@@ -11,6 +11,7 @@
 [SOILWAT2]: https://github.com/DrylandEcology/SOILWAT2
 [tinytex]: https://yihui.name/tinytex/
 [xcode]: https://developer.apple.com/xcode
+[netCDF]: https://downloads.unidata.ucar.edu/netcdf/
 
 
 Note: this document is best viewed as part of the doxygen-built documentation
@@ -53,11 +54,11 @@ on your side.
     - xcode command line tools (run `xcode-select --install` on the command line)
     - having agreed to the xcode license (run `xcodebuild -license`)
     - or, alternatively, the full [xcode][] installation
-  - optional:
+  - to build the documentation (optional)
     - [doxygen][] (ideally `>= v1.9.3`) and
-      a minimal `latex` installation (see below)
-      to generate a local copy of the documentation
-
+    - a minimal `latex` installation (see below)
+  - to build with [netCDF][] support (optional)
+    - the `netCDF-C` library
 
 
 #### Example instructions for a minimal `latex` installation
@@ -106,10 +107,19 @@ on your side.
 
 
 ### Compilation
-  * Compile an executable binary, e.g.,
+  * Compile an executable binary with text-based input/output, e.g.,
 ```{.sh}
-    cd SOILWAT2/
     make
+```
+
+  * Compile an executable binary with [netCDF][] support, e.g.,
+```{.sh}
+    CPPFLAGS=-DSWNETCDF make
+```
+
+  * User-specified paths to [netCDF][] header and library can be provided, e.g.,
+```{.sh}
+    CPPFLAGS=-DSWNETCDF NC_CFLAGS="-I/path/to/include" NC_LIBS="-L/path/to/lib" make
 ```
 
 <br>

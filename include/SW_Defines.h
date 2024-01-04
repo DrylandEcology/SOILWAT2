@@ -106,6 +106,9 @@ extern "C" {
 #define MAX_FILENAMESIZE 512
 #define MAX_PATHSIZE 2048
 
+/* Large storage for a value when reading in key-value pairs from an input file */
+#define LARGE_VALUE 1024
+
 /* Maximum number of messages to store in LOG_INFO */
 #define MAX_MSGS 10
 

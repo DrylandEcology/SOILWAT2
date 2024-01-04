@@ -32,6 +32,7 @@
 [doxygen]: https://github.com/doxygen/doxygen
 [GoogleTest]: https://github.com/google/googletest
 [semantic versioning]: https://semver.org/
+[netCDF]: https://downloads.unidata.ucar.edu/netcdf/
 
 <br>
 
@@ -101,26 +102,27 @@ A full code documentation may be built, see [here](#get_documentation).
         - `POSIX API`
     - GNU-compliant `make`
     - On Windows OS: an installation of `cygwin`
+    - the `netCDF-C` library (if compiled with [netCDF][] support)
 
   * Clone the repository
     (details can be found in the
     [manual](doc/additional_pages/A_SOILWAT2_user_guide.md)), for instance,
-    ```{.sh}
+```{.sh}
         git clone --recursive https://github.com/DrylandEcology/SOILWAT2.git SOILWAT2
-    ```
+```
 
   * Build with `make` (see `make help` to print information about all
-    available targets), for instance,
-    ```{.sh}
-        cd SOILWAT2/
-        make
-    ```
+    available targets). For instance,
+```{.sh}
+        make                          # text-based mode
+        CPPFLAGS=-DSWNETCDF make      # netCDF-based mode
+```
 
-    You can use a specific compiler, e.g.,
-    ```{.sh}
+  * You can use a specific compiler, e.g.,
+```{.sh}
         CC=gcc make
         CC=clang make
-    ```
+```
 <br>
 
 

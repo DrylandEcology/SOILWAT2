@@ -130,6 +130,38 @@ lib_gmock := $(dir_build_test)/lib$(gmock).a
 # RM = rm
 
 
+#------ netCDF SUPPORT
+# `CPPFLAGS=-DSWNETCDF make all`
+
+# User-specified paths to netCDF header and library:
+#   `CPPFLAGS=-DSWNETCDF NC_CFLAGS="-I/path/to/include" NC_LIBS="-L/path/to/lib" make all`
+
+ifneq (,$(findstring -DSWNETCDF,$(CPPFLAGS)))
+  # define makefile variable SWNETCDF if defined via CPPFLAGS
+  SWNETCDF = 1
+endif
+
+ifdef SWNETCDF
+  ifndef NC_CFLAGS
+    # use `nc-config` if user did not provide NC_CFLAGS
+    NC_CFLAGS := $(shell nc-config --cflags)
+  endif
+
+  ifndef NC_LIBS
+    # use `nc-config` if user did not provide NC_LIBS
+    NC_LIBS := $(shell nc-config --libs)
+  else
+    ifeq (,$(findstring -lnetcdf,$(NC_LIBS)))
+      NC_LIBS += -lnetcdf
+    endif
+  endif
+else
+  # unset NC_CFLAGS and NC_LIBS if SWNETCDF is not defined
+  NC_CFLAGS :=
+  NC_LIBS :=
+endif
+
+
 #------ STANDARDS
 # googletest requires c++14 and POSIX API
 # see https://github.com/google/oss-policies-info/blob/main/foundational-cxx-support-matrix.md
@@ -191,8 +223,8 @@ instr_flags_severe := \
 sw_CPPFLAGS := $(CPPFLAGS) $(sw_info) -MMD -MP -I.
 sw_CPPFLAGS_bin := $(sw_CPPFLAGS) -I$(dir_build_sw2)
 sw_CPPFLAGS_test := $(sw_CPPFLAGS) -I$(dir_build_test)
-sw_CFLAGS := $(CFLAGS)
-sw_CXXFLAGS := $(CXXFLAGS)
+sw_CFLAGS := $(CFLAGS) $(NC_CFLAGS)
+sw_CXXFLAGS := $(CXXFLAGS) $(NC_CFLAGS)
 
 # `SW2_FLAGS` can be used to pass in additional flags
 bin_flags := -O2 -fno-stack-protector $(SW2_FLAGS)
@@ -205,7 +237,7 @@ gtest_flags := -D_POSIX_C_SOURCE=200809L # googletest requires POSIX API
 # order of libraries is important for GNU gcc (libSOILWAT2 depends on libm)
 sw_LDFLAGS_bin := $(LDFLAGS) -L$(dir_bin)
 sw_LDFLAGS_test := $(LDFLAGS) -L$(dir_bin) -L$(dir_build_test)
-sw_LDLIBS := $(LDLIBS) -lm
+sw_LDLIBS := $(LDLIBS) $(NC_LIBS) -lm
 
 target_LDLIBS := -l$(target) $(sw_LDLIBS)
 test_LDLIBS := -l$(target_test) $(sw_LDLIBS)
@@ -243,6 +275,10 @@ sources_core := \
 	$(dir_src)/SW_Flow.c \
 	$(dir_src)/SW_Carbon.c \
 	$(dir_src)/SW_Domain.c
+
+ifdef SWNETCDF
+sources_core += $(dir_src)/SW_netCDF.c
+endif
 
 sources_lib = \
 	$(sw_sources) \

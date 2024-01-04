@@ -2,21 +2,33 @@
 
 # SOILWAT2 v8.0.0-devel
 
+* SOILWAT2 can now be compiled in one of two modes
+  (#361, #362; @N1ckP3rsl3y, @dschlaep):
+    * `"netCDF"`-based input (currently limited to the `"domain"`);
+      this mode is compiled if the new preprocessor definition `"SWNETCDF"`
+      and the `"netCDF"` library are available,
+      e.g., `CPPFLAGS=-DSWNETCDF make all`
+    * text-based input and output (as previously)
+
 * SOILWAT2 now represents a simulation `"domain"`, i.e.,
   a set of (independent) simulation units/runs (#360; @N1ckP3rsl3y, @dschlaep).
   A `"domain"` is defined by either a set of `"sites"` or by a `"xy"`-grid.
   The simulation set consists of simulation units within a `"domain"` that
   have not yet been simulated.
   Simulation units are identified via `"suid"` (simulation unit identifier).
-    * Input files are read once and now populate a `"template"`.
-    * New `SW_CTL_RunSimSet()` loops over the simulation set or runs
-      one user specified simulation unit.
+    * Input text files are read once and now populate a `"template"`
+      that is used for each simulation unit.
+    * New `SW_CTL_RunSimSet()` loops over the simulation set or
+      runs one user specified simulation unit.
       It writes warning and error messages from all simulation units to the
       `logfile` but does not exit if a simulation unit fails
       (`main()` will exit with an error if it fails or
       if every simulation unit produced an error).
     * New `SW_CTL_run_sw()` takes a deep copy of the `"template"` as basis
       for each simulation unit.
+    * For `"netCDF"`-based SOILWAT2, information about the `"domain"`
+      (i.e., simulation units and their geographic locations) is obtained from
+      `"domain.nc"` (#361; @N1ckP3rsl3y, @dschlaep).
 
 * Tests now utilize the same template/deep-copy approach (@dschlaep),
   i.e., input files from `test/example/` populate a `"template"` and
@@ -48,6 +60,7 @@
   topography (previously in `"siteparam.in"`).
 * Input file `"siteparam.in"` lost inputs for geographic coordinates and
   topography (content moved to `"modelrun.in"`).
+* Input file `"files.in"` gained two entries for `"netCDF"`-based SOILWAT2.
 * New command line option `"-s X"` where `X` is a simulation unit identifier;
   if the option `"-s X"` is absent or `X` is `0`, then all simulation units
   in the simulation `"domain"` are run;
@@ -56,6 +69,24 @@
   The code gracefully ends early if the wall time reaches a limit of
   `X - SW_WRAPUPTIME` seconds; if the option `"-t X"` is absent,
   then there is (practically) no wall time limit.
+
+
+## Changes to inputs for `"netCDF"`-based SOILWAT2
+* `"netCDF"`-based SOILWAT2 is compiled if the new preprocessor definition
+  `"SWNETCDF"` is made available, e.g., `CPPFLAGS=-DSWNETCDF make all`
+* User-specified paths to `"netCDF"` header and library can be provided as well,
+  e.g., `CPPFLAGS=-DSWNETCDF NC_CFLAGS="-I/path/to/include" NC_LIBS="-L/path/to/lib" make all`
+* New input directory `"Input_nc/"` that describes `"netCDF"`-based inputs
+  (paths provided by new entries in `"files.in"`).
+* New text input file `"files_nc.in"` that lists for each input purpose
+  (currently, only `"domain"` is implemented)
+  the path to the `"netCDF"` input file and associated variable name.
+* New text input file `"attribues_nc.in"` to provide global attributes and a
+  geographic (and optionally a projected) `"CRS"` (coordinate reference system)
+  that describe the `"domain.nc"`.
+* A user provided `"domain.nc"` that describes the simulation `"domain"`.
+  Specifications must be consistent with `"domain.in"`.
+  If absent, a template is automatically generated based on `"domain.in"`.
 
 
 # SOILWAT2 v7.2.0

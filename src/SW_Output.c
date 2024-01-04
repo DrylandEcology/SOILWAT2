@@ -509,7 +509,7 @@ static void sumof_swc(SW_SOILWAT *v, SW_SOILWAT_OUTPUTS *s, OutKey k,
    @param[in] bFlush_output Determines if output should be created for
 		a specific output key
    @param[in] tOffset Offset describing with the previous or current period
-   @param[in,out] LogInfo Holds information dealing with logfile output
+   @param[out] LogInfo Holds information on warnings and errors
 */
 static void average_for(SW_ALL* sw, ObjType otyp, OutPeriod pd,
 		Bool bFlush_output, TimeInt tOffset, LOG_INFO* LogInfo) {
@@ -1699,7 +1699,7 @@ void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs, int count,
   	information about every vegetation species
   @param[in] ncol_OUT Number of output columns for each output key
   @param[out] colnames_OUT Names of output columns for each output key
-  @param[in,out] LogInfo Holds information dealing with logfile output
+  @param[out] LogInfo Holds information on warnings and errors
 
   @sideeffect Set values of colnames_OUT
 */
@@ -2244,7 +2244,7 @@ int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
 		are required for each output key
 	@param[out] used_OUTNPERIODS The number of different time steps/periods
 		 that are used/requested
-	@param[in,out] LogInfo Holds information dealing with logfile output
+	@param[out] LogInfo Holds information on warnings and errors
  */
 void SW_OUT_read(SW_ALL* sw, char *InFiles[],
 	OutPeriod timeSteps[][SW_OUTNPERIODS], IntUS *used_OUTNPERIODS,
@@ -2291,7 +2291,7 @@ void SW_OUT_read(SW_ALL* sw, char *InFiles[],
 	*used_OUTNPERIODS = 1; // if 'TIMESTEP' is not specified in input file, then only one time step = period can be specified
 
 
-	while (GetALine(f, inbuf))
+	while (GetALine(f, inbuf, MAX_FILENAMESIZE))
 	{
 		itemno++; /* note extra lines will cause an error */
 
@@ -2463,7 +2463,7 @@ void _collect_values(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
   		all information in the simulation
 	@param[in] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
  		hold pointers to subroutines for output keys
-	@param[in,out] LogInfo Holds information dealing with logfile output
+	@param[out] LogInfo Holds information on warnings and errors
 */
 void SW_OUT_flush(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 				  LOG_INFO* LogInfo) {
@@ -2486,7 +2486,7 @@ void SW_OUT_flush(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 	@param[in] bFlush_output Determines if output should be created for
 		a specific output key
 	@param[in] tOffset Offset describing with the previous or current period
-	@param[in,out] LogInfo Holds information dealing with logfile output
+	@param[out] LogInfo Holds information on warnings and errors
 */
 void SW_OUT_sum_today(SW_ALL* sw, ObjType otyp,
 		Bool bFlush_output, TimeInt tOffset, LOG_INFO* LogInfo)

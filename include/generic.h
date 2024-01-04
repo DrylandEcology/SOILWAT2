@@ -208,7 +208,6 @@ double final_running_sd(unsigned int n, double ssqr);
 double mean(double values[], int length);
 double standardDeviation(double inputArray[], int length);
 
-
 #ifdef __cplusplus
 }
 #endif

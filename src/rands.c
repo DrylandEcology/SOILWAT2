@@ -236,7 +236,7 @@ float RandUniFloatRange(const float min, const float max, sw_random_t* pcg_rng) 
 	\param last Upper bound of the values.
 	\param[out] list Upon return this array will be filled with random values.
   \param[in,out] *pcg_rng The random number generator to use.
-  \param[in,out] LogInfo Holds information dealing with logfile output
+  \param[out] LogInfo Holds information on warnings and errors
 */
 void RandUniList(long count, long first, long last, RandListType list[],
                  sw_random_t* pcg_rng, LOG_INFO* LogInfo) {
@@ -414,7 +414,7 @@ double RandNorm(double mean, double stddev, sw_random_t* pcg_rng) {
   \param bb The second shape parameter of the beta distribution with
          \f$0.0 < bb\f$.
   \param[in,out] *pcg_rng The random number generator to use.
-  \param[in,out] LogInfo Holds information dealing with logfile output
+  \param[out] LogInfo Holds information on warnings and errors
   \return A random variate of a beta distribution.
 */
 float RandBeta ( float aa, float bb, sw_random_t* pcg_rng, LOG_INFO* LogInfo) {

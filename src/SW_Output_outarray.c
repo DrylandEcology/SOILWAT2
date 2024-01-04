@@ -207,7 +207,7 @@ void do_running_agg(RealD *p, RealD *psd, size_t k, IntU n, RealD x)
     @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
 		basic output information for all output keys
 	@param[out] GenOutput Holds general variables that deal with output
-	@param[in,out] LogInfo Holds information dealing with logfile output
+	@param[out] LogInfo Holds information on warnings and errors
 
 	Note: Compare with function `setGlobalrSOILWAT2_OutputVariables` in `rSW_Output.c`
 

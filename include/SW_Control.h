@@ -28,7 +28,7 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_CTL_init_ptrs(SW_ALL* sw);
+void SW_CTL_init_ptrs(SW_ALL* sw) ;
 void SW_CTL_alloc_outptrs(SW_ALL* sw, LOG_INFO* LogInfo);
 void SW_ALL_deepCopy(SW_ALL* source, SW_ALL* dest, LOG_INFO* LogInfo);
 void SW_CTL_setup_domain(unsigned long userSUID,
@@ -48,8 +48,8 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
                       LOG_INFO *main_LogInfo);
 void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                              LOG_INFO* LogInfo);
-void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncStartSuid[],
-                   char* ncInFiles[], SW_OUTPUT_POINTERS SW_OutputPtrs[],
+void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSuid[],
+                   SW_OUTPUT_POINTERS SW_OutputPtrs[],
                    RealD p_OUT[][SW_OUTNPERIODS], LOG_INFO* LogInfo);
 
 

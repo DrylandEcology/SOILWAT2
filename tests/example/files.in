@@ -4,6 +4,10 @@
 # All names are relative to current directory of execution
 # USER: change path and file names as suitable for own application
 
+#--- Files for netCDF-related inputs
+Input_nc/files_nc.in
+Input_nc/attributes_nc.in
+
 #--- Constant (between simulation runs) temporal description of the simulation
 Input/domain.in
 

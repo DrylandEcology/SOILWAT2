@@ -6,17 +6,22 @@
 #include "include/filefuncs.h"
 #include "include/SW_Files.h"
 #include "include/SW_Times.h"
+#include "include/myMemory.h"
+#include "include/generic.h"
+
+#if defined(SWNETCDF)
+#include "include/SW_netCDF.h"
+#endif
 
 /* =================================================== */
 /*                   Local Defines                     */
 /* --------------------------------------------------- */
 
-#define NUM_DOM_IN_KEYS 8 // Number of possible keys within `domain.in`
+#define NUM_DOM_IN_KEYS 13 // Number of possible keys within `domain.in`
 
 /* =================================================== */
 /*             Private Function Declarations           */
 /* --------------------------------------------------- */
-static int domain_inkey_to_id(char *key);
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -28,15 +33,19 @@ static int domain_inkey_to_id(char *key);
  * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
  *  temporal/spatial information for a set of simulation runs
  * @param[in] suid Unique identifier for a simulation run
- * @param[out] ncStartSuid Unique indentifier of the first suid to run
+ * @param[out] ncSuid Unique indentifier of the first suid to run
  *  in relation to netCDFs
 */
-void SW_DOM_calc_ncStartSuid(SW_DOMAIN* SW_Domain, unsigned long suid,
-                             unsigned long ncStartSuid[]) {
+void SW_DOM_calc_ncSuid(SW_DOMAIN* SW_Domain, unsigned long suid,
+                             unsigned long ncSuid[]) {
 
-    (void) SW_Domain;
-    (void) suid;
-    (void) ncStartSuid;
+    if(strcmp(SW_Domain->DomainType, "s") == 0) {
+        ncSuid[0] = suid;
+        ncSuid[1] = 0;
+    } else {
+        ncSuid[0] = suid / SW_Domain->nDimX;
+        ncSuid[1] = suid % SW_Domain->nDimX;
+    }
 }
 
 /**
@@ -56,16 +65,16 @@ void SW_DOM_calc_nSUIDs(SW_DOMAIN* SW_Domain) {
  *
  * @param[in] domainType Type of domain in which simulations are running
  *  (gridcell/sites)
- * @param[in] ncStartSuid Current simulation unit identifier for which progress
+ * @param[in] ncSuid Current simulation unit identifier for which progress
  * should be checked.
  *
  * @return
- * TRUE if simulation for \p ncStartSuid has not been completed yet;
- * FALSE if simulation for \p ncStartSuid has been completed (i.e., skip).
+ * TRUE if simulation for \p ncSuid has not been completed yet;
+ * FALSE if simulation for \p ncSuid has been completed (i.e., skip).
 */
-Bool SW_DOM_CheckProgress(char* domainType, unsigned long ncStartSuid[]) {
+Bool SW_DOM_CheckProgress(char* domainType, unsigned long ncSuid[]) {
     (void) domainType;
-    (void) ncStartSuid;
+    (void) ncSuid;
 
     // return TRUE (due to lack of capability to track progress)
     return swTRUE;
@@ -86,25 +95,35 @@ void SW_DOM_CreateProgress(SW_DOMAIN* SW_Domain) {
  *
  * @param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
  *      temporal/spatial information for a set of simulation runs
- * @param[in] LogInfo Holds information dealing with logfile output
+ * @param[in] LogInfo Holds information on warnings and errors
 */
 void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 
+    static const char *possibleKeys[NUM_DOM_IN_KEYS] =
+            {"Domain", "nDimX", "nDimY", "nDimS",
+            "StartYear", "EndYear", "StartDoy", "EndDoy",
+            "crs_bbox", "xmin_bbox", "ymin_bbox", "xmax_bbox", "ymax_bbox"};
+    static const Bool requiredKeys[NUM_DOM_IN_KEYS] =
+            {swTRUE, swTRUE, swTRUE, swTRUE,
+            swTRUE, swTRUE, swFALSE, swFALSE,
+            swTRUE, swTRUE, swTRUE, swTRUE, swTRUE};
+    Bool hasKeys[NUM_DOM_IN_KEYS] = {swFALSE};
+
     FILE *f;
     int y, keyID;
-    char inbuf[MAX_FILENAMESIZE], *MyFileName;
-    TimeInt tempdoy;
-    char key[10], value[6]; // 10 - Max key size, 6 - max characters
-    Bool fstartdy = swFALSE, fenddy = swFALSE;
+    char inbuf[LARGE_VALUE], *MyFileName;
+    char key[10], value[LARGE_VALUE]; // 10 - Max key size
 
     MyFileName = SW_Domain->PathInfo.InFiles[eDomain];
 	f = OpenFile(MyFileName, "r", LogInfo);
 
     // Set SW_DOMAIN
-    while(GetALine(f, inbuf)) {
-        sscanf(inbuf, "%s %s", key, value);
+    while(GetALine(f, inbuf, LARGE_VALUE)) {
+        sscanf(inbuf, "%9s %s", key, value);
 
-        keyID = domain_inkey_to_id(key);
+        keyID = key_to_id(key, possibleKeys, NUM_DOM_IN_KEYS);
+        set_hasKey(keyID, possibleKeys, hasKeys, LogInfo); // no error, only warnings possible
+
         switch(keyID) {
             case 0: // Domain type
                 if(strcmp(value, "xy") != 0 && strcmp(value, "s") != 0) {
@@ -148,13 +167,26 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
                 break;
             case 6: // Start day of year
                 SW_Domain->startstart = atoi(value);
-                fstartdy = swTRUE;
                 break;
             case 7: // End day of year
-                tempdoy = atoi(value);
-                SW_Domain->endend = (tempdoy == 365) ?
-                                Time_get_lastdoy_y(SW_Domain->endyr) : 365;
-                fenddy = swTRUE;
+                SW_Domain->endend = atoi(value);
+                break;
+            case 8: // CRS box
+                // Re-scan and get the entire value (including spaces)
+                sscanf(inbuf, "%9s %27[^\n]", key, value);
+                strcpy(SW_Domain->crs_bbox, value);
+                break;
+            case 9: // Minimum x coordinate
+                SW_Domain->min_x = atof(value);
+                break;
+            case 10: // Minimum y coordinate
+                SW_Domain->min_y = atof(value);
+                break;
+            case 11: // Maximum x coordinate
+                SW_Domain->max_x = atof(value);
+                break;
+            case 12: // Maximum y coordinate
+                SW_Domain->max_y = atof(value);
                 break;
             case KEY_NOT_FOUND: // Unknown key
                 LogError(LogInfo, LOGWARN, "%s: Ignoring an unknown key, %s",
@@ -166,23 +198,46 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     CloseFile(&f, LogInfo);
 
 
-	if (SW_Domain->endyr < SW_Domain->startyr) {
-        LogError(LogInfo, LOGERROR, "%s: Start Year > End Year", MyFileName);
+    // Check if all required input was provided
+    check_requiredKeys(hasKeys, requiredKeys, possibleKeys, NUM_DOM_IN_KEYS, LogInfo);
+    if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
-	}
+    }
+
+    if (SW_Domain->endyr < SW_Domain->startyr) {
+          LogError(LogInfo, LOGERROR, "%s: Start Year > End Year", MyFileName);
+          return; // Exit function prematurely due to error
+    }
 
     // Check if start day of year was not found
-    if(!fstartdy) {
+    keyID = key_to_id("StartDoy", possibleKeys, NUM_DOM_IN_KEYS);
+    if(!hasKeys[keyID]) {
         LogError(LogInfo, LOGWARN, "Domain.in: Missing Start Day - using 1\n");
         SW_Domain->startstart = 1;
     }
 
-    // Check if end day of year was not found
-	if (!fenddy) {
-		SW_Domain->endend = Time_get_lastdoy_y(SW_Domain->endyr);
-        LogError(LogInfo, LOGWARN,
-                "Domain.in: Missing End Day - using %d\n", SW_Domain->endend);
-	}
+    // Check end day of year
+    keyID = key_to_id("EndDoy", possibleKeys, NUM_DOM_IN_KEYS);
+    if (SW_Domain->endend == 365 || !hasKeys[keyID]) {
+        // Make sure last day is correct if last year is a leap year and
+        // last day is last day of that year
+        SW_Domain->endend = Time_get_lastdoy_y(SW_Domain->endyr);
+    }
+    if (!hasKeys[keyID]) {
+          LogError(LogInfo, LOGWARN,
+                  "Domain.in: Missing End Day - using %d\n", SW_Domain->endend);
+    }
+
+    // Check bounding box coordinates
+    if (GT(SW_Domain->min_x, SW_Domain->max_x)) {
+        LogError(LogInfo, LOGERROR, "Domain.in: bbox x-axis min > max.");
+        return; // Exit function prematurely due to error
+    }
+
+    if (GT(SW_Domain->min_y, SW_Domain->max_y)) {
+        LogError(LogInfo, LOGERROR, "Domain.in: bbox y-axis min > max.");
+        return; // Exit function prematurely due to error
+    }
 }
 
 /**
@@ -190,12 +245,12 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
  *
  * @param[in] domainType Type of domain in which simulations are running
  *  (gridcell/sites)
- * @param[in] ncStartSuid Unique indentifier of the first suid to run
+ * @param[in] ncSuid Unique indentifier of the first suid to run
  *  in relation to netCDFs
 */
-void SW_DOM_SetProgress(char* domainType, unsigned long ncStartSuid[]) {
+void SW_DOM_SetProgress(char* domainType, unsigned long ncSuid[]) {
     (void) domainType;
-    (void) ncStartSuid;
+    (void) ncSuid;
 }
 
 /**
@@ -205,7 +260,7 @@ void SW_DOM_SetProgress(char* domainType, unsigned long ncStartSuid[]) {
  *  temporal/spatial information for a set of simulation runs
  * @param[in] userSUID Simulation Unit Identifier requested by the user (base1);
  *            0 indicates that all simulations units within domain are requested
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_DOM_SimSet(SW_DOMAIN* SW_Domain, unsigned long userSUID,
                    LOG_INFO* LogInfo) {
@@ -230,7 +285,7 @@ void SW_DOM_SimSet(SW_DOMAIN* SW_Domain, unsigned long userSUID,
     } else {
         *endSimSet = SW_Domain->nSUIDs;
         for(*startSimSet = 0; *startSimSet < *endSimSet; (*startSimSet)++) {
-            SW_DOM_calc_ncStartSuid(SW_Domain, *startSimSet, startSuid);
+            SW_DOM_calc_ncSuid(SW_Domain, *startSimSet, startSuid);
 
             if(SW_DOM_CheckProgress(SW_Domain->DomainType, startSuid)) {
                 return; // Found start suid
@@ -245,33 +300,24 @@ void SW_DOM_deepCopy(SW_DOMAIN* source, SW_DOMAIN* dest, LOG_INFO* LogInfo) {
     SW_F_deepCopy(&dest->PathInfo, &source->PathInfo, LogInfo);
 }
 
+void SW_DOM_init_ptrs(SW_DOMAIN* SW_Domain) {
+    SW_F_init_ptrs(SW_Domain->PathInfo.InFiles);
+
+    #if defined(SWNETCDF)
+    SW_NC_init_ptrs(&SW_Domain->netCDFInfo);
+    #endif
+}
+
+void SW_DOM_deconstruct(SW_DOMAIN* SW_Domain) {
+    SW_F_deconstruct(SW_Domain->PathInfo.InFiles);
+
+    #if defined(SWNETCDF)
+    SW_NC_deconstruct(&SW_Domain->netCDFInfo);
+    SW_NC_close_files(&SW_Domain->netCDFInfo);
+    #endif
+}
+
+
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
-
-/**
- * @brief Helper function to `SW_DOM_read()` to determine which input
- *        key has been read in
- *
- * @param[in] key Read-in key from domain input file
- *
- * @return Either the ID of the key within a fixed set of possible keys,
- *         or KEY_NOT_FOUND (-1) for an unknown key
-*/
-static int domain_inkey_to_id(char *key) {
-    static const char *possibleKeys[] =
-            {"Domain", "nDimX", "nDimY", "nDimS",
-            "StartYear", "EndYear", "StartDoy", "EndDoy"};
-
-    int id, stringMatch = 0, compRes;
-
-    for(id = 0; id < NUM_DOM_IN_KEYS; id++) {
-        compRes = strcmp(key, possibleKeys[id]);
-
-        if(compRes == stringMatch) {
-            return id;
-        }
-    }
-
-    return KEY_NOT_FOUND;
-}
