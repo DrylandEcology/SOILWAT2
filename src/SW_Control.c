@@ -715,6 +715,10 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSu
                    SW_OUTPUT_POINTERS SW_OutputPtrs[],
                    RealD p_OUT[][SW_OUTNPERIODS], LOG_INFO* LogInfo) {
 
+    #ifdef SWDEBUG
+    int debug = 0;
+    #endif
+
     SW_ALL local_sw;
 
     // Copy template SW_ALL to local instance
@@ -723,10 +727,22 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSu
         goto freeMem; // Free memory and skip simulation run
     }
 
+    // Obtain suid-specific inputs
     #if defined(SWNETCDF)
-    SW_NC_read_inputs(sw_template, SW_Domain, ncSuid, LogInfo);
+    SW_NC_read_inputs(&local_sw, SW_Domain, ncSuid, LogInfo);
     if(LogInfo->stopRun) {
         goto freeMem;
+    }
+    #endif
+
+    // Run simulation for suid
+    #ifdef SWDEBUG
+    if (debug) {
+        swprintf(
+            "SW_CTL_run_sw(): suid = %zu/%zu, lon/lat = (%f, %f)\n",
+            ncSuid[0], ncSuid[1],
+            local_sw.Model.longitude, local_sw.Model.latitude
+        );
     }
     #endif
 
