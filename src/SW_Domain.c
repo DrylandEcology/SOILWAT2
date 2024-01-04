@@ -227,6 +227,17 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
           LogError(LogInfo, LOGWARN,
                   "Domain.in: Missing End Day - using %d\n", SW_Domain->endend);
     }
+
+    // Check bounding box coordinates
+    if (GT(SW_Domain->min_x, SW_Domain->max_x)) {
+        LogError(LogInfo, LOGERROR, "Domain.in: bbox x-axis min > max.");
+        return; // Exit function prematurely due to error
+    }
+
+    if (GT(SW_Domain->min_y, SW_Domain->max_y)) {
+        LogError(LogInfo, LOGERROR, "Domain.in: bbox y-axis min > max.");
+        return; // Exit function prematurely due to error
+    }
 }
 
 /**
