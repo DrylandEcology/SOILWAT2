@@ -1280,6 +1280,55 @@ static void fill_netCDF_with_global_atts(SW_NETCDF* SW_netCDF, int* ncFileID,
 }
 
 /**
+ * @brief Overwrite specific global attributes into a new file
+ *
+ * @param[in] ncFileID Identifier of the open netCDF file to write all information to
+ * @param[in] domType Type of domain in which simulations are running
+ *  (gridcell/sites)
+ * @param[in] freqAtt Value of a global attribute "frequency" (may be "fx",
+ *  "day", "week", "month", or "year")
+ * @param[in] isInputFile Specifies if the file being written to is input
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+static void update_netCDF_global_atts(int* ncFileID, const char* domType,
+                    const char* freqAtt, Bool isInputFile, LOG_INFO* LogInfo) {
+
+    char sourceStr[40]; // 40 - valid size of the SOILWAT2 global `SW2_VERSION` + "SOILWAT2"
+    char creationDateStr[21]; // 21 - valid size to hold a string of format YYYY-MM-DDTHH:MM:SSZ
+    time_t t = time(NULL);
+
+    int attNum;
+    const int numGlobAtts = (strcmp(domType, "s") == 0) ? 5 : 4; // Do or do not include "featureType"
+    const char* attNames[] = {
+        "source", "creation_date", "product", "frequency", "featureType"
+    };
+
+    const char* productStr = (isInputFile) ? "model-input" : "model-output";
+    const char* featureTypeStr;
+    if(strcmp(domType, "s") == 0) {
+        featureTypeStr = (dimExists("time", *ncFileID)) ? "timeSeries" : "point";
+    } else {
+        featureTypeStr = "";
+    }
+
+    const char* attVals[] = {
+        sourceStr, creationDateStr, productStr, freqAtt, featureTypeStr
+    };
+
+    // Fill `sourceStr` and `creationDateStr`
+    snprintf(sourceStr, 40, "SOILWAT2%s", SW2_VERSION);
+    strftime(creationDateStr, sizeof creationDateStr, "%FT%TZ", gmtime(&t));
+
+    // Write out the necessary global attributes that are listed above
+    for(attNum = 0; attNum < numGlobAtts; attNum++) {
+        write_str_att(attNames[attNum], attVals[attNum], NC_GLOBAL, *ncFileID, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+    }
+}
+
+/**
  * @brief Wrapper function to fill a netCDF with all the invariant information
  *  i.e., global attributes (including time created) and CRS information
  *  (including the creation of these variables)
@@ -1690,6 +1739,69 @@ void SW_NC_create_template(const char* domFile, int domFileID,
     const char* attNames[], const char* attVals[], int numAtts, Bool isInput,
     const char* freq, LOG_INFO* LogInfo) {
 
+    int dimArrSize = 0, index, varID = 0;
+    int dimIDs[4]; // Maximum expected number of dimensions
+    Bool siteDimExists = dimExists("site", domFileID);
+    const char* latName = (dimExists("lat", domFileID)) ? "lat" : "y";
+    const char* lonName = (dimExists("lon", domFileID)) ? "lon" : "x";
+    const char* domType = (siteDimExists) ? "s" : "xy";
+    int numConstDims = (siteDimExists) ? 1 : 2;
+    const char* thirdDim = (siteDimExists) ? "site" : latName;
+    const char* constDimNames[] = {thirdDim, lonName};
+    const char* timeVertNames[] = {"time", "vertical"};
+    int timeVertVals[] = {timeSize, vertSize}, numTimeVertVals = 2;
+
+    CopyFile(domFile, fileName, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    if(nc_open(fileName, NC_WRITE, newFileID) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "An error occurred when attempting "
+                                    "to access the new file %s.", fileName);
+        return; // Exit function prematurely due to error
+    }
+
+    for(index = 0; index < numTimeVertVals; index++) {
+        if(timeVertVals[index] > 0) {
+            create_netCDF_dim(timeVertNames[index], timeSize, newFileID,
+                              &dimIDs[dimArrSize], LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+            dimArrSize++;
+        }
+    }
+
+    for(index = 0; index < numConstDims; index++) {
+        get_dim_identifier(*newFileID, constDimNames[index],
+                           &dimIDs[dimArrSize], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        dimArrSize++;
+    }
+
+    create_netCDF_var(&varID, varName, dimIDs, newFileID, newVarType,
+                      dimArrSize, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    update_netCDF_global_atts(newFileID, domType, freq, isInput, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    for(index = 0; index < numAtts; index++) {
+        write_str_att(attNames[index], attVals[index],
+                      varID, *newFileID, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+    }
 }
 
 /**
