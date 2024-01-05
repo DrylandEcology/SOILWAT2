@@ -75,7 +75,14 @@ void SW_DOM_calc_nSUIDs(SW_DOMAIN* SW_Domain) {
 */
 Bool SW_DOM_CheckProgress(int progFileID, int progVarID,
                           unsigned long ncSuid[], LOG_INFO* LogInfo) {
+    #if defined(SWNETCDF)
+    return SW_NC_check_progress(progFileID, progVarID, ncSuid, LogInfo);
+    #else
+    (void) progFileID;
+    (void) progVarID;
     (void) ncSuid;
+    (void) LogInfo;
+    #endif
 
     // return TRUE (due to lack of capability to track progress)
     return swTRUE;
@@ -258,12 +265,19 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
  *  in relation to netCDFs
  * @param[in,out] LogInfo
 */
-void SW_DOM_SetProgress(char* domainType, unsigned long ncSuid[]) {
-    (void) domainType;
 void SW_DOM_SetProgress(const char* domType, int progFileID,
                         int progVarID, unsigned long ncSuid[],
                         LOG_INFO* LogInfo) {
+
+    #if defined(SWNETCDF)
+    SW_NC_set_progress(domType, progFileID, progVarID, ncSuid, LogInfo);
+    #else
+    (void) progFileID;
+    (void) progVarID;
     (void) ncSuid;
+    (void) LogInfo;
+    (void) domType;
+    #endif
 }
 
 /**
@@ -278,10 +292,18 @@ void SW_DOM_SetProgress(const char* domType, int progFileID,
 void SW_DOM_SimSet(SW_DOMAIN* SW_Domain, unsigned long userSUID,
                    LOG_INFO* LogInfo) {
 
+    Bool progFound;
     unsigned long
       *startSimSet = &SW_Domain->startSimSet,
       *endSimSet = &SW_Domain->endSimSet,
       startSuid[2]; // 2 -> [y, x] or [0, s]
+    int progFileID = 0; // Value does not matter if SWNETCDF is not defined
+    int progVarID = 0; // Value does not matter if SWNETCDF is not defined
+
+    #if defined(SWNETCDF)
+    progFileID = SW_Domain->netCDFInfo.ncFileIDs[vNCprog];
+    progVarID = SW_Domain->netCDFInfo.ncVarIDs[vNCprog];
+    #endif
 
     if(userSUID > 0) {
         if(userSUID > SW_Domain->nSUIDs) {
@@ -300,8 +322,11 @@ void SW_DOM_SimSet(SW_DOMAIN* SW_Domain, unsigned long userSUID,
         for(*startSimSet = 0; *startSimSet < *endSimSet; (*startSimSet)++) {
             SW_DOM_calc_ncSuid(SW_Domain, *startSimSet, startSuid);
 
-            if(SW_DOM_CheckProgress(SW_Domain->DomainType, startSuid)) {
-                return; // Found start suid
+            progFound = SW_DOM_CheckProgress(progFileID, progVarID,
+                                             startSuid, LogInfo);
+
+            if(progFound || LogInfo->stopRun) {
+                return; // Found start suid or error occurred
             }
         }
     }

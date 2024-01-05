@@ -210,7 +210,14 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
     char tag_suid[32]; /* 32 = 11 character for "(suid = ) " + 20 character for ULONG_MAX + '\0' */
     tag_suid[0] = '\0';
     WallTimeSpec tss, tsr;
-    Bool ok_tss = swFALSE, ok_tsr = swFALSE;
+    Bool ok_tss = swFALSE, ok_tsr = swFALSE, ok_suid;
+    int progFileID = 0; // Value does not matter if SWNETCDF is not defined
+    int progVarID = 0; // Value does not matter if SWNETCDF is not defined
+
+    #if defined(SWNETCDF)
+    progFileID = SW_Domain->netCDFInfo.ncFileIDs[vNCprog];
+    progVarID = SW_Domain->netCDFInfo.ncVarIDs[vNCprog];
+    #endif
 
     set_walltime(&tss, &ok_tss);
 
@@ -231,7 +238,11 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
         sw_init_logs(main_LogInfo->logfp, &local_LogInfo);
 
         SW_DOM_calc_ncSuid(SW_Domain, suid, ncSuid);
-        if(SW_DOM_CheckProgress(SW_Domain->DomainType, ncSuid)) {
+
+        ok_suid = SW_DOM_CheckProgress(progFileID, progVarID, ncSuid,
+                                       &local_LogInfo);
+
+        if(ok_suid && !local_LogInfo.stopRun) {
 
             nSims++; // Counter of simulation runs
 
@@ -240,22 +251,20 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
                           SW_OutputPtrs, NULL, &local_LogInfo);
             SW_WT_TimeRun(tsr, ok_tsr, SW_WallTime);
 
-            if(local_LogInfo.stopRun) {
-                main_LogInfo->numDomainErrors++; // Counter of simulation units with error
-
-            } else {
+            if(!local_LogInfo.stopRun) {
                 // Set simulation run progress
-                SW_DOM_SetProgress(SW_Domain->DomainType, ncSuid);
+                SW_DOM_SetProgress(SW_Domain->DomainType, progFileID,
+                                   progVarID, ncSuid, &local_LogInfo);
             }
+        }
 
-            if (local_LogInfo.numWarnings > 0) {
-                main_LogInfo->numDomainWarnings++;  // Counter of simulation units with warnings
-            }
+        if (local_LogInfo.numWarnings > 0) {
+            main_LogInfo->numDomainWarnings++;  // Counter of simulation units with warnings
+        }
 
-            if (local_LogInfo.stopRun || local_LogInfo.numWarnings > 0) {
-                snprintf(tag_suid, 32, "(suid = %lu) ", suid + 1);
-                sw_write_warnings(tag_suid, &local_LogInfo);
-            }
+        if (local_LogInfo.stopRun || local_LogInfo.numWarnings > 0) {
+            snprintf(tag_suid, 32, "(suid = %lu) ", suid + 1);
+            sw_write_warnings(tag_suid, &local_LogInfo);
         }
     }
 

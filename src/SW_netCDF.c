@@ -395,6 +395,26 @@ static void get_single_uint_val(int ncFileID, int varID, size_t index[],
                                     "unsigned integer.");
     }
 }
+
+/**
+ * @brief Get a byte value from a variable
+ *
+ * @param[in] ncFileID Identifier of the open netCDF file to access
+ * @param[in] varID Identifier of the variable
+ * @param[in] varName Name of the variable to access
+ * @param[in] index Location of the value within the variable
+ * @param[out] value String buffer to hold the resulting value
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+static void get_single_byte_val(int ncFileID, int varID, size_t index[],
+                                signed char* value, LOG_INFO* LogInfo) {
+
+    if(nc_get_var1_schar(ncFileID, varID, index, value) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "An error occurred when trying to "
+                                    "get a value from a variable of type byte");
+    }
+}
+
 /**
  * @brief Get a dimension value from a given netCDF file
  *
@@ -1982,6 +2002,11 @@ void SW_NC_set_progress(const char* domType, int progFileID,
                         int progVarID, unsigned long ncSUID[],
                         LOG_INFO* LogInfo) {
 
+    const signed char mark = 1;
+    size_t *count = (strcmp(domType, "s") == 0) ? (size_t[1]){1} : (size_t[2]){1, 1};
+
+    fill_netCDF_var_byte(progFileID, progVarID, &mark, ncSUID, count, LogInfo);
+    nc_sync(progFileID);
 }
 
 /**
@@ -1997,6 +2022,11 @@ void SW_NC_set_progress(const char* domType, int progFileID,
 Bool SW_NC_check_progress(int progFileID, int progVarID,
                           unsigned long ncSUID[], LOG_INFO* LogInfo) {
 
+    signed char progVal = 0, readyVal = 0;
+
+    get_single_byte_val(progFileID, progVarID, ncSUID, &progVal, LogInfo);
+
+    return (Bool) (!LogInfo->stopRun && progVal == readyVal);
 }
 
 /**
