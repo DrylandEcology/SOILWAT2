@@ -247,7 +247,7 @@ static void nc_read_atts(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo,
  * @param[out] dimID Identifier of the dimension
  * @param[out] LogInfo Holds information on warnings and errors
 */
-static void get_dim_identifier(int ncFileID, char* dimName, int* dimID,
+static void get_dim_identifier(int ncFileID, const char* dimName, int* dimID,
                                LOG_INFO* LogInfo) {
 
     if(nc_inq_dimid(ncFileID, dimName, dimID) != NC_NOERR) {
