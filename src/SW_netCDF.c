@@ -1947,18 +1947,25 @@ void SW_NC_deconstruct(SW_NETCDF* SW_netCDF) {
  *  netCDF file information
 */
 void SW_NC_open_files(SW_NETCDF* SW_netCDF, LOG_INFO* LogInfo) {
-    int fileNum, openType;
+    int fileNum, openType, *fileID;
+    char* fileName;
 
     for(fileNum = 0; fileNum < SW_NVARNC; fileNum++) {
-        if(FileExists(SW_netCDF->InFilesNC[fileNum])) {
+        fileName = SW_netCDF->InFilesNC[fileNum];
+        fileID = &SW_netCDF->ncFileIDs[fileNum];
+
+        if(FileExists(fileName)) {
             openType = (fileNum == vNCprog) ? NC_WRITE : NC_NOWRITE;
 
-            if(nc_open(SW_netCDF->InFilesNC[fileNum], openType,
-                                    &SW_netCDF->ncFileIDs[fileNum]) != NC_NOERR) {
-
+            if(nc_open(fileName, openType, fileID) != NC_NOERR) {
                 LogError(LogInfo, LOGERROR, "An error occurred when opening %s.",
-                                            SW_netCDF->InFilesNC[fileNum]);
+                                            fileName);
+                return; // Exit function prematurely due to error
+            }
 
+            get_var_identifier(*fileID, SW_netCDF->varNC[fileNum],
+                               &SW_netCDF->ncVarIDs[fileNum], LogInfo);
+            if(LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
         }

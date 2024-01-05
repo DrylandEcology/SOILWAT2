@@ -1066,6 +1066,7 @@ typedef struct {
     char *InFilesNC[SW_NVARNC];
 
     int ncFileIDs[SW_NVARNC];
+    int ncVarIDs[SW_NVARNC];
 } SW_NETCDF;
 
 /* =================================================== */
