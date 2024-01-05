@@ -1680,12 +1680,15 @@ void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
  * @param[in] attNames Attribute names that the new variable will contain
  * @param[in] attVals Attribute values that the new variable will contain
  * @param[in] numAtts Number of attributes being sent in
+ * @param[in] isInput Specifies if the created file will be input or output
+ * @param[in] freq Value of the global attribute "frequency"
  * @param[in,out] LogInfo  Holds information dealing with logfile output
 */
 void SW_NC_create_template(const char* domFile, int domFileID,
     const char* fileName, int* newFileID, int newVarType,
     unsigned long timeSize, unsigned long vertSize, const char* varName,
-    const char* attNames[], const char* attVals[], int numAtts, LOG_INFO* LogInfo) {
+    const char* attNames[], const char* attVals[], int numAtts, Bool isInput,
+    const char* freq, LOG_INFO* LogInfo) {
 
 }
 
@@ -1706,13 +1709,13 @@ void SW_NC_create_progress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
  * @param[in] domType Type of domain in which simulations are running
  *  (gridcell/sites)
  * @param[in] progFileID Identifier of the progress netCDF file
- * @param[in] progVarName User-specified progress variable name
+ * @param[in] progVarID Identifier of the progress variable within the progress netCDF
  * @param[in] ncSUID Current simulation unit identifier for which is used
  *  to get data from netCDF
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_NC_set_progress(const char* domType, int progFileID,
-                        const char* progVarName, unsigned long ncSUID[],
+                        int progVarID, unsigned long ncSUID[],
                         LOG_INFO* LogInfo) {
 
 }
@@ -1722,12 +1725,12 @@ void SW_NC_set_progress(const char* domType, int progFileID,
  *  netCDF
  *
  * @param[in] progFileID Identifier of the progress netCDF file
- * @param[in] progVarName User-specified progress variable name
+ * @param[in] progVarID Identifier of the progress variable
  * @param[in] ncSUID Current simulation unit identifier for which is used
  *  to get data from netCDF
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-Bool SW_NC_check_progress(int progFileID, const char* progVarName,
+Bool SW_NC_check_progress(int progFileID, int progVarID,
                           unsigned long ncSUID[], LOG_INFO* LogInfo) {
 
 }

@@ -63,17 +63,18 @@ void SW_DOM_calc_nSUIDs(SW_DOMAIN* SW_Domain) {
 /**
  * @brief Check progress in domain
  *
- * @param[in] domainType Type of domain in which simulations are running
- *  (gridcell/sites)
- * @param[in] ncSuid Current simulation unit identifier for which progress
- * should be checked.
+ * @param[in] progFileID Identifier of the progress netCDF file
+ * @param[in] progVarID Identifier of the progress variable
+ * @param[in] ncSuid Current simulation unit identifier for which is used
+ *  to get data from netCDF
+ * @param[in,out] LogInfo Holds information dealing with logfile output
  *
  * @return
  * TRUE if simulation for \p ncSuid has not been completed yet;
  * FALSE if simulation for \p ncSuid has been completed (i.e., skip).
 */
-Bool SW_DOM_CheckProgress(char* domainType, unsigned long ncSuid[]) {
-    (void) domainType;
+Bool SW_DOM_CheckProgress(int progFileID, int progVarID,
+                          unsigned long ncSuid[], LOG_INFO* LogInfo) {
     (void) ncSuid;
 
     // return TRUE (due to lack of capability to track progress)
@@ -85,8 +86,9 @@ Bool SW_DOM_CheckProgress(char* domainType, unsigned long ncSuid[]) {
  *
  * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
  *  temporal/spatial information for a set of simulation runs
+ * @param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_DOM_CreateProgress(SW_DOMAIN* SW_Domain) {
+void SW_DOM_CreateProgress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     (void) SW_Domain;
 }
 
@@ -243,13 +245,19 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 /**
  * @brief Mark a completed suid in progress netCDF
  *
- * @param[in] domainType Type of domain in which simulations are running
+ * @param[in] domType Type of domain in which simulations are running
  *  (gridcell/sites)
+ * @param[in] progFileID Identifier of the progress netCDF file
+ * @param[in] progVarID Identifier of the progress variable
  * @param[in] ncSuid Unique indentifier of the first suid to run
  *  in relation to netCDFs
+ * @param[in,out] LogInfo
 */
 void SW_DOM_SetProgress(char* domainType, unsigned long ncSuid[]) {
     (void) domainType;
+void SW_DOM_SetProgress(const char* domType, int progFileID,
+                        int progVarID, unsigned long ncSuid[],
+                        LOG_INFO* LogInfo) {
     (void) ncSuid;
 }
 
