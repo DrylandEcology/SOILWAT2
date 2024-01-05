@@ -376,6 +376,11 @@ void SW_CTL_setup_domain(unsigned long userSUID,
     }
     #endif
 
+    SW_DOM_CreateProgress(SW_Domain, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     SW_DOM_SimSet(SW_Domain, userSUID, LogInfo);
 }
 

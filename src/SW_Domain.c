@@ -89,7 +89,12 @@ Bool SW_DOM_CheckProgress(int progFileID, int progVarID,
  * @param[in] LogInfo Holds information dealing with logfile output
 */
 void SW_DOM_CreateProgress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
+    #if defined(SWNETCDF)
+    SW_NC_create_progress(SW_Domain, LogInfo);
+    #else
     (void) SW_Domain;
+    (void) LogInfo;
+    #endif
 }
 
 /**

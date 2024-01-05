@@ -9,6 +9,8 @@
 #include "include/SW_Defines.h"
 #include "include/SW_Files.h"
 #include "include/myMemory.h"
+#include "include/Times.h"
+#include "include/SW_Domain.h"
 
 /* =================================================== */
 /*                   Local Defines                     */
@@ -376,6 +378,24 @@ static void get_single_double_val(int ncFileID, const char* varName,
 }
 
 /**
+ * @brief Get an unsigned integer value from a variable
+ *
+ * @param[in] ncFileID Identifier of the open netCDF file to access
+ * @param[in] varID Identifier of the variable
+ * @param[in] index Location of the value within the variable
+ * @param[out] value String buffer to hold the resulting value
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+static void get_single_uint_val(int ncFileID, int varID, size_t index[],
+                                unsigned int* value, LOG_INFO* LogInfo) {
+
+    if(nc_get_var1_uint(ncFileID, varID, index, value) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "An error occurred when trying to "
+                                    "get a value from a variable of type "
+                                    "unsigned integer.");
+    }
+}
+/**
  * @brief Get a dimension value from a given netCDF file
  *
  * @param[in] ncFileID Identifier of the open netCDF file to access
@@ -478,6 +498,27 @@ static void fill_netCDF_var_uint(int ncFileID, int varID, unsigned int values[],
 }
 
 /**
+ * @brief Fills a variable with value(s) of type byte
+ *
+ * @param[in] ncFileID Identifier of the open netCDF file to write the value(s) to
+ * @param[in] varID Identifier to the variable within the given netCDF file
+ * @param[in] values Individual or list of input variables
+ * @param[in] startIndices Specification of where the C-provided netCDF
+ *  should start writing values within the specified variable
+ * @param[in] count How many values to write into the given variable
+ * @param[out] LogInfo Holds information dealing with logfile output
+*/
+static void fill_netCDF_var_byte(int ncFileID, int varID, const signed char values[],
+                                 size_t startIndices[], size_t count[],
+                                 LOG_INFO* LogInfo) {
+
+    if(nc_put_vara_schar(ncFileID, varID, startIndices, count, &values[0]) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "Could not fill variable (byte) "
+                                    "with the given value(s).");
+    }
+}
+
+/**
  * @brief Fills a variable with value(s) of type double
  *
  * @param[in] ncFileID Identifier of the open netCDF file to write the value(s) to
@@ -499,7 +540,25 @@ static void fill_netCDF_var_double(int ncFileID, int varID, double values[],
 }
 
 /**
- * @brief Write an attribute of type unsigned integer to a variable
+ * @brief Write a local attribute of type byte
+ *
+ * @param[in] attName Name of the attribute to create
+ * @param[in] attVal Value to write out
+ * @param[in] varID Identifier of the variable to add the attribute to
+ * @param[in] ncFileID Identifier of the open netCDF file to write the attribute to
+ * @param[out] LogInfo Holds information dealing with logfile output
+*/
+static void write_byte_att(const char* attName, const signed char attVal,
+                           int varID, int ncFileID, LOG_INFO* LogInfo) {
+
+    if(nc_put_att_schar(ncFileID, varID, attName, NC_BYTE, 1, &attVal) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "Could not create new attribute %s",
+                                    attName);
+    }
+}
+
+/**
+ * @brief Write a global attribute (text) to a netCDF file
  *
  * @param[in] attName Name of the attribute to create
  * @param[in] attVal Attribute string to write out
@@ -554,6 +613,50 @@ static void write_double_att(const char* attName, const double* attVal, int varI
         LogError(LogInfo, LOGERROR, "Could not create new global attribute %s",
                                     attName);
     }
+}
+
+/**
+ * @brief Fill the progress variable in the progress netCDF with values
+ *
+ * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+ *  temporal/spatial information for a set of simulation runs
+ * @param[in,out] LogInfo Holds information on warnings and errors
+*/
+static void fill_prog_netCDF_vals(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
+
+    int domVarID = SW_Domain->netCDFInfo.ncVarIDs[vNCdom];
+    int progVarID = SW_Domain->netCDFInfo.ncVarIDs[vNCprog];
+    signed char readyVal = 0;
+    unsigned int domStatus;
+    unsigned long suid, ncSuid[2], nSUIDs = SW_Domain->nSUIDs;
+    unsigned long nDimY = SW_Domain->nDimY, nDimX = SW_Domain->nDimX;
+    int progFileID = SW_Domain->netCDFInfo.ncFileIDs[vNCprog];
+    int domFileID = SW_Domain->netCDFInfo.ncFileIDs[vNCdom];
+    signed char* vals = (signed char*)Mem_Malloc(nSUIDs * sizeof(signed char),
+                                                 "fill_prog_netCDF_vals()",
+                                                 LogInfo);
+    size_t* start = (strcmp(SW_Domain->DomainType, "s") == 0) ?
+                        (size_t[1]){0} : (size_t[2]){0, 0};
+    size_t* count = (strcmp(SW_Domain->DomainType, "s") == 0) ?
+                        (size_t[1]){nSUIDs} : (size_t[2]){nDimY, nDimX};
+
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    for(suid = 0; suid < nSUIDs; suid++) {
+        SW_DOM_calc_ncSuid(SW_Domain, suid, ncSuid);
+
+        get_single_uint_val(domFileID, domVarID, ncSuid, &domStatus, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        vals[suid] = (domStatus == NC_FILL_UINT) ? NC_FILL_BYTE : readyVal;
+    }
+
+    fill_netCDF_var_byte(progFileID, progVarID, vals, start, count, LogInfo);
+    nc_sync(progFileID);
 }
 
 /**
@@ -1813,6 +1916,55 @@ void SW_NC_create_template(const char* domFile, int domFileID,
 */
 void SW_NC_create_progress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 
+    SW_NETCDF* SW_netCDF = &SW_Domain->netCDFInfo;
+    Bool primCRSIsGeo = SW_Domain->netCDFInfo.primary_crs_is_geographic;
+    Bool domTypeIsS = strcmp(SW_Domain->DomainType, "s") == 0;
+    const char* projGridMap = "crs_projsc: x y crs_geogsc: lat lon";
+    const char* geoGridMap = "crs_geogsc";
+    const char* sCoord = "lat lon site";
+    const char* xyCoord = "lat lon";
+    const char* coord = domTypeIsS ? sCoord : xyCoord;
+    const char* grid_map = primCRSIsGeo ? geoGridMap : projGridMap;
+    const char* attNames[] = {"long_name", "units", "grid_mapping",
+                              "coordinates"};
+    const char* attVals[] = {"simulation progress", "1", grid_map, coord};
+    const int numAtts = 4;
+    const signed char fillVal = NC_FILL_BYTE;
+    const char* varName = SW_netCDF->varNC[vNCprog];
+    const char* freq = "fx";
+
+    int domFileID = SW_netCDF->ncFileIDs[vNCdom];
+    int* progFileID = &SW_netCDF->ncFileIDs[vNCprog];
+    const char* domFileName = SW_netCDF->InFilesNC[vNCdom];
+    const char* progFileName = SW_netCDF->InFilesNC[vNCprog];
+    int* progVarID = &SW_netCDF->ncVarIDs[vNCprog];
+
+    if(FileExists(SW_Domain->netCDFInfo.InFilesNC[vNCprog])) {
+        SW_NC_check(SW_Domain, *progFileID, progFileName, LogInfo);
+    } else {
+        SW_NC_create_template(domFileName, domFileID, progFileName,
+                              progFileID, NC_BYTE, 0, 0, varName,
+                              attNames, attVals, numAtts, swFALSE, freq,
+                              LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        // Write out the attribute "_FillValue" to the progress variable
+        get_var_identifier(*progFileID, varName, progVarID, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        write_byte_att("_FillValue", fillVal, *progVarID, *progFileID, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        nc_enddef(*progFileID);
+
+        fill_prog_netCDF_vals(SW_Domain, LogInfo);
+    }
 }
 
 /**
