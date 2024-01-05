@@ -62,7 +62,7 @@
 
 @param[in,out] sw Comprehensive struct of type SW_ALL containing all
   information in the simulation
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 */
 static void _begin_year(SW_ALL* sw, LOG_INFO* LogInfo) {
 	// SW_F_new_year() not needed
@@ -105,7 +105,7 @@ static void _end_day(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
  *
  * @param[in] source Source struct of type SW_ALL to copy
  * @param[out] dest Destination struct of type SW_ALL to be copied into
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_ALL_deepCopy(SW_ALL* source, SW_ALL* dest, LOG_INFO* LogInfo)
 {
@@ -179,7 +179,7 @@ void SW_ALL_deepCopy(SW_ALL* source, SW_ALL* dest, LOG_INFO* LogInfo)
   information in the simulation
 @param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
   hold pointers to subroutines for output keys
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 */
 
 void SW_CTL_main(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
@@ -236,7 +236,7 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
             nSims++; // Counter of simulation runs
 
             set_walltime(&tsr, &ok_tsr);
-            SW_CTL_run_sw(sw_template, SW_Domain, ncSuid, NULL,
+            SW_CTL_run_sw(sw_template, SW_Domain, ncSuid,
                           SW_OutputPtrs, NULL, &local_LogInfo);
             SW_WT_TimeRun(tsr, ok_tsr, SW_WallTime);
 
@@ -293,7 +293,7 @@ void SW_CTL_init_ptrs(SW_ALL* sw) {
  *
  * @param[out] sw Comprehensive struct of type SW_ALL containing
  *  all information in the simulation
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_alloc_outptrs(SW_ALL* sw, LOG_INFO* LogInfo) {
     SW_VPD_alloc_outptrs(&sw->VegProd, LogInfo);
@@ -314,7 +314,7 @@ void SW_CTL_alloc_outptrs(SW_ALL* sw, LOG_INFO* LogInfo) {
  *            0 indicates that all simulations units within domain are requested
  * @param[out] SW_Domain Struct of type SW_DOMAIN holding constant
  *  temporal/spatial information for a set of simulation runs
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_setup_domain(unsigned long userSUID,
                          SW_DOMAIN* SW_Domain,
@@ -348,17 +348,8 @@ void SW_CTL_setup_domain(unsigned long userSUID,
     SW_DOM_calc_nSUIDs(SW_Domain);
 
     #if defined(SWNETCDF)
-    SW_NC_open_files(&SW_Domain->netCDFInfo, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-    if(FileExists(SW_Domain->netCDFInfo.InFilesNC[DOMAIN_NC])) {
-        SW_NC_check(SW_Domain, SW_Domain->netCDFInfo.ncFileIDs[DOMAIN_NC],
-                    SW_Domain->netCDFInfo.InFilesNC[DOMAIN_NC], LogInfo);
-        if(LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
-    } else {
+    // Create domain template if it does not exist (and exit)
+    if(!FileExists(SW_Domain->netCDFInfo.InFilesNC[vNCdom])) {
         SW_NC_create_domain_template(SW_Domain, LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit prematurely due to error
@@ -371,6 +362,18 @@ void SW_CTL_setup_domain(unsigned long userSUID,
                                     DOMAIN_TEMP);
         return; // Exit prematurely so the user can modify the domain template
     }
+
+    // Open necessary netCDF input files and check for consistency with domain
+    SW_NC_open_files(&SW_Domain->netCDFInfo, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    SW_NC_check(SW_Domain, SW_Domain->netCDFInfo.ncFileIDs[vNCdom],
+                SW_Domain->netCDFInfo.InFilesNC[vNCdom], LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
     #endif
 
     SW_DOM_SimSet(SW_Domain, userSUID, LogInfo);
@@ -382,7 +385,7 @@ void SW_CTL_setup_domain(unsigned long userSUID,
  *  information in the simulation
  * @param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
  *  hold pointers to subroutines for output keys
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
  */
 void SW_CTL_setup_model(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                         LOG_INFO* LogInfo) {
@@ -439,7 +442,7 @@ void SW_CTL_clear_model(Bool full_reset, SW_ALL* sw) {
 
   @param[in,out] sw Comprehensive structure holding all information
     dealt with in SOILWAT2
-  @param[in,out] LogInfo Holds information dealing with logfile output
+  @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_init_run(SW_ALL* sw, LOG_INFO* LogInfo) {
 
@@ -482,7 +485,7 @@ void SW_CTL_init_run(SW_ALL* sw, LOG_INFO* LogInfo) {
   all information in the simulation
 @param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
   hold pointers to subroutines for output keys
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                              LOG_INFO* LogInfo) {
@@ -563,7 +566,7 @@ void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 @param[in,out] sw Comprehensive struct of type SW_ALL containing
   all information in the simulation
 @param[in,out] PathInfo Struct holding all information about the programs path/files
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_read_inputs_from_disk(SW_ALL* sw, PATH_INFO* PathInfo,
                                   LOG_INFO* LogInfo) {
@@ -703,59 +706,54 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, PATH_INFO* PathInfo,
  *  temporal/spatial information for a set of simulation runs
  * @param[in] ncSuid Unique indentifier of the first suid to run
  *  in relation to netCDF gridcells/sites
- * @param[in] ncInFiles Input netCDF files
  * @param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
  *  hold pointers to subroutines for output keys
  * @param[in,out] p_OUT Data storage for simulation run values
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSuid[],
-                   char* ncInFiles[], SW_OUTPUT_POINTERS SW_OutputPtrs[],
+                   SW_OUTPUT_POINTERS SW_OutputPtrs[],
                    RealD p_OUT[][SW_OUTNPERIODS], LOG_INFO* LogInfo) {
 
+    #ifdef SWDEBUG
+    int debug = 0;
+    #endif
+
     SW_ALL local_sw;
-    SW_ALL *local_sw_ptr = &local_sw;
 
-    // Check to see if we can modify `sw_template` (nSUIDS = 1) and there's no
-    // need to copy
-    if(SW_Domain->nSUIDs == 1) {
-        // Make the address of `local_sw` point to `sw_template`'s address
-        local_sw_ptr = sw_template;
-        SW_CTL_alloc_outptrs(sw_template, LogInfo);
-
-    } else {
-        // Copy template SW_ALL to local instance -- yet to be fully implemented
-        SW_ALL_deepCopy(sw_template, local_sw_ptr, LogInfo);
-
-        if(LogInfo->stopRun) {
-            goto freeMem; // Free memory and skip simulation run
-        }
-
-        #if defined(SWNETCDF)
-        SW_NC_read_inputs(sw_template, SW_Domain, ncSuid, LogInfo);
-        if(LogInfo->stopRun) {
-            goto freeMem;
-        }
-        #endif
-
-        SW_MDL_get_ModelRun(&local_sw.Model, SW_Domain, ncInFiles, LogInfo);
-        if(LogInfo->stopRun) {
-            goto freeMem; // Free memory and skip simulation run
-        }
+    // Copy template SW_ALL to local instance
+    SW_ALL_deepCopy(sw_template, &local_sw, LogInfo);
+    if(LogInfo->stopRun) {
+        goto freeMem; // Free memory and skip simulation run
     }
 
-    SW_CTL_main(local_sw_ptr, SW_OutputPtrs, LogInfo);
+    // Obtain suid-specific inputs
+    #if defined(SWNETCDF)
+    SW_NC_read_inputs(&local_sw, SW_Domain, ncSuid, LogInfo);
+    if(LogInfo->stopRun) {
+        goto freeMem;
+    }
+    #endif
+
+    // Run simulation for suid
+    #ifdef SWDEBUG
+    if (debug) {
+        swprintf(
+            "SW_CTL_run_sw(): suid = %zu/%zu, lon/lat = (%f, %f)\n",
+            ncSuid[0], ncSuid[1],
+            local_sw.Model.longitude, local_sw.Model.latitude
+        );
+    }
+    #endif
+
+    SW_CTL_main(&local_sw, SW_OutputPtrs, LogInfo);
 
     // Clear local instance of SW_ALL
     freeMem: {
-        // Check if the number of suids is greater than 1
-        // If the number of suids is 1, deallocation will happen later
-        if(SW_Domain->nSUIDs > 1) {
-            SW_CTL_clear_model(swFALSE, local_sw_ptr);
-        }
+        SW_CTL_clear_model(swFALSE, &local_sw);
     }
 
-    (void) ncInFiles;
+    (void) SW_Domain;
     (void) ncSuid;
     (void) p_OUT;
 }

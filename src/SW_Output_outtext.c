@@ -126,7 +126,7 @@ static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil,
 	and values
   \param[in] pd The output time step.
   \param[in] InFiles Array of program in/output files
-  \param[in,out] LogInfo Holds information dealing with logfile output
+  \param[out] LogInfo Holds information on warnings and errors
 */
 /***********************************************************/
 static void _create_csv_files(SW_FILE_STATUS* SW_FileStatus, OutPeriod pd,
@@ -225,7 +225,7 @@ static void _create_filename_ST(char *str, char *flag, int iteration,
   \param FileStatus Struct of type
 		SW_FILE_STATUS which holds basic information about output files
 		and values
-  \param LogInfo Holds information dealing with logfile output
+  \param LogInfo Holds information on warnings and errors
 */
 /***********************************************************/
 static void _create_csv_file_ST(int iteration, OutPeriod pd, char *InFiles[],
@@ -324,7 +324,7 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd, char *InFiles[],
  * @param[in] n_layers Number of layers of soil within the simulation run
  * @param[in] InFiles Array of program in/output files
  * @param[in] GenOutput Holds general variables that deal with output
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
  *
  *  @note Call this routine at the beginning of the main program run, but
  *  after SW_OUT_read() which sets the global variable use_OutPeriod.
@@ -468,7 +468,7 @@ void get_outstrleader(OutPeriod pd, size_t sizeof_str,
   \param SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds basic output
 	information for all output keys
   \param GenOutput Holds general variables that deal with output
-  \param LogInfo Holds information dealing with logfile output
+  \param LogInfo Holds information on warnings and errors
 
 */
 void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil,
@@ -541,7 +541,7 @@ void find_TXToutputSoilReg_inUse(Bool make_soil[], Bool make_regular[],
 		SW_FILE_STATUS which holds basic information about output files
 		and values
 	@param[in] GenOutput Holds general variables that deal with output
-	@param[in,out] LogInfo Holds information dealing with logfile output
+	@param[out] LogInfo Holds information on warnings and errors
 */
 void SW_OUT_close_files(SW_FILE_STATUS* SW_FileStatus, SW_GEN_OUT* GenOutput,
 						LOG_INFO* LogInfo) {

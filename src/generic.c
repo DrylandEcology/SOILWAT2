@@ -512,24 +512,3 @@ double standardDeviation(double inputArray[], int length) {
     return sqrt(total / (finalLength - 1));
 
 }
-
-/**
- * @brief Convert a key read-in from an input file to an index
- *  the caller can understand
- *
- * @param[in] key Key found within the file to test for
- * @param[in] possibleKeys A list of possible keys that can be found
- * @param[in] numPossKeys Number of keys within `possibleKeys`
-*/
-int key_to_id(const char* key, const char **possibleKeys,
-              int numPossKeys) {
-    int id;
-
-    for(id = 0; id < numPossKeys; id++) {
-        if(strcmp(key, possibleKeys[id]) == 0) {
-            return id;
-        }
-    }
-
-    return KEY_NOT_FOUND;
-}

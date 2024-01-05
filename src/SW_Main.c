@@ -151,14 +151,11 @@ int main(int argc, char **argv) {
     closeFiles: {
         // finish-up output
         SW_OUT_close_files(&sw_template.FileStatus, &sw_template.GenOutput, &LogInfo); // not used with rSOILWAT2
-        #if defined(SWNETCDF)
-        SW_NC_close_files(&SW_Domain.netCDFInfo);
-        #endif
     }
 
     finishProgram: {
         // de-allocate all memory
-        SW_DOM_deconstruct(&SW_Domain);
+        SW_DOM_deconstruct(&SW_Domain); // Includes closing netCDF files if needed
         SW_CTL_clear_model(swTRUE, &sw_template);
 
         sw_write_warnings("(main) ", &LogInfo);

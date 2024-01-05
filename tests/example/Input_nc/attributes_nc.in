@@ -22,7 +22,7 @@ geo_longitude_of_prime_meridian 0.0
 geo_semi_major_axis             6378137.0
 geo_inverse_flattening          298.257223563
 
-#------ Projected CRS Attributes
+#------ Projected CRS Attributes (optional)
 
 proj_long_name                     NAD83 / Conus Albers
 proj_grid_mapping_name             albers_conical_equal_area

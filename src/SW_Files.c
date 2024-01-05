@@ -38,7 +38,7 @@
 
 @param *s Name of the first file to read for filenames, or NULL. If NULL, then read
 	from DFLT_FIRSTFILE or whichever filename was set previously.
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 
 @sideeffect *s Updated name of the first file to read for filenames, or NULL. If NULL, then read
 	from DFLT_FIRSTFILE or whichever filename was set previously.
@@ -71,7 +71,7 @@ void SW_CSV_F_INIT(const char *s, LOG_INFO* LogInfo)
 /** Read `first` input file `eFirst` that contains names of the remaining input files.
 
 	@param[in,out] PathInfo truct holding all information about the programs path/files
-	@param[in,out] LogInfo Holds information dealing with logfile output
+	@param[out] LogInfo Holds information on warnings and errors
 
     @note If input file `eFirst` changes, particularly if the locations of the
       `weather_prefix` and/or `output_prefix` change; then update the hard-coded line
@@ -273,7 +273,7 @@ void SW_F_init_ptrs(char *InFiles[]) {
 
 @param[in] *firstfile File to be read in.
 @param[out] _ProjDir Project directory
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 
 @sideeffect
 	- *firstfile File to be read in.

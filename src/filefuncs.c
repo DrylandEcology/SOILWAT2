@@ -136,6 +136,15 @@ static char **getfiles(const char *fspec, int *nfound, LOG_INFO* LogInfo) {
 /* --------------------------------------------------- */
 
 /**************************************************************/
+
+/**
+  @brief Compose, store and count warning and error messages
+
+  @param[in,out] LogInfo Holds information on warnings and errors
+  @param[in] mode Indicator whether message is a warning or error
+  @param[in] fmt Message string with optional format specifications for ... arguments
+  @param[in] ... Additional values that are injected into fmt
+*/
 void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...) {
     /* 9-Dec-03 (cwb) Modified to accept argument list similar
      *           to fprintf() so sprintf(errstr...) doesn't need
@@ -147,7 +156,7 @@ void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...) {
     char msgType[MAX_LOG_SIZE];
 	int nextWarn = LogInfo->numWarnings;
 	va_list args;
-    int expectedWriteSize; // Not used when SWDEBUG is not defined
+    int expectedWriteSize;
 
 	va_start(args, fmt);
 
@@ -442,7 +451,7 @@ Bool RemoveFiles(const char *fspec, LOG_INFO* LogInfo) {
 
 @param[in] from The file path of the source (original) file.
 @param[in] to The file path to the file copy (destination).
-@param[out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 
 @return swTRUE on success and swFALSE on failure.
 */
@@ -492,4 +501,76 @@ Bool CopyFile(const char *from, const char *to, LOG_INFO* LogInfo) {
     }
 
     return swTRUE;
+}
+
+
+/**
+ * @brief Convert a key read-in from an input file to an index
+ *  the caller can understand
+ *
+ * @param[in] key Key found within the file to test for
+ * @param[in] possibleKeys A list of possible keys that can be found
+ * @param[in] numPossKeys Number of keys within `possibleKeys`
+*/
+int key_to_id(const char* key, const char **possibleKeys,
+              int numPossKeys) {
+    int id;
+
+    for(id = 0; id < numPossKeys; id++) {
+        if(strcmp(key, possibleKeys[id]) == 0) {
+            return id;
+        }
+    }
+
+    return KEY_NOT_FOUND;
+}
+
+/**
+  @brief Mark a found key as found and warns if duplicate
+
+  @param[in] keyID Index of key (as returned by key_to_id()).
+  @param[in] possibleKeys A list of possible keys that can be found
+      (used for warning messages).
+  @param[in,out] hasKeys Array that is updated if keyID is found.
+  @param[out] LogInfo Holds information on warnings and errors
+*/
+void set_hasKey(int keyID, const char **possibleKeys, Bool *hasKeys, LOG_INFO* LogInfo) {
+    if (keyID != KEY_NOT_FOUND) {
+        if (hasKeys[keyID]) {
+            LogError(
+                LogInfo,
+                LOGWARN,
+                "Duplicate input key '%s' found.",
+                possibleKeys[keyID]
+            );
+        }
+
+        hasKeys[keyID] = swTRUE;
+    }
+}
+
+/**
+  @brief Throw error if a required key was not found
+
+  @param[in] hasKeys Array with found keys.
+  @param[in] requiredKeys Array with required keys.
+  @param[in] possibleKeys A list of possible keys
+      (used for error message).
+  @param[in] numKeys Number of keys.
+  @param[out] LogInfo Holds information on warnings and errors
+*/
+void check_requiredKeys(Bool *hasKeys, const Bool *requiredKeys, const char **possibleKeys, int numKeys, LOG_INFO* LogInfo) {
+    int keyID;
+
+    for (keyID = 0; keyID < numKeys; keyID++) {
+        if (!hasKeys[keyID] && requiredKeys[keyID]) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Required input key '%s' not found.\n",
+                possibleKeys[keyID]
+            );
+            return; // Exit function prematurely due to error
+        }
+    }
 }

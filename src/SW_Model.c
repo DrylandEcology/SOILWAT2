@@ -94,7 +94,7 @@ void SW_MDL_deconstruct(void)
 @param[in,out] SW_Model Struct of type SW_MODEL holding basic time information
 	about the simulation
 @param[in] InFiles Array of program in/output files
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 */
 void SW_MDL_read(SW_MODEL* SW_Model, char *InFiles[], LOG_INFO* LogInfo) {
 	/* =================================================== */
@@ -235,7 +235,7 @@ void SW_MDL_new_day(SW_MODEL* SW_Model) {
  * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
  *  temporal/spatial information for a set of simulation runs
  * @param[in] fileNames Input netCDF files
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_MDL_get_ModelRun(SW_MODEL* SW_Model, SW_DOMAIN* SW_Domain,
                          char* fileNames[], LOG_INFO* LogInfo) {

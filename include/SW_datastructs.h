@@ -1044,7 +1044,7 @@ typedef struct {
 
     // Possible attributes if the type is "projected"
     char *datum, *units;
-    double standard_parallel[2]; // 2 = [x, y] or [lat, long]
+    double standard_parallel[2]; // first and second standard parallels; 2nd may be missing (NAN)
     double longitude_of_central_meridian,
            latitude_of_projection_origin,
            false_easting,

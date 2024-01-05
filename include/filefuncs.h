@@ -33,6 +33,11 @@ Bool RemoveFiles(const char *fspec, LOG_INFO* LogInfo);
 Bool CopyFile(const char *from, const char *to, LOG_INFO* LogInfo);
 void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...);
 
+int key_to_id(const char* key, const char **possibleKeys,
+                     int numPossKeys);
+void set_hasKey(int keyID, const char **possibleKeys, Bool *hasKeys, LOG_INFO* LogInfo);
+void check_requiredKeys(Bool *hasKeys, const Bool *requiredKeys, const char **possibleKeys, int numKeys, LOG_INFO* LogInfo);
+
 
 #ifdef __cplusplus
 }

@@ -350,7 +350,7 @@ Time report is written to
 Time is not reported at all if quiet mode and `logfile` is `NULL`.
 
 @param[in] wt Object with timing information.
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in] LogInfo Holds information on warnings and errors
 */
 void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO* LogInfo) {
     double total_time = 0;

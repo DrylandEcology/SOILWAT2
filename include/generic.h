@@ -207,9 +207,6 @@ double get_running_sqr(double mean_prev, double mean_current, double val_to_add)
 double final_running_sd(unsigned int n, double ssqr);
 double mean(double values[], int length);
 double standardDeviation(double inputArray[], int length);
-int key_to_id(const char* key, const char **possibleKeys,
-                     int numPossKeys);
-
 
 #ifdef __cplusplus
 }
