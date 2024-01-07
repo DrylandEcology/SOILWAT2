@@ -29,6 +29,11 @@
     * For `"netCDF"`-based SOILWAT2, information about the `"domain"`
       (i.e., simulation units and their geographic locations) is obtained from
       `"domain.nc"` (#361; @N1ckP3rsl3y, @dschlaep).
+    * For `"netCDF"`-based SOILWAT2, simulation progress (success/failure) is
+      tracked by `"progress.nc"` (#387; @N1ckP3rsl3y, @dschlaep);
+      progress tracking makes re-starts after partial completion of the
+      simulation set by an earlier execution possible.
+
 
 * Tests now utilize the same template/deep-copy approach (@dschlaep),
   i.e., input files from `test/example/` populate a `"template"` and
@@ -79,7 +84,7 @@
 * New input directory `"Input_nc/"` that describes `"netCDF"`-based inputs
   (paths provided by new entries in `"files.in"`).
 * New text input file `"files_nc.in"` that lists for each input purpose
-  (currently, only `"domain"` is implemented)
+  (currently, `"domain"` and `"progress"` are implemented)
   the path to the `"netCDF"` input file and associated variable name.
 * New text input file `"attribues_nc.in"` to provide global attributes and a
   geographic (and optionally a projected) `"CRS"` (coordinate reference system)
@@ -87,6 +92,9 @@
 * A user provided `"domain.nc"` that describes the simulation `"domain"`.
   Specifications must be consistent with `"domain.in"`.
   If absent, a template is automatically generated based on `"domain.in"`.
+* A user provided `"progress.nc"` that describes the simulation `"progress"`.
+  Specifications must be consistent with `"domain.nc"`.
+  If absent, it is automatically generated based on `"domain.nc"`.
 
 
 # SOILWAT2 v7.2.0
