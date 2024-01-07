@@ -2132,6 +2132,7 @@ void SW_NC_read(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
             case vNCprog:
                 SW_netCDF->varNC[vNCprog] = Str_Dup(varName, LogInfo);
                 SW_netCDF->InFilesNC[vNCprog] = Str_Dup(path, LogInfo);
+                break;
             default:
                 LogError(LogInfo, LOGWARN, "Ignoring unknown key in %s, %s",
                          MyFileName, key);
