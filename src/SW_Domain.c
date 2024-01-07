@@ -257,7 +257,7 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 /**
  * @brief Mark completion status of simulation run
  *
- * @param[in] success Did simulation run succeed or fail?
+ * @param[in] isFailure Did simulation run fail or succeed?
  * @param[in] domType Type of domain in which simulations are running
  *  (gridcell/sites)
  * @param[in] progFileID Identifier of the progress netCDF file
@@ -266,14 +266,14 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
  *  in relation to netCDFs
  * @param[in,out] LogInfo
 */
-void SW_DOM_SetProgress(Bool success, const char* domType, int progFileID,
+void SW_DOM_SetProgress(Bool isFailure, const char* domType, int progFileID,
                         int progVarID, unsigned long ncSuid[],
                         LOG_INFO* LogInfo) {
 
     #if defined(SWNETCDF)
-    SW_NC_set_progress(success, domType, progFileID, progVarID, ncSuid, LogInfo);
+    SW_NC_set_progress(isFailure, domType, progFileID, progVarID, ncSuid, LogInfo);
     #else
-    (void) success;
+    (void) isFailure;
     (void) progFileID;
     (void) progVarID;
     (void) ncSuid;

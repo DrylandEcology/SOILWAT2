@@ -2012,7 +2012,7 @@ void SW_NC_create_progress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 /**
  * @brief Mark a site/gridcell as completed (success/fail) in the progress file
  *
- * @param[in] success Did simulation run succeed or fail?
+ * @param[in] isFailure Did simulation run fail or succeed?
  * @param[in] domType Type of domain in which simulations are running
  *  (gridcell/sites)
  * @param[in] progFileID Identifier of the progress netCDF file
@@ -2021,11 +2021,11 @@ void SW_NC_create_progress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
  *  to get data from netCDF
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_NC_set_progress(Bool success, const char* domType, int progFileID,
+void SW_NC_set_progress(Bool isFailure, const char* domType, int progFileID,
                         int progVarID, unsigned long ncSUID[],
                         LOG_INFO* LogInfo) {
 
-    const signed char mark = (success) ? PRGRSS_DONE : PRGRSS_FAIL;
+    const signed char mark = (isFailure) ? PRGRSS_FAIL : PRGRSS_DONE;
     size_t *count = (strcmp(domType, "s") == 0) ? (size_t[1]){1} : (size_t[2]){1, 1};
 
     fill_netCDF_var_byte(progFileID, progVarID, &mark, ncSUID, count, LogInfo);

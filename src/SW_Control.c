@@ -256,7 +256,7 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
             SW_WT_TimeRun(tsr, ok_tsr, SW_WallTime);
 
             /* Report progress for suid */
-            SW_DOM_SetProgress(!local_LogInfo.stopRun,
+            SW_DOM_SetProgress(local_LogInfo.stopRun,
                                SW_Domain->DomainType, progFileID,
                                progVarID, ncSuid, &local_LogInfo);
         }
