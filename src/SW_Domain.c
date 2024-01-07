@@ -273,7 +273,7 @@ void SW_DOM_SetProgress(Bool success, const char* domType, int progFileID,
     #if defined(SWNETCDF)
     SW_NC_set_progress(success, domType, progFileID, progVarID, ncSuid, LogInfo);
     #else
-    (void) success
+    (void) success;
     (void) progFileID;
     (void) progVarID;
     (void) ncSuid;
