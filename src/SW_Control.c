@@ -211,6 +211,7 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
     tag_suid[0] = '\0';
     WallTimeSpec tss, tsr;
     Bool ok_tss = swFALSE, ok_tsr = swFALSE, ok_suid;
+
     int progFileID = 0; // Value does not matter if SWNETCDF is not defined
     int progVarID = 0; // Value does not matter if SWNETCDF is not defined
 
@@ -221,6 +222,7 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
 
     set_walltime(&tss, &ok_tss);
 
+    /* Loop over suids in simulation set of domain */
     for(suid = SW_Domain->startSimSet; suid < SW_Domain->endSimSet; suid++)
     {
         /* Check wall time against limit */
@@ -237,25 +239,32 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
         LOG_INFO local_LogInfo;
         sw_init_logs(main_LogInfo->logfp, &local_LogInfo);
 
+        /* Check if suid needs to be simulated */
         SW_DOM_calc_ncSuid(SW_Domain, suid, ncSuid);
 
         ok_suid = SW_DOM_CheckProgress(progFileID, progVarID, ncSuid,
                                        &local_LogInfo);
 
         if(ok_suid && !local_LogInfo.stopRun) {
+            /* Count simulation run */
+            nSims++;
 
-            nSims++; // Counter of simulation runs
-
+            /* Simulate suid */
             set_walltime(&tsr, &ok_tsr);
             SW_CTL_run_sw(sw_template, SW_Domain, ncSuid,
                           SW_OutputPtrs, NULL, &local_LogInfo);
             SW_WT_TimeRun(tsr, ok_tsr, SW_WallTime);
 
+            /* Report progress for suid */
             if(!local_LogInfo.stopRun) {
-                // Set simulation run progress
                 SW_DOM_SetProgress(SW_Domain->DomainType, progFileID,
                                    progVarID, ncSuid, &local_LogInfo);
             }
+        }
+
+        /* Report errors and warnings for suid */
+        if(local_LogInfo.stopRun) {
+            main_LogInfo->numDomainErrors++; // Counter of simulation units with error
         }
 
         if (local_LogInfo.numWarnings > 0) {
@@ -268,6 +277,7 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
         }
     }
 
+    /* Produce global error if all suids failed */
     if (nSims == main_LogInfo->numDomainErrors) {
         LogError(
             main_LogInfo,
