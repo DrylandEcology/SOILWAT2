@@ -568,15 +568,16 @@ static void fill_netCDF_var_double(int ncFileID, int varID, double values[],
  * @brief Write a local attribute of type byte
  *
  * @param[in] attName Name of the attribute to create
- * @param[in] attVal Value to write out
+ * @param[in] attVal Attribute value(s) to write out
  * @param[in] varID Identifier of the variable to add the attribute to
  * @param[in] ncFileID Identifier of the open netCDF file to write the attribute to
+ * @param[in] numVals Number of values to write to the single attribute
  * @param[out] LogInfo Holds information dealing with logfile output
 */
-static void write_byte_att(const char* attName, const signed char attVal,
-                           int varID, int ncFileID, LOG_INFO* LogInfo) {
+static void write_byte_att(const char* attName, const signed char* attVal,
+                           int varID, int ncFileID, int numVals, LOG_INFO* LogInfo) {
 
-    if(nc_put_att_schar(ncFileID, varID, attName, NC_BYTE, 1, &attVal) != NC_NOERR) {
+    if(nc_put_att_schar(ncFileID, varID, attName, NC_BYTE, numVals, attVal) != NC_NOERR) {
         LogError(LogInfo, LOGERROR, "Could not create new attribute %s",
                                     attName);
     }
@@ -624,7 +625,7 @@ static void write_str_att(const char* attName, const char* attStr,
  * @brief Write an attribute of type double to a variable
  *
  * @param[in] attName Name of the attribute to create
- * @param[in] attVal Attribute value to write out
+ * @param[in] attVal Attribute value(s) to write out
  * @param[in] varID Identifier of the variable to add the attribute to
  *  (Note: NC_GLOBAL is acceptable and is a global attribute of the netCDF file)
  * @param[in] ncFileID Identifier of the open netCDF file to write the attribute to
@@ -1953,7 +1954,10 @@ void SW_NC_create_progress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
                               "coordinates"};
     const char* attVals[] = {"simulation progress", "1", grid_map, coord};
     const int numAtts = 4;
+    int numValsToWrite;
     const signed char fillVal = NC_FILL_BYTE;
+    const signed char flagVals[] = {PRGRSS_FAIL, PRGRSS_READY, PRGRSS_DONE};
+    const char* flagMeanings = "simulation_error ready_to_simulate simulation_complete";
     const char* varName = SW_netCDF->varNC[vNCprog];
     const char* freq = "fx";
 
@@ -1974,16 +1978,30 @@ void SW_NC_create_progress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
             return; // Exit function prematurely due to error
         }
 
-        // Write out the attribute "_FillValue" to the progress variable
         get_var_identifier(*progFileID, varName, progVarID, LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
-        write_byte_att("_FillValue", fillVal, *progVarID, *progFileID, LogInfo);
+        // Add attribute "_FillValue" to the progress variable
+        numValsToWrite = 1;
+        write_byte_att("_FillValue", &fillVal, *progVarID, *progFileID, numValsToWrite, LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
+
+        // Add attributes "flag_values" and "flag_meanings"
+        numValsToWrite = 3;
+        write_byte_att("flag_values", flagVals, *progVarID, *progFileID, numValsToWrite, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        write_str_att("flag_meanings", flagMeanings, *progVarID, *progFileID, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
 
         nc_enddef(*progFileID);
 
