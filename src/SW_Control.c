@@ -256,10 +256,9 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
             SW_WT_TimeRun(tsr, ok_tsr, SW_WallTime);
 
             /* Report progress for suid */
-            if(!local_LogInfo.stopRun) {
-                SW_DOM_SetProgress(SW_Domain->DomainType, progFileID,
-                                   progVarID, ncSuid, &local_LogInfo);
-            }
+            SW_DOM_SetProgress(!local_LogInfo.stopRun,
+                               SW_Domain->DomainType, progFileID,
+                               progVarID, ncSuid, &local_LogInfo);
         }
 
         /* Report errors and warnings for suid */
@@ -278,11 +277,12 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
     }
 
     /* Produce global error if all suids failed */
-    if (nSims == main_LogInfo->numDomainErrors) {
+    if (nSims > 0 && nSims == main_LogInfo->numDomainErrors) {
         LogError(
             main_LogInfo,
             LOGERROR,
-            "All simulated units produced errors."
+            "All simulated units (n = %zu) produced errors.",
+            nSims
         );
     }
 

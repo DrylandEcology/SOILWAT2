@@ -28,7 +28,7 @@ void SW_NC_create_template(const char* domFile, int domFileID,
     const char* attNames[], const char* attVals[], int numAtts, Bool isInput,
     const char* freq, LOG_INFO* LogInfo);
 void SW_NC_create_progress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo);
-void SW_NC_set_progress(const char* domType, int progFileID,
+void SW_NC_set_progress(Bool success, const char* domType, int progFileID,
                         int progVarID, unsigned long ncSUID[],
                         LOG_INFO* LogInfo);
 Bool SW_NC_check_progress(int progFileID, int progVarID,

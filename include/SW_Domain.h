@@ -17,7 +17,7 @@ Bool SW_DOM_CheckProgress(int progFileID, int progVarID,
                           unsigned long ncSuid[], LOG_INFO* LogInfo);
 void SW_DOM_CreateProgress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo);
 void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo);
-void SW_DOM_SetProgress(const char* domType, int progFileID,
+void SW_DOM_SetProgress(Bool success, const char* domType, int progFileID,
                         int progVarID, unsigned long ncSuid[],
                         LOG_INFO* LogInfo);
 void SW_DOM_SimSet(SW_DOMAIN* SW_Domain, unsigned long userSUID,
