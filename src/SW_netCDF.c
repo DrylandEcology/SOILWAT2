@@ -2068,6 +2068,7 @@ void SW_NC_read_inputs(SW_ALL* sw, SW_DOMAIN* SW_Domain, size_t ncSUID[],
 
     int file, varNum;
     Bool domTypeS = Str_CompareI(SW_Domain->DomainType, "s") == 0;
+    const int numInFilesNC = 1;
     const int numDomVals = 2;
     const int numVals[] = {numDomVals};
     const int ncFileIDs[] = {SW_Domain->netCDFInfo.ncFileIDs[vNCdom]};
@@ -2084,7 +2085,7 @@ void SW_NC_read_inputs(SW_ALL* sw, SW_DOMAIN* SW_Domain, size_t ncSUID[],
         For the domain type "xy", the index of the variable "y" is the first
         in "ncSUID" and the index of the variable "x" is the second in "ncSUID"
     */
-    for(file = 0; file < SW_NVARNC; file++) {
+    for(file = 0; file < numInFilesNC; file++) {
         for(varNum = 0; varNum < numVals[file]; varNum++) {
             ncIndex = (domTypeS) ? 0 : varNum % 2;
 
