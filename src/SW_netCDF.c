@@ -1508,6 +1508,73 @@ static void fill_netCDF_with_invariants(SW_NETCDF* SW_netCDF, char* domType,
                                  isInputFile, LogInfo);
 }
 
+/**
+ * @brief Create a new variable by calculating the dimensions
+ *  and writing attributes
+ *
+ * @param[in] ncFileID Identifier of the netCDF file
+ * @param[in] newVarType Type of the variable to create
+ * @param[in] timeSize Size of "time" dimension
+ * @param[in] vertSize Size of "vertical" dimension
+ * @param[in] varName Name of variable to write
+ * @param[in] attNames Attribute names that the new variable will contain
+ * @param[in] attVals Attribute values that the new variable will contain
+ * @param[in] numAtts Number of attributes being sent in
+ * @param[in,out] LogInfo  Holds information dealing with logfile output
+*/
+static void create_full_var(int* ncFileID, int newVarType,
+    unsigned long timeSize, unsigned long vertSize, const char* varName,
+    const char* attNames[], const char* attVals[], int numAtts,
+    LOG_INFO* LogInfo) {
+
+    int dimArrSize = 0, index, varID = 0;
+    int dimIDs[4]; // Maximum expected number of dimensions
+    Bool siteDimExists = dimExists("site", *ncFileID);
+    const char* latName = (dimExists("lat", *ncFileID)) ? "lat" : "y";
+    const char* lonName = (dimExists("lon", *ncFileID)) ? "lon" : "x";
+    int numConstDims = (siteDimExists) ? 1 : 2;
+    const char* thirdDim = (siteDimExists) ? "site" : latName;
+    const char* constDimNames[] = {thirdDim, lonName};
+    const char* timeVertNames[] = {"time", "vertical"};
+    int timeVertVals[] = {timeSize, vertSize}, numTimeVertVals = 2;
+
+    for(index = 0; index < numTimeVertVals; index++) {
+        if(timeVertVals[index] > 0) {
+            create_netCDF_dim(timeVertNames[index], timeSize, ncFileID,
+                              &dimIDs[dimArrSize], LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+            dimArrSize++;
+        }
+    }
+
+    for(index = 0; index < numConstDims; index++) {
+        get_dim_identifier(*ncFileID, constDimNames[index],
+                        &dimIDs[dimArrSize], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        dimArrSize++;
+    }
+
+    for(index = 0; index < numAtts; index++) {
+        write_str_att(attNames[index], attVals[index],
+                    varID, *ncFileID, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+    }
+
+    create_netCDF_var(&varID, varName, dimIDs, ncFileID, newVarType,
+                      dimArrSize, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+}
+
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
@@ -1867,17 +1934,9 @@ void SW_NC_create_template(const char* domFile, int domFileID,
     const char* attNames[], const char* attVals[], int numAtts, Bool isInput,
     const char* freq, LOG_INFO* LogInfo) {
 
-    int dimArrSize = 0, index, varID = 0;
-    int dimIDs[4]; // Maximum expected number of dimensions
     Bool siteDimExists = dimExists("site", domFileID);
-    const char* latName = (dimExists("lat", domFileID)) ? "lat" : "y";
-    const char* lonName = (dimExists("lon", domFileID)) ? "lon" : "x";
     const char* domType = (siteDimExists) ? "s" : "xy";
-    int numConstDims = (siteDimExists) ? 1 : 2;
-    const char* thirdDim = (siteDimExists) ? "site" : latName;
-    const char* constDimNames[] = {thirdDim, lonName};
-    const char* timeVertNames[] = {"time", "vertical"};
-    int timeVertVals[] = {timeSize, vertSize}, numTimeVertVals = 2;
+
 
     CopyFile(domFile, fileName, LogInfo);
     if(LogInfo->stopRun) {
@@ -1890,46 +1949,15 @@ void SW_NC_create_template(const char* domFile, int domFileID,
         return; // Exit function prematurely due to error
     }
 
-    for(index = 0; index < numTimeVertVals; index++) {
-        if(timeVertVals[index] > 0) {
-            create_netCDF_dim(timeVertNames[index], timeSize, newFileID,
-                              &dimIDs[dimArrSize], LogInfo);
-            if(LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
-
-            dimArrSize++;
-        }
-    }
-
-    for(index = 0; index < numConstDims; index++) {
-        get_dim_identifier(*newFileID, constDimNames[index],
-                           &dimIDs[dimArrSize], LogInfo);
+    if(!varExists(*newFileID, varName)) {
+        create_full_var(newFileID, newVarType, timeSize, vertSize, varName,
+                        attNames, attVals, numAtts, LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
-
-        dimArrSize++;
-    }
-
-    create_netCDF_var(&varID, varName, dimIDs, newFileID, newVarType,
-                      dimArrSize, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
     }
 
     update_netCDF_global_atts(newFileID, domType, freq, isInput, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-
-    for(index = 0; index < numAtts; index++) {
-        write_str_att(attNames[index], attVals[index],
-                      varID, *newFileID, LogInfo);
-        if(LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
-    }
 }
 
 /**
@@ -1958,7 +1986,7 @@ void SW_NC_create_progress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     const signed char fillVal = NC_FILL_BYTE;
     const signed char flagVals[] = {PRGRSS_FAIL, PRGRSS_READY, PRGRSS_DONE};
     const char* flagMeanings = "simulation_error ready_to_simulate simulation_complete";
-    const char* varName = SW_netCDF->varNC[vNCprog];
+    const char* progVarName = SW_netCDF->varNC[vNCprog];
     const char* freq = "fx";
 
     int domFileID = SW_netCDF->ncFileIDs[vNCdom];
@@ -1967,39 +1995,61 @@ void SW_NC_create_progress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     const char* progFileName = SW_netCDF->InFilesNC[vNCprog];
     int* progVarID = &SW_netCDF->ncVarIDs[vNCprog];
 
-    if(FileExists(SW_Domain->netCDFInfo.InFilesNC[vNCprog])) {
-        SW_NC_check(SW_Domain, *progFileID, progFileName, LogInfo);
-    } else {
-        SW_NC_create_template(domFileName, domFileID, progFileName,
-                              progFileID, NC_BYTE, 0, 0, varName,
-                              attNames, attVals, numAtts, swFALSE, freq,
-                              LogInfo);
+    Bool progFileIsDom = (Bool) (strcmp(progFileName, domFileName) == 0);
+    Bool progFileExists = FileExists(progFileName);
+    Bool progVarExists = varExists(*progFileID, progVarName);
+    Bool createOrModFile = !progFileExists || (progFileIsDom && !progVarExists);
+
+    /*
+      See if the progress variable exists within it's file, also handling
+      the case where the progress variable is in the domain netCDF
+
+      In addition to making sure the file exists, make sure the progress
+      variable is present
+    */
+    if(createOrModFile) {
+
+        if(progFileExists) {
+            nc_redef(*progFileID);
+
+            create_full_var(progFileID, NC_BYTE, 0, 0, progVarName,
+                            attNames, attVals, numAtts, LogInfo);
+        } else {
+            SW_NC_create_template(domFileName, domFileID, progFileName,
+                progFileID, NC_BYTE, 0, 0, progVarName, attNames, attVals,
+                numAtts, swFALSE, freq, LogInfo);
+        }
+
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
-        get_var_identifier(*progFileID, varName, progVarID, LogInfo);
+        get_var_identifier(*progFileID, progVarName, progVarID, LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
-        // Add attribute "_FillValue" to the progress variable
-        numValsToWrite = 1;
-        write_byte_att("_FillValue", &fillVal, *progVarID, *progFileID, numValsToWrite, LogInfo);
-        if(LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
+        // If the progress existed before this function was called,
+        // do not set the new attributes
+        if(!progVarExists) {
+            // Add attribute "_FillValue" to the progress variable
+            numValsToWrite = 1;
+            write_byte_att("_FillValue", &fillVal, *progVarID, *progFileID, numValsToWrite, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 
-        // Add attributes "flag_values" and "flag_meanings"
-        numValsToWrite = 3;
-        write_byte_att("flag_values", flagVals, *progVarID, *progFileID, numValsToWrite, LogInfo);
-        if(LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
+            // Add attributes "flag_values" and "flag_meanings"
+            numValsToWrite = 3;
+            write_byte_att("flag_values", flagVals, *progVarID, *progFileID, numValsToWrite, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 
-        write_str_att("flag_meanings", flagMeanings, *progVarID, *progFileID, LogInfo);
-        if(LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
+            write_str_att("flag_meanings", flagMeanings, *progVarID, *progFileID, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
         }
 
 
@@ -2265,29 +2315,44 @@ void SW_NC_deconstruct(SW_NETCDF* SW_netCDF) {
  * @param[out] LogInfo Struct of type SW_NETCDF holding constant
  *  netCDF file information
 */
-void SW_NC_open_files(SW_NETCDF* SW_netCDF, LOG_INFO* LogInfo) {
-    int fileNum, openType, *fileID;
-    char* fileName;
+void SW_NC_open_dom_prog_files(SW_NETCDF* SW_netCDF, LOG_INFO* LogInfo) {
+    int fileNum, openType = NC_WRITE, *fileID;
+    char* fileName, *domFile = SW_netCDF->InFilesNC[vNCdom];
+    char* progFile = SW_netCDF->InFilesNC[vNCprog];
+    Bool progFileDomain = (Bool) (strcmp(domFile, progFile) == 0);
 
-    for(fileNum = 0; fileNum < SW_NVARNC; fileNum++) {
+    // Open the domain/progress netCDF
+    for(fileNum = vNCdom; fileNum <= vNCprog; fileNum++) {
         fileName = SW_netCDF->InFilesNC[fileNum];
         fileID = &SW_netCDF->ncFileIDs[fileNum];
 
         if(FileExists(fileName)) {
-            openType = (fileNum == vNCprog) ? NC_WRITE : NC_NOWRITE;
-
             if(nc_open(fileName, openType, fileID) != NC_NOERR) {
                 LogError(LogInfo, LOGERROR, "An error occurred when opening %s.",
                                             fileName);
                 return; // Exit function prematurely due to error
             }
 
-            get_var_identifier(*fileID, SW_netCDF->varNC[fileNum],
-                               &SW_netCDF->ncVarIDs[fileNum], LogInfo);
-            if(LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+            /*
+              Get the ID for the domain variable and the progress variable if
+              it is not in the domain netCDF or it exists in the domain netCDF
+            */
+            if(fileNum == vNCdom || !progFileDomain ||
+                varExists(*fileID, SW_netCDF->varNC[fileNum])) {
+
+                get_var_identifier(*fileID, SW_netCDF->varNC[fileNum],
+                                    &SW_netCDF->ncVarIDs[fileNum], LogInfo);
+                if(LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
             }
         }
+    }
+
+    // Make sure the correct variables are present
+    if(progFileDomain) {
+        nc_close(SW_netCDF->ncFileIDs[vNCprog]);
+        SW_netCDF->ncFileIDs[vNCprog] = SW_netCDF->ncFileIDs[vNCdom];
     }
 }
 

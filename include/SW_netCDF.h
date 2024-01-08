@@ -39,7 +39,7 @@ void SW_NC_check_input_files(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo);
 void SW_NC_read(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo, LOG_INFO* LogInfo);
 void SW_NC_init_ptrs(SW_NETCDF* SW_netCDF);
 void SW_NC_deconstruct(SW_NETCDF* SW_netCDF);
-void SW_NC_open_files(SW_NETCDF* SW_netCDF, LOG_INFO* LogInfo);
+void SW_NC_open_dom_prog_files(SW_NETCDF* SW_netCDF, LOG_INFO* LogInfo);
 void SW_NC_close_files(SW_NETCDF* SW_netCDF);
 
 #ifdef __cplusplus

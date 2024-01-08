@@ -383,7 +383,7 @@ void SW_CTL_setup_domain(unsigned long userSUID,
     }
 
     // Open necessary netCDF input files and check for consistency with domain
-    SW_NC_open_files(&SW_Domain->netCDFInfo, LogInfo);
+    SW_NC_open_dom_prog_files(&SW_Domain->netCDFInfo, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
