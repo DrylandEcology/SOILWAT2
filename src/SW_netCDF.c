@@ -2001,13 +2001,17 @@ void SW_NC_create_progress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     Bool createOrModFile = !progFileExists || (progFileIsDom && !progVarExists);
 
     /*
+      If the progress file is not to be created or modified, check it
+
       See if the progress variable exists within it's file, also handling
       the case where the progress variable is in the domain netCDF
 
       In addition to making sure the file exists, make sure the progress
       variable is present
     */
-    if(createOrModFile) {
+    if(!createOrModFile) {
+        SW_NC_check(SW_Domain, *progFileID, progFileName, LogInfo);
+    } else {
 
         if(progFileExists) {
             nc_redef(*progFileID);
