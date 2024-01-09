@@ -428,7 +428,7 @@ static void get_single_byte_val(int ncFileID, int varID, size_t index[],
  * @param[out] dimVal String buffer to hold the resulting value
  * @param[out] LogInfo Holds information on warnings and errors
 */
-static void get_dim_val(int ncFileID, char* dimName, size_t* dimVal,
+static void get_dim_val(int ncFileID, const char* dimName, size_t* dimVal,
                         LOG_INFO* LogInfo) {
 
     int dimID = 0;
@@ -452,8 +452,10 @@ static void get_dim_val(int ncFileID, char* dimName, size_t* dimVal,
 */
 static Bool is_wgs84(char* crs_name) {
     const int numPosSyns = 5;
-    static char* wgs84_synonyms[] = {"WGS84", "WGS 84", "EPSG:4326",
-                                     "WGS_1984", "World Geodetic System 1984"};
+    static char* wgs84_synonyms[] = {
+        (char *)"WGS84", (char *)"WGS 84", (char *)"EPSG:4326",
+        (char *)"WGS_1984", (char *)"World Geodetic System 1984"
+    };
 
     for (int index = 0; index < numPosSyns; index++) {
         if (Str_CompareI(crs_name, wgs84_synonyms[index]) == 0) {
@@ -657,10 +659,10 @@ static void fill_prog_netCDF_vals(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     unsigned long nDimY = SW_Domain->nDimY, nDimX = SW_Domain->nDimX;
     int progFileID = SW_Domain->netCDFInfo.ncFileIDs[vNCprog];
     int domFileID = SW_Domain->netCDFInfo.ncFileIDs[vNCdom];
-    size_t* start = (strcmp(SW_Domain->DomainType, "s") == 0) ?
-                        (size_t[1]){0} : (size_t[2]){0, 0};
-    size_t* count = (strcmp(SW_Domain->DomainType, "s") == 0) ?
-                        (size_t[1]){nSUIDs} : (size_t[2]){nDimY, nDimX};
+    size_t start1D[] = {0}, start2D[] = {0, 0};
+    size_t count1D[] = {nSUIDs}, count2D[] = {nDimY, nDimX};
+    size_t* start = (strcmp(SW_Domain->DomainType, "s") == 0) ? start1D : start2D;
+    size_t* count = (strcmp(SW_Domain->DomainType, "s") == 0) ? count1D : count2D;
 
     signed char* vals = (signed char*)Mem_Malloc(nSUIDs * sizeof(signed char),
                                                  "fill_prog_netCDF_vals()",
@@ -1539,7 +1541,8 @@ static void create_full_var(int* ncFileID, int newVarType,
     const char* thirdDim = (siteDimExists) ? "site" : latName;
     const char* constDimNames[] = {thirdDim, lonName};
     const char* timeVertNames[] = {"time", "vertical"};
-    int timeVertVals[] = {timeSize, vertSize}, numTimeVertVals = 2;
+    unsigned long timeVertVals[] = {timeSize, vertSize};
+    int numTimeVertVals = 2;
 
     for(index = 0; index < numTimeVertVals; index++) {
         if(timeVertVals[index] > 0) {
@@ -1603,7 +1606,7 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
     const char *geoCRS = "crs_geogsc", *projCRS = "crs_projsc";
     Bool geoCRSExists = varExists(ncFileID, geoCRS);
     Bool projCRSExists = varExists(ncFileID, projCRS);
-    char* impliedDomType = (dimExists("site", ncFileID)) ? "s" : "xy";
+    const char* impliedDomType = (dimExists("site", ncFileID)) ? "s" : "xy";
     Bool dimMismatch = swFALSE;
     size_t latDimVal = 0, lonDimVal = 0, SDimVal = 0;
 
@@ -1649,10 +1652,9 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
     double projStdParallel[2]; // Compare to standard_parallel is projected CRS
     int attNum;
 
-    char* attFailMsg = "The attribute '%s' of the variable '%s' "
-                       "within the file %s does not match the one "
-                       "in the domain input file. Please make sure "
-                       "these match.";
+    const char* attFailMsg = "The attribute '%s' of the variable '%s' "
+            "within the file %s does not match the one in the domain input "
+            "file. Please make sure these match.";
 
     /*
        Make sure the domain types are consistent
@@ -1674,7 +1676,7 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
             return; // Exit function prematurely due to error
         }
 
-        dimMismatch = SDimVal != SW_Domain->nDimS;
+        dimMismatch = (Bool) (SDimVal != SW_Domain->nDimS);
     } else if(strcmp(impliedDomType, "xy") == 0) {
         if(geoIsPrimCRS && geoCRSExists) {
             get_dim_val(ncFileID, "lat", &latDimVal, LogInfo);
@@ -1700,8 +1702,8 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
             return; // Exit function prematurely due to error
         }
 
-        dimMismatch = latDimVal != SW_Domain->nDimY ||
-                      lonDimVal != SW_Domain->nDimX;
+        dimMismatch = (Bool) (latDimVal != SW_Domain->nDimY ||
+                              lonDimVal != SW_Domain->nDimX);
     }
 
     if(dimMismatch) {
@@ -1974,7 +1976,7 @@ void SW_NC_create_progress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 
     SW_NETCDF* SW_netCDF = &SW_Domain->netCDFInfo;
     Bool primCRSIsGeo = SW_Domain->netCDFInfo.primary_crs_is_geographic;
-    Bool domTypeIsS = strcmp(SW_Domain->DomainType, "s") == 0;
+    Bool domTypeIsS = (Bool) (strcmp(SW_Domain->DomainType, "s") == 0);
     const char* projGridMap = "crs_projsc: x y crs_geogsc: lat lon";
     const char* geoGridMap = "crs_geogsc";
     const char* sCoord = "lat lon site";
@@ -2001,7 +2003,7 @@ void SW_NC_create_progress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     Bool progFileIsDom = (Bool) (strcmp(progFileName, domFileName) == 0);
     Bool progFileExists = FileExists(progFileName);
     Bool progVarExists = varExists(*progFileID, progVarName);
-    Bool createOrModFile = !progFileExists || (progFileIsDom && !progVarExists);
+    Bool createOrModFile = (Bool) (!progFileExists || (progFileIsDom && !progVarExists));
 
     /*
       If the progress file is not to be created or modified, check it
@@ -2083,7 +2085,8 @@ void SW_NC_set_progress(Bool isFailure, const char* domType, int progFileID,
                         LOG_INFO* LogInfo) {
 
     const signed char mark = (isFailure) ? PRGRSS_FAIL : PRGRSS_DONE;
-    size_t *count = (strcmp(domType, "s") == 0) ? (size_t[1]){1} : (size_t[2]){1, 1};
+    size_t count1D[] = {1}, count2D[] = {1, 1};
+    size_t *count = (strcmp(domType, "s") == 0) ? count1D : count2D;
 
     fill_netCDF_var_byte(progFileID, progVarID, &mark, ncSUID, count, LogInfo);
     nc_sync(progFileID);
@@ -2124,7 +2127,7 @@ void SW_NC_read_inputs(SW_ALL* sw, SW_DOMAIN* SW_Domain, size_t ncSUID[],
                        LOG_INFO* LogInfo) {
 
     int file, varNum;
-    Bool domTypeS = Str_CompareI(SW_Domain->DomainType, "s") == 0;
+    Bool domTypeS = (Bool) (Str_CompareI(SW_Domain->DomainType, (char *)"s") == 0);
     const int numInFilesNC = 1;
     const int numDomVals = 2;
     const int numVals[] = {numDomVals};
