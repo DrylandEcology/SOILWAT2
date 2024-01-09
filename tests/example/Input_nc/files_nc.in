@@ -6,4 +6,4 @@
 # This convention eliminates the possibility of incorrect reads due to line dependencies.
 
 domain domain Input_nc/domain.nc
-progress progress Input_nc/progress.nc
+progress progress Input_nc/progress.nc    # Note: progress can be a separate file or the same as domain

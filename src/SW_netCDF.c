@@ -531,7 +531,7 @@ static void fill_netCDF_var_uint(int ncFileID, int varID, unsigned int values[],
  * @param[in] startIndices Specification of where the C-provided netCDF
  *  should start writing values within the specified variable
  * @param[in] count How many values to write into the given variable
- * @param[out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 static void fill_netCDF_var_byte(int ncFileID, int varID, const signed char values[],
                                  size_t startIndices[], size_t count[],
@@ -572,7 +572,7 @@ static void fill_netCDF_var_double(int ncFileID, int varID, double values[],
  * @param[in] varID Identifier of the variable to add the attribute to
  * @param[in] ncFileID Identifier of the open netCDF file to write the attribute to
  * @param[in] numVals Number of values to write to the single attribute
- * @param[out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 static void write_byte_att(const char* attName, const signed char* attVal,
                            int varID, int ncFileID, int numVals, LOG_INFO* LogInfo) {
@@ -2312,12 +2312,15 @@ void SW_NC_deconstruct(SW_NETCDF* SW_netCDF) {
 }
 
 /**
- * @brief Open all netCDF files that should be open throughout the program
+ * @brief Open netCDF file(s) that contain(s) domain and progress variables
+ *
+ * These files are kept open during simulations
+ *   * to read geographic coordinates from the domain
+ *   * to identify and update progress
  *
  * @param[in,out] SW_netCDF Struct of type SW_NETCDF holding constant
  *  netCDF file information
- * @param[out] LogInfo Struct of type SW_NETCDF holding constant
- *  netCDF file information
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_open_dom_prog_files(SW_NETCDF* SW_netCDF, LOG_INFO* LogInfo) {
     int fileNum, openType = NC_WRITE, *fileID;
@@ -2353,7 +2356,9 @@ void SW_NC_open_dom_prog_files(SW_NETCDF* SW_netCDF, LOG_INFO* LogInfo) {
         }
     }
 
-    // Make sure the correct variables are present
+    // If the progress variable is contained in the domain netCDF, then
+    // close the (redundant) progress file identifier
+    // and use instead the (equivalent) domain file identifier
     if(progFileDomain) {
         nc_close(SW_netCDF->ncFileIDs[vNCprog]);
         SW_netCDF->ncFileIDs[vNCprog] = SW_netCDF->ncFileIDs[vNCdom];
