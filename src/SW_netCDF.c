@@ -2384,3 +2384,47 @@ void SW_NC_close_files(SW_NETCDF* SW_netCDF) {
         nc_close(SW_netCDF->ncFileIDs[fileNum]);
     }
 }
+
+/**
+ * @brief Deep copy a source instance of SW_NETCDF into a destination instance
+ *
+ * @param[in] source Source struct of type SW_NETCDF to copy
+ * @param[out] dest Destination struct of type SW_NETCDF to be copied into
+ * @param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NC_deepCopy(SW_NETCDF* source, SW_NETCDF* dest, LOG_INFO* LogInfo) {
+    int index, numIndivCopy = 5;
+
+    char* srcStrs[] = {
+        source->title, source->author, source->institution, source->comment,
+        source->coordinate_system
+    };
+
+    char** destStrs[] = {
+        &dest->title, &dest->author, &dest->institution, &dest->comment,
+        &dest->coordinate_system
+    };
+
+    memcpy(dest, source, sizeof(*dest));
+
+    SW_NC_init_ptrs(dest);
+
+    for(index = 0; index < numIndivCopy; index++) {
+        *destStrs[index] = Str_Dup(srcStrs[index], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to
+        }
+    }
+
+    for(index = 0; index < SW_NVARNC; index++) {
+        dest->varNC[index] = Str_Dup(source->varNC[index], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        dest->InFilesNC[index] = Str_Dup(source->InFilesNC[index], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+    }
+}

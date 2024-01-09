@@ -41,6 +41,7 @@ void SW_NC_init_ptrs(SW_NETCDF* SW_netCDF);
 void SW_NC_deconstruct(SW_NETCDF* SW_netCDF);
 void SW_NC_open_dom_prog_files(SW_NETCDF* SW_netCDF, LOG_INFO* LogInfo);
 void SW_NC_close_files(SW_NETCDF* SW_netCDF);
+void SW_NC_deepCopy(SW_NETCDF* source, SW_NETCDF* dest, LOG_INFO* LogInfo);
 
 #ifdef __cplusplus
 }

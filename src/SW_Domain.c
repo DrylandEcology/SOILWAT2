@@ -338,6 +338,10 @@ void SW_DOM_deepCopy(SW_DOMAIN* source, SW_DOMAIN* dest, LOG_INFO* LogInfo) {
     memcpy(dest, source, sizeof (*dest));
 
     SW_F_deepCopy(&dest->PathInfo, &source->PathInfo, LogInfo);
+
+    #if defined(SWNETCDF)
+    SW_NC_deepCopy(&dest->netCDFInfo, &source->netCDFInfo, LogInfo);
+    #endif
 }
 
 void SW_DOM_init_ptrs(SW_DOMAIN* SW_Domain) {
