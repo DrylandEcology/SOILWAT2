@@ -364,7 +364,7 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO* LogInfo) {
 
     total_time = diff_walltime(wt.timeStart, wt.has_walltime); // negative if failed
 
-    if (GT(total_time, 0.)) {
+    if (GE(total_time, 0.)) {
         fprintf(logfp, "    * Total wall time: %.2f [seconds]\n", total_time);
     } else {
         fprintf(logfp, "    * Wall time failed.\n");
