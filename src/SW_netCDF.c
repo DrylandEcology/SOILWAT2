@@ -1374,7 +1374,6 @@ static void fill_netCDF_with_global_atts(SW_NETCDF* SW_netCDF, int* ncFileID,
 
     char sourceStr[40]; // 40 - valid size of the SOILWAT2 global `SW2_VERSION` + "SOILWAT2"
     char creationDateStr[21]; // 21 - valid size to hold a string of format YYYY-MM-DDTHH:MM:SSZ
-    time_t t = time(NULL);
 
     int attNum;
     const int numGlobAtts = (strcmp(domType, "s") == 0) ? 14 : 13; // Do or do not include "featureType"
@@ -1401,7 +1400,7 @@ static void fill_netCDF_with_global_atts(SW_NETCDF* SW_netCDF, int* ncFileID,
 
     // Fill `sourceStr` and `creationDateStr`
     snprintf(sourceStr, 40, "SOILWAT2%s", SW2_VERSION);
-    strftime(creationDateStr, sizeof creationDateStr, "%FT%TZ", gmtime(&t));
+    timeStringISO8601(creationDateStr, sizeof creationDateStr);
 
     // Write out the necessary global attributes that are listed above
     for(attNum = 0; attNum < numGlobAtts; attNum++) {
@@ -1428,7 +1427,6 @@ static void update_netCDF_global_atts(int* ncFileID, const char* domType,
 
     char sourceStr[40]; // 40 - valid size of the SOILWAT2 global `SW2_VERSION` + "SOILWAT2"
     char creationDateStr[21]; // 21 - valid size to hold a string of format YYYY-MM-DDTHH:MM:SSZ
-    time_t t = time(NULL);
 
     int attNum;
     const int numGlobAtts = (strcmp(domType, "s") == 0) ? 5 : 4; // Do or do not include "featureType"
@@ -1450,7 +1448,7 @@ static void update_netCDF_global_atts(int* ncFileID, const char* domType,
 
     // Fill `sourceStr` and `creationDateStr`
     snprintf(sourceStr, 40, "SOILWAT2%s", SW2_VERSION);
-    strftime(creationDateStr, sizeof creationDateStr, "%FT%TZ", gmtime(&t));
+    timeStringISO8601(creationDateStr, sizeof creationDateStr);
 
     // Write out the necessary global attributes that are listed above
     for(attNum = 0; attNum < numGlobAtts; attNum++) {

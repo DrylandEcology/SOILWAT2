@@ -404,3 +404,15 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO* LogInfo) {
         );
     }
 }
+
+
+/**
+  @brief Current date and time in UTC formatted according to ISO 8601
+
+  @param[out] timeString Character array that returns the formatted time.
+  @param[in] stringLength Length of timeString (should be at least 21).
+*/
+void timeStringISO8601(char *timeString, int stringLength) {
+  time_t t = time(NULL);
+  strftime(timeString, stringLength, "%FT%TZ", gmtime(&t));
+}
