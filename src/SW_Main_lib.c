@@ -261,6 +261,9 @@ void sw_fail_on_error(LOG_INFO* LogInfo) {
         if(!LogInfo->QuietMode) {
             fprintf(stderr, "%s", LogInfo->errorMsg);
         }
+        if(LogInfo->printProgressMsg) {
+            sw_message("ended.");
+        }
         exit(EXIT_FAILURE);
     }
     #endif
@@ -280,6 +283,7 @@ void sw_init_logs(FILE* logInitPtr, LOG_INFO* LogInfo) {
 
 	LogInfo->stopRun = swFALSE;
 	LogInfo->QuietMode = swFALSE;
+	LogInfo->printProgressMsg = swFALSE;
 	LogInfo->numWarnings = 0;
 	LogInfo->numDomainWarnings = 0;
 	LogInfo->numDomainErrors = 0;

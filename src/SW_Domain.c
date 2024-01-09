@@ -320,6 +320,12 @@ void SW_DOM_SimSet(SW_DOMAIN* SW_Domain, unsigned long userSUID,
         *startSimSet = userSUID - 1;
         *endSimSet = userSUID;
     } else {
+        #if defined(SOILWAT)
+        if(LogInfo->printProgressMsg) {
+            sw_message("is identifying the simulation set ...");
+        }
+        #endif
+
         *endSimSet = SW_Domain->nSUIDs;
         for(*startSimSet = 0; *startSimSet < *endSimSet; (*startSimSet)++) {
             SW_DOM_calc_ncSuid(SW_Domain, *startSimSet, startSuid);

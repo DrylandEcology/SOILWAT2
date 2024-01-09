@@ -769,7 +769,8 @@ typedef struct {
 	Bool stopRun;           // Specifies if an error has occurred and
                             // the program needs to stop early (backtrack)
 
-  Bool QuietMode; /**< Don't print version, error message, or notify user about logfile (only used by SOILWAT2) */
+  Bool QuietMode, /**< Don't print version, error message, or notify user about logfile (only used by SOILWAT2) */
+    printProgressMsg; /**< Do/don't print progress messages to the console */
 } LOG_INFO;
 
 typedef struct {

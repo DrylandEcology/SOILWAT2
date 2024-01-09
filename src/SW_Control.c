@@ -222,6 +222,12 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
 
     set_walltime(&tss, &ok_tss);
 
+    #if defined(SOILWAT)
+    if(main_LogInfo->printProgressMsg) {
+        sw_message("is running simulations across the domain ...");
+    }
+    #endif
+
     /* Loop over suids in simulation set of domain */
     for(suid = SW_Domain->startSimSet; suid < SW_Domain->endSimSet; suid++)
     {
@@ -238,6 +244,8 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
 
         LOG_INFO local_LogInfo;
         sw_init_logs(main_LogInfo->logfp, &local_LogInfo);
+        local_LogInfo.printProgressMsg = main_LogInfo->printProgressMsg;
+
 
         /* Check if suid needs to be simulated */
         SW_DOM_calc_ncSuid(SW_Domain, suid, ncSuid);

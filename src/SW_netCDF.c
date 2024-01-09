@@ -1853,6 +1853,12 @@ void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
         return; // Exit prematurely due to error
     }
 
+    #if defined(SOILWAT)
+    if(LogInfo->printProgressMsg) {
+        sw_message("is creating a domain template ...");
+    }
+    #endif
+
     if(nc_create(DOMAIN_TEMP, NC_NETCDF4, domFileID) != NC_NOERR) {
         LogError(LogInfo, LOGERROR, "Could not create new domain template due "
                                     "to something internal.");
@@ -2024,6 +2030,11 @@ void SW_NC_create_progress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
             create_full_var(progFileID, NC_BYTE, 0, 0, progVarName,
                             attNames, attVals, numAtts, LogInfo);
         } else {
+            #if defined(SOILWAT)
+            if(LogInfo->printProgressMsg) {
+                sw_message("is creating a progress tracker ...");
+            }
+            #endif
             SW_NC_create_template(domFileName, domFileID, progFileName,
                 progFileID, NC_BYTE, 0, 0, progVarName, attNames, attVals,
                 numAtts, swFALSE, freq, LogInfo);
