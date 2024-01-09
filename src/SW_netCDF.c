@@ -657,14 +657,14 @@ static void fill_prog_netCDF_vals(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     unsigned long nDimY = SW_Domain->nDimY, nDimX = SW_Domain->nDimX;
     int progFileID = SW_Domain->netCDFInfo.ncFileIDs[vNCprog];
     int domFileID = SW_Domain->netCDFInfo.ncFileIDs[vNCdom];
-    signed char* vals = (signed char*)Mem_Malloc(nSUIDs * sizeof(signed char),
-                                                 "fill_prog_netCDF_vals()",
-                                                 LogInfo);
     size_t* start = (strcmp(SW_Domain->DomainType, "s") == 0) ?
                         (size_t[1]){0} : (size_t[2]){0, 0};
     size_t* count = (strcmp(SW_Domain->DomainType, "s") == 0) ?
                         (size_t[1]){nSUIDs} : (size_t[2]){nDimY, nDimX};
 
+    signed char* vals = (signed char*)Mem_Malloc(nSUIDs * sizeof(signed char),
+                                                 "fill_prog_netCDF_vals()",
+                                                 LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -674,7 +674,7 @@ static void fill_prog_netCDF_vals(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 
         get_single_uint_val(domFileID, domVarID, ncSuid, &domStatus, LogInfo);
         if(LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
+            goto freeMem; // Exit function prematurely due to error
         }
 
         vals[suid] = (domStatus == NC_FILL_UINT) ? NC_FILL_BYTE : PRGRSS_READY;
@@ -682,6 +682,11 @@ static void fill_prog_netCDF_vals(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 
     fill_netCDF_var_byte(progFileID, progVarID, vals, start, count, LogInfo);
     nc_sync(progFileID);
+
+    // Free allocated memory
+    freeMem: {
+        free(vals);
+    }
 }
 
 /**
