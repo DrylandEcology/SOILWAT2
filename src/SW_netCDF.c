@@ -2024,17 +2024,18 @@ void SW_NC_create_progress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
         SW_NC_check(SW_Domain, *progFileID, progFileName, LogInfo);
     } else {
 
+        #if defined(SOILWAT)
+        if(LogInfo->printProgressMsg) {
+            sw_message("is creating a progress tracker ...");
+        }
+        #endif
+
         if(progFileExists) {
             nc_redef(*progFileID);
 
             create_full_var(progFileID, NC_BYTE, 0, 0, progVarName,
                             attNames, attVals, numAtts, LogInfo);
         } else {
-            #if defined(SOILWAT)
-            if(LogInfo->printProgressMsg) {
-                sw_message("is creating a progress tracker ...");
-            }
-            #endif
             SW_NC_create_template(domFileName, domFileID, progFileName,
                 progFileID, NC_BYTE, 0, 0, progVarName, attNames, attVals,
                 numAtts, swFALSE, freq, LogInfo);
