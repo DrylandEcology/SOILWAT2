@@ -1586,6 +1586,56 @@ static void create_full_var(int* ncFileID, int newVarType,
 /* --------------------------------------------------- */
 
 /**
+ * @brief Write values to output variables in previously-created
+ *  output netCDF files
+ *
+ * @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
+ *  basic output information for all output keys
+ * @param[in] p_OUT Data storage for simulation run values
+ * @param[in] ncol_OUT Number of output columns for each output key
+ * @param[in] numFilesPerKey Number of output netCDFs each output key will
+ *  have (same amount for each key)
+ * @param[in] ncOutFileNames A list of the generated netCDF file names
+ * @param[in] ncSuid Unique indentifier of the current suid being simulated
+ * @param[in] strideOutYears Number of years to write into an output file
+ * @param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NC_write_output(SW_OUTPUT* SW_Output, RealD p_OUT[][SW_OUTNPERIODS],
+        IntUS ncol_OUT[], int numFilesPerKey, char** ncOutFileNames[][SW_OUTNKEYS],
+        unsigned long ncSuid[], int strideOutYears, LOG_INFO* LogInfo) {
+
+}
+
+/**
+ * @brief Generate all requested netCDF output files that will be written to
+ *  instead of CSVs
+ *
+ * @param[in] domFile Name of the domain netCDF
+ * @param[in] domFileID Identifier of the domain netCDF file
+ * @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
+ *  basic output information for all output keys
+ * @param[in] strideOutYears Number of years to write into an output file
+ * @param[out] numFilesPerKey Number of output netCDFs each output key will
+ *  have (same amount for each key)
+ * @param[out] ncOutFileNames A list of the generated netCDF file names
+ * @param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NC_create_output_files(const char* domFile, int domFileID,
+        SW_OUTPUT* SW_Output, int strideOutYears, int* numFilesPerKey,
+        char** ncOutFileNames[][SW_OUTNKEYS], LOG_INFO* LogInfo) {
+
+}
+
+/**
+ * @brief Retrieve the maximum number of layers to create in netCDF output files
+ *
+ * @param[in] readInNumLayers Value read-in from the input file `soils.in`
+*/
+int SW_NC_get_nMaxSoilLayers(int readInNumLayers) {
+    return readInNumLayers;
+}
+
+/**
  * @brief Check that the constant content is consistent between
  *  domain.in and a given netCDF file
  *
