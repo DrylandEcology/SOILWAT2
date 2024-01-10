@@ -37,3 +37,7 @@ proj_longitude_of_central_meridian -96
 proj_latitude_of_projection_origin 23
 proj_false_easting                 0
 proj_false_northing                0
+
+
+#------ Output file information
+strideOutYears Inf                 # Specifies the number of years to put into a single output netCDF -- may be 1, X (e.g., 10), or "Inf" (all years in one file), defaults to "Inf" if this line is not found

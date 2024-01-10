@@ -17,7 +17,7 @@
 /* --------------------------------------------------- */
 
 #define NUM_NC_IN_KEYS 2 // Number of possible keys within `files_nc.in`
-#define NUM_ATT_IN_KEYS 25 // Number of possible keys within `attributes_nc.in`
+#define NUM_ATT_IN_KEYS 26 // Number of possible keys within `attributes_nc.in`
 
 #define PRGRSS_READY ((signed char)0) // SUID is ready for simulation
 #define PRGRSS_DONE ((signed char)1) // SUID has successfully been simulated
@@ -52,7 +52,9 @@ static void nc_read_atts(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo,
             "proj_inverse_flattening", "proj_datum", "proj_units",
             "proj_standard_parallel", "proj_longitude_of_central_meridian",
             "proj_latitude_of_projection_origin", "proj_false_easting",
-            "proj_false_northing"
+            "proj_false_northing",
+
+            "strideOutYears"
             };
     static const Bool requiredKeys[NUM_ATT_IN_KEYS] =
             {swTRUE, swTRUE, swTRUE, swFALSE,
@@ -65,6 +67,7 @@ static void nc_read_atts(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo,
             swFALSE, swFALSE, swFALSE,
             swFALSE, swFALSE,
             swFALSE, swFALSE,
+            swFALSE,
             swFALSE};
     Bool hasKeys[NUM_ATT_IN_KEYS] = {swFALSE};
 
@@ -191,6 +194,16 @@ static void nc_read_atts(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo,
                 break;
             case 24:
                 SW_netCDF->crs_projsc.false_northing = atoi(value);
+                break;
+            case 25:
+                if(Str_CompareI(value, (char *) "Inf") != 0) {
+                    SW_netCDF->strideOutYears = atoi(value);
+
+                    if(SW_netCDF->strideOutYears <= 0) {
+                        LogError(LogInfo, LOGERROR, "The value for 'strideOutYears' <= 0");
+                        return; // Exit function due to invalid input
+                    }
+                }
                 break;
             case KEY_NOT_FOUND:
                 LogError(LogInfo, LOGWARN, "Ignoring unknown key in %s - %s",
@@ -2322,6 +2335,8 @@ void SW_NC_init_ptrs(SW_NETCDF* SW_netCDF) {
 
     SW_netCDF->crs_projsc.standard_parallel[0] = NAN;
     SW_netCDF->crs_projsc.standard_parallel[1] = NAN;
+
+    SW_netCDF->strideOutYears = -1;
 
     for(index = 0; index < numAllocVars; index++) {
         *allocArr[index] = NULL;
