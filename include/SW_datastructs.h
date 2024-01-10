@@ -166,6 +166,11 @@ typedef struct {
 	FILE *fp_soil[SW_OUTNPERIODS];
 	char buf_soil[SW_OUTNPERIODS][MAX_LAYERS * OUTSTRLEN];
 
+    #if defined(SWNETCDF)
+    char** ncOutFiles[SW_OUTNKEYS][SW_OUTNPERIODS];
+    int numOutFiles;
+    #endif
+
 } SW_FILE_STATUS;
 
 /* =================================================== */
