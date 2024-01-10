@@ -335,6 +335,12 @@ void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
 
 	OutPeriod pd;
 
+  #if defined(SOILWAT)
+  if(LogInfo->printProgressMsg) {
+      sw_message("is creating output files ...");
+  }
+  #endif
+
 	ForEachOutPeriod(pd) {
 		if (GenOutput->use_OutPeriod[pd]) {
 			_create_csv_files(SW_FileStatus, pd, InFiles, LogInfo);

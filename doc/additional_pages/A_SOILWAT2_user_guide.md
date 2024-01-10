@@ -122,6 +122,11 @@ on your side.
     CPPFLAGS=-DSWNETCDF NC_CFLAGS="-I/path/to/include" NC_LIBS="-L/path/to/lib" make
 ```
 
+  * User-specified username and hostname, e.g.,
+```{.sh}
+    USERNAME=nobody HOSTNAME=nowhere make
+```
+
 <br>
 
 

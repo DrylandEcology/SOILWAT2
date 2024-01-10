@@ -13,10 +13,13 @@ extern "C" {
 void SW_DOM_calc_ncSuid(SW_DOMAIN* SW_Domain, unsigned long suid,
                              unsigned long ncSuid[]);
 void SW_DOM_calc_nSUIDs(SW_DOMAIN* SW_Domain);
-Bool SW_DOM_CheckProgress(char* domainType, unsigned long ncSuid[]);
-void SW_DOM_CreateProgress(SW_DOMAIN* SW_Domain);
+Bool SW_DOM_CheckProgress(int progFileID, int progVarID,
+                          unsigned long ncSuid[], LOG_INFO* LogInfo);
+void SW_DOM_CreateProgress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo);
 void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo);
-void SW_DOM_SetProgress(char* domainType, unsigned long ncSuid[]);
+void SW_DOM_SetProgress(Bool isFailure, const char* domType, int progFileID,
+                        int progVarID, unsigned long ncSuid[],
+                        LOG_INFO* LogInfo);
 void SW_DOM_SimSet(SW_DOMAIN* SW_Domain, unsigned long userSUID,
                    LOG_INFO* LogInfo);
 void SW_DOM_deepCopy(SW_DOMAIN* source, SW_DOMAIN* dest, LOG_INFO* LogInfo);

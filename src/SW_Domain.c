@@ -63,18 +63,26 @@ void SW_DOM_calc_nSUIDs(SW_DOMAIN* SW_Domain) {
 /**
  * @brief Check progress in domain
  *
- * @param[in] domainType Type of domain in which simulations are running
- *  (gridcell/sites)
- * @param[in] ncSuid Current simulation unit identifier for which progress
- * should be checked.
+ * @param[in] progFileID Identifier of the progress netCDF file
+ * @param[in] progVarID Identifier of the progress variable
+ * @param[in] ncSuid Current simulation unit identifier for which is used
+ *  to get data from netCDF
+ * @param[in,out] LogInfo Holds information dealing with logfile output
  *
  * @return
  * TRUE if simulation for \p ncSuid has not been completed yet;
  * FALSE if simulation for \p ncSuid has been completed (i.e., skip).
 */
-Bool SW_DOM_CheckProgress(char* domainType, unsigned long ncSuid[]) {
-    (void) domainType;
+Bool SW_DOM_CheckProgress(int progFileID, int progVarID,
+                          unsigned long ncSuid[], LOG_INFO* LogInfo) {
+    #if defined(SWNETCDF)
+    return SW_NC_check_progress(progFileID, progVarID, ncSuid, LogInfo);
+    #else
+    (void) progFileID;
+    (void) progVarID;
     (void) ncSuid;
+    (void) LogInfo;
+    #endif
 
     // return TRUE (due to lack of capability to track progress)
     return swTRUE;
@@ -85,9 +93,15 @@ Bool SW_DOM_CheckProgress(char* domainType, unsigned long ncSuid[]) {
  *
  * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
  *  temporal/spatial information for a set of simulation runs
+ * @param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_DOM_CreateProgress(SW_DOMAIN* SW_Domain) {
+void SW_DOM_CreateProgress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
+    #if defined(SWNETCDF)
+    SW_NC_create_progress(SW_Domain, LogInfo);
+    #else
     (void) SW_Domain;
+    (void) LogInfo;
+    #endif
 }
 
 /**
@@ -241,16 +255,31 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 }
 
 /**
- * @brief Mark a completed suid in progress netCDF
+ * @brief Mark completion status of simulation run
  *
- * @param[in] domainType Type of domain in which simulations are running
+ * @param[in] isFailure Did simulation run fail or succeed?
+ * @param[in] domType Type of domain in which simulations are running
  *  (gridcell/sites)
+ * @param[in] progFileID Identifier of the progress netCDF file
+ * @param[in] progVarID Identifier of the progress variable
  * @param[in] ncSuid Unique indentifier of the first suid to run
  *  in relation to netCDFs
+ * @param[in,out] LogInfo
 */
-void SW_DOM_SetProgress(char* domainType, unsigned long ncSuid[]) {
-    (void) domainType;
+void SW_DOM_SetProgress(Bool isFailure, const char* domType, int progFileID,
+                        int progVarID, unsigned long ncSuid[],
+                        LOG_INFO* LogInfo) {
+
+    #if defined(SWNETCDF)
+    SW_NC_set_progress(isFailure, domType, progFileID, progVarID, ncSuid, LogInfo);
+    #else
+    (void) isFailure;
+    (void) progFileID;
+    (void) progVarID;
     (void) ncSuid;
+    (void) LogInfo;
+    (void) domType;
+    #endif
 }
 
 /**
@@ -265,10 +294,18 @@ void SW_DOM_SetProgress(char* domainType, unsigned long ncSuid[]) {
 void SW_DOM_SimSet(SW_DOMAIN* SW_Domain, unsigned long userSUID,
                    LOG_INFO* LogInfo) {
 
+    Bool progFound;
     unsigned long
       *startSimSet = &SW_Domain->startSimSet,
       *endSimSet = &SW_Domain->endSimSet,
       startSuid[2]; // 2 -> [y, x] or [0, s]
+    int progFileID = 0; // Value does not matter if SWNETCDF is not defined
+    int progVarID = 0; // Value does not matter if SWNETCDF is not defined
+
+    #if defined(SWNETCDF)
+    progFileID = SW_Domain->netCDFInfo.ncFileIDs[vNCprog];
+    progVarID = SW_Domain->netCDFInfo.ncVarIDs[vNCprog];
+    #endif
 
     if(userSUID > 0) {
         if(userSUID > SW_Domain->nSUIDs) {
@@ -283,12 +320,21 @@ void SW_DOM_SimSet(SW_DOMAIN* SW_Domain, unsigned long userSUID,
         *startSimSet = userSUID - 1;
         *endSimSet = userSUID;
     } else {
+        #if defined(SOILWAT)
+        if(LogInfo->printProgressMsg) {
+            sw_message("is identifying the simulation set ...");
+        }
+        #endif
+
         *endSimSet = SW_Domain->nSUIDs;
         for(*startSimSet = 0; *startSimSet < *endSimSet; (*startSimSet)++) {
             SW_DOM_calc_ncSuid(SW_Domain, *startSimSet, startSuid);
 
-            if(SW_DOM_CheckProgress(SW_Domain->DomainType, startSuid)) {
-                return; // Found start suid
+            progFound = SW_DOM_CheckProgress(progFileID, progVarID,
+                                             startSuid, LogInfo);
+
+            if(progFound || LogInfo->stopRun) {
+                return; // Found start suid or error occurred
             }
         }
     }
@@ -298,6 +344,10 @@ void SW_DOM_deepCopy(SW_DOMAIN* source, SW_DOMAIN* dest, LOG_INFO* LogInfo) {
     memcpy(dest, source, sizeof (*dest));
 
     SW_F_deepCopy(&dest->PathInfo, &source->PathInfo, LogInfo);
+
+    #if defined(SWNETCDF)
+    SW_NC_deepCopy(&dest->netCDFInfo, &source->netCDFInfo, LogInfo);
+    #endif
 }
 
 void SW_DOM_init_ptrs(SW_DOMAIN* SW_Domain) {

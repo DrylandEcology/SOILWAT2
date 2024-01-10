@@ -80,10 +80,13 @@ int main(int argc, char **argv) {
         goto finishProgram;
     }
 
-	// Print version if not in quiet mode
-	if (!LogInfo.QuietMode) {
-		sw_print_version();
-	}
+    // SOILWAT2: do print progress to console unless user requests quiet
+    LogInfo.printProgressMsg = (Bool)(!LogInfo.QuietMode);
+
+    if (LogInfo.printProgressMsg) {
+      sw_message("started.");
+      sw_print_version();
+    }
 
     // setup and construct domain
     SW_CTL_setup_domain(userSUID, &SW_Domain, &LogInfo);
@@ -162,6 +165,9 @@ int main(int argc, char **argv) {
         SW_WT_ReportTime(SW_WallTime, &LogInfo);
         sw_wrapup_logs(&LogInfo);
         sw_fail_on_error(&LogInfo);
+        if (LogInfo.printProgressMsg) {
+          sw_message("ended.");
+        }
     }
 
 	return 0;

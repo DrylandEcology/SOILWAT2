@@ -210,10 +210,25 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
     char tag_suid[32]; /* 32 = 11 character for "(suid = ) " + 20 character for ULONG_MAX + '\0' */
     tag_suid[0] = '\0';
     WallTimeSpec tss, tsr;
-    Bool ok_tss = swFALSE, ok_tsr = swFALSE;
+    Bool ok_tss = swFALSE, ok_tsr = swFALSE, ok_suid;
+
+    int progFileID = 0; // Value does not matter if SWNETCDF is not defined
+    int progVarID = 0; // Value does not matter if SWNETCDF is not defined
+
+    #if defined(SWNETCDF)
+    progFileID = SW_Domain->netCDFInfo.ncFileIDs[vNCprog];
+    progVarID = SW_Domain->netCDFInfo.ncVarIDs[vNCprog];
+    #endif
 
     set_walltime(&tss, &ok_tss);
 
+    #if defined(SOILWAT)
+    if(main_LogInfo->printProgressMsg) {
+        sw_message("is running simulations across the domain ...");
+    }
+    #endif
+
+    /* Loop over suids in simulation set of domain */
     for(suid = SW_Domain->startSimSet; suid < SW_Domain->endSimSet; suid++)
     {
         /* Check wall time against limit */
@@ -229,41 +244,53 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
 
         LOG_INFO local_LogInfo;
         sw_init_logs(main_LogInfo->logfp, &local_LogInfo);
+        local_LogInfo.printProgressMsg = main_LogInfo->printProgressMsg;
 
+
+        /* Check if suid needs to be simulated */
         SW_DOM_calc_ncSuid(SW_Domain, suid, ncSuid);
-        if(SW_DOM_CheckProgress(SW_Domain->DomainType, ncSuid)) {
 
-            nSims++; // Counter of simulation runs
+        ok_suid = SW_DOM_CheckProgress(progFileID, progVarID, ncSuid,
+                                       &local_LogInfo);
 
+        if(ok_suid && !local_LogInfo.stopRun) {
+            /* Count simulation run */
+            nSims++;
+
+            /* Simulate suid */
             set_walltime(&tsr, &ok_tsr);
             SW_CTL_run_sw(sw_template, SW_Domain, ncSuid,
                           SW_OutputPtrs, NULL, &local_LogInfo);
             SW_WT_TimeRun(tsr, ok_tsr, SW_WallTime);
 
-            if(local_LogInfo.stopRun) {
-                main_LogInfo->numDomainErrors++; // Counter of simulation units with error
+            /* Report progress for suid */
+            SW_DOM_SetProgress(local_LogInfo.stopRun,
+                               SW_Domain->DomainType, progFileID,
+                               progVarID, ncSuid, &local_LogInfo);
+        }
 
-            } else {
-                // Set simulation run progress
-                SW_DOM_SetProgress(SW_Domain->DomainType, ncSuid);
-            }
+        /* Report errors and warnings for suid */
+        if(local_LogInfo.stopRun) {
+            main_LogInfo->numDomainErrors++; // Counter of simulation units with error
+        }
 
-            if (local_LogInfo.numWarnings > 0) {
-                main_LogInfo->numDomainWarnings++;  // Counter of simulation units with warnings
-            }
+        if (local_LogInfo.numWarnings > 0) {
+            main_LogInfo->numDomainWarnings++;  // Counter of simulation units with warnings
+        }
 
-            if (local_LogInfo.stopRun || local_LogInfo.numWarnings > 0) {
-                snprintf(tag_suid, 32, "(suid = %lu) ", suid + 1);
-                sw_write_warnings(tag_suid, &local_LogInfo);
-            }
+        if (local_LogInfo.stopRun || local_LogInfo.numWarnings > 0) {
+            snprintf(tag_suid, 32, "(suid = %lu) ", suid + 1);
+            sw_write_warnings(tag_suid, &local_LogInfo);
         }
     }
 
-    if (nSims == main_LogInfo->numDomainErrors) {
+    /* Produce global error if all suids failed */
+    if (nSims > 0 && nSims == main_LogInfo->numDomainErrors) {
         LogError(
             main_LogInfo,
             LOGERROR,
-            "All simulated units produced errors."
+            "All simulated units (n = %zu) produced errors.",
+            nSims
         );
     }
 
@@ -364,7 +391,7 @@ void SW_CTL_setup_domain(unsigned long userSUID,
     }
 
     // Open necessary netCDF input files and check for consistency with domain
-    SW_NC_open_files(&SW_Domain->netCDFInfo, LogInfo);
+    SW_NC_open_dom_prog_files(&SW_Domain->netCDFInfo, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -375,6 +402,11 @@ void SW_CTL_setup_domain(unsigned long userSUID,
         return; // Exit function prematurely due to error
     }
     #endif
+
+    SW_DOM_CreateProgress(SW_Domain, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
     SW_DOM_SimSet(SW_Domain, userSUID, LogInfo);
 }

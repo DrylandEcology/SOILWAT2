@@ -80,10 +80,11 @@ SHELL = /bin/sh
 
 #------ Identification
 SW2_VERSION := "$(shell git describe --abbrev=7 --dirty --always --tags)"
-HOSTNAME := "$(shell uname -sn)"
+HOSTNAME ?= "$(shell uname -sn)"
+USERNAME ?= "$(USER)"
 
 sw_info := -DSW2_VERSION=\"$(SW2_VERSION)\" \
-					-DUSERNAME=\"$(USER)\" \
+					-DUSERNAME=\"$(USERNAME)\" \
 					-DHOSTNAME=\"$(HOSTNAME)\"
 
 

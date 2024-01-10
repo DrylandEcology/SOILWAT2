@@ -9,13 +9,20 @@
 #include "include/SW_Defines.h"
 #include "include/SW_Files.h"
 #include "include/myMemory.h"
+#include "include/Times.h"
+#include "include/SW_Domain.h"
 
 /* =================================================== */
 /*                   Local Defines                     */
 /* --------------------------------------------------- */
 
-#define NUM_NC_IN_KEYS 1 // Number of possible keys within `files_nc.in`
+#define NUM_NC_IN_KEYS 2 // Number of possible keys within `files_nc.in`
 #define NUM_ATT_IN_KEYS 25 // Number of possible keys within `attributes_nc.in`
+
+#define PRGRSS_READY ((signed char)0) // SUID is ready for simulation
+#define PRGRSS_DONE ((signed char)1) // SUID has successfully been simulated
+#define PRGRSS_FAIL ((signed char)-1) // SUID failed to simulate
+
 
 /* =================================================== */
 /*             Local Function Definitions              */
@@ -245,7 +252,7 @@ static void nc_read_atts(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo,
  * @param[out] dimID Identifier of the dimension
  * @param[out] LogInfo Holds information on warnings and errors
 */
-static void get_dim_identifier(int ncFileID, char* dimName, int* dimID,
+static void get_dim_identifier(int ncFileID, const char* dimName, int* dimID,
                                LOG_INFO* LogInfo) {
 
     if(nc_inq_dimid(ncFileID, dimName, dimID) != NC_NOERR) {
@@ -376,6 +383,44 @@ static void get_single_double_val(int ncFileID, const char* varName,
 }
 
 /**
+ * @brief Get an unsigned integer value from a variable
+ *
+ * @param[in] ncFileID Identifier of the open netCDF file to access
+ * @param[in] varID Identifier of the variable
+ * @param[in] index Location of the value within the variable
+ * @param[out] value String buffer to hold the resulting value
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+static void get_single_uint_val(int ncFileID, int varID, size_t index[],
+                                unsigned int* value, LOG_INFO* LogInfo) {
+
+    if(nc_get_var1_uint(ncFileID, varID, index, value) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "An error occurred when trying to "
+                                    "get a value from a variable of type "
+                                    "unsigned integer.");
+    }
+}
+
+/**
+ * @brief Get a byte value from a variable
+ *
+ * @param[in] ncFileID Identifier of the open netCDF file to access
+ * @param[in] varID Identifier of the variable
+ * @param[in] varName Name of the variable to access
+ * @param[in] index Location of the value within the variable
+ * @param[out] value String buffer to hold the resulting value
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+static void get_single_byte_val(int ncFileID, int varID, size_t index[],
+                                signed char* value, LOG_INFO* LogInfo) {
+
+    if(nc_get_var1_schar(ncFileID, varID, index, value) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "An error occurred when trying to "
+                                    "get a value from a variable of type byte");
+    }
+}
+
+/**
  * @brief Get a dimension value from a given netCDF file
  *
  * @param[in] ncFileID Identifier of the open netCDF file to access
@@ -383,7 +428,7 @@ static void get_single_double_val(int ncFileID, const char* varName,
  * @param[out] dimVal String buffer to hold the resulting value
  * @param[out] LogInfo Holds information on warnings and errors
 */
-static void get_dim_val(int ncFileID, char* dimName, size_t* dimVal,
+static void get_dim_val(int ncFileID, const char* dimName, size_t* dimVal,
                         LOG_INFO* LogInfo) {
 
     int dimID = 0;
@@ -407,8 +452,10 @@ static void get_dim_val(int ncFileID, char* dimName, size_t* dimVal,
 */
 static Bool is_wgs84(char* crs_name) {
     const int numPosSyns = 5;
-    static char* wgs84_synonyms[] = {"WGS84", "WGS 84", "EPSG:4326",
-                                     "WGS_1984", "World Geodetic System 1984"};
+    static char* wgs84_synonyms[] = {
+        (char *)"WGS84", (char *)"WGS 84", (char *)"EPSG:4326",
+        (char *)"WGS_1984", (char *)"World Geodetic System 1984"
+    };
 
     for (int index = 0; index < numPosSyns; index++) {
         if (Str_CompareI(crs_name, wgs84_synonyms[index]) == 0) {
@@ -478,6 +525,27 @@ static void fill_netCDF_var_uint(int ncFileID, int varID, unsigned int values[],
 }
 
 /**
+ * @brief Fills a variable with value(s) of type byte
+ *
+ * @param[in] ncFileID Identifier of the open netCDF file to write the value(s) to
+ * @param[in] varID Identifier to the variable within the given netCDF file
+ * @param[in] values Individual or list of input variables
+ * @param[in] startIndices Specification of where the C-provided netCDF
+ *  should start writing values within the specified variable
+ * @param[in] count How many values to write into the given variable
+ * @param[out] LogInfo Holds information on warnings and errors
+*/
+static void fill_netCDF_var_byte(int ncFileID, int varID, const signed char values[],
+                                 size_t startIndices[], size_t count[],
+                                 LOG_INFO* LogInfo) {
+
+    if(nc_put_vara_schar(ncFileID, varID, startIndices, count, &values[0]) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "Could not fill variable (byte) "
+                                    "with the given value(s).");
+    }
+}
+
+/**
  * @brief Fills a variable with value(s) of type double
  *
  * @param[in] ncFileID Identifier of the open netCDF file to write the value(s) to
@@ -499,7 +567,26 @@ static void fill_netCDF_var_double(int ncFileID, int varID, double values[],
 }
 
 /**
- * @brief Write an attribute of type unsigned integer to a variable
+ * @brief Write a local attribute of type byte
+ *
+ * @param[in] attName Name of the attribute to create
+ * @param[in] attVal Attribute value(s) to write out
+ * @param[in] varID Identifier of the variable to add the attribute to
+ * @param[in] ncFileID Identifier of the open netCDF file to write the attribute to
+ * @param[in] numVals Number of values to write to the single attribute
+ * @param[out] LogInfo Holds information on warnings and errors
+*/
+static void write_byte_att(const char* attName, const signed char* attVal,
+                           int varID, int ncFileID, int numVals, LOG_INFO* LogInfo) {
+
+    if(nc_put_att_schar(ncFileID, varID, attName, NC_BYTE, numVals, attVal) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "Could not create new attribute %s",
+                                    attName);
+    }
+}
+
+/**
+ * @brief Write a global attribute (text) to a netCDF file
  *
  * @param[in] attName Name of the attribute to create
  * @param[in] attVal Attribute string to write out
@@ -540,7 +627,7 @@ static void write_str_att(const char* attName, const char* attStr,
  * @brief Write an attribute of type double to a variable
  *
  * @param[in] attName Name of the attribute to create
- * @param[in] attVal Attribute value to write out
+ * @param[in] attVal Attribute value(s) to write out
  * @param[in] varID Identifier of the variable to add the attribute to
  *  (Note: NC_GLOBAL is acceptable and is a global attribute of the netCDF file)
  * @param[in] ncFileID Identifier of the open netCDF file to write the attribute to
@@ -553,6 +640,54 @@ static void write_double_att(const char* attName, const double* attVal, int varI
     if(nc_put_att_double(ncFileID, varID, attName, NC_DOUBLE, numVals, attVal) != NC_NOERR) {
         LogError(LogInfo, LOGERROR, "Could not create new global attribute %s",
                                     attName);
+    }
+}
+
+/**
+ * @brief Fill the progress variable in the progress netCDF with values
+ *
+ * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+ *  temporal/spatial information for a set of simulation runs
+ * @param[in,out] LogInfo Holds information on warnings and errors
+*/
+static void fill_prog_netCDF_vals(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
+
+    int domVarID = SW_Domain->netCDFInfo.ncVarIDs[vNCdom];
+    int progVarID = SW_Domain->netCDFInfo.ncVarIDs[vNCprog];
+    unsigned int domStatus;
+    unsigned long suid, ncSuid[2], nSUIDs = SW_Domain->nSUIDs;
+    unsigned long nDimY = SW_Domain->nDimY, nDimX = SW_Domain->nDimX;
+    int progFileID = SW_Domain->netCDFInfo.ncFileIDs[vNCprog];
+    int domFileID = SW_Domain->netCDFInfo.ncFileIDs[vNCdom];
+    size_t start1D[] = {0}, start2D[] = {0, 0};
+    size_t count1D[] = {nSUIDs}, count2D[] = {nDimY, nDimX};
+    size_t* start = (strcmp(SW_Domain->DomainType, "s") == 0) ? start1D : start2D;
+    size_t* count = (strcmp(SW_Domain->DomainType, "s") == 0) ? count1D : count2D;
+
+    signed char* vals = (signed char*)Mem_Malloc(nSUIDs * sizeof(signed char),
+                                                 "fill_prog_netCDF_vals()",
+                                                 LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    for(suid = 0; suid < nSUIDs; suid++) {
+        SW_DOM_calc_ncSuid(SW_Domain, suid, ncSuid);
+
+        get_single_uint_val(domFileID, domVarID, ncSuid, &domStatus, LogInfo);
+        if(LogInfo->stopRun) {
+            goto freeMem; // Exit function prematurely due to error
+        }
+
+        vals[suid] = (domStatus == NC_FILL_UINT) ? NC_FILL_BYTE : PRGRSS_READY;
+    }
+
+    fill_netCDF_var_byte(progFileID, progVarID, vals, start, count, LogInfo);
+    nc_sync(progFileID);
+
+    // Free allocated memory
+    freeMem: {
+        free(vals);
     }
 }
 
@@ -1241,7 +1376,6 @@ static void fill_netCDF_with_global_atts(SW_NETCDF* SW_netCDF, int* ncFileID,
 
     char sourceStr[40]; // 40 - valid size of the SOILWAT2 global `SW2_VERSION` + "SOILWAT2"
     char creationDateStr[21]; // 21 - valid size to hold a string of format YYYY-MM-DDTHH:MM:SSZ
-    time_t t = time(NULL);
 
     int attNum;
     const int numGlobAtts = (strcmp(domType, "s") == 0) ? 14 : 13; // Do or do not include "featureType"
@@ -1268,7 +1402,55 @@ static void fill_netCDF_with_global_atts(SW_NETCDF* SW_netCDF, int* ncFileID,
 
     // Fill `sourceStr` and `creationDateStr`
     snprintf(sourceStr, 40, "SOILWAT2%s", SW2_VERSION);
-    strftime(creationDateStr, sizeof creationDateStr, "%FT%TZ", gmtime(&t));
+    timeStringISO8601(creationDateStr, sizeof creationDateStr);
+
+    // Write out the necessary global attributes that are listed above
+    for(attNum = 0; attNum < numGlobAtts; attNum++) {
+        write_str_att(attNames[attNum], attVals[attNum], NC_GLOBAL, *ncFileID, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+    }
+}
+
+/**
+ * @brief Overwrite specific global attributes into a new file
+ *
+ * @param[in] ncFileID Identifier of the open netCDF file to write all information to
+ * @param[in] domType Type of domain in which simulations are running
+ *  (gridcell/sites)
+ * @param[in] freqAtt Value of a global attribute "frequency" (may be "fx",
+ *  "day", "week", "month", or "year")
+ * @param[in] isInputFile Specifies if the file being written to is input
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+static void update_netCDF_global_atts(int* ncFileID, const char* domType,
+                    const char* freqAtt, Bool isInputFile, LOG_INFO* LogInfo) {
+
+    char sourceStr[40]; // 40 - valid size of the SOILWAT2 global `SW2_VERSION` + "SOILWAT2"
+    char creationDateStr[21]; // 21 - valid size to hold a string of format YYYY-MM-DDTHH:MM:SSZ
+
+    int attNum;
+    const int numGlobAtts = (strcmp(domType, "s") == 0) ? 5 : 4; // Do or do not include "featureType"
+    const char* attNames[] = {
+        "source", "creation_date", "product", "frequency", "featureType"
+    };
+
+    const char* productStr = (isInputFile) ? "model-input" : "model-output";
+    const char* featureTypeStr;
+    if(strcmp(domType, "s") == 0) {
+        featureTypeStr = (dimExists("time", *ncFileID)) ? "timeSeries" : "point";
+    } else {
+        featureTypeStr = "";
+    }
+
+    const char* attVals[] = {
+        sourceStr, creationDateStr, productStr, freqAtt, featureTypeStr
+    };
+
+    // Fill `sourceStr` and `creationDateStr`
+    snprintf(sourceStr, 40, "SOILWAT2%s", SW2_VERSION);
+    timeStringISO8601(creationDateStr, sizeof creationDateStr);
 
     // Write out the necessary global attributes that are listed above
     for(attNum = 0; attNum < numGlobAtts; attNum++) {
@@ -1331,6 +1513,74 @@ static void fill_netCDF_with_invariants(SW_NETCDF* SW_netCDF, char* domType,
                                  isInputFile, LogInfo);
 }
 
+/**
+ * @brief Create a new variable by calculating the dimensions
+ *  and writing attributes
+ *
+ * @param[in] ncFileID Identifier of the netCDF file
+ * @param[in] newVarType Type of the variable to create
+ * @param[in] timeSize Size of "time" dimension
+ * @param[in] vertSize Size of "vertical" dimension
+ * @param[in] varName Name of variable to write
+ * @param[in] attNames Attribute names that the new variable will contain
+ * @param[in] attVals Attribute values that the new variable will contain
+ * @param[in] numAtts Number of attributes being sent in
+ * @param[in,out] LogInfo  Holds information dealing with logfile output
+*/
+static void create_full_var(int* ncFileID, int newVarType,
+    unsigned long timeSize, unsigned long vertSize, const char* varName,
+    const char* attNames[], const char* attVals[], int numAtts,
+    LOG_INFO* LogInfo) {
+
+    int dimArrSize = 0, index, varID = 0;
+    int dimIDs[4]; // Maximum expected number of dimensions
+    Bool siteDimExists = dimExists("site", *ncFileID);
+    const char* latName = (dimExists("lat", *ncFileID)) ? "lat" : "y";
+    const char* lonName = (dimExists("lon", *ncFileID)) ? "lon" : "x";
+    int numConstDims = (siteDimExists) ? 1 : 2;
+    const char* thirdDim = (siteDimExists) ? "site" : latName;
+    const char* constDimNames[] = {thirdDim, lonName};
+    const char* timeVertNames[] = {"time", "vertical"};
+    unsigned long timeVertVals[] = {timeSize, vertSize};
+    int numTimeVertVals = 2;
+
+    for(index = 0; index < numTimeVertVals; index++) {
+        if(timeVertVals[index] > 0) {
+            create_netCDF_dim(timeVertNames[index], timeSize, ncFileID,
+                              &dimIDs[dimArrSize], LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+            dimArrSize++;
+        }
+    }
+
+    for(index = 0; index < numConstDims; index++) {
+        get_dim_identifier(*ncFileID, constDimNames[index],
+                        &dimIDs[dimArrSize], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        dimArrSize++;
+    }
+
+    for(index = 0; index < numAtts; index++) {
+        write_str_att(attNames[index], attVals[index],
+                    varID, *ncFileID, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+    }
+
+    create_netCDF_var(&varID, varName, dimIDs, ncFileID, newVarType,
+                      dimArrSize, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+}
+
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
@@ -1356,7 +1606,7 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
     const char *geoCRS = "crs_geogsc", *projCRS = "crs_projsc";
     Bool geoCRSExists = varExists(ncFileID, geoCRS);
     Bool projCRSExists = varExists(ncFileID, projCRS);
-    char* impliedDomType = (dimExists("site", ncFileID)) ? "s" : "xy";
+    const char* impliedDomType = (dimExists("site", ncFileID)) ? "s" : "xy";
     Bool dimMismatch = swFALSE;
     size_t latDimVal = 0, lonDimVal = 0, SDimVal = 0;
 
@@ -1402,10 +1652,9 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
     double projStdParallel[2]; // Compare to standard_parallel is projected CRS
     int attNum;
 
-    char* attFailMsg = "The attribute '%s' of the variable '%s' "
-                       "within the file %s does not match the one "
-                       "in the domain input file. Please make sure "
-                       "these match.";
+    const char* attFailMsg = "The attribute '%s' of the variable '%s' "
+            "within the file %s does not match the one in the domain input "
+            "file. Please make sure these match.";
 
     /*
        Make sure the domain types are consistent
@@ -1427,7 +1676,7 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
             return; // Exit function prematurely due to error
         }
 
-        dimMismatch = SDimVal != SW_Domain->nDimS;
+        dimMismatch = (Bool) (SDimVal != SW_Domain->nDimS);
     } else if(strcmp(impliedDomType, "xy") == 0) {
         if(geoIsPrimCRS && geoCRSExists) {
             get_dim_val(ncFileID, "lat", &latDimVal, LogInfo);
@@ -1453,8 +1702,8 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
             return; // Exit function prematurely due to error
         }
 
-        dimMismatch = latDimVal != SW_Domain->nDimY ||
-                      lonDimVal != SW_Domain->nDimX;
+        dimMismatch = (Bool) (latDimVal != SW_Domain->nDimY ||
+                              lonDimVal != SW_Domain->nDimX);
     }
 
     if(dimMismatch) {
@@ -1604,6 +1853,12 @@ void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
         return; // Exit prematurely due to error
     }
 
+    #if defined(SOILWAT)
+    if(LogInfo->printProgressMsg) {
+        sw_message("is creating a domain template ...");
+    }
+    #endif
+
     if(nc_create(DOMAIN_TEMP, NC_NETCDF4, domFileID) != NC_NOERR) {
         LogError(LogInfo, LOGERROR, "Could not create new domain template due "
                                     "to something internal.");
@@ -1667,24 +1922,206 @@ void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 }
 
 /**
- * @brief Copy domain netCDF to a new file and make it ready for a new variable
+ * @brief Copy domain netCDF to a new file and add a new variable
  *
+ * @param[in] domFile Name of the domain netCDF
+ * @param[in] domFileID Identifier of the domain netCDF file
  * @param[in] fileName Name of the netCDF file to create
+ * @param[in] newFileID Identifier of the netCDF file to create
+ * @param[in] newVarType Type of the variable to create
  * @param[in] timeSize Size of "time" dimension
  * @param[in] vertSize Size of "vertical" dimension
  * @param[in] varName Name of variable to write
- * @param[in] varAttributes Attributes that the new variable will contain
- * @param[in,out] LogInfo  Holds information on warnings and errors
+ * @param[in] attNames Attribute names that the new variable will contain
+ * @param[in] attVals Attribute values that the new variable will contain
+ * @param[in] numAtts Number of attributes being sent in
+ * @param[in] isInput Specifies if the created file will be input or output
+ * @param[in] freq Value of the global attribute "frequency"
+ * @param[in,out] LogInfo  Holds information dealing with logfile output
 */
-void SW_NC_create_template(const char* fileName, unsigned long timeSize,
-                           unsigned long vertSize, const char* varName,
-                           char* varAttributes[], LOG_INFO* LogInfo) {
-    (void) fileName;
-    (void) timeSize;
-    (void) vertSize;
-    (void) varName;
-    (void) varAttributes;
-    (void) LogInfo;
+void SW_NC_create_template(const char* domFile, int domFileID,
+    const char* fileName, int* newFileID, int newVarType,
+    unsigned long timeSize, unsigned long vertSize, const char* varName,
+    const char* attNames[], const char* attVals[], int numAtts, Bool isInput,
+    const char* freq, LOG_INFO* LogInfo) {
+
+    Bool siteDimExists = dimExists("site", domFileID);
+    const char* domType = (siteDimExists) ? "s" : "xy";
+
+
+    CopyFile(domFile, fileName, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    if(nc_open(fileName, NC_WRITE, newFileID) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "An error occurred when attempting "
+                                    "to access the new file %s.", fileName);
+        return; // Exit function prematurely due to error
+    }
+
+    if(!varExists(*newFileID, varName)) {
+        create_full_var(newFileID, newVarType, timeSize, vertSize, varName,
+                        attNames, attVals, numAtts, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+    }
+
+    update_netCDF_global_atts(newFileID, domType, freq, isInput, LogInfo);
+}
+
+/**
+ * @brief Create a progress netCDF file
+ *
+ * @param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+ *  temporal/spatial information for a set of simulation runs
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+void SW_NC_create_progress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
+
+    SW_NETCDF* SW_netCDF = &SW_Domain->netCDFInfo;
+    Bool primCRSIsGeo = SW_Domain->netCDFInfo.primary_crs_is_geographic;
+    Bool domTypeIsS = (Bool) (strcmp(SW_Domain->DomainType, "s") == 0);
+    const char* projGridMap = "crs_projsc: x y crs_geogsc: lat lon";
+    const char* geoGridMap = "crs_geogsc";
+    const char* sCoord = "lat lon site";
+    const char* xyCoord = "lat lon";
+    const char* coord = domTypeIsS ? sCoord : xyCoord;
+    const char* grid_map = primCRSIsGeo ? geoGridMap : projGridMap;
+    const char* attNames[] = {"long_name", "units", "grid_mapping",
+                              "coordinates"};
+    const char* attVals[] = {"simulation progress", "1", grid_map, coord};
+    const int numAtts = 4;
+    int numValsToWrite;
+    const signed char fillVal = NC_FILL_BYTE;
+    const signed char flagVals[] = {PRGRSS_FAIL, PRGRSS_READY, PRGRSS_DONE};
+    const char* flagMeanings = "simulation_error ready_to_simulate simulation_complete";
+    const char* progVarName = SW_netCDF->varNC[vNCprog];
+    const char* freq = "fx";
+
+    int domFileID = SW_netCDF->ncFileIDs[vNCdom];
+    int* progFileID = &SW_netCDF->ncFileIDs[vNCprog];
+    const char* domFileName = SW_netCDF->InFilesNC[vNCdom];
+    const char* progFileName = SW_netCDF->InFilesNC[vNCprog];
+    int* progVarID = &SW_netCDF->ncVarIDs[vNCprog];
+
+    Bool progFileIsDom = (Bool) (strcmp(progFileName, domFileName) == 0);
+    Bool progFileExists = FileExists(progFileName);
+    Bool progVarExists = varExists(*progFileID, progVarName);
+    Bool createOrModFile = (Bool) (!progFileExists || (progFileIsDom && !progVarExists));
+
+    /*
+      If the progress file is not to be created or modified, check it
+
+      See if the progress variable exists within it's file, also handling
+      the case where the progress variable is in the domain netCDF
+
+      In addition to making sure the file exists, make sure the progress
+      variable is present
+    */
+    if(!createOrModFile) {
+        SW_NC_check(SW_Domain, *progFileID, progFileName, LogInfo);
+    } else {
+
+        #if defined(SOILWAT)
+        if(LogInfo->printProgressMsg) {
+            sw_message("is creating a progress tracker ...");
+        }
+        #endif
+
+        if(progFileExists) {
+            nc_redef(*progFileID);
+
+            create_full_var(progFileID, NC_BYTE, 0, 0, progVarName,
+                            attNames, attVals, numAtts, LogInfo);
+        } else {
+            SW_NC_create_template(domFileName, domFileID, progFileName,
+                progFileID, NC_BYTE, 0, 0, progVarName, attNames, attVals,
+                numAtts, swFALSE, freq, LogInfo);
+        }
+
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        get_var_identifier(*progFileID, progVarName, progVarID, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        // If the progress existed before this function was called,
+        // do not set the new attributes
+        if(!progVarExists) {
+            // Add attribute "_FillValue" to the progress variable
+            numValsToWrite = 1;
+            write_byte_att("_FillValue", &fillVal, *progVarID, *progFileID, numValsToWrite, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+            // Add attributes "flag_values" and "flag_meanings"
+            numValsToWrite = 3;
+            write_byte_att("flag_values", flagVals, *progVarID, *progFileID, numValsToWrite, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+            write_str_att("flag_meanings", flagMeanings, *progVarID, *progFileID, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+        }
+
+
+        nc_enddef(*progFileID);
+
+        fill_prog_netCDF_vals(SW_Domain, LogInfo);
+    }
+}
+
+/**
+ * @brief Mark a site/gridcell as completed (success/fail) in the progress file
+ *
+ * @param[in] isFailure Did simulation run fail or succeed?
+ * @param[in] domType Type of domain in which simulations are running
+ *  (gridcell/sites)
+ * @param[in] progFileID Identifier of the progress netCDF file
+ * @param[in] progVarID Identifier of the progress variable within the progress netCDF
+ * @param[in] ncSUID Current simulation unit identifier for which is used
+ *  to get data from netCDF
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+void SW_NC_set_progress(Bool isFailure, const char* domType, int progFileID,
+                        int progVarID, unsigned long ncSUID[],
+                        LOG_INFO* LogInfo) {
+
+    const signed char mark = (isFailure) ? PRGRSS_FAIL : PRGRSS_DONE;
+    size_t count1D[] = {1}, count2D[] = {1, 1};
+    size_t *count = (strcmp(domType, "s") == 0) ? count1D : count2D;
+
+    fill_netCDF_var_byte(progFileID, progVarID, &mark, ncSUID, count, LogInfo);
+    nc_sync(progFileID);
+}
+
+/**
+ * @brief Check if a site/grid cell is marked to be run in the progress
+ *  netCDF
+ *
+ * @param[in] progFileID Identifier of the progress netCDF file
+ * @param[in] progVarID Identifier of the progress variable
+ * @param[in] ncSUID Current simulation unit identifier for which is used
+ *  to get data from netCDF
+ * @param[in,out] LogInfo Holds information dealing with logfile output
+*/
+Bool SW_NC_check_progress(int progFileID, int progVarID,
+                          unsigned long ncSUID[], LOG_INFO* LogInfo) {
+
+    signed char progVal = 0;
+
+    get_single_byte_val(progFileID, progVarID, ncSUID, &progVal, LogInfo);
+
+    return (Bool) (!LogInfo->stopRun && progVal == PRGRSS_READY);
 }
 
 /**
@@ -1702,7 +2139,8 @@ void SW_NC_read_inputs(SW_ALL* sw, SW_DOMAIN* SW_Domain, size_t ncSUID[],
                        LOG_INFO* LogInfo) {
 
     int file, varNum;
-    Bool domTypeS = Str_CompareI(SW_Domain->DomainType, "s") == 0;
+    Bool domTypeS = (Bool) (Str_CompareI(SW_Domain->DomainType, (char *)"s") == 0);
+    const int numInFilesNC = 1;
     const int numDomVals = 2;
     const int numVals[] = {numDomVals};
     const int ncFileIDs[] = {SW_Domain->netCDFInfo.ncFileIDs[vNCdom]};
@@ -1719,7 +2157,7 @@ void SW_NC_read_inputs(SW_ALL* sw, SW_DOMAIN* SW_Domain, size_t ncSUID[],
         For the domain type "xy", the index of the variable "y" is the first
         in "ncSUID" and the index of the variable "x" is the second in "ncSUID"
     */
-    for(file = 0; file < SW_NVARNC; file++) {
+    for(file = 0; file < numInFilesNC; file++) {
         for(varNum = 0; varNum < numVals[file]; varNum++) {
             ncIndex = (domTypeS) ? 0 : varNum % 2;
 
@@ -1761,10 +2199,10 @@ void SW_NC_check_input_files(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
  * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_read(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
-    static const char* possibleKeys[NUM_NC_IN_KEYS] = {"domain"};
+    static const char* possibleKeys[NUM_NC_IN_KEYS] = {"domain", "progress"};
     static const Bool requiredKeys[NUM_NC_IN_KEYS] =
-            {swTRUE};
-    Bool hasKeys[NUM_NC_IN_KEYS] = {swFALSE};
+            {swTRUE, swTRUE};
+    Bool hasKeys[NUM_NC_IN_KEYS] = {swFALSE, swFALSE};
 
     FILE *f;
     char inbuf[MAX_FILENAMESIZE], *MyFileName;
@@ -1786,6 +2224,10 @@ void SW_NC_read(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
             case vNCdom:
                 SW_netCDF->varNC[vNCdom] = Str_Dup(varName, LogInfo);
                 SW_netCDF->InFilesNC[vNCdom] = Str_Dup(path, LogInfo);
+                break;
+            case vNCprog:
+                SW_netCDF->varNC[vNCprog] = Str_Dup(varName, LogInfo);
+                SW_netCDF->InFilesNC[vNCprog] = Str_Dup(path, LogInfo);
                 break;
             default:
                 LogError(LogInfo, LOGWARN, "Ignoring unknown key in %s, %s",
@@ -1888,27 +2330,56 @@ void SW_NC_deconstruct(SW_NETCDF* SW_netCDF) {
 }
 
 /**
- * @brief Open all netCDF files that should be open throughout the program
+ * @brief Open netCDF file(s) that contain(s) domain and progress variables
+ *
+ * These files are kept open during simulations
+ *   * to read geographic coordinates from the domain
+ *   * to identify and update progress
  *
  * @param[in,out] SW_netCDF Struct of type SW_NETCDF holding constant
  *  netCDF file information
- * @param[out] LogInfo Struct of type SW_NETCDF holding constant
- *  netCDF file information
+ * @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_NC_open_files(SW_NETCDF* SW_netCDF, LOG_INFO* LogInfo) {
-    int fileNum;
+void SW_NC_open_dom_prog_files(SW_NETCDF* SW_netCDF, LOG_INFO* LogInfo) {
+    int fileNum, openType = NC_WRITE, *fileID;
+    char* fileName, *domFile = SW_netCDF->InFilesNC[vNCdom];
+    char* progFile = SW_netCDF->InFilesNC[vNCprog];
+    Bool progFileDomain = (Bool) (strcmp(domFile, progFile) == 0);
 
-    for(fileNum = 0; fileNum < SW_NVARNC; fileNum++) {
-        if(FileExists(SW_netCDF->InFilesNC[fileNum])) {
-            if(nc_open(SW_netCDF->InFilesNC[fileNum], NC_NOWRITE,
-                                    &SW_netCDF->ncFileIDs[fileNum]) != NC_NOERR) {
+    // Open the domain/progress netCDF
+    for(fileNum = vNCdom; fileNum <= vNCprog; fileNum++) {
+        fileName = SW_netCDF->InFilesNC[fileNum];
+        fileID = &SW_netCDF->ncFileIDs[fileNum];
 
+        if(FileExists(fileName)) {
+            if(nc_open(fileName, openType, fileID) != NC_NOERR) {
                 LogError(LogInfo, LOGERROR, "An error occurred when opening %s.",
-                                            SW_netCDF->InFilesNC[fileNum]);
-
+                                            fileName);
                 return; // Exit function prematurely due to error
             }
+
+            /*
+              Get the ID for the domain variable and the progress variable if
+              it is not in the domain netCDF or it exists in the domain netCDF
+            */
+            if(fileNum == vNCdom || !progFileDomain ||
+                varExists(*fileID, SW_netCDF->varNC[fileNum])) {
+
+                get_var_identifier(*fileID, SW_netCDF->varNC[fileNum],
+                                    &SW_netCDF->ncVarIDs[fileNum], LogInfo);
+                if(LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
+            }
         }
+    }
+
+    // If the progress variable is contained in the domain netCDF, then
+    // close the (redundant) progress file identifier
+    // and use instead the (equivalent) domain file identifier
+    if(progFileDomain) {
+        nc_close(SW_netCDF->ncFileIDs[vNCprog]);
+        SW_netCDF->ncFileIDs[vNCprog] = SW_netCDF->ncFileIDs[vNCdom];
     }
 }
 
@@ -1923,5 +2394,49 @@ void SW_NC_close_files(SW_NETCDF* SW_netCDF) {
 
     for(fileNum = 0; fileNum < SW_NVARNC; fileNum++) {
         nc_close(SW_netCDF->ncFileIDs[fileNum]);
+    }
+}
+
+/**
+ * @brief Deep copy a source instance of SW_NETCDF into a destination instance
+ *
+ * @param[in] source Source struct of type SW_NETCDF to copy
+ * @param[out] dest Destination struct of type SW_NETCDF to be copied into
+ * @param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NC_deepCopy(SW_NETCDF* source, SW_NETCDF* dest, LOG_INFO* LogInfo) {
+    int index, numIndivCopy = 5;
+
+    char* srcStrs[] = {
+        source->title, source->author, source->institution, source->comment,
+        source->coordinate_system
+    };
+
+    char** destStrs[] = {
+        &dest->title, &dest->author, &dest->institution, &dest->comment,
+        &dest->coordinate_system
+    };
+
+    memcpy(dest, source, sizeof(*dest));
+
+    SW_NC_init_ptrs(dest);
+
+    for(index = 0; index < numIndivCopy; index++) {
+        *destStrs[index] = Str_Dup(srcStrs[index], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to
+        }
+    }
+
+    for(index = 0; index < SW_NVARNC; index++) {
+        dest->varNC[index] = Str_Dup(source->varNC[index], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        dest->InFilesNC[index] = Str_Dup(source->InFilesNC[index], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
     }
 }

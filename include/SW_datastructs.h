@@ -26,7 +26,7 @@
 #endif
 
 #define SW_NFILES 26 // For `InFiles`
-#define SW_NVARNC 1 // For `InFilesNC`
+#define SW_NVARNC 2 // For `InFilesNC`
 
 
 /* =================================================== */
@@ -769,7 +769,8 @@ typedef struct {
 	Bool stopRun;           // Specifies if an error has occurred and
                             // the program needs to stop early (backtrack)
 
-  Bool QuietMode; /**< Don't print version, error message, or notify user about logfile (only used by SOILWAT2) */
+  Bool QuietMode, /**< Don't print version, error message, or notify user about logfile (only used by SOILWAT2) */
+    printProgressMsg; /**< Do/don't print progress messages to the console */
 } LOG_INFO;
 
 typedef struct {
@@ -1066,6 +1067,7 @@ typedef struct {
     char *InFilesNC[SW_NVARNC];
 
     int ncFileIDs[SW_NVARNC];
+    int ncVarIDs[SW_NVARNC];
 } SW_NETCDF;
 
 /* =================================================== */

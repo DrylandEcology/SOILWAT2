@@ -144,7 +144,7 @@ void setup_testGlobalSoilwatTemplate() {
     // Initialize SOILWAT2 variables and read values from example input file
     sw_init_logs(NULL, &LogInfo);
 
-    SW_F_init_ptrs(template_SW_Domain.PathInfo.InFiles);
+    SW_DOM_init_ptrs(&template_SW_Domain);
     SW_CTL_init_ptrs(&template_SW_All);
 
     template_SW_Domain.PathInfo.InFiles[eFirst] = Str_Dup(DFLT_FIRSTFILE, &LogInfo);
@@ -184,6 +184,6 @@ void setup_testGlobalSoilwatTemplate() {
 /* Free allocated memory of global test variables
 */
 void teardown_testGlobalSoilwatTemplate() {
-    SW_F_deconstruct(template_SW_Domain.PathInfo.InFiles);
+    SW_DOM_deconstruct(&template_SW_Domain);
     SW_CTL_clear_model(swTRUE, &template_SW_All);
 }

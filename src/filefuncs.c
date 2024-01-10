@@ -15,6 +15,7 @@
 
 #include "include/filefuncs.h"
 #include "include/myMemory.h"
+#include "include/Times.h"
 
 
 /* 01/05/2011	(drs) removed unused variable *p from MkDir()
@@ -205,6 +206,23 @@ void LogError(LOG_INFO* LogInfo, const int mode, const char *fmt, ...) {
 
 	va_end(args);
 }
+
+
+
+
+/**
+  @brief Print a SOILWAT2 status message
+
+  @param[in] msg Message string.
+*/
+void sw_message(const char *msg) {
+    char timeString[21];
+    timeStringISO8601(timeString, sizeof timeString);
+
+    swprintf("SOILWAT2 (%s) %s\n", timeString, msg);
+}
+
+
 
 
 /**************************************************************/
