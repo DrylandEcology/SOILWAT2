@@ -185,7 +185,7 @@ void SW_OUT_set_SXWrequests(OutPeriod timeSteps_SXW[][SW_OUTNPERIODS],
  */
 void get_none(OutPeriod pd, SW_ALL* sw); /* default until defined */
 
-#ifdef SW_OUTTEXT
+#if defined(SW_OUTTEXT) && !defined(SWNETCDF)
 void get_temp_text(OutPeriod pd, SW_ALL* sw);
 void get_precip_text(OutPeriod pd, SW_ALL* sw);
 void get_vwcBulk_text(OutPeriod pd, SW_ALL* sw);
@@ -216,7 +216,7 @@ void get_co2effects_text(OutPeriod pd, SW_ALL* sw);
 void get_biomass_text(OutPeriod pd, SW_ALL* sw);
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 void get_temp_mem(OutPeriod pd, SW_ALL* sw);
 void get_precip_mem(OutPeriod pd, SW_ALL* sw);
 void get_vwcBulk_mem(OutPeriod pd, SW_ALL* sw);

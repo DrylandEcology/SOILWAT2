@@ -64,9 +64,12 @@ void get_outvalleader(SW_MODEL* SW_Model, OutPeriod pd,
 	size_t irow_OUT[], size_t nrow_OUT[], TimeInt tOffset, RealD *p);
 #endif
 
-#ifdef STEPWAT
+#if defined(STEPWAT) || defined(SWNETCDF)
+#if defined(STEPWAT)
 void do_running_agg(RealD *p, RealD *psd, size_t k, IntU n, RealD x);
-void setGlobalSTEPWAT2_OutputVariables(SW_OUTPUT* SW_Output, SW_GEN_OUT *GenOutput,
+#endif
+
+void SW_OUT_construct_outarray(SW_OUTPUT* SW_Output, SW_GEN_OUT *GenOutput,
 									   LOG_INFO *LogInfo);
 #endif
 

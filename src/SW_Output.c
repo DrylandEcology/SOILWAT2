@@ -48,14 +48,13 @@
 #include "include/SW_Output.h"
 
 // Array-based output declarations:
-#ifdef SW_OUTARRAY
+#if defined(SW_OUTARRAY)
   #include "include/SW_Output_outarray.h"
 #endif
 
 // Text-based output declarations:
-#ifdef SW_OUTTEXT
-
-#include "include/SW_Output_outtext.h"
+#if defined(SW_OUTTEXT)
+  #include "include/SW_Output_outtext.h"
 #endif
 
 /* Note: `get_XXX` functions are declared in `SW_Output.h`
@@ -1131,7 +1130,7 @@ void SW_OUT_init_ptrs(SW_ALL* sw) {
 		#endif
 	}
 
-	#ifdef SW_OUTARRAY
+	#if defined(SW_OUTARRAY)
 	ForEachOutKey(key) {
 		for (column = 0; column < SW_OUTNPERIODS; column++) {
 			sw->GenOutput.p_OUT[key][column] = NULL;
@@ -1164,7 +1163,7 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 	// `print_IterationSummary` is set by STEPWAT2's `main` function
 	#endif
 
-	#ifdef SW_OUTTEXT
+	#if defined(SW_OUTTEXT)
 	ForEachOutPeriod(p)
 	{
 		make_soil[p] = swFALSE;
@@ -1182,7 +1181,7 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 		}
 	}
 
-	#ifdef SW_OUTARRAY
+	#if defined(SW_OUTARRAY)
 	ForEachOutPeriod(p)
 	{
 		GenOutput->nrow_OUT[p] = 0;
@@ -1227,11 +1226,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 		switch (k)
 		{
 		case eSW_Temp:
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			SW_OutputPtrs[k].pfunc_text =
 						(void (*)(OutPeriod, SW_ALL*)) get_temp_text;
 			#endif
-			#if defined(RSOILWAT)
+			#if defined(RSOILWAT) || defined(SWNETCDF)
 			SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_temp_mem;
 			#elif defined(STEPWAT)
 			SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_temp_agg;
@@ -1240,11 +1239,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 			break;
 
 		case eSW_Precip:
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			SW_OutputPtrs[k].pfunc_text =
 						(void (*)(OutPeriod, SW_ALL*)) get_precip_text;
 			#endif
-			#if defined(RSOILWAT)
+			#if defined(RSOILWAT) || defined(SWNETCDF)
 			SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_precip_mem;
 			#elif defined(STEPWAT)
 			SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_precip_agg;
@@ -1253,11 +1252,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 			break;
 
 		case eSW_VWCBulk:
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			SW_OutputPtrs[k].pfunc_text =
 						(void (*)(OutPeriod, SW_ALL*)) get_vwcBulk_text;
 			#endif
-			#if defined(RSOILWAT)
+			#if defined(RSOILWAT) || defined(SWNETCDF)
 			SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_vwcBulk_mem;
 			#elif defined(STEPWAT)
 			SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_vwcBulk_agg;
@@ -1266,11 +1265,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 			break;
 
 		case eSW_VWCMatric:
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			SW_OutputPtrs[k].pfunc_text =
 						(void (*)(OutPeriod, SW_ALL*)) get_vwcMatric_text;
 			#endif
-			#if defined(RSOILWAT)
+			#if defined(RSOILWAT) || defined(SWNETCDF)
 			SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_vwcMatric_mem;
 			#elif defined(STEPWAT)
 			SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_vwcMatric_agg;
@@ -1279,11 +1278,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 			break;
 
 		case eSW_SWCBulk:
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			SW_OutputPtrs[k].pfunc_text =
 						(void (*)(OutPeriod, SW_ALL*)) get_swcBulk_text;
 			#endif
-			#if defined(RSOILWAT)
+			#if defined(RSOILWAT) || defined(SWNETCDF)
 			SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_swcBulk_mem;
 			#elif defined(STEPWAT)
 			SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_swcBulk_agg;
@@ -1292,11 +1291,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 			break;
 
 		case eSW_SWPMatric:
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			SW_OutputPtrs[k].pfunc_text =
 						(void (*)(OutPeriod, SW_ALL*)) get_swpMatric_text;
 			#endif
-			#if defined(RSOILWAT)
+			#if defined(RSOILWAT) || defined(SWNETCDF)
 			SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_swpMatric_mem;
 			#elif defined(STEPWAT)
 			SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_swpMatric_agg;
@@ -1305,11 +1304,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 			break;
 
 		case eSW_SWABulk:
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			SW_OutputPtrs[k].pfunc_text =
 						(void (*)(OutPeriod, SW_ALL*)) get_swaBulk_text;
 			#endif
-			#if defined(RSOILWAT)
+			#if defined(RSOILWAT) || defined(SWNETCDF)
 			SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_swaBulk_mem;
 			#elif defined(STEPWAT)
 			SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_swaBulk_agg;
@@ -1318,11 +1317,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 			break;
 
 		case eSW_SWAMatric:
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			SW_OutputPtrs[k].pfunc_text =
 						(void (*)(OutPeriod, SW_ALL*)) get_swaMatric_text;
 			#endif
-			#if defined(RSOILWAT)
+			#if defined(RSOILWAT) || defined(SWNETCDF)
 			SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_swaMatric_mem;
 			#elif defined(STEPWAT)
 			SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_swaMatric_agg;
@@ -1331,11 +1330,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 			break;
 
 		case eSW_SWA:
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			SW_OutputPtrs[k].pfunc_text =
 						(void (*)(OutPeriod, SW_ALL*)) get_swa_text;
 			#endif
-			#if defined(RSOILWAT)
+			#if defined(RSOILWAT) || defined(SWNETCDF)
 			SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_swa_mem;
 			#elif defined(STEPWAT)
 			SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_swa_agg;
@@ -1344,11 +1343,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 			break;
 
 		case eSW_SurfaceWater:
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			SW_OutputPtrs[k].pfunc_text =
 						(void (*)(OutPeriod, SW_ALL*)) get_surfaceWater_text;
 			#endif
-			#if defined(RSOILWAT)
+			#if defined(RSOILWAT) || defined(SWNETCDF)
 			SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_surfaceWater_mem;
 			#elif defined(STEPWAT)
 			SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_surfaceWater_agg;
@@ -1357,11 +1356,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 			break;
 
 		case eSW_Runoff:
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			SW_OutputPtrs[k].pfunc_text =
 						(void (*)(OutPeriod, SW_ALL*)) get_runoffrunon_text;
 			#endif
-			#if defined(RSOILWAT)
+			#if defined(RSOILWAT) || defined(SWNETCDF)
 			SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_runoffrunon_mem;
 			#elif defined(STEPWAT)
 			SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_runoffrunon_agg;
@@ -1370,11 +1369,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 			break;
 
 		case eSW_Transp:
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			SW_OutputPtrs[k].pfunc_text =
 						(void (*)(OutPeriod, SW_ALL*)) get_transp_text;
 			#endif
-			#if defined(RSOILWAT)
+			#if defined(RSOILWAT) || defined(SWNETCDF)
 			SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_transp_mem;
 			#elif defined(STEPWAT)
 			SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_transp_agg;
@@ -1383,11 +1382,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 			break;
 
 		case eSW_EvapSoil:
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			SW_OutputPtrs[k].pfunc_text =
 						(void (*)(OutPeriod, SW_ALL*)) get_evapSoil_text;
 			#endif
-			#if defined(RSOILWAT)
+			#if defined(RSOILWAT) || defined(SWNETCDF)
 			SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_evapSoil_mem;
 			#elif defined(STEPWAT)
 			SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_evapSoil_agg;
@@ -1396,11 +1395,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 			break;
 
 		case eSW_EvapSurface:
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			SW_OutputPtrs[k].pfunc_text =
 						(void (*)(OutPeriod, SW_ALL*)) get_evapSurface_text;
 			#endif
-			#if defined(RSOILWAT)
+			#if defined(RSOILWAT) || defined(SWNETCDF)
 			SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_evapSurface_mem;
 			#elif defined(STEPWAT)
 			SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_evapSurface_agg;
@@ -1409,11 +1408,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 			break;
 
 		case eSW_Interception:
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			SW_OutputPtrs[k].pfunc_text =
 						(void (*)(OutPeriod, SW_ALL*)) get_interception_text;
 			#endif
-			#if defined(RSOILWAT)
+			#if defined(RSOILWAT) || defined(SWNETCDF)
 			SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_interception_mem;
 			#elif defined(STEPWAT)
 			SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_interception_agg;
@@ -1422,11 +1421,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 			break;
 
 		case eSW_SoilInf:
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			SW_OutputPtrs[k].pfunc_text =
 						(void (*)(OutPeriod, SW_ALL*)) get_soilinf_text;
 			#endif
-			#if defined(RSOILWAT)
+			#if defined(RSOILWAT) || defined(SWNETCDF)
 			SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_soilinf_mem;
 			#elif defined(STEPWAT)
 			SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_soilinf_agg;
@@ -1435,11 +1434,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 			break;
 
 		case eSW_LyrDrain:
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			SW_OutputPtrs[k].pfunc_text =
 						(void (*)(OutPeriod, SW_ALL*)) get_lyrdrain_text;
 			#endif
-			#if defined(RSOILWAT)
+			#if defined(RSOILWAT) || defined(SWNETCDF)
 			SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_lyrdrain_mem;
 			#elif defined(STEPWAT)
 			SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_lyrdrain_agg;
@@ -1448,11 +1447,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 			break;
 
 		case eSW_HydRed:
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			SW_OutputPtrs[k].pfunc_text =
 						(void (*)(OutPeriod, SW_ALL*)) get_hydred_text;
 			#endif
-			#if defined(RSOILWAT)
+			#if defined(RSOILWAT) || defined(SWNETCDF)
 			SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_hydred_mem;
 			#elif defined(STEPWAT)
 			SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_hydred_agg;
@@ -1461,11 +1460,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 			break;
 
 		case eSW_AET:
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			SW_OutputPtrs[k].pfunc_text =
 						(void (*)(OutPeriod, SW_ALL*)) get_aet_text;
 			#endif
-			#if defined(RSOILWAT)
+			#if defined(RSOILWAT) || defined(SWNETCDF)
 			SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_aet_mem;
 			#elif defined(STEPWAT)
 			SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_aet_agg;
@@ -1474,11 +1473,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 			break;
 
 		case eSW_PET:
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			SW_OutputPtrs[k].pfunc_text =
 						(void (*)(OutPeriod, SW_ALL*)) get_pet_text;
 			#endif
-			#if defined(RSOILWAT)
+			#if defined(RSOILWAT) || defined(SWNETCDF)
 			SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_pet_mem;
 			#elif defined(STEPWAT)
 			SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_pet_agg;
@@ -1487,11 +1486,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 			break;
 
 		case eSW_WetDays:
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			SW_OutputPtrs[k].pfunc_text =
 						(void (*)(OutPeriod, SW_ALL*)) get_wetdays_text;
 			#endif
-			#if defined(RSOILWAT)
+			#if defined(RSOILWAT) || defined(SWNETCDF)
 			SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_wetdays_mem;
 			#elif defined(STEPWAT)
 			SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_wetdays_agg;
@@ -1500,11 +1499,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 			break;
 
 		case eSW_SnowPack:
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			SW_OutputPtrs[k].pfunc_text =
 						(void (*)(OutPeriod, SW_ALL*)) get_snowpack_text;
 			#endif
-			#if defined(RSOILWAT)
+			#if defined(RSOILWAT) || defined(SWNETCDF)
 			SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_snowpack_mem;
 			#elif defined(STEPWAT)
 			SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_snowpack_agg;
@@ -1513,11 +1512,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 			break;
 
 		case eSW_DeepSWC:
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			SW_OutputPtrs[k].pfunc_text =
 						(void (*)(OutPeriod, SW_ALL*)) get_deepswc_text;
 			#endif
-			#if defined(RSOILWAT)
+			#if defined(RSOILWAT) || defined(SWNETCDF)
 			SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_deepswc_mem;
 			#elif defined(STEPWAT)
 			SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_deepswc_agg;
@@ -1526,11 +1525,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 			break;
 
 		case eSW_SoilTemp:
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			SW_OutputPtrs[k].pfunc_text =
 							(void (*)(OutPeriod, SW_ALL*)) get_soiltemp_text;
 			#endif
-			#if defined(RSOILWAT)
+			#if defined(RSOILWAT) || defined(SWNETCDF)
 			SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_soiltemp_mem;
 			#elif defined(STEPWAT)
 			SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_soiltemp_agg;
@@ -1539,11 +1538,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 			break;
 
         case eSW_Frozen:
-            #ifdef SW_OUTTEXT
+            #if defined(SW_OUTTEXT)
             SW_OutputPtrs[k].pfunc_text =
 								(void (*)(OutPeriod, SW_ALL*)) get_frozen_text;
             #endif
-            #if defined(RSOILWAT)
+            #if defined(RSOILWAT) || defined(SWNETCDF)
             SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_frozen_mem;
             #elif defined(STEPWAT)
             SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_frozen_agg;
@@ -1552,11 +1551,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
             break;
 
 		case eSW_Estab:
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			SW_OutputPtrs[k].pfunc_text =
 							(void (*)(OutPeriod, SW_ALL*)) get_estab_text;
 			#endif
-			#if defined(RSOILWAT)
+			#if defined(RSOILWAT) || defined(SWNETCDF)
 			SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_estab_mem;
 			#elif defined(STEPWAT)
 			SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_estab_agg;
@@ -1565,11 +1564,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 			break;
 
 		case eSW_CO2Effects:
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			SW_OutputPtrs[k].pfunc_text =
 							(void (*)(OutPeriod, SW_ALL*)) get_co2effects_text;
 			#endif
-			#if defined(RSOILWAT)
+			#if defined(RSOILWAT) || defined(SWNETCDF)
 			SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_co2effects_mem;
 			#elif defined(STEPWAT)
 			SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_co2effects_agg;
@@ -1578,11 +1577,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 			break;
 
 		case eSW_Biomass:
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			SW_OutputPtrs[k].pfunc_text =
 							(void (*)(OutPeriod, SW_ALL*)) get_biomass_text;
 			#endif
-			#if defined(RSOILWAT)
+			#if defined(RSOILWAT) || defined(SWNETCDF)
 			SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_biomass_mem;
 			#elif defined(STEPWAT)
 			SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_biomass_agg;
@@ -1591,11 +1590,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 			break;
 
 		default:
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			SW_OutputPtrs[k].pfunc_text =
 							(void (*)(OutPeriod, SW_ALL*)) get_none;
 			#endif
-			#if defined(RSOILWAT)
+			#if defined(RSOILWAT) || defined(SWNETCDF)
 			SW_OutputPtrs[k].pfunc_mem = (void (*)(OutPeriod, SW_ALL*)) get_none;
 			#elif defined(STEPWAT)
 			SW_OutputPtrs[k].pfunc_agg = (void (*)(OutPeriod, SW_ALL*)) get_none;
@@ -2409,7 +2408,7 @@ void SW_OUT_read(SW_ALL* sw, char *InFiles[],
 	// Determine which output periods are turned on for at least one output key
 	find_OutPeriods_inUse(&sw->GenOutput, sw->Output);
 
-	#ifdef SW_OUTTEXT
+	#if defined(SW_OUTTEXT)
 	// Determine for which output periods text output per soil layer or 'regular'
 	// is requested:
 	find_TXToutputSoilReg_inUse(sw->FileStatus.make_soil,
@@ -2418,7 +2417,7 @@ void SW_OUT_read(SW_ALL* sw, char *InFiles[],
 								sw->GenOutput.used_OUTNPERIODS);
 	#endif
 
-	#ifdef STEPWAT
+	#if defined(STEPWAT) || defined(SWNETCDF)
 	// Determine number of used years/months/weeks/days in simulation period
 	SW_OUT_set_nrow(&sw->Model, sw->GenOutput.use_OutPeriod,
 					sw->GenOutput.nrow_OUT);
@@ -2601,7 +2600,7 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
   int debug = 0;
   #endif
 
-	#ifdef SW_OUTTEXT
+	#if defined(SW_OUTTEXT)
 	char str_time[10]; // year and day/week/month header for each output row
 
 	// We don't really need all of these buffers to init every day
@@ -2662,7 +2661,7 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 				continue; // don't call any `get_XXX` function
 			}
 
-			#ifdef SOILWAT
+			#if defined(SOILWAT) && !defined(SWNETCDF)
 			#ifdef SWDEBUG
 			if (debug) swprintf(" call pfunc_text(%d=%s))",
 								outPeriod, pd2str[outPeriod]);
@@ -2671,7 +2670,7 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 			((void (*)(OutPeriod, SW_ALL*)) SW_OutputPtrs[k].pfunc_text)
 															(outPeriod, sw);
 
-			#elif RSOILWAT
+			#elif defined(RSOILWAT) || defined(SWNETCDF)
 			#ifdef SWDEBUG
 			if (debug) swprintf(" call pfunc_mem(%d=%s))",
 				outPeriod, pd2str[outPeriod]);
@@ -2721,7 +2720,7 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 			if (debug) swprintf(" ... ok");
 			#endif
 
-			#ifdef SW_OUTTEXT
+			#if defined(SW_OUTTEXT)
 			/* concatenate formatted output for one row of `csv`- files */
 			if (sw->GenOutput.print_SW_Output)
 			{
@@ -2750,7 +2749,7 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 		} // end of loop across `used_OUTNPERIODS`
 	} // end of loop across output keys
 
-	#ifdef SW_OUTTEXT
+	#if defined(SW_OUTTEXT)
 	// write formatted output to csv-files
 	ForEachOutPeriod(p)
 	{
@@ -2798,7 +2797,7 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 	(void) tOffset;
 	#endif
 
-	#ifdef SW_OUTARRAY
+	#if defined(SW_OUTARRAY)
 	// increment row counts
 	ForEachOutPeriod(p)
 	{

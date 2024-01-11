@@ -33,6 +33,10 @@
 #include "include/SW_Output.h"
 #include "include/SW_Output_outtext.h"
 
+#if defined(SWNETCDF)
+#include "include/SW_Output_outarray.h"
+#endif
+
 
 /** \brief Formatted output string for aggregated output
 
@@ -117,7 +121,7 @@ static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil,
 }
 
 
-#if defined(SOILWAT)
+#if defined(SOILWAT) && !defined(SWNETCDF)
 /**
   \brief Create `csv` output files for specified time step
 
@@ -341,6 +345,14 @@ void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
   }
   #endif
 
+    #if defined(SWNETCDF)
+    SW_OUT_construct_outarray(SW_Output, GenOutput, LogInfo);
+
+    (void) pd;
+    (void) SW_FileStatus;
+    (void) n_layers;
+    (void) InFiles;
+    #else
 	ForEachOutPeriod(pd) {
 		if (GenOutput->use_OutPeriod[pd]) {
 			_create_csv_files(SW_FileStatus, pd, InFiles, LogInfo);
@@ -357,6 +369,7 @@ void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
             }
 		}
 	}
+    #endif
 }
 
 

@@ -279,6 +279,7 @@ sources_core := \
 
 ifdef SWNETCDF
 sources_core += $(dir_src)/SW_netCDF.c
+sources_core += $(dir_src)/SW_Output_outarray.c
 endif
 
 sources_lib = \

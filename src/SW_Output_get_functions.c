@@ -46,13 +46,13 @@
 #endif
 
 // Array-based output declarations:
-#ifdef SW_OUTARRAY
+#if defined(SW_OUTARRAY)
 // externs `ncol_TimeOUT`
 #include "include/SW_Output_outarray.h"
 #endif
 
 // Text-based output declarations:
-#ifdef SW_OUTTEXT
+#if defined(SW_OUTTEXT)
 
 #include "include/SW_Output_outtext.h"
 #endif
@@ -167,14 +167,17 @@ void get_co2effects_text(OutPeriod pd, SW_ALL* sw) {
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 void get_co2effects_mem(OutPeriod pd, SW_ALL* sw) {
 	int k;
 	size_t iOUTIndex;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_CO2Effects][pd];
+
+    #if defined(RSOILWAT)
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    #endif
 
 	// No averaging or summing required:
 	ForEachVegType(k)
@@ -260,15 +263,18 @@ void get_biomass_text(OutPeriod pd, SW_ALL* sw) {
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 void get_biomass_mem(OutPeriod pd, SW_ALL* sw) {
 	int k, i;
 	SW_VEGPROD_OUTPUTS *vo = sw->VegProd.p_oagg[pd];
 	size_t iOUTIndex;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_Biomass][pd];
+
+    #if defined(RSOILWAT)
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    #endif
 
 	// fCover for NVEGTYPES plus bare-ground
 	iOUTIndex = iOUT(0, pd, sw->GenOutput);
@@ -400,7 +406,7 @@ void get_estab_text(OutPeriod pd, SW_ALL* sw)
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 /**
 @brief The establishment check produces, for each species in the given set,
 			a day of year >= 0 that the species established itself in the current year.
@@ -419,8 +425,11 @@ void get_estab_mem(OutPeriod pd, SW_ALL* sw)
 	size_t iOUTIndex;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_Estab][pd];
+
+    #if defined(RSOILWAT)
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    #endif
 
 	for (i = 0; i < sw->VegEstab.count; i++)
 	{
@@ -491,7 +500,7 @@ void get_temp_text(OutPeriod pd, SW_ALL* sw)
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets temp text from SW_WEATHER_OUTPUTS when dealing with RSOILWAT.
@@ -506,9 +515,11 @@ void get_temp_mem(OutPeriod pd, SW_ALL* sw)
 	size_t iOUTIndex;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_Temp][pd];
+
+    #if defined(RSOILWAT)
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
-
+    #endif
 
 	iOUTIndex = iOUT(0, pd, sw->GenOutput);
 	p[iOUTIndex] = vo->temp_max;
@@ -627,7 +638,7 @@ void get_precip_text(OutPeriod pd, SW_ALL* sw)
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets precipitation text from SW_WEATHER_OUTPUTS when dealing with RSOILWAT.
@@ -642,8 +653,11 @@ void get_precip_mem(OutPeriod pd, SW_ALL* sw)
 	size_t iOUTIndex;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_Precip][pd];
+
+    #if defined(RSOILWAT)
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    #endif
 
 	iOUTIndex = iOUT(0, pd, sw->GenOutput);
 	p[iOUTIndex] = vo->ppt;
@@ -757,7 +771,7 @@ void get_vwcBulk_text(OutPeriod pd, SW_ALL* sw)
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets vwcBulk text from SW_SOILWAT_OUTPUTS when dealing with RSOILWAT.
@@ -773,8 +787,11 @@ void get_vwcBulk_mem(OutPeriod pd, SW_ALL* sw)
 	size_t iOUTIndex;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_VWCBulk][pd];
+
+    #if defined(RSOILWAT)
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    #endif
 
 	ForEachSoilLayer(i, sw->Site.n_layers) {
 		/* vwcBulk at this point is identical to swcBulk */
@@ -848,7 +865,7 @@ void get_vwcMatric_text(OutPeriod pd, SW_ALL* sw)
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets vwcMatric text from SW_SOILWAT_OUTPUTS when dealing with RSOILWAT.
@@ -865,8 +882,11 @@ void get_vwcMatric_mem(OutPeriod pd, SW_ALL* sw)
 	size_t iOUTIndex;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_VWCMatric][pd];
+
+    #if defined(RSOILWAT)
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    #endif
 
 	ForEachSoilLayer(i, sw->Site.n_layers) {
 		/* vwcMatric at this point is identical to swcBulk */
@@ -945,7 +965,7 @@ void get_swa_text(OutPeriod pd, SW_ALL* sw)
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets SWA text from SW_SOILWAT_OUTPUTS when dealing with RSOILWAT.
@@ -962,8 +982,11 @@ void get_swa_mem(OutPeriod pd, SW_ALL* sw)
 	size_t iOUTIndex;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_SWA][pd];
+
+    #if defined(RSOILWAT)
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    #endif
 
 	ForEachVegType(k)
 	{
@@ -1039,7 +1062,7 @@ void get_swcBulk_text(OutPeriod pd, SW_ALL* sw)
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets swcBulk text from SW_SOILWAT_OUTPUTS when dealing with RSOILWAT.
@@ -1055,8 +1078,11 @@ void get_swcBulk_mem(OutPeriod pd, SW_ALL* sw)
 	size_t iOUTIndex;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_SWCBulk][pd];
+
+    #if defined(RSOILWAT)
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    #endif
 
 	ForEachSoilLayer(i, sw->Site.n_layers)
 	{
@@ -1160,7 +1186,7 @@ void get_swpMatric_text(OutPeriod pd, SW_ALL* sw)
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets swpMatric when dealing with RSOILWAT
@@ -1177,8 +1203,11 @@ void get_swpMatric_mem(OutPeriod pd, SW_ALL* sw)
 	size_t iOUTIndex;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_SWPMatric][pd];
+
+    #if defined(RSOILWAT)
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    #endif
 
 	ForEachSoilLayer(i, sw->Site.n_layers)
 	{
@@ -1253,7 +1282,7 @@ void get_swaBulk_text(OutPeriod pd, SW_ALL* sw)
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets swaBulk when dealing with RSOILWAT.
@@ -1269,8 +1298,11 @@ void get_swaBulk_mem(OutPeriod pd, SW_ALL* sw)
 	size_t iOUTIndex;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_SWABulk][pd];
+
+    #if defined(RSOILWAT)
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    #endif
 
 	ForEachSoilLayer(i, sw->Site.n_layers)
 	{
@@ -1342,7 +1374,7 @@ void get_swaMatric_text(OutPeriod pd, SW_ALL* sw)
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets swaMatric when dealing with RSOILWAT.
@@ -1359,8 +1391,11 @@ void get_swaMatric_mem(OutPeriod pd, SW_ALL* sw)
 	size_t iOUTIndex;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_SWAMatric][pd];
+
+    #if defined(RSOILWAT)
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    #endif
 
 	ForEachSoilLayer(i, sw->Site.n_layers)
 	{
@@ -1429,7 +1464,7 @@ void get_surfaceWater_text(OutPeriod pd, SW_ALL* sw)
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets surfaceWater when dealing with RSOILWAT.
@@ -1444,8 +1479,11 @@ void get_surfaceWater_mem(OutPeriod pd, SW_ALL* sw)
 	size_t iOUTIndex;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_SurfaceWater][pd];
+
+    #if defined(RSOILWAT)
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    #endif
 
 	iOUTIndex = iOUT(0, pd, sw->GenOutput);
 	p[iOUTIndex] = vo->surfaceWater;
@@ -1508,7 +1546,7 @@ void get_runoffrunon_text(OutPeriod pd, SW_ALL* sw)
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets surfaceRunon, surfaceRunoff, and snowRunoff when dealing with RSOILWAT.
@@ -1524,8 +1562,11 @@ void get_runoffrunon_mem(OutPeriod pd, SW_ALL* sw)
 	size_t iOUTIndex;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_Runoff][pd];
+
+    #if defined(RSOILWAT)
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    #endif
 
 	net = vo->surfaceRunoff + vo->snowRunoff - vo->surfaceRunon;
 
@@ -1624,7 +1665,7 @@ void get_transp_text(OutPeriod pd, SW_ALL* sw)
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets transp_total when dealing with RSOILWAT.
@@ -1641,8 +1682,11 @@ void get_transp_mem(OutPeriod pd, SW_ALL* sw)
 	size_t iOUTIndex;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_Transp][pd];
+
+    #if defined(RSOILWAT)
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    #endif
 
 	/* total transpiration */
 	ForEachSoilLayer(i, n_layers)
@@ -1773,7 +1817,7 @@ void get_evapSoil_text(OutPeriod pd, SW_ALL* sw)
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets evap when dealing with RSOILWAT.
@@ -1789,8 +1833,11 @@ void get_evapSoil_mem(OutPeriod pd, SW_ALL* sw)
 	size_t iOUTIndex;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_EvapSoil][pd];
+
+    #if defined(RSOILWAT)
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    #endif
 
 	ForEachEvapLayer(i, sw->Site.n_evap_lyrs)
 	{
@@ -1865,7 +1912,7 @@ void get_evapSurface_text(OutPeriod pd, SW_ALL* sw)
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets evapSurface when dealing with RSOILWAT.
@@ -1881,8 +1928,11 @@ void get_evapSurface_mem(OutPeriod pd, SW_ALL* sw)
 	size_t iOUTIndex;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_EvapSurface][pd];
+
+    #if defined(RSOILWAT)
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    #endif
 
 	iOUTIndex = iOUT(0, pd, sw->GenOutput);
 	p[iOUTIndex] = vo->total_evap;
@@ -1974,7 +2024,7 @@ void get_interception_text(OutPeriod pd, SW_ALL* sw)
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets total_int, int_veg, and litter_int when dealing with RSOILWAT.
@@ -1990,8 +2040,11 @@ void get_interception_mem(OutPeriod pd, SW_ALL* sw)
 	size_t iOUTIndex;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_Interception][pd];
+
+    #if defined(RSOILWAT)
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    #endif
 
 	iOUTIndex = iOUT(0, pd, sw->GenOutput);
 	p[iOUTIndex] = vo->total_int;
@@ -2067,7 +2120,7 @@ void get_soilinf_text(OutPeriod pd, SW_ALL* sw)
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets soil_inf when dealing with RSOILWAT.
@@ -2082,8 +2135,11 @@ void get_soilinf_mem(OutPeriod pd, SW_ALL* sw)
 	size_t iOUTIndex;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_SoilInf][pd];
+
+    #if defined(RSOILWAT)
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    #endif
 
 	iOUTIndex = iOUT(0, pd, sw->GenOutput);
 	p[iOUTIndex] = vo->soil_inf;
@@ -2147,7 +2203,7 @@ void get_lyrdrain_text(OutPeriod pd, SW_ALL* sw)
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets lyrdrain when dealing with RSOILWAT.
@@ -2163,8 +2219,11 @@ void get_lyrdrain_mem(OutPeriod pd, SW_ALL* sw)
 	size_t iOUTIndex;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_LyrDrain][pd];
+
+    #if defined(RSOILWAT)
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    #endif
 
 	for (i = 0; i < sw->Site.n_layers - 1; i++)
 	{
@@ -2247,7 +2306,7 @@ void get_hydred_text(OutPeriod pd, SW_ALL* sw)
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets hydred and hydred_total when dealing with RSOILWAT.
@@ -2264,8 +2323,11 @@ void get_hydred_mem(OutPeriod pd, SW_ALL* sw)
 	size_t iOUTIndex;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_HydRed][pd];
+
+    #if defined(RSOILWAT)
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    #endif
 
 	/* total hydraulic redistribution */
 	ForEachSoilLayer(i, n_layers)
@@ -2368,7 +2430,7 @@ void get_aet_text(OutPeriod pd, SW_ALL* sw)
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets actual evapotranspiration when dealing with RSOILWAT.
@@ -2384,8 +2446,11 @@ void get_aet_mem(OutPeriod pd, SW_ALL* sw)
 	size_t iOUTIndex;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_AET][pd];
+
+    #if defined(RSOILWAT)
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    #endif
 
 	iOUTIndex = iOUT(0, pd, sw->GenOutput);
 	p[iOUTIndex] = vo->aet;
@@ -2503,7 +2568,7 @@ void get_pet_text(OutPeriod pd, SW_ALL* sw)
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets potential evapotranspiration and radiation
@@ -2519,8 +2584,11 @@ void get_pet_mem(OutPeriod pd, SW_ALL* sw)
 	size_t iOUTIndex;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_PET][pd];
+
+    #if defined(RSOILWAT)
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    #endif
 
 	iOUTIndex = iOUT(0, pd, sw->GenOutput);
 	p[iOUTIndex] = vo->pet;
@@ -2612,7 +2680,7 @@ void get_wetdays_text(OutPeriod pd, SW_ALL* sw)
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets is_wet and wetdays when dealing with RSOILWAT.
@@ -2627,8 +2695,11 @@ void get_wetdays_mem(OutPeriod pd, SW_ALL* sw)
 	size_t iOUTIndex;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_WetDays][pd];
+
+    #if defined(RSOILWAT)
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    #endif
 
 	if (pd == eSW_Day)
 	{
@@ -2714,7 +2785,7 @@ void get_snowpack_text(OutPeriod pd, SW_ALL* sw)
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets snowpack and snowdepth when dealing with OUTTEXT.
@@ -2729,8 +2800,11 @@ void get_snowpack_mem(OutPeriod pd, SW_ALL* sw)
 	size_t iOUTIndex;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_SnowPack][pd];
+
+    #if defined(RSOILWAT)
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    #endif
 
 	iOUTIndex = iOUT(0, pd, sw->GenOutput);
 	p[iOUTIndex] = vo->snowpack;
@@ -2792,7 +2866,7 @@ void get_deepswc_text(OutPeriod pd, SW_ALL* sw)
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets deep for when dealing with RSOILWAT.
@@ -2807,8 +2881,11 @@ void get_deepswc_mem(OutPeriod pd, SW_ALL* sw)
 	size_t iOUTIndex;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_DeepSWC][pd];
+
+    #if defined(RSOILWAT)
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    #endif
 
 	iOUTIndex = iOUT(0, pd, sw->GenOutput);
 	p[iOUTIndex] = vo->deep;
@@ -2876,7 +2953,7 @@ void get_soiltemp_text(OutPeriod pd, SW_ALL* sw)
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets soil temperature for when dealing with RSOILWAT.
@@ -2892,8 +2969,11 @@ void get_soiltemp_mem(OutPeriod pd, SW_ALL* sw)
 	size_t iOUTIndex;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_SoilTemp][pd];
+
+    #if defined(RSOILWAT)
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    #endif
 
 	ForEachSoilLayer(i, sw->Site.n_layers)
 	{
@@ -2975,7 +3055,7 @@ void get_frozen_text(OutPeriod pd, SW_ALL* sw)
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets soil state (frozen/unfrozen) for when dealing with RSOILWAT.
@@ -2991,8 +3071,11 @@ void get_frozen_mem(OutPeriod pd, SW_ALL* sw)
 	size_t iOUTIndex;
 
     RealD *p = sw->GenOutput.p_OUT[eSW_Frozen][pd];
+
+    #if defined(RSOILWAT)
     get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    #endif
 
     ForEachSoilLayer(i, sw->Site.n_layers)
     {

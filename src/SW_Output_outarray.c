@@ -186,7 +186,8 @@ void get_outvalleader(SW_MODEL* SW_Model, OutPeriod pd,
 #endif
 
 
-#ifdef STEPWAT
+#if defined(STEPWAT) || defined(SWNETCDF)
+#if defined(STEPWAT)
 /** @brief Handle the cumulative running mean and standard deviation
 		@param k. The index (base0) for subsetting `p` and `psd`, e.g., as calculated by
 			macro `iOUT` or `iOUT2`.
@@ -200,7 +201,7 @@ void do_running_agg(RealD *p, RealD *psd, size_t k, IntU n, RealD x)
 	p[k] = get_running_mean(n, prev_val, x);
 	psd[k] = psd[k] + get_running_sqr(prev_val, p[k], x); // += didn't work with *psd
 }
-
+#endif
 
 /** Set global STEPWAT2 output variables that aggregate across iterations/repetitions
 
@@ -214,7 +215,7 @@ void do_running_agg(RealD *p, RealD *psd, size_t k, IntU n, RealD x)
 	@sideeffect: `GenOutput->p_OUT` and `GenOutput->p_OUTsd` pointing to allocated arrays for
 		each output period and output key.
 	*/
-void setGlobalSTEPWAT2_OutputVariables(SW_OUTPUT* SW_Output, SW_GEN_OUT *GenOutput,
+void SW_OUT_construct_outarray(SW_OUTPUT* SW_Output, SW_GEN_OUT *GenOutput,
 									   LOG_INFO *LogInfo)
 {
 	IntUS i;
@@ -234,16 +235,18 @@ void setGlobalSTEPWAT2_OutputVariables(SW_OUTPUT* SW_Output, SW_GEN_OUT *GenOutp
 					(GenOutput->ncol_OUT[k] + ncol_TimeOUT[timeStepOutPeriod]);
 
 				GenOutput->p_OUT[k][timeStepOutPeriod] = (RealD *) Mem_Calloc(size, s,
-					"setGlobalSTEPWAT2_OutputVariables()", LogInfo);
+					"SW_OUT_construct_outarray()", LogInfo);
                 if(LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }
 
+                #if defined(STEPWAT)
 				GenOutput->p_OUTsd[k][timeStepOutPeriod] = (RealD *) Mem_Calloc(size, s,
-					"setGlobalSTEPWAT2_OutputVariables()", LogInfo);
+					"SW_OUT_construct_outarray()", LogInfo);
                 if(LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }
+                #endif
 			}
 		}
 	}
