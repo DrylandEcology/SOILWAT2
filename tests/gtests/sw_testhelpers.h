@@ -93,3 +93,5 @@ using VegProdFixtureTest = AllTestFixture;
 using WeatherFixtureTest = AllTestFixture;
 
 using WaterBalanceFixtureTest = AllTestFixture;
+
+using SpinUpTest = AllTestFixture;
