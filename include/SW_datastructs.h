@@ -109,12 +109,12 @@ typedef struct {
 
 	// Create a copy of SW_DOMAIN's time & spinup information
 	// to use instead of passing around SW_DOMAIN
-	TimeInt startyr,       	 /* beginning year for a set of simulation run */
-			endyr,         	 /* ending year for a set of simulation run */
-			startstart,    	 /* startday in start year */
-			endend,        	 /* end day in end year */
-			spinup_scope,  	 /* scope of spinup */
-			spinup_duration; /* duration of spinup */
+	TimeInt startyr,			/* beginning year for a set of simulation run */
+			endyr,				/* ending year for a set of simulation run */
+			startstart,			/* startday in start year */
+			endend,				/* end day in end year */
+			spinup_scope, 		/* scope of spinup */
+			spinup_duration;	/* duration of spinup */
 
 	int spinup_mode, 	 /* mode used for spinup */
 		spinup_rng_seed; /* RNG seed for spinup */
@@ -1053,11 +1053,11 @@ typedef struct {
 	
 	TimeInt scope,			/**< Scope (N): use first N years of simulation for the spinup */
 			duration;		/**< Duration (M): sample M years out of the first N years */
-	
+
 	int mode,				/**< Mode: (1) repeated random resample; (2) construct sequence of M years */
 		rng_seed;			/**< Seed for generating random years for mode 1 */
 
-	sw_random_t spinup_rng;
+	sw_random_t spinup_rng; /**< Random number generator used for mode 1 */
 
 	Bool spinup;			/**< Whether the spinup is currently running - used to disable outputs */
 } SW_SPINUP;

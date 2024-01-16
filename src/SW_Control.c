@@ -537,7 +537,7 @@ void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 */
 void SW_CTL_run_spinup(SW_ALL* sw, LOG_INFO* LogInfo) {
   
-  unsigned int i, quotient = 0, remainder = 0;
+  unsigned int i, k, quotient = 0, remainder = 0;
   int mode = sw->Model.spinup_mode,
       yr;
   TimeInt
@@ -574,7 +574,8 @@ void SW_CTL_run_spinup(SW_ALL* sw, LOG_INFO* LogInfo) {
           years[ i ] = yr + ( i % scope );
         }
         for ( i = 0; i < remainder; i++) {
-          years[ i + ( scope * quotient ) ] = yr + i;
+          k = i + (scope * quotient);
+          years[ k ] = yr + i;
         }
       }
 
