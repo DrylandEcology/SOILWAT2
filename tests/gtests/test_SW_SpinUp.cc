@@ -37,7 +37,6 @@
 
 #include "tests/gtests/sw_testhelpers.h"
 
-using ::testing::HasSubstr;
 
 namespace {
   // Test SpinUp with mode = 1 and scope > duration
@@ -48,7 +47,7 @@ namespace {
 
     SW_All.Model.spinup_mode = 1;
     SW_All.Model.spinup_scope = 27;
-    SW_All.Model.spinup_duration = 12;
+    SW_All.Model.spinup_duration = 3;
 
     // Turn on soil temperature simulations
     SW_All.Site.use_soil_temp = swTRUE;
@@ -60,14 +59,18 @@ namespace {
     // Turn on spinup flag
     SW_All.Model.spinup_active = swTRUE;
 
-    // Run the simulation
+    // Run the spinup
     SW_CTL_run_spinup(&SW_All, &LogInfo);
     sw_fail_on_error(&LogInfo);
     // Turn off spinup flag
     SW_All.Model.spinup_active = swFALSE;
+
+    // Run (a short) simulation
+    SW_All.Model.startyr = 1980;
+    SW_All.Model.endyr = 1981;
     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
- 
+
     for (i = 0; i < n; i++) {
       // Check soil temp after spinup
       EXPECT_NE(prevTemp[i], SW_All.SoilWat.avgLyrTemp[i]) <<
@@ -92,8 +95,8 @@ namespace {
           *prevMoist = new double[n];
 
     SW_All.Model.spinup_mode = 1;
-    SW_All.Model.spinup_scope = 12;
-    SW_All.Model.spinup_duration = 12;
+    SW_All.Model.spinup_scope = 3;
+    SW_All.Model.spinup_duration = 3;
 
     // Turn on soil temperature simulations
     SW_All.Site.use_soil_temp = swTRUE;
@@ -105,14 +108,18 @@ namespace {
     // Turn on spinup flag
     SW_All.Model.spinup_active = swTRUE;
 
-    // Run the simulation
+    // Run the spinup
     SW_CTL_run_spinup(&SW_All, &LogInfo);
     sw_fail_on_error(&LogInfo);
     // Turn off spinup flag
     SW_All.Model.spinup_active = swFALSE;
+
+    // Run (a short) simulation
+    SW_All.Model.startyr = 1980;
+    SW_All.Model.endyr = 1981;
     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
- 
+
     for (i = 0; i < n; i++) {
       // Check soil temp after spinup
       EXPECT_NE(prevTemp[i], SW_All.SoilWat.avgLyrTemp[i]) <<
@@ -137,8 +144,8 @@ namespace {
           *prevMoist = new double[n];
 
     SW_All.Model.spinup_mode = 1;
-    SW_All.Model.spinup_scope = 5;
-    SW_All.Model.spinup_duration = 12;
+    SW_All.Model.spinup_scope = 1;
+    SW_All.Model.spinup_duration = 3;
 
     // Turn on soil temperature simulations
     SW_All.Site.use_soil_temp = swTRUE;
@@ -150,14 +157,18 @@ namespace {
     // Turn on spinup flag
     SW_All.Model.spinup_active = swTRUE;
 
-    // Run the simulation
+    // Run the spinup
     SW_CTL_run_spinup(&SW_All, &LogInfo);
     sw_fail_on_error(&LogInfo);
     // Turn off spinup flag
     SW_All.Model.spinup_active = swFALSE;
+
+    // Run (a short) simulation
+    SW_All.Model.startyr = 1980;
+    SW_All.Model.endyr = 1981;
     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
- 
+
     for (i = 0; i < n; i++) {
       // Check soil temp after spinup
       EXPECT_NE(prevTemp[i], SW_All.SoilWat.avgLyrTemp[i]) <<
@@ -183,7 +194,7 @@ namespace {
 
     SW_All.Model.spinup_mode = 2;
     SW_All.Model.spinup_scope = 27;
-    SW_All.Model.spinup_duration = 12;
+    SW_All.Model.spinup_duration = 3;
 
     // Turn on soil temperature simulations
     SW_All.Site.use_soil_temp = swTRUE;
@@ -195,14 +206,18 @@ namespace {
     // Turn on spinup flag
     SW_All.Model.spinup_active = swTRUE;
 
-    // Run the simulation
+    // Run the spinup
     SW_CTL_run_spinup(&SW_All, &LogInfo);
     sw_fail_on_error(&LogInfo);
     // Turn off spinup flag
     SW_All.Model.spinup_active = swFALSE;
+
+    // Run (a short) simulation
+    SW_All.Model.startyr = 1980;
+    SW_All.Model.endyr = 1981;
     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
- 
+
     for (i = 0; i < n; i++) {
       // Check soil temp after spinup
       EXPECT_NE(prevTemp[i], SW_All.SoilWat.avgLyrTemp[i]) <<
@@ -227,8 +242,8 @@ namespace {
           *prevMoist = new double[n];
 
     SW_All.Model.spinup_mode = 2;
-    SW_All.Model.spinup_scope = 12;
-    SW_All.Model.spinup_duration = 12;
+    SW_All.Model.spinup_scope = 3;
+    SW_All.Model.spinup_duration = 3;
 
     // Turn on soil temperature simulations
     SW_All.Site.use_soil_temp = swTRUE;
@@ -240,14 +255,18 @@ namespace {
     // Turn on spinup flag
     SW_All.Model.spinup_active = swTRUE;
 
-    // Run the simulation
+    // Run the spinup
     SW_CTL_run_spinup(&SW_All, &LogInfo);
     sw_fail_on_error(&LogInfo);
     // Turn off spinup flag
     SW_All.Model.spinup_active = swFALSE;
+
+    // Run (a short) simulation
+    SW_All.Model.startyr = 1980;
+    SW_All.Model.endyr = 1981;
     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
- 
+
     for (i = 0; i < n; i++) {
       // Check soil temp after spinup
       EXPECT_NE(prevTemp[i], SW_All.SoilWat.avgLyrTemp[i]) <<
@@ -272,8 +291,8 @@ namespace {
           *prevMoist = new double[n];
 
     SW_All.Model.spinup_mode = 2;
-    SW_All.Model.spinup_scope = 7;
-    SW_All.Model.spinup_duration = 12;
+    SW_All.Model.spinup_scope = 1;
+    SW_All.Model.spinup_duration = 3;
 
     // Turn on soil temperature simulations
     SW_All.Site.use_soil_temp = swTRUE;
@@ -285,14 +304,18 @@ namespace {
     // Turn on spinup flag
     SW_All.Model.spinup_active = swTRUE;
 
-    // Run the simulation
+    // Run the spinup
     SW_CTL_run_spinup(&SW_All, &LogInfo);
     sw_fail_on_error(&LogInfo);
     // Turn off spinup flag
     SW_All.Model.spinup_active = swFALSE;
+
+    // Run (a short) simulation
+    SW_All.Model.startyr = 1980;
+    SW_All.Model.endyr = 1981;
     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
- 
+
     for (i = 0; i < n; i++) {
       // Check soil temp after spinup
       EXPECT_NE(prevTemp[i], SW_All.SoilWat.avgLyrTemp[i]) <<
