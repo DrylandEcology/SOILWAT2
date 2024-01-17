@@ -183,8 +183,8 @@ void SW_MDL_new_year(SW_MODEL* SW_Model) {
 	Time_new_year(year, SW_Model->days_in_month, SW_Model->cum_monthdays);
 	SW_Model->simyear = SW_Model->year + SW_Model->addtl_yr;
 
-	SW_Model->firstdoy = (year == SW_Model->startyr) ? SW_Model->startstart : 1;
-	SW_Model->lastdoy = (year == SW_Model->endyr) ? SW_Model->endend : Time_get_lastdoy_y(year);
+	SW_Model->firstdoy = (year == SW_Model->startyr && !SW_Model->spinup_active) ? SW_Model->startstart : 1;
+	SW_Model->lastdoy = (year == SW_Model->endyr && !SW_Model->spinup_active) ? SW_Model->endend : Time_get_lastdoy_y(year);
 }
 
 /**

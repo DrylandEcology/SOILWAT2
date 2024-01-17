@@ -49,9 +49,6 @@ namespace {
     SW_All.Model.spinup_mode = 1;
     SW_All.Model.spinup_scope = 27;
     SW_All.Model.spinup_duration = 12;
-    // Note: ^ For some reason, with mode = 1 and scope = 12, the WB check
-    // for if infiltration = rhs fails on day 1 of 1980, which doesn't
-    // happen with mode = 1 and scope = anything else (limited testing)
 
     // Turn on soil temperature simulations
     SW_All.Site.use_soil_temp = swTRUE;

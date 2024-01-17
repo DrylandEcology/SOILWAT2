@@ -592,7 +592,10 @@ void SW_CTL_run_spinup(SW_ALL* sw, LOG_INFO* LogInfo) {
   }
 
   TimeInt *cur_yr = &sw->Model.year,
-          yrIdx;
+          yrIdx,
+          startyr = sw->Model.startyr;
+
+  sw->Model.startyr = years[0]; // set startyr for spinup
 
   for (yrIdx = 0; yrIdx < duration; yrIdx++) {
     *cur_yr = years[ yrIdx ];
@@ -607,6 +610,8 @@ void SW_CTL_run_spinup(SW_ALL* sw, LOG_INFO* LogInfo) {
         return; // Exit function prematurely due to error
     }
   }
+
+  sw->Model.startyr = startyr; // reset startyr to original value
 
   free( years );
 

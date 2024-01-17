@@ -351,9 +351,9 @@ void SW_WaterBalance_Checks(SW_ALL* sw, LOG_INFO* LogInfo)
   LyrIndex n_layers = sw->Site.n_layers;
 
 
-  // re-init static variables on first day of each simulation
-  // to prevent carry-over
-  if (sw->Model.year == sw->Model.startyr && sw->Model.doy == sw->Model.firstdoy) {
+  // re-init static variable on first day of each simulation run (if no spinup)
+  // or on first day of spinup
+  if (!sw->SoilWat.is_wbError_init) {
     surfaceWater_yesterday = 0.;
   }
 
