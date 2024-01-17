@@ -34,12 +34,18 @@
     * Time of simulation units and reports average, standard deviation
       minimum and maximum time.
 
+* SOILWAT2 gained spin-up functionality (#379; @niteflyunicorns, @dschlaep).
+  A user-requested sequence of (random) years is simulated (without output)
+  before the actual simulation run to provide better starting values
+  (e.g., soil moisture, soil temperature).
+  User inputs are obtained from `"domain.in"`.
 
 ## Changes to inputs
 * New input file `"domain.in"` with input variables that specify
   type and spatial dimensions of the simulation `"domain"`
-  (with a backwards compatible default of one site)
-  as well as start and end year (the latter previously in `"years.in"`).
+  (with a backwards compatible default of one site),
+  start and end year (the latter previously in `"years.in"`), and
+  spin-up information (mode, duration, scope).
   This input file uses a key-value pair approach, i.e., inputs must use
   the correct key while they don't have to be on a specific line
   (as they have to be in other input files).
