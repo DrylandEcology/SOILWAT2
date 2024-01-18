@@ -109,7 +109,7 @@ void SW_VES_construct(SW_VEGESTAB* SW_VegEstab) {
  *
  * @param[out] SW_VegEstab SW_VegEstab Struct of type SW_VEGESTAB holding all
  *  information about vegetation within the simulation
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_VES_alloc_outptrs(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo) {
     OutPeriod pd;
@@ -217,7 +217,7 @@ void SW_VES_new_year(IntU count) {
   vegetation establishment within the simulation
 @param[in] InFiles Array of program in/output files
 @param[in] _ProjDir Project directory
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 */
 void SW_VES_read(SW_VEGESTAB* SW_VegEstab, char *InFiles[],
 				 char *_ProjDir, LOG_INFO* LogInfo) {
@@ -237,7 +237,7 @@ void SW_VES_read(SW_VEGESTAB* SW_VegEstab, char *InFiles[],
   considered for turning on/off calculations of vegetation establishment.
 @param[in] InFiles Array of program in/output files
 @param[in] _ProjDir Project directory
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 
 @note
   - Establishment is calculated under the following conditions
@@ -272,7 +272,7 @@ void SW_VES_read2(SW_VEGESTAB* SW_VegEstab, Bool use_VegEstab,
             return; // Exit function prematurely due to error
         }
 
-		if (!GetALine(f, inbuf) || (consider_InputFlag && *inbuf == '0')) {
+		if (!GetALine(f, inbuf, MAX_FILENAMESIZE) || (consider_InputFlag && *inbuf == '0')) {
 			/* turn off vegetation establishment if either
 					 * no species listed
 					 * if user input flag is set to 0 and we don't ignore that input,
@@ -284,7 +284,7 @@ void SW_VES_read2(SW_VEGESTAB* SW_VegEstab, Bool use_VegEstab,
 			/* read file names with species establishment parameters
 				 and read those files one by one
 			*/
-			while (GetALine(f, inbuf)) {
+			while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
 				strcpy(buf, _ProjDir); // add `_ProjDir` to path, e.g., for STEPWAT2
 				strcat(buf, inbuf);
 				_read_spp(buf, SW_VegEstab, LogInfo);
@@ -311,7 +311,7 @@ void SW_VES_read2(SW_VEGESTAB* SW_VegEstab, Bool use_VegEstab,
 
 @param[in,out] SW_VegEstab SW_VegEstab SW_VegEstab Struct of type SW_VEGESTAB
   holding all information about vegetation within the simulation
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 */
 void SW_VegEstab_alloc_outptrs(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo)
 {
@@ -362,7 +362,7 @@ void SW_VegEstab_alloc_outptrs(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo)
 	@param[in] n_transp_lyrs Index of the deepest transp. region
 	@param[in] count Held within type SW_VEGESTAB to determine
 		how many species to check
-	@param[in,out] LogInfo Holds information dealing with logfile output
+	@param[out] LogInfo Holds information on warnings and errors
 */
 void SW_VES_init_run(SW_VEGESTAB_INFO** parms, SW_SITE *SW_Site,
 	LyrIndex n_transp_lyrs[], IntU count, LOG_INFO* LogInfo) {
@@ -529,7 +529,7 @@ static void _read_spp(const char *infile, SW_VEGESTAB* SW_VegEstab,
 			return; // Exit function prematurely due to error
 	}
 
-	while (GetALine(f, inbuf)) {
+	while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
 		switch (lineno) {
 		case 0:
 			strcpy(name, inbuf);
@@ -612,7 +612,7 @@ static void _read_spp(const char *infile, SW_VEGESTAB* SW_VegEstab,
 @param[in] sppnum Index for which paramater is beign initialized.
 @param[in] SW_Site Struct of type SW_SITE describing the simulated site
 @param[in] n_transp_lyrs Layer index of deepest transp. region.
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 */
 void _spp_init(SW_VEGESTAB_INFO** parms, unsigned int sppnum,
 	SW_SITE *SW_Site, LyrIndex n_transp_lyrs[], LOG_INFO* LogInfo) {
@@ -746,7 +746,7 @@ static void _sanity_check(unsigned int sppnum, RealD swcBulk_wiltpt[],
 
 @param[in,out] SW_VegEstab SW_VegEstab Struct of type SW_VEGESTAB holding all
   information about vegetation within the simulation
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 
 @return (++SW_VegEstab->count) - 1
 */

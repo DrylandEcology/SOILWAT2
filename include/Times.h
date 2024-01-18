@@ -99,6 +99,7 @@ double diff_walltime(WallTimeSpec start, Bool ok_start);
 void SW_WT_StartTime(SW_WALLTIME *wt);
 void SW_WT_TimeRun(WallTimeSpec ts, Bool ok_ts, SW_WALLTIME *wt);
 void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO* LogInfo);
+void timeStringISO8601(char *timeString, int stringLength);
 
 #ifdef __cplusplus
 }

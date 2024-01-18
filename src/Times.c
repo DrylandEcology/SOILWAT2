@@ -350,7 +350,7 @@ Time report is written to
 Time is not reported at all if quiet mode and `logfile` is `NULL`.
 
 @param[in] wt Object with timing information.
-@param[in] LogInfo Holds information dealing with logfile output
+@param[in] LogInfo Holds information on warnings and errors
 */
 void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO* LogInfo) {
     double total_time = 0;
@@ -364,7 +364,7 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO* LogInfo) {
 
     total_time = diff_walltime(wt.timeStart, wt.has_walltime); // negative if failed
 
-    if (GT(total_time, 0.)) {
+    if (GE(total_time, 0.)) {
         fprintf(logfp, "    * Total wall time: %.2f [seconds]\n", total_time);
     } else {
         fprintf(logfp, "    * Wall time failed.\n");
@@ -403,4 +403,16 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO* LogInfo) {
             100. * wt.timeSimSet / total_time
         );
     }
+}
+
+
+/**
+  @brief Current date and time in UTC formatted according to ISO 8601
+
+  @param[out] timeString Character array that returns the formatted time.
+  @param[in] stringLength Length of timeString (should be at least 21).
+*/
+void timeStringISO8601(char *timeString, int stringLength) {
+  time_t t = time(NULL);
+  strftime(timeString, stringLength, "%FT%TZ", gmtime(&t));
 }

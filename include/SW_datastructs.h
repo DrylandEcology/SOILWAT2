@@ -25,7 +25,8 @@
 #define SW_OUTTEXT
 #endif
 
-#define SW_NFILES 24 // For `InFiles`
+#define SW_NFILES 26 // For `InFiles`
+#define SW_NVARNC 2 // For `InFilesNC`
 
 
 /* =================================================== */
@@ -122,7 +123,7 @@ typedef struct {
 	sw_random_t spinup_rng; /* RNG to use for spinup */
 
 	Bool spinup_active; /* flag used for enabling spinup capabilites */
-	
+
 	// ********** END of copying SW_DOMAIN's data *************
 
 	RealD longitude,	/* longitude of the site (radians)        */
@@ -142,7 +143,7 @@ typedef struct {
 	Bool newperiod[SW_OUTNPERIODS];
 	Bool isnorth;
 
-    int ncStartSuid[2]; // First element used for domain "s", both used for "xy"
+    int ncSuid[2]; // First element used for domain "s", both used for "xy"
 
 	#ifdef STEPWAT
 	/* Variables from GlobalType (STEPWAT2) used in SOILWAT2 */
@@ -779,7 +780,8 @@ typedef struct {
 	Bool stopRun;           // Specifies if an error has occurred and
                             // the program needs to stop early (backtrack)
 
-  Bool QuietMode; /**< Don't print version, error message, or notify user about logfile (only used by SOILWAT2) */
+  Bool QuietMode, /**< Don't print version, error message, or notify user about logfile (only used by SOILWAT2) */
+    printProgressMsg; /**< Do/don't print progress messages to the console */
 } LOG_INFO;
 
 typedef struct {
@@ -1045,12 +1047,48 @@ typedef struct {
 } SW_GEN_OUT;
 
 /* =================================================== */
+/*         Coordinate Reference System struct          */
+/* --------------------------------------------------- */
+
+typedef struct {
+    char *long_name, *grid_mapping_name, *crs_wkt;
+    double longitude_of_prime_meridian, semi_major_axis, inverse_flattening;
+
+    // Possible attributes if the type is "projected"
+    char *datum, *units;
+    double standard_parallel[2]; // first and second standard parallels; 2nd may be missing (NAN)
+    double longitude_of_central_meridian,
+           latitude_of_projection_origin,
+           false_easting,
+           false_northing;
+} SW_CRS;
+
+/* =================================================== */
+/*                SOILWAT2 netCDF struct               */
+/* --------------------------------------------------- */
+
+typedef struct {
+
+    char *title, *author, *institution, *comment, *coordinate_system;
+    Bool primary_crs_is_geographic;
+
+    SW_CRS crs_geogsc, crs_projsc;
+
+    char *varNC[SW_NVARNC];
+    char *InFilesNC[SW_NVARNC];
+
+    int ncFileIDs[SW_NVARNC];
+    int ncVarIDs[SW_NVARNC];
+} SW_NETCDF;
+
+
+/* =================================================== */
 /*                    Domain structs                   */
 /* --------------------------------------------------- */
 
 typedef struct {
 	// data for the (optional) spinup before simulation loop
-	
+
 	TimeInt scope,			/**< Scope (N): use first N years of simulation for the spinup */
 			duration;		/**< Duration (M): sample M years out of the first N years */
 
@@ -1077,6 +1115,12 @@ typedef struct {
 		startSimSet,       /**< First SUID in simulation set within domain to simulate */
 		endSimSet;         /**< Last SUID in simulation set within domain to simulate */
 
+    char crs_bbox[27];     /**< Input name/CRS type (domain.in) - holds up to "World Geodetic System 1984" (26) */
+    double min_x,          /**< Minimum x coordinate of the bounding box */
+           min_y,          /**< Minimum y coordinate of the bounding box */
+           max_x,          /**< Maximum x coordinate of the bounding box */
+           max_y;          /**< Maximum y coordinate of the bounding box */
+
 	// Temporal domain information
 	TimeInt startyr,     /**< First calendar year of the simulation runs */
 			endyr,           /**< Last calendar year of the simulation runs */
@@ -1088,6 +1132,9 @@ typedef struct {
 
 	// Data for (optional) spinup
 	SW_SPINUP SW_SpinUp;
+
+    // Information dealing with netCDFs
+    SW_NETCDF netCDFInfo;
 } SW_DOMAIN;
 
 /* =================================================== */

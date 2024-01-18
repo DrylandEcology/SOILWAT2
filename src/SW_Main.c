@@ -37,6 +37,9 @@
 #include "include/SW_Domain.h"
 #include "include/SW_Model.h"
 
+#if defined(SWNETCDF)
+#include "include/SW_netCDF.h"
+#endif
 
 
 /* =================================================== */
@@ -67,7 +70,7 @@ int main(int argc, char **argv) {
     // Initialize logs and pointer objects
     sw_init_logs(stdout, &LogInfo);
 
-    SW_F_init_ptrs(SW_Domain.PathInfo.InFiles);
+    SW_DOM_init_ptrs(&SW_Domain);
     SW_CTL_init_ptrs(&sw_template);
 
     // Obtain user input from the command line
@@ -77,10 +80,13 @@ int main(int argc, char **argv) {
         goto finishProgram;
     }
 
-	// Print version if not in quiet mode
-	if (!LogInfo.QuietMode) {
-		sw_print_version();
-	}
+    // SOILWAT2: do print progress to console unless user requests quiet
+    LogInfo.printProgressMsg = (Bool)(!LogInfo.QuietMode);
+
+    if (LogInfo.printProgressMsg) {
+      sw_message("started.");
+      sw_print_version();
+    }
 
     // setup and construct domain
     SW_CTL_setup_domain(userSUID, &SW_Domain, &LogInfo);
@@ -104,6 +110,10 @@ int main(int argc, char **argv) {
     if(LogInfo.stopRun) {
         goto finishProgram;
     }
+
+    #if defined(SWNETCDF)
+    SW_NC_check_input_files(&SW_Domain, &LogInfo);
+    #endif
 
 	// finalize daily weather
 	SW_WTH_finalize_all_weather(&sw_template.Markov, &sw_template.Weather,
@@ -148,13 +158,16 @@ int main(int argc, char **argv) {
 
     finishProgram: {
         // de-allocate all memory
-        SW_F_deconstruct(SW_Domain.PathInfo.InFiles);
+        SW_DOM_deconstruct(&SW_Domain); // Includes closing netCDF files if needed
         SW_CTL_clear_model(swTRUE, &sw_template);
 
         sw_write_warnings("(main) ", &LogInfo);
         SW_WT_ReportTime(SW_WallTime, &LogInfo);
         sw_wrapup_logs(&LogInfo);
         sw_fail_on_error(&LogInfo);
+        if (LogInfo.printProgressMsg) {
+          sw_message("ended.");
+        }
     }
 
 	return 0;

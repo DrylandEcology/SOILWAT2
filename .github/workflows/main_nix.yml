@@ -50,6 +50,25 @@ jobs:
       run: make clean test_sanitizer
 
 
+  build_ncSW2:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository and submodules
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Install netCDF-C
+      run: |
+        sudo apt-get update
+        sudo apt-get install libnetcdf-dev
+
+    - name: Build binary with netCDF support
+      run: CPPFLAGS=-DSWNETCDF make clean all
+
+
+
   check_code_coverage:
     runs-on: ubuntu-latest
 

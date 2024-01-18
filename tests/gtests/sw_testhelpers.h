@@ -76,7 +76,7 @@ class AllTestFixture : public ::testing::Test {
 
     // Free allocated memory in test fixture local variables
     void TearDown() override {
-        SW_F_deconstruct(SW_Domain.PathInfo.InFiles);
+        SW_DOM_deconstruct(&SW_Domain);
         SW_CTL_clear_model(swTRUE, &SW_All);
     }
 };
