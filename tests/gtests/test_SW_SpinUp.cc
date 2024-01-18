@@ -51,10 +51,10 @@ namespace {
 
     // Turn on soil temperature simulations
     SW_All.Site.use_soil_temp = swTRUE;
-    // Get current soil temp and soil moisture levels
+    // Get initial soil temp and soil moisture levels
     for (i = 0; i < n; i++) {
-      prevTemp[i] = SW_All.SoilWat.avgLyrTemp[i]; // first layer
-      prevMoist[i] = SW_All.SoilWat.swcBulk[Today][i]; // Today, first layer
+      prevTemp[i] = SW_All.Site.avgLyrTempInit[i];
+      prevMoist[i] = SW_All.SoilWat.swcBulk[Today][i];
     }
     // Turn on spinup flag
     SW_All.Model.spinup_active = swTRUE;
@@ -100,10 +100,10 @@ namespace {
 
     // Turn on soil temperature simulations
     SW_All.Site.use_soil_temp = swTRUE;
-    // Get current soil temp and soil moisture levels
+    // Get initial soil temp and soil moisture levels
     for (i = 0; i < n; i++) {
-      prevTemp[i] = SW_All.SoilWat.avgLyrTemp[i]; // first layer
-      prevMoist[i] = SW_All.SoilWat.swcBulk[Today][i]; // Today, first layer
+      prevTemp[i] = SW_All.Site.avgLyrTempInit[i];
+      prevMoist[i] = SW_All.SoilWat.swcBulk[Today][i];
     }
     // Turn on spinup flag
     SW_All.Model.spinup_active = swTRUE;
@@ -149,10 +149,10 @@ namespace {
 
     // Turn on soil temperature simulations
     SW_All.Site.use_soil_temp = swTRUE;
-    // Get current soil temp and soil moisture levels
+    // Get initial soil temp and soil moisture levels
     for (i = 0; i < n; i++) {
-      prevTemp[i] = SW_All.SoilWat.avgLyrTemp[i]; // first layer
-      prevMoist[i] = SW_All.SoilWat.swcBulk[Today][i]; // Today, first layer
+      prevTemp[i] = SW_All.Site.avgLyrTempInit[i];
+      prevMoist[i] = SW_All.SoilWat.swcBulk[Today][i];
     }
     // Turn on spinup flag
     SW_All.Model.spinup_active = swTRUE;
@@ -198,10 +198,10 @@ namespace {
 
     // Turn on soil temperature simulations
     SW_All.Site.use_soil_temp = swTRUE;
-    // Get current soil temp and soil moisture levels
+    // Get initial soil temp and soil moisture levels
     for (i = 0; i < n; i++) {
-      prevTemp[i] = SW_All.SoilWat.avgLyrTemp[i]; // first layer
-      prevMoist[i] = SW_All.SoilWat.swcBulk[Today][i]; // Today, first layer
+      prevTemp[i] = SW_All.Site.avgLyrTempInit[i];
+      prevMoist[i] = SW_All.SoilWat.swcBulk[Today][i];
     }
     // Turn on spinup flag
     SW_All.Model.spinup_active = swTRUE;
@@ -247,10 +247,10 @@ namespace {
 
     // Turn on soil temperature simulations
     SW_All.Site.use_soil_temp = swTRUE;
-    // Get current soil temp and soil moisture levels
+    // Get initial soil temp and soil moisture levels
     for (i = 0; i < n; i++) {
-      prevTemp[i] = SW_All.SoilWat.avgLyrTemp[i]; // first layer
-      prevMoist[i] = SW_All.SoilWat.swcBulk[Today][i]; // Today, first layer
+      prevTemp[i] = SW_All.Site.avgLyrTempInit[i];
+      prevMoist[i] = SW_All.SoilWat.swcBulk[Today][i];
     }
     // Turn on spinup flag
     SW_All.Model.spinup_active = swTRUE;
@@ -296,10 +296,10 @@ namespace {
 
     // Turn on soil temperature simulations
     SW_All.Site.use_soil_temp = swTRUE;
-    // Get current soil temp and soil moisture levels
+    // Get initial soil temp and soil moisture levels
     for (i = 0; i < n; i++) {
-      prevTemp[i] = SW_All.SoilWat.avgLyrTemp[i]; // first layer
-      prevMoist[i] = SW_All.SoilWat.swcBulk[Today][i]; // Today, first layer
+      prevTemp[i] = SW_All.Site.avgLyrTempInit[i];
+      prevMoist[i] = SW_All.SoilWat.swcBulk[Today][i];
     }
     // Turn on spinup flag
     SW_All.Model.spinup_active = swTRUE;
