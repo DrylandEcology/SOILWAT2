@@ -332,4 +332,148 @@ namespace {
     delete[] prevTemp;
     delete[] prevMoist;
   }
+
+
+  // Evaluate spinup
+
+  #ifdef SW2_SpinupEvaluation
+  // Run SOILWAT2 unit tests with flag
+  // ```
+  //   CPPFLAGS=-DSW2_SpinupEvaluation make test && bin/sw_test --gtest_filter=*SpinupEvaluation*
+  // ```
+  //
+  // Produce plots based on output generated above
+  // ```
+  //   Rscript tools/plot__SW2_SpinupEvaluation.R
+  // ```
+
+  TEST_F(SpinUpTest, SpinupEvaluation) {
+    SW_ALL local_sw;
+    LOG_INFO local_LogInfo;
+
+    FILE *fp;
+    char fname[FILENAME_MAX];
+    int
+      i, n = 8, // n = number of soil layers to test
+      k1, test_duration[6] = {0, 1, 3, 5, 10, 20},
+      k2, k3;
+    float
+      test_swcInit[4] = {0.5, 1, 15, 45},
+      test_tsInit[5][8] = {
+        {-2, -2, -2, -2, -2, -2, -2, -2},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {-1, -1, -1, -1, 0, 0, 1, 1},
+        {-2, -1.5, -1.25, -0.75, -0.5, 0.5, 1.5, 2},
+        {2, 2, 2, 2, 2, 2, 2, 2}
+      };
+
+
+    // Output file
+    strcpy(fname, SW_Domain.PathInfo.output_prefix);
+    strcat(fname, "Table__SW2_SpinupEvaluation.csv");
+
+    fp = OpenFile(fname, "w", &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    // Column names
+    fprintf(
+      fp,
+      "stage,spinup_duration,swc_init,ts_init,variable,soil_layer,value"
+      "\n"
+    );
+
+
+    for (k1 = 0; k1 < 6; k1++) {
+      for (k2 = 0; k2 < 4; k2++) {
+        for (k3 = 0; k3 < 5; k3++) {
+
+          sw_init_logs(NULL, &local_LogInfo); // Initialize logs and silence warn/error reporting
+
+          // deep copy of template
+          SW_ALL_deepCopy(&SW_All, &local_sw, &local_LogInfo);
+          sw_fail_on_error(&local_LogInfo); // exit test program if unexpected error
+
+
+          //--- k1: set spinup
+          local_sw.Model.spinup_active = swTRUE;
+          local_sw.Model.spinup_duration = test_duration[k1];
+          local_sw.Model.spinup_mode = 1;
+          local_sw.Model.spinup_scope = 1;
+
+
+          //--- k2: set initial swc values
+          local_sw.Site._SWCInitVal = test_swcInit[k2];
+          SW_SIT_init_run(&local_sw.VegProd, &local_sw.Site, &local_LogInfo);
+          sw_fail_on_error(&local_LogInfo); // exit test program if unexpected error
+          SW_SWC_init_run(&local_sw.SoilWat, &local_sw.Site, &local_sw.Weather.temp_snow);
+
+
+          //---k3: set initial soil temperature
+          local_sw.Site.use_soil_temp = swTRUE;
+          for (i = 0; i < n; i++) {
+            local_sw.Site.avgLyrTempInit[i] = test_tsInit[k3][i];
+          }
+
+
+          // Print initial values
+          for (i = 0; i < n; i++) {
+            fprintf(
+              fp,
+              "init,%d,%f,%d,swc,%d,%f\n"
+              "init,%d,%f,%d,ts,%d,%f\n",
+              test_duration[k1], test_swcInit[k2], k3, i, local_sw.SoilWat.swcBulk[Today][i],
+              test_duration[k1], test_swcInit[k2], k3, i, local_sw.Site.avgLyrTempInit[i]
+            );
+          }
+          fflush(fp);
+
+
+          // Run the spinup
+          if (test_duration[k1] > 0) {
+            SW_CTL_run_spinup(&local_sw, &local_LogInfo);
+            sw_fail_on_error(&local_LogInfo);
+
+            // Print values after spinup
+            for (i = 0; i < n; i++) {
+              fprintf(
+                fp,
+                "spinup,%d,%f,%d,swc,%d,%f\n"
+                "spinup,%d,%f,%d,ts,%d,%f\n",
+                test_duration[k1], test_swcInit[k2], k3, i, local_sw.SoilWat.swcBulk[Today][i],
+                test_duration[k1], test_swcInit[k2], k3, i, local_sw.SoilWat.avgLyrTemp[i]
+              );
+            }
+            fflush(fp);
+          }
+
+          local_sw.Model.spinup_active = swFALSE;
+
+
+          // Run (a short) simulation
+          local_sw.Model.startyr = 1980;
+          local_sw.Model.endyr = 1980;
+          SW_CTL_main(&local_sw, &SW_OutputPtrs, &local_LogInfo);
+          sw_fail_on_error(&local_LogInfo); // exit test program if unexpected error
+
+          // Print values after simulation
+          for (i = 0; i < n; i++) {
+            fprintf(
+              fp,
+              "srun,%d,%f,%d,swc,%d,%f\n"
+              "srun,%d,%f,%d,ts,%d,%f\n",
+              test_duration[k1], test_swcInit[k2], k3, i, local_sw.SoilWat.swcBulk[Today][i],
+              test_duration[k1], test_swcInit[k2], k3, i, local_sw.SoilWat.avgLyrTemp[i]
+            );
+          }
+          fflush(fp);
+
+        } // end of loop over test_tsInit
+      } // end of loop over test_swcInit
+    } // end of loop over test_duration
+
+    fclose(fp);
+  }
+
+  #endif // end of SW2_SpinupEvaluation_Test
+
 } // namespace

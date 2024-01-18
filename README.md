@@ -309,6 +309,14 @@ Currently, the following is implemented:
       Rscript tools/plot__SW2_PET_Test__petfunc_by_temps.R
 ```
 
+  - Spinup evaluation plots for spinup duration and initialization of
+    soil moisture and soil temperature
+
+```{.sh}
+      CPPFLAGS=-DSW2_SpinupEvaluation make test && bin/sw_test --gtest_filter=*SpinupEvaluation*
+      Rscript tools/plot__SW2_SpinupEvaluation.R
+```
+
 <br>
 
 
