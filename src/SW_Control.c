@@ -527,16 +527,26 @@ void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 }
 
 /**
-@brief Calls 'SW_CTL_run_current_year' over an array of simulated years
+@brief Run a spin-up
+
+  Calls 'SW_CTL_run_current_year' over an array of simulated years
           as specified by the given spinup scope and duration which
           then calls 'SW_SWC_water_flow' for each day.
 
+  No output is produced during the spin-up; state variables including
+  soil moisture and soil temperature are updated and handed off to the
+  simulation run.
+
+  A spin-up duration of 0 returns immediately (no spin-up).
+
 @param[in,out] sw Comprehensive struct of type SW_ALL containing all
   information in the simulation
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information dealing with logfile output
 */
 void SW_CTL_run_spinup(SW_ALL* sw, LOG_INFO* LogInfo) {
-  
+
+  if (sw->Model.spinup_duration == 0) return;
+
   unsigned int i, k, quotient = 0, remainder = 0;
   int mode = sw->Model.spinup_mode,
       yr;
