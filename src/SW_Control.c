@@ -93,7 +93,7 @@ static void _end_day(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                      LOG_INFO* LogInfo) {
   int localTOffset = 1; // tOffset is one when called from this function
 
-  if ( !sw->Model.spinup_active ) {
+  if ( !sw->Model.SW_SpinUp.spinup ) {
     _collect_values(sw, SW_OutputPtrs, swFALSE, localTOffset, LogInfo);
       if(LogInfo->stopRun) {
           return; // Exit function prematurely due to error
@@ -586,7 +586,7 @@ void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
   #ifdef SWDEBUG
   if (debug) swprintf("'SW_CTL_run_current_year': flush output\n");
   #endif
-  if ( !sw->Model.spinup_active ) {
+  if ( !sw->Model.SW_SpinUp.spinup ) {
     SW_OUT_flush(sw, SW_OutputPtrs, LogInfo);
   }
 
@@ -618,14 +618,14 @@ void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 */
 void SW_CTL_run_spinup(SW_ALL* sw, LOG_INFO* LogInfo) {
 
-  if (sw->Model.spinup_duration == 0) return;
+  if (sw->Model.SW_SpinUp.duration == 0) return;
 
   unsigned int i, k, quotient = 0, remainder = 0;
-  int mode = sw->Model.spinup_mode,
+  int mode = sw->Model.SW_SpinUp.mode,
       yr;
   TimeInt
-    duration = sw->Model.spinup_duration,
-    scope = sw->Model.spinup_scope,
+    duration = sw->Model.SW_SpinUp.duration,
+    scope = sw->Model.SW_SpinUp.scope,
     finalyr = sw->Model.startyr + scope - 1,
     *years;
 
@@ -668,7 +668,7 @@ void SW_CTL_run_spinup(SW_ALL* sw, LOG_INFO* LogInfo) {
       for ( i = 0; i < duration; i++ ) {
         yr = RandUniIntRange( sw->Model.startyr,
                                       finalyr,
-                                      &sw->Model.spinup_rng );
+                                      &sw->Model.SW_SpinUp.spinup_rng );
         years[ i ] = yr;
       }
       break;
@@ -890,9 +890,9 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSu
 
     if ( SW_Domain->SW_SpinUp.spinup ) {
       SW_CTL_run_spinup(&local_sw, LogInfo );
-      local_sw.Model.spinup_active = swFALSE;
+      local_sw.Model.SW_SpinUp.spinup = swFALSE;
     }
-    
+
     SW_CTL_main(&local_sw, SW_OutputPtrs, LogInfo);
 
     // Clear local instance of SW_ALL

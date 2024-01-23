@@ -45,9 +45,9 @@ namespace {
     RealD *prevTemp = new double[n],
           *prevMoist = new double[n];
 
-    SW_All.Model.spinup_mode = 1;
-    SW_All.Model.spinup_scope = 27;
-    SW_All.Model.spinup_duration = 3;
+    SW_All.Model.SW_SpinUp.mode = 1;
+    SW_All.Model.SW_SpinUp.scope = 27;
+    SW_All.Model.SW_SpinUp.duration = 3;
 
     // Turn on soil temperature simulations
     SW_All.Site.use_soil_temp = swTRUE;
@@ -57,13 +57,13 @@ namespace {
       prevMoist[i] = SW_All.SoilWat.swcBulk[Today][i];
     }
     // Turn on spinup flag
-    SW_All.Model.spinup_active = swTRUE;
+    SW_All.Model.SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
     SW_CTL_run_spinup(&SW_All, &LogInfo);
     sw_fail_on_error(&LogInfo);
     // Turn off spinup flag
-    SW_All.Model.spinup_active = swFALSE;
+    SW_All.Model.SW_SpinUp.spinup = swFALSE;
 
     // Run (a short) simulation
     SW_All.Model.startyr = 1980;
@@ -94,9 +94,9 @@ namespace {
     RealD *prevTemp = new double[n],
           *prevMoist = new double[n];
 
-    SW_All.Model.spinup_mode = 1;
-    SW_All.Model.spinup_scope = 3;
-    SW_All.Model.spinup_duration = 3;
+    SW_All.Model.SW_SpinUp.mode = 1;
+    SW_All.Model.SW_SpinUp.scope = 3;
+    SW_All.Model.SW_SpinUp.duration = 3;
 
     // Turn on soil temperature simulations
     SW_All.Site.use_soil_temp = swTRUE;
@@ -106,13 +106,13 @@ namespace {
       prevMoist[i] = SW_All.SoilWat.swcBulk[Today][i];
     }
     // Turn on spinup flag
-    SW_All.Model.spinup_active = swTRUE;
+    SW_All.Model.SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
     SW_CTL_run_spinup(&SW_All, &LogInfo);
     sw_fail_on_error(&LogInfo);
     // Turn off spinup flag
-    SW_All.Model.spinup_active = swFALSE;
+    SW_All.Model.SW_SpinUp.spinup = swFALSE;
 
     // Run (a short) simulation
     SW_All.Model.startyr = 1980;
@@ -143,9 +143,9 @@ namespace {
     RealD *prevTemp = new double[n],
           *prevMoist = new double[n];
 
-    SW_All.Model.spinup_mode = 1;
-    SW_All.Model.spinup_scope = 1;
-    SW_All.Model.spinup_duration = 3;
+    SW_All.Model.SW_SpinUp.mode = 1;
+    SW_All.Model.SW_SpinUp.scope = 1;
+    SW_All.Model.SW_SpinUp.duration = 3;
 
     // Turn on soil temperature simulations
     SW_All.Site.use_soil_temp = swTRUE;
@@ -155,13 +155,13 @@ namespace {
       prevMoist[i] = SW_All.SoilWat.swcBulk[Today][i];
     }
     // Turn on spinup flag
-    SW_All.Model.spinup_active = swTRUE;
+    SW_All.Model.SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
     SW_CTL_run_spinup(&SW_All, &LogInfo);
     sw_fail_on_error(&LogInfo);
     // Turn off spinup flag
-    SW_All.Model.spinup_active = swFALSE;
+    SW_All.Model.SW_SpinUp.spinup = swFALSE;
 
     // Run (a short) simulation
     SW_All.Model.startyr = 1980;
@@ -192,9 +192,9 @@ namespace {
     RealD *prevTemp = new double[n],
           *prevMoist = new double[n];
 
-    SW_All.Model.spinup_mode = 2;
-    SW_All.Model.spinup_scope = 27;
-    SW_All.Model.spinup_duration = 3;
+    SW_All.Model.SW_SpinUp.mode = 2;
+    SW_All.Model.SW_SpinUp.scope = 27;
+    SW_All.Model.SW_SpinUp.duration = 3;
 
     // Turn on soil temperature simulations
     SW_All.Site.use_soil_temp = swTRUE;
@@ -204,13 +204,13 @@ namespace {
       prevMoist[i] = SW_All.SoilWat.swcBulk[Today][i];
     }
     // Turn on spinup flag
-    SW_All.Model.spinup_active = swTRUE;
+    SW_All.Model.SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
     SW_CTL_run_spinup(&SW_All, &LogInfo);
     sw_fail_on_error(&LogInfo);
     // Turn off spinup flag
-    SW_All.Model.spinup_active = swFALSE;
+    SW_All.Model.SW_SpinUp.spinup = swFALSE;
 
     // Run (a short) simulation
     SW_All.Model.startyr = 1980;
@@ -241,9 +241,9 @@ namespace {
     RealD *prevTemp = new double[n],
           *prevMoist = new double[n];
 
-    SW_All.Model.spinup_mode = 2;
-    SW_All.Model.spinup_scope = 3;
-    SW_All.Model.spinup_duration = 3;
+    SW_All.Model.SW_SpinUp.mode = 2;
+    SW_All.Model.SW_SpinUp.scope = 3;
+    SW_All.Model.SW_SpinUp.duration = 3;
 
     // Turn on soil temperature simulations
     SW_All.Site.use_soil_temp = swTRUE;
@@ -253,13 +253,13 @@ namespace {
       prevMoist[i] = SW_All.SoilWat.swcBulk[Today][i];
     }
     // Turn on spinup flag
-    SW_All.Model.spinup_active = swTRUE;
+    SW_All.Model.SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
     SW_CTL_run_spinup(&SW_All, &LogInfo);
     sw_fail_on_error(&LogInfo);
     // Turn off spinup flag
-    SW_All.Model.spinup_active = swFALSE;
+    SW_All.Model.SW_SpinUp.spinup = swFALSE;
 
     // Run (a short) simulation
     SW_All.Model.startyr = 1980;
@@ -290,9 +290,9 @@ namespace {
     RealD *prevTemp = new double[n],
           *prevMoist = new double[n];
 
-    SW_All.Model.spinup_mode = 2;
-    SW_All.Model.spinup_scope = 1;
-    SW_All.Model.spinup_duration = 3;
+    SW_All.Model.SW_SpinUp.mode = 2;
+    SW_All.Model.SW_SpinUp.scope = 1;
+    SW_All.Model.SW_SpinUp.duration = 3;
 
     // Turn on soil temperature simulations
     SW_All.Site.use_soil_temp = swTRUE;
@@ -302,13 +302,13 @@ namespace {
       prevMoist[i] = SW_All.SoilWat.swcBulk[Today][i];
     }
     // Turn on spinup flag
-    SW_All.Model.spinup_active = swTRUE;
+    SW_All.Model.SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
     SW_CTL_run_spinup(&SW_All, &LogInfo);
     sw_fail_on_error(&LogInfo);
     // Turn off spinup flag
-    SW_All.Model.spinup_active = swFALSE;
+    SW_All.Model.SW_SpinUp.spinup = swFALSE;
 
     // Run (a short) simulation
     SW_All.Model.startyr = 1980;
@@ -395,10 +395,10 @@ namespace {
 
 
           //--- k1: set spinup
-          local_sw.Model.spinup_active = swTRUE;
-          local_sw.Model.spinup_duration = test_duration[k1];
-          local_sw.Model.spinup_mode = 1;
-          local_sw.Model.spinup_scope = 1;
+          local_sw.Model.SW_SpinUp.spinup = swTRUE;
+          local_sw.Model.SW_SpinUp.duration = test_duration[k1];
+          local_sw.Model.SW_SpinUp.mode = 1;
+          local_sw.Model.SW_SpinUp.scope = 1;
 
 
           //--- k2: set initial swc values
@@ -446,7 +446,7 @@ namespace {
             fflush(fp);
           }
 
-          local_sw.Model.spinup_active = swFALSE;
+          local_sw.Model.SW_SpinUp.spinup = swFALSE;
 
 
           // Run (a short) simulation

@@ -183,8 +183,8 @@ void SW_MDL_new_year(SW_MODEL* SW_Model) {
 	Time_new_year(year, SW_Model->days_in_month, SW_Model->cum_monthdays);
 	SW_Model->simyear = SW_Model->year + SW_Model->addtl_yr;
 
-	SW_Model->firstdoy = (year == SW_Model->startyr && !SW_Model->spinup_active) ? SW_Model->startstart : 1;
-	SW_Model->lastdoy = (year == SW_Model->endyr && !SW_Model->spinup_active) ? SW_Model->endend : Time_get_lastdoy_y(year);
+	SW_Model->firstdoy = (year == SW_Model->startyr && !SW_Model->SW_SpinUp.spinup) ? SW_Model->startstart : 1;
+	SW_Model->lastdoy = (year == SW_Model->endyr && !SW_Model->SW_SpinUp.spinup) ? SW_Model->endend : Time_get_lastdoy_y(year);
 }
 
 /**
@@ -244,12 +244,8 @@ void SW_MDL_get_ModelRun(SW_MODEL* SW_Model, SW_DOMAIN* SW_Domain,
     SW_Model->endyr = SW_Domain->endyr; // Copy end year
     SW_Model->startstart = SW_Domain->startstart; // Copy start doy
     SW_Model->endend = SW_Domain->endend; // Copy end doy
-	SW_Model->spinup_scope = SW_Domain->SW_SpinUp.scope;
-	SW_Model->spinup_duration = SW_Domain->SW_SpinUp.duration;
-	SW_Model->spinup_mode = SW_Domain->SW_SpinUp.mode;
-	SW_Model->spinup_active = SW_Domain->SW_SpinUp.spinup;
-	SW_Model->spinup_rng = SW_Domain->SW_SpinUp.spinup_rng;
-	SW_Model->spinup_rng_seed = SW_Domain->SW_SpinUp.rng_seed;
+
+    memcpy(&SW_Model->SW_SpinUp, &SW_Domain->SW_SpinUp, sizeof (SW_Model->SW_SpinUp));
 
     (void) LogInfo;
     (void) fileNames;

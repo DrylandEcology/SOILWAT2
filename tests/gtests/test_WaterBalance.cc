@@ -496,16 +496,15 @@ namespace {
     int i;
 
     // Turn on spinup simulation
-    SW_All.Model.spinup_active = swTRUE;
+    SW_All.Model.SW_SpinUp.spinup = swTRUE;
     // Set spinup variables
-    SW_All.Model.spinup_mode = 1;
-    SW_All.Model.spinup_duration = 5;
-    SW_All.Model.spinup_scope = 8;
-    SW_All.Model.spinup_rng_seed = 42;
+    SW_All.Model.SW_SpinUp.mode = 1;
+    SW_All.Model.SW_SpinUp.duration = 5;
+    SW_All.Model.SW_SpinUp.scope = 8;
 
     // Run the spinup & deactivate
     SW_CTL_run_spinup(&SW_All, &LogInfo);
-    SW_All.Model.spinup_active = swFALSE;
+    SW_All.Model.SW_SpinUp.spinup = swFALSE;
 
     // Run the simulation
     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);

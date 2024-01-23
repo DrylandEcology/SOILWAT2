@@ -90,6 +90,26 @@ typedef struct {
 		memoized_int_sin_beta[MAX_DAYS][TWO_DAYS];
 } SW_ATMD;
 
+
+
+/* =================================================== */
+/*                Spin-up struct                    */
+/* --------------------------------------------------- */
+typedef struct {
+	// data for the (optional) spinup before simulation loop
+
+	TimeInt scope,			/**< Scope (N): use first N years of simulation for the spinup */
+			duration;		/**< Duration (M): sample M years out of the first N years */
+
+	int mode,				/**< Mode: (1) repeated random resample; (2) construct sequence of M years */
+		rng_seed;			/**< Seed for generating random years for mode 1 */
+
+	sw_random_t spinup_rng; /**< Random number generator used for mode 1 */
+
+	Bool spinup;			/**< Whether the spinup is currently running - used to disable outputs */
+} SW_SPINUP;
+
+
 /* =================================================== */
 /*                    Model structs                    */
 /* --------------------------------------------------- */
@@ -113,16 +133,10 @@ typedef struct {
 	TimeInt startyr,			/* beginning year for a set of simulation run */
 			endyr,				/* ending year for a set of simulation run */
 			startstart,			/* startday in start year */
-			endend,				/* end day in end year */
-			spinup_scope, 		/* scope of spinup */
-			spinup_duration;	/* duration of spinup */
+			endend;				/* end day in end year */
 
-	int spinup_mode, 	 /* mode used for spinup */
-		spinup_rng_seed; /* RNG seed for spinup */
-
-	sw_random_t spinup_rng; /* RNG to use for spinup */
-
-	Bool spinup_active; /* flag used for enabling spinup capabilites */
+	// Data for (optional) spinup (copied from SW_DOMAIN)
+	SW_SPINUP SW_SpinUp;
 
 	// ********** END of copying SW_DOMAIN's data *************
 
@@ -1085,20 +1099,6 @@ typedef struct {
 /* =================================================== */
 /*                    Domain structs                   */
 /* --------------------------------------------------- */
-
-typedef struct {
-	// data for the (optional) spinup before simulation loop
-
-	TimeInt scope,			/**< Scope (N): use first N years of simulation for the spinup */
-			duration;		/**< Duration (M): sample M years out of the first N years */
-
-	int mode,				/**< Mode: (1) repeated random resample; (2) construct sequence of M years */
-		rng_seed;			/**< Seed for generating random years for mode 1 */
-
-	sw_random_t spinup_rng; /**< Random number generator used for mode 1 */
-
-	Bool spinup;			/**< Whether the spinup is currently running - used to disable outputs */
-} SW_SPINUP;
 
 typedef struct {
 	// Spatial domain information
