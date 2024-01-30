@@ -57,8 +57,7 @@ typedef struct {
 // this structure is for keeping track of the variables used in the soil_temperature function (mainly the regressions)
 typedef struct {
 
-	double depths[MAX_LAYERS],  //soil layer depths of SoilWat soil
-	       depthsR[MAX_ST_RGR],//evenly spaced depths of soil temperature layer profile
+	double depthsR[MAX_ST_RGR],//evenly spaced depths of soil temperature layer profile
 		   	 fcR[MAX_ST_RGR],//field capacity of soil temperature layer profile, i.e., at `depthsR[]`
 		   	 wpR[MAX_ST_RGR], //wilting point of soil temperature layer profile, i.e., at `depthsR[]`
 		   	 bDensityR[MAX_ST_RGR],//bulk density of the whole soil of soil temperature layer profile, i.e., at `depthsR[]`
@@ -274,6 +273,7 @@ typedef struct {
 		//Saxton2006_fK_gravel, /* gravel-correction factor for conductivity [1] */
 		//Saxton2006_lambda; /* Slope of logarithmic tension-moisture curve */
 
+    double depths[MAX_LAYERS];  //soil layer depths of SoilWat soil
 
 	/* Soil water retention curve (SWRC) */
 	unsigned int

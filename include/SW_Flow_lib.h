@@ -146,6 +146,7 @@ void soil_temperature(ST_RGR_VALUES* SW_StRegValues,
 					  double H_gt,
 					  TimeInt year,
 					  TimeInt doy,
+                      double depths[],
 					  double maxLyrTemperature[],
 					  double minLyrTemperature[],
 					  Bool *ptr_stError,
@@ -182,9 +183,10 @@ void SW_ST_setup_run(
 );
 
 void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
-	double width[], double oldavgLyrTemp[], double sTconst, unsigned int nlyrs,
+	double width[], double avgLyrTempInit[], double sTconst, unsigned int nlyrs,
 	double fc[], double wp[], double deltaX, double theMaxDepth,
-	unsigned int nRgr, Bool *ptr_stError, Bool *soil_temp_init, LOG_INFO* LogInfo);
+	unsigned int nRgr, double depths[], Bool *ptr_stError,
+    Bool *soil_temp_init, LOG_INFO* LogInfo);
 
 void set_frozen_unfrozen(unsigned int nlyrs, double avgLyrTemp[], double swc[],
 						 double swc_sat[], double width[], double lyrFrozen[]);
