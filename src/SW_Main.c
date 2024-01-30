@@ -63,6 +63,7 @@ int main(int argc, char **argv) {
 	Bool EchoInits = swFALSE;
 
     unsigned long userSUID;
+    int nMaxSoilLayers = 0;
 
     // Start overall wall time
     SW_WT_StartTime(&SW_WallTime);
@@ -113,6 +114,9 @@ int main(int argc, char **argv) {
 
     #if defined(SWNETCDF)
     SW_NC_check_input_files(&SW_Domain, &LogInfo);
+    nMaxSoilLayers = SW_NC_get_nMaxSoilLayers(sw_template.Site.n_layers);
+    #else
+    nMaxSoilLayers = sw_template.Site.n_layers;
     #endif
 
 	// finalize daily weather
