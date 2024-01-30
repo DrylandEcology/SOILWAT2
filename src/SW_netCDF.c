@@ -1737,18 +1737,20 @@ static void create_full_var(int* ncFileID, int newVarType,
  *
  * @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
  *  basic output information for all output keys
- * @param[in] p_OUT Data storage for simulation run values
- * @param[in] ncol_OUT Number of output columns for each output key
+ * @param[in] SW_GenOut Holds general variables that deal with output
  * @param[in] numFilesPerKey Number of output netCDFs each output key will
  *  have (same amount for each key)
- * @param[in] ncOutFileNames A list of the generated netCDF file names
+ * @param[in] ncOutFileNames A list of the generated output netCDF file names
  * @param[in] ncSuid Unique indentifier of the current suid being simulated
  * @param[in] strideOutYears Number of years to write into an output file
+ * @param[in] startYr Start simulation year
+ * @param[in] endYr End simulation year
  * @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_NC_write_output(SW_OUTPUT* SW_Output, RealD p_OUT[][SW_OUTNPERIODS],
-        IntUS ncol_OUT[], int numFilesPerKey, char** ncOutFileNames[][SW_OUTNKEYS],
-        unsigned long ncSuid[], int strideOutYears, LOG_INFO* LogInfo) {
+void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* SW_GenOut,
+        int numFilesPerKey, char** ncOutFileNames[][SW_OUTNPERIODS],
+        size_t ncSuid[], int strideOutYears, int startYr, int endYr,
+        LOG_INFO* LogInfo) {
 
 }
 
@@ -1761,14 +1763,23 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, RealD p_OUT[][SW_OUTNPERIODS],
  * @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
  *  basic output information for all output keys
  * @param[in] strideOutYears Number of years to write into an output file
+ * @param[in] startYr Start year of the simulation
+ * @param[in] endYr End year of the simulation
+ * @param[in] n_layers Number of layers to write out
+ * @param[in] n_evap_lyrs Number of layers in which evap is possible
  * @param[out] numFilesPerKey Number of output netCDFs each output key will
  *  have (same amount for each key)
- * @param[out] ncOutFileNames A list of the generated netCDF file names
+ * @param[out] lyrDepths Depths of soil layers (cm)
+ * @param[out] baseCalendarYear First year of the entire simulation
+ * @param[out] useOutPeriods Determine which output periods to output
+ * @param[out] ncOutFileNames A list of the generated output netCDF file names
  * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_create_output_files(const char* domFile, int domFileID,
-        SW_OUTPUT* SW_Output, int strideOutYears, int* numFilesPerKey,
-        char** ncOutFileNames[][SW_OUTNKEYS], LOG_INFO* LogInfo) {
+        SW_OUTPUT* SW_Output, int strideOutYears, int startYr, int endYr,
+        LyrIndex n_layers, int n_evap_lyrs, int* numFilesPerKey,
+        double lyrDepths[], int baseCalendarYear, Bool useOutPeriods[],
+        char** ncOutFileNames[][SW_OUTNPERIODS], LOG_INFO* LogInfo) {
 
 }
 
@@ -2127,19 +2138,28 @@ void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
  * @param[in] newVarType Type of the variable to create
  * @param[in] timeSize Size of "time" dimension
  * @param[in] vertSize Size of "vertical" dimension
+ * @param[in] vegSize Size of "pft" dimension
  * @param[in] varName Name of variable to write
  * @param[in] attNames Attribute names that the new variable will contain
  * @param[in] attVals Attribute values that the new variable will contain
  * @param[in] numAtts Number of attributes being sent in
  * @param[in] isInput Specifies if the created file will be input or output
  * @param[in] freq Value of the global attribute "frequency"
+ * @param[in,out] startTime Start number of days when dealing with
+ *  years between netCDF files
+ * @param[in] lyrDepths Depths of soil layers (cm)
+ * @param[in] baseCalendarYear First year of the entire simulation
+ * @param[in] startYr Start year for the current template
+ * @param[in] pd Current output netCDF period
  * @param[in,out] LogInfo  Holds information dealing with logfile output
 */
 void SW_NC_create_template(const char* domFile, int domFileID,
     const char* fileName, int* newFileID, int newVarType,
-    unsigned long timeSize, unsigned long vertSize, const char* varName,
-    const char* attNames[], const char* attVals[], int numAtts, Bool isInput,
-    const char* freq, LOG_INFO* LogInfo) {
+    size_t timeSize, size_t vertSize, int vegSize,
+    const char* varName, const char* attNames[], const char* attVals[],
+    int numAtts, Bool isInput, const char* freq, double* startTime,
+    double lyrDepths[], int baseCalendarYear, int startYr, OutPeriod pd,
+    LOG_INFO* LogInfo) {
 
     Bool siteDimExists = dimExists("site", domFileID);
     const char* domType = (siteDimExists) ? "s" : "xy";

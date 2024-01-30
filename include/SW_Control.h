@@ -49,8 +49,7 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
 void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                              LOG_INFO* LogInfo);
 void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSuid[],
-                   SW_OUTPUT_POINTERS SW_OutputPtrs[],
-                   RealD p_OUT[][SW_OUTNPERIODS], LOG_INFO* LogInfo);
+                   SW_OUTPUT_POINTERS SW_OutputPtrs[], LOG_INFO* LogInfo);
 
 
 #ifdef __cplusplus

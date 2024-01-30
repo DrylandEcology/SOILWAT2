@@ -740,12 +740,10 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, PATH_INFO* PathInfo,
  *  in relation to netCDF gridcells/sites
  * @param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
  *  hold pointers to subroutines for output keys
- * @param[in,out] p_OUT Data storage for simulation run values
  * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSuid[],
-                   SW_OUTPUT_POINTERS SW_OutputPtrs[],
-                   RealD p_OUT[][SW_OUTNPERIODS], LOG_INFO* LogInfo) {
+                   SW_OUTPUT_POINTERS SW_OutputPtrs[], LOG_INFO* LogInfo) {
 
     #ifdef SWDEBUG
     int debug = 0;
@@ -787,5 +785,4 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSu
 
     (void) SW_Domain;
     (void) ncSuid;
-    (void) p_OUT;
 }
