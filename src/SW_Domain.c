@@ -130,6 +130,9 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 
     MyFileName = SW_Domain->PathInfo.InFiles[eDomain];
 	f = OpenFile(MyFileName, "r", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
     // Set SW_DOMAIN
     while(GetALine(f, inbuf, LARGE_VALUE)) {

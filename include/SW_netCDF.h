@@ -26,6 +26,42 @@ extern "C" {
 #define COMMENT_INDEX 3
 #define UNITS_INDEX 4
 #define CELLMETHOD_INDEX 5
+
+#define NWETHR_VARS 0
+#define NTEMP_VARS 6
+#define NPRECIP_VARS 5
+#define NSOILINF_VARS 1
+#define NRUNOFF_VARS 4
+#define NALLH2O_VARS 0
+#define NVWCBULK_VARS 1
+#define NVWCMATRIC_VARS 1
+#define NSWCBULK_VARS 1
+#define NSWABULK_VARS 1
+#define NSWAMATRIC_VARS 1
+#define NSWA_VARS 1
+#define NSWPMATRIC_VARS 1
+#define NSURFACEW_VARS 1
+#define NTRANSP_VARS 2
+#define NEVAPSOIL_VARS 1
+#define NEVAPSURFACE 4
+#define NINTERCEPTION_VARS 3
+#define NLYRDRAIN_VARS 1
+#define NHYDRED_VARS 2
+#define NET_VARS 0
+#define NAET_VARS 6
+#define NPET_VARS 5
+#define NWETDAY_VARS 1
+#define NSNOWPACK_VARS 2
+#define NDEEPSWC_VARS 1
+#define NSOILTEMP_VARS 3
+#define NFROZEN_VARS 1
+#define NALLVEG_VARS 0
+#define NESTAB_VARS 1
+#define NCO2EFFECTS_VARS 2
+#define NBIOMASS_VARS 8
+
+extern int numVarsPerKey[];
+
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
