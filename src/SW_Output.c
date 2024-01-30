@@ -1630,6 +1630,38 @@ void SW_OUT_deconstruct(Bool full_reset, SW_ALL *sw)
 			sw->Output[k].outfile = NULL;
 		}
 		#endif
+
+        #if defined(SWNETCDF)
+        if(sw->Output[k].use) {
+            if(!isnull(sw->Output[k].outputVarInfo)) {
+                for(int varNum = 0; varNum < numVarsPerKey[k]; varNum++) {
+
+                    if(!isnull(sw->Output[k].outputVarInfo[varNum]) &&
+                        sw->Output[k].reqOutputVars[varNum]) {
+
+                        for(int attNum = 0; attNum < NUM_OUTPUT_INFO; attNum++) {
+
+                            if(!isnull(sw->Output[k].outputVarInfo[varNum][attNum])) {
+                                free(sw->Output[k].outputVarInfo[varNum][attNum]);
+                                sw->Output[k].outputVarInfo[varNum][attNum] = NULL;
+                            }
+                        }
+
+                        free(sw->Output[k].outputVarInfo[varNum]);
+                        sw->Output[k].outputVarInfo[varNum] = NULL;
+                    }
+                }
+
+                free(sw->Output[k].outputVarInfo);
+                sw->Output[k].outputVarInfo = NULL;
+            }
+
+            if(!isnull(sw->Output[k].reqOutputVars)) {
+                free(sw->Output[k].reqOutputVars);
+                sw->Output[k].reqOutputVars = NULL;
+            }
+        }
+        #endif
 	}
 
 	#if defined(SW_OUTARRAY)
@@ -2422,6 +2454,10 @@ void SW_OUT_read(SW_ALL* sw, char *InFiles[],
 	SW_OUT_set_nrow(&sw->Model, sw->GenOutput.use_OutPeriod,
 					sw->GenOutput.nrow_OUT);
 	#endif
+
+    #if defined(SWNETCDF)
+    SW_NC_read_out_vars(sw->Output, InFiles, sw->VegEstab.parms, LogInfo);
+    #endif
 
 }
 

@@ -25,7 +25,7 @@
 #define SW_OUTTEXT
 #endif
 
-#define SW_NFILES 26 // For `InFiles`
+#define SW_NFILES 27 // For `InFiles`
 #define SW_NVARNC 2 // For `InFilesNC`
 
 
@@ -956,6 +956,11 @@ typedef struct {
 	#if defined(RSOILWAT)
 	char *outfile; /* name of output */ //could probably be removed
 	#endif
+
+    #if defined(SWNETCDF)
+    Bool* reqOutputVars;          /* Output the respecitve variable */
+    char*** outputVarInfo;        /* Information about the respective output variable */
+    #endif
 } SW_OUTPUT;
 
 typedef struct {

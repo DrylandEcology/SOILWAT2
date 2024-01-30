@@ -16,6 +16,7 @@ extern "C" {
 
 #define DOMAIN_TEMP "Input_nc/domain_template.nc"
 
+#define NOUT_VAR_INPUTS 10
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
@@ -44,11 +45,17 @@ void SW_NC_read_inputs(SW_ALL* sw, SW_DOMAIN* SW_Domain, unsigned long ncSUID[],
                        LOG_INFO* LogInfo);
 void SW_NC_check_input_files(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo);
 void SW_NC_read(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo, LOG_INFO* LogInfo);
+void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
+                    SW_VEGESTAB_INFO** parms, LOG_INFO* LogInfo);
 void SW_NC_init_ptrs(SW_NETCDF* SW_netCDF);
 void SW_NC_deconstruct(SW_NETCDF* SW_netCDF);
 void SW_NC_open_dom_prog_files(SW_NETCDF* SW_netCDF, LOG_INFO* LogInfo);
 void SW_NC_close_files(SW_NETCDF* SW_netCDF);
 void SW_NC_deepCopy(SW_NETCDF* source, SW_NETCDF* dest, LOG_INFO* LogInfo);
+void SW_NC_init_outvars(char**** outkeyVars, OutKey currOutKey,
+                                 LOG_INFO* LogInfo);
+void SW_NC_init_outReq(Bool** reqOutVar, OutKey currOutKey, LOG_INFO* LogInfo);
+void SW_NC_alloc_files(char*** ncOutFiles, int numFiles, LOG_INFO* LogInfo);
 
 #ifdef __cplusplus
 }

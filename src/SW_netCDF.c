@@ -23,6 +23,84 @@
 #define PRGRSS_DONE ((signed char)1) // SUID has successfully been simulated
 #define PRGRSS_FAIL ((signed char)-1) // SUID failed to simulate
 
+const int times[] = {MAX_DAYS - 1, MAX_WEEKS, MAX_MONTHS, 1};
+
+// Matches order of the defines within `SW_Output.h`
+// Index `eSW_Estab` is modified from `SW_VES_read2()`,
+// specifying how many output variable there will be depending on the run
+int numVarsPerKey[] = {
+    NWETHR_VARS, NTEMP_VARS, NPRECIP_VARS, NSOILINF_VARS, NRUNOFF_VARS,
+    NALLH2O_VARS, NVWCBULK_VARS, NVWCMATRIC_VARS, NSWCBULK_VARS,
+    NSWABULK_VARS, NSWAMATRIC_VARS, NSWA_VARS, NSWPMATRIC_VARS,
+    NSURFACEW_VARS, NTRANSP_VARS, NEVAPSOIL_VARS, NEVAPSURFACE,
+    NINTERCEPTION_VARS, NLYRDRAIN_VARS, NHYDRED_VARS, NET_VARS,
+    NAET_VARS, NPET_VARS, NWETDAY_VARS, NSNOWPACK_VARS, NDEEPSWC_VARS,
+    NSOILTEMP_VARS, NFROZEN_VARS, NALLVEG_VARS, NESTAB_VARS, NCO2EFFECTS_VARS,
+    NBIOMASS_VARS
+};
+
+static const char* possKeys[][8] = {
+    {NULL}, // WTHR
+    {"TEMP__temp_max", "TEMP__temp_min", "TEMP__temp_avg", "TEMP__surfaceMax",
+    "TEMP__surfaceMin", "TEMP__surfaceAvg"},
+
+    {"PRECIP__ppt", "PRECIP__rain", "PRECIP__snow", "PRECIP__snowmelt",
+        "PRECIP__snowloss"},
+
+    {"SOILINFILT__soil_inf"},
+
+    {"RUNOFF__net", "RUNOFF__surfaceRunoff", "RUNOFF__snowRunoff",
+    "RUNOFF__surfaceRunon"},
+
+    {NULL}, // ALLH2O
+
+    // VWCBULK -> SURFACEWATER
+    {"VWCBULK__vwcMatric"}, {"VWCMATRIC__vwcBulk"}, {"SWCBULK__swcBulk"},
+    {"SWABULK__swaBulk"}, {"SWAMATRIC__swaMatric"}, {"SWA__SWA_VegType"},
+    {"SWPMATRIC__swpMatric"}, {"SURFACEWATER__surfaceWater"},
+
+    {"TRANSP__transp_total", "TRANSP__transp"},
+
+    {"EVAPSOIL__evap_baresoil"},
+
+    {"EVAPSURFACE__total_evap", "EVAPSURFACE__evap_veg", "EVAPSURFACE__litter_evap",
+    "EVAPSURFACE__surfaceWater_evap"},
+
+    {"INTERCEPTION__total_int", "INTERCEPTION__int_veg", "INTERCEPTION__litter_int"},
+
+    {"LYRDRAIN__lyrdrain"},
+
+    {"HYDRED__hydred_total", "HYDRED__hydred"},
+
+    {NULL}, // ET
+
+    {"AET__aet", "AET__tran", "AET__esoil", "AET__ecnw", "AET__esurf", "AET__snowloss"},
+
+    {"PET__pet", "PET__H_oh", "PET__H_ot", "PET__H_gh", "PET__H_gt"},
+
+    {"WETDAY__is_wet"},
+
+    {"SNOWPACK__snowpack", "SNOWPACK__snowdepth"},
+
+    {"DEEPSWC__deep"},
+
+    {"SOILTEMP__maxLyrTemperature", "SOILTEMP__minLyrTemperature",
+        "SOILTEMP__avgLyrTemp"},
+
+    {"FROZEN__lyrFrozen"},
+
+    {NULL}, // ALLVEG
+
+    {NULL}, // ESTABL -- handled differently
+
+    {"CO2EFFECTS__veg[].co2_multipliers[BIO_INDEX]",
+     "CO2EFFECTS__veg[].co2_multipliers[WUE_INDEX]"},
+
+    {"BIOMASS__bare_cov.fCover", "BIOMASS__veg[].cov.fCover",
+        "BIOMASS__biomass_total", "BIOMASS__veg[].biomass_inveg",
+        "BIOMASS__litter_total", "BIOMASS__biolive_total",
+        "BIOMASS__veg[].biolive_inveg", "BIOMASS__LAI"}
+};
 
 /* =================================================== */
 /*             Local Function Definitions              */
@@ -255,6 +333,38 @@ static void nc_read_atts(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo,
     SW_netCDF->coordinate_system = (SW_netCDF->primary_crs_is_geographic) ?
         Str_Dup(SW_netCDF->crs_geogsc.long_name, LogInfo) :
         Str_Dup(SW_netCDF->crs_projsc.long_name, LogInfo);
+}
+
+/**
+ * @brief Convert a read-in key (<OUTKEY>__<SW2 Variable Name>) into
+ *  it's respective numeric values
+*/
+static void get_2d_output_key(char* varKey, OutKey* outKey, int* outVarNum) {
+
+    OutKey k;
+    int varNum;
+    const int establSize = 6;
+
+    *outKey = eSW_NoKey;
+    *outVarNum = KEY_NOT_FOUND;
+
+    if(strncmp(varKey, SW_ESTAB, establSize) == 0) {
+        *outKey = eSW_Estab;
+    } else {
+        ForEachOutKey(k) {
+            if(k != eSW_Estab) {
+                for(varNum = 0; varNum < numVarsPerKey[k]; varNum++) {
+                    if(strcmp(possKeys[k][varNum], varKey) == 0) {
+
+                        *outKey = k;
+                        *outVarNum = varNum;
+
+                        return;
+                    }
+                }
+            }
+        }
+    }
 }
 
 /**
@@ -787,6 +897,26 @@ static void dealloc_netCDF_domain_vars(double **valsY, double **valsX,
     }
 }
 
+/**
+ * @brief Wrapper function to initialize output request variables
+ *  and output variable information
+ *
+ * @param[out] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
+ *  basic output information for all output keys
+ * @param[out] LogInfo Holds information on warnings and errors
+*/
+static void init_output_var_info(SW_OUTPUT* SW_Output, LOG_INFO* LogInfo) {
+    OutKey key;
+
+    ForEachOutKey(key) {
+        SW_NC_init_outReq(&SW_Output[key].reqOutputVars, key, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        SW_Output[key].outputVarInfo = NULL;
+    }
+}
 /**
  * @brief Helper function to `fill_domain_netCDF_vars()` to allocate
  *  memory for writing out values
@@ -2312,6 +2442,158 @@ void SW_NC_read(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 }
 
 /**
+ * @brief Read the user-provided csv that contains information about
+ *  output variables in netCDFs
+ *
+ * @param[in,out] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
+ *  basic output information for all output keys
+ * @param[in] InFiles Array of program in/output files
+ * @param[in] parms Array of type SW_VEGESTAB_INFO holding information about
+ *  species
+ * @param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
+                    SW_VEGESTAB_INFO** parms, LOG_INFO* LogInfo) {
+
+    FILE *f;
+    OutKey currOutKey;
+    SW_OUTPUT* currOut;
+    char inbuf[MAX_FILENAMESIZE], *MyFileName;
+    char varKey[MAX_FILENAMESIZE];
+    int varNum = 0, lineno = 0;
+
+    int index, numVars, estVar;
+    char* copyStr = NULL;
+    char input[NOUT_VAR_INPUTS][MAX_FILENAMESIZE] = {"\0"};
+    int scanRes = 0, defToLocalInd = 0;
+    const char* readLineFormat =
+        "%13[^,],%50[^,],%10[^,],%4[^,],%1[^,],%16[^,],"
+        "%50[^,],%100[^,],%10[^,],%14[^,]";
+
+    // Column indices
+    const int keyInd = 0, SWVarNameInd = 1, SWUnitsInd = 2, dimInd = 3,
+              doOutInd = 4, outVarNameInd = 5, longNameInd = 6,
+              commentInd = 7, outUnits = 8, cellMethodInd = 9;
+
+    MyFileName = InFiles[eNCOutVars];
+	f = OpenFile(MyFileName, "r", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit prematurely due to error
+    }
+
+    init_output_var_info(SW_Output, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit prematurely due to error
+    }
+
+    GetALine(f, inbuf, MAX_FILENAMESIZE); // Ignore the header
+    while(GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+        lineno++;
+        scanRes = sscanf(inbuf, readLineFormat, input[keyInd],
+                input[SWVarNameInd], input[SWUnitsInd], input[dimInd],
+                input[doOutInd], input[outVarNameInd], input[longNameInd],
+                input[commentInd], input[outUnits], input[cellMethodInd]);
+
+        if(scanRes != NOUT_VAR_INPUTS) {
+            LogError(LogInfo, LOGERROR, "Read in line #%d and found it does "
+                        "not contain the correct number of columns (%d). Use "
+                        "NA if the column should be intentionally blank (only "
+                        "meant for long_name or comment).",
+                        lineno, NOUT_VAR_INPUTS);
+            return; // Exit function prematurely due to error
+        }
+
+        if(atoi(input[doOutInd])) {
+            snprintf(varKey, MAX_FILENAMESIZE, "%s__%s",
+                     input[keyInd], input[SWVarNameInd]);
+
+            get_2d_output_key(varKey, &currOutKey, &varNum);
+            currOut = &SW_Output[currOutKey];
+
+            if(!currOut->use) {
+                LogError(LogInfo, LOGERROR, "The output request in outsetup.in "
+                                "does not match the request in the netCDF "
+                                "output input file.");
+                return; // Exit function prematurely due to error
+            }
+
+            if(currOutKey == KEY_NOT_FOUND) {
+                LogError(LogInfo, LOGWARN, "Could not find input key %s "
+                                "and/or variable %s on line %d.",
+                                input[keyInd], input[SWVarNameInd], lineno);
+
+                continue;
+            }
+
+            // Handle establishment different since it is "dynamic"
+            // (SW_VEGESTAB'S "count")
+            if(currOutKey == eSW_Estab && SW_Output[eSW_Estab].use) {
+                varNum = 0;
+            }
+
+            if(isnull(currOut->outputVarInfo)) {
+
+                SW_NC_init_outvars(&currOut->outputVarInfo,
+                                            currOutKey, LogInfo);
+                if(LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
+            }
+
+            currOut->reqOutputVars[varNum] = swTRUE;
+            currOut->outputVarInfo[varNum][DIM_INDEX] =
+                                            Str_Dup(input[dimInd], LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+            // Read in the rest of the attributes
+            // Output variable name, long name, comment, units, and cell_method
+           for(index = VARNAME_INDEX; index <= CELLMETHOD_INDEX; index++) {
+                defToLocalInd = index + doOutInd;
+
+                if(currOutKey == eSW_Estab) {
+                    numVars = numVarsPerKey[currOutKey];
+                    for(estVar = 0; estVar < numVars; estVar++) {
+
+                        if(estVar > 0 && index == VARNAME_INDEX) {
+                            currOut->reqOutputVars[estVar] = swTRUE;
+                            currOut->outputVarInfo[estVar][DIM_INDEX] =
+                                            Str_Dup(input[dimInd], LogInfo);
+                            if(LogInfo->stopRun) {
+                                return; // Exit function prematurely due to error
+                            }
+                        }
+
+                        if(index == VARNAME_INDEX) {
+                            copyStr = parms[estVar]->sppname;
+                        } else {
+                            copyStr = input[defToLocalInd];
+                        }
+                        currOut->outputVarInfo[estVar][index] =
+                                                    Str_Dup(copyStr, LogInfo);
+                        if(LogInfo->stopRun) {
+                            return; // Exit function prematurely due to error
+                        }
+                    }
+                } else {
+                    if(strcmp(input[defToLocalInd], "NA") == 0) {
+                        copyStr = (char *)"";
+                    } else {
+                        copyStr = input[defToLocalInd];
+                    }
+                    currOut->outputVarInfo[varNum][index] =
+                                                Str_Dup(copyStr, LogInfo);
+                    if(LogInfo->stopRun) {
+                        return; // Exit function prematurely due to error
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
  * @brief Initializes pointers within the type SW_NETCDF and SW_CRS
  *
  * @param[in,out] SW_netCDF Struct of type SW_NETCDF holding constant
@@ -2505,3 +2787,78 @@ void SW_NC_deepCopy(SW_NETCDF* source, SW_NETCDF* dest, LOG_INFO* LogInfo) {
         }
     }
 }
+
+/**
+ * @brief Initialize information in regards to output variables
+ *  respective to SW_OUTPUT instances
+ *
+ * @param[out] outkeyVars Holds all information about output variables
+ *  in netCDFs (e.g., output variable name)
+ * @param[in] currOutKey Specifies what output key is currently being allocated
+ *  (i.e., temperature, precipitation, etc.)
+ * @param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NC_init_outvars(char**** outkeyVars, OutKey currOutKey,
+                            LOG_INFO* LogInfo) {
+
+    int index, varNum, attNum;
+
+    // Allocate all memory for the variable information in the current
+    // output key
+    *outkeyVars =
+        (char ***)Mem_Malloc(sizeof(char **) * numVarsPerKey[currOutKey],
+                            "SW_NC_init_outvars()", LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+    for(index = 0; index < numVarsPerKey[currOutKey]; index++) {
+        (*outkeyVars)[index] = NULL;
+    }
+
+    for(index = 0; index < numVarsPerKey[currOutKey]; index++) {
+        (*outkeyVars)[index] =
+            (char **)Mem_Malloc(sizeof(char *) * NUM_OUTPUT_INFO,
+                "SW_NC_init_outvars()", LogInfo);
+        if(LogInfo->stopRun) {
+            for(varNum = 0; varNum < index; varNum++) {
+                free((*outkeyVars)[varNum]);
+            }
+            free(*outkeyVars);
+            return; // Exit function prematurely due to error
+        }
+
+        for(attNum = 0; attNum < NUM_OUTPUT_INFO; attNum++) {
+            (*outkeyVars)[index][attNum] = NULL;
+        }
+    }
+}
+
+/**
+ * @brief Initialize information about whether or not a variable should
+ *  be output
+ *
+ * @param[out] reqOutVar Specifies the number of variables that can be output
+ *  for a given output key
+ * @param[in] currOutKey Specifies what output key is currently being allocated
+ *  (i.e., temperature, precipitation, etc.)
+ * @param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NC_init_outReq(Bool** reqOutVar, OutKey currOutKey, LOG_INFO* LogInfo) {
+
+    int index;
+
+    // Initialize the variable within SW_OUTPUT which specifies if a variable
+    // is to be written out or not
+    *reqOutVar =
+        (Bool *)Mem_Malloc(sizeof(Bool) * numVarsPerKey[currOutKey],
+                            "SW_NC_init_outReq()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    for(index = 0; index < numVarsPerKey[currOutKey]; index++) {
+        (*reqOutVar)[index] = swFALSE;
+    }
+}
+
