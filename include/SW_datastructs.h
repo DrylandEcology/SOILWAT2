@@ -1079,7 +1079,8 @@ typedef struct {
     int ncFileIDs[SW_NVARNC];
     int ncVarIDs[SW_NVARNC];
 
-    int strideOutYears; // How many years to write out in a single output netCDF -- 1, X (e.g., 10) or Inf (-1)
+    int strideOutYears; /*< How many years to write out in a single output netCDF -- 1, X (e.g., 10) or Inf (-1) */
+    int baseCalendarYear; /*< Base simulation year for output output netCDFs */
 } SW_NETCDF;
 
 /* =================================================== */

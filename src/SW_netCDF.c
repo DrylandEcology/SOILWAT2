@@ -17,7 +17,7 @@
 /* --------------------------------------------------- */
 
 #define NUM_NC_IN_KEYS 2 // Number of possible keys within `files_nc.in`
-#define NUM_ATT_IN_KEYS 26 // Number of possible keys within `attributes_nc.in`
+#define NUM_ATT_IN_KEYS 27 // Number of possible keys within `attributes_nc.in`
 
 #define PRGRSS_READY ((signed char)0) // SUID is ready for simulation
 #define PRGRSS_DONE ((signed char)1) // SUID has successfully been simulated
@@ -132,7 +132,7 @@ static void nc_read_atts(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo,
             "proj_latitude_of_projection_origin", "proj_false_easting",
             "proj_false_northing",
 
-            "strideOutYears"
+            "strideOutYears", "baseCalendarYear"
             };
     static const Bool requiredKeys[NUM_ATT_IN_KEYS] =
             {swTRUE, swTRUE, swTRUE, swFALSE,
@@ -146,7 +146,7 @@ static void nc_read_atts(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo,
             swFALSE, swFALSE,
             swFALSE, swFALSE,
             swFALSE,
-            swFALSE};
+            swFALSE, swTRUE};
     Bool hasKeys[NUM_ATT_IN_KEYS] = {swFALSE};
 
     FILE *f;
@@ -282,6 +282,9 @@ static void nc_read_atts(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo,
                         return; // Exit function due to invalid input
                     }
                 }
+                break;
+            case 26:
+                SW_netCDF->baseCalendarYear = atoi(value);
                 break;
             case KEY_NOT_FOUND:
                 LogError(LogInfo, LOGWARN, "Ignoring unknown key in %s - %s",
