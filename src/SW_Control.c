@@ -777,6 +777,16 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSu
     #endif
 
     SW_CTL_main(&local_sw, SW_OutputPtrs, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    #if defined(SWNETCDF)
+    SW_NC_write_output(local_sw.Output, &local_sw.GenOutput,
+        local_sw.FileStatus.numOutFiles, local_sw.FileStatus.ncOutFiles,
+        ncSuid, SW_Domain->netCDFInfo.strideOutYears,
+        local_sw.Model.startyr, local_sw.Model.endyr, LogInfo);
+
 
     // Clear local instance of SW_ALL
     freeMem: {
