@@ -35,6 +35,7 @@
 
 #if defined(SWNETCDF)
 #include "include/SW_Output_outarray.h"
+#include "include/SW_netCDF.h"
 #endif
 
 
@@ -325,6 +326,8 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd, char *InFiles[],
  *	and values
  * @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
  * 	basic output information for all output keys
+ * @param[in] SW_netCDF Struct of type SW_NETCDF holding constant
+ *  netCDF file information
  * @param[in] n_layers Number of layers of soil within the simulation run
  * @param[in] InFiles Array of program in/output files
  * @param[in] GenOutput Holds general variables that deal with output
@@ -333,9 +336,11 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd, char *InFiles[],
  *  @note Call this routine at the beginning of the main program run, but
  *  after SW_OUT_read() which sets the global variable use_OutPeriod.
 */
-void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
-	LyrIndex n_layers, char *InFiles[], SW_GEN_OUT* GenOutput,
-	LOG_INFO* LogInfo) {
+void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus,
+    SW_OUTPUT* SW_Output, SW_NETCDF* SW_netCDF, LyrIndex n_layers,
+    LyrIndex n_evap_lyrs, char *InFiles[], SW_GEN_OUT* GenOutput,
+    int startYr, int endYr, double lyrDepths[], int baseCalendarYear,
+    LOG_INFO* LogInfo) {
 
 	OutPeriod pd;
 
@@ -347,10 +352,18 @@ void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
 
     #if defined(SWNETCDF)
     SW_OUT_construct_outarray(SW_Output, GenOutput, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    SW_NC_create_output_files(SW_netCDF->InFilesNC[vNCdom],
+        SW_netCDF->ncVarIDs[vNCdom], SW_Output, SW_netCDF->strideOutYears,
+        startYr, endYr, n_layers, n_evap_lyrs,
+        &SW_FileStatus->numOutFiles, lyrDepths, baseCalendarYear,
+        GenOutput->use_OutPeriod, SW_FileStatus->ncOutFiles, LogInfo);
 
     (void) pd;
     (void) SW_FileStatus;
-    (void) n_layers;
     (void) InFiles;
     #else
 	ForEachOutPeriod(pd) {
@@ -369,6 +382,12 @@ void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
             }
 		}
 	}
+    (void) n_evap_lyrs;
+    (void) lyrDepths;
+    (void) SW_netCDF;
+    (void) startYr;
+    (void) endYr;
+    (void) baseCalendarYear;
     #endif
 }
 

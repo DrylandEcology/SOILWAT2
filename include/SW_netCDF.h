@@ -17,6 +17,15 @@ extern "C" {
 #define DOMAIN_TEMP "Input_nc/domain_template.nc"
 
 #define NOUT_VAR_INPUTS 10
+#define MAX_NATTS 6 // Maximum number of attributes an output variable may have
+#define NUM_OUTPUT_INFO 6 // Number of columns within the output variable netCDF of interest (see below)
+
+#define DIM_INDEX 0
+#define VARNAME_INDEX 1
+#define LONGNAME_INDEX 2
+#define COMMENT_INDEX 3
+#define UNITS_INDEX 4
+#define CELLMETHOD_INDEX 5
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */

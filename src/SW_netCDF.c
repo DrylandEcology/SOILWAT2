@@ -11,6 +11,8 @@
 #include "include/myMemory.h"
 #include "include/Times.h"
 #include "include/SW_Domain.h"
+#include "include/SW_Output.h"
+#include "include/SW_Output_outarray.h"
 
 /* =================================================== */
 /*                   Local Defines                     */
@@ -22,6 +24,8 @@
 #define PRGRSS_READY ((signed char)0) // SUID is ready for simulation
 #define PRGRSS_DONE ((signed char)1) // SUID has successfully been simulated
 #define PRGRSS_FAIL ((signed char)-1) // SUID failed to simulate
+
+#define MAX_NUM_DIMS 5
 
 const int times[] = {MAX_DAYS - 1, MAX_WEEKS, MAX_MONTHS, 1};
 
@@ -769,6 +773,23 @@ static void write_double_att(const char* attName, const double* attVal, int varI
     }
 }
 
+
+/**
+ * @brief Write values to a variable of type string
+ *
+ * @param[in] ncFileID Identifier of the open netCDF file to write the attribute to
+ * @param[in] varVals Attribute value(s) to write out
+ * @param[out] LogInfo Holds information on warnings and errors
+*/
+static void write_string_vals(int ncFileID, int varID, const char **varVals,
+                              LOG_INFO* LogInfo) {
+
+
+    if(nc_put_var_string(ncFileID, varID, &varVals[0]) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "Could not write string values.");
+    }
+}
+
 /**
  * @brief Fill the progress variable in the progress netCDF with values
  *
@@ -860,7 +881,8 @@ static void create_netCDF_var(int* varID, const char* varName, int* dimIDs,
     }
 
     // Do not compress the CRS variables
-    if(strcmp(varName, "crs_geogsc") != 0 && strcmp(varName, "crs_projsc") != 0) {
+    if(strcmp(varName, "crs_geogsc") != 0 && strcmp(varName, "crs_projsc") != 0 &&
+        varType != NC_STRING) {
 
         if(nc_def_var_deflate(*ncFileID, *varID, shuffle, deflate, level) != NC_NOERR) {
             LogError(LogInfo, LOGERROR, "An error occurred when attempting to "
@@ -1660,6 +1682,384 @@ static void fill_netCDF_with_invariants(SW_NETCDF* SW_netCDF, char* domType,
 }
 
 /**
+ * @brief Calculate time size in days
+ *
+ * @param[in] rangeStart Start year for the current output file
+ * @param[in] rangeEnd End year for the current output file
+ * @param[in] baseTime Base number of output periods in a year
+ *  (e.g., 60 moonths in 5 years, or 731 days in 1980-1981)
+ * @param[in] pd Current output netCDF period
+*/
+static double calc_timeSize(int rangeStart, int rangeEnd, int baseTime,
+                            OutPeriod pd) {
+
+    double numLeapYears = 0.0;
+    int year;
+
+    if(pd == eSW_Day) {
+        for(year = rangeStart; year < rangeEnd; year++) {
+            if(isleapyear(year)) {
+                numLeapYears++;
+            }
+        }
+    }
+
+    return (double) (baseTime * (rangeEnd - rangeStart)) + numLeapYears;
+}
+
+/**
+ * @brief Gather the output dimension sizes when writing out values to
+ *  the output netCDF
+ *
+ * @param[in] dimStr String holding the dimensions for a specific
+ *  variable
+ * @param[in] originTimeSize Original "time" dimension size (that will
+ *  not be overwritten in the function)
+ * @param[in] originVertSize Original "vertical" dimension size (that will
+ *  not be overwritten in the function)
+ * @param[in] originPFTSize Original "pft" dimension size (that will
+ *  not be overwritten in the function)
+ * @param[out] timeSize Output write size for dimension "time"
+ * @param[out] vertSize Output write size for dimension "vertical"
+ * @param[out] pftSize Output write size for dimension "pft"
+ * @param[out] LogInfo Holds information dealing with logfile output
+*/
+static void determine_out_dim_sizes(char* dimStr, int originTimeSize,
+        int originVertSize, int originPFTSize, int* timeSize, int* vertSize,
+        int* pftSize, LOG_INFO* LogInfo) {
+
+    char* wkgPtr = dimStr;
+
+    *timeSize = *vertSize = *pftSize = 0;
+
+    while(*wkgPtr != '\0') {
+        switch(*wkgPtr) {
+            case 'Z':
+                *vertSize = originVertSize;
+                break;
+            case 'T':
+                *timeSize = originTimeSize;
+                break;
+            case 'V':
+                *pftSize = originPFTSize;
+                break;
+            default:
+                LogError(LogInfo, LOGWARN, "Detected unknown dimension: %s.",
+                                           *wkgPtr);
+                break;
+        }
+        wkgPtr++;
+    }
+}
+
+/**
+ * @brief Helper function to `fill_dimVar()`; fully creates/fills
+ *  the variable "time_bnds" and fills the variable "time"
+ *
+ * @param[in] ncFileID Identifier of the netCDF in which the information
+ *  will be written
+ * @param[in] dimIDs Dimension identifiers for "vertical" and "bnds"
+ * @param[in] size Size of the vertical dimension/variable
+ * @param[in] dimVarID "time" dimension identifier
+ * @param[in] startYr Start year of the simulation
+ * @param[in,out] startTime Start number of days when dealing with
+ *  years between netCDF files
+ * @param[in] pd Current output netCDF period
+ * @param[out] LogInfo Holds information dealing with logfile output
+*/
+static void create_time_vars(int ncFileID, int dimIDs[], int size,
+            int dimVarID, int startYr, double* startTime, OutPeriod pd,
+            LOG_INFO* LogInfo) {
+
+    double *bndsVals = NULL, *dimVarVals = NULL;
+    size_t numBnds = 2;
+    size_t start[] = {0, 0}, count[] = {(size_t)size, 0};
+    int currYear = startYr;
+    double midTimeNum = 0.0;
+    int month = 0, numDays = 0;
+    int bndsID = 0;
+    const int numDaysInWeek = 7;
+
+    const int periodDays[] = {1, numDaysInWeek, 0, MAX_DAYS - 1};
+
+    create_netCDF_var(&bndsID, "time_bnds", dimIDs,
+                        &ncFileID, NC_DOUBLE, numBnds, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    dimVarVals = (double *)Mem_Malloc(size * sizeof(double),
+                        "create_full_var", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    bndsVals = (double *)Mem_Malloc(size * numBnds * sizeof(double),
+                        "create_full_var", LogInfo);
+    if(LogInfo->stopRun) {
+        free(dimVarVals);
+        return; // Exit function prematurely due to error
+    }
+
+    for(size_t index = 0; index < (size_t) size; index++) {
+        numDays = periodDays[pd];
+
+        switch(pd) {
+            case eSW_Day:
+                midTimeNum = *startTime;
+                break;
+            case eSW_Week:
+                midTimeNum = *startTime - 1;
+                midTimeNum += *startTime + (double) numDays;
+                midTimeNum /= 2.0;
+                break;
+            case eSW_Month:
+                if(month == Feb) {
+                    numDays = isleapyear(currYear) ? 29 : 28;
+                } else {
+                    numDays = monthdays[month];
+                }
+                midTimeNum = *startTime - 1;
+                midTimeNum += *startTime + (double)numDays;
+                midTimeNum = floor(midTimeNum / 2.0);
+
+                currYear += (index % MAX_MONTHS == 0) ? 1.0 : 0.0;
+
+                month = (month + 1) % MAX_MONTHS;
+                break;
+            default: // yearly
+                numDays += isleapyear(currYear) ? 1.0 : 0.0;
+                midTimeNum = *startTime + ((double)numDays / 2.0);
+                midTimeNum = floor(midTimeNum);
+
+                currYear++;
+                break;
+        }
+        bndsVals[index * 2] = *startTime;
+        bndsVals[index * 2 + 1] = *startTime + numDays - 1;
+
+        *startTime += numDays;
+        dimVarVals[index] = midTimeNum;
+    }
+
+    fill_netCDF_var_double(ncFileID, dimVarID, dimVarVals,
+                           start, count, LogInfo);
+    free(dimVarVals);
+    if(LogInfo->stopRun) {
+        free(bndsVals);
+        return; // Exit function prematurely due to error
+    }
+
+    count[1] = numBnds;
+
+    fill_netCDF_var_double(ncFileID, bndsID, bndsVals,
+                            start, count, LogInfo);
+
+    free(bndsVals);
+}
+
+/**
+ * @brief Helper function to `fill_dimVar()`; fully creates/fills
+ *  the variable "vertical_bnds" and fills the variable "vertical"
+ *
+ * @param[in] ncFileID Identifier of the netCDF in which the information
+ *  will be written
+ * @param[in] dimIDs Dimension identifiers for "vertical" and "bnds"
+ * @param[in] size Size of the vertical dimension/variable
+ * @param[in] dimVarID "vertical" dimension identifier
+ * @param[in] lyrDepths Depths of soil layers (cm)
+ * @param[out] LogInfo Holds information dealing with logfile output
+*/
+static void create_vert_vars(int ncFileID, int dimIDs[], int size,
+                int dimVarID, double lyrDepths[], LOG_INFO* LogInfo) {
+
+    double *dimVarVals = NULL, *bndVals = NULL, lyrDepthStart = 0.0;
+    size_t numBnds = 2;
+    size_t start[] = {0, 0}, count[] = {(size_t)size, 0};
+    int bndIndex = 0;
+
+    create_netCDF_var(&bndIndex, "vertical_bnds", dimIDs,
+                        &ncFileID, NC_DOUBLE, numBnds, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    dimVarVals = (double *)Mem_Malloc(size * sizeof(double),
+                        "create_full_var", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    bndVals = (double *)Mem_Malloc(size * numBnds * sizeof(double),
+                        "create_full_var", LogInfo);
+    if(LogInfo->stopRun) {
+        free(dimVarVals);
+        return; // Exit function prematurely due to error
+    }
+
+    for(size_t index = 0; index < (size_t) size; index++) {
+        dimVarVals[index] = lyrDepths[index];
+
+        bndVals[index * 2] = lyrDepthStart;
+        bndVals[index * 2 + 1] = dimVarVals[index];
+
+        lyrDepthStart = bndVals[index * 2 + 1];
+    }
+
+    fill_netCDF_var_double(ncFileID, dimVarID, dimVarVals,
+                            start, count, LogInfo);
+    free(dimVarVals);
+    if(LogInfo->stopRun) {
+        free(bndVals);
+        return; // Exit function prematurely due to error
+    }
+
+    count[1] = numBnds;
+
+    fill_netCDF_var_double(ncFileID, bndIndex, bndVals,
+                            start, count, LogInfo);
+
+    free(bndVals);
+}
+
+/**
+ * @brief Helper function to `create_output_dimVar()`; fills
+ *  the dimension variable plus the respective "*_bnds" variable
+ *  if needed
+ *
+ * @param[in] ncFileID Identifier of the netCDF in which the information
+ *  will be written
+ * @param[in] dimIDs Identifiers of the dimensions the parent dimension has
+ *  (i.e., "time", "vertical", and "pft") in case of the need when creating
+ *  the "bnds" dimension for a "*_bnds" variable
+ * @param[in] size Size of the dimension/original variable dimension
+ * @param[in] varID Identifier of the new variable respectively named
+ *  from the created dimension
+ * @param[in] lyrDepths Depths of soil layers (cm)
+ * @param[in,out] startTime Start number of days when dealing with
+ *  years between netCDF files
+ * @param[in] dimNum Identifier to determine which position the given
+ *  dimension is in out of: "vertical" (0), "time" (1), and "pft" (2)
+ * @param[in] startYr Start year of the simulation
+ * @param[in] pd Current output netCDF period
+ * @param[out] LogInfo Holds information dealing with logfile output
+*/
+static void fill_dimVar(int ncFileID, int dimIDs[], int size, int varID,
+            double lyrDepths[], double* startTime, int dimNum,
+            int startYr, OutPeriod pd, LOG_INFO* LogInfo) {
+
+    const int vertInd = 0, timeInd = 1, pftInd = 2;
+    const int numBnds = 2;
+
+    const char* vertVals[] = {"trees", "shrubs", "forbs", "grass"};
+
+    if(dimNum == pftInd) {
+        write_string_vals(ncFileID, varID, vertVals, LogInfo);
+    } else {
+        if(!dimExists("bnds", ncFileID)) {
+            create_netCDF_dim("bnds", numBnds, &ncFileID, &dimIDs[1], LogInfo);
+        } else {
+            get_dim_identifier(ncFileID, "bnds", &dimIDs[1], LogInfo);
+        }
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        if(dimNum == vertInd) {
+            if(!varExists(ncFileID, "vertical_bnds")) {
+
+                create_vert_vars(ncFileID, dimIDs, size, varID,
+                                    lyrDepths, LogInfo);
+            }
+        } else if(dimNum == timeInd) {
+            if(!varExists(ncFileID, "time_bnds")) {
+                create_time_vars(ncFileID, dimIDs, size, varID,
+                                    startYr, startTime, pd, LogInfo);
+            }
+        }
+    }
+}
+
+/**
+ * @brief Create a "time", "vertical", or "pft" dimension variable and the
+ *  respective "*_bnds" variale (plus "bnds" dimension) for "time"
+ *  and "vertical" and fill the variable with the respective information
+ *
+ * @param[in] name Name of the new dimension
+ * @param[in] size Size of the new dimension
+ * @param[in] ncFileID Identifier of the netCDF in which the information
+ *  will be written
+ * @param[in,out] dimID New dimenion identifier within the given netCDF
+ * @param[in] dimNum Identifier to determine which position the given
+ *  dimension is in out of: "vertical" (0), "time" (1), and "pft" (2)
+ * @param[in] lyrDepths Depths of soil layers (cm)
+ * @param[in,out] startTime Start number of days when dealing with
+ *  years between netCDF files
+ * @param[in] baseCalendarYear First year of the entire simulation
+ * @param[in] startYr Start year of the simulation
+ * @param[in] pd Current output netCDF period
+ * @param[out] LogInfo Holds information dealing with logfile output
+*/
+static void create_output_dimVar(const char* name, int size, int ncFileID,
+        int* dimID, int dimNum, double lyrDepths[], double* startTime,
+        int baseCalendarYear, int startYr, OutPeriod pd, LOG_INFO* LogInfo) {
+
+    const int timeIndex = 1, pftIndex = 2, timeUnitIndex = 2;
+
+    int varID, index;
+    int dimIDs[2] = {0,0};
+    int varType = (dimNum == pftIndex) ? NC_STRING : NC_DOUBLE;
+    double tempVal = 1.0;
+    double* startFillTime = (dimNum == timeIndex) ? startTime : &tempVal;
+    const int numDims = 1;
+
+    const char* outAttNames[][6] = {
+        {"long_name", "standard_name", "units", "positive", "axis", "bounds"},
+        {"long_name", "standard_name", "units", "axis", "calendar"},
+        {"standard_name"}
+    };
+
+    char outAttVals[][6][MAX_FILENAMESIZE] = {
+        {"soil depth", "depth", "centimeter", "down", "Z", "vertical_bnds"},
+        {"time", "time", "", "T", "standard"},
+        {"biological_taxon_name"}
+    };
+
+    const int numVarAtts[] = {6, 5, 1};
+
+    create_netCDF_dim(name, size, &ncFileID, dimID, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    if(!varExists(ncFileID, name)) {
+        dimIDs[0] = *dimID;
+
+        create_netCDF_var(&varID, name, dimIDs, &ncFileID,
+                            varType, numDims, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        fill_dimVar(ncFileID, dimIDs, size, varID, lyrDepths,
+                    startFillTime, dimNum, startYr, pd, LogInfo);
+
+        if(dimNum == timeIndex) {
+            snprintf(outAttVals[timeIndex][timeUnitIndex], MAX_FILENAMESIZE,
+                     "days since %d-1-1", baseCalendarYear);
+        }
+
+        for(index = 0; index < numVarAtts[dimNum]; index++) {
+            write_str_att(outAttNames[dimNum][index], outAttVals[dimNum][index],
+                          varID, ncFileID, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+        }
+    }
+}
+
+/**
  * @brief Create a new variable by calculating the dimensions
  *  and writing attributes
  *
@@ -1667,40 +2067,38 @@ static void fill_netCDF_with_invariants(SW_NETCDF* SW_netCDF, char* domType,
  * @param[in] newVarType Type of the variable to create
  * @param[in] timeSize Size of "time" dimension
  * @param[in] vertSize Size of "vertical" dimension
+ * @param[in] pftSize Size of "pft" dimension
  * @param[in] varName Name of variable to write
  * @param[in] attNames Attribute names that the new variable will contain
  * @param[in] attVals Attribute values that the new variable will contain
  * @param[in] numAtts Number of attributes being sent in
- * @param[in,out] LogInfo  Holds information dealing with logfile output
+ * @param[in] lyrDepths Depths of soil layers (cm)
+ * @param[in,out] startTime Start number of days when dealing with
+ *  years between netCDF files
+ * @param[in] baseCalendarYear First year of the entire simulation
+ * @param[in] startYr Start year of the simulation
+ * @param[in] pd Current output netCDF period
+ * @param[in,out] LogInfo Holds information dealing with logfile output
 */
 static void create_full_var(int* ncFileID, int newVarType,
-    unsigned long timeSize, unsigned long vertSize, const char* varName,
+    size_t timeSize, size_t vertSize, size_t pftSize, const char* varName,
     const char* attNames[], const char* attVals[], int numAtts,
-    LOG_INFO* LogInfo) {
+    double lyrDepths[], double* startTime, int baseCalendarYear,
+    int startYr, OutPeriod pd, LOG_INFO* LogInfo) {
 
     int dimArrSize = 0, index, varID = 0;
-    int dimIDs[4]; // Maximum expected number of dimensions
+    int dimIDs[MAX_NUM_DIMS];
     Bool siteDimExists = dimExists("site", *ncFileID);
     const char* latName = (dimExists("lat", *ncFileID)) ? "lat" : "y";
     const char* lonName = (dimExists("lon", *ncFileID)) ? "lon" : "x";
     int numConstDims = (siteDimExists) ? 1 : 2;
     const char* thirdDim = (siteDimExists) ? "site" : latName;
     const char* constDimNames[] = {thirdDim, lonName};
-    const char* timeVertNames[] = {"time", "vertical"};
-    unsigned long timeVertVals[] = {timeSize, vertSize};
-    int numTimeVertVals = 2;
+    const char* timeVertVegNames[] = {"vertical", "time", "pft"};
+    char* dimVarName;
+    size_t timeVertVegVals[] = {vertSize, timeSize, pftSize};
+    int numTimeVertVegVals = 3, varVal;
 
-    for(index = 0; index < numTimeVertVals; index++) {
-        if(timeVertVals[index] > 0) {
-            create_netCDF_dim(timeVertNames[index], timeSize, ncFileID,
-                              &dimIDs[dimArrSize], LogInfo);
-            if(LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
-
-            dimArrSize++;
-        }
-    }
 
     for(index = 0; index < numConstDims; index++) {
         get_dim_identifier(*ncFileID, constDimNames[index],
@@ -1712,6 +2110,33 @@ static void create_full_var(int* ncFileID, int newVarType,
         dimArrSize++;
     }
 
+    for(index = 0; index < numTimeVertVegVals; index++) {
+        dimVarName = (char *)timeVertVegNames[index];
+        varVal = timeVertVegVals[index];
+        if(varVal > 0) {
+            if(!dimExists(dimVarName, *ncFileID)) {
+                create_output_dimVar(dimVarName, varVal, *ncFileID,
+                        &dimIDs[dimArrSize], index, lyrDepths, startTime,
+                        baseCalendarYear, startYr, pd, LogInfo);
+            } else {
+                get_dim_identifier(*ncFileID, dimVarName, &dimIDs[dimArrSize],
+                                   LogInfo);
+            }
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+            dimArrSize++;
+        }
+    }
+
+
+    create_netCDF_var(&varID, varName, dimIDs, ncFileID, newVarType,
+                      dimArrSize, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     for(index = 0; index < numAtts; index++) {
         write_str_att(attNames[index], attVals[index],
                     varID, *ncFileID, LogInfo);
@@ -1719,11 +2144,196 @@ static void create_full_var(int* ncFileID, int newVarType,
             return; // Exit function prematurely due to error
         }
     }
+}
 
-    create_netCDF_var(&varID, varName, dimIDs, ncFileID, newVarType,
-                      dimArrSize, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
+/**
+ * @brief Determine if the current output key contains information
+ *  within layers
+ *
+ * @param[in] key Specifies what output key is currently being allocated
+ *  (i.e., temperature, precipitation, etc.)
+ * @param[in] n_layers Total number of soil layers
+ * @param[in] n_evap_lyrs Number of layers in which evap is possible
+ *
+ * @return Number of layers to write out to the netCDFs in question
+*/
+static int getNLayers(OutKey key, int n_layers, int n_evap_lyrs) {
+    int nLayers = 0;
+
+    if((key >= eSW_VWCBulk && key <= eSW_SWPMatric) ||
+        key == eSW_EvapSoil || key == eSW_HydRed    ||
+        key == eSW_WetDays  || key == eSW_SoilTemp  ||
+        key == eSW_Frozen   || key == eSW_Biomass   ||
+        key == eSW_Transp) {
+
+        nLayers = n_layers;
+    } else if(key == eSW_LyrDrain) {
+        nLayers = n_layers - 1;
+    } else if(key == eSW_EvapSoil) {
+        nLayers = n_evap_lyrs;
+    }
+
+    return nLayers;
+}
+
+/**
+ * @brief Concentrate the important output variable attributes
+ *  into one location to write out
+ *
+ * @param[in] varInfo Attribute information on the current variable
+ *  that will help create the attributes
+ * @param[in] key Specifies what output key is currently being allocated
+ *  (i.e., temperature, precipitation, etc.)
+ * @param[in] pd Current output netCDF period
+ * @param[in] varNum Designated variable placement within the list of output
+ *  variable information
+ * @param[out] resAtts Resulting attributes to write out
+ * @param[in] sumType Sum type of the output key
+ * @param[out] LogInfo Holds information on warnings and errors
+*/
+static int gather_var_attributes(char** varInfo, OutKey key, OutPeriod pd,
+                                 int varNum, char* resAtts[], OutSum sumType,
+                                 LOG_INFO* LogInfo) {
+    int fillSize = 0, varIndex;
+    char cellRedef[MAX_FILENAMESIZE], establOrginName[MAX_FILENAMESIZE];
+
+    if(key == eSW_Estab) {
+        snprintf(establOrginName, MAX_FILENAMESIZE,
+                 "%s__%s", SW_ESTAB, varInfo[VARNAME_INDEX]);
+
+        resAtts[fillSize] = Str_Dup(establOrginName, LogInfo);
+        if(LogInfo->stopRun) {
+            return 0; // Exit function prematurely due to error
+        }
+    } else {
+        resAtts[fillSize] = (char *)possKeys[key][varNum];
+    }
+    fillSize++;
+
+    // Transfer the variable info into the result array (ignore the variable name and dimensions)
+    for(varIndex = LONGNAME_INDEX; varIndex <= CELLMETHOD_INDEX; varIndex++) {
+        resAtts[fillSize] = varInfo[varIndex];
+        fillSize++;
+    }
+
+    if(pd > eSW_Day) {
+        snprintf(cellRedef, MAX_FILENAMESIZE, "%s within days time: %s over days",
+                 resAtts[fillSize - 1], styp2str[sumType]);
+        resAtts[fillSize - 1] = Str_Dup(cellRedef, LogInfo);
+        if(LogInfo->stopRun) {
+            return 0; // Exit function prematurely due to error
+        }
+    }
+
+    if(key == eSW_Temp || key == eSW_SoilTemp) {
+        resAtts[fillSize] = (char *)"temperature: on_scale";
+        fillSize++;
+    }
+
+    return fillSize;
+}
+
+/**
+ * @brief Create and fill a new output netCDF file
+ *
+ * @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
+ *  basic output information for all output keys
+ * @param[in] domFile Domain netCDF file name
+ * @param[in] domID Domain netCDF file identifier
+ * @param[in] newFileName Name of the new file that will be created
+ * @param[in] key Specifies what output key is currently being allocated
+ *  (i.e., temperature, precipitation, etc.)
+ * @param[in] pd Current output netCDF period
+ * @param[in] originTimeSize Original "time" dimension size (that will
+ *  not be overwritten in the function)
+ * @param[in] originVertSize Original "vertical" dimension size (that will
+ *  not be overwritten in the function)
+ * @param[in] lyrDepths Depths of soil layers (cm)
+ * @param[in,out] startTime Start number of days when dealing with
+ *  years between netCDF files
+ * @param[in] baseCalendarYear First year of the entire simulation
+ * @param[in] startYr Start year of the simulation
+ * @param[in] LogInfo Holds information on warnings and errors
+*/
+static void create_output_file(SW_OUTPUT* SW_Output,
+        const char* domFile, int domID, const char* newFileName,
+        OutKey key, OutPeriod pd, int originTimeSize, int originVertSize,
+        double lyrDepths[], double* startTime, int baseCalendarYear,
+        int startYr, LOG_INFO* LogInfo) {
+
+    int index;
+    const char* frequency[] = {"daily", "weekly", "monthly", "yearly"};
+    const char* attNames[] = {
+        "original_name", "long_name", "comment", "units", "cell_method",
+        "units_metadata"
+    };
+    char* attVals[MAX_NATTS] = {NULL};
+    OutSum sumType = SW_Output->sumtype;
+
+    int numAtts = 0;
+    int numOutVars = numVarsPerKey[key];
+    int originNumVeg = NVEGTYPES;
+    int numVegTypesOut = 0, timeSize = 0, vertSize = 0;
+    const int nameAtt = 0;
+
+    int newFileID = -1; // Default to not created
+    int cellMethAttInd;
+    char* varName, *dimStr = NULL;
+    char** varInfo;
+
+    // Add the rest of the output variables for the current output file
+    for(index = 0; index < numOutVars; index++) {
+        if(SW_Output->reqOutputVars[index]) {
+            varInfo = SW_Output->outputVarInfo[index];
+            varName = SW_Output->outputVarInfo[index][VARNAME_INDEX];
+            dimStr = SW_Output->outputVarInfo[index][DIM_INDEX];
+
+            determine_out_dim_sizes(dimStr, originTimeSize, originVertSize,
+                originNumVeg, &timeSize, &vertSize, &numVegTypesOut, LogInfo);
+            numAtts = gather_var_attributes(varInfo, key, pd, index, attVals,
+                                            sumType, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+            if(!FileExists(newFileName)) {
+                if(pd > eSW_Day) {
+                    cellMethAttInd = (key == eSW_Temp || key == eSW_SoilTemp) ?
+                                                    numAtts - 2 : numAtts - 1;
+                }
+
+                // Create a new output file and initialize it with the first variable to create
+                SW_NC_create_template(domFile, domID, newFileName,
+                    &newFileID, NC_DOUBLE, timeSize, vertSize, numVegTypesOut,
+                    varName, attNames, (const char**)attVals, numAtts, swFALSE,
+                    frequency[pd], startTime, lyrDepths, baseCalendarYear,
+                    startYr, pd, LogInfo);
+            } else {
+                create_full_var(&newFileID, NC_DOUBLE, timeSize, vertSize, numVegTypesOut,
+                                varName, attNames, (const char**)attVals, numAtts,
+                                lyrDepths, startTime, baseCalendarYear, startYr, pd,
+                                LogInfo);
+            }
+
+            if(pd > eSW_Day && !isnull(attVals[cellMethAttInd])) {
+                free(attVals[cellMethAttInd]);
+                attVals[cellMethAttInd] = NULL;
+            }
+            if(key == eSW_Estab && !isnull(attVals[nameAtt])) {
+                free(attVals[nameAtt]);
+            }
+            if(LogInfo->stopRun && FileExists(newFileName)) {
+                nc_close(newFileID);
+                return; // Exit function prematurely due to error
+            }
+        }
+    }
+
+    // Only close the file if it was created
+    if(newFileID > -1) {
+        nc_close(newFileID);
+    }
+}
     }
 }
 
@@ -1781,6 +2391,74 @@ void SW_NC_create_output_files(const char* domFile, int domFileID,
         double lyrDepths[], int baseCalendarYear, Bool useOutPeriods[],
         char** ncOutFileNames[][SW_OUTNPERIODS], LOG_INFO* LogInfo) {
 
+    OutKey key;
+    OutPeriod pd;
+    int rangeStart, rangeEnd, fileNum;
+    int numYears = endYr - startYr + 1, yearOffset;
+    char fileNameBuf[MAX_FILENAMESIZE], yearBuff[10]; // 10 - hold up to YYYY-YYYY
+    int timeSize = 0, baseTime = 0, vertSize = 0;
+    double startTime[SW_OUTNPERIODS];
+
+    const char* outputDir = "Output/";
+    const char* periodSuffix[] = {"_daily", "_weekly", "_monthly", "_yearly"};
+    char* yearFormat;
+
+    *numFilesPerKey = (strideOutYears == -1) ? 1 :
+                            (int) ceil((double) numYears / strideOutYears);
+
+    yearOffset = (strideOutYears == -1) ? numYears : strideOutYears;
+
+    yearFormat = (strideOutYears == 1) ? (char *)"%d" : (char *)"%d-%d";
+
+    ForEachOutKey(key) {
+        if(numVarsPerKey[key] > 0 && SW_Output[key].use) {
+            vertSize = getNLayers(key, n_layers, n_evap_lyrs);
+
+            ForEachOutPeriod(pd) {
+                if(useOutPeriods[pd]) {
+                    startTime[pd] = 1;
+                    baseTime = times[pd];
+                    rangeStart = startYr;
+
+                    SW_NC_alloc_files(&ncOutFileNames[key][pd], *numFilesPerKey,
+                                    LogInfo);
+                    if(LogInfo->stopRun) {
+                        return; // Exit prematurely due to error
+                    }
+                    for(fileNum = 0; fileNum < *numFilesPerKey; fileNum++) {
+                        if(rangeStart + yearOffset > endYr) {
+                            rangeEnd = rangeStart + (endYr - rangeStart) + 1;
+                        } else {
+                            rangeEnd = rangeStart + yearOffset;
+                        }
+
+                        snprintf(yearBuff, 10, yearFormat, rangeStart, rangeEnd - 1);
+                        snprintf(fileNameBuf, MAX_FILENAMESIZE, "%s%s_%s%s.nc",
+                                outputDir, key2str[key], yearBuff, periodSuffix[pd]);
+
+                        ncOutFileNames[key][pd][fileNum] = Str_Dup(fileNameBuf, LogInfo);
+                        if(LogInfo->stopRun) {
+                            return; // Exit function prematurely due to error
+                        }
+
+                        if(!FileExists(fileNameBuf)) {
+                            timeSize = calc_timeSize(rangeStart, rangeEnd,
+                                                    baseTime, pd);
+
+                            create_output_file(&SW_Output[key], domFile, domFileID,
+                                fileNameBuf, key, pd, timeSize, vertSize, lyrDepths,
+                                &startTime[pd], baseCalendarYear, rangeStart, LogInfo);
+                            if(LogInfo->stopRun) {
+                                return; // Exit function prematurely due to error
+                            }
+                        }
+
+                        rangeStart = rangeEnd;
+                    }
+                }
+            }
+        }
+    }
 }
 
 /**
@@ -2885,3 +3563,25 @@ void SW_NC_init_outReq(Bool** reqOutVar, OutKey currOutKey, LOG_INFO* LogInfo) {
     }
 }
 
+/**
+ * @brief Allocate memory for files within SW_FILE_STATUS for future
+ *  functions to write to/create
+ *
+ * @param[out] ncOutFiles Output file names storage array
+ * @param[in] numFiles Number of file names to store/allocate memory for
+ * @param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NC_alloc_files(char*** ncOutFiles, int numFiles, LOG_INFO* LogInfo) {
+
+    int varNum;
+
+    *ncOutFiles = (char **) Mem_Malloc(numFiles * sizeof(char *),
+                            "SW_NC_create_output_files()", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    for(varNum = 0; varNum < numFiles; varNum++) {
+        (*ncOutFiles)[varNum] = NULL;
+    }
+}

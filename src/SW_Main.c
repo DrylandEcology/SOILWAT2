@@ -138,8 +138,11 @@ int main(int argc, char **argv) {
     if(LogInfo.stopRun) {
         goto finishProgram;
     }
-	SW_OUT_create_files(&sw_template.FileStatus, sw_template.Output, sw_template.Site.n_layers,
-	                    SW_Domain.PathInfo.InFiles, &sw_template.GenOutput, &LogInfo); // only used with SOILWAT2
+	SW_OUT_create_files(&sw_template.FileStatus, sw_template.Output,
+        &SW_Domain.netCDFInfo, nMaxSoilLayers, sw_template.Site.n_evap_lyrs,
+        SW_Domain.PathInfo.InFiles, &sw_template.GenOutput, sw_template.Model.startyr,
+        sw_template.Model.endyr, sw_template.Site.depths,
+        SW_Domain.netCDFInfo.baseCalendarYear, &LogInfo); // only used with SOILWAT2
     if(LogInfo.stopRun) {
         goto closeFiles;
     }
