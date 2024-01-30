@@ -48,13 +48,17 @@
 #include "include/SW_Output.h"
 
 // Array-based output declarations:
-#if defined(SW_OUTARRAY)
+#if defined(SW_OUTARRAY) || defined(SWNETCDF)
   #include "include/SW_Output_outarray.h"
 #endif
 
 // Text-based output declarations:
 #if defined(SW_OUTTEXT)
   #include "include/SW_Output_outtext.h"
+#endif
+
+#if defined(SWNETCDF)
+  #include "include/SW_netCDF.h"
 #endif
 
 /* Note: `get_XXX` functions are declared in `SW_Output.h`
@@ -1665,9 +1669,33 @@ void SW_OUT_deconstruct(Bool full_reset, SW_ALL *sw)
 	}
 
 	#if defined(SW_OUTARRAY)
+    OutPeriod pd;
+
 	if (full_reset) {
 		SW_OUT_deconstruct_outarray(&sw->GenOutput);
 	}
+
+    ForEachOutKey(k) {
+        ForEachOutPeriod(pd) {
+            if(!isnull(sw->FileStatus.ncOutFiles[k][pd])) {
+                for(int file = 0; file < sw->FileStatus.numOutFiles; file++) {
+                    if(!isnull(sw->FileStatus.ncOutFiles[k][pd][file])) {
+
+                        free(sw->FileStatus.ncOutFiles[k][pd][file]);
+                        sw->FileStatus.ncOutFiles[k][pd][file] = NULL;
+                    }
+                }
+
+                free(sw->FileStatus.ncOutFiles[k][pd]);
+                sw->FileStatus.ncOutFiles[k][pd] = NULL;
+            }
+
+            if(!isnull(sw->FileStatus.ncOutFiles[k][pd])) {
+                free(sw->FileStatus.ncOutFiles[k][pd]);
+                sw->FileStatus.ncOutFiles[k][pd] = NULL;
+            }
+        }
+    }
 	#endif
 }
 
@@ -2889,7 +2917,129 @@ void _echo_all_inputs(SW_ALL* sw) {
 	_echo_outputs(sw);
 }
 
+#if defined(SWNETCDF)
+/**
+ * @brief Deep copy SW_OUTPUT instances with information in regards to
+ *  netCDFs along with netCDF output files stored in SW_FILE_STATUS
+ *
+ * @param[out] dest_out Destination instances of SW_OUTPUT
+ * @param[in] source_out Source instances of SW_OUTPUT
+ * @param[out] dest_files Destination instance of netCDF files (SW_FILE_STATUS)
+ * @param[in] source_files Source instance of netCDF files (SW_FILE_STATUS)
+ * @param[in] useOutPeriods Specify which output periods were requested to output
+ * @param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_OUT_deepCopy(SW_OUTPUT* dest_out, SW_OUTPUT* source_out,
+                     SW_FILE_STATUS* dest_files, SW_FILE_STATUS* source_files,
+                     Bool useOutPeriods[], LOG_INFO* LogInfo) {
 
+    OutKey key;
+    OutPeriod pd;
+    int varNum, attNum, fileNum;
+    int numVars = 0, numFiles = source_files->numOutFiles;
+    char** destFile = NULL, *srcFile = NULL;
+
+    ForEachOutKey(key) {
+        memcpy(&dest_out[key], &source_out[key], sizeof(SW_OUTPUT));
+        numVars = numVarsPerKey[key];
+
+        if(numVars > 0 && source_out[key].use) {
+            ForEachOutPeriod(pd) {
+                if(useOutPeriods[pd]) {
+                    SW_NC_alloc_files(&dest_files->ncOutFiles[key][pd],
+                                        numFiles, LogInfo);
+                    if(LogInfo->stopRun) {
+                        return; // Exit function prematurely due to error
+                    }
+                    for(fileNum = 0; fileNum < numFiles; fileNum++) {
+                        destFile = &dest_files->ncOutFiles[key][pd][fileNum];
+                        srcFile = source_files->ncOutFiles[key][pd][fileNum];
+
+                        *destFile = Str_Dup(srcFile, LogInfo);
+
+                        if(LogInfo->stopRun) {
+                            return; // Exit function prematurley due to error
+                        }
+                    }
+                }
+            }
+
+            SW_NC_init_outvars(&dest_out[key].outputVarInfo,
+                                        key, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+            SW_NC_init_outReq(&dest_out[key].reqOutputVars, key, LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+            for(varNum = 0; varNum < numVars; varNum++) {
+                dest_out[key].reqOutputVars[varNum] =
+                                        source_out[key].reqOutputVars[varNum];
+
+                if(dest_out[key].reqOutputVars[varNum]) {
+                    for(attNum = 0; attNum < MAX_NATTS; attNum++) {
+                        dest_out[key].outputVarInfo[varNum][attNum] =
+                            Str_Dup(source_out[key].outputVarInfo[varNum][attNum], LogInfo);
+                        if(LogInfo->stopRun) {
+                            return; // Exit function prematurely due to error
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * @brief Copy the output array, `p_OUT`, to a new simulation run and
+ *  initialize `colnames_OUT` to NULL within the new instance
+ *
+ * @param[out] dest Destination instance of SW_GEN_OUT
+ * @param[in] source Source instance of SW_GEN_OUT
+ * @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
+ *  basic output information for all output keys
+ * @param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_GENOUT_deepCopy(SW_GEN_OUT* dest, SW_GEN_OUT* source,
+                    SW_OUTPUT* SW_Output, LOG_INFO* LogInfo) {
+
+    OutKey key;
+    OutPeriod timeStepOutPeriod;
+    size_t index, size;
+
+    memcpy(dest, source, sizeof(SW_GEN_OUT));
+
+    SW_OUT_construct_outarray(SW_Output, dest, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    ForEachOutKey(key) {
+		for(index = 0; index < source->used_OUTNPERIODS; index++) {
+			timeStepOutPeriod = source->timeSteps[key][index];
+
+			if (SW_Output[key].use && timeStepOutPeriod != eSW_NoTime) {
+				size = source->nrow_OUT[timeStepOutPeriod] *
+					(source->ncol_OUT[key] + ncol_TimeOUT[timeStepOutPeriod]);
+
+                for(index = 0; index < size; index++) {
+                    dest->p_OUT[key][timeStepOutPeriod][index] =
+                                source->p_OUT[key][timeStepOutPeriod][index];
+                }
+			}
+		}
+
+        for (index = 0; index < 5 * NVEGTYPES + MAX_LAYERS; index++)
+        {
+            dest->colnames_OUT[key][index] = NULL; // Not needed within the copy
+        }
+	}
+
+}
+#endif
 
 /*==================================================================*/
 /**

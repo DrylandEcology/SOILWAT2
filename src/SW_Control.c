@@ -165,6 +165,22 @@ void SW_ALL_deepCopy(SW_ALL* source, SW_ALL* dest, LOG_INFO* LogInfo)
     }
 
     SW_VegEstab_alloc_outptrs(&dest->VegEstab, LogInfo);
+
+    #if defined(SWNETCDF)
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    SW_OUT_deepCopy(dest->Output, source->Output, &dest->FileStatus,
+                    &source->FileStatus, source->GenOutput.use_OutPeriod,
+                    LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    SW_GENOUT_deepCopy(&dest->GenOutput, &source->GenOutput,
+                       source->Output, LogInfo);
+    #endif
 }
 
 
@@ -750,6 +766,7 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSu
     #endif
 
     SW_ALL local_sw;
+    Bool full_reset = swFALSE;
 
     // Copy template SW_ALL to local instance
     SW_ALL_deepCopy(sw_template, &local_sw, LogInfo);
@@ -787,10 +804,12 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSu
         ncSuid, SW_Domain->netCDFInfo.strideOutYears,
         local_sw.Model.startyr, local_sw.Model.endyr, LogInfo);
 
+    full_reset = swTRUE;
+    #endif
 
     // Clear local instance of SW_ALL
     freeMem: {
-        SW_CTL_clear_model(swFALSE, &local_sw);
+        SW_CTL_clear_model(full_reset, &local_sw);
     }
 
     (void) SW_Domain;

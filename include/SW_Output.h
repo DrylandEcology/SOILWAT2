@@ -169,6 +169,14 @@ void SW_OUT_set_SXWrequests(OutPeriod timeSteps_SXW[][SW_OUTNPERIODS],
 		IntUS *used_OUTNPERIODS, SW_OUTPUT *SW_Output, LOG_INFO *LogInfo);
 #endif
 
+#if defined(SWNETCDF)
+void SW_OUT_deepCopy(SW_OUTPUT* dest_out, SW_OUTPUT* source_out,
+                     SW_FILE_STATUS* dest_files, SW_FILE_STATUS* source_files,
+                     Bool useOutPeriods[], LOG_INFO* LogInfo);
+void SW_GENOUT_deepCopy(SW_GEN_OUT* dest, SW_GEN_OUT* source,
+                    SW_OUTPUT* SW_Output, LOG_INFO* LogInfo);
+#endif
+
 
 // Functions that format the output in `sw_outstr` for printing
 /* --------------------------------------------------- */
