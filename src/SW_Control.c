@@ -275,8 +275,8 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
 
             /* Simulate suid */
             set_walltime(&tsr, &ok_tsr);
-            SW_CTL_run_sw(sw_template, SW_Domain, ncSuid,
-                          SW_OutputPtrs, NULL, &local_LogInfo);
+            SW_CTL_run_sw(sw_template, SW_Domain, ncSuid, SW_OutputPtrs,
+                          &local_LogInfo);
             SW_WT_TimeRun(tsr, ok_tsr, SW_WallTime);
 
             /* Report progress for suid */

@@ -3063,8 +3063,9 @@ void SW_NC_create_template(const char* domFile, int domFileID,
     }
 
     if(!varExists(*newFileID, varName)) {
-        create_full_var(newFileID, newVarType, timeSize, vertSize, varName,
-                        attNames, attVals, numAtts, LogInfo);
+        create_full_var(newFileID, newVarType, timeSize, vertSize, vegSize,
+                        varName, attNames, attVals, numAtts, lyrDepths,
+                        startTime, baseCalendarYear, startYr, pd, LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -3108,6 +3109,10 @@ void SW_NC_create_progress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     const char* progFileName = SW_netCDF->InFilesNC[vNCprog];
     int* progVarID = &SW_netCDF->ncVarIDs[vNCprog];
 
+    // create_full_var/SW_NC_create_template
+    // No time variable/dimension
+    double startTime = 0;
+
     Bool progFileIsDom = (Bool) (strcmp(progFileName, domFileName) == 0);
     Bool progFileExists = FileExists(progFileName);
     Bool progVarExists = varExists(*progFileID, progVarName);
@@ -3132,15 +3137,19 @@ void SW_NC_create_progress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
         }
         #endif
 
+        // No need for various information when creating the progress netCDF
+        // like start year, start time, base calendar year, layer depths
+        // and period
         if(progFileExists) {
             nc_redef(*progFileID);
 
-            create_full_var(progFileID, NC_BYTE, 0, 0, progVarName,
-                            attNames, attVals, numAtts, LogInfo);
+            create_full_var(progFileID, NC_BYTE, 0, 0, 0, progVarName,
+                            attNames, attVals, numAtts, NULL,
+                            &startTime, 0, 0, 0, LogInfo);
         } else {
             SW_NC_create_template(domFileName, domFileID, progFileName,
-                progFileID, NC_BYTE, 0, 0, progVarName, attNames, attVals,
-                numAtts, swFALSE, freq, LogInfo);
+                progFileID, NC_BYTE, 0, 0, 0, progVarName, attNames, attVals,
+                numAtts, swFALSE, freq, &startTime, NULL, 0, 0, 0, LogInfo);
         }
 
         if(LogInfo->stopRun) {
