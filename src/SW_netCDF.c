@@ -3380,9 +3380,10 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
     char varKey[MAX_FILENAMESIZE];
     int varNum = 0, lineno = 0;
 
+    Bool estabFound = swFALSE;
     int index, numVars, estVar;
     char* copyStr = NULL;
-    char input[NOUT_VAR_INPUTS][MAX_FILENAMESIZE] = {"\0"};
+    char input[NOUT_VAR_INPUTS][MAX_ATTVAL_SIZE] = {"\0"};
     int scanRes = 0, defToLocalInd = 0;
     const char* readLineFormat =
         "%13[^,],%50[^,],%10[^,],%4[^,],%1[^,],%16[^,],"
@@ -3421,36 +3422,34 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
             return; // Exit function prematurely due to error
         }
 
-        if(atoi(input[doOutInd])) {
+        // Check if the variable was requested to be output
+        // Store attribute information for each variable (including names)
+        if(atoi(input[doOutInd]) && currOut->use) {
             snprintf(varKey, MAX_FILENAMESIZE, "%s__%s",
                      input[keyInd], input[SWVarNameInd]);
 
             get_2d_output_key(varKey, &currOutKey, &varNum);
             currOut = &SW_Output[currOutKey];
 
-            if(!currOut->use) {
-                LogError(LogInfo, LOGERROR, "The output request in outsetup.in "
-                                "does not match the request in the netCDF "
-                                "output input file.");
-                return; // Exit function prematurely due to error
-            }
-
             if(currOutKey == KEY_NOT_FOUND) {
                 LogError(LogInfo, LOGWARN, "Could not find input key %s "
                                 "and/or variable %s on line %d.",
                                 input[keyInd], input[SWVarNameInd], lineno);
-
                 continue;
-            }
+            } else if(currOutKey == eSW_Estab) {
+                // Handle establishment different since it is "dynamic"
+                // (SW_VEGESTAB'S "count")
+                if(estabFound) {
+                    LogError(LogInfo, LOGWARN, "Found more than one rows for "
+                                        "the key ESTAB, only one is expected, "
+                                        "ignoring...");
+                    continue;
+                }
 
-            // Handle establishment different since it is "dynamic"
-            // (SW_VEGESTAB'S "count")
-            if(currOutKey == eSW_Estab && SW_Output[eSW_Estab].use) {
+                estabFound = swTRUE;
                 varNum = 0;
             }
-
             if(isnull(currOut->outputVarInfo)) {
-
                 SW_NC_init_outvars(&currOut->outputVarInfo,
                                             currOutKey, LogInfo);
                 if(LogInfo->stopRun) {
@@ -3470,6 +3469,17 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
            for(index = VARNAME_INDEX; index <= CELLMETHOD_INDEX; index++) {
                 defToLocalInd = index + doOutInd;
 
+                if(currOutKey == eSW_Estab && index == VARNAME_INDEX) {
+                    copyStr = parms[estVar]->sppname;
+                } else if(strcmp(input[defToLocalInd], "NA") == 0) {
+                    copyStr = (char *)"";
+                } else {
+                    copyStr = input[defToLocalInd];
+                }
+
+                // Handle ESTAB differently by storing all attributes
+                // into `count` amount of variables and give the
+                // correct <sppname>'s
                 if(currOutKey == eSW_Estab) {
                     numVars = numVarsPerKey[currOutKey];
                     for(estVar = 0; estVar < numVars; estVar++) {
@@ -3483,11 +3493,6 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
                             }
                         }
 
-                        if(index == VARNAME_INDEX) {
-                            copyStr = parms[estVar]->sppname;
-                        } else {
-                            copyStr = input[defToLocalInd];
-                        }
                         currOut->outputVarInfo[estVar][index] =
                                                     Str_Dup(copyStr, LogInfo);
                         if(LogInfo->stopRun) {
@@ -3495,11 +3500,6 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
                         }
                     }
                 } else {
-                    if(strcmp(input[defToLocalInd], "NA") == 0) {
-                        copyStr = (char *)"";
-                    } else {
-                        copyStr = input[defToLocalInd];
-                    }
                     currOut->outputVarInfo[varNum][index] =
                                                 Str_Dup(copyStr, LogInfo);
                     if(LogInfo->stopRun) {

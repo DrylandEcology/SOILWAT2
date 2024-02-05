@@ -19,6 +19,7 @@ extern "C" {
 #define NOUT_VAR_INPUTS 10
 #define MAX_NATTS 6 // Maximum number of attributes an output variable may have
 #define NUM_OUTPUT_INFO 6 // Number of columns within the output variable netCDF of interest (see below)
+#define MAX_ATTVAL_SIZE 128
 
 #define DIM_INDEX 0
 #define VARNAME_INDEX 1
