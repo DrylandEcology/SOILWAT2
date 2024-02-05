@@ -1825,7 +1825,7 @@ static void create_time_vars(int ncFileID, int dimIDs[], int size,
     int bndsID = 0;
     const int numDaysInWeek = 7;
 
-    const int periodDays[] = {1, numDaysInWeek, 0, MAX_DAYS - 1};
+    const int periodDays[] = {1, numDaysInWeek, 0, 0};
 
     create_netCDF_var(&bndsID, "time_bnds", dimIDs,
                         &ncFileID, NC_DOUBLE, numBnds, LogInfo);
@@ -1849,39 +1849,29 @@ static void create_time_vars(int ncFileID, int dimIDs[], int size,
     for(size_t index = 0; index < (size_t) size; index++) {
         numDays = periodDays[pd];
 
-        switch(pd) {
-            case eSW_Day:
-                midTimeNum = *startTime;
-                break;
-            case eSW_Week:
-                midTimeNum = *startTime - 1;
-                midTimeNum += *startTime + (double) numDays;
-                midTimeNum /= 2.0;
-                break;
+        switch(pd) { // No special calculations to to for days/weeks
             case eSW_Month:
                 if(month == Feb) {
                     numDays = isleapyear(currYear) ? 29 : 28;
                 } else {
                     numDays = monthdays[month];
                 }
-                midTimeNum = *startTime - 1;
-                midTimeNum += *startTime + (double)numDays;
-                midTimeNum = floor(midTimeNum / 2.0);
 
                 currYear += (index % MAX_MONTHS == 0) ? 1.0 : 0.0;
-
                 month = (month + 1) % MAX_MONTHS;
                 break;
             default: // yearly
-                numDays += isleapyear(currYear) ? 1.0 : 0.0;
-                midTimeNum = *startTime + ((double)numDays / 2.0);
-                midTimeNum = floor(midTimeNum);
-
+                numDays = Time_get_lastdoy_y(currYear);
                 currYear++;
                 break;
         }
+
+        midTimeNum = *startTime;
+        midTimeNum += *startTime + (double) numDays;
+        midTimeNum /= 2.0;
+
         bndsVals[index * 2] = *startTime;
-        bndsVals[index * 2 + 1] = *startTime + numDays - 1;
+        bndsVals[index * 2 + 1] = *startTime + numDays;
 
         *startTime += numDays;
         dimVarVals[index] = midTimeNum;
@@ -2203,7 +2193,7 @@ static void create_full_var(int* ncFileID, int newVarType,
  * @return Number of layers to write out to the netCDFs in question
 */
 static int getNLayers(OutKey key, int n_layers, int n_evap_lyrs) {
-    int nLayers = 0;
+    int numLayers = 0;
 
     if((key >= eSW_VWCBulk && key <= eSW_SWPMatric) ||
         key == eSW_EvapSoil || key == eSW_HydRed    ||
@@ -2211,14 +2201,14 @@ static int getNLayers(OutKey key, int n_layers, int n_evap_lyrs) {
         key == eSW_Frozen   || key == eSW_Biomass   ||
         key == eSW_Transp) {
 
-        nLayers = n_layers;
+        numLayers = n_layers;
     } else if(key == eSW_LyrDrain) {
-        nLayers = n_layers - 1;
+        numLayers = n_layers - 1;
     } else if(key == eSW_EvapSoil) {
-        nLayers = n_evap_lyrs;
+        numLayers = n_evap_lyrs;
     }
 
-    return nLayers;
+    return numLayers;
 }
 
 /**
@@ -2624,7 +2614,7 @@ void SW_NC_create_output_files(const char* domFile, int domFileID,
 
             ForEachOutPeriod(pd) {
                 if(useOutPeriods[pd]) {
-                    startTime[pd] = 1;
+                    startTime[pd] = 0;
                     baseTime = times[pd];
                     rangeStart = startYr;
 
