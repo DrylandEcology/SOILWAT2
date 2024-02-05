@@ -3007,8 +3007,7 @@ void SW_GENOUT_deepCopy(SW_GEN_OUT* dest, SW_GEN_OUT* source,
                     SW_OUTPUT* SW_Output, LOG_INFO* LogInfo) {
 
     OutKey key;
-    OutPeriod timeStepOutPeriod;
-    size_t index, size;
+    size_t index;
 
     memcpy(dest, source, sizeof(SW_GEN_OUT));
 
@@ -3018,20 +3017,6 @@ void SW_GENOUT_deepCopy(SW_GEN_OUT* dest, SW_GEN_OUT* source,
     }
 
     ForEachOutKey(key) {
-		for(index = 0; index < source->used_OUTNPERIODS; index++) {
-			timeStepOutPeriod = source->timeSteps[key][index];
-
-			if (SW_Output[key].use && timeStepOutPeriod != eSW_NoTime) {
-				size = source->nrow_OUT[timeStepOutPeriod] *
-					(source->ncol_OUT[key] + ncol_TimeOUT[timeStepOutPeriod]);
-
-                for(index = 0; index < size; index++) {
-                    dest->p_OUT[key][timeStepOutPeriod][index] =
-                                source->p_OUT[key][timeStepOutPeriod][index];
-                }
-			}
-		}
-
         for (index = 0; index < 5 * NVEGTYPES + MAX_LAYERS; index++)
         {
             dest->colnames_OUT[key][index] = NULL; // Not needed within the copy
