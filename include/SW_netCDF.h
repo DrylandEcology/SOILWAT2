@@ -67,8 +67,8 @@ extern int numVarsPerKey[];
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* SW_GenOut,
-        int numFilesPerKey, char** ncOutFileNames[][SW_OUTNPERIODS],
-        size_t ncSuid[], int strideOutYears, int startYr, int endYr,
+        LyrIndex n_layers, int n_evap_layers, int numFilesPerKey,
+        char** ncOutFileNames[][SW_OUTNPERIODS], size_t ncSuid[],
         LOG_INFO* LogInfo);
 void SW_NC_create_output_files(const char* domFile, int domFileID,
         SW_OUTPUT* SW_Output, int strideOutYears, int startYr, int endYr,

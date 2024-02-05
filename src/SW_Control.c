@@ -800,9 +800,9 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSu
 
     #if defined(SWNETCDF)
     SW_NC_write_output(local_sw.Output, &local_sw.GenOutput,
+        local_sw.Site.n_layers, local_sw.Site.n_evap_lyrs,
         local_sw.FileStatus.numOutFiles, local_sw.FileStatus.ncOutFiles,
-        ncSuid, SW_Domain->netCDFInfo.strideOutYears,
-        local_sw.Model.startyr, local_sw.Model.endyr, LogInfo);
+        ncSuid, LogInfo);
 
     full_reset = swTRUE;
     #endif

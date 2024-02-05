@@ -967,27 +967,6 @@ static void init_output_var_info(SW_OUTPUT* SW_Output, LOG_INFO* LogInfo) {
 }
 
 /**
- * @brief Determines if the netCDF output file is to be written to
- *  by checking if there were any requested output variables
- *
- * @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
- *  basic output information for all output keys
- * @param[in] key Specifies what output key is currently being allocated
- *  (i.e., temperature, precipitation, etc.)
-*/
-static Bool output_file(SW_OUTPUT* SW_Output, OutKey key) {
-    int varNum;
-
-    for(varNum = 0; varNum < numVarsPerKey[key]; varNum++) {
-        if(SW_Output->reqOutputVars[varNum]) {
-            return swTRUE;
-        }
-    }
-
-    return swFALSE;
-}
-
-/**
  * @brief Helper function to `fill_domain_netCDF_vars()` to allocate
  *  memory for writing out values
  *
@@ -2312,7 +2291,7 @@ static void create_output_file(SW_OUTPUT* SW_Output,
     const int nameAtt = 0;
 
     int newFileID = -1; // Default to not created
-    int cellMethAttInd;
+    int cellMethAttInd = 0;
     char* varName, *dimStr = NULL;
     char** varInfo;
 
@@ -2371,27 +2350,6 @@ static void create_output_file(SW_OUTPUT* SW_Output,
 }
 
 /**
- * @brief Determine the starting dimensions to write data to the current
- *  file
- *
- * @param[out] start Start indices that the netCDF function will use
- * @param[in] ncSuid Unique indentifier of the current suid being simulated
- * @param[in] ncFileID File identifier to gather any necessary information
- *  from
-*/
-static void get_start_dims(size_t start[], size_t ncSuid[], int ncFileID) {
-
-    int index;
-    Bool twoDimDom = (Bool) (dimExists("lon", ncFileID) ||
-                             dimExists("x", ncFileID));
-    int additionDimStart = (twoDimDom) ? 2 : 1;
-
-    for(index = 0; index < MAX_NUM_DIMS; index++) {
-        start[index] = (index < additionDimStart) ? ncSuid[index] : 0;
-    }
-}
-
-/**
  * @brief Determine the write dimensions/sizes for the current
  *  output variable/period
  *
@@ -2402,16 +2360,16 @@ static void get_start_dims(size_t start[], size_t ncSuid[], int ncFileID) {
  * @param[out] LogInfo Holds information on warnings and errors
 */
 static void get_write_dim_sizes(int ncFileID, size_t dimSizes[], char* dimStr,
-                                LOG_INFO* LogInfo) {
+                                int n_layers, LOG_INFO* LogInfo) {
 
-    char* wkgDimPtr = dimStr, *dimName;
-    Bool twoDimDom = (Bool) (dimExists("lon", ncFileID) || dimExists("x", ncFileID));
+    char* wkgDimPtr = dimStr, *dimName = NULL;
+    Bool twoDimDom = !((Bool)dimExists("site", ncFileID));
     Bool readDimVal;
     int numDims = 0, index;
 
     dimSizes[numDims] = 1;
-    dimSizes[numDims + 1] = twoDimDom ? 1 : 0;
-    numDims += 2;
+    dimSizes[numDims + 1] = (twoDimDom) ? 1 : 0;
+    numDims += (twoDimDom) ? 2 : 1;
 
     while(*wkgDimPtr != '\0') {
         readDimVal = swTRUE;
@@ -2424,7 +2382,7 @@ static void get_write_dim_sizes(int ncFileID, size_t dimSizes[], char* dimStr,
                 dimName = (char *)"pft";
                 break;
             case 'Z':
-                dimName = (char *)"vertical";
+                dimSizes[numDims] = (size_t)n_layers;
                 break;
             default:
                 readDimVal = swFALSE;
@@ -2432,9 +2390,11 @@ static void get_write_dim_sizes(int ncFileID, size_t dimSizes[], char* dimStr,
         }
 
         if(readDimVal) {
-            get_dim_val(ncFileID, dimName, &dimSizes[numDims], LogInfo);
-            if(LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+            if(*wkgDimPtr != 'Z') {
+                get_dim_val(ncFileID, dimName, &dimSizes[numDims], LogInfo);
+                if(LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
             }
 
             numDims++;
@@ -2445,6 +2405,32 @@ static void get_write_dim_sizes(int ncFileID, size_t dimSizes[], char* dimStr,
     for(index = numDims; index < MAX_NUM_DIMS; index++) {
         dimSizes[index] = 0;
     }
+}
+
+/**
+ * @brief Calculate the starting index that will be used to write from
+ *  `p_OUT`
+ *
+ * @param[in] SW_GenOut Holds general variables that deal with output
+ * @param[in] ncFileID Identifier of the open netCDF file to check
+ * @param[in] varNum Variable number within the current key
+ * @param[in] pd Current output netCDF period
+ * @param[in] vertSize Size of "vertical" dimension (if any)
+ * @param[in] startTime Start number of days when dealing with
+ *  years between netCDF files
+*/
+static int calc_pOUTIndex(SW_GEN_OUT* SW_GenOut, int ncFileID, int varNum,
+                          OutPeriod pd, int vertSize, int startTime) {
+    int pOUTIndex = 0;
+
+    if(dimExists("vertical", ncFileID) && dimExists("pft", ncFileID)) {
+        pOUTIndex = iOUT2(varNum, 0, pd, (*SW_GenOut), vertSize);
+    } else {
+        pOUTIndex = iOUT(varNum, pd, (*SW_GenOut));
+    }
+    pOUTIndex += startTime;
+
+    return pOUTIndex;
 }
 
 /* =================================================== */
@@ -2458,55 +2444,41 @@ static void get_write_dim_sizes(int ncFileID, size_t dimSizes[], char* dimStr,
  * @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
  *  basic output information for all output keys
  * @param[in] SW_GenOut Holds general variables that deal with output
+ * @param[in] n_layers Number of layers to write out
+ * @param[in] n_evap_layers Number of layers in which evap is possible
  * @param[in] numFilesPerKey Number of output netCDFs each output key will
  *  have (same amount for each key)
  * @param[in] ncOutFileNames A list of the generated output netCDF file names
  * @param[in] ncSuid Unique indentifier of the current suid being simulated
- * @param[in] strideOutYears Number of years to write into an output file
- * @param[in] startYr Start simulation year
- * @param[in] endYr End simulation year
  * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* SW_GenOut,
-        int numFilesPerKey, char** ncOutFileNames[][SW_OUTNPERIODS],
-        size_t ncSuid[], int strideOutYears, int startYr, int endYr,
+        LyrIndex n_layers, int n_evap_layers, int numFilesPerKey,
+        char** ncOutFileNames[][SW_OUTNPERIODS], size_t ncSuid[],
         LOG_INFO* LogInfo) {
 
     OutKey key;
     OutPeriod pd;
     RealD *p_OUTValPtr = NULL;
-    int fileNum, numYears = endYr - startYr + 1;
-    int currFileID = 0, varNum;
+    int fileNum, currFileID = 0, varNum;
 
     char* fileName, *varName, *dimStr = NULL;
     size_t dimSizes[MAX_NUM_DIMS] = {0};
     size_t start[] = {0, 0, 0, 0, 0};
-    int pOUTIndex, startTime, timeSize = 0;
-    int rangeStart, rangeEnd, timeIndMin, timeIndMax;
-
-    int yearOffset = (strideOutYears == 1) ? 1 :
-                            (int) ceil((double) numYears / strideOutYears);
+    size_t pOUTIndex, startTime, timeSize = 0;
+    int vertSize;
 
     ForEachOutPeriod(pd) {
-        rangeStart = startYr;
-
         if(!SW_GenOut->use_OutPeriod[pd]) {
             continue; // Skip period iteration
         }
 
         for(fileNum = 0; fileNum < numFilesPerKey; fileNum++) {
-            if(rangeStart + yearOffset > endYr) {
-                rangeEnd = rangeStart + (endYr - rangeStart) + 1;
-            } else {
-                rangeEnd = rangeStart + yearOffset;
-            }
-
             ForEachOutKey(key) {
                 startTime = 0;
+                vertSize = getNLayers(key, n_layers, n_evap_layers);
 
-                if(numVarsPerKey[key] == 0 || !SW_Output[key].use ||
-                   !output_file(&SW_Output[key], key)) {
-
+                if(numVarsPerKey[key] == 0 || !SW_Output[key].use) {
                     continue; // Skip key iteration
                 }
                 fileName = ncOutFileNames[key][pd][fileNum];
@@ -2526,17 +2498,17 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* SW_GenOut,
                     varName = SW_Output[key].outputVarInfo[varNum][VARNAME_INDEX];
                     dimStr = SW_Output[key].outputVarInfo[varNum][DIM_INDEX];
 
-                    pOUTIndex = SW_GenOut->nrow_OUT[pd];
-                    pOUTIndex *= ncol_TimeOUT[pd] + varNum;
-                    pOUTIndex += startTime;
+                    pOUTIndex = calc_pOUTIndex(SW_GenOut, currFileID, varNum,
+                                               pd, vertSize, startTime);
 
                     get_write_dim_sizes(currFileID, dimSizes, dimStr,
-                                        LogInfo);
+                                        vertSize, LogInfo);
                     if(LogInfo->stopRun) {
                         return; // Exit function prematurely due to error
                     }
 
-                    get_start_dims(start, ncSuid, currFileID);
+                    start[0] = ncSuid[0];
+                    start[1] = ncSuid[1];
 
                     p_OUTValPtr = &SW_GenOut->p_OUT[key][pd][pOUTIndex];
 
@@ -2546,14 +2518,8 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* SW_GenOut,
                         return; // Exit function prematurely due to error
                     }
                 }
-                // Detect if the "vertical" dimension is before "time" dimension
-                timeIndMin = dimExists("site", currFileID) ? 1 : 2;
-                timeIndMax = dimExists("site", currFileID) ? 2 : 3;
-
-                timeSize = dimExists("vertical", currFileID) ?
-                            dimSizes[timeIndMax] : dimSizes[timeIndMin];
-
-                rangeStart = rangeEnd;
+                // Get the time value from the "time" dimension
+                get_dim_val(currFileID, "time", &timeSize, LogInfo);
                 startTime += timeSize;
 
                 nc_close(currFileID);
