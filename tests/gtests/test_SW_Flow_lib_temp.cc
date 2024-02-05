@@ -505,7 +505,7 @@ namespace {
     SW_Site.stNRGR = nRgr;
 
     SW_Site.soilBulk_density[0] = 1.8;
-    SW_Site.width[0] = 20;
+    SW_Site.width[0] = SW_Site.depths[0] = 20;
     SW_Site.avgLyrTempInit[0] = 5.0;
     SW_Site.Tsoil_constant = 4.15;
     SW_Site.swcBulk_fieldcap[0] = 2.6;
@@ -662,7 +662,8 @@ namespace {
     bmLimiter = 300., t1Param1 = 15., t1Param2 = -4., t1Param3 = 600., csParam1 =0.00070,
     csParam2 = 0.00030, shParam = 0.18, snowdepth = 5, sTconst = 4.15, deltaX = 15,
     theMaxDepth = 990., snow = 1, max_air_temp = 10.1, min_air_temp = -5.0, H_gt = 300.0,
-    surface_max = 10.6, surface_min = -6.8;
+    surface_max = 10.6, surface_min = -6.8,
+    acc = 0.;
     Bool ptr_stError = swFALSE;
 
     unsigned int nlyrs2 = MAX_LAYERS;
@@ -681,6 +682,8 @@ namespace {
     SW_Site.n_layers = nlyrs2;
     SW_Site.stNRGR = nRgr;
 
+    acc = 0.;
+
     for (i = 0; i < nlyrs2; i++) {
       SW_Site.avgLyrTempInit[i] = sTempInit3[i];
       // SWC(wilting point): width > swc_wp > 0
@@ -697,6 +700,8 @@ namespace {
 
       SW_Site.soilBulk_density[i] = 1.;
       SW_Site.width[i] = width2[i];
+      acc += width2[i];
+      SW_Site.depths[i] = acc;
       SW_Site.swcBulk_fieldcap[0] = 2.6;
       SW_Site.swcBulk_wiltpt[0] = 1.0;
       SW_Site.stDeltaX = 15;
@@ -804,14 +809,13 @@ namespace {
 
   // Test that main soil temperature functions fails when it is supposed to
   TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunctionDeathTest) {
-    SW_SITE SW_Site;
     ST_RGR_VALUES SW_StRegValues;
     SW_ST_init_run(&SW_StRegValues);
 
     LOG_INFO LogInfo;
     sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
-    RealD lyrFrozen[MAX_LAYERS] = {0};
+    RealD lyrFrozen[MAX_LAYERS] = {0}, depths[MAX_LAYERS] = {0};
 
     unsigned int nlyrs = 1, nRgr = 65, year = 1980, doy = 1;
     double airTemp = 25.0, pet = 5.0, aet = 4.0, biomass = 100., surfaceTemp = 15.,
@@ -831,7 +835,7 @@ namespace {
       sTemp, &surfaceTemp, nlyrs, bmLimiter, t1Param1, t1Param2,
       t1Param3, csParam1, csParam2, shParam, snowdepth,
       sTconst, deltaX, theMaxDepth, nRgr, snow, max_air_temp,
-      min_air_temp, H_gt, year, doy, SW_Site.depths,
+      min_air_temp, H_gt, year, doy, depths,
       min_temp, max_temp, &ptr_stError, &LogInfo
     );
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
