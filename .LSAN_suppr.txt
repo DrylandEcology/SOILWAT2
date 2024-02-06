@@ -11,3 +11,4 @@ leak:realizeClassWithoutSwift
 leak:_fetchInitializingClassList
 leak:libobjc.A.dylib
 leak:libsystem_c.dylib
+leak:libsystem_info.dylib

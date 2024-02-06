@@ -1226,6 +1226,11 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 		SW_Output[k].first_orig = 1;
 		SW_Output[k].last_orig = 366;
 
+		#if defined(SWNETCDF)
+		SW_Output[k].outputVarInfo = NULL;
+		SW_Output[k].reqOutputVars = NULL;
+		#endif
+
 		// assign `get_XXX` functions
 		switch (k)
 		{
@@ -1636,34 +1641,31 @@ void SW_OUT_deconstruct(Bool full_reset, SW_ALL *sw)
 		#endif
 
         #if defined(SWNETCDF)
-        if(sw->Output[k].use) {
-            if(!isnull(sw->Output[k].outputVarInfo)) {
-                for(int varNum = 0; varNum < numVarsPerKey[k]; varNum++) {
+        if(!isnull(sw->Output[k].outputVarInfo)) {
+            for(int varNum = 0; varNum < numVarsPerKey[k]; varNum++) {
 
-                    if(!isnull(sw->Output[k].outputVarInfo[varNum]) &&
-                        sw->Output[k].reqOutputVars[varNum]) {
+                if(!isnull(sw->Output[k].outputVarInfo[varNum])) {
 
-                        for(int attNum = 0; attNum < NUM_OUTPUT_INFO; attNum++) {
+                    for(int attNum = 0; attNum < NUM_OUTPUT_INFO; attNum++) {
 
-                            if(!isnull(sw->Output[k].outputVarInfo[varNum][attNum])) {
-                                free(sw->Output[k].outputVarInfo[varNum][attNum]);
-                                sw->Output[k].outputVarInfo[varNum][attNum] = NULL;
-                            }
+                        if(!isnull(sw->Output[k].outputVarInfo[varNum][attNum])) {
+                            free(sw->Output[k].outputVarInfo[varNum][attNum]);
+                            sw->Output[k].outputVarInfo[varNum][attNum] = NULL;
                         }
-
-                        free(sw->Output[k].outputVarInfo[varNum]);
-                        sw->Output[k].outputVarInfo[varNum] = NULL;
                     }
+
+                    free(sw->Output[k].outputVarInfo[varNum]);
+                    sw->Output[k].outputVarInfo[varNum] = NULL;
                 }
-
-                free(sw->Output[k].outputVarInfo);
-                sw->Output[k].outputVarInfo = NULL;
             }
 
-            if(!isnull(sw->Output[k].reqOutputVars)) {
-                free(sw->Output[k].reqOutputVars);
-                sw->Output[k].reqOutputVars = NULL;
-            }
+            free(sw->Output[k].outputVarInfo);
+            sw->Output[k].outputVarInfo = NULL;
+        }
+
+        if(!isnull(sw->Output[k].reqOutputVars)) {
+            free(sw->Output[k].reqOutputVars);
+            sw->Output[k].reqOutputVars = NULL;
         }
         #endif
 	}

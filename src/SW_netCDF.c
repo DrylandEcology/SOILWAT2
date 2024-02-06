@@ -3342,8 +3342,8 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
     char input[NOUT_VAR_INPUTS][MAX_ATTVAL_SIZE] = {"\0"};
     int scanRes = 0, defToLocalInd = 0;
     const char* readLineFormat =
-        "%13[^,],%50[^,],%10[^,],%4[^,],%1[^,],%16[^,],"
-        "%50[^,],%100[^,],%10[^,],%14[^,]";
+        "%13[^,],%50[^,],%10[^,],%4[^,],%1[^,],%127[^,],"
+        "%127[^,],%127[^,],%127[^,],%127[^,]";
 
     // Column indices
     const int keyInd = 0, SWVarNameInd = 1, SWUnitsInd = 2, dimInd = 3,
@@ -3370,41 +3370,53 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
                 input[commentInd], input[outUnits], input[cellMethodInd]);
 
         if(scanRes != NOUT_VAR_INPUTS) {
-            LogError(LogInfo, LOGERROR, "Read in line #%d and found it does "
-                        "not contain the correct number of columns (%d). Use "
-                        "NA if the column should be intentionally blank (only "
-                        "meant for long_name or comment).",
-                        lineno, NOUT_VAR_INPUTS);
+            LogError(LogInfo, LOGERROR,
+                        "%s [row %d]: %d instead of %d columns found. "
+                        "Enter 'NA' if value should be blank "
+                        "(e.g., for 'long_name' or 'comment').",
+                        MyFileName, lineno + 1, NOUT_VAR_INPUTS);
             return; // Exit function prematurely due to error
         }
 
         // Check if the variable was requested to be output
         // Store attribute information for each variable (including names)
-        if(atoi(input[doOutInd]) && currOut->use) {
+        if(atoi(input[doOutInd])) {
+
             snprintf(varKey, MAX_FILENAMESIZE, "%s__%s",
                      input[keyInd], input[SWVarNameInd]);
 
             get_2d_output_key(varKey, &currOutKey, &varNum);
+
+            if(currOutKey == eSW_NoKey) {
+                    LogError(LogInfo, LOGWARN,
+                                    "%s [row %d]: Could not interpret the input combination "
+                                    "of key/variable: '%s'/'%s'.",
+                                    MyFileName, lineno + 1, input[keyInd], input[SWVarNameInd]);
+                    continue;
+            }
+
             currOut = &SW_Output[currOutKey];
 
-            if(currOutKey == KEY_NOT_FOUND) {
-                LogError(LogInfo, LOGWARN, "Could not find input key %s "
-                                "and/or variable %s on line %d.",
-                                input[keyInd], input[SWVarNameInd], lineno);
+            if (!currOut->use) {
+                // key not in use
+                // don't output any of the variables within that outkey group
                 continue;
-            } else if(currOutKey == eSW_Estab) {
+            }
+
+            if(currOutKey == eSW_Estab) {
                 // Handle establishment different since it is "dynamic"
                 // (SW_VEGESTAB'S "count")
                 if(estabFound) {
-                    LogError(LogInfo, LOGWARN, "Found more than one rows for "
+                    LogError(LogInfo, LOGWARN, "%s: Found more than one row for "
                                         "the key ESTAB, only one is expected, "
-                                        "ignoring...");
+                                        "ignoring...", MyFileName);
                     continue;
                 }
 
                 estabFound = swTRUE;
                 varNum = 0;
             }
+
             if(isnull(currOut->outputVarInfo)) {
                 SW_NC_init_outvars(&currOut->outputVarInfo,
                                             currOutKey, LogInfo);
@@ -3463,6 +3475,7 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
                     }
                 }
             }
+
         }
     }
 }
@@ -3675,35 +3688,40 @@ void SW_NC_deepCopy(SW_NETCDF* source, SW_NETCDF* dest, LOG_INFO* LogInfo) {
 void SW_NC_init_outvars(char**** outkeyVars, OutKey currOutKey,
                             LOG_INFO* LogInfo) {
 
-    int index, varNum, attNum;
+    *outkeyVars = NULL;
 
-    // Allocate all memory for the variable information in the current
-    // output key
-    *outkeyVars =
-        (char ***)Mem_Malloc(sizeof(char **) * numVarsPerKey[currOutKey],
-                            "SW_NC_init_outvars()", LogInfo);
-        if(LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
+    if (numVarsPerKey[currOutKey] > 0) {
 
-    for(index = 0; index < numVarsPerKey[currOutKey]; index++) {
-        (*outkeyVars)[index] = NULL;
-    }
+        int index, varNum, attNum;
 
-    for(index = 0; index < numVarsPerKey[currOutKey]; index++) {
-        (*outkeyVars)[index] =
-            (char **)Mem_Malloc(sizeof(char *) * NUM_OUTPUT_INFO,
-                "SW_NC_init_outvars()", LogInfo);
-        if(LogInfo->stopRun) {
-            for(varNum = 0; varNum < index; varNum++) {
-                free((*outkeyVars)[varNum]);
+        // Allocate all memory for the variable information in the current
+        // output key
+        *outkeyVars =
+            (char ***)Mem_Malloc(sizeof(char **) * numVarsPerKey[currOutKey],
+                                "SW_NC_init_outvars()", LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
             }
-            free(*outkeyVars);
-            return; // Exit function prematurely due to error
+
+        for(index = 0; index < numVarsPerKey[currOutKey]; index++) {
+            (*outkeyVars)[index] = NULL;
         }
 
-        for(attNum = 0; attNum < NUM_OUTPUT_INFO; attNum++) {
-            (*outkeyVars)[index][attNum] = NULL;
+        for(index = 0; index < numVarsPerKey[currOutKey]; index++) {
+            (*outkeyVars)[index] =
+                (char **)Mem_Malloc(sizeof(char *) * NUM_OUTPUT_INFO,
+                    "SW_NC_init_outvars()", LogInfo);
+            if(LogInfo->stopRun) {
+                for(varNum = 0; varNum < index; varNum++) {
+                    free((*outkeyVars)[varNum]);
+                }
+                free(*outkeyVars);
+                return; // Exit function prematurely due to error
+            }
+
+            for(attNum = 0; attNum < NUM_OUTPUT_INFO; attNum++) {
+                (*outkeyVars)[index][attNum] = NULL;
+            }
         }
     }
 }
@@ -3720,19 +3738,24 @@ void SW_NC_init_outvars(char**** outkeyVars, OutKey currOutKey,
 */
 void SW_NC_init_outReq(Bool** reqOutVar, OutKey currOutKey, LOG_INFO* LogInfo) {
 
-    int index;
+    *reqOutVar = NULL;
 
-    // Initialize the variable within SW_OUTPUT which specifies if a variable
-    // is to be written out or not
-    *reqOutVar =
-        (Bool *)Mem_Malloc(sizeof(Bool) * numVarsPerKey[currOutKey],
-                            "SW_NC_init_outReq()", LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
+    if (numVarsPerKey[currOutKey] > 0) {
 
-    for(index = 0; index < numVarsPerKey[currOutKey]; index++) {
-        (*reqOutVar)[index] = swFALSE;
+        int index;
+
+        // Initialize the variable within SW_OUTPUT which specifies if a variable
+        // is to be written out or not
+        *reqOutVar =
+            (Bool *)Mem_Malloc(sizeof(Bool) * numVarsPerKey[currOutKey],
+                                "SW_NC_init_outReq()", LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        for(index = 0; index < numVarsPerKey[currOutKey]; index++) {
+            (*reqOutVar)[index] = swFALSE;
+        }
     }
 }
 
