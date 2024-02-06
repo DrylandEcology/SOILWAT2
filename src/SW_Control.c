@@ -45,6 +45,7 @@
 #include "include/SW_Carbon.h"
 #include "include/myMemory.h"
 #include "include/SW_Main_lib.h"
+#include "include/rands.h"
 
 #if defined(SWNETCDF)
 #include "include/SW_netCDF.h"
@@ -92,10 +93,12 @@ static void _end_day(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                      LOG_INFO* LogInfo) {
   int localTOffset = 1; // tOffset is one when called from this function
 
-	_collect_values(sw, SW_OutputPtrs, swFALSE, localTOffset, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
+  if ( !sw->Model.SW_SpinUp.spinup ) {
+    _collect_values(sw, SW_OutputPtrs, swFALSE, localTOffset, LogInfo);
+      if(LogInfo->stopRun) {
+          return; // Exit function prematurely due to error
+      }
+  }
 
 	SW_SWC_end_day(&sw->SoilWat, sw->Site.n_layers);
 }
@@ -388,6 +391,9 @@ void SW_CTL_setup_domain(unsigned long userSUID,
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
+
+    SW_DOM_construct(SW_Domain->SW_SpinUp.rng_seed, SW_Domain);
+
     SW_DOM_calc_nSUIDs(SW_Domain);
 
     #if defined(SWNETCDF)
@@ -425,6 +431,7 @@ void SW_CTL_setup_domain(unsigned long userSUID,
     }
 
     SW_DOM_SimSet(SW_Domain, userSUID, LogInfo);
+
 }
 
 /** @brief Setup and construct model (independent of inputs)
@@ -595,7 +602,9 @@ void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
   #ifdef SWDEBUG
   if (debug) swprintf("'SW_CTL_run_current_year': flush output\n");
   #endif
-  SW_OUT_flush(sw, SW_OutputPtrs, LogInfo);
+  if ( !sw->Model.SW_SpinUp.spinup ) {
+    SW_OUT_flush(sw, SW_OutputPtrs, LogInfo);
+  }
 
   #ifdef SWDEBUG
   if(LogInfo->stopRun) {
@@ -604,6 +613,107 @@ void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 
   if (debug) swprintf("'SW_CTL_run_current_year': completed.\n");
   #endif
+}
+
+/**
+@brief Run a spin-up
+
+  Calls 'SW_CTL_run_current_year' over an array of simulated years
+          as specified by the given spinup scope and duration which
+          then calls 'SW_SWC_water_flow' for each day.
+
+  No output is produced during the spin-up; state variables including
+  soil moisture and soil temperature are updated and handed off to the
+  simulation run.
+
+  A spin-up duration of 0 returns immediately (no spin-up).
+
+@param[in,out] sw Comprehensive struct of type SW_ALL containing all
+  information in the simulation
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+void SW_CTL_run_spinup(SW_ALL* sw, LOG_INFO* LogInfo) {
+
+  if (sw->Model.SW_SpinUp.duration == 0) return;
+
+  unsigned int i, k, quotient = 0, remainder = 0;
+  int mode = sw->Model.SW_SpinUp.mode,
+      yr;
+  TimeInt
+    duration = sw->Model.SW_SpinUp.duration,
+    scope = sw->Model.SW_SpinUp.scope,
+    finalyr = sw->Model.startyr + scope - 1,
+    *years;
+
+    years = ( TimeInt* )Mem_Malloc( sizeof( TimeInt ) * duration, "SW_CTL_run_spinup()", LogInfo );
+    if(LogInfo->stopRun) {
+      return; // Exit function prematurely due to error
+    }
+
+  #ifdef SWDEBUG
+  int debug = 0;
+  #endif
+  
+  switch ( mode ) {
+    case 2:
+      // initialize structured array
+      if ( duration <= scope ) {
+        // 1:m
+        yr = sw->Model.startyr;
+        for ( i = 0; i < duration; i++ ) {
+          years[ i ] = yr + i;
+        }
+      }
+      else {
+        // { {1:n}_(m//n), 1:(m%n) }
+        quotient = duration / scope;
+        remainder = duration % scope;
+        yr = sw->Model.startyr;
+        for ( i = 0; i < quotient * scope; i ++ ) {
+          years[ i ] = yr + ( i % scope );
+        }
+        for ( i = 0; i < remainder; i++) {
+          k = i + (scope * quotient);
+          years[ k ] = yr + i;
+        }
+      }
+
+      break;
+    default: // same as case 1
+      // initialize random array
+      for ( i = 0; i < duration; i++ ) {
+        yr = RandUniIntRange( sw->Model.startyr,
+                                      finalyr,
+                                      &sw->Model.SW_SpinUp.spinup_rng );
+        years[ i ] = yr;
+      }
+      break;
+  }
+
+  TimeInt *cur_yr = &sw->Model.year,
+          yrIdx,
+          startyr = sw->Model.startyr;
+
+  sw->Model.startyr = years[0]; // set startyr for spinup
+
+  for (yrIdx = 0; yrIdx < duration; yrIdx++) {
+    *cur_yr = years[ yrIdx ];
+
+    #ifdef SWDEBUG
+    if (debug) swprintf("\n'SW_CTL_run_spinup': simulate year = %d\n", *cur_yr);
+    #endif
+
+    SW_CTL_run_current_year(sw, NULL, LogInfo);
+    if(LogInfo->stopRun) {
+        free( years );
+        return; // Exit function prematurely due to error
+    }
+  }
+
+  sw->Model.startyr = startyr; // reset startyr to original value
+
+  free( years );
+
 }
 
 
@@ -792,6 +902,11 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSu
         );
     }
     #endif
+
+    if ( SW_Domain->SW_SpinUp.spinup ) {
+      SW_CTL_run_spinup(&local_sw, LogInfo );
+      local_sw.Model.SW_SpinUp.spinup = swFALSE;
+    }
 
     SW_CTL_main(&local_sw, SW_OutputPtrs, LogInfo);
     if(LogInfo->stopRun) {

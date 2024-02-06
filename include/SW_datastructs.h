@@ -89,6 +89,26 @@ typedef struct {
 		memoized_int_sin_beta[MAX_DAYS][TWO_DAYS];
 } SW_ATMD;
 
+
+
+/* =================================================== */
+/*                Spin-up struct                    */
+/* --------------------------------------------------- */
+typedef struct {
+	// data for the (optional) spinup before simulation loop
+
+	TimeInt scope,			/**< Scope (N): use first N years of simulation for the spinup */
+			duration;		/**< Duration (M): sample M years out of the first N years */
+
+	int mode,				/**< Mode: (1) repeated random resample; (2) construct sequence of M years */
+		rng_seed;			/**< Seed for generating random years for mode 1 */
+
+	sw_random_t spinup_rng; /**< Random number generator used for mode 1 */
+
+	Bool spinup;			/**< Whether the spinup is currently running - used to disable outputs */
+} SW_SPINUP;
+
+
 /* =================================================== */
 /*                    Model structs                    */
 /* --------------------------------------------------- */
@@ -107,12 +127,17 @@ typedef struct {
 	 * doy and year are base1. */
 	/* simyear = year + addtl_yr */
 
-	// Create a copy of SW_DOMAIN's time information to instead
-	// of passing around SW_DOMAIN
-	TimeInt startyr,       /* beginning year for a set of simulation run */
-			endyr,         /* ending year for a set of simulation run */
-			startstart,    /* startday in start year */
-			endend;        /* end day in end year */
+	// Create a copy of SW_DOMAIN's time & spinup information
+	// to use instead of passing around SW_DOMAIN
+	TimeInt startyr,			/* beginning year for a set of simulation run */
+			endyr,				/* ending year for a set of simulation run */
+			startstart,			/* startday in start year */
+			endend;				/* end day in end year */
+
+	// Data for (optional) spinup (copied from SW_DOMAIN)
+	SW_SPINUP SW_SpinUp;
+
+	// ********** END of copying SW_DOMAIN's data *************
 
 	RealD longitude,	/* longitude of the site (radians)        */
 		  latitude,		/* latitude of the site (radians)        */
@@ -1085,8 +1110,9 @@ typedef struct {
     char* outputVarsFileName;
 } SW_NETCDF;
 
+
 /* =================================================== */
-/*                    Domain struct                    */
+/*                    Domain structs                   */
 /* --------------------------------------------------- */
 
 typedef struct {
@@ -1118,6 +1144,9 @@ typedef struct {
 
 	// Information on input files
 	PATH_INFO PathInfo;
+
+	// Data for (optional) spinup
+	SW_SPINUP SW_SpinUp;
 
     // Information dealing with netCDFs
     SW_NETCDF netCDFInfo;
