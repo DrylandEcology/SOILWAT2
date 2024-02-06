@@ -3408,9 +3408,7 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
            for(index = VARNAME_INDEX; index <= CELLMETHOD_INDEX; index++) {
                 defToLocalInd = index + doOutInd;
 
-                if(currOutKey == eSW_Estab && index == VARNAME_INDEX) {
-                    copyStr = parms[estVar]->sppname;
-                } else if(strcmp(input[defToLocalInd], "NA") == 0) {
+                if(strcmp(input[defToLocalInd], "NA") == 0) {
                     copyStr = (char *)"";
                 } else {
                     copyStr = input[defToLocalInd];
@@ -3423,7 +3421,8 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
                     numVars = numVarsPerKey[currOutKey];
                     for(estVar = 0; estVar < numVars; estVar++) {
 
-                        if(estVar > 0 && index == VARNAME_INDEX) {
+                        if(index == VARNAME_INDEX) {
+                            copyStr = parms[estVar]->sppname;
                             currOut->reqOutputVars[estVar] = swTRUE;
                             currOut->outputVarInfo[estVar][DIM_INDEX] =
                                             Str_Dup(input[dimInd], LogInfo);
