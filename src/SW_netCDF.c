@@ -2316,18 +2316,16 @@ static void create_output_file(SW_OUTPUT* SW_Output,
                                                     numAtts - 2 : numAtts - 1;
                 }
 
-                // Create a new output file and initialize it with the first variable to create
+                // Create a new output file
                 SW_NC_create_template(domFile, domID, newFileName,
-                    &newFileID, NC_DOUBLE, timeSize, vertSize, numVegTypesOut,
-                    varName, attNames, (const char**)attVals, numAtts, swFALSE,
-                    frequency[pd], startTime, lyrDepths, baseCalendarYear,
-                    startYr, pd, LogInfo);
-            } else {
-                create_full_var(&newFileID, NC_DOUBLE, timeSize, vertSize, numVegTypesOut,
-                                varName, attNames, (const char**)attVals, numAtts,
-                                lyrDepths, startTime, baseCalendarYear, startYr, pd,
-                                LogInfo);
+                    &newFileID, swFALSE, frequency[pd], LogInfo);
             }
+
+            create_full_var(&newFileID, NC_DOUBLE, timeSize, vertSize, numVegTypesOut,
+                            varName, attNames, (const char**)attVals, numAtts,
+                            lyrDepths, startTime, baseCalendarYear, startYr, pd,
+                            LogInfo);
+
 
             if(pd > eSW_Day && !isnull(attVals[cellMethAttInd])) {
                 free(attVals[cellMethAttInd]);
@@ -2971,36 +2969,19 @@ void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 }
 
 /**
- * @brief Copy domain netCDF to a new file and add a new variable
+ * @brief Copy domain netCDF as a template
  *
  * @param[in] domFile Name of the domain netCDF
  * @param[in] domFileID Identifier of the domain netCDF file
  * @param[in] fileName Name of the netCDF file to create
  * @param[in] newFileID Identifier of the netCDF file to create
- * @param[in] newVarType Type of the variable to create
- * @param[in] timeSize Size of "time" dimension
- * @param[in] vertSize Size of "vertical" dimension
- * @param[in] vegSize Size of "pft" dimension
- * @param[in] varName Name of variable to write
- * @param[in] attNames Attribute names that the new variable will contain
- * @param[in] attVals Attribute values that the new variable will contain
- * @param[in] numAtts Number of attributes being sent in
  * @param[in] isInput Specifies if the created file will be input or output
  * @param[in] freq Value of the global attribute "frequency"
- * @param[in,out] startTime Start number of days when dealing with
- *  years between netCDF files
- * @param[in] lyrDepths Depths of soil layers (cm)
- * @param[in] baseCalendarYear First year of the entire simulation
- * @param[in] startYr Start year for the current template
- * @param[in] pd Current output netCDF period
- * @param[in,out] LogInfo  Holds information dealing with logfile output
+ * @param[out] LogInfo  Holds information dealing with logfile output
 */
 void SW_NC_create_template(const char* domFile, int domFileID,
-    const char* fileName, int* newFileID, int newVarType,
-    size_t timeSize, size_t vertSize, int vegSize,
-    const char* varName, const char* attNames[], const char* attVals[],
-    int numAtts, Bool isInput, const char* freq, double* startTime,
-    double lyrDepths[], int baseCalendarYear, int startYr, OutPeriod pd,
+    const char* fileName, int* newFileID,
+    Bool isInput, const char* freq,
     LOG_INFO* LogInfo) {
 
     Bool siteDimExists = dimExists("site", domFileID);
@@ -3016,15 +2997,6 @@ void SW_NC_create_template(const char* domFile, int domFileID,
         LogError(LogInfo, LOGERROR, "An error occurred when attempting "
                                     "to access the new file %s.", fileName);
         return; // Exit function prematurely due to error
-    }
-
-    if(!varExists(*newFileID, varName)) {
-        create_full_var(newFileID, newVarType, timeSize, vertSize, vegSize,
-                        varName, attNames, attVals, numAtts, lyrDepths,
-                        startTime, baseCalendarYear, startYr, pd, LogInfo);
-        if(LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
     }
 
     update_netCDF_global_atts(newFileID, domType, freq, isInput, LogInfo);
@@ -3098,15 +3070,14 @@ void SW_NC_create_progress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
         // and period
         if(progFileExists) {
             nc_redef(*progFileID);
-
-            create_full_var(progFileID, NC_BYTE, 0, 0, 0, progVarName,
-                            attNames, attVals, numAtts, NULL,
-                            &startTime, 0, 0, 0, LogInfo);
         } else {
             SW_NC_create_template(domFileName, domFileID, progFileName,
-                progFileID, NC_BYTE, 0, 0, 0, progVarName, attNames, attVals,
-                numAtts, swFALSE, freq, &startTime, NULL, 0, 0, 0, LogInfo);
+                progFileID, swFALSE, freq, LogInfo);
         }
+
+        create_full_var(progFileID, NC_BYTE, 0, 0, 0, progVarName,
+                        attNames, attVals, numAtts, NULL,
+                        &startTime, 0, 0, 0, LogInfo);
 
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error

@@ -80,11 +80,8 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
                  LOG_INFO* LogInfo);
 void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo);
 void SW_NC_create_template(const char* domFile, int domFileID,
-    const char* fileName, int* newFileID, int newVarType,
-    size_t timeSize, size_t vertSize, int vegSize,
-    const char* varName, const char* attNames[], const char* attVals[],
-    int numAtts, Bool isInput, const char* freq, double* startTime,
-    double lyrDepths[], int baseCalendarYear, int startYr, OutPeriod pd,
+    const char* fileName, int* newFileID,
+    Bool isInput, const char* freq,
     LOG_INFO* LogInfo);
 void SW_NC_create_progress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo);
 void SW_NC_set_progress(Bool isFailure, const char* domType, int progFileID,
