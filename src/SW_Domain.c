@@ -6,6 +6,7 @@
 #include "include/filefuncs.h"
 #include "include/SW_Files.h"
 #include "include/SW_Times.h"
+#include "include/rands.h"
 #include "include/myMemory.h"
 #include "include/generic.h"
 
@@ -17,7 +18,7 @@
 /*                   Local Defines                     */
 /* --------------------------------------------------- */
 
-#define NUM_DOM_IN_KEYS 13 // Number of possible keys within `domain.in`
+#define NUM_DOM_IN_KEYS 17 // Number of possible keys within `domain.in`
 
 /* =================================================== */
 /*             Private Function Declarations           */
@@ -105,6 +106,30 @@ void SW_DOM_CreateProgress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 }
 
 /**
+ * @brief Domain constructor for global variables.
+ *
+ * @param[in] rng_seed Initial state for spinup RNG
+ * @param[out] SW_Domain Struct of type SW_DOMAIN which
+ * holds constant temporal/spatial information for a set
+ * of simulation runs
+*/
+void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN* SW_Domain) {
+
+	/* Set seed of `spinup_rng`
+	  - SOILWAT2: set seed here
+	  - STEPWAT2: `main()` uses `Globals.randseed` to (re-)set for each iteration
+	  - rSOILWAT2: R API handles RNGs
+	*/
+	#if defined(SOILWAT)
+		RandSeed(rng_seed, 1u, &SW_Domain->SW_SpinUp.spinup_rng);
+	#else
+		(void) rng_seed; // Silence compiler flag `-Wunused-parameter`
+	#endif
+}
+
+
+
+/**
  * @brief Read `domain.in` and report any problems encountered when doing so
  *
  * @param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
@@ -116,24 +141,26 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     static const char *possibleKeys[NUM_DOM_IN_KEYS] =
             {"Domain", "nDimX", "nDimY", "nDimS",
             "StartYear", "EndYear", "StartDoy", "EndDoy",
-            "crs_bbox", "xmin_bbox", "ymin_bbox", "xmax_bbox", "ymax_bbox"};
+            "crs_bbox", "xmin_bbox", "ymin_bbox", "xmax_bbox", "ymax_bbox",
+            "SpinupMode", "SpinupScope", "SpinupDuration", "SpinupSeed"};
     static const Bool requiredKeys[NUM_DOM_IN_KEYS] =
             {swTRUE, swTRUE, swTRUE, swTRUE,
             swTRUE, swTRUE, swFALSE, swFALSE,
-            swTRUE, swTRUE, swTRUE, swTRUE, swTRUE};
+            swTRUE, swTRUE, swTRUE, swTRUE, swTRUE,
+            swTRUE, swTRUE, swTRUE, swTRUE};
     Bool hasKeys[NUM_DOM_IN_KEYS] = {swFALSE};
 
     FILE *f;
     int y, keyID;
     char inbuf[LARGE_VALUE], *MyFileName;
-    char key[10], value[LARGE_VALUE]; // 10 - Max key size
+    char key[15], value[LARGE_VALUE]; // 15 - Max key size
 
     MyFileName = SW_Domain->PathInfo.InFiles[eDomain];
 	f = OpenFile(MyFileName, "r", LogInfo);
 
     // Set SW_DOMAIN
     while(GetALine(f, inbuf, LARGE_VALUE)) {
-        sscanf(inbuf, "%9s %s", key, value);
+        sscanf(inbuf, "%14s %s", key, value);
 
         keyID = key_to_id(key, possibleKeys, NUM_DOM_IN_KEYS);
         set_hasKey(keyID, possibleKeys, hasKeys, LogInfo); // no error, only warnings possible
@@ -157,6 +184,7 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
             case 3: // Number of S slots
                 SW_Domain->nDimS = atoi(value);
                 break;
+
             case 4: // Start year
                 y = atoi(value);
 
@@ -185,6 +213,7 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
             case 7: // End day of year
                 SW_Domain->endend = atoi(value);
                 break;
+
             case 8: // CRS box
                 // Re-scan and get the entire value (including spaces)
                 sscanf(inbuf, "%9s %27[^\n]", key, value);
@@ -202,13 +231,56 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
             case 12: // Maximum y coordinate
                 SW_Domain->max_y = atof(value);
                 break;
+
+            case 13: // Spinup Mode
+                y = atoi(value);
+                                
+                if (y != 1 && y != 2) {
+                    CloseFile(&f, LogInfo);
+                    LogError(LogInfo, LOGERROR,
+                            "%s: Incorrect Mode (%d) for spinup"\
+                            " Please select \"1\" or \"2\"", MyFileName, y);
+                    return; // Exit function prematurely due to error
+                }
+                SW_Domain->SW_SpinUp.mode = y;
+                break;
+            case 14: // Spinup Scope
+                SW_Domain->SW_SpinUp.scope = atoi(value);
+                break;
+            case 15: // Spinup Duration                                
+                SW_Domain->SW_SpinUp.duration = atoi(value);
+
+                // Set the spinup flag to true if duration > 0
+                if (SW_Domain->SW_SpinUp.duration == 0) {
+                    SW_Domain->SW_SpinUp.spinup = swFALSE;
+                }
+                else {
+                    SW_Domain->SW_SpinUp.spinup = swTRUE;
+                }
+                break;
+            case 16: // Spinup Seed
+                SW_Domain->SW_SpinUp.rng_seed = atoi( value );
+                break;
+            case 17: // Spinup Mode
+                y = atoi(value);
+                                
+                if (y != 1 && y != 2) {
+                    CloseFile(&f, LogInfo);
+                    LogError(LogInfo, LOGERROR,
+                            "%s: Incorrect Mode (%d) for spinup"\
+                            " Please select \"1\" or \"2\"", MyFileName, y);
+                    return; // Exit function prematurely due to error
+                }
+                SW_Domain->SW_SpinUp.mode = atoi(value);
+                break;
+
             case KEY_NOT_FOUND: // Unknown key
                 LogError(LogInfo, LOGWARN, "%s: Ignoring an unknown key, %s",
                          MyFileName, key);
                 break;
         }
     }
-
+    
     CloseFile(&f, LogInfo);
 
 
@@ -250,6 +322,14 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 
     if (GT(SW_Domain->min_y, SW_Domain->max_y)) {
         LogError(LogInfo, LOGERROR, "Domain.in: bbox y-axis min > max.");
+        return; // Exit function prematurely due to error
+    }
+
+    // Check if scope value is out of range
+    if (SW_Domain->SW_SpinUp.scope < 1 ||
+        SW_Domain->SW_SpinUp.scope > (SW_Domain->endyr - SW_Domain->startyr)) {
+        LogError(LogInfo, LOGERROR,
+                "%s: Invalid Scope (N = %d) for spinup", MyFileName, SW_Domain->SW_SpinUp.scope);
         return; // Exit function prematurely due to error
     }
 }

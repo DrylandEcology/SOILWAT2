@@ -492,5 +492,31 @@ namespace {
     }
   }
 
+    TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSpinup) {
+    int i;
+
+    // Turn on spinup simulation
+    SW_All.Model.SW_SpinUp.spinup = swTRUE;
+    // Set spinup variables
+    SW_All.Model.SW_SpinUp.mode = 1;
+    SW_All.Model.SW_SpinUp.duration = 5;
+    SW_All.Model.SW_SpinUp.scope = 8;
+
+    // Run the spinup & deactivate
+    SW_CTL_run_spinup(&SW_All, &LogInfo);
+    SW_All.Model.SW_SpinUp.spinup = swFALSE;
+
+    // Run the simulation
+    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
+        "Water balance error in test " <<
+        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
+    }
+  }
+
 
 } // namespace
