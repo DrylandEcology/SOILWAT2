@@ -504,7 +504,6 @@ namespace {
 
     // Run the spinup & deactivate
     SW_CTL_run_spinup(&SW_All, &LogInfo);
-    SW_All.Model.SW_SpinUp.spinup = swFALSE;
 
     // Run the simulation
     SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);

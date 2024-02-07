@@ -153,6 +153,7 @@ void setup_testGlobalSoilwatTemplate() {
     SW_CTL_setup_domain(userSUID, &template_SW_Domain, &LogInfo);
 
     SW_CTL_setup_model(&template_SW_All, &template_SW_OutputPtrs, &LogInfo);
+    template_SW_All.Model.doOutput = swFALSE; /* turn off output during tests */
     SW_MDL_get_ModelRun(&template_SW_All.Model, &template_SW_Domain, NULL, &LogInfo);
     SW_CTL_alloc_outptrs(&template_SW_All, &LogInfo);  /* allocate memory for output pointers */
     SW_CTL_read_inputs_from_disk(&template_SW_All, &template_SW_Domain.PathInfo, &LogInfo);
