@@ -168,6 +168,11 @@ void SW_ALL_deepCopy(SW_ALL* source, SW_ALL* dest, LOG_INFO* LogInfo)
     }
 
     SW_VegEstab_alloc_outptrs(&dest->VegEstab, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    SW_GENOUT_deepCopy(&dest->GenOutput, &source->GenOutput, dest->Output, LogInfo);
 }
 
 
@@ -314,7 +319,8 @@ void SW_CTL_init_ptrs(SW_ALL* sw) {
   SW_MKV_init_ptrs(&sw->Markov);
   SW_VES_init_ptrs(&sw->VegEstab);
   SW_VPD_init_ptrs(&sw->VegProd);
-  SW_OUT_init_ptrs(sw);
+  SW_OUT_init_ptrs(sw->Output);
+  SW_GENOUT_init_ptrs(&sw->GenOutput);
   SW_SWC_init_ptrs(&sw->SoilWat);
 }
 
@@ -900,7 +906,7 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSu
 
     // Clear local instance of SW_ALL
     freeMem: {
-        SW_CTL_clear_model(swFALSE, &local_sw);
+        SW_CTL_clear_model(swTRUE, &local_sw);
     }
 
     (void) SW_Domain;

@@ -49,7 +49,7 @@ namespace {
     int i;
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -68,7 +68,7 @@ namespace {
     SW_All.Site.use_soil_temp = swTRUE;
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -89,7 +89,7 @@ namespace {
     SW_All.Site.percentRunon = 1.25;
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -127,7 +127,7 @@ namespace {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -163,7 +163,7 @@ namespace {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -190,7 +190,7 @@ namespace {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -218,7 +218,7 @@ namespace {
     SW_SWC_init_run(&SW_All.SoilWat, &SW_All.Site, &SW_All.Weather.temp_snow);
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -246,7 +246,7 @@ namespace {
     SW_SWC_init_run(&SW_All.SoilWat, &SW_All.Site, &SW_All.Weather.temp_snow);
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -270,7 +270,7 @@ namespace {
     sw_fail_on_error(&LogInfo);
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -305,7 +305,7 @@ namespace {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -342,7 +342,7 @@ namespace {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -385,7 +385,7 @@ namespace {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -432,7 +432,7 @@ namespace {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -481,7 +481,7 @@ namespace {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -506,7 +506,7 @@ namespace {
     SW_CTL_run_spinup(&SW_All, &LogInfo);
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
