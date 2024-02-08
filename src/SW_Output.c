@@ -3096,7 +3096,7 @@ void SW_OUT_deepCopy(SW_OUTPUT* dest_out, SW_OUTPUT* source_out,
                      SW_FILE_STATUS* dest_files, SW_FILE_STATUS* source_files,
                      Bool useOutPeriods[], LOG_INFO* LogInfo) {
 
-    OutKey key;
+    IntUS key;
     OutPeriod pd;
     int varNum, attNum, fileNum;
     int numVars = 0, numFiles = source_files->numOutFiles;
@@ -3128,12 +3128,12 @@ void SW_OUT_deepCopy(SW_OUTPUT* dest_out, SW_OUTPUT* source_out,
             }
 
             SW_NC_init_outvars(&dest_out[key].outputVarInfo,
-                                        key, LogInfo);
+                                        (OutKey)key, LogInfo);
             if(LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
 
-            SW_NC_init_outReq(&dest_out[key].reqOutputVars, key, LogInfo);
+            SW_NC_init_outReq(&dest_out[key].reqOutputVars, (OutKey)key, LogInfo);
             if(LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }

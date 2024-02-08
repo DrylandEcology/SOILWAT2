@@ -348,8 +348,7 @@ static void nc_read_atts(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo,
 */
 static void get_2d_output_key(char* varKey, OutKey* outKey, int* outVarNum) {
 
-    OutKey k;
-    int varNum;
+    int k, varNum;
     const int establSize = 6;
 
     *outKey = eSW_NoKey;
@@ -363,7 +362,7 @@ static void get_2d_output_key(char* varKey, OutKey* outKey, int* outVarNum) {
                 for(varNum = 0; varNum < numVarsPerKey[k]; varNum++) {
                     if(strcmp(possKeys[k][varNum], varKey) == 0) {
 
-                        *outKey = k;
+                        *outKey = (OutKey) k;
                         *outVarNum = varNum;
 
                         return;
@@ -954,10 +953,10 @@ static void dealloc_netCDF_domain_vars(double **valsY, double **valsX,
  * @param[out] LogInfo Holds information on warnings and errors
 */
 static void init_output_var_info(SW_OUTPUT* SW_Output, LOG_INFO* LogInfo) {
-    OutKey key;
+    int key;
 
     ForEachOutKey(key) {
-        SW_NC_init_outReq(&SW_Output[key].reqOutputVars, key, LogInfo);
+        SW_NC_init_outReq(&SW_Output[key].reqOutputVars, (OutKey)key, LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -2361,7 +2360,7 @@ static void get_write_dim_sizes(int ncFileID, size_t dimSizes[], char* dimStr,
                                 int n_layers, LOG_INFO* LogInfo) {
 
     char* wkgDimPtr = dimStr, *dimName = NULL;
-    Bool twoDimDom = !((Bool)dimExists("site", ncFileID));
+    Bool twoDimDom = (Bool) !dimExists("site", ncFileID);
     Bool readDimVal;
     int numDims = 0, index;
 
@@ -2455,7 +2454,7 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* SW_GenOut,
         char** ncOutFileNames[][SW_OUTNPERIODS], size_t ncSuid[],
         LOG_INFO* LogInfo) {
 
-    OutKey key;
+    int key;
     OutPeriod pd;
     RealD *p_OUTValPtr = NULL;
     int fileNum, currFileID = 0, varNum;
@@ -2474,7 +2473,7 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* SW_GenOut,
         for(fileNum = 0; fileNum < numFilesPerKey; fileNum++) {
             ForEachOutKey(key) {
                 startTime = 0;
-                vertSize = getNLayers(key, n_layers, n_evap_layers);
+                vertSize = getNLayers((OutKey)key, n_layers, n_evap_layers);
 
                 if(numVarsPerKey[key] == 0 || !SW_Output[key].use) {
                     continue; // Skip key iteration
@@ -2553,7 +2552,7 @@ void SW_NC_create_output_files(const char* domFile, int domFileID,
         double lyrDepths[], int baseCalendarYear, Bool useOutPeriods[],
         char** ncOutFileNames[][SW_OUTNPERIODS], LOG_INFO* LogInfo) {
 
-    OutKey key;
+    int key;
     OutPeriod pd;
     int rangeStart, rangeEnd, fileNum;
     int numYears = endYr - startYr + 1, yearOffset;
@@ -2574,7 +2573,7 @@ void SW_NC_create_output_files(const char* domFile, int domFileID,
 
     ForEachOutKey(key) {
         if(numVarsPerKey[key] > 0 && SW_Output[key].use) {
-            vertSize = getNLayers(key, n_layers, n_evap_lyrs);
+            vertSize = getNLayers((OutKey)key, n_layers, n_evap_lyrs);
 
             ForEachOutPeriod(pd) {
                 if(useOutPeriods[pd]) {
@@ -2608,7 +2607,7 @@ void SW_NC_create_output_files(const char* domFile, int domFileID,
                                                     baseTime, pd);
 
                             create_output_file(&SW_Output[key], domFile, domFileID,
-                                fileNameBuf, key, pd, timeSize, vertSize, lyrDepths,
+                                fileNameBuf, (OutKey)key, pd, timeSize, vertSize, lyrDepths,
                                 &startTime[pd], baseCalendarYear, rangeStart, LogInfo);
                             if(LogInfo->stopRun) {
                                 return; // Exit function prematurely due to error
