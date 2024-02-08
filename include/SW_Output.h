@@ -126,7 +126,8 @@ extern char const *styp2str[];
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_OUT_init_ptrs(SW_ALL* sw);
+void SW_OUT_init_ptrs(SW_OUTPUT* SW_Output);
+void SW_GENOUT_init_ptrs(SW_GEN_OUT *GenOutput);
 void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 		SW_OUTPUT_POINTERS* SW_OutputPtrs, SW_OUTPUT* SW_Output,
 		LyrIndex n_layers, SW_GEN_OUT *GenOutput);
@@ -153,6 +154,13 @@ void SW_OUT_flush(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 				  LOG_INFO* LogInfo);
 void _collect_values(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 		Bool bFlush_output, TimeInt tOffset, LOG_INFO* LogInfo);
+
+void SW_OUT_close_files(SW_FILE_STATUS* SW_FileStatus, SW_GEN_OUT* GenOutput,
+						LOG_INFO* LogInfo);
+void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
+	LyrIndex n_layers, char *InFiles[], SW_GEN_OUT* GenOutput,
+	LOG_INFO* LogInfo);
+
 void _echo_outputs(SW_ALL* sw);
 void _echo_all_inputs(SW_ALL* sw);
 
@@ -168,6 +176,9 @@ Bool has_OutPeriod_inUse2(OutPeriod pd, OutKey k, SW_GEN_OUT *GenOutput);
 void SW_OUT_set_SXWrequests(OutPeriod timeSteps_SXW[][SW_OUTNPERIODS],
 		IntUS *used_OUTNPERIODS, SW_OUTPUT *SW_Output, LOG_INFO *LogInfo);
 #endif
+
+void SW_GENOUT_deepCopy(SW_GEN_OUT* dest, SW_GEN_OUT* source, SW_OUTPUT* SW_Output, LOG_INFO* LogInfo);
+
 
 
 // Functions that format the output in `sw_outstr` for printing

@@ -133,21 +133,23 @@ void SW_OUT_set_nrow(SW_MODEL* SW_Model, Bool use_OutPeriod[],
 */
 void SW_OUT_deconstruct_outarray(SW_GEN_OUT *GenOutput)
 {
-	IntUS i;
-	OutKey k;
+	IntUS i, k;
 
 	ForEachOutKey(k) {
 		for (i = 0; i < SW_OUTNPERIODS; i++) {
-			free(GenOutput->p_OUT[k][i]);
-			GenOutput->p_OUT[k][i] = NULL;
+			if (!isnull(GenOutput->p_OUT[k][i])) {
+			    free(GenOutput->p_OUT[k][i]);
+			    GenOutput->p_OUT[k][i] = NULL;
+			}
 
 			#ifdef STEPWAT
-			free(GenOutput->p_OUTsd[k][i]);
-			GenOutput->p_OUTsd[k][i] = NULL;
+			if (!isnull(GenOutput->p_OUTsd[k][i])) {
+			    free(GenOutput->p_OUTsd[k][i]);
+			    GenOutput->p_OUTsd[k][i] = NULL;
+			}
 			#endif
 		}
 	}
-
 }
 
 
@@ -200,9 +202,10 @@ void do_running_agg(RealD *p, RealD *psd, size_t k, IntU n, RealD x)
 	p[k] = get_running_mean(n, prev_val, x);
 	psd[k] = psd[k] + get_running_sqr(prev_val, p[k], x); // += didn't work with *psd
 }
+#endif
 
 
-/** Set global STEPWAT2 output variables that aggregate across iterations/repetitions
+/** Allocate p_OUT and p_OUTsd
 
     @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
 		basic output information for all output keys
@@ -214,39 +217,45 @@ void do_running_agg(RealD *p, RealD *psd, size_t k, IntU n, RealD x)
 	@sideeffect: `GenOutput->p_OUT` and `GenOutput->p_OUTsd` pointing to allocated arrays for
 		each output period and output key.
 	*/
-void setGlobalSTEPWAT2_OutputVariables(SW_OUTPUT* SW_Output, SW_GEN_OUT *GenOutput,
-									   LOG_INFO *LogInfo)
-{
-	IntUS i;
-	size_t
-		size,
-		s = sizeof(RealD);
-	OutKey k;
-	OutPeriod timeStepOutPeriod;
+void SW_OUT_construct_outarray(SW_GEN_OUT *GenOutput, SW_OUTPUT* SW_Output,
+									   LOG_INFO *LogInfo) {
+    IntUS i, k;
+    size_t
+        size,
+        s = sizeof(RealD);
+    OutPeriod timeStepOutPeriod;
 
-	ForEachOutKey(k) {
-		for (i = 0; i < GenOutput->used_OUTNPERIODS; i++) {
-			timeStepOutPeriod = GenOutput->timeSteps[k][i];
+    ForEachOutKey(k) {
+        for (i = 0; i < GenOutput->used_OUTNPERIODS; i++) {
+            timeStepOutPeriod = GenOutput->timeSteps[k][i];
 
-			if (SW_Output[k].use && timeStepOutPeriod != eSW_NoTime)
-			{
-				size = GenOutput->nrow_OUT[timeStepOutPeriod] *
-					(GenOutput->ncol_OUT[k] + ncol_TimeOUT[timeStepOutPeriod]);
+            if (SW_Output[k].use && timeStepOutPeriod != eSW_NoTime) {
 
-				GenOutput->p_OUT[k][timeStepOutPeriod] = (RealD *) Mem_Calloc(size, s,
-					"setGlobalSTEPWAT2_OutputVariables()", LogInfo);
-                if(LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
-                }
+              size = GenOutput->nrow_OUT[timeStepOutPeriod] *
+                  (GenOutput->ncol_OUT[k] + ncol_TimeOUT[timeStepOutPeriod]);
 
-				GenOutput->p_OUTsd[k][timeStepOutPeriod] = (RealD *) Mem_Calloc(size, s,
-					"setGlobalSTEPWAT2_OutputVariables()", LogInfo);
-                if(LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
-                }
-			}
-		}
-	}
+              GenOutput->p_OUT[k][timeStepOutPeriod] = (RealD *) Mem_Calloc(
+                  size,
+                  s,
+                  "SW_OUT_construct_outarray()",
+                  LogInfo
+              );
+              if(LogInfo->stopRun) {
+                  return; // Exit function prematurely due to error
+              }
+
+              #if defined(STEPWAT)
+              GenOutput->p_OUTsd[k][timeStepOutPeriod] = (RealD *) Mem_Calloc(
+                  size,
+                  s,
+                  "SW_OUT_construct_outarray()",
+                  LogInfo
+              );
+              if(LogInfo->stopRun) {
+                  return; // Exit function prematurely due to error
+              }
+              #endif
+            }
+        }
+    }
 }
-
-#endif

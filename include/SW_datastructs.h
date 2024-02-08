@@ -16,12 +16,12 @@
 
 
 // Array-based output:
-#if defined(RSOILWAT) || defined(STEPWAT)
+#if defined(RSOILWAT) || defined(STEPWAT) || defined(SWNETCDF)
 #define SW_OUTARRAY
 #endif
 
 // Text-based output:
-#if defined(SOILWAT) || defined(STEPWAT)
+#if (defined(SOILWAT) || defined(STEPWAT)) && !defined(SWNETCDF)
 #define SW_OUTTEXT
 #endif
 
@@ -156,6 +156,7 @@ typedef struct {
 	 * printing and summing weekly/monthly values */
 	Bool newperiod[SW_OUTNPERIODS];
 	Bool isnorth;
+	Bool doOutput; /**< Flag to indicate if output should be produced (TRUE) or not (FALSE); set to FALSE for spinup and tests */
 
     int ncSuid[2]; // First element used for domain "s", both used for "xy"
 
@@ -1007,7 +1008,7 @@ typedef struct {
 	Bool print_SW_Output;
 	char sw_outstr[MAX_LAYERS * OUTSTRLEN];
 
-	#if defined(RSOILWAT) || defined(STEPWAT)
+	#if defined(SW_OUTARRAY)
 	/** \brief A 2-dim array of pointers to output arrays.
 
 	The variable p_OUT used by rSOILWAT2 for output and by STEPWAT2 for
@@ -1170,7 +1171,7 @@ typedef struct {
 	void (*pfunc_text)(OutPeriod, SW_ALL*); /* pointer to output routine for text output */
 	#endif
 
-	#if defined(RSOILWAT)
+	#if defined(RSOILWAT) || defined(SWNETCDF)
 	void (*pfunc_mem)(OutPeriod, SW_ALL*); /* pointer to output routine for array output */
 
 	#elif defined(STEPWAT)

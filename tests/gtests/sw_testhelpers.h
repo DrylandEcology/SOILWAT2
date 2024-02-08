@@ -13,7 +13,7 @@
 
 extern SW_ALL template_SW_All;
 extern SW_DOMAIN template_SW_Domain;
-extern SW_OUTPUT_POINTERS template_SW_OutputPtrs;
+extern SW_OUTPUT_POINTERS template_SW_OutputPtrs[SW_OUTNKEYS];
 
 
 #define length(array) (sizeof(array) / sizeof(*(array))) //get length of an array
@@ -57,7 +57,7 @@ class AllTestFixture : public ::testing::Test {
     SW_ALL SW_All;
     SW_DOMAIN SW_Domain;
     LOG_INFO LogInfo;
-    SW_OUTPUT_POINTERS SW_OutputPtrs;
+    SW_OUTPUT_POINTERS SW_OutputPtrs[SW_OUTNKEYS];
 
     // Deep copy global test variables
     // (that were set up by `setup_testGlobalSoilwatTemplate()`) to

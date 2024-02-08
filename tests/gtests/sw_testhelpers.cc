@@ -22,13 +22,14 @@
 #include "include/SW_Control.h"
 
 #include "include/SW_Files.h"
+#include "include/SW_Output.h"
 
 #include "tests/gtests/sw_testhelpers.h"
 
 
 SW_ALL template_SW_All;
 SW_DOMAIN template_SW_Domain;
-SW_OUTPUT_POINTERS template_SW_OutputPtrs;
+SW_OUTPUT_POINTERS template_SW_OutputPtrs[SW_OUTNKEYS];
 
 
 /**
@@ -152,7 +153,8 @@ void setup_testGlobalSoilwatTemplate() {
 
     SW_CTL_setup_domain(userSUID, &template_SW_Domain, &LogInfo);
 
-    SW_CTL_setup_model(&template_SW_All, &template_SW_OutputPtrs, &LogInfo);
+    SW_CTL_setup_model(&template_SW_All, template_SW_OutputPtrs, &LogInfo);
+    template_SW_All.Model.doOutput = swFALSE; /* turn off output during tests */
     SW_MDL_get_ModelRun(&template_SW_All.Model, &template_SW_Domain, NULL, &LogInfo);
     SW_CTL_alloc_outptrs(&template_SW_All, &LogInfo);  /* allocate memory for output pointers */
     SW_CTL_read_inputs_from_disk(&template_SW_All, &template_SW_Domain.PathInfo, &LogInfo);
@@ -179,6 +181,22 @@ void setup_testGlobalSoilwatTemplate() {
 
     SW_CTL_init_run(&template_SW_All, &LogInfo);
     sw_fail_on_error(&LogInfo);
+
+    SW_OUT_set_ncol(
+        template_SW_All.Site.n_layers,
+        template_SW_All.Site.n_evap_lyrs,
+        template_SW_All.VegEstab.count,
+        template_SW_All.GenOutput.ncol_OUT
+    );
+    SW_OUT_set_colnames(
+        template_SW_All.Site.n_layers,
+        template_SW_All.VegEstab.parms,
+        template_SW_All.GenOutput.ncol_OUT,
+        template_SW_All.GenOutput.colnames_OUT,
+        &LogInfo
+    );
+    sw_fail_on_error(&LogInfo);
+
 }
 
 /* Free allocated memory of global test variables

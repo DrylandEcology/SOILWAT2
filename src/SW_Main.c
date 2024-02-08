@@ -32,7 +32,6 @@
 #include "include/SW_Site.h"
 #include "include/SW_Weather.h"
 #include "include/SW_Output.h"
-#include "include/SW_Output_outtext.h"
 #include "include/SW_Main_lib.h"
 #include "include/SW_Domain.h"
 #include "include/SW_Model.h"

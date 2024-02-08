@@ -93,7 +93,7 @@ static void _end_day(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                      LOG_INFO* LogInfo) {
   int localTOffset = 1; // tOffset is one when called from this function
 
-  if ( !sw->Model.SW_SpinUp.spinup ) {
+  if ( sw->Model.doOutput ) {
     _collect_values(sw, SW_OutputPtrs, swFALSE, localTOffset, LogInfo);
       if(LogInfo->stopRun) {
           return; // Exit function prematurely due to error
@@ -168,6 +168,11 @@ void SW_ALL_deepCopy(SW_ALL* source, SW_ALL* dest, LOG_INFO* LogInfo)
     }
 
     SW_VegEstab_alloc_outptrs(&dest->VegEstab, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    SW_GENOUT_deepCopy(&dest->GenOutput, &source->GenOutput, dest->Output, LogInfo);
 }
 
 
@@ -314,7 +319,8 @@ void SW_CTL_init_ptrs(SW_ALL* sw) {
   SW_MKV_init_ptrs(&sw->Markov);
   SW_VES_init_ptrs(&sw->VegEstab);
   SW_VPD_init_ptrs(&sw->VegProd);
-  SW_OUT_init_ptrs(sw);
+  SW_OUT_init_ptrs(sw->Output);
+  SW_GENOUT_init_ptrs(&sw->GenOutput);
   SW_SWC_init_ptrs(&sw->SoilWat);
 }
 
@@ -428,7 +434,7 @@ void SW_CTL_setup_domain(unsigned long userSUID,
  */
 void SW_CTL_setup_model(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
                         LOG_INFO* LogInfo) {
-	SW_MDL_construct(sw->Model.newperiod, sw->Model.days_in_month);
+	SW_MDL_construct(&sw->Model);
 	SW_WTH_construct(&sw->Weather);
 
 	// delay SW_MKV_construct() until we know from inputs whether we need it
@@ -586,7 +592,7 @@ void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
   #ifdef SWDEBUG
   if (debug) swprintf("'SW_CTL_run_current_year': flush output\n");
   #endif
-  if ( !sw->Model.SW_SpinUp.spinup ) {
+  if ( sw->Model.doOutput ) {
     SW_OUT_flush(sw, SW_OutputPtrs, LogInfo);
   }
 
@@ -628,6 +634,7 @@ void SW_CTL_run_spinup(SW_ALL* sw, LOG_INFO* LogInfo) {
     scope = sw->Model.SW_SpinUp.scope,
     finalyr = sw->Model.startyr + scope - 1,
     *years;
+  Bool prev_doOut = sw->Model.doOutput;
 
     years = ( TimeInt* )Mem_Malloc( sizeof( TimeInt ) * duration, "SW_CTL_run_spinup()", LogInfo );
     if(LogInfo->stopRun) {
@@ -637,7 +644,7 @@ void SW_CTL_run_spinup(SW_ALL* sw, LOG_INFO* LogInfo) {
   #ifdef SWDEBUG
   int debug = 0;
   #endif
-  
+
   switch ( mode ) {
     case 2:
       // initialize structured array
@@ -680,6 +687,8 @@ void SW_CTL_run_spinup(SW_ALL* sw, LOG_INFO* LogInfo) {
 
   sw->Model.startyr = years[0]; // set startyr for spinup
 
+  sw->Model.doOutput = swFALSE; // turn output temporarily off
+
   for (yrIdx = 0; yrIdx < duration; yrIdx++) {
     *cur_yr = years[ yrIdx ];
 
@@ -689,15 +698,16 @@ void SW_CTL_run_spinup(SW_ALL* sw, LOG_INFO* LogInfo) {
 
     SW_CTL_run_current_year(sw, NULL, LogInfo);
     if(LogInfo->stopRun) {
-        free( years );
-        return; // Exit function prematurely due to error
+        goto reSet; // Exit function prematurely due to error
     }
   }
 
-  sw->Model.startyr = startyr; // reset startyr to original value
+  reSet: {
+      sw->Model.startyr = startyr; // reset startyr to original value
+      sw->Model.doOutput = prev_doOut; // reset doOutput to original value
 
-  free( years );
-
+      free( years );
+  }
 }
 
 
@@ -890,14 +900,13 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSu
 
     if ( SW_Domain->SW_SpinUp.spinup ) {
       SW_CTL_run_spinup(&local_sw, LogInfo );
-      local_sw.Model.SW_SpinUp.spinup = swFALSE;
     }
 
     SW_CTL_main(&local_sw, SW_OutputPtrs, LogInfo);
 
     // Clear local instance of SW_ALL
     freeMem: {
-        SW_CTL_clear_model(swFALSE, &local_sw);
+        SW_CTL_clear_model(swTRUE, &local_sw);
     }
 
     (void) SW_Domain;

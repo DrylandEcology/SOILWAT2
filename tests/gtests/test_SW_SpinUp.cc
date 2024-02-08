@@ -62,13 +62,11 @@ namespace {
     // Run the spinup
     SW_CTL_run_spinup(&SW_All, &LogInfo);
     sw_fail_on_error(&LogInfo);
-    // Turn off spinup flag
-    SW_All.Model.SW_SpinUp.spinup = swFALSE;
 
     // Run (a short) simulation
     SW_All.Model.startyr = 1980;
     SW_All.Model.endyr = 1981;
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (i = 0; i < n; i++) {
@@ -111,13 +109,11 @@ namespace {
     // Run the spinup
     SW_CTL_run_spinup(&SW_All, &LogInfo);
     sw_fail_on_error(&LogInfo);
-    // Turn off spinup flag
-    SW_All.Model.SW_SpinUp.spinup = swFALSE;
 
     // Run (a short) simulation
     SW_All.Model.startyr = 1980;
     SW_All.Model.endyr = 1981;
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (i = 0; i < n; i++) {
@@ -160,13 +156,11 @@ namespace {
     // Run the spinup
     SW_CTL_run_spinup(&SW_All, &LogInfo);
     sw_fail_on_error(&LogInfo);
-    // Turn off spinup flag
-    SW_All.Model.SW_SpinUp.spinup = swFALSE;
 
     // Run (a short) simulation
     SW_All.Model.startyr = 1980;
     SW_All.Model.endyr = 1981;
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (i = 0; i < n; i++) {
@@ -209,13 +203,11 @@ namespace {
     // Run the spinup
     SW_CTL_run_spinup(&SW_All, &LogInfo);
     sw_fail_on_error(&LogInfo);
-    // Turn off spinup flag
-    SW_All.Model.SW_SpinUp.spinup = swFALSE;
 
     // Run (a short) simulation
     SW_All.Model.startyr = 1980;
     SW_All.Model.endyr = 1981;
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (i = 0; i < n; i++) {
@@ -258,13 +250,11 @@ namespace {
     // Run the spinup
     SW_CTL_run_spinup(&SW_All, &LogInfo);
     sw_fail_on_error(&LogInfo);
-    // Turn off spinup flag
-    SW_All.Model.SW_SpinUp.spinup = swFALSE;
 
     // Run (a short) simulation
     SW_All.Model.startyr = 1980;
     SW_All.Model.endyr = 1981;
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (i = 0; i < n; i++) {
@@ -307,13 +297,11 @@ namespace {
     // Run the spinup
     SW_CTL_run_spinup(&SW_All, &LogInfo);
     sw_fail_on_error(&LogInfo);
-    // Turn off spinup flag
-    SW_All.Model.SW_SpinUp.spinup = swFALSE;
 
     // Run (a short) simulation
     SW_All.Model.startyr = 1980;
     SW_All.Model.endyr = 1981;
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (i = 0; i < n; i++) {
@@ -445,8 +433,6 @@ namespace {
             }
             fflush(fp);
           }
-
-          local_sw.Model.SW_SpinUp.spinup = swFALSE;
 
 
           // Run (a short) simulation

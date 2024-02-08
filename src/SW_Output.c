@@ -54,7 +54,6 @@
 
 // Text-based output declarations:
 #ifdef SW_OUTTEXT
-
 #include "include/SW_Output_outtext.h"
 #endif
 
@@ -516,8 +515,8 @@ static void average_for(SW_ALL* sw, ObjType otyp, OutPeriod pd,
 
 	TimeInt curr_pd = 0;
 	RealD div = 0.; /* if sumtype=AVG, days in period; if sumtype=SUM, 1 */
-	OutKey k;
 	LyrIndex i;
+	IntUS k;
 	int j;
 	LyrIndex n_layers = sw->Site.n_layers, n_evap_layers = sw->Site.n_evap_lyrs;
 
@@ -843,8 +842,7 @@ static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op,
 	LOG_INFO* LogInfo)
 {
 	TimeInt pd = 0;
-	OutKey k;
-	IntUS i;
+	IntUS i, k;
 	Bool use_help, use_KeyPeriodCombo;
 
 	switch (op)
@@ -878,7 +876,7 @@ static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op,
 		use_KeyPeriodCombo = swFALSE;
 		for (i = 0; i < used_OUTNPERIODS; i++)
 		{
-			use_help = (Bool) op == timeSteps[k][i];
+			use_help = (Bool) (op == timeSteps[k][i]);
 
 			#ifdef STEPWAT
 			use_help = (Bool) (use_help || op == sw->GenOutput.timeSteps_SXW[k][i]);
@@ -896,7 +894,7 @@ static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op,
 			switch (otyp)
 			{
 			case eSWC:
-				sumof_swc(&sw->SoilWat, sw->SoilWat.p_accu[op], k, &sw->Site,
+				sumof_swc(&sw->SoilWat, sw->SoilWat.p_accu[op], (OutKey)k, &sw->Site,
 														  			LogInfo);
                 if(LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
@@ -904,7 +902,7 @@ static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op,
 				break;
 
 			case eWTH:
-				sumof_wth(&sw->Weather, sw->Weather.p_accu[op], k,
+				sumof_wth(&sw->Weather, sw->Weather.p_accu[op], (OutKey)k,
 											   				LogInfo);
                 if(LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
@@ -912,12 +910,12 @@ static void collect_sums(SW_ALL* sw, ObjType otyp, OutPeriod op,
                 break;
 			case eVES:
 				if (op == eSW_Year) {
-					sumof_ves(&sw->VegEstab, sw->VegEstab.p_accu[eSW_Year], k); /* yearly, y'see */
+					sumof_ves(&sw->VegEstab, sw->VegEstab.p_accu[eSW_Year], (OutKey)k); /* yearly, y'see */
 				}
 				break;
 
 			case eVPD:
-				sumof_vpd(&sw->VegProd, sw->VegProd.p_accu[op], k, sw->Model.doy,
+				sumof_vpd(&sw->VegProd, sw->VegProd.p_accu[op], (OutKey)k, sw->Model.doy,
 															  			LogInfo);
                 if(LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
@@ -980,9 +978,8 @@ static void _set_SXWrequests_helper(OutKey k, OutPeriod pd, OutSum aggfun,
 */
 void find_OutPeriods_inUse(SW_GEN_OUT* GenOutput, SW_OUTPUT* SW_Output)
 {
-	OutKey k;
 	OutPeriod p;
-	IntUS i, timeStepInd;
+	IntUS k, i, timeStepInd;
 
 	ForEachOutPeriod(p) {
 		GenOutput->use_OutPeriod[p] = swFALSE;
@@ -1013,7 +1010,7 @@ Bool has_OutPeriod_inUse(OutPeriod pd, OutKey k, IntUS used_OUTNPERIODS,
 
 	for (i = 0; i < used_OUTNPERIODS; i++)
 	{
-		has_timeStep = (Bool) has_timeStep || timeSteps[k][i] == pd;
+		has_timeStep = (Bool) (has_timeStep || timeSteps[k][i] == pd);
 	}
 
 	return has_timeStep;
@@ -1109,35 +1106,44 @@ void SW_OUT_set_SXWrequests(OutPeriod timeSteps_SXW[][SW_OUTNPERIODS],
 #endif
 
 /**
- * @brief Initialize all possible pointers in the array, SW_OUTPUT, and
- * 		SW_GEN_OUT to NULL
+ * @brief Initialize all possible pointers in the array SW_OUTPUT to NULL
  *
- * @param[in,out] sw Comprehensive struct of type SW_ALL containing
- * 		all information in the simulation
 */
-void SW_OUT_init_ptrs(SW_ALL* sw) {
-	OutKey key;
-	IntU column;
+void SW_OUT_init_ptrs(SW_OUTPUT* SW_Output) {
+	#ifdef RSOILWAT
+	IntUS key;
+
+	ForEachOutKey(key)
+	{
+		SW_Output[key]->outfile = NULL;
+	}
+	#else
+	(void) SW_Output;
+	#endif
+}
+
+/**
+ * @brief Initialize all possible pointers in SW_GEN_OUT to NULL
+ *
+*/
+void SW_GENOUT_init_ptrs(SW_GEN_OUT *GenOutput) {
+	IntUS key, column;
 
 	ForEachOutKey(key)
 	{
 		for (column = 0; column < 5 * NVEGTYPES + MAX_LAYERS; column++)
 		{
-			sw->GenOutput.colnames_OUT[key][column] = NULL;
+			GenOutput->colnames_OUT[key][column] = NULL;
 		}
-
-		#ifdef RSOILWAT
-		sw->Output[key].outfile = NULL;
-		#endif
 	}
 
 	#ifdef SW_OUTARRAY
 	ForEachOutKey(key) {
 		for (column = 0; column < SW_OUTNPERIODS; column++) {
-			sw->GenOutput.p_OUT[key][column] = NULL;
+			GenOutput->p_OUT[key][column] = NULL;
 
 			#ifdef STEPWAT
-			sw->GenOutput.p_OUTsd[key][column] = NULL;
+			GenOutput->p_OUTsd[key][column] = NULL;
 			#endif
 		}
 	}
@@ -1150,7 +1156,7 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 		LyrIndex n_layers, SW_GEN_OUT *GenOutput)
 {
 	/* =================================================== */
-	OutKey k;
+	IntUS k;
 	OutPeriod p;
 	LyrIndex i;
 	SW_SOILWAT_OUTPUTS *s = NULL;
@@ -1174,6 +1180,7 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 	/* Silence compiler */
 	(void) make_soil;
 	(void) make_regular;
+	(void) SW_OutputPtrs;
 	#endif
 
 	ForEachSoilLayer(i, n_layers) {
@@ -1216,10 +1223,10 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 
 		// default values for `SW_Output`:
 		SW_Output[k].use = swFALSE;
-		SW_Output[k].mykey = k;
+		SW_Output[k].mykey = (OutKey)k;
 		SW_Output[k].myobj = key2obj[k];
 		SW_Output[k].sumtype = eSW_Off;
-		SW_Output[k].has_sl = has_key_soillayers(k);
+		SW_Output[k].has_sl = has_key_soillayers((OutKey)k);
 		SW_Output[k].first_orig = 1;
 		SW_Output[k].last_orig = 366;
 
@@ -1610,8 +1617,7 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 
 void SW_OUT_deconstruct(Bool full_reset, SW_ALL *sw)
 {
-	OutKey k;
-	IntU i;
+	IntUS k, i;
 
 	ForEachOutKey(k)
 	{
@@ -2097,7 +2103,7 @@ void SW_OUT_new_year(TimeInt firstdoy, TimeInt lastdoy,
 	/* =================================================== */
 	/* reset the terminal output days each year  */
 
-	OutKey k;
+	IntUS k;
 
 	ForEachOutKey(k)
 	{
@@ -2371,7 +2377,7 @@ void SW_OUT_read(SW_ALL* sw, char *InFiles[],
 			k,
 			str2stype(Str_ToUpper(sumtype, upsum), LogInfo),
 			first,
-			!Str_CompareI("END", (char *)last) ? 366 : atoi(last),
+			(Str_CompareI((char *)last, (char *)"END") == 0) ? 366 : atoi(last),
 			msg,
 			sizeof msg,
 			&sw->VegProd.use_SWA,
@@ -2539,6 +2545,7 @@ void SW_OUT_sum_today(SW_ALL* sw, ObjType otyp,
 	}
 }
 
+
 /** `SW_OUT_write_today` is called twice: by
       - `_end_day` at the end of each day with values
         values of `bFlush_output` set to FALSE and `tOffset` set to 1
@@ -2581,7 +2588,6 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 	 * July 12, 2017: Added functionality for writing outputs for STEPPE and SOILWAT since we now want output for STEPPE
 	 */
 	TimeInt t = 0xffff;
-	OutKey k;
 	OutPeriod p;
 	Bool writeit[SW_OUTNPERIODS], use_help;
 
@@ -2592,7 +2598,7 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 	#ifdef STEPWAT
 	Bool use_help_txt, use_help_SXW;
 	#endif
-	IntUS i, outPeriod;
+	IntUS k, i, outPeriod;
 
 	/* Update `tOffset` within SW_GEN_OUT for output functions */
 	sw->GenOutput.tOffset = tOffset;
@@ -2662,7 +2668,7 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 				continue; // don't call any `get_XXX` function
 			}
 
-			#ifdef SOILWAT
+			#ifdef SW_OUTTEXT
 			#ifdef SWDEBUG
 			if (debug) swprintf(" call pfunc_text(%d=%s))",
 								outPeriod, pd2str[outPeriod]);
@@ -2796,6 +2802,7 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 	}
 	#else
 	(void) tOffset;
+	(void) SW_OutputPtrs;
 	#endif
 
 	#ifdef SW_OUTARRAY
@@ -2815,9 +2822,70 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 }
 
 
+/** @brief create all of the user-specified output files.
+ *
+ * @param[in,out] SW_FileStatus Struct of type
+ *	SW_FILE_STATUS which holds basic information about output files
+ *	and values
+ * @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
+ * 	basic output information for all output keys
+ * @param[in] n_layers Number of layers of soil within the simulation run
+ * @param[in] InFiles Array of program in/output files
+ * @param[in] GenOutput Holds general variables that deal with output
+ * @param[out] LogInfo Holds information on warnings and errors
+ *
+ *  @note Call this routine at the beginning of the main program run, but
+ *  after SW_OUT_read() which sets the global variable use_OutPeriod.
+*/
+void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
+    LyrIndex n_layers, char *InFiles[], SW_GEN_OUT* GenOutput,
+    LOG_INFO* LogInfo) {
+
+    #if defined(SOILWAT)
+    if(LogInfo->printProgressMsg) {
+        sw_message("is creating output files ...");
+    }
+    #endif
+
+    #if defined(SW_OUTTEXT)
+    SW_OUT_create_textfiles(SW_FileStatus, SW_Output,
+        n_layers, InFiles, GenOutput, LogInfo);
+    #else
+    (void) SW_FileStatus;
+    (void) SW_Output;
+    (void) n_layers;
+    (void) InFiles;
+    (void) GenOutput;
+    #endif
+}
+
+
+/** @brief close all of the user-specified output files.
+    call this routine at the end of the program run.
+
+	@param[in,out] SW_FileStatus Struct of type
+		SW_FILE_STATUS which holds basic information about output files
+		and values
+	@param[in] GenOutput Holds general variables that deal with output
+	@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_OUT_close_files(SW_FILE_STATUS* SW_FileStatus, SW_GEN_OUT* GenOutput,
+            LOG_INFO* LogInfo) {
+
+    #if defined(SW_OUTTEXT)
+    SW_OUT_close_textfiles(SW_FileStatus, GenOutput, LogInfo);
+    #else
+    (void) SW_FileStatus;
+    (void) GenOutput;
+    (void) LogInfo;
+    #endif
+}
+
+
+
 void _echo_outputs(SW_ALL* sw)
 {
-	OutKey k;
+	IntUS k;
 	char str[OUTSTRLEN], errstr[MAX_ERROR];
 
 	strcpy(errstr, "\n===============================================\n"
@@ -2852,6 +2920,49 @@ void _echo_all_inputs(SW_ALL* sw) {
 				   sw->VegEstab.count);
 	_echo_VegProd(sw->VegProd.veg, sw->VegProd.bare_cov);
 	_echo_outputs(sw);
+}
+
+
+/**
+ * @brief Deep copy a source instance of SW_GEN_OUT into a destination instance
+ *
+ * Source values of p_OUT and p_OUTsd are not copied to destination.
+ *
+ * @param[out] dest Destination struct of type SW_GEN_OUT to be copied into
+ * @param[in] source Source struct of type SW_GEN_OUT to copy
+ * @param[in] SW_Output Passed as input argument.
+ * @param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_GENOUT_deepCopy(SW_GEN_OUT* dest, SW_GEN_OUT* source, SW_OUTPUT* SW_Output, LOG_INFO* LogInfo) {
+
+    IntUS key, icol;
+
+    memcpy(dest, source, sizeof (*dest));
+
+    SW_GENOUT_init_ptrs(dest);
+
+    /* allocate and copy colnames_OUT */
+    ForEachOutKey(key) {
+        for (icol = 0; icol < 5 * NVEGTYPES + MAX_LAYERS; icol++) {
+            if (!isnull(dest->colnames_OUT[key][icol])) {
+
+                dest->colnames_OUT[key][icol] = Str_Dup(
+                    source->colnames_OUT[key][icol],
+                    LogInfo
+                );
+                if(LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
+            }
+        }
+    }
+
+    /* allocate p_OUT and p_OUTsd -- but don't copy values */
+    #ifdef SW_OUTARRAY
+    SW_OUT_construct_outarray(dest, SW_Output, LogInfo);
+    #else
+    (void) SW_Output;
+    #endif
 }
 
 
