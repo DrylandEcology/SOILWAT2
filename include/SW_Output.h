@@ -126,10 +126,11 @@ extern char const *styp2str[];
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_OUT_init_ptrs(SW_ALL* sw);
+void SW_OUT_init_ptrs(SW_OUTPUT* SW_Output);
+void SW_GENOUT_init_ptrs(SW_GEN_OUT *GenOutput);
 void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 		SW_OUTPUT_POINTERS* SW_OutputPtrs, SW_OUTPUT* SW_Output,
-		LyrIndex n_layers, SW_GEN_OUT *GenOutput);
+		LyrIndex n_layers, SW_GEN_OUT *GenOutput, LOG_INFO *LogInfo);
 void SW_OUT_deconstruct(Bool full_reset, SW_ALL *sw);
 void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs, int count,
 					 IntUS ncol_OUT[]);
@@ -153,6 +154,25 @@ void SW_OUT_flush(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 				  LOG_INFO* LogInfo);
 void _collect_values(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 		Bool bFlush_output, TimeInt tOffset, LOG_INFO* LogInfo);
+
+void SW_OUT_close_files(SW_FILE_STATUS* SW_FileStatus, SW_GEN_OUT* GenOutput,
+						LOG_INFO* LogInfo);
+void SW_OUT_create_files(
+    SW_FILE_STATUS* SW_FileStatus,
+    SW_OUTPUT* SW_Output,
+    LyrIndex n_layers,
+    char *InFiles[],
+    SW_GEN_OUT* GenOutput,
+
+    SW_NETCDF* SW_netCDF,
+    LyrIndex n_evap_lyrs,
+    int startYr,
+    int endYr,
+    double lyrDepths[],
+
+    LOG_INFO* LogInfo
+);
+
 void _echo_outputs(SW_ALL* sw);
 void _echo_all_inputs(SW_ALL* sw);
 
@@ -169,12 +189,12 @@ void SW_OUT_set_SXWrequests(OutPeriod timeSteps_SXW[][SW_OUTNPERIODS],
 		IntUS *used_OUTNPERIODS, SW_OUTPUT *SW_Output, LOG_INFO *LogInfo);
 #endif
 
+void SW_GENOUT_deepCopy(SW_GEN_OUT* dest, SW_GEN_OUT* source, SW_OUTPUT* SW_Output, LOG_INFO* LogInfo);
+
 #if defined(SWNETCDF)
 void SW_OUT_deepCopy(SW_OUTPUT* dest_out, SW_OUTPUT* source_out,
                      SW_FILE_STATUS* dest_files, SW_FILE_STATUS* source_files,
                      Bool useOutPeriods[], LOG_INFO* LogInfo);
-void SW_GENOUT_deepCopy(SW_GEN_OUT* dest, SW_GEN_OUT* source,
-                    SW_OUTPUT* SW_Output, LOG_INFO* LogInfo);
 #endif
 
 

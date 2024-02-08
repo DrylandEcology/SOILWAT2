@@ -155,6 +155,7 @@ typedef struct {
 	 * printing and summing weekly/monthly values */
 	Bool newperiod[SW_OUTNPERIODS];
 	Bool isnorth;
+	Bool doOutput; /**< Flag to indicate if output should be produced (TRUE) or not (FALSE); set to FALSE for spinup and tests */
 
     int ncSuid[2]; // First element used for domain "s", both used for "xy"
 

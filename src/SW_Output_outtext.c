@@ -67,31 +67,41 @@ static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil,
 		Bool does_agg, LyrIndex n_layers, SW_OUTPUT* SW_Output,
 		SW_GEN_OUT* GenOutput, LOG_INFO* LogInfo) {
 
-	unsigned int i;
-	char key[50],
-		str_help1[n_layers * OUTSTRLEN],
-		str_help2[n_layers * OUTSTRLEN];
-	OutKey k;
-
-	// Initialize headers
-	str_reg[0] = (char)'\0';
-	str_soil[0] = (char)'\0';
-
 	#ifdef SOILWAT
 		if (does_agg) {
 			LogError(LogInfo, LOGERROR, "'_create_csv_headers': value TRUE for "\
 				"argument 'does_agg' is not implemented for SOILWAT2-standalone.");
             return; // Exit function prematurely due to error
 		}
-	#else
-		(void) LogInfo;
 	#endif
+
+	unsigned int i, k;
+	char key[50];
+
+	size_t size_help = n_layers * OUTSTRLEN;
+	char *str_help1, *str_help2;
+
+  str_help1 = (char *) Mem_Malloc(sizeof(char) * size_help, "_create_csv_headers()", LogInfo);
+  if(LogInfo->stopRun) {
+      return; // Exit function prematurely due to error
+  }
+
+  str_help2 = (char *) Mem_Malloc(sizeof(char) * size_help, "_create_csv_headers()", LogInfo);
+  if(LogInfo->stopRun) {
+      free(str_help1);
+      return; // Exit function prematurely due to error
+  }
+
+	// Initialize headers
+	str_reg[0] = (char)'\0';
+	str_soil[0] = (char)'\0';
 
 	ForEachOutKey(k)
 	{
-		if (SW_Output[k].use && has_OutPeriod_inUse(pd, k,
-						GenOutput->used_OUTNPERIODS, GenOutput->timeSteps))
-		{
+		if (
+				SW_Output[k].use &&
+				has_OutPeriod_inUse(pd, (OutKey)k, GenOutput->used_OUTNPERIODS, GenOutput->timeSteps)
+		) {
 			strcpy(key, key2str[k]);
 			str_help2[0] = '\0';
 
@@ -99,17 +109,17 @@ static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil,
 				if (does_agg) {
 						snprintf(
 							str_help1,
-							sizeof str_help1,
+							size_help,
 							"%c%s_%s_Mean%c%s_%s_SD",
 							_OUTSEP, key, GenOutput->colnames_OUT[k][i], _OUTSEP,
 							key, GenOutput->colnames_OUT[k][i]
 						);
-						strcat(str_help2, str_help1);
 				} else {
-					snprintf(str_help1, sizeof str_help1, "%c%s_%s", _OUTSEP,
+					snprintf(str_help1, size_help, "%c%s_%s", _OUTSEP,
 							 key, GenOutput->colnames_OUT[k][i]);
-					strcat(str_help2, str_help1);
 				}
+
+				strcat(str_help2, str_help1);
 			}
 
 			if (SW_Output[k].has_sl) {
@@ -119,6 +129,9 @@ static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil,
 			}
 		}
 	}
+
+	free(str_help1);
+	free(str_help2);
 }
 
 
@@ -319,7 +332,7 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd, char *InFiles[],
 
 #if defined(SOILWAT)
 
-/** @brief create all of the user-specified output files.
+/** @brief create all of the user-specified output text files.
  *
  * @param[in,out] SW_FileStatus Struct of type
  *	SW_FILE_STATUS which holds basic information about output files
@@ -332,40 +345,14 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd, char *InFiles[],
  * @param[in] InFiles Array of program in/output files
  * @param[in] GenOutput Holds general variables that deal with output
  * @param[out] LogInfo Holds information on warnings and errors
- *
- *  @note Call this routine at the beginning of the main program run, but
- *  after SW_OUT_read() which sets the global variable use_OutPeriod.
+
 */
-void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus,
-    SW_OUTPUT* SW_Output, SW_NETCDF* SW_netCDF, LyrIndex n_layers,
-    LyrIndex n_evap_lyrs, char *InFiles[], SW_GEN_OUT* GenOutput,
-    int startYr, int endYr, double lyrDepths[], int baseCalendarYear,
-    LOG_INFO* LogInfo) {
+void SW_OUT_create_textfiles(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
+	LyrIndex n_layers, char *InFiles[], SW_GEN_OUT* GenOutput,
+	LOG_INFO* LogInfo) {
 
 	OutPeriod pd;
 
-  #if defined(SOILWAT)
-  if(LogInfo->printProgressMsg) {
-      sw_message("is creating output files ...");
-  }
-  #endif
-
-    #if defined(SWNETCDF)
-    SW_OUT_construct_outarray(SW_Output, GenOutput, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-
-    SW_NC_create_output_files(SW_netCDF->InFilesNC[vNCdom],
-        SW_netCDF->ncVarIDs[vNCdom], SW_Output, SW_netCDF->strideOutYears,
-        startYr, endYr, n_layers, n_evap_lyrs,
-        &SW_FileStatus->numOutFiles, lyrDepths, baseCalendarYear,
-        GenOutput->use_OutPeriod, SW_FileStatus->ncOutFiles, LogInfo);
-
-    (void) pd;
-    (void) SW_FileStatus;
-    (void) InFiles;
-    #else
 	ForEachOutPeriod(pd) {
 		if (GenOutput->use_OutPeriod[pd]) {
 			_create_csv_files(SW_FileStatus, pd, InFiles, LogInfo);
@@ -382,15 +369,7 @@ void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus,
             }
 		}
 	}
-    (void) n_evap_lyrs;
-    (void) lyrDepths;
-    (void) SW_netCDF;
-    (void) startYr;
-    (void) endYr;
-    (void) baseCalendarYear;
-    #endif
 }
-
 
 #elif defined(STEPWAT)
 
@@ -516,15 +495,24 @@ void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil,
 	char str_time[20];
 	char
 		// 3500 characters required for does_agg = TRUE
-		header_reg[2 * OUTSTRLEN],
-		// 26500 characters required for 25 soil layers and does_agg = TRUE
-		header_soil[n_layers * OUTSTRLEN];
+		header_reg[2 * OUTSTRLEN];
+
+  // 26500 characters required for 25 soil layers and does_agg = TRUE
+  size_t size_hs = n_layers * OUTSTRLEN;
+  char *header_soil;
+
+  header_soil = (char *) Mem_Malloc(sizeof(char) * size_hs, "write_headers_to_csv()", LogInfo);
+  if(LogInfo->stopRun) {
+      return; // Exit function prematurely due to error
+  }
+
 
 	// Acquire headers
 	get_outstrheader(pd, str_time, sizeof str_time);
 	_create_csv_headers(pd, header_reg, header_soil, does_agg,
 			n_layers, SW_Output, GenOutput, LogInfo);
     if(LogInfo->stopRun) {
+        free(header_soil);
         return; // Exit function prematurely due to error
     }
 
@@ -538,14 +526,15 @@ void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil,
 		fprintf(fp_soil, "%s%s\n", str_time, header_soil);
 		fflush(fp_soil);
 	}
+
+	free(header_soil);
 }
 
 void find_TXToutputSoilReg_inUse(Bool make_soil[], Bool make_regular[],
 		SW_OUTPUT* SW_Output, OutPeriod timeSteps[][SW_OUTNPERIODS],
 		IntUS used_OUTNPERIODS)
 {
-	IntUS i;
-	OutKey k;
+	IntUS i, k;
 
 	ForEachOutPeriod(i)
 	{
@@ -572,7 +561,7 @@ void find_TXToutputSoilReg_inUse(Bool make_soil[], Bool make_regular[],
 }
 
 
-/** @brief close all of the user-specified output files.
+/** @brief close all of the user-specified output text files.
     call this routine at the end of the program run.
 
 	@param[in,out] SW_FileStatus Struct of type
@@ -581,7 +570,7 @@ void find_TXToutputSoilReg_inUse(Bool make_soil[], Bool make_regular[],
 	@param[in] GenOutput Holds general variables that deal with output
 	@param[out] LogInfo Holds information on warnings and errors
 */
-void SW_OUT_close_files(SW_FILE_STATUS* SW_FileStatus, SW_GEN_OUT* GenOutput,
+void SW_OUT_close_textfiles(SW_FILE_STATUS* SW_FileStatus, SW_GEN_OUT* GenOutput,
 						LOG_INFO* LogInfo) {
 
 	Bool close_regular, close_layers, close_aggs;

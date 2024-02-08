@@ -32,7 +32,6 @@
 #include "include/SW_Site.h"
 #include "include/SW_Weather.h"
 #include "include/SW_Output.h"
-#include "include/SW_Output_outtext.h"
 #include "include/SW_Main_lib.h"
 #include "include/SW_Domain.h"
 #include "include/SW_Model.h"
@@ -101,6 +100,7 @@ int main(int argc, char **argv) {
         goto finishProgram;
     }
 
+
     SW_MDL_get_ModelRun(&sw_template.Model, &SW_Domain, NULL, &LogInfo);
     if(LogInfo.stopRun) {
         goto finishProgram;
@@ -142,11 +142,21 @@ int main(int argc, char **argv) {
     if(LogInfo.stopRun) {
         goto finishProgram;
     }
-	SW_OUT_create_files(&sw_template.FileStatus, sw_template.Output,
-        &SW_Domain.netCDFInfo, nMaxSoilLayers, sw_template.Site.n_evap_lyrs,
-        SW_Domain.PathInfo.InFiles, &sw_template.GenOutput, sw_template.Model.startyr,
-        sw_template.Model.endyr, sw_template.Site.depths,
-        SW_Domain.netCDFInfo.baseCalendarYear, &LogInfo); // only used with SOILWAT2
+    SW_OUT_create_files(
+        &sw_template.FileStatus,
+        sw_template.Output,
+        nMaxSoilLayers,
+        SW_Domain.PathInfo.InFiles,
+        &sw_template.GenOutput,
+
+        &SW_Domain.netCDFInfo,
+        sw_template.Site.n_evap_lyrs,
+        sw_template.Model.startyr,
+        sw_template.Model.endyr,
+        sw_template.Site.depths,
+
+        &LogInfo
+    );
     if(LogInfo.stopRun) {
         goto closeFiles;
     }

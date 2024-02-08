@@ -275,32 +275,30 @@ sources_core := \
 	$(dir_src)/SW_Flow_lib.c \
 	$(dir_src)/SW_Flow.c \
 	$(dir_src)/SW_Carbon.c \
-	$(dir_src)/SW_Domain.c
+	$(dir_src)/SW_Domain.c \
+	$(dir_src)/SW_Output.c \
+	$(dir_src)/SW_Output_get_functions.c
 
 ifdef SWNETCDF
 sources_core += $(dir_src)/SW_netCDF.c
 sources_core += $(dir_src)/SW_Output_outarray.c
+else
+sources_core += $(dir_src)/SW_Output_outtext.c
 endif
 
 sources_lib = \
 	$(sw_sources) \
-	$(sources_core) \
-	$(dir_src)/SW_Output.c \
-	$(dir_src)/SW_Output_get_functions.c
+	$(sources_core)
 objects_lib = $(sources_lib:$(dir_src)/%.c=$(dir_build_sw2)/%.o)
 
 
-# SOILWAT2-standalone
-sources_bin := $(dir_src)/SW_Main.c $(dir_src)/SW_Output_outtext.c
+# Code for SOILWAT2-standalone program
+sources_bin := $(dir_src)/SW_Main.c
 objects_bin := $(sources_bin:$(dir_src)/%.c=$(dir_build_sw2)/%.o)
 
 
-# Unfortunately, we currently cannot include 'SW_Output.c' because
-#  - cannot increment expression of enum type (e.g., OutKey, OutPeriod)
-#  - assigning to 'OutKey' from incompatible type 'int'
-# ==> instead, we use 'SW_Output_mock.c' which provides mock versions of the
-# public functions (but will result in some compiler warnings)
-sources_lib_test := $(sources_core) $(dir_src)/SW_Output_mock.c
+# Code for SOILWAT2-test library (include all source code)
+sources_lib_test := $(sources_core)
 objects_lib_test := $(sources_lib_test:$(dir_src)/%.c=$(dir_build_test)/%.o)
 
 

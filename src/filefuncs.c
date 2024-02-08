@@ -41,8 +41,11 @@ static void freeGetfilesEarly(char **flist, int nfound, DIR *dir, char *fname) {
     }
 
     closedir(dir);
-    free(fname);
-    fname = NULL;
+
+    if (!isnull(fname)) {
+        free(fname);
+        fname = NULL;
+    }
 }
 
 static char **getfiles(const char *fspec, int *nfound, LOG_INFO* LogInfo) {
@@ -452,14 +455,19 @@ Bool RemoveFiles(const char *fspec, LOG_INFO* LogInfo) {
 			}
 		}
 	}
+    if (!isnull(flist)) {
+        for (i = 0; i < nfiles; i++) {
+            if (!isnull(flist[i])) {
+                free(flist[i]);
+            }
+        }
+        free(flist);
+    }
+
     if(LogInfo->stopRun) {
         return swFALSE;
     }
 
-	for (i = 0; i < nfiles; i++) {
-		free(flist[i]);
-	}
-	free(flist);
 
 	return (Bool) result;
 }

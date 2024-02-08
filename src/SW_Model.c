@@ -60,11 +60,10 @@ const TimeInt _notime = 0xffff; /* init value for _prev* */
 /**
 @brief MDL constructor for global variables.
 
-@param[out] newperiod newperiod[] Specifies when a new day/week/month/year
-	has started
-@param[out] days_in_month[] Number of days per month for "current" year
+@param[in,out] SW_Model Struct of type SW_MODEL holding basic time information
+	about the simulation
 */
-void SW_MDL_construct(Bool newperiod[], TimeInt days_in_month[]) {
+void SW_MDL_construct(SW_MODEL* SW_Model) {
 	/* =================================================== */
 	/* note that an initializer that is called during
 	 * execution (better called clean() or something)
@@ -73,13 +72,16 @@ void SW_MDL_construct(Bool newperiod[], TimeInt days_in_month[]) {
 	 */
 	OutPeriod pd;
 
-	Time_init_model(days_in_month); // values of time are correct only after Time_new_year()
+	Time_init_model(SW_Model->days_in_month); // values of time are correct only after Time_new_year()
 
 	ForEachOutPeriod(pd)
 	{
-		newperiod[pd] = swFALSE;
+		SW_Model->newperiod[pd] = swFALSE;
 	}
-	newperiod[eSW_Day] = swTRUE; // every day is a new day
+	SW_Model->newperiod[eSW_Day] = swTRUE; // every day is a new day
+
+	SW_Model->addtl_yr = 0;
+	SW_Model->doOutput = swTRUE;
 }
 
 /**
@@ -126,7 +128,6 @@ void SW_MDL_read(SW_MODEL* SW_Model, char *InFiles[], LOG_INFO* LogInfo) {
 	 but if hemisphere occurs first, skip checking for the rest
 	 and assume they're not there.
 	 */
-    SW_Model->addtl_yr = 0;
 	lineno = 0;
 	while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
 		switch(lineno) {

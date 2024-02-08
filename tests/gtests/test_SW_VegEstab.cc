@@ -21,7 +21,7 @@ namespace {
     EXPECT_GT(SW_All.VegEstab.count, 0);
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 

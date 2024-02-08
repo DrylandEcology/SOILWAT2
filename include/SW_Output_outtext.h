@@ -26,11 +26,9 @@ extern "C" {
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 #if defined(SOILWAT)
-void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus,
-    SW_OUTPUT* SW_Output, SW_NETCDF* SW_netCDF, LyrIndex n_layers,
-    LyrIndex n_evap_lyrs, char *InFiles[], SW_GEN_OUT* GenOutput,
-    int startYr, int endYr, double lyrDepths[], int baseCalendarYear,
-    LOG_INFO* LogInfo);
+void SW_OUT_create_textfiles(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
+	LyrIndex n_layers, char *InFiles[], SW_GEN_OUT* GenOutput,
+	LOG_INFO* LogInfo);
 
 #elif defined(STEPWAT)
 void SW_OUT_create_summary_files(SW_FILE_STATUS* SW_FileStatus,
@@ -49,7 +47,7 @@ void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil,
 void find_TXToutputSoilReg_inUse(Bool make_soil[], Bool make_regular[],
 		SW_OUTPUT* SW_Output, OutPeriod timeSteps[][SW_OUTNPERIODS],
 		IntUS used_OUTNPERIODS);
-void SW_OUT_close_files(SW_FILE_STATUS* SW_FileStatus, SW_GEN_OUT* GenOutput,
+void SW_OUT_close_textfiles(SW_FILE_STATUS* SW_FileStatus, SW_GEN_OUT* GenOutput,
 						LOG_INFO* LogInfo);
 
 
