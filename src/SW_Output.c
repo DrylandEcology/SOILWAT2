@@ -2911,7 +2911,10 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
  * @param[in] GenOutput Holds general variables that deal with output
  * @param[in] SW_netCDF Struct of type SW_NETCDF holding constant
  *  netCDF file information
- * @param[in] n_layers Number of layers of soil within the simulation run
+ * @param[in] n_evap_lyrs Number of layers in which evap is possible
+ * @param[in] startYr First calendar year
+ * @param[in] endYr Last calendar year
+ * @param[in] lyrDepths Array of soil layer depths
  * @param[out] LogInfo Holds information on warnings and errors
  *
  *  @note Call this routine at the beginning of the main program run, but
