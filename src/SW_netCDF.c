@@ -1798,12 +1798,9 @@ static void create_time_vars(int ncFileID, int dimIDs[], int size,
     size_t numBnds = 2;
     size_t start[] = {0, 0}, count[] = {(size_t)size, 0};
     int currYear = startYr;
-    double midTimeNum = 0.0;
-    int month = 0, numDays = 0;
+    int month = 0, week = 0, numDays = 0;
     int bndsID = 0;
-    const int numDaysInWeek = 7;
 
-    const int periodDays[] = {1, numDaysInWeek, 0, 0};
 
     create_netCDF_var(&bndsID, "time_bnds", dimIDs,
                         &ncFileID, NC_DOUBLE, numBnds, LogInfo);
@@ -1825,9 +1822,24 @@ static void create_time_vars(int ncFileID, int dimIDs[], int size,
     }
 
     for(size_t index = 0; index < (size_t) size; index++) {
-        numDays = periodDays[pd];
 
-        switch(pd) { // No special calculations to to for days/weeks
+        switch(pd) {
+            case eSW_Day:
+                numDays = 1;
+                break;
+
+            case eSW_Week:
+                if (week == MAX_WEEKS - 1) {
+                  // last "week" (7-day period) is either 1 or 2 days long
+                  numDays = isleapyear(currYear) ? 2 : 1;
+                } else {
+                  numDays = WKDAYS;
+                }
+
+                currYear += (index % MAX_WEEKS == 0) ? 1.0 : 0.0;
+                week = (week + 1) % MAX_WEEKS;
+                break;
+
             case eSW_Month:
                 if(month == Feb) {
                     numDays = isleapyear(currYear) ? 29 : 28;
@@ -1838,21 +1850,23 @@ static void create_time_vars(int ncFileID, int dimIDs[], int size,
                 currYear += (index % MAX_MONTHS == 0) ? 1.0 : 0.0;
                 month = (month + 1) % MAX_MONTHS;
                 break;
-            default: // yearly
+
+            case eSW_Year:
                 numDays = Time_get_lastdoy_y(currYear);
                 currYear++;
                 break;
-        }
 
-        midTimeNum = *startTime;
-        midTimeNum += *startTime + (double) numDays;
-        midTimeNum /= 2.0;
+            default:
+                break;
+        }
 
         bndsVals[index * 2] = *startTime;
         bndsVals[index * 2 + 1] = *startTime + numDays;
 
+        // time value = mid-time of bounds
+        dimVarVals[index] = (bndsVals[index * 2] + bndsVals[index * 2 + 1]) / 2.0;
+
         *startTime += numDays;
-        dimVarVals[index] = midTimeNum;
     }
 
     fill_netCDF_var_double(ncFileID, dimVarID, dimVarVals,
