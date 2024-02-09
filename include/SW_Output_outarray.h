@@ -26,14 +26,26 @@ extern "C" {
 /*                    Local Defines                    */
 /* --------------------------------------------------- */
 
-/** iOUT returns the index to the `i`-th column for time period `pd` in an
-  output array that is organized by columns where `i` is base0 and
-  `pd` is `OutPeriod`. The index order has to match up with column names as
-  defined by `SW_OUT_set_colnames`.
+/** @brief Position in an output array `p_OUT[OutKey][OutPeriod]`
+
+  The position is specified by
+      - `varid` the `i`-th variable within current output group `OutKey`
+        (see `SW_OUT_set_colnames`).
+      - `timeid` the current time index (e.g., `GenOutput->irow_OUT[OutPeriod]`)
+
+  The correct dimensions of the output array `p_OUT[OutKey][OutPeriod]`
+  are inferred from
+      - `nrow_OUT_pd` the number of time steps in the current `OutPeriod`
+        (e.g., `GenOutput->nrow_OUT[OutPeriod]`)
+      - `ncol_TimeOUT_pd` the number of header (time) variables for the current
+        `OutPeriod` (e.g., `ncol_TimeOUT[OutPeriod]`)
+
+  Positions are consecutive along consecutive `timeid` values for a given
+  variable and output time step.
 */
-#define iOUT(i, pd, GenOutput) \
-            ((GenOutput.irow_OUT[(pd)]) + (GenOutput.nrow_OUT[(pd)]) * \
-            (ncol_TimeOUT[(pd)] + (i)))
+#define iOUT(varid, timeid, nrow_OUT_pd, ncol_TimeOUT_pd) \
+            ((timeid) + (nrow_OUT_pd) * ((ncol_TimeOUT_pd) + (varid)))
+
 
 /** iOUT2 returns the index to the `i`-th (soil layer) column
   within the `k`-th (vegetation type) column block for time period `pd` in an
@@ -41,8 +53,8 @@ extern "C" {
   `pd` is `OutPeriod`. The index order has to match up with column names as
   defined by `SW_OUT_set_colnames`.
 */
-#define iOUT2(i, k, pd, GenOutput, n_layers) \
-              ((GenOutput.irow_OUT[(pd)]) + (GenOutput.nrow_OUT[(pd)]) * (ncol_TimeOUT[(pd)] + \
+#define iOUT2(i, k, pd, irow_OUT, nrow_OUT, n_layers) \
+              ((irow_OUT)[(pd)] + (nrow_OUT)[(pd)] * (ncol_TimeOUT[(pd)] + \
                (i) + (n_layers) * (k)))
 
 

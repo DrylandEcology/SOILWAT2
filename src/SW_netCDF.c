@@ -2435,11 +2435,11 @@ static int calc_pOUTIndex(SW_GEN_OUT* SW_GenOut, int ncFileID, int varNum,
     int pOUTIndex = 0;
 
     if(dimExists("vertical", ncFileID) && dimExists("pft", ncFileID)) {
-        pOUTIndex = iOUT2(varNum, 0, pd, (*SW_GenOut), vertSize);
+        pOUTIndex = startTime + SW_GenOut->nrow_OUT[pd] * (ncol_TimeOUT[pd] + varNum + vertSize * 0);
+        //iOUT2(varNum, 0, pd, (*SW_GenOut.irow_OUT), (*SW_GenOut.nrow_OUT), vertSize);
     } else {
-        pOUTIndex = iOUT(varNum, pd, (*SW_GenOut));
+        pOUTIndex = iOUT(varNum, startTime, SW_GenOut->nrow_OUT[pd], ncol_TimeOUT[pd]);
     }
-    pOUTIndex += startTime;
 
     return pOUTIndex;
 }
