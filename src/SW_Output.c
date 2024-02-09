@@ -3155,6 +3155,10 @@ void SW_OUT_deepCopy(SW_OUTPUT* dest_out, SW_OUTPUT* source_out,
                     }
                 }
             }
+
+        } else {
+            dest_out[key].reqOutputVars = NULL;
+            dest_out[key].outputVarInfo = NULL;
         }
     }
 }
