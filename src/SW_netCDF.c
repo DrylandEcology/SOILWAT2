@@ -2461,23 +2461,28 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* SW_GenOut,
 
     char* fileName, *varName, *dimStr = NULL;
     size_t dimSizes[MAX_NUM_DIMS] = {0};
-    size_t start[] = {0, 0, 0, 0, 0};
+    size_t start[MAX_NUM_DIMS] = {0};
     size_t pOUTIndex, startTime, timeSize = 0;
     int vertSize;
+
+    start[0] = ncSuid[0];
+    start[1] = ncSuid[1];
 
     ForEachOutPeriod(pd) {
         if(!SW_GenOut->use_OutPeriod[pd]) {
             continue; // Skip period iteration
         }
 
-        for(fileNum = 0; fileNum < numFilesPerKey; fileNum++) {
-            ForEachOutKey(key) {
-                startTime = 0;
-                vertSize = getNLayers((OutKey)key, n_layers, n_evap_layers);
+        ForEachOutKey(key) {
+            if(numVarsPerKey[key] == 0 || !SW_Output[key].use) {
+                continue; // Skip key iteration
+            }
 
-                if(numVarsPerKey[key] == 0 || !SW_Output[key].use) {
-                    continue; // Skip key iteration
-                }
+            startTime = 0; // keep track of time across time-sliced files per outkey
+            vertSize = getNLayers((OutKey)key, n_layers, n_evap_layers);
+
+
+            for(fileNum = 0; fileNum < numFilesPerKey; fileNum++) {
                 fileName = ncOutFileNames[key][pd][fileNum];
 
                 if(nc_open(fileName, NC_WRITE, &currFileID) != NC_NOERR) {
@@ -2504,9 +2509,6 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* SW_GenOut,
                         return; // Exit function prematurely due to error
                     }
 
-                    start[0] = ncSuid[0];
-                    start[1] = ncSuid[1];
-
                     p_OUTValPtr = &SW_GenOut->p_OUT[key][pd][pOUTIndex];
 
                     write_double_vals(varName, p_OUTValPtr,
@@ -2515,6 +2517,7 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* SW_GenOut,
                         return; // Exit function prematurely due to error
                     }
                 }
+
                 // Get the time value from the "time" dimension
                 get_dim_val(currFileID, "time", &timeSize, LogInfo);
                 startTime += timeSize;
