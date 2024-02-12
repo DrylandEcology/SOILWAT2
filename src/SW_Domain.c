@@ -261,18 +261,6 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
             case 16: // Spinup Seed
                 SW_Domain->SW_SpinUp.rng_seed = atoi( value );
                 break;
-            case 17: // Spinup Mode
-                y = atoi(value);
-                                
-                if (y != 1 && y != 2) {
-                    CloseFile(&f, LogInfo);
-                    LogError(LogInfo, LOGERROR,
-                            "%s: Incorrect Mode (%d) for spinup"\
-                            " Please select \"1\" or \"2\"", MyFileName, y);
-                    return; // Exit function prematurely due to error
-                }
-                SW_Domain->SW_SpinUp.mode = atoi(value);
-                break;
 
             case KEY_NOT_FOUND: // Unknown key
                 LogError(LogInfo, LOGWARN, "%s: Ignoring an unknown key, %s",
