@@ -2042,17 +2042,17 @@ static void create_output_dimVar(const char* name, int size, int ncFileID,
 
     const char* outAttNames[][6] = {
         {"long_name", "standard_name", "units", "positive", "axis", "bounds"},
-        {"long_name", "standard_name", "units", "axis", "calendar"},
+        {"long_name", "standard_name", "units", "axis", "calendar", "bounds"},
         {"standard_name"}
     };
 
     char outAttVals[][6][MAX_FILENAMESIZE] = {
         {"soil depth", "depth", "centimeter", "down", "Z", "vertical_bnds"},
-        {"time", "time", "", "T", "standard"},
+        {"time", "time", "", "T", "standard", "time_bnds"},
         {"biological_taxon_name"}
     };
 
-    const int numVarAtts[] = {6, 5, 1};
+    const int numVarAtts[] = {6, 6, 1};
 
     create_netCDF_dim(name, size, &ncFileID, dimID, LogInfo);
     if(LogInfo->stopRun) {
@@ -2073,7 +2073,7 @@ static void create_output_dimVar(const char* name, int size, int ncFileID,
 
         if(dimNum == timeIndex) {
             snprintf(outAttVals[timeIndex][timeUnitIndex], MAX_FILENAMESIZE,
-                     "days since %d-1-1", baseCalendarYear);
+                     "days since %d-01-01 00:00:00", baseCalendarYear);
         }
 
         for(index = 0; index < numVarAtts[dimNum]; index++) {
