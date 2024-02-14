@@ -2660,6 +2660,9 @@ int SW_NC_get_nMaxSoilLayers(int readInNumLayers) {
  * @brief Check that the constant content is consistent between
  *  domain.in and a given netCDF file
  *
+ * If ncFileID is negative, then the netCDF fileName will be temporarily
+ * opened for read-access.
+ *
  * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
  *  temporal/spatial information for a set of simulation runs
  * @param[in] ncFileID Identifier of the open netCDF file to check
@@ -2668,6 +2671,17 @@ int SW_NC_get_nMaxSoilLayers(int readInNumLayers) {
 */
 void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
                  LOG_INFO* LogInfo) {
+
+    Bool fileWasClosed = (ncFileID < 0) ? swTRUE : swFALSE;
+
+    if (fileWasClosed) {
+        // "Once a netCDF dataset is opened, it is referred to by a netCDF ID, which is a small non-negative integer"
+        if (nc_open(fileName, NC_NOWRITE, &ncFileID) != NC_NOERR) {
+            LogError(LogInfo, LOGERROR, "An error occurred when attempting "
+                                        "to open the file %s.", fileName);
+            return; // Exit function prematurely due to error
+        }
+    }
 
     SW_CRS *crs_geogsc = &SW_Domain->netCDFInfo.crs_geogsc;
     SW_CRS *crs_projsc = &SW_Domain->netCDFInfo.crs_projsc;
@@ -2735,6 +2749,7 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
                     "does not match the one specified in the domain input "
                     "file ('%s'). Please make sure these match.",
                     fileName, SW_Domain->DomainType);
+        goto wrapUp; // Exit function prematurely due to error
     }
 
     /*
@@ -2744,7 +2759,7 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
     if(strcmp(impliedDomType, "s") == 0) {
         get_dim_val(ncFileID, "site", &SDimVal, LogInfo);
         if(LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
+            goto wrapUp; // Exit function prematurely due to error
         }
 
         dimMismatch = (Bool) (SDimVal != SW_Domain->nDimS);
@@ -2752,25 +2767,25 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
         if(geoIsPrimCRS && geoCRSExists) {
             get_dim_val(ncFileID, "lat", &latDimVal, LogInfo);
             if(LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
             get_dim_val(ncFileID, "lon", &lonDimVal, LogInfo);
             if(LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
         } else if(!geoIsPrimCRS && projCRSExists) {
             get_dim_val(ncFileID, "y", &latDimVal, LogInfo);
             if(LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
             get_dim_val(ncFileID, "x", &lonDimVal, LogInfo);
             if(LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
         } else {
             LogError(LogInfo, LOGERROR, "Could not find the proper CRS variable "
                                         "for the domain type/primary CRS.");
-            return; // Exit function prematurely due to error
+            goto wrapUp; // Exit function prematurely due to error
         }
 
         dimMismatch = (Bool) (latDimVal != SW_Domain->nDimY ||
@@ -2781,7 +2796,7 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
         LogError(LogInfo, LOGERROR, "The size of the dimensions in %s do "
                     "not match the domain input file's. Please make sure "
                     "these match.", fileName);
-        return; // Exit function prematurely due to error
+        goto wrapUp; // Exit function prematurely due to error
     }
 
     /*
@@ -2793,13 +2808,13 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
             get_str_att_val(ncFileID, geoCRS, strAttsToComp[attNum],
                             strAttVal, LogInfo);
             if(LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
 
             if(strcmp(geoStrAttVals[attNum], strAttVal) != 0) {
                 LogError(LogInfo, LOGERROR, attFailMsg,
                         strAttsToComp[attNum], geoCRS, fileName);
-                return; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
         }
 
@@ -2807,20 +2822,20 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
             get_double_att_val(ncFileID, geoCRS, doubleAttsToComp[attNum],
                             &doubleAttVal, LogInfo);
             if(LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
 
             if(doubleAttVal != geoDoubleAttVals[attNum]) {
                 LogError(LogInfo, LOGERROR, attFailMsg,
                         doubleAttsToComp[attNum], geoCRS, fileName);
-                return; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
         }
     } else {
         LogError(LogInfo, LOGERROR, "A geographic CRS was not found in %s. "
                                     "Please make sure one is provided.",
                                     fileName);
-        return; // Exit function prematurely due to error
+        goto wrapUp; // Exit function prematurely due to error
     }
 
     /*
@@ -2833,13 +2848,13 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
             get_str_att_val(ncFileID, projCRS, strAttsToComp[attNum],
                             strAttVal, LogInfo);
             if(LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
 
             if(strcmp(projStrAttVals[attNum], strAttVal) != 0) {
                 LogError(LogInfo, LOGERROR, attFailMsg,
                         strAttsToComp[attNum], projCRS, fileName);
-                return; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
         }
 
@@ -2847,13 +2862,13 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
             get_double_att_val(ncFileID, projCRS, doubleAttsToComp[attNum],
                                &doubleAttVal, LogInfo);
             if(LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
 
             if(doubleAttVal != projDoubleAttVals[attNum]) {
                 LogError(LogInfo, LOGERROR, attFailMsg,
                         doubleAttsToComp[attNum], projCRS, fileName);
-                return; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
         }
 
@@ -2862,13 +2877,13 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
             get_str_att_val(ncFileID, projCRS, strProjAttsToComp[attNum],
                             strAttVal, LogInfo);
             if(LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
 
             if(strcmp(strAttVal, strProjAttVals[attNum]) != 0) {
                 LogError(LogInfo, LOGERROR, attFailMsg, strProjAttsToComp[attNum],
                          projCRS, fileName);
-                return; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
         }
 
@@ -2876,20 +2891,20 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
             get_double_att_val(ncFileID, projCRS, doubleProjAttsToComp[attNum],
                                 &doubleAttVal, LogInfo);
             if(LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
 
             if(doubleAttVal != doubleProjAttVals[attNum]) {
                 LogError(LogInfo, LOGERROR, attFailMsg, doubleProjAttsToComp[attNum],
                          projCRS, fileName);
-                return; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
         }
 
         // Test for standard_parallel
         get_double_att_val(ncFileID, projCRS, stdParallel, projStdParallel, LogInfo);
         if(LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
+            goto wrapUp; // Exit function prematurely due to error
         }
 
         if(projStdParallel[0] != stdParVals[0] ||
@@ -2897,6 +2912,14 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
 
             LogError(LogInfo, LOGERROR, attFailMsg, stdParallel,
                      projCRS, fileName);
+            goto wrapUp; // Exit function prematurely due to error
+        }
+    }
+
+
+    wrapUp: {
+        if (fileWasClosed) {
+            nc_close(ncFileID);
         }
     }
 }
