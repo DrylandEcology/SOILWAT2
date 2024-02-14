@@ -2290,7 +2290,7 @@ static void create_output_file(SW_OUTPUT* SW_Output,
         int startYr, LOG_INFO* LogInfo) {
 
     int index;
-    const char* frequency[] = {"daily", "weekly", "monthly", "yearly"};
+    char frequency[10];
     const char* attNames[] = {
         "original_name", "long_name", "comment", "units", "cell_method",
         "units_metadata"
@@ -2308,6 +2308,9 @@ static void create_output_file(SW_OUTPUT* SW_Output,
     int cellMethAttInd = 0;
     char* varName, *dimStr = NULL;
     char** varInfo;
+
+    snprintf(frequency, 9, "%s", pd2longstr[pd]);
+    Str_ToLower(frequency, frequency);
 
     // Add the rest of the output variables for the current output file
     for(index = 0; index < numOutVars; index++) {
@@ -2332,7 +2335,7 @@ static void create_output_file(SW_OUTPUT* SW_Output,
 
                 // Create a new output file
                 SW_NC_create_template(domFile, domID, newFileName,
-                    &newFileID, swFALSE, frequency[pd], LogInfo);
+                    &newFileID, swFALSE, frequency, LogInfo);
             }
 
             create_full_var(&newFileID, NC_DOUBLE, timeSize, vertSize, numVegTypesOut,
@@ -2579,7 +2582,7 @@ void SW_NC_create_output_files(const char* domFile, int domFileID,
     double startTime[SW_OUTNPERIODS];
 
     const char* outputDir = "Output/";
-    const char* periodSuffix[] = {"_daily", "_weekly", "_monthly", "_yearly"};
+    char periodSuffix[10];
     char* yearFormat;
 
     *numFilesPerKey = (strideOutYears == -1) ? 1 :
@@ -2599,6 +2602,9 @@ void SW_NC_create_output_files(const char* domFile, int domFileID,
                     baseTime = times[pd];
                     rangeStart = startYr;
 
+                    snprintf(periodSuffix, 9, "%s", pd2longstr[pd]);
+                    Str_ToLower(periodSuffix, periodSuffix);
+
                     SW_NC_alloc_files(&ncOutFileNames[key][pd], *numFilesPerKey,
                                     LogInfo);
                     if(LogInfo->stopRun) {
@@ -2612,8 +2618,8 @@ void SW_NC_create_output_files(const char* domFile, int domFileID,
                         }
 
                         snprintf(yearBuff, 10, yearFormat, rangeStart, rangeEnd - 1);
-                        snprintf(fileNameBuf, MAX_FILENAMESIZE, "%s%s_%s%s.nc",
-                                outputDir, key2str[key], yearBuff, periodSuffix[pd]);
+                        snprintf(fileNameBuf, MAX_FILENAMESIZE, "%s%s_%s_%s.nc",
+                                outputDir, key2str[key], yearBuff, periodSuffix);
 
                         ncOutFileNames[key][pd][fileNum] = Str_Dup(fileNameBuf, LogInfo);
                         if(LogInfo->stopRun) {
