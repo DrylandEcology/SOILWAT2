@@ -3497,8 +3497,11 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
                                 currOut->reqOutputVars[estVar] = swTRUE;
                                 currOut->outputVarInfo[estVar][index] =
                                                 Str_Dup(parms[estVar]->sppname, LogInfo);
-                                currOut->outputVarInfo[estVar][DIM_INDEX] =
+                                if (estVar > 0) {
+                                    // copy dimension (but already copied for first estab-species)
+                                    currOut->outputVarInfo[estVar][DIM_INDEX] =
                                                 Str_Dup(input[dimInd], LogInfo);
+                                }
                                 break;
 
                             case LONGNAME_INDEX:
