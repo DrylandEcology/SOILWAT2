@@ -71,10 +71,12 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* SW_GenOut,
         char** ncOutFileNames[][SW_OUTNPERIODS], size_t ncSuid[],
         LOG_INFO* LogInfo);
 void SW_NC_create_output_files(const char* domFile, int domFileID,
-        SW_DOMAIN* SW_Domain, SW_OUTPUT* SW_Output, const char* output_prefix,
+        SW_DOMAIN* SW_Domain, SW_OUTPUT* SW_Output,
+        OutPeriod timeSteps[][SW_OUTNPERIODS], IntUS used_OUTNPERIODS,
+        const char* output_prefix,
         int strideOutYears, int startYr, int endYr,
         LyrIndex n_layers, int n_evap_lyrs, int* numFilesPerKey,
-        double lyrDepths[], int baseCalendarYear, Bool useOutPeriods[],
+        double lyrDepths[], int baseCalendarYear,
         char** ncOutFileNames[][SW_OUTNPERIODS], LOG_INFO* LogInfo);
 int SW_NC_get_nMaxSoilLayers(int readInNumLayers);
 void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,

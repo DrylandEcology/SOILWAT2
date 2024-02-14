@@ -2503,6 +2503,10 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* SW_GenOut,
             for(fileNum = 0; fileNum < numFilesPerKey; fileNum++) {
                 fileName = ncOutFileNames[key][pd][fileNum];
 
+                if (isnull(fileName)) {
+                    continue; // this outperiod x outkey combination was not requested
+                }
+
                 if(nc_open(fileName, NC_WRITE, &currFileID) != NC_NOERR) {
                     LogError(LogInfo, LOGWARN, "Could not open file %s, so "
                                             "no information was written to it.",
@@ -2556,6 +2560,8 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* SW_GenOut,
  *  temporal/spatial information for a set of simulation runs
  * @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
  *  basic output information for all output keys
+ * @param[in] timeSteps Requested time steps
+ * @param[in] used_OUTNPERIODS Determine which output periods to output
  * @param[in] output_prefix Directory path of output files.
  * @param[in] strideOutYears Number of years to write into an output file
  * @param[in] startYr Start year of the simulation
@@ -2566,18 +2572,19 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* SW_GenOut,
  *  have (same amount for each key)
  * @param[out] lyrDepths Depths of soil layers (cm)
  * @param[out] baseCalendarYear First year of the entire simulation
- * @param[out] useOutPeriods Determine which output periods to output
  * @param[out] ncOutFileNames A list of the generated output netCDF file names
  * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_create_output_files(const char* domFile, int domFileID,
-        SW_DOMAIN* SW_Domain, SW_OUTPUT* SW_Output, const char* output_prefix,
+        SW_DOMAIN* SW_Domain, SW_OUTPUT* SW_Output,
+        OutPeriod timeSteps[][SW_OUTNPERIODS], IntUS used_OUTNPERIODS,
+        const char* output_prefix,
         int strideOutYears, int startYr, int endYr,
         LyrIndex n_layers, int n_evap_lyrs, int* numFilesPerKey,
-        double lyrDepths[], int baseCalendarYear, Bool useOutPeriods[],
+        double lyrDepths[], int baseCalendarYear,
         char** ncOutFileNames[][SW_OUTNPERIODS], LOG_INFO* LogInfo) {
 
-    int key;
+    int key, ip;
     OutPeriod pd;
     int rangeStart, rangeEnd, fileNum;
     int numYears = endYr - startYr + 1, yearOffset;
@@ -2599,8 +2606,11 @@ void SW_NC_create_output_files(const char* domFile, int domFileID,
         if(numVarsPerKey[key] > 0 && SW_Output[key].use) {
             vertSize = getNLayers((OutKey)key, n_layers, n_evap_lyrs);
 
-            ForEachOutPeriod(pd) {
-                if(useOutPeriods[pd]) {
+            // Loop over requested output periods (which may vary for each outkey)
+            for (ip = 0; ip < used_OUTNPERIODS; ip++) {
+                pd = timeSteps[key][ip];
+
+                if (pd != eSW_NoTime) {
                     startTime[pd] = 0;
                     baseTime = times[pd];
                     rangeStart = startYr;

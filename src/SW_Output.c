@@ -2955,17 +2955,18 @@ void SW_OUT_create_files(
     #elif defined(SWNETCDF)
     SW_NC_create_output_files(SW_Domain->netCDFInfo.InFilesNC[vNCdom],
         SW_Domain->netCDFInfo.ncVarIDs[vNCdom],
-        SW_Domain, SW_Output, SW_Domain->PathInfo.output_prefix,
+        SW_Domain, SW_Output,
+        GenOutput->timeSteps, GenOutput->used_OUTNPERIODS,
+        SW_Domain->PathInfo.output_prefix,
         SW_Domain->netCDFInfo.strideOutYears, startYr, endYr, n_layers, n_evap_lyrs,
         &SW_FileStatus->numOutFiles, lyrDepths, SW_Domain->netCDFInfo.baseCalendarYear,
-        GenOutput->use_OutPeriod, SW_FileStatus->ncOutFiles, LogInfo);
+        SW_FileStatus->ncOutFiles, LogInfo);
 
     #else
     (void) SW_FileStatus;
     (void) SW_Domain;
     (void) SW_Output;
     (void) n_layers;
-    (void) GenOutput;
     (void) n_evap_lyrs;
     (void) startYr;
     (void) endYr;
@@ -3115,13 +3116,15 @@ void SW_OUT_deepCopy(SW_OUTPUT* dest_out, SW_OUTPUT* source_out,
                         return; // Exit function prematurely due to error
                     }
                     for(fileNum = 0; fileNum < numFiles; fileNum++) {
-                        destFile = &dest_files->ncOutFiles[key][pd][fileNum];
-                        srcFile = source_files->ncOutFiles[key][pd][fileNum];
+                        if (!isnull(source_files->ncOutFiles[key][pd])) {
+                            srcFile = source_files->ncOutFiles[key][pd][fileNum];
 
-                        *destFile = Str_Dup(srcFile, LogInfo);
+                            destFile = &dest_files->ncOutFiles[key][pd][fileNum];
+                            *destFile = Str_Dup(srcFile, LogInfo);
 
-                        if(LogInfo->stopRun) {
-                            return; // Exit function prematurley due to error
+                            if(LogInfo->stopRun) {
+                                return; // Exit function prematurley due to error
+                            }
                         }
                     }
                 }
