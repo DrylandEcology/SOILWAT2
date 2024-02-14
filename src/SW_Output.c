@@ -111,6 +111,9 @@ char const *pd2longstr[] =
 char const *styp2str[] =
 { SW_SUM_OFF, SW_SUM_SUM, SW_SUM_AVG, SW_SUM_FNL };
 
+char const *styp2longstr[] =
+{ SW_SUM_OFF, SW_SUM_SUM, SW_SUM_AVG_LONG, SW_SUM_FNL_LONG };
+
 
 /* =================================================== */
 /*             Private Function Declarations            */

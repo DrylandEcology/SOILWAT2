@@ -2245,7 +2245,8 @@ static int gather_var_attributes(char** varInfo, OutKey key, OutPeriod pd,
 
     if(pd > eSW_Day) {
         snprintf(cellRedef, MAX_FILENAMESIZE, "%s within days time: %s over days",
-                 resAtts[fillSize - 1], styp2str[sumType]);
+                 resAtts[fillSize - 1], styp2longstr[sumType]);
+        Str_ToLower(cellRedef, cellRedef);
         resAtts[fillSize - 1] = Str_Dup(cellRedef, LogInfo);
         if(LogInfo->stopRun) {
             return 0; // Exit function prematurely due to error

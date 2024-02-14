@@ -104,7 +104,9 @@ extern "C" {
 #define SW_SUM_OFF "OFF"  /* don't output */
 #define SW_SUM_SUM "SUM"  /* sum for period */
 #define SW_SUM_AVG "AVG"  /* arith. avg for period */
+#define SW_SUM_AVG_LONG "MEAN"  /* arith. avg for period */
 #define SW_SUM_FNL "FIN"  /* value on last day in period */
+#define SW_SUM_FNL_LONG "LAST"  /* value on last day in period */
 #define SW_NSUMTYPES 4
 
 /* convenience loops for consistency.
@@ -122,6 +124,7 @@ extern "C" {
 extern char const *key2str[];
 extern char const *pd2longstr[];
 extern char const *styp2str[];
+extern char const *styp2longstr[];
 
 /* =================================================== */
 /*             Global Function Declarations            */
