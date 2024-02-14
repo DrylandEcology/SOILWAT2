@@ -2910,7 +2910,7 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
  * @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
  * 	basic output information for all output keys
  * @param[in] n_layers Number of layers of soil within the simulation run
- * @param[in] InFiles Array of program in/output files
+ * @param[in] PathInfo Information on directory and file paths
  * @param[in] GenOutput Holds general variables that deal with output
  * @param[in] SW_netCDF Struct of type SW_NETCDF holding constant
  *  netCDF file information
@@ -2927,7 +2927,7 @@ void SW_OUT_create_files(
     SW_FILE_STATUS* SW_FileStatus,
     SW_OUTPUT* SW_Output,
     LyrIndex n_layers,
-    char *InFiles[],
+    PATH_INFO* PathInfo,
     SW_GEN_OUT* GenOutput,
 
     SW_NETCDF* SW_netCDF,
@@ -2947,7 +2947,7 @@ void SW_OUT_create_files(
 
     #if defined(SW_OUTTEXT)
     SW_OUT_create_textfiles(SW_FileStatus, SW_Output,
-        n_layers, InFiles, GenOutput, LogInfo);
+        n_layers, PathInfo->InFiles, GenOutput, LogInfo);
 
     (void) SW_netCDF;
     (void) n_evap_lyrs;
@@ -2957,21 +2957,18 @@ void SW_OUT_create_files(
 
     #elif defined(SWNETCDF)
     SW_NC_create_output_files(SW_netCDF->InFilesNC[vNCdom],
-        SW_netCDF->ncVarIDs[vNCdom], SW_Output, SW_netCDF->strideOutYears,
-        startYr, endYr, n_layers, n_evap_lyrs,
+        SW_netCDF->ncVarIDs[vNCdom], SW_Output, PathInfo->output_prefix,
+        SW_netCDF->strideOutYears, startYr, endYr, n_layers, n_evap_lyrs,
         &SW_FileStatus->numOutFiles, lyrDepths, SW_netCDF->baseCalendarYear,
         GenOutput->use_OutPeriod, SW_FileStatus->ncOutFiles, LogInfo);
-
-    (void) InFiles;
 
     #else
     (void) SW_FileStatus;
     (void) SW_Output;
     (void) n_layers;
-    (void) InFiles;
+    (void) PathInfo;
     (void) GenOutput;
     (void) SW_netCDF;
-    (void) n_layers;
     (void) n_evap_lyrs;
     (void) startYr;
     (void) endYr;

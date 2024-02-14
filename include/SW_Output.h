@@ -164,7 +164,7 @@ void SW_OUT_create_files(
     SW_FILE_STATUS* SW_FileStatus,
     SW_OUTPUT* SW_Output,
     LyrIndex n_layers,
-    char *InFiles[],
+    PATH_INFO* PathInfo,
     SW_GEN_OUT* GenOutput,
 
     SW_NETCDF* SW_netCDF,

@@ -221,6 +221,18 @@ void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
         return; // Exit function prematurely due to error
 	}
 
+    if (!DirExists(PathInfo->output_prefix)) {
+        if (!MkDir(PathInfo->output_prefix, LogInfo)) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Cannot make output path: '%s'\n",
+                PathInfo->output_prefix
+            );
+            return; // Exit function prematurely due to error
+        }
+    }
+
 #ifdef SOILWAT
 	if (0 == strcmp(PathInfo->InFiles[eLog], "stdout")) {
 		LogInfo->logfp = stdout;

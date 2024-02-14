@@ -2554,6 +2554,7 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* SW_GenOut,
  * @param[in] domFileID Identifier of the domain netCDF file
  * @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
  *  basic output information for all output keys
+ * @param[in] output_prefix Directory path of output files.
  * @param[in] strideOutYears Number of years to write into an output file
  * @param[in] startYr Start year of the simulation
  * @param[in] endYr End year of the simulation
@@ -2568,7 +2569,8 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* SW_GenOut,
  * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_create_output_files(const char* domFile, int domFileID,
-        SW_OUTPUT* SW_Output, int strideOutYears, int startYr, int endYr,
+        SW_OUTPUT* SW_Output, const char* output_prefix,
+        int strideOutYears, int startYr, int endYr,
         LyrIndex n_layers, int n_evap_lyrs, int* numFilesPerKey,
         double lyrDepths[], int baseCalendarYear, Bool useOutPeriods[],
         char** ncOutFileNames[][SW_OUTNPERIODS], LOG_INFO* LogInfo) {
@@ -2581,7 +2583,6 @@ void SW_NC_create_output_files(const char* domFile, int domFileID,
     int timeSize = 0, baseTime = 0, vertSize = 0;
     double startTime[SW_OUTNPERIODS];
 
-    const char* outputDir = "Output/";
     char periodSuffix[10];
     char* yearFormat;
 
@@ -2619,7 +2620,7 @@ void SW_NC_create_output_files(const char* domFile, int domFileID,
 
                         snprintf(yearBuff, 10, yearFormat, rangeStart, rangeEnd - 1);
                         snprintf(fileNameBuf, MAX_FILENAMESIZE, "%s%s_%s_%s.nc",
-                                outputDir, key2str[key], yearBuff, periodSuffix);
+                                output_prefix, key2str[key], yearBuff, periodSuffix);
 
                         ncOutFileNames[key][pd][fileNum] = Str_Dup(fileNameBuf, LogInfo);
                         if(LogInfo->stopRun) {

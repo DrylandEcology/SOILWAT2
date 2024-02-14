@@ -146,7 +146,7 @@ int main(int argc, char **argv) {
         &sw_template.FileStatus,
         sw_template.Output,
         nMaxSoilLayers,
-        SW_Domain.PathInfo.InFiles,
+        &SW_Domain.PathInfo,
         &sw_template.GenOutput,
 
         &SW_Domain.netCDFInfo,

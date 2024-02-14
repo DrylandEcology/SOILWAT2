@@ -71,7 +71,8 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* SW_GenOut,
         char** ncOutFileNames[][SW_OUTNPERIODS], size_t ncSuid[],
         LOG_INFO* LogInfo);
 void SW_NC_create_output_files(const char* domFile, int domFileID,
-        SW_OUTPUT* SW_Output, int strideOutYears, int startYr, int endYr,
+        SW_OUTPUT* SW_Output, const char* output_prefix,
+        int strideOutYears, int startYr, int endYr,
         LyrIndex n_layers, int n_evap_lyrs, int* numFilesPerKey,
         double lyrDepths[], int baseCalendarYear, Bool useOutPeriods[],
         char** ncOutFileNames[][SW_OUTNPERIODS], LOG_INFO* LogInfo);
