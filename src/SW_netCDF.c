@@ -3324,6 +3324,7 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
     int varNum = 0, lineno = 0;
 
     Bool estabFound = swFALSE;
+    Bool used_OutKeys[SW_OUTNKEYS] = {swFALSE};
     int index, numVars, estVar;
     char* copyStr = NULL;
     char input[NOUT_VAR_INPUTS][MAX_ATTVAL_SIZE] = {"\0"};
@@ -3389,6 +3390,8 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
                 // don't output any of the variables within that outkey group
                 continue;
             }
+
+            used_OutKeys[currOutKey] = swTRUE; // track if any variable is requested
 
             if(currOutKey == eSW_Estab) {
                 // Handle establishment different since it is "dynamic"
@@ -3462,6 +3465,14 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
                 }
             }
 
+        }
+    }
+
+
+    // Update "use": turn off if no variable of an outkey group is requested
+    ForEachOutKey(index) {
+        if (!used_OutKeys[index]) {
+            SW_Output[index].use = swFALSE;
         }
     }
 }
