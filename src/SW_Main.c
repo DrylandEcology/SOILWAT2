@@ -144,12 +144,11 @@ int main(int argc, char **argv) {
     }
     SW_OUT_create_files(
         &sw_template.FileStatus,
+        &SW_Domain,
         sw_template.Output,
         nMaxSoilLayers,
-        &SW_Domain.PathInfo,
         &sw_template.GenOutput,
 
-        &SW_Domain.netCDFInfo,
         sw_template.Site.n_evap_lyrs,
         sw_template.Model.startyr,
         sw_template.Model.endyr,

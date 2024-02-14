@@ -2907,13 +2907,12 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
  * @param[in,out] SW_FileStatus Struct of type
  *	SW_FILE_STATUS which holds basic information about output files
  *	and values
+ * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+ *  temporal/spatial information for a set of simulation runs
  * @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
  * 	basic output information for all output keys
  * @param[in] n_layers Number of layers of soil within the simulation run
- * @param[in] PathInfo Information on directory and file paths
  * @param[in] GenOutput Holds general variables that deal with output
- * @param[in] SW_netCDF Struct of type SW_NETCDF holding constant
- *  netCDF file information
  * @param[in] n_evap_lyrs Number of layers in which evap is possible
  * @param[in] startYr First calendar year
  * @param[in] endYr Last calendar year
@@ -2925,12 +2924,11 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 */
 void SW_OUT_create_files(
     SW_FILE_STATUS* SW_FileStatus,
+    SW_DOMAIN* SW_Domain,
     SW_OUTPUT* SW_Output,
     LyrIndex n_layers,
-    PATH_INFO* PathInfo,
     SW_GEN_OUT* GenOutput,
 
-    SW_NETCDF* SW_netCDF,
     LyrIndex n_evap_lyrs,
     int startYr,
     int endYr,
@@ -2947,28 +2945,27 @@ void SW_OUT_create_files(
 
     #if defined(SW_OUTTEXT)
     SW_OUT_create_textfiles(SW_FileStatus, SW_Output,
-        n_layers, PathInfo->InFiles, GenOutput, LogInfo);
+        n_layers, SW_Domain->PathInfo.InFiles, GenOutput, LogInfo);
 
-    (void) SW_netCDF;
     (void) n_evap_lyrs;
     (void) startYr;
     (void) endYr;
     (void) lyrDepths;
 
     #elif defined(SWNETCDF)
-    SW_NC_create_output_files(SW_netCDF->InFilesNC[vNCdom],
-        SW_netCDF->ncVarIDs[vNCdom], SW_Output, PathInfo->output_prefix,
-        SW_netCDF->strideOutYears, startYr, endYr, n_layers, n_evap_lyrs,
-        &SW_FileStatus->numOutFiles, lyrDepths, SW_netCDF->baseCalendarYear,
+    SW_NC_create_output_files(SW_Domain->netCDFInfo.InFilesNC[vNCdom],
+        SW_Domain->netCDFInfo.ncVarIDs[vNCdom],
+        SW_Domain, SW_Output, SW_Domain->PathInfo.output_prefix,
+        SW_Domain->netCDFInfo.strideOutYears, startYr, endYr, n_layers, n_evap_lyrs,
+        &SW_FileStatus->numOutFiles, lyrDepths, SW_Domain->netCDFInfo.baseCalendarYear,
         GenOutput->use_OutPeriod, SW_FileStatus->ncOutFiles, LogInfo);
 
     #else
     (void) SW_FileStatus;
+    (void) SW_Domain;
     (void) SW_Output;
     (void) n_layers;
-    (void) PathInfo;
     (void) GenOutput;
-    (void) SW_netCDF;
     (void) n_evap_lyrs;
     (void) startYr;
     (void) endYr;

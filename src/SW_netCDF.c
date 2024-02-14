@@ -2552,6 +2552,8 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* SW_GenOut,
  *
  * @param[in] domFile Name of the domain netCDF
  * @param[in] domFileID Identifier of the domain netCDF file
+ * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+ *  temporal/spatial information for a set of simulation runs
  * @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
  *  basic output information for all output keys
  * @param[in] output_prefix Directory path of output files.
@@ -2569,7 +2571,7 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* SW_GenOut,
  * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_create_output_files(const char* domFile, int domFileID,
-        SW_OUTPUT* SW_Output, const char* output_prefix,
+        SW_DOMAIN* SW_Domain, SW_OUTPUT* SW_Output, const char* output_prefix,
         int strideOutYears, int startYr, int endYr,
         LyrIndex n_layers, int n_evap_lyrs, int* numFilesPerKey,
         double lyrDepths[], int baseCalendarYear, Bool useOutPeriods[],
@@ -2627,7 +2629,13 @@ void SW_NC_create_output_files(const char* domFile, int domFileID,
                             return; // Exit function prematurely due to error
                         }
 
-                        if(!FileExists(fileNameBuf)) {
+                        if(FileExists(fileNameBuf)) {
+                            SW_NC_check(SW_Domain, -1, fileNameBuf, LogInfo);
+                            if(LogInfo->stopRun) {
+                                return; // Exit function prematurely due to error
+                            }
+
+                        } else {
                             timeSize = calc_timeSize(rangeStart, rangeEnd,
                                                     baseTime, pd);
 

@@ -162,12 +162,11 @@ void SW_OUT_close_files(SW_FILE_STATUS* SW_FileStatus, SW_GEN_OUT* GenOutput,
 						LOG_INFO* LogInfo);
 void SW_OUT_create_files(
     SW_FILE_STATUS* SW_FileStatus,
+    SW_DOMAIN* SW_Domain,
     SW_OUTPUT* SW_Output,
     LyrIndex n_layers,
-    PATH_INFO* PathInfo,
     SW_GEN_OUT* GenOutput,
 
-    SW_NETCDF* SW_netCDF,
     LyrIndex n_evap_lyrs,
     int startYr,
     int endYr,
