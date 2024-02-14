@@ -97,13 +97,13 @@ static const char* possKeys[][8] = {
 
     {NULL}, // ESTABL -- handled differently
 
-    {"CO2EFFECTS__veg[].co2_multipliers[BIO_INDEX]",
-     "CO2EFFECTS__veg[].co2_multipliers[WUE_INDEX]"},
+    {"CO2EFFECTS__veg.co2_multipliers[BIO_INDEX]",
+     "CO2EFFECTS__veg.co2_multipliers[WUE_INDEX]"},
 
-    {"BIOMASS__bare_cov.fCover", "BIOMASS__veg[].cov.fCover",
-        "BIOMASS__biomass_total", "BIOMASS__veg[].biomass_inveg",
+    {"BIOMASS__bare_cov.fCover", "BIOMASS__veg.cov.fCover",
+        "BIOMASS__biomass_total", "BIOMASS__veg.biomass_inveg",
         "BIOMASS__litter_total", "BIOMASS__biolive_total",
-        "BIOMASS__veg[].biolive_inveg", "BIOMASS__LAI"}
+        "BIOMASS__veg.biolive_inveg", "BIOMASS__LAI"}
 };
 
 /* =================================================== */
@@ -3303,8 +3303,15 @@ void SW_NC_read(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
 }
 
 /**
- * @brief Read the user-provided csv that contains information about
+ * @brief Read the user-provided tsv file that contains information about
  *  output variables in netCDFs
+ *
+ * If a user turns off all variables of an outkey group, then
+ * the entire outkey group is turned off.
+ *
+ * Lack of information for a variable in the tsv file is equivalent to
+ * turning off the output of that variable. For instance, an empty tsv file
+ * results in no output produced.
  *
  * @param[in,out] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
  *  basic output information for all output keys
@@ -3328,15 +3335,17 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
     int index, numVars, estVar;
     char* copyStr = NULL;
     char input[NOUT_VAR_INPUTS][MAX_ATTVAL_SIZE] = {"\0"};
+    char establn[MAX_ATTVAL_SIZE] = {"\0"};
     int scanRes = 0, defToLocalInd = 0;
     const char* readLineFormat =
-        "%13[^,],%50[^,],%10[^,],%4[^,],%1[^,],%127[^,],"
-        "%127[^,],%127[^,],%127[^,],%127[^,]";
+        "%13[^\t]\t%50[^\t]\t%10[^\t]\t%4[^\t]\t%1[^\t]\t"
+        "%127[^\t]\t%127[^\t]\t%127[^\t]\t%127[^\t]\t%127[^\t]\t%127[^\t]";
 
     // Column indices
     const int keyInd = 0, SWVarNameInd = 1, SWUnitsInd = 2, dimInd = 3,
               doOutInd = 4, outVarNameInd = 5, longNameInd = 6,
-              commentInd = 7, outUnits = 8, cellMethodInd = 9;
+              commentInd = 7, outUnits = 8, cellMethodInd = 9,
+              usercommentInd = 10;
 
     MyFileName = InFiles[eNCOutVars];
 	f = OpenFile(MyFileName, "r", LogInfo);
@@ -3349,20 +3358,24 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
         return; // Exit prematurely due to error
     }
 
-    GetALine(f, inbuf, MAX_FILENAMESIZE); // Ignore the header
+    GetALine(f, inbuf, MAX_FILENAMESIZE); // Ignore the first row (column names)
+
     while(GetALine(f, inbuf, MAX_FILENAMESIZE)) {
         lineno++;
+
+        // Ignore columns after "cell_method"
         scanRes = sscanf(inbuf, readLineFormat, input[keyInd],
                 input[SWVarNameInd], input[SWUnitsInd], input[dimInd],
                 input[doOutInd], input[outVarNameInd], input[longNameInd],
-                input[commentInd], input[outUnits], input[cellMethodInd]);
+                input[commentInd], input[outUnits], input[cellMethodInd],
+                input[usercommentInd]);
 
         if(scanRes != NOUT_VAR_INPUTS) {
             LogError(LogInfo, LOGERROR,
                         "%s [row %d]: %d instead of %d columns found. "
                         "Enter 'NA' if value should be blank "
                         "(e.g., for 'long_name' or 'comment').",
-                        MyFileName, lineno + 1, NOUT_VAR_INPUTS);
+                        MyFileName, lineno + 1, scanRes, NOUT_VAR_INPUTS);
             return; // Exit function prematurely due to error
         }
 
@@ -3398,7 +3411,7 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
                 // (SW_VEGESTAB'S "count")
                 if(estabFound) {
                     LogError(LogInfo, LOGWARN, "%s: Found more than one row for "
-                                        "the key ESTAB, only one is expected, "
+                                        "the key ESTABL, only one is expected, "
                                         "ignoring...", MyFileName);
                     continue;
                 }
@@ -3440,18 +3453,27 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
                     numVars = numVarsPerKey[currOutKey];
                     for(estVar = 0; estVar < numVars; estVar++) {
 
-                        if(index == VARNAME_INDEX) {
-                            copyStr = parms[estVar]->sppname;
-                            currOut->reqOutputVars[estVar] = swTRUE;
-                            currOut->outputVarInfo[estVar][DIM_INDEX] =
-                                            Str_Dup(input[dimInd], LogInfo);
-                            if(LogInfo->stopRun) {
-                                return; // Exit function prematurely due to error
-                            }
+                        switch(index) {
+                            case VARNAME_INDEX:
+                                currOut->reqOutputVars[estVar] = swTRUE;
+                                currOut->outputVarInfo[estVar][index] =
+                                                Str_Dup(parms[estVar]->sppname, LogInfo);
+                                currOut->outputVarInfo[estVar][DIM_INDEX] =
+                                                Str_Dup(input[dimInd], LogInfo);
+                                break;
+
+                            case LONGNAME_INDEX:
+                                snprintf(establn, MAX_ATTVAL_SIZE - 1, copyStr, parms[estVar]->sppname);
+                                currOut->outputVarInfo[estVar][index] =
+                                                Str_Dup(establn, LogInfo);
+                                break;
+
+                            default:
+                                currOut->outputVarInfo[estVar][index] =
+                                                            Str_Dup(copyStr, LogInfo);
+                                break;
                         }
 
-                        currOut->outputVarInfo[estVar][index] =
-                                                    Str_Dup(copyStr, LogInfo);
                         if(LogInfo->stopRun) {
                             return; // Exit function prematurely due to error
                         }

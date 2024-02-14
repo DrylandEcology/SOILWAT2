@@ -3,6 +3,16 @@
 # NOTE: This file follows the convention of key-value pairs. That is, the value is only matched with the key eliminating the possibility of incorrect reads due to line dependencies.
 # NOTE: When writing the value for any "crs_wkt" please remove occurrences of '\' within it (when generating netCDFs, the '\' will be placed back into the attribute value).
 
+# NOTE: "SW2_netCDF_output_variables.tsv" (tab-separated values)
+#   * missing rows (outkey-variable pairs) turn off respective output
+#   * user can provide their input for fields "Do output?",
+#     "netCDF variable name", "netCDF long_name", "netCDF comment",
+#     and "netCDF units"
+#   * field "netCDF cell_method" refers to internal within-day calculation
+#   * field "User comment" is ignored
+#   * changing values of other fields leads to incorrect output or a crash
+
+
 #------ Global Attributes
 title              example_title
 author             example_author
