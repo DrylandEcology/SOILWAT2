@@ -48,8 +48,8 @@ BIOMASS	litter_total	g m-2	T	1	bLitterAbove	biomass in above-ground litter	NA	g 
 BIOMASS	biolive_total	g m-2	T	1	bVegLive	live biomass in above-ground vegetation	NA	g m-2	time: mean	Not standardized but see cVeg
 BIOMASS	veg.biolive_inveg	g m-2	TV	1	bVegLivePFT	live biomass in above-ground vegetation by plant functional type	NA	g m-2	time: mean	Not standardized but see cVeg
 BIOMASS	LAI	m m-2	T	1	lai	leaf area index	A ratio obtained by dividing the total upper leaf surface area of vegetation by the (horizontal) surface area of the land on which it grows.	m m-2	time: mean	CMIP6/CMOR3
-VWCBULK	vwcMatric	cm cm-1	ZT	1	vwcMatric	volumetric soil moisture in matric component of soil layer	Volume fraction of water in matric component of soil layer, i.e., mrsol divided by soil layer depth without coarse fragments	mm mm-1	time: mean	NA
-VWCMATRIC	vwcBulk	cm cm-1	ZT	1	vwc	volumetric soil moisture of soil layer	Volume fraction of water in soil layer, i.e., mrsol divided by soil layer depth	mm mm-1	time: mean	NA
+VWCBULK	vwcBulk	cm cm-1	ZT	1	vwc	volumetric soil moisture of soil layer	Volume fraction of water in soil layer, i.e., mrsol divided by soil layer depth	mm mm-1	time: mean	NA
+VWCMATRIC	vwcMatric	cm cm-1	ZT	1	vwcMatric	volumetric soil moisture in matric component of soil layer	Volume fraction of water in matric component of soil layer, i.e., mrsol divided by soil layer depth without coarse fragments	mm mm-1	time: mean	NA
 SWCBULK	swcBulk	cm	ZT	1	mrsol	mass content of water in soil layer	Total water content of soil layer	mm	time: mean	CMIP6/CMOR3
 SWA	SWA_VegType	cm	ZTV	1	swaPFT	available water content in soil layer by plant functional type	Water content of soil layer held at a plant functional type specific potential	mm	time: mean	NA
 SWABULK	swaBulk	cm	ZT	1	swa	available water content in soil layer	Water content of soil layer held at a potential > -1.5 MPa	mm	time: mean	NA

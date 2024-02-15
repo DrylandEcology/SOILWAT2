@@ -59,7 +59,7 @@ static const char* possKeys[][8] = {
     {NULL}, // ALLH2O
 
     // VWCBULK -> SURFACEWATER
-    {"VWCBULK__vwcMatric"}, {"VWCMATRIC__vwcBulk"}, {"SWCBULK__swcBulk"},
+    {"VWCBULK__vwcBulk"}, {"VWCMATRIC__vwcMatric"}, {"SWCBULK__swcBulk"},
     {"SWABULK__swaBulk"}, {"SWAMATRIC__swaMatric"}, {"SWA__SWA_VegType"},
     {"SWPMATRIC__swpMatric"}, {"SURFACEWATER__surfaceWater"},
 
