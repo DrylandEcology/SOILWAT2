@@ -2188,14 +2188,16 @@ static int getNLayers(OutKey key, int n_layers, int n_evap_lyrs) {
     int numLayers = 0;
 
     if((key >= eSW_VWCBulk && key <= eSW_SWPMatric) ||
-        key == eSW_EvapSoil || key == eSW_HydRed    ||
+        key == eSW_HydRed   ||
         key == eSW_WetDays  || key == eSW_SoilTemp  ||
         key == eSW_Frozen   || key == eSW_Biomass   ||
         key == eSW_Transp) {
 
         numLayers = n_layers;
+
     } else if(key == eSW_LyrDrain) {
         numLayers = n_layers - 1;
+
     } else if(key == eSW_EvapSoil) {
         numLayers = n_evap_lyrs;
     }
