@@ -33,13 +33,37 @@ const int times[] = {MAX_DAYS - 1, MAX_WEEKS, MAX_MONTHS, 1};
 // Index `eSW_Estab` is modified from `SW_VES_read2()`,
 // specifying how many output variable there will be depending on the run
 int numVarsPerKey[] = {
-    NWETHR_VARS, NTEMP_VARS, NPRECIP_VARS, NSOILINF_VARS, NRUNOFF_VARS,
-    NALLH2O_VARS, NVWCBULK_VARS, NVWCMATRIC_VARS, NSWCBULK_VARS,
-    NSWABULK_VARS, NSWAMATRIC_VARS, NSWA_VARS, NSWPMATRIC_VARS,
-    NSURFACEW_VARS, NTRANSP_VARS, NEVAPSOIL_VARS, NEVAPSURFACE,
-    NINTERCEPTION_VARS, NLYRDRAIN_VARS, NHYDRED_VARS, NET_VARS,
-    NAET_VARS, NPET_VARS, NWETDAY_VARS, NSNOWPACK_VARS, NDEEPSWC_VARS,
-    NSOILTEMP_VARS, NFROZEN_VARS, NALLVEG_VARS, NESTAB_VARS, NCO2EFFECTS_VARS,
+    NWETHR_VARS,
+    NTEMP_VARS,
+    NPRECIP_VARS,
+    NSOILINF_VARS,
+    NRUNOFF_VARS,
+    NALLH2O_VARS,
+    NVWCBULK_VARS,
+    NVWCMATRIC_VARS,
+    NSWCBULK_VARS,
+    NSWABULK_VARS,
+    NSWAMATRIC_VARS,
+    NSWA_VARS,
+    NSWPMATRIC_VARS,
+    NSURFACEW_VARS,
+    NTRANSP_VARS,
+    NEVAPSOIL_VARS,
+    NEVAPSURFACE,
+    NINTERCEPTION_VARS,
+    NLYRDRAIN_VARS,
+    NHYDRED_VARS,
+    NET_VARS,
+    NAET_VARS,
+    NPET_VARS,
+    NWETDAY_VARS,
+    NSNOWPACK_VARS,
+    NDEEPSWC_VARS,
+    NSOILTEMP_VARS,
+    NFROZEN_VARS,
+    NALLVEG_VARS,
+    NESTAB_VARS,
+    NCO2EFFECTS_VARS,
     NBIOMASS_VARS
 };
 
@@ -549,6 +573,25 @@ static void get_single_byte_val(int ncFileID, int varID, size_t index[],
     }
 }
 
+
+/**
+ * @brief Get a dimension value from a given netCDF file
+ *
+ * @param[in] ncFileID Identifier of the open netCDF file to access
+ * @param[in] dimID Identifier of the dimension to access
+ * @param[out] dimVal String buffer to hold the resulting value
+ * @param[out] LogInfo Holds information on warnings and errors
+*/
+static void get_dimlen_from_dimid(int ncFileID, int dimID, size_t* dimVal,
+                        LOG_INFO* LogInfo) {
+
+    if(nc_inq_dimlen(ncFileID, dimID, dimVal) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "An error occurred when attempting "
+                                    "to retrieve the dimension value of "
+                                    "%d.", dimID);
+    }
+}
+
 /**
  * @brief Get a dimension value from a given netCDF file
  *
@@ -557,7 +600,7 @@ static void get_single_byte_val(int ncFileID, int varID, size_t index[],
  * @param[out] dimVal String buffer to hold the resulting value
  * @param[out] LogInfo Holds information on warnings and errors
 */
-static void get_dim_val(int ncFileID, const char* dimName, size_t* dimVal,
+static void get_dimlen_from_dimname(int ncFileID, const char* dimName, size_t* dimVal,
                         LOG_INFO* LogInfo) {
 
     int dimID = 0;
@@ -567,11 +610,7 @@ static void get_dim_val(int ncFileID, const char* dimName, size_t* dimVal,
         return; // Exit function prematurely due to error
     }
 
-    if(nc_inq_dimlen(ncFileID, dimID, dimVal) != NC_NOERR) {
-        LogError(LogInfo, LOGERROR, "An error occurred when attempting "
-                                    "to retrieve the dimension value of "
-                                    "%s.", dimName);
-    }
+    get_dimlen_from_dimid(ncFileID, dimID, dimVal, LogInfo);
 }
 
 /**
@@ -775,22 +814,25 @@ static void write_double_att(const char* attName, const double* attVal, int varI
 /**
  * @brief Write values to a variable of type double
  *
- * @param[in] varName Name of the attribute to create
- * @param[in] varVals Attribute value(s) to write out
- * @param[in] ncFileID Identifier of the open netCDF file to write the attribute to
+ * @param[in,out] varID Identifier corresponding to varName.
+ *   If negative, then will be queried using varName and returned.
+ * @param[in] varName Name of the variable to write;
+ *   not used, unless varID is negative.
+ * @param[in] varVals Value(s) to write out
+ * @param[in] ncFileID Identifier of the open netCDF file
  * @param[out] LogInfo Holds information on warnings and errors
 */
-static void write_double_vals(const char* varName, const double* varVals,
+static void write_double_vals(int* varID, const char* varName, const double* varVals,
         int ncFileID, size_t start[], size_t count[], LOG_INFO* LogInfo) {
 
-    int varID = 0;
-
-    get_var_identifier(ncFileID, varName, &varID, LogInfo);
-    if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
+    if (*varID < 0) {
+        get_var_identifier(ncFileID, varName, varID, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
     }
 
-    if(nc_put_vara_double(ncFileID, varID, start, count, varVals) != NC_NOERR) {
+    if(nc_put_vara_double(ncFileID, *varID, start, count, varVals) != NC_NOERR) {
         LogError(LogInfo, LOGERROR, "Could not write values to the variable %s",
                                     varName);
     }
@@ -1965,8 +2007,6 @@ static void create_vert_vars(int ncFileID, int dimIDs[], int size,
  * @param[in] lyrDepths Depths of soil layers (cm)
  * @param[in,out] startTime Start number of days when dealing with
  *  years between netCDF files
- * @param[in] dimNum Identifier to determine which position the given
- *  dimension is in out of: "vertical" (0), "time" (1), and "pft" (2)
  * @param[in] startYr Start year of the simulation
  * @param[in] pd Current output netCDF period
  * @param[out] LogInfo Holds information dealing with logfile output
@@ -2009,8 +2049,8 @@ static void fill_dimVar(int ncFileID, int dimIDs[], int size, int varID,
 
 /**
  * @brief Create a "time", "vertical", or "pft" dimension variable and the
- *  respective "*_bnds" variale (plus "bnds" dimension) for "time"
- *  and "vertical" and fill the variable with the respective information
+ *  respective "*_bnds" variables (plus "bnds" dimension)
+ *  and fill the variable with the respective information
  *
  * @param[in] name Name of the new dimension
  * @param[in] size Size of the new dimension
@@ -2027,17 +2067,18 @@ static void fill_dimVar(int ncFileID, int dimIDs[], int size, int varID,
  * @param[in] pd Current output netCDF period
  * @param[out] LogInfo Holds information dealing with logfile output
 */
-static void create_output_dimVar(const char* name, int size, int ncFileID,
-        int* dimID, int dimNum, double lyrDepths[], double* startTime,
+static void create_output_dimVar(char* name, int size, int ncFileID,
+        int* dimID, double lyrDepths[], double* startTime,
         int baseCalendarYear, int startYr, OutPeriod pd, LOG_INFO* LogInfo) {
 
+    char* dimNames[3] = {"vertical", "time", "pft"};
     const int timeIndex = 1, pftIndex = 2, timeUnitIndex = 2;
-
+    int dimNum;
     int varID, index;
     int dimIDs[2] = {0,0};
-    int varType = (dimNum == pftIndex) ? NC_STRING : NC_DOUBLE;
+    int varType;
     double tempVal = 1.0;
-    double* startFillTime = (dimNum == timeIndex) ? startTime : &tempVal;
+    double* startFillTime;
     const int numDims = 1;
 
     const char* outAttNames[][6] = {
@@ -2053,6 +2094,14 @@ static void create_output_dimVar(const char* name, int size, int ncFileID,
     };
 
     const int numVarAtts[] = {6, 6, 1};
+
+    for (dimNum = 0; dimNum < 3; dimNum++) {
+        if (Str_CompareI(dimNames[dimNum], name) == 0) break;
+    }
+
+    varType = (dimNum == pftIndex) ? NC_STRING : NC_DOUBLE;
+
+    startFillTime = (dimNum == timeIndex) ? startTime : &tempVal;
 
     create_netCDF_dim(name, size, &ncFileID, dimID, LogInfo);
     if(LogInfo->stopRun) {
@@ -2121,9 +2170,9 @@ static void create_full_var(int* ncFileID, int newVarType,
     int numConstDims = (siteDimExists) ? 1 : 2;
     const char* thirdDim = (siteDimExists) ? "site" : latName;
     const char* constDimNames[] = {thirdDim, lonName};
-    const char* timeVertVegNames[] = {"vertical", "time", "pft"};
+    const char* timeVertVegNames[] = {"time", "vertical", "pft"};
     char* dimVarName;
-    size_t timeVertVegVals[] = {vertSize, timeSize, pftSize};
+    size_t timeVertVegVals[] = {timeSize, vertSize, pftSize};
     int numTimeVertVegVals = 3, varVal;
 
 
@@ -2143,7 +2192,7 @@ static void create_full_var(int* ncFileID, int newVarType,
         if(varVal > 0) {
             if(!dimExists(dimVarName, *ncFileID)) {
                 create_output_dimVar(dimVarName, varVal, *ncFileID,
-                        &dimIDs[dimArrSize], index, lyrDepths, startTime,
+                        &dimIDs[dimArrSize], lyrDepths, startTime,
                         baseCalendarYear, startYr, pd, LogInfo);
             } else {
                 get_dim_identifier(*ncFileID, dimVarName, &dimIDs[dimArrSize],
@@ -2366,6 +2415,7 @@ static void create_output_file(SW_OUTPUT* SW_Output,
     }
 }
 
+
 /**
  * @brief Determine the write dimensions/sizes for the current
  *  output variable/period
@@ -2376,79 +2426,58 @@ static void create_output_file(SW_OUTPUT* SW_Output,
  *  variable
  * @param[out] LogInfo Holds information on warnings and errors
 */
-static void get_write_dim_sizes(int ncFileID, size_t dimSizes[], char* dimStr,
-                                int n_layers, LOG_INFO* LogInfo) {
+static void get_vardim_write_counts(int ncFileID, int varID, size_t count[], LOG_INFO* LogInfo) {
 
-    char* wkgDimPtr = dimStr, *dimName = NULL;
-    Bool twoDimDom = (Bool) !dimExists("site", ncFileID);
-    Bool readDimVal;
-    int numDims = 0, index;
+    int dimIndex, ndimsp;
+    int nSpaceDims = dimExists("site", ncFileID) ? 1 : 2;
+    int dimidsp[MAX_NUM_DIMS] = {0};
 
-    dimSizes[numDims] = 1;
-    dimSizes[numDims + 1] = (twoDimDom) ? 1 : 0;
-    numDims += (twoDimDom) ? 2 : 1;
 
-    while(*wkgDimPtr != '\0') {
-        readDimVal = swTRUE;
-
-        switch(*wkgDimPtr) {
-            case 'T':
-                dimName = (char *)"time";
-                break;
-            case 'V':
-                dimName = (char *)"pft";
-                break;
-            case 'Z':
-                dimSizes[numDims] = (size_t)n_layers;
-                break;
-            default:
-                readDimVal = swFALSE;
-                break;
-        }
-
-        if(readDimVal) {
-            if(*wkgDimPtr != 'Z') {
-                get_dim_val(ncFileID, dimName, &dimSizes[numDims], LogInfo);
-                if(LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
-                }
-            }
-
-            numDims++;
-        }
-        wkgDimPtr++;
+    /* Fill 1s into space dimensions (we write one site/xy-gridcell per run) */
+    /* We assume here that the first dimension(s) are space */
+    for (dimIndex = 0; dimIndex < nSpaceDims; dimIndex++) {
+        count[dimIndex] = 1;
     }
 
-    for(index = numDims; index < MAX_NUM_DIMS; index++) {
-        dimSizes[index] = 0;
+    /* Query number of dimensions of variable */
+    if (nc_inq_varndims(ncFileID, varID, &ndimsp) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "An error occurred when attempting "
+                                    "to retrieve the dimension number of %s.",
+                                    varID);
+        return; // Exit function prematurely due to error
+    }
+
+    if (ndimsp > MAX_NUM_DIMS) {
+        LogError(LogInfo, LOGERROR, "Variable %d has n = %d dimensions; "
+                                    "more than the maximum of %d.",
+                                    varID, ndimsp, MAX_NUM_DIMS);
+        return; // Exit function prematurely due to error
+    }
+
+    /* Query dimension IDs associated with variable (skip space dimensions) */
+    if (nc_inq_vardimid(ncFileID, varID, dimidsp) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "An error occurred when attempting "
+                                    "to retrieve the dimension IDs of %s.",
+                                    varID);
+        return; // Exit function prematurely due to error
+    }
+
+
+    /* Query size of other (non-space dimensions): we write all of them out */
+    for (dimIndex = nSpaceDims; dimIndex < ndimsp; dimIndex++) {
+        get_dimlen_from_dimid(ncFileID, dimidsp[dimIndex], &count[dimIndex], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+    }
+
+    /* Zero remaining unused slots */
+    for(dimIndex = ndimsp; dimIndex < MAX_NUM_DIMS; dimIndex++) {
+        count[dimIndex] = 0;
     }
 }
 
-/**
- * @brief Calculate the starting index that will be used to write from
- *  `p_OUT`
- *
- * @param[in] SW_GenOut Holds general variables that deal with output
- * @param[in] ncFileID Identifier of the open netCDF file to check
- * @param[in] varNum Variable number within the current key
- * @param[in] pd Current output netCDF period
- * @param[in] vertSize Size of "vertical" dimension (if any)
- * @param[in] startTime Start number of days when dealing with
- *  years between netCDF files
-*/
-static int calc_pOUTIndex(SW_GEN_OUT* SW_GenOut, int ncFileID, int varNum,
-                          OutPeriod pd, int vertSize, int startTime) {
-    int pOUTIndex = 0;
 
-    if(dimExists("vertical", ncFileID) && dimExists("pft", ncFileID)) {
-        pOUTIndex = startTime + SW_GenOut->nrow_OUT[pd] * (ncol_TimeOUT[pd] + varNum + vertSize * 0);
-        //iOUT2(varNum, 0, pd, (*SW_GenOut.irow_OUT), (*SW_GenOut.nrow_OUT), vertSize);
-    } else {
-        pOUTIndex = iOUT(varNum, startTime, SW_GenOut->nrow_OUT[pd], ncol_TimeOUT[pd]);
-    }
-
-    return pOUTIndex;
-}
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -2477,10 +2506,11 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* SW_GenOut,
     int key;
     OutPeriod pd;
     RealD *p_OUTValPtr = NULL;
-    int fileNum, currFileID = 0, varNum;
+    int fileNum, currFileID = 0, varNum, varID = -1;
+    Bool hasVert, hasPFT;
 
-    char* fileName, *varName, *dimStr = NULL;
-    size_t dimSizes[MAX_NUM_DIMS] = {0};
+    char* fileName, *varName;
+    size_t count[MAX_NUM_DIMS] = {0};
     size_t start[MAX_NUM_DIMS] = {0};
     size_t pOUTIndex, startTime, timeSize = 0;
     int vertSize;
@@ -2516,34 +2546,59 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* SW_GenOut,
                     continue; // Skip key iteration
                 }
 
+                hasVert = dimExists("vertical", currFileID);
+                hasPFT = dimExists("pft", currFileID);
+
+
                 for(varNum = 0; varNum < numVarsPerKey[key]; varNum++) {
                     if(!SW_Output[key].reqOutputVars[varNum]) {
                         continue; // Skip variable iteration
                     }
 
                     varName = SW_Output[key].outputVarInfo[varNum][VARNAME_INDEX];
-                    dimStr = SW_Output[key].outputVarInfo[varNum][DIM_INDEX];
-
-                    pOUTIndex = calc_pOUTIndex(SW_GenOut, currFileID, varNum,
-                                               pd, vertSize, startTime);
-
-                    get_write_dim_sizes(currFileID, dimSizes, dimStr,
-                                        vertSize, LogInfo);
+                    // Locate correct slice in netCDF to write to
+                    get_var_identifier(currFileID, varName, &varID, LogInfo);
                     if(LogInfo->stopRun) {
                         return; // Exit function prematurely due to error
                     }
 
+                    get_vardim_write_counts(currFileID, varID, count, LogInfo);
+                    if(LogInfo->stopRun) {
+                        return; // Exit function prematurely due to error
+                    }
+
+                    // Point to contiguous memory where values change fastest
+                    // for vegtypes, then soil layers, then time, then variables
+                    pOUTIndex = iOUTnc(
+                        varNum,
+                        startTime,
+                        0, // first soil layer
+                        0, // first plant functional type
+                        SW_GenOut->nrow_OUT[pd], // total number of time steps
+                        hasVert ? vertSize : 1, // 1 used if no soil layers
+                        hasPFT ? NVEGTYPES : 1, // 1 used if no vegtypes
+                        ncol_TimeOUT[pd]
+                    );
+
                     p_OUTValPtr = &SW_GenOut->p_OUT[key][pd][pOUTIndex];
 
-                    write_double_vals(varName, p_OUTValPtr,
-                                currFileID, start, dimSizes, LogInfo);
+
+                    /* For current variable x output period,
+                       write out all values across vegtypes and soil layers (if any)
+                       for current time-chunk
+                    */
+                    write_double_vals(&varID, NULL, p_OUTValPtr,
+                                currFileID, start, count, LogInfo);
                     if(LogInfo->stopRun) {
                         return; // Exit function prematurely due to error
                     }
                 }
 
                 // Get the time value from the "time" dimension
-                get_dim_val(currFileID, "time", &timeSize, LogInfo);
+                get_dimlen_from_dimname(currFileID, "time", &timeSize, LogInfo);
+                if(LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
                 startTime += timeSize;
 
                 nc_close(currFileID);
@@ -2777,7 +2832,7 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
        domain input file
     */
     if(strcmp(impliedDomType, "s") == 0) {
-        get_dim_val(ncFileID, "site", &SDimVal, LogInfo);
+        get_dimlen_from_dimname(ncFileID, "site", &SDimVal, LogInfo);
         if(LogInfo->stopRun) {
             goto wrapUp; // Exit function prematurely due to error
         }
@@ -2785,20 +2840,20 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
         dimMismatch = (Bool) (SDimVal != SW_Domain->nDimS);
     } else if(strcmp(impliedDomType, "xy") == 0) {
         if(geoIsPrimCRS && geoCRSExists) {
-            get_dim_val(ncFileID, "lat", &latDimVal, LogInfo);
+            get_dimlen_from_dimname(ncFileID,  "lat", &latDimVal, LogInfo);
             if(LogInfo->stopRun) {
                 goto wrapUp; // Exit function prematurely due to error
             }
-            get_dim_val(ncFileID, "lon", &lonDimVal, LogInfo);
+            get_dimlen_from_dimname(ncFileID, "lon", &lonDimVal, LogInfo);
             if(LogInfo->stopRun) {
                 goto wrapUp; // Exit function prematurely due to error
             }
         } else if(!geoIsPrimCRS && projCRSExists) {
-            get_dim_val(ncFileID, "y", &latDimVal, LogInfo);
+            get_dimlen_from_dimname(ncFileID, "y", &latDimVal, LogInfo);
             if(LogInfo->stopRun) {
                 goto wrapUp; // Exit function prematurely due to error
             }
-            get_dim_val(ncFileID, "x", &lonDimVal, LogInfo);
+            get_dimlen_from_dimname(ncFileID, "x", &lonDimVal, LogInfo);
             if(LogInfo->stopRun) {
                 goto wrapUp; // Exit function prematurely due to error
             }

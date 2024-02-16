@@ -48,8 +48,11 @@
 #define p_OUTsd
 #undef p_OUTsd
 
+#if defined(SWNETCDF)
+const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = { 0 }; // time header not used for netCDFs
+#else
 const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = { 2, 2, 2, 1 }; // number of time header columns for each output period
-
+#endif
 
 
 /* =================================================== */

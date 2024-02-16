@@ -129,8 +129,7 @@ static void format_IterationSummary2(RealD *p, RealD *psd, OutPeriod pd,
 */
 void get_none(OutPeriod pd, SW_ALL* sw)
 {
-	if (pd) {}
-
+	(void) pd;
 	(void) sw; // Coerce to void to silence compiler
 }
 
@@ -170,7 +169,7 @@ void get_co2effects_text(OutPeriod pd, SW_ALL* sw) {
 #if defined(RSOILWAT) || defined(SWNETCDF)
 void get_co2effects_mem(OutPeriod pd, SW_ALL* sw) {
 	int k;
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_CO2Effects][pd];
 
@@ -179,23 +178,35 @@ void get_co2effects_mem(OutPeriod pd, SW_ALL* sw) {
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
     #endif
 
-	// No averaging or summing required:
-	ForEachVegType(k)
-	{
-		iOUTIndex = iOUT(k, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-		p[iOUTIndex] =
-			sw->VegProd.veg[k].co2_multipliers[BIO_INDEX][sw->Model.simyear];
+    // No averaging or summing required:
+    ForEachVegType(k)
+    {
+        #if defined(RSOILWAT)
+        iOUTIndex = iOUT(k, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
 
-		iOUTIndex = iOUT(k + NVEGTYPES, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-		p[iOUTIndex] =
-			sw->VegProd.veg[k].co2_multipliers[WUE_INDEX][sw->Model.simyear];
-	}
+        #elif defined(SWNETCDF)
+        iOUTIndex = iOUTnc(0, sw->GenOutput.irow_OUT[pd], 0, k, sw->GenOutput.nrow_OUT[pd], 1, NVEGTYPES, ncol_TimeOUT[pd]);
+        #endif
+
+        p[iOUTIndex] =
+            sw->VegProd.veg[k].co2_multipliers[BIO_INDEX][sw->Model.simyear];
+
+        #if defined(RSOILWAT)
+        iOUTIndex = iOUT(k + NVEGTYPES, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+        #elif defined(SWNETCDF)
+        iOUTIndex = iOUTnc(1, sw->GenOutput.irow_OUT[pd], 0, k, sw->GenOutput.nrow_OUT[pd], 1, NVEGTYPES, ncol_TimeOUT[pd]);
+        #endif
+
+        p[iOUTIndex] =
+            sw->VegProd.veg[k].co2_multipliers[WUE_INDEX][sw->Model.simyear];
+    }
 }
 
 #elif defined(STEPWAT)
 void get_co2effects_agg(OutPeriod pd, SW_ALL* sw) {
 	int k;
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD
 		*p = sw->GenOutput.p_OUT[eSW_CO2Effects][pd],
@@ -265,59 +276,129 @@ void get_biomass_text(OutPeriod pd, SW_ALL* sw) {
 
 #if defined(RSOILWAT) || defined(SWNETCDF)
 void get_biomass_mem(OutPeriod pd, SW_ALL* sw) {
-	int k, i;
+	int k;
 	SW_VEGPROD_OUTPUTS *vo = sw->VegProd.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_Biomass][pd];
 
     #if defined(RSOILWAT)
+    int i;
 	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
 					sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
     #endif
 
-	// fCover for NVEGTYPES plus bare-ground
-	iOUTIndex = iOUT(0, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = sw->VegProd.bare_cov.fCover;
-	i = 1;
-	ForEachVegType(k)
-	{
-		iOUTIndex = iOUT(i + k, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-		p[iOUTIndex] = sw->VegProd.veg[k].cov.fCover;
-	}
+    // fCover of bare-ground
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(0, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
 
-	// biomass (g/m2 as component of total) for NVEGTYPES plus totals and litter
-	iOUTIndex = iOUT(i + NVEGTYPES, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->biomass_total;
-	i += NVEGTYPES + 1;
-	ForEachVegType(k) {
-		iOUTIndex = iOUT(i + k, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-		p[iOUTIndex] = vo->veg[k].biomass_inveg;
-	}
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(0, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, NVEGTYPES, ncol_TimeOUT[pd]);
+    #endif
 
-	iOUTIndex = iOUT(i + NVEGTYPES, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->litter_total;
+    p[iOUTIndex] = sw->VegProd.bare_cov.fCover;
 
-	// biolive (g/m2 as component of total) for NVEGTYPES plus totals
-	iOUTIndex = iOUT(i + NVEGTYPES + 1, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->biolive_total;
-	i += NVEGTYPES + 2;
 
-	ForEachVegType(k) {
-		iOUTIndex = iOUT(i + k, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-		p[iOUTIndex] = vo->veg[k].biolive_inveg;
-	}
+    // fCover for NVEGTYPES
+    #if defined(RSOILWAT)
+    i = 1;
+    #endif
 
-	// leaf area index [m2/m2]
-	iOUTIndex = iOUT(i + NVEGTYPES, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->LAI;
+    ForEachVegType(k) {
+        #if defined(RSOILWAT)
+        iOUTIndex = iOUT(i + k, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+        #elif defined(SWNETCDF)
+        iOUTIndex = iOUTnc(1, sw->GenOutput.irow_OUT[pd], 0, k, sw->GenOutput.nrow_OUT[pd], 1, NVEGTYPES, ncol_TimeOUT[pd]);
+        #endif
+
+        p[iOUTIndex] = sw->VegProd.veg[k].cov.fCover;
+    }
+
+    // biomass (g/m2 as component of total) totals
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(i + NVEGTYPES, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(2, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, NVEGTYPES, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->biomass_total;
+
+
+    // biomass (g/m2 as component of total) for NVEGTYPES
+    #if defined(RSOILWAT)
+    i += NVEGTYPES + 1;
+    #endif
+
+    ForEachVegType(k) {
+        #if defined(RSOILWAT)
+        iOUTIndex = iOUT(i + k, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+        #elif defined(SWNETCDF)
+        iOUTIndex = iOUTnc(3, sw->GenOutput.irow_OUT[pd], 0, k, sw->GenOutput.nrow_OUT[pd], 1, NVEGTYPES, ncol_TimeOUT[pd]);
+        #endif
+
+        p[iOUTIndex] = vo->veg[k].biomass_inveg;
+
+    }
+
+
+    // biomass (g/m2 as component of total) of litter
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(i + NVEGTYPES, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(4, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, NVEGTYPES, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->litter_total;
+
+
+    // biolive (g/m2 as component of total) total
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(i + NVEGTYPES + 1, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(5, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, NVEGTYPES, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->biolive_total;
+
+
+    // biolive (g/m2 as component of total) for NVEGTYPES
+    #if defined(RSOILWAT)
+    i += NVEGTYPES + 2;
+    #endif
+
+    ForEachVegType(k) {
+        #if defined(RSOILWAT)
+        iOUTIndex = iOUT(i + k, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+        #elif defined(SWNETCDF)
+        iOUTIndex = iOUTnc(6, sw->GenOutput.irow_OUT[pd], 0, k, sw->GenOutput.nrow_OUT[pd], 1, NVEGTYPES, ncol_TimeOUT[pd]);
+        #endif
+
+        p[iOUTIndex] = vo->veg[k].biolive_inveg;
+    }
+
+
+    // leaf area index [m2/m2]
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(i + NVEGTYPES, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(7, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, NVEGTYPES, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->LAI;
 }
 
 #elif defined(STEPWAT)
 void get_biomass_agg(OutPeriod pd, SW_ALL* sw) {
 	int k, i;
 	SW_VEGPROD_OUTPUTS *vo = sw->VegProd.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD
 		*p = sw->GenOutput.p_OUT[eSW_Biomass][pd],
@@ -422,7 +503,7 @@ void get_estab_text(OutPeriod pd, SW_ALL* sw)
 void get_estab_mem(OutPeriod pd, SW_ALL* sw)
 {
 	IntU i;
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_Estab][pd];
 
@@ -431,11 +512,17 @@ void get_estab_mem(OutPeriod pd, SW_ALL* sw)
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
     #endif
 
-	for (i = 0; i < sw->VegEstab.count; i++)
-	{
-		iOUTIndex = iOUT(i, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-		p[iOUTIndex] = sw->VegEstab.parms[i]->estab_doy;
-	}
+    for (i = 0; i < sw->VegEstab.count; i++)
+    {
+        #if defined(RSOILWAT)
+        iOUTIndex = iOUT(i, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+        #elif defined(SWNETCDF)
+        iOUTIndex = iOUTnc(i, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+        #endif
+
+        p[iOUTIndex] = sw->VegEstab.parms[i]->estab_doy;
+    }
 }
 
 #elif defined(STEPWAT)
@@ -454,7 +541,7 @@ void get_estab_mem(OutPeriod pd, SW_ALL* sw)
 void get_estab_agg(OutPeriod pd, SW_ALL* sw)
 {
 	IntU i;
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD
 		*p = sw->GenOutput.p_OUT[eSW_Estab][pd],
@@ -512,7 +599,7 @@ void get_temp_text(OutPeriod pd, SW_ALL* sw)
 void get_temp_mem(OutPeriod pd, SW_ALL* sw)
 {
 	SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_Temp][pd];
 
@@ -521,22 +608,63 @@ void get_temp_mem(OutPeriod pd, SW_ALL* sw)
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
     #endif
 
-	iOUTIndex = iOUT(0, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->temp_max;
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(0, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
 
-	iOUTIndex = iOUT(1, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->temp_min;
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(0, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
 
-	iOUTIndex = iOUT(2, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->temp_avg;
+    p[iOUTIndex] = vo->temp_max;
 
-	iOUTIndex = iOUT(3, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(1, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(1, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->temp_min;
+
+
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(2, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(2, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->temp_avg;
+
+
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(3, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(3, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
     p[iOUTIndex] = vo->surfaceMax;
 
-	iOUTIndex = iOUT(4, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->surfaceMin;
 
-	iOUTIndex = iOUT(5, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(4, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(4, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->surfaceMin;
+
+
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(5, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(5, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
     p[iOUTIndex] = vo->surfaceAvg;
 }
 
@@ -552,7 +680,7 @@ void get_temp_mem(OutPeriod pd, SW_ALL* sw)
 void get_temp_agg(OutPeriod pd, SW_ALL* sw)
 {
 	SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD
 		*p = sw->GenOutput.p_OUT[eSW_Temp][pd],
@@ -650,7 +778,7 @@ void get_precip_text(OutPeriod pd, SW_ALL* sw)
 void get_precip_mem(OutPeriod pd, SW_ALL* sw)
 {
 	SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_Precip][pd];
 
@@ -659,20 +787,54 @@ void get_precip_mem(OutPeriod pd, SW_ALL* sw)
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
     #endif
 
-	iOUTIndex = iOUT(0, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->ppt;
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(0, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
 
-	iOUTIndex = iOUT(1, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->rain;
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(0, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
 
-	iOUTIndex = iOUT(2, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->snow;
+    p[iOUTIndex] = vo->ppt;
 
-	iOUTIndex = iOUT(3, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->snowmelt;
 
-	iOUTIndex = iOUT(4, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->snowloss;
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(1, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(1, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->rain;
+
+
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(2, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(2, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->snow;
+
+
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(3, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(3, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->snowmelt;
+
+
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(4, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(4, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->snowloss;
 }
 
 #elif defined(STEPWAT)
@@ -687,7 +849,7 @@ void get_precip_mem(OutPeriod pd, SW_ALL* sw)
 void get_precip_agg(OutPeriod pd, SW_ALL* sw)
 {
 	SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD
 		*p = sw->GenOutput.p_OUT[eSW_Precip][pd],
@@ -784,7 +946,7 @@ void get_vwcBulk_mem(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_VWCBulk][pd];
 
@@ -793,11 +955,17 @@ void get_vwcBulk_mem(OutPeriod pd, SW_ALL* sw)
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
     #endif
 
-	ForEachSoilLayer(i, sw->Site.n_layers) {
-		/* vwcBulk at this point is identical to swcBulk */
-		iOUTIndex = iOUT(i, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-		p[iOUTIndex] = vo->vwcBulk[i] / sw->Site.width[i];
-	}
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+        #if defined(RSOILWAT)
+        iOUTIndex = iOUT(i, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+        #elif defined(SWNETCDF)
+        iOUTIndex = iOUTnc(0, sw->GenOutput.irow_OUT[pd], i, 0, sw->GenOutput.nrow_OUT[pd], sw->Site.n_layers, 1, ncol_TimeOUT[pd]);
+        #endif
+
+        /* vwcBulk at this point is identical to swcBulk */
+        p[iOUTIndex] = vo->vwcBulk[i] / sw->Site.width[i];
+    }
 }
 
 #elif defined(STEPWAT)
@@ -813,7 +981,7 @@ void get_vwcBulk_agg(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD
 		*p = sw->GenOutput.p_OUT[eSW_VWCBulk][pd],
@@ -879,7 +1047,7 @@ void get_vwcMatric_mem(OutPeriod pd, SW_ALL* sw)
 	LyrIndex i;
 	RealD convert;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_VWCMatric][pd];
 
@@ -888,13 +1056,18 @@ void get_vwcMatric_mem(OutPeriod pd, SW_ALL* sw)
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
     #endif
 
-	ForEachSoilLayer(i, sw->Site.n_layers) {
-		/* vwcMatric at this point is identical to swcBulk */
-		convert = 1. / (1. - sw->Site.fractionVolBulk_gravel[i]) / sw->Site.width[i];
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+        #if defined(RSOILWAT)
+        iOUTIndex = iOUT(i, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
 
-		iOUTIndex = iOUT(i, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-		p[iOUTIndex] = vo->vwcMatric[i] * convert;
-	}
+        #elif defined(SWNETCDF)
+        iOUTIndex = iOUTnc(0, sw->GenOutput.irow_OUT[pd], i, 0, sw->GenOutput.nrow_OUT[pd], sw->Site.n_layers, 1, ncol_TimeOUT[pd]);
+        #endif
+
+        /* vwcMatric at this point is identical to swcBulk */
+        convert = 1. / (1. - sw->Site.fractionVolBulk_gravel[i]) / sw->Site.width[i];
+        p[iOUTIndex] = vo->vwcMatric[i] * convert;
+    }
 }
 
 #elif defined(STEPWAT)
@@ -911,7 +1084,7 @@ void get_vwcMatric_agg(OutPeriod pd, SW_ALL* sw)
 	LyrIndex i;
 	RealD convert;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD
 		*p = sw->GenOutput.p_OUT[eSW_VWCMatric][pd],
@@ -979,7 +1152,7 @@ void get_swa_mem(OutPeriod pd, SW_ALL* sw)
 	LyrIndex i;
 	int k;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_SWA][pd];
 
@@ -988,14 +1161,18 @@ void get_swa_mem(OutPeriod pd, SW_ALL* sw)
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
     #endif
 
-	ForEachVegType(k)
-	{
-		ForEachSoilLayer(i, sw->Site.n_layers)
-		{
-			iOUTIndex = iOUT2(i, k, pd, sw->GenOutput.irow_OUT, sw->GenOutput.nrow_OUT, sw->Site.n_layers);
-			p[iOUTIndex] = vo->SWA_VegType[k][i];
-		}
-	}
+    ForEachVegType(k) {
+        ForEachSoilLayer(i, sw->Site.n_layers) {
+          #if defined(RSOILWAT)
+          iOUTIndex = iOUT2(i, k, pd, sw->GenOutput.irow_OUT, sw->GenOutput.nrow_OUT, sw->Site.n_layers);
+
+          #elif defined(SWNETCDF)
+          iOUTIndex = iOUTnc(0, sw->GenOutput.irow_OUT[pd], i, k, sw->GenOutput.nrow_OUT[pd], sw->Site.n_layers, NVEGTYPES, ncol_TimeOUT[pd]);
+          #endif
+
+          p[iOUTIndex] = vo->SWA_VegType[k][i];
+        }
+    }
 }
 
 #elif defined(STEPWAT)
@@ -1012,7 +1189,7 @@ void get_swa_agg(OutPeriod pd, SW_ALL* sw)
 	LyrIndex i;
 	int k;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD
 		*p = sw->GenOutput.p_OUT[eSW_SWA][pd],
@@ -1075,7 +1252,7 @@ void get_swcBulk_mem(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_SWCBulk][pd];
 
@@ -1084,11 +1261,17 @@ void get_swcBulk_mem(OutPeriod pd, SW_ALL* sw)
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
     #endif
 
-	ForEachSoilLayer(i, sw->Site.n_layers)
-	{
-		iOUTIndex = iOUT(i, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-		p[iOUTIndex] = vo->swcBulk[i];
-	}
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+        #if defined(RSOILWAT)
+        iOUTIndex = iOUT(i, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+        #elif defined(SWNETCDF)
+        iOUTIndex = iOUTnc(0, sw->GenOutput.irow_OUT[pd], i, 0, sw->GenOutput.nrow_OUT[pd], sw->Site.n_layers, 1, ncol_TimeOUT[pd]);
+        #endif
+
+
+        p[iOUTIndex] = vo->swcBulk[i];
+    }
 }
 
 #elif defined(STEPWAT)
@@ -1104,7 +1287,7 @@ void get_swcBulk_agg(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD
 		*p = sw->GenOutput.p_OUT[eSW_SWCBulk][pd],
@@ -1200,7 +1383,7 @@ void get_swpMatric_mem(OutPeriod pd, SW_ALL* sw)
 	LyrIndex i;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 	LOG_INFO local_log;
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_SWPMatric][pd];
 
@@ -1209,13 +1392,18 @@ void get_swpMatric_mem(OutPeriod pd, SW_ALL* sw)
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
     #endif
 
-	ForEachSoilLayer(i, sw->Site.n_layers)
-	{
-		/* swpMatric at this point is identical to swcBulk */
-		iOUTIndex = iOUT(i, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-		p[iOUTIndex] = SW_SWRC_SWCtoSWP(vo->swpMatric[i], &sw->Site,
-										i, &local_log);
-	}
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+        #if defined(RSOILWAT)
+        iOUTIndex = iOUT(i, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+        #elif defined(SWNETCDF)
+        iOUTIndex = iOUTnc(0, sw->GenOutput.irow_OUT[pd], i, 0, sw->GenOutput.nrow_OUT[pd], sw->Site.n_layers, 1, ncol_TimeOUT[pd]);
+        #endif
+
+        /* swpMatric at this point is identical to swcBulk */
+        p[iOUTIndex] = SW_SWRC_SWCtoSWP(vo->swpMatric[i], &sw->Site,
+                        i, &local_log);
+    }
 }
 
 #elif defined(STEPWAT)
@@ -1233,7 +1421,7 @@ void get_swpMatric_agg(OutPeriod pd, SW_ALL* sw)
 	LyrIndex i;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 	LOG_INFO local_log;
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD
 		*p = sw->GenOutput.p_OUT[eSW_SWPMatric][pd],
@@ -1295,7 +1483,7 @@ void get_swaBulk_mem(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_SWABulk][pd];
 
@@ -1304,11 +1492,16 @@ void get_swaBulk_mem(OutPeriod pd, SW_ALL* sw)
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
     #endif
 
-	ForEachSoilLayer(i, sw->Site.n_layers)
-	{
-		iOUTIndex = iOUT(i, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-		p[iOUTIndex] = vo->swaBulk[i];
-	}
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+        #if defined(RSOILWAT)
+        iOUTIndex = iOUT(i, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+        #elif defined(SWNETCDF)
+        iOUTIndex = iOUTnc(0, sw->GenOutput.irow_OUT[pd], i, 0, sw->GenOutput.nrow_OUT[pd], sw->Site.n_layers, 1, ncol_TimeOUT[pd]);
+        #endif
+
+        p[iOUTIndex] = vo->swaBulk[i];
+    }
 }
 
 #elif defined(STEPWAT)
@@ -1324,7 +1517,7 @@ void get_swaBulk_agg(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD
 		*p = sw->GenOutput.p_OUT[eSW_SWABulk][pd],
@@ -1388,7 +1581,7 @@ void get_swaMatric_mem(OutPeriod pd, SW_ALL* sw)
 	LyrIndex i;
 	RealD convert;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_SWAMatric][pd];
 
@@ -1397,14 +1590,18 @@ void get_swaMatric_mem(OutPeriod pd, SW_ALL* sw)
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
     #endif
 
-	ForEachSoilLayer(i, sw->Site.n_layers)
-	{
-		/* swaMatric at this point is identical to swaBulk */
-		convert = 1. / (1. - sw->Site.fractionVolBulk_gravel[i]);
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+        #if defined(RSOILWAT)
+        iOUTIndex = iOUT(i, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
 
-		iOUTIndex = iOUT(i, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-		p[iOUTIndex] = vo->swaMatric[i] * convert;
-	}
+        #elif defined(SWNETCDF)
+        iOUTIndex = iOUTnc(0, sw->GenOutput.irow_OUT[pd], i, 0, sw->GenOutput.nrow_OUT[pd], sw->Site.n_layers, 1, ncol_TimeOUT[pd]);
+        #endif
+
+        /* swaMatric at this point is identical to swaBulk */
+        convert = 1. / (1. - sw->Site.fractionVolBulk_gravel[i]);
+        p[iOUTIndex] = vo->swaMatric[i] * convert;
+    }
 }
 
 #elif defined(STEPWAT)
@@ -1421,7 +1618,7 @@ void get_swaMatric_agg(OutPeriod pd, SW_ALL* sw)
 	LyrIndex i;
 	RealD convert;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD
 		*p = sw->GenOutput.p_OUT[eSW_SWAMatric][pd],
@@ -1476,7 +1673,7 @@ void get_surfaceWater_text(OutPeriod pd, SW_ALL* sw)
 void get_surfaceWater_mem(OutPeriod pd, SW_ALL* sw)
 {
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_SurfaceWater][pd];
 
@@ -1485,8 +1682,14 @@ void get_surfaceWater_mem(OutPeriod pd, SW_ALL* sw)
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
     #endif
 
-	iOUTIndex = iOUT(0, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->surfaceWater;
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(0, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(0, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->surfaceWater;
 }
 
 #elif defined(STEPWAT)
@@ -1501,7 +1704,7 @@ void get_surfaceWater_mem(OutPeriod pd, SW_ALL* sw)
 void get_surfaceWater_agg(OutPeriod pd, SW_ALL* sw)
 {
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD
 		*p = sw->GenOutput.p_OUT[eSW_SurfaceWater][pd],
@@ -1557,9 +1760,8 @@ void get_runoffrunon_text(OutPeriod pd, SW_ALL* sw)
 */
 void get_runoffrunon_mem(OutPeriod pd, SW_ALL* sw)
 {
-	RealD net;
 	SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_Runoff][pd];
 
@@ -1568,19 +1770,44 @@ void get_runoffrunon_mem(OutPeriod pd, SW_ALL* sw)
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
     #endif
 
-	net = vo->surfaceRunoff + vo->snowRunoff - vo->surfaceRunon;
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(0, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
 
-	iOUTIndex = iOUT(0, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = net;
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(0, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
 
-	iOUTIndex = iOUT(1, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->surfaceRunoff;
+    p[iOUTIndex] = vo->surfaceRunoff + vo->snowRunoff - vo->surfaceRunon;
 
-	iOUTIndex = iOUT(2, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->snowRunoff;
 
-	iOUTIndex = iOUT(3, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->surfaceRunon;
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(1, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(1, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->surfaceRunoff;
+
+
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(2, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(2, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->snowRunoff;
+
+
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(3, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(3, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->surfaceRunon;
 }
 
 #elif defined(STEPWAT)
@@ -1596,7 +1823,7 @@ void get_runoffrunon_agg(OutPeriod pd, SW_ALL* sw)
 {
 	RealD net;
 	SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD
 		*p = sw->GenOutput.p_OUT[eSW_Runoff][pd],
@@ -1679,7 +1906,7 @@ void get_transp_mem(OutPeriod pd, SW_ALL* sw)
 	LyrIndex i, n_layers = sw->Site.n_layers;
 	int k;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_Transp][pd];
 
@@ -1688,22 +1915,31 @@ void get_transp_mem(OutPeriod pd, SW_ALL* sw)
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
     #endif
 
-	/* total transpiration */
-	ForEachSoilLayer(i, n_layers)
-	{
-		iOUTIndex = iOUT(i, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-		p[iOUTIndex] = vo->transp_total[i];
-	}
+    /* total transpiration */
+    ForEachSoilLayer(i, n_layers) {
+        #if defined(RSOILWAT)
+        iOUTIndex = iOUT(i, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
 
-	/* transpiration for each vegetation type */
-	ForEachVegType(k)
-	{
-		ForEachSoilLayer(i, n_layers)
-		{
-			iOUTIndex = iOUT2(i, k + 1, pd, sw->GenOutput.irow_OUT, sw->GenOutput.nrow_OUT, n_layers);
-			p[iOUTIndex] = vo->transp[k][i]; // k + 1 because of total transp.
-		}
-	}
+        #elif defined(SWNETCDF)
+        iOUTIndex = iOUTnc(0, sw->GenOutput.irow_OUT[pd], i, 0, sw->GenOutput.nrow_OUT[pd], sw->Site.n_layers, NVEGTYPES, ncol_TimeOUT[pd]);
+        #endif
+
+        p[iOUTIndex] = vo->transp_total[i];
+    }
+
+    /* transpiration for each vegetation type */
+    ForEachVegType(k) {
+        ForEachSoilLayer(i, n_layers) {
+            #if defined(RSOILWAT)
+            iOUTIndex = iOUT2(i, k + 1, pd, sw->GenOutput.irow_OUT, sw->GenOutput.nrow_OUT, sw->Site.n_layers);
+
+            #elif defined(SWNETCDF)
+            iOUTIndex = iOUTnc(1, sw->GenOutput.irow_OUT[pd], i, k, sw->GenOutput.nrow_OUT[pd], sw->Site.n_layers, NVEGTYPES, ncol_TimeOUT[pd]);
+            #endif
+
+            p[iOUTIndex] = vo->transp[k][i]; // k + 1 because of total transp.
+        }
+    }
 }
 
 #elif defined(STEPWAT)
@@ -1720,7 +1956,7 @@ void get_transp_agg(OutPeriod pd, SW_ALL* sw)
 	LyrIndex i, n_layers = sw->Site.n_layers;
 	int k;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD
 		*p = sw->GenOutput.p_OUT[eSW_Transp][pd],
@@ -1830,7 +2066,7 @@ void get_evapSoil_mem(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_EvapSoil][pd];
 
@@ -1839,11 +2075,17 @@ void get_evapSoil_mem(OutPeriod pd, SW_ALL* sw)
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
     #endif
 
-	ForEachEvapLayer(i, sw->Site.n_evap_lyrs)
-	{
-		iOUTIndex = iOUT(i, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-		p[iOUTIndex] = vo->evap_baresoil[i];
-	}
+    ForEachEvapLayer(i, sw->Site.n_evap_lyrs) {
+        #if defined(RSOILWAT)
+        iOUTIndex = iOUT(i, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+        #elif defined(SWNETCDF)
+        iOUTIndex = iOUTnc(0, sw->GenOutput.irow_OUT[pd], i, 0, sw->GenOutput.nrow_OUT[pd], sw->Site.n_evap_lyrs, 1, ncol_TimeOUT[pd]);
+        #endif
+
+        p[iOUTIndex] = vo->evap_baresoil[i];
+
+    }
 }
 
 #elif defined(STEPWAT)
@@ -1859,7 +2101,7 @@ void get_evapSoil_agg(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD
 		*p = sw->GenOutput.p_OUT[eSW_EvapSoil][pd],
@@ -1925,7 +2167,7 @@ void get_evapSurface_mem(OutPeriod pd, SW_ALL* sw)
 {
 	int k;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_EvapSurface][pd];
 
@@ -1934,19 +2176,46 @@ void get_evapSurface_mem(OutPeriod pd, SW_ALL* sw)
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
     #endif
 
-	iOUTIndex = iOUT(0, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->total_evap;
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(0, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
 
-	ForEachVegType(k) {
-		iOUTIndex = iOUT(k + 1, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-		p[iOUTIndex] = vo->evap_veg[k];
-	}
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(0, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
 
-	iOUTIndex = iOUT(NVEGTYPES + 1, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->litter_evap;
+    p[iOUTIndex] = vo->total_evap;
 
-	iOUTIndex = iOUT(NVEGTYPES + 2, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->surfaceWater_evap;
+
+    ForEachVegType(k) {
+        #if defined(RSOILWAT)
+        iOUTIndex = iOUT(k + 1, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+        #elif defined(SWNETCDF)
+        iOUTIndex = iOUTnc(1, sw->GenOutput.irow_OUT[pd], 0, k, sw->GenOutput.nrow_OUT[pd], 1, NVEGTYPES, ncol_TimeOUT[pd]);
+        #endif
+
+        p[iOUTIndex] = vo->evap_veg[k];
+    }
+
+
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(NVEGTYPES + 1, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(2, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->litter_evap;
+
+
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(NVEGTYPES + 2, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(3, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->surfaceWater_evap;
 }
 
 #elif defined(STEPWAT)
@@ -1962,7 +2231,7 @@ void get_evapSurface_agg(OutPeriod pd, SW_ALL* sw)
 {
 	int k;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD
 		*p = sw->GenOutput.p_OUT[eSW_EvapSurface][pd],
@@ -2037,7 +2306,7 @@ void get_interception_mem(OutPeriod pd, SW_ALL* sw)
 {
 	int k;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_Interception][pd];
 
@@ -2046,16 +2315,36 @@ void get_interception_mem(OutPeriod pd, SW_ALL* sw)
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
     #endif
 
-	iOUTIndex = iOUT(0, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->total_int;
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(0, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
 
-	ForEachVegType(k) {
-		iOUTIndex = iOUT(k + 1, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-		p[iOUTIndex] = vo->int_veg[k];
-	}
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(0, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
 
-	iOUTIndex = iOUT(NVEGTYPES + 1, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->litter_int;
+    p[iOUTIndex] = vo->total_int;
+
+
+    ForEachVegType(k) {
+        #if defined(RSOILWAT)
+        iOUTIndex = iOUT(k + 1, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+        #elif defined(SWNETCDF)
+        iOUTIndex = iOUTnc(1, sw->GenOutput.irow_OUT[pd], 0, k, sw->GenOutput.nrow_OUT[pd], 1, NVEGTYPES, ncol_TimeOUT[pd]);
+        #endif
+
+        p[iOUTIndex] = vo->int_veg[k];
+    }
+
+
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(NVEGTYPES + 1, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(2, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->litter_int;
 }
 
 #elif defined(STEPWAT)
@@ -2071,7 +2360,7 @@ void get_interception_agg(OutPeriod pd, SW_ALL* sw)
 {
 	int k;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD
 		*p = sw->GenOutput.p_OUT[eSW_Interception][pd],
@@ -2132,7 +2421,7 @@ void get_soilinf_text(OutPeriod pd, SW_ALL* sw)
 void get_soilinf_mem(OutPeriod pd, SW_ALL* sw)
 {
 	SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_SoilInf][pd];
 
@@ -2141,8 +2430,14 @@ void get_soilinf_mem(OutPeriod pd, SW_ALL* sw)
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
     #endif
 
-	iOUTIndex = iOUT(0, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->soil_inf;
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(0, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(0, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->soil_inf;
 }
 
 #elif defined(STEPWAT)
@@ -2157,7 +2452,7 @@ void get_soilinf_mem(OutPeriod pd, SW_ALL* sw)
 void get_soilinf_agg(OutPeriod pd, SW_ALL* sw)
 {
 	SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD
 		*p = sw->GenOutput.p_OUT[eSW_SoilInf][pd],
@@ -2216,7 +2511,7 @@ void get_lyrdrain_mem(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_LyrDrain][pd];
 
@@ -2225,11 +2520,16 @@ void get_lyrdrain_mem(OutPeriod pd, SW_ALL* sw)
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
     #endif
 
-	for (i = 0; i < sw->Site.n_layers - 1; i++)
-	{
-		iOUTIndex = iOUT(i, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-		p[iOUTIndex] = vo->lyrdrain[i];
-	}
+    for (i = 0; i < sw->Site.n_layers - 1; i++) {
+        #if defined(RSOILWAT)
+        iOUTIndex = iOUT(i, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+        #elif defined(SWNETCDF)
+        iOUTIndex = iOUTnc(0, sw->GenOutput.irow_OUT[pd], i, 0, sw->GenOutput.nrow_OUT[pd], sw->Site.n_layers - 1, 1, ncol_TimeOUT[pd]);
+        #endif
+
+        p[iOUTIndex] = vo->lyrdrain[i];
+    }
 }
 
 #elif defined(STEPWAT)
@@ -2245,7 +2545,7 @@ void get_lyrdrain_agg(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD
 		*p = sw->GenOutput.p_OUT[eSW_LyrDrain][pd],
@@ -2320,7 +2620,7 @@ void get_hydred_mem(OutPeriod pd, SW_ALL* sw)
 	LyrIndex i, n_layers = sw->Site.n_layers;
 	int k;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_HydRed][pd];
 
@@ -2329,22 +2629,32 @@ void get_hydred_mem(OutPeriod pd, SW_ALL* sw)
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
     #endif
 
-	/* total hydraulic redistribution */
-	ForEachSoilLayer(i, n_layers)
-	{
-		iOUTIndex = iOUT(i, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-		p[iOUTIndex] = vo->hydred_total[i];
-	}
+    /* total hydraulic redistribution */
+    ForEachSoilLayer(i, n_layers) {
+        #if defined(RSOILWAT)
+        iOUTIndex = iOUT(i, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
 
-	/* hydraulic redistribution for each vegetation type */
-	ForEachVegType(k)
-	{
-		ForEachSoilLayer(i, n_layers)
-		{
-			iOUTIndex = iOUT2(i, k + 1, pd, sw->GenOutput.irow_OUT, sw->GenOutput.nrow_OUT, n_layers);
-			p[iOUTIndex] = vo->hydred[k][i]; // k + 1 because of total hydred
-		}
-	}
+        #elif defined(SWNETCDF)
+        iOUTIndex = iOUTnc(0, sw->GenOutput.irow_OUT[pd], i, 0, sw->GenOutput.nrow_OUT[pd], sw->Site.n_layers, 1, ncol_TimeOUT[pd]);
+        #endif
+
+        p[iOUTIndex] = vo->hydred_total[i];
+    }
+
+
+    /* hydraulic redistribution for each vegetation type */
+    ForEachVegType(k) {
+        ForEachSoilLayer(i, n_layers) {
+            #if defined(RSOILWAT)
+            iOUTIndex = iOUT2(i, k + 1, pd, sw->GenOutput.irow_OUT, sw->GenOutput.nrow_OUT, sw->Site.n_layers);
+
+            #elif defined(SWNETCDF)
+            iOUTIndex = iOUTnc(1, sw->GenOutput.irow_OUT[pd], i, k, sw->GenOutput.nrow_OUT[pd], sw->Site.n_layers, NVEGTYPES, ncol_TimeOUT[pd]);
+            #endif
+
+            p[iOUTIndex] = vo->hydred[k][i]; // k + 1 because of total hydred
+        }
+    }
 }
 
 #elif defined(STEPWAT)
@@ -2361,7 +2671,7 @@ void get_hydred_agg(OutPeriod pd, SW_ALL* sw)
 	LyrIndex i, n_layers = sw->Site.n_layers;
 	int k;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD
 		*p = sw->GenOutput.p_OUT[eSW_HydRed][pd],
@@ -2443,7 +2753,7 @@ void get_aet_mem(OutPeriod pd, SW_ALL* sw)
 {
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 	SW_WEATHER_OUTPUTS *vo2 = sw->Weather.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_AET][pd];
 
@@ -2452,23 +2762,64 @@ void get_aet_mem(OutPeriod pd, SW_ALL* sw)
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
     #endif
 
-	iOUTIndex = iOUT(0, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->aet;
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(0, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
 
-	iOUTIndex = iOUT(1, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->tran;
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(0, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
 
-	iOUTIndex = iOUT(2, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->esoil;
+    p[iOUTIndex] = vo->aet;
 
-	iOUTIndex = iOUT(3, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->ecnw;
 
-	iOUTIndex = iOUT(4, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->esurf;
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(1, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
 
-	iOUTIndex = iOUT(5, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo2->snowloss; // should be `vo->esnow`
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(1, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->tran;
+
+
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(2, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(2, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->esoil;
+
+
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(3, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(3, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->ecnw;
+
+
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(4, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(4, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->esurf;
+
+
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(5, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(5, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo2->snowloss; // should be `vo->esnow`
 }
 
 #elif defined(STEPWAT)
@@ -2484,7 +2835,7 @@ void get_aet_agg(OutPeriod pd, SW_ALL* sw)
 {
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 	SW_WEATHER_OUTPUTS *vo2 = sw->Weather.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD
 		*p = sw->GenOutput.p_OUT[eSW_AET][pd],
@@ -2581,7 +2932,7 @@ void get_pet_text(OutPeriod pd, SW_ALL* sw)
 void get_pet_mem(OutPeriod pd, SW_ALL* sw)
 {
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_PET][pd];
 
@@ -2590,20 +2941,54 @@ void get_pet_mem(OutPeriod pd, SW_ALL* sw)
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
     #endif
 
-	iOUTIndex = iOUT(0, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->pet;
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(0, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
 
-	iOUTIndex = iOUT(1, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->H_oh;
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(0, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
 
-	iOUTIndex = iOUT(2, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->H_ot;
+    p[iOUTIndex] = vo->pet;
 
-	iOUTIndex = iOUT(3, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->H_gh;
 
-	iOUTIndex = iOUT(4, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->H_gt;
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(1, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(1, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->H_oh;
+
+
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(2, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(2, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->H_ot;
+
+
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(3, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(3, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->H_gh;
+
+
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(4, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(4, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->H_gt;
 }
 
 #elif defined(STEPWAT)
@@ -2615,7 +3000,7 @@ void get_pet_mem(OutPeriod pd, SW_ALL* sw)
 void get_pet_agg(OutPeriod pd, SW_ALL* sw)
 {
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD
 		*p = sw->GenOutput.p_OUT[eSW_PET][pd],
@@ -2692,7 +3077,7 @@ void get_wetdays_text(OutPeriod pd, SW_ALL* sw)
 void get_wetdays_mem(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_WetDays][pd];
 
@@ -2701,22 +3086,32 @@ void get_wetdays_mem(OutPeriod pd, SW_ALL* sw)
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
     #endif
 
-	if (pd == eSW_Day)
-	{
-		ForEachSoilLayer(i, sw->Site.n_layers) {
-			iOUTIndex = iOUT(i, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-			p[iOUTIndex] = (sw->SoilWat.is_wet[i]) ? 1 : 0;
-		}
+    if (pd == eSW_Day) {
+        ForEachSoilLayer(i, sw->Site.n_layers) {
+            #if defined(RSOILWAT)
+            iOUTIndex = iOUT(i, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
 
-	} else
-	{
-		SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+            #elif defined(SWNETCDF)
+            iOUTIndex = iOUTnc(0, sw->GenOutput.irow_OUT[pd], i, 0, sw->GenOutput.nrow_OUT[pd], sw->Site.n_layers, 1, ncol_TimeOUT[pd]);
+            #endif
 
-		ForEachSoilLayer(i, sw->Site.n_layers) {
-			iOUTIndex = iOUT(i, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-			p[iOUTIndex] = (int) vo->wetdays[i];
-		}
-	}
+            p[iOUTIndex] = (sw->SoilWat.is_wet[i]) ? 1 : 0;
+        }
+
+    } else {
+        SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+
+        ForEachSoilLayer(i, sw->Site.n_layers) {
+            #if defined(RSOILWAT)
+            iOUTIndex = iOUT(i, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+            #elif defined(SWNETCDF)
+            iOUTIndex = iOUTnc(0, sw->GenOutput.irow_OUT[pd], i, 0, sw->GenOutput.nrow_OUT[pd], sw->Site.n_layers, 1, ncol_TimeOUT[pd]);
+            #endif
+
+            p[iOUTIndex] = (int) vo->wetdays[i];
+        }
+    }
 }
 
 #elif defined(STEPWAT)
@@ -2731,7 +3126,7 @@ void get_wetdays_mem(OutPeriod pd, SW_ALL* sw)
 void get_wetdays_agg(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD
 		*p = sw->GenOutput.p_OUT[eSW_WetDays][pd],
@@ -2797,7 +3192,7 @@ void get_snowpack_text(OutPeriod pd, SW_ALL* sw)
 void get_snowpack_mem(OutPeriod pd, SW_ALL* sw)
 {
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_SnowPack][pd];
 
@@ -2806,11 +3201,24 @@ void get_snowpack_mem(OutPeriod pd, SW_ALL* sw)
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
     #endif
 
-	iOUTIndex = iOUT(0, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->snowpack;
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(0, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
 
-	iOUTIndex = iOUT(1, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->snowdepth;
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(0, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->snowpack;
+
+
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(1, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(1, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->snowdepth;
 }
 
 #elif defined(STEPWAT)
@@ -2825,7 +3233,7 @@ void get_snowpack_mem(OutPeriod pd, SW_ALL* sw)
 void get_snowpack_agg(OutPeriod pd, SW_ALL* sw)
 {
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD
 		*p = sw->GenOutput.p_OUT[eSW_SnowPack][pd],
@@ -2878,7 +3286,7 @@ void get_deepswc_text(OutPeriod pd, SW_ALL* sw)
 void get_deepswc_mem(OutPeriod pd, SW_ALL* sw)
 {
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_DeepSWC][pd];
 
@@ -2887,8 +3295,14 @@ void get_deepswc_mem(OutPeriod pd, SW_ALL* sw)
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
     #endif
 
-	iOUTIndex = iOUT(0, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
-	p[iOUTIndex] = vo->deep;
+    #if defined(RSOILWAT)
+    iOUTIndex = iOUT(0, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+    #elif defined(SWNETCDF)
+    iOUTIndex = iOUTnc(0, sw->GenOutput.irow_OUT[pd], 0, 0, sw->GenOutput.nrow_OUT[pd], 1, 1, ncol_TimeOUT[pd]);
+    #endif
+
+    p[iOUTIndex] = vo->deep;
 }
 
 #elif defined(STEPWAT)
@@ -2903,7 +3317,7 @@ void get_deepswc_mem(OutPeriod pd, SW_ALL* sw)
 void get_deepswc_agg(OutPeriod pd, SW_ALL* sw)
 {
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD
 		*p = sw->GenOutput.p_OUT[eSW_DeepSWC][pd],
@@ -2966,7 +3380,7 @@ void get_soiltemp_mem(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD *p = sw->GenOutput.p_OUT[eSW_SoilTemp][pd];
 
@@ -2975,17 +3389,39 @@ void get_soiltemp_mem(OutPeriod pd, SW_ALL* sw)
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
     #endif
 
-	ForEachSoilLayer(i, sw->Site.n_layers)
-	{
-		iOUTIndex = iOUT((i * 3), sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+        #if defined(RSOILWAT)
+        iOUTIndex = iOUT((i * 3), sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+        #elif defined(SWNETCDF)
+        iOUTIndex = iOUTnc(0, sw->GenOutput.irow_OUT[pd], i, 0, sw->GenOutput.nrow_OUT[pd], sw->Site.n_layers, 1, ncol_TimeOUT[pd]);
+        #endif
+
         p[iOUTIndex] = vo->maxLyrTemperature[i];
 
-		iOUTIndex = iOUT((i * 3) + 1, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+        #if defined(RSOILWAT)
+        iOUTIndex = iOUT((i * 3) + 1, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+        #elif defined(SWNETCDF)
+        iOUTIndex = iOUTnc(1, sw->GenOutput.irow_OUT[pd], i, 0, sw->GenOutput.nrow_OUT[pd], sw->Site.n_layers, 1, ncol_TimeOUT[pd]);
+        #endif
+
         p[iOUTIndex] = vo->minLyrTemperature[i];
 
-		iOUTIndex = iOUT((i * 3) + 2, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+
+        #if defined(RSOILWAT)
+        iOUTIndex = iOUT((i * 3) + 2, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+        #elif defined(SWNETCDF)
+        iOUTIndex = iOUTnc(2, sw->GenOutput.irow_OUT[pd], i, 0, sw->GenOutput.nrow_OUT[pd], sw->Site.n_layers, 1, ncol_TimeOUT[pd]);
+        #endif
+
         p[iOUTIndex] = vo->avgLyrTemp[i];
-	}
+
+
+    }
 }
 
 #elif defined(STEPWAT)
@@ -3001,7 +3437,7 @@ void get_soiltemp_agg(OutPeriod pd, SW_ALL* sw)
 {
 	LyrIndex i;
 	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
 	RealD
 		*p = sw->GenOutput.p_OUT[eSW_SoilTemp][pd],
@@ -3068,7 +3504,7 @@ void get_frozen_mem(OutPeriod pd, SW_ALL* sw)
 {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
     RealD *p = sw->GenOutput.p_OUT[eSW_Frozen][pd];
 
@@ -3077,9 +3513,14 @@ void get_frozen_mem(OutPeriod pd, SW_ALL* sw)
 					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
     #endif
 
-    ForEachSoilLayer(i, sw->Site.n_layers)
-    {
-		iOUTIndex = iOUT(i, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+        #if defined(RSOILWAT)
+        iOUTIndex = iOUT(i, sw->GenOutput.irow_OUT[pd], sw->GenOutput.nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+        #elif defined(SWNETCDF)
+        iOUTIndex = iOUTnc(0, sw->GenOutput.irow_OUT[pd], i, 0, sw->GenOutput.nrow_OUT[pd], sw->Site.n_layers, 1, ncol_TimeOUT[pd]);
+        #endif
+
         p[iOUTIndex] = vo->lyrFrozen[i];
     }
 }
@@ -3097,7 +3538,7 @@ void get_frozen_agg(OutPeriod pd, SW_ALL* sw)
 {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+	size_t iOUTIndex = 0;
 
     RealD
         *p = sw->GenOutput.p_OUT[eSW_Frozen][pd],
