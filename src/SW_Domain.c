@@ -251,7 +251,7 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
                 SW_Domain->SW_SpinUp.duration = atoi(value);
 
                 // Set the spinup flag to true if duration > 0
-                if (SW_Domain->SW_SpinUp.duration == 0) {
+                if (SW_Domain->SW_SpinUp.duration <= 0) {
                     SW_Domain->SW_SpinUp.spinup = swFALSE;
                 }
                 else {
