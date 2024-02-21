@@ -3443,9 +3443,10 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
     char input[NOUT_VAR_INPUTS][MAX_ATTVAL_SIZE] = {"\0"};
     char establn[MAX_ATTVAL_SIZE] = {"\0"};
     int scanRes = 0, defToLocalInd = 0;
+    // in readLineFormat: 255 must be equal to MAX_ATTVAL_SIZE - 1
     const char* readLineFormat =
         "%13[^\t]\t%50[^\t]\t%10[^\t]\t%4[^\t]\t%1[^\t]\t"
-        "%127[^\t]\t%127[^\t]\t%127[^\t]\t%127[^\t]\t%127[^\t]\t%127[^\t]";
+        "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]";
 
     // Column indices
     const int keyInd = 0, SWVarNameInd = 1, SWUnitsInd = 2, dimInd = 3,
@@ -3550,6 +3551,13 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
                     copyStr = (char *)"";
                 } else {
                     copyStr = input[defToLocalInd];
+                }
+                if (strlen(copyStr) >= MAX_ATTVAL_SIZE - 1) {
+                    LogError(LogInfo, LOGWARN,
+                        "%s [row %d, field %d]: maximum string length reached "
+                        "or exceeded (%d); content may be truncated: '%s'",
+                        MyFileName, lineno + 1, defToLocalInd + 1, MAX_ATTVAL_SIZE - 1, copyStr
+                    );
                 }
 
                 // Handle ESTAB differently by storing all attributes
