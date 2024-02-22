@@ -303,14 +303,15 @@ void SW_VES_read2(SW_VEGESTAB* SW_VegEstab, Bool use_VegEstab,
                 CloseFile(&f, LogInfo);
                 return; // Exit function prematurely due to error
             }
-
-            #if defined(SWNETCDF)
-            numVarsPerKey[eSW_Estab] = SW_VegEstab->count;
-            #endif
 		}
 
 		CloseFile(&f, LogInfo);
 	}
+
+
+    #if defined(SWNETCDF)
+    numVarsPerKey[eSW_Estab] = SW_VegEstab->count;
+    #endif
 }
 
 

@@ -3525,6 +3525,11 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
 
                 estabFound = swTRUE;
                 varNum = 0;
+
+                if (numVarsPerKey[currOutKey] == 0) {
+                    // outsetup.in and nc-out request ESTAB but no taxon available
+                    continue;
+                }
             }
 
             if(isnull(currOut->outputVarInfo)) {
