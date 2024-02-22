@@ -135,8 +135,9 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 		SW_OUTPUT_POINTERS* SW_OutputPtrs, SW_OUTPUT* SW_Output,
 		LyrIndex n_layers, SW_GEN_OUT *GenOutput, LOG_INFO *LogInfo);
 void SW_OUT_deconstruct(Bool full_reset, SW_ALL *sw);
-void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs, int count,
-					 IntUS ncol_OUT[]);
+void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs, int nTaxaEstabl,
+					IntUS ncol_OUT[], IntUS nvar_OUT[],
+					IntUS nsl_OUT[][SW_OUTNMAXVARS], IntUS npft_OUT[][SW_OUTNMAXVARS]);
 void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms,
 	IntUS ncol_OUT[], char *colnames_OUT[][5 * NVEGTYPES + MAX_LAYERS],
 	LOG_INFO* LogInfo);

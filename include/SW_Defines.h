@@ -202,6 +202,9 @@ typedef IntUS OutPeriod;
 */
 #define SW_OUTNKEYS 32
 
+#define SW_OUTNMAXVARS 8 // maximum number of output variables per OutKey
+
+
 /*------------ DON'T CHANGE ANYTHING BELOW THIS LINE ------------*/
 /* Macros to simplify and add consistency to common tasks */
 /* Note the loop var must be declared as LyrIndex */

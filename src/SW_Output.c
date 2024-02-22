@@ -1722,48 +1722,150 @@ void SW_OUT_deconstruct(Bool full_reset, SW_ALL *sw)
 	#endif
 }
 
+/** Specify output dimensions
+
+    Note to programmer: this function must match what `get_*()` implement.
+
+    @param[in] tLayers Number of soil layers
+    @param[in] n_evap_lyrs Number of soil layers with evaporation
+    @param[in] nTaxaEstabl Number of taxa used for establishment output.
+    @param[out] ncol_OUT Calculated number of output combinations across
+        variables, soil layers, and plant functional types (vegtypes)
+        as array of length SW_OUTNKEYS.
+    @param[out] nvar_OUT Specified number of output variables (per outkey)
+        as array of length SW_OUTNKEYS.
+    @param[out] nsl_OUT Specified number of output soil layer per variable
+        as array of size SW_OUTNKEYS by SW_OUTNMAXVARS.
+    @param[out] npft_OUT Specified number of output vegtypes per variable
+        as array of size SW_OUTNKEYS by SW_OUTNMAXVARS.
+*/
+void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs, int nTaxaEstabl,
+					IntUS ncol_OUT[], IntUS nvar_OUT[],
+					IntUS nsl_OUT[][SW_OUTNMAXVARS], IntUS npft_OUT[][SW_OUTNMAXVARS]) {
+
+    int key, ivar;
+    IntUS tmp;
+
+    //--- Set number of output variables ------
+    nvar_OUT[eSW_AllWthr] = 0;
+    nvar_OUT[eSW_Temp] = 6;
+    nvar_OUT[eSW_Precip] = 5;
+    nvar_OUT[eSW_SoilInf] = 1;
+    nvar_OUT[eSW_Runoff] = 4;
+    nvar_OUT[eSW_AllH2O] = 0;
+    nvar_OUT[eSW_VWCBulk] = 1;
+    nvar_OUT[eSW_VWCMatric] = 1;
+    nvar_OUT[eSW_SWCBulk] = 1;
+    nvar_OUT[eSW_SWABulk] = 1;
+    nvar_OUT[eSW_SWAMatric] = 1;
+    nvar_OUT[eSW_SWA] = 1;
+    nvar_OUT[eSW_SWPMatric] = 1;
+    nvar_OUT[eSW_SurfaceWater] = 1;
+    nvar_OUT[eSW_Transp] = 2; // NVEGTYPES plus totals
+    nvar_OUT[eSW_EvapSoil] = 1;
+    nvar_OUT[eSW_EvapSurface] = 4; // NVEGTYPES plus totals, litter, surface water
+    nvar_OUT[eSW_Interception] = 3; // NVEGTYPES plus totals, litter
+    nvar_OUT[eSW_LyrDrain] = 1;
+    nvar_OUT[eSW_HydRed] = 2; // NVEGTYPES plus totals
+    nvar_OUT[eSW_ET] = 0;
+    nvar_OUT[eSW_AET] = 6;
+    nvar_OUT[eSW_PET] = 5;
+    nvar_OUT[eSW_WetDays] = 1;
+    nvar_OUT[eSW_SnowPack] = 2;
+    nvar_OUT[eSW_DeepSWC] = 1;
+    nvar_OUT[eSW_SoilTemp] = 3;
+    nvar_OUT[eSW_Frozen] = 1;
+    nvar_OUT[eSW_AllVeg] = 0;
+    nvar_OUT[eSW_Estab] = nTaxaEstabl;
+    nvar_OUT[eSW_CO2Effects] = 2;
+    // eSW_Biomass: fCover for NVEGTYPES plus bare-ground
+    //    biomass for NVEGTYPES plus totals and litter
+    //    biolive for NVEGTYPES plus totals
+    //    LAI
+    nvar_OUT[eSW_Biomass] = 8;
 
 
-void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs, int count,
-					 IntUS ncol_OUT[]) {
+    //--- Set number of soil layer and/or pft (vegtype) for each variable ------
 
-	ncol_OUT[eSW_AllWthr] = 0;
-	ncol_OUT[eSW_Temp] = 6;
-	ncol_OUT[eSW_Precip] = 5;
-	ncol_OUT[eSW_SoilInf] = 1;
-	ncol_OUT[eSW_Runoff] = 4;
-	ncol_OUT[eSW_AllH2O] = 0;
-	ncol_OUT[eSW_VWCBulk] = tLayers;
-	ncol_OUT[eSW_VWCMatric] = tLayers;
-	ncol_OUT[eSW_SWCBulk] = tLayers;
-	ncol_OUT[eSW_SWABulk] = tLayers;
-	ncol_OUT[eSW_SWAMatric] = tLayers;
-	ncol_OUT[eSW_SWA] = tLayers * NVEGTYPES;
-	ncol_OUT[eSW_SWPMatric] = tLayers;
-	ncol_OUT[eSW_SurfaceWater] = 1;
-	ncol_OUT[eSW_Transp] = tLayers * (NVEGTYPES + 1); // NVEGTYPES plus totals
-	ncol_OUT[eSW_EvapSoil] = n_evap_lyrs;
-	ncol_OUT[eSW_EvapSurface] = NVEGTYPES + 3; // NVEGTYPES plus totals, litter, surface water
-	ncol_OUT[eSW_Interception] = NVEGTYPES + 2; // NVEGTYPES plus totals, litter
-	ncol_OUT[eSW_LyrDrain] = tLayers - 1;
-	ncol_OUT[eSW_HydRed] = tLayers * (NVEGTYPES + 1); // NVEGTYPES plus totals
-	ncol_OUT[eSW_ET] = 0;
-	ncol_OUT[eSW_AET] = 6;
-	ncol_OUT[eSW_PET] = 5;
-	ncol_OUT[eSW_WetDays] = tLayers;
-	ncol_OUT[eSW_SnowPack] = 2;
-	ncol_OUT[eSW_DeepSWC] = 1;
-	ncol_OUT[eSW_SoilTemp] = (tLayers * 3); // 3 for three new column names for each layer
-    ncol_OUT[eSW_Frozen] = tLayers;
-	ncol_OUT[eSW_AllVeg] = 0;
-	ncol_OUT[eSW_Estab] = count;
-	ncol_OUT[eSW_CO2Effects] = 2 * NVEGTYPES;
-	ncol_OUT[eSW_Biomass] = NVEGTYPES + 1 +  // fCover for NVEGTYPES plus bare-ground
-		NVEGTYPES + 2 +  // biomass for NVEGTYPES plus totals and litter
-		NVEGTYPES + 1 +  // biolive for NVEGTYPES plus totals
-		1; // LAI
+    // init
+    ForEachOutKey(key) {
+        for (ivar = 0; ivar < SW_OUTNMAXVARS; ivar++) {
+            nsl_OUT[key][ivar] = 0;
+            npft_OUT[key][ivar] = 0;
+        }
+    }
 
+    nsl_OUT[eSW_VWCBulk][0] = tLayers;
+
+    nsl_OUT[eSW_VWCMatric][0] = tLayers;
+
+    nsl_OUT[eSW_SWCBulk][0] = tLayers;
+
+    nsl_OUT[eSW_SWABulk][0] = tLayers;
+
+    nsl_OUT[eSW_SWAMatric][0] = tLayers;
+
+    nsl_OUT[eSW_SWAMatric][0] = tLayers;
+
+    nsl_OUT[eSW_SWA][0] = tLayers;
+    npft_OUT[eSW_SWA][0] = NVEGTYPES;
+
+    nsl_OUT[eSW_SWPMatric][0] = tLayers;
+
+    nsl_OUT[eSW_EvapSoil][0] = n_evap_lyrs;
+
+    nsl_OUT[eSW_LyrDrain][0] = tLayers - 1;
+
+    nsl_OUT[eSW_WetDays][0] = tLayers;
+
+    nsl_OUT[eSW_SoilTemp][0] = tLayers;
+    nsl_OUT[eSW_SoilTemp][1] = tLayers;
+    nsl_OUT[eSW_SoilTemp][2] = tLayers;
+
+    nsl_OUT[eSW_Frozen][0] = tLayers;
+
+    npft_OUT[eSW_CO2Effects][0] = NVEGTYPES;
+    npft_OUT[eSW_CO2Effects][1] = NVEGTYPES;
+
+
+    // OutKeys that combine variables of mixed-dimensions
+    nsl_OUT[eSW_Transp][0] = tLayers; // 0: TRANSP__transp_total
+    nsl_OUT[eSW_Transp][1] = tLayers; // 1: TRANSP__transp
+    npft_OUT[eSW_Transp][1] = NVEGTYPES;
+
+    npft_OUT[eSW_EvapSurface][1] = NVEGTYPES; // 1: EVAPSURFACE__evap_veg
+
+    npft_OUT[eSW_Interception][1] = NVEGTYPES; // 1: INTERCEPTION__int_veg
+
+    nsl_OUT[eSW_HydRed][0] = tLayers; // 0: HYDRED__hydred_total
+    nsl_OUT[eSW_HydRed][1] = tLayers; // 1: HYDRED__hydred
+    npft_OUT[eSW_HydRed][1] = NVEGTYPES;
+
+    npft_OUT[eSW_Biomass][1] = NVEGTYPES; // 1: BIOMASS__veg.cov.fCover
+    npft_OUT[eSW_Biomass][3] = NVEGTYPES; // 3: BIOMASS__veg.biomass_inveg
+    npft_OUT[eSW_Biomass][6] = NVEGTYPES; // 6: BIOMASS__veg.biolive_inveg
+
+
+    //--- Sum up number of output combinations across variables - soil layers - vegtypes ------
+    ForEachOutKey(key) {
+        ncol_OUT[key] = 0;
+
+        for (ivar = 0; ivar < nvar_OUT[key]; ivar++) {
+            tmp = 1; // variable has dimension T
+            if (nsl_OUT[key][ivar] > 0) {
+                tmp = nsl_OUT[key][ivar]; // variable has dimension TZ
+                if (npft_OUT[key][ivar] > 0) {
+                    tmp *= npft_OUT[key][ivar]; // variable has dimension TZV
+                }
+            } else if (npft_OUT[key][ivar] > 0) {
+                tmp = npft_OUT[key][ivar]; // variable has dimension TV
+            }
+
+            ncol_OUT[key] += tmp;
+        }
+    }
 }
+
 
 /** @brief Set column/variable names
 

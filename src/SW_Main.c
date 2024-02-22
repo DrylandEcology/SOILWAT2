@@ -133,12 +133,17 @@ int main(int argc, char **argv) {
         goto finishProgram;
     }
 
-  // initialize output
-	SW_OUT_set_ncol(sw_template.Site.n_layers, sw_template.Site.n_evap_lyrs,
-                    sw_template.VegEstab.count, sw_template.GenOutput.ncol_OUT);
-	SW_OUT_set_colnames(sw_template.Site.n_layers, sw_template.VegEstab.parms,
-						sw_template.GenOutput.ncol_OUT, sw_template.GenOutput.colnames_OUT,
-						&LogInfo);
+    // initialize output
+    SW_OUT_set_ncol(
+        sw_template.Site.n_layers,
+        sw_template.Site.n_evap_lyrs,
+        sw_template.VegEstab.count,
+        sw_template.GenOutput.ncol_OUT,
+        sw_template.GenOutput.nvar_OUT,
+        sw_template.GenOutput.nsl_OUT,
+        sw_template.GenOutput.npft_OUT
+    );
+
     if(LogInfo.stopRun) {
         goto finishProgram;
     }

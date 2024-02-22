@@ -1011,8 +1011,12 @@ typedef struct {
 	/** names of output columns for each output key; number is an expensive guess */
 	char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS];
 
-	/** number of output columns for each output key */
-	IntUS ncol_OUT[SW_OUTNKEYS];
+	/** number of outputs */
+	IntUS ncol_OUT[SW_OUTNKEYS]; /*< number of output combinations across variables - soil layer - vegtype */
+	IntUS nvar_OUT[SW_OUTNKEYS]; /*< number of output variables */
+	IntUS nsl_OUT[SW_OUTNKEYS][SW_OUTNMAXVARS]; /*< number of output soil layers */
+	IntUS npft_OUT[SW_OUTNKEYS][SW_OUTNMAXVARS]; /*< number of output plant functional types (vegtype) */
+
 
 	Bool print_IterationSummary;
 	Bool print_SW_Output;
@@ -1026,8 +1030,8 @@ typedef struct {
 	*/
 	RealD *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
 
-	size_t nrow_OUT[SW_OUTNPERIODS];
-	size_t irow_OUT[SW_OUTNPERIODS];
+	size_t nrow_OUT[SW_OUTNPERIODS]; /*< number of output time steps */
+	size_t irow_OUT[SW_OUTNPERIODS]; /*< current output time step index */
 	#endif
 
 	#ifdef STEPWAT
