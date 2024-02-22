@@ -3161,7 +3161,7 @@ void SW_GENOUT_deepCopy(SW_GEN_OUT* dest, SW_GEN_OUT* source, SW_OUTPUT* SW_Outp
     /* allocate and copy colnames_OUT */
     ForEachOutKey(key) {
         for (icol = 0; icol < 5 * NVEGTYPES + MAX_LAYERS; icol++) {
-            if (!isnull(dest->colnames_OUT[key][icol])) {
+            if (!isnull(source->colnames_OUT[key][icol])) {
 
                 dest->colnames_OUT[key][icol] = Str_Dup(
                     source->colnames_OUT[key][icol],
