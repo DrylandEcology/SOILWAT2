@@ -124,6 +124,7 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN* SW_Domain) {
 		RandSeed(rng_seed, 1u, &SW_Domain->SW_SpinUp.spinup_rng);
 	#else
 		(void) rng_seed; // Silence compiler flag `-Wunused-parameter`
+		(void) SW_Domain;
 	#endif
 }
 
