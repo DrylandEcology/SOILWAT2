@@ -1992,7 +1992,7 @@ static void create_output_dimVar(char* name, int size, int ncFileID,
         int* dimID, double lyrDepths[], double* startTime,
         int baseCalendarYear, int startYr, OutPeriod pd, LOG_INFO* LogInfo) {
 
-    char* dimNames[3] = {"vertical", "time", "pft"};
+    char* dimNames[3] = {(char *)"vertical", (char *)"time", (char *)"pft"};
     const int timeIndex = 1, pftIndex = 2, timeUnitIndex = 2;
     int dimNum;
     int varID, index;

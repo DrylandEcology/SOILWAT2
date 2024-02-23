@@ -1044,8 +1044,7 @@ Bool has_OutPeriod_inUse2(OutPeriod pd, OutKey k, SW_GEN_OUT *GenOutput)
 	{
 		for (i = 0; i < GenOutput->used_OUTNPERIODS; i++)
 		{
-			has_timeStep2 = (Bool) has_timeStep2 ||
-									GenOutput->timeSteps_SXW[k][i] == pd;
+			has_timeStep2 = (Bool) (has_timeStep2 || GenOutput->timeSteps_SXW[k][i] == pd);
 		}
 	}
 
@@ -1223,6 +1222,7 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 		ForEachOutPeriod(p)
 		{
 			GenOutput->timeSteps[k][p] = eSW_NoTime;
+
 			#ifdef STEPWAT
 			GenOutput->timeSteps_SXW[k][p] = eSW_NoTime;
 			#endif
@@ -1692,12 +1692,15 @@ void SW_OUT_deconstruct(Bool full_reset, SW_ALL *sw)
         #endif
 	}
 
-	#if defined(SW_OUTARRAY)
-    OutPeriod pd;
+    #if defined(SW_OUTARRAY)
+    if (full_reset) {
+      SW_OUT_deconstruct_outarray(&sw->GenOutput);
+    }
+    #endif
 
-	if (full_reset) {
-		SW_OUT_deconstruct_outarray(&sw->GenOutput);
-	}
+
+    #if defined(SWNETCDF)
+    OutPeriod pd;
 
     ForEachOutKey(k) {
         ForEachOutPeriod(pd) {
@@ -1720,8 +1723,9 @@ void SW_OUT_deconstruct(Bool full_reset, SW_ALL *sw)
             }
         }
     }
-	#endif
+    #endif
 }
+
 
 /** Specify output dimensions
 
@@ -2886,7 +2890,7 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 			use_help_txt = use_help;
 			use_help_SXW = (Bool) (sw->GenOutput.timeSteps_SXW[k][i] != eSW_NoTime &&
 								   writeit[sw->GenOutput.timeSteps_SXW[k][i]]);
-			use_help = (Bool) use_help_txt || use_help_SXW;
+			use_help = (Bool) (use_help_txt || use_help_SXW);
 			#endif
 
 			if (!use_help) {
