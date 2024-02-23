@@ -1034,6 +1034,10 @@ typedef struct {
 	size_t irow_OUT[SW_OUTNPERIODS]; /*< current output time step index */
 	#endif
 
+	#if defined(SWNETCDF)
+	size_t iOUToffset[SW_OUTNKEYS][SW_OUTNPERIODS][SW_OUTNMAXVARS]; /*< offset positions of output variables for indexing p_OUT */
+	#endif
+
 	#ifdef STEPWAT
 	RealD *p_OUTsd[SW_OUTNKEYS][SW_OUTNPERIODS];
 

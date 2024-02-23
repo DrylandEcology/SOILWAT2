@@ -1663,7 +1663,8 @@ void SW_OUT_deconstruct(Bool full_reset, SW_ALL *sw)
 
         #if defined(SWNETCDF)
         if(!isnull(sw->Output[k].outputVarInfo)) {
-            for(int varNum = 0; varNum < numVarsPerKey[k]; varNum++) {
+
+            for(int varNum = 0; varNum < sw->GenOutput.nvar_OUT[k]; varNum++) {
 
                 if(!isnull(sw->Output[k].outputVarInfo[varNum])) {
 
@@ -2275,6 +2276,53 @@ void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms,
 }
 
 
+/** Setup output information/description
+
+    @param[in] tLayers Number of soil layers
+    @param[in] n_evap_lyrs Number of soil layers with evaporation
+    @param[in] SW_VegEstab Struct for vegetation establishment
+    @param[out] SW_GenOutput Holds general variables that deal with output
+    @param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_OUT_setup_output(
+    int tLayers,
+    int n_evap_lyrs,
+    SW_VEGESTAB* SW_VegEstab,
+    SW_GEN_OUT* SW_GenOutput,
+    LOG_INFO* LogInfo
+) {
+    SW_OUT_set_ncol(
+        tLayers,
+        n_evap_lyrs,
+        SW_VegEstab->count,
+        SW_GenOutput->ncol_OUT,
+        SW_GenOutput->nvar_OUT,
+        SW_GenOutput->nsl_OUT,
+        SW_GenOutput->npft_OUT
+    );
+
+    #if defined(SWNETCDF)
+    SW_OUT_calc_iOUToffset(
+        SW_GenOutput->nrow_OUT,
+        SW_GenOutput->nvar_OUT,
+        SW_GenOutput->nsl_OUT,
+        SW_GenOutput->npft_OUT,
+        SW_GenOutput->iOUToffset
+    );
+    (void) LogInfo;
+
+    #else
+    SW_OUT_set_colnames(
+        tLayers,
+        SW_VegEstab->parms,
+        SW_GenOutput->ncol_OUT,
+        SW_GenOutput->colnames_OUT,
+        LogInfo
+    );
+    #endif // !SWNETCDF
+}
+
+
 void SW_OUT_new_year(TimeInt firstdoy, TimeInt lastdoy,
 					 SW_OUTPUT* SW_Output)
 {
@@ -2607,11 +2655,6 @@ void SW_OUT_read(SW_ALL* sw, char *InFiles[],
 	SW_OUT_set_nrow(&sw->Model, sw->GenOutput.use_OutPeriod,
 					sw->GenOutput.nrow_OUT);
 	#endif
-
-    #if defined(SWNETCDF)
-    SW_NC_read_out_vars(sw->Output, InFiles, sw->VegEstab.parms, LogInfo);
-    #endif
-
 }
 
 
@@ -3013,9 +3056,8 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
  *  temporal/spatial information for a set of simulation runs
  * @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
  * 	basic output information for all output keys
- * @param[in] n_layers Number of layers of soil within the simulation run
  * @param[in] GenOutput Holds general variables that deal with output
- * @param[in] n_evap_lyrs Number of layers in which evap is possible
+ * @param[in] n_layers Number of layers of soil within the simulation run
  * @param[in] startYr First calendar year
  * @param[in] endYr Last calendar year
  * @param[in] lyrDepths Array of soil layer depths
@@ -3028,10 +3070,9 @@ void SW_OUT_create_files(
     SW_FILE_STATUS* SW_FileStatus,
     SW_DOMAIN* SW_Domain,
     SW_OUTPUT* SW_Output,
-    LyrIndex n_layers,
     SW_GEN_OUT* GenOutput,
+    LyrIndex n_layers,
 
-    LyrIndex n_evap_lyrs,
     int startYr,
     int endYr,
     double lyrDepths[],
@@ -3049,27 +3090,37 @@ void SW_OUT_create_files(
     SW_OUT_create_textfiles(SW_FileStatus, SW_Output,
         n_layers, SW_Domain->PathInfo.InFiles, GenOutput, LogInfo);
 
-    (void) n_evap_lyrs;
     (void) startYr;
     (void) endYr;
     (void) lyrDepths;
 
     #elif defined(SWNETCDF)
-    SW_NC_create_output_files(SW_Domain->netCDFInfo.InFilesNC[vNCdom],
+    SW_NC_create_output_files(
+        SW_Domain->netCDFInfo.InFilesNC[vNCdom],
         SW_Domain->netCDFInfo.ncVarIDs[vNCdom],
-        SW_Domain, SW_Output,
-        GenOutput->timeSteps, GenOutput->used_OUTNPERIODS,
         SW_Domain->PathInfo.output_prefix,
-        SW_Domain->netCDFInfo.strideOutYears, startYr, endYr, n_layers, n_evap_lyrs,
-        &SW_FileStatus->numOutFiles, lyrDepths, SW_Domain->netCDFInfo.baseCalendarYear,
-        SW_FileStatus->ncOutFiles, LogInfo);
+        SW_Domain,
+        SW_Output,
+        GenOutput->timeSteps,
+        GenOutput->used_OUTNPERIODS,
+        GenOutput->nvar_OUT,
+        GenOutput->nsl_OUT,
+        GenOutput->npft_OUT,
+        lyrDepths,
+        SW_Domain->netCDFInfo.strideOutYears,
+        startYr, endYr,
+        SW_Domain->netCDFInfo.baseCalendarYear,
+        &SW_FileStatus->numOutFiles,
+        SW_FileStatus->ncOutFiles,
+        LogInfo);
+
+    (void) n_layers;
 
     #else
     (void) SW_FileStatus;
     (void) SW_Domain;
     (void) SW_Output;
     (void) n_layers;
-    (void) n_evap_lyrs;
     (void) startYr;
     (void) endYr;
     (void) lyrDepths;
@@ -3193,23 +3244,23 @@ void SW_GENOUT_deepCopy(SW_GEN_OUT* dest, SW_GEN_OUT* source, SW_OUTPUT* SW_Outp
  * @param[out] dest_files Destination instance of netCDF files (SW_FILE_STATUS)
  * @param[in] source_files Source instance of netCDF files (SW_FILE_STATUS)
  * @param[in] useOutPeriods Specify which output periods were requested to output
+ * @param[in] nvar_OUT Number of output variables (array of length SW_OUTNPERIODS).
  * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_OUT_deepCopy(SW_OUTPUT* dest_out, SW_OUTPUT* source_out,
                      SW_FILE_STATUS* dest_files, SW_FILE_STATUS* source_files,
-                     Bool useOutPeriods[], LOG_INFO* LogInfo) {
+                     Bool useOutPeriods[], IntUS nvar_OUT[], LOG_INFO* LogInfo) {
 
     IntUS key;
     OutPeriod pd;
     int varNum, attNum, fileNum;
-    int numVars = 0, numFiles = source_files->numOutFiles;
+    int numFiles = source_files->numOutFiles;
     char** destFile = NULL, *srcFile = NULL;
 
     ForEachOutKey(key) {
         memcpy(&dest_out[key], &source_out[key], sizeof(SW_OUTPUT));
-        numVars = numVarsPerKey[key];
 
-        if(numVars > 0 && source_out[key].use) {
+        if(nvar_OUT[key] > 0 && source_out[key].use) {
             ForEachOutPeriod(pd) {
                 if(useOutPeriods[pd]) {
                     SW_NC_alloc_files(&dest_files->ncOutFiles[key][pd],
@@ -3232,27 +3283,32 @@ void SW_OUT_deepCopy(SW_OUTPUT* dest_out, SW_OUTPUT* source_out,
                 }
             }
 
-            SW_NC_init_outvars(&dest_out[key].outputVarInfo,
-                                        (OutKey)key, LogInfo);
+            SW_NC_alloc_outvars(&dest_out[key].outputVarInfo,
+                                        nvar_OUT[key], LogInfo);
             if(LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
 
-            SW_NC_init_outReq(&dest_out[key].reqOutputVars, (OutKey)key, LogInfo);
+            SW_NC_alloc_outReq(&dest_out[key].reqOutputVars, nvar_OUT[key], LogInfo);
             if(LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
 
-            for(varNum = 0; varNum < numVars; varNum++) {
-                dest_out[key].reqOutputVars[varNum] =
-                                        source_out[key].reqOutputVars[varNum];
 
-                if(dest_out[key].reqOutputVars[varNum]) {
-                    for(attNum = 0; attNum < MAX_NATTS; attNum++) {
-                        dest_out[key].outputVarInfo[varNum][attNum] =
-                            Str_Dup(source_out[key].outputVarInfo[varNum][attNum], LogInfo);
-                        if(LogInfo->stopRun) {
-                            return; // Exit function prematurely due to error
+            if (!isnull(source_out[key].reqOutputVars)) {
+                for(varNum = 0; varNum < nvar_OUT[key]; varNum++) {
+                    dest_out[key].reqOutputVars[varNum] =
+                                            source_out[key].reqOutputVars[varNum];
+
+                    if(dest_out[key].reqOutputVars[varNum]) {
+                        for(attNum = 0; attNum < MAX_NATTS; attNum++) {
+                            if (!isnull(source_out[key].outputVarInfo[varNum][attNum])) {
+                                dest_out[key].outputVarInfo[varNum][attNum] =
+                                    Str_Dup(source_out[key].outputVarInfo[varNum][attNum], LogInfo);
+                                if(LogInfo->stopRun) {
+                                    return; // Exit function prematurely due to error
+                                }
+                            }
                         }
                     }
                 }

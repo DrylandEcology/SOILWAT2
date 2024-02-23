@@ -262,3 +262,59 @@ void SW_OUT_construct_outarray(SW_GEN_OUT *GenOutput, SW_OUTPUT* SW_Output,
         }
     }
 }
+
+
+
+/** Calculate offset positions of output variables for indexing p_OUT
+
+    @param[in] nrow_OUT Number of output time steps
+        (array of length SW_OUTNPERIODS).
+    @param[in] nvar_OUT Number of output variables
+        (array of length SW_OUTNPERIODS).
+    @param[in] nsl_OUT Number of output soil layer per variable
+        (array of size SW_OUTNKEYS by SW_OUTNMAXVARS).
+    @param[in] npft_OUT Number of output vegtypes per variable
+        (array of size SW_OUTNKEYS by SW_OUTNMAXVARS).
+    @param[out] iOUToffset Offset positions of output variables for indexing p_OUT
+        (array of size SW_OUTNKEYS by SW_OUTNPERIODS by SW_OUTNMAXVARS).
+*/
+void SW_OUT_calc_iOUToffset(
+    size_t nrow_OUT[],
+    IntUS nvar_OUT[],
+    IntUS nsl_OUT[][SW_OUTNMAXVARS],
+    IntUS npft_OUT[][SW_OUTNMAXVARS],
+    size_t iOUToffset[][SW_OUTNPERIODS][SW_OUTNMAXVARS]
+) {
+    int key, ivar, iprev, pd;
+    size_t tmp, tmp_nsl, tmp_npft, tmp_header;
+
+    ForEachOutPeriod(pd) {
+        tmp_header = nrow_OUT[pd] * ncol_TimeOUT[pd];
+
+        ForEachOutKey(key) {
+            iOUToffset[key][pd][0] = tmp_header;
+
+            for (ivar = 1; ivar < nvar_OUT[key]; ivar++) {
+                iprev = ivar - 1;
+
+                tmp_nsl = (nsl_OUT[key][iprev] > 0) ? nsl_OUT[key][iprev] : 1;
+                tmp_npft = (npft_OUT[key][iprev] > 0) ? npft_OUT[key][iprev] : 1;
+
+                tmp = iOUTnc(
+                    nrow_OUT[pd] - 1,
+                    tmp_nsl - 1,
+                    tmp_npft - 1,
+                    tmp_nsl,
+                    tmp_npft
+                );
+
+                iOUToffset[key][pd][ivar] = iOUToffset[key][pd][iprev] + 1 + tmp;
+            }
+
+            for (ivar = nvar_OUT[key]; ivar < SW_OUTNMAXVARS; ivar++) {
+                iOUToffset[key][pd][ivar] = 0;
+            }
+        }
+    }
+}
+

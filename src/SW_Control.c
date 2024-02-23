@@ -173,8 +173,10 @@ void SW_ALL_deepCopy(SW_ALL* source, SW_ALL* dest, LOG_INFO* LogInfo)
     }
 
     #if defined(SWNETCDF)
-    SW_OUT_deepCopy(dest->Output, source->Output, &dest->FileStatus,
-                    &source->FileStatus, source->GenOutput.use_OutPeriod,
+    SW_OUT_deepCopy(dest->Output, source->Output,
+                    &dest->FileStatus, &source->FileStatus,
+                    source->GenOutput.use_OutPeriod,
+                    source->GenOutput.nvar_OUT,
                     LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -917,7 +919,6 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSu
 
     #if defined(SWNETCDF)
     SW_NC_write_output(local_sw.Output, &local_sw.GenOutput,
-        local_sw.Site.n_layers, local_sw.Site.n_evap_lyrs,
         local_sw.FileStatus.numOutFiles, local_sw.FileStatus.ncOutFiles,
         ncSuid, LogInfo);
     #endif

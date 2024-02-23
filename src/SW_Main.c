@@ -134,29 +134,40 @@ int main(int argc, char **argv) {
     }
 
     // initialize output
-    SW_OUT_set_ncol(
+    SW_OUT_setup_output(
         sw_template.Site.n_layers,
         sw_template.Site.n_evap_lyrs,
-        sw_template.VegEstab.count,
-        sw_template.GenOutput.ncol_OUT,
-        sw_template.GenOutput.nvar_OUT,
-        sw_template.GenOutput.nsl_OUT,
-        sw_template.GenOutput.npft_OUT
+        &sw_template.VegEstab,
+        &sw_template.GenOutput,
+        &LogInfo
     );
 
     if(LogInfo.stopRun) {
         goto finishProgram;
     }
+
+    #if defined(SWNETCDF)
+    SW_NC_read_out_vars(
+        sw_template.Output,
+        &sw_template.GenOutput,
+        SW_Domain.PathInfo.InFiles,
+        sw_template.VegEstab.parms,
+        &LogInfo
+    );
+    if(LogInfo.stopRun) {
+      goto finishProgram;
+    }
+    #endif // SWNETCDF
+
     SW_OUT_create_files(
         &sw_template.FileStatus,
         &SW_Domain,
         sw_template.Output,
-        nMaxSoilLayers,
         &sw_template.GenOutput,
+        nMaxSoilLayers,
 
-        sw_template.Site.n_evap_lyrs,
-        sw_template.Model.startyr,
-        sw_template.Model.endyr,
+        SW_Domain.startyr,
+        SW_Domain.endyr,
         sw_template.Site.depths,
 
         &LogInfo

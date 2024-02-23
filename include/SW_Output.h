@@ -141,6 +141,13 @@ void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs, int nTaxaEstabl,
 void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms,
 	IntUS ncol_OUT[], char *colnames_OUT[][5 * NVEGTYPES + MAX_LAYERS],
 	LOG_INFO* LogInfo);
+void SW_OUT_setup_output(
+    int tLayers,
+    int n_evap_lyrs,
+    SW_VEGESTAB* SW_VegEstab,
+    SW_GEN_OUT* SW_GenOutput,
+    LOG_INFO* LogInfo
+);
 void SW_OUT_new_year(TimeInt firstdoy, TimeInt lastdoy,
 					 SW_OUTPUT* SW_Output);
 int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
@@ -165,10 +172,9 @@ void SW_OUT_create_files(
     SW_FILE_STATUS* SW_FileStatus,
     SW_DOMAIN* SW_Domain,
     SW_OUTPUT* SW_Output,
-    LyrIndex n_layers,
     SW_GEN_OUT* GenOutput,
+    LyrIndex n_layers,
 
-    LyrIndex n_evap_lyrs,
     int startYr,
     int endYr,
     double lyrDepths[],
@@ -197,7 +203,7 @@ void SW_GENOUT_deepCopy(SW_GEN_OUT* dest, SW_GEN_OUT* source, SW_OUTPUT* SW_Outp
 #if defined(SWNETCDF)
 void SW_OUT_deepCopy(SW_OUTPUT* dest_out, SW_OUTPUT* source_out,
                      SW_FILE_STATUS* dest_files, SW_FILE_STATUS* source_files,
-                     Bool useOutPeriods[], LOG_INFO* LogInfo);
+                     Bool useOutPeriods[], IntUS nvar_OUT[], LOG_INFO* LogInfo);
 #endif
 
 

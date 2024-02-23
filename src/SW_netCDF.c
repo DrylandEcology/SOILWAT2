@@ -30,45 +30,8 @@
 
 const int times[] = {MAX_DAYS - 1, MAX_WEEKS, MAX_MONTHS, 1};
 
-// Matches order of the defines within `SW_Output.h`
-// Index `eSW_Estab` is modified from `SW_VES_read2()`,
-// specifying how many output variable there will be depending on the run
-int numVarsPerKey[] = {
-    NWETHR_VARS,
-    NTEMP_VARS,
-    NPRECIP_VARS,
-    NSOILINF_VARS,
-    NRUNOFF_VARS,
-    NALLH2O_VARS,
-    NVWCBULK_VARS,
-    NVWCMATRIC_VARS,
-    NSWCBULK_VARS,
-    NSWABULK_VARS,
-    NSWAMATRIC_VARS,
-    NSWA_VARS,
-    NSWPMATRIC_VARS,
-    NSURFACEW_VARS,
-    NTRANSP_VARS,
-    NEVAPSOIL_VARS,
-    NEVAPSURFACE,
-    NINTERCEPTION_VARS,
-    NLYRDRAIN_VARS,
-    NHYDRED_VARS,
-    NET_VARS,
-    NAET_VARS,
-    NPET_VARS,
-    NWETDAY_VARS,
-    NSNOWPACK_VARS,
-    NDEEPSWC_VARS,
-    NSOILTEMP_VARS,
-    NFROZEN_VARS,
-    NALLVEG_VARS,
-    NESTAB_VARS,
-    NCO2EFFECTS_VARS,
-    NBIOMASS_VARS
-};
 
-static const char* possKeys[][8] = {
+static const char* possKeys[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
     {NULL}, // WTHR
     {"TEMP__temp_max", "TEMP__temp_min", "TEMP__temp_avg", "TEMP__surfaceMax",
     "TEMP__surfaceMin", "TEMP__surfaceAvg"},
@@ -371,7 +334,7 @@ static void nc_read_atts(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo,
  * @brief Convert a read-in key (<OUTKEY>__<SW2 Variable Name>) into
  *  it's respective numeric values
 */
-static void get_2d_output_key(char* varKey, OutKey* outKey, int* outVarNum) {
+static void get_2d_output_key(char* varKey, OutKey* outKey, int* outVarNum, IntUS nvar_OUT[]) {
 
     int k, varNum;
     const int establSize = 6;
@@ -384,7 +347,7 @@ static void get_2d_output_key(char* varKey, OutKey* outKey, int* outVarNum) {
     } else {
         ForEachOutKey(k) {
             if(k != eSW_Estab) {
-                for(varNum = 0; varNum < numVarsPerKey[k]; varNum++) {
+                for(varNum = 0; varNum < nvar_OUT[k]; varNum++) {
                     if(strcmp(possKeys[k][varNum], varKey) == 0) {
 
                         *outKey = (OutKey) k;
@@ -988,18 +951,19 @@ static void dealloc_netCDF_domain_vars(double **valsY, double **valsX,
 }
 
 /**
- * @brief Wrapper function to initialize output request variables
+ * @brief Wrapper function to allocate output request variables
  *  and output variable information
  *
  * @param[out] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
  *  basic output information for all output keys
+ * @param[in] GenOutput Holds general variables that deal with output
  * @param[out] LogInfo Holds information on warnings and errors
 */
-static void init_output_var_info(SW_OUTPUT* SW_Output, LOG_INFO* LogInfo) {
+static void alloc_output_var_info(SW_OUTPUT* SW_Output, SW_GEN_OUT *GenOutput, LOG_INFO* LogInfo) {
     int key;
 
     ForEachOutKey(key) {
-        SW_NC_init_outReq(&SW_Output[key].reqOutputVars, (OutKey)key, LogInfo);
+        SW_NC_alloc_outReq(&SW_Output[key].reqOutputVars, GenOutput->nvar_OUT[key], LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -1773,50 +1737,7 @@ static double calc_timeSize(int rangeStart, int rangeEnd, int baseTime,
     return (double) (baseTime * (rangeEnd - rangeStart)) + numLeapYears;
 }
 
-/**
- * @brief Gather the output dimension sizes when writing out values to
- *  the output netCDF
- *
- * @param[in] dimStr String holding the dimensions for a specific
- *  variable
- * @param[in] originTimeSize Original "time" dimension size (that will
- *  not be overwritten in the function)
- * @param[in] originVertSize Original "vertical" dimension size (that will
- *  not be overwritten in the function)
- * @param[in] originPFTSize Original "pft" dimension size (that will
- *  not be overwritten in the function)
- * @param[out] timeSize Output write size for dimension "time"
- * @param[out] vertSize Output write size for dimension "vertical"
- * @param[out] pftSize Output write size for dimension "pft"
- * @param[out] LogInfo Holds information dealing with logfile output
-*/
-static void determine_out_dim_sizes(char* dimStr, int originTimeSize,
-        int originVertSize, int originPFTSize, int* timeSize, int* vertSize,
-        int* pftSize, LOG_INFO* LogInfo) {
 
-    char* wkgPtr = dimStr;
-
-    *timeSize = *vertSize = *pftSize = 0;
-
-    while(*wkgPtr != '\0') {
-        switch(*wkgPtr) {
-            case 'Z':
-                *vertSize = originVertSize;
-                break;
-            case 'T':
-                *timeSize = originTimeSize;
-                break;
-            case 'V':
-                *pftSize = originPFTSize;
-                break;
-            default:
-                LogError(LogInfo, LOGWARN, "Detected unknown dimension: %s.",
-                                           *wkgPtr);
-                break;
-        }
-        wkgPtr++;
-    }
-}
 
 /**
  * @brief Helper function to `fill_dimVar()`; fully creates/fills
@@ -1852,13 +1773,13 @@ static void create_time_vars(int ncFileID, int dimIDs[], int size,
     }
 
     dimVarVals = (double *)Mem_Malloc(size * sizeof(double),
-                        "create_full_var", LogInfo);
+                        "create_time_vars", LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
     bndsVals = (double *)Mem_Malloc(size * numBnds * sizeof(double),
-                        "create_full_var", LogInfo);
+                        "create_time_vars", LogInfo);
     if(LogInfo->stopRun) {
         free(dimVarVals);
         return; // Exit function prematurely due to error
@@ -1955,13 +1876,13 @@ static void create_vert_vars(int ncFileID, int dimIDs[], int size,
     }
 
     dimVarVals = (double *)Mem_Malloc(size * sizeof(double),
-                        "create_full_var", LogInfo);
+                        "create_vert_vars", LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
     bndVals = (double *)Mem_Malloc(size * numBnds * sizeof(double),
-                        "create_full_var", LogInfo);
+                        "create_vert_vars", LogInfo);
     if(LogInfo->stopRun) {
         free(dimVarVals);
         return; // Exit function prematurely due to error
@@ -2061,7 +1982,7 @@ static void fill_dimVar(int ncFileID, int dimIDs[], int size, int varID,
  *  dimension is in out of: "vertical" (0), "time" (1), and "pft" (2)
  * @param[in] lyrDepths Depths of soil layers (cm)
  * @param[in,out] startTime Start number of days when dealing with
- *  years between netCDF files
+ *  years between netCDF files (returns updated value)
  * @param[in] baseCalendarYear First year of the entire simulation
  * @param[in] startYr Start year of the simulation
  * @param[in] pd Current output netCDF period
@@ -2150,7 +2071,7 @@ static void create_output_dimVar(char* name, int size, int ncFileID,
  * @param[in] numAtts Number of attributes being sent in
  * @param[in] lyrDepths Depths of soil layers (cm)
  * @param[in,out] startTime Start number of days when dealing with
- *  years between netCDF files
+ *  years between netCDF files (returns updated value)
  * @param[in] baseCalendarYear First year of the entire simulation
  * @param[in] startYr Start year of the simulation
  * @param[in] pd Current output netCDF period
@@ -2222,37 +2143,6 @@ static void create_full_var(int* ncFileID, int newVarType,
     }
 }
 
-/**
- * @brief Determine if the current output key contains information
- *  within layers
- *
- * @param[in] key Specifies what output key is currently being allocated
- *  (i.e., temperature, precipitation, etc.)
- * @param[in] n_layers Total number of soil layers
- * @param[in] n_evap_lyrs Number of layers in which evap is possible
- *
- * @return Number of layers to write out to the netCDFs in question
-*/
-static int getNLayers(OutKey key, int n_layers, int n_evap_lyrs) {
-    int numLayers = 0;
-
-    if((key >= eSW_VWCBulk && key <= eSW_SWPMatric) ||
-        key == eSW_HydRed   ||
-        key == eSW_WetDays  || key == eSW_SoilTemp  ||
-        key == eSW_Frozen   || key == eSW_Biomass   ||
-        key == eSW_Transp) {
-
-        numLayers = n_layers;
-
-    } else if(key == eSW_LyrDrain) {
-        numLayers = n_layers - 1;
-
-    } else if(key == eSW_EvapSoil) {
-        numLayers = n_evap_lyrs;
-    }
-
-    return numLayers;
-}
 
 /**
  * @brief Concentrate the important output variable attributes
@@ -2323,22 +2213,31 @@ static int gather_var_attributes(char** varInfo, OutKey key, OutPeriod pd,
  * @param[in] key Specifies what output key is currently being allocated
  *  (i.e., temperature, precipitation, etc.)
  * @param[in] pd Current output netCDF period
+ * @param[in] nVar Number of variables available for current output key
+ * @param[in] nvar_OUT Number of output variables (array of length SW_OUTNPERIODS).
+ * @param[in] nsl Number of output soil layer per variable
+ *      (array of size SW_OUTNMAXVARS).
+ * @param[in] npft Number of output vegtypes per variable
+ *      (array of size SW_OUTNMAXVARS).
+ * @param[in] lyrDepths Depths of soil layers (cm)
  * @param[in] originTimeSize Original "time" dimension size (that will
  *  not be overwritten in the function)
- * @param[in] originVertSize Original "vertical" dimension size (that will
- *  not be overwritten in the function)
- * @param[in] lyrDepths Depths of soil layers (cm)
- * @param[in,out] startTime Start number of days when dealing with
- *  years between netCDF files
- * @param[in] baseCalendarYear First year of the entire simulation
  * @param[in] startYr Start year of the simulation
+ * @param[in] baseCalendarYear First year of the entire simulation
+ * @param[in,out] startTime Start number of days when dealing with
+ *  years between netCDF files (returns updated value)
  * @param[in] LogInfo Holds information on warnings and errors
 */
 static void create_output_file(SW_OUTPUT* SW_Output,
         const char* domFile, int domID, const char* newFileName,
-        OutKey key, OutPeriod pd, int originTimeSize, int originVertSize,
-        double lyrDepths[], double* startTime, int baseCalendarYear,
-        int startYr, LOG_INFO* LogInfo) {
+        OutKey key, OutPeriod pd,
+        int nVar,
+        IntUS nsl[],
+        IntUS npft[],
+        double lyrDepths[],
+        int originTimeSize, int startYr, int baseCalendarYear,
+        double* startTime,
+        LOG_INFO* LogInfo) {
 
     int index;
     char frequency[10];
@@ -2350,54 +2249,56 @@ static void create_output_file(SW_OUTPUT* SW_Output,
     OutSum sumType = SW_Output->sumtype;
 
     int numAtts = 0;
-    int numOutVars = numVarsPerKey[key];
-    int originNumVeg = NVEGTYPES;
-    int numVegTypesOut = 0, timeSize = 0, vertSize = 0;
     const int nameAtt = 0;
 
     int newFileID = -1; // Default to not created
     int cellMethAttInd = 0;
-    char* varName, *dimStr = NULL;
+    char* varName;
     char** varInfo;
 
     snprintf(frequency, 9, "%s", pd2longstr[pd]);
     Str_ToLower(frequency, frequency);
 
-    // Add the rest of the output variables for the current output file
-    for(index = 0; index < numOutVars; index++) {
+
+    // Create file
+    if(!FileExists(newFileName)) {
+        // Create a new output file
+        SW_NC_create_template(domFile, domID, newFileName,
+            &newFileID, swFALSE, frequency, LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+    }
+
+
+    // Add output variables
+    for(index = 0; index < nVar; index++) {
         if(SW_Output->reqOutputVars[index]) {
             varInfo = SW_Output->outputVarInfo[index];
             varName = SW_Output->outputVarInfo[index][VARNAME_INDEX];
-            dimStr = SW_Output->outputVarInfo[index][DIM_INDEX];
 
-            determine_out_dim_sizes(dimStr, originTimeSize, originVertSize,
-                originNumVeg, &timeSize, &vertSize, &numVegTypesOut, LogInfo);
             numAtts = gather_var_attributes(varInfo, key, pd, index, attVals,
                                             sumType, LogInfo);
             if(LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
 
-            if(!FileExists(newFileName)) {
-                if(pd > eSW_Day) {
-                    cellMethAttInd = (key == eSW_Temp || key == eSW_SoilTemp) ?
-                                                    numAtts - 2 : numAtts - 1;
-                }
-
-                // Create a new output file
-                SW_NC_create_template(domFile, domID, newFileName,
-                    &newFileID, swFALSE, frequency, LogInfo);
-            }
-
-            create_full_var(&newFileID, NC_DOUBLE, timeSize, vertSize, numVegTypesOut,
+            create_full_var(&newFileID, NC_DOUBLE,
+                            originTimeSize, nsl[index], npft[index],
                             varName, attNames, (const char**)attVals, numAtts,
                             lyrDepths, startTime, baseCalendarYear, startYr, pd,
                             LogInfo);
 
-
-            if(pd > eSW_Day && !isnull(attVals[cellMethAttInd])) {
-                free(attVals[cellMethAttInd]);
-                attVals[cellMethAttInd] = NULL;
+            if(pd > eSW_Day) {
+                if (newFileID > -1) {
+                    // new file was created
+                    cellMethAttInd = (key == eSW_Temp || key == eSW_SoilTemp) ?
+                                                    numAtts - 2 : numAtts - 1;
+                }
+                if (!isnull(attVals[cellMethAttInd])) {
+                    free(attVals[cellMethAttInd]);
+                    attVals[cellMethAttInd] = NULL;
+                }
             }
             if(key == eSW_Estab && !isnull(attVals[nameAtt])) {
                 free(attVals[nameAtt]);
@@ -2417,21 +2318,23 @@ static void create_output_file(SW_OUTPUT* SW_Output,
 
 
 /**
- * @brief Determine the write dimensions/sizes for the current
- *  output variable/period
+ * @brief Collect the write dimensions/sizes for the current output slice
  *
  * @param[in] ncFileID Output netCDF file ID
- * @param[out] dimSizes Array storing the output dimensions
- * @param[in] dimStr String holding the dimensions for a specific
- *  variable
- * @param[out] LogInfo Holds information on warnings and errors
+ * @param[in] timeSize Number of time steps in current output slice
+ * @param[in] nsl Number of soil layers
+ * @param[in] npft Number of plant functional types
+ * @param[out] count Array storing the output dimensions
 */
-static void get_vardim_write_counts(int ncFileID, int varID, size_t count[], LOG_INFO* LogInfo) {
-
+static void get_vardim_write_counts(
+    int ncFileID,
+    size_t timeSize,
+    IntUS nsl,
+    IntUS npft,
+    size_t count[]
+) {
     int dimIndex, ndimsp;
     int nSpaceDims = dimExists("site", ncFileID) ? 1 : 2;
-    int dimidsp[MAX_NUM_DIMS] = {0};
-
 
     /* Fill 1s into space dimensions (we write one site/xy-gridcell per run) */
     /* We assume here that the first dimension(s) are space */
@@ -2439,44 +2342,127 @@ static void get_vardim_write_counts(int ncFileID, int varID, size_t count[], LOG
         count[dimIndex] = 1;
     }
 
-    /* Query number of dimensions of variable */
-    if (nc_inq_varndims(ncFileID, varID, &ndimsp) != NC_NOERR) {
-        LogError(LogInfo, LOGERROR, "An error occurred when attempting "
-                                    "to retrieve the dimension number of %s.",
-                                    varID);
-        return; // Exit function prematurely due to error
+    /* Fill in time dimension */
+    if (timeSize > 0) {
+        count[dimIndex] = timeSize;
+        dimIndex++;
     }
 
-    if (ndimsp > MAX_NUM_DIMS) {
-        LogError(LogInfo, LOGERROR, "Variable %d has n = %d dimensions; "
-                                    "more than the maximum of %d.",
-                                    varID, ndimsp, MAX_NUM_DIMS);
-        return; // Exit function prematurely due to error
+    /* Fill in vertical (if present) */
+    if (nsl > 0) {
+        count[dimIndex] = nsl;
+        dimIndex++;
     }
 
-    /* Query dimension IDs associated with variable (skip space dimensions) */
-    if (nc_inq_vardimid(ncFileID, varID, dimidsp) != NC_NOERR) {
-        LogError(LogInfo, LOGERROR, "An error occurred when attempting "
-                                    "to retrieve the dimension IDs of %s.",
-                                    varID);
-        return; // Exit function prematurely due to error
-    }
-
-
-    /* Query size of other (non-space dimensions): we write all of them out */
-    for (dimIndex = nSpaceDims; dimIndex < ndimsp; dimIndex++) {
-        get_dimlen_from_dimid(ncFileID, dimidsp[dimIndex], &count[dimIndex], LogInfo);
-        if(LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
+    /* Fill in pft (if present) */
+    if (npft > 0) {
+        count[dimIndex] = npft;
+        dimIndex++;
     }
 
     /* Zero remaining unused slots */
+    ndimsp = dimIndex;
     for(dimIndex = ndimsp; dimIndex < MAX_NUM_DIMS; dimIndex++) {
         count[dimIndex] = 0;
     }
 }
 
+#if defined(SWDEBUG)
+/**
+ * @brief Check that count matches with existing variable in netCDF
+ *
+ * @param[in] fileName Name of output netCDF file
+ * @param[in] varName Name of output netCDF variable
+ * @param[in] ncFileID Output netCDF file ID
+ * @param[in] varID Output netCDF variable ID
+ * @param[in] count Array with established the output dimensions
+ * @param[out] LogInfo Holds information on warnings and errors
+*/
+static void check_counts_against_vardim(
+    const char *fileName,
+    const char *varName,
+    int ncFileID,
+    int varID,
+    size_t count[],
+    LOG_INFO* LogInfo
+) {
+
+    int dimIndex, ndimsp;
+    int nSpaceDims = dimExists("site", ncFileID) ? 1 : 2;
+    int dimidsp[MAX_NUM_DIMS] = {0};
+    char dimname[NC_MAX_NAME + 1];
+    size_t ccheck[MAX_NUM_DIMS] = {0};
+
+
+    /* Fill 1s into space dimensions (we write one site/xy-gridcell per run) */
+    /* We assume here that the first dimension(s) are space */
+    for (dimIndex = 0; dimIndex < nSpaceDims; dimIndex++) {
+        ccheck[dimIndex] = 1;
+    }
+
+    /* Query number of dimensions of variable */
+    if (nc_inq_varndims(ncFileID, varID, &ndimsp) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR,
+            "%s / variable = %s: "
+            "could not read number of dimensions.",
+            fileName, varName
+        );
+        return; // Exit function prematurely due to error
+    }
+
+    if (ndimsp > MAX_NUM_DIMS) {
+        LogError(LogInfo, LOGERROR,
+            "%s / variable = %s: "
+            "found n = %d dimensions (more than maximum of %d).",
+            fileName, varName, ndimsp, MAX_NUM_DIMS
+        );
+        return; // Exit function prematurely due to error
+    }
+
+    /* Query dimension IDs associated with variable (skip space dimensions) */
+    if (nc_inq_vardimid(ncFileID, varID, dimidsp) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR,
+            "%s / variable = %s: "
+            "could not read name of dimension identifiers.",
+            fileName, varName
+        );
+        return; // Exit function prematurely due to error
+    }
+
+
+    /* Query size and name of other (non-space) dimensions */
+    for (dimIndex = nSpaceDims; dimIndex < ndimsp; dimIndex++) {
+        get_dimlen_from_dimid(ncFileID, dimidsp[dimIndex], &ccheck[dimIndex], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+    }
+
+    /* Loop through dimensions and check that counts match */
+    for (dimIndex = 0; dimIndex < ndimsp; dimIndex++) {
+        if (count[dimIndex] != ccheck[dimIndex]) {
+
+            if (nc_inq_dimname(ncFileID, dimidsp[dimIndex], dimname) != NC_NOERR) {
+                LogError(LogInfo, LOGERROR,
+                    "%s / variable = %s: "
+                    "could not read name of dimension %d.",
+                    fileName, varName, dimidsp[dimIndex]
+                );
+                return; // Exit function prematurely due to error
+            }
+
+            LogError(LogInfo, LOGERROR,
+                "%s / variable = %s: "
+                "provided value (%d) does not match expected "
+                "size of dimension '%s' (%d).",
+                fileName, varName, dimname,
+                count[dimIndex], ccheck[dimIndex]
+            );
+            return; // Exit function prematurely due to error
+        }
+    }
+}
+#endif // SWDEBUG
 
 
 /* =================================================== */
@@ -2489,17 +2475,15 @@ static void get_vardim_write_counts(int ncFileID, int varID, size_t count[], LOG
  *
  * @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
  *  basic output information for all output keys
- * @param[in] SW_GenOut Holds general variables that deal with output
- * @param[in] n_layers Number of layers to write out
- * @param[in] n_evap_layers Number of layers in which evap is possible
+ * @param[in] GenOutput Holds general variables that deal with output
  * @param[in] numFilesPerKey Number of output netCDFs each output key will
  *  have (same amount for each key)
  * @param[in] ncOutFileNames A list of the generated output netCDF file names
  * @param[in] ncSuid Unique indentifier of the current suid being simulated
  * @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* SW_GenOut,
-        LyrIndex n_layers, int n_evap_layers, int numFilesPerKey,
+void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* GenOutput,
+        int numFilesPerKey,
         char** ncOutFileNames[][SW_OUTNPERIODS], size_t ncSuid[],
         LOG_INFO* LogInfo) {
 
@@ -2507,30 +2491,28 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* SW_GenOut,
     OutPeriod pd;
     RealD *p_OUTValPtr = NULL;
     int fileNum, currFileID = 0, varNum, varID = -1;
-    Bool hasVert, hasPFT;
 
     char* fileName, *varName;
     size_t count[MAX_NUM_DIMS] = {0};
     size_t start[MAX_NUM_DIMS] = {0};
     size_t pOUTIndex, startTime, timeSize = 0;
-    int vertSize;
+    int vertSize, pftSize;
 
     start[0] = ncSuid[0];
     start[1] = ncSuid[1];
 
+
     ForEachOutPeriod(pd) {
-        if(!SW_GenOut->use_OutPeriod[pd]) {
+        if(!GenOutput->use_OutPeriod[pd]) {
             continue; // Skip period iteration
         }
 
         ForEachOutKey(key) {
-            if(numVarsPerKey[key] == 0 || !SW_Output[key].use) {
+            if(GenOutput->nvar_OUT[key] == 0 || !SW_Output[key].use) {
                 continue; // Skip key iteration
             }
 
             startTime = 0; // keep track of time across time-sliced files per outkey
-            vertSize = getNLayers((OutKey)key, n_layers, n_evap_layers);
-
 
             for(fileNum = 0; fileNum < numFilesPerKey; fileNum++) {
                 fileName = ncOutFileNames[key][pd][fileNum];
@@ -2540,47 +2522,68 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* SW_GenOut,
                 }
 
                 if(nc_open(fileName, NC_WRITE, &currFileID) != NC_NOERR) {
-                    LogError(LogInfo, LOGWARN, "Could not open file %s, so "
-                                            "no information was written to it.",
+                    LogError(LogInfo, LOGERROR, "Could not open output file %s.",
                                             fileName);
-                    continue; // Skip key iteration
+                    return; // Exit function prematurely due to error
                 }
 
-                hasVert = dimExists("vertical", currFileID);
-                hasPFT = dimExists("pft", currFileID);
+                // Get size of the "time" dimension
+                get_dimlen_from_dimname(currFileID, "time", &timeSize, LogInfo);
+                if(LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
 
 
-                for(varNum = 0; varNum < numVarsPerKey[key]; varNum++) {
+                for(varNum = 0; varNum < GenOutput->nvar_OUT[key]; varNum++) {
                     if(!SW_Output[key].reqOutputVars[varNum]) {
                         continue; // Skip variable iteration
                     }
 
                     varName = SW_Output[key].outputVarInfo[varNum][VARNAME_INDEX];
+
                     // Locate correct slice in netCDF to write to
                     get_var_identifier(currFileID, varName, &varID, LogInfo);
                     if(LogInfo->stopRun) {
                         return; // Exit function prematurely due to error
                     }
 
-                    get_vardim_write_counts(currFileID, varID, count, LogInfo);
+                    get_vardim_write_counts(
+                        currFileID,
+                        timeSize,
+                        GenOutput->nsl_OUT[key][varNum],
+                        GenOutput->npft_OUT[key][varNum],
+                        count
+                    );
+
+                    #if defined(SWDEBUG)
+                    check_counts_against_vardim(
+                        fileName, varName,
+                        currFileID, varID,
+                        count,
+                        LogInfo
+                    );
                     if(LogInfo->stopRun) {
                         return; // Exit function prematurely due to error
                     }
+                    #endif // SWDEBUG
 
-                    // Point to contiguous memory where values change fastest
-                    // for vegtypes, then soil layers, then time, then variables
-                    pOUTIndex = iOUTnc(
-                        varNum,
-                        startTime,
-                        0, // first soil layer
-                        0, // first plant functional type
-                        SW_GenOut->nrow_OUT[pd], // total number of time steps
-                        hasVert ? vertSize : 1, // 1 used if no soil layers
-                        hasPFT ? NVEGTYPES : 1, // 1 used if no vegtypes
-                        ncol_TimeOUT[pd]
-                    );
 
-                    p_OUTValPtr = &SW_GenOut->p_OUT[key][pd][pOUTIndex];
+                    /* Point to contiguous memory where values change fastest
+                       for vegtypes, then soil layers, then time, then variables
+                    */
+                    pOUTIndex = GenOutput->iOUToffset[key][pd][varNum];
+                    if (startTime > 0) {
+                        // 1 if no soil layers
+                        vertSize = (GenOutput->nsl_OUT[key][varNum] > 0) ?
+                            GenOutput->nsl_OUT[key][varNum] : 1;
+                        // 1 if no vegtypes
+                        pftSize = (GenOutput->npft_OUT[key][varNum] > 0) ?
+                            GenOutput->npft_OUT[key][varNum] : 1;
+
+                        pOUTIndex += iOUTnc(startTime, 0, 0, vertSize, pftSize);
+                    }
+
+                    p_OUTValPtr = &GenOutput->p_OUT[key][pd][pOUTIndex];
 
 
                     /* For current variable x output period,
@@ -2594,11 +2597,7 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* SW_GenOut,
                     }
                 }
 
-                // Get the time value from the "time" dimension
-                get_dimlen_from_dimname(currFileID, "time", &timeSize, LogInfo);
-                if(LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
-                }
+                // Update startTime
                 startTime += timeSize;
 
                 nc_close(currFileID);
@@ -2613,40 +2612,51 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* SW_GenOut,
  *
  * @param[in] domFile Name of the domain netCDF
  * @param[in] domFileID Identifier of the domain netCDF file
+ * @param[in] output_prefix Directory path of output files.
  * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
  *  temporal/spatial information for a set of simulation runs
  * @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
  *  basic output information for all output keys
  * @param[in] timeSteps Requested time steps
  * @param[in] used_OUTNPERIODS Determine which output periods to output
- * @param[in] output_prefix Directory path of output files.
+ * @param[in] nvar_OUT Number of output variables (array of length SW_OUTNPERIODS).
+ * @param[in] nsl_OUT Number of output soil layer per variable
+ *      (array of size SW_OUTNKEYS by SW_OUTNMAXVARS).
+ * @param[in] npft_OUT Number of output vegtypes per variable
+ *      (array of size SW_OUTNKEYS by SW_OUTNMAXVARS).
+ * @param[in] lyrDepths Depths of soil layers (cm)
  * @param[in] strideOutYears Number of years to write into an output file
  * @param[in] startYr Start year of the simulation
  * @param[in] endYr End year of the simulation
- * @param[in] n_layers Number of layers to write out
- * @param[in] n_evap_lyrs Number of layers in which evap is possible
+ * @param[in] baseCalendarYear First year of the entire simulation
  * @param[out] numFilesPerKey Number of output netCDFs each output key will
  *  have (same amount for each key)
- * @param[out] lyrDepths Depths of soil layers (cm)
- * @param[out] baseCalendarYear First year of the entire simulation
  * @param[out] ncOutFileNames A list of the generated output netCDF file names
  * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_create_output_files(const char* domFile, int domFileID,
-        SW_DOMAIN* SW_Domain, SW_OUTPUT* SW_Output,
-        OutPeriod timeSteps[][SW_OUTNPERIODS], IntUS used_OUTNPERIODS,
         const char* output_prefix,
+        SW_DOMAIN* SW_Domain,
+        SW_OUTPUT* SW_Output,
+        OutPeriod timeSteps[][SW_OUTNPERIODS],
+        IntUS used_OUTNPERIODS,
+        IntUS nvar_OUT[],
+        IntUS nsl_OUT[][SW_OUTNMAXVARS],
+        IntUS npft_OUT[][SW_OUTNMAXVARS],
+        double lyrDepths[],
         int strideOutYears, int startYr, int endYr,
-        LyrIndex n_layers, int n_evap_lyrs, int* numFilesPerKey,
-        double lyrDepths[], int baseCalendarYear,
-        char** ncOutFileNames[][SW_OUTNPERIODS], LOG_INFO* LogInfo) {
+        int baseCalendarYear,
+        int* numFilesPerKey,
+        char** ncOutFileNames[][SW_OUTNPERIODS],
+        LOG_INFO* LogInfo) {
 
     int key, ip;
     OutPeriod pd;
     int rangeStart, rangeEnd, fileNum;
+
     int numYears = endYr - startYr + 1, yearOffset;
     char fileNameBuf[MAX_FILENAMESIZE], yearBuff[10]; // 10 - hold up to YYYY-YYYY
-    int timeSize = 0, baseTime = 0, vertSize = 0;
+    int timeSize = 0, baseTime = 0;
     double startTime[SW_OUTNPERIODS];
 
     char periodSuffix[10];
@@ -2660,8 +2670,7 @@ void SW_NC_create_output_files(const char* domFile, int domFileID,
     yearFormat = (strideOutYears == 1) ? (char *)"%d" : (char *)"%d-%d";
 
     ForEachOutKey(key) {
-        if(numVarsPerKey[key] > 0 && SW_Output[key].use) {
-            vertSize = getNLayers((OutKey)key, n_layers, n_evap_lyrs);
+        if(nvar_OUT[key] > 0 && SW_Output[key].use) {
 
             // Loop over requested output periods (which may vary for each outkey)
             for (ip = 0; ip < used_OUTNPERIODS; ip++) {
@@ -2706,9 +2715,17 @@ void SW_NC_create_output_files(const char* domFile, int domFileID,
                             timeSize = calc_timeSize(rangeStart, rangeEnd,
                                                     baseTime, pd);
 
-                            create_output_file(&SW_Output[key], domFile, domFileID,
-                                fileNameBuf, (OutKey)key, pd, timeSize, vertSize, lyrDepths,
-                                &startTime[pd], baseCalendarYear, rangeStart, LogInfo);
+                            create_output_file(
+                                &SW_Output[key],
+                                domFile, domFileID, fileNameBuf,
+                                (OutKey)key, pd,
+                                nvar_OUT[key],
+                                nsl_OUT[key],
+                                npft_OUT[key],
+                                lyrDepths,
+                                timeSize, rangeStart, baseCalendarYear,
+                                &startTime[pd],
+                                LogInfo);
                             if(LogInfo->stopRun) {
                                 return; // Exit function prematurely due to error
                             }
@@ -3419,14 +3436,19 @@ void SW_NC_read(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo, LOG_INFO* LogInfo) {
  * turning off the output of that variable. For instance, an empty tsv file
  * results in no output produced.
  *
+ * This function requires previous calls to
+ *   - SW_VES_read2() to set parms
+ *   - SW_OUT_setup_output() to set GenOutput.nvar_OUT
+ *
  * @param[in,out] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
  *  basic output information for all output keys
+ * @param[in] GenOutput Holds general variables that deal with output
  * @param[in] InFiles Array of program in/output files
  * @param[in] parms Array of type SW_VEGESTAB_INFO holding information about
  *  species
  * @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
+void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, SW_GEN_OUT *GenOutput, char* InFiles[],
                     SW_VEGESTAB_INFO** parms, LOG_INFO* LogInfo) {
 
     FILE *f;
@@ -3438,7 +3460,7 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
 
     Bool estabFound = swFALSE;
     Bool used_OutKeys[SW_OUTNKEYS] = {swFALSE};
-    int index, numVars, estVar;
+    int index, estVar;
     char* copyStr = NULL;
     char input[NOUT_VAR_INPUTS][MAX_ATTVAL_SIZE] = {"\0"};
     char establn[MAX_ATTVAL_SIZE] = {"\0"};
@@ -3460,7 +3482,7 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
         return; // Exit prematurely due to error
     }
 
-    init_output_var_info(SW_Output, LogInfo);
+    alloc_output_var_info(SW_Output, GenOutput, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit prematurely due to error
     }
@@ -3493,7 +3515,7 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
             snprintf(varKey, MAX_FILENAMESIZE, "%s__%s",
                      input[keyInd], input[SWVarNameInd]);
 
-            get_2d_output_key(varKey, &currOutKey, &varNum);
+            get_2d_output_key(varKey, &currOutKey, &varNum, GenOutput->nvar_OUT);
 
             if(currOutKey == eSW_NoKey) {
                     LogError(LogInfo, LOGWARN,
@@ -3526,30 +3548,25 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
                 estabFound = swTRUE;
                 varNum = 0;
 
-                if (numVarsPerKey[currOutKey] == 0) {
+                if (GenOutput->nvar_OUT[currOutKey] == 0) {
                     // outsetup.in and nc-out request ESTAB but no taxon available
                     continue;
                 }
             }
 
             if(isnull(currOut->outputVarInfo)) {
-                SW_NC_init_outvars(&currOut->outputVarInfo,
-                                            currOutKey, LogInfo);
+                SW_NC_alloc_outvars(&currOut->outputVarInfo,
+                                    GenOutput->nvar_OUT[currOutKey], LogInfo);
                 if(LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }
             }
 
             currOut->reqOutputVars[varNum] = swTRUE;
-            currOut->outputVarInfo[varNum][DIM_INDEX] =
-                                            Str_Dup(input[dimInd], LogInfo);
-            if(LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
 
             // Read in the rest of the attributes
             // Output variable name, long name, comment, units, and cell_method
-           for(index = VARNAME_INDEX; index <= CELLMETHOD_INDEX; index++) {
+            for(index = VARNAME_INDEX; index <= CELLMETHOD_INDEX; index++) {
                 defToLocalInd = index + doOutInd;
 
                 if(strcmp(input[defToLocalInd], "NA") == 0) {
@@ -3569,19 +3586,13 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, char* InFiles[],
                 // into `count` amount of variables and give the
                 // correct <sppname>'s
                 if(currOutKey == eSW_Estab) {
-                    numVars = numVarsPerKey[currOutKey];
-                    for(estVar = 0; estVar < numVars; estVar++) {
+                    for(estVar = 0; estVar < GenOutput->nvar_OUT[currOutKey]; estVar++) {
 
                         switch(index) {
                             case VARNAME_INDEX:
                                 currOut->reqOutputVars[estVar] = swTRUE;
                                 currOut->outputVarInfo[estVar][index] =
                                                 Str_Dup(parms[estVar]->sppname, LogInfo);
-                                if (estVar > 0) {
-                                    // copy dimension (but already copied for first estab-species)
-                                    currOut->outputVarInfo[estVar][DIM_INDEX] =
-                                                Str_Dup(input[dimInd], LogInfo);
-                                }
                                 break;
 
                             case LONGNAME_INDEX:
@@ -3817,41 +3828,39 @@ void SW_NC_deepCopy(SW_NETCDF* source, SW_NETCDF* dest, LOG_INFO* LogInfo) {
 }
 
 /**
- * @brief Initialize information in regards to output variables
+ * @brief Allocate memory for information in regards to output variables
  *  respective to SW_OUTPUT instances
  *
  * @param[out] outkeyVars Holds all information about output variables
  *  in netCDFs (e.g., output variable name)
- * @param[in] currOutKey Specifies what output key is currently being allocated
- *  (i.e., temperature, precipitation, etc.)
+ * @param[in] nVar Number of variables available for current output key
  * @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_NC_init_outvars(char**** outkeyVars, OutKey currOutKey,
-                            LOG_INFO* LogInfo) {
+void SW_NC_alloc_outvars(char**** outkeyVars, int nVar, LOG_INFO* LogInfo) {
 
     *outkeyVars = NULL;
 
-    if (numVarsPerKey[currOutKey] > 0) {
+    if (nVar > 0) {
 
         int index, varNum, attNum;
 
         // Allocate all memory for the variable information in the current
         // output key
         *outkeyVars =
-            (char ***)Mem_Malloc(sizeof(char **) * numVarsPerKey[currOutKey],
-                                "SW_NC_init_outvars()", LogInfo);
+            (char ***)Mem_Malloc(sizeof(char **) * nVar,
+                                "SW_NC_alloc_outvars()", LogInfo);
             if(LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
 
-        for(index = 0; index < numVarsPerKey[currOutKey]; index++) {
+        for(index = 0; index < nVar; index++) {
             (*outkeyVars)[index] = NULL;
         }
 
-        for(index = 0; index < numVarsPerKey[currOutKey]; index++) {
+        for(index = 0; index < nVar; index++) {
             (*outkeyVars)[index] =
                 (char **)Mem_Malloc(sizeof(char *) * NUM_OUTPUT_INFO,
-                    "SW_NC_init_outvars()", LogInfo);
+                    "SW_NC_alloc_outvars()", LogInfo);
             if(LogInfo->stopRun) {
                 for(varNum = 0; varNum < index; varNum++) {
                     free((*outkeyVars)[varNum]);
@@ -3868,33 +3877,32 @@ void SW_NC_init_outvars(char**** outkeyVars, OutKey currOutKey,
 }
 
 /**
- * @brief Initialize information about whether or not a variable should
+ * @brief Allocate information about whether or not a variable should
  *  be output
  *
  * @param[out] reqOutVar Specifies the number of variables that can be output
  *  for a given output key
- * @param[in] currOutKey Specifies what output key is currently being allocated
- *  (i.e., temperature, precipitation, etc.)
+ * @param[in] nVar Number of variables available for current output key
  * @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_NC_init_outReq(Bool** reqOutVar, OutKey currOutKey, LOG_INFO* LogInfo) {
+void SW_NC_alloc_outReq(Bool** reqOutVar, int nVar, LOG_INFO* LogInfo) {
 
     *reqOutVar = NULL;
 
-    if (numVarsPerKey[currOutKey] > 0) {
+    if (nVar > 0) {
 
         int index;
 
         // Initialize the variable within SW_OUTPUT which specifies if a variable
         // is to be written out or not
         *reqOutVar =
-            (Bool *)Mem_Malloc(sizeof(Bool) * numVarsPerKey[currOutKey],
-                                "SW_NC_init_outReq()", LogInfo);
+            (Bool *)Mem_Malloc(sizeof(Bool) * nVar,
+                                "SW_NC_alloc_outReq()", LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
-        for(index = 0; index < numVarsPerKey[currOutKey]; index++) {
+        for(index = 0; index < nVar; index++) {
             (*reqOutVar)[index] = swFALSE;
         }
     }

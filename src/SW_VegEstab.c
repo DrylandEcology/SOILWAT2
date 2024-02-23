@@ -46,9 +46,6 @@
 #include "include/SW_VegProd.h" // externs `key2veg[]`
 #include "include/SW_VegEstab.h"
 
-#if defined(SWNETCDF)
-#include "include/SW_netCDF.h"
-#endif
 
 
 /* =================================================== */
@@ -307,11 +304,6 @@ void SW_VES_read2(SW_VEGESTAB* SW_VegEstab, Bool use_VegEstab,
 
 		CloseFile(&f, LogInfo);
 	}
-
-
-    #if defined(SWNETCDF)
-    numVarsPerKey[eSW_Estab] = SW_VegEstab->count;
-    #endif
 }
 
 

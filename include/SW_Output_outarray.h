@@ -28,25 +28,21 @@ extern "C" {
 
 
 
-/** @brief Position in an output array `p_OUT[OutKey][OutPeriod]`
+/** @brief Position in an output array `p_OUT[OutKey][OutPeriod]` after offset
 
   The position is specified by
-      - `varId` the current (`i`-th) variable within current output group `OutKey`
-        (soil layers and vegetation types do not count towards "variables")
       - `timeId` the current time index (e.g., `GenOutput->irow_OUT[OutPeriod]`)
       - `slId` the current (`k`-th) soil layer; set to 0 if no soil layers
       - `ptfId` the current (`n`-th) vegetation type; set to 0 if no vegetation
 
   The correct dimension of the output array `p_OUT[OutKey][OutPeriod]`
   is inferred from
-      - `nTime` the total number of time steps in the current `OutPeriod`
-        (e.g., `GenOutput->nrow_OUT[OutPeriod]`)
       - `nSl` the total number of soil layers (e.g., `Site.n_layers`);
         set to 1 if no soil layers
       - `nPTF` the total number of vegetation types (e.g., `NVEGTYPES`);
         set to 1 if no vegetation
-      - `ncol_TimeOUT_pd` the number of header (time) variables for the current
-        `OutPeriod` (e.g., `ncol_TimeOUT[OutPeriod]`)
+      - `iOUToffset` the start indices for each variable
+        (see SW_OUT_calc_iOUToffset())
 
   Positions are consecutive along
       1. vegetation types (if present), then
@@ -57,8 +53,8 @@ extern "C" {
   Thus, values for all soil layers and all vegetation types are contiguous
   at each time step.
 */
-#define iOUTnc(varId, timeId, slId, ptfId, nTime, nSl, nPTF, ncol_TimeOUT_pd) \
-            ((ptfId) + (nPTF) * ((slId) + (nSl) * ((timeId) + (nTime) * ((varId) + (ncol_TimeOUT_pd)))))
+#define iOUTnc(timeId, slId, ptfId, nSl, nPTF) \
+            ((ptfId) + (nPTF) * ((slId) + (nSl) * (timeId)))
 
 
 /** @brief Position in an output array `p_OUT[OutKey][OutPeriod]`
@@ -126,6 +122,14 @@ void get_outvalleader(SW_MODEL* SW_Model, OutPeriod pd,
 #if defined(STEPWAT)
 void do_running_agg(RealD *p, RealD *psd, size_t k, IntU n, RealD x);
 #endif
+
+void SW_OUT_calc_iOUToffset(
+    size_t nrow_OUT[],
+    IntUS nvar_OUT[],
+    IntUS nsl_OUT[][SW_OUTNMAXVARS],
+    IntUS npft_OUT[][SW_OUTNMAXVARS],
+    size_t iOUToffset[][SW_OUTNPERIODS][SW_OUTNMAXVARS]
+);
 
 
 
