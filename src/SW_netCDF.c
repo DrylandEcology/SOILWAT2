@@ -10,6 +10,7 @@
 #include "include/SW_Files.h"
 #include "include/myMemory.h"
 #include "include/Times.h"
+#include "include/SW_VegProd.h" // externs `key2veg[]`
 #include "include/SW_Domain.h"
 #include "include/SW_Output.h"
 #include "include/SW_Output_outarray.h"
@@ -2018,10 +2019,9 @@ static void fill_dimVar(int ncFileID, int dimIDs[], int size, int varID,
     const int vertInd = 0, timeInd = 1, pftInd = 2;
     const int numBnds = 2;
 
-    const char* vertVals[] = {"trees", "shrubs", "forbs", "grass"};
 
     if(dimNum == pftInd) {
-        write_string_vals(ncFileID, varID, vertVals, LogInfo);
+        write_string_vals(ncFileID, varID, key2veg, LogInfo);
     } else {
         if(!dimExists("bnds", ncFileID)) {
             create_netCDF_dim("bnds", numBnds, &ncFileID, &dimIDs[1], LogInfo);
