@@ -173,12 +173,6 @@ void SW_OUT_create_files(
     SW_DOMAIN* SW_Domain,
     SW_OUTPUT* SW_Output,
     SW_GEN_OUT* GenOutput,
-    LyrIndex n_layers,
-
-    int startYr,
-    int endYr,
-    double lyrDepths[],
-
     LOG_INFO* LogInfo
 );
 

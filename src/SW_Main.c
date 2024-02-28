@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
 	Bool EchoInits = swFALSE;
 
     unsigned long userSUID;
-    int nMaxSoilLayers = 0;
+
 
     // Start overall wall time
     SW_WT_StartTime(&SW_WallTime);
@@ -114,9 +114,6 @@ int main(int argc, char **argv) {
 
     #if defined(SWNETCDF)
     SW_NC_check_input_files(&SW_Domain, &LogInfo);
-    nMaxSoilLayers = SW_NC_get_nMaxSoilLayers(sw_template.Site.n_layers);
-    #else
-    nMaxSoilLayers = sw_template.Site.n_layers;
     #endif
 
 	// finalize daily weather
@@ -133,15 +130,29 @@ int main(int argc, char **argv) {
         goto finishProgram;
     }
 
-    // initialize output
-    SW_OUT_setup_output(
+    // identify domain-wide soil profile information
+    SW_DOM_soilProfile(
+        &SW_Domain.hasConsistentSoilLayerDepths,
+        &SW_Domain.nMaxSoilLayers,
+        &SW_Domain.nMaxEvapLayers,
+        SW_Domain.depthsAllSoilLayers,
         sw_template.Site.n_layers,
         sw_template.Site.n_evap_lyrs,
+        sw_template.Site.depths,
+        &LogInfo
+    );
+    if(LogInfo.stopRun) {
+        goto finishProgram;
+    }
+
+    // initialize output
+    SW_OUT_setup_output(
+        SW_Domain.nMaxSoilLayers,
+        SW_Domain.nMaxEvapLayers,
         &sw_template.VegEstab,
         &sw_template.GenOutput,
         &LogInfo
     );
-
     if(LogInfo.stopRun) {
         goto finishProgram;
     }
@@ -164,12 +175,6 @@ int main(int argc, char **argv) {
         &SW_Domain,
         sw_template.Output,
         &sw_template.GenOutput,
-        nMaxSoilLayers,
-
-        SW_Domain.startyr,
-        SW_Domain.endyr,
-        sw_template.Site.depths,
-
         &LogInfo
     );
     if(LogInfo.stopRun) {

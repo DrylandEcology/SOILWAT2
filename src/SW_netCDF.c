@@ -1858,13 +1858,18 @@ static void create_time_vars(int ncFileID, int dimIDs[], int size,
  * @param[in] dimIDs Dimension identifiers for "vertical" and "bnds"
  * @param[in] size Size of the vertical dimension/variable
  * @param[in] dimVarID "vertical" dimension identifier
+ * @param[in] hasConsistentSoilLayerDepths Flag indicating if all simulation
+ *      run within domain have identical soil layer depths
+ *      (though potentially variable number of soil layers)
  * @param[in] lyrDepths Depths of soil layers (cm)
  * @param[out] LogInfo Holds information dealing with logfile output
 */
 static void create_vert_vars(int ncFileID, int dimIDs[], int size,
-                int dimVarID, double lyrDepths[], LOG_INFO* LogInfo) {
+                int dimVarID,
+                Bool hasConsistentSoilLayerDepths, double lyrDepths[],
+                LOG_INFO* LogInfo) {
 
-    double *dimVarVals = NULL, *bndVals = NULL, lyrDepthStart = 0.0;
+    double *dimVarVals = NULL, *bndVals = NULL, lyrStart = 0.0;
     size_t numBnds = 2;
     size_t start[] = {0, 0}, count[] = {(size_t)size, 0};
     int bndIndex = 0;
@@ -1889,12 +1894,14 @@ static void create_vert_vars(int ncFileID, int dimIDs[], int size,
     }
 
     for(size_t index = 0; index < (size_t) size; index++) {
-        dimVarVals[index] = lyrDepths[index];
+        // if hasConsistentSoilLayerDepths,
+        // then use soil layer depth, else soil layer number
+        dimVarVals[index] = (hasConsistentSoilLayerDepths) ? lyrDepths[index] : (index + 1);
 
-        bndVals[index * 2] = lyrDepthStart;
+        bndVals[index * 2] = lyrStart;
         bndVals[index * 2 + 1] = dimVarVals[index];
 
-        lyrDepthStart = bndVals[index * 2 + 1];
+        lyrStart = bndVals[index * 2 + 1];
     }
 
     fill_netCDF_var_double(ncFileID, dimVarID, dimVarVals,
@@ -1926,6 +1933,9 @@ static void create_vert_vars(int ncFileID, int dimIDs[], int size,
  * @param[in] size Size of the dimension/original variable dimension
  * @param[in] varID Identifier of the new variable respectively named
  *  from the created dimension
+ * @param[in] hasConsistentSoilLayerDepths Flag indicating if all simulation
+ *      run within domain have identical soil layer depths
+ *      (though potentially variable number of soil layers)
  * @param[in] lyrDepths Depths of soil layers (cm)
  * @param[in,out] startTime Start number of days when dealing with
  *  years between netCDF files
@@ -1934,7 +1944,8 @@ static void create_vert_vars(int ncFileID, int dimIDs[], int size,
  * @param[out] LogInfo Holds information dealing with logfile output
 */
 static void fill_dimVar(int ncFileID, int dimIDs[], int size, int varID,
-            double lyrDepths[], double* startTime, int dimNum,
+            Bool hasConsistentSoilLayerDepths, double lyrDepths[],
+            double* startTime, int dimNum,
             int startYr, OutPeriod pd, LOG_INFO* LogInfo) {
 
     const int vertInd = 0, timeInd = 1, pftInd = 2;
@@ -1957,6 +1968,7 @@ static void fill_dimVar(int ncFileID, int dimIDs[], int size, int varID,
             if(!varExists(ncFileID, "vertical_bnds")) {
 
                 create_vert_vars(ncFileID, dimIDs, size, varID,
+                                    hasConsistentSoilLayerDepths,
                                     lyrDepths, LogInfo);
             }
         } else if(dimNum == timeInd) {
@@ -1980,6 +1992,9 @@ static void fill_dimVar(int ncFileID, int dimIDs[], int size, int varID,
  * @param[in,out] dimID New dimenion identifier within the given netCDF
  * @param[in] dimNum Identifier to determine which position the given
  *  dimension is in out of: "vertical" (0), "time" (1), and "pft" (2)
+ * @param[in] hasConsistentSoilLayerDepths Flag indicating if all simulation
+ *      run within domain have identical soil layer depths
+ *      (though potentially variable number of soil layers)
  * @param[in] lyrDepths Depths of soil layers (cm)
  * @param[in,out] startTime Start number of days when dealing with
  *  years between netCDF files (returns updated value)
@@ -1989,11 +2004,13 @@ static void fill_dimVar(int ncFileID, int dimIDs[], int size, int varID,
  * @param[out] LogInfo Holds information dealing with logfile output
 */
 static void create_output_dimVar(char* name, int size, int ncFileID,
-        int* dimID, double lyrDepths[], double* startTime,
+        int* dimID,
+        Bool hasConsistentSoilLayerDepths, double lyrDepths[],
+        double* startTime,
         int baseCalendarYear, int startYr, OutPeriod pd, LOG_INFO* LogInfo) {
 
     char* dimNames[3] = {(char *)"vertical", (char *)"time", (char *)"pft"};
-    const int timeIndex = 1, pftIndex = 2, timeUnitIndex = 2;
+    const int vertIndex = 0, timeIndex = 1, pftIndex = 2, timeUnitIndex = 2;
     int dimNum;
     int varID, index;
     int dimIDs[2] = {0,0};
@@ -2038,12 +2055,20 @@ static void create_output_dimVar(char* name, int size, int ncFileID,
             return; // Exit function prematurely due to error
         }
 
-        fill_dimVar(ncFileID, dimIDs, size, varID, lyrDepths,
+        fill_dimVar(ncFileID, dimIDs, size, varID,
+                    hasConsistentSoilLayerDepths, lyrDepths,
                     startFillTime, dimNum, startYr, pd, LogInfo);
 
         if(dimNum == timeIndex) {
             snprintf(outAttVals[timeIndex][timeUnitIndex], MAX_FILENAMESIZE,
                      "days since %d-01-01 00:00:00", baseCalendarYear);
+        }
+
+        if (dimNum == vertIndex && !hasConsistentSoilLayerDepths) {
+            // Use soil layers as dimension variable values
+            // because soil layer depths are not consistent across domain
+            snprintf(outAttVals[vertIndex][0], MAX_FILENAMESIZE, "soil layer");
+            snprintf(outAttVals[vertIndex][2], MAX_FILENAMESIZE, "1");
         }
 
         for(index = 0; index < numVarAtts[dimNum]; index++) {
@@ -2069,6 +2094,9 @@ static void create_output_dimVar(char* name, int size, int ncFileID,
  * @param[in] attNames Attribute names that the new variable will contain
  * @param[in] attVals Attribute values that the new variable will contain
  * @param[in] numAtts Number of attributes being sent in
+ * @param[in] hasConsistentSoilLayerDepths Flag indicating if all simulation
+ *      run within domain have identical soil layer depths
+ *      (though potentially variable number of soil layers)
  * @param[in] lyrDepths Depths of soil layers (cm)
  * @param[in,out] startTime Start number of days when dealing with
  *  years between netCDF files (returns updated value)
@@ -2080,7 +2108,8 @@ static void create_output_dimVar(char* name, int size, int ncFileID,
 static void create_full_var(int* ncFileID, int newVarType,
     size_t timeSize, size_t vertSize, size_t pftSize, const char* varName,
     const char* attNames[], const char* attVals[], int numAtts,
-    double lyrDepths[], double* startTime, int baseCalendarYear,
+    Bool hasConsistentSoilLayerDepths, double lyrDepths[],
+    double* startTime, int baseCalendarYear,
     int startYr, OutPeriod pd, LOG_INFO* LogInfo) {
 
     int dimArrSize = 0, index, varID = 0;
@@ -2113,7 +2142,9 @@ static void create_full_var(int* ncFileID, int newVarType,
         if(varVal > 0) {
             if(!dimExists(dimVarName, *ncFileID)) {
                 create_output_dimVar(dimVarName, varVal, *ncFileID,
-                        &dimIDs[dimArrSize], lyrDepths, startTime,
+                        &dimIDs[dimArrSize],
+                        hasConsistentSoilLayerDepths, lyrDepths,
+                        startTime,
                         baseCalendarYear, startYr, pd, LogInfo);
             } else {
                 get_dim_identifier(*ncFileID, dimVarName, &dimIDs[dimArrSize],
@@ -2205,6 +2236,11 @@ static int gather_var_attributes(char** varInfo, OutKey key, OutPeriod pd,
 /**
  * @brief Create and fill a new output netCDF file
  *
+ * \p hasConsistentSoilLayerDepths determines if vertical dimension (soil depth)
+ * is represented by
+ *   - soil layer depths (if entire domain has the same soil layer profile)
+ *   - soil layer number (if soil layer profile varies across domain)
+ *
  * @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
  *  basic output information for all output keys
  * @param[in] domFile Domain netCDF file name
@@ -2219,6 +2255,9 @@ static int gather_var_attributes(char** varInfo, OutKey key, OutPeriod pd,
  *      (array of size SW_OUTNMAXVARS).
  * @param[in] npft Number of output vegtypes per variable
  *      (array of size SW_OUTNMAXVARS).
+ * @param[in] hasConsistentSoilLayerDepths Flag indicating if all simulation
+ *      run within domain have identical soil layer depths
+ *      (though potentially variable number of soil layers)
  * @param[in] lyrDepths Depths of soil layers (cm)
  * @param[in] originTimeSize Original "time" dimension size (that will
  *  not be overwritten in the function)
@@ -2234,6 +2273,7 @@ static void create_output_file(SW_OUTPUT* SW_Output,
         int nVar,
         IntUS nsl[],
         IntUS npft[],
+        Bool hasConsistentSoilLayerDepths,
         double lyrDepths[],
         int originTimeSize, int startYr, int baseCalendarYear,
         double* startTime,
@@ -2286,7 +2326,8 @@ static void create_output_file(SW_OUTPUT* SW_Output,
             create_full_var(&newFileID, NC_DOUBLE,
                             originTimeSize, nsl[index], npft[index],
                             varName, attNames, (const char**)attVals, numAtts,
-                            lyrDepths, startTime, baseCalendarYear, startYr, pd,
+                            hasConsistentSoilLayerDepths, lyrDepths,
+                            startTime, baseCalendarYear, startYr, pd,
                             LogInfo);
 
             if(pd > eSW_Day) {
@@ -2512,6 +2553,7 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* GenOutput,
                 continue; // Skip key iteration
             }
 
+            // Loop over output time-slices
             startTime = 0; // keep track of time across time-sliced files per outkey
 
             for(fileNum = 0; fileNum < numFilesPerKey; fileNum++) {
@@ -2610,6 +2652,11 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* GenOutput,
  * @brief Generate all requested netCDF output files that will be written to
  *  instead of CSVs
  *
+ * \p hasConsistentSoilLayerDepths determines if vertical dimension (soil depth)
+ * is represented by
+ *   - soil layer depths (if entire domain has the same soil layer profile)
+ *   - soil layer number (if soil layer profile varies across domain)
+ *
  * @param[in] domFile Name of the domain netCDF
  * @param[in] domFileID Identifier of the domain netCDF file
  * @param[in] output_prefix Directory path of output files.
@@ -2624,6 +2671,9 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* GenOutput,
  *      (array of size SW_OUTNKEYS by SW_OUTNMAXVARS).
  * @param[in] npft_OUT Number of output vegtypes per variable
  *      (array of size SW_OUTNKEYS by SW_OUTNMAXVARS).
+ * @param[in] hasConsistentSoilLayerDepths Flag indicating if all simulation
+ *      run within domain have identical soil layer depths
+ *      (though potentially variable number of soil layers)
  * @param[in] lyrDepths Depths of soil layers (cm)
  * @param[in] strideOutYears Number of years to write into an output file
  * @param[in] startYr Start year of the simulation
@@ -2634,7 +2684,9 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* GenOutput,
  * @param[out] ncOutFileNames A list of the generated output netCDF file names
  * @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_NC_create_output_files(const char* domFile, int domFileID,
+void SW_NC_create_output_files(
+        const char* domFile,
+        int domFileID,
         const char* output_prefix,
         SW_DOMAIN* SW_Domain,
         SW_OUTPUT* SW_Output,
@@ -2643,8 +2695,11 @@ void SW_NC_create_output_files(const char* domFile, int domFileID,
         IntUS nvar_OUT[],
         IntUS nsl_OUT[][SW_OUTNMAXVARS],
         IntUS npft_OUT[][SW_OUTNMAXVARS],
+        Bool hasConsistentSoilLayerDepths,
         double lyrDepths[],
-        int strideOutYears, int startYr, int endYr,
+        int strideOutYears,
+        int startYr,
+        int endYr,
         int baseCalendarYear,
         int* numFilesPerKey,
         char** ncOutFileNames[][SW_OUTNPERIODS],
@@ -2722,6 +2777,7 @@ void SW_NC_create_output_files(const char* domFile, int domFileID,
                                 nvar_OUT[key],
                                 nsl_OUT[key],
                                 npft_OUT[key],
+                                hasConsistentSoilLayerDepths,
                                 lyrDepths,
                                 timeSize, rangeStart, baseCalendarYear,
                                 &startTime[pd],
@@ -2739,13 +2795,65 @@ void SW_NC_create_output_files(const char* domFile, int domFileID,
     }
 }
 
-/**
- * @brief Retrieve the maximum number of layers to create in netCDF output files
- *
- * @param[in] readInNumLayers Value read-in from the input file `soils.in`
+/** Identify soil profile information across simulation domain from netCDF
+
+    nMaxEvapLayers is set to nMaxSoilLayers.
+
+    @param[out] hasConsistentSoilLayerDepths Flag indicating if all simulation
+        run within domain have identical soil layer depths
+        (though potentially variable number of soil layers)
+    @param[out] nMaxSoilLayers Largest number of soil layers across
+        simulation domain
+    @param[out] nMaxEvapLayers Largest number of soil layers from which
+        bare-soil evaporation may extract water across simulation domain
+    @param[out] depthsAllSoilLayers Lower soil layer depths [cm] if
+        consistent across simulation domain
+    @param[in] default_n_layers Default number of soil layer
+    @param[in] default_n_evap_lyrs Default number of soil layer used for
+        bare-soil evaporation
+    @param[in] default_depths Default values of soil layer depths [cm]
+    @param[out] LogInfo Holds information on warnings and errors
 */
-int SW_NC_get_nMaxSoilLayers(int readInNumLayers) {
-    return readInNumLayers;
+void SW_NC_soilProfile(
+    Bool *hasConsistentSoilLayerDepths,
+    LyrIndex *nMaxSoilLayers,
+    LyrIndex *nMaxEvapLayers,
+    double depthsAllSoilLayers[],
+    LyrIndex default_n_layers,
+    LyrIndex default_n_evap_lyrs,
+    double default_depths[],
+    LOG_INFO* LogInfo
+) {
+    // TO IMPLEMENT:
+    // if (has soils as nc-input) then
+    //     investigate these soil nc-inputs and determine
+    //     *nMaxSoilLayers = ...;
+        if (*nMaxSoilLayers > MAX_LAYERS) {
+            LogError(LogInfo, LOGERROR,
+                "Domain-wide maximum number of soil layers (%d) "
+                "is larger than allowed (MAX_LAYERS = %d).\n",
+                *nMaxSoilLayers, MAX_LAYERS
+            );
+            return; // Exit function prematurely due to error
+        }
+    //     *hasConsistentSoilLayerDepths = ...;
+    //     if (*hasConsistentSoilLayerDepths) depthsAllSoilLayers[k] = ...;
+    // else
+
+    *hasConsistentSoilLayerDepths = swTRUE;
+    *nMaxSoilLayers = default_n_layers;
+    (void) default_n_evap_lyrs;
+
+    memcpy(
+        depthsAllSoilLayers,
+        default_depths,
+        sizeof(default_depths[0]) * default_n_layers
+    );
+
+    // endif
+
+    // Use total number of soil layers for bare-soil evaporation output
+    *nMaxEvapLayers = *nMaxSoilLayers;
 }
 
 /**
@@ -3215,7 +3323,7 @@ void SW_NC_create_progress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
         }
 
         create_full_var(progFileID, NC_BYTE, 0, 0, 0, progVarName,
-                        attNames, attVals, numAtts, NULL,
+                        attNames, attVals, numAtts, swFALSE, NULL,
                         &startTime, 0, 0, 0, LogInfo);
 
         if(LogInfo->stopRun) {

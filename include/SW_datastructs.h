@@ -1151,6 +1151,13 @@ typedef struct {
 			startstart,      /**< First day in first calendar year of the simulation runs */
 			endend;          /**< Last day in last calendar year of the simulation runs */
 
+    // Vertical domain information
+    Bool hasConsistentSoilLayerDepths; /**< Flag indicating if all simulation run within domain have identical soil layer depths (though potentially variable number of soil layers) */
+    LyrIndex
+        nMaxSoilLayers,  /**< Largest number of soil layers across simulation domain */
+        nMaxEvapLayers;  /**< Largest number of soil layers from which bare-soil evaporation may extract water across simulation domain */
+    double depthsAllSoilLayers[MAX_LAYERS]; /**< Lower soil layer depths [cm] if consistent across simulation domain */
+
 	// Information on input files
 	PATH_INFO PathInfo;
 

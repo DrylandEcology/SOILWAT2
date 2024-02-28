@@ -36,7 +36,9 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* GenOutput,
         int numFilesPerKey,
         char** ncOutFileNames[][SW_OUTNPERIODS], size_t ncSuid[],
         LOG_INFO* LogInfo);
-void SW_NC_create_output_files(const char* domFile, int domFileID,
+void SW_NC_create_output_files(
+        const char* domFile,
+        int domFileID,
         const char* output_prefix,
         SW_DOMAIN* SW_Domain,
         SW_OUTPUT* SW_Output,
@@ -45,13 +47,25 @@ void SW_NC_create_output_files(const char* domFile, int domFileID,
         IntUS nvar_OUT[],
         IntUS nsl_OUT[][SW_OUTNMAXVARS],
         IntUS npft_OUT[][SW_OUTNMAXVARS],
+        Bool hasConsistentSoilLayerDepths,
         double lyrDepths[],
-        int strideOutYears, int startYr, int endYr,
+        int strideOutYears,
+        int startYr,
+        int endYr,
         int baseCalendarYear,
         int* numFilesPerKey,
         char** ncOutFileNames[][SW_OUTNPERIODS],
         LOG_INFO* LogInfo);
-int SW_NC_get_nMaxSoilLayers(int readInNumLayers);
+void SW_NC_soilProfile(
+    Bool *hasConsistentSoilLayerDepths,
+    LyrIndex *nMaxSoilLayers,
+    LyrIndex *nMaxEvapLayers,
+    double depthsAllSoilLayers[],
+    LyrIndex default_n_layers,
+    LyrIndex default_n_evap_lyrs,
+    double default_depths[],
+    LOG_INFO* LogInfo
+);
 void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
                  LOG_INFO* LogInfo);
 void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo);

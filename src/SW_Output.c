@@ -3061,10 +3061,6 @@ void SW_OUT_write_today(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
  * @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
  * 	basic output information for all output keys
  * @param[in] GenOutput Holds general variables that deal with output
- * @param[in] n_layers Number of layers of soil within the simulation run
- * @param[in] startYr First calendar year
- * @param[in] endYr Last calendar year
- * @param[in] lyrDepths Array of soil layer depths
  * @param[out] LogInfo Holds information on warnings and errors
  *
  *  @note Call this routine at the beginning of the main program run, but
@@ -3075,12 +3071,6 @@ void SW_OUT_create_files(
     SW_DOMAIN* SW_Domain,
     SW_OUTPUT* SW_Output,
     SW_GEN_OUT* GenOutput,
-    LyrIndex n_layers,
-
-    int startYr,
-    int endYr,
-    double lyrDepths[],
-
     LOG_INFO* LogInfo
 ) {
 
@@ -3092,11 +3082,7 @@ void SW_OUT_create_files(
 
     #if defined(SW_OUTTEXT)
     SW_OUT_create_textfiles(SW_FileStatus, SW_Output,
-        n_layers, SW_Domain->PathInfo.InFiles, GenOutput, LogInfo);
-
-    (void) startYr;
-    (void) endYr;
-    (void) lyrDepths;
+        SW_Domain->nMaxSoilLayers, SW_Domain->PathInfo.InFiles, GenOutput, LogInfo);
 
     #elif defined(SWNETCDF)
     SW_NC_create_output_files(
@@ -3110,24 +3096,20 @@ void SW_OUT_create_files(
         GenOutput->nvar_OUT,
         GenOutput->nsl_OUT,
         GenOutput->npft_OUT,
-        lyrDepths,
+        SW_Domain->hasConsistentSoilLayerDepths,
+        SW_Domain->depthsAllSoilLayers,
         SW_Domain->netCDFInfo.strideOutYears,
-        startYr, endYr,
+        SW_Domain->startyr,
+        SW_Domain->endyr,
         SW_Domain->netCDFInfo.baseCalendarYear,
         &SW_FileStatus->numOutFiles,
         SW_FileStatus->ncOutFiles,
         LogInfo);
 
-    (void) n_layers;
-
     #else
     (void) SW_FileStatus;
     (void) SW_Domain;
     (void) SW_Output;
-    (void) n_layers;
-    (void) startYr;
-    (void) endYr;
-    (void) lyrDepths;
     #endif
 }
 

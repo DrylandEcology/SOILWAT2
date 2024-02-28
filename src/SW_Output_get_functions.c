@@ -45,6 +45,10 @@
 #include <math.h>
 #endif
 
+#if defined(SWNETCDF)
+#include <netcdf.h> // defines NC_FILL_DOUBLE
+#endif
+
 // Array-based output declarations:
 #if defined(SW_OUTARRAY)
 #include "include/SW_Output_outarray.h"
@@ -52,7 +56,6 @@
 
 // Text-based output declarations:
 #if defined(SW_OUTTEXT)
-
 #include "include/SW_Output_outtext.h"
 #endif
 
@@ -1025,6 +1028,16 @@ void get_vwcBulk_mem(OutPeriod pd, SW_ALL* sw)
         /* vwcBulk at this point is identical to swcBulk */
         p[iOUTIndex] = vo->vwcBulk[i] / sw->Site.width[i];
     }
+
+    #if defined(SWNETCDF)
+    /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+    for (i = sw->Site.n_layers; i < go->nsl_OUT[eSW_VWCBulk][0]; i++) {
+        iOUTIndex =
+            go->iOUToffset[eSW_VWCBulk][pd][0] +
+            iOUTnc(go->irow_OUT[pd], i, 0, go->nsl_OUT[eSW_VWCBulk][0], 1);
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+    }
+    #endif // SWNETCDF
 }
 
 #elif defined(STEPWAT)
@@ -1131,6 +1144,16 @@ void get_vwcMatric_mem(OutPeriod pd, SW_ALL* sw)
         convert = 1. / (1. - sw->Site.fractionVolBulk_gravel[i]) / sw->Site.width[i];
         p[iOUTIndex] = vo->vwcMatric[i] * convert;
     }
+
+    #if defined(SWNETCDF)
+    /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+    for (i = sw->Site.n_layers; i < go->nsl_OUT[eSW_VWCMatric][0]; i++) {
+        iOUTIndex =
+            go->iOUToffset[eSW_VWCMatric][pd][0] +
+            iOUTnc(go->irow_OUT[pd], i, 0, go->nsl_OUT[eSW_VWCMatric][0], 1);
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+    }
+    #endif // SWNETCDF
 }
 
 #elif defined(STEPWAT)
@@ -1239,6 +1262,16 @@ void get_swa_mem(OutPeriod pd, SW_ALL* sw)
 
             p[iOUTIndex] = vo->SWA_VegType[k][i];
         }
+
+        #if defined(SWNETCDF)
+        /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+        for (i = sw->Site.n_layers; i < go->nsl_OUT[eSW_SWA][0]; i++) {
+            iOUTIndex =
+                go->iOUToffset[eSW_SWA][pd][0] +
+                iOUTnc(go->irow_OUT[pd], i, k, go->nsl_OUT[eSW_SWA][0], go->npft_OUT[eSW_SWA][0]);
+            p[iOUTIndex] = NC_FILL_DOUBLE;
+        }
+        #endif // SWNETCDF
     }
 }
 
@@ -1340,9 +1373,18 @@ void get_swcBulk_mem(OutPeriod pd, SW_ALL* sw)
             iOUTnc(go->irow_OUT[pd], i, 0, go->nsl_OUT[eSW_SWCBulk][0], 1);
         #endif
 
-
         p[iOUTIndex] = vo->swcBulk[i];
     }
+
+    #if defined(SWNETCDF)
+    /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+    for (i = sw->Site.n_layers; i < go->nsl_OUT[eSW_SWCBulk][0]; i++) {
+        iOUTIndex =
+            go->iOUToffset[eSW_SWCBulk][pd][0] +
+            iOUTnc(go->irow_OUT[pd], i, 0, go->nsl_OUT[eSW_SWCBulk][0], 1);
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+    }
+    #endif // SWNETCDF
 }
 
 #elif defined(STEPWAT)
@@ -1480,6 +1522,16 @@ void get_swpMatric_mem(OutPeriod pd, SW_ALL* sw)
         p[iOUTIndex] = SW_SWRC_SWCtoSWP(vo->swpMatric[i], &sw->Site,
                         i, &local_log);
     }
+
+    #if defined(SWNETCDF)
+    /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+    for (i = sw->Site.n_layers; i < go->nsl_OUT[eSW_SWPMatric][0]; i++) {
+        iOUTIndex =
+            go->iOUToffset[eSW_SWPMatric][pd][0] +
+            iOUTnc(go->irow_OUT[pd], i, 0, go->nsl_OUT[eSW_SWPMatric][0], 1);
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+    }
+    #endif // SWNETCDF
 }
 
 #elif defined(STEPWAT)
@@ -1582,6 +1634,16 @@ void get_swaBulk_mem(OutPeriod pd, SW_ALL* sw)
 
         p[iOUTIndex] = vo->swaBulk[i];
     }
+
+    #if defined(SWNETCDF)
+    /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+    for (i = sw->Site.n_layers; i < go->nsl_OUT[eSW_SWABulk][0]; i++) {
+        iOUTIndex =
+            go->iOUToffset[eSW_SWABulk][pd][0] +
+            iOUTnc(go->irow_OUT[pd], i, 0, go->nsl_OUT[eSW_SWABulk][0], 1);
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+    }
+    #endif // SWNETCDF
 }
 
 #elif defined(STEPWAT)
@@ -1686,6 +1748,16 @@ void get_swaMatric_mem(OutPeriod pd, SW_ALL* sw)
         convert = 1. / (1. - sw->Site.fractionVolBulk_gravel[i]);
         p[iOUTIndex] = vo->swaMatric[i] * convert;
     }
+
+    #if defined(SWNETCDF)
+    /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+    for (i = sw->Site.n_layers; i < go->nsl_OUT[eSW_SWAMatric][0]; i++) {
+        iOUTIndex =
+            go->iOUToffset[eSW_SWAMatric][pd][0] +
+            iOUTnc(go->irow_OUT[pd], i, 0, go->nsl_OUT[eSW_SWAMatric][0], 1);
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+    }
+    #endif // SWNETCDF
 }
 
 #elif defined(STEPWAT)
@@ -2029,6 +2101,17 @@ void get_transp_mem(OutPeriod pd, SW_ALL* sw)
         p[iOUTIndex] = vo->transp_total[i];
     }
 
+    #if defined(SWNETCDF)
+    /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+    for (i = sw->Site.n_layers; i < go->nsl_OUT[eSW_Transp][0]; i++) {
+        iOUTIndex =
+            go->iOUToffset[eSW_Transp][pd][0] +
+            iOUTnc(go->irow_OUT[pd], i, 0, go->nsl_OUT[eSW_Transp][0], 1);
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+    }
+    #endif // SWNETCDF
+
+
     /* transpiration for each vegetation type */
     ForEachVegType(k) {
         ForEachSoilLayer(i, n_layers) {
@@ -2039,11 +2122,21 @@ void get_transp_mem(OutPeriod pd, SW_ALL* sw)
             #elif defined(SWNETCDF)
             iOUTIndex =
                 go->iOUToffset[eSW_Transp][pd][1] +
-                iOUTnc(go->irow_OUT[pd], i, k, go->nsl_OUT[eSW_Transp][0], go->npft_OUT[eSW_Transp][1]);
+                iOUTnc(go->irow_OUT[pd], i, k, go->nsl_OUT[eSW_Transp][1], go->npft_OUT[eSW_Transp][1]);
             #endif
 
             p[iOUTIndex] = vo->transp[k][i];
         }
+
+        #if defined(SWNETCDF)
+        /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+        for (i = sw->Site.n_layers; i < go->nsl_OUT[eSW_Transp][1]; i++) {
+            iOUTIndex =
+                go->iOUToffset[eSW_Transp][pd][1] +
+                iOUTnc(go->irow_OUT[pd], i, k, go->nsl_OUT[eSW_Transp][1], go->npft_OUT[eSW_Transp][1]);
+            p[iOUTIndex] = NC_FILL_DOUBLE;
+        }
+        #endif // SWNETCDF
     }
 }
 
@@ -2195,6 +2288,16 @@ void get_evapSoil_mem(OutPeriod pd, SW_ALL* sw)
 
         p[iOUTIndex] = vo->evap_baresoil[i];
     }
+
+    #if defined(SWNETCDF)
+    /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+    for (i = sw->Site.n_evap_lyrs; i < go->nsl_OUT[eSW_EvapSoil][0]; i++) {
+        iOUTIndex =
+            go->iOUToffset[eSW_EvapSoil][pd][0] +
+            iOUTnc(go->irow_OUT[pd], i, 0, go->nsl_OUT[eSW_EvapSoil][0], 1);
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+    }
+    #endif // SWNETCDF
 }
 
 #elif defined(STEPWAT)
@@ -2666,6 +2769,16 @@ void get_lyrdrain_mem(OutPeriod pd, SW_ALL* sw)
 
         p[iOUTIndex] = vo->lyrdrain[i];
     }
+
+    #if defined(SWNETCDF)
+    /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+    for (i = sw->Site.n_layers - 1; i < go->nsl_OUT[eSW_LyrDrain][0]; i++) {
+        iOUTIndex =
+            go->iOUToffset[eSW_LyrDrain][pd][0] +
+            iOUTnc(go->irow_OUT[pd], i, 0, go->nsl_OUT[eSW_LyrDrain][0], 1);
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+    }
+    #endif // SWNETCDF
 }
 
 #elif defined(STEPWAT)
@@ -2781,6 +2894,16 @@ void get_hydred_mem(OutPeriod pd, SW_ALL* sw)
         p[iOUTIndex] = vo->hydred_total[i];
     }
 
+    #if defined(SWNETCDF)
+    /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+    for (i = sw->Site.n_layers; i < go->nsl_OUT[eSW_HydRed][0]; i++) {
+        iOUTIndex =
+            go->iOUToffset[eSW_HydRed][pd][0] +
+            iOUTnc(go->irow_OUT[pd], i, 0, go->nsl_OUT[eSW_HydRed][0], 1);
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+    }
+    #endif // SWNETCDF
+
 
     /* hydraulic redistribution for each vegetation type */
     ForEachVegType(k) {
@@ -2796,6 +2919,16 @@ void get_hydred_mem(OutPeriod pd, SW_ALL* sw)
 
             p[iOUTIndex] = vo->hydred[k][i]; // k + 1 because of total hydred
         }
+
+        #if defined(SWNETCDF)
+        /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+        for (i = sw->Site.n_layers; i < go->nsl_OUT[eSW_HydRed][0]; i++) {
+            iOUTIndex =
+                go->iOUToffset[eSW_HydRed][pd][1] +
+                iOUTnc(go->irow_OUT[pd], i, k, go->nsl_OUT[eSW_HydRed][1], go->npft_OUT[eSW_HydRed][1]);
+            p[iOUTIndex] = NC_FILL_DOUBLE;
+        }
+        #endif // SWNETCDF
     }
 }
 
@@ -3274,6 +3407,16 @@ void get_wetdays_mem(OutPeriod pd, SW_ALL* sw)
             p[iOUTIndex] = (int) vo->wetdays[i];
         }
     }
+
+    #if defined(SWNETCDF)
+    /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+    for (i = sw->Site.n_layers; i < go->nsl_OUT[eSW_WetDays][0]; i++) {
+        iOUTIndex =
+            go->iOUToffset[eSW_WetDays][pd][0] +
+            iOUTnc(go->irow_OUT[pd], i, 0, go->nsl_OUT[eSW_WetDays][0], 1);
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+    }
+    #endif // SWNETCDF
 }
 
 #elif defined(STEPWAT)
@@ -3588,7 +3731,6 @@ void get_soiltemp_mem(OutPeriod pd, SW_ALL* sw)
         p[iOUTIndex] = vo->minLyrTemperature[i];
 
 
-
         #if defined(RSOILWAT)
         iOUTIndex = iOUT((i * 3) + 2, go->irow_OUT[pd], go->nrow_OUT[pd], ncol_TimeOUT[pd]);
 
@@ -3599,9 +3741,27 @@ void get_soiltemp_mem(OutPeriod pd, SW_ALL* sw)
         #endif
 
         p[iOUTIndex] = vo->avgLyrTemp[i];
-
-
     }
+
+    #if defined(SWNETCDF)
+    /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+    for (i = sw->Site.n_layers; i < go->nsl_OUT[eSW_SoilTemp][0]; i++) {
+        iOUTIndex =
+            go->iOUToffset[eSW_SoilTemp][pd][0] +
+            iOUTnc(go->irow_OUT[pd], i, 0, go->nsl_OUT[eSW_SoilTemp][0], 1);
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+
+        iOUTIndex =
+            go->iOUToffset[eSW_SoilTemp][pd][1] +
+            iOUTnc(go->irow_OUT[pd], i, 0, go->nsl_OUT[eSW_SoilTemp][1], 1);
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+
+        iOUTIndex =
+            go->iOUToffset[eSW_SoilTemp][pd][2] +
+            iOUTnc(go->irow_OUT[pd], i, 0, go->nsl_OUT[eSW_SoilTemp][2], 1);
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+    }
+    #endif // SWNETCDF
 }
 
 #elif defined(STEPWAT)
@@ -3708,6 +3868,16 @@ void get_frozen_mem(OutPeriod pd, SW_ALL* sw)
 
         p[iOUTIndex] = vo->lyrFrozen[i];
     }
+
+    #if defined(SWNETCDF)
+    /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+    for (i = sw->Site.n_layers; i < go->nsl_OUT[eSW_Frozen][0]; i++) {
+        iOUTIndex =
+            go->iOUToffset[eSW_Frozen][pd][0] +
+            iOUTnc(go->irow_OUT[pd], i, 0, go->nsl_OUT[eSW_Frozen][0], 1);
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+    }
+    #endif // SWNETCDF
 }
 
 #elif defined(STEPWAT)
