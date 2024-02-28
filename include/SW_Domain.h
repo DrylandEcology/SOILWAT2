@@ -26,7 +26,16 @@ void SW_DOM_SimSet(SW_DOMAIN* SW_Domain, unsigned long userSUID,
 void SW_DOM_deepCopy(SW_DOMAIN* source, SW_DOMAIN* dest, LOG_INFO* LogInfo);
 void SW_DOM_init_ptrs(SW_DOMAIN* SW_Domain);
 void SW_DOM_deconstruct(SW_DOMAIN* SW_Domain);
-
+void SW_DOM_soilProfile(
+    Bool *hasConsistentSoilLayerDepths,
+    LyrIndex *nMaxSoilLayers,
+    LyrIndex *nMaxEvapLayers,
+    double depthsAllSoilLayers[],
+    LyrIndex default_n_layers,
+    LyrIndex default_n_evap_lyrs,
+    double default_depths[],
+    LOG_INFO* LogInfo
+);
 #ifdef __cplusplus
 }
 #endif

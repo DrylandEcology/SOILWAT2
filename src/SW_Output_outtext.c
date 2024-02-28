@@ -33,6 +33,11 @@
 #include "include/SW_Output.h"
 #include "include/SW_Output_outtext.h"
 
+#if defined(SWNETCDF)
+#include "include/SW_Output_outarray.h"
+#include "include/SW_netCDF.h"
+#endif
+
 
 /** \brief Formatted output string for aggregated output
 
@@ -130,7 +135,7 @@ static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil,
 }
 
 
-#if defined(SOILWAT)
+#if defined(SOILWAT) && !defined(SWNETCDF)
 /**
   \brief Create `csv` output files for specified time step
 
@@ -334,6 +339,8 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd, char *InFiles[],
  *	and values
  * @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
  * 	basic output information for all output keys
+ * @param[in] SW_netCDF Struct of type SW_NETCDF holding constant
+ *  netCDF file information
  * @param[in] n_layers Number of layers of soil within the simulation run
  * @param[in] InFiles Array of program in/output files
  * @param[in] GenOutput Holds general variables that deal with output
@@ -363,7 +370,6 @@ void SW_OUT_create_textfiles(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output
 		}
 	}
 }
-
 
 #elif defined(STEPWAT)
 

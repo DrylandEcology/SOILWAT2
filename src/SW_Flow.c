@@ -747,8 +747,9 @@ void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo) {
 			sw->Site.stDeltaX, sw->Site.stMaxDepth, sw->Site.stNRGR,
 			sw->SoilWat.snowpack[Today], sw->Weather.now.temp_max,
 			sw->Weather.now.temp_min, sw->SoilWat.H_gt, sw->Model.year,
-			sw->Model.doy, sw->SoilWat.maxLyrTemperature,
-			sw->SoilWat.minLyrTemperature, &sw->SoilWat.soiltempError, LogInfo);
+			sw->Model.doy, sw->Site.depths, sw->SoilWat.maxLyrTemperature,
+			sw->SoilWat.minLyrTemperature, &sw->SoilWat.soiltempError,
+            LogInfo);
 
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error

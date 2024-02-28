@@ -1979,6 +1979,7 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 	int k, flagswpcrit = 0;
 	RealD
 		evsum = 0., trsum_veg[NVEGTYPES] = {0.}, tmp;
+    double acc = 0.0;
 
 	#ifdef SWDEBUG
 	int debug = 0;
@@ -2013,6 +2014,9 @@ void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site, LOG_INFO* LogInfo
 	/* Loop over soil layers check variables and calculate parameters */
 	ForEachSoilLayer(s, SW_Site->n_layers)
 	{
+        // copy depths of soil layer profile
+        acc += SW_Site->width[s];
+        SW_Site->depths[s] = acc;
 
 		/* Copy site-level SWRC/PTF information to each layer:
 		   We currently allow specifying one SWRC/PTF for a site for all layers;

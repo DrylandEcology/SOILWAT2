@@ -72,6 +72,8 @@ extern "C" {
 #define NoDay 999
 #define WKDAYS 7
 
+extern const TimeInt monthdays[];
+
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
