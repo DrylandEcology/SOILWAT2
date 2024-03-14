@@ -1115,7 +1115,7 @@ void SW_OUT_init_ptrs(SW_OUTPUT* SW_Output) {
 
 	ForEachOutKey(key)
 	{
-		SW_Output[key]->outfile = NULL;
+		SW_Output[key].outfile = NULL;
 	}
 	#else
 	(void) SW_Output;
