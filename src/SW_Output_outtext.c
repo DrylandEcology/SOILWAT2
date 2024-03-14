@@ -585,9 +585,9 @@ void SW_OUT_close_textfiles(SW_FILE_STATUS* SW_FileStatus, SW_GEN_OUT* GenOutput
 
 		#else
 		close_regular = swFALSE;
-		close_layers - swFALSE;
+		close_layers = swFALSE;
 		close_aggs = swFALSE;
-		
+
 		#endif
 
 		if (GenOutput->use_OutPeriod[p]) {
