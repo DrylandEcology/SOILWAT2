@@ -69,7 +69,7 @@ void sw_print_version(void) {
 		"SOILWAT2 version: %s\n",
 		SW2_VERSION
 	);
-	#ifndef RSOILWAT2
+	#ifndef RSOILWAT
 	swprintf(
 		"Compiled        : by %s, on %s, on %s %s\n",
 		USERNAME, HOSTNAME, BUILD_DATE, BUILD_TIME

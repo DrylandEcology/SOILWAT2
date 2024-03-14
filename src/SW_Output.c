@@ -2856,6 +2856,7 @@ void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
     (void) n_layers;
     (void) InFiles;
     (void) GenOutput;
+	(void) LogInfo;
     #endif
 }
 
