@@ -60,11 +60,10 @@ const TimeInt _notime = 0xffff; /* init value for _prev* */
 /**
 @brief MDL constructor for global variables.
 
-@param[out] newperiod newperiod[] Specifies when a new day/week/month/year
-	has started
-@param[out] days_in_month[] Number of days per month for "current" year
+@param[in,out] SW_Model Struct of type SW_MODEL holding basic time information
+	about the simulation
 */
-void SW_MDL_construct(Bool newperiod[], TimeInt days_in_month[]) {
+void SW_MDL_construct(SW_MODEL* SW_Model) {
 	/* =================================================== */
 	/* note that an initializer that is called during
 	 * execution (better called clean() or something)
@@ -73,13 +72,16 @@ void SW_MDL_construct(Bool newperiod[], TimeInt days_in_month[]) {
 	 */
 	OutPeriod pd;
 
-	Time_init_model(days_in_month); // values of time are correct only after Time_new_year()
+	Time_init_model(SW_Model->days_in_month); // values of time are correct only after Time_new_year()
 
 	ForEachOutPeriod(pd)
 	{
-		newperiod[pd] = swFALSE;
+		SW_Model->newperiod[pd] = swFALSE;
 	}
-	newperiod[eSW_Day] = swTRUE; // every day is a new day
+	SW_Model->newperiod[eSW_Day] = swTRUE; // every day is a new day
+
+	SW_Model->addtl_yr = 0;
+	SW_Model->doOutput = swTRUE;
 }
 
 /**
@@ -89,12 +91,12 @@ void SW_MDL_deconstruct(void)
 {}
 
 /**
-@brief Reads in MDL file and displays error message if file is incorrect.
+@brief Reads in `modelrun.in` and displays error message if file is incorrect.
 
 @param[in,out] SW_Model Struct of type SW_MODEL holding basic time information
 	about the simulation
 @param[in] InFiles Array of program in/output files
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 */
 void SW_MDL_read(SW_MODEL* SW_Model, char *InFiles[], LOG_INFO* LogInfo) {
 	/* =================================================== */
@@ -111,10 +113,9 @@ void SW_MDL_read(SW_MODEL* SW_Model, char *InFiles[], LOG_INFO* LogInfo) {
 	 *    starting year
 	 */
 	FILE *f;
-	int y, cnt;
-	TimeInt d;
-	char *p, enddyval[6], errstr[MAX_LOG_SIZE], *MyFileName, inbuf[MAX_FILENAMESIZE];
-	Bool fstartdy = swFALSE, fenddy = swFALSE, fhemi = swFALSE;
+	int lineno;
+	char *MyFileName, inbuf[MAX_FILENAMESIZE];
+	double temp;
 
 	MyFileName = InFiles[eModel];
 	f = OpenFile(MyFileName, "r", LogInfo);
@@ -122,104 +123,46 @@ void SW_MDL_read(SW_MODEL* SW_Model, char *InFiles[], LOG_INFO* LogInfo) {
         return; // Exit function prematurely due to error
     }
 
-	/* ----- beginning year */
-	if (!GetALine(f, inbuf)) {
-		CloseFile(&f, LogInfo);
-		LogError(LogInfo, LOGERROR, "%s: No input.", MyFileName);
-        return; // Exit function prematurely due to error
-	}
-	y = atoi(inbuf);
-	if (y < 0) {
-		CloseFile(&f, LogInfo);
-		LogError(LogInfo, LOGERROR, "%s: Negative start year (%d)", MyFileName, y);
-        return; // Exit function prematurely due to error
-	}
-	SW_Model->startyr = yearto4digit((TimeInt) y);
-	SW_Model->addtl_yr = 0; // Could be done anywhere; SOILWAT2 runs don't need a delta year
-
-	/* ----- ending year */
-	if (!GetALine(f, inbuf)) {
-		CloseFile(&f, LogInfo);
-		LogError(LogInfo, LOGERROR, "%s: Ending year not found.", MyFileName);
-        return; // Exit function prematurely due to error
-	}
-	y = atoi(inbuf);
-	//assert(y > 0);
-	if (y < 0) {
-		CloseFile(&f, LogInfo);
-		LogError(LogInfo, LOGERROR, "%s: Negative ending year (%d)", MyFileName, y);
-        return; // Exit function prematurely due to error
-	}
-	SW_Model->endyr = yearto4digit((TimeInt) y);
-	if (SW_Model->endyr < SW_Model->startyr) {
-		CloseFile(&f, LogInfo);
-		LogError(LogInfo, LOGERROR, "%s: Start Year > End Year", MyFileName);
-        return; // Exit function prematurely due to error
-	}
-
 	/* ----- Start checking for model time parameters */
 	/*   input should be in order of startdy, enddy, hemisphere,
 	 but if hemisphere occurs first, skip checking for the rest
 	 and assume they're not there.
 	 */
-	cnt = 0;
-	while (GetALine(f, inbuf)) {
-		cnt++;
-		if (isalpha((int) *inbuf) && strcmp(inbuf, "end")) { /* get hemisphere */
-			SW_Model->isnorth = (Bool) (toupper((int) *inbuf) == 'N');
-			fhemi = swTRUE;
-			break;
-		}//TODO: SHOULDN'T WE SKIP THIS BELOW IF ABOVE IS swTRUE
-		switch (cnt) {
-		case 1:
-			SW_Model->startstart = atoi(inbuf);
-			fstartdy = swTRUE;
-			break;
-		case 2:
-			p = inbuf;
-			cnt = 0;
-			while (*p && cnt < 6) {
-				enddyval[cnt++] = tolower((int) *(p++));
-			}
-			enddyval[cnt] = enddyval[5] = '\0';
-			fenddy = swTRUE;
-			break;
-		case 3:
-			SW_Model->isnorth = (Bool) (toupper((int) *inbuf) == 'N');
-			fhemi = swTRUE;
-			break;
-		default:
-			break; /* skip any extra lines */
+	lineno = 0;
+	while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+		switch(lineno) {
+			case 0: // Longitude
+				// longitude is currently not used by the code, but may be used in the future
+				// it is present in the `siteparam.in` input file to completely document
+				// site location
+				SW_Model->longitude = atof(inbuf) * deg_to_rad;
+				break;
+			case 1: // Latitude
+				SW_Model->latitude = atof(inbuf) * deg_to_rad;
+
+				// Calculate hemisphere based on latitude
+				SW_Model->isnorth = (GT(SW_Model->latitude, 0.)) ? swTRUE : swFALSE;
+				break;
+			case 2: // Elevation
+				SW_Model->elevation = atof(inbuf);
+				break;
+			case 3: // Slope
+				SW_Model->slope = atof(inbuf) * deg_to_rad;
+				break;
+			case 4: // Aspect
+				temp = atof(inbuf);
+				SW_Model->aspect = missing(temp) ? temp : temp * deg_to_rad;
+				break;
+			default: // More lines than expected
+				LogError(LogInfo, LOGERROR, "More lines read than expected." \
+						 "Please double check your `modelrun.in` file.");
+                return; // Exit function prematurely due to error
+
+				break;
 		}
+		lineno++;
 	}
 
-	if (!(fstartdy && fenddy && fhemi)) {
-		snprintf(errstr, MAX_LOG_SIZE, "\nNot found in %s:\n", MyFileName);
-		if (!fstartdy) {
-			strcat(errstr, "\tStart Day  - using 1\n");
-			SW_Model->startstart = 1;
-		}
-		if (!fenddy) {
-			strcat(errstr, "\tEnd Day    - using \"end\"\n");
-			strcpy(enddyval, "end");
-		}
-		if (!fhemi) {
-			strcat(errstr, "\tHemisphere - using \"N\"\n");
-			SW_Model->isnorth = swTRUE;
-		}
-		strcat(errstr, "Continuing.\n");
-		LogError(LogInfo, LOGWARN, errstr);
-	}
-
-	SW_Model->startstart += ((SW_Model->isnorth) ? DAYFIRST_NORTH : DAYFIRST_SOUTH) - 1;
-	if (strcmp(enddyval, "end") == 0) {
-		SW_Model->endend = (SW_Model->isnorth) ? Time_get_lastdoy_y(SW_Model->endyr) : DAYLAST_SOUTH;
-	} else {
-		d = atoi(enddyval);
-		SW_Model->endend = (d == 365) ? Time_get_lastdoy_y(SW_Model->endyr) : 365;
-	}
-
-	SW_Model->daymid = (SW_Model->isnorth) ? DAYMID_NORTH : DAYMID_SOUTH;
 	CloseFile(&f, LogInfo);
 
 }
@@ -241,8 +184,8 @@ void SW_MDL_new_year(SW_MODEL* SW_Model) {
 	Time_new_year(year, SW_Model->days_in_month, SW_Model->cum_monthdays);
 	SW_Model->simyear = SW_Model->year + SW_Model->addtl_yr;
 
-	SW_Model->firstdoy = (year == SW_Model->startyr) ? SW_Model->startstart : 1;
-	SW_Model->lastdoy = (year == SW_Model->endyr) ? SW_Model->endend : Time_get_lastdoy_y(year);
+	SW_Model->firstdoy = (year == SW_Model->startyr && !SW_Model->SW_SpinUp.spinup) ? SW_Model->startstart : 1;
+	SW_Model->lastdoy = (year == SW_Model->endyr && !SW_Model->SW_SpinUp.spinup) ? SW_Model->endend : Time_get_lastdoy_y(year);
 }
 
 /**
@@ -282,4 +225,29 @@ void SW_MDL_new_day(SW_MODEL* SW_Model) {
 	} else
 		SW_Model->newperiod[eSW_Week] = swFALSE;
 
+}
+
+/**
+ * @brief Obtain information from domain for one model run based on
+ * user inputted suid
+ *
+ * @param[in,out] SW_Model Struct of type SW_MODEL holding basic time
+ *  information about the simulation
+ * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+ *  temporal/spatial information for a set of simulation runs
+ * @param[in] fileNames Input netCDF files
+ * @param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_MDL_get_ModelRun(SW_MODEL* SW_Model, SW_DOMAIN* SW_Domain,
+                         char* fileNames[], LOG_INFO* LogInfo) {
+
+    SW_Model->startyr = SW_Domain->startyr; // Copy start year
+    SW_Model->endyr = SW_Domain->endyr; // Copy end year
+    SW_Model->startstart = SW_Domain->startstart; // Copy start doy
+    SW_Model->endend = SW_Domain->endend; // Copy end doy
+
+    memcpy(&SW_Model->SW_SpinUp, &SW_Domain->SW_SpinUp, sizeof (SW_Model->SW_SpinUp));
+
+    (void) LogInfo;
+    (void) fileNames;
 }

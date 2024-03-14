@@ -38,6 +38,7 @@ namespace {
     }
 
     free(ptr1);
+    ptr1 = NULL;
 
 
     //--- Expect to return NULL and report error if size_new is 0

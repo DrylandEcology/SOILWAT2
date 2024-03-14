@@ -20,6 +20,7 @@
 #define SOILW_DEF_H
 
 #include <math.h>  /* >= C99; for: atan(), isfinite() */
+#include <time.h>
 #include "include/generic.h"
 
 #if !defined(RSOILWAT) /* rSOILWAT2 uses R's RNGs */
@@ -47,6 +48,9 @@ extern "C" {
 #define BUILD_DATE __DATE__
 #define BUILD_TIME __TIME__
 
+
+/* Time in seconds to wrap up the SOILWAT2 program before wall time is completely exhausted */
+#define SW_WRAPUPTIME 2
 
 /* Not sure if this parameter is variable or a consequence of algebra,
  * but it's different in the FORTRAN version than in the ELM doc.
@@ -102,6 +106,9 @@ extern "C" {
 #define MAX_FILENAMESIZE 512
 #define MAX_PATHSIZE 2048
 
+/* Large storage for a value when reading in key-value pairs from an input file */
+#define LARGE_VALUE 1024
+
 /* Maximum number of messages to store in LOG_INFO */
 #define MAX_MSGS 10
 
@@ -115,6 +122,8 @@ extern "C" {
 
 #define MAX_SPECIESNAMELEN   4  /* for vegestab */
 
+/* Constant for a key not found when reading in a key-value style input file */
+#define KEY_NOT_FOUND -1
 
 /* convenience indices to arrays in the model */
 #define TWO_DAYS   2
@@ -255,6 +264,15 @@ typedef enum { eF,   /* file management */
 typedef unsigned int TimeInt;
 typedef unsigned int LyrIndex;
 typedef signed char flag;
+
+
+/* Wall time functionality */
+#if (defined(__STDC__) && defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L)
+  /* C11 or later */
+  typedef struct timespec WallTimeSpec;
+#else
+  typedef time_t WallTimeSpec;
+#endif
 
 
 /* =================================================== */

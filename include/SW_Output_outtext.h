@@ -26,7 +26,7 @@ extern "C" {
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 #if defined(SOILWAT)
-void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
+void SW_OUT_create_textfiles(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
 	LyrIndex n_layers, char *InFiles[], SW_GEN_OUT* GenOutput,
 	LOG_INFO* LogInfo);
 
@@ -47,7 +47,7 @@ void write_headers_to_csv(OutPeriod pd, FILE *fp_reg, FILE *fp_soil,
 void find_TXToutputSoilReg_inUse(Bool make_soil[], Bool make_regular[],
 		SW_OUTPUT* SW_Output, OutPeriod timeSteps[][SW_OUTNPERIODS],
 		IntUS used_OUTNPERIODS);
-void SW_OUT_close_files(SW_FILE_STATUS* SW_FileStatus, SW_GEN_OUT* GenOutput,
+void SW_OUT_close_textfiles(SW_FILE_STATUS* SW_FileStatus, SW_GEN_OUT* GenOutput,
 						LOG_INFO* LogInfo);
 
 

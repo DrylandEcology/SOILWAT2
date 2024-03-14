@@ -21,7 +21,7 @@
  would give an index to the number of seedlings
  established in a year.
  20090826 (drs) added return; after LBL_Normal_Exit:
- 06/26/2013	(rjm)	closed open files in function SW_VES_read() or if LogError() with LOGFATAL is called in _read_spp()
+ 06/26/2013	(rjm)	closed open files in function SW_VES_read() or if LogError() with LOGERROR is called in _read_spp()
  08/21/2013	(clk)	changed the line v = SW_VegEstab.parms[ _new_species() ]; -> v = SW_VegEstab.parms[ count ], where count = _new_species();
  for some reason, without this change, a segmenation fault was occuring
  */
@@ -91,25 +91,34 @@ void SW_VES_init_ptrs(SW_VEGESTAB* SW_VegEstab) {
 
 @param[out] SW_VegEstab Struct of type SW_VEGESTAB holding all
   information about vegetation within the simulation
-@param[in,out] LogInfo Holds information dealing with logfile output
 */
-void SW_VES_construct(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo) {
+void SW_VES_construct(SW_VEGESTAB* SW_VegEstab) {
 	/* =================================================== */
 	/* note that an initializer that is called during
 	 * execution (better called clean() or something)
 	 * will need to free all allocated memory first
 	 * before clearing structure.
 	 */
-	OutPeriod pd;
 
 	// Clear the module structure:
 	memset(SW_VegEstab, 0, sizeof(SW_VEGESTAB));
+}
 
-	// Allocate output structures:
+/**
+ * @brief Allocate dynamic memory for output pointers in the SW_VEGESTAB struct
+ *
+ * @param[out] SW_VegEstab SW_VegEstab Struct of type SW_VEGESTAB holding all
+ *  information about vegetation within the simulation
+ * @param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_VES_alloc_outptrs(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo) {
+    OutPeriod pd;
+
+    // Allocate output structures:
 	ForEachOutPeriod(pd)
 	{
 		SW_VegEstab->p_accu[pd] = (SW_VEGESTAB_OUTPUTS *) Mem_Calloc(1,
-			sizeof(SW_VEGESTAB_OUTPUTS), "SW_VES_construct()", LogInfo);
+			sizeof(SW_VEGESTAB_OUTPUTS), "SW_VES_alloc_outptrs()", LogInfo);
 
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -121,7 +130,7 @@ void SW_VES_construct(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo) {
 
 		if (pd > eSW_Day) {
 			SW_VegEstab->p_oagg[pd] = (SW_VEGESTAB_OUTPUTS *) Mem_Calloc(1,
-				sizeof(SW_VEGESTAB_OUTPUTS), "SW_VES_construct()", LogInfo);
+				sizeof(SW_VEGESTAB_OUTPUTS), "SW_VES_alloc_outptrs()", LogInfo);
 
             if(LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
@@ -150,11 +159,11 @@ void SW_VES_deconstruct(SW_VEGESTAB* SW_VegEstab)
 	{
 		for (i = 0; i < SW_VegEstab->count; i++)
 		{
-			Mem_Free(SW_VegEstab->parms[i]);
+			free(SW_VegEstab->parms[i]);
 			SW_VegEstab->parms[i] = NULL;
 		}
 
-		Mem_Free(SW_VegEstab->parms);
+		free(SW_VegEstab->parms);
 		SW_VegEstab->parms = NULL;
 	}
 
@@ -165,22 +174,24 @@ void SW_VES_deconstruct(SW_VEGESTAB* SW_VegEstab)
 		if (SW_VegEstab->count > 0)
 		{
 			if (pd > eSW_Day && !isnull(SW_VegEstab->p_oagg[pd]->days)) {
-				Mem_Free(SW_VegEstab->p_oagg[eSW_Year]->days);
+				free(SW_VegEstab->p_oagg[eSW_Year]->days);
+				SW_VegEstab->p_oagg[eSW_Year]->days = NULL;
 			}
 
 			if (!isnull(SW_VegEstab->p_accu[pd]->days)) {
-				Mem_Free(SW_VegEstab->p_accu[eSW_Year]->days);
+				free(SW_VegEstab->p_accu[eSW_Year]->days);
+				SW_VegEstab->p_accu[eSW_Year]->days = NULL;
 			}
 		}
 
 		// De-allocate output structures
 		if (pd > eSW_Day && !isnull(SW_VegEstab->p_oagg[pd])) {
-			Mem_Free(SW_VegEstab->p_oagg[pd]);
+			free(SW_VegEstab->p_oagg[pd]);
 			SW_VegEstab->p_oagg[pd] = NULL;
 		}
 
 		if (!isnull(SW_VegEstab->p_accu[pd])) {
-			Mem_Free(SW_VegEstab->p_accu[pd]);
+			free(SW_VegEstab->p_accu[pd]);
 			SW_VegEstab->p_accu[pd] = NULL;
 		}
 	}
@@ -206,7 +217,7 @@ void SW_VES_new_year(IntU count) {
   vegetation establishment within the simulation
 @param[in] InFiles Array of program in/output files
 @param[in] _ProjDir Project directory
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 */
 void SW_VES_read(SW_VEGESTAB* SW_VegEstab, char *InFiles[],
 				 char *_ProjDir, LOG_INFO* LogInfo) {
@@ -226,7 +237,7 @@ void SW_VES_read(SW_VEGESTAB* SW_VegEstab, char *InFiles[],
   considered for turning on/off calculations of vegetation establishment.
 @param[in] InFiles Array of program in/output files
 @param[in] _ProjDir Project directory
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 
 @note
   - Establishment is calculated under the following conditions
@@ -243,7 +254,8 @@ void SW_VES_read2(SW_VEGESTAB* SW_VegEstab, Bool use_VegEstab,
 	LOG_INFO* LogInfo) {
 
 	SW_VES_deconstruct(SW_VegEstab);
-	SW_VES_construct(SW_VegEstab, LogInfo);
+	SW_VES_construct(SW_VegEstab);
+    SW_VES_alloc_outptrs(SW_VegEstab, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -260,7 +272,7 @@ void SW_VES_read2(SW_VEGESTAB* SW_VegEstab, Bool use_VegEstab,
             return; // Exit function prematurely due to error
         }
 
-		if (!GetALine(f, inbuf) || (consider_InputFlag && *inbuf == '0')) {
+		if (!GetALine(f, inbuf, MAX_FILENAMESIZE) || (consider_InputFlag && *inbuf == '0')) {
 			/* turn off vegetation establishment if either
 					 * no species listed
 					 * if user input flag is set to 0 and we don't ignore that input,
@@ -272,7 +284,7 @@ void SW_VES_read2(SW_VEGESTAB* SW_VegEstab, Bool use_VegEstab,
 			/* read file names with species establishment parameters
 				 and read those files one by one
 			*/
-			while (GetALine(f, inbuf)) {
+			while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
 				strcpy(buf, _ProjDir); // add `_ProjDir` to path, e.g., for STEPWAT2
 				strcat(buf, inbuf);
 				_read_spp(buf, SW_VegEstab, LogInfo);
@@ -282,7 +294,7 @@ void SW_VES_read2(SW_VEGESTAB* SW_VegEstab, Bool use_VegEstab,
                 }
 			}
 
-			SW_VegEstab_construct(SW_VegEstab, LogInfo);
+			SW_VegEstab_alloc_outptrs(SW_VegEstab, LogInfo);
             if(LogInfo->stopRun) {
                 CloseFile(&f, LogInfo);
                 return; // Exit function prematurely due to error
@@ -295,24 +307,43 @@ void SW_VES_read2(SW_VEGESTAB* SW_VegEstab, Bool use_VegEstab,
 
 
 /**
-@brief Construct SW_VegEstab output variables
+@brief Allocates element `day` for SW_VegEstab output variables
 
 @param[in,out] SW_VegEstab SW_VegEstab SW_VegEstab Struct of type SW_VEGESTAB
   holding all information about vegetation within the simulation
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 */
-void SW_VegEstab_construct(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo)
+void SW_VegEstab_alloc_outptrs(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo)
 {
 	if (SW_VegEstab->count > 0) {
+
+		if (isnull(SW_VegEstab->p_oagg[eSW_Year])) {
+			LogError(
+				LogInfo,
+				LOGERROR,
+				"SW_VegEstab_alloc_outptrs: 'p_oagg[eSW_Year]' is unexpectedly NULL."
+			);
+			return; // Exit function prematurely due to error
+		}
+
+		if (isnull(SW_VegEstab->p_accu[eSW_Year])) {
+			LogError(
+				LogInfo,
+				LOGERROR,
+				"SW_VegEstab_alloc_outptrs: 'p_accu[eSW_Year]' is unexpectedly NULL."
+			);
+			return; // Exit function prematurely due to error
+		}
+
 		SW_VegEstab->p_oagg[eSW_Year]->days = (TimeInt *) Mem_Calloc(
-			SW_VegEstab->count, sizeof(TimeInt), "SW_VegEstab_construct()",
+			SW_VegEstab->count, sizeof(TimeInt), "SW_VegEstab_alloc_outptrs()",
 																	LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
 		SW_VegEstab->p_accu[eSW_Year]->days = (TimeInt *) Mem_Calloc(
-			SW_VegEstab->count, sizeof(TimeInt), "SW_VegEstab_construct()",
+			SW_VegEstab->count, sizeof(TimeInt), "SW_VegEstab_alloc_outptrs()",
 																	LogInfo);
 	}
 }
@@ -331,7 +362,7 @@ void SW_VegEstab_construct(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo)
 	@param[in] n_transp_lyrs Index of the deepest transp. region
 	@param[in] count Held within type SW_VEGESTAB to determine
 		how many species to check
-	@param[in,out] LogInfo Holds information dealing with logfile output
+	@param[out] LogInfo Holds information on warnings and errors
 */
 void SW_VES_init_run(SW_VEGESTAB_INFO** parms, SW_SITE *SW_Site,
 	LyrIndex n_transp_lyrs[], IntU count, LOG_INFO* LogInfo) {
@@ -498,7 +529,7 @@ static void _read_spp(const char *infile, SW_VEGESTAB* SW_VegEstab,
 			return; // Exit function prematurely due to error
 	}
 
-	while (GetALine(f, inbuf)) {
+	while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
 		switch (lineno) {
 		case 0:
 			strcpy(name, inbuf);
@@ -581,7 +612,7 @@ static void _read_spp(const char *infile, SW_VEGESTAB* SW_VegEstab,
 @param[in] sppnum Index for which paramater is beign initialized.
 @param[in] SW_Site Struct of type SW_SITE describing the simulated site
 @param[in] n_transp_lyrs Layer index of deepest transp. region.
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 */
 void _spp_init(SW_VEGESTAB_INFO** parms, unsigned int sppnum,
 	SW_SITE *SW_Site, LyrIndex n_transp_lyrs[], LOG_INFO* LogInfo) {
@@ -715,7 +746,7 @@ static void _sanity_check(unsigned int sppnum, RealD swcBulk_wiltpt[],
 
 @param[in,out] SW_VegEstab SW_VegEstab Struct of type SW_VEGESTAB holding all
   information about vegetation within the simulation
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 
 @return (++SW_VegEstab->count) - 1
 */

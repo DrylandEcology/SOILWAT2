@@ -30,7 +30,7 @@ namespace {
     TEST_F(WeatherFixtureTest, WeatherDefaultValues) {
 
         // Testing to fill allHist from `SW_Weather`
-        SW_SKY_read(PathInfo.InFiles, &SW_All.Sky, &LogInfo);
+        SW_SKY_read(SW_Domain.PathInfo.InFiles, &SW_All.Sky, &LogInfo);
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         readAllWeather(
@@ -87,7 +87,7 @@ namespace {
 
         SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
                      SW_All.Weather.generateWeatherMethod,
-                     PathInfo.InFiles, &LogInfo);
+                     SW_Domain.PathInfo.InFiles, &LogInfo);
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
@@ -120,7 +120,7 @@ namespace {
 
         SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
                      SW_All.Weather.generateWeatherMethod,
-                     PathInfo.InFiles, &LogInfo);
+                     SW_Domain.PathInfo.InFiles, &LogInfo);
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         SW_All.Model.startyr = 1981;
@@ -155,7 +155,7 @@ namespace {
 
         SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
                      SW_All.Weather.generateWeatherMethod,
-                     PathInfo.InFiles, &LogInfo);
+                     SW_Domain.PathInfo.InFiles, &LogInfo);
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // Change directory to get input files with some missing data
@@ -751,8 +751,8 @@ namespace {
          int yearIndex = 0, midJanDay = 14;
 
          /* Test if monthly values are not being used */
-         SW_WTH_setup(&SW_All.Weather, PathInfo.InFiles,
-                      PathInfo.weather_prefix, &LogInfo);
+         SW_WTH_setup(&SW_All.Weather, SW_Domain.PathInfo.InFiles,
+                      SW_Domain.PathInfo.weather_prefix, &LogInfo);
          sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
          // Read in all weather
@@ -782,8 +782,8 @@ namespace {
          int yearIndex = 0, year = 1980, midJanDay = 14;
 
         /* Test correct priority is being given to input values from DAYMET */
-         SW_WTH_setup(&SW_All.Weather, PathInfo.InFiles,
-                      PathInfo.weather_prefix, &LogInfo);
+         SW_WTH_setup(&SW_All.Weather, SW_Domain.PathInfo.InFiles,
+                      SW_Domain.PathInfo.weather_prefix, &LogInfo);
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
              // Switch directory to gridmet input folder
@@ -884,8 +884,8 @@ namespace {
          int yearIndex = 0, year = 1980, midJanDay = 14;
 
          /* Test correct priority is being given to input values from DAYMET */
-         SW_WTH_setup(&SW_All.Weather, PathInfo.InFiles,
-                      PathInfo.weather_prefix, &LogInfo);
+         SW_WTH_setup(&SW_All.Weather, SW_Domain.PathInfo.InFiles,
+                      SW_Domain.PathInfo.weather_prefix, &LogInfo);
          sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
                  // Switch directory to daymet input folder
@@ -985,8 +985,8 @@ namespace {
 
          /* Test correct priority is being given to input values from MACA */
 
-         SW_WTH_setup(&SW_All.Weather, PathInfo.InFiles,
-                      PathInfo.weather_prefix, &LogInfo);
+         SW_WTH_setup(&SW_All.Weather, SW_Domain.PathInfo.InFiles,
+                      SW_Domain.PathInfo.weather_prefix, &LogInfo);
          sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
                  // Switch directory to daymet input folder
@@ -1091,8 +1091,8 @@ namespace {
         double cloudCovTestVal = .5, actVapPressTestVal = 4.23, windSpeedTestVal = 2.12;
 
         // Setup and read in weather
-        SW_WTH_setup(&SW_All.Weather, PathInfo.InFiles,
-                     PathInfo.weather_prefix, &LogInfo);
+        SW_WTH_setup(&SW_All.Weather, SW_Domain.PathInfo.InFiles,
+                     SW_Domain.PathInfo.weather_prefix, &LogInfo);
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // Turn off flags for monthly values along with daily flags

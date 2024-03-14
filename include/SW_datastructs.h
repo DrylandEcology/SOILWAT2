@@ -16,16 +16,17 @@
 
 
 // Array-based output:
-#if defined(RSOILWAT) || defined(STEPWAT)
+#if defined(RSOILWAT) || defined(STEPWAT) || defined(SWNETCDF)
 #define SW_OUTARRAY
 #endif
 
 // Text-based output:
-#if defined(SOILWAT) || defined(STEPWAT)
+#if (defined(SOILWAT) || defined(STEPWAT)) && !defined(SWNETCDF)
 #define SW_OUTTEXT
 #endif
 
-#define SW_NFILES 23 // For `InFiles`
+#define SW_NFILES 26 // For `InFiles`
+#define SW_NVARNC 2 // For `InFilesNC`
 
 
 /* =================================================== */
@@ -89,17 +90,32 @@ typedef struct {
 		memoized_int_sin_beta[MAX_DAYS][TWO_DAYS];
 } SW_ATMD;
 
+
+
+/* =================================================== */
+/*                Spin-up struct                    */
+/* --------------------------------------------------- */
+typedef struct {
+	// data for the (optional) spinup before simulation loop
+
+	TimeInt scope,			/**< Scope (N): use first N years of simulation for the spinup */
+			duration;		/**< Duration (M): sample M years out of the first N years */
+
+	int mode,				/**< Mode: (1) repeated random resample; (2) construct sequence of M years */
+		rng_seed;			/**< Seed for generating random years for mode 1 */
+
+	sw_random_t spinup_rng; /**< Random number generator used for mode 1 */
+
+	Bool spinup;			/**< Whether the spinup is currently running - used to disable outputs */
+} SW_SPINUP;
+
+
 /* =================================================== */
 /*                    Model structs                    */
 /* --------------------------------------------------- */
 
 typedef struct {
 	TimeInt /* controlling dates for model run */
-	startyr, /* beginning year for model run */
-	endyr, /* ending year for model run */
-	startstart, /* startday in start year */
-	endend, /* end day in end year */
-	daymid, /* mid year depends on hemisphere */
 	/* current year dates */
 	firstdoy, /* start day for this year */
 	lastdoy, /* 366 if leapyear or endend if endyr */
@@ -112,6 +128,24 @@ typedef struct {
 	 * doy and year are base1. */
 	/* simyear = year + addtl_yr */
 
+	// Create a copy of SW_DOMAIN's time & spinup information
+	// to use instead of passing around SW_DOMAIN
+	TimeInt startyr,			/* beginning year for a set of simulation run */
+			endyr,				/* ending year for a set of simulation run */
+			startstart,			/* startday in start year */
+			endend;				/* end day in end year */
+
+	// Data for (optional) spinup (copied from SW_DOMAIN)
+	SW_SPINUP SW_SpinUp;
+
+	// ********** END of copying SW_DOMAIN's data *************
+
+	RealD longitude,	/* longitude of the site (radians)        */
+		  latitude,		/* latitude of the site (radians)        */
+		  elevation,	/* elevation a.s.l (m) of the site */
+		  slope,		/* slope of the site (radians): between 0 (horizontal) and pi / 2 (vertical) */
+		  aspect;		/* aspect of the site (radians): A value of \ref SW_MISSING indicates no data, ie., treat it as if slope = 0; South facing slope: aspect = 0, East = -pi / 2, West = pi / 2, North = ±pi */
+
 	TimeInt
 		days_in_month[MAX_MONTHS], /* number of days per month for "current" year */
 		cum_monthdays[MAX_MONTHS]; /* monthly cumulative number of days for "current" year */
@@ -122,6 +156,9 @@ typedef struct {
 	 * printing and summing weekly/monthly values */
 	Bool newperiod[SW_OUTNPERIODS];
 	Bool isnorth;
+	Bool doOutput; /**< Flag to indicate if output should be produced (TRUE) or not (FALSE); set to FALSE for spinup and tests */
+
+    int ncSuid[2]; // First element used for domain "s", both used for "xy"
 
 	#ifdef STEPWAT
 	/* Variables from GlobalType (STEPWAT2) used in SOILWAT2 */
@@ -179,11 +216,6 @@ typedef struct {
 	RealD
 		slow_drain_coeff, /* low soil water drainage coefficient   */
 		pet_scale,	/* changes relative effect of PET calculation */
-		longitude,	/* longitude of the site (radians)        */
-		latitude,	/* latitude of the site (radians)        */
-		altitude,	/* altitude a.s.l (m) of the site */
-		slope,		/* slope of the site (radians): between 0 (horizontal) and pi / 2 (vertical) */
-		aspect,		/* aspect of the site (radians): A value of \ref SW_MISSING indicates no data, ie., treat it as if slope = 0; South facing slope: aspect = 0, East = -pi / 2, West = pi / 2, North = ±pi */
 					/* SWAT2K model parameters : Neitsch S, Arnold J, Kiniry J, Williams J. 2005. Soil and water assessment tool (SWAT) theoretical documentation. version 2005. Blackland Research Center, Texas Agricultural Experiment Station: Temple, TX. */
 		TminAccu2,	/* Avg. air temp below which ppt is snow ( C) */
 		TmaxCrit,	/* Snow temperature at which snow melt starts ( C) */
@@ -488,6 +520,24 @@ typedef struct {
 	TimeInt first, last, total;
 } SW_TIMES;
 
+typedef struct {
+  Bool has_walltime; /**< Flag indicating whether timing functionality works */
+  WallTimeSpec timeStart; /**< Time stamp at start of main() */
+
+  double
+    wallTimeLimit, /**< User provided wall time limit in seconds */
+    timeSimSet,    /**< Wall time [seconds] of the loop over the simulation set */
+    timeMean,      /**< Mean time [seconds] across simulation runs - defined as a call to SW_CTL_run_sw() */
+    timeSS,        /**< Sum of squared time - helper for calculating running standard deviation */
+    timeSD,        /**< Standard deviation of time [seconds] across simulation runs */
+    timeMin,       /**< Minimum time [seconds] of a simulation run */
+    timeMax;       /**< Maximum time [seconds] of a simulation run */
+
+  unsigned long
+    nTimedRuns,   /**< Number of simulation runs with timing information */
+    nUntimedRuns; /**< Number of simulation runs for which timing failed */
+} SW_WALLTIME;
+
 /* =================================================== */
 /*                   Weather structs                   */
 /* --------------------------------------------------- */
@@ -738,11 +788,15 @@ typedef struct {
 		 warningMsgs[MAX_MSGS][MAX_LOG_SIZE]; // Holds up to MAX_MSGS warning messages to report
 
 	int numWarnings;        // Number of total warnings thrown
+	unsigned long
+	  numDomainWarnings,  /**< Number of suids with at least one warning */
+	  numDomainErrors;    /**< Number of suids with an error */
 
 	Bool stopRun;           // Specifies if an error has occurred and
                             // the program needs to stop early (backtrack)
 
-  Bool QuietMode; /**< Don't print version, error message, or notify user about logfile (only used by SOILWAT2) */
+  Bool QuietMode, /**< Don't print version, error message, or notify user about logfile (only used by SOILWAT2) */
+    printProgressMsg; /**< Do/don't print progress messages to the console */
 } LOG_INFO;
 
 typedef struct {
@@ -818,7 +872,7 @@ typedef struct {
 
 typedef struct {
 	TimeInt *days;	/* only output the day of estab for each species in the input */
-					/* this array is allocated via `SW_VegEstab_construct()` */
+					/* this array is allocated via `SW_VegEstab_alloc_outptrs()` */
 					/* each day in the array corresponds to the ordered species list */
 } SW_VEGESTAB_OUTPUTS;
 
@@ -954,7 +1008,7 @@ typedef struct {
 	Bool print_SW_Output;
 	char sw_outstr[MAX_LAYERS * OUTSTRLEN];
 
-	#if defined(RSOILWAT) || defined(STEPWAT)
+	#if defined(SW_OUTARRAY)
 	/** \brief A 2-dim array of pointers to output arrays.
 
 	The variable p_OUT used by rSOILWAT2 for output and by STEPWAT2 for
@@ -1008,6 +1062,83 @@ typedef struct {
 } SW_GEN_OUT;
 
 /* =================================================== */
+/*         Coordinate Reference System struct          */
+/* --------------------------------------------------- */
+
+typedef struct {
+    char *long_name, *grid_mapping_name, *crs_wkt;
+    double longitude_of_prime_meridian, semi_major_axis, inverse_flattening;
+
+    // Possible attributes if the type is "projected"
+    char *datum, *units;
+    double standard_parallel[2]; // first and second standard parallels; 2nd may be missing (NAN)
+    double longitude_of_central_meridian,
+           latitude_of_projection_origin,
+           false_easting,
+           false_northing;
+} SW_CRS;
+
+/* =================================================== */
+/*                SOILWAT2 netCDF struct               */
+/* --------------------------------------------------- */
+
+typedef struct {
+
+    char *title, *author, *institution, *comment, *coordinate_system;
+    Bool primary_crs_is_geographic;
+
+    SW_CRS crs_geogsc, crs_projsc;
+
+    char *varNC[SW_NVARNC];
+    char *InFilesNC[SW_NVARNC];
+
+    int ncFileIDs[SW_NVARNC];
+    int ncVarIDs[SW_NVARNC];
+} SW_NETCDF;
+
+
+/* =================================================== */
+/*                    Domain structs                   */
+/* --------------------------------------------------- */
+
+typedef struct {
+	// Spatial domain information
+	// SUID = simulation unit identifier
+
+	char DomainType[3];  /**< Type of domain: 'xy' (grid), 's' (sites) */ // (3 = 2 characters + '\0')
+
+	unsigned long // to clarify, "long" = "long int", not double
+		nDimX,             /**< Number of grid cells along x dimension (used if domainType is 'xy') */
+		nDimY,             /**< Number of grid cells along y dimension (used if domainType is 'xy') */
+		nDimS,             /**< Number of sites (used if domainType is 's') */
+		nSUIDs,            /**< Total size of domain, i.e., total number of grid cells (if domainType is 'xy') or number of sites (if domainType is 's') */
+
+		startSimSet,       /**< First SUID in simulation set within domain to simulate */
+		endSimSet;         /**< Last SUID in simulation set within domain to simulate */
+
+    char crs_bbox[27];     /**< Input name/CRS type (domain.in) - holds up to "World Geodetic System 1984" (26) */
+    double min_x,          /**< Minimum x coordinate of the bounding box */
+           min_y,          /**< Minimum y coordinate of the bounding box */
+           max_x,          /**< Maximum x coordinate of the bounding box */
+           max_y;          /**< Maximum y coordinate of the bounding box */
+
+	// Temporal domain information
+	TimeInt startyr,     /**< First calendar year of the simulation runs */
+			endyr,           /**< Last calendar year of the simulation runs */
+			startstart,      /**< First day in first calendar year of the simulation runs */
+			endend;          /**< Last day in last calendar year of the simulation runs */
+
+	// Information on input files
+	PATH_INFO PathInfo;
+
+	// Data for (optional) spinup
+	SW_SPINUP SW_SpinUp;
+
+    // Information dealing with netCDFs
+    SW_NETCDF netCDFInfo;
+} SW_DOMAIN;
+
+/* =================================================== */
 /*                 Comprehensive struct                */
 /* --------------------------------------------------- */
 
@@ -1040,7 +1171,7 @@ typedef struct {
 	void (*pfunc_text)(OutPeriod, SW_ALL*); /* pointer to output routine for text output */
 	#endif
 
-	#if defined(RSOILWAT)
+	#if defined(RSOILWAT) || defined(SWNETCDF)
 	void (*pfunc_mem)(OutPeriod, SW_ALL*); /* pointer to output routine for array output */
 
 	#elif defined(STEPWAT)

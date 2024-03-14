@@ -49,7 +49,7 @@ namespace {
     int i;
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -68,7 +68,7 @@ namespace {
     SW_All.Site.use_soil_temp = swTRUE;
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -89,7 +89,7 @@ namespace {
     SW_All.Site.percentRunon = 1.25;
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -112,7 +112,7 @@ namespace {
     // Read Markov weather generator input files (they are not normally read)
     SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
                  SW_All.Weather.generateWeatherMethod,
-                 PathInfo.InFiles, &LogInfo);
+                 SW_Domain.PathInfo.InFiles, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Point to nonexisting weather data
@@ -127,7 +127,7 @@ namespace {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -151,7 +151,7 @@ namespace {
     // Read Markov weather generator input files (they are not normally read)
     SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
                  SW_All.Weather.generateWeatherMethod,
-                 PathInfo.InFiles, &LogInfo);
+                 SW_Domain.PathInfo.InFiles, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Prepare weather data
@@ -163,7 +163,7 @@ namespace {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -190,7 +190,7 @@ namespace {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -218,7 +218,7 @@ namespace {
     SW_SWC_init_run(&SW_All.SoilWat, &SW_All.Site, &SW_All.Weather.temp_snow);
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -246,7 +246,7 @@ namespace {
     SW_SWC_init_run(&SW_All.SoilWat, &SW_All.Site, &SW_All.Weather.temp_snow);
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -266,11 +266,11 @@ namespace {
 
     // Re-calculate vegetation
     SW_VPD_init_run(&SW_All.VegProd, &SW_All.Weather, &SW_All.Model,
-                    SW_All.Site.latitude, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+                    &LogInfo);
+    sw_fail_on_error(&LogInfo);
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -292,12 +292,12 @@ namespace {
     SW_All.Site.site_ptf_type = encode_str2ptf(SW_All.Site.site_ptf_name);
     SW_All.Site.site_has_swrcp = swTRUE;
 
-    Mem_Free(PathInfo.InFiles[eSWRCp]);
-    PathInfo.InFiles[eSWRCp] = Str_Dup("Input/swrc_params_vanGenuchten1980.in", &LogInfo);
+    free(SW_Domain.PathInfo.InFiles[eSWRCp]);
+    SW_Domain.PathInfo.InFiles[eSWRCp] = Str_Dup("Input/swrc_params_vanGenuchten1980.in", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Read SWRC parameter input file (which is not read by default)
-    SW_SWRC_read(&SW_All.Site, PathInfo.InFiles, &LogInfo);
+    SW_SWRC_read(&SW_All.Site, SW_Domain.PathInfo.InFiles, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Update soils
@@ -305,7 +305,7 @@ namespace {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -329,12 +329,12 @@ namespace {
     SW_All.Site.site_ptf_type = encode_str2ptf(SW_All.Site.site_ptf_name);
     SW_All.Site.site_has_swrcp = swTRUE;
 
-    Mem_Free(PathInfo.InFiles[eSWRCp]);
-    PathInfo.InFiles[eSWRCp] = Str_Dup("Input/swrc_params_FXW.in", &LogInfo);
+    free(SW_Domain.PathInfo.InFiles[eSWRCp]);
+    SW_Domain.PathInfo.InFiles[eSWRCp] = Str_Dup("Input/swrc_params_FXW.in", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Read SWRC parameter input file (which is not read by default)
-    SW_SWRC_read(&SW_All.Site, PathInfo.InFiles, &LogInfo);
+    SW_SWRC_read(&SW_All.Site, SW_Domain.PathInfo.InFiles, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Update soils
@@ -342,7 +342,7 @@ namespace {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -385,7 +385,7 @@ namespace {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -432,7 +432,7 @@ namespace {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -481,7 +481,32 @@ namespace {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
+        "Water balance error in test " <<
+        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
+    }
+  }
+
+    TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSpinup) {
+    int i;
+
+    // Turn on spinup simulation
+    SW_All.Model.SW_SpinUp.spinup = swTRUE;
+    // Set spinup variables
+    SW_All.Model.SW_SpinUp.mode = 1;
+    SW_All.Model.SW_SpinUp.duration = 5;
+    SW_All.Model.SW_SpinUp.scope = 8;
+
+    // Run the spinup & deactivate
+    SW_CTL_run_spinup(&SW_All, &LogInfo);
+
+    // Run the simulation
+    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks

@@ -51,7 +51,7 @@ void SW_CBN_deconstruct(void)
  * @param[in] SW_Model Struct of type SW_MODEL holding basic time information
  *	about the simulation
  * @param[in] InFiles Array of program in/output files
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
  *
  * Additionally, check for the following issues:
  *   1. Duplicate entries.
@@ -104,7 +104,7 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, char *InFiles[],
   }
   #endif
 
-  while (GetALine(f, inbuf)) {
+  while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
     #ifdef SWDEBUG
     if (debug) swprintf("\ninbuf = %s", inbuf);
     #endif
@@ -218,11 +218,11 @@ void SW_CBN_read(SW_CARBON* SW_Carbon, SW_MODEL* SW_Model, char *InFiles[],
  * @param[in] SW_Model Struct of type SW_MODEL holding basic time information
  *	about the simulation
  * @param[in] SW_Carbon Struct of type SW_CARBON holding all CO2-related data
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
  *
  */
 void SW_CBN_init_run(VegType VegProd_veg[], SW_MODEL* SW_Model,
-                     SW_CARBON* SW_Carbon, LOG_INFO* LogInfo) {
+    SW_CARBON* SW_Carbon, LOG_INFO* LogInfo) {
   int k;
   TimeInt year, simendyr = SW_Model->endyr + SW_Model->addtl_yr;
   double ppm;
@@ -252,8 +252,8 @@ void SW_CBN_init_run(VegType VegProd_veg[], SW_MODEL* SW_Model,
     if (SW_Carbon->use_bio_mult) {
       ForEachVegType(k) {
         VegProd_veg[k].co2_multipliers[BIO_INDEX][year] =
-                                              VegProd_veg[k].co2_bio_coeff1
-                                              * pow(ppm, VegProd_veg[k].co2_bio_coeff2);
+                            VegProd_veg[k].co2_bio_coeff1
+                            * pow(ppm, VegProd_veg[k].co2_bio_coeff2);
       }
     }
 
@@ -267,8 +267,9 @@ void SW_CBN_init_run(VegType VegProd_veg[], SW_MODEL* SW_Model,
 
     if (SW_Carbon->use_wue_mult) {
       ForEachVegType(k) {
-        VegProd_veg[k].co2_multipliers[WUE_INDEX][year] = VegProd_veg[k].co2_wue_coeff1 *
-          pow(ppm, VegProd_veg[k].co2_wue_coeff2);
+        VegProd_veg[k].co2_multipliers[WUE_INDEX][year] =
+                VegProd_veg[k].co2_wue_coeff1 *
+                    pow(ppm, VegProd_veg[k].co2_wue_coeff2);
       }
     }
   }

@@ -37,7 +37,8 @@ Note: this document is best viewed as part of the doxygen-built documentation
 SOILWAT2 needs the following input files for a simulation run:
 \secreflist
 \refitem filesin files.in
-\refitem yearsin years.in
+\refitem modelrunin modelrun.in
+\refitem domainin domain.in
 \refitem siteparamin siteparam.in
 \refitem soilsin soils.in
 \refitem swrcpin swrc_params.in
@@ -62,8 +63,14 @@ SOILWAT2 needs the following input files for a simulation run:
 Go back to the \ref explain_inputs "list of input files"
 <hr>
 
-\section yearsin years.in
-\verbinclude tests/example/Input/years.in
+\section modelrunin modelrun.in
+\verbinclude tests/example/Input/modelrun.in
+
+Go back to the \ref explain_inputs "list of input files"
+<hr>
+
+\section domainin domain.in
+\verbinclude tests/example/Input/domain.in
 
 Go back to the \ref explain_inputs "list of input files"
 <hr>

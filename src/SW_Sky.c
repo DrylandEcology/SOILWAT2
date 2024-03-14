@@ -12,7 +12,7 @@
  06/16/2010	(drs) all cloud.in input files contain on line 1 cloud cover, line 2 wind speed, line 3 rel. humidity, and line 4 transmissivity, but SW_SKY_read() was reading rel. humidity from line 1 and cloud cover from line 3 instead -> SW_SKY_read() is now reading as the input files are formatted
  08/22/2011	(drs) new 5th line in cloud.in containing snow densities (kg/m3): read  in SW_SKY_read(void) as case 4
  09/26/2011	(drs) added calls to Times.c:interpolate_monthlyValues() to SW_SKY_init() for each monthly input variable
- 06/27/2013	(drs)	closed open files if LogError() with LOGFATAL is called in SW_SKY_read()
+ 06/27/2013	(drs)	closed open files if LogError() with LOGERROR is called in SW_SKY_read()
  */
 /********************************************************/
 /********************************************************/
@@ -40,7 +40,7 @@
 @param[in] InFiles Array of program in/output files
 @param[out] SW_Sky Struct of type SW_SKY which describes sky conditions
 	over the simulated site
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 */
 void SW_SKY_read(char *InFiles[], SW_SKY* SW_Sky, LOG_INFO* LogInfo) {
 	/* =================================================== */
@@ -58,7 +58,7 @@ void SW_SKY_read(char *InFiles[], SW_SKY* SW_Sky, LOG_INFO* LogInfo) {
         return; // Exit function prematurely due to error
     }
 
-	while (GetALine(f, inbuf)) {
+	while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
 		switch (lineno) {
 		case 0:
 			x = sscanf(inbuf, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
@@ -121,6 +121,7 @@ void SW_SKY_read(char *InFiles[], SW_SKY* SW_Sky, LOG_INFO* LogInfo) {
 */
 void SW_SKY_new_year(SW_MODEL* SW_Model, RealD snow_density[MAX_MONTHS],
 					 RealD snow_density_daily[MAX_MONTHS]) {
+
     Bool interpAsBase1 = swTRUE;
 	TimeInt year = SW_Model->year;
 

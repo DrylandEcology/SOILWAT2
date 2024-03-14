@@ -117,7 +117,7 @@ void *Mem_Calloc(size_t nobjs, size_t size, const char *funcname,
 
   @param[in,out] block pointer to the memory to be reallocated.
   @param[in] sizeNew new size of the array in bytes.
-  @param[out] LogInfo Holds information dealing with logfile output.
+  @param[out] LogInfo Holds information on warnings and errors.
 
   @return On success, a pointer to the beginning of newly allocated memory;
   on failure, a null pointer (and freed original pointer \p block).
@@ -139,18 +139,6 @@ void *Mem_ReAlloc(void *block, size_t sizeNew, LOG_INFO* LogInfo) {
 	}
 
 	return res;
-}
-
-/*****************************************************/
-void Mem_Free(void *block) {
-	/*-------------------------------------------
-	 Provide a wrapper for free() that facilitates debugging.
-
-	 cwb - 5/19/2001
-	 7/23/01  - added Macguire's code.
-	 -------------------------------------------*/
-
-	free(block);
 }
 
 /*****************************************************/

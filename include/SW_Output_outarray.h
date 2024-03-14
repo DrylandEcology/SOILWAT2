@@ -57,6 +57,9 @@ extern const IntUS ncol_TimeOUT[SW_OUTNPERIODS];
 /* --------------------------------------------------- */
 void SW_OUT_set_nrow(SW_MODEL* SW_Model, Bool use_OutPeriod[],
 					           size_t nrow_OUT[]);
+
+void SW_OUT_construct_outarray(SW_GEN_OUT *GenOutput, SW_OUTPUT* SW_Output,
+									   LOG_INFO *LogInfo);
 void SW_OUT_deconstruct_outarray(SW_GEN_OUT *GenOutput);
 
 #ifdef RSOILWAT
@@ -66,9 +69,8 @@ void get_outvalleader(SW_MODEL* SW_Model, OutPeriod pd,
 
 #ifdef STEPWAT
 void do_running_agg(RealD *p, RealD *psd, size_t k, IntU n, RealD x);
-void setGlobalSTEPWAT2_OutputVariables(SW_OUTPUT* SW_Output, SW_GEN_OUT *GenOutput,
-									   LOG_INFO *LogInfo);
 #endif
+
 
 
 #ifdef __cplusplus

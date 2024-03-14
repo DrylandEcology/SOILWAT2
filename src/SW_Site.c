@@ -40,7 +40,7 @@
  Lastly, since fieldcap and wiltpt were removed from soils.in, those values are now calculated within read_layers()
  05/16/2013	(drs)	fixed in init_site_info() the check of transpiration region validity: it gave error if only one layer was present
  06/24/2013	(rjm)	added function void SW_SIT_clear_layers(void) to free allocated soil layers
- 06/27/2013	(drs)	closed open files if LogError() with LOGFATAL is called in SW_SIT_read(), _read_layers()
+ 06/27/2013	(drs)	closed open files if LogError() with LOGERROR is called in SW_SIT_read(), _read_layers()
  07/09/2013	(clk)	added the initialization of all the new variables
  06/05/2016 (ctd) Modified threshold for condition involving gravel in _read_layers() function - as per Caitlin's request.
  									Also, added print statements to notify the user that values may be invalid if the gravel content does not follow
@@ -109,7 +109,7 @@ char const *ptf2str[N_PTFs] = {
 
 	@param[in] SW_Site Struct of type SW_SITE describing the simulated site
 	@param[in] layerno Current layer which is being worked with
-	@param[in,out] LogInfo Holds information dealing with logfile output
+	@param[out] LogInfo Holds information on warnings and errors
 
 	@return A logical value indicating if soil properties passed the checks.
 */
@@ -338,7 +338,7 @@ static double ui_theta_min(
 	Throws an error if `SWRC` is not implemented.
 
 	@param[in] *swrc_name Name of a SWRC
-	@param[in,out] LogInfo Holds information dealing with logfile output
+	@param[out] LogInfo Holds information on warnings and errors
 
 	@return Internal identification number of selected SWRC
 */
@@ -406,7 +406,7 @@ unsigned int encode_str2ptf(char *ptf_name) {
 	@param[in] bdensity Density of the whole soil
 		(matric soil plus coarse fragments) [g/cm3];
 		accepts #SW_MISSING if not used by selected PTF
-	@param[in,out] LogInfo Holds information dealing with logfile output
+	@param[out] LogInfo Holds information on warnings and errors
 
 */
 void SWRC_PTF_estimate_parameters(
@@ -518,7 +518,7 @@ void SWRC_PTF_Cosby1984_for_Campbell1974(
 	@param[in] ptf_type Identification number of selected PTF
 	@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
 	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
-	@param[in,out] LogInfo Holds information dealing with logfile output
+	@param[out] LogInfo Holds information on warnings and errors
 
 	@return Estimated saturated water content of the bulk soil [cm]
 */
@@ -595,7 +595,7 @@ double SW_swcBulk_saturated(
 	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
 	@param[in] swcBulk_sat Saturated water content of the bulk soil [cm]
 	@param[in] _SWCMinVal Lower bound on swc.
-	@param[in,out] LogInfo Holds information dealing with logfile output
+	@param[out] LogInfo Holds information on warnings and errors
 
 	@return Minimum water content of the bulk soil [cm]
 */
@@ -702,7 +702,7 @@ Bool check_SWRC_vs_PTF(char *swrc_name, char *ptf_name) {
 
 	@param[in] swrc_type Identification number of selected SWRC
 	@param[in] *swrcp Vector of SWRC parameters
-	@param[in,out] LogInfo Holds information dealing with logfile output
+	@param[out] LogInfo Holds information on warnings and errors
 
 	@return A logical value indicating if parameters passed the checks.
 */
@@ -752,7 +752,7 @@ Bool SWRC_check_parameters(unsigned int swrc_type, double *swrcp,
 		- `swrcp[3]` (`K_sat`): saturated hydraulic conductivity `[cm / day]`
 
 	@param[in] *swrcp Vector of SWRC parameters
-	@param[in,out] LogInfo Holds information dealing with logfile output
+	@param[out] LogInfo Holds information on warnings and errors
 
 	@return A logical value indicating if parameters passed the checks.
 */
@@ -823,7 +823,7 @@ Bool SWRC_check_parameters_for_Campbell1974(double *swrcp,
 		- `swrcp[4]` (`K_sat`): saturated hydraulic conductivity `[cm / day]`
 
 	@param[in] *swrcp Vector of SWRC parameters
-	@param[in,out] LogInfo Holds information dealing with logfile output
+	@param[out] LogInfo Holds information on warnings and errors
 
 	@return A logical value indicating if parameters passed the checks.
 */
@@ -931,7 +931,7 @@ Bool SWRC_check_parameters_for_vanGenuchten1980(double *swrcp,
 	Table 1 in \cite wang2022WRRa.
 
 	@param[in] *swrcp Vector of SWRC parameters
-	@param[in,out] LogInfo Holds information dealing with logfile output
+	@param[out] LogInfo Holds information on warnings and errors
 
 	@return A logical value indicating if parameters passed the checks.
 */
@@ -1016,7 +1016,7 @@ Bool SWRC_check_parameters_for_FXW(double *swrcp, LOG_INFO* LogInfo) {
 	@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
 	@param[out] *theta_sat Estimated saturated volumetric water content
 		of the matric soil [cm/cm]
-	@param[in,out] LogInfo Holds information dealing with logfile output
+	@param[out] LogInfo Holds information on warnings and errors
 */
 void PTF_Saxton2006(
 	double *theta_sat,
@@ -1145,7 +1145,7 @@ void PTF_Saxton2006(
 	@param[in] porosity Pore space of the matric soil (< 2 mm fraction) [cm3/cm3]
 	@param[out] *theta_min Estimated residual volumetric water content
 		of the matric soil [cm/cm]
-	@param[in,out] LogInfo Holds information dealing with logfile output
+	@param[out] LogInfo Holds information on warnings and errors
 */
 void PTF_RawlsBrakensiek1985(
 	double *theta_min,
@@ -1339,7 +1339,7 @@ void SW_SIT_construct(SW_SITE* SW_Site) {
 @param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
 @param[in] InFiles Array of program in/output files
 @param[out] SW_Carbon Struct of type SW_CARBON holding all CO2-related data
-@param[in,out] LogInfo Holds information dealing with logfile output
+@param[out] LogInfo Holds information on warnings and errors
 */
 void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 				 SW_CARBON* SW_Carbon, LOG_INFO* LogInfo) {
@@ -1356,7 +1356,6 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 	#endif
 	LyrIndex r;
 	Bool too_many_regions = swFALSE;
-	RealD tmp;
 	char inbuf[MAX_FILENAMESIZE];
 
 	/* note that Files.read() must be called prior to this. */
@@ -1367,7 +1366,7 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
         return; // Exit function prematurely due to error
     }
 
-	while (GetALine(f, inbuf)) {
+	while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
 		switch (lineno) {
 		case 0:
 			SW_Site->_SWCMinVal = atof(inbuf);
@@ -1436,79 +1435,60 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 			SW_Site->transp.range = atof(inbuf);
 			break;
 		case 22:
-			// longitude is currently not used by the code, but may be used in the future
-			// it is present in the `siteparam.in` input file to completely document
-			// site location
-			SW_Site->longitude = atof(inbuf) * deg_to_rad;
-			break;
-		case 23:
-			SW_Site->latitude = atof(inbuf) * deg_to_rad;
-			break;
-		case 24:
-			SW_Site->altitude = atof(inbuf);
-			break;
-		case 25:
-			SW_Site->slope = atof(inbuf) * deg_to_rad;
-			break;
-		case 26:
-			tmp = atof(inbuf);
-			SW_Site->aspect = missing(tmp) ? tmp : tmp * deg_to_rad;
-			break;
-		case 27:
 			SW_Site->bmLimiter = atof(inbuf);
 			break;
-		case 28:
+		case 23:
 			SW_Site->t1Param1 = atof(inbuf);
 			break;
-		case 29:
+		case 24:
 			SW_Site->t1Param2 = atof(inbuf);
 			break;
-		case 30:
+		case 25:
 			SW_Site->t1Param3 = atof(inbuf);
 			break;
-		case 31:
+		case 26:
 			SW_Site->csParam1 = atof(inbuf);
 			break;
-		case 32:
+		case 27:
 			SW_Site->csParam2 = atof(inbuf);
 			break;
-		case 33:
+		case 28:
 			SW_Site->shParam = atof(inbuf);
 			break;
-		case 34:
+		case 29:
 			SW_Site->Tsoil_constant = atof(inbuf);
 			break;
-		case 35:
+		case 30:
 			SW_Site->stDeltaX = atof(inbuf);
 			break;
-		case 36:
+		case 31:
 			SW_Site->stMaxDepth = atof(inbuf);
 			break;
-		case 37:
+		case 32:
 			SW_Site->use_soil_temp = itob(atoi(inbuf));
 			break;
-		case 38:
+		case 33:
 			SW_Carbon->use_bio_mult = itob(atoi(inbuf));
 			#ifdef SWDEBUG
 			if (debug) swprintf("'SW_SIT_read': use_bio_mult = %d\n", SW_Carbon->use_bio_mult);
 			#endif
 			break;
-		case 39:
+		case 34:
 			SW_Carbon->use_wue_mult = itob(atoi(inbuf));
 			#ifdef SWDEBUG
 			if (debug) swprintf("'SW_SIT_read': use_wue_mult = %d\n", SW_Carbon->use_wue_mult);
 			#endif
 			break;
-		case 40:
+		case 35:
 			strcpy(SW_Carbon->scenario, inbuf);
 			#ifdef SWDEBUG
 			if (debug) swprintf("'SW_SIT_read': scenario = %s\n", SW_Carbon->scenario);
 			#endif
 			break;
-		case 41:
+		case 36:
 			SW_Site->type_soilDensityInput = atoi(inbuf);
 			break;
-		case 42:
+		case 37:
 			strcpy(SW_Site->site_swrc_name, inbuf);
 			SW_Site->site_swrc_type =
 							encode_str2swrc(SW_Site->site_swrc_name, LogInfo);
@@ -1517,16 +1497,16 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
                 return; // Exit function prematurely due to error
             }
 			break;
-		case 43:
+		case 38:
 			strcpy(SW_Site->site_ptf_name, inbuf);
 			SW_Site->site_ptf_type = encode_str2ptf(SW_Site->site_ptf_name);
 			break;
-		case 44:
+		case 39:
 			SW_Site->site_has_swrcp = itob(atoi(inbuf));
 			break;
 
 		default:
-			if (lineno > 44 + MAX_TRANSP_REGIONS)
+			if (lineno > 39 + MAX_TRANSP_REGIONS)
 				break; /* skip extra lines */
 
 			if (MAX_TRANSP_REGIONS < SW_Site->n_transp_rgn) {
@@ -1603,7 +1583,7 @@ void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
 
 	@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
 	@param[in] InFiles Array of program in/output files
-	@param[in,out] LogInfo Holds information dealing with logfile output
+	@param[out] LogInfo Holds information on warnings and errors
 
 	@note Previously, the function was static and named `_read_layers()`.
 */
@@ -1626,7 +1606,7 @@ void SW_LYR_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
         return; // Exit function prematurely due to error
     }
 
-	while (GetALine(f, inbuf)) {
+	while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
 		lyrno = SW_Site->n_layers++;
 
 		x = sscanf(
@@ -1729,7 +1709,7 @@ void SW_LYR_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
     depth [cm] of each region in ascending (in value) order. If you think about
     this from the perspective of soil, it would mean the shallowest bound is at
     `lowerBounds[0]`.
-  @param[in,out] LogInfo Holds information dealing with logfile output
+  @param[out] LogInfo Holds information on warnings and errors
 
   @sideeffect After deleting any previous data in the soil layer array
     SW_Site.lyr, it creates new soil layers based on the argument inputs.
@@ -1818,7 +1798,7 @@ void set_soillayers(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
     depth [cm] of each region in ascending (in value) order. If you think about
     this from the perspective of soil, it would mean the shallowest bound is at
     `lowerBounds[0]`.
-  @param[in,out] LogInfo Holds information dealing with logfile output
+  @param[out] LogInfo Holds information on warnings and errors
 
   @sideeffect
     \ref SW_SITE._TranspRgnBounds and \ref SW_SITE.n_transp_rgn will be
@@ -1892,7 +1872,7 @@ void derive_soilRegions(SW_SITE* SW_Site, int nRegions,
  *
  * @param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
  * @param[in] InFiles Array of program in/output files
- * @param[in,out] LogInfo Holds information dealing with logfile output
+ * @param[out] LogInfo Holds information on warnings and errors
  *
 */
 void SW_SWRC_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
@@ -1914,7 +1894,7 @@ void SW_SWRC_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
         return; // Exit function prematurely due to error
     }
 
-	while (GetALine(f, inbuf)) {
+	while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
 		x = sscanf(
 			inbuf,
 			"%f %f %f %f %f %f",
@@ -1982,7 +1962,7 @@ void SW_SWRC_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo) {
 	@param[in,out] SW_VegProd Struct of type SW_VEGPROD describing surface
 		cover conditions in the simulation
 	@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
-	@param[in,out] LogInfo Holds information dealing with logfile output
+	@param[out] LogInfo Holds information on warnings and errors
 
 	@sideeffect Values stored in global variable `SW_Site`.
 */
@@ -2538,8 +2518,10 @@ void SW_SIT_init_counts(SW_SITE* SW_Site) {
 @brief Print site-parameters and soil characteristics.
 
 @param[in] SW_Site Struct of type SW_SITE describing the simulated site
+@param[in] SW_Model Struct of type SW_MODEL holding basic time information
+	about the simulation
 */
-void _echo_inputs(SW_SITE* SW_Site) {
+void _echo_inputs(SW_SITE* SW_Site, SW_MODEL* SW_Model) {
 	/* =================================================== */
 	LyrIndex i;
 	LOG_INFO LogInfo;
@@ -2555,11 +2537,11 @@ void _echo_inputs(SW_SITE* SW_Site) {
 	printf("  PET Scale: %5.4f\n", SW_Site->pet_scale);
 	printf("  Runoff: proportion of surface water lost: %5.4f\n", SW_Site->percentRunoff);
 	printf("  Runon: proportion of new surface water gained: %5.4f\n", SW_Site->percentRunon);
-	printf("  Longitude (degree): %4.2f\n", SW_Site->longitude * rad_to_deg);
-	printf("  Latitude (degree): %4.2f\n", SW_Site->latitude * rad_to_deg);
-	printf("  Altitude (m a.s.l.): %4.2f \n", SW_Site->altitude);
-	printf("  Slope (degree): %4.2f\n", SW_Site->slope * rad_to_deg);
-	printf("  Aspect (degree): %4.2f\n", SW_Site->aspect * rad_to_deg);
+	printf("  Longitude (degree): %4.2f\n", SW_Model->longitude * rad_to_deg);
+	printf("  Latitude (degree): %4.2f\n", SW_Model->latitude * rad_to_deg);
+	printf("  Altitude (m a.s.l.): %4.2f \n", SW_Model->elevation);
+	printf("  Slope (degree): %4.2f\n", SW_Model->slope * rad_to_deg);
+	printf("  Aspect (degree): %4.2f\n", SW_Model->aspect * rad_to_deg);
 
 	printf("\nSnow simulation parameters (SWAT2K model):\n----------------------\n");
 	printf("  Avg. air temp below which ppt is snow ( C): %5.4f\n", SW_Site->TminAccu2);

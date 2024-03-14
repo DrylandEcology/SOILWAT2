@@ -53,7 +53,6 @@
 
 // Text-based output declarations:
 #ifdef SW_OUTTEXT
-
 #include "include/SW_Output_outtext.h"
 #endif
 

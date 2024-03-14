@@ -1,26 +1,8 @@
 #include <gmock/gmock.h>
-#include <assert.h>
-#include <ctype.h>
-#include <dirent.h>
-#include <errno.h>
-#include <float.h>
-#include <math.h>
-#include <memory.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <time.h>
-#include <unistd.h>
+#include <gtest/gtest.h>
 
 #include "include/generic.h"
 #include "include/filefuncs.h"
-#include "include/SW_Files.h"
-#include "include/myMemory.h"
-#include "include/SW_Weather.h"
-#include "include/SW_datastructs.h"
 
 #include "tests/gtests/sw_testhelpers.h"
 
@@ -65,6 +47,9 @@ int main(int argc, char **argv) {
     swprintf("Invalid project directory (%s)", dir_test);
   }
 
+  setup_testGlobalSoilwatTemplate();
+
+
   //--- Setup unit tests
   ::testing::InitGoogleTest(&argc, argv);
   ::testing::InitGoogleMock(&argc, argv);
@@ -77,6 +62,8 @@ int main(int argc, char **argv) {
 
   // Run unit tests
   res = RUN_ALL_TESTS();
+
+  teardown_testGlobalSoilwatTemplate();
 
   //--- Return output of 'RUN_ALL_TESTS()'
   // (https://google.github.io/googletest/primer.html#writing-the-main-function)
