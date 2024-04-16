@@ -133,13 +133,22 @@ lib_gmock := $(dir_build_test)/lib$(gmock).a
 
 #------ netCDF SUPPORT
 # `CPPFLAGS=-DSWNETCDF make all`
+# `CPPFLAGS='-DSWNETCDF -DSWUDUNITS' make all`
 
 # User-specified paths to netCDF header and library:
 #   `CPPFLAGS=-DSWNETCDF NC_CFLAGS="-I/path/to/include" NC_LIBS="-L/path/to/lib" make all`
 
+# User-specified paths to headers and libraries of netCDF, udunits2 and expat:
+#   `CPPFLAGS='-DSWNETCDF -DSWUDUNITS' NC_CFLAGS="-I/path/to/include" UD_CFLAGS="-I/path/to/include" EX_CFLAGS="-I/path/to/include" NC_LIBS="-L/path/to/lib" UD_LIBS="-L/path/to/lib" EX_LIBS="-L/path/to/lib" make all`
+
 ifneq (,$(findstring -DSWNETCDF,$(CPPFLAGS)))
   # define makefile variable SWNETCDF if defined via CPPFLAGS
   SWNETCDF = 1
+endif
+
+ifneq (,$(findstring -DSWUDUNITS,$(CPPFLAGS)))
+  # define makefile variable SWUDUNITS if defined via CPPFLAGS
+  SWUDUNITS = 1
 endif
 
 ifdef SWNETCDF
@@ -156,11 +165,40 @@ ifdef SWNETCDF
       NC_LIBS += -lnetcdf
     endif
   endif
+
+  ifdef SWUDUNITS
+    ifndef UD_CFLAGS
+      # assume headers are at same path as those for nc
+      UD_CFLAGS := $(NC_CFLAGS)/udunits2
+    endif
+
+    ifndef UD_LIBS
+      UD_LIBS := -ludunits2
+    endif
+
+    ifndef EX_LIBS
+      EX_LIBS := -lexpat
+    endif
+  else
+    # if SWUDUNITS is not defined, then unset
+    UD_CFLAGS :=
+    EX_CFLAGS :=
+    UD_LIBS :=
+    EX_LIBS :=
+  endif
+
 else
-  # unset NC_CFLAGS and NC_LIBS if SWNETCDF is not defined
+  # if SWNETCDF is not defined, then unset
+  SWUDUNITS :=
   NC_CFLAGS :=
+  UD_CFLAGS :=
+  EX_CFLAGS :=
   NC_LIBS :=
+  UD_LIBS :=
+  EX_LIBS :=
 endif
+
+
 
 
 #------ STANDARDS
@@ -224,8 +262,8 @@ instr_flags_severe := \
 sw_CPPFLAGS := $(CPPFLAGS) $(sw_info) -MMD -MP -I.
 sw_CPPFLAGS_bin := $(sw_CPPFLAGS) -I$(dir_build_sw2)
 sw_CPPFLAGS_test := $(sw_CPPFLAGS) -I$(dir_build_test)
-sw_CFLAGS := $(CFLAGS) $(NC_CFLAGS)
-sw_CXXFLAGS := $(CXXFLAGS) $(NC_CFLAGS)
+sw_CFLAGS := $(CFLAGS) $(NC_CFLAGS) $(UD_CFLAGS) $(EX_CFLAGS)
+sw_CXXFLAGS := $(CXXFLAGS) $(NC_CFLAGS) $(UD_CFLAGS) $(EX_CFLAGS)
 
 # `SW2_FLAGS` can be used to pass in additional flags
 bin_flags := -O2 -fno-stack-protector $(SW2_FLAGS)
@@ -238,7 +276,7 @@ gtest_flags := -D_POSIX_C_SOURCE=200809L # googletest requires POSIX API
 # order of libraries is important for GNU gcc (libSOILWAT2 depends on libm)
 sw_LDFLAGS_bin := $(LDFLAGS) -L$(dir_bin)
 sw_LDFLAGS_test := $(LDFLAGS) -L$(dir_bin) -L$(dir_build_test)
-sw_LDLIBS := $(LDLIBS) $(NC_LIBS) -lm
+sw_LDLIBS := $(LDLIBS) $(NC_LIBS) $(UD_LIBS) $(EX_LIBS) -lm
 
 target_LDLIBS := -l$(target) $(sw_LDLIBS)
 test_LDLIBS := -l$(target_test) $(sw_LDLIBS)

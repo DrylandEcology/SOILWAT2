@@ -34,6 +34,14 @@
       progress tracking makes re-starts after partial completion of the
       simulation set by an earlier execution possible.
 
+* SOILWAT2 can now be compiled with `"udunits2"` to convert output to user
+  requested units (#392; @dschlaep, @N1ckP3rsl3y).
+    * Unit conversion is available only in `"netCDF"`-mode and if compiled
+      with the new preprocessor definition `"SWUDUNITS"`
+      and if the `"udunits2"` library is available,
+      e.g., `CPPFLAGS='-DSWNETCDF -DSWUDUNITS' make all`.
+    * Users request output units via field `"netCDF units"` of the
+      input file `"SW2_netCDF_output_variables.tsv"`.
 
 * Tests now utilize the same template/deep-copy approach (@dschlaep),
   i.e., input files from `test/example/` populate a `"template"` and

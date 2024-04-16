@@ -27,6 +27,9 @@
 #include "external/pcg/pcg_basic.h" // see https://github.com/imneme/pcg-c-basic
 #endif
 
+#if defined(SWNETCDF) && defined(SWUDUNITS)
+#include <udunits2.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -285,6 +288,15 @@ typedef signed char flag;
 typedef int sw_random_t; /* not used by rSOILWAT2; it uses instead R's RNG */
 #else
 typedef pcg32_random_t sw_random_t;
+#endif
+
+/* =================================================== */
+/*                   unit conversion structs           */
+/* --------------------------------------------------- */
+#if defined(SWNETCDF) && defined(SWUDUNITS)
+typedef cv_converter sw_converter_t; /* udunits unit converter */
+#else
+typedef int sw_converter_t;
 #endif
 
 

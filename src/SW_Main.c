@@ -168,6 +168,14 @@ int main(int argc, char **argv) {
     if(LogInfo.stopRun) {
       goto finishProgram;
     }
+    SW_NC_create_units_converters(
+        sw_template.Output,
+        sw_template.GenOutput.nvar_OUT,
+        &LogInfo
+    );
+    if(LogInfo.stopRun) {
+      goto finishProgram;
+    }
     #endif // SWNETCDF
 
     SW_OUT_create_files(
