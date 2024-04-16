@@ -986,6 +986,8 @@ typedef struct {
     #if defined(SWNETCDF)
     Bool* reqOutputVars;          /* Output the respecitve variable */
     char*** outputVarInfo;        /* Information about the respective output variable */
+    char **units_sw;               /* Units internally utilized by SOILWAT2 */
+    sw_converter_t **uconv;          /* udunits2 unit converter from SOILWAT2 units to user-requested units */
     #endif
 } SW_OUTPUT;
 

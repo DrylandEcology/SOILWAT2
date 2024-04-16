@@ -3,6 +3,10 @@
 #include <string.h>
 #include <netcdf.h>
 
+#if defined(SWUDUNITS)
+#include <udunits2.h>
+#endif
+
 #include "include/SW_netCDF.h"
 #include "include/generic.h"
 #include "include/filefuncs.h"
@@ -951,28 +955,6 @@ static void dealloc_netCDF_domain_vars(double **valsY, double **valsX,
 }
 
 /**
- * @brief Wrapper function to allocate output request variables
- *  and output variable information
- *
- * @param[out] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
- *  basic output information for all output keys
- * @param[in] GenOutput Holds general variables that deal with output
- * @param[out] LogInfo Holds information on warnings and errors
-*/
-static void alloc_output_var_info(SW_OUTPUT* SW_Output, SW_GEN_OUT *GenOutput, LOG_INFO* LogInfo) {
-    int key;
-
-    ForEachOutKey(key) {
-        SW_NC_alloc_outReq(&SW_Output[key].reqOutputVars, GenOutput->nvar_OUT[key], LogInfo);
-        if(LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
-
-        SW_Output[key].outputVarInfo = NULL;
-    }
-}
-
-/**
  * @brief Helper function to `fill_domain_netCDF_vars()` to allocate
  *  memory for writing out values
  *
@@ -1029,6 +1011,141 @@ static void alloc_netCDF_domain_vars(Bool domTypeIsSite,
                                          "alloc_netCDF_domain_vars()",
                                          LogInfo);
 }
+
+
+
+/**
+ * @brief Allocate memory for information in regards to output variables
+ *  respective to SW_OUTPUT instances
+ *
+ * @param[out] outkeyVars Holds all information about output variables
+ *  in netCDFs (e.g., output variable name)
+ * @param[in] nVar Number of variables available for current output key
+ * @param[out] LogInfo Holds information on warnings and errors
+*/
+static void alloc_outvars(char**** outkeyVars, int nVar, LOG_INFO* LogInfo) {
+
+    *outkeyVars = NULL;
+
+    if (nVar > 0) {
+
+        int index, varNum, attNum;
+
+        // Allocate all memory for the variable information in the current
+        // output key
+        *outkeyVars =
+            (char ***)Mem_Malloc(sizeof(char **) * nVar,
+                                "alloc_outvars()", LogInfo);
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+        for(index = 0; index < nVar; index++) {
+            (*outkeyVars)[index] = NULL;
+        }
+
+        for(index = 0; index < nVar; index++) {
+            (*outkeyVars)[index] =
+                (char **)Mem_Malloc(sizeof(char *) * NUM_OUTPUT_INFO,
+                    "alloc_outvars()", LogInfo);
+            if(LogInfo->stopRun) {
+                for(varNum = 0; varNum < index; varNum++) {
+                    free((*outkeyVars)[varNum]);
+                }
+                free(*outkeyVars);
+                return; // Exit function prematurely due to error
+            }
+
+            for(attNum = 0; attNum < NUM_OUTPUT_INFO; attNum++) {
+                (*outkeyVars)[index][attNum] = NULL;
+            }
+        }
+    }
+}
+
+/**
+ * @brief Allocate information about whether or not a variable should
+ *  be output
+ *
+ * @param[out] reqOutVar Specifies the number of variables that can be output
+ *  for a given output key
+ * @param[in] nVar Number of variables available for current output key
+ * @param[out] LogInfo Holds information on warnings and errors
+*/
+static void alloc_outReq(Bool** reqOutVar, int nVar, LOG_INFO* LogInfo) {
+
+    *reqOutVar = NULL;
+
+    if (nVar > 0) {
+
+        // Initialize the variable within SW_OUTPUT which specifies if a variable
+        // is to be written out or not
+        *reqOutVar =
+            (Bool *)Mem_Malloc(sizeof(Bool) * nVar,
+                                "alloc_outReq()", LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        for(int index = 0; index < nVar; index++) {
+            (*reqOutVar)[index] = swFALSE;
+        }
+    }
+}
+
+/**
+ * @brief Allocate memory for internal SOILWAT2 units
+ *
+ * @param[out] units_sw Array of text representations of SOILWAT2 units
+ * @param[in] nVar Number of variables available for current output key
+ * @param[out] LogInfo Holds information on warnings and errors
+*/
+static void alloc_unitssw(char*** units_sw, int nVar, LOG_INFO* LogInfo) {
+
+    *units_sw = NULL;
+
+    if (nVar > 0) {
+
+        // Initialize the variable within SW_OUTPUT
+        *units_sw = (char **)Mem_Malloc(sizeof(char *) * nVar,
+                                "alloc_unitssw()", LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        for(int index = 0; index < nVar; index++) {
+            (*units_sw)[index] = NULL;
+        }
+    }
+}
+
+
+/**
+ * @brief Allocate memory for udunits2 unit converter
+ *
+ * @param[out] uconv Array of pointers to udunits2 unit converter
+ * @param[in] nVar Number of variables available for current output key
+ * @param[out] LogInfo Holds information on warnings and errors
+*/
+static void alloc_uconv(sw_converter_t ***uconv, int nVar, LOG_INFO* LogInfo) {
+
+    *uconv = NULL;
+
+    if (nVar > 0) {
+
+        *uconv = (sw_converter_t **)Mem_Malloc(sizeof(sw_converter_t *) * nVar,
+                                "alloc_uconv()", LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        for(int index = 0; index < nVar; index++) {
+            (*uconv)[index] = NULL;
+        }
+    }
+}
+
+
 
 /**
  * @brief Fill horizontal coordinate variables, "domain"
@@ -2366,13 +2483,15 @@ static void create_output_file(SW_OUTPUT* SW_Output,
  * @param[in] nsl Number of soil layers
  * @param[in] npft Number of plant functional types
  * @param[out] count Array storing the output dimensions
+ * @param[out] countTotal Total size (count) of output values
 */
 static void get_vardim_write_counts(
     int ncFileID,
     size_t timeSize,
     IntUS nsl,
     IntUS npft,
-    size_t count[]
+    size_t count[],
+    size_t *countTotal
 ) {
     int dimIndex, ndimsp;
     int nSpaceDims = dimExists("site", ncFileID) ? 1 : 2;
@@ -2383,21 +2502,26 @@ static void get_vardim_write_counts(
         count[dimIndex] = 1;
     }
 
+    *countTotal = 1;
+
     /* Fill in time dimension */
     if (timeSize > 0) {
         count[dimIndex] = timeSize;
+        *countTotal *= timeSize;
         dimIndex++;
     }
 
     /* Fill in vertical (if present) */
     if (nsl > 0) {
         count[dimIndex] = nsl;
+        *countTotal *= nsl;
         dimIndex++;
     }
 
     /* Fill in pft (if present) */
     if (npft > 0) {
         count[dimIndex] = npft;
+        *countTotal *= npft;
         dimIndex++;
     }
 
@@ -2536,7 +2660,7 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* GenOutput,
     char* fileName, *varName;
     size_t count[MAX_NUM_DIMS] = {0};
     size_t start[MAX_NUM_DIMS] = {0};
-    size_t pOUTIndex, startTime, timeSize = 0;
+    size_t pOUTIndex, startTime, timeSize = 0, countTotal = 0;
     int vertSize, pftSize;
 
     start[0] = ncSuid[0];
@@ -2594,7 +2718,8 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* GenOutput,
                         timeSize,
                         GenOutput->nsl_OUT[key][varNum],
                         GenOutput->npft_OUT[key][varNum],
-                        count
+                        count,
+                        &countTotal
                     );
 
                     #if defined(SWDEBUG)
@@ -2627,6 +2752,18 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* GenOutput,
 
                     p_OUTValPtr = &GenOutput->p_OUT[key][pd][pOUTIndex];
 
+
+                    /* Convert units if udunits2 and if converter available */
+                    #if defined(SWUDUNITS)
+                    if (!isnull(SW_Output[key].uconv[varNum])) {
+                        cv_convert_doubles(
+                            SW_Output[key].uconv[varNum],
+                            p_OUTValPtr,
+                            countTotal,
+                            p_OUTValPtr
+                        );
+                    }
+                    #endif
 
                     /* For current variable x output period,
                        write out all values across vegtypes and soil layers (if any)
@@ -3590,7 +3727,7 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, SW_GEN_OUT *GenOutput, char* InFi
         return; // Exit prematurely due to error
     }
 
-    alloc_output_var_info(SW_Output, GenOutput, LogInfo);
+    SW_NC_alloc_output_var_info(SW_Output, GenOutput->nvar_OUT, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit prematurely due to error
     }
@@ -3662,14 +3799,6 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, SW_GEN_OUT *GenOutput, char* InFi
                 }
             }
 
-            if(isnull(currOut->outputVarInfo)) {
-                SW_NC_alloc_outvars(&currOut->outputVarInfo,
-                                    GenOutput->nvar_OUT[currOutKey], LogInfo);
-                if(LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
-                }
-            }
-
             currOut->reqOutputVars[varNum] = swTRUE;
 
             // Read in the rest of the attributes
@@ -3728,6 +3857,21 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, SW_GEN_OUT *GenOutput, char* InFi
                 }
             }
 
+
+            // Copy SW units for later use
+            if(currOutKey == eSW_Estab) {
+                for(estVar = 0; estVar < GenOutput->nvar_OUT[currOutKey]; estVar++) {
+                    currOut->units_sw[estVar] = Str_Dup(input[SWUnitsInd], LogInfo);
+                    if(LogInfo->stopRun) {
+                        return; // Exit function prematurely due to error
+                    }
+                }
+            } else {
+                currOut->units_sw[varNum] = Str_Dup(input[SWUnitsInd], LogInfo);
+                if(LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
+            }
         }
     }
 
@@ -3739,6 +3883,94 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, SW_GEN_OUT *GenOutput, char* InFi
         }
     }
 }
+
+/** Create unit converters for output variables
+
+This function requires previous calls to
+    - SW_NC_alloc_output_var_info() to initialize
+      SW_Output[key].uconv[varIndex] to NULL
+    - SW_NC_read_out_vars() to obtain user requested output units
+    - SW_OUT_setup_output() to set GenOutput.nvar_OUT for argument nVars
+
+@param[in,out] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
+    basic output information for all output keys
+@param[in] nVars Array with number of output variables
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NC_create_units_converters(SW_OUTPUT* SW_Output, IntUS * nVars, LOG_INFO* LogInfo) {
+    int varIndex, key;
+
+    #if defined(SWUDUNITS)
+    ut_system *system;
+    ut_unit *unitFrom, *unitTo;
+
+    ut_set_error_message_handler(ut_ignore); /* silence udunits2 error messages */
+    system = ut_read_xml(NULL); /* Load unit system database */
+    #endif
+
+    ForEachOutKey(key) {
+        for (varIndex = 0; varIndex < nVars[key]; varIndex++) {
+            #if defined(SWUDUNITS)
+            if (!isnull(SW_Output[key].units_sw[varIndex])) {
+                unitFrom = ut_parse(
+                    system,
+                    SW_Output[key].units_sw[varIndex],
+                    UT_UTF8
+                );
+                unitTo = ut_parse(
+                    system,
+                    SW_Output[key].outputVarInfo[varIndex][UNITS_INDEX],
+                    UT_UTF8
+                );
+
+                if (ut_are_convertible(unitFrom, unitTo)) {
+                    // SW_Output[key].uconv[varIndex] was previously initialized to NULL
+                    SW_Output[key].uconv[varIndex] = ut_get_converter(unitFrom, unitTo);
+                }
+
+                if (isnull(SW_Output[key].uconv[varIndex])) {
+                    // ut_are_convertible() is false or ut_get_converter() failed
+                    LogError(
+                        LogInfo, LOGWARN,
+                        "Units of variable '%s' cannot get converted from "
+                        "internal '%s' to requested '%s'. "
+                        "Output will use internal units.",
+                        SW_Output[key].outputVarInfo[varIndex][VARNAME_INDEX],
+                        SW_Output[key].units_sw[varIndex],
+                        SW_Output[key].outputVarInfo[varIndex][UNITS_INDEX]
+                    );
+
+                    /* converter is not available: output in internal units */
+                    free(SW_Output[key].outputVarInfo[varIndex][UNITS_INDEX]);
+                    SW_Output[key].outputVarInfo[varIndex][UNITS_INDEX] =
+                        Str_Dup(SW_Output[key].units_sw[varIndex], LogInfo);
+                }
+
+                ut_free(unitFrom);
+                ut_free(unitTo);
+            }
+
+            #else
+            /* udunits2 is not available: output in internal units */
+            free(SW_Output[key].outputVarInfo[varIndex][UNITS_INDEX]);
+            if (!isnull(SW_Output[key].units_sw[varIndex])) {
+                SW_Output[key].outputVarInfo[varIndex][UNITS_INDEX] =
+                    Str_Dup(SW_Output[key].units_sw[varIndex], LogInfo);
+            }
+            #endif
+
+            if(LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+        }
+    }
+
+
+    #if defined(SWUDUNITS)
+    ut_free_system(system);
+    #endif
+}
+
 
 /**
  * @brief Initializes pointers within the type SW_NETCDF and SW_CRS
@@ -3935,84 +4167,105 @@ void SW_NC_deepCopy(SW_NETCDF* source, SW_NETCDF* dest, LOG_INFO* LogInfo) {
     }
 }
 
+
 /**
- * @brief Allocate memory for information in regards to output variables
- *  respective to SW_OUTPUT instances
+ * @brief Wrapper function to allocate output request variables
+ *  and output variable information
  *
- * @param[out] outkeyVars Holds all information about output variables
- *  in netCDFs (e.g., output variable name)
- * @param[in] nVar Number of variables available for current output key
+ * @param[out] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
+ *  basic output information for all output keys
+ * @param[in] nVars Array with number of output variables
  * @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_NC_alloc_outvars(char**** outkeyVars, int nVar, LOG_INFO* LogInfo) {
+void SW_NC_alloc_output_var_info(SW_OUTPUT* SW_Output, IntUS *nVars, LOG_INFO* LogInfo) {
+    int key;
 
-    *outkeyVars = NULL;
-
-    if (nVar > 0) {
-
-        int index, varNum, attNum;
-
-        // Allocate all memory for the variable information in the current
-        // output key
-        *outkeyVars =
-            (char ***)Mem_Malloc(sizeof(char **) * nVar,
-                                "SW_NC_alloc_outvars()", LogInfo);
-            if(LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
-
-        for(index = 0; index < nVar; index++) {
-            (*outkeyVars)[index] = NULL;
-        }
-
-        for(index = 0; index < nVar; index++) {
-            (*outkeyVars)[index] =
-                (char **)Mem_Malloc(sizeof(char *) * NUM_OUTPUT_INFO,
-                    "SW_NC_alloc_outvars()", LogInfo);
-            if(LogInfo->stopRun) {
-                for(varNum = 0; varNum < index; varNum++) {
-                    free((*outkeyVars)[varNum]);
-                }
-                free(*outkeyVars);
-                return; // Exit function prematurely due to error
-            }
-
-            for(attNum = 0; attNum < NUM_OUTPUT_INFO; attNum++) {
-                (*outkeyVars)[index][attNum] = NULL;
-            }
+    ForEachOutKey(key) {
+        SW_NC_alloc_outputkey_var_info(&SW_Output[key], nVars[key], LogInfo);
+        if(LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
         }
     }
 }
 
-/**
- * @brief Allocate information about whether or not a variable should
- *  be output
- *
- * @param[out] reqOutVar Specifies the number of variables that can be output
- *  for a given output key
- * @param[in] nVar Number of variables available for current output key
- * @param[out] LogInfo Holds information on warnings and errors
-*/
-void SW_NC_alloc_outReq(Bool** reqOutVar, int nVar, LOG_INFO* LogInfo) {
+void SW_NC_alloc_outputkey_var_info(SW_OUTPUT* currOut, IntUS nVar, LOG_INFO* LogInfo) {
 
-    *reqOutVar = NULL;
+    alloc_outReq(&currOut->reqOutputVars, nVar, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
-    if (nVar > 0) {
+    alloc_outvars(&currOut->outputVarInfo, nVar, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
-        int index;
+    alloc_unitssw(&currOut->units_sw, nVar, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
-        // Initialize the variable within SW_OUTPUT which specifies if a variable
-        // is to be written out or not
-        *reqOutVar =
-            (Bool *)Mem_Malloc(sizeof(Bool) * nVar,
-                                "SW_NC_alloc_outReq()", LogInfo);
-        if(LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
+    alloc_uconv(&currOut->uconv, nVar, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+}
+
+void SW_NC_dealloc_outputkey_var_info(SW_OUTPUT* SW_Output, IntUS k, IntUS *nVars) {
+    if(!isnull(SW_Output[k].outputVarInfo)) {
+
+        for(int varNum = 0; varNum < nVars[k]; varNum++) {
+
+            if(!isnull(SW_Output[k].outputVarInfo[varNum])) {
+
+                for(int attNum = 0; attNum < NUM_OUTPUT_INFO; attNum++) {
+
+                    if(!isnull(SW_Output[k].outputVarInfo[varNum][attNum])) {
+                        free(SW_Output[k].outputVarInfo[varNum][attNum]);
+                        SW_Output[k].outputVarInfo[varNum][attNum] = NULL;
+                    }
+                }
+
+                free(SW_Output[k].outputVarInfo[varNum]);
+                SW_Output[k].outputVarInfo[varNum] = NULL;
+            }
         }
 
-        for(index = 0; index < nVar; index++) {
-            (*reqOutVar)[index] = swFALSE;
+        free(SW_Output[k].outputVarInfo);
+        SW_Output[k].outputVarInfo = NULL;
+    }
+
+    if (!isnull(SW_Output[k].units_sw)) {
+        for (int varNum = 0; varNum < nVars[k]; varNum++) {
+            if(!isnull(SW_Output[k].units_sw[varNum])) {
+                free(SW_Output[k].units_sw[varNum]);
+                SW_Output[k].units_sw[varNum] = NULL;
+            }
         }
+
+        free(SW_Output[k].units_sw);
+        SW_Output[k].units_sw = NULL;
+    }
+
+    if (!isnull(SW_Output[k].uconv)) {
+        for (int varNum = 0; varNum < nVars[k]; varNum++) {
+            if(!isnull(SW_Output[k].uconv[varNum])) {
+                #if defined(SWNETCDF) && defined(SWUDUNITS)
+                cv_free(SW_Output[k].uconv[varNum]);
+                #else
+                free(SW_Output[k].uconv[varNum]);
+                #endif
+                SW_Output[k].uconv[varNum] = NULL;
+            }
+        }
+
+        free(SW_Output[k].uconv);
+        SW_Output[k].uconv = NULL;
+    }
+
+    if(!isnull(SW_Output[k].reqOutputVars)) {
+        free(SW_Output[k].reqOutputVars);
+        SW_Output[k].reqOutputVars = NULL;
     }
 }
 

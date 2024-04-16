@@ -1240,6 +1240,8 @@ void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 		#if defined(SWNETCDF)
 		SW_Output[k].outputVarInfo = NULL;
 		SW_Output[k].reqOutputVars = NULL;
+		SW_Output[k].units_sw = NULL;
+		SW_Output[k].uconv = NULL;
 		#endif
 
 		// assign `get_XXX` functions
@@ -1662,33 +1664,7 @@ void SW_OUT_deconstruct(Bool full_reset, SW_ALL *sw)
 		#endif
 
         #if defined(SWNETCDF)
-        if(!isnull(sw->Output[k].outputVarInfo)) {
-
-            for(int varNum = 0; varNum < sw->GenOutput.nvar_OUT[k]; varNum++) {
-
-                if(!isnull(sw->Output[k].outputVarInfo[varNum])) {
-
-                    for(int attNum = 0; attNum < NUM_OUTPUT_INFO; attNum++) {
-
-                        if(!isnull(sw->Output[k].outputVarInfo[varNum][attNum])) {
-                            free(sw->Output[k].outputVarInfo[varNum][attNum]);
-                            sw->Output[k].outputVarInfo[varNum][attNum] = NULL;
-                        }
-                    }
-
-                    free(sw->Output[k].outputVarInfo[varNum]);
-                    sw->Output[k].outputVarInfo[varNum] = NULL;
-                }
-            }
-
-            free(sw->Output[k].outputVarInfo);
-            sw->Output[k].outputVarInfo = NULL;
-        }
-
-        if(!isnull(sw->Output[k].reqOutputVars)) {
-            free(sw->Output[k].reqOutputVars);
-            sw->Output[k].reqOutputVars = NULL;
-        }
+        SW_NC_dealloc_outputkey_var_info(sw->Output, k, sw->GenOutput.nvar_OUT);
         #endif
 	}
 
@@ -3269,17 +3245,10 @@ void SW_OUT_deepCopy(SW_OUTPUT* dest_out, SW_OUTPUT* source_out,
                 }
             }
 
-            SW_NC_alloc_outvars(&dest_out[key].outputVarInfo,
-                                        nvar_OUT[key], LogInfo);
+            SW_NC_alloc_outputkey_var_info(&dest_out[key], nvar_OUT[key], LogInfo);
             if(LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
-
-            SW_NC_alloc_outReq(&dest_out[key].reqOutputVars, nvar_OUT[key], LogInfo);
-            if(LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
-
 
             if (!isnull(source_out[key].reqOutputVars)) {
                 for(varNum = 0; varNum < nvar_OUT[key]; varNum++) {
@@ -3296,6 +3265,12 @@ void SW_OUT_deepCopy(SW_OUTPUT* dest_out, SW_OUTPUT* source_out,
                                 }
                             }
                         }
+
+                        dest_out[key].units_sw[varNum] =
+                            Str_Dup(source_out[key].units_sw[varNum], LogInfo);
+                        if(LogInfo->stopRun) {
+                            return; // Exit function prematurely due to error
+                        }
                     }
                 }
             }
@@ -3303,8 +3278,14 @@ void SW_OUT_deepCopy(SW_OUTPUT* dest_out, SW_OUTPUT* source_out,
         } else {
             dest_out[key].reqOutputVars = NULL;
             dest_out[key].outputVarInfo = NULL;
+            dest_out[key].units_sw = NULL;
+            dest_out[key].uconv = NULL;
         }
     }
+
+    #if defined(SWNETCDF)
+    SW_NC_create_units_converters(dest_out, nvar_OUT, LogInfo);
+    #endif
 }
 #endif
 

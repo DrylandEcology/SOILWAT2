@@ -85,13 +85,15 @@ void SW_NC_check_input_files(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo);
 void SW_NC_read(SW_NETCDF* SW_netCDF, PATH_INFO* PathInfo, LOG_INFO* LogInfo);
 void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, SW_GEN_OUT *GenOutput, char* InFiles[],
                     SW_VEGESTAB_INFO** parms, LOG_INFO* LogInfo);
+void SW_NC_create_units_converters(SW_OUTPUT* SW_Output, IntUS * nVars, LOG_INFO* LogInfo);
 void SW_NC_init_ptrs(SW_NETCDF* SW_netCDF);
 void SW_NC_deconstruct(SW_NETCDF* SW_netCDF);
 void SW_NC_open_dom_prog_files(SW_NETCDF* SW_netCDF, LOG_INFO* LogInfo);
 void SW_NC_close_files(SW_NETCDF* SW_netCDF);
 void SW_NC_deepCopy(SW_NETCDF* source, SW_NETCDF* dest, LOG_INFO* LogInfo);
-void SW_NC_alloc_outvars(char**** outkeyVars, int nVar, LOG_INFO* LogInfo);
-void SW_NC_alloc_outReq(Bool** reqOutVar, int nVar, LOG_INFO* LogInfo);
+void SW_NC_dealloc_outputkey_var_info(SW_OUTPUT* SW_Output, IntUS k, IntUS *nVars);
+void SW_NC_alloc_output_var_info(SW_OUTPUT* SW_Output, IntUS *nVars, LOG_INFO* LogInfo);
+void SW_NC_alloc_outputkey_var_info(SW_OUTPUT* currOut, IntUS nVar, LOG_INFO* LogInfo);
 void SW_NC_alloc_files(char*** ncOutFiles, int numFiles, LOG_INFO* LogInfo);
 
 #ifdef __cplusplus
