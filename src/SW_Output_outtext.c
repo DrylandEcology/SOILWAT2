@@ -573,7 +573,7 @@ void find_TXToutputSoilReg_inUse(Bool make_soil[], Bool make_regular[],
 void SW_OUT_close_textfiles(SW_FILE_STATUS* SW_FileStatus, SW_GEN_OUT* GenOutput,
 						LOG_INFO* LogInfo) {
 
-	Bool close_regular, close_layers, close_aggs;
+	Bool close_regular = swFALSE, close_layers = swFALSE, close_aggs = swFALSE;
 	OutPeriod p;
 
 
@@ -588,6 +588,7 @@ void SW_OUT_close_textfiles(SW_FILE_STATUS* SW_FileStatus, SW_GEN_OUT* GenOutput
 		close_layers = (Bool) (SW_FileStatus->make_soil[p] && GenOutput->storeAllIterations);
 		close_aggs = (Bool) ((SW_FileStatus->make_regular[p] || SW_FileStatus->make_soil[p])
 			&& GenOutput->prepare_IterationSummary);
+
 		#endif
 
 		if (GenOutput->use_OutPeriod[p]) {
