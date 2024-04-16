@@ -636,7 +636,7 @@ void SW_CTL_run_current_year(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 */
 void SW_CTL_run_spinup(SW_ALL* sw, LOG_INFO* LogInfo) {
 
-  if (sw->Model.SW_SpinUp.duration == 0) return;
+  if (sw->Model.SW_SpinUp.duration <= 0) return;
 
   unsigned int i, k, quotient = 0, remainder = 0;
   int mode = sw->Model.SW_SpinUp.mode,
