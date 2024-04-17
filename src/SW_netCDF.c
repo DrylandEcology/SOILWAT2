@@ -617,7 +617,7 @@ static Bool dimExists(const char* targetDim, int ncFileID) {
     // Attempt to get the dimension identifier
     int inquireRes = nc_inq_dimid(ncFileID, targetDim, &dimID);
 
-    return (Bool) (inquireRes != NC_EBADDIM);
+    return (Bool) (inquireRes == NC_NOERR);
 }
 
 /**
