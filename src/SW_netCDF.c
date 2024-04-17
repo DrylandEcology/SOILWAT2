@@ -2205,6 +2205,8 @@ static void create_output_dimVar(char* name, int size, int ncFileID,
  *  and writing attributes
  *
  * @param[in] ncFileID Identifier of the netCDF file
+ * @param[in] domType Type of domain in which simulations are running
+ *  (gridcell/sites)
  * @param[in] newVarType Type of the variable to create
  * @param[in] timeSize Size of "time" dimension
  * @param[in] vertSize Size of "vertical" dimension
@@ -2224,7 +2226,7 @@ static void create_output_dimVar(char* name, int size, int ncFileID,
  * @param[in] pd Current output netCDF period
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
-static void create_full_var(int* ncFileID, int newVarType,
+static void create_full_var(int* ncFileID, const char* domType, int newVarType,
     size_t timeSize, size_t vertSize, size_t pftSize, const char* varName,
     const char* attNames[], const char* attVals[], int numAtts,
     Bool hasConsistentSoilLayerDepths, double lyrDepths[],
@@ -2233,11 +2235,11 @@ static void create_full_var(int* ncFileID, int newVarType,
 
     int dimArrSize = 0, index, varID = 0;
     int dimIDs[MAX_NUM_DIMS];
-    Bool siteDimExists = dimExists("site", *ncFileID);
     const char* latName = (dimExists("lat", *ncFileID)) ? "lat" : "y";
     const char* lonName = (dimExists("lon", *ncFileID)) ? "lon" : "x";
-    int numConstDims = (siteDimExists) ? 1 : 2;
-    const char* thirdDim = (siteDimExists) ? "site" : latName;
+    Bool domTypeIsSites = (Bool) (strcmp(domType, "s") == 0);
+    int numConstDims = (domTypeIsSites) ? 1 : 2;
+    const char* thirdDim = (domTypeIsSites) ? "site" : latName;
     const char* constDimNames[] = {thirdDim, lonName};
     const char* timeVertVegNames[] = {"time", "vertical", "pft"};
     char* dimVarName;
@@ -2363,7 +2365,8 @@ static int gather_var_attributes(char** varInfo, OutKey key, OutPeriod pd,
  * @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
  *  basic output information for all output keys
  * @param[in] domFile Domain netCDF file name
- * @param[in] domID Domain netCDF file identifier
+ * @param[in] domType Type of domain in which simulations are running
+ *  (gridcell/sites)
  * @param[in] newFileName Name of the new file that will be created
  * @param[in] key Specifies what output key is currently being allocated
  *  (i.e., temperature, precipitation, etc.)
@@ -2387,7 +2390,8 @@ static int gather_var_attributes(char** varInfo, OutKey key, OutPeriod pd,
  * @param[in] LogInfo Holds information on warnings and errors
 */
 static void create_output_file(SW_OUTPUT* SW_Output,
-        const char* domFile, int domID, const char* newFileName,
+        const char* domFile, const char* domType,
+        const char* newFileName,
         OutKey key, OutPeriod pd,
         int nVar,
         IntUS nsl[],
@@ -2422,8 +2426,8 @@ static void create_output_file(SW_OUTPUT* SW_Output,
     // Create file
     if(!FileExists(newFileName)) {
         // Create a new output file
-        SW_NC_create_template(domFile, domID, newFileName,
-            &newFileID, swFALSE, frequency, LogInfo);
+        SW_NC_create_template(domType, domFile,
+            newFileName, &newFileID, swFALSE, frequency, LogInfo);
         if(LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -2442,7 +2446,7 @@ static void create_output_file(SW_OUTPUT* SW_Output,
                 return; // Exit function prematurely due to error
             }
 
-            create_full_var(&newFileID, NC_DOUBLE,
+            create_full_var(&newFileID, domType, NC_DOUBLE,
                             originTimeSize, nsl[index], npft[index],
                             varName, attNames, (const char**)attVals, numAtts,
                             hasConsistentSoilLayerDepths, lyrDepths,
@@ -2480,7 +2484,8 @@ static void create_output_file(SW_OUTPUT* SW_Output,
 /**
  * @brief Collect the write dimensions/sizes for the current output slice
  *
- * @param[in] ncFileID Output netCDF file ID
+ * @param[in] domType Type of domain in which simulations are running
+ *  (gridcell/sites)
  * @param[in] timeSize Number of time steps in current output slice
  * @param[in] nsl Number of soil layers
  * @param[in] npft Number of plant functional types
@@ -2488,7 +2493,7 @@ static void create_output_file(SW_OUTPUT* SW_Output,
  * @param[out] countTotal Total size (count) of output values
 */
 static void get_vardim_write_counts(
-    int ncFileID,
+    const char* domType,
     size_t timeSize,
     IntUS nsl,
     IntUS npft,
@@ -2496,7 +2501,7 @@ static void get_vardim_write_counts(
     size_t *countTotal
 ) {
     int dimIndex, ndimsp;
-    int nSpaceDims = dimExists("site", ncFileID) ? 1 : 2;
+    int nSpaceDims = (strcmp(domType, "s") == 0) ? 1 : 2;
 
     /* Fill 1s into space dimensions (we write one site/xy-gridcell per run) */
     /* We assume here that the first dimension(s) are space */
@@ -2647,11 +2652,15 @@ static void check_counts_against_vardim(
  *  have (same amount for each key)
  * @param[in] ncOutFileNames A list of the generated output netCDF file names
  * @param[in] ncSuid Unique indentifier of the current suid being simulated
+ * @param[in] domType Type of domain in which simulations are running
+ *  (gridcell/sites)
  * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* GenOutput,
         int numFilesPerKey,
-        char** ncOutFileNames[][SW_OUTNPERIODS], size_t ncSuid[],
+        char** ncOutFileNames[][SW_OUTNPERIODS],
+        size_t ncSuid[],
+        const char* domType,
         LOG_INFO* LogInfo) {
 
     int key;
@@ -2716,7 +2725,7 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* GenOutput,
                     }
 
                     get_vardim_write_counts(
-                        currFileID,
+                        domType,
                         timeSize,
                         GenOutput->nsl_OUT[key][varNum],
                         GenOutput->npft_OUT[key][varNum],
@@ -2797,7 +2806,8 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* GenOutput,
  *   - soil layer number (if soil layer profile varies across domain)
  *
  * @param[in] domFile Name of the domain netCDF
- * @param[in] domFileID Identifier of the domain netCDF file
+ * @param[in] domType Type of domain in which simulations are running
+ *  (gridcell/sites)
  * @param[in] output_prefix Directory path of output files.
  * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
  *  temporal/spatial information for a set of simulation runs
@@ -2825,7 +2835,7 @@ void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* GenOutput,
 */
 void SW_NC_create_output_files(
         const char* domFile,
-        int domFileID,
+        const char* domType,
         const char* output_prefix,
         SW_DOMAIN* SW_Domain,
         SW_OUTPUT* SW_Output,
@@ -2911,7 +2921,8 @@ void SW_NC_create_output_files(
 
                             create_output_file(
                                 &SW_Output[key],
-                                domFile, domFileID, fileNameBuf,
+                                domFile, domType,
+                                fileNameBuf,
                                 (OutKey)key, pd,
                                 nvar_OUT[key],
                                 nsl_OUT[key],
@@ -3084,10 +3095,11 @@ void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
        Make sure the domain types are consistent
     */
     if(strcmp(SW_Domain->DomainType, impliedDomType) != 0) {
-        LogError(LogInfo, LOGERROR, "The implied domain type within %s "
-                    "does not match the one specified in the domain input "
-                    "file ('%s'). Please make sure these match.",
-                    fileName, SW_Domain->DomainType);
+        LogError(LogInfo, LOGERROR,
+                    "The existing file ('%s') has a domain type '%s'; "
+                    "however, the current simulation uses a domain type '%s'. "
+                    "Please make sure these match.",
+                    fileName, impliedDomType, SW_Domain->DomainType);
         goto wrapUp; // Exit function prematurely due to error
     }
 
@@ -3357,21 +3369,22 @@ void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 /**
  * @brief Copy domain netCDF as a template
  *
+ * @param[in] domType Type of domain in which simulations are running
+ *  (gridcell/sites)
  * @param[in] domFile Name of the domain netCDF
- * @param[in] domFileID Identifier of the domain netCDF file
  * @param[in] fileName Name of the netCDF file to create
  * @param[in] newFileID Identifier of the netCDF file to create
  * @param[in] isInput Specifies if the created file will be input or output
  * @param[in] freq Value of the global attribute "frequency"
  * @param[out] LogInfo  Holds information dealing with logfile output
 */
-void SW_NC_create_template(const char* domFile, int domFileID,
+void SW_NC_create_template(
+    const char* domType,
+    const char* domFile,
     const char* fileName, int* newFileID,
     Bool isInput, const char* freq,
     LOG_INFO* LogInfo) {
 
-    Bool siteDimExists = dimExists("site", domFileID);
-    const char* domType = (siteDimExists) ? "s" : "xy";
 
 
     CopyFile(domFile, fileName, LogInfo);
@@ -3417,7 +3430,6 @@ void SW_NC_create_progress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     const char* progVarName = SW_netCDF->varNC[vNCprog];
     const char* freq = "fx";
 
-    int domFileID = SW_netCDF->ncFileIDs[vNCdom];
     int* progFileID = &SW_netCDF->ncFileIDs[vNCprog];
     const char* domFileName = SW_netCDF->InFilesNC[vNCdom];
     const char* progFileName = SW_netCDF->InFilesNC[vNCprog];
@@ -3457,11 +3469,12 @@ void SW_NC_create_progress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
         if(progFileExists) {
             nc_redef(*progFileID);
         } else {
-            SW_NC_create_template(domFileName, domFileID, progFileName,
-                progFileID, swFALSE, freq, LogInfo);
+            SW_NC_create_template(SW_Domain->DomainType, domFileName,
+                progFileName, progFileID, swFALSE, freq, LogInfo);
         }
 
-        create_full_var(progFileID, NC_BYTE, 0, 0, 0, progVarName,
+        create_full_var(progFileID, SW_Domain->DomainType,
+                        NC_BYTE, 0, 0, 0, progVarName,
                         attNames, attVals, numAtts, swFALSE, NULL,
                         &startTime, 0, 0, 0, LogInfo);
 

@@ -3063,7 +3063,7 @@ void SW_OUT_create_files(
     #elif defined(SWNETCDF)
     SW_NC_create_output_files(
         SW_Domain->netCDFInfo.InFilesNC[vNCdom],
-        SW_Domain->netCDFInfo.ncVarIDs[vNCdom],
+        SW_Domain->DomainType,
         SW_Domain->PathInfo.output_prefix,
         SW_Domain,
         SW_Output,

@@ -34,11 +34,14 @@ extern "C" {
 /* --------------------------------------------------- */
 void SW_NC_write_output(SW_OUTPUT* SW_Output, SW_GEN_OUT* GenOutput,
         int numFilesPerKey,
-        char** ncOutFileNames[][SW_OUTNPERIODS], size_t ncSuid[],
+        char** ncOutFileNames[][SW_OUTNPERIODS],
+        size_t ncSuid[],
+        const char* domType,
         LOG_INFO* LogInfo);
+
 void SW_NC_create_output_files(
         const char* domFile,
-        int domFileID,
+        const char* domType,
         const char* output_prefix,
         SW_DOMAIN* SW_Domain,
         SW_OUTPUT* SW_Output,
@@ -69,7 +72,7 @@ void SW_NC_soilProfile(
 void SW_NC_check(SW_DOMAIN* SW_Domain, int ncFileID, const char* fileName,
                  LOG_INFO* LogInfo);
 void SW_NC_create_domain_template(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo);
-void SW_NC_create_template(const char* domFile, int domFileID,
+void SW_NC_create_template(const char* domType, const char* domFile,
     const char* fileName, int* newFileID,
     Bool isInput, const char* freq,
     LOG_INFO* LogInfo);

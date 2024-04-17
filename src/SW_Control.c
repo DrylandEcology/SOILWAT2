@@ -918,9 +918,15 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSu
     }
 
     #if defined(SWNETCDF)
-    SW_NC_write_output(local_sw.Output, &local_sw.GenOutput,
-        local_sw.FileStatus.numOutFiles, local_sw.FileStatus.ncOutFiles,
-        ncSuid, LogInfo);
+    SW_NC_write_output(
+        local_sw.Output,
+        &local_sw.GenOutput,
+        local_sw.FileStatus.numOutFiles,
+        local_sw.FileStatus.ncOutFiles,
+        ncSuid,
+        SW_Domain->DomainType,
+        LogInfo
+    );
     #endif
 
     // Clear local instance of SW_ALL
