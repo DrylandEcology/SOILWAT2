@@ -1680,8 +1680,9 @@ static void fill_netCDF_with_geo_CRS_atts(SW_CRS* crs_geogsc, int* ncFileID,
  * @param[in] ncFileID Identifier of the open netCDF file to write all information to
  * @param[in] domType Type of domain in which simulations are running
  *  (gridcell/sites)
- * @param[in] freqAtt Value of a global attribute "frequency" (may be "fx",
- *  "day", "week", "month", or "year")
+ * @param[in] freqAtt Value of a global attribute "frequency"
+ *    * fixed (no time): "fx"
+ *    * has time: "day", "week", "month", or "year"
  * @param[in] isInputFile Specifies if the file being written to is input
  * @param[out] LogInfo Holds information on warnings and errors
 */
@@ -1693,7 +1694,7 @@ static void fill_netCDF_with_global_atts(SW_NETCDF* SW_netCDF, int* ncFileID,
     char creationDateStr[21]; // 21 - valid size to hold a string of format YYYY-MM-DDTHH:MM:SSZ
 
     int attNum;
-    const int numGlobAtts = (strcmp(domType, "s") == 0) ? 14 : 13; // Do or do not include "featureType"
+    const int numGlobAtts = (strcmp(domType, "s") == 0) ? 14 : 13; // Use "featureType" only if domainType is "s"
     const char* attNames[] = {
         "title", "author", "institution", "comment", "coordinate_system",
         "Conventions", "source", "source_id", "further_info_url", "creation_date",
@@ -1703,7 +1704,7 @@ static void fill_netCDF_with_global_atts(SW_NETCDF* SW_netCDF, int* ncFileID,
     const char* productStr = (isInputFile) ? "model-input" : "model-output";
     const char* featureTypeStr;
     if(strcmp(domType, "s") == 0) {
-        featureTypeStr = (dimExists("time", *ncFileID)) ? "timeSeries" : "point";
+        featureTypeStr = (strcmp(freqAtt, "fx") == 0) ? "point" : "timeSeries";
     } else {
         featureTypeStr = "";
     }
@@ -1734,8 +1735,9 @@ static void fill_netCDF_with_global_atts(SW_NETCDF* SW_netCDF, int* ncFileID,
  * @param[in] ncFileID Identifier of the open netCDF file to write all information to
  * @param[in] domType Type of domain in which simulations are running
  *  (gridcell/sites)
- * @param[in] freqAtt Value of a global attribute "frequency" (may be "fx",
- *  "day", "week", "month", or "year")
+ * @param[in] freqAtt Value of a global attribute "frequency"
+ *    * fixed (no time): "fx"
+ *    * has time: "day", "week", "month", or "year"
  * @param[in] isInputFile Specifies if the file being written to is input
  * @param[in,out] LogInfo Holds information dealing with logfile output
 */
@@ -1746,7 +1748,7 @@ static void update_netCDF_global_atts(int* ncFileID, const char* domType,
     char creationDateStr[21]; // 21 - valid size to hold a string of format YYYY-MM-DDTHH:MM:SSZ
 
     int attNum;
-    const int numGlobAtts = (strcmp(domType, "s") == 0) ? 5 : 4; // Do or do not include "featureType"
+    const int numGlobAtts = (strcmp(domType, "s") == 0) ? 5 : 4; // Use "featureType" only if domainType is "s"
     const char* attNames[] = {
         "source", "creation_date", "product", "frequency", "featureType"
     };
@@ -1754,7 +1756,7 @@ static void update_netCDF_global_atts(int* ncFileID, const char* domType,
     const char* productStr = (isInputFile) ? "model-input" : "model-output";
     const char* featureTypeStr;
     if(strcmp(domType, "s") == 0) {
-        featureTypeStr = (dimExists("time", *ncFileID)) ? "timeSeries" : "point";
+        featureTypeStr = (strcmp(freqAtt, "fx") == 0) ? "point" : "timeSeries";
     } else {
         featureTypeStr = "";
     }
