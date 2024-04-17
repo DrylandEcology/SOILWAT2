@@ -109,6 +109,8 @@
 * A user provided `"progress.nc"` that describes the simulation `"progress"`.
   Specifications must be consistent with `"domain.nc"`.
   If absent, it is automatically generated based on `"domain.nc"`.
+* New tab-separated value `"tsv"` input file `"SW2_netCDF_output_variables.tsv"`
+  that lists, activates, and describes each output variable in `"netCDF"` mode.
 
 
 # SOILWAT2 v7.2.0
