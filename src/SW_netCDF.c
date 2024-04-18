@@ -3927,7 +3927,15 @@ void SW_NC_create_units_converters(SW_OUTPUT* SW_Output, IntUS * nVars, LOG_INFO
     #endif
 
     ForEachOutKey(key) {
+        if (!SW_Output[key].use) {
+            continue; // Skip key iteration
+        }
+
         for (varIndex = 0; varIndex < nVars[key]; varIndex++) {
+            if (!SW_Output[key].reqOutputVars[varIndex]) {
+                continue; // Skip variable iteration
+            }
+
             #if defined(SWUDUNITS)
             if (!isnull(SW_Output[key].units_sw[varIndex])) {
                 unitFrom = ut_parse(
