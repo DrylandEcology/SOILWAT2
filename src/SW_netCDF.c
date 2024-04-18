@@ -2317,6 +2317,7 @@ static int gather_var_attributes(char** varInfo, OutKey key, OutPeriod pd,
     int fillSize = 0, varIndex;
     char cellRedef[MAX_FILENAMESIZE], establOrginName[MAX_FILENAMESIZE];
 
+    // Determine attribute 'original_name'
     if(key == eSW_Estab) {
         snprintf(establOrginName, MAX_FILENAMESIZE,
                  "%s__%s", SW_ESTAB, varInfo[VARNAME_INDEX]);
@@ -3752,7 +3753,7 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, SW_GEN_OUT *GenOutput, char* InFi
     while(GetALine(f, inbuf, MAX_FILENAMESIZE)) {
         lineno++;
 
-        // Ignore columns after "cell_method"
+        // Ignore additional columns
         scanRes = sscanf(inbuf, readLineFormat, input[keyInd],
                 input[SWVarNameInd], input[SWUnitsInd], input[dimInd],
                 input[doOutInd], input[outVarNameInd], input[longNameInd],

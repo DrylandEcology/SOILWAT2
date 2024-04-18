@@ -984,10 +984,10 @@ typedef struct {
 	#endif
 
     #if defined(SWNETCDF)
-    Bool* reqOutputVars;          /* Output the respecitve variable */
-    char*** outputVarInfo;        /* Information about the respective output variable */
-    char **units_sw;               /* Units internally utilized by SOILWAT2 */
-    sw_converter_t **uconv;          /* udunits2 unit converter from SOILWAT2 units to user-requested units */
+    Bool* reqOutputVars;          /**< Do/don't output a variable in the netCDF output files (dynamically allocated array over output variables) */
+    char*** outputVarInfo;        /**< Attributes of output variables in netCDF output files (dynamically allcoated 2-d array: `[varIndex][attIndex]`) */
+    char **units_sw;              /**< Units internally utilized by SOILWAT2 (dynamically allocated array over output variables) */
+    sw_converter_t **uconv;       /**< udunits2 unit converter from internal SOILWAT2 units to user-requested units (dynamically allocated array over output variables) */
     #endif
 } SW_OUTPUT;
 
@@ -1013,11 +1013,11 @@ typedef struct {
 	/** names of output columns for each output key; number is an expensive guess */
 	char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS];
 
-	/** number of outputs */
-	IntUS ncol_OUT[SW_OUTNKEYS]; /*< number of output combinations across variables - soil layer - vegtype */
-	IntUS nvar_OUT[SW_OUTNKEYS]; /*< number of output variables */
-	IntUS nsl_OUT[SW_OUTNKEYS][SW_OUTNMAXVARS]; /*< number of output soil layers */
-	IntUS npft_OUT[SW_OUTNKEYS][SW_OUTNMAXVARS]; /*< number of output plant functional types (vegtype) */
+	/* number of outputs */
+	IntUS ncol_OUT[SW_OUTNKEYS]; /**< number of output combinations across variables - soil layer - vegtype */
+	IntUS nvar_OUT[SW_OUTNKEYS]; /**< number of output variables */
+	IntUS nsl_OUT[SW_OUTNKEYS][SW_OUTNMAXVARS]; /**< number of output soil layers */
+	IntUS npft_OUT[SW_OUTNKEYS][SW_OUTNMAXVARS]; /**< number of output plant functional types (vegtype) */
 
 
 	Bool print_IterationSummary;
@@ -1032,12 +1032,12 @@ typedef struct {
 	*/
 	RealD *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
 
-	size_t nrow_OUT[SW_OUTNPERIODS]; /*< number of output time steps */
-	size_t irow_OUT[SW_OUTNPERIODS]; /*< current output time step index */
+	size_t nrow_OUT[SW_OUTNPERIODS]; /**< number of output time steps */
+	size_t irow_OUT[SW_OUTNPERIODS]; /**< current output time step index */
 	#endif
 
 	#if defined(SWNETCDF)
-	size_t iOUToffset[SW_OUTNKEYS][SW_OUTNPERIODS][SW_OUTNMAXVARS]; /*< offset positions of output variables for indexing p_OUT */
+	size_t iOUToffset[SW_OUTNKEYS][SW_OUTNPERIODS][SW_OUTNMAXVARS]; /**< offset positions of output variables for indexing p_OUT */
 	#endif
 
 	#ifdef STEPWAT
@@ -1060,7 +1060,7 @@ typedef struct {
 		across iterations/repeats */
 	Bool prepare_IterationSummary;
 
-	/* Variable from ModelType (STEPWAT2) used in SOILWAT2 */
+	/** Variable from ModelType (STEPWAT2) used in SOILWAT2 */
 	IntUS currIter;
 
 	/* Variables from SXW_t (STEPWAT2) used in SOILWAT2 */
@@ -1115,8 +1115,8 @@ typedef struct {
     int ncFileIDs[SW_NVARNC];
     int ncVarIDs[SW_NVARNC];
 
-    int strideOutYears; /*< How many years to write out in a single output netCDF -- 1, X (e.g., 10) or Inf (-1) */
-    int baseCalendarYear; /*< Base simulation year for output output netCDFs */
+    int strideOutYears; /**< How many years to write out in a single output netCDF -- 1, X (e.g., 10) or Inf (-1) */
+    int baseCalendarYear; /**< Calendar year that is the reference basis of the time units (e.g., days since YYYY-01-01) of every output netCDFs */
 
     char* outputVarsFileName;
 } SW_NETCDF;

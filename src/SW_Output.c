@@ -1024,13 +1024,6 @@ Bool has_OutPeriod_inUse(OutPeriod pd, OutKey k, IntUS used_OUTNPERIODS,
 }
 
 #ifdef STEPWAT
-/** Tally for which output time periods at least one output key/type is active
-		while accounting for output needs of `SXW`
-		@param `SW_Output[k].use` and `timeSteps_SXW`
-*/
-void find_OutPeriods_inUse2(void)
-{}
-
 /** Determine whether output period `pd` is active for output key `k` while
 		accounting for output needs of `SXW`
 */

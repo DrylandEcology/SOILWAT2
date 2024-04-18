@@ -339,8 +339,6 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd, char *InFiles[],
  *	and values
  * @param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
  * 	basic output information for all output keys
- * @param[in] SW_netCDF Struct of type SW_NETCDF holding constant
- *  netCDF file information
  * @param[in] n_layers Number of layers of soil within the simulation run
  * @param[in] InFiles Array of program in/output files
  * @param[in] GenOutput Holds general variables that deal with output

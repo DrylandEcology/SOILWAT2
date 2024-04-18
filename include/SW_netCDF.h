@@ -21,6 +21,8 @@ extern "C" {
 #define NUM_OUTPUT_INFO 6 // Number of columns within the output variable netCDF of interest (see below)
 #define MAX_ATTVAL_SIZE 256
 
+
+// Indices to second dimension of `outputVarInfo[varIndex][attIndex]`
 #define DIM_INDEX 0 // unused
 #define VARNAME_INDEX 1
 #define LONGNAME_INDEX 2

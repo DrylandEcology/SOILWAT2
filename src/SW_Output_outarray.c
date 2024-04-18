@@ -159,12 +159,13 @@ void SW_OUT_deconstruct_outarray(SW_GEN_OUT *GenOutput)
 #ifdef RSOILWAT
 /** @brief Corresponds to function `get_outstrleader` of `SOILWAT2-standalone
 
-	@param[in] SW_Model Struct of type SW_MODEL holding basic time information
-		about the simulation
-	@param[in] pd Time period in simulation output (day/week/month/year)
-	@param[in] irow_OUT Current time step
-	@param[in] nrow_OUT Number of output rows for each output period
-    @param[out] p Allocated array to hold output periods for every output key
+@param[in] SW_Model Struct of type SW_MODEL holding basic time information
+    about the simulation
+@param[in] pd Time period in simulation output (day/week/month/year)
+@param[in] irow_OUT Current time step
+@param[in] nrow_OUT Number of output rows for each output period
+@param[in] tOffset Offset describing the previous or current period
+@param[out] p Allocated array to hold output periods for every output key
 */
 void get_outvalleader(SW_MODEL* SW_Model, OutPeriod pd,
 	size_t irow_OUT[], size_t nrow_OUT[], TimeInt tOffset, RealD *p) {
@@ -193,10 +194,12 @@ void get_outvalleader(SW_MODEL* SW_Model, OutPeriod pd,
 
 #if defined(STEPWAT)
 /** @brief Handle the cumulative running mean and standard deviation
-		@param k. The index (base0) for subsetting `p` and `psd`, e.g., as calculated by
+		@param[in,out] p Running mean
+		@param[in,out] psd Running standard deviation
+		@param[in] k The index (base0) for subsetting `p` and `psd`, e.g., as calculated by
 			macro `iOUT` or `iOUT2`.
-		@param n. The current iteration/repetition number (base1).
-		@param x. The new value.
+		@param[in] n The current iteration/repetition number (base1).
+		@param[in] x The new value to add to the running mean and running standard deviation
 */
 void do_running_agg(RealD *p, RealD *psd, size_t k, IntU n, RealD x)
 {
