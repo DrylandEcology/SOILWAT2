@@ -16,7 +16,7 @@ extern "C" {
 
 #define DOMAIN_TEMP "Input_nc/domain_template.nc"
 
-#define NOUT_VAR_INPUTS 11
+#define NOUT_VAR_INPUTS 12 // Number of columns in 'Input_nc/SW2_netCDF_output_variables.tsv'
 #define MAX_NATTS 6 // Maximum number of attributes an output variable may have
 #define NUM_OUTPUT_INFO 6 // Number of columns within the output variable netCDF of interest (see below)
 #define MAX_ATTVAL_SIZE 256

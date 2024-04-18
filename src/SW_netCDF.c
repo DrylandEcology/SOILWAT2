@@ -3728,14 +3728,15 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, SW_GEN_OUT *GenOutput, char* InFi
     int scanRes = 0, defToLocalInd = 0;
     // in readLineFormat: 255 must be equal to MAX_ATTVAL_SIZE - 1
     const char* readLineFormat =
-        "%13[^\t]\t%50[^\t]\t%10[^\t]\t%4[^\t]\t%1[^\t]\t"
+        "%13[^\t]\t%50[^\t]\t%50[^\t]\t%10[^\t]\t%4[^\t]\t%1[^\t]\t"
         "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]";
 
     // Column indices
-    const int keyInd = 0, SWVarNameInd = 1, SWUnitsInd = 2, dimInd = 3,
-              doOutInd = 4, outVarNameInd = 5, longNameInd = 6,
-              commentInd = 7, outUnits = 8, cellMethodInd = 9,
-              usercommentInd = 10;
+    const int keyInd = 0, SWVarNameInd = 1, SWTxtNameInd = 2,
+              SWUnitsInd = 3, dimInd = 4,
+              doOutInd = 5, outVarNameInd = 6, longNameInd = 7,
+              commentInd = 8, outUnits = 9, cellMethodInd = 10,
+              usercommentInd = 11;
 
     MyFileName = InFiles[eNCOutVars];
 	f = OpenFile(MyFileName, "r", LogInfo);
@@ -3755,7 +3756,8 @@ void SW_NC_read_out_vars(SW_OUTPUT* SW_Output, SW_GEN_OUT *GenOutput, char* InFi
 
         // Ignore additional columns
         scanRes = sscanf(inbuf, readLineFormat, input[keyInd],
-                input[SWVarNameInd], input[SWUnitsInd], input[dimInd],
+                input[SWVarNameInd], input[SWTxtNameInd],
+                input[SWUnitsInd], input[dimInd],
                 input[doOutInd], input[outVarNameInd], input[longNameInd],
                 input[commentInd], input[outUnits], input[cellMethodInd],
                 input[usercommentInd]);
