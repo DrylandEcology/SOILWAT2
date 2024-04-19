@@ -3606,6 +3606,12 @@ void SW_NC_read_inputs(SW_ALL* sw, SW_DOMAIN* SW_Domain, size_t ncSUID[],
             }
         }
     }
+
+
+    /* Convert units */
+    /* Convert latitude/longitude to radians */
+    sw->Model.latitude *= deg_to_rad;
+    sw->Model.longitude *= deg_to_rad;
 }
 
 /**
