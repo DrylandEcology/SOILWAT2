@@ -4,5 +4,5 @@
 	branch = main
 [submodule "pcg"]
 	path = external/pcg
-	url = https://github.com/imneme/pcg-c-basic
-        branch = master
+	url = https://github.com/DrylandEcology/pcg-c-basic
+        branch = feature_sw2
