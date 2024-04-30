@@ -3,8 +3,8 @@
 # SOILWAT2 v8.0.0-devel
 
 * SOILWAT2 can now be compiled in one of two modes
-  (#361, #362; @N1ckP3rsl3y, @dschlaep):
-    * `"netCDF"`-based input (currently limited to the `"domain"`);
+  (#361, #362, #363; @N1ckP3rsl3y, @dschlaep):
+    * `"netCDF"`-based input (currently limited to the `"domain"`) and outputs;
       this mode is compiled if the new preprocessor definition `"SWNETCDF"`
       and the `"netCDF"` library are available,
       e.g., `CPPFLAGS=-DSWNETCDF make all`
@@ -65,6 +65,10 @@
   (e.g., soil moisture, soil temperature).
   User inputs are obtained from `"domain.in"`.
 
+* The random number generator `"pcg"` is now a submodule of a forked copy
+  of the previous repository `imneme/pcg-c-basic` (#353; @dschlaep).
+  This allowed us to fix a function declaration without a prototype.
+
 ## Changes to inputs
 * New input file `"domain.in"` with input variables that specify
   type and spatial dimensions of the simulation `"domain"`
@@ -89,8 +93,7 @@
   `X - SW_WRAPUPTIME` seconds; if the option `"-t X"` is absent,
   then there is (practically) no wall time limit.
 
-
-## Changes to inputs for `"netCDF"`-based SOILWAT2
+## Changes to inputs and outputs for `"netCDF"`-based SOILWAT2
 * `"netCDF"`-based SOILWAT2 is compiled if the new preprocessor definition
   `"SWNETCDF"` is made available, e.g., `CPPFLAGS=-DSWNETCDF make all`
 * User-specified paths to `"netCDF"` header and library can be provided as well,
@@ -111,6 +114,10 @@
   If absent, it is automatically generated based on `"domain.nc"`.
 * New tab-separated value `"tsv"` input file `"SW2_netCDF_output_variables.tsv"`
   that lists, activates, and describes each output variable in `"netCDF"` mode.
+* All outputs are written to `"netCDF"` files based on user requests from
+  `"SW2_netCDF_output_variables.tsv"` (#363; @dschlaep, @N1ckP3rsl3y).
+  `"netCDF"` output files combine output variables by output group `"outkey"`
+  and output period (daily, weekly, monthly, yearly).
 
 
 # SOILWAT2 v7.2.0
