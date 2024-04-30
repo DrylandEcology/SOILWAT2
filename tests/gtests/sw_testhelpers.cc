@@ -182,17 +182,11 @@ void setup_testGlobalSoilwatTemplate() {
     SW_CTL_init_run(&template_SW_All, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
-    SW_OUT_set_ncol(
+    SW_OUT_setup_output(
         template_SW_All.Site.n_layers,
         template_SW_All.Site.n_evap_lyrs,
-        template_SW_All.VegEstab.count,
-        template_SW_All.GenOutput.ncol_OUT
-    );
-    SW_OUT_set_colnames(
-        template_SW_All.Site.n_layers,
-        template_SW_All.VegEstab.parms,
-        template_SW_All.GenOutput.ncol_OUT,
-        template_SW_All.GenOutput.colnames_OUT,
+        &template_SW_All.VegEstab,
+        &template_SW_All.GenOutput,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo);

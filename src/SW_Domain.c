@@ -124,8 +124,17 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN* SW_Domain) {
 		RandSeed(rng_seed, 1u, &SW_Domain->SW_SpinUp.spinup_rng);
 	#else
 		(void) rng_seed; // Silence compiler flag `-Wunused-parameter`
-		(void) SW_Domain;
 	#endif
+
+
+    SW_Domain->nMaxSoilLayers = 0;
+    SW_Domain->nMaxEvapLayers = 0;
+    SW_Domain->hasConsistentSoilLayerDepths = swFALSE;
+    memset(
+        &SW_Domain->depthsAllSoilLayers,
+        0.,
+        sizeof(&SW_Domain->depthsAllSoilLayers[0]) * MAX_LAYERS
+    );
 }
 
 
@@ -158,6 +167,9 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
 
     MyFileName = SW_Domain->PathInfo.InFiles[eDomain];
 	f = OpenFile(MyFileName, "r", LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
     // Set SW_DOMAIN
     while(GetALine(f, inbuf, LARGE_VALUE)) {
@@ -434,6 +446,64 @@ void SW_DOM_deconstruct(SW_DOMAIN* SW_Domain) {
     SW_NC_deconstruct(&SW_Domain->netCDFInfo);
     SW_NC_close_files(&SW_Domain->netCDFInfo);
     #endif
+}
+
+/** Identify soil profile information across simulation domain
+
+    @param[out] hasConsistentSoilLayerDepths Flag indicating if all simulation
+        run within domain have identical soil layer depths
+        (though potentially variable number of soil layers)
+    @param[out] nMaxSoilLayers Largest number of soil layers across
+        simulation domain
+    @param[out] nMaxEvapLayers Largest number of soil layers from which
+        bare-soil evaporation may extract water across simulation domain
+    @param[out] depthsAllSoilLayers Lower soil layer depths [cm] if
+        consistent across simulation domain
+    @param[in] default_n_layers Default number of soil layer
+    @param[in] default_n_evap_lyrs Default number of soil layer used for
+        bare-soil evaporation
+    @param[in] default_depths Default values of soil layer depths [cm]
+    @param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_DOM_soilProfile(
+    Bool *hasConsistentSoilLayerDepths,
+    LyrIndex *nMaxSoilLayers,
+    LyrIndex *nMaxEvapLayers,
+    double depthsAllSoilLayers[],
+    LyrIndex default_n_layers,
+    LyrIndex default_n_evap_lyrs,
+    double default_depths[],
+    LOG_INFO* LogInfo
+) {
+
+    #if defined(SWNETCDF)
+    SW_NC_soilProfile(
+        hasConsistentSoilLayerDepths,
+        nMaxSoilLayers,
+        nMaxEvapLayers,
+        depthsAllSoilLayers,
+        default_n_layers,
+        default_n_evap_lyrs,
+        default_depths,
+        LogInfo
+    );
+
+    #else
+
+    // Assume default/template values are consistent
+    *hasConsistentSoilLayerDepths = swTRUE;
+    *nMaxSoilLayers = default_n_layers;
+    *nMaxEvapLayers = default_n_evap_lyrs;
+
+    memcpy(
+        depthsAllSoilLayers,
+        default_depths,
+        sizeof(default_depths[0]) * default_n_layers
+    );
+
+    (void) LogInfo;
+
+    #endif // !SWNETCDF
 }
 
 

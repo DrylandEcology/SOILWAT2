@@ -33,6 +33,11 @@
 #include "include/SW_Output.h"
 #include "include/SW_Output_outtext.h"
 
+#if defined(SWNETCDF)
+#include "include/SW_Output_outarray.h"
+#include "include/SW_netCDF.h"
+#endif
+
 
 /** \brief Formatted output string for aggregated output
 
@@ -130,7 +135,7 @@ static void _create_csv_headers(OutPeriod pd, char *str_reg, char *str_soil,
 }
 
 
-#if defined(SOILWAT)
+#if defined(SOILWAT) && !defined(SWNETCDF)
 /**
   \brief Create `csv` output files for specified time step
 
@@ -364,7 +369,6 @@ void SW_OUT_create_textfiles(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output
 	}
 }
 
-
 #elif defined(STEPWAT)
 
 void SW_OUT_create_summary_files(SW_FILE_STATUS* SW_FileStatus,
@@ -567,7 +571,7 @@ void find_TXToutputSoilReg_inUse(Bool make_soil[], Bool make_regular[],
 void SW_OUT_close_textfiles(SW_FILE_STATUS* SW_FileStatus, SW_GEN_OUT* GenOutput,
 						LOG_INFO* LogInfo) {
 
-	Bool close_regular, close_layers, close_aggs;
+	Bool close_regular = swFALSE, close_layers = swFALSE, close_aggs = swFALSE;
 	OutPeriod p;
 
 
@@ -582,11 +586,6 @@ void SW_OUT_close_textfiles(SW_FILE_STATUS* SW_FileStatus, SW_GEN_OUT* GenOutput
 		close_layers = (Bool) (SW_FileStatus->make_soil[p] && GenOutput->storeAllIterations);
 		close_aggs = (Bool) ((SW_FileStatus->make_regular[p] || SW_FileStatus->make_soil[p])
 			&& GenOutput->prepare_IterationSummary);
-
-		#else
-		close_regular = swFALSE;
-		close_layers = swFALSE;
-		close_aggs = swFALSE;
 
 		#endif
 

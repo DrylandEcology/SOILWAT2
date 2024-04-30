@@ -172,7 +172,19 @@ void SW_ALL_deepCopy(SW_ALL* source, SW_ALL* dest, LOG_INFO* LogInfo)
         return; // Exit function prematurely due to error
     }
 
-    SW_GENOUT_deepCopy(&dest->GenOutput, &source->GenOutput, dest->Output, LogInfo);
+    #if defined(SWNETCDF)
+    SW_OUT_deepCopy(dest->Output, source->Output,
+                    &dest->FileStatus, &source->FileStatus,
+                    source->GenOutput.use_OutPeriod,
+                    source->GenOutput.nvar_OUT,
+                    LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+    #endif
+
+    SW_GENOUT_deepCopy(&dest->GenOutput, &source->GenOutput,
+                       source->Output, LogInfo);
 }
 
 
@@ -267,8 +279,8 @@ void SW_CTL_RunSimSet(SW_ALL *sw_template, SW_OUTPUT_POINTERS SW_OutputPtrs[],
 
             /* Simulate suid */
             set_walltime(&tsr, &ok_tsr);
-            SW_CTL_run_sw(sw_template, SW_Domain, ncSuid,
-                          SW_OutputPtrs, NULL, &local_LogInfo);
+            SW_CTL_run_sw(sw_template, SW_Domain, ncSuid, SW_OutputPtrs,
+                          &local_LogInfo);
             SW_WT_TimeRun(tsr, ok_tsr, SW_WallTime);
 
             /* Report progress for suid */
@@ -442,12 +454,12 @@ void SW_CTL_setup_model(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 	SW_SIT_construct(&sw->Site);
 	SW_VES_construct(&sw->VegEstab);
 	SW_VPD_construct(&sw->VegProd);
+	// SW_FLW_construct() not needed
+	SW_OUT_construct(sw->FileStatus.make_soil, sw->FileStatus.make_regular,
+      SW_OutputPtrs, sw->Output, sw->Site.n_layers, &sw->GenOutput, LogInfo);
     if(LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
-	// SW_FLW_construct() not needed
-	SW_OUT_construct(sw->FileStatus.make_soil, sw->FileStatus.make_regular,
-      SW_OutputPtrs, sw->Output, sw->Site.n_layers, &sw->GenOutput);
 	SW_SWC_construct(&sw->SoilWat);
 	SW_CBN_construct(&sw->Carbon);
 }
@@ -860,12 +872,10 @@ void SW_CTL_read_inputs_from_disk(SW_ALL* sw, PATH_INFO* PathInfo,
  *  in relation to netCDF gridcells/sites
  * @param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
  *  hold pointers to subroutines for output keys
- * @param[in,out] p_OUT Data storage for simulation run values
  * @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSuid[],
-                   SW_OUTPUT_POINTERS SW_OutputPtrs[],
-                   RealD p_OUT[][SW_OUTNPERIODS], LOG_INFO* LogInfo) {
+                   SW_OUTPUT_POINTERS SW_OutputPtrs[], LOG_INFO* LogInfo) {
 
     #ifdef SWDEBUG
     int debug = 0;
@@ -903,6 +913,21 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSu
     }
 
     SW_CTL_main(&local_sw, SW_OutputPtrs, LogInfo);
+    if(LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    #if defined(SWNETCDF)
+    SW_NC_write_output(
+        local_sw.Output,
+        &local_sw.GenOutput,
+        local_sw.FileStatus.numOutFiles,
+        local_sw.FileStatus.ncOutFiles,
+        ncSuid,
+        SW_Domain->DomainType,
+        LogInfo
+    );
+    #endif
 
     // Clear local instance of SW_ALL
     freeMem: {
@@ -911,5 +936,4 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSu
 
     (void) SW_Domain;
     (void) ncSuid;
-    (void) p_OUT;
 }

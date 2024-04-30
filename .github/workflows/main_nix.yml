@@ -59,13 +59,16 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Install netCDF-C
+    - name: Install netCDF-C and udunits2
       run: |
         sudo apt-get update
-        sudo apt-get install libnetcdf-dev
+        sudo apt-get install libnetcdf-dev libudunits2-dev
 
     - name: Build binary with netCDF support
       run: CPPFLAGS=-DSWNETCDF make clean all
+
+    - name: Build binary with netCDF and udunits2 support
+      run: CPPFLAGS='-DSWNETCDF -DSWUDUNITS' make clean all
 
 
 

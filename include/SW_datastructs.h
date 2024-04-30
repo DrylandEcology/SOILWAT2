@@ -25,7 +25,7 @@
 #define SW_OUTTEXT
 #endif
 
-#define SW_NFILES 26 // For `InFiles`
+#define SW_NFILES 27 // For `InFiles`
 #define SW_NVARNC 2 // For `InFilesNC`
 
 
@@ -57,8 +57,7 @@ typedef struct {
 // this structure is for keeping track of the variables used in the soil_temperature function (mainly the regressions)
 typedef struct {
 
-	double depths[MAX_LAYERS],  //soil layer depths of SoilWat soil
-	       depthsR[MAX_ST_RGR],//evenly spaced depths of soil temperature layer profile
+	double depthsR[MAX_ST_RGR],//evenly spaced depths of soil temperature layer profile
 		   	 fcR[MAX_ST_RGR],//field capacity of soil temperature layer profile, i.e., at `depthsR[]`
 		   	 wpR[MAX_ST_RGR], //wilting point of soil temperature layer profile, i.e., at `depthsR[]`
 		   	 bDensityR[MAX_ST_RGR],//bulk density of the whole soil of soil temperature layer profile, i.e., at `depthsR[]`
@@ -192,6 +191,11 @@ typedef struct {
 	FILE *fp_soil[SW_OUTNPERIODS];
 	char buf_soil[SW_OUTNPERIODS][MAX_LAYERS * OUTSTRLEN];
 
+    #if defined(SWNETCDF)
+    char** ncOutFiles[SW_OUTNKEYS][SW_OUTNPERIODS];
+    int numOutFiles;
+    #endif
+
 } SW_FILE_STATUS;
 
 /* =================================================== */
@@ -295,6 +299,7 @@ typedef struct {
 		//Saxton2006_fK_gravel, /* gravel-correction factor for conductivity [1] */
 		//Saxton2006_lambda; /* Slope of logarithmic tension-moisture curve */
 
+    double depths[MAX_LAYERS];  //soil layer depths of SoilWat soil
 
 	/* Soil water retention curve (SWRC) */
 	unsigned int
@@ -977,6 +982,13 @@ typedef struct {
 	#if defined(RSOILWAT)
 	char *outfile; /* name of output */ //could probably be removed
 	#endif
+
+    #if defined(SWNETCDF)
+    Bool* reqOutputVars;          /**< Do/don't output a variable in the netCDF output files (dynamically allocated array over output variables) */
+    char*** outputVarInfo;        /**< Attributes of output variables in netCDF output files (dynamically allcoated 2-d array: `[varIndex][attIndex]`) */
+    char **units_sw;              /**< Units internally utilized by SOILWAT2 (dynamically allocated array over output variables) */
+    sw_converter_t **uconv;       /**< udunits2 unit converter from internal SOILWAT2 units to user-requested units (dynamically allocated array over output variables) */
+    #endif
 } SW_OUTPUT;
 
 typedef struct {
@@ -1001,8 +1013,12 @@ typedef struct {
 	/** names of output columns for each output key; number is an expensive guess */
 	char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS];
 
-	/** number of output columns for each output key */
-	IntUS ncol_OUT[SW_OUTNKEYS];
+	/* number of outputs */
+	IntUS ncol_OUT[SW_OUTNKEYS]; /**< number of output combinations across variables - soil layer - vegtype */
+	IntUS nvar_OUT[SW_OUTNKEYS]; /**< number of output variables */
+	IntUS nsl_OUT[SW_OUTNKEYS][SW_OUTNMAXVARS]; /**< number of output soil layers */
+	IntUS npft_OUT[SW_OUTNKEYS][SW_OUTNMAXVARS]; /**< number of output plant functional types (vegtype) */
+
 
 	Bool print_IterationSummary;
 	Bool print_SW_Output;
@@ -1016,8 +1032,12 @@ typedef struct {
 	*/
 	RealD *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
 
-	size_t nrow_OUT[SW_OUTNPERIODS];
-	size_t irow_OUT[SW_OUTNPERIODS];
+	size_t nrow_OUT[SW_OUTNPERIODS]; /**< number of output time steps */
+	size_t irow_OUT[SW_OUTNPERIODS]; /**< current output time step index */
+	#endif
+
+	#if defined(SWNETCDF)
+	size_t iOUToffset[SW_OUTNKEYS][SW_OUTNPERIODS][SW_OUTNMAXVARS]; /**< offset positions of output variables for indexing p_OUT */
 	#endif
 
 	#ifdef STEPWAT
@@ -1040,7 +1060,7 @@ typedef struct {
 		across iterations/repeats */
 	Bool prepare_IterationSummary;
 
-	/* Variable from ModelType (STEPWAT2) used in SOILWAT2 */
+	/** Variable from ModelType (STEPWAT2) used in SOILWAT2 */
 	IntUS currIter;
 
 	/* Variables from SXW_t (STEPWAT2) used in SOILWAT2 */
@@ -1094,6 +1114,11 @@ typedef struct {
 
     int ncFileIDs[SW_NVARNC];
     int ncVarIDs[SW_NVARNC];
+
+    int strideOutYears; /**< How many years to write out in a single output netCDF -- 1, X (e.g., 10) or Inf (-1) */
+    int baseCalendarYear; /**< Calendar year that is the reference basis of the time units (e.g., days since YYYY-01-01) of every output netCDFs */
+
+    char* outputVarsFileName;
 } SW_NETCDF;
 
 
@@ -1127,6 +1152,13 @@ typedef struct {
 			endyr,           /**< Last calendar year of the simulation runs */
 			startstart,      /**< First day in first calendar year of the simulation runs */
 			endend;          /**< Last day in last calendar year of the simulation runs */
+
+    // Vertical domain information
+    Bool hasConsistentSoilLayerDepths; /**< Flag indicating if all simulation run within domain have identical soil layer depths (though potentially variable number of soil layers) */
+    LyrIndex
+        nMaxSoilLayers,  /**< Largest number of soil layers across simulation domain */
+        nMaxEvapLayers;  /**< Largest number of soil layers from which bare-soil evaporation may extract water across simulation domain */
+    double depthsAllSoilLayers[MAX_LAYERS]; /**< Lower soil layer depths [cm] if consistent across simulation domain */
 
 	// Information on input files
 	PATH_INFO PathInfo;
@@ -1167,7 +1199,7 @@ typedef struct {
 
 typedef struct {
 
-	#ifdef SW_OUTTEXT
+	#if defined(SW_OUTTEXT)
 	void (*pfunc_text)(OutPeriod, SW_ALL*); /* pointer to output routine for text output */
 	#endif
 

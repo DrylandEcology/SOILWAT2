@@ -63,6 +63,7 @@ int main(int argc, char **argv) {
 
     unsigned long userSUID;
 
+
     // Start overall wall time
     SW_WT_StartTime(&SW_WallTime);
 
@@ -99,6 +100,7 @@ int main(int argc, char **argv) {
         goto finishProgram;
     }
 
+
     SW_MDL_get_ModelRun(&sw_template.Model, &SW_Domain, NULL, &LogInfo);
     if(LogInfo.stopRun) {
         goto finishProgram;
@@ -128,17 +130,61 @@ int main(int argc, char **argv) {
         goto finishProgram;
     }
 
-  // initialize output
-	SW_OUT_set_ncol(sw_template.Site.n_layers, sw_template.Site.n_evap_lyrs,
-                    sw_template.VegEstab.count, sw_template.GenOutput.ncol_OUT);
-	SW_OUT_set_colnames(sw_template.Site.n_layers, sw_template.VegEstab.parms,
-						sw_template.GenOutput.ncol_OUT, sw_template.GenOutput.colnames_OUT,
-						&LogInfo);
+    // identify domain-wide soil profile information
+    SW_DOM_soilProfile(
+        &SW_Domain.hasConsistentSoilLayerDepths,
+        &SW_Domain.nMaxSoilLayers,
+        &SW_Domain.nMaxEvapLayers,
+        SW_Domain.depthsAllSoilLayers,
+        sw_template.Site.n_layers,
+        sw_template.Site.n_evap_lyrs,
+        sw_template.Site.depths,
+        &LogInfo
+    );
     if(LogInfo.stopRun) {
         goto finishProgram;
     }
-	SW_OUT_create_files(&sw_template.FileStatus, sw_template.Output, sw_template.Site.n_layers,
-	                    SW_Domain.PathInfo.InFiles, &sw_template.GenOutput, &LogInfo); // only used with SOILWAT2
+
+    // initialize output
+    SW_OUT_setup_output(
+        SW_Domain.nMaxSoilLayers,
+        SW_Domain.nMaxEvapLayers,
+        &sw_template.VegEstab,
+        &sw_template.GenOutput,
+        &LogInfo
+    );
+    if(LogInfo.stopRun) {
+        goto finishProgram;
+    }
+
+    #if defined(SWNETCDF)
+    SW_NC_read_out_vars(
+        sw_template.Output,
+        &sw_template.GenOutput,
+        SW_Domain.PathInfo.InFiles,
+        sw_template.VegEstab.parms,
+        &LogInfo
+    );
+    if(LogInfo.stopRun) {
+      goto finishProgram;
+    }
+    SW_NC_create_units_converters(
+        sw_template.Output,
+        sw_template.GenOutput.nvar_OUT,
+        &LogInfo
+    );
+    if(LogInfo.stopRun) {
+      goto finishProgram;
+    }
+    #endif // SWNETCDF
+
+    SW_OUT_create_files(
+        &sw_template.FileStatus,
+        &SW_Domain,
+        sw_template.Output,
+        &sw_template.GenOutput,
+        &LogInfo
+    );
     if(LogInfo.stopRun) {
         goto closeFiles;
     }

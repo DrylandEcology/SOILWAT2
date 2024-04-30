@@ -48,8 +48,11 @@
 #define p_OUTsd
 #undef p_OUTsd
 
+#if defined(SWNETCDF)
+const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = { 0 }; // time header not used for netCDFs
+#else
 const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = { 2, 2, 2, 1 }; // number of time header columns for each output period
-
+#endif
 
 
 /* =================================================== */
@@ -156,12 +159,13 @@ void SW_OUT_deconstruct_outarray(SW_GEN_OUT *GenOutput)
 #ifdef RSOILWAT
 /** @brief Corresponds to function `get_outstrleader` of `SOILWAT2-standalone
 
-	@param[in] SW_Model Struct of type SW_MODEL holding basic time information
-		about the simulation
-	@param[in] pd Time period in simulation output (day/week/month/year)
-	@param[in] irow_OUT Current time step
-	@param[in] nrow_OUT Number of output rows for each output period
-    @param[out] p Allocated array to hold output periods for every output key
+@param[in] SW_Model Struct of type SW_MODEL holding basic time information
+    about the simulation
+@param[in] pd Time period in simulation output (day/week/month/year)
+@param[in] irow_OUT Current time step
+@param[in] nrow_OUT Number of output rows for each output period
+@param[in] tOffset Offset describing the previous or current period
+@param[out] p Allocated array to hold output periods for every output key
 */
 void get_outvalleader(SW_MODEL* SW_Model, OutPeriod pd,
 	size_t irow_OUT[], size_t nrow_OUT[], TimeInt tOffset, RealD *p) {
@@ -188,12 +192,14 @@ void get_outvalleader(SW_MODEL* SW_Model, OutPeriod pd,
 #endif
 
 
-#ifdef STEPWAT
+#if defined(STEPWAT)
 /** @brief Handle the cumulative running mean and standard deviation
-		@param k. The index (base0) for subsetting `p` and `psd`, e.g., as calculated by
+		@param[in,out] p Running mean
+		@param[in,out] psd Running standard deviation
+		@param[in] k The index (base0) for subsetting `p` and `psd`, e.g., as calculated by
 			macro `iOUT` or `iOUT2`.
-		@param n. The current iteration/repetition number (base1).
-		@param x. The new value.
+		@param[in] n The current iteration/repetition number (base1).
+		@param[in] x The new value to add to the running mean and running standard deviation
 */
 void do_running_agg(RealD *p, RealD *psd, size_t k, IntU n, RealD x)
 {
@@ -259,3 +265,59 @@ void SW_OUT_construct_outarray(SW_GEN_OUT *GenOutput, SW_OUTPUT* SW_Output,
         }
     }
 }
+
+
+
+/** Calculate offset positions of output variables for indexing p_OUT
+
+    @param[in] nrow_OUT Number of output time steps
+        (array of length SW_OUTNPERIODS).
+    @param[in] nvar_OUT Number of output variables
+        (array of length SW_OUTNPERIODS).
+    @param[in] nsl_OUT Number of output soil layer per variable
+        (array of size SW_OUTNKEYS by SW_OUTNMAXVARS).
+    @param[in] npft_OUT Number of output vegtypes per variable
+        (array of size SW_OUTNKEYS by SW_OUTNMAXVARS).
+    @param[out] iOUToffset Offset positions of output variables for indexing p_OUT
+        (array of size SW_OUTNKEYS by SW_OUTNPERIODS by SW_OUTNMAXVARS).
+*/
+void SW_OUT_calc_iOUToffset(
+    size_t nrow_OUT[],
+    IntUS nvar_OUT[],
+    IntUS nsl_OUT[][SW_OUTNMAXVARS],
+    IntUS npft_OUT[][SW_OUTNMAXVARS],
+    size_t iOUToffset[][SW_OUTNPERIODS][SW_OUTNMAXVARS]
+) {
+    int key, ivar, iprev, pd;
+    size_t tmp, tmp_nsl, tmp_npft, tmp_header;
+
+    ForEachOutPeriod(pd) {
+        tmp_header = nrow_OUT[pd] * ncol_TimeOUT[pd];
+
+        ForEachOutKey(key) {
+            iOUToffset[key][pd][0] = tmp_header;
+
+            for (ivar = 1; ivar < nvar_OUT[key]; ivar++) {
+                iprev = ivar - 1;
+
+                tmp_nsl = (nsl_OUT[key][iprev] > 0) ? nsl_OUT[key][iprev] : 1;
+                tmp_npft = (npft_OUT[key][iprev] > 0) ? npft_OUT[key][iprev] : 1;
+
+                tmp = iOUTnc(
+                    nrow_OUT[pd] - 1,
+                    tmp_nsl - 1,
+                    tmp_npft - 1,
+                    tmp_nsl,
+                    tmp_npft
+                );
+
+                iOUToffset[key][pd][ivar] = iOUToffset[key][pd][iprev] + 1 + tmp;
+            }
+
+            for (ivar = nvar_OUT[key]; ivar < SW_OUTNMAXVARS; ivar++) {
+                iOUToffset[key][pd][ivar] = 0;
+            }
+        }
+    }
+}
+

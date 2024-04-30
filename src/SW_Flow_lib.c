@@ -1498,6 +1498,7 @@ void SW_ST_setup_run(
 			SW_Site->stDeltaX,
 			SW_Site->stMaxDepth,
 			SW_Site->stNRGR,
+            SW_Site->depths,
 			ptr_stError,
 			soil_temp_init,
 			LogInfo
@@ -1543,6 +1544,7 @@ void SW_ST_setup_run(
 @param[in] deltaX The depth increment for the soil temperature calculations (cm).
 @param[in] theMaxDepth the lower bound of the equation (cm).
 @param[in] nRgr the number of regressions (1 extra value is needed for the avgLyrTempR).
+@param[in] depths Depths of soil layers (cm)
 @param[in,out] ptr_stError Booleans status of soil temperature error in *ptr_stError.
 @param[out] soil_temp_init Flag specifying if the values for
 	`soil_temperature()` have been initialized
@@ -1552,7 +1554,8 @@ void SW_ST_setup_run(
 void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
 	double width[], double avgLyrTempInit[], double sTconst, unsigned int nlyrs,
 	double fc[], double wp[], double deltaX, double theMaxDepth,
-	unsigned int nRgr, Bool *ptr_stError, Bool *soil_temp_init, LOG_INFO* LogInfo) {
+	unsigned int nRgr, double depths[], Bool *ptr_stError,
+    Bool *soil_temp_init, LOG_INFO* LogInfo) {
 
 	// local vars
 	unsigned int x1 = 0, x2 = 0, j = 0, i;
@@ -1600,18 +1603,7 @@ void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
 	}
 	SW_StRegValues->oldavgLyrTempR[nRgr + 1] = 0.0;
 
-	// copy depths of soil layer profile
-	for (j = 0; j < nlyrs; j++) {
-		acc += width[j];
-		SW_StRegValues->depths[j] = acc;
-    #ifdef SWDEBUG
-    if (debug)
-      swprintf("\n j=%u, depths = %f", j, SW_StRegValues->depths[j]);
-    #endif
-	}
-
 	// calculate evenly spaced depths of soil temperature profile
-	acc = 0.0;
 	for (i = 0; i < nRgr + 1; i++) {
 		acc += deltaX;
 		SW_StRegValues->depthsR[i] = acc;
@@ -1622,12 +1614,12 @@ void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
 	}
 
 	// if soil temperature max depth is less than soil layer depth then quit
-	if (LT(theMaxDepth, SW_StRegValues->depths[nlyrs - 1])) {
+	if (LT(theMaxDepth, depths[nlyrs - 1])) {
 		if (!(*ptr_stError)) {
 			(*ptr_stError) = swTRUE;
 
 			// if the error hasn't been reported yet... print an error to the logfile
-        LogError(LogInfo, LOGERROR, "SOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, SW_StRegValues->depths[nlyrs - 1]);
+        LogError(LogInfo, LOGERROR, "SOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f cm) must be more than soil layer depth (%5.2f cm)... soil temperature will NOT be calculated\n", theMaxDepth, depths[nlyrs - 1]);
             return; // Exit function prematurely due to error
 		}
 
@@ -1652,7 +1644,7 @@ void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
 			} else {
 				// add from next (x2) soil layer
 				j = x2;
-				if (LT(SW_StRegValues->depthsR[i], SW_StRegValues->depths[x2])) { // soil temperatur layer ends within x2-th soil layer
+				if (LT(SW_StRegValues->depthsR[i], depths[x2])) { // soil temperatur layer ends within x2-th soil layer
 					d2 = fmax(deltaX - acc, 0.0);
 					d1 = width[x2] - d2;
 				} else {
@@ -1685,7 +1677,7 @@ void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
 	// initial soil temperature for layers of the soil temperature profile
 	lyrSoil_to_lyrTemp(SW_StRegValues->tlyrs_by_slyrs, nlyrs, width, bDensity, nRgr, deltaX,
 		SW_StRegValues->bDensityR);
-	lyrSoil_to_lyrTemp_temperature(nlyrs, SW_StRegValues->depths, avgLyrTempInit, sTconst, nRgr,
+	lyrSoil_to_lyrTemp_temperature(nlyrs, depths, avgLyrTempInit, sTconst, nRgr,
 		SW_StRegValues->depthsR, theMaxDepth, SW_StRegValues->oldavgLyrTempR);
 
 	// Initial surface soil temperature `oldavgLyrTempR[0]` is not used;
@@ -1707,7 +1699,7 @@ void soil_temperature_setup(ST_RGR_VALUES* SW_StRegValues, double bDensity[],
 	if (debug) {
 		for (j = 0; j < nlyrs; j++) {
 			swprintf("\nConv Soil depth[%i]=%2.2f, fc=%2.2f, wp=%2.2f, bDens=%2.2f, oldT=%2.2f",
-				j, SW_StRegValues->depths[j], fc[j], wp[j], bDensity[j], avgLyrTempInit[j]);
+				j, depths[j], fc[j], wp[j], bDensity[j], avgLyrTempInit[j]);
 		}
 
 		swprintf("\nConv ST oldSurfaceTR=%2.2f", SW_StRegValues->oldavgLyrTempR[0]);
@@ -2198,6 +2190,7 @@ Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000, Par
 @param[in] H_gt Daily global (tilted) irradiation [MJ / m2]
 @param[in] year Current year in simulation
 @param[in] doy Day of the year (base1) [1-366]
+@param[in] depths Depths of soil layers (cm)
 @param[out] maxLyrTemperature An array holding all of the layers maximum temperature (&deg;C)
 @param[out] minLyrTemperature An array holding all of the layers minimum temperature (&deg;C)
 @param[out] *ptr_stError Boolean indicating whether there was an error.
@@ -2212,8 +2205,9 @@ void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
 	double t1Param3, double csParam1, double csParam2, double shParam,
 	double snowdepth, double sTconst, double deltaX, double theMaxDepth,
 	unsigned int nRgr, double snow, double max_air_temp, double min_air_temp,
-	double H_gt, TimeInt year, TimeInt doy, double maxLyrTemperature[],
-	double minLyrTemperature[], Bool *ptr_stError, LOG_INFO* LogInfo) {
+	double H_gt, TimeInt year, TimeInt doy, double depths[],
+    double maxLyrTemperature[], double minLyrTemperature[], Bool *ptr_stError,
+    LOG_INFO* LogInfo) {
 
 	unsigned int i, sFadjusted_avgLyrTemp;
   #ifdef SWDEBUG
@@ -2360,7 +2354,7 @@ void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
 		swprintf("\nlayer values:");
 		for (i = 0; i < nlyrs; i++) {
 			swprintf("\ni %2d width %f depth %f vwc %f bDensity %f",
-			i, width[i], SW_StRegValues->depths[i], vwc[i], bDensity[i]);
+			i, width[i], depths[i], vwc[i], bDensity[i]);
 		}
 		swprintf("\n");
 	}
@@ -2395,8 +2389,8 @@ void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
 
 	// convert soil temperature of soil temperature profile 'avgLyrTempR' to soil profile layers 'avgLyrTemp'
 	lyrTemp_to_lyrSoil_temperature(SW_StRegValues->tlyrs_by_slyrs, nRgr,
-		SW_StRegValues->depthsR, avgLyrTempR, nlyrs, SW_StRegValues->depths,
-		width, avgLyrTemp, temperatureRangeR, temperatureRange);
+		SW_StRegValues->depthsR, avgLyrTempR, nlyrs, depths, width,
+        avgLyrTemp, temperatureRangeR, temperatureRange);
 
 	// Calculate fusion pools based on soil profile layers, soil freezing/thawing, and if freezing/thawing not completed during one day, then adjust soil temperature
 	sFadjusted_avgLyrTemp =
@@ -2406,9 +2400,8 @@ void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
 
 	// update avgLyrTempR if avgLyrTemp were changed due to soil freezing/thawing
 	if (sFadjusted_avgLyrTemp) {
-		lyrSoil_to_lyrTemp_temperature(nlyrs, SW_StRegValues->depths,
-			avgLyrTemp, sTconst, nRgr, SW_StRegValues->depthsR, theMaxDepth,
-			avgLyrTempR);
+		lyrSoil_to_lyrTemp_temperature(nlyrs, depths, avgLyrTemp, sTconst,
+            nRgr, SW_StRegValues->depthsR, theMaxDepth, avgLyrTempR);
 	}
 
 	// determine frozen/unfrozen status of soil layers
@@ -2434,7 +2427,7 @@ void soil_temperature(ST_RGR_VALUES* SW_StRegValues, double *surface_max,
 		swprintf("\nSoil profile layer temperatures:");
 		for (i = 0; i < nlyrs; i++) {
 			swprintf("\ni %d oldTemp %f avgLyrTemp %f swc %f, swc_sat %f depth %f frozen %f",
-				i, oldavgLyrTemp[i], avgLyrTemp[i], swc[i], swc_sat[i], SW_StRegValues->depths[i], lyrFrozen[i]);
+				i, oldavgLyrTemp[i], avgLyrTemp[i], swc[i], swc_sat[i], depths[i], lyrFrozen[i]);
 		}
 
 		swprintf("\n");

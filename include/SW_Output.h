@@ -104,7 +104,9 @@ extern "C" {
 #define SW_SUM_OFF "OFF"  /* don't output */
 #define SW_SUM_SUM "SUM"  /* sum for period */
 #define SW_SUM_AVG "AVG"  /* arith. avg for period */
+#define SW_SUM_AVG_LONG "MEAN"  /* arith. avg for period */
 #define SW_SUM_FNL "FIN"  /* value on last day in period */
+#define SW_SUM_FNL_LONG "LAST"  /* value on last day in period */
 #define SW_NSUMTYPES 4
 
 /* convenience loops for consistency.
@@ -122,6 +124,7 @@ extern "C" {
 extern char const *key2str[];
 extern char const *pd2longstr[];
 extern char const *styp2str[];
+extern char const *styp2longstr[];
 
 /* =================================================== */
 /*             Global Function Declarations            */
@@ -130,13 +133,21 @@ void SW_OUT_init_ptrs(SW_OUTPUT* SW_Output);
 void SW_GENOUT_init_ptrs(SW_GEN_OUT *GenOutput);
 void SW_OUT_construct(Bool make_soil[], Bool make_regular[],
 		SW_OUTPUT_POINTERS* SW_OutputPtrs, SW_OUTPUT* SW_Output,
-		LyrIndex n_layers, SW_GEN_OUT *GenOutput);
+		LyrIndex n_layers, SW_GEN_OUT *GenOutput, LOG_INFO *LogInfo);
 void SW_OUT_deconstruct(Bool full_reset, SW_ALL *sw);
-void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs, int count,
-					 IntUS ncol_OUT[]);
+void SW_OUT_set_ncol(int tLayers, int n_evap_lyrs, int nTaxaEstabl,
+					IntUS ncol_OUT[], IntUS nvar_OUT[],
+					IntUS nsl_OUT[][SW_OUTNMAXVARS], IntUS npft_OUT[][SW_OUTNMAXVARS]);
 void SW_OUT_set_colnames(int tLayers, SW_VEGESTAB_INFO** parms,
 	IntUS ncol_OUT[], char *colnames_OUT[][5 * NVEGTYPES + MAX_LAYERS],
 	LOG_INFO* LogInfo);
+void SW_OUT_setup_output(
+    int tLayers,
+    int n_evap_lyrs,
+    SW_VEGESTAB* SW_VegEstab,
+    SW_GEN_OUT* SW_GenOutput,
+    LOG_INFO* LogInfo
+);
 void SW_OUT_new_year(TimeInt firstdoy, TimeInt lastdoy,
 					 SW_OUTPUT* SW_Output);
 int SW_OUT_read_onekey(OutKey k, OutSum sumtype, int first, int last,
@@ -157,9 +168,13 @@ void _collect_values(SW_ALL* sw, SW_OUTPUT_POINTERS* SW_OutputPtrs,
 
 void SW_OUT_close_files(SW_FILE_STATUS* SW_FileStatus, SW_GEN_OUT* GenOutput,
 						LOG_INFO* LogInfo);
-void SW_OUT_create_files(SW_FILE_STATUS* SW_FileStatus, SW_OUTPUT* SW_Output,
-	LyrIndex n_layers, char *InFiles[], SW_GEN_OUT* GenOutput,
-	LOG_INFO* LogInfo);
+void SW_OUT_create_files(
+    SW_FILE_STATUS* SW_FileStatus,
+    SW_DOMAIN* SW_Domain,
+    SW_OUTPUT* SW_Output,
+    SW_GEN_OUT* GenOutput,
+    LOG_INFO* LogInfo
+);
 
 void _echo_outputs(SW_ALL* sw);
 void _echo_all_inputs(SW_ALL* sw);
@@ -171,7 +186,6 @@ Bool has_keyname_soillayers(const char *var);
 Bool has_key_soillayers(OutKey k);
 
 #ifdef STEPWAT
-void find_OutPeriods_inUse2(void);
 Bool has_OutPeriod_inUse2(OutPeriod pd, OutKey k, SW_GEN_OUT *GenOutput);
 void SW_OUT_set_SXWrequests(OutPeriod timeSteps_SXW[][SW_OUTNPERIODS],
 		IntUS *used_OUTNPERIODS, SW_OUTPUT *SW_Output, LOG_INFO *LogInfo);
@@ -179,6 +193,11 @@ void SW_OUT_set_SXWrequests(OutPeriod timeSteps_SXW[][SW_OUTNPERIODS],
 
 void SW_GENOUT_deepCopy(SW_GEN_OUT* dest, SW_GEN_OUT* source, SW_OUTPUT* SW_Output, LOG_INFO* LogInfo);
 
+#if defined(SWNETCDF)
+void SW_OUT_deepCopy(SW_OUTPUT* dest_out, SW_OUTPUT* source_out,
+                     SW_FILE_STATUS* dest_files, SW_FILE_STATUS* source_files,
+                     Bool useOutPeriods[], IntUS nvar_OUT[], LOG_INFO* LogInfo);
+#endif
 
 
 // Functions that format the output in `sw_outstr` for printing
@@ -196,7 +215,7 @@ void SW_GENOUT_deepCopy(SW_GEN_OUT* dest, SW_GEN_OUT* source, SW_OUTPUT* SW_Outp
  */
 void get_none(OutPeriod pd, SW_ALL* sw); /* default until defined */
 
-#ifdef SW_OUTTEXT
+#if defined(SW_OUTTEXT) && !defined(SWNETCDF)
 void get_temp_text(OutPeriod pd, SW_ALL* sw);
 void get_precip_text(OutPeriod pd, SW_ALL* sw);
 void get_vwcBulk_text(OutPeriod pd, SW_ALL* sw);
@@ -227,7 +246,7 @@ void get_co2effects_text(OutPeriod pd, SW_ALL* sw);
 void get_biomass_text(OutPeriod pd, SW_ALL* sw);
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 void get_temp_mem(OutPeriod pd, SW_ALL* sw);
 void get_precip_mem(OutPeriod pd, SW_ALL* sw);
 void get_vwcBulk_mem(OutPeriod pd, SW_ALL* sw);
