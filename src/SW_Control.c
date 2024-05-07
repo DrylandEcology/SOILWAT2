@@ -657,6 +657,17 @@ void SW_CTL_run_spinup(SW_ALL* sw, LOG_INFO* LogInfo) {
   int debug = 0;
   #endif
 
+    #ifdef SWDEBUG
+    if (debug) {
+        swprintf(
+            "'SW_CTL_run_spinup': "
+            "mode = %d, duration = %d (# years), "
+            "scope = %d [# calendar years out of %d-%d]\n",
+            mode, duration, scope, sw->Model.startyr, finalyr
+        );
+    }
+    #endif
+
   switch ( mode ) {
     case 2:
       // initialize structured array
@@ -705,7 +716,11 @@ void SW_CTL_run_spinup(SW_ALL* sw, LOG_INFO* LogInfo) {
     *cur_yr = years[ yrIdx ];
 
     #ifdef SWDEBUG
-    if (debug) swprintf("\n'SW_CTL_run_spinup': simulate year = %d\n", *cur_yr);
+    if (debug) {
+        swprintf(
+            "'SW_CTL_run_spinup': simulate year = %d | %d\n", yrIdx + 1, *cur_yr
+        );
+    }
     #endif
 
     SW_CTL_run_current_year(sw, NULL, LogInfo);
@@ -914,7 +929,7 @@ void SW_CTL_run_sw(SW_ALL* sw_template, SW_DOMAIN* SW_Domain, unsigned long ncSu
 
     SW_CTL_main(&local_sw, SW_OutputPtrs, LogInfo);
     if(LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
+        goto freeMem; // Free memory and exit function prematurely due to error
     }
 
     #if defined(SWNETCDF)
