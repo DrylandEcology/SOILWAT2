@@ -35,15 +35,6 @@
 
 #include "include/SW_Output.h"
 
-#ifdef RSOILWAT
-#include <R.h>
-#include <Rdefines.h>
-#include <Rinternals.h>
-#endif
-
-#ifdef STEPWAT
-#include <math.h>
-#endif
 
 #if defined(SWNETCDF)
 #include <netcdf.h> // defines NC_FILL_DOUBLE

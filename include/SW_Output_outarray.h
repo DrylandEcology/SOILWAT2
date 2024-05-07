@@ -93,8 +93,6 @@ extern "C" {
 #if defined(SWNETCDF)
     #undef iOUT
     #undef iOUT2
-#else
-    #undef iOUTnc
 #endif
 
 
