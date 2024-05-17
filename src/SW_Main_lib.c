@@ -255,7 +255,7 @@ void sw_init_args(int argc, char **argv, Bool *EchoInits,
 void sw_fail_on_error(LOG_INFO* LogInfo) {
     #ifdef RSOILWAT
     if(LogInfo->stopRun) {
-        error(LogInfo->errorMsg);
+        error("%s", LogInfo->errorMsg);
     }
 
     #else
