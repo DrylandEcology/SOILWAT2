@@ -28,10 +28,6 @@
 #include "include/SW_Times.h"
 #include "include/myMemory.h"
 
-#ifdef STEPWAT
-#include "ST_defines.h"
-#endif
-
 
 /* =================================================== */
 /*                  Global Variables                   */
