@@ -14,8 +14,8 @@
   // R-API requires that we use it's own random number implementation
   // see https://cran.r-project.org/doc/manuals/R-exts.html#Writing-portable-packages
   // and https://cran.r-project.org/doc/manuals/R-exts.html#Random-numbers
-  #include <R_ext/Random.h> // for the random number generators
-  #include <Rmath.h> // for rnorm()
+  #include <R.h> // for the R random number generators from <R_ext/Random.h>, ie., GetRNGstate() and PutRNGstate()
+  #include <Rmath.h> // for rnorm(), runif(), unif_rand()
 
 #else
 #include "external/pcg/pcg_basic.h"

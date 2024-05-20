@@ -46,7 +46,7 @@
 #include <assert.h>
 
 #ifdef RSOILWAT
-  #include <R_ext/Print.h>
+  #include <R.h> // for Rprintf() from <R_ext/Print.h>
 #endif
 
 
