@@ -49,6 +49,12 @@ jobs:
       if: ${{ runner.os != 'macOS' }}
       run: make clean test_sanitizer
 
+    - name: Compile as library for STEPWAT2
+      run: CPPFLAGS='-DSTEPWAT' sw_sources='SW_Output_outarray.c SW_Output_outtext.c' make clean lib
+
+    - name: Compile as library for rSOILWAT2
+      run: CPPFLAGS='-DRSOILWAT' CFLAGS='-Iexternal/Rmock' sw_sources='SW_Output_outarray.c' make clean libr
+
 
   build_ncSW2:
     runs-on: ubuntu-latest
