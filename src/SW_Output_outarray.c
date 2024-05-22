@@ -136,10 +136,12 @@ void SW_OUT_deconstruct_outarray(SW_GEN_OUT *GenOutput)
 
 	ForEachOutKey(k) {
 		for (i = 0; i < SW_OUTNPERIODS; i++) {
+			#if defined(SW_OUTARRAY)
 			if (!isnull(GenOutput->p_OUT[k][i])) {
 			    free(GenOutput->p_OUT[k][i]);
 			    GenOutput->p_OUT[k][i] = NULL;
 			}
+			#endif
 
 			#ifdef STEPWAT
 			if (!isnull(GenOutput->p_OUTsd[k][i])) {
@@ -149,6 +151,10 @@ void SW_OUT_deconstruct_outarray(SW_GEN_OUT *GenOutput)
 			#endif
 		}
 	}
+
+	#if !defined(SW_OUTARRAY) && !defined(STEPWAT)
+	(void) *GenOutput;
+	#endif
 }
 
 
@@ -233,6 +239,7 @@ void SW_OUT_construct_outarray(SW_GEN_OUT *GenOutput, SW_OUTPUT* SW_Output,
 
             if (SW_Output[k].use && timeStepOutPeriod != eSW_NoTime) {
 
+              #if defined(SW_OUTARRAY)
               size = GenOutput->nrow_OUT[timeStepOutPeriod] *
                   (GenOutput->ncol_OUT[k] + ncol_TimeOUT[timeStepOutPeriod]);
 
@@ -245,6 +252,7 @@ void SW_OUT_construct_outarray(SW_GEN_OUT *GenOutput, SW_OUTPUT* SW_Output,
               if(LogInfo->stopRun) {
                   return; // Exit function prematurely due to error
               }
+              #endif
 
               #if defined(STEPWAT)
               GenOutput->p_OUTsd[k][timeStepOutPeriod] = (RealD *) Mem_Calloc(
@@ -260,6 +268,13 @@ void SW_OUT_construct_outarray(SW_GEN_OUT *GenOutput, SW_OUTPUT* SW_Output,
             }
         }
     }
+
+
+    #if !defined(SW_OUTARRAY) && !defined(STEPWAT)
+    (void) *LogInfo;
+    (void) s;
+    (void) size;
+    #endif
 }
 
 
