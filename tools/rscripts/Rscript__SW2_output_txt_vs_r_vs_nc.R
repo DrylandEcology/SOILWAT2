@@ -5,23 +5,23 @@
 #   # Run text-based SOILWAT2 on example simulation
 #   rm -r tests/example/Output
 #   make clean bin_run
-#   cp -R tests/example/Output tests/example/Output_txt
+#   cp -R tests/example/Output tests/example/Output_comps-txt
 #
 #   # Run nc-based SOILWAT2 on example simulation
 #   rm -r tests/example/Output
 #   CPPFLAGS='-DSWNETCDF -DSWUDUNITS' make clean bin_run
 #   mv tests/example/Input_nc/domain_template.nc tests/example/Input_nc/domain.nc
 #   bin/SOILWAT2 -d ./tests/example -f files.in
-#   cp -R tests/example/Output tests/example/Output_nc
+#   cp -R tests/example/Output tests/example/Output_comps-nc
 #   rm tests/example/Input_nc/domain.nc tests/example/Input_nc/progress.nc
 # ```
 #
 # Compare output generated above
 # ```
-#   Rscript tools/check__output_txt_vs_r_vs_nc.R
+#   Rscript tools/rscripts/Rscript__SW2_output_txt_vs_r_vs_nc.R
 # ```
 #
-# See also `tools/run_compare_outputs.sh`
+# See also `toolscheck_outputModes.sh`
 #
 #------ . ------
 stopifnot(
@@ -36,8 +36,8 @@ qprobs <- c(0, 0.05, 0.25, 0.5, 0.75, 0.95, 1)
 
 #--- Paths ------
 dir_example <- file.path("tests", "example")
-dir_nc <- file.path(dir_example, "Output_nc")
-dir_txt <- file.path(dir_example, "Output_txt")
+dir_nc <- file.path(dir_example, "Output_comps-nc")
+dir_txt <- file.path(dir_example, "Output_comps-txt")
 
 
 #--- SOILWAT2 metadata ------
