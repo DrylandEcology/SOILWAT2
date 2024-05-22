@@ -3049,7 +3049,7 @@ void SW_OUT_create_files(
     }
     #endif
 
-    #if defined(SW_OUTTEXT)
+    #if defined(SOILWAT) && defined(SW_OUTTEXT)
     SW_OUT_create_textfiles(SW_FileStatus, SW_Output,
         SW_Domain->nMaxSoilLayers, SW_Domain->PathInfo.InFiles, GenOutput, LogInfo);
 

@@ -49,6 +49,13 @@ jobs:
       if: ${{ runner.os != 'macOS' }}
       run: make clean test_sanitizer
 
+    - name: Compile as library for STEPWAT2
+      run: CPPFLAGS='-DSTEPWAT' make clean lib
+
+    - name: Compile as library for rSOILWAT2
+      # Rmock/ provides bare-bones headers of R C-API functions required by SOILWAT2
+      run: CPPFLAGS='-DRSOILWAT' CFLAGS='-Iexternal/Rmock' make clean libr
+
 
   build_ncSW2:
     runs-on: ubuntu-latest

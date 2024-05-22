@@ -24,6 +24,8 @@
 # Figures created by scripts in tools/
 /tools/Fig*
 /tools/*.pdf
+/tools/figures/
+/tools/figures*
 
 # Google unit test output
 gtest-*.o

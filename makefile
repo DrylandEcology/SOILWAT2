@@ -18,7 +18,8 @@
 # make doc_open    open documentation
 #
 # --- SOILWAT2 library ------
-# make lib         create SOILWAT2 library
+# make lib         create SOILWAT2 library (utilized by SOILWAT2 and STEPWAT2)
+# make libr        create SOILWAT2 library (utilized by rSOILWAT2)
 #
 # --- Tests ------
 # make test        create a test binary executable that includes the unit tests
@@ -285,12 +286,6 @@ gmock_LDLIBS := -l$(gmock)
 
 
 #------ CODE FILES
-# sw_sources is used by STEPWAT2 and rSOILWAT2 to pass relevant output code file
-ifneq ($(origin sw_sources), undefined)
-	# Add source path
-	sw_sources := $(sw_sources:%.c=$(dir_src)/%.c)
-endif
-
 # SOILWAT2 files
 sources_core := \
 	$(dir_src)/SW_Main_lib.c \
@@ -315,18 +310,15 @@ sources_core := \
 	$(dir_src)/SW_Carbon.c \
 	$(dir_src)/SW_Domain.c \
 	$(dir_src)/SW_Output.c \
-	$(dir_src)/SW_Output_get_functions.c
+	$(dir_src)/SW_Output_get_functions.c \
+	$(dir_src)/SW_Output_outarray.c \
+	$(dir_src)/SW_Output_outtext.c
 
 ifdef SWNETCDF
 sources_core += $(dir_src)/SW_netCDF.c
-sources_core += $(dir_src)/SW_Output_outarray.c
-else
-sources_core += $(dir_src)/SW_Output_outtext.c
 endif
 
-sources_lib = \
-	$(sw_sources) \
-	$(sources_core)
+sources_lib = $(sources_core)
 objects_lib = $(sources_lib:$(dir_src)/%.c=$(dir_build_sw2)/%.o)
 
 

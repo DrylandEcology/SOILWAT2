@@ -12,6 +12,7 @@
 [tinytex]: https://yihui.name/tinytex/
 [xcode]: https://developer.apple.com/xcode
 [netCDF]: https://downloads.unidata.ucar.edu/netcdf/
+[udunits2]: https://downloads.unidata.ucar.edu/udunits/
 
 
 Note: this document is best viewed as part of the doxygen-built documentation
@@ -59,6 +60,8 @@ on your side.
     - a minimal `latex` installation (see below)
   - to build with [netCDF][] support (optional)
     - the `netCDF-C` library
+  - to build with [udunits2][] support (optional)
+    - the `udunits2` library
 
 
 #### Example instructions for a minimal `latex` installation

@@ -3,16 +3,19 @@
 
 # Run SOILWAT2 unit tests with appropriate flag
 # ```
-#   CPPFLAGS=-DSW2_SolarPosition_Test__hourangles_by_lat_and_doy make test_run
+#   CPPFLAGS=-DSW2_SolarPosition_Test__hourangles_by_lat_and_doy make test
+#   bin/sw_test --gtest_filter=*SolarPosHourAnglesByLatAndDoy*
 # ```
 #
 # Produce plots based on output generated above
 # ```
-#   Rscript tools/plot__SW2_SolarPosition_Test__hourangles_by_lat_and_doy.R
+#   Rscript tools/rscripts/Rscript__SW2_SolarPosition_Test__hourangles_by_lat_and_doy.R
 # ```
 
 #------
 dir_out <- file.path("tests", "example", "Output")
+dir_fig <- file.path("tools", "figures")
+dir.create(dir_fig, recursive = TRUE, showWarnings = FALSE)
 
 tag_filename <- "SW2_SolarPosition_Test__hourangles_by_lat_and_doy"
 
@@ -188,7 +191,7 @@ if (do_plot_maps || do_plot_expectations) {
 
       # Start plot
       fname <- file.path(
-        dirname(file_sw2_test_outputs[fids[1]]),
+        dir_fig,
         sub(
           "Table__",
           "Fig__",
@@ -299,7 +302,7 @@ if (do_plot_maps || do_plot_expectations) {
 
         # Start plot
         fname <- file.path(
-          dirname(file_sw2_test_outputs[fids[1]]),
+          dir_fig,
           sub(
             "Table__",
             "Fig__Symmetry_ReflectedAspect__",
@@ -419,7 +422,7 @@ if (do_plot_maps || do_plot_expectations) {
 
           # Start plot
           fname <- file.path(
-            dirname(file_sw2_test_outputs[fids[1]]),
+            dir_fig,
             sub(
               "Table__",
               "Fig__Symmetry_ReflectedAspect2__",
@@ -531,7 +534,7 @@ if (do_plot_maps || do_plot_expectations) {
 
         # Start plot
         fname <- file.path(
-          dirname(file_sw2_test_outputs[fids[1]]),
+          dir_fig,
           sub(
             "Table__",
             "Fig__Symmetry_ReflectedDOY__",
@@ -642,7 +645,7 @@ if (do_plot_maps || do_plot_expectations) {
         if (n_panels[1] > 0) {
           # Start plot
           fname <- file.path(
-            dirname(file_sw2_test_outputs[fids[1]]),
+            dir_fig,
             sub(
               "Table__",
               "Fig__Symmetry_ShiftedDOY-ReflectedLatitude-FlippedAspect__",

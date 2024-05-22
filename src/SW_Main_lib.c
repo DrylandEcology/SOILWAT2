@@ -29,7 +29,7 @@
 #include "include/myMemory.h"
 
 #ifdef RSOILWAT
-  #include <R.h>    // for error(), and warning()
+  #include <R.h>    // for error(), and warning() from <R_ext/Error.h>
 #endif
 
 /* =================================================== */

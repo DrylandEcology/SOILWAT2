@@ -330,7 +330,7 @@ static void _create_csv_file_ST(int iteration, OutPeriod pd, char *InFiles[],
 
 
 
-#if defined(SOILWAT)
+#if defined(SOILWAT) && !defined(SWNETCDF)
 
 /** @brief create all of the user-specified output text files.
  *
