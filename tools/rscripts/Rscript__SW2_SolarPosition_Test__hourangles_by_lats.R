@@ -4,16 +4,19 @@
 
 # Run SOILWAT2 unit tests with appropriate flag
 # ```
-#   CPPFLAGS=-DSW2_SolarPosition_Test__hourangles_by_lats make test_run
+#   CPPFLAGS=-DSW2_SolarPosition_Test__hourangles_by_lats make test
+#   bin/sw_test --gtest_filter=*SolarPosHourAnglesByLats*
 # ```
 #
 # Produce plots based on output generated above
 # ```
-#   Rscript tools/plot__SW2_SolarPosition_Test__hourangles_by_lats.R
+#   Rscript tools/rscripts/Rscript__SW2_SolarPosition_Test__hourangles_by_lats.R
 # ```
 
 #------
 dir_out <- file.path("tests", "example", "Output")
+dir_fig <- file.path("tools", "figures")
+dir.create(dir_fig, recursive = TRUE, showWarnings = FALSE)
 
 tag_filename <- "SW2_SolarPosition_Test__hourangles_by_lats"
 
@@ -105,7 +108,7 @@ if (do_plot) {
         x <- vals[doy, , slope, , vars]
         xH <- vals[doy, , 2, 1, vars_oH]
 
-        if (any(!is.na(x))) {
+        if (!all(is.na(x))) {
 
           graphics::plot(
             1,
@@ -188,7 +191,7 @@ if (do_plot) {
 
     for (iv in seq_along(var_sets)[-1]) {
       fname <- file.path(
-        dirname(file_sw2_test_output),
+        dir_fig,
         sub(
           "Table__",
           "Fig__",

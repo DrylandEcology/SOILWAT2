@@ -438,7 +438,7 @@ namespace {
           // Run (a short) simulation
           local_sw.Model.startyr = 1980;
           local_sw.Model.endyr = 1980;
-          SW_CTL_main(&local_sw, &SW_OutputPtrs, &local_LogInfo);
+          SW_CTL_main(&local_sw, SW_OutputPtrs, &local_LogInfo);
           sw_fail_on_error(&local_LogInfo); // exit test program if unexpected error
 
           // Print values after simulation

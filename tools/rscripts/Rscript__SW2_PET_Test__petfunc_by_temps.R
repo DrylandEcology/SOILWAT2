@@ -4,16 +4,19 @@
 
 # Run SOILWAT2 unit tests with appropriate flag
 # ```
-#   CPPFLAGS=-DSW2_PET_Test__petfunc_by_temps make test_run
+#   CPPFLAGS=-DSW2_PET_Test__petfunc_by_temps make test
+#   bin/sw_test --gtest_filter=*PETPetfuncByTemps*
 # ```
 #
 # Produce plots based on output generated above
 # ```
-#   Rscript tools/plot__SW2_PET_Test__petfunc_by_temps.R
+#   Rscript tools/rscripts/Rscript__SW2_PET_Test__petfunc_by_temps.R
 # ```
 
 #------
 dir_out <- file.path("tests", "example", "Output")
+dir_fig <- file.path("tools", "figures")
+dir.create(dir_fig, recursive = TRUE, showWarnings = FALSE)
 
 tag_filename <- "SW2_PET_Test__petfunc_by_temps"
 
@@ -70,7 +73,7 @@ if (do_plot) {
   n_panels <- c(length(ws), length(cc))
 
   pdf(
-    file = file.path(dir_out, paste0("Fig__", tag_filename, "__by_RH", ".pdf")),
+    file = file.path(dir_fig, paste0("Fig__", tag_filename, "__by_RH", ".pdf")),
     height = 2 * n_panels[1],
     width = 2 * n_panels[2]
   )
@@ -98,7 +101,7 @@ if (do_plot) {
 
   tmp <- tmp +
     ggplot2::theme(
-      legend.position = c(
+      legend.position.inside = c(
         0.4 / (n_panels[2] + 1),
         1 - 0.4 / (n_panels[1] + 1)
       ),
@@ -117,7 +120,7 @@ if (do_plot) {
   n_panels <- c(length(rh), length(ws))
 
   pdf(
-    file = file.path(dir_out, paste0("Fig__", tag_filename, "__by_CloudCover", ".pdf")),
+    file = file.path(dir_fig, paste0("Fig__", tag_filename, "__by_CloudCover", ".pdf")),
     height = 2 * n_panels[1],
     width = 2 * n_panels[2]
   )
@@ -145,7 +148,7 @@ if (do_plot) {
 
   tmp <- tmp +
     ggplot2::theme(
-      legend.position = c(
+      legend.position.inside = c(
         0.4 / (n_panels[2] + 1),
         1 - 0.4 / (n_panels[1] + 1)
       ),
@@ -164,7 +167,7 @@ if (do_plot) {
   n_panels <- c(length(rh), length(cc))
 
   pdf(
-    file = file.path(dir_out, paste0("Fig__", tag_filename, "__by_WindSpeed", ".pdf")),
+    file = file.path(dir_fig, paste0("Fig__", tag_filename, "__by_WindSpeed", ".pdf")),
     height = 2 * n_panels[1],
     width = 2 * n_panels[2]
   )
@@ -192,7 +195,7 @@ if (do_plot) {
 
   tmp <- tmp +
     ggplot2::theme(
-      legend.position = c(
+      legend.position.inside = c(
         0.4 / (n_panels[2] + 1),
         1 - 0.4 / (n_panels[1] + 1)
       ),
@@ -214,7 +217,7 @@ if (do_plot) {
   n_panels <- c(length(rh), length(ws))
 
   pdf(
-    file = file.path(dir_out, paste0("Fig__", tag_filename, "__by_fRSDS", ".pdf")),
+    file = file.path(dir_fig, paste0("Fig__", tag_filename, "__by_fRSDS", ".pdf")),
     height = 2 * n_panels[1],
     width = 2 * n_panels[2]
   )
@@ -242,7 +245,7 @@ if (do_plot) {
 
   tmp <- tmp +
     ggplot2::theme(
-      legend.position = c(
+      legend.position.inside = c(
         0.4 / (n_panels[2] + 1),
         1 - 0.4 / (n_panels[1] + 1)
       ),

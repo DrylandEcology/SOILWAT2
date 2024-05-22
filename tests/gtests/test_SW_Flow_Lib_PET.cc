@@ -349,12 +349,13 @@ namespace
   #ifdef SW2_SolarPosition_Test__hourangles_by_lat_and_doy
   // Run SOILWAT2 unit tests with flag
   // ```
-  //   CPPFLAGS=-DSW2_SolarPosition_Test__hourangles_by_lat_and_doy make test test_run
+  //   CPPFLAGS=-DSW2_SolarPosition_Test__hourangles_by_lat_and_doy make test
+  //   bin/sw_test --gtest_filter=*SolarPosHourAnglesByLatAndDoy*
   // ```
   //
   // Produce plots based on output generated above
   // ```
-  //   Rscript tools/plot__SW2_SolarPosition_Test__hourangles_by_lat_and_doy.R
+  //   Rscript tools/rscripts/Rscript__SW2_SolarPosition_Test__hourangles_by_lat_and_doy.R
   // ```
   TEST(AtmDemandTest, SolarPosHourAnglesByLatAndDoy)
   {
@@ -375,6 +376,11 @@ namespace
       *strnum,
       fname[FILENAME_MAX];
 
+    SW_ATMD SW_AtmDemand;
+    SW_PET_init_run(&SW_AtmDemand); // Init radiation memoization
+
+    LOG_INFO LogInfo;
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
 
     for (isl = 0; isl <= 3; isl++) {
       slope = 90. * isl / 3.;
@@ -391,7 +397,7 @@ namespace
 */
 
         // Output file
-        strcpy(fname, output_prefix);
+        strcpy(fname, "Output/");
         strcat(
           fname,
           "Table__SW2_SolarPosition_Test__hourangles_by_lat_and_doy"
@@ -403,7 +409,7 @@ namespace
         snprintf(strnum, length_strnum + 1, "%d", (int) slope);
         strcat(fname, strnum);
         free(strnum);
-        strnum = NULL
+        strnum = NULL;
 
         strcat(fname, "__aspect");
         length_strnum = snprintf(NULL, 0, "%d", (int) aspect);
@@ -411,11 +417,13 @@ namespace
         snprintf(strnum, length_strnum + 1, "%d", (int) aspect);
         strcat(fname, strnum);
         free(strnum);
-        strnum = NULL
+        strnum = NULL;
 
         strcat(fname, ".csv");
 
-        fp = OpenFile(fname, "w");
+        fp = OpenFile(fname, "w", &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
 
         // Column names
         fprintf(
@@ -443,6 +451,7 @@ namespace
             );
 
             sun_hourangles(
+              &SW_AtmDemand,
               idoy,
               ilat * deg_to_rad,
               slope * deg_to_rad,
@@ -478,12 +487,13 @@ namespace
             fflush(fp);
           }
 
-          SW_PET_init_run(); // Re-init radiation memoization (for new latitude)
+          SW_PET_init_run(&SW_AtmDemand); // Re-init radiation memoization (for new latitude)
         }
 
 
         // Clean up
-        CloseFile(&fp);
+        CloseFile(&fp, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         if (isl == 0) {
           break;
@@ -498,12 +508,13 @@ namespace
   #ifdef SW2_SolarPosition_Test__hourangles_by_lats
   // Run SOILWAT2 unit tests with flag
   // ```
-  //   CPPFLAGS=-DSW2_SolarPosition_Test__hourangles_by_lats make test test_run
+  //   CPPFLAGS=-DSW2_SolarPosition_Test__hourangles_by_lats make test
+  //   bin/sw_test --gtest_filter=*SolarPosHourAnglesByLats*
   // ```
   //
   // Produce plots based on output generated above
   // ```
-  //   Rscript tools/plot__SW2_SolarPosition_Test__hourangles_by_lats.R
+  //   Rscript tools/rscripts/Rscript__SW2_SolarPosition_Test__hourangles_by_lats.R
   // ```
   TEST(AtmDemandTest, SolarPosHourAnglesByLats)
   {
@@ -523,9 +534,17 @@ namespace
     FILE *fp;
     char fname[FILENAME_MAX];
 
-    strcpy(fname, output_prefix);
+    SW_ATMD SW_AtmDemand;
+    SW_PET_init_run(&SW_AtmDemand); // Init radiation memoization
+
+    LOG_INFO LogInfo;
+    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
+
+    strcpy(fname, "Output/");
     strcat(fname, "Table__SW2_SolarPosition_Test__hourangles_by_lats.csv");
-    fp = OpenFile(fname, "w");
+    fp = OpenFile(fname, "w", &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
 
     // Column names
     fprintf(
@@ -561,6 +580,7 @@ namespace
               );
 
               sun_hourangles(
+                &SW_AtmDemand,
                 doys[idoy], rlat, rslope, raspect,
                 sun_angles,
                 int_cos_theta,
@@ -581,13 +601,14 @@ namespace
               fflush(fp);
             }
 
-            SW_PET_init_run(); // Re-init radiation memoization
+            SW_PET_init_run(&SW_AtmDemand); // Re-init radiation memoization
           }
         }
       }
     }
 
-    CloseFile(&fp);
+    CloseFile(&fp, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
   }
   #endif // end of SW2_SolarPosition_Test__hourangles_by_lats
 
@@ -1224,12 +1245,13 @@ namespace
   #ifdef SW2_PET_Test__petfunc_by_temps
   // Run SOILWAT2 unit tests with flag
   // ```
-  //   CPPFLAGS=-DSW2_PET_Test__petfunc_by_temps make test test_run
+  //   CPPFLAGS=-DSW2_PET_Test__petfunc_by_temps make test
+  //   bin/sw_test --gtest_filter=*PETPetfuncByTemps*
   // ```
   //
   // Produce plots based on output generated above
   // ```
-  //   Rscript tools/plot__SW2_PET_Test__petfunc_by_temps.R
+  //   Rscript tools/rscripts/Rscript__SW2_PET_Test__petfunc_by_temps.R
   // ```
   TEST(AtmDemandTest, PETPetfuncByTemps)
   {
@@ -1258,9 +1280,10 @@ namespace
     FILE *fp;
     char fname[FILENAME_MAX];
 
-    strcpy(fname, output_prefix);
+    strcpy(fname, "Output/");
     strcat(fname, "Table__SW2_PET_Test__petfunc_by_temps.csv");
-    fp = OpenFile(fname, "w");
+    fp = OpenFile(fname, "w", &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Column names
     fprintf(
@@ -1297,7 +1320,7 @@ namespace
                 H_gt = fH_gt * solar_radiation(
                   &SW_AtmDemand, doy,
                   lat, elev, slope, aspect, reflec,
-                  &cloudcover, RH, temp,
+                  &cloudcover, RH,
                   rsds, desc_rsds,
                   &H_oh, &H_ot, &H_gh, &LogInfo
                 );
@@ -1332,7 +1355,8 @@ namespace
     }
 
     // Clean up
-    CloseFile(&fp);
+    CloseFile(&fp, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
   }
   #endif // end of SW2_PET_Test__petfunc_by_temps
 

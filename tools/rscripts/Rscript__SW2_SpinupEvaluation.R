@@ -1,11 +1,12 @@
 # Run SOILWAT2 unit tests with appropriate flag
 # ```
-#   CPPFLAGS=-DSW2_SpinupEvaluation make test && bin/sw_test --gtest_filter=*SpinupEvaluation*
+#   CPPFLAGS=-DSW2_SpinupEvaluation make test
+#   bin/sw_test --gtest_filter=*SpinupEvaluation*
 # ```
 #
 # Produce plots based on output generated above
 # ```
-#   Rscript tools/plot__SW2_SpinupEvaluation.R
+#   Rscript tools/rscripts/Rscript__SW2_SpinupEvaluation.R
 # ```
 
 #------
@@ -17,6 +18,8 @@ stopifnot(
 )
 
 dir_out <- file.path("tests", "example", "Output")
+dir_fig <- file.path("tools", "figures")
+dir.create(dir_fig, recursive = TRUE, showWarnings = FALSE)
 
 tag_filename <- "SW2_SpinupEvaluation"
 
@@ -87,7 +90,7 @@ for (k in seq_along(file_sw2_test_outputs)) {
 
   grDevices::pdf(
     file = file.path(
-      dirname(file_sw2_test_outputs[[k]]),
+      dir_fig,
       sub(
         "Table__", "Fig__",
         sub(".csv", ".pdf", basename(file_sw2_test_outputs[[k]]))
