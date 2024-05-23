@@ -1,4 +1,5 @@
 #include "gtest/gtest.h"
+
 #include <assert.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -15,37 +16,39 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "include/filefuncs.h"
 #include "include/generic.h"
 #include "include/myMemory.h"
-#include "include/filefuncs.h"
 #include "include/rands.h"
-#include "include/Times.h"
-#include "include/SW_Defines.h"
-#include "include/SW_Times.h"
-#include "include/SW_Files.h"
 #include "include/SW_Carbon.h"
-#include "include/SW_Site.h"
-#include "include/SW_VegProd.h"
-#include "include/SW_VegEstab.h"
-#include "include/SW_Model.h"
-#include "include/SW_SoilWater.h"
-#include "include/SW_Weather.h"
-#include "include/SW_Markov.h"
-#include "include/SW_Sky.h"
 #include "include/SW_Control.h"
+#include "include/SW_Defines.h"
+#include "include/SW_Files.h"
+#include "include/SW_Markov.h"
+#include "include/SW_Model.h"
+#include "include/SW_Site.h"
+#include "include/SW_Sky.h"
+#include "include/SW_SoilWater.h"
+#include "include/SW_Times.h"
+#include "include/SW_VegEstab.h"
+#include "include/SW_VegProd.h"
+#include "include/SW_Weather.h"
+#include "include/Times.h"
 
 #include "tests/gtests/sw_testhelpers.h"
 
-
-
 namespace {
-  /* Test daily water balance and water cycling:
-       i) Call function 'SW_CTL_main' which calls 'SW_CTL_run_current_year' for each year
-          which calls 'SW_SWC_water_flow' for each day
-      ii) Summarize checks added to debugging code of 'SW_SWC_water_flow' (which is
-          compiled if flag 'SWDEBUG' is defined)
-  */
-  TEST_F(WaterBalanceFixtureTest, WaterBalanceExample1) { // default run == 'testing' example1
+/* Test daily water balance and water cycling:
+
+     i) Call function 'SW_CTL_main' which calls 'SW_CTL_run_current_year' for
+   each year which calls 'SW_SWC_water_flow' for each day
+
+    ii) Summarize checks added to debugging code of 'SW_SWC_water_flow' (which
+   is compiled if flag 'SWDEBUG' is defined)
+*/
+
+// default run == 'testing' example1
+TEST_F(WaterBalanceFixtureTest, WaterBalanceExample1) {
     int i;
 
     // Run the simulation
@@ -54,14 +57,13 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
-        "Water balance error in test " <<
-        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
+        EXPECT_EQ(0, SW_All.SoilWat.wbError[i])
+            << "Water balance error in test " << i << ": "
+            << (char *) SW_All.SoilWat.wbErrorNames[i];
     }
-  }
+}
 
-
-  TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSoilTemperature) {
+TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSoilTemperature) {
     int i;
 
     // Turn on soil temperature simulations
@@ -73,14 +75,13 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
-        "Water balance error in test " <<
-        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
+        EXPECT_EQ(0, SW_All.SoilWat.wbError[i])
+            << "Water balance error in test " << i << ": "
+            << (char *) SW_All.SoilWat.wbErrorNames[i];
     }
-  }
+}
 
-
-  TEST_F(WaterBalanceFixtureTest, WaterBalanceWithPondedWaterRunonRunoff) {
+TEST_F(WaterBalanceFixtureTest, WaterBalanceWithPondedWaterRunonRunoff) {
     int i;
 
     // Turn on impermeability of first soil layer, runon, and runoff
@@ -94,15 +95,13 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
-        "Water balance error in test " <<
-        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
+        EXPECT_EQ(0, SW_All.SoilWat.wbError[i])
+            << "Water balance error in test " << i << ": "
+            << (char *) SW_All.SoilWat.wbErrorNames[i];
     }
-  }
+}
 
-
-
-  TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
+TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
     int i;
 
     // Turn on Markov weather generator (and turn off use of historical weather)
@@ -110,9 +109,13 @@ namespace {
     SW_All.Weather.use_weathergenerator_only = swTRUE;
 
     // Read Markov weather generator input files (they are not normally read)
-    SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
-                 SW_All.Weather.generateWeatherMethod,
-                 SW_Domain.PathInfo.InFiles, &LogInfo);
+    SW_MKV_setup(
+        &SW_All.Markov,
+        SW_All.Weather.rng_seed,
+        SW_All.Weather.generateWeatherMethod,
+        SW_Domain.PathInfo.InFiles,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Point to nonexisting weather data
@@ -122,8 +125,13 @@ namespace {
     SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
-      SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+    SW_WTH_finalize_all_weather(
+        &SW_All.Markov,
+        &SW_All.Weather,
+        SW_All.Model.cum_monthdays,
+        SW_All.Model.days_in_month,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
@@ -132,14 +140,16 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
-        "Water balance error in test " <<
-        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
+        EXPECT_EQ(0, SW_All.SoilWat.wbError[i])
+            << "Water balance error in test " << i << ": "
+            << (char *) SW_All.SoilWat.wbErrorNames[i];
     }
-  }
+}
 
-
-  TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorForSomeMissingValues) {
+TEST_F(
+    WaterBalanceFixtureTest,
+    WaterBalanceWithWeatherGeneratorForSomeMissingValues
+) {
     int i;
 
     // Turn on Markov weather generator
@@ -149,17 +159,26 @@ namespace {
     strcpy(SW_All.Weather.name_prefix, "Input/data_weather_missing/weath");
 
     // Read Markov weather generator input files (they are not normally read)
-    SW_MKV_setup(&SW_All.Markov, SW_All.Weather.rng_seed,
-                 SW_All.Weather.generateWeatherMethod,
-                 SW_Domain.PathInfo.InFiles, &LogInfo);
+    SW_MKV_setup(
+        &SW_All.Markov,
+        SW_All.Weather.rng_seed,
+        SW_All.Weather.generateWeatherMethod,
+        SW_Domain.PathInfo.InFiles,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Prepare weather data
     SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
-      SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+    SW_WTH_finalize_all_weather(
+        &SW_All.Markov,
+        &SW_All.Weather,
+        SW_All.Model.cum_monthdays,
+        SW_All.Model.days_in_month,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
@@ -168,21 +187,19 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
-        "Water balance error in test " <<
-        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
+        EXPECT_EQ(0, SW_All.SoilWat.wbError[i])
+            << "Water balance error in test " << i << ": "
+            << (char *) SW_All.SoilWat.wbErrorNames[i];
     }
-  }
+}
 
-
-  TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
+TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
     int i;
     LyrIndex s;
 
     // Set high gravel volume in all soil layers
-    ForEachSoilLayer(s, SW_All.Site.n_layers)
-    {
-      SW_All.Site.fractionVolBulk_gravel[s] = 0.99;
+    ForEachSoilLayer(s, SW_All.Site.n_layers) {
+        SW_All.Site.fractionVolBulk_gravel[s] = 0.99;
     }
 
     // Re-calculate soils
@@ -195,23 +212,17 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
-        "Water balance error in test " <<
-        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
+        EXPECT_EQ(0, SW_All.SoilWat.wbError[i])
+            << "Water balance error in test " << i << ": "
+            << (char *) SW_All.SoilWat.wbErrorNames[i];
     }
-  }
+}
 
-
-  TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOneSoilLayer) {
+TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOneSoilLayer) {
     int i;
 
     // Setup one soil layer
-    create_test_soillayers(
-      1,
-      &SW_All.VegProd,
-      &SW_All.Site,
-      &LogInfo
-    );
+    create_test_soillayers(1, &SW_All.VegProd, &SW_All.Site, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Initialize `swcBulk` based on new soil layers
@@ -223,23 +234,17 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
-        "Water balance error in test " <<
-        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
+        EXPECT_EQ(0, SW_All.SoilWat.wbError[i])
+            << "Water balance error in test " << i << ": "
+            << (char *) SW_All.SoilWat.wbErrorNames[i];
     }
-  }
+}
 
-
-  TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMaxSoilLayers) {
+TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMaxSoilLayers) {
     int i;
 
     // Setup maximum number of soil layers
-    create_test_soillayers(
-      MAX_LAYERS,
-      &SW_All.VegProd,
-      &SW_All.Site,
-      &LogInfo
-    );
+    create_test_soillayers(MAX_LAYERS, &SW_All.VegProd, &SW_All.Site, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Initialize `swcBulk` based on new soil layers
@@ -251,22 +256,20 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
-        "Water balance error in test " <<
-        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
+        EXPECT_EQ(0, SW_All.SoilWat.wbError[i])
+            << "Water balance error in test " << i << ": "
+            << (char *) SW_All.SoilWat.wbErrorNames[i];
     }
-  }
+}
 
-
-  TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
+TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
     int i;
 
     // Select method to estimate vegetation from long-term climate
     SW_All.VegProd.veg_method = 1;
 
     // Re-calculate vegetation
-    SW_VPD_init_run(&SW_All.VegProd, &SW_All.Weather, &SW_All.Model,
-                    &LogInfo);
+    SW_VPD_init_run(&SW_All.VegProd, &SW_All.Weather, &SW_All.Model, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run the simulation
@@ -275,25 +278,27 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
-        "Water balance error in test " <<
-        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
+        EXPECT_EQ(0, SW_All.SoilWat.wbError[i])
+            << "Water balance error in test " << i << ": "
+            << (char *) SW_All.SoilWat.wbErrorNames[i];
     }
-  }
+}
 
-  TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
+TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
     int i;
 
     // Set SWRC and PTF (and SWRC parameter input filename)
     strcpy(SW_All.Site.site_swrc_name, (char *) "vanGenuchten1980");
-    SW_All.Site.site_swrc_type = encode_str2swrc(SW_All.Site.site_swrc_name, &LogInfo);
+    SW_All.Site.site_swrc_type =
+        encode_str2swrc(SW_All.Site.site_swrc_name, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     strcpy(SW_All.Site.site_ptf_name, (char *) "Rosetta3");
     SW_All.Site.site_ptf_type = encode_str2ptf(SW_All.Site.site_ptf_name);
     SW_All.Site.site_has_swrcp = swTRUE;
 
     free(SW_Domain.PathInfo.InFiles[eSWRCp]);
-    SW_Domain.PathInfo.InFiles[eSWRCp] = Str_Dup("Input/swrc_params_vanGenuchten1980.in", &LogInfo);
+    SW_Domain.PathInfo.InFiles[eSWRCp] =
+        Str_Dup("Input/swrc_params_vanGenuchten1980.in", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Read SWRC parameter input file (which is not read by default)
@@ -310,27 +315,27 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
-        "Water balance error in test " <<
-        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
+        EXPECT_EQ(0, SW_All.SoilWat.wbError[i])
+            << "Water balance error in test " << i << ": "
+            << (char *) SW_All.SoilWat.wbErrorNames[i];
     }
-  }
+}
 
-
-
-  TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
+TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
     int i;
 
     // Set SWRC and PTF (and SWRC parameter input filename)
     strcpy(SW_All.Site.site_swrc_name, (char *) "FXW");
-    SW_All.Site.site_swrc_type = encode_str2swrc(SW_All.Site.site_swrc_name, &LogInfo);
+    SW_All.Site.site_swrc_type =
+        encode_str2swrc(SW_All.Site.site_swrc_name, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     strcpy(SW_All.Site.site_ptf_name, (char *) "neuroFX2021");
     SW_All.Site.site_ptf_type = encode_str2ptf(SW_All.Site.site_ptf_name);
     SW_All.Site.site_has_swrcp = swTRUE;
 
     free(SW_Domain.PathInfo.InFiles[eSWRCp]);
-    SW_Domain.PathInfo.InFiles[eSWRCp] = Str_Dup("Input/swrc_params_FXW.in", &LogInfo);
+    SW_Domain.PathInfo.InFiles[eSWRCp] =
+        Str_Dup("Input/swrc_params_FXW.in", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Read SWRC parameter input file (which is not read by default)
@@ -347,14 +352,13 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
-        "Water balance error in test " <<
-        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
+        EXPECT_EQ(0, SW_All.SoilWat.wbError[i])
+            << "Water balance error in test " << i << ": "
+            << (char *) SW_All.SoilWat.wbErrorNames[i];
     }
-  }
+}
 
-
-  TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
+TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
     int i;
 
     // Point to Daymet weather data
@@ -374,14 +378,20 @@ namespace {
     SW_All.Weather.dailyInputFlags[ACTUAL_VP] = swTRUE;
     SW_All.Weather.dailyInputFlags[SHORT_WR] = swTRUE;
     SW_All.Weather.n_input_forcings = 5;
-    SW_All.Weather.desc_rsds = 2; // Daymet rsds is flux density over daylight period
+    // Daymet rsds is flux density over daylight period
+    SW_All.Weather.desc_rsds = 2;
 
     // Prepare weather data
     SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
-      SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+    SW_WTH_finalize_all_weather(
+        &SW_All.Markov,
+        &SW_All.Weather,
+        SW_All.Model.cum_monthdays,
+        SW_All.Model.days_in_month,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
@@ -390,14 +400,13 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
-        "Water balance error in test " <<
-        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
+        EXPECT_EQ(0, SW_All.SoilWat.wbError[i])
+            << "Water balance error in test " << i << ": "
+            << (char *) SW_All.SoilWat.wbErrorNames[i];
     }
-  }
+}
 
-
-  TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGRIDMET) {
+TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGRIDMET) {
     int i;
 
     // Point to gridMET weather data
@@ -427,8 +436,13 @@ namespace {
     SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
-      SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+    SW_WTH_finalize_all_weather(
+        &SW_All.Markov,
+        &SW_All.Weather,
+        SW_All.Model.cum_monthdays,
+        SW_All.Model.days_in_month,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
@@ -437,14 +451,13 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
-        "Water balance error in test " <<
-        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
+        EXPECT_EQ(0, SW_All.SoilWat.wbError[i])
+            << "Water balance error in test " << i << ": "
+            << (char *) SW_All.SoilWat.wbErrorNames[i];
     }
-  }
+}
 
-
-  TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACA) {
+TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACA) {
     int i;
 
     // Point to MACA weather data
@@ -476,8 +489,13 @@ namespace {
     SW_WTH_read(&SW_All.Weather, &SW_All.Sky, &SW_All.Model, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    SW_WTH_finalize_all_weather(&SW_All.Markov, &SW_All.Weather,
-      SW_All.Model.cum_monthdays, SW_All.Model.days_in_month, &LogInfo);
+    SW_WTH_finalize_all_weather(
+        &SW_All.Markov,
+        &SW_All.Weather,
+        SW_All.Model.cum_monthdays,
+        SW_All.Model.days_in_month,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
@@ -486,13 +504,13 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
-        "Water balance error in test " <<
-        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
+        EXPECT_EQ(0, SW_All.SoilWat.wbError[i])
+            << "Water balance error in test " << i << ": "
+            << (char *) SW_All.SoilWat.wbErrorNames[i];
     }
-  }
+}
 
-    TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSpinup) {
+TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSpinup) {
     int i;
 
     // Turn on spinup simulation
@@ -511,11 +529,9 @@ namespace {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-      EXPECT_EQ(0, SW_All.SoilWat.wbError[i]) <<
-        "Water balance error in test " <<
-        i << ": " << (char*)SW_All.SoilWat.wbErrorNames[i];
+        EXPECT_EQ(0, SW_All.SoilWat.wbError[i])
+            << "Water balance error in test " << i << ": "
+            << (char *) SW_All.SoilWat.wbErrorNames[i];
     }
-  }
-
-
+}
 } // namespace

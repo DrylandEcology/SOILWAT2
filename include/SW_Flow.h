@@ -10,8 +10,9 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_FLW_init_run(SW_SOILWAT* SW_SoilWat);
-void SW_Water_Flow(SW_ALL* sw, LOG_INFO* LogInfo);
+void SW_FLW_init_run(SW_SOILWAT *SW_SoilWat);
+
+void SW_Water_Flow(SW_ALL *sw, LOG_INFO *LogInfo);
 
 
 #ifdef __cplusplus

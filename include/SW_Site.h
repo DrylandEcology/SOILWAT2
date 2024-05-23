@@ -1,46 +1,82 @@
 /********************************************************/
 /********************************************************/
 /*  Source file: SW_Site.h
-	Type: header
-	Application: SOILWAT - soilwater dynamics simulator
-	Purpose: Define a structure to hold parameters that
-	         are read in Site::read() and passed to
-	         Layers::init(*).  There are a couple of
-	         parameters that belong at the site level
-	         but it also makes sense to keep the layer
-	         parms in the same site input file.
-	History:
-	   (8/28/01) -- INITIAL CODING - cwb
-	   1-Oct-03  (cwb) Removed variables sum_evap_coeff and
-	             *sum_transp_coeff.  sum_evap_coeff doesn't
-	             do anything since it's always 1.0 (due
-	             to normalization) and sum_transp_coeff[]
-	             can easily be calculated in the only
-	             function where it applies: transp_weighted_avg().
-	(10/12/2009) - (drs) added altitude
-	11/02/2010	(drs) added snow parameters to SW_SITE to be read in from siteparam.in
-	10/19/2010	(drs) added Bool HydraulicRedistribution flag and RealD maxCondroot, swp50, and shapeCond parameters to the structure SW_SITE
-	07/20/2011	(drs) added RealD impermeability to struct SW_LAYER_INFO: fraction of how impermeable a layer is (0=permeable, 1=impermeable)
- 					added RealD swc_saturated to struct SW_LAYER_INFO: saturated soil water content (cm) * width
-	09/08/2011	(drs) moved all hydraulic redistribution parameters to SW_VegProd.h struct VegType
-	09/09/2011	(drs) added RealD transp_coeff_xx for each vegetation type (tree, shrub, grass) to struct SW_LAYER_INFO
-	09/09/2011	(drs) added RealD my_transp_rgn_xx for each vegetation type (tree, shrub, grass) to struct SW_LAYER_INFO
-						added RealD n_transp_lyrs_xx for each vegetation type (tree, shrub, grass) to struct SW_SITE
-	09/15/2011	(drs)	deleted RealD albedo in struct SW_SITE and moved it to SW_VegProd.h to make input vegetation type dependent
-	02/04/2012	(drs)	added Reald swc_atSWPcrit_xx for each vegetation type (tree, shrub, grass) to struct SW_LAYER_INFO: swc at the critical soil water potential
-	05/24/2012  (DLM) added variables for Soil Temperature constants to SW_SITE struct
-	05/25/2012  (DLM) added variable avgLyrTemp to SW_LAYER_INFO struct to keep track of the soil temperature for each soil layer
-	05/30/2012  (DLM) added stDeltaX variable for soil_temperature function to SW_SITE struct
-	05/31/2012  (DLM) added use_soil_temp, stMaxDepth, stNRGR variables to SW_SITE struct
-	11/06/2012	(clk)	added slope and aspect to SW_SITE struct
-	11/30/2010	(clk)	added the variable 'percentRunoff' which is the percent of surface water that is lost do to surface runoff
- 	04/16/2013	(clk)	added the variables soilMatric_density and fractionVolBulk_gravel
- 						soilMatric_density is the soil density excluding the gravel component
-						fractionVolBulk_gravel is the gravel content as a fraction of the bulk soil
-						renamed many of the of the variables in SW_LAYER_INFO to better reflect BULK and MATRIC values
- 						due to the renaming, also had to update the use of these variables in the other files.
-	07/09/2013	(clk)	added the variables transp_coeff[SW_FORBS], swcBulk_atSWPcrit[SW_FORBS], and my_transp_rgn[SW_FORBS] to SW_LAYER_INFO
-	07/09/2013	(clk)	added the variable n_transp_lyrs_forb to SW_SITE
+Type: header
+Application: SOILWAT - soilwater dynamics simulator
+Purpose: Define a structure to hold parameters that
+are read in Site::read() and passed to
+Layers::init(*).  There are a couple of
+parameters that belong at the site level
+but it also makes sense to keep the layer
+parms in the same site input file.
+History:
+
+(8/28/01) -- INITIAL CODING - cwb
+
+1-Oct-03  (cwb) Removed variables sum_evap_coeff and
+             *sum_transp_coeff.  sum_evap_coeff doesn't
+             do anything since it's always 1.0 (due
+             to normalization) and sum_transp_coeff[]
+             can easily be calculated in the only
+             function where it applies: transp_weighted_avg().
+
+(10/12/2009) - (drs) added altitude
+
+11/02/2010	(drs) added snow parameters to SW_SITE to be read in from
+siteparam.in
+
+10/19/2010	(drs) added Bool HydraulicRedistribution flag and RealD
+maxCondroot, swp50, and shapeCond parameters to the structure SW_SITE
+
+07/20/2011	(drs) added RealD impermeability to struct SW_LAYER_INFO:
+fraction of how impermeable a layer is (0=permeable, 1=impermeable) added RealD
+swc_saturated to struct SW_LAYER_INFO: saturated soil water content (cm) * width
+
+09/08/2011	(drs) moved all hydraulic redistribution parameters to
+SW_VegProd.h struct VegType
+
+09/09/2011	(drs) added RealD transp_coeff_xx for each vegetation type
+(tree, shrub, grass) to struct SW_LAYER_INFO
+
+09/09/2011	(drs) added RealD my_transp_rgn_xx for each vegetation type
+(tree, shrub, grass) to struct SW_LAYER_INFO added RealD n_transp_lyrs_xx for
+each vegetation type (tree, shrub, grass) to struct SW_SITE
+
+09/15/2011	(drs)	deleted RealD albedo in struct SW_SITE and moved it to
+SW_VegProd.h to make input vegetation type dependent
+
+02/04/2012	(drs)	added Reald swc_atSWPcrit_xx for each vegetation type
+(tree, shrub, grass) to struct SW_LAYER_INFO: swc at the critical soil water
+potential
+
+05/24/2012  (DLM) added variables for Soil Temperature constants to SW_SITE
+struct
+
+05/25/2012  (DLM) added variable avgLyrTemp to SW_LAYER_INFO struct to keep
+track of the soil temperature for each soil layer
+
+05/30/2012  (DLM) added stDeltaX variable for soil_temperature function to
+SW_SITE struct
+
+05/31/2012  (DLM) added use_soil_temp, stMaxDepth, stNRGR variables to
+SW_SITE struct
+
+11/06/2012	(clk)	added slope and aspect to SW_SITE struct
+
+11/30/2010	(clk)	added the variable 'percentRunoff' which is the percent
+of surface water that is lost do to surface runoff
+
+04/16/2013	(clk)	added the variables soilMatric_density and
+fractionVolBulk_gravel soilMatric_density is the soil density excluding the
+gravel component fractionVolBulk_gravel is the gravel content as a fraction of
+the bulk soil renamed many of the of the variables in SW_LAYER_INFO to better
+reflect BULK and MATRIC values due to the renaming, also had to update the use
+of these variables in the other files.
+
+07/09/2013	(clk)	added the variables transp_coeff[SW_FORBS],
+swcBulk_atSWPcrit[SW_FORBS], and my_transp_rgn[SW_FORBS] to SW_LAYER_INFO
+
+07/09/2013	(clk)	added the variable n_transp_lyrs_forb to SW_SITE
 */
 /********************************************************/
 /********************************************************/
@@ -139,7 +175,7 @@ extern "C" {
 */
 
 #define N_SWRCs 3 /**< Number of SWRCs implemented by SOILWAT2 */
-#define N_PTFs 2 /**< Number of PTFs implemented by SOILWAT2 */
+#define N_PTFs 2  /**< Number of PTFs implemented by SOILWAT2 */
 
 // Indices of #swrc2str (for code readability)
 #define sw_Campbell1974 0
@@ -161,99 +197,137 @@ extern char const *ptf2str[];
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 
-unsigned int encode_str2swrc(char *swrc_name, LOG_INFO* LogInfo);
+unsigned int encode_str2swrc(char *swrc_name, LOG_INFO *LogInfo);
+
 unsigned int encode_str2ptf(char *ptf_name);
 
 void SWRC_PTF_estimate_parameters(
-	unsigned int ptf_type,
-	double *swrcp,
-	double sand,
-	double clay,
-	double gravel,
-	double bdensity,
-	LOG_INFO* LogInfo
+    unsigned int ptf_type,
+    double *swrcp,
+    double sand,
+    double clay,
+    double gravel,
+    double bdensity,
+    LOG_INFO *LogInfo
 );
+
 void SWRC_PTF_Cosby1984_for_Campbell1974(
-	double *swrcp,
-	double sand,
-	double clay
+    double *swrcp, double sand, double clay
 );
 
 
 Bool check_SWRC_vs_PTF(char *swrc_name, char *ptf_name);
-Bool SWRC_check_parameters(unsigned int swrc_type, double *swrcp,
-						   LOG_INFO* LogInfo);
-Bool SWRC_check_parameters_for_Campbell1974(double *swrcp,
-										    LOG_INFO* LogInfo);
-Bool SWRC_check_parameters_for_vanGenuchten1980(double *swrcp,
-												LOG_INFO* LogInfo);
-Bool SWRC_check_parameters_for_FXW(double *swrcp, LOG_INFO* LogInfo);
+
+Bool SWRC_check_parameters(
+    unsigned int swrc_type, double *swrcp, LOG_INFO *LogInfo
+);
+
+Bool SWRC_check_parameters_for_Campbell1974(double *swrcp, LOG_INFO *LogInfo);
+
+Bool SWRC_check_parameters_for_vanGenuchten1980(
+    double *swrcp, LOG_INFO *LogInfo
+);
+
+Bool SWRC_check_parameters_for_FXW(double *swrcp, LOG_INFO *LogInfo);
 
 double SW_swcBulk_saturated(
-	unsigned int swrc_type,
-	double *swrcp,
-	double gravel,
-	double width,
-	unsigned int ptf_type,
-	double sand,
-	double clay,
-	LOG_INFO* LogInfo
+    unsigned int swrc_type,
+    double *swrcp,
+    double gravel,
+    double width,
+    unsigned int ptf_type,
+    double sand,
+    double clay,
+    LOG_INFO *LogInfo
 );
+
 double SW_swcBulk_minimum(
-	unsigned int swrc_type,
-	double *swrcp,
-	double gravel,
-	double width,
-	unsigned int ptf_type,
-	double ui_sm_min,
-	double sand,
-	double clay,
-	double swcBulk_sat,
-	RealD _SWCMinVal,
-	LOG_INFO* LogInfo
+    unsigned int swrc_type,
+    double *swrcp,
+    double gravel,
+    double width,
+    unsigned int ptf_type,
+    double ui_sm_min,
+    double sand,
+    double clay,
+    double swcBulk_sat,
+    RealD _SWCMinVal,
+    LOG_INFO *LogInfo
 );
+
 void PTF_Saxton2006(
-	double *theta_sat,
-	double sand,
-	double clay,
-	LOG_INFO* LogInfo
+    double *theta_sat, double sand, double clay, LOG_INFO *LogInfo
 );
+
 void PTF_RawlsBrakensiek1985(
-	double *theta_min,
-	double sand,
-	double clay,
-	double porosity,
-	LOG_INFO* LogInfo
+    double *theta_min,
+    double sand,
+    double clay,
+    double porosity,
+    LOG_INFO *LogInfo
 );
 
 
 RealD calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel);
-RealD calculate_soilMatricDensity(RealD bulkDensity, RealD fractionGravel,
-								  LOG_INFO* LogInfo);
-LyrIndex nlayers_bsevap(RealD *evap_coeff, LyrIndex n_layers);
-void nlayers_vegroots(LyrIndex n_layers, LyrIndex n_transp_lyrs[],
-					  RealD transp_coeff[][MAX_LAYERS]);
 
-void SW_SIT_construct(SW_SITE* SW_Site);
-void SW_SIT_init_counts(SW_SITE* SW_Site);
-void SW_SIT_read(SW_SITE* SW_Site, char *InFiles[],
-				 SW_CARBON* SW_Carbon, LOG_INFO* LogInfo);
-void SW_SIT_init_run(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
-					LOG_INFO* LogInfo);
-void _echo_inputs(SW_SITE* SW_Site, SW_MODEL* SW_Model);
+RealD calculate_soilMatricDensity(
+    RealD bulkDensity, RealD fractionGravel, LOG_INFO *LogInfo
+);
+
+LyrIndex nlayers_bsevap(RealD *evap_coeff, LyrIndex n_layers);
+
+void nlayers_vegroots(
+    LyrIndex n_layers,
+    LyrIndex n_transp_lyrs[],
+    RealD transp_coeff[][MAX_LAYERS]
+);
+
+void SW_SIT_construct(SW_SITE *SW_Site);
+
+void SW_SIT_init_counts(SW_SITE *SW_Site);
+
+void SW_SIT_read(
+    SW_SITE *SW_Site, char *InFiles[], SW_CARBON *SW_Carbon, LOG_INFO *LogInfo
+);
+
+void SW_SIT_init_run(
+    SW_VEGPROD *SW_VegProd, SW_SITE *SW_Site, LOG_INFO *LogInfo
+);
+
+void _echo_inputs(SW_SITE *SW_Site, SW_MODEL *SW_Model);
+
 
 /* these used to be in Layers */
-void SW_LYR_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo);
-void SW_SWRC_read(SW_SITE* SW_Site, char *InFiles[], LOG_INFO* LogInfo);
-void add_deepdrain_layer(SW_SITE* SW_Site);
+void SW_LYR_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo);
 
-void set_soillayers(SW_VEGPROD* SW_VegProd, SW_SITE* SW_Site,
-	LyrIndex nlyrs, RealF *dmax, RealF *bd, RealF *f_gravel, RealF *evco,
-	RealF *trco_grass, RealF *trco_shrub, RealF *trco_tree, RealF *trco_forb,
-	RealF *psand, RealF *pclay, RealF *imperm, RealF *soiltemp, int nRegions,
-	RealD *regionLowerBounds, LOG_INFO* LogInfo);
-void derive_soilRegions(SW_SITE* SW_Site, int nRegions,
-						RealD *regionLowerBounds, LOG_INFO* LogInfo);
+void SW_SWRC_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo);
+
+void add_deepdrain_layer(SW_SITE *SW_Site);
+
+void set_soillayers(
+    SW_VEGPROD *SW_VegProd,
+    SW_SITE *SW_Site,
+    LyrIndex nlyrs,
+    RealF *dmax,
+    RealF *bd,
+    RealF *f_gravel,
+    RealF *evco,
+    RealF *trco_grass,
+    RealF *trco_shrub,
+    RealF *trco_tree,
+    RealF *trco_forb,
+    RealF *psand,
+    RealF *pclay,
+    RealF *imperm,
+    RealF *soiltemp,
+    int nRegions,
+    RealD *regionLowerBounds,
+    LOG_INFO *LogInfo
+);
+
+void derive_soilRegions(
+    SW_SITE *SW_Site, int nRegions, RealD *regionLowerBounds, LOG_INFO *LogInfo
+);
 
 
 #ifdef __cplusplus

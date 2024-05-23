@@ -1,8 +1,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "include/generic.h"
 #include "include/filefuncs.h"
+#include "include/generic.h"
 
 #include "tests/gtests/sw_testhelpers.h"
 
@@ -12,8 +12,7 @@
    The paths are relative to the unit-test executable which is located at bin/
    of the SOILWAT2 repository
 */
-const char * dir_test = "./tests/example";
-
+const char *dir_test = "./tests/example";
 
 /* Naming scheme for unit tests
    https://google.github.io/googletest/faq.html
@@ -36,37 +35,35 @@ const char * dir_test = "./tests/example";
 */
 
 
-
-
 int main(int argc, char **argv) {
-  int res;
-  /*--- Imitate 'SW_Main.c/main()' */
+    int res;
+    /*--- Imitate 'SW_Main.c/main()' */
 
-  // Emulate 'sw_init_args()'
-  if (!ChDir(dir_test)) {
-    swprintf("Invalid project directory (%s)", dir_test);
-  }
+    // Emulate 'sw_init_args()'
+    if (!ChDir(dir_test)) {
+        swprintf("Invalid project directory (%s)", dir_test);
+    }
 
-  setup_testGlobalSoilwatTemplate();
+    setup_testGlobalSoilwatTemplate();
 
 
-  //--- Setup unit tests
-  ::testing::InitGoogleTest(&argc, argv);
-  ::testing::InitGoogleMock(&argc, argv);
+    //--- Setup unit tests
+    ::testing::InitGoogleTest(&argc, argv);
+    ::testing::InitGoogleMock(&argc, argv);
 
-  // Set death tests to be "threadsafe" instead of "fast", i.e.,
-  // "re-executes the binary to cause just the single death test under consideration to be run"
-  // (https://google.github.io/googletest/reference/assertions.html#death)
-  // See code example in header for `AllTestStruct`
-  GTEST_FLAG_SET(death_test_style, "threadsafe");
+    // Set death tests to be "threadsafe" instead of "fast", i.e.,
+    // "re-executes the binary to cause just the single death test under
+    // consideration to be run"
+    // (https://google.github.io/googletest/reference/assertions.html#death)
+    // See code example in header for `AllTestStruct`
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
 
-  // Run unit tests
-  res = RUN_ALL_TESTS();
+    // Run unit tests
+    res = RUN_ALL_TESTS();
 
-  teardown_testGlobalSoilwatTemplate();
+    teardown_testGlobalSoilwatTemplate();
 
-  //--- Return output of 'RUN_ALL_TESTS()'
-  // (https://google.github.io/googletest/primer.html#writing-the-main-function)
-  return res;
+    //--- Return output of 'RUN_ALL_TESTS()'
+    // (https://google.github.io/googletest/primer.html#writing-the-main-function)
+    return res;
 }
-

@@ -1,4 +1,5 @@
 #include <gmock/gmock.h>
+
 #include <assert.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -13,70 +14,59 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <time.h>
+#include <typeinfo> // for 'typeid'
 #include <unistd.h>
 
-#include <typeinfo>  // for 'typeid'
-
+#include "include/filefuncs.h"
 #include "include/generic.h"
 #include "include/myMemory.h"
-#include "include/filefuncs.h"
 #include "include/rands.h"
-#include "include/Times.h"
-#include "include/SW_Defines.h"
-#include "include/SW_Times.h"
-#include "include/SW_Files.h"
 #include "include/SW_Carbon.h"
-#include "include/SW_Site.h"
-#include "include/SW_VegProd.h"
-#include "include/SW_VegEstab.h"
-#include "include/SW_Model.h"
-#include "include/SW_SoilWater.h"
-#include "include/SW_Weather.h"
-#include "include/SW_Markov.h"
-#include "include/SW_Sky.h"
+#include "include/SW_Defines.h"
+#include "include/SW_Files.h"
 #include "include/SW_Main_lib.h"
+#include "include/SW_Markov.h"
+#include "include/SW_Model.h"
+#include "include/SW_Site.h"
+#include "include/SW_Sky.h"
+#include "include/SW_SoilWater.h"
+#include "include/SW_Times.h"
+#include "include/SW_VegEstab.h"
+#include "include/SW_VegProd.h"
+#include "include/SW_Weather.h"
+#include "include/Times.h"
 
 #include "tests/gtests/sw_testhelpers.h"
 
 using ::testing::HasSubstr;
 
 namespace {
-  // List SWRC: PTFs
-  const char *ns_ptfca2C1974[] = {
-    "Campbell1974",
-    "Cosby1984AndOthers", "Cosby1984"
-  };
-  const char *ns_ptfa2vG1980[] = {
-    "vanGenuchten1980",
-    // all PTFs
-    "Rosetta3"
-  };
-  const char *ns_ptfc2vG1980[] = {
-    "vanGenuchten1980"
-    // PTFs implemented in SOILWAT2
-  };
-  const char *ns_ptfa2FXW[] = {
-    "FXW"
-    // all PTFs
-    "neuroFX2021"
-  };
-  const char *ns_ptfc2FXW[] = {
-    "FXW"
-    // PTFs implemented in SOILWAT2
-  };
+// List SWRC Campbell1974: all PTFs
+const char *ns_ptfca2C1974[] = {
+    "Campbell1974", "Cosby1984AndOthers", "Cosby1984"
+};
 
-  // Test pedotransfer functions
-  TEST(SiteTest, SitePTFs) {
+// List SWRC vanGenuchten1980: all PTFs
+const char *ns_ptfa2vG1980[] = {"vanGenuchten1980", "Rosetta3"};
+
+// List SWRC vanGenuchten1980: PTFs implemented in SOILWAT2
+const char *ns_ptfc2vG1980[] = {"vanGenuchten1980"};
+
+// List SWRC FXW: all PTFs
+const char *ns_ptfa2FXW[] = {"FXW", "neuroFX2021"};
+
+// List SWRC FXW: PTFs implemented in SOILWAT2
+const char *ns_ptfc2FXW[] = {"FXW"};
+
+// Test pedotransfer functions
+TEST(SiteTest, SitePTFs) {
     LOG_INFO LogInfo;
-    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
+    // Initialize logs and silence warn/error reporting
+    sw_init_logs(NULL, &LogInfo);
 
     // inputs
-    RealD
-      swrcp[SWRC_PARAM_NMAX],
-      sand = 0.33,
-      clay = 0.33,
-      gravel = 0.1,
-      bdensity = 1.4;
+    RealD swrcp[SWRC_PARAM_NMAX];
+    RealD sand = 0.33, clay = 0.33, gravel = 0.1, bdensity = 1.4;
     unsigned int swrc_type, k;
 
 
@@ -85,69 +75,70 @@ namespace {
 
     swrc_type = encode_str2swrc((char *) ns_ptfca2C1974[0], &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
     for (k = 1; k < length(ns_ptfca2C1974); k++) {
-      SWRC_PTF_estimate_parameters(
-        encode_str2ptf((char *) ns_ptfca2C1974[k]),
-        swrcp,
-        sand,
-        clay,
-        gravel,
-        bdensity,
-        &LogInfo
-      );
-      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
-      EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        SWRC_PTF_estimate_parameters(
+            encode_str2ptf((char *) ns_ptfca2C1974[k]),
+            swrcp,
+            sand,
+            clay,
+            gravel,
+            bdensity,
+            &LogInfo
+        );
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+        EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     }
 
     swrc_type = encode_str2swrc((char *) ns_ptfc2vG1980[0], &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
     for (k = 1; k < length(ns_ptfc2vG1980); k++) {
-      SWRC_PTF_estimate_parameters(
-        encode_str2ptf((char *) ns_ptfc2vG1980[k]),
-        swrcp,
-        sand,
-        clay,
-        gravel,
-        bdensity,
-        &LogInfo
-      );
-      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
-      EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        SWRC_PTF_estimate_parameters(
+            encode_str2ptf((char *) ns_ptfc2vG1980[k]),
+            swrcp,
+            sand,
+            clay,
+            gravel,
+            bdensity,
+            &LogInfo
+        );
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+        EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     }
 
     swrc_type = encode_str2swrc((char *) ns_ptfc2FXW[0], &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
     for (k = 1; k < length(ns_ptfc2FXW); k++) {
-      SWRC_PTF_estimate_parameters(
-        encode_str2ptf((char *) ns_ptfc2FXW[k]),
-        swrcp,
-        sand,
-        clay,
-        gravel,
-        bdensity,
-        &LogInfo
-      );
-      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
-      EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-      sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        SWRC_PTF_estimate_parameters(
+            encode_str2ptf((char *) ns_ptfc2FXW[k]),
+            swrcp,
+            sand,
+            clay,
+            gravel,
+            bdensity,
+            &LogInfo
+        );
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+        EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     }
-  }
+}
 
-
-  // Test fatal failures of PTF estimation
-  TEST(SiteTest, SitePTFsDeathTest) {
+// Test fatal failures of PTF estimation
+TEST(SiteTest, SitePTFsDeathTest) {
     LOG_INFO LogInfo;
-    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
+    // Initialize logs and silence warn/error reporting
+    sw_init_logs(NULL, &LogInfo);
 
-
-    RealD
-      swrcp[SWRC_PARAM_NMAX],
-      sand = 0.33,
-      clay = 0.33,
-      gravel = 0.1,
-      bdensity = 1.4;
+    RealD swrcp[SWRC_PARAM_NMAX];
+    RealD sand = 0.33, clay = 0.33, gravel = 0.1, bdensity = 1.4;
     unsigned int ptf_type;
 
 
@@ -155,103 +146,78 @@ namespace {
     ptf_type = N_PTFs + 1;
 
     SWRC_PTF_estimate_parameters(
-      ptf_type,
-      swrcp,
-      sand,
-      clay,
-      gravel,
-      bdensity,
-      &LogInfo
+        ptf_type, swrcp, sand, clay, gravel, bdensity, &LogInfo
     );
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
     // Detect failure by error message
-    EXPECT_THAT(LogInfo.errorMsg, HasSubstr("PTF is not implemented in SOILWAT2"));
+    EXPECT_THAT(
+        LogInfo.errorMsg, HasSubstr("PTF is not implemented in SOILWAT2")
+    );
+}
 
-  }
-
-
-  // Test PTF-SWRC pairings
-  TEST(SiteTest, SitePTF2SWRC) {
+// Test PTF-SWRC pairings
+TEST(SiteTest, SitePTF2SWRC) {
     unsigned int k; // `length()` returns "unsigned long"
+    Bool res = swFALSE;
 
     for (k = 1; k < length(ns_ptfca2C1974); k++) {
-      EXPECT_TRUE(
-        (bool) check_SWRC_vs_PTF(
-          (char *) ns_ptfca2C1974[0],
-          (char *) ns_ptfca2C1974[k]
-        )
-      );
+        res = check_SWRC_vs_PTF(
+            (char *) ns_ptfca2C1974[0], (char *) ns_ptfca2C1974[k]
+        );
+        EXPECT_TRUE((bool) res);
 
-      EXPECT_FALSE(
-        (bool) check_SWRC_vs_PTF(
-          (char *) ns_ptfa2vG1980[0],
-          (char *) ns_ptfca2C1974[k]
-        )
-      );
+        res = check_SWRC_vs_PTF(
+            (char *) ns_ptfa2vG1980[0], (char *) ns_ptfca2C1974[k]
+        );
+        EXPECT_FALSE((bool) res);
 
-      EXPECT_FALSE(
-        (bool) check_SWRC_vs_PTF(
-          (char *) ns_ptfa2FXW[0],
-          (char *) ns_ptfca2C1974[k]
-        )
-      );
+        res = check_SWRC_vs_PTF(
+            (char *) ns_ptfa2FXW[0], (char *) ns_ptfca2C1974[k]
+        );
+        EXPECT_FALSE((bool) res);
     }
 
     for (k = 1; k < length(ns_ptfa2vG1980); k++) {
-      EXPECT_FALSE(
-        (bool) check_SWRC_vs_PTF(
-          (char *) ns_ptfa2vG1980[0],
-          (char *) ns_ptfa2vG1980[k]
-        )
-      );
+        res = check_SWRC_vs_PTF(
+            (char *) ns_ptfa2vG1980[0], (char *) ns_ptfa2vG1980[k]
+        );
+        EXPECT_FALSE((bool) res);
 
-      EXPECT_FALSE(
-        (bool) check_SWRC_vs_PTF(
-          (char *) ns_ptfca2C1974[0],
-          (char *) ns_ptfa2vG1980[k]
-        )
-      );
+        res = check_SWRC_vs_PTF(
+            (char *) ns_ptfca2C1974[0], (char *) ns_ptfa2vG1980[k]
+        );
+        EXPECT_FALSE((bool) res);
 
-      EXPECT_FALSE(
-        (bool) check_SWRC_vs_PTF(
-          (char *) ns_ptfa2FXW[0],
-          (char *) ns_ptfa2vG1980[k]
-        )
-      );
+        res = check_SWRC_vs_PTF(
+            (char *) ns_ptfa2FXW[0], (char *) ns_ptfa2vG1980[k]
+        );
+        EXPECT_FALSE((bool) res);
     }
 
 
     for (k = 1; k < length(ns_ptfa2FXW); k++) {
-      EXPECT_FALSE(
-        (bool) check_SWRC_vs_PTF(
-          (char *) ns_ptfa2FXW[0],
-          (char *) ns_ptfa2FXW[k]
-        )
-      );
+        res =
+            check_SWRC_vs_PTF((char *) ns_ptfa2FXW[0], (char *) ns_ptfa2FXW[k]);
+        EXPECT_FALSE((bool) res);
 
-      EXPECT_FALSE(
-        (bool) check_SWRC_vs_PTF(
-          (char *) ns_ptfca2C1974[0],
-          (char *) ns_ptfa2FXW[k]
-        )
-      );
+        res = check_SWRC_vs_PTF(
+            (char *) ns_ptfca2C1974[0], (char *) ns_ptfa2FXW[k]
+        );
+        EXPECT_FALSE((bool) res);
 
-      EXPECT_FALSE(
-        (bool) check_SWRC_vs_PTF(
-          (char *) ns_ptfa2vG1980[0],
-          (char *) ns_ptfa2FXW[k]
-        )
-      );
+        res = check_SWRC_vs_PTF(
+            (char *) ns_ptfa2vG1980[0], (char *) ns_ptfa2FXW[k]
+        );
+        EXPECT_FALSE((bool) res);
     }
+}
 
-  }
-
-
-  // Test fatal failures of SWRC parameter checks
-  TEST(SiteTest, SiteSWRCpChecksDeathTest) {
+// Test fatal failures of SWRC parameter checks
+TEST(SiteTest, SiteSWRCpChecksDeathTest) {
     LOG_INFO LogInfo;
-    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
+    // Initialize logs and silence warn/error reporting
+    sw_init_logs(NULL, &LogInfo);
 
     // inputs
     RealD swrcp[SWRC_PARAM_NMAX];
@@ -266,18 +232,16 @@ namespace {
 
     // Detect failure by error message
     EXPECT_THAT(LogInfo.errorMsg, HasSubstr("is not implemented"));
-  }
+}
 
-
-  // Test nonfatal failures of SWRC parameter checks
-  TEST(SiteTest, SiteSWRCpChecks) {
+// Test nonfatal failures of SWRC parameter checks
+TEST(SiteTest, SiteSWRCpChecks) {
     LOG_INFO LogInfo;
-    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
+    // Initialize logs and silence warn/error reporting
+    sw_init_logs(NULL, &LogInfo);
 
     // inputs
-    RealD
-      swrcp[SWRC_PARAM_NMAX],
-      tmp;
+    RealD swrcp[SWRC_PARAM_NMAX], tmp;
     unsigned int swrc_type;
 
 
@@ -315,7 +279,6 @@ namespace {
     EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     swrcp[2] = tmp;
-
 
 
     //--- Fail SWRC: vanGenuchten1980
@@ -367,9 +330,6 @@ namespace {
     EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     swrcp[3] = tmp;
-
-
-
 
 
     //--- Fail SWRC: FXW
@@ -430,20 +390,16 @@ namespace {
     EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     swrcp[5] = tmp;
-  }
+}
 
-
-  // Test 'PTF_RawlsBrakensiek1985'
-  TEST(SiteTest, SitePTFRawlsBrakensiek1985) {
+// Test 'PTF_RawlsBrakensiek1985'
+TEST(SiteTest, SitePTFRawlsBrakensiek1985) {
     LOG_INFO LogInfo;
-    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
+    // Initialize logs and silence warn/error reporting
+    sw_init_logs(NULL, &LogInfo);
 
-    //declare mock INPUTS
-    double
-      theta_min,
-      clay = 0.1,
-      sand = 0.6,
-      porosity = 0.4;
+    // declare mock INPUTS
+    double theta_min, clay = 0.1, sand = 0.6, porosity = 0.4;
     int k1, k2, k3;
 
     //--- EXPECT SW_MISSING if soil texture is out of range
@@ -475,31 +431,34 @@ namespace {
 
     // Check that `theta_min` is reasonable over ranges of soil properties
     for (k1 = 0; k1 <= 5; k1++) {
-      sand = 0.05 + (double) k1 / 5. * (0.7 - 0.05);
+        sand = 0.05 + (double) k1 / 5. * (0.7 - 0.05);
 
-      for (k2 = 0; k2 <= 5; k2++) {
-        clay = 0.05 + (double) k2 / 5. * (0.6 - 0.05);
+        for (k2 = 0; k2 <= 5; k2++) {
+            clay = 0.05 + (double) k2 / 5. * (0.6 - 0.05);
 
-        for (k3 = 0; k3 <= 5; k3++) {
-          porosity = 0.1 + (double) k3 / 5. * (0.99 - 0.1);
+            for (k3 = 0; k3 <= 5; k3++) {
+                porosity = 0.1 + (double) k3 / 5. * (0.99 - 0.1);
 
-          PTF_RawlsBrakensiek1985(&theta_min, sand, clay, porosity, &LogInfo);
-          sw_fail_on_error(&LogInfo); // exit test program if unexpected error
-          EXPECT_GE(theta_min, 0.);
-          EXPECT_LT(theta_min, porosity);
+                PTF_RawlsBrakensiek1985(
+                    &theta_min, sand, clay, porosity, &LogInfo
+                );
+                // exit test program if unexpected error
+                sw_fail_on_error(&LogInfo);
+
+                EXPECT_GE(theta_min, 0.);
+                EXPECT_LT(theta_min, porosity);
+            }
         }
-      }
     }
 
     // Expect theta_min = 0 if sand = 0.4, clay = 0.5, and porosity = 0.1
     PTF_RawlsBrakensiek1985(&theta_min, 0.4, 0.5, 0.1, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     EXPECT_DOUBLE_EQ(theta_min, 0);
-  }
+}
 
-
-  // Test that `SW_SIT_init_run` fails on bad soil inputs
-  TEST_F(SiteFixtureTest, SiteSoilEvaporationParametersDeathTest) {
+// Test that `SW_SIT_init_run` fails on bad soil inputs
+TEST_F(SiteFixtureTest, SiteSoilEvaporationParametersDeathTest) {
 
     // Check error for bad bare-soil evaporation coefficient (should be [0-1])
 
@@ -509,12 +468,13 @@ namespace {
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
     // Detect failure by error message
-    EXPECT_THAT(LogInfo.errorMsg,
-                HasSubstr("'bare-soil evaporation coefficient' has an invalid value"));
-  }
+    EXPECT_THAT(
+        LogInfo.errorMsg,
+        HasSubstr("'bare-soil evaporation coefficient' has an invalid value")
+    );
+}
 
-
-  TEST_F(SiteFixtureTest, SiteSoilTranspirationParametersDeathTest) {
+TEST_F(SiteFixtureTest, SiteSoilTranspirationParametersDeathTest) {
 
     // Check error for bad transpiration coefficient (should be [0-1])
 
@@ -523,27 +483,24 @@ namespace {
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
     // Detect failure by error message
-    EXPECT_THAT(LogInfo.errorMsg,
-                HasSubstr("'transpiration coefficient' has an invalid value"));
-  }
+    EXPECT_THAT(
+        LogInfo.errorMsg,
+        HasSubstr("'transpiration coefficient' has an invalid value")
+    );
+}
 
-
-  // Test that soil transpiration regions are derived well
-  TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
+// Test that soil transpiration regions are derived well
+TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     /* Notes:
         - SW_Site.n_layers is base1
         - soil layer information in _TranspRgnBounds is base0
     */
 
-    LyrIndex
-      i, id,
-      nRegions,
-      prev_TranspRgnBounds[MAX_TRANSP_REGIONS] = {0};
-    RealD
-      soildepth;
+    LyrIndex i, id, nRegions, prev_TranspRgnBounds[MAX_TRANSP_REGIONS] = {0};
+    RealD soildepth;
 
     for (i = 0; i < MAX_TRANSP_REGIONS; ++i) {
-      prev_TranspRgnBounds[i] = SW_All.Site._TranspRgnBounds[i];
+        prev_TranspRgnBounds[i] = SW_All.Site._TranspRgnBounds[i];
     }
 
 
@@ -554,15 +511,15 @@ namespace {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (i = 0; i < nRegions; ++i) {
-      // Quickly calculate soil depth for current region as output information
-      soildepth = 0.;
-      for (id = 0; id <= SW_All.Site._TranspRgnBounds[i]; ++id) {
-        soildepth += SW_All.Site.width[id];
-      }
+        // Quickly calculate soil depth for current region as output information
+        soildepth = 0.;
+        for (id = 0; id <= SW_All.Site._TranspRgnBounds[i]; ++id) {
+            soildepth += SW_All.Site.width[id];
+        }
 
-      EXPECT_EQ(prev_TranspRgnBounds[i], SW_All.Site._TranspRgnBounds[i]) <<
-        "for transpiration region = " << i + 1 <<
-        " at a soil depth of " << soildepth << " cm";
+        EXPECT_EQ(prev_TranspRgnBounds[i], SW_All.Site._TranspRgnBounds[i])
+            << "for transpiration region = " << i + 1 << " at a soil depth of "
+            << soildepth << " cm";
     }
 
 
@@ -573,8 +530,8 @@ namespace {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (i = 0; i < nRegions; ++i) {
-      EXPECT_EQ(SW_All.Site.n_layers - 1, SW_All.Site._TranspRgnBounds[i]) <<
-        "for a single transpiration region across all soil layers";
+        EXPECT_EQ(SW_All.Site.n_layers - 1, SW_All.Site._TranspRgnBounds[i])
+            << "for a single transpiration region across all soil layers";
     }
 
 
@@ -585,8 +542,9 @@ namespace {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (i = 0; i < nRegions; ++i) {
-      EXPECT_EQ(0, SW_All.Site._TranspRgnBounds[i]) <<
-        "for a single transpiration region for the shallowest soil layer";
+        EXPECT_EQ(
+            0, SW_All.Site._TranspRgnBounds[i]
+        ) << "for a single transpiration region for the shallowest soil layer";
     }
 
 
@@ -596,77 +554,67 @@ namespace {
     // Example: one region each for the topmost soil layers
     soildepth = 0.;
     for (i = 0; i < nRegions; ++i) {
-      soildepth += SW_All.Site.width[i];
-      regionLowerBounds4[i] = soildepth;
+        soildepth += SW_All.Site.width[i];
+        regionLowerBounds4[i] = soildepth;
     }
     derive_soilRegions(&SW_All.Site, nRegions, regionLowerBounds4, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (i = 0; i < nRegions; ++i) {
-      EXPECT_EQ(i, SW_All.Site._TranspRgnBounds[i]) <<
-        "for transpiration region for the " << i + 1 << "-th soil layer";
+        EXPECT_EQ(i, SW_All.Site._TranspRgnBounds[i])
+            << "for transpiration region for the " << i + 1 << "-th soil layer";
     }
 
     delete[] regionLowerBounds4;
-  }
+}
 
-
-  // Test bulk and matric soil density functionality
-  TEST(SiteTest, SiteSoilDensity) {
+// Test bulk and matric soil density functionality
+TEST(SiteTest, SiteSoilDensity) {
     LOG_INFO LogInfo;
-    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
+    // Initialize logs and silence warn/error reporting
+    sw_init_logs(NULL, &LogInfo);
 
-    double
-      soildensity = 1.4,
-      fcoarse = 0.1;
+    double soildensity = 1.4, fcoarse = 0.1;
 
 
     // Check that matric density is zero if coarse fragments is 100%
     EXPECT_DOUBLE_EQ(
-      calculate_soilMatricDensity(soildensity, 1., &LogInfo),
-      0.
+        calculate_soilMatricDensity(soildensity, 1., &LogInfo), 0.
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
     // Check that bulk and matric soil density are equal if no coarse fragments
     EXPECT_DOUBLE_EQ(
-      calculate_soilBulkDensity(soildensity, 0.),
-      calculate_soilMatricDensity(soildensity, 0., &LogInfo)
+        calculate_soilBulkDensity(soildensity, 0.),
+        calculate_soilMatricDensity(soildensity, 0., &LogInfo)
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
     // Check that bulk and matric density calculations are inverse to each other
     EXPECT_DOUBLE_EQ(
-      calculate_soilBulkDensity(
-        calculate_soilMatricDensity(soildensity, fcoarse, &LogInfo),
-        fcoarse
-      ),
-      soildensity
+        calculate_soilBulkDensity(
+            calculate_soilMatricDensity(soildensity, fcoarse, &LogInfo), fcoarse
+        ),
+        soildensity
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     EXPECT_DOUBLE_EQ(
-      calculate_soilMatricDensity(
-        calculate_soilBulkDensity(soildensity, fcoarse),
-        fcoarse,
-        &LogInfo
-      ),
-      soildensity
+        calculate_soilMatricDensity(
+            calculate_soilBulkDensity(soildensity, fcoarse), fcoarse, &LogInfo
+        ),
+        soildensity
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
     // Check that bulk density is larger than matric density if coarse fragments
-    EXPECT_GT(
-      calculate_soilBulkDensity(soildensity, fcoarse),
-      soildensity
-    );
-  }
+    EXPECT_GT(calculate_soilBulkDensity(soildensity, fcoarse), soildensity);
+}
 
-
-  TEST_F(SiteFixtureTest, SiteSoilDensityTypes) {
+TEST_F(SiteFixtureTest, SiteSoilDensityTypes) {
     double fcoarse = 0.1;
 
     // Inputs represent matric density
@@ -676,8 +624,7 @@ namespace {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     EXPECT_GT(
-      SW_All.Site.soilBulk_density[0],
-      SW_All.Site.soilMatric_density[0]
+        SW_All.Site.soilBulk_density[0], SW_All.Site.soilMatric_density[0]
     );
 
 
@@ -688,16 +635,15 @@ namespace {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     EXPECT_GT(
-      SW_All.Site.soilBulk_density[0],
-      SW_All.Site.soilMatric_density[0]
+        SW_All.Site.soilBulk_density[0], SW_All.Site.soilMatric_density[0]
     );
-  }
+}
 
-
-  // Test that bulk and matric soil density fail
-  TEST(SiteTest, SiteSoilDensityTooLowDeathTest) {
+// Test that bulk and matric soil density fail
+TEST(SiteTest, SiteSoilDensityTooLowDeathTest) {
     LOG_INFO LogInfo;
-    sw_init_logs(NULL, &LogInfo); // Initialize logs and silence warn/error reporting
+    // Initialize logs and silence warn/error reporting
+    sw_init_logs(NULL, &LogInfo);
 
     // Create an error if bulk density too low for coarse fragments
     calculate_soilMatricDensity(1.65, 0.7, &LogInfo);
@@ -705,10 +651,9 @@ namespace {
 
     // Detect failure by error message
     EXPECT_THAT(LogInfo.errorMsg, HasSubstr("is lower than expected"));
-  }
+}
 
-
-  TEST_F(SiteFixtureTest, SiteSoilDensityMissingDeathTest) {
+TEST_F(SiteFixtureTest, SiteSoilDensityMissingDeathTest) {
     // Create an error if type_soilDensityInput not implemented
 
     SW_All.Site.type_soilDensityInput = SW_MISSING;
@@ -716,6 +661,8 @@ namespace {
     SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
 
     // Detect failure by error message
-    EXPECT_THAT(LogInfo.errorMsg, HasSubstr("Soil density type not recognized"));
-  }
+    EXPECT_THAT(
+        LogInfo.errorMsg, HasSubstr("Soil density type not recognized")
+    );
+}
 } // namespace

@@ -1,14 +1,14 @@
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
-#include "include/SW_Domain.h"
 #include "include/filefuncs.h"
+#include "include/generic.h"
+#include "include/myMemory.h"
+#include "include/rands.h"
+#include "include/SW_Domain.h"
 #include "include/SW_Files.h"
 #include "include/SW_Times.h"
-#include "include/rands.h"
-#include "include/myMemory.h"
-#include "include/generic.h"
 
 #if defined(SWNETCDF)
 #include "include/SW_netCDF.h"
@@ -29,18 +29,19 @@
 /* --------------------------------------------------- */
 
 /**
- * @brief Calculate the suid for the start gridcell/site position
- *
- * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
- *  temporal/spatial information for a set of simulation runs
- * @param[in] suid Unique identifier for a simulation run
- * @param[out] ncSuid Unique indentifier of the first suid to run
- *  in relation to netCDFs
-*/
-void SW_DOM_calc_ncSuid(SW_DOMAIN* SW_Domain, unsigned long suid,
-                             unsigned long ncSuid[]) {
+@brief Calculate the suid for the start gridcell/site position
 
-    if(strcmp(SW_Domain->DomainType, "s") == 0) {
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+@param[in] suid Unique identifier for a simulation run
+@param[out] ncSuid Unique indentifier of the first suid to run
+    in relation to netCDFs
+*/
+void SW_DOM_calc_ncSuid(
+    SW_DOMAIN *SW_Domain, unsigned long suid, unsigned long ncSuid[]
+) {
+
+    if (strcmp(SW_Domain->DomainType, "s") == 0) {
         ncSuid[0] = suid;
         ncSuid[1] = 0;
     } else {
@@ -50,81 +51,81 @@ void SW_DOM_calc_ncSuid(SW_DOMAIN* SW_Domain, unsigned long suid,
 }
 
 /**
- * @brief Calculate the number of suids in the given domain
- *
- * @param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
- *  temporal/spatial information for a set of simulation runs
+@brief Calculate the number of suids in the given domain
+
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
 */
-void SW_DOM_calc_nSUIDs(SW_DOMAIN* SW_Domain) {
+void SW_DOM_calc_nSUIDs(SW_DOMAIN *SW_Domain) {
     SW_Domain->nSUIDs = (strcmp(SW_Domain->DomainType, "s") == 0) ?
-        SW_Domain->nDimS :
-        SW_Domain->nDimX * SW_Domain->nDimY;
+                            SW_Domain->nDimS :
+                            SW_Domain->nDimX * SW_Domain->nDimY;
 }
 
 /**
- * @brief Check progress in domain
- *
- * @param[in] progFileID Identifier of the progress netCDF file
- * @param[in] progVarID Identifier of the progress variable
- * @param[in] ncSuid Current simulation unit identifier for which is used
- *  to get data from netCDF
- * @param[in,out] LogInfo Holds information dealing with logfile output
- *
- * @return
- * TRUE if simulation for \p ncSuid has not been completed yet;
- * FALSE if simulation for \p ncSuid has been completed (i.e., skip).
+@brief Check progress in domain
+
+@param[in] progFileID Identifier of the progress netCDF file
+@param[in] progVarID Identifier of the progress variable
+@param[in] ncSuid Current simulation unit identifier for which is used
+    to get data from netCDF
+@param[in,out] LogInfo Holds information dealing with logfile output
+
+@return
+TRUE if simulation for \p ncSuid has not been completed yet;
+FALSE if simulation for \p ncSuid has been completed (i.e., skip).
 */
-Bool SW_DOM_CheckProgress(int progFileID, int progVarID,
-                          unsigned long ncSuid[], LOG_INFO* LogInfo) {
-    #if defined(SWNETCDF)
+Bool SW_DOM_CheckProgress(
+    int progFileID, int progVarID, unsigned long ncSuid[], LOG_INFO *LogInfo
+) {
+#if defined(SWNETCDF)
     return SW_NC_check_progress(progFileID, progVarID, ncSuid, LogInfo);
-    #else
+#else
     (void) progFileID;
     (void) progVarID;
     (void) ncSuid;
     (void) LogInfo;
-    #endif
+#endif
 
     // return TRUE (due to lack of capability to track progress)
     return swTRUE;
 }
 
 /**
- * @brief Create an empty progress netCDF
- *
- * @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
- *  temporal/spatial information for a set of simulation runs
- * @param[in] LogInfo Holds information dealing with logfile output
+@brief Create an empty progress netCDF
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+@param[in] LogInfo Holds information dealing with logfile output
 */
-void SW_DOM_CreateProgress(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
-    #if defined(SWNETCDF)
+void SW_DOM_CreateProgress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
+#if defined(SWNETCDF)
     SW_NC_create_progress(SW_Domain, LogInfo);
-    #else
+#else
     (void) SW_Domain;
     (void) LogInfo;
-    #endif
+#endif
 }
 
 /**
- * @brief Domain constructor for global variables.
- *
- * @param[in] rng_seed Initial state for spinup RNG
- * @param[out] SW_Domain Struct of type SW_DOMAIN which
- * holds constant temporal/spatial information for a set
- * of simulation runs
-*/
-void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN* SW_Domain) {
+@brief Domain constructor for global variables.
 
-	/* Set seed of `spinup_rng`
-	  - SOILWAT2: set seed here
-	  - STEPWAT2: `main()` uses `Globals.randseed` to (re-)set for each iteration
-	  - rSOILWAT2: R API handles RNGs
-	*/
-	#if defined(SOILWAT)
-		RandSeed(rng_seed, 1u, &SW_Domain->SW_SpinUp.spinup_rng);
-	#else
-		(void) rng_seed; // Silence compiler flag `-Wunused-parameter`
-	#endif
+@param[in] rng_seed Initial state for spinup RNG
+@param[out] SW_Domain Struct of type SW_DOMAIN which
+    holds constant temporal/spatial information for a set of simulation runs
+*/
+void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
+
+/* Set seed of `spinup_rng`
+  - SOILWAT2: set seed here
+  - STEPWAT2: `main()` uses `Globals.randseed` to (re-)set for each iteration
+  - rSOILWAT2: R API handles RNGs
+*/
+#if defined(SOILWAT)
+    RandSeed(rng_seed, 1u, &SW_Domain->SW_SpinUp.spinup_rng);
+#else
+    (void) rng_seed; // Silence compiler flag `-Wunused-parameter`
+#endif
 
 
     SW_Domain->nMaxSoilLayers = 0;
@@ -137,27 +138,53 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN* SW_Domain) {
     );
 }
 
-
-
 /**
- * @brief Read `domain.in` and report any problems encountered when doing so
- *
- * @param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
- *      temporal/spatial information for a set of simulation runs
- * @param[in] LogInfo Holds information on warnings and errors
-*/
-void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
+@brief Read `domain.in` and report any problems encountered when doing so
 
-    static const char *possibleKeys[NUM_DOM_IN_KEYS] =
-            {"Domain", "nDimX", "nDimY", "nDimS",
-            "StartYear", "EndYear", "StartDoy", "EndDoy",
-            "crs_bbox", "xmin_bbox", "ymin_bbox", "xmax_bbox", "ymax_bbox",
-            "SpinupMode", "SpinupScope", "SpinupDuration", "SpinupSeed"};
-    static const Bool requiredKeys[NUM_DOM_IN_KEYS] =
-            {swTRUE, swTRUE, swTRUE, swTRUE,
-            swTRUE, swTRUE, swFALSE, swFALSE,
-            swTRUE, swTRUE, swTRUE, swTRUE, swTRUE,
-            swTRUE, swTRUE, swTRUE, swTRUE};
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+@param[in] LogInfo Holds information on warnings and errors
+*/
+void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
+
+    static const char *possibleKeys[NUM_DOM_IN_KEYS] = {
+        "Domain",
+        "nDimX",
+        "nDimY",
+        "nDimS",
+        "StartYear",
+        "EndYear",
+        "StartDoy",
+        "EndDoy",
+        "crs_bbox",
+        "xmin_bbox",
+        "ymin_bbox",
+        "xmax_bbox",
+        "ymax_bbox",
+        "SpinupMode",
+        "SpinupScope",
+        "SpinupDuration",
+        "SpinupSeed"
+    };
+    static const Bool requiredKeys[NUM_DOM_IN_KEYS] = {
+        swTRUE,
+        swTRUE,
+        swTRUE,
+        swTRUE,
+        swTRUE,
+        swTRUE,
+        swFALSE,
+        swFALSE,
+        swTRUE,
+        swTRUE,
+        swTRUE,
+        swTRUE,
+        swTRUE,
+        swTRUE,
+        swTRUE,
+        swTRUE,
+        swTRUE
+    };
     Bool hasKeys[NUM_DOM_IN_KEYS] = {swFALSE};
 
     FILE *f;
@@ -166,139 +193,167 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     char key[15], value[LARGE_VALUE]; // 15 - Max key size
 
     MyFileName = SW_Domain->PathInfo.InFiles[eDomain];
-	f = OpenFile(MyFileName, "r", LogInfo);
-    if(LogInfo->stopRun) {
+    f = OpenFile(MyFileName, "r", LogInfo);
+    if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
     // Set SW_DOMAIN
-    while(GetALine(f, inbuf, LARGE_VALUE)) {
+    while (GetALine(f, inbuf, LARGE_VALUE)) {
         sscanf(inbuf, "%14s %s", key, value);
 
         keyID = key_to_id(key, possibleKeys, NUM_DOM_IN_KEYS);
-        set_hasKey(keyID, possibleKeys, hasKeys, LogInfo); // no error, only warnings possible
 
-        switch(keyID) {
-            case 0: // Domain type
-                if(strcmp(value, "xy") != 0 && strcmp(value, "s") != 0) {
-                    LogError(LogInfo, LOGERROR, "%s: Incorrect domain type %s."\
-                             " Please select from \"xy\" and \"s\".",
-                             MyFileName, value);
-                    return; // Exit function prematurely due to error
-                }
-                strcpy(SW_Domain->DomainType, value);
-                break;
-            case 1: // Number of X slots
-                SW_Domain->nDimX = atoi(value);
-                break;
-            case 2: // Number of Y slots
-                SW_Domain->nDimY = atoi(value);
-                break;
-            case 3: // Number of S slots
-                SW_Domain->nDimS = atoi(value);
-                break;
+        set_hasKey(keyID, possibleKeys, hasKeys, LogInfo);
+        // set_hasKey() produces never an error, only possibly warnings
 
-            case 4: // Start year
-                y = atoi(value);
+        switch (keyID) {
+        case 0: // Domain type
+            if (strcmp(value, "xy") != 0 && strcmp(value, "s") != 0) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "%s: Incorrect domain type %s."
+                    " Please select from \"xy\" and \"s\".",
+                    MyFileName,
+                    value
+                );
+                return; // Exit function prematurely due to error
+            }
+            strcpy(SW_Domain->DomainType, value);
+            break;
+        case 1: // Number of X slots
+            SW_Domain->nDimX = atoi(value);
+            break;
+        case 2: // Number of Y slots
+            SW_Domain->nDimY = atoi(value);
+            break;
+        case 3: // Number of S slots
+            SW_Domain->nDimS = atoi(value);
+            break;
 
-                if (y < 0) {
-                    CloseFile(&f, LogInfo);
-                    LogError(LogInfo, LOGERROR,
-                             "%s: Negative start year (%d)", MyFileName, y);
-                    return; // Exit function prematurely due to error
-                }
-                SW_Domain->startyr = yearto4digit((TimeInt) y);
-                break;
-            case 5: // End year
-                y = atoi(value);
+        case 4: // Start year
+            y = atoi(value);
 
-                if (y < 0) {
-                    CloseFile(&f, LogInfo);
-                    LogError(LogInfo, LOGERROR,
-                             "%s: Negative ending year (%d)", MyFileName, y);
-                    return; // Exit function prematurely due to error
-                }
-                SW_Domain->endyr = yearto4digit((TimeInt) y);
-                break;
-            case 6: // Start day of year
-                SW_Domain->startstart = atoi(value);
-                break;
-            case 7: // End day of year
-                SW_Domain->endend = atoi(value);
-                break;
+            if (y < 0) {
+                CloseFile(&f, LogInfo);
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "%s: Negative start year (%d)",
+                    MyFileName,
+                    y
+                );
+                return; // Exit function prematurely due to error
+            }
+            SW_Domain->startyr = yearto4digit((TimeInt) y);
+            break;
+        case 5: // End year
+            y = atoi(value);
 
-            case 8: // CRS box
-                // Re-scan and get the entire value (including spaces)
-                sscanf(inbuf, "%9s %27[^\n]", key, value);
-                strcpy(SW_Domain->crs_bbox, value);
-                break;
-            case 9: // Minimum x coordinate
-                SW_Domain->min_x = atof(value);
-                break;
-            case 10: // Minimum y coordinate
-                SW_Domain->min_y = atof(value);
-                break;
-            case 11: // Maximum x coordinate
-                SW_Domain->max_x = atof(value);
-                break;
-            case 12: // Maximum y coordinate
-                SW_Domain->max_y = atof(value);
-                break;
+            if (y < 0) {
+                CloseFile(&f, LogInfo);
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "%s: Negative ending year (%d)",
+                    MyFileName,
+                    y
+                );
+                return; // Exit function prematurely due to error
+            }
+            SW_Domain->endyr = yearto4digit((TimeInt) y);
+            break;
+        case 6: // Start day of year
+            SW_Domain->startstart = atoi(value);
+            break;
+        case 7: // End day of year
+            SW_Domain->endend = atoi(value);
+            break;
 
-            case 13: // Spinup Mode
-                y = atoi(value);
-                                
-                if (y != 1 && y != 2) {
-                    CloseFile(&f, LogInfo);
-                    LogError(LogInfo, LOGERROR,
-                            "%s: Incorrect Mode (%d) for spinup"\
-                            " Please select \"1\" or \"2\"", MyFileName, y);
-                    return; // Exit function prematurely due to error
-                }
-                SW_Domain->SW_SpinUp.mode = y;
-                break;
-            case 14: // Spinup Scope
-                SW_Domain->SW_SpinUp.scope = atoi(value);
-                break;
-            case 15: // Spinup Duration                                
-                SW_Domain->SW_SpinUp.duration = atoi(value);
+        case 8: // CRS box
+            // Re-scan and get the entire value (including spaces)
+            sscanf(inbuf, "%9s %27[^\n]", key, value);
+            strcpy(SW_Domain->crs_bbox, value);
+            break;
+        case 9: // Minimum x coordinate
+            SW_Domain->min_x = atof(value);
+            break;
+        case 10: // Minimum y coordinate
+            SW_Domain->min_y = atof(value);
+            break;
+        case 11: // Maximum x coordinate
+            SW_Domain->max_x = atof(value);
+            break;
+        case 12: // Maximum y coordinate
+            SW_Domain->max_y = atof(value);
+            break;
 
-                // Set the spinup flag to true if duration > 0
-                if (SW_Domain->SW_SpinUp.duration <= 0) {
-                    SW_Domain->SW_SpinUp.spinup = swFALSE;
-                }
-                else {
-                    SW_Domain->SW_SpinUp.spinup = swTRUE;
-                }
-                break;
-            case 16: // Spinup Seed
-                SW_Domain->SW_SpinUp.rng_seed = atoi( value );
-                break;
+        case 13: // Spinup Mode
+            y = atoi(value);
 
-            case KEY_NOT_FOUND: // Unknown key
-                LogError(LogInfo, LOGWARN, "%s: Ignoring an unknown key, %s",
-                         MyFileName, key);
-                break;
+            if (y != 1 && y != 2) {
+                CloseFile(&f, LogInfo);
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "%s: Incorrect Mode (%d) for spinup"
+                    " Please select \"1\" or \"2\"",
+                    MyFileName,
+                    y
+                );
+                return; // Exit function prematurely due to error
+            }
+            SW_Domain->SW_SpinUp.mode = y;
+            break;
+        case 14: // Spinup Scope
+            SW_Domain->SW_SpinUp.scope = atoi(value);
+            break;
+        case 15: // Spinup Duration
+            SW_Domain->SW_SpinUp.duration = atoi(value);
+
+            // Set the spinup flag to true if duration > 0
+            if (SW_Domain->SW_SpinUp.duration <= 0) {
+                SW_Domain->SW_SpinUp.spinup = swFALSE;
+            } else {
+                SW_Domain->SW_SpinUp.spinup = swTRUE;
+            }
+            break;
+        case 16: // Spinup Seed
+            SW_Domain->SW_SpinUp.rng_seed = atoi(value);
+            break;
+
+        case KEY_NOT_FOUND: // Unknown key
+            LogError(
+                LogInfo,
+                LOGWARN,
+                "%s: Ignoring an unknown key, %s",
+                MyFileName,
+                key
+            );
+            break;
         }
     }
-    
+
     CloseFile(&f, LogInfo);
 
 
     // Check if all required input was provided
-    check_requiredKeys(hasKeys, requiredKeys, possibleKeys, NUM_DOM_IN_KEYS, LogInfo);
-    if(LogInfo->stopRun) {
+    check_requiredKeys(
+        hasKeys, requiredKeys, possibleKeys, NUM_DOM_IN_KEYS, LogInfo
+    );
+    if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
     if (SW_Domain->endyr < SW_Domain->startyr) {
-          LogError(LogInfo, LOGERROR, "%s: Start Year > End Year", MyFileName);
-          return; // Exit function prematurely due to error
+        LogError(LogInfo, LOGERROR, "%s: Start Year > End Year", MyFileName);
+        return; // Exit function prematurely due to error
     }
 
     // Check if start day of year was not found
     keyID = key_to_id("StartDoy", possibleKeys, NUM_DOM_IN_KEYS);
-    if(!hasKeys[keyID]) {
+    if (!hasKeys[keyID]) {
         LogError(LogInfo, LOGWARN, "Domain.in: Missing Start Day - using 1\n");
         SW_Domain->startstart = 1;
     }
@@ -311,8 +366,12 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
         SW_Domain->endend = Time_get_lastdoy_y(SW_Domain->endyr);
     }
     if (!hasKeys[keyID]) {
-          LogError(LogInfo, LOGWARN,
-                  "Domain.in: Missing End Day - using %d\n", SW_Domain->endend);
+        LogError(
+            LogInfo,
+            LOGWARN,
+            "Domain.in: Missing End Day - using %d\n",
+            SW_Domain->endend
+        );
     }
 
     // Check bounding box coordinates
@@ -329,71 +388,86 @@ void SW_DOM_read(SW_DOMAIN* SW_Domain, LOG_INFO* LogInfo) {
     // Check if scope value is out of range
     if (SW_Domain->SW_SpinUp.scope < 1 ||
         SW_Domain->SW_SpinUp.scope > (SW_Domain->endyr - SW_Domain->startyr)) {
-        LogError(LogInfo, LOGERROR,
-                "%s: Invalid Scope (N = %d) for spinup", MyFileName, SW_Domain->SW_SpinUp.scope);
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "%s: Invalid Scope (N = %d) for spinup",
+            MyFileName,
+            SW_Domain->SW_SpinUp.scope
+        );
         return; // Exit function prematurely due to error
     }
 }
 
 /**
- * @brief Mark completion status of simulation run
- *
- * @param[in] isFailure Did simulation run fail or succeed?
- * @param[in] domType Type of domain in which simulations are running
- *  (gridcell/sites)
- * @param[in] progFileID Identifier of the progress netCDF file
- * @param[in] progVarID Identifier of the progress variable
- * @param[in] ncSuid Unique indentifier of the first suid to run
- *  in relation to netCDFs
- * @param[in,out] LogInfo
-*/
-void SW_DOM_SetProgress(Bool isFailure, const char* domType, int progFileID,
-                        int progVarID, unsigned long ncSuid[],
-                        LOG_INFO* LogInfo) {
+@brief Mark completion status of simulation run
 
-    #if defined(SWNETCDF)
-    SW_NC_set_progress(isFailure, domType, progFileID, progVarID, ncSuid, LogInfo);
-    #else
+@param[in] isFailure Did simulation run fail or succeed?
+@param[in] domType Type of domain in which simulations are running
+    (gridcell/sites)
+@param[in] progFileID Identifier of the progress netCDF file
+@param[in] progVarID Identifier of the progress variable
+@param[in] ncSuid Unique indentifier of the first suid to run
+    in relation to netCDFs
+@param[in,out] LogInfo
+*/
+void SW_DOM_SetProgress(
+    Bool isFailure,
+    const char *domType,
+    int progFileID,
+    int progVarID,
+    unsigned long ncSuid[],
+    LOG_INFO *LogInfo
+) {
+
+#if defined(SWNETCDF)
+    SW_NC_set_progress(
+        isFailure, domType, progFileID, progVarID, ncSuid, LogInfo
+    );
+#else
     (void) isFailure;
     (void) progFileID;
     (void) progVarID;
     (void) ncSuid;
     (void) LogInfo;
     (void) domType;
-    #endif
+#endif
 }
 
 /**
- * @brief Calculate range of suids to run simulations for
- *
- * @param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
- *  temporal/spatial information for a set of simulation runs
- * @param[in] userSUID Simulation Unit Identifier requested by the user (base1);
- *            0 indicates that all simulations units within domain are requested
- * @param[out] LogInfo Holds information on warnings and errors
+@brief Calculate range of suids to run simulations for
+
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+@param[in] userSUID Simulation Unit Identifier requested by the user (base1);
+    0 indicates that all simulations units within domain are requested
+@param[out] LogInfo Holds information on warnings and errors
 */
-void SW_DOM_SimSet(SW_DOMAIN* SW_Domain, unsigned long userSUID,
-                   LOG_INFO* LogInfo) {
+void SW_DOM_SimSet(
+    SW_DOMAIN *SW_Domain, unsigned long userSUID, LOG_INFO *LogInfo
+) {
 
     Bool progFound;
-    unsigned long
-      *startSimSet = &SW_Domain->startSimSet,
-      *endSimSet = &SW_Domain->endSimSet,
-      startSuid[2]; // 2 -> [y, x] or [0, s]
+    unsigned long *startSimSet = &SW_Domain->startSimSet,
+                  *endSimSet = &SW_Domain->endSimSet,
+                  startSuid[2]; // 2 -> [y, x] or [0, s]
     int progFileID = 0; // Value does not matter if SWNETCDF is not defined
-    int progVarID = 0; // Value does not matter if SWNETCDF is not defined
+    int progVarID = 0;  // Value does not matter if SWNETCDF is not defined
 
-    #if defined(SWNETCDF)
+#if defined(SWNETCDF)
     progFileID = SW_Domain->netCDFInfo.ncFileIDs[vNCprog];
     progVarID = SW_Domain->netCDFInfo.ncVarIDs[vNCprog];
-    #endif
+#endif
 
-    if(userSUID > 0) {
-        if(userSUID > SW_Domain->nSUIDs) {
-            LogError(LogInfo, LOGERROR,
+    if (userSUID > 0) {
+        if (userSUID > SW_Domain->nSUIDs) {
+            LogError(
+                LogInfo,
+                LOGERROR,
                 "User requested simulation unit (suid = %lu) "
                 "does not exist in simulation domain (n = %lu).",
-                userSUID, SW_Domain->nSUIDs
+                userSUID,
+                SW_Domain->nSUIDs
             );
             return; // Exit function prematurely due to error
         }
@@ -401,51 +475,51 @@ void SW_DOM_SimSet(SW_DOMAIN* SW_Domain, unsigned long userSUID,
         *startSimSet = userSUID - 1;
         *endSimSet = userSUID;
     } else {
-        #if defined(SOILWAT)
-        if(LogInfo->printProgressMsg) {
+#if defined(SOILWAT)
+        if (LogInfo->printProgressMsg) {
             sw_message("is identifying the simulation set ...");
         }
-        #endif
+#endif
 
         *endSimSet = SW_Domain->nSUIDs;
-        for(*startSimSet = 0; *startSimSet < *endSimSet; (*startSimSet)++) {
+        for (*startSimSet = 0; *startSimSet < *endSimSet; (*startSimSet)++) {
             SW_DOM_calc_ncSuid(SW_Domain, *startSimSet, startSuid);
 
-            progFound = SW_DOM_CheckProgress(progFileID, progVarID,
-                                             startSuid, LogInfo);
+            progFound =
+                SW_DOM_CheckProgress(progFileID, progVarID, startSuid, LogInfo);
 
-            if(progFound || LogInfo->stopRun) {
+            if (progFound || LogInfo->stopRun) {
                 return; // Found start suid or error occurred
             }
         }
     }
 }
 
-void SW_DOM_deepCopy(SW_DOMAIN* source, SW_DOMAIN* dest, LOG_INFO* LogInfo) {
-    memcpy(dest, source, sizeof (*dest));
+void SW_DOM_deepCopy(SW_DOMAIN *source, SW_DOMAIN *dest, LOG_INFO *LogInfo) {
+    memcpy(dest, source, sizeof(*dest));
 
     SW_F_deepCopy(&dest->PathInfo, &source->PathInfo, LogInfo);
 
-    #if defined(SWNETCDF)
+#if defined(SWNETCDF)
     SW_NC_deepCopy(&dest->netCDFInfo, &source->netCDFInfo, LogInfo);
-    #endif
+#endif
 }
 
-void SW_DOM_init_ptrs(SW_DOMAIN* SW_Domain) {
+void SW_DOM_init_ptrs(SW_DOMAIN *SW_Domain) {
     SW_F_init_ptrs(SW_Domain->PathInfo.InFiles);
 
-    #if defined(SWNETCDF)
+#if defined(SWNETCDF)
     SW_NC_init_ptrs(&SW_Domain->netCDFInfo);
-    #endif
+#endif
 }
 
-void SW_DOM_deconstruct(SW_DOMAIN* SW_Domain) {
+void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
     SW_F_deconstruct(SW_Domain->PathInfo.InFiles);
 
-    #if defined(SWNETCDF)
+#if defined(SWNETCDF)
     SW_NC_deconstruct(&SW_Domain->netCDFInfo);
     SW_NC_close_files(&SW_Domain->netCDFInfo);
-    #endif
+#endif
 }
 
 /** Identify soil profile information across simulation domain
@@ -473,10 +547,10 @@ void SW_DOM_soilProfile(
     LyrIndex default_n_layers,
     LyrIndex default_n_evap_lyrs,
     double default_depths[],
-    LOG_INFO* LogInfo
+    LOG_INFO *LogInfo
 ) {
 
-    #if defined(SWNETCDF)
+#if defined(SWNETCDF)
     SW_NC_soilProfile(
         hasConsistentSoilLayerDepths,
         nMaxSoilLayers,
@@ -488,7 +562,7 @@ void SW_DOM_soilProfile(
         LogInfo
     );
 
-    #else
+#else
 
     // Assume default/template values are consistent
     *hasConsistentSoilLayerDepths = swTRUE;
@@ -503,9 +577,8 @@ void SW_DOM_soilProfile(
 
     (void) LogInfo;
 
-    #endif // !SWNETCDF
+#endif // !SWNETCDF
 }
-
 
 /* =================================================== */
 /*             Local Function Definitions              */

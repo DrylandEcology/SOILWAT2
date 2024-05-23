@@ -40,9 +40,9 @@
 #ifndef TIMES_H
 #define TIMES_H
 
-#include <time.h>
-#include "include/SW_Defines.h"
 #include "include/SW_datastructs.h"
+#include "include/SW_Defines.h"
+#include <time.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -78,29 +78,45 @@ extern const TimeInt monthdays[];
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void Time_init_model(TimeInt days_in_month[]);
-void Time_new_year(TimeInt year, TimeInt days_in_month[],
-                   TimeInt cum_monthdays[]);
+
+void Time_new_year(
+    TimeInt year, TimeInt days_in_month[], TimeInt cum_monthdays[]
+);
 
 TimeInt Time_days_in_month(TimeInt month, TimeInt days_in_month[]);
+
 TimeInt Time_get_lastdoy_y(TimeInt year);
 
 TimeInt doy2month(const TimeInt doy, TimeInt cum_monthdays[]);
-TimeInt doy2mday(const TimeInt doy, TimeInt cum_monthdays[],
-                 TimeInt days_in_month[]);
+
+TimeInt doy2mday(
+    const TimeInt doy, TimeInt cum_monthdays[], TimeInt days_in_month[]
+);
+
 TimeInt doy2week(TimeInt doy);
+
 TimeInt yearto4digit(TimeInt yr);
 
 Bool isleapyear(const TimeInt year);
 
-void interpolate_monthlyValues(double monthlyValues[], Bool interpAsBase1,
-  TimeInt cum_monthdays[], TimeInt days_in_month[], double dailyValues[]);
-
+void interpolate_monthlyValues(
+    double monthlyValues[],
+    Bool interpAsBase1,
+    TimeInt cum_monthdays[],
+    TimeInt days_in_month[],
+    double dailyValues[]
+);
 
 void set_walltime(WallTimeSpec *ts, Bool *ok);
+
 double diff_walltime(WallTimeSpec start, Bool ok_start);
+
 void SW_WT_StartTime(SW_WALLTIME *wt);
+
 void SW_WT_TimeRun(WallTimeSpec ts, Bool ok_ts, SW_WALLTIME *wt);
-void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO* LogInfo);
+
+void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo);
+
 void timeStringISO8601(char *timeString, int stringLength);
 
 #ifdef __cplusplus

@@ -39,9 +39,7 @@ extern "C" {
 
 
 /*---------------------------------------------------------------*/
-typedef enum {
-	Yesterday, Today
-} TwoDays;
+typedef enum { Yesterday, Today } TwoDays;
 
 #define DAYFIRST_NORTH 1
 #define DAYLAST_NORTH 366
