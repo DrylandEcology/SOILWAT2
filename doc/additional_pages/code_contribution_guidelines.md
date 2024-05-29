@@ -1,4 +1,4 @@
-# Suggestions for code development
+# Contributing to SOILWAT2
 
 [SOILWAT2]: https://github.com/DrylandEcology/SOILWAT2
 [rSOILWAT2]: https://github.com/DrylandEcology/rSOILWAT2
@@ -11,37 +11,38 @@
 [semantic versioning]: https://semver.org/
 [netCDF]: https://downloads.unidata.ucar.edu/netcdf/
 [udunits2]: https://downloads.unidata.ucar.edu/udunits/
+[ClangFormat]: https://clang.llvm.org/docs/ClangFormat.html
 
 
-
-# Code development, documentation, and tests go together
-
-We develop code on development branches and,
-after they are reviewed and pass our checks,
-merge them into the main branch for release.
-
-
-<hr>
 Go back to the [main page](README.md).
 
 # Table of contents
-1. [How to contribute](#contribute)
-    1. [SOILWAT2 code](#SOILWAT2_code)
-    2. [Code guidelines](#follow_guidelines)
-    3. [Code documentation](#code_documentation)
-    4. [Code tests](#code_tests)
-        1. [Unit tests](#unit_tests)
-        2. [Integration tests](#int_tests)
-        3. [Extra checks](#extra_tests)
-        4. [Continuous integration checks](#ci_tests)
-        5. [Sanitizers & leaks](#leaks_tests)
-    5. [Code debugging](#code_debugging)
-    6. [Code versioning](#code_versioning)
-    7. [Reverse dependencies](#revdep)
-2. [Some additional notes](#more_notes)
+1. [SOILWAT2 code](#SOILWAT2_code)
+2. [Code guidelines](#guidelines)
+3. [Code documentation](#code_documentation)
+4. [Code tests](#code_tests)
+    1. [Unit tests](#unit_tests)
+    2. [Integration tests](#int_tests)
+    3. [Extra checks](#extra_tests)
+    4. [Continuous integration checks](#ci_tests)
+    5. [Sanitizers & leaks](#leaks_tests)
+5. [Code debugging](#code_debugging)
+6. [Code versioning](#code_versioning)
+7. [Reverse dependencies](#revdep)
+8. [Some additional notes](#more_notes)
 
 <br>
 
+
+## Code development, documentation, and tests go together
+
+We develop code on development branches and,
+after they are reviewed and pass our checks,
+we merge them into the main branch and issue a release.
+Each release is documented with the main changes in `NEWS` and
+on the GitHub release page.
+
+<br>
 
 
 <a name="SOILWAT2_code"></a>
@@ -59,63 +60,150 @@ please see section [reverse dependencies](#revdep).
 <br>
 
 
-<a name="follow_guidelines"></a>
-## Follow our guidelines as detailed [here][guidelines]
+
+<a name="guidelines"></a>
+## Code format guidelines
+
+We use a `LLVM`-derived code style for the `SOILWAT2` repository.
+
+The file `".clang-format"` documents all details of the code style.
+We use `clang-format v18` (see [ClangFormat][]);
+please, note that other versions of `clang-format` do format code differently
+even if using the same `".clang-format"`.
+
+
+A short illustration of our code style
+```{.c}
+void my_function(
+    TYPE1 argument1,
+    TYPE2 argument2,
+    TYPE3 argument3,
+    TYPE4 argument4,
+    TYPE5 argument5,
+    TYPE6 argument6,
+    TYPE7 argument7
+) {
+    short k; /* short comments are ok after code */
+
+    for (k = 0; k < (short) argument1; k++) {
+        /* place long comments on their own line for better readability */
+        function_with_few_arguments(k, argument2, argument3);
+
+        function_with_some_arguments(
+            k, argument2, argument3, argument4, argument5
+        );
+
+        function_with_many_arguments(
+            k,
+            argument1,
+            argument2,
+            argument3,
+            argument4,
+            argument5,
+            argument6,
+            argument7
+        );
+    }
+}
+```
+
+A git integration allows to format just the lines that differ
+between the working directory and `HEAD`.
+This can be useful when preparing a new commit.
+More details can be found in the documentation ([ClangFormat][]) including
+how to use options `--staged` or `--diff`
+```{.sh}
+    git clang-format --style=file
+```
+
+We have a script `"tools/run_format.sh"` that applies the code style to all
+files in `"include/"`, `"src/"`, and `"tests/gtests/"` directories.
+However, please don't include formatting changes to a commit that are unrelated
+to the developed implementation for that commit.
+
+A github action workflow `".github/workflows/clang-format-check.yml"`
+checks code style for pull requests into the main branch and release branches.
+
+
+## Other guidelines
+Additional (and partially outdated) guidelines can be found [here][guidelines]
 
 <br>
 
 
-## Code development, documentation, and tests go together
-
-We develop code on development branches and,
-after they are reviewed and pass our checks,
-merge them into the main branch for release.
-
-
 <a name="code_documentation"></a>
-### Code documentation
-  * Document new code with [doxygen][] inline documentation
+## Code documentation
+Document new code with [doxygen][] inline documentation.
 
-  * Check that new documentation renders correctly and does not
-    generate `doxygen` warnings, i.e.,
-    run `make doc` and check that it returns successfully
-    (it checks that `doxygen doc/Doxyfile | grep warning` is empty).
-    Also check that new or amended documentation displays
-    as intended by opening `doc/html/index.html` and navigating to the item
-    in question
+Check that new documentation renders correctly and does not
+generate `doxygen` warnings, i.e.,
+run `make doc` and check that it returns successfully
+(it checks that `doxygen doc/Doxyfile | grep warning` is empty).
+Also check that new or amended documentation displays
+as intended, i.e., run `make doc_open` (this opens `doc/html/index.html`)
+and visually inspect the item in question.
 
-  * Keep `doc/html/` local, i.e., don't push to the repository
+Please note that the generated documentation at `doc/html/` is kept local,
+i.e., git ignores the local copy and it is not pushed to the repository.
 
-  * Use regular c-style comments for additional code documentation
+Use regular c-style comments for additional code documentation.
+Please note line width limit of 80 characters and prefer to place
+comments on their own line.
+
+A short illustration of our `doxygen` style (using markdown is ok)
+```
+/**
+@brief Short description
+
+Some longer description.
+Continuation of some longer description.
+
+@param[in] argument1 Argument for foo
+    Some more text for argument1
+@param[in,out] *argument2 Argument for foo
+*/
+void foo(int argument1, int *argument2) {
+    /* Do something here */
+}
+```
 
 <br>
 
 
 <a name="code_tests"></a>
-### Code tests
+## Code tests
 __Testing framework__
 
 The goal is to cover all code development with new or amended tests.
 `SOILWAT2` comes with unit tests, integration tests, and extra checks.
 Additionally, the github repository runs continuous integration checks.
 
-Most of these tests and checks are run with the following steps
+Most of these tests and checks can be run with the following steps
 
 ```{.sh}
-    bash tools/check_functionality.sh check_SOILWAT2 "CC=" "CXX=" "txt" "tests/example/Output_ref" "false"
-    bash tools/check_functionality.sh check_SOILWAT2 "CC=" "CXX=" "nc" "tests/example/Output_ref" "false"
+    # Run text-based and nc-based SOILWAT2 and compare example runs against Output_ref/
+    tools/check_functionality.sh check_SOILWAT2 "CC=" "CXX=" "txt" "tests/example/Output_ref" "false"
+    tools/check_functionality.sh check_SOILWAT2 "CC=" "CXX=" "nc" "tests/example/Output_ref" "false"
 
     tools/check_outputModes.sh
 
     tools/check_extras.sh
 ```
 
-The following sections on tests provide details.
+These checks can be modified to run the checks with a specific compiler and
+compare output from example runs against a previously created reference output
+(here, `Output_v700/` -- instead of creating a new reference), e.g.,
+```{.sh}
+    tools/check_functionality.sh check_SOILWAT2 "CC=clang" "CXX=clang++" "txt" "tests/example/Output_v700" "false"
+```
+
+
+The next sections provide additional details.
 
 <br>
 
 <a name="unit_tests"></a>
-#### Unit tests
+### Unit tests
 
 We use [GoogleTest][] for unit tests
 to check that individual units of code, e.g., functions, work as expected.
@@ -148,7 +236,7 @@ Please note that this script currently works only with `macports`.
 <br>
 
 <a name="int_tests"></a>
-#### Integration tests
+### Integration tests
 
 We use integration tests to check that the entire simulation model works
 as expected when used in a real-world application setting.
@@ -199,7 +287,7 @@ The following steps provide a starting point for such comparisons:
 
 
 <a name="extra_tests"></a>
-#### Extra checks
+### Extra checks
 
 Additional output can be generated by passing appropriate flags when running
 unit tests. Scripts are available to analyze such output and
@@ -232,7 +320,7 @@ Currently, the following are implemented:
 
 
 <a name="ci_tests"></a>
-#### Continuous integration checks
+### Continuous integration checks
 
 Development/feature branches can only be merged into the main branch and
 released if they pass all checks on the continuous integration servers
@@ -249,7 +337,7 @@ Please run the "severe", "sanitizer", and "leak" targets locally
 
 
 <a name="leaks_tests"></a>
-#### Sanitizers & leaks
+### Sanitizers & leaks
 
 Run the simulation and tests with the `leaks` program, For instance,
 ```{.sh}
@@ -294,7 +382,7 @@ This can be fixed, for instance, with the following steps
 
 
 <a name="code_debugging"></a>
-### Debugging
+## Debugging
   Debugging is controlled at two levels:
   * at the preprocessor (pass `-DSWDEBUG`):
     all debug code is wrapped by this flag so that it does not end up in
@@ -336,7 +424,7 @@ This can be fixed, for instance, with the following steps
 
 
 <a name="code_versioning"></a>
-### Version numbers
+## Releases and version numbering
 
 We attempt to follow guidelines of [semantic versioning][] with version
 numbers of `MAJOR.MINOR.PATCH`;
@@ -345,8 +433,8 @@ on simulated output (e.g., identical output -> increase patch number) and
 on dependencies `STEPWAT2` and `rSOILWAT2`
 (e.g., no updates required -> increase patch number).
 
-We create a new release for each update to the master branch.
-The master branch is updated via pull requests from development branches
+We create a new release for each update to the main branch.
+The main branch is updated via pull requests from development branches
 after they are reviewed and pass required checks.
 
 
