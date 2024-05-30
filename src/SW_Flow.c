@@ -285,11 +285,11 @@ void SW_Water_Flow(SW_ALL *sw, LOG_INFO *LogInfo) {
 
 #ifdef SWDEBUG
     if (debug && sw->Model.year == debug_year && sw->Model.doy == debug_doy) {
-        swprintf("Flow (%d-%d): start:", sw->Model.year, sw->Model.doy);
+        sw_printf("Flow (%d-%d): start:", sw->Model.year, sw->Model.doy);
         ForEachSoilLayer(i, n_layers) {
-            swprintf(" swc[%i]=%1.3f", i, sw->SoilWat.swcBulk[Today][i]);
+            sw_printf(" swc[%i]=%1.3f", i, sw->SoilWat.swcBulk[Today][i]);
         }
-        swprintf("\n");
+        sw_printf("\n");
     }
 #endif
 
@@ -506,15 +506,15 @@ void SW_Water_Flow(SW_ALL *sw, LOG_INFO *LogInfo) {
 
 #ifdef SWDEBUG
     if (debug && sw->Model.year == debug_year && sw->Model.doy == debug_doy) {
-        swprintf("Flow (%d-%d): satperc:", sw->Model.year, sw->Model.doy);
+        sw_printf("Flow (%d-%d): satperc:", sw->Model.year, sw->Model.doy);
         ForEachSoilLayer(i, n_layers) {
-            swprintf(" swc[%i]=%1.3f", i, sw->SoilWat.swcBulk[Today][i]);
+            sw_printf(" swc[%i]=%1.3f", i, sw->SoilWat.swcBulk[Today][i]);
         }
-        swprintf("\n              : satperc:");
+        sw_printf("\n              : satperc:");
         ForEachSoilLayer(i, n_layers) {
-            swprintf(" perc[%d]=%1.3f", i, sw->SoilWat.drain[i]);
+            sw_printf(" perc[%d]=%1.3f", i, sw->SoilWat.drain[i]);
         }
-        swprintf("\n");
+        sw_printf("\n");
     }
 #endif
 
@@ -747,15 +747,15 @@ void SW_Water_Flow(SW_ALL *sw, LOG_INFO *LogInfo) {
 
 #ifdef SWDEBUG
     if (debug && sw->Model.year == debug_year && sw->Model.doy == debug_doy) {
-        swprintf("Flow (%d-%d): Esoil:", sw->Model.year, sw->Model.doy);
+        sw_printf("Flow (%d-%d): Esoil:", sw->Model.year, sw->Model.doy);
         ForEachSoilLayer(i, n_layers) {
-            swprintf(" swc[%i]=%1.3f", i, sw->SoilWat.swcBulk[Today][i]);
+            sw_printf(" swc[%i]=%1.3f", i, sw->SoilWat.swcBulk[Today][i]);
         }
-        swprintf("\n              : Esoil:");
+        sw_printf("\n              : Esoil:");
         ForEachSoilLayer(i, n_layers) {
-            swprintf(" Esoil[%d]=%1.3f", i, sw->SoilWat.evap_baresoil[i]);
+            sw_printf(" Esoil[%d]=%1.3f", i, sw->SoilWat.evap_baresoil[i]);
         }
-        swprintf("\n");
+        sw_printf("\n");
     }
 #endif
 
@@ -805,19 +805,19 @@ void SW_Water_Flow(SW_ALL *sw, LOG_INFO *LogInfo) {
 
 #ifdef SWDEBUG
     if (debug && sw->Model.year == debug_year && sw->Model.doy == debug_doy) {
-        swprintf("Flow (%d-%d): ETveg:", sw->Model.year, sw->Model.doy);
+        sw_printf("Flow (%d-%d): ETveg:", sw->Model.year, sw->Model.doy);
         ForEachSoilLayer(i, n_layers) {
-            swprintf(" swc[%i]=%1.3f", i, sw->SoilWat.swcBulk[Today][i]);
+            sw_printf(" swc[%i]=%1.3f", i, sw->SoilWat.swcBulk[Today][i]);
         }
-        swprintf("\n              : ETveg:");
+        sw_printf("\n              : ETveg:");
         Eveg = 0.;
         ForEachSoilLayer(i, n_layers) {
             Tveg = 0.;
             Eveg += sw->SoilWat.evap_baresoil[i];
             ForEachVegType(k) { Tveg += sw->SoilWat.transpiration[k][i]; }
-            swprintf(" Tveg[%d]=%1.3f/Eveg=%1.3f", i, Tveg, Eveg);
+            sw_printf(" Tveg[%d]=%1.3f/Eveg=%1.3f", i, Tveg, Eveg);
         }
-        swprintf("\n");
+        sw_printf("\n");
     }
 #endif
 
@@ -855,17 +855,17 @@ void SW_Water_Flow(SW_ALL *sw, LOG_INFO *LogInfo) {
 
 #ifdef SWDEBUG
     if (debug && sw->Model.year == debug_year && sw->Model.doy == debug_doy) {
-        swprintf("Flow (%d-%d): HR:", sw->Model.year, sw->Model.doy);
+        sw_printf("Flow (%d-%d): HR:", sw->Model.year, sw->Model.doy);
         ForEachSoilLayer(i, n_layers) {
-            swprintf(" swc[%i]=%1.3f", i, sw->SoilWat.swcBulk[Today][i]);
+            sw_printf(" swc[%i]=%1.3f", i, sw->SoilWat.swcBulk[Today][i]);
         }
-        swprintf("\n              : HR:");
+        sw_printf("\n              : HR:");
         ForEachSoilLayer(i, n_layers) {
             HRveg = 0.;
             ForEachVegType(k) { HRveg += sw->SoilWat.hydred[k][i]; }
-            swprintf(" HRveg[%d]=%1.3f", i, HRveg);
+            sw_printf(" HRveg[%d]=%1.3f", i, HRveg);
         }
-        swprintf("\n");
+        sw_printf("\n");
     }
 #endif
 
@@ -896,15 +896,15 @@ void SW_Water_Flow(SW_ALL *sw, LOG_INFO *LogInfo) {
 
 #ifdef SWDEBUG
     if (debug && sw->Model.year == debug_year && sw->Model.doy == debug_doy) {
-        swprintf("Flow (%d-%d): unsatperc:", sw->Model.year, sw->Model.doy);
+        sw_printf("Flow (%d-%d): unsatperc:", sw->Model.year, sw->Model.doy);
         ForEachSoilLayer(i, n_layers) {
-            swprintf(" swc[%i]=%1.3f", i, sw->SoilWat.swcBulk[Today][i]);
+            sw_printf(" swc[%i]=%1.3f", i, sw->SoilWat.swcBulk[Today][i]);
         }
-        swprintf("\n              : satperc:");
+        sw_printf("\n              : satperc:");
         ForEachSoilLayer(i, n_layers) {
-            swprintf(" perc[%d]=%1.3f", i, sw->SoilWat.drain[i]);
+            sw_printf(" perc[%d]=%1.3f", i, sw->SoilWat.drain[i]);
         }
-        swprintf("\n");
+        sw_printf("\n");
     }
 #endif
 
@@ -984,7 +984,7 @@ void SW_Water_Flow(SW_ALL *sw, LOG_INFO *LogInfo) {
     if (debug) {
         if (sw->Site.deepdrain) {
             if (!EQ(sw->SoilWat.drain[sw->Site.deep_lyr], drainout)) {
-                swprintf(
+                sw_printf(
                     "Percolation (%f) of last layer [%d] is not equal to deep "
                     "drainage (%f).\n",
                     sw->SoilWat.drain[sw->Site.deep_lyr],

@@ -116,7 +116,7 @@ void SW_OUT_set_nrow(
 
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(
+        sw_printf(
             "n(year) = %zu, n(month) = %zu, n(week) = %zu, n(day) = %zu\n",
             nrow_OUT[eSW_Year],
             nrow_OUT[eSW_Month],

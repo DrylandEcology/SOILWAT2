@@ -2188,7 +2188,7 @@ void SW_OUT_set_colnames(
 
 #ifdef SWDEBUG
     if (debug) {
-        swprintf("SW_OUT_set_colnames: set columns for 'eSW_Temp' ...");
+        sw_printf("SW_OUT_set_colnames: set columns for 'eSW_Temp' ...");
     }
 #endif
     for (i = 0; i < ncol_OUT[eSW_Temp]; i++) {
@@ -2209,7 +2209,7 @@ void SW_OUT_set_colnames(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" 'eSW_Precip' ...");
+        sw_printf(" 'eSW_Precip' ...");
     }
 #endif
     for (i = 0; i < ncol_OUT[eSW_Precip]; i++) {
@@ -2220,7 +2220,7 @@ void SW_OUT_set_colnames(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" 'eSW_SoilInf' ...");
+        sw_printf(" 'eSW_SoilInf' ...");
     }
 #endif
     for (i = 0; i < ncol_OUT[eSW_SoilInf]; i++) {
@@ -2231,7 +2231,7 @@ void SW_OUT_set_colnames(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" 'eSW_Runoff' ...");
+        sw_printf(" 'eSW_Runoff' ...");
     }
 #endif
     for (i = 0; i < ncol_OUT[eSW_Runoff]; i++) {
@@ -2242,7 +2242,7 @@ void SW_OUT_set_colnames(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" 'eSW_VWCBulk' ...");
+        sw_printf(" 'eSW_VWCBulk' ...");
     }
 #endif
     for (i = 0; i < ncol_OUT[eSW_VWCBulk]; i++) {
@@ -2253,7 +2253,7 @@ void SW_OUT_set_colnames(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" 'eSW_VWCMatric' ...");
+        sw_printf(" 'eSW_VWCMatric' ...");
     }
 #endif
     for (i = 0; i < ncol_OUT[eSW_VWCMatric]; i++) {
@@ -2264,7 +2264,7 @@ void SW_OUT_set_colnames(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" 'eSW_SWCBulk' ...");
+        sw_printf(" 'eSW_SWCBulk' ...");
     }
 #endif
     for (i = 0; i < ncol_OUT[eSW_SWCBulk]; i++) {
@@ -2275,7 +2275,7 @@ void SW_OUT_set_colnames(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" 'eSW_SWABulk' ...");
+        sw_printf(" 'eSW_SWABulk' ...");
     }
 #endif
     for (i = 0; i < ncol_OUT[eSW_SWABulk]; i++) {
@@ -2286,7 +2286,7 @@ void SW_OUT_set_colnames(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" 'eSW_SWA' ...");
+        sw_printf(" 'eSW_SWA' ...");
     }
 #endif
     for (i = 0; i < tLayers; i++) {
@@ -2306,7 +2306,7 @@ void SW_OUT_set_colnames(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" 'eSW_SWAMatric' ...");
+        sw_printf(" 'eSW_SWAMatric' ...");
     }
 #endif
     for (i = 0; i < ncol_OUT[eSW_SWAMatric]; i++) {
@@ -2317,7 +2317,7 @@ void SW_OUT_set_colnames(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" 'eSW_SWPMatric' ...");
+        sw_printf(" 'eSW_SWPMatric' ...");
     }
 #endif
     for (i = 0; i < ncol_OUT[eSW_SWPMatric]; i++) {
@@ -2328,7 +2328,7 @@ void SW_OUT_set_colnames(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" 'eSW_SurfaceWater' ...");
+        sw_printf(" 'eSW_SurfaceWater' ...");
     }
 #endif
     for (i = 0; i < ncol_OUT[eSW_SurfaceWater]; i++) {
@@ -2340,7 +2340,7 @@ void SW_OUT_set_colnames(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" 'eSW_Transp' ...");
+        sw_printf(" 'eSW_Transp' ...");
     }
 #endif
     for (i = 0; i < tLayers; i++) {
@@ -2358,7 +2358,7 @@ void SW_OUT_set_colnames(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" 'eSW_EvapSoil' ...");
+        sw_printf(" 'eSW_EvapSoil' ...");
     }
 #endif
     for (i = 0; i < ncol_OUT[eSW_EvapSoil]; i++) {
@@ -2369,7 +2369,7 @@ void SW_OUT_set_colnames(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" 'eSW_EvapSurface' ...");
+        sw_printf(" 'eSW_EvapSurface' ...");
     }
 #endif
     for (i = 0; i < NVEGTYPES + 2; i++) {
@@ -2389,7 +2389,7 @@ void SW_OUT_set_colnames(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" 'eSW_Interception' ...");
+        sw_printf(" 'eSW_Interception' ...");
     }
 #endif
     for (i = 0; i < NVEGTYPES + 2; i++) {
@@ -2402,7 +2402,7 @@ void SW_OUT_set_colnames(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" 'eSW_LyrDrain' ...");
+        sw_printf(" 'eSW_LyrDrain' ...");
     }
 #endif
     for (i = 0; i < ncol_OUT[eSW_LyrDrain]; i++) {
@@ -2413,7 +2413,7 @@ void SW_OUT_set_colnames(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" 'eSW_HydRed' ...");
+        sw_printf(" 'eSW_HydRed' ...");
     }
 #endif
     for (i = 0; i < tLayers; i++) {
@@ -2429,7 +2429,7 @@ void SW_OUT_set_colnames(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" 'eSW_AET' ...");
+        sw_printf(" 'eSW_AET' ...");
     }
 #endif
     for (i = 0; i < ncol_OUT[eSW_AET]; i++) {
@@ -2440,7 +2440,7 @@ void SW_OUT_set_colnames(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" 'eSW_PET' ...");
+        sw_printf(" 'eSW_PET' ...");
     }
 #endif
     for (i = 0; i < ncol_OUT[eSW_PET]; i++) {
@@ -2451,7 +2451,7 @@ void SW_OUT_set_colnames(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" 'eSW_WetDays' ...");
+        sw_printf(" 'eSW_WetDays' ...");
     }
 #endif
     for (i = 0; i < ncol_OUT[eSW_WetDays]; i++) {
@@ -2462,7 +2462,7 @@ void SW_OUT_set_colnames(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" 'eSW_SnowPack' ...");
+        sw_printf(" 'eSW_SnowPack' ...");
     }
 #endif
     for (i = 0; i < ncol_OUT[eSW_SnowPack]; i++) {
@@ -2474,7 +2474,7 @@ void SW_OUT_set_colnames(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" 'eSW_DeepSWC' ...");
+        sw_printf(" 'eSW_DeepSWC' ...");
     }
 #endif
     for (i = 0; i < ncol_OUT[eSW_DeepSWC]; i++) {
@@ -2485,7 +2485,7 @@ void SW_OUT_set_colnames(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" 'eSW_SoilTemp' ...");
+        sw_printf(" 'eSW_SoilTemp' ...");
     }
 #endif
     j = 0; // Layer variable for the next for-loop, 0 is first layer not surface
@@ -2511,7 +2511,7 @@ void SW_OUT_set_colnames(
 
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" 'eSW_Frozen' ...");
+        sw_printf(" 'eSW_Frozen' ...");
     }
 #endif
     for (i = 0; i < ncol_OUT[eSW_Frozen]; i++) {
@@ -2522,7 +2522,7 @@ void SW_OUT_set_colnames(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" 'eSW_Estab' ...");
+        sw_printf(" 'eSW_Estab' ...");
     }
 #endif
     for (i = 0; i < ncol_OUT[eSW_Estab]; i++) {
@@ -2533,7 +2533,7 @@ void SW_OUT_set_colnames(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" 'eSW_CO2Effects' ...");
+        sw_printf(" 'eSW_CO2Effects' ...");
     }
 #endif
     for (i = 0; i < 2; i++) {
@@ -2551,7 +2551,7 @@ void SW_OUT_set_colnames(
 
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" 'eSW_Biomass' ...");
+        sw_printf(" 'eSW_Biomass' ...");
     }
 #endif
     i = 0;
@@ -2597,7 +2597,7 @@ void SW_OUT_set_colnames(
     }
 
     if (debug) {
-        swprintf(" completed.\n");
+        sw_printf(" completed.\n");
     }
 #endif
 }
@@ -3239,7 +3239,7 @@ void SW_OUT_write_today(
 
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(
+        sw_printf(
             "'SW_OUT_write_today': %dyr-%dmon-%dwk-%ddoy: ",
             sw->Model.year,
             sw->Model.month,
@@ -3277,7 +3277,7 @@ void SW_OUT_write_today(
     ForEachOutKey(k) {
 #ifdef SWDEBUG
         if (debug) {
-            swprintf("key=%d=%s: ", k, key2str[k]);
+            sw_printf("key=%d=%s: ", k, key2str[k]);
         }
 #endif
 
@@ -3304,7 +3304,7 @@ void SW_OUT_write_today(
 #if defined(SW_OUTTEXT)
 #ifdef SWDEBUG
             if (debug) {
-                swprintf(
+                sw_printf(
                     " call pfunc_text(%d=%s))", outPeriod, pd2str[outPeriod]
                 );
             }
@@ -3317,7 +3317,7 @@ void SW_OUT_write_today(
 #elif defined(RSOILWAT) || defined(SWNETCDF)
 #ifdef SWDEBUG
             if (debug) {
-                swprintf(
+                sw_printf(
                     " call pfunc_mem(%d=%s))", outPeriod, pd2str[outPeriod]
                 );
             }
@@ -3330,7 +3330,7 @@ void SW_OUT_write_today(
             if (use_help_SXW) {
 #ifdef SWDEBUG
                 if (debug) {
-                    swprintf(
+                    sw_printf(
                         " call pfunc_SXW(%d=%s))",
                         sw->GenOutput.timeSteps_SXW[k][i],
                         pd2str[sw->GenOutput.timeSteps_SXW[k][i]]
@@ -3348,7 +3348,7 @@ void SW_OUT_write_today(
                 if (sw->GenOutput.prepare_IterationSummary) {
 #ifdef SWDEBUG
                     if (debug) {
-                        swprintf(
+                        sw_printf(
                             " call pfunc_agg(%d=%s))",
                             outPeriod,
                             pd2str[outPeriod]
@@ -3363,7 +3363,7 @@ void SW_OUT_write_today(
                     outPeriod = sw->GenOutput.timeSteps[k][i];
 #ifdef SWDEBUG
                     if (debug) {
-                        swprintf(
+                        sw_printf(
                             " call pfunc_text(%d=%s))",
                             outPeriod,
                             pd2str[outPeriod]
@@ -3378,7 +3378,7 @@ void SW_OUT_write_today(
 
 #ifdef SWDEBUG
             if (debug) {
-                swprintf(" ... ok");
+                sw_printf(" ... ok");
             }
 #endif
 
@@ -3480,7 +3480,7 @@ void SW_OUT_write_today(
 
 #ifdef SWDEBUG
     if (debug) {
-        swprintf("'SW_OUT_write_today': completed\n");
+        sw_printf("'SW_OUT_write_today': completed\n");
     }
 #endif
 }

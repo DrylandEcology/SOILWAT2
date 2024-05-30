@@ -20,7 +20,7 @@ static void assert_decreasing_SWPcrit(SW_VEGPROD *SW_VegProd) {
         vegtype = SW_VegProd->rank_SWPcrits[rank];
 
         /*
-        swprintf("Rank=%d is vegtype=%d with SWPcrit=%f\n",
+        sw_printf("Rank=%d is vegtype=%d with SWPcrit=%f\n",
                 rank, vegtype,
                 SW_VegProd.critSoilWater[vegtype]);
         */

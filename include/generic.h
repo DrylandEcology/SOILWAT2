@@ -144,9 +144,9 @@ typedef unsigned char byte;
 /** Print macro that works correctly both for rSOILWAT2 and for
  * SOILWAT2-standalone. Use instead of (R)printf */
 #ifdef RSOILWAT
-#define swprintf Rprintf
+#define sw_printf Rprintf
 #else
-#define swprintf printf
+#define sw_printf printf
 #endif
 
 

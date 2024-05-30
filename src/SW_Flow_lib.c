@@ -1226,7 +1226,7 @@ void hydraulic_redistribution(
 
 #ifdef SWDEBUG
     if (debug) {
-        swprintf("hydred[%d-%d/veg(%d)]: \n", year, doy, vegk);
+        sw_printf("hydred[%d-%d/veg(%d)]: \n", year, doy, vegk);
     }
 #endif
 
@@ -1306,7 +1306,7 @@ void hydraulic_redistribution(
 
 #ifdef SWDEBUG
                 if (debug) {
-                    swprintf(
+                    sw_printf(
                         "hd[sl=%d,%d|so=%d,re=%d]=%+.6f cm: "
                         "so|re: w=%4.1f|%4.1f cm, "
                         "swc=%.4f|%.4f cm, "
@@ -1392,7 +1392,7 @@ void hydraulic_redistribution(
                         hdnet2 += hydredmat[i][j];
                     }
                     if (!EQ(hdnet, hdnet2)) {
-                        swprintf(
+                        sw_printf(
                             "hd[sl=%d|it=%d]: pre=%+.6f (hdin=%.6f, "
                             "hdout=%.6f), "
                             "post=%+.6f, swa=%.6f, swc=%.4f\n",
@@ -1540,7 +1540,7 @@ void lyrTemp_to_lyrSoil_temperature(
 
 #ifdef SWDEBUG
         if (debug) {
-            swprintf(
+            sw_printf(
                 "\nConf T : i=%i, j=%i, n=%i, avgLyrTemp[%i]=%2.2f, acc=%2.2f",
                 i,
                 j,
@@ -1617,7 +1617,7 @@ void lyrSoil_to_lyrTemp_temperature(
 #ifdef SWDEBUG
         if (debug) {
 
-            swprintf(
+            sw_printf(
                 "\nConf T: i=%i, j1=%i, j2=%i, avgLyrTempR[%i]=%2.2f, "
                 "avgLyrTemp2[%i]=%2.2f, avgLyrTemp2[%i]=%2.2f, "
                 "depthT[%i]=%2.2f, depthS2[%i]=%2.2f, depthS2[%i]=%2.2f",
@@ -1645,7 +1645,7 @@ void lyrSoil_to_lyrTemp_temperature(
 
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(
+        sw_printf(
             "\nConf T: avgLyrTempR[%i]=%2.2f, avgLyrTempR[%i]=%2.2f",
             i,
             avgLyrTempR[i],
@@ -1711,7 +1711,7 @@ void lyrSoil_to_lyrTemp(
 
 #ifdef SWDEBUG
         if (debug) {
-            swprintf(
+            sw_printf(
                 "\n i = %u, j = %u, tempLyrVal=%2.2f,  soilLyrVal = %2.2f, "
                 "cor[i][j] = %2.2f, ratio = %2.2f, acc=%2.2f,sum=%2.2f",
                 i,
@@ -1809,7 +1809,7 @@ void SW_ST_setup_run(
     if (!(*soil_temp_init)) {
 #ifdef SWDEBUG
         if (debug) {
-            swprintf("\nCalling soil_temperature_setup\n");
+            sw_printf("\nCalling soil_temperature_setup\n");
         }
 #endif
 
@@ -1923,7 +1923,7 @@ void soil_temperature_setup(
 
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(
+        sw_printf(
             "\nInit soil layer profile: nlyrs=%i, sTconst=%2.2F;"
             "\nSoil temperature profile: deltaX=%F, theMaxDepth=%F, nRgr=%i\n",
             nlyrs,
@@ -1975,7 +1975,7 @@ void soil_temperature_setup(
         SW_StRegValues->depthsR[i] = acc;
 #ifdef SWDEBUG
         if (debug) {
-            swprintf("\n i=%u, depthsR = %f", i, SW_StRegValues->depthsR[i]);
+            sw_printf("\n i=%u, depthsR = %f", i, SW_StRegValues->depthsR[i]);
         }
 #endif
     }
@@ -2047,9 +2047,9 @@ void soil_temperature_setup(
 #ifdef SWDEBUG
     if (debug) {
         for (i = 0; i < nRgr + 1; i++) {
-            swprintf("\ntl_by_sl");
+            sw_printf("\ntl_by_sl");
             for (j = 0; j < nlyrs + 1; j++) {
-                swprintf(
+                sw_printf(
                     "[%i,%i]=%3.2f ", i, j, SW_StRegValues->tlyrs_by_slyrs[i][j]
                 );
             }
@@ -2115,7 +2115,7 @@ void soil_temperature_setup(
 #ifdef SWDEBUG
     if (debug) {
         for (j = 0; j < nlyrs; j++) {
-            swprintf(
+            sw_printf(
                 "\nConv Soil depth[%i]=%2.2f, fc=%2.2f, wp=%2.2f, bDens=%2.2f, "
                 "oldT=%2.2f",
                 j,
@@ -2127,12 +2127,12 @@ void soil_temperature_setup(
             );
         }
 
-        swprintf(
+        sw_printf(
             "\nConv ST oldSurfaceTR=%2.2f", SW_StRegValues->oldavgLyrTempR[0]
         );
 
         for (i = 0; i < nRgr + 1; i++) {
-            swprintf(
+            sw_printf(
                 "\nConv ST depth[%i]=%2.2f, fcR=%2.2f, wpR=%2.2f, "
                 "bDensR=%2.2f, oldTR=%2.2f",
                 i,
@@ -2449,7 +2449,7 @@ void soil_temperature_today(
 
 #ifdef SWDEBUG
                 if (debug) {
-                    swprintf(
+                    sw_printf(
                         "step=%d/%d (dTime=%.0f), sl=%d/%d: \n"
                         "\t* pe(%.3f) = (%.3f) / (%.3f) = (vwcR(%.3f) - "
                         "wpR(%.3f)) / (fcR(%.3f) - wpR(%.3f))\n"
@@ -2534,7 +2534,7 @@ void soil_temperature_today(
 
 #ifdef SWDEBUG
                 if (debug) {
-                    swprintf(
+                    sw_printf(
                         "\t* d(Tsoil[%d]) = %.2f from\n"
                         "\t\t* dT/dX2 = %.1f = dt(%.0f) / dX^2(%.0f)\n"
                         "\t\t* p2 = %.4f = Ts[i-1, t](%.2f) - 2 * Ts[i, "
@@ -2620,7 +2620,7 @@ void soil_temperature_today(
 
 #ifdef SWDEBUG
             if (debug) {
-                swprintf(
+                sw_printf(
                     "layer=%d/depth=%.0f: "
                     "range(Tsoil)=%.2f = range(Tsurface)(%.2f) * damp(%.4f) "
                     "(mean(alpha)=%.4f)\n",
@@ -2891,7 +2891,7 @@ void soil_temperature(
 
 #ifdef SWDEBUG
     if (debug) {
-        swprintf("\n\nNew call to soil_temperature()");
+        sw_printf("\n\nNew call to soil_temperature()");
     }
 #endif
 
@@ -2915,7 +2915,7 @@ void soil_temperature(
 
 #ifdef SWDEBUG
         if (debug) {
-            swprintf(
+            sw_printf(
                 "\nTsurface (min/mean/max) = %f/%f/%f (underneath snowpack)\n",
                 *surface_min,
                 *surfaceAvg,
@@ -2949,7 +2949,7 @@ void soil_temperature(
                                      (1. - (biomass / bmLimiter)));
 #ifdef SWDEBUG
             if (debug) {
-                swprintf(
+                sw_printf(
                     "\nTsurface (min/mean/max) = %f/%f/%f "
                     "\n  mean = %f + (%f * %f * (1 - (%f / %f)) * (1 - (%f / "
                     "%f)) ) )\n",
@@ -2973,7 +2973,7 @@ void soil_temperature(
                 airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3);
 #ifdef SWDEBUG
             if (debug) {
-                swprintf(
+                sw_printf(
                     "\nTsurface (min/mean/max) = %f/%f/%f "
                     "\n  mean= %f + ((%f * (%f - %f)) / %f)\n",
                     *surface_min,
@@ -3009,7 +3009,7 @@ void soil_temperature(
 
 #ifdef SWDEBUG
         if (debug) {
-            swprintf("\n");
+            sw_printf("\n");
         }
 #endif
 
@@ -3031,9 +3031,9 @@ void soil_temperature(
 
 #ifdef SWDEBUG
     if (debug) {
-        swprintf("\nregression values:");
+        sw_printf("\nregression values:");
         for (i = 0; i < nRgr; i++) {
-            swprintf(
+            sw_printf(
                 "\nk %2d width %f depth %f vwcR %f fcR %f wpR %f "
                 "oldavgLyrTempR %f bDensityR %f",
                 i,
@@ -3047,9 +3047,9 @@ void soil_temperature(
             );
         }
 
-        swprintf("\nlayer values:");
+        sw_printf("\nlayer values:");
         for (i = 0; i < nlyrs; i++) {
-            swprintf(
+            sw_printf(
                 "\ni %2d width %f depth %f vwc %f bDensity %f",
                 i,
                 width[i],
@@ -3058,7 +3058,7 @@ void soil_temperature(
                 bDensity[i]
             );
         }
-        swprintf("\n");
+        sw_printf("\n");
     }
 #endif
 
@@ -3102,9 +3102,9 @@ void soil_temperature(
 
 #ifdef SWDEBUG
     if (debug) {
-        swprintf("\nSoil temperature profile values:");
+        sw_printf("\nSoil temperature profile values:");
         for (i = 0; i <= nRgr + 1; i++) {
-            swprintf(
+            sw_printf(
                 "\nk %d oldavgLyrTempR %f avgLyrTempR %f depth %f",
                 i,
                 SW_StRegValues->oldavgLyrTempR[i],
@@ -3112,7 +3112,7 @@ void soil_temperature(
                 (i * deltaX)
             );
         }
-        swprintf("\n");
+        sw_printf("\n");
     }
 #endif
 
@@ -3172,16 +3172,16 @@ void soil_temperature(
 
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(
+        sw_printf(
             "\navgLyrTemp %f surface; soil temperature adjusted by "
             "freeze/thaw: %i",
             *surfaceAvg,
             sFadjusted_avgLyrTemp
         );
 
-        swprintf("\nSoil temperature profile values:");
+        sw_printf("\nSoil temperature profile values:");
         for (i = 0; i <= nRgr + 1; i++) {
-            swprintf(
+            sw_printf(
                 "\nk %d oldavgLyrTempR %f avgLyrTempR %f depth %f",
                 i,
                 SW_StRegValues->oldavgLyrTempR[i],
@@ -3190,9 +3190,9 @@ void soil_temperature(
             );
         }
 
-        swprintf("\nSoil profile layer temperatures:");
+        sw_printf("\nSoil profile layer temperatures:");
         for (i = 0; i < nlyrs; i++) {
-            swprintf(
+            sw_printf(
                 "\ni %d oldTemp %f avgLyrTemp %f swc %f, swc_sat %f depth %f "
                 "frozen %f",
                 i,
@@ -3205,7 +3205,7 @@ void soil_temperature(
             );
         }
 
-        swprintf("\n");
+        sw_printf("\n");
     }
 #endif
 

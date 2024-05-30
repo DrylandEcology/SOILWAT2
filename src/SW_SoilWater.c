@@ -237,7 +237,7 @@ static double itp_FXW_for_phi(double theta, double *swrcp, LOG_INFO *LogInfo) {
 
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(
+        sw_printf(
             "\nitp_FXW_for_phi(theta=%f): init: "
             "f(a)=%f, f(b)=%f, n_max=%d, k1=%f\n",
             theta,
@@ -279,7 +279,7 @@ static double itp_FXW_for_phi(double theta, double *swrcp, LOG_INFO *LogInfo) {
 
 #ifdef SWDEBUG
         if (debug) {
-            swprintf(
+            sw_printf(
                 "j=%d:"
                 "\ta=%f, b=%f, y_a=%f, y_b=%f,\n"
                 "\tr=%f, delta=%f, x_half=%f, x_f=%f, x_t=%f (s=%.0f),\n"
@@ -351,7 +351,7 @@ static double itp_FXW_for_phi(double theta, double *swrcp, LOG_INFO *LogInfo) {
 #ifdef SWDEBUG
     if (debug) {
         if (!missing(phi)) {
-            swprintf(
+            sw_printf(
                 "itp_FXW_for_phi() = phi = %f [bar]: converged in j=%d/%d "
                 "steps\n",
                 phi,
@@ -359,7 +359,7 @@ static double itp_FXW_for_phi(double theta, double *swrcp, LOG_INFO *LogInfo) {
                 n_max
             );
         } else {
-            swprintf(
+            sw_printf(
                 "itp_FXW_for_phi(): failed to converged in j=%d/%d steps\n",
                 j,
                 n_max
@@ -483,7 +483,7 @@ void SW_WaterBalance_Checks(SW_ALL *sw, LOG_INFO *LogInfo) {
     if (!LE(sw->SoilWat.aet, sw->SoilWat.pet)) {
         sw->SoilWat.wbError[0]++;
         if (debugi[0]) {
-            swprintf(
+            sw_printf(
                 "%s: aet=%f, pet=%f\n", flag, sw->SoilWat.aet, sw->SoilWat.pet
             );
         }
@@ -502,7 +502,7 @@ void SW_WaterBalance_Checks(SW_ALL *sw, LOG_INFO *LogInfo) {
     if (!EQ_w_tol(sw->SoilWat.aet, rhs, wbtol)) {
         sw->SoilWat.wbError[1]++;
         if (debugi[1]) {
-            swprintf(
+            sw_printf(
                 "%s: AET(%f) == %f == Etotal(%f) + Ttotal(%f)\n",
                 flag,
                 sw->SoilWat.aet,
@@ -541,7 +541,7 @@ void SW_WaterBalance_Checks(SW_ALL *sw, LOG_INFO *LogInfo) {
     if (!EQ_w_tol(Etotal, rhs, wbtol)) {
         sw->SoilWat.wbError[3]++;
         if (debugi[3]) {
-            swprintf(
+            sw_printf(
                 "%s: Etotal(%f) == %f == Esoil(%f) + Eponded(%f) + Eveg(%f) + "
                 "Elitter(%f) + Esnow(%f)\n",
                 flag,
@@ -570,7 +570,7 @@ void SW_WaterBalance_Checks(SW_ALL *sw, LOG_INFO *LogInfo) {
     if (!EQ_w_tol(Etotalsurf, rhs, wbtol)) {
         sw->SoilWat.wbError[4]++;
         if (debugi[4]) {
-            swprintf(
+            sw_printf(
                 "%s: Esurf(%f) == %f == Eponded(%f) + Eveg(%f) + Elitter(%f)\n",
                 flag,
                 Etotalsurf,
@@ -601,7 +601,7 @@ void SW_WaterBalance_Checks(SW_ALL *sw, LOG_INFO *LogInfo) {
     if (!EQ_w_tol(infiltration, rhs, wbtol)) {
         sw->SoilWat.wbError[5]++;
         if (debugi[5]) {
-            swprintf(
+            sw_printf(
                 "%s: inf(%f) == %f == rain(%f) + snowmelt(%f) + runon(%f) - "
                 "(runoff(%f) + intercepted(%f) + delta_surfaceWater(%f) + "
                 "Eponded(%f))\n",
@@ -634,7 +634,7 @@ void SW_WaterBalance_Checks(SW_ALL *sw, LOG_INFO *LogInfo) {
     if (!EQ_w_tol(lhs, rhs, wbtol)) {
         sw->SoilWat.wbError[6]++;
         if (debugi[6]) {
-            swprintf(
+            sw_printf(
                 "%s: Ttotal(%f) + Esoil(%f) == %f == %f == inf(%f) - "
                 "(deepDrainage(%f) + delta_swc(%f))\n",
                 flag,
@@ -669,7 +669,7 @@ void SW_WaterBalance_Checks(SW_ALL *sw, LOG_INFO *LogInfo) {
         if (!EQ_w_tol(delta_swcj[i], rhs, wbtol)) {
             sw->SoilWat.wbError[7]++;
             if (debugi[7]) {
-                swprintf(
+                sw_printf(
                     "%s sl=%d: delta_swc(%f) == %f == perc_in(%f) + hydred(%f) "
                     "- (perc_out(%f) + Ttot(%f) + Esoil(%f))\n",
                     flag,
@@ -700,7 +700,7 @@ void SW_WaterBalance_Checks(SW_ALL *sw, LOG_INFO *LogInfo) {
             GT(sw->SoilWat.swcBulk[Today][i], sw->Site.swcBulk_saturated[i])) {
             sw->SoilWat.wbError[8]++;
             if (debugi[8]) {
-                swprintf(
+                sw_printf(
                     "%s sl=%d: swc_min(%f) <= swc(%f) <= swc_sat(%f)\n",
                     flag,
                     i,
@@ -862,7 +862,7 @@ void SW_SWC_water_flow(SW_ALL *sw, LOG_INFO *LogInfo) {
 
 #ifdef SWDEBUG
             if (debug) {
-                swprintf(
+                sw_printf(
                     "\n'SW_SWC_water_flow': adjust SWC from historic inputs.\n"
                 );
             }
@@ -892,7 +892,7 @@ void SW_SWC_water_flow(SW_ALL *sw, LOG_INFO *LogInfo) {
     } else {
 #ifdef SWDEBUG
         if (debug) {
-            swprintf("\n'SW_SWC_water_flow': call 'SW_Water_Flow'.\n");
+            sw_printf("\n'SW_SWC_water_flow': call 'SW_Water_Flow'.\n");
         }
 #endif
         SW_Water_Flow(sw, LogInfo);
@@ -903,7 +903,7 @@ void SW_SWC_water_flow(SW_ALL *sw, LOG_INFO *LogInfo) {
 
 #ifdef SWDEBUG
     if (debug) {
-        swprintf("\n'SW_SWC_water_flow': check water balance.\n");
+        sw_printf("\n'SW_SWC_water_flow': check water balance.\n");
     }
     SW_WaterBalance_Checks(sw, LogInfo);
     if (LogInfo->stopRun) {
@@ -911,7 +911,7 @@ void SW_SWC_water_flow(SW_ALL *sw, LOG_INFO *LogInfo) {
     }
 
     if (debug) {
-        swprintf("\n'SW_SWC_water_flow': determine wet soil layers.\n");
+        sw_printf("\n'SW_SWC_water_flow': determine wet soil layers.\n");
     }
 #endif
     ForEachSoilLayer(i, sw->Site.n_layers) sw->SoilWat.is_wet[i] =

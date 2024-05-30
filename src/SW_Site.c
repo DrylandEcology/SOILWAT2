@@ -1436,7 +1436,7 @@ void SW_SIT_read(
             SW_Carbon->use_bio_mult = itob(atoi(inbuf));
 #ifdef SWDEBUG
             if (debug) {
-                swprintf(
+                sw_printf(
                     "'SW_SIT_read': use_bio_mult = %d\n",
                     SW_Carbon->use_bio_mult
                 );
@@ -1447,7 +1447,7 @@ void SW_SIT_read(
             SW_Carbon->use_wue_mult = itob(atoi(inbuf));
 #ifdef SWDEBUG
             if (debug) {
-                swprintf(
+                sw_printf(
                     "'SW_SIT_read': use_wue_mult = %d\n",
                     SW_Carbon->use_wue_mult
                 );
@@ -1458,7 +1458,9 @@ void SW_SIT_read(
             strcpy(SW_Carbon->scenario, inbuf);
 #ifdef SWDEBUG
             if (debug) {
-                swprintf("'SW_SIT_read': scenario = %s\n", SW_Carbon->scenario);
+                sw_printf(
+                    "'SW_SIT_read': scenario = %s\n", SW_Carbon->scenario
+                );
             }
 #endif
             break;
@@ -2285,7 +2287,7 @@ void SW_SIT_init_run(
 
 #ifdef SWDEBUG
         if (debug) {
-            swprintf(
+            sw_printf(
                 "L[%d] swcmin=%f = swpmin=%f\n",
                 s,
                 SW_Site->swcBulk_min[s],
@@ -2295,7 +2297,7 @@ void SW_SIT_init_run(
                 return; // Exit function prematurely due to error
             }
 
-            swprintf(
+            sw_printf(
                 "L[%d] SWC(HalfWiltpt)=%f = swp(hw)=%f\n",
                 s,
                 SW_Site->swcBulk_halfwiltpt[s],

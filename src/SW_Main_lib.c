@@ -38,7 +38,7 @@
 @brief Print usage and command line options
 */
 static void sw_print_usage(void) {
-    swprintf(
+    sw_printf(
         "Ecosystem water simulation model SOILWAT2\n"
         "More details at https://github.com/Burke-Lauenroth-Lab/SOILWAT2\n"
         "Usage: ./SOILWAT2 [-d startdir] [-f files.in] [-e] [-q] [-v] [-h] "
@@ -65,9 +65,9 @@ static void sw_print_usage(void) {
 @brief Print version information
 */
 void sw_print_version(void) {
-    swprintf("SOILWAT2 version: %s\n", SW2_VERSION);
+    sw_printf("SOILWAT2 version: %s\n", SW2_VERSION);
 #ifndef RSOILWAT
-    swprintf(
+    sw_printf(
         "Compiled        : by %s, on %s, on %s %s\n",
         USERNAME,
         HOSTNAME,

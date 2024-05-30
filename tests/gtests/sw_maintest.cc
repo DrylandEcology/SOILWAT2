@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
 
     // Emulate 'sw_init_args()'
     if (!ChDir(dir_test)) {
-        swprintf("Invalid project directory (%s)", dir_test);
+        sw_printf("Invalid project directory (%s)", dir_test);
     }
 
     setup_testGlobalSoilwatTemplate();

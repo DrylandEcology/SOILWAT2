@@ -248,7 +248,7 @@ void SW_CTL_main(
     for (*cur_yr = sw->Model.startyr; *cur_yr <= sw->Model.endyr; (*cur_yr)++) {
 #ifdef SWDEBUG
         if (debug) {
-            swprintf("\n'SW_CTL_main': simulate year = %d\n", *cur_yr);
+            sw_printf("\n'SW_CTL_main': simulate year = %d\n", *cur_yr);
         }
 #endif
 
@@ -623,7 +623,7 @@ void SW_CTL_run_current_year(
 
 #ifdef SWDEBUG
     if (debug) {
-        swprintf("\n'SW_CTL_run_current_year': begin new year\n");
+        sw_printf("\n'SW_CTL_run_current_year': begin new year\n");
     }
 #endif
     _begin_year(sw, LogInfo);
@@ -634,7 +634,7 @@ void SW_CTL_run_current_year(
     for (*doy = sw->Model.firstdoy; *doy <= sw->Model.lastdoy; (*doy)++) {
 #ifdef SWDEBUG
         if (debug) {
-            swprintf("\t: begin doy = %d ... ", *doy);
+            sw_printf("\t: begin doy = %d ... ", *doy);
         }
 #endif
         _begin_day(sw, LogInfo);
@@ -644,7 +644,7 @@ void SW_CTL_run_current_year(
 
 #ifdef SWDEBUG
         if (debug) {
-            swprintf("simulate water ... ");
+            sw_printf("simulate water ... ");
         }
 #endif
         SW_SWC_water_flow(sw, LogInfo);
@@ -675,7 +675,7 @@ void SW_CTL_run_current_year(
 
 #ifdef SWDEBUG
         if (debug) {
-            swprintf("ending day ... ");
+            sw_printf("ending day ... ");
         }
 #endif
         _end_day(sw, SW_OutputPtrs, LogInfo);
@@ -685,14 +685,14 @@ void SW_CTL_run_current_year(
 
 #ifdef SWDEBUG
         if (debug) {
-            swprintf("doy = %d completed.\n", *doy);
+            sw_printf("doy = %d completed.\n", *doy);
         }
 #endif
     }
 
 #ifdef SWDEBUG
     if (debug) {
-        swprintf("'SW_CTL_run_current_year': flush output\n");
+        sw_printf("'SW_CTL_run_current_year': flush output\n");
     }
 #endif
     if (sw->Model.doOutput) {
@@ -705,7 +705,7 @@ void SW_CTL_run_current_year(
     }
 
     if (debug) {
-        swprintf("'SW_CTL_run_current_year': completed.\n");
+        sw_printf("'SW_CTL_run_current_year': completed.\n");
     }
 #endif
 }
@@ -755,7 +755,7 @@ void SW_CTL_run_spinup(SW_ALL *sw, LOG_INFO *LogInfo) {
 
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(
+        sw_printf(
             "'SW_CTL_run_spinup': "
             "mode = %d, duration = %d (# years), "
             "scope = %d [# calendar years out of %d-%d]\n",
@@ -814,7 +814,7 @@ void SW_CTL_run_spinup(SW_ALL *sw, LOG_INFO *LogInfo) {
 
 #ifdef SWDEBUG
         if (debug) {
-            swprintf(
+            sw_printf(
                 "'SW_CTL_run_spinup': simulate year = %d | %d\n",
                 yrIdx + 1,
                 *cur_yr
@@ -855,7 +855,7 @@ void SW_CTL_read_inputs_from_disk(
 
 #ifdef SWDEBUG
     if (debug) {
-        swprintf("'SW_CTL_read_inputs_from_disk': Read input from disk:");
+        sw_printf("'SW_CTL_read_inputs_from_disk': Read input from disk:");
     }
 #endif
 
@@ -865,7 +865,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" > 'model'");
+        sw_printf(" > 'model'");
     }
 #endif
 
@@ -877,7 +877,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" > 'weather setup'");
+        sw_printf(" > 'weather setup'");
     }
 #endif
 
@@ -887,7 +887,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" > 'climate'");
+        sw_printf(" > 'climate'");
     }
 #endif
 
@@ -904,7 +904,7 @@ void SW_CTL_read_inputs_from_disk(
         }
 #ifdef SWDEBUG
         if (debug) {
-            swprintf(" > 'weather generator'");
+            sw_printf(" > 'weather generator'");
         }
 #endif
     }
@@ -915,7 +915,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" > 'weather read'");
+        sw_printf(" > 'weather read'");
     }
 #endif
 
@@ -925,7 +925,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" > 'veg'");
+        sw_printf(" > 'veg'");
     }
 #endif
 
@@ -935,7 +935,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" > 'site'");
+        sw_printf(" > 'site'");
     }
 #endif
 
@@ -945,7 +945,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #ifdef RSWDEBUG
     if (debug) {
-        swprintf(" > 'soils'");
+        sw_printf(" > 'soils'");
     }
 #endif
 
@@ -955,7 +955,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" > 'swrc parameters'");
+        sw_printf(" > 'swrc parameters'");
     }
 #endif
 
@@ -965,7 +965,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" > 'establishment'");
+        sw_printf(" > 'establishment'");
     }
 #endif
 
@@ -981,7 +981,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" > 'ouput'");
+        sw_printf(" > 'ouput'");
     }
 #endif
 
@@ -991,7 +991,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(" > 'CO2'");
+        sw_printf(" > 'CO2'");
     }
 #endif
 
@@ -1001,10 +1001,10 @@ void SW_CTL_read_inputs_from_disk(
         return; // Exit function prematurely due to error
     }
     if (debug) {
-        swprintf(" > 'swc'");
+        sw_printf(" > 'swc'");
     }
     if (debug) {
-        swprintf(" completed.\n");
+        sw_printf(" completed.\n");
     }
 #endif
 }
@@ -1054,7 +1054,7 @@ void SW_CTL_run_sw(
 // Run simulation for suid
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(
+        sw_printf(
             "SW_CTL_run_sw(): suid = %zu/%zu, lon/lat = (%f, %f)\n",
             ncSuid[0],
             ncSuid[1],

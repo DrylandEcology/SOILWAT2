@@ -118,7 +118,7 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
 
 #ifdef SWDEBUG
         if (debug) {
-            swprintf(
+            sw_printf(
                 "'SW_F_read': line = %d/%d: %s\n", lineno, eEndFile, inbuf
             );
         }

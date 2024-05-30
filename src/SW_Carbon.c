@@ -74,8 +74,8 @@ void SW_CBN_read(
     if (!SW_Carbon->use_bio_mult && !SW_Carbon->use_wue_mult) {
 #ifdef SWDEBUG
         if (debug) {
-            swprintf("'SW_CBN_read': CO2-effects are turned off; don't read "
-                     "CO2-concentration data from file.\n");
+            sw_printf("'SW_CBN_read': CO2-effects are turned off; don't read "
+                      "CO2-concentration data from file.\n");
         }
 #endif
         return; // Exit function prematurely due to error
@@ -103,7 +103,7 @@ void SW_CBN_read(
 
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(
+        sw_printf(
             "'SW_CBN_read': start reading CO2-concentration data from file.\n"
         );
     }
@@ -112,7 +112,7 @@ void SW_CBN_read(
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
 #ifdef SWDEBUG
         if (debug) {
-            swprintf("\ninbuf = %s", inbuf);
+            sw_printf("\ninbuf = %s", inbuf);
         }
 #endif
 
@@ -154,7 +154,7 @@ void SW_CBN_read(
         SW_Carbon->ppm[year] = ppm;
 #ifdef SWDEBUG
         if (debug) {
-            swprintf(
+            sw_printf(
                 "  ==> SW_Carbon->ppm[%d] = %3.2f", year, SW_Carbon->ppm[year]
             );
         }
@@ -294,7 +294,7 @@ void SW_CBN_init_run(
 
 #ifdef SWDEBUG
         if (debug) {
-            swprintf(
+            sw_printf(
                 "Shrub: use%d: bio_mult[%d] = %1.3f / coeff1 = %1.3f / coeff2 "
                 "= %1.3f / ppm = %3.2f\n",
                 SW_Carbon->use_bio_mult,

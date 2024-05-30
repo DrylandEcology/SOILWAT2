@@ -231,7 +231,7 @@ void sw_message(const char *msg) {
     char timeString[21];
     timeStringISO8601(timeString, sizeof timeString);
 
-    swprintf("SOILWAT2 (%s) %s\n", timeString, msg);
+    sw_printf("SOILWAT2 (%s) %s\n", timeString, msg);
 }
 
 /**************************************************************/

@@ -867,7 +867,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
 
     // Expect that sTempInitR is updated to sTempR for the next day
     for (k = 0; k <= nRgr + 1; k++) {
-        // swprintf("\n k %u, newoldtempR %f", k,
+        // sw_printf("\n k %u, newoldtempR %f", k,
         // SW_StRegValues.oldavgLyrTempR[k]);
         EXPECT_NE(SW_StRegValues.oldavgLyrTempR[k], SW_MISSING);
     }
@@ -1019,7 +1019,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
         SW_Site.stDeltaX = 15;
         SW_Site.stMaxDepth = 990.;
 
-        // swprintf("\n i %u, bDensity %f, swc_sat %f, fc %f, swc %f,  wp %f",
+        // sw_printf("\n i %u, bDensity %f, swc_sat %f, fc %f, swc %f,  wp %f",
         //   i, bDensity2[i],  swc_sat2[i], fc2[i], swc2[i], wp2[i] );
     }
 
@@ -1224,14 +1224,14 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
     EXPECT_EQ(MAX_LAYERS, resultValue2);
 
     for (k = 0; k < nlyrs2; k++) {
-        // swprintf("\n k %u, sTemp3 %f", k, sTemp3[k]);
+        // sw_printf("\n k %u, sTemp3 %f", k, sTemp3[k]);
         EXPECT_GT(sTemp3[k], -100); // Sense check
         EXPECT_LT(sTemp3[k], 100);  // Sense check&
     }
 
     // Expect that sTempInitR is updated to sTempR for the next day
     for (k = 0; k <= nRgr + 1; k++) {
-        // swprintf("\n k %u, newoldtempR %f", k,
+        // sw_printf("\n k %u, newoldtempR %f", k,
         // SW_All.StRegValues.oldavgLyrTempR[k]);
         EXPECT_NE(SW_StRegValues.oldavgLyrTempR[k], SW_MISSING);
     }

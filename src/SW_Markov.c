@@ -414,7 +414,7 @@ void SW_MKV_today(
 
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(
+        sw_printf(
             "mkv(before): yr=%u/doy0=%u: ppt=%.3f, tmax=%.3f, tmin=%.3f\n",
             year,
             doy0,
@@ -487,7 +487,7 @@ void SW_MKV_today(
 
 #ifdef SWDEBUG
     if (debug) {
-        swprintf(
+        sw_printf(
             "mkv(after): yr=%u/doy0=%u/week=%u: ppt=%.3f, tmax=%.3f, "
             "tmin=%.3f\n",
             year,
