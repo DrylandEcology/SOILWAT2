@@ -99,11 +99,6 @@ extern "C" {
 #define fmin(a, b) ((LT((a), (b))) ? (a) : (b))
 #endif
 
-/* absolute value for floating point values */
-#if !defined(RSOILWAT) && !defined(abs)
-#define abs(a) (((a) < 0) ? (-a) : (a))
-#endif
-
 /* redefine sqrt for double (default) or float */
 #ifdef NO_SQRTF /* the case for Borland's compiler */
 #define sqrtf sqrt
