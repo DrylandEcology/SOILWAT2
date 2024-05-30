@@ -19,7 +19,7 @@ TEST(TimesTest, TimesLeapYear) {
     Time_init_model(days_in_month);
 
     // Loop through years and tests
-    for (k = 0; k < length(years); k++) {
+    for (k = 0; k < sw_length(years); k++) {
         Time_new_year(years[k], days_in_month, cum_monthdays);
 
         kleap = isleapyear(years[k]);
@@ -88,7 +88,7 @@ TEST(TimesTest, TimesInterpolateMonthlyValues) {
     Time_init_model(days_in_month);
 
     // Loop through years and tests
-    for (k = 0; k < length(years); k++) {
+    for (k = 0; k < sw_length(years); k++) {
         Time_new_year(years[k], days_in_month, cum_monthdays);
         lpadd = isleapyear(years[k]) ? 1 : 0;
 

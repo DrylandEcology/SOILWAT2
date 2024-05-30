@@ -47,7 +47,7 @@ TEST(SiteTest, SitePTFs) {
     swrc_type = encode_str2swrc((char *) ns_ptfca2C1974[0], &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    for (k = 1; k < length(ns_ptfca2C1974); k++) {
+    for (k = 1; k < sw_length(ns_ptfca2C1974); k++) {
         SWRC_PTF_estimate_parameters(
             encode_str2ptf((char *) ns_ptfca2C1974[k]),
             swrcp,
@@ -66,7 +66,7 @@ TEST(SiteTest, SitePTFs) {
     swrc_type = encode_str2swrc((char *) ns_ptfc2vG1980[0], &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    for (k = 1; k < length(ns_ptfc2vG1980); k++) {
+    for (k = 1; k < sw_length(ns_ptfc2vG1980); k++) {
         SWRC_PTF_estimate_parameters(
             encode_str2ptf((char *) ns_ptfc2vG1980[k]),
             swrcp,
@@ -85,7 +85,7 @@ TEST(SiteTest, SitePTFs) {
     swrc_type = encode_str2swrc((char *) ns_ptfc2FXW[0], &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    for (k = 1; k < length(ns_ptfc2FXW); k++) {
+    for (k = 1; k < sw_length(ns_ptfc2FXW); k++) {
         SWRC_PTF_estimate_parameters(
             encode_str2ptf((char *) ns_ptfc2FXW[k]),
             swrcp,
@@ -129,10 +129,10 @@ TEST(SiteTest, SitePTFsDeathTest) {
 
 // Test PTF-SWRC pairings
 TEST(SiteTest, SitePTF2SWRC) {
-    unsigned int k; // `length()` returns "unsigned long"
+    unsigned int k; // `sw_length()` returns "unsigned long"
     Bool res = swFALSE;
 
-    for (k = 1; k < length(ns_ptfca2C1974); k++) {
+    for (k = 1; k < sw_length(ns_ptfca2C1974); k++) {
         res = check_SWRC_vs_PTF(
             (char *) ns_ptfca2C1974[0], (char *) ns_ptfca2C1974[k]
         );
@@ -149,7 +149,7 @@ TEST(SiteTest, SitePTF2SWRC) {
         EXPECT_FALSE((bool) res);
     }
 
-    for (k = 1; k < length(ns_ptfa2vG1980); k++) {
+    for (k = 1; k < sw_length(ns_ptfa2vG1980); k++) {
         res = check_SWRC_vs_PTF(
             (char *) ns_ptfa2vG1980[0], (char *) ns_ptfa2vG1980[k]
         );
@@ -167,7 +167,7 @@ TEST(SiteTest, SitePTF2SWRC) {
     }
 
 
-    for (k = 1; k < length(ns_ptfa2FXW); k++) {
+    for (k = 1; k < sw_length(ns_ptfa2FXW); k++) {
         res =
             check_SWRC_vs_PTF((char *) ns_ptfa2FXW[0], (char *) ns_ptfa2FXW[k]);
         EXPECT_FALSE((bool) res);

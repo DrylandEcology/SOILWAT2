@@ -619,7 +619,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureTodayFunction) {
         temperatureRangeR,
         depthsR
     };
-    for (i = 0; i < length(array_list); i++) {
+    for (i = 0; i < sw_length(array_list); i++) {
         delete[] array_list[i];
     }
 }
@@ -1237,7 +1237,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
     }
 
     double *array_list[] = {swc2, swc_sat2, min_temp, max_temp};
-    for (i = 0; i < length(array_list); i++) {
+    for (i = 0; i < sw_length(array_list); i++) {
         delete[] array_list[i];
     }
 }

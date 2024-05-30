@@ -423,7 +423,7 @@ TEST(SWFlowTest, SWFlowSaturatedPercolation) {
         swcsat5
     };
 
-    for (i = 0; i < length(array_list); i++) {
+    for (i = 0; i < sw_length(array_list); i++) {
         delete[] array_list[i];
     }
 }

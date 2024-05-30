@@ -14,7 +14,7 @@ extern SW_OUTPUT_POINTERS template_SW_OutputPtrs[SW_OUTNKEYS];
 
 
 // get length of an array
-#define length(array) (sizeof(array) / sizeof(*(array)))
+#define sw_length(array) (sizeof(array) / sizeof(*(array)))
 
 static const double tol0 = 1e-0, tol1 = 1e-1, tol2 = 1e-2, tol3 = 1e-3,
                     tol6 = 1e-6, tol9 = 1e-9;

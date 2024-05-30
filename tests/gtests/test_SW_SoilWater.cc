@@ -290,7 +290,7 @@ TEST(SoilWaterTest, SoilWaterTranslateBetweenSWCandSWP) {
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // check bounds of swc
-        for (k = 0; k < length(swpsb); k++) {
+        for (k = 0; k < sw_length(swpsb); k++) {
             swcBulk = SWRC_SWPtoSWC(
                 swpsb[k], swrc_type, swrcp, gravel, width, em, &LogInfo
             );
@@ -307,7 +307,7 @@ TEST(SoilWaterTest, SoilWaterTranslateBetweenSWCandSWP) {
         // for phi at 0 (saturation) and phi in [fc, infinity]
         // but not necessarily if phi in ]0, fc[;
         // for instance, Campbell1974 is not inverse in ]0, swrcp[0][
-        for (k = 0; k < length(swpsi); k++) {
+        for (k = 0; k < sw_length(swpsi); k++) {
             swcBulk = SWRC_SWPtoSWC(
                 swpsi[k], swrc_type, swrcp, gravel, width, em, &LogInfo
             );
