@@ -61,10 +61,8 @@
 #ifndef GENERIC_H
 #define GENERIC_H
 
-#include <assert.h>
-#include <float.h>
-#include <math.h>
-#include <stdio.h>
+#include <float.h> // for FLT_EPSILON, DBL_EPSILON
+#include <math.h>  // for fabs, sqrt, sqrtf
 
 #ifdef RSOILWAT
 #include <R.h> // for Rprintf() from <R_ext/Print.h>

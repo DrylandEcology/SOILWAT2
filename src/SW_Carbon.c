@@ -12,16 +12,20 @@ in SW_VegProd.c and SW_Flow_lib.c.
 @date   7 February 2017
 */
 
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
-#include "include/filefuncs.h"
-#include "include/SW_Carbon.h"
-#include "include/SW_Files.h"
-#include "include/SW_Model.h"
-#include "include/SW_VegProd.h"
+/* =================================================== */
+/*                INCLUDES / DEFINES                   */
+/* --------------------------------------------------- */
+#include "include/SW_Carbon.h"      // for SW_CBN_construct, SW_CBN_deconst...
+#include "include/filefuncs.h"      // for LogError, CloseFile, GetALine
+#include "include/generic.h"        // for LOGERROR, EQ, LT
+#include "include/SW_datastructs.h" // for SW_CARBON, LOG_INFO, SW_MODEL
+#include "include/SW_Defines.h"     // for ForEachVegType, MAX_FILENAMESIZE
+#include "include/SW_Files.h"       // for eCarbon
+#include "include/SW_VegProd.h"     // for BIO_INDEX, WUE_INDEX
+#include <math.h>                   // for pow
+#include <stdio.h>                  // for sscanf, FILE
+#include <string.h>                 // for strcmp, memset
 
 /* =================================================== */
 /*             Global Function Definitions             */

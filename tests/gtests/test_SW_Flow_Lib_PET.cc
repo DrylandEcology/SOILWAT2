@@ -1,45 +1,27 @@
-#include "gmock/gmock.h"
+#include "include/filefuncs.h"           // for LogError (CloseFile, OpenFile)
+#include "include/generic.h"             // for LOGERROR, ZRO, sqrt
+#include "include/SW_datastructs.h"      // for SW_ATMD, LOG_INFO
+#include "include/SW_Defines.h"          // for deg_to_rad, SW_MISSING, rad...
+#include "include/SW_Flow_lib_PET.h"     // for SW_PET_init_run, solar_radi...
+#include "include/SW_Main_lib.h"         // for sw_fail_on_error, sw_init_logs
+#include "tests/gtests/sw_testhelpers.h" // for tol3, tol0, tol1, tol6, mis...
+#include "gmock/gmock.h"                 // for StrEq
+#include "gtest/gtest.h"                 // for Test, EXPECT_NEAR, TestInfo...
+#include <cmath>                         // for round, NAN, isfinite
+#include <memory>                        // for allocator
+#include <sstream>                       // for char_traits, basic_ostream
+#include <stdio.h>                       // for NULL (fprintf, fflush, FILE)
 
-#include <assert.h>
-#include <cmath>
-#include <ctype.h>
-#include <dirent.h>
-#include <errno.h>
-#include <float.h>
-#include <math.h>
-#include <memory.h>
-#include <sstream>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <time.h>
-#include <typeinfo> // for 'typeid'
-#include <unistd.h>
+#if defined(SW2_PET_Test__petfunc_by_temps) ||                    \
+    defined(SW2_SolarPosition_Test__hourangles_by_lat_and_doy) || \
+    defined(SW2_SolarPosition_Test__hourangles_by_lats)
+#include <string.h> // for strcat, strcpy
+#endif
 
-#include "include/filefuncs.h"
-#include "include/generic.h"
-#include "include/myMemory.h"
-#include "include/rands.h"
-#include "include/SW_Carbon.h"
-#include "include/SW_Defines.h"
-#include "include/SW_Files.h"
-#include "include/SW_Flow_lib_PET.h"
-#include "include/SW_Main_lib.h"
-#include "include/SW_Markov.h"
-#include "include/SW_Model.h"
-#include "include/SW_Site.h"
-#include "include/SW_Sky.h"
-#include "include/SW_SoilWater.h"
-#include "include/SW_Times.h"
-#include "include/SW_VegEstab.h"
-#include "include/SW_VegProd.h"
-#include "include/SW_Weather.h"
-#include "include/Times.h"
+#if defined(SW2_SolarPosition_Test__hourangles_by_lat_and_doy)
+#include <stdlib.h> // for free, malloc
+#endif
 
-#include "tests/gtests/sw_testhelpers.h"
 
 using ::testing::StrEq;
 

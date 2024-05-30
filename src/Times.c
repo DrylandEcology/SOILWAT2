@@ -31,13 +31,13 @@
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-
-#include "include/SW_Defines.h"
-#include "include/Times.h"
+#include "include/Times.h"          // for Jan, Dec, Feb, NoMonth, NoDay
+#include "include/generic.h"        // for Bool, GE, final_running_sd, get_...
+#include "include/SW_datastructs.h" // for SW_WALLTIME, LOG_INFO
+#include "include/SW_Defines.h"     // for TimeInt, WallTimeSpec, MAX_DAYS
+#include <stdio.h>                  // for fprintf, FILE, NULL, stdout
+#include <string.h>                 // for NULL, memcpy
+#include <time.h>                   // for time, difftime, gmtime, strftime
 
 
 /* =================================================== */

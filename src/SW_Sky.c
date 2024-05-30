@@ -31,19 +31,18 @@
 /********************************************************/
 /********************************************************/
 
-/* =================================================== */
+
 /* =================================================== */
 /*                INCLUDES / DEFINES                   */
-
-#include <stdio.h>
-#include <stdlib.h>
-
-#include "include/filefuncs.h"
-#include "include/generic.h"
-#include "include/SW_Files.h"
-#include "include/SW_Model.h"
-#include "include/SW_Sky.h"
-#include "include/Times.h"
+/* --------------------------------------------------- */
+#include "include/SW_Sky.h"         // for SW_SKY_new_year, SW_SKY_read
+#include "include/filefuncs.h"      // for CloseFile, GetALine, LogError
+#include "include/generic.h"        // for RealD, Bool, LOGERROR, swTRUE
+#include "include/SW_datastructs.h" // for LOG_INFO, SW_MODEL, SW_SKY
+#include "include/SW_Defines.h"     // for MAX_FILENAMESIZE, MAX_MONTHS
+#include "include/SW_Files.h"       // for eSky
+#include "include/Times.h"          // for isleapyear, interpolate_monthlyV...
+#include <stdio.h>                  // for sscanf, FILE
 
 /* =================================================== */
 /*             Global Function Definitions             */

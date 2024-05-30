@@ -101,7 +101,9 @@
 extern "C" {
 #endif
 
-#include "include/SW_datastructs.h"
+#include "include/generic.h"        // for RealD
+#include "include/SW_datastructs.h" // for SW_SOILWAT, SW_SITE, LOG_INFO
+#include "include/SW_Defines.h"     // for TimeInt, LyrIndex, NVEGTYPES, MAX_...
 
 /* =================================================== */
 /*                 Local Defines/enum                  */

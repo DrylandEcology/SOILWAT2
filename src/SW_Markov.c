@@ -16,22 +16,22 @@
 /********************************************************/
 /********************************************************/
 
-/* =================================================== */
+
 /* =================================================== */
 /*                INCLUDES / DEFINES                   */
-
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "include/filefuncs.h"
-#include "include/myMemory.h"
-#include "include/rands.h"
-#include "include/SW_Files.h"
-#include "include/SW_Markov.h"
-#include "include/SW_Model.h"
-#include "include/Times.h"
+/* --------------------------------------------------- */
+#include "include/SW_Markov.h"      // for SW_MKV_construct, SW_MKV_deconst...
+#include "include/filefuncs.h"      // for LogError, CloseFile, GetALine
+#include "include/generic.h"        // for RealD, RealF, LOGERROR, swFALSE
+#include "include/myMemory.h"       // for Mem_Calloc, Mem_Copy
+#include "include/rands.h"          // for RandNorm, RandSeed, RandUni
+#include "include/SW_datastructs.h" // for SW_MARKOV, LOG_INFO
+#include "include/SW_Defines.h"     // for MAX_DAYS, MAX_FILENAMESIZE, TimeInt
+#include "include/SW_Files.h"       // for eMarkovCov, eMarkovProb
+#include "include/Times.h"          // for doy2week
+#include <math.h>                   // for isfinite
+#include <stdio.h>                  // for NULL, fopen, sscanf, FILE, size_t
+#include <stdlib.h>                 // for free
 
 /* =================================================== */
 /*             Local Function Definitions              */

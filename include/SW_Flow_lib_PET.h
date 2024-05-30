@@ -11,7 +11,8 @@
 #ifndef SW_PET_H
 #define SW_PET_H
 
-#include "include/SW_datastructs.h"
+#include "include/SW_datastructs.h" // for SW_ATMD, LOG_INFO
+#include "include/SW_Defines.h"     // for TWO_DAYS
 
 #ifdef __cplusplus
 extern "C" {

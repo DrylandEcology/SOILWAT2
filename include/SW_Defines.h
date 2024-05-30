@@ -22,16 +22,15 @@
 #ifndef SOILW_DEF_H
 #define SOILW_DEF_H
 
-#include "include/generic.h"
-#include <math.h> /* >= C99; for: atan(), isfinite() */
-#include <time.h>
+#include "include/generic.h" // for IntUS, RealF
+#include <time.h>            // for time_t, timespec
 
 #if !defined(RSOILWAT)              /* rSOILWAT2 uses R's RNGs */
-#include "external/pcg/pcg_basic.h" // see https://github.com/imneme/pcg-c-basic
+#include "external/pcg/pcg_basic.h" // for pcg32_random_t
 #endif
 
 #if defined(SWNETCDF) && defined(SWUDUNITS)
-#include <udunits2.h>
+#include <udunits2.h> // for cv_converter
 #endif
 
 #ifdef __cplusplus

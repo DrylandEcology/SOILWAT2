@@ -33,24 +33,25 @@
 /********************************************************/
 /********************************************************/
 
-/* =================================================== */
+
 /* =================================================== */
 /*                INCLUDES / DEFINES                   */
+/* --------------------------------------------------- */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "include/filefuncs.h"
-#include "include/generic.h"
-#include "include/myMemory.h"
-#include "include/SW_Files.h"
-#include "include/SW_Model.h"
-#include "include/SW_Site.h"
-#include "include/SW_SoilWater.h"
-#include "include/SW_Times.h"
-#include "include/SW_VegEstab.h"
-#include "include/SW_VegProd.h" // externs `key2veg[]`
+#include "include/SW_VegEstab.h"    // for SW_ESTAB_BARS, SW_GERM_BARS, SW_...
+#include "include/filefuncs.h"      // for LogError, CloseFile, GetALine
+#include "include/generic.h"        // for IntU, LOGERROR, RealD, isnull, LT
+#include "include/myMemory.h"       // for Mem_Calloc, Mem_ReAlloc
+#include "include/SW_datastructs.h" // for SW_VEGESTAB_INFO, LOG_INFO, SW_V...
+#include "include/SW_Defines.h"     // for TimeInt, eSW_Year, MAX_FILENAMESIZE
+#include "include/SW_Files.h"       // for eVegEstab
+#include "include/SW_SoilWater.h"   // for SW_SWRC_SWPtoSWC
+#include "include/SW_Times.h"       // for Today
+#include "include/SW_VegProd.h"     // for key2veg
+#include <math.h>                   // for fabs
+#include <stdio.h>                  // for NULL, snprintf, FILE, printf
+#include <stdlib.h>                 // for atoi, atof, free
+#include <string.h>                 // for strcpy, strcat, strlen, memset
 
 
 /* =================================================== */

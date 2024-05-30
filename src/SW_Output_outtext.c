@@ -18,23 +18,19 @@ History:
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
 
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "include/SW_Output_outtext.h" // for SW_OUT_close_textfiles, SW_OU...
+#include "include/filefuncs.h"         // for CloseFile, OpenFile, LogError
+#include "include/generic.h"           // for Bool, swFALSE, SOILWAT, IntUS
+#include "include/myMemory.h"          // for Mem_Malloc
+#include "include/SW_datastructs.h"    // for LOG_INFO, SW_GEN_OUT, SW_OUTPUT
+#include "include/SW_Defines.h"        // for _OUTSEP, OutPeriod, ForEachOu...
+#include "include/SW_Output.h"         // for pd2longstr, ForEachOutKey
+#include <stdio.h>                     // for snprintf, fflush, fprintf
+#include <stdlib.h>                    // for free
+#include <string.h>                    // for strcat, strcpy
 
-#include "include/filefuncs.h"
-#include "include/myMemory.h"
-#include "include/SW_Files.h"
-#include "include/SW_Model.h"
-#include "include/SW_Site.h"
-
-#include "include/SW_Output.h" // externs `key2str`, `pd2longstr`
-#include "include/SW_Output_outtext.h"
-
-#if defined(SWNETCDF)
-#include "include/SW_netCDF.h"
-#include "include/SW_Output_outarray.h"
+#if (defined(SOILWAT) && !defined(SWNETCDF)) || defined(STEPWAT)
+#include "include/SW_Files.h" // for eOutputDaily, eOutputDaily_soil
 #endif
 
 

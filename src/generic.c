@@ -1,12 +1,3 @@
-#include <ctype.h>
-#include <math.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "include/filefuncs.h"
-#include "include/generic.h"
 
 /*
  History:
@@ -16,6 +7,15 @@
  05/31/2012  (DLM) added st_getBounds() function for use in the soil_temperature
  function in SW_Flow_lib.c
  */
+
+/* =================================================== */
+/*                INCLUDES / DEFINES                   */
+/* --------------------------------------------------- */
+#include "include/generic.h"    // for EQ, GE, LE, sqrt, squared, Bool, GT, LT
+#include "include/SW_Defines.h" // for missing
+#include <ctype.h>              // for isspace, tolower, toupper
+#include <stdio.h>              // for NULL
+#include <string.h>             // for strchr, strlen, strstr
 
 /* =================================================== */
 /*             Local Function Definitions              */

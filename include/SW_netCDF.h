@@ -1,7 +1,10 @@
 #ifndef SWNETCDF_H
 #define SWNETCDF_H
 
-#include "include/SW_datastructs.h"
+#include "include/generic.h"        // for Bool, IntUS
+#include "include/SW_datastructs.h" // for SW_DOMAIN, SW_NETCDF, SW_OUTPUT, S...
+#include "include/SW_Defines.h"     // for OutPeriod, SW_OUTNPERIODS, SW_OUTN...
+#include <stdio.h>                  // for size_t
 
 #ifdef __cplusplus
 extern "C" {

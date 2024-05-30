@@ -76,20 +76,25 @@
 /********************************************************/
 /********************************************************/
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
-#include "include/filefuncs.h"
-#include "include/myMemory.h"
-#include "include/SW_Files.h"
-#include "include/SW_Flow_lib_PET.h"
-#include "include/SW_Markov.h"
-#include "include/SW_Model.h"
-#include "include/SW_Sky.h"
-#include "include/SW_SoilWater.h"
-#include "include/SW_Weather.h"
-#include "include/Times.h"
+/* =================================================== */
+/*                INCLUDES / DEFINES                   */
+/* --------------------------------------------------- */
+#include "include/SW_Weather.h"      // for SW_WTH_alloc_outptrs, SW_WTH_co...
+#include "include/filefuncs.h"       // for LogError, CloseFile, GetALine
+#include "include/generic.h"         // for Bool, mean, LOGERROR, swFALSE
+#include "include/myMemory.h"        // for Mem_Malloc, Mem_Calloc
+#include "include/SW_datastructs.h"  // for SW_WEATHER_HIST, LOG_INFO, SW_W...
+#include "include/SW_Defines.h"      // for missing, SW_MISSING, TimeInt
+#include "include/SW_Files.h"        // for eWeather
+#include "include/SW_Flow_lib_PET.h" // for actualVaporPressure1, actualVap...
+#include "include/SW_Markov.h"       // for SW_MKV_today
+#include "include/SW_SoilWater.h"    // for SW_SWC_adjust_snow
+#include "include/Times.h"           // for Time_get_lastdoy_y, Time_days_i...
+#include <math.h>                    // for exp
+#include <stdio.h>                   // for NULL, sscanf, FILE, fclose, fopen
+#include <stdlib.h>                  // for atoi, free
+#include <string.h>                  // for memset, NULL, strcpy
 
 /* =================================================== */
 /*             Local Function Definitions              */

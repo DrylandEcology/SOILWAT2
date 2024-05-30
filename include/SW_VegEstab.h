@@ -15,7 +15,9 @@
 #ifndef SW_VEGESTAB_H
 #define SW_VEGESTAB_H
 
-#include "include/SW_datastructs.h"
+#include "include/generic.h"        // for Bool, RealD, IntU
+#include "include/SW_datastructs.h" // for SW_VEGESTAB, SW_VEGESTAB_INFO, SW_...
+#include "include/SW_Defines.h"     // for LyrIndex, TimeInt
 
 
 #ifdef __cplusplus

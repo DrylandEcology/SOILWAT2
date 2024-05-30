@@ -1,25 +1,8 @@
-#include "gtest/gtest.h"
-
-#include <assert.h>
-#include <ctype.h>
-#include <dirent.h>
-#include <errno.h>
-#include <float.h>
-#include <math.h>
-#include <memory.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <time.h>
-#include <unistd.h>
-
-#include "include/generic.h"
-#include "include/SW_Defines.h"
-
-#include "tests/gtests/sw_testhelpers.h"
+#include "include/generic.h"    // for sw_strtok, standardDeviation, mean
+#include "include/SW_Defines.h" // for SW_MISSING
+#include "gtest/gtest.h"        // for Message, AssertionResult, Test, Test...
+#include <cmath>                // for isnan
+#include <stdio.h>              // for NULL
 
 namespace {
 const unsigned int N = 9;

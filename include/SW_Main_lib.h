@@ -6,7 +6,9 @@
 #ifndef SW_MAIN_LIB_H
 #define SW_MAIN_LIB_H
 
-#include "include/SW_datastructs.h"
+#include "include/generic.h"        // for Bool
+#include "include/SW_datastructs.h" // for LOG_INFO
+#include <stdio.h>                  // for FILE
 
 #ifdef __cplusplus
 extern "C" {

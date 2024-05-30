@@ -1,11 +1,9 @@
-#include "gtest/gtest.h"
-
-#include "include/generic.h"    // for `Bool`, `swTRUE`, `swFALSE`
-#include "include/SW_Control.h" // for `SW_CTL_main()`
-#include "include/SW_SoilWater.h"
-#include "include/SW_VegEstab.h" // for `SW_VegEstab`, `SW_VES_read2()`
-
-#include "tests/gtests/sw_testhelpers.h" // for `Reset_SOILWAT2_after_UnitTest()`
+#include "include/generic.h"             // for swFALSE, swTRUE
+#include "include/SW_Control.h"          // for SW_CTL_main
+#include "include/SW_Main_lib.h"         // for sw_fail_on_error
+#include "include/SW_VegEstab.h"         // for SW_VES_read2
+#include "tests/gtests/sw_testhelpers.h" // for VegEstabFixtureTest
+#include "gtest/gtest.h"                 // for Message, AssertionResult
 
 namespace {
 // Run a simulation with vegetation establishment turn on

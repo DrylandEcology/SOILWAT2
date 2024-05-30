@@ -1,42 +1,19 @@
-#include <gmock/gmock.h>
+#include "include/generic.h"             // for RealD, swTRUE
+#include "include/SW_Control.h"          // for SW_CTL_main, SW_CTL_run_spinup
+#include "include/SW_Main_lib.h"         // for sw_fail_on_error
+#include "include/SW_Times.h"            // for Today
+#include "tests/gtests/sw_testhelpers.h" // for SpinUpTest
+#include "gtest/gtest.h"                 // for Test, Message, TestPartResul...
 
-#include <assert.h>
-#include <ctype.h>
-#include <dirent.h>
-#include <errno.h>
-#include <float.h>
-#include <math.h>
-#include <memory.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <time.h>
-#include <unistd.h>
+#if defined(SW2_SpinupEvaluation)
+#include "include/filefuncs.h"      // for OpenFile, CloseFile
+#include "include/SW_datastructs.h" // for SW_ALL, LOG_INFO
+#include "include/SW_Site.h"        // for SW_SIT_init_run
+#include "include/SW_SoilWater.h"   // for SW_SWC_init_run
+#include <stdio.h>                  // for fprintf, fflush, FILE
+#include <string.h>                 // for strcat, strcpy
+#endif
 
-#include "include/filefuncs.h"
-#include "include/generic.h"
-#include "include/myMemory.h"
-#include "include/rands.h"
-#include "include/SW_Carbon.h"
-#include "include/SW_Control.h"
-#include "include/SW_Defines.h"
-#include "include/SW_Files.h"
-#include "include/SW_Main_lib.h"
-#include "include/SW_Markov.h"
-#include "include/SW_Model.h"
-#include "include/SW_Site.h"
-#include "include/SW_Sky.h"
-#include "include/SW_SoilWater.h"
-#include "include/SW_Times.h"
-#include "include/SW_VegEstab.h"
-#include "include/SW_VegProd.h"
-#include "include/SW_Weather.h"
-#include "include/Times.h"
-
-#include "tests/gtests/sw_testhelpers.h"
 
 namespace {
 // Test SpinUp with mode = 1 and scope > duration
@@ -482,7 +459,8 @@ TEST_F(SpinUpTest, SpinupEvaluation) {
         } // end of loop over test_swcInit
     } // end of loop over test_duration
 
-    fclose(fp);
+    CloseFile(&fp, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 }
 #endif // end of SW2_SpinupEvaluation_Test
 

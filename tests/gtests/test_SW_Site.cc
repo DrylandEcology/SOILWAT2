@@ -1,42 +1,13 @@
-#include <gmock/gmock.h>
-
-#include <assert.h>
-#include <ctype.h>
-#include <dirent.h>
-#include <errno.h>
-#include <float.h>
-#include <math.h>
-#include <memory.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <time.h>
-#include <typeinfo> // for 'typeid'
-#include <unistd.h>
-
-#include "include/filefuncs.h"
-#include "include/generic.h"
-#include "include/myMemory.h"
-#include "include/rands.h"
-#include "include/SW_Carbon.h"
-#include "include/SW_Defines.h"
-#include "include/SW_Files.h"
-#include "include/SW_Main_lib.h"
-#include "include/SW_Markov.h"
-#include "include/SW_Model.h"
-#include "include/SW_Site.h"
-#include "include/SW_Sky.h"
-#include "include/SW_SoilWater.h"
-#include "include/SW_Times.h"
-#include "include/SW_VegEstab.h"
-#include "include/SW_VegProd.h"
-#include "include/SW_Weather.h"
-#include "include/Times.h"
-
-#include "tests/gtests/sw_testhelpers.h"
+#include "include/generic.h"             // for RealD, Bool, swFALSE
+#include "include/SW_datastructs.h"      // for LOG_INFO
+#include "include/SW_Defines.h"          // for SWRC_PARAM_NMAX, SW_MISSING
+#include "include/SW_Main_lib.h"         // for sw_fail_on_error, sw_init_logs
+#include "include/SW_Site.h"             // for SWRC_check_parameters, chec...
+#include "tests/gtests/sw_testhelpers.h" // for SiteFixtureTest, length
+#include "gmock/gmock.h"                 // for HasSubstr, MakePredicateFor...
+#include "gtest/gtest.h"                 // for Test, EXPECT_FALSE, TestInf...
+#include <stdio.h>                       // for NULL
+#include <string.h>                      // for memset
 
 using ::testing::HasSubstr;
 

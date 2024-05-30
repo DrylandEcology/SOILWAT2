@@ -75,7 +75,10 @@
 #ifndef SW_OUTPUT_H
 #define SW_OUTPUT_H
 
-#include "include/SW_datastructs.h"
+#include "include/generic.h"        // for Bool, IntUS
+#include "include/SW_datastructs.h" // for SW_ALL, eSW_LastKey, eSW_NoKey
+#include "include/SW_Defines.h"     // for OutPeriod, TimeInt, SW_OUTNMAXVARS
+#include <stddef.h>                 // for size_t
 
 #ifdef __cplusplus
 extern "C" {

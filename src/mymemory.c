@@ -25,12 +25,16 @@
 
  * - CWBennett 7/17/01 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
-#include "include/filefuncs.h"
-#include "include/myMemory.h"
+/* =================================================== */
+/*                INCLUDES / DEFINES                   */
+/* --------------------------------------------------- */
+#include "include/myMemory.h"       // for Mem_Calloc, Mem_Copy, Mem_Malloc
+#include "include/filefuncs.h"      // for LogError
+#include "include/generic.h"        // for LOGERROR, byte, isnull
+#include "include/SW_datastructs.h" // for LOG_INFO
+#include <stdlib.h>                 // for free, malloc, realloc
+#include <string.h>                 // for strlen, memcpy, memset, strcpy
 
 /* =================================================== */
 /*             Global Function Definitions             */

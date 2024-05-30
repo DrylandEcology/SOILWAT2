@@ -1,29 +1,18 @@
-#include <gmock/gmock.h>
-
-#include <assert.h>
-#include <ctype.h>
-#include <dirent.h>
-#include <errno.h>
-#include <float.h>
-#include <math.h>
-#include <memory.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <time.h>
-#include <unistd.h>
-
-#include "include/SW_Flow_lib_PET.h"
-#include "include/SW_Markov.h"
-#include "include/SW_Model.h"
-#include "include/SW_Sky.h"
-#include "include/SW_Weather.h"
-#include "include/Times.h"
-
-#include "tests/gtests/sw_testhelpers.h"
+#include "include/generic.h"             // for swTRUE, swFALSE, Bool, squared
+#include "include/SW_datastructs.h"      // for SW_CLIMATE_CLIM, SW_CLIMATE...
+#include "include/SW_Defines.h"          // for MAX_MONTHS, SHORT_WR, REL_H...
+#include "include/SW_Flow_lib_PET.h"     // for svp, actualVaporPressure2
+#include "include/SW_Main_lib.h"         // for sw_fail_on_error
+#include "include/SW_Markov.h"           // for SW_MKV_setup
+#include "include/SW_Sky.h"              // for SW_SKY_read
+#include "include/SW_Weather.h"          // for SW_WTH_read, checkAllWeather
+#include "include/Times.h"               // for Jan, Feb, Dec
+#include "tests/gtests/sw_testhelpers.h" // for WeatherFixtureTest, tol6
+#include "gmock/gmock.h"                 // for HasSubstr, MakePredicateFor...
+#include "gtest/gtest.h"                 // for Test, Message, TestPartResul...
+#include <cmath>                         // for isnan
+#include <stdio.h>                       // for NULL
+#include <string.h>                      // for strcpy
 
 using ::testing::HasSubstr;
 

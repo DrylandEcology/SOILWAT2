@@ -1,25 +1,8 @@
-#include "gtest/gtest.h"
-
-#include <assert.h>
-#include <ctype.h>
-#include <dirent.h>
-#include <errno.h>
-#include <float.h>
-#include <math.h>
-#include <memory.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <time.h>
-#include <unistd.h>
-
-#include "include/generic.h"
-#include "include/SW_Defines.h"
-
-#include "tests/gtests/sw_testhelpers.h" // get the re-defined `missing`
+#include "include/SW_Defines.h"          // for SW_MISSING
+#include "tests/gtests/sw_testhelpers.h" // for missing
+#include "gtest/gtest.h"                 // for AssertionResult, Message, Test
+#include <cmath>                         // for exp, INFINITY, NAN
+#include <float.h>                       // for DBL_MIN
 
 namespace {
 TEST(SWDefines, SWDefinesMissingValues) {

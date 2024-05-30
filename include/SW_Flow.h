@@ -1,7 +1,7 @@
 #ifndef SW_FLOW_H
 #define SW_FLOW_H
 
-#include "include/SW_datastructs.h"
+#include "include/SW_datastructs.h" // for SW_ALL, SW_SOILWAT, LOG_INFO
 
 #ifdef __cplusplus
 extern "C" {

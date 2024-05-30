@@ -86,24 +86,23 @@ vegtype variable forb and forb.cov.fCover
 /********************************************************/
 /********************************************************/
 
-/* =================================================== */
+
 /* =================================================== */
 /*                INCLUDES / DEFINES                   */
-
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "include/filefuncs.h"
-#include "include/generic.h"
-#include "include/myMemory.h"
-#include "include/SW_Files.h"
-#include "include/SW_Model.h"
-#include "include/SW_Site.h"
-#include "include/SW_VegProd.h"
-#include "include/SW_Weather.h"
-#include "include/Times.h"
+/* --------------------------------------------------- */
+#include "include/SW_VegProd.h"     // for BIO_INDEX, SW_VPD_alloc_outptrs
+#include "include/filefuncs.h"      // for LogError, CloseFile, GetALine
+#include "include/generic.h"        // for LOGERROR, Bool, LOGWARN, RealF, GT
+#include "include/myMemory.h"       // for Mem_Calloc, Mem_Malloc
+#include "include/SW_datastructs.h" // for SW_VEGPROD, LOG_INFO, SW_VEGPROD...
+#include "include/SW_Defines.h"     // for ForEachVegType, NVEGTYPES, SW_TREES
+#include "include/SW_Files.h"       // for eVegProd
+#include "include/SW_Weather.h"     // for deallocateClimateStructs, alloca...
+#include "include/Times.h"          // for interpolate_monthlyValues, Jan, Dec
+#include <math.h>                   // for log, pow
+#include <stdio.h>                  // for sscanf, printf, NULL, FILE
+#include <stdlib.h>                 // for free
+#include <string.h>                 // for memset
 
 
 /* =================================================== */

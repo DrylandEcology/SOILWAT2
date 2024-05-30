@@ -17,16 +17,18 @@ History:
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
 
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "include/SW_Output_outarray.h" // for SW_OUT_calc_iOUToffset, SW_O...
+#include "include/generic.h"            // for IntUS, IntU, Bool, RealD
+#include "include/SW_datastructs.h"     // for SW_GEN_OUT, LOG_INFO, SW_MODEL
+#include "include/SW_Defines.h"         // for eSW_Day, SW_OUTNMAXVARS, SW_...
+#include "include/SW_Output.h"          // for ForEachOutKey
+#include "include/Times.h"              // for Time_get_lastdoy_y
+#include <stdio.h>                      // for size_t
 
-#include "include/myMemory.h"
-#include "include/SW_Model.h"
-#include "include/SW_Output.h"
-#include "include/SW_Output_outarray.h"
-#include "include/SW_Times.h"
+#if defined(SW_OUTARRAY)
+#include "include/myMemory.h" // for Mem_Calloc
+#include <stdlib.h>           // for free
+#endif
 
 
 /* =================================================== */

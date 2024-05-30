@@ -30,14 +30,16 @@
 /* =================================================== */
 /* =================================================== */
 /*                INCLUDES / DEFINES                   */
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "include/filefuncs.h"
-#include "include/myMemory.h"
-#include "include/SW_Files.h"
+/* --------------------------------------------------- */
+#include "include/SW_Files.h"       // for eLog, eOutputDaily, eOutputDaily...
+#include "include/filefuncs.h"      // for CloseFile, LogError, DirExists
+#include "include/generic.h"        // for LOGERROR, isnull, IntUS, LOGWARN
+#include "include/myMemory.h"       // for Str_Dup
+#include "include/SW_datastructs.h" // for LOG_INFO, SW_NFILES, PATH_INFO
+#include "include/SW_Defines.h"     // for MAX_FILENAMESIZE
+#include <stdio.h>                  // for FILENAME_MAX, NULL, FILE, stderr
+#include <stdlib.h>                 // for free
+#include <string.h>                 // for strcpy, strcmp, strlen, memcpy
 
 /* =================================================== */
 /*             Global Function Definitions             */

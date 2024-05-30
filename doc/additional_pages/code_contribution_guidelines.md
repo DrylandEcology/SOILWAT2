@@ -12,6 +12,7 @@
 [netCDF]: https://downloads.unidata.ucar.edu/netcdf/
 [udunits2]: https://downloads.unidata.ucar.edu/udunits/
 [ClangFormat]: https://clang.llvm.org/docs/ClangFormat.html
+[iwyu]:https://include-what-you-use.org/
 
 
 Go back to the [main page](README.md).
@@ -19,6 +20,9 @@ Go back to the [main page](README.md).
 # Table of contents
 1. [SOILWAT2 code](#SOILWAT2_code)
 2. [Code guidelines](#guidelines)
+    1. [Code format](#code_format)
+    2. [Include directives](#includes)
+    3. [Other guidelines](#other_guidelines)
 3. [Code documentation](#code_documentation)
 4. [Code tests](#code_tests)
     1. [Unit tests](#unit_tests)
@@ -62,7 +66,11 @@ please see section [reverse dependencies](#revdep).
 
 
 <a name="guidelines"></a>
-## Code format guidelines
+## Code guidelines
+
+
+<a name="code_format"></a>
+### Code format
 
 We use a `LLVM`-derived code style for the `SOILWAT2` repository.
 
@@ -124,8 +132,24 @@ to the developed implementation for that commit.
 A github action workflow `".github/workflows/clang-format-check.yml"`
 checks code style for pull requests into the main branch and release branches.
 
+<br>
 
-## Other guidelines
+
+<a name="includes"></a>
+### Include directives
+
+Our goal is to include headers only if actually used, and
+include all headers that are used.
+
+The tool `include-what-you-use` ([iwyu][]) can provide helpful information.
+
+We have a script `"tools/run_iwyu.sh"` that illustrates some use cases.
+
+<br>
+
+
+<a name="other_guidelines"></a>
+### Other guidelines
 Additional (and partially outdated) guidelines can be found [here][guidelines]
 
 <br>

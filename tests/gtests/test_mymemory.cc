@@ -1,11 +1,10 @@
-#include <gmock/gmock.h>
-
-#include <stdlib.h>
-
-#include "include/filefuncs.h"
-#include "include/myMemory.h"
-
-#include "tests/gtests/sw_testhelpers.h"
+#include "include/generic.h"        // for isnull
+#include "include/myMemory.h"       // for Mem_Malloc, Mem_ReAlloc
+#include "include/SW_datastructs.h" // for LOG_INFO
+#include "include/SW_Main_lib.h"    // for sw_fail_on_error, sw_init_logs
+#include "gmock/gmock.h"            // for HasSubstr, MakePredicateFormatte...
+#include "gtest/gtest.h"            // for Test, AssertionResult, Message, T...
+#include <stdlib.h>                 // for NULL, free, size_t
 
 using ::testing::HasSubstr;
 

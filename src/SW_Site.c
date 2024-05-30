@@ -108,20 +108,20 @@
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
 
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "include/filefuncs.h"
-#include "include/generic.h"
-#include "include/myMemory.h"
-#include "include/SW_Carbon.h"
-#include "include/SW_Files.h"
-#include "include/SW_Main_lib.h"
-#include "include/SW_Site.h"
-#include "include/SW_SoilWater.h"
-#include "include/SW_VegProd.h"
+#include "include/SW_Site.h"        // for N_PTFs, N_SWRCs, sw_Campbell1974
+#include "include/filefuncs.h"      // for LogError, CloseFile, GetALine
+#include "include/generic.h"        // for LOGERROR, swFALSE, LOGWARN, RealF
+#include "include/myMemory.h"       // for Str_Dup
+#include "include/SW_datastructs.h" // for LOG_INFO, SW_SITE, SW_VEGPROD
+#include "include/SW_Defines.h"     // for LyrIndex, ForEachSoilLayer, ForE...
+#include "include/SW_Files.h"       // for eSite, eLayers, eSWRCp
+#include "include/SW_Main_lib.h"    // for sw_init_logs
+#include "include/SW_SoilWater.h"   // for SW_SWRC_SWCtoSWP, SW_SWRC_SWPtoSWC
+#include "include/SW_VegProd.h"     // for key2veg, get_critical_rank, sum_...
+#include <math.h>                   // for fmod
+#include <stdio.h>                  // for printf, sscanf, FILE, NULL, stdout
+#include <stdlib.h>                 // for atof, atoi, free
+#include <string.h>                 // for strcpy, memset
 
 
 /* =================================================== */

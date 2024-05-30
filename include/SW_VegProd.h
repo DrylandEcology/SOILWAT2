@@ -83,7 +83,9 @@
 #ifndef SW_VEGPROD_H
 #define SW_VEGPROD_H
 
-#include "include/SW_datastructs.h"
+#include "include/generic.h"        // for Bool, RealD
+#include "include/SW_datastructs.h" // for SW_VEGPROD, SW_MODEL, SW_WEATHER_HIST
+#include "include/SW_Defines.h"     // for LyrIndex, NVEGTYPES, MAX_LAYERS,
 
 #ifdef __cplusplus
 extern "C" {

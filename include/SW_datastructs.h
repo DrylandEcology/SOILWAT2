@@ -12,7 +12,9 @@
 #ifndef DATATYPES_H
 #define DATATYPES_H
 
-#include "include/SW_Defines.h"
+#include "include/generic.h"    // for Bool
+#include "include/SW_Defines.h" // for MAX_NYEAR, MAX_ST_RGR, MAX_LAYERS, M...
+#include <stdio.h>              // for FILENAME_MAX, FILE
 
 
 // Array-based output:

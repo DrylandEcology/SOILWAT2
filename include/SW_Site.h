@@ -83,7 +83,9 @@ swcBulk_atSWPcrit[SW_FORBS], and my_transp_rgn[SW_FORBS] to SW_LAYER_INFO
 #ifndef SW_SITE_H
 #define SW_SITE_H
 
-#include "include/SW_datastructs.h"
+#include "include/generic.h"        // for Bool, RealD, RealF
+#include "include/SW_datastructs.h" // for SW_SITE, SW_VEGPROD, LOG_INFO
+#include "include/SW_Defines.h"     // for LyrIndex
 
 #ifdef __cplusplus
 extern "C" {

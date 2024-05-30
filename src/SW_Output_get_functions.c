@@ -18,20 +18,13 @@ History:
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
 
-#include <ctype.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "include/SW_Carbon.h"
-#include "include/SW_Model.h"
-#include "include/SW_Output.h"
-#include "include/SW_Site.h"
-#include "include/SW_SoilWater.h"
-#include "include/SW_VegEstab.h"
-#include "include/SW_VegProd.h"
-#include "include/Times.h"
+#include "include/generic.h"        // for RealD, IntU
+#include "include/SW_datastructs.h" // for SW_ALL, SW_OUTTEXT, SW_GEN_OUT
+#include "include/SW_Defines.h"     // for _OUTSEP, OUT_DIGITS, OUTSTRLEN
+#include "include/SW_Output.h"      // for get_aet_text, get_biomass_text
+#include "include/SW_SoilWater.h"   // for SW_SWRC_SWCtoSWP
+#include "include/SW_VegProd.h"     // for BIO_INDEX, WUE_INDEX
+#include <stdio.h>                  // for snprintf, NULL
 
 #if defined(SWNETCDF)
 #include <netcdf.h> // defines NC_FILL_DOUBLE
@@ -39,12 +32,11 @@ History:
 
 // Array-based output declarations:
 #if defined(SW_OUTARRAY)
-#include "include/SW_Output_outarray.h"
+#include "include/SW_Output_outarray.h" // for iOUT, ncol_TimeOUT, get_outv...
 #endif
 
-// Text-based output declarations:
 #if defined(SW_OUTTEXT)
-#include "include/SW_Output_outtext.h"
+#include <string.h> // for strcat
 #endif
 
 

@@ -1,18 +1,26 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
-#include "include/filefuncs.h"
-#include "include/generic.h"
-#include "include/myMemory.h"
-#include "include/rands.h"
-#include "include/SW_Domain.h"
-#include "include/SW_Files.h"
-#include "include/SW_Times.h"
+/* =================================================== */
+/*                INCLUDES / DEFINES                   */
+/* --------------------------------------------------- */
+#include "include/SW_Domain.h"      // for SW_DOM_CheckProgress, SW_DOM_Cre...
+#include "include/filefuncs.h"      // for LogError, CloseFile, key_to_id
+#include "include/generic.h"        // for swTRUE, LOGERROR, swFALSE, Bool
+#include "include/SW_datastructs.h" // for SW_DOMAIN, LOG_INFO
+#include "include/SW_Defines.h"     // for LyrIndex, LARGE_VALUE, TimeInt
+#include "include/SW_Files.h"       // for SW_F_deconstruct, SW_F_deepCopy
+#include "include/Times.h"          // for yearto4digit, Time_get_lastdoy_y
+#include <stdio.h>                  // for sscanf, FILE
+#include <stdlib.h>                 // for atoi, atof
+#include <string.h>                 // for strcmp, memcpy, strcpy, memset
 
 #if defined(SWNETCDF)
 #include "include/SW_netCDF.h"
 #endif
+
+#if defined(SOILWAT)
+#include "include/rands.h" // for RandSeed
+#endif
+
 
 /* =================================================== */
 /*                   Local Defines                     */

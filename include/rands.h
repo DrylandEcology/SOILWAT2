@@ -10,7 +10,8 @@
 
 #ifndef RANDS_H
 
-#include "include/SW_datastructs.h"
+#include "include/SW_datastructs.h" // for LOG_INFO
+#include "include/SW_Defines.h"     // for sw_random_t
 
 #ifdef __cplusplus
 extern "C" {

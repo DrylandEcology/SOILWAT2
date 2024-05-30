@@ -1,26 +1,29 @@
-#include <dirent.h>
-#include <errno.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#ifdef __BCC__
-#include <dir.h>
-#include <stat.h>
-#else
-#include <unistd.h>
-#endif
 
-#include "include/filefuncs.h"
-#include "include/myMemory.h"
-#include "include/Times.h"
 
 /* 01/05/2011	(drs) removed unused variable *p from MkDir()
  06/21/2013	(DLM)	memory leak in function getfiles(): variables dname and
  fname need to be free'd
  */
+
+/* =================================================== */
+/*                INCLUDES / DEFINES                   */
+/* --------------------------------------------------- */
+#include "include/filefuncs.h"      // for BaseName, ChDir, CloseFile, Copy...
+#include "include/generic.h"        // for swFALSE, Bool, swTRUE, LOGERROR
+#include "include/myMemory.h"       // for Str_Dup, Mem_Malloc, Mem_ReAlloc
+#include "include/SW_datastructs.h" // for LOG_INFO
+#include "include/SW_Defines.h"     // for MAX_LOG_SIZE, KEY_NOT_FOUND, MAX...
+#include "include/Times.h"          // for timeStringISO8601
+#include <assert.h>                 // for assert
+#include <dirent.h>                 // for closedir, DIR, opendir, readdir
+#include <stdarg.h>                 // for va_end, va_start
+#include <stdio.h>                  // for NULL, fclose, FILE, fopen, EOF
+#include <stdlib.h>                 // for free
+#include <string.h>                 // for strlen, strrchr, strcpy, strchr
+#include <sys/dirent.h>             // for dirent
+#include <sys/errno.h>              // for errno, EACCES
+#include <sys/stat.h>               // for stat, mkdir, S_ISDIR, S_ISREG
+#include <unistd.h>                 // for chdir
 
 /* =================================================== */
 /*             Local Function Definitions              */

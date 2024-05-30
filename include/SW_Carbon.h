@@ -8,7 +8,7 @@ effects of CO2 on transpiration and biomass.
 #ifndef CARBON
 #define CARBON
 
-#include "include/SW_datastructs.h"
+#include "include/SW_datastructs.h" // for SW_Carbon, SW_Model, LOG_INFO
 
 
 #ifdef __cplusplus

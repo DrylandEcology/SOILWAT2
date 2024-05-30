@@ -13,10 +13,13 @@
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
 
-#include <math.h>
+#include "include/SW_Flow_lib_PET.h" // for SW_PET_init_run, actualVaporPre...
+#include "include/filefuncs.h"       // for LogError
+#include "include/generic.h"         // for squared, fmax, fmin, GT, Bool
+#include "include/SW_datastructs.h"  // for SW_ATMD, LOG_INFO
+#include "include/SW_Defines.h"      // for missing, swPI, SW_MISSING, swPI2
+#include <math.h>                    // for tan, pow, sin, cos, exp, fabs
 
-#include "include/filefuncs.h"
-#include "include/SW_Flow_lib_PET.h"
 
 /* =================================================== */
 /*                  Local Variables                    */

@@ -1,16 +1,11 @@
-#include "gtest/gtest.h"
-
-#include <cmath>
-
-#include "include/myMemory.h"
-#include "include/SW_Control.h"
-#include "include/SW_datastructs.h"
-#include "include/SW_Defines.h"
-#include "include/SW_Domain.h"
-#include "include/SW_Files.h"
-#include "include/SW_Main_lib.h"
-#include "include/SW_Model.h"
-#include "include/SW_Weather.h"
+#include "include/generic.h"        // for EQ, swTRUE
+#include "include/SW_Control.h"     // for SW_ALL_deepCopy, SW_CTL_clear_model
+#include "include/SW_datastructs.h" // for LOG_INFO, SW_ALL, SW_DOMAIN, SW_...
+#include "include/SW_Defines.h"     // for SW_OUTNKEYS, SW_MISSING
+#include "include/SW_Domain.h"      // for SW_DOM_deconstruct, SW_DOM_deepCopy
+#include "include/SW_Main_lib.h"    // for sw_fail_on_error, sw_init_logs
+#include "gtest/gtest.h"            // for Test
+#include <string.h>                 // for memcpy, NULL
 
 
 extern SW_ALL template_SW_All;

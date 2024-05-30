@@ -5,7 +5,8 @@
 #ifndef MYMEMORY_H
 #define MYMEMORY_H
 
-#include "include/SW_datastructs.h"
+#include "include/SW_datastructs.h" // for LOG_INFO
+#include <stdio.h>                  // for size_t
 
 
 #ifdef __cplusplus

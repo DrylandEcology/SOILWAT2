@@ -20,7 +20,7 @@
 #ifndef SW_MODEL_H
 #define SW_MODEL_H
 
-#include "include/SW_datastructs.h"
+#include "include/SW_datastructs.h" // for SW_MODEL, SW_DOMAIN, LOG_INFO
 
 #ifdef __cplusplus
 extern "C" {

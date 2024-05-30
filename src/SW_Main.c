@@ -15,28 +15,20 @@
 /* =================================================== */
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "include/filefuncs.h"      // for sw_message
+#include "include/generic.h"        // for Bool, swFALSE, swTRUE
+#include "include/SW_Control.h"     // for SW_CTL_RunSimSet, SW_CTL_clear_m...
+#include "include/SW_datastructs.h" // for LOG_INFO, SW_ALL, SW_DOMAIN, SW_...
+#include "include/SW_Defines.h"     // for SW_OUTNKEYS
+#include "include/SW_Domain.h"      // for SW_DOM_deconstruct, SW_DOM_init_...
+#include "include/SW_Files.h"       // for eFirst
+#include "include/SW_Main_lib.h"    // for sw_fail_on_error, sw_init_args
+#include "include/SW_Model.h"       // for SW_MDL_get_ModelRun
+#include "include/SW_Output.h"      // for SW_OUT_close_files, SW_OUT_creat...
+#include "include/SW_Weather.h"     // for SW_WTH_finalize_all_weather
+#include "include/Times.h"          // for SW_WT_ReportTime, SW_WT_StartTime
+#include <stdio.h>                  // for NULL, stdout
 
-#ifdef __BCC__
-#include <dir.h>
-#else
-#include <unistd.h>
-#endif
-
-#include "include/filefuncs.h"
-#include "include/generic.h"
-#include "include/SW_Control.h"
-#include "include/SW_Defines.h"
-#include "include/SW_Domain.h"
-#include "include/SW_Files.h"
-#include "include/SW_Main_lib.h"
-#include "include/SW_Model.h"
-#include "include/SW_Output.h"
-#include "include/SW_Site.h"
-#include "include/SW_Weather.h"
-#include "include/Times.h"
 
 #if defined(SWNETCDF)
 #include "include/SW_netCDF.h"

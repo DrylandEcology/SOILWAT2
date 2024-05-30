@@ -1,26 +1,11 @@
-#include "gtest/gtest.h"
-
-#include <assert.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "include/filefuncs.h"
-#include "include/generic.h"
-#include "include/myMemory.h"
-#include "include/SW_Defines.h"
-#include "include/SW_Files.h"
-#include "include/SW_Flow_lib.h"
-#include "include/SW_Model.h"
-#include "include/SW_Site.h"
-#include "include/SW_Sky.h"
-#include "include/SW_SoilWater.h"
-#include "include/SW_VegProd.h"
-#include "include/SW_Weather.h"
-#include "include/Times.h"
-
-#include "tests/gtests/sw_testhelpers.h"
+#include "include/generic.h"             // for Bool, swFALSE, swTRUE, RealD
+#include "include/SW_datastructs.h"      // for LOG_INFO, SW_WALLTIME
+#include "include/SW_Defines.h"          // for MAX_MONTHS, TimeInt, MAX_DAYS
+#include "include/SW_Main_lib.h"         // for sw_init_logs
+#include "include/Times.h"               // for doy2mday, doy2month, doy2week
+#include "tests/gtests/sw_testhelpers.h" // for tol9, length
+#include "gtest/gtest.h"                 // for Message, TestPartResult, Test
+#include <stdio.h>                       // for NULL
 
 namespace {
 TEST(TimesTest, TimesLeapYear) {

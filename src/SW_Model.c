@@ -39,21 +39,16 @@
 /* =================================================== */
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
-
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "include/filefuncs.h"
-#include "include/generic.h"
-#include "include/rands.h"
-#include "include/SW_Files.h"
-#include "include/SW_Model.h"
-#include "include/SW_Site.h"
-#include "include/SW_SoilWater.h" /* for setup_new_year() */
-#include "include/SW_Times.h"
-#include "include/Times.h"
+#include "include/SW_Model.h"       // for SW_MDL_construct, SW_MDL_deconst...
+#include "include/filefuncs.h"      // for CloseFile, GetALine, LogError
+#include "include/generic.h"        // for swFALSE, swTRUE, GT, LOGERROR
+#include "include/SW_datastructs.h" // for SW_MODEL, LOG_INFO, SW_DOMAIN
+#include "include/SW_Defines.h"     // for deg_to_rad, ForEachOutPeriod
+#include "include/SW_Files.h"       // for eModel
+#include "include/Times.h"          // for Time_get_lastdoy_y, Time_init_model
+#include <stdio.h>                  // for FILE
+#include <stdlib.h>                 // for atof
+#include <string.h>                 // for memcpy
 
 
 /* =================================================== */

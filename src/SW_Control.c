@@ -27,32 +27,34 @@
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "include/SW_Control.h"      // for SW_ALL_deepCopy, SW_CTL_RunSimSet
+#include "include/filefuncs.h"       // for LogError, sw_message
+#include "include/generic.h"         // for swTRUE, Bool, swFALSE, GT, IntU
+#include "include/myMemory.h"        // for Mem_Malloc
+#include "include/rands.h"           // for RandUniIntRange
+#include "include/SW_Carbon.h"       // for SW_CBN_construct, SW_CBN_decons...
+#include "include/SW_datastructs.h"  // for SW_ALL, LOG_INFO, SW_OUTPUT_POI...
+#include "include/SW_Defines.h"      // for TimeInt, WallTimeSpec, SW_WRAPU...
+#include "include/SW_Domain.h"       // for SW_DOM_CheckProgress, SW_DOM_Cr...
+#include "include/SW_Files.h"        // for SW_F_construct, SW_F_read, eFirst
+#include "include/SW_Flow.h"         // for SW_FLW_init_run
+#include "include/SW_Flow_lib.h"     // for SW_ST_init_run
+#include "include/SW_Flow_lib_PET.h" // for SW_PET_init_run
+#include "include/SW_Main_lib.h"     // for sw_init_logs, sw_write_warnings
+#include "include/SW_Markov.h"       // for SW_MKV_init_ptrs, SW_MKV_decons...
+#include "include/SW_Model.h"        // for SW_MDL_construct, SW_MDL_decons...
+#include "include/SW_Output.h"       // for SW_GENOUT_deepCopy, SW_GENOUT_i...
+#include "include/SW_Site.h"         // for SW_LYR_read, SW_SIT_construct
+#include "include/SW_Sky.h"          // for SW_SKY_new_year, SW_SKY_read
+#include "include/SW_SoilWater.h"    // for SW_SWC_alloc_outptrs, SW_SWC_co...
+#include "include/SW_VegEstab.h"     // for SW_VES_init_ptrs, SW_VES_alloc_...
+#include "include/SW_VegProd.h"      // for SW_VPD_alloc_outptrs, SW_VPD_co...
+#include "include/SW_Weather.h"      // for SW_WTH_alloc_outptrs, SW_WTH_co...
+#include "include/Times.h"           // for diff_walltime, set_walltime
+#include <stdio.h>                   // for NULL, snprintf
+#include <stdlib.h>                  // for free
+#include <string.h>                  // for memcpy, NULL
 
-#include "include/filefuncs.h"
-#include "include/myMemory.h"
-#include "include/rands.h"
-#include "include/SW_Carbon.h"
-#include "include/SW_Control.h"
-#include "include/SW_Defines.h"
-#include "include/SW_Domain.h"
-#include "include/SW_Files.h"
-#include "include/SW_Flow.h"
-#include "include/SW_Flow_lib.h"
-#include "include/SW_Flow_lib_PET.h"
-#include "include/SW_Main_lib.h"
-#include "include/SW_Markov.h"
-#include "include/SW_Model.h"
-#include "include/SW_Output.h"
-#include "include/SW_Site.h"
-#include "include/SW_Sky.h"
-#include "include/SW_SoilWater.h"
-#include "include/SW_VegEstab.h"
-#include "include/SW_VegProd.h"
-#include "include/SW_Weather.h"
-#include "include/Times.h"
 
 #if defined(SWNETCDF)
 #include "include/SW_netCDF.h"

@@ -31,23 +31,21 @@ History:
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
 
-#include <ctype.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "include/filefuncs.h"
-#include "include/myMemory.h"
-#include "include/SW_Files.h"
-#include "include/SW_Model.h"
-#include "include/SW_Output.h"
-#include "include/SW_Site.h"
-#include "include/SW_SoilWater.h"
-#include "include/SW_Times.h"
-#include "include/SW_VegEstab.h"
-#include "include/SW_VegProd.h"
-#include "include/Times.h"
+#include "include/SW_Output.h"      // for ForEachOutKey, SW_EVAPSOIL
+#include "include/filefuncs.h"      // for LogError, CloseFile, GetALine
+#include "include/generic.h"        // for IntUS, Bool, LOGERROR, Str_Co...
+#include "include/myMemory.h"       // for Str_Dup
+#include "include/SW_datastructs.h" // for SW_ALL, SW_OUTTEXT, LOG_INFO
+#include "include/SW_Defines.h"     // for eSWC, OutPeriod, NVEGTYPES
+#include "include/SW_Files.h"       // for eOutput, eSite
+#include "include/SW_Site.h"        // for _echo_inputs
+#include "include/SW_Times.h"       // for Today, Yesterday
+#include "include/SW_VegEstab.h"    // for _echo_VegEstab
+#include "include/SW_VegProd.h"     // for _echo_VegProd
+#include "include/Times.h"          // for Time_days_in_month, WKDAYS
+#include <stdio.h>                  // for snprintf, fprintf, printf
+#include <stdlib.h>                 // for atoi, free
+#include <string.h>                 // for strcat, strcmp, strcpy, memset
 
 // Array-based output declarations:
 #if defined(SW_OUTARRAY) || defined(SWNETCDF)
@@ -56,7 +54,7 @@ History:
 
 // Text-based output declarations:
 #if defined(SW_OUTTEXT)
-#include "include/SW_Output_outtext.h"
+#include "include/SW_Output_outtext.h" // for SW_OUT_close_textfiles, SW_OU...
 #endif
 
 #if defined(SWNETCDF)

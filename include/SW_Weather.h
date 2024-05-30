@@ -37,7 +37,9 @@
 #ifndef SW_WEATHER_H
 #define SW_WEATHER_H
 
-#include "include/SW_datastructs.h"
+#include "include/generic.h"        // for Bool, RealD
+#include "include/SW_datastructs.h" // for SW_WEATHER, SW_SKY, SW_MODEL, LOG_...
+#include "include/SW_Defines.h"     // for TimeInt
 
 #ifdef __cplusplus
 extern "C" {

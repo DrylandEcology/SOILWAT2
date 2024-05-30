@@ -16,7 +16,10 @@
 #ifndef SW_OUTPUT_ARRAY_H
 #define SW_OUTPUT_ARRAY_H
 
-#include "include/SW_datastructs.h"
+#include "include/generic.h"        // for Bool, RealD
+#include "include/SW_datastructs.h" // for SW_MODEL, SW_OUTPUT, SW_GEN_OUT, L...
+#include "include/SW_Defines.h"     // for OutPeriod, SW_OUTNPERIODS, SW_OUTN...
+#include <stdio.h>                  // for size_t
 
 #ifdef __cplusplus
 extern "C" {

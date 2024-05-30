@@ -208,20 +208,14 @@ calls to surface_temperature_under_snow to account for the new parameters
 /* =================================================== */
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
+#include "include/SW_Flow_lib.h"    // for EsT_partitioning, SW_ST_init_run
+#include "include/filefuncs.h"      // for LogError
+#include "include/generic.h"        // for interpolation, GT, LT, fmax, fmin
+#include "include/SW_datastructs.h" // for LOG_INFO, SW_SITE, ST_RGR_VALUES
+#include "include/SW_Defines.h"     // for MAX_LAYERS, MAX_ST_RGR, TimeInt
+#include "include/SW_SoilWater.h"   // for SW_SWRC_SWCtoSWP
+#include <math.h>                   // for fabs, exp, log10, copysign
 
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "include/filefuncs.h"
-#include "include/SW_Carbon.h"
-#include "include/SW_Flow_lib.h"
-#include "include/SW_Model.h"
-#include "include/SW_Site.h"
-#include "include/SW_SoilWater.h"
-#include "include/SW_Times.h"
-#include "include/Times.h"
 
 /* =================================================== */
 /*                  Local Variables                    */

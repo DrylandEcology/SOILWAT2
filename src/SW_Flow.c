@@ -203,20 +203,15 @@
 /* =================================================== */
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
-
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-
-#include "include/SW_Flow.h"
-#include "include/SW_Flow_lib.h"
-#include "include/SW_Flow_lib_PET.h"
-#include "include/SW_Model.h"
-#include "include/SW_Site.h"
-#include "include/SW_Sky.h"
-#include "include/SW_SoilWater.h"
-#include "include/SW_Times.h"
-#include "include/SW_VegProd.h"
+#include "include/SW_Flow.h"         // for SW_FLW_init_run, SW_Water_Flow
+#include "include/generic.h"         // for RealD, GT, fmax, EQ, fmin
+#include "include/SW_datastructs.h"  // for LOG_INFO, SW_ALL, SW_SOILWAT
+#include "include/SW_Defines.h"      // for ForEachVegType, NVEGTYPES, ForE...
+#include "include/SW_Flow_lib.h"     // for evap_fromSurface, remove_from_soil
+#include "include/SW_Flow_lib_PET.h" // for petfunc, solar_radiation
+#include "include/SW_SoilWater.h"    // for SW_SWC_snowloss, SW_SnowDepth
+#include "include/SW_Times.h"        // for Today, Yesterday
+#include "include/SW_VegProd.h"      // for WUE_INDEX
 
 /* =================================================== */
 /*             Global Function Definitions             */

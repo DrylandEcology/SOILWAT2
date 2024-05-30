@@ -1,15 +1,15 @@
-#include <ctype.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
 
-#include "include/filefuncs.h"
-#include "include/generic.h"
-#include "include/myMemory.h"
-#include "include/rands.h"
-
+/* =================================================== */
+/*                INCLUDES / DEFINES                   */
+/* --------------------------------------------------- */
+#include "include/rands.h"          // for RandBeta, RandListType, RandNorm
+#include "include/filefuncs.h"      // for LogError
+#include "include/generic.h"        // for LOGERROR, max, min, sqrt
+#include "include/myMemory.h"       // for Mem_Malloc
+#include "include/SW_datastructs.h" // for LOG_INFO
+#include "include/SW_Defines.h"     // for sw_random_t, SW_MISSING
+#include <math.h>                   // for log, exp, ldexp
+#include <stdlib.h>                 // for free
 
 #ifdef RSOILWAT
 // R-API requires that we use it's own random number implementation
@@ -18,11 +18,11 @@
 // and https://cran.r-project.org/doc/manuals/R-exts.html#Random-numbers
 #include <R.h>     // for the R random number generators from <R_ext/Random.h>,
                    // ie., GetRNGstate() and PutRNGstate()
-#include <Rmath.h> // for rnorm(), runif(), unif_rand()
-
+#include <Rmath.h> // for rnorm, runif, unif_rand
 #else
-#include "external/pcg/pcg_basic.h"
-
+#include "external/pcg/pcg_basic.h" // for pcg32_srandom_r, pcg32_boundedra...
+#include <stdio.h>                  // for NULL
+#include <time.h>                   // for time
 #endif
 
 

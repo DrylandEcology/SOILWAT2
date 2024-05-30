@@ -9,8 +9,9 @@
 #ifndef FILEFUNCS_H
 #define FILEFUNCS_H
 
-#include "include/generic.h"
-#include "include/SW_datastructs.h"
+#include "include/generic.h"        // for Bool
+#include "include/SW_datastructs.h" // for LOG_INFO
+#include <stdio.h>                  // for FILE
 
 #ifdef __cplusplus
 extern "C" {

@@ -1,30 +1,16 @@
-#include "gtest/gtest.h"
-
-#include <assert.h>
-#include <ctype.h>
-#include <dirent.h>
-#include <errno.h>
-#include <float.h>
-#include <math.h>
-#include <memory.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <time.h>
-#include <unistd.h>
-
-#include "include/filefuncs.h"
-#include "include/generic.h"
-#include "include/SW_Control.h"
-#include "include/SW_Files.h"
-#include "include/SW_Output.h"
-#include "include/SW_Site.h"
-#include "include/SW_SoilWater.h"
 
 #include "tests/gtests/sw_testhelpers.h"
+#include "include/generic.h"    // for RealF, swFALSE, swTRUE, RealD
+#include "include/myMemory.h"   // for Str_Dup
+#include "include/SW_Control.h" // for SW_CTL_alloc_outptrs, SW_CTL_clear_m...
+#include "include/SW_Files.h"   // for eFirst
+#include "include/SW_Model.h"   // for SW_MDL_get_ModelRun
+#include "include/SW_Output.h"  // for SW_OUT_setup_output
+#include "include/SW_Site.h"    // for encode_str2ptf, encode_str2swrc, set...
+#include "include/SW_Weather.h" // for SW_WTH_finalize_all_weather
+#include <stdio.h>              // for NULL, fprintf, stderr
+#include <stdlib.h>             // for exit
+#include <string.h>             // for strcpy
 
 
 SW_ALL template_SW_All;

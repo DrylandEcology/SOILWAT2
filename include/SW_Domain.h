@@ -1,7 +1,9 @@
 #ifndef SWDOMAIN_H
 #define SWDOMAIN_H
 
-#include "include/SW_datastructs.h"
+#include "include/generic.h"        // for Bool
+#include "include/SW_datastructs.h" // for SW_DOMAIN, SW_DOMAIN
+#include "include/SW_Defines.h"     // for LyrIndex
 
 #ifdef __cplusplus
 extern "C" {

@@ -16,7 +16,7 @@
 #ifndef SW_FILES_H
 #define SW_FILES_H
 
-#include "include/SW_datastructs.h"
+#include "include/SW_datastructs.h" // for PATH_INFO, LOG_INFO
 
 #ifdef __cplusplus
 extern "C" {

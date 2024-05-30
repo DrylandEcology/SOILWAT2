@@ -1,23 +1,27 @@
-#include <netcdf.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+/* =================================================== */
+/*                INCLUDES / DEFINES                   */
+/* --------------------------------------------------- */
+#include "include/SW_netCDF.h"          // for vNCdom, vNCprog, VARNAME_INDEX
+#include "include/filefuncs.h"          // for LogError, FileExists, CloseFile
+#include "include/generic.h"            // for Bool, swFALSE, LOGERROR, swTRUE
+#include "include/myMemory.h"           // for Str_Dup, Mem_Malloc
+#include "include/SW_datastructs.h"     // for LOG_INFO, SW_NETCDF, SW_DOMAIN
+#include "include/SW_Defines.h"         // for MAX_FILENAMESIZE, OutPeriod
+#include "include/SW_Domain.h"          // for SW_DOM_calc_ncSuid
+#include "include/SW_Files.h"           // for eNCInAtt, eNCIn, eNCOutVars
+#include "include/SW_Output.h"          // for ForEachOutKey, SW_ESTAB, pd2...
+#include "include/SW_Output_outarray.h" // for iOUTnc
+#include "include/SW_VegProd.h"         // for key2veg
+#include "include/Times.h"              // for isleapyear, timeStringISO8601
+#include <math.h>                       // for NAN, ceil, isnan
+#include <netcdf.h>                     // for NC_NOERR, nc_close, NC_DOUBLE
+#include <stdio.h>                      // for size_t, NULL, snprintf, sscanf
+#include <stdlib.h>                     // for free, atof, atoi
+#include <string.h>                     // for strcmp, strlen, strstr, memcpy
 
 #if defined(SWUDUNITS)
-#include <udunits2.h>
+#include <udunits2.h> // for ut_free, ut_parse, utEncoding
 #endif
-
-#include "include/filefuncs.h"
-#include "include/generic.h"
-#include "include/myMemory.h"
-#include "include/SW_Defines.h"
-#include "include/SW_Domain.h"
-#include "include/SW_Files.h"
-#include "include/SW_netCDF.h"
-#include "include/SW_Output.h"
-#include "include/SW_Output_outarray.h"
-#include "include/SW_VegProd.h" // externs `key2veg[]`
-#include "include/Times.h"
 
 /* =================================================== */
 /*                   Local Defines                     */

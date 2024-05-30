@@ -16,7 +16,10 @@
 #ifndef SW_OUTPUT_TXT_H
 #define SW_OUTPUT_TXT_H
 
-#include "include/SW_datastructs.h"
+#include "include/generic.h"        // for Bool
+#include "include/SW_datastructs.h" // for SW_FILE_STATUS, SW_OUTPUT, LOG_INFO
+#include "include/SW_Defines.h"     // for SW_OUTNPERIODS
+#include <stdio.h>                  // for size_t
 
 #ifdef __cplusplus
 extern "C" {

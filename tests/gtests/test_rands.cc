@@ -1,28 +1,10 @@
-#include <gmock/gmock.h>
-
-#include <assert.h>
-#include <ctype.h>
-#include <dirent.h>
-#include <errno.h>
-#include <float.h>
-#include <math.h>
-#include <memory.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <time.h>
-#include <unistd.h>
-
-#include "include/filefuncs.h"
-#include "include/generic.h"
-#include "include/myMemory.h"
-#include "include/rands.h"
-#include "include/SW_Main_lib.h"
-
-#include "tests/gtests/sw_testhelpers.h"
+#include "include/rands.h"          // for RandSeed, RandBeta, RandUniFloat...
+#include "include/SW_datastructs.h" // for LOG_INFO
+#include "include/SW_Defines.h"     // for sw_random_t, SW_MISSING
+#include "include/SW_Main_lib.h"    // for sw_fail_on_error, sw_init_logs
+#include "gmock/gmock.h"            // for HasSubstr, MakePredicateFormatte...
+#include "gtest/gtest.h"            // for Test, Message, AssertionResult, T...
+#include <stdio.h>                  // for NULL
 
 using ::testing::HasSubstr;
 

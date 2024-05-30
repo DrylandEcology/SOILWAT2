@@ -18,8 +18,8 @@
 #ifndef SW_CONTROL_H
 #define SW_CONTROL_H
 
-#include "include/generic.h" // for `Bool`, `swTRUE`, `swFALSE`
-#include "include/SW_datastructs.h"
+#include "include/generic.h"        // for Bool
+#include "include/SW_datastructs.h" // for SW_ALL, LOG_INFO, SW_DOMAIN, SW_OU...
 
 #ifdef __cplusplus
 extern "C" {

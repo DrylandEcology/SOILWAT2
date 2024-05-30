@@ -40,9 +40,9 @@
 #ifndef TIMES_H
 #define TIMES_H
 
-#include "include/SW_datastructs.h"
-#include "include/SW_Defines.h"
-#include <time.h>
+#include "include/generic.h"        // for Bool
+#include "include/SW_datastructs.h" // for SW_WALLTIME, LOG_INFO
+#include "include/SW_Defines.h"     // for TimeInt, WallTimeSpec
 
 #ifdef __cplusplus
 extern "C" {

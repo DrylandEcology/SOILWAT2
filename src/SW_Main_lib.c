@@ -15,20 +15,16 @@
 /* =================================================== */
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
-#ifdef __BCC__
-#include <dir.h>
-#else
-#include <unistd.h>
-#endif
-
-#include "include/filefuncs.h"
-#include "include/generic.h"
-#include "include/myMemory.h"
-#include "include/SW_Main_lib.h"
+#include "include/SW_Main_lib.h"    // for sw_fail_on_error, sw_init_args
+#include "include/filefuncs.h"      // for LogError, ChDir, CloseFile, sw_m...
+#include "include/generic.h"        // for LOGERROR, swFALSE, Bool, swTRUE
+#include "include/myMemory.h"       // for Str_Dup
+#include "include/SW_datastructs.h" // for LOG_INFO
+#include "include/SW_Defines.h"     // for MAX_MSGS, MAX_LOG_SIZE, BUILD_DATE
+#include <stdio.h>                  // for fprintf, stderr, fflush, stdout
+#include <stdlib.h>                 // for atof, atoll, exit, free, EXIT_FA...
+#include <string.h>                 // for strcpy, strncmp
 
 #ifdef RSOILWAT
 #include <R.h> // for error(), and warning() from <R_ext/Error.h>

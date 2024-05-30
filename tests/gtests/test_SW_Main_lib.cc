@@ -1,9 +1,10 @@
-#include "gtest/gtest.h"
-#include <gmock/gmock.h>
-
-#include "include/filefuncs.h"
-#include "include/SW_datastructs.h"
-#include "include/SW_Main_lib.h"
+#include "include/filefuncs.h"      // for LogError
+#include "include/generic.h"        // for LOGERROR, LOGWARN
+#include "include/SW_datastructs.h" // for LOG_INFO
+#include "include/SW_Main_lib.h"    // for sw_init_logs, sw_fail_on_error
+#include "gmock/gmock.h"            // for HasSubstr, MakePredicateFormatte...
+#include "gtest/gtest.h"            // for Test, Message, AssertionResult
+#include <stddef.h>                 // for NULL
 
 
 using ::testing::HasSubstr;

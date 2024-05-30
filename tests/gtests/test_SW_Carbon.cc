@@ -1,42 +1,11 @@
-#include "gtest/gtest.h"
-
-#include <assert.h>
-#include <ctype.h>
-#include <dirent.h>
-#include <errno.h>
-#include <float.h>
-#include <math.h>
-#include <memory.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <time.h>
-#include <unistd.h>
-
-#include <typeinfo> // for 'typeid'
-
-#include "include/filefuncs.h"
-#include "include/generic.h"
-#include "include/myMemory.h"
-#include "include/rands.h"
-#include "include/SW_Carbon.h"
-#include "include/SW_Defines.h"
-#include "include/SW_Files.h"
-#include "include/SW_Markov.h"
-#include "include/SW_Model.h"
-#include "include/SW_Site.h"
-#include "include/SW_Sky.h"
-#include "include/SW_SoilWater.h"
-#include "include/SW_Times.h"
-#include "include/SW_VegEstab.h"
-#include "include/SW_VegProd.h"
-#include "include/SW_Weather.h"
-#include "include/Times.h"
-
-#include "tests/gtests/sw_testhelpers.h"
+#include "include/SW_Carbon.h"           // for SW_CBN_construct, SW_CBN_read
+#include "include/SW_datastructs.h"      // for SW_CARBON
+#include "include/SW_Defines.h"          // for TimeInt, ForEachVegType
+#include "include/SW_Main_lib.h"         // for sw_fail_on_error
+#include "include/SW_VegProd.h"          // for BIO_INDEX, WUE_INDEX
+#include "tests/gtests/sw_testhelpers.h" // for CarbonFixtureTest
+#include "gtest/gtest.h"                 // for Message, Test, CmpHelperGT
+#include <string.h>                      // for strcpy
 
 namespace {
 // Test the SW_Carbon constructor 'SW_CBN_construct'

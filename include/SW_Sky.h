@@ -26,7 +26,9 @@ transmission_daily, snow_density_daily each of [MAX_DAYS]
 #ifndef SW_SKY_H
 #define SW_SKY_H
 
-#include "include/SW_datastructs.h"
+#include "include/generic.h"        // for RealD
+#include "include/SW_datastructs.h" // for LOG_INFO, SW_MODEL, SW_SKY
+#include "include/SW_Defines.h"     // for MAX_MONTHS
 
 #ifdef __cplusplus
 extern "C" {

@@ -71,24 +71,22 @@
 /* =================================================== */
 /*                INCLUDES / DEFINES                   */
 
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "include/SW_SoilWater.h"   // for FXW_h0, FXW_hr, SWRC_SWCtoSWP
+#include "include/filefuncs.h"      // for LogError, CloseFile, GetALine
+#include "include/generic.h"        // for RealD, LOGERROR, GT, LT, fmax
+#include "include/myMemory.h"       // for Mem_Calloc, Str_Dup
+#include "include/SW_datastructs.h" // for LOG_INFO, SW_SOILWAT, SW_SITE
+#include "include/SW_Defines.h"     // for NVEGTYPES, LyrIndex, MAX_LAYERS
+#include "include/SW_Files.h"       // for eSoilwat
+#include "include/SW_Flow.h"        // for SW_Water_Flow
+#include "include/SW_Site.h"        // for sw_Campbell1974, sw_FXW, sw_vanG...
+#include "include/SW_Times.h"       // for Today, Yesterday
+#include "include/Times.h"          // for yearto4digit
+#include <math.h>                   // for fabs, pow, log, ceil, copysign
+#include <stdio.h>                  // for NULL, FILE, sscanf, snprintf
+#include <stdlib.h>                 // for atoi, free
+#include <string.h>                 // for memset
 
-#include "include/filefuncs.h"
-#include "include/myMemory.h"
-#include "include/SW_Files.h"
-#include "include/SW_Flow.h"
-#include "include/SW_Model.h"
-#include "include/SW_Site.h"
-#include "include/SW_SoilWater.h"
-#include "include/SW_Times.h"
-#include "include/Times.h"
-
-#ifdef SWDEBUG
-#include "include/SW_Weather.h"
-#endif
 
 #ifdef RSOILWAT
 // SW_SWC_new_year() is currently not functional in rSOILWAT2

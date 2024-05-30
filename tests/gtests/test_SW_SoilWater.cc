@@ -1,27 +1,16 @@
-#include <gmock/gmock.h>
-
-#include <assert.h>
-#include <iostream>
-#include <math.h>
-#include <sstream>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string>
-
-#include "include/filefuncs.h"
-#include "include/generic.h"
-#include "include/myMemory.h"
-#include "include/SW_Defines.h"
-#include "include/SW_Files.h"
-#include "include/SW_Flow_lib.h"
-#include "include/SW_Main_lib.h"
-#include "include/SW_Model.h"
-#include "include/SW_Site.h"
-#include "include/SW_SoilWater.h"
-#include "include/SW_VegProd.h"
-
-#include "tests/gtests/sw_testhelpers.h"
+#include "include/generic.h"             // for RealD, LOGERROR, LOGWARN
+#include "include/SW_datastructs.h"      // for LOG_INFO, SW_SITE
+#include "include/SW_Defines.h"          // for SW_MISSING, SWRC_PARAM_NMAX
+#include "include/SW_Main_lib.h"         // for sw_fail_on_error, sw_init_logs
+#include "include/SW_Site.h"             // for N_SWRCs, swrc2str, N_PTFs
+#include "include/SW_SoilWater.h"        // for SWRC_SWCtoSWP, SWRC_SWPtoSWC
+#include "tests/gtests/sw_testhelpers.h" // for tol9, length
+#include "gmock/gmock.h"                 // for HasSubstr, MakePredicateFor...
+#include "gtest/gtest.h"                 // for Test, Message, TestPartResul...
+#include <sstream>                       // for basic_ostringstream, basic_...
+#include <stdio.h>                       // for NULL
+#include <string.h>                      // for memset
+#include <string>                        // for allocator, char_traits
 
 using ::testing::HasSubstr;
 
