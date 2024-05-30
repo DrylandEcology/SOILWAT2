@@ -335,9 +335,9 @@ check_SOILWAT2() {
 
 
   echo $'\n'$'\n'\
-       --------------------------------------------------$'\n'\
-       "Run ""${mode}""-based tests"$'\n'\
-       --------------------------------------------------
+--------------------------------------------------$'\n'\
+"Run ""${mode}""-based tests"$'\n'\
+--------------------------------------------------
 
   echo $'\n'"Target 'test_run' ..."
   res=$(run_fresh_sw2 "${cxxcomp}" aflags[@] "${mode}" test_run)
@@ -372,7 +372,7 @@ check_SOILWAT2() {
 
   if exists leaks ; then
 
-    echo $'\n'"Target: 'bin_leaks' ..."
+    echo $'\n'"Target: 'test_leaks' ..."
     res=$(run_fresh_sw2 "${cxxcomp}" aflags[@] "${mode}" test)
 
     report_if_error "${res}" "${verbosity}"
