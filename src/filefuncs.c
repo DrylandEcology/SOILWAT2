@@ -15,15 +15,23 @@
 #include "include/SW_Defines.h"     // for MAX_LOG_SIZE, KEY_NOT_FOUND, MAX...
 #include "include/Times.h"          // for timeStringISO8601
 #include <assert.h>                 // for assert
-#include <dirent.h>                 // for closedir, DIR, opendir, readdir
+#include <dirent.h>                 // for dirent, closedir, DIR, opendir, re...
+#include <errno.h>                  // for errno, EACCES
 #include <stdarg.h>                 // for va_end, va_start
 #include <stdio.h>                  // for NULL, fclose, FILE, fopen, EOF
 #include <stdlib.h>                 // for free
 #include <string.h>                 // for strlen, strrchr, strcpy, strchr
-#include <sys/dirent.h>             // for dirent
-#include <sys/errno.h>              // for errno, EACCES
 #include <sys/stat.h>               // for stat, mkdir, S_ISDIR, S_ISREG
 #include <unistd.h>                 // for chdir
+
+/* Note
+Some of these headers are not part of the C Standard Library header files;
+however, they are part of the C POSIX library:
+    * <dirent.h>
+    * <sys/stat.h>
+    * <unistd.h>
+*/
+
 
 /* =================================================== */
 /*             Local Function Definitions              */

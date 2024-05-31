@@ -10,6 +10,10 @@
 #-------------------------------------------------------------------------------
 #--- Ignore the following messages reported by `include-what-you-use` ----------
 #
+# include/generic.h should remove these lines:
+# - #include <R.h>  // lines 68-68
+#
+#
 # src/generic.c should add these lines:
 # #include <_ctype.h>              // for isspace, tolower, toupper
 #
@@ -19,17 +23,17 @@
 #
 # src/filefuncs.c should add these lines:
 # #include <__stdarg_va_arg.h>         // for va_end, va_start
+# #include <sys/dirent.h>              // for dirent
+# #include <sys/errno.h>               // for errno, EACCES
 #
 # src/filefuncs.c should remove these lines:
-# - #include <stdarg.h>  // lines 11-11
+# - #include <errno.h>  // lines 19-19
+# - #include <stdarg.h>  // lines 20-20
 #
 #
 # src/SW_netCDF.c should add these lines:
 # #include "converter.h"                   // for cv_convert_doubles, cv_free
 #
-#
-# include/generic.h should remove these lines:
-# - #include <R.h>  // lines 68-68
 #
 #-------------------------------------------------------------------------------
 
