@@ -20,7 +20,7 @@
 #ifndef SW_MODEL_H
 #define SW_MODEL_H
 
-#include "include/SW_datastructs.h"
+#include "include/SW_datastructs.h" // for SW_MODEL, SW_DOMAIN, LOG_INFO
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,13 +29,22 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_MDL_read(SW_MODEL* SW_Model, char *InFiles[], LOG_INFO* LogInfo);
-void SW_MDL_construct(SW_MODEL* SW_Model);
+void SW_MDL_read(SW_MODEL *SW_Model, char *InFiles[], LOG_INFO *LogInfo);
+
+void SW_MDL_construct(SW_MODEL *SW_Model);
+
 void SW_MDL_deconstruct(void);
-void SW_MDL_new_year(SW_MODEL* SW_Model);
-void SW_MDL_new_day(SW_MODEL* SW_Model);
-void SW_MDL_get_ModelRun(SW_MODEL* SW_Model, SW_DOMAIN* SW_Domain,
-                         char* fileNames[], LOG_INFO* LogInfo);
+
+void SW_MDL_new_year(SW_MODEL *SW_Model);
+
+void SW_MDL_new_day(SW_MODEL *SW_Model);
+
+void SW_MDL_get_ModelRun(
+    SW_MODEL *SW_Model,
+    SW_DOMAIN *SW_Domain,
+    char *fileNames[],
+    LOG_INFO *LogInfo
+);
 
 
 #ifdef __cplusplus

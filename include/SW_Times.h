@@ -31,17 +31,13 @@
 #ifndef SW_TIMES_H
 #define SW_TIMES_H
 
-#include "include/Times.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 
 /*---------------------------------------------------------------*/
-typedef enum {
-	Yesterday, Today
-} TwoDays;
+typedef enum { Yesterday, Today } TwoDays;
 
 #define DAYFIRST_NORTH 1
 #define DAYLAST_NORTH 366

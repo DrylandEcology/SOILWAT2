@@ -1,0 +1,27 @@
+# List of specific commits to ignore by git
+
+# Useful for running automatic formatters without losing author information on relevant revisions
+
+# based on information from https://michaelheap.com/git-ignore-rev/
+
+# Run `git blame --ignore-revs-file .git-blame-ignore-revs`
+
+# Or set up global git config:
+#   # Set a global ignoreRevsFile
+#   git config --global blame.ignoreRevsFile .git-blame-ignore-revs
+#
+#   # Mark any lines that have had a commit skipped using --ignore-rev with a `?`
+#   git config --global blame.markIgnoredLines true
+#
+#   # Mark any lines that were added in a skipped commit and can not be attributed with a `*`
+#   git config --global blame.markUnblamableLines true
+
+
+# Initial push of existing code base
+af175f2ba4af18a3957e585a497e4913e2ec8847
+
+# Format entire code base
+0987e33874b8bba546d0cc71f7e096bb9f843869
+
+# Reorganize header include directives
+6853e36433d67be0b9c3a8b46bf46e634352a1b1

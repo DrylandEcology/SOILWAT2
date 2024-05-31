@@ -16,7 +16,7 @@
 #ifndef SW_FILES_H
 #define SW_FILES_H
 
-#include "include/SW_datastructs.h"
+#include "include/SW_datastructs.h" // for PATH_INFO, LOG_INFO
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,41 +28,61 @@ extern "C" {
  * input from `files.in`.
  */
 typedef enum {
-	eNoFile = -1,
-	/* List of all input files */
-	eFirst = 0,
+    eNoFile = -1,
+    /* List of all input files */
+    eFirst = 0,
     /* netCDF-related input files directory */
-    eNCIn, eNCInAtt, eNCOutVars,
-	/* Domain information */
-	eDomain,
-	/* Description of a model run */
-	eModel, eLog,
-	/* Description of simulated site */
-	eSite, eLayers, eSWRCp,
-	/* Weather and climate forcing */
-	eWeather, eMarkovProb, eMarkovCov, eSky,
-	/* Description of vegetation */
-	eVegProd, eVegEstab,
-	/* Description of CO2 effects */
-	eCarbon,
-	/* (optional) soil moisture measurements */
-	eSoilwat,
-	/* Simulation outputs */
-	eOutput, eOutputDaily, eOutputWeekly, eOutputMonthly, eOutputYearly,
-	eOutputDaily_soil, eOutputWeekly_soil, eOutputMonthly_soil, eOutputYearly_soil,
-	eEndFile
+    eNCIn,
+    eNCInAtt,
+    eNCOutVars,
+    /* Domain information */
+    eDomain,
+    /* Description of a model run */
+    eModel,
+    eLog,
+    /* Description of simulated site */
+    eSite,
+    eLayers,
+    eSWRCp,
+    /* Weather and climate forcing */
+    eWeather,
+    eMarkovProb,
+    eMarkovCov,
+    eSky,
+    /* Description of vegetation */
+    eVegProd,
+    eVegEstab,
+    /* Description of CO2 effects */
+    eCarbon,
+    /* (optional) soil moisture measurements */
+    eSoilwat,
+    /* Simulation outputs */
+    eOutput,
+    eOutputDaily,
+    eOutputWeekly,
+    eOutputMonthly,
+    eOutputYearly,
+    eOutputDaily_soil,
+    eOutputWeekly_soil,
+    eOutputMonthly_soil,
+    eOutputYearly_soil,
+    eEndFile
 } SW_FileIndex;
 
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_F_read(PATH_INFO* PathInfo, LOG_INFO* LogInfo);
-void SW_F_deepCopy(PATH_INFO* source, PATH_INFO* dest, LOG_INFO* LogInfo);
+void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo);
+
+void SW_F_deepCopy(PATH_INFO *source, PATH_INFO *dest, LOG_INFO *LogInfo);
+
 void SW_F_init_ptrs(char *InFiles[]);
-void SW_F_construct(const char *firstfile, char _ProjDir[],
-					LOG_INFO *LogInfo);
+
+void SW_F_construct(const char *firstfile, char _ProjDir[], LOG_INFO *LogInfo);
+
 void SW_F_deconstruct(char *InFiles[]);
-void SW_CSV_F_INIT(const char *s, LOG_INFO* LogInfo);
+
+void SW_CSV_F_INIT(const char *s, LOG_INFO *LogInfo);
 
 
 #ifdef __cplusplus

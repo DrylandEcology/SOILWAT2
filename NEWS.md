@@ -69,6 +69,9 @@
   of the previous repository `imneme/pcg-c-basic` (#353; @dschlaep).
   This allowed us to fix a function declaration without a prototype.
 
+* Specified a consistent code style and formatted code,
+  header include directives, and doxygen documentation (#316; @dschlaep).
+
 ## Changes to inputs
 * New input file `"domain.in"` with input variables that specify
   type and spatial dimensions of the simulation `"domain"`

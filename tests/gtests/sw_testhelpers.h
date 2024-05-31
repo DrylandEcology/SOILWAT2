@@ -1,14 +1,11 @@
-#include <cmath>
-#include "gtest/gtest.h"
-#include "include/SW_datastructs.h"
-#include "include/SW_Defines.h"
-#include "include/SW_Control.h"
-#include "include/SW_Main_lib.h"
-#include "include/SW_Files.h"
-#include "include/myMemory.h"
-#include "include/SW_Weather.h"
-#include "include/SW_Model.h"
-#include "include/SW_Domain.h"
+#include "include/generic.h"        // for EQ, swTRUE
+#include "include/SW_Control.h"     // for SW_ALL_deepCopy, SW_CTL_clear_model
+#include "include/SW_datastructs.h" // for LOG_INFO, SW_ALL, SW_DOMAIN, SW_...
+#include "include/SW_Defines.h"     // for SW_OUTNKEYS, SW_MISSING
+#include "include/SW_Domain.h"      // for SW_DOM_deconstruct, SW_DOM_deepCopy
+#include "include/SW_Main_lib.h"    // for sw_fail_on_error, sw_init_logs
+#include "gtest/gtest.h"            // for Test
+#include <string.h>                 // for memcpy, NULL
 
 
 extern SW_ALL template_SW_All;
@@ -16,10 +13,11 @@ extern SW_DOMAIN template_SW_Domain;
 extern SW_OUTPUT_POINTERS template_SW_OutputPtrs[SW_OUTNKEYS];
 
 
-#define length(array) (sizeof(array) / sizeof(*(array))) //get length of an array
+// get length of an array
+#define sw_length(array) (sizeof(array) / sizeof(*(array)))
 
-static const double
-  tol0 = 1e-0, tol1 = 1e-1, tol2 = 1e-2, tol3 = 1e-3, tol6 = 1e-6, tol9 = 1e-9;
+static const double tol0 = 1e-0, tol1 = 1e-1, tol2 = 1e-2, tol3 = 1e-3,
+                    tol6 = 1e-6, tol9 = 1e-9;
 
 
 /* SOILWAT2's macro `missing` uses `isfinite` which is C99; however,
@@ -29,21 +27,25 @@ static const double
       did you mean 'std::isfinite'?"
 */
 #undef missing
-#define missing(x)  ( EQ( fabs( (x) ), SW_MISSING ) || !std::isfinite( (x) ) )
+#define missing(x) (EQ(fabs((x)), SW_MISSING) || !std::isfinite((x)))
 
 
 /* Functions for tests */
 
-void create_test_soillayers(unsigned int nlayers,
-      SW_VEGPROD *SW_VegProd, SW_SITE *SW_Site, LOG_INFO *LogInfo);
+void create_test_soillayers(
+    unsigned int nlayers,
+    SW_VEGPROD *SW_VegProd,
+    SW_SITE *SW_Site,
+    LOG_INFO *LogInfo
+);
 
 void setup_SW_Site_for_tests(SW_SITE *SW_Site);
 
 void setup_testGlobalSoilwatTemplate();
 void teardown_testGlobalSoilwatTemplate();
 
-
-/* AllTestFixture is our base test fixture class inheriting from `::testing::Test` */
+/* AllTestFixture is our base test fixture class inheriting from
+ * `::testing::Test` */
 /* Note: don't use text fixtures with death tests in thread-safe mode,
    use class `AllTestStruct` (inside the death assertion) instead (see below).
    This is because each thread-safe death assertion is run from scratch and
@@ -53,7 +55,6 @@ void teardown_testGlobalSoilwatTemplate();
 */
 class AllTestFixture : public ::testing::Test {
   protected:
-
     SW_ALL SW_All;
     SW_DOMAIN SW_Domain;
     LOG_INFO LogInfo;
@@ -65,7 +66,7 @@ class AllTestFixture : public ::testing::Test {
     void SetUp() override {
         sw_init_logs(NULL, &LogInfo);
 
-        memcpy(&SW_OutputPtrs, &template_SW_OutputPtrs, sizeof (SW_OutputPtrs));
+        memcpy(&SW_OutputPtrs, &template_SW_OutputPtrs, sizeof(SW_OutputPtrs));
 
         SW_DOM_deepCopy(&template_SW_Domain, &SW_Domain, &LogInfo);
         sw_fail_on_error(&LogInfo);
@@ -80,7 +81,6 @@ class AllTestFixture : public ::testing::Test {
         SW_CTL_clear_model(swTRUE, &SW_All);
     }
 };
-
 
 using CarbonFixtureTest = AllTestFixture;
 

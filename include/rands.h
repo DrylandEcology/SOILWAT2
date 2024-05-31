@@ -10,9 +10,8 @@
 
 #ifndef RANDS_H
 
-#include <stdio.h>
-#include <float.h>
-#include "include/SW_datastructs.h"
+#include "include/SW_datastructs.h" // for LOG_INFO
+#include "include/SW_Defines.h"     // for sw_random_t
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,17 +28,27 @@ typedef long RandListType;
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void RandSeed(
-  unsigned long initstate,
-  unsigned long initseq,
-  sw_random_t* pcg_rng
+    unsigned long initstate, unsigned long initseq, sw_random_t *pcg_rng
 );
-double RandUni(sw_random_t* pcg_rng);
-int RandUniIntRange(const long first, const long last, sw_random_t* pcg_rng);
-float RandUniFloatRange(const float min, const float max, sw_random_t* pcg_rng);
-double RandNorm(double mean, double stddev, sw_random_t* pcg_rng);
-void RandUniList(long count, long first, long last, RandListType list[],
-                 sw_random_t* pcg_rng, LOG_INFO* LogInfo);
-float RandBeta(float aa, float bb, sw_random_t* pcg_rng, LOG_INFO* LogInfo);
+
+double RandUni(sw_random_t *pcg_rng);
+
+int RandUniIntRange(const long first, const long last, sw_random_t *pcg_rng);
+
+float RandUniFloatRange(const float min, const float max, sw_random_t *pcg_rng);
+
+double RandNorm(double mean, double stddev, sw_random_t *pcg_rng);
+
+void RandUniList(
+    long count,
+    long first,
+    long last,
+    RandListType list[],
+    sw_random_t *pcg_rng,
+    LOG_INFO *LogInfo
+);
+
+float RandBeta(float aa, float bb, sw_random_t *pcg_rng, LOG_INFO *LogInfo);
 
 
 #ifdef __cplusplus
