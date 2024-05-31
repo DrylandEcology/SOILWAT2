@@ -91,7 +91,7 @@
 #include "include/SW_Markov.h"       // for SW_MKV_today
 #include "include/SW_SoilWater.h"    // for SW_SWC_adjust_snow
 #include "include/Times.h"           // for Time_get_lastdoy_y, Time_days_i...
-#include <math.h>                    // for exp
+#include <math.h>                    // for exp, fmin, fmax
 #include <stdio.h>                   // for NULL, sscanf, FILE, fclose, fopen
 #include <stdlib.h>                  // for atoi, free
 #include <string.h>                  // for memset, NULL, strcpy
@@ -2332,9 +2332,9 @@ void _read_weather_hist(
                         );
 
                     relHum = e / es;
-                    relHum = max(0., relHum);
+                    relHum = fmax(0., relHum);
 
-                    yearWeather->r_humidity_daily[doy] = min(100., relHum);
+                    yearWeather->r_humidity_daily[doy] = fmin(100., relHum);
 
                 } else {
                     // Set relative humidity to "SW_MISSING"

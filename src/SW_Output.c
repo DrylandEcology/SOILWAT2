@@ -33,7 +33,7 @@ History:
 
 #include "include/SW_Output.h"      // for ForEachOutKey, SW_EVAPSOIL
 #include "include/filefuncs.h"      // for LogError, CloseFile, GetALine
-#include "include/generic.h"        // for IntUS, Bool, LOGERROR, Str_Co...
+#include "include/generic.h"        // for IntUS, Bool, LOGERROR, MAX, Str_Co...
 #include "include/myMemory.h"       // for Str_Dup
 #include "include/SW_datastructs.h" // for SW_ALL, SW_OUTTEXT, LOG_INFO
 #include "include/SW_Defines.h"     // for eSWC, OutPeriod, NVEGTYPES
@@ -1223,7 +1223,7 @@ void SW_OUT_set_SXWrequests(
 ) {
     // Update `used_OUTNPERIODS`:
     // SXW uses up to 2 time periods for the same output key: monthly and yearly
-    *used_OUTNPERIODS = max(2, *used_OUTNPERIODS);
+    *used_OUTNPERIODS = MAX(2, *used_OUTNPERIODS);
 
     // STEPWAT2 requires monthly summed transpiration
     _set_SXWrequests_helper(

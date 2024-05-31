@@ -62,7 +62,7 @@
 #define GENERIC_H
 
 #include <float.h> // for FLT_EPSILON, DBL_EPSILON
-#include <math.h>  // for fabs, sqrt, sqrtf
+#include <math.h>  // for fabs, sqrt, sqrtf, fmax, fmin
 
 #ifdef RSOILWAT
 #include <R.h> // for Rprintf() from <R_ext/Print.h>
@@ -82,12 +82,12 @@ extern "C" {
 #define itob(i) ((i) ? swTRUE : swFALSE)
 
 /* integer versions */
-#ifndef max
-#define max(a, b) (((a) > (b)) ? (a) : (b))
+#ifndef MAX
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #endif
 
-#ifndef min
-#define min(a, b) (((a) < (b)) ? (a) : (b))
+#ifndef MIN
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #endif
 
 /* floating point versions work for float or double */
@@ -212,8 +212,8 @@ typedef unsigned char byte;
 // allowed.
 #define GET_F_DELTA(x, y)                                      \
     ((sizeof(x) == sizeof(float)) ?                            \
-         (max(F_DELTA, FLT_EPSILON * max(fabs(x), fabs(y)))) : \
-         (max(D_DELTA, DBL_EPSILON * max(fabs(x), fabs(y)))))
+         (MAX(F_DELTA, FLT_EPSILON * MAX(fabs(x), fabs(y)))) : \
+         (MAX(D_DELTA, DBL_EPSILON * MAX(fabs(x), fabs(y)))))
 
 /**< LT tests whether x is less than y while accounting for floating-point
  * arithmetic */
@@ -236,7 +236,7 @@ typedef unsigned char byte;
 
 /**< EQ tests whether x and y are equal while accounting for floating-point
  * arithmetic */
-#define EQ(x, y) (EQ_w_tol(x, y, GET_F_DELTA(x, y)))
+#define EQ(x, y) (EQ_w_tol((x), (y), GET_F_DELTA((x), (y))))
 
 /**< LE tests whether x is less than or equal to y while accounting for
  * floating-point arithmetic */

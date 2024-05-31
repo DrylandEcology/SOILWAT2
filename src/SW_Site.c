@@ -110,7 +110,7 @@
 
 #include "include/SW_Site.h"        // for N_PTFs, N_SWRCs, sw_Campbell1974
 #include "include/filefuncs.h"      // for LogError, CloseFile, GetALine
-#include "include/generic.h"        // for LOGERROR, swFALSE, LOGWARN, RealF
+#include "include/generic.h"        // for LOGERROR, swFALSE, LOGWARN, MAX, R...
 #include "include/myMemory.h"       // for Str_Dup
 #include "include/SW_datastructs.h" // for LOG_INFO, SW_SITE, SW_VEGPROD
 #include "include/SW_Defines.h"     // for LyrIndex, ForEachSoilLayer, ForE...
@@ -2383,7 +2383,7 @@ void SW_SIT_init_run(
 
             if (curregion || SW_Site->_TranspRgnBounds[curregion] == 0) {
                 SW_Site->my_transp_rgn[k][s] = curregion;
-                SW_Site->n_transp_lyrs[k] = max(SW_Site->n_transp_lyrs[k], s);
+                SW_Site->n_transp_lyrs[k] = MAX(SW_Site->n_transp_lyrs[k], s);
 
             } else if (s == 0) {
                 LogError(

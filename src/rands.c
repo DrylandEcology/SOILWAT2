@@ -4,11 +4,11 @@
 /* --------------------------------------------------- */
 #include "include/rands.h"          // for RandBeta, RandListType, RandNorm
 #include "include/filefuncs.h"      // for LogError
-#include "include/generic.h"        // for LOGERROR, max, min, sqrt
+#include "include/generic.h"        // for LOGERROR, sqrt
 #include "include/myMemory.h"       // for Mem_Malloc
 #include "include/SW_datastructs.h" // for LOG_INFO
 #include "include/SW_Defines.h"     // for sw_random_t, SW_MISSING
-#include <math.h>                   // for log, exp, ldexp
+#include <math.h>                   // for log, exp, ldexp, fmin, fmax
 #include <stdlib.h>                 // for free
 
 #ifdef RSOILWAT
@@ -462,8 +462,8 @@ float RandBeta(float aa, float bb, sw_random_t *pcg_rng, LOG_INFO *LogInfo) {
 
     //------  Algorithm BB
     if (1.0 < aa && 1.0 < bb) {
-        a = min(aa, bb);
-        b = max(aa, bb);
+        a = fmin(aa, bb);
+        b = fmax(aa, bb);
         alpha = a + b;
         beta = sqrt((alpha - 2.0) / (2.0 * a * b - alpha));
         gamma = a + 1.0 / beta;
@@ -496,8 +496,8 @@ float RandBeta(float aa, float bb, sw_random_t *pcg_rng, LOG_INFO *LogInfo) {
 
     } else {
         //------  Algorithm BC
-        a = max(aa, bb);
-        b = min(aa, bb);
+        a = fmax(aa, bb);
+        b = fmin(aa, bb);
         alpha = a + b;
         beta = 1.0 / b;
         delta = 1.0 + a - b;
