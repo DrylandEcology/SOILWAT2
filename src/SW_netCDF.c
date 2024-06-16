@@ -138,6 +138,43 @@ static const char *possKeys[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
      "BIOMASS__LAI"}
 };
 
+static const char *SWVarUnits[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
+    {NULL}, /* WTHR */
+    {"degC", "degC", "degC", "degC", "degC", "degC"}, /* TEMP */
+    {"cm", "cm", "cm", "cm", "cm"}, /* PRECIP */
+    {"cm"}, /* SOILINFILT */
+    {"cm", "cm", "cm", "cm"}, /* RUNOFF */
+    {NULL}, /* ALLH2O */
+    {"cm cm-1"}, /* VWCBULK */
+    {"cm cm-1"}, /* VWCMATRIC */
+    {"cm"}, /* SWCBULK */
+    {"cm"}, /* SWABULK */
+    {"cm"}, /* SWAMATRIC */
+    {"cm"}, /* SWA */
+    {"-1bar"}, /* SWPMATRIC */
+    {"cm"}, /* SURFACEWATER */
+    {"cm", "cm"}, /* TRANSP */
+    {"cm"}, /* EVAPSOIL */
+    {"cm", "cm", "cm", "cm"}, /* EVAPSURFACE */
+    {"cm", "cm", "cm"}, /* INTERCEPTION */
+    {"cm"}, /* LYRDRAIN */
+    {"cm", "cm"}, /* HYDRED */
+    {NULL}, /* ET */
+    {"cm", "cm", "cm", "cm", "cm", "cm"}, /* AET */
+    {"cm", "MJ m-2", "MJ m-2", "MJ m-2", "MJ m-2"}, /* PET */
+    {"1"}, /* WETDAY */
+    {"cm", "cm"}, /* SNOWPACK */
+    {"cm"}, /* DEEPSWC */
+    {"degC", "degC", "degC"}, /* SOILTEMP */
+    {"1"}, /* FROZEN */
+    {NULL}, /* ALLVEG */
+    {"1"}, /* ESTABL */
+    {"1", "1"}, /* CO2EFFECTS */
+
+    /* BIOMASS */
+    {"1", "1", "g m-2", "g m-2", "g m-2", "g m-2", "g m-2", "m m-2"}
+};
+
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
@@ -4731,6 +4768,20 @@ void SW_NC_read_out_vars(
                 continue;
             }
 
+            if(Str_CompareI((char *)SWVarUnits[currOutKey][varNum],
+                                            input[SWUnitsInd]) != 0) {
+                LogError(
+                    LogInfo,
+                    LOGWARN,
+                    "%s: Found an input variable (%s) with a 'SW2 units' "
+                    "value that does not match the unit SOILWAT2 uses."
+                    "This will be ignored and '%s' will be used.",
+                    MyFileName,
+                    input[SWVarNameInd],
+                    SWVarUnits[currOutKey][varNum]
+                );
+            }
+
             used_OutKeys[currOutKey] =
                 swTRUE; // track if any variable is requested
 
@@ -4835,13 +4886,14 @@ void SW_NC_read_out_vars(
                 for (estVar = 0; estVar < GenOutput->nvar_OUT[currOutKey];
                      estVar++) {
                     currOut->units_sw[estVar] =
-                        Str_Dup(input[SWUnitsInd], LogInfo);
+                        Str_Dup(SWVarUnits[currOutKey][varNum], LogInfo);
                     if (LogInfo->stopRun) {
                         return; // Exit function prematurely due to error
                     }
                 }
             } else {
-                currOut->units_sw[varNum] = Str_Dup(input[SWUnitsInd], LogInfo);
+                currOut->units_sw[varNum] =
+                        Str_Dup(SWVarUnits[currOutKey][varNum], LogInfo);
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }
