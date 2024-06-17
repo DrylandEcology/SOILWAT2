@@ -139,37 +139,37 @@ static const char *possKeys[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
 };
 
 static const char *SWVarUnits[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
-    {NULL}, /* WTHR */
+    {NULL},                                           /* WTHR */
     {"degC", "degC", "degC", "degC", "degC", "degC"}, /* TEMP */
-    {"cm", "cm", "cm", "cm", "cm"}, /* PRECIP */
-    {"cm"}, /* SOILINFILT */
-    {"cm", "cm", "cm", "cm"}, /* RUNOFF */
-    {NULL}, /* ALLH2O */
-    {"cm cm-1"}, /* VWCBULK */
-    {"cm cm-1"}, /* VWCMATRIC */
-    {"cm"}, /* SWCBULK */
-    {"cm"}, /* SWABULK */
-    {"cm"}, /* SWAMATRIC */
-    {"cm"}, /* SWA */
-    {"-1bar"}, /* SWPMATRIC */
-    {"cm"}, /* SURFACEWATER */
-    {"cm", "cm"}, /* TRANSP */
-    {"cm"}, /* EVAPSOIL */
-    {"cm", "cm", "cm", "cm"}, /* EVAPSURFACE */
-    {"cm", "cm", "cm"}, /* INTERCEPTION */
-    {"cm"}, /* LYRDRAIN */
-    {"cm", "cm"}, /* HYDRED */
-    {NULL}, /* ET */
-    {"cm", "cm", "cm", "cm", "cm", "cm"}, /* AET */
-    {"cm", "MJ m-2", "MJ m-2", "MJ m-2", "MJ m-2"}, /* PET */
-    {"1"}, /* WETDAY */
-    {"cm", "cm"}, /* SNOWPACK */
-    {"cm"}, /* DEEPSWC */
-    {"degC", "degC", "degC"}, /* SOILTEMP */
-    {"1"}, /* FROZEN */
-    {NULL}, /* ALLVEG */
-    {"1"}, /* ESTABL */
-    {"1", "1"}, /* CO2EFFECTS */
+    {"cm", "cm", "cm", "cm", "cm"},                   /* PRECIP */
+    {"cm"},                                           /* SOILINFILT */
+    {"cm", "cm", "cm", "cm"},                         /* RUNOFF */
+    {NULL},                                           /* ALLH2O */
+    {"cm cm-1"},                                      /* VWCBULK */
+    {"cm cm-1"},                                      /* VWCMATRIC */
+    {"cm"},                                           /* SWCBULK */
+    {"cm"},                                           /* SWABULK */
+    {"cm"},                                           /* SWAMATRIC */
+    {"cm"},                                           /* SWA */
+    {"-1bar"},                                        /* SWPMATRIC */
+    {"cm"},                                           /* SURFACEWATER */
+    {"cm", "cm"},                                     /* TRANSP */
+    {"cm"},                                           /* EVAPSOIL */
+    {"cm", "cm", "cm", "cm"},                         /* EVAPSURFACE */
+    {"cm", "cm", "cm"},                               /* INTERCEPTION */
+    {"cm"},                                           /* LYRDRAIN */
+    {"cm", "cm"},                                     /* HYDRED */
+    {NULL},                                           /* ET */
+    {"cm", "cm", "cm", "cm", "cm", "cm"},             /* AET */
+    {"cm", "MJ m-2", "MJ m-2", "MJ m-2", "MJ m-2"},   /* PET */
+    {"1"},                                            /* WETDAY */
+    {"cm", "cm"},                                     /* SNOWPACK */
+    {"cm"},                                           /* DEEPSWC */
+    {"degC", "degC", "degC"},                         /* SOILTEMP */
+    {"1"},                                            /* FROZEN */
+    {NULL},                                           /* ALLVEG */
+    {"1"},                                            /* ESTABL */
+    {"1", "1"},                                       /* CO2EFFECTS */
 
     /* BIOMASS */
     {"1", "1", "g m-2", "g m-2", "g m-2", "g m-2", "g m-2", "m m-2"}
@@ -4768,8 +4768,9 @@ void SW_NC_read_out_vars(
                 continue;
             }
 
-            if(Str_CompareI((char *)SWVarUnits[currOutKey][varNum],
-                                            input[SWUnitsInd]) != 0) {
+            if (Str_CompareI(
+                    (char *) SWVarUnits[currOutKey][varNum], input[SWUnitsInd]
+                ) != 0) {
                 LogError(
                     LogInfo,
                     LOGWARN,
@@ -4893,7 +4894,7 @@ void SW_NC_read_out_vars(
                 }
             } else {
                 currOut->units_sw[varNum] =
-                        Str_Dup(SWVarUnits[currOutKey][varNum], LogInfo);
+                    Str_Dup(SWVarUnits[currOutKey][varNum], LogInfo);
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }
