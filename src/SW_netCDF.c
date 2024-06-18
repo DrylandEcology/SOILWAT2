@@ -4775,8 +4775,8 @@ void SW_NC_read_out_vars(
                     LogInfo,
                     LOGWARN,
                     "%s: Found an input variable (%s) with a 'SW2 units' "
-                    "value that does not match the unit SOILWAT2 uses."
-                    "This will be ignored and '%s' will be used.",
+                    "value that does not match the unit SOILWAT2 uses. "
+                    "This will be ignored, and '%s' will be used.",
                     MyFileName,
                     input[SWVarNameInd],
                     SWVarUnits[currOutKey][varNum]
