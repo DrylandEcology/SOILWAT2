@@ -3,7 +3,7 @@
 
 #--- Activate/deactivate plant establishment calculations
 
-0	# 1/0 = do/don't calculate and output establishment conditions
+1	# 1/0 = do/don't calculate and output establishment conditions
 
 
 #--- File names with establishment parameters (only used if activated)
