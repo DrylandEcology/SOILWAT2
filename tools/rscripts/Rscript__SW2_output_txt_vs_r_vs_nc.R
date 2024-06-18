@@ -21,7 +21,7 @@
 #   Rscript tools/rscripts/Rscript__SW2_output_txt_vs_r_vs_nc.R
 # ```
 #
-# See also `toolscheck_outputModes.sh`
+# See also `tools/check_outputModes.sh`
 #
 #------ . ------
 stopifnot(
@@ -221,13 +221,27 @@ read_swdata <- function(outkey, pd, swr, dir_txt, dir_nc) {
               }
             }
 
+            # Read units from nc
+            units_has <- RNetCDF::att.get.nc(
+              nc,
+              variable = keydesc[kv, "netCDF.variable.name"],
+              attribute = "units"
+            )
+
+            if (!identical(units_has, keydesc[kv, "netCDF.units"])) {
+              stop(
+                "Found unit ", shQuote(units_has),
+                " but expected ", shQuote(keydesc[kv, "netCDF.units"]),
+                " for variable ", shQuote(keydesc[kv, "netCDF.variable.name"]),
+                " in nc-output."
+              )
+            }
+
             # Convert units to SOILWAT2 units
-            if (
-              identical(keydesc[kv, "netCDF.units"], keydesc[kv, "SW2.units"])
-            ) {
+            if (identical(units_has, keydesc[kv, "SW2.units"])) {
               res
             } else {
-              units::set_units(res, keydesc[kv, "netCDF.units"], mode = "standard") |>
+              units::set_units(res, units_has, mode = "standard") |>
                 units::set_units(keydesc[kv, "SW2.units"], mode = "standard") |>
                 units::drop_units()
             }
