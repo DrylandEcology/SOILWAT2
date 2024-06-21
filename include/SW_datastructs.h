@@ -1250,6 +1250,10 @@ typedef struct {
     char *varNC[SW_NVARNC];
     char *InFilesNC[SW_NVARNC];
 
+    /** Should a domain template netCDF file be automatically renamed
+    to provided file name for domain? */
+    Bool renameDomainTemplateNC;
+
     int ncFileIDs[SW_NVARNC];
     int ncVarIDs[SW_NVARNC];
 

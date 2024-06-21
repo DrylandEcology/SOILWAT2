@@ -93,7 +93,9 @@ void SW_NC_check(
     SW_DOMAIN *SW_Domain, int ncFileID, const char *fileName, LOG_INFO *LogInfo
 );
 
-void SW_NC_create_domain_template(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
+void SW_NC_create_domain_template(
+    SW_DOMAIN *SW_Domain, char *fileName, LOG_INFO *LogInfo
+);
 
 void SW_NC_create_template(
     const char *domType,

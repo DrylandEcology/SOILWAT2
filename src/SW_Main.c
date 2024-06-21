@@ -74,6 +74,7 @@ int main(int argc, char **argv) {
         &SW_Domain.PathInfo.InFiles[eFirst],
         &userSUID,
         &SW_WallTime.wallTimeLimit,
+        &SW_Domain.netCDFInfo.renameDomainTemplateNC,
         &LogInfo
     );
     if (LogInfo.stopRun) {

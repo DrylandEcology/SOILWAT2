@@ -161,6 +161,8 @@ int setup_testGlobalSoilwatTemplate() {
     SW_DOM_init_ptrs(&template_SW_Domain);
     SW_CTL_init_ptrs(&template_SW_All);
 
+    template_SW_Domain.netCDFInfo.renameDomainTemplateNC = swTRUE;
+
     template_SW_Domain.PathInfo.InFiles[eFirst] =
         Str_Dup(DFLT_FIRSTFILE, &LogInfo);
     if (LogInfo.stopRun) {
