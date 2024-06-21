@@ -146,8 +146,12 @@ void setup_SW_Site_for_tests(SW_SITE *SW_Site) {
 
   The purpose is to read in text files once, and then have `AllTestFixture`
   create deep copies for each test.
+
+  @return 0 if successful; 1 otherwise
+  (i.e., same behavior as `RUN_ALL_TESTS()`)
 */
-void setup_testGlobalSoilwatTemplate() {
+int setup_testGlobalSoilwatTemplate() {
+    int success = 0;
     unsigned long userSUID;
     LOG_INFO LogInfo;
 
@@ -159,25 +163,43 @@ void setup_testGlobalSoilwatTemplate() {
 
     template_SW_Domain.PathInfo.InFiles[eFirst] =
         Str_Dup(DFLT_FIRSTFILE, &LogInfo);
+    if (LogInfo.stopRun) {
+        goto finishProgram;
+    }
 
     // userSUID: 0 means no user input for suid, i.e., entire simulation domain
     userSUID = 0;
 
     SW_CTL_setup_domain(userSUID, &template_SW_Domain, &LogInfo);
+    if (LogInfo.stopRun) {
+        goto finishProgram;
+    }
 
     SW_CTL_setup_model(&template_SW_All, template_SW_OutputPtrs, &LogInfo);
+    if (LogInfo.stopRun) {
+        goto finishProgram;
+    }
     template_SW_All.Model.doOutput = swFALSE; /* turn off output during tests */
 
     SW_MDL_get_ModelRun(
         &template_SW_All.Model, &template_SW_Domain, NULL, &LogInfo
     );
+    if (LogInfo.stopRun) {
+        goto finishProgram;
+    }
 
     /* allocate memory for output pointers */
     SW_CTL_alloc_outptrs(&template_SW_All, &LogInfo);
+    if (LogInfo.stopRun) {
+        goto finishProgram;
+    }
 
     SW_CTL_read_inputs_from_disk(
         &template_SW_All, &template_SW_Domain.PathInfo, &LogInfo
     );
+    if (LogInfo.stopRun) {
+        goto finishProgram;
+    }
 
     /* Notes on messages during tests
         - `SW_F_read()`, via SW_CTL_read_inputs_from_disk(), opens the file
@@ -188,7 +210,6 @@ void setup_testGlobalSoilwatTemplate() {
        against)
     */
     sw_wrapup_logs(&LogInfo);
-    sw_fail_on_error(&LogInfo);
     sw_init_logs(NULL, &LogInfo);
 
     SW_WTH_finalize_all_weather(
@@ -198,10 +219,14 @@ void setup_testGlobalSoilwatTemplate() {
         template_SW_All.Model.days_in_month,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo);
+    if (LogInfo.stopRun) {
+        goto finishProgram;
+    }
 
     SW_CTL_init_run(&template_SW_All, &LogInfo);
-    sw_fail_on_error(&LogInfo);
+    if (LogInfo.stopRun) {
+        goto finishProgram;
+    }
 
     SW_OUT_setup_output(
         template_SW_All.Site.n_layers,
@@ -210,7 +235,16 @@ void setup_testGlobalSoilwatTemplate() {
         &template_SW_All.GenOutput,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo);
+    if (LogInfo.stopRun) {
+        goto finishProgram;
+    }
+
+finishProgram: {
+    if (LogInfo.stopRun) {
+        success = 1; // failure
+    }
+}
+    return success;
 }
 
 /* Free allocated memory of global test variables
