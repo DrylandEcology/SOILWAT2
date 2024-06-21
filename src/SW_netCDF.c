@@ -4665,6 +4665,7 @@ void SW_NC_read_out_vars(
 
     Bool estabFound = swFALSE;
     Bool used_OutKeys[SW_OUTNKEYS] = {swFALSE};
+    int varNumUnits;
     int index, estVar;
     char *copyStr = NULL;
     char input[NOUT_VAR_INPUTS][MAX_ATTVAL_SIZE] = {"\0"};
@@ -4768,8 +4769,17 @@ void SW_NC_read_out_vars(
                 continue;
             }
 
+            // check SOILWAT2 (internal) units
+            if (currOutKey == eSW_Estab) {
+                // estab: one unit for every species' output
+                varNumUnits = 0;
+            } else {
+                varNumUnits = varNum;
+            }
+
             if (Str_CompareI(
-                    (char *) SWVarUnits[currOutKey][varNum], input[SWUnitsInd]
+                    (char *) SWVarUnits[currOutKey][varNumUnits],
+                    input[SWUnitsInd]
                 ) != 0) {
                 LogError(
                     LogInfo,
@@ -4779,12 +4789,12 @@ void SW_NC_read_out_vars(
                     "This will be ignored, and '%s' will be used.",
                     MyFileName,
                     input[SWVarNameInd],
-                    SWVarUnits[currOutKey][varNum]
+                    SWVarUnits[currOutKey][varNumUnits]
                 );
             }
 
-            used_OutKeys[currOutKey] =
-                swTRUE; // track if any variable is requested
+            // track if any variable is requested
+            used_OutKeys[currOutKey] = swTRUE;
 
             if (currOutKey == eSW_Estab) {
                 // Handle establishment different since it is "dynamic"
@@ -4887,14 +4897,14 @@ void SW_NC_read_out_vars(
                 for (estVar = 0; estVar < GenOutput->nvar_OUT[currOutKey];
                      estVar++) {
                     currOut->units_sw[estVar] =
-                        Str_Dup(SWVarUnits[currOutKey][varNum], LogInfo);
+                        Str_Dup(SWVarUnits[currOutKey][varNumUnits], LogInfo);
                     if (LogInfo->stopRun) {
                         return; // Exit function prematurely due to error
                     }
                 }
             } else {
                 currOut->units_sw[varNum] =
-                    Str_Dup(SWVarUnits[currOutKey][varNum], LogInfo);
+                    Str_Dup(SWVarUnits[currOutKey][varNumUnits], LogInfo);
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }
