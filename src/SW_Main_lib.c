@@ -42,7 +42,7 @@ static void sw_print_usage(void) {
         "Ecosystem water simulation model SOILWAT2\n"
         "More details at https://github.com/Burke-Lauenroth-Lab/SOILWAT2\n"
         "Usage: ./SOILWAT2 [-d startdir] [-f files.in] [-e] [-q] [-v] [-h] "
-        "[-s 1] [-t 10]\n"
+        "[-s 1] [-t 10] [-r]\n"
         "  -d : operate (chdir) in startdir (default=.)\n"
         "  -f : name of main input file (default=files.in)\n"
         "       a preceeding path applies to all input files\n"
@@ -54,6 +54,8 @@ static void sw_print_usage(void) {
         "  -s : simulate all (0) or one (> 0) simulation unit from the domain\n"
         "       (default = 0)\n"
         "  -t : wall time limit in seconds\n"
+        "  -r : rename netCDF domain template file "
+        "[name provided in 'Input_nc/files_nc.in']\n"
     );
 }
 
@@ -89,6 +91,8 @@ void sw_print_version(void) {
 @param[out] wallTimeLimit Terminate simulations early when
             wall time limit is reached
             (default value is set by SW_WT_StartTime())
+@param[out] renameDomainTemplateNC Should a domain template netCDF file be
+            automatically renamed to provided file name for domain?
 @param[out] LogInfo Holds information on warnings and errors
 */
 void sw_init_args(
@@ -98,6 +102,7 @@ void sw_init_args(
     char **_firstfile,
     unsigned long *userSUID,
     double *wallTimeLimit,
+    Bool *renameDomainTemplateNC,
     LOG_INFO *LogInfo
 ) {
 
@@ -117,10 +122,10 @@ void sw_init_args(
     char str[1024];
 
     /* valid options */
-    char const *opts[] = {"-d", "-f", "-e", "-q", "-v", "-h", "-s", "-t"};
+    char const *opts[] = {"-d", "-f", "-e", "-q", "-v", "-h", "-s", "-t", "-r"};
 
     /* indicates options with values: 0=none, 1=required, -1=optional */
-    int valopts[] = {1, 1, 0, 0, 0, 0, 1, 1};
+    int valopts[] = {1, 1, 0, 0, 0, 0, 1, 1, 0};
 
     int i,  /* looper through all cmdline arguments */
         a,  /* current valid argument-value position */
@@ -134,6 +139,7 @@ void sw_init_args(
     }
 
     *EchoInits = swFALSE;
+    *renameDomainTemplateNC = swFALSE;
     *userSUID = 0; // Default (if no input) is 0 (i.e., all suids)
 
     a = 1;
@@ -246,6 +252,10 @@ void sw_init_args(
 
             case 7: /* -t */
                 *wallTimeLimit = atof(str);
+                break;
+
+            case 8: /* -r */
+                *renameDomainTemplateNC = swTRUE;
                 break;
 
             default:

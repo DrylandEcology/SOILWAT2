@@ -98,6 +98,8 @@
   The code gracefully ends early if the wall time reaches a limit of
   `X - SW_WRAPUPTIME` seconds; if the option `"-t X"` is absent,
   then there is (practically) no wall time limit.
+* New command line option `"-r"` to rename netCDF domain template file
+  to file name provided in `"Input_nc/files_nc.in"`.
 
 ## Changes to outputs
 * Output of establishment/recruitment for two species is now

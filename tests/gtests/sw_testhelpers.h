@@ -41,7 +41,7 @@ void create_test_soillayers(
 
 void setup_SW_Site_for_tests(SW_SITE *SW_Site);
 
-void setup_testGlobalSoilwatTemplate();
+int setup_testGlobalSoilwatTemplate();
 void teardown_testGlobalSoilwatTemplate();
 
 /* AllTestFixture is our base test fixture class inheriting from

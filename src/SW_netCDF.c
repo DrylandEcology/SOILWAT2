@@ -4108,9 +4108,13 @@ wrapUp:
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
+@param[in] fileName File name of the domain template netCDF file;
+    if NULL, then use the default domain template file name.
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_NC_create_domain_template(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
+void SW_NC_create_domain_template(
+    SW_DOMAIN *SW_Domain, char *fileName, LOG_INFO *LogInfo
+) {
 
     SW_NETCDF *SW_netCDF = &SW_Domain->netCDFInfo;
     int *domFileID = &SW_Domain->netCDFInfo.ncFileIDs[vNCdom];
@@ -4119,7 +4123,11 @@ void SW_NC_create_domain_template(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     int nDomainDims, domVarID = 0, YVarID = 0, XVarID = 0, sVarID = 0;
     int YBndsID = 0, XBndsID = 0;
 
-    if (FileExists(DOMAIN_TEMP)) {
+    if (isnull(fileName)) {
+        fileName = (char *) DOMAIN_TEMP;
+    }
+
+    if (FileExists(fileName)) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -4136,7 +4144,7 @@ void SW_NC_create_domain_template(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     }
 #endif
 
-    if (nc_create(DOMAIN_TEMP, NC_NETCDF4, domFileID) != NC_NOERR) {
+    if (nc_create(fileName, NC_NETCDF4, domFileID) != NC_NOERR) {
         LogError(
             LogInfo,
             LOGERROR,

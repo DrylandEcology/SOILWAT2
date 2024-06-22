@@ -44,7 +44,12 @@ int main(int argc, char **argv) {
         sw_printf("Invalid project directory (%s)", dir_test);
     }
 
-    setup_testGlobalSoilwatTemplate();
+    res = setup_testGlobalSoilwatTemplate();
+
+    if (res != 0) {
+        // Setup failed
+        goto finishProgram; // Exit function prematurely due to error
+    }
 
 
     //--- Setup unit tests
@@ -61,9 +66,12 @@ int main(int argc, char **argv) {
     // Run unit tests
     res = RUN_ALL_TESTS();
 
+
+finishProgram:
     teardown_testGlobalSoilwatTemplate();
 
     //--- Return output of 'RUN_ALL_TESTS()'
     // (https://google.github.io/googletest/primer.html#writing-the-main-function)
+    // It returns 0 if all tests are successful, or 1 otherwise.
     return res;
 }

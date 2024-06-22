@@ -447,22 +447,30 @@ void SW_CTL_setup_domain(
 
 #if defined(SWNETCDF)
     // Create domain template if it does not exist (and exit)
+    char *fnameDomainTemplateNC;
+
+    fnameDomainTemplateNC = (SW_Domain->netCDFInfo.renameDomainTemplateNC) ?
+                                SW_Domain->netCDFInfo.InFilesNC[vNCdom] :
+                                NULL;
+
     if (!FileExists(SW_Domain->netCDFInfo.InFilesNC[vNCdom])) {
-        SW_NC_create_domain_template(SW_Domain, LogInfo);
+        SW_NC_create_domain_template(SW_Domain, fnameDomainTemplateNC, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit prematurely due to error
         }
 
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Domain netCDF template has been created. "
-            "Please modify it and rename it to "
-            "'domain.nc' when done and try again. "
-            "The template path is: %s",
-            DOMAIN_TEMP
-        );
-        return; // Exit prematurely so the user can modify the domain template
+        if (!SW_Domain->netCDFInfo.renameDomainTemplateNC) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Domain netCDF template has been created. "
+                "Please modify it and rename it to "
+                "'domain.nc' when done and try again. "
+                "The template path is: %s",
+                DOMAIN_TEMP
+            );
+            return; // Exit prematurely: user modifies the domain template
+        }
     }
 
     // Open necessary netCDF input files and check for consistency with domain
