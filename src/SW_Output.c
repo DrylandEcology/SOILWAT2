@@ -3301,7 +3301,7 @@ void SW_OUT_write_today(
                 continue; // don't call any `get_XXX` function
             }
 
-#if defined(SW_OUTTEXT)
+#if defined(SOILWAT) && !defined(SWNETCDF)
 #ifdef SWDEBUG
             if (debug) {
                 sw_printf(
