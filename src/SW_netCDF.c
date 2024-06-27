@@ -4487,7 +4487,7 @@ Bool SW_NC_check_progress(
 @brief Read values from netCDF input files for available variables and copy
 to SW_All
 
-@param[in,out] sw Comprehensive struct of type SW_ALL containing
+@param[in,out] sw Comprehensive struct of type SW_RUN containing
     all information in the simulation
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
@@ -4496,7 +4496,7 @@ to SW_All
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_read_inputs(
-    SW_ALL *sw, SW_DOMAIN *SW_Domain, size_t ncSUID[], LOG_INFO *LogInfo
+    SW_RUN *sw, SW_DOMAIN *SW_Domain, size_t ncSUID[], LOG_INFO *LogInfo
 ) {
 
     int file, varNum;

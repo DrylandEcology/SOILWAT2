@@ -13,7 +13,7 @@
 #include <string.h>             // for strcpy
 
 
-SW_ALL template_SW_All;
+SW_RUN template_SW_All;
 SW_DOMAIN template_SW_Domain;
 SW_OUTPUT_POINTERS template_SW_OutputPtrs[SW_OUTNKEYS];
 

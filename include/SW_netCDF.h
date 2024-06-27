@@ -123,7 +123,7 @@ Bool SW_NC_check_progress(
 );
 
 void SW_NC_read_inputs(
-    SW_ALL *sw, SW_DOMAIN *SW_Domain, size_t ncSUID[], LOG_INFO *LogInfo
+    SW_RUN *sw, SW_DOMAIN *SW_Domain, size_t ncSUID[], LOG_INFO *LogInfo
 );
 
 void SW_NC_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);

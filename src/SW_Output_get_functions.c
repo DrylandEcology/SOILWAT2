@@ -19,7 +19,7 @@ History:
 /* --------------------------------------------------- */
 
 #include "include/generic.h"        // for RealD, IntU
-#include "include/SW_datastructs.h" // for SW_ALL, SW_OUTTEXT, SW_GEN_OUT
+#include "include/SW_datastructs.h" // for SW_RUN, SW_OUTTEXT, SW_GEN_OUT
 #include "include/SW_Defines.h"     // for _OUTSEP, OUT_DIGITS, OUTSTRLEN
 #include "include/SW_Output.h"      // for get_aet_text, get_biomass_text
 #include "include/SW_SoilWater.h"   // for SW_SWRC_SWCtoSWP
@@ -46,7 +46,7 @@ History:
 
 #ifdef STEPWAT
 static void format_IterationSummary(
-    RealD *p, RealD *psd, OutPeriod pd, IntUS N, SW_ALL *sw
+    RealD *p, RealD *psd, OutPeriod pd, IntUS N, SW_RUN *sw
 ) {
     IntUS i;
     size_t n;
@@ -74,7 +74,7 @@ static void format_IterationSummary(
 }
 
 static void format_IterationSummary2(
-    RealD *p, RealD *psd, OutPeriod pd, IntUS N1, IntUS offset, SW_ALL *sw
+    RealD *p, RealD *psd, OutPeriod pd, IntUS N1, IntUS offset, SW_RUN *sw
 ) {
     IntUS k, i;
     size_t n;
@@ -120,10 +120,10 @@ This just gives the main output loop something to call,
 rather than an empty pointer.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_none(OutPeriod pd, SW_ALL *sw) {
+void get_none(OutPeriod pd, SW_RUN *sw) {
     (void) pd;
     (void) sw; // Coerce to void to silence compiler
 }
@@ -136,10 +136,10 @@ void get_none(OutPeriod pd, SW_ALL *sw) {
 dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_co2effects_text(OutPeriod pd, SW_ALL *sw) {
+void get_co2effects_text(OutPeriod pd, SW_RUN *sw) {
     int k;
     SW_GEN_OUT *go = &sw->GenOutput;
 
@@ -175,7 +175,7 @@ void get_co2effects_text(OutPeriod pd, SW_ALL *sw) {
 #endif
 
 #if defined(RSOILWAT) || defined(SWNETCDF)
-void get_co2effects_mem(OutPeriod pd, SW_ALL *sw) {
+void get_co2effects_mem(OutPeriod pd, SW_RUN *sw) {
     int k;
     size_t iOUTIndex = 0;
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -220,7 +220,7 @@ void get_co2effects_mem(OutPeriod pd, SW_ALL *sw) {
 }
 
 #elif defined(STEPWAT)
-void get_co2effects_agg(OutPeriod pd, SW_ALL *sw) {
+void get_co2effects_agg(OutPeriod pd, SW_RUN *sw) {
     int k;
     size_t iOUTIndex = 0;
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -261,7 +261,7 @@ void get_co2effects_agg(OutPeriod pd, SW_ALL *sw) {
 
 //------ eSW_Biomass
 #ifdef SW_OUTTEXT
-void get_biomass_text(OutPeriod pd, SW_ALL *sw) {
+void get_biomass_text(OutPeriod pd, SW_RUN *sw) {
     int k;
     SW_VEGPROD_OUTPUTS *vo = sw->VegProd.p_oagg[pd];
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -330,7 +330,7 @@ void get_biomass_text(OutPeriod pd, SW_ALL *sw) {
 #endif
 
 #if defined(RSOILWAT) || defined(SWNETCDF)
-void get_biomass_mem(OutPeriod pd, SW_ALL *sw) {
+void get_biomass_mem(OutPeriod pd, SW_RUN *sw) {
     int k;
     SW_VEGPROD_OUTPUTS *vo = sw->VegProd.p_oagg[pd];
     size_t iOUTIndex = 0;
@@ -473,7 +473,7 @@ void get_biomass_mem(OutPeriod pd, SW_ALL *sw) {
 }
 
 #elif defined(STEPWAT)
-void get_biomass_agg(OutPeriod pd, SW_ALL *sw) {
+void get_biomass_agg(OutPeriod pd, SW_RUN *sw) {
     int k, i;
     SW_VEGPROD_OUTPUTS *vo = sw->VegProd.p_oagg[pd];
     size_t iOUTIndex = 0;
@@ -559,10 +559,10 @@ The value will be the day that the species established, or - if it didn't
 establish this year.  This check is for OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_estab_text(OutPeriod pd, SW_ALL *sw) {
+void get_estab_text(OutPeriod pd, SW_RUN *sw) {
     IntU i;
     SW_GEN_OUT *go = &sw->GenOutput;
 
@@ -591,10 +591,10 @@ The value will be the day that the species established, or - if it didn't
 establish this year.  This check is for RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_estab_mem(OutPeriod pd, SW_ALL *sw) {
+void get_estab_mem(OutPeriod pd, SW_RUN *sw) {
     IntU i;
     size_t iOUTIndex = 0;
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -632,10 +632,10 @@ The value will be the day that the species established, or - if it didn't
 establish this year.  This check is for STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_estab_agg(OutPeriod pd, SW_ALL *sw) {
+void get_estab_agg(OutPeriod pd, SW_RUN *sw) {
     IntU i;
     size_t iOUTIndex = 0;
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -665,10 +665,10 @@ void get_estab_agg(OutPeriod pd, SW_ALL *sw) {
 @brief Gets temp text from SW_WEATHER_OUTPUTS when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
   in the simulation
 */
-void get_temp_text(OutPeriod pd, SW_ALL *sw) {
+void get_temp_text(OutPeriod pd, SW_RUN *sw) {
     SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
     SW_GEN_OUT *go = &sw->GenOutput;
 
@@ -705,10 +705,10 @@ void get_temp_text(OutPeriod pd, SW_ALL *sw) {
 @brief Gets temp text from SW_WEATHER_OUTPUTS when dealing with RSOILWAT.
 
 @param pd Period.
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
   in the simulation
 */
-void get_temp_mem(OutPeriod pd, SW_ALL *sw) {
+void get_temp_mem(OutPeriod pd, SW_RUN *sw) {
     SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -793,10 +793,10 @@ void get_temp_mem(OutPeriod pd, SW_ALL *sw) {
 @brief Gets temp text from SW_WEATHER_OUTPUTS when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_temp_agg(OutPeriod pd, SW_ALL *sw) {
+void get_temp_agg(OutPeriod pd, SW_RUN *sw) {
     SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -831,10 +831,10 @@ void get_temp_agg(OutPeriod pd, SW_ALL *sw) {
 @brief STEPWAT2 expects annual mean air temperature
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_temp_SXW(OutPeriod pd, SW_ALL *sw) {
+void get_temp_SXW(OutPeriod pd, SW_RUN *sw) {
     TimeInt tOffset;
 
     if (pd == eSW_Month || pd == eSW_Year) {
@@ -860,10 +860,10 @@ void get_temp_SXW(OutPeriod pd, SW_ALL *sw) {
 OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_precip_text(OutPeriod pd, SW_ALL *sw) {
+void get_precip_text(OutPeriod pd, SW_RUN *sw) {
     SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
     SW_GEN_OUT *go = &sw->GenOutput;
 
@@ -898,10 +898,10 @@ void get_precip_text(OutPeriod pd, SW_ALL *sw) {
 RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_precip_mem(OutPeriod pd, SW_ALL *sw) {
+void get_precip_mem(OutPeriod pd, SW_RUN *sw) {
     SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -976,10 +976,10 @@ void get_precip_mem(OutPeriod pd, SW_ALL *sw) {
 STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_precip_agg(OutPeriod pd, SW_ALL *sw) {
+void get_precip_agg(OutPeriod pd, SW_RUN *sw) {
     SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -1011,10 +1011,10 @@ void get_precip_agg(OutPeriod pd, SW_ALL *sw) {
 @brief STEPWAT2 expects monthly and annual sum of precipitation
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_precip_SXW(OutPeriod pd, SW_ALL *sw) {
+void get_precip_SXW(OutPeriod pd, SW_RUN *sw) {
     TimeInt tOffset;
 
     if (pd == eSW_Month || pd == eSW_Year) {
@@ -1038,10 +1038,10 @@ void get_precip_SXW(OutPeriod pd, SW_ALL *sw) {
 @brief Gets vwcBulk text from SW_SOILWAT_OUTPUTS when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_vwcBulk_text(OutPeriod pd, SW_ALL *sw) {
+void get_vwcBulk_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -1070,10 +1070,10 @@ void get_vwcBulk_text(OutPeriod pd, SW_ALL *sw) {
 @brief Gets vwcBulk text from SW_SOILWAT_OUTPUTS when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_vwcBulk_mem(OutPeriod pd, SW_ALL *sw) {
+void get_vwcBulk_mem(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
@@ -1119,10 +1119,10 @@ void get_vwcBulk_mem(OutPeriod pd, SW_ALL *sw) {
 @brief Gets vwcBulk text from SW_SOILWAT_OUTPUTS when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_vwcBulk_agg(OutPeriod pd, SW_ALL *sw) {
+void get_vwcBulk_agg(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
@@ -1154,10 +1154,10 @@ void get_vwcBulk_agg(OutPeriod pd, SW_ALL *sw) {
 @brief Gets vwcMatric text from SW_SOILWAT_OUTPUTS when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_vwcMatric_text(OutPeriod pd, SW_ALL *sw) {
+void get_vwcMatric_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     RealD convert;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
@@ -1190,10 +1190,10 @@ void get_vwcMatric_text(OutPeriod pd, SW_ALL *sw) {
 @brief Gets vwcMatric text from SW_SOILWAT_OUTPUTS when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_vwcMatric_mem(OutPeriod pd, SW_ALL *sw) {
+void get_vwcMatric_mem(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     RealD convert;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
@@ -1242,10 +1242,10 @@ void get_vwcMatric_mem(OutPeriod pd, SW_ALL *sw) {
 @brief Gets vwcMatric text from SW_SOILWAT_OUTPUTS when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_vwcMatric_agg(OutPeriod pd, SW_ALL *sw) {
+void get_vwcMatric_agg(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     RealD convert;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
@@ -1282,10 +1282,10 @@ void get_vwcMatric_agg(OutPeriod pd, SW_ALL *sw) {
 @brief Gets SWA text from SW_SOILWAT_OUTPUTS when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_swa_text(OutPeriod pd, SW_ALL *sw) {
+void get_swa_text(OutPeriod pd, SW_RUN *sw) {
     /* added 21-Oct-03, cwb */
     LyrIndex i;
     int k;
@@ -1317,10 +1317,10 @@ void get_swa_text(OutPeriod pd, SW_ALL *sw) {
 @brief Gets SWA text from SW_SOILWAT_OUTPUTS when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_swa_mem(OutPeriod pd, SW_ALL *sw) {
+void get_swa_mem(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     int k;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
@@ -1379,10 +1379,10 @@ void get_swa_mem(OutPeriod pd, SW_ALL *sw) {
 @brief Gets SWA text from SW_SOILWAT_OUTPUTS when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_swa_agg(OutPeriod pd, SW_ALL *sw) {
+void get_swa_agg(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     int k;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
@@ -1415,10 +1415,10 @@ void get_swa_agg(OutPeriod pd, SW_ALL *sw) {
 @brief Gets swcBulk text from SW_SOILWAT_OUTPUTS when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_swcBulk_text(OutPeriod pd, SW_ALL *sw) {
+void get_swcBulk_text(OutPeriod pd, SW_RUN *sw) {
     /* added 21-Oct-03, cwb */
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
@@ -1440,10 +1440,10 @@ void get_swcBulk_text(OutPeriod pd, SW_ALL *sw) {
 @brief Gets swcBulk text from SW_SOILWAT_OUTPUTS when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_swcBulk_mem(OutPeriod pd, SW_ALL *sw) {
+void get_swcBulk_mem(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
@@ -1488,10 +1488,10 @@ void get_swcBulk_mem(OutPeriod pd, SW_ALL *sw) {
 @brief Gets swcBulk text from SW_SOILWAT_OUTPUTS when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_swcBulk_agg(OutPeriod pd, SW_ALL *sw) {
+void get_swcBulk_agg(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
@@ -1515,10 +1515,10 @@ void get_swcBulk_agg(OutPeriod pd, SW_ALL *sw) {
 @brief STEPWAT2 expects monthly mean SWCbulk by soil layer.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_swcBulk_SXW(OutPeriod pd, SW_ALL *sw) {
+void get_swcBulk_SXW(OutPeriod pd, SW_RUN *sw) {
     TimeInt month;
 
     if (pd == eSW_Month) {
@@ -1545,10 +1545,10 @@ other average is better and fix this) we're not averaging swp but converting the
 averged swc.  This also avoids converting for each day. added 12-Oct-03, cwb
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_swpMatric_text(OutPeriod pd, SW_ALL *sw) {
+void get_swpMatric_text(OutPeriod pd, SW_RUN *sw) {
     RealD val;
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
@@ -1578,10 +1578,10 @@ void get_swpMatric_text(OutPeriod pd, SW_ALL *sw) {
 @brief Gets swpMatric when dealing with RSOILWAT
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_swpMatric_mem(OutPeriod pd, SW_ALL *sw) {
+void get_swpMatric_mem(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     LOG_INFO local_log;
@@ -1629,10 +1629,10 @@ void get_swpMatric_mem(OutPeriod pd, SW_ALL *sw) {
 @brief Gets swpMatric when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_swpMatric_agg(OutPeriod pd, SW_ALL *sw) {
+void get_swpMatric_agg(OutPeriod pd, SW_RUN *sw) {
     RealD val;
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
@@ -1667,10 +1667,10 @@ void get_swpMatric_agg(OutPeriod pd, SW_ALL *sw) {
 @brief gets swaBulk when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_swaBulk_text(OutPeriod pd, SW_ALL *sw) {
+void get_swaBulk_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -1691,10 +1691,10 @@ void get_swaBulk_text(OutPeriod pd, SW_ALL *sw) {
 @brief Gets swaBulk when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_swaBulk_mem(OutPeriod pd, SW_ALL *sw) {
+void get_swaBulk_mem(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
@@ -1739,10 +1739,10 @@ void get_swaBulk_mem(OutPeriod pd, SW_ALL *sw) {
 @brief Gets swaBulk when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_swaBulk_agg(OutPeriod pd, SW_ALL *sw) {
+void get_swaBulk_agg(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
@@ -1770,10 +1770,10 @@ void get_swaBulk_agg(OutPeriod pd, SW_ALL *sw) {
 @brief Gets swaMatric when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_swaMatric_text(OutPeriod pd, SW_ALL *sw) {
+void get_swaMatric_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     RealD convert;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
@@ -1805,10 +1805,10 @@ void get_swaMatric_text(OutPeriod pd, SW_ALL *sw) {
 @brief Gets swaMatric when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_swaMatric_mem(OutPeriod pd, SW_ALL *sw) {
+void get_swaMatric_mem(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     RealD convert;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
@@ -1856,10 +1856,10 @@ void get_swaMatric_mem(OutPeriod pd, SW_ALL *sw) {
 @brief Gets swaMatric when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_swaMatric_agg(OutPeriod pd, SW_ALL *sw) {
+void get_swaMatric_agg(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     RealD convert;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
@@ -1895,10 +1895,10 @@ void get_swaMatric_agg(OutPeriod pd, SW_ALL *sw) {
 @brief Gets surfaceWater when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_surfaceWater_text(OutPeriod pd, SW_ALL *sw) {
+void get_surfaceWater_text(OutPeriod pd, SW_RUN *sw) {
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_GEN_OUT *go = &sw->GenOutput;
 
@@ -1920,10 +1920,10 @@ void get_surfaceWater_text(OutPeriod pd, SW_ALL *sw) {
 @brief Gets surfaceWater when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_surfaceWater_mem(OutPeriod pd, SW_ALL *sw) {
+void get_surfaceWater_mem(OutPeriod pd, SW_RUN *sw) {
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -1953,10 +1953,10 @@ void get_surfaceWater_mem(OutPeriod pd, SW_ALL *sw) {
 @brief Gets surfaceWater when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_surfaceWater_agg(OutPeriod pd, SW_ALL *sw) {
+void get_surfaceWater_agg(OutPeriod pd, SW_RUN *sw) {
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -1983,10 +1983,10 @@ void get_surfaceWater_agg(OutPeriod pd, SW_ALL *sw) {
 OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_runoffrunon_text(OutPeriod pd, SW_ALL *sw) {
+void get_runoffrunon_text(OutPeriod pd, SW_RUN *sw) {
     RealD net;
     SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -2021,10 +2021,10 @@ void get_runoffrunon_text(OutPeriod pd, SW_ALL *sw) {
 RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_runoffrunon_mem(OutPeriod pd, SW_ALL *sw) {
+void get_runoffrunon_mem(OutPeriod pd, SW_RUN *sw) {
     SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -2088,10 +2088,10 @@ void get_runoffrunon_mem(OutPeriod pd, SW_ALL *sw) {
 STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_runoffrunon_agg(OutPeriod pd, SW_ALL *sw) {
+void get_runoffrunon_agg(OutPeriod pd, SW_RUN *sw) {
     RealD net;
     SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
     size_t iOUTIndex = 0;
@@ -2127,10 +2127,10 @@ void get_runoffrunon_agg(OutPeriod pd, SW_ALL *sw) {
 @brief Gets transp_total when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_transp_text(OutPeriod pd, SW_ALL *sw) {
+void get_transp_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i, n_layers = sw->Site.n_layers;
     int k;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
@@ -2165,10 +2165,10 @@ void get_transp_text(OutPeriod pd, SW_ALL *sw) {
 @brief Gets transp_total when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_transp_mem(OutPeriod pd, SW_ALL *sw) {
+void get_transp_mem(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i, n_layers = sw->Site.n_layers;
     int k;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
@@ -2255,10 +2255,10 @@ void get_transp_mem(OutPeriod pd, SW_ALL *sw) {
 @brief Gets transp_total when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_transp_agg(OutPeriod pd, SW_ALL *sw) {
+void get_transp_agg(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i, n_layers = sw->Site.n_layers;
     int k;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
@@ -2299,10 +2299,10 @@ void get_transp_agg(OutPeriod pd, SW_ALL *sw) {
                                 see function '_transp_contribution_by_group'
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_transp_SXW(OutPeriod pd, SW_ALL *sw) {
+void get_transp_SXW(OutPeriod pd, SW_RUN *sw) {
     TimeInt month;
 
     if (pd == eSW_Month) {
@@ -2336,7 +2336,7 @@ void get_transp_SXW(OutPeriod pd, SW_ALL *sw) {
 
 @brief pd Period.
 */
-void get_evapSoil_text(OutPeriod pd, SW_ALL *sw) {
+void get_evapSoil_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -2359,10 +2359,10 @@ void get_evapSoil_text(OutPeriod pd, SW_ALL *sw) {
 @brief Gets evap when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_evapSoil_mem(OutPeriod pd, SW_ALL *sw) {
+void get_evapSoil_mem(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
@@ -2407,10 +2407,10 @@ void get_evapSoil_mem(OutPeriod pd, SW_ALL *sw) {
 @brief Gets evap when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_evapSoil_agg(OutPeriod pd, SW_ALL *sw) {
+void get_evapSoil_agg(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
@@ -2440,10 +2440,10 @@ void get_evapSoil_agg(OutPeriod pd, SW_ALL *sw) {
 @brief Gets evapSurface when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_evapSurface_text(OutPeriod pd, SW_ALL *sw) {
+void get_evapSurface_text(OutPeriod pd, SW_RUN *sw) {
     int k;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -2488,10 +2488,10 @@ void get_evapSurface_text(OutPeriod pd, SW_ALL *sw) {
 @brief Gets evapSurface when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_evapSurface_mem(OutPeriod pd, SW_ALL *sw) {
+void get_evapSurface_mem(OutPeriod pd, SW_RUN *sw) {
     int k;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
@@ -2563,10 +2563,10 @@ void get_evapSurface_mem(OutPeriod pd, SW_ALL *sw) {
 @brief Gets evapSurface when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_evapSurface_agg(OutPeriod pd, SW_ALL *sw) {
+void get_evapSurface_agg(OutPeriod pd, SW_RUN *sw) {
     int k;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
@@ -2608,10 +2608,10 @@ void get_evapSurface_agg(OutPeriod pd, SW_ALL *sw) {
 @brief Gets total_int, int_veg, and litter_int when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_interception_text(OutPeriod pd, SW_ALL *sw) {
+void get_interception_text(OutPeriod pd, SW_RUN *sw) {
     int k;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -2644,10 +2644,10 @@ void get_interception_text(OutPeriod pd, SW_ALL *sw) {
 @brief Gets total_int, int_veg, and litter_int when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_interception_mem(OutPeriod pd, SW_ALL *sw) {
+void get_interception_mem(OutPeriod pd, SW_RUN *sw) {
     int k;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
@@ -2708,10 +2708,10 @@ void get_interception_mem(OutPeriod pd, SW_ALL *sw) {
 @brief Gets total_int, int_veg, and litter_int when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_interception_agg(OutPeriod pd, SW_ALL *sw) {
+void get_interception_agg(OutPeriod pd, SW_RUN *sw) {
     int k;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
@@ -2748,10 +2748,10 @@ void get_interception_agg(OutPeriod pd, SW_ALL *sw) {
 @brief Gets soil_inf when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_soilinf_text(OutPeriod pd, SW_ALL *sw) {
+void get_soilinf_text(OutPeriod pd, SW_RUN *sw) {
     /* 20100202 (drs) added */
     /* 20110219 (drs) added runoff */
     /* 12/13/2012	(clk)	moved runoff, now named snowRunoff, to
@@ -2777,10 +2777,10 @@ void get_soilinf_text(OutPeriod pd, SW_ALL *sw) {
 @brief Gets soil_inf when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_soilinf_mem(OutPeriod pd, SW_ALL *sw) {
+void get_soilinf_mem(OutPeriod pd, SW_RUN *sw) {
     SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -2810,10 +2810,10 @@ void get_soilinf_mem(OutPeriod pd, SW_ALL *sw) {
 @brief Gets soil_inf when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_soilinf_agg(OutPeriod pd, SW_ALL *sw) {
+void get_soilinf_agg(OutPeriod pd, SW_RUN *sw) {
     SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -2838,10 +2838,10 @@ void get_soilinf_agg(OutPeriod pd, SW_ALL *sw) {
 @brief Gets lyrdrain when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_lyrdrain_text(OutPeriod pd, SW_ALL *sw) {
+void get_lyrdrain_text(OutPeriod pd, SW_RUN *sw) {
     /* 20100202 (drs) added */
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
@@ -2865,10 +2865,10 @@ void get_lyrdrain_text(OutPeriod pd, SW_ALL *sw) {
 @brief Gets lyrdrain when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_lyrdrain_mem(OutPeriod pd, SW_ALL *sw) {
+void get_lyrdrain_mem(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
@@ -2913,10 +2913,10 @@ void get_lyrdrain_mem(OutPeriod pd, SW_ALL *sw) {
 @brief Gets lyrdrain when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_lyrdrain_agg(OutPeriod pd, SW_ALL *sw) {
+void get_lyrdrain_agg(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
@@ -2946,10 +2946,10 @@ void get_lyrdrain_agg(OutPeriod pd, SW_ALL *sw) {
 @brief Gets hydred and hydred_total when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_hydred_text(OutPeriod pd, SW_ALL *sw) {
+void get_hydred_text(OutPeriod pd, SW_RUN *sw) {
     /* 20101020 (drs) added */
     LyrIndex i, n_layers = sw->Site.n_layers;
     int k;
@@ -2985,10 +2985,10 @@ void get_hydred_text(OutPeriod pd, SW_ALL *sw) {
 @brief Gets hydred and hydred_total when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_hydred_mem(OutPeriod pd, SW_ALL *sw) {
+void get_hydred_mem(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i, n_layers = sw->Site.n_layers;
     int k;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
@@ -3076,10 +3076,10 @@ void get_hydred_mem(OutPeriod pd, SW_ALL *sw) {
 @brief Gets hydred and hydred_total when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_hydred_agg(OutPeriod pd, SW_ALL *sw) {
+void get_hydred_agg(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i, n_layers = sw->Site.n_layers;
     int k;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
@@ -3124,10 +3124,10 @@ void get_hydred_agg(OutPeriod pd, SW_ALL *sw) {
 @brief Gets actual evapotranspiration when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_aet_text(OutPeriod pd, SW_ALL *sw) {
+void get_aet_text(OutPeriod pd, SW_RUN *sw) {
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_WEATHER_OUTPUTS *vo2 = sw->Weather.p_oagg[pd];
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -3165,10 +3165,10 @@ void get_aet_text(OutPeriod pd, SW_ALL *sw) {
 @brief Gets actual evapotranspiration when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_aet_mem(OutPeriod pd, SW_ALL *sw) {
+void get_aet_mem(OutPeriod pd, SW_RUN *sw) {
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_WEATHER_OUTPUTS *vo2 = sw->Weather.p_oagg[pd];
     size_t iOUTIndex = 0;
@@ -3254,10 +3254,10 @@ void get_aet_mem(OutPeriod pd, SW_ALL *sw) {
 @brief Gets actual evapotranspiration when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_aet_agg(OutPeriod pd, SW_ALL *sw) {
+void get_aet_agg(OutPeriod pd, SW_RUN *sw) {
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_WEATHER_OUTPUTS *vo2 = sw->Weather.p_oagg[pd];
     size_t iOUTIndex = 0;
@@ -3294,10 +3294,10 @@ void get_aet_agg(OutPeriod pd, SW_ALL *sw) {
 @brief STEPWAT2 expects annual sum of actual evapotranspiration
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_aet_SXW(OutPeriod pd, SW_ALL *sw) {
+void get_aet_SXW(OutPeriod pd, SW_RUN *sw) {
     if (pd == eSW_Year) {
         SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
         SW_GEN_OUT *go = &sw->GenOutput;
@@ -3315,10 +3315,10 @@ void get_aet_SXW(OutPeriod pd, SW_ALL *sw) {
 @brief Gets potential evapotranspiration and radiation when dealing with OUTTEXT
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_pet_text(OutPeriod pd, SW_ALL *sw) {
+void get_pet_text(OutPeriod pd, SW_RUN *sw) {
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_GEN_OUT *go = &sw->GenOutput;
 
@@ -3352,10 +3352,10 @@ void get_pet_text(OutPeriod pd, SW_ALL *sw) {
 @brief Gets potential evapotranspiration and radiation
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_pet_mem(OutPeriod pd, SW_ALL *sw) {
+void get_pet_mem(OutPeriod pd, SW_RUN *sw) {
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -3428,7 +3428,7 @@ void get_pet_mem(OutPeriod pd, SW_ALL *sw) {
 /**
 @brief Gets potential evapotranspiration and radiation
 */
-void get_pet_agg(OutPeriod pd, SW_ALL *sw) {
+void get_pet_agg(OutPeriod pd, SW_RUN *sw) {
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -3465,10 +3465,10 @@ void get_pet_agg(OutPeriod pd, SW_ALL *sw) {
 @brief Gets is_wet and wetdays when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_wetdays_text(OutPeriod pd, SW_ALL *sw) {
+void get_wetdays_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i, n_layers = sw->Site.n_layers;
     SW_GEN_OUT *go = &sw->GenOutput;
 
@@ -3500,10 +3500,10 @@ void get_wetdays_text(OutPeriod pd, SW_ALL *sw) {
 @brief Gets is_wet and wetdays when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_wetdays_mem(OutPeriod pd, SW_ALL *sw) {
+void get_wetdays_mem(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     size_t iOUTIndex = 0;
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -3552,10 +3552,10 @@ void get_wetdays_mem(OutPeriod pd, SW_ALL *sw) {
 @brief Gets is_wet and wetdays when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_wetdays_agg(OutPeriod pd, SW_ALL *sw) {
+void get_wetdays_agg(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     size_t iOUTIndex = 0;
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -3596,10 +3596,10 @@ void get_wetdays_agg(OutPeriod pd, SW_ALL *sw) {
 @brief Gets snowpack and snowdepth when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_snowpack_text(OutPeriod pd, SW_ALL *sw) {
+void get_snowpack_text(OutPeriod pd, SW_RUN *sw) {
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_GEN_OUT *go = &sw->GenOutput;
 
@@ -3624,10 +3624,10 @@ void get_snowpack_text(OutPeriod pd, SW_ALL *sw) {
 @brief Gets snowpack and snowdepth when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_snowpack_mem(OutPeriod pd, SW_ALL *sw) {
+void get_snowpack_mem(OutPeriod pd, SW_RUN *sw) {
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -3668,10 +3668,10 @@ void get_snowpack_mem(OutPeriod pd, SW_ALL *sw) {
 @brief Gets snowpack and snowdepth when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_snowpack_agg(OutPeriod pd, SW_ALL *sw) {
+void get_snowpack_agg(OutPeriod pd, SW_RUN *sw) {
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -3700,10 +3700,10 @@ void get_snowpack_agg(OutPeriod pd, SW_ALL *sw) {
 @brief Gets deep for when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_deepswc_text(OutPeriod pd, SW_ALL *sw) {
+void get_deepswc_text(OutPeriod pd, SW_RUN *sw) {
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_GEN_OUT *go = &sw->GenOutput;
 
@@ -3725,10 +3725,10 @@ void get_deepswc_text(OutPeriod pd, SW_ALL *sw) {
 @brief Gets deep for when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_deepswc_mem(OutPeriod pd, SW_ALL *sw) {
+void get_deepswc_mem(OutPeriod pd, SW_RUN *sw) {
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -3758,10 +3758,10 @@ void get_deepswc_mem(OutPeriod pd, SW_ALL *sw) {
 @brief Gets deep for when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_deepswc_agg(OutPeriod pd, SW_ALL *sw) {
+void get_deepswc_agg(OutPeriod pd, SW_RUN *sw) {
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -3786,10 +3786,10 @@ void get_deepswc_agg(OutPeriod pd, SW_ALL *sw) {
 @brief Gets soil temperature for when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_soiltemp_text(OutPeriod pd, SW_ALL *sw) {
+void get_soiltemp_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -3832,10 +3832,10 @@ void get_soiltemp_text(OutPeriod pd, SW_ALL *sw) {
 @brief Gets soil temperature for when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_soiltemp_mem(OutPeriod pd, SW_ALL *sw) {
+void get_soiltemp_mem(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
@@ -3918,10 +3918,10 @@ void get_soiltemp_mem(OutPeriod pd, SW_ALL *sw) {
 @brief Gets soil temperature for when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_soiltemp_agg(OutPeriod pd, SW_ALL *sw) {
+void get_soiltemp_agg(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
@@ -3965,10 +3965,10 @@ void get_soiltemp_agg(OutPeriod pd, SW_ALL *sw) {
 OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_frozen_text(OutPeriod pd, SW_ALL *sw) {
+void get_frozen_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_GEN_OUT *go = &sw->GenOutput;
@@ -3991,10 +3991,10 @@ void get_frozen_text(OutPeriod pd, SW_ALL *sw) {
 @brief Gets soil state (frozen/unfrozen) for when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_frozen_mem(OutPeriod pd, SW_ALL *sw) {
+void get_frozen_mem(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
@@ -4039,10 +4039,10 @@ void get_frozen_mem(OutPeriod pd, SW_ALL *sw) {
 @brief Gets soil temperature for when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 */
-void get_frozen_agg(OutPeriod pd, SW_ALL *sw) {
+void get_frozen_agg(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;

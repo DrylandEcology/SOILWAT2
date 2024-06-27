@@ -76,7 +76,7 @@
 #define SW_OUTPUT_H
 
 #include "include/generic.h"        // for Bool, IntUS
-#include "include/SW_datastructs.h" // for SW_ALL, eSW_LastKey, eSW_NoKey
+#include "include/SW_datastructs.h" // for SW_RUN, eSW_LastKey, eSW_NoKey
 #include "include/SW_Defines.h"     // for OutPeriod, TimeInt, SW_OUTNMAXVARS
 #include <stddef.h>                 // for size_t
 
@@ -170,7 +170,7 @@ void SW_OUT_construct(
     LOG_INFO *LogInfo
 );
 
-void SW_OUT_deconstruct(Bool full_reset, SW_ALL *sw);
+void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw);
 
 void SW_OUT_set_ncol(
     int tLayers,
@@ -214,7 +214,7 @@ int SW_OUT_read_onekey(
 );
 
 void SW_OUT_read(
-    SW_ALL *sw,
+    SW_RUN *sw,
     char *InFiles[],
     OutPeriod timeSteps[][SW_OUTNPERIODS],
     IntUS *used_OUTNPERIODS,
@@ -222,7 +222,7 @@ void SW_OUT_read(
 );
 
 void SW_OUT_sum_today(
-    SW_ALL *sw,
+    SW_RUN *sw,
     ObjType otyp,
     Bool bFlush_output,
     TimeInt tOffset,
@@ -230,7 +230,7 @@ void SW_OUT_sum_today(
 );
 
 void SW_OUT_write_today(
-    SW_ALL *sw,
+    SW_RUN *sw,
     SW_OUTPUT_POINTERS *SW_OutputPtrs,
     Bool bFlush_output,
     TimeInt tOffset
@@ -239,11 +239,11 @@ void SW_OUT_write_today(
 void SW_OUT_write_year(void);
 
 void SW_OUT_flush(
-    SW_ALL *sw, SW_OUTPUT_POINTERS *SW_OutputPtrs, LOG_INFO *LogInfo
+    SW_RUN *sw, SW_OUTPUT_POINTERS *SW_OutputPtrs, LOG_INFO *LogInfo
 );
 
 void _collect_values(
-    SW_ALL *sw,
+    SW_RUN *sw,
     SW_OUTPUT_POINTERS *SW_OutputPtrs,
     Bool bFlush_output,
     TimeInt tOffset,
@@ -262,9 +262,9 @@ void SW_OUT_create_files(
     LOG_INFO *LogInfo
 );
 
-void _echo_outputs(SW_ALL *sw);
+void _echo_outputs(SW_RUN *sw);
 
-void _echo_all_inputs(SW_ALL *sw);
+void _echo_all_inputs(SW_RUN *sw);
 
 void find_OutPeriods_inUse(SW_GEN_OUT *GenOutput, SW_OUTPUT *SW_Output);
 
@@ -323,127 +323,127 @@ void SW_OUT_deepCopy(
  * 05-Mar-03 (cwb) Added code for max,min,avg. Previously, only avg was output.
  * 22 June-15 (akt)  Added code for adding surfaceAvg at output
  */
-void get_none(OutPeriod pd, SW_ALL *sw); /* default until defined */
+void get_none(OutPeriod pd, SW_RUN *sw); /* default until defined */
 
 #if defined(SW_OUTTEXT) && !defined(SWNETCDF)
-void get_temp_text(OutPeriod pd, SW_ALL *sw);
-void get_precip_text(OutPeriod pd, SW_ALL *sw);
-void get_vwcBulk_text(OutPeriod pd, SW_ALL *sw);
-void get_vwcMatric_text(OutPeriod pd, SW_ALL *sw);
-void get_swcBulk_text(OutPeriod pd, SW_ALL *sw);
-void get_swpMatric_text(OutPeriod pd, SW_ALL *sw);
-void get_swaBulk_text(OutPeriod pd, SW_ALL *sw);
-void get_swaMatric_text(OutPeriod pd, SW_ALL *sw);
-void get_swa_text(OutPeriod pd, SW_ALL *sw);
-void get_surfaceWater_text(OutPeriod pd, SW_ALL *sw);
-void get_runoffrunon_text(OutPeriod pd, SW_ALL *sw);
-void get_transp_text(OutPeriod pd, SW_ALL *sw);
-void get_evapSoil_text(OutPeriod pd, SW_ALL *sw);
-void get_evapSurface_text(OutPeriod pd, SW_ALL *sw);
-void get_interception_text(OutPeriod pd, SW_ALL *sw);
-void get_soilinf_text(OutPeriod pd, SW_ALL *sw);
-void get_lyrdrain_text(OutPeriod pd, SW_ALL *sw);
-void get_hydred_text(OutPeriod pd, SW_ALL *sw);
-void get_aet_text(OutPeriod pd, SW_ALL *sw);
-void get_pet_text(OutPeriod pd, SW_ALL *sw);
-void get_wetdays_text(OutPeriod pd, SW_ALL *sw);
-void get_snowpack_text(OutPeriod pd, SW_ALL *sw);
-void get_deepswc_text(OutPeriod pd, SW_ALL *sw);
-void get_estab_text(OutPeriod pd, SW_ALL *sw);
-void get_soiltemp_text(OutPeriod pd, SW_ALL *sw);
-void get_frozen_text(OutPeriod pd, SW_ALL *sw);
-void get_co2effects_text(OutPeriod pd, SW_ALL *sw);
-void get_biomass_text(OutPeriod pd, SW_ALL *sw);
+void get_temp_text(OutPeriod pd, SW_RUN *sw);
+void get_precip_text(OutPeriod pd, SW_RUN *sw);
+void get_vwcBulk_text(OutPeriod pd, SW_RUN *sw);
+void get_vwcMatric_text(OutPeriod pd, SW_RUN *sw);
+void get_swcBulk_text(OutPeriod pd, SW_RUN *sw);
+void get_swpMatric_text(OutPeriod pd, SW_RUN *sw);
+void get_swaBulk_text(OutPeriod pd, SW_RUN *sw);
+void get_swaMatric_text(OutPeriod pd, SW_RUN *sw);
+void get_swa_text(OutPeriod pd, SW_RUN *sw);
+void get_surfaceWater_text(OutPeriod pd, SW_RUN *sw);
+void get_runoffrunon_text(OutPeriod pd, SW_RUN *sw);
+void get_transp_text(OutPeriod pd, SW_RUN *sw);
+void get_evapSoil_text(OutPeriod pd, SW_RUN *sw);
+void get_evapSurface_text(OutPeriod pd, SW_RUN *sw);
+void get_interception_text(OutPeriod pd, SW_RUN *sw);
+void get_soilinf_text(OutPeriod pd, SW_RUN *sw);
+void get_lyrdrain_text(OutPeriod pd, SW_RUN *sw);
+void get_hydred_text(OutPeriod pd, SW_RUN *sw);
+void get_aet_text(OutPeriod pd, SW_RUN *sw);
+void get_pet_text(OutPeriod pd, SW_RUN *sw);
+void get_wetdays_text(OutPeriod pd, SW_RUN *sw);
+void get_snowpack_text(OutPeriod pd, SW_RUN *sw);
+void get_deepswc_text(OutPeriod pd, SW_RUN *sw);
+void get_estab_text(OutPeriod pd, SW_RUN *sw);
+void get_soiltemp_text(OutPeriod pd, SW_RUN *sw);
+void get_frozen_text(OutPeriod pd, SW_RUN *sw);
+void get_co2effects_text(OutPeriod pd, SW_RUN *sw);
+void get_biomass_text(OutPeriod pd, SW_RUN *sw);
 #endif
 
 #if defined(RSOILWAT) || defined(SWNETCDF)
-void get_temp_mem(OutPeriod pd, SW_ALL *sw);
-void get_precip_mem(OutPeriod pd, SW_ALL *sw);
-void get_vwcBulk_mem(OutPeriod pd, SW_ALL *sw);
-void get_vwcMatric_mem(OutPeriod pd, SW_ALL *sw);
-void get_swcBulk_mem(OutPeriod pd, SW_ALL *sw);
-void get_swpMatric_mem(OutPeriod pd, SW_ALL *sw);
-void get_swaBulk_mem(OutPeriod pd, SW_ALL *sw);
-void get_swaMatric_mem(OutPeriod pd, SW_ALL *sw);
-void get_swa_mem(OutPeriod pd, SW_ALL *sw);
-void get_surfaceWater_mem(OutPeriod pd, SW_ALL *sw);
-void get_runoffrunon_mem(OutPeriod pd, SW_ALL *sw);
-void get_transp_mem(OutPeriod pd, SW_ALL *sw);
-void get_evapSoil_mem(OutPeriod pd, SW_ALL *sw);
-void get_evapSurface_mem(OutPeriod pd, SW_ALL *sw);
-void get_interception_mem(OutPeriod pd, SW_ALL *sw);
-void get_soilinf_mem(OutPeriod pd, SW_ALL *sw);
-void get_lyrdrain_mem(OutPeriod pd, SW_ALL *sw);
-void get_hydred_mem(OutPeriod pd, SW_ALL *sw);
-void get_aet_mem(OutPeriod pd, SW_ALL *sw);
-void get_pet_mem(OutPeriod pd, SW_ALL *sw);
-void get_wetdays_mem(OutPeriod pd, SW_ALL *sw);
-void get_snowpack_mem(OutPeriod pd, SW_ALL *sw);
-void get_deepswc_mem(OutPeriod pd, SW_ALL *sw);
-void get_estab_mem(OutPeriod pd, SW_ALL *sw);
-void get_soiltemp_mem(OutPeriod pd, SW_ALL *sw);
-void get_frozen_mem(OutPeriod pd, SW_ALL *sw);
-void get_co2effects_mem(OutPeriod pd, SW_ALL *sw);
-void get_biomass_mem(OutPeriod pd, SW_ALL *sw);
+void get_temp_mem(OutPeriod pd, SW_RUN *sw);
+void get_precip_mem(OutPeriod pd, SW_RUN *sw);
+void get_vwcBulk_mem(OutPeriod pd, SW_RUN *sw);
+void get_vwcMatric_mem(OutPeriod pd, SW_RUN *sw);
+void get_swcBulk_mem(OutPeriod pd, SW_RUN *sw);
+void get_swpMatric_mem(OutPeriod pd, SW_RUN *sw);
+void get_swaBulk_mem(OutPeriod pd, SW_RUN *sw);
+void get_swaMatric_mem(OutPeriod pd, SW_RUN *sw);
+void get_swa_mem(OutPeriod pd, SW_RUN *sw);
+void get_surfaceWater_mem(OutPeriod pd, SW_RUN *sw);
+void get_runoffrunon_mem(OutPeriod pd, SW_RUN *sw);
+void get_transp_mem(OutPeriod pd, SW_RUN *sw);
+void get_evapSoil_mem(OutPeriod pd, SW_RUN *sw);
+void get_evapSurface_mem(OutPeriod pd, SW_RUN *sw);
+void get_interception_mem(OutPeriod pd, SW_RUN *sw);
+void get_soilinf_mem(OutPeriod pd, SW_RUN *sw);
+void get_lyrdrain_mem(OutPeriod pd, SW_RUN *sw);
+void get_hydred_mem(OutPeriod pd, SW_RUN *sw);
+void get_aet_mem(OutPeriod pd, SW_RUN *sw);
+void get_pet_mem(OutPeriod pd, SW_RUN *sw);
+void get_wetdays_mem(OutPeriod pd, SW_RUN *sw);
+void get_snowpack_mem(OutPeriod pd, SW_RUN *sw);
+void get_deepswc_mem(OutPeriod pd, SW_RUN *sw);
+void get_estab_mem(OutPeriod pd, SW_RUN *sw);
+void get_soiltemp_mem(OutPeriod pd, SW_RUN *sw);
+void get_frozen_mem(OutPeriod pd, SW_RUN *sw);
+void get_co2effects_mem(OutPeriod pd, SW_RUN *sw);
+void get_biomass_mem(OutPeriod pd, SW_RUN *sw);
 
 #elif defined(STEPWAT)
-void get_temp_agg(OutPeriod pd, SW_ALL *sw);
-void get_precip_agg(OutPeriod pd, SW_ALL *sw);
-void get_vwcBulk_agg(OutPeriod pd, SW_ALL *sw);
-void get_vwcMatric_agg(OutPeriod pd, SW_ALL *sw);
-void get_swcBulk_agg(OutPeriod pd, SW_ALL *sw);
-void get_swpMatric_agg(OutPeriod pd, SW_ALL *sw);
-void get_swaBulk_agg(OutPeriod pd, SW_ALL *sw);
-void get_swaMatric_agg(OutPeriod pd, SW_ALL *sw);
-void get_swa_agg(OutPeriod pd, SW_ALL *sw);
-void get_surfaceWater_agg(OutPeriod pd, SW_ALL *sw);
-void get_runoffrunon_agg(OutPeriod pd, SW_ALL *sw);
-void get_transp_agg(OutPeriod pd, SW_ALL *sw);
-void get_evapSoil_agg(OutPeriod pd, SW_ALL *sw);
-void get_evapSurface_agg(OutPeriod pd, SW_ALL *sw);
-void get_interception_agg(OutPeriod pd, SW_ALL *sw);
-void get_soilinf_agg(OutPeriod pd, SW_ALL *sw);
-void get_lyrdrain_agg(OutPeriod pd, SW_ALL *sw);
-void get_hydred_agg(OutPeriod pd, SW_ALL *sw);
-void get_aet_agg(OutPeriod pd, SW_ALL *sw);
-void get_pet_agg(OutPeriod pd, SW_ALL *sw);
-void get_wetdays_agg(OutPeriod pd, SW_ALL *sw);
-void get_snowpack_agg(OutPeriod pd, SW_ALL *sw);
-void get_deepswc_agg(OutPeriod pd, SW_ALL *sw);
-void get_estab_agg(OutPeriod pd, SW_ALL *sw);
-void get_soiltemp_agg(OutPeriod pd, SW_ALL *sw);
-void get_frozen_agg(OutPeriod pd, SW_ALL *sw);
-void get_co2effects_agg(OutPeriod pd, SW_ALL *sw);
-void get_biomass_agg(OutPeriod pd, SW_ALL *sw);
+void get_temp_agg(OutPeriod pd, SW_RUN *sw);
+void get_precip_agg(OutPeriod pd, SW_RUN *sw);
+void get_vwcBulk_agg(OutPeriod pd, SW_RUN *sw);
+void get_vwcMatric_agg(OutPeriod pd, SW_RUN *sw);
+void get_swcBulk_agg(OutPeriod pd, SW_RUN *sw);
+void get_swpMatric_agg(OutPeriod pd, SW_RUN *sw);
+void get_swaBulk_agg(OutPeriod pd, SW_RUN *sw);
+void get_swaMatric_agg(OutPeriod pd, SW_RUN *sw);
+void get_swa_agg(OutPeriod pd, SW_RUN *sw);
+void get_surfaceWater_agg(OutPeriod pd, SW_RUN *sw);
+void get_runoffrunon_agg(OutPeriod pd, SW_RUN *sw);
+void get_transp_agg(OutPeriod pd, SW_RUN *sw);
+void get_evapSoil_agg(OutPeriod pd, SW_RUN *sw);
+void get_evapSurface_agg(OutPeriod pd, SW_RUN *sw);
+void get_interception_agg(OutPeriod pd, SW_RUN *sw);
+void get_soilinf_agg(OutPeriod pd, SW_RUN *sw);
+void get_lyrdrain_agg(OutPeriod pd, SW_RUN *sw);
+void get_hydred_agg(OutPeriod pd, SW_RUN *sw);
+void get_aet_agg(OutPeriod pd, SW_RUN *sw);
+void get_pet_agg(OutPeriod pd, SW_RUN *sw);
+void get_wetdays_agg(OutPeriod pd, SW_RUN *sw);
+void get_snowpack_agg(OutPeriod pd, SW_RUN *sw);
+void get_deepswc_agg(OutPeriod pd, SW_RUN *sw);
+void get_estab_agg(OutPeriod pd, SW_RUN *sw);
+void get_soiltemp_agg(OutPeriod pd, SW_RUN *sw);
+void get_frozen_agg(OutPeriod pd, SW_RUN *sw);
+void get_co2effects_agg(OutPeriod pd, SW_RUN *sw);
+void get_biomass_agg(OutPeriod pd, SW_RUN *sw);
 
-void get_temp_SXW(OutPeriod pd, SW_ALL *sw);
-void get_precip_SXW(OutPeriod pd, SW_ALL *sw);
-void get_vwcBulk_SXW(OutPeriod pd, SW_ALL *sw);
-void get_vwcMatric_SXW(OutPeriod pd, SW_ALL *sw);
-void get_swcBulk_SXW(OutPeriod pd, SW_ALL *sw);
-void get_swpMatric_SXW(OutPeriod pd, SW_ALL *sw);
-void get_swaBulk_SXW(OutPeriod pd, SW_ALL *sw);
-void get_swaMatric_SXW(OutPeriod pd, SW_ALL *sw);
-void get_swa_SXW(OutPeriod pd, SW_ALL *sw);
-void get_surfaceWater_SXW(OutPeriod pd, SW_ALL *sw);
-void get_runoffrunon_SXW(OutPeriod pd, SW_ALL *sw);
-void get_transp_SXW(OutPeriod pd, SW_ALL *sw);
-void get_evapSoil_SXW(OutPeriod pd, SW_ALL *sw);
-void get_evapSurface_SXW(OutPeriod pd, SW_ALL *sw);
-void get_interception_SXW(OutPeriod pd, SW_ALL *sw);
-void get_soilinf_SXW(OutPeriod pd, SW_ALL *sw);
-void get_lyrdrain_SXW(OutPeriod pd, SW_ALL *sw);
-void get_hydred_SXW(OutPeriod pd, SW_ALL *sw);
-void get_aet_SXW(OutPeriod pd, SW_ALL *sw);
-void get_pet_SXW(OutPeriod pd, SW_ALL *sw);
-void get_wetdays_SXW(OutPeriod pd, SW_ALL *sw);
-void get_snowpack_SXW(OutPeriod pd, SW_ALL *sw);
-void get_deepswc_SXW(OutPeriod pd, SW_ALL *sw);
-void get_estab_SXW(OutPeriod pd, SW_ALL *sw);
-void get_soiltemp_SXW(OutPeriod pd, SW_ALL *sw);
-void get_frozen_SXW(OutPeriod pd, SW_ALL *sw);
-void get_co2effects_SXW(OutPeriod pd, SW_ALL *sw);
-void get_biomass_SXW(OutPeriod pd, SW_ALL *sw);
+void get_temp_SXW(OutPeriod pd, SW_RUN *sw);
+void get_precip_SXW(OutPeriod pd, SW_RUN *sw);
+void get_vwcBulk_SXW(OutPeriod pd, SW_RUN *sw);
+void get_vwcMatric_SXW(OutPeriod pd, SW_RUN *sw);
+void get_swcBulk_SXW(OutPeriod pd, SW_RUN *sw);
+void get_swpMatric_SXW(OutPeriod pd, SW_RUN *sw);
+void get_swaBulk_SXW(OutPeriod pd, SW_RUN *sw);
+void get_swaMatric_SXW(OutPeriod pd, SW_RUN *sw);
+void get_swa_SXW(OutPeriod pd, SW_RUN *sw);
+void get_surfaceWater_SXW(OutPeriod pd, SW_RUN *sw);
+void get_runoffrunon_SXW(OutPeriod pd, SW_RUN *sw);
+void get_transp_SXW(OutPeriod pd, SW_RUN *sw);
+void get_evapSoil_SXW(OutPeriod pd, SW_RUN *sw);
+void get_evapSurface_SXW(OutPeriod pd, SW_RUN *sw);
+void get_interception_SXW(OutPeriod pd, SW_RUN *sw);
+void get_soilinf_SXW(OutPeriod pd, SW_RUN *sw);
+void get_lyrdrain_SXW(OutPeriod pd, SW_RUN *sw);
+void get_hydred_SXW(OutPeriod pd, SW_RUN *sw);
+void get_aet_SXW(OutPeriod pd, SW_RUN *sw);
+void get_pet_SXW(OutPeriod pd, SW_RUN *sw);
+void get_wetdays_SXW(OutPeriod pd, SW_RUN *sw);
+void get_snowpack_SXW(OutPeriod pd, SW_RUN *sw);
+void get_deepswc_SXW(OutPeriod pd, SW_RUN *sw);
+void get_estab_SXW(OutPeriod pd, SW_RUN *sw);
+void get_soiltemp_SXW(OutPeriod pd, SW_RUN *sw);
+void get_frozen_SXW(OutPeriod pd, SW_RUN *sw);
+void get_co2effects_SXW(OutPeriod pd, SW_RUN *sw);
+void get_biomass_SXW(OutPeriod pd, SW_RUN *sw);
 #endif
 
 

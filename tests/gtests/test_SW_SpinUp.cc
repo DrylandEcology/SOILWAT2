@@ -7,7 +7,7 @@
 
 #if defined(SW2_SpinupEvaluation)
 #include "include/filefuncs.h"      // for OpenFile, CloseFile
-#include "include/SW_datastructs.h" // for SW_ALL, LOG_INFO
+#include "include/SW_datastructs.h" // for SW_RUN, LOG_INFO
 #include "include/SW_Site.h"        // for SW_SIT_init_run
 #include "include/SW_SoilWater.h"   // for SW_SWC_init_run
 #include <stdio.h>                  // for fprintf, fflush, FILE
@@ -307,7 +307,7 @@ TEST_F(SpinUpTest, Mode2WithScopeLessThanDuration) {
 // ```
 
 TEST_F(SpinUpTest, SpinupEvaluation) {
-    SW_ALL local_sw;
+    SW_RUN local_sw;
     LOG_INFO local_LogInfo;
 
     FILE *fp;

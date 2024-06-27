@@ -205,7 +205,7 @@
 /* --------------------------------------------------- */
 #include "include/SW_Flow.h"         // for SW_FLW_init_run, SW_Water_Flow
 #include "include/generic.h"         // for RealD, GT, fmax, EQ, fmin
-#include "include/SW_datastructs.h"  // for LOG_INFO, SW_ALL, SW_SOILWAT
+#include "include/SW_datastructs.h"  // for LOG_INFO, SW_RUN, SW_SOILWAT
 #include "include/SW_Defines.h"      // for ForEachVegType, NVEGTYPES, ForE...
 #include "include/SW_Flow_lib.h"     // for evap_fromSurface, remove_from_soil
 #include "include/SW_Flow_lib_PET.h" // for petfunc, solar_radiation
@@ -259,7 +259,7 @@ void SW_FLW_init_run(SW_SOILWAT *SW_SoilWat) {
 /* *************************************************** */
 /*            The Water Flow                           */
 /* --------------------------------------------------- */
-void SW_Water_Flow(SW_ALL *sw, LOG_INFO *LogInfo) {
+void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
 #ifdef SWDEBUG
     IntUS debug = 0, debug_year = 1980, debug_doy = 350;
     double Eveg, Tveg, HRveg;

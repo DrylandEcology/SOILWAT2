@@ -1351,7 +1351,7 @@ typedef struct {
     SW_ATMD AtmDemand;
     SW_GEN_OUT GenOutput;
 
-} SW_ALL;
+} SW_RUN;
 
 /* =================================================== */
 /*                 Output struct/enums                 */
@@ -1361,19 +1361,19 @@ typedef struct {
 
 #if defined(SW_OUTTEXT)
     /** pointer to output routine for text output */
-    void (*pfunc_text)(OutPeriod, SW_ALL *);
+    void (*pfunc_text)(OutPeriod, SW_RUN *);
 #endif
 
 #if defined(RSOILWAT) || defined(SWNETCDF)
     /** pointer to output routine for array output */
-    void (*pfunc_mem)(OutPeriod, SW_ALL *);
+    void (*pfunc_mem)(OutPeriod, SW_RUN *);
 
 #elif defined(STEPWAT)
     /** pointer to output routine for aggregated output across STEPWAT
      * iterations */
-    void (*pfunc_agg)(OutPeriod, SW_ALL *);
+    void (*pfunc_agg)(OutPeriod, SW_RUN *);
     /** pointer to output routine for STEPWAT in-memory output */
-    void (*pfunc_SXW)(OutPeriod, SW_ALL *);
+    void (*pfunc_SXW)(OutPeriod, SW_RUN *);
 #endif
 } SW_OUTPUT_POINTERS;
 

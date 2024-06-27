@@ -1,6 +1,6 @@
 #include "include/generic.h"        // for EQ, swTRUE
 #include "include/SW_Control.h"     // for SW_ALL_deepCopy, SW_CTL_clear_model
-#include "include/SW_datastructs.h" // for LOG_INFO, SW_ALL, SW_DOMAIN, SW_...
+#include "include/SW_datastructs.h" // for LOG_INFO, SW_RUN, SW_DOMAIN, SW_...
 #include "include/SW_Defines.h"     // for SW_OUTNKEYS, SW_MISSING
 #include "include/SW_Domain.h"      // for SW_DOM_deconstruct, SW_DOM_deepCopy
 #include "include/SW_Main_lib.h"    // for sw_fail_on_error, sw_init_logs
@@ -8,7 +8,7 @@
 #include <string.h>                 // for memcpy, NULL
 
 
-extern SW_ALL template_SW_All;
+extern SW_RUN template_SW_All;
 extern SW_DOMAIN template_SW_Domain;
 extern SW_OUTPUT_POINTERS template_SW_OutputPtrs[SW_OUTNKEYS];
 
@@ -55,7 +55,7 @@ void teardown_testGlobalSoilwatTemplate();
 */
 class AllTestFixture : public ::testing::Test {
   protected:
-    SW_ALL SW_All;
+    SW_RUN SW_All;
     SW_DOMAIN SW_Domain;
     LOG_INFO LogInfo;
     SW_OUTPUT_POINTERS SW_OutputPtrs[SW_OUTNKEYS];

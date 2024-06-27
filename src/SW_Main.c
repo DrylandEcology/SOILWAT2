@@ -18,7 +18,7 @@
 #include "include/filefuncs.h"      // for sw_message
 #include "include/generic.h"        // for Bool, swFALSE, swTRUE
 #include "include/SW_Control.h"     // for SW_CTL_RunSimSet, SW_CTL_clear_m...
-#include "include/SW_datastructs.h" // for LOG_INFO, SW_ALL, SW_DOMAIN, SW_...
+#include "include/SW_datastructs.h" // for LOG_INFO, SW_RUN, SW_DOMAIN, SW_...
 #include "include/SW_Defines.h"     // for SW_OUTNKEYS
 #include "include/SW_Domain.h"      // for SW_DOM_deconstruct, SW_DOM_init_...
 #include "include/SW_Files.h"       // for eFirst
@@ -48,7 +48,7 @@
 int main(int argc, char **argv) {
     /* =================================================== */
     SW_WALLTIME SW_WallTime;
-    SW_ALL sw_template;
+    SW_RUN sw_template;
     SW_DOMAIN SW_Domain;
     SW_OUTPUT_POINTERS SW_OutputPtrs[SW_OUTNKEYS];
     LOG_INFO LogInfo;
