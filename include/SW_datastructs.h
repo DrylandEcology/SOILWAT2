@@ -30,6 +30,10 @@
 #define SW_NFILES 27 // For `InFiles`
 #define SW_NVARNC 2  // For `InFilesNC`
 
+/* Declare SW_RUN & SW_OUT_DOM structs for SW_OUT_DOM and SW_DOMAIN to see */
+typedef struct SW_RUN SW_RUN;
+typedef struct SW_OUT_DOM SW_OUT_DOM;
+
 /* =================================================== */
 /*                   Carbon structs                    */
 /* --------------------------------------------------- */
@@ -1086,140 +1090,6 @@ typedef enum {
     eSW_LastKey /* make sure this is the last one */
 } OutKey;
 
-typedef struct {
-    OutKey mykey;
-    ObjType myobj;
-    OutSum sumtype;
-    Bool use,   // TRUE if output is requested
-        has_sl; // TRUE if output key/type produces output for each soil layer
-    TimeInt first,
-        last, /* first/last doy of current year, i.e., updated for each year */
-        first_orig,
-        last_orig; /* first/last doy that were originally requested */
-
-#if defined(RSOILWAT)
-    char *outfile; /* name of output */ // could probably be removed
-#endif
-
-#if defined(SWNETCDF)
-    Bool *reqOutputVars;   /**< Do/don't output a variable in the netCDF output
-                              files (dynamically allocated array over output
-                              variables) */
-    char ***outputVarInfo; /**< Attributes of output variables in netCDF output
-                              files (dynamically allcoated 2-d array:
-                              `[varIndex][attIndex]`) */
-    char **units_sw; /**< Units internally utilized by SOILWAT2 (dynamically
-                        allocated array over output variables) */
-    sw_converter_t **uconv; /**< udunits2 unit converter from internal SOILWAT2
-                               units to user-requested units (dynamically
-                               allocated array over output variables) */
-#endif
-} SW_OUTPUT;
-
-typedef struct {
-    TimeInt tOffset; /* 1 or 0 means we're writing previous or current period */
-
-
-    // Variables describing output periods:
-    /** `timeSteps` is the array that keeps track of the output time periods
-       that are required for `text` and/or `array`-based output for each output
-       key. */
-    OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];
-
-    /** The number of different time steps/periods that are used/requested
-                    Note: Under STEPWAT2, this may be larger than the sum of
-       `use_OutPeriod` because it also incorporates information from
-       `timeSteps_SXW`. */
-    IntUS used_OUTNPERIODS;
-
-    /** TRUE if time step/period is active for any output key. */
-    Bool use_OutPeriod[SW_OUTNPERIODS];
-
-
-    // Variables describing size and names of output
-    /** names of output columns for each output key; number is an expensive
-     * guess */
-    char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS];
-
-    /* number of outputs */
-    IntUS ncol_OUT[SW_OUTNKEYS]; /**< number of output combinations across
-                                    variables - soil layer - vegtype */
-    IntUS nvar_OUT[SW_OUTNKEYS]; /**< number of output variables */
-    IntUS nsl_OUT[SW_OUTNKEYS]
-                 [SW_OUTNMAXVARS]; /**< number of output soil layers */
-    IntUS npft_OUT[SW_OUTNKEYS]
-                  [SW_OUTNMAXVARS]; /**< number of output plant functional types
-                                       (vegtype) */
-
-
-    Bool print_IterationSummary;
-    Bool print_SW_Output;
-    char sw_outstr[MAX_LAYERS * OUTSTRLEN];
-
-#if defined(SW_OUTARRAY)
-    /**
-    @brief A 2-dim array of pointers to output arrays.
-
-    The variable p_OUT used by rSOILWAT2 for output and by STEPWAT2 for
-    mean aggregation.
-    */
-    RealD *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
-
-    size_t nrow_OUT[SW_OUTNPERIODS]; /**< number of output time steps */
-    size_t irow_OUT[SW_OUTNPERIODS]; /**< current output time step index */
-#endif
-
-#if defined(SWNETCDF)
-    size_t iOUToffset[SW_OUTNKEYS][SW_OUTNPERIODS]
-                     [SW_OUTNMAXVARS]; /**< offset positions of output variables
-                                          for indexing p_OUT */
-#endif
-
-#ifdef STEPWAT
-    RealD *p_OUTsd[SW_OUTNKEYS][SW_OUTNPERIODS];
-
-    char sw_outstr_agg[MAX_LAYERS * OUTSTRLEN];
-
-    /** `timeSteps_SXW` is the array that keeps track of the output time periods
-            that are required for `SXW` in-memory output for each output key.
-            Compare with `timeSteps` */
-    OutPeriod timeSteps_SXW[SW_OUTNKEYS][SW_OUTNPERIODS];
-
-    /** `storeAllIterations` is set to TRUE if STEPWAT2 is called with `-i` flag
-             if TRUE, then write to disk the SOILWAT2 output
-            for each STEPWAT2 iteration/repeat to separate files */
-    Bool storeAllIterations;
-
-    /** `prepare_IterationSummary` is set to TRUE if STEPWAT2 is called with
-             `-o` flag; if TRUE, then calculate/write to disk the running mean
-       and sd across iterations/repeats */
-    Bool prepare_IterationSummary;
-
-    /** Variable from ModelType (STEPWAT2) used in SOILWAT2 */
-    IntUS currIter;
-
-    /* Variables from SXW_t (STEPWAT2) used in SOILWAT2 */
-    // transpXXX: monthly sum of soilwat's transpiration by soil layer
-    // * these are dynamic arrays that are indexed by Ilp()
-    RealD transpTotal[MAX_LAYERS][MAX_MONTHS], // total transpiration, i.e., sum
-                                               // across vegetation types
-        transpVeg[NVEGTYPES][MAX_LAYERS]
-                 [MAX_MONTHS]; // transpiration as contributed by vegetation
-                               // types
-    RealF swc[MAX_LAYERS]
-             [MAX_MONTHS]; // monthly mean SWCbulk for each soil layer
-
-    // fixed monthly array:
-    RealF ppt_monthly[MAX_MONTHS];  // monthly sum of soilwat's precipitation
-    RealF temp_monthly[MAX_MONTHS]; // monthly mean soilwat's air temperature
-
-    // annual values:
-    RealF temp, // annual mean soilwat's air temperature
-        ppt,    // annual sum of soilwat's precipitation
-        aet;    // annual sum of soilwat's evapotranspiration
-#endif
-} SW_GEN_OUT;
-
 /* =================================================== */
 /*         Coordinate Reference System struct          */
 /* --------------------------------------------------- */
@@ -1265,6 +1135,107 @@ typedef struct {
 
     char *outputVarsFileName;
 } SW_NETCDF;
+
+struct SW_OUT_DOM {
+
+    /* Output information */
+
+    // Variables describing output periods:
+    /** `timeSteps` is the array that keeps track of the output time periods
+       that are required for `text` and/or `array`-based output for each output
+       key. */
+    OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];
+
+    /** The number of different time steps/periods that are used/requested
+                    Note: Under STEPWAT2, this may be larger than the sum of
+       `use_OutPeriod` because it also incorporates information from
+       `timeSteps_SXW`. */
+    IntUS used_OUTNPERIODS;
+
+    /** TRUE if time step/period is active for any output key. */
+    Bool use_OutPeriod[SW_OUTNPERIODS];
+
+    // Variables describing size and names of output
+    /** names of output columns for each output key; number is an expensive
+     * guess */
+    char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS];
+
+    /* number of outputs */
+    IntUS ncol_OUT[SW_OUTNKEYS]; /**< number of output combinations across
+                                    variables - soil layer - vegtype */
+    IntUS nvar_OUT[SW_OUTNKEYS]; /**< number of output variables */
+    IntUS nsl_OUT[SW_OUTNKEYS]
+                 [SW_OUTNMAXVARS]; /**< number of output soil layers */
+    IntUS npft_OUT[SW_OUTNKEYS]
+                  [SW_OUTNMAXVARS]; /**< number of output plant functional types
+                                       (vegtype) */
+
+
+    Bool print_IterationSummary;
+    Bool print_SW_Output;
+
+#if defined(SW_OUTARRAY)
+    size_t nrow_OUT[SW_OUTNPERIODS]; /**< number of output time steps */
+#endif
+
+#if defined(SWNETCDF)
+    size_t iOUToffset[SW_OUTNKEYS][SW_OUTNPERIODS]
+                     [SW_OUTNMAXVARS]; /**< offset positions of output variables
+                                          for indexing p_OUT */
+#endif
+
+    OutKey mykey[SW_OUTNKEYS];
+    ObjType myobj[SW_OUTNKEYS];
+    OutSum sumtype[SW_OUTNKEYS];
+    Bool use[SW_OUTNKEYS],   // TRUE if output is requested
+        has_sl[SW_OUTNKEYS]; // TRUE if output key/type produces output for each
+                             // soil layer
+    TimeInt first_orig[SW_OUTNKEYS],
+        last_orig[SW_OUTNKEYS]; /* first/last doy that were originally requested
+                                 */
+
+#if defined(RSOILWAT)
+    char *outfile[SW_OUTNKEYS];
+    /* name of output */ // could probably be removed
+#endif
+
+#if defined(SWNETCDF)
+    Bool *reqOutputVars[SW_OUTNKEYS]; /**< Do/don't output a variable in the
+                            netCDF output files (dynamically allocated array
+                            over output variables) */
+    char **
+        *outputVarInfo[SW_OUTNKEYS]; /**< Attributes of output variables in
+                           netCDF output files (dynamically allcoated 2-d array:
+                           `[varIndex][attIndex]`) */
+    char *
+        *units_sw[SW_OUTNKEYS]; /**< Units internally utilized by SOILWAT2
+                      (dynamically    allocated array over output variables) */
+    sw_converter_t *
+        *uconv[SW_OUTNKEYS]; /**< udunits2 unit converter from internal SOILWAT2
+                   units to user-requested units (dynamically
+                   allocated array over output variables) */
+#endif
+
+
+    /* Output function pointers */
+
+#if defined(SW_OUTTEXT)
+    /** pointer to output routine for text output */
+    void (*pfunc_text[SW_OUTNKEYS])(OutPeriod, SW_RUN *);
+#endif
+
+#if defined(RSOILWAT) || defined(SWNETCDF)
+    /** pointer to output routine for array output */
+    void (*pfunc_mem[SW_OUTNKEYS])(OutPeriod, SW_RUN *, SW_OUT_DOM *);
+
+#elif defined(STEPWAT)
+    /** pointer to output routine for aggregated output across STEPWAT
+     * iterations */
+    void (*pfunc_agg[SW_OUTNKEYS])(OutPeriod, SW_RUN *, SW_OUT_DOM *);
+    /** pointer to output routine for STEPWAT in-memory output */
+    void (*pfunc_SXW[SW_OUTNKEYS])(OutPeriod, SW_RUN *, SW_OUT_DOM *);
+#endif
+};
 
 /* =================================================== */
 /*                    Domain structs                   */
@@ -1328,13 +1299,82 @@ typedef struct {
 
     // Information dealing with netCDFs
     SW_NETCDF netCDFInfo;
+
+    // Information that is constant through simulation runs
+    SW_OUT_DOM OutDom;
 } SW_DOMAIN;
 
 /* =================================================== */
-/*                 Comprehensive struct                */
+/*               Simulation Run Structs               */
 /* --------------------------------------------------- */
 
 typedef struct {
+
+    TimeInt tOffset; /* 1 or 0 means we're writing previous or current period */
+
+    char sw_outstr[MAX_LAYERS * OUTSTRLEN];
+
+    /* Output first/last days of current year i.e., updated for each year */
+    TimeInt first[SW_OUTNKEYS], last[SW_OUTNKEYS];
+
+#ifdef SW_OUTARRAY
+    /**
+    @brief A 2-dim array of pointers to output arrays.
+
+    The variable p_OUT used by rSOILWAT2 for output, by STEPWAT2 for
+    mean aggregation, and by SOILWAT2 when user requests netCDF output files.
+    */
+    RealD *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
+
+    size_t irow_OUT[SW_OUTNPERIODS]; /**< current output time step index */
+#endif
+
+#ifdef STEPWAT
+    RealD *p_OUTsd[SW_OUTNKEYS][SW_OUTNPERIODS];
+
+    char sw_outstr_agg[MAX_LAYERS * OUTSTRLEN];
+
+    /** `timeSteps_SXW` is the array that keeps track of the output time periods
+            that are required for `SXW` in-memory output for each output key.
+            Compare with `timeSteps` */
+    OutPeriod timeSteps_SXW[SW_OUTNKEYS][SW_OUTNPERIODS];
+
+    /** `storeAllIterations` is set to TRUE if STEPWAT2 is called with `-i` flag
+             if TRUE, then write to disk the SOILWAT2 output
+            for each STEPWAT2 iteration/repeat to separate files */
+    Bool storeAllIterations;
+
+    /** `prepare_IterationSummary` is set to TRUE if STEPWAT2 is called with
+             `-o` flag; if TRUE, then calculate/write to disk the running mean
+       and sd across iterations/repeats */
+    Bool prepare_IterationSummary;
+
+    /** Variable from ModelType (STEPWAT2) used in SOILWAT2 */
+    IntUS currIter;
+
+    /* Variables from SXW_t (STEPWAT2) used in SOILWAT2 */
+    // transpXXX: monthly sum of soilwat's transpiration by soil layer
+    // * these are dynamic arrays that are indexed by Ilp()
+    RealD transpTotal[MAX_LAYERS][MAX_MONTHS], // total transpiration, i.e., sum
+                                               // across vegetation types
+        transpVeg[NVEGTYPES][MAX_LAYERS]
+                 [MAX_MONTHS]; // transpiration as contributed by vegetation
+                               // types
+    RealF swc[MAX_LAYERS]
+             [MAX_MONTHS]; // monthly mean SWCbulk for each soil layer
+
+    // fixed monthly array:
+    RealF ppt_monthly[MAX_MONTHS];  // monthly sum of soilwat's precipitation
+    RealF temp_monthly[MAX_MONTHS]; // monthly mean soilwat's air temperature
+
+    // annual values:
+    RealF temp, // annual mean soilwat's air temperature
+        ppt,    // annual sum of soilwat's precipitation
+        aet;    // annual sum of soilwat's evapotranspiration
+#endif
+} SW_OUT_RUN;
+
+struct SW_RUN {
     SW_VEGPROD VegProd;
     SW_WEATHER Weather;
     SW_SOILWAT SoilWat;
@@ -1346,35 +1386,9 @@ typedef struct {
     ST_RGR_VALUES StRegValues;
     SW_FILE_STATUS FileStatus;
     SW_MARKOV Markov;
-    SW_OUTPUT Output[SW_OUTNKEYS];
+    SW_OUT_RUN OutRun;
 
     SW_ATMD AtmDemand;
-    SW_GEN_OUT GenOutput;
-
-} SW_RUN;
-
-/* =================================================== */
-/*                 Output struct/enums                 */
-/* --------------------------------------------------- */
-
-typedef struct {
-
-#if defined(SW_OUTTEXT)
-    /** pointer to output routine for text output */
-    void (*pfunc_text)(OutPeriod, SW_RUN *);
-#endif
-
-#if defined(RSOILWAT) || defined(SWNETCDF)
-    /** pointer to output routine for array output */
-    void (*pfunc_mem)(OutPeriod, SW_RUN *);
-
-#elif defined(STEPWAT)
-    /** pointer to output routine for aggregated output across STEPWAT
-     * iterations */
-    void (*pfunc_agg)(OutPeriod, SW_RUN *);
-    /** pointer to output routine for STEPWAT in-memory output */
-    void (*pfunc_SXW)(OutPeriod, SW_RUN *);
-#endif
-} SW_OUTPUT_POINTERS;
+};
 
 #endif // DATATYPES_H
