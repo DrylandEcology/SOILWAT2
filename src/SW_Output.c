@@ -985,8 +985,7 @@ static void collect_sums(
             use_help = (Bool) (op == OutDom->timeSteps[k][i]);
 
 #ifdef STEPWAT
-            use_help =
-                (Bool) (use_help || op == sw->GenOutput.timeSteps_SXW[k][i]);
+            use_help = (Bool) (use_help || op == OutDom->timeSteps_SXW[k][i]);
 #endif
 
             if (use_help) {
@@ -1059,7 +1058,7 @@ static void _set_SXWrequests_helper(
     OutPeriod timeSteps_SXW[][SW_OUTNPERIODS],
     LOG_INFO *LogInfo
 ) {
-    Bool warn = OutDom.use[k];
+    Bool warn = OutDom->use[k];
 
     timeSteps_SXW[k][0] = pd;
     OutDom->use[k] = swTRUE;
@@ -1200,7 +1199,7 @@ void SW_OUT_set_SXWrequests(
     // STEPWAT2 requires monthly mean bulk soil water content
     _set_SXWrequests_helper(
         OutDom,
-        SW_SWCBulk,
+        eSW_SWCBulk,
         eSW_Month,
         eSW_Avg,
         "monthly bulk soil water content",
@@ -2353,9 +2352,9 @@ void SW_OUT_read(
         }
 
 // For now: rSOILWAT2's function `onGet_SW_OUT` requires that
-// `sw->Output[k].outfile` is allocated here
+// `OutDom->outfile[k]` is allocated here
 #if defined(RSOILWAT)
-        sw->Output[k].outfile = (char *) Str_Dup(outfile, LogInfo);
+        OutDom->outfile[k] = (char *) Str_Dup(outfile, LogInfo);
         if (LogInfo->stopRun) {
             CloseFile(&f, LogInfo);
             return; // Exit function prematurely due to error
@@ -2735,7 +2734,7 @@ void SW_OUT_write_today(
             if (!use_help_txt) {
                 continue; // SXW output complete; skip to next output period
             } else {
-                if (sw->OutRun.prepare_IterationSummary) {
+                if (OutDom->prepare_IterationSummary) {
 #ifdef SWDEBUG
                     if (debug) {
                         sw_printf(

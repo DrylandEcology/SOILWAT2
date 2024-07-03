@@ -1174,6 +1174,23 @@ struct SW_OUT_DOM {
     Bool print_IterationSummary;
     Bool print_SW_Output;
 
+#if defined(STEPWAT)
+    /** `timeSteps_SXW` is the array that keeps track of the output time periods
+            that are required for `SXW` in-memory output for each output key.
+            Compare with `timeSteps` */
+    OutPeriod timeSteps_SXW[SW_OUTNKEYS][SW_OUTNPERIODS];
+
+    /** `storeAllIterations` is set to TRUE if STEPWAT2 is called with `-i` flag
+             if TRUE, then write to disk the SOILWAT2 output
+            for each STEPWAT2 iteration/repeat to separate files */
+    Bool storeAllIterations;
+
+    /** `prepare_IterationSummary` is set to TRUE if STEPWAT2 is called with
+             `-o` flag; if TRUE, then calculate/write to disk the running mean
+       and sd across iterations/repeats */
+    Bool prepare_IterationSummary;
+#endif
+
 #if defined(SW_OUTARRAY)
     size_t nrow_OUT[SW_OUTNPERIODS]; /**< number of output time steps */
 #endif
@@ -1182,6 +1199,21 @@ struct SW_OUT_DOM {
     size_t iOUToffset[SW_OUTNKEYS][SW_OUTNPERIODS]
                      [SW_OUTNMAXVARS]; /**< offset positions of output variables
                                           for indexing p_OUT */
+
+    Bool *reqOutputVars[SW_OUTNKEYS]; /**< Do/don't output a variable in the
+                            netCDF output files (dynamically allocated array
+                            over output variables) */
+    char **
+        *outputVarInfo[SW_OUTNKEYS]; /**< Attributes of output variables in
+                           netCDF output files (dynamically allcoated 2-d array:
+                           `[varIndex][attIndex]`) */
+    char *
+        *units_sw[SW_OUTNKEYS]; /**< Units internally utilized by SOILWAT2
+                      (dynamically    allocated array over output variables) */
+    sw_converter_t *
+        *uconv[SW_OUTNKEYS]; /**< udunits2 unit converter from internal SOILWAT2
+                   units to user-requested units (dynamically
+                   allocated array over output variables) */
 #endif
 
     OutKey mykey[SW_OUTNKEYS];
@@ -1197,23 +1229,6 @@ struct SW_OUT_DOM {
 #if defined(RSOILWAT)
     char *outfile[SW_OUTNKEYS];
     /* name of output */ // could probably be removed
-#endif
-
-#if defined(SWNETCDF)
-    Bool *reqOutputVars[SW_OUTNKEYS]; /**< Do/don't output a variable in the
-                            netCDF output files (dynamically allocated array
-                            over output variables) */
-    char **
-        *outputVarInfo[SW_OUTNKEYS]; /**< Attributes of output variables in
-                           netCDF output files (dynamically allcoated 2-d array:
-                           `[varIndex][attIndex]`) */
-    char *
-        *units_sw[SW_OUTNKEYS]; /**< Units internally utilized by SOILWAT2
-                      (dynamically    allocated array over output variables) */
-    sw_converter_t *
-        *uconv[SW_OUTNKEYS]; /**< udunits2 unit converter from internal SOILWAT2
-                   units to user-requested units (dynamically
-                   allocated array over output variables) */
 #endif
 
 
@@ -1333,21 +1348,6 @@ typedef struct {
     RealD *p_OUTsd[SW_OUTNKEYS][SW_OUTNPERIODS];
 
     char sw_outstr_agg[MAX_LAYERS * OUTSTRLEN];
-
-    /** `timeSteps_SXW` is the array that keeps track of the output time periods
-            that are required for `SXW` in-memory output for each output key.
-            Compare with `timeSteps` */
-    OutPeriod timeSteps_SXW[SW_OUTNKEYS][SW_OUTNPERIODS];
-
-    /** `storeAllIterations` is set to TRUE if STEPWAT2 is called with `-i` flag
-             if TRUE, then write to disk the SOILWAT2 output
-            for each STEPWAT2 iteration/repeat to separate files */
-    Bool storeAllIterations;
-
-    /** `prepare_IterationSummary` is set to TRUE if STEPWAT2 is called with
-             `-o` flag; if TRUE, then calculate/write to disk the running mean
-       and sd across iterations/repeats */
-    Bool prepare_IterationSummary;
 
     /** Variable from ModelType (STEPWAT2) used in SOILWAT2 */
     IntUS currIter;

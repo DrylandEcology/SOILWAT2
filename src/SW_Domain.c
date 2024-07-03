@@ -1100,7 +1100,7 @@ void SW_DOM_init_ptrs(SW_DOMAIN *SW_Domain) {
     SW_F_init_ptrs(SW_Domain->PathInfo.InFiles);
 
 #ifdef RSOILWAT
-    ForEachOutKey(key) { OutDom->outfile[key] = NULL; }
+    ForEachOutKey(key) { SW_Domain->OutDom.outfile[key] = NULL; }
 #endif
 
 #if defined(SWNETCDF)

@@ -457,7 +457,7 @@ void SW_OUT_create_summary_files(
     OutPeriod p;
 
     ForEachOutPeriod(p) {
-        if (GenOutput->use_OutPeriod[p]) {
+        if (OutDom->use_OutPeriod[p]) {
             _create_csv_file_ST(-1, p, InFiles, SW_FileStatus, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
@@ -493,7 +493,7 @@ void SW_OUT_create_iteration_files(
     OutPeriod p;
 
     ForEachOutPeriod(p) {
-        if (GenOutput->use_OutPeriod[p]) {
+        if (OutDom->use_OutPeriod[p]) {
             _create_csv_file_ST(iteration, p, InFiles, SW_FileStatus, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
