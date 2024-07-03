@@ -284,7 +284,7 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
             OutDom->pfunc_agg[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_vwcBulk_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
 #endif
             break;
 
@@ -300,7 +300,7 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
             OutDom->pfunc_agg[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_vwcMatric_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
 #endif
             break;
 
@@ -332,7 +332,7 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
             OutDom->pfunc_agg[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_swpMatric_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
 #endif
             break;
 
@@ -348,7 +348,7 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
             OutDom->pfunc_agg[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_swaBulk_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
 #endif
             break;
 
@@ -364,7 +364,7 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
             OutDom->pfunc_agg[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_swaMatric_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
 #endif
             break;
 
@@ -380,7 +380,7 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
             OutDom->pfunc_agg[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_swa_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
 #endif
             break;
 
@@ -396,7 +396,7 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
             OutDom->pfunc_agg[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
             ) get_surfaceWater_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
 #endif
             break;
 
@@ -412,7 +412,7 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
             OutDom->pfunc_agg[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
             ) get_runoffrunon_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
 #endif
             break;
 
@@ -444,7 +444,7 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
             OutDom->pfunc_agg[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_evapSoil_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
 #endif
             break;
 
@@ -460,7 +460,7 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
             OutDom->pfunc_agg[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
             ) get_evapSurface_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
 #endif
             break;
 
@@ -476,7 +476,7 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
             OutDom->pfunc_agg[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
             ) get_interception_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
 #endif
             break;
 
@@ -492,7 +492,7 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
             OutDom->pfunc_agg[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_soilinf_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
 #endif
             break;
 
@@ -508,7 +508,7 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
             OutDom->pfunc_agg[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_lyrdrain_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
 #endif
             break;
 
@@ -524,7 +524,7 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
             OutDom->pfunc_agg[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_hydred_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
 #endif
             break;
 
@@ -556,7 +556,7 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
             OutDom->pfunc_agg[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_pet_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
 #endif
             break;
 
@@ -572,7 +572,7 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
             OutDom->pfunc_agg[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_wetdays_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
 #endif
             break;
 
@@ -588,7 +588,7 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
             OutDom->pfunc_agg[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_snowpack_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
 #endif
             break;
 
@@ -604,7 +604,7 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
             OutDom->pfunc_agg[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_deepswc_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
 #endif
             break;
 
@@ -620,7 +620,7 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
             OutDom->pfunc_agg[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_soiltemp_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
 #endif
             break;
 
@@ -636,7 +636,7 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
             OutDom->pfunc_agg[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_frozen_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
 #endif
             break;
 
@@ -652,7 +652,7 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
             OutDom->pfunc_agg[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_estab_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
 #endif
             break;
 
@@ -668,7 +668,7 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
             OutDom->pfunc_agg[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
             ) get_co2effects_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
 #endif
             break;
 
@@ -684,22 +684,23 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
             OutDom->pfunc_agg[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_biomass_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
 #endif
             break;
 
         default:
 #if defined(SW_OUTTEXT)
-            OutDom->pfunc_text[k] = (void (*)(OutPeriod, SW_RUN *)) get_none;
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_none_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
 #elif defined(STEPWAT)
             OutDom->pfunc_agg[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
 #endif
             break;
         }

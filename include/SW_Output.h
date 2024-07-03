@@ -302,9 +302,12 @@ void SW_OUT_deepCopy(
  * 05-Mar-03 (cwb) Added code for max,min,avg. Previously, only avg was output.
  * 22 June-15 (akt)  Added code for adding surfaceAvg at output
  */
-void get_none(
+void get_none_outarray(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom
-); /* default until defined */
+); /* default until defined for outarray output */
+void get_none_text(
+    OutPeriod pd, SW_RUN *sw
+); /* default until defined for text */
 
 #if defined(SW_OUTTEXT) && !defined(SWNETCDF)
 void get_temp_text(OutPeriod pd, SW_RUN *sw);

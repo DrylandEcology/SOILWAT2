@@ -120,7 +120,8 @@ static void format_IterationSummary2(
 /* --------------------------------------------------- */
 
 /**
-@brief Output routine for quantities that aren't yet implemented.
+@brief Output routine for quantities that aren't yet implemented
+for outarray output.
 
 This just gives the main output loop something to call,
 rather than an empty pointer.
@@ -131,10 +132,26 @@ rather than an empty pointer.
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
 */
-void get_none(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+void get_none_outarray(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     (void) pd;
     (void) sw; // Coerce to void to silence compiler
     (void) OutDom;
+}
+
+/**
+@brief Output routine for quantities that aren't yet implemented
+for text output.
+
+This just gives the main output loop something to call,
+rather than an empty pointer.
+
+@param[in] pd Time period in simulation output (day/week/month/year)
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+*/
+void get_none_text(OutPeriod pd, SW_RUN *sw) {
+    (void) pd;
+    (void) sw; // Coerce to void to silence compiler
 }
 
 //------ eSW_CO2Effects
