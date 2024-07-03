@@ -15,7 +15,6 @@
 
 SW_RUN template_SW_All;
 SW_DOMAIN template_SW_Domain;
-SW_OUTPUT_POINTERS template_SW_OutputPtrs[SW_OUTNKEYS];
 
 /**
 @brief Creates soil layers based on function arguments (instead of reading
@@ -141,8 +140,7 @@ void setup_SW_Site_for_tests(SW_SITE *SW_Site) {
 
 /* Set up global variables for testing and read in values from SOILWAT2 example
 
-  Prepares global variables `template_SW_Domain`, `template_SW_All`, and
-  `template_SW_OutputPtrs`.
+  Prepares global variables `template_SW_Domain`, `template_SW_All`.
 
   The purpose is to read in text files once, and then have `AllTestFixture`
   create deep copies for each test.
@@ -177,7 +175,7 @@ int setup_testGlobalSoilwatTemplate() {
         goto finishProgram;
     }
 
-    SW_CTL_setup_model(&template_SW_All, template_SW_OutputPtrs, &LogInfo);
+    SW_CTL_setup_model(&template_SW_All, &template_SW_Domain.OutDom, &LogInfo);
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
@@ -197,7 +195,10 @@ int setup_testGlobalSoilwatTemplate() {
     }
 
     SW_CTL_read_inputs_from_disk(
-        &template_SW_All, &template_SW_Domain.PathInfo, &LogInfo
+        &template_SW_All,
+        &template_SW_Domain.OutDom,
+        &template_SW_Domain.PathInfo,
+        &LogInfo
     );
     if (LogInfo.stopRun) {
         goto finishProgram;
@@ -234,7 +235,7 @@ int setup_testGlobalSoilwatTemplate() {
         template_SW_All.Site.n_layers,
         template_SW_All.Site.n_evap_lyrs,
         &template_SW_All.VegEstab,
-        &template_SW_All.GenOutput,
+        &template_SW_Domain.OutDom,
         &LogInfo
     );
     if (LogInfo.stopRun) {

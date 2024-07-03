@@ -36,13 +36,13 @@ TEST_F(SpinUpTest, Mode1WithScopeGreaterThanDuration) {
     SW_All.Model.SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
-    SW_CTL_run_spinup(&SW_All, &LogInfo);
+    SW_CTL_run_spinup(&SW_All, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run (a short) simulation
     SW_All.Model.startyr = 1980;
     SW_All.Model.endyr = 1981;
-    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (i = 0; i < n; i++) {
@@ -82,13 +82,13 @@ TEST_F(SpinUpTest, Mode1WithScopeEqualToDuration) {
     SW_All.Model.SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
-    SW_CTL_run_spinup(&SW_All, &LogInfo);
+    SW_CTL_run_spinup(&SW_All, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run (a short) simulation
     SW_All.Model.startyr = 1980;
     SW_All.Model.endyr = 1981;
-    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (i = 0; i < n; i++) {
@@ -128,13 +128,13 @@ TEST_F(SpinUpTest, Mode1WithScopeLessThanDuration) {
     SW_All.Model.SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
-    SW_CTL_run_spinup(&SW_All, &LogInfo);
+    SW_CTL_run_spinup(&SW_All, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run (a short) simulation
     SW_All.Model.startyr = 1980;
     SW_All.Model.endyr = 1981;
-    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (i = 0; i < n; i++) {
@@ -174,13 +174,13 @@ TEST_F(SpinUpTest, Mode2WithScopeGreaterThanDuration) {
     SW_All.Model.SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
-    SW_CTL_run_spinup(&SW_All, &LogInfo);
+    SW_CTL_run_spinup(&SW_All, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run (a short) simulation
     SW_All.Model.startyr = 1980;
     SW_All.Model.endyr = 1981;
-    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (i = 0; i < n; i++) {
@@ -220,13 +220,13 @@ TEST_F(SpinUpTest, Mode2WithScopeEqualToDuration) {
     SW_All.Model.SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
-    SW_CTL_run_spinup(&SW_All, &LogInfo);
+    SW_CTL_run_spinup(&SW_All, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run (a short) simulation
     SW_All.Model.startyr = 1980;
     SW_All.Model.endyr = 1981;
-    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (i = 0; i < n; i++) {
@@ -266,13 +266,13 @@ TEST_F(SpinUpTest, Mode2WithScopeLessThanDuration) {
     SW_All.Model.SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
-    SW_CTL_run_spinup(&SW_All, &LogInfo);
+    SW_CTL_run_spinup(&SW_All, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run (a short) simulation
     SW_All.Model.startyr = 1980;
     SW_All.Model.endyr = 1981;
-    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (i = 0; i < n; i++) {
@@ -431,7 +431,7 @@ TEST_F(SpinUpTest, SpinupEvaluation) {
                 // Run (a short) simulation
                 local_sw.Model.startyr = 1980;
                 local_sw.Model.endyr = 1980;
-                SW_CTL_main(&local_sw, SW_OutputPtrs, &local_LogInfo);
+                SW_CTL_main(&SW_All, &SW_Domain.OutDom, &LogInfo);
                 // exit test program if unexpected error
                 sw_fail_on_error(&local_LogInfo);
 

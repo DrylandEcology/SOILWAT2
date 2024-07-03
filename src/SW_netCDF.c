@@ -1320,7 +1320,7 @@ static void alloc_netCDF_domain_vars(
 
 /**
 @brief Allocate memory for information in regards to output variables
-respective to SW_OUTPUT instances
+within SW_OUT_DOM
 
 @param[out] outkeyVars Holds all information about output variables
     in netCDFs (e.g., output variable name)
@@ -1381,7 +1381,7 @@ static void alloc_outReq(Bool **reqOutVar, int nVar, LOG_INFO *LogInfo) {
 
     if (nVar > 0) {
 
-        // Initialize the variable within SW_OUTPUT which specifies if a
+        // Initialize the variable within SW_OUT_DOM which specifies if a
         // variable is to be written out or not
         *reqOutVar =
             (Bool *) Mem_Malloc(sizeof(Bool) * nVar, "alloc_outReq()", LogInfo);
@@ -1408,7 +1408,7 @@ static void alloc_unitssw(char ***units_sw, int nVar, LOG_INFO *LogInfo) {
 
     if (nVar > 0) {
 
-        // Initialize the variable within SW_OUTPUT
+        // Initialize the variable within SW_OUT_DOM
         *units_sw = (char **) Mem_Malloc(
             sizeof(char *) * nVar, "alloc_unitssw()", LogInfo
         );
@@ -2998,8 +2998,7 @@ is represented by
     - soil layer depths (if entire domain has the same soil layer profile)
     - soil layer number (if soil layer profile varies across domain)
 
-@param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
-    basic output information for all output keys
+@param[in] OutDom
 @param[in] domFile Domain netCDF file name
 @param[in] domType Type of domain in which simulations are running
     (gridcell/sites)
@@ -3027,7 +3026,7 @@ SW_OUTNPERIODS).
 @param[in] LogInfo Holds information on warnings and errors
 */
 static void create_output_file(
-    SW_OUTPUT *SW_Output,
+    SW_OUT_DOM *OutDom,
     const char *domFile,
     const char *domType,
     const char *newFileName,
@@ -3056,7 +3055,7 @@ static void create_output_file(
         "units_metadata"
     };
     char *attVals[MAX_NATTS] = {NULL};
-    OutSum sumType = SW_Output->sumtype;
+    OutSum sumType = OutDom->sumtype[key];
 
     int numAtts = 0;
     const int nameAtt = 0;
@@ -3090,9 +3089,9 @@ static void create_output_file(
 
     // Add output variables
     for (index = 0; index < nVar; index++) {
-        if (SW_Output->reqOutputVars[index]) {
-            varInfo = SW_Output->outputVarInfo[index];
-            varName = SW_Output->outputVarInfo[index][VARNAME_INDEX];
+        if (OutDom->reqOutputVars[key][index]) {
+            varInfo = OutDom->outputVarInfo[key][index];
+            varName = OutDom->outputVarInfo[key][index][VARNAME_INDEX];
 
             numAtts = gather_var_attributes(
                 varInfo, key, pd, index, attVals, sumType, LogInfo
@@ -3336,9 +3335,10 @@ static void check_counts_against_vardim(
 @brief Write values to output variables in previously-created
 output netCDF files
 
-@param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
-    basic output information for all output keys
-@param[in] GenOutput Holds general variables that deal with output
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
+@param[in] p_OUT Array of accumulated output values throughout
+    simulation years
 @param[in] numFilesPerKey Number of output netCDFs each output key will
     have (same amount for each key)
 @param[in] ncOutFileNames A list of the generated output netCDF file names
@@ -3348,8 +3348,8 @@ output netCDF files
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_write_output(
-    SW_OUTPUT *SW_Output,
-    SW_GEN_OUT *GenOutput,
+    SW_OUT_DOM *OutDom,
+    RealD *p_OUT[][SW_OUTNPERIODS],
     int numFilesPerKey,
     char **ncOutFileNames[][SW_OUTNPERIODS],
     size_t ncSuid[],
@@ -3373,12 +3373,12 @@ void SW_NC_write_output(
 
 
     ForEachOutPeriod(pd) {
-        if (!GenOutput->use_OutPeriod[pd]) {
+        if (!OutDom->use_OutPeriod[pd]) {
             continue; // Skip period iteration
         }
 
         ForEachOutKey(key) {
-            if (GenOutput->nvar_OUT[key] == 0 || !SW_Output[key].use) {
+            if (OutDom->nvar_OUT[key] == 0 || !OutDom->use[key]) {
                 continue; // Skip key iteration
             }
 
@@ -3412,13 +3412,12 @@ void SW_NC_write_output(
                 }
 
 
-                for (varNum = 0; varNum < GenOutput->nvar_OUT[key]; varNum++) {
-                    if (!SW_Output[key].reqOutputVars[varNum]) {
+                for (varNum = 0; varNum < OutDom->nvar_OUT[key]; varNum++) {
+                    if (!OutDom->reqOutputVars[key][varNum]) {
                         continue; // Skip variable iteration
                     }
 
-                    varName =
-                        SW_Output[key].outputVarInfo[varNum][VARNAME_INDEX];
+                    varName = OutDom->outputVarInfo[key][varNum][VARNAME_INDEX];
 
                     // Locate correct slice in netCDF to write to
                     get_var_identifier(currFileID, varName, &varID, LogInfo);
@@ -3429,8 +3428,8 @@ void SW_NC_write_output(
                     get_vardim_write_counts(
                         domType,
                         timeSize,
-                        GenOutput->nsl_OUT[key][varNum],
-                        GenOutput->npft_OUT[key][varNum],
+                        OutDom->nsl_OUT[key][varNum],
+                        OutDom->npft_OUT[key][varNum],
                         count,
                         &countTotal
                     );
@@ -3448,28 +3447,28 @@ void SW_NC_write_output(
                     /* Point to contiguous memory where values change fastest
                        for vegtypes, then soil layers, then time, then variables
                     */
-                    pOUTIndex = GenOutput->iOUToffset[key][pd][varNum];
+                    pOUTIndex = OutDom->iOUToffset[key][pd][varNum];
                     if (startTime > 0) {
                         // 1 if no soil layers
-                        vertSize = (GenOutput->nsl_OUT[key][varNum] > 0) ?
-                                       GenOutput->nsl_OUT[key][varNum] :
+                        vertSize = (OutDom->nsl_OUT[key][varNum] > 0) ?
+                                       OutDom->nsl_OUT[key][varNum] :
                                        1;
                         // 1 if no vegtypes
-                        pftSize = (GenOutput->npft_OUT[key][varNum] > 0) ?
-                                      GenOutput->npft_OUT[key][varNum] :
+                        pftSize = (OutDom->npft_OUT[key][varNum] > 0) ?
+                                      OutDom->npft_OUT[key][varNum] :
                                       1;
 
                         pOUTIndex += iOUTnc(startTime, 0, 0, vertSize, pftSize);
                     }
 
-                    p_OUTValPtr = &GenOutput->p_OUT[key][pd][pOUTIndex];
+                    p_OUTValPtr = &p_OUT[key][pd][pOUTIndex];
 
 
 /* Convert units if udunits2 and if converter available */
 #if defined(SWUDUNITS)
-                    if (!isnull(SW_Output[key].uconv[varNum])) {
+                    if (!isnull(OutDom->uconv[key][varNum])) {
                         cv_convert_doubles(
-                            SW_Output[key].uconv[varNum],
+                            OutDom->uconv[key][varNum],
                             p_OUTValPtr,
                             countTotal,
                             p_OUTValPtr
@@ -3519,8 +3518,6 @@ is represented by
 @param[in] output_prefix Directory path of output files.
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
-@param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
-    basic output information for all output keys
 @param[in] timeSteps Requested time steps
 @param[in] used_OUTNPERIODS Determine which output periods to output
 @param[in] nvar_OUT Number of output variables (array of length
@@ -3547,7 +3544,6 @@ void SW_NC_create_output_files(
     const char *domType,
     const char *output_prefix,
     SW_DOMAIN *SW_Domain,
-    SW_OUTPUT *SW_Output,
     OutPeriod timeSteps[][SW_OUTNPERIODS],
     IntUS used_OUTNPERIODS,
     IntUS nvar_OUT[],
@@ -3586,7 +3582,7 @@ void SW_NC_create_output_files(
     yearFormat = (strideOutYears == 1) ? (char *) "%d" : (char *) "%d-%d";
 
     ForEachOutKey(key) {
-        if (nvar_OUT[key] > 0 && SW_Output[key].use) {
+        if (nvar_OUT[key] > 0 && SW_Domain->OutDom.use[key]) {
 
             // Loop over requested output periods (which may vary for each
             // outkey)
@@ -3646,7 +3642,7 @@ void SW_NC_create_output_files(
                             );
 
                             create_output_file(
-                                &SW_Output[key],
+                                &SW_Domain->OutDom,
                                 domFile,
                                 domType,
                                 fileNameBuf,
@@ -4648,17 +4644,15 @@ This function requires previous calls to
     - SW_VES_read2() to set parms
     - SW_OUT_setup_output() to set GenOutput.nvar_OUT
 
-@param[in,out] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
-    basic output information for all output keys
-@param[in] GenOutput Holds general variables that deal with output
+@param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 @param[in] InFiles Array of program in/output files
 @param[in] parms Array of type SW_VEGESTAB_INFO holding information about
     species
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_read_out_vars(
-    SW_OUTPUT *SW_Output,
-    SW_GEN_OUT *GenOutput,
+    SW_OUT_DOM *OutDom,
     char *InFiles[],
     SW_VEGESTAB_INFO **parms,
     LOG_INFO *LogInfo
@@ -4666,7 +4660,6 @@ void SW_NC_read_out_vars(
 
     FILE *f;
     OutKey currOutKey;
-    SW_OUTPUT *currOut;
     char inbuf[MAX_FILENAMESIZE], *MyFileName;
     char varKey[MAX_FILENAMESIZE];
     int varNum = 0, lineno = 0;
@@ -4696,7 +4689,7 @@ void SW_NC_read_out_vars(
         return; // Exit prematurely due to error
     }
 
-    SW_NC_alloc_output_var_info(SW_Output, GenOutput->nvar_OUT, LogInfo);
+    SW_NC_alloc_output_var_info(OutDom, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit prematurely due to error
     }
@@ -4751,9 +4744,7 @@ void SW_NC_read_out_vars(
                 input[SWVarNameInd]
             );
 
-            get_2d_output_key(
-                varKey, &currOutKey, &varNum, GenOutput->nvar_OUT
-            );
+            get_2d_output_key(varKey, &currOutKey, &varNum, OutDom->nvar_OUT);
 
             if (currOutKey == eSW_NoKey) {
                 LogError(
@@ -4769,9 +4760,7 @@ void SW_NC_read_out_vars(
                 continue;
             }
 
-            currOut = &SW_Output[currOutKey];
-
-            if (!currOut->use) {
+            if (!OutDom->use[currOutKey]) {
                 // key not in use
                 // don't output any of the variables within that outkey group
                 continue;
@@ -4822,14 +4811,14 @@ void SW_NC_read_out_vars(
                 estabFound = swTRUE;
                 varNum = 0;
 
-                if (GenOutput->nvar_OUT[currOutKey] == 0) {
+                if (OutDom->nvar_OUT[currOutKey] == 0) {
                     // outsetup.in and nc-out request ESTAB but no taxon
                     // available
                     continue;
                 }
             }
 
-            currOut->reqOutputVars[varNum] = swTRUE;
+            OutDom->reqOutputVars[currOutKey][varNum] = swTRUE;
 
             // Read in the rest of the attributes
             // Output variable name, long name, comment, units, and cell_method
@@ -4859,13 +4848,13 @@ void SW_NC_read_out_vars(
                 // into `count` amount of variables and give the
                 // correct <sppname>'s
                 if (currOutKey == eSW_Estab) {
-                    for (estVar = 0; estVar < GenOutput->nvar_OUT[currOutKey];
+                    for (estVar = 0; estVar < OutDom->nvar_OUT[currOutKey];
                          estVar++) {
 
                         switch (index) {
                         case VARNAME_INDEX:
-                            currOut->reqOutputVars[estVar] = swTRUE;
-                            currOut->outputVarInfo[estVar][index] =
+                            OutDom->reqOutputVars[currOutKey][estVar] = swTRUE;
+                            OutDom->outputVarInfo[currOutKey][estVar][index] =
                                 Str_Dup(parms[estVar]->sppname, LogInfo);
                             break;
 
@@ -4876,12 +4865,12 @@ void SW_NC_read_out_vars(
                                 copyStr,
                                 parms[estVar]->sppname
                             );
-                            currOut->outputVarInfo[estVar][index] =
+                            OutDom->outputVarInfo[currOutKey][estVar][index] =
                                 Str_Dup(establn, LogInfo);
                             break;
 
                         default:
-                            currOut->outputVarInfo[estVar][index] =
+                            OutDom->outputVarInfo[currOutKey][estVar][index] =
                                 Str_Dup(copyStr, LogInfo);
                             break;
                         }
@@ -4891,7 +4880,7 @@ void SW_NC_read_out_vars(
                         }
                     }
                 } else {
-                    currOut->outputVarInfo[varNum][index] =
+                    OutDom->outputVarInfo[currOutKey][varNum][index] =
                         Str_Dup(copyStr, LogInfo);
                     if (LogInfo->stopRun) {
                         return; // Exit function prematurely due to error
@@ -4902,16 +4891,16 @@ void SW_NC_read_out_vars(
 
             // Copy SW units for later use
             if (currOutKey == eSW_Estab) {
-                for (estVar = 0; estVar < GenOutput->nvar_OUT[currOutKey];
+                for (estVar = 0; estVar < OutDom->nvar_OUT[currOutKey];
                      estVar++) {
-                    currOut->units_sw[estVar] =
+                    OutDom->units_sw[currOutKey][estVar] =
                         Str_Dup(SWVarUnits[currOutKey][varNumUnits], LogInfo);
                     if (LogInfo->stopRun) {
                         return; // Exit function prematurely due to error
                     }
                 }
             } else {
-                currOut->units_sw[varNum] =
+                OutDom->units_sw[currOutKey][varNum] =
                     Str_Dup(SWVarUnits[currOutKey][varNumUnits], LogInfo);
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
@@ -4924,7 +4913,7 @@ void SW_NC_read_out_vars(
     // Update "use": turn off if no variable of an outkey group is requested
     ForEachOutKey(index) {
         if (!used_OutKeys[index]) {
-            SW_Output[index].use = swFALSE;
+            OutDom->use[index] = swFALSE;
         }
     }
 }
@@ -4937,14 +4926,11 @@ This function requires previous calls to
     - SW_NC_read_out_vars() to obtain user requested output units
     - SW_OUT_setup_output() to set GenOutput.nvar_OUT for argument nVars
 
-@param[in,out] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
-    basic output information for all output keys
-@param[in] nVars Array with number of output variables
+@param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_NC_create_units_converters(
-    SW_OUTPUT *SW_Output, IntUS *nVars, LOG_INFO *LogInfo
-) {
+void SW_NC_create_units_converters(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     int varIndex, key;
 
 #if defined(SWUDUNITS)
@@ -4959,34 +4945,33 @@ void SW_NC_create_units_converters(
 #endif
 
     ForEachOutKey(key) {
-        if (!SW_Output[key].use) {
+        if (!OutDom->use[key]) {
             continue; // Skip key iteration
         }
 
-        for (varIndex = 0; varIndex < nVars[key]; varIndex++) {
-            if (!SW_Output[key].reqOutputVars[varIndex]) {
+        for (varIndex = 0; varIndex < OutDom->nvar_OUT[key]; varIndex++) {
+            if (!OutDom->reqOutputVars[key][varIndex]) {
                 continue; // Skip variable iteration
             }
 
 #if defined(SWUDUNITS)
-            if (!isnull(SW_Output[key].units_sw[varIndex])) {
-                unitFrom = ut_parse(
-                    system, SW_Output[key].units_sw[varIndex], UT_UTF8
-                );
+            if (!isnull(OutDom->units_sw[key][varIndex])) {
+                unitFrom =
+                    ut_parse(system, OutDom->units_sw[key][varIndex], UT_UTF8);
                 unitTo = ut_parse(
                     system,
-                    SW_Output[key].outputVarInfo[varIndex][UNITS_INDEX],
+                    OutDom->outputVarInfo[key][varIndex][UNITS_INDEX],
                     UT_UTF8
                 );
 
                 if (ut_are_convertible(unitFrom, unitTo)) {
-                    // SW_Output[key].uconv[varIndex] was previously initialized
+                    // OutDom.uconv[key][varIndex] was previously initialized
                     // to NULL
-                    SW_Output[key].uconv[varIndex] =
+                    OutDom->uconv[key][varIndex] =
                         ut_get_converter(unitFrom, unitTo);
                 }
 
-                if (isnull(SW_Output[key].uconv[varIndex])) {
+                if (isnull(OutDom->uconv[key][varIndex])) {
                     // ut_are_convertible() is false or ut_get_converter()
                     // failed
                     LogError(
@@ -4995,15 +4980,15 @@ void SW_NC_create_units_converters(
                         "Units of variable '%s' cannot get converted from "
                         "internal '%s' to requested '%s'. "
                         "Output will use internal units.",
-                        SW_Output[key].outputVarInfo[varIndex][VARNAME_INDEX],
-                        SW_Output[key].units_sw[varIndex],
-                        SW_Output[key].outputVarInfo[varIndex][UNITS_INDEX]
+                        OutDom->outputVarInfo[key][varIndex][VARNAME_INDEX],
+                        OutDom->units_sw[key][varIndex],
+                        OutDom->outputVarInfo[key][varIndex][UNITS_INDEX]
                     );
 
                     /* converter is not available: output in internal units */
-                    free(SW_Output[key].outputVarInfo[varIndex][UNITS_INDEX]);
-                    SW_Output[key].outputVarInfo[varIndex][UNITS_INDEX] =
-                        Str_Dup(SW_Output[key].units_sw[varIndex], LogInfo);
+                    free(OutDom->outputVarInfo[key][varIndex][UNITS_INDEX]);
+                    OutDom->outputVarInfo[key][varIndex][UNITS_INDEX] =
+                        Str_Dup(OutDom->units_sw[key][varIndex], LogInfo);
                 }
 
                 ut_free(unitFrom);
@@ -5012,10 +4997,10 @@ void SW_NC_create_units_converters(
 
 #else
             /* udunits2 is not available: output in internal units */
-            free(SW_Output[key].outputVarInfo[varIndex][UNITS_INDEX]);
-            if (!isnull(SW_Output[key].units_sw[varIndex])) {
-                SW_Output[key].outputVarInfo[varIndex][UNITS_INDEX] =
-                    Str_Dup(SW_Output[key].units_sw[varIndex], LogInfo);
+            free(OutDom->outputVarInfo[key][varIndex][UNITS_INDEX]);
+            if (!isnull(OutDom->units_sw[key][varIndex])) {
+                OutDom->outputVarInfo[key][varIndex][UNITS_INDEX] =
+                    Str_Dup(OutDom->units_sw[key][varIndex], LogInfo);
             }
 #endif
 
@@ -5256,18 +5241,17 @@ void SW_NC_deepCopy(SW_NETCDF *source, SW_NETCDF *dest, LOG_INFO *LogInfo) {
 @brief Wrapper function to allocate output request variables
 and output variable information
 
-@param[out] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
-    basic output information for all output keys
-@param[in] nVars Array with number of output variables
+@param[out] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_NC_alloc_output_var_info(
-    SW_OUTPUT *SW_Output, IntUS *nVars, LOG_INFO *LogInfo
-) {
+void SW_NC_alloc_output_var_info(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     int key;
 
     ForEachOutKey(key) {
-        SW_NC_alloc_outputkey_var_info(&SW_Output[key], nVars[key], LogInfo);
+        SW_NC_alloc_outputkey_var_info(
+            OutDom, key, LogInfo
+        );
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -5275,87 +5259,85 @@ void SW_NC_alloc_output_var_info(
 }
 
 void SW_NC_alloc_outputkey_var_info(
-    SW_OUTPUT *currOut, IntUS nVar, LOG_INFO *LogInfo
+    SW_OUT_DOM *OutDom, int key, LOG_INFO *LogInfo
 ) {
 
-    alloc_outReq(&currOut->reqOutputVars, nVar, LogInfo);
+    alloc_outReq(&OutDom->reqOutputVars[key], OutDom->nvar_OUT[key], LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    alloc_outvars(&currOut->outputVarInfo, nVar, LogInfo);
+    alloc_outvars(&OutDom->outputVarInfo[key], OutDom->nvar_OUT[key], LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    alloc_unitssw(&currOut->units_sw, nVar, LogInfo);
+    alloc_unitssw(&OutDom->units_sw[key], OutDom->nvar_OUT[key], LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    alloc_uconv(&currOut->uconv, nVar, LogInfo);
+    alloc_uconv(&OutDom->uconv[key], OutDom->nvar_OUT[key], LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 }
 
-void SW_NC_dealloc_outputkey_var_info(
-    SW_OUTPUT *SW_Output, IntUS k, IntUS *nVars
-) {
-    if (!isnull(SW_Output[k].outputVarInfo)) {
+void SW_NC_dealloc_outputkey_var_info(SW_OUT_DOM *OutDom, IntUS k) {
+    if (!isnull(OutDom->outputVarInfo[k])) {
 
-        for (int varNum = 0; varNum < nVars[k]; varNum++) {
+        for (int varNum = 0; varNum < OutDom->nvar_OUT[k]; varNum++) {
 
-            if (!isnull(SW_Output[k].outputVarInfo[varNum])) {
+            if (!isnull(OutDom->outputVarInfo[k][varNum])) {
 
                 for (int attNum = 0; attNum < NUM_OUTPUT_INFO; attNum++) {
 
-                    if (!isnull(SW_Output[k].outputVarInfo[varNum][attNum])) {
-                        free(SW_Output[k].outputVarInfo[varNum][attNum]);
-                        SW_Output[k].outputVarInfo[varNum][attNum] = NULL;
+                    if (!isnull(OutDom->outputVarInfo[k][varNum][attNum])) {
+                        free(OutDom->outputVarInfo[k][varNum][attNum]);
+                        OutDom->outputVarInfo[k][varNum][attNum] = NULL;
                     }
                 }
 
-                free(SW_Output[k].outputVarInfo[varNum]);
-                SW_Output[k].outputVarInfo[varNum] = NULL;
+                free(OutDom->outputVarInfo[k][varNum]);
+                OutDom->outputVarInfo[k][varNum] = NULL;
             }
         }
 
-        free(SW_Output[k].outputVarInfo);
-        SW_Output[k].outputVarInfo = NULL;
+        free(OutDom->outputVarInfo[k]);
+        OutDom->outputVarInfo[k] = NULL;
     }
 
-    if (!isnull(SW_Output[k].units_sw)) {
-        for (int varNum = 0; varNum < nVars[k]; varNum++) {
-            if (!isnull(SW_Output[k].units_sw[varNum])) {
-                free(SW_Output[k].units_sw[varNum]);
-                SW_Output[k].units_sw[varNum] = NULL;
+    if (!isnull(OutDom->units_sw[k])) {
+        for (int varNum = 0; varNum < OutDom->nvar_OUT[k]; varNum++) {
+            if (!isnull(OutDom->units_sw[k][varNum])) {
+                free(OutDom->units_sw[k][varNum]);
+                OutDom->units_sw[k][varNum] = NULL;
             }
         }
 
-        free(SW_Output[k].units_sw);
-        SW_Output[k].units_sw = NULL;
+        free(OutDom->units_sw[k]);
+        OutDom->units_sw[k] = NULL;
     }
 
-    if (!isnull(SW_Output[k].uconv)) {
-        for (int varNum = 0; varNum < nVars[k]; varNum++) {
-            if (!isnull(SW_Output[k].uconv[varNum])) {
+    if (!isnull(OutDom->uconv[k])) {
+        for (int varNum = 0; varNum < OutDom->nvar_OUT[k]; varNum++) {
+            if (!isnull(OutDom->uconv[k][varNum])) {
 #if defined(SWNETCDF) && defined(SWUDUNITS)
-                cv_free(SW_Output[k].uconv[varNum]);
+                cv_free(OutDom->uconv[k][varNum]);
 #else
-                free(SW_Output[k].uconv[varNum]);
+                free(OutDom->uconv[k][varNum]);
 #endif
-                SW_Output[k].uconv[varNum] = NULL;
+                OutDom->uconv[k][varNum] = NULL;
             }
         }
 
-        free(SW_Output[k].uconv);
-        SW_Output[k].uconv = NULL;
+        free(OutDom->uconv[k]);
+        OutDom->uconv[k] = NULL;
     }
 
-    if (!isnull(SW_Output[k].reqOutputVars)) {
-        free(SW_Output[k].reqOutputVars);
-        SW_Output[k].reqOutputVars = NULL;
+    if (!isnull(OutDom->reqOutputVars[k])) {
+        free(OutDom->reqOutputVars[k]);
+        OutDom->reqOutputVars[k] = NULL;
     }
 }
 

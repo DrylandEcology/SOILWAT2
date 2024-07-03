@@ -19,7 +19,7 @@ History:
 
 #include "include/SW_Output_outarray.h" // for SW_OUT_calc_iOUToffset, SW_O...
 #include "include/generic.h"            // for IntUS, IntU, Bool, RealD
-#include "include/SW_datastructs.h"     // for SW_GEN_OUT, LOG_INFO, SW_MODEL
+#include "include/SW_datastructs.h"     // for LOG_INFO, SW_MODEL
 #include "include/SW_Defines.h"         // for eSW_Day, SW_OUTNMAXVARS, SW_...
 #include "include/SW_Output.h"          // for ForEachOutKey
 #include "include/Times.h"              // for Time_get_lastdoy_y
@@ -42,7 +42,7 @@ History:
 and thus have `static storage duration`.
 
 The variable p_OUTsd is used by STEPWAT2 for standard-deviation during
-aggregation. See also `SW_GEN_OUT.p_OUT`
+aggregation. See also `SW_OUT_RUN.p_OUT`
 */
 #define p_OUTsd
 #undef p_OUTsd
@@ -130,31 +130,32 @@ void SW_OUT_set_nrow(
 /**
 @brief For each out key, the p_OUT array is set to NULL.
 
-@param[in,out] GenOutput Holds general variables that deal with output
+@param[in,out] OutRun Struct of type SW_OUT_RUN that holds output
+    information that may change throughout simulation runs
 */
-void SW_OUT_deconstruct_outarray(SW_GEN_OUT *GenOutput) {
+void SW_OUT_deconstruct_outarray(SW_OUT_RUN *OutRun) {
     IntUS i, k;
 
     ForEachOutKey(k) {
         for (i = 0; i < SW_OUTNPERIODS; i++) {
 #if defined(SW_OUTARRAY)
-            if (!isnull(GenOutput->p_OUT[k][i])) {
-                free(GenOutput->p_OUT[k][i]);
-                GenOutput->p_OUT[k][i] = NULL;
+            if (!isnull(OutRun->p_OUT[k][i])) {
+                free(OutRun->p_OUT[k][i]);
+                OutRun->p_OUT[k][i] = NULL;
             }
 #endif
 
 #ifdef STEPWAT
-            if (!isnull(GenOutput->p_OUTsd[k][i])) {
-                free(GenOutput->p_OUTsd[k][i]);
-                GenOutput->p_OUTsd[k][i] = NULL;
+            if (!isnull(OutRun->p_OUTsd[k][i])) {
+                free(OutRun->p_OUTsd[k][i]);
+                OutRun->p_OUTsd[k][i] = NULL;
             }
 #endif
         }
     }
 
 #if !defined(SW_OUTARRAY) && !defined(STEPWAT)
-    (void) *GenOutput;
+    (void) *OutRun;
 #endif
 }
 
@@ -228,36 +229,36 @@ void do_running_agg(RealD *p, RealD *psd, size_t k, IntU n, RealD x) {
 
 /** Allocate p_OUT and p_OUTsd
 
-@param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
-    basic output information for all output keys
-@param[out] GenOutput Holds general variables that deal with output
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
+@param[out] OutRun Struct of type SW_OUT_RUN that holds output
+    information that may change throughout simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 
 Note: Compare with function `setGlobalrSOILWAT2_OutputVariables` in
 `rSW_Output.c`
 
-@sideeffect: `GenOutput->p_OUT` and `GenOutput->p_OUTsd` pointing to
+@sideeffect: `OutRun->p_OUT` and `OutRun->p_OUTsd` pointing to
     allocated arrays for each output period and output key.
 */
 void SW_OUT_construct_outarray(
-    SW_GEN_OUT *GenOutput, SW_OUTPUT *SW_Output, LOG_INFO *LogInfo
+    SW_OUT_DOM *OutDom, SW_OUT_RUN *OutRun, LOG_INFO *LogInfo
 ) {
     IntUS i, k;
     size_t size, s = sizeof(RealD);
     OutPeriod timeStepOutPeriod;
 
     ForEachOutKey(k) {
-        for (i = 0; i < GenOutput->used_OUTNPERIODS; i++) {
-            timeStepOutPeriod = GenOutput->timeSteps[k][i];
+        for (i = 0; i < OutDom->used_OUTNPERIODS; i++) {
+            timeStepOutPeriod = OutDom->timeSteps[k][i];
 
-            if (SW_Output[k].use && timeStepOutPeriod != eSW_NoTime) {
+            if (OutDom->use[k] && timeStepOutPeriod != eSW_NoTime) {
 
 #if defined(SW_OUTARRAY)
-                size =
-                    GenOutput->nrow_OUT[timeStepOutPeriod] *
-                    (GenOutput->ncol_OUT[k] + ncol_TimeOUT[timeStepOutPeriod]);
+                size = OutDom->nrow_OUT[timeStepOutPeriod] *
+                       (OutDom->ncol_OUT[k] + ncol_TimeOUT[timeStepOutPeriod]);
 
-                GenOutput->p_OUT[k][timeStepOutPeriod] = (RealD *) Mem_Calloc(
+                OutRun->p_OUT[k][timeStepOutPeriod] = (RealD *) Mem_Calloc(
                     size, s, "SW_OUT_construct_outarray()", LogInfo
                 );
                 if (LogInfo->stopRun) {
@@ -266,7 +267,7 @@ void SW_OUT_construct_outarray(
 #endif
 
 #if defined(STEPWAT)
-                GenOutput->p_OUTsd[k][timeStepOutPeriod] = (RealD *) Mem_Calloc(
+                OutRun->p_OUTsd[k][timeStepOutPeriod] = (RealD *) Mem_Calloc(
                     size, s, "SW_OUT_construct_outarray()", LogInfo
                 );
                 if (LogInfo->stopRun) {
@@ -282,6 +283,7 @@ void SW_OUT_construct_outarray(
     (void) *LogInfo;
     (void) s;
     (void) size;
+    (void) OutRun;
 #endif
 }
 

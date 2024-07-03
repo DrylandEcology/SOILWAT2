@@ -32,47 +32,41 @@ void SW_CTL_init_ptrs(SW_RUN *sw);
 
 void SW_CTL_alloc_outptrs(SW_RUN *sw, LOG_INFO *LogInfo);
 
-void SW_ALL_deepCopy(SW_RUN *source, SW_RUN *dest, LOG_INFO *LogInfo);
+void SW_ALL_deepCopy(
+    SW_RUN *source, SW_RUN *dest, SW_OUT_DOM *DomRun, LOG_INFO *LogInfo
+);
 
 void SW_CTL_setup_domain(
     unsigned long userSUID, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
 );
 
-void SW_CTL_setup_model(
-    SW_RUN *sw, SW_OUTPUT_POINTERS *SW_OutputPtrs, LOG_INFO *LogInfo
-);
+void SW_CTL_setup_model(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
 void SW_CTL_clear_model(Bool full_reset, SW_RUN *sw);
 
 void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *LogInfo);
 
 void SW_CTL_read_inputs_from_disk(
-    SW_RUN *sw, PATH_INFO *PathInfo, LOG_INFO *LogInfo
+    SW_RUN *sw, SW_OUT_DOM *OutDom, PATH_INFO *PathInfo, LOG_INFO *LogInfo
 );
 
-void SW_CTL_main(
-    SW_RUN *sw, SW_OUTPUT_POINTERS *SW_OutputPtrs, LOG_INFO *LogInfo
-);
+void SW_CTL_main(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
 void SW_CTL_RunSimSet(
     SW_RUN *sw_template,
-    SW_OUTPUT_POINTERS SW_OutputPtrs[],
     SW_DOMAIN *SW_Domain,
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *main_LogInfo
 );
 
-void SW_CTL_run_current_year(
-    SW_RUN *sw, SW_OUTPUT_POINTERS *SW_OutputPtrs, LOG_INFO *LogInfo
-);
+void SW_CTL_run_current_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
-void SW_CTL_run_spinup(SW_RUN *sw, LOG_INFO *LogInfo);
+void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
 void SW_CTL_run_sw(
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
     unsigned long ncSuid[],
-    SW_OUTPUT_POINTERS SW_OutputPtrs[],
     LOG_INFO *LogInfo
 );
 

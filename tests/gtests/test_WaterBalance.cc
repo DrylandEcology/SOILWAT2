@@ -30,7 +30,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceExample1) {
     int i;
 
     // Run the simulation
-    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -48,7 +48,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSoilTemperature) {
     SW_All.Site.use_soil_temp = swTRUE;
 
     // Run the simulation
-    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -68,7 +68,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithPondedWaterRunonRunoff) {
     SW_All.Site.percentRunon = 1.25;
 
     // Run the simulation
-    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -113,7 +113,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -160,7 +160,7 @@ TEST_F(
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -185,7 +185,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -207,7 +207,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOneSoilLayer) {
     SW_SWC_init_run(&SW_All.SoilWat, &SW_All.Site, &SW_All.Weather.temp_snow);
 
     // Run the simulation
-    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -229,7 +229,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMaxSoilLayers) {
     SW_SWC_init_run(&SW_All.SoilWat, &SW_All.Site, &SW_All.Weather.temp_snow);
 
     // Run the simulation
-    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -251,7 +251,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
     sw_fail_on_error(&LogInfo);
 
     // Run the simulation
-    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -288,7 +288,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -325,7 +325,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -373,7 +373,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -424,7 +424,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGRIDMET) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -477,7 +477,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACA) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -499,10 +499,10 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSpinup) {
     SW_All.Model.SW_SpinUp.scope = 8;
 
     // Run the spinup & deactivate
-    SW_CTL_run_spinup(&SW_All, &LogInfo);
+    SW_CTL_run_spinup(&SW_All, &SW_Domain.OutDom, &LogInfo);
 
     // Run the simulation
-    SW_CTL_main(&SW_All, SW_OutputPtrs, &LogInfo);
+    SW_CTL_main(&SW_All, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks

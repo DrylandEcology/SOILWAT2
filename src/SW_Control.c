@@ -58,6 +58,7 @@
 
 #if defined(SWNETCDF)
 #include "include/SW_netCDF.h"
+#include "include/SW_Output_outarray.h"
 #endif
 
 
@@ -71,9 +72,11 @@
 
 @param[in,out] sw Comprehensive struct of type SW_RUN containing all
   information in the simulation
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 */
-static void _begin_year(SW_RUN *sw, LOG_INFO *LogInfo) {
+static void _begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     // SW_F_new_year() not needed
 
     // call SW_MDL_new_year() first to set up time-related arrays for this year
@@ -101,7 +104,13 @@ static void _begin_year(SW_RUN *sw, LOG_INFO *LogInfo) {
     }
 
     // SW_CBN_new_year() not needed
-    SW_OUT_new_year(sw->Model.firstdoy, sw->Model.lastdoy, sw->Output);
+    SW_OUT_new_year(
+        sw->Model.firstdoy,
+        sw->Model.lastdoy,
+        OutDom,
+        sw->OutRun.first,
+        sw->OutRun.last
+    );
 }
 
 static void _begin_day(SW_RUN *sw, LOG_INFO *LogInfo) {
@@ -116,13 +125,11 @@ static void _begin_day(SW_RUN *sw, LOG_INFO *LogInfo) {
     );
 }
 
-static void _end_day(
-    SW_RUN *sw, SW_OUTPUT_POINTERS *SW_OutputPtrs, LOG_INFO *LogInfo
-) {
+static void _end_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     int localTOffset = 1; // tOffset is one when called from this function
 
     if (sw->Model.doOutput) {
-        _collect_values(sw, SW_OutputPtrs, swFALSE, localTOffset, LogInfo);
+        _collect_values(sw, OutDom, swFALSE, localTOffset, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -136,9 +143,14 @@ static void _end_day(
 
 @param[in] source Source struct of type SW_RUN to copy
 @param[out] dest Destination struct of type SW_RUN to be copied into
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_ALL_deepCopy(SW_RUN *source, SW_RUN *dest, LOG_INFO *LogInfo) {
+void SW_ALL_deepCopy(
+    SW_RUN *source, SW_RUN *dest, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
+) {
+
     memcpy(dest, source, sizeof(*dest));
 
     /* Allocate memory for output pointers */
@@ -202,24 +214,12 @@ void SW_ALL_deepCopy(SW_RUN *source, SW_RUN *dest, LOG_INFO *LogInfo) {
         return; // Exit function prematurely due to error
     }
 
-#if defined(SWNETCDF)
-    SW_OUT_deepCopy(
-        dest->Output,
-        source->Output,
-        &dest->FileStatus,
-        &source->FileStatus,
-        source->GenOutput.use_OutPeriod,
-        source->GenOutput.nvar_OUT,
-        LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
+#ifdef SWNETCDF
+    SW_OUT_deepCopy(&dest->FileStatus, &source->FileStatus, OutDom, LogInfo);
+    SW_OUT_construct_outarray(OutDom, &dest->OutRun, LogInfo);
+#else
+    (void) OutDom;
 #endif
-
-    SW_GENOUT_deepCopy(
-        &dest->GenOutput, &source->GenOutput, source->Output, LogInfo
-    );
 }
 
 /* =================================================== */
@@ -231,14 +231,12 @@ void SW_ALL_deepCopy(SW_RUN *source, SW_RUN *dest, LOG_INFO *LogInfo) {
 
 @param[in,out] sw Comprehensive struct of type SW_RUN containing all
   information in the simulation
-@param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
-  hold pointers to subroutines for output keys
+@param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 */
 
-void SW_CTL_main(
-    SW_RUN *sw, SW_OUTPUT_POINTERS *SW_OutputPtrs, LOG_INFO *LogInfo
-) {
+void SW_CTL_main(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 #ifdef SWDEBUG
     int debug = 0;
 #endif
@@ -252,7 +250,7 @@ void SW_CTL_main(
         }
 #endif
 
-        SW_CTL_run_current_year(sw, SW_OutputPtrs, LogInfo);
+        SW_CTL_run_current_year(sw, OutDom, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -261,7 +259,6 @@ void SW_CTL_main(
 
 void SW_CTL_RunSimSet(
     SW_RUN *sw_template,
-    SW_OUTPUT_POINTERS SW_OutputPtrs[],
     SW_DOMAIN *SW_Domain,
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *main_LogInfo
@@ -319,9 +316,7 @@ void SW_CTL_RunSimSet(
 
             /* Simulate suid */
             set_walltime(&tsr, &ok_tsr);
-            SW_CTL_run_sw(
-                sw_template, SW_Domain, ncSuid, SW_OutputPtrs, &local_LogInfo
-            );
+            SW_CTL_run_sw(sw_template, SW_Domain, ncSuid, &local_LogInfo);
             SW_WT_TimeRun(tsr, ok_tsr, SW_WallTime);
 
             /* Report progress for suid */
@@ -378,8 +373,7 @@ void SW_CTL_init_ptrs(SW_RUN *sw) {
     SW_MKV_init_ptrs(&sw->Markov);
     SW_VES_init_ptrs(&sw->VegEstab);
     SW_VPD_init_ptrs(&sw->VegProd);
-    SW_OUT_init_ptrs(sw->Output);
-    SW_GENOUT_init_ptrs(&sw->GenOutput);
+    SW_OUT_init_ptrs(&sw->OutRun);
     SW_SWC_init_ptrs(&sw->SoilWat);
 }
 
@@ -503,13 +497,11 @@ void SW_CTL_setup_domain(
 
 @param[in,out] sw Comprehensive struct of type SW_RUN containing all
     information in the simulation
-@param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
-    hold pointers to subroutines for output keys
+@param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_CTL_setup_model(
-    SW_RUN *sw, SW_OUTPUT_POINTERS *SW_OutputPtrs, LOG_INFO *LogInfo
-) {
+void SW_CTL_setup_model(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     SW_MDL_construct(&sw->Model);
     SW_WTH_construct(&sw->Weather);
 
@@ -522,10 +514,9 @@ void SW_CTL_setup_model(
     SW_OUT_construct(
         sw->FileStatus.make_soil,
         sw->FileStatus.make_regular,
-        SW_OutputPtrs,
-        sw->Output,
+        OutDom,
+        &sw->OutRun,
         sw->Site.n_layers,
-        &sw->GenOutput,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -616,12 +607,12 @@ void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
 
 @param[in,out] sw Comprehensive struct of type SW_RUN containing
   all information in the simulation
-@param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
-  hold pointers to subroutines for output keys
+@param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_run_current_year(
-    SW_RUN *sw, SW_OUTPUT_POINTERS *SW_OutputPtrs, LOG_INFO *LogInfo
+    SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
     /*=======================================================*/
     TimeInt *doy = &sw->Model.doy; // base1
@@ -634,7 +625,7 @@ void SW_CTL_run_current_year(
         sw_printf("\n'SW_CTL_run_current_year': begin new year\n");
     }
 #endif
-    _begin_year(sw, LogInfo);
+    _begin_year(sw, OutDom, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -686,7 +677,7 @@ void SW_CTL_run_current_year(
             sw_printf("ending day ... ");
         }
 #endif
-        _end_day(sw, SW_OutputPtrs, LogInfo);
+        _end_day(sw, OutDom, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -704,7 +695,7 @@ void SW_CTL_run_current_year(
     }
 #endif
     if (sw->Model.doOutput) {
-        SW_OUT_flush(sw, SW_OutputPtrs, LogInfo);
+        SW_OUT_flush(sw, OutDom, LogInfo);
     }
 
 #ifdef SWDEBUG
@@ -733,9 +724,11 @@ void SW_CTL_run_current_year(
 
 @param[in,out] sw Comprehensive struct of type SW_RUN containing all
   information in the simulation
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 @param[out] LogInfo Holds information dealing with logfile output
 */
-void SW_CTL_run_spinup(SW_RUN *sw, LOG_INFO *LogInfo) {
+void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 
     if (sw->Model.SW_SpinUp.duration <= 0) {
         return;
@@ -749,7 +742,6 @@ void SW_CTL_run_spinup(SW_RUN *sw, LOG_INFO *LogInfo) {
     TimeInt finalyr = sw->Model.startyr + scope - 1;
     TimeInt *years;
     Bool prev_doOut = sw->Model.doOutput;
-
     years = (TimeInt *) Mem_Malloc(
         sizeof(TimeInt) * duration, "SW_CTL_run_spinup()", LogInfo
     );
@@ -830,7 +822,7 @@ void SW_CTL_run_spinup(SW_RUN *sw, LOG_INFO *LogInfo) {
         }
 #endif
 
-        SW_CTL_run_current_year(sw, NULL, LogInfo);
+        SW_CTL_run_current_year(sw, OutDom, LogInfo);
         if (LogInfo->stopRun) {
             goto reSet; // Exit function prematurely due to error
         }
@@ -850,12 +842,14 @@ reSet: {
 
 @param[in,out] sw Comprehensive struct of type SW_RUN containing
   all information in the simulation
+@param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 @param[in,out] PathInfo Struct holding all information about the programs
 path/files
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_read_inputs_from_disk(
-    SW_RUN *sw, PATH_INFO *PathInfo, LOG_INFO *LogInfo
+    SW_RUN *sw, SW_OUT_DOM *OutDom, PATH_INFO *PathInfo, LOG_INFO *LogInfo
 ) {
 #ifdef SWDEBUG
     int debug = 0;
@@ -977,13 +971,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_OUT_read(
-        sw,
-        PathInfo->InFiles,
-        sw->GenOutput.timeSteps,
-        &sw->GenOutput.used_OUTNPERIODS,
-        LogInfo
-    );
+    SW_OUT_read(sw, OutDom, PathInfo->InFiles, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -1027,15 +1015,12 @@ on error but end early and report to caller
     temporal/spatial information for a set of simulation runs
 @param[in] ncSuid Unique indentifier of the first suid to run
     in relation to netCDF gridcells/sites
-@param[in,out] SW_OutputPtrs SW_OUTPUT_POINTERS of size SW_OUTNKEYS which
-    hold pointers to subroutines for output keys
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_run_sw(
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
     unsigned long ncSuid[],
-    SW_OUTPUT_POINTERS SW_OutputPtrs[],
     LOG_INFO *LogInfo
 ) {
 
@@ -1046,7 +1031,7 @@ void SW_CTL_run_sw(
     SW_RUN local_sw;
 
     // Copy template SW_RUN to local instance
-    SW_ALL_deepCopy(sw_template, &local_sw, LogInfo);
+    SW_ALL_deepCopy(sw_template, &local_sw, &SW_Domain->OutDom, LogInfo);
     if (LogInfo->stopRun) {
         goto freeMem; // Free memory and skip simulation run
     }
@@ -1073,18 +1058,18 @@ void SW_CTL_run_sw(
 #endif
 
     if (SW_Domain->SW_SpinUp.spinup) {
-        SW_CTL_run_spinup(&local_sw, LogInfo);
+        SW_CTL_run_spinup(&local_sw, &SW_Domain->OutDom, LogInfo);
     }
 
-    SW_CTL_main(&local_sw, SW_OutputPtrs, LogInfo);
+    SW_CTL_main(&local_sw, &SW_Domain->OutDom, LogInfo);
     if (LogInfo->stopRun) {
         goto freeMem; // Free memory and exit function prematurely due to error
     }
 
 #if defined(SWNETCDF)
     SW_NC_write_output(
-        local_sw.Output,
-        &local_sw.GenOutput,
+        &SW_Domain->OutDom,
+        local_sw.OutRun.p_OUT,
         local_sw.FileStatus.numOutFiles,
         local_sw.FileStatus.ncOutFiles,
         ncSuid,

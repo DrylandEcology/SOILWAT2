@@ -10,7 +10,6 @@
 
 extern SW_RUN template_SW_All;
 extern SW_DOMAIN template_SW_Domain;
-extern SW_OUTPUT_POINTERS template_SW_OutputPtrs[SW_OUTNKEYS];
 
 
 // get length of an array
@@ -58,7 +57,6 @@ class AllTestFixture : public ::testing::Test {
     SW_RUN SW_All;
     SW_DOMAIN SW_Domain;
     LOG_INFO LogInfo;
-    SW_OUTPUT_POINTERS SW_OutputPtrs[SW_OUTNKEYS];
 
     // Deep copy global test variables
     // (that were set up by `setup_testGlobalSoilwatTemplate()`) to
@@ -66,12 +64,26 @@ class AllTestFixture : public ::testing::Test {
     void SetUp() override {
         sw_init_logs(NULL, &LogInfo);
 
-        memcpy(&SW_OutputPtrs, &template_SW_OutputPtrs, sizeof(SW_OutputPtrs));
+#if defined(SWNETCDF)
+        memcpy(
+            SW_Domain.OutDom.pfunc_mem,
+            template_SW_Domain.OutDom.pfunc_mem,
+            sizeof(void *) * SW_OUTNKEYS
+        );
+#else
+        memcpy(
+            SW_Domain.OutDom.pfunc_text,
+            template_SW_Domain.OutDom.pfunc_text,
+            sizeof(void *) * SW_OUTNKEYS
+        );
+#endif
 
         SW_DOM_deepCopy(&template_SW_Domain, &SW_Domain, &LogInfo);
         sw_fail_on_error(&LogInfo);
 
-        SW_ALL_deepCopy(&template_SW_All, &SW_All, &LogInfo);
+        SW_ALL_deepCopy(
+            &template_SW_All, &SW_All, &template_SW_Domain.OutDom, &LogInfo
+        );
         sw_fail_on_error(&LogInfo);
     }
 

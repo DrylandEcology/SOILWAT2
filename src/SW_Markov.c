@@ -206,8 +206,7 @@ void (*test_mvnorm)(RealD *, RealD *, RealD, RealD, RealD, RealD, RealD, sw_rand
 /* --------------------------------------------------- */
 
 /**
-@brief Initialize all possible pointers in the array, SW_OUTPUT, and
-SW_GEN_OUT to NULL
+@brief Initialize all possible markov pointers to NULL
 
 @param[in,out] SW_Markov Struct of type SW_MARKOV which holds values
     related to temperature and weather generator
