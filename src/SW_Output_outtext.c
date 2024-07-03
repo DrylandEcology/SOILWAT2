@@ -432,6 +432,8 @@ void SW_OUT_create_textfiles(
                 SW_FileStatus->fp_reg[pd],
                 SW_FileStatus->fp_soil[pd],
                 swFALSE,
+                SW_FileStatus->make_regular,
+                SW_FileStatus->make_soil,
                 n_layers,
                 LogInfo
             );
@@ -467,6 +469,8 @@ void SW_OUT_create_summary_files(
                 SW_FileStatus->fp_reg_agg[p],
                 SW_FileStatus->fp_soil_agg[p],
                 swTRUE,
+                SW_FileStatus->make_regular,
+                SW_FileStatus->make_soil,
                 n_layers,
                 LogInfo
             );
@@ -501,6 +505,8 @@ void SW_OUT_create_iteration_files(
                 SW_FileStatus->fp_reg[p],
                 SW_FileStatus->fp_soil[p],
                 swFALSE,
+                SW_FileStatus->make_regular,
+                SW_FileStatus->make_soil,
                 n_layers,
                 LogInfo
             );
@@ -586,6 +592,10 @@ be called before _create_csv_headers(); otherwise, `ncol_OUT` and
 @param fp_soil name of file.
 @param does_agg Indicate whether output is aggregated (`-o` option) or
     for each SOILWAT2 run (`-i` option)
+@param make_regular Array of size SW_OUTNPERIODS which holds boolean values
+    specifying to output "regular" header names
+@param make_soil Array of size SW_OUTNPERIODS which holds boolean values
+    specifying to output a soil-related header names
 @param n_layers Number of soil layers being dealt with in a simulation
 @param LogInfo Holds information on warnings and errors
 */
@@ -595,6 +605,8 @@ void write_headers_to_csv(
     FILE *fp_reg,
     FILE *fp_soil,
     Bool does_agg,
+    Bool make_regular[],
+    Bool make_soil[],
     LyrIndex n_layers,
     LOG_INFO *LogInfo
 ) {
