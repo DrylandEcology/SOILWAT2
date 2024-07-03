@@ -5249,9 +5249,7 @@ void SW_NC_alloc_output_var_info(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     int key;
 
     ForEachOutKey(key) {
-        SW_NC_alloc_outputkey_var_info(
-            OutDom, key, LogInfo
-        );
+        SW_NC_alloc_outputkey_var_info(OutDom, key, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }

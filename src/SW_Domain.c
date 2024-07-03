@@ -203,9 +203,7 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
 #endif
 
 #if defined(SW_OUTARRAY)
-    ForEachOutPeriod(p) {
-        OutDom->nrow_OUT[p] = 0;
-    }
+    ForEachOutPeriod(p) { OutDom->nrow_OUT[p] = 0; }
 #endif
 
     /* attach the printing functions for each output

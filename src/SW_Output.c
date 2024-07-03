@@ -1243,13 +1243,7 @@ void SW_OUT_set_SXWrequests(
 
     // STEPWAT2 requires annual sum of AET
     _set_SXWrequests_helper(
-        OutDom,
-        eSW_AET,
-        eSW_Year,
-        eSW_Sum,
-        "annual AET",
-        timeSteps_SXW,
-        LogInfo
+        OutDom, eSW_AET, eSW_Year, eSW_Sum, "annual AET", timeSteps_SXW, LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -1312,9 +1306,7 @@ void SW_OUT_construct(
     }
 
 #if defined(SW_OUTARRAY)
-    ForEachOutPeriod(p) {
-        OutRun->irow_OUT[p] = 0;
-    }
+    ForEachOutPeriod(p) { OutRun->irow_OUT[p] = 0; }
 #else
     (void) OutRun;
 #endif
