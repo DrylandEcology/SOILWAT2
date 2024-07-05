@@ -65,6 +65,48 @@ History:
     and defined/implemented in 'SW_Output_get_functions.c"
 */
 
+/* converts an enum output key (OutKey type) to a module  */
+/* or object type. see SW_Output.h for OutKey order.         */
+/* MUST be SW_OUTNKEYS of these */
+ObjType key2obj[] = {
+    // weather/atmospheric quantities:
+    eWTH,
+    eWTH,
+    eWTH,
+    eWTH,
+    eWTH,
+    // soil related water quantities:
+    eSWC,
+    eSWC,
+    eSWC,
+    eSWC,
+    eSWC,
+    eSWC,
+    eSWC,
+    eSWC,
+    eSWC,
+    eSWC,
+    eSWC,
+    eSWC,
+    eSWC,
+    eSWC,
+    eSWC,
+    eSWC,
+    eSWC,
+    eSWC,
+    eSWC,
+    eSWC,
+    eSWC,
+    eSWC,
+    eSWC,
+    // vegetation quantities:
+    eVES,
+    eVES,
+    // vegetation other:
+    eVPD,
+    eVPD
+};
+
 
 /* =================================================== */
 /*                  Global Variables                   */
@@ -1058,7 +1100,7 @@ static void _set_SXWrequests_helper(
 ) {
     Bool warn = OutDom->use[k];
 
-    timeSteps_SXW[k][0] = pd;
+    OutDom->timeSteps_SXW[k][0] = pd;
     OutDom->use[k] = swTRUE;
     OutDom->first_orig[k] = 1;
     OutDom->last_orig[k] = 366;
@@ -1209,7 +1251,7 @@ void SW_OUT_set_SXWrequests(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
-    timeSteps_SXW[eSW_Temp][1] = eSW_Year;
+    OutDom->timeSteps_SXW[eSW_Temp][1] = eSW_Year;
 
     // STEPWAT2 requires annual and monthly precipitation sum
     _set_SXWrequests_helper(
@@ -1223,7 +1265,7 @@ void SW_OUT_set_SXWrequests(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
-    timeSteps_SXW[eSW_Precip][1] = eSW_Year;
+    OutDom->timeSteps_SXW[eSW_Precip][1] = eSW_Year;
 
     // STEPWAT2 requires annual sum of AET
     _set_SXWrequests_helper(
@@ -1256,6 +1298,530 @@ void SW_OUT_init_ptrs(SW_OUT_RUN *OutRun) {
 #else
     (void) OutRun;
 #endif
+}
+
+/**
+ * @brief Initialize output values that live in the domain-level
+ * (contained in SW_OUT_DOM)
+ *
+ * @param[out] OutDom OutDom Struct of type SW_OUT_DOM that holds output
+ * information that do not change throughout simulation runs
+ */
+void SW_OUTDOM_construct(SW_OUT_DOM *OutDom) {
+
+    IntUS k;
+    OutPeriod p;
+
+#if defined(SOILWAT)
+    OutDom->print_SW_Output = swTRUE;
+#elif defined(STEPWAT)
+    OutDom->print_SW_Output = (Bool) OutDom->storeAllIterations;
+// `print_IterationSummary` is set by STEPWAT2's `main` function
+#endif
+
+#if defined(SW_OUTARRAY)
+    ForEachOutPeriod(p) { OutDom->nrow_OUT[p] = 0; }
+#endif
+
+    /* attach the printing functions for each output
+     * quantity to the appropriate element in the
+     * output structure.  Using a loop makes it convenient
+     * to simply add a line as new quantities are
+     * implemented and leave the default case for every
+     * thing else.
+     */
+    ForEachOutKey(k) {
+        ForEachOutPeriod(p) {
+            OutDom->timeSteps[k][p] = eSW_NoTime;
+
+#ifdef STEPWAT
+            OutDom->timeSteps_SXW[k][p] = eSW_NoTime;
+#endif
+        }
+
+        // default values for `SW_Output`:
+        OutDom->use[k] = swFALSE;
+        OutDom->mykey[k] = (OutKey) k;
+        OutDom->myobj[k] = key2obj[k];
+        OutDom->sumtype[k] = eSW_Off;
+        OutDom->has_sl[k] = has_key_soillayers((OutKey) k);
+        OutDom->first_orig[k] = 1;
+        OutDom->last_orig[k] = 366;
+
+#if defined(SWNETCDF)
+        OutDom->outputVarInfo[k] = NULL;
+        OutDom->reqOutputVars[k] = NULL;
+        OutDom->units_sw[k] = NULL;
+        OutDom->uconv[k] = NULL;
+#endif
+
+        // assign `get_XXX` functions
+        switch (k) {
+        case eSW_Temp:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_temp_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_temp_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_temp_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_temp_SXW;
+#endif
+            break;
+
+        case eSW_Precip:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_precip_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_precip_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_precip_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_precip_SXW;
+#endif
+            break;
+
+        case eSW_VWCBulk:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_vwcBulk_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_vwcBulk_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_vwcBulk_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+#endif
+            break;
+
+        case eSW_VWCMatric:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_vwcMatric_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_vwcMatric_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_vwcMatric_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+#endif
+            break;
+
+        case eSW_SWCBulk:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_swcBulk_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_swcBulk_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_swcBulk_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_swcBulk_SXW;
+#endif
+            break;
+
+        case eSW_SWPMatric:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_swpMatric_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_swpMatric_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_swpMatric_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+#endif
+            break;
+
+        case eSW_SWABulk:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_swaBulk_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_swaBulk_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_swaBulk_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+#endif
+            break;
+
+        case eSW_SWAMatric:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_swaMatric_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_swaMatric_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_swaMatric_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+#endif
+            break;
+
+        case eSW_SWA:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_swa_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_swa_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_swa_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+#endif
+            break;
+
+        case eSW_SurfaceWater:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_surfaceWater_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
+            ) get_surfaceWater_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
+            ) get_surfaceWater_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+#endif
+            break;
+
+        case eSW_Runoff:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_runoffrunon_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
+            ) get_runoffrunon_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
+            ) get_runoffrunon_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+#endif
+            break;
+
+        case eSW_Transp:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_transp_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_transp_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_transp_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_transp_SXW;
+#endif
+            break;
+
+        case eSW_EvapSoil:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_evapSoil_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_evapSoil_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_evapSoil_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+#endif
+            break;
+
+        case eSW_EvapSurface:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_evapSurface_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
+            ) get_evapSurface_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
+            ) get_evapSurface_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+#endif
+            break;
+
+        case eSW_Interception:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_interception_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
+            ) get_interception_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
+            ) get_interception_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+#endif
+            break;
+
+        case eSW_SoilInf:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_soilinf_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_soilinf_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_soilinf_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+#endif
+            break;
+
+        case eSW_LyrDrain:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_lyrdrain_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_lyrdrain_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_lyrdrain_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+#endif
+            break;
+
+        case eSW_HydRed:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_hydred_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_hydred_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_hydred_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+#endif
+            break;
+
+        case eSW_AET:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_aet_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_aet_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_aet_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_aet_SXW;
+#endif
+            break;
+
+        case eSW_PET:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_pet_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_pet_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_pet_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+#endif
+            break;
+
+        case eSW_WetDays:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_wetdays_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_wetdays_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_wetdays_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+#endif
+            break;
+
+        case eSW_SnowPack:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_snowpack_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_snowpack_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_snowpack_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+#endif
+            break;
+
+        case eSW_DeepSWC:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_deepswc_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_deepswc_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_deepswc_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+#endif
+            break;
+
+        case eSW_SoilTemp:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_soiltemp_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_soiltemp_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_soiltemp_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+#endif
+            break;
+
+        case eSW_Frozen:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_frozen_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_frozen_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_frozen_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+#endif
+            break;
+
+        case eSW_Estab:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_estab_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_estab_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_estab_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+#endif
+            break;
+
+        case eSW_CO2Effects:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_co2effects_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
+            ) get_co2effects_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
+            ) get_co2effects_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+#endif
+            break;
+
+        case eSW_Biomass:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_biomass_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_biomass_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_biomass_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+#endif
+            break;
+
+        default:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *)) get_none_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+#endif
+            break;
+        }
+    } // end of loop across output keys
 }
 
 void SW_OUT_construct(

@@ -158,6 +158,8 @@ extern char const *styp2longstr[];
 
 void SW_OUT_init_ptrs(SW_OUT_RUN *OutRun);
 
+void SW_OUTDOM_construct(SW_OUT_DOM *OutDom);
+
 void SW_OUT_construct(
     Bool make_soil[],
     Bool make_regular[],
