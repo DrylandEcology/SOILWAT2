@@ -273,11 +273,7 @@ Bool has_key_soillayers(OutKey k);
 #ifdef STEPWAT
 Bool has_OutPeriod_inUse2(OutPeriod pd, OutKey k, SW_OUT_DOM *OutDom);
 
-void SW_OUT_set_SXWrequests(
-    SW_OUT_DOM *OutDom,
-    OutPeriod timeSteps_SXW[][SW_OUTNPERIODS],
-    LOG_INFO *LogInfo
-);
+void SW_OUT_set_SXWrequests(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 #endif
 
 #if defined(SWNETCDF)

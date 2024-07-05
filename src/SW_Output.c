@@ -180,7 +180,6 @@ static void _set_SXWrequests_helper(
     OutPeriod pd,
     OutSum aggfun,
     const char *str,
-    OutPeriod timeSteps_SXW[][SW_OUTNPERIODS],
     LOG_INFO *LogInfo
 );
 #endif
@@ -1055,7 +1054,6 @@ static void _set_SXWrequests_helper(
     OutPeriod pd,
     OutSum aggfun,
     const char *str,
-    OutPeriod timeSteps_SXW[][SW_OUTNPERIODS],
     LOG_INFO *LogInfo
 ) {
     Bool warn = OutDom->use[k];
@@ -1173,24 +1171,14 @@ Currently implemented:
 `used_OUTNPERIODS`, and adjusts variables `use`, `sumtype` (with a warning),
 `first_orig`, and `last_orig` of `SW_Output`.
 */
-void SW_OUT_set_SXWrequests(
-    SW_OUT_DOM *OutDom,
-    OutPeriod timeSteps_SXW[][SW_OUTNPERIODS],
-    LOG_INFO *LogInfo
-) {
+void SW_OUT_set_SXWrequests(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     // Update `used_OUTNPERIODS`:
     // SXW uses up to 2 time periods for the same output key: monthly and yearly
     OutDom->used_OUTNPERIODS = MAX(2, OutDom->used_OUTNPERIODS);
 
     // STEPWAT2 requires monthly summed transpiration
     _set_SXWrequests_helper(
-        OutDom,
-        eSW_Transp,
-        eSW_Month,
-        eSW_Sum,
-        "monthly transpiration",
-        timeSteps_SXW,
-        LogInfo
+        OutDom, eSW_Transp, eSW_Month, eSW_Sum, "monthly transpiration", LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -1203,7 +1191,6 @@ void SW_OUT_set_SXWrequests(
         eSW_Month,
         eSW_Avg,
         "monthly bulk soil water content",
-        timeSteps_SXW,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -1217,7 +1204,6 @@ void SW_OUT_set_SXWrequests(
         eSW_Month,
         eSW_Avg,
         "annual and monthly air temperature",
-        timeSteps_SXW,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -1232,7 +1218,6 @@ void SW_OUT_set_SXWrequests(
         eSW_Month,
         eSW_Sum,
         "annual and monthly precipitation",
-        timeSteps_SXW,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -1242,7 +1227,7 @@ void SW_OUT_set_SXWrequests(
 
     // STEPWAT2 requires annual sum of AET
     _set_SXWrequests_helper(
-        OutDom, eSW_AET, eSW_Year, eSW_Sum, "annual AET", timeSteps_SXW, LogInfo
+        OutDom, eSW_AET, eSW_Year, eSW_Sum, "annual AET", LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
