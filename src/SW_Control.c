@@ -215,7 +215,9 @@ void SW_RUN_deepCopy(
     }
 
 #ifdef SWNETCDF
-    SW_OUT_deepCopy(&dest->FileStatus, &source->FileStatus, OutDom, LogInfo);
+    SW_FILESTATUS_deepCopy(
+        &dest->FileStatus, &source->FileStatus, OutDom, LogInfo
+    );
     SW_OUT_construct_outarray(OutDom, &dest->OutRun, LogInfo);
 #else
     (void) OutDom;

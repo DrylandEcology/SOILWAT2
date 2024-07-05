@@ -281,7 +281,7 @@ void SW_OUT_set_SXWrequests(
 #endif
 
 #if defined(SWNETCDF)
-void SW_OUT_deepCopy(
+void SW_FILESTATUS_deepCopy(
     SW_FILE_STATUS *dest_files,
     SW_FILE_STATUS *source_files,
     SW_OUT_DOM *OutDom,

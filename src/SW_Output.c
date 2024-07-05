@@ -3007,7 +3007,7 @@ netCDF output files stored in SW_FILE_STATUS
     information that do not change throughout simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_OUT_deepCopy(
+void SW_FILESTATUS_deepCopy(
     SW_FILE_STATUS *dest_files,
     SW_FILE_STATUS *source_files,
     SW_OUT_DOM *OutDom,
