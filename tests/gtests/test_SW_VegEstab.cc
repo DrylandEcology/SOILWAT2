@@ -10,7 +10,7 @@ namespace {
 TEST_F(VegEstabFixtureTest, SimulateWithVegEstab) {
     // Turn on vegetation establishment and process inputs (but ignore use flag)
     SW_VES_read2(
-        &SW_All.VegEstab,
+        &SW_Run.VegEstab,
         swTRUE,
         swFALSE,
         SW_Domain.PathInfo.InFiles,
@@ -19,20 +19,20 @@ TEST_F(VegEstabFixtureTest, SimulateWithVegEstab) {
     );
 
     // Expect that vegetation establishment is turn on and contains species
-    EXPECT_TRUE(SW_All.VegEstab.use);
-    EXPECT_GT(SW_All.VegEstab.count, 0);
+    EXPECT_TRUE(SW_Run.VegEstab.use);
+    EXPECT_GT(SW_Run.VegEstab.count, 0);
 
     // Run the simulation
-    SW_CTL_main(&SW_All, &SW_Domain.OutDom, &LogInfo);
+    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
     // Expect valid 'day of year' 1-366 output for each species from the
     // vegetation establishment calculations
     // note: estab_doy == 0 means no establishment
-    for (unsigned int i = 0; i < SW_All.VegEstab.count; i++) {
-        EXPECT_GE(SW_All.VegEstab.parms[i]->estab_doy, 0);
-        EXPECT_LE(SW_All.VegEstab.parms[i]->estab_doy, 366);
+    for (unsigned int i = 0; i < SW_Run.VegEstab.count; i++) {
+        EXPECT_GE(SW_Run.VegEstab.parms[i]->estab_doy, 0);
+        EXPECT_LE(SW_Run.VegEstab.parms[i]->estab_doy, 366);
     }
 }
 } // namespace

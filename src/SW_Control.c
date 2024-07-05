@@ -27,7 +27,7 @@
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
 
-#include "include/SW_Control.h"      // for SW_ALL_deepCopy, SW_CTL_RunSimSet
+#include "include/SW_Control.h"      // for SW_RUN_deepCopy, SW_CTL_RunSimSet
 #include "include/filefuncs.h"       // for LogError, sw_message
 #include "include/generic.h"         // for swTRUE, Bool, swFALSE, GT, IntU
 #include "include/myMemory.h"        // for Mem_Malloc
@@ -147,7 +147,7 @@ static void _end_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     information that do not change throughout simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_ALL_deepCopy(
+void SW_RUN_deepCopy(
     SW_RUN *source, SW_RUN *dest, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
 
@@ -1031,7 +1031,7 @@ void SW_CTL_run_sw(
     SW_RUN local_sw;
 
     // Copy template SW_RUN to local instance
-    SW_ALL_deepCopy(sw_template, &local_sw, &SW_Domain->OutDom, LogInfo);
+    SW_RUN_deepCopy(sw_template, &local_sw, &SW_Domain->OutDom, LogInfo);
     if (LogInfo->stopRun) {
         goto freeMem; // Free memory and skip simulation run
     }

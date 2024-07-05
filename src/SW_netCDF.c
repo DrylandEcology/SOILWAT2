@@ -4481,7 +4481,7 @@ Bool SW_NC_check_progress(
 
 /**
 @brief Read values from netCDF input files for available variables and copy
-to SW_All
+to SW_Run
 
 @param[in,out] sw Comprehensive struct of type SW_RUN containing
     all information in the simulation

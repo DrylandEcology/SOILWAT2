@@ -13,7 +13,7 @@
 #include <string.h>             // for strcpy
 
 
-SW_RUN template_SW_All;
+SW_RUN template_SW_Run;
 SW_DOMAIN template_SW_Domain;
 
 /**
@@ -140,7 +140,7 @@ void setup_SW_Site_for_tests(SW_SITE *SW_Site) {
 
 /* Set up global variables for testing and read in values from SOILWAT2 example
 
-  Prepares global variables `template_SW_Domain`, `template_SW_All`.
+  Prepares global variables `template_SW_Domain`, `template_SW_Run`.
 
   The purpose is to read in text files once, and then have `AllTestFixture`
   create deep copies for each test.
@@ -157,7 +157,7 @@ int setup_testGlobalSoilwatTemplate() {
     sw_init_logs(NULL, &LogInfo);
 
     SW_DOM_init_ptrs(&template_SW_Domain);
-    SW_CTL_init_ptrs(&template_SW_All);
+    SW_CTL_init_ptrs(&template_SW_Run);
 
     template_SW_Domain.netCDFInfo.renameDomainTemplateNC = swTRUE;
 
@@ -175,27 +175,27 @@ int setup_testGlobalSoilwatTemplate() {
         goto finishProgram;
     }
 
-    SW_CTL_setup_model(&template_SW_All, &template_SW_Domain.OutDom, &LogInfo);
+    SW_CTL_setup_model(&template_SW_Run, &template_SW_Domain.OutDom, &LogInfo);
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
-    template_SW_All.Model.doOutput = swFALSE; /* turn off output during tests */
+    template_SW_Run.Model.doOutput = swFALSE; /* turn off output during tests */
 
     SW_MDL_get_ModelRun(
-        &template_SW_All.Model, &template_SW_Domain, NULL, &LogInfo
+        &template_SW_Run.Model, &template_SW_Domain, NULL, &LogInfo
     );
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
 
     /* allocate memory for output pointers */
-    SW_CTL_alloc_outptrs(&template_SW_All, &LogInfo);
+    SW_CTL_alloc_outptrs(&template_SW_Run, &LogInfo);
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
 
     SW_CTL_read_inputs_from_disk(
-        &template_SW_All,
+        &template_SW_Run,
         &template_SW_Domain.OutDom,
         &template_SW_Domain.PathInfo,
         &LogInfo
@@ -216,25 +216,25 @@ int setup_testGlobalSoilwatTemplate() {
     sw_init_logs(NULL, &LogInfo);
 
     SW_WTH_finalize_all_weather(
-        &template_SW_All.Markov,
-        &template_SW_All.Weather,
-        template_SW_All.Model.cum_monthdays,
-        template_SW_All.Model.days_in_month,
+        &template_SW_Run.Markov,
+        &template_SW_Run.Weather,
+        template_SW_Run.Model.cum_monthdays,
+        template_SW_Run.Model.days_in_month,
         &LogInfo
     );
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
 
-    SW_CTL_init_run(&template_SW_All, &LogInfo);
+    SW_CTL_init_run(&template_SW_Run, &LogInfo);
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
 
     SW_OUT_setup_output(
-        template_SW_All.Site.n_layers,
-        template_SW_All.Site.n_evap_lyrs,
-        &template_SW_All.VegEstab,
+        template_SW_Run.Site.n_layers,
+        template_SW_Run.Site.n_evap_lyrs,
+        &template_SW_Run.VegEstab,
         &template_SW_Domain.OutDom,
         &LogInfo
     );
@@ -254,5 +254,5 @@ finishProgram: {
  */
 void teardown_testGlobalSoilwatTemplate() {
     SW_DOM_deconstruct(&template_SW_Domain);
-    SW_CTL_clear_model(swTRUE, &template_SW_All);
+    SW_CTL_clear_model(swTRUE, &template_SW_Run);
 }
