@@ -215,7 +215,7 @@ void get_co2effects_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         pd,
         OutRun->irow_OUT,
         OutDom->nrow_OUT,
-        sw->OutRun.tOffset,
+        OutRun->tOffset,
         p
     );
 #endif
@@ -398,7 +398,7 @@ void get_biomass_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         pd,
         OutRun->irow_OUT,
         OutDom->nrow_OUT,
-        sw->OutRun.tOffset,
+        OutRun->tOffset,
         p
     );
 #endif
@@ -710,7 +710,7 @@ void get_estab_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         pd,
         OutRun->irow_OUT,
         OutDom->nrow_OUT,
-        sw->OutRun.tOffset,
+        OutRun->tOffset,
         p
     );
 #endif
@@ -842,7 +842,7 @@ void get_temp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         pd,
         OutRun->irow_OUT,
         OutDom->nrow_OUT,
-        sw->OutRun.tOffset,
+        OutRun->tOffset,
         p
     );
 #endif
@@ -984,12 +984,13 @@ void get_temp_SXW(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
     if (pd == eSW_Month || pd == eSW_Year) {
         SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
-        tOffset = sw->OutRun.tOffset;
+        SW_OUT_RUN *OutRun = &sw->OutRun;
+        tOffset = OutRun->tOffset;
 
         if (pd == eSW_Month) {
-            sw->OutRun.temp_monthly[sw->Model.month - tOffset] = vo->temp_avg;
+            OutRun->temp_monthly[sw->Model.month - tOffset] = vo->temp_avg;
         } else if (pd == eSW_Year) {
-            sw->OutRun.temp = vo->temp_avg;
+            OutRun->temp = vo->temp_avg;
         }
     }
 
@@ -1064,7 +1065,7 @@ void get_precip_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         pd,
         OutRun->irow_OUT,
         OutDom->nrow_OUT,
-        sw->OutRun.tOffset,
+        OutRun->tOffset,
         p
     );
 #endif
@@ -1191,12 +1192,13 @@ void get_precip_SXW(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
     if (pd == eSW_Month || pd == eSW_Year) {
         SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
-        tOffset = sw->OutRun.tOffset;
+        SW_OUT_RUN *OutRun = &sw->OutRun;
+        tOffset = OutRun->tOffset;
 
         if (pd == eSW_Month) {
-            sw->OutRun.ppt_monthly[sw->Model.month - tOffset] = vo->ppt;
+            OutRun->ppt_monthly[sw->Model.month - tOffset] = vo->ppt;
         } else if (pd == eSW_Year) {
-            sw->OutRun.ppt = vo->ppt;
+            OutRun->ppt = vo->ppt;
         }
     }
 
@@ -1264,7 +1266,7 @@ void get_vwcBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         pd,
         OutRun->irow_OUT,
         OutDom->nrow_OUT,
-        sw->OutRun.tOffset,
+        OutRun->tOffset,
         p
     );
 #endif
@@ -1409,7 +1411,7 @@ void get_vwcMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         pd,
         OutRun->irow_OUT,
         OutDom->nrow_OUT,
-        sw->OutRun.tOffset,
+        OutRun->tOffset,
         p
     );
 #endif
@@ -1555,7 +1557,7 @@ void get_swa_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         pd,
         OutRun->irow_OUT,
         OutDom->nrow_OUT,
-        sw->OutRun.tOffset,
+        OutRun->tOffset,
         p
     );
 #endif
@@ -1692,7 +1694,7 @@ void get_swcBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         pd,
         OutRun->irow_OUT,
         OutDom->nrow_OUT,
-        sw->OutRun.tOffset,
+        OutRun->tOffset,
         p
     );
 #endif
@@ -1777,10 +1779,11 @@ void get_swcBulk_SXW(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     if (pd == eSW_Month) {
         LyrIndex i;
         SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-        month = sw->Model.month - sw->OutRun.tOffset;
+        SW_OUT_RUN *OutRun = &sw->OutRun;
+        month = sw->Model.month - OutRun->tOffset;
 
         ForEachSoilLayer(i, sw->Site.n_layers) {
-            sw->OutRun.swc[i][month] = vo->swcBulk[i];
+            OutRun->swc[i][month] = vo->swcBulk[i];
         }
     }
 
@@ -1855,7 +1858,7 @@ void get_swpMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         pd,
         OutRun->irow_OUT,
         OutDom->nrow_OUT,
-        sw->OutRun.tOffset,
+        OutRun->tOffset,
         p
     );
 #endif
@@ -1986,7 +1989,7 @@ void get_swaBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         pd,
         OutRun->irow_OUT,
         OutDom->nrow_OUT,
-        sw->OutRun.tOffset,
+        OutRun->tOffset,
         p
     );
 #endif
@@ -2121,7 +2124,7 @@ void get_swaMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         pd,
         OutRun->irow_OUT,
         OutDom->nrow_OUT,
-        sw->OutRun.tOffset,
+        OutRun->tOffset,
         p
     );
 #endif
@@ -2253,7 +2256,7 @@ void get_surfaceWater_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         pd,
         OutRun->irow_OUT,
         OutDom->nrow_OUT,
-        sw->OutRun.tOffset,
+        OutRun->tOffset,
         p
     );
 #endif
@@ -2369,7 +2372,7 @@ void get_runoffrunon_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         pd,
         OutRun->irow_OUT,
         OutDom->nrow_OUT,
-        sw->OutRun.tOffset,
+        OutRun->tOffset,
         p
     );
 #endif
@@ -2537,7 +2540,7 @@ void get_transp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         pd,
         OutRun->irow_OUT,
         OutDom->nrow_OUT,
-        sw->OutRun.tOffset,
+        OutRun->tOffset,
         p
     );
 #endif
@@ -2687,17 +2690,18 @@ void get_transp_SXW(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         LyrIndex i;
         int k;
         SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-        month = sw->Model.month - sw->OutRun.tOffset;
+        SW_OUT_RUN *OutRun = &sw->OutRun;
+        month = sw->Model.month - OutRun->tOffset;
 
         /* total transpiration */
         ForEachSoilLayer(i, sw->Site.n_layers) {
-            sw->OutRun.transpTotal[i][month] = vo->transp_total[i];
+            OutRun->transpTotal[i][month] = vo->transp_total[i];
         }
 
         /* transpiration for each vegetation type */
         ForEachVegType(k) {
             ForEachSoilLayer(i, sw->Site.n_layers) {
-                sw->OutRun.transpVeg[k][i][month] = vo->transp[k][i];
+                OutRun->transpVeg[k][i][month] = vo->transp[k][i];
             }
         }
     }
@@ -2757,7 +2761,7 @@ void get_evapSoil_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         pd,
         OutRun->irow_OUT,
         OutDom->nrow_OUT,
-        sw->OutRun.tOffset,
+        OutRun->tOffset,
         p
     );
 #endif
@@ -2907,7 +2911,7 @@ void get_evapSurface_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         pd,
         OutRun->irow_OUT,
         OutDom->nrow_OUT,
-        sw->OutRun.tOffset,
+        OutRun->tOffset,
         p
     );
 #endif
@@ -3097,7 +3101,7 @@ void get_interception_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         pd,
         OutRun->irow_OUT,
         OutDom->nrow_OUT,
-        sw->OutRun.tOffset,
+        OutRun->tOffset,
         p
     );
 #endif
@@ -3255,7 +3259,7 @@ void get_soilinf_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         pd,
         OutRun->irow_OUT,
         OutDom->nrow_OUT,
-        sw->OutRun.tOffset,
+        OutRun->tOffset,
         p
     );
 #endif
@@ -3360,7 +3364,7 @@ void get_lyrdrain_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         pd,
         OutRun->irow_OUT,
         OutDom->nrow_OUT,
-        sw->OutRun.tOffset,
+        OutRun->tOffset,
         p
     );
 #endif
@@ -3500,7 +3504,7 @@ void get_hydred_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         pd,
         OutRun->irow_OUT,
         OutDom->nrow_OUT,
-        sw->OutRun.tOffset,
+        OutRun->tOffset,
         p
     );
 #endif
@@ -3709,7 +3713,7 @@ void get_aet_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         pd,
         OutRun->irow_OUT,
         OutDom->nrow_OUT,
-        sw->OutRun.tOffset,
+        OutRun->tOffset,
         p
     );
 #endif
@@ -3850,8 +3854,9 @@ void get_aet_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 void get_aet_SXW(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     if (pd == eSW_Year) {
         SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+        SW_OUT_RUN *OutRun = &sw->OutRun;
 
-        sw->OutRun.aet = vo->aet;
+        OutRun->aet = vo->aet;
     }
 
     (void) OutDom;
@@ -3923,7 +3928,7 @@ void get_pet_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         pd,
         OutRun->irow_OUT,
         OutDom->nrow_OUT,
-        sw->OutRun.tOffset,
+        OutRun->tOffset,
         p
     );
 #endif
@@ -4093,7 +4098,7 @@ void get_wetdays_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         pd,
         OutRun->irow_OUT,
         OutDom->nrow_OUT,
-        sw->OutRun.tOffset,
+        OutRun->tOffset,
         p
     );
 #endif
@@ -4241,7 +4246,7 @@ void get_snowpack_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         pd,
         OutRun->irow_OUT,
         OutDom->nrow_OUT,
-        sw->OutRun.tOffset,
+        OutRun->tOffset,
         p
     );
 #endif
@@ -4359,7 +4364,7 @@ void get_deepswc_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         pd,
         OutRun->irow_OUT,
         OutDom->nrow_OUT,
-        sw->OutRun.tOffset,
+        OutRun->tOffset,
         p
     );
 #endif
@@ -4483,7 +4488,7 @@ void get_soiltemp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         pd,
         OutRun->irow_OUT,
         OutDom->nrow_OUT,
-        sw->OutRun.tOffset,
+        OutRun->tOffset,
         p
     );
 #endif
@@ -4687,7 +4692,7 @@ void get_frozen_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         pd,
         OutRun->irow_OUT,
         OutDom->nrow_OUT,
-        sw->OutRun.tOffset,
+        OutRun->tOffset,
         p
     );
 #endif
