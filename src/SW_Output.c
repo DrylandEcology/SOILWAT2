@@ -3643,17 +3643,17 @@ void SW_FILESTATUS_deepCopy(
       loops over each \ref OutPeriod `pd` and, depending on application (see
       details below):
       - calls the appropriate output formatter function `get_XXX` via its
-        pointer stored in `SW_Output[k].pfunc_XXX`
+        pointer stored in `OutDom.pfunc_XXX`
       - writes output to file(s) and/or passes output in-memory
 
   There are four types of outputs and thus four types of output formatter
   functions `get_XXX` in file \ref SW_Output_get_functions.c
     - output to text files of current simulation:
-      - output formatter function such as `get_XXX_text` which prepare a
-        formatted text string in the global variable \ref SW_OUT_RUN.sw_outstr
+      - output formatter function such as `get_XXX_text` which prepares a
+        formatted text string in the variable sw_outstr found in SW_OUT_RUN
   which is concatenated and written to the text files by SW_OUT_write_today()
       - these output formatter functions are assigned to pointers
-        `SW_Output[k].pfunc_text` and called by SW_OUT_write_today()
+        `OutDom.pfunc_text[k]` and called by SW_OUT_write_today()
       - currently used by `SOILWAT2-standalone` and by `STEPWAT2` if executed
         with its `-i flag`
 
@@ -3669,7 +3669,7 @@ void SW_FILESTATUS_deepCopy(
           \ref sw_outstr_agg which is concatenated and written to the text
           files by SW_OUT_write_today()
       - these output formatter functions are assigned to pointers
-        `SW_Output[k].pfunc_agg` and called by SW_OUT_write_today()
+        `OutDom.pfunc_agg[k]` and called by SW_OUT_write_today()
       - currently used by `STEPWAT2` if executed with its `-o flag`
 
     - in-memory output via `STEPWAT2` variable `SXW`
@@ -3680,7 +3680,7 @@ void SW_FILESTATUS_deepCopy(
         values directly in the appropriate slots of `SXW` for the correct time
         step
       - these output formatter functions are assigned to pointers
-        `SW_Output[k].pfunc_SXW` and called by SW_OUT_write_today()
+        `OutDom.pfunc_SXW[k]` and called by SW_OUT_write_today()
       - currently used by `STEPWAT2` if executed with its `-s flag`, i.e.,
         whenever `STEPWAT2` is run with `SOILWAT2`
 
@@ -3688,7 +3688,7 @@ void SW_FILESTATUS_deepCopy(
       - output formatter function such as `get_XXX_mem` which store the correct
         values directly in the appropriate elements of `SW_OUT_RUN.p_OUT`
       - these output formatter functions are assigned to pointers
-        `SW_Output[k].pfunc_mem` and called by SW_OUT_write_today()
+        `OutDom.pfunc_mem[k]` and called by SW_OUT_write_today()
       - currently used by `rSOILWAT2`
 
 
@@ -3696,28 +3696,39 @@ void SW_FILESTATUS_deepCopy(
 
   In detail:
 
-  There is a structure array (SW_OUTPUT) that contains the
-  information from the outsetup.in file. This structure is filled in
-  the initialization process by matching defined macros of valid keys
-  with enumeration variables used as indices into the structure
-  array.  A similar combination of text macros and enumeration
-  constants handles the TIMEPERIOD conversion from text to numeric
-  index.
+  There are two output structures - SW_OUT_DOM & SW_OUT_RUN.
 
-  Each structure element of the array contains the output period
-  code, start and end values, output file name, opened file pointer
-  for output, on/off status, and a pointer to the function that
-  prepares a complete line of formatted output per output period.
+  The main structure used in SOILWAT2 is SW_OUT_DOM which holds output
+  information that is consistent through domain simulations. This includes:
+  1) Information from outsetup.in (array, an element per output key)
+  2) Output function pointers (array, an element per output key)
+  3) Other output information like output column names and time steps
 
-  A _construct() function clears the entire structure array to set
-  values and flags to zero. Those output objects that are
-  turned off are ignored.
-  Thus, to add a new output variable, a new get_function must be added to
-  in addition to adding the new macro and enumeration keys
-  for it.  Oh, and a line or two of summarizing code.
+  SW_OUT_RUN holds a small amount of output information in SOILWAT2
+  the main information is
+  1) First and last day of the current year during simulation
+  2) Formatted output string for output files
 
-  After initialization, each valid output key has an element in the
-  structure array that "knows" its parameters and whether it is on or
+  The output arrays in SW_OUT_DOM (e.g., mykey) are filled in by
+  initialization process by matching defined macros of valid keys
+  with enumeration variables used as indices into the arrays of
+  information it contains. A similar combination of text macros
+  and enumeration constants handles the TIMEPERIOD conversion
+  from text to numeric index.
+
+  The arrays being spoke of hold the output period code, start
+  and end values, output file name, opened file pointer for output,
+  on/off status, and a pointer to the function that prepares a complete
+  line of formatted output per output period.
+
+  A _construct() function clears the SW_OUT_DOM in it's entirety to set
+  values and flags to zero. Those output objects that are turned off
+  are ignored. Thus, to add a new output variable, a new get_function
+  must be added to in addition to adding the new macro and enumeration
+  keys for it.  Oh, and a line or two of summarizing code.
+
+  After initialization, each valid output key has an element in
+  SW_OUT_DOM that "knows" its parameters and whether it is on or
   off.  There is still space allocated for the "off" keys but they
   are ignored by the use flag.
 
@@ -3777,7 +3788,7 @@ void SW_FILESTATUS_deepCopy(
   - Create and declare a get_*() function that returns the correctly
   formatted string for output.
   - Add a line to link the get_ function to the appropriate element in
-  the SW_OUTPUT array in _construct().
+  the SW_OUT_DOM output function array in _construct().
   - Add new code to the switch statement in sumof_*() to handle the new
   key.
   - Add new code to the switch statement in average_for() to do the
