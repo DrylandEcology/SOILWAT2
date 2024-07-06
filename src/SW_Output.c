@@ -1312,6 +1312,8 @@ void SW_OUTDOM_construct(SW_OUT_DOM *OutDom) {
     IntUS k;
     OutPeriod p;
 
+    memset(OutDom, 0, sizeof(SW_OUT_DOM));
+
 #if defined(SOILWAT)
     OutDom->print_SW_Output = swTRUE;
 #elif defined(STEPWAT)
