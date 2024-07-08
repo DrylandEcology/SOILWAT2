@@ -218,6 +218,9 @@ void SW_RUN_deepCopy(
     SW_FILESTATUS_deepCopy(
         &dest->FileStatus, &source->FileStatus, OutDom, LogInfo
     );
+    if(LogInfo->stopRun) {
+        return; // Exit prematurely due to error
+    }
     SW_OUT_construct_outarray(OutDom, &dest->OutRun, LogInfo);
 #else
     (void) OutDom;
