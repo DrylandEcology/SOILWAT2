@@ -3635,7 +3635,7 @@ void SW_OUTDOM_deepCopy(
     IntUS k, i;
 
     /* Copies output pointers as well */
-    memcpy(source, dest, sizeof(*dest));
+    memcpy(dest, source, sizeof(*dest));
 
     ForEachOutKey(k) {
         for (i = 0; i < 5 * NVEGTYPES + MAX_LAYERS; i++) {
