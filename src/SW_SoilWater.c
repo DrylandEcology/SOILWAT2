@@ -376,7 +376,7 @@ static double itp_FXW_for_phi(double theta, double *swrcp, LOG_INFO *LogInfo) {
 /* --------------------------------------------------- */
 
 #ifdef SWDEBUG
-void SW_WaterBalance_Checks(SW_ALL *sw, LOG_INFO *LogInfo) {
+void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
 
     IntUS i, k;
     int debugi[N_WBCHECKS] = {
@@ -831,11 +831,11 @@ void SW_SWC_deconstruct(SW_SOILWAT *SW_SoilWat) {
 @brief Adjust SWC according to historical (measured) data if available, compute
 water flow, and check if swc is above threshold for "wet" condition.
 
-@param[in,out] sw Comprehensive struct of type SW_ALL containing all information
+@param[in,out] sw Comprehensive struct of type SW_RUN containing all information
     in the simulation.
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_SWC_water_flow(SW_ALL *sw, LOG_INFO *LogInfo) {
+void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     /* =================================================== */
 
 

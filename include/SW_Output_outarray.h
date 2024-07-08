@@ -17,7 +17,7 @@
 #define SW_OUTPUT_ARRAY_H
 
 #include "include/generic.h"        // for Bool, RealD
-#include "include/SW_datastructs.h" // for SW_MODEL, SW_OUTPUT, SW_GEN_OUT, L...
+#include "include/SW_datastructs.h" // for SW_MODEL, L...
 #include "include/SW_Defines.h"     // for OutPeriod, SW_OUTNPERIODS, SW_OUTN...
 #include <stdio.h>                  // for size_t
 
@@ -114,10 +114,10 @@ void SW_OUT_set_nrow(
 );
 
 void SW_OUT_construct_outarray(
-    SW_GEN_OUT *GenOutput, SW_OUTPUT *SW_Output, LOG_INFO *LogInfo
+    SW_OUT_DOM *OutDom, SW_OUT_RUN *OutRun, LOG_INFO *LogInfo
 );
 
-void SW_OUT_deconstruct_outarray(SW_GEN_OUT *GenOutput);
+void SW_OUT_deconstruct_outarray(SW_OUT_RUN *OutRun);
 
 #ifdef RSOILWAT
 void get_outvalleader(

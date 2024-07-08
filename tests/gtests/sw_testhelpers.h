@@ -1,6 +1,6 @@
 #include "include/generic.h"        // for EQ, swTRUE
-#include "include/SW_Control.h"     // for SW_ALL_deepCopy, SW_CTL_clear_model
-#include "include/SW_datastructs.h" // for LOG_INFO, SW_ALL, SW_DOMAIN, SW_...
+#include "include/SW_Control.h"     // for SW_RUN_deepCopy, SW_CTL_clear_model
+#include "include/SW_datastructs.h" // for LOG_INFO, SW_RUN, SW_DOMAIN, SW_...
 #include "include/SW_Defines.h"     // for SW_OUTNKEYS, SW_MISSING
 #include "include/SW_Domain.h"      // for SW_DOM_deconstruct, SW_DOM_deepCopy
 #include "include/SW_Main_lib.h"    // for sw_fail_on_error, sw_init_logs
@@ -8,9 +8,8 @@
 #include <string.h>                 // for memcpy, NULL
 
 
-extern SW_ALL template_SW_All;
+extern SW_RUN template_SW_Run;
 extern SW_DOMAIN template_SW_Domain;
-extern SW_OUTPUT_POINTERS template_SW_OutputPtrs[SW_OUTNKEYS];
 
 
 // get length of an array
@@ -55,10 +54,9 @@ void teardown_testGlobalSoilwatTemplate();
 */
 class AllTestFixture : public ::testing::Test {
   protected:
-    SW_ALL SW_All;
+    SW_RUN SW_Run;
     SW_DOMAIN SW_Domain;
     LOG_INFO LogInfo;
-    SW_OUTPUT_POINTERS SW_OutputPtrs[SW_OUTNKEYS];
 
     // Deep copy global test variables
     // (that were set up by `setup_testGlobalSoilwatTemplate()`) to
@@ -66,19 +64,19 @@ class AllTestFixture : public ::testing::Test {
     void SetUp() override {
         sw_init_logs(NULL, &LogInfo);
 
-        memcpy(&SW_OutputPtrs, &template_SW_OutputPtrs, sizeof(SW_OutputPtrs));
-
         SW_DOM_deepCopy(&template_SW_Domain, &SW_Domain, &LogInfo);
         sw_fail_on_error(&LogInfo);
 
-        SW_ALL_deepCopy(&template_SW_All, &SW_All, &LogInfo);
+        SW_RUN_deepCopy(
+            &template_SW_Run, &SW_Run, &template_SW_Domain.OutDom, &LogInfo
+        );
         sw_fail_on_error(&LogInfo);
     }
 
     // Free allocated memory in test fixture local variables
     void TearDown() override {
         SW_DOM_deconstruct(&SW_Domain);
-        SW_CTL_clear_model(swTRUE, &SW_All);
+        SW_CTL_clear_model(swTRUE, &SW_Run);
     }
 };
 

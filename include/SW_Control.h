@@ -19,7 +19,7 @@
 #define SW_CONTROL_H
 
 #include "include/generic.h"        // for Bool
-#include "include/SW_datastructs.h" // for SW_ALL, LOG_INFO, SW_DOMAIN, SW_OU...
+#include "include/SW_datastructs.h" // for SW_RUN, LOG_INFO, SW_DOMAIN, SW_OU...
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,51 +28,45 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_CTL_init_ptrs(SW_ALL *sw);
+void SW_CTL_init_ptrs(SW_RUN *sw);
 
-void SW_CTL_alloc_outptrs(SW_ALL *sw, LOG_INFO *LogInfo);
+void SW_CTL_alloc_outptrs(SW_RUN *sw, LOG_INFO *LogInfo);
 
-void SW_ALL_deepCopy(SW_ALL *source, SW_ALL *dest, LOG_INFO *LogInfo);
+void SW_RUN_deepCopy(
+    SW_RUN *source, SW_RUN *dest, SW_OUT_DOM *DomRun, LOG_INFO *LogInfo
+);
 
 void SW_CTL_setup_domain(
     unsigned long userSUID, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
 );
 
-void SW_CTL_setup_model(
-    SW_ALL *sw, SW_OUTPUT_POINTERS *SW_OutputPtrs, LOG_INFO *LogInfo
-);
+void SW_CTL_setup_model(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
-void SW_CTL_clear_model(Bool full_reset, SW_ALL *sw);
+void SW_CTL_clear_model(Bool full_reset, SW_RUN *sw);
 
-void SW_CTL_init_run(SW_ALL *sw, LOG_INFO *LogInfo);
+void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *LogInfo);
 
 void SW_CTL_read_inputs_from_disk(
-    SW_ALL *sw, PATH_INFO *PathInfo, LOG_INFO *LogInfo
+    SW_RUN *sw, SW_OUT_DOM *OutDom, PATH_INFO *PathInfo, LOG_INFO *LogInfo
 );
 
-void SW_CTL_main(
-    SW_ALL *sw, SW_OUTPUT_POINTERS *SW_OutputPtrs, LOG_INFO *LogInfo
-);
+void SW_CTL_main(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
 void SW_CTL_RunSimSet(
-    SW_ALL *sw_template,
-    SW_OUTPUT_POINTERS SW_OutputPtrs[],
+    SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *main_LogInfo
 );
 
-void SW_CTL_run_current_year(
-    SW_ALL *sw, SW_OUTPUT_POINTERS *SW_OutputPtrs, LOG_INFO *LogInfo
-);
+void SW_CTL_run_current_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
-void SW_CTL_run_spinup(SW_ALL *sw, LOG_INFO *LogInfo);
+void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
 void SW_CTL_run_sw(
-    SW_ALL *sw_template,
+    SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
     unsigned long ncSuid[],
-    SW_OUTPUT_POINTERS SW_OutputPtrs[],
     LOG_INFO *LogInfo
 );
 

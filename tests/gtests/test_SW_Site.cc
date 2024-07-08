@@ -433,9 +433,9 @@ TEST_F(SiteFixtureTest, SiteSoilEvaporationParametersDeathTest) {
 
     // Check error for bad bare-soil evaporation coefficient (should be [0-1])
 
-    SW_All.Site.evap_coeff[0] = -0.5;
+    SW_Run.Site.evap_coeff[0] = -0.5;
 
-    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
+    SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
     // Detect failure by error message
@@ -449,8 +449,8 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationParametersDeathTest) {
 
     // Check error for bad transpiration coefficient (should be [0-1])
 
-    SW_All.Site.transp_coeff[SW_GRASS][1] = 1.5;
-    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
+    SW_Run.Site.transp_coeff[SW_GRASS][1] = 1.5;
+    SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
     // Detect failure by error message
@@ -471,24 +471,24 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     RealD soildepth;
 
     for (i = 0; i < MAX_TRANSP_REGIONS; ++i) {
-        prev_TranspRgnBounds[i] = SW_All.Site._TranspRgnBounds[i];
+        prev_TranspRgnBounds[i] = SW_Run.Site._TranspRgnBounds[i];
     }
 
 
     // Check that "default" values do not change region bounds
     nRegions = 3;
     RealD regionLowerBounds1[] = {20., 40., 100.};
-    derive_soilRegions(&SW_All.Site, nRegions, regionLowerBounds1, &LogInfo);
+    derive_soilRegions(&SW_Run.Site, nRegions, regionLowerBounds1, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (i = 0; i < nRegions; ++i) {
         // Quickly calculate soil depth for current region as output information
         soildepth = 0.;
-        for (id = 0; id <= SW_All.Site._TranspRgnBounds[i]; ++id) {
-            soildepth += SW_All.Site.width[id];
+        for (id = 0; id <= SW_Run.Site._TranspRgnBounds[i]; ++id) {
+            soildepth += SW_Run.Site.width[id];
         }
 
-        EXPECT_EQ(prev_TranspRgnBounds[i], SW_All.Site._TranspRgnBounds[i])
+        EXPECT_EQ(prev_TranspRgnBounds[i], SW_Run.Site._TranspRgnBounds[i])
             << "for transpiration region = " << i + 1 << " at a soil depth of "
             << soildepth << " cm";
     }
@@ -497,24 +497,24 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     // Check that setting one region for all soil layers works
     nRegions = 1;
     RealD regionLowerBounds2[] = {100.};
-    derive_soilRegions(&SW_All.Site, nRegions, regionLowerBounds2, &LogInfo);
+    derive_soilRegions(&SW_Run.Site, nRegions, regionLowerBounds2, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (i = 0; i < nRegions; ++i) {
-        EXPECT_EQ(SW_All.Site.n_layers - 1, SW_All.Site._TranspRgnBounds[i])
+        EXPECT_EQ(SW_Run.Site.n_layers - 1, SW_Run.Site._TranspRgnBounds[i])
             << "for a single transpiration region across all soil layers";
     }
 
 
     // Check that setting one region for one soil layer works
     nRegions = 1;
-    RealD regionLowerBounds3[] = {SW_All.Site.width[0]};
-    derive_soilRegions(&SW_All.Site, nRegions, regionLowerBounds3, &LogInfo);
+    RealD regionLowerBounds3[] = {SW_Run.Site.width[0]};
+    derive_soilRegions(&SW_Run.Site, nRegions, regionLowerBounds3, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (i = 0; i < nRegions; ++i) {
         EXPECT_EQ(
-            0, SW_All.Site._TranspRgnBounds[i]
+            0, SW_Run.Site._TranspRgnBounds[i]
         ) << "for a single transpiration region for the shallowest soil layer";
     }
 
@@ -525,14 +525,14 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     // Example: one region each for the topmost soil layers
     soildepth = 0.;
     for (i = 0; i < nRegions; ++i) {
-        soildepth += SW_All.Site.width[i];
+        soildepth += SW_Run.Site.width[i];
         regionLowerBounds4[i] = soildepth;
     }
-    derive_soilRegions(&SW_All.Site, nRegions, regionLowerBounds4, &LogInfo);
+    derive_soilRegions(&SW_Run.Site, nRegions, regionLowerBounds4, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (i = 0; i < nRegions; ++i) {
-        EXPECT_EQ(i, SW_All.Site._TranspRgnBounds[i])
+        EXPECT_EQ(i, SW_Run.Site._TranspRgnBounds[i])
             << "for transpiration region for the " << i + 1 << "-th soil layer";
     }
 
@@ -589,24 +589,24 @@ TEST_F(SiteFixtureTest, SiteSoilDensityTypes) {
     double fcoarse = 0.1;
 
     // Inputs represent matric density
-    SW_All.Site.type_soilDensityInput = SW_MATRIC;
-    SW_All.Site.fractionVolBulk_gravel[0] = fcoarse;
-    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
+    SW_Run.Site.type_soilDensityInput = SW_MATRIC;
+    SW_Run.Site.fractionVolBulk_gravel[0] = fcoarse;
+    SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     EXPECT_GT(
-        SW_All.Site.soilBulk_density[0], SW_All.Site.soilMatric_density[0]
+        SW_Run.Site.soilBulk_density[0], SW_Run.Site.soilMatric_density[0]
     );
 
 
     // Inputs represent bulk density
-    SW_All.Site.type_soilDensityInput = SW_BULK;
-    SW_All.Site.fractionVolBulk_gravel[0] = fcoarse;
-    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
+    SW_Run.Site.type_soilDensityInput = SW_BULK;
+    SW_Run.Site.fractionVolBulk_gravel[0] = fcoarse;
+    SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     EXPECT_GT(
-        SW_All.Site.soilBulk_density[0], SW_All.Site.soilMatric_density[0]
+        SW_Run.Site.soilBulk_density[0], SW_Run.Site.soilMatric_density[0]
     );
 }
 
@@ -627,9 +627,9 @@ TEST(SiteTest, SiteSoilDensityTooLowDeathTest) {
 TEST_F(SiteFixtureTest, SiteSoilDensityMissingDeathTest) {
     // Create an error if type_soilDensityInput not implemented
 
-    SW_All.Site.type_soilDensityInput = SW_MISSING;
+    SW_Run.Site.type_soilDensityInput = SW_MISSING;
 
-    SW_SIT_init_run(&SW_All.VegProd, &SW_All.Site, &LogInfo);
+    SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
 
     // Detect failure by error message
     EXPECT_THAT(

@@ -18,7 +18,7 @@
 #include "include/filefuncs.h"      // for sw_message
 #include "include/generic.h"        // for Bool, swFALSE, swTRUE
 #include "include/SW_Control.h"     // for SW_CTL_RunSimSet, SW_CTL_clear_m...
-#include "include/SW_datastructs.h" // for LOG_INFO, SW_ALL, SW_DOMAIN, SW_...
+#include "include/SW_datastructs.h" // for LOG_INFO, SW_RUN, SW_DOMAIN, SW_...
 #include "include/SW_Defines.h"     // for SW_OUTNKEYS
 #include "include/SW_Domain.h"      // for SW_DOM_deconstruct, SW_DOM_init_...
 #include "include/SW_Files.h"       // for eFirst
@@ -48,9 +48,8 @@
 int main(int argc, char **argv) {
     /* =================================================== */
     SW_WALLTIME SW_WallTime;
-    SW_ALL sw_template;
+    SW_RUN sw_template;
     SW_DOMAIN SW_Domain;
-    SW_OUTPUT_POINTERS SW_OutputPtrs[SW_OUTNKEYS];
     LOG_INFO LogInfo;
     Bool EchoInits = swFALSE;
 
@@ -96,7 +95,7 @@ int main(int argc, char **argv) {
     }
 
     // setup and construct model template (independent of inputs)
-    SW_CTL_setup_model(&sw_template, SW_OutputPtrs, &LogInfo);
+    SW_CTL_setup_model(&sw_template, &SW_Domain.OutDom, &LogInfo);
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
@@ -108,7 +107,9 @@ int main(int argc, char **argv) {
     }
 
     // read user inputs
-    SW_CTL_read_inputs_from_disk(&sw_template, &SW_Domain.PathInfo, &LogInfo);
+    SW_CTL_read_inputs_from_disk(
+        &sw_template, &SW_Domain.OutDom, &SW_Domain.PathInfo, &LogInfo
+    );
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
@@ -155,7 +156,7 @@ int main(int argc, char **argv) {
         SW_Domain.nMaxSoilLayers,
         SW_Domain.nMaxEvapLayers,
         &sw_template.VegEstab,
-        &sw_template.GenOutput,
+        &SW_Domain.OutDom,
         &LogInfo
     );
     if (LogInfo.stopRun) {
@@ -164,8 +165,7 @@ int main(int argc, char **argv) {
 
 #if defined(SWNETCDF)
     SW_NC_read_out_vars(
-        sw_template.Output,
-        &sw_template.GenOutput,
+        &SW_Domain.OutDom,
         SW_Domain.PathInfo.InFiles,
         sw_template.VegEstab.parms,
         &LogInfo
@@ -173,39 +173,27 @@ int main(int argc, char **argv) {
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
-    SW_NC_create_units_converters(
-        sw_template.Output, sw_template.GenOutput.nvar_OUT, &LogInfo
-    );
+    SW_NC_create_units_converters(&SW_Domain.OutDom, &LogInfo);
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
 #endif // SWNETCDF
 
-    SW_OUT_create_files(
-        &sw_template.FileStatus,
-        &SW_Domain,
-        sw_template.Output,
-        &sw_template.GenOutput,
-        &LogInfo
-    );
+    SW_OUT_create_files(&sw_template.FileStatus, &SW_Domain, &LogInfo);
     if (LogInfo.stopRun) {
         goto closeFiles;
     }
 
     if (EchoInits) {
-        _echo_all_inputs(&sw_template);
+        _echo_all_inputs(&sw_template, &SW_Domain.OutDom);
     }
 
     // run simulations: loop over simulation set
-    SW_CTL_RunSimSet(
-        &sw_template, SW_OutputPtrs, &SW_Domain, &SW_WallTime, &LogInfo
-    );
+    SW_CTL_RunSimSet(&sw_template, &SW_Domain, &SW_WallTime, &LogInfo);
 
 closeFiles: {
     // finish-up output (not used with rSOILWAT2)
-    SW_OUT_close_files(
-        &sw_template.FileStatus, &sw_template.GenOutput, &LogInfo
-    );
+    SW_OUT_close_files(&sw_template.FileStatus, &SW_Domain.OutDom, &LogInfo);
 }
 
 finishProgram: {

@@ -2,7 +2,7 @@
 #define SWNETCDF_H
 
 #include "include/generic.h"        // for Bool, IntUS
-#include "include/SW_datastructs.h" // for SW_DOMAIN, SW_NETCDF, SW_OUTPUT, S...
+#include "include/SW_datastructs.h" // for SW_DOMAIN, SW_NETCDF, S...
 #include "include/SW_Defines.h"     // for OutPeriod, SW_OUTNPERIODS, SW_OUTN...
 #include <stdio.h>                  // for size_t
 
@@ -47,8 +47,8 @@ extern "C" {
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_NC_write_output(
-    SW_OUTPUT *SW_Output,
-    SW_GEN_OUT *GenOutput,
+    SW_OUT_DOM *OutDom,
+    RealD *p_OUT[][SW_OUTNPERIODS],
     int numFilesPerKey,
     char **ncOutFileNames[][SW_OUTNPERIODS],
     size_t ncSuid[],
@@ -61,7 +61,6 @@ void SW_NC_create_output_files(
     const char *domType,
     const char *output_prefix,
     SW_DOMAIN *SW_Domain,
-    SW_OUTPUT *SW_Output,
     OutPeriod timeSteps[][SW_OUTNPERIODS],
     IntUS used_OUTNPERIODS,
     IntUS nvar_OUT[],
@@ -123,7 +122,7 @@ Bool SW_NC_check_progress(
 );
 
 void SW_NC_read_inputs(
-    SW_ALL *sw, SW_DOMAIN *SW_Domain, size_t ncSUID[], LOG_INFO *LogInfo
+    SW_RUN *sw, SW_DOMAIN *SW_Domain, size_t ncSUID[], LOG_INFO *LogInfo
 );
 
 void SW_NC_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
@@ -131,16 +130,13 @@ void SW_NC_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
 void SW_NC_read(SW_NETCDF *SW_netCDF, PATH_INFO *PathInfo, LOG_INFO *LogInfo);
 
 void SW_NC_read_out_vars(
-    SW_OUTPUT *SW_Output,
-    SW_GEN_OUT *GenOutput,
+    SW_OUT_DOM *OutDom,
     char *InFiles[],
     SW_VEGESTAB_INFO **parms,
     LOG_INFO *LogInfo
 );
 
-void SW_NC_create_units_converters(
-    SW_OUTPUT *SW_Output, IntUS *nVars, LOG_INFO *LogInfo
-);
+void SW_NC_create_units_converters(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
 void SW_NC_init_ptrs(SW_NETCDF *SW_netCDF);
 
@@ -152,16 +148,12 @@ void SW_NC_close_files(SW_NETCDF *SW_netCDF);
 
 void SW_NC_deepCopy(SW_NETCDF *source, SW_NETCDF *dest, LOG_INFO *LogInfo);
 
-void SW_NC_dealloc_outputkey_var_info(
-    SW_OUTPUT *SW_Output, IntUS k, IntUS *nVars
-);
+void SW_NC_dealloc_outputkey_var_info(SW_OUT_DOM *OutDom, IntUS k);
 
-void SW_NC_alloc_output_var_info(
-    SW_OUTPUT *SW_Output, IntUS *nVars, LOG_INFO *LogInfo
-);
+void SW_NC_alloc_output_var_info(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
 void SW_NC_alloc_outputkey_var_info(
-    SW_OUTPUT *currOut, IntUS nVar, LOG_INFO *LogInfo
+    SW_OUT_DOM *OutDom, int key, LOG_INFO *LogInfo
 );
 
 void SW_NC_alloc_files(char ***ncOutFiles, int numFiles, LOG_INFO *LogInfo);

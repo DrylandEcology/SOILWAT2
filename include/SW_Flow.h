@@ -1,7 +1,7 @@
 #ifndef SW_FLOW_H
 #define SW_FLOW_H
 
-#include "include/SW_datastructs.h" // for SW_ALL, SW_SOILWAT, LOG_INFO
+#include "include/SW_datastructs.h" // for SW_RUN, SW_SOILWAT, LOG_INFO
 
 #ifdef __cplusplus
 extern "C" {
@@ -12,7 +12,7 @@ extern "C" {
 /* --------------------------------------------------- */
 void SW_FLW_init_run(SW_SOILWAT *SW_SoilWat);
 
-void SW_Water_Flow(SW_ALL *sw, LOG_INFO *LogInfo);
+void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo);
 
 
 #ifdef __cplusplus

@@ -5,9 +5,11 @@
 #include "include/SW_Domain.h"      // for SW_DOM_CheckProgress, SW_DOM_Cre...
 #include "include/filefuncs.h"      // for LogError, CloseFile, key_to_id
 #include "include/generic.h"        // for swTRUE, LOGERROR, swFALSE, Bool
+#include "include/myMemory.h"       // for Str_Dup
 #include "include/SW_datastructs.h" // for SW_DOMAIN, LOG_INFO
 #include "include/SW_Defines.h"     // for LyrIndex, LARGE_VALUE, TimeInt
 #include "include/SW_Files.h"       // for SW_F_deconstruct, SW_F_deepCopy
+#include "include/SW_Output.h"      // for ForEachOutKey
 #include "include/Times.h"          // for yearto4digit, Time_get_lastdoy_y
 #include <stdio.h>                  // for sscanf, FILE
 #include <stdlib.h>                 // for atoi, atof
@@ -116,7 +118,8 @@ void SW_DOM_CreateProgress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 }
 
 /**
-@brief Domain constructor for global variables.
+@brief Domain constructor for global variables which are constant between
+    simulation runs.
 
 @param[in] rng_seed Initial state for spinup RNG
 @param[out] SW_Domain Struct of type SW_DOMAIN which
@@ -135,7 +138,6 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
     (void) rng_seed; // Silence compiler flag `-Wunused-parameter`
 #endif
 
-
     SW_Domain->nMaxSoilLayers = 0;
     SW_Domain->nMaxEvapLayers = 0;
     SW_Domain->hasConsistentSoilLayerDepths = swFALSE;
@@ -144,6 +146,8 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
         0.,
         sizeof(&SW_Domain->depthsAllSoilLayers[0]) * MAX_LAYERS
     );
+
+    SW_OUTDOM_construct(&SW_Domain->OutDom);
 }
 
 /**
@@ -504,16 +508,28 @@ void SW_DOM_SimSet(
 }
 
 void SW_DOM_deepCopy(SW_DOMAIN *source, SW_DOMAIN *dest, LOG_INFO *LogInfo) {
+
     memcpy(dest, source, sizeof(*dest));
 
+    SW_OUTDOM_deepCopy(&source->OutDom, &dest->OutDom, LogInfo);
+
     SW_F_deepCopy(&dest->PathInfo, &source->PathInfo, LogInfo);
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 #if defined(SWNETCDF)
     SW_NC_deepCopy(&dest->netCDFInfo, &source->netCDFInfo, LogInfo);
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 #endif
 }
 
 void SW_DOM_init_ptrs(SW_DOMAIN *SW_Domain) {
+
+    SW_OUTDOM_init_ptrs(&SW_Domain->OutDom);
+
     SW_F_init_ptrs(SW_Domain->PathInfo.InFiles);
 
 #if defined(SWNETCDF)
@@ -522,12 +538,33 @@ void SW_DOM_init_ptrs(SW_DOMAIN *SW_Domain) {
 }
 
 void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
+    IntUS k, i;
+
     SW_F_deconstruct(SW_Domain->PathInfo.InFiles);
 
 #if defined(SWNETCDF)
+
     SW_NC_deconstruct(&SW_Domain->netCDFInfo);
     SW_NC_close_files(&SW_Domain->netCDFInfo);
+
+    ForEachOutKey(k) {
+        SW_NC_dealloc_outputkey_var_info(&SW_Domain->OutDom, k);
+    }
 #endif
+    ForEachOutKey(k) {
+        for (i = 0; i < 5 * NVEGTYPES + MAX_LAYERS; i++) {
+            if (!isnull(SW_Domain->OutDom.colnames_OUT[k][i])) {
+                free(SW_Domain->OutDom.colnames_OUT[k][i]);
+                SW_Domain->OutDom.colnames_OUT[k][i] = NULL;
+            }
+        }
+#ifdef RSOILWAT
+        if (!isnull(SW_Domain->OutDom.outfile[k])) {
+            free(SW_Domain->OutDom.outfile[k]);
+            SW_Domain->OutDom.outfile[k] = NULL;
+        }
+#endif
+    }
 }
 
 /** Identify soil profile information across simulation domain

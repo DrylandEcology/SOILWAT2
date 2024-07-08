@@ -1232,7 +1232,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
     // Expect that sTempInitR is updated to sTempR for the next day
     for (k = 0; k <= nRgr + 1; k++) {
         // sw_printf("\n k %u, newoldtempR %f", k,
-        // SW_All.StRegValues.oldavgLyrTempR[k]);
+        // SW_Run.StRegValues.oldavgLyrTempR[k]);
         EXPECT_NE(SW_StRegValues.oldavgLyrTempR[k], SW_MISSING);
     }
 

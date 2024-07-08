@@ -144,7 +144,7 @@ void _read_swc_hist(
     SW_SOILWAT_HIST *SoilWat_hist, TimeInt year, LOG_INFO *LogInfo
 );
 
-void SW_SWC_water_flow(SW_ALL *sw, LOG_INFO *LogInfo);
+void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo);
 
 void calculate_repartitioned_soilwater(
     SW_SOILWAT *SW_SoilWat,
@@ -255,7 +255,7 @@ double SWRC_SWPtoSWC_FXW(
 );
 
 #ifdef SWDEBUG
-void SW_WaterBalance_Checks(SW_ALL *sw, LOG_INFO *LogInfo);
+void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo);
 #endif
 
 

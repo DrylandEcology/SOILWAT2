@@ -47,10 +47,10 @@ TEST(SoilWaterTest, SoilWaterSWCadjustSnow) {
     // when average temperature >= SW_Site.TminAccu2, we expect rain == ppt
     EXPECT_EQ(rain, 1);
 
-    // when average temperature >= SW_All.Site.TminAccu2, we expect snow == 0
+    // when average temperature >= SW_Run.Site.TminAccu2, we expect snow == 0
     EXPECT_EQ(snow, 0);
 
-    // when temp_snow <= SW_All.Site.TmaxCrit, we expect snowmelt == 0
+    // when temp_snow <= SW_Run.Site.TmaxCrit, we expect snowmelt == 0
     EXPECT_EQ(snowmelt, 0);
 
     SW_Site.TminAccu2 = 6;
@@ -71,10 +71,10 @@ TEST(SoilWaterTest, SoilWaterSWCadjustSnow) {
     // when average temperature < SW_Site.TminAccu2, we expect rain == 0
     EXPECT_EQ(rain, 0);
 
-    // when average temperature < SW_All.Site.TminAccu2, we expect snow == ppt
+    // when average temperature < SW_Run.Site.TminAccu2, we expect snow == ppt
     EXPECT_EQ(snow, 1);
 
-    // when temp_snow > SW_All.Site.TmaxCrit, we expect snowmelt == fmax(0,
+    // when temp_snow > SW_Run.Site.TmaxCrit, we expect snowmelt == fmax(0,
     // *snowpack - *snowmelt )
     EXPECT_EQ(snowmelt, 0);
 }
@@ -108,10 +108,10 @@ TEST(SoilWaterTest, SoilWaterSWCadjustSnow2) {
     // when average temperature >= SW_Site.TminAccu2, we expect rain == ppt
     EXPECT_EQ(rain, 1);
 
-    // when average temperature >= SW_All.Site.TminAccu2, we expect snow == 0
+    // when average temperature >= SW_Run.Site.TminAccu2, we expect snow == 0
     EXPECT_EQ(snow, 0);
 
-    // when temp_snow > SW_All.Site.TmaxCrit, we expect snowmelt == 0
+    // when temp_snow > SW_Run.Site.TmaxCrit, we expect snowmelt == 0
     EXPECT_EQ(snowmelt, 0);
 }
 

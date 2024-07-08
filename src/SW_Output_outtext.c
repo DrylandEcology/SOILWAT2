@@ -22,7 +22,7 @@ History:
 #include "include/filefuncs.h"         // for CloseFile, OpenFile, LogError
 #include "include/generic.h"           // for Bool, swFALSE, SOILWAT, IntUS
 #include "include/myMemory.h"          // for Mem_Malloc
-#include "include/SW_datastructs.h"    // for LOG_INFO, SW_GEN_OUT, SW_OUTPUT
+#include "include/SW_datastructs.h"    // for LOG_INFO
 #include "include/SW_Defines.h"        // for _OUTSEP, OutPeriod, ForEachOu...
 #include "include/SW_Output.h"         // for pd2longstr, ForEachOutKey
 #include <stdio.h>                     // for snprintf, fflush, fprintf
@@ -42,7 +42,7 @@ Defined as char `sw_outstr_agg[MAX_LAYERS * OUTSTRLEN];`
 Used for output as returned from any function `get_XXX_agg` which
 aggregates output across iterations/repeats for STEPWAT2
 
-Active if \ref SW_GEN_OUT.print_IterationSummary is TRUE
+Active if @ref SW_OUT_DOM.print_IterationSummary is TRUE
 */
 #define sw_outstr_agg
 #undef sw_outstr_agg
@@ -57,13 +57,12 @@ Active if \ref SW_GEN_OUT.print_IterationSummary is TRUE
 /* --------------------------------------------------- */
 
 static void _create_csv_headers(
+    SW_OUT_DOM *OutDom,
     OutPeriod pd,
     char *str_reg,
     char *str_soil,
     Bool does_agg,
     LyrIndex n_layers,
-    SW_OUTPUT *SW_Output,
-    SW_GEN_OUT *GenOutput,
     LOG_INFO *LogInfo
 ) {
 
@@ -106,17 +105,17 @@ static void _create_csv_headers(
     str_soil[0] = (char) '\0';
 
     ForEachOutKey(k) {
-        isTrue = (Bool) (SW_Output[k].use && has_OutPeriod_inUse(
-                                                 pd,
-                                                 (OutKey) k,
-                                                 GenOutput->used_OUTNPERIODS,
-                                                 GenOutput->timeSteps
-                                             ));
+        isTrue = (Bool) (OutDom->use[k] && has_OutPeriod_inUse(
+                                               pd,
+                                               (OutKey) k,
+                                               OutDom->used_OUTNPERIODS,
+                                               OutDom->timeSteps
+                                           ));
         if (isTrue) {
             strcpy(key, key2str[k]);
             str_help2[0] = '\0';
 
-            for (i = 0; i < GenOutput->ncol_OUT[k]; i++) {
+            for (i = 0; i < OutDom->ncol_OUT[k]; i++) {
                 if (does_agg) {
                     snprintf(
                         str_help1,
@@ -124,10 +123,10 @@ static void _create_csv_headers(
                         "%c%s_%s_Mean%c%s_%s_SD",
                         _OUTSEP,
                         key,
-                        GenOutput->colnames_OUT[k][i],
+                        OutDom->colnames_OUT[k][i],
                         _OUTSEP,
                         key,
-                        GenOutput->colnames_OUT[k][i]
+                        OutDom->colnames_OUT[k][i]
                     );
                 } else {
                     snprintf(
@@ -136,14 +135,14 @@ static void _create_csv_headers(
                         "%c%s_%s",
                         _OUTSEP,
                         key,
-                        GenOutput->colnames_OUT[k][i]
+                        OutDom->colnames_OUT[k][i]
                     );
                 }
 
                 strcat(str_help2, str_help1);
             }
 
-            if (SW_Output[k].has_sl) {
+            if (OutDom->has_sl[k]) {
                 strcat((char *) str_soil, str_help2);
             } else {
                 strcat((char *) str_reg, str_help2);
@@ -402,43 +401,40 @@ static void _create_csv_file_ST(
 /**
 @brief create all of the user-specified output text files.
 
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 @param[in,out] SW_FileStatus Struct of type SW_FILE_STATUS which holds basic
     information about output files and values
-@param[in] SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds
-    basic output information for all output keys
 @param[in] n_layers Number of layers of soil within the simulation run
 @param[in] InFiles Array of program in/output files
-@param[in] GenOutput Holds general variables that deal with output
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_OUT_create_textfiles(
+    SW_OUT_DOM *OutDom,
     SW_FILE_STATUS *SW_FileStatus,
-    SW_OUTPUT *SW_Output,
     LyrIndex n_layers,
     char *InFiles[],
-    SW_GEN_OUT *GenOutput,
     LOG_INFO *LogInfo
 ) {
 
     OutPeriod pd;
 
     ForEachOutPeriod(pd) {
-        if (GenOutput->use_OutPeriod[pd]) {
+        if (OutDom->use_OutPeriod[pd]) {
             _create_csv_files(SW_FileStatus, pd, InFiles, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
 
             write_headers_to_csv(
+                OutDom,
                 pd,
                 SW_FileStatus->fp_reg[pd],
                 SW_FileStatus->fp_soil[pd],
                 swFALSE,
                 SW_FileStatus->make_regular,
                 SW_FileStatus->make_soil,
-                SW_Output,
                 n_layers,
-                GenOutput,
                 LogInfo
             );
             if (LogInfo->stopRun) {
@@ -451,9 +447,8 @@ void SW_OUT_create_textfiles(
 #elif defined(STEPWAT)
 
 void SW_OUT_create_summary_files(
+    SW_OUT_DOM *OutDom,
     SW_FILE_STATUS *SW_FileStatus,
-    SW_OUTPUT *SW_Output,
-    SW_GEN_OUT *GenOutput,
     char *InFiles[],
     LyrIndex n_layers,
     LOG_INFO *LogInfo
@@ -462,22 +457,21 @@ void SW_OUT_create_summary_files(
     OutPeriod p;
 
     ForEachOutPeriod(p) {
-        if (GenOutput->use_OutPeriod[p]) {
+        if (OutDom->use_OutPeriod[p]) {
             _create_csv_file_ST(-1, p, InFiles, SW_FileStatus, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
 
             write_headers_to_csv(
+                OutDom,
                 p,
                 SW_FileStatus->fp_reg_agg[p],
                 SW_FileStatus->fp_soil_agg[p],
                 swTRUE,
                 SW_FileStatus->make_regular,
                 SW_FileStatus->make_soil,
-                SW_Output,
                 n_layers,
-                GenOutput,
                 LogInfo
             );
             if (LogInfo->stopRun) {
@@ -488,10 +482,9 @@ void SW_OUT_create_summary_files(
 }
 
 void SW_OUT_create_iteration_files(
+    SW_OUT_DOM *OutDom,
     SW_FILE_STATUS *SW_FileStatus,
-    SW_OUTPUT *SW_Output,
     int iteration,
-    SW_GEN_OUT *GenOutput,
     char *InFiles[],
     LyrIndex n_layers,
     LOG_INFO *LogInfo
@@ -500,22 +493,21 @@ void SW_OUT_create_iteration_files(
     OutPeriod p;
 
     ForEachOutPeriod(p) {
-        if (GenOutput->use_OutPeriod[p]) {
+        if (OutDom->use_OutPeriod[p]) {
             _create_csv_file_ST(iteration, p, InFiles, SW_FileStatus, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
 
             write_headers_to_csv(
+                OutDom,
                 p,
                 SW_FileStatus->fp_reg[p],
                 SW_FileStatus->fp_soil[p],
                 swFALSE,
                 SW_FileStatus->make_regular,
                 SW_FileStatus->make_soil,
-                SW_Output,
                 n_layers,
-                GenOutput,
                 LogInfo
             );
             if (LogInfo->stopRun) {
@@ -593,31 +585,29 @@ header in the output file.
 be called before _create_csv_headers(); otherwise, `ncol_OUT` and
 `colnames_OUT` are not set.
 
+@param OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 @param pd timeperiod so it can write headers to correct output file.
 @param fp_reg name of file.
 @param fp_soil name of file.
 @param does_agg Indicate whether output is aggregated (`-o` option) or
     for each SOILWAT2 run (`-i` option)
-@param n_layers Number of soil layers being dealt with in a simulation
 @param make_regular Array of size SW_OUTNPERIODS which holds boolean values
     specifying to output "regular" header names
 @param make_soil Array of size SW_OUTNPERIODS which holds boolean values
     specifying to output a soil-related header names
-@param SW_Output SW_OUTPUT array of size SW_OUTNKEYS which holds basic output
-    information for all output keys
-@param GenOutput Holds general variables that deal with output
+@param n_layers Number of soil layers being dealt with in a simulation
 @param LogInfo Holds information on warnings and errors
 */
 void write_headers_to_csv(
+    SW_OUT_DOM *OutDom,
     OutPeriod pd,
     FILE *fp_reg,
     FILE *fp_soil,
     Bool does_agg,
     Bool make_regular[],
     Bool make_soil[],
-    SW_OUTPUT *SW_Output,
     LyrIndex n_layers,
-    SW_GEN_OUT *GenOutput,
     LOG_INFO *LogInfo
 ) {
 
@@ -641,14 +631,7 @@ void write_headers_to_csv(
     // Acquire headers
     get_outstrheader(pd, str_time, sizeof str_time);
     _create_csv_headers(
-        pd,
-        header_reg,
-        header_soil,
-        does_agg,
-        n_layers,
-        SW_Output,
-        GenOutput,
-        LogInfo
+        OutDom, pd, header_reg, header_soil, does_agg, n_layers, LogInfo
     );
     if (LogInfo->stopRun) {
         free(header_soil);
@@ -672,7 +655,7 @@ void write_headers_to_csv(
 void find_TXToutputSoilReg_inUse(
     Bool make_soil[],
     Bool make_regular[],
-    SW_OUTPUT *SW_Output,
+    Bool has_sl[],
     OutPeriod timeSteps[][SW_OUTNPERIODS],
     IntUS used_OUTNPERIODS
 ) {
@@ -686,7 +669,7 @@ void find_TXToutputSoilReg_inUse(
     ForEachOutKey(k) {
         for (i = 0; i < used_OUTNPERIODS; i++) {
             if (timeSteps[k][i] != eSW_NoTime) {
-                if (SW_Output[k].has_sl) {
+                if (has_sl[k]) {
                     make_soil[timeSteps[k][i]] = swTRUE;
                 } else {
                     make_regular[timeSteps[k][i]] = swTRUE;
@@ -703,11 +686,12 @@ call this routine at the end of the program run.
 
 @param[in,out] SW_FileStatus Struct of type SW_FILE_STATUS which
     holds basic information about output files and values
-@param[in] GenOutput Holds general variables that deal with output
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_OUT_close_textfiles(
-    SW_FILE_STATUS *SW_FileStatus, SW_GEN_OUT *GenOutput, LOG_INFO *LogInfo
+    SW_FILE_STATUS *SW_FileStatus, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
 
     Bool close_regular = swFALSE, close_layers = swFALSE, close_aggs = swFALSE;
@@ -722,16 +706,16 @@ void SW_OUT_close_textfiles(
 
 #elif defined(STEPWAT)
         close_regular = (Bool) (SW_FileStatus->make_regular[p] &&
-                                GenOutput->storeAllIterations);
-        close_layers = (Bool) (SW_FileStatus->make_soil[p] &&
-                               GenOutput->storeAllIterations);
+                                OutDom->storeAllIterations);
+        close_layers =
+            (Bool) (SW_FileStatus->make_soil[p] && OutDom->storeAllIterations);
         close_aggs = (Bool) ((SW_FileStatus->make_regular[p] ||
                               SW_FileStatus->make_soil[p]) &&
-                             GenOutput->prepare_IterationSummary);
+                             OutDom->prepare_IterationSummary);
 
 #endif
 
-        if (GenOutput->use_OutPeriod[p]) {
+        if (OutDom->use_OutPeriod[p]) {
             if (close_regular) {
                 CloseFile(&SW_FileStatus->fp_reg[p], LogInfo);
             }
