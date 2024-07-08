@@ -1300,6 +1300,29 @@ void SW_OUT_init_ptrs(SW_OUT_RUN *OutRun) {
 #endif
 }
 
+void SW_OUTDOM_init_ptrs(SW_OUT_DOM *OutDom) {
+    IntUS key, column;
+
+    ForEachOutKey(key) {
+        for (column = 0; column < 5 * NVEGTYPES + MAX_LAYERS; column++) {
+            OutDom->colnames_OUT[key][column] = NULL;
+        }
+    }
+
+#if defined(SWNETCDF)
+    ForEachOutKey(key) {
+        OutDom->outputVarInfo[key] = NULL;
+        OutDom->reqOutputVars[key] = NULL;
+        OutDom->units_sw[key] = NULL;
+        OutDom->uconv[key] = NULL;
+    }
+#endif
+
+#ifdef RSOILWAT
+    ForEachOutKey(key) { OutDom->outfile[key] = NULL; }
+#endif
+}
+
 /**
  * @brief Initialize output values that live in the domain-level
  * (contained in SW_OUT_DOM)
@@ -1349,13 +1372,6 @@ void SW_OUTDOM_construct(SW_OUT_DOM *OutDom) {
         OutDom->has_sl[k] = has_key_soillayers((OutKey) k);
         OutDom->first_orig[k] = 1;
         OutDom->last_orig[k] = 366;
-
-#if defined(SWNETCDF)
-        OutDom->outputVarInfo[k] = NULL;
-        OutDom->reqOutputVars[k] = NULL;
-        OutDom->units_sw[k] = NULL;
-        OutDom->uconv[k] = NULL;
-#endif
 
         // assign `get_XXX` functions
         switch (k) {
@@ -3604,6 +3620,84 @@ void SW_FILESTATUS_deepCopy(
     }
 }
 #endif
+
+/**
+ * @brief Deep copy the struct SW_OUT_DOM
+ *
+ * @param[in] source Source instance of SW_OUT_DOM
+ * @param[out] dest Destination instance of SW_OUT_DOM
+ * @param[out] LogInfo Holds information on warnings and errors
+ */
+void SW_OUTDOM_deepCopy(
+    SW_OUT_DOM *source, SW_OUT_DOM *dest, LOG_INFO *LogInfo
+) {
+
+    IntUS k, i;
+
+    /* Copies output pointers as well */
+    memcpy(source, dest, sizeof(*dest));
+
+    ForEachOutKey(k) {
+        for (i = 0; i < 5 * NVEGTYPES + MAX_LAYERS; i++) {
+            if (!isnull(source->colnames_OUT[k][i])) {
+
+                dest->colnames_OUT[k][i] =
+                    Str_Dup(source->colnames_OUT[k][i], LogInfo);
+                if (LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
+            }
+        }
+
+#if defined(SWNETCDF)
+        int varNum, attNum;
+
+        if (source->nvar_OUT[k] > 0 && source->use[k]) {
+
+            SW_NC_alloc_outputkey_var_info(dest, k, LogInfo);
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+            if (!isnull(source->reqOutputVars[k])) {
+                for (varNum = 0; varNum < source->nvar_OUT[k]; varNum++) {
+                    dest->reqOutputVars[k][varNum] =
+                        source->reqOutputVars[k][varNum];
+
+                    if (dest->reqOutputVars[k][varNum]) {
+                        for (attNum = 0; attNum < MAX_NATTS; attNum++) {
+                            if (!isnull(source->outputVarInfo[k][varNum][attNum]
+                                )) {
+                                dest->outputVarInfo[k][varNum]
+                                                   [attNum] = Str_Dup(
+                                    source->outputVarInfo[k][varNum][attNum],
+                                    LogInfo
+                                );
+                                if (LogInfo->stopRun) {
+                                    return; // Exit function prematurely due to
+                                            // error
+                                }
+                            }
+                        }
+
+                        dest[k].units_sw[k][varNum] =
+                            Str_Dup(source->units_sw[k][varNum], LogInfo);
+                        if (LogInfo->stopRun) {
+                            return; // Exit function prematurely due to error
+                        }
+                    }
+                }
+            }
+
+        } else {
+            dest->reqOutputVars[k] = NULL;
+            dest->outputVarInfo[k] = NULL;
+            dest->units_sw[k] = NULL;
+            dest->uconv[k] = NULL;
+        }
+#endif
+    }
+}
 
 /*==================================================================*/
 /**

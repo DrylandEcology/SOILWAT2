@@ -508,44 +508,29 @@ void SW_DOM_SimSet(
 }
 
 void SW_DOM_deepCopy(SW_DOMAIN *source, SW_DOMAIN *dest, LOG_INFO *LogInfo) {
-    IntUS k, i;
 
     memcpy(dest, source, sizeof(*dest));
 
+    SW_OUTDOM_deepCopy(&source->OutDom, &dest->OutDom, LogInfo);
+
     SW_F_deepCopy(&dest->PathInfo, &source->PathInfo, LogInfo);
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
 #if defined(SWNETCDF)
     SW_NC_deepCopy(&dest->netCDFInfo, &source->netCDFInfo, LogInfo);
-#endif
-
-    ForEachOutKey(k) {
-        for (i = 0; i < 5 * NVEGTYPES + MAX_LAYERS; i++) {
-            if (!isnull(source->OutDom.colnames_OUT[k][i])) {
-
-                dest->OutDom.colnames_OUT[k][i] =
-                    Str_Dup(source->OutDom.colnames_OUT[k][i], LogInfo);
-                if (LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
-                }
-            }
-        }
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
     }
+#endif
 }
 
 void SW_DOM_init_ptrs(SW_DOMAIN *SW_Domain) {
-    IntUS key, column;
 
-    ForEachOutKey(key) {
-        for (column = 0; column < 5 * NVEGTYPES + MAX_LAYERS; column++) {
-            SW_Domain->OutDom.colnames_OUT[key][column] = NULL;
-        }
-    }
+    SW_OUTDOM_init_ptrs(&SW_Domain->OutDom);
 
     SW_F_init_ptrs(SW_Domain->PathInfo.InFiles);
-
-#ifdef RSOILWAT
-    ForEachOutKey(key) { SW_Domain->OutDom.outfile[key] = NULL; }
-#endif
 
 #if defined(SWNETCDF)
     SW_NC_init_ptrs(&SW_Domain->netCDFInfo);

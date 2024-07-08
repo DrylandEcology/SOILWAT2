@@ -64,20 +64,6 @@ class AllTestFixture : public ::testing::Test {
     void SetUp() override {
         sw_init_logs(NULL, &LogInfo);
 
-#if defined(SWNETCDF)
-        memcpy(
-            SW_Domain.OutDom.pfunc_mem,
-            template_SW_Domain.OutDom.pfunc_mem,
-            sizeof(void *) * SW_OUTNKEYS
-        );
-#else
-        memcpy(
-            SW_Domain.OutDom.pfunc_text,
-            template_SW_Domain.OutDom.pfunc_text,
-            sizeof(void *) * SW_OUTNKEYS
-        );
-#endif
-
         SW_DOM_deepCopy(&template_SW_Domain, &SW_Domain, &LogInfo);
         sw_fail_on_error(&LogInfo);
 

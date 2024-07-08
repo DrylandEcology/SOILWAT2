@@ -158,6 +158,8 @@ extern char const *styp2longstr[];
 
 void SW_OUT_init_ptrs(SW_OUT_RUN *OutRun);
 
+void SW_OUTDOM_init_ptrs(SW_OUT_DOM *OutDom);
+
 void SW_OUTDOM_construct(SW_OUT_DOM *OutDom);
 
 void SW_OUT_construct(
@@ -286,6 +288,10 @@ void SW_FILESTATUS_deepCopy(
     LOG_INFO *LogInfo
 );
 #endif
+
+void SW_OUTDOM_deepCopy(
+    SW_OUT_DOM *source, SW_OUT_DOM *dest, LOG_INFO *LogInfo
+);
 
 // Functions that format the output in `sw_outstr` for printing
 /* --------------------------------------------------- */
