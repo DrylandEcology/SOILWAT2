@@ -1337,12 +1337,7 @@ void SW_OUTDOM_construct(SW_OUT_DOM *OutDom) {
 
     memset(OutDom, 0, sizeof(SW_OUT_DOM));
 
-#if defined(SOILWAT)
     OutDom->print_SW_Output = swTRUE;
-#elif defined(STEPWAT)
-    OutDom->print_SW_Output = (Bool) OutDom->storeAllIterations;
-// `print_IterationSummary` is set by STEPWAT2's `main` function
-#endif
 
 #if defined(SW_OUTARRAY)
     ForEachOutPeriod(p) { OutDom->nrow_OUT[p] = 0; }
