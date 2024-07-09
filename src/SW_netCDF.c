@@ -4661,7 +4661,7 @@ void SW_NC_read_out_vars(
     FILE *f;
     OutKey currOutKey;
     char inbuf[MAX_FILENAMESIZE], *MyFileName;
-    char varKey[MAX_FILENAMESIZE];
+    char varKey[MAX_FILENAMESIZE + 1];
     int varNum = 0, lineno = 0;
 
     Bool estabFound = swFALSE;
@@ -4738,7 +4738,7 @@ void SW_NC_read_out_vars(
 
             snprintf(
                 varKey,
-                MAX_FILENAMESIZE,
+                MAX_FILENAMESIZE + 1,
                 "%s__%s",
                 input[keyInd],
                 input[SWVarNameInd]
