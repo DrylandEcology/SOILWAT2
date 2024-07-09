@@ -155,48 +155,74 @@ endif
 ifdef SWNETCDF
   ifndef NC_CFLAGS
     # use `nc-config` if user did not provide NC_CFLAGS
-    NC_CFLAGS := $(shell nc-config --cflags)
+    sw_NC_CFLAGS := $(shell nc-config --cflags)
+  else
+    sw_NC_CFLAGS := $(NC_CFLAGS)
   endif
 
   ifndef NC_LIBS
     # use `nc-config` if user did not provide NC_LIBS
-    NC_LIBS := $(shell nc-config --libs)
+    sw_NC_LIBS := $(shell nc-config --libs)
   else
-    ifeq (,$(findstring -lnetcdf,$(NC_LIBS)))
-      NC_LIBS += -lnetcdf
-    endif
+    sw_NC_LIBS := $(NC_LIBS)
+  endif
+
+  ifeq (,$(findstring -lnetcdf,$(sw_NC_LIBS)))
+    # Add '-lnetcdf' if not already present
+    sw_NC_LIBS += -lnetcdf
   endif
 
   ifdef SWUDUNITS
     ifndef UD_CFLAGS
-      # assume headers are at same path as those for nc
-      UD_CFLAGS := $(NC_CFLAGS)/udunits2
+      tmp := $(firstword $(sw_NC_CFLAGS))
+      ifneq (,$(findstring -I,$(tmp)))
+        # assume headers are at same include path as those for nc
+        sw_UD_CFLAGS := $(tmp)/udunits2
+      else
+        sw_UD_CFLAGS :=
+      endif
+    else
+      sw_UD_CFLAGS := $(UD_CFLAGS)
     endif
 
     ifndef UD_LIBS
-      UD_LIBS := -ludunits2
+      sw_UD_LIBS := -ludunits2
+    else
+      sw_UD_LIBS := $(UD_LIBS)
+    endif
+
+    ifeq (,$(findstring -ludunits2,$(sw_UD_LIBS)))
+      # Add '-ludunits2' if not already present
+      sw_UD_LIBS += -ludunits2
     endif
 
     ifndef EX_LIBS
-      EX_LIBS := -lexpat
+      sw_EX_LIBS :=
+    else
+      sw_EX_LIBS := $(EX_LIBS)
+      ifeq (,$(findstring -lexpat,$(sw_EX_LIBS)))
+        # Add '-lexpat' if not already present
+        sw_EX_LIBS += -lexpat
+      endif
     endif
+
   else
     # if SWUDUNITS is not defined, then unset
-    UD_CFLAGS :=
-    EX_CFLAGS :=
-    UD_LIBS :=
-    EX_LIBS :=
+    sw_UD_CFLAGS :=
+    sw_EX_CFLAGS :=
+    sw_UD_LIBS :=
+    sw_EX_LIBS :=
   endif
 
 else
   # if SWNETCDF is not defined, then unset
   SWUDUNITS :=
-  NC_CFLAGS :=
-  UD_CFLAGS :=
-  EX_CFLAGS :=
-  NC_LIBS :=
-  UD_LIBS :=
-  EX_LIBS :=
+  sw_NC_CFLAGS :=
+  sw_UD_CFLAGS :=
+  sw_EX_CFLAGS :=
+  sw_NC_LIBS :=
+  sw_UD_LIBS :=
+  sw_EX_LIBS :=
 endif
 
 
@@ -263,8 +289,8 @@ instr_flags_severe := \
 sw_CPPFLAGS := $(CPPFLAGS) $(sw_info) -MMD -MP -I.
 sw_CPPFLAGS_bin := $(sw_CPPFLAGS) -I$(dir_build_sw2)
 sw_CPPFLAGS_test := $(sw_CPPFLAGS) -I$(dir_build_test)
-sw_CFLAGS := $(CFLAGS) $(NC_CFLAGS) $(UD_CFLAGS) $(EX_CFLAGS)
-sw_CXXFLAGS := $(CXXFLAGS) $(NC_CFLAGS) $(UD_CFLAGS) $(EX_CFLAGS)
+sw_CFLAGS := $(CFLAGS) $(sw_NC_CFLAGS) $(sw_UD_CFLAGS) $(sw_EX_CFLAGS)
+sw_CXXFLAGS := $(CXXFLAGS) $(sw_NC_CFLAGS) $(sw_UD_CFLAGS) $(sw_EX_CFLAGS)
 
 # `SW2_FLAGS` can be used to pass in additional flags
 bin_flags := -O2 -fno-stack-protector $(SW2_FLAGS)
@@ -277,7 +303,7 @@ gtest_flags := -D_POSIX_C_SOURCE=200809L # googletest requires POSIX API
 # order of libraries is important for GNU gcc (libSOILWAT2 depends on libm)
 sw_LDFLAGS_bin := $(LDFLAGS) -L$(dir_bin)
 sw_LDFLAGS_test := $(LDFLAGS) -L$(dir_bin) -L$(dir_build_test)
-sw_LDLIBS := $(LDLIBS) $(NC_LIBS) $(UD_LIBS) $(EX_LIBS) -lm
+sw_LDLIBS := $(LDLIBS) $(sw_NC_LIBS) $(sw_UD_LIBS) $(sw_EX_LIBS) -lm
 
 target_LDLIBS := -l$(target) $(sw_LDLIBS)
 test_LDLIBS := -l$(target_test) $(sw_LDLIBS)
