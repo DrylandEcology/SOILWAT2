@@ -68,6 +68,27 @@ static void sw_print_usage(void) {
 */
 void sw_print_version(void) {
     sw_printf("SOILWAT2 version: %s\n", SW2_VERSION);
+
+#if defined(STEPWAT)
+    sw_printf("Compiled as library for STEPWAT2");
+
+#elif defined(RSOILWAT2)
+    sw_printf("Compiled as library for rSOILWAT2");
+
+#else
+    sw_printf("Capabilities: ");
+#if defined(SWNETCDF)
+    sw_printf("netCDF-c");
+#if defined(SWUDUNITS)
+    sw_printf(", udunits2");
+#endif
+#else
+    sw_printf("text");
+#endif
+#endif
+
+    sw_printf("\n");
+
 #ifndef RSOILWAT
     sw_printf(
         "Compiled        : by %s, on %s, on %s %s\n",

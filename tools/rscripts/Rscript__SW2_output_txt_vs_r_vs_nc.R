@@ -41,6 +41,8 @@ dir_txt <- file.path(dir_example, "Output_comps-txt")
 
 
 #--- SOILWAT2 metadata ------
+outModes <- c("txt", "nc", "r")
+
 pds2 <- rSOILWAT2:::rSW2_glovars[["kSOILWAT2"]][["OutPeriods"]]
 pds1 <- tolower(pds2)
 pds3 <- c("daily", "weekly", "monthly", "yearly")
@@ -58,6 +60,11 @@ outvars <- read.delim(
 
 #--- . ------
 #--- Run rSOILWAT2 ------
+cat(
+  "Run rSOILWAT2 v", getNamespaceVersion("rSOILWAT2"),
+  " on example simulation ...\n",
+  sep = ""
+)
 swr <- rSOILWAT2::sw_exec(rSOILWAT2::sw_exampleData)
 
 
@@ -286,11 +293,19 @@ read_swdata <- function(outkey, pd, swr, dir_txt, dir_nc) {
 
 
 #--- . ------
+cat("Compare output among SOILWAT2 runs:\n")
+
 #--- Compile and compare output data ------
 diffs <- array(
   data = vector(mode = "list", length = length(outkeys) * length(pds1)),
   dim = c(length(outkeys), length(pds1)),
   dimnames = list(outkeys, pds1)
+)
+
+hasModes <- array(
+  data = NA,
+  dim = c(length(outkeys), length(pds1), length(outModes)),
+  dimnames = list(outkeys, pds1, outModes)
 )
 
 for (pd in seq_along(pds1)) {
@@ -305,6 +320,13 @@ for (pd in seq_along(pds1)) {
     )
 
     if (inherits(x, "try-error")) next
+
+    #--- Identify output modes ------
+    hasModes[key, pd, outModes] <- vapply(
+      outModes,
+      function(om) isTRUE(all(dim(x[[om]]) > 0L)),
+      FUN.VALUE = NA
+    )
 
     #--- Compare data ------
     list_combinations <- combn(names(x), m = 2L) |> as.data.frame()
@@ -345,6 +367,13 @@ for (pd in seq_along(pds1)) {
       list()
   }
 }
+
+
+#--- Identify available output modes ------
+has_modes <- apply(hasModes, MARGIN = 3L, sum) > 0L
+
+cat("* Modes with output:", toString(names(has_modes)[has_modes]), "\n")
+cat("* Modes without output:", toString(names(has_modes)[!has_modes]), "\n")
 
 
 #--- Identify outkeys without output ------
