@@ -175,7 +175,9 @@ int setup_testGlobalSoilwatTemplate() {
         goto finishProgram;
     }
 
-    SW_CTL_setup_model(&template_SW_Run, &template_SW_Domain.OutDom, &LogInfo);
+    SW_CTL_setup_model(
+        &template_SW_Run, &template_SW_Domain.OutDom, swTRUE, &LogInfo
+    );
     if (LogInfo.stopRun) {
         goto finishProgram;
     }

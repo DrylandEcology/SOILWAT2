@@ -163,6 +163,7 @@ void SW_OUTDOM_init_ptrs(SW_OUT_DOM *OutDom);
 void SW_OUTDOM_construct(SW_OUT_DOM *OutDom);
 
 void SW_OUT_construct(
+    Bool zeroOutStruct,
     Bool make_soil[],
     Bool make_regular[],
     SW_OUT_DOM *OutDom,

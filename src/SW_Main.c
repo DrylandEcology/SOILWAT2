@@ -95,7 +95,7 @@ int main(int argc, char **argv) {
     }
 
     // setup and construct model template (independent of inputs)
-    SW_CTL_setup_model(&sw_template, &SW_Domain.OutDom, &LogInfo);
+    SW_CTL_setup_model(&sw_template, &SW_Domain.OutDom, swTRUE, &LogInfo);
     if (LogInfo.stopRun) {
         goto finishProgram;
     }

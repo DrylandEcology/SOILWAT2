@@ -1838,6 +1838,7 @@ void SW_OUTDOM_construct(SW_OUT_DOM *OutDom) {
 }
 
 void SW_OUT_construct(
+    Bool zeroOutStruct,
     Bool make_soil[],
     Bool make_regular[],
     SW_OUT_DOM *OutDom,
@@ -1851,7 +1852,9 @@ void SW_OUT_construct(
     SW_SOILWAT_OUTPUTS *s = NULL;
     int j;
 
-    memset(OutRun, 0, sizeof(SW_OUT_RUN));
+    if (zeroOutStruct) {
+        memset(OutRun, 0, sizeof(SW_OUT_RUN));
+    }
 
 #if defined(SW_OUTTEXT)
     ForEachOutPeriod(p) {

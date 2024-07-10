@@ -504,9 +504,12 @@ void SW_CTL_setup_domain(
     information in the simulation
 @param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
+@param[in] zeroOutInfo Specifies if SW_OUT_RUN should be zeroed-out
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_CTL_setup_model(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
+void SW_CTL_setup_model(
+    SW_RUN *sw, SW_OUT_DOM *OutDom, Bool zeroOutInfo, LOG_INFO *LogInfo
+) {
     SW_MDL_construct(&sw->Model);
     SW_WTH_construct(&sw->Weather);
 
@@ -517,6 +520,7 @@ void SW_CTL_setup_model(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     SW_VPD_construct(&sw->VegProd);
     // SW_FLW_construct() not needed
     SW_OUT_construct(
+        zeroOutInfo,
         sw->FileStatus.make_soil,
         sw->FileStatus.make_regular,
         OutDom,
