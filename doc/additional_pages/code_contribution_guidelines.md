@@ -282,6 +282,15 @@ this script makes sure that output between the different versions is the same
     tools/check_outputModes.sh
 ```
 
+Environmental variables that `make` needs to see when running the script
+should be exported. For instance,
+
+```{.sh}
+    export UD_LIBS="-L/path/to/libudunits2"
+    tools/check_outputModes.sh
+```
+
+
 
 Another use case is to compare output of a new (development) branch to output
 from a previous (reference) release.

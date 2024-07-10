@@ -19,18 +19,26 @@ declare -a noflags=()
 
 echo "Run text-based SOILWAT2 on example simulation ..."
 rm -r tests/example/Output_comps-txt > /dev/null 2>&1
-run_fresh_sw2 "CC=" noflags[@] "txt" "bin_run" > /dev/null 2>&1
-cp -R tests/example/Output tests/example/Output_comps-txt > /dev/null 2>&1
+res=$(run_fresh_sw2 "CC=" noflags[@] "txt" "bin_run" 2>&1)
+if [[ "${res}" == *"make failed"* ]]; then
+    echo "${res}"
+else
+    cp -R tests/example/Output tests/example/Output_comps-txt > /dev/null 2>&1
+fi
 
 echo "Run nc-based SOILWAT2 on example simulation ..."
 rm -r tests/example/Output_comps-nc > /dev/null 2>&1
-run_fresh_sw2 "CC=" noflags[@] "nc" "bin_run" > /dev/null 2>&1
-cp -R tests/example/Output tests/example/Output_comps-nc > /dev/null 2>&1
+res=$(run_fresh_sw2 "CC=" noflags[@] "nc" "bin_run" 2>&1)
+if [[ "${res}" == *"make failed"* ]]; then
+    echo "${res}"
+else
+    cp -R tests/example/Output tests/example/Output_comps-nc > /dev/null 2>&1
+fi
 clean_example_inputs > /dev/null 2>&1
 
 unset noflags
 
-echo "Compare output among text-based, nc-based, and rSOILWAT2 runs:"
+# Compare output among text-based, nc-based, and rSOILWAT2 runs
 res=$(Rscript tools/rscripts/Rscript__SW2_output_txt_vs_r_vs_nc.R 2>&1)
 
 echo "${res}"
