@@ -2998,7 +2998,8 @@ is represented by
     - soil layer depths (if entire domain has the same soil layer profile)
     - soil layer number (if soil layer profile varies across domain)
 
-@param[in] OutDom
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 @param[in] domFile Domain netCDF file name
 @param[in] domType Type of domain in which simulations are running
     (gridcell/sites)

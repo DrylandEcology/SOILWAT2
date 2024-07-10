@@ -3326,8 +3326,8 @@ void SW_OUT_write_today(
                         );
                     }
 #endif
-                    ((void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
-                    ) OutDom->pfunc_text[k])(outPeriod, sw, OutDom);
+                    ((void (*)(OutPeriod, SW_RUN *)
+                    ) OutDom->pfunc_text[k])(outPeriod, sw);
                 }
             }
 #endif
