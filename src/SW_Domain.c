@@ -421,7 +421,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 @param[in] progVarID Identifier of the progress variable
 @param[in] ncSuid Unique indentifier of the first suid to run
     in relation to netCDFs
-@param[in,out] LogInfo
+@param[in,out] LogInfo Holds information on warnings and errors
 */
 void SW_DOM_SetProgress(
     Bool isFailure,
