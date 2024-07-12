@@ -1132,8 +1132,6 @@ typedef struct {
     int baseCalendarYear; /**< Calendar year that is the reference basis of the
                              time units (e.g., days since YYYY-01-01) of every
                              output netCDFs */
-
-    char *outputVarsFileName;
 } SW_NETCDF;
 
 struct SW_OUT_DOM {
