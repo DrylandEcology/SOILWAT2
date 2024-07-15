@@ -1,5 +1,8 @@
 # NEWS
 
+# SOILWAT2 v8.1.0-devel
+
+
 # SOILWAT2 v8.0.0
 * Simulation output remains the same as the previous version.
   However, output of establishment/recruitment for two species is now
