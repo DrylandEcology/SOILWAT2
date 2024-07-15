@@ -1,7 +1,7 @@
 
 # Run script from within SOILWAT2/ with
 # ```
-#    Rscript tools/plot__SW2_SoilTemperature.R
+#    Rscript tools/rscripts/Rscript__SW2_SoilTemperature.R
 # ```
 # after running SOILWAT2 on "tests/example", e.g.,
 # ```
@@ -14,16 +14,16 @@ dir_testing <- file.path("tests", "example")
 dir_sw2_input <- file.path(dir_testing, "Input")
 dir_sw2_output <- file.path(dir_testing, "Output")
 
-dir_fig <- "tools"
+dir_fig <- file.path("tools", "figures")
 dir.create(dir_fig, recursive = TRUE, showWarnings = FALSE)
 
 
 #--- Read data
-soils <- read.table(file.path(dir_sw2_input, "soils.in"), header = FALSE)
+soils <- utils::read.table(file.path(dir_sw2_input, "soils.in"), header = FALSE)
 
-xw <- read.csv(file.path(dir_sw2_output, "sw2_daily.csv"))
+xw <- utils::read.csv(file.path(dir_sw2_output, "sw2_daily.csv"))
 
-x <- read.csv(file.path(dir_sw2_output, "sw2_daily_slyrs.csv"))
+x <- utils::read.csv(file.path(dir_sw2_output, "sw2_daily_slyrs.csv"))
 
 tag_soil_temp <- "SOILTEMP_Lyr"
 tag_surface_temp <- "SOILTEMP_surfaceTemp_C"
@@ -125,7 +125,7 @@ xvwc2 <- merge(
 
 
 #--- Panels by layer showing trends over one year
-pdf(file = file.path(dir_fig, "Fig_SoilTemperature_by_Layer.pdf"))
+grDevices::pdf(file = file.path(dir_fig, "Fig_SoilTemperature_by_Layer.pdf"))
 
 ggplot2::ggplot(
   data = dplyr::filter(xtsoil, Year == 1980)
@@ -137,12 +137,12 @@ ggplot2::ggplot(
     dplyr::vars(depth_cm),
     scales = "fixed"
   ) +
-  egg::theme_article()
+  ggplot2::theme_bw()
 
-dev.off()
+grDevices::dev.off()
 
 
-pdf(file = file.path(dir_fig, "Fig_SoilTemperatureDelta_by_Layer.pdf"))
+grDevices::pdf(file = file.path(dir_fig, "Fig_SoilTemperatureDelta_by_Layer.pdf"))
 
 ggplot2::ggplot(
   data = dplyr::filter(xtsoil_delta, Year == 2010)
@@ -154,14 +154,16 @@ ggplot2::ggplot(
     dplyr::vars(depth_cm),
     scales = "free_y"
   ) +
-  egg::theme_article()
+  ggplot2::theme_bw()
 
-dev.off()
+grDevices::dev.off()
 
 
 
 #--- Soil temperature range vs soil moisture
-pdf(file = file.path(dir_fig, "Fig_SoilTemperatureRange_vs_SoilMoisture.pdf"))
+grDevices::pdf(
+  file = file.path(dir_fig, "Fig_SoilTemperatureRange_vs_SoilMoisture.pdf")
+)
 
 ggplot2::ggplot(
   data = xvwc2
@@ -170,10 +172,9 @@ ggplot2::ggplot(
     ggplot2::aes(x = VWC, y = SoilTempRange)
   ) +
   ggplot2::facet_wrap(dplyr::vars(depth_cm)) +
-  egg::theme_article()
+  ggplot2::theme_bw()
 
-
-dev.off()
+grDevices::dev.off()
 
 
 
@@ -203,7 +204,7 @@ tmp2$type = "Mean across: range > 0 C"
 xtsoilClim <- rbind(tmp1, tmp2)
 
 
-pdf(file = file.path(dir_fig, "Fig_SoilTemperatureClim_by_Layer.pdf"))
+grDevices::pdf(file = file.path(dir_fig, "Fig_SoilTemperatureClim_by_Layer.pdf"))
 
 ggplot2::ggplot(
   data = xtsoilClim
@@ -214,6 +215,6 @@ ggplot2::ggplot(
   ggplot2::facet_grid(rows = dplyr::vars(type)) +
   ggplot2::scale_y_reverse() +
   ggplot2::geom_hline(yintercept = 0, color = "orange", linetype = "dashed") +
-  egg::theme_article()
+  ggplot2::theme_bw()
 
-dev.off()
+grDevices::dev.off()

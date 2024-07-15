@@ -18,7 +18,8 @@
 # make doc_open    open documentation
 #
 # --- SOILWAT2 library ------
-# make lib         create SOILWAT2 library
+# make lib         create SOILWAT2 library (utilized by SOILWAT2 and STEPWAT2)
+# make libr        create SOILWAT2 library (utilized by rSOILWAT2)
 #
 # --- Tests ------
 # make test        create a test binary executable that includes the unit tests
@@ -80,10 +81,11 @@ SHELL = /bin/sh
 
 #------ Identification
 SW2_VERSION := "$(shell git describe --abbrev=7 --dirty --always --tags)"
-HOSTNAME := "$(shell uname -sn)"
+HOSTNAME ?= "$(shell uname -sn)"
+USERNAME ?= "$(USER)"
 
 sw_info := -DSW2_VERSION=\"$(SW2_VERSION)\" \
-					-DUSERNAME=\"$(USER)\" \
+					-DUSERNAME=\"$(USERNAME)\" \
 					-DHOSTNAME=\"$(HOSTNAME)\"
 
 
@@ -128,6 +130,102 @@ lib_gmock := $(dir_build_test)/lib$(gmock).a
 # CXX = g++ or clang++
 # AR = ar
 # RM = rm
+
+
+#------ netCDF SUPPORT
+# `CPPFLAGS=-DSWNETCDF make all`
+# `CPPFLAGS='-DSWNETCDF -DSWUDUNITS' make all`
+
+# User-specified paths to netCDF header and library:
+#   `CPPFLAGS=-DSWNETCDF NC_CFLAGS="-I/path/to/include" NC_LIBS="-L/path/to/lib" make all`
+
+# User-specified paths to headers and libraries of netCDF, udunits2 and expat:
+#   `CPPFLAGS='-DSWNETCDF -DSWUDUNITS' NC_CFLAGS="-I/path/to/include" UD_CFLAGS="-I/path/to/include" EX_CFLAGS="-I/path/to/include" NC_LIBS="-L/path/to/lib" UD_LIBS="-L/path/to/lib" EX_LIBS="-L/path/to/lib" make all`
+
+ifneq (,$(findstring -DSWNETCDF,$(CPPFLAGS)))
+  # define makefile variable SWNETCDF if defined via CPPFLAGS
+  SWNETCDF = 1
+endif
+
+ifneq (,$(findstring -DSWUDUNITS,$(CPPFLAGS)))
+  # define makefile variable SWUDUNITS if defined via CPPFLAGS
+  SWUDUNITS = 1
+endif
+
+ifdef SWNETCDF
+  ifndef NC_CFLAGS
+    # use `nc-config` if user did not provide NC_CFLAGS
+    sw_NC_CFLAGS := $(shell nc-config --cflags)
+  else
+    sw_NC_CFLAGS := $(NC_CFLAGS)
+  endif
+
+  ifndef NC_LIBS
+    # use `nc-config` if user did not provide NC_LIBS
+    sw_NC_LIBS := $(shell nc-config --libs)
+  else
+    sw_NC_LIBS := $(NC_LIBS)
+  endif
+
+  ifeq (,$(findstring -lnetcdf,$(sw_NC_LIBS)))
+    # Add '-lnetcdf' if not already present
+    sw_NC_LIBS += -lnetcdf
+  endif
+
+  ifdef SWUDUNITS
+    ifndef UD_CFLAGS
+      tmp := $(firstword $(sw_NC_CFLAGS))
+      ifneq (,$(findstring -I,$(tmp)))
+        # assume headers are at same include path as those for nc
+        sw_UD_CFLAGS := $(tmp)/udunits2
+      else
+        sw_UD_CFLAGS :=
+      endif
+    else
+      sw_UD_CFLAGS := $(UD_CFLAGS)
+    endif
+
+    ifndef UD_LIBS
+      sw_UD_LIBS := -ludunits2
+    else
+      sw_UD_LIBS := $(UD_LIBS)
+    endif
+
+    ifeq (,$(findstring -ludunits2,$(sw_UD_LIBS)))
+      # Add '-ludunits2' if not already present
+      sw_UD_LIBS += -ludunits2
+    endif
+
+    ifndef EX_LIBS
+      sw_EX_LIBS :=
+    else
+      sw_EX_LIBS := $(EX_LIBS)
+      ifeq (,$(findstring -lexpat,$(sw_EX_LIBS)))
+        # Add '-lexpat' if not already present
+        sw_EX_LIBS += -lexpat
+      endif
+    endif
+
+  else
+    # if SWUDUNITS is not defined, then unset
+    sw_UD_CFLAGS :=
+    sw_EX_CFLAGS :=
+    sw_UD_LIBS :=
+    sw_EX_LIBS :=
+  endif
+
+else
+  # if SWNETCDF is not defined, then unset
+  SWUDUNITS :=
+  sw_NC_CFLAGS :=
+  sw_UD_CFLAGS :=
+  sw_EX_CFLAGS :=
+  sw_NC_LIBS :=
+  sw_UD_LIBS :=
+  sw_EX_LIBS :=
+endif
+
+
 
 
 #------ STANDARDS
@@ -191,8 +289,8 @@ instr_flags_severe := \
 sw_CPPFLAGS := $(CPPFLAGS) $(sw_info) -MMD -MP -I.
 sw_CPPFLAGS_bin := $(sw_CPPFLAGS) -I$(dir_build_sw2)
 sw_CPPFLAGS_test := $(sw_CPPFLAGS) -I$(dir_build_test)
-sw_CFLAGS := $(CFLAGS)
-sw_CXXFLAGS := $(CXXFLAGS)
+sw_CFLAGS := $(CFLAGS) $(sw_NC_CFLAGS) $(sw_UD_CFLAGS) $(sw_EX_CFLAGS)
+sw_CXXFLAGS := $(CXXFLAGS) $(sw_NC_CFLAGS) $(sw_UD_CFLAGS) $(sw_EX_CFLAGS)
 
 # `SW2_FLAGS` can be used to pass in additional flags
 bin_flags := -O2 -fno-stack-protector $(SW2_FLAGS)
@@ -205,7 +303,7 @@ gtest_flags := -D_POSIX_C_SOURCE=200809L # googletest requires POSIX API
 # order of libraries is important for GNU gcc (libSOILWAT2 depends on libm)
 sw_LDFLAGS_bin := $(LDFLAGS) -L$(dir_bin)
 sw_LDFLAGS_test := $(LDFLAGS) -L$(dir_bin) -L$(dir_build_test)
-sw_LDLIBS := $(LDLIBS) -lm
+sw_LDLIBS := $(LDLIBS) $(sw_NC_LIBS) $(sw_UD_LIBS) $(sw_EX_LIBS) -lm
 
 target_LDLIBS := -l$(target) $(sw_LDLIBS)
 test_LDLIBS := -l$(target_test) $(sw_LDLIBS)
@@ -214,12 +312,6 @@ gmock_LDLIBS := -l$(gmock)
 
 
 #------ CODE FILES
-# sw_sources is used by STEPWAT2 and rSOILWAT2 to pass relevant output code file
-ifneq ($(origin sw_sources), undefined)
-	# Add source path
-	sw_sources := $(sw_sources:%.c=$(dir_src)/%.c)
-endif
-
 # SOILWAT2 files
 sources_core := \
 	$(dir_src)/SW_Main_lib.c \
@@ -241,27 +333,28 @@ sources_core := \
 	$(dir_src)/SW_Flow_lib_PET.c \
 	$(dir_src)/SW_Flow_lib.c \
 	$(dir_src)/SW_Flow.c \
-	$(dir_src)/SW_Carbon.c
-
-sources_lib = \
-	$(sw_sources) \
-	$(sources_core) \
+	$(dir_src)/SW_Carbon.c \
+	$(dir_src)/SW_Domain.c \
 	$(dir_src)/SW_Output.c \
-	$(dir_src)/SW_Output_get_functions.c
+	$(dir_src)/SW_Output_get_functions.c \
+	$(dir_src)/SW_Output_outarray.c \
+	$(dir_src)/SW_Output_outtext.c
+
+ifdef SWNETCDF
+sources_core += $(dir_src)/SW_netCDF.c
+endif
+
+sources_lib = $(sources_core)
 objects_lib = $(sources_lib:$(dir_src)/%.c=$(dir_build_sw2)/%.o)
 
 
-# SOILWAT2-standalone
-sources_bin := $(dir_src)/SW_Main.c $(dir_src)/SW_Output_outtext.c
+# Code for SOILWAT2-standalone program
+sources_bin := $(dir_src)/SW_Main.c
 objects_bin := $(sources_bin:$(dir_src)/%.c=$(dir_build_sw2)/%.o)
 
 
-# Unfortunately, we currently cannot include 'SW_Output.c' because
-#  - cannot increment expression of enum type (e.g., OutKey, OutPeriod)
-#  - assigning to 'OutKey' from incompatible type 'int'
-# ==> instead, we use 'SW_Output_mock.c' which provides mock versions of the
-# public functions (but will result in some compiler warnings)
-sources_lib_test := $(sources_core) $(dir_src)/SW_Output_mock.c
+# Code for SOILWAT2-test library (include all source code)
+sources_lib_test := $(sources_core)
 objects_lib_test := $(sources_lib_test:$(dir_src)/%.c=$(dir_build_test)/%.o)
 
 

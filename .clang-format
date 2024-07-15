@@ -1,0 +1,16 @@
+---
+BasedOnStyle: LLVM
+AlignAfterOpenBracket: BlockIndent                  # llvm: Align; >= v14
+AlignEscapedNewlines: Left                          # llvm: right
+BinPackArguments: false                             # llvm: true
+BinPackParameters: false                            # llvm: true
+BreakBeforeTernaryOperators: false                  # llvm: true
+IndentWidth: 4                                      # llvm: 2
+InsertBraces: true                                  # llvm: false; >= v15
+InsertNewlineAtEOF: true                            # llvm: false; >= v16
+MaxEmptyLinesToKeep: 2                              # llvm: 1
+PenaltyReturnTypeOnItsOwnLine: 1000                 # llvm: 60
+SeparateDefinitionBlocks: Always                    # llvm: leave; >= v14
+SortIncludes: CaseInsensitive                       # llvm: CaseSensitive
+SpaceAfterCStyleCast: true                          # llvm: false
+...

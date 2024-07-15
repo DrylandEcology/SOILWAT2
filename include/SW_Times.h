@@ -31,24 +31,18 @@
 #ifndef SW_TIMES_H
 #define SW_TIMES_H
 
-#include "include/Times.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 
 /*---------------------------------------------------------------*/
-typedef enum {
-	Yesterday, Today
-} TwoDays;
+typedef enum { Yesterday, Today } TwoDays;
 
 #define DAYFIRST_NORTH 1
 #define DAYLAST_NORTH 366
 #define DAYFIRST_SOUTH 183
 #define DAYLAST_SOUTH 182
-#define DAYMID_NORTH 183
-#define DAYMID_SOUTH 366
 
 /* The above define the beginning, ending and middle
  * days of the year for northern and southern

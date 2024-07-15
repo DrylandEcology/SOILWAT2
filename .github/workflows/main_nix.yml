@@ -49,6 +49,35 @@ jobs:
       if: ${{ runner.os != 'macOS' }}
       run: make clean test_sanitizer
 
+    - name: Compile as library for STEPWAT2
+      run: CPPFLAGS='-DSTEPWAT' make clean lib
+
+    - name: Compile as library for rSOILWAT2
+      # Rmock/ provides bare-bones headers of R C-API functions required by SOILWAT2
+      run: CPPFLAGS='-DRSOILWAT' CFLAGS='-Iexternal/Rmock' make clean libr
+
+
+  build_ncSW2:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository and submodules
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Install netCDF-C and udunits2
+      run: |
+        sudo apt-get update
+        sudo apt-get install libnetcdf-dev libudunits2-dev
+
+    - name: Build binary with netCDF support
+      run: CPPFLAGS=-DSWNETCDF make clean all
+
+    - name: Build binary with netCDF and udunits2 support
+      run: CPPFLAGS='-DSWNETCDF -DSWUDUNITS' make clean all
+
+
 
   check_code_coverage:
     runs-on: ubuntu-latest

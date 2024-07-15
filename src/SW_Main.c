@@ -6,7 +6,8 @@
  *  Purpose: Contains the main loops and initializations.
  *
  06/24/2013	(rjm)	included "SW_Site.h" and "SW_Weather.h";
- added calls at end of main() to SW_SIT_clear_layers() and SW_WTH_clear_runavg_list() to free memory
+ added calls at end of main() to SW_SIT_clear_layers() and
+ SW_WTH_clear_runavg_list() to free memory
  */
 /********************************************************/
 /********************************************************/
@@ -14,32 +15,29 @@
 /* =================================================== */
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+#include "include/filefuncs.h"      // for sw_message
+#include "include/generic.h"        // for Bool, swFALSE, swTRUE
+#include "include/SW_Control.h"     // for SW_CTL_RunSimSet, SW_CTL_clear_m...
+#include "include/SW_datastructs.h" // for LOG_INFO, SW_RUN, SW_DOMAIN, SW_...
+#include "include/SW_Defines.h"     // for SW_OUTNKEYS
+#include "include/SW_Domain.h"      // for SW_DOM_deconstruct, SW_DOM_init_...
+#include "include/SW_Files.h"       // for eFirst
+#include "include/SW_Main_lib.h"    // for sw_fail_on_error, sw_init_args
+#include "include/SW_Model.h"       // for SW_MDL_get_ModelRun
+#include "include/SW_Output.h"      // for SW_OUT_close_files, SW_OUT_creat...
+#include "include/SW_Weather.h"     // for SW_WTH_finalize_all_weather
+#include "include/Times.h"          // for SW_WT_ReportTime, SW_WT_StartTime
+#include <stdio.h>                  // for NULL, stdout
 
-#ifdef __BCC__
-#include <dir.h>
-#else
-#include <unistd.h>
+
+#if defined(SWNETCDF)
+#include "include/SW_netCDF.h"
 #endif
-#include "include/generic.h"
-#include "include/filefuncs.h"
-#include "include/SW_Files.h"
-#include "include/SW_Defines.h"
-#include "include/SW_Control.h"
-#include "include/SW_Site.h"
-#include "include/SW_Weather.h"
-#include "include/SW_Output.h"
-#include "include/SW_Output_outtext.h"
-#include "include/SW_Main_lib.h"
-
 
 
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
-
 
 
 /* =================================================== */
@@ -48,86 +46,171 @@
 
 /************  Main() ************************/
 int main(int argc, char **argv) {
-	/* =================================================== */
-	SW_ALL sw;
-	SW_OUTPUT_POINTERS SW_OutputPtrs[SW_OUTNKEYS];
-	LOG_INFO LogInfo;
-	PATH_INFO PathInfo;
-	Bool EchoInits;
+    /* =================================================== */
+    SW_WALLTIME SW_WallTime;
+    SW_RUN sw_template;
+    SW_DOMAIN SW_Domain;
+    LOG_INFO LogInfo;
+    Bool EchoInits = swFALSE;
 
-	sw_init_logs(stdout, &LogInfo);
-	SW_CTL_init_ptrs(&sw, PathInfo.InFiles);
+    unsigned long userSUID;
 
-	sw_init_args(argc, argv, &EchoInits, &PathInfo.InFiles[eFirst],  &LogInfo);
-    if(LogInfo.stopRun) {
+
+    // Start overall wall time
+    SW_WT_StartTime(&SW_WallTime);
+
+    // Initialize logs and pointer objects
+    sw_init_logs(stdout, &LogInfo);
+
+    SW_DOM_init_ptrs(&SW_Domain);
+    SW_CTL_init_ptrs(&sw_template);
+
+    // Obtain user input from the command line
+    sw_init_args(
+        argc,
+        argv,
+        &EchoInits,
+        &SW_Domain.PathInfo.InFiles[eFirst],
+        &userSUID,
+        &SW_WallTime.wallTimeLimit,
+        &SW_Domain.netCDFInfo.renameDomainTemplateNC,
+        &LogInfo
+    );
+    if (LogInfo.stopRun) {
         goto finishProgram;
     }
 
-	// Print version if not in quiet mode
-	if (!LogInfo.QuietMode) {
-		sw_print_version();
-	}
+    // SOILWAT2: do print progress to console unless user requests quiet
+    LogInfo.printProgressMsg = (Bool) (!LogInfo.QuietMode);
 
-  // setup and construct model (independent of inputs)
-	SW_CTL_setup_model(&sw, SW_OutputPtrs, &PathInfo, &LogInfo);
-    if(LogInfo.stopRun) {
+    if (LogInfo.printProgressMsg) {
+        sw_message("started.");
+        sw_print_version();
+    }
+
+    // setup and construct domain
+    SW_CTL_setup_domain(userSUID, &SW_Domain, &LogInfo);
+    if (LogInfo.stopRun) {
         goto finishProgram;
     }
 
-	// read user inputs
-	SW_CTL_read_inputs_from_disk(&sw, &PathInfo, &LogInfo);
-    if(LogInfo.stopRun) {
+    // setup and construct model template (independent of inputs)
+    SW_CTL_setup_model(&sw_template, &SW_Domain.OutDom, swTRUE, &LogInfo);
+    if (LogInfo.stopRun) {
         goto finishProgram;
     }
 
-	// finalize daily weather
-	SW_WTH_finalize_all_weather(&sw.Markov, &sw.Weather, sw.Model.cum_monthdays,
-								sw.Model.days_in_month, &LogInfo);
-    if(LogInfo.stopRun) {
+
+    SW_MDL_get_ModelRun(&sw_template.Model, &SW_Domain, NULL, &LogInfo);
+    if (LogInfo.stopRun) {
         goto finishProgram;
     }
 
-	// initialize simulation run (based on user inputs)
-	SW_CTL_init_run(&sw, &LogInfo);
-    if(LogInfo.stopRun) {
+    // read user inputs
+    SW_CTL_read_inputs_from_disk(
+        &sw_template, &SW_Domain.OutDom, &SW_Domain.PathInfo, &LogInfo
+    );
+    if (LogInfo.stopRun) {
         goto finishProgram;
     }
 
-  // initialize output
-	SW_OUT_set_ncol(sw.Site.n_layers, sw.Site.n_evap_lyrs, sw.VegEstab.count,
-					sw.GenOutput.ncol_OUT);
-	SW_OUT_set_colnames(sw.Site.n_layers, sw.VegEstab.parms,
-						sw.GenOutput.ncol_OUT, sw.GenOutput.colnames_OUT,
-						&LogInfo);
-    if(LogInfo.stopRun) {
+#if defined(SWNETCDF)
+    SW_NC_check_input_files(&SW_Domain, &LogInfo);
+#endif
+
+    // finalize daily weather
+    SW_WTH_finalize_all_weather(
+        &sw_template.Markov,
+        &sw_template.Weather,
+        sw_template.Model.cum_monthdays,
+        sw_template.Model.days_in_month,
+        &LogInfo
+    );
+    if (LogInfo.stopRun) {
         goto finishProgram;
     }
-	SW_OUT_create_files(&sw.FileStatus, sw.Output, sw.Site.n_layers,
-	                    PathInfo.InFiles, &sw.GenOutput, &LogInfo); // only used with SOILWAT2
-    if(LogInfo.stopRun) {
+
+    // initialize simulation run (based on user inputs)
+    SW_CTL_init_run(&sw_template, &LogInfo);
+    if (LogInfo.stopRun) {
+        goto finishProgram;
+    }
+
+    // identify domain-wide soil profile information
+    SW_DOM_soilProfile(
+        &SW_Domain.hasConsistentSoilLayerDepths,
+        &SW_Domain.nMaxSoilLayers,
+        &SW_Domain.nMaxEvapLayers,
+        SW_Domain.depthsAllSoilLayers,
+        sw_template.Site.n_layers,
+        sw_template.Site.n_evap_lyrs,
+        sw_template.Site.depths,
+        &LogInfo
+    );
+    if (LogInfo.stopRun) {
+        goto finishProgram;
+    }
+
+    // initialize output
+    SW_OUT_setup_output(
+        SW_Domain.nMaxSoilLayers,
+        SW_Domain.nMaxEvapLayers,
+        &sw_template.VegEstab,
+        &SW_Domain.OutDom,
+        &LogInfo
+    );
+    if (LogInfo.stopRun) {
+        goto finishProgram;
+    }
+
+#if defined(SWNETCDF)
+    SW_NC_read_out_vars(
+        &SW_Domain.OutDom,
+        SW_Domain.PathInfo.InFiles,
+        sw_template.VegEstab.parms,
+        &LogInfo
+    );
+    if (LogInfo.stopRun) {
+        goto finishProgram;
+    }
+    SW_NC_create_units_converters(&SW_Domain.OutDom, &LogInfo);
+    if (LogInfo.stopRun) {
+        goto finishProgram;
+    }
+#endif // SWNETCDF
+
+    SW_OUT_create_files(&sw_template.FileStatus, &SW_Domain, &LogInfo);
+    if (LogInfo.stopRun) {
         goto closeFiles;
     }
 
-	if(EchoInits) {
-		_echo_all_inputs(&sw);
-	}
-
-  // run simulation: loop through each year
-	SW_CTL_main(&sw, SW_OutputPtrs, &LogInfo);
-
-    closeFiles: {
-        // finish-up output
-        SW_OUT_close_files(&sw.FileStatus, &sw.GenOutput, &LogInfo); // not used with rSOILWAT2
+    if (EchoInits) {
+        _echo_all_inputs(&sw_template, &SW_Domain.OutDom);
     }
 
-    finishProgram: {
-        // de-allocate all memory
-        SW_CTL_clear_model(swTRUE, &sw, &PathInfo);
+    // run simulations: loop over simulation set
+    SW_CTL_RunSimSet(&sw_template, &SW_Domain, &SW_WallTime, &LogInfo);
 
-        sw_write_warnings(&LogInfo);
-        sw_fail_on_error(&LogInfo);
-    }
-
-	return 0;
+closeFiles: {
+    // finish-up output (not used with rSOILWAT2)
+    SW_OUT_close_files(&sw_template.FileStatus, &SW_Domain.OutDom, &LogInfo);
 }
+
+finishProgram: {
+    // de-allocate all memory
+    SW_DOM_deconstruct(&SW_Domain); // Includes closing netCDF files if needed
+    SW_CTL_clear_model(swTRUE, &sw_template);
+
+    sw_write_warnings("(main) ", &LogInfo);
+    SW_WT_ReportTime(SW_WallTime, &LogInfo);
+    sw_wrapup_logs(&LogInfo);
+    sw_fail_on_error(&LogInfo);
+    if (LogInfo.printProgressMsg) {
+        sw_message("ended.");
+    }
+}
+
+    return 0;
+}
+
 /*********** End of Main() *******************/

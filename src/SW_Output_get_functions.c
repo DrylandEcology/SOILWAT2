@@ -1,14 +1,14 @@
 /********************************************************/
 /********************************************************/
 /**
-  @file
-  @brief Format user-specified output for text and/or in-memory processing
+@file
+@brief Format user-specified output for text and/or in-memory processing
 
-  See the \ref out_algo "output algorithm documentation" for details.
+See the \ref out_algo "output algorithm documentation" for details.
 
-  History:
-  2018 June 04 (drs) moved output formatter `get_XXX` functions from
-     `SW_Output.c` to dedicated `SW_Output_get_functions.c`
+History:
+2018 June 04 (drs) moved output formatter `get_XXX` functions from
+`SW_Output.c` to dedicated `SW_Output_get_functions.c`
 */
 /********************************************************/
 /********************************************************/
@@ -18,45 +18,26 @@
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
 
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
+#include "include/generic.h"        // for RealD, IntU
+#include "include/SW_datastructs.h" // for SW_RUN, SW_OUTTEXT
+#include "include/SW_Defines.h"     // for _OUTSEP, OUT_DIGITS, OUTSTRLEN
+#include "include/SW_Output.h"      // for get_aet_text, get_biomass_text
+#include "include/SW_SoilWater.h"   // for SW_SWRC_SWCtoSWP
+#include "include/SW_VegProd.h"     // for BIO_INDEX, WUE_INDEX
+#include <stdio.h>                  // for snprintf, NULL
 
-#include "include/Times.h"
-
-#include "include/SW_Carbon.h"
-#include "include/SW_Model.h"
-#include "include/SW_Site.h"
-#include "include/SW_SoilWater.h"
-#include "include/SW_VegEstab.h"
-#include "include/SW_VegProd.h"
-
-#include "include/SW_Output.h"
-
-#ifdef RSOILWAT
-#include <R.h>
-#include <Rdefines.h>
-#include <Rinternals.h>
-#endif
-
-#ifdef STEPWAT
-#include <math.h>
+#if defined(SWNETCDF)
+#include <netcdf.h> // defines NC_FILL_DOUBLE
 #endif
 
 // Array-based output declarations:
-#ifdef SW_OUTARRAY
-// externs `ncol_TimeOUT`
-#include "include/SW_Output_outarray.h"
+#if defined(SW_OUTARRAY)
+#include "include/SW_Output_outarray.h" // for iOUT, ncol_TimeOUT, get_outv...
 #endif
 
-// Text-based output declarations:
-#ifdef SW_OUTTEXT
-
-#include "include/SW_Output_outtext.h"
+#if defined(SW_OUTTEXT)
+#include <string.h> // for strcat
 #endif
-
 
 
 /* =================================================== */
@@ -64,53 +45,73 @@
 /* --------------------------------------------------- */
 
 #ifdef STEPWAT
-static void format_IterationSummary(RealD *p, RealD *psd, OutPeriod pd, IntUS N,
-									SW_ALL *sw)
-{
-	IntUS i;
-	size_t n;
-	RealD sd;
-	char str[OUTSTRLEN];
+static void format_IterationSummary(
+    RealD *p, RealD *psd, OutPeriod pd, IntUS N, SW_RUN *sw, size_t nrow_OUT[]
+) {
+    IntUS i;
+    size_t n;
+    RealD sd;
+    char str[OUTSTRLEN];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	for (i = 0; i < N; i++)
-	{
-		n = iOUT(i, pd, sw->GenOutput);
-		sd = final_running_sd(sw->Model.runModelIterations, psd[n]);
+    for (i = 0; i < N; i++) {
+        n = iOUT(i, OutRun->irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
+        sd = final_running_sd(sw->Model.runModelIterations, psd[n]);
 
-		snprintf(
-			str,
-			OUTSTRLEN,
-			"%c%.*f%c%.*f",
-			_OUTSEP, OUT_DIGITS, p[n], _OUTSEP, OUT_DIGITS, sd
-		);
-		strcat(sw->GenOutput.sw_outstr_agg, str);
-	}
+        snprintf(
+            str,
+            OUTSTRLEN,
+            "%c%.*f%c%.*f",
+            _OUTSEP,
+            OUT_DIGITS,
+            p[n],
+            _OUTSEP,
+            OUT_DIGITS,
+            sd
+        );
+        strcat(OutRun->sw_outstr_agg, str);
+    }
 }
 
-static void format_IterationSummary2(RealD *p, RealD *psd, OutPeriod pd,
-	IntUS N1, IntUS offset, SW_ALL *sw)
-{
-	IntUS k, i;
-	size_t n;
-	RealD sd;
-	char str[OUTSTRLEN];
+static void format_IterationSummary2(
+    RealD *p,
+    RealD *psd,
+    OutPeriod pd,
+    IntUS N1,
+    IntUS offset,
+    SW_RUN *sw,
+    size_t nrow_OUT[]
+) {
+    IntUS k, i;
+    size_t n;
+    RealD sd;
+    char str[OUTSTRLEN];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	for (k = 0; k < N1; k++)
-	{
-		for (i = 0; i < sw->Site.n_layers; i++)
-		{
-			n = iOUT2(i, k + offset, pd, sw->GenOutput, sw->Site.n_layers);
-			sd = final_running_sd(sw->Model.runModelIterations, psd[n]);
+    for (k = 0; k < N1; k++) {
+        for (i = 0; i < sw->Site.n_layers; i++) {
+            n = iOUT2(
+                i, k + offset, pd, OutRun->irow_OUT, nrow_OUT, sw->Site.n_layers
+            );
+            sd = final_running_sd(sw->Model.runModelIterations, psd[n]);
 
-			snprintf(str, OUTSTRLEN, "%c%.*f%c%.*f",
-				_OUTSEP, OUT_DIGITS, p[n], _OUTSEP, OUT_DIGITS, sd);
-			strcat(sw->GenOutput.sw_outstr_agg, str);
-		}
-	}
+            snprintf(
+                str,
+                OUTSTRLEN,
+                "%c%.*f%c%.*f",
+                _OUTSEP,
+                OUT_DIGITS,
+                p[n],
+                _OUTSEP,
+                OUT_DIGITS,
+                sd
+            );
+            strcat(OutRun->sw_outstr_agg, str);
+        }
+    }
 }
 
 #endif
-
 
 
 /* =================================================== */
@@ -119,251 +120,517 @@ static void format_IterationSummary2(RealD *p, RealD *psd, OutPeriod pd,
 /* --------------------------------------------------- */
 
 /**
-@brief Output routine for quantities that aren't yet implemented.
-			This just gives the main output loop something to call, rather than an
-			empty pointer.
+@brief Output routine for quantities that aren't yet implemented
+for outarray output.
+
+This just gives the main output loop something to call,
+rather than an empty pointer.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_none(OutPeriod pd, SW_ALL* sw)
-{
-	if (pd) {}
-
-	(void) sw; // Coerce to void to silence compiler
+void get_none_outarray(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    (void) pd;
+    (void) sw; // Coerce to void to silence compiler
+    (void) OutDom;
 }
 
+/**
+@brief Output routine for quantities that aren't yet implemented
+for text output.
+
+This just gives the main output loop something to call,
+rather than an empty pointer.
+
+@param[in] pd Time period in simulation output (day/week/month/year)
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+*/
+void get_none_text(OutPeriod pd, SW_RUN *sw) {
+    (void) pd;
+    (void) sw; // Coerce to void to silence compiler
+}
 
 //------ eSW_CO2Effects
 #ifdef SW_OUTTEXT
 
 /**
-@brief Gets CO<SUB>2</SUB> effects by running through each vegetation type if dealing with OUTTEXT.
+@brief Gets CO<SUB>2</SUB> effects by running through each vegetation type if
+dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_co2effects_text(OutPeriod pd, SW_ALL* sw) {
-	int k;
+void get_co2effects_text(OutPeriod pd, SW_RUN *sw) {
+    int k;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	char str[OUTSTRLEN];
-	sw->GenOutput.sw_outstr[0] = '\0';
-	TimeInt simyear = sw->Model.simyear;
+    char str[OUTSTRLEN];
+    OutRun->sw_outstr[0] = '\0';
+    TimeInt simyear = sw->Model.simyear;
 
-	if (pd) {} // hack to silence "-Wunused-parameter"
+    (void) pd; // hack to silence "-Wunused-parameter"
 
-	ForEachVegType(k) {
-		snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS,
-			sw->VegProd.veg[k].co2_multipliers[BIO_INDEX][simyear]);
-		strcat(sw->GenOutput.sw_outstr, str);
-	}
-	ForEachVegType(k) {
-		snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS,
-			sw->VegProd.veg[k].co2_multipliers[WUE_INDEX][simyear]);
-		strcat(sw->GenOutput.sw_outstr, str);
-	}
+    ForEachVegType(k) {
+        snprintf(
+            str,
+            OUTSTRLEN,
+            "%c%.*f",
+            _OUTSEP,
+            OUT_DIGITS,
+            sw->VegProd.veg[k].co2_multipliers[BIO_INDEX][simyear]
+        );
+        strcat(OutRun->sw_outstr, str);
+    }
+    ForEachVegType(k) {
+        snprintf(
+            str,
+            OUTSTRLEN,
+            "%c%.*f",
+            _OUTSEP,
+            OUT_DIGITS,
+            sw->VegProd.veg[k].co2_multipliers[WUE_INDEX][simyear]
+        );
+        strcat(OutRun->sw_outstr, str);
+    }
 }
 #endif
 
+#if defined(RSOILWAT) || defined(SWNETCDF)
+void get_co2effects_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    int k;
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
+    RealD *p = OutRun->p_OUT[eSW_CO2Effects][pd];
+
 #if defined(RSOILWAT)
-void get_co2effects_mem(OutPeriod pd, SW_ALL* sw) {
-	int k;
-	size_t iOUTIndex;
+    get_outvalleader(
+        &sw->Model, pd, OutRun->irow_OUT, OutDom->nrow_OUT, OutRun->tOffset, p
+    );
+#endif
 
-	RealD *p = sw->GenOutput.p_OUT[eSW_CO2Effects][pd];
-	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
-					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    // No averaging OutRun summing required:
+    ForEachVegType(k) {
+#if defined(RSOILWAT)
+        iOUTIndex = iOUT(
+            k, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
 
-	// No averaging or summing required:
-	ForEachVegType(k)
-	{
-		iOUTIndex = iOUT(k, pd, sw->GenOutput);
-		p[iOUTIndex] =
-			sw->VegProd.veg[k].co2_multipliers[BIO_INDEX][sw->Model.simyear];
+#elif defined(SWNETCDF)
+        iOUTIndex = OutDom->iOUToffset[eSW_CO2Effects][pd][0] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        0,
+                        k,
+                        1,
+                        OutDom->npft_OUT[eSW_CO2Effects][0]
+                    );
+#endif
 
-		iOUTIndex = iOUT(k + NVEGTYPES, pd, sw->GenOutput);
-		p[iOUTIndex] =
-			sw->VegProd.veg[k].co2_multipliers[WUE_INDEX][sw->Model.simyear];
-	}
+        p[iOUTIndex] =
+            sw->VegProd.veg[k].co2_multipliers[BIO_INDEX][sw->Model.simyear];
+
+
+#if defined(RSOILWAT)
+        iOUTIndex = iOUT(
+            k + NVEGTYPES,
+            OutRun->irow_OUT[pd],
+            OutDom->nrow_OUT[pd],
+            ncol_TimeOUT[pd]
+        );
+
+#elif defined(SWNETCDF)
+        iOUTIndex = OutDom->iOUToffset[eSW_CO2Effects][pd][1] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        0,
+                        k,
+                        1,
+                        OutDom->npft_OUT[eSW_CO2Effects][1]
+                    );
+#endif
+
+        p[iOUTIndex] =
+            sw->VegProd.veg[k].co2_multipliers[WUE_INDEX][sw->Model.simyear];
+    }
 }
 
 #elif defined(STEPWAT)
-void get_co2effects_agg(OutPeriod pd, SW_ALL* sw) {
-	int k;
-	size_t iOUTIndex;
+void get_co2effects_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    int k;
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD
-		*p = sw->GenOutput.p_OUT[eSW_CO2Effects][pd],
-		*psd = sw->GenOutput.p_OUTsd[eSW_CO2Effects][pd];
+    RealD *p = OutRun->p_OUT[eSW_CO2Effects][pd],
+          *psd = OutRun->p_OUTsd[eSW_CO2Effects][pd];
 
-	ForEachVegType(k)
-	{
-		iOUTIndex = iOUT(k, pd, sw->GenOutput);
-		do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-					  sw->VegProd.veg[k].co2_multipliers[BIO_INDEX][sw->Model.simyear]);
+    ForEachVegType(k) {
+        iOUTIndex = iOUT(
+            k, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+        do_running_agg(
+            p,
+            psd,
+            iOUTIndex,
+            OutRun->currIter,
+            sw->VegProd.veg[k].co2_multipliers[BIO_INDEX][sw->Model.simyear]
+        );
 
-		iOUTIndex = iOUT(k + NVEGTYPES, pd, sw->GenOutput);
-		do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-					  sw->VegProd.veg[k].co2_multipliers[WUE_INDEX][sw->Model.simyear]);
-	}
+        iOUTIndex = iOUT(
+            k + NVEGTYPES,
+            OutRun->irow_OUT[pd],
+            OutDom->nrow_OUT[pd],
+            ncol_TimeOUT[pd]
+        );
+        do_running_agg(
+            p,
+            psd,
+            iOUTIndex,
+            OutRun->currIter,
+            sw->VegProd.veg[k].co2_multipliers[WUE_INDEX][sw->Model.simyear]
+        );
+    }
 
-	if (sw->GenOutput.print_IterationSummary) {
-		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_CO2Effects], sw);
-	}
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p, psd, pd, OutDom->ncol_OUT[eSW_CO2Effects], sw, OutDom->nrow_OUT
+        );
+    }
 }
 #endif
 
 
 //------ eSW_Biomass
 #ifdef SW_OUTTEXT
-void get_biomass_text(OutPeriod pd, SW_ALL* sw) {
-	int k;
-	SW_VEGPROD_OUTPUTS *vo = sw->VegProd.p_oagg[pd];
+void get_biomass_text(OutPeriod pd, SW_RUN *sw) {
+    int k;
+    SW_VEGPROD_OUTPUTS *vo = sw->VegProd.p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	char str[OUTSTRLEN];
-	sw->GenOutput.sw_outstr[0] = '\0';
+    char str[OUTSTRLEN];
+    OutRun->sw_outstr[0] = '\0';
 
-	// fCover for NVEGTYPES plus bare-ground
-	snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS,
-											sw->VegProd.bare_cov.fCover);
-	strcat(sw->GenOutput.sw_outstr, str);
-	ForEachVegType(k) {
-		snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS,
-												sw->VegProd.veg[k].cov.fCover);
-		strcat(sw->GenOutput.sw_outstr, str);
-	}
+    // fCover for NVEGTYPES plus bare-ground
+    snprintf(
+        str,
+        OUTSTRLEN,
+        "%c%.*f",
+        _OUTSEP,
+        OUT_DIGITS,
+        sw->VegProd.bare_cov.fCover
+    );
+    strcat(OutRun->sw_outstr, str);
+    ForEachVegType(k) {
+        snprintf(
+            str,
+            OUTSTRLEN,
+            "%c%.*f",
+            _OUTSEP,
+            OUT_DIGITS,
+            sw->VegProd.veg[k].cov.fCover
+        );
+        strcat(OutRun->sw_outstr, str);
+    }
 
-	// biomass (g/m2 as component of total) for NVEGTYPES plus totals and litter
-	snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->biomass_total);
-	strcat(sw->GenOutput.sw_outstr, str);
-	ForEachVegType(k) {
-		snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->veg[k].biomass_inveg);
-		strcat(sw->GenOutput.sw_outstr, str);
-	}
-	snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->litter_total);
-	strcat(sw->GenOutput.sw_outstr, str);
+    // biomass (g/m2 as component of total) for NVEGTYPES plus totals and litter
+    snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->biomass_total);
+    strcat(OutRun->sw_outstr, str);
+    ForEachVegType(k) {
+        snprintf(
+            str,
+            OUTSTRLEN,
+            "%c%.*f",
+            _OUTSEP,
+            OUT_DIGITS,
+            vo->veg[k].biomass_inveg
+        );
+        strcat(OutRun->sw_outstr, str);
+    }
+    snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->litter_total);
+    strcat(OutRun->sw_outstr, str);
 
-	// biolive (g/m2 as component of total) for NVEGTYPES plus totals
-	snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->biolive_total);
-	strcat(sw->GenOutput.sw_outstr, str);
-	ForEachVegType(k) {
-		snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->veg[k].biolive_inveg);
-		strcat(sw->GenOutput.sw_outstr, str);
-	}
+    // biolive (g/m2 as component of total) for NVEGTYPES plus totals
+    snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->biolive_total);
+    strcat(OutRun->sw_outstr, str);
+    ForEachVegType(k) {
+        snprintf(
+            str,
+            OUTSTRLEN,
+            "%c%.*f",
+            _OUTSEP,
+            OUT_DIGITS,
+            vo->veg[k].biolive_inveg
+        );
+        strcat(OutRun->sw_outstr, str);
+    }
 
-	// leaf area index [m2/m2]
-	snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->LAI);
-	strcat(sw->GenOutput.sw_outstr, str);
+    // leaf area index [m2/m2]
+    snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->LAI);
+    strcat(OutRun->sw_outstr, str);
 }
 #endif
 
+#if defined(RSOILWAT) || defined(SWNETCDF)
+void get_biomass_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    int k;
+    SW_VEGPROD_OUTPUTS *vo = sw->VegProd.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
+
+    RealD *p = OutRun->p_OUT[eSW_Biomass][pd];
+
 #if defined(RSOILWAT)
-void get_biomass_mem(OutPeriod pd, SW_ALL* sw) {
-	int k, i;
-	SW_VEGPROD_OUTPUTS *vo = sw->VegProd.p_oagg[pd];
-	size_t iOUTIndex;
+    int i;
+    get_outvalleader(
+        &sw->Model, pd, OutRun->irow_OUT, OutDom->nrow_OUT, OutRun->tOffset, p
+    );
+#endif
 
-	RealD *p = sw->GenOutput.p_OUT[eSW_Biomass][pd];
-	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
-					sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+// fCover of bare-ground
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
 
-	// fCover for NVEGTYPES plus bare-ground
-	iOUTIndex = iOUT(0, pd, sw->GenOutput);
-	p[iOUTIndex] = sw->VegProd.bare_cov.fCover;
-	i = 1;
-	ForEachVegType(k)
-	{
-		iOUTIndex = iOUT(i + k, pd, sw->GenOutput);
-		p[iOUTIndex] = sw->VegProd.veg[k].cov.fCover;
-	}
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_Biomass][pd][0] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
 
-	// biomass (g/m2 as component of total) for NVEGTYPES plus totals and litter
-	iOUTIndex = iOUT(i + NVEGTYPES, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->biomass_total;
-	i += NVEGTYPES + 1;
-	ForEachVegType(k) {
-		iOUTIndex = iOUT(i + k, pd, sw->GenOutput);
-		p[iOUTIndex] = vo->veg[k].biomass_inveg;
-	}
+    p[iOUTIndex] = sw->VegProd.bare_cov.fCover;
 
-	iOUTIndex = iOUT(i + NVEGTYPES, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->litter_total;
 
-	// biolive (g/m2 as component of total) for NVEGTYPES plus totals
-	iOUTIndex = iOUT(i + NVEGTYPES + 1, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->biolive_total;
-	i += NVEGTYPES + 2;
+// fCover for NVEGTYPES
+#if defined(RSOILWAT)
+    i = 1;
+#endif
 
-	ForEachVegType(k) {
-		iOUTIndex = iOUT(i + k, pd, sw->GenOutput);
-		p[iOUTIndex] = vo->veg[k].biolive_inveg;
-	}
+    ForEachVegType(k) {
+#if defined(RSOILWAT)
+        iOUTIndex = iOUT(
+            i + k, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
 
-	// leaf area index [m2/m2]
-	iOUTIndex = iOUT(i + NVEGTYPES, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->LAI;
+#elif defined(SWNETCDF)
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_Biomass][pd][1] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], 0, k, 1, OutDom->npft_OUT[eSW_Biomass][1]
+            );
+#endif
+
+        p[iOUTIndex] = sw->VegProd.veg[k].cov.fCover;
+    }
+
+// biomass (g/m2 as component of total) totals
+#if defined(RSOILWAT)
+    iOUTIndex = iOUT(
+        i + NVEGTYPES,
+        OutRun->irow_OUT[pd],
+        OutDom->nrow_OUT[pd],
+        ncol_TimeOUT[pd]
+    );
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_Biomass][pd][2] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->biomass_total;
+
+
+// biomass (g/m2 as component of total) for NVEGTYPES
+#if defined(RSOILWAT)
+    i += NVEGTYPES + 1;
+#endif
+
+    ForEachVegType(k) {
+#if defined(RSOILWAT)
+        iOUTIndex = iOUT(
+            i + k, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+
+#elif defined(SWNETCDF)
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_Biomass][pd][3] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], 0, k, 1, OutDom->npft_OUT[eSW_Biomass][3]
+            );
+#endif
+
+        p[iOUTIndex] = vo->veg[k].biomass_inveg;
+    }
+
+
+// biomass (g/m2 as component of total) of litter
+#if defined(RSOILWAT)
+    iOUTIndex = iOUT(
+        i + NVEGTYPES,
+        OutRun->irow_OUT[pd],
+        OutDom->nrow_OUT[pd],
+        ncol_TimeOUT[pd]
+    );
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_Biomass][pd][4] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->litter_total;
+
+
+// biolive (g/m2 as component of total) total
+#if defined(RSOILWAT)
+    iOUTIndex = iOUT(
+        i + NVEGTYPES + 1,
+        OutRun->irow_OUT[pd],
+        OutDom->nrow_OUT[pd],
+        ncol_TimeOUT[pd]
+    );
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_Biomass][pd][5] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->biolive_total;
+
+
+// biolive (g/m2 as component of total) for NVEGTYPES
+#if defined(RSOILWAT)
+    i += NVEGTYPES + 2;
+#endif
+
+    ForEachVegType(k) {
+#if defined(RSOILWAT)
+        iOUTIndex = iOUT(
+            i + k, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+
+#elif defined(SWNETCDF)
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_Biomass][pd][6] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], 0, k, 1, OutDom->npft_OUT[eSW_Biomass][6]
+            );
+#endif
+
+        p[iOUTIndex] = vo->veg[k].biolive_inveg;
+    }
+
+
+// leaf area index [m2/m2]
+#if defined(RSOILWAT)
+    iOUTIndex = iOUT(
+        i + NVEGTYPES,
+        OutRun->irow_OUT[pd],
+        OutDom->nrow_OUT[pd],
+        ncol_TimeOUT[pd]
+    );
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_Biomass][pd][7] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->LAI;
 }
 
 #elif defined(STEPWAT)
-void get_biomass_agg(OutPeriod pd, SW_ALL* sw) {
-	int k, i;
-	SW_VEGPROD_OUTPUTS *vo = sw->VegProd.p_oagg[pd];
-	size_t iOUTIndex;
+void get_biomass_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    int k, i;
+    SW_VEGPROD_OUTPUTS *vo = sw->VegProd.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD
-		*p = sw->GenOutput.p_OUT[eSW_Biomass][pd],
-		*psd = sw->GenOutput.p_OUTsd[eSW_Biomass][pd];
+    RealD *p = OutRun->p_OUT[eSW_Biomass][pd],
+          *psd = OutRun->p_OUTsd[eSW_Biomass][pd];
 
-	// fCover for NVEGTYPES plus bare-ground
-	iOUTIndex = iOUT(0, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   sw->VegProd.bare_cov.fCover);
-	i = 1;
-	ForEachVegType(k)
-	{
-		iOUTIndex = iOUT(i + k, pd, sw->GenOutput);
-		do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-					   sw->VegProd.veg[k].cov.fCover);
-	}
+    // fCover for NVEGTYPES plus bare-ground
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(
+        p, psd, iOUTIndex, OutRun->currIter, sw->VegProd.bare_cov.fCover
+    );
 
-	// biomass (g/m2 as component of total) for NVEGTYPES plus totals and litter
-	iOUTIndex = iOUT(i + NVEGTYPES, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter, vo->biomass_total);
-	i += NVEGTYPES + 1;
+    i = 1;
+    ForEachVegType(k) {
+        iOUTIndex = iOUT(
+            i + k, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+        do_running_agg(
+            p, psd, iOUTIndex, OutRun->currIter, sw->VegProd.veg[k].cov.fCover
+        );
+    }
 
-	ForEachVegType(k) {
-		iOUTIndex = iOUT(i + k, pd, sw->GenOutput);
-		do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-					   vo->veg[k].biomass_inveg);
-	}
+    // biomass (g/m2 as component of total) for NVEGTYPES plus totals and litter
+    iOUTIndex = iOUT(
+        i + NVEGTYPES,
+        OutRun->irow_OUT[pd],
+        OutDom->nrow_OUT[pd],
+        ncol_TimeOUT[pd]
+    );
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->biomass_total);
+    i += NVEGTYPES + 1;
 
-	iOUTIndex = iOUT(i + NVEGTYPES, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter, vo->litter_total);
+    ForEachVegType(k) {
+        iOUTIndex = iOUT(
+            i + k, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+        do_running_agg(
+            p, psd, iOUTIndex, OutRun->currIter, vo->veg[k].biomass_inveg
+        );
+    }
 
-	// biolive (g/m2 as component of total) for NVEGTYPES plus totals
-	iOUTIndex = iOUT(i + NVEGTYPES + 1, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter, vo->biolive_total);
-	i += NVEGTYPES + 2;
-	ForEachVegType(k) {
-		iOUTIndex = iOUT(i + k, pd, sw->GenOutput);
-		do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-					   vo->veg[k].biolive_inveg);
-	}
+    iOUTIndex = iOUT(
+        i + NVEGTYPES,
+        OutRun->irow_OUT[pd],
+        OutDom->nrow_OUT[pd],
+        ncol_TimeOUT[pd]
+    );
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->litter_total);
 
-	// leaf area index [m2/m2]
-	iOUTIndex = iOUT(i + NVEGTYPES, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter, vo->LAI);
+    // biolive (g/m2 as component of total) for NVEGTYPES plus totals
+    iOUTIndex = iOUT(
+        i + NVEGTYPES + 1,
+        OutRun->irow_OUT[pd],
+        OutDom->nrow_OUT[pd],
+        ncol_TimeOUT[pd]
+    );
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->biolive_total);
+    i += NVEGTYPES + 2;
+    ForEachVegType(k) {
+        iOUTIndex = iOUT(
+            i + k, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+        do_running_agg(
+            p, psd, iOUTIndex, OutRun->currIter, vo->veg[k].biolive_inveg
+        );
+    }
 
-	if (sw->GenOutput.print_IterationSummary) {
-		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_Biomass], sw);
-	}
+    // leaf area index [m2/m2]
+    iOUTIndex = iOUT(
+        i + NVEGTYPES,
+        OutRun->irow_OUT[pd],
+        OutDom->nrow_OUT[pd],
+        ncol_TimeOUT[pd]
+    );
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->LAI);
+
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p, psd, pd, OutDom->ncol_OUT[eSW_Biomass], sw, OutDom->nrow_OUT
+        );
+    }
 }
 #endif
-
 
 
 //------ eSW_Estab
@@ -373,95 +640,124 @@ void get_biomass_agg(OutPeriod pd, SW_ALL* sw) {
 
 /**
 @brief The establishment check produces, for each species in the given set,
-			a day of year >= 0 that the species established itself in the current year.
-			The output will be a single row of numbers for each year. Each column
-			represents a species in order it was entered in the stabs.in file. The
-			value will be the day that the species established, or - if it didn't
-			establish this year.  This check is for OUTTEXT.
+a day of year >= 0 that the species established itself in the current year.
+
+The output will be a single row of numbers for each year.
+Each column represents a species in order it was entered in the stabs.in file.
+The value will be the day that the species established, OutRun - if it didn't
+establish this year.  This check is for OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_estab_text(OutPeriod pd, SW_ALL* sw)
-{
-	IntU i;
+void get_estab_text(OutPeriod pd, SW_RUN *sw) {
+    IntU i;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	char str[OUTSTRLEN];
-	sw->GenOutput.sw_outstr[0] = '\0';
+    char str[OUTSTRLEN];
+    OutRun->sw_outstr[0] = '\0';
 
-	i = (IntU) pd; // silence `-Wunused-parameter`
+    i = (IntU) pd; // silence `-Wunused-parameter`
 
-	for (i = 0; i < sw->VegEstab.count; i++)
-	{
-		snprintf(str, OUTSTRLEN, "%c%d", _OUTSEP, sw->VegEstab.parms[i]->estab_doy);
-		strcat(sw->GenOutput.sw_outstr, str);
-	}
+    for (i = 0; i < sw->VegEstab.count; i++) {
+        snprintf(
+            str, OUTSTRLEN, "%c%d", _OUTSEP, sw->VegEstab.parms[i]->estab_doy
+        );
+        strcat(OutRun->sw_outstr, str);
+    }
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 /**
 @brief The establishment check produces, for each species in the given set,
-			a day of year >= 0 that the species established itself in the current year.
-			The output will be a single row of numbers for each year. Each column
-			represents a species in order it was entered in the stabs.in file. The
-			value will be the day that the species established, or - if it didn't
-			establish this year.  This check is for RSOILWAT.
+a day of year >= 0 that the species established itself in the current year.
+
+The output will be a single row of numbers for each year.
+Each column represents a species in order it was entered in the stabs.in file.
+The value will be the day that the species established, OutRun - if it didn't
+establish this year.  This check is for RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_estab_mem(OutPeriod pd, SW_ALL* sw)
-{
-	IntU i;
-	size_t iOUTIndex;
+void get_estab_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    IntU i;
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD *p = sw->GenOutput.p_OUT[eSW_Estab][pd];
-	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
-					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    RealD *p = OutRun->p_OUT[eSW_Estab][pd];
 
-	for (i = 0; i < sw->VegEstab.count; i++)
-	{
-		iOUTIndex = iOUT(i, pd, sw->GenOutput);
-		p[iOUTIndex] = sw->VegEstab.parms[i]->estab_doy;
-	}
+#if defined(RSOILWAT)
+    get_outvalleader(
+        &sw->Model, pd, OutRun->irow_OUT, OutDom->nrow_OUT, OutRun->tOffset, p
+    );
+#endif
+
+    for (i = 0; i < sw->VegEstab.count; i++) {
+#if defined(RSOILWAT)
+        iOUTIndex = iOUT(
+            i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+
+#elif defined(SWNETCDF)
+        iOUTIndex = OutDom->iOUToffset[eSW_Estab][pd][i] +
+                    iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+        p[iOUTIndex] = sw->VegEstab.parms[i]->estab_doy;
+    }
 }
 
 #elif defined(STEPWAT)
 /**
 @brief The establishment check produces, for each species in the given set,
-			a day of year >= 0 that the species established itself in the current year.
-			The output will be a single row of numbers for each year. Each column
-			represents a species in order it was entered in the stabs.in file. The
-			value will be the day that the species established, or - if it didn't
-			establish this year.  This check is for STEPWAT.
+a day of year >= 0 that the species established itself in the current year.
+
+The output will be a single row of numbers for each year.
+Each column represents a species in order it was entered in the stabs.in file.
+The value will be the day that the species established, OutRun - if it didn't
+establish this year.  This check is for STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_estab_agg(OutPeriod pd, SW_ALL* sw)
-{
-	IntU i;
-	size_t iOUTIndex;
+void get_estab_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    IntU i;
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD
-		*p = sw->GenOutput.p_OUT[eSW_Estab][pd],
-		*psd = sw->GenOutput.p_OUTsd[eSW_Estab][pd];
+    RealD *p = OutRun->p_OUT[eSW_Estab][pd],
+          *psd = OutRun->p_OUTsd[eSW_Estab][pd];
 
-	for (i = 0; i < sw->VegEstab.count; i++)
-	{
-		iOUTIndex = iOUT(i, pd, sw->GenOutput);
-		do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-					   sw->VegEstab.parms[i]->estab_doy);
-	}
+    for (i = 0; i < sw->VegEstab.count; i++) {
+        iOUTIndex = iOUT(
+            i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+        do_running_agg(
+            p,
+            psd,
+            iOUTIndex,
+            OutRun->currIter,
+            sw->VegEstab.parms[i]->estab_doy
+        );
+    }
 
-	if (sw->GenOutput.print_IterationSummary) {
-		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_Estab], sw);
-	}
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p, psd, pd, OutDom->ncol_OUT[eSW_Estab], sw, OutDom->nrow_OUT
+        );
+    }
 }
 #endif
 
@@ -473,59 +769,133 @@ void get_estab_agg(OutPeriod pd, SW_ALL* sw)
 @brief Gets temp text from SW_WEATHER_OUTPUTS when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
   in the simulation
 */
-void get_temp_text(OutPeriod pd, SW_ALL* sw)
-{
-	SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+void get_temp_text(OutPeriod pd, SW_RUN *sw) {
+    SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	sw->GenOutput.sw_outstr[0] = '\0';
-	snprintf(sw->GenOutput.sw_outstr, sizeof sw->GenOutput.sw_outstr,"%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f",
-		_OUTSEP, OUT_DIGITS, vo->temp_max,
-		_OUTSEP, OUT_DIGITS, vo->temp_min,
-		_OUTSEP, OUT_DIGITS, vo->temp_avg,
-        _OUTSEP, OUT_DIGITS, vo->surfaceMax,
-		_OUTSEP, OUT_DIGITS, vo->surfaceMin,
-        _OUTSEP, OUT_DIGITS, vo->surfaceAvg);
+    OutRun->sw_outstr[0] = '\0';
+    snprintf(
+        OutRun->sw_outstr,
+        sizeof OutRun->sw_outstr,
+        "%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f",
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->temp_max,
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->temp_min,
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->temp_avg,
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->surfaceMax,
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->surfaceMin,
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->surfaceAvg
+    );
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets temp text from SW_WEATHER_OUTPUTS when dealing with RSOILWAT.
 
 @param pd Period.
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_temp_mem(OutPeriod pd, SW_ALL* sw)
-{
-	SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
-	size_t iOUTIndex;
+void get_temp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD *p = sw->GenOutput.p_OUT[eSW_Temp][pd];
-	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
-					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    RealD *p = OutRun->p_OUT[eSW_Temp][pd];
+
+#if defined(RSOILWAT)
+    get_outvalleader(
+        &sw->Model, pd, OutRun->irow_OUT, OutDom->nrow_OUT, OutRun->tOffset, p
+    );
+#endif
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_Temp][pd][0] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->temp_max;
 
 
-	iOUTIndex = iOUT(0, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->temp_max;
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(1, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
 
-	iOUTIndex = iOUT(1, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->temp_min;
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_Temp][pd][1] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
 
-	iOUTIndex = iOUT(2, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->temp_avg;
+    p[iOUTIndex] = vo->temp_min;
 
-	iOUTIndex = iOUT(3, pd, sw->GenOutput);
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(2, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_Temp][pd][2] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->temp_avg;
+
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(3, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_Temp][pd][3] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
     p[iOUTIndex] = vo->surfaceMax;
 
-	iOUTIndex = iOUT(4, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->surfaceMin;
 
-	iOUTIndex = iOUT(5, pd, sw->GenOutput);
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(4, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_Temp][pd][4] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->surfaceMin;
+
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(5, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_Temp][pd][5] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
     p[iOUTIndex] = vo->surfaceAvg;
 }
 
@@ -535,70 +905,76 @@ void get_temp_mem(OutPeriod pd, SW_ALL* sw)
 @brief Gets temp text from SW_WEATHER_OUTPUTS when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_temp_agg(OutPeriod pd, SW_ALL* sw)
-{
-	SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
-	size_t iOUTIndex;
+void get_temp_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD
-		*p = sw->GenOutput.p_OUT[eSW_Temp][pd],
-		*psd = sw->GenOutput.p_OUTsd[eSW_Temp][pd];
+    RealD *p = OutRun->p_OUT[eSW_Temp][pd],
+          *psd = OutRun->p_OUTsd[eSW_Temp][pd];
 
-	iOUTIndex = iOUT(0, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->temp_max);
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->temp_max);
 
-	iOUTIndex = iOUT(1, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->temp_min);
+    iOUTIndex =
+        iOUT(1, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->temp_min);
 
-	iOUTIndex = iOUT(2, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->temp_avg);
+    iOUTIndex =
+        iOUT(2, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->temp_avg);
 
-	iOUTIndex = iOUT(3, pd, sw->GenOutput);
-    do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->surfaceMax);
+    iOUTIndex =
+        iOUT(3, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->surfaceMax);
 
-	iOUTIndex = iOUT(4, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->surfaceMin);
+    iOUTIndex =
+        iOUT(4, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->surfaceMin);
 
-	iOUTIndex = iOUT(5, pd, sw->GenOutput);
-    do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->surfaceAvg);
+    iOUTIndex =
+        iOUT(5, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->surfaceAvg);
 
-	if (sw->GenOutput.print_IterationSummary) {
-		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_Temp], sw);
-	}
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p, psd, pd, OutDom->ncol_OUT[eSW_Temp], sw, OutDom->nrow_OUT
+        );
+    }
 }
 
 /**
 @brief STEPWAT2 expects annual mean air temperature
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_temp_SXW(OutPeriod pd, SW_ALL* sw)
-{
-	TimeInt tOffset;
+void get_temp_SXW(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    TimeInt tOffset;
 
-	if (pd == eSW_Month || pd == eSW_Year) {
-		SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
-		tOffset = sw->GenOutput.tOffset;
+    if (pd == eSW_Month || pd == eSW_Year) {
+        SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+        SW_OUT_RUN *OutRun = &sw->OutRun;
+        tOffset = OutRun->tOffset;
 
-		if (pd == eSW_Month) {
-			sw->GenOutput.temp_monthly[sw->Model.month - tOffset] = vo->temp_avg;
-		}
-		else if (pd == eSW_Year) {
-			sw->GenOutput.temp = vo->temp_avg;
-		}
-	}
+        if (pd == eSW_Month) {
+            OutRun->temp_monthly[sw->Model.month - tOffset] = vo->temp_avg;
+        } else if (pd == eSW_Year) {
+            OutRun->temp = vo->temp_avg;
+        }
+    }
+
+    (void) OutDom;
 }
 #endif
 
@@ -607,126 +983,201 @@ void get_temp_SXW(OutPeriod pd, SW_ALL* sw)
 #ifdef SW_OUTTEXT
 
 /**
-@brief Gets precipitation text from SW_WEATHER_OUTPUTS when dealing with OUTTEXT.
+@brief Gets precipitation text from SW_WEATHER_OUTPUTS when dealing with
+OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_precip_text(OutPeriod pd, SW_ALL* sw)
-{
-	SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+void get_precip_text(OutPeriod pd, SW_RUN *sw) {
+    SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	sw->GenOutput.sw_outstr[0] = '\0';
-	snprintf(sw->GenOutput.sw_outstr, sizeof sw->GenOutput.sw_outstr,"%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f",
-		_OUTSEP, OUT_DIGITS, vo->ppt,
-		_OUTSEP, OUT_DIGITS, vo->rain,
-		_OUTSEP, OUT_DIGITS, vo->snow,
-		_OUTSEP, OUT_DIGITS, vo->snowmelt,
-		_OUTSEP, OUT_DIGITS, vo->snowloss);
+    OutRun->sw_outstr[0] = '\0';
+    snprintf(
+        OutRun->sw_outstr,
+        sizeof OutRun->sw_outstr,
+        "%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f",
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->ppt,
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->rain,
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->snow,
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->snowmelt,
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->snowloss
+    );
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
-@brief Gets precipitation text from SW_WEATHER_OUTPUTS when dealing with RSOILWAT.
+@brief Gets precipitation text from SW_WEATHER_OUTPUTS when dealing with
+RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_precip_mem(OutPeriod pd, SW_ALL* sw)
-{
-	SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
-	size_t iOUTIndex;
+void get_precip_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD *p = sw->GenOutput.p_OUT[eSW_Precip][pd];
-	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
-					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    RealD *p = OutRun->p_OUT[eSW_Precip][pd];
 
-	iOUTIndex = iOUT(0, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->ppt;
+#if defined(RSOILWAT)
+    get_outvalleader(
+        &sw->Model, pd, OutRun->irow_OUT, OutDom->nrow_OUT, OutRun->tOffset, p
+    );
+#endif
 
-	iOUTIndex = iOUT(1, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->rain;
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
 
-	iOUTIndex = iOUT(2, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->snow;
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_Precip][pd][0] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
 
-	iOUTIndex = iOUT(3, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->snowmelt;
+    p[iOUTIndex] = vo->ppt;
 
-	iOUTIndex = iOUT(4, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->snowloss;
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(1, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_Precip][pd][1] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->rain;
+
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(2, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_Precip][pd][2] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->snow;
+
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(3, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_Precip][pd][3] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->snowmelt;
+
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(4, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_Precip][pd][4] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->snowloss;
 }
 
 #elif defined(STEPWAT)
 
 /**
-@brief Gets precipitation text from SW_WEATHER_OUTPUTS when dealing with STEPWAT.
+@brief Gets precipitation text from SW_WEATHER_OUTPUTS when dealing with
+STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_precip_agg(OutPeriod pd, SW_ALL* sw)
-{
-	SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
-	size_t iOUTIndex;
+void get_precip_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD
-		*p = sw->GenOutput.p_OUT[eSW_Precip][pd],
-		*psd = sw->GenOutput.p_OUTsd[eSW_Precip][pd];
+    RealD *p = OutRun->p_OUT[eSW_Precip][pd],
+          *psd = OutRun->p_OUTsd[eSW_Precip][pd];
 
-	iOUTIndex = iOUT(0, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->ppt);
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->ppt);
 
-	iOUTIndex = iOUT(1, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->rain);
+    iOUTIndex =
+        iOUT(1, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->rain);
 
-	iOUTIndex = iOUT(2, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->snow);
+    iOUTIndex =
+        iOUT(2, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->snow);
 
-	iOUTIndex = iOUT(3, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->snowmelt);
+    iOUTIndex =
+        iOUT(3, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->snowmelt);
 
-	iOUTIndex = iOUT(4, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->snowloss);
+    iOUTIndex =
+        iOUT(4, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->snowloss);
 
-	if (sw->GenOutput.print_IterationSummary) {
-		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_Precip], sw);
-	}
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p, psd, pd, OutDom->ncol_OUT[eSW_Precip], sw, OutDom->nrow_OUT
+        );
+    }
 }
 
 /**
 @brief STEPWAT2 expects monthly and annual sum of precipitation
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_precip_SXW(OutPeriod pd, SW_ALL* sw)
-{
-	TimeInt tOffset;
+void get_precip_SXW(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    TimeInt tOffset;
 
-	if (pd == eSW_Month || pd == eSW_Year) {
-		SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
-		tOffset = sw->GenOutput.tOffset;
+    if (pd == eSW_Month || pd == eSW_Year) {
+        SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+        SW_OUT_RUN *OutRun = &sw->OutRun;
+        tOffset = OutRun->tOffset;
 
-		if (pd == eSW_Month) {
-			sw->GenOutput.ppt_monthly[sw->Model.month - tOffset] = vo->ppt;
-		}
-		else if (pd == eSW_Year) {
-			sw->GenOutput.ppt = vo->ppt;
-		}
-	}
+        if (pd == eSW_Month) {
+            OutRun->ppt_monthly[sw->Model.month - tOffset] = vo->ppt;
+        } else if (pd == eSW_Year) {
+            OutRun->ppt = vo->ppt;
+        }
+    }
+
+    (void) OutDom;
 }
 #endif
 
@@ -737,50 +1188,88 @@ void get_precip_SXW(OutPeriod pd, SW_ALL* sw)
 @brief Gets vwcBulk text from SW_SOILWAT_OUTPUTS when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_vwcBulk_text(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+void get_vwcBulk_text(OutPeriod pd, SW_RUN *sw) {
+    LyrIndex i;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	char str[OUTSTRLEN];
-	sw->GenOutput.sw_outstr[0] = '\0';
+    char str[OUTSTRLEN];
+    OutRun->sw_outstr[0] = '\0';
 
-	ForEachSoilLayer(i, sw->Site.n_layers) {
-		/* vwcBulk at this point is identical to swcBulk */
-		snprintf(str, OUTSTRLEN, "%c%.*f",
-			_OUTSEP, OUT_DIGITS, vo->vwcBulk[i] / sw->Site.width[i]);
-		strcat(sw->GenOutput.sw_outstr, str);
-	}
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+        /* vwcBulk at this point is identical to swcBulk */
+        snprintf(
+            str,
+            OUTSTRLEN,
+            "%c%.*f",
+            _OUTSEP,
+            OUT_DIGITS,
+            vo->vwcBulk[i] / sw->Site.width[i]
+        );
+        strcat(OutRun->sw_outstr, str);
+    }
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets vwcBulk text from SW_SOILWAT_OUTPUTS when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_vwcBulk_mem(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_vwcBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    LyrIndex i;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD *p = sw->GenOutput.p_OUT[eSW_VWCBulk][pd];
-	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
-					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    RealD *p = OutRun->p_OUT[eSW_VWCBulk][pd];
 
-	ForEachSoilLayer(i, sw->Site.n_layers) {
-		/* vwcBulk at this point is identical to swcBulk */
-		iOUTIndex = iOUT(i, pd, sw->GenOutput);
-		p[iOUTIndex] = vo->vwcBulk[i] / sw->Site.width[i];
-	}
+#if defined(RSOILWAT)
+    get_outvalleader(
+        &sw->Model, pd, OutRun->irow_OUT, OutDom->nrow_OUT, OutRun->tOffset, p
+    );
+#endif
+
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+#if defined(RSOILWAT)
+        iOUTIndex = iOUT(
+            i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+
+#elif defined(SWNETCDF)
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_VWCBulk][pd][0] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_VWCBulk][0], 1
+            );
+#endif
+
+        /* vwcBulk at this point is identical to swcBulk */
+        p[iOUTIndex] = vo->vwcBulk[i] / sw->Site.width[i];
+    }
+
+#if defined(SWNETCDF)
+    /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+    for (i = sw->Site.n_layers; i < OutDom->nsl_OUT[eSW_VWCBulk][0]; i++) {
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_VWCBulk][pd][0] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_VWCBulk][0], 1
+            );
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+    }
+#endif // SWNETCDF
 }
 
 #elif defined(STEPWAT)
@@ -789,30 +1278,40 @@ void get_vwcBulk_mem(OutPeriod pd, SW_ALL* sw)
 @brief Gets vwcBulk text from SW_SOILWAT_OUTPUTS when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_vwcBulk_agg(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_vwcBulk_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    LyrIndex i;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD
-		*p = sw->GenOutput.p_OUT[eSW_VWCBulk][pd],
-		*psd = sw->GenOutput.p_OUTsd[eSW_VWCBulk][pd];
+    RealD *p = OutRun->p_OUT[eSW_VWCBulk][pd],
+          *psd = OutRun->p_OUTsd[eSW_VWCBulk][pd];
 
-	ForEachSoilLayer(i, sw->Site.n_layers) {
-		/* vwcBulk at this point is identical to swcBulk */
-		iOUTIndex = iOUT(i, pd, sw->GenOutput);
-		do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-					   vo->vwcBulk[i] / sw->Site.width[i]);
-	}
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+        /* vwcBulk at this point is identical to swcBulk */
+        iOUTIndex = iOUT(
+            i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+        do_running_agg(
+            p,
+            psd,
+            iOUTIndex,
+            OutRun->currIter,
+            vo->vwcBulk[i] / sw->Site.width[i]
+        );
+    }
 
-	if (sw->GenOutput.print_IterationSummary) {
-		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_VWCBulk], sw);
-	}
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p, psd, pd, OutDom->ncol_OUT[eSW_VWCBulk], sw, OutDom->nrow_OUT
+        );
+    }
 }
 #endif
 
@@ -824,57 +1323,95 @@ void get_vwcBulk_agg(OutPeriod pd, SW_ALL* sw)
 @brief Gets vwcMatric text from SW_SOILWAT_OUTPUTS when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_vwcMatric_text(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i;
-	RealD convert;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+void get_vwcMatric_text(OutPeriod pd, SW_RUN *sw) {
+    LyrIndex i;
+    RealD convert;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	char str[OUTSTRLEN];
-	sw->GenOutput.sw_outstr[0] = '\0';
+    char str[OUTSTRLEN];
+    OutRun->sw_outstr[0] = '\0';
 
-	ForEachSoilLayer(i, sw->Site.n_layers) {
-		/* vwcMatric at this point is identical to swcBulk */
-		convert = 1. / (1. - sw->Site.fractionVolBulk_gravel[i]) /
-														sw->Site.width[i];
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+        /* vwcMatric at this point is identical to swcBulk */
+        convert =
+            1. / (1. - sw->Site.fractionVolBulk_gravel[i]) / sw->Site.width[i];
 
-		snprintf(str, OUTSTRLEN, "%c%.*f",
-			_OUTSEP, OUT_DIGITS, vo->vwcMatric[i] * convert);
-		strcat(sw->GenOutput.sw_outstr, str);
-	}
+        snprintf(
+            str,
+            OUTSTRLEN,
+            "%c%.*f",
+            _OUTSEP,
+            OUT_DIGITS,
+            vo->vwcMatric[i] * convert
+        );
+        strcat(OutRun->sw_outstr, str);
+    }
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets vwcMatric text from SW_SOILWAT_OUTPUTS when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_vwcMatric_mem(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i;
-	RealD convert;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_vwcMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    LyrIndex i;
+    RealD convert;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD *p = sw->GenOutput.p_OUT[eSW_VWCMatric][pd];
-	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
-					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    RealD *p = OutRun->p_OUT[eSW_VWCMatric][pd];
 
-	ForEachSoilLayer(i, sw->Site.n_layers) {
-		/* vwcMatric at this point is identical to swcBulk */
-		convert = 1. / (1. - sw->Site.fractionVolBulk_gravel[i]) / sw->Site.width[i];
+#if defined(RSOILWAT)
+    get_outvalleader(
+        &sw->Model, pd, OutRun->irow_OUT, OutDom->nrow_OUT, OutRun->tOffset, p
+    );
+#endif
 
-		iOUTIndex = iOUT(i, pd, sw->GenOutput);
-		p[iOUTIndex] = vo->vwcMatric[i] * convert;
-	}
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+#if defined(RSOILWAT)
+        iOUTIndex = iOUT(
+            i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+
+#elif defined(SWNETCDF)
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_VWCMatric][pd][0] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_VWCMatric][0], 1
+            );
+#endif
+
+        /* vwcMatric at this point is identical to swcBulk */
+        convert =
+            1. / (1. - sw->Site.fractionVolBulk_gravel[i]) / sw->Site.width[i];
+        p[iOUTIndex] = vo->vwcMatric[i] * convert;
+    }
+
+#if defined(SWNETCDF)
+    /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+    for (i = sw->Site.n_layers; i < OutDom->nsl_OUT[eSW_VWCMatric][0]; i++) {
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_VWCMatric][pd][0] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_VWCMatric][0], 1
+            );
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+    }
+#endif // SWNETCDF
 }
 
 #elif defined(STEPWAT)
@@ -883,33 +1420,40 @@ void get_vwcMatric_mem(OutPeriod pd, SW_ALL* sw)
 @brief Gets vwcMatric text from SW_SOILWAT_OUTPUTS when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_vwcMatric_agg(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i;
-	RealD convert;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_vwcMatric_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    LyrIndex i;
+    RealD convert;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD
-		*p = sw->GenOutput.p_OUT[eSW_VWCMatric][pd],
-		*psd = sw->GenOutput.p_OUTsd[eSW_VWCMatric][pd];
+    RealD *p = OutRun->p_OUT[eSW_VWCMatric][pd],
+          *psd = OutRun->p_OUTsd[eSW_VWCMatric][pd];
 
-	ForEachSoilLayer(i, sw->Site.n_layers) {
-		/* vwcMatric at this point is identical to swcBulk */
-		convert = 1. / (1. - sw->Site.fractionVolBulk_gravel[i]) / sw->Site.width[i];
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+        /* vwcMatric at this point is identical to swcBulk */
+        convert =
+            1. / (1. - sw->Site.fractionVolBulk_gravel[i]) / sw->Site.width[i];
 
-		iOUTIndex = iOUT(i, pd, sw->GenOutput);
-		do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-					   vo->vwcMatric[i] * convert);
-	}
+        iOUTIndex = iOUT(
+            i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+        do_running_agg(
+            p, psd, iOUTIndex, OutRun->currIter, vo->vwcMatric[i] * convert
+        );
+    }
 
-	if (sw->GenOutput.print_IterationSummary) {
-		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_VWCMatric], sw);
-	}
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p, psd, pd, OutDom->ncol_OUT[eSW_VWCMatric], sw, OutDom->nrow_OUT
+        );
+    }
 }
 #endif
 
@@ -921,58 +1465,100 @@ void get_vwcMatric_agg(OutPeriod pd, SW_ALL* sw)
 @brief Gets SWA text from SW_SOILWAT_OUTPUTS when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_swa_text(OutPeriod pd, SW_ALL* sw)
-{
-	/* added 21-Oct-03, cwb */
-	LyrIndex i;
-	int k;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+void get_swa_text(OutPeriod pd, SW_RUN *sw) {
+    /* added 21-Oct-03, cwb */
+    LyrIndex i;
+    int k;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	char str[OUTSTRLEN];
-	sw->GenOutput.sw_outstr[0] = '\0';
+    char str[OUTSTRLEN];
+    OutRun->sw_outstr[0] = '\0';
 
-	ForEachVegType(k)
-	{
-		ForEachSoilLayer(i, sw->Site.n_layers)
-		{
-			snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->SWA_VegType[k][i]);
-			strcat(sw->GenOutput.sw_outstr, str);
-		}
-	}
+    ForEachVegType(k) {
+        ForEachSoilLayer(i, sw->Site.n_layers) {
+            snprintf(
+                str,
+                OUTSTRLEN,
+                "%c%.*f",
+                _OUTSEP,
+                OUT_DIGITS,
+                vo->SWA_VegType[k][i]
+            );
+            strcat(OutRun->sw_outstr, str);
+        }
+    }
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets SWA text from SW_SOILWAT_OUTPUTS when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_swa_mem(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i;
-	int k;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_swa_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    LyrIndex i;
+    int k;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD *p = sw->GenOutput.p_OUT[eSW_SWA][pd];
-	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
-					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    RealD *p = OutRun->p_OUT[eSW_SWA][pd];
 
-	ForEachVegType(k)
-	{
-		ForEachSoilLayer(i, sw->Site.n_layers)
-		{
-			iOUTIndex = iOUT2(i, k, pd, sw->GenOutput, sw->Site.n_layers);
-			p[iOUTIndex] = vo->SWA_VegType[k][i];
-		}
-	}
+#if defined(RSOILWAT)
+    get_outvalleader(
+        &sw->Model, pd, OutRun->irow_OUT, OutDom->nrow_OUT, OutRun->tOffset, p
+    );
+#endif
+
+    ForEachVegType(k) {
+        ForEachSoilLayer(i, sw->Site.n_layers) {
+#if defined(RSOILWAT)
+            iOUTIndex = iOUT2(
+                i, k, pd, OutRun->irow_OUT, OutDom->nrow_OUT, sw->Site.n_layers
+            );
+
+#elif defined(SWNETCDF)
+            iOUTIndex = OutDom->iOUToffset[eSW_SWA][pd][0] +
+                        iOUTnc(
+                            OutRun->irow_OUT[pd],
+                            i,
+                            k,
+                            OutDom->nsl_OUT[eSW_SWA][0],
+                            OutDom->npft_OUT[eSW_SWA][0]
+                        );
+#endif
+
+            p[iOUTIndex] = vo->SWA_VegType[k][i];
+        }
+
+#if defined(SWNETCDF)
+        /* Set extra soil layers to missing/fill value (up to domain-wide max)
+         */
+        for (i = sw->Site.n_layers; i < OutDom->nsl_OUT[eSW_SWA][0]; i++) {
+            iOUTIndex = OutDom->iOUToffset[eSW_SWA][pd][0] +
+                        iOUTnc(
+                            OutRun->irow_OUT[pd],
+                            i,
+                            k,
+                            OutDom->nsl_OUT[eSW_SWA][0],
+                            OutDom->npft_OUT[eSW_SWA][0]
+                        );
+            p[iOUTIndex] = NC_FILL_DOUBLE;
+        }
+#endif // SWNETCDF
+    }
 }
 
 #elif defined(STEPWAT)
@@ -981,34 +1567,37 @@ void get_swa_mem(OutPeriod pd, SW_ALL* sw)
 @brief Gets SWA text from SW_SOILWAT_OUTPUTS when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_swa_agg(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i;
-	int k;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_swa_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    LyrIndex i;
+    int k;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD
-		*p = sw->GenOutput.p_OUT[eSW_SWA][pd],
-		*psd = sw->GenOutput.p_OUTsd[eSW_SWA][pd];
+    RealD *p = OutRun->p_OUT[eSW_SWA][pd], *psd = OutRun->p_OUTsd[eSW_SWA][pd];
 
-	ForEachVegType(k)
-	{
-		ForEachSoilLayer(i, sw->Site.n_layers)
-		{
-			iOUTIndex = iOUT2(i, k, pd, sw->GenOutput, sw->Site.n_layers);
-			do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-						   vo->SWA_VegType[k][i]);
-		}
-	}
+    ForEachVegType(k) {
+        ForEachSoilLayer(i, sw->Site.n_layers) {
+            iOUTIndex = iOUT2(
+                i, k, pd, OutRun->irow_OUT, OutDom->nrow_OUT, sw->Site.n_layers
+            );
+            do_running_agg(
+                p, psd, iOUTIndex, OutRun->currIter, vo->SWA_VegType[k][i]
+            );
+        }
+    }
 
-	if (sw->GenOutput.print_IterationSummary) {
-		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary2(p, psd, pd, NVEGTYPES, 0, sw);
-	}
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary2(
+            p, psd, pd, NVEGTYPES, 0, sw, OutDom->nrow_OUT
+        );
+    }
 }
 #endif
 
@@ -1019,50 +1608,80 @@ void get_swa_agg(OutPeriod pd, SW_ALL* sw)
 @brief Gets swcBulk text from SW_SOILWAT_OUTPUTS when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_swcBulk_text(OutPeriod pd, SW_ALL* sw)
-{
-	/* added 21-Oct-03, cwb */
-	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+void get_swcBulk_text(OutPeriod pd, SW_RUN *sw) {
+    /* added 21-Oct-03, cwb */
+    LyrIndex i;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	char str[OUTSTRLEN];
-	sw->GenOutput.sw_outstr[0] = '\0';
+    char str[OUTSTRLEN];
+    OutRun->sw_outstr[0] = '\0';
 
-	ForEachSoilLayer(i, sw->Site.n_layers)
-	{
-		snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->swcBulk[i]);
-		strcat(sw->GenOutput.sw_outstr, str);
-	}
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+        snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->swcBulk[i]);
+        strcat(OutRun->sw_outstr, str);
+    }
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets swcBulk text from SW_SOILWAT_OUTPUTS when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_swcBulk_mem(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_swcBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    LyrIndex i;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD *p = sw->GenOutput.p_OUT[eSW_SWCBulk][pd];
-	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
-					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    RealD *p = OutRun->p_OUT[eSW_SWCBulk][pd];
 
-	ForEachSoilLayer(i, sw->Site.n_layers)
-	{
-		iOUTIndex = iOUT(i, pd, sw->GenOutput);
-		p[iOUTIndex] = vo->swcBulk[i];
-	}
+#if defined(RSOILWAT)
+    get_outvalleader(
+        &sw->Model, pd, OutRun->irow_OUT, OutDom->nrow_OUT, OutRun->tOffset, p
+    );
+#endif
+
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+#if defined(RSOILWAT)
+        iOUTIndex = iOUT(
+            i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+
+#elif defined(SWNETCDF)
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_SWCBulk][pd][0] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_SWCBulk][0], 1
+            );
+#endif
+
+        p[iOUTIndex] = vo->swcBulk[i];
+    }
+
+#if defined(SWNETCDF)
+    /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+    for (i = sw->Site.n_layers; i < OutDom->nsl_OUT[eSW_SWCBulk][0]; i++) {
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_SWCBulk][pd][0] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_SWCBulk][0], 1
+            );
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+    }
+#endif // SWNETCDF
 }
 
 #elif defined(STEPWAT)
@@ -1071,53 +1690,59 @@ void get_swcBulk_mem(OutPeriod pd, SW_ALL* sw)
 @brief Gets swcBulk text from SW_SOILWAT_OUTPUTS when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_swcBulk_agg(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_swcBulk_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    LyrIndex i;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD
-		*p = sw->GenOutput.p_OUT[eSW_SWCBulk][pd],
-		*psd = sw->GenOutput.p_OUTsd[eSW_SWCBulk][pd];
+    RealD *p = OutRun->p_OUT[eSW_SWCBulk][pd],
+          *psd = OutRun->p_OUTsd[eSW_SWCBulk][pd];
 
-	ForEachSoilLayer(i, sw->Site.n_layers)
-	{
-		iOUTIndex = iOUT(i, pd, sw->GenOutput);
-		do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-					   vo->swcBulk[i]);
-	}
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+        iOUTIndex = iOUT(
+            i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+        do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->swcBulk[i]);
+    }
 
-	if (sw->GenOutput.print_IterationSummary) {
-		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_SWCBulk], sw);
-	}
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p, psd, pd, OutDom->ncol_OUT[eSW_SWCBulk], sw, OutDom->nrow_OUT
+        );
+    }
 }
 
 /**
 @brief STEPWAT2 expects monthly mean SWCbulk by soil layer.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_swcBulk_SXW(OutPeriod pd, SW_ALL* sw)
-{
-	TimeInt month;
+void get_swcBulk_SXW(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    TimeInt month;
 
-	if (pd == eSW_Month) {
-		LyrIndex i;
-		SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-		month = sw->Model.month - sw->GenOutput.tOffset;
+    if (pd == eSW_Month) {
+        LyrIndex i;
+        SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+        SW_OUT_RUN *OutRun = &sw->OutRun;
+        month = sw->Model.month - OutRun->tOffset;
 
-		ForEachSoilLayer(i, sw->Site.n_layers)
-		{
-			sw->GenOutput.swc[i][month] = vo->swcBulk[i];
-		}
-	}
+        ForEachSoilLayer(i, sw->Site.n_layers) {
+            OutRun->swc[i][month] = vo->swcBulk[i];
+        }
+    }
+
+    (void) OutDom;
 }
 #endif
 
@@ -1126,67 +1751,98 @@ void get_swcBulk_SXW(OutPeriod pd, SW_ALL* sw)
 #ifdef SW_OUTTEXT
 
 /**
-@brief eSW_SWPMatric Can't take arithmetic average of swp vecause its exponentail.
-			At this time (until I rewmember to look up whether harmonic or some other
-			average is better and fix this) we're not averaging swp but converting
-			the averged swc.  This also avoids converting for each day. added 12-Oct-03, cwb
+@brief eSW_SWPMatric Can't take arithmetic average of swp vecause its
+exponentail. At this time (until I rewmember to look up whether harmonic OutRun
+some other average is better and fix this) we're not averaging swp but
+converting the averged swc.  This also avoids converting for each day. added
+12-Oct-03, cwb
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_swpMatric_text(OutPeriod pd, SW_ALL* sw)
-{
-	RealD val;
-	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+void get_swpMatric_text(OutPeriod pd, SW_RUN *sw) {
+    RealD val;
+    LyrIndex i;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	/* Local LOG_INFO only because `SW_SWRC_SWCtoSWP()` requires it */
-	LOG_INFO local_log;
-	local_log.logfp = NULL;
+    /* Local LOG_INFO only because `SW_SWRC_SWCtoSWP()` requires it */
+    LOG_INFO local_log;
+    local_log.logfp = NULL;
 
-	char str[OUTSTRLEN];
-	sw->GenOutput.sw_outstr[0] = '\0';
+    char str[OUTSTRLEN];
+    OutRun->sw_outstr[0] = '\0';
 
-	ForEachSoilLayer(i, sw->Site.n_layers)
-	{
-		/* swpMatric at this point is identical to swcBulk */
-		val = SW_SWRC_SWCtoSWP(vo->swpMatric[i], &sw->Site, i, &local_log);
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+        /* swpMatric at this point is identical to swcBulk */
+        val = SW_SWRC_SWCtoSWP(vo->swpMatric[i], &sw->Site, i, &local_log);
 
 
-		snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, val);
-		strcat(sw->GenOutput.sw_outstr, str);
-	}
+        snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, val);
+        strcat(OutRun->sw_outstr, str);
+    }
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets swpMatric when dealing with RSOILWAT
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_swpMatric_mem(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	LOG_INFO local_log;
-	size_t iOUTIndex;
+void get_swpMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    LyrIndex i;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    LOG_INFO local_log;
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD *p = sw->GenOutput.p_OUT[eSW_SWPMatric][pd];
-	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
-					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    RealD *p = OutRun->p_OUT[eSW_SWPMatric][pd];
 
-	ForEachSoilLayer(i, sw->Site.n_layers)
-	{
-		/* swpMatric at this point is identical to swcBulk */
-		iOUTIndex = iOUT(i, pd, sw->GenOutput);
-		p[iOUTIndex] = SW_SWRC_SWCtoSWP(vo->swpMatric[i], &sw->Site,
-										i, &local_log);
-	}
+#if defined(RSOILWAT)
+    get_outvalleader(
+        &sw->Model, pd, OutRun->irow_OUT, OutDom->nrow_OUT, OutRun->tOffset, p
+    );
+#endif
+
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+#if defined(RSOILWAT)
+        iOUTIndex = iOUT(
+            i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+
+#elif defined(SWNETCDF)
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_SWPMatric][pd][0] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_SWPMatric][0], 1
+            );
+#endif
+
+        /* swpMatric at this point is identical to swcBulk */
+        p[iOUTIndex] =
+            SW_SWRC_SWCtoSWP(vo->swpMatric[i], &sw->Site, i, &local_log);
+    }
+
+#if defined(SWNETCDF)
+    /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+    for (i = sw->Site.n_layers; i < OutDom->nsl_OUT[eSW_SWPMatric][0]; i++) {
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_SWPMatric][pd][0] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_SWPMatric][0], 1
+            );
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+    }
+#endif // SWNETCDF
 }
 
 #elif defined(STEPWAT)
@@ -1195,34 +1851,38 @@ void get_swpMatric_mem(OutPeriod pd, SW_ALL* sw)
 @brief Gets swpMatric when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_swpMatric_agg(OutPeriod pd, SW_ALL* sw)
-{
-	RealD val;
-	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	LOG_INFO local_log;
-	size_t iOUTIndex;
+void get_swpMatric_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    RealD val;
+    LyrIndex i;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    LOG_INFO local_log;
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD
-		*p = sw->GenOutput.p_OUT[eSW_SWPMatric][pd],
-		*psd = sw->GenOutput.p_OUTsd[eSW_SWPMatric][pd];
+    RealD *p = OutRun->p_OUT[eSW_SWPMatric][pd],
+          *psd = OutRun->p_OUTsd[eSW_SWPMatric][pd];
 
-	ForEachSoilLayer(i, sw->Site.n_layers)
-	{
-		/* swpMatric at this point is identical to swcBulk */
-		val = SW_SWRC_SWCtoSWP(vo->swpMatric[i], &sw->Site, i, &local_log);
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+        /* swpMatric at this point is identical to swcBulk */
+        val = SW_SWRC_SWCtoSWP(vo->swpMatric[i], &sw->Site, i, &local_log);
 
-		iOUTIndex = iOUT(i, pd, sw->GenOutput);
-		do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter, val);
-	}
+        iOUTIndex = iOUT(
+            i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+        do_running_agg(p, psd, iOUTIndex, OutRun->currIter, val);
+    }
 
-	if (sw->GenOutput.print_IterationSummary) {
-		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_SWPMatric], sw);
-	}
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p, psd, pd, OutDom->ncol_OUT[eSW_SWPMatric], sw, OutDom->nrow_OUT
+        );
+    }
 }
 #endif
 
@@ -1234,49 +1894,79 @@ void get_swpMatric_agg(OutPeriod pd, SW_ALL* sw)
 @brief gets swaBulk when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_swaBulk_text(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+void get_swaBulk_text(OutPeriod pd, SW_RUN *sw) {
+    LyrIndex i;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	char str[OUTSTRLEN];
-	sw->GenOutput.sw_outstr[0] = '\0';
+    char str[OUTSTRLEN];
+    OutRun->sw_outstr[0] = '\0';
 
-	ForEachSoilLayer(i, sw->Site.n_layers)
-	{
-		snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->swaBulk[i]);
-		strcat(sw->GenOutput.sw_outstr, str);
-	}
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+        snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->swaBulk[i]);
+        strcat(OutRun->sw_outstr, str);
+    }
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets swaBulk when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_swaBulk_mem(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_swaBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    LyrIndex i;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD *p = sw->GenOutput.p_OUT[eSW_SWABulk][pd];
-	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
-					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    RealD *p = OutRun->p_OUT[eSW_SWABulk][pd];
 
-	ForEachSoilLayer(i, sw->Site.n_layers)
-	{
-		iOUTIndex = iOUT(i, pd, sw->GenOutput);
-		p[iOUTIndex] = vo->swaBulk[i];
-	}
+#if defined(RSOILWAT)
+    get_outvalleader(
+        &sw->Model, pd, OutRun->irow_OUT, OutDom->nrow_OUT, OutRun->tOffset, p
+    );
+#endif
+
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+#if defined(RSOILWAT)
+        iOUTIndex = iOUT(
+            i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+
+#elif defined(SWNETCDF)
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_SWABulk][pd][0] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_SWABulk][0], 1
+            );
+#endif
+
+        p[iOUTIndex] = vo->swaBulk[i];
+    }
+
+#if defined(SWNETCDF)
+    /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+    for (i = sw->Site.n_layers; i < OutDom->nsl_OUT[eSW_SWABulk][0]; i++) {
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_SWABulk][pd][0] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_SWABulk][0], 1
+            );
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+    }
+#endif // SWNETCDF
 }
 
 #elif defined(STEPWAT)
@@ -1285,30 +1975,33 @@ void get_swaBulk_mem(OutPeriod pd, SW_ALL* sw)
 @brief Gets swaBulk when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_swaBulk_agg(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_swaBulk_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    LyrIndex i;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD
-		*p = sw->GenOutput.p_OUT[eSW_SWABulk][pd],
-		*psd = sw->GenOutput.p_OUTsd[eSW_SWABulk][pd];
+    RealD *p = OutRun->p_OUT[eSW_SWABulk][pd],
+          *psd = OutRun->p_OUTsd[eSW_SWABulk][pd];
 
-	ForEachSoilLayer(i, sw->Site.n_layers)
-	{
-		iOUTIndex = iOUT(i, pd, sw->GenOutput);
-		do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-					   vo->swaBulk[i]);
-	}
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+        iOUTIndex = iOUT(
+            i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+        do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->swaBulk[i]);
+    }
 
-	if (sw->GenOutput.print_IterationSummary) {
-		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_SWABulk], sw);
-	}
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p, psd, pd, OutDom->ncol_OUT[eSW_SWABulk], sw, OutDom->nrow_OUT
+        );
+    }
 }
 #endif
 
@@ -1319,57 +2012,93 @@ void get_swaBulk_agg(OutPeriod pd, SW_ALL* sw)
 @brief Gets swaMatric when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_swaMatric_text(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i;
-	RealD convert;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+void get_swaMatric_text(OutPeriod pd, SW_RUN *sw) {
+    LyrIndex i;
+    RealD convert;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	char str[OUTSTRLEN];
-	sw->GenOutput.sw_outstr[0] = '\0';
+    char str[OUTSTRLEN];
+    OutRun->sw_outstr[0] = '\0';
 
-	ForEachSoilLayer(i, sw->Site.n_layers)
-	{
-		/* swaMatric at this point is identical to swaBulk */
-		convert = 1. / (1. - sw->Site.fractionVolBulk_gravel[i]);
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+        /* swaMatric at this point is identical to swaBulk */
+        convert = 1. / (1. - sw->Site.fractionVolBulk_gravel[i]);
 
-		snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->swaMatric[i] * convert);
-		strcat(sw->GenOutput.sw_outstr, str);
-	}
+        snprintf(
+            str,
+            OUTSTRLEN,
+            "%c%.*f",
+            _OUTSEP,
+            OUT_DIGITS,
+            vo->swaMatric[i] * convert
+        );
+        strcat(OutRun->sw_outstr, str);
+    }
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets swaMatric when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_swaMatric_mem(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i;
-	RealD convert;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_swaMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    LyrIndex i;
+    RealD convert;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD *p = sw->GenOutput.p_OUT[eSW_SWAMatric][pd];
-	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
-					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    RealD *p = OutRun->p_OUT[eSW_SWAMatric][pd];
 
-	ForEachSoilLayer(i, sw->Site.n_layers)
-	{
-		/* swaMatric at this point is identical to swaBulk */
-		convert = 1. / (1. - sw->Site.fractionVolBulk_gravel[i]);
+#if defined(RSOILWAT)
+    get_outvalleader(
+        &sw->Model, pd, OutRun->irow_OUT, OutDom->nrow_OUT, OutRun->tOffset, p
+    );
+#endif
 
-		iOUTIndex = iOUT(i, pd, sw->GenOutput);
-		p[iOUTIndex] = vo->swaMatric[i] * convert;
-	}
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+#if defined(RSOILWAT)
+        iOUTIndex = iOUT(
+            i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+
+#elif defined(SWNETCDF)
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_SWAMatric][pd][0] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_SWAMatric][0], 1
+            );
+#endif
+
+        /* swaMatric at this point is identical to swaBulk */
+        convert = 1. / (1. - sw->Site.fractionVolBulk_gravel[i]);
+        p[iOUTIndex] = vo->swaMatric[i] * convert;
+    }
+
+#if defined(SWNETCDF)
+    /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+    for (i = sw->Site.n_layers; i < OutDom->nsl_OUT[eSW_SWAMatric][0]; i++) {
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_SWAMatric][pd][0] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_SWAMatric][0], 1
+            );
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+    }
+#endif // SWNETCDF
 }
 
 #elif defined(STEPWAT)
@@ -1378,34 +2107,39 @@ void get_swaMatric_mem(OutPeriod pd, SW_ALL* sw)
 @brief Gets swaMatric when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_swaMatric_agg(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i;
-	RealD convert;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_swaMatric_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    LyrIndex i;
+    RealD convert;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD
-		*p = sw->GenOutput.p_OUT[eSW_SWAMatric][pd],
-		*psd = sw->GenOutput.p_OUTsd[eSW_SWAMatric][pd];
+    RealD *p = OutRun->p_OUT[eSW_SWAMatric][pd],
+          *psd = OutRun->p_OUTsd[eSW_SWAMatric][pd];
 
-	ForEachSoilLayer(i, sw->Site.n_layers)
-	{
-		/* swaMatric at this point is identical to swaBulk */
-		convert = 1. / (1. - sw->Site.fractionVolBulk_gravel[i]);
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+        /* swaMatric at this point is identical to swaBulk */
+        convert = 1. / (1. - sw->Site.fractionVolBulk_gravel[i]);
 
-		iOUTIndex = iOUT(i, pd, sw->GenOutput);
-		do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-					   vo->swaMatric[i] * convert);
-	}
+        iOUTIndex = iOUT(
+            i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+        do_running_agg(
+            p, psd, iOUTIndex, OutRun->currIter, vo->swaMatric[i] * convert
+        );
+    }
 
-	if (sw->GenOutput.print_IterationSummary) {
-		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_SWAMatric], sw);
-	}
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p, psd, pd, OutDom->ncol_OUT[eSW_SWAMatric], sw, OutDom->nrow_OUT
+        );
+    }
 }
 #endif
 
@@ -1417,38 +2151,61 @@ void get_swaMatric_agg(OutPeriod pd, SW_ALL* sw)
 @brief Gets surfaceWater when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_surfaceWater_text(OutPeriod pd, SW_ALL* sw)
-{
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+void get_surfaceWater_text(OutPeriod pd, SW_RUN *sw) {
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	sw->GenOutput.sw_outstr[0] = '\0';
-	snprintf(sw->GenOutput.sw_outstr, sizeof sw->GenOutput.sw_outstr,"%c%.*f", _OUTSEP, OUT_DIGITS, vo->surfaceWater);
+    OutRun->sw_outstr[0] = '\0';
+    snprintf(
+        OutRun->sw_outstr,
+        sizeof OutRun->sw_outstr,
+        "%c%.*f",
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->surfaceWater
+    );
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets surfaceWater when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_surfaceWater_mem(OutPeriod pd, SW_ALL* sw)
-{
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_surfaceWater_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD *p = sw->GenOutput.p_OUT[eSW_SurfaceWater][pd];
-	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
-					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    RealD *p = OutRun->p_OUT[eSW_SurfaceWater][pd];
 
-	iOUTIndex = iOUT(0, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->surfaceWater;
+#if defined(RSOILWAT)
+    get_outvalleader(
+        &sw->Model, pd, OutRun->irow_OUT, OutDom->nrow_OUT, OutRun->tOffset, p
+    );
+#endif
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_SurfaceWater][pd][0] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->surfaceWater;
 }
 
 #elif defined(STEPWAT)
@@ -1457,27 +2214,29 @@ void get_surfaceWater_mem(OutPeriod pd, SW_ALL* sw)
 @brief Gets surfaceWater when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_surfaceWater_agg(OutPeriod pd, SW_ALL* sw)
-{
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_surfaceWater_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD
-		*p = sw->GenOutput.p_OUT[eSW_SurfaceWater][pd],
-		*psd = sw->GenOutput.p_OUTsd[eSW_SurfaceWater][pd];
+    RealD *p = OutRun->p_OUT[eSW_SurfaceWater][pd],
+          *psd = OutRun->p_OUTsd[eSW_SurfaceWater][pd];
 
-	iOUTIndex = iOUT(0, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->surfaceWater);
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->surfaceWater);
 
-	if (sw->GenOutput.print_IterationSummary) {
-		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd,
-									sw->GenOutput.ncol_OUT[eSW_SurfaceWater], sw);
-	}
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p, psd, pd, OutDom->ncol_OUT[eSW_SurfaceWater], sw, OutDom->nrow_OUT
+        );
+    }
 }
 #endif
 
@@ -1486,103 +2245,161 @@ void get_surfaceWater_agg(OutPeriod pd, SW_ALL* sw)
 #ifdef SW_OUTTEXT
 
 /**
-@brief Gets surfaceRunon, surfaceRunoff, and snowRunoff when dealing with OUTTEXT.
+@brief Gets surfaceRunon, surfaceRunoff, and snowRunoff when dealing with
+OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_runoffrunon_text(OutPeriod pd, SW_ALL* sw)
-{
-	RealD net;
-	SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+void get_runoffrunon_text(OutPeriod pd, SW_RUN *sw) {
+    RealD net;
+    SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	net = vo->surfaceRunoff + vo->snowRunoff - vo->surfaceRunon;
+    net = vo->surfaceRunoff + vo->snowRunoff - vo->surfaceRunon;
 
-	sw->GenOutput.sw_outstr[0] = '\0';
-	snprintf(sw->GenOutput.sw_outstr, sizeof sw->GenOutput.sw_outstr,"%c%.*f%c%.*f%c%.*f%c%.*f",
-		_OUTSEP, OUT_DIGITS, net,
-		_OUTSEP, OUT_DIGITS, vo->surfaceRunoff,
-		_OUTSEP, OUT_DIGITS, vo->snowRunoff,
-		_OUTSEP, OUT_DIGITS, vo->surfaceRunon);
+    OutRun->sw_outstr[0] = '\0';
+    snprintf(
+        OutRun->sw_outstr,
+        sizeof OutRun->sw_outstr,
+        "%c%.*f%c%.*f%c%.*f%c%.*f",
+        _OUTSEP,
+        OUT_DIGITS,
+        net,
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->surfaceRunoff,
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->snowRunoff,
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->surfaceRunon
+    );
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
-@brief Gets surfaceRunon, surfaceRunoff, and snowRunoff when dealing with RSOILWAT.
+@brief Gets surfaceRunon, surfaceRunoff, and snowRunoff when dealing with
+RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_runoffrunon_mem(OutPeriod pd, SW_ALL* sw)
-{
-	RealD net;
-	SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
-	size_t iOUTIndex;
+void get_runoffrunon_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD *p = sw->GenOutput.p_OUT[eSW_Runoff][pd];
-	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
-					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    RealD *p = OutRun->p_OUT[eSW_Runoff][pd];
 
-	net = vo->surfaceRunoff + vo->snowRunoff - vo->surfaceRunon;
+#if defined(RSOILWAT)
+    get_outvalleader(
+        &sw->Model, pd, OutRun->irow_OUT, OutDom->nrow_OUT, OutRun->tOffset, p
+    );
+#endif
 
-	iOUTIndex = iOUT(0, pd, sw->GenOutput);
-	p[iOUTIndex] = net;
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
 
-	iOUTIndex = iOUT(1, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->surfaceRunoff;
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_Runoff][pd][0] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
 
-	iOUTIndex = iOUT(2, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->snowRunoff;
+    p[iOUTIndex] = vo->surfaceRunoff + vo->snowRunoff - vo->surfaceRunon;
 
-	iOUTIndex = iOUT(3, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->surfaceRunon;
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(1, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_Runoff][pd][1] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->surfaceRunoff;
+
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(2, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_Runoff][pd][2] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->snowRunoff;
+
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(3, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_Runoff][pd][3] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->surfaceRunon;
 }
 
 #elif defined(STEPWAT)
 
 /**
-@brief Gets surfaceRunon, surfaceRunoff, and snowRunoff when dealing with STEPWAT.
+@brief Gets surfaceRunon, surfaceRunoff, and snowRunoff when dealing with
+STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_runoffrunon_agg(OutPeriod pd, SW_ALL* sw)
-{
-	RealD net;
-	SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
-	size_t iOUTIndex;
+void get_runoffrunon_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    RealD net;
+    SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD
-		*p = sw->GenOutput.p_OUT[eSW_Runoff][pd],
-		*psd = sw->GenOutput.p_OUTsd[eSW_Runoff][pd];
+    RealD *p = OutRun->p_OUT[eSW_Runoff][pd],
+          *psd = OutRun->p_OUTsd[eSW_Runoff][pd];
 
-	net = vo->surfaceRunoff + vo->snowRunoff - vo->surfaceRunon;
+    net = vo->surfaceRunoff + vo->snowRunoff - vo->surfaceRunon;
 
-	iOUTIndex = iOUT(0, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   net);
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, net);
 
-	iOUTIndex = iOUT(1, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->surfaceRunoff);
+    iOUTIndex =
+        iOUT(1, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->surfaceRunoff);
 
-	iOUTIndex = iOUT(2, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->snowRunoff);
+    iOUTIndex =
+        iOUT(2, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->snowRunoff);
 
-	iOUTIndex = iOUT(3, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->surfaceRunon);
+    iOUTIndex =
+        iOUT(3, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->surfaceRunon);
 
-	if (sw->GenOutput.print_IterationSummary) {
-		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_Runoff], sw);
-	}
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p, psd, pd, OutDom->ncol_OUT[eSW_Runoff], sw, OutDom->nrow_OUT
+        );
+    }
 }
 #endif
 
@@ -1593,73 +2410,136 @@ void get_runoffrunon_agg(OutPeriod pd, SW_ALL* sw)
 @brief Gets transp_total when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_transp_text(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i, n_layers = sw->Site.n_layers;
-	int k;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+void get_transp_text(OutPeriod pd, SW_RUN *sw) {
+    LyrIndex i, n_layers = sw->Site.n_layers;
+    int k;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	char str[OUTSTRLEN];
-	sw->GenOutput.sw_outstr[0] = '\0';
+    char str[OUTSTRLEN];
+    OutRun->sw_outstr[0] = '\0';
 
-	/* total transpiration */
-	ForEachSoilLayer(i, n_layers)
-	{
-		snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->transp_total[i]);
-		strcat(sw->GenOutput.sw_outstr, str);
-	}
+    /* total transpiration */
+    ForEachSoilLayer(i, n_layers) {
+        snprintf(
+            str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->transp_total[i]
+        );
+        strcat(OutRun->sw_outstr, str);
+    }
 
-	/* transpiration for each vegetation type */
-	ForEachVegType(k)
-	{
-		ForEachSoilLayer(i, n_layers)
-		{
-			snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->transp[k][i]);
-			strcat(sw->GenOutput.sw_outstr, str);
-		}
-	}
+    /* transpiration for each vegetation type */
+    ForEachVegType(k) {
+        ForEachSoilLayer(i, n_layers) {
+            snprintf(
+                str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->transp[k][i]
+            );
+            strcat(OutRun->sw_outstr, str);
+        }
+    }
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets transp_total when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_transp_mem(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i, n_layers = sw->Site.n_layers;
-	int k;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_transp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    LyrIndex i, n_layers = sw->Site.n_layers;
+    int k;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD *p = sw->GenOutput.p_OUT[eSW_Transp][pd];
-	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
-					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    RealD *p = OutRun->p_OUT[eSW_Transp][pd];
 
-	/* total transpiration */
-	ForEachSoilLayer(i, n_layers)
-	{
-		iOUTIndex = iOUT(i, pd, sw->GenOutput);
-		p[iOUTIndex] = vo->transp_total[i];
-	}
+#if defined(RSOILWAT)
+    get_outvalleader(
+        &sw->Model, pd, OutRun->irow_OUT, OutDom->nrow_OUT, OutRun->tOffset, p
+    );
+#endif
 
-	/* transpiration for each vegetation type */
-	ForEachVegType(k)
-	{
-		ForEachSoilLayer(i, n_layers)
-		{
-			iOUTIndex = iOUT2(i, k + 1, pd, sw->GenOutput, n_layers);
-			p[iOUTIndex] = vo->transp[k][i]; // k + 1 because of total transp.
-		}
-	}
+    /* total transpiration */
+    ForEachSoilLayer(i, n_layers) {
+#if defined(RSOILWAT)
+        iOUTIndex = iOUT(
+            i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+
+#elif defined(SWNETCDF)
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_Transp][pd][0] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_Transp][0], 1
+            );
+#endif
+
+        p[iOUTIndex] = vo->transp_total[i];
+    }
+
+#if defined(SWNETCDF)
+    /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+    for (i = sw->Site.n_layers; i < OutDom->nsl_OUT[eSW_Transp][0]; i++) {
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_Transp][pd][0] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_Transp][0], 1
+            );
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+    }
+#endif // SWNETCDF
+
+
+    /* transpiration for each vegetation type */
+    ForEachVegType(k) {
+        ForEachSoilLayer(i, n_layers) {
+#if defined(RSOILWAT)
+            // k + 1 because of total transp.
+            iOUTIndex = iOUT2(
+                i, k + 1, pd, OutRun->irow_OUT, OutDom->nrow_OUT, n_layers
+            );
+
+#elif defined(SWNETCDF)
+            iOUTIndex = OutDom->iOUToffset[eSW_Transp][pd][1] +
+                        iOUTnc(
+                            OutRun->irow_OUT[pd],
+                            i,
+                            k,
+                            OutDom->nsl_OUT[eSW_Transp][1],
+                            OutDom->npft_OUT[eSW_Transp][1]
+                        );
+#endif
+
+            p[iOUTIndex] = vo->transp[k][i];
+        }
+
+#if defined(SWNETCDF)
+        /* Set extra soil layers to missing/fill value (up to domain-wide max)
+         */
+        for (i = sw->Site.n_layers; i < OutDom->nsl_OUT[eSW_Transp][1]; i++) {
+            iOUTIndex = OutDom->iOUToffset[eSW_Transp][pd][1] +
+                        iOUTnc(
+                            OutRun->irow_OUT[pd],
+                            i,
+                            k,
+                            OutDom->nsl_OUT[eSW_Transp][1],
+                            OutDom->npft_OUT[eSW_Transp][1]
+                        );
+            p[iOUTIndex] = NC_FILL_DOUBLE;
+        }
+#endif // SWNETCDF
+    }
 }
 
 #elif defined(STEPWAT)
@@ -1668,83 +2548,90 @@ void get_transp_mem(OutPeriod pd, SW_ALL* sw)
 @brief Gets transp_total when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_transp_agg(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i, n_layers = sw->Site.n_layers;
-	int k;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_transp_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    LyrIndex i, n_layers = sw->Site.n_layers;
+    int k;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD
-		*p = sw->GenOutput.p_OUT[eSW_Transp][pd],
-		*psd = sw->GenOutput.p_OUTsd[eSW_Transp][pd];
+    RealD *p = OutRun->p_OUT[eSW_Transp][pd],
+          *psd = OutRun->p_OUTsd[eSW_Transp][pd];
 
-	/* total transpiration */
-	ForEachSoilLayer(i, n_layers)
-	{
-		iOUTIndex = iOUT(i, pd, sw->GenOutput);
-		do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-					   vo->transp_total[i]);
-	}
+    /* total transpiration */
+    ForEachSoilLayer(i, n_layers) {
+        iOUTIndex = iOUT(
+            i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+        do_running_agg(
+            p, psd, iOUTIndex, OutRun->currIter, vo->transp_total[i]
+        );
+    }
 
-	if (sw->GenOutput.print_IterationSummary) {
-		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, n_layers, sw);
-	}
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(p, psd, pd, n_layers, sw, OutDom->nrow_OUT);
+    }
 
-	/* transpiration for each vegetation type */
-	ForEachVegType(k)
-	{
-		ForEachSoilLayer(i, n_layers)
-		{
-			// k + 1 because of total transp.
-			iOUTIndex = iOUT2(i, k + 1, pd, sw->GenOutput, n_layers);
-			do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-						   vo->transp[k][i]);
-		}
-	}
+    /* transpiration for each vegetation type */
+    ForEachVegType(k) {
+        ForEachSoilLayer(i, n_layers) {
+            // k + 1 because of total transp.
+            iOUTIndex = iOUT2(
+                i, k + 1, pd, OutRun->irow_OUT, OutDom->nrow_OUT, n_layers
+            );
+            do_running_agg(
+                p, psd, iOUTIndex, OutRun->currIter, vo->transp[k][i]
+            );
+        }
+    }
 
-	if (sw->GenOutput.print_IterationSummary) {
-		format_IterationSummary2(p, psd, pd, NVEGTYPES, 1, sw);
-	}
+    if (OutDom->print_IterationSummary) {
+        format_IterationSummary2(
+            p, psd, pd, NVEGTYPES, 1, sw, OutDom->nrow_OUT
+        );
+    }
 }
 
 /**
 @brief STEPWAT2 expects monthly sum of transpiration by soil layer. <BR>
-				see function '_transp_contribution_by_group'
+                                see function '_transp_contribution_by_group'
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_transp_SXW(OutPeriod pd, SW_ALL* sw)
-{
-	TimeInt month;
+void get_transp_SXW(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    TimeInt month;
 
-	if (pd == eSW_Month) {
-		LyrIndex i;
-		int k;
-		SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-		month = sw->Model.month - sw->GenOutput.tOffset;
+    if (pd == eSW_Month) {
+        LyrIndex i;
+        int k;
+        SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+        SW_OUT_RUN *OutRun = &sw->OutRun;
+        month = sw->Model.month - OutRun->tOffset;
 
-		/* total transpiration */
-		ForEachSoilLayer(i, sw->Site.n_layers)
-		{
-			sw->GenOutput.transpTotal[i][month] = vo->transp_total[i];
-		}
+        /* total transpiration */
+        ForEachSoilLayer(i, sw->Site.n_layers) {
+            OutRun->transpTotal[i][month] = vo->transp_total[i];
+        }
 
-		/* transpiration for each vegetation type */
-		ForEachVegType(k)
-		{
-			ForEachSoilLayer(i, sw->Site.n_layers)
-			{
-				sw->GenOutput.transpVeg[k][i][month] = vo->transp[k][i];
-			}
-		}
-	}
+        /* transpiration for each vegetation type */
+        ForEachVegType(k) {
+            ForEachSoilLayer(i, sw->Site.n_layers) {
+                OutRun->transpVeg[k][i][month] = vo->transp[k][i];
+            }
+        }
+    }
+
+    (void) OutDom;
 }
 #endif
 
@@ -1757,46 +2644,76 @@ void get_transp_SXW(OutPeriod pd, SW_ALL* sw)
 
 @brief pd Period.
 */
-void get_evapSoil_text(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+void get_evapSoil_text(OutPeriod pd, SW_RUN *sw) {
+    LyrIndex i;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	char str[OUTSTRLEN];
-	sw->GenOutput.sw_outstr[0] = '\0';
+    char str[OUTSTRLEN];
+    OutRun->sw_outstr[0] = '\0';
 
-	ForEachEvapLayer(i, sw->Site.n_evap_lyrs)
-	{
-		snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->evap_baresoil[i]);
-		strcat(sw->GenOutput.sw_outstr, str);
-	}
+    ForEachEvapLayer(i, sw->Site.n_evap_lyrs) {
+        snprintf(
+            str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->evap_baresoil[i]
+        );
+        strcat(OutRun->sw_outstr, str);
+    }
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets evap when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_evapSoil_mem(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_evapSoil_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    LyrIndex i;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD *p = sw->GenOutput.p_OUT[eSW_EvapSoil][pd];
-	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
-					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    RealD *p = OutRun->p_OUT[eSW_EvapSoil][pd];
 
-	ForEachEvapLayer(i, sw->Site.n_evap_lyrs)
-	{
-		iOUTIndex = iOUT(i, pd, sw->GenOutput);
-		p[iOUTIndex] = vo->evap_baresoil[i];
-	}
+#if defined(RSOILWAT)
+    get_outvalleader(
+        &sw->Model, pd, OutRun->irow_OUT, OutDom->nrow_OUT, OutRun->tOffset, p
+    );
+#endif
+
+    ForEachEvapLayer(i, sw->Site.n_evap_lyrs) {
+#if defined(RSOILWAT)
+        iOUTIndex = iOUT(
+            i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+
+#elif defined(SWNETCDF)
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_EvapSoil][pd][0] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_EvapSoil][0], 1
+            );
+#endif
+
+        p[iOUTIndex] = vo->evap_baresoil[i];
+    }
+
+#if defined(SWNETCDF)
+    /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+    for (i = sw->Site.n_evap_lyrs; i < OutDom->nsl_OUT[eSW_EvapSoil][0]; i++) {
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_EvapSoil][pd][0] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_EvapSoil][0], 1
+            );
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+    }
+#endif // SWNETCDF
 }
 
 #elif defined(STEPWAT)
@@ -1805,30 +2722,35 @@ void get_evapSoil_mem(OutPeriod pd, SW_ALL* sw)
 @brief Gets evap when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_evapSoil_agg(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_evapSoil_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    LyrIndex i;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD
-		*p = sw->GenOutput.p_OUT[eSW_EvapSoil][pd],
-		*psd = sw->GenOutput.p_OUTsd[eSW_EvapSoil][pd];
+    RealD *p = OutRun->p_OUT[eSW_EvapSoil][pd],
+          *psd = OutRun->p_OUTsd[eSW_EvapSoil][pd];
 
-	ForEachEvapLayer(i, sw->Site.n_evap_lyrs)
-	{
-		iOUTIndex = iOUT(i, pd, sw->GenOutput);
-		do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-					   vo->evap_baresoil[i]);
-	}
+    ForEachEvapLayer(i, sw->Site.n_evap_lyrs) {
+        iOUTIndex = iOUT(
+            i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+        do_running_agg(
+            p, psd, iOUTIndex, OutRun->currIter, vo->evap_baresoil[i]
+        );
+    }
 
-	if (sw->GenOutput.print_IterationSummary) {
-		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_EvapSoil], sw);
-	}
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p, psd, pd, OutDom->ncol_OUT[eSW_EvapSoil], sw, OutDom->nrow_OUT
+        );
+    }
 }
 #endif
 
@@ -1840,63 +2762,138 @@ void get_evapSoil_agg(OutPeriod pd, SW_ALL* sw)
 @brief Gets evapSurface when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_evapSurface_text(OutPeriod pd, SW_ALL* sw)
-{
-	int k;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+void get_evapSurface_text(OutPeriod pd, SW_RUN *sw) {
+    int k;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	char str[OUTSTRLEN];
-	sw->GenOutput.sw_outstr[0] = '\0';
+    char str[OUTSTRLEN];
+    OutRun->sw_outstr[0] = '\0';
 
-	snprintf(sw->GenOutput.sw_outstr, sizeof sw->GenOutput.sw_outstr,"%c%.*f", _OUTSEP, OUT_DIGITS, vo->total_evap);
+    snprintf(
+        OutRun->sw_outstr,
+        sizeof OutRun->sw_outstr,
+        "%c%.*f",
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->total_evap
+    );
 
-	ForEachVegType(k) {
-		snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->evap_veg[k]);
-		strcat(sw->GenOutput.sw_outstr, str);
-	}
+    ForEachVegType(k) {
+        snprintf(
+            str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->evap_veg[k]
+        );
+        strcat(OutRun->sw_outstr, str);
+    }
 
-	snprintf(str, OUTSTRLEN, "%c%.*f%c%.*f",
-		_OUTSEP, OUT_DIGITS, vo->litter_evap,
-		_OUTSEP, OUT_DIGITS, vo->surfaceWater_evap);
-	strcat(sw->GenOutput.sw_outstr, str);
+    snprintf(
+        str,
+        OUTSTRLEN,
+        "%c%.*f%c%.*f",
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->litter_evap,
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->surfaceWater_evap
+    );
+    strcat(OutRun->sw_outstr, str);
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets evapSurface when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_evapSurface_mem(OutPeriod pd, SW_ALL* sw)
-{
-	int k;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_evapSurface_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    int k;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD *p = sw->GenOutput.p_OUT[eSW_EvapSurface][pd];
-	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
-					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    RealD *p = OutRun->p_OUT[eSW_EvapSurface][pd];
 
-	iOUTIndex = iOUT(0, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->total_evap;
+#if defined(RSOILWAT)
+    get_outvalleader(
+        &sw->Model, pd, OutRun->irow_OUT, OutDom->nrow_OUT, OutRun->tOffset, p
+    );
+#endif
 
-	ForEachVegType(k) {
-		iOUTIndex = iOUT(k + 1, pd, sw->GenOutput);
-		p[iOUTIndex] = vo->evap_veg[k];
-	}
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
 
-	iOUTIndex = iOUT(NVEGTYPES + 1, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->litter_evap;
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_EvapSurface][pd][0] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
 
-	iOUTIndex = iOUT(NVEGTYPES + 2, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->surfaceWater_evap;
+    p[iOUTIndex] = vo->total_evap;
+
+
+    ForEachVegType(k) {
+#if defined(RSOILWAT)
+        iOUTIndex = iOUT(
+            k + 1, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+
+#elif defined(SWNETCDF)
+        iOUTIndex = OutDom->iOUToffset[eSW_EvapSurface][pd][1] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        0,
+                        k,
+                        1,
+                        OutDom->npft_OUT[eSW_EvapSurface][1]
+                    );
+#endif
+
+        p[iOUTIndex] = vo->evap_veg[k];
+    }
+
+
+#if defined(RSOILWAT)
+    iOUTIndex = iOUT(
+        NVEGTYPES + 1,
+        OutRun->irow_OUT[pd],
+        OutDom->nrow_OUT[pd],
+        ncol_TimeOUT[pd]
+    );
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_EvapSurface][pd][2] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->litter_evap;
+
+
+#if defined(RSOILWAT)
+    iOUTIndex = iOUT(
+        NVEGTYPES + 2,
+        OutRun->irow_OUT[pd],
+        OutDom->nrow_OUT[pd],
+        ncol_TimeOUT[pd]
+    );
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_EvapSurface][pd][3] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->surfaceWater_evap;
 }
 
 #elif defined(STEPWAT)
@@ -1905,42 +2902,53 @@ void get_evapSurface_mem(OutPeriod pd, SW_ALL* sw)
 @brief Gets evapSurface when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_evapSurface_agg(OutPeriod pd, SW_ALL* sw)
-{
-	int k;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_evapSurface_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    int k;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD
-		*p = sw->GenOutput.p_OUT[eSW_EvapSurface][pd],
-		*psd = sw->GenOutput.p_OUTsd[eSW_EvapSurface][pd];
+    RealD *p = OutRun->p_OUT[eSW_EvapSurface][pd],
+          *psd = OutRun->p_OUTsd[eSW_EvapSurface][pd];
 
-	iOUTIndex = iOUT(0, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->total_evap);
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->total_evap);
 
-	ForEachVegType(k) {
-		iOUTIndex = iOUT(k + 1, pd, sw->GenOutput);
-		do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-					   vo->evap_veg[k]);
-	}
+    ForEachVegType(k) {
+        iOUTIndex = iOUT(
+            k + 1, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+        do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->evap_veg[k]);
+    }
 
-	iOUTIndex = iOUT(NVEGTYPES + 1, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->litter_evap);
+    iOUTIndex = iOUT(
+        NVEGTYPES + 1,
+        OutRun->irow_OUT[pd],
+        OutDom->nrow_OUT[pd],
+        ncol_TimeOUT[pd]
+    );
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->litter_evap);
 
-	iOUTIndex = iOUT(NVEGTYPES + 2, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->surfaceWater_evap);
+    iOUTIndex = iOUT(
+        NVEGTYPES + 2,
+        OutRun->irow_OUT[pd],
+        OutDom->nrow_OUT[pd],
+        ncol_TimeOUT[pd]
+    );
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->surfaceWater_evap);
 
-	if (sw->GenOutput.print_IterationSummary) {
-		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd,
-								sw->GenOutput.ncol_OUT[eSW_EvapSurface], sw);
-	}
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p, psd, pd, OutDom->ncol_OUT[eSW_EvapSurface], sw, OutDom->nrow_OUT
+        );
+    }
 }
 #endif
 
@@ -1951,58 +2959,110 @@ void get_evapSurface_agg(OutPeriod pd, SW_ALL* sw)
 @brief Gets total_int, int_veg, and litter_int when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_interception_text(OutPeriod pd, SW_ALL* sw)
-{
-	int k;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+void get_interception_text(OutPeriod pd, SW_RUN *sw) {
+    int k;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	char str[OUTSTRLEN];
-	sw->GenOutput.sw_outstr[0] = '\0';
+    char str[OUTSTRLEN];
+    OutRun->sw_outstr[0] = '\0';
 
-	snprintf(sw->GenOutput.sw_outstr, sizeof sw->GenOutput.sw_outstr,"%c%.*f", _OUTSEP, OUT_DIGITS, vo->total_int);
+    snprintf(
+        OutRun->sw_outstr,
+        sizeof OutRun->sw_outstr,
+        "%c%.*f",
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->total_int
+    );
 
-	ForEachVegType(k) {
-		snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->int_veg[k]);
-		strcat(sw->GenOutput.sw_outstr, str);
-	}
+    ForEachVegType(k) {
+        snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->int_veg[k]);
+        strcat(OutRun->sw_outstr, str);
+    }
 
-	snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->litter_int);
-	strcat(sw->GenOutput.sw_outstr, str);
+    snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->litter_int);
+    strcat(OutRun->sw_outstr, str);
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets total_int, int_veg, and litter_int when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_interception_mem(OutPeriod pd, SW_ALL* sw)
-{
-	int k;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_interception_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    int k;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD *p = sw->GenOutput.p_OUT[eSW_Interception][pd];
-	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
-					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    RealD *p = OutRun->p_OUT[eSW_Interception][pd];
 
-	iOUTIndex = iOUT(0, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->total_int;
+#if defined(RSOILWAT)
+    get_outvalleader(
+        &sw->Model, pd, OutRun->irow_OUT, OutDom->nrow_OUT, OutRun->tOffset, p
+    );
+#endif
 
-	ForEachVegType(k) {
-		iOUTIndex = iOUT(k + 1, pd, sw->GenOutput);
-		p[iOUTIndex] = vo->int_veg[k];
-	}
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
 
-	iOUTIndex = iOUT(NVEGTYPES + 1, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->litter_int;
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_Interception][pd][0] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->total_int;
+
+
+    ForEachVegType(k) {
+#if defined(RSOILWAT)
+        iOUTIndex = iOUT(
+            k + 1, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+
+#elif defined(SWNETCDF)
+        iOUTIndex = OutDom->iOUToffset[eSW_Interception][pd][1] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        0,
+                        k,
+                        1,
+                        OutDom->npft_OUT[eSW_Interception][1]
+                    );
+#endif
+
+        p[iOUTIndex] = vo->int_veg[k];
+    }
+
+
+#if defined(RSOILWAT)
+    iOUTIndex = iOUT(
+        NVEGTYPES + 1,
+        OutRun->irow_OUT[pd],
+        OutDom->nrow_OUT[pd],
+        ncol_TimeOUT[pd]
+    );
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_Interception][pd][2] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->litter_int;
 }
 
 #elif defined(STEPWAT)
@@ -2011,37 +3071,45 @@ void get_interception_mem(OutPeriod pd, SW_ALL* sw)
 @brief Gets total_int, int_veg, and litter_int when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_interception_agg(OutPeriod pd, SW_ALL* sw)
-{
-	int k;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_interception_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    int k;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD
-		*p = sw->GenOutput.p_OUT[eSW_Interception][pd],
-		*psd = sw->GenOutput.p_OUTsd[eSW_Interception][pd];
+    RealD *p = OutRun->p_OUT[eSW_Interception][pd],
+          *psd = OutRun->p_OUTsd[eSW_Interception][pd];
 
-	iOUTIndex = iOUT(0, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->total_int);
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->total_int);
 
-	ForEachVegType(k) {
-		iOUTIndex = iOUT(k + 1, pd, sw->GenOutput);
-		do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-					   vo->int_veg[k]);
-	}
+    ForEachVegType(k) {
+        iOUTIndex = iOUT(
+            k + 1, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+        do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->int_veg[k]);
+    }
 
-	iOUTIndex = iOUT(NVEGTYPES + 1, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->litter_int);
+    iOUTIndex = iOUT(
+        NVEGTYPES + 1,
+        OutRun->irow_OUT[pd],
+        OutDom->nrow_OUT[pd],
+        ncol_TimeOUT[pd]
+    );
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->litter_int);
 
-	if (sw->GenOutput.print_IterationSummary) {
-		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_Interception], sw);
-	}
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p, psd, pd, OutDom->ncol_OUT[eSW_Interception], sw, OutDom->nrow_OUT
+        );
+    }
 }
 #endif
 
@@ -2052,41 +3120,65 @@ void get_interception_agg(OutPeriod pd, SW_ALL* sw)
 @brief Gets soil_inf when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_soilinf_text(OutPeriod pd, SW_ALL* sw)
-{
-	/* 20100202 (drs) added */
-	/* 20110219 (drs) added runoff */
-	/* 12/13/2012	(clk)	moved runoff, now named snowRunoff, to get_runoffrunon(); */
-	SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+void get_soilinf_text(OutPeriod pd, SW_RUN *sw) {
+    /* 20100202 (drs) added */
+    /* 20110219 (drs) added runoff */
+    /* 12/13/2012	(clk)	moved runoff, now named snowRunoff, to
+     * get_runoffrunon(); */
+    SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	sw->GenOutput.sw_outstr[0] = '\0';
-	snprintf(sw->GenOutput.sw_outstr, sizeof sw->GenOutput.sw_outstr,"%c%.*f", _OUTSEP, OUT_DIGITS, vo->soil_inf);
+    OutRun->sw_outstr[0] = '\0';
+    snprintf(
+        OutRun->sw_outstr,
+        sizeof OutRun->sw_outstr,
+        "%c%.*f",
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->soil_inf
+    );
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets soil_inf when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_soilinf_mem(OutPeriod pd, SW_ALL* sw)
-{
-	SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
-	size_t iOUTIndex;
+void get_soilinf_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD *p = sw->GenOutput.p_OUT[eSW_SoilInf][pd];
-	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
-					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    RealD *p = OutRun->p_OUT[eSW_SoilInf][pd];
 
-	iOUTIndex = iOUT(0, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->soil_inf;
+#if defined(RSOILWAT)
+    get_outvalleader(
+        &sw->Model, pd, OutRun->irow_OUT, OutDom->nrow_OUT, OutRun->tOffset, p
+    );
+#endif
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_SoilInf][pd][0] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->soil_inf;
 }
 
 #elif defined(STEPWAT)
@@ -2095,27 +3187,29 @@ void get_soilinf_mem(OutPeriod pd, SW_ALL* sw)
 @brief Gets soil_inf when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_soilinf_agg(OutPeriod pd, SW_ALL* sw)
-{
-	SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
-	size_t iOUTIndex;
+void get_soilinf_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD
-		*p = sw->GenOutput.p_OUT[eSW_SoilInf][pd],
-		*psd = sw->GenOutput.p_OUTsd[eSW_SoilInf][pd];
+    RealD *p = OutRun->p_OUT[eSW_SoilInf][pd],
+          *psd = OutRun->p_OUTsd[eSW_SoilInf][pd];
 
-	iOUTIndex = iOUT(0, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->soil_inf);
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->soil_inf);
 
-	if (sw->GenOutput.print_IterationSummary) {
-		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd,
-										sw->GenOutput.ncol_OUT[eSW_SoilInf], sw);
-	}
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p, psd, pd, OutDom->ncol_OUT[eSW_SoilInf], sw, OutDom->nrow_OUT
+        );
+    }
 }
 #endif
 
@@ -2127,50 +3221,82 @@ void get_soilinf_agg(OutPeriod pd, SW_ALL* sw)
 @brief Gets lyrdrain when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_lyrdrain_text(OutPeriod pd, SW_ALL* sw)
-{
-	/* 20100202 (drs) added */
-	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+void get_lyrdrain_text(OutPeriod pd, SW_RUN *sw) {
+    /* 20100202 (drs) added */
+    LyrIndex i;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	char str[OUTSTRLEN];
-	sw->GenOutput.sw_outstr[0] = '\0';
+    char str[OUTSTRLEN];
+    OutRun->sw_outstr[0] = '\0';
 
-	for (i = 0; i < sw->Site.n_layers - 1; i++)
-	{
-		snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->lyrdrain[i]);
-		strcat(sw->GenOutput.sw_outstr, str);
-	}
+    for (i = 0; i < sw->Site.n_layers - 1; i++) {
+        snprintf(
+            str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->lyrdrain[i]
+        );
+        strcat(OutRun->sw_outstr, str);
+    }
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets lyrdrain when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_lyrdrain_mem(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_lyrdrain_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    LyrIndex i;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD *p = sw->GenOutput.p_OUT[eSW_LyrDrain][pd];
-	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
-					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    RealD *p = OutRun->p_OUT[eSW_LyrDrain][pd];
 
-	for (i = 0; i < sw->Site.n_layers - 1; i++)
-	{
-		iOUTIndex = iOUT(i, pd, sw->GenOutput);
-		p[iOUTIndex] = vo->lyrdrain[i];
-	}
+#if defined(RSOILWAT)
+    get_outvalleader(
+        &sw->Model, pd, OutRun->irow_OUT, OutDom->nrow_OUT, OutRun->tOffset, p
+    );
+#endif
+
+    for (i = 0; i < sw->Site.n_layers - 1; i++) {
+#if defined(RSOILWAT)
+        iOUTIndex = iOUT(
+            i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+
+#elif defined(SWNETCDF)
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_LyrDrain][pd][0] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_LyrDrain][0], 1
+            );
+#endif
+
+        p[iOUTIndex] = vo->lyrdrain[i];
+    }
+
+#if defined(SWNETCDF)
+    /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+    for (i = sw->Site.n_layers - 1; i < OutDom->nsl_OUT[eSW_LyrDrain][0]; i++) {
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_LyrDrain][pd][0] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_LyrDrain][0], 1
+            );
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+    }
+#endif // SWNETCDF
 }
 
 #elif defined(STEPWAT)
@@ -2179,31 +3305,33 @@ void get_lyrdrain_mem(OutPeriod pd, SW_ALL* sw)
 @brief Gets lyrdrain when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_lyrdrain_agg(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_lyrdrain_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    LyrIndex i;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD
-		*p = sw->GenOutput.p_OUT[eSW_LyrDrain][pd],
-		*psd = sw->GenOutput.p_OUTsd[eSW_LyrDrain][pd];
+    RealD *p = OutRun->p_OUT[eSW_LyrDrain][pd],
+          *psd = OutRun->p_OUTsd[eSW_LyrDrain][pd];
 
-	for (i = 0; i < sw->Site.n_layers - 1; i++)
-	{
-		iOUTIndex = iOUT(i, pd, sw->GenOutput);
-		do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-					   vo->lyrdrain[i]);
-	}
+    for (i = 0; i < sw->Site.n_layers - 1; i++) {
+        iOUTIndex = iOUT(
+            i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+        do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->lyrdrain[i]);
+    }
 
-	if (sw->GenOutput.print_IterationSummary) {
-		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd,
-								sw->GenOutput.ncol_OUT[eSW_LyrDrain], sw);
-	}
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p, psd, pd, OutDom->ncol_OUT[eSW_LyrDrain], sw, OutDom->nrow_OUT
+        );
+    }
 }
 #endif
 
@@ -2215,74 +3343,142 @@ void get_lyrdrain_agg(OutPeriod pd, SW_ALL* sw)
 @brief Gets hydred and hydred_total when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_hydred_text(OutPeriod pd, SW_ALL* sw)
-{
-	/* 20101020 (drs) added */
-	LyrIndex i, n_layers = sw->Site.n_layers;
-	int k;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+void get_hydred_text(OutPeriod pd, SW_RUN *sw) {
+    /* 20101020 (drs) added */
+    LyrIndex i, n_layers = sw->Site.n_layers;
+    int k;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	char str[OUTSTRLEN];
-	sw->GenOutput.sw_outstr[0] = '\0';
+    char str[OUTSTRLEN];
+    OutRun->sw_outstr[0] = '\0';
 
-	/* total hydraulic redistribution */
-	ForEachSoilLayer(i, n_layers)
-	{
-		snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->hydred_total[i]);
-		strcat(sw->GenOutput.sw_outstr, str);
-	}
+    /* total hydraulic redistribution */
+    ForEachSoilLayer(i, n_layers) {
+        snprintf(
+            str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->hydred_total[i]
+        );
+        strcat(OutRun->sw_outstr, str);
+    }
 
-	/* hydraulic redistribution for each vegetation type */
-	ForEachVegType(k)
-	{
-		ForEachSoilLayer(i, n_layers)
-		{
-			snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->hydred[k][i]);
-			strcat(sw->GenOutput.sw_outstr, str);
-		}
-	}
+    /* hydraulic redistribution for each vegetation type */
+    ForEachVegType(k) {
+        ForEachSoilLayer(i, n_layers) {
+            snprintf(
+                str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->hydred[k][i]
+            );
+            strcat(OutRun->sw_outstr, str);
+        }
+    }
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets hydred and hydred_total when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_hydred_mem(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i, n_layers = sw->Site.n_layers;
-	int k;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_hydred_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    LyrIndex i, n_layers = sw->Site.n_layers;
+    int k;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD *p = sw->GenOutput.p_OUT[eSW_HydRed][pd];
-	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
-					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    RealD *p = OutRun->p_OUT[eSW_HydRed][pd];
 
-	/* total hydraulic redistribution */
-	ForEachSoilLayer(i, n_layers)
-	{
-		iOUTIndex = iOUT(i, pd, sw->GenOutput);
-		p[iOUTIndex] = vo->hydred_total[i];
-	}
+#if defined(RSOILWAT)
+    get_outvalleader(
+        &sw->Model, pd, OutRun->irow_OUT, OutDom->nrow_OUT, OutRun->tOffset, p
+    );
+#endif
 
-	/* hydraulic redistribution for each vegetation type */
-	ForEachVegType(k)
-	{
-		ForEachSoilLayer(i, n_layers)
-		{
-			iOUTIndex = iOUT2(i, k + 1, pd, sw->GenOutput, n_layers);
-			p[iOUTIndex] = vo->hydred[k][i]; // k + 1 because of total hydred
-		}
-	}
+    /* total hydraulic redistribution */
+    ForEachSoilLayer(i, n_layers) {
+#if defined(RSOILWAT)
+        iOUTIndex = iOUT(
+            i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+
+#elif defined(SWNETCDF)
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_HydRed][pd][0] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_HydRed][0], 1
+            );
+#endif
+
+        p[iOUTIndex] = vo->hydred_total[i];
+    }
+
+#if defined(SWNETCDF)
+    /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+    for (i = sw->Site.n_layers; i < OutDom->nsl_OUT[eSW_HydRed][0]; i++) {
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_HydRed][pd][0] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_HydRed][0], 1
+            );
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+    }
+#endif // SWNETCDF
+
+
+    /* hydraulic redistribution for each vegetation type */
+    ForEachVegType(k) {
+        ForEachSoilLayer(i, n_layers) {
+#if defined(RSOILWAT)
+            // k + 1 because of total hydred
+            iOUTIndex = iOUT2(
+                i,
+                k + 1,
+                pd,
+                OutRun->irow_OUT,
+                OutDom->nrow_OUT,
+                sw->Site.n_layers
+            );
+
+#elif defined(SWNETCDF)
+            iOUTIndex = OutDom->iOUToffset[eSW_HydRed][pd][1] +
+                        iOUTnc(
+                            OutRun->irow_OUT[pd],
+                            i,
+                            k,
+                            OutDom->nsl_OUT[eSW_HydRed][1],
+                            OutDom->npft_OUT[eSW_HydRed][1]
+                        );
+#endif
+
+            p[iOUTIndex] = vo->hydred[k][i];
+        }
+
+#if defined(SWNETCDF)
+        /* Set extra soil layers to missing/fill value (up to domain-wide max)
+         */
+        for (i = sw->Site.n_layers; i < OutDom->nsl_OUT[eSW_HydRed][0]; i++) {
+            iOUTIndex = OutDom->iOUToffset[eSW_HydRed][pd][1] +
+                        iOUTnc(
+                            OutRun->irow_OUT[pd],
+                            i,
+                            k,
+                            OutDom->nsl_OUT[eSW_HydRed][1],
+                            OutDom->npft_OUT[eSW_HydRed][1]
+                        );
+            p[iOUTIndex] = NC_FILL_DOUBLE;
+        }
+#endif // SWNETCDF
+    }
 }
 
 #elif defined(STEPWAT)
@@ -2291,48 +3487,54 @@ void get_hydred_mem(OutPeriod pd, SW_ALL* sw)
 @brief Gets hydred and hydred_total when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_hydred_agg(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i, n_layers = sw->Site.n_layers;
-	int k;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_hydred_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    LyrIndex i, n_layers = sw->Site.n_layers;
+    int k;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD
-		*p = sw->GenOutput.p_OUT[eSW_HydRed][pd],
-		*psd = sw->GenOutput.p_OUTsd[eSW_HydRed][pd];
+    RealD *p = OutRun->p_OUT[eSW_HydRed][pd],
+          *psd = OutRun->p_OUTsd[eSW_HydRed][pd];
 
-	/* total hydraulic redistribution */
-	ForEachSoilLayer(i, n_layers)
-	{
-		iOUTIndex = iOUT(i, pd, sw->GenOutput);
-		do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-					   vo->hydred_total[i]);
-	}
+    /* total hydraulic redistribution */
+    ForEachSoilLayer(i, n_layers) {
+        iOUTIndex = iOUT(
+            i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+        do_running_agg(
+            p, psd, iOUTIndex, OutRun->currIter, vo->hydred_total[i]
+        );
+    }
 
-	if (sw->GenOutput.print_IterationSummary) {
-		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, n_layers, sw);
-	}
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(p, psd, pd, n_layers, sw, OutDom->nrow_OUT);
+    }
 
-	/* hydraulic redistribution for each vegetation type */
-	ForEachVegType(k)
-	{
-		ForEachSoilLayer(i, n_layers)
-		{
-			// k + 1 because of total hydred
-			iOUTIndex = iOUT2(i, k + 1, pd, sw->GenOutput, n_layers);
-			do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-						   vo->hydred[k][i]);
-		}
-	}
+    /* hydraulic redistribution for each vegetation type */
+    ForEachVegType(k) {
+        ForEachSoilLayer(i, n_layers) {
+            // k + 1 because of total hydred
+            iOUTIndex = iOUT2(
+                i, k + 1, pd, OutRun->irow_OUT, OutDom->nrow_OUT, n_layers
+            );
+            do_running_agg(
+                p, psd, iOUTIndex, OutRun->currIter, vo->hydred[k][i]
+            );
+        }
+    }
 
-	if (sw->GenOutput.print_IterationSummary) {
-		format_IterationSummary2(p, psd, pd, NVEGTYPES, 1, sw);
-	}
+    if (OutDom->print_IterationSummary) {
+        format_IterationSummary2(
+            p, psd, pd, NVEGTYPES, 1, sw, OutDom->nrow_OUT
+        );
+    }
 }
 #endif
 
@@ -2344,66 +3546,138 @@ void get_hydred_agg(OutPeriod pd, SW_ALL* sw)
 @brief Gets actual evapotranspiration when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_aet_text(OutPeriod pd, SW_ALL* sw)
-{
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	SW_WEATHER_OUTPUTS *vo2 = sw->Weather.p_oagg[pd];
+void get_aet_text(OutPeriod pd, SW_RUN *sw) {
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo2 = sw->Weather.p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	sw->GenOutput.sw_outstr[0] = '\0';
-	snprintf(
-		sw->GenOutput.sw_outstr,
-		sizeof sw->GenOutput.sw_outstr,
-		"%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f",
-		_OUTSEP, OUT_DIGITS, vo->aet,
-		_OUTSEP, OUT_DIGITS, vo->tran,
-		_OUTSEP, OUT_DIGITS, vo->esoil,
-		_OUTSEP, OUT_DIGITS, vo->ecnw,
-		_OUTSEP, OUT_DIGITS, vo->esurf,
-		_OUTSEP, OUT_DIGITS, vo2->snowloss // should be `vo->esnow`
-	);
-
+    OutRun->sw_outstr[0] = '\0';
+    snprintf(
+        OutRun->sw_outstr,
+        sizeof OutRun->sw_outstr,
+        "%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f",
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->aet,
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->tran,
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->esoil,
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->ecnw,
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->esurf,
+        _OUTSEP,
+        OUT_DIGITS,
+        vo2->snowloss // should be `vo->esnow`
+    );
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets actual evapotranspiration when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_aet_mem(OutPeriod pd, SW_ALL* sw)
-{
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	SW_WEATHER_OUTPUTS *vo2 = sw->Weather.p_oagg[pd];
-	size_t iOUTIndex;
+void get_aet_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo2 = sw->Weather.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD *p = sw->GenOutput.p_OUT[eSW_AET][pd];
-	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
-					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    RealD *p = OutRun->p_OUT[eSW_AET][pd];
 
-	iOUTIndex = iOUT(0, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->aet;
+#if defined(RSOILWAT)
+    get_outvalleader(
+        &sw->Model, pd, OutRun->irow_OUT, OutDom->nrow_OUT, OutRun->tOffset, p
+    );
+#endif
 
-	iOUTIndex = iOUT(1, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->tran;
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
 
-	iOUTIndex = iOUT(2, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->esoil;
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_AET][pd][0] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
 
-	iOUTIndex = iOUT(3, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->ecnw;
+    p[iOUTIndex] = vo->aet;
 
-	iOUTIndex = iOUT(4, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->esurf;
 
-	iOUTIndex = iOUT(5, pd, sw->GenOutput);
-	p[iOUTIndex] = vo2->snowloss; // should be `vo->esnow`
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(1, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_AET][pd][1] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->tran;
+
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(2, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_AET][pd][2] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->esoil;
+
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(3, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_AET][pd][3] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->ecnw;
+
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(4, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_AET][pd][4] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->esurf;
+
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(5, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_AET][pd][5] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo2->snowloss; // should be `vo->esnow`
 }
 
 #elif defined(STEPWAT)
@@ -2412,64 +3686,70 @@ void get_aet_mem(OutPeriod pd, SW_ALL* sw)
 @brief Gets actual evapotranspiration when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_aet_agg(OutPeriod pd, SW_ALL* sw)
-{
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	SW_WEATHER_OUTPUTS *vo2 = sw->Weather.p_oagg[pd];
-	size_t iOUTIndex;
+void get_aet_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo2 = sw->Weather.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD
-		*p = sw->GenOutput.p_OUT[eSW_AET][pd],
-		*psd = sw->GenOutput.p_OUTsd[eSW_AET][pd];
+    RealD *p = OutRun->p_OUT[eSW_AET][pd], *psd = OutRun->p_OUTsd[eSW_AET][pd];
 
-	iOUTIndex = iOUT(0, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->aet);
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->aet);
 
-	iOUTIndex = iOUT(1, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->tran);
+    iOUTIndex =
+        iOUT(1, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->tran);
 
-	iOUTIndex = iOUT(2, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->esoil);
+    iOUTIndex =
+        iOUT(2, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->esoil);
 
-	iOUTIndex = iOUT(3, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->ecnw);
+    iOUTIndex =
+        iOUT(3, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->ecnw);
 
-	iOUTIndex = iOUT(4, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->esurf);
+    iOUTIndex =
+        iOUT(4, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->esurf);
 
-	// should be `vo->esnow`
-	iOUTIndex = iOUT(5, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo2->snowloss);
+    // should be `vo->esnow`
+    iOUTIndex =
+        iOUT(5, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo2->snowloss);
 
-	if (sw->GenOutput.print_IterationSummary) {
-		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_AET], sw);
-	}
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p, psd, pd, OutDom->ncol_OUT[eSW_AET], sw, OutDom->nrow_OUT
+        );
+    }
 }
 
 /**
 @brief STEPWAT2 expects annual sum of actual evapotranspiration
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_aet_SXW(OutPeriod pd, SW_ALL* sw)
-{
-	if (pd == eSW_Year) {
-		SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+void get_aet_SXW(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    if (pd == eSW_Year) {
+        SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+        SW_OUT_RUN *OutRun = &sw->OutRun;
 
-		sw->GenOutput.aet = vo->aet;
-	}
+        OutRun->aet = vo->aet;
+    }
+
+    (void) OutDom;
 }
 #endif
 
@@ -2478,100 +3758,164 @@ void get_aet_SXW(OutPeriod pd, SW_ALL* sw)
 #ifdef SW_OUTTEXT
 
 /**
-@brief Gets potential evapotranspiration and radiation
-				when dealing with OUTTEXT.
+@brief Gets potential evapotranspiration and radiation when dealing with OUTTEXT
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_pet_text(OutPeriod pd, SW_ALL* sw)
-{
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+void get_pet_text(OutPeriod pd, SW_RUN *sw) {
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	sw->GenOutput.sw_outstr[0] = '\0';
-	snprintf(
-		sw->GenOutput.sw_outstr,
-		sizeof sw->GenOutput.sw_outstr,
-		"%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f",
-		_OUTSEP, OUT_DIGITS, vo->pet,
-		_OUTSEP, OUT_DIGITS, vo->H_oh,
-		_OUTSEP, OUT_DIGITS, vo->H_ot,
-		_OUTSEP, OUT_DIGITS, vo->H_gh,
-		_OUTSEP, OUT_DIGITS, vo->H_gt
-	);
+    OutRun->sw_outstr[0] = '\0';
+    snprintf(
+        OutRun->sw_outstr,
+        sizeof OutRun->sw_outstr,
+        "%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f",
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->pet,
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->H_oh,
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->H_ot,
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->H_gh,
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->H_gt
+    );
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets potential evapotranspiration and radiation
-			when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_pet_mem(OutPeriod pd, SW_ALL* sw)
-{
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_pet_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD *p = sw->GenOutput.p_OUT[eSW_PET][pd];
-	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
-					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    RealD *p = OutRun->p_OUT[eSW_PET][pd];
 
-	iOUTIndex = iOUT(0, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->pet;
+#if defined(RSOILWAT)
+    get_outvalleader(
+        &sw->Model, pd, OutRun->irow_OUT, OutDom->nrow_OUT, OutRun->tOffset, p
+    );
+#endif
 
-	iOUTIndex = iOUT(1, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->H_oh;
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
 
-	iOUTIndex = iOUT(2, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->H_ot;
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_PET][pd][0] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
 
-	iOUTIndex = iOUT(3, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->H_gh;
+    p[iOUTIndex] = vo->pet;
 
-	iOUTIndex = iOUT(4, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->H_gt;
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(1, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_PET][pd][1] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->H_oh;
+
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(2, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_PET][pd][2] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->H_ot;
+
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(3, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_PET][pd][3] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->H_gh;
+
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(4, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_PET][pd][4] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->H_gt;
 }
 
 #elif defined(STEPWAT)
 
 /**
 @brief Gets potential evapotranspiration and radiation
-			when dealing with OUTTEXT.
 */
-void get_pet_agg(OutPeriod pd, SW_ALL* sw)
-{
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_pet_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD
-		*p = sw->GenOutput.p_OUT[eSW_PET][pd],
-		*psd = sw->GenOutput.p_OUTsd[eSW_PET][pd];
+    RealD *p = OutRun->p_OUT[eSW_PET][pd], *psd = OutRun->p_OUTsd[eSW_PET][pd];
 
-	iOUTIndex = iOUT(0, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter, vo->pet);
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->pet);
 
-	iOUTIndex = iOUT(1, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter, vo->H_oh);
+    iOUTIndex =
+        iOUT(1, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->H_oh);
 
-	iOUTIndex = iOUT(2, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter, vo->H_ot);
+    iOUTIndex =
+        iOUT(2, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->H_ot);
 
-	iOUTIndex = iOUT(3, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter, vo->H_gh);
+    iOUTIndex =
+        iOUT(3, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->H_gh);
 
-	iOUTIndex = iOUT(4, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter, vo->H_gt);
+    iOUTIndex =
+        iOUT(4, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->H_gt);
 
-	if (sw->GenOutput.print_IterationSummary) {
-		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_PET], sw);
-	}
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p, psd, pd, OutDom->ncol_OUT[eSW_PET], sw, OutDom->nrow_OUT
+        );
+    }
 }
 #endif
 
@@ -2583,69 +3927,94 @@ void get_pet_agg(OutPeriod pd, SW_ALL* sw)
 @brief Gets is_wet and wetdays when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_wetdays_text(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i, n_layers = sw->Site.n_layers;
+void get_wetdays_text(OutPeriod pd, SW_RUN *sw) {
+    LyrIndex i, n_layers = sw->Site.n_layers;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	char str[OUTSTRLEN];
-	sw->GenOutput.sw_outstr[0] = '\0';
+    char str[OUTSTRLEN];
+    OutRun->sw_outstr[0] = '\0';
 
-	if (pd == eSW_Day)
-	{
-		ForEachSoilLayer(i, n_layers) {
-			snprintf(str, OUTSTRLEN, "%c%i", _OUTSEP, (sw->SoilWat.is_wet[i]) ? 1 : 0);
-			strcat(sw->GenOutput.sw_outstr, str);
-		}
+    if (pd == eSW_Day) {
+        ForEachSoilLayer(i, n_layers) {
+            snprintf(
+                str, OUTSTRLEN, "%c%i", _OUTSEP, (sw->SoilWat.is_wet[i]) ? 1 : 0
+            );
+            strcat(OutRun->sw_outstr, str);
+        }
 
-	} else
-	{
-		SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    } else {
+        SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
-		ForEachSoilLayer(i, n_layers) {
-			snprintf(str, OUTSTRLEN, "%c%i", _OUTSEP, (int) vo->wetdays[i]);
-			strcat(sw->GenOutput.sw_outstr, str);
-		}
-	}
+        ForEachSoilLayer(i, n_layers) {
+            snprintf(str, OUTSTRLEN, "%c%i", _OUTSEP, (int) vo->wetdays[i]);
+            strcat(OutRun->sw_outstr, str);
+        }
+    }
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets is_wet and wetdays when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_wetdays_mem(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i;
-	size_t iOUTIndex;
+void get_wetdays_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    LyrIndex i;
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD *p = sw->GenOutput.p_OUT[eSW_WetDays][pd];
-	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
-					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    RealD *p = OutRun->p_OUT[eSW_WetDays][pd];
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
-	if (pd == eSW_Day)
-	{
-		ForEachSoilLayer(i, sw->Site.n_layers) {
-			iOUTIndex = iOUT(i, pd, sw->GenOutput);
-			p[iOUTIndex] = (sw->SoilWat.is_wet[i]) ? 1 : 0;
-		}
+#if defined(RSOILWAT)
+    get_outvalleader(
+        &sw->Model, pd, OutRun->irow_OUT, OutDom->nrow_OUT, OutRun->tOffset, p
+    );
+#endif
 
-	} else
-	{
-		SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+#if defined(RSOILWAT)
+        iOUTIndex = iOUT(
+            i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
 
-		ForEachSoilLayer(i, sw->Site.n_layers) {
-			iOUTIndex = iOUT(i, pd, sw->GenOutput);
-			p[iOUTIndex] = (int) vo->wetdays[i];
-		}
-	}
+#elif defined(SWNETCDF)
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_WetDays][pd][0] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_WetDays][0], 1
+            );
+#endif
+
+        if (pd == eSW_Day) {
+            p[iOUTIndex] = (sw->SoilWat.is_wet[i]) ? 1 : 0;
+        } else {
+            p[iOUTIndex] = (int) vo->wetdays[i];
+        }
+    }
+
+#if defined(SWNETCDF)
+    /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+    for (i = sw->Site.n_layers; i < OutDom->nsl_OUT[eSW_WetDays][0]; i++) {
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_WetDays][pd][0] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_WetDays][0], 1
+            );
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+    }
+#endif // SWNETCDF
 }
 
 #elif defined(STEPWAT)
@@ -2654,41 +4023,50 @@ void get_wetdays_mem(OutPeriod pd, SW_ALL* sw)
 @brief Gets is_wet and wetdays when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_wetdays_agg(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i;
-	size_t iOUTIndex;
+void get_wetdays_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    LyrIndex i;
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD
-		*p = sw->GenOutput.p_OUT[eSW_WetDays][pd],
-		*psd = sw->GenOutput.p_OUTsd[eSW_WetDays][pd];
+    RealD *p = OutRun->p_OUT[eSW_WetDays][pd],
+          *psd = OutRun->p_OUTsd[eSW_WetDays][pd];
 
-	if (pd == eSW_Day)
-	{
-		ForEachSoilLayer(i, sw->Site.n_layers) {
-			iOUTIndex = iOUT(i, pd, sw->GenOutput);
-			do_running_agg(p, psd, iOUTIndex,sw->GenOutput.currIter,
-						   (sw->SoilWat.is_wet[i]) ? 1 : 0);
-		}
+    if (pd == eSW_Day) {
+        ForEachSoilLayer(i, sw->Site.n_layers) {
+            iOUTIndex = iOUT(
+                i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+            );
+            do_running_agg(
+                p,
+                psd,
+                iOUTIndex,
+                OutRun->currIter,
+                (sw->SoilWat.is_wet[i]) ? 1 : 0
+            );
+        }
 
-	} else
-	{
-		SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    } else {
+        SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
-		ForEachSoilLayer(i, sw->Site.n_layers) {
-			iOUTIndex = iOUT(i, pd, sw->GenOutput);
-			do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-						   vo->wetdays[i]);
-		}
-	}
+        ForEachSoilLayer(i, sw->Site.n_layers) {
+            iOUTIndex = iOUT(
+                i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+            );
+            do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->wetdays[i]);
+        }
+    }
 
-	if (sw->GenOutput.print_IterationSummary) {
-		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_WetDays], sw);
-	}
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p, psd, pd, OutDom->ncol_OUT[eSW_WetDays], sw, OutDom->nrow_OUT
+        );
+    }
 }
 #endif
 
@@ -2700,43 +4078,76 @@ void get_wetdays_agg(OutPeriod pd, SW_ALL* sw)
 @brief Gets snowpack and snowdepth when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_snowpack_text(OutPeriod pd, SW_ALL* sw)
-{
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+void get_snowpack_text(OutPeriod pd, SW_RUN *sw) {
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	sw->GenOutput.sw_outstr[0] = '\0';
-	snprintf(sw->GenOutput.sw_outstr, sizeof sw->GenOutput.sw_outstr,"%c%.*f%c%.*f",
-		_OUTSEP, OUT_DIGITS, vo->snowpack,
-		_OUTSEP, OUT_DIGITS, vo->snowdepth);
+    OutRun->sw_outstr[0] = '\0';
+    snprintf(
+        OutRun->sw_outstr,
+        sizeof OutRun->sw_outstr,
+        "%c%.*f%c%.*f",
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->snowpack,
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->snowdepth
+    );
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets snowpack and snowdepth when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_snowpack_mem(OutPeriod pd, SW_ALL* sw)
-{
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_snowpack_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD *p = sw->GenOutput.p_OUT[eSW_SnowPack][pd];
-	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
-					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    RealD *p = OutRun->p_OUT[eSW_SnowPack][pd];
 
-	iOUTIndex = iOUT(0, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->snowpack;
+#if defined(RSOILWAT)
+    get_outvalleader(
+        &sw->Model, pd, OutRun->irow_OUT, OutDom->nrow_OUT, OutRun->tOffset, p
+    );
+#endif
 
-	iOUTIndex = iOUT(1, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->snowdepth;
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_SnowPack][pd][0] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->snowpack;
+
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(1, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_SnowPack][pd][1] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->snowdepth;
 }
 
 #elif defined(STEPWAT)
@@ -2745,30 +4156,33 @@ void get_snowpack_mem(OutPeriod pd, SW_ALL* sw)
 @brief Gets snowpack and snowdepth when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_snowpack_agg(OutPeriod pd, SW_ALL* sw)
-{
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_snowpack_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD
-		*p = sw->GenOutput.p_OUT[eSW_SnowPack][pd],
-		*psd = sw->GenOutput.p_OUTsd[eSW_SnowPack][pd];
+    RealD *p = OutRun->p_OUT[eSW_SnowPack][pd],
+          *psd = OutRun->p_OUTsd[eSW_SnowPack][pd];
 
-	iOUTIndex = iOUT(0, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->snowpack);
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->snowpack);
 
-	iOUTIndex = iOUT(1, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->snowdepth);
+    iOUTIndex =
+        iOUT(1, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->snowdepth);
 
-	if (sw->GenOutput.print_IterationSummary) {
-		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_SnowPack], sw);
-	}
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p, psd, pd, OutDom->ncol_OUT[eSW_SnowPack], sw, OutDom->nrow_OUT
+        );
+    }
 }
 #endif
 
@@ -2780,38 +4194,61 @@ void get_snowpack_agg(OutPeriod pd, SW_ALL* sw)
 @brief Gets deep for when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_deepswc_text(OutPeriod pd, SW_ALL* sw)
-{
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+void get_deepswc_text(OutPeriod pd, SW_RUN *sw) {
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	sw->GenOutput.sw_outstr[0] = '\0';
-	snprintf(sw->GenOutput.sw_outstr, sizeof sw->GenOutput.sw_outstr,"%c%.*f", _OUTSEP, OUT_DIGITS, vo->deep);
+    OutRun->sw_outstr[0] = '\0';
+    snprintf(
+        OutRun->sw_outstr,
+        sizeof OutRun->sw_outstr,
+        "%c%.*f",
+        _OUTSEP,
+        OUT_DIGITS,
+        vo->deep
+    );
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets deep for when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_deepswc_mem(OutPeriod pd, SW_ALL* sw)
-{
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_deepswc_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD *p = sw->GenOutput.p_OUT[eSW_DeepSWC][pd];
-	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
-					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    RealD *p = OutRun->p_OUT[eSW_DeepSWC][pd];
 
-	iOUTIndex = iOUT(0, pd, sw->GenOutput);
-	p[iOUTIndex] = vo->deep;
+#if defined(RSOILWAT)
+    get_outvalleader(
+        &sw->Model, pd, OutRun->irow_OUT, OutDom->nrow_OUT, OutRun->tOffset, p
+    );
+#endif
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->iOUToffset[eSW_DeepSWC][pd][0] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->deep;
 }
 
 #elif defined(STEPWAT)
@@ -2820,26 +4257,29 @@ void get_deepswc_mem(OutPeriod pd, SW_ALL* sw)
 @brief Gets deep for when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_deepswc_agg(OutPeriod pd, SW_ALL* sw)
-{
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_deepswc_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD
-		*p = sw->GenOutput.p_OUT[eSW_DeepSWC][pd],
-		*psd = sw->GenOutput.p_OUTsd[eSW_DeepSWC][pd];
+    RealD *p = OutRun->p_OUT[eSW_DeepSWC][pd],
+          *psd = OutRun->p_OUTsd[eSW_DeepSWC][pd];
 
-	iOUTIndex = iOUT(0, pd, sw->GenOutput);
-	do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-				   vo->deep);
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->deep);
 
-	if (sw->GenOutput.print_IterationSummary) {
-		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_DeepSWC], sw);
-	}
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p, psd, pd, OutDom->ncol_OUT[eSW_DeepSWC], sw, OutDom->nrow_OUT
+        );
+    }
 }
 #endif
 
@@ -2851,61 +4291,156 @@ void get_deepswc_agg(OutPeriod pd, SW_ALL* sw)
 @brief Gets soil temperature for when dealing with OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_soiltemp_text(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+void get_soiltemp_text(OutPeriod pd, SW_RUN *sw) {
+    LyrIndex i;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	char str[OUTSTRLEN];
-	sw->GenOutput.sw_outstr[0] = '\0';
+    char str[OUTSTRLEN];
+    OutRun->sw_outstr[0] = '\0';
 
-	ForEachSoilLayer(i, sw->Site.n_layers)
-	{
-        snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->maxLyrTemperature[i]);
-        strcat(sw->GenOutput.sw_outstr, str);
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+        snprintf(
+            str,
+            OUTSTRLEN,
+            "%c%.*f",
+            _OUTSEP,
+            OUT_DIGITS,
+            vo->maxLyrTemperature[i]
+        );
+        strcat(OutRun->sw_outstr, str);
 
-        snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->minLyrTemperature[i]);
-        strcat(sw->GenOutput.sw_outstr, str);
+        snprintf(
+            str,
+            OUTSTRLEN,
+            "%c%.*f",
+            _OUTSEP,
+            OUT_DIGITS,
+            vo->minLyrTemperature[i]
+        );
+        strcat(OutRun->sw_outstr, str);
 
-        snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->avgLyrTemp[i]);
-        strcat(sw->GenOutput.sw_outstr, str);
-	}
+        snprintf(
+            str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->avgLyrTemp[i]
+        );
+        strcat(OutRun->sw_outstr, str);
+    }
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets soil temperature for when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_soiltemp_mem(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_soiltemp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    LyrIndex i;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD *p = sw->GenOutput.p_OUT[eSW_SoilTemp][pd];
-	get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
-					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    RealD *p = OutRun->p_OUT[eSW_SoilTemp][pd];
 
-	ForEachSoilLayer(i, sw->Site.n_layers)
-	{
-		iOUTIndex = iOUT((i * 3), pd, sw->GenOutput);
+#if defined(RSOILWAT)
+    get_outvalleader(
+        &sw->Model, pd, OutRun->irow_OUT, OutDom->nrow_OUT, OutRun->tOffset, p
+    );
+#endif
+
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+#if defined(RSOILWAT)
+        iOUTIndex = iOUT(
+            (i * 3),
+            OutRun->irow_OUT[pd],
+            OutDom->nrow_OUT[pd],
+            ncol_TimeOUT[pd]
+        );
+
+#elif defined(SWNETCDF)
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_SoilTemp][pd][0] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_SoilTemp][0], 1
+            );
+#endif
+
         p[iOUTIndex] = vo->maxLyrTemperature[i];
 
-		iOUTIndex = iOUT((i * 3) + 1, pd, sw->GenOutput);
+
+#if defined(RSOILWAT)
+        iOUTIndex = iOUT(
+            (i * 3) + 1,
+            OutRun->irow_OUT[pd],
+            OutDom->nrow_OUT[pd],
+            ncol_TimeOUT[pd]
+        );
+
+#elif defined(SWNETCDF)
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_SoilTemp][pd][1] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_SoilTemp][1], 1
+            );
+#endif
+
         p[iOUTIndex] = vo->minLyrTemperature[i];
 
-		iOUTIndex = iOUT((i * 3) + 2, pd, sw->GenOutput);
+
+#if defined(RSOILWAT)
+        iOUTIndex = iOUT(
+            (i * 3) + 2,
+            OutRun->irow_OUT[pd],
+            OutDom->nrow_OUT[pd],
+            ncol_TimeOUT[pd]
+        );
+
+#elif defined(SWNETCDF)
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_SoilTemp][pd][2] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_SoilTemp][2], 1
+            );
+#endif
+
         p[iOUTIndex] = vo->avgLyrTemp[i];
-	}
+    }
+
+#if defined(SWNETCDF)
+    /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+    for (i = sw->Site.n_layers; i < OutDom->nsl_OUT[eSW_SoilTemp][0]; i++) {
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_SoilTemp][pd][0] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_SoilTemp][0], 1
+            );
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_SoilTemp][pd][1] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_SoilTemp][1], 1
+            );
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_SoilTemp][pd][2] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_SoilTemp][2], 1
+            );
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+    }
+#endif // SWNETCDF
 }
 
 #elif defined(STEPWAT)
@@ -2914,38 +4449,56 @@ void get_soiltemp_mem(OutPeriod pd, SW_ALL* sw)
 @brief Gets soil temperature for when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_soiltemp_agg(OutPeriod pd, SW_ALL* sw)
-{
-	LyrIndex i;
-	SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+void get_soiltemp_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    LyrIndex i;
+    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-	RealD
-		*p = sw->GenOutput.p_OUT[eSW_SoilTemp][pd],
-		*psd = sw->GenOutput.p_OUTsd[eSW_SoilTemp][pd];
+    RealD *p = OutRun->p_OUT[eSW_SoilTemp][pd],
+          *psd = OutRun->p_OUTsd[eSW_SoilTemp][pd];
 
-    ForEachSoilLayer(i, sw->Site.n_layers)
-    {
-		iOUTIndex = iOUT((i * 3), pd, sw->GenOutput);
-        do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-					   vo->maxLyrTemperature[i]);
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+        iOUTIndex = iOUT(
+            (i * 3),
+            OutRun->irow_OUT[pd],
+            OutDom->nrow_OUT[pd],
+            ncol_TimeOUT[pd]
+        );
+        do_running_agg(
+            p, psd, iOUTIndex, OutRun->currIter, vo->maxLyrTemperature[i]
+        );
 
-		iOUTIndex = iOUT((i * 3) + 1, pd, sw->GenOutput);
-        do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-					   vo->minLyrTemperature[i]);
+        iOUTIndex = iOUT(
+            (i * 3) + 1,
+            OutRun->irow_OUT[pd],
+            OutDom->nrow_OUT[pd],
+            ncol_TimeOUT[pd]
+        );
+        do_running_agg(
+            p, psd, iOUTIndex, OutRun->currIter, vo->minLyrTemperature[i]
+        );
 
-		iOUTIndex = iOUT((i * 3) + 2, pd, sw->GenOutput);
-        do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-					   vo->avgLyrTemp[i]);
+        iOUTIndex = iOUT(
+            (i * 3) + 2,
+            OutRun->irow_OUT[pd],
+            OutDom->nrow_OUT[pd],
+            ncol_TimeOUT[pd]
+        );
+        do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->avgLyrTemp[i]);
     }
 
-	if (sw->GenOutput.print_IterationSummary) {
-		sw->GenOutput.sw_outstr_agg[0] = '\0';
-		format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_SoilTemp], sw);
-	}
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p, psd, pd, OutDom->ncol_OUT[eSW_SoilTemp], sw, OutDom->nrow_OUT
+        );
+    }
 }
 #endif
 
@@ -2953,52 +4506,85 @@ void get_soiltemp_agg(OutPeriod pd, SW_ALL* sw)
 #ifdef SW_OUTTEXT
 
 /**
-@brief Gets state (frozen/unfrozen) for each layer for when dealing with OUTTEXT.
+@brief Gets state (frozen/unfrozen) for each layer for when dealing with
+OUTTEXT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_frozen_text(OutPeriod pd, SW_ALL* sw)
-{
+void get_frozen_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
     char str[OUTSTRLEN];
-    sw->GenOutput.sw_outstr[0] = '\0';
+    OutRun->sw_outstr[0] = '\0';
 
-    ForEachSoilLayer(i, sw->Site.n_layers)
-    {
-        snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->lyrFrozen[i]);
-        strcat(sw->GenOutput.sw_outstr, str);
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+        snprintf(
+            str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->lyrFrozen[i]
+        );
+        strcat(OutRun->sw_outstr, str);
     }
 }
 #endif
 
-#if defined(RSOILWAT)
+#if defined(RSOILWAT) || defined(SWNETCDF)
 
 /**
 @brief Gets soil state (frozen/unfrozen) for when dealing with RSOILWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_frozen_mem(OutPeriod pd, SW_ALL* sw)
-{
+void get_frozen_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = sw->GenOutput.p_OUT[eSW_Frozen][pd];
-    get_outvalleader(&sw->Model, pd, sw->GenOutput.irow_OUT,
-					 sw->GenOutput.nrow_OUT, sw->GenOutput.tOffset, p);
+    RealD *p = OutRun->p_OUT[eSW_Frozen][pd];
 
-    ForEachSoilLayer(i, sw->Site.n_layers)
-    {
-		iOUTIndex = iOUT(i, pd, sw->GenOutput);
+#if defined(RSOILWAT)
+    get_outvalleader(
+        &sw->Model, pd, OutRun->irow_OUT, OutDom->nrow_OUT, OutRun->tOffset, p
+    );
+#endif
+
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+#if defined(RSOILWAT)
+        iOUTIndex = iOUT(
+            i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+
+#elif defined(SWNETCDF)
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_Frozen][pd][0] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_Frozen][0], 1
+            );
+#endif
+
         p[iOUTIndex] = vo->lyrFrozen[i];
     }
+
+#if defined(SWNETCDF)
+    /* Set extra soil layers to missing/fill value (up to domain-wide max) */
+    for (i = sw->Site.n_layers; i < OutDom->nsl_OUT[eSW_Frozen][0]; i++) {
+        iOUTIndex =
+            OutDom->iOUToffset[eSW_Frozen][pd][0] +
+            iOUTnc(
+                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_Frozen][0], 1
+            );
+        p[iOUTIndex] = NC_FILL_DOUBLE;
+    }
+#endif // SWNETCDF
 }
 
 #elif defined(STEPWAT)
@@ -3007,29 +4593,32 @@ void get_frozen_mem(OutPeriod pd, SW_ALL* sw)
 @brief Gets soil temperature for when dealing with STEPWAT.
 
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] sw Comprehensive struct of type SW_ALL containing all information
-  in the simulation.
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
 */
-void get_frozen_agg(OutPeriod pd, SW_ALL* sw)
-{
+void get_frozen_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-	size_t iOUTIndex;
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD
-        *p = sw->GenOutput.p_OUT[eSW_Frozen][pd],
-        *psd = sw->GenOutput.p_OUTsd[eSW_Frozen][pd];
+    RealD *p = OutRun->p_OUT[eSW_Frozen][pd],
+          *psd = OutRun->p_OUTsd[eSW_Frozen][pd];
 
-    ForEachSoilLayer(i, sw->Site.n_layers)
-    {
-		iOUTIndex = iOUT(i, pd, sw->GenOutput);
-        do_running_agg(p, psd, iOUTIndex, sw->GenOutput.currIter,
-					   vo->lyrFrozen[i]);
+    ForEachSoilLayer(i, sw->Site.n_layers) {
+        iOUTIndex = iOUT(
+            i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
+        );
+        do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->lyrFrozen[i]);
     }
 
-    if (sw->GenOutput.print_IterationSummary) {
-        sw->GenOutput.sw_outstr_agg[0] = '\0';
-        format_IterationSummary(p, psd, pd, sw->GenOutput.ncol_OUT[eSW_Frozen], sw);
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p, psd, pd, OutDom->ncol_OUT[eSW_Frozen], sw, OutDom->nrow_OUT
+        );
     }
 }
 #endif

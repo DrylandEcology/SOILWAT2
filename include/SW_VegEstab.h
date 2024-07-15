@@ -1,13 +1,13 @@
 /********************************************************/
 /********************************************************/
 /*	Source file: Veg_Estab.h
-	Type: header
-	Application: SOILWAT - soilwater dynamics simulator
-	Purpose: Supports Veg_Estab.c routines.
-	History:
-	(8/28/01) -- INITIAL CODING - cwb
+        Type: header
+        Application: SOILWAT - soilwater dynamics simulator
+        Purpose: Supports Veg_Estab.c routines.
+        History:
+        (8/28/01) -- INITIAL CODING - cwb
 
-	currently not used.
+        currently not used.
 */
 /********************************************************/
 /********************************************************/
@@ -15,7 +15,9 @@
 #ifndef SW_VEGESTAB_H
 #define SW_VEGESTAB_H
 
-#include "include/SW_datastructs.h"
+#include "include/generic.h"        // for Bool, RealD, IntU
+#include "include/SW_datastructs.h" // for SW_VEGESTAB, SW_VEGESTAB_INFO, SW_...
+#include "include/SW_Defines.h"     // for LyrIndex, TimeInt
 
 
 #ifdef __cplusplus
@@ -30,31 +32,59 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_VES_read(SW_VEGESTAB* SW_VegEstab, char *InFiles[],
-				 char *_ProjDir, LOG_INFO* LogInfo);
-void SW_VES_read2(
-	SW_VEGESTAB* SW_VegEstab,
-	Bool use_VegEstab,
-	Bool consider_InputFlag,
-	char *InFiles[],
-	char *_ProjDir,
-	LOG_INFO* LogInfo
+void SW_VES_read(
+    SW_VEGESTAB *SW_VegEstab, char *InFiles[], char *_ProjDir, LOG_INFO *LogInfo
 );
-void SW_VES_init_ptrs(SW_VEGESTAB* SW_VegEstab);
-void SW_VES_construct(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo);
-void SW_VES_deconstruct(SW_VEGESTAB* SW_VegEstab);
-void SW_VES_init_run(SW_VEGESTAB_INFO** parms, SW_SITE *SW_Site,
-	LyrIndex n_transp_lyrs[], IntU count, LOG_INFO* LogInfo);
-void SW_VegEstab_construct(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo);
-void SW_VES_checkestab(SW_VEGESTAB_INFO** parms, SW_WEATHER* SW_Weather,
-					   RealD swcBulk[][MAX_LAYERS], TimeInt doy,
-					   TimeInt firstdoy, IntU count);
+
+void SW_VES_read2(
+    SW_VEGESTAB *SW_VegEstab,
+    Bool use_VegEstab,
+    Bool consider_InputFlag,
+    char *InFiles[],
+    char *_ProjDir,
+    LOG_INFO *LogInfo
+);
+
+void SW_VES_init_ptrs(SW_VEGESTAB *SW_VegEstab);
+
+void SW_VES_construct(SW_VEGESTAB *SW_VegEstab);
+
+void SW_VES_alloc_outptrs(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo);
+
+void SW_VegEstab_alloc_outptrs(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo);
+
+void SW_VES_deconstruct(SW_VEGESTAB *SW_VegEstab);
+
+void SW_VES_init_run(
+    SW_VEGESTAB_INFO **parms,
+    SW_SITE *SW_Site,
+    LyrIndex n_transp_lyrs[],
+    IntU count,
+    LOG_INFO *LogInfo
+);
+
+void SW_VES_checkestab(
+    SW_VEGESTAB_INFO **parms,
+    SW_WEATHER *SW_Weather,
+    RealD swcBulk[][MAX_LAYERS],
+    TimeInt doy,
+    TimeInt firstdoy,
+    IntU count
+);
+
 void SW_VES_new_year(IntU count);
-void _spp_init(SW_VEGESTAB_INFO** parms, unsigned int sppnum,
-	SW_SITE *SW_Site, LyrIndex n_transp_lyrs[], LOG_INFO* LogInfo);
-IntU _new_species(SW_VEGESTAB* SW_VegEstab, LOG_INFO* LogInfo);
-void _echo_VegEstab(RealD width[], SW_VEGESTAB_INFO** parms,
-					IntU count);
+
+void _spp_init(
+    SW_VEGESTAB_INFO **parms,
+    unsigned int sppnum,
+    SW_SITE *SW_Site,
+    LyrIndex n_transp_lyrs[],
+    LOG_INFO *LogInfo
+);
+
+IntU _new_species(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo);
+
+void _echo_VegEstab(RealD width[], SW_VEGESTAB_INFO **parms, IntU count);
 
 
 /* COMMENT-1
