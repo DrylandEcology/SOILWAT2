@@ -2227,10 +2227,12 @@ unsigned int adjust_Tsoil_by_freezing_and_thawing(
 
     //	double deltaTemp, Cis, sFusionPool[nlyrs], sFusionPool_actual[nlyrs];
     // To avoid compiler warnings "warning: parameter set but not used"
-    double temp;
-    temp = oldavgLyrTemp[0] + avgLyrTemp[0] + shParam + nlyrs + vwc[0] +
-           bDensity[0];
-    temp += temp;
+    (void) oldavgLyrTemp;
+    (void) avgLyrTemp;
+    (void) shParam;
+    (void) nlyrs;
+    (void) vwc;
+    (void) bDensity;
     // end avoid compiler warnings
 
     unsigned int i, sFadjusted_avgLyrTemp;

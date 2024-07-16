@@ -2729,6 +2729,15 @@ static void create_output_dimVar(
             break;
         }
     }
+    if (dimNum >= 3) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "create_output_dimVar() does not support requested dimension '%s'.",
+            name
+        );
+        return; // Exit function prematurely due to error
+    }
 
     varType = (dimNum == pftIndex) ? NC_STRING : NC_DOUBLE;
 
