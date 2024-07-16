@@ -307,7 +307,6 @@ void calcSiteClimate(
                 totalAbove65 = SW_MISSING;
                 currentNonFrost = SW_MISSING;
                 consecNonFrost = SW_MISSING;
-                currMonDay = SW_MISSING;
                 break;
             }
 
@@ -366,6 +365,7 @@ void calcSiteClimate(
                 totalAbove65 += (currentTempMean > 0.0) ? currentTempMean : 0.0;
             }
         }
+
         // Set all values
         climateOutput->minTemp7thMon_C[yearIndex] = current7thMonMin;
         climateOutput->PPT7thMon_mm[yearIndex] = PPT7thMon;

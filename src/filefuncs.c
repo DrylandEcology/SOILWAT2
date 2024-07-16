@@ -406,7 +406,7 @@ Bool MkDir(const char *dname, LOG_INFO *LogInfo) {
      *   -p behavior.
      */
 
-    int r, i, n;
+    int i, n;
     Bool result = swTRUE;
     char *a[256] = {0}; /* points to each path element for mkdir -p behavior */
     char *c;            /* duplicate of dname so we don't change it */
@@ -434,7 +434,7 @@ Bool MkDir(const char *dname, LOG_INFO *LogInfo) {
     for (i = 0; i < n; i++) {
         strcat(errstr, a[i]);
         if (!DirExists(errstr)) {
-            if (0 != (r = mkdir(errstr, 0777))) {
+            if (0 != mkdir(errstr, 0777)) {
                 if (errno == EACCES) {
                     result = swFALSE;
                     break;

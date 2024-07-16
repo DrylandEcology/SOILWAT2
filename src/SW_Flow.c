@@ -665,7 +665,6 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         fmax(0., fmin(peti, sw->SoilWat.litter_int_storage));
     peti -= surface_evap_litter_rate;
     surface_evap_standingWater_rate = fmax(0., fmin(peti, *standingWaterToday));
-    peti -= surface_evap_standingWater_rate;
 
     /* Scale all (potential) evaporation and transpiration flux rates to (PET -
      * Esnow) */

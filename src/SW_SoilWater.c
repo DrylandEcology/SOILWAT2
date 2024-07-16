@@ -216,7 +216,7 @@ static double itp_FXW_for_phi(double theta, double *swrcp, LOG_INFO *LogInfo) {
 
 
     // Set hyper-parameters
-    k1 = 3.174603e-08; // 0 < k1 = 0.2 / (b - a) < inf
+    // k1 = 3.174603e-08; // 0 < k1 = 0.2 / (b - a) < inf
     /*
     k1 = 2. converges in about 31-33 iterations
     k1 = 0.2 converges in 28-30 iterations

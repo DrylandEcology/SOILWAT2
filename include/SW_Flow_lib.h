@@ -351,7 +351,7 @@ unsigned int adjust_Tsoil_by_freezing_and_thawing(
     unsigned int nlyrs,
     double vwc[],
     double bDensity[],
-    Bool fusion_pool_init,
+    Bool *fusion_pool_init,
     double oldsFusionPool_actual[]
 );
 

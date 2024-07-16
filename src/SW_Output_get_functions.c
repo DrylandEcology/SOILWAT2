@@ -660,7 +660,7 @@ void get_estab_text(OutPeriod pd, SW_RUN *sw) {
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
-    i = (IntU) pd; // silence `-Wunused-parameter`
+    (void) pd; // silence `-Wunused-parameter`
 
     for (i = 0; i < sw->VegEstab.count; i++) {
         snprintf(

@@ -2199,7 +2199,7 @@ Based on equations from Eitzinger 2000. @cite Eitzinger2000
 @param vwc An array of temperature-layer VWC values (cm/layer).
 @param bDensity An array of the bulk density of the whole soil per soil layer
     (g/cm<SUP>3</SUP>).
-@param[in] fusion_pool_init Specifies if the values for the soil fusion
+@param[in,out] fusion_pool_init Specifies if the values for the soil fusion
     (thawing/freezing) section of `soil_temperature()` have been initialized
 @param oldsFusionPool_actual Yesterdays actual fusion pool at each soil layer
 
@@ -2213,7 +2213,7 @@ unsigned int adjust_Tsoil_by_freezing_and_thawing(
     unsigned int nlyrs,
     double vwc[],
     double bDensity[],
-    Bool fusion_pool_init,
+    Bool *fusion_pool_init,
     double oldsFusionPool_actual[]
 ) {
     // Calculate fusion pools based on soil profile layers, soil
@@ -2252,11 +2252,11 @@ unsigned int adjust_Tsoil_by_freezing_and_thawing(
      */
 
 
-    if (!fusion_pool_init) {
+    if (!(*fusion_pool_init)) {
         for (i = 0; i < nlyrs; i++) {
             oldsFusionPool_actual[i] = 0.;
         }
-        fusion_pool_init = swTRUE;
+        *fusion_pool_init = swTRUE;
     }
 
     sFadjusted_avgLyrTemp = 0;
@@ -3142,7 +3142,7 @@ void soil_temperature(
         nlyrs,
         vwc,
         bDensity,
-        SW_StRegValues->fusion_pool_init,
+        &SW_StRegValues->fusion_pool_init,
         SW_StRegValues->oldsFusionPool_actual
     );
 
