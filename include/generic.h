@@ -301,7 +301,7 @@ double lobfM(double xs[], double ys[], unsigned int n);
 
 double lobfB(double xs[], double ys[], unsigned int n);
 
-void lobf(double *m, double *b, double xs[], double ys[], unsigned int size);
+void lobf(double *m, double *b, double xs[], double ys[], unsigned int n);
 
 
 double get_running_mean(unsigned int n, double mean_prev, double val_to_add);

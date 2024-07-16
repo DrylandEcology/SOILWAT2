@@ -31,7 +31,7 @@ void DirName(const char *p, char *outString);
 
 const char *BaseName(const char *p);
 
-Bool FileExists(const char *f);
+Bool FileExists(const char *name);
 
 Bool DirExists(const char *d);
 
