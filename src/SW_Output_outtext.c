@@ -220,6 +220,9 @@ static void get_outstrheader(OutPeriod pd, char *str, size_t sizeof_str) {
     case eSW_Year:
         snprintf(str, sizeof_str, "%s", "Year");
         break;
+
+    default:
+        break;
     }
 }
 
@@ -570,6 +573,9 @@ void get_outstrleader(
 
     case eSW_Year:
         snprintf(str, sizeof_str, "%d", SW_Model->simyear);
+        break;
+
+    default:
         break;
     }
 }

@@ -335,6 +335,8 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             break;
 
         case KEY_NOT_FOUND: // Unknown key
+
+        default:
             LogError(
                 LogInfo,
                 LOGWARN,

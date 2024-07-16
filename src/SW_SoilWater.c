@@ -1332,6 +1332,15 @@ void SW_SWC_read(
         case 3:
             SW_SoilWat->hist.method = atoi(inbuf);
             break;
+        default:
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "SW_SWC_read(): incorrect format of input file '%s'.",
+                MyFileName
+            );
+            return; // Exit function prematurely due to error
+            break;
         }
         lineno++;
     }

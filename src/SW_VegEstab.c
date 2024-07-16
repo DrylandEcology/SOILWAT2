@@ -634,6 +634,15 @@ static void _read_spp(
         case 15:
             v->max_temp_estab = atof(inbuf);
             break;
+        default:
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "_read_spp(): incorrect format of input file '%s'.",
+                infile
+            );
+            return; // Exit function prematurely due to error
+            break;
         }
         /* check for valid name first */
         if (0 == lineno) {

@@ -1760,6 +1760,8 @@ void set_soillayers(
             case SW_GRASS:
                 SW_Site->transp_coeff[k][lyrno] = trco_grass[i];
                 break;
+            default:
+                break;
             }
         }
 

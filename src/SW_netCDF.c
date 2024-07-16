@@ -382,6 +382,7 @@ static void nc_read_atts(
             SW_netCDF->baseCalendarYear = atoi(value);
             break;
         case KEY_NOT_FOUND:
+        default:
             LogError(
                 LogInfo,
                 LOGWARN,

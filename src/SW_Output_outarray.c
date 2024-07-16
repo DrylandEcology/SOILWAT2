@@ -199,6 +199,7 @@ void get_outvalleader(
         break;
 
     case eSW_Year:
+    default:
         break;
     }
 }
