@@ -168,7 +168,6 @@ void SW_OUT_construct(
     Bool make_regular[],
     SW_OUT_DOM *OutDom,
     SW_OUT_RUN *OutRun,
-    LyrIndex n_layers,
     LOG_INFO *LogInfo
 );
 

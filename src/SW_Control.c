@@ -525,7 +525,6 @@ void SW_CTL_setup_model(
         sw->FileStatus.make_regular,
         OutDom,
         &sw->OutRun,
-        sw->Site.n_layers,
         LogInfo
     );
     if (LogInfo->stopRun) {

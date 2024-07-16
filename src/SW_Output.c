@@ -1843,14 +1843,10 @@ void SW_OUT_construct(
     Bool make_regular[],
     SW_OUT_DOM *OutDom,
     SW_OUT_RUN *OutRun,
-    LyrIndex n_layers,
     LOG_INFO *LogInfo
 ) {
     /* =================================================== */
-    LyrIndex i;
     OutPeriod p;
-    SW_SOILWAT_OUTPUTS *s = NULL;
-    int j;
 
     if (zeroOutStruct) {
         memset(OutRun, 0, sizeof(SW_OUT_RUN));
@@ -1866,10 +1862,6 @@ void SW_OUT_construct(
     (void) make_soil;
     (void) make_regular;
 #endif
-
-    ForEachSoilLayer(i, n_layers) {
-        ForEachVegType(j) { s->SWA_VegType[j][i] = 0.; }
-    }
 
 #if defined(SW_OUTARRAY)
     ForEachOutPeriod(p) { OutRun->irow_OUT[p] = 0; }
