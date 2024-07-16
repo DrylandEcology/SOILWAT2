@@ -24,10 +24,13 @@ History:
 #include "include/SW_Output.h"      // for get_aet_text, get_biomass_text
 #include "include/SW_SoilWater.h"   // for SW_SWRC_SWCtoSWP
 #include "include/SW_VegProd.h"     // for BIO_INDEX, WUE_INDEX
-#include <stdio.h>                  // for snprintf, NULL
 
 #if defined(SWNETCDF)
 #include <netcdf.h> // defines NC_FILL_DOUBLE
+#endif
+
+#if defined(SWNETCDF) || defined(RSOILWAT)
+#include <stddef.h> // for NULL
 #endif
 
 // Array-based output declarations:
@@ -36,6 +39,7 @@ History:
 #endif
 
 #if defined(SW_OUTTEXT)
+#include <stdio.h>  // for snprintf, NULL
 #include <string.h> // for strcat
 #endif
 

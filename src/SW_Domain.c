@@ -5,7 +5,6 @@
 #include "include/SW_Domain.h"      // for SW_DOM_CheckProgress, SW_DOM_Cre...
 #include "include/filefuncs.h"      // for LogError, CloseFile, key_to_id
 #include "include/generic.h"        // for swTRUE, LOGERROR, swFALSE, Bool
-#include "include/myMemory.h"       // for Str_Dup
 #include "include/SW_datastructs.h" // for SW_DOMAIN, LOG_INFO
 #include "include/SW_Defines.h"     // for LyrIndex, LARGE_VALUE, TimeInt
 #include "include/SW_Files.h"       // for SW_F_deconstruct, SW_F_deepCopy
