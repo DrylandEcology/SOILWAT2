@@ -80,7 +80,17 @@ void *Mem_Malloc(size_t size, const char *funcname, LOG_INFO *LogInfo) {
      consistent with other modules.
      -------------------------------------------*/
 
-    void *p;
+    void *p = NULL;
+
+    if (LogInfo->stopRun) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Mem_Malloc() by %s() called with existing error.",
+            funcname
+        );
+        return p; // Exit function prematurely due to error
+    }
 
     p = malloc(size);
 
