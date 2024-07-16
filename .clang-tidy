@@ -1,0 +1,7 @@
+---
+Checks:          'clang-diagnostic-*,clang-analyzer-*,bugprone-*,cert-*,concurrency-*,cppcoreguidelines-*,misc-*,mpi-*,performance-*,portability-*,readability-*'
+WarningsAsErrors: true
+HeaderFilterRegex: ''
+FormatStyle:     none
+SystemHeaders:   false
+...
