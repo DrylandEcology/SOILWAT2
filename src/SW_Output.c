@@ -938,10 +938,11 @@ static void average_for(
                     sw->SoilWat.p_accu[pd]->snowdepth / div;
                 break;
 
-            case eSW_Estab: /* do nothing, no averaging required */
-                break;
+            case eSW_Estab:
+                /* do nothing, no averaging required */
 
             case eSW_CO2Effects:
+                /* do nothing, no averaging required */
                 break;
 
             case eSW_Biomass:
