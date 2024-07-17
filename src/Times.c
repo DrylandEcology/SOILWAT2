@@ -168,7 +168,13 @@ Useful for formatting user inputs.
 */
 TimeInt yearto4digit(TimeInt yr) {
     // called by SW_MDL_read(), SW_WTH_read(), SW_SWC_read()
-    return (TimeInt) ((yr > 100) ? yr : (yr < 50) ? 2000 + yr : 1900 + yr);
+    TimeInt year = yr;
+
+    if (yr <= 100) {
+        year = (yr < 50) ? 2000 + yr : 1900 + yr;
+    }
+
+    return year;
 }
 
 /**
