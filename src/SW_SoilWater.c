@@ -1691,11 +1691,7 @@ RealD SW_SnowDepth(RealD SWE, RealD snowdensity) {
      snowdensity (kg/m3)
      Output: snow depth (cm)
      ---------------------*/
-    if (GT(snowdensity, 0.)) {
-        return SWE / snowdensity * 10. * 100.;
-    } else {
-        return 0.;
-    }
+    return (GT(snowdensity, 0.)) ? (SWE / snowdensity * 10. * 100.) : 0.;
 }
 
 /**

@@ -308,7 +308,9 @@ void st_getBounds(
     if (LT(depth, bounds[0])) {
         *x2 = 0;
         return;
-    } else if (GT(depth, bounds[size - 1])) {
+    }
+
+    if (GT(depth, bounds[size - 1])) {
         *x1 = size - 1;
         *x2 = -1;
         return;

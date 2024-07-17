@@ -1742,15 +1742,17 @@ double surface_temperature_under_snow(double airTempAvg, double snow) {
     double kSnow;          // the effect of snow based on swe
     double tSoilAvg = 0.0; // the average temeperature of the soil surface
                            // Parton et al. 1998. Equation 6.
-    if (snow == 0) {
-        return 0.0;
-    } else if (snow > 0 && airTempAvg >= 0) {
-        tSoilAvg = -2.0;
-    } else if (snow > 0 && airTempAvg < 0) {
-        // Parton et al. 1998. Equation 5.
-        kSnow = fmax((-0.15 * snow + 1.0), 0.0);
-        tSoilAvg = 0.3 * airTempAvg * kSnow + -2.0;
+
+    if (snow > 0) {
+        if (airTempAvg >= 0) {
+            tSoilAvg = -2.0;
+        } else {
+            // Parton et al. 1998. Equation 5.
+            kSnow = fmax((-0.15 * snow + 1.0), 0.0);
+            tSoilAvg = 0.3 * airTempAvg * kSnow + -2.0;
+        }
     }
+
     return tSoilAvg;
 }
 

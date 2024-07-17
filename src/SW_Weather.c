@@ -1235,7 +1235,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
                     doy + 1,
                     year + weather->startYear
                 );
-                return; // Exit function prematurely due to error
+                // Will exit function prematurely due to error
 
             } else if ((!missing(dailyMaxTemp) && !missing(dailyMinTemp)) &&
                        ((dailyMinTemp > 100. || dailyMinTemp < -100.) ||
@@ -1253,7 +1253,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
                     doy,
                     year + weather->startYear
                 );
-                return; // Exit function prematurely due to error
+                // Will exit function prematurely due to error
 
             } else if (!missing(weathHist[year]->ppt[doy]) &&
                        weathHist[year]->ppt[doy] < 0) {
@@ -1269,7 +1269,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
                     doy + 1,
                     year + weather->startYear
                 );
-                return; // Exit function prematurely due to error
+                // Will exit function prematurely due to error
 
             } else if (!missing(weathHist[year]->r_humidity_daily[doy]) &&
                        (weathHist[year]->r_humidity_daily[doy] < 0. ||
@@ -1286,7 +1286,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
                     "%f). ",
                     weathHist[year]->r_humidity_daily[doy]
                 );
-                return; // Exit function prematurely due to error
+                // Will exit function prematurely due to error
 
             } else if (!missing(weathHist[year]->cloudcov_daily[doy]) &&
                        (weathHist[year]->cloudcov_daily[doy] < 0. ||
@@ -1302,7 +1302,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
                     " not fall in the range [0, 100] (cloud cover = %f). ",
                     weathHist[year]->cloudcov_daily[doy]
                 );
-                return; // Exit function prematurely due to error
+                // Will exit function prematurely due to error
 
             } else if (!missing(weathHist[year]->windspeed_daily[doy]) &&
                        weathHist[year]->windspeed_daily[doy] < 0.) {
@@ -1318,7 +1318,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
                     doy + 1,
                     year + weather->startYear
                 );
-                return; // Exit function prematurely due to error
+                // Will exit function prematurely due to error
 
             } else if (!missing(weathHist[year]->shortWaveRad[doy]) &&
                        weathHist[year]->shortWaveRad[doy] < 0.) {
@@ -1334,7 +1334,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
                     doy + 1,
                     year + weather->startYear
                 );
-                return; // Exit function prematurely due to error
+                // Will exit function prematurely due to error
 
             } else if (!missing(weathHist[year]->actualVaporPressure[doy]) &&
                        weathHist[year]->actualVaporPressure[doy] < 0.) {
@@ -1351,6 +1351,10 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
                     doy + 1,
                     year + weather->startYear
                 );
+                // Will exit function prematurely due to error
+            }
+
+            if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
         }

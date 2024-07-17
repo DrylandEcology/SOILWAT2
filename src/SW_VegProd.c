@@ -2140,11 +2140,7 @@ value to go below zero
 @return A value that is either above or equal to zero
 */
 double cutZeroInf(double testValue) {
-    if (LT(testValue, 0.)) {
-        return 0.;
-    } else {
-        return testValue;
-    }
+    return (LT(testValue, 0.)) ? 0. : testValue;
 }
 
 /**

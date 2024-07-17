@@ -554,7 +554,6 @@ static void get_str_att_val(
             attName,
             varName
         );
-        return; // Exit function prematurely due to error
     } else if (attLenCallRes != NC_NOERR) {
         LogError(
             LogInfo,
@@ -565,6 +564,11 @@ static void get_str_att_val(
             attName
         );
     }
+
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
 
     attCallRes = nc_get_att_text(ncFileID, varID, attName, strVal);
     if (attCallRes != NC_NOERR) {

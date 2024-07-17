@@ -3293,35 +3293,31 @@ void SW_OUT_write_today(
 
             if (!use_help_txt) {
                 continue; // SXW output complete; skip to next output period
-            } else {
-                if (OutDom->prepare_IterationSummary) {
-#ifdef SWDEBUG
-                    if (debug) {
-                        sw_printf(
-                            " call pfunc_agg(%d=%s))",
-                            outPeriod,
-                            pd2str[outPeriod]
-                        );
-                    }
-#endif
-                    ((void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
-                    ) OutDom->pfunc_agg[k])(outPeriod, sw, OutDom);
-                }
+            }
 
-                if (OutDom->print_SW_Output) {
-                    outPeriod = OutDom->timeSteps[k][i];
+            if (OutDom->prepare_IterationSummary) {
 #ifdef SWDEBUG
-                    if (debug) {
-                        sw_printf(
-                            " call pfunc_text(%d=%s))",
-                            outPeriod,
-                            pd2str[outPeriod]
-                        );
-                    }
-#endif
-                    ((void (*)(OutPeriod, SW_RUN *)
-                    ) OutDom->pfunc_text[k])(outPeriod, sw);
+                if (debug) {
+                    sw_printf(
+                        " call pfunc_agg(%d=%s))", outPeriod, pd2str[outPeriod]
+                    );
                 }
+#endif
+                ((void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
+                ) OutDom->pfunc_agg[k])(outPeriod, sw, OutDom);
+            }
+
+            if (OutDom->print_SW_Output) {
+                outPeriod = OutDom->timeSteps[k][i];
+#ifdef SWDEBUG
+                if (debug) {
+                    sw_printf(
+                        " call pfunc_text(%d=%s))", outPeriod, pd2str[outPeriod]
+                    );
+                }
+#endif
+                ((void (*)(OutPeriod, SW_RUN *)
+                ) OutDom->pfunc_text[k])(outPeriod, sw);
             }
 #endif
 

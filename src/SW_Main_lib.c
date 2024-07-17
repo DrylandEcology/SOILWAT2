@@ -180,117 +180,116 @@ void sw_init_args(
             sw_print_usage();
             LogError(LogInfo, LOGERROR, "\nInvalid option %s\n", argv[a]);
             return; // Exit function prematurely due to error
+        }
 
-        } else {
-            // Use `valopts[op]` in else-branch to avoid
-            // `warning: array subscript 6 is above array bounds of 'int[6]'
-            // [-Warray-bounds]`
+        // Use `valopts[op]` in else-branch to avoid
+        // `warning: array subscript 6 is above array bounds of 'int[6]'
+        // [-Warray-bounds]`
 
-            *str = '\0';
-            /* extract value part of option-value pair */
-            if (valopts[op]) {
-                if ('\0' != argv[a][2]) {
-                    /* no space betw opt-value */
-                    strcpy(str, (argv[a] + 2));
+        *str = '\0';
+        /* extract value part of option-value pair */
+        if (valopts[op]) {
+            if ('\0' != argv[a][2]) {
+                /* no space betw opt-value */
+                strcpy(str, (argv[a] + 2));
 
-                } else if ('-' != *argv[a + 1]) {
-                    /* space betw opt-value */
-                    strcpy(str, argv[++a]);
+            } else if ('-' != *argv[a + 1]) {
+                /* space betw opt-value */
+                strcpy(str, argv[++a]);
 
-                } else if (0 < valopts[op]) {
-                    /* required opt-val not found */
-                    sw_print_usage();
-                    LogError(
-                        LogInfo, LOGERROR, "\nIncomplete option %s\n", opts[op]
-                    );
-                    return; // Exit function prematurely due to error
-                }
-                /* opt-val not required */
-            }
-
-            /* tell us what to do here                   */
-            /* set indicators/variables based on results */
-            switch (op) {
-            case 0: /* -d */
-                if (!ChDir(str)) {
-                    LogError(
-                        LogInfo, LOGERROR, "Invalid project directory (%s)", str
-                    );
-                    return; // Exit function prematurely due to error
-                }
-                break;
-
-            case 1: /* -f */
-                free(*_firstfile);
-                *_firstfile = Str_Dup(str, LogInfo);
-                if (LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
-                }
-                break;
-
-            case 2: /* -e */
-                *EchoInits = swTRUE;
-                break;
-
-            case 3: /* -q */
-                LogInfo->QuietMode = swTRUE;
-                break;
-
-            case 4: /* -v */
-                sw_print_version();
-                LogError(LogInfo, LOGERROR, "");
-                if (LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
-                }
-                break;
-
-            case 5: /* -h */
+            } else if (0 < valopts[op]) {
+                /* required opt-val not found */
                 sw_print_usage();
-                LogError(LogInfo, LOGERROR, "");
-                if (LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
-                }
-                break;
+                LogError(
+                    LogInfo, LOGERROR, "\nIncomplete option %s\n", opts[op]
+                );
+                return; // Exit function prematurely due to error
+            }
+            /* opt-val not required */
+        }
 
-            case 6: /* -s */
-                *userSUID = atoll(str);
-                /* Check that user input can be represented by userSUID
-                 * (currently, unsigned long) */
-                /* Expect that conversion of string to double results in the
-                 * same value as conversion of userSUID to double */
-                if (!EQ(atof(str), (double) *userSUID)) {
-                    LogError(
-                        LogInfo,
-                        LOGERROR,
-                        "User input not recognized as a simulation unit "
-                        "('-s %s' vs. %lu).",
-                        str,
-                        *userSUID
-                    );
-                    return; // Exit function prematurely due to error
-                }
-                break;
+        /* tell us what to do here                   */
+        /* set indicators/variables based on results */
+        switch (op) {
+        case 0: /* -d */
+            if (!ChDir(str)) {
+                LogError(
+                    LogInfo, LOGERROR, "Invalid project directory (%s)", str
+                );
+                return; // Exit function prematurely due to error
+            }
+            break;
 
-            case 7: /* -t */
-                *wallTimeLimit = atof(str);
-                break;
+        case 1: /* -f */
+            free(*_firstfile);
+            *_firstfile = Str_Dup(str, LogInfo);
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+            break;
 
-            case 8: /* -r */
-                *renameDomainTemplateNC = swTRUE;
-                break;
+        case 2: /* -e */
+            *EchoInits = swTRUE;
+            break;
 
-            default:
+        case 3: /* -q */
+            LogInfo->QuietMode = swTRUE;
+            break;
+
+        case 4: /* -v */
+            sw_print_version();
+            LogError(LogInfo, LOGERROR, "");
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+            break;
+
+        case 5: /* -h */
+            sw_print_usage();
+            LogError(LogInfo, LOGERROR, "");
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+            break;
+
+        case 6: /* -s */
+            *userSUID = atoll(str);
+            /* Check that user input can be represented by userSUID
+             * (currently, unsigned long) */
+            /* Expect that conversion of string to double results in the
+             * same value as conversion of userSUID to double */
+            if (!EQ(atof(str), (double) *userSUID)) {
                 LogError(
                     LogInfo,
                     LOGERROR,
-                    "Programmer: bad option in main:sw_init_args:switch"
+                    "User input not recognized as a simulation unit "
+                    "('-s %s' vs. %lu).",
+                    str,
+                    *userSUID
                 );
-
                 return; // Exit function prematurely due to error
             }
+            break;
 
-            a++; /* move to next valid arg-value position */
+        case 7: /* -t */
+            *wallTimeLimit = atof(str);
+            break;
+
+        case 8: /* -r */
+            *renameDomainTemplateNC = swTRUE;
+            break;
+
+        default:
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Programmer: bad option in main:sw_init_args:switch"
+            );
+
+            return; // Exit function prematurely due to error
         }
+
+        a++; /* move to next valid arg-value position */
     } /* end for(i) */
 }
 

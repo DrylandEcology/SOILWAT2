@@ -644,6 +644,7 @@ static void _read_spp(
             return; // Exit function prematurely due to error
             break;
         }
+
         /* check for valid name first */
         if (0 == lineno) {
             if (strlen(name) > MAX_SPECIESNAMELEN) {
@@ -658,9 +659,9 @@ static void _read_spp(
                     MAX_SPECIESNAMELEN
                 );
                 return; // Exit function prematurely due to error
-            } else {
-                strcpy(v->sppname, name);
             }
+
+            strcpy(v->sppname, name);
         }
 
         lineno++; /*only increments when there's a value */
