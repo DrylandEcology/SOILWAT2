@@ -1,7 +1,34 @@
 ---
-Checks:          'clang-diagnostic-*,clang-analyzer-*,bugprone-*,cert-*,concurrency-*,cppcoreguidelines-*,misc-*,mpi-*,performance-*,portability-*,readability-*'
+# Checks + accepted suppressions for SOILWAT2
+Checks: >
+    clang-diagnostic-*,
+    clang-analyzer-*,
+    -clang-analyzer-core.CallAndMessage,
+    bugprone-*,
+    -bugprone-easily-swappable-parameters,
+    cert-*,
+    concurrency-*,
+    cppcoreguidelines-*,
+    -cppcoreguidelines-avoid-magic-numbers,
+    -cppcoreguidelines-init-variables,
+    -cppcoreguidelines-macro-to-enum,
+    misc-*,
+    -misc-include-cleaner,
+    mpi-*,
+    performance-*,
+    portability-*,
+    readability-*,
+    -readability-function-cognitive-complexity,
+    -readability-identifier-length,
+    -readability-isolate-declaration,
+    -readability-magic-numbers
 WarningsAsErrors: true
 HeaderFilterRegex: ''
 FormatStyle:     none
 SystemHeaders:   false
+CheckOptions:
+    - key: readability-braces-around-statements.ShortStatementLines
+      value: '2'
+    - key: readability-uppercase-literal-suffix.NewSuffixes
+      value: 'L;LL;LU;LLU'
 ...
