@@ -253,7 +253,7 @@ double SW_swcBulk_minimum(
     double sand,
     double clay,
     double swcBulk_sat,
-    RealD _SWCMinVal,
+    RealD SWCMinVal,
     LOG_INFO *LogInfo
 );
 

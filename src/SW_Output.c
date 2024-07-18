@@ -216,7 +216,7 @@ static void average_for(
 );
 
 #ifdef STEPWAT
-static void _set_SXWrequests_helper(
+static void set_SXWrequests_helper(
     SW_OUT_DOM *OutDom,
     OutKey k,
     OutPeriod pd,
@@ -1091,7 +1091,7 @@ static void collect_sums(
 
 
 #ifdef STEPWAT
-static void _set_SXWrequests_helper(
+static void set_SXWrequests_helper(
     SW_OUT_DOM *OutDom,
     OutKey k,
     OutPeriod pd,
@@ -1220,7 +1220,7 @@ void SW_OUT_set_SXWrequests(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     OutDom->used_OUTNPERIODS = MAX(2, OutDom->used_OUTNPERIODS);
 
     // STEPWAT2 requires monthly summed transpiration
-    _set_SXWrequests_helper(
+    set_SXWrequests_helper(
         OutDom, eSW_Transp, eSW_Month, eSW_Sum, "monthly transpiration", LogInfo
     );
     if (LogInfo->stopRun) {
@@ -1228,7 +1228,7 @@ void SW_OUT_set_SXWrequests(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     }
 
     // STEPWAT2 requires monthly mean bulk soil water content
-    _set_SXWrequests_helper(
+    set_SXWrequests_helper(
         OutDom,
         eSW_SWCBulk,
         eSW_Month,
@@ -1241,7 +1241,7 @@ void SW_OUT_set_SXWrequests(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     }
 
     // STEPWAT2 requires annual and monthly mean air temperature
-    _set_SXWrequests_helper(
+    set_SXWrequests_helper(
         OutDom,
         eSW_Temp,
         eSW_Month,
@@ -1255,7 +1255,7 @@ void SW_OUT_set_SXWrequests(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     OutDom->timeSteps_SXW[eSW_Temp][1] = eSW_Year;
 
     // STEPWAT2 requires annual and monthly precipitation sum
-    _set_SXWrequests_helper(
+    set_SXWrequests_helper(
         OutDom,
         eSW_Precip,
         eSW_Month,
@@ -1269,7 +1269,7 @@ void SW_OUT_set_SXWrequests(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     OutDom->timeSteps_SXW[eSW_Precip][1] = eSW_Year;
 
     // STEPWAT2 requires annual sum of AET
-    _set_SXWrequests_helper(
+    set_SXWrequests_helper(
         OutDom, eSW_AET, eSW_Year, eSW_Sum, "annual AET", LogInfo
     );
     if (LogInfo->stopRun) {
@@ -3112,7 +3112,7 @@ void SW_OUT_sum_today(
 
 /** `SW_OUT_write_today` is called twice
 
-    - `_end_day` at the end of each day with values
+    - `end_day` at the end of each day with values
       values of `bFlush_output` set to FALSE and `tOffset` set to 1
     - `SW_OUT_flush` at the end of every year with
       values of `bFlush_output` set to TRUE and `tOffset` set to 0
@@ -3218,7 +3218,7 @@ void SW_OUT_write_today(
     writeit[eSW_Year] = (Bool) (sw->Model.newperiod[eSW_Year] || bFlush_output);
 
     // update daily: don't process daily output if `bFlush_output` is TRUE
-    // because `_end_day` was already called and produced daily output
+    // because `end_day` was already called and produced daily output
     writeit[eSW_Day] = (Bool) (writeit[eSW_Day] && !bFlush_output);
 
 
@@ -3694,7 +3694,7 @@ void SW_OUTDOM_deepCopy(
   __In summary:__
 
   The function SW_CTL_run_current_year() in file SW_Control.c calls:
-    - the function _end_day() in file SW_Control.c, for each day, which in turn
+    - the function end_day() in file SW_Control.c, for each day, which in turn
       calls _collect_values() with (global) arguments `bFlush_output` = `FALSE`
       and `tOffset` = 1
     - the function SW_OUT_flush(), after the last day of each year, which in

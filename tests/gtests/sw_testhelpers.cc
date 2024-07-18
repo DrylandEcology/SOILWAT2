@@ -121,7 +121,7 @@ void setup_SW_Site_for_tests(SW_SITE *SW_Site) {
 
     SW_Site->deepdrain = swTRUE;
 
-    SW_Site->_SWCMinVal = 100;
+    SW_Site->SWCMinVal = 100;
     SW_Site->_SWCWetVal = 15;
     SW_Site->_SWCInitVal = 15;
 

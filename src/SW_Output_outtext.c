@@ -56,7 +56,7 @@ Active if @ref SW_OUT_DOM.print_IterationSummary is TRUE
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
-static void _create_csv_headers(
+static void create_csv_headers(
     SW_OUT_DOM *OutDom,
     OutPeriod pd,
     char *str_reg,
@@ -71,7 +71,7 @@ static void _create_csv_headers(
         LogError(
             LogInfo,
             LOGERROR,
-            "'_create_csv_headers': value TRUE for "
+            "'create_csv_headers': value TRUE for "
             "argument 'does_agg' is not implemented for SOILWAT2-standalone."
         );
         return; // Exit function prematurely due to error
@@ -86,14 +86,14 @@ static void _create_csv_headers(
     char *str_help1, *str_help2;
 
     str_help1 = (char *) Mem_Malloc(
-        sizeof(char) * size_help, "_create_csv_headers()", LogInfo
+        sizeof(char) * size_help, "create_csv_headers()", LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
     str_help2 = (char *) Mem_Malloc(
-        sizeof(char) * size_help, "_create_csv_headers()", LogInfo
+        sizeof(char) * size_help, "create_csv_headers()", LogInfo
     );
     if (LogInfo->stopRun) {
         free(str_help1);
@@ -234,7 +234,7 @@ static void get_outstrheader(OutPeriod pd, char *str, size_t sizeof_str) {
 
 \return `name_flagiteration.ext`
 */
-static void _create_filename_ST(
+static void create_filename_ST(
     char *str,
     char *flag,
     int iteration,
@@ -290,7 +290,7 @@ name if -i flag used in STEPWAT2. Set to a negative value otherwise.
 @param LogInfo Holds information on warnings and errors
 */
 /***********************************************************/
-static void _create_csv_file_ST(
+static void create_csv_file_ST(
     int iteration,
     OutPeriod pd,
     char *InFiles[],
@@ -306,7 +306,7 @@ static void _create_csv_file_ST(
             // assumes a specific order of `SW_FileIndex` --> fix and create
             // something that allows subsetting such as `eOutputFile[pd]` or
             // append time period to a basename, etc.
-            _create_filename_ST(
+            create_filename_ST(
                 InFiles[eOutputDaily + pd],
                 "agg",
                 0,
@@ -325,7 +325,7 @@ static void _create_csv_file_ST(
         }
 
         if (FileStatus->make_soil[pd]) {
-            _create_filename_ST(
+            create_filename_ST(
                 InFiles[eOutputDaily_soil + pd],
                 "agg",
                 0,
@@ -356,7 +356,7 @@ static void _create_csv_file_ST(
         }
 
         if (FileStatus->make_regular[pd]) {
-            _create_filename_ST(
+            create_filename_ST(
                 InFiles[eOutputDaily + pd],
                 "rep",
                 iteration,
@@ -375,7 +375,7 @@ static void _create_csv_file_ST(
         }
 
         if (FileStatus->make_soil[pd]) {
-            _create_filename_ST(
+            create_filename_ST(
                 InFiles[eOutputDaily_soil + pd],
                 "rep",
                 iteration,
@@ -461,7 +461,7 @@ void SW_OUT_create_summary_files(
 
     ForEachOutPeriod(p) {
         if (OutDom->use_OutPeriod[p]) {
-            _create_csv_file_ST(-1, p, InFiles, SW_FileStatus, LogInfo);
+            create_csv_file_ST(-1, p, InFiles, SW_FileStatus, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
@@ -497,7 +497,7 @@ void SW_OUT_create_iteration_files(
 
     ForEachOutPeriod(p) {
         if (OutDom->use_OutPeriod[p]) {
-            _create_csv_file_ST(iteration, p, InFiles, SW_FileStatus, LogInfo);
+            create_csv_file_ST(iteration, p, InFiles, SW_FileStatus, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
@@ -588,7 +588,7 @@ goes through all values and if the value is defined to be used it creates the
 header in the output file.
 
 @note The functions SW_OUT_set_ncol() and SW_OUT_set_colnames() must
-be called before _create_csv_headers(); otherwise, `ncol_OUT` and
+be called before create_csv_headers(); otherwise, `ncol_OUT` and
 `colnames_OUT` are not set.
 
 @param OutDom Struct of type SW_OUT_DOM that holds output
@@ -636,7 +636,7 @@ void write_headers_to_csv(
 
     // Acquire headers
     get_outstrheader(pd, str_time, sizeof str_time);
-    _create_csv_headers(
+    create_csv_headers(
         OutDom, pd, header_reg, header_soil, does_agg, n_layers, LogInfo
     );
     if (LogInfo->stopRun) {

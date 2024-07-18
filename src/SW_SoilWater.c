@@ -97,7 +97,7 @@
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
-static void _clear_hist(
+static void clear_hist(
     RealD SoilWat_hist_swc[][MAX_LAYERS],
     RealD SoilWat_hist_std_err[][MAX_LAYERS]
 ) {
@@ -111,7 +111,7 @@ static void _clear_hist(
     }
 }
 
-static void _reset_swc(SW_SOILWAT *SW_SoilWat, SW_SITE *SW_Site) {
+static void reset_swc(SW_SOILWAT *SW_SoilWat, SW_SITE *SW_Site) {
     LyrIndex lyr;
 
     /* reset swc */
@@ -1229,7 +1229,7 @@ void SW_SWC_init_run(
 
     *temp_snow = 0.; // Snow temperature
 
-    _reset_swc(SW_SoilWat, SW_Site);
+    reset_swc(SW_SoilWat, SW_Site);
 }
 
 /**
@@ -1249,7 +1249,7 @@ void SW_SWC_new_year(
     LyrIndex lyr;
 
     if (SW_Site->reset_yr) {
-        _reset_swc(SW_SoilWat, SW_Site);
+        reset_swc(SW_SoilWat, SW_Site);
 
     } else {
         /* update swc */
@@ -1431,7 +1431,7 @@ void _read_swc_hist(
         return; // Exit function prematurely due to error
     }
 
-    _clear_hist(SoilWat_hist->swc, SoilWat_hist->std_err);
+    clear_hist(SoilWat_hist->swc, SoilWat_hist->std_err);
 
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
         recno++;

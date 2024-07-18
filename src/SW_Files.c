@@ -218,7 +218,7 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
                 free(PathInfo->InFiles[fileno]);
             }
 
-            strcpy(buf, PathInfo->_ProjDir);
+            strcpy(buf, PathInfo->SW_ProjDir);
             strcat(buf, inbuf);
             PathInfo->InFiles[fileno] = Str_Dup(buf, LogInfo);
             if (LogInfo->stopRun) {
@@ -299,13 +299,15 @@ void SW_F_init_ptrs(char *InFiles[]) {
 }
 
 /**
-@brief Determines string length of file being read in combined with _ProjDir.
+@brief Determines string length of file being read in combined with SW_ProjDir.
 
 @param[in] *firstfile File to be read in.
-@param[out] _ProjDir Project directory
+@param[out] SW_ProjDir Project directory
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_F_construct(const char *firstfile, char _ProjDir[], LOG_INFO *LogInfo) {
+void SW_F_construct(
+    const char *firstfile, char SW_ProjDir[], LOG_INFO *LogInfo
+) {
     /* =================================================== */
     /* 10-May-02 (cwb) enhancement allows model to be run
      *    in one directory while getting its input from another.
@@ -322,15 +324,15 @@ void SW_F_construct(const char *firstfile, char _ProjDir[], LOG_INFO *LogInfo) {
     c = dirString;
 
     if (c) {
-        strcpy(_ProjDir, c);
+        strcpy(SW_ProjDir, c);
         c = local_firstfile;
-        p = c + strlen(_ProjDir);
+        p = c + strlen(SW_ProjDir);
         while (*p) {
             *(c++) = *(p++);
         }
         *c = '\0';
     } else {
-        _ProjDir[0] = '\0';
+        SW_ProjDir[0] = '\0';
     }
 
     free(local_firstfile);

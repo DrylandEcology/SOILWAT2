@@ -33,7 +33,10 @@ extern "C" {
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_VES_read(
-    SW_VEGESTAB *SW_VegEstab, char *InFiles[], char *_ProjDir, LOG_INFO *LogInfo
+    SW_VEGESTAB *SW_VegEstab,
+    char *InFiles[],
+    char *SW_ProjDir,
+    LOG_INFO *LogInfo
 );
 
 void SW_VES_read2(
@@ -41,7 +44,7 @@ void SW_VES_read2(
     Bool use_VegEstab,
     Bool consider_InputFlag,
     char *InFiles[],
-    char *_ProjDir,
+    char *SW_ProjDir,
     LOG_INFO *LogInfo
 );
 

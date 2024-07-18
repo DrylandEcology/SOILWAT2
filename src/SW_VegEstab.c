@@ -24,7 +24,7 @@
  20090826 (drs) added return; after LBL_Normal_Exit:
 
  06/26/2013	(rjm)	closed open files in function SW_VES_read() or if
- LogError() with LOGERROR is called in _read_spp()
+ LogError() with LOGERROR is called in read_spp()
 
  08/21/2013	(clk)	changed the line v = SW_VegEstab.parms[ _new_species()
  ]; -> v = SW_VegEstab.parms[ count ], where count = _new_species(); for some
@@ -57,7 +57,7 @@
 /* =================================================== */
 /*             Private Function Declarations           */
 /* --------------------------------------------------- */
-static void _sanity_check(
+static void sanity_check(
     unsigned int sppnum,
     RealD swcBulk_wiltpt[],
     LyrIndex n_transp_lyrs[],
@@ -65,11 +65,11 @@ static void _sanity_check(
     LOG_INFO *LogInfo
 );
 
-static void _read_spp(
+static void read_spp(
     const char *infile, SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo
 );
 
-static void _checkit(
+static void checkit(
     TimeInt doy,
     unsigned int sppnum,
     SW_WEATHER_NOW *wn,
@@ -78,7 +78,7 @@ static void _checkit(
     SW_VEGESTAB_INFO **parms
 );
 
-static void _zero_state(unsigned int sppnum, SW_VEGESTAB_INFO **parms);
+static void zero_state(unsigned int sppnum, SW_VEGESTAB_INFO **parms);
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -233,14 +233,17 @@ void SW_VES_new_year(IntU count) {
 @param[in,out] SW_VegEstab Struct of type SW_VEGESTAB holding all information
     about vegetation establishment within the simulation
 @param[in] InFiles Array of program in/output files
-@param[in] _ProjDir Project directory
+@param[in] SW_ProjDir Project directory
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_VES_read(
-    SW_VEGESTAB *SW_VegEstab, char *InFiles[], char *_ProjDir, LOG_INFO *LogInfo
+    SW_VEGESTAB *SW_VegEstab,
+    char *InFiles[],
+    char *SW_ProjDir,
+    LOG_INFO *LogInfo
 ) {
 
-    SW_VES_read2(SW_VegEstab, swTRUE, swTRUE, InFiles, _ProjDir, LogInfo);
+    SW_VES_read2(SW_VegEstab, swTRUE, swTRUE, InFiles, SW_ProjDir, LogInfo);
 }
 
 /**
@@ -253,7 +256,7 @@ void SW_VES_read(
 @param[in] consider_InputFlag Should the user input flag read from `"estab.in"`
     be considered for turning on/off calculations of vegetation establishment.
 @param[in] InFiles Array of program in/output files
-@param[in] _ProjDir Project directory
+@param[in] SW_ProjDir Project directory
 @param[out] LogInfo Holds information on warnings and errors
 
 @note
@@ -271,7 +274,7 @@ void SW_VES_read2(
     Bool use_VegEstab,
     Bool consider_InputFlag,
     char *InFiles[],
-    char *_ProjDir,
+    char *SW_ProjDir,
     LOG_INFO *LogInfo
 ) {
 
@@ -308,10 +311,10 @@ void SW_VES_read2(
                      and read those files one by one
             */
             while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
-                // add `_ProjDir` to path, e.g., for STEPWAT2
-                strcpy(buf, _ProjDir);
+                // add `SW_ProjDir` to path, e.g., for STEPWAT2
+                strcpy(buf, SW_ProjDir);
                 strcat(buf, inbuf);
-                _read_spp(buf, SW_VegEstab, LogInfo);
+                read_spp(buf, SW_VegEstab, LogInfo);
                 if (LogInfo->stopRun) {
                     CloseFile(&f, LogInfo);
                     return; // Exit function prematurely due to error
@@ -436,7 +439,7 @@ void SW_VES_checkestab(
     IntUS i;
 
     for (i = 0; i < count; i++) {
-        _checkit(doy, i, &SW_Weather->now, swcBulk, firstdoy, parms);
+        checkit(doy, i, &SW_Weather->now, swcBulk, firstdoy, parms);
     }
 }
 
@@ -444,7 +447,7 @@ void SW_VES_checkestab(
 /*            Local Function Definitions               */
 /* --------------------------------------------------- */
 
-static void _checkit(
+static void checkit(
     TimeInt doy,
     unsigned int sppnum,
     SW_WEATHER_NOW *wn,
@@ -460,7 +463,7 @@ static void _checkit(
     RealF avgswc;                 /* avg_swc today */
 
     if (doy == firstdoy) {
-        _zero_state(sppnum, parms);
+        zero_state(sppnum, parms);
     }
 
     if (v->no_estab || v->estab_doy > 0) {
@@ -545,7 +548,7 @@ LBL_Normal_Exit:
     return;
 }
 
-static void _zero_state(unsigned int sppnum, SW_VEGESTAB_INFO **parms) {
+static void zero_state(unsigned int sppnum, SW_VEGESTAB_INFO **parms) {
     /* =================================================== */
     /* zero any values that need it for the new growing season */
 
@@ -557,7 +560,7 @@ static void _zero_state(unsigned int sppnum, SW_VEGESTAB_INFO **parms) {
     parms_sppnum->wetdays_for_germ = parms_sppnum->wetdays_for_estab = 0;
 }
 
-static void _read_spp(
+static void read_spp(
     const char *infile, SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo
 ) {
     /* =================================================== */
@@ -638,7 +641,7 @@ static void _read_spp(
             LogError(
                 LogInfo,
                 LOGERROR,
-                "_read_spp(): incorrect format of input file '%s'.",
+                "read_spp(): incorrect format of input file '%s'.",
                 infile
             );
             return; // Exit function prematurely due to error
@@ -722,12 +725,12 @@ void _spp_init(
     }
     parms_sppnum->min_swc_estab /= parms_sppnum->estab_lyrs;
 
-    _sanity_check(
+    sanity_check(
         sppnum, SW_Site->swcBulk_wiltpt, n_transp_lyrs, parms, LogInfo
     );
 }
 
-static void _sanity_check(
+static void sanity_check(
     unsigned int sppnum,
     RealD swcBulk_wiltpt[],
     LyrIndex n_transp_lyrs[],

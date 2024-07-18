@@ -76,7 +76,7 @@
     information that do not change throughout simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 */
-static void _begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
+static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     // SW_F_new_year() not needed
 
     // call SW_MDL_new_year() first to set up time-related arrays for this year
@@ -113,7 +113,7 @@ static void _begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     );
 }
 
-static void _begin_day(SW_RUN *sw, LOG_INFO *LogInfo) {
+static void begin_day(SW_RUN *sw, LOG_INFO *LogInfo) {
     SW_MDL_new_day(&sw->Model);
     SW_WTH_new_day(
         &sw->Weather,
@@ -125,7 +125,7 @@ static void _begin_day(SW_RUN *sw, LOG_INFO *LogInfo) {
     );
 }
 
-static void _end_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
+static void end_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     int localTOffset = 1; // tOffset is one when called from this function
 
     if (sw->Model.doOutput) {
@@ -416,7 +416,7 @@ void SW_CTL_setup_domain(
 
     SW_F_construct(
         SW_Domain->PathInfo.InFiles[eFirst],
-        SW_Domain->PathInfo._ProjDir,
+        SW_Domain->PathInfo.SW_ProjDir,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -566,7 +566,7 @@ void SW_CTL_clear_model(Bool full_reset, SW_RUN *sw) {
 @brief Initialize simulation run (based on user inputs)
 
 Note: Time will only be set up correctly while carrying out a simulation year,
-i.e., after calling _begin_year()
+i.e., after calling begin_year()
 
 @param[in,out] sw Comprehensive structure holding all information
     dealt with in SOILWAT2
@@ -633,7 +633,7 @@ void SW_CTL_run_current_year(
         sw_printf("\n'SW_CTL_run_current_year': begin new year\n");
     }
 #endif
-    _begin_year(sw, OutDom, LogInfo);
+    begin_year(sw, OutDom, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -644,7 +644,7 @@ void SW_CTL_run_current_year(
             sw_printf("\t: begin doy = %d ... ", *doy);
         }
 #endif
-        _begin_day(sw, LogInfo);
+        begin_day(sw, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -685,7 +685,7 @@ void SW_CTL_run_current_year(
             sw_printf("ending day ... ");
         }
 #endif
-        _end_day(sw, OutDom, LogInfo);
+        end_day(sw, OutDom, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -969,7 +969,9 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_VES_read(&sw->VegEstab, PathInfo->InFiles, PathInfo->_ProjDir, LogInfo);
+    SW_VES_read(
+        &sw->VegEstab, PathInfo->InFiles, PathInfo->SW_ProjDir, LogInfo
+    );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }

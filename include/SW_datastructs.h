@@ -307,7 +307,7 @@ typedef struct {
     LyrIndex _TranspRgnBounds[MAX_TRANSP_REGIONS];
     RealD _SWCInitVal, /* initialization value for swc */
         _SWCWetVal,    /* value for a "wet" day,       */
-        _SWCMinVal;    /* lower bound on swc.          */
+        SWCMinVal;     /* lower bound on swc.          */
 
     /* bulk = relating to the whole soil, i.e., matric + rock/gravel/coarse
      * fragments */
@@ -916,7 +916,7 @@ typedef struct {
 
 typedef struct {
     char *InFiles[SW_NFILES];
-    char _ProjDir[FILENAME_MAX];
+    char SW_ProjDir[FILENAME_MAX]; // SW_ProjDir
     char weather_prefix[FILENAME_MAX];
     char output_prefix[FILENAME_MAX];
 } PATH_INFO;

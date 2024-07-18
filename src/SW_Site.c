@@ -272,7 +272,7 @@ static double lower_limit_of_theta_min(
 @brief User-input based minimum volumetric water content
 
 This function returns minimum soil water content `theta_min` determined
-by user input via #SW_SITE._SWCMinVal as
+by user input via #SW_SITE.SWCMinVal as
     * a fixed VWC value,
     * a fixed SWP value, or
     * a realistic lower limit from `lower_limit_of_theta_min()`,
@@ -284,7 +284,7 @@ by user input via #SW_SITE._SWCMinVal as
       (independently of the selected SWRC).
 
 @param[in] ui_sm_min User input of requested minimum soil moisture,
-    see _SWCMinVal
+    see SWCMinVal
 @param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
     of the whole soil [m3/m3]
 @param[in] width Soil layer width [cm]
@@ -294,7 +294,7 @@ by user input via #SW_SITE._SWCMinVal as
 @param[in] swrc_type Identification number of selected SWRC
 @param[in] *swrcp Vector of SWRC parameters
 @param[in] legacy_mode If true then legacy behavior (see details)
-@param[in] _SWCMinVal Lower bound on swc.
+@param[in] SWCMinVal Lower bound on swc.
 
 @return Minimum volumetric water content of the matric soil [cm / cm]
 */
@@ -308,7 +308,7 @@ static double ui_theta_min(
     unsigned int swrc_type,
     double *swrcp,
     Bool legacy_mode,
-    RealD _SWCMinVal,
+    RealD SWCMinVal,
     LOG_INFO *LogInfo
 ) {
     double vwc_min = SW_MISSING, tmp_vwcmin;
@@ -339,17 +339,17 @@ static double ui_theta_min(
             }
         }
 
-    } else if (GE(_SWCMinVal, 1.0)) {
-        /* user input: fixed (matric) SWP value; unit(_SWCMinVal) == -bar */
+    } else if (GE(SWCMinVal, 1.0)) {
+        /* user input: fixed (matric) SWP value; unit(SWCMinVal) == -bar */
         vwc_min =
             SWRC_SWPtoSWC(
-                _SWCMinVal, swrc_type, swrcp, gravel, width, LOGERROR, LogInfo
+                SWCMinVal, swrc_type, swrcp, gravel, width, LOGERROR, LogInfo
             ) /
             ((1. - gravel) * width);
 
     } else {
-        /* user input: fixed matric VWC; unit(_SWCMinVal) == cm/cm */
-        vwc_min = _SWCMinVal / width;
+        /* user input: fixed matric VWC; unit(SWCMinVal) == cm/cm */
+        vwc_min = SWCMinVal / width;
     }
 
     return vwc_min;
@@ -598,11 +598,11 @@ are utilized only in legacy mode, i.e., `ptf` equal to
 @param[in] width Soil layer width [cm]
 @param[in] ptf_type Identification number of selected PTF
 @param[in] ui_sm_min User input of requested minimum soil moisture,
-    see #SW_SITE._SWCMinVal
+    see #SW_SITE.SWCMinVal
 @param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
 @param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
 @param[in] swcBulk_sat Saturated water content of the bulk soil [cm]
-@param[in] _SWCMinVal Lower bound on swc.
+@param[in] SWCMinVal Lower bound on swc.
 @param[out] LogInfo Holds information on warnings and errors
 
 @return Minimum water content of the bulk soil [cm]
@@ -617,7 +617,7 @@ double SW_swcBulk_minimum(
     double sand,
     double clay,
     double swcBulk_sat,
-    RealD _SWCMinVal,
+    RealD SWCMinVal,
     LOG_INFO *LogInfo
 ) {
     double theta_min_sim, theta_min_theoretical = SW_MISSING;
@@ -661,7 +661,7 @@ double SW_swcBulk_minimum(
         // test:
         //   error: "no known conversion from 'bool' to 'Bool'"
         ptf_type == sw_Cosby1984AndOthers ? swTRUE : swFALSE,
-        _SWCMinVal,
+        SWCMinVal,
         LogInfo
     );
 
@@ -1331,7 +1331,7 @@ void SW_SIT_read(
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
         switch (lineno) {
         case 0:
-            SW_Site->_SWCMinVal = atof(inbuf);
+            SW_Site->SWCMinVal = atof(inbuf);
             break;
         case 1:
             SW_Site->_SWCInitVal = atof(inbuf);
@@ -2177,11 +2177,11 @@ void SW_SIT_init_run(
             SW_Site->fractionVolBulk_gravel[s],
             SW_Site->width[s],
             SW_Site->ptf_type[s],
-            SW_Site->_SWCMinVal,
+            SW_Site->SWCMinVal,
             SW_Site->fractionWeightMatric_sand[s],
             SW_Site->fractionWeightMatric_clay[s],
             SW_Site->swcBulk_saturated[s],
-            SW_Site->_SWCMinVal,
+            SW_Site->SWCMinVal,
             LogInfo
         );
         if (LogInfo->stopRun) {
