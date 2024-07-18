@@ -1307,7 +1307,7 @@ static void alloc_netCDF_domain_vars(
             numVals = (bndVarNum % 2 == 0) ? numY : numX;
 
             *(bndsVars[bndVarNum]) = (double *) Mem_Malloc(
-                numVals * numBnds * sizeof(double),
+                (unsigned long) (numVals * numBnds) * sizeof(double),
                 "alloc_netCDF_domain_vars()",
                 LogInfo
             );
