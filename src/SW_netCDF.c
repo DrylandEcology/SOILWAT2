@@ -1650,7 +1650,7 @@ freeMem:
 */
 static void fill_domain_netCDF_domain(
     const char *domainVarName,
-    int *domID,
+    int *domVarID,
     int domDims[],
     int domFileID,
     int nDomainDims,
@@ -1675,10 +1675,10 @@ static void fill_domain_netCDF_domain(
     const int numAtts = 4;
 
     create_netCDF_var(
-        domID, domainVarName, domDims, &domFileID, NC_UINT, nDomainDims, LogInfo
+        domVarID, domainVarName, domDims, &domFileID, NC_UINT, nDomainDims, LogInfo
     );
 
-    write_uint_att("_FillValue", NC_FILL_UINT, *domID, domFileID, LogInfo);
+    write_uint_att("_FillValue", NC_FILL_UINT, *domVarID, domFileID, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -1686,7 +1686,7 @@ static void fill_domain_netCDF_domain(
     // Write all attributes to the domain variable
     for (attNum = 0; attNum < numAtts; attNum++) {
         write_str_att(
-            strAttNames[attNum], strAttVals[attNum], *domID, domFileID, LogInfo
+            strAttNames[attNum], strAttVals[attNum], *domVarID, domFileID, LogInfo
         );
 
         if (LogInfo->stopRun) {
