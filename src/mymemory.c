@@ -149,7 +149,7 @@ void *Mem_ReAlloc(void *block, size_t sizeNew, LOG_INFO *LogInfo) {
         return NULL;
     }
 
-    void *res = (void *) realloc(block, sizeNew);
+    void *res = realloc(block, sizeNew);
 
     if (isnull(res)) {
         free(block);

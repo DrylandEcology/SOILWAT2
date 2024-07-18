@@ -370,7 +370,7 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
     double total_time = 0;
     unsigned long nSims = wt.nTimedRuns + wt.nUntimedRuns;
 
-    FILE *logfp = (Bool) LogInfo->QuietMode ? LogInfo->logfp : stdout;
+    FILE *logfp = LogInfo->QuietMode ? LogInfo->logfp : stdout;
 
     if (isnull(logfp)) {
         return;

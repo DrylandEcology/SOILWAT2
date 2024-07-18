@@ -252,7 +252,7 @@ Bool GetALine(FILE *f, char buf[], int numChars) {
     char *p;
     Bool not_eof = swFALSE;
     while (!isnull(fgets(buf, numChars, f))) {
-        p = strchr(buf, (int) '\n');
+        p = strchr(buf, '\n');
         if (!isnull(p)) {
             *p = '\0';
         }

@@ -423,8 +423,7 @@ static void sumof_swc(
 ) {
     LyrIndex i;
     int j; // for use with ForEachVegType
-    LyrIndex n_layers = (LyrIndex) SW_Site->n_layers,
-             n_evap_layers = (LyrIndex) SW_Site->n_evap_lyrs;
+    LyrIndex n_layers = SW_Site->n_layers, n_evap_layers = SW_Site->n_evap_lyrs;
 
     switch (k) {
 
@@ -2913,7 +2912,7 @@ void SW_OUT_read(
 // For now: rSOILWAT2's function `onGet_SW_OUT` requires that
 // `OutDom->outfile[k]` is allocated here
 #if defined(RSOILWAT)
-        OutDom->outfile[k] = (char *) Str_Dup(outfile, LogInfo);
+        OutDom->outfile[k] = Str_Dup(outfile, LogInfo);
         if (LogInfo->stopRun) {
             CloseFile(&f, LogInfo);
             return; // Exit function prematurely due to error
@@ -3258,9 +3257,7 @@ void SW_OUT_write_today(
                 );
             }
 #endif
-
-            ((void (*)(OutPeriod, SW_RUN *)
-            ) OutDom->pfunc_text[k])(outPeriod, sw);
+            OutDom->pfunc_text[k](outPeriod, sw);
 
 #elif defined(RSOILWAT) || defined(SWNETCDF)
 #ifdef SWDEBUG
@@ -3270,8 +3267,7 @@ void SW_OUT_write_today(
                 );
             }
 #endif
-            ((void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
-            ) OutDom->pfunc_mem[k])(outPeriod, sw, OutDom);
+            OutDom->pfunc_mem[k](outPeriod, sw, OutDom);
 
 #elif defined(STEPWAT)
             if (use_help_SXW) {
@@ -3284,10 +3280,7 @@ void SW_OUT_write_today(
                     );
                 }
 #endif
-                ((void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
-                ) OutDom->pfunc_SXW[k])(
-                    OutDom->timeSteps_SXW[k][i], sw, OutDom
-                );
+                OutDom->pfunc_SXW[k](OutDom->timeSteps_SXW[k][i], sw, OutDom);
             }
 
             if (!use_help_txt) {
@@ -3302,8 +3295,7 @@ void SW_OUT_write_today(
                     );
                 }
 #endif
-                ((void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
-                ) OutDom->pfunc_agg[k])(outPeriod, sw, OutDom);
+                OutDom->pfunc_agg[k](outPeriod, sw, OutDom);
             }
 
             if (OutDom->print_SW_Output) {
@@ -3315,8 +3307,7 @@ void SW_OUT_write_today(
                     );
                 }
 #endif
-                ((void (*)(OutPeriod, SW_RUN *)
-                ) OutDom->pfunc_text[k])(outPeriod, sw);
+                OutDom->pfunc_text[k](outPeriod, sw);
             }
 #endif
 

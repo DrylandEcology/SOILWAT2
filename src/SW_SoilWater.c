@@ -1320,7 +1320,7 @@ void SW_SWC_read(
             SW_SoilWat->hist_use = (atoi(inbuf)) ? swTRUE : swFALSE;
             break;
         case 1:
-            SW_SoilWat->hist.file_prefix = (char *) Str_Dup(inbuf, LogInfo);
+            SW_SoilWat->hist.file_prefix = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
                 CloseFile(&f, LogInfo);
                 return; // Exit function prematurely due to error
