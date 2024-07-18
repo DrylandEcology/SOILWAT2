@@ -665,7 +665,7 @@ void find_TXToutputSoilReg_inUse(
     OutPeriod timeSteps[][SW_OUTNPERIODS],
     IntUS used_OUTNPERIODS
 ) {
-    IntUS i, k;
+    int i, k;
 
     ForEachOutPeriod(i) {
         make_soil[i] = swFALSE;

@@ -436,7 +436,7 @@ void SW_VES_checkestab(
     IntU count
 ) {
     /* =================================================== */
-    IntUS i;
+    IntU i;
 
     for (i = 0; i < count; i++) {
         checkit(doy, i, &SW_Weather->now, swcBulk, firstdoy, parms);

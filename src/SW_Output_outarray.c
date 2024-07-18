@@ -134,7 +134,7 @@ void SW_OUT_set_nrow(
     information that may change throughout simulation runs
 */
 void SW_OUT_deconstruct_outarray(SW_OUT_RUN *OutRun) {
-    IntUS i, k;
+    int i, k;
 
     ForEachOutKey(k) {
         for (i = 0; i < SW_OUTNPERIODS; i++) {
@@ -245,7 +245,7 @@ Note: Compare with function `setGlobalrSOILWAT2_OutputVariables` in
 void SW_OUT_construct_outarray(
     SW_OUT_DOM *OutDom, SW_OUT_RUN *OutRun, LOG_INFO *LogInfo
 ) {
-    IntUS i, k;
+    int i, k;
     size_t size, s = sizeof(RealD);
     OutPeriod timeStepOutPeriod;
 

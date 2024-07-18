@@ -86,7 +86,8 @@ static void format_IterationSummary2(
     SW_RUN *sw,
     size_t nrow_OUT[]
 ) {
-    IntUS k, i;
+    int k;
+    IntUS i;
     size_t n;
     RealD sd;
     char str[OUTSTRLEN];

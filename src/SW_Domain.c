@@ -539,7 +539,7 @@ void SW_DOM_init_ptrs(SW_DOMAIN *SW_Domain) {
 }
 
 void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
-    IntUS k, i;
+    int k, i;
 
     SW_F_deconstruct(SW_Domain->PathInfo.InFiles);
 

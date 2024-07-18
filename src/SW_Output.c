@@ -605,8 +605,7 @@ static void average_for(
     TimeInt curr_pd = 0;
     RealD div = 0.; /* if sumtype=AVG, days in period; if sumtype=SUM, 1 */
     LyrIndex i;
-    IntUS k;
-    int j;
+    int k, j;
     LyrIndex n_layers = sw->Site.n_layers, n_evap_layers = sw->Site.n_evap_lyrs;
 
     if (otyp == eVES) {
@@ -988,7 +987,7 @@ static void collect_sums(
     LOG_INFO *LogInfo
 ) {
     TimeInt pd = 0;
-    IntUS i, k;
+    int i, k;
     Bool use_help, use_KeyPeriodCombo;
 
     switch (op) {
@@ -1143,7 +1142,7 @@ static void set_SXWrequests_helper(
 */
 void find_OutPeriods_inUse(SW_OUT_DOM *OutDom) {
     OutPeriod p;
-    IntUS k, i, timeStepInd;
+    unsigned int k, i, timeStepInd;
 
     ForEachOutPeriod(p) { OutDom->use_OutPeriod[p] = swFALSE; }
 
@@ -1287,7 +1286,7 @@ void SW_OUT_set_SXWrequests(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 void SW_OUT_init_ptrs(SW_OUT_RUN *OutRun) {
 
 #if defined(SW_OUTARRAY)
-    IntUS key, column;
+    int key, column;
     ForEachOutKey(key) {
         for (column = 0; column < SW_OUTNPERIODS; column++) {
             OutRun->p_OUT[key][column] = NULL;
@@ -1302,7 +1301,7 @@ void SW_OUT_init_ptrs(SW_OUT_RUN *OutRun) {
 }
 
 void SW_OUTDOM_init_ptrs(SW_OUT_DOM *OutDom) {
-    IntUS key, column;
+    int key, column;
 
     ForEachOutKey(key) {
         for (column = 0; column < 5 * NVEGTYPES + MAX_LAYERS; column++) {
@@ -1333,7 +1332,7 @@ void SW_OUTDOM_init_ptrs(SW_OUT_DOM *OutDom) {
  */
 void SW_OUTDOM_construct(SW_OUT_DOM *OutDom) {
 
-    IntUS k;
+    int k;
     OutPeriod p;
 
     memset(OutDom, 0, sizeof(SW_OUT_DOM));
@@ -1895,7 +1894,7 @@ void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw) {
 
 #if defined(SWNETCDF)
     OutPeriod pd;
-    IntUS k;
+    int k;
 
     ForEachOutKey(k) {
         ForEachOutPeriod(pd) {
@@ -2107,7 +2106,7 @@ void SW_OUT_set_colnames(
     char *colnames_OUT[][5 * NVEGTYPES + MAX_LAYERS],
     LOG_INFO *LogInfo
 ) {
-    IntUS i, j;
+    int i, j;
 #ifdef SWDEBUG
     int debug = 0;
 #endif
@@ -2618,7 +2617,7 @@ void SW_OUT_new_year(
     /* =================================================== */
     /* reset the terminal output days each year  */
 
-    IntUS k;
+    int k;
 
     ForEachOutKey(k) {
         if (!OutDom->use[k]) {
@@ -3164,7 +3163,7 @@ void SW_OUT_write_today(
 #ifdef STEPWAT
     Bool use_help_txt, use_help_SXW;
 #endif
-    IntUS k, i, outPeriod;
+    int k, i, outPeriod;
 
     /* Update `tOffset` within SW_OUT_RUN for output functions */
     sw->OutRun.tOffset = tOffset;
@@ -3512,7 +3511,7 @@ void SW_OUT_close_files(
 }
 
 void _echo_outputs(SW_OUT_DOM *OutDom) {
-    IntUS k;
+    int k;
     char str[OUTSTRLEN], errstr[MAX_ERROR];
 
     strcpy(
@@ -3570,7 +3569,7 @@ void SW_FILESTATUS_deepCopy(
     LOG_INFO *LogInfo
 ) {
 
-    IntUS key;
+    int key;
     OutPeriod pd;
     int fileNum;
     int numFiles = source_files->numOutFiles;
@@ -3619,7 +3618,7 @@ void SW_OUTDOM_deepCopy(
     SW_OUT_DOM *source, SW_OUT_DOM *dest, LOG_INFO *LogInfo
 ) {
 
-    IntUS k, i;
+    int k, i;
 
     /* Copies output pointers as well */
     memcpy(dest, source, sizeof(*dest));
