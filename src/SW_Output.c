@@ -1908,12 +1908,12 @@ void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw) {
                     }
                 }
 
-                free(sw->FileStatus.ncOutFiles[k][pd]);
+                free((void *) sw->FileStatus.ncOutFiles[k][pd]);
                 sw->FileStatus.ncOutFiles[k][pd] = NULL;
             }
 
             if (!isnull(sw->FileStatus.ncOutFiles[k][pd])) {
-                free(sw->FileStatus.ncOutFiles[k][pd]);
+                free((void *) sw->FileStatus.ncOutFiles[k][pd]);
                 sw->FileStatus.ncOutFiles[k][pd] = NULL;
             }
         }

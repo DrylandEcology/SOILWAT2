@@ -1541,7 +1541,7 @@ void deallocateAllWeather(SW_WEATHER_HIST **allHist, unsigned int n_years) {
             }
         }
 
-        free(allHist);
+        free((void *) allHist);
         allHist = NULL;
     }
 }
@@ -2713,7 +2713,7 @@ void deallocateClimateStructs(
                 }
             }
 
-            free(doublePtrs[pointer]);
+            free((void *) doublePtrs[pointer]);
         }
     }
 }

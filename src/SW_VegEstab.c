@@ -181,7 +181,7 @@ void SW_VES_deconstruct(SW_VEGESTAB *SW_VegEstab) {
             SW_VegEstab->parms[i] = NULL;
         }
 
-        free(SW_VegEstab->parms);
+        free((void *) SW_VegEstab->parms);
         SW_VegEstab->parms = NULL;
     }
 
@@ -847,7 +847,7 @@ IntU _new_species(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo) {
                 SW_VegEstab->count + 1, sizeof(SW_VEGESTAB_INFO *), me, LogInfo
             ) :
             (SW_VEGESTAB_INFO **) Mem_ReAlloc(
-                SW_VegEstab->parms,
+                (void *) SW_VegEstab->parms,
                 sizeof(SW_VEGESTAB_INFO *) * (SW_VegEstab->count + 1),
                 LogInfo
             );

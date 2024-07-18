@@ -1359,9 +1359,9 @@ static void alloc_outvars(char ****outkeyVars, int nVar, LOG_INFO *LogInfo) {
             );
             if (LogInfo->stopRun) {
                 for (varNum = 0; varNum < index; varNum++) {
-                    free((*outkeyVars)[varNum]);
+                    free((void *) (*outkeyVars)[varNum]);
                 }
-                free(*outkeyVars);
+                free((void *) *outkeyVars);
                 return; // Exit function prematurely due to error
             }
 
@@ -5311,12 +5311,12 @@ void SW_NC_dealloc_outputkey_var_info(SW_OUT_DOM *OutDom, IntUS k) {
                     }
                 }
 
-                free(OutDom->outputVarInfo[k][varNum]);
+                free((void *) OutDom->outputVarInfo[k][varNum]);
                 OutDom->outputVarInfo[k][varNum] = NULL;
             }
         }
 
-        free(OutDom->outputVarInfo[k]);
+        free((void *) OutDom->outputVarInfo[k]);
         OutDom->outputVarInfo[k] = NULL;
     }
 
@@ -5328,7 +5328,7 @@ void SW_NC_dealloc_outputkey_var_info(SW_OUT_DOM *OutDom, IntUS k) {
             }
         }
 
-        free(OutDom->units_sw[k]);
+        free((void *) OutDom->units_sw[k]);
         OutDom->units_sw[k] = NULL;
     }
 
@@ -5344,7 +5344,7 @@ void SW_NC_dealloc_outputkey_var_info(SW_OUT_DOM *OutDom, IntUS k) {
             }
         }
 
-        free(OutDom->uconv[k]);
+        free((void *) OutDom->uconv[k]);
         OutDom->uconv[k] = NULL;
     }
 

@@ -47,7 +47,7 @@ static void freeGetfilesEarly(char **flist, int nfound, DIR *dir, char *fname) {
             }
         }
 
-        free(flist);
+        free((void *) flist);
         flist = NULL;
     }
 
@@ -118,7 +118,7 @@ static char **getfiles(const char *fspec, int *nfound, LOG_INFO *LogInfo) {
             (*nfound)++;
             if (alloc) {
                 flist = (char **) Mem_ReAlloc(
-                    flist, sizeof(char *) * (*nfound), LogInfo
+                    (void *) flist, sizeof(char *) * (*nfound), LogInfo
                 );
 
                 if (LogInfo->stopRun) {
@@ -494,7 +494,7 @@ Bool RemoveFiles(const char *fspec, LOG_INFO *LogInfo) {
                 free(flist[i]);
             }
         }
-        free(flist);
+        free((void *) flist);
     }
 
     return (Bool) (result && !LogInfo->stopRun);
