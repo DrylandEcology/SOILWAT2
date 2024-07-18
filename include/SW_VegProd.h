@@ -102,7 +102,7 @@ extern "C" {
 /* =================================================== */
 /*            Externed Global Variables                */
 /* --------------------------------------------------- */
-extern char const *key2veg[NVEGTYPES];
+extern const char *const key2veg[NVEGTYPES];
 
 
 /* =================================================== */

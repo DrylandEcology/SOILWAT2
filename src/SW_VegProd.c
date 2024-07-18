@@ -111,7 +111,7 @@ vegtype variable forb and forb.cov.fCover
 
 // key2veg must be in the same order as the indices to vegetation types defined
 // in SW_Defines.h
-char const *key2veg[NVEGTYPES] = {"Trees", "Shrubs", "Forbs", "Grasses"};
+const char *const key2veg[NVEGTYPES] = {"Trees", "Shrubs", "Forbs", "Grasses"};
 
 /* =================================================== */
 /*             Global Function Definitions             */

@@ -47,7 +47,7 @@
 const int times[] = {MAX_DAYS - 1, MAX_WEEKS, MAX_MONTHS, 1};
 
 
-static const char *possKeys[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
+static const char *const possKeys[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
     {NULL}, // WTHR
     {"TEMP__temp_max",
      "TEMP__temp_min",
@@ -138,7 +138,7 @@ static const char *possKeys[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
      "BIOMASS__LAI"}
 };
 
-static const char *SWVarUnits[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
+static const char *const SWVarUnits[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
     {NULL},                                           /* WTHR */
     {"degC", "degC", "degC", "degC", "degC", "degC"}, /* TEMP */
     {"cm", "cm", "cm", "cm", "cm"},                   /* PRECIP */
@@ -1082,11 +1082,11 @@ static void write_double_vals(
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void write_string_vals(
-    int ncFileID, int varID, const char **varVals, LOG_INFO *LogInfo
+    int ncFileID, int varID, const char *const varVals[], LOG_INFO *LogInfo
 ) {
 
-
-    if (nc_put_var_string(ncFileID, varID, &varVals[0]) != NC_NOERR) {
+    if (nc_put_var_string(ncFileID, varID, (const char **) &varVals[0]) !=
+        NC_NOERR) {
         LogError(LogInfo, LOGERROR, "Could not write string values.");
     }
 }

@@ -68,7 +68,7 @@ History:
 /* converts an enum output key (OutKey type) to a module  */
 /* or object type. see SW_Output.h for OutKey order.         */
 /* MUST be SW_OUTNKEYS of these */
-ObjType key2obj[] = {
+const ObjType key2obj[] = {
     // weather/atmospheric quantities:
     eWTH,
     eWTH,
@@ -115,7 +115,7 @@ ObjType key2obj[] = {
 // Convert from IDs to strings
 /* These MUST be in the same order as enum OutKey in
  * SW_Output.h */
-char const *key2str[] = {
+const char *const key2str[] = {
     // weather/atmospheric quantities:
     SW_WETHR,
     SW_TEMP,
@@ -154,15 +154,15 @@ char const *key2str[] = {
     SW_BIOMASS
 };
 
-char const *pd2str[] = {SW_DAY, SW_WEEK, SW_MONTH, SW_YEAR};
+const char *const pd2str[] = {SW_DAY, SW_WEEK, SW_MONTH, SW_YEAR};
 
-char const *pd2longstr[] = {
+const char *const pd2longstr[] = {
     SW_DAY_LONG, SW_WEEK_LONG, SW_MONTH_LONG, SW_YEAR_LONG
 };
 
-char const *styp2str[] = {SW_SUM_OFF, SW_SUM_SUM, SW_SUM_AVG, SW_SUM_FNL};
+const char *const styp2str[] = {SW_SUM_OFF, SW_SUM_SUM, SW_SUM_AVG, SW_SUM_FNL};
 
-char const *styp2longstr[] = {
+const char *const styp2longstr[] = {
     SW_SUM_OFF, SW_SUM_SUM, SW_SUM_AVG_LONG, SW_SUM_FNL_LONG
 };
 

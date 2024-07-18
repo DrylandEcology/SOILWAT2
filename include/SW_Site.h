@@ -191,8 +191,8 @@ extern "C" {
 /* =================================================== */
 /*            Externed Global Variables                */
 /* --------------------------------------------------- */
-extern char const *swrc2str[];
-extern char const *ptf2str[];
+extern const char *const swrc2str[];
+extern const char *const ptf2str[];
 
 
 /* =================================================== */

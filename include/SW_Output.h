@@ -147,10 +147,10 @@ extern "C" {
 /*            Externed Global Variables                */
 /* --------------------------------------------------- */
 
-extern char const *key2str[];
-extern char const *pd2longstr[];
-extern char const *styp2str[];
-extern char const *styp2longstr[];
+extern const char *const key2str[];
+extern const char *const pd2longstr[];
+extern const char *const styp2str[];
+extern const char *const styp2longstr[];
 
 /* =================================================== */
 /*             Global Function Declarations            */

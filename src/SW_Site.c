@@ -135,7 +135,9 @@
     - Order must exactly match "indices of `swrc2str`"
     - See details in section \ref swrc_ptf
 */
-char const *swrc2str[N_SWRCs] = {"Campbell1974", "vanGenuchten1980", "FXW"};
+const char *const swrc2str[N_SWRCs] = {
+    "Campbell1974", "vanGenuchten1980", "FXW"
+};
 
 /** Character representation of implemented Pedotransfer Functions (PTF)
 
@@ -145,7 +147,7 @@ char const *swrc2str[N_SWRCs] = {"Campbell1974", "vanGenuchten1980", "FXW"};
     - See details in section \ref swrc_ptf
     - `rSOILWAT2` may implemented additional PTFs
 */
-char const *ptf2str[N_PTFs] = {"Cosby1984AndOthers", "Cosby1984"};
+const char *const ptf2str[N_PTFs] = {"Cosby1984AndOthers", "Cosby1984"};
 
 /* =================================================== */
 /*             Local Function Definitions              */
