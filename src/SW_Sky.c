@@ -127,6 +127,7 @@ void SW_SKY_read(char *InFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
             for (k = 0; k < MAX_MONTHS; k++) {
                 SW_Sky->snow_density[k] = tmp[k];
             }
+            break;
         case 4:
             for (k = 0; k < MAX_MONTHS; k++) {
                 SW_Sky->n_rain_per_day[k] = tmp[k];
