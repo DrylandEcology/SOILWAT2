@@ -97,8 +97,9 @@ static char **getfiles(const char *fspec, int *nfound, LOG_INFO *LogInfo) {
     len2 = (fn2) ? strlen(fn2) : 0;
 
     (*nfound) = 0;
+    dir = opendir(dname);
 
-    if ((dir = opendir(dname)) == NULL) {
+    if (isnull(dir)) {
         free(fname);
         return NULL;
     }
@@ -251,7 +252,8 @@ Bool GetALine(FILE *f, char buf[], int numChars) {
     char *p;
     Bool not_eof = swFALSE;
     while (!isnull(fgets(buf, numChars, f))) {
-        if (!isnull(p = strchr(buf, (int) '\n'))) {
+        p = strchr(buf, (int) '\n');
+        if (!isnull(p)) {
             *p = '\0';
         }
 
@@ -275,7 +277,9 @@ void DirName(const char *p, char *outString) {
     char sep1 = '/', sep2 = '\\';
 
     *outString = '\0';
-    if (!(c = (char *) strrchr(p, (int) sep1))) {
+    c = (char *) strrchr(p, (int) sep1);
+
+    if (!c) {
         c = (char *) strrchr(p, (int) sep2);
     }
 
@@ -294,7 +298,8 @@ const char *BaseName(const char *p) {
     char *c;
     char sep1 = '/', sep2 = '\\';
 
-    if (!(c = (char *) strrchr(p, (int) sep1))) {
+    c = (char *) strrchr(p, (int) sep1);
+    if (!c) {
         c = (char *) strrchr(p, (int) sep2);
     }
 
@@ -471,7 +476,9 @@ Bool RemoveFiles(const char *fspec, LOG_INFO *LogInfo) {
         return swTRUE;
     }
 
-    if ((flist = getfiles(fspec, &nfiles, LogInfo))) {
+    flist = getfiles(fspec, &nfiles, LogInfo);
+
+    if (!isnull(flist)) {
         DirName(fspec, fname); // Transfer `fspec` into `fname`
         dlen = strlen(fname);
         for (i = 0; i < nfiles; i++) {
@@ -481,8 +488,7 @@ Bool RemoveFiles(const char *fspec, LOG_INFO *LogInfo) {
                 break;
             }
         }
-    }
-    if (!isnull(flist)) {
+
         for (i = 0; i < nfiles; i++) {
             if (!isnull(flist[i])) {
                 free(flist[i]);
@@ -491,12 +497,7 @@ Bool RemoveFiles(const char *fspec, LOG_INFO *LogInfo) {
         free(flist);
     }
 
-    if (LogInfo->stopRun) {
-        return swFALSE;
-    }
-
-
-    return (Bool) result;
+    return (Bool) (result && !LogInfo->stopRun);
 }
 
 /**

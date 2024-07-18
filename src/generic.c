@@ -29,9 +29,9 @@ static void uncomment_cstyle(char *p) {
      cwb - 9/11/01
      -------------------------------------------*/
 
-    char *e; /* end of comment */
+    char *e = strchr(p + 2, '*'); /* end of comment */
 
-    if ((e = strchr(p + 2, '*'))) {
+    if (e) {
         if (*(++e) == '/') {
             e++;
             while (*e) {
@@ -237,12 +237,16 @@ void UnComment(char *s) {
      cwb - 9/11/01 added c-style comment code and
      split out the different tasks.
      -------------------------------------------*/
-    char *p;
+    char *p = strchr(s, '#');
 
-    if ((p = strchr(s, '#'))) {
+    if (!isnull(p)) {
         *p = '\0';
-    } else if ((p = strstr(s, "/*"))) {
-        uncomment_cstyle(p);
+    } else {
+        p = strstr(s, "/*");
+
+        if (!isnull(p)) {
+            uncomment_cstyle(p);
+        }
     }
 
     Str_TrimRight(s);

@@ -319,8 +319,9 @@ void SW_F_construct(const char *firstfile, char _ProjDir[], LOG_INFO *LogInfo) {
     }
 
     DirName(local_firstfile, dirString);
+    c = dirString;
 
-    if ((c = dirString)) {
+    if (c) {
         strcpy(_ProjDir, c);
         c = local_firstfile;
         p = c + strlen(_ProjDir);

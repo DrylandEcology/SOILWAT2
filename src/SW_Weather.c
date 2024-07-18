@@ -2196,7 +2196,8 @@ void _read_weather_hist(
     // Create file name: `[weather-file prefix].[year]`
     snprintf(fname, MAX_FILENAMESIZE, "%s.%4d", weather_prefix, year);
 
-    if (NULL == (f = fopen(fname, "r"))) {
+    f = fopen(fname, "r");
+    if (isnull(f)) {
         return;
     }
 

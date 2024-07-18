@@ -30,7 +30,7 @@
 #include "include/SW_Files.h"       // for eMarkovCov, eMarkovProb
 #include "include/Times.h"          // for doy2week
 #include <math.h>                   // for isfinite
-#include <stdio.h>                  // for NULL, fopen, sscanf, FILE, size_t
+#include <stdio.h>                  // for NULL, sscanf, FILE, size_t
 #include <stdlib.h>                 // for free
 
 /* =================================================== */
@@ -526,8 +526,8 @@ Bool SW_MKV_read_prob(
 
     /* note that Files.read() must be called prior to this. */
     char *MyFileName = InFiles[eMarkovProb];
-
-    if (NULL == (f = fopen(MyFileName, "r"))) {
+    f = OpenFile(MyFileName, "r", LogInfo);
+    if (LogInfo->stopRun) {
         return swFALSE;
     }
 
@@ -642,8 +642,8 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo) {
     RealF t1, t2, t3, t4, t5, t6, cfxw, cfxd, cfnw, cfnd;
 
     char *MyFileName = InFiles[eMarkovCov];
-
-    if (NULL == (f = fopen(MyFileName, "r"))) {
+    f = OpenFile(MyFileName, "r", LogInfo);
+    if (LogInfo->stopRun) {
         return swFALSE;
     }
 
