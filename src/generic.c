@@ -97,10 +97,11 @@ char *Str_TrimRight(char *s) {
      cwb - 9/11/01 moved this from Uncomment
      -------------------------------------------*/
 
-    char *p = s + strlen(s);
+    char *p = s + strlen(s) - 1;
 
-    while ((--p) >= s && isspace((int) *p))
-        ;
+    while (p >= s && isspace((int) *p)) {
+        p--;
+    }
     *(++p) = '\0';
 
     return s;
