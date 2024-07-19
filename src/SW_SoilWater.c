@@ -2272,7 +2272,7 @@ are the inverse of each other for `(phi, theta)` between
 @return Soil water content in the layer [cm]
 */
 double SWRC_SWPtoSWC_vanGenuchten1980(
-    double swpMatric, double *swrcp, double gravel, double width
+    double swpMatric, const double *swrcp, double gravel, double width
 ) {
     double phi, tmp, res;
 

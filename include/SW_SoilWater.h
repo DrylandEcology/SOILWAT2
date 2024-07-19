@@ -247,7 +247,7 @@ double SWRC_SWPtoSWC_Campbell1974(
 );
 
 double SWRC_SWPtoSWC_vanGenuchten1980(
-    double swpMatric, double *swrcp, double gravel, double width
+    double swpMatric, const double *swrcp, double gravel, double width
 );
 
 double SWRC_SWPtoSWC_FXW(

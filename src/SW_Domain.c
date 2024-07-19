@@ -86,7 +86,10 @@ TRUE if simulation for \p ncSuid has not been completed yet;
 FALSE if simulation for \p ncSuid has been completed (i.e., skip).
 */
 Bool SW_DOM_CheckProgress(
-    int progFileID, int progVarID, unsigned long ncSuid[], LOG_INFO *LogInfo
+    int progFileID,
+    int progVarID,
+    unsigned long ncSuid[], // NOLINT(readability-non-const-parameter)
+    LOG_INFO *LogInfo
 ) {
 #if defined(SWNETCDF)
     return SW_NC_check_progress(progFileID, progVarID, ncSuid, LogInfo);
@@ -472,7 +475,7 @@ void SW_DOM_SetProgress(
     const char *domType,
     int progFileID,
     int progVarID,
-    unsigned long ncSuid[],
+    unsigned long ncSuid[], // NOLINT(readability-non-const-parameter)
     LOG_INFO *LogInfo
 ) {
 

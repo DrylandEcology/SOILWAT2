@@ -110,7 +110,7 @@ extern const IntUS ncol_TimeOUT[SW_OUTNPERIODS];
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_OUT_set_nrow(
-    SW_MODEL *SW_Model, Bool use_OutPeriod[], size_t nrow_OUT[]
+    SW_MODEL *SW_Model, const Bool use_OutPeriod[], size_t nrow_OUT[]
 );
 
 void SW_OUT_construct_outarray(
@@ -123,8 +123,8 @@ void SW_OUT_deconstruct_outarray(SW_OUT_RUN *OutRun);
 void get_outvalleader(
     SW_MODEL *SW_Model,
     OutPeriod pd,
-    size_t irow_OUT[],
-    size_t nrow_OUT[],
+    const size_t irow_OUT[],
+    const size_t nrow_OUT[],
     TimeInt tOffset,
     RealD *p
 );
@@ -135,8 +135,8 @@ void do_running_agg(RealD *p, RealD *psd, size_t k, IntU n, RealD x);
 #endif
 
 void SW_OUT_calc_iOUToffset(
-    size_t nrow_OUT[],
-    IntUS nvar_OUT[],
+    const size_t nrow_OUT[],
+    const IntUS nvar_OUT[],
     IntUS nsl_OUT[][SW_OUTNMAXVARS],
     IntUS npft_OUT[][SW_OUTNMAXVARS],
     size_t iOUToffset[][SW_OUTNPERIODS][SW_OUTNMAXVARS]

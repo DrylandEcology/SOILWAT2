@@ -696,7 +696,7 @@ on the biomass.
 @sideeffect new_biomass Updated biomass.
 */
 void apply_biomassCO2effect(
-    double new_biomass[], double biomass[], double multiplier
+    double new_biomass[], const double biomass[], double multiplier
 ) {
     int i;
     for (i = 0; i < 12; i++) {
@@ -1212,7 +1212,7 @@ void estimatePotNatVegComposition(
     double meanTemp_C,
     double PPT_cm,
     double meanTempMon_C[],
-    double PPTMon_cm[],
+    const double PPTMon_cm[],
     double inputValues[],
     double shrubLimit,
     double SumGrassesFraction,
@@ -1750,8 +1750,8 @@ indices from two input arrays
 @param[out] LogInfo Holds information on warnings and errors
 */
 void uniqueIndices(
-    int arrayOne[],
-    int arrayTwo[],
+    const int arrayOne[],
+    const int arrayTwo[],
     int arrayOneSize,
     int arrayTwoSize,
     int *finalIndexArray,

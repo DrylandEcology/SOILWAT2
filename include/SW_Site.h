@@ -234,7 +234,7 @@ Bool SWRC_check_parameters_for_FXW(double *swrcp, LOG_INFO *LogInfo);
 
 double SW_swcBulk_saturated(
     unsigned int swrc_type,
-    double *swrcp,
+    const double *swrcp,
     double gravel,
     double width,
     unsigned int ptf_type,
@@ -310,25 +310,28 @@ void set_soillayers(
     SW_VEGPROD *SW_VegProd,
     SW_SITE *SW_Site,
     LyrIndex nlyrs,
-    RealF *dmax,
-    RealF *bd,
-    RealF *f_gravel,
-    RealF *evco,
-    RealF *trco_grass,
-    RealF *trco_shrub,
-    RealF *trco_tree,
-    RealF *trco_forb,
-    RealF *psand,
-    RealF *pclay,
-    RealF *imperm,
-    RealF *soiltemp,
+    const RealF *dmax,
+    const RealF *bd,
+    const RealF *f_gravel,
+    const RealF *evco,
+    const RealF *trco_grass,
+    const RealF *trco_shrub,
+    const RealF *trco_tree,
+    const RealF *trco_forb,
+    const RealF *psand,
+    const RealF *pclay,
+    const RealF *imperm,
+    const RealF *soiltemp,
     int nRegions,
     RealD *regionLowerBounds,
     LOG_INFO *LogInfo
 );
 
 void derive_soilRegions(
-    SW_SITE *SW_Site, int nRegions, RealD *regionLowerBounds, LOG_INFO *LogInfo
+    SW_SITE *SW_Site,
+    int nRegions,
+    const RealD *regionLowerBounds,
+    LOG_INFO *LogInfo
 );
 
 

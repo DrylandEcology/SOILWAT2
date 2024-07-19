@@ -255,7 +255,7 @@ void sw_message(const char *msg) {
  * @param[out] LogInfo Holds information on warnings and errors
  */
 void check_errno(
-    const char *inFile, char *valString, char *endPtr, LOG_INFO *LogInfo
+    const char *inFile, char *valString, const char *endPtr, LOG_INFO *LogInfo
 ) {
 
     if (errno != 0 || (*endPtr != 0 && !isspace(*endPtr))) {
@@ -677,7 +677,7 @@ void set_hasKey(
 @param[out] LogInfo Holds information on warnings and errors
 */
 void check_requiredKeys(
-    Bool *hasKeys,
+    const Bool *hasKeys,
     const Bool *requiredKeys,
     const char **possibleKeys,
     int numKeys,

@@ -70,7 +70,7 @@ const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = {2, 2, 2, 1};
 @param[out] nrow_OUT Number of output rows for each output period
 */
 void SW_OUT_set_nrow(
-    SW_MODEL *SW_Model, Bool use_OutPeriod[], size_t nrow_OUT[]
+    SW_MODEL *SW_Model, const Bool use_OutPeriod[], size_t nrow_OUT[]
 ) {
     TimeInt i;
     size_t n_yrs;
@@ -175,8 +175,8 @@ void SW_OUT_deconstruct_outarray(SW_OUT_RUN *OutRun) {
 void get_outvalleader(
     SW_MODEL *SW_Model,
     OutPeriod pd,
-    size_t irow_OUT[],
-    size_t nrow_OUT[],
+    const size_t irow_OUT[],
+    const size_t nrow_OUT[],
     TimeInt tOffset,
     RealD *p
 ) {
@@ -302,8 +302,8 @@ void SW_OUT_construct_outarray(
     p_OUT (array of size SW_OUTNKEYS by SW_OUTNPERIODS by SW_OUTNMAXVARS).
 */
 void SW_OUT_calc_iOUToffset(
-    size_t nrow_OUT[],
-    IntUS nvar_OUT[],
+    const size_t nrow_OUT[],
+    const IntUS nvar_OUT[],
     IntUS nsl_OUT[][SW_OUTNMAXVARS],
     IntUS npft_OUT[][SW_OUTNMAXVARS],
     size_t iOUToffset[][SW_OUTNPERIODS][SW_OUTNMAXVARS]

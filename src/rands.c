@@ -59,7 +59,9 @@ even if they occurred during the same system time.
 @param[in,out] pcg_rng The random number generator to set.
 */
 void RandSeed(
-    unsigned long initstate, unsigned long initseq, sw_random_t *pcg_rng
+    unsigned long initstate,
+    unsigned long initseq,
+    sw_random_t *pcg_rng // NOLINT(readability-non-const-parameter)
 ) {
 // R uses its own random number generators
 #ifndef RSOILWAT
@@ -93,6 +95,7 @@ If `pcg_rng` was not initialized with `RandSeed()`, then the first call to
 
 @return A pseudo-random number between 0 and 1.
 */
+// NOLINTNEXTLINE(readability-non-const-parameter)
 double RandUni(sw_random_t *pcg_rng) {
 
     double res;
@@ -122,7 +125,11 @@ double RandUni(sw_random_t *pcg_rng) {
 
 \return Random number between the two bounds defined.
 */
-int RandUniIntRange(const long first, const long last, sw_random_t *pcg_rng) {
+int RandUniIntRange(
+    const long first,
+    const long last,
+    sw_random_t *pcg_rng // NOLINT(readability-non-const-parameter)
+) {
     /* History:
         Return a randomly selected integer between
         first and last, inclusive.
@@ -334,7 +341,11 @@ If compiled with defined `RSOILWAT`, then `rnorm()` from header
 @param stddev Standard deviation of the distribution.
 @param[in,out] *pcg_rng The random number generator to use.
 */
-double RandNorm(double mean, double stddev, sw_random_t *pcg_rng) {
+double RandNorm(
+    double mean,
+    double stddev,
+    sw_random_t *pcg_rng // NOLINT(readability-non-const-parameter)
+) {
     /* History:
         cwb - 6/20/00
         This routine is

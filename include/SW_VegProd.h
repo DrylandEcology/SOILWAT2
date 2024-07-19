@@ -131,7 +131,7 @@ void estimatePotNatVegComposition(
     double meanTemp_C,
     double PPT_cm,
     double meanTempMon_C[],
-    double PPTMon_cm[],
+    const double PPTMon_cm[],
     double inputValues[],
     double shrubLimit,
     double SumGrassesFraction,
@@ -149,8 +149,8 @@ void estimatePotNatVegComposition(
 double cutZeroInf(double testValue);
 
 void uniqueIndices(
-    int arrayOne[],
-    int arrayTwo[],
+    const int arrayOne[],
+    const int arrayTwo[],
     int arrayOneSize,
     int arrayTwoSize,
     int *finalIndexArray,
@@ -168,7 +168,7 @@ void SW_VPD_init_run(
 void SW_VPD_deconstruct(SW_VEGPROD *SW_VegProd);
 
 void apply_biomassCO2effect(
-    double *new_biomass, double *biomass, double multiplier
+    double *new_biomass, const double *biomass, double multiplier
 );
 
 RealD sum_across_vegtypes(RealD x[][MAX_LAYERS], LyrIndex layerno);

@@ -402,9 +402,9 @@ void infiltrate_water_high(
     double *drainout,
     double pptleft,
     int nlyrs,
-    double swcfc[],
+    const double swcfc[],
     double swcsat[],
-    double impermeability[],
+    const double impermeability[],
     double *standingWater,
     double lyrFrozen[]
 ) {
@@ -484,7 +484,7 @@ void transp_weighted_avg(
     SW_SITE *SW_Site,
     unsigned int n_tr_rgns,
     LyrIndex n_layers,
-    unsigned int tr_regions[],
+    const unsigned int tr_regions[],
     double swc[],
     int VegType,
     LOG_INFO *LogInfo
@@ -965,7 +965,7 @@ void remove_from_soil(
     SW_SITE *SW_Site,
     double *aet,
     unsigned int nlyrs,
-    double coeff[],
+    const double coeff[],
     double rate,
     double swcmin[],
     double lyrFrozen[],
@@ -1195,7 +1195,7 @@ void hydraulic_redistribution(
     SW_SITE *SW_Site,
     unsigned int vegk,
     unsigned int nlyrs,
-    double lyrFrozen[],
+    const double lyrFrozen[],
     double maxCondroot,
     double swp50,
     double shapeCond,
@@ -1570,8 +1570,8 @@ depths/layers.
 */
 void lyrSoil_to_lyrTemp_temperature(
     unsigned int nlyrSoil,
-    double depth_Soil[],
-    double avgLyrTemp[],
+    const double depth_Soil[],
+    const double avgLyrTemp[],
     double endTemp,
     unsigned int nlyrTemp,
     double depth_Temp[],
@@ -1671,8 +1671,8 @@ to soil temperature layer values.
 void lyrSoil_to_lyrTemp(
     double cor[MAX_ST_RGR][MAX_LAYERS + 1],
     unsigned int nlyrSoil,
-    double width_Soil[],
-    double var[],
+    const double width_Soil[],
+    const double var[],
     unsigned int nlyrTemp,
     double width_Temp,
     double res[]
@@ -1898,8 +1898,8 @@ void soil_temperature_setup(
     double avgLyrTempInit[],
     double sTconst,
     unsigned int nlyrs,
-    double fc[],
-    double wp[],
+    const double fc[],
+    const double wp[],
     double deltaX,
     double theMaxDepth,
     unsigned int nRgr,
@@ -2167,7 +2167,7 @@ void set_frozen_unfrozen(
     double avgLyrTemp[],
     double swc[],
     double swc_sat[],
-    double width[],
+    const double width[],
     double lyrFrozen[]
 ) {
 
@@ -2209,12 +2209,12 @@ Based on equations from Eitzinger 2000. @cite Eitzinger2000
 freezing/thawing
 */
 unsigned int adjust_Tsoil_by_freezing_and_thawing(
-    double oldavgLyrTemp[],
-    double avgLyrTemp[],
+    const double oldavgLyrTemp[],
+    const double avgLyrTemp[],
     double shParam,
     unsigned int nlyrs,
-    double vwc[],
-    double bDensity[],
+    const double vwc[],
+    const double bDensity[],
     Bool *fusion_pool_init,
     double oldsFusionPool_actual[]
 ) {
@@ -2365,18 +2365,18 @@ void soil_temperature_today(
     double sTconst,
     int nRgr,
     double avgLyrTempR[],
-    double oldavgLyrTempR[],
-    double vwcR[],
-    double wpR[],
-    double fcR[],
-    double bDensityR[],
+    const double oldavgLyrTempR[],
+    const double vwcR[],
+    const double wpR[],
+    const double fcR[],
+    const double bDensityR[],
     double csParam1,
     double csParam2,
     double shParam,
     Bool *ptr_stError,
     double surface_range,
     double temperatureRangeR[],
-    double depthsR[],
+    const double depthsR[],
     TimeInt year,
     TimeInt doy
 ) {

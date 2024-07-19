@@ -359,7 +359,7 @@ void st_getBounds(
  HISTORY:
  05/29/2012 (DLM) initial coding
  **************************************************************************************************************************************/
-double lobfM(double xs[], double ys[], unsigned int n) {
+double lobfM(const double xs[], const double ys[], unsigned int n) {
     double sumX, sumY, sumXY, sumX2, temp;
     unsigned int i;
 
@@ -525,7 +525,7 @@ double final_running_sd(unsigned int n, double ssqr) {
 @note When a value is SW_MISSING, the function sees it as a value to skip and
 ignores it to not influence the mean.
 */
-double mean(double values[], int length) {
+double mean(const double values[], int length) {
 
     int index, finalLength = 0;
     double total = 0.0, currentVal;

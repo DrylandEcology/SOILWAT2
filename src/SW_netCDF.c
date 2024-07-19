@@ -523,7 +523,7 @@ static void nc_read_atts(
 it's respective numeric values
 */
 static void get_2d_output_key(
-    char *varKey, OutKey *outKey, int *outVarNum, IntUS nvar_OUT[]
+    char *varKey, OutKey *outKey, int *outVarNum, const IntUS nvar_OUT[]
 ) {
 
     int k, varNum;
@@ -1226,7 +1226,7 @@ freeMem:
 static void create_netCDF_dim(
     const char *dimName,
     unsigned long size,
-    int *ncFileID,
+    const int *ncFileID,
     int *dimID,
     LOG_INFO *LogInfo
 ) {
@@ -1257,7 +1257,7 @@ static void create_netCDF_var(
     int *varID,
     const char *varName,
     int *dimIDs,
-    int *ncFileID,
+    const int *ncFileID,
     int varType,
     int numDims,
     LOG_INFO *LogInfo
@@ -2081,7 +2081,7 @@ static void fill_domain_netCDF_xy(
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void fill_netCDF_with_proj_CRS_atts(
-    SW_CRS *crs_projsc, int *ncFileID, int proj_id, LOG_INFO *LogInfo
+    SW_CRS *crs_projsc, const int *ncFileID, int proj_id, LOG_INFO *LogInfo
 ) {
 
     const int numStrAtts = 5, numDoubleAtts = 8;
@@ -2163,7 +2163,7 @@ static void fill_netCDF_with_proj_CRS_atts(
 */
 static void fill_netCDF_with_geo_CRS_atts(
     SW_CRS *crs_geogsc,
-    int *ncFileID,
+    const int *ncFileID,
     char *coord_sys,
     int geo_id,
     LOG_INFO *LogInfo
@@ -2238,7 +2238,7 @@ static void fill_netCDF_with_geo_CRS_atts(
 */
 static void fill_netCDF_with_global_atts(
     SW_NETCDF *SW_netCDF,
-    int *ncFileID,
+    const int *ncFileID,
     const char *domType,
     const char *freqAtt,
     Bool isInputFile,
@@ -2323,7 +2323,7 @@ static void fill_netCDF_with_global_atts(
 @param[in,out] LogInfo Holds information dealing with logfile output
 */
 static void update_netCDF_global_atts(
-    int *ncFileID,
+    const int *ncFileID,
     const char *domType,
     const char *freqAtt,
     Bool isInputFile,
@@ -2604,7 +2604,7 @@ static void create_vert_vars(
     int size,
     int dimVarID,
     Bool hasConsistentSoilLayerDepths,
-    double lyrDepths[],
+    const double lyrDepths[],
     LOG_INFO *LogInfo
 ) {
 
@@ -3451,7 +3451,7 @@ void SW_NC_write_output(
     RealD *p_OUT[][SW_OUTNPERIODS],
     int numFilesPerKey,
     char **ncOutFileNames[][SW_OUTNPERIODS],
-    size_t ncSuid[],
+    const size_t ncSuid[],
     const char *domType,
     LOG_INFO *LogInfo
 ) {

@@ -19,7 +19,10 @@ void SW_DOM_calc_ncSuid(
 void SW_DOM_calc_nSUIDs(SW_DOMAIN *SW_Domain);
 
 Bool SW_DOM_CheckProgress(
-    int progFileID, int progVarID, unsigned long ncSuid[], LOG_INFO *LogInfo
+    int progFileID,
+    int progVarID,
+    unsigned long ncSuid[],
+    LOG_INFO *LogInfo
 );
 
 void SW_DOM_CreateProgress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);

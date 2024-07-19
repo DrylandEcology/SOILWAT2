@@ -521,8 +521,7 @@ void SW_CTL_setup_model(
     // SW_FLW_construct() not needed
     SW_OUT_construct(
         zeroOutInfo,
-        sw->FileStatus.make_soil,
-        sw->FileStatus.make_regular,
+        &sw->FileStatus,
         OutDom,
         &sw->OutRun,
         LogInfo
@@ -1029,7 +1028,7 @@ on error but end early and report to caller
 void SW_CTL_run_sw(
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
-    unsigned long ncSuid[],
+    unsigned long ncSuid[], // NOLINT(readability-non-const-parameter)
     LOG_INFO *LogInfo
 ) {
 

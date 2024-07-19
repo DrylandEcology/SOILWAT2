@@ -124,7 +124,7 @@ TimeInt Time_get_lastdoy_y(TimeInt year) {
 
 @return Month (base0) [Jan-Dec = 0-11].
 */
-TimeInt doy2month(const TimeInt doy, TimeInt cum_monthdays[]) {
+TimeInt doy2month(const TimeInt doy, const TimeInt cum_monthdays[]) {
     TimeInt mon;
 
     for (mon = Jan; mon < Dec && doy > cum_monthdays[mon]; mon++)
@@ -142,7 +142,7 @@ TimeInt doy2month(const TimeInt doy, TimeInt cum_monthdays[]) {
 @return Day of the month [1-31].
 */
 TimeInt doy2mday(
-    const TimeInt doy, TimeInt cum_monthdays[], TimeInt days_in_month[]
+    const TimeInt doy, TimeInt cum_monthdays[], const TimeInt days_in_month[]
 ) {
 
     TimeInt new_doy0 = doy2month(doy, cum_monthdays) - 1;
@@ -214,7 +214,7 @@ index for "day of year" (doy) is used, i.e., the value on the first day of year
 (`doy = 0`) is located in `dailyValues[0]`.
 */
 void interpolate_monthlyValues(
-    double monthlyValues[],
+    const double monthlyValues[],
     Bool interpAsBase1,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],

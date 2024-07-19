@@ -297,7 +297,7 @@ void st_getBounds(
     double bounds[]
 );
 
-double lobfM(double xs[], double ys[], unsigned int n);
+double lobfM(const double xs[], const double ys[], unsigned int n);
 
 double lobfB(double xs[], double ys[], unsigned int n);
 
@@ -312,7 +312,7 @@ double get_running_sqr(
 
 double final_running_sd(unsigned int n, double ssqr);
 
-double mean(double values[], int length);
+double mean(const double values[], int length);
 
 double standardDeviation(double inputArray[], int length);
 

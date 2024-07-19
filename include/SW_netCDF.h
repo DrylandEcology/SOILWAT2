@@ -51,7 +51,7 @@ void SW_NC_write_output(
     RealD *p_OUT[][SW_OUTNPERIODS],
     int numFilesPerKey,
     char **ncOutFileNames[][SW_OUTNPERIODS],
-    size_t ncSuid[],
+    const size_t ncSuid[],
     const char *domType,
     LOG_INFO *LogInfo
 );

@@ -70,7 +70,7 @@ void SW_WTH_read(
 );
 
 void set_dailyInputIndices(
-    Bool dailyInputFlags[MAX_INPUT_COLUMNS],
+    const Bool dailyInputFlags[MAX_INPUT_COLUMNS],
     unsigned int dailyInputIndices[MAX_INPUT_COLUMNS],
     unsigned int *n_input_forcings
 );
@@ -148,8 +148,8 @@ void _read_weather_hist(
     SW_WEATHER_HIST *yearWeather,
     char weather_prefix[],
     unsigned int n_input_forcings,
-    unsigned int *dailyInputIndices,
-    Bool *dailyInputFlags,
+    const unsigned int *dailyInputIndices,
+    const Bool *dailyInputFlags,
     LOG_INFO *LogInfo
 );
 
@@ -189,10 +189,10 @@ void scaleAllWeather(
     double *scale_temp_min,
     double *scale_precip,
     double *scale_skyCover,
-    double *scale_wind,
+    const double *scale_wind,
     double *scale_rH,
-    double *scale_actVapPress,
-    double *scale_shortWaveRad,
+    const double *scale_actVapPress,
+    const double *scale_shortWaveRad,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[]
 );

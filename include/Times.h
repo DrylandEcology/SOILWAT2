@@ -87,10 +87,10 @@ TimeInt Time_days_in_month(TimeInt month, TimeInt days_in_month[]);
 
 TimeInt Time_get_lastdoy_y(TimeInt year);
 
-TimeInt doy2month(const TimeInt doy, TimeInt cum_monthdays[]);
+TimeInt doy2month(const TimeInt doy, const TimeInt cum_monthdays[]);
 
 TimeInt doy2mday(
-    const TimeInt doy, TimeInt cum_monthdays[], TimeInt days_in_month[]
+    const TimeInt doy, TimeInt cum_monthdays[], const TimeInt days_in_month[]
 );
 
 TimeInt doy2week(TimeInt doy);
@@ -100,7 +100,7 @@ TimeInt yearto4digit(TimeInt yr);
 Bool isleapyear(const TimeInt year);
 
 void interpolate_monthlyValues(
-    double monthlyValues[],
+    const double monthlyValues[],
     Bool interpAsBase1,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],

@@ -164,8 +164,7 @@ void SW_OUTDOM_construct(SW_OUT_DOM *OutDom);
 
 void SW_OUT_construct(
     Bool zeroOutStruct,
-    Bool make_soil[],
-    Bool make_regular[],
+    SW_FILE_STATUS *FileStatus,
     SW_OUT_DOM *OutDom,
     SW_OUT_RUN *OutRun,
     LOG_INFO *LogInfo
@@ -186,7 +185,7 @@ void SW_OUT_set_ncol(
 void SW_OUT_set_colnames(
     int tLayers,
     SW_VEGESTAB_INFO **parms,
-    IntUS ncol_OUT[],
+    const IntUS ncol_OUT[],
     char *colnames_OUT[][5 * NVEGTYPES + MAX_LAYERS],
     LOG_INFO *LogInfo
 );
