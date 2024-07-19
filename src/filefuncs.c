@@ -314,15 +314,15 @@ void DirName(const char *p, char *outString) {
      * Be sure to copy the return value to a more stable buffer
      * before moving on.
      */
-    char *c;
+    const char *c;
     int l;
     char sep1 = '/', sep2 = '\\';
 
     *outString = '\0';
-    c = (char *) strrchr(p, (int) sep1);
+    c = strrchr(p, (int) sep1);
 
     if (!c) {
-        c = (char *) strrchr(p, (int) sep2);
+        c = strrchr(p, (int) sep2);
     }
 
     if (c) {
@@ -337,15 +337,15 @@ const char *BaseName(const char *p) {
     /* return a pointer to the terminal element (file) of a path. */
     /* Doesn't modify the string, but you'll probably want to
      * copy the result to a stable buffer. */
-    char *c;
+    const char *c;
     char sep1 = '/', sep2 = '\\';
 
-    c = (char *) strrchr(p, (int) sep1);
+    c = strrchr(p, (int) sep1);
     if (!c) {
-        c = (char *) strrchr(p, (int) sep2);
+        c = strrchr(p, (int) sep2);
     }
 
-    return ((c != NULL) ? c + 1 : p);
+    return (isnull(c) ? p : c + 1);
 }
 
 /**************************************************************/
