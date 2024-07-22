@@ -29,6 +29,7 @@
 #include "include/SW_Defines.h"     // for MAX_DAYS, MAX_FILENAMESIZE, TimeInt
 #include "include/SW_Files.h"       // for eMarkovCov, eMarkovProb
 #include "include/Times.h"          // for doy2week
+#include <errno.h>                  // for errno
 #include <math.h>                   // for isfinite
 #include <stdio.h>                  // for NULL, sscanf, FILE, size_t
 #include <stdlib.h>                 // for free
@@ -519,10 +520,14 @@ Bool SW_MKV_read_prob(
 ) {
     /* =================================================== */
     const int nitems = 5;
+    const int numFloatInStrings = 4;
+
     FILE *f;
-    int lineno = 0, day, x;
+    int lineno = 0, day, x, index;
     RealF wet, dry, avg, std;
-    char inbuf[MAX_FILENAMESIZE];
+    RealF *floatVals[4] = {&wet, &dry, &avg, &std};
+    char inbuf[MAX_FILENAMESIZE], *endPtr;
+    char dayStr[4] = {'\0'}, inFloatStrs[4][20] = {{'\0'}};
 
     /* note that Files.read() must be called prior to this. */
     char *MyFileName = InFiles[eMarkovProb];
@@ -536,7 +541,29 @@ Bool SW_MKV_read_prob(
             break; /* skip extra lines */
         }
 
-        x = sscanf(inbuf, "%d %f %f %f %f", &day, &wet, &dry, &avg, &std);
+        x = sscanf(
+            inbuf,
+            "%3s %19s %19s %19s %19s",
+            dayStr,
+            inFloatStrs[0],
+            inFloatStrs[1],
+            inFloatStrs[2],
+            inFloatStrs[3]
+        );
+
+        day = strtol(dayStr, &endPtr, 10);
+        check_errno(MyFileName, dayStr, endPtr, LogInfo);
+        if (LogInfo->stopRun) {
+            return swFALSE; // Exit function prematurely due to error
+        }
+
+        for (index = 0; index < numFloatInStrings; index++) {
+            *(floatVals[index]) = strtof(inFloatStrs[index], &endPtr);
+            check_errno(MyFileName, inFloatStrs[index], endPtr, LogInfo);
+            if (LogInfo->stopRun) {
+                return swFALSE; // Exit function prematurely due to error
+            }
+        }
 
         // Check that text file is ok:
         if (x < nitems) {
@@ -637,9 +664,14 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo) {
     /* =================================================== */
     const int nitems = 11;
     FILE *f;
-    int lineno = 0, week, x;
+    int lineno = 0, week, x, index;
     char inbuf[MAX_FILENAMESIZE];
     RealF t1, t2, t3, t4, t5, t6, cfxw, cfxd, cfnw, cfnd;
+    RealF *floatVals[] = {
+        &t1, &t2, &t3, &t4, &t5, &t6, &cfxw, &cfxd, &cfnw, &cfnd
+    };
+    char weekStr[3] = {'\0'}, inFloatStrs[10][20] = {{'\0'}}, *endPtr;
+    const int numFloatVals = 10;
 
     char *MyFileName = InFiles[eMarkovCov];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -654,18 +686,18 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo) {
 
         x = sscanf(
             inbuf,
-            "%d %f %f %f %f %f %f %f %f %f %f",
-            &week,
-            &t1,
-            &t2,
-            &t3,
-            &t4,
-            &t5,
-            &t6,
-            &cfxw,
-            &cfxd,
-            &cfnw,
-            &cfnd
+            "%2s %s %s %s %s %s %s %s %s %s %s",
+            weekStr,
+            inFloatStrs[0],
+            inFloatStrs[1],
+            inFloatStrs[2],
+            inFloatStrs[3],
+            inFloatStrs[4],
+            inFloatStrs[5],
+            inFloatStrs[6],
+            inFloatStrs[7],
+            inFloatStrs[8],
+            inFloatStrs[9]
         );
 
         // Check that text file is ok:
@@ -680,6 +712,20 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo) {
                 MyFileName
             );
             return swFALSE; // Exit function prematurely due to error
+        }
+
+        week = strtol(weekStr, &endPtr, 10);
+        check_errno(MyFileName, weekStr, endPtr, LogInfo);
+        if (LogInfo->stopRun) {
+            return swFALSE; // Exit function prematurely due to error
+        }
+
+        for (index = 0; index < numFloatVals; index++) {
+            *(floatVals[index]) = strtof(inFloatStrs[index], &endPtr);
+            check_errno(MyFileName, inFloatStrs[index], endPtr, LogInfo);
+            if (LogInfo->stopRun) {
+                return swFALSE; // Exit function prematurely due to error
+            }
         }
 
         // week is a real calendar week

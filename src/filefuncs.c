@@ -15,6 +15,7 @@
 #include "include/SW_Defines.h"     // for MAX_LOG_SIZE, KEY_NOT_FOUND, MAX...
 #include "include/Times.h"          // for timeStringISO8601
 #include <assert.h>                 // for assert
+#include <ctype.h>                  // for isspace
 #include <dirent.h>                 // for dirent, closedir, DIR, opendir, re...
 #include <errno.h>                  // for errno, EACCES
 #include <stdarg.h>                 // for va_end, va_start
@@ -241,6 +242,45 @@ void sw_message(const char *msg) {
     timeStringISO8601(timeString, sizeof timeString);
 
     sw_printf("SOILWAT2 (%s) %s\n", timeString, msg);
+}
+
+/**
+ * @brief Check errno for an error, and report it if there is
+ *
+ * @param[in] inFile Input file that contains the value that threw the error
+ * @param[in] valString String from input that caused the error when converting
+ * @param[in] endPtr Resulting pointer after attempting to convert a numeric
+ * value
+ * @param[out] LogInfo Holds information on warnings and errors
+ */
+void check_errno(
+    const char *inFile, char *valString, char *endPtr, LOG_INFO *LogInfo
+) {
+
+    if (errno != 0 || (*endPtr != 0 && !isspace(*endPtr))) {
+        switch (errno) {
+        case ERANGE:
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Processing input '%s' within %s produced an error indicating "
+                "that result was too large.\n",
+                valString,
+                (isnull(inFile)) ? "command-line arguments" : inFile
+            );
+            break;
+
+        default:
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Processing input '%s' within %s produced error code %d.\n",
+                valString,
+                (isnull(inFile)) ? "command-line arguments" : inFile
+            );
+            break;
+        }
+    }
 }
 
 /**************************************************************/

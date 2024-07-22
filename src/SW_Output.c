@@ -43,8 +43,9 @@ History:
 #include "include/SW_VegEstab.h"    // for _echo_VegEstab
 #include "include/SW_VegProd.h"     // for _echo_VegProd
 #include "include/Times.h"          // for Time_days_in_month, WKDAYS
+#include <errno.h>                  // for errno
 #include <stdio.h>                  // for snprintf, fprintf, printf
-#include <stdlib.h>                 // for atoi, free
+#include <stdlib.h>                 // for free
 #include <string.h>                 // for strcat, strcmp, strcpy, memset
 
 // Array-based output declarations:
@@ -2777,6 +2778,7 @@ void SW_OUT_read(
      *             In fact, the only keys to process are
      *             TRANSP, PRECIP, and TEMP.
      */
+
     FILE *f;
     OutKey k;
     int x, itemno, msg_type;
@@ -2794,14 +2796,14 @@ void SW_OUT_read(
     char sumtype[4];
     char period[10
                 /* last: last doy for output, if "end", ==366 */];
-    char last[4];
+    char lastStr[4], firstStr[4];
     char outfile[MAX_FILENAMESIZE];
     // message to print
     char msg[200];
     /* space for uppercase conversion */
     char upkey[50], upsum[4];
-    char inbuf[MAX_FILENAMESIZE];
-    int first; /* first doy for output */
+    char inbuf[MAX_FILENAMESIZE], *endPtr;
+    int first, last; /* first doy for output */
 
     char *MyFileName = InFiles[eOutput];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -2820,12 +2822,12 @@ void SW_OUT_read(
 
         x = sscanf(
             inbuf,
-            "%s %s %s %d %s %s",
+            "%s %s %s %s %s %s",
             keyname,
             sumtype,
             period,
-            &first,
-            last,
+            firstStr,
+            lastStr,
             outfile
         );
 
@@ -2902,13 +2904,6 @@ void SW_OUT_read(
             return; // Exit function prematurely due to error
         }
 
-        // Convert strings to index numbers
-        k = str2key(Str_ToUpper(keyname, upkey), LogInfo);
-        if (LogInfo->stopRun) {
-            CloseFile(&f, LogInfo);
-            return; // Exit function prematurely due to error
-        }
-
 // For now: rSOILWAT2's function `onGet_SW_OUT` requires that
 // `OutDom->outfile[k]` is allocated here
 #if defined(RSOILWAT)
@@ -2921,14 +2916,34 @@ void SW_OUT_read(
         outfile[0] = '\0';
 #endif
 
+        first = strtol(firstStr, &endPtr, 10);
+        check_errno(MyFileName, firstStr, endPtr, LogInfo);
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        if (Str_CompareI(lastStr, (char *) "END") != 0) {
+            last = strtol(lastStr, &endPtr, 10);
+            check_errno(MyFileName, lastStr, endPtr, LogInfo);
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+        }
+
+        // Convert strings to index numbers
+        k = str2key(Str_ToUpper(keyname, upkey), LogInfo);
+        if (LogInfo->stopRun) {
+            CloseFile(&f, LogInfo);
+            return; // Exit function prematurely due to error
+        }
+
         // Fill information into `sw->Output[k]`
         msg_type = SW_OUT_read_onekey(
             OutDom,
             k,
             str2stype(Str_ToUpper(sumtype, upsum), LogInfo),
             first,
-            (Str_CompareI((char *) last, (char *) "END") == 0) ? 366 :
-                                                                 atoi(last),
+            (Str_CompareI(lastStr, (char *) "END") == 0) ? 366 : last,
             msg,
             sizeof msg,
             &sw->VegProd.use_SWA,

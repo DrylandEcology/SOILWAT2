@@ -62,6 +62,8 @@ class AllTestFixture : public ::testing::Test {
     // (that were set up by `setup_testGlobalSoilwatTemplate()`) to
     // test fixture local variables
     void SetUp() override {
+        errno = 0;
+
         sw_init_logs(NULL, &LogInfo);
 
         SW_DOM_deepCopy(&template_SW_Domain, &SW_Domain, &LogInfo);

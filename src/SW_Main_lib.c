@@ -22,8 +22,9 @@
 #include "include/myMemory.h"       // for Str_Dup
 #include "include/SW_datastructs.h" // for LOG_INFO
 #include "include/SW_Defines.h"     // for MAX_MSGS, MAX_LOG_SIZE, BUILD_DATE
+#include <errno.h>                  // for errno
 #include <stdio.h>                  // for fprintf, stderr, fflush, stdout
-#include <stdlib.h>                 // for atof, atoll, exit, free, EXIT_FA...
+#include <stdlib.h>                 // for exit, free, EXIT_FA...
 #include <string.h>                 // for strcpy, strncmp
 
 #ifdef RSOILWAT
@@ -140,7 +141,7 @@ void sw_init_args(
      *                -q=quiet, don't print "Check logfile"
      *                   at end of program.
      */
-    char str[1024];
+    char str[1024], *endPtr;
 
     /* valid options */
     char const *opts[] = {"-d", "-f", "-e", "-q", "-v", "-h", "-s", "-t", "-r"};
@@ -152,6 +153,7 @@ void sw_init_args(
         a,  /* current valid argument-value position */
         op, /* position number of found option */
         nopts = sizeof(opts) / sizeof(char *);
+    double doubleUserSUID = 0.;
 
     /* Defaults */
     *_firstfile = Str_Dup(DFLT_FIRSTFILE, LogInfo);
@@ -253,12 +255,23 @@ void sw_init_args(
             break;
 
         case 6: /* -s */
-            *userSUID = atoll(str);
+            *userSUID = (unsigned long) strtoll(str, &endPtr, 10);
+            check_errno(NULL, str, endPtr, LogInfo);
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
             /* Check that user input can be represented by userSUID
              * (currently, unsigned long) */
             /* Expect that conversion of string to double results in the
              * same value as conversion of userSUID to double */
-            if (!EQ(atof(str), (double) *userSUID)) {
+            doubleUserSUID = strtod(str, &endPtr);
+            check_errno(NULL, str, endPtr, LogInfo);
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+            if (!EQ(doubleUserSUID, (double) *userSUID)) {
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -272,7 +285,11 @@ void sw_init_args(
             break;
 
         case 7: /* -t */
-            *wallTimeLimit = atof(str);
+            *wallTimeLimit = strtod(str, &endPtr);
+            check_errno(NULL, str, endPtr, LogInfo);
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
             break;
 
         case 8: /* -r */

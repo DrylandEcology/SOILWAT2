@@ -47,6 +47,9 @@ void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...);
 
 void sw_message(const char *msg);
 
+void check_errno(
+    const char *inFile, char *valString, char *endPtr, LOG_INFO *LogInfo
+);
 
 int key_to_id(const char *key, const char **possibleKeys, int numPossKeys);
 

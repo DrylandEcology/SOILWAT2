@@ -890,7 +890,6 @@ void SW_CTL_read_inputs_from_disk(
         sw_printf(" > 'weather setup'");
     }
 #endif
-
     SW_SKY_read(PathInfo->InFiles, &sw->Sky, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error

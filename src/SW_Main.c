@@ -26,6 +26,7 @@
 #include "include/SW_Output.h"      // for SW_OUT_close_files, SW_OUT_creat...
 #include "include/SW_Weather.h"     // for SW_WTH_finalize_all_weather
 #include "include/Times.h"          // for SW_WT_ReportTime, SW_WT_StartTime
+#include <errno.h>                  // for errno
 #include <stdio.h>                  // for NULL, stdout
 
 
@@ -53,7 +54,7 @@ int main(int argc, char **argv) {
     Bool EchoInits = swFALSE;
 
     unsigned long userSUID;
-
+    errno = 0;
 
     // Start overall wall time
     SW_WT_StartTime(&SW_WallTime);

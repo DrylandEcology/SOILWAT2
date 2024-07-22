@@ -82,9 +82,10 @@
 #include "include/SW_Site.h"        // for sw_Campbell1974, sw_FXW, sw_vanG...
 #include "include/SW_Times.h"       // for Today, Yesterday
 #include "include/Times.h"          // for yearto4digit
+#include <errno.h>                  // for errno
 #include <math.h>                   // for fabs, pow, log, ceil, copysign
 #include <stdio.h>                  // for NULL, FILE, sscanf, snprintf
-#include <stdlib.h>                 // for atoi, free
+#include <stdlib.h>                 // for free
 #include <string.h>                 // for memset
 
 
@@ -1306,7 +1307,9 @@ void SW_SWC_read(
      */
     FILE *f;
     int lineno = 0, nitems = 4;
-    char inbuf[MAX_FILENAMESIZE];
+    char inbuf[MAX_FILENAMESIZE], *endPtr;
+    int inBufintRes;
+    Bool convertInput;
 
     char *MyFileName = InFiles[eSoilwat];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -1315,9 +1318,19 @@ void SW_SWC_read(
     }
 
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+        convertInput = (Bool) (lineno >= 0 && lineno <= 3 && lineno != 1);
+
+        if (convertInput) {
+            inBufintRes = strtol(inbuf, &endPtr, 10);
+            check_errno(MyFileName, inbuf, endPtr, LogInfo);
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+        }
+
         switch (lineno) {
         case 0:
-            SW_SoilWat->hist_use = (atoi(inbuf)) ? swTRUE : swFALSE;
+            SW_SoilWat->hist_use = (inBufintRes) ? swTRUE : swFALSE;
             break;
         case 1:
             SW_SoilWat->hist.file_prefix = Str_Dup(inbuf, LogInfo);
@@ -1327,10 +1340,10 @@ void SW_SWC_read(
             }
             break;
         case 2:
-            SW_SoilWat->hist.yr.first = yearto4digit(atoi(inbuf));
+            SW_SoilWat->hist.yr.first = yearto4digit((TimeInt) inBufintRes);
             break;
         case 3:
-            SW_SoilWat->hist.method = atoi(inbuf);
+            SW_SoilWat->hist.method = inBufintRes;
             break;
         default:
             LogError(
@@ -1413,9 +1426,13 @@ void _read_swc_hist(
      * cause problems in the flow model.
      */
     FILE *f;
-    int x, lyr, recno = 0, doy;
+    int x, lyr, recno = 0, doy, index;
     RealF swc, st_err;
-    char fname[MAX_FILENAMESIZE], inbuf[MAX_FILENAMESIZE];
+    char fname[MAX_FILENAMESIZE], inbuf[MAX_FILENAMESIZE], *endPtr;
+    char varStrs[4][10] = {{'\0'}};
+    int *inBufintRess[] = {&doy, &lyr};
+    float *inBufFloatVals[] = {&swc, &st_err};
+    const int numInVals = 4;
 
     snprintf(
         fname, MAX_FILENAMESIZE, "%s.%4d", SoilWat_hist->file_prefix, year
@@ -1435,7 +1452,10 @@ void _read_swc_hist(
 
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
         recno++;
-        x = sscanf(inbuf, "%d %d %f %f", &doy, &lyr, &swc, &st_err);
+        x = sscanf(
+            inbuf, "%s %s %s %s", varStrs[0], varStrs[1], varStrs[2], varStrs[3]
+        );
+
         if (x < 4) {
             CloseFile(&f, LogInfo);
             LogError(
@@ -1460,6 +1480,21 @@ void _read_swc_hist(
             );
             return; // Exit function prematurely due to error
         }
+
+        for (index = 0; index < numInVals; index++) {
+            *(inBufintRess[index]) = strtol(varStrs[index], &endPtr, 10);
+            check_errno(fname, varStrs[index], endPtr, LogInfo);
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+            *(inBufFloatVals[index]) = strtof(varStrs[index + 2], &endPtr);
+            check_errno(fname, varStrs[index], endPtr, LogInfo);
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+        }
+
         if (doy < 1 || doy > MAX_DAYS) {
             CloseFile(&f, LogInfo);
             LogError(

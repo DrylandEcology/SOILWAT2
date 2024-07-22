@@ -23,9 +23,11 @@ in SW_VegProd.c and SW_Flow_lib.c.
 #include "include/SW_Defines.h"     // for ForEachVegType, MAX_FILENAMESIZE
 #include "include/SW_Files.h"       // for eCarbon
 #include "include/SW_VegProd.h"     // for BIO_INDEX, WUE_INDEX
-#include <math.h>                   // for pow
-#include <stdio.h>                  // for sscanf, FILE
-#include <string.h>                 // for strcmp, memset
+#include <errno.h>
+#include <math.h>   // for pow
+#include <stdio.h>  // for sscanf, FILE
+#include <stdlib.h> // for strtol, strtod
+#include <string.h> // for strcmp, memset
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -83,7 +85,7 @@ void SW_CBN_read(
 
     /* Reading carbon.in */
     FILE *f;
-    char scenario[64];
+    char scenario[64], yearStr[5], ppmStr[20];
     int year;
     int simstartyr = (int) SW_Model->startyr + SW_Model->addtl_yr;
     int simendyr = (int) SW_Model->endyr + SW_Model->addtl_yr;
@@ -93,7 +95,7 @@ void SW_CBN_read(
     double ppm = 1.;
     int existing_years[MAX_NYEAR] = {0};
     short fileWasEmpty = 1;
-    char *MyFileName, inbuf[MAX_FILENAMESIZE];
+    char *MyFileName, inbuf[MAX_FILENAMESIZE], *endPtr;
 
     MyFileName = InFiles[eCarbon];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -121,11 +123,22 @@ void SW_CBN_read(
         // Read the year standalone because if it's 0 it marks a change in the
         // scenario, in which case we'll need to read in a string instead of an
         // int
-        sscanf(inbuf, "%d", &year);
+        sscanf(inbuf, "%4s", yearStr);
+        year = strtol(yearStr, &endPtr, 10);
+        check_errno(MyFileName, yearStr, endPtr, LogInfo);
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 
         // Find scenario
         if (year == 0) {
-            sscanf(inbuf, "%d %63s", &year, scenario);
+            sscanf(inbuf, "%4s %63s", yearStr, scenario);
+            year = strtol(yearStr, &endPtr, 10);
+            check_errno(MyFileName, yearStr, endPtr, LogInfo);
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
             continue; // Skip to the ppm values
         }
         if (strcmp(scenario, SW_Carbon->scenario) != 0) {
@@ -135,7 +148,18 @@ void SW_CBN_read(
             continue; // We aren't using this year
         }
 
-        sscanf(inbuf, "%d %lf", &year, &ppm);
+        sscanf(inbuf, "%4s %19s", yearStr, ppmStr);
+        year = strtol(yearStr, &endPtr, 10);
+        check_errno(MyFileName, yearStr, endPtr, LogInfo);
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        ppm = strtod(ppmStr, &endPtr);
+        check_errno(MyFileName, ppmStr, endPtr, LogInfo);
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 
         if (year < 0) {
             CloseFile(&f, LogInfo);

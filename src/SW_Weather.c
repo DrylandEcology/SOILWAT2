@@ -91,9 +91,10 @@
 #include "include/SW_Markov.h"       // for SW_MKV_today
 #include "include/SW_SoilWater.h"    // for SW_SWC_adjust_snow
 #include "include/Times.h"           // for Time_get_lastdoy_y, Time_days_i...
+#include <errno.h>                   // for errno
 #include <math.h>                    // for exp, fmin, fmax
 #include <stdio.h>                   // for NULL, sscanf, FILE, fclose, fopen
-#include <stdlib.h>                  // for atoi, free
+#include <stdlib.h>                  // for free
 #include <string.h>                  // for memset, NULL, strcpy
 
 /* =================================================== */
@@ -1701,10 +1702,20 @@ void SW_WTH_setup(
     /* =================================================== */
     const int nitems = 35;
     FILE *f;
-    int lineno = 0, month, x;
-    RealF sppt, stmax, stmin;
-    RealF sky, wind, rH, actVP, shortWaveRad;
-    char inbuf[MAX_FILENAMESIZE];
+    int lineno = 0, month, x, index;
+    RealD sppt, stmax, stmin;
+    RealD sky, wind, rH, actVP, shortWaveRad;
+    char inbuf[MAX_FILENAMESIZE], *endPtr;
+    int inBufintRes;
+    double inBufdoubleRes;
+
+    char weathInputStrs[9][20] = {{'\0'}};
+    RealD *inFloatVals[8] = {
+        &sppt, &stmax, &stmin, &sky, &wind, &rH, &actVP, &shortWaveRad
+    };
+    const int numInDefaultVars = 9;
+
+    Bool doIntConv;
 
     Bool *dailyInputFlags = SW_Weather->dailyInputFlags;
 
@@ -1715,22 +1726,35 @@ void SW_WTH_setup(
     }
 
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+        doIntConv = (Bool) (lineno <= 22 && (lineno != 1 && lineno != 2));
+
+        if (lineno <= 22) {
+            if (doIntConv) {
+                inBufintRes = strtol(inbuf, &endPtr, 10);
+            } else {
+                inBufdoubleRes = strtod(inbuf, &endPtr);
+            }
+            check_errno(MyFileName, inbuf, endPtr, LogInfo);
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+        }
+
         switch (lineno) {
         case 0:
-            SW_Weather->use_snow = itob(atoi(inbuf));
+            SW_Weather->use_snow = itob(inBufintRes);
             break;
         case 1:
-            SW_Weather->pct_snowdrift = atoi(inbuf);
+            SW_Weather->pct_snowdrift = inBufdoubleRes;
             break;
         case 2:
-            SW_Weather->pct_snowRunoff = atoi(inbuf);
+            SW_Weather->pct_snowRunoff = inBufdoubleRes;
             break;
 
         case 3:
-            x = atoi(inbuf);
             SW_Weather->use_weathergenerator_only = swFALSE;
 
-            switch (x) {
+            switch (inBufintRes) {
             case 0:
                 // As is
                 SW_Weather->generateWeatherMethod = 0;
@@ -1766,79 +1790,79 @@ void SW_WTH_setup(
             break;
 
         case 4:
-            SW_Weather->rng_seed = atoi(inbuf);
+            SW_Weather->rng_seed = inBufintRes;
             break;
 
         case 5:
-            SW_Weather->use_cloudCoverMonthly = itob(atoi(inbuf));
+            SW_Weather->use_cloudCoverMonthly = itob(inBufintRes);
             break;
 
         case 6:
-            SW_Weather->use_windSpeedMonthly = itob(atoi(inbuf));
+            SW_Weather->use_windSpeedMonthly = itob(inBufintRes);
             break;
 
         case 7:
-            SW_Weather->use_humidityMonthly = itob(atoi(inbuf));
+            SW_Weather->use_humidityMonthly = itob(inBufintRes);
             break;
 
         case 8:
-            SW_Weather->dailyInputFlags[TEMP_MAX] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[TEMP_MAX] = itob(inBufintRes);
             break;
 
         case 9:
-            SW_Weather->dailyInputFlags[TEMP_MIN] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[TEMP_MIN] = itob(inBufintRes);
             break;
 
         case 10:
-            SW_Weather->dailyInputFlags[PPT] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[PPT] = itob(inBufintRes);
             break;
 
         case 11:
-            SW_Weather->dailyInputFlags[CLOUD_COV] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[CLOUD_COV] = itob(inBufintRes);
             break;
 
         case 12:
-            SW_Weather->dailyInputFlags[WIND_SPEED] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[WIND_SPEED] = itob(inBufintRes);
             break;
 
         case 13:
-            SW_Weather->dailyInputFlags[WIND_EAST] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[WIND_EAST] = itob(inBufintRes);
             break;
 
         case 14:
-            SW_Weather->dailyInputFlags[WIND_NORTH] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[WIND_NORTH] = itob(inBufintRes);
             break;
 
         case 15:
-            SW_Weather->dailyInputFlags[REL_HUMID] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[REL_HUMID] = itob(inBufintRes);
             break;
 
         case 16:
-            SW_Weather->dailyInputFlags[REL_HUMID_MAX] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[REL_HUMID_MAX] = itob(inBufintRes);
             break;
 
         case 17:
-            SW_Weather->dailyInputFlags[REL_HUMID_MIN] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[REL_HUMID_MIN] = itob(inBufintRes);
             break;
 
         case 18:
-            SW_Weather->dailyInputFlags[SPEC_HUMID] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[SPEC_HUMID] = itob(inBufintRes);
             break;
 
         case 19:
-            SW_Weather->dailyInputFlags[TEMP_DEWPOINT] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[TEMP_DEWPOINT] = itob(inBufintRes);
             break;
 
         case 20:
-            SW_Weather->dailyInputFlags[ACTUAL_VP] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[ACTUAL_VP] = itob(inBufintRes);
             break;
 
         case 21:
-            SW_Weather->dailyInputFlags[SHORT_WR] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[SHORT_WR] = itob(inBufintRes);
             break;
 
         case 22:
-            SW_Weather->desc_rsds = atoi(inbuf);
+            SW_Weather->desc_rsds = inBufintRes;
             break;
 
 
@@ -1849,24 +1873,37 @@ void SW_WTH_setup(
 
             x = sscanf(
                 inbuf,
-                "%d %f %f %f %f %f %f %f %f",
-                &month,
-                &sppt,
-                &stmax,
-                &stmin,
-                &sky,
-                &wind,
-                &rH,
-                &actVP,
-                &shortWaveRad
+                "%19s %19s %19s %19s %19s %19s %19s %19s %19s",
+                weathInputStrs[0],
+                weathInputStrs[1],
+                weathInputStrs[2],
+                weathInputStrs[3],
+                weathInputStrs[4],
+                weathInputStrs[5],
+                weathInputStrs[6],
+                weathInputStrs[7],
+                weathInputStrs[8]
             );
 
-            if (x != 9) {
+            if (x != numInDefaultVars) {
                 CloseFile(&f, LogInfo);
                 LogError(
                     LogInfo, LOGERROR, "%s : Bad record %d.", MyFileName, lineno
                 );
                 return; // Exit function prematurely due to error
+            }
+
+            for (index = 0; index < numInDefaultVars; index++) {
+                if (index == 0) {
+                    month = strtol(weathInputStrs[index], &endPtr, 10);
+                } else {
+                    *(inFloatVals[index - 1]) =
+                        strtod(weathInputStrs[index], &endPtr);
+                }
+                check_errno(MyFileName, weathInputStrs[index], endPtr, LogInfo);
+                if (LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
             }
 
             month--; // convert to base0
@@ -2170,11 +2207,13 @@ void _read_weather_hist(
      */
 
     FILE *f;
-    unsigned int x, lineno = 0;
+    unsigned int x, lineno = 0, index;
     int doy;
     // TimeInt mon, j, k = 0;
     // RealF acc = 0.0;
     RealD weathInput[MAX_INPUT_COLUMNS];
+
+    errno = 0;
 
     Bool hasMaxMinTemp =
         (Bool) (dailyInputFlags[TEMP_MAX] && dailyInputFlags[TEMP_MIN]);
@@ -2191,7 +2230,9 @@ void _read_weather_hist(
 
     double es, e, relHum, tempSlope, svpVal;
 
-    char fname[MAX_FILENAMESIZE], inbuf[MAX_FILENAMESIZE];
+    char fname[MAX_FILENAMESIZE], inbuf[MAX_FILENAMESIZE], *endPtr;
+
+    char weathInStrs[15][20];
 
     // Create file name: `[weather-file prefix].[year]`
     snprintf(fname, MAX_FILENAMESIZE, "%s.%4d", weather_prefix, year);
@@ -2205,22 +2246,23 @@ void _read_weather_hist(
         lineno++;
         x = sscanf(
             inbuf,
-            "%d %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
-            &doy,
-            &weathInput[0],
-            &weathInput[1],
-            &weathInput[2],
-            &weathInput[3],
-            &weathInput[4],
-            &weathInput[5],
-            &weathInput[6],
-            &weathInput[7],
-            &weathInput[8],
-            &weathInput[9],
-            &weathInput[10],
-            &weathInput[11],
-            &weathInput[12],
-            &weathInput[13]
+            "%19s %19s %19s %19s %19s %19s %19s %19s %19s %19s "
+            "%19s %19s %19s %19s %19s",
+            weathInStrs[0],
+            weathInStrs[1],
+            weathInStrs[2],
+            weathInStrs[3],
+            weathInStrs[4],
+            weathInStrs[5],
+            weathInStrs[6],
+            weathInStrs[7],
+            weathInStrs[8],
+            weathInStrs[9],
+            weathInStrs[10],
+            weathInStrs[11],
+            weathInStrs[12],
+            weathInStrs[13],
+            weathInStrs[14]
         );
 
         if (x != n_input_forcings + 1) {
@@ -2247,6 +2289,20 @@ void _read_weather_hist(
             );
             return; // Exit function prematurely due to error
         }
+
+        for (index = 0; index < n_input_forcings + 1; index++) {
+            if (index == 0) {
+                doy = strtol(weathInStrs[index], &endPtr, 10);
+            } else {
+                weathInput[index - 1] = strtod(weathInStrs[index], &endPtr);
+            }
+
+            check_errno(fname, weathInStrs[index], endPtr, LogInfo);
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+        }
+
         if (doy < 1 || doy > MAX_DAYS) {
             CloseFile(&f, LogInfo);
             LogError(

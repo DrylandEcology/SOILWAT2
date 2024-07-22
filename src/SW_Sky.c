@@ -42,7 +42,9 @@
 #include "include/SW_Defines.h"     // for MAX_FILENAMESIZE, MAX_MONTHS
 #include "include/SW_Files.h"       // for eSky
 #include "include/Times.h"          // for isleapyear, interpolate_monthlyV...
+#include <errno.h>                  // for errno
 #include <stdio.h>                  // for sscanf, FILE
+#include <stdlib.h>                 // for strtod
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -66,10 +68,12 @@ void SW_SKY_read(char *InFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
      * and cloud cover from line 3 instead -> SW_SKY_read() is now reading as
      * the input files are formatted
      */
+
     FILE *f;
-    int lineno = 0, x = 0, k;
+    int lineno = 0, x = 0, k, index;
     RealD tmp[MAX_MONTHS];
-    char *MyFileName, inbuf[MAX_FILENAMESIZE];
+    char *MyFileName, inbuf[MAX_FILENAMESIZE], *endPtr;
+    char tmpStrs[MAX_MONTHS][20] = {{'\0'}};
 
     MyFileName = InFiles[eSky];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -80,19 +84,19 @@ void SW_SKY_read(char *InFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
         x = sscanf(
             inbuf,
-            "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
-            &tmp[0],
-            &tmp[1],
-            &tmp[2],
-            &tmp[3],
-            &tmp[4],
-            &tmp[5],
-            &tmp[6],
-            &tmp[7],
-            &tmp[8],
-            &tmp[9],
-            &tmp[10],
-            &tmp[11]
+            "%19s %19s %19s %19s %19s %19s %19s %19s %19s %19s %19s %19s",
+            tmpStrs[0],
+            tmpStrs[1],
+            tmpStrs[2],
+            tmpStrs[3],
+            tmpStrs[4],
+            tmpStrs[5],
+            tmpStrs[6],
+            tmpStrs[7],
+            tmpStrs[8],
+            tmpStrs[9],
+            tmpStrs[10],
+            tmpStrs[11]
         );
 
         if (x != 12) {
@@ -105,6 +109,14 @@ void SW_SKY_read(char *InFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
                 lineno
             );
             return; // Exit function prematurely due to error
+        }
+
+        for (index = 0; index < MAX_MONTHS; index++) {
+            tmp[index] = strtod(tmpStrs[index], &endPtr);
+            check_errno(MyFileName, tmpStrs[index], endPtr, LogInfo);
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
         }
 
         switch (lineno) {

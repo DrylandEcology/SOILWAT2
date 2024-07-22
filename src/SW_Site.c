@@ -118,9 +118,10 @@
 #include "include/SW_Main_lib.h"    // for sw_init_logs
 #include "include/SW_SoilWater.h"   // for SW_SWRC_SWCtoSWP, SW_SWRC_SWPtoSWC
 #include "include/SW_VegProd.h"     // for key2veg, get_critical_rank, sum_...
+#include <errno.h>                  // for errno
 #include <math.h>                   // for fmod
 #include <stdio.h>                  // for printf, sscanf, FILE, NULL, stdout
-#include <stdlib.h>                 // for atof, atoi, free
+#include <stdlib.h>                 // for free, strod, strtol
 #include <string.h>                 // for strcpy, memset
 
 
@@ -1311,6 +1312,7 @@ void SW_SIT_read(
     /* 5-Feb-2002 (cwb) Removed rgntop requirement in
      *    transpiration regions section of input
      */
+
     FILE *f;
     int lineno = 0, x;
     int rgnlow; /* lower layer of region */
@@ -1320,7 +1322,12 @@ void SW_SIT_read(
 #endif
     LyrIndex r;
     Bool too_many_regions = swFALSE;
-    char inbuf[MAX_FILENAMESIZE];
+    char inbuf[MAX_FILENAMESIZE], *endPtr;
+    int intRes;
+    double doubleRes;
+    char rgnStr[2][10] = {{'\0'}};
+
+    Bool doDoubleConv, strLine;
 
     /* note that Files.read() must be called prior to this. */
     char *MyFileName = InFiles[eSite];
@@ -1331,108 +1338,129 @@ void SW_SIT_read(
     }
 
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+
+        strLine = (Bool) (lineno == 35 || lineno == 37 || lineno == 38);
+
+        if (!strLine) {
+            /* Check to see if the line number contains a double or integer
+             * value */
+            doDoubleConv = (Bool) ((lineno >= 0 && lineno <= 2) ||
+                                   (lineno >= 5 && lineno <= 31));
+
+            if (doDoubleConv) {
+                doubleRes = strtod(inbuf, &endPtr);
+            } else {
+                intRes = strtol(inbuf, &endPtr, 10);
+            }
+
+            check_errno(MyFileName, inbuf, endPtr, LogInfo);
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+        }
+
         switch (lineno) {
         case 0:
-            SW_Site->SWCMinVal = atof(inbuf);
+            SW_Site->SWCMinVal = doubleRes;
             break;
         case 1:
-            SW_Site->_SWCInitVal = atof(inbuf);
+            SW_Site->_SWCInitVal = doubleRes;
             break;
         case 2:
-            SW_Site->_SWCWetVal = atof(inbuf);
+            SW_Site->_SWCWetVal = doubleRes;
             break;
         case 3:
-            SW_Site->reset_yr = itob(atoi(inbuf));
+            SW_Site->reset_yr = itob(intRes);
             break;
         case 4:
-            SW_Site->deepdrain = itob(atoi(inbuf));
+            SW_Site->deepdrain = itob(intRes);
             break;
         case 5:
-            SW_Site->pet_scale = atof(inbuf);
+            SW_Site->pet_scale = doubleRes;
             break;
         case 6:
-            SW_Site->percentRunoff = atof(inbuf);
+            SW_Site->percentRunoff = doubleRes;
             break;
         case 7:
-            SW_Site->percentRunon = atof(inbuf);
+            SW_Site->percentRunon = doubleRes;
             break;
         case 8:
-            SW_Site->TminAccu2 = atof(inbuf);
+            SW_Site->TminAccu2 = doubleRes;
             break;
         case 9:
-            SW_Site->TmaxCrit = atof(inbuf);
+            SW_Site->TmaxCrit = doubleRes;
             break;
         case 10:
-            SW_Site->lambdasnow = atof(inbuf);
+            SW_Site->lambdasnow = doubleRes;
             break;
         case 11:
-            SW_Site->RmeltMin = atof(inbuf);
+            SW_Site->RmeltMin = doubleRes;
             break;
         case 12:
-            SW_Site->RmeltMax = atof(inbuf);
+            SW_Site->RmeltMax = doubleRes;
             break;
         case 13:
-            SW_Site->slow_drain_coeff = atof(inbuf);
+            SW_Site->slow_drain_coeff = doubleRes;
             break;
         case 14:
-            SW_Site->evap.xinflec = atof(inbuf);
+            SW_Site->evap.xinflec = doubleRes;
             break;
         case 15:
-            SW_Site->evap.slope = atof(inbuf);
+            SW_Site->evap.slope = doubleRes;
             break;
         case 16:
-            SW_Site->evap.yinflec = atof(inbuf);
+            SW_Site->evap.yinflec = doubleRes;
             break;
         case 17:
-            SW_Site->evap.range = atof(inbuf);
+            SW_Site->evap.range = doubleRes;
             break;
         case 18:
-            SW_Site->transp.xinflec = atof(inbuf);
+            SW_Site->transp.xinflec = doubleRes;
             break;
         case 19:
-            SW_Site->transp.slope = atof(inbuf);
+            SW_Site->transp.slope = doubleRes;
             break;
         case 20:
-            SW_Site->transp.yinflec = atof(inbuf);
+            SW_Site->transp.yinflec = doubleRes;
             break;
         case 21:
-            SW_Site->transp.range = atof(inbuf);
+            SW_Site->transp.range = doubleRes;
             break;
         case 22:
-            SW_Site->bmLimiter = atof(inbuf);
+            SW_Site->bmLimiter = doubleRes;
             break;
         case 23:
-            SW_Site->t1Param1 = atof(inbuf);
+            SW_Site->t1Param1 = doubleRes;
             break;
         case 24:
-            SW_Site->t1Param2 = atof(inbuf);
+            SW_Site->t1Param2 = doubleRes;
             break;
         case 25:
-            SW_Site->t1Param3 = atof(inbuf);
+            SW_Site->t1Param3 = doubleRes;
             break;
         case 26:
-            SW_Site->csParam1 = atof(inbuf);
+            SW_Site->csParam1 = doubleRes;
             break;
         case 27:
-            SW_Site->csParam2 = atof(inbuf);
+            SW_Site->csParam2 = doubleRes;
             break;
         case 28:
-            SW_Site->shParam = atof(inbuf);
+            SW_Site->shParam = doubleRes;
             break;
         case 29:
-            SW_Site->Tsoil_constant = atof(inbuf);
+            SW_Site->Tsoil_constant = doubleRes;
             break;
         case 30:
-            SW_Site->stDeltaX = atof(inbuf);
+            SW_Site->stDeltaX = doubleRes;
             break;
         case 31:
-            SW_Site->stMaxDepth = atof(inbuf);
+            SW_Site->stMaxDepth = doubleRes;
             break;
         case 32:
-            SW_Site->use_soil_temp = itob(atoi(inbuf));
+            SW_Site->use_soil_temp = itob(intRes);
             break;
         case 33:
-            SW_Carbon->use_bio_mult = itob(atoi(inbuf));
+            SW_Carbon->use_bio_mult = itob(intRes);
 #ifdef SWDEBUG
             if (debug) {
                 sw_printf(
@@ -1443,7 +1471,7 @@ void SW_SIT_read(
 #endif
             break;
         case 34:
-            SW_Carbon->use_wue_mult = itob(atoi(inbuf));
+            SW_Carbon->use_wue_mult = itob(intRes);
 #ifdef SWDEBUG
             if (debug) {
                 sw_printf(
@@ -1464,7 +1492,7 @@ void SW_SIT_read(
 #endif
             break;
         case 36:
-            SW_Site->type_soilDensityInput = atoi(inbuf);
+            SW_Site->type_soilDensityInput = intRes;
             break;
         case 37:
             strcpy(SW_Site->site_swrc_name, inbuf);
@@ -1480,7 +1508,7 @@ void SW_SIT_read(
             SW_Site->site_ptf_type = encode_str2ptf(SW_Site->site_ptf_name);
             break;
         case 39:
-            SW_Site->site_has_swrcp = itob(atoi(inbuf));
+            SW_Site->site_has_swrcp = itob(intRes);
             break;
 
         default:
@@ -1492,7 +1520,20 @@ void SW_SIT_read(
                 too_many_regions = swTRUE;
                 goto Label_End_Read;
             }
-            x = sscanf(inbuf, "%d %d", &region, &rgnlow);
+            x = sscanf(inbuf, "%s %s", rgnStr[0], rgnStr[1]);
+
+            region = strtol(rgnStr[0], &endPtr, 10);
+            check_errno(MyFileName, rgnStr[0], endPtr, LogInfo);
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+            rgnlow = strtol(rgnStr[1], &endPtr, 10);
+            check_errno(MyFileName, rgnStr[1], endPtr, LogInfo);
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
             if (x < 2 || region < 1 || rgnlow < 1) {
                 CloseFile(&f, LogInfo);
                 LogError(
@@ -1580,10 +1621,26 @@ void SW_LYR_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
 
     FILE *f;
     LyrIndex lyrno;
-    int x, k;
+    int x, k, index;
     RealF dmin = 0.0, dmax, evco, trco_veg[NVEGTYPES], psand, pclay,
           soildensity, imperm, soiltemp, f_gravel;
-    char inbuf[MAX_FILENAMESIZE];
+    char inbuf[MAX_FILENAMESIZE], *endPtr;
+    char inFloatStrs[12][20] = {{'\0'}};
+    float *inFloatVals[] = {
+        &dmax,
+        &soildensity,
+        &f_gravel,
+        &evco,
+        &trco_veg[SW_GRASS],
+        &trco_veg[SW_SHRUB],
+        &trco_veg[SW_TREES],
+        &trco_veg[SW_FORBS],
+        &psand,
+        &pclay,
+        &imperm,
+        &soiltemp
+    };
+    const int numFloatInStrings = 12;
 
     /* note that Files.read() must be called prior to this. */
     char *MyFileName = InFiles[eLayers];
@@ -1598,19 +1655,19 @@ void SW_LYR_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
 
         x = sscanf(
             inbuf,
-            "%f %f %f %f %f %f %f %f %f %f %f %f",
-            &dmax,
-            &soildensity,
-            &f_gravel,
-            &evco,
-            &trco_veg[SW_GRASS],
-            &trco_veg[SW_SHRUB],
-            &trco_veg[SW_TREES],
-            &trco_veg[SW_FORBS],
-            &psand,
-            &pclay,
-            &imperm,
-            &soiltemp
+            "%19s %19s %19s %19s %19s %19s %19s %19s %19s %19s %19s %19s",
+            inFloatStrs[0],
+            inFloatStrs[1],
+            inFloatStrs[2],
+            inFloatStrs[3],
+            inFloatStrs[4],
+            inFloatStrs[5],
+            inFloatStrs[6],
+            inFloatStrs[7],
+            inFloatStrs[8],
+            inFloatStrs[9],
+            inFloatStrs[10],
+            inFloatStrs[11]
         );
 
         /* Check that we have 12 values per layer */
@@ -1625,6 +1682,15 @@ void SW_LYR_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
                 lyrno + 1
             );
             return; // Exit function prematurely due to error
+        }
+
+        /* Convert float strings to floats */
+        for (index = 0; index < numFloatInStrings; index++) {
+            *(inFloatVals[index]) = strtof(inFloatStrs[index], &endPtr);
+            check_errno(MyFileName, inFloatStrs[index], endPtr, LogInfo);
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
         }
 
         SW_Site->width[lyrno] = dmax - dmin;
@@ -1883,9 +1949,11 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
 
     FILE *f;
     LyrIndex lyrno = 0, k;
-    int x;
+    int x, index;
     RealF tmp_swrcp[SWRC_PARAM_NMAX];
-    char inbuf[MAX_FILENAMESIZE];
+    char inbuf[MAX_FILENAMESIZE], *endPtr;
+    char swrcpFloatStrs[6][20] = {{'\0'}};
+    const int numFloatInStrings = 6;
 
     /* note that Files.read() must be called prior to this. */
     char *MyFileName = InFiles[eSWRCp];
@@ -1898,13 +1966,13 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
         x = sscanf(
             inbuf,
-            "%f %f %f %f %f %f",
-            &tmp_swrcp[0],
-            &tmp_swrcp[1],
-            &tmp_swrcp[2],
-            &tmp_swrcp[3],
-            &tmp_swrcp[4],
-            &tmp_swrcp[5]
+            "%s %s %s %s %s %s",
+            swrcpFloatStrs[0],
+            swrcpFloatStrs[1],
+            swrcpFloatStrs[2],
+            swrcpFloatStrs[3],
+            swrcpFloatStrs[4],
+            swrcpFloatStrs[5]
         );
 
         /* Note: `SW_SIT_init_run()` will call function to check for valid
@@ -1922,6 +1990,15 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
                 SWRC_PARAM_NMAX
             );
             return; // Exit function prematurely due to error
+        }
+
+        /* Convert float strings to floats */
+        for (index = 0; index < numFloatInStrings; index++) {
+            tmp_swrcp[index] = strtof(swrcpFloatStrs[index], &endPtr);
+            check_errno(MyFileName, swrcpFloatStrs[index], endPtr, LogInfo);
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
         }
 
         /* Check that we are within `SW_Site.n_layers` */

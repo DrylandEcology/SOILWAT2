@@ -16,7 +16,7 @@
 #include <math.h>                       // for NAN, ceil, isnan
 #include <netcdf.h>                     // for NC_NOERR, nc_close, NC_DOUBLE
 #include <stdio.h>                      // for size_t, NULL, snprintf, sscanf
-#include <stdlib.h>                     // for free, atof, atoi
+#include <stdlib.h>                     // for free, strtod
 #include <string.h>                     // for strcmp, strlen, strstr, memcpy
 
 #if defined(SWUDUNITS)
@@ -233,13 +233,19 @@ static void nc_read_atts(
     Bool hasKeys[NUM_ATT_IN_KEYS] = {swFALSE};
 
     FILE *f;
-    char inbuf[LARGE_VALUE], value[LARGE_VALUE];
+    char inbuf[LARGE_VALUE], value[LARGE_VALUE], *endPtr;
     char key[35]; // 35 - Max key size
     char *MyFileName;
     int keyID;
     int n;
-    float num1 = 0, num2 = 0;
+    double num1 = 0, num2 = 0;
     Bool geoCRSFound = swFALSE, projCRSFound = swFALSE;
+
+    double inBufdoubleRes;
+    int inBufintRes;
+    char numOneStr[20], numTwoStr[20];
+
+    Bool doIntConv, doDoubleConv;
 
     MyFileName = PathInfo->InFiles[eNCInAtt];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -254,6 +260,7 @@ static void nc_read_atts(
     }
 
     while (GetALine(f, inbuf, LARGE_VALUE)) {
+
         sscanf(inbuf, "%34s %s", key, value);
 
         // Check if the key is "long_name" or "crs_wkt"
@@ -267,6 +274,25 @@ static void nc_read_atts(
         keyID = key_to_id(key, possibleKeys, NUM_ATT_IN_KEYS);
         set_hasKey(keyID, possibleKeys, hasKeys, LogInfo);
         // set_hasKey() does not produce errors, only warnings possible
+
+        /* Check to see if the line number contains a double or integer value */
+        doIntConv = (Bool) (keyID >= 23 && keyID <= 25);
+        doDoubleConv = (Bool) ((keyID >= 9 && keyID <= 11) ||
+                               (keyID >= 15 && keyID <= 17) ||
+                               (keyID >= 21 && keyID <= 22));
+
+        if (doIntConv || doDoubleConv) {
+            if (doIntConv) {
+                inBufintRes = strtol(value, &endPtr, 10);
+            } else {
+                inBufdoubleRes = strtod(value, &endPtr);
+            }
+
+            check_errno(MyFileName, value, endPtr, LogInfo);
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+        }
 
         switch (keyID) {
         case 0:
@@ -313,13 +339,13 @@ static void nc_read_atts(
             SW_netCDF->crs_geogsc.crs_wkt = Str_Dup(value, LogInfo);
             break;
         case 9:
-            SW_netCDF->crs_geogsc.longitude_of_prime_meridian = atof(value);
+            SW_netCDF->crs_geogsc.longitude_of_prime_meridian = inBufdoubleRes;
             break;
         case 10:
-            SW_netCDF->crs_geogsc.semi_major_axis = atof(value);
+            SW_netCDF->crs_geogsc.semi_major_axis = inBufdoubleRes;
             break;
         case 11:
-            SW_netCDF->crs_geogsc.inverse_flattening = atof(value);
+            SW_netCDF->crs_geogsc.inverse_flattening = inBufdoubleRes;
             break;
         case 12:
             SW_netCDF->crs_projsc.long_name = Str_Dup(value, LogInfo);
@@ -332,13 +358,13 @@ static void nc_read_atts(
             SW_netCDF->crs_projsc.crs_wkt = Str_Dup(value, LogInfo);
             break;
         case 15:
-            SW_netCDF->crs_projsc.longitude_of_prime_meridian = atof(value);
+            SW_netCDF->crs_projsc.longitude_of_prime_meridian = inBufdoubleRes;
             break;
         case 16:
-            SW_netCDF->crs_projsc.semi_major_axis = atof(value);
+            SW_netCDF->crs_projsc.semi_major_axis = inBufdoubleRes;
             break;
         case 17:
-            SW_netCDF->crs_projsc.inverse_flattening = atof(value);
+            SW_netCDF->crs_projsc.inverse_flattening = inBufdoubleRes;
             break;
         case 18:
             SW_netCDF->crs_projsc.datum = Str_Dup(value, LogInfo);
@@ -349,26 +375,46 @@ static void nc_read_atts(
         case 20:
             // Re-scan for 1 or 2 values of standard parallel(s)
             // the user may separate values by white-space, comma, etc.
-            n = sscanf(inbuf, "%34s %f%*[^-.0123456789]%f", key, &num1, &num2);
+            n = sscanf(
+                inbuf,
+                "%34s %19s%*[^-.0123456789]%19s",
+                key,
+                numOneStr,
+                numTwoStr
+            );
+
+            num1 = strtod(numOneStr, &endPtr);
+            check_errno(MyFileName, numOneStr, endPtr, LogInfo);
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+            num2 = strtod(numTwoStr, &endPtr);
+            check_errno(MyFileName, numTwoStr, endPtr, LogInfo);
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 
             SW_netCDF->crs_projsc.standard_parallel[0] = num1;
             SW_netCDF->crs_projsc.standard_parallel[1] = (n == 3) ? num2 : NAN;
             break;
         case 21:
-            SW_netCDF->crs_projsc.longitude_of_central_meridian = atof(value);
+            SW_netCDF->crs_projsc.longitude_of_central_meridian =
+                inBufdoubleRes;
             break;
         case 22:
-            SW_netCDF->crs_projsc.latitude_of_projection_origin = atof(value);
+            SW_netCDF->crs_projsc.latitude_of_projection_origin =
+                inBufdoubleRes;
             break;
         case 23:
-            SW_netCDF->crs_projsc.false_easting = atoi(value);
+            SW_netCDF->crs_projsc.false_easting = inBufintRes;
             break;
         case 24:
-            SW_netCDF->crs_projsc.false_northing = atoi(value);
+            SW_netCDF->crs_projsc.false_northing = inBufintRes;
             break;
         case 25:
             if (Str_CompareI(value, (char *) "Inf") != 0) {
-                SW_netCDF->strideOutYears = atoi(value);
+                SW_netCDF->strideOutYears = inBufintRes;
 
                 if (SW_netCDF->strideOutYears <= 0) {
                     LogError(
@@ -379,7 +425,7 @@ static void nc_read_atts(
             }
             break;
         case 26:
-            SW_netCDF->baseCalendarYear = atoi(value);
+            SW_netCDF->baseCalendarYear = inBufintRes;
             break;
         case KEY_NOT_FOUND:
         default:
@@ -1675,7 +1721,13 @@ static void fill_domain_netCDF_domain(
     const int numAtts = 4;
 
     create_netCDF_var(
-        domVarID, domainVarName, domDims, &domFileID, NC_UINT, nDomainDims, LogInfo
+        domVarID,
+        domainVarName,
+        domDims,
+        &domFileID,
+        NC_UINT,
+        nDomainDims,
+        LogInfo
     );
 
     write_uint_att("_FillValue", NC_FILL_UINT, *domVarID, domFileID, LogInfo);
@@ -1686,7 +1738,11 @@ static void fill_domain_netCDF_domain(
     // Write all attributes to the domain variable
     for (attNum = 0; attNum < numAtts; attNum++) {
         write_str_att(
-            strAttNames[attNum], strAttVals[attNum], *domVarID, domFileID, LogInfo
+            strAttNames[attNum],
+            strAttVals[attNum],
+            *domVarID,
+            domFileID,
+            LogInfo
         );
 
         if (LogInfo->stopRun) {
@@ -4442,6 +4498,9 @@ void SW_NC_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
         fill_prog_netCDF_vals(SW_Domain, LogInfo);
     }
+
+    errno =
+        0; /* Reset errno if the progress file is now found in `FileExists()` */
 }
 
 /**
@@ -4684,13 +4743,14 @@ void SW_NC_read_out_vars(
     int varNumUnits;
     int index, estVar;
     char *copyStr = NULL;
-    char input[NOUT_VAR_INPUTS][MAX_ATTVAL_SIZE] = {"\0"};
+    char input[NOUT_VAR_INPUTS][MAX_ATTVAL_SIZE] = {"\0"}, *endPtr;
     char establn[MAX_ATTVAL_SIZE] = {"\0"};
     int scanRes = 0, defToLocalInd = 0;
     // in readLineFormat: 255 must be equal to MAX_ATTVAL_SIZE - 1
     const char *readLineFormat =
         "%13[^\t]\t%50[^\t]\t%50[^\t]\t%10[^\t]\t%4[^\t]\t%1[^\t]\t"
         "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]";
+    int doOutputVal;
 
     // Column indices
     const int keyInd = 0, SWVarNameInd = 1, SWTxtNameInd = 2, SWUnitsInd = 3,
@@ -4749,8 +4809,14 @@ void SW_NC_read_out_vars(
 
         // Check if the variable was requested to be output
         // Store attribute information for each variable (including names)
-        if (atoi(input[doOutInd])) {
 
+        doOutputVal = strtol(input[doOutInd], &endPtr, 10);
+        check_errno(MyFileName, input[doOutInd], endPtr, LogInfo);
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        if (doOutputVal) {
             snprintf(
                 varKey,
                 MAX_FILENAMESIZE + 1,

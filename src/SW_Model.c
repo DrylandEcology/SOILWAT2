@@ -46,8 +46,9 @@
 #include "include/SW_Defines.h"     // for deg_to_rad, ForEachOutPeriod
 #include "include/SW_Files.h"       // for eModel
 #include "include/Times.h"          // for Time_get_lastdoy_y, Time_init_model
+#include <errno.h>                  // for errno
 #include <stdio.h>                  // for FILE
-#include <stdlib.h>                 // for atof
+#include <stdlib.h>                 // for strtod
 #include <string.h>                 // for memcpy
 
 
@@ -115,8 +116,8 @@ void SW_MDL_read(SW_MODEL *SW_Model, char *InFiles[], LOG_INFO *LogInfo) {
      */
     FILE *f;
     int lineno;
-    char *MyFileName, inbuf[MAX_FILENAMESIZE];
-    double temp;
+    char *MyFileName, inbuf[MAX_FILENAMESIZE], *endPtr;
+    double value;
 
     MyFileName = InFiles[eModel];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -131,31 +132,38 @@ void SW_MDL_read(SW_MODEL *SW_Model, char *InFiles[], LOG_INFO *LogInfo) {
      */
     lineno = 0;
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+        if (lineno <= 4) {
+            value = strtod(inbuf, &endPtr);
+            check_errno(MyFileName, inbuf, endPtr, LogInfo);
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+        }
+
         switch (lineno) {
         case 0: // Longitude
             // longitude is currently not used by the code, but may be used in
             // the future it is present in the `siteparam.in` input file to
             // completely document site location
-            SW_Model->longitude = atof(inbuf) * deg_to_rad;
+            SW_Model->longitude = value * deg_to_rad;
             break;
 
         case 1: // Latitude
-            SW_Model->latitude = atof(inbuf) * deg_to_rad;
+            SW_Model->latitude = value * deg_to_rad;
             // Calculate hemisphere based on latitude
             SW_Model->isnorth = (GT(SW_Model->latitude, 0.)) ? swTRUE : swFALSE;
             break;
 
         case 2: // Elevation
-            SW_Model->elevation = atof(inbuf);
+            SW_Model->elevation = value;
             break;
 
         case 3: // Slope
-            SW_Model->slope = atof(inbuf) * deg_to_rad;
+            SW_Model->slope = value * deg_to_rad;
             break;
 
         case 4: // Aspect
-            temp = atof(inbuf);
-            SW_Model->aspect = missing(temp) ? temp : temp * deg_to_rad;
+            SW_Model->aspect = missing(value) ? value : value * deg_to_rad;
             break;
 
         default: // More lines than expected

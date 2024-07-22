@@ -48,9 +48,10 @@
 #include "include/SW_SoilWater.h"   // for SW_SWRC_SWPtoSWC
 #include "include/SW_Times.h"       // for Today
 #include "include/SW_VegProd.h"     // for key2veg
+#include <errno.h>                  // for errno
 #include <math.h>                   // for fabs
 #include <stdio.h>                  // for NULL, snprintf, FILE, printf
-#include <stdlib.h>                 // for atoi, atof, free
+#include <stdlib.h>                 // for free
 #include <string.h>                 // for strcpy, strcat, strlen, memset
 
 
@@ -564,12 +565,17 @@ static void read_spp(
     const char *infile, SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo
 ) {
     /* =================================================== */
+
     SW_VEGESTAB_INFO *v;
     const int nitems = 16;
     FILE *f;
     int lineno = 0;
     char name[80]; /* only allow 4 char sppnames */
-    char inbuf[MAX_FILENAMESIZE];
+    char inbuf[MAX_FILENAMESIZE], *endPtr;
+    int inBufintRes;
+    double inBufFloatVal;
+
+    Bool doIntConv;
 
     IntU count;
 
@@ -588,54 +594,73 @@ static void read_spp(
     }
 
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+
+        if (lineno >= 1 && lineno <= 15) {
+            /* Check to see if the line number contains an integer or float
+             * value */
+            doIntConv = (Bool) ((lineno >= 1 && lineno <= 2) ||
+                                (lineno >= 5 && lineno <= 11));
+
+            if (doIntConv) {
+                inBufintRes = strtol(inbuf, &endPtr, 10);
+            } else {
+                inBufFloatVal = strtof(inbuf, &endPtr);
+            }
+
+            check_errno(infile, inbuf, endPtr, LogInfo);
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+        }
+
         switch (lineno) {
         case 0:
             strcpy(name, inbuf);
             break;
         case 1:
-            v->vegType = atoi(inbuf);
+            v->vegType = inBufintRes;
             break;
         case 2:
-            v->estab_lyrs = atoi(inbuf);
+            v->estab_lyrs = inBufintRes;
             break;
         case 3:
-            v->bars[SW_GERM_BARS] = fabs(atof(inbuf));
+            v->bars[SW_GERM_BARS] = fabs(inBufFloatVal);
             break;
         case 4:
-            v->bars[SW_ESTAB_BARS] = fabs(atof(inbuf));
+            v->bars[SW_ESTAB_BARS] = fabs(inBufFloatVal);
             break;
         case 5:
-            v->min_pregerm_days = atoi(inbuf);
+            v->min_pregerm_days = inBufintRes;
             break;
         case 6:
-            v->max_pregerm_days = atoi(inbuf);
+            v->max_pregerm_days = inBufintRes;
             break;
         case 7:
-            v->min_wetdays_for_germ = atoi(inbuf);
+            v->min_wetdays_for_germ = inBufintRes;
             break;
         case 8:
-            v->max_drydays_postgerm = atoi(inbuf);
+            v->max_drydays_postgerm = inBufintRes;
             break;
         case 9:
-            v->min_wetdays_for_estab = atoi(inbuf);
+            v->min_wetdays_for_estab = inBufintRes;
             break;
         case 10:
-            v->min_days_germ2estab = atoi(inbuf);
+            v->min_days_germ2estab = inBufintRes;
             break;
         case 11:
-            v->max_days_germ2estab = atoi(inbuf);
+            v->max_days_germ2estab = inBufintRes;
             break;
         case 12:
-            v->min_temp_germ = atof(inbuf);
+            v->min_temp_germ = inBufFloatVal;
             break;
         case 13:
-            v->max_temp_germ = atof(inbuf);
+            v->max_temp_germ = inBufFloatVal;
             break;
         case 14:
-            v->min_temp_estab = atof(inbuf);
+            v->min_temp_estab = inBufFloatVal;
             break;
         case 15:
-            v->max_temp_estab = atof(inbuf);
+            v->max_temp_estab = inBufFloatVal;
             break;
         default:
             LogError(

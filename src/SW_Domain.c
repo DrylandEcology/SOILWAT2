@@ -10,8 +10,9 @@
 #include "include/SW_Files.h"       // for SW_F_deconstruct, SW_F_deepCopy
 #include "include/SW_Output.h"      // for ForEachOutKey
 #include "include/Times.h"          // for yearto4digit, Time_get_lastdoy_y
+#include <errno.h>                  // for errno
 #include <stdio.h>                  // for sscanf, FILE
-#include <stdlib.h>                 // for atoi, atof
+#include <stdlib.h>                 // for strtod, strtol
 #include <string.h>                 // for strcmp, memcpy, strcpy, memset
 
 #if defined(SWNETCDF)
@@ -200,8 +201,12 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     FILE *f;
     int y, keyID;
-    char inbuf[LARGE_VALUE], *MyFileName;
+    char inbuf[LARGE_VALUE], *MyFileName, *endPtr;
     char key[15], value[LARGE_VALUE]; // 15 - Max key size
+    int intRes;
+    double doubleRes;
+
+    Bool doDoubleConv;
 
     MyFileName = SW_Domain->PathInfo.InFiles[eDomain];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -217,6 +222,26 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
         set_hasKey(keyID, possibleKeys, hasKeys, LogInfo);
         // set_hasKey() produces never an error, only possibly warnings
+
+        /* Make sure we are not trying to convert a string with no numerical
+         * value */
+        if (keyID > 0 && keyID <= 16 && keyID != 8) {
+
+            /* Check to see if the line number contains a double or integer
+             * value */
+            doDoubleConv = (Bool) (keyID >= 9 && keyID <= 12);
+
+            if (doDoubleConv) {
+                doubleRes = strtod(value, &endPtr);
+            } else {
+                intRes = strtol(value, &endPtr, 10);
+            }
+
+            check_errno(MyFileName, value, endPtr, LogInfo);
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+        }
 
         switch (keyID) {
         case 0: // Domain type
@@ -234,17 +259,17 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             strcpy(SW_Domain->DomainType, value);
             break;
         case 1: // Number of X slots
-            SW_Domain->nDimX = atoi(value);
+            SW_Domain->nDimX = intRes;
             break;
         case 2: // Number of Y slots
-            SW_Domain->nDimY = atoi(value);
+            SW_Domain->nDimY = intRes;
             break;
         case 3: // Number of S slots
-            SW_Domain->nDimS = atoi(value);
+            SW_Domain->nDimS = intRes;
             break;
 
         case 4: // Start year
-            y = atoi(value);
+            y = intRes;
 
             if (y < 0) {
                 CloseFile(&f, LogInfo);
@@ -260,7 +285,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             SW_Domain->startyr = yearto4digit((TimeInt) y);
             break;
         case 5: // End year
-            y = atoi(value);
+            y = intRes;
 
             if (y < 0) {
                 CloseFile(&f, LogInfo);
@@ -276,10 +301,10 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             SW_Domain->endyr = yearto4digit((TimeInt) y);
             break;
         case 6: // Start day of year
-            SW_Domain->startstart = atoi(value);
+            SW_Domain->startstart = intRes;
             break;
         case 7: // End day of year
-            SW_Domain->endend = atoi(value);
+            SW_Domain->endend = intRes;
             break;
 
         case 8: // CRS box
@@ -288,20 +313,20 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             strcpy(SW_Domain->crs_bbox, value);
             break;
         case 9: // Minimum x coordinate
-            SW_Domain->min_x = atof(value);
+            SW_Domain->min_x = doubleRes;
             break;
         case 10: // Minimum y coordinate
-            SW_Domain->min_y = atof(value);
+            SW_Domain->min_y = doubleRes;
             break;
         case 11: // Maximum x coordinate
-            SW_Domain->max_x = atof(value);
+            SW_Domain->max_x = doubleRes;
             break;
         case 12: // Maximum y coordinate
-            SW_Domain->max_y = atof(value);
+            SW_Domain->max_y = doubleRes;
             break;
 
         case 13: // Spinup Mode
-            y = atoi(value);
+            y = intRes;
 
             if (y != 1 && y != 2) {
                 CloseFile(&f, LogInfo);
@@ -318,10 +343,10 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             SW_Domain->SW_SpinUp.mode = y;
             break;
         case 14: // Spinup Scope
-            SW_Domain->SW_SpinUp.scope = atoi(value);
+            SW_Domain->SW_SpinUp.scope = intRes;
             break;
         case 15: // Spinup Duration
-            SW_Domain->SW_SpinUp.duration = atoi(value);
+            SW_Domain->SW_SpinUp.duration = intRes;
 
             // Set the spinup flag to true if duration > 0
             if (SW_Domain->SW_SpinUp.duration <= 0) {
@@ -331,7 +356,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             }
             break;
         case 16: // Spinup Seed
-            SW_Domain->SW_SpinUp.rng_seed = atoi(value);
+            SW_Domain->SW_SpinUp.rng_seed = intRes;
             break;
 
         case KEY_NOT_FOUND: // Unknown key
