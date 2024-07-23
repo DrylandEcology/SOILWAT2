@@ -191,7 +191,8 @@ void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...) {
     if (expectedWriteSize > MAX_LOG_SIZE) {
         // Silence gcc (>= 7.1) compiler flag `-Wformat-truncation=`, i.e.,
         // handle output truncation
-        fprintf(stderr, "Programmer: message exceeds the maximum size.\n");
+        (void
+        ) fprintf(stderr, "Programmer: message exceeds the maximum size.\n");
 #ifdef SWDEBUG
         exit(EXIT_FAILURE);
 #endif
@@ -200,7 +201,7 @@ void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...) {
     expectedWriteSize = vsnprintf(buf, MAX_LOG_SIZE, outfmt, args);
 #ifdef SWDEBUG
     if (expectedWriteSize > MAX_LOG_SIZE) {
-        fprintf(
+        (void) fprintf(
             stderr,
             "Programmer: Injecting arguments to final message buffer "
             "makes it exceed the maximum size.\n"
@@ -217,7 +218,7 @@ void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...) {
     } else if (LOGERROR & mode) {
 
 #ifdef STEPWAT
-        fprintf(stderr, "%s", buf);
+        (void) fprintf(stderr, "%s", buf);
 
         // Consider updating STEPWAT2: instead of exiting/crashing, do catch
         // errors, recoil, and use `sw_write_warnings(); sw_fail_on_error()`
@@ -377,7 +378,10 @@ void CloseFile(FILE **f, LOG_INFO *LogInfo) {
         );
         return;
     }
-    fclose(*f);
+
+    if (fclose(*f) == EOF) {
+        LogError(LogInfo, LOGERROR, "CloseFile: Could not close file.");
+    }
 
     *f = NULL;
 }
@@ -568,7 +572,6 @@ Bool CopyFile(const char *from, const char *to, LOG_INFO *LogInfo) {
 
     fto = fopen(to, "w");
     if (fto == NULL) {
-        fclose(ffrom);
         LogError(
             LogInfo,
             LOGERROR,
@@ -583,8 +586,8 @@ Bool CopyFile(const char *from, const char *to, LOG_INFO *LogInfo) {
             LogError(
                 LogInfo, LOGERROR, "CopyFile: error while copying to %s.\n", to
             );
-            fclose(ffrom);
-            fclose(fto);
+            (void) fclose(ffrom);
+            (void) fclose(fto);
             return swFALSE; // Exit function prematurely due to error
         }
     }
@@ -593,8 +596,8 @@ Bool CopyFile(const char *from, const char *to, LOG_INFO *LogInfo) {
         LogError(
             LogInfo, LOGERROR, "CopyFile: error reading source file %s.\n", from
         );
-        fclose(ffrom);
-        fclose(fto);
+        (void) fclose(ffrom);
+        (void) fclose(fto);
         return swFALSE; // Exit function prematurely due to error
     }
 

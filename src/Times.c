@@ -32,6 +32,7 @@
 /* --------------------------------------------------- */
 
 #include "include/Times.h"          // for Jan, Dec, Feb, NoMonth, NoDay
+#include "include/filefuncs.h"      // for sw_message
 #include "include/generic.h"        // for Bool, GE, final_running_sd, get_...
 #include "include/SW_datastructs.h" // for SW_WALLTIME, LOG_INFO
 #include "include/SW_Defines.h"     // for TimeInt, WallTimeSpec, MAX_DAYS
@@ -369,6 +370,7 @@ Time is not reported at all if quiet mode and `logfile` is `NULL`.
 void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
     double total_time = 0;
     unsigned long nSims = wt.nTimedRuns + wt.nUntimedRuns;
+    int fprintRes = 0;
 
     FILE *logfp = LogInfo->QuietMode ? LogInfo->logfp : stdout;
 
@@ -376,33 +378,51 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
         return;
     }
 
-    fprintf(logfp, "Time report\n");
+    fprintRes = fprintf(logfp, "Time report\n");
+    if (fprintRes < 0) {
+        goto wrapUpErrMsg;
+    }
 
     // negative if failed
     total_time = diff_walltime(wt.timeStart, wt.has_walltime);
 
     if (GE(total_time, 0.)) {
-        fprintf(logfp, "    * Total wall time: %.2f [seconds]\n", total_time);
+        fprintRes = fprintf(
+            logfp, "    * Total wall time: %.2f [seconds]\n", total_time
+        );
     } else {
-        fprintf(logfp, "    * Wall time failed.\n");
+        fprintRes = fprintf(logfp, "    * Wall time failed.\n");
+    }
+    if (fprintRes < 0) {
+        goto wrapUpErrMsg;
     }
 
     if (nSims > 1) {
-        fprintf(logfp, "    * Number of simulation runs: %lu", nSims);
+        fprintRes =
+            fprintf(logfp, "    * Number of simulation runs: %lu", nSims);
+        if (fprintRes < 0) {
+            goto wrapUpErrMsg;
+        }
 
         if (wt.nUntimedRuns > 0) {
-            fprintf(
+            fprintRes = fprintf(
                 logfp,
                 " total (%lu timed | %lu untimed)",
                 wt.nTimedRuns,
                 wt.nUntimedRuns
             );
+            if (fprintRes < 0) {
+                goto wrapUpErrMsg;
+            }
         }
 
-        fprintf(logfp, "\n");
+        fprintRes = fprintf(logfp, "\n");
+        if (fprintRes < 0) {
+            goto wrapUpErrMsg;
+        }
 
         if (wt.nTimedRuns > 0) {
-            fprintf(
+            fprintRes = fprintf(
                 logfp,
                 "    * Variation among simulation runs: "
                 "%.3f mean (%.3f SD, %.3f-%.3f min-max) [seconds]\n",
@@ -411,17 +431,26 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
                 wt.timeMin,
                 wt.timeMax
             );
+            if (fprintRes < 0) {
+                goto wrapUpErrMsg;
+            }
         }
     }
 
     if (GT(total_time, 0.) && GE(wt.timeSimSet, 0.)) {
-        fprintf(
+        fprintRes = fprintf(
             logfp,
             "    * Wall time for simulation set: %.2f %% [percent of total "
             "wall time]\n",
             100. * wt.timeSimSet / total_time
         );
     }
+
+wrapUpErrMsg: {
+    if (fprintRes < 0) {
+        sw_message("Failed to write whole time report.");
+    }
+}
 }
 
 /**
@@ -432,5 +461,7 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
 */
 void timeStringISO8601(char *timeString, int stringLength) {
     time_t t = time(NULL);
-    strftime(timeString, stringLength, "%FT%TZ", gmtime(&t));
+    if (strftime(timeString, stringLength, "%FT%TZ", gmtime(&t)) == 0) {
+        timeString[0] = '\0';
+    }
 }

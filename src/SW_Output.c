@@ -3028,7 +3028,7 @@ void _collect_values(
         return; // Exit function prematurely due to error
     }
 
-    SW_OUT_write_today(sw, OutDom, bFlush_output, tOffset);
+    SW_OUT_write_today(sw, OutDom, bFlush_output, tOffset, LogInfo);
 }
 
 /** called at year end to process the remainder of the output period.
@@ -3137,9 +3137,14 @@ void SW_OUT_sum_today(
 @param[in] bFlush_output Determines if output should be created for
     a specific output key
 @param[in] tOffset Offset describing with the previous or current period
+@param[out] LogInfo Holds information on warnings and errors
 */
 void SW_OUT_write_today(
-    SW_RUN *sw, SW_OUT_DOM *OutDom, Bool bFlush_output, TimeInt tOffset
+    SW_RUN *sw,
+    SW_OUT_DOM *OutDom,
+    Bool bFlush_output,
+    TimeInt tOffset,
+    LOG_INFO *LogInfo
 ) {
     /* --------------------------------------------------- */
     /* all output values must have been summed, averaged or
@@ -3199,6 +3204,8 @@ void SW_OUT_write_today(
         sw->FileStatus.buf_soil_agg[p][0] = '\0';
 #endif
     }
+#else
+(void) LogInfo;
 #endif
 
 #ifdef SWDEBUG
@@ -3360,6 +3367,8 @@ void SW_OUT_write_today(
     } // end of loop across output keys
 
 #if defined(SW_OUTTEXT)
+    int fprintRes = 0;
+
     // write formatted output to csv-files
     ForEachOutPeriod(p) {
         if (OutDom->use_OutPeriod[p] && writeit[p]) {
@@ -3367,48 +3376,94 @@ void SW_OUT_write_today(
 
             if (sw->FileStatus.make_regular[p]) {
                 if (OutDom->print_SW_Output) {
-                    fprintf(
+                    fprintRes = fprintf(
                         sw->FileStatus.fp_reg[p],
                         "%s%s\n",
                         str_time,
                         sw->FileStatus.buf_reg[p]
                     );
+
+                    if (fprintRes < 0) {
+                        LogError(
+                            LogInfo,
+                            LOGERROR,
+                            "Could not write values to \"regular\" CSVs."
+                        );
+                        return; /* Exit prematurely due to error */
+                    }
+
                     // STEPWAT2 needs a fflush for yearly output;
                     // other time steps, the soil-layer files, and SOILWAT2 work
                     // fine without it...
-                    fflush(sw->FileStatus.fp_reg[p]);
+                    if (fflush(sw->FileStatus.fp_reg[p]) == EOF) {
+                        LogError(
+                            LogInfo,
+                            LOGERROR,
+                            "Could not write flush values to \"regular\" CSVs."
+                        );
+                        return; /* Exit prematurely due to error */
+                    }
                 }
 
 #ifdef STEPWAT
                 if (OutDom->print_IterationSummary) {
-                    fprintf(
+                    fprintRes = fprintf(
                         sw->FileStatus.fp_reg_agg[p],
                         "%s%s\n",
                         str_time,
                         sw->FileStatus.buf_reg_agg[p]
                     );
+
+                    if (fprintRes < 0) {
+                        LogError(
+                            LogInfo,
+                            LOGERROR,
+                            "Could not write values to \"regular\" aggregation "
+                            "iteration files."
+                        );
+                        return; /* Exit prematurely due to error */
+                    }
                 }
 #endif
             }
 
             if (sw->FileStatus.make_soil[p]) {
                 if (OutDom->print_SW_Output) {
-                    fprintf(
+                    fprintRes = fprintf(
                         sw->FileStatus.fp_soil[p],
                         "%s%s\n",
                         str_time,
                         sw->FileStatus.buf_soil[p]
                     );
+
+                    if (fprintRes < 0) {
+                        LogError(
+                            LogInfo,
+                            LOGERROR,
+                            "Could not write values to \"soil\" output files."
+                        );
+                        return; /* Exit prematurely due to error */
+                    }
                 }
 
 #ifdef STEPWAT
                 if (OutDom->print_IterationSummary) {
-                    fprintf(
+                    fprintRes = fprintf(
                         sw->FileStatus.fp_soil_agg[p],
                         "%s%s\n",
                         str_time,
                         sw->FileStatus.buf_soil_agg[p]
                     );
+
+                    if (fprintRes < 0) {
+                        LogError(
+                            LogInfo,
+                            LOGERROR,
+                            "Could not write values to \"soil\" aggregation "
+                            "iteration files."
+                        );
+                        return; /* Exit prematurely due to error */
+                    }
                 }
 #endif
             }

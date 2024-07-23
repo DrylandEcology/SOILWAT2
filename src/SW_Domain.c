@@ -203,7 +203,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     int y, keyID;
     char inbuf[LARGE_VALUE], *MyFileName, *endPtr;
     char key[15], value[LARGE_VALUE]; // 15 - Max key size
-    int intRes;
+    int intRes, scanRes;
     double doubleRes;
 
     Bool doDoubleConv;
@@ -216,7 +216,14 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     // Set SW_DOMAIN
     while (GetALine(f, inbuf, LARGE_VALUE)) {
-        sscanf(inbuf, "%14s %s", key, value);
+        scanRes = sscanf(inbuf, "%14s %s", key, value);
+
+        if (scanRes < 2) {
+            LogError(
+                LogInfo, LOGERROR, "Invalid key-value pair in %s.", MyFileName
+            );
+            return; /* Exit prematurely due to error */
+        }
 
         keyID = key_to_id(key, possibleKeys, NUM_DOM_IN_KEYS);
 
@@ -309,7 +316,18 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
         case 8: // CRS box
             // Re-scan and get the entire value (including spaces)
-            sscanf(inbuf, "%9s %27[^\n]", key, value);
+            scanRes = sscanf(inbuf, "%9s %27[^\n]", key, value);
+
+            if (scanRes < 2) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Invalid key-value pair for CRS box in %s.",
+                    MyFileName
+                );
+                return; /* Exit prematurely due to error */
+            }
+
             strcpy(SW_Domain->crs_bbox, value);
             break;
         case 9: // Minimum x coordinate

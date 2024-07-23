@@ -234,7 +234,11 @@ void SW_OUT_sum_today(
 );
 
 void SW_OUT_write_today(
-    SW_RUN *sw, SW_OUT_DOM *OutDom, Bool bFlush_output, TimeInt tOffset
+    SW_RUN *sw,
+    SW_OUT_DOM *OutDom,
+    Bool bFlush_output,
+    TimeInt tOffset,
+    LOG_INFO *LogInfo
 );
 
 void SW_OUT_write_year(void);

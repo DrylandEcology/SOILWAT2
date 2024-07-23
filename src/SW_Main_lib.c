@@ -328,7 +328,7 @@ void sw_fail_on_error(LOG_INFO *LogInfo) {
 #else
     if (LogInfo->stopRun) {
         if (!LogInfo->QuietMode) {
-            fprintf(stderr, "%s", LogInfo->errorMsg);
+            (void) fprintf(stderr, "%s", LogInfo->errorMsg);
         }
         if (LogInfo->printProgressMsg) {
             sw_message("ended.");
@@ -400,26 +400,47 @@ void sw_write_warnings(const char *header, LOG_INFO *LogInfo) {
         }
     }
 #else
+    int writeRes = 0;
+
     /* SOILWAT2: do print warnings and don't notify user if quiet */
     if (!isnull(LogInfo->logfp)) {
         for (warnMsgNum = 0; warnMsgNum < warningUpperBound; warnMsgNum++) {
-            fprintf(
+            writeRes = fprintf(
                 LogInfo->logfp, "%s%s", header, LogInfo->warningMsgs[warnMsgNum]
             );
+
+            if (writeRes < 0) {
+                goto writeErrMsg;
+            }
         }
 
         if (tooManyWarns) {
-            fprintf(LogInfo->logfp, "%s%s", header, tooManyWarnsStr);
+            writeRes = fprintf(LogInfo->logfp, "%s%s", header, tooManyWarnsStr);
+            if (writeRes < 0) {
+                goto writeErrMsg;
+            }
         }
 
         if (LogInfo->stopRun) {
             /* Write error message to log file here;
                later (sw_fail_on_error()), we will write it to stderr and crash
              */
-            fprintf(LogInfo->logfp, "%s%s", header, LogInfo->errorMsg);
+            writeRes =
+                fprintf(LogInfo->logfp, "%s%s", header, LogInfo->errorMsg);
+            if (writeRes < 0) {
+                goto writeErrMsg;
+            }
         }
 
-        fflush(LogInfo->logfp);
+        writeRes = fflush(LogInfo->logfp);
+
+    writeErrMsg: {
+        if (writeRes < 0) {
+            sw_message(
+                "Failed to write all warning/error messages to logfile.\n"
+            );
+        }
+    }
     }
 #endif
 }
@@ -444,10 +465,11 @@ void sw_wrapup_logs(LOG_INFO *LogInfo) {
     if ((LogInfo->numDomainErrors > 0 || LogInfo->numDomainWarnings > 0 ||
          LogInfo->stopRun || LogInfo->numWarnings > 0) &&
         !QuietMode && LogInfo->logfp != stdout && LogInfo->logfp != stderr) {
-        fprintf(stderr, "\nCheck logfile for warnings and error messages.\n");
+        (void
+        ) fprintf(stderr, "\nCheck logfile for warnings and error messages.\n");
 
         if (LogInfo->numDomainWarnings > 0) {
-            fprintf(
+            (void) fprintf(
                 stderr,
                 "Simulation units with warnings: n = %lu\n",
                 LogInfo->numDomainWarnings
@@ -455,7 +477,7 @@ void sw_wrapup_logs(LOG_INFO *LogInfo) {
         }
 
         if (LogInfo->numDomainErrors > 0) {
-            fprintf(
+            (void) fprintf(
                 stderr,
                 "Simulation units with an error: n = %lu\n",
                 LogInfo->numDomainErrors

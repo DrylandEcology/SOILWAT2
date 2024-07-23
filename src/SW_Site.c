@@ -1522,16 +1522,18 @@ void SW_SIT_read(
             }
             x = sscanf(inbuf, "%s %s", rgnStr[0], rgnStr[1]);
 
-            region = strtol(rgnStr[0], &endPtr, 10);
-            check_errno(MyFileName, rgnStr[0], endPtr, LogInfo);
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
+            if(x == 2) {
+                region = strtol(rgnStr[0], &endPtr, 10);
+                check_errno(MyFileName, rgnStr[0], endPtr, LogInfo);
+                if (LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
 
-            rgnlow = strtol(rgnStr[1], &endPtr, 10);
-            check_errno(MyFileName, rgnStr[1], endPtr, LogInfo);
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                rgnlow = strtol(rgnStr[1], &endPtr, 10);
+                check_errno(MyFileName, rgnStr[1], endPtr, LogInfo);
+                if (LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
             }
 
             if (x < 2 || region < 1 || rgnlow < 1) {

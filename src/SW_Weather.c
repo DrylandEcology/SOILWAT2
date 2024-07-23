@@ -2516,7 +2516,14 @@ void _read_weather_hist(
           }
     */
 
-    fclose(f);
+    if (fclose(f) == EOF) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "_read_weather_hist: could not close file %s.",
+            fname
+        );
+    }
 }
 
 void initializeClimatePtrs(

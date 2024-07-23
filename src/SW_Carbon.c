@@ -86,7 +86,7 @@ void SW_CBN_read(
     /* Reading carbon.in */
     FILE *f;
     char scenario[64], yearStr[5], ppmStr[20];
-    int year;
+    int year, scanRes;
     int simstartyr = (int) SW_Model->startyr + SW_Model->addtl_yr;
     int simendyr = (int) SW_Model->endyr + SW_Model->addtl_yr;
 
@@ -123,7 +123,18 @@ void SW_CBN_read(
         // Read the year standalone because if it's 0 it marks a change in the
         // scenario, in which case we'll need to read in a string instead of an
         // int
-        sscanf(inbuf, "%4s", yearStr);
+        scanRes = sscanf(inbuf, "%4s", yearStr);
+
+        if (scanRes < 1) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Not enough values when reading in the year from %s.",
+                MyFileName
+            );
+            return; /* Exit prematurely due to error */
+        }
+
         year = strtol(yearStr, &endPtr, 10);
         check_errno(MyFileName, yearStr, endPtr, LogInfo);
         if (LogInfo->stopRun) {
@@ -132,7 +143,19 @@ void SW_CBN_read(
 
         // Find scenario
         if (year == 0) {
-            sscanf(inbuf, "%4s %63s", yearStr, scenario);
+            scanRes = sscanf(inbuf, "%4s %63s", yearStr, scenario);
+
+            if (scanRes < 2) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Not enough values when reading in the year and "
+                    "scenario from %s.",
+                    MyFileName
+                );
+                return; /* Exit prematurely due to error */
+            }
+
             year = strtol(yearStr, &endPtr, 10);
             check_errno(MyFileName, yearStr, endPtr, LogInfo);
             if (LogInfo->stopRun) {
@@ -148,7 +171,19 @@ void SW_CBN_read(
             continue; // We aren't using this year
         }
 
-        sscanf(inbuf, "%4s %19s", yearStr, ppmStr);
+        scanRes = sscanf(inbuf, "%4s %19s", yearStr, ppmStr);
+
+        if (scanRes < 2) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Not enough values when reading in the year and "
+                "ppm from %s.",
+                MyFileName
+            );
+            return; /* Exit prematurely due to error */
+        }
+
         year = strtol(yearStr, &endPtr, 10);
         check_errno(MyFileName, yearStr, endPtr, LogInfo);
         if (LogInfo->stopRun) {

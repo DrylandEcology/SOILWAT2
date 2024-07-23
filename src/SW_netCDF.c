@@ -237,7 +237,7 @@ static void nc_read_atts(
     char key[35]; // 35 - Max key size
     char *MyFileName;
     int keyID;
-    int n;
+    int n, scanRes;
     double num1 = 0, num2 = 0;
     Bool geoCRSFound = swFALSE, projCRSFound = swFALSE;
 
@@ -261,14 +261,33 @@ static void nc_read_atts(
 
     while (GetALine(f, inbuf, LARGE_VALUE)) {
 
-        sscanf(inbuf, "%34s %s", key, value);
+        scanRes = sscanf(inbuf, "%34s %s", key, value);
+
+        if (scanRes < 2) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Not enough values for a valid key-value pair in %s.",
+                MyFileName
+            );
+            return; /* Exit prematurely due to error */
+        }
 
         // Check if the key is "long_name" or "crs_wkt"
         if (strstr(key, "long_name") != NULL ||
             strstr(key, "crs_wkt") != NULL) {
 
             // Reread the like and get the entire value (includes spaces)
-            sscanf(inbuf, "%34s %[^\n]", key, value);
+            scanRes = sscanf(inbuf, "%34s %[^\n]", key, value);
+            if (scanRes < 2) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Not enough values for a valid key-value pair in %s.",
+                    MyFileName
+                );
+                return; /* Exit prematurely due to error */
+            }
         }
 
         keyID = key_to_id(key, possibleKeys, NUM_ATT_IN_KEYS);
@@ -382,6 +401,15 @@ static void nc_read_atts(
                 numOneStr,
                 numTwoStr
             );
+
+            if(n < 2) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Not enough values to read in for the standard parallel(s)."
+                );
+                return; /* Exit prematurely due to error */
+            }
 
             num1 = strtod(numOneStr, &endPtr);
             check_errno(MyFileName, numOneStr, endPtr, LogInfo);
@@ -4654,14 +4682,25 @@ void SW_NC_read(SW_NETCDF *SW_netCDF, PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
     char inbuf[MAX_FILENAMESIZE], *MyFileName;
     char key[15]; // 15 - Max key size
     char varName[MAX_FILENAMESIZE], path[MAX_FILENAMESIZE];
-    int keyID;
+    int keyID, scanRes;
 
     MyFileName = PathInfo->InFiles[eNCIn];
     f = OpenFile(MyFileName, "r", LogInfo);
 
     // Get domain file name
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
-        sscanf(inbuf, "%14s %s %s", key, varName, path);
+        scanRes = sscanf(inbuf, "%14s %s %s", key, varName, path);
+
+        if (scanRes < 3) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Not enough values found in %s (should be key, variable "
+                "name, path to input).",
+                MyFileName
+            );
+            return; /* Exit prematurely due to error */
+        }
 
         keyID = key_to_id(key, possibleKeys, NUM_NC_IN_KEYS);
         set_hasKey(

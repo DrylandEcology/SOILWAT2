@@ -625,6 +625,7 @@ void write_headers_to_csv(
     // 26500 characters required for 25 soil layers and does_agg = TRUE
     size_t size_hs = (size_t) (n_layers * OUTSTRLEN);
     char *header_soil;
+    int fprintRes = 0;
 
     header_soil = (char *) Mem_Malloc(
         sizeof(char) * size_hs, "write_headers_to_csv()", LogInfo
@@ -646,13 +647,43 @@ void write_headers_to_csv(
 
     // Write headers to files
     if (make_regular[pd]) {
-        fprintf(fp_reg, "%s%s\n", str_time, header_reg);
-        fflush(fp_reg);
+        fprintRes = fprintf(fp_reg, "%s%s\n", str_time, header_reg);
+
+        if (fprintRes < 0) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Could not write headers to \"regular\" CSVs."
+            );
+            return; /* Exit prematurely due to error */
+        }
+
+        if (fflush(fp_reg) == EOF) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Could note write headers to \"regular\" CSVs."
+            );
+            return; /* Exit prematurely due to error */
+        }
     }
 
     if (make_soil[pd]) {
-        fprintf(fp_soil, "%s%s\n", str_time, header_soil);
-        fflush(fp_soil);
+        fprintRes = fprintf(fp_soil, "%s%s\n", str_time, header_soil);
+
+        if (fprintRes < 0) {
+            LogError(
+                LogInfo, LOGERROR, "Could not write headers to \"soil\" CSVs."
+            );
+            return; /* Exit prematurely due to error */
+        }
+
+        if (fflush(fp_soil) == EOF) {
+            LogError(
+                LogInfo, LOGERROR, "Could note flush headers to \"soil\" CSVs."
+            );
+            return; /* Exit prematurely due to error */
+        }
     }
 
     free(header_soil);
