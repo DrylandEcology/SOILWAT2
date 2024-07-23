@@ -276,7 +276,8 @@ void check_errno(
                 LOGERROR,
                 "Processing input '%s' within %s produced error code %d.\n",
                 valString,
-                (isnull(inFile)) ? "command-line arguments" : inFile
+                (isnull(inFile)) ? "command-line arguments" : inFile,
+                errno
             );
             break;
         }
