@@ -2822,7 +2822,7 @@ void SW_OUT_read(
 
         x = sscanf(
             inbuf,
-            "%s %s %s %s %s %s",
+            "%s %s %s %3s %3s %s",
             keyname,
             sumtype,
             period,
@@ -2841,7 +2841,7 @@ void SW_OUT_read(
             // maximum number of possible timeStep is SW_OUTNPERIODS
             *used_OUTNPERIODS = sscanf(
                 inbuf,
-                "%s %s %s %s %s",
+                "%9s %9s %9s %9s %9s",
                 keyname,
                 timeStep[0],
                 timeStep[1],
@@ -3205,7 +3205,7 @@ void SW_OUT_write_today(
 #endif
     }
 #else
-(void) LogInfo;
+    (void) LogInfo;
 #endif
 
 #ifdef SWDEBUG

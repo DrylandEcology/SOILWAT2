@@ -1429,7 +1429,7 @@ void _read_swc_hist(
     int x, lyr, recno = 0, doy, index;
     RealF swc, st_err;
     char fname[MAX_FILENAMESIZE], inbuf[MAX_FILENAMESIZE], *endPtr;
-    char varStrs[4][10] = {{'\0'}};
+    char varStrs[4][20] = {{'\0'}};
     int *inBufintRess[] = {&doy, &lyr};
     float *inBufFloatVals[] = {&swc, &st_err};
     const int numInVals = 4;
@@ -1453,7 +1453,12 @@ void _read_swc_hist(
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
         recno++;
         x = sscanf(
-            inbuf, "%s %s %s %s", varStrs[0], varStrs[1], varStrs[2], varStrs[3]
+            inbuf,
+            "%19s %19s %19s %19s",
+            varStrs[0],
+            varStrs[1],
+            varStrs[2],
+            varStrs[3]
         );
 
         if (x < 4) {

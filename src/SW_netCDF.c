@@ -402,7 +402,7 @@ static void nc_read_atts(
                 numTwoStr
             );
 
-            if(n < 2) {
+            if (n < 2) {
                 LogError(
                     LogInfo,
                     LOGERROR,

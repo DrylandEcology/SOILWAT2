@@ -1520,9 +1520,9 @@ void SW_SIT_read(
                 too_many_regions = swTRUE;
                 goto Label_End_Read;
             }
-            x = sscanf(inbuf, "%s %s", rgnStr[0], rgnStr[1]);
+            x = sscanf(inbuf, "%9s %9s", rgnStr[0], rgnStr[1]);
 
-            if(x == 2) {
+            if (x == 2) {
                 region = strtol(rgnStr[0], &endPtr, 10);
                 check_errno(MyFileName, rgnStr[0], endPtr, LogInfo);
                 if (LogInfo->stopRun) {
@@ -1968,7 +1968,7 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
         x = sscanf(
             inbuf,
-            "%s %s %s %s %s %s",
+            "%19s %19s %19s %19s %19s %19s",
             swrcpFloatStrs[0],
             swrcpFloatStrs[1],
             swrcpFloatStrs[2],

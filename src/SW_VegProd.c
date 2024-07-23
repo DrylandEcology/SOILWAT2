@@ -233,7 +233,7 @@ void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *InFiles[], LOG_INFO *LogInfo) {
         if (lineno - 1 < line_help) { /* Compare to `line_help` in base0 */
             switch (lineno) {
             case 1:
-                x = sscanf(inbuf, "%s", vegMethodStr);
+                x = sscanf(inbuf, "%19s", vegMethodStr);
                 if (x != 1) {
                     CloseFile(&f, LogInfo);
                     LogError(
@@ -246,7 +246,7 @@ void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *InFiles[], LOG_INFO *LogInfo) {
                     return; // Exit function prematurely due to error
                 }
 
-                SW_VegProd->veg_method = strtol(vegMethodStr, &endPtr, 0);
+                SW_VegProd->veg_method = strtol(vegMethodStr, &endPtr, 10);
                 check_errno(MyFileName, vegMethodStr, endPtr, LogInfo);
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
@@ -452,7 +452,7 @@ void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *InFiles[], LOG_INFO *LogInfo) {
 
             x = sscanf(
                 inbuf,
-                "%s %s %s %s",
+                "%19s %19s %19s %19s",
                 vegStrs[0],
                 vegStrs[1],
                 vegStrs[2],

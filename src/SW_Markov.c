@@ -686,7 +686,7 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo) {
 
         x = sscanf(
             inbuf,
-            "%2s %s %s %s %s %s %s %s %s %s %s",
+            "%2s %19s %19s %19s %19s %19s %19s %19s %19s %19s %19s",
             weekStr,
             inFloatStrs[0],
             inFloatStrs[1],
