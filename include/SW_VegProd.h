@@ -173,7 +173,7 @@ void apply_biomassCO2effect(
 
 RealD sum_across_vegtypes(RealD x[][MAX_LAYERS], LyrIndex layerno);
 
-void _echo_VegProd(VegType VegProd_veg[], CoverType VegProd_bare_cov);
+void echo_VegProd(VegType VegProd_veg[], CoverType VegProd_bare_cov);
 
 void get_critical_rank(SW_VEGPROD *SW_VegProd);
 

@@ -87,7 +87,7 @@ void _spp_init(
 
 IntU _new_species(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo);
 
-void _echo_VegEstab(RealD width[], SW_VEGESTAB_INFO **parms, IntU count);
+void echo_VegEstab(RealD width[], SW_VEGESTAB_INFO **parms, IntU count);
 
 
 /* COMMENT-1

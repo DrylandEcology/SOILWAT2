@@ -305,9 +305,9 @@ typedef struct {
     /* transpiration regions  shallow, moderately shallow,  */
     /* deep and very deep. units are in layer numbers. */
     LyrIndex _TranspRgnBounds[MAX_TRANSP_REGIONS];
-    RealD _SWCInitVal, /* initialization value for swc */
-        _SWCWetVal,    /* value for a "wet" day,       */
-        SWCMinVal;     /* lower bound on swc.          */
+    RealD SWCInitVal, /* initialization value for swc */
+        SWCWetVal,    /* value for a "wet" day,       */
+        SWCMinVal;    /* lower bound on swc.          */
 
     /* bulk = relating to the whole soil, i.e., matric + rock/gravel/coarse
      * fragments */

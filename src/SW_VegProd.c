@@ -906,7 +906,7 @@ RealD sum_across_vegtypes(RealD x[][MAX_LAYERS], LyrIndex layerno) {
 @param[in] VegProd_bare_cov Bare-ground cover of plot that is not
     occupied by vegetation
 */
-void _echo_VegProd(VegType VegProd_veg[], CoverType VegProd_bare_cov) {
+void echo_VegProd(VegType VegProd_veg[], CoverType VegProd_bare_cov) {
     /* ================================================== */
 
     int k;

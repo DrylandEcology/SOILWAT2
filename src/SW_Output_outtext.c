@@ -167,7 +167,7 @@ static void create_csv_headers(
 @param[out] LogInfo Holds information on warnings and errors
 */
 /***********************************************************/
-static void _create_csv_files(
+static void create_csv_files(
     SW_FILE_STATUS *SW_FileStatus,
     OutPeriod pd,
     char *InFiles[],
@@ -424,7 +424,7 @@ void SW_OUT_create_textfiles(
 
     ForEachOutPeriod(pd) {
         if (OutDom->use_OutPeriod[pd]) {
-            _create_csv_files(SW_FileStatus, pd, InFiles, LogInfo);
+            create_csv_files(SW_FileStatus, pd, InFiles, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }

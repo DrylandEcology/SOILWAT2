@@ -185,7 +185,7 @@ int main(int argc, char **argv) {
     }
 
     if (EchoInits) {
-        _echo_all_inputs(&sw_template, &SW_Domain.OutDom);
+        echo_all_inputs(&sw_template, &SW_Domain.OutDom);
     }
 
     // run simulations: loop over simulation set

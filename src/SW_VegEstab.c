@@ -899,7 +899,7 @@ IntU _new_species(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo) {
 @param[in] count Held within type SW_VEGESTAB to determine
     how many species to check
 */
-void _echo_VegEstab(RealD width[], SW_VEGESTAB_INFO **parms, IntU count) {
+void echo_VegEstab(RealD width[], SW_VEGESTAB_INFO **parms, IntU count) {
     /* --------------------------------------------------- */
     IntU i;
     char outstr[2048], errstr[MAX_ERROR];

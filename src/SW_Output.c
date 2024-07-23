@@ -38,10 +38,10 @@ History:
 #include "include/SW_datastructs.h" // for SW_RUN, SW_OUTTEXT, LOG_INFO
 #include "include/SW_Defines.h"     // for eSWC, OutPeriod, NVEGTYPES
 #include "include/SW_Files.h"       // for eOutput, eSite
-#include "include/SW_Site.h"        // for _echo_inputs
+#include "include/SW_Site.h"        // for echo_inputs
 #include "include/SW_Times.h"       // for Today, Yesterday
-#include "include/SW_VegEstab.h"    // for _echo_VegEstab
-#include "include/SW_VegProd.h"     // for _echo_VegProd
+#include "include/SW_VegEstab.h"    // for echo_VegEstab
+#include "include/SW_VegProd.h"     // for echo_VegProd
 #include "include/Times.h"          // for Time_days_in_month, WKDAYS
 #include <errno.h>                  // for errno
 #include <stdio.h>                  // for snprintf, fprintf, printf
@@ -3571,7 +3571,7 @@ void SW_OUT_close_files(
 #endif
 }
 
-void _echo_outputs(SW_OUT_DOM *OutDom) {
+void echo_outputs(SW_OUT_DOM *OutDom) {
     int k;
     char str[OUTSTRLEN], errstr[MAX_ERROR];
 
@@ -3600,16 +3600,16 @@ void _echo_outputs(SW_OUT_DOM *OutDom) {
     printf("%s\n", errstr);
 }
 
-void _echo_all_inputs(SW_RUN *sw, SW_OUT_DOM *OutDom) {
+void echo_all_inputs(SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
     if (!sw->VegEstab.use) {
         printf("Establishment not used.\n");
     }
 
-    _echo_inputs(&sw->Site, &sw->Model);
-    _echo_VegEstab(sw->Site.width, sw->VegEstab.parms, sw->VegEstab.count);
-    _echo_VegProd(sw->VegProd.veg, sw->VegProd.bare_cov);
-    _echo_outputs(OutDom);
+    echo_inputs(&sw->Site, &sw->Model);
+    echo_VegEstab(sw->Site.width, sw->VegEstab.parms, sw->VegEstab.count);
+    echo_VegProd(sw->VegProd.veg, sw->VegProd.bare_cov);
+    echo_outputs(OutDom);
 }
 
 #if defined(SWNETCDF)

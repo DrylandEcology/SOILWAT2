@@ -16,17 +16,17 @@
  siteparam.in
 
  10/19/2010	(drs) added HydraulicRedistribution flag, and maxCondroot,
- swp50, and shapeCond parameters to SW_SIT_read()  and _echo_inputs()
+ swp50, and shapeCond parameters to SW_SIT_read()  and echo_inputs()
 
  07/20/2011	(drs) updated _read_layers() to read impermeability values from
  each soil layer from soils.in file added calculation for saturated swc in
- water_eqn() updated _echo_inputs() to print impermeability and saturated swc
+ water_eqn() updated echo_inputs() to print impermeability and saturated swc
  values
 
  09/08/2011	(drs) moved all hydraulic redistribution parameters to
  SW_VegProd.h struct VegType
 
- 09/15/2011	(drs)	deleted albedo from SW_SIT_read() and _echo_inputs():
+ 09/15/2011	(drs)	deleted albedo from SW_SIT_read() and echo_inputs():
  moved it to SW_VegProd.h to make input vegetation type dependent
 
  02/03/2012	(drs)	if input of SWCmin < 0 then estimate SWCmin with
@@ -37,24 +37,24 @@
 
  02/04/2012	(drs)	added calculation of swc at SWPcrit for each vegetation
  type and layer to function 'init_site_info()' added vwc/swc at SWPcrit to
- '_echo_inputs()'
+ 'echo_inputs()'
 
  05/24/2012  (DLM) edited SW_SIT_read(void) function to be able to read in Soil
  Temperature constants from siteparam.in file
 
- 05/24/2012  (DLM) edited _echo_inputs(void) function to echo the Soil
+ 05/24/2012  (DLM) edited echo_inputs(void) function to echo the Soil
  Temperature constants to the logfile
 
  05/25/2012  (DLM) edited _read_layers( void) function to read in the initial
  soil temperature for each layer
 
- 05/25/2012  (DLM) edited _echo_inputs( void) function to echo the read in soil
+ 05/25/2012  (DLM) edited echo_inputs( void) function to echo the read in soil
  temperatures for each layer
 
- 05/30/2012  (DLM) edited _read_layers & _echo_inputs functions to read in/echo
+ 05/30/2012  (DLM) edited _read_layers & echo_inputs functions to read in/echo
  the deltaX parameter
 
- 05/31/2012  (DLM) edited _read_layers & _echo_inputs functions to read in/echo
+ 05/31/2012  (DLM) edited _read_layers & echo_inputs functions to read in/echo
  stMaxDepth & use_soil_temp variables
 
  05/31/2012  (DLM) edited init_site_info(void) to check if stMaxDepth & stDeltaX
@@ -63,13 +63,13 @@
  11/06/2012	(clk)	In SW_SIT_read(void), added lines to read in aspect and
  slope from siteparam.in
 
- 11/06/2012	(clk)	In _echo_inputs(void), added lines to echo aspect and
+ 11/06/2012	(clk)	In echo_inputs(void), added lines to echo aspect and
  slope to logfile
 
  11/30/2012	(clk)	In SW_SIT_read(void), added lines to read in
  percentRunoff from siteparam.in
 
- 11/30/2012	(clk)	In _echo_inputs(void), added lines to echo percentRunoff
+ 11/30/2012	(clk)	In echo_inputs(void), added lines to echo percentRunoff
  to logfile
 
  04/16/2013	(clk)	changed the water_eqn to use the fraction of gravel
@@ -1364,10 +1364,10 @@ void SW_SIT_read(
             SW_Site->SWCMinVal = doubleRes;
             break;
         case 1:
-            SW_Site->_SWCInitVal = doubleRes;
+            SW_Site->SWCInitVal = doubleRes;
             break;
         case 2:
-            SW_Site->_SWCWetVal = doubleRes;
+            SW_Site->SWCWetVal = doubleRes;
             break;
         case 3:
             SW_Site->reset_yr = itob(intRes);
@@ -2272,18 +2272,18 @@ void SW_SIT_init_run(
 
         /* Calculate wet limit of SWC for what inputs defined as wet */
         SW_Site->swcBulk_wet[s] =
-            GE(SW_Site->_SWCWetVal, 1.0) ?
-                SW_SWRC_SWPtoSWC(SW_Site->_SWCWetVal, SW_Site, s, LogInfo) :
-                SW_Site->_SWCWetVal * SW_Site->width[s];
+            GE(SW_Site->SWCWetVal, 1.0) ?
+                SW_SWRC_SWPtoSWC(SW_Site->SWCWetVal, SW_Site, s, LogInfo) :
+                SW_Site->SWCWetVal * SW_Site->width[s];
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
         /* Calculate initial SWC based on inputs */
         SW_Site->swcBulk_init[s] =
-            GE(SW_Site->_SWCInitVal, 1.0) ?
-                SW_SWRC_SWPtoSWC(SW_Site->_SWCInitVal, SW_Site, s, LogInfo) :
-                SW_Site->_SWCInitVal * SW_Site->width[s];
+            GE(SW_Site->SWCInitVal, 1.0) ?
+                SW_SWRC_SWPtoSWC(SW_Site->SWCInitVal, SW_Site, s, LogInfo) :
+                SW_Site->SWCInitVal * SW_Site->width[s];
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -2654,7 +2654,7 @@ void SW_SIT_init_counts(SW_SITE *SW_Site) {
 @param[in] SW_Model Struct of type SW_MODEL holding basic time information
     about the simulation
 */
-void _echo_inputs(SW_SITE *SW_Site, SW_MODEL *SW_Model) {
+void echo_inputs(SW_SITE *SW_Site, SW_MODEL *SW_Model) {
     /* =================================================== */
     LyrIndex i;
     LOG_INFO LogInfo;
