@@ -1781,9 +1781,10 @@ void SW_WTH_setup(
                 LogError(
                     LogInfo,
                     LOGERROR,
-                    "%s : Bad missing weather method %d.",
+                    "%s : Requested weather generator method '%d' is not "
+                    "implemented.",
                     MyFileName,
-                    x
+                    inBufintRes
                 );
                 return; // Exit function prematurely due to error
             }

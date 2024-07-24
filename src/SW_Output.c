@@ -2180,6 +2180,7 @@ void SW_OUT_set_colnames(
     }
 #endif
     for (i = 0; i < ncol_OUT[eSW_SoilInf]; i++) {
+        // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
         colnames_OUT[eSW_SoilInf][i] = Str_Dup(cnames_eSW_SoilInf[i], LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -2288,8 +2289,10 @@ void SW_OUT_set_colnames(
     }
 #endif
     for (i = 0; i < ncol_OUT[eSW_SurfaceWater]; i++) {
+        // NOLINTBEGIN(clang-analyzer-core.CallAndMessage)
         colnames_OUT[eSW_SurfaceWater][i] =
             Str_Dup(cnames_eSW_SurfaceWater[i], LogInfo);
+        // NOLINTEND(clang-analyzer-core.CallAndMessage)
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -2801,7 +2804,7 @@ void SW_OUT_read(
     /* space for uppercase conversion */
     char upkey[50], upsum[4];
     char inbuf[MAX_FILENAMESIZE], *endPtr;
-    int first, last; /* first doy for output */
+    int first, last = -1; /* first doy for output */
 
     char *MyFileName = InFiles[eOutput];
     f = OpenFile(MyFileName, "r", LogInfo);

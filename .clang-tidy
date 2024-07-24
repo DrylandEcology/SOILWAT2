@@ -3,7 +3,6 @@
 Checks: >
     clang-diagnostic-*,
     clang-analyzer-*,
-    -clang-analyzer-core.CallAndMessage,
     bugprone-*,
     -bugprone-easily-swappable-parameters,
     cert-*,
