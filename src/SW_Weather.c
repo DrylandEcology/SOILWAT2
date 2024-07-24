@@ -2209,7 +2209,7 @@ void _read_weather_hist(
 
     FILE *f;
     unsigned int x, lineno = 0, index;
-    int doy;
+    int doy = 0;
     // TimeInt mon, j, k = 0;
     // RealF acc = 0.0;
     RealD weathInput[MAX_INPUT_COLUMNS];

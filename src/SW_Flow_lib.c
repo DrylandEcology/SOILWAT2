@@ -1689,7 +1689,7 @@ void lyrSoil_to_lyrTemp(
         acc = 0.0;
         sum = 0.0;
         while (LT(acc, width_Temp) && j < nlyrSoil + 1) {
-            if (GE(cor[i][j], 0.0)) {
+            if (GE(cor[i][j], 0.0) && j < nlyrSoil) {
                 // there are soil layers to add
                 ratio = cor[i][j] / width_Soil[j];
                 res[i] += var[j] * ratio;
@@ -1698,7 +1698,7 @@ void lyrSoil_to_lyrTemp(
                 if (LT(acc, width_Temp)) {
                     j++;
                 }
-            } else if (LT(cor[i][j], 0.0)) {
+            } else if (LT(cor[i][j], 0.0) && j == nlyrSoil) {
                 // negative cor values indicate end of soil layer profile
                 // copying values from deepest soil layer
                 ratio = -cor[i][j] / width_Soil[j - 1];
