@@ -378,7 +378,8 @@ static double itp_FXW_for_phi(double theta, double *swrcp, LOG_INFO *LogInfo) {
 #ifdef SWDEBUG
 void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
 
-    IntUS i, k;
+    LyrIndex i;
+    IntUS k;
     int debugi[N_WBCHECKS] = {
         1, 1, 1, 1, 1, 1, 1, 1, 1
     }; // print output for each check yes/no
