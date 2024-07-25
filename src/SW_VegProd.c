@@ -99,7 +99,6 @@ vegtype variable forb and forb.cov.fCover
 #include "include/SW_Files.h"       // for eVegProd
 #include "include/SW_Weather.h"     // for deallocateClimateStructs, alloca...
 #include "include/Times.h"          // for interpolate_monthlyValues, Jan, Dec
-#include <errno.h>                  // for errno
 #include <math.h>                   // for log, pow
 #include <stdio.h>                  // for sscanf, printf, NULL, FILE
 #include <stdlib.h>                 // for free

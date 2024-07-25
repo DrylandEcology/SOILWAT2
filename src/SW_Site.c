@@ -118,7 +118,6 @@
 #include "include/SW_Main_lib.h"    // for sw_init_logs
 #include "include/SW_SoilWater.h"   // for SW_SWRC_SWCtoSWP, SW_SWRC_SWPtoSWC
 #include "include/SW_VegProd.h"     // for key2veg, get_critical_rank, sum_...
-#include <errno.h>                  // for errno
 #include <math.h>                   // for fmod
 #include <stdio.h>                  // for printf, sscanf, FILE, NULL, stdout
 #include <stdlib.h>                 // for free, strod, strtol

@@ -520,11 +520,7 @@ void SW_CTL_setup_model(
     SW_VPD_construct(&sw->VegProd);
     // SW_FLW_construct() not needed
     SW_OUT_construct(
-        zeroOutInfo,
-        &sw->FileStatus,
-        OutDom,
-        &sw->OutRun,
-        LogInfo
+        zeroOutInfo, &sw->FileStatus, OutDom, &sw->OutRun, LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error

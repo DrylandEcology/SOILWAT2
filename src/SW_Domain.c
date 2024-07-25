@@ -10,7 +10,6 @@
 #include "include/SW_Files.h"       // for SW_F_deconstruct, SW_F_deepCopy
 #include "include/SW_Output.h"      // for ForEachOutKey
 #include "include/Times.h"          // for yearto4digit, Time_get_lastdoy_y
-#include <errno.h>                  // for errno
 #include <stdio.h>                  // for sscanf, FILE
 #include <stdlib.h>                 // for strtod, strtol
 #include <string.h>                 // for strcmp, memcpy, strcpy, memset

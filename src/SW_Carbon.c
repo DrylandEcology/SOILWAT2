@@ -23,11 +23,10 @@ in SW_VegProd.c and SW_Flow_lib.c.
 #include "include/SW_Defines.h"     // for ForEachVegType, MAX_FILENAMESIZE
 #include "include/SW_Files.h"       // for eCarbon
 #include "include/SW_VegProd.h"     // for BIO_INDEX, WUE_INDEX
-#include <errno.h>
-#include <math.h>   // for pow
-#include <stdio.h>  // for sscanf, FILE
-#include <stdlib.h> // for strtol, strtod
-#include <string.h> // for strcmp, memset
+#include <math.h>                   // for pow
+#include <stdio.h>                  // for sscanf, FILE
+#include <stdlib.h>                 // for strtol, strtod
+#include <string.h>                 // for strcmp, memset
 
 /* =================================================== */
 /*             Global Function Definitions             */

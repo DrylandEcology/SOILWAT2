@@ -50,7 +50,12 @@ History:
 
 #ifdef STEPWAT
 static void format_IterationSummary(
-    RealD *p, RealD *psd, OutPeriod pd, IntUS N, SW_RUN *sw, const size_t nrow_OUT[]
+    RealD *p,
+    RealD *psd,
+    OutPeriod pd,
+    IntUS N,
+    SW_RUN *sw,
+    const size_t nrow_OUT[]
 ) {
     IntUS i;
     size_t n;

@@ -46,7 +46,6 @@
 #include "include/SW_Defines.h"     // for deg_to_rad, ForEachOutPeriod
 #include "include/SW_Files.h"       // for eModel
 #include "include/Times.h"          // for Time_get_lastdoy_y, Time_init_model
-#include <errno.h>                  // for errno
 #include <stdio.h>                  // for FILE
 #include <stdlib.h>                 // for strtod
 #include <string.h>                 // for memcpy

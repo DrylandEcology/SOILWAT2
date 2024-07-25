@@ -42,7 +42,6 @@
 #include "include/SW_Defines.h"     // for MAX_FILENAMESIZE, MAX_MONTHS
 #include "include/SW_Files.h"       // for eSky
 #include "include/Times.h"          // for isleapyear, interpolate_monthlyV...
-#include <errno.h>                  // for errno
 #include <stdio.h>                  // for sscanf, FILE
 #include <stdlib.h>                 // for strtod
 

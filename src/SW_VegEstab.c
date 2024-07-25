@@ -48,7 +48,6 @@
 #include "include/SW_SoilWater.h"   // for SW_SWRC_SWPtoSWC
 #include "include/SW_Times.h"       // for Today
 #include "include/SW_VegProd.h"     // for key2veg
-#include <errno.h>                  // for errno
 #include <math.h>                   // for fabs
 #include <stdio.h>                  // for NULL, snprintf, FILE, printf
 #include <stdlib.h>                 // for free

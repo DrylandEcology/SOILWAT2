@@ -5,6 +5,7 @@
 #include "include/SW_Domain.h"      // for SW_DOM_deconstruct, SW_DOM_deepCopy
 #include "include/SW_Main_lib.h"    // for sw_fail_on_error, sw_init_logs
 #include "gtest/gtest.h"            // for Test
+#include <errno.h>                  // for errno
 #include <string.h>                 // for memcpy, NULL
 
 

@@ -43,7 +43,6 @@ History:
 #include "include/SW_VegEstab.h"    // for echo_VegEstab
 #include "include/SW_VegProd.h"     // for echo_VegProd
 #include "include/Times.h"          // for Time_days_in_month, WKDAYS
-#include <errno.h>                  // for errno
 #include <stdio.h>                  // for snprintf, fprintf, printf
 #include <stdlib.h>                 // for free
 #include <string.h>                 // for strcat, strcmp, strcpy, memset

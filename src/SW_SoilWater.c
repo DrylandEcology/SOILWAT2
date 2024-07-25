@@ -82,7 +82,6 @@
 #include "include/SW_Site.h"        // for sw_Campbell1974, sw_FXW, sw_vanG...
 #include "include/SW_Times.h"       // for Today, Yesterday
 #include "include/Times.h"          // for yearto4digit
-#include <errno.h>                  // for errno
 #include <math.h>                   // for fabs, pow, log, ceil, copysign
 #include <stdio.h>                  // for NULL, FILE, sscanf, snprintf
 #include <stdlib.h>                 // for free

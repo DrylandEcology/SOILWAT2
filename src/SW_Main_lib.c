@@ -22,7 +22,6 @@
 #include "include/myMemory.h"       // for Str_Dup
 #include "include/SW_datastructs.h" // for LOG_INFO
 #include "include/SW_Defines.h"     // for MAX_MSGS, MAX_LOG_SIZE, BUILD_DATE
-#include <errno.h>                  // for errno
 #include <stdio.h>                  // for fprintf, stderr, fflush, stdout
 #include <stdlib.h>                 // for exit, free, EXIT_FA...
 #include <string.h>                 // for strcpy, strncmp

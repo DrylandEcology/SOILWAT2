@@ -29,7 +29,6 @@
 #include "include/SW_Defines.h"     // for MAX_DAYS, MAX_FILENAMESIZE, TimeInt
 #include "include/SW_Files.h"       // for eMarkovCov, eMarkovProb
 #include "include/Times.h"          // for doy2week
-#include <errno.h>                  // for errno
 #include <math.h>                   // for isfinite
 #include <stdio.h>                  // for NULL, sscanf, FILE, size_t
 #include <stdlib.h>                 // for free

@@ -33,9 +33,7 @@ void RandSeed(
 
 double RandUni(sw_random_t *pcg_rng);
 
-int RandUniIntRange(
-    const long first, const long last, sw_random_t *pcg_rng
-);
+int RandUniIntRange(const long first, const long last, sw_random_t *pcg_rng);
 
 float RandUniFloatRange(const float min, const float max, sw_random_t *pcg_rng);
 
