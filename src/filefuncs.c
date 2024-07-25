@@ -208,6 +208,8 @@ void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...) {
         );
         exit(EXIT_FAILURE);
     }
+#else
+(void) expectedWriteSize; /* Silence clang-tidy clang-analyzer-deadcode.DeadStores */
 #endif
 
     if (LOGWARN & mode) {

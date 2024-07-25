@@ -161,6 +161,8 @@ void SW_CBN_read(
                 return; // Exit function prematurely due to error
             }
 
+            (void) year; /* Silence clang-tidy clang-analyzer-deadcode.DeadStores */
+
             continue; // Skip to the ppm values
         }
         if (strcmp(scenario, SW_Carbon->scenario) != 0) {
