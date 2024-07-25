@@ -144,9 +144,9 @@ typedef struct {
         firstdoy, /* start day for this year */
         lastdoy,  /* 366 if leapyear or endend if endyr */
         doy, week, month, year, simyear, /* current model time */
-        _prevweek,                       /* check for new week */
-        _prevmonth,                      /* check for new month */
-        _prevyear;                       /* check for new year */
+        prevweek,                       /* check for new week */
+        prevmonth,                      /* check for new month */
+        prevyear;                       /* check for new year */
     /* however, week and month are base0 because they
      * are used as array indices, so take care.
      * doy and year are base1. */
@@ -304,7 +304,7 @@ typedef struct {
 
     /* transpiration regions  shallow, moderately shallow,  */
     /* deep and very deep. units are in layer numbers. */
-    LyrIndex _TranspRgnBounds[MAX_TRANSP_REGIONS];
+    LyrIndex TranspRgnBounds[MAX_TRANSP_REGIONS];
     RealD SWCInitVal, /* initialization value for swc */
         SWCWetVal,    /* value for a "wet" day,       */
         SWCMinVal;    /* lower bound on swc.          */

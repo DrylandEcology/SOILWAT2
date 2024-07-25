@@ -77,7 +77,7 @@ void SW_VES_checkestab(
 
 void SW_VES_new_year(IntU count);
 
-void _spp_init(
+void spp_init(
     SW_VEGESTAB_INFO **parms,
     unsigned int sppnum,
     SW_SITE *SW_Site,
@@ -85,7 +85,7 @@ void _spp_init(
     LOG_INFO *LogInfo
 );
 
-IntU _new_species(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo);
+IntU new_species(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo);
 
 void echo_VegEstab(const RealD width[], SW_VEGESTAB_INFO **parms, IntU count);
 

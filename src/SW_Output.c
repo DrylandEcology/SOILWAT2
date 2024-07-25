@@ -3000,7 +3000,7 @@ void SW_OUT_read(
 #endif
 }
 
-void _collect_values(
+void collect_values(
     SW_RUN *sw,
     SW_OUT_DOM *OutDom,
     Bool bFlush_output,
@@ -3045,7 +3045,7 @@ subs.
 void SW_OUT_flush(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     TimeInt localTOffset = 0; // tOffset is zero when called from this function
 
-    _collect_values(sw, OutDom, swTRUE, localTOffset, LogInfo);
+    collect_values(sw, OutDom, swTRUE, localTOffset, LogInfo);
 }
 
 /** adds today's output values to week, month and year
@@ -3755,13 +3755,13 @@ void SW_OUTDOM_deepCopy(
 
   The function SW_CTL_run_current_year() in file SW_Control.c calls:
     - the function end_day() in file SW_Control.c, for each day, which in turn
-      calls _collect_values() with (global) arguments `bFlush_output` = `FALSE`
+      calls collect_values() with (global) arguments `bFlush_output` = `FALSE`
       and `tOffset` = 1
     - the function SW_OUT_flush(), after the last day of each year, which in
-      turn calls _collect_values() with (global) arguments
+      turn calls collect_values() with (global) arguments
       `bFlush_output` = TRUE and `tOffset` = 0
 
-  The function _collect_values()
+  The function collect_values()
     -# calls SW_OUT_sum_today() for each of the \ref ObjType `otype`
       that produce output, i.e., `eSWC`, `eWTH`, `eVES`, and `eVPD`.
       SW_OUT_sum_today() loops over each \ref OutPeriod `pd`

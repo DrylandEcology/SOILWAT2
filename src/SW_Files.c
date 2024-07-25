@@ -305,17 +305,17 @@ void SW_F_construct(
      *    it could be useful in a standalone run.
      */
     char *c, *p, dirString[FILENAME_MAX];
-    char *local_firstfile = Str_Dup(firstfile, LogInfo);
+    char *localfirstfile = Str_Dup(firstfile, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    DirName(local_firstfile, dirString);
+    DirName(localfirstfile, dirString);
     c = dirString;
 
     if (c) {
         strcpy(SW_ProjDir, c);
-        c = local_firstfile;
+        c = localfirstfile;
         p = c + strlen(SW_ProjDir);
         while (*p) {
             *(c++) = *(p++);
@@ -325,7 +325,7 @@ void SW_F_construct(
         SW_ProjDir[0] = '\0';
     }
 
-    free(local_firstfile);
+    free(localfirstfile);
 }
 
 /**

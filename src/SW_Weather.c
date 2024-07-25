@@ -57,7 +57,7 @@
  06/21/2013	(DLM)	variable 'tail' got too large by 1 and leaked memory
  when accessing array runavg_list[] in function _runavg_temp(): changed test
  from '(tail < SW_Weather.days_in_runavg)' to '(tail <
- (SW_Weather.days_in_runavg-1))' in function _clear_hist_weather() temp_max was
+ (SW_Weather.days_in_runavg-1))' in function clear_hist_weather() temp_max was
  tested twice, one should be temp_min
 
  06/24/2013	(rjm) added function void SW_WTH_clear_runavg_list(void) to free
@@ -676,7 +676,7 @@ void readAllWeather(
         year = yearIndex + startYear;
 
         // Set all daily weather values to missing
-        _clear_hist_weather(allHist[yearIndex]);
+        clear_hist_weather(allHist[yearIndex]);
 
         // Update yearly day/month information needed when interpolating
         // cloud cover, wind speed, and relative humidity if necessary
@@ -715,7 +715,7 @@ void readAllWeather(
         // Read daily weather values from disk
         if (!use_weathergenerator_only) {
 
-            _read_weather_hist(
+            read_weather_hist(
                 year,
                 allHist[yearIndex],
                 weather_prefix,
@@ -1366,7 +1366,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
 @brief Clears weather history.
 @note Used by rSOILWAT2
 */
-void _clear_hist_weather(SW_WEATHER_HIST *yearWeather) {
+void clear_hist_weather(SW_WEATHER_HIST *yearWeather) {
     /* --------------------------------------------------- */
     TimeInt d;
 
@@ -1690,13 +1690,13 @@ void SW_WTH_new_day(
 @param[in,out] SW_Weather Struct of type SW_WEATHER holding all relevant
     information pretaining to meteorological input data
 @param[in] InFiles Array of program in/output files
-@param[out] _weather_prefix File name of weather data without extension.
+@param[out] weather_prefix File name of weather data without extension.
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_WTH_setup(
     SW_WEATHER *SW_Weather,
     char *InFiles[],
-    char *_weather_prefix,
+    char *weather_prefix,
     LOG_INFO *LogInfo
 ) {
     /* =================================================== */
@@ -1921,7 +1921,7 @@ void SW_WTH_setup(
         lineno++;
     }
 
-    strcpy(SW_Weather->name_prefix, _weather_prefix);
+    strcpy(SW_Weather->name_prefix, weather_prefix);
     CloseFile(&f, LogInfo);
 
     if (lineno < nitems) {
@@ -1986,7 +1986,7 @@ void set_dailyInputIndices(
   * Turn off necessary flags. This happens after the calculation of
     input indices due to the fact that setting before calculating may
     result in an incorrect `n_input_forcings` in SW_WEATHER, and unexpectedly
-    crash the program in `_read_weather_hist()`.
+    crash the program in `read_weather_hist()`.
 
   * Check if monthly flags have been chosen to override daily flags.
   * Aside from checking for purely a monthly flag, we must make sure we have
@@ -2183,7 +2183,7 @@ Format of a input file (white-space separated values):
     specifying what variable has daily input on disk
 @param[out] LogInfo Holds information on warnings and errors
 */
-void _read_weather_hist(
+void read_weather_hist(
     TimeInt year,
     SW_WEATHER_HIST *yearWeather,
     char weather_prefix[],
@@ -2520,7 +2520,7 @@ void _read_weather_hist(
         LogError(
             LogInfo,
             LOGERROR,
-            "_read_weather_hist: could not close file %s.",
+            "read_weather_hist: could not close file %s.",
             fname
         );
     }

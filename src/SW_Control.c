@@ -129,7 +129,7 @@ static void end_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     int localTOffset = 1; // tOffset is one when called from this function
 
     if (sw->Model.doOutput) {
-        _collect_values(sw, OutDom, swFALSE, localTOffset, LogInfo);
+        collect_values(sw, OutDom, swFALSE, localTOffset, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -197,7 +197,7 @@ void SW_RUN_deepCopy(
 
     for (IntU speciesNum = 0; speciesNum < source->VegEstab.count;
          speciesNum++) {
-        _new_species(&dest->VegEstab, LogInfo);
+        new_species(&dest->VegEstab, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit prematurely due to error
         }

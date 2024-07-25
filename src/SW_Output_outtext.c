@@ -23,7 +23,7 @@ History:
 #include "include/generic.h"           // for Bool, swFALSE, SOILWAT, IntUS
 #include "include/myMemory.h"          // for Mem_Malloc
 #include "include/SW_datastructs.h"    // for LOG_INFO
-#include "include/SW_Defines.h"        // for _OUTSEP, OutPeriod, ForEachOu...
+#include "include/SW_Defines.h"        // for OUTSEP, OutPeriod, ForEachOu...
 #include "include/SW_Output.h"         // for pd2longstr, ForEachOutKey
 #include <stdio.h>                     // for snprintf, fflush, fprintf
 #include <stdlib.h>                    // for free
@@ -121,10 +121,10 @@ static void create_csv_headers(
                         str_help1,
                         size_help,
                         "%c%s_%s_Mean%c%s_%s_SD",
-                        _OUTSEP,
+                        OUTSEP,
                         key,
                         OutDom->colnames_OUT[k][i],
-                        _OUTSEP,
+                        OUTSEP,
                         key,
                         OutDom->colnames_OUT[k][i]
                     );
@@ -133,7 +133,7 @@ static void create_csv_headers(
                         str_help1,
                         size_help,
                         "%c%s_%s",
-                        _OUTSEP,
+                        OUTSEP,
                         key,
                         OutDom->colnames_OUT[k][i]
                     );
@@ -201,19 +201,19 @@ static void get_outstrheader(OutPeriod pd, char *str, size_t sizeof_str) {
     switch (pd) {
     case eSW_Day:
         snprintf(
-            str, sizeof_str, "%s%c%s", "Year", _OUTSEP, pd2longstr[eSW_Day]
+            str, sizeof_str, "%s%c%s", "Year", OUTSEP, pd2longstr[eSW_Day]
         );
         break;
 
     case eSW_Week:
         snprintf(
-            str, sizeof_str, "%s%c%s", "Year", _OUTSEP, pd2longstr[eSW_Week]
+            str, sizeof_str, "%s%c%s", "Year", OUTSEP, pd2longstr[eSW_Week]
         );
         break;
 
     case eSW_Month:
         snprintf(
-            str, sizeof_str, "%s%c%s", "Year", _OUTSEP, pd2longstr[eSW_Month]
+            str, sizeof_str, "%s%c%s", "Year", OUTSEP, pd2longstr[eSW_Month]
         );
         break;
 
@@ -545,7 +545,7 @@ void get_outstrleader(
     switch (pd) {
     case eSW_Day:
         snprintf(
-            str, sizeof_str, "%d%c%d", SW_Model->simyear, _OUTSEP, SW_Model->doy
+            str, sizeof_str, "%d%c%d", SW_Model->simyear, OUTSEP, SW_Model->doy
         );
         break;
 
@@ -555,7 +555,7 @@ void get_outstrleader(
             sizeof_str,
             "%d%c%d",
             SW_Model->simyear,
-            _OUTSEP,
+            OUTSEP,
             (SW_Model->week + 1) - tOffset
         );
         break;
@@ -566,7 +566,7 @@ void get_outstrleader(
             sizeof_str,
             "%d%c%d",
             SW_Model->simyear,
-            _OUTSEP,
+            OUTSEP,
             (SW_Model->month + 1) - tOffset
         );
         break;

@@ -1266,7 +1266,7 @@ void SW_SWC_new_year(
     /* update historical (measured) values, if needed */
     if (SW_SoilWat->hist_use && year >= SW_SoilWat->hist.yr.first) {
 #ifndef RSOILWAT
-        _read_swc_hist(&SW_SoilWat->hist, year, LogInfo);
+        read_swc_hist(&SW_SoilWat->hist, year, LogInfo);
 #else
         LogError(
             LogInfo,
@@ -1276,7 +1276,7 @@ void SW_SWC_new_year(
 
         if (swFALSE) {
             // read from disk:
-            _read_swc_hist(&SW_SoilWat->hist, year, LogInfo);
+            read_swc_hist(&SW_SoilWat->hist, year, LogInfo);
         } else {
             // copy from R memory
             // onSet_SW_SWC_hist(LogInfo);
@@ -1288,7 +1288,7 @@ void SW_SWC_new_year(
 /**
 @brief Like all of the other functions, read() reads in the setup parameters.
 
-See _read_swc_hist() for reading historical files.
+See read_swc_hist() for reading historical files.
 
 @param[in,out] SW_SoilWat Struct of type SW_SOILWAT containing
     soil water related values
@@ -1394,7 +1394,7 @@ to make the input file name.
 @param[in] year Four digit number for desired year, measured in years.
 @param[out] LogInfo Holds information on warnings and errors
 */
-void _read_swc_hist(
+void read_swc_hist(
     SW_SOILWAT_HIST *SoilWat_hist, TimeInt year, LOG_INFO *LogInfo
 ) {
     /* =================================================== */

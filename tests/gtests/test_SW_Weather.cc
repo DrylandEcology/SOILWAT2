@@ -850,10 +850,10 @@ TEST_F(WeatherFixtureTest, WeatherInputDailyGridMet) {
     SW_Run.Weather.desc_rsds = 1; // gridMET rsds is flux density over 24 hours
 
     // Reset daily weather values
-    _clear_hist_weather(SW_Run.Weather.allHist[0]);
+    clear_hist_weather(SW_Run.Weather.allHist[0]);
 
     // Using the new inputs folder, read in year = 1980
-    _read_weather_hist(
+    read_weather_hist(
         year,
         SW_Run.Weather.allHist[0],
         SW_Run.Weather.name_prefix,
@@ -954,10 +954,10 @@ TEST_F(WeatherFixtureTest, WeatherInputDayMet) {
     SW_Run.Weather.desc_rsds = 2;
 
     // Reset daily weather values
-    _clear_hist_weather(SW_Run.Weather.allHist[0]);
+    clear_hist_weather(SW_Run.Weather.allHist[0]);
 
     // Using the new inputs folder, read in year = 1980
-    _read_weather_hist(
+    read_weather_hist(
         year,
         SW_Run.Weather.allHist[0],
         SW_Run.Weather.name_prefix,
@@ -1066,10 +1066,10 @@ TEST_F(WeatherFixtureTest, WeatherInputMACA) {
     SW_Run.Weather.desc_rsds = 1; // MACA rsds is flux density over 24 hours
 
     // Reset daily weather values
-    _clear_hist_weather(SW_Run.Weather.allHist[0]);
+    clear_hist_weather(SW_Run.Weather.allHist[0]);
 
     // Using the new inputs folder, read in year = 1980
-    _read_weather_hist(
+    read_weather_hist(
         year,
         SW_Run.Weather.allHist[0],
         SW_Run.Weather.name_prefix,
@@ -1224,7 +1224,7 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputWrongColumnNumberDeathTest) {
     // not the columns being read in
     SW_Run.Weather.n_input_forcings = 0;
 
-    _read_weather_hist(
+    read_weather_hist(
         year,
         SW_Run.Weather.allHist[0],
         SW_Run.Weather.name_prefix,

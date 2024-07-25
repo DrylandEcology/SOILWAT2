@@ -26,8 +26,8 @@
  06/26/2013	(rjm)	closed open files in function SW_VES_read() or if
  LogError() with LOGERROR is called in read_spp()
 
- 08/21/2013	(clk)	changed the line v = SW_VegEstab.parms[ _new_species()
- ]; -> v = SW_VegEstab.parms[ count ], where count = _new_species(); for some
+ 08/21/2013	(clk)	changed the line v = SW_VegEstab.parms[ new_species()
+ ]; -> v = SW_VegEstab.parms[ count ], where count = new_species(); for some
  reason, without this change, a segmenation fault was occuring
  */
 /********************************************************/
@@ -407,7 +407,7 @@ void SW_VES_init_run(
     IntU i;
 
     for (i = 0; i < count; i++) {
-        _spp_init(parms, i, SW_Site, n_transp_lyrs, LogInfo);
+        spp_init(parms, i, SW_Site, n_transp_lyrs, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -578,7 +578,7 @@ static void read_spp(
 
     IntU count;
 
-    count = _new_species(SW_VegEstab, LogInfo);
+    count = new_species(SW_VegEstab, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -715,7 +715,7 @@ other function call.
 @param[in] n_transp_lyrs Layer index of deepest transp. region.
 @param[out] LogInfo Holds information on warnings and errors
 */
-void _spp_init(
+void spp_init(
     SW_VEGESTAB_INFO **parms,
     unsigned int sppnum,
     SW_SITE *SW_Site,
@@ -864,7 +864,7 @@ required.  For each species thereafter realloc() is called.
 
 @return (++SW_VegEstab->count) - 1
 */
-IntU _new_species(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo) {
+IntU new_species(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo) {
 
     const char *me = "SW_VegEstab_newspecies()";
 

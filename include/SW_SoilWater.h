@@ -140,7 +140,7 @@ void SW_SWC_init_run(
     SW_SOILWAT *SW_SoilWat, SW_SITE *SW_Site, RealD *temp_snow
 );
 
-void _read_swc_hist(
+void read_swc_hist(
     SW_SOILWAT_HIST *SoilWat_hist, TimeInt year, LOG_INFO *LogInfo
 );
 

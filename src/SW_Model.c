@@ -194,7 +194,7 @@ void SW_MDL_new_year(SW_MODEL *SW_Model) {
      */
     TimeInt year = SW_Model->year;
 
-    SW_Model->_prevweek = SW_Model->_prevmonth = SW_Model->_prevyear = notime;
+    SW_Model->prevweek = SW_Model->prevmonth = SW_Model->prevyear = notime;
 
     Time_new_year(year, SW_Model->days_in_month, SW_Model->cum_monthdays);
     SW_Model->simyear = SW_Model->year + SW_Model->addtl_yr;
@@ -232,19 +232,19 @@ void SW_MDL_new_day(SW_MODEL *SW_Model) {
         return;
     }
 
-    if (SW_Model->month != SW_Model->_prevmonth) {
+    if (SW_Model->month != SW_Model->prevmonth) {
         SW_Model->newperiod[eSW_Month] =
-            (SW_Model->_prevmonth != notime) ? swTRUE : swFALSE;
-        SW_Model->_prevmonth = SW_Model->month;
+            (SW_Model->prevmonth != notime) ? swTRUE : swFALSE;
+        SW_Model->prevmonth = SW_Model->month;
     } else {
         SW_Model->newperiod[eSW_Month] = swFALSE;
     }
 
-    /*  if (SW_Model.week != _prevweek || SW_Model.month == NoMonth) { */
-    if (SW_Model->week != SW_Model->_prevweek) {
+    /*  if (SW_Model.week != prevweek || SW_Model.month == NoMonth) { */
+    if (SW_Model->week != SW_Model->prevweek) {
         SW_Model->newperiod[eSW_Week] =
-            (SW_Model->_prevweek != notime) ? swTRUE : swFALSE;
-        SW_Model->_prevweek = SW_Model->week;
+            (SW_Model->prevweek != notime) ? swTRUE : swFALSE;
+        SW_Model->prevweek = SW_Model->week;
     } else {
         SW_Model->newperiod[eSW_Week] = swFALSE;
     }

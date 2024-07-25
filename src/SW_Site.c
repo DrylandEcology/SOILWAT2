@@ -1546,7 +1546,7 @@ void SW_SIT_read(
                 );
                 return; // Exit function prematurely due to error
             }
-            SW_Site->_TranspRgnBounds[region - 1] = (LyrIndex) (rgnlow - 1);
+            SW_Site->TranspRgnBounds[region - 1] = (LyrIndex) (rgnlow - 1);
             SW_Site->n_transp_rgn++;
         }
 
@@ -1596,7 +1596,7 @@ Label_End_Read:
 
     /* check for any discontinuities (reversals) in the transpiration regions */
     for (r = 1; r < SW_Site->n_transp_rgn; r++) {
-        if (SW_Site->_TranspRgnBounds[r - 1] >= SW_Site->_TranspRgnBounds[r]) {
+        if (SW_Site->TranspRgnBounds[r - 1] >= SW_Site->TranspRgnBounds[r]) {
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -1864,14 +1864,14 @@ void set_soillayers(
 @param[out] LogInfo Holds information on warnings and errors
 
 @sideeffect
-    \ref SW_SITE._TranspRgnBounds and \ref SW_SITE.n_transp_rgn will be
+    \ref SW_SITE.TranspRgnBounds and \ref SW_SITE.n_transp_rgn will be
     derived from the input and from the soil information.
 
 @note
 - \p nRegions does NOT determine how many regions will be derived. It only
   defines the size of the \p regionLowerBounds array. For example, if your
   input parameters are `(4, { 10, 20, 40 })`, but there is a soil layer from
-  41 to 60 cm, it will be placed in `_TranspRgnBounds[4]`.
+  41 to 60 cm, it will be placed in `TranspRgnBounds[4]`.
 */
 void derive_soilRegions(
     SW_SITE *SW_Site,
@@ -1897,7 +1897,7 @@ void derive_soilRegions(
     /* --------------- Clear out the array ------------------ */
     for (i = 0; i < MAX_TRANSP_REGIONS; ++i) {
         // Setting bounds to a ridiculous number so we know how many get set.
-        SW_Site->_TranspRgnBounds[i] = UNDEFINED_LAYER;
+        SW_Site->TranspRgnBounds[i] = UNDEFINED_LAYER;
     }
 
     /* ----------------- Derive Regions ------------------- */
@@ -1905,13 +1905,13 @@ void derive_soilRegions(
     layer = 0; // SW_Site.lyr is base0-indexed
     totalDepth = 0;
     for (i = 0; i < nRegions; ++i) {
-        SW_Site->_TranspRgnBounds[i] = layer;
+        SW_Site->TranspRgnBounds[i] = layer;
         // Find the layer that pushes us out of the region.
         // It becomes the bound.
         while (totalDepth < regionLowerBounds[i] && layer < SW_Site->n_layers &&
                sum_across_vegtypes(SW_Site->transp_coeff, layer)) {
             totalDepth += SW_Site->width[layer];
-            SW_Site->_TranspRgnBounds[i] = layer;
+            SW_Site->TranspRgnBounds[i] = layer;
             layer++;
         }
     }
@@ -1920,18 +1920,18 @@ void derive_soilRegions(
     for (i = 0; i < nRegions - 1; ++i) {
         // If there is a duplicate bound we will remove it by left shifting the
         // array, overwriting the duplicate.
-        if (SW_Site->_TranspRgnBounds[i] == SW_Site->_TranspRgnBounds[i + 1]) {
+        if (SW_Site->TranspRgnBounds[i] == SW_Site->TranspRgnBounds[i + 1]) {
             for (j = i + 1; j < nRegions - 1; ++j) {
-                SW_Site->_TranspRgnBounds[j] = SW_Site->_TranspRgnBounds[j + 1];
+                SW_Site->TranspRgnBounds[j] = SW_Site->TranspRgnBounds[j + 1];
             }
-            SW_Site->_TranspRgnBounds[MAX_TRANSP_REGIONS - 1] = UNDEFINED_LAYER;
+            SW_Site->TranspRgnBounds[MAX_TRANSP_REGIONS - 1] = UNDEFINED_LAYER;
         }
     }
 
     /* -------------- Derive n_transp_rgn --------------- */
     SW_Site->n_transp_rgn = 0;
     while (SW_Site->n_transp_rgn < MAX_TRANSP_REGIONS &&
-           SW_Site->_TranspRgnBounds[SW_Site->n_transp_rgn] != UNDEFINED_LAYER
+           SW_Site->TranspRgnBounds[SW_Site->n_transp_rgn] != UNDEFINED_LAYER
     ) {
         SW_Site->n_transp_rgn++;
     }
@@ -2454,7 +2454,7 @@ void SW_SIT_init_run(
              * base1 but s is base0.*/
             curregion = 0;
             ForEachTranspRegion(r, SW_Site->n_transp_rgn) {
-                if (s < SW_Site->_TranspRgnBounds[r]) {
+                if (s < SW_Site->TranspRgnBounds[r]) {
                     if (ZRO(SW_Site->transp_coeff[k][s])) {
                         break; /* end of transpiring layers */
                     }
@@ -2463,7 +2463,7 @@ void SW_SIT_init_run(
                 }
             }
 
-            if (curregion || SW_Site->_TranspRgnBounds[curregion] == 0) {
+            if (curregion || SW_Site->TranspRgnBounds[curregion] == 0) {
                 SW_Site->my_transp_rgn[k][s] = curregion;
                 SW_Site->n_transp_lyrs[k] = MAX(SW_Site->n_transp_lyrs[k], s);
 

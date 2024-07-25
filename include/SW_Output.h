@@ -244,7 +244,7 @@ void SW_OUT_write_year(void);
 
 void SW_OUT_flush(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
-void _collect_values(
+void collect_values(
     SW_RUN *sw,
     SW_OUT_DOM *OutDom,
     Bool bFlush_output,

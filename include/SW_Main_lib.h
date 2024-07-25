@@ -22,7 +22,7 @@ void sw_init_args(
     int argc,
     char **argv,
     Bool *EchoInits,
-    char **_firstfile,
+    char **firstfile,
     unsigned long *userSUID,
     double *wallTimeLimit,
     Bool *renameDomainTemplateNC,

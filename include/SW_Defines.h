@@ -119,7 +119,7 @@ extern "C" {
 #define OUT_DIGITS 6
 
 /** Separator used when generating text-based output files (csv-format) */
-#define _OUTSEP ','
+#define OUTSEP ','
 
 // was 256 & 1024...
 #define MAX_FILENAMESIZE 512

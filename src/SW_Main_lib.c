@@ -106,7 +106,7 @@ void sw_print_version(void) {
 @param[in] argc Number (count) of command line arguments.
 @param[in] argv Values of command line arguments.
 @param[out] EchoInits Flag to control if inputs are to be output to the user
-@param[out] _firstfile First file name to be filled in the program run
+@param[out] firstfile First file name to be filled in the program run
 @param[out] userSUID Simulation Unit Identifier requested by the user (base1);
             0 indicates that all simulations units within domain are requested
 @param[out] wallTimeLimit Terminate simulations early when
@@ -120,7 +120,7 @@ void sw_init_args(
     int argc,
     char **argv,
     Bool *EchoInits,
-    char **_firstfile,
+    char **firstfile,
     unsigned long *userSUID,
     double *wallTimeLimit,
     Bool *renameDomainTemplateNC,
@@ -155,7 +155,7 @@ void sw_init_args(
     double doubleUserSUID = 0.;
 
     /* Defaults */
-    *_firstfile = Str_Dup(DFLT_FIRSTFILE, LogInfo);
+    *firstfile = Str_Dup(DFLT_FIRSTFILE, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -222,8 +222,8 @@ void sw_init_args(
             break;
 
         case 1: /* -f */
-            free(*_firstfile);
-            *_firstfile = Str_Dup(str, LogInfo);
+            free(*firstfile);
+            *firstfile = Str_Dup(str, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }

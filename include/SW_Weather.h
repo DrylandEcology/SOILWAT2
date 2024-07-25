@@ -58,7 +58,7 @@ extern "C" {
 void SW_WTH_setup(
     SW_WEATHER *SW_Weather,
     char *InFiles[],
-    char *_weather_prefix,
+    char *weather_prefix,
     LOG_INFO *LogInfo
 );
 
@@ -143,7 +143,7 @@ void deallocateClimateStructs(
     SW_CLIMATE_YEARLY *climateOutput, SW_CLIMATE_CLIM *climateAverages
 );
 
-void _read_weather_hist(
+void read_weather_hist(
     TimeInt year,
     SW_WEATHER_HIST *yearWeather,
     char weather_prefix[],
@@ -217,7 +217,7 @@ void initializeAllWeatherPtrs(SW_WEATHER_HIST **allHist, unsigned int n_years);
 
 void deallocateAllWeather(SW_WEATHER_HIST **allHist, unsigned int n_years);
 
-void _clear_hist_weather(SW_WEATHER_HIST *yearWeather);
+void clear_hist_weather(SW_WEATHER_HIST *yearWeather);
 
 void SW_WTH_finalize_all_weather(
     SW_MARKOV *SW_Markov,
