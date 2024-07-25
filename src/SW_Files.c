@@ -71,13 +71,8 @@ void SW_CSV_F_INIT(const char *s, LOG_INFO *LogInfo) {
                 LogInfo, LOGWARN, "Can't remove old csv output file: %s\n", s
             );
         }
-    } else if (!MkDir(dirString, LogInfo)) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Can't make output path for csv file: %s\n",
-            dirString
-        );
+    } else {
+        MkDir(dirString, LogInfo);
     }
 }
 
@@ -246,14 +241,9 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
     }
 
     if (!DirExists(PathInfo->output_prefix)) {
-        if (!MkDir(PathInfo->output_prefix, LogInfo)) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "Cannot make output path: '%s'\n",
-                PathInfo->output_prefix
-            );
-            return; // Exit function prematurely due to error
+        MkDir(PathInfo->output_prefix, LogInfo);
+        if (LogInfo->stopRun) {
+            return; // Exit prematurely due to error
         }
     }
 

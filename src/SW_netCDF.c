@@ -4526,9 +4526,6 @@ void SW_NC_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
         fill_prog_netCDF_vals(SW_Domain, LogInfo);
     }
-
-    errno =
-        0; /* Reset errno if the progress file is now found in `FileExists()` */
 }
 
 /**

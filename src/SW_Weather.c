@@ -2214,8 +2214,6 @@ void _read_weather_hist(
     // RealF acc = 0.0;
     RealD weathInput[MAX_INPUT_COLUMNS];
 
-    errno = 0;
-
     Bool hasMaxMinTemp =
         (Bool) (dailyInputFlags[TEMP_MAX] && dailyInputFlags[TEMP_MIN]);
     Bool hasMaxMinRelHumid = (Bool) (dailyInputFlags[REL_HUMID_MAX] &&
@@ -2240,6 +2238,7 @@ void _read_weather_hist(
 
     f = fopen(fname, "r");
     if (isnull(f)) {
+        errno = 0; // no weather input file (use generator) --> reset errno
         return;
     }
 

@@ -37,7 +37,7 @@ Bool DirExists(const char *d);
 
 Bool ChDir(const char *d);
 
-Bool MkDir(const char *dname, LOG_INFO *LogInfo);
+void MkDir(const char *dname, LOG_INFO *LogInfo);
 
 Bool RemoveFiles(const char *fspec, LOG_INFO *LogInfo);
 
@@ -48,7 +48,7 @@ void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...);
 void sw_message(const char *msg);
 
 void check_errno(
-    const char *inFile, char *valString, const char *endPtr, LOG_INFO *LogInfo
+    const char *valMsg1, char *valMsg2, const char *endPtr, LOG_INFO *LogInfo
 );
 
 int key_to_id(const char *key, const char **possibleKeys, int numPossKeys);

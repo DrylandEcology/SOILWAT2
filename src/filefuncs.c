@@ -17,7 +17,7 @@
 #include <assert.h>                 // for assert
 #include <ctype.h>                  // for isspace
 #include <dirent.h>                 // for dirent, closedir, DIR, opendir, re...
-#include <errno.h>                  // for errno, EACCES
+#include <errno.h>                  // for errno, ENOENT, ERANGE
 #include <stdarg.h>                 // for va_end, va_start
 #include <stdio.h>                  // for NULL, fclose, FILE, fopen, EOF
 #include <stdlib.h>                 // for free
@@ -246,28 +246,51 @@ void sw_message(const char *msg) {
 }
 
 /**
- * @brief Check errno for an error, and report it if there is
- *
- * @param[in] inFile Input file that contains the value that threw the error
- * @param[in] valString String from input that caused the error when converting
- * @param[in] endPtr Resulting pointer after attempting to convert a numeric
- * value
- * @param[out] LogInfo Holds information on warnings and errors
- */
-void check_errno(
-    const char *inFile, char *valString, const char *endPtr, LOG_INFO *LogInfo
-) {
+@brief Throw error if `errno` or `endPtr` indicate an error
 
-    if (errno != 0 || (*endPtr != 0 && !isspace(*endPtr))) {
+This function generates an error (via `LogInfo`) if
+    - errno is not equal to 0, or
+    - endPtr (resulting from a call to `strtod()` or related function)
+      is not empty or does not point to whitespace
+
+@param[in] valMsg1 First message string; for instance, the input file name
+    that contains the value that threw the error
+@param[in] valMsg2 Second message string; for instance, the input text
+    that caused the error when converting
+@param[in] endPtr Resulting pointer after attempting to convert a numeric
+    value, e.g., with a call to `strtod()` or related function
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void check_errno(
+    const char *valMsg1, char *valMsg2, const char *endPtr, LOG_INFO *LogInfo
+) {
+    Bool failedStrToNum =
+        (Bool) (isnull(endPtr) ? swFALSE : (*endPtr != 0 && !isspace(*endPtr)));
+
+    const char *tmpMsg1 =
+        isnull(valMsg1) ? (const char *) "command-line arguments" : valMsg1;
+
+
+    if (errno == 0 && failedStrToNum) {
+        LogError(
+            LogInfo, LOGERROR, "Processing '%s' within '%s'.", valMsg2, tmpMsg1
+        );
+
+    } else if (errno != 0) {
         switch (errno) {
         case ERANGE:
             LogError(
                 LogInfo,
                 LOGERROR,
-                "Processing input '%s' within %s produced an error indicating "
-                "that result was too large.\n",
-                valString,
-                (isnull(inFile)) ? "command-line arguments" : inFile
+                "Processing '%s' within '%s': result too large.",
+                valMsg2,
+                tmpMsg1
+            );
+            break;
+
+        case ENOENT:
+            LogError(
+                LogInfo, LOGERROR, "No such file or directory '%s'.", valMsg1
             );
             break;
 
@@ -275,9 +298,9 @@ void check_errno(
             LogError(
                 LogInfo,
                 LOGERROR,
-                "Processing input '%s' within %s produced error code %d.\n",
-                valString,
-                (isnull(inFile)) ? "command-line arguments" : inFile,
+                "Processing '%s' within '%s': error code %d.",
+                valMsg2,
+                tmpMsg1,
                 errno
             );
             break;
@@ -353,10 +376,8 @@ FILE *OpenFile(const char *name, const char *mode, LOG_INFO *LogInfo) {
     FILE *fp;
     fp = fopen(name, mode);
     if (isnull(fp)) {
-        LogError(
-            LogInfo, LOGERROR, "Cannot open file %s: %s", name, strerror(errno)
-        );
-        return NULL; // Exit function prematurely due to error
+        // Report error if file couldn't be opened
+        check_errno(name, NULL, NULL, LogInfo);
     }
     return (fp);
 }
@@ -372,9 +393,7 @@ void CloseFile(FILE **f, LOG_INFO *LogInfo) {
      */
     if (*f == NULL) {
         LogError(
-            LogInfo,
-            LOGWARN,
-            "Tried to close file that doesn't exist or isn't open!"
+            LogInfo, LOGWARN, "CloseFile: file doesn't exist or isn't open!"
         );
         return;
     }
@@ -397,6 +416,9 @@ Bool FileExists(const char *name) {
     if (0 == stat(name, &statbuf)) {
         result = S_ISREG(statbuf.st_mode) ? swTRUE : swFALSE;
     }
+
+    // we are not interested here in errno (-> reset); we return TRUE/FALSE
+    errno = 0;
 
     return (result);
 }
@@ -437,14 +459,13 @@ Bool ChDir(const char *dname) {
 #define mkdir(d, m) mkdir(d, m)
 #endif
 
-Bool MkDir(const char *dname, LOG_INFO *LogInfo) {
+void MkDir(const char *dname, LOG_INFO *LogInfo) {
     /* make a path with 'mkdir -p' -like behavior. provides an
      * interface for portability problems.
      * RELATIVE PATH ONLY solves problems like "C:\etc" and null
      * first element in absolute path.
      * if you need to make an absolute path, use ChDir() first.
      * if you care about mode of new dir, use mkdir(), not MkDir()
-     * if MkDir returns FALSE, check errno.
      *
      * Notes:
      * - portability issues seem to be quite problematic, at least
@@ -452,50 +473,54 @@ Bool MkDir(const char *dname, LOG_INFO *LogInfo) {
      *   error code is EACCES, so if something else happens (and it
      *   well might in unix), more tests have to be included, perhaps
      *   with macros that test the compiler/platform.
-     * - we're borrowing errstr to build the path to facilitate the
+     * - we're borrowing buffer to build the path to facilitate the
      *   -p behavior.
      */
 
     int i, n;
-    Bool result = swTRUE;
     char *a[256] = {0}; /* points to each path element for mkdir -p behavior */
     char *c;            /* duplicate of dname so we don't change it */
     const char *delim = "\\/"; /* path separators */
-    char errstr[MAX_ERROR];
+    char buffer[MAX_ERROR];
+    int resMkdir = 0;
 
     int startIndex = 0, strLen = 0; // For `sw_strtok()`
 
     if (isnull(dname)) {
-        return swFALSE;
+        return;
     }
 
     c = Str_Dup(dname, LogInfo);
     if (LogInfo->stopRun) {
-        return swFALSE; // Exit function prematurely due to error
+        return; // Exit function prematurely due to error
     }
 
     /* parse path */
     n = 0;
-    while (NULL != (a[n++] = sw_strtok(c, &startIndex, &strLen, delim)))
-        ;
-
-    n--;
-    errstr[0] = '\0';
-    for (i = 0; i < n; i++) {
-        strcat(errstr, a[i]);
-        if (!DirExists(errstr)) {
-            if (0 != mkdir(errstr, 0777)) {
-                if (errno == EACCES) {
-                    result = swFALSE;
-                    break;
-                }
-            }
-        }
-        strcat(errstr, "/");
+    while (NULL != (a[n] = sw_strtok(c, &startIndex, &strLen, delim)) && n < 256
+    ) {
+        n++;
     }
 
+    buffer[0] = '\0';
+    for (i = 0; i < n; i++) {
+        strcat(buffer, a[i]);
+        if (!DirExists(buffer)) {
+            resMkdir = mkdir(buffer, 0777);
+            if (0 == resMkdir) {
+                // directory successfully created -> reset errno
+                errno = 0;
+            } else {
+                // directory failed to create -> report error
+                check_errno(buffer, NULL, NULL, LogInfo);
+                goto freeMem; // Exit function prematurely due to error
+            }
+        }
+        strcat(buffer, "/");
+    }
+
+freeMem:
     free(c);
-    return result;
 }
 
 #undef mkdir
