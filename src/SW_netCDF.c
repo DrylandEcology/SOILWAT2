@@ -241,8 +241,8 @@ static void nc_read_atts(
     double num1 = 0, num2 = 0;
     Bool geoCRSFound = swFALSE, projCRSFound = swFALSE;
 
-    double inBufdoubleRes;
-    int inBufintRes;
+    double inBufdoubleRes = 0.;
+    int inBufintRes = 0;
     char numOneStr[20], numTwoStr[20];
 
     Bool doIntConv, doDoubleConv;
