@@ -82,7 +82,7 @@ static void create_csv_headers(
     char key[50];
     Bool isTrue = swFALSE;
 
-    size_t size_help = (size_t) (n_layers * OUTSTRLEN);
+    size_t size_help = (size_t)(n_layers) * OUTSTRLEN;
     char *str_help1, *str_help2;
 
     str_help1 = (char *) Mem_Malloc(
@@ -623,7 +623,7 @@ void write_headers_to_csv(
         header_reg[2 * OUTSTRLEN];
 
     // 26500 characters required for 25 soil layers and does_agg = TRUE
-    size_t size_hs = (size_t) (n_layers * OUTSTRLEN);
+    size_t size_hs = (size_t)(n_layers) * OUTSTRLEN;
     char *header_soil;
     int fprintRes = 0;
 
