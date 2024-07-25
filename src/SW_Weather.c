@@ -1706,8 +1706,8 @@ void SW_WTH_setup(
     RealD sppt, stmax, stmin;
     RealD sky, wind, rH, actVP, shortWaveRad;
     char inbuf[MAX_FILENAMESIZE], *endPtr;
-    int inBufintRes;
-    double inBufdoubleRes;
+    int inBufintRes = 0;
+    double inBufdoubleRes = 0.;
 
     char weathInputStrs[9][20] = {{'\0'}};
     RealD *inFloatVals[8] = {

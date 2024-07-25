@@ -1314,16 +1314,16 @@ void SW_SIT_read(
 
     FILE *f;
     int lineno = 0, x;
-    int rgnlow; /* lower layer of region */
-    int region; /* transp region definition number */
+    int rgnlow = 0; /* lower layer of region */
+    int region = 0; /* transp region definition number */
 #ifdef SWDEBUG
     int debug = 0;
 #endif
     LyrIndex r;
     Bool too_many_regions = swFALSE;
     char inbuf[MAX_FILENAMESIZE], *endPtr;
-    int intRes;
-    double doubleRes;
+    int intRes = 0;
+    double doubleRes = 0.;
     char rgnStr[2][10] = {{'\0'}};
 
     Bool doDoubleConv, strLine;

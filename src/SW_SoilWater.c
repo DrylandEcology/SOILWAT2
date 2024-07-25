@@ -1308,7 +1308,7 @@ void SW_SWC_read(
     FILE *f;
     int lineno = 0, nitems = 4;
     char inbuf[MAX_FILENAMESIZE], *endPtr;
-    int inBufintRes;
+    int inBufintRes = 0;
     Bool convertInput;
 
     char *MyFileName = InFiles[eSoilwat];
@@ -1426,8 +1426,8 @@ void read_swc_hist(
      * cause problems in the flow model.
      */
     FILE *f;
-    int x, lyr, recno = 0, doy, index;
-    RealF swc, st_err;
+    int x, lyr = 0, recno = 0, doy = 0, index;
+    RealF swc = 0., st_err = 0.;
     char fname[MAX_FILENAMESIZE], inbuf[MAX_FILENAMESIZE], *endPtr;
     char varStrs[4][20] = {{'\0'}};
     int *inBufIntVals[] = {&doy, &lyr};

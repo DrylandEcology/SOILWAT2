@@ -165,7 +165,7 @@ void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *InFiles[], LOG_INFO *LogInfo) {
     int x, k, lineno = 0, index;
     // last case line number before monthly biomass densities
     const int line_help = 28;
-    RealF help_veg[NVEGTYPES], help_bareGround, litt, biom, pctl, laic;
+    RealF help_veg[NVEGTYPES], help_bareGround = 0., litt, biom, pctl, laic;
     RealF *monBioVals[] = {&litt, &biom, &pctl, &laic};
     char *MyFileName, inbuf[MAX_FILENAMESIZE], *endPtr;
     char vegStrs[NVEGTYPES][20] = {{'\0'}}, bareGroundStr[20] = {'\0'};

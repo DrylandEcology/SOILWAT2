@@ -205,8 +205,8 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     int y, keyID;
     char inbuf[LARGE_VALUE], *MyFileName, *endPtr;
     char key[15], value[LARGE_VALUE]; // 15 - Max key size
-    int intRes, scanRes;
-    double doubleRes;
+    int intRes = 0, scanRes;
+    double doubleRes = 0.;
 
     Bool doDoubleConv;
 
