@@ -1430,9 +1430,9 @@ void read_swc_hist(
     RealF swc, st_err;
     char fname[MAX_FILENAMESIZE], inbuf[MAX_FILENAMESIZE], *endPtr;
     char varStrs[4][20] = {{'\0'}};
-    int *inBufintRess[] = {&doy, &lyr};
+    int *inBufIntVals[] = {&doy, &lyr};
     float *inBufFloatVals[] = {&swc, &st_err};
-    const int numInVals = 4;
+    const int numInValsPerType = 2;
 
     snprintf(
         fname, MAX_FILENAMESIZE, "%s.%4d", SoilWat_hist->file_prefix, year
@@ -1486,8 +1486,8 @@ void read_swc_hist(
             return; // Exit function prematurely due to error
         }
 
-        for (index = 0; index < numInVals; index++) {
-            *(inBufintRess[index]) = strtol(varStrs[index], &endPtr, 10);
+        for (index = 0; index < numInValsPerType; index++) {
+            *(inBufIntVals[index]) = (int) strtol(varStrs[index], &endPtr, 10);
             check_errno(fname, varStrs[index], endPtr, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
