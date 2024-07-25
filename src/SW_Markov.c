@@ -92,9 +92,11 @@ static void temp_correct_wetdry(
 #ifdef SWDEBUG
 // since `temp_correct_wetdry` is static we cannot do unit tests unless we set
 // it up as an externed function pointer
+// NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
 void (*test_temp_correct_wetdry)(
     RealD *, RealD *, RealD, RealD, RealD, RealD, RealD
 ) = &temp_correct_wetdry;
+// NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
 #endif
 
 
@@ -196,8 +198,10 @@ static void mvnorm(
 #ifdef SWDEBUG
 // since `mvnorm` is static we cannot do unit tests unless we set it up
 // as an externed function pointer
+// NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
 void (*test_mvnorm)(RealD *, RealD *, RealD, RealD, RealD, RealD, RealD, sw_random_t *, LOG_INFO *) =
     &mvnorm;
+// NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
 #endif
 
 
