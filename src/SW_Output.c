@@ -2780,7 +2780,7 @@ void SW_OUT_read(
      */
 
     FILE *f;
-    OutKey k;
+    OutKey k = eSW_NoKey;
     int x, itemno, msg_type;
     IntUS i;
     Bool useTimeStep = swFALSE;
