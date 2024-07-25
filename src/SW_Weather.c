@@ -1730,7 +1730,7 @@ void SW_WTH_setup(
 
         if (lineno <= 22) {
             if (doIntConv) {
-                inBufintRes = strtol(inbuf, &endPtr, 10);
+                inBufintRes = (int) strtol(inbuf, &endPtr, 10);
             } else {
                 inBufdoubleRes = strtod(inbuf, &endPtr);
             }
@@ -1896,7 +1896,7 @@ void SW_WTH_setup(
 
             for (index = 0; index < numInDefaultVars; index++) {
                 if (index == 0) {
-                    month = strtol(weathInputStrs[index], &endPtr, 10);
+                    month = (int) strtol(weathInputStrs[index], &endPtr, 10);
                 } else {
                     *(inFloatVals[index - 1]) =
                         strtod(weathInputStrs[index], &endPtr);
@@ -2292,7 +2292,7 @@ void read_weather_hist(
 
         for (index = 0; index < n_input_forcings + 1; index++) {
             if (index == 0) {
-                doy = strtol(weathInStrs[index], &endPtr, 10);
+                doy = (int) strtol(weathInStrs[index], &endPtr, 10);
             } else {
                 weathInput[index - 1] = strtod(weathInStrs[index], &endPtr);
             }

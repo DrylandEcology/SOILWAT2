@@ -134,7 +134,7 @@ void SW_CBN_read(
             return; /* Exit prematurely due to error */
         }
 
-        year = strtol(yearStr, &endPtr, 10);
+        year = (int) strtol(yearStr, &endPtr, 10);
         check_errno(MyFileName, yearStr, endPtr, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -155,7 +155,7 @@ void SW_CBN_read(
                 return; /* Exit prematurely due to error */
             }
 
-            year = strtol(yearStr, &endPtr, 10);
+            year = (int) strtol(yearStr, &endPtr, 10);
             check_errno(MyFileName, yearStr, endPtr, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
@@ -186,7 +186,7 @@ void SW_CBN_read(
             return; /* Exit prematurely due to error */
         }
 
-        year = strtol(yearStr, &endPtr, 10);
+        year = (int) strtol(yearStr, &endPtr, 10);
         check_errno(MyFileName, yearStr, endPtr, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error

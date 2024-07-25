@@ -243,7 +243,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             if (doDoubleConv) {
                 doubleRes = strtod(value, &endPtr);
             } else {
-                intRes = strtol(value, &endPtr, 10);
+                intRes = (int) strtol(value, &endPtr, 10);
             }
 
             check_errno(MyFileName, value, endPtr, LogInfo);

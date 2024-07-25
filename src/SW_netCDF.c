@@ -302,7 +302,7 @@ static void nc_read_atts(
 
         if (doIntConv || doDoubleConv) {
             if (doIntConv) {
-                inBufintRes = strtol(value, &endPtr, 10);
+                inBufintRes = (int) strtol(value, &endPtr, 10);
             } else {
                 inBufdoubleRes = strtod(value, &endPtr);
             }
@@ -4848,7 +4848,7 @@ void SW_NC_read_out_vars(
         // Check if the variable was requested to be output
         // Store attribute information for each variable (including names)
 
-        doOutputVal = strtol(input[doOutInd], &endPtr, 10);
+        doOutputVal = (int) strtol(input[doOutInd], &endPtr, 10);
         check_errno(MyFileName, input[doOutInd], endPtr, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error

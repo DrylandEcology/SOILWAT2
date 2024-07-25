@@ -550,7 +550,7 @@ Bool SW_MKV_read_prob(
             inFloatStrs[3]
         );
 
-        day = strtol(dayStr, &endPtr, 10);
+        day = (int) strtol(dayStr, &endPtr, 10);
         check_errno(MyFileName, dayStr, endPtr, LogInfo);
         if (LogInfo->stopRun) {
             return swFALSE; // Exit function prematurely due to error
@@ -713,7 +713,7 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo) {
             return swFALSE; // Exit function prematurely due to error
         }
 
-        week = strtol(weekStr, &endPtr, 10);
+        week = (int) strtol(weekStr, &endPtr, 10);
         check_errno(MyFileName, weekStr, endPtr, LogInfo);
         if (LogInfo->stopRun) {
             return swFALSE; // Exit function prematurely due to error

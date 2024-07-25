@@ -2916,14 +2916,14 @@ void SW_OUT_read(
         outfile[0] = '\0';
 #endif
 
-        first = strtol(firstStr, &endPtr, 10);
+        first = (int) strtol(firstStr, &endPtr, 10);
         check_errno(MyFileName, firstStr, endPtr, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
         if (Str_CompareI(lastStr, (char *) "END") != 0) {
-            last = strtol(lastStr, &endPtr, 10);
+            last = (int) strtol(lastStr, &endPtr, 10);
             check_errno(MyFileName, lastStr, endPtr, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error

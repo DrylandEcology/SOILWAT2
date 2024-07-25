@@ -1324,9 +1324,10 @@ void SW_SIT_read(
     char inbuf[MAX_FILENAMESIZE], *endPtr;
     int intRes = 0;
     double doubleRes = 0.;
+    float floatRes = 0.;
     char rgnStr[2][10] = {{'\0'}};
 
-    Bool doDoubleConv, strLine;
+    Bool doDoubleConv, doFloatConv, strLine;
 
     /* note that Files.read() must be called prior to this. */
     char *MyFileName = InFiles[eSite];
@@ -1346,10 +1347,14 @@ void SW_SIT_read(
             doDoubleConv = (Bool) ((lineno >= 0 && lineno <= 2) ||
                                    (lineno >= 5 && lineno <= 31));
 
+            doFloatConv = (Bool) (lineno >= 14 && lineno <= 21);
+
             if (doDoubleConv) {
                 doubleRes = strtod(inbuf, &endPtr);
+            } else if (doFloatConv) {
+                floatRes = strtof(inbuf, &endPtr);
             } else {
-                intRes = strtol(inbuf, &endPtr, 10);
+                intRes = (int) strtol(inbuf, &endPtr, 10);
             }
 
             check_errno(MyFileName, inbuf, endPtr, LogInfo);
@@ -1402,28 +1407,28 @@ void SW_SIT_read(
             SW_Site->slow_drain_coeff = doubleRes;
             break;
         case 14:
-            SW_Site->evap.xinflec = doubleRes;
+            SW_Site->evap.xinflec = floatRes;
             break;
         case 15:
-            SW_Site->evap.slope = doubleRes;
+            SW_Site->evap.slope = floatRes;
             break;
         case 16:
-            SW_Site->evap.yinflec = doubleRes;
+            SW_Site->evap.yinflec = floatRes;
             break;
         case 17:
-            SW_Site->evap.range = doubleRes;
+            SW_Site->evap.range = floatRes;
             break;
         case 18:
-            SW_Site->transp.xinflec = doubleRes;
+            SW_Site->transp.xinflec = floatRes;
             break;
         case 19:
-            SW_Site->transp.slope = doubleRes;
+            SW_Site->transp.slope = floatRes;
             break;
         case 20:
-            SW_Site->transp.yinflec = doubleRes;
+            SW_Site->transp.yinflec = floatRes;
             break;
         case 21:
-            SW_Site->transp.range = doubleRes;
+            SW_Site->transp.range = floatRes;
             break;
         case 22:
             SW_Site->bmLimiter = doubleRes;
@@ -1522,13 +1527,13 @@ void SW_SIT_read(
             x = sscanf(inbuf, "%9s %9s", rgnStr[0], rgnStr[1]);
 
             if (x == 2) {
-                region = strtol(rgnStr[0], &endPtr, 10);
+                region = (int) strtol(rgnStr[0], &endPtr, 10);
                 check_errno(MyFileName, rgnStr[0], endPtr, LogInfo);
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }
 
-                rgnlow = strtol(rgnStr[1], &endPtr, 10);
+                rgnlow = (int) strtol(rgnStr[1], &endPtr, 10);
                 check_errno(MyFileName, rgnStr[1], endPtr, LogInfo);
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error

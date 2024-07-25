@@ -1321,7 +1321,7 @@ void SW_SWC_read(
         convertInput = (Bool) (lineno >= 0 && lineno <= 3 && lineno != 1);
 
         if (convertInput) {
-            inBufintRes = strtol(inbuf, &endPtr, 10);
+            inBufintRes = (int) strtol(inbuf, &endPtr, 10);
             check_errno(MyFileName, inbuf, endPtr, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error

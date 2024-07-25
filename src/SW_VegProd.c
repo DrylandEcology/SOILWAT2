@@ -245,7 +245,8 @@ void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *InFiles[], LOG_INFO *LogInfo) {
                     return; // Exit function prematurely due to error
                 }
 
-                SW_VegProd->veg_method = strtol(vegMethodStr, &endPtr, 10);
+                SW_VegProd->veg_method =
+                    (int) strtol(vegMethodStr, &endPtr, 10);
                 check_errno(MyFileName, vegMethodStr, endPtr, LogInfo);
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error

@@ -601,7 +601,7 @@ static void read_spp(
                                 (lineno >= 5 && lineno <= 11));
 
             if (doIntConv) {
-                inBufintRes = strtol(inbuf, &endPtr, 10);
+                inBufintRes = (int) strtol(inbuf, &endPtr, 10);
             } else {
                 inBufFloatVal = strtof(inbuf, &endPtr);
             }
