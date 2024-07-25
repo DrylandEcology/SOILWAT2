@@ -1344,15 +1344,16 @@ void SW_SIT_read(
         if (!strLine) {
             /* Check to see if the line number contains a double or integer
              * value */
-            doDoubleConv = (Bool) ((lineno >= 0 && lineno <= 2) ||
-                                   (lineno >= 5 && lineno <= 31));
-
             doFloatConv = (Bool) (lineno >= 14 && lineno <= 21);
 
-            if (doDoubleConv) {
-                doubleRes = strtod(inbuf, &endPtr);
-            } else if (doFloatConv) {
+            doDoubleConv =
+                (Bool) (!doFloatConv && ((lineno >= 0 && lineno <= 2) ||
+                                         (lineno >= 5 && lineno <= 31)));
+
+            if (doFloatConv) {
                 floatRes = strtof(inbuf, &endPtr);
+            } else if (doDoubleConv) {
+                doubleRes = strtod(inbuf, &endPtr);
             } else {
                 intRes = (int) strtol(inbuf, &endPtr, 10);
             }
