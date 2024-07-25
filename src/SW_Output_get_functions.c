@@ -2795,9 +2795,7 @@ void get_evapSurface_text(OutPeriod pd, SW_RUN *sw) {
     );
 
     ForEachVegType(k) {
-        snprintf(
-            str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->evap_veg[k]
-        );
+        snprintf(str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->evap_veg[k]);
         strcat(OutRun->sw_outstr, str);
     }
 
@@ -3246,9 +3244,7 @@ void get_lyrdrain_text(OutPeriod pd, SW_RUN *sw) {
     OutRun->sw_outstr[0] = '\0';
 
     for (i = 0; i < sw->Site.n_layers - 1; i++) {
-        snprintf(
-            str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->lyrdrain[i]
-        );
+        snprintf(str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->lyrdrain[i]);
         strcat(OutRun->sw_outstr, str);
     }
 }

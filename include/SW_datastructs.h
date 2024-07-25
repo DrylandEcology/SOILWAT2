@@ -144,9 +144,9 @@ typedef struct {
         firstdoy, /* start day for this year */
         lastdoy,  /* 366 if leapyear or endend if endyr */
         doy, week, month, year, simyear, /* current model time */
-        prevweek,                       /* check for new week */
-        prevmonth,                      /* check for new month */
-        prevyear;                       /* check for new year */
+        prevweek,                        /* check for new week */
+        prevmonth,                       /* check for new month */
+        prevyear;                        /* check for new year */
     /* however, week and month are base0 because they
      * are used as array indices, so take care.
      * doy and year are base1. */

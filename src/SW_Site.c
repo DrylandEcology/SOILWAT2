@@ -1931,8 +1931,7 @@ void derive_soilRegions(
     /* -------------- Derive n_transp_rgn --------------- */
     SW_Site->n_transp_rgn = 0;
     while (SW_Site->n_transp_rgn < MAX_TRANSP_REGIONS &&
-           SW_Site->TranspRgnBounds[SW_Site->n_transp_rgn] != UNDEFINED_LAYER
-    ) {
+           SW_Site->TranspRgnBounds[SW_Site->n_transp_rgn] != UNDEFINED_LAYER) {
         SW_Site->n_transp_rgn++;
     }
 }
