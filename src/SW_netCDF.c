@@ -538,12 +538,14 @@ static void get_2d_output_key(
         ForEachOutKey(k) {
             if (k != eSW_Estab) {
                 for (varNum = 0; varNum < nvar_OUT[k]; varNum++) {
-                    if (strcmp(possKeys[k][varNum], varKey) == 0) {
+                    if(!isnull(possKeys[k][varNum])) {
+                        if (strcmp(possKeys[k][varNum], varKey) == 0) {
 
-                        *outKey = (OutKey) k;
-                        *outVarNum = varNum;
+                            *outKey = (OutKey) k;
+                            *outVarNum = varNum;
 
-                        return;
+                            return;
+                        }
                     }
                 }
             }
