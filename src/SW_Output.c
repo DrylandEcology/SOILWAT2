@@ -2338,9 +2338,9 @@ void SW_OUT_set_colnames(
             return; // Exit function prematurely due to error
         }
     }
-    for (i = 0; i < ncol_OUT[eSW_EvapSurface] - (NVEGTYPES + 2); i++) {
-        colnames_OUT[eSW_EvapSurface][NVEGTYPES + 2 + i] =
-            Str_Dup(cnames_add_eSW_EvapSurface[i], LogInfo);
+    for (i = NVEGTYPES + 2; i < ncol_OUT[eSW_EvapSurface]; i++) {
+        colnames_OUT[eSW_EvapSurface][i] =
+            Str_Dup(cnames_add_eSW_EvapSurface[i - (NVEGTYPES + 2)], LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
