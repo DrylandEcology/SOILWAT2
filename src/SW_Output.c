@@ -2859,7 +2859,6 @@ void SW_OUT_read(
                 useTimeStep = swTRUE;
 
                 if (*used_OUTNPERIODS > SW_OUTNPERIODS) {
-                    CloseFile(&f, LogInfo);
                     LogError(
                         LogInfo,
                         LOGERROR,
@@ -2868,7 +2867,7 @@ void SW_OUT_read(
                         *used_OUTNPERIODS,
                         SW_OUTNPERIODS
                     );
-                    return; // Exit function prematurely due to error
+                    goto closeFile;
                 }
             }
 
@@ -2892,7 +2891,6 @@ void SW_OUT_read(
         // we have read a line that specifies an output key/type
         // make sure that we got enough input
         if (x < 6) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -2901,7 +2899,7 @@ void SW_OUT_read(
                 keyname,
                 itemno
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
 
 // For now: rSOILWAT2's function `onGet_SW_OUT` requires that
@@ -2909,8 +2907,7 @@ void SW_OUT_read(
 #if defined(RSOILWAT)
         OutDom->outfile[k] = Str_Dup(outfile, LogInfo);
         if (LogInfo->stopRun) {
-            CloseFile(&f, LogInfo);
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
 #else
         outfile[0] = '\0';
@@ -2918,21 +2915,20 @@ void SW_OUT_read(
 
         first = sw_strtoi(firstStr, MyFileName, LogInfo);
         if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
 
         if (Str_CompareI(lastStr, (char *) "END") != 0) {
             last = sw_strtoi(lastStr, MyFileName, LogInfo);
             if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
         }
 
         // Convert strings to index numbers
         k = str2key(Str_ToUpper(keyname, upkey), LogInfo);
         if (LogInfo->stopRun) {
-            CloseFile(&f, LogInfo);
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
 
         // Fill information into `sw->Output[k]`
@@ -2953,8 +2949,7 @@ void SW_OUT_read(
             LogError(LogInfo, msg_type, "%s", msg);
 
             if (msg_type == LOGERROR) {
-                CloseFile(&f, LogInfo);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
         }
 
@@ -2975,8 +2970,6 @@ void SW_OUT_read(
         }
     } // end of while-loop
 
-    CloseFile(&f, LogInfo);
-
     // Determine which output periods are turned on for at least one output key
     find_OutPeriods_inUse(OutDom);
 
@@ -2996,6 +2989,8 @@ void SW_OUT_read(
     // Determine number of used years/months/weeks/days in simulation period
     SW_OUT_set_nrow(&sw->Model, OutDom->use_OutPeriod, OutDom->nrow_OUT);
 #endif
+
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 void collect_values(

@@ -224,7 +224,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             LogError(
                 LogInfo, LOGERROR, "Invalid key-value pair in %s.", MyFileName
             );
-            return; /* Exit prematurely due to error */
+            goto closeFile;
         }
 
         keyID = key_to_id(key, possibleKeys, NUM_DOM_IN_KEYS);
@@ -247,7 +247,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             }
 
             if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
         }
 
@@ -262,7 +262,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     MyFileName,
                     value
                 );
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             strcpy(SW_Domain->DomainType, value);
             break;
@@ -280,7 +280,6 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             y = intRes;
 
             if (y < 0) {
-                CloseFile(&f, LogInfo);
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -288,7 +287,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     MyFileName,
                     y
                 );
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             SW_Domain->startyr = yearto4digit((TimeInt) y);
             break;
@@ -296,7 +295,6 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             y = intRes;
 
             if (y < 0) {
-                CloseFile(&f, LogInfo);
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -304,7 +302,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     MyFileName,
                     y
                 );
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             SW_Domain->endyr = yearto4digit((TimeInt) y);
             break;
@@ -326,7 +324,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     "Invalid key-value pair for CRS box in %s.",
                     MyFileName
                 );
-                return; /* Exit prematurely due to error */
+                goto closeFile;
             }
 
             strcpy(SW_Domain->crs_bbox, value);
@@ -348,7 +346,6 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             y = intRes;
 
             if (y != 1 && y != 2) {
-                CloseFile(&f, LogInfo);
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -357,7 +354,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     MyFileName,
                     y
                 );
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             SW_Domain->SW_SpinUp.mode = y;
             break;
@@ -392,20 +389,18 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         }
     }
 
-    CloseFile(&f, LogInfo);
-
 
     // Check if all required input was provided
     check_requiredKeys(
         hasKeys, requiredKeys, possibleKeys, NUM_DOM_IN_KEYS, LogInfo
     );
     if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     if (SW_Domain->endyr < SW_Domain->startyr) {
         LogError(LogInfo, LOGERROR, "%s: Start Year > End Year", MyFileName);
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     // Check if start day of year was not found
@@ -434,12 +429,12 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     // Check bounding box coordinates
     if (GT(SW_Domain->min_x, SW_Domain->max_x)) {
         LogError(LogInfo, LOGERROR, "Domain.in: bbox x-axis min > max.");
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     if (GT(SW_Domain->min_y, SW_Domain->max_y)) {
         LogError(LogInfo, LOGERROR, "Domain.in: bbox y-axis min > max.");
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     // Check if scope value is out of range
@@ -452,8 +447,9 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             MyFileName,
             SW_Domain->SW_SpinUp.scope
         );
-        return; // Exit function prematurely due to error
     }
+
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**

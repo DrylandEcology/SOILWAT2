@@ -1359,7 +1359,7 @@ void SW_SIT_read(
             }
 
             if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
         }
 
@@ -1503,8 +1503,7 @@ void SW_SIT_read(
             SW_Site->site_swrc_type =
                 encode_str2swrc(SW_Site->site_swrc_name, LogInfo);
             if (LogInfo->stopRun) {
-                CloseFile(&f, LogInfo);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             break;
         case 38:
@@ -1529,17 +1528,16 @@ void SW_SIT_read(
             if (x == 2) {
                 region = sw_strtoi(rgnStr[0], MyFileName, LogInfo);
                 if (LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
+                    goto closeFile;
                 }
 
                 rgnlow = sw_strtoi(rgnStr[1], MyFileName, LogInfo);
                 if (LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
+                    goto closeFile;
                 }
             }
 
             if (x < 2 || region < 1 || rgnlow < 1) {
-                CloseFile(&f, LogInfo);
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -1547,7 +1545,7 @@ void SW_SIT_read(
                     MyFileName,
                     lineno
                 );
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             SW_Site->TranspRgnBounds[region - 1] = (LyrIndex) (rgnlow - 1);
             SW_Site->n_transp_rgn++;
@@ -1558,8 +1556,6 @@ void SW_SIT_read(
 
 Label_End_Read:
 
-    CloseFile(&f, LogInfo);
-
     if (LT(SW_Site->percentRunoff, 0.) || GT(SW_Site->percentRunoff, 1.)) {
         LogError(
             LogInfo,
@@ -1569,7 +1565,7 @@ Label_End_Read:
             MyFileName,
             SW_Site->percentRunoff
         );
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     if (LT(SW_Site->percentRunon, 0.)) {
@@ -1581,7 +1577,7 @@ Label_End_Read:
             MyFileName,
             SW_Site->percentRunon
         );
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     if (too_many_regions) {
@@ -1594,7 +1590,7 @@ Label_End_Read:
             SW_Site->n_transp_rgn,
             MAX_TRANSP_REGIONS
         );
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     /* check for any discontinuities (reversals) in the transpiration regions */
@@ -1606,9 +1602,11 @@ Label_End_Read:
                 "%s : Discontinuity/reversal in transpiration regions.\n",
                 InFiles[eSite]
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
     }
+
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /** Reads soil layers and soil properties from input file
@@ -1677,7 +1675,6 @@ void SW_LYR_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
         /* Check that we have 12 values per layer */
         /* Adjust number if new variables are added */
         if (x != 12) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -1685,7 +1682,7 @@ void SW_LYR_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
                 MyFileName,
                 lyrno + 1
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
 
         /* Convert float strings to floats */
@@ -1693,7 +1690,7 @@ void SW_LYR_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
             *(inFloatVals[index]) =
                 sw_strtof(inFloatStrs[index], MyFileName, LogInfo);
             if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
         }
 
@@ -1714,7 +1711,6 @@ void SW_LYR_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
         SW_Site->avgLyrTempInit[lyrno] = soiltemp;
 
         if (lyrno >= MAX_LAYERS) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -1724,11 +1720,11 @@ void SW_LYR_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
                 lyrno + 1,
                 MAX_LAYERS
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
     }
 
-    CloseFile(&f, LogInfo);
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**
@@ -1986,7 +1982,6 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
 
         /* Check that we have n = `SWRC_PARAM_NMAX` values per layer */
         if (x != SWRC_PARAM_NMAX) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -1995,7 +1990,7 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
                 x,
                 SWRC_PARAM_NMAX
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
 
         /* Convert float strings to floats */
@@ -2003,13 +1998,12 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
             tmp_swrcp[index] =
                 sw_strtof(swrcpFloatStrs[index], MyFileName, LogInfo);
             if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
         }
 
         /* Check that we are within `SW_Site.n_layers` */
         if (lyrno >= SW_Site->n_layers) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -2019,7 +2013,7 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
                 lyrno + 1,
                 SW_Site->n_layers
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
 
         /* Copy values into structure */
@@ -2030,7 +2024,7 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
         lyrno++;
     }
 
-    CloseFile(&f, LogInfo);
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**

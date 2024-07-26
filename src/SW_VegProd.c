@@ -200,7 +200,6 @@ void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *InFiles[], LOG_INFO *LogInfo) {
             expectedNumInVals = (lineno >= 4) ? NVEGTYPES : NVEGTYPES + 1;
 
             if (x < expectedNumInVals) {
-                CloseFile(&f, LogInfo);
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -209,20 +208,20 @@ void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *InFiles[], LOG_INFO *LogInfo) {
                     lineErrStrings[lineno - 1],
                     MyFileName
                 );
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
 
             ForEachVegType(k) {
                 help_veg[k] = sw_strtof(vegStrs[k], MyFileName, LogInfo);
                 if (LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
+                    goto closeFile;
                 }
             }
 
             if (x == NVEGTYPES + 1) {
                 help_bareGround = sw_strtof(bareGroundStr, MyFileName, LogInfo);
                 if (LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
+                    goto closeFile;
                 }
             }
         }
@@ -232,7 +231,6 @@ void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *InFiles[], LOG_INFO *LogInfo) {
             case 1:
                 x = sscanf(inbuf, "%19s", vegMethodStr);
                 if (x != 1) {
-                    CloseFile(&f, LogInfo);
                     LogError(
                         LogInfo,
                         LOGERROR,
@@ -240,13 +238,13 @@ void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *InFiles[], LOG_INFO *LogInfo) {
                         lineErrStrings[0],
                         MyFileName
                     );
-                    return; // Exit function prematurely due to error
+                    goto closeFile;
                 }
 
                 SW_VegProd->veg_method =
                     sw_strtoi(vegMethodStr, MyFileName, LogInfo);
                 if (LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
+                    goto closeFile;
                 }
                 break;
 
@@ -457,7 +455,6 @@ void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *InFiles[], LOG_INFO *LogInfo) {
             );
 
             if (x < NVEGTYPES) {
-                CloseFile(&f, LogInfo);
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -465,14 +462,14 @@ void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *InFiles[], LOG_INFO *LogInfo) {
                     mon + 1,
                     MyFileName
                 );
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
 
             for (index = 0; index < numMonthVals; index++) {
                 *(monBioVals[index]) =
                     sw_strtof(vegStrs[index], MyFileName, LogInfo);
                 if (LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
+                    goto closeFile;
                 }
             }
 
@@ -516,7 +513,7 @@ void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *InFiles[], LOG_INFO *LogInfo) {
 
     SW_VPD_fix_cover(SW_VegProd, LogInfo);
 
-    CloseFile(&f, LogInfo);
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**

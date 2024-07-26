@@ -1323,7 +1323,7 @@ void SW_SWC_read(
         if (convertInput) {
             inBufintRes = sw_strtoi(inbuf, MyFileName, LogInfo);
             if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
         }
 
@@ -1334,8 +1334,7 @@ void SW_SWC_read(
         case 1:
             SW_SoilWat->hist.file_prefix = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
-                CloseFile(&f, LogInfo);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             break;
         case 2:
@@ -1351,16 +1350,14 @@ void SW_SWC_read(
                 "SW_SWC_read(): incorrect format of input file '%s'.",
                 MyFileName
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
             break;
         }
         lineno++;
     }
 
-    CloseFile(&f, LogInfo);
-
     if (!SW_SoilWat->hist_use) {
-        return;
+        goto closeFile;
     }
     if (lineno < nitems) {
         LogError(
@@ -1369,17 +1366,19 @@ void SW_SWC_read(
             "%s : Insufficient parameters specified.",
             MyFileName
         );
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
     if (SW_SoilWat->hist.method < 1 || SW_SoilWat->hist.method > 2) {
         LogError(
             LogInfo, LOGERROR, "%s : Invalid swc adjustment method.", MyFileName
         );
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
     SW_SoilWat->hist.yr.last = endyr;
     SW_SoilWat->hist.yr.total =
         SW_SoilWat->hist.yr.last - SW_SoilWat->hist.yr.first + 1;
+
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**
@@ -1437,11 +1436,6 @@ void read_swc_hist(
         fname, MAX_FILENAMESIZE, "%s.%4d", SoilWat_hist->file_prefix, year
     );
 
-    if (!FileExists(fname)) {
-        LogError(LogInfo, LOGWARN, "Historical SWC file %s not found.", fname);
-        return; // Exit function prematurely due to error
-    }
-
     f = OpenFile(fname, "r", LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -1461,7 +1455,6 @@ void read_swc_hist(
         );
 
         if (x < 4) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -1470,10 +1463,9 @@ void read_swc_hist(
                 fname,
                 recno
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
         if (x > 4) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -1482,24 +1474,23 @@ void read_swc_hist(
                 fname,
                 recno
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
 
         for (index = 0; index < numInValsPerType; index++) {
             *(inBufIntVals[index]) = sw_strtoi(varStrs[index], fname, LogInfo);
             if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
 
             *(inBufFloatVals[index]) =
                 sw_strtof(varStrs[index + 2], fname, LogInfo);
             if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
         }
 
         if (doy < 1 || doy > MAX_DAYS) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -1507,10 +1498,9 @@ void read_swc_hist(
                 fname,
                 recno
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
         if (lyr < 1 || lyr > MAX_LAYERS) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -1520,13 +1510,14 @@ void read_swc_hist(
                 MAX_LAYERS,
                 recno
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
 
         SoilWat_hist->swc[doy - 1][lyr - 1] = swc;
         SoilWat_hist->std_err[doy - 1][lyr - 1] = st_err;
     }
-    CloseFile(&f, LogInfo);
+
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**

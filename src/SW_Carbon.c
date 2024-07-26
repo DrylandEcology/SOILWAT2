@@ -130,12 +130,12 @@ void SW_CBN_read(
                 "Not enough values when reading in the year from %s.",
                 MyFileName
             );
-            return; /* Exit prematurely due to error */
+            goto closeFile;
         }
 
         year = sw_strtoi(yearStr, MyFileName, LogInfo);
         if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
 
         // Find scenario
@@ -150,12 +150,12 @@ void SW_CBN_read(
                     "scenario from %s.",
                     MyFileName
                 );
-                return; /* Exit prematurely due to error */
+                goto closeFile;
             }
 
             year = sw_strtoi(yearStr, MyFileName, LogInfo);
             if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
 
             /* Silence clang-tidy clang-analyzer-deadcode.DeadStores */
@@ -180,21 +180,20 @@ void SW_CBN_read(
                 "ppm from %s.",
                 MyFileName
             );
-            return; /* Exit prematurely due to error */
+            goto closeFile;
         }
 
         year = sw_strtoi(yearStr, MyFileName, LogInfo);
         if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
 
         ppm = sw_strtod(ppmStr, MyFileName, LogInfo);
         if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
 
         if (year < 0) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -204,7 +203,7 @@ void SW_CBN_read(
                 year,
                 SW_Carbon->scenario
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
 
         SW_Carbon->ppm[year] = ppm;
@@ -224,7 +223,6 @@ void SW_CBN_read(
            1][year].grass != 1.0, due to floating point precision and the chance
            that a multiplier of 1.0 was actually calculated */
         if (existing_years[year] != 0) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -234,13 +232,10 @@ void SW_CBN_read(
                 year,
                 SW_Carbon->scenario
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
         existing_years[year] = 1;
     }
-
-    CloseFile(&f, LogInfo);
-
 
     /* Error checking */
 
@@ -255,7 +250,7 @@ void SW_CBN_read(
             " debugging purposes, SOILWAT2 read in file '%s'\n",
             MyFileName
         );
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     // A scenario must be found in order for ppm to have a positive value
@@ -267,7 +262,7 @@ void SW_CBN_read(
             " was not found in carbon.in\n",
             SW_Carbon->scenario
         );
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     // Ensure that the desired years were calculated
@@ -282,9 +277,11 @@ void SW_CBN_read(
                 year,
                 SW_Carbon->scenario
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
     }
+
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**

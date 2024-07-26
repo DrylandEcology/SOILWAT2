@@ -1735,7 +1735,7 @@ void SW_WTH_setup(
             }
 
             if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
         }
 
@@ -1776,7 +1776,6 @@ void SW_WTH_setup(
                 break;
 
             default:
-                CloseFile(&f, LogInfo);
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -1785,7 +1784,7 @@ void SW_WTH_setup(
                     MyFileName,
                     inBufintRes
                 );
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             break;
 
@@ -1886,11 +1885,10 @@ void SW_WTH_setup(
             );
 
             if (x != numInDefaultVars) {
-                CloseFile(&f, LogInfo);
                 LogError(
                     LogInfo, LOGERROR, "%s : Bad record %d.", MyFileName, lineno
                 );
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
 
             for (index = 0; index < numInDefaultVars; index++) {
@@ -1922,7 +1920,6 @@ void SW_WTH_setup(
     }
 
     strcpy(SW_Weather->name_prefix, weather_prefix);
-    CloseFile(&f, LogInfo);
 
     if (lineno < nitems) {
         LogError(LogInfo, LOGERROR, "%s : Too few input lines.", MyFileName);
@@ -1943,6 +1940,8 @@ void SW_WTH_setup(
         dailyInputFlags,
         LogInfo
     );
+
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**
@@ -2266,7 +2265,6 @@ void read_weather_hist(
         );
 
         if (x != n_input_forcings + 1) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -2275,10 +2273,9 @@ void read_weather_hist(
                 lineno,
                 doy
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
         if (x > MAX_INPUT_COLUMNS + 1) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -2287,7 +2284,7 @@ void read_weather_hist(
                 lineno,
                 doy
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
 
         for (index = 0; index < n_input_forcings + 1; index++) {
@@ -2299,13 +2296,11 @@ void read_weather_hist(
             }
 
             if (LogInfo->stopRun) {
-                CloseFile(&f, LogInfo);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
         }
 
         if (doy < 1 || doy > MAX_DAYS) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -2313,7 +2308,7 @@ void read_weather_hist(
                 fname,
                 lineno
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
 
         /* --- Make the assignments ---- */
@@ -2517,14 +2512,7 @@ void read_weather_hist(
           }
     */
 
-    if (fclose(f) == EOF) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "read_weather_hist: could not close file %s.",
-            fname
-        );
-    }
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 void initializeClimatePtrs(

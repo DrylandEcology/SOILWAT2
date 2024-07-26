@@ -532,6 +532,8 @@ Bool SW_MKV_read_prob(
     char inbuf[MAX_FILENAMESIZE];
     char dayStr[4] = {'\0'}, inFloatStrs[4][20] = {{'\0'}};
 
+    Bool result = swTRUE;
+
     /* note that Files.read() must be called prior to this. */
     char *MyFileName = InFiles[eMarkovProb];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -556,20 +558,21 @@ Bool SW_MKV_read_prob(
 
         day = sw_strtoi(dayStr, MyFileName, LogInfo);
         if (LogInfo->stopRun) {
-            return swFALSE; // Exit function prematurely due to error
+            result = swFALSE;
+            goto closeFile;
         }
 
         for (index = 0; index < numFloatInStrings; index++) {
             *(floatVals[index]) =
                 sw_strtof(inFloatStrs[index], MyFileName, LogInfo);
             if (LogInfo->stopRun) {
-                return swFALSE; // Exit function prematurely due to error
+                result = swFALSE;
+                goto closeFile;
             }
         }
 
         // Check that text file is ok:
         if (x < nitems) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -578,14 +581,14 @@ Bool SW_MKV_read_prob(
                 lineno,
                 MyFileName
             );
-            return swFALSE; // Exit function prematurely due to error
+            result = swFALSE;
+            goto closeFile;
         }
 
         // Check that input values meet requirements:
 
         // day is a real calendar day
         if (!isfinite((float) day) || day < 1 || day > MAX_DAYS) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -595,13 +598,13 @@ Bool SW_MKV_read_prob(
                 lineno,
                 MyFileName
             );
-            return swFALSE; // Exit function prematurely due to error
+            result = swFALSE;
+            goto closeFile;
         }
 
         // Probabilities are in [0, 1]
         if (!isfinite(wet) || LT(wet, 0.) || GT(wet, 1.) || !isfinite(dry) ||
             LT(dry, 0.) || GT(dry, 1.)) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -613,12 +616,12 @@ Bool SW_MKV_read_prob(
                 lineno,
                 MyFileName
             );
-            return swFALSE; // Exit function prematurely due to error
+            result = swFALSE;
+            goto closeFile;
         }
 
         // Mean and SD of daily precipitation are >= 0
         if (!isfinite(avg) || LT(avg, 0.) || !isfinite(std) || LT(std, 0.)) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -630,7 +633,8 @@ Bool SW_MKV_read_prob(
                 lineno,
                 MyFileName
             );
-            return swFALSE; // Exit function prematurely due to error
+            result = swFALSE;
+            goto closeFile;
         }
 
         // Store values in `SW_Markov`
@@ -646,9 +650,9 @@ Bool SW_MKV_read_prob(
         SW_Markov->std_ppt[day] = std;
     }
 
-    CloseFile(&f, LogInfo);
+closeFile: { CloseFile(&f, LogInfo); }
 
-    return swTRUE;
+    return result;
 }
 
 /**
@@ -674,6 +678,7 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo) {
     };
     char weekStr[3] = {'\0'}, inFloatStrs[10][20] = {{'\0'}};
     const int numFloatVals = 10;
+    Bool result = swTRUE;
 
     char *MyFileName = InFiles[eMarkovCov];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -704,7 +709,6 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo) {
 
         // Check that text file is ok:
         if (x < nitems) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -713,25 +717,27 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo) {
                 lineno,
                 MyFileName
             );
-            return swFALSE; // Exit function prematurely due to error
+            result = swFALSE;
+            goto closeFile;
         }
 
         week = sw_strtoi(weekStr, MyFileName, LogInfo);
         if (LogInfo->stopRun) {
-            return swFALSE; // Exit function prematurely due to error
+            result = swFALSE;
+            goto closeFile;
         }
 
         for (index = 0; index < numFloatVals; index++) {
             *(floatVals[index]) =
                 sw_strtof(inFloatStrs[index], MyFileName, LogInfo);
             if (LogInfo->stopRun) {
-                return swFALSE; // Exit function prematurely due to error
+                result = swFALSE;
+                goto closeFile;
             }
         }
 
         // week is a real calendar week
         if (!isfinite((float) week) || week < 1 || week > MAX_WEEKS) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -741,12 +747,12 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo) {
                 lineno,
                 MyFileName
             );
-            return swFALSE; // Exit function prematurely due to error
+            result = swFALSE;
+            goto closeFile;
         }
 
         // Mean weekly temperature values are real numbers
         if (!isfinite(t1) || !isfinite(t2)) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -758,12 +764,12 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo) {
                 lineno,
                 MyFileName
             );
-            return swFALSE; // Exit function prematurely due to error
+            result = swFALSE;
+            goto closeFile;
         }
 
         // Covariance values are finite
         if (!isfinite(t3) || !isfinite(t4) || !isfinite(t5) || !isfinite(t6)) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -777,13 +783,13 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo) {
                 lineno,
                 MyFileName
             );
-            return swFALSE; // Exit function prematurely due to error
+            result = swFALSE;
+            goto closeFile;
         }
 
         // Correction factors are real numbers
         if (!isfinite(cfxw) || !isfinite(cfxd) || !isfinite(cfnw) ||
             !isfinite(cfnd)) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -797,7 +803,8 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo) {
                 lineno,
                 MyFileName
             );
-            return swFALSE; // Exit function prematurely due to error
+            result = swFALSE;
+            goto closeFile;
         }
 
         // Store values in `SW_Markov`
@@ -825,9 +832,9 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo) {
         SW_Markov->cfnd[week] = cfnd;
     }
 
-    CloseFile(&f, LogInfo);
+closeFile: { CloseFile(&f, LogInfo); }
 
-    return swTRUE;
+    return result;
 }
 
 void SW_MKV_setup(

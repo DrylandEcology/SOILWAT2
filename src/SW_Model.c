@@ -133,7 +133,7 @@ void SW_MDL_read(SW_MODEL *SW_Model, char *InFiles[], LOG_INFO *LogInfo) {
         if (lineno <= 4) {
             value = sw_strtod(inbuf, MyFileName, LogInfo);
             if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
         }
 
@@ -170,14 +170,14 @@ void SW_MDL_read(SW_MODEL *SW_Model, char *InFiles[], LOG_INFO *LogInfo) {
                 "More lines read than expected."
                 "Please double check your `modelrun.in` file."
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
 
             break;
         }
         lineno++;
     }
 
-    CloseFile(&f, LogInfo);
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**

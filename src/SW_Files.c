@@ -129,8 +129,7 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
         case 20:
             PathInfo->InFiles[eOutputDaily] = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
-                CloseFile(&f, LogInfo);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             ++fileno;
             SW_CSV_F_INIT(PathInfo->InFiles[eOutputDaily], LogInfo);
@@ -138,8 +137,7 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
         case 21:
             PathInfo->InFiles[eOutputWeekly] = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
-                CloseFile(&f, LogInfo);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             ++fileno;
             SW_CSV_F_INIT(PathInfo->InFiles[eOutputWeekly], LogInfo);
@@ -148,8 +146,7 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
         case 22:
             PathInfo->InFiles[eOutputMonthly] = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
-                CloseFile(&f, LogInfo);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             ++fileno;
             SW_CSV_F_INIT(PathInfo->InFiles[eOutputMonthly], LogInfo);
@@ -158,8 +155,7 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
         case 23:
             PathInfo->InFiles[eOutputYearly] = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
-                CloseFile(&f, LogInfo);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             ++fileno;
             SW_CSV_F_INIT(PathInfo->InFiles[eOutputYearly], LogInfo);
@@ -167,8 +163,7 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
         case 24:
             PathInfo->InFiles[eOutputDaily_soil] = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
-                CloseFile(&f, LogInfo);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             ++fileno;
             SW_CSV_F_INIT(PathInfo->InFiles[eOutputDaily_soil], LogInfo);
@@ -177,8 +172,7 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
         case 25:
             PathInfo->InFiles[eOutputWeekly_soil] = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
-                CloseFile(&f, LogInfo);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             ++fileno;
             SW_CSV_F_INIT(PathInfo->InFiles[eOutputWeekly_soil], LogInfo);
@@ -187,8 +181,7 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
         case 26:
             PathInfo->InFiles[eOutputMonthly_soil] = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
-                CloseFile(&f, LogInfo);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             ++fileno;
             SW_CSV_F_INIT(PathInfo->InFiles[eOutputMonthly_soil], LogInfo);
@@ -197,8 +190,7 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
         case 27:
             PathInfo->InFiles[eOutputYearly_soil] = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
-                CloseFile(&f, LogInfo);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             ++fileno;
             SW_CSV_F_INIT(PathInfo->InFiles[eOutputYearly_soil], LogInfo);
@@ -217,33 +209,29 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
             strcat(buf, inbuf);
             PathInfo->InFiles[fileno] = Str_Dup(buf, LogInfo);
             if (LogInfo->stopRun) {
-                CloseFile(&f, LogInfo);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
         }
 
         // Check if something went wrong in `SW_CSV_F_INIT()`
         if (LogInfo->stopRun) {
-            CloseFile(&f, LogInfo);
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
 
         lineno++;
     }
 
-    CloseFile(&f, LogInfo);
-
     if (fileno < eEndFile - 1) {
         LogError(
             LogInfo, LOGERROR, "Too few files (%d) in %s", fileno, MyFileName
         );
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     if (!DirExists(PathInfo->output_prefix)) {
         MkDir(PathInfo->output_prefix, LogInfo);
         if (LogInfo->stopRun) {
-            return; // Exit prematurely due to error
+            goto closeFile;
         }
     }
 
@@ -256,6 +244,8 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
         LogInfo->logfp = OpenFile(PathInfo->InFiles[eLog], "w", LogInfo);
     }
 #endif
+
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 void SW_F_deepCopy(PATH_INFO *source, PATH_INFO *dest, LOG_INFO *LogInfo) {

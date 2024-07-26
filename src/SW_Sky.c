@@ -98,7 +98,6 @@ void SW_SKY_read(char *InFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
         );
 
         if (x != 12) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -106,13 +105,13 @@ void SW_SKY_read(char *InFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
                 MyFileName,
                 lineno
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
 
         for (index = 0; index < MAX_MONTHS; index++) {
             tmp[index] = sw_strtod(tmpStrs[index], MyFileName, LogInfo);
             if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
         }
 
@@ -144,7 +143,6 @@ void SW_SKY_read(char *InFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
             break;
 
         default:
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -152,14 +150,15 @@ void SW_SKY_read(char *InFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
                 MyFileName,
                 lineno
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
+
             break;
         }
 
         lineno++;
     }
 
-    CloseFile(&f, LogInfo);
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**

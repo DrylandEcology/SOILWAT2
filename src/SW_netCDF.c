@@ -270,7 +270,7 @@ static void nc_read_atts(
                 "Not enough values for a valid key-value pair in %s.",
                 MyFileName
             );
-            return; /* Exit prematurely due to error */
+            goto closeFile;
         }
 
         // Check if the key is "long_name" or "crs_wkt"
@@ -286,7 +286,7 @@ static void nc_read_atts(
                     "Not enough values for a valid key-value pair in %s.",
                     MyFileName
                 );
-                return; /* Exit prematurely due to error */
+                goto closeFile;
             }
         }
 
@@ -308,7 +308,7 @@ static void nc_read_atts(
             }
 
             if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
         }
 
@@ -342,8 +342,7 @@ static void nc_read_atts(
                     "geographic and projected.",
                     value
                 );
-                CloseFile(&f, LogInfo);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             break;
         case 6:
@@ -407,17 +406,17 @@ static void nc_read_atts(
                     LOGERROR,
                     "Not enough values to read in for the standard parallel(s)."
                 );
-                return; /* Exit prematurely due to error */
+                goto closeFile;
             }
 
             num1 = sw_strtod(numOneStr, MyFileName, LogInfo);
             if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
 
             num2 = sw_strtod(numTwoStr, MyFileName, LogInfo);
             if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
 
             SW_netCDF->crs_projsc.standard_parallel[0] = num1;
@@ -445,7 +444,7 @@ static void nc_read_atts(
                     LogError(
                         LogInfo, LOGERROR, "The value for 'strideOutYears' <= 0"
                     );
-                    return; // Exit function due to invalid input
+                    goto closeFile;
                 }
             }
             break;
@@ -465,12 +464,9 @@ static void nc_read_atts(
         }
 
         if (LogInfo->stopRun) {
-            CloseFile(&f, LogInfo);
-            return; // Exist function prematurely due to error
+            goto closeFile;
         }
     }
-
-    CloseFile(&f, LogInfo);
 
 
     // Check if all required input was provided
@@ -478,7 +474,7 @@ static void nc_read_atts(
         hasKeys, requiredKeys, possibleKeys, NUM_ATT_IN_KEYS, LogInfo
     );
     if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
 
@@ -492,7 +488,7 @@ static void nc_read_atts(
             PathInfo->InFiles[eNCInAtt],
             (SW_netCDF->primary_crs_is_geographic) ? "geographic" : "projected"
         );
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     if (projCRSFound && !geoCRSFound) {
@@ -506,13 +502,15 @@ static void nc_read_atts(
             "'projected' with a geographic CRS.",
             PathInfo->InFiles[eNCInAtt]
         );
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     SW_netCDF->coordinate_system =
         (SW_netCDF->primary_crs_is_geographic) ?
             Str_Dup(SW_netCDF->crs_geogsc.long_name, LogInfo) :
             Str_Dup(SW_netCDF->crs_projsc.long_name, LogInfo);
+
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**
@@ -4695,7 +4693,7 @@ void SW_NC_read(SW_NETCDF *SW_netCDF, PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
                 "name, path to input).",
                 MyFileName
             );
-            return; /* Exit prematurely due to error */
+            goto closeFile;
         }
 
         keyID = key_to_id(key, possibleKeys, NUM_NC_IN_KEYS);
@@ -4724,18 +4722,18 @@ void SW_NC_read(SW_NETCDF *SW_netCDF, PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
         }
     }
 
-    CloseFile(&f, LogInfo);
-
     // Check if all required input was provided
     check_requiredKeys(
         hasKeys, requiredKeys, possibleKeys, NUM_NC_IN_KEYS, LogInfo
     );
     if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     // Read CRS and attributes for netCDFs
     nc_read_atts(SW_netCDF, PathInfo, LogInfo);
+
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**

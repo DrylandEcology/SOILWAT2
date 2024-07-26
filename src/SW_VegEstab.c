@@ -316,19 +316,17 @@ void SW_VES_read2(
                 strcat(buf, inbuf);
                 read_spp(buf, SW_VegEstab, LogInfo);
                 if (LogInfo->stopRun) {
-                    CloseFile(&f, LogInfo);
-                    return; // Exit function prematurely due to error
+                    goto closeFile;
                 }
             }
 
             SW_VegEstab_alloc_outptrs(SW_VegEstab, LogInfo);
             if (LogInfo->stopRun) {
-                CloseFile(&f, LogInfo);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
         }
 
-        CloseFile(&f, LogInfo);
+    closeFile: { CloseFile(&f, LogInfo); }
     }
 }
 
@@ -607,7 +605,7 @@ static void read_spp(
             }
 
             if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
         }
 
@@ -667,14 +665,13 @@ static void read_spp(
                 "read_spp(): incorrect format of input file '%s'.",
                 infile
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
             break;
         }
 
         /* check for valid name first */
         if (0 == lineno) {
             if (strlen(name) > MAX_SPECIESNAMELEN) {
-                CloseFile(&f, LogInfo);
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -684,7 +681,7 @@ static void read_spp(
                     name,
                     MAX_SPECIESNAMELEN
                 );
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
 
             strcpy(v->sppname, name);
@@ -693,14 +690,13 @@ static void read_spp(
         lineno++; /*only increments when there's a value */
     }
 
-    CloseFile(&f, LogInfo);
-
     if (lineno != nitems) {
         LogError(
             LogInfo, LOGERROR, "%s : Too few/many input parameters.\n", infile
         );
-        return; // Exit function prematurely due to error
     }
+
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**
