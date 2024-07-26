@@ -167,7 +167,7 @@ void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *InFiles[], LOG_INFO *LogInfo) {
     const int line_help = 28;
     RealF help_veg[NVEGTYPES], help_bareGround = 0., litt, biom, pctl, laic;
     RealF *monBioVals[] = {&litt, &biom, &pctl, &laic};
-    char *MyFileName, inbuf[MAX_FILENAMESIZE], *endPtr;
+    char *MyFileName, inbuf[MAX_FILENAMESIZE];
     char vegStrs[NVEGTYPES][20] = {{'\0'}}, bareGroundStr[20] = {'\0'};
     char *startOfErrMsg;
     char vegMethodStr[20] = {'\0'};
@@ -213,16 +213,14 @@ void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *InFiles[], LOG_INFO *LogInfo) {
             }
 
             ForEachVegType(k) {
-                help_veg[k] = strtof(vegStrs[k], &endPtr);
-                check_errno(MyFileName, vegStrs[k], endPtr, LogInfo);
+                help_veg[k] = sw_strtof(vegStrs[k], MyFileName, LogInfo);
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }
             }
 
             if (x == NVEGTYPES + 1) {
-                help_bareGround = strtof(bareGroundStr, &endPtr);
-                check_errno(MyFileName, bareGroundStr, endPtr, LogInfo);
+                help_bareGround = sw_strtof(bareGroundStr, MyFileName, LogInfo);
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }
@@ -246,8 +244,7 @@ void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *InFiles[], LOG_INFO *LogInfo) {
                 }
 
                 SW_VegProd->veg_method =
-                    (int) strtol(vegMethodStr, &endPtr, 10);
-                check_errno(MyFileName, vegMethodStr, endPtr, LogInfo);
+                    sw_strtoi(vegMethodStr, MyFileName, LogInfo);
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }
@@ -472,8 +469,8 @@ void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *InFiles[], LOG_INFO *LogInfo) {
             }
 
             for (index = 0; index < numMonthVals; index++) {
-                *(monBioVals[index]) = strtof(vegStrs[index], &endPtr);
-                check_errno(MyFileName, vegStrs[index], endPtr, LogInfo);
+                *(monBioVals[index]) =
+                    sw_strtof(vegStrs[index], MyFileName, LogInfo);
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }

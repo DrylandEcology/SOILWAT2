@@ -169,7 +169,6 @@ int setup_testGlobalSoilwatTemplate() {
 
     // userSUID: 0 means no user input for suid, i.e., entire simulation domain
     userSUID = 0;
-    errno = 0;
 
     SW_CTL_setup_domain(userSUID, &template_SW_Domain, &LogInfo);
     if (LogInfo.stopRun) {

@@ -2802,7 +2802,7 @@ void SW_OUT_read(
     char msg[200];
     /* space for uppercase conversion */
     char upkey[50], upsum[4];
-    char inbuf[MAX_FILENAMESIZE], *endPtr;
+    char inbuf[MAX_FILENAMESIZE];
     int first, last = -1; /* first doy for output */
 
     char *MyFileName = InFiles[eOutput];
@@ -2916,15 +2916,13 @@ void SW_OUT_read(
         outfile[0] = '\0';
 #endif
 
-        first = (int) strtol(firstStr, &endPtr, 10);
-        check_errno(MyFileName, firstStr, endPtr, LogInfo);
+        first = sw_strtoi(firstStr, MyFileName, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
         if (Str_CompareI(lastStr, (char *) "END") != 0) {
-            last = (int) strtol(lastStr, &endPtr, 10);
-            check_errno(MyFileName, lastStr, endPtr, LogInfo);
+            last = sw_strtoi(lastStr, MyFileName, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }

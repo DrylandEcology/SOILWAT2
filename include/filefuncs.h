@@ -47,9 +47,17 @@ void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...);
 
 void sw_message(const char *msg);
 
-void check_errno(
-    const char *valMsg1, char *valMsg2, const char *endPtr, LOG_INFO *LogInfo
+unsigned long int sw_strtoul(
+    const char *str, const char *errMsg, LOG_INFO *LogInfo
 );
+
+long int sw_strtol(const char *str, const char *errMsg, LOG_INFO *LogInfo);
+
+int sw_strtoi(const char *str, const char *errMsg, LOG_INFO *LogInfo);
+
+double sw_strtod(const char *str, const char *errMsg, LOG_INFO *LogInfo);
+
+float sw_strtof(const char *str, const char *errMsg, LOG_INFO *LogInfo);
 
 int key_to_id(const char *key, const char **possibleKeys, int numPossKeys);
 

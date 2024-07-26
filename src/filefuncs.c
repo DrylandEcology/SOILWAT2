@@ -17,10 +17,12 @@
 #include <assert.h>                 // for assert
 #include <ctype.h>                  // for isspace
 #include <dirent.h>                 // for dirent, closedir, DIR, opendir, re...
-#include <errno.h>                  // for errno, ENOENT, ERANGE
+#include <errno.h>                  // for errno, ERANGE
+#include <limits.h>                 // for LONG_MIN, LONG_MAX, INT_MIN, INT_MAX
+#include <math.h>                   // for HUGE_VAL, HUGE_VALF
 #include <stdarg.h>                 // for va_end, va_start
 #include <stdio.h>                  // for NULL, fclose, FILE, fopen, EOF
-#include <stdlib.h>                 // for free
+#include <stdlib.h>                 // for free, strtod, strtof, strtol
 #include <string.h>                 // for strlen, strrchr, strcpy, strchr
 #include <sys/stat.h>               // for stat, mkdir, S_ISDIR, S_ISREG
 #include <unistd.h>                 // for chdir
@@ -249,66 +251,199 @@ void sw_message(const char *msg) {
 }
 
 /**
-@brief Throw error if `errno` or `endPtr` indicate an error
+@brief Convert string to unsigned long integer with error handling
 
-This function generates an error (via `LogInfo`) if
-    - errno is not equal to 0, or
-    - endPtr (resulting from a call to `strtod()` or related function)
-      is not empty or does not point to whitespace
+This function implements cert-err34-c
+"Detect errors when converting a string to a number".
 
-@param[in] valMsg1 First message string; for instance, the input file name
-    that contains the value that threw the error
-@param[in] valMsg2 Second message string; for instance, the input text
-    that caused the error when converting
-@param[in] endPtr Resulting pointer after attempting to convert a numeric
-    value, e.g., with a call to `strtod()` or related function
+@param[in] str Pointer to string to be converted.
+@param[in] errMsg Pointer to string included in error message.
 @param[out] LogInfo Holds information on warnings and errors
 */
-void check_errno(
-    const char *valMsg1, char *valMsg2, const char *endPtr, LOG_INFO *LogInfo
+unsigned long int sw_strtoul(
+    const char *str, const char *errMsg, LOG_INFO *LogInfo
 ) {
-    Bool failedStrToNum =
-        (Bool) (isnull(endPtr) ? swFALSE : (*endPtr != 0 && !isspace(*endPtr)));
+    unsigned long int resul = ULONG_MAX;
+    char *endStr;
 
-    const char *tmpMsg1 =
-        isnull(valMsg1) ? (const char *) "command-line arguments" : valMsg1;
+    errno = 0;
 
+    resul = strtoul(str, &endStr, 10);
 
-    if (errno == 0 && failedStrToNum) {
+    if (endStr == str || '\0' != *endStr) {
         LogError(
-            LogInfo, LOGERROR, "Processing '%s' within '%s'.", valMsg2, tmpMsg1
+            LogInfo,
+            LOGERROR,
+            "%s: converting '%s' to unsigned long integer failed.",
+            errMsg,
+            str
         );
 
-    } else if (errno != 0) {
-        switch (errno) {
-        case ERANGE:
+    } else if (ULONG_MAX == resul && ERANGE == errno) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "%s: '%s' out of range of type unsigned long integer.",
+            errMsg,
+            str
+        );
+    }
+
+    return resul;
+}
+
+/**
+@brief Convert string to long integer with error handling
+
+This function implements cert-err34-c
+"Detect errors when converting a string to a number".
+
+@param[in] str Pointer to string to be converted.
+@param[in] errMsg Pointer to string included in error message.
+@param[out] LogInfo Holds information on warnings and errors
+*/
+long int sw_strtol(const char *str, const char *errMsg, LOG_INFO *LogInfo) {
+    long int resl = LONG_MIN;
+    char *endStr;
+
+    errno = 0;
+
+    resl = strtol(str, &endStr, 10);
+
+    if (endStr == str || '\0' != *endStr) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "%s: converting '%s' to long integer failed.",
+            errMsg,
+            str
+        );
+
+    } else if ((LONG_MIN == resl || LONG_MAX == resl) && ERANGE == errno) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "%s: '%s' out of range of type long integer.",
+            errMsg,
+            str
+        );
+    }
+
+    return resl;
+}
+
+/**
+@brief Convert string to integer with error handling
+
+This function implements cert-err34-c
+"Detect errors when converting a string to a number".
+
+@param[in] str Pointer to string to be converted.
+@param[in] errMsg Pointer to string included in error message.
+@param[out] LogInfo Holds information on warnings and errors
+*/
+int sw_strtoi(const char *str, const char *errMsg, LOG_INFO *LogInfo) {
+    long int resl;
+    int resi = INT_MIN;
+
+    resl = sw_strtol(str, errMsg, LogInfo);
+
+    if (!LogInfo->stopRun) {
+        if (resl > INT_MAX || resl < INT_MIN) {
             LogError(
                 LogInfo,
                 LOGERROR,
-                "Processing '%s' within '%s': result too large.",
-                valMsg2,
-                tmpMsg1
+                "%s: '%s' out of range of type integer.",
+                errMsg,
+                str
             );
-            break;
 
-        case ENOENT:
-            LogError(
-                LogInfo, LOGERROR, "No such file or directory '%s'.", valMsg1
-            );
-            break;
-
-        default:
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "Processing '%s' within '%s': error code %d.",
-                valMsg2,
-                tmpMsg1,
-                errno
-            );
-            break;
+        } else {
+            resi = (int) resl;
         }
     }
+
+    return resi;
+}
+
+/**
+@brief Convert string to double with error handling
+
+This function implements cert-err34-c
+"Detect errors when converting a string to a number".
+
+@param[in] str Pointer to string to be converted.
+@param[in] errMsg Pointer to string included in error message.
+@param[out] LogInfo Holds information on warnings and errors
+*/
+double sw_strtod(const char *str, const char *errMsg, LOG_INFO *LogInfo) {
+    double resd = HUGE_VAL;
+    char *endStr;
+
+    errno = 0;
+
+    resd = strtod(str, &endStr);
+
+    if (endStr == str || '\0' != *endStr) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "%s: converting '%s' to double failed.",
+            errMsg,
+            str
+        );
+
+    } else if (HUGE_VAL == resd && ERANGE == errno) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "%s: '%s' out of range of type double.",
+            errMsg,
+            str
+        );
+    }
+
+    return resd;
+}
+
+/**
+@brief Convert string to float with error handling
+
+This function implements cert-err34-c
+"Detect errors when converting a string to a number".
+
+@param[in] str Pointer to string to be converted.
+@param[in] errMsg Pointer to string included in error message.
+@param[out] LogInfo Holds information on warnings and errors
+*/
+float sw_strtof(const char *str, const char *errMsg, LOG_INFO *LogInfo) {
+    float resf = HUGE_VALF;
+    char *endStr;
+
+    errno = 0;
+
+    resf = strtof(str, &endStr);
+
+    if (endStr == str || '\0' != *endStr) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "%s: converting '%s' to float failed.",
+            errMsg,
+            str
+        );
+
+    } else if (HUGE_VALF == resf && ERANGE == errno) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "%s: '%s' out of range of type float.",
+            errMsg,
+            str
+        );
+    }
+
+    return resf;
 }
 
 /**************************************************************/
@@ -380,7 +515,7 @@ FILE *OpenFile(const char *name, const char *mode, LOG_INFO *LogInfo) {
     fp = fopen(name, mode);
     if (isnull(fp)) {
         // Report error if file couldn't be opened
-        check_errno(name, NULL, NULL, LogInfo);
+        LogError(LogInfo, LOGERROR, "Cannot open file '%s'", name);
     }
     return (fp);
 }
@@ -419,9 +554,6 @@ Bool FileExists(const char *name) {
     if (0 == stat(name, &statbuf)) {
         result = S_ISREG(statbuf.st_mode) ? swTRUE : swFALSE;
     }
-
-    // we are not interested here in errno (-> reset); we return TRUE/FALSE
-    errno = 0;
 
     return (result);
 }
@@ -462,6 +594,7 @@ Bool ChDir(const char *dname) {
 #define mkdir(d, m) mkdir(d, m)
 #endif
 
+// Errors are reported via LogInfo
 void MkDir(const char *dname, LOG_INFO *LogInfo) {
     /* make a path with 'mkdir -p' -like behavior. provides an
      * interface for portability problems.
@@ -485,7 +618,6 @@ void MkDir(const char *dname, LOG_INFO *LogInfo) {
     char *c;            /* duplicate of dname so we don't change it */
     const char *delim = "\\/"; /* path separators */
     char buffer[MAX_ERROR];
-    int resMkdir = 0;
 
     int startIndex = 0, strLen = 0; // For `sw_strtok()`
 
@@ -509,13 +641,11 @@ void MkDir(const char *dname, LOG_INFO *LogInfo) {
     for (i = 0; i < n; i++) {
         strcat(buffer, a[i]);
         if (!DirExists(buffer)) {
-            resMkdir = mkdir(buffer, 0777);
-            if (0 == resMkdir) {
-                // directory successfully created -> reset errno
-                errno = 0;
-            } else {
+            if (0 != mkdir(buffer, 0777)) {
                 // directory failed to create -> report error
-                check_errno(buffer, NULL, NULL, LogInfo);
+                LogError(
+                    LogInfo, LOGERROR, "Failed to create directory '%s'", buffer
+                );
                 goto freeMem; // Exit function prematurely due to error
             }
         }
@@ -539,7 +669,6 @@ Bool RemoveFiles(const char *fspec, LOG_INFO *LogInfo) {
      *   eg: /here/now/fi*les, /here/now/files*
      *   or /here/now/files
      * Returns TRUE if all files removed, FALSE otherwise.
-     * Check errno if return is FALSE.
      */
 
     char **flist, fname[FILENAME_MAX];

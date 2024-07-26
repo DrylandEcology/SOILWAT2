@@ -233,7 +233,7 @@ static void nc_read_atts(
     Bool hasKeys[NUM_ATT_IN_KEYS] = {swFALSE};
 
     FILE *f;
-    char inbuf[LARGE_VALUE], value[LARGE_VALUE], *endPtr;
+    char inbuf[LARGE_VALUE], value[LARGE_VALUE];
     char key[35]; // 35 - Max key size
     char *MyFileName;
     int keyID;
@@ -302,12 +302,11 @@ static void nc_read_atts(
 
         if (doIntConv || doDoubleConv) {
             if (doIntConv) {
-                inBufintRes = (int) strtol(value, &endPtr, 10);
+                inBufintRes = sw_strtoi(value, MyFileName, LogInfo);
             } else {
-                inBufdoubleRes = strtod(value, &endPtr);
+                inBufdoubleRes = sw_strtod(value, MyFileName, LogInfo);
             }
 
-            check_errno(MyFileName, value, endPtr, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
@@ -411,14 +410,12 @@ static void nc_read_atts(
                 return; /* Exit prematurely due to error */
             }
 
-            num1 = strtod(numOneStr, &endPtr);
-            check_errno(MyFileName, numOneStr, endPtr, LogInfo);
+            num1 = sw_strtod(numOneStr, MyFileName, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
 
-            num2 = strtod(numTwoStr, &endPtr);
-            check_errno(MyFileName, numTwoStr, endPtr, LogInfo);
+            num2 = sw_strtod(numTwoStr, MyFileName, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
@@ -4781,7 +4778,7 @@ void SW_NC_read_out_vars(
     int varNumUnits;
     int index, estVar;
     char *copyStr = NULL;
-    char input[NOUT_VAR_INPUTS][MAX_ATTVAL_SIZE] = {"\0"}, *endPtr;
+    char input[NOUT_VAR_INPUTS][MAX_ATTVAL_SIZE] = {"\0"};
     char establn[MAX_ATTVAL_SIZE] = {"\0"};
     int scanRes = 0, defToLocalInd = 0;
     // in readLineFormat: 255 must be equal to MAX_ATTVAL_SIZE - 1
@@ -4848,8 +4845,7 @@ void SW_NC_read_out_vars(
         // Check if the variable was requested to be output
         // Store attribute information for each variable (including names)
 
-        doOutputVal = (int) strtol(input[doOutInd], &endPtr, 10);
-        check_errno(MyFileName, input[doOutInd], endPtr, LogInfo);
+        doOutputVal = sw_strtoi(input[doOutInd], MyFileName, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }

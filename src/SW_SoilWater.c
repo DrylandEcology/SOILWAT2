@@ -1307,7 +1307,7 @@ void SW_SWC_read(
      */
     FILE *f;
     int lineno = 0, nitems = 4;
-    char inbuf[MAX_FILENAMESIZE], *endPtr;
+    char inbuf[MAX_FILENAMESIZE];
     int inBufintRes = 0;
     Bool convertInput;
 
@@ -1321,8 +1321,7 @@ void SW_SWC_read(
         convertInput = (Bool) (lineno >= 0 && lineno <= 3 && lineno != 1);
 
         if (convertInput) {
-            inBufintRes = (int) strtol(inbuf, &endPtr, 10);
-            check_errno(MyFileName, inbuf, endPtr, LogInfo);
+            inBufintRes = sw_strtoi(inbuf, MyFileName, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
@@ -1428,7 +1427,7 @@ void read_swc_hist(
     FILE *f;
     int x, lyr = 0, recno = 0, doy = 0, index;
     RealF swc = 0., st_err = 0.;
-    char fname[MAX_FILENAMESIZE], inbuf[MAX_FILENAMESIZE], *endPtr;
+    char fname[MAX_FILENAMESIZE], inbuf[MAX_FILENAMESIZE];
     char varStrs[4][20] = {{'\0'}};
     int *inBufIntVals[] = {&doy, &lyr};
     float *inBufFloatVals[] = {&swc, &st_err};
@@ -1487,14 +1486,13 @@ void read_swc_hist(
         }
 
         for (index = 0; index < numInValsPerType; index++) {
-            *(inBufIntVals[index]) = (int) strtol(varStrs[index], &endPtr, 10);
-            check_errno(fname, varStrs[index], endPtr, LogInfo);
+            *(inBufIntVals[index]) = sw_strtoi(varStrs[index], fname, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
 
-            *(inBufFloatVals[index]) = strtof(varStrs[index + 2], &endPtr);
-            check_errno(fname, varStrs[index], endPtr, LogInfo);
+            *(inBufFloatVals[index]) =
+                sw_strtof(varStrs[index + 2], fname, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }

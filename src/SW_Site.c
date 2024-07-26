@@ -1321,7 +1321,7 @@ void SW_SIT_read(
 #endif
     LyrIndex r;
     Bool too_many_regions = swFALSE;
-    char inbuf[MAX_FILENAMESIZE], *endPtr;
+    char inbuf[MAX_FILENAMESIZE];
     int intRes = 0;
     double doubleRes = 0.;
     float floatRes = 0.;
@@ -1341,7 +1341,7 @@ void SW_SIT_read(
 
         strLine = (Bool) (lineno == 35 || lineno == 37 || lineno == 38);
 
-        if (!strLine) {
+        if (!strLine && lineno <= 38) {
             /* Check to see if the line number contains a double or integer
              * value */
             doFloatConv = (Bool) (lineno >= 14 && lineno <= 21);
@@ -1350,15 +1350,14 @@ void SW_SIT_read(
                 (Bool) (!doFloatConv && ((lineno >= 0 && lineno <= 2) ||
                                          (lineno >= 5 && lineno <= 31)));
 
-            if (doFloatConv) {
-                floatRes = strtof(inbuf, &endPtr);
-            } else if (doDoubleConv) {
-                doubleRes = strtod(inbuf, &endPtr);
+            if (doDoubleConv) {
+                doubleRes = sw_strtod(inbuf, MyFileName, LogInfo);
+            } else if (doFloatConv) {
+                floatRes = sw_strtof(inbuf, MyFileName, LogInfo);
             } else {
-                intRes = (int) strtol(inbuf, &endPtr, 10);
+                intRes = sw_strtoi(inbuf, MyFileName, LogInfo);
             }
 
-            check_errno(MyFileName, inbuf, endPtr, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
@@ -1528,14 +1527,12 @@ void SW_SIT_read(
             x = sscanf(inbuf, "%9s %9s", rgnStr[0], rgnStr[1]);
 
             if (x == 2) {
-                region = (int) strtol(rgnStr[0], &endPtr, 10);
-                check_errno(MyFileName, rgnStr[0], endPtr, LogInfo);
+                region = sw_strtoi(rgnStr[0], MyFileName, LogInfo);
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }
 
-                rgnlow = (int) strtol(rgnStr[1], &endPtr, 10);
-                check_errno(MyFileName, rgnStr[1], endPtr, LogInfo);
+                rgnlow = sw_strtoi(rgnStr[1], MyFileName, LogInfo);
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }
@@ -1631,7 +1628,7 @@ void SW_LYR_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
     int x, k, index;
     RealF dmin = 0.0, dmax, evco, trco_veg[NVEGTYPES], psand, pclay,
           soildensity, imperm, soiltemp, f_gravel;
-    char inbuf[MAX_FILENAMESIZE], *endPtr;
+    char inbuf[MAX_FILENAMESIZE];
     char inFloatStrs[12][20] = {{'\0'}};
     float *inFloatVals[] = {
         &dmax,
@@ -1693,8 +1690,8 @@ void SW_LYR_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
 
         /* Convert float strings to floats */
         for (index = 0; index < numFloatInStrings; index++) {
-            *(inFloatVals[index]) = strtof(inFloatStrs[index], &endPtr);
-            check_errno(MyFileName, inFloatStrs[index], endPtr, LogInfo);
+            *(inFloatVals[index]) =
+                sw_strtof(inFloatStrs[index], MyFileName, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
@@ -1960,7 +1957,7 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
     LyrIndex lyrno = 0, k;
     int x, index;
     RealF tmp_swrcp[SWRC_PARAM_NMAX];
-    char inbuf[MAX_FILENAMESIZE], *endPtr;
+    char inbuf[MAX_FILENAMESIZE];
     char swrcpFloatStrs[6][20] = {{'\0'}};
     const int numFloatInStrings = 6;
 
@@ -2003,8 +2000,8 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
 
         /* Convert float strings to floats */
         for (index = 0; index < numFloatInStrings; index++) {
-            tmp_swrcp[index] = strtof(swrcpFloatStrs[index], &endPtr);
-            check_errno(MyFileName, swrcpFloatStrs[index], endPtr, LogInfo);
+            tmp_swrcp[index] =
+                sw_strtof(swrcpFloatStrs[index], MyFileName, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }

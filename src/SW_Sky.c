@@ -43,7 +43,6 @@
 #include "include/SW_Files.h"       // for eSky
 #include "include/Times.h"          // for isleapyear, interpolate_monthlyV...
 #include <stdio.h>                  // for sscanf, FILE
-#include <stdlib.h>                 // for strtod
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -71,7 +70,7 @@ void SW_SKY_read(char *InFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
     FILE *f;
     int lineno = 0, x = 0, k, index;
     RealD tmp[MAX_MONTHS];
-    char *MyFileName, inbuf[MAX_FILENAMESIZE], *endPtr;
+    char *MyFileName, inbuf[MAX_FILENAMESIZE];
     char tmpStrs[MAX_MONTHS][20] = {{'\0'}};
 
     MyFileName = InFiles[eSky];
@@ -111,8 +110,7 @@ void SW_SKY_read(char *InFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
         }
 
         for (index = 0; index < MAX_MONTHS; index++) {
-            tmp[index] = strtod(tmpStrs[index], &endPtr);
-            check_errno(MyFileName, tmpStrs[index], endPtr, LogInfo);
+            tmp[index] = sw_strtod(tmpStrs[index], MyFileName, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }

@@ -47,7 +47,6 @@
 #include "include/SW_Files.h"       // for eModel
 #include "include/Times.h"          // for Time_get_lastdoy_y, Time_init_model
 #include <stdio.h>                  // for FILE
-#include <stdlib.h>                 // for strtod
 #include <string.h>                 // for memcpy
 
 
@@ -115,7 +114,7 @@ void SW_MDL_read(SW_MODEL *SW_Model, char *InFiles[], LOG_INFO *LogInfo) {
      */
     FILE *f;
     int lineno;
-    char *MyFileName, inbuf[MAX_FILENAMESIZE], *endPtr;
+    char *MyFileName, inbuf[MAX_FILENAMESIZE];
     double value;
 
     MyFileName = InFiles[eModel];
@@ -132,8 +131,7 @@ void SW_MDL_read(SW_MODEL *SW_Model, char *InFiles[], LOG_INFO *LogInfo) {
     lineno = 0;
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
         if (lineno <= 4) {
-            value = strtod(inbuf, &endPtr);
-            check_errno(MyFileName, inbuf, endPtr, LogInfo);
+            value = sw_strtod(inbuf, MyFileName, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }

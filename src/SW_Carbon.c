@@ -25,7 +25,6 @@ in SW_VegProd.c and SW_Flow_lib.c.
 #include "include/SW_VegProd.h"     // for BIO_INDEX, WUE_INDEX
 #include <math.h>                   // for pow
 #include <stdio.h>                  // for sscanf, FILE
-#include <stdlib.h>                 // for strtol, strtod
 #include <string.h>                 // for strcmp, memset
 
 /* =================================================== */
@@ -94,7 +93,7 @@ void SW_CBN_read(
     double ppm = 1.;
     int existing_years[MAX_NYEAR] = {0};
     short fileWasEmpty = 1;
-    char *MyFileName, inbuf[MAX_FILENAMESIZE], *endPtr;
+    char *MyFileName, inbuf[MAX_FILENAMESIZE];
 
     MyFileName = InFiles[eCarbon];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -134,8 +133,7 @@ void SW_CBN_read(
             return; /* Exit prematurely due to error */
         }
 
-        year = (int) strtol(yearStr, &endPtr, 10);
-        check_errno(MyFileName, yearStr, endPtr, LogInfo);
+        year = sw_strtoi(yearStr, MyFileName, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -155,14 +153,13 @@ void SW_CBN_read(
                 return; /* Exit prematurely due to error */
             }
 
-            year = (int) strtol(yearStr, &endPtr, 10);
-            check_errno(MyFileName, yearStr, endPtr, LogInfo);
+            year = sw_strtoi(yearStr, MyFileName, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
 
-            (void
-            ) year; /* Silence clang-tidy clang-analyzer-deadcode.DeadStores */
+            /* Silence clang-tidy clang-analyzer-deadcode.DeadStores */
+            (void) year;
 
             continue; // Skip to the ppm values
         }
@@ -186,14 +183,12 @@ void SW_CBN_read(
             return; /* Exit prematurely due to error */
         }
 
-        year = (int) strtol(yearStr, &endPtr, 10);
-        check_errno(MyFileName, yearStr, endPtr, LogInfo);
+        year = sw_strtoi(yearStr, MyFileName, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
-        ppm = strtod(ppmStr, &endPtr);
-        check_errno(MyFileName, ppmStr, endPtr, LogInfo);
+        ppm = sw_strtod(ppmStr, MyFileName, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }

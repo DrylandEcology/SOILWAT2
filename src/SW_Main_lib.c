@@ -140,7 +140,8 @@ void sw_init_args(
      *                -q=quiet, don't print "Check logfile"
      *                   at end of program.
      */
-    char str[1024], *endPtr;
+    char str[1024];
+    const char *errMsg = "command-line";
 
     /* valid options */
     char const *opts[] = {"-d", "-f", "-e", "-q", "-v", "-h", "-s", "-t", "-r"};
@@ -254,8 +255,7 @@ void sw_init_args(
             break;
 
         case 6: /* -s */
-            *userSUID = (unsigned long) strtoll(str, &endPtr, 10);
-            check_errno(NULL, str, endPtr, LogInfo);
+            *userSUID = sw_strtoul(str, errMsg, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
@@ -264,8 +264,7 @@ void sw_init_args(
              * (currently, unsigned long) */
             /* Expect that conversion of string to double results in the
              * same value as conversion of userSUID to double */
-            doubleUserSUID = strtod(str, &endPtr);
-            check_errno(NULL, str, endPtr, LogInfo);
+            doubleUserSUID = sw_strtod(str, errMsg, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
@@ -284,8 +283,7 @@ void sw_init_args(
             break;
 
         case 7: /* -t */
-            *wallTimeLimit = strtod(str, &endPtr);
-            check_errno(NULL, str, endPtr, LogInfo);
+            *wallTimeLimit = sw_strtod(str, errMsg, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }

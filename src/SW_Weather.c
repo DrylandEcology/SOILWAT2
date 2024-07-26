@@ -91,7 +91,6 @@
 #include "include/SW_Markov.h"       // for SW_MKV_today
 #include "include/SW_SoilWater.h"    // for SW_SWC_adjust_snow
 #include "include/Times.h"           // for Time_get_lastdoy_y, Time_days_i...
-#include <errno.h>                   // for errno
 #include <math.h>                    // for exp, fmin, fmax
 #include <stdio.h>                   // for NULL, sscanf, FILE, fclose, fopen
 #include <stdlib.h>                  // for free
@@ -1705,7 +1704,7 @@ void SW_WTH_setup(
     int lineno = 0, month, x, index;
     RealD sppt, stmax, stmin;
     RealD sky, wind, rH, actVP, shortWaveRad;
-    char inbuf[MAX_FILENAMESIZE], *endPtr;
+    char inbuf[MAX_FILENAMESIZE];
     int inBufintRes = 0;
     double inBufdoubleRes = 0.;
 
@@ -1730,11 +1729,11 @@ void SW_WTH_setup(
 
         if (lineno <= 22) {
             if (doIntConv) {
-                inBufintRes = (int) strtol(inbuf, &endPtr, 10);
+                inBufintRes = sw_strtoi(inbuf, MyFileName, LogInfo);
             } else {
-                inBufdoubleRes = strtod(inbuf, &endPtr);
+                inBufdoubleRes = sw_strtod(inbuf, MyFileName, LogInfo);
             }
-            check_errno(MyFileName, inbuf, endPtr, LogInfo);
+
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
@@ -1896,12 +1895,13 @@ void SW_WTH_setup(
 
             for (index = 0; index < numInDefaultVars; index++) {
                 if (index == 0) {
-                    month = (int) strtol(weathInputStrs[index], &endPtr, 10);
+                    month =
+                        sw_strtoi(weathInputStrs[index], MyFileName, LogInfo);
                 } else {
                     *(inFloatVals[index - 1]) =
-                        strtod(weathInputStrs[index], &endPtr);
+                        sw_strtod(weathInputStrs[index], MyFileName, LogInfo);
                 }
-                check_errno(MyFileName, weathInputStrs[index], endPtr, LogInfo);
+
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }
@@ -2229,7 +2229,7 @@ void read_weather_hist(
 
     double es, e, relHum, tempSlope, svpVal;
 
-    char fname[MAX_FILENAMESIZE], inbuf[MAX_FILENAMESIZE], *endPtr;
+    char fname[MAX_FILENAMESIZE], inbuf[MAX_FILENAMESIZE];
 
     char weathInStrs[15][20];
 
@@ -2238,7 +2238,7 @@ void read_weather_hist(
 
     f = fopen(fname, "r");
     if (isnull(f)) {
-        errno = 0; // no weather input file (use generator) --> reset errno
+        // no weather input file --> use generator
         return;
     }
 
@@ -2292,13 +2292,14 @@ void read_weather_hist(
 
         for (index = 0; index < n_input_forcings + 1; index++) {
             if (index == 0) {
-                doy = (int) strtol(weathInStrs[index], &endPtr, 10);
+                doy = sw_strtoi(weathInStrs[index], fname, LogInfo);
             } else {
-                weathInput[index - 1] = strtod(weathInStrs[index], &endPtr);
+                weathInput[index - 1] =
+                    sw_strtod(weathInStrs[index], fname, LogInfo);
             }
 
-            check_errno(fname, weathInStrs[index], endPtr, LogInfo);
             if (LogInfo->stopRun) {
+                CloseFile(&f, LogInfo);
                 return; // Exit function prematurely due to error
             }
         }

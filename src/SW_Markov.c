@@ -529,7 +529,7 @@ Bool SW_MKV_read_prob(
     int lineno = 0, day, x, index;
     RealF wet, dry, avg, std;
     RealF *floatVals[4] = {&wet, &dry, &avg, &std};
-    char inbuf[MAX_FILENAMESIZE], *endPtr;
+    char inbuf[MAX_FILENAMESIZE];
     char dayStr[4] = {'\0'}, inFloatStrs[4][20] = {{'\0'}};
 
     /* note that Files.read() must be called prior to this. */
@@ -554,15 +554,14 @@ Bool SW_MKV_read_prob(
             inFloatStrs[3]
         );
 
-        day = (int) strtol(dayStr, &endPtr, 10);
-        check_errno(MyFileName, dayStr, endPtr, LogInfo);
+        day = sw_strtoi(dayStr, MyFileName, LogInfo);
         if (LogInfo->stopRun) {
             return swFALSE; // Exit function prematurely due to error
         }
 
         for (index = 0; index < numFloatInStrings; index++) {
-            *(floatVals[index]) = strtof(inFloatStrs[index], &endPtr);
-            check_errno(MyFileName, inFloatStrs[index], endPtr, LogInfo);
+            *(floatVals[index]) =
+                sw_strtof(inFloatStrs[index], MyFileName, LogInfo);
             if (LogInfo->stopRun) {
                 return swFALSE; // Exit function prematurely due to error
             }
@@ -673,7 +672,7 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo) {
     RealF *floatVals[] = {
         &t1, &t2, &t3, &t4, &t5, &t6, &cfxw, &cfxd, &cfnw, &cfnd
     };
-    char weekStr[3] = {'\0'}, inFloatStrs[10][20] = {{'\0'}}, *endPtr;
+    char weekStr[3] = {'\0'}, inFloatStrs[10][20] = {{'\0'}};
     const int numFloatVals = 10;
 
     char *MyFileName = InFiles[eMarkovCov];
@@ -717,15 +716,14 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo) {
             return swFALSE; // Exit function prematurely due to error
         }
 
-        week = (int) strtol(weekStr, &endPtr, 10);
-        check_errno(MyFileName, weekStr, endPtr, LogInfo);
+        week = sw_strtoi(weekStr, MyFileName, LogInfo);
         if (LogInfo->stopRun) {
             return swFALSE; // Exit function prematurely due to error
         }
 
         for (index = 0; index < numFloatVals; index++) {
-            *(floatVals[index]) = strtof(inFloatStrs[index], &endPtr);
-            check_errno(MyFileName, inFloatStrs[index], endPtr, LogInfo);
+            *(floatVals[index]) =
+                sw_strtof(inFloatStrs[index], MyFileName, LogInfo);
             if (LogInfo->stopRun) {
                 return swFALSE; // Exit function prematurely due to error
             }

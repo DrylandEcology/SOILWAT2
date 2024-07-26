@@ -203,7 +203,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     FILE *f;
     int y, keyID;
-    char inbuf[LARGE_VALUE], *MyFileName, *endPtr;
+    char inbuf[LARGE_VALUE], *MyFileName;
     char key[15], value[LARGE_VALUE]; // 15 - Max key size
     int intRes = 0, scanRes;
     double doubleRes = 0.;
@@ -241,12 +241,11 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             doDoubleConv = (Bool) (keyID >= 9 && keyID <= 12);
 
             if (doDoubleConv) {
-                doubleRes = strtod(value, &endPtr);
+                doubleRes = sw_strtod(value, MyFileName, LogInfo);
             } else {
-                intRes = (int) strtol(value, &endPtr, 10);
+                intRes = sw_strtoi(value, MyFileName, LogInfo);
             }
 
-            check_errno(MyFileName, value, endPtr, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }

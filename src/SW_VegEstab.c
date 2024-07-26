@@ -570,7 +570,7 @@ static void read_spp(
     FILE *f;
     int lineno = 0;
     char name[80]; /* only allow 4 char sppnames */
-    char inbuf[MAX_FILENAMESIZE], *endPtr;
+    char inbuf[MAX_FILENAMESIZE];
     int inBufintRes;
     double inBufFloatVal;
 
@@ -601,12 +601,11 @@ static void read_spp(
                                 (lineno >= 5 && lineno <= 11));
 
             if (doIntConv) {
-                inBufintRes = (int) strtol(inbuf, &endPtr, 10);
+                inBufintRes = sw_strtoi(inbuf, infile, LogInfo);
             } else {
-                inBufFloatVal = strtof(inbuf, &endPtr);
+                inBufFloatVal = sw_strtof(inbuf, infile, LogInfo);
             }
 
-            check_errno(infile, inbuf, endPtr, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
