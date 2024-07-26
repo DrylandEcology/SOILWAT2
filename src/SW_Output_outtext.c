@@ -242,7 +242,7 @@ static void create_filename_ST(
     size_t sizeof_filename,
     LOG_INFO *LogInfo
 ) {
-    int startIndex = 0, strLen = 0; // For `sw_strtok()`
+    size_t startIndex = 0, strLen = 0; // For `sw_strtok()`
 
     char *basename;
     char *ext;

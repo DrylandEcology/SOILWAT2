@@ -280,7 +280,7 @@ char *Str_ToLower(char *s, char *r);
 int Str_CompareI(char *t, char *s);
 
 char *sw_strtok(
-    char inputStr[], int *startIndex, int *strLen, const char *delim
+    char inputStr[], size_t *startIndex, size_t *strLen, const char *delim
 );
 
 Bool isDelim(char currChar, const char *delim);
@@ -313,9 +313,9 @@ double get_running_sqr(
 
 double final_running_sd(unsigned int n, double ssqr);
 
-double mean(const double values[], int length);
+double mean(const double values[], unsigned int length);
 
-double standardDeviation(double inputArray[], int length);
+double standardDeviation(double inputArray[], unsigned int length);
 
 
 #ifdef __cplusplus

@@ -43,7 +43,7 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo);
 void SW_MKV_setup(
     SW_MARKOV *SW_Markov,
     unsigned long Weather_rng_seed,
-    int Weather_genWeathMethod,
+    unsigned int Weather_genWeathMethod,
     char *InFiles[],
     LOG_INFO *LogInfo
 );

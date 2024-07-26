@@ -739,7 +739,7 @@ void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 
     unsigned int i, k, quotient = 0, remainder = 0;
     int mode = sw->Model.SW_SpinUp.mode;
-    int yr;
+    TimeInt yr;
     TimeInt duration = sw->Model.SW_SpinUp.duration;
     TimeInt scope = sw->Model.SW_SpinUp.scope;
     TimeInt finalyr = sw->Model.startyr + scope - 1;

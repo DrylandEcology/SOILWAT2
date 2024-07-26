@@ -63,9 +63,9 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
     InFiles[eMarkovProb] = Str_Dup("Input/mkv_prob.in", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    int rng_seed,
-        // Turn on Markov weather generator
-        generateWeatherMethod = 2;
+    int rng_seed;
+    // Turn on Markov weather generator
+    unsigned int generateWeatherMethod = 2;
 
     short k, n = 18, seed = 42, year = 1980;
     RealD tmax, tmin, ppt;

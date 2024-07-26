@@ -1019,7 +1019,7 @@ the available soilwater of each veg type above so start at bottom move up.
 */
 /***********************************************************/
 void get_dSWAbulk(
-    int i,
+    unsigned int i,
     SW_VEGPROD *SW_VegProd,
     RealF swa_master[][NVEGTYPES][MAX_LAYERS],
     RealF dSWA_repart_sum[][MAX_LAYERS]

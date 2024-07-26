@@ -227,7 +227,7 @@ typedef struct {
 
 #if defined(SWNETCDF)
     char **ncOutFiles[SW_OUTNKEYS][SW_OUTNPERIODS];
-    int numOutFiles;
+    unsigned int numOutFiles;
 #endif
 
 } SW_FILE_STATUS;

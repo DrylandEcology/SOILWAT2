@@ -125,7 +125,7 @@ double RandUni(sw_random_t *pcg_rng) {
 
 \return Random number between the two bounds defined.
 */
-int RandUniIntRange(
+long RandUniIntRange(
     const long first,
     const long last,
     sw_random_t *pcg_rng // NOLINT(readability-non-const-parameter)
@@ -275,7 +275,7 @@ void RandUniList(
     /* if count <= 2, handle things directly */
     /* for less complexity and more speed    */
     if (count <= 2) {
-        list[0] = (long) RandUniIntRange(first, last, pcg_rng);
+        list[0] = RandUniIntRange(first, last, pcg_rng);
 
         if (count == 2) {
             while ((list[1] = RandUniIntRange(first, last, pcg_rng)) == list[0])

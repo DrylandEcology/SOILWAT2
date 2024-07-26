@@ -1008,8 +1008,8 @@ void estimateVegetationFromClimate(
     LOG_INFO *LogInfo
 ) {
 
-    int numYears = SW_Model->endyr - SW_Model->startyr + 1, k,
-        bareGroundIndex = 7;
+    unsigned int numYears = SW_Model->endyr - SW_Model->startyr + 1;
+    unsigned int k, bareGroundIndex = 7;
 
     SW_CLIMATE_YEARLY climateOutput;
     SW_CLIMATE_CLIM climateAverages;
@@ -1231,6 +1231,7 @@ void estimatePotNatVegComposition(
                degreeAbove65 = 1, frostFreeDays = 2, estimIndicesNotNA = 0,
                grassesEstim[3], overallEstim[nTypes], iFixed[nTypes],
                iFixedSize = 0;
+    int tempSwapValue;
     int isetIndices[3] = {grassAnn, treeIndex, bareGround};
 
     const char *txt_isetIndices[] = {"annual grasses", "trees", "bare ground"};
@@ -1240,7 +1241,7 @@ void estimatePotNatVegComposition(
            summerMAP = 0., winterMAP = 0., C4Species = SW_MISSING, C3Grassland,
            C3Shrubland, estimGrassSum = 0, finalVegSum = 0., estimCoverSum = 0.,
            tempSumGrasses = 0., estimCover[nTypes], initialVegSum = 0.,
-           tempSwapValue, fixedValuesSum = 0;
+           fixedValuesSum = 0;
 
     Bool fixSumGrasses = (Bool) (!missing(SumGrassesFraction));
     Bool isGrassIndex = swFALSE, tempShrubBool;

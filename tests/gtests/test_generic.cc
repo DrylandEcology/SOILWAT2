@@ -105,7 +105,7 @@ TEST(GenericTest, GenericStrtok) {
     */
 
     char *currString;
-    int startIndex = 0, strLen = 0;
+    size_t startIndex = 0, strLen = 0;
 
     char emptyDelim[] = "";
     char oneDelim[] = "\\";

@@ -49,7 +49,7 @@ extern "C" {
 void SW_NC_write_output(
     SW_OUT_DOM *OutDom,
     RealD *p_OUT[][SW_OUTNPERIODS],
-    int numFilesPerKey,
+    unsigned int numFilesPerKey,
     char **ncOutFileNames[][SW_OUTNPERIODS],
     const size_t ncSuid[],
     const char *domType,
@@ -69,10 +69,10 @@ void SW_NC_create_output_files(
     Bool hasConsistentSoilLayerDepths,
     double lyrDepths[],
     int strideOutYears,
-    int startYr,
-    int endYr,
+    unsigned int startYr,
+    unsigned int endYr,
     int baseCalendarYear,
-    int *numFilesPerKey,
+    unsigned int *numFilesPerKey,
     char **ncOutFileNames[][SW_OUTNPERIODS],
     LOG_INFO *LogInfo
 );
@@ -156,7 +156,9 @@ void SW_NC_alloc_outputkey_var_info(
     SW_OUT_DOM *OutDom, int key, LOG_INFO *LogInfo
 );
 
-void SW_NC_alloc_files(char ***ncOutFiles, int numFiles, LOG_INFO *LogInfo);
+void SW_NC_alloc_files(
+    char ***ncOutFiles, unsigned int numFiles, LOG_INFO *LogInfo
+);
 
 #ifdef __cplusplus
 }

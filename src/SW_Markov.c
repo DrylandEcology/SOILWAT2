@@ -840,7 +840,7 @@ closeFile: { CloseFile(&f, LogInfo); }
 void SW_MKV_setup(
     SW_MARKOV *SW_Markov,
     unsigned long Weather_rng_seed,
-    int Weather_genWeathMethod,
+    unsigned int Weather_genWeathMethod,
     char *InFiles[],
     LOG_INFO *LogInfo
 ) {

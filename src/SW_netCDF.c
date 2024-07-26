@@ -1347,7 +1347,7 @@ memory for writing out values
 */
 static void alloc_netCDF_domain_vars(
     Bool domTypeIsSite,
-    int nSUIDs,
+    unsigned long nSUIDs,
     unsigned int numY,
     unsigned int numX,
     double **valsY,
@@ -1361,7 +1361,7 @@ static void alloc_netCDF_domain_vars(
     double **vars[] = {valsY, valsX};
     double **bndsVars[] = {valsYBnds, valsXBnds};
     const int numVars = 2, numBnds = 2;
-    int varNum, bndVarNum, numVals;
+    unsigned int varNum, bndVarNum, numVals;
 
     for (varNum = 0; varNum < numVars; varNum++) {
         numVals = (varNum % 2 == 0) ? numY : numX;
@@ -1378,7 +1378,7 @@ static void alloc_netCDF_domain_vars(
             numVals = (bndVarNum % 2 == 0) ? numY : numX;
 
             *(bndsVars[bndVarNum]) = (double *) Mem_Malloc(
-                (unsigned long) (numVals * numBnds) * sizeof(double),
+                (size_t) (numVals * numBnds) * sizeof(double),
                 "alloc_netCDF_domain_vars()",
                 LogInfo
             );
@@ -2441,12 +2441,15 @@ static void fill_netCDF_with_invariants(
     (e.g., 60 months in 5 years, or 731 days in 1980-1981)
 @param[in] pd Current output netCDF period
 */
-static double calc_timeSize(
-    int rangeStart, int rangeEnd, int baseTime, OutPeriod pd
+static unsigned int calc_timeSize(
+    unsigned int rangeStart,
+    unsigned int rangeEnd,
+    unsigned int baseTime,
+    OutPeriod pd
 ) {
 
-    double numLeapYears = 0.0;
-    int year;
+    unsigned int numLeapYears = 0;
+    unsigned int year;
 
     if (pd == eSW_Day) {
         for (year = rangeStart; year < rangeEnd; year++) {
@@ -2456,7 +2459,7 @@ static double calc_timeSize(
         }
     }
 
-    return (double) (baseTime * (rangeEnd - rangeStart)) + numLeapYears;
+    return baseTime * (rangeEnd - rangeStart) + numLeapYears;
 }
 
 /**
@@ -2477,19 +2480,19 @@ the variable "time_bnds" and fills the variable "time"
 static void create_time_vars(
     int ncFileID,
     int dimIDs[],
-    int size,
+    unsigned int size,
     int dimVarID,
-    int startYr,
+    unsigned int startYr,
     double *startTime,
     OutPeriod pd,
     LOG_INFO *LogInfo
 ) {
 
     double *bndsVals = NULL, *dimVarVals = NULL;
-    size_t numBnds = 2;
+    const int numBnds = 2;
     size_t start[] = {0, 0}, count[] = {(size_t) size, 0};
-    int currYear = startYr;
-    int month = 0, week = 0, numDays = 0;
+    unsigned int currYear = startYr;
+    unsigned int month = 0, week = 0, numDays = 0;
     int bndsID = 0;
 
 
@@ -2508,7 +2511,7 @@ static void create_time_vars(
     }
 
     bndsVals = (double *) Mem_Malloc(
-        size * numBnds * sizeof(double), "create_time_vars", LogInfo
+        (size_t) (size * numBnds) * sizeof(double), "create_time_vars", LogInfo
     );
     if (LogInfo->stopRun) {
         free(dimVarVals);
@@ -2530,7 +2533,7 @@ static void create_time_vars(
                 numDays = WKDAYS;
             }
 
-            currYear += (index % MAX_WEEKS == 0) ? 1.0 : 0.0;
+            currYear += (index % MAX_WEEKS == 0) ? 1 : 0;
             week = (week + 1) % MAX_WEEKS;
             break;
 
@@ -2541,7 +2544,7 @@ static void create_time_vars(
                 numDays = monthdays[month];
             }
 
-            currYear += (index % MAX_MONTHS == 0) ? 1.0 : 0.0;
+            currYear += (index % MAX_MONTHS == 0) ? 1 : 0;
             month = (month + 1) % MAX_MONTHS;
             break;
 
@@ -2598,7 +2601,7 @@ the variable "vertical_bnds" and fills the variable "vertical"
 static void create_vert_vars(
     int ncFileID,
     int dimIDs[],
-    int size,
+    unsigned int size,
     int dimVarID,
     Bool hasConsistentSoilLayerDepths,
     const double lyrDepths[],
@@ -2606,7 +2609,7 @@ static void create_vert_vars(
 ) {
 
     double *dimVarVals = NULL, *bndVals = NULL, lyrStart = 0.0;
-    size_t numBnds = 2;
+    const int numBnds = 2;
     size_t start[] = {0, 0}, count[] = {(size_t) size, 0};
     int bndIndex = 0;
 
@@ -2631,7 +2634,7 @@ static void create_vert_vars(
     }
 
     bndVals = (double *) Mem_Malloc(
-        size * numBnds * sizeof(double), "create_vert_vars", LogInfo
+        (size_t) (size * numBnds) * sizeof(double), "create_vert_vars", LogInfo
     );
     if (LogInfo->stopRun) {
         free(dimVarVals);
@@ -2641,8 +2644,9 @@ static void create_vert_vars(
     for (size_t index = 0; index < (size_t) size; index++) {
         // if hasConsistentSoilLayerDepths,
         // then use soil layer depth, else soil layer number
-        dimVarVals[index] =
-            (hasConsistentSoilLayerDepths) ? lyrDepths[index] : (index + 1);
+        dimVarVals[index] = (hasConsistentSoilLayerDepths) ?
+                                lyrDepths[index] :
+                                (double) (index + 1);
 
         bndVals[index * 2] = lyrStart;
         bndVals[index * 2 + 1] = dimVarVals[index];
@@ -2692,13 +2696,13 @@ if needed
 static void fill_dimVar(
     int ncFileID,
     int dimIDs[],
-    int size,
+    unsigned int size,
     int varID,
     Bool hasConsistentSoilLayerDepths,
     double lyrDepths[],
     double *startTime,
     int dimNum,
-    int startYr,
+    unsigned int startYr,
     OutPeriod pd,
     LOG_INFO *LogInfo
 ) {
@@ -2774,14 +2778,14 @@ and fill the variable with the respective information
 */
 static void create_output_dimVar(
     char *name,
-    int size,
+    unsigned int size,
     int ncFileID,
     int *dimID,
     Bool hasConsistentSoilLayerDepths,
     double lyrDepths[],
     double *startTime,
-    int baseCalendarYear,
-    int startYr,
+    unsigned int baseCalendarYear,
+    unsigned int startYr,
     OutPeriod pd,
     LOG_INFO *LogInfo
 ) {
@@ -2925,28 +2929,29 @@ static void create_full_var(
     const char *varName,
     const char *attNames[],
     const char *attVals[],
-    int numAtts,
+    unsigned int numAtts,
     Bool hasConsistentSoilLayerDepths,
     double lyrDepths[],
     double *startTime,
-    int baseCalendarYear,
-    int startYr,
+    unsigned int baseCalendarYear,
+    unsigned int startYr,
     OutPeriod pd,
     LOG_INFO *LogInfo
 ) {
 
-    int dimArrSize = 0, index, varID = 0;
+    int dimArrSize = 0, varID = 0;
+    unsigned int index;
     int dimIDs[MAX_NUM_DIMS];
     const char *latName = (dimExists("lat", *ncFileID)) ? "lat" : "y";
     const char *lonName = (dimExists("lon", *ncFileID)) ? "lon" : "x";
     Bool domTypeIsSites = (Bool) (strcmp(domType, "s") == 0);
-    int numConstDims = (domTypeIsSites) ? 1 : 2;
+    unsigned int numConstDims = (domTypeIsSites) ? 1 : 2;
     const char *thirdDim = (domTypeIsSites) ? "site" : latName;
     const char *constDimNames[] = {thirdDim, lonName};
     const char *timeVertVegNames[] = {"time", "vertical", "pft"};
     char *dimVarName;
     size_t timeVertVegVals[] = {timeSize, vertSize, pftSize};
-    int numTimeVertVegVals = 3, varVal;
+    unsigned int numTimeVertVegVals = 3, varVal;
 
 
     for (index = 0; index < numConstDims; index++) {
@@ -3133,8 +3138,8 @@ static void create_output_file(
     IntUS npft[],
     Bool hasConsistentSoilLayerDepths,
     double lyrDepths[],
-    int originTimeSize,
-    int startYr,
+    unsigned int originTimeSize,
+    unsigned int startYr,
     int baseCalendarYear,
     double *startTime,
     LOG_INFO *LogInfo
@@ -3446,7 +3451,7 @@ output netCDF files
 void SW_NC_write_output(
     SW_OUT_DOM *OutDom,
     RealD *p_OUT[][SW_OUTNPERIODS],
-    int numFilesPerKey,
+    unsigned int numFilesPerKey,
     char **ncOutFileNames[][SW_OUTNPERIODS],
     const size_t ncSuid[],
     const char *domType,
@@ -3456,7 +3461,8 @@ void SW_NC_write_output(
     int key;
     OutPeriod pd;
     RealD *p_OUTValPtr = NULL;
-    int fileNum, currFileID = 0, varNum, varID = -1;
+    unsigned int fileNum;
+    int currFileID = 0, varNum, varID = -1;
 
     char *fileName, *varName;
     size_t count[MAX_NUM_DIMS] = {0};
@@ -3648,30 +3654,32 @@ void SW_NC_create_output_files(
     Bool hasConsistentSoilLayerDepths,
     double lyrDepths[],
     int strideOutYears,
-    int startYr,
-    int endYr,
+    unsigned int startYr,
+    unsigned int endYr,
     int baseCalendarYear,
-    int *numFilesPerKey,
+    unsigned int *numFilesPerKey,
     char **ncOutFileNames[][SW_OUTNPERIODS],
     LOG_INFO *LogInfo
 ) {
 
     int key, ip;
     OutPeriod pd;
-    int rangeStart, rangeEnd, fileNum;
+    unsigned int rangeStart, rangeEnd, fileNum;
 
-    int numYears = endYr - startYr + 1, yearOffset;
+    unsigned int numYears = endYr - startYr + 1, yearOffset;
     char fileNameBuf[MAX_FILENAMESIZE];
     char yearBuff[10]; // 10 - hold up to YYYY-YYYY
-    int timeSize = 0, baseTime = 0;
+    unsigned int timeSize = 0;
+    unsigned int baseTime = 0;
     double startTime[SW_OUTNPERIODS];
 
     char periodSuffix[10];
     char *yearFormat;
 
-    *numFilesPerKey = (strideOutYears == -1) ?
-                          1 :
-                          (int) ceil((double) numYears / strideOutYears);
+    *numFilesPerKey =
+        (strideOutYears == -1) ?
+            1 :
+            (unsigned int) ceil((double) numYears / strideOutYears);
 
     yearOffset = (strideOutYears == -1) ? numYears : strideOutYears;
 
@@ -5460,9 +5468,11 @@ functions to write to/create
 @param[in] numFiles Number of file names to store/allocate memory for
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_NC_alloc_files(char ***ncOutFiles, int numFiles, LOG_INFO *LogInfo) {
+void SW_NC_alloc_files(
+    char ***ncOutFiles, unsigned int numFiles, LOG_INFO *LogInfo
+) {
 
-    int varNum;
+    unsigned int varNum;
 
     *ncOutFiles = (char **) Mem_Malloc(
         numFiles * sizeof(char *), "SW_NC_create_output_files()", LogInfo

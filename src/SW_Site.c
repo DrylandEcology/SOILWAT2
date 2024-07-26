@@ -118,11 +118,11 @@
 #include "include/SW_Main_lib.h"    // for sw_init_logs
 #include "include/SW_SoilWater.h"   // for SW_SWRC_SWCtoSWP, SW_SWRC_SWPtoSWC
 #include "include/SW_VegProd.h"     // for key2veg, get_critical_rank, sum_...
+#include <limits.h>                 // for UINT_MAX
 #include <math.h>                   // for fmod
 #include <stdio.h>                  // for printf, sscanf, FILE, NULL, stdout
 #include <stdlib.h>                 // for free, strod, strtol
 #include <string.h>                 // for strcpy, memset
-
 
 /* =================================================== */
 /*                  Global Variables                   */
@@ -2062,7 +2062,7 @@ void SW_SIT_init_run(
     LyrIndex s, r, curregion;
     int k, flagswpcrit = 0;
     RealD evsum = 0., trsum_veg[NVEGTYPES] = {0.}, tmp;
-    double acc = 0.0;
+    double acc = 0.0, tmp_stNRGR;
 
 #ifdef SWDEBUG
     int debug = 0;
@@ -2591,7 +2591,13 @@ void SW_SIT_init_run(
 
     // getting the number of regressions, for use in the soil_temperature
     // function
-    SW_Site->stNRGR = (SW_Site->stMaxDepth / SW_Site->stDeltaX) - 1;
+    tmp_stNRGR = (SW_Site->stMaxDepth / SW_Site->stDeltaX);
+    if (tmp_stNRGR > (double) UINT_MAX) {
+        SW_Site->stNRGR = MAX_ST_RGR + 1;
+    } else {
+        SW_Site->stNRGR = (unsigned int) tmp_stNRGR - 1;
+    }
+
     Bool too_many_RGR = (Bool) (SW_Site->stNRGR + 1 >= MAX_ST_RGR);
 
     if (!EQ(fmod(SW_Site->stMaxDepth, SW_Site->stDeltaX), 0.0) ||

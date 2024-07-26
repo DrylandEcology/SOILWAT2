@@ -73,9 +73,9 @@ static char **getfiles(const char *fspec, int *nfound, LOG_INFO *LogInfo) {
     char **flist = NULL, *fname, *fn1, *fn2, *p2;
     char dname[FILENAME_MAX];
 
-    int startIndex = 0, strLen = 0; // For `sw_strtok()`
+    size_t startIndex = 0, strLen = 0; // For `sw_strtok()`
 
-    int len1, len2;
+    size_t len1, len2;
     Bool match, alloc = swFALSE;
 
     DIR *dir;
@@ -476,7 +476,7 @@ void DirName(const char *p, char *outString) {
      * before moving on.
      */
     const char *c;
-    int l;
+    long int l;
     char sep1 = '/', sep2 = '\\';
 
     *outString = '\0';
@@ -619,7 +619,7 @@ void MkDir(const char *dname, LOG_INFO *LogInfo) {
     const char *delim = "\\/"; /* path separators */
     char buffer[MAX_ERROR];
 
-    int startIndex = 0, strLen = 0; // For `sw_strtok()`
+    size_t startIndex = 0, strLen = 0; // For `sw_strtok()`
 
     if (isnull(dname)) {
         return;
@@ -672,7 +672,8 @@ Bool RemoveFiles(const char *fspec, LOG_INFO *LogInfo) {
      */
 
     char **flist, fname[FILENAME_MAX];
-    int i, nfiles, dlen, result = swTRUE;
+    int i, nfiles, result = swTRUE;
+    size_t dlen;
 
     if (fspec == NULL) {
         return swTRUE;

@@ -166,9 +166,9 @@ int Str_CompareI(char *t, char *s) {
 This is a thread-safe replacement for strtok.
 */
 char *sw_strtok(
-    char inputStr[], int *startIndex, int *strLen, const char *delim
+    char inputStr[], size_t *startIndex, size_t *strLen, const char *delim
 ) {
-    int index = *startIndex;
+    size_t index = *startIndex;
     char *newPtr = NULL;
 
     if (*startIndex == 0) {
@@ -525,9 +525,9 @@ double final_running_sd(unsigned int n, double ssqr) {
 @note When a value is SW_MISSING, the function sees it as a value to skip and
 ignores it to not influence the mean.
 */
-double mean(const double values[], int length) {
+double mean(const double values[], unsigned int length) {
 
-    int index, finalLength = 0;
+    unsigned int index, finalLength = 0;
     double total = 0.0, currentVal;
 
     for (index = 0; index < length; index++) {
@@ -555,9 +555,9 @@ double mean(const double values[], int length) {
 @note When a value is SW_MISSING, the function sees it as a value to skip and
 ignores it to not influence the standard deviation.
 */
-double standardDeviation(double inputArray[], int length) {
+double standardDeviation(double inputArray[], unsigned int length) {
 
-    int index, finalLength = 0;
+    unsigned int index, finalLength = 0;
     double arrayMean = mean(inputArray, length), total = 0.0, currentVal;
 
     for (index = 0; index < length; index++) {

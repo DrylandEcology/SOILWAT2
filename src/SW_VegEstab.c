@@ -502,7 +502,8 @@ static void checkit(
 
         /* any dry period (> max_drydays) or temp out of range
          * after germination means restart */
-        for (i = avgswc = 0; i < v->estab_lyrs;) {
+        avgswc = 0.;
+        for (i = 0; i < v->estab_lyrs;) {
             avgswc += swcBulk[Today][i++];
         }
         avgswc /= (RealF) v->estab_lyrs;
@@ -742,7 +743,7 @@ void spp_init(
             return; // Exit function prematurely due to error
         }
     }
-    parms_sppnum->min_swc_estab /= parms_sppnum->estab_lyrs;
+    parms_sppnum->min_swc_estab /= (RealF) parms_sppnum->estab_lyrs;
 
     sanity_check(
         sppnum, SW_Site->swcBulk_wiltpt, n_transp_lyrs, parms, LogInfo
@@ -831,7 +832,7 @@ static void sanity_check(
     for (i = 0; i < parms_sppnum->estab_lyrs; i++) {
         mean_wiltpt += swcBulk_wiltpt[i];
     }
-    mean_wiltpt /= parms_sppnum->estab_lyrs;
+    mean_wiltpt /= (RealF) parms_sppnum->estab_lyrs;
 
     if (LT(parms_sppnum->min_swc_estab, mean_wiltpt)) {
         LogError(

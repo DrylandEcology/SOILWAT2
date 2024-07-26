@@ -1891,12 +1891,12 @@ void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw) {
 
 #if defined(SWNETCDF)
     OutPeriod pd;
-    int k;
+    unsigned int k, file;
 
     ForEachOutKey(k) {
         ForEachOutPeriod(pd) {
             if (!isnull(sw->FileStatus.ncOutFiles[k][pd])) {
-                for (int file = 0; file < sw->FileStatus.numOutFiles; file++) {
+                for (file = 0; file < sw->FileStatus.numOutFiles; file++) {
                     if (!isnull(sw->FileStatus.ncOutFiles[k][pd][file])) {
 
                         free(sw->FileStatus.ncOutFiles[k][pd][file]);
@@ -1935,16 +1935,16 @@ Note to programmer: this function must match what `get_*()` implement.
     as array of size SW_OUTNKEYS by SW_OUTNMAXVARS.
 */
 void SW_OUT_set_ncol(
-    int tLayers,
-    int n_evap_lyrs,
-    int nTaxaEstabl,
+    unsigned int tLayers,
+    unsigned int n_evap_lyrs,
+    unsigned int nTaxaEstabl,
     IntUS ncol_OUT[],
     IntUS nvar_OUT[],
     IntUS nsl_OUT[][SW_OUTNMAXVARS],
     IntUS npft_OUT[][SW_OUTNMAXVARS]
 ) {
 
-    int key, ivar;
+    unsigned int key, ivar;
     IntUS tmp;
 
     //--- Set number of output variables ------
@@ -2097,13 +2097,13 @@ Ck_Lyr1, ..., Ck_LyrN`
 @sideeffect Set values of colnames_OUT
 */
 void SW_OUT_set_colnames(
-    int tLayers,
+    unsigned int tLayers,
     SW_VEGESTAB_INFO **parms,
     const IntUS ncol_OUT[],
     char *colnames_OUT[][5 * NVEGTYPES + MAX_LAYERS],
     LOG_INFO *LogInfo
 ) {
-    int i, j;
+    unsigned int i, j;
 #ifdef SWDEBUG
     int debug = 0;
 #endif
@@ -2570,8 +2570,8 @@ void SW_OUT_set_colnames(
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_OUT_setup_output(
-    int tLayers,
-    int n_evap_lyrs,
+    unsigned int tLayers,
+    unsigned int n_evap_lyrs,
     SW_VEGESTAB *SW_VegEstab,
     SW_OUT_DOM *OutDom,
     LOG_INFO *LogInfo
@@ -3625,8 +3625,8 @@ void SW_FILESTATUS_deepCopy(
 
     int key;
     OutPeriod pd;
-    int fileNum;
-    int numFiles = source_files->numOutFiles;
+    unsigned int fileNum;
+    unsigned int numFiles = source_files->numOutFiles;
     char **destFile = NULL, *srcFile = NULL;
 
     ForEachOutKey(key) {

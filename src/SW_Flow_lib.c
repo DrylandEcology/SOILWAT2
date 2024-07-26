@@ -401,7 +401,7 @@ void infiltrate_water_high(
     double drain[],
     double *drainout,
     double pptleft,
-    int nlyrs,
+    unsigned int nlyrs,
     const double swcfc[],
     double swcsat[],
     const double impermeability[],
@@ -409,8 +409,8 @@ void infiltrate_water_high(
     double lyrFrozen[]
 ) {
 
-    int i;
-    int j;
+    unsigned int i;
+    unsigned int j;
     double d[MAX_LAYERS] = {0};
     double push, ksat_rel;
 
@@ -444,7 +444,9 @@ void infiltrate_water_high(
 
     /* adjust (i.e., push water upwards) if water content of a layer is now
      * above saturated water content */
-    for (j = nlyrs - 1; j >= 0; j--) {
+
+    /* reverse for-loop with j in [nlyrs - 1, 0] */
+    for (j = nlyrs; j-- > 0;) {
         if (GT(swc[j], swcsat[j])) {
             push = swc[j] - swcsat[j];
             swc[j] -= push;
@@ -1061,7 +1063,7 @@ void percolate_unsaturated(
 ) {
 
     unsigned int i;
-    int j;
+    unsigned int j;
     double drainlw = 0.0, swc_avail, drainpot, d[MAX_LAYERS] = {0}, push,
            kunsat_rel, swcrel, tmp1, tmp2;
 
@@ -1144,8 +1146,10 @@ void percolate_unsaturated(
 
 
     /* adjust (i.e., push water upwards) if water content of a layer is
-             now above saturated water content */
-    for (j = nlyrs - 1; j >= 0; j--) {
+       now above saturated water content */
+
+    /* reverse for-loop with j in [nlyrs - 1, 0] */
+    for (j = nlyrs; j-- > 0;) {
         if (GT(swc[j], SW_Site->swcBulk_saturated[j])) {
             push = swc[j] - SW_Site->swcBulk_saturated[j];
             swc[j] -= push;
@@ -2363,7 +2367,7 @@ void soil_temperature_today(
     double deltaX,
     double sT1,
     double sTconst,
-    int nRgr,
+    unsigned int nRgr,
     double avgLyrTempR[],
     const double oldavgLyrTempR[],
     const double vwcR[],
@@ -2380,8 +2384,7 @@ void soil_temperature_today(
     TimeInt year,
     TimeInt doy
 ) {
-
-    int i, k, m, Nsteps_per_day = 1;
+    unsigned int i, k, m, Nsteps_per_day = 1;
     double pe, cs, sh, dT_to_dX2, alpha, part2;
     double oldavgLyrTempR2[MAX_ST_RGR];
 

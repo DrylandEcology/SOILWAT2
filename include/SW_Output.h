@@ -173,9 +173,9 @@ void SW_OUT_construct(
 void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw);
 
 void SW_OUT_set_ncol(
-    int tLayers,
-    int n_evap_lyrs,
-    int nTaxaEstabl,
+    unsigned int tLayers,
+    unsigned int n_evap_lyrs,
+    unsigned int nTaxaEstabl,
     IntUS ncol_OUT[],
     IntUS nvar_OUT[],
     IntUS nsl_OUT[][SW_OUTNMAXVARS],
@@ -183,7 +183,7 @@ void SW_OUT_set_ncol(
 );
 
 void SW_OUT_set_colnames(
-    int tLayers,
+    unsigned int tLayers,
     SW_VEGESTAB_INFO **parms,
     const IntUS ncol_OUT[],
     char *colnames_OUT[][5 * NVEGTYPES + MAX_LAYERS],
@@ -191,8 +191,8 @@ void SW_OUT_set_colnames(
 );
 
 void SW_OUT_setup_output(
-    int tLayers,
-    int n_evap_lyrs,
+    unsigned int tLayers,
+    unsigned int n_evap_lyrs,
     SW_VEGESTAB *SW_VegEstab,
     SW_OUT_DOM *OutDom,
     LOG_INFO *LogInfo

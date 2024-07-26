@@ -274,7 +274,8 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     RealD *standingWaterToday = &sw->SoilWat.standingWater[Today];
     RealD *standingWaterYesterday = &sw->SoilWat.standingWater[Yesterday];
 
-    int doy, month, k;
+    TimeInt doy, month;
+    int k;
     LyrIndex i, n_layers = sw->Site.n_layers;
 
     RealD UpNeigh_lyrSWCBulk[MAX_LAYERS], UpNeigh_lyrDrain[MAX_LAYERS];

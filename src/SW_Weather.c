@@ -113,11 +113,11 @@ averages and standard deviations output by `averageClimateAcrossYears()`
 */
 void averageClimateAcrossYears(
     SW_CLIMATE_YEARLY *climateOutput,
-    int numYears,
+    unsigned int numYears,
     SW_CLIMATE_CLIM *climateAverages
 ) {
 
-    int month;
+    unsigned int month;
 
     // Take long-term average of monthly mean, maximum and minimum temperature
     // and precipitation throughout "numYears"
@@ -210,15 +210,16 @@ void calcSiteClimate(
     SW_WEATHER_HIST **allHist,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
-    int numYears,
-    int startYear,
+    unsigned int numYears,
+    unsigned int startYear,
     Bool inNorthHem,
     SW_CLIMATE_YEARLY *climateOutput
 ) {
 
-    int month, yearIndex, year, day, numDaysYear, currMonDay;
-    int numDaysMonth, adjustedDoy, adjustedYear = 0, secondMonth, seventhMonth;
-    int adjustedStartYear, calendarYearDays;
+    unsigned int month, yearIndex, year, day, numDaysYear, currMonDay;
+    unsigned int numDaysMonth, adjustedDoy, adjustedYear = 0, secondMonth,
+                                            seventhMonth;
+    unsigned int adjustedStartYear, calendarYearDays;
 
     double currentTempMin, currentTempMean, totalAbove65, current7thMonMin,
         PPT7thMon, consecNonFrost, currentNonFrost;
@@ -403,13 +404,14 @@ void calcSiteClimateLatInvariants(
     SW_WEATHER_HIST **allHist,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
-    int numYears,
-    int startYear,
+    unsigned int numYears,
+    unsigned int startYear,
     SW_CLIMATE_YEARLY *climateOutput
 ) {
 
-    int month = Jan, numDaysMonth = Time_days_in_month(month, days_in_month),
-        yearIndex, day, numDaysYear, currMonDay, year;
+    unsigned int month = Jan;
+    unsigned int numDaysMonth = Time_days_in_month(month, days_in_month);
+    unsigned int yearIndex, day, numDaysYear, currMonDay, year;
 
     for (yearIndex = 0; yearIndex < numYears; yearIndex++) {
         year = yearIndex + startYear;
@@ -462,22 +464,23 @@ during the driest quarter of the year
     numYears
 */
 void findDriestQtr(
-    int numYears,
+    unsigned int numYears,
     Bool inNorthHem,
     double *meanTempDriestQtr_C,
     double **meanTempMon_C,
     double **PPTMon_cm
 ) {
 
-    int yearIndex, month, prevMonth, nextMonth,
-        adjustedMonth = 0, numQuarterMonths = 3,
-        endNumYears = (inNorthHem) ? numYears : numYears - 1;
+    unsigned int yearIndex, month, prevMonth, nextMonth;
+    unsigned int adjustedMonth = 0;
+    unsigned int numQuarterMonths = 3;
+    unsigned int endNumYears = (inNorthHem) ? numYears : numYears - 1;
 
     // NOTE: These variables are the same throughout the program if site is in
     // northern hempisphere
     // The main purpose of these are to easily control the correct year when
     // dealing with adjusted years in the southern hempisphere
-    int adjustedYearZero = 0, adjustedYearOne = 0, adjustedYearTwo = 0;
+    unsigned int adjustedYearZero = 0, adjustedYearOne = 0, adjustedYearTwo = 0;
 
     double driestThreeMonPPT, driestMeanTemp, currentQtrPPT, currentQtrTemp;
 
@@ -555,13 +558,13 @@ years.
 @param[in,out] nextMonth Month following current input month
 */
 void driestQtrSouthAdjMonYears(
-    int month,
-    int *adjustedYearZero,
-    int *adjustedYearOne,
-    int *adjustedYearTwo,
-    int *adjustedMonth,
-    int *prevMonth,
-    int *nextMonth
+    unsigned int month,
+    unsigned int *adjustedYearZero,
+    unsigned int *adjustedYearOne,
+    unsigned int *adjustedYearTwo,
+    unsigned int *adjustedMonth,
+    unsigned int *prevMonth,
+    unsigned int *nextMonth
 ) {
     *adjustedMonth = month + Jul;
     *adjustedMonth %= MAX_MONTHS;
@@ -649,7 +652,7 @@ series
 */
 void readAllWeather(
     SW_WEATHER_HIST **allHist,
-    int startYear,
+    unsigned int startYear,
     unsigned int n_years,
     Bool use_weathergenerator_only,
     char weather_prefix[],
@@ -859,7 +862,7 @@ minimum and maximum air temperature.
 */
 void scaleAllWeather(
     SW_WEATHER_HIST **allHist,
-    int startYear,
+    unsigned int startYear,
     unsigned int n_years,
     double *scale_temp_max,
     double *scale_temp_min,
@@ -873,7 +876,7 @@ void scaleAllWeather(
     TimeInt days_in_month[]
 ) {
 
-    int year, month;
+    unsigned int year, month;
     unsigned int yearIndex, numDaysYear, day;
 
     Bool trivial = swTRUE;
@@ -1025,14 +1028,14 @@ this requires that appropriate structures are initialized.
 void generateMissingWeather(
     SW_MARKOV *SW_Markov,
     SW_WEATHER_HIST **allHist,
-    int startYear,
+    unsigned int startYear,
     unsigned int n_years,
     unsigned int method,
     unsigned int optLOCF_nMax,
     LOG_INFO *LogInfo
 ) {
 
-    int year;
+    unsigned int year;
     unsigned int yearIndex, numDaysYear, day, iMissing;
 
     double yesterdayPPT = 0., yesterdayTempMin = 0., yesterdayTempMax = 0.,
@@ -2552,13 +2555,13 @@ void initializeMonthlyClimatePtrs(SW_CLIMATE_YEARLY *climateOutput) {
 }
 
 void allocateClimateStructs(
-    int numYears,
+    unsigned int numYears,
     SW_CLIMATE_YEARLY *climateOutput,
     SW_CLIMATE_CLIM *climateAverages,
     LOG_INFO *LogInfo
 ) {
 
-    int month;
+    unsigned int month;
 
     initializeClimatePtrs(climateOutput, climateAverages);
 
