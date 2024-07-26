@@ -439,27 +439,27 @@ This code is distributed under the GNU LGPL license.
 @param[out] LogInfo Holds information on warnings and errors
 \return A random variate of a beta distribution.
 */
-float RandBeta(float aa, float bb, sw_random_t *pcg_rng, LOG_INFO *LogInfo) {
-    float a;
-    float alpha;
-    float b;
-    float beta;
-    float delta;
-    float gamma;
-    float k1;
-    float k2;
-    const float log4 = 1.3862943611198906188;
-    const float log5 = 1.6094379124341003746;
-    float r;
-    float s;
-    float t;
-    float u1;
-    float u2;
-    float v;
-    float value;
-    float w;
-    float y;
-    float z;
+double RandBeta(double aa, double bb, sw_random_t *pcg_rng, LOG_INFO *LogInfo) {
+    double a;
+    double alpha;
+    double b;
+    double beta;
+    double delta;
+    double gamma;
+    double k1;
+    double k2;
+    const double log4 = 1.3862943611198906188;
+    const double log5 = 1.6094379124341003746;
+    double r;
+    double s;
+    double t;
+    double u1;
+    double u2;
+    double v;
+    double value;
+    double w;
+    double y;
+    double z;
 
     if (aa <= 0.0) {
         LogError(LogInfo, LOGERROR, "RandBeta - Fatal error: AA <= 0.0\n");

@@ -48,7 +48,7 @@ void RandUniList(
     LOG_INFO *LogInfo
 );
 
-float RandBeta(float aa, float bb, sw_random_t *pcg_rng, LOG_INFO *LogInfo);
+double RandBeta(double aa, double bb, sw_random_t *pcg_rng, LOG_INFO *LogInfo);
 
 
 #ifdef __cplusplus
