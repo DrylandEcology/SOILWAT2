@@ -1618,11 +1618,11 @@ void SW_LYR_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
     FILE *f;
     LyrIndex lyrno;
     int x, k, index;
-    RealF dmin = 0.0, dmax, evco, trco_veg[NVEGTYPES], psand, pclay,
-          soildensity, imperm, soiltemp, f_gravel;
+    double dmin = 0.0, dmax, evco, trco_veg[NVEGTYPES], psand, pclay,
+           soildensity, imperm, soiltemp, f_gravel;
     char inbuf[MAX_FILENAMESIZE];
-    char inFloatStrs[12][20] = {{'\0'}};
-    float *inFloatVals[] = {
+    char inDoubleStrs[12][20] = {{'\0'}};
+    double *inDoubleVals[] = {
         &dmax,
         &soildensity,
         &f_gravel,
@@ -1636,7 +1636,7 @@ void SW_LYR_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
         &imperm,
         &soiltemp
     };
-    const int numFloatInStrings = 12;
+    const int numDoubleInStrings = 12;
 
     /* note that Files.read() must be called prior to this. */
     char *MyFileName = InFiles[eLayers];
@@ -1652,18 +1652,18 @@ void SW_LYR_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
         x = sscanf(
             inbuf,
             "%19s %19s %19s %19s %19s %19s %19s %19s %19s %19s %19s %19s",
-            inFloatStrs[0],
-            inFloatStrs[1],
-            inFloatStrs[2],
-            inFloatStrs[3],
-            inFloatStrs[4],
-            inFloatStrs[5],
-            inFloatStrs[6],
-            inFloatStrs[7],
-            inFloatStrs[8],
-            inFloatStrs[9],
-            inFloatStrs[10],
-            inFloatStrs[11]
+            inDoubleStrs[0],
+            inDoubleStrs[1],
+            inDoubleStrs[2],
+            inDoubleStrs[3],
+            inDoubleStrs[4],
+            inDoubleStrs[5],
+            inDoubleStrs[6],
+            inDoubleStrs[7],
+            inDoubleStrs[8],
+            inDoubleStrs[9],
+            inDoubleStrs[10],
+            inDoubleStrs[11]
         );
 
         /* Check that we have 12 values per layer */
@@ -1679,10 +1679,10 @@ void SW_LYR_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
             goto closeFile;
         }
 
-        /* Convert float strings to floats */
-        for (index = 0; index < numFloatInStrings; index++) {
-            *(inFloatVals[index]) =
-                sw_strtof(inFloatStrs[index], MyFileName, LogInfo);
+        /* Convert strings to doubles */
+        for (index = 0; index < numDoubleInStrings; index++) {
+            *(inDoubleVals[index]) =
+                sw_strtod(inDoubleStrs[index], MyFileName, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;
             }

@@ -1021,8 +1021,8 @@ the available soilwater of each veg type above so start at bottom move up.
 void get_dSWAbulk(
     unsigned int i,
     SW_VEGPROD *SW_VegProd,
-    RealF swa_master[][NVEGTYPES][MAX_LAYERS],
-    RealF dSWA_repart_sum[][MAX_LAYERS]
+    double swa_master[][NVEGTYPES][MAX_LAYERS],
+    double dSWA_repart_sum[][MAX_LAYERS]
 ) {
 
     int j, kv, curr_vegType, curr_crit_rank_index, kv_veg_type,
@@ -1033,9 +1033,9 @@ void get_dSWAbulk(
     double veg_type_in_use, vegFractionSum, newFraction;
     double inner_loop_veg_type; // set to inner loop veg type
     smallestCritVal = SW_VegProd->critSoilWater[SW_VegProd->rank_SWPcrits[0]];
-    RealF dSWA_bulk[NVEGTYPES * NVEGTYPES][NVEGTYPES * NVEGTYPES][MAX_LAYERS];
-    RealF dSWA_bulk_repartioned[NVEGTYPES * NVEGTYPES][NVEGTYPES * NVEGTYPES]
-                               [MAX_LAYERS];
+    double dSWA_bulk[NVEGTYPES * NVEGTYPES][NVEGTYPES * NVEGTYPES][MAX_LAYERS];
+    double dSWA_bulk_repartioned[NVEGTYPES * NVEGTYPES][NVEGTYPES * NVEGTYPES]
+                                [MAX_LAYERS];
 
     // need to initialize to 0
     for (curr_vegType = 0; curr_vegType < NVEGTYPES; curr_vegType++) {

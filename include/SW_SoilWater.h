@@ -184,8 +184,8 @@ void SW_SWC_end_day(SW_SOILWAT *SW_SoilWat, LyrIndex n_layers);
 void get_dSWAbulk(
     unsigned int i,
     SW_VEGPROD *SW_VegProd,
-    RealF swa_master[][NVEGTYPES][MAX_LAYERS],
-    RealF dSWA_repart_sum[][MAX_LAYERS]
+    double swa_master[][NVEGTYPES][MAX_LAYERS],
+    double dSWA_repart_sum[][MAX_LAYERS]
 );
 
 RealD SW_SWRC_SWCtoSWP(

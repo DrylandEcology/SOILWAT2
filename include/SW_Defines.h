@@ -279,7 +279,7 @@ typedef unsigned short OutPeriod;
  * before I got the documentation.
  */
 typedef struct {
-    RealF xinflec, yinflec, range, slope;
+    double xinflec, yinflec, range, slope;
 } tanfunc_t;
 
 /* standardize the test for missing */

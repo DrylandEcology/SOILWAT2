@@ -22,7 +22,7 @@
 /* --------------------------------------------------- */
 #include "include/SW_Markov.h"      // for SW_MKV_construct, SW_MKV_deconst...
 #include "include/filefuncs.h"      // for LogError, CloseFile, GetALine
-#include "include/generic.h"        // for RealD, RealF, LOGERROR, swFALSE
+#include "include/generic.h"        // for RealD, LOGERROR, swFALSE
 #include "include/myMemory.h"       // for Mem_Calloc, Mem_Copy
 #include "include/rands.h"          // for RandNorm, RandSeed, RandUni
 #include "include/SW_datastructs.h" // for SW_MARKOV, LOG_INFO
@@ -409,7 +409,7 @@ void SW_MKV_today(
      * 1 leave with rain == today's ppt
      */
     TimeInt week;
-    RealF prob, p, x;
+    double prob, p, x;
 
 #ifdef SWDEBUG
     short debug = 0;
@@ -527,10 +527,10 @@ Bool SW_MKV_read_prob(
 
     FILE *f;
     int lineno = 0, day, x, index;
-    RealF wet, dry, avg, std;
-    RealF *floatVals[4] = {&wet, &dry, &avg, &std};
+    double wet, dry, avg, std;
+    double *doubleVals[4] = {&wet, &dry, &avg, &std};
     char inbuf[MAX_FILENAMESIZE];
-    char dayStr[4] = {'\0'}, inFloatStrs[4][20] = {{'\0'}};
+    char dayStr[4] = {'\0'}, inDoubleStrs[4][20] = {{'\0'}};
 
     Bool result = swTRUE;
 
@@ -550,10 +550,10 @@ Bool SW_MKV_read_prob(
             inbuf,
             "%3s %19s %19s %19s %19s",
             dayStr,
-            inFloatStrs[0],
-            inFloatStrs[1],
-            inFloatStrs[2],
-            inFloatStrs[3]
+            inDoubleStrs[0],
+            inDoubleStrs[1],
+            inDoubleStrs[2],
+            inDoubleStrs[3]
         );
 
         day = sw_strtoi(dayStr, MyFileName, LogInfo);
@@ -563,8 +563,8 @@ Bool SW_MKV_read_prob(
         }
 
         for (index = 0; index < numFloatInStrings; index++) {
-            *(floatVals[index]) =
-                sw_strtof(inFloatStrs[index], MyFileName, LogInfo);
+            *(doubleVals[index]) =
+                sw_strtod(inDoubleStrs[index], MyFileName, LogInfo);
             if (LogInfo->stopRun) {
                 result = swFALSE;
                 goto closeFile;
@@ -672,12 +672,12 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo) {
     FILE *f;
     int lineno = 0, week, x, index;
     char inbuf[MAX_FILENAMESIZE];
-    RealF t1, t2, t3, t4, t5, t6, cfxw, cfxd, cfnw, cfnd;
-    RealF *floatVals[] = {
+    double t1, t2, t3, t4, t5, t6, cfxw, cfxd, cfnw, cfnd;
+    double *doubleVals[] = {
         &t1, &t2, &t3, &t4, &t5, &t6, &cfxw, &cfxd, &cfnw, &cfnd
     };
-    char weekStr[3] = {'\0'}, inFloatStrs[10][20] = {{'\0'}};
-    const int numFloatVals = 10;
+    char weekStr[3] = {'\0'}, inDoubleStrs[10][20] = {{'\0'}};
+    const int numDoubleVals = 10;
     Bool result = swTRUE;
 
     char *MyFileName = InFiles[eMarkovCov];
@@ -695,16 +695,16 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo) {
             inbuf,
             "%2s %19s %19s %19s %19s %19s %19s %19s %19s %19s %19s",
             weekStr,
-            inFloatStrs[0],
-            inFloatStrs[1],
-            inFloatStrs[2],
-            inFloatStrs[3],
-            inFloatStrs[4],
-            inFloatStrs[5],
-            inFloatStrs[6],
-            inFloatStrs[7],
-            inFloatStrs[8],
-            inFloatStrs[9]
+            inDoubleStrs[0],
+            inDoubleStrs[1],
+            inDoubleStrs[2],
+            inDoubleStrs[3],
+            inDoubleStrs[4],
+            inDoubleStrs[5],
+            inDoubleStrs[6],
+            inDoubleStrs[7],
+            inDoubleStrs[8],
+            inDoubleStrs[9]
         );
 
         // Check that text file is ok:
@@ -727,9 +727,9 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo) {
             goto closeFile;
         }
 
-        for (index = 0; index < numFloatVals; index++) {
-            *(floatVals[index]) =
-                sw_strtof(inFloatStrs[index], MyFileName, LogInfo);
+        for (index = 0; index < numDoubleVals; index++) {
+            *(doubleVals[index]) =
+                sw_strtod(inDoubleStrs[index], MyFileName, LogInfo);
             if (LogInfo->stopRun) {
                 result = swFALSE;
                 goto closeFile;

@@ -100,17 +100,9 @@ extern "C" {
 #define fmin(a, b) ((LT((a), (b))) ? (a) : (b))
 #endif
 
-/* redefine sqrt for double (default) or float */
-#ifdef NO_SQRTF /* the case for Borland's compiler */
-#define sqrtf sqrt
-#endif
-
-#define sqrt(x) ((sizeof(x) == sizeof(float)) ? sqrtf(x) : sqrt(x))
-
 #define isnull(a) (NULL == (a))
 
 /* ---------   Redefine basic types to be more malleable ---- */
-typedef float RealF;
 typedef double RealD;
 typedef int Int;
 typedef unsigned int IntU;
@@ -123,16 +115,6 @@ typedef enum { swFALSE = (1 != 1), swTRUE = (1 == 1) } Bool;
 
 typedef unsigned char byte;
 
-/* an attempt to facilitate integer implementation of real */
-/*
- typedef long IRealF
- typedef double long IRealD
- #define IF_GRAIN 10000000L
- #define F2I(x) ((IRealF)(x*IF_GRAIN))
- #define D2I(x) ((IRealD)(x*ID_GRAIN))
- #define I2F(x) ((( RealF)x/IF_GRAIN))
- #define I2D(x) ((( RealD)x/ID_GRAIN))
- */
 
 /* --------------------------------------------------*/
 /* These are facilities for logging errors.          */
@@ -154,6 +136,7 @@ typedef unsigned char byte;
 
 /* --------------------------------------------------*/
 /* --------------------------------------------------*/
+
 /* The following tests account for imprecision in the
  floating point representation of either single
  or double real numbers.  Use these instead of
@@ -201,9 +184,14 @@ typedef unsigned char byte;
     for floats/doubles, which are typically not used with side-effecting
     expressions.
  */
-#define F_DELTA (10 * FLT_EPSILON)
 #define D_DELTA (10 * DBL_EPSILON)
 
+
+#if defined(STEPWAT)
+/* ------ STEPWAT2 uses floats and doubles ------ */
+typedef float RealF;
+
+#define F_DELTA (10 * FLT_EPSILON)
 
 // new definitions for these four macros (MUCH MUCH faster, by a factor of about
 // 4)... just trying them out for now.  The idea behind how these work is that
@@ -216,13 +204,6 @@ typedef unsigned char byte;
          (MAX(F_DELTA, FLT_EPSILON * MAX(fabs(x), fabs(y)))) : \
          (MAX(D_DELTA, DBL_EPSILON * MAX(fabs(x), fabs(y)))))
 
-/**< LT tests whether x is less than y while accounting for floating-point
- * arithmetic */
-#define LT(x, y) ((x) < ((y) - GET_F_DELTA(x, y)))
-
-/**< GT tests whether x is greater than y while accounting for floating-point
- * arithmetic */
-#define GT(x, y) ((x) > ((y) + GET_F_DELTA(x, y)))
 
 /**< ZRO tests whether x is equal to zero while accounting for floating-point
  * arithmetic */
@@ -231,6 +212,45 @@ typedef unsigned char byte;
 // equal... it would be a waste of time.
 #define ZRO(x) \
     ((sizeof(x) == sizeof(float)) ? (fabs(x) <= F_DELTA) : (fabs(x) <= D_DELTA))
+
+
+/* redefine sqrt for double (default) or float */
+#ifdef NO_SQRTF /* the case for Borland's compiler */
+#define sqrtf sqrt
+#endif
+
+#define sqrt(x) ((sizeof(x) == sizeof(float)) ? sqrtf(x) : sqrt(x))
+
+
+#else /* !defined(STEPWAT), i.e., SOILWAT2 and rSOILWAT2 */
+/* ------ SOILWAT2 uses doubles (>= v8.1.0) ------ */
+
+// new definitions for these four macros (MUCH MUCH faster, by a factor of about
+// 4)... just trying them out for now.  The idea behind how these work is that
+// both an absolute error and relative error check are being used in conjunction
+// with one another.  In this for now I'm using F_DELTA for the amount of
+// absolute error allowed and FLT_EPSILON for the amount of relative error
+// allowed.
+#define GET_F_DELTA(x, y) (MAX(D_DELTA, DBL_EPSILON * MAX(fabs(x), fabs(y))))
+
+/**< ZRO tests whether x is equal to zero while accounting for floating-point
+ * arithmetic */
+// for iszero(x) we just use an absolute error check, because a relative error
+// check doesn't make sense for any number close enough to zero to be considered
+// equal... it would be a waste of time.
+#define ZRO(x) (fabs(x) <= D_DELTA)
+
+#endif
+
+
+/**< LT tests whether x is less than y while accounting for floating-point
+ * arithmetic */
+#define LT(x, y) ((x) < ((y) - GET_F_DELTA(x, y)))
+
+/**< GT tests whether x is greater than y while accounting for floating-point
+ * arithmetic */
+#define GT(x, y) ((x) > ((y) + GET_F_DELTA(x, y)))
+
 
 /**< EQ tests whether x and y are equal based on a specified tolerance */
 #define EQ_w_tol(x, y, tol) (fabs((x) - (y)) <= tol)

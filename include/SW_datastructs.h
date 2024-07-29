@@ -870,9 +870,9 @@ typedef struct {
         standingWater[TWO_DAYS]; /* water on soil surface if layer below is
                                     saturated */
 
-    RealF swa_master[NVEGTYPES][NVEGTYPES]
-                    [MAX_LAYERS]; // veg_type, crit_val, layer
-    RealF dSWA_repartitioned_sum[NVEGTYPES][MAX_LAYERS];
+    double swa_master[NVEGTYPES][NVEGTYPES]
+                     [MAX_LAYERS]; // veg_type, crit_val, layer
+    double dSWA_repartitioned_sum[NVEGTYPES][MAX_LAYERS];
 
     Bool soiltempError; // soil temperature error indicator
 #ifdef SWDEBUG
@@ -1357,22 +1357,22 @@ typedef struct {
     /* Variables from SXW_t (STEPWAT2) used in SOILWAT2 */
     // transpXXX: monthly sum of soilwat's transpiration by soil layer
     // * these are dynamic arrays that are indexed by Ilp()
-    RealD transpTotal[MAX_LAYERS][MAX_MONTHS], // total transpiration, i.e., sum
-                                               // across vegetation types
+    double transpTotal[MAX_LAYERS][MAX_MONTHS], // total transpiration, i.e.,
+                                                // sum across vegetation types
         transpVeg[NVEGTYPES][MAX_LAYERS]
                  [MAX_MONTHS]; // transpiration as contributed by vegetation
                                // types
-    RealF swc[MAX_LAYERS]
-             [MAX_MONTHS]; // monthly mean SWCbulk for each soil layer
+    double swc[MAX_LAYERS]
+              [MAX_MONTHS]; // monthly mean SWCbulk for each soil layer
 
     // fixed monthly array:
-    RealF ppt_monthly[MAX_MONTHS];  // monthly sum of soilwat's precipitation
-    RealF temp_monthly[MAX_MONTHS]; // monthly mean soilwat's air temperature
+    double ppt_monthly[MAX_MONTHS];  // monthly sum of soilwat's precipitation
+    double temp_monthly[MAX_MONTHS]; // monthly mean soilwat's air temperature
 
     // annual values:
-    RealF temp, // annual mean soilwat's air temperature
-        ppt,    // annual sum of soilwat's precipitation
-        aet;    // annual sum of soilwat's evapotranspiration
+    double temp, // annual mean soilwat's air temperature
+        ppt,     // annual sum of soilwat's precipitation
+        aet;     // annual sum of soilwat's evapotranspiration
 #endif
 } SW_OUT_RUN;
 

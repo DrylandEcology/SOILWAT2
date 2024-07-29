@@ -170,7 +170,7 @@ long RandUniIntRange(
     (void) pcg_rng; // silence compile warnings [-Wunused-parameter]
 
     GetRNGstate();
-    res = (long) runif(f, l);
+    res = (long) runif((double) f, (double) l);
     PutRNGstate();
 #endif
 
