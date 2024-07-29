@@ -944,7 +944,7 @@ void calculate_repartitioned_soilwater(
     LyrIndex i;
     RealD val = SW_MISSING;
     int j, k;
-    float curr_crit_val, new_crit_val;
+    double curr_crit_val, new_crit_val;
 
     ForEachSoilLayer(i, n_layers) {
         val = SW_SoilWat->swcBulk[Today][i];
@@ -1027,11 +1027,11 @@ void get_dSWAbulk(
 
     int j, kv, curr_vegType, curr_crit_rank_index, kv_veg_type,
         prev_crit_veg_type, greater_veg_type;
-    float crit_val, prev_crit_val, smallestCritVal, vegFractionSum, newFraction;
+    double crit_val, prev_crit_val, smallestCritVal;
     // set to current veg type fraction value to avoid multiple if loops. should
     // just need 1 instead of 3 now.
-    float veg_type_in_use;
-    float inner_loop_veg_type; // set to inner loop veg type
+    double veg_type_in_use, vegFractionSum, newFraction;
+    double inner_loop_veg_type; // set to inner loop veg type
     smallestCritVal = SW_VegProd->critSoilWater[SW_VegProd->rank_SWPcrits[0]];
     RealF dSWA_bulk[NVEGTYPES * NVEGTYPES][NVEGTYPES * NVEGTYPES][MAX_LAYERS];
     RealF dSWA_bulk_repartioned[NVEGTYPES * NVEGTYPES][NVEGTYPES * NVEGTYPES]
@@ -1425,11 +1425,11 @@ void read_swc_hist(
      */
     FILE *f;
     int x, lyr = 0, recno = 0, doy = 0, index;
-    RealF swc = 0., st_err = 0.;
+    double swc = 0., st_err = 0.;
     char fname[MAX_FILENAMESIZE], inbuf[MAX_FILENAMESIZE];
     char varStrs[4][20] = {{'\0'}};
     int *inBufIntVals[] = {&doy, &lyr};
-    float *inBufFloatVals[] = {&swc, &st_err};
+    double *inBufDoubleVals[] = {&swc, &st_err};
     const int numInValsPerType = 2;
 
     snprintf(
@@ -1483,8 +1483,8 @@ void read_swc_hist(
                 goto closeFile;
             }
 
-            *(inBufFloatVals[index]) =
-                sw_strtof(varStrs[index + 2], fname, LogInfo);
+            *(inBufDoubleVals[index]) =
+                sw_strtod(varStrs[index + 2], fname, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;
             }

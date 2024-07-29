@@ -457,8 +457,8 @@ static void checkit(
     SW_VEGESTAB_INFO *v = parms[sppnum];
 
     IntU i;
-    RealF avgtemp = wn->temp_avg; /* avg of today's min/max temp */
-    RealF avgswc;                 /* avg_swc today */
+    double avgtemp = wn->temp_avg; /* avg of today's min/max temp */
+    double avgswc;                 /* avg_swc today */
 
     if (doy == firstdoy) {
         zero_state(sppnum, parms);
@@ -506,7 +506,7 @@ static void checkit(
         for (i = 0; i < v->estab_lyrs;) {
             avgswc += swcBulk[Today][i++];
         }
-        avgswc /= (RealF) v->estab_lyrs;
+        avgswc /= (double) v->estab_lyrs;
         if (LT(avgswc, v->min_swc_estab)) {
             v->drydays_postgerm++;
             v->wetdays_for_estab = 0;
@@ -571,7 +571,7 @@ static void read_spp(
     char name[80]; /* only allow 4 char sppnames */
     char inbuf[MAX_FILENAMESIZE];
     int inBufintRes;
-    double inBufFloatVal;
+    double inBufDoubleVal;
 
     Bool doIntConv;
 
@@ -594,7 +594,7 @@ static void read_spp(
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
 
         if (lineno >= 1 && lineno <= 15) {
-            /* Check to see if the line number contains an integer or float
+            /* Check to see if the line number contains an integer or double
              * value */
             doIntConv = (Bool) ((lineno >= 1 && lineno <= 2) ||
                                 (lineno >= 5 && lineno <= 11));
@@ -602,7 +602,7 @@ static void read_spp(
             if (doIntConv) {
                 inBufintRes = sw_strtoi(inbuf, infile, LogInfo);
             } else {
-                inBufFloatVal = sw_strtof(inbuf, infile, LogInfo);
+                inBufDoubleVal = sw_strtod(inbuf, infile, LogInfo);
             }
 
             if (LogInfo->stopRun) {
@@ -621,10 +621,10 @@ static void read_spp(
             v->estab_lyrs = inBufintRes;
             break;
         case 3:
-            v->bars[SW_GERM_BARS] = fabs(inBufFloatVal);
+            v->bars[SW_GERM_BARS] = fabs(inBufDoubleVal);
             break;
         case 4:
-            v->bars[SW_ESTAB_BARS] = fabs(inBufFloatVal);
+            v->bars[SW_ESTAB_BARS] = fabs(inBufDoubleVal);
             break;
         case 5:
             v->min_pregerm_days = inBufintRes;
@@ -648,16 +648,16 @@ static void read_spp(
             v->max_days_germ2estab = inBufintRes;
             break;
         case 12:
-            v->min_temp_germ = inBufFloatVal;
+            v->min_temp_germ = inBufDoubleVal;
             break;
         case 13:
-            v->max_temp_germ = inBufFloatVal;
+            v->max_temp_germ = inBufDoubleVal;
             break;
         case 14:
-            v->min_temp_estab = inBufFloatVal;
+            v->min_temp_estab = inBufDoubleVal;
             break;
         case 15:
-            v->max_temp_estab = inBufFloatVal;
+            v->max_temp_estab = inBufDoubleVal;
             break;
         default:
             LogError(
@@ -743,7 +743,7 @@ void spp_init(
             return; // Exit function prematurely due to error
         }
     }
-    parms_sppnum->min_swc_estab /= (RealF) parms_sppnum->estab_lyrs;
+    parms_sppnum->min_swc_estab /= (double) parms_sppnum->estab_lyrs;
 
     sanity_check(
         sppnum, SW_Site->swcBulk_wiltpt, n_transp_lyrs, parms, LogInfo
@@ -832,7 +832,7 @@ static void sanity_check(
     for (i = 0; i < parms_sppnum->estab_lyrs; i++) {
         mean_wiltpt += swcBulk_wiltpt[i];
     }
-    mean_wiltpt /= (RealF) parms_sppnum->estab_lyrs;
+    mean_wiltpt /= (double) parms_sppnum->estab_lyrs;
 
     if (LT(parms_sppnum->min_swc_estab, mean_wiltpt)) {
         LogError(

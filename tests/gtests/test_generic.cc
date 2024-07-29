@@ -22,7 +22,7 @@ double x[N] = {-4., -3., -2., -1., 0., 1., 2., 3., 4.},
         2.44949,
         2.738613
 };
-float tol = 1e-6;
+double tol = 1e-6;
 
 TEST(GenericTest, GenericRunningMean) {
     double m_at_k = 0.;

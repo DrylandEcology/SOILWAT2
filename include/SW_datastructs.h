@@ -982,7 +982,7 @@ typedef struct {
         estab_lyrs;   /* estab could conceivably need more than one layer */
                       /* swc is averaged over these top layers to compare to */
                       /* the converted value from min_swc_estab */
-    RealF bars[2],    /* read from input, saved for reporting */
+    double bars[2],   /* read from input, saved for reporting */
         min_swc_germ, /* wetting point required for germination converted from
                        */
         /* bars to cm per layer for efficiency in the loop */

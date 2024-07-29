@@ -83,7 +83,7 @@ swcBulk_atSWPcrit[SW_FORBS], and my_transp_rgn[SW_FORBS] to SW_LAYER_INFO
 #ifndef SW_SITE_H
 #define SW_SITE_H
 
-#include "include/generic.h"        // for Bool, RealD, RealF
+#include "include/generic.h"        // for Bool, RealD
 #include "include/SW_datastructs.h" // for SW_SITE, SW_VEGPROD, LOG_INFO
 #include "include/SW_Defines.h"     // for LyrIndex
 
@@ -310,18 +310,18 @@ void set_soillayers(
     SW_VEGPROD *SW_VegProd,
     SW_SITE *SW_Site,
     LyrIndex nlyrs,
-    const RealF *dmax,
-    const RealF *bd,
-    const RealF *f_gravel,
-    const RealF *evco,
-    const RealF *trco_grass,
-    const RealF *trco_shrub,
-    const RealF *trco_tree,
-    const RealF *trco_forb,
-    const RealF *psand,
-    const RealF *pclay,
-    const RealF *imperm,
-    const RealF *soiltemp,
+    const double *dmax,
+    const double *bd,
+    const double *f_gravel,
+    const double *evco,
+    const double *trco_grass,
+    const double *trco_shrub,
+    const double *trco_tree,
+    const double *trco_forb,
+    const double *psand,
+    const double *pclay,
+    const double *imperm,
+    const double *soiltemp,
     int nRegions,
     RealD *regionLowerBounds,
     LOG_INFO *LogInfo

@@ -22,8 +22,7 @@
 #ifndef SOILW_DEF_H
 #define SOILW_DEF_H
 
-#include "include/generic.h" // for IntUS, RealF
-#include <time.h>            // for time_t, timespec
+#include <time.h> // for time_t, timespec
 
 #if !defined(RSOILWAT)              /* rSOILWAT2 uses R's RNGs */
 #include "external/pcg/pcg_basic.h" // for pcg32_random_t
@@ -171,9 +170,8 @@ extern "C" {
 #define MAX_WEEKS 53
 #define MAX_DAYS 366
 
-#define SWRC_PARAM_NMAX                                  \
-    6 /**< Maximal number of SWRC parameters implemented \
-       */
+/** Maximal number of SWRC parameters implemented */
+#define SWRC_PARAM_NMAX 6
 
 /*
    Indices to daily input flags/indices (dailyInputFlags & dailyInputIndices in
@@ -217,8 +215,8 @@ extern "C" {
 #define eSW_Year 3
 #define eSW_NoTime 999 // no time period
 // c++ doesn't support (pd)++ for pd as a typedef enum OutPeriod in
-// macro `ForEachOutPeriod` --> instead, define as type `IntUS`
-typedef IntUS OutPeriod;
+// macro `ForEachOutPeriod` --> instead, define as type unsigned int
+typedef unsigned short OutPeriod;
 
 /*
   * Number of output keys

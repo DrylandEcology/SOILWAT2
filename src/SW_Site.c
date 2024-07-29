@@ -1324,10 +1324,9 @@ void SW_SIT_read(
     char inbuf[MAX_FILENAMESIZE];
     int intRes = 0;
     double doubleRes = 0.;
-    float floatRes = 0.;
     char rgnStr[2][10] = {{'\0'}};
 
-    Bool doDoubleConv, doFloatConv, strLine;
+    Bool doDoubleConv, strLine;
 
     /* note that Files.read() must be called prior to this. */
     char *MyFileName = InFiles[eSite];
@@ -1344,16 +1343,11 @@ void SW_SIT_read(
         if (!strLine && lineno <= 38) {
             /* Check to see if the line number contains a double or integer
              * value */
-            doFloatConv = (Bool) (lineno >= 14 && lineno <= 21);
-
-            doDoubleConv =
-                (Bool) (!doFloatConv && ((lineno >= 0 && lineno <= 2) ||
-                                         (lineno >= 5 && lineno <= 31)));
+            doDoubleConv = (Bool) ((lineno >= 0 && lineno <= 2) ||
+                                   (lineno >= 5 && lineno <= 31));
 
             if (doDoubleConv) {
                 doubleRes = sw_strtod(inbuf, MyFileName, LogInfo);
-            } else if (doFloatConv) {
-                floatRes = sw_strtof(inbuf, MyFileName, LogInfo);
             } else {
                 intRes = sw_strtoi(inbuf, MyFileName, LogInfo);
             }
@@ -1407,28 +1401,28 @@ void SW_SIT_read(
             SW_Site->slow_drain_coeff = doubleRes;
             break;
         case 14:
-            SW_Site->evap.xinflec = floatRes;
+            SW_Site->evap.xinflec = doubleRes;
             break;
         case 15:
-            SW_Site->evap.slope = floatRes;
+            SW_Site->evap.slope = doubleRes;
             break;
         case 16:
-            SW_Site->evap.yinflec = floatRes;
+            SW_Site->evap.yinflec = doubleRes;
             break;
         case 17:
-            SW_Site->evap.range = floatRes;
+            SW_Site->evap.range = doubleRes;
             break;
         case 18:
-            SW_Site->transp.xinflec = floatRes;
+            SW_Site->transp.xinflec = doubleRes;
             break;
         case 19:
-            SW_Site->transp.slope = floatRes;
+            SW_Site->transp.slope = doubleRes;
             break;
         case 20:
-            SW_Site->transp.yinflec = floatRes;
+            SW_Site->transp.yinflec = doubleRes;
             break;
         case 21:
-            SW_Site->transp.range = floatRes;
+            SW_Site->transp.range = doubleRes;
             break;
         case 22:
             SW_Site->bmLimiter = doubleRes;
@@ -1777,24 +1771,24 @@ void set_soillayers(
     SW_VEGPROD *SW_VegProd,
     SW_SITE *SW_Site,
     LyrIndex nlyrs,
-    const RealF *dmax,
-    const RealF *bd,
-    const RealF *f_gravel,
-    const RealF *evco,
-    const RealF *trco_grass,
-    const RealF *trco_shrub,
-    const RealF *trco_tree,
-    const RealF *trco_forb,
-    const RealF *psand,
-    const RealF *pclay,
-    const RealF *imperm,
-    const RealF *soiltemp,
+    const double *dmax,
+    const double *bd,
+    const double *f_gravel,
+    const double *evco,
+    const double *trco_grass,
+    const double *trco_shrub,
+    const double *trco_tree,
+    const double *trco_forb,
+    const double *psand,
+    const double *pclay,
+    const double *imperm,
+    const double *soiltemp,
     int nRegions,
     RealD *regionLowerBounds,
     LOG_INFO *LogInfo
 ) {
 
-    RealF dmin = 0.0;
+    double dmin = 0.0;
 
     LyrIndex lyrno;
     unsigned int i, k;
@@ -1952,10 +1946,10 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
     FILE *f;
     LyrIndex lyrno = 0, k;
     int x, index;
-    RealF tmp_swrcp[SWRC_PARAM_NMAX];
+    double tmp_swrcp[SWRC_PARAM_NMAX];
     char inbuf[MAX_FILENAMESIZE];
-    char swrcpFloatStrs[6][20] = {{'\0'}};
-    const int numFloatInStrings = 6;
+    char swrcpDoubleStrs[6][20] = {{'\0'}};
+    const int numDoubleInStrings = 6;
 
     /* note that Files.read() must be called prior to this. */
     char *MyFileName = InFiles[eSWRCp];
@@ -1969,12 +1963,12 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
         x = sscanf(
             inbuf,
             "%19s %19s %19s %19s %19s %19s",
-            swrcpFloatStrs[0],
-            swrcpFloatStrs[1],
-            swrcpFloatStrs[2],
-            swrcpFloatStrs[3],
-            swrcpFloatStrs[4],
-            swrcpFloatStrs[5]
+            swrcpDoubleStrs[0],
+            swrcpDoubleStrs[1],
+            swrcpDoubleStrs[2],
+            swrcpDoubleStrs[3],
+            swrcpDoubleStrs[4],
+            swrcpDoubleStrs[5]
         );
 
         /* Note: `SW_SIT_init_run()` will call function to check for valid
@@ -1993,10 +1987,10 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
             goto closeFile;
         }
 
-        /* Convert float strings to floats */
-        for (index = 0; index < numFloatInStrings; index++) {
+        /* Convert strings to doubles */
+        for (index = 0; index < numDoubleInStrings; index++) {
             tmp_swrcp[index] =
-                sw_strtof(swrcpFloatStrs[index], MyFileName, LogInfo);
+                sw_strtod(swrcpDoubleStrs[index], MyFileName, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;
             }

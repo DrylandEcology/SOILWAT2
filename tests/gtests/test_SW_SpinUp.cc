@@ -314,8 +314,8 @@ TEST_F(SpinUpTest, SpinupEvaluation) {
     char fname[FILENAME_MAX];
     int i, n = 8, // n = number of soil layers to test
         k1, test_duration[6] = {0, 1, 3, 5, 10, 20}, k2, k3;
-    float test_swcInit[4] = {0.5, 1, 15, 45};
-    float test_tsInit[5][8] = {
+    double test_swcInit[4] = {0.5, 1, 15, 45};
+    double test_tsInit[5][8] = {
         {-2, -2, -2, -2, -2, -2, -2, -2},
         {0, 0, 0, 0, 0, 0, 0, 0},
         {-1, -1, -1, -1, 0, 0, 1, 1},

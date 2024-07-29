@@ -1712,7 +1712,7 @@ void SW_WTH_setup(
     double inBufdoubleRes = 0.;
 
     char weathInputStrs[9][20] = {{'\0'}};
-    RealD *inFloatVals[8] = {
+    RealD *inDoubleVals[8] = {
         &sppt, &stmax, &stmin, &sky, &wind, &rH, &actVP, &shortWaveRad
     };
     const int numInDefaultVars = 9;
@@ -1899,7 +1899,7 @@ void SW_WTH_setup(
                     month =
                         sw_strtoi(weathInputStrs[index], MyFileName, LogInfo);
                 } else {
-                    *(inFloatVals[index - 1]) =
+                    *(inDoubleVals[index - 1]) =
                         sw_strtod(weathInputStrs[index], MyFileName, LogInfo);
                 }
 
@@ -2212,8 +2212,7 @@ void read_weather_hist(
     FILE *f;
     unsigned int x, lineno = 0, index;
     int doy = 0;
-    // TimeInt mon, j, k = 0;
-    // RealF acc = 0.0;
+
     RealD weathInput[MAX_INPUT_COLUMNS];
 
     Bool hasMaxMinTemp =

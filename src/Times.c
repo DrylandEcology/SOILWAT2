@@ -298,7 +298,7 @@ double diff_walltime(WallTimeSpec start, Bool ok_start) {
 #if SW_TIMESPEC == 1
             /* C11 or later */
             d = difftime(end.tv_sec, start.tv_sec) +
-                (end.tv_nsec - start.tv_nsec) / 1000000000.;
+                (double) (end.tv_nsec - start.tv_nsec) / 1.e9;
 
 #else
             d = difftime(end, start);

@@ -92,7 +92,7 @@ vegtype variable forb and forb.cov.fCover
 /* --------------------------------------------------- */
 #include "include/SW_VegProd.h"     // for BIO_INDEX, SW_VPD_alloc_outptrs
 #include "include/filefuncs.h"      // for LogError, CloseFile, GetALine
-#include "include/generic.h"        // for LOGERROR, Bool, LOGWARN, RealF, GT
+#include "include/generic.h"        // for LOGERROR, Bool, LOGWARN, GT
 #include "include/myMemory.h"       // for Mem_Calloc, Mem_Malloc
 #include "include/SW_datastructs.h" // for SW_VEGPROD, LOG_INFO, SW_VEGPROD...
 #include "include/SW_Defines.h"     // for ForEachVegType, NVEGTYPES, SW_TREES
@@ -165,8 +165,8 @@ void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *InFiles[], LOG_INFO *LogInfo) {
     int x, k, lineno = 0, index;
     // last case line number before monthly biomass densities
     const int line_help = 28;
-    RealF help_veg[NVEGTYPES], help_bareGround = 0., litt, biom, pctl, laic;
-    RealF *monBioVals[] = {&litt, &biom, &pctl, &laic};
+    double help_veg[NVEGTYPES], help_bareGround = 0., litt, biom, pctl, laic;
+    double *monBioVals[] = {&litt, &biom, &pctl, &laic};
     char *MyFileName, inbuf[MAX_FILENAMESIZE];
     char vegStrs[NVEGTYPES][20] = {{'\0'}}, bareGroundStr[20] = {'\0'};
     char *startOfErrMsg;
@@ -942,11 +942,11 @@ void get_critical_rank(SW_VEGPROD *SW_VegProd) {
             Get proper order for rank_SWPcrits
     ----------------------------------------------------------*/
     int i, outerLoop, innerLoop;
-    float key;
+    double key;
 
     // need two temp arrays equal to critSoilWater since we dont want to alter
     // the original at all
-    RealF tempArray[NVEGTYPES], tempArrayUnsorted[NVEGTYPES];
+    double tempArray[NVEGTYPES], tempArrayUnsorted[NVEGTYPES];
 
     ForEachVegType(i) {
         tempArray[i] = SW_VegProd->critSoilWater[i];
