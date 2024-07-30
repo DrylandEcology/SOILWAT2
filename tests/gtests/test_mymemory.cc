@@ -17,10 +17,10 @@ TEST(MemoryTest, MemoryRealloc) {
     int *ptr0;
     int *ptr1;
     int k;
-    int n_old = 5;
-    int n_new = 7;
-    size_t size_old = sizeof ptr0 * n_old;
-    size_t size_new = sizeof ptr0 * n_new;
+    int const n_old = 5;
+    int const n_new = 7;
+    size_t const size_old = sizeof ptr0 * n_old;
+    size_t const size_new = sizeof ptr0 * n_new;
 
 
     //--- Expect to reallocate previously allocated memory ------

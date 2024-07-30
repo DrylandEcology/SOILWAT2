@@ -37,10 +37,10 @@ TEST(SiteTest, SitePTFs) {
 
     // inputs
     RealD swrcp[SWRC_PARAM_NMAX];
-    RealD sand = 0.33;
-    RealD clay = 0.33;
-    RealD gravel = 0.1;
-    RealD bdensity = 1.4;
+    RealD const sand = 0.33;
+    RealD const clay = 0.33;
+    RealD const gravel = 0.1;
+    RealD const bdensity = 1.4;
     unsigned int swrc_type;
     unsigned int k;
 
@@ -113,10 +113,10 @@ TEST(SiteTest, SitePTFsDeathTest) {
     sw_init_logs(NULL, &LogInfo);
 
     RealD swrcp[SWRC_PARAM_NMAX];
-    RealD sand = 0.33;
-    RealD clay = 0.33;
-    RealD gravel = 0.1;
-    RealD bdensity = 1.4;
+    RealD const sand = 0.33;
+    RealD const clay = 0.33;
+    RealD const gravel = 0.1;
+    RealD const bdensity = 1.4;
     unsigned int ptf_type;
 
 
@@ -561,8 +561,8 @@ TEST(SiteTest, SiteSoilDensity) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    double soildensity = 1.4;
-    double fcoarse = 0.1;
+    double const soildensity = 1.4;
+    double const fcoarse = 0.1;
 
 
     // Check that matric density is zero if coarse fragments is 100%
@@ -603,7 +603,7 @@ TEST(SiteTest, SiteSoilDensity) {
 }
 
 TEST_F(SiteFixtureTest, SiteSoilDensityTypes) {
-    double fcoarse = 0.1;
+    double const fcoarse = 0.1;
 
     // Inputs represent matric density
     SW_Run.Site.type_soilDensityInput = SW_MATRIC;

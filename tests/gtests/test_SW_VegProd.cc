@@ -53,13 +53,13 @@ int forbIndexL1 = 2;
 int grassesIndexL1 = 3;
 int bareGroundL1 = 4;
 
-static void copyL0(double outL0[], double inL0[]) {
+static void copyL0(double outL0[], const double inL0[]) {
     for (int index = 0; index < 8; index++) {
         outL0[index] = inL0[index];
     }
 }
 
-static void calcVegCoverL1FromL0(double L1[], double L0[]) {
+static void calcVegCoverL1FromL0(double L1[], const double L0[]) {
     L1[treeIndexL1] = L0[treeIndex];
     L1[shrubIndexL1] = L0[shrubIndex];
     L1[forbIndexL1] = L0[forbIndex] + L0[succIndex];
@@ -67,8 +67,8 @@ static void calcVegCoverL1FromL0(double L1[], double L0[]) {
     L1[bareGroundL1] = L0[bareGround];
 }
 
-static void calcGrassCoverFromL0(double grass[], double L0[]) {
-    double grass_sum = L0[C3Index] + L0[C4Index] + L0[grassAnn];
+static void calcGrassCoverFromL0(double grass[], const double L0[]) {
+    double const grass_sum = L0[C3Index] + L0[C4Index] + L0[grassAnn];
 
     if (GT(grass_sum, 0.)) {
         grass[0] = L0[C3Index] / grass_sum;
@@ -124,7 +124,7 @@ TEST_F(VegProdFixtureTest, VegProdConstructor) {
 // Test the application of the biomass CO2-effect
 TEST(VegProdTest, VegProdBiomassCO2effect) {
     int i;
-    double x = 1.5;
+    double const x = 1.5;
     double biom1[12];
     double biom2[12];
 
@@ -204,7 +204,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
     SW_CLIMATE_CLIM climateAverages;
 
     double inputValues[8];
-    double shrubLimit = .2;
+    double const shrubLimit = .2;
 
     // Array holding only grass values
     double grassOutput[3]; // 3 = Number of grass variables
@@ -215,15 +215,15 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
     // Array holding all values from estimation minus grasses
     double RelAbundanceL1[5]; // 5 = Number of types minus grasses
 
-    double SumGrassesFraction = SW_MISSING;
+    double const SumGrassesFraction = SW_MISSING;
     double C4Variables[3];
 
-    Bool fillEmptyWithBareGround = swTRUE;
-    Bool warnExtrapolation = swTRUE;
+    Bool const fillEmptyWithBareGround = swTRUE;
+    Bool const warnExtrapolation = swTRUE;
     Bool inNorthHem = swTRUE;
-    Bool fixBareGround = swTRUE;
+    Bool const fixBareGround = swTRUE;
 
-    int nTypes = 8;
+    int const nTypes = 8;
     int index;
 
 
@@ -789,10 +789,10 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
     SW_CLIMATE_CLIM climateAverages;
 
     int index;
-    int nTypes = 8;
+    int const nTypes = 8;
 
     double inputValues[8];
-    double shrubLimit = .2;
+    double const shrubLimit = .2;
 
     // Array holding only grass values
     double grassOutput[3]; // 3 = Number of grass variables
@@ -810,9 +810,9 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
     double grassOutputExpected[3];
 
     Bool fillEmptyWithBareGround = swTRUE;
-    Bool inNorthHem = swTRUE;
-    Bool warnExtrapolation = swTRUE;
-    Bool fixBareGround = swTRUE;
+    Bool const inNorthHem = swTRUE;
+    Bool const warnExtrapolation = swTRUE;
+    Bool const fixBareGround = swTRUE;
 
 
     // Reset "SW_Run.Weather.allHist"
@@ -1365,18 +1365,18 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne1DeathTest) {
     SW_CLIMATE_CLIM climateAverages;
     SW_CLIMATE_YEARLY climateOutput;
 
-    double SumGrassesFraction = SW_MISSING;
+    double const SumGrassesFraction = SW_MISSING;
     double C4Variables[3];
 
-    Bool fillEmptyWithBareGround = swTRUE;
-    Bool inNorthHem = swTRUE;
-    Bool warnExtrapolation = swTRUE;
-    Bool fixBareGround = swTRUE;
+    Bool const fillEmptyWithBareGround = swTRUE;
+    Bool const inNorthHem = swTRUE;
+    Bool const warnExtrapolation = swTRUE;
+    Bool const fixBareGround = swTRUE;
 
     double inputValues[8] = {
         .0567, .5, .0392, .0981, .3218, .0827, .1293, .0405
     };
-    double shrubLimit = .2;
+    double const shrubLimit = .2;
 
     // Array holding only grass values
     double grassOutput[3]; // 3 = Number of grass variables
@@ -1469,13 +1469,13 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne2DeathTest) {
     double SumGrassesFraction = SW_MISSING;
     double C4Variables[3];
 
-    Bool fillEmptyWithBareGround = swTRUE;
-    Bool inNorthHem = swTRUE;
-    Bool warnExtrapolation = swTRUE;
-    Bool fixBareGround = swTRUE;
+    Bool const fillEmptyWithBareGround = swTRUE;
+    Bool const inNorthHem = swTRUE;
+    Bool const warnExtrapolation = swTRUE;
+    Bool const fixBareGround = swTRUE;
 
     double inputValues[8];
-    double shrubLimit = .2;
+    double const shrubLimit = .2;
 
     // Array holding only grass values
     double grassOutput[3]; // 3 = Number of grass variables

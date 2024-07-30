@@ -226,7 +226,7 @@ TEST_F(WeatherFixtureTest, ClimateVariableClimateFromDefaultWeather) {
     SW_CLIMATE_YEARLY climateOutput;
     SW_CLIMATE_CLIM climateAverages;
 
-    Bool inNorthHem = swTRUE;
+    Bool const inNorthHem = swTRUE;
 
     // Allocate memory
     // 31 = number of years used in test
@@ -339,7 +339,7 @@ TEST_F(WeatherFixtureTest, ClimateVariableClimateFromOneYearWeather) {
     SW_CLIMATE_YEARLY climateOutput;
     SW_CLIMATE_CLIM climateAverages;
 
-    Bool inNorthHem = swTRUE;
+    Bool const inNorthHem = swTRUE;
 
     // Allocate memory
     // 1 = number of years used in test
@@ -464,7 +464,7 @@ TEST_F(WeatherFixtureTest, ClimateFromDefaultWeatherSouth) {
 
     // "South" and not "North" to reduce confusion when calling
     // `calcSiteClimate()`
-    Bool inSouthHem = swFALSE;
+    Bool const inSouthHem = swFALSE;
 
     // Allocate memory
     // 31 = number of years used in test
@@ -580,9 +580,9 @@ TEST_F(WeatherFixtureTest, ClimateVariableClimateFromConstantWeather) {
     SW_CLIMATE_CLIM climateAverages;
     SW_WEATHER_HIST **allHist = NULL;
 
-    unsigned int n_years = 2;
+    unsigned int const n_years = 2;
 
-    Bool inNorthHem = swTRUE;
+    Bool const inNorthHem = swTRUE;
 
     // Allocate memory
     allocateClimateStructs(n_years, &climateOutput, &climateAverages, &LogInfo);
@@ -685,10 +685,10 @@ TEST_F(
     WeatherFixtureTest, ClimateVariableAverageTemperatureOfDriestQuarterTest
 ) {
 
-    double monthlyPPT[MAX_MONTHS] = {
+    double const monthlyPPT[MAX_MONTHS] = {
         .5, .5, .1, .4, .9, 1.0, 1.2, 6.5, 7.5, 1.2, 4., .6
     };
-    double monthlyTemp[MAX_MONTHS] = {
+    double const monthlyTemp[MAX_MONTHS] = {
         -3.2, -.4, 1.2, 3.5, 7.5, 4.5, 6.5, 8.2, 2.0, 3., .1, -.3
     };
     double result[2]; // 2 = max number of years in test
@@ -701,7 +701,7 @@ TEST_F(
 
     double **meanTempMon_C = new double *[MAX_MONTHS];
 
-    Bool inNorthHem = swTRUE;
+    Bool const inNorthHem = swTRUE;
 
     for (month = 0; month < MAX_MONTHS; month++) {
         PPTMon_cm[month] = new double[2];
@@ -770,8 +770,8 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyInputPrioritization) {
      */
 
     // Initialize any variables
-    int yearIndex = 0;
-    int midJanDay = 14;
+    int const yearIndex = 0;
+    int const midJanDay = 14;
 
     /* Test if monthly values are not being used */
     SW_WTH_setup(
@@ -820,9 +820,9 @@ TEST_F(WeatherFixtureTest, WeatherInputDailyGridMet) {
 
     double result;
     double expectedResult;
-    int yearIndex = 0;
-    int year = 1980;
-    int midJanDay = 14;
+    int const yearIndex = 0;
+    int const year = 1980;
+    int const midJanDay = 14;
 
     /* Test correct priority is being given to input values from DAYMET */
     SW_WTH_setup(
@@ -931,9 +931,9 @@ TEST_F(WeatherFixtureTest, WeatherInputDayMet) {
     double result;
     double expectedResult;
     double tempSlope;
-    int yearIndex = 0;
-    int year = 1980;
-    int midJanDay = 14;
+    int const yearIndex = 0;
+    int const year = 1980;
+    int const midJanDay = 14;
 
     /* Test correct priority is being given to input values from DAYMET */
     SW_WTH_setup(
@@ -1040,9 +1040,9 @@ TEST_F(WeatherFixtureTest, WeatherInputMACA) {
 
     double result;
     double expectedResult;
-    int yearIndex = 0;
-    int year = 1980;
-    int midJanDay = 14;
+    int const yearIndex = 0;
+    int const year = 1980;
+    int const midJanDay = 14;
 
     /* Test correct priority is being given to input values from MACA */
 
@@ -1152,12 +1152,12 @@ TEST_F(WeatherFixtureTest, WeatherDailyLOCFInputValues) {
        We want to make sure when the weather generator method is equal to 1,
        LOCF is performed on these variables and not ignored
     */
-    int numDaysLOCFTolerance = 366;
-    int yearIndex = 0;
+    int const numDaysLOCFTolerance = 366;
+    int const yearIndex = 0;
     int day;
-    double cloudCovTestVal = .5;
-    double actVapPressTestVal = 4.23;
-    double windSpeedTestVal = 2.12;
+    double const cloudCovTestVal = .5;
+    double const actVapPressTestVal = 4.23;
+    double const windSpeedTestVal = 2.12;
 
     // Setup and read in weather
     SW_WTH_setup(
@@ -1229,7 +1229,7 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputWrongColumnNumberDeathTest) {
      */
 
     // Initialize any variables
-    TimeInt year = 1980;
+    TimeInt const year = 1980;
 
     /* Not the same number of flags as columns */
     // Run weather functions and expect an failure (error)

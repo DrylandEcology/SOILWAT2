@@ -30,8 +30,8 @@ TEST(SWFlowTest, SWFlowVegInterceptedWater) {
         double pptleft;
         double wintveg;
         double store;
-        double scale = 1.0;
-        double m = 1.0;
+        double const scale = 1.0;
+        double const m = 1.0;
 
         // Test expectation when there is no leaf-area
         bLAI = 0.0, ppt = 5.0, pptleft = ppt, store = 0.0;
@@ -102,7 +102,7 @@ TEST(SWFlowTest, SWFlowLitterInterceptedWater) {
         double wintlit;
         double store;
         double scale = 1.0;
-        double m = 1.0;
+        double const m = 1.0;
 
         // Test expectation when there is no litter
         blitter = 0.0, ppt = 5.0, pptleft = ppt, wintlit = 0.0, store = 0.0;
@@ -468,7 +468,7 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
     double swc[1] = {12};
 
     // INPUTS for expected outputs
-    double swp_avgExpected1 = 1.5992088;
+    double const swp_avgExpected1 = 1.5992088;
 
     // Setup soil layers
     create_test_soillayers(n_layers, &SW_VegProd, &SW_Site, &LogInfo);
@@ -504,7 +504,7 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
     double swc2[25];
 
     // INPUTS for expected OUTPUTS
-    double swp_avgExpectedM = 1.7389131503001496;
+    double const swp_avgExpectedM = 1.7389131503001496;
 
     // Setup soil layers
     create_test_soillayers(n_layers, &SW_VegProd, &SW_Site, &LogInfo);
@@ -590,15 +590,15 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
     unsigned int nelyrs;
     double bserate = 0;
     double totagb;
-    double Es_param_limit = 999.;
-    double fbse = 0.813;
-    double fbse0 = 0.;
-    double petday = 0.1;
-    double petday0 = 0.;
-    double shift = 45;
-    double shape = 0.1;
-    double inflec = 0.25;
-    double range = 0.5;
+    double const Es_param_limit = 999.;
+    double const fbse = 0.813;
+    double const fbse0 = 0.;
+    double const petday = 0.1;
+    double const petday0 = 0.;
+    double const shift = 45;
+    double const shape = 0.1;
+    double const inflec = 0.25;
+    double const range = 0.5;
 
     double swc[25];
 
@@ -746,11 +746,11 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation2) {
     unsigned int nelyrs;
     unsigned int i;
     double bserate = 0;
-    double petday = 0.1;
-    double shift = 45;
-    double shape = 0.1;
-    double inflec = 0.25;
-    double range = 0.8;
+    double const petday = 0.1;
+    double const shift = 45;
+    double const shape = 0.1;
+    double const inflec = 0.25;
+    double const range = 0.8;
     double swc[25];
 
     // Loop over tests with varying number of soil layers
@@ -804,22 +804,22 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation2) {
 TEST(SWFlowTest, SWFlowPotentialTranspiration) {
     // INPUTS
     double bstrate = 0;
-    double swpavg = 0.8;
+    double const swpavg = 0.8;
     double biolive = -0.8;
     double biodead = 0.2;
-    double fbst = 0.8;
-    double petday = 0.1;
-    double swp_shift = 45;
-    double swp_shape = 0.1;
-    double swp_inflec = 0.25;
-    double swp_range = 0.3;
-    double shade_scale = 1.1;
-    double shade_deadmax = 0.9;
-    double shade_xinflex = 0.4;
-    double shade_slope = 0.9;
-    double shade_yinflex = 0.3;
-    double shade_range = 0.8;
-    double co2_wue_multiplier = 2.1;
+    double const fbst = 0.8;
+    double const petday = 0.1;
+    double const swp_shift = 45;
+    double const swp_shape = 0.1;
+    double const swp_inflec = 0.25;
+    double const swp_range = 0.3;
+    double const shade_scale = 1.1;
+    double const shade_deadmax = 0.9;
+    double const shade_xinflex = 0.4;
+    double const shade_slope = 0.9;
+    double const shade_yinflex = 0.3;
+    double const shade_range = 0.8;
+    double const co2_wue_multiplier = 2.1;
 
     // Begin Test for if biolive < 0
     pot_transp(
@@ -930,12 +930,12 @@ TEST(SWFlowTest, SWFlowPotentialTranspiration) {
 // Test result for watrate by manipulating variable petday
 TEST(SWFlowTest, SWFlowWatrate) {
     // INPUTS
-    double swp = 0.8;
+    double const swp = 0.8;
     double petday = 0.1;
-    double shift = 45;
-    double shape = 0.1;
-    double inflec = 0.25;
-    double range = 0.8;
+    double const shift = 45;
+    double const shape = 0.1;
+    double const inflec = 0.25;
+    double const range = 0.8;
 
     // Begin Test for if petday < .2
     double watExpected = 0.630365;
@@ -984,7 +984,7 @@ TEST(SWFlowTest, SWFlowSurfaceEvaporation) {
     // Begin Test for when water_pool > evap_rate
     double aetExpected = 0.86;
     double evapExpected = 0.33;
-    double waterExpected = 0.67;
+    double const waterExpected = 0.67;
     evap_fromSurface(&water_pool, &evap_rate, &aet);
 
     // Variable aet is expected to be 0.86 with current inputs
@@ -1035,9 +1035,9 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
     // INPUTS
     unsigned int nlyrs;
     unsigned int i;
-    double aet_init = 0.33;
+    double const aet_init = 0.33;
     double aet;
-    double rate = 0.62;
+    double const rate = 0.62;
     double swc_init[MAX_LAYERS];
     double swc[MAX_LAYERS];
     double swcmin[MAX_LAYERS] = {0.};
@@ -1480,12 +1480,12 @@ TEST(SWFlowTest, SWFlowHydraulicRedistribution) {
     // INPUTS
     unsigned int nlyrs;
     unsigned int i;
-    unsigned int year = 1980;
-    unsigned int doy = 1;
-    double maxCondroot = -0.2328;
-    double swp50 = 1.2e12;
-    double shapeCond = 1;
-    double scale = 0.3;
+    unsigned int const year = 1980;
+    unsigned int const doy = 1;
+    double const maxCondroot = -0.2328;
+    double const swp50 = 1.2e12;
+    double const shapeCond = 1;
+    double const scale = 0.3;
     double swc[MAX_LAYERS];
     double hydred[MAX_LAYERS] = {0.};
     double swcExpected = 0.;
@@ -1494,17 +1494,17 @@ TEST(SWFlowTest, SWFlowHydraulicRedistribution) {
     RealD lyrFrozen[MAX_LAYERS] = {0};
 
     // INPUTS for expected outcomes
-    double swcExpected_1L[1] = {0.8258887};
-    double hydredExpected_1L[1] = {0.};
+    double const swcExpected_1L[1] = {0.8258887};
+    double const hydredExpected_1L[1] = {0.};
 
-    double swcExpected_MAXL[MAX_LAYERS] = {
+    double const swcExpected_MAXL[MAX_LAYERS] = {
         0.8258890, 0.2068467, 0.9920907, 0.2581966, 0.2329534,
         1.8503562, 0.1678064, 0.1678063, 0.4403078, 0.9193770,
         2.2045783, 0.2295204, 0.2329534, 1.8503562, 0.1678063,
         0.1678063, 0.1466935, 0.1838611, 0.2205380, 1.1471038,
         2.3287794, 2.3129346, 1.6781799, 3.3564146, 6.7275094
     };
-    double hydredExpected_MAXL[MAX_LAYERS] = {
+    double const hydredExpected_MAXL[MAX_LAYERS] = {
         0.000000e+00,   -2.436254e-05,  3.723615e-05,    1.105724e-04,
         7.844259e-05,   3.179664e-05,   -1.7262914e-05,  -1.726291e-05,
         -1.6618943e-04, -5.0191450e-05, 1.491759e-05,    1.105724e-04,

@@ -19,10 +19,10 @@ namespace {
 
 TEST(SoilWaterTest, SoilWaterSWCadjustSnow) {
     // setup variables
-    RealD doy = 1;
-    RealD temp_min = 0;
-    RealD temp_max = 10;
-    RealD ppt = 1;
+    RealD const doy = 1;
+    RealD const temp_min = 0;
+    RealD const temp_max = 10;
+    RealD const ppt = 1;
     RealD rain = 1.5;
     RealD snow = 1.5;
     RealD snowmelt = 1.2;
@@ -87,10 +87,10 @@ TEST(SoilWaterTest, SoilWaterSWCadjustSnow) {
 }
 
 TEST(SoilWaterTest, SoilWaterSWCadjustSnow2) {
-    RealD doy = 1;
-    RealD temp_min = 0;
-    RealD temp_max = 22;
-    RealD ppt = 1;
+    RealD const doy = 1;
+    RealD const temp_min = 0;
+    RealD const temp_max = 22;
+    RealD const ppt = 1;
     RealD rain = 1.5;
     RealD snow = 1.5;
     RealD snowmelt = 1.2;
@@ -147,17 +147,17 @@ TEST(SoilWaterTest, SoilWaterTranslateBetweenSWCandSWP) {
     RealD swc_wp;
     RealD swp;
     RealD swrcp[SWRC_PARAM_NMAX];
-    RealD sand = 0.33;
-    RealD clay = 0.33;
-    RealD gravel = 0.2;
-    RealD bdensity = 1.4;
-    RealD width = 10.;
+    RealD const sand = 0.33;
+    RealD const clay = 0.33;
+    RealD const gravel = 0.2;
+    RealD const bdensity = 1.4;
+    RealD const width = 10.;
     // SWP values in [0, Inf[ but FXW maxes out at 6178.19079 bar
-    RealD swpsb[12] = {
+    RealD const swpsb[12] = {
         0., 0.001, 0.01, 0.026, 0.027, 0.33, 15., 30., 100., 300., 1000., 6178.
     };
     // SWP values in [fc, Inf[ but FXW maxes out at 6178.19079 bar
-    RealD swpsi[7] = {0.33, 15., 30., 100., 300., 1000., 6178.};
+    RealD const swpsi[7] = {0.33, 15., 30., 100., 300., 1000., 6178.};
 
     std::ostringstream msg;
 
@@ -169,9 +169,9 @@ TEST(SoilWaterTest, SoilWaterTranslateBetweenSWCandSWP) {
         // Find a suitable PTF to generate `SWRCp`
         for (ptf_type = 0;
              ptf_type < N_PTFs &&
-             !check_SWRC_vs_PTF(
-                 (char *) swrc2str[swrc_type], (char *) ptf2str[ptf_type]
-             );
+             (check_SWRC_vs_PTF(
+                  (char *) swrc2str[swrc_type], (char *) ptf2str[ptf_type]
+              ) == 0u);
              ptf_type++) {
         }
 
@@ -368,8 +368,8 @@ TEST(SoilWaterTest, SoilWaterSWCtoSWPDeathTest) {
 
     // set up mock variables
     RealD swrcp[SWRC_PARAM_NMAX];
-    RealD gravel = 0.1;
-    RealD width = 10.;
+    RealD const gravel = 0.1;
+    RealD const width = 10.;
 
     unsigned int swrc_type;
 
@@ -487,8 +487,8 @@ TEST(SoilWaterTest, SoilWaterSWPtoSWCDeathTest) {
 
     // set up mock variables
     RealD swrcp[SWRC_PARAM_NMAX];
-    RealD gravel = 0.1;
-    RealD width = 10.;
+    RealD const gravel = 0.1;
+    RealD const width = 10.;
 
     unsigned int swrc_type;
 

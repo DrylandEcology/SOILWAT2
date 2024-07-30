@@ -69,12 +69,12 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
     sw_init_logs(NULL, &LogInfo);
 
     // declare inputs and output
-    double deltaX = 15.0;
-    double theMaxDepth = 990.0;
-    double sTconst = 4.15;
+    double const deltaX = 15.0;
+    double const theMaxDepth = 990.0;
+    double const sTconst = 4.15;
     double acc = 0.0;
     unsigned int nlyrs;
-    unsigned int nRgr = 65;
+    unsigned int const nRgr = 65;
     Bool ptr_stError = swFALSE;
     sw_random_t STInit_rng;
     RandSeed(0u, 0u, &STInit_rng);
@@ -212,11 +212,11 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInitDeathTest) {
     sw_init_logs(NULL, &LogInfo);
 
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
-    double deltaX = 15.0;
-    double sTconst = 4.15;
+    double const deltaX = 15.0;
+    double const sTconst = 4.15;
     double acc = 0.0;
     unsigned int nlyrs;
-    unsigned int nRgr = 65;
+    unsigned int const nRgr = 65;
     unsigned int i = 0.;
     Bool ptr_stError = swFALSE;
     nlyrs = MAX_LAYERS;
@@ -240,7 +240,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInitDeathTest) {
 
     /// test when theMaxDepth is less than soil layer depth - function should
     /// fail
-    double theMaxDepth2 = 70.0;
+    double const theMaxDepth2 = 70.0;
 
     // We expect an error when max depth < last layer
     soil_temperature_setup(
@@ -285,12 +285,12 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
     sw_init_logs(NULL, &LogInfo);
 
     // declare inputs and output
-    double deltaX = 15.0;
-    double theMaxDepth = 990.0;
-    double sTconst = 4.15;
+    double const deltaX = 15.0;
+    double const theMaxDepth = 990.0;
+    double const sTconst = 4.15;
     double acc = 0.0;
     unsigned int nlyrs;
-    unsigned int nRgr = 65;
+    unsigned int const nRgr = 65;
     Bool ptr_stError = swFALSE;
 
     sw_random_t SLIF_rng;
@@ -524,16 +524,16 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureTodayFunction) {
 
     // declare inputs and output
     double delta_time = 86400.;
-    double deltaX = 15.0;
-    double T1 = 20.0;
-    double sTconst = 4.16;
-    double csParam1 = 0.00070;
-    double csParam2 = 0.000030;
-    double shParam = 0.18;
-    double surface_range = 1.;
-    unsigned int nRgr = 65;
-    unsigned int year = 1980;
-    unsigned int doy = 1;
+    double const deltaX = 15.0;
+    double const T1 = 20.0;
+    double const sTconst = 4.16;
+    double const csParam1 = 0.00070;
+    double const csParam2 = 0.000030;
+    double const shParam = 0.18;
+    double const surface_range = 1.;
+    unsigned int const nRgr = 65;
+    unsigned int const year = 1980;
+    unsigned int const doy = 1;
     Bool ptr_stError = swFALSE;
 
     sw_random_t STTF_rng;
@@ -665,32 +665,32 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
     RealD lyrFrozen[MAX_LAYERS] = {0};
 
     unsigned int k;
-    unsigned int year = 1980;
-    unsigned int doy = 1;
+    unsigned int const year = 1980;
+    unsigned int const doy = 1;
 
     // *****  Test when nlyrs = 1  ***** //
-    unsigned int nlyrs = 1;
-    unsigned int nRgr = 65;
+    unsigned int const nlyrs = 1;
+    unsigned int const nRgr = 65;
     double airTemp = 25.0;
-    double pet = 5.0;
-    double aet = 4.0;
+    double const pet = 5.0;
+    double const aet = 4.0;
     double biomass = 100.;
     double surfaceTemp = 15.;
-    double bmLimiter = 300.;
-    double t1Param1 = 15.;
-    double t1Param2 = -4.;
-    double t1Param3 = 600.;
-    double csParam1 = 0.00070;
-    double csParam2 = 0.00030;
-    double shParam = 0.18;
+    double const bmLimiter = 300.;
+    double const t1Param1 = 15.;
+    double const t1Param2 = -4.;
+    double const t1Param3 = 600.;
+    double const csParam1 = 0.00070;
+    double const csParam2 = 0.00030;
+    double const shParam = 0.18;
     double snowdepth = 5;
-    double sTconst = 4.15;
-    double deltaX = 15;
-    double theMaxDepth = 990.;
-    double snow = 1;
-    double max_air_temp = 10.1;
-    double min_air_temp = -5.0;
-    double H_gt = 300.0;
+    double const sTconst = 4.15;
+    double const deltaX = 15;
+    double const theMaxDepth = 990.;
+    double const snow = 1;
+    double const max_air_temp = 10.1;
+    double const min_air_temp = -5.0;
+    double const H_gt = 300.0;
     double surface_max = 10.6;
     double surface_min = -6.8;
     Bool ptr_stError = swFALSE;
@@ -905,7 +905,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
     EXPECT_NE(surfaceTemp, surface_temperature_under_snow(airTemp, snow));
 
     // checks for  lyrTemp_to_lyrSoil_temperature
-    int resultValue = sizeof(sTemp) / sizeof(sTemp[0]);
+    int const resultValue = sizeof(sTemp) / sizeof(sTemp[0]);
 
     // when the number of soil layers is 1, sTemp should have length 1
     EXPECT_EQ(1, resultValue);
@@ -1009,41 +1009,41 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
 
     unsigned int i;
     unsigned int k;
-    unsigned int year = 1980;
-    unsigned int doy = 1;
+    unsigned int const year = 1980;
+    unsigned int const doy = 1;
 
     // intialize values
-    unsigned int nRgr = 65;
-    double airTemp = 25.0;
-    double pet = 5.0;
-    double aet = 4.0;
+    unsigned int const nRgr = 65;
+    double const airTemp = 25.0;
+    double const pet = 5.0;
+    double const aet = 4.0;
     double biomass = 100.;
     double surfaceTemp = 15.;
-    double bmLimiter = 300.;
-    double t1Param1 = 15.;
-    double t1Param2 = -4.;
-    double t1Param3 = 600.;
-    double csParam1 = 0.00070;
-    double csParam2 = 0.00030;
-    double shParam = 0.18;
+    double const bmLimiter = 300.;
+    double const t1Param1 = 15.;
+    double const t1Param2 = -4.;
+    double const t1Param3 = 600.;
+    double const csParam1 = 0.00070;
+    double const csParam2 = 0.00030;
+    double const shParam = 0.18;
     double snowdepth = 5;
-    double sTconst = 4.15;
-    double deltaX = 15;
-    double theMaxDepth = 990.;
-    double snow = 1;
-    double max_air_temp = 10.1;
-    double min_air_temp = -5.0;
-    double H_gt = 300.0;
+    double const sTconst = 4.15;
+    double const deltaX = 15;
+    double const theMaxDepth = 990.;
+    double const snow = 1;
+    double const max_air_temp = 10.1;
+    double const min_air_temp = -5.0;
+    double const H_gt = 300.0;
     double surface_max = 10.6;
     double surface_min = -6.8;
     double acc = 0.;
     Bool ptr_stError = swFALSE;
 
-    unsigned int nlyrs2 = MAX_LAYERS;
+    unsigned int const nlyrs2 = MAX_LAYERS;
     double width2[] = {5,  5,  5,  10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
                        10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
-    double sTempInit3[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3,
-                           3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
+    double const sTempInit3[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3,
+                                 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
     double sTemp3[MAX_LAYERS];
     double bDensity2[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                           1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
@@ -1283,7 +1283,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
     EXPECT_NE(surfaceTemp, surface_temperature_under_snow(airTemp, snow));
 
     // checks for  lyrTemp_to_lyrSoil_temperature
-    int resultValue2 = sizeof(sTemp3) / sizeof(sTemp3[0]);
+    int const resultValue2 = sizeof(sTemp3) / sizeof(sTemp3[0]);
 
     // when the number of soil layers is MAX_LAYERS, length of sTemp3 should
     // be MAX_LAYERS
@@ -1321,30 +1321,30 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunctionDeathTest) {
     RealD lyrFrozen[MAX_LAYERS] = {0};
     RealD depths[MAX_LAYERS] = {0};
 
-    unsigned int nlyrs = 1;
-    unsigned int nRgr = 65;
-    unsigned int year = 1980;
-    unsigned int doy = 1;
-    double airTemp = 25.0;
-    double pet = 5.0;
-    double aet = 4.0;
-    double biomass = 100.;
+    unsigned int const nlyrs = 1;
+    unsigned int const nRgr = 65;
+    unsigned int const year = 1980;
+    unsigned int const doy = 1;
+    double const airTemp = 25.0;
+    double const pet = 5.0;
+    double const aet = 4.0;
+    double const biomass = 100.;
     double surfaceTemp = 15.;
-    double bmLimiter = 300.;
-    double t1Param1 = 15.;
-    double t1Param2 = -4.;
-    double t1Param3 = 600.;
-    double csParam1 = 0.00070;
-    double csParam2 = 0.00030;
-    double shParam = 0.18;
-    double snowdepth = 5;
-    double sTconst = 4.15;
-    double deltaX = 15;
-    double theMaxDepth = 990.;
-    double snow = 1;
-    double max_air_temp = 10.1;
-    double min_air_temp = -5.0;
-    double H_gt = 300.0;
+    double const bmLimiter = 300.;
+    double const t1Param1 = 15.;
+    double const t1Param2 = -4.;
+    double const t1Param3 = 600.;
+    double const csParam1 = 0.00070;
+    double const csParam2 = 0.00030;
+    double const shParam = 0.18;
+    double const snowdepth = 5;
+    double const sTconst = 4.15;
+    double const deltaX = 15;
+    double const theMaxDepth = 990.;
+    double const snow = 1;
+    double const max_air_temp = 10.1;
+    double const min_air_temp = -5.0;
+    double const H_gt = 300.0;
     double surface_max = 10.6;
     double surface_min = -6.8;
     Bool ptr_stError = swFALSE;

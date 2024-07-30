@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
     /*--- Imitate 'SW_Main.c/main()' */
 
     // Emulate 'sw_init_args()'
-    if (!ChDir(dir_test)) {
+    if (ChDir(dir_test) == 0u) {
         sw_printf("Invalid project directory (%s)", dir_test);
     }
 

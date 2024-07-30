@@ -90,7 +90,7 @@ void create_test_soillayers(
     double soiltemp[MAX_LAYERS] = {-1, -1, -1, -1, 0, 0, 1, 1, 1, 1, 1, 1, 1,
                                    1,  1,  1,  2,  2, 2, 2, 2, 2, 2, 2, 2};
 
-    int nRegions = 3;
+    int const nRegions = 3;
     RealD regionLowerBounds[3] = {20., 50., 100.};
 
     set_soillayers(
@@ -164,7 +164,7 @@ int setup_testGlobalSoilwatTemplate() {
 
     template_SW_Domain.PathInfo.InFiles[eFirst] =
         Str_Dup(DFLT_FIRSTFILE, &LogInfo);
-    if (LogInfo.stopRun) {
+    if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
 
@@ -172,14 +172,14 @@ int setup_testGlobalSoilwatTemplate() {
     userSUID = 0;
 
     SW_CTL_setup_domain(userSUID, &template_SW_Domain, &LogInfo);
-    if (LogInfo.stopRun) {
+    if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
 
     SW_CTL_setup_model(
         &template_SW_Run, &template_SW_Domain.OutDom, swTRUE, &LogInfo
     );
-    if (LogInfo.stopRun) {
+    if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
     template_SW_Run.Model.doOutput = swFALSE; /* turn off output during tests */
@@ -187,13 +187,13 @@ int setup_testGlobalSoilwatTemplate() {
     SW_MDL_get_ModelRun(
         &template_SW_Run.Model, &template_SW_Domain, NULL, &LogInfo
     );
-    if (LogInfo.stopRun) {
+    if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
 
     /* allocate memory for output pointers */
     SW_CTL_alloc_outptrs(&template_SW_Run, &LogInfo);
-    if (LogInfo.stopRun) {
+    if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
 
@@ -203,7 +203,7 @@ int setup_testGlobalSoilwatTemplate() {
         &template_SW_Domain.PathInfo,
         &LogInfo
     );
-    if (LogInfo.stopRun) {
+    if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
 
@@ -225,12 +225,12 @@ int setup_testGlobalSoilwatTemplate() {
         template_SW_Run.Model.days_in_month,
         &LogInfo
     );
-    if (LogInfo.stopRun) {
+    if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
 
     SW_CTL_init_run(&template_SW_Run, &LogInfo);
-    if (LogInfo.stopRun) {
+    if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
 
@@ -241,12 +241,12 @@ int setup_testGlobalSoilwatTemplate() {
         &template_SW_Domain.OutDom,
         &LogInfo
     );
-    if (LogInfo.stopRun) {
+    if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
 
 finishProgram: {
-    if (LogInfo.stopRun) {
+    if (LogInfo.stopRun != 0u) {
         success = 1; // failure
     }
 }

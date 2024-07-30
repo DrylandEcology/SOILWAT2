@@ -37,7 +37,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceExample1) {
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 
@@ -55,7 +55,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSoilTemperature) {
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 
@@ -75,7 +75,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithPondedWaterRunonRunoff) {
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 
@@ -120,7 +120,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 
@@ -167,7 +167,7 @@ TEST_F(
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 
@@ -192,7 +192,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 
@@ -214,7 +214,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOneSoilLayer) {
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 
@@ -236,7 +236,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMaxSoilLayers) {
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 
@@ -258,7 +258,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 
@@ -295,7 +295,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 
@@ -332,7 +332,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 
@@ -380,7 +380,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 
@@ -431,7 +431,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGRIDMET) {
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 
@@ -484,7 +484,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACA) {
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 
@@ -509,7 +509,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSpinup) {
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 } // namespace

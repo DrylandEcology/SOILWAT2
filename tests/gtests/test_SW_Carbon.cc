@@ -23,7 +23,7 @@ TEST(CarbonTest, CarbonConstructor) {
 // Test reading yearly CO2 data from disk file
 TEST_F(CarbonFixtureTest, CarbonReadInputFile) {
     TimeInt year;
-    TimeInt simendyr = SW_Run.Model.endyr + SW_Run.Model.addtl_yr;
+    TimeInt const simendyr = SW_Run.Model.endyr + SW_Run.Model.addtl_yr;
     double sum_CO2;
 
     // Test if CO2-effects are turned off -> no CO2 concentration data are read
@@ -65,7 +65,7 @@ TEST_F(CarbonFixtureTest, CarbonReadInputFile) {
 // Test the calculation of CO2-effect multipliers
 TEST_F(CarbonFixtureTest, CarbonCO2multipliers) {
     TimeInt year;
-    TimeInt simendyr = SW_Run.Model.endyr + SW_Run.Model.addtl_yr;
+    TimeInt const simendyr = SW_Run.Model.endyr + SW_Run.Model.addtl_yr;
     int k;
 
     SW_CBN_construct(&SW_Run.Carbon);

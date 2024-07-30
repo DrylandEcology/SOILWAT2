@@ -25,7 +25,7 @@ TEST(WeatherGeneratorTest, WeatherGeneratorConstructor) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    int rng_seed = 8;
+    int const rng_seed = 8;
 
     SW_MKV_init_ptrs(&SW_Markov);
     SW_MKV_construct(rng_seed, &SW_Markov);
@@ -65,12 +65,12 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
 
     int rng_seed;
     // Turn on Markov weather generator
-    unsigned int generateWeatherMethod = 2;
+    unsigned int const generateWeatherMethod = 2;
 
     short k;
-    short n = 18;
-    short seed = 42;
-    short year = 1980;
+    short const n = 18;
+    short const seed = 42;
+    short const year = 1980;
     RealD tmax;
     RealD tmin;
     RealD ppt;
@@ -169,9 +169,9 @@ TEST(WeatherGeneratorTest, WeatherGeneratormvnorm) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    int rng_seed = 9;
+    int const rng_seed = 9;
     short k;
-    short n = 3;
+    short const n = 3;
     RealD tmax = 0.;
     RealD tmin = 0.;
     RealD tval;
@@ -259,7 +259,7 @@ TEST(WeatherGeneratorTest, WeatherGeneratormvnormDeathTest) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    int rng_seed = 11;
+    int const rng_seed = 11;
     RealD tmax = 0.;
     RealD tmin = 0.;
 
@@ -287,16 +287,16 @@ TEST(WeatherGeneratorTest, WeatherGeneratorWetDryTemperatureCorrection) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    int rng_seed = 13;
+    int const rng_seed = 13;
     RealD tmax = 0.;
     RealD tmin = 0.;
-    RealD t0 = 0.;
-    RealD t10 = 10.;
-    RealD wet = 1.;
-    RealD dry = 0.;
-    RealD cf0 = 0.;
-    RealD cf_pos = 5.;
-    RealD cf_neg = -5.;
+    RealD const t0 = 0.;
+    RealD const t10 = 10.;
+    RealD const wet = 1.;
+    RealD const dry = 0.;
+    RealD const cf0 = 0.;
+    RealD const cf_pos = 5.;
+    RealD const cf_neg = -5.;
 
     SW_MKV_init_ptrs(&SW_Markov);
     SW_MKV_construct(rng_seed, &SW_Markov); // initialize markov_rng

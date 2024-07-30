@@ -31,15 +31,15 @@ TEST(AtmDemandTest, SolarPosSolarPosition) {
     double declin;
     double reldist;
     double lat;
-    double six_hours = 6. * swPI / 12.;
+    double const six_hours = 6. * swPI / 12.;
     // Min/max solar declination = angle of Earth's axial tilt/obliquity
     //   value for 2020 based on Astronomical Almanac 2010
-    double declin_max = 23.43668 * deg_to_rad;
-    double declin_min = -declin_max;
+    double const declin_max = 23.43668 * deg_to_rad;
+    double const declin_min = -declin_max;
     // Min/max relative sun-earth distance
     //   values based on Astronomical Almanac 2010
-    double reldist_max = 1.01671;
-    double reldist_min = 0.98329;
+    double const reldist_max = 1.01671;
+    double const reldist_min = 0.98329;
 
     int i;
 
@@ -48,14 +48,14 @@ TEST(AtmDemandTest, SolarPosSolarPosition) {
     //   - June solstice (Jun 20-22)
     //   - September equinox (Sep 21-24)
     //   - December solistice (Dec 20-23)
-    int doy_Mar_equinox[2] = {79, 81};
-    int doy_Sep_equinox[2] = {264, 266};
-    int doy_Jun_solstice[2] = {171, 173};
-    int doy_Dec_solstice[2] = {354, 357};
+    int const doy_Mar_equinox[2] = {79, 81};
+    int const doy_Sep_equinox[2] = {264, 266};
+    int const doy_Jun_solstice[2] = {171, 173};
+    int const doy_Dec_solstice[2] = {354, 357};
 
     // Dates of perihelion and aphelion
-    int doy_perihelion[2] = {2, 5};
-    int doy_aphelion[2] = {184, 187};
+    int const doy_perihelion[2] = {2, 5};
+    int const doy_aphelion[2] = {184, 187};
 
 
     for (i = 1; i <= 366; i++) {
@@ -154,12 +154,12 @@ TEST(AtmDemandTest, SolarPosSW_HourAnglesSymmetries) {
     int itime;
     int isl;
     int iasp;
-    int doys[14] = {
+    int const doys[14] = {
         1, 17, 47, 75, 105, 135, 162, 198, 228, 258, 288, 318, 344, 366
     };
     int doy_used[4][14];
-    int doy_Jun_solstice = 172;
-    double rad_to_hours = 12. / swPI;
+    int const doy_Jun_solstice = 172;
+    double const rad_to_hours = 12. / swPI;
     double latitude;
     double latitude_used[4][14];
     double slope;
@@ -615,9 +615,9 @@ TEST(AtmDemandTest, SolarRadiationExtraterrestrial) {
     unsigned int doy;
     double lat;
     // Madison_WI: Duffie & Beckman 2013: Ex 1.6.1
-    double lat_Madison_WI = 43. * deg_to_rad;
+    double const lat_Madison_WI = 43. * deg_to_rad;
     // StLouis_MO: Duffie & Beckman 2013: Ex 2.11.1
-    double lat_StLouis_MO = 38.6 * deg_to_rad;
+    double const lat_StLouis_MO = 38.6 * deg_to_rad;
     double sun_angles[7];
     double int_cos_theta[2];
     double int_sin_beta[2];
@@ -625,7 +625,7 @@ TEST(AtmDemandTest, SolarRadiationExtraterrestrial) {
     double res_ratio;
 
     // Duffie & Beckman 2013: Table 1.10.1
-    unsigned int doys_Table1_6_1[12] = {
+    unsigned int const doys_Table1_6_1[12] = {
         17, 47, 75, 105, 135, 162, 198, 228, 258, 288, 318, 344
     };
 
@@ -633,11 +633,11 @@ TEST(AtmDemandTest, SolarRadiationExtraterrestrial) {
     // during shifts between permanent sun and night
     //   * lat = +85: Mar = 2.2, Sep = 6.4
     //   * lat = -90: Mar = 6.2, Sep = 1.4, Oct = 20.4
-    double lats_Table1_10_1[9] = {
+    double const lats_Table1_10_1[9] = {
         85., 45., 30., 15., 0., -10., -45., -60., -90.
     };
 
-    double H_oh_Table1_10_1[9][12] = {
+    double const H_oh_Table1_10_1[9][12] = {
         // clang-format off
         {0.0, 0.0, NAN, 19.2, 37.0, 44.7, 41.0, 26.4, NAN, 0.0, 0.0, 0.0},
         {12.2, 17.4, 25.1, 33.2, 39.2, 41.7, 40.4, 35.3, 27.8, 19.6, 13.3, 10.7},
@@ -784,10 +784,11 @@ TEST(AtmDemandTest, SolarRadiationGlobal) {
     unsigned int k;
 
     // Duffie & Beckman 2013: Table 1.6.1
-    unsigned int doys_Table1_6_1[12] = {
+    unsigned int const doys_Table1_6_1[12] = {
         17, 47, 75, 105, 135, 162, 198, 228, 258, 288, 318, 344
     };
-    unsigned int desc_rsds = 0; // `rsds` represents daily irradiation [MJ / m2]
+    unsigned int const desc_rsds =
+        0; // `rsds` represents daily irradiation [MJ / m2]
 
     double H_gt;
     double H_ot;
@@ -798,7 +799,7 @@ TEST(AtmDemandTest, SolarRadiationGlobal) {
     double actual_vap_pressure;
 
     // Duffie & Beckman 2013: Example 2.19.1
-    double H_Ex2_19_1[3][12] = {
+    double const H_Ex2_19_1[3][12] = {
         // clang-format off
         // H_oh [MJ / m2]
         {13.37, 18.81, 26.03, 33.78, 39.42, 41.78, 40.56, 35.92, 28.80, 20.90, 14.62, 11.91},
@@ -809,7 +810,7 @@ TEST(AtmDemandTest, SolarRadiationGlobal) {
         // clang-format on
     };
 
-    double albedo[12] = {
+    double const albedo[12] = {
         0.7, 0.7, 0.4, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.4
     };
 
@@ -824,25 +825,25 @@ TEST(AtmDemandTest, SolarRadiationGlobal) {
     // {66.25, 66.25, 70, 67.5, 65, 60, 57.5, 57.5, 60, 63.75, 72.5, 71.25},
     // replaced observed with estimated values to match `H_Ex2_19_1`:
     // replaced ~ -61 + 1.661 * observed
-    double cloud_cover1[12] = {
+    double const cloud_cover1[12] = {
         53., 47.5, 54., 53., 40., 35., 35., 30., 46., 50., 63., 52.
     };
 
     // cloud_cover2: derived from observed `rsds` (`H_Ex2_19_1["H_gh"][]`)
     // and calculated `H_gh`
     // note: this should be identical to `cloud_cover1[]`
-    double cloud_cover2[12] = {
+    double const cloud_cover2[12] = {
         39.9, 37.7, 45.6, 49.0, 36.2, 32.9, 30.6, 28.7, 40.6, 41.8, 50.7, 37.6
     };
 
     // Element 11:  Relative Humidity (%), MN3HRLY (Statistic 94):  Mean of
     // 3-Hourly Observations
-    double rel_humidity[12] = {
+    double const rel_humidity[12] = {
         74.5, 73.1, 71.4, 66.3, 65.8, 68.3, 71.0, 74.4, 76.8, 73.2, 76.9, 78.5
     };
 
     // Element 01:  Dry Bulb Temperature (deg C)
-    double air_temp_mean[12] = {
+    double const air_temp_mean[12] = {
         -8.9, -6.3, 0.2, 7.4, 13.6, 19, 21.7, 20.2, 15.4, 9.4, 1.9, -5.7
     };
 
@@ -969,10 +970,10 @@ TEST(AtmDemandTest, SolarRadiationGlobal) {
 TEST(AtmDemandTest, PETsvp) {
     int i;
     // Temperature [C]
-    double temp_C[] = {-30, -20, -10, 0, 10, 20, 30, 40, 50, 60};
+    double const temp_C[] = {-30, -20, -10, 0, 10, 20, 30, 40, 50, 60};
     double check_svp;
     // Expected saturation vapor pressure [kPa]
-    double expected_svp[] = {
+    double const expected_svp[] = {
         0.0380009,
         0.103226,
         0.2598657,
@@ -986,7 +987,7 @@ TEST(AtmDemandTest, PETsvp) {
     };
     double check_svp_to_t;
     // Expected slope of svp - temperature curve [kPa / K]
-    double expected_svp_to_T[] = {
+    double const expected_svp_to_T[] = {
         0.0039537,
         0.0099076,
         0.0230775,
@@ -1017,32 +1018,32 @@ TEST(AtmDemandTest, PETpetfunc) {
 
 
     int i;
-    unsigned int doy = 2;
-    unsigned int desc_rsds = 0;
+    unsigned int const doy = 2;
+    unsigned int const desc_rsds = 0;
     double check_pet;
-    double rsds = SW_MISSING;
+    double const rsds = SW_MISSING;
     double H_gt;
     double H_oh;
     double H_ot;
     double H_gh;
-    double lat = 39. * deg_to_rad;
-    double elev = 1000.;
-    double slope0 = 0.;
-    double sloped = 5. * deg_to_rad;
-    double aspect = -90. * deg_to_rad; // East-facing slope
-    double reflec = 0.15;
-    double temp = 25.;
-    double RH = 61.;
-    double windsp = 1.3;
+    double const lat = 39. * deg_to_rad;
+    double const elev = 1000.;
+    double const slope0 = 0.;
+    double const sloped = 5. * deg_to_rad;
+    double const aspect = -90. * deg_to_rad; // East-facing slope
+    double const reflec = 0.15;
+    double const temp = 25.;
+    double const RH = 61.;
+    double const windsp = 1.3;
     double cloudcov = 71.;
     double actual_vap_pressure;
 
 
     // TEST `petfunc()` for varying average daily air temperature `avgtemp` [C]
     // Inputs
-    double avgtemps[] = {-30, -20, -10, 0, 10, 20, 30, 40, 50, 60};
+    double const avgtemps[] = {-30, -20, -10, 0, 10, 20, 30, 40, 50, 60};
     // Expected PET
-    double expected_pet_avgtemps[] = {
+    double const expected_pet_avgtemps[] = {
         0.0100,
         0.0184,
         0.0346,
@@ -1090,13 +1091,13 @@ TEST(AtmDemandTest, PETpetfunc) {
 
     // TEST `petfunc()` for varying latitude `lat` [± pi / 2]
     // Inputs
-    double lats[] = {-90., -45., 0., 45., 90.};
+    double const lats[] = {-90., -45., 0., 45., 90.};
     // Expected PET
-    double expected_pet_lats[] = {
+    double const expected_pet_lats[] = {
         0.416576, 0.435964, 0.359670, 0.121564, 0.042131
     };
 
-    double e_a = actualVaporPressure1(RH, temp);
+    double const e_a = actualVaporPressure1(RH, temp);
 
     for (i = 0; i < 5; i++) {
         SW_PET_init_run(&SW_AtmDemand); // Re-init radiation memoization
@@ -1131,9 +1132,11 @@ TEST(AtmDemandTest, PETpetfunc) {
     // TEST `petfunc()` for varying elevation [m a.s.l.]
     // Testing from -413 meters (Death Valley) to 8727 meters (~Everest).
     // Inputs
-    double elevs[] = {-413, 0, 1000, 4418, 8727};
+    double const elevs[] = {-413, 0, 1000, 4418, 8727};
     // Expected PET
-    double expected_pet_elevs[] = {0.1670, 0.1634, 0.1550, 0.1305, 0.1093};
+    double const expected_pet_elevs[] = {
+        0.1670, 0.1634, 0.1550, 0.1305, 0.1093
+    };
 
     for (i = 0; i < 5; i++) {
         SW_PET_init_run(&SW_AtmDemand); // Re-init radiation memoization
@@ -1168,9 +1171,11 @@ TEST(AtmDemandTest, PETpetfunc) {
 
     // TEST `petfunc()` for varying slope [0 - pi / 2; radians]
     // Inputs
-    double slopes[] = {0., 15., 34., 57., 90.};
+    double const slopes[] = {0., 15., 34., 57., 90.};
     // Expected PET
-    double expected_pet_slopes[] = {0.1550, 0.1542, 0.1512, 0.1429, 0.1200};
+    double const expected_pet_slopes[] = {
+        0.1550, 0.1542, 0.1512, 0.1429, 0.1200
+    };
 
     for (i = 0; i < 5; i++) {
         SW_PET_init_run(&SW_AtmDemand); // Re-init radiation memoization
@@ -1205,9 +1210,9 @@ TEST(AtmDemandTest, PETpetfunc) {
     // TEST `petfunc()` for varying aspect
     //   [South facing slope = 0, East = -pi / 2, West = pi / 2, North = ±pi]
     // Inputs
-    double aspects[] = {-180, -90, -45, 0, 45, 90, 180};
+    double const aspects[] = {-180, -90, -45, 0, 45, 90, 180};
     // Expected PET
-    double expected_pet_aspects[] = {
+    double const expected_pet_aspects[] = {
         0.1357, 0.1549, 0.1681, 0.1736, 0.1681, 0.1549, 0.1357
     };
 
@@ -1243,9 +1248,11 @@ TEST(AtmDemandTest, PETpetfunc) {
 
     // TEST `petfunc()` for varying albedo [0-1]
     // Inputs
-    double reflecs[] = {0., 0.22, 0.46, 0.55, 1.};
+    double const reflecs[] = {0., 0.22, 0.46, 0.55, 1.};
     // Expected PET
-    double expected_pet_reflecs[] = {0.1745, 0.1457, 0.1141, 0.1022, 0.0421};
+    double const expected_pet_reflecs[] = {
+        0.1745, 0.1457, 0.1141, 0.1022, 0.0421
+    };
 
     for (i = 0; i < 5; i++) {
         SW_PET_init_run(&SW_AtmDemand); // Re-init radiation memoization
@@ -1280,9 +1287,9 @@ TEST(AtmDemandTest, PETpetfunc) {
 
     // TEST `petfunc()` for varying relative humidity [0-100; %]
     // Inputs
-    double RHs[] = {0, 34, 56, 79, 100};
+    double const RHs[] = {0, 34, 56, 79, 100};
     // Expected PET
-    double expected_pet_RHs[] = {0.2267, 0.2123, 0.1662, 0.1128, 0.0612};
+    double const expected_pet_RHs[] = {0.2267, 0.2123, 0.1662, 0.1128, 0.0612};
 
     for (i = 0; i < 5; i++) {
         SW_PET_init_run(&SW_AtmDemand); // Re-init radiation memoization
@@ -1319,9 +1326,11 @@ TEST(AtmDemandTest, PETpetfunc) {
 
     // TEST `petfunc()` for varying wind speed [m / s]
     // Inputs
-    double windsps[] = {0., 1., 5., 10., 20.};
+    double const windsps[] = {0., 1., 5., 10., 20.};
     // Expected PET
-    double expected_pet_windsps[] = {0.1016, 0.1426, 0.3070, 0.5124, 0.9232};
+    double const expected_pet_windsps[] = {
+        0.1016, 0.1426, 0.3070, 0.5124, 0.9232
+    };
 
     SW_PET_init_run(&SW_AtmDemand); // Re-init radiation memoization
 
@@ -1358,7 +1367,9 @@ TEST(AtmDemandTest, PETpetfunc) {
     // Inputs
     double cloudcovs[] = {0, 12, 36, 76, 100};
     // Expected PET
-    double expected_pet_cloudcovs[] = {0.1253, 0.1303, 0.1404, 0.1571, 0.1671};
+    double const expected_pet_cloudcovs[] = {
+        0.1253, 0.1303, 0.1404, 0.1571, 0.1671
+    };
     // Note: increasing cloud cover decreases H_gt and increases PET
 
     for (i = 0; i < 5; i++) {
