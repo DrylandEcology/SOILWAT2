@@ -1702,11 +1702,13 @@ void lyrSoil_to_lyrTemp(
                 if (LT(acc, width_Temp)) {
                     j++;
                 }
-            } else if (LT(cor[i][j], 0.0) && j == nlyrSoil) {
+            } else if (LT(cor[i][j], 0.0)) {
                 // negative cor values indicate end of soil layer profile
                 // copying values from deepest soil layer
-                ratio = -cor[i][j] / width_Soil[j - 1];
-                res[i] += var[j - 1] * ratio;
+                // NOLINTBEGIN(clang-analyzer-core.UndefinedBinaryOperatorResult)
+                ratio = -cor[i][j] / width_Soil[nlyrSoil - 1];
+                res[i] += var[nlyrSoil - 1] * ratio;
+                // NOLINTEND(clang-analyzer-core.UndefinedBinaryOperatorResult)
                 sum += ratio;
                 acc += (-cor[i][j]);
             }
