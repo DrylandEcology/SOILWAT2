@@ -287,7 +287,8 @@ void SW_VES_read2(
 
     SW_VegEstab->use = use_VegEstab;
 
-    char buf[FILENAME_MAX], inbuf[MAX_FILENAMESIZE];
+    char buf[FILENAME_MAX];
+    char inbuf[MAX_FILENAMESIZE];
     FILE *f;
 
     if (SW_VegEstab->use) {
@@ -897,7 +898,8 @@ IntU new_species(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo) {
 void echo_VegEstab(const RealD width[], SW_VEGESTAB_INFO **parms, IntU count) {
     /* --------------------------------------------------- */
     IntU i;
-    char outstr[2048], errstr[MAX_ERROR];
+    char outstr[2048];
+    char errstr[MAX_ERROR];
 
     snprintf(
         errstr,

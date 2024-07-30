@@ -412,7 +412,8 @@ void infiltrate_water_high(
     unsigned int i;
     unsigned int j;
     double d[MAX_LAYERS] = {0};
-    double push, ksat_rel;
+    double push;
+    double ksat_rel;
 
     // Infiltration
     swc[0] += pptleft + *standingWater;
@@ -514,8 +515,10 @@ void transp_weighted_avg(
      1-Oct-03 - local sumco replaces previous sum_tr_coeff[]
 
      **********************************************************************/
-    unsigned int r, i;
-    double swp, sumco;
+    unsigned int r;
+    unsigned int i;
+    double swp;
+    double sumco;
 
     *swp_avg = 0;
     for (r = 1; r <= n_tr_rgns; r++) {
@@ -646,7 +649,9 @@ void pot_soil_evap(
      swpotentl - compute soilwater potential
      **********************************************************************/
 
-    double x, avswp = 0.0, sumwidth = 0.0;
+    double x;
+    double avswp = 0.0;
+    double sumwidth = 0.0;
     unsigned int i;
 
     /* get the weighted average of swp in the evap layers */
@@ -721,7 +726,9 @@ void pot_soil_evap_bs(
      swpotentl - compute soilwater potential
      **********************************************************************/
 
-    double x, avswp = 0.0, sumwidth = 0.0;
+    double x;
+    double avswp = 0.0;
+    double sumwidth = 0.0;
     unsigned int i;
 
     /* get the weighted average of swp in the evap layers */
@@ -814,7 +821,9 @@ void pot_transp(
      tanfunc - tangent function
      **********************************************************************/
 
-    double par1, par2, shadeaf;
+    double par1;
+    double par2;
+    double shadeaf;
 
     if (LE(biolive, 0.)) {
         *bstrate = 0.;
@@ -880,7 +889,9 @@ double watrate(
 
      **********************************************************************/
 
-    double par1, par2, result;
+    double par1;
+    double par2;
+    double result;
 
     if (LT(petday, .2)) {
         par1 = 3.0;
@@ -986,7 +997,12 @@ HISTORY: 10 Jan 2002 - cwb - replaced two previous functions with
      **********************************************************************/
 
     unsigned int i;
-    double swpfrac[MAX_LAYERS], sumswp = 0.0, swc_avail, q, tmpswp, d = 0.;
+    double swpfrac[MAX_LAYERS];
+    double sumswp = 0.0;
+    double swc_avail;
+    double q;
+    double tmpswp;
+    double d = 0.;
 
     for (i = 0; i < nlyrs; i++) {
         tmpswp = SW_SWRC_SWCtoSWP(swc[i], SW_Site, i, LogInfo);
@@ -1064,8 +1080,15 @@ void percolate_unsaturated(
 
     unsigned int i;
     unsigned int j;
-    double drainlw = 0.0, swc_avail, drainpot, d[MAX_LAYERS] = {0}, push,
-           kunsat_rel, swcrel, tmp1, tmp2;
+    double drainlw = 0.0;
+    double swc_avail;
+    double drainpot;
+    double d[MAX_LAYERS] = {0};
+    double push;
+    double kunsat_rel;
+    double swcrel;
+    double tmp1;
+    double tmp2;
 
 
     /* Note that this function calculates percolation as if no gravel
@@ -1215,18 +1238,26 @@ void hydraulic_redistribution(
      point 03/23/2012 (drs) excluded hydraulic redistribution from top soil
      layer (assuming that this layer is <= 5 cm deep)
      **********************************************************************/
-
-    unsigned int i, j, idso, idre, nit;
-    Bool is_hd_adj;
-    double swa[MAX_LAYERS] = {0}, swp[MAX_LAYERS] = {0},
-           relCondroot[MAX_LAYERS] = {0}, mlyrRootCo[2] = {0.},
-           hydredmat[MAX_LAYERS][MAX_LAYERS] = {{0}};
-    double hdnet, hdin, hdout, tmp;
-
 #ifdef SWDEBUG
     short debug = 0;
     double hdnet2;
 #endif
+
+    unsigned int i;
+    unsigned int j;
+    unsigned int idso;
+    unsigned int idre;
+    unsigned int nit;
+    Bool is_hd_adj;
+    double swa[MAX_LAYERS] = {0};
+    double swp[MAX_LAYERS] = {0};
+    double relCondroot[MAX_LAYERS] = {0};
+    double mlyrRootCo[2] = {0.};
+    double hydredmat[MAX_LAYERS][MAX_LAYERS] = {{0}};
+    double hdnet;
+    double hdin;
+    double hdout;
+    double tmp;
 
 #ifdef SWDEBUG
     if (debug) {
@@ -1473,13 +1504,15 @@ void lyrTemp_to_lyrSoil_temperature(
     double temperatureRangeR[],
     double temperatureRange[]
 ) {
-
-    // i: index to soil temperature layer (i = 0 is surface)
-    // j: index to soil layer (j = 0 is first soil layer)
-    unsigned int i = 0, j, n;
 #ifdef SWDEBUG
     int debug = 0;
 #endif
+
+    // i: index to soil temperature layer (i = 0 is surface)
+    // j: index to soil layer (j = 0 is first soil layer)
+    unsigned int i = 0;
+    unsigned int j;
+    unsigned int n;
     double acc;
 
     // interpolate soil temperature values for depth of soil profile layers
@@ -1582,12 +1615,15 @@ void lyrSoil_to_lyrTemp_temperature(
     double maxTempDepth,
     double avgLyrTempR[]
 ) {
-
-    unsigned int i, j1 = 0, j2;
 #ifdef SWDEBUG
     int debug = 0;
 #endif
-    double depth_Soil2[MAX_LAYERS + 1] = {0}, avgLyrTemp2[MAX_LAYERS + 1] = {0};
+
+    unsigned int i;
+    unsigned int j1 = 0;
+    unsigned int j2;
+    double depth_Soil2[MAX_LAYERS + 1] = {0};
+    double avgLyrTemp2[MAX_LAYERS + 1] = {0};
 
     // transfer data to include bottom conditions; do not include surface
     // temperature in interpolations
@@ -1681,12 +1717,15 @@ void lyrSoil_to_lyrTemp(
     double width_Temp,
     double res[]
 ) {
-
-    unsigned int i, j = 0;
 #ifdef SWDEBUG
     int debug = 0;
 #endif
-    double acc, ratio, sum;
+
+    unsigned int i;
+    unsigned int j = 0;
+    double acc;
+    double ratio;
+    double sum;
 
     for (i = 0; i < nlyrTemp + 1; i++) {
         res[i] = 0.0;
@@ -1807,12 +1846,11 @@ void SW_ST_setup_run(
     double *lyrFrozen,
     LOG_INFO *LogInfo
 ) {
-
-    LyrIndex i;
-
 #ifdef SWDEBUG
     int debug = 0;
 #endif
+
+    LyrIndex i;
 
     if (!(*soil_temp_init)) {
 #ifdef SWDEBUG
@@ -1914,15 +1952,21 @@ void soil_temperature_setup(
     Bool *soil_temp_init,
     LOG_INFO *LogInfo
 ) {
-
-    // local vars
-    unsigned int x1 = 0, x2 = 0, j = 0, i;
 #ifdef SWDEBUG
     int debug = 0;
 #endif
-    double d1 = 0.0, d2 = 0.0, acc = 0.0;
+
+    // local vars
+    unsigned int x1 = 0;
+    unsigned int x2 = 0;
+    unsigned int j = 0;
+    unsigned int i;
+    double d1 = 0.0;
+    double d2 = 0.0;
+    double acc = 0.0;
     // double fc_vwc[nlyrs], wp_vwc[nlyrs];
-    double fc_vwc[MAX_LAYERS] = {0}, wp_vwc[MAX_LAYERS] = {0};
+    double fc_vwc[MAX_LAYERS] = {0};
+    double wp_vwc[MAX_LAYERS] = {0};
 
     // set `soil_temp_init` to 1 to indicate that this function was already
     // called and shouldn't be called again
@@ -2243,7 +2287,8 @@ unsigned int adjust_Tsoil_by_freezing_and_thawing(
     (void) bDensity;
     // end avoid compiler warnings
 
-    unsigned int i, sFadjusted_avgLyrTemp;
+    unsigned int i;
+    unsigned int sFadjusted_avgLyrTemp;
 
     /* local variables explained:
      debug - 1 to print out debug messages & then exit the program after
@@ -2386,12 +2431,6 @@ void soil_temperature_today(
     TimeInt year,
     TimeInt doy
 ) {
-    unsigned int i, k, m, Nsteps_per_day = 1;
-    double pe, cs, sh, dT_to_dX2, alpha, part2;
-    double oldavgLyrTempR2[MAX_ST_RGR];
-
-    Bool Tsoil_not_exploded = swTRUE;
-
 #ifdef SWDEBUG
     int debug = 0;
     if (year == 1981 && doy > 180 && doy < 191) {
@@ -2402,6 +2441,20 @@ void soil_temperature_today(
     (void) year;
     (void) doy;
 #endif
+
+    unsigned int i;
+    unsigned int k;
+    unsigned int m;
+    unsigned int Nsteps_per_day = 1;
+    double pe;
+    double cs;
+    double sh;
+    double dT_to_dX2;
+    double alpha;
+    double part2;
+    double oldavgLyrTempR2[MAX_ST_RGR];
+
+    Bool Tsoil_not_exploded = swTRUE;
 
     // upper boundary condition; index 0 indicates surface and not first layer
     // --> required for interpolation from soil temperature layers to soil
@@ -2864,17 +2917,22 @@ void soil_temperature(
     Bool *ptr_stError,
     LOG_INFO *LogInfo
 ) {
-
-    unsigned int i, sFadjusted_avgLyrTemp;
 #ifdef SWDEBUG
     int debug = 0;
     if (year == 1980 && doy < 10) {
         debug = 0;
     }
 #endif
-    double oldavgLyrTemp[MAX_LAYERS], vwc[MAX_LAYERS], vwcR[MAX_ST_RGR],
-        avgLyrTempR[MAX_ST_RGR], temperatureRangeR[MAX_ST_RGR],
-        temperatureRange[MAX_LAYERS], surface_range;
+
+    unsigned int i;
+    unsigned int sFadjusted_avgLyrTemp;
+    double oldavgLyrTemp[MAX_LAYERS];
+    double vwc[MAX_LAYERS];
+    double vwcR[MAX_ST_RGR];
+    double avgLyrTempR[MAX_ST_RGR];
+    double temperatureRangeR[MAX_ST_RGR];
+    double temperatureRange[MAX_LAYERS];
+    double surface_range;
 
     /* local variables explained:
      debug - 1 to print out debug messages & then exit the program after

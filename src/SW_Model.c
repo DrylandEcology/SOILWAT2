@@ -114,7 +114,8 @@ void SW_MDL_read(SW_MODEL *SW_Model, char *InFiles[], LOG_INFO *LogInfo) {
      */
     FILE *f;
     int lineno;
-    char *MyFileName, inbuf[MAX_FILENAMESIZE];
+    char *MyFileName;
+    char inbuf[MAX_FILENAMESIZE];
     double value;
 
     MyFileName = InFiles[eModel];

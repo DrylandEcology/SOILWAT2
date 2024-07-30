@@ -423,7 +423,8 @@ static void sumof_swc(
 ) {
     LyrIndex i;
     int j; // for use with ForEachVegType
-    LyrIndex n_layers = SW_Site->n_layers, n_evap_layers = SW_Site->n_evap_lyrs;
+    LyrIndex n_layers = SW_Site->n_layers;
+    LyrIndex n_evap_layers = SW_Site->n_evap_lyrs;
 
     switch (k) {
 
@@ -604,8 +605,10 @@ static void average_for(
     TimeInt curr_pd = 0;
     RealD div = 0.; /* if sumtype=AVG, days in period; if sumtype=SUM, 1 */
     LyrIndex i;
-    int k, j;
-    LyrIndex n_layers = sw->Site.n_layers, n_evap_layers = sw->Site.n_evap_lyrs;
+    int k;
+    int j;
+    LyrIndex n_layers = sw->Site.n_layers;
+    LyrIndex n_evap_layers = sw->Site.n_evap_lyrs;
 
     if (otyp == eVES) {
         return;
@@ -986,8 +989,10 @@ static void collect_sums(
     LOG_INFO *LogInfo
 ) {
     TimeInt pd = 0;
-    int i, k;
-    Bool use_help, use_KeyPeriodCombo;
+    int i;
+    int k;
+    Bool use_help;
+    Bool use_KeyPeriodCombo;
 
     switch (op) {
     case eSW_Day:
@@ -1141,7 +1146,9 @@ static void set_SXWrequests_helper(
 */
 void find_OutPeriods_inUse(SW_OUT_DOM *OutDom) {
     OutPeriod p;
-    unsigned int k, i, timeStepInd;
+    unsigned int k;
+    unsigned int i;
+    unsigned int timeStepInd;
 
     ForEachOutPeriod(p) { OutDom->use_OutPeriod[p] = swFALSE; }
 
@@ -1285,7 +1292,8 @@ void SW_OUT_set_SXWrequests(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 void SW_OUT_init_ptrs(SW_OUT_RUN *OutRun) {
 
 #if defined(SW_OUTARRAY)
-    int key, column;
+    int key;
+    int column;
     ForEachOutKey(key) {
         for (column = 0; column < SW_OUTNPERIODS; column++) {
             OutRun->p_OUT[key][column] = NULL;
@@ -1300,7 +1308,8 @@ void SW_OUT_init_ptrs(SW_OUT_RUN *OutRun) {
 }
 
 void SW_OUTDOM_init_ptrs(SW_OUT_DOM *OutDom) {
-    int key, column;
+    int key;
+    int column;
 
     ForEachOutKey(key) {
         for (column = 0; column < 5 * NVEGTYPES + MAX_LAYERS; column++) {
@@ -1891,7 +1900,8 @@ void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw) {
 
 #if defined(SWNETCDF)
     OutPeriod pd;
-    unsigned int k, file;
+    unsigned int k;
+    unsigned int file;
 
     ForEachOutKey(k) {
         ForEachOutPeriod(pd) {
@@ -1944,7 +1954,8 @@ void SW_OUT_set_ncol(
     IntUS npft_OUT[][SW_OUTNMAXVARS]
 ) {
 
-    unsigned int key, ivar;
+    unsigned int key;
+    unsigned int ivar;
     IntUS tmp;
 
     //--- Set number of output variables ------
@@ -2103,11 +2114,12 @@ void SW_OUT_set_colnames(
     char *colnames_OUT[][5 * NVEGTYPES + MAX_LAYERS],
     LOG_INFO *LogInfo
 ) {
-    unsigned int i, j;
 #ifdef SWDEBUG
     int debug = 0;
 #endif
 
+    unsigned int i;
+    unsigned int j;
     char ctemp[50];
     const char *Layers_names[MAX_LAYERS] = {
         "Lyr_1",  "Lyr_2",  "Lyr_3",  "Lyr_4",  "Lyr_5",  "Lyr_6",  "Lyr_7",
@@ -2781,7 +2793,9 @@ void SW_OUT_read(
 
     FILE *f;
     OutKey k = eSW_NoKey;
-    int x, itemno, msg_type;
+    int x;
+    int itemno;
+    int msg_type;
     IntUS i;
     Bool useTimeStep = swFALSE;
     IntUS *used_OUTNPERIODS = &OutDom->used_OUTNPERIODS;
@@ -2790,20 +2804,24 @@ void SW_OUT_read(
     /* except for the uppercase space. */
     // timeStep: matrix to capture all the periods entered in outsetup.in
     char timeStep[SW_OUTNPERIODS][10];
-    char keyname[50], ext[10];
+    char keyname[50];
+    char ext[10];
     /* sumtype: should be 2 chars, but we don't  want overflow from user typos
      */
     char sumtype[4];
     char period[10
                 /* last: last doy for output, if "end", ==366 */];
-    char lastStr[4], firstStr[4];
+    char lastStr[4];
+    char firstStr[4];
     char outfile[MAX_FILENAMESIZE];
     // message to print
     char msg[200];
     /* space for uppercase conversion */
-    char upkey[50], upsum[4];
+    char upkey[50];
+    char upsum[4];
     char inbuf[MAX_FILENAMESIZE];
-    int first, last = -1; /* first doy for output */
+    int first;
+    int last = -1; /* first doy for output */
 
     char *MyFileName = InFiles[eOutput];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -3164,25 +3182,31 @@ void SW_OUT_write_today(
      * July 12, 2017: Added functionality for writing outputs for STEPPE and
      * SOILWAT since we now want output for STEPPE
      */
+#ifdef SWDEBUG
+    int debug = 0;
+#endif
+
     TimeInt t = 0xffff;
     OutPeriod p;
-    Bool writeit[SW_OUTNPERIODS], use_help;
+    Bool writeit[SW_OUTNPERIODS];
+    Bool use_help;
 
     // Temporary string to hold sw_outstr before concatenating
     // to buf_soil/buf_reg
     // Silences -Wrestrict when compiling on Linux (found within -Wall)
     char tempstr[MAX_LAYERS * OUTSTRLEN];
+    int k;
+    int i;
+    int outPeriod;
+
 #ifdef STEPWAT
-    Bool use_help_txt, use_help_SXW;
+    Bool use_help_txt;
+    Bool use_help_SXW;
 #endif
-    int k, i, outPeriod;
+
 
     /* Update `tOffset` within SW_OUT_RUN for output functions */
     sw->OutRun.tOffset = tOffset;
-
-#ifdef SWDEBUG
-    int debug = 0;
-#endif
 
 #if defined(SW_OUTTEXT)
     char str_time[10]; // year and day/week/month header for each output row
@@ -3566,7 +3590,8 @@ void SW_OUT_close_files(
 
 void echo_outputs(SW_OUT_DOM *OutDom) {
     int k;
-    char str[OUTSTRLEN], errstr[MAX_ERROR];
+    char str[OUTSTRLEN];
+    char errstr[MAX_ERROR];
 
     strcpy(
         errstr,
@@ -3627,7 +3652,8 @@ void SW_FILESTATUS_deepCopy(
     OutPeriod pd;
     unsigned int fileNum;
     unsigned int numFiles = source_files->numOutFiles;
-    char **destFile = NULL, *srcFile = NULL;
+    char **destFile = NULL;
+    char *srcFile = NULL;
 
     ForEachOutKey(key) {
         if (OutDom->nvar_OUT[key] > 0 && OutDom->use[key]) {
@@ -3672,7 +3698,8 @@ void SW_OUTDOM_deepCopy(
     SW_OUT_DOM *source, SW_OUT_DOM *dest, LOG_INFO *LogInfo
 ) {
 
-    int k, i;
+    int k;
+    int i;
 
     /* Copies output pointers as well */
     memcpy(dest, source, sizeof(*dest));
@@ -3690,7 +3717,8 @@ void SW_OUTDOM_deepCopy(
         }
 
 #if defined(SWNETCDF)
-        int varNum, attNum;
+        int varNum;
+        int attNum;
 
         if (source->nvar_OUT[k] > 0 && source->use[k]) {
 

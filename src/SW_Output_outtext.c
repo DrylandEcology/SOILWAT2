@@ -78,12 +78,14 @@ static void create_csv_headers(
     }
 #endif
 
-    unsigned int i, k;
+    unsigned int i;
+    unsigned int k;
     char key[50];
     Bool isTrue = swFALSE;
 
     size_t size_help = (size_t) (n_layers) *OUTSTRLEN;
-    char *str_help1, *str_help2;
+    char *str_help1;
+    char *str_help2;
 
     str_help1 = (char *) Mem_Malloc(
         sizeof(char) * size_help, "create_csv_headers()", LogInfo
@@ -242,7 +244,8 @@ static void create_filename_ST(
     size_t sizeof_filename,
     LOG_INFO *LogInfo
 ) {
-    size_t startIndex = 0, strLen = 0; // For `sw_strtok()`
+    size_t startIndex = 0;
+    size_t strLen = 0; // For `sw_strtok()`
 
     char *basename;
     char *ext;
@@ -696,7 +699,8 @@ void find_TXToutputSoilReg_inUse(
     OutPeriod timeSteps[][SW_OUTNPERIODS],
     IntUS used_OUTNPERIODS
 ) {
-    int i, k;
+    int i;
+    int k;
 
     ForEachOutPeriod(i) {
         make_soil[i] = swFALSE;
@@ -731,7 +735,9 @@ void SW_OUT_close_textfiles(
     SW_FILE_STATUS *SW_FileStatus, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
 
-    Bool close_regular = swFALSE, close_layers = swFALSE, close_aggs = swFALSE;
+    Bool close_regular = swFALSE;
+    Bool close_layers = swFALSE;
+    Bool close_aggs = swFALSE;
     OutPeriod p;
 
 

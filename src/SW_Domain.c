@@ -202,10 +202,14 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     Bool hasKeys[NUM_DOM_IN_KEYS] = {swFALSE};
 
     FILE *f;
-    int y, keyID;
-    char inbuf[LARGE_VALUE], *MyFileName;
-    char key[15], value[LARGE_VALUE]; // 15 - Max key size
-    int intRes = 0, scanRes;
+    int y;
+    int keyID;
+    char inbuf[LARGE_VALUE];
+    char *MyFileName;
+    char key[15];
+    char value[LARGE_VALUE]; // 15 - Max key size
+    int intRes = 0;
+    int scanRes;
     double doubleRes = 0.;
 
     Bool doDoubleConv;
@@ -501,9 +505,9 @@ void SW_DOM_SimSet(
 ) {
 
     Bool progFound;
-    unsigned long *startSimSet = &SW_Domain->startSimSet,
-                  *endSimSet = &SW_Domain->endSimSet,
-                  startSuid[2]; // 2 -> [y, x] or [0, s]
+    unsigned long *startSimSet = &SW_Domain->startSimSet;
+    unsigned long *endSimSet = &SW_Domain->endSimSet;
+    unsigned long startSuid[2]; // 2 -> [y, x] or [0, s]
     int progFileID = 0; // Value does not matter if SWNETCDF is not defined
     int progVarID = 0;  // Value does not matter if SWNETCDF is not defined
 
@@ -579,7 +583,8 @@ void SW_DOM_init_ptrs(SW_DOMAIN *SW_Domain) {
 }
 
 void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
-    int k, i;
+    int k;
+    int i;
 
     SW_F_deconstruct(SW_Domain->PathInfo.InFiles);
 

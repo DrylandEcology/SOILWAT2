@@ -34,7 +34,8 @@ TEST(GenericTest, GenericRunningMean) {
 }
 
 TEST(GenericTest, GenericRunningSD) {
-    double ss, sd_at_k;
+    double ss;
+    double sd_at_k;
 
     for (k = 0; k < N; k++) {
         if (k == 0) {
@@ -105,7 +106,8 @@ TEST(GenericTest, GenericStrtok) {
     */
 
     char *currString;
-    size_t startIndex = 0, strLen = 0;
+    size_t startIndex = 0;
+    size_t strLen = 0;
 
     char emptyDelim[] = "";
     char oneDelim[] = "\\";

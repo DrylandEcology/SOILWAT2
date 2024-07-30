@@ -83,8 +83,11 @@ void SW_CBN_read(
 
     /* Reading carbon.in */
     FILE *f;
-    char scenario[64], yearStr[5], ppmStr[20];
-    int year, scanRes;
+    char scenario[64];
+    char yearStr[5];
+    char ppmStr[20];
+    int year;
+    int scanRes;
     int simstartyr = (int) SW_Model->startyr + SW_Model->addtl_yr;
     int simendyr = (int) SW_Model->endyr + SW_Model->addtl_yr;
 
@@ -93,7 +96,8 @@ void SW_CBN_read(
     double ppm = 1.;
     int existing_years[MAX_NYEAR] = {0};
     short fileWasEmpty = 1;
-    char *MyFileName, inbuf[MAX_FILENAMESIZE];
+    char *MyFileName;
+    char inbuf[MAX_FILENAMESIZE];
 
     MyFileName = InFiles[eCarbon];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -308,12 +312,14 @@ void SW_CBN_init_run(
     SW_CARBON *SW_Carbon,
     LOG_INFO *LogInfo
 ) {
-    int k;
-    TimeInt year, simendyr = SW_Model->endyr + SW_Model->addtl_yr;
-    double ppm;
 #ifdef SWDEBUG
     short debug = 0;
 #endif
+
+    int k;
+    TimeInt year;
+    TimeInt simendyr = SW_Model->endyr + SW_Model->addtl_yr;
+    double ppm;
 
     if (!SW_Carbon->use_bio_mult && !SW_Carbon->use_wue_mult) {
         return;

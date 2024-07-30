@@ -147,7 +147,12 @@ static void mvnorm(
      * cwb - 24-Oct-03 -- Note the switch to double (RealD).
      *       C converts the floats transparently.
      */
-    RealD s, z1, z2, wTmax_sd, vc10, vc11;
+    RealD s;
+    RealD z1;
+    RealD z2;
+    RealD wTmax_sd;
+    RealD vc10;
+    RealD vc11;
 
     // Gentle, J. E. 2009. Computational statistics. Springer, Dordrecht; New
     // York.
@@ -408,12 +413,14 @@ void SW_MKV_today(
     /* enter with rain == yesterday's ppt, doy0 as array index: [0, 365] = doy -
      * 1 leave with rain == today's ppt
      */
-    TimeInt week;
-    double prob, p, x;
-
 #ifdef SWDEBUG
     short debug = 0;
 #endif
+
+    TimeInt week;
+    double prob;
+    double p;
+    double x;
 
 #ifdef SWDEBUG
     if (debug) {
@@ -526,11 +533,18 @@ Bool SW_MKV_read_prob(
     const int numFloatInStrings = 4;
 
     FILE *f;
-    int lineno = 0, day, x, index;
-    double wet, dry, avg, std;
+    int lineno = 0;
+    int day;
+    int x;
+    int index;
+    double wet;
+    double dry;
+    double avg;
+    double std;
     double *doubleVals[4] = {&wet, &dry, &avg, &std};
     char inbuf[MAX_FILENAMESIZE];
-    char dayStr[4] = {'\0'}, inDoubleStrs[4][20] = {{'\0'}};
+    char dayStr[4] = {'\0'};
+    char inDoubleStrs[4][20] = {{'\0'}};
 
     Bool result = swTRUE;
 
@@ -670,13 +684,26 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo) {
     /* =================================================== */
     const int nitems = 11;
     FILE *f;
-    int lineno = 0, week, x, index;
+    int lineno = 0;
+    int week;
+    int x;
+    int index;
     char inbuf[MAX_FILENAMESIZE];
-    double t1, t2, t3, t4, t5, t6, cfxw, cfxd, cfnw, cfnd;
+    double t1;
+    double t2;
+    double t3;
+    double t4;
+    double t5;
+    double t6;
+    double cfxw;
+    double cfxd;
+    double cfnw;
+    double cfnd;
     double *doubleVals[] = {
         &t1, &t2, &t3, &t4, &t5, &t6, &cfxw, &cfxd, &cfnw, &cfnd
     };
-    char weekStr[3] = {'\0'}, inDoubleStrs[10][20] = {{'\0'}};
+    char weekStr[3] = {'\0'};
+    char inDoubleStrs[10][20] = {{'\0'}};
     const int numDoubleVals = 10;
     Bool result = swTRUE;
 
@@ -845,7 +872,8 @@ void SW_MKV_setup(
     LOG_INFO *LogInfo
 ) {
 
-    Bool read_prob, read_cov;
+    Bool read_prob;
+    Bool read_cov;
 
     SW_MKV_construct(Weather_rng_seed, SW_Markov);
     allocateMKV(SW_Markov, LogInfo);

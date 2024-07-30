@@ -11,10 +11,18 @@ using ::testing::HasSubstr;
 namespace {
 // This tests the uniform random number generator
 TEST(RNGTest, RNGUnifZeroToOneOutput) {
-    sw_random_t rng71, rng71b, rng11, rng12;
-    int i, n = 10;
-    double min = 0., max = 1.;
-    double x71, x71b, x11, x12;
+    sw_random_t rng71;
+    sw_random_t rng71b;
+    sw_random_t rng11;
+    sw_random_t rng12;
+    int i;
+    int n = 10;
+    double min = 0.;
+    double max = 1.;
+    double x71;
+    double x71b;
+    double x11;
+    double x12;
 
     // Seed rngs
     RandSeed(7u, 1u, &rng71);
@@ -53,10 +61,19 @@ TEST(RNGTest, RNGUnifZeroToOneOutput) {
 }
 
 TEST(RNGTest, RNGUnifFloatRangeOutput) {
-    sw_random_t rng71, rng71b, rng11, rng12;
-    int i, n = 10;
-    float min = 7.5, max = 77.7;
-    double x71, x71b, x11, x12, x0;
+    sw_random_t rng71;
+    sw_random_t rng71b;
+    sw_random_t rng11;
+    sw_random_t rng12;
+    int i;
+    int n = 10;
+    float min = 7.5;
+    float max = 77.7;
+    double x71;
+    double x71b;
+    double x11;
+    double x12;
+    double x0;
 
     // Seed rngs
     RandSeed(7u, 1u, &rng71);
@@ -104,10 +121,19 @@ TEST(RNGTest, RNGUnifFloatRangeOutput) {
 }
 
 TEST(RNGTest, RNGUnifIntRangeOutput) {
-    sw_random_t rng71, rng71b, rng11, rng12;
-    int i, n = 10;
-    int min = 7, max = 123;
-    double x71, x71b, x11, x12, x0;
+    sw_random_t rng71;
+    sw_random_t rng71b;
+    sw_random_t rng11;
+    sw_random_t rng12;
+    int i;
+    int n = 10;
+    int min = 7;
+    int max = 123;
+    double x71;
+    double x71b;
+    double x11;
+    double x12;
+    double x0;
 
     // Seed rngs
     RandSeed(7u, 1u, &rng71);
@@ -157,13 +183,20 @@ TEST(RNGTest, RNGUnifIntRangeOutput) {
 
 // This tests the normal random number generator
 TEST(RNGTest, RNGNormMeanSD) {
-    sw_random_t rng71, rng71b, rng11, rng12;
-    int i, n = 10, f = 9999;
-    double mean = 0., sd = 1., unlikely[2] = {mean - f * sd, mean + f * sd};
-    double x71[2] = {-SW_MISSING, SW_MISSING},
-           x71b[2] = {-SW_MISSING, SW_MISSING},
-           x11[2] = {-SW_MISSING, SW_MISSING},
-           x12[2] = {-SW_MISSING, SW_MISSING};
+    sw_random_t rng71;
+    sw_random_t rng71b;
+    sw_random_t rng11;
+    sw_random_t rng12;
+    int i;
+    int n = 10;
+    int f = 9999;
+    double mean = 0.;
+    double sd = 1.;
+    double unlikely[2] = {mean - f * sd, mean + f * sd};
+    double x71[2] = {-SW_MISSING, SW_MISSING};
+    double x71b[2] = {-SW_MISSING, SW_MISSING};
+    double x11[2] = {-SW_MISSING, SW_MISSING};
+    double x12[2] = {-SW_MISSING, SW_MISSING};
 
     // Seed rngs
     RandSeed(7u, 1u, &rng71);
@@ -238,9 +271,20 @@ TEST(RNGTest, RNGBetaZeroToOneOutput) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
-    sw_random_t rng71, rng71b, rng11, rng12;
-    int i, n = 10;
-    double a = 0.25, b = 2., min = 0., max = 1., x71, x71b, x11, x12;
+    sw_random_t rng71;
+    sw_random_t rng71b;
+    sw_random_t rng11;
+    sw_random_t rng12;
+    int i;
+    int n = 10;
+    double a = 0.25;
+    double b = 2.;
+    double min = 0.;
+    double max = 1.;
+    double x71;
+    double x71b;
+    double x11;
+    double x12;
 
     // Seed rngs
     RandSeed(7u, 1u, &rng71);

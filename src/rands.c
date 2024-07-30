@@ -147,7 +147,9 @@ long RandUniIntRange(
         - first = -5, last = 5, result = 0
     */
 
-    long f, l, res;
+    long f;
+    long l;
+    long res;
 
     if (first == last) {
         return first;
@@ -204,7 +206,9 @@ float RandUniFloatRange(
             - first = 4.5, last = -1.1, result = -.32
             - first = -5, last = 5, result = 0
     */
-    float f, l, r;
+    float f;
+    float l;
+    float r;
 
     if (max == min) {
         return min;
@@ -250,7 +254,11 @@ void RandUniList(
     LOG_INFO *LogInfo
 ) {
 
-    long i, j, c, range, *klist;
+    long i;
+    long j;
+    long c;
+    long range;
+    long *klist;
 
     range = last - first + 1;
 
@@ -364,7 +372,9 @@ double RandNorm(
     double res;
 
 #ifndef RSOILWAT
-    double v1, v2, r;
+    double v1;
+    double v2;
+    double r;
 
 #ifdef RANDNORMSTATIC
     /* original, non-reentrant code: issue #326 */

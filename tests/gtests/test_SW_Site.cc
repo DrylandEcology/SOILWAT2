@@ -37,8 +37,12 @@ TEST(SiteTest, SitePTFs) {
 
     // inputs
     RealD swrcp[SWRC_PARAM_NMAX];
-    RealD sand = 0.33, clay = 0.33, gravel = 0.1, bdensity = 1.4;
-    unsigned int swrc_type, k;
+    RealD sand = 0.33;
+    RealD clay = 0.33;
+    RealD gravel = 0.1;
+    RealD bdensity = 1.4;
+    unsigned int swrc_type;
+    unsigned int k;
 
 
     //--- Matching PTF-SWRC pairs
@@ -109,7 +113,10 @@ TEST(SiteTest, SitePTFsDeathTest) {
     sw_init_logs(NULL, &LogInfo);
 
     RealD swrcp[SWRC_PARAM_NMAX];
-    RealD sand = 0.33, clay = 0.33, gravel = 0.1, bdensity = 1.4;
+    RealD sand = 0.33;
+    RealD clay = 0.33;
+    RealD gravel = 0.1;
+    RealD bdensity = 1.4;
     unsigned int ptf_type;
 
 
@@ -212,7 +219,8 @@ TEST(SiteTest, SiteSWRCpChecks) {
     sw_init_logs(NULL, &LogInfo);
 
     // inputs
-    RealD swrcp[SWRC_PARAM_NMAX], tmp;
+    RealD swrcp[SWRC_PARAM_NMAX];
+    RealD tmp;
     unsigned int swrc_type;
 
 
@@ -370,8 +378,13 @@ TEST(SiteTest, SitePTFRawlsBrakensiek1985) {
     sw_init_logs(NULL, &LogInfo);
 
     // declare mock INPUTS
-    double theta_min, clay = 0.1, sand = 0.6, porosity = 0.4;
-    int k1, k2, k3;
+    double theta_min;
+    double clay = 0.1;
+    double sand = 0.6;
+    double porosity = 0.4;
+    int k1;
+    int k2;
+    int k3;
 
     //--- EXPECT SW_MISSING if soil texture is out of range
     // within range: sand [0.05, 0.7], clay [0.05, 0.6], porosity [0.1, 1[
@@ -467,7 +480,10 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
         - soil layer information in TranspRgnBounds is base0
     */
 
-    LyrIndex i, id, nRegions, prevTranspRgnBounds[MAX_TRANSP_REGIONS] = {0};
+    LyrIndex i;
+    LyrIndex id;
+    LyrIndex nRegions;
+    LyrIndex prevTranspRgnBounds[MAX_TRANSP_REGIONS] = {0};
     RealD soildepth;
 
     for (i = 0; i < MAX_TRANSP_REGIONS; ++i) {
@@ -545,7 +561,8 @@ TEST(SiteTest, SiteSoilDensity) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    double soildensity = 1.4, fcoarse = 0.1;
+    double soildensity = 1.4;
+    double fcoarse = 0.1;
 
 
     // Check that matric density is zero if coarse fragments is 100%

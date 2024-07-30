@@ -56,7 +56,8 @@ char *Str_TrimLeft(char *s) {
      cwb - 18-Nov-02
      -------------------------------------------*/
 
-    char *q, *p;
+    char *q;
+    char *p;
     q = p = s;
     while (*q && isspace((int) *(q))) {
         q++; /* goto nonblank */
@@ -115,7 +116,8 @@ char *Str_ToUpper(char *s, char *r) {
 
      cwb - 10/5/01
      -------------------------------------------*/
-    char *p = s, *q = r;
+    char *p = s;
+    char *q = r;
     while (*p) {
         *(q++) = (char) toupper((int) (*(p++)));
     }
@@ -131,7 +133,8 @@ char *Str_ToLower(char *s, char *r) {
 
      cwb - 10/5/01
      -------------------------------------------*/
-    char *p = s, *q = r;
+    char *p = s;
+    char *q = r;
     while (*p) {
         *(q++) = (char) tolower((int) (*(p++)));
     }
@@ -145,7 +148,8 @@ int Str_CompareI(char *t, char *s) {
      * works like strcmp() except case-insensitive
      * cwb 4-Sep-03
      */
-    char *tChar = t, *sChar = s;
+    char *tChar = t;
+    char *sChar = s;
 
     // While t and s characters are not '\0' (null)
     // and the lower case character of t and s are the same
@@ -360,7 +364,11 @@ void st_getBounds(
  05/29/2012 (DLM) initial coding
  **************************************************************************************************************************************/
 double lobfM(const double xs[], const double ys[], unsigned int n) {
-    double sumX, sumY, sumXY, sumX2, temp;
+    double sumX;
+    double sumY;
+    double sumXY;
+    double sumX2;
+    double temp;
     unsigned int i;
 
     sumX = sumY = sumXY = sumX2 = 0.0; // init values to 0
@@ -388,7 +396,9 @@ double lobfM(const double xs[], const double ys[], unsigned int n) {
  05/29/2012 (DLM) initial coding
  **************************************************************************************************************************************/
 double lobfB(double xs[], double ys[], unsigned int n) {
-    double sumX, sumY, temp;
+    double sumX;
+    double sumY;
+    double temp;
     unsigned int i;
 
     sumX = sumY = 0.0;
@@ -527,8 +537,10 @@ ignores it to not influence the mean.
 */
 double mean(const double values[], unsigned int length) {
 
-    unsigned int index, finalLength = 0;
-    double total = 0.0, currentVal;
+    unsigned int index;
+    unsigned int finalLength = 0;
+    double total = 0.0;
+    double currentVal;
 
     for (index = 0; index < length; index++) {
         currentVal = values[index];
@@ -557,8 +569,11 @@ ignores it to not influence the standard deviation.
 */
 double standardDeviation(double inputArray[], unsigned int length) {
 
-    unsigned int index, finalLength = 0;
-    double arrayMean = mean(inputArray, length), total = 0.0, currentVal;
+    unsigned int index;
+    unsigned int finalLength = 0;
+    double arrayMean = mean(inputArray, length);
+    double total = 0.0;
+    double currentVal;
 
     for (index = 0; index < length; index++) {
         currentVal = inputArray[index];

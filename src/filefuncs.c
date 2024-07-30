@@ -70,13 +70,20 @@ static char **getfiles(const char *fspec, int *nfound, LOG_INFO *LogInfo) {
      * nfound is the number of files found, also, num elements in flist
      */
 
-    char **flist = NULL, *fname, *fn1, *fn2, *p2;
+    char **flist = NULL;
+    char *fname;
+    char *fn1;
+    char *fn2;
+    char *p2;
     char dname[FILENAME_MAX];
 
-    size_t startIndex = 0, strLen = 0; // For `sw_strtok()`
+    size_t startIndex = 0;
+    size_t strLen = 0; // For `sw_strtok()`
 
-    size_t len1, len2;
-    Bool match, alloc = swFALSE;
+    size_t len1;
+    size_t len2;
+    Bool match;
+    Bool alloc = swFALSE;
 
     DIR *dir;
     struct dirent *ent;
@@ -477,7 +484,8 @@ void DirName(const char *p, char *outString) {
      */
     const char *c;
     long int l;
-    char sep1 = '/', sep2 = '\\';
+    char sep1 = '/';
+    char sep2 = '\\';
 
     *outString = '\0';
     c = strrchr(p, (int) sep1);
@@ -499,7 +507,8 @@ const char *BaseName(const char *p) {
     /* Doesn't modify the string, but you'll probably want to
      * copy the result to a stable buffer. */
     const char *c;
-    char sep1 = '/', sep2 = '\\';
+    char sep1 = '/';
+    char sep2 = '\\';
 
     c = strrchr(p, (int) sep1);
     if (!c) {
@@ -613,13 +622,15 @@ void MkDir(const char *dname, LOG_INFO *LogInfo) {
      *   -p behavior.
      */
 
-    int i, n;
+    int i;
+    int n;
     char *a[256] = {0}; /* points to each path element for mkdir -p behavior */
     char *c;            /* duplicate of dname so we don't change it */
     const char *delim = "\\/"; /* path separators */
     char buffer[MAX_ERROR];
 
-    size_t startIndex = 0, strLen = 0; // For `sw_strtok()`
+    size_t startIndex = 0;
+    size_t strLen = 0; // For `sw_strtok()`
 
     if (isnull(dname)) {
         return;
@@ -671,8 +682,11 @@ Bool RemoveFiles(const char *fspec, LOG_INFO *LogInfo) {
      * Returns TRUE if all files removed, FALSE otherwise.
      */
 
-    char **flist, fname[FILENAME_MAX];
-    int i, nfiles, result = swTRUE;
+    char **flist;
+    char fname[FILENAME_MAX];
+    int i;
+    int nfiles;
+    int result = swTRUE;
     size_t dlen;
 
     if (fspec == NULL) {
@@ -715,7 +729,8 @@ Bool RemoveFiles(const char *fspec, LOG_INFO *LogInfo) {
 Bool CopyFile(const char *from, const char *to, LOG_INFO *LogInfo) {
     char buffer[4096]; // or any other constant that is a multiple of 512
     size_t n;
-    FILE *ffrom, *fto;
+    FILE *ffrom;
+    FILE *fto;
 
     ffrom = fopen(from, "r");
     if (ffrom == NULL) {

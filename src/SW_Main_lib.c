@@ -149,10 +149,10 @@ void sw_init_args(
     /* indicates options with values: 0=none, 1=required, -1=optional */
     int valopts[] = {1, 1, 0, 0, 0, 0, 1, 1, 0};
 
-    int i,  /* looper through all cmdline arguments */
-        a,  /* current valid argument-value position */
-        op, /* position number of found option */
-        nopts = sizeof(opts) / sizeof(char *);
+    int i;  /* looper through all cmdline arguments */
+    int a;  /* current valid argument-value position */
+    int op; /* position number of found option */
+    int nopts = sizeof(opts) / sizeof(char *);
     double doubleUserSUID = 0.;
 
     /* Defaults */
@@ -365,7 +365,8 @@ simulation run
 */
 void sw_write_warnings(const char *header, LOG_INFO *LogInfo) {
 
-    int warnMsgNum, warningUpperBound = LogInfo->numWarnings;
+    int warnMsgNum;
+    int warningUpperBound = LogInfo->numWarnings;
     Bool tooManyWarns = swFALSE;
     char tooManyWarnsStr[MAX_LOG_SIZE];
 

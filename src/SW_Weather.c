@@ -216,13 +216,27 @@ void calcSiteClimate(
     SW_CLIMATE_YEARLY *climateOutput
 ) {
 
-    unsigned int month, yearIndex, year, day, numDaysYear, currMonDay;
-    unsigned int numDaysMonth, adjustedDoy, adjustedYear = 0, secondMonth,
-                                            seventhMonth;
-    unsigned int adjustedStartYear, calendarYearDays;
+    unsigned int month;
+    unsigned int yearIndex;
+    unsigned int year;
+    unsigned int day;
+    unsigned int numDaysYear;
+    unsigned int currMonDay;
+    unsigned int numDaysMonth;
+    unsigned int adjustedDoy;
+    unsigned int adjustedYear = 0;
+    unsigned int secondMonth;
+    unsigned int seventhMonth;
+    unsigned int adjustedStartYear;
+    unsigned int calendarYearDays;
 
-    double currentTempMin, currentTempMean, totalAbove65, current7thMonMin,
-        PPT7thMon, consecNonFrost, currentNonFrost;
+    double currentTempMin;
+    double currentTempMean;
+    double totalAbove65;
+    double current7thMonMin;
+    double PPT7thMon;
+    double consecNonFrost;
+    double currentNonFrost;
 
     size_t size_nyrs = sizeof(double) * numYears;
 
@@ -411,7 +425,11 @@ void calcSiteClimateLatInvariants(
 
     unsigned int month = Jan;
     unsigned int numDaysMonth = Time_days_in_month(month, days_in_month);
-    unsigned int yearIndex, day, numDaysYear, currMonDay, year;
+    unsigned int yearIndex;
+    unsigned int day;
+    unsigned int numDaysYear;
+    unsigned int currMonDay;
+    unsigned int year;
 
     for (yearIndex = 0; yearIndex < numYears; yearIndex++) {
         year = yearIndex + startYear;
@@ -471,7 +489,10 @@ void findDriestQtr(
     double **PPTMon_cm
 ) {
 
-    unsigned int yearIndex, month, prevMonth, nextMonth;
+    unsigned int yearIndex;
+    unsigned int month;
+    unsigned int prevMonth;
+    unsigned int nextMonth;
     unsigned int adjustedMonth = 0;
     unsigned int numQuarterMonths = 3;
     unsigned int endNumYears = (inNorthHem) ? numYears : numYears - 1;
@@ -480,9 +501,14 @@ void findDriestQtr(
     // northern hempisphere
     // The main purpose of these are to easily control the correct year when
     // dealing with adjusted years in the southern hempisphere
-    unsigned int adjustedYearZero = 0, adjustedYearOne = 0, adjustedYearTwo = 0;
+    unsigned int adjustedYearZero = 0;
+    unsigned int adjustedYearOne = 0;
+    unsigned int adjustedYearTwo = 0;
 
-    double driestThreeMonPPT, driestMeanTemp, currentQtrPPT, currentQtrTemp;
+    double driestThreeMonPPT;
+    double driestMeanTemp;
+    double currentQtrPPT;
+    double currentQtrTemp;
 
     for (yearIndex = 0; yearIndex < endNumYears; yearIndex++) {
         driestThreeMonPPT = SW_MISSING;
@@ -669,7 +695,8 @@ void readAllWeather(
     TimeInt days_in_month[],
     LOG_INFO *LogInfo
 ) {
-    unsigned int yearIndex, year;
+    unsigned int yearIndex;
+    unsigned int year;
 
     /* Interpolation is to be in base0 in `interpolate_monthlyValues()` */
     Bool interpAsBase1 = swFALSE;
@@ -757,7 +784,8 @@ void finalizeAllWeather(
     LOG_INFO *LogInfo
 ) {
 
-    unsigned int day, yearIndex;
+    unsigned int day;
+    unsigned int yearIndex;
 
     // Impute missing values
     generateMissingWeather(
@@ -876,8 +904,11 @@ void scaleAllWeather(
     TimeInt days_in_month[]
 ) {
 
-    unsigned int year, month;
-    unsigned int yearIndex, numDaysYear, day;
+    unsigned int year;
+    unsigned int month;
+    unsigned int yearIndex;
+    unsigned int numDaysYear;
+    unsigned int day;
 
     Bool trivial = swTRUE;
 
@@ -1036,17 +1067,29 @@ void generateMissingWeather(
 ) {
 
     unsigned int year;
-    unsigned int yearIndex, numDaysYear, day, iMissing;
+    unsigned int yearIndex;
+    unsigned int numDaysYear;
+    unsigned int day;
+    unsigned int iMissing;
 
-    double yesterdayPPT = 0., yesterdayTempMin = 0., yesterdayTempMax = 0.,
-           yesterdayCloudCov = 0., yesterdayWindSpeed = 0.,
-           yesterdayRelHum = 0., yesterdayShortWR = 0., yesterdayActVP = 0.;
+    double yesterdayPPT = 0.;
+    double yesterdayTempMin = 0.;
+    double yesterdayTempMax = 0.;
+    double yesterdayCloudCov = 0.;
+    double yesterdayWindSpeed = 0.;
+    double yesterdayRelHum = 0.;
+    double yesterdayShortWR = 0.;
+    double yesterdayActVP = 0.;
 
     Bool any_missing;
-    Bool missing_Tmax = swFALSE, missing_Tmin = swFALSE, missing_PPT = swFALSE,
-         missing_CloudCov = swFALSE, missing_WindSpeed = swFALSE,
-         missing_RelHum = swFALSE, missing_ActVP = swFALSE,
-         missing_ShortWR = swFALSE;
+    Bool missing_Tmax = swFALSE;
+    Bool missing_Tmin = swFALSE;
+    Bool missing_PPT = swFALSE;
+    Bool missing_CloudCov = swFALSE;
+    Bool missing_WindSpeed = swFALSE;
+    Bool missing_RelHum = swFALSE;
+    Bool missing_ActVP = swFALSE;
+    Bool missing_ShortWR = swFALSE;
 
 
     // Pass through method: return early
@@ -1206,10 +1249,13 @@ crash.
 void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
 
     // Initialize any variables
-    TimeInt year, doy, numDaysInYear;
+    TimeInt year;
+    TimeInt doy;
+    TimeInt numDaysInYear;
     SW_WEATHER_HIST **weathHist = weather->allHist;
 
-    double dailyMinTemp, dailyMaxTemp;
+    double dailyMinTemp;
+    double dailyMaxTemp;
 
     // Loop through `allHist` years
     for (year = 0; year < weather->n_years; year++) {
@@ -1607,8 +1653,8 @@ void SW_WTH_new_day(
     SW_WEATHER_NOW *wn = &SW_Weather->now;
 
     /* Indices to today's weather record in `allHist` */
-    TimeInt doy0 = doy - 1,
-            doy1 = doy; // Used for call to SW_SWC_adjust_snow()
+    TimeInt doy0 = doy - 1;
+    TimeInt doy1 = doy; // Used for call to SW_SWC_adjust_snow()
     TimeInt yearIndex = year - SW_Weather->startYear;
 
     /*
@@ -1704,9 +1750,18 @@ void SW_WTH_setup(
     /* =================================================== */
     const int nitems = 35;
     FILE *f;
-    int lineno = 0, month, x, index;
-    RealD sppt, stmax, stmin;
-    RealD sky, wind, rH, actVP, shortWaveRad;
+    int lineno = 0;
+    int month;
+    int x;
+    int index;
+    RealD sppt;
+    RealD stmax;
+    RealD stmin;
+    RealD sky;
+    RealD wind;
+    RealD rH;
+    RealD actVP;
+    RealD shortWaveRad;
     char inbuf[MAX_FILENAMESIZE];
     int inBufintRes = 0;
     double inBufdoubleRes = 0.;
@@ -2210,7 +2265,9 @@ void read_weather_hist(
      */
 
     FILE *f;
-    unsigned int x, lineno = 0, index;
+    unsigned int x;
+    unsigned int lineno = 0;
+    unsigned int index;
     int doy = 0;
 
     RealD weathInput[MAX_INPUT_COLUMNS];
@@ -2228,9 +2285,14 @@ void read_weather_hist(
         (Bool) (hasMaxMinRelHumid || dailyInputFlags[REL_HUMID] ||
                 dailyInputFlags[SPEC_HUMID] || dailyInputFlags[ACTUAL_VP]);
 
-    double es, e, relHum, tempSlope, svpVal;
+    double es;
+    double e;
+    double relHum;
+    double tempSlope;
+    double svpVal;
 
-    char fname[MAX_FILENAMESIZE], inbuf[MAX_FILENAMESIZE];
+    char fname[MAX_FILENAMESIZE];
+    char inbuf[MAX_FILENAMESIZE];
 
     char weathInStrs[15][20];
 
@@ -2722,8 +2784,10 @@ void deallocateClimateStructs(
     SW_CLIMATE_YEARLY *climateOutput, SW_CLIMATE_CLIM *climateAverages
 ) {
 
-    int month, pointer;
-    const int numSinglePtrs = 14, numDoublePtrs = 4;
+    int month;
+    int pointer;
+    const int numSinglePtrs = 14;
+    const int numDoublePtrs = 4;
 
     double *singlePtrs[] = {
         climateOutput->PPT_cm,

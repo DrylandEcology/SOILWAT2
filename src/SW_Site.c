@@ -313,7 +313,8 @@ static double ui_theta_min(
     RealD SWCMinVal,
     LOG_INFO *LogInfo
 ) {
-    double vwc_min = SW_MISSING, tmp_vwcmin;
+    double vwc_min = SW_MISSING;
+    double tmp_vwcmin;
 
     if (LT(ui_sm_min, 0.0)) {
         /* user input: request to estimate minimum theta */
@@ -622,7 +623,8 @@ double SW_swcBulk_minimum(
     RealD SWCMinVal,
     LOG_INFO *LogInfo
 ) {
-    double theta_min_sim, theta_min_theoretical = SW_MISSING;
+    double theta_min_sim;
+    double theta_min_theoretical = SW_MISSING;
 
     /* `theta_min` based on theoretical SWRC */
     switch (swrc_type) {
@@ -1024,7 +1026,11 @@ Bool SWRC_check_parameters_for_FXW(double *swrcp, LOG_INFO *LogInfo) {
 void PTF_Saxton2006(
     double *theta_sat, double sand, double clay, LOG_INFO *LogInfo
 ) {
-    double OM = 0., theta_33, theta_33t, theta_S33, theta_S33t;
+    double OM = 0.;
+    double theta_33;
+    double theta_33t;
+    double theta_S33;
+    double theta_S33t;
 
     /* Eq. 2: 33 kPa moisture */
     theta_33t = +0.299 - 0.251 * sand + 0.195 * clay + 0.011 * OM +
@@ -1211,7 +1217,8 @@ The count stops at first layer with 0.
 @param[in] n_layers Number of layers of soil within the simulation run
 */
 LyrIndex nlayers_bsevap(RealD *evap_coeff, LyrIndex n_layers) {
-    LyrIndex s, n = 0;
+    LyrIndex s;
+    LyrIndex n = 0;
 
     ForEachSoilLayer(s, n_layers) {
         if (GT(evap_coeff[s], 0.0)) {
@@ -1311,14 +1318,15 @@ void SW_SIT_read(
     /* 5-Feb-2002 (cwb) Removed rgntop requirement in
      *    transpiration regions section of input
      */
-
-    FILE *f;
-    int lineno = 0, x;
-    int rgnlow = 0; /* lower layer of region */
-    int region = 0; /* transp region definition number */
 #ifdef SWDEBUG
     int debug = 0;
 #endif
+
+    FILE *f;
+    int lineno = 0;
+    int x;
+    int rgnlow = 0; /* lower layer of region */
+    int region = 0; /* transp region definition number */
     LyrIndex r;
     Bool too_many_regions = swFALSE;
     char inbuf[MAX_FILENAMESIZE];
@@ -1326,7 +1334,8 @@ void SW_SIT_read(
     double doubleRes = 0.;
     char rgnStr[2][10] = {{'\0'}};
 
-    Bool doDoubleConv, strLine;
+    Bool doDoubleConv;
+    Bool strLine;
 
     /* note that Files.read() must be called prior to this. */
     char *MyFileName = InFiles[eSite];
@@ -1617,9 +1626,19 @@ void SW_LYR_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
 
     FILE *f;
     LyrIndex lyrno;
-    int x, k, index;
-    double dmin = 0.0, dmax, evco, trco_veg[NVEGTYPES], psand, pclay,
-           soildensity, imperm, soiltemp, f_gravel;
+    int x;
+    int k;
+    int index;
+    double dmin = 0.0;
+    double dmax;
+    double evco;
+    double trco_veg[NVEGTYPES];
+    double psand;
+    double pclay;
+    double soildensity;
+    double imperm;
+    double soiltemp;
+    double f_gravel;
     char inbuf[MAX_FILENAMESIZE];
     char inDoubleStrs[12][20] = {{'\0'}};
     double *inDoubleVals[] = {
@@ -1791,7 +1810,8 @@ void set_soillayers(
     double dmin = 0.0;
 
     LyrIndex lyrno;
-    unsigned int i, k;
+    unsigned int i;
+    unsigned int k;
 
     // De-allocate and delete previous soil layers and reset counters
     SW_SIT_init_counts(SW_Site);
@@ -1872,9 +1892,11 @@ void derive_soilRegions(
     const RealD *regionLowerBounds,
     LOG_INFO *LogInfo
 ) {
-    int i, j;
+    int i;
+    int j;
     RealD totalDepth = 0;
-    LyrIndex layer, UNDEFINED_LAYER = 999;
+    LyrIndex layer;
+    LyrIndex UNDEFINED_LAYER = 999;
 
     /* ------------- Error checking --------------- */
     if (nRegions < 1 || nRegions > MAX_TRANSP_REGIONS) {
@@ -1944,8 +1966,10 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
     }
 
     FILE *f;
-    LyrIndex lyrno = 0, k;
-    int x, index;
+    LyrIndex lyrno = 0;
+    LyrIndex k;
+    int x;
+    int index;
     double tmp_swrcp[SWRC_PARAM_NMAX];
     char inbuf[MAX_FILENAMESIZE];
     char swrcpDoubleStrs[6][20] = {{'\0'}};
@@ -2053,14 +2077,20 @@ void SW_SIT_init_run(
     /* 5-Mar-2002 (cwb) added normalization for ev and tr coefficients */
     /* 1-Oct-03 (cwb) removed sum_evap_coeff and sum_transp_coeff  */
 
-    LyrIndex s, r, curregion;
-    int k, flagswpcrit = 0;
-    RealD evsum = 0., trsum_veg[NVEGTYPES] = {0.}, tmp;
-    double acc = 0.0, tmp_stNRGR;
-
 #ifdef SWDEBUG
     int debug = 0;
 #endif
+
+    LyrIndex s;
+    LyrIndex r;
+    LyrIndex curregion;
+    int k;
+    int flagswpcrit = 0;
+    RealD evsum = 0.;
+    RealD trsum_veg[NVEGTYPES] = {0.};
+    RealD tmp;
+    double acc = 0.0;
+    double tmp_stNRGR;
 
 
     /* Determine number of layers with potential for

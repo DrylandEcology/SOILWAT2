@@ -162,13 +162,23 @@ void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *InFiles[], LOG_INFO *LogInfo) {
 
     FILE *f;
     TimeInt mon = Jan;
-    int x, k, lineno = 0, index;
+    int x;
+    int k;
+    int lineno = 0;
+    int index;
     // last case line number before monthly biomass densities
     const int line_help = 28;
-    double help_veg[NVEGTYPES], help_bareGround = 0., litt, biom, pctl, laic;
+    double help_veg[NVEGTYPES];
+    double help_bareGround = 0.;
+    double litt;
+    double biom;
+    double pctl;
+    double laic;
     double *monBioVals[] = {&litt, &biom, &pctl, &laic};
-    char *MyFileName, inbuf[MAX_FILENAMESIZE];
-    char vegStrs[NVEGTYPES][20] = {{'\0'}}, bareGroundStr[20] = {'\0'};
+    char *MyFileName;
+    char inbuf[MAX_FILENAMESIZE];
+    char vegStrs[NVEGTYPES][20] = {{'\0'}};
+    char bareGroundStr[20] = {'\0'};
     char *startOfErrMsg;
     char vegMethodStr[20] = {'\0'};
     const int numMonthVals = 4;
@@ -941,12 +951,15 @@ void get_critical_rank(SW_VEGPROD *SW_VegProd) {
     /*----------------------------------------------------------
             Get proper order for rank_SWPcrits
     ----------------------------------------------------------*/
-    int i, outerLoop, innerLoop;
+    int i;
+    int outerLoop;
+    int innerLoop;
     double key;
 
     // need two temp arrays equal to critSoilWater since we dont want to alter
     // the original at all
-    double tempArray[NVEGTYPES], tempArrayUnsorted[NVEGTYPES];
+    double tempArray[NVEGTYPES];
+    double tempArrayUnsorted[NVEGTYPES];
 
     ForEachVegType(i) {
         tempArray[i] = SW_VegProd->critSoilWater[i];
@@ -1009,28 +1022,34 @@ void estimateVegetationFromClimate(
 ) {
 
     unsigned int numYears = SW_Model->endyr - SW_Model->startyr + 1;
-    unsigned int k, bareGroundIndex = 7;
+    unsigned int k;
+    unsigned int bareGroundIndex = 7;
 
     SW_CLIMATE_YEARLY climateOutput;
     SW_CLIMATE_CLIM climateAverages;
 
     // NOTE: 8 = number of types, 5 = (number of types) - grasses
 
-    double coverValues[8] =
-        {SW_MISSING,
-         SW_MISSING,
-         SW_MISSING,
-         SW_MISSING,
-         0.0,
-         SW_MISSING,
-         0.0,
-         0.0},
-           shrubLimit = .2;
+    double coverValues[8] = {
+        SW_MISSING,
+        SW_MISSING,
+        SW_MISSING,
+        SW_MISSING,
+        0.0,
+        SW_MISSING,
+        0.0,
+        0.0
+    };
+    double shrubLimit = .2;
 
-    double SumGrassesFraction = SW_MISSING, C4Variables[3], grassOutput[3],
-           RelAbundanceL0[8], RelAbundanceL1[5];
+    double SumGrassesFraction = SW_MISSING;
+    double C4Variables[3];
+    double grassOutput[3];
+    double RelAbundanceL0[8];
+    double RelAbundanceL1[5];
 
-    Bool fillEmptyWithBareGround = swTRUE, warnExtrapolation = swTRUE;
+    Bool fillEmptyWithBareGround = swTRUE;
+    Bool warnExtrapolation = swTRUE;
     Bool inNorthHem = swTRUE;
     Bool fixBareGround = swTRUE;
 
@@ -1222,29 +1241,54 @@ void estimatePotNatVegComposition(
 ) {
 
     const int nTypes = 8;
-    int winterMonths[3], summerMonths[3];
+    int winterMonths[3];
+    int summerMonths[3];
 
     // Indices both single value and arrays
-    int index, succIndex = 0, forbIndex = 1, C3Index = 2, C4Index = 3,
-               grassAnn = 4, shrubIndex = 5, treeIndex = 6, bareGround = 7,
-               grassEstimSize = 0, overallEstimSize = 0, julyMin = 0,
-               degreeAbove65 = 1, frostFreeDays = 2, estimIndicesNotNA = 0,
-               grassesEstim[3], overallEstim[nTypes], iFixed[nTypes],
-               iFixedSize = 0;
+    int index;
+    int succIndex = 0;
+    int forbIndex = 1;
+    int C3Index = 2;
+    int C4Index = 3;
+    int grassAnn = 4;
+    int shrubIndex = 5;
+    int treeIndex = 6;
+    int bareGround = 7;
+    int grassEstimSize = 0;
+    int overallEstimSize = 0;
+    int julyMin = 0;
+    int degreeAbove65 = 1;
+    int frostFreeDays = 2;
+    int estimIndicesNotNA = 0;
+    int grassesEstim[3];
+    int overallEstim[nTypes];
+    int iFixed[nTypes];
+    int iFixedSize = 0;
     int tempSwapValue;
     int isetIndices[3] = {grassAnn, treeIndex, bareGround};
 
     const char *txt_isetIndices[] = {"annual grasses", "trees", "bare ground"};
 
     // Totals of different areas of variables
-    double totalSumGrasses = 0., inputSumGrasses = 0., tempDiffJanJul,
-           summerMAP = 0., winterMAP = 0., C4Species = SW_MISSING, C3Grassland,
-           C3Shrubland, estimGrassSum = 0, finalVegSum = 0., estimCoverSum = 0.,
-           tempSumGrasses = 0., estimCover[nTypes], initialVegSum = 0.,
-           fixedValuesSum = 0;
+    double totalSumGrasses = 0.;
+    double inputSumGrasses = 0.;
+    double tempDiffJanJul;
+    double summerMAP = 0.;
+    double winterMAP = 0.;
+    double C4Species = SW_MISSING;
+    double C3Grassland;
+    double C3Shrubland;
+    double estimGrassSum = 0;
+    double finalVegSum = 0.;
+    double estimCoverSum = 0.;
+    double tempSumGrasses = 0.;
+    double estimCover[nTypes];
+    double initialVegSum = 0.;
+    double fixedValuesSum = 0;
 
     Bool fixSumGrasses = (Bool) (!missing(SumGrassesFraction));
-    Bool isGrassIndex = swFALSE, tempShrubBool;
+    Bool isGrassIndex = swFALSE;
+    Bool tempShrubBool;
 
 
     // Land cover/vegetation types that are not estimated
@@ -1754,10 +1798,13 @@ void uniqueIndices(
     LOG_INFO *LogInfo
 ) {
 
-    int index, finalArrayIndex = 0, nTypes = 8,
-               tempSize = arrayOneSize + arrayTwoSize + finalArrayIndex,
-               tempIndex = 0;
-    int *tempArray, *tempArraySeen;
+    int index;
+    int finalArrayIndex = 0;
+    int nTypes = 8;
+    int tempSize = arrayOneSize + arrayTwoSize + finalArrayIndex;
+    int tempIndex = 0;
+    int *tempArray;
+    int *tempArraySeen;
 
     tempArray =
         (int *) Mem_Malloc(sizeof(int) * tempSize, "uniqueIndices()", LogInfo);

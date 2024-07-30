@@ -232,7 +232,8 @@
 void SW_FLW_init_run(SW_SOILWAT *SW_SoilWat) {
     /* 06/26/2013	(rjm) added function SW_FLW_init_run() to init global
      * variables between consecutive calls to SoilWat as dynamic library */
-    int i, k;
+    int i;
+    int k;
 
 
     // These only have to be cleared if a loop is wrong in the code.
@@ -261,25 +262,44 @@ void SW_FLW_init_run(SW_SOILWAT *SW_SoilWat) {
 /* --------------------------------------------------- */
 void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
 #ifdef SWDEBUG
-    IntUS debug = 0, debug_year = 1980, debug_doy = 350;
-    double Eveg, Tveg, HRveg;
+    IntUS debug = 0;
+    IntUS debug_year = 1980;
+    IntUS debug_doy = 350;
+    double Eveg;
+    double Tveg;
+    double HRveg;
 #endif
 
-    RealD swpot_avg[NVEGTYPES], transp_veg[NVEGTYPES], transp_rate[NVEGTYPES],
-        soil_evap[NVEGTYPES], soil_evap_rate[NVEGTYPES],
-        soil_evap_rate_bs = 1., surface_evap_veg_rate[NVEGTYPES],
-        surface_evap_litter_rate = 1., surface_evap_standingWater_rate = 1.,
-        h2o_for_soil = 0., snowmelt, scale_veg[NVEGTYPES], pet2, peti,
-        rate_help, x, drainout = 0;
+    RealD swpot_avg[NVEGTYPES];
+    RealD transp_veg[NVEGTYPES];
+    RealD transp_rate[NVEGTYPES];
+    RealD soil_evap[NVEGTYPES];
+    RealD soil_evap_rate[NVEGTYPES];
+    RealD soil_evap_rate_bs = 1.;
+    RealD surface_evap_veg_rate[NVEGTYPES];
+    RealD surface_evap_litter_rate = 1.;
+    RealD surface_evap_standingWater_rate = 1.;
+    RealD h2o_for_soil = 0.;
+    RealD snowmelt;
+    RealD scale_veg[NVEGTYPES];
+    RealD pet2;
+    RealD peti;
+    RealD rate_help;
+    RealD x;
+    RealD drainout = 0;
     RealD *standingWaterToday = &sw->SoilWat.standingWater[Today];
     RealD *standingWaterYesterday = &sw->SoilWat.standingWater[Yesterday];
 
-    TimeInt doy, month;
+    TimeInt doy;
+    TimeInt month;
     int k;
-    LyrIndex i, n_layers = sw->Site.n_layers;
+    LyrIndex i;
+    LyrIndex n_layers = sw->Site.n_layers;
 
-    RealD UpNeigh_lyrSWCBulk[MAX_LAYERS], UpNeigh_lyrDrain[MAX_LAYERS];
-    RealD UpNeigh_drainout, UpNeigh_standingWater;
+    RealD UpNeigh_lyrSWCBulk[MAX_LAYERS];
+    RealD UpNeigh_lyrDrain[MAX_LAYERS];
+    RealD UpNeigh_drainout;
+    RealD UpNeigh_standingWater;
 
     doy = sw->Model.doy;     /* base1 */
     month = sw->Model.month; /* base0 */

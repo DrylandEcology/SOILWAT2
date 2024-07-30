@@ -68,9 +68,13 @@ void SW_SKY_read(char *InFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
      */
 
     FILE *f;
-    int lineno = 0, x = 0, k, index;
+    int lineno = 0;
+    int x = 0;
+    int k;
+    int index;
     RealD tmp[MAX_MONTHS];
-    char *MyFileName, inbuf[MAX_FILENAMESIZE];
+    char *MyFileName;
+    char inbuf[MAX_FILENAMESIZE];
     char tmpStrs[MAX_MONTHS][20] = {{'\0'}};
 
     MyFileName = InFiles[eSky];

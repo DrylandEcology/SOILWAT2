@@ -9,12 +9,16 @@
 
 namespace {
 TEST(TimesTest, TimesLeapYear) {
-    TimeInt days_in_month[MAX_MONTHS], cum_monthdays[MAX_MONTHS];
+    TimeInt days_in_month[MAX_MONTHS];
+    TimeInt cum_monthdays[MAX_MONTHS];
 
-    unsigned int k, lpadd,
-        years[] = {1900, 1980, 1981, 2000}; // noleap, leap, noleap, leap years
+    unsigned int k;
+    unsigned int lpadd;
+    // years[]: noleap, leap, noleap, leap years
+    unsigned int years[] = {1900, 1980, 1981, 2000};
 
-    Bool kleap, isleap[] = {swFALSE, swTRUE, swFALSE, swTRUE};
+    Bool kleap;
+    Bool isleap[] = {swFALSE, swTRUE, swFALSE, swTRUE};
 
     Time_init_model(days_in_month);
 
@@ -76,12 +80,16 @@ TEST(TimesTest, TimesInterpolateMonthlyValues) {
     RealD cloudcov_daily[MAX_DAYS + 1];
 
 
-    TimeInt days_in_month[MAX_MONTHS], cum_monthdays[MAX_MONTHS];
+    TimeInt days_in_month[MAX_MONTHS];
+    TimeInt cum_monthdays[MAX_MONTHS];
 
     Bool interpAsBase1 = swFALSE;
 
-    unsigned int i, k, doy, lpadd,
-        years[] = {1980, 1981}; // leap year, non-leap year
+    unsigned int i;
+    unsigned int k;
+    unsigned int doy;
+    unsigned int lpadd;
+    unsigned int years[] = {1980, 1981}; // leap year, non-leap year
 
     Bool isMon1;
 
@@ -223,7 +231,8 @@ TEST(TimesTest, TimeTracking) {
     SW_WALLTIME wt;
     WallTimeSpec start;
     Bool ok;
-    int k, n_runs = 10;
+    int k;
+    int n_runs = 10;
     LOG_INFO LogInfo;
 
 

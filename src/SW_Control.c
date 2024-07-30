@@ -269,15 +269,19 @@ void SW_CTL_RunSimSet(
     LOG_INFO *main_LogInfo
 ) {
 
-    unsigned long suid, nSims = 0;
+    unsigned long suid;
+    unsigned long nSims = 0;
     unsigned long ncSuid[2]; // 2 -> [y, x] or [s, 0]
     /* tag_suid is 32:
       11 character for "(suid = ) " + 20 character for ULONG_MAX + '\0' */
     char tag_suid[32];
 
     tag_suid[0] = '\0';
-    WallTimeSpec tss, tsr;
-    Bool ok_tss = swFALSE, ok_tsr = swFALSE, ok_suid;
+    WallTimeSpec tss;
+    WallTimeSpec tsr;
+    Bool ok_tss = swFALSE;
+    Bool ok_tsr = swFALSE;
+    Bool ok_suid;
 
     int progFileID = 0; // Value does not matter if SWNETCDF is not defined
     int progVarID = 0;  // Value does not matter if SWNETCDF is not defined
@@ -618,16 +622,18 @@ void SW_CTL_run_current_year(
     SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
     /*=======================================================*/
-    TimeInt *doy = &sw->Model.doy; // base1
 #ifdef SWDEBUG
     int debug = 0;
 #endif
+
+    TimeInt *doy = &sw->Model.doy; // base1
 
 #ifdef SWDEBUG
     if (debug) {
         sw_printf("\n'SW_CTL_run_current_year': begin new year\n");
     }
 #endif
+
     begin_year(sw, OutDom, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -737,7 +743,14 @@ void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         return;
     }
 
-    unsigned int i, k, quotient = 0, remainder = 0;
+#ifdef SWDEBUG
+    int debug = 0;
+#endif
+
+    unsigned int i;
+    unsigned int k;
+    unsigned int quotient = 0;
+    unsigned int remainder = 0;
     int mode = sw->Model.SW_SpinUp.mode;
     TimeInt yr;
     TimeInt duration = sw->Model.SW_SpinUp.duration;
@@ -751,10 +764,6 @@ void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
-
-#ifdef SWDEBUG
-    int debug = 0;
-#endif
 
 #ifdef SWDEBUG
     if (debug) {
@@ -806,7 +815,9 @@ void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         break;
     }
 
-    TimeInt *cur_yr = &sw->Model.year, yrIdx, startyr = sw->Model.startyr;
+    TimeInt *cur_yr = &sw->Model.year;
+    TimeInt yrIdx;
+    TimeInt startyr = sw->Model.startyr;
 
     sw->Model.startyr = years[0]; // set startyr for spinup
 

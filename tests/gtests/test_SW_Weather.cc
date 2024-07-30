@@ -109,7 +109,8 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesDays) {
 
 TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesYears) {
 
-    int year, day;
+    int year;
+    int day;
     SW_Run.Weather.generateWeatherMethod = 2;
 
     // Change directory to get input files with some missing data
@@ -150,7 +151,8 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesYears) {
 
 TEST_F(WeatherFixtureTest, WeatherWeatherGeneratorOnly) {
 
-    int year, day;
+    int year;
+    int day;
 
     SW_Run.Weather.generateWeatherMethod = 2;
     SW_Run.Weather.use_weathergenerator_only = swTRUE;
@@ -691,7 +693,8 @@ TEST_F(
     };
     double result[2]; // 2 = max number of years in test
 
-    int month, year;
+    int month;
+    int year;
 
     double **PPTMon_cm;
     PPTMon_cm = new double *[MAX_MONTHS];
@@ -767,7 +770,8 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyInputPrioritization) {
      */
 
     // Initialize any variables
-    int yearIndex = 0, midJanDay = 14;
+    int yearIndex = 0;
+    int midJanDay = 14;
 
     /* Test if monthly values are not being used */
     SW_WTH_setup(
@@ -814,8 +818,11 @@ TEST_F(WeatherFixtureTest, WeatherInputDailyGridMet) {
        * This section uses the test directory "*_gridmet".
      */
 
-    double result, expectedResult;
-    int yearIndex = 0, year = 1980, midJanDay = 14;
+    double result;
+    double expectedResult;
+    int yearIndex = 0;
+    int year = 1980;
+    int midJanDay = 14;
 
     /* Test correct priority is being given to input values from DAYMET */
     SW_WTH_setup(
@@ -921,8 +928,12 @@ TEST_F(WeatherFixtureTest, WeatherInputDayMet) {
        * This section uses the test directory "*_daymet".
      */
 
-    double result, expectedResult, tempSlope;
-    int yearIndex = 0, year = 1980, midJanDay = 14;
+    double result;
+    double expectedResult;
+    double tempSlope;
+    int yearIndex = 0;
+    int year = 1980;
+    int midJanDay = 14;
 
     /* Test correct priority is being given to input values from DAYMET */
     SW_WTH_setup(
@@ -1027,8 +1038,11 @@ TEST_F(WeatherFixtureTest, WeatherInputMACA) {
         * This section uses the test directory "*_maca".
      */
 
-    double result, expectedResult;
-    int yearIndex = 0, year = 1980, midJanDay = 14;
+    double result;
+    double expectedResult;
+    int yearIndex = 0;
+    int year = 1980;
+    int midJanDay = 14;
 
     /* Test correct priority is being given to input values from MACA */
 
@@ -1138,9 +1152,12 @@ TEST_F(WeatherFixtureTest, WeatherDailyLOCFInputValues) {
        We want to make sure when the weather generator method is equal to 1,
        LOCF is performed on these variables and not ignored
     */
-    int numDaysLOCFTolerance = 366, yearIndex = 0, day;
-    double cloudCovTestVal = .5, actVapPressTestVal = 4.23,
-           windSpeedTestVal = 2.12;
+    int numDaysLOCFTolerance = 366;
+    int yearIndex = 0;
+    int day;
+    double cloudCovTestVal = .5;
+    double actVapPressTestVal = 4.23;
+    double windSpeedTestVal = 2.12;
 
     // Setup and read in weather
     SW_WTH_setup(

@@ -60,7 +60,8 @@ void SW_CSV_F_INIT(const char *s, LOG_INFO *LogInfo) {
      *  remove old output and/or create the output directories if needed */
     /* borrow inbuf for filenames */
 
-    char inbuf[MAX_FILENAMESIZE], dirString[FILENAME_MAX];
+    char inbuf[MAX_FILENAMESIZE];
+    char dirString[FILENAME_MAX];
 
     DirName(s, dirString);
 
@@ -96,12 +97,15 @@ Update values of variables within PATH_INFO:
     - `logfp` for SOILWAT2-standalone
 */
 void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
-    FILE *f;
-    int lineno = 0, fileno = 0;
-    char buf[FILENAME_MAX], inbuf[MAX_FILENAMESIZE];
 #ifdef SWDEBUG
     int debug = 0;
 #endif
+
+    FILE *f;
+    int lineno = 0;
+    int fileno = 0;
+    char buf[FILENAME_MAX];
+    char inbuf[MAX_FILENAMESIZE];
 
     char *MyFileName = PathInfo->InFiles[eFirst];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -294,7 +298,9 @@ void SW_F_construct(
      *    This was done mostly in support of STEPWAT but
      *    it could be useful in a standalone run.
      */
-    char *c, *p, dirString[FILENAME_MAX];
+    char *c;
+    char *p;
+    char dirString[FILENAME_MAX];
     char *localfirstfile = Str_Dup(firstfile, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error

@@ -220,8 +220,14 @@ void interpolate_monthlyValues(
     TimeInt days_in_month[],
     double dailyValues[]
 ) {
-    unsigned int doy, mday, month, month2 = NoMonth, nmdays;
-    unsigned int startdoy = 1, endDay = MAX_DAYS, doyOffset = 0;
+    unsigned int doy;
+    unsigned int mday;
+    unsigned int month;
+    unsigned int month2 = NoMonth;
+    unsigned int nmdays;
+    unsigned int startdoy = 1;
+    unsigned int endDay = MAX_DAYS;
+    unsigned int doyOffset = 0;
     double sign = 1.;
 
     // Check if we are interpolating values as base1

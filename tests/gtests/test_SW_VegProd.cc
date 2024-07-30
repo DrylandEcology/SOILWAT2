@@ -14,7 +14,8 @@ using ::testing::HasSubstr;
 static void assert_decreasing_SWPcrit(SW_VEGPROD *SW_VegProd);
 
 static void assert_decreasing_SWPcrit(SW_VEGPROD *SW_VegProd) {
-    int rank, vegtype;
+    int rank;
+    int vegtype;
 
     for (rank = 0; rank < NVEGTYPES - 1; rank++) {
         vegtype = SW_VegProd->rank_SWPcrits[rank];
@@ -124,7 +125,8 @@ TEST_F(VegProdFixtureTest, VegProdConstructor) {
 TEST(VegProdTest, VegProdBiomassCO2effect) {
     int i;
     double x = 1.5;
-    double biom1[12], biom2[12];
+    double biom1[12];
+    double biom2[12];
 
     for (i = 0; i < 12; i++) {
         biom1[i] = i + 1.;

@@ -72,14 +72,15 @@ const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = {2, 2, 2, 1};
 void SW_OUT_set_nrow(
     SW_MODEL *SW_Model, const Bool use_OutPeriod[], size_t nrow_OUT[]
 ) {
-    TimeInt i;
-    size_t n_yrs;
-    IntU startyear, endyear;
 #ifdef SWDEBUG
     int debug = 0;
 #endif
 
-    startyear = SW_Model->startyr;
+    TimeInt i;
+    size_t n_yrs;
+    IntU startyear = SW_Model->startyr;
+    IntU endyear;
+
 
 #ifdef STEPWAT
     n_yrs = SW_Model->runModelYears;
@@ -134,7 +135,8 @@ void SW_OUT_set_nrow(
     information that may change throughout simulation runs
 */
 void SW_OUT_deconstruct_outarray(SW_OUT_RUN *OutRun) {
-    int i, k;
+    int i;
+    int k;
 
     ForEachOutKey(k) {
         for (i = 0; i < SW_OUTNPERIODS; i++) {
@@ -245,8 +247,10 @@ Note: Compare with function `setGlobalrSOILWAT2_OutputVariables` in
 void SW_OUT_construct_outarray(
     SW_OUT_DOM *OutDom, SW_OUT_RUN *OutRun, LOG_INFO *LogInfo
 ) {
-    int i, k;
-    size_t size, s = sizeof(RealD);
+    int i;
+    int k;
+    size_t size;
+    size_t s = sizeof(RealD);
     OutPeriod timeStepOutPeriod;
 
     ForEachOutKey(k) {
@@ -308,8 +312,14 @@ void SW_OUT_calc_iOUToffset(
     IntUS npft_OUT[][SW_OUTNMAXVARS],
     size_t iOUToffset[][SW_OUTNPERIODS][SW_OUTNMAXVARS]
 ) {
-    int key, ivar, iprev, pd;
-    size_t tmp, tmp_nsl, tmp_npft, tmp_header;
+    int key;
+    int ivar;
+    int iprev;
+    int pd;
+    size_t tmp;
+    size_t tmp_nsl;
+    size_t tmp_npft;
+    size_t tmp_header;
 
     ForEachOutPeriod(pd) {
         tmp_header = nrow_OUT[pd] * ncol_TimeOUT[pd];

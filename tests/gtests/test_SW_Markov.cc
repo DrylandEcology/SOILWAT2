@@ -67,9 +67,16 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
     // Turn on Markov weather generator
     unsigned int generateWeatherMethod = 2;
 
-    short k, n = 18, seed = 42, year = 1980;
-    RealD tmax, tmin, ppt;
-    RealD *tmax0 = new double[n], *tmin0 = new double[n], *ppt0 = new double[n];
+    short k;
+    short n = 18;
+    short seed = 42;
+    short year = 1980;
+    RealD tmax;
+    RealD tmin;
+    RealD ppt;
+    RealD *tmax0 = new double[n];
+    RealD *tmin0 = new double[n];
+    RealD *ppt0 = new double[n];
 
 
     //--- Generate some weather values with fixed seed ------
@@ -163,8 +170,11 @@ TEST(WeatherGeneratorTest, WeatherGeneratormvnorm) {
     sw_init_logs(NULL, &LogInfo);
 
     int rng_seed = 9;
-    short k, n = 3;
-    RealD tmax = 0., tmin = 0., tval;
+    short k;
+    short n = 3;
+    RealD tmax = 0.;
+    RealD tmin = 0.;
+    RealD tval;
 
     SW_MKV_init_ptrs(&SW_Markov);
     SW_MKV_construct(rng_seed, &SW_Markov); // initialize markov_rng
@@ -250,7 +260,8 @@ TEST(WeatherGeneratorTest, WeatherGeneratormvnormDeathTest) {
     sw_init_logs(NULL, &LogInfo);
 
     int rng_seed = 11;
-    RealD tmax = 0., tmin = 0.;
+    RealD tmax = 0.;
+    RealD tmin = 0.;
 
     SW_MKV_init_ptrs(&SW_Markov);
     SW_MKV_construct(rng_seed, &SW_Markov); // initialize markov_rng
@@ -277,8 +288,15 @@ TEST(WeatherGeneratorTest, WeatherGeneratorWetDryTemperatureCorrection) {
     sw_init_logs(NULL, &LogInfo);
 
     int rng_seed = 13;
-    RealD tmax = 0., tmin = 0., t0 = 0., t10 = 10., wet = 1., dry = 0.,
-          cf0 = 0., cf_pos = 5., cf_neg = -5.;
+    RealD tmax = 0.;
+    RealD tmin = 0.;
+    RealD t0 = 0.;
+    RealD t10 = 10.;
+    RealD wet = 1.;
+    RealD dry = 0.;
+    RealD cf0 = 0.;
+    RealD cf_pos = 5.;
+    RealD cf_neg = -5.;
 
     SW_MKV_init_ptrs(&SW_Markov);
     SW_MKV_construct(rng_seed, &SW_Markov); // initialize markov_rng
