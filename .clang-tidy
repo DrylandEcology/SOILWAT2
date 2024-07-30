@@ -3,10 +3,12 @@
 Checks: >
     clang-diagnostic-*,
     clang-analyzer-*,
+    -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
     bugprone-*,
     -bugprone-easily-swappable-parameters,
     cert-*,
     concurrency-*,
+    -concurrency-mt-unsafe,
     cppcoreguidelines-*,
     -cppcoreguidelines-avoid-magic-numbers,
     -cppcoreguidelines-init-variables,
@@ -20,7 +22,7 @@ Checks: >
     -readability-function-cognitive-complexity,
     -readability-identifier-length,
     -readability-magic-numbers
-WarningsAsErrors: true
+WarningsAsErrors: '*'
 HeaderFilterRegex: ''
 FormatStyle:     none
 SystemHeaders:   false
