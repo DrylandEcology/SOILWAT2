@@ -22,3 +22,8 @@ make CPPFLAGS='-DSTEPWAT' tidy-bin 2>/dev/null
 
 
 #-------------------------------------------------------------------------------
+# Check SOILWAT2 tests with all extra flags
+make CPPFLAGS='-DSW2_SpinupEvaluation -DSW2_PET_Test__petfunc_by_temps -DSW2_SolarPosition_Test__hourangles_by_lat_and_doy -DSW2_SolarPosition_Test__hourangles_by_lats' tidy-test 2>/dev/null
+
+
+#-------------------------------------------------------------------------------
