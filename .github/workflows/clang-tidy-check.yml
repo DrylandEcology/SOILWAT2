@@ -1,0 +1,21 @@
+name: clang-tidy check
+
+on:
+  push:
+    branches: [master, main, release/**]
+  pull_request:
+    branches: [master, main, release/**]
+
+jobs:
+  formatting-check:
+    name: Tidy Check
+    runs-on: ubuntu-latest
+      
+    steps:
+    - name: Checkout repository and submodules
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+      
+    - name: Run
+      run: ./tools/run_tidy.sh
