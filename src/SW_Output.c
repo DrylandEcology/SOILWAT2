@@ -44,7 +44,6 @@ History:
 #include "include/SW_VegProd.h"     // for echo_VegProd
 #include "include/Times.h"          // for Time_days_in_month, WKDAYS
 #include <stdio.h>                  // for snprintf, fprintf, printf
-#include <stdlib.h>                 // for free
 #include <string.h>                 // for strcat, strcmp, strcpy, memset
 
 // Array-based output declarations:
@@ -59,6 +58,7 @@ History:
 
 #if defined(SWNETCDF)
 #include "include/SW_netCDF.h"
+#include <stdlib.h> // for free
 #endif
 
 /* Note: `get_XXX` functions are declared in `SW_Output.h`
