@@ -1,6 +1,13 @@
 #!/bin/bash
 
 #-------------------------------------------------------------------------------
+# Verify that clang-tidy is available
+if ! command -v clang-tidy > /dev/null 2>&1; then
+    echo "clang-tidy is not available."
+    exit 1
+fi
+
+#-------------------------------------------------------------------------------
 process_clangtidy_results() {
     local status="$1"
     local res="$2"
