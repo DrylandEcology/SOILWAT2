@@ -5,7 +5,7 @@
 #include "include/SW_VegProd.h"          // for BIO_INDEX, WUE_INDEX
 #include "tests/gtests/sw_testhelpers.h" // for CarbonFixtureTest
 #include "gtest/gtest.h"                 // for Message, Test, CmpHelperGT
-#include <string.h>                      // for strcpy
+#include <stdio.h>                       // for snprintf
 
 namespace {
 // Test the SW_Carbon constructor 'SW_CBN_construct'
@@ -46,7 +46,10 @@ TEST_F(CarbonFixtureTest, CarbonReadInputFile) {
     // Test if CO2-effects are turned on -> CO2 concentration data are read from
     // file
     SW_CBN_construct(&SW_Run.Carbon);
-    strcpy(SW_Run.Carbon.scenario, "RCP85");
+    (void) snprintf(
+        SW_Run.Carbon.scenario, sizeof SW_Run.Carbon.scenario, "%s", "RCP85"
+    );
+
     SW_Run.Carbon.use_wue_mult = 1;
     SW_Run.Carbon.use_bio_mult = 1;
     SW_Run.Model.addtl_yr = 0;
@@ -69,7 +72,9 @@ TEST_F(CarbonFixtureTest, CarbonCO2multipliers) {
     int k;
 
     SW_CBN_construct(&SW_Run.Carbon);
-    strcpy(SW_Run.Carbon.scenario, "RCP85");
+    (void) snprintf(
+        SW_Run.Carbon.scenario, sizeof SW_Run.Carbon.scenario, "%s", "RCP85"
+    );
     SW_Run.Carbon.use_wue_mult = 1;
     SW_Run.Carbon.use_bio_mult = 1;
     SW_Run.Model.addtl_yr = 0;

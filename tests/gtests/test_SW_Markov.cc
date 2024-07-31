@@ -11,10 +11,13 @@
 
 using ::testing::HasSubstr;
 
+// NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
 extern void (*test_mvnorm)(RealD *, RealD *, RealD, RealD, RealD, RealD, RealD, sw_random_t *, LOG_INFO *);
 extern void (*test_temp_correct_wetdry)(
     RealD *, RealD *, RealD, RealD, RealD, RealD, RealD
 );
+
+// NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
 
 namespace {
 // Test the SW_MARKOV constructor 'SW_MKV_construct'

@@ -13,21 +13,21 @@ using ::testing::HasSubstr;
 
 namespace {
 // List SWRC Campbell1974: all PTFs
-const char *ns_ptfca2C1974[] = {
+const char *const ns_ptfca2C1974[] = {
     "Campbell1974", "Cosby1984AndOthers", "Cosby1984"
 };
 
 // List SWRC vanGenuchten1980: all PTFs
-const char *ns_ptfa2vG1980[] = {"vanGenuchten1980", "Rosetta3"};
+const char *const ns_ptfa2vG1980[] = {"vanGenuchten1980", "Rosetta3"};
 
 // List SWRC vanGenuchten1980: PTFs implemented in SOILWAT2
-const char *ns_ptfc2vG1980[] = {"vanGenuchten1980"};
+const char *const ns_ptfc2vG1980[] = {"vanGenuchten1980"};
 
 // List SWRC FXW: all PTFs
-const char *ns_ptfa2FXW[] = {"FXW", "neuroFX2021"};
+const char *const ns_ptfa2FXW[] = {"FXW", "neuroFX2021"};
 
 // List SWRC FXW: PTFs implemented in SOILWAT2
-const char *ns_ptfc2FXW[] = {"FXW"};
+const char *const ns_ptfc2FXW[] = {"FXW"};
 
 // Test pedotransfer functions
 TEST(SiteTest, SitePTFs) {

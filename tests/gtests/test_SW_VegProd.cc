@@ -10,10 +10,55 @@
 
 using ::testing::HasSubstr;
 
+namespace {
 
-static void assert_decreasing_SWPcrit(SW_VEGPROD *SW_VegProd);
+// Vegetation cover: see `estimatePotNatVegComposition()`
+// RelAbundanceL0 and inputValues indices
+const int succIndex = 0;
+const int forbIndex = 1;
+const int C3Index = 2;
+const int C4Index = 3;
+const int grassAnn = 4;
+const int shrubIndex = 5;
+const int treeIndex = 6;
+const int bareGround = 7;
 
-static void assert_decreasing_SWPcrit(SW_VEGPROD *SW_VegProd) {
+// RelAbundanceL1 indices
+const int treeIndexL1 = 0;
+const int shrubIndexL1 = 1;
+const int forbIndexL1 = 2;
+const int grassesIndexL1 = 3;
+const int bareGroundL1 = 4;
+
+void copyL0(double outL0[], const double inL0[]) {
+    for (int index = 0; index < 8; index++) {
+        outL0[index] = inL0[index];
+    }
+}
+
+void calcVegCoverL1FromL0(double L1[], const double L0[]) {
+    L1[treeIndexL1] = L0[treeIndex];
+    L1[shrubIndexL1] = L0[shrubIndex];
+    L1[forbIndexL1] = L0[forbIndex] + L0[succIndex];
+    L1[grassesIndexL1] = L0[C3Index] + L0[C4Index] + L0[grassAnn];
+    L1[bareGroundL1] = L0[bareGround];
+}
+
+void calcGrassCoverFromL0(double grass[], const double L0[]) {
+    double const grass_sum = L0[C3Index] + L0[C4Index] + L0[grassAnn];
+
+    if (GT(grass_sum, 0.)) {
+        grass[0] = L0[C3Index] / grass_sum;
+        grass[1] = L0[C4Index] / grass_sum;
+        grass[2] = L0[grassAnn] / grass_sum;
+    } else {
+        grass[0] = 0.;
+        grass[1] = 0.;
+        grass[2] = 0.;
+    }
+}
+
+void assert_decreasing_SWPcrit(SW_VEGPROD *SW_VegProd) {
     int rank;
     int vegtype;
 
@@ -35,55 +80,6 @@ static void assert_decreasing_SWPcrit(SW_VEGPROD *SW_VegProd) {
     }
 }
 
-// Vegetation cover: see `estimatePotNatVegComposition()`
-// RelAbundanceL0 and inputValues indices
-int succIndex = 0;
-int forbIndex = 1;
-int C3Index = 2;
-int C4Index = 3;
-int grassAnn = 4;
-int shrubIndex = 5;
-int treeIndex = 6;
-int bareGround = 7;
-
-// RelAbundanceL1 indices
-int treeIndexL1 = 0;
-int shrubIndexL1 = 1;
-int forbIndexL1 = 2;
-int grassesIndexL1 = 3;
-int bareGroundL1 = 4;
-
-static void copyL0(double outL0[], const double inL0[]) {
-    for (int index = 0; index < 8; index++) {
-        outL0[index] = inL0[index];
-    }
-}
-
-static void calcVegCoverL1FromL0(double L1[], const double L0[]) {
-    L1[treeIndexL1] = L0[treeIndex];
-    L1[shrubIndexL1] = L0[shrubIndex];
-    L1[forbIndexL1] = L0[forbIndex] + L0[succIndex];
-    L1[grassesIndexL1] = L0[C3Index] + L0[C4Index] + L0[grassAnn];
-    L1[bareGroundL1] = L0[bareGround];
-}
-
-static void calcGrassCoverFromL0(double grass[], const double L0[]) {
-    double const grass_sum = L0[C3Index] + L0[C4Index] + L0[grassAnn];
-
-    if (GT(grass_sum, 0.)) {
-        grass[0] = L0[C3Index] / grass_sum;
-        grass[1] = L0[C4Index] / grass_sum;
-        grass[2] = L0[grassAnn] / grass_sum;
-    } else {
-        grass[0] = 0.;
-        grass[1] = 0.;
-        grass[2] = 0.;
-    }
-}
-
-namespace {
-int k;
-
 // Test the SW_VEGPROD constructor 'SW_VPD_construct'
 TEST_F(VegProdFixtureTest, VegProdConstructor) {
     // This test requires a local copy of SW_VEGPROD to avoid a memory leak
@@ -97,6 +93,7 @@ TEST_F(VegProdFixtureTest, VegProdConstructor) {
     // would see only NULL and thus not de-allocate the required second time
     // to avoid a leak)
     SW_VEGPROD SW_VegProd;
+    int k;
 
     SW_VPD_construct(&SW_VegProd);
     // allocate memory for output pointers

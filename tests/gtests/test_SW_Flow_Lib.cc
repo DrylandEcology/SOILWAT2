@@ -10,11 +10,6 @@
 #include <ios>                           // for fixed
 #include <stdio.h>                       // for NULL
 
-sw_random_t flow_rng;
-// SW_SOILWAT_OUTPUTS *swo = NULL;
-
-int k;
-
 namespace {
 // Test the veg interception function 'veg_intercepted_water'
 TEST(SWFlowTest, SWFlowVegInterceptedWater) {
@@ -122,10 +117,9 @@ TEST(SWFlowTest, SWFlowLitterInterceptedWater) {
         EXPECT_EQ(pptleft, ppt);
 
         // Test expectations when pptleft is 0
-        pptleft = 0.0, scale = 0.5, blitter = 5.0;
-
 
         // Test expectations when there is no throughfall
+        scale = 0.5;
         blitter = 200.0, ppt = 0.0, pptleft = ppt, wintlit = 0.0, store = 0.0;
 
         litter_intercepted_water(

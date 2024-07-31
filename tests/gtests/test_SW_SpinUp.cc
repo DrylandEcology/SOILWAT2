@@ -2,7 +2,7 @@
 #include "include/SW_Control.h"          // for SW_CTL_main, SW_CTL_run_spinup
 #include "include/SW_Main_lib.h"         // for sw_fail_on_error
 #include "include/SW_Times.h"            // for Today
-#include "tests/gtests/sw_testhelpers.h" // for SpinUpTest
+#include "tests/gtests/sw_testhelpers.h" // for SpinUpFixtureTest
 #include "gtest/gtest.h"                 // for Test, Message, TestPartResul...
 
 #if defined(SW2_SpinupEvaluation)
@@ -10,14 +10,13 @@
 #include "include/SW_datastructs.h" // for SW_RUN, LOG_INFO
 #include "include/SW_Site.h"        // for SW_SIT_init_run
 #include "include/SW_SoilWater.h"   // for SW_SWC_init_run
-#include <stdio.h>                  // for fprintf, fflush, FILE
-#include <string.h>                 // for strcat, strcpy
+#include <stdio.h>                  // for fprintf, fflush, snprintf
 #endif
 
 
 namespace {
 // Test SpinUp with mode = 1 and scope > duration
-TEST_F(SpinUpTest, Mode1WithScopeGreaterThanDuration) {
+TEST_F(SpinUpFixtureTest, Mode1WithScopeGreaterThanDuration) {
     int i;
     int const n = 4; // n = number of soil layers to test
     RealD *prevTemp = new double[n];
@@ -65,7 +64,7 @@ TEST_F(SpinUpTest, Mode1WithScopeGreaterThanDuration) {
 }
 
 // Test SpinUp with mode = 1 and scope = duration
-TEST_F(SpinUpTest, Mode1WithScopeEqualToDuration) {
+TEST_F(SpinUpFixtureTest, Mode1WithScopeEqualToDuration) {
     int i;
     int const n = 4; // n = number of soil layers to test
     RealD *prevTemp = new double[n];
@@ -113,7 +112,7 @@ TEST_F(SpinUpTest, Mode1WithScopeEqualToDuration) {
 }
 
 // Test SpinUp with mode = 1 and scope < duration
-TEST_F(SpinUpTest, Mode1WithScopeLessThanDuration) {
+TEST_F(SpinUpFixtureTest, Mode1WithScopeLessThanDuration) {
     int i;
     int const n = 4; // n = number of soil layers to test
     RealD *prevTemp = new double[n];
@@ -161,7 +160,7 @@ TEST_F(SpinUpTest, Mode1WithScopeLessThanDuration) {
 }
 
 // Test SpinUp with mode = 2 and scope > duration
-TEST_F(SpinUpTest, Mode2WithScopeGreaterThanDuration) {
+TEST_F(SpinUpFixtureTest, Mode2WithScopeGreaterThanDuration) {
     int i;
     int const n = 4; // n = number of soil layers to test
     RealD *prevTemp = new double[n];
@@ -209,7 +208,7 @@ TEST_F(SpinUpTest, Mode2WithScopeGreaterThanDuration) {
 }
 
 // Test SpinUp with mode = 2 and scope = duration
-TEST_F(SpinUpTest, Mode2WithScopeEqualToDuration) {
+TEST_F(SpinUpFixtureTest, Mode2WithScopeEqualToDuration) {
     int i;
     int const n = 4; // n = number of soil layers to test
     RealD *prevTemp = new double[n];
@@ -257,7 +256,7 @@ TEST_F(SpinUpTest, Mode2WithScopeEqualToDuration) {
 }
 
 // Test SpinUp with mode = 2 and scope < duration
-TEST_F(SpinUpTest, Mode2WithScopeLessThanDuration) {
+TEST_F(SpinUpFixtureTest, Mode2WithScopeLessThanDuration) {
     int i;
     int const n = 4; // n = number of soil layers to test
     RealD *prevTemp = new double[n];
@@ -318,16 +317,20 @@ TEST_F(SpinUpTest, Mode2WithScopeLessThanDuration) {
 //   Rscript tools/plot__SW2_SpinupEvaluation.R
 // ```
 
-TEST_F(SpinUpTest, SpinupEvaluation) {
+TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
     SW_RUN local_sw;
     LOG_INFO local_LogInfo;
 
     FILE *fp;
     char fname[FILENAME_MAX];
-    int i, n = 8, // n = number of soil layers to test
-        k1, test_duration[6] = {0, 1, 3, 5, 10, 20}, k2, k3;
-    double test_swcInit[4] = {0.5, 1, 15, 45};
-    double test_tsInit[5][8] = {
+    int i;
+    const int n = 8; // n = number of soil layers to test
+    int k1;
+    int k2;
+    int k3;
+    const int test_duration[6] = {0, 1, 3, 5, 10, 20};
+    const double test_swcInit[4] = {0.5, 1, 15, 45};
+    const double test_tsInit[5][8] = {
         {-2, -2, -2, -2, -2, -2, -2, -2},
         {0, 0, 0, 0, 0, 0, 0, 0},
         {-1, -1, -1, -1, 0, 0, 1, 1},
@@ -337,14 +340,19 @@ TEST_F(SpinUpTest, SpinupEvaluation) {
 
 
     // Output file
-    strcpy(fname, SW_Domain.PathInfo.output_prefix);
-    strcat(fname, "Table__SW2_SpinupEvaluation.csv");
+    (void) snprintf(
+        fname,
+        sizeof fname,
+        "%s%s",
+        SW_Domain.PathInfo.output_prefix,
+        "Table__SW2_SpinupEvaluation.csv"
+    );
 
     fp = OpenFile(fname, "w", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Column names
-    fprintf(
+    (void) fprintf(
         fp,
         "stage,spinup_duration,swc_init,ts_init,variable,soil_layer,value"
         "\n"
@@ -359,7 +367,9 @@ TEST_F(SpinUpTest, SpinupEvaluation) {
                 sw_init_logs(NULL, &local_LogInfo);
 
                 // deep copy of template
-                SW_RUN_deepCopy(&SW_Run, &local_sw, &local_LogInfo);
+                SW_RUN_deepCopy(
+                    &SW_Run, &local_sw, &SW_Domain.OutDom, &local_LogInfo
+                );
                 // exit test program if unexpected error
                 sw_fail_on_error(&local_LogInfo);
 
@@ -394,7 +404,7 @@ TEST_F(SpinUpTest, SpinupEvaluation) {
 
                 // Print initial values
                 for (i = 0; i < n; i++) {
-                    fprintf(
+                    (void) fprintf(
                         fp,
                         "init,%d,%f,%d,swc,%d,%f\n"
                         "init,%d,%f,%d,ts,%d,%f\n",
@@ -410,17 +420,19 @@ TEST_F(SpinUpTest, SpinupEvaluation) {
                         local_sw.Site.avgLyrTempInit[i]
                     );
                 }
-                fflush(fp);
+                (void) fflush(fp);
 
 
                 // Run the spinup
                 if (test_duration[k1] > 0) {
-                    SW_CTL_run_spinup(&local_sw, &local_LogInfo);
+                    SW_CTL_run_spinup(
+                        &local_sw, &SW_Domain.OutDom, &local_LogInfo
+                    );
                     sw_fail_on_error(&local_LogInfo);
 
                     // Print values after spinup
                     for (i = 0; i < n; i++) {
-                        fprintf(
+                        (void) fprintf(
                             fp,
                             "spinup,%d,%f,%d,swc,%d,%f\n"
                             "spinup,%d,%f,%d,ts,%d,%f\n",
@@ -436,7 +448,7 @@ TEST_F(SpinUpTest, SpinupEvaluation) {
                             local_sw.SoilWat.avgLyrTemp[i]
                         );
                     }
-                    fflush(fp);
+                    (void) fflush(fp);
                 }
 
 
@@ -449,7 +461,7 @@ TEST_F(SpinUpTest, SpinupEvaluation) {
 
                 // Print values after simulation
                 for (i = 0; i < n; i++) {
-                    fprintf(
+                    (void) fprintf(
                         fp,
                         "srun,%d,%f,%d,swc,%d,%f\n"
                         "srun,%d,%f,%d,ts,%d,%f\n",
@@ -465,7 +477,7 @@ TEST_F(SpinUpTest, SpinupEvaluation) {
                         local_sw.SoilWat.avgLyrTemp[i]
                     );
                 }
-                fflush(fp);
+                (void) fflush(fp);
 
             } // end of loop over test_tsInit
         } // end of loop over test_swcInit

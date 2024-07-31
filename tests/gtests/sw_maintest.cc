@@ -12,7 +12,7 @@
    The paths are relative to the unit-test executable which is located at bin/
    of the SOILWAT2 repository
 */
-const char *dir_test = "./tests/example";
+const char *const dir_test = "./tests/example";
 
 /* Naming scheme for unit tests
    https://google.github.io/googletest/faq.html

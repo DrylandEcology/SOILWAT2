@@ -19,7 +19,7 @@ namespace {
 
 TEST(SoilWaterTest, SoilWaterSWCadjustSnow) {
     // setup variables
-    RealD const doy = 1;
+    const unsigned int doy = 1;
     RealD const temp_min = 0;
     RealD const temp_max = 10;
     RealD const ppt = 1;
@@ -87,7 +87,7 @@ TEST(SoilWaterTest, SoilWaterSWCadjustSnow) {
 }
 
 TEST(SoilWaterTest, SoilWaterSWCadjustSnow2) {
-    RealD const doy = 1;
+    const unsigned int doy = 1;
     RealD const temp_min = 0;
     RealD const temp_max = 22;
     RealD const ppt = 1;

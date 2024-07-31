@@ -7,11 +7,9 @@
 #include "tests/gtests/sw_testhelpers.h" // for length, missing
 #include "gmock/gmock.h"                 // for HasSubstr, MakePredicateFor...
 #include "gtest/gtest.h"                 // for Test, EXPECT_EQ, CmpHelperGT
-#include <math.h>                        // for fmaxf, ceil, fminf
+#include <math.h>                        // for fmax, ceil, fminf
 #include <stdio.h>                       // for NULL
 
-
-sw_random_t flowTemp_rng;
 
 using ::testing::HasSubstr;
 
@@ -74,13 +72,14 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
     double const sTconst = 4.15;
     double acc = 0.0;
     unsigned int nlyrs;
+    unsigned int iStart;
     unsigned int const nRgr = 65;
     Bool ptr_stError = swFALSE;
     sw_random_t STInit_rng;
     RandSeed(0u, 0u, &STInit_rng);
 
     // *****  Test when nlyrs = 1  ***** //
-    unsigned int i = 0.;
+    unsigned int i = 0;
     nlyrs = 1;
     double width[] = {20};
     double sTempInit[] = {1};
@@ -117,9 +116,8 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
         sizeof(double) * MAX_ST_RGR * (MAX_LAYERS + 1)
     );
 
-    for (unsigned int i = ceil(SW_Site.depths[nlyrs - 1] / deltaX);
-         i < nRgr + 1;
-         i++) {
+    iStart = (unsigned int) ceil(SW_Site.depths[nlyrs - 1] / deltaX);
+    for (i = iStart; i < nRgr + 1; i++) {
         EXPECT_EQ(SW_StRegValues.tlyrs_by_slyrs[i][nlyrs], -deltaX);
         // Values should be equal to -deltaX when i > the depth of the soil
         // profile/deltaX and j is == nlyrs
@@ -181,9 +179,8 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
         sizeof(double) * MAX_ST_RGR * (MAX_LAYERS + 1)
     );
 
-    for (unsigned int i = ceil(SW_Site.depths[nlyrs - 1] / deltaX);
-         i < nRgr + 1;
-         i++) {
+    iStart = (unsigned int) ceil(SW_Site.depths[nlyrs - 1] / deltaX);
+    for (i = iStart; i < nRgr + 1; i++) {
         EXPECT_EQ(SW_StRegValues.tlyrs_by_slyrs[i][nlyrs], -deltaX);
         // Values should be equal to -deltaX when i > the depth of the soil
         // profile/deltaX and j is == nlyrs
@@ -217,7 +214,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInitDeathTest) {
     double acc = 0.0;
     unsigned int nlyrs;
     unsigned int const nRgr = 65;
-    unsigned int i = 0.;
+    unsigned int i = 0;
     Bool ptr_stError = swFALSE;
     nlyrs = MAX_LAYERS;
     double width2[] = {5,  5,  5,  10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
@@ -290,6 +287,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
     double const sTconst = 4.15;
     double acc = 0.0;
     unsigned int nlyrs;
+    unsigned int iStart;
     unsigned int const nRgr = 65;
     Bool ptr_stError = swFALSE;
 
@@ -297,12 +295,15 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
     RandSeed(0u, 0u, &SLIF_rng);
 
     // *****  Test when nlyrs = 1  ***** //
-    unsigned int i = 0.;
+    unsigned int i = 0;
     nlyrs = 1;
+    double tmp;
     double width[] = {20};
     double sTempInit[] = {1};
-    double bDensity[] = {fmaxf(RandNorm(1.5, 0.5, &SLIF_rng), 0.1)};
-    double fc[] = {fmaxf(RandNorm(1.5, 0.5, &SLIF_rng), 0.1)};
+    tmp = RandNorm(1.5, 0.5, &SLIF_rng);
+    double bDensity[] = {fmax(tmp, 0.1)};
+    tmp = RandNorm(1.5, 0.5, &SLIF_rng);
+    double fc[] = {fmax(tmp, 0.1)};
     double wp[1];
 
     wp[0] = fmax(fc[0] - 0.6, .1); // wp will always be less than fc
@@ -339,7 +340,8 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
         EXPECT_GT(SW_StRegValues.wpR[i], 0);
     }
 
-    for (i = ceil(SW_Site.depths[nlyrs - 1] / deltaX) + 1; i < nRgr + 1; i++) {
+    iStart = (unsigned int) ceil(SW_Site.depths[nlyrs - 1] / deltaX);
+    for (i = iStart; i < nRgr + 1; i++) {
         // The TempLayer values that are at depths greater than the max
         // SoilLayer depth should be uniform
         EXPECT_EQ(SW_StRegValues.bDensityR[i], SW_StRegValues.bDensityR[i - 1]);
@@ -348,8 +350,9 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
     }
 
     // lyrSoil_to_lyrTemp_temperature tests
-    EXPECT_TRUE(missing(SW_StRegValues.oldavgLyrTempR[0])
-    ); // surface temperature is initialized to missing because not used
+    // surface temperature is initialized to missing because not used
+    EXPECT_TRUE(missing(SW_StRegValues.oldavgLyrTempR[0]));
+
     double maxvalR = 0.;
     for (i = 1; i < nRgr + 1; i++) {
         // Values interpolated into sTempInitR should be realistic
@@ -382,9 +385,12 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
     double *wp2 = new double[nlyrs];
 
     for (i = 0; i < nlyrs; i++) {
-        bDensity2[i] = fmaxf(RandNorm(1., 0.5, &SLIF_rng), 0.1);
-        fc2[i] = fmaxf(RandNorm(1.5, 0.5, &SLIF_rng), 0.1);
-        wp2[i] = fmaxf(fc2[i] - 0.6, 0.1); // wp will always be less than fc
+        // note: fmax() may be our macro that evaluates arguments twice
+        tmp = RandNorm(1., 0.5, &SLIF_rng);
+        bDensity2[i] = fmax(tmp, 0.1);
+        tmp = RandNorm(1.5, 0.5, &SLIF_rng);
+        fc2[i] = fmax(tmp, 0.1);
+        wp2[i] = fmax(fc2[i] - 0.6, 0.1); // wp will always be less than fc
         EXPECT_GT(bDensity2[i], 0);
         EXPECT_GT(fc2[i], 0);
         EXPECT_GT(wp2[i], 0);
@@ -424,7 +430,8 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
         EXPECT_GT(SW_StRegValues.wpR[i], 0);
     }
 
-    for (i = ceil(SW_Site.depths[nlyrs - 1] / deltaX) + 1; i < nRgr + 1; i++) {
+    iStart = (unsigned int) ceil(SW_Site.depths[nlyrs - 1] / deltaX);
+    for (i = iStart; i < nRgr + 1; i++) {
         // The TempLayer values that are at depths greater than the max
         // SoilLayer depth should be uniform
         EXPECT_EQ(SW_StRegValues.bDensityR[i], SW_StRegValues.bDensityR[i - 1]);
@@ -496,7 +503,7 @@ TEST(SWFlowTempTest, SWFlowTempSetFrozenUnfrozen) {
     double *swc2 = new double[nlyrs];
     double *swc_sat2 = new double[nlyrs];
 
-    unsigned int i = 0.;
+    unsigned int i = 0;
     for (i = 0; i < nlyrs; i++) {
         sTemp3[i] = -5;
         sTemp4[i] = 0;
@@ -551,7 +558,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureTodayFunction) {
     double *bDensityR = new double[nRgr + 2];
     double *temperatureRangeR = new double[nRgr + 2];
     double *depthsR = new double[nRgr + 2];
-    unsigned int i = 0.;
+    unsigned int i = 0;
     for (i = 0; i <= nRgr + 1; i++) {
         sTempR[i] = RandNorm(1.5, 1, &STTF_rng);
         sTempInitR[i] = RandNorm(1.5, 1, &STTF_rng);
@@ -1066,14 +1073,14 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
         SW_Site.swcBulk_wiltpt[i] = 0.1 * width2[i];
         // SWC(field capacity): width > swc_fc > swc_wp
         SW_Site.swcBulk_fieldcap[i] =
-            fminf(width2[i], SW_Site.swcBulk_wiltpt[i] + 0.15 * width2[i]);
+            fmin(width2[i], SW_Site.swcBulk_wiltpt[i] + 0.15 * width2[i]);
         // SWC(saturation): width > swc_sat > swc_fc
         SW_Site.swcBulk_saturated[i] =
-            fminf(width2[i], SW_Site.swcBulk_fieldcap[i] + 0.2 * width2[i]);
+            fmin(width2[i], SW_Site.swcBulk_fieldcap[i] + 0.2 * width2[i]);
         // SWC: swc_sat >= SWC > 0; here, swc_fc >= SWC >= swc_wp
         swc2[i] = RandUniFloatRange(
-            SW_Site.swcBulk_wiltpt[i],
-            SW_Site.swcBulk_fieldcap[i],
+            (float) SW_Site.swcBulk_wiltpt[i],
+            (float) SW_Site.swcBulk_fieldcap[i],
             &soilTemp_rng
         );
 

@@ -10,9 +10,9 @@
 #include "tests/gtests/sw_testhelpers.h" // for WeatherFixtureTest, tol6
 #include "gmock/gmock.h"                 // for HasSubstr, MakePredicateFor...
 #include "gtest/gtest.h"                 // for Test, Message, TestPartResul...
-#include <cmath>                         // for isnan
-#include <stdio.h>                       // for NULL
-#include <string.h>                      // for strcpy
+#include <cmath>                         // for isnan, sqrt
+#include <stdio.h>                       // for snprintf, NULL
+
 
 using ::testing::HasSubstr;
 
@@ -73,7 +73,12 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesDays) {
     SW_Run.Weather.generateWeatherMethod = 2;
 
     // Change directory to get input files with some missing data
-    strcpy(SW_Run.Weather.name_prefix, "Input/data_weather_missing/weath");
+    (void) snprintf(
+        SW_Run.Weather.name_prefix,
+        sizeof SW_Run.Weather.name_prefix,
+        "%s",
+        "Input/data_weather_missing/weath"
+    );
 
     SW_MKV_setup(
         &SW_Run.Markov,
@@ -114,7 +119,12 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesYears) {
     SW_Run.Weather.generateWeatherMethod = 2;
 
     // Change directory to get input files with some missing data
-    strcpy(SW_Run.Weather.name_prefix, "Input/data_weather_missing/weath");
+    (void) snprintf(
+        SW_Run.Weather.name_prefix,
+        sizeof SW_Run.Weather.name_prefix,
+        "%s",
+        "Input/data_weather_missing/weath"
+    );
 
     SW_MKV_setup(
         &SW_Run.Markov,
@@ -141,10 +151,10 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesYears) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
-    // Check everyday's value and test if it's `MISSING`
+    // Check everyday's value and check that it is not `MISSING`
     for (year = 0; year < 2; year++) {
         for (day = 0; day < 365; day++) {
-            EXPECT_TRUE(!missing(SW_Run.Weather.allHist[year]->temp_max[day]));
+            EXPECT_FALSE(missing(SW_Run.Weather.allHist[year]->temp_max[day]));
         }
     }
 }
@@ -167,7 +177,12 @@ TEST_F(WeatherFixtureTest, WeatherWeatherGeneratorOnly) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Change directory to get input files with some missing data
-    strcpy(SW_Run.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
+    (void) snprintf(
+        SW_Run.Weather.name_prefix,
+        sizeof SW_Run.Weather.name_prefix,
+        "%s",
+        "Input/data_weather_nonexisting/weath"
+    );
 
     SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -181,10 +196,10 @@ TEST_F(WeatherFixtureTest, WeatherWeatherGeneratorOnly) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    // Check everyday's value and test if it's `MISSING`
+    // Check everyday's value and check that it is not `MISSING`
     for (year = 0; year < 31; year++) {
         for (day = 0; day < 365; day++) {
-            EXPECT_TRUE(!missing(SW_Run.Weather.allHist[year]->temp_max[day]));
+            EXPECT_FALSE(missing(SW_Run.Weather.allHist[year]->temp_max[day]));
         }
     }
 }
@@ -194,7 +209,12 @@ TEST_F(WeatherFixtureTest, ReadAllWeatherTooManyMissingForLOCFDeathTest) {
     // Error: too many missing values and weather generator turned off
 
     // Change to directory without input files
-    strcpy(SW_Run.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
+    (void) snprintf(
+        SW_Run.Weather.name_prefix,
+        sizeof SW_Run.Weather.name_prefix,
+        "%s",
+        "Input/data_weather_nonexisting/weath"
+    );
 
     // Set LOCF (temp) + 0 (PPT) method
     SW_Run.Weather.generateWeatherMethod = 1;
@@ -834,7 +854,12 @@ TEST_F(WeatherFixtureTest, WeatherInputDailyGridMet) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Switch directory to gridmet input folder
-    strcpy(SW_Run.Weather.name_prefix, "Input/data_weather_gridmet/weath");
+    (void) snprintf(
+        SW_Run.Weather.name_prefix,
+        sizeof SW_Run.Weather.name_prefix,
+        "%s",
+        "Input/data_weather_gridmet/weath"
+    );
 
     // Turn off monthly flags
     SW_Run.Weather.use_cloudCoverMonthly = swFALSE;
@@ -945,7 +970,12 @@ TEST_F(WeatherFixtureTest, WeatherInputDayMet) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Switch directory to daymet input folder
-    strcpy(SW_Run.Weather.name_prefix, "Input/data_weather_daymet/weath");
+    (void) snprintf(
+        SW_Run.Weather.name_prefix,
+        sizeof SW_Run.Weather.name_prefix,
+        "%s",
+        "Input/data_weather_daymet/weath"
+    );
 
     // Turn off monthly flags
     SW_Run.Weather.use_cloudCoverMonthly = swFALSE;
@@ -1055,7 +1085,12 @@ TEST_F(WeatherFixtureTest, WeatherInputMACA) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Switch directory to daymet input folder
-    strcpy(SW_Run.Weather.name_prefix, "Input/data_weather_maca/weath");
+    (void) snprintf(
+        SW_Run.Weather.name_prefix,
+        sizeof SW_Run.Weather.name_prefix,
+        "%s",
+        "Input/data_weather_maca/weath"
+    );
 
     // Turn off monthly flags
     SW_Run.Weather.use_cloudCoverMonthly = swFALSE;

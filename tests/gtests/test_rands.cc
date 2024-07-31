@@ -67,8 +67,8 @@ TEST(RNGTest, RNGUnifFloatRangeOutput) {
     sw_random_t rng12;
     int i;
     int const n = 10;
-    float const min = 7.5;
-    float const max = 77.7;
+    float const lowVal = 7.5;
+    float const highVal = 77.7;
     double x71;
     double x71b;
     double x11;
@@ -83,22 +83,22 @@ TEST(RNGTest, RNGUnifFloatRangeOutput) {
 
 
     for (i = 0; i < n; i++) {
-        // Produce random numbers and check that within bounds of [min, max)
-        x71 = RandUniFloatRange(min, max, &rng71);
-        EXPECT_GE(x71, min);
-        EXPECT_LT(x71, max);
+        // Check that random numbers are within bounds of [lowVal, highVal)
+        x71 = RandUniFloatRange(lowVal, highVal, &rng71);
+        EXPECT_GE(x71, lowVal);
+        EXPECT_LT(x71, highVal);
 
-        x71b = RandUniFloatRange(min, max, &rng71b);
-        EXPECT_GE(x71b, min);
-        EXPECT_LT(x71b, max);
+        x71b = RandUniFloatRange(lowVal, highVal, &rng71b);
+        EXPECT_GE(x71b, lowVal);
+        EXPECT_LT(x71b, highVal);
 
-        x11 = RandUniFloatRange(min, max, &rng11);
-        EXPECT_GE(x11, min);
-        EXPECT_LT(x11, max);
+        x11 = RandUniFloatRange(lowVal, highVal, &rng11);
+        EXPECT_GE(x11, lowVal);
+        EXPECT_LT(x11, highVal);
 
-        x12 = RandUniFloatRange(min, max, &rng12);
-        EXPECT_GE(x12, min);
-        EXPECT_LT(x12, max);
+        x12 = RandUniFloatRange(lowVal, highVal, &rng12);
+        EXPECT_GE(x12, lowVal);
+        EXPECT_LT(x12, highVal);
 
         // Check that rngs with identical state & sequence produce same output
         EXPECT_DOUBLE_EQ(x71, x71b);
@@ -110,14 +110,14 @@ TEST(RNGTest, RNGUnifFloatRangeOutput) {
         EXPECT_TRUE(x11 != x12);
     }
 
-    // Check that order of min/max doesn't matter
-    x0 = RandUniFloatRange(max, min, &rng11);
-    EXPECT_GE(x0, min);
-    EXPECT_LT(x0, max);
+    // Check that order of lowVal/highVal doesn't matter
+    x0 = RandUniFloatRange(highVal, lowVal, &rng11);
+    EXPECT_GE(x0, lowVal);
+    EXPECT_LT(x0, highVal);
 
-    // Check that result is min if min == max
-    EXPECT_FLOAT_EQ(max, RandUniFloatRange(max, max, &rng11));
-    EXPECT_FLOAT_EQ(min, RandUniFloatRange(min, min, &rng11));
+    // Check that result is lowVal if min == max
+    EXPECT_FLOAT_EQ(highVal, RandUniFloatRange(highVal, highVal, &rng11));
+    EXPECT_FLOAT_EQ(lowVal, RandUniFloatRange(lowVal, lowVal, &rng11));
 }
 
 TEST(RNGTest, RNGUnifIntRangeOutput) {
@@ -129,11 +129,11 @@ TEST(RNGTest, RNGUnifIntRangeOutput) {
     int const n = 10;
     int const min = 7;
     int const max = 123;
-    double x71;
-    double x71b;
-    double x11;
-    double x12;
-    double x0;
+    long int x71;
+    long int x71b;
+    long int x11;
+    long int x12;
+    long int x0;
 
     // Seed rngs
     RandSeed(7u, 1u, &rng71);

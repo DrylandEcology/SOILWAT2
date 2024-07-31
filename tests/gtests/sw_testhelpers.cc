@@ -13,8 +13,11 @@
 #include <string.h>             // for strcpy
 
 
+// NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
 SW_RUN template_SW_Run;
 SW_DOMAIN template_SW_Domain;
+
+// NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
 
 /**
 @brief Creates soil layers based on function arguments (instead of reading
@@ -34,7 +37,7 @@ void create_test_soillayers(
 ) {
 
     if (nlayers <= 0 || nlayers > MAX_LAYERS) {
-        fprintf(
+        (void) fprintf(
             stderr,
             "create_test_soillayers(): "
             "requested number of soil layers (n = %d) is not accepted.\n",
@@ -132,10 +135,20 @@ void setup_SW_Site_for_tests(SW_SITE *SW_Site) {
     SW_Site->slow_drain_coeff = 0.02;
 
     SW_Site->site_has_swrcp = swFALSE;
-    strcpy(SW_Site->site_swrc_name, (char *) "Campbell1974");
+    (void) snprintf(
+        SW_Site->site_swrc_name,
+        sizeof SW_Site->site_swrc_name,
+        "%s",
+        "Campbell1974"
+    );
     SW_Site->site_swrc_type =
         encode_str2swrc(SW_Site->site_swrc_name, &LogInfo);
-    strcpy(SW_Site->site_ptf_name, (char *) "Cosby1984AndOthers");
+    (void) snprintf(
+        SW_Site->site_ptf_name,
+        sizeof SW_Site->site_ptf_name,
+        "%s",
+        "Cosby1984AndOthers"
+    );
     SW_Site->site_ptf_type = encode_str2ptf(SW_Site->site_ptf_name);
 }
 

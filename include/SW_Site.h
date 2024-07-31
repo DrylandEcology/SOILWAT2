@@ -329,7 +329,7 @@ void set_soillayers(
 
 void derive_soilRegions(
     SW_SITE *SW_Site,
-    int nRegions,
+    unsigned int nRegions,
     const RealD *regionLowerBounds,
     LOG_INFO *LogInfo
 );

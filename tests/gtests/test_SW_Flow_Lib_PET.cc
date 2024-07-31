@@ -5,25 +5,16 @@
 #include "include/SW_Flow_lib_PET.h"     // for SW_PET_init_run, solar_radi...
 #include "include/SW_Main_lib.h"         // for sw_fail_on_error, sw_init_logs
 #include "tests/gtests/sw_testhelpers.h" // for tol3, tol0, tol1, tol6, mis...
-#include "gmock/gmock.h"                 // for StrEq
 #include "gtest/gtest.h"                 // for Test, EXPECT_NEAR, TestInfo...
 #include <cmath>                         // for round, NAN, isfinite
 #include <memory>                        // for allocator
 #include <sstream>                       // for char_traits, basic_ostream
 #include <stdio.h>                       // for NULL (fprintf, fflush, FILE)
 
-#if defined(SW2_PET_Test__petfunc_by_temps) ||                    \
-    defined(SW2_SolarPosition_Test__hourangles_by_lat_and_doy) || \
-    defined(SW2_SolarPosition_Test__hourangles_by_lats)
-#include <string.h> // for strcat, strcpy
-#endif
-
 #if defined(SW2_SolarPosition_Test__hourangles_by_lat_and_doy)
 #include <stdlib.h> // for free, malloc
 #endif
 
-
-using ::testing::StrEq;
 
 namespace {
 // Test solar position
@@ -351,15 +342,45 @@ TEST(AtmDemandTest, SolarPosSW_HourAnglesSymmetries) {
 //   Rscript
 //   tools/rscripts/Rscript__SW2_SolarPosition_Test__hourangles_by_lat_and_doy.R
 // ```
+
+int fname_SolarPosHourAnglesByLatAndDoy(
+    char *buffer, size_t bufsz, double slope, double aspect
+) {
+    return snprintf(
+        buffer,
+        bufsz,
+        "%s/%s__%s%d__%s%d.%s",
+        "Output",
+        "Table__SW2_SolarPosition_Test__hourangles_by_lat_and_doy",
+        "slope",
+        (int) slope,
+        "aspect",
+        (int) aspect,
+        "csv"
+    );
+}
+
 TEST(AtmDemandTest, SolarPosHourAnglesByLatAndDoy) {
-    int k, ilat, idoy, isl, iasp, length_strnum;
-    double rad_to_hours = 12. / swPI, slope = 0., aspect = 0.,
-           aspects[9] = {-180., -120., -90., -60., 0., 60., 90., 120., 180.},
-           sun_angles[7], int_cos_theta[2], int_sin_beta[2], daylength_H,
-           daylength_T;
+    int k;
+    int ilat;
+    int idoy;
+    int isl;
+    int iasp;
+    int length_strnum;
+    const double rad_to_hours = 12. / swPI;
+    double slope = 0.;
+    double aspect = 0.;
+    double sun_angles[7];
+    double int_cos_theta[2];
+    double int_sin_beta[2];
+    double daylength_H;
+    double daylength_T;
+    const double aspects[9] = {
+        -180., -120., -90., -60., 0., 60., 90., 120., 180.
+    };
 
     FILE *fp;
-    char *strnum, fname[FILENAME_MAX];
+    char *fname = NULL;
 
     SW_ATMD SW_AtmDemand;
     SW_PET_init_run(&SW_AtmDemand); // Init radiation memoization
@@ -383,36 +404,19 @@ TEST(AtmDemandTest, SolarPosHourAnglesByLatAndDoy) {
             */
 
             // Output file
-            strcpy(fname, "Output/");
-            strcat(
-                fname,
-                "Table__SW2_SolarPosition_Test__hourangles_by_lat_and_doy"
+            length_strnum =
+                fname_SolarPosHourAnglesByLatAndDoy(NULL, 0, slope, aspect);
+            fname = (char *) malloc(length_strnum + 1);
+            (void) fname_SolarPosHourAnglesByLatAndDoy(
+                fname, length_strnum + 1, slope, aspect
             );
-
-            strcat(fname, "__slope");
-            length_strnum = snprintf(NULL, 0, "%d", (int) slope);
-            strnum = (char *) malloc(length_strnum + 1);
-            snprintf(strnum, length_strnum + 1, "%d", (int) slope);
-            strcat(fname, strnum);
-            free(strnum);
-            strnum = NULL;
-
-            strcat(fname, "__aspect");
-            length_strnum = snprintf(NULL, 0, "%d", (int) aspect);
-            strnum = (char *) malloc(length_strnum + 1);
-            snprintf(strnum, length_strnum + 1, "%d", (int) aspect);
-            strcat(fname, strnum);
-            free(strnum);
-            strnum = NULL;
-
-            strcat(fname, ".csv");
 
             fp = OpenFile(fname, "w", &LogInfo);
             sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
             // Column names
-            fprintf(
+            (void) fprintf(
                 fp,
                 "DOY, Latitude, Slope, Aspect, Declination"
                 ", omega_indicator, "
@@ -426,7 +430,7 @@ TEST(AtmDemandTest, SolarPosHourAnglesByLatAndDoy) {
             // Loop over each DOY and 1-degree latitude bands
             for (ilat = -90; ilat <= 90; ilat++) {
                 for (idoy = 1; idoy <= 366; idoy++) {
-                    fprintf(
+                    (void) fprintf(
                         fp,
                         "%d, %d, %.2f, %.2f, %f",
                         idoy,
@@ -448,7 +452,7 @@ TEST(AtmDemandTest, SolarPosHourAnglesByLatAndDoy) {
                     );
 
                     for (k = 0; k < 7; k++) {
-                        fprintf(fp, ", %f", sun_angles[k]);
+                        (void) fprintf(fp, ", %f", sun_angles[k]);
                     }
 
                     // Calculate numbers of daylight hours
@@ -462,14 +466,14 @@ TEST(AtmDemandTest, SolarPosHourAnglesByLatAndDoy) {
                                       sun_angles[5] - sun_angles[4];
                     }
 
-                    fprintf(
+                    (void) fprintf(
                         fp,
                         ", %f, %f\n",
                         daylength_H * rad_to_hours,
                         daylength_T * rad_to_hours
                     );
 
-                    fflush(fp);
+                    (void) fflush(fp);
                 }
 
                 // Re-init radiation memoization (for new latitude)
@@ -479,6 +483,8 @@ TEST(AtmDemandTest, SolarPosHourAnglesByLatAndDoy) {
 
             // Clean up
             CloseFile(&fp, &LogInfo);
+            free(fname);
+            fname = NULL;
             sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
             if (isl == 0) {
@@ -503,14 +509,23 @@ TEST(AtmDemandTest, SolarPosHourAnglesByLatAndDoy) {
 //   tools/rscripts/Rscript__SW2_SolarPosition_Test__hourangles_by_lats.R
 // ```
 TEST(AtmDemandTest, SolarPosHourAnglesByLats) {
-    int k, ilat, idoy, isl, iasp, iasp2;
+    int k;
+    int ilat;
+    int idoy;
+    int isl;
+    int iasp;
+    int iasp2;
 
     // doys: day of nonleap year Mar 18 (one day before equinox), Jun 21
     // (solstice), Sep 24 (one day before equinox), and Dep 21 (solstice)
-    int doys[4] = {79, 172, 263, 355};
-    double rlat, rslope, raspect;
-    double dangle2[5] = {-10., -1., 0., 1., 10.};
-    double sun_angles[7], int_cos_theta[2], int_sin_beta[2];
+    const int doys[4] = {79, 172, 263, 355};
+    double rlat;
+    double rslope;
+    double raspect;
+    const double dangle2[5] = {-10., -1., 0., 1., 10.};
+    double sun_angles[7];
+    double int_cos_theta[2];
+    double int_sin_beta[2];
 
     FILE *fp;
     char fname[FILENAME_MAX];
@@ -522,14 +537,18 @@ TEST(AtmDemandTest, SolarPosHourAnglesByLats) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    strcpy(fname, "Output/");
-    strcat(fname, "Table__SW2_SolarPosition_Test__hourangles_by_lats.csv");
+    (void) snprintf(
+        fname,
+        sizeof fname,
+        "%s",
+        "Output/Table__SW2_SolarPosition_Test__hourangles_by_lats.csv"
+    );
     fp = OpenFile(fname, "w", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
     // Column names
-    fprintf(
+    (void) fprintf(
         fp,
         "DOY, Latitude, Slope, Aspect, Declination"
         ", omega_indicator, "
@@ -553,7 +572,7 @@ TEST(AtmDemandTest, SolarPosHourAnglesByLats) {
 
                     for (idoy = 0; idoy < 4; idoy++) {
 
-                        fprintf(
+                        (void) fprintf(
                             fp,
                             "%d, %.2f, %.2f, %.2f, %f",
                             doys[idoy],
@@ -575,10 +594,10 @@ TEST(AtmDemandTest, SolarPosHourAnglesByLats) {
                         );
 
                         for (k = 0; k < 7; k++) {
-                            fprintf(fp, ", %f", sun_angles[k]);
+                            (void) fprintf(fp, ", %f", sun_angles[k]);
                         }
 
-                        fprintf(
+                        (void) fprintf(
                             fp,
                             ", %f, %f, %f, %f\n",
                             int_cos_theta[0],
@@ -587,7 +606,7 @@ TEST(AtmDemandTest, SolarPosHourAnglesByLats) {
                             int_sin_beta[1]
                         );
 
-                        fflush(fp);
+                        (void) fflush(fp);
                     }
 
                     // Re-init radiation memoization
@@ -787,8 +806,8 @@ TEST(AtmDemandTest, SolarRadiationGlobal) {
     unsigned int const doys_Table1_6_1[12] = {
         17, 47, 75, 105, 135, 162, 198, 228, 258, 288, 318, 344
     };
-    unsigned int const desc_rsds =
-        0; // `rsds` represents daily irradiation [MJ / m2]
+    // `rsds` represents daily irradiation [MJ / m2]
+    unsigned int const desc_rsds = 0;
 
     double H_gt;
     double H_ot;
@@ -913,6 +932,7 @@ TEST(AtmDemandTest, SolarRadiationGlobal) {
             &LogInfo
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        (void) H_gt;
 
         // Expect: observed `rsds` (for `desc_rsds = 0`) is equal to `H_gh`
         EXPECT_DOUBLE_EQ(rsds, H_gh);
@@ -1424,24 +1444,46 @@ TEST(AtmDemandTest, PETPetfuncByTemps) {
     sw_init_logs(NULL, &LogInfo);
 
 
-    int doy, k1, k2, k3, k4, k5;
+    int doy;
+    int k1;
+    int k2;
+    int k3;
+    int k4;
+    int k5;
 
-    unsigned int desc_rsds = 0;
+    const unsigned int desc_rsds = 0;
 
-    double pet, temp, RH, windspeed, cloudcover, fH_gt,
-        rsds = SW_MISSING, H_gt, H_oh, H_ot, H_gh, elev = 0., lat = 40.,
-        slope = 0., aspect = SW_MISSING, reflec = 0.15;
+    double pet;
+    double temp;
+    double RH;
+    double windspeed;
+    double cloudcover;
+    double fH_gt;
+    const double rsds = SW_MISSING;
+    double H_gt;
+    double H_oh;
+    double H_ot;
+    double H_gh;
+    const double elev = 0.;
+    const double lat = 40.;
+    const double slope = 0.;
+    const double aspect = SW_MISSING;
+    const double reflec = 0.15;
 
     FILE *fp;
     char fname[FILENAME_MAX];
 
-    strcpy(fname, "Output/");
-    strcat(fname, "Table__SW2_PET_Test__petfunc_by_temps.csv");
+    (void) snprintf(
+        fname,
+        sizeof fname,
+        "%s",
+        "Output/Table__SW2_PET_Test__petfunc_by_temps.csv"
+    );
     fp = OpenFile(fname, "w", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Column names
-    fprintf(
+    (void) fprintf(
         fp,
         "Temperature_C, RH_pct, windspeed_m_per_s, cloudcover_pct, fH_gt, "
         "PET_mm"
@@ -1503,7 +1545,7 @@ TEST(AtmDemandTest, PETPetfuncByTemps) {
                             sw_fail_on_error(&LogInfo);
                         }
 
-                        fprintf(
+                        (void) fprintf(
                             fp,
                             "%f, %f, %f, %f, %f, %f\n",
                             temp,
@@ -1514,7 +1556,7 @@ TEST(AtmDemandTest, PETPetfuncByTemps) {
                             pet
                         );
 
-                        fflush(fp);
+                        (void) fflush(fp);
                     }
                 }
             }

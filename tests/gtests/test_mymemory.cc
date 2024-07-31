@@ -23,6 +23,10 @@ TEST(MemoryTest, MemoryRealloc) {
     size_t const size_new = sizeof ptr0 * n_new;
 
 
+    // The cast `(int *) Mem_*()` avoids
+    // "error: assigning to 'int *' from incompatible type 'void *'"
+    // However, it triggers [cppcoreguidelines-pro-type-cstyle-cast]
+
     //--- Expect to reallocate previously allocated memory ------
     ptr0 = (int *) Mem_Malloc(size_old, "MemoryRealloc", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error

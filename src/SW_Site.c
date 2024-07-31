@@ -1888,12 +1888,12 @@ void set_soillayers(
 */
 void derive_soilRegions(
     SW_SITE *SW_Site,
-    int nRegions,
+    unsigned int nRegions,
     const RealD *regionLowerBounds,
     LOG_INFO *LogInfo
 ) {
-    int i;
-    int j;
+    unsigned int i;
+    unsigned int j;
     RealD totalDepth = 0;
     LyrIndex layer;
     LyrIndex UNDEFINED_LAYER = 999;

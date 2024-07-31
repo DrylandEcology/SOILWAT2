@@ -6,25 +6,25 @@
 
 namespace {
 const unsigned int N = 9;
-unsigned int k;
-double x[N] = {-4., -3., -2., -1., 0., 1., 2., 3., 4.},
-       // m calculated in R with `for (k in seq_along(x)) print(mean(x[1:k]))`
-    m[N] = {-4, -3.5, -3, -2.5, -2, -1.5, -1, -0.5, 0},
-       // sd calculated in R with `for (k in seq_along(x)) print(sd(x[1:k]))`
-    sd[N] = {
-        SW_MISSING,
-        0.7071068,
-        1.,
-        1.290994,
-        1.581139,
-        1.870829,
-        2.160247,
-        2.44949,
-        2.738613
+const double x[N] = {-4., -3., -2., -1., 0., 1., 2., 3., 4.};
+// m calculated in R with `for (k in seq_along(x)) print(mean(x[1:k]))`
+const double m[N] = {-4, -3.5, -3, -2.5, -2, -1.5, -1, -0.5, 0};
+// sd calculated in R with `for (k in seq_along(x)) print(sd(x[1:k]))`
+const double sd[N] = {
+    SW_MISSING,
+    0.7071068,
+    1.,
+    1.290994,
+    1.581139,
+    1.870829,
+    2.160247,
+    2.44949,
+    2.738613
 };
-double tol = 1e-6;
+const double tol = 1e-6;
 
 TEST(GenericTest, GenericRunningMean) {
+    unsigned int k;
     double m_at_k = 0.;
 
     for (k = 0; k < N; k++) {
@@ -34,6 +34,7 @@ TEST(GenericTest, GenericRunningMean) {
 }
 
 TEST(GenericTest, GenericRunningSD) {
+    unsigned int k;
     double ss;
     double sd_at_k;
 
