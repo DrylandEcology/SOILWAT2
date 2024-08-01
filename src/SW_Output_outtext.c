@@ -80,6 +80,7 @@ static void create_csv_headers(
 
     unsigned int i;
     unsigned int k;
+    int resSNP;
     char key[50];
     Bool isTrue = swFALSE;
 
@@ -119,7 +120,7 @@ static void create_csv_headers(
 
             for (i = 0; i < OutDom->ncol_OUT[k]; i++) {
                 if (does_agg) {
-                    snprintf(
+                    resSNP = snprintf(
                         str_help1,
                         size_help,
                         "%c%s_%s_Mean%c%s_%s_SD",
@@ -131,7 +132,7 @@ static void create_csv_headers(
                         OutDom->colnames_OUT[k][i]
                     );
                 } else {
-                    snprintf(
+                    resSNP = snprintf(
                         str_help1,
                         size_help,
                         "%c%s_%s",
@@ -139,6 +140,11 @@ static void create_csv_headers(
                         key,
                         OutDom->colnames_OUT[k][i]
                     );
+                }
+
+                if (resSNP >= (int) size_help || resSNP < 0) {
+                    LogError(LogInfo, LOGERROR, "csv-header is too long.");
+                    goto freeMem; // Exit function prematurely due to error
                 }
 
                 strcat(str_help2, str_help1);
@@ -152,6 +158,7 @@ static void create_csv_headers(
         }
     }
 
+freeMem:
     free(str_help1);
     free(str_help2);
 }
@@ -202,25 +209,25 @@ static void create_csv_files(
 static void get_outstrheader(OutPeriod pd, char *str, size_t sizeof_str) {
     switch (pd) {
     case eSW_Day:
-        snprintf(
+        (void) snprintf(
             str, sizeof_str, "%s%c%s", "Year", OUTSEP, pd2longstr[eSW_Day]
         );
         break;
 
     case eSW_Week:
-        snprintf(
+        (void) snprintf(
             str, sizeof_str, "%s%c%s", "Year", OUTSEP, pd2longstr[eSW_Week]
         );
         break;
 
     case eSW_Month:
-        snprintf(
+        (void) snprintf(
             str, sizeof_str, "%s%c%s", "Year", OUTSEP, pd2longstr[eSW_Month]
         );
         break;
 
     case eSW_Year:
-        snprintf(str, sizeof_str, "%s", "Year");
+        (void) snprintf(str, sizeof_str, "%s", "Year");
         break;
 
     default:
@@ -246,6 +253,7 @@ static void create_filename_ST(
 ) {
     size_t startIndex = 0;
     size_t strLen = 0; // For `sw_strtok()`
+    int resSNP;
 
     char *basename;
     char *ext;
@@ -260,7 +268,7 @@ static void create_filename_ST(
 
     // Put new file together
     if (iteration > 0) {
-        snprintf(
+        resSNP = snprintf(
             filename,
             sizeof_filename,
             "%s_%s%d.%s",
@@ -270,10 +278,18 @@ static void create_filename_ST(
             ext
         );
     } else {
-        snprintf(filename, sizeof_filename, "%s_%s.%s", basename, flag, ext);
+        resSNP = snprintf(
+            filename, sizeof_filename, "%s_%s.%s", basename, flag, ext
+        );
     }
 
     free(fileDup);
+
+    if (resSNP >= sizeof_filename || resSNP < 0) {
+        LogError(
+            LogInfo, LOGERROR, "csv file name is too long: '%s'", filename
+        );
+    }
 }
 
 /**
@@ -547,13 +563,13 @@ void get_outstrleader(
 ) {
     switch (pd) {
     case eSW_Day:
-        snprintf(
+        (void) snprintf(
             str, sizeof_str, "%d%c%d", SW_Model->simyear, OUTSEP, SW_Model->doy
         );
         break;
 
     case eSW_Week:
-        snprintf(
+        (void) snprintf(
             str,
             sizeof_str,
             "%d%c%d",
@@ -564,7 +580,7 @@ void get_outstrleader(
         break;
 
     case eSW_Month:
-        snprintf(
+        (void) snprintf(
             str,
             sizeof_str,
             "%d%c%d",
@@ -575,7 +591,7 @@ void get_outstrleader(
         break;
 
     case eSW_Year:
-        snprintf(str, sizeof_str, "%d", SW_Model->simyear);
+        (void) snprintf(str, sizeof_str, "%d", SW_Model->simyear);
         break;
 
     default:

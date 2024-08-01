@@ -2341,7 +2341,7 @@ static void fill_netCDF_with_global_atts(
     };
 
     // Fill `sourceStr` and `creationDateStr`
-    snprintf(sourceStr, 40, "SOILWAT2%s", SW2_VERSION);
+    (void) snprintf(sourceStr, 40, "SOILWAT2%s", SW2_VERSION);
     timeStringISO8601(creationDateStr, sizeof creationDateStr);
 
     // Write out the necessary global attributes that are listed above
@@ -2400,7 +2400,7 @@ static void update_netCDF_global_atts(
     };
 
     // Fill `sourceStr` and `creationDateStr`
-    snprintf(sourceStr, 40, "SOILWAT2%s", SW2_VERSION);
+    (void) snprintf(sourceStr, 40, "SOILWAT2%s", SW2_VERSION);
     timeStringISO8601(creationDateStr, sizeof creationDateStr);
 
     // Write out the necessary global attributes that are listed above
@@ -2925,7 +2925,7 @@ static void create_output_dimVar(
         );
 
         if (dimNum == timeIndex) {
-            snprintf(
+            (void) snprintf(
                 outAttVals[timeIndex][timeUnitIndex],
                 MAX_FILENAMESIZE,
                 "days since %d-01-01 00:00:00",
@@ -2936,8 +2936,10 @@ static void create_output_dimVar(
         if (dimNum == vertIndex && !hasConsistentSoilLayerDepths) {
             // Use soil layers as dimension variable values
             // because soil layer depths are not consistent across domain
-            snprintf(outAttVals[vertIndex][0], MAX_FILENAMESIZE, "soil layer");
-            snprintf(outAttVals[vertIndex][2], MAX_FILENAMESIZE, "1");
+            (void) snprintf(
+                outAttVals[vertIndex][0], MAX_FILENAMESIZE, "soil layer"
+            );
+            (void) snprintf(outAttVals[vertIndex][2], MAX_FILENAMESIZE, "1");
         }
 
         for (index = 0; index < numVarAtts[dimNum]; index++) {
@@ -3104,18 +3106,28 @@ static int gather_var_attributes(
 ) {
     int fillSize = 0;
     int varIndex;
+    int resSNP;
     char cellRedef[MAX_FILENAMESIZE];
     char establOrginName[MAX_FILENAMESIZE];
 
     // Determine attribute 'original_name'
     if (key == eSW_Estab) {
-        snprintf(
+        resSNP = snprintf(
             establOrginName,
             MAX_FILENAMESIZE,
             "%s__%s",
             SW_ESTAB,
             varInfo[VARNAME_INDEX]
         );
+
+        if (resSNP >= MAX_FILENAMESIZE || resSNP < 0) {
+            LogError(
+                LogInfo,
+                LOGWARN,
+                "attribute 'original_name' of variable '%s' was truncated.",
+                varInfo[VARNAME_INDEX]
+            );
+        }
 
         resAtts[fillSize] = Str_Dup(establOrginName, LogInfo);
         if (LogInfo->stopRun) {
@@ -3134,13 +3146,23 @@ static int gather_var_attributes(
     }
 
     if (pd > eSW_Day) {
-        snprintf(
+        resSNP = snprintf(
             cellRedef,
             MAX_FILENAMESIZE,
             "%s within days time: %s over days",
             resAtts[fillSize - 1],
             styp2longstr[sumType]
         );
+
+        if (resSNP >= MAX_FILENAMESIZE || resSNP < 0) {
+            LogError(
+                LogInfo,
+                LOGWARN,
+                "attribute 'cell_methods' of variable '%s' was truncated.",
+                varInfo[VARNAME_INDEX]
+            );
+        }
+
         Str_ToLower(cellRedef, cellRedef);
         resAtts[fillSize - 1] = Str_Dup(cellRedef, LogInfo);
         if (LogInfo->stopRun) {
@@ -3232,7 +3254,7 @@ static void create_output_file(
     char *varName;
     char **varInfo;
 
-    snprintf(frequency, 9, "%s", pd2longstr[pd]);
+    (void) snprintf(frequency, 9, "%s", pd2longstr[pd]);
     Str_ToLower(frequency, frequency);
 
 
@@ -3739,6 +3761,7 @@ void SW_NC_create_output_files(
 
     int key;
     int ip;
+    int resSNP;
     OutPeriod pd;
     unsigned int rangeStart;
     unsigned int rangeEnd;
@@ -3777,7 +3800,7 @@ void SW_NC_create_output_files(
                     baseTime = times[pd];
                     rangeStart = startYr;
 
-                    snprintf(periodSuffix, 9, "%s", pd2longstr[pd]);
+                    (void) snprintf(periodSuffix, 9, "%s", pd2longstr[pd]);
                     Str_ToLower(periodSuffix, periodSuffix);
 
                     SW_NC_alloc_files(
@@ -3793,10 +3816,10 @@ void SW_NC_create_output_files(
                             rangeEnd = rangeStart + yearOffset;
                         }
 
-                        snprintf(
+                        (void) snprintf(
                             yearBuff, 10, yearFormat, rangeStart, rangeEnd - 1
                         );
-                        snprintf(
+                        resSNP = snprintf(
                             fileNameBuf,
                             MAX_FILENAMESIZE,
                             "%s%s_%s_%s.nc",
@@ -3805,6 +3828,16 @@ void SW_NC_create_output_files(
                             yearBuff,
                             periodSuffix
                         );
+
+                        if (resSNP >= MAX_FILENAMESIZE || resSNP < 0) {
+                            LogError(
+                                LogInfo,
+                                LOGERROR,
+                                "nc-output file name '%s' is too long.",
+                                fileNameBuf
+                            );
+                            return; // Exit function prematurely due to error
+                        }
 
                         ncOutFileNames[key][pd][fileNum] =
                             Str_Dup(fileNameBuf, LogInfo);
@@ -4883,6 +4916,7 @@ void SW_NC_read_out_vars(
     int varNumUnits;
     int index;
     int estVar;
+    int resSNP;
     char *copyStr = NULL;
     char input[NOUT_VAR_INPUTS][MAX_ATTVAL_SIZE] = {"\0"};
     char establn[MAX_ATTVAL_SIZE] = {"\0"};
@@ -4966,13 +5000,23 @@ void SW_NC_read_out_vars(
         }
 
         if (doOutputVal) {
-            snprintf(
+            resSNP = snprintf(
                 varKey,
                 MAX_FILENAMESIZE + 1,
                 "%s__%s",
                 input[keyInd],
                 input[SWVarNameInd]
             );
+
+            if (resSNP >= MAX_FILENAMESIZE + 1 || resSNP < 0) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "nc-output variable name '%s' is too long.",
+                    varKey
+                );
+                return; // Exit function prematurely due to error
+            }
 
             get_2d_output_key(varKey, &currOutKey, &varNum, OutDom->nvar_OUT);
 
@@ -5089,7 +5133,7 @@ void SW_NC_read_out_vars(
                             break;
 
                         case LONGNAME_INDEX:
-                            snprintf(
+                            (void) snprintf(
                                 establn,
                                 MAX_ATTVAL_SIZE - 1,
                                 copyStr,

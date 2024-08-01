@@ -2681,7 +2681,7 @@ int SW_OUT_read_onekey(
     if (OutDom->sumtype[k] == eSW_Fnl && !OutDom->has_sl[k]) {
         OutDom->sumtype[k] = eSW_Avg;
 
-        snprintf(
+        (void) snprintf(
             msg,
             sizeof_msg,
             "%s : Summary Type FIN with key %s is meaningless.\n"
@@ -2710,7 +2710,7 @@ int SW_OUT_read_onekey(
                 k == eSW_AllH2O)) {
         OutDom->use[k] = swFALSE;
 
-        snprintf(
+        (void) snprintf(
             msg,
             sizeof_msg,
             "%s : Output key %s is currently unimplemented.",
@@ -2724,7 +2724,7 @@ int SW_OUT_read_onekey(
     if (k == eSW_DeepSWC && OutDom->sumtype[k] != eSW_Off && !deepdrain) {
         OutDom->use[k] = swFALSE;
 
-        snprintf(
+        (void) snprintf(
             msg,
             sizeof_msg,
             "%s : DEEPSWC cannot produce output if deep drainage is "
@@ -2740,7 +2740,7 @@ int SW_OUT_read_onekey(
     OutDom->last_orig[k] = last;
 
     if (OutDom->last_orig[k] == 0) {
-        snprintf(
+        (void) snprintf(
             msg,
             sizeof_msg,
             "%s : Invalid ending day (%d), key=%s.",
@@ -3607,9 +3607,13 @@ void echo_outputs(SW_OUT_DOM *OutDom) {
         strcat(errstr, key2str[k]);
         strcat(errstr, "\n\tSummary Type: ");
         strcat(errstr, styp2str[OutDom->sumtype[k]]);
-        snprintf(str, OUTSTRLEN, "\n\tStart period: %d", OutDom->first_orig[k]);
+        (void) snprintf(
+            str, OUTSTRLEN, "\n\tStart period: %d", OutDom->first_orig[k]
+        );
         strcat(errstr, str);
-        snprintf(str, OUTSTRLEN, "\n\tEnd period  : %d", OutDom->last_orig[k]);
+        (void) snprintf(
+            str, OUTSTRLEN, "\n\tEnd period  : %d", OutDom->last_orig[k]
+        );
         strcat(errstr, str);
         strcat(errstr, "\n");
     }

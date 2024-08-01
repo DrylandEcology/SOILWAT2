@@ -509,7 +509,7 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
     }
 
     if (debug) {
-        snprintf(
+        (void) snprintf(
             flag, sizeof flag, "WB (%d-%d)", sw->Model.year, sw->Model.doy
         );
     }
@@ -1482,6 +1482,7 @@ void read_swc_hist(
     int recno = 0;
     int doy = 0;
     int index;
+    int resSNP;
     double swc = 0.;
     double st_err = 0.;
     char fname[MAX_FILENAMESIZE];
@@ -1491,9 +1492,19 @@ void read_swc_hist(
     double *inBufDoubleVals[] = {&swc, &st_err};
     const int numInValsPerType = 2;
 
-    snprintf(
+    resSNP = snprintf(
         fname, MAX_FILENAMESIZE, "%s.%4d", SoilWat_hist->file_prefix, year
     );
+
+    if (resSNP >= MAX_FILENAMESIZE || resSNP < 0) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "SWC-hist file name is too long for year = %d",
+            year
+        );
+        return; // Exit function prematurely due to error
+    }
 
     f = OpenFile(fname, "r", LogInfo);
     if (LogInfo->stopRun) {

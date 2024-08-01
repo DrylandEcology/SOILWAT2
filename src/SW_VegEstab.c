@@ -901,7 +901,7 @@ void echo_VegEstab(const double width[], SW_VEGESTAB_INFO **parms, IntU count) {
     char outstr[2048];
     char errstr[MAX_ERROR];
 
-    snprintf(
+    (void) snprintf(
         errstr,
         MAX_ERROR,
         "\n=========================================================\n\n"
@@ -913,7 +913,7 @@ void echo_VegEstab(const double width[], SW_VEGESTAB_INFO **parms, IntU count) {
 
     strcpy(outstr, errstr);
     for (i = 0; i < count; i++) {
-        snprintf(
+        (void) snprintf(
             errstr,
             MAX_ERROR,
             "Species: %s (vegetation type %s [%d])\n----------------\n"
@@ -939,7 +939,7 @@ void echo_VegEstab(const double width[], SW_VEGESTAB_INFO **parms, IntU count) {
             parms[i]->min_wetdays_for_germ
         );
 
-        snprintf(
+        (void) snprintf(
             errstr,
             MAX_ERROR,
             "Establishment parameters:\n"

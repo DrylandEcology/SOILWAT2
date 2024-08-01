@@ -375,7 +375,7 @@ void sw_write_warnings(const char *header, LOG_INFO *LogInfo) {
         warningUpperBound = MAX_MSGS;
         tooManyWarns = swTRUE;
 
-        snprintf(
+        (void) snprintf(
             tooManyWarnsStr,
             MAX_LOG_SIZE,
             "There were a total of %d warnings and only %d were printed.\n",

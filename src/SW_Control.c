@@ -351,7 +351,7 @@ void SW_CTL_RunSimSet(
         }
 
         if (local_LogInfo.stopRun || local_LogInfo.numWarnings > 0) {
-            snprintf(tag_suid, 32, "(suid = %lu) ", suid + 1);
+            (void) snprintf(tag_suid, 32, "(suid = %lu) ", suid + 1);
             sw_write_warnings(tag_suid, &local_LogInfo);
         }
     }

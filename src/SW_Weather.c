@@ -2269,6 +2269,7 @@ void read_weather_hist(
     unsigned int lineno = 0;
     unsigned int index;
     int doy = 0;
+    int resSNP;
 
     double weathInput[MAX_INPUT_COLUMNS];
 
@@ -2297,7 +2298,17 @@ void read_weather_hist(
     char weathInStrs[15][20];
 
     // Create file name: `[weather-file prefix].[year]`
-    snprintf(fname, MAX_FILENAMESIZE, "%s.%4d", weather_prefix, year);
+    resSNP = snprintf(fname, MAX_FILENAMESIZE, "%s.%4d", weather_prefix, year);
+
+    if (resSNP >= MAX_FILENAMESIZE || resSNP < 0) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Weather input file name is too long for year = %d",
+            year
+        );
+        return; // Exit function prematurely due to error
+    }
 
     f = fopen(fname, "r");
     if (isnull(f)) {
