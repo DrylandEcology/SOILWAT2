@@ -242,15 +242,15 @@ void calcSiteClimate(
 
     // Initialize accumulated value arrays to all zeros
     for (month = 0; month < MAX_MONTHS; month++) {
-        memset(climateOutput->meanTempMon_C[month], 0., size_nyrs);
-        memset(climateOutput->maxTempMon_C[month], 0., size_nyrs);
-        memset(climateOutput->minTempMon_C[month], 0., size_nyrs);
-        memset(climateOutput->PPTMon_cm[month], 0., size_nyrs);
+        memset(climateOutput->meanTempMon_C[month], 0, size_nyrs);
+        memset(climateOutput->maxTempMon_C[month], 0, size_nyrs);
+        memset(climateOutput->minTempMon_C[month], 0, size_nyrs);
+        memset(climateOutput->PPTMon_cm[month], 0, size_nyrs);
     }
-    memset(climateOutput->PPT_cm, 0., size_nyrs);
-    memset(climateOutput->meanTemp_C, 0., size_nyrs);
-    memset(climateOutput->minTemp2ndMon_C, 0., size_nyrs);
-    memset(climateOutput->minTemp7thMon_C, 0., size_nyrs);
+    memset(climateOutput->PPT_cm, 0, size_nyrs);
+    memset(climateOutput->meanTemp_C, 0, size_nyrs);
+    memset(climateOutput->minTemp2ndMon_C, 0, size_nyrs);
+    memset(climateOutput->minTemp7thMon_C, 0, size_nyrs);
 
     calcSiteClimateLatInvariants(
         allHist,

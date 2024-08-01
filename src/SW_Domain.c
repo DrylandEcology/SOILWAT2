@@ -145,7 +145,7 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
     SW_Domain->hasConsistentSoilLayerDepths = swFALSE;
     memset(
         &SW_Domain->depthsAllSoilLayers,
-        0.,
+        0,
         sizeof(&SW_Domain->depthsAllSoilLayers[0]) * MAX_LAYERS
     );
 
