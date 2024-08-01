@@ -191,9 +191,9 @@ void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...) {
     va_start(args, fmt);
 
     if (LOGWARN & mode) {
-        strcpy(msgType, "WARNING: ");
+        (void) snprintf(msgType, sizeof msgType, "%s", "WARNING: ");
     } else if (LOGERROR & mode) {
-        strcpy(msgType, "ERROR: ");
+        (void) snprintf(msgType, sizeof msgType, "%s", "ERROR: ");
     }
 
     expectedWriteSize = snprintf(outfmt, MAX_LOG_SIZE, "%s%s\n", msgType, fmt);
@@ -224,7 +224,12 @@ void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...) {
 
     if (LOGWARN & mode) {
         if (nextWarn < MAX_MSGS) {
-            strcpy(LogInfo->warningMsgs[nextWarn], buf);
+            (void) snprintf(
+                LogInfo->warningMsgs[nextWarn],
+                sizeof LogInfo->warningMsgs[nextWarn],
+                "%s",
+                buf
+            );
         }
         LogInfo->numWarnings++;
     } else if (LOGERROR & mode) {
@@ -237,7 +242,7 @@ void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...) {
         // as SOILWAT2 >= 7.2.0
         exit(EXIT_FAILURE);
 #else
-        strcpy(LogInfo->errorMsg, buf);
+        (void) snprintf(LogInfo->errorMsg, sizeof LogInfo->errorMsg, "%s", buf);
         LogInfo->stopRun = swTRUE;
 #endif
     }

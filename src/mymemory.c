@@ -60,7 +60,7 @@ char *Str_Dup(const char *s, LOG_INFO *LogInfo) {
         return NULL; // Exit function prematurely due to error
     }
 
-    strcpy(p, s);
+    strcpy(p, s); // NOLINT(clang-analyzer-security.insecureAPI.strcpy)
 
     return p;
 }

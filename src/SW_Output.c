@@ -2161,12 +2161,16 @@ void SW_OUT_set_colnames(
     for (i = 0; i < ncol_OUT[eSW_Temp]; i++) {
         if (i < 3) {
             // Normal air temperature columns
-            strcpy(ctemp, cnames_eSW_Temp[i]);
+            (void) snprintf(ctemp, sizeof ctemp, "%s", cnames_eSW_Temp[i]);
         } else {
             // Surface temperature columns
-            strcpy(ctemp, cnames_eSW_Temp[3]);
-            strcat(ctemp, "_");
-            strcat(ctemp, cnames_eSW_Temp[i % 3]);
+            (void) snprintf(
+                ctemp,
+                sizeof ctemp,
+                "%s_%s",
+                cnames_eSW_Temp[3],
+                cnames_eSW_Temp[i % 3]
+            );
         }
 
         colnames_OUT[eSW_Temp][i] = Str_Dup(ctemp, LogInfo);
@@ -2259,13 +2263,13 @@ void SW_OUT_set_colnames(
 #endif
     for (i = 0; i < tLayers; i++) {
         for (j = 0; j < NVEGTYPES; j++) {
-            strcpy(ctemp, "swa_");
-            strcat(
-                ctemp, cnames_VegTypes[j + 1]
-            ); // j+1 since no total column for swa.
-            strcat(ctemp, "_");
-            strcat(ctemp, Layers_names[i]);
-
+            (void) snprintf(
+                ctemp,
+                sizeof ctemp,
+                "swa_%s_%s",
+                cnames_VegTypes[j + 1], // j+1 since no total column for swa.
+                Layers_names[i]
+            );
             colnames_OUT[eSW_SWA][i + j * tLayers] = Str_Dup(ctemp, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
@@ -2315,11 +2319,13 @@ void SW_OUT_set_colnames(
 #endif
     for (i = 0; i < tLayers; i++) {
         for (j = 0; j < NVEGTYPES + 1; j++) {
-            strcpy(ctemp, "transp_");
-            strcat(ctemp, cnames_VegTypes[j]);
-            strcat(ctemp, "_");
-            strcat(ctemp, Layers_names[i]);
-
+            (void) snprintf(
+                ctemp,
+                sizeof ctemp,
+                "transp_%s_%s",
+                cnames_VegTypes[j],
+                Layers_names[i]
+            );
             colnames_OUT[eSW_Transp][i + j * tLayers] = Str_Dup(ctemp, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
@@ -2343,8 +2349,7 @@ void SW_OUT_set_colnames(
     }
 #endif
     for (i = 0; i < NVEGTYPES + 2; i++) {
-        strcpy(ctemp, "evap_");
-        strcat(ctemp, cnames_VegTypes[i]);
+        (void) snprintf(ctemp, sizeof ctemp, "evap_%s", cnames_VegTypes[i]);
         colnames_OUT[eSW_EvapSurface][i] = Str_Dup(ctemp, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -2363,8 +2368,7 @@ void SW_OUT_set_colnames(
     }
 #endif
     for (i = 0; i < NVEGTYPES + 2; i++) {
-        strcpy(ctemp, "int_");
-        strcat(ctemp, cnames_VegTypes[i]);
+        (void) snprintf(ctemp, sizeof ctemp, "int_%s", cnames_VegTypes[i]);
         colnames_OUT[eSW_Interception][i] = Str_Dup(ctemp, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -2388,9 +2392,13 @@ void SW_OUT_set_colnames(
 #endif
     for (i = 0; i < tLayers; i++) {
         for (j = 0; j < NVEGTYPES + 1; j++) {
-            strcpy(ctemp, cnames_VegTypes[j]);
-            strcat(ctemp, "_");
-            strcat(ctemp, Layers_names[i]);
+            (void) snprintf(
+                ctemp,
+                sizeof ctemp,
+                "%s_%s",
+                cnames_VegTypes[j],
+                Layers_names[i]
+            );
             colnames_OUT[eSW_HydRed][i + j * tLayers] = Str_Dup(ctemp, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
@@ -2468,10 +2476,13 @@ void SW_OUT_set_colnames(
         }
 
         // For layers 1 through ncol_OUT[eSW_SoilTemp]
-        strcpy(ctemp, Layers_names[j]);
-
-        strcat(ctemp, "_");
-        strcat(ctemp, cnames_eSW_Temp[i % 3]);
+        (void) snprintf(
+            ctemp,
+            sizeof ctemp,
+            "%s_%s",
+            Layers_names[j],
+            cnames_eSW_Temp[i % 3]
+        );
 
         colnames_OUT[eSW_SoilTemp][i] = Str_Dup(ctemp, LogInfo);
         if (LogInfo->stopRun) {
@@ -2508,9 +2519,13 @@ void SW_OUT_set_colnames(
 #endif
     for (i = 0; i < 2; i++) {
         for (j = 0; j < NVEGTYPES; j++) {
-            strcpy(ctemp, cnames_eSW_CO2Effects[i]);
-            strcat(ctemp, "_");
-            strcat(ctemp, cnames_VegTypes[j + 1]); // j+1 since no total column
+            (void) snprintf(
+                ctemp,
+                sizeof ctemp,
+                "%s_%s",
+                cnames_eSW_CO2Effects[i],
+                cnames_VegTypes[j + 1] // j+1 since no total column
+            );
             colnames_OUT[eSW_CO2Effects][j + i * NVEGTYPES] =
                 Str_Dup(ctemp, LogInfo);
             if (LogInfo->stopRun) {
@@ -2525,15 +2540,19 @@ void SW_OUT_set_colnames(
     }
 #endif
     i = 0;
-    strcpy(ctemp, "fCover_BareGround");
+    (void) snprintf(ctemp, sizeof ctemp, "%s", "fCover_BareGround");
     colnames_OUT[eSW_Biomass][i] = Str_Dup(ctemp, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
     i = 1;
     for (j = 0; j < NVEGTYPES; j++) {
-        strcpy(ctemp, "fCover_");
-        strcat(ctemp, cnames_VegTypes[j + 1]); // j+1 since no total column
+        (void) snprintf(
+            ctemp,
+            sizeof ctemp,
+            "fCover_%s",
+            cnames_VegTypes[j + 1] // j+1 since no total column
+        );
         colnames_OUT[eSW_Biomass][j + i] = Str_Dup(ctemp, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -2541,8 +2560,7 @@ void SW_OUT_set_colnames(
     }
     i += j;
     for (j = 0; j < NVEGTYPES + 2; j++) {
-        strcpy(ctemp, "Biomass_");
-        strcat(ctemp, cnames_VegTypes[j]);
+        (void) snprintf(ctemp, sizeof ctemp, "Biomass_%s", cnames_VegTypes[j]);
         colnames_OUT[eSW_Biomass][j + i] = Str_Dup(ctemp, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -2550,15 +2568,14 @@ void SW_OUT_set_colnames(
     }
     i += j;
     for (j = 0; j < NVEGTYPES + 1; j++) {
-        strcpy(ctemp, "Biolive_");
-        strcat(ctemp, cnames_VegTypes[j]);
+        (void) snprintf(ctemp, sizeof ctemp, "Biolive_%s", cnames_VegTypes[j]);
         colnames_OUT[eSW_Biomass][j + i] = Str_Dup(ctemp, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
     }
     i += j;
-    strcpy(ctemp, "LAI_total");
+    (void) snprintf(ctemp, sizeof ctemp, "%s", "LAI_total");
     colnames_OUT[eSW_Biomass][i] = Str_Dup(ctemp, LogInfo);
 
 #ifdef SWDEBUG
@@ -3367,6 +3384,7 @@ void SW_OUT_write_today(
                 }
             }
 
+
 #ifdef STEPWAT
             if (OutDom->print_IterationSummary) {
                 strcpy(tempstr, sw->OutRun.sw_outstr_agg);
@@ -3593,11 +3611,15 @@ void echo_outputs(SW_OUT_DOM *OutDom) {
     char str[OUTSTRLEN];
     char errstr[MAX_ERROR];
 
-    strcpy(
+
+    (void) snprintf(
         errstr,
+        sizeof errstr,
+        "%s",
         "\n===============================================\n"
         "  Output Configuration:\n"
     );
+
 
     ForEachOutKey(k) {
         if (!OutDom->use[k]) {

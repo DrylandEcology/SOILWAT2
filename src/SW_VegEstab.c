@@ -287,6 +287,7 @@ void SW_VES_read2(
 
     SW_VegEstab->use = use_VegEstab;
 
+    int resSNP;
     char buf[FILENAME_MAX];
     char inbuf[MAX_FILENAMESIZE];
     FILE *f;
@@ -313,8 +314,17 @@ void SW_VES_read2(
             */
             while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
                 // add `SW_ProjDir` to path, e.g., for STEPWAT2
-                strcpy(buf, SW_ProjDir);
-                strcat(buf, inbuf);
+                resSNP = snprintf(buf, sizeof buf, "%s%s", SW_ProjDir, inbuf);
+                if (resSNP < 0 || (unsigned) resSNP >= (sizeof buf)) {
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "Establishment parameter file name is too long: '%s'.",
+                        inbuf
+                    );
+                    goto closeFile;
+                }
+
                 read_spp(buf, SW_VegEstab, LogInfo);
                 if (LogInfo->stopRun) {
                     goto closeFile;
@@ -569,6 +579,7 @@ static void read_spp(
     const int nitems = 16;
     FILE *f;
     int lineno = 0;
+    int resSNP;
     char name[80]; /* only allow 4 char sppnames */
     char inbuf[MAX_FILENAMESIZE];
     int inBufintRes;
@@ -585,7 +596,16 @@ static void read_spp(
     v = SW_VegEstab->parms[count];
 
     // have to copy before the pointer infile gets reset below by getAline
-    strcpy(v->sppFileName, infile);
+    resSNP = snprintf(v->sppFileName, sizeof v->sppFileName, "%s", infile);
+    if (resSNP < 0 || (unsigned) resSNP >= (sizeof v->sppFileName)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Establishment parameter file name is too long: '%s'.",
+            infile
+        );
+        return; // Exit function prematurely due to error
+    }
 
     f = OpenFile(infile, "r", LogInfo);
     if (LogInfo->stopRun) {
@@ -613,7 +633,16 @@ static void read_spp(
 
         switch (lineno) {
         case 0:
-            strcpy(name, inbuf);
+            resSNP = snprintf(name, sizeof name, "%s", inbuf);
+            if (resSNP < 0 || (unsigned) resSNP >= (sizeof name)) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Establishment species name is too long: '%s'.",
+                    inbuf
+                );
+                goto closeFile;
+            }
             break;
         case 1:
             v->vegType = inBufintRes;
@@ -686,7 +715,7 @@ static void read_spp(
                 goto closeFile;
             }
 
-            strcpy(v->sppname, name);
+            (void) snprintf(v->sppname, sizeof v->sppname, "%s", name);
         }
 
         lineno++; /*only increments when there's a value */
@@ -911,7 +940,8 @@ void echo_VegEstab(const double width[], SW_VEGESTAB_INFO **parms, IntU count) {
         count
     );
 
-    strcpy(outstr, errstr);
+    (void) snprintf(outstr, sizeof outstr, "%s", errstr);
+
     for (i = 0; i < count; i++) {
         (void) snprintf(
             errstr,

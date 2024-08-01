@@ -1493,10 +1493,10 @@ void read_swc_hist(
     const int numInValsPerType = 2;
 
     resSNP = snprintf(
-        fname, MAX_FILENAMESIZE, "%s.%4d", SoilWat_hist->file_prefix, year
+        fname, sizeof fname, "%s.%4d", SoilWat_hist->file_prefix, year
     );
 
-    if (resSNP >= MAX_FILENAMESIZE || resSNP < 0) {
+    if (resSNP < 0 || (unsigned) resSNP >= (sizeof fname)) {
         LogError(
             LogInfo,
             LOGERROR,

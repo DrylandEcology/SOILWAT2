@@ -1331,6 +1331,7 @@ void SW_SIT_read(
     Bool too_many_regions = swFALSE;
     char inbuf[MAX_FILENAMESIZE];
     int intRes = 0;
+    int resSNP;
     double doubleRes = 0.;
     char rgnStr[2][10] = {{'\0'}};
 
@@ -1489,7 +1490,19 @@ void SW_SIT_read(
 #endif
             break;
         case 35:
-            strcpy(SW_Carbon->scenario, inbuf);
+            resSNP = snprintf(
+                SW_Carbon->scenario, sizeof SW_Carbon->scenario, "%s", inbuf
+            );
+            if (resSNP < 0 ||
+                (unsigned) resSNP >= (sizeof SW_Carbon->scenario)) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Atmospheric [CO2] scenario name is too long: '%s'.",
+                    inbuf
+                );
+                goto closeFile;
+            }
 #ifdef SWDEBUG
             if (debug) {
                 sw_printf(
@@ -1502,7 +1515,19 @@ void SW_SIT_read(
             SW_Site->type_soilDensityInput = intRes;
             break;
         case 37:
-            strcpy(SW_Site->site_swrc_name, inbuf);
+            resSNP = snprintf(
+                SW_Site->site_swrc_name,
+                sizeof SW_Site->site_swrc_name,
+                "%s",
+                inbuf
+            );
+            if (resSNP < 0 ||
+                (unsigned) resSNP >= (sizeof SW_Site->site_swrc_name)) {
+                LogError(
+                    LogInfo, LOGERROR, "SWRC name is too long: '%s'.", inbuf
+                );
+                goto closeFile;
+            }
             SW_Site->site_swrc_type =
                 encode_str2swrc(SW_Site->site_swrc_name, LogInfo);
             if (LogInfo->stopRun) {
@@ -1510,7 +1535,19 @@ void SW_SIT_read(
             }
             break;
         case 38:
-            strcpy(SW_Site->site_ptf_name, inbuf);
+            resSNP = snprintf(
+                SW_Site->site_ptf_name,
+                sizeof SW_Site->site_ptf_name,
+                "%s",
+                inbuf
+            );
+            if (resSNP < 0 ||
+                (unsigned) resSNP >= (sizeof SW_Site->site_ptf_name)) {
+                LogError(
+                    LogInfo, LOGERROR, "PTF name is too long: '%s'.", inbuf
+                );
+                goto closeFile;
+            }
             SW_Site->site_ptf_type = encode_str2ptf(SW_Site->site_ptf_name);
             break;
         case 39:

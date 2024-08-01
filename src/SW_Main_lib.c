@@ -193,11 +193,11 @@ void sw_init_args(
         if (valopts[op]) {
             if ('\0' != argv[a][2]) {
                 /* no space betw opt-value */
-                strcpy(str, (argv[a] + 2));
+                (void) snprintf(str, sizeof str, "%s", (argv[a] + 2));
 
             } else if ('-' != *argv[a + 1]) {
                 /* space betw opt-value */
-                strcpy(str, argv[++a]);
+                (void) snprintf(str, sizeof str, "%s", argv[++a]);
 
             } else if (0 < valopts[op]) {
                 /* required opt-val not found */

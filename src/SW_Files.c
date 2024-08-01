@@ -66,7 +66,7 @@ void SW_CSV_F_INIT(const char *s, LOG_INFO *LogInfo) {
     DirName(s, dirString);
 
     if (DirExists(dirString)) {
-        strcpy(inbuf, s);
+        (void) snprintf(inbuf, sizeof inbuf, "%s", s);
         if (!RemoveFiles(inbuf, LogInfo)) {
             LogError(
                 LogInfo, LOGWARN, "Can't remove old csv output file: %s\n", s
@@ -104,6 +104,7 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
     FILE *f;
     int lineno = 0;
     int fileno = 0;
+    int resSNP;
     char buf[FILENAME_MAX];
     char inbuf[MAX_FILENAMESIZE];
 
@@ -125,10 +126,40 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
 
         switch (lineno) {
         case 10:
-            strcpy(PathInfo->weather_prefix, inbuf);
+            resSNP = snprintf(
+                PathInfo->weather_prefix,
+                sizeof PathInfo->weather_prefix,
+                "%s",
+                inbuf
+            );
+            if (resSNP < 0 ||
+                (unsigned) resSNP >= (sizeof PathInfo->weather_prefix)) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "weather prefix is too long: '%s'.",
+                    inbuf
+                );
+                goto closeFile;
+            }
             break;
         case 18:
-            strcpy(PathInfo->output_prefix, inbuf);
+            resSNP = snprintf(
+                PathInfo->output_prefix,
+                sizeof PathInfo->output_prefix,
+                "%s",
+                inbuf
+            );
+            if (resSNP < 0 ||
+                (unsigned) resSNP >= (sizeof PathInfo->output_prefix)) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "output path name is too long: '%s'.",
+                    inbuf
+                );
+                goto closeFile;
+            }
             break;
         case 20:
             PathInfo->InFiles[eOutputDaily] = Str_Dup(inbuf, LogInfo);
@@ -209,8 +240,15 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
                 free(PathInfo->InFiles[fileno]);
             }
 
-            strcpy(buf, PathInfo->SW_ProjDir);
-            strcat(buf, inbuf);
+            resSNP =
+                snprintf(buf, sizeof buf, "%s%s", PathInfo->SW_ProjDir, inbuf);
+            if (resSNP < 0 || (unsigned) resSNP >= (sizeof buf)) {
+                LogError(
+                    LogInfo, LOGERROR, "input file name is too long: '%s'.", buf
+                );
+                goto closeFile;
+            }
+
             PathInfo->InFiles[fileno] = Str_Dup(buf, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;

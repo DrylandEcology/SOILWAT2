@@ -311,7 +311,7 @@ static void nc_read_atts(
             if (doIntConv) {
                 infVal = (Str_CompareI(value, (char *) "Inf") == 0);
 
-                if(!infVal) {
+                if (!infVal) {
                     inBufintRes = sw_strtoi(value, MyFileName, LogInfo);
                 }
             } else {
@@ -3114,13 +3114,13 @@ static int gather_var_attributes(
     if (key == eSW_Estab) {
         resSNP = snprintf(
             establOrginName,
-            MAX_FILENAMESIZE,
+            sizeof establOrginName,
             "%s__%s",
             SW_ESTAB,
             varInfo[VARNAME_INDEX]
         );
 
-        if (resSNP >= MAX_FILENAMESIZE || resSNP < 0) {
+        if (resSNP < 0 || (unsigned) resSNP >= (sizeof establOrginName)) {
             LogError(
                 LogInfo,
                 LOGWARN,
@@ -3148,13 +3148,13 @@ static int gather_var_attributes(
     if (pd > eSW_Day) {
         resSNP = snprintf(
             cellRedef,
-            MAX_FILENAMESIZE,
+            sizeof cellRedef,
             "%s within days time: %s over days",
             resAtts[fillSize - 1],
             styp2longstr[sumType]
         );
 
-        if (resSNP >= MAX_FILENAMESIZE || resSNP < 0) {
+        if (resSNP < 0 || (unsigned) resSNP >= (sizeof cellRedef)) {
             LogError(
                 LogInfo,
                 LOGWARN,
@@ -3821,7 +3821,7 @@ void SW_NC_create_output_files(
                         );
                         resSNP = snprintf(
                             fileNameBuf,
-                            MAX_FILENAMESIZE,
+                            sizeof fileNameBuf,
                             "%s%s_%s_%s.nc",
                             output_prefix,
                             key2str[key],
@@ -3829,7 +3829,8 @@ void SW_NC_create_output_files(
                             periodSuffix
                         );
 
-                        if (resSNP >= MAX_FILENAMESIZE || resSNP < 0) {
+                        if (resSNP < 0 ||
+                            (unsigned) resSNP >= (sizeof fileNameBuf)) {
                             LogError(
                                 LogInfo,
                                 LOGERROR,
@@ -5002,13 +5003,13 @@ void SW_NC_read_out_vars(
         if (doOutputVal) {
             resSNP = snprintf(
                 varKey,
-                MAX_FILENAMESIZE + 1,
+                sizeof varKey,
                 "%s__%s",
                 input[keyInd],
                 input[SWVarNameInd]
             );
 
-            if (resSNP >= MAX_FILENAMESIZE + 1 || resSNP < 0) {
+            if (resSNP < 0 || (unsigned) resSNP >= (sizeof varKey)) {
                 LogError(
                     LogInfo,
                     LOGERROR,

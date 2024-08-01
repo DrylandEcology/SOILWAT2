@@ -1754,6 +1754,7 @@ void SW_WTH_setup(
     int month;
     int x;
     int index;
+    int resSNP;
     double sppt;
     double stmax;
     double stmin;
@@ -1977,7 +1978,21 @@ void SW_WTH_setup(
         lineno++;
     }
 
-    strcpy(SW_Weather->name_prefix, weather_prefix);
+    resSNP = snprintf(
+        SW_Weather->name_prefix,
+        sizeof SW_Weather->name_prefix,
+        "%s",
+        weather_prefix
+    );
+    if (resSNP < 0 || (unsigned) resSNP >= (sizeof SW_Weather->name_prefix)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Weather input path name is too long: '%s'.",
+            weather_prefix
+        );
+        return; // Exit function prematurely due to error
+    }
 
     if (lineno < nitems) {
         LogError(LogInfo, LOGERROR, "%s : Too few input lines.", MyFileName);
@@ -2298,9 +2313,9 @@ void read_weather_hist(
     char weathInStrs[15][20];
 
     // Create file name: `[weather-file prefix].[year]`
-    resSNP = snprintf(fname, MAX_FILENAMESIZE, "%s.%4d", weather_prefix, year);
+    resSNP = snprintf(fname, sizeof fname, "%s.%4d", weather_prefix, year);
 
-    if (resSNP >= MAX_FILENAMESIZE || resSNP < 0) {
+    if (resSNP < 0 || (unsigned) resSNP >= (sizeof fname)) {
         LogError(
             LogInfo,
             LOGERROR,

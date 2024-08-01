@@ -268,7 +268,9 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                 );
                 goto closeFile;
             }
-            strcpy(SW_Domain->DomainType, value);
+            (void) snprintf(
+                SW_Domain->DomainType, sizeof SW_Domain->DomainType, "%s", value
+            );
             break;
         case 1: // Number of X slots
             SW_Domain->nDimX = intRes;
@@ -331,7 +333,9 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                 goto closeFile;
             }
 
-            strcpy(SW_Domain->crs_bbox, value);
+            (void) snprintf(
+                SW_Domain->crs_bbox, sizeof SW_Domain->crs_bbox, "%s", value
+            );
             break;
         case 9: // Minimum x coordinate
             SW_Domain->min_x = doubleRes;

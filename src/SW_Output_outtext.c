@@ -115,7 +115,7 @@ static void create_csv_headers(
                                                OutDom->timeSteps
                                            ));
         if (isTrue) {
-            strcpy(key, key2str[k]);
+            (void) snprintf(key, sizeof key, "%s", key2str[k]);
             str_help2[0] = '\0';
 
             for (i = 0; i < OutDom->ncol_OUT[k]; i++) {
@@ -142,7 +142,7 @@ static void create_csv_headers(
                     );
                 }
 
-                if (resSNP >= (int) size_help || resSNP < 0) {
+                if (resSNP < 0 || (unsigned) resSNP >= size_help) {
                     LogError(LogInfo, LOGERROR, "csv-header is too long.");
                     goto freeMem; // Exit function prematurely due to error
                 }
@@ -285,7 +285,7 @@ static void create_filename_ST(
 
     free(fileDup);
 
-    if (resSNP >= sizeof_filename || resSNP < 0) {
+    if (resSNP < 0 || (unsigned) resSNP >= sizeof_filename) {
         LogError(
             LogInfo, LOGERROR, "csv file name is too long: '%s'", filename
         );
