@@ -7,6 +7,16 @@ if ! command -v clang-tidy > /dev/null 2>&1; then
     exit 1
 fi
 
+# Verify that clang-tidy is at least v17
+ctv=$(clang-tidy --version | egrep -o "version [0-9]+.[0-9]+.[0-9]+")
+p1=$(echo "$ctv" | egrep -o "[0-9]+.[0-9]+.[0-9]+" | cut -d "." -f 1)
+
+if [ ! "$p1" -ge 17 ]; then
+    echo "We require clang-tidy version 17 or later but found" "${ctv}"
+    exit 1
+fi
+
+
 #-------------------------------------------------------------------------------
 process_clangtidy_results() {
     local status="$1"
