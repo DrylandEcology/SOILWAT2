@@ -309,7 +309,7 @@ static void nc_read_atts(
 
         if (doIntConv || doDoubleConv) {
             if (doIntConv) {
-                infVal = (Str_CompareI(value, (char *) "Inf") == 0);
+                infVal = (Bool) (Str_CompareI(value, (char *) "Inf") == 0);
 
                 if (!infVal) {
                     inBufintRes = sw_strtoi(value, MyFileName, LogInfo);
