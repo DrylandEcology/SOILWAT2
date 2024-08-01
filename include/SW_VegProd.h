@@ -83,7 +83,7 @@
 #ifndef SW_VEGPROD_H
 #define SW_VEGPROD_H
 
-#include "include/generic.h"        // for Bool, RealD
+#include "include/generic.h"        // for Bool
 #include "include/SW_datastructs.h" // for SW_VEGPROD, SW_MODEL, SW_WEATHER_HIST
 #include "include/SW_Defines.h"     // for LyrIndex, NVEGTYPES, MAX_LAYERS,
 
@@ -171,7 +171,7 @@ void apply_biomassCO2effect(
     double *new_biomass, const double *biomass, double multiplier
 );
 
-RealD sum_across_vegtypes(RealD x[][MAX_LAYERS], LyrIndex layerno);
+double sum_across_vegtypes(double x[][MAX_LAYERS], LyrIndex layerno);
 
 void echo_VegProd(VegType VegProd_veg[], CoverType VegProd_bare_cov);
 

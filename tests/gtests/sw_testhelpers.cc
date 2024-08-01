@@ -94,7 +94,7 @@ void create_test_soillayers(
                                    1,  1,  1,  2,  2, 2, 2, 2, 2, 2, 2, 2};
 
     int const nRegions = 3;
-    RealD regionLowerBounds[3] = {20., 50., 100.};
+    double regionLowerBounds[3] = {20., 50., 100.};
 
     set_soillayers(
         SW_VegProd,

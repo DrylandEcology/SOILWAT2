@@ -48,7 +48,7 @@ extern "C" {
 /* --------------------------------------------------- */
 void SW_NC_write_output(
     SW_OUT_DOM *OutDom,
-    RealD *p_OUT[][SW_OUTNPERIODS],
+    double *p_OUT[][SW_OUTNPERIODS],
     unsigned int numFilesPerKey,
     char **ncOutFileNames[][SW_OUTNPERIODS],
     const size_t ncSuid[],

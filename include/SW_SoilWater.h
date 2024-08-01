@@ -101,7 +101,6 @@
 extern "C" {
 #endif
 
-#include "include/generic.h"        // for RealD
 #include "include/SW_datastructs.h" // for SW_SOILWAT, SW_SITE, LOG_INFO
 #include "include/SW_Defines.h"     // for TimeInt, LyrIndex, NVEGTYPES, MAX_...
 
@@ -137,7 +136,7 @@ void SW_SWC_read(
 );
 
 void SW_SWC_init_run(
-    SW_SOILWAT *SW_SoilWat, SW_SITE *SW_Site, RealD *temp_snow
+    SW_SOILWAT *SW_SoilWat, SW_SITE *SW_Site, double *temp_snow
 );
 
 void read_swc_hist(
@@ -148,14 +147,14 @@ void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo);
 
 void calculate_repartitioned_soilwater(
     SW_SOILWAT *SW_SoilWat,
-    RealD swcBulk_atSWPcrit[][MAX_LAYERS],
+    double swcBulk_atSWPcrit[][MAX_LAYERS],
     SW_VEGPROD *SW_VegProd,
     LyrIndex n_layers
 );
 
 void SW_SWC_adjust_swc(
-    RealD swcBulk[][MAX_LAYERS],
-    RealD swcBulk_min[],
+    double swcBulk[][MAX_LAYERS],
+    double swcBulk_min[],
     TimeInt doy,
     SW_SOILWAT_HIST SoilWat_hist,
     LyrIndex n_layers,
@@ -163,21 +162,21 @@ void SW_SWC_adjust_swc(
 );
 
 void SW_SWC_adjust_snow(
-    RealD *temp_snow,
-    RealD snowpack[],
+    double *temp_snow,
+    double snowpack[],
     SW_SITE *SW_Site,
-    RealD temp_min,
-    RealD temp_max,
-    RealD ppt,
+    double temp_min,
+    double temp_max,
+    double ppt,
     TimeInt doy,
-    RealD *rain,
-    RealD *snow,
-    RealD *snowmelt
+    double *rain,
+    double *snow,
+    double *snowmelt
 );
 
-RealD SW_SWC_snowloss(RealD pet, RealD *snowpack);
+double SW_SWC_snowloss(double pet, double *snowpack);
 
-RealD SW_SnowDepth(RealD SWE, RealD snowdensity);
+double SW_SnowDepth(double SWE, double snowdensity);
 
 void SW_SWC_end_day(SW_SOILWAT *SW_SoilWat, LyrIndex n_layers);
 
@@ -188,8 +187,8 @@ void get_dSWAbulk(
     double dSWA_repart_sum[][MAX_LAYERS]
 );
 
-RealD SW_SWRC_SWCtoSWP(
-    RealD swcBulk, SW_SITE *SW_Site, LyrIndex layerno, LOG_INFO *LogInfo
+double SW_SWRC_SWCtoSWP(
+    double swcBulk, SW_SITE *SW_Site, LyrIndex layerno, LOG_INFO *LogInfo
 );
 
 double SWRC_SWCtoSWP(
@@ -228,8 +227,8 @@ double SWRC_SWCtoSWP_FXW(
     LOG_INFO *LogInfo
 );
 
-RealD SW_SWRC_SWPtoSWC(
-    RealD swpMatric, SW_SITE *SW_Site, LyrIndex layerno, LOG_INFO *LogInfo
+double SW_SWRC_SWPtoSWC(
+    double swpMatric, SW_SITE *SW_Site, LyrIndex layerno, LOG_INFO *LogInfo
 );
 
 double SWRC_SWPtoSWC(

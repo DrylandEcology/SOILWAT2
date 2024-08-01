@@ -166,7 +166,7 @@ static Bool SW_check_soil_properties(
 ) {
 
     int k;
-    RealD fval = 0;
+    double fval = 0;
     char *errtype = NULL;
     Bool res = swTRUE;
 
@@ -310,7 +310,7 @@ static double ui_theta_min(
     unsigned int swrc_type,
     double *swrcp,
     Bool legacy_mode,
-    RealD SWCMinVal,
+    double SWCMinVal,
     LOG_INFO *LogInfo
 ) {
     double vwc_min = SW_MISSING;
@@ -620,7 +620,7 @@ double SW_swcBulk_minimum(
     double sand,
     double clay,
     double swcBulk_sat,
-    RealD SWCMinVal,
+    double SWCMinVal,
     LOG_INFO *LogInfo
 ) {
     double theta_min_sim;
@@ -1171,7 +1171,7 @@ Based on equation 20 from Saxton. @cite Saxton2006.
 Similarly, estimate soil bulk density from `theta_sat` with
 `2.65 * (1. - theta_sat * (1. - fractionGravel))`.
 */
-RealD calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel) {
+double calculate_soilBulkDensity(double matricDensity, double fractionGravel) {
     return matricDensity * (1. - fractionGravel) + fractionGravel * 2.65;
 }
 
@@ -1180,8 +1180,8 @@ RealD calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel) {
 
 Based on equation 20 from Saxton. @cite Saxton2006
 */
-RealD calculate_soilMatricDensity(
-    RealD bulkDensity, RealD fractionGravel, LOG_INFO *LogInfo
+double calculate_soilMatricDensity(
+    double bulkDensity, double fractionGravel, LOG_INFO *LogInfo
 ) {
     double res;
 
@@ -1216,7 +1216,7 @@ The count stops at first layer with 0.
     about every soil layer in the simulation
 @param[in] n_layers Number of layers of soil within the simulation run
 */
-LyrIndex nlayers_bsevap(RealD *evap_coeff, LyrIndex n_layers) {
+LyrIndex nlayers_bsevap(double *evap_coeff, LyrIndex n_layers) {
     LyrIndex s;
     LyrIndex n = 0;
 
@@ -1244,7 +1244,7 @@ The count stops at first layer with 0 per vegetation type.
 void nlayers_vegroots(
     LyrIndex n_layers,
     LyrIndex n_transp_lyrs[],
-    RealD transp_coeff[][MAX_LAYERS]
+    double transp_coeff[][MAX_LAYERS]
 ) {
     LyrIndex s;
     int k;
@@ -1803,7 +1803,7 @@ void set_soillayers(
     const double *imperm,
     const double *soiltemp,
     int nRegions,
-    RealD *regionLowerBounds,
+    double *regionLowerBounds,
     LOG_INFO *LogInfo
 ) {
 
@@ -1889,12 +1889,12 @@ void set_soillayers(
 void derive_soilRegions(
     SW_SITE *SW_Site,
     unsigned int nRegions,
-    const RealD *regionLowerBounds,
+    const double *regionLowerBounds,
     LOG_INFO *LogInfo
 ) {
     unsigned int i;
     unsigned int j;
-    RealD totalDepth = 0;
+    double totalDepth = 0;
     LyrIndex layer;
     LyrIndex UNDEFINED_LAYER = 999;
 
@@ -2086,9 +2086,9 @@ void SW_SIT_init_run(
     LyrIndex curregion;
     int k;
     int flagswpcrit = 0;
-    RealD evsum = 0.;
-    RealD trsum_veg[NVEGTYPES] = {0.};
-    RealD tmp;
+    double evsum = 0.;
+    double trsum_veg[NVEGTYPES] = {0.};
+    double tmp;
     double acc = 0.0;
     double tmp_stNRGR;
 

@@ -1,4 +1,4 @@
-#include "include/generic.h"             // for RealD, swFALSE, swTRUE
+#include "include/generic.h"             // for swFALSE, swTRUE
 #include "include/rands.h"               // for RandNorm, RandSeed
 #include "include/SW_datastructs.h"      // for LOG_INFO, SW_SITE, SW_VEGPROD
 #include "include/SW_Defines.h"          // for MAX_LAYERS, ForEachSoilLayer
@@ -161,7 +161,7 @@ TEST(SWFlowTest, SWFlowLitterInterceptedWater) {
 
 // Test infiltration under high water function, 'infiltrate_water_high'
 TEST(SWFlowTest, SWFlowSaturatedPercolation) {
-    RealD lyrFrozen[MAX_LAYERS] = {0};
+    double lyrFrozen[MAX_LAYERS] = {0};
 
     // declare inputs
     double pptleft = 5.0;
@@ -1040,7 +1040,7 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
     double coeff[MAX_LAYERS];
     double coeffZero[MAX_LAYERS] = {0.};
 
-    RealD lyrFrozen[MAX_LAYERS] = {0};
+    double lyrFrozen[MAX_LAYERS] = {0};
 
 
     // Loop over tests with varying number of soil layers
@@ -1242,7 +1242,7 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
     double swc[MAX_LAYERS];
     double drain[MAX_LAYERS];
 
-    RealD lyrFrozen[MAX_LAYERS] = {0};
+    double lyrFrozen[MAX_LAYERS] = {0};
 
 
     // Loop over tests with varying number of soil layers
@@ -1485,7 +1485,7 @@ TEST(SWFlowTest, SWFlowHydraulicRedistribution) {
     double swcExpected = 0.;
     double hydredExpected = 0.;
 
-    RealD lyrFrozen[MAX_LAYERS] = {0};
+    double lyrFrozen[MAX_LAYERS] = {0};
 
     // INPUTS for expected outcomes
     double const swcExpected_1L[1] = {0.8258887};

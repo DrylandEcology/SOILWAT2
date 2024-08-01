@@ -103,7 +103,6 @@ extern "C" {
 #define isnull(a) (NULL == (a))
 
 /* ---------   Redefine basic types to be more malleable ---- */
-typedef double RealD;
 typedef int Int;
 typedef unsigned int IntU;
 typedef short int IntS;
@@ -190,6 +189,7 @@ typedef unsigned char byte;
 #if defined(STEPWAT)
 /* ------ STEPWAT2 uses floats and doubles ------ */
 typedef float RealF;
+typedef double RealD;
 
 #define F_DELTA (10 * FLT_EPSILON)
 

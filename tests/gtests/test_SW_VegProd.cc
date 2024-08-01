@@ -141,7 +141,7 @@ TEST(VegProdTest, VegProdBiomassCO2effect) {
 TEST(VegProdTest, VegProdSumming) {
     int vegIndex;
 
-    RealD transp_coeff[NVEGTYPES][MAX_LAYERS];
+    double transp_coeff[NVEGTYPES][MAX_LAYERS];
 
 
     for (vegIndex = 0; vegIndex < NVEGTYPES; vegIndex++) {

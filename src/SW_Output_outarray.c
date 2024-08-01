@@ -18,7 +18,7 @@ History:
 /* --------------------------------------------------- */
 
 #include "include/SW_Output_outarray.h" // for SW_OUT_calc_iOUToffset, SW_O...
-#include "include/generic.h"            // for IntUS, IntU, Bool, RealD
+#include "include/generic.h"            // for IntUS, IntU, Bool
 #include "include/SW_datastructs.h"     // for LOG_INFO, SW_MODEL
 #include "include/SW_Defines.h"         // for eSW_Day, SW_OUTNMAXVARS, SW_...
 #include "include/SW_Output.h"          // for ForEachOutKey
@@ -180,7 +180,7 @@ void get_outvalleader(
     const size_t irow_OUT[],
     const size_t nrow_OUT[],
     TimeInt tOffset,
-    RealD *p
+    double *p
 ) {
 
     p[irow_OUT[pd] + nrow_OUT[pd] * 0] = SW_Model->simyear;
@@ -220,8 +220,8 @@ void get_outvalleader(
 @param[in] x The new value to add to the running mean and
     running standard deviation
 */
-void do_running_agg(RealD *p, RealD *psd, size_t k, IntU n, RealD x) {
-    RealD prev_val = p[k];
+void do_running_agg(double *p, double *psd, size_t k, IntU n, double x) {
+    double prev_val = p[k];
 
     p[k] = get_running_mean(n, prev_val, x);
     psd[k] =
@@ -250,7 +250,7 @@ void SW_OUT_construct_outarray(
     int i;
     int k;
     size_t size;
-    size_t s = sizeof(RealD);
+    size_t s = sizeof(double);
     OutPeriod timeStepOutPeriod;
 
     ForEachOutKey(k) {
@@ -263,7 +263,7 @@ void SW_OUT_construct_outarray(
                 size = OutDom->nrow_OUT[timeStepOutPeriod] *
                        (OutDom->ncol_OUT[k] + ncol_TimeOUT[timeStepOutPeriod]);
 
-                OutRun->p_OUT[k][timeStepOutPeriod] = (RealD *) Mem_Calloc(
+                OutRun->p_OUT[k][timeStepOutPeriod] = (double *) Mem_Calloc(
                     size, s, "SW_OUT_construct_outarray()", LogInfo
                 );
                 if (LogInfo->stopRun) {
@@ -272,7 +272,7 @@ void SW_OUT_construct_outarray(
 #endif
 
 #if defined(STEPWAT)
-                OutRun->p_OUTsd[k][timeStepOutPeriod] = (RealD *) Mem_Calloc(
+                OutRun->p_OUTsd[k][timeStepOutPeriod] = (double *) Mem_Calloc(
                     size, s, "SW_OUT_construct_outarray()", LogInfo
                 );
                 if (LogInfo->stopRun) {

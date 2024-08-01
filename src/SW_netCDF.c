@@ -3513,7 +3513,7 @@ output netCDF files
 */
 void SW_NC_write_output(
     SW_OUT_DOM *OutDom,
-    RealD *p_OUT[][SW_OUTNPERIODS],
+    double *p_OUT[][SW_OUTNPERIODS],
     unsigned int numFilesPerKey,
     char **ncOutFileNames[][SW_OUTNPERIODS],
     const size_t ncSuid[],
@@ -3523,7 +3523,7 @@ void SW_NC_write_output(
 
     int key;
     OutPeriod pd;
-    RealD *p_OUTValPtr = NULL;
+    double *p_OUTValPtr = NULL;
     unsigned int fileNum;
     int currFileID = 0;
     int varNum;
@@ -4699,7 +4699,7 @@ void SW_NC_read_inputs(
     const char *varNames[][2] = {{domLatVar, domLonVar}};
     int ncIndex;
 
-    RealD *values[][2] = {{&sw->Model.latitude, &sw->Model.longitude}};
+    double *values[][2] = {{&sw->Model.latitude, &sw->Model.longitude}};
 
     /*
         Gather all values being requested within the array "values"

@@ -1,4 +1,4 @@
-#include "include/generic.h"             // for RealD, LOGERROR, LOGWARN
+#include "include/generic.h"             // for LOGERROR, LOGWARN
 #include "include/SW_datastructs.h"      // for LOG_INFO, SW_SITE
 #include "include/SW_Defines.h"          // for SW_MISSING, SWRC_PARAM_NMAX
 #include "include/SW_Main_lib.h"         // for sw_fail_on_error, sw_init_logs
@@ -20,14 +20,14 @@ namespace {
 TEST(SoilWaterTest, SoilWaterSWCadjustSnow) {
     // setup variables
     const unsigned int doy = 1;
-    RealD const temp_min = 0;
-    RealD const temp_max = 10;
-    RealD const ppt = 1;
-    RealD rain = 1.5;
-    RealD snow = 1.5;
-    RealD snowmelt = 1.2;
-    RealD temp_snow = 0;
-    RealD snowpack[TWO_DAYS] = {0};
+    double const temp_min = 0;
+    double const temp_max = 10;
+    double const ppt = 1;
+    double rain = 1.5;
+    double snow = 1.5;
+    double snowmelt = 1.2;
+    double temp_snow = 0;
+    double snowpack[TWO_DAYS] = {0};
 
     SW_SITE SW_Site;
 
@@ -88,14 +88,14 @@ TEST(SoilWaterTest, SoilWaterSWCadjustSnow) {
 
 TEST(SoilWaterTest, SoilWaterSWCadjustSnow2) {
     const unsigned int doy = 1;
-    RealD const temp_min = 0;
-    RealD const temp_max = 22;
-    RealD const ppt = 1;
-    RealD rain = 1.5;
-    RealD snow = 1.5;
-    RealD snowmelt = 1.2;
-    RealD temp_snow = 0;
-    RealD snowpack[TWO_DAYS] = {0};
+    double const temp_min = 0;
+    double const temp_max = 22;
+    double const ppt = 1;
+    double rain = 1.5;
+    double snow = 1.5;
+    double snowmelt = 1.2;
+    double temp_snow = 0;
+    double snowpack[TWO_DAYS] = {0};
 
     SW_SITE SW_Site;
 
@@ -140,24 +140,24 @@ TEST(SoilWaterTest, SoilWaterTranslateBetweenSWCandSWP) {
     unsigned int ptf_type;
     unsigned int k;
     const int em = LOGERROR;
-    RealD phi;
-    RealD swcBulk;
-    RealD swc_sat;
-    RealD swc_fc;
-    RealD swc_wp;
-    RealD swp;
-    RealD swrcp[SWRC_PARAM_NMAX];
-    RealD const sand = 0.33;
-    RealD const clay = 0.33;
-    RealD const gravel = 0.2;
-    RealD const bdensity = 1.4;
-    RealD const width = 10.;
+    double phi;
+    double swcBulk;
+    double swc_sat;
+    double swc_fc;
+    double swc_wp;
+    double swp;
+    double swrcp[SWRC_PARAM_NMAX];
+    double const sand = 0.33;
+    double const clay = 0.33;
+    double const gravel = 0.2;
+    double const bdensity = 1.4;
+    double const width = 10.;
     // SWP values in [0, Inf[ but FXW maxes out at 6178.19079 bar
-    RealD const swpsb[12] = {
+    double const swpsb[12] = {
         0., 0.001, 0.01, 0.026, 0.027, 0.33, 15., 30., 100., 300., 1000., 6178.
     };
     // SWP values in [fc, Inf[ but FXW maxes out at 6178.19079 bar
-    RealD const swpsi[7] = {0.33, 15., 30., 100., 300., 1000., 6178.};
+    double const swpsi[7] = {0.33, 15., 30., 100., 300., 1000., 6178.};
 
     std::ostringstream msg;
 
@@ -367,9 +367,9 @@ TEST(SoilWaterTest, SoilWaterSWCtoSWPDeathTest) {
     sw_init_logs(NULL, &LogInfo);
 
     // set up mock variables
-    RealD swrcp[SWRC_PARAM_NMAX];
-    RealD const gravel = 0.1;
-    RealD const width = 10.;
+    double swrcp[SWRC_PARAM_NMAX];
+    double const gravel = 0.1;
+    double const width = 10.;
 
     unsigned int swrc_type;
 
@@ -486,9 +486,9 @@ TEST(SoilWaterTest, SoilWaterSWPtoSWCDeathTest) {
     sw_init_logs(NULL, &LogInfo);
 
     // set up mock variables
-    RealD swrcp[SWRC_PARAM_NMAX];
-    RealD const gravel = 0.1;
-    RealD const width = 10.;
+    double swrcp[SWRC_PARAM_NMAX];
+    double const gravel = 0.1;
+    double const width = 10.;
 
     unsigned int swrc_type;
 

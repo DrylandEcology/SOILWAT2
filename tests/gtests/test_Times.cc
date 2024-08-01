@@ -1,4 +1,4 @@
-#include "include/generic.h"             // for Bool, swFALSE, swTRUE, RealD
+#include "include/generic.h"             // for Bool, swFALSE, swTRUE
 #include "include/SW_datastructs.h"      // for LOG_INFO, SW_WALLTIME
 #include "include/SW_Defines.h"          // for MAX_MONTHS, TimeInt, MAX_DAYS
 #include "include/SW_Main_lib.h"         // for sw_init_logs
@@ -73,11 +73,11 @@ double valXd(double v1, double v2, int sign, int mday, int delta_days) {
 
 TEST(TimesTest, TimesInterpolateMonthlyValues) {
     // point to the structure that contains cloud coverage monthly values
-    RealD cloudcov_monthly[MAX_MONTHS];
+    double cloudcov_monthly[MAX_MONTHS];
 
     // `interpolate_monthlyValues()` needs an array of length `MAX_DAYS + 1`
     // if `interpAsBase1` is TRUE
-    RealD cloudcov_daily[MAX_DAYS + 1];
+    double cloudcov_daily[MAX_DAYS + 1];
 
 
     TimeInt days_in_month[MAX_MONTHS];

@@ -18,7 +18,7 @@ History:
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
 
-#include "include/generic.h"        // for RealD, IntU
+#include "include/generic.h"        // for IntU
 #include "include/SW_datastructs.h" // for SW_RUN, SW_OUTTEXT
 #include "include/SW_Defines.h"     // for OUTSEP, OUT_DIGITS, OUTSTRLEN
 #include "include/SW_Output.h"      // for get_aet_text, get_biomass_text
@@ -50,8 +50,8 @@ History:
 
 #ifdef STEPWAT
 static void format_IterationSummary(
-    RealD *p,
-    RealD *psd,
+    double *p,
+    double *psd,
     OutPeriod pd,
     IntUS N,
     SW_RUN *sw,
@@ -59,7 +59,7 @@ static void format_IterationSummary(
 ) {
     IntUS i;
     size_t n;
-    RealD sd;
+    double sd;
     char str[OUTSTRLEN];
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -83,8 +83,8 @@ static void format_IterationSummary(
 }
 
 static void format_IterationSummary2(
-    RealD *p,
-    RealD *psd,
+    double *p,
+    double *psd,
     OutPeriod pd,
     IntUS N1,
     IntUS offset,
@@ -94,7 +94,7 @@ static void format_IterationSummary2(
     int k;
     LyrIndex i;
     size_t n;
-    RealD sd;
+    double sd;
     char str[OUTSTRLEN];
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -217,7 +217,7 @@ void get_co2effects_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     int k;
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
-    RealD *p = OutRun->p_OUT[eSW_CO2Effects][pd];
+    double *p = OutRun->p_OUT[eSW_CO2Effects][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -277,8 +277,8 @@ void get_co2effects_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_CO2Effects][pd];
-    RealD *psd = OutRun->p_OUTsd[eSW_CO2Effects][pd];
+    double *p = OutRun->p_OUT[eSW_CO2Effects][pd];
+    double *psd = OutRun->p_OUTsd[eSW_CO2Effects][pd];
 
     ForEachVegType(k) {
         iOUTIndex = iOUT(
@@ -394,7 +394,7 @@ void get_biomass_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Biomass][pd];
+    double *p = OutRun->p_OUT[eSW_Biomass][pd];
 
 #if defined(RSOILWAT)
     int i;
@@ -560,8 +560,8 @@ void get_biomass_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Biomass][pd];
-    RealD *psd = OutRun->p_OUTsd[eSW_Biomass][pd];
+    double *p = OutRun->p_OUT[eSW_Biomass][pd];
+    double *psd = OutRun->p_OUTsd[eSW_Biomass][pd];
 
     // fCover for NVEGTYPES plus bare-ground
     iOUTIndex =
@@ -703,7 +703,7 @@ void get_estab_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Estab][pd];
+    double *p = OutRun->p_OUT[eSW_Estab][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -747,8 +747,8 @@ void get_estab_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Estab][pd];
-    RealD *psd = OutRun->p_OUTsd[eSW_Estab][pd];
+    double *p = OutRun->p_OUT[eSW_Estab][pd];
+    double *psd = OutRun->p_OUTsd[eSW_Estab][pd];
 
     for (i = 0; i < sw->VegEstab.count; i++) {
         iOUTIndex = iOUT(
@@ -830,7 +830,7 @@ void get_temp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Temp][pd];
+    double *p = OutRun->p_OUT[eSW_Temp][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -926,8 +926,8 @@ void get_temp_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Temp][pd];
-    RealD *psd = OutRun->p_OUTsd[eSW_Temp][pd];
+    double *p = OutRun->p_OUT[eSW_Temp][pd];
+    double *psd = OutRun->p_OUTsd[eSW_Temp][pd];
 
     iOUTIndex =
         iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
@@ -1048,7 +1048,7 @@ void get_precip_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Precip][pd];
+    double *p = OutRun->p_OUT[eSW_Precip][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -1133,8 +1133,8 @@ void get_precip_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Precip][pd];
-    RealD *psd = OutRun->p_OUTsd[eSW_Precip][pd];
+    double *p = OutRun->p_OUT[eSW_Precip][pd];
+    double *psd = OutRun->p_OUTsd[eSW_Precip][pd];
 
     iOUTIndex =
         iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
@@ -1244,7 +1244,7 @@ void get_vwcBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_VWCBulk][pd];
+    double *p = OutRun->p_OUT[eSW_VWCBulk][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -1300,8 +1300,8 @@ void get_vwcBulk_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_VWCBulk][pd];
-    RealD *psd = OutRun->p_OUTsd[eSW_VWCBulk][pd];
+    double *p = OutRun->p_OUT[eSW_VWCBulk][pd];
+    double *psd = OutRun->p_OUTsd[eSW_VWCBulk][pd];
 
     ForEachSoilLayer(i, sw->Site.n_layers) {
         /* vwcBulk at this point is identical to swcBulk */
@@ -1341,7 +1341,7 @@ void get_vwcBulk_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 */
 void get_vwcMatric_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
-    RealD convert;
+    double convert;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -1379,12 +1379,12 @@ void get_vwcMatric_text(OutPeriod pd, SW_RUN *sw) {
 */
 void get_vwcMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
-    RealD convert;
+    double convert;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_VWCMatric][pd];
+    double *p = OutRun->p_OUT[eSW_VWCMatric][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -1438,13 +1438,13 @@ void get_vwcMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 */
 void get_vwcMatric_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
-    RealD convert;
+    double convert;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_VWCMatric][pd];
-    RealD *psd = OutRun->p_OUTsd[eSW_VWCMatric][pd];
+    double *p = OutRun->p_OUT[eSW_VWCMatric][pd];
+    double *psd = OutRun->p_OUTsd[eSW_VWCMatric][pd];
 
     ForEachSoilLayer(i, sw->Site.n_layers) {
         /* vwcMatric at this point is identical to swcBulk */
@@ -1525,7 +1525,7 @@ void get_swa_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SWA][pd];
+    double *p = OutRun->p_OUT[eSW_SWA][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -1590,8 +1590,8 @@ void get_swa_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SWA][pd];
-    RealD *psd = OutRun->p_OUTsd[eSW_SWA][pd];
+    double *p = OutRun->p_OUT[eSW_SWA][pd];
+    double *psd = OutRun->p_OUTsd[eSW_SWA][pd];
 
     ForEachVegType(k) {
         ForEachSoilLayer(i, sw->Site.n_layers) {
@@ -1658,7 +1658,7 @@ void get_swcBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SWCBulk][pd];
+    double *p = OutRun->p_OUT[eSW_SWCBulk][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -1713,8 +1713,8 @@ void get_swcBulk_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SWCBulk][pd];
-    RealD *psd = OutRun->p_OUTsd[eSW_SWCBulk][pd];
+    double *p = OutRun->p_OUT[eSW_SWCBulk][pd];
+    double *psd = OutRun->p_OUTsd[eSW_SWCBulk][pd];
 
     ForEachSoilLayer(i, sw->Site.n_layers) {
         iOUTIndex = iOUT(
@@ -1776,7 +1776,7 @@ converting the averged swc.  This also avoids converting for each day. added
     information that do not change throughout simulation runs
 */
 void get_swpMatric_text(OutPeriod pd, SW_RUN *sw) {
-    RealD val;
+    double val;
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
@@ -1817,7 +1817,7 @@ void get_swpMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SWPMatric][pd];
+    double *p = OutRun->p_OUT[eSW_SWPMatric][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -1869,15 +1869,15 @@ void get_swpMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     information that do not change throughout simulation runs
 */
 void get_swpMatric_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
-    RealD val;
+    double val;
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     LOG_INFO local_log;
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SWPMatric][pd];
-    RealD *psd = OutRun->p_OUTsd[eSW_SWPMatric][pd];
+    double *p = OutRun->p_OUT[eSW_SWPMatric][pd];
+    double *psd = OutRun->p_OUTsd[eSW_SWPMatric][pd];
 
     ForEachSoilLayer(i, sw->Site.n_layers) {
         /* swpMatric at this point is identical to swcBulk */
@@ -1943,7 +1943,7 @@ void get_swaBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SWABulk][pd];
+    double *p = OutRun->p_OUT[eSW_SWABulk][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -1998,8 +1998,8 @@ void get_swaBulk_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SWABulk][pd];
-    RealD *psd = OutRun->p_OUTsd[eSW_SWABulk][pd];
+    double *p = OutRun->p_OUT[eSW_SWABulk][pd];
+    double *psd = OutRun->p_OUTsd[eSW_SWABulk][pd];
 
     ForEachSoilLayer(i, sw->Site.n_layers) {
         iOUTIndex = iOUT(
@@ -2031,7 +2031,7 @@ void get_swaBulk_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 */
 void get_swaMatric_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
-    RealD convert;
+    double convert;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -2068,12 +2068,12 @@ void get_swaMatric_text(OutPeriod pd, SW_RUN *sw) {
 */
 void get_swaMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
-    RealD convert;
+    double convert;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SWAMatric][pd];
+    double *p = OutRun->p_OUT[eSW_SWAMatric][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -2126,13 +2126,13 @@ void get_swaMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 */
 void get_swaMatric_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
-    RealD convert;
+    double convert;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SWAMatric][pd];
-    RealD *psd = OutRun->p_OUTsd[eSW_SWAMatric][pd];
+    double *p = OutRun->p_OUT[eSW_SWAMatric][pd];
+    double *psd = OutRun->p_OUTsd[eSW_SWAMatric][pd];
 
     ForEachSoilLayer(i, sw->Site.n_layers) {
         /* swaMatric at this point is identical to swaBulk */
@@ -2200,7 +2200,7 @@ void get_surfaceWater_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SurfaceWater][pd];
+    double *p = OutRun->p_OUT[eSW_SurfaceWater][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -2236,8 +2236,8 @@ void get_surfaceWater_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SurfaceWater][pd];
-    RealD *psd = OutRun->p_OUTsd[eSW_SurfaceWater][pd];
+    double *p = OutRun->p_OUT[eSW_SurfaceWater][pd];
+    double *psd = OutRun->p_OUTsd[eSW_SurfaceWater][pd];
 
     iOUTIndex =
         iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
@@ -2267,7 +2267,7 @@ OUTTEXT.
     information that do not change throughout simulation runs
 */
 void get_runoffrunon_text(OutPeriod pd, SW_RUN *sw) {
-    RealD net;
+    double net;
     SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -2311,7 +2311,7 @@ void get_runoffrunon_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Runoff][pd];
+    double *p = OutRun->p_OUT[eSW_Runoff][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -2380,13 +2380,13 @@ STEPWAT.
     information that do not change throughout simulation runs
 */
 void get_runoffrunon_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
-    RealD net;
+    double net;
     SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Runoff][pd];
-    RealD *psd = OutRun->p_OUTsd[eSW_Runoff][pd];
+    double *p = OutRun->p_OUT[eSW_Runoff][pd];
+    double *psd = OutRun->p_OUTsd[eSW_Runoff][pd];
 
     net = vo->surfaceRunoff + vo->snowRunoff - vo->surfaceRunon;
 
@@ -2476,7 +2476,7 @@ void get_transp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Transp][pd];
+    double *p = OutRun->p_OUT[eSW_Transp][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -2575,8 +2575,8 @@ void get_transp_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Transp][pd];
-    RealD *psd = OutRun->p_OUTsd[eSW_Transp][pd];
+    double *p = OutRun->p_OUT[eSW_Transp][pd];
+    double *psd = OutRun->p_OUTsd[eSW_Transp][pd];
 
     /* total transpiration */
     ForEachSoilLayer(i, n_layers) {
@@ -2693,7 +2693,7 @@ void get_evapSoil_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_EvapSoil][pd];
+    double *p = OutRun->p_OUT[eSW_EvapSoil][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -2748,8 +2748,8 @@ void get_evapSoil_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_EvapSoil][pd];
-    RealD *psd = OutRun->p_OUTsd[eSW_EvapSoil][pd];
+    double *p = OutRun->p_OUT[eSW_EvapSoil][pd];
+    double *psd = OutRun->p_OUTsd[eSW_EvapSoil][pd];
 
     ForEachEvapLayer(i, sw->Site.n_evap_lyrs) {
         iOUTIndex = iOUT(
@@ -2836,7 +2836,7 @@ void get_evapSurface_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_EvapSurface][pd];
+    double *p = OutRun->p_OUT[eSW_EvapSurface][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -2926,8 +2926,8 @@ void get_evapSurface_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_EvapSurface][pd];
-    RealD *psd = OutRun->p_OUTsd[eSW_EvapSurface][pd];
+    double *p = OutRun->p_OUT[eSW_EvapSurface][pd];
+    double *psd = OutRun->p_OUTsd[eSW_EvapSurface][pd];
 
     iOUTIndex =
         iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
@@ -3021,7 +3021,7 @@ void get_interception_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Interception][pd];
+    double *p = OutRun->p_OUT[eSW_Interception][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -3095,8 +3095,8 @@ void get_interception_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Interception][pd];
-    RealD *psd = OutRun->p_OUTsd[eSW_Interception][pd];
+    double *p = OutRun->p_OUT[eSW_Interception][pd];
+    double *psd = OutRun->p_OUTsd[eSW_Interception][pd];
 
     iOUTIndex =
         iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
@@ -3174,7 +3174,7 @@ void get_soilinf_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SoilInf][pd];
+    double *p = OutRun->p_OUT[eSW_SoilInf][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -3210,8 +3210,8 @@ void get_soilinf_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SoilInf][pd];
-    RealD *psd = OutRun->p_OUTsd[eSW_SoilInf][pd];
+    double *p = OutRun->p_OUT[eSW_SoilInf][pd];
+    double *psd = OutRun->p_OUTsd[eSW_SoilInf][pd];
 
     iOUTIndex =
         iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
@@ -3272,7 +3272,7 @@ void get_lyrdrain_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_LyrDrain][pd];
+    double *p = OutRun->p_OUT[eSW_LyrDrain][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -3327,8 +3327,8 @@ void get_lyrdrain_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_LyrDrain][pd];
-    RealD *psd = OutRun->p_OUTsd[eSW_LyrDrain][pd];
+    double *p = OutRun->p_OUT[eSW_LyrDrain][pd];
+    double *psd = OutRun->p_OUTsd[eSW_LyrDrain][pd];
 
     for (i = 0; i < sw->Site.n_layers - 1; i++) {
         iOUTIndex = iOUT(
@@ -3409,7 +3409,7 @@ void get_hydred_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_HydRed][pd];
+    double *p = OutRun->p_OUT[eSW_HydRed][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -3513,8 +3513,8 @@ void get_hydred_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_HydRed][pd];
-    RealD *psd = OutRun->p_OUTsd[eSW_HydRed][pd];
+    double *p = OutRun->p_OUT[eSW_HydRed][pd];
+    double *psd = OutRun->p_OUTsd[eSW_HydRed][pd];
 
     /* total hydraulic redistribution */
     ForEachSoilLayer(i, n_layers) {
@@ -3614,7 +3614,7 @@ void get_aet_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_AET][pd];
+    double *p = OutRun->p_OUT[eSW_AET][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -3711,8 +3711,8 @@ void get_aet_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_AET][pd];
-    RealD *psd = OutRun->p_OUTsd[eSW_AET][pd];
+    double *p = OutRun->p_OUT[eSW_AET][pd];
+    double *psd = OutRun->p_OUTsd[eSW_AET][pd];
 
     iOUTIndex =
         iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
@@ -3825,7 +3825,7 @@ void get_pet_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_PET][pd];
+    double *p = OutRun->p_OUT[eSW_PET][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -3903,8 +3903,8 @@ void get_pet_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_PET][pd];
-    RealD *psd = OutRun->p_OUTsd[eSW_PET][pd];
+    double *p = OutRun->p_OUT[eSW_PET][pd];
+    double *psd = OutRun->p_OUTsd[eSW_PET][pd];
 
     iOUTIndex =
         iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
@@ -3991,7 +3991,7 @@ void get_wetdays_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_WetDays][pd];
+    double *p = OutRun->p_OUT[eSW_WetDays][pd];
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 #if defined(RSOILWAT)
@@ -4050,8 +4050,8 @@ void get_wetdays_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_WetDays][pd];
-    RealD *psd = OutRun->p_OUTsd[eSW_WetDays][pd];
+    double *p = OutRun->p_OUT[eSW_WetDays][pd];
+    double *psd = OutRun->p_OUTsd[eSW_WetDays][pd];
 
     if (pd == eSW_Day) {
         ForEachSoilLayer(i, sw->Site.n_layers) {
@@ -4135,7 +4135,7 @@ void get_snowpack_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SnowPack][pd];
+    double *p = OutRun->p_OUT[eSW_SnowPack][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -4183,8 +4183,8 @@ void get_snowpack_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SnowPack][pd];
-    RealD *psd = OutRun->p_OUTsd[eSW_SnowPack][pd];
+    double *p = OutRun->p_OUT[eSW_SnowPack][pd];
+    double *psd = OutRun->p_OUTsd[eSW_SnowPack][pd];
 
     iOUTIndex =
         iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
@@ -4248,7 +4248,7 @@ void get_deepswc_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_DeepSWC][pd];
+    double *p = OutRun->p_OUT[eSW_DeepSWC][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -4284,8 +4284,8 @@ void get_deepswc_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_DeepSWC][pd];
-    RealD *psd = OutRun->p_OUTsd[eSW_DeepSWC][pd];
+    double *p = OutRun->p_OUT[eSW_DeepSWC][pd];
+    double *psd = OutRun->p_OUTsd[eSW_DeepSWC][pd];
 
     iOUTIndex =
         iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
@@ -4367,7 +4367,7 @@ void get_soiltemp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SoilTemp][pd];
+    double *p = OutRun->p_OUT[eSW_SoilTemp][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -4477,8 +4477,8 @@ void get_soiltemp_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SoilTemp][pd];
-    RealD *psd = OutRun->p_OUTsd[eSW_SoilTemp][pd];
+    double *p = OutRun->p_OUT[eSW_SoilTemp][pd];
+    double *psd = OutRun->p_OUTsd[eSW_SoilTemp][pd];
 
     ForEachSoilLayer(i, sw->Site.n_layers) {
         iOUTIndex = iOUT(
@@ -4566,7 +4566,7 @@ void get_frozen_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Frozen][pd];
+    double *p = OutRun->p_OUT[eSW_Frozen][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -4621,8 +4621,8 @@ void get_frozen_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Frozen][pd];
-    RealD *psd = OutRun->p_OUTsd[eSW_Frozen][pd];
+    double *p = OutRun->p_OUT[eSW_Frozen][pd];
+    double *psd = OutRun->p_OUTsd[eSW_Frozen][pd];
 
     ForEachSoilLayer(i, sw->Site.n_layers) {
         iOUTIndex = iOUT(

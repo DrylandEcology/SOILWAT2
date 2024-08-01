@@ -37,7 +37,7 @@
 #ifndef SW_WEATHER_H
 #define SW_WEATHER_H
 
-#include "include/generic.h"        // for Bool, RealD
+#include "include/generic.h"        // for Bool
 #include "include/SW_datastructs.h" // for SW_WEATHER, SW_SKY, SW_MODEL, LOG_...
 #include "include/SW_Defines.h"     // for TimeInt
 
@@ -165,9 +165,9 @@ void readAllWeather(
     unsigned int n_input_forcings,
     unsigned int *dailyInputIndices,
     Bool *dailyInputFlags,
-    RealD *cloudcov,
-    RealD *windspeed,
-    RealD *r_humidity,
+    double *cloudcov,
+    double *windspeed,
+    double *r_humidity,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
     LOG_INFO *LogInfo
@@ -240,7 +240,7 @@ void SW_WTH_deconstruct(SW_WEATHER *SW_Weather);
 void SW_WTH_new_day(
     SW_WEATHER *SW_Weather,
     SW_SITE *SW_Site,
-    RealD snowpack[],
+    double snowpack[],
     TimeInt doy,
     TimeInt year,
     LOG_INFO *LogInfo

@@ -328,7 +328,7 @@ static void sumof_vpd(
     LOG_INFO *LogInfo
 ) {
     int ik;
-    RealD tmp;
+    double tmp;
 
     switch (k) {
     case eSW_CO2Effects:
@@ -603,7 +603,7 @@ static void average_for(
 ) {
 
     TimeInt curr_pd = 0;
-    RealD div = 0.; /* if sumtype=AVG, days in period; if sumtype=SUM, 1 */
+    double div = 0.; /* if sumtype=AVG, days in period; if sumtype=SUM, 1 */
     LyrIndex i;
     int k;
     int j;

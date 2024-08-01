@@ -1,4 +1,4 @@
-#include "include/generic.h"             // for swFALSE, Bool, RealD, GT, fmax
+#include "include/generic.h"             // for swFALSE, Bool, GT, fmax
 #include "include/rands.h"               // for RandNorm, RandSeed, RandUni...
 #include "include/SW_datastructs.h"      // for LOG_INFO, ST_RGR_VALUES
 #include "include/SW_Defines.h"          // for MAX_LAYERS, sw_random_t
@@ -469,7 +469,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
 
 // Test set layer to frozen or unfrozen 'set_frozen_unfrozen'
 TEST(SWFlowTempTest, SWFlowTempSetFrozenUnfrozen) {
-    RealD lyrFrozen[MAX_LAYERS] = {0};
+    double lyrFrozen[MAX_LAYERS] = {0};
 
     // declare inputs and output
     // *****  Test when nlyrs = 1  ***** //
@@ -669,7 +669,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    RealD lyrFrozen[MAX_LAYERS] = {0};
+    double lyrFrozen[MAX_LAYERS] = {0};
 
     unsigned int k;
     unsigned int const year = 1980;
@@ -1006,7 +1006,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    RealD lyrFrozen[MAX_LAYERS] = {0};
+    double lyrFrozen[MAX_LAYERS] = {0};
 
 
     // *****  Test when nlyrs = MAX_LAYERS  ***** //
@@ -1325,8 +1325,8 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunctionDeathTest) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    RealD lyrFrozen[MAX_LAYERS] = {0};
-    RealD depths[MAX_LAYERS] = {0};
+    double lyrFrozen[MAX_LAYERS] = {0};
+    double depths[MAX_LAYERS] = {0};
 
     unsigned int const nlyrs = 1;
     unsigned int const nRgr = 65;

@@ -1,4 +1,4 @@
-#include "include/generic.h"        // for RealD, GT, fmin
+#include "include/generic.h"        // for GT, fmin
 #include "include/myMemory.h"       // for Str_Dup
 #include "include/SW_datastructs.h" // for LOG_INFO, SW_MARKOV, SW_NFILES
 #include "include/SW_Defines.h"     // for sw_random_t
@@ -12,9 +12,9 @@
 using ::testing::HasSubstr;
 
 // NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
-extern void (*test_mvnorm)(RealD *, RealD *, RealD, RealD, RealD, RealD, RealD, sw_random_t *, LOG_INFO *);
+extern void (*test_mvnorm)(double *, double *, double, double, double, double, double, sw_random_t *, LOG_INFO *);
 extern void (*test_temp_correct_wetdry)(
-    RealD *, RealD *, RealD, RealD, RealD, RealD, RealD
+    double *, double *, double, double, double, double, double
 );
 
 // NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
@@ -74,12 +74,12 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
     short const n = 18;
     short const seed = 42;
     short const year = 1980;
-    RealD tmax;
-    RealD tmin;
-    RealD ppt;
-    RealD *tmax0 = new double[n];
-    RealD *tmin0 = new double[n];
-    RealD *ppt0 = new double[n];
+    double tmax;
+    double tmin;
+    double ppt;
+    double *tmax0 = new double[n];
+    double *tmin0 = new double[n];
+    double *ppt0 = new double[n];
 
 
     //--- Generate some weather values with fixed seed ------
@@ -175,9 +175,9 @@ TEST(WeatherGeneratorTest, WeatherGeneratormvnorm) {
     int const rng_seed = 9;
     short k;
     short const n = 3;
-    RealD tmax = 0.;
-    RealD tmin = 0.;
-    RealD tval;
+    double tmax = 0.;
+    double tmin = 0.;
+    double tval;
 
     SW_MKV_init_ptrs(&SW_Markov);
     SW_MKV_construct(rng_seed, &SW_Markov); // initialize markov_rng
@@ -263,8 +263,8 @@ TEST(WeatherGeneratorTest, WeatherGeneratormvnormDeathTest) {
     sw_init_logs(NULL, &LogInfo);
 
     int const rng_seed = 11;
-    RealD tmax = 0.;
-    RealD tmin = 0.;
+    double tmax = 0.;
+    double tmin = 0.;
 
     SW_MKV_init_ptrs(&SW_Markov);
     SW_MKV_construct(rng_seed, &SW_Markov); // initialize markov_rng
@@ -291,15 +291,15 @@ TEST(WeatherGeneratorTest, WeatherGeneratorWetDryTemperatureCorrection) {
     sw_init_logs(NULL, &LogInfo);
 
     int const rng_seed = 13;
-    RealD tmax = 0.;
-    RealD tmin = 0.;
-    RealD const t0 = 0.;
-    RealD const t10 = 10.;
-    RealD const wet = 1.;
-    RealD const dry = 0.;
-    RealD const cf0 = 0.;
-    RealD const cf_pos = 5.;
-    RealD const cf_neg = -5.;
+    double tmax = 0.;
+    double tmin = 0.;
+    double const t0 = 0.;
+    double const t10 = 10.;
+    double const wet = 1.;
+    double const dry = 0.;
+    double const cf0 = 0.;
+    double const cf_pos = 5.;
+    double const cf_neg = -5.;
 
     SW_MKV_init_ptrs(&SW_Markov);
     SW_MKV_construct(rng_seed, &SW_Markov); // initialize markov_rng

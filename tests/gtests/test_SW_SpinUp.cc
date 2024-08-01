@@ -1,4 +1,4 @@
-#include "include/generic.h"             // for RealD, swTRUE
+#include "include/generic.h"             // for swTRUE
 #include "include/SW_Control.h"          // for SW_CTL_main, SW_CTL_run_spinup
 #include "include/SW_Main_lib.h"         // for sw_fail_on_error
 #include "include/SW_Times.h"            // for Today
@@ -19,8 +19,8 @@ namespace {
 TEST_F(SpinUpFixtureTest, Mode1WithScopeGreaterThanDuration) {
     int i;
     int const n = 4; // n = number of soil layers to test
-    RealD *prevTemp = new double[n];
-    RealD *prevMoist = new double[n];
+    double *prevTemp = new double[n];
+    double *prevMoist = new double[n];
 
     SW_Run.Model.SW_SpinUp.mode = 1;
     SW_Run.Model.SW_SpinUp.scope = 27;
@@ -67,8 +67,8 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeGreaterThanDuration) {
 TEST_F(SpinUpFixtureTest, Mode1WithScopeEqualToDuration) {
     int i;
     int const n = 4; // n = number of soil layers to test
-    RealD *prevTemp = new double[n];
-    RealD *prevMoist = new double[n];
+    double *prevTemp = new double[n];
+    double *prevMoist = new double[n];
 
     SW_Run.Model.SW_SpinUp.mode = 1;
     SW_Run.Model.SW_SpinUp.scope = 3;
@@ -115,8 +115,8 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeEqualToDuration) {
 TEST_F(SpinUpFixtureTest, Mode1WithScopeLessThanDuration) {
     int i;
     int const n = 4; // n = number of soil layers to test
-    RealD *prevTemp = new double[n];
-    RealD *prevMoist = new double[n];
+    double *prevTemp = new double[n];
+    double *prevMoist = new double[n];
 
     SW_Run.Model.SW_SpinUp.mode = 1;
     SW_Run.Model.SW_SpinUp.scope = 1;
@@ -163,8 +163,8 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeLessThanDuration) {
 TEST_F(SpinUpFixtureTest, Mode2WithScopeGreaterThanDuration) {
     int i;
     int const n = 4; // n = number of soil layers to test
-    RealD *prevTemp = new double[n];
-    RealD *prevMoist = new double[n];
+    double *prevTemp = new double[n];
+    double *prevMoist = new double[n];
 
     SW_Run.Model.SW_SpinUp.mode = 2;
     SW_Run.Model.SW_SpinUp.scope = 27;
@@ -211,8 +211,8 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeGreaterThanDuration) {
 TEST_F(SpinUpFixtureTest, Mode2WithScopeEqualToDuration) {
     int i;
     int const n = 4; // n = number of soil layers to test
-    RealD *prevTemp = new double[n];
-    RealD *prevMoist = new double[n];
+    double *prevTemp = new double[n];
+    double *prevMoist = new double[n];
 
     SW_Run.Model.SW_SpinUp.mode = 2;
     SW_Run.Model.SW_SpinUp.scope = 3;
@@ -259,8 +259,8 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeEqualToDuration) {
 TEST_F(SpinUpFixtureTest, Mode2WithScopeLessThanDuration) {
     int i;
     int const n = 4; // n = number of soil layers to test
-    RealD *prevTemp = new double[n];
-    RealD *prevMoist = new double[n];
+    double *prevTemp = new double[n];
+    double *prevMoist = new double[n];
 
     SW_Run.Model.SW_SpinUp.mode = 2;
     SW_Run.Model.SW_SpinUp.scope = 1;

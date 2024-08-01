@@ -15,7 +15,7 @@
 #ifndef SW_VEGESTAB_H
 #define SW_VEGESTAB_H
 
-#include "include/generic.h"        // for Bool, RealD, IntU
+#include "include/generic.h"        // for Bool, IntU
 #include "include/SW_datastructs.h" // for SW_VEGESTAB, SW_VEGESTAB_INFO, SW_...
 #include "include/SW_Defines.h"     // for LyrIndex, TimeInt
 
@@ -69,7 +69,7 @@ void SW_VES_init_run(
 void SW_VES_checkestab(
     SW_VEGESTAB_INFO **parms,
     SW_WEATHER *SW_Weather,
-    RealD swcBulk[][MAX_LAYERS],
+    double swcBulk[][MAX_LAYERS],
     TimeInt doy,
     TimeInt firstdoy,
     IntU count
@@ -87,7 +87,7 @@ void spp_init(
 
 IntU new_species(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo);
 
-void echo_VegEstab(const RealD width[], SW_VEGESTAB_INFO **parms, IntU count);
+void echo_VegEstab(const double width[], SW_VEGESTAB_INFO **parms, IntU count);
 
 
 /* COMMENT-1

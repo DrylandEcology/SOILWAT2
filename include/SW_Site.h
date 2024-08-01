@@ -83,7 +83,7 @@ swcBulk_atSWPcrit[SW_FORBS], and my_transp_rgn[SW_FORBS] to SW_LAYER_INFO
 #ifndef SW_SITE_H
 #define SW_SITE_H
 
-#include "include/generic.h"        // for Bool, RealD
+#include "include/generic.h"        // for Bool
 #include "include/SW_datastructs.h" // for SW_SITE, SW_VEGPROD, LOG_INFO
 #include "include/SW_Defines.h"     // for LyrIndex
 
@@ -253,7 +253,7 @@ double SW_swcBulk_minimum(
     double sand,
     double clay,
     double swcBulk_sat,
-    RealD SWCMinVal,
+    double SWCMinVal,
     LOG_INFO *LogInfo
 );
 
@@ -270,18 +270,18 @@ void PTF_RawlsBrakensiek1985(
 );
 
 
-RealD calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel);
+double calculate_soilBulkDensity(double matricDensity, double fractionGravel);
 
-RealD calculate_soilMatricDensity(
-    RealD bulkDensity, RealD fractionGravel, LOG_INFO *LogInfo
+double calculate_soilMatricDensity(
+    double bulkDensity, double fractionGravel, LOG_INFO *LogInfo
 );
 
-LyrIndex nlayers_bsevap(RealD *evap_coeff, LyrIndex n_layers);
+LyrIndex nlayers_bsevap(double *evap_coeff, LyrIndex n_layers);
 
 void nlayers_vegroots(
     LyrIndex n_layers,
     LyrIndex n_transp_lyrs[],
-    RealD transp_coeff[][MAX_LAYERS]
+    double transp_coeff[][MAX_LAYERS]
 );
 
 void SW_SIT_construct(SW_SITE *SW_Site);
@@ -323,14 +323,14 @@ void set_soillayers(
     const double *imperm,
     const double *soiltemp,
     int nRegions,
-    RealD *regionLowerBounds,
+    double *regionLowerBounds,
     LOG_INFO *LogInfo
 );
 
 void derive_soilRegions(
     SW_SITE *SW_Site,
     unsigned int nRegions,
-    const RealD *regionLowerBounds,
+    const double *regionLowerBounds,
     LOG_INFO *LogInfo
 );
 

@@ -40,7 +40,7 @@
 
 #include "include/SW_VegEstab.h"    // for SW_ESTAB_BARS, SW_GERM_BARS, SW_...
 #include "include/filefuncs.h"      // for LogError, CloseFile, GetALine
-#include "include/generic.h"        // for IntU, LOGERROR, RealD, isnull, LT
+#include "include/generic.h"        // for IntU, LOGERROR, isnull, LT
 #include "include/myMemory.h"       // for Mem_Calloc, Mem_ReAlloc
 #include "include/SW_datastructs.h" // for SW_VEGESTAB_INFO, LOG_INFO, SW_V...
 #include "include/SW_Defines.h"     // for TimeInt, eSW_Year, MAX_FILENAMESIZE
@@ -59,7 +59,7 @@
 /* --------------------------------------------------- */
 static void sanity_check(
     unsigned int sppnum,
-    RealD swcBulk_wiltpt[],
+    double swcBulk_wiltpt[],
     LyrIndex n_transp_lyrs[],
     SW_VEGESTAB_INFO **parms,
     LOG_INFO *LogInfo
@@ -73,7 +73,7 @@ static void checkit(
     TimeInt doy,
     unsigned int sppnum,
     SW_WEATHER_NOW *wn,
-    RealD swcBulk[][MAX_LAYERS],
+    double swcBulk[][MAX_LAYERS],
     TimeInt firstdoy,
     SW_VEGESTAB_INFO **parms
 );
@@ -429,7 +429,7 @@ void SW_VES_init_run(
 void SW_VES_checkestab(
     SW_VEGESTAB_INFO **parms,
     SW_WEATHER *SW_Weather,
-    RealD swcBulk[][MAX_LAYERS],
+    double swcBulk[][MAX_LAYERS],
     TimeInt doy,
     TimeInt firstdoy,
     IntU count
@@ -450,7 +450,7 @@ static void checkit(
     TimeInt doy,
     unsigned int sppnum,
     SW_WEATHER_NOW *wn,
-    RealD swcBulk[][MAX_LAYERS],
+    double swcBulk[][MAX_LAYERS],
     TimeInt firstdoy,
     SW_VEGESTAB_INFO **parms
 ) {
@@ -753,7 +753,7 @@ void spp_init(
 
 static void sanity_check(
     unsigned int sppnum,
-    RealD swcBulk_wiltpt[],
+    double swcBulk_wiltpt[],
     LyrIndex n_transp_lyrs[],
     SW_VEGESTAB_INFO **parms,
     LOG_INFO *LogInfo
@@ -895,7 +895,7 @@ IntU new_species(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo) {
 @param[in] count Held within type SW_VEGESTAB to determine
     how many species to check
 */
-void echo_VegEstab(const RealD width[], SW_VEGESTAB_INFO **parms, IntU count) {
+void echo_VegEstab(const double width[], SW_VEGESTAB_INFO **parms, IntU count) {
     /* --------------------------------------------------- */
     IntU i;
     char outstr[2048];

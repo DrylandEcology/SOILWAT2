@@ -204,7 +204,7 @@
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
 #include "include/SW_Flow.h"         // for SW_FLW_init_run, SW_Water_Flow
-#include "include/generic.h"         // for RealD, GT, fmax, EQ, fmin
+#include "include/generic.h"         // for GT, fmax, EQ, fmin
 #include "include/SW_datastructs.h"  // for LOG_INFO, SW_RUN, SW_SOILWAT
 #include "include/SW_Defines.h"      // for ForEachVegType, NVEGTYPES, ForE...
 #include "include/SW_Flow_lib.h"     // for evap_fromSurface, remove_from_soil
@@ -270,25 +270,25 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     double HRveg;
 #endif
 
-    RealD swpot_avg[NVEGTYPES];
-    RealD transp_veg[NVEGTYPES];
-    RealD transp_rate[NVEGTYPES];
-    RealD soil_evap[NVEGTYPES];
-    RealD soil_evap_rate[NVEGTYPES];
-    RealD soil_evap_rate_bs = 1.;
-    RealD surface_evap_veg_rate[NVEGTYPES];
-    RealD surface_evap_litter_rate = 1.;
-    RealD surface_evap_standingWater_rate = 1.;
-    RealD h2o_for_soil = 0.;
-    RealD snowmelt;
-    RealD scale_veg[NVEGTYPES];
-    RealD pet2;
-    RealD peti;
-    RealD rate_help;
-    RealD x;
-    RealD drainout = 0;
-    RealD *standingWaterToday = &sw->SoilWat.standingWater[Today];
-    RealD *standingWaterYesterday = &sw->SoilWat.standingWater[Yesterday];
+    double swpot_avg[NVEGTYPES];
+    double transp_veg[NVEGTYPES];
+    double transp_rate[NVEGTYPES];
+    double soil_evap[NVEGTYPES];
+    double soil_evap_rate[NVEGTYPES];
+    double soil_evap_rate_bs = 1.;
+    double surface_evap_veg_rate[NVEGTYPES];
+    double surface_evap_litter_rate = 1.;
+    double surface_evap_standingWater_rate = 1.;
+    double h2o_for_soil = 0.;
+    double snowmelt;
+    double scale_veg[NVEGTYPES];
+    double pet2;
+    double peti;
+    double rate_help;
+    double x;
+    double drainout = 0;
+    double *standingWaterToday = &sw->SoilWat.standingWater[Today];
+    double *standingWaterYesterday = &sw->SoilWat.standingWater[Yesterday];
 
     TimeInt doy;
     TimeInt month;
@@ -296,10 +296,10 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     LyrIndex i;
     LyrIndex n_layers = sw->Site.n_layers;
 
-    RealD UpNeigh_lyrSWCBulk[MAX_LAYERS];
-    RealD UpNeigh_lyrDrain[MAX_LAYERS];
-    RealD UpNeigh_drainout;
-    RealD UpNeigh_standingWater;
+    double UpNeigh_lyrSWCBulk[MAX_LAYERS];
+    double UpNeigh_lyrDrain[MAX_LAYERS];
+    double UpNeigh_drainout;
+    double UpNeigh_standingWater;
 
     doy = sw->Model.doy;     /* base1 */
     month = sw->Model.month; /* base0 */

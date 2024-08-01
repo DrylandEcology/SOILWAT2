@@ -73,7 +73,7 @@
 
 #include "include/SW_SoilWater.h"   // for FXW_h0, FXW_hr, SWRC_SWCtoSWP
 #include "include/filefuncs.h"      // for LogError, CloseFile, GetALine
-#include "include/generic.h"        // for RealD, LOGERROR, GT, LT, fmax
+#include "include/generic.h"        // for LOGERROR, GT, LT, fmax
 #include "include/myMemory.h"       // for Mem_Calloc, Str_Dup
 #include "include/SW_datastructs.h" // for LOG_INFO, SW_SOILWAT, SW_SITE
 #include "include/SW_Defines.h"     // for NVEGTYPES, LyrIndex, MAX_LAYERS
@@ -98,8 +98,8 @@
 /* --------------------------------------------------- */
 
 static void clear_hist(
-    RealD SoilWat_hist_swc[][MAX_LAYERS],
-    RealD SoilWat_hist_std_err[][MAX_LAYERS]
+    double SoilWat_hist_swc[][MAX_LAYERS],
+    double SoilWat_hist_std_err[][MAX_LAYERS]
 ) {
     TimeInt d;
     LyrIndex z;
@@ -405,36 +405,36 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
         1, 1, 1, 1, 1, 1, 1, 1, 1
     }; // print output for each check yes/no
     char flag[16];
-    RealD Etotal;
-    RealD Etotalsurf;
-    RealD Etotalint;
-    RealD Eponded;
-    RealD Elitter;
-    RealD Esnow;
-    RealD Esoil = 0.;
-    RealD Eveg = 0.;
-    RealD Ttotal = 0.;
-    RealD Ttotalj[MAX_LAYERS];
-    RealD percolationIn[MAX_LAYERS + 1];
-    RealD percolationOut[MAX_LAYERS + 1];
-    RealD hydraulicRedistribution[MAX_LAYERS];
-    RealD infiltration;
-    RealD deepDrainage;
-    RealD runoff;
-    RealD runon;
-    RealD snowmelt;
-    RealD rain;
-    RealD arriving_water;
-    RealD intercepted;
-    RealD int_veg_total = 0.;
-    RealD delta_surfaceWater;
-    RealD delta_swc_total = 0.;
-    RealD delta_swcj[MAX_LAYERS];
-    RealD lhs;
-    RealD rhs;
-    RealD wbtol = 1e-9;
+    double Etotal;
+    double Etotalsurf;
+    double Etotalint;
+    double Eponded;
+    double Elitter;
+    double Esnow;
+    double Esoil = 0.;
+    double Eveg = 0.;
+    double Ttotal = 0.;
+    double Ttotalj[MAX_LAYERS];
+    double percolationIn[MAX_LAYERS + 1];
+    double percolationOut[MAX_LAYERS + 1];
+    double hydraulicRedistribution[MAX_LAYERS];
+    double infiltration;
+    double deepDrainage;
+    double runoff;
+    double runon;
+    double snowmelt;
+    double rain;
+    double arriving_water;
+    double intercepted;
+    double int_veg_total = 0.;
+    double delta_surfaceWater;
+    double delta_swc_total = 0.;
+    double delta_swcj[MAX_LAYERS];
+    double lhs;
+    double rhs;
+    double wbtol = 1e-9;
 
-    static RealD surfaceWater_yesterday;
+    static double surfaceWater_yesterday;
     static Bool debug = swFALSE;
     LyrIndex n_layers = sw->Site.n_layers;
 
@@ -976,14 +976,14 @@ use in get_dSWAbulk(). Must be call after `SW_SWC_water_flow()` is executed.
 /***********************************************************/
 void calculate_repartitioned_soilwater(
     SW_SOILWAT *SW_SoilWat,
-    RealD swcBulk_atSWPcrit[][MAX_LAYERS],
+    double swcBulk_atSWPcrit[][MAX_LAYERS],
     SW_VEGPROD *SW_VegProd,
     LyrIndex n_layers
 ) {
 
     // this will run for every day of every year
     LyrIndex i;
-    RealD val = SW_MISSING;
+    double val = SW_MISSING;
     int j;
     int k;
     double curr_crit_val;
@@ -1271,7 +1271,7 @@ void SW_SWC_end_day(SW_SOILWAT *SW_SoilWat, LyrIndex n_layers) {
 }
 
 void SW_SWC_init_run(
-    SW_SOILWAT *SW_SoilWat, SW_SITE *SW_Site, RealD *temp_snow
+    SW_SOILWAT *SW_SoilWat, SW_SITE *SW_Site, double *temp_snow
 ) {
 
     SW_SoilWat->soiltempError = swFALSE;
@@ -1591,8 +1591,8 @@ closeFile: { CloseFile(&f, LogInfo); }
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_SWC_adjust_swc(
-    RealD swcBulk[][MAX_LAYERS],
-    RealD swcBulk_min[],
+    double swcBulk[][MAX_LAYERS],
+    double swcBulk_min[],
     TimeInt doy,
     SW_SOILWAT_HIST SoilWat_hist,
     LyrIndex n_layers,
@@ -1602,8 +1602,8 @@ void SW_SWC_adjust_swc(
     /* =================================================== */
     /* 01/07/02 (cwb) added final loop to guarantee swc > swcBulk_min
      */
-    RealD lower;
-    RealD upper;
+    double lower;
+    double upper;
     LyrIndex lyrIndex;
     TimeInt dy = doy - 1;
 
@@ -1667,16 +1667,16 @@ Equations based on SWAT2K routines. @cite Neitsch2005
 */
 
 void SW_SWC_adjust_snow(
-    RealD *temp_snow,
-    RealD snowpack[],
+    double *temp_snow,
+    double snowpack[],
     SW_SITE *SW_Site,
-    RealD temp_min,
-    RealD temp_max,
-    RealD ppt,
+    double temp_min,
+    double temp_max,
+    double ppt,
     TimeInt doy,
-    RealD *rain,
-    RealD *snow,
-    RealD *snowmelt
+    double *rain,
+    double *snow,
+    double *snowmelt
 ) {
 
     /***************************************************************************
@@ -1693,12 +1693,12 @@ void SW_SWC_adjust_snow(
 
     ***********************************************************************/
 
-    const RealD snow_cov = 1.;
-    RealD *snowpack_today = &snowpack[Today];
-    RealD temp_ave;
-    RealD Rmelt;
-    RealD SnowAccu = 0.;
-    RealD SnowMelt = 0.;
+    const double snow_cov = 1.;
+    double *snowpack_today = &snowpack[Today];
+    double temp_ave;
+    double Rmelt;
+    double SnowAccu = 0.;
+    double SnowMelt = 0.;
 
     temp_ave = (temp_min + temp_max) / 2.;
 
@@ -1753,9 +1753,9 @@ measured in cm.
 cm.
 
 */
-RealD SW_SWC_snowloss(RealD pet, RealD *snowpack) {
-    const RealD cov_soil = 0.5;
-    RealD snowloss;
+double SW_SWC_snowloss(double pet, double *snowpack) {
+    const double cov_soil = 0.5;
+    double snowloss;
 
     if (GT(*snowpack, 0.)) {
         snowloss = fmax(0., fmin(*snowpack, cov_soil * pet));
@@ -1776,7 +1776,7 @@ RealD SW_SWC_snowloss(RealD pet, RealD *snowpack) {
 @return SW_SnowDepth Snow depth, measured in cm.
 */
 
-RealD SW_SnowDepth(RealD SWE, RealD snowdensity) {
+double SW_SnowDepth(double SWE, double snowdensity) {
     /*---------------------
      08/22/2011	(drs)	calculates depth of snowpack
      Input:	SWE: snow water equivalents (cm = 10kg/m2)
@@ -1801,8 +1801,8 @@ See #swrc2str() for implemented SWRCs.
 
 @return Soil water potential [-bar]
 */
-RealD SW_SWRC_SWCtoSWP(
-    RealD swcBulk, SW_SITE *SW_Site, LyrIndex layerno, LOG_INFO *LogInfo
+double SW_SWRC_SWCtoSWP(
+    double swcBulk, SW_SITE *SW_Site, LyrIndex layerno, LOG_INFO *LogInfo
 ) {
     return SWRC_SWCtoSWP(
         swcBulk,
@@ -2175,8 +2175,8 @@ See #swrc2str() for implemented SWRCs.
 
 @return Soil water content in the layer [cm]
 */
-RealD SW_SWRC_SWPtoSWC(
-    RealD swpMatric, SW_SITE *SW_Site, LyrIndex layerno, LOG_INFO *LogInfo
+double SW_SWRC_SWPtoSWC(
+    double swpMatric, SW_SITE *SW_Site, LyrIndex layerno, LOG_INFO *LogInfo
 ) {
     return SWRC_SWPtoSWC(
         swpMatric,

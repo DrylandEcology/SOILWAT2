@@ -22,7 +22,7 @@
 /* --------------------------------------------------- */
 #include "include/SW_Markov.h"      // for SW_MKV_construct, SW_MKV_deconst...
 #include "include/filefuncs.h"      // for LogError, CloseFile, GetALine
-#include "include/generic.h"        // for RealD, LOGERROR, swFALSE
+#include "include/generic.h"        // for LOGERROR, swFALSE
 #include "include/myMemory.h"       // for Mem_Calloc, Mem_Copy
 #include "include/rands.h"          // for RandNorm, RandSeed, RandUni
 #include "include/SW_datastructs.h" // for SW_MARKOV, LOG_INFO
@@ -67,13 +67,13 @@ All temperature values are in units of degree Celsius.
 @return tmin The corrected minimum temperature, i.e., tmin + cfmin.
 */
 static void temp_correct_wetdry(
-    RealD *tmax,
-    RealD *tmin,
-    RealD rain,
-    RealD cfmax_wet,
-    RealD cfmax_dry,
-    RealD cfmin_wet,
-    RealD cfmin_dry
+    double *tmax,
+    double *tmin,
+    double rain,
+    double cfmax_wet,
+    double cfmax_dry,
+    double cfmin_wet,
+    double cfmin_dry
 ) {
 
     if (GT(rain, 0.)) {
@@ -94,7 +94,7 @@ static void temp_correct_wetdry(
 // it up as an externed function pointer
 // NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
 void (*test_temp_correct_wetdry)(
-    RealD *, RealD *, RealD, RealD, RealD, RealD, RealD
+    double *, double *, double, double, double, double, double
 ) = &temp_correct_wetdry;
 // NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
 #endif
@@ -121,13 +121,13 @@ void (*test_temp_correct_wetdry)(
     @return Daily minimum (*tmin) and maximum (*tmax) temperature.
 */
 static void mvnorm(
-    RealD *tmax,
-    RealD *tmin,
-    RealD wTmax,
-    RealD wTmin,
-    RealD wTmax_var,
-    RealD wTmin_var,
-    RealD wT_covar,
+    double *tmax,
+    double *tmin,
+    double wTmax,
+    double wTmin,
+    double wTmax_var,
+    double wTmin_var,
+    double wT_covar,
     sw_random_t *markov_rng,
     LOG_INFO *LogInfo
 ) {
@@ -144,15 +144,15 @@ static void mvnorm(
      *       after some extensive debugging in this and the
      *       RandNorm() function, it seems silly to maintain
      *       the extra function call.
-     * cwb - 24-Oct-03 -- Note the switch to double (RealD).
+     * cwb - 24-Oct-03 -- Note the switch to double (double).
      *       C converts the floats transparently.
      */
-    RealD s;
-    RealD z1;
-    RealD z2;
-    RealD wTmax_sd;
-    RealD vc10;
-    RealD vc11;
+    double s;
+    double z1;
+    double z2;
+    double wTmax_sd;
+    double vc10;
+    double vc11;
 
     // Gentle, J. E. 2009. Computational statistics. Springer, Dordrecht; New
     // York.
@@ -204,7 +204,7 @@ static void mvnorm(
 // since `mvnorm` is static we cannot do unit tests unless we set it up
 // as an externed function pointer
 // NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
-void (*test_mvnorm)(RealD *, RealD *, RealD, RealD, RealD, RealD, RealD, sw_random_t *, LOG_INFO *) =
+void (*test_mvnorm)(double *, double *, double, double, double, double, double, sw_random_t *, LOG_INFO *) =
     &mvnorm;
 // NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
 #endif
@@ -263,48 +263,52 @@ void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV *SW_Markov) {
 @param[out] LogInfo Holds information on warnings and errors
 */
 void allocateMKV(SW_MARKOV *SW_Markov, LOG_INFO *LogInfo) {
-    size_t s = sizeof(RealD);
+    size_t s = sizeof(double);
 
     SW_Markov->wetprob =
-        (RealD *) Mem_Calloc(MAX_DAYS, s, "allocateMKV", LogInfo);
+        (double *) Mem_Calloc(MAX_DAYS, s, "allocateMKV", LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
     SW_Markov->dryprob =
-        (RealD *) Mem_Calloc(MAX_DAYS, s, "allocateMKV", LogInfo);
+        (double *) Mem_Calloc(MAX_DAYS, s, "allocateMKV", LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
     SW_Markov->avg_ppt =
-        (RealD *) Mem_Calloc(MAX_DAYS, s, "allocateMKV", LogInfo);
+        (double *) Mem_Calloc(MAX_DAYS, s, "allocateMKV", LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
     SW_Markov->std_ppt =
-        (RealD *) Mem_Calloc(MAX_DAYS, s, "allocateMKV", LogInfo);
+        (double *) Mem_Calloc(MAX_DAYS, s, "allocateMKV", LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    SW_Markov->cfxw = (RealD *) Mem_Calloc(MAX_DAYS, s, "allocateMKV", LogInfo);
+    SW_Markov->cfxw =
+        (double *) Mem_Calloc(MAX_DAYS, s, "allocateMKV", LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    SW_Markov->cfxd = (RealD *) Mem_Calloc(MAX_DAYS, s, "allocateMKV", LogInfo);
+    SW_Markov->cfxd =
+        (double *) Mem_Calloc(MAX_DAYS, s, "allocateMKV", LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    SW_Markov->cfnw = (RealD *) Mem_Calloc(MAX_DAYS, s, "allocateMKV", LogInfo);
+    SW_Markov->cfnw =
+        (double *) Mem_Calloc(MAX_DAYS, s, "allocateMKV", LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    SW_Markov->cfnd = (RealD *) Mem_Calloc(MAX_DAYS, s, "allocateMKV", LogInfo);
+    SW_Markov->cfnd =
+        (double *) Mem_Calloc(MAX_DAYS, s, "allocateMKV", LogInfo);
 }
 
 /** Free dynamically allocated memory in SW_MARKOV
@@ -372,7 +376,7 @@ void SW_MKV_deconstruct(SW_MARKOV *SW_Markov) { deallocateMKV(SW_Markov); }
  for the weather generator
 */
 void copyMKV(SW_MARKOV *dest_MKV, SW_MARKOV *template_MKV) {
-    size_t s = sizeof(RealD) * MAX_DAYS; /* see `allocateMKV()` */
+    size_t s = sizeof(double) * MAX_DAYS; /* see `allocateMKV()` */
 
     Mem_Copy(dest_MKV->wetprob, template_MKV->wetprob, s);
     Mem_Copy(dest_MKV->dryprob, template_MKV->dryprob, s);
@@ -404,9 +408,9 @@ void SW_MKV_today(
     SW_MARKOV *SW_Markov,
     TimeInt doy0,
     TimeInt year,
-    RealD *tmax,
-    RealD *tmin,
-    RealD *rain,
+    double *tmax,
+    double *tmin,
+    double *rain,
     LOG_INFO *LogInfo
 ) {
     /* =================================================== */

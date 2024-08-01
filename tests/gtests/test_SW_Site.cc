@@ -1,4 +1,4 @@
-#include "include/generic.h"             // for RealD, Bool, swFALSE
+#include "include/generic.h"             // for Bool, swFALSE
 #include "include/SW_datastructs.h"      // for LOG_INFO
 #include "include/SW_Defines.h"          // for SWRC_PARAM_NMAX, SW_MISSING
 #include "include/SW_Main_lib.h"         // for sw_fail_on_error, sw_init_logs
@@ -36,11 +36,11 @@ TEST(SiteTest, SitePTFs) {
     sw_init_logs(NULL, &LogInfo);
 
     // inputs
-    RealD swrcp[SWRC_PARAM_NMAX];
-    RealD const sand = 0.33;
-    RealD const clay = 0.33;
-    RealD const gravel = 0.1;
-    RealD const bdensity = 1.4;
+    double swrcp[SWRC_PARAM_NMAX];
+    double const sand = 0.33;
+    double const clay = 0.33;
+    double const gravel = 0.1;
+    double const bdensity = 1.4;
     unsigned int swrc_type;
     unsigned int k;
 
@@ -112,11 +112,11 @@ TEST(SiteTest, SitePTFsDeathTest) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    RealD swrcp[SWRC_PARAM_NMAX];
-    RealD const sand = 0.33;
-    RealD const clay = 0.33;
-    RealD const gravel = 0.1;
-    RealD const bdensity = 1.4;
+    double swrcp[SWRC_PARAM_NMAX];
+    double const sand = 0.33;
+    double const clay = 0.33;
+    double const gravel = 0.1;
+    double const bdensity = 1.4;
     unsigned int ptf_type;
 
 
@@ -198,7 +198,7 @@ TEST(SiteTest, SiteSWRCpChecksDeathTest) {
     sw_init_logs(NULL, &LogInfo);
 
     // inputs
-    RealD swrcp[SWRC_PARAM_NMAX];
+    double swrcp[SWRC_PARAM_NMAX];
     unsigned int swrc_type;
 
 
@@ -219,8 +219,8 @@ TEST(SiteTest, SiteSWRCpChecks) {
     sw_init_logs(NULL, &LogInfo);
 
     // inputs
-    RealD swrcp[SWRC_PARAM_NMAX];
-    RealD tmp;
+    double swrcp[SWRC_PARAM_NMAX];
+    double tmp;
     unsigned int swrc_type;
 
 
@@ -484,7 +484,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     LyrIndex id;
     LyrIndex nRegions;
     LyrIndex prevTranspRgnBounds[MAX_TRANSP_REGIONS] = {0};
-    RealD soildepth;
+    double soildepth;
 
     for (i = 0; i < MAX_TRANSP_REGIONS; ++i) {
         prevTranspRgnBounds[i] = SW_Run.Site.TranspRgnBounds[i];
@@ -493,7 +493,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
 
     // Check that "default" values do not change region bounds
     nRegions = 3;
-    RealD regionLowerBounds1[] = {20., 40., 100.};
+    double regionLowerBounds1[] = {20., 40., 100.};
     derive_soilRegions(&SW_Run.Site, nRegions, regionLowerBounds1, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -512,7 +512,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
 
     // Check that setting one region for all soil layers works
     nRegions = 1;
-    RealD regionLowerBounds2[] = {100.};
+    double regionLowerBounds2[] = {100.};
     derive_soilRegions(&SW_Run.Site, nRegions, regionLowerBounds2, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -524,7 +524,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
 
     // Check that setting one region for one soil layer works
     nRegions = 1;
-    RealD regionLowerBounds3[] = {SW_Run.Site.width[0]};
+    double regionLowerBounds3[] = {SW_Run.Site.width[0]};
     derive_soilRegions(&SW_Run.Site, nRegions, regionLowerBounds3, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -537,7 +537,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
 
     // Check that setting the maximal number of regions works
     nRegions = MAX_TRANSP_REGIONS;
-    RealD *regionLowerBounds4 = new RealD[nRegions];
+    double *regionLowerBounds4 = new double[nRegions];
     // Example: one region each for the topmost soil layers
     soildepth = 0.;
     for (i = 0; i < nRegions; ++i) {

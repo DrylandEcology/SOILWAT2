@@ -688,9 +688,9 @@ void readAllWeather(
     unsigned int n_input_forcings,
     unsigned int *dailyInputIndices,
     Bool *dailyInputFlags,
-    RealD *cloudcov,
-    RealD *windspeed,
-    RealD *r_humidity,
+    double *cloudcov,
+    double *windspeed,
+    double *r_humidity,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
     LOG_INFO *LogInfo
@@ -1632,7 +1632,7 @@ void SW_WTH_init_run(SW_WEATHER *SW_Weather) {
 void SW_WTH_new_day(
     SW_WEATHER *SW_Weather,
     SW_SITE *SW_Site,
-    RealD snowpack[],
+    double snowpack[],
     TimeInt doy,
     TimeInt year,
     LOG_INFO *LogInfo
@@ -1754,20 +1754,20 @@ void SW_WTH_setup(
     int month;
     int x;
     int index;
-    RealD sppt;
-    RealD stmax;
-    RealD stmin;
-    RealD sky;
-    RealD wind;
-    RealD rH;
-    RealD actVP;
-    RealD shortWaveRad;
+    double sppt;
+    double stmax;
+    double stmin;
+    double sky;
+    double wind;
+    double rH;
+    double actVP;
+    double shortWaveRad;
     char inbuf[MAX_FILENAMESIZE];
     int inBufintRes = 0;
     double inBufdoubleRes = 0.;
 
     char weathInputStrs[9][20] = {{'\0'}};
-    RealD *inDoubleVals[8] = {
+    double *inDoubleVals[8] = {
         &sppt, &stmax, &stmin, &sky, &wind, &rH, &actVP, &shortWaveRad
     };
     const int numInDefaultVars = 9;
@@ -2270,7 +2270,7 @@ void read_weather_hist(
     unsigned int index;
     int doy = 0;
 
-    RealD weathInput[MAX_INPUT_COLUMNS];
+    double weathInput[MAX_INPUT_COLUMNS];
 
     Bool hasMaxMinTemp =
         (Bool) (dailyInputFlags[TEMP_MAX] && dailyInputFlags[TEMP_MIN]);

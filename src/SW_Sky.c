@@ -37,7 +37,7 @@
 /* --------------------------------------------------- */
 #include "include/SW_Sky.h"         // for SW_SKY_new_year, SW_SKY_read
 #include "include/filefuncs.h"      // for CloseFile, GetALine, LogError
-#include "include/generic.h"        // for RealD, Bool, LOGERROR, swTRUE
+#include "include/generic.h"        // for Bool, LOGERROR, swTRUE
 #include "include/SW_datastructs.h" // for LOG_INFO, SW_MODEL, SW_SKY
 #include "include/SW_Defines.h"     // for MAX_FILENAMESIZE, MAX_MONTHS
 #include "include/SW_Files.h"       // for eSky
@@ -72,7 +72,7 @@ void SW_SKY_read(char *InFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
     int x = 0;
     int k;
     int index;
-    RealD tmp[MAX_MONTHS];
+    double tmp[MAX_MONTHS];
     char *MyFileName;
     char inbuf[MAX_FILENAMESIZE];
     char tmpStrs[MAX_MONTHS][20] = {{'\0'}};
@@ -179,8 +179,8 @@ prior to this function.
 */
 void SW_SKY_new_year(
     SW_MODEL *SW_Model,
-    RealD snow_density[MAX_MONTHS],
-    RealD snow_density_daily[MAX_MONTHS]
+    double snow_density[MAX_MONTHS],
+    double snow_density_daily[MAX_MONTHS]
 ) {
 
     Bool interpAsBase1 = swTRUE;
