@@ -244,6 +244,7 @@ static void nc_read_atts(
     double num2 = 0;
     Bool geoCRSFound = swFALSE;
     Bool projCRSFound = swFALSE;
+    Bool infVal = swFALSE;
 
     double inBufdoubleRes = 0.;
     int inBufintRes = 0;
@@ -308,7 +309,11 @@ static void nc_read_atts(
 
         if (doIntConv || doDoubleConv) {
             if (doIntConv) {
-                inBufintRes = sw_strtoi(value, MyFileName, LogInfo);
+                infVal = (Str_CompareI(value, (char *) "Inf") == 0);
+
+                if(!infVal) {
+                    inBufintRes = sw_strtoi(value, MyFileName, LogInfo);
+                }
             } else {
                 inBufdoubleRes = sw_strtod(value, MyFileName, LogInfo);
             }
@@ -443,7 +448,7 @@ static void nc_read_atts(
             SW_netCDF->crs_projsc.false_northing = inBufintRes;
             break;
         case 25:
-            if (Str_CompareI(value, (char *) "Inf") != 0) {
+            if (!infVal) {
                 SW_netCDF->strideOutYears = inBufintRes;
 
                 if (SW_netCDF->strideOutYears <= 0) {
