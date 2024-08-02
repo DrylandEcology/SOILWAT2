@@ -151,9 +151,9 @@ static void create_csv_headers(
             }
 
             if (OutDom->has_sl[k]) {
-                strcat((char *) str_soil, str_help2);
+                strcat(str_soil, str_help2);
             } else {
-                strcat((char *) str_reg, str_help2);
+                strcat(str_reg, str_help2);
             }
         }
     }
