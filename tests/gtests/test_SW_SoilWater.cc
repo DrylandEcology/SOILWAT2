@@ -164,7 +164,7 @@ TEST(SoilWaterTest, SoilWaterTranslateBetweenSWCandSWP) {
 
     // Loop over SWRCs
     for (swrc_type = 0; swrc_type < N_SWRCs; swrc_type++) {
-        memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
+        memset(swrcp, 0, SWRC_PARAM_NMAX * sizeof(swrcp[0]));
 
         // Find a suitable PTF to generate `SWRCp`
         for (ptf_type = 0;
@@ -454,7 +454,7 @@ TEST(SoilWaterTest, SoilWaterSWCtoSWPDeathTest) {
     swrc_type = encode_str2swrc((char *) "vanGenuchten1980", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
+    memset(swrcp, 0, SWRC_PARAM_NMAX * sizeof(swrcp[0]));
     swrcp[0] = 0.1246;
     swrcp[1] = 0.4445;
     swrcp[2] = 0.0112;

@@ -439,7 +439,7 @@ void SWRC_PTF_estimate_parameters(
 ) {
 
     /* Initialize swrcp[] to 0 */
-    memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
+    memset(swrcp, 0, SWRC_PARAM_NMAX * sizeof(swrcp[0]));
 
     if (ptf_type == sw_Cosby1984AndOthers || ptf_type == sw_Cosby1984) {
         SWRC_PTF_Cosby1984_for_Campbell1974(swrcp, sand, clay);

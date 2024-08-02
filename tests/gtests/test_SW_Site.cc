@@ -227,7 +227,7 @@ TEST(SiteTest, SiteSWRCpChecks) {
     //--- SWRC: Campbell1974
     swrc_type = encode_str2swrc((char *) "Campbell1974", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
-    memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
+    memset(swrcp, 0, SWRC_PARAM_NMAX * sizeof(swrcp[0]));
     swrcp[0] = 24.2159;
     swrcp[1] = 0.4436;
     swrcp[2] = 10.3860;
@@ -263,7 +263,7 @@ TEST(SiteTest, SiteSWRCpChecks) {
     //--- Fail SWRC: vanGenuchten1980
     swrc_type = encode_str2swrc((char *) "vanGenuchten1980", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
-    memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
+    memset(swrcp, 0, SWRC_PARAM_NMAX * sizeof(swrcp[0]));
     swrcp[0] = 0.1246;
     swrcp[1] = 0.4445;
     swrcp[2] = 0.0112;
@@ -314,7 +314,7 @@ TEST(SiteTest, SiteSWRCpChecks) {
     //--- Fail SWRC: FXW
     swrc_type = encode_str2swrc((char *) "FXW", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
-    memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
+    memset(swrcp, 0, SWRC_PARAM_NMAX * sizeof(swrcp[0]));
     swrcp[0] = 0.437461;
     swrcp[1] = 0.050757;
     swrcp[2] = 1.247689;
