@@ -207,6 +207,7 @@ void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...) {
 #endif
     }
 
+    // NOLINTNEXTLINE(clang-analyzer-valist.Uninitialized)
     expectedWriteSize = vsnprintf(buf, MAX_LOG_SIZE, outfmt, args);
 #ifdef SWDEBUG
     if (expectedWriteSize > MAX_LOG_SIZE) {
