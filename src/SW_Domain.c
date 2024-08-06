@@ -5,6 +5,7 @@
 #include "include/SW_Domain.h"      // for SW_DOM_CheckProgress, SW_DOM_Cre...
 #include "include/filefuncs.h"      // for LogError, CloseFile, key_to_id
 #include "include/generic.h"        // for swTRUE, LOGERROR, swFALSE, Bool
+#include "include/myMemory.h"       // for sw_memccpy_custom
 #include "include/SW_datastructs.h" // for SW_DOMAIN, LOG_INFO
 #include "include/SW_Defines.h"     // for LyrIndex, LARGE_VALUE, TimeInt
 #include "include/SW_Files.h"       // for SW_F_deconstruct, SW_F_deepCopy
@@ -12,7 +13,7 @@
 #include "include/Times.h"          // for yearto4digit, Time_get_lastdoy_y
 #include <stdio.h>                  // for sscanf, FILE
 #include <stdlib.h>                 // for strtod, strtol
-#include <string.h>                 // for strcmp, memcpy, strcpy, memset
+#include <string.h>                 // for strcmp, memcpy, memset
 
 #if defined(SWNETCDF)
 #include "include/SW_netCDF.h"
@@ -268,8 +269,8 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                 );
                 goto closeFile;
             }
-            (void) snprintf(
-                SW_Domain->DomainType, sizeof SW_Domain->DomainType, "%s", value
+            (void) sw_memccpy(
+                SW_Domain->DomainType, value, '\0', sizeof SW_Domain->DomainType
             );
             break;
         case 1: // Number of X slots
@@ -333,8 +334,8 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                 goto closeFile;
             }
 
-            (void) snprintf(
-                SW_Domain->crs_bbox, sizeof SW_Domain->crs_bbox, "%s", value
+            (void) sw_memccpy(
+                SW_Domain->crs_bbox, value, '\0', sizeof SW_Domain->crs_bbox
             );
             break;
         case 9: // Minimum x coordinate

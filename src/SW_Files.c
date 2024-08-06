@@ -39,7 +39,7 @@
 #include "include/SW_Defines.h"     // for MAX_FILENAMESIZE
 #include <stdio.h>                  // for FILENAME_MAX, NULL, FILE, stderr
 #include <stdlib.h>                 // for free
-#include <string.h>                 // for strcpy, strcmp, strlen, memcpy
+#include <string.h>                 // for memccpy, strcmp, strlen, memcpy
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -66,7 +66,7 @@ void SW_CSV_F_INIT(const char *s, LOG_INFO *LogInfo) {
     DirName(s, dirString);
 
     if (DirExists(dirString)) {
-        (void) snprintf(inbuf, sizeof inbuf, "%s", s);
+        (void) sw_memccpy(inbuf, (char *) s, '\0', sizeof inbuf);
         if (!RemoveFiles(inbuf, LogInfo)) {
             LogError(
                 LogInfo, LOGWARN, "Can't remove old csv output file: %s\n", s
@@ -348,7 +348,7 @@ void SW_F_construct(
     c = dirString;
 
     if (c) {
-        strcpy(SW_ProjDir, c);
+        (void) sw_memccpy(SW_ProjDir, c, '\0', sizeof dirString);
         c = localfirstfile;
         p = c + strlen(SW_ProjDir);
         while (*p) {

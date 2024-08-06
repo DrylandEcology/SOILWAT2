@@ -44,7 +44,7 @@ History:
 #include "include/SW_VegProd.h"     // for echo_VegProd
 #include "include/Times.h"          // for Time_days_in_month, WKDAYS
 #include <stdio.h>                  // for snprintf, fprintf, printf
-#include <string.h>                 // for strcat, strcmp, strcpy, memset
+#include <string.h>                 // for strcmp, memccpy, memset
 
 // Array-based output declarations:
 #if defined(SW_OUTARRAY) || defined(SWNETCDF)
@@ -2161,7 +2161,9 @@ void SW_OUT_set_colnames(
     for (i = 0; i < ncol_OUT[eSW_Temp]; i++) {
         if (i < 3) {
             // Normal air temperature columns
-            (void) snprintf(ctemp, sizeof ctemp, "%s", cnames_eSW_Temp[i]);
+            (void) sw_memccpy(
+                ctemp, (char *) cnames_eSW_Temp[i], '\0', sizeof ctemp
+            );
         } else {
             // Surface temperature columns
             (void) snprintf(
@@ -2540,7 +2542,7 @@ void SW_OUT_set_colnames(
     }
 #endif
     i = 0;
-    (void) snprintf(ctemp, sizeof ctemp, "%s", "fCover_BareGround");
+    (void) sw_memccpy(ctemp, "fCover_BareGround", '\0', sizeof ctemp);
     colnames_OUT[eSW_Biomass][i] = Str_Dup(ctemp, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -3216,9 +3218,39 @@ void SW_OUT_write_today(
     int i;
     int outPeriod;
 
+#ifdef SW_OUTTEXT
+    char *resPtr = NULL;
+
+    char *soilWritePtr[SW_OUTNPERIODS] = {
+        sw->FileStatus.buf_soil[0],
+        sw->FileStatus.buf_soil[1],
+        sw->FileStatus.buf_soil[2],
+        sw->FileStatus.buf_soil[3]
+    };
+    char *regWritePtr[SW_OUTNPERIODS] = {
+        sw->FileStatus.buf_reg[0],
+        sw->FileStatus.buf_reg[1],
+        sw->FileStatus.buf_reg[2],
+        sw->FileStatus.buf_reg[3]
+    };
+#endif
+
 #ifdef STEPWAT
     Bool use_help_txt;
     Bool use_help_SXW;
+
+    char *soilAggWritePtr[SW_OUTNPERIODS] = {
+        sw->FileStatus.buf_soil[0],
+        sw->FileStatus.buf_soil[1],
+        sw->FileStatus.buf_soil[2],
+        sw->FileStatus.buf_soil[3]
+    };
+    char *regAggWritePtr[SW_OUTNPERIODS] = {
+        sw->FileStatus.buf_reg[0],
+        sw->FileStatus.buf_reg[1],
+        sw->FileStatus.buf_reg[2],
+        sw->FileStatus.buf_reg[3]
+    };
 #endif
 
 
@@ -3280,6 +3312,37 @@ void SW_OUT_write_today(
     // formatting functions `get_XXX`, and concatenate for one row of
     // `csv`-output
     ForEachOutKey(k) {
+#ifdef SW_OUTTEXT
+        size_t writeSizeReg[SW_OUTNPERIODS] = {
+            (size_t) (MAX_LAYERS * OUTSTRLEN),
+            (size_t) (MAX_LAYERS * OUTSTRLEN),
+            (size_t) (MAX_LAYERS * OUTSTRLEN),
+            (size_t) (MAX_LAYERS * OUTSTRLEN)
+        };
+
+        size_t writeSizeSoil[SW_OUTNPERIODS] = {
+            (size_t) (MAX_LAYERS * OUTSTRLEN),
+            (size_t) (MAX_LAYERS * OUTSTRLEN),
+            (size_t) (MAX_LAYERS * OUTSTRLEN),
+            (size_t) (MAX_LAYERS * OUTSTRLEN)
+        };
+#endif
+
+#ifdef STEPWAT
+        size_t writeSizeSoilAgg[SW_OUTNPERIODS] = {
+            (size_t) (MAX_LAYERS * OUTSTRLEN),
+            (size_t) (MAX_LAYERS * OUTSTRLEN),
+            (size_t) (MAX_LAYERS * OUTSTRLEN),
+            (size_t) (MAX_LAYERS * OUTSTRLEN)
+        };
+        size_t writeSizeRegAgg[SW_OUTNPERIODS] = {
+            (size_t) (MAX_LAYERS * OUTSTRLEN),
+            (size_t) (MAX_LAYERS * OUTSTRLEN),
+            (size_t) (MAX_LAYERS * OUTSTRLEN),
+            (size_t) (MAX_LAYERS * OUTSTRLEN)
+        };
+#endif
+
 #ifdef SWDEBUG
         if (debug) {
             sw_printf("key=%d=%s: ", k, key2str[k]);
@@ -3291,6 +3354,7 @@ void SW_OUT_write_today(
         }
 
         for (i = 0; i < OutDom->used_OUTNPERIODS; i++) {
+
             outPeriod = OutDom->timeSteps[k][i];
             use_help = (Bool) (outPeriod != eSW_NoTime && writeit[outPeriod]);
 
@@ -3376,22 +3440,66 @@ void SW_OUT_write_today(
 #if defined(SW_OUTTEXT)
             /* concatenate formatted output for one row of `csv`- files */
             if (OutDom->print_SW_Output) {
-                strcpy(tempstr, sw->OutRun.sw_outstr);
+                (void) sw_memccpy(
+                    tempstr,
+                    sw->OutRun.sw_outstr,
+                    '\0',
+                    (size_t) (MAX_LAYERS * OUTSTRLEN)
+                );
+
                 if (OutDom->has_sl[k]) {
-                    strcat(sw->FileStatus.buf_soil[outPeriod], tempstr);
+                    resPtr = (char *) sw_memccpy(
+                        soilWritePtr[outPeriod],
+                        tempstr,
+                        '\0',
+                        writeSizeSoil[outPeriod]
+                    );
+                    soilWritePtr[outPeriod] = resPtr - 1;
+                    writeSizeSoil[outPeriod] -=
+                        (resPtr - soilWritePtr[outPeriod] - 1);
                 } else {
-                    strcat(sw->FileStatus.buf_reg[outPeriod], tempstr);
+                    resPtr = (char *) sw_memccpy(
+                        regWritePtr[outPeriod],
+                        tempstr,
+                        '\0',
+                        writeSizeReg[outPeriod]
+                    );
+                    regWritePtr[outPeriod] = resPtr - 1;
+                    writeSizeReg[outPeriod] -=
+                        (resPtr - regWritePtr[outPeriod] - 1);
                 }
             }
 
 
 #ifdef STEPWAT
             if (OutDom->print_IterationSummary) {
-                strcpy(tempstr, sw->OutRun.sw_outstr_agg);
+                (void) sw_memccpy(
+                    tempstr,
+                    sw->OutRun.sw_outstr_agg,
+                    '\0',
+                    (size_t) (MAX_LAYERS * OUTSTRLEN)
+                );
+
                 if (OutDom->has_sl[k]) {
-                    strcat(sw->FileStatus.buf_soil_agg[outPeriod], tempstr);
+                    resPtr = sw_memccpy(
+                        soilAggWritePtr[outPeriod],
+                        tempstr,
+                        '\0',
+                        writeSizeSoilAgg[outPeriod]
+                    );
+                    soilAggWritePtr[outPeriod] = resPtr - 1;
+                    writeSizeSoilAgg[outPeriod] -=
+                        (resPtr - soilAggWritePtr[outPeriod] - 1);
                 } else {
-                    strcat(sw->FileStatus.buf_reg_agg[outPeriod], tempstr);
+                    resPtr = sw_memccpy(
+                        regAggWritePtr[outPeriod],
+                        tempstr,
+                        '\0',
+                        writeSizeRegAgg[outPeriod]
+                    );
+                    regAggWritePtr[outPeriod] = resPtr - 1;
+                    writeSizeRegAgg[outPeriod] -=
+                        (resPtr - regAggWritePtr[outPeriod] - 1);
                 }
             }
 #endif
@@ -3608,39 +3716,72 @@ void SW_OUT_close_files(
 
 void echo_outputs(SW_OUT_DOM *OutDom) {
     int k;
+    int index;
+    int writeValIndex = 0;
     char str[OUTSTRLEN];
     char errstr[MAX_ERROR];
+    size_t writeSize = MAX_ERROR;
+    char *writePtr = errstr;
+    char *resPtr = NULL;
+    char *cpyPtr = NULL;
+    const int numWriteStrs = 6;
+    const size_t errHeaderSize = 75;
 
+    const char *errStrHeader = "---------------------------\nKey ";
 
-    (void) snprintf(
-        errstr,
-        sizeof errstr,
-        "%s",
+    const char *errStrFooter =
+        "\n----------  End of Output Configuration ---------- \n";
+
+    const char *errStrConf =
         "\n===============================================\n"
-        "  Output Configuration:\n"
-    );
+        "  Output Configuration:\n";
+
+    char *writeStrs[] = {
+        (char *) errStrHeader,
+        (char *) key2str[0], /* Overwrite in loop below */
+        (char *) "\n\tSummary Type: ",
+        (char *) styp2str[0], /* Overwrite in loop below */
+        (char *) "\n\tStart period: %d",
+        (char *) "\n\tEnd period  : %d\n"
+    };
+
+    TimeInt writeVals[] = {
+        OutDom->first_orig[0], /* Overwrite in loop below */
+        OutDom->last_orig[0]   /* Overwrite in loop below */
+    };
+
+    (void) sw_memccpy(errstr, (char *) errStrConf, '\0', errHeaderSize);
 
 
     ForEachOutKey(k) {
-        if (!OutDom->use[k]) {
+        if (OutDom->use[k]) {
+            writeStrs[1] = (char *) key2str[k];
+            writeStrs[3] = (char *) styp2str[OutDom->sumtype[k]];
+
+            writeVals[0] = OutDom->first_orig[k];
+            writeVals[0] = OutDom->last_orig[k];
+        } else {
             continue;
         }
-        strcat(errstr, "---------------------------\nKey ");
-        strcat(errstr, key2str[k]);
-        strcat(errstr, "\n\tSummary Type: ");
-        strcat(errstr, styp2str[OutDom->sumtype[k]]);
-        (void) snprintf(
-            str, OUTSTRLEN, "\n\tStart period: %d", OutDom->first_orig[k]
-        );
-        strcat(errstr, str);
-        (void) snprintf(
-            str, OUTSTRLEN, "\n\tEnd period  : %d", OutDom->last_orig[k]
-        );
-        strcat(errstr, str);
-        strcat(errstr, "\n");
+
+        for (index = 0; index < numWriteStrs; index++) {
+            cpyPtr = writeStrs[index];
+
+            if (index > 4) {
+                (void
+                ) snprintf(str, OUTSTRLEN, cpyPtr, writeVals[writeValIndex]);
+
+                writeValIndex++;
+                cpyPtr = str;
+            }
+
+            resPtr = (char *) sw_memccpy(writePtr, cpyPtr, '\0', writeSize);
+            writeSize -= (resPtr - writePtr - 1);
+            writePtr = resPtr - 1;
+        }
     }
 
-    strcat(errstr, "\n----------  End of Output Configuration ---------- \n");
+    sw_memccpy(writePtr, (char *) errStrFooter, '\0', writeSize);
     printf("%s\n", errstr);
 }
 

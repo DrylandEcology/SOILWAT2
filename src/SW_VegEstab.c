@@ -51,7 +51,7 @@
 #include <math.h>                   // for fabs
 #include <stdio.h>                  // for NULL, snprintf, FILE, printf
 #include <stdlib.h>                 // for free
-#include <string.h>                 // for strcpy, strcat, strlen, memset
+#include <string.h>                 // for memccpy, strlen, memset
 
 
 /* =================================================== */
@@ -715,7 +715,7 @@ static void read_spp(
                 goto closeFile;
             }
 
-            (void) snprintf(v->sppname, sizeof v->sppname, "%s", name);
+            (void) sw_memccpy(v->sppname, name, '\0', sizeof(v->sppname));
         }
 
         lineno++; /*only increments when there's a value */
@@ -927,8 +927,15 @@ IntU new_species(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo) {
 void echo_VegEstab(const double width[], SW_VEGESTAB_INFO **parms, IntU count) {
     /* --------------------------------------------------- */
     IntU i;
-    char outstr[2048];
+    char outstr[MAX_ERROR];
     char errstr[MAX_ERROR];
+
+    const char *endDispStr =
+        "\n-----------------  End of Establishment Parameters ------------\n";
+
+    size_t writeSize = MAX_ERROR;
+    char *writePtr = outstr;
+    char *resPtr = NULL;
 
     (void) snprintf(
         errstr,
@@ -940,7 +947,7 @@ void echo_VegEstab(const double width[], SW_VEGESTAB_INFO **parms, IntU count) {
         count
     );
 
-    (void) snprintf(outstr, sizeof outstr, "%s", errstr);
+    (void) sw_memccpy(outstr, errstr, '\0', sizeof outstr);
 
     for (i = 0; i < count; i++) {
         (void) snprintf(
@@ -996,12 +1003,13 @@ void echo_VegEstab(const double width[], SW_VEGESTAB_INFO **parms, IntU count) {
             parms[i]->max_drydays_postgerm
         );
 
-        strcat(outstr, errstr);
+        resPtr = (char *) sw_memccpy(
+            (void *) writePtr, (void *) errstr, '\0', writeSize
+        );
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - outstr - 1);
     }
-    strcat(
-        outstr,
-        "\n-----------------  End of Establishment Parameters ------------\n"
-    );
+    sw_memccpy(outstr, (char *) endDispStr, '\0', writeSize);
 
     printf("%s\n", outstr);
 }

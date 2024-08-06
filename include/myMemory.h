@@ -31,6 +31,9 @@ void Mem_Set(void *block, byte c, size_t n);
 
 void Mem_Copy(void *dest, const void *src, size_t n);
 
+void *sw_memccpy_custom(
+    void *__restrict dest, void *__restrict src, int c, size_t n
+);
 
 #ifdef __cplusplus
 }

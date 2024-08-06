@@ -94,7 +94,7 @@
 #include <math.h>                    // for exp, fmin, fmax
 #include <stdio.h>                   // for NULL, sscanf, FILE, fclose, fopen
 #include <stdlib.h>                  // for free
-#include <string.h>                  // for memset, NULL, strcpy
+#include <string.h>                  // for memset, NULL
 
 /* =================================================== */
 /*             Local Function Definitions              */

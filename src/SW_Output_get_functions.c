@@ -19,6 +19,7 @@ History:
 /* --------------------------------------------------- */
 
 #include "include/generic.h"        // for IntU
+#include "include/myMemory.h"       // for sw_memccpy_custom
 #include "include/SW_datastructs.h" // for SW_RUN, SW_OUTTEXT
 #include "include/SW_Defines.h"     // for OUTSEP, OUT_DIGITS, OUTSTRLEN
 #include "include/SW_Output.h"      // for get_aet_text, get_biomass_text
@@ -40,7 +41,7 @@ History:
 
 #if defined(SW_OUTTEXT)
 #include <stdio.h>  // for snprintf, NULL
-#include <string.h> // for strcat
+#include <string.h> // for memccpy
 #endif
 
 
@@ -61,6 +62,9 @@ static void format_IterationSummary(
     size_t n;
     double sd;
     char str[OUTSTRLEN];
+    size_t writeSize = OUTSTRLEN;
+    char *writePtr = sw->OutRun.sw_outstr_agg;
+    char *resPtr = NULL;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     for (i = 0; i < N; i++) {
@@ -78,7 +82,9 @@ static void format_IterationSummary(
             OUT_DIGITS,
             sd
         );
-        strcat(OutRun->sw_outstr_agg, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr_agg - 1);
     }
 }
 
@@ -96,6 +102,10 @@ static void format_IterationSummary2(
     size_t n;
     double sd;
     char str[OUTSTRLEN];
+    size_t strLen = strlen(sw->OutRun.sw_outstr_agg);
+    size_t writeSize = OUTSTRLEN - strLen;
+    char *writePtr = sw->OutRun.sw_outstr_agg + strLen;
+    char *resPtr = NULL;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     for (k = 0; k < N1; k++) {
@@ -116,7 +126,9 @@ static void format_IterationSummary2(
                 OUT_DIGITS,
                 sd
             );
-            strcat(OutRun->sw_outstr_agg, str);
+            resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+            writePtr = resPtr - 1;
+            writeSize -= (resPtr - OutRun->sw_outstr_agg - 1);
         }
     }
 }
@@ -184,6 +196,9 @@ void get_co2effects_text(OutPeriod pd, SW_RUN *sw) {
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
     TimeInt simyear = sw->Model.simyear;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     (void) pd; // hack to silence "-Wunused-parameter"
 
@@ -196,7 +211,9 @@ void get_co2effects_text(OutPeriod pd, SW_RUN *sw) {
             OUT_DIGITS,
             sw->VegProd.veg[k].co2_multipliers[BIO_INDEX][simyear]
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
     ForEachVegType(k) {
         (void) snprintf(
@@ -207,7 +224,9 @@ void get_co2effects_text(OutPeriod pd, SW_RUN *sw) {
             OUT_DIGITS,
             sw->VegProd.veg[k].co2_multipliers[WUE_INDEX][simyear]
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 }
 #endif
@@ -323,6 +342,9 @@ void get_biomass_text(OutPeriod pd, SW_RUN *sw) {
     int k;
     SW_VEGPROD_OUTPUTS *vo = sw->VegProd.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
@@ -336,7 +358,10 @@ void get_biomass_text(OutPeriod pd, SW_RUN *sw) {
         OUT_DIGITS,
         sw->VegProd.bare_cov.fCover
     );
-    strcat(OutRun->sw_outstr, str);
+    resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+    writePtr = resPtr - 1;
+    writeSize -= (resPtr - OutRun->sw_outstr - 1);
+
     ForEachVegType(k) {
         (void) snprintf(
             str,
@@ -346,13 +371,18 @@ void get_biomass_text(OutPeriod pd, SW_RUN *sw) {
             OUT_DIGITS,
             sw->VegProd.veg[k].cov.fCover
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 
     // biomass (g/m2 as component of total) for NVEGTYPES plus totals and litter
     (void
     ) snprintf(str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->biomass_total);
-    strcat(OutRun->sw_outstr, str);
+    resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+    writePtr = resPtr - 1;
+    writeSize -= (resPtr - OutRun->sw_outstr - 1);
+
     ForEachVegType(k) {
         (void) snprintf(
             str,
@@ -362,16 +392,23 @@ void get_biomass_text(OutPeriod pd, SW_RUN *sw) {
             OUT_DIGITS,
             vo->veg[k].biomass_inveg
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
     (void
     ) snprintf(str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->litter_total);
-    strcat(OutRun->sw_outstr, str);
+    resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+    writePtr = resPtr - 1;
+    writeSize -= (resPtr - OutRun->sw_outstr - 1);
 
     // biolive (g/m2 as component of total) for NVEGTYPES plus totals
     (void
     ) snprintf(str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->biolive_total);
-    strcat(OutRun->sw_outstr, str);
+    resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+    writePtr = resPtr - 1;
+    writeSize -= (resPtr - OutRun->sw_outstr - 1);
+
     ForEachVegType(k) {
         (void) snprintf(
             str,
@@ -381,12 +418,14 @@ void get_biomass_text(OutPeriod pd, SW_RUN *sw) {
             OUT_DIGITS,
             vo->veg[k].biolive_inveg
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 
     // leaf area index [m2/m2]
     (void) snprintf(str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->LAI);
-    strcat(OutRun->sw_outstr, str);
+    sw_memccpy(writePtr, str, '\0', writeSize);
 }
 #endif
 
@@ -670,6 +709,9 @@ establish this year.  This check is for OUTTEXT.
 void get_estab_text(OutPeriod pd, SW_RUN *sw) {
     IntU i;
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
@@ -680,7 +722,9 @@ void get_estab_text(OutPeriod pd, SW_RUN *sw) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%d", OUTSEP, sw->VegEstab.parms[i]->estab_doy
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 }
 #endif
@@ -1211,6 +1255,9 @@ void get_vwcBulk_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
@@ -1225,7 +1272,9 @@ void get_vwcBulk_text(OutPeriod pd, SW_RUN *sw) {
             OUT_DIGITS,
             vo->vwcBulk[i] / sw->Site.width[i]
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 }
 #endif
@@ -1347,6 +1396,9 @@ void get_vwcMatric_text(OutPeriod pd, SW_RUN *sw) {
     double convert;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
@@ -1364,7 +1416,9 @@ void get_vwcMatric_text(OutPeriod pd, SW_RUN *sw) {
             OUT_DIGITS,
             vo->vwcMatric[i] * convert
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 }
 #endif
@@ -1490,6 +1544,9 @@ void get_swa_text(OutPeriod pd, SW_RUN *sw) {
     int k;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
@@ -1504,7 +1561,9 @@ void get_swa_text(OutPeriod pd, SW_RUN *sw) {
                 OUT_DIGITS,
                 vo->SWA_VegType[k][i]
             );
-            strcat(OutRun->sw_outstr, str);
+            resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+            writePtr = resPtr - 1;
+            writeSize -= (resPtr - OutRun->sw_outstr - 1);
         }
     }
 }
@@ -1633,6 +1692,9 @@ void get_swcBulk_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
@@ -1641,7 +1703,9 @@ void get_swcBulk_text(OutPeriod pd, SW_RUN *sw) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->swcBulk[i]
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 }
 #endif
@@ -1785,6 +1849,9 @@ void get_swpMatric_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     /* Local LOG_INFO only because `SW_SWRC_SWCtoSWP()` requires it */
     LOG_INFO local_log;
@@ -1799,7 +1866,9 @@ void get_swpMatric_text(OutPeriod pd, SW_RUN *sw) {
 
 
         (void) snprintf(str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, val);
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 }
 #endif
@@ -1920,6 +1989,9 @@ void get_swaBulk_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
@@ -1928,7 +2000,9 @@ void get_swaBulk_text(OutPeriod pd, SW_RUN *sw) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->swaBulk[i]
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 }
 #endif
@@ -2041,6 +2115,9 @@ void get_swaMatric_text(OutPeriod pd, SW_RUN *sw) {
     double convert;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
@@ -2057,7 +2134,9 @@ void get_swaMatric_text(OutPeriod pd, SW_RUN *sw) {
             OUT_DIGITS,
             vo->swaMatric[i] * convert
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 }
 #endif
@@ -2438,10 +2517,13 @@ void get_transp_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     LyrIndex n_layers = sw->Site.n_layers;
     int k;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    char *writeStr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
-    char str[OUTSTRLEN];
+    char str[OUTSTRLEN] = {'\0'};
     OutRun->sw_outstr[0] = '\0';
 
     /* total transpiration */
@@ -2449,7 +2531,9 @@ void get_transp_text(OutPeriod pd, SW_RUN *sw) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->transp_total[i]
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writeStr, str, '\0', writeSize);
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
+        writeStr = resPtr - 1;
     }
 
     /* transpiration for each vegetation type */
@@ -2458,7 +2542,9 @@ void get_transp_text(OutPeriod pd, SW_RUN *sw) {
             (void) snprintf(
                 str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->transp[k][i]
             );
-            strcat(OutRun->sw_outstr, str);
+            resPtr = (char *) sw_memccpy(writeStr, str, '\0', writeSize);
+            writeSize -= (resPtr - OutRun->sw_outstr - 1);
+            writeStr = resPtr - 1;
         }
     }
 }
@@ -2670,6 +2756,9 @@ void get_evapSoil_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
@@ -2678,7 +2767,9 @@ void get_evapSoil_text(OutPeriod pd, SW_RUN *sw) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->evap_baresoil[i]
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 }
 #endif
@@ -2793,24 +2884,26 @@ void get_evapSurface_text(OutPeriod pd, SW_RUN *sw) {
     int k;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
-    (void) snprintf(
-        OutRun->sw_outstr,
-        sizeof OutRun->sw_outstr,
-        "%c%.*f",
-        OUTSEP,
-        OUT_DIGITS,
-        vo->total_evap
-    );
+    (void
+    ) snprintf(str, sizeof str, "%c%.*f", OUTSEP, OUT_DIGITS, vo->total_evap);
+    resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+    writePtr = resPtr - 1;
+    writeSize -= (resPtr - OutRun->sw_outstr - 1);
 
     ForEachVegType(k) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->evap_veg[k]
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 
     (void) snprintf(
@@ -2824,7 +2917,7 @@ void get_evapSurface_text(OutPeriod pd, SW_RUN *sw) {
         OUT_DIGITS,
         vo->surfaceWater_evap
     );
-    strcat(OutRun->sw_outstr, str);
+    sw_memccpy(writePtr, str, '\0', writeSize);
 }
 #endif
 
@@ -2990,29 +3083,31 @@ void get_interception_text(OutPeriod pd, SW_RUN *sw) {
     int k;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
-    (void) snprintf(
-        OutRun->sw_outstr,
-        sizeof OutRun->sw_outstr,
-        "%c%.*f",
-        OUTSEP,
-        OUT_DIGITS,
-        vo->total_int
-    );
+    (void
+    ) snprintf(str, sizeof str, "%c%.*f", OUTSEP, OUT_DIGITS, vo->total_int);
+    resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+    writePtr = resPtr - 1;
+    writeSize -= (resPtr - OutRun->sw_outstr - 1);
 
     ForEachVegType(k) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->int_veg[k]
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 
     (void
     ) snprintf(str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->litter_int);
-    strcat(OutRun->sw_outstr, str);
+    sw_memccpy(writePtr, str, '\0', writeSize);
 }
 #endif
 
@@ -3256,6 +3351,9 @@ void get_lyrdrain_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
@@ -3264,7 +3362,9 @@ void get_lyrdrain_text(OutPeriod pd, SW_RUN *sw) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->lyrdrain[i]
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 }
 #endif
@@ -3380,6 +3480,9 @@ void get_hydred_text(OutPeriod pd, SW_RUN *sw) {
     int k;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
@@ -3389,7 +3492,9 @@ void get_hydred_text(OutPeriod pd, SW_RUN *sw) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->hydred_total[i]
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 
     /* hydraulic redistribution for each vegetation type */
@@ -3398,7 +3503,9 @@ void get_hydred_text(OutPeriod pd, SW_RUN *sw) {
             (void) snprintf(
                 str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->hydred[k][i]
             );
-            strcat(OutRun->sw_outstr, str);
+            resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+            writePtr = resPtr - 1;
+            writeSize -= (resPtr - OutRun->sw_outstr - 1);
         }
     }
 }
@@ -3966,6 +4073,9 @@ void get_wetdays_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     LyrIndex n_layers = sw->Site.n_layers;
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
@@ -3975,7 +4085,9 @@ void get_wetdays_text(OutPeriod pd, SW_RUN *sw) {
             (void) snprintf(
                 str, OUTSTRLEN, "%c%i", OUTSEP, (sw->SoilWat.is_wet[i]) ? 1 : 0
             );
-            strcat(OutRun->sw_outstr, str);
+            resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+            writePtr = resPtr - 1;
+            writeSize -= (resPtr - OutRun->sw_outstr - 1);
         }
 
     } else {
@@ -3984,7 +4096,9 @@ void get_wetdays_text(OutPeriod pd, SW_RUN *sw) {
         ForEachSoilLayer(i, n_layers) {
             (void
             ) snprintf(str, OUTSTRLEN, "%c%i", OUTSEP, (int) vo->wetdays[i]);
-            strcat(OutRun->sw_outstr, str);
+            resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+            writePtr = resPtr - 1;
+            writeSize -= (resPtr - OutRun->sw_outstr - 1);
         }
     }
 }
@@ -4332,6 +4446,9 @@ void get_soiltemp_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
@@ -4345,7 +4462,9 @@ void get_soiltemp_text(OutPeriod pd, SW_RUN *sw) {
             OUT_DIGITS,
             vo->maxLyrTemperature[i]
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
 
         (void) snprintf(
             str,
@@ -4355,12 +4474,16 @@ void get_soiltemp_text(OutPeriod pd, SW_RUN *sw) {
             OUT_DIGITS,
             vo->minLyrTemperature[i]
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
 
         (void) snprintf(
             str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->avgLyrTemp[i]
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 }
 #endif
@@ -4551,6 +4674,9 @@ void get_frozen_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
@@ -4559,7 +4685,9 @@ void get_frozen_text(OutPeriod pd, SW_RUN *sw) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->lyrFrozen[i]
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 }
 #endif

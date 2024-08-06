@@ -24,7 +24,7 @@
 #include "include/SW_Defines.h"     // for MAX_MSGS, MAX_LOG_SIZE, BUILD_DATE
 #include <stdio.h>                  // for fprintf, stderr, fflush, stdout
 #include <stdlib.h>                 // for exit, free, EXIT_FA...
-#include <string.h>                 // for strcpy, strncmp
+#include <string.h>                 // for strncmp
 
 #ifdef RSOILWAT
 #include <R.h> // for error(), and warning() from <R_ext/Error.h>

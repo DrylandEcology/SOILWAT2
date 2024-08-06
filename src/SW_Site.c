@@ -122,7 +122,7 @@
 #include <math.h>                   // for fmod
 #include <stdio.h>                  // for printf, sscanf, FILE, NULL, stdout
 #include <stdlib.h>                 // for free, strod, strtol
-#include <string.h>                 // for strcpy, memset
+#include <string.h>                 // for memset
 
 /* =================================================== */
 /*                  Global Variables                   */

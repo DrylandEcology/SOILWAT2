@@ -2936,10 +2936,11 @@ static void create_output_dimVar(
         if (dimNum == vertIndex && !hasConsistentSoilLayerDepths) {
             // Use soil layers as dimension variable values
             // because soil layer depths are not consistent across domain
-            (void) snprintf(
-                outAttVals[vertIndex][0], MAX_FILENAMESIZE, "soil layer"
+            (void) sw_memccpy(
+                outAttVals[vertIndex][0], "soil layer", '\0', MAX_FILENAMESIZE
             );
-            (void) snprintf(outAttVals[vertIndex][2], MAX_FILENAMESIZE, "1");
+            (void
+            ) sw_memccpy(outAttVals[vertIndex][2], "1", '\0', MAX_FILENAMESIZE);
         }
 
         for (index = 0; index < numVarAtts[dimNum]; index++) {
@@ -3254,7 +3255,7 @@ static void create_output_file(
     char *varName;
     char **varInfo;
 
-    (void) snprintf(frequency, 9, "%s", pd2longstr[pd]);
+    (void) sw_memccpy(frequency, (char *) pd2longstr[pd], '\0', 9);
     Str_ToLower(frequency, frequency);
 
 
@@ -3800,7 +3801,9 @@ void SW_NC_create_output_files(
                     baseTime = times[pd];
                     rangeStart = startYr;
 
-                    (void) snprintf(periodSuffix, 9, "%s", pd2longstr[pd]);
+                    (void) sw_memccpy(
+                        periodSuffix, (char *) pd2longstr[pd], '\0', 9
+                    );
                     Str_ToLower(periodSuffix, periodSuffix);
 
                     SW_NC_alloc_files(
@@ -5134,11 +5137,8 @@ void SW_NC_read_out_vars(
                             break;
 
                         case LONGNAME_INDEX:
-                            (void) snprintf(
-                                establn,
-                                MAX_ATTVAL_SIZE - 1,
-                                copyStr,
-                                parms[estVar]->sppname
+                            (void) sw_memccpy(
+                                establn, copyStr, '\0', MAX_ATTVAL_SIZE
                             );
                             OutDom->outputVarInfo[currOutKey][estVar][index] =
                                 Str_Dup(establn, LogInfo);

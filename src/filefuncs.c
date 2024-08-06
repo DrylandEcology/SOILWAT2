@@ -23,7 +23,7 @@
 #include <stdarg.h>                 // for va_end, va_start
 #include <stdio.h>                  // for NULL, fclose, FILE, fopen, EOF
 #include <stdlib.h>                 // for free, strtod, strtof, strtol
-#include <string.h>                 // for strlen, strrchr, strcpy, strchr
+#include <string.h>                 // for strlen, strrchr, memccpy, strchr
 #include <sys/stat.h>               // for stat, mkdir, S_ISDIR, S_ISREG
 #include <unistd.h>                 // for chdir
 
@@ -187,13 +187,14 @@ void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...) {
     int nextWarn = LogInfo->numWarnings;
     va_list args;
     int expectedWriteSize;
+    char *writePtr = msgType;
 
     va_start(args, fmt);
 
     if (LOGWARN & mode) {
-        (void) snprintf(msgType, sizeof msgType, "%s", "WARNING: ");
+        (void) sw_memccpy(writePtr, "WARNING: ", '\0', MAX_LOG_SIZE);
     } else if (LOGERROR & mode) {
-        (void) snprintf(msgType, sizeof msgType, "%s", "ERROR: ");
+        (void) sw_memccpy(writePtr, "ERROR: ", '\0', MAX_LOG_SIZE);
     }
 
     expectedWriteSize = snprintf(outfmt, MAX_LOG_SIZE, "%s%s\n", msgType, fmt);
@@ -225,11 +226,8 @@ void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...) {
 
     if (LOGWARN & mode) {
         if (nextWarn < MAX_MSGS) {
-            (void) snprintf(
-                LogInfo->warningMsgs[nextWarn],
-                sizeof LogInfo->warningMsgs[nextWarn],
-                "%s",
-                buf
+            (void) sw_memccpy(
+                LogInfo->warningMsgs[nextWarn], buf, '\0', MAX_LOG_SIZE
             );
         }
         LogInfo->numWarnings++;
@@ -243,7 +241,7 @@ void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...) {
         // as SOILWAT2 >= 7.2.0
         exit(EXIT_FAILURE);
 #else
-        (void) snprintf(LogInfo->errorMsg, sizeof LogInfo->errorMsg, "%s", buf);
+        (void) sw_memccpy(LogInfo->errorMsg, buf, '\0', MAX_LOG_SIZE);
         LogInfo->stopRun = swTRUE;
 #endif
     }
@@ -634,9 +632,12 @@ void MkDir(const char *dname, LOG_INFO *LogInfo) {
     char *c;            /* duplicate of dname so we don't change it */
     const char *delim = "\\/"; /* path separators */
     char buffer[MAX_ERROR];
+    char *writePtr = buffer;
+    char *resPtr = NULL;
 
     size_t startIndex = 0;
     size_t strLen = 0; // For `sw_strtok()`
+    size_t writeSize = 256;
 
     if (isnull(dname)) {
         return;
@@ -656,17 +657,36 @@ void MkDir(const char *dname, LOG_INFO *LogInfo) {
 
     buffer[0] = '\0';
     for (i = 0; i < n; i++) {
-        strcat(buffer, a[i]);
-        if (!DirExists(buffer)) {
+        if (!isnull(resPtr) || i == 0) {
+            resPtr = (char *) sw_memccpy(writePtr, a[i], '\0', writeSize);
+            writeSize -= (resPtr - buffer - 1);
+            writePtr = resPtr - 1;
+        }
+
+        if (!DirExists(buffer) || isnull(resPtr)) {
             if (0 != mkdir(buffer, 0777)) {
                 // directory failed to create -> report error
                 LogError(
                     LogInfo, LOGERROR, "Failed to create directory '%s'", buffer
                 );
                 goto freeMem; // Exit function prematurely due to error
+            } else {
+                /* Directory was created but not by the expected name */
+                LogError(
+                    LogInfo,
+                    LOGWARN,
+                    "Could not create the desired directory. The path created"
+                    "instead is %s.",
+                    buffer
+                );
             }
         }
-        strcat(buffer, "/");
+
+        if (!isnull(resPtr)) {
+            resPtr = (char *) sw_memccpy(writePtr, "/", '\0', writeSize);
+            writePtr = resPtr - 1;
+            writeSize--;
+        }
     }
 
 freeMem:
@@ -690,10 +710,12 @@ Bool RemoveFiles(const char *fspec, LOG_INFO *LogInfo) {
 
     char **flist;
     char fname[FILENAME_MAX];
+    char *resPtr = NULL;
     int i;
     int nfiles;
     int result = swTRUE;
     size_t dlen;
+    size_t writeSize = FILENAME_MAX;
 
     if (fspec == NULL) {
         return swTRUE;
@@ -705,7 +727,9 @@ Bool RemoveFiles(const char *fspec, LOG_INFO *LogInfo) {
         DirName(fspec, fname); // Transfer `fspec` into `fname`
         dlen = strlen(fname);
         for (i = 0; i < nfiles; i++) {
-            strcpy(fname + dlen, flist[i]);
+            resPtr =
+                (char *) sw_memccpy(fname + dlen, flist[i], '\0', writeSize);
+            writeSize -= (resPtr - (fname + dlen) - 1);
             if (0 != remove(fname)) {
                 result = swFALSE;
                 break;

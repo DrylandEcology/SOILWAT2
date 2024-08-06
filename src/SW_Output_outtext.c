@@ -27,7 +27,7 @@ History:
 #include "include/SW_Output.h"         // for pd2longstr, ForEachOutKey
 #include <stdio.h>                     // for snprintf, fflush, fprintf
 #include <stdlib.h>                    // for free
-#include <string.h>                    // for strcat, strcpy
+#include <string.h>                    // for memccpy
 
 #if (defined(SOILWAT) && !defined(SWNETCDF)) || defined(STEPWAT)
 #include "include/SW_Files.h" // for eOutputDaily, eOutputDaily_soil
@@ -88,6 +88,14 @@ static void create_csv_headers(
     char *str_help1;
     char *str_help2;
 
+    size_t writeSizeHelp = size_help;
+    size_t writeSizeReg = (size_t) (2 * OUTSTRLEN);
+    size_t writeSizeSoil = (size_t) (n_layers) *OUTSTRLEN;
+    char *writePtrHelp = NULL;
+    char *resPtr = NULL;
+    char *writePtrSoil = NULL;
+    char *writePtrReg = NULL;
+
     str_help1 = (char *) Mem_Malloc(
         sizeof(char) * size_help, "create_csv_headers()", LogInfo
     );
@@ -107,7 +115,12 @@ static void create_csv_headers(
     str_reg[0] = (char) '\0';
     str_soil[0] = (char) '\0';
 
+    writePtrReg = str_reg;
+    writePtrSoil = str_soil;
+
     ForEachOutKey(k) {
+        writePtrHelp = str_help2;
+
         isTrue = (Bool) (OutDom->use[k] && has_OutPeriod_inUse(
                                                pd,
                                                (OutKey) k,
@@ -115,7 +128,7 @@ static void create_csv_headers(
                                                OutDom->timeSteps
                                            ));
         if (isTrue) {
-            (void) snprintf(key, sizeof key, "%s", key2str[k]);
+            (void) sw_memccpy(key, (char *) key2str[k], '\0', sizeof key);
             str_help2[0] = '\0';
 
             for (i = 0; i < OutDom->ncol_OUT[k]; i++) {
@@ -147,13 +160,25 @@ static void create_csv_headers(
                     goto freeMem; // Exit function prematurely due to error
                 }
 
-                strcat(str_help2, str_help1);
+                resPtr = (char *) sw_memccpy(
+                    writePtrHelp, str_help1, '\0', writeSizeHelp
+                );
+                writePtrHelp = resPtr - 1;
+                writeSizeHelp -= (resPtr - writePtrHelp - 1);
             }
 
             if (OutDom->has_sl[k]) {
-                strcat(str_soil, str_help2);
+                resPtr = (char *) sw_memccpy(
+                    writePtrSoil, str_help2, '\0', writeSizeSoil
+                );
+                writeSizeSoil -= (resPtr - str_soil - 1);
+                writePtrSoil = resPtr - 1;
             } else {
-                strcat(str_reg, str_help2);
+                resPtr = (char *) sw_memccpy(
+                    writePtrReg, str_help2, '\0', writeSizeReg
+                );
+                writeSizeReg -= (resPtr - str_reg - 1);
+                writePtrReg = resPtr - 1;
             }
         }
     }
@@ -227,7 +252,7 @@ static void get_outstrheader(OutPeriod pd, char *str, size_t sizeof_str) {
         break;
 
     case eSW_Year:
-        (void) snprintf(str, sizeof_str, "%s", "Year");
+        (void) sw_memccpy(str, "Year", '\0', sizeof_str);
         break;
 
     default:

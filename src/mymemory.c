@@ -34,7 +34,7 @@
 #include "include/generic.h"        // for LOGERROR, byte, isnull
 #include "include/SW_datastructs.h" // for LOG_INFO
 #include <stdlib.h>                 // for free, malloc, realloc
-#include <string.h>                 // for strlen, memcpy, memset, strcpy
+#include <string.h>                 // for strlen, memset, strcpy
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -181,6 +181,50 @@ void Mem_Copy(void *dest, const void *src, size_t n) {
      -------------------------------------------*/
 
     memcpy(dest, src, n);
+}
+
+/*
+@brief Custom functionality that mimics that of `sw_memccpy()` and is used
+when the correct dependencies for `sw_memccpy()` are not available
+
+@note This implementation is based off one suggested by Martin Sebor in
+the article
+https://developers.redhat.com/blog/2019/08/12/efficient-string-copying-and-concatenation-in-c#
+
+@note This function uses the compiler macro '__restrict' instead of simply
+'restrict' due to C++ standards not supporting it, so '__restrict' is
+compatible in Clang and GCC
+
+@param[in,out] dest Character array to copy into
+@param[in] src Character array to copy from
+@param[in] c Target character which, upon finding, is one of the stopping
+condiditions
+@param[in] n The number of bytes to copy from src to dest, and is the
+second stopping condition
+
+@return
+Upon finding the target character: the pointer to the next byte in dest after
+the copy Upon not finding the target character: null pointer character
+*/
+void *sw_memccpy_custom(
+    void *__restrict dest, void *__restrict src, int c, size_t n
+) {
+    char *s = (char *) src;
+    char *ret = (char *) dest;
+
+    while (n > 0) {
+        *ret = *s;
+
+        if ((unsigned char) *ret == (unsigned char) c) {
+            return ret + 1;
+        }
+
+        ret++;
+        s++;
+        n--;
+    }
+
+    return 0;
 }
 
 /* ===============  end of block from gen_funcs.c ----------------- */
