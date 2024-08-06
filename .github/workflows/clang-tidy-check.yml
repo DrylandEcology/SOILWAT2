@@ -20,5 +20,10 @@ jobs:
       with:
         submodules: recursive
 
+    - name: Install netCDF-C and udunits2
+      run: |
+        sudo apt-get update
+        sudo apt-get install libnetcdf-dev libudunits2-dev
+
     - name: Run
       run: ./tools/run_tidy.sh
