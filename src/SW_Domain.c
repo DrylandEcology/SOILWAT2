@@ -5,15 +5,15 @@
 #include "include/SW_Domain.h"      // for SW_DOM_CheckProgress, SW_DOM_Cre...
 #include "include/filefuncs.h"      // for LogError, CloseFile, key_to_id
 #include "include/generic.h"        // for swTRUE, LOGERROR, swFALSE, Bool
-#include "include/myMemory.h"       // for Str_Dup
+#include "include/myMemory.h"       // for sw_memccpy_custom
 #include "include/SW_datastructs.h" // for SW_DOMAIN, LOG_INFO
 #include "include/SW_Defines.h"     // for LyrIndex, LARGE_VALUE, TimeInt
 #include "include/SW_Files.h"       // for SW_F_deconstruct, SW_F_deepCopy
 #include "include/SW_Output.h"      // for ForEachOutKey
 #include "include/Times.h"          // for yearto4digit, Time_get_lastdoy_y
 #include <stdio.h>                  // for sscanf, FILE
-#include <stdlib.h>                 // for atoi, atof
-#include <string.h>                 // for strcmp, memcpy, strcpy, memset
+#include <stdlib.h>                 // for strtod, strtol
+#include <string.h>                 // for strcmp, memcpy, memset
 
 #if defined(SWNETCDF)
 #include "include/SW_netCDF.h"
@@ -86,7 +86,10 @@ TRUE if simulation for \p ncSuid has not been completed yet;
 FALSE if simulation for \p ncSuid has been completed (i.e., skip).
 */
 Bool SW_DOM_CheckProgress(
-    int progFileID, int progVarID, unsigned long ncSuid[], LOG_INFO *LogInfo
+    int progFileID,
+    int progVarID,
+    unsigned long ncSuid[], // NOLINT(readability-non-const-parameter)
+    LOG_INFO *LogInfo
 ) {
 #if defined(SWNETCDF)
     return SW_NC_check_progress(progFileID, progVarID, ncSuid, LogInfo);
@@ -143,7 +146,7 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
     SW_Domain->hasConsistentSoilLayerDepths = swFALSE;
     memset(
         &SW_Domain->depthsAllSoilLayers,
-        0.,
+        0,
         sizeof(&SW_Domain->depthsAllSoilLayers[0]) * MAX_LAYERS
     );
 
@@ -200,9 +203,17 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     Bool hasKeys[NUM_DOM_IN_KEYS] = {swFALSE};
 
     FILE *f;
-    int y, keyID;
-    char inbuf[LARGE_VALUE], *MyFileName;
-    char key[15], value[LARGE_VALUE]; // 15 - Max key size
+    int y;
+    int keyID;
+    char inbuf[LARGE_VALUE];
+    char *MyFileName;
+    char key[15];
+    char value[LARGE_VALUE]; // 15 - Max key size
+    int intRes = 0;
+    int scanRes;
+    double doubleRes = 0.;
+
+    Bool doDoubleConv;
 
     MyFileName = SW_Domain->PathInfo.InFiles[eDomain];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -212,12 +223,38 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     // Set SW_DOMAIN
     while (GetALine(f, inbuf, LARGE_VALUE)) {
-        sscanf(inbuf, "%14s %s", key, value);
+        scanRes = sscanf(inbuf, "%14s %s", key, value);
+
+        if (scanRes < 2) {
+            LogError(
+                LogInfo, LOGERROR, "Invalid key-value pair in %s.", MyFileName
+            );
+            goto closeFile;
+        }
 
         keyID = key_to_id(key, possibleKeys, NUM_DOM_IN_KEYS);
 
         set_hasKey(keyID, possibleKeys, hasKeys, LogInfo);
         // set_hasKey() produces never an error, only possibly warnings
+
+        /* Make sure we are not trying to convert a string with no numerical
+         * value */
+        if (keyID > 0 && keyID <= 16 && keyID != 8) {
+
+            /* Check to see if the line number contains a double or integer
+             * value */
+            doDoubleConv = (Bool) (keyID >= 9 && keyID <= 12);
+
+            if (doDoubleConv) {
+                doubleRes = sw_strtod(value, MyFileName, LogInfo);
+            } else {
+                intRes = sw_strtoi(value, MyFileName, LogInfo);
+            }
+
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
+        }
 
         switch (keyID) {
         case 0: // Domain type
@@ -230,25 +267,26 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     MyFileName,
                     value
                 );
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
-            strcpy(SW_Domain->DomainType, value);
+            (void) sw_memccpy(
+                SW_Domain->DomainType, value, '\0', sizeof SW_Domain->DomainType
+            );
             break;
         case 1: // Number of X slots
-            SW_Domain->nDimX = atoi(value);
+            SW_Domain->nDimX = intRes;
             break;
         case 2: // Number of Y slots
-            SW_Domain->nDimY = atoi(value);
+            SW_Domain->nDimY = intRes;
             break;
         case 3: // Number of S slots
-            SW_Domain->nDimS = atoi(value);
+            SW_Domain->nDimS = intRes;
             break;
 
         case 4: // Start year
-            y = atoi(value);
+            y = intRes;
 
             if (y < 0) {
-                CloseFile(&f, LogInfo);
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -256,15 +294,14 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     MyFileName,
                     y
                 );
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             SW_Domain->startyr = yearto4digit((TimeInt) y);
             break;
         case 5: // End year
-            y = atoi(value);
+            y = intRes;
 
             if (y < 0) {
-                CloseFile(&f, LogInfo);
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -272,40 +309,52 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     MyFileName,
                     y
                 );
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             SW_Domain->endyr = yearto4digit((TimeInt) y);
             break;
         case 6: // Start day of year
-            SW_Domain->startstart = atoi(value);
+            SW_Domain->startstart = intRes;
             break;
         case 7: // End day of year
-            SW_Domain->endend = atoi(value);
+            SW_Domain->endend = intRes;
             break;
 
         case 8: // CRS box
             // Re-scan and get the entire value (including spaces)
-            sscanf(inbuf, "%9s %27[^\n]", key, value);
-            strcpy(SW_Domain->crs_bbox, value);
+            scanRes = sscanf(inbuf, "%9s %27[^\n]", key, value);
+
+            if (scanRes < 2) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Invalid key-value pair for CRS box in %s.",
+                    MyFileName
+                );
+                goto closeFile;
+            }
+
+            (void) sw_memccpy(
+                SW_Domain->crs_bbox, value, '\0', sizeof SW_Domain->crs_bbox
+            );
             break;
         case 9: // Minimum x coordinate
-            SW_Domain->min_x = atof(value);
+            SW_Domain->min_x = doubleRes;
             break;
         case 10: // Minimum y coordinate
-            SW_Domain->min_y = atof(value);
+            SW_Domain->min_y = doubleRes;
             break;
         case 11: // Maximum x coordinate
-            SW_Domain->max_x = atof(value);
+            SW_Domain->max_x = doubleRes;
             break;
         case 12: // Maximum y coordinate
-            SW_Domain->max_y = atof(value);
+            SW_Domain->max_y = doubleRes;
             break;
 
         case 13: // Spinup Mode
-            y = atoi(value);
+            y = intRes;
 
             if (y != 1 && y != 2) {
-                CloseFile(&f, LogInfo);
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -314,15 +363,15 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     MyFileName,
                     y
                 );
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             SW_Domain->SW_SpinUp.mode = y;
             break;
         case 14: // Spinup Scope
-            SW_Domain->SW_SpinUp.scope = atoi(value);
+            SW_Domain->SW_SpinUp.scope = intRes;
             break;
         case 15: // Spinup Duration
-            SW_Domain->SW_SpinUp.duration = atoi(value);
+            SW_Domain->SW_SpinUp.duration = intRes;
 
             // Set the spinup flag to true if duration > 0
             if (SW_Domain->SW_SpinUp.duration <= 0) {
@@ -332,10 +381,12 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             }
             break;
         case 16: // Spinup Seed
-            SW_Domain->SW_SpinUp.rng_seed = atoi(value);
+            SW_Domain->SW_SpinUp.rng_seed = intRes;
             break;
 
         case KEY_NOT_FOUND: // Unknown key
+
+        default:
             LogError(
                 LogInfo,
                 LOGWARN,
@@ -347,20 +398,18 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         }
     }
 
-    CloseFile(&f, LogInfo);
-
 
     // Check if all required input was provided
     check_requiredKeys(
         hasKeys, requiredKeys, possibleKeys, NUM_DOM_IN_KEYS, LogInfo
     );
     if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     if (SW_Domain->endyr < SW_Domain->startyr) {
         LogError(LogInfo, LOGERROR, "%s: Start Year > End Year", MyFileName);
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     // Check if start day of year was not found
@@ -389,12 +438,12 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     // Check bounding box coordinates
     if (GT(SW_Domain->min_x, SW_Domain->max_x)) {
         LogError(LogInfo, LOGERROR, "Domain.in: bbox x-axis min > max.");
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     if (GT(SW_Domain->min_y, SW_Domain->max_y)) {
         LogError(LogInfo, LOGERROR, "Domain.in: bbox y-axis min > max.");
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     // Check if scope value is out of range
@@ -407,8 +456,9 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             MyFileName,
             SW_Domain->SW_SpinUp.scope
         );
-        return; // Exit function prematurely due to error
     }
+
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**
@@ -428,7 +478,7 @@ void SW_DOM_SetProgress(
     const char *domType,
     int progFileID,
     int progVarID,
-    unsigned long ncSuid[],
+    unsigned long ncSuid[], // NOLINT(readability-non-const-parameter)
     LOG_INFO *LogInfo
 ) {
 
@@ -460,9 +510,9 @@ void SW_DOM_SimSet(
 ) {
 
     Bool progFound;
-    unsigned long *startSimSet = &SW_Domain->startSimSet,
-                  *endSimSet = &SW_Domain->endSimSet,
-                  startSuid[2]; // 2 -> [y, x] or [0, s]
+    unsigned long *startSimSet = &SW_Domain->startSimSet;
+    unsigned long *endSimSet = &SW_Domain->endSimSet;
+    unsigned long startSuid[2]; // 2 -> [y, x] or [0, s]
     int progFileID = 0; // Value does not matter if SWNETCDF is not defined
     int progVarID = 0;  // Value does not matter if SWNETCDF is not defined
 
@@ -538,7 +588,8 @@ void SW_DOM_init_ptrs(SW_DOMAIN *SW_Domain) {
 }
 
 void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
-    IntUS k, i;
+    int k;
+    int i;
 
     SW_F_deconstruct(SW_Domain->PathInfo.InFiles);
 

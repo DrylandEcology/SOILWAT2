@@ -32,6 +32,7 @@
 /* --------------------------------------------------- */
 
 #include "include/Times.h"          // for Jan, Dec, Feb, NoMonth, NoDay
+#include "include/filefuncs.h"      // for sw_message
 #include "include/generic.h"        // for Bool, GE, final_running_sd, get_...
 #include "include/SW_datastructs.h" // for SW_WALLTIME, LOG_INFO
 #include "include/SW_Defines.h"     // for TimeInt, WallTimeSpec, MAX_DAYS
@@ -123,7 +124,7 @@ TimeInt Time_get_lastdoy_y(TimeInt year) {
 
 @return Month (base0) [Jan-Dec = 0-11].
 */
-TimeInt doy2month(const TimeInt doy, TimeInt cum_monthdays[]) {
+TimeInt doy2month(const TimeInt doy, const TimeInt cum_monthdays[]) {
     TimeInt mon;
 
     for (mon = Jan; mon < Dec && doy > cum_monthdays[mon]; mon++)
@@ -141,7 +142,7 @@ TimeInt doy2month(const TimeInt doy, TimeInt cum_monthdays[]) {
 @return Day of the month [1-31].
 */
 TimeInt doy2mday(
-    const TimeInt doy, TimeInt cum_monthdays[], TimeInt days_in_month[]
+    const TimeInt doy, TimeInt cum_monthdays[], const TimeInt days_in_month[]
 ) {
 
     TimeInt new_doy0 = doy2month(doy, cum_monthdays) - 1;
@@ -168,7 +169,13 @@ Useful for formatting user inputs.
 */
 TimeInt yearto4digit(TimeInt yr) {
     // called by SW_MDL_read(), SW_WTH_read(), SW_SWC_read()
-    return (TimeInt) ((yr > 100) ? yr : (yr < 50) ? 2000 + yr : 1900 + yr);
+    TimeInt year = yr;
+
+    if (yr <= 100) {
+        year = (yr < 50) ? 2000 + yr : 1900 + yr;
+    }
+
+    return year;
 }
 
 /**
@@ -207,14 +214,20 @@ index for "day of year" (doy) is used, i.e., the value on the first day of year
 (`doy = 0`) is located in `dailyValues[0]`.
 */
 void interpolate_monthlyValues(
-    double monthlyValues[],
+    const double monthlyValues[],
     Bool interpAsBase1,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
     double dailyValues[]
 ) {
-    unsigned int doy, mday, month, month2 = NoMonth, nmdays;
-    unsigned int startdoy = 1, endDay = MAX_DAYS, doyOffset = 0;
+    unsigned int doy;
+    unsigned int mday;
+    unsigned int month;
+    unsigned int month2 = NoMonth;
+    unsigned int nmdays;
+    unsigned int startdoy = 1;
+    unsigned int endDay = MAX_DAYS;
+    unsigned int doyOffset = 0;
     double sign = 1.;
 
     // Check if we are interpolating values as base1
@@ -291,7 +304,7 @@ double diff_walltime(WallTimeSpec start, Bool ok_start) {
 #if SW_TIMESPEC == 1
             /* C11 or later */
             d = difftime(end.tv_sec, start.tv_sec) +
-                (end.tv_nsec - start.tv_nsec) / 1000000000.;
+                (double) (end.tv_nsec - start.tv_nsec) / 1.e9;
 
 #else
             d = difftime(end, start);
@@ -363,40 +376,59 @@ Time is not reported at all if quiet mode and `logfile` is `NULL`.
 void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
     double total_time = 0;
     unsigned long nSims = wt.nTimedRuns + wt.nUntimedRuns;
+    int fprintRes = 0;
 
-    FILE *logfp = (Bool) LogInfo->QuietMode ? LogInfo->logfp : stdout;
+    FILE *logfp = LogInfo->QuietMode ? LogInfo->logfp : stdout;
 
     if (isnull(logfp)) {
         return;
     }
 
-    fprintf(logfp, "Time report\n");
+    fprintRes = fprintf(logfp, "Time report\n");
+    if (fprintRes < 0) {
+        goto wrapUpErrMsg;
+    }
 
     // negative if failed
     total_time = diff_walltime(wt.timeStart, wt.has_walltime);
 
     if (GE(total_time, 0.)) {
-        fprintf(logfp, "    * Total wall time: %.2f [seconds]\n", total_time);
+        fprintRes = fprintf(
+            logfp, "    * Total wall time: %.2f [seconds]\n", total_time
+        );
     } else {
-        fprintf(logfp, "    * Wall time failed.\n");
+        fprintRes = fprintf(logfp, "    * Wall time failed.\n");
+    }
+    if (fprintRes < 0) {
+        goto wrapUpErrMsg;
     }
 
     if (nSims > 1) {
-        fprintf(logfp, "    * Number of simulation runs: %lu", nSims);
+        fprintRes =
+            fprintf(logfp, "    * Number of simulation runs: %lu", nSims);
+        if (fprintRes < 0) {
+            goto wrapUpErrMsg;
+        }
 
         if (wt.nUntimedRuns > 0) {
-            fprintf(
+            fprintRes = fprintf(
                 logfp,
                 " total (%lu timed | %lu untimed)",
                 wt.nTimedRuns,
                 wt.nUntimedRuns
             );
+            if (fprintRes < 0) {
+                goto wrapUpErrMsg;
+            }
         }
 
-        fprintf(logfp, "\n");
+        fprintRes = fprintf(logfp, "\n");
+        if (fprintRes < 0) {
+            goto wrapUpErrMsg;
+        }
 
         if (wt.nTimedRuns > 0) {
-            fprintf(
+            fprintRes = fprintf(
                 logfp,
                 "    * Variation among simulation runs: "
                 "%.3f mean (%.3f SD, %.3f-%.3f min-max) [seconds]\n",
@@ -405,17 +437,26 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
                 wt.timeMin,
                 wt.timeMax
             );
+            if (fprintRes < 0) {
+                goto wrapUpErrMsg;
+            }
         }
     }
 
     if (GT(total_time, 0.) && GE(wt.timeSimSet, 0.)) {
-        fprintf(
+        fprintRes = fprintf(
             logfp,
             "    * Wall time for simulation set: %.2f %% [percent of total "
             "wall time]\n",
             100. * wt.timeSimSet / total_time
         );
     }
+
+wrapUpErrMsg: {
+    if (fprintRes < 0) {
+        sw_message("Failed to write whole time report.");
+    }
+}
 }
 
 /**
@@ -426,5 +467,7 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
 */
 void timeStringISO8601(char *timeString, int stringLength) {
     time_t t = time(NULL);
-    strftime(timeString, stringLength, "%FT%TZ", gmtime(&t));
+    if (strftime(timeString, stringLength, "%FT%TZ", gmtime(&t)) == 0) {
+        timeString[0] = '\0';
+    }
 }

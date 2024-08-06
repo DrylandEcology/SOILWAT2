@@ -83,7 +83,7 @@ swcBulk_atSWPcrit[SW_FORBS], and my_transp_rgn[SW_FORBS] to SW_LAYER_INFO
 #ifndef SW_SITE_H
 #define SW_SITE_H
 
-#include "include/generic.h"        // for Bool, RealD, RealF
+#include "include/generic.h"        // for Bool
 #include "include/SW_datastructs.h" // for SW_SITE, SW_VEGPROD, LOG_INFO
 #include "include/SW_Defines.h"     // for LyrIndex
 
@@ -191,8 +191,8 @@ extern "C" {
 /* =================================================== */
 /*            Externed Global Variables                */
 /* --------------------------------------------------- */
-extern char const *swrc2str[];
-extern char const *ptf2str[];
+extern const char *const swrc2str[];
+extern const char *const ptf2str[];
 
 
 /* =================================================== */
@@ -234,7 +234,7 @@ Bool SWRC_check_parameters_for_FXW(double *swrcp, LOG_INFO *LogInfo);
 
 double SW_swcBulk_saturated(
     unsigned int swrc_type,
-    double *swrcp,
+    const double *swrcp,
     double gravel,
     double width,
     unsigned int ptf_type,
@@ -253,7 +253,7 @@ double SW_swcBulk_minimum(
     double sand,
     double clay,
     double swcBulk_sat,
-    RealD _SWCMinVal,
+    double SWCMinVal,
     LOG_INFO *LogInfo
 );
 
@@ -270,18 +270,18 @@ void PTF_RawlsBrakensiek1985(
 );
 
 
-RealD calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel);
+double calculate_soilBulkDensity(double matricDensity, double fractionGravel);
 
-RealD calculate_soilMatricDensity(
-    RealD bulkDensity, RealD fractionGravel, LOG_INFO *LogInfo
+double calculate_soilMatricDensity(
+    double bulkDensity, double fractionGravel, LOG_INFO *LogInfo
 );
 
-LyrIndex nlayers_bsevap(RealD *evap_coeff, LyrIndex n_layers);
+LyrIndex nlayers_bsevap(double *evap_coeff, LyrIndex n_layers);
 
 void nlayers_vegroots(
     LyrIndex n_layers,
     LyrIndex n_transp_lyrs[],
-    RealD transp_coeff[][MAX_LAYERS]
+    double transp_coeff[][MAX_LAYERS]
 );
 
 void SW_SIT_construct(SW_SITE *SW_Site);
@@ -296,7 +296,7 @@ void SW_SIT_init_run(
     SW_VEGPROD *SW_VegProd, SW_SITE *SW_Site, LOG_INFO *LogInfo
 );
 
-void _echo_inputs(SW_SITE *SW_Site, SW_MODEL *SW_Model);
+void echo_inputs(SW_SITE *SW_Site, SW_MODEL *SW_Model);
 
 
 /* these used to be in Layers */
@@ -310,25 +310,28 @@ void set_soillayers(
     SW_VEGPROD *SW_VegProd,
     SW_SITE *SW_Site,
     LyrIndex nlyrs,
-    RealF *dmax,
-    RealF *bd,
-    RealF *f_gravel,
-    RealF *evco,
-    RealF *trco_grass,
-    RealF *trco_shrub,
-    RealF *trco_tree,
-    RealF *trco_forb,
-    RealF *psand,
-    RealF *pclay,
-    RealF *imperm,
-    RealF *soiltemp,
+    const double *dmax,
+    const double *bd,
+    const double *f_gravel,
+    const double *evco,
+    const double *trco_grass,
+    const double *trco_shrub,
+    const double *trco_tree,
+    const double *trco_forb,
+    const double *psand,
+    const double *pclay,
+    const double *imperm,
+    const double *soiltemp,
     int nRegions,
-    RealD *regionLowerBounds,
+    double *regionLowerBounds,
     LOG_INFO *LogInfo
 );
 
 void derive_soilRegions(
-    SW_SITE *SW_Site, int nRegions, RealD *regionLowerBounds, LOG_INFO *LogInfo
+    SW_SITE *SW_Site,
+    unsigned int nRegions,
+    const double *regionLowerBounds,
+    LOG_INFO *LogInfo
 );
 
 

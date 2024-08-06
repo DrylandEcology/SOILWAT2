@@ -521,6 +521,14 @@ cov :
 		./tools/run_gcov.sh
 
 
+#--- Targets for clang-tidy
+tidy-bin: $(sources_lib) $(sources_bin)
+	clang-tidy --config-file=.clang-tidy $(sources_lib) $(sources_bin) -- $(sw_CPPFLAGS_bin) $(sw_CFLAGS) $(bin_flags) $(warning_flags) $(set_std)
+
+tidy-test: $(sources_test)
+	clang-tidy --config-file=.clang-tidy_swtest $(sources_test) -- $(sw_CPPFLAGS_test) $(sw_CXXFLAGS) $(gtest_flags) $(debug_flags) $(warning_flags) $(instr_flags) $(set_std++_tests) -isystem ${dir_gmock}/include -isystem ${dir_gtest}/include
+
+
 #--- Convenience targets for documentation
 .PHONY : doc
 doc :

@@ -14,7 +14,7 @@ TEST_F(VegEstabFixtureTest, SimulateWithVegEstab) {
         swTRUE,
         swFALSE,
         SW_Domain.PathInfo.InFiles,
-        SW_Domain.PathInfo._ProjDir,
+        SW_Domain.PathInfo.SW_ProjDir,
         &LogInfo
     );
 

@@ -70,8 +70,8 @@ void write_headers_to_csv(
     FILE *fp_reg,
     FILE *fp_soil,
     Bool does_agg,
-    Bool make_regular[],
-    Bool make_soil[],
+    const Bool make_regular[],
+    const Bool make_soil[],
     LyrIndex n_layers,
     LOG_INFO *LogInfo
 );
@@ -79,7 +79,7 @@ void write_headers_to_csv(
 void find_TXToutputSoilReg_inUse(
     Bool make_soil[],
     Bool make_regular[],
-    Bool has_sl[],
+    const Bool has_sl[],
     OutPeriod timeSteps[][SW_OUTNPERIODS],
     IntUS used_OUTNPERIODS
 );

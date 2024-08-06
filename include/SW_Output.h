@@ -147,10 +147,10 @@ extern "C" {
 /*            Externed Global Variables                */
 /* --------------------------------------------------- */
 
-extern char const *key2str[];
-extern char const *pd2longstr[];
-extern char const *styp2str[];
-extern char const *styp2longstr[];
+extern const char *const key2str[];
+extern const char *const pd2longstr[];
+extern const char *const styp2str[];
+extern const char *const styp2longstr[];
 
 /* =================================================== */
 /*             Global Function Declarations            */
@@ -164,20 +164,18 @@ void SW_OUTDOM_construct(SW_OUT_DOM *OutDom);
 
 void SW_OUT_construct(
     Bool zeroOutStruct,
-    Bool make_soil[],
-    Bool make_regular[],
+    SW_FILE_STATUS *FileStatus,
     SW_OUT_DOM *OutDom,
     SW_OUT_RUN *OutRun,
-    LyrIndex n_layers,
     LOG_INFO *LogInfo
 );
 
 void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw);
 
 void SW_OUT_set_ncol(
-    int tLayers,
-    int n_evap_lyrs,
-    int nTaxaEstabl,
+    unsigned int tLayers,
+    unsigned int n_evap_lyrs,
+    unsigned int nTaxaEstabl,
     IntUS ncol_OUT[],
     IntUS nvar_OUT[],
     IntUS nsl_OUT[][SW_OUTNMAXVARS],
@@ -185,16 +183,16 @@ void SW_OUT_set_ncol(
 );
 
 void SW_OUT_set_colnames(
-    int tLayers,
+    unsigned int tLayers,
     SW_VEGESTAB_INFO **parms,
-    IntUS ncol_OUT[],
+    const IntUS ncol_OUT[],
     char *colnames_OUT[][5 * NVEGTYPES + MAX_LAYERS],
     LOG_INFO *LogInfo
 );
 
 void SW_OUT_setup_output(
-    int tLayers,
-    int n_evap_lyrs,
+    unsigned int tLayers,
+    unsigned int n_evap_lyrs,
     SW_VEGESTAB *SW_VegEstab,
     SW_OUT_DOM *OutDom,
     LOG_INFO *LogInfo
@@ -235,14 +233,18 @@ void SW_OUT_sum_today(
 );
 
 void SW_OUT_write_today(
-    SW_RUN *sw, SW_OUT_DOM *OutDom, Bool bFlush_output, TimeInt tOffset
+    SW_RUN *sw,
+    SW_OUT_DOM *OutDom,
+    Bool bFlush_output,
+    TimeInt tOffset,
+    LOG_INFO *LogInfo
 );
 
 void SW_OUT_write_year(void);
 
 void SW_OUT_flush(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
-void _collect_values(
+void collect_values(
     SW_RUN *sw,
     SW_OUT_DOM *OutDom,
     Bool bFlush_output,
@@ -258,9 +260,9 @@ void SW_OUT_create_files(
     SW_FILE_STATUS *SW_FileStatus, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
 );
 
-void _echo_outputs(SW_OUT_DOM *OutDom);
+void echo_outputs(SW_OUT_DOM *OutDom);
 
-void _echo_all_inputs(SW_RUN *sw, SW_OUT_DOM *OutDom);
+void echo_all_inputs(SW_RUN *sw, SW_OUT_DOM *OutDom);
 
 void find_OutPeriods_inUse(SW_OUT_DOM *OutDom);
 

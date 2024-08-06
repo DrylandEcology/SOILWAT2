@@ -39,7 +39,7 @@
 #include "include/SW_Defines.h"     // for MAX_FILENAMESIZE
 #include <stdio.h>                  // for FILENAME_MAX, NULL, FILE, stderr
 #include <stdlib.h>                 // for free
-#include <string.h>                 // for strcpy, strcmp, strlen, memcpy
+#include <string.h>                 // for memccpy, strcmp, strlen, memcpy
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -60,24 +60,20 @@ void SW_CSV_F_INIT(const char *s, LOG_INFO *LogInfo) {
      *  remove old output and/or create the output directories if needed */
     /* borrow inbuf for filenames */
 
-    char inbuf[MAX_FILENAMESIZE], dirString[FILENAME_MAX];
+    char inbuf[MAX_FILENAMESIZE];
+    char dirString[FILENAME_MAX];
 
     DirName(s, dirString);
 
     if (DirExists(dirString)) {
-        strcpy(inbuf, s);
+        (void) sw_memccpy(inbuf, (char *) s, '\0', sizeof inbuf);
         if (!RemoveFiles(inbuf, LogInfo)) {
             LogError(
                 LogInfo, LOGWARN, "Can't remove old csv output file: %s\n", s
             );
         }
-    } else if (!MkDir(dirString, LogInfo)) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Can't make output path for csv file: %s\n",
-            dirString
-        );
+    } else {
+        MkDir(dirString, LogInfo);
     }
 }
 
@@ -101,12 +97,16 @@ Update values of variables within PATH_INFO:
     - `logfp` for SOILWAT2-standalone
 */
 void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
-    FILE *f;
-    int lineno = 0, fileno = 0;
-    char buf[FILENAME_MAX], inbuf[MAX_FILENAMESIZE];
 #ifdef SWDEBUG
     int debug = 0;
 #endif
+
+    FILE *f;
+    int lineno = 0;
+    int fileno = 0;
+    int resSNP;
+    char buf[FILENAME_MAX];
+    char inbuf[MAX_FILENAMESIZE];
 
     char *MyFileName = PathInfo->InFiles[eFirst];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -126,16 +126,45 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
 
         switch (lineno) {
         case 10:
-            strcpy(PathInfo->weather_prefix, inbuf);
+            resSNP = snprintf(
+                PathInfo->weather_prefix,
+                sizeof PathInfo->weather_prefix,
+                "%s",
+                inbuf
+            );
+            if (resSNP < 0 ||
+                (unsigned) resSNP >= (sizeof PathInfo->weather_prefix)) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "weather prefix is too long: '%s'.",
+                    inbuf
+                );
+                goto closeFile;
+            }
             break;
         case 18:
-            strcpy(PathInfo->output_prefix, inbuf);
+            resSNP = snprintf(
+                PathInfo->output_prefix,
+                sizeof PathInfo->output_prefix,
+                "%s",
+                inbuf
+            );
+            if (resSNP < 0 ||
+                (unsigned) resSNP >= (sizeof PathInfo->output_prefix)) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "output path name is too long: '%s'.",
+                    inbuf
+                );
+                goto closeFile;
+            }
             break;
         case 20:
             PathInfo->InFiles[eOutputDaily] = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
-                CloseFile(&f, LogInfo);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             ++fileno;
             SW_CSV_F_INIT(PathInfo->InFiles[eOutputDaily], LogInfo);
@@ -143,8 +172,7 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
         case 21:
             PathInfo->InFiles[eOutputWeekly] = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
-                CloseFile(&f, LogInfo);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             ++fileno;
             SW_CSV_F_INIT(PathInfo->InFiles[eOutputWeekly], LogInfo);
@@ -153,8 +181,7 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
         case 22:
             PathInfo->InFiles[eOutputMonthly] = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
-                CloseFile(&f, LogInfo);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             ++fileno;
             SW_CSV_F_INIT(PathInfo->InFiles[eOutputMonthly], LogInfo);
@@ -163,8 +190,7 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
         case 23:
             PathInfo->InFiles[eOutputYearly] = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
-                CloseFile(&f, LogInfo);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             ++fileno;
             SW_CSV_F_INIT(PathInfo->InFiles[eOutputYearly], LogInfo);
@@ -172,8 +198,7 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
         case 24:
             PathInfo->InFiles[eOutputDaily_soil] = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
-                CloseFile(&f, LogInfo);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             ++fileno;
             SW_CSV_F_INIT(PathInfo->InFiles[eOutputDaily_soil], LogInfo);
@@ -182,8 +207,7 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
         case 25:
             PathInfo->InFiles[eOutputWeekly_soil] = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
-                CloseFile(&f, LogInfo);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             ++fileno;
             SW_CSV_F_INIT(PathInfo->InFiles[eOutputWeekly_soil], LogInfo);
@@ -192,8 +216,7 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
         case 26:
             PathInfo->InFiles[eOutputMonthly_soil] = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
-                CloseFile(&f, LogInfo);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             ++fileno;
             SW_CSV_F_INIT(PathInfo->InFiles[eOutputMonthly_soil], LogInfo);
@@ -202,8 +225,7 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
         case 27:
             PathInfo->InFiles[eOutputYearly_soil] = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
-                CloseFile(&f, LogInfo);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             ++fileno;
             SW_CSV_F_INIT(PathInfo->InFiles[eOutputYearly_soil], LogInfo);
@@ -218,42 +240,40 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
                 free(PathInfo->InFiles[fileno]);
             }
 
-            strcpy(buf, PathInfo->_ProjDir);
-            strcat(buf, inbuf);
+            resSNP =
+                snprintf(buf, sizeof buf, "%s%s", PathInfo->SW_ProjDir, inbuf);
+            if (resSNP < 0 || (unsigned) resSNP >= (sizeof buf)) {
+                LogError(
+                    LogInfo, LOGERROR, "input file name is too long: '%s'.", buf
+                );
+                goto closeFile;
+            }
+
             PathInfo->InFiles[fileno] = Str_Dup(buf, LogInfo);
             if (LogInfo->stopRun) {
-                CloseFile(&f, LogInfo);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
         }
 
         // Check if something went wrong in `SW_CSV_F_INIT()`
         if (LogInfo->stopRun) {
-            CloseFile(&f, LogInfo);
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
 
         lineno++;
     }
 
-    CloseFile(&f, LogInfo);
-
     if (fileno < eEndFile - 1) {
         LogError(
             LogInfo, LOGERROR, "Too few files (%d) in %s", fileno, MyFileName
         );
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     if (!DirExists(PathInfo->output_prefix)) {
-        if (!MkDir(PathInfo->output_prefix, LogInfo)) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "Cannot make output path: '%s'\n",
-                PathInfo->output_prefix
-            );
-            return; // Exit function prematurely due to error
+        MkDir(PathInfo->output_prefix, LogInfo);
+        if (LogInfo->stopRun) {
+            goto closeFile;
         }
     }
 
@@ -266,6 +286,8 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
         LogInfo->logfp = OpenFile(PathInfo->InFiles[eLog], "w", LogInfo);
     }
 #endif
+
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 void SW_F_deepCopy(PATH_INFO *source, PATH_INFO *dest, LOG_INFO *LogInfo) {
@@ -299,40 +321,45 @@ void SW_F_init_ptrs(char *InFiles[]) {
 }
 
 /**
-@brief Determines string length of file being read in combined with _ProjDir.
+@brief Determines string length of file being read in combined with SW_ProjDir.
 
 @param[in] *firstfile File to be read in.
-@param[out] _ProjDir Project directory
+@param[out] SW_ProjDir Project directory
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_F_construct(const char *firstfile, char _ProjDir[], LOG_INFO *LogInfo) {
+void SW_F_construct(
+    const char *firstfile, char SW_ProjDir[], LOG_INFO *LogInfo
+) {
     /* =================================================== */
     /* 10-May-02 (cwb) enhancement allows model to be run
      *    in one directory while getting its input from another.
      *    This was done mostly in support of STEPWAT but
      *    it could be useful in a standalone run.
      */
-    char *c, *p, dirString[FILENAME_MAX];
-    char *local_firstfile = Str_Dup(firstfile, LogInfo);
+    char *c;
+    char *p;
+    char dirString[FILENAME_MAX];
+    char *localfirstfile = Str_Dup(firstfile, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    DirName(local_firstfile, dirString);
+    DirName(localfirstfile, dirString);
+    c = dirString;
 
-    if ((c = dirString)) {
-        strcpy(_ProjDir, c);
-        c = local_firstfile;
-        p = c + strlen(_ProjDir);
+    if (c) {
+        (void) sw_memccpy(SW_ProjDir, c, '\0', sizeof dirString);
+        c = localfirstfile;
+        p = c + strlen(SW_ProjDir);
         while (*p) {
             *(c++) = *(p++);
         }
         *c = '\0';
     } else {
-        _ProjDir[0] = '\0';
+        SW_ProjDir[0] = '\0';
     }
 
-    free(local_firstfile);
+    free(localfirstfile);
 }
 
 /**

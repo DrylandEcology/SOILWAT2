@@ -12,6 +12,7 @@
 [netCDF]: https://downloads.unidata.ucar.edu/netcdf/
 [udunits2]: https://downloads.unidata.ucar.edu/udunits/
 [ClangFormat]: https://clang.llvm.org/docs/ClangFormat.html
+[clang-tidy]: https://clang.llvm.org/extra/clang-tidy
 [iwyu]:https://include-what-you-use.org/
 
 
@@ -21,8 +22,9 @@ Go back to the [main page](README.md).
 1. [SOILWAT2 code](#SOILWAT2_code)
 2. [Code guidelines](#guidelines)
     1. [Code format](#code_format)
-    2. [Include directives](#includes)
-    3. [Other guidelines](#other_guidelines)
+    2. [Code checks](#code_checks)
+    3. [Include directives](#includes)
+    4. [Other guidelines](#other_guidelines)
 3. [Code documentation](#code_documentation)
 4. [Code tests](#code_tests)
     1. [Unit tests](#unit_tests)
@@ -131,6 +133,27 @@ to the developed implementation for that commit.
 
 A github action workflow `".github/workflows/clang-format-check.yml"`
 checks code style for pull requests into the main branch and release branches.
+
+<br>
+
+
+
+<a name="code_checks"></a>
+### Code checks
+
+We use [clang-tidy][] to check code in the `SOILWAT2` repository.
+
+The files `".clang-tidy"` and `".clang-tidy_swtests"` document all details
+related to these code checks.
+
+We have `make` targets `"tidy-bin"` and `"tidy-test"` to run these checks on
+the code and on the test code respectively.
+
+We also have a script `"tools/run_tidy.sh"` that runs all appropriate checks.
+The script exits with a failure code if any check reports code issues.
+
+A github action workflow `".github/workflows/clang-tidy-check.yml"`
+checks code for pull requests into the main branch and release branches.
 
 <br>
 

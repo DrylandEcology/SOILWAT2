@@ -76,7 +76,7 @@
     information that do not change throughout simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 */
-static void _begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
+static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     // SW_F_new_year() not needed
 
     // call SW_MDL_new_year() first to set up time-related arrays for this year
@@ -113,7 +113,7 @@ static void _begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     );
 }
 
-static void _begin_day(SW_RUN *sw, LOG_INFO *LogInfo) {
+static void begin_day(SW_RUN *sw, LOG_INFO *LogInfo) {
     SW_MDL_new_day(&sw->Model);
     SW_WTH_new_day(
         &sw->Weather,
@@ -125,11 +125,11 @@ static void _begin_day(SW_RUN *sw, LOG_INFO *LogInfo) {
     );
 }
 
-static void _end_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
+static void end_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     int localTOffset = 1; // tOffset is one when called from this function
 
     if (sw->Model.doOutput) {
-        _collect_values(sw, OutDom, swFALSE, localTOffset, LogInfo);
+        collect_values(sw, OutDom, swFALSE, localTOffset, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -197,7 +197,7 @@ void SW_RUN_deepCopy(
 
     for (IntU speciesNum = 0; speciesNum < source->VegEstab.count;
          speciesNum++) {
-        _new_species(&dest->VegEstab, LogInfo);
+        new_species(&dest->VegEstab, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit prematurely due to error
         }
@@ -269,15 +269,19 @@ void SW_CTL_RunSimSet(
     LOG_INFO *main_LogInfo
 ) {
 
-    unsigned long suid, nSims = 0;
+    unsigned long suid;
+    unsigned long nSims = 0;
     unsigned long ncSuid[2]; // 2 -> [y, x] or [s, 0]
     /* tag_suid is 32:
       11 character for "(suid = ) " + 20 character for ULONG_MAX + '\0' */
     char tag_suid[32];
 
     tag_suid[0] = '\0';
-    WallTimeSpec tss, tsr;
-    Bool ok_tss = swFALSE, ok_tsr = swFALSE, ok_suid;
+    WallTimeSpec tss;
+    WallTimeSpec tsr;
+    Bool ok_tss = swFALSE;
+    Bool ok_tsr = swFALSE;
+    Bool ok_suid;
 
     int progFileID = 0; // Value does not matter if SWNETCDF is not defined
     int progVarID = 0;  // Value does not matter if SWNETCDF is not defined
@@ -347,7 +351,7 @@ void SW_CTL_RunSimSet(
         }
 
         if (local_LogInfo.stopRun || local_LogInfo.numWarnings > 0) {
-            snprintf(tag_suid, 32, "(suid = %lu) ", suid + 1);
+            (void) snprintf(tag_suid, 32, "(suid = %lu) ", suid + 1);
             sw_write_warnings(tag_suid, &local_LogInfo);
         }
     }
@@ -416,7 +420,7 @@ void SW_CTL_setup_domain(
 
     SW_F_construct(
         SW_Domain->PathInfo.InFiles[eFirst],
-        SW_Domain->PathInfo._ProjDir,
+        SW_Domain->PathInfo.SW_ProjDir,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -520,13 +524,7 @@ void SW_CTL_setup_model(
     SW_VPD_construct(&sw->VegProd);
     // SW_FLW_construct() not needed
     SW_OUT_construct(
-        zeroOutInfo,
-        sw->FileStatus.make_soil,
-        sw->FileStatus.make_regular,
-        OutDom,
-        &sw->OutRun,
-        sw->Site.n_layers,
-        LogInfo
+        zeroOutInfo, &sw->FileStatus, OutDom, &sw->OutRun, LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -567,7 +565,7 @@ void SW_CTL_clear_model(Bool full_reset, SW_RUN *sw) {
 @brief Initialize simulation run (based on user inputs)
 
 Note: Time will only be set up correctly while carrying out a simulation year,
-i.e., after calling _begin_year()
+i.e., after calling begin_year()
 
 @param[in,out] sw Comprehensive structure holding all information
     dealt with in SOILWAT2
@@ -624,17 +622,19 @@ void SW_CTL_run_current_year(
     SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
     /*=======================================================*/
-    TimeInt *doy = &sw->Model.doy; // base1
 #ifdef SWDEBUG
     int debug = 0;
 #endif
+
+    TimeInt *doy = &sw->Model.doy; // base1
 
 #ifdef SWDEBUG
     if (debug) {
         sw_printf("\n'SW_CTL_run_current_year': begin new year\n");
     }
 #endif
-    _begin_year(sw, OutDom, LogInfo);
+
+    begin_year(sw, OutDom, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -645,7 +645,7 @@ void SW_CTL_run_current_year(
             sw_printf("\t: begin doy = %d ... ", *doy);
         }
 #endif
-        _begin_day(sw, LogInfo);
+        begin_day(sw, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -686,7 +686,7 @@ void SW_CTL_run_current_year(
             sw_printf("ending day ... ");
         }
 #endif
-        _end_day(sw, OutDom, LogInfo);
+        end_day(sw, OutDom, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -743,9 +743,16 @@ void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         return;
     }
 
-    unsigned int i, k, quotient = 0, remainder = 0;
+#ifdef SWDEBUG
+    int debug = 0;
+#endif
+
+    unsigned int i;
+    unsigned int k;
+    unsigned int quotient = 0;
+    unsigned int remainder = 0;
     int mode = sw->Model.SW_SpinUp.mode;
-    int yr;
+    TimeInt yr;
     TimeInt duration = sw->Model.SW_SpinUp.duration;
     TimeInt scope = sw->Model.SW_SpinUp.scope;
     TimeInt finalyr = sw->Model.startyr + scope - 1;
@@ -757,10 +764,6 @@ void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
-
-#ifdef SWDEBUG
-    int debug = 0;
-#endif
 
 #ifdef SWDEBUG
     if (debug) {
@@ -812,7 +815,9 @@ void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         break;
     }
 
-    TimeInt *cur_yr = &sw->Model.year, yrIdx, startyr = sw->Model.startyr;
+    TimeInt *cur_yr = &sw->Model.year;
+    TimeInt yrIdx;
+    TimeInt startyr = sw->Model.startyr;
 
     sw->Model.startyr = years[0]; // set startyr for spinup
 
@@ -891,7 +896,6 @@ void SW_CTL_read_inputs_from_disk(
         sw_printf(" > 'weather setup'");
     }
 #endif
-
     SW_SKY_read(PathInfo->InFiles, &sw->Sky, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -970,7 +974,9 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_VES_read(&sw->VegEstab, PathInfo->InFiles, PathInfo->_ProjDir, LogInfo);
+    SW_VES_read(
+        &sw->VegEstab, PathInfo->InFiles, PathInfo->SW_ProjDir, LogInfo
+    );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -1029,7 +1035,7 @@ on error but end early and report to caller
 void SW_CTL_run_sw(
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
-    unsigned long ncSuid[],
+    unsigned long ncSuid[], // NOLINT(readability-non-const-parameter)
     LOG_INFO *LogInfo
 ) {
 

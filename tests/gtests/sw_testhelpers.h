@@ -92,4 +92,4 @@ using WeatherFixtureTest = AllTestFixture;
 
 using WaterBalanceFixtureTest = AllTestFixture;
 
-using SpinUpTest = AllTestFixture;
+using SpinUpFixtureTest = AllTestFixture;

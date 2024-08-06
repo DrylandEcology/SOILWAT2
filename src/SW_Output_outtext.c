@@ -23,11 +23,11 @@ History:
 #include "include/generic.h"           // for Bool, swFALSE, SOILWAT, IntUS
 #include "include/myMemory.h"          // for Mem_Malloc
 #include "include/SW_datastructs.h"    // for LOG_INFO
-#include "include/SW_Defines.h"        // for _OUTSEP, OutPeriod, ForEachOu...
+#include "include/SW_Defines.h"        // for OUTSEP, OutPeriod, ForEachOu...
 #include "include/SW_Output.h"         // for pd2longstr, ForEachOutKey
 #include <stdio.h>                     // for snprintf, fflush, fprintf
 #include <stdlib.h>                    // for free
-#include <string.h>                    // for strcat, strcpy
+#include <string.h>                    // for memccpy
 
 #if (defined(SOILWAT) && !defined(SWNETCDF)) || defined(STEPWAT)
 #include "include/SW_Files.h" // for eOutputDaily, eOutputDaily_soil
@@ -56,7 +56,7 @@ Active if @ref SW_OUT_DOM.print_IterationSummary is TRUE
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
-static void _create_csv_headers(
+static void create_csv_headers(
     SW_OUT_DOM *OutDom,
     OutPeriod pd,
     char *str_reg,
@@ -71,29 +71,40 @@ static void _create_csv_headers(
         LogError(
             LogInfo,
             LOGERROR,
-            "'_create_csv_headers': value TRUE for "
+            "'create_csv_headers': value TRUE for "
             "argument 'does_agg' is not implemented for SOILWAT2-standalone."
         );
         return; // Exit function prematurely due to error
     }
 #endif
 
-    unsigned int i, k;
+    unsigned int i;
+    unsigned int k;
+    int resSNP;
     char key[50];
     Bool isTrue = swFALSE;
 
-    size_t size_help = n_layers * OUTSTRLEN;
-    char *str_help1, *str_help2;
+    size_t size_help = (size_t) (n_layers) *OUTSTRLEN;
+    char *str_help1;
+    char *str_help2;
+
+    size_t writeSizeHelp = size_help;
+    size_t writeSizeReg = (size_t) (2 * OUTSTRLEN);
+    size_t writeSizeSoil = (size_t) (n_layers) *OUTSTRLEN;
+    char *writePtrHelp = NULL;
+    char *resPtr = NULL;
+    char *writePtrSoil = NULL;
+    char *writePtrReg = NULL;
 
     str_help1 = (char *) Mem_Malloc(
-        sizeof(char) * size_help, "_create_csv_headers()", LogInfo
+        sizeof(char) * size_help, "create_csv_headers()", LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
     str_help2 = (char *) Mem_Malloc(
-        sizeof(char) * size_help, "_create_csv_headers()", LogInfo
+        sizeof(char) * size_help, "create_csv_headers()", LogInfo
     );
     if (LogInfo->stopRun) {
         free(str_help1);
@@ -104,7 +115,12 @@ static void _create_csv_headers(
     str_reg[0] = (char) '\0';
     str_soil[0] = (char) '\0';
 
+    writePtrReg = str_reg;
+    writePtrSoil = str_soil;
+
     ForEachOutKey(k) {
+        writePtrHelp = str_help2;
+
         isTrue = (Bool) (OutDom->use[k] && has_OutPeriod_inUse(
                                                pd,
                                                (OutKey) k,
@@ -112,44 +128,62 @@ static void _create_csv_headers(
                                                OutDom->timeSteps
                                            ));
         if (isTrue) {
-            strcpy(key, key2str[k]);
+            (void) sw_memccpy(key, (char *) key2str[k], '\0', sizeof key);
             str_help2[0] = '\0';
 
             for (i = 0; i < OutDom->ncol_OUT[k]; i++) {
                 if (does_agg) {
-                    snprintf(
+                    resSNP = snprintf(
                         str_help1,
                         size_help,
                         "%c%s_%s_Mean%c%s_%s_SD",
-                        _OUTSEP,
+                        OUTSEP,
                         key,
                         OutDom->colnames_OUT[k][i],
-                        _OUTSEP,
+                        OUTSEP,
                         key,
                         OutDom->colnames_OUT[k][i]
                     );
                 } else {
-                    snprintf(
+                    resSNP = snprintf(
                         str_help1,
                         size_help,
                         "%c%s_%s",
-                        _OUTSEP,
+                        OUTSEP,
                         key,
                         OutDom->colnames_OUT[k][i]
                     );
                 }
 
-                strcat(str_help2, str_help1);
+                if (resSNP < 0 || (unsigned) resSNP >= size_help) {
+                    LogError(LogInfo, LOGERROR, "csv-header is too long.");
+                    goto freeMem; // Exit function prematurely due to error
+                }
+
+                resPtr = (char *) sw_memccpy(
+                    writePtrHelp, str_help1, '\0', writeSizeHelp
+                );
+                writePtrHelp = resPtr - 1;
+                writeSizeHelp -= (resPtr - writePtrHelp - 1);
             }
 
             if (OutDom->has_sl[k]) {
-                strcat((char *) str_soil, str_help2);
+                resPtr = (char *) sw_memccpy(
+                    writePtrSoil, str_help2, '\0', writeSizeSoil
+                );
+                writeSizeSoil -= (resPtr - str_soil - 1);
+                writePtrSoil = resPtr - 1;
             } else {
-                strcat((char *) str_reg, str_help2);
+                resPtr = (char *) sw_memccpy(
+                    writePtrReg, str_help2, '\0', writeSizeReg
+                );
+                writeSizeReg -= (resPtr - str_reg - 1);
+                writePtrReg = resPtr - 1;
             }
         }
     }
 
+freeMem:
     free(str_help1);
     free(str_help2);
 }
@@ -167,7 +201,7 @@ static void _create_csv_headers(
 @param[out] LogInfo Holds information on warnings and errors
 */
 /***********************************************************/
-static void _create_csv_files(
+static void create_csv_files(
     SW_FILE_STATUS *SW_FileStatus,
     OutPeriod pd,
     char *InFiles[],
@@ -200,25 +234,28 @@ static void _create_csv_files(
 static void get_outstrheader(OutPeriod pd, char *str, size_t sizeof_str) {
     switch (pd) {
     case eSW_Day:
-        snprintf(
-            str, sizeof_str, "%s%c%s", "Year", _OUTSEP, pd2longstr[eSW_Day]
+        (void) snprintf(
+            str, sizeof_str, "%s%c%s", "Year", OUTSEP, pd2longstr[eSW_Day]
         );
         break;
 
     case eSW_Week:
-        snprintf(
-            str, sizeof_str, "%s%c%s", "Year", _OUTSEP, pd2longstr[eSW_Week]
+        (void) snprintf(
+            str, sizeof_str, "%s%c%s", "Year", OUTSEP, pd2longstr[eSW_Week]
         );
         break;
 
     case eSW_Month:
-        snprintf(
-            str, sizeof_str, "%s%c%s", "Year", _OUTSEP, pd2longstr[eSW_Month]
+        (void) snprintf(
+            str, sizeof_str, "%s%c%s", "Year", OUTSEP, pd2longstr[eSW_Month]
         );
         break;
 
     case eSW_Year:
-        snprintf(str, sizeof_str, "%s", "Year");
+        (void) sw_memccpy(str, "Year", '\0', sizeof_str);
+        break;
+
+    default:
         break;
     }
 }
@@ -231,7 +268,7 @@ static void get_outstrheader(OutPeriod pd, char *str, size_t sizeof_str) {
 
 \return `name_flagiteration.ext`
 */
-static void _create_filename_ST(
+static void create_filename_ST(
     char *str,
     char *flag,
     int iteration,
@@ -239,7 +276,9 @@ static void _create_filename_ST(
     size_t sizeof_filename,
     LOG_INFO *LogInfo
 ) {
-    int startIndex = 0, strLen = 0; // For `sw_strtok()`
+    size_t startIndex = 0;
+    size_t strLen = 0; // For `sw_strtok()`
+    int resSNP;
 
     char *basename;
     char *ext;
@@ -254,7 +293,7 @@ static void _create_filename_ST(
 
     // Put new file together
     if (iteration > 0) {
-        snprintf(
+        resSNP = snprintf(
             filename,
             sizeof_filename,
             "%s_%s%d.%s",
@@ -264,10 +303,18 @@ static void _create_filename_ST(
             ext
         );
     } else {
-        snprintf(filename, sizeof_filename, "%s_%s.%s", basename, flag, ext);
+        resSNP = snprintf(
+            filename, sizeof_filename, "%s_%s.%s", basename, flag, ext
+        );
     }
 
     free(fileDup);
+
+    if (resSNP < 0 || (unsigned) resSNP >= sizeof_filename) {
+        LogError(
+            LogInfo, LOGERROR, "csv file name is too long: '%s'", filename
+        );
+    }
 }
 
 /**
@@ -287,7 +334,7 @@ name if -i flag used in STEPWAT2. Set to a negative value otherwise.
 @param LogInfo Holds information on warnings and errors
 */
 /***********************************************************/
-static void _create_csv_file_ST(
+static void create_csv_file_ST(
     int iteration,
     OutPeriod pd,
     char *InFiles[],
@@ -303,7 +350,7 @@ static void _create_csv_file_ST(
             // assumes a specific order of `SW_FileIndex` --> fix and create
             // something that allows subsetting such as `eOutputFile[pd]` or
             // append time period to a basename, etc.
-            _create_filename_ST(
+            create_filename_ST(
                 InFiles[eOutputDaily + pd],
                 "agg",
                 0,
@@ -322,7 +369,7 @@ static void _create_csv_file_ST(
         }
 
         if (FileStatus->make_soil[pd]) {
-            _create_filename_ST(
+            create_filename_ST(
                 InFiles[eOutputDaily_soil + pd],
                 "agg",
                 0,
@@ -353,7 +400,7 @@ static void _create_csv_file_ST(
         }
 
         if (FileStatus->make_regular[pd]) {
-            _create_filename_ST(
+            create_filename_ST(
                 InFiles[eOutputDaily + pd],
                 "rep",
                 iteration,
@@ -372,7 +419,7 @@ static void _create_csv_file_ST(
         }
 
         if (FileStatus->make_soil[pd]) {
-            _create_filename_ST(
+            create_filename_ST(
                 InFiles[eOutputDaily_soil + pd],
                 "rep",
                 iteration,
@@ -421,7 +468,7 @@ void SW_OUT_create_textfiles(
 
     ForEachOutPeriod(pd) {
         if (OutDom->use_OutPeriod[pd]) {
-            _create_csv_files(SW_FileStatus, pd, InFiles, LogInfo);
+            create_csv_files(SW_FileStatus, pd, InFiles, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
@@ -458,7 +505,7 @@ void SW_OUT_create_summary_files(
 
     ForEachOutPeriod(p) {
         if (OutDom->use_OutPeriod[p]) {
-            _create_csv_file_ST(-1, p, InFiles, SW_FileStatus, LogInfo);
+            create_csv_file_ST(-1, p, InFiles, SW_FileStatus, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
@@ -494,7 +541,7 @@ void SW_OUT_create_iteration_files(
 
     ForEachOutPeriod(p) {
         if (OutDom->use_OutPeriod[p]) {
-            _create_csv_file_ST(iteration, p, InFiles, SW_FileStatus, LogInfo);
+            create_csv_file_ST(iteration, p, InFiles, SW_FileStatus, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
@@ -541,35 +588,38 @@ void get_outstrleader(
 ) {
     switch (pd) {
     case eSW_Day:
-        snprintf(
-            str, sizeof_str, "%d%c%d", SW_Model->simyear, _OUTSEP, SW_Model->doy
+        (void) snprintf(
+            str, sizeof_str, "%d%c%d", SW_Model->simyear, OUTSEP, SW_Model->doy
         );
         break;
 
     case eSW_Week:
-        snprintf(
+        (void) snprintf(
             str,
             sizeof_str,
             "%d%c%d",
             SW_Model->simyear,
-            _OUTSEP,
+            OUTSEP,
             (SW_Model->week + 1) - tOffset
         );
         break;
 
     case eSW_Month:
-        snprintf(
+        (void) snprintf(
             str,
             sizeof_str,
             "%d%c%d",
             SW_Model->simyear,
-            _OUTSEP,
+            OUTSEP,
             (SW_Model->month + 1) - tOffset
         );
         break;
 
     case eSW_Year:
-        snprintf(str, sizeof_str, "%d", SW_Model->simyear);
+        (void) snprintf(str, sizeof_str, "%d", SW_Model->simyear);
+        break;
+
+    default:
         break;
     }
 }
@@ -582,7 +632,7 @@ goes through all values and if the value is defined to be used it creates the
 header in the output file.
 
 @note The functions SW_OUT_set_ncol() and SW_OUT_set_colnames() must
-be called before _create_csv_headers(); otherwise, `ncol_OUT` and
+be called before create_csv_headers(); otherwise, `ncol_OUT` and
 `colnames_OUT` are not set.
 
 @param OutDom Struct of type SW_OUT_DOM that holds output
@@ -605,8 +655,8 @@ void write_headers_to_csv(
     FILE *fp_reg,
     FILE *fp_soil,
     Bool does_agg,
-    Bool make_regular[],
-    Bool make_soil[],
+    const Bool make_regular[],
+    const Bool make_soil[],
     LyrIndex n_layers,
     LOG_INFO *LogInfo
 ) {
@@ -617,8 +667,9 @@ void write_headers_to_csv(
         header_reg[2 * OUTSTRLEN];
 
     // 26500 characters required for 25 soil layers and does_agg = TRUE
-    size_t size_hs = n_layers * OUTSTRLEN;
+    size_t size_hs = (size_t) (n_layers) *OUTSTRLEN;
     char *header_soil;
+    int fprintRes = 0;
 
     header_soil = (char *) Mem_Malloc(
         sizeof(char) * size_hs, "write_headers_to_csv()", LogInfo
@@ -630,7 +681,7 @@ void write_headers_to_csv(
 
     // Acquire headers
     get_outstrheader(pd, str_time, sizeof str_time);
-    _create_csv_headers(
+    create_csv_headers(
         OutDom, pd, header_reg, header_soil, does_agg, n_layers, LogInfo
     );
     if (LogInfo->stopRun) {
@@ -640,13 +691,43 @@ void write_headers_to_csv(
 
     // Write headers to files
     if (make_regular[pd]) {
-        fprintf(fp_reg, "%s%s\n", str_time, header_reg);
-        fflush(fp_reg);
+        fprintRes = fprintf(fp_reg, "%s%s\n", str_time, header_reg);
+
+        if (fprintRes < 0) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Could not write headers to \"regular\" CSVs."
+            );
+            return; /* Exit prematurely due to error */
+        }
+
+        if (fflush(fp_reg) == EOF) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Could note write headers to \"regular\" CSVs."
+            );
+            return; /* Exit prematurely due to error */
+        }
     }
 
     if (make_soil[pd]) {
-        fprintf(fp_soil, "%s%s\n", str_time, header_soil);
-        fflush(fp_soil);
+        fprintRes = fprintf(fp_soil, "%s%s\n", str_time, header_soil);
+
+        if (fprintRes < 0) {
+            LogError(
+                LogInfo, LOGERROR, "Could not write headers to \"soil\" CSVs."
+            );
+            return; /* Exit prematurely due to error */
+        }
+
+        if (fflush(fp_soil) == EOF) {
+            LogError(
+                LogInfo, LOGERROR, "Could note flush headers to \"soil\" CSVs."
+            );
+            return; /* Exit prematurely due to error */
+        }
     }
 
     free(header_soil);
@@ -655,11 +736,12 @@ void write_headers_to_csv(
 void find_TXToutputSoilReg_inUse(
     Bool make_soil[],
     Bool make_regular[],
-    Bool has_sl[],
+    const Bool has_sl[],
     OutPeriod timeSteps[][SW_OUTNPERIODS],
     IntUS used_OUTNPERIODS
 ) {
-    IntUS i, k;
+    int i;
+    int k;
 
     ForEachOutPeriod(i) {
         make_soil[i] = swFALSE;
@@ -694,7 +776,9 @@ void SW_OUT_close_textfiles(
     SW_FILE_STATUS *SW_FileStatus, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
 
-    Bool close_regular = swFALSE, close_layers = swFALSE, close_aggs = swFALSE;
+    Bool close_regular = swFALSE;
+    Bool close_layers = swFALSE;
+    Bool close_aggs = swFALSE;
     OutPeriod p;
 
 

@@ -16,17 +16,17 @@
  siteparam.in
 
  10/19/2010	(drs) added HydraulicRedistribution flag, and maxCondroot,
- swp50, and shapeCond parameters to SW_SIT_read()  and _echo_inputs()
+ swp50, and shapeCond parameters to SW_SIT_read()  and echo_inputs()
 
  07/20/2011	(drs) updated _read_layers() to read impermeability values from
  each soil layer from soils.in file added calculation for saturated swc in
- water_eqn() updated _echo_inputs() to print impermeability and saturated swc
+ water_eqn() updated echo_inputs() to print impermeability and saturated swc
  values
 
  09/08/2011	(drs) moved all hydraulic redistribution parameters to
  SW_VegProd.h struct VegType
 
- 09/15/2011	(drs)	deleted albedo from SW_SIT_read() and _echo_inputs():
+ 09/15/2011	(drs)	deleted albedo from SW_SIT_read() and echo_inputs():
  moved it to SW_VegProd.h to make input vegetation type dependent
 
  02/03/2012	(drs)	if input of SWCmin < 0 then estimate SWCmin with
@@ -37,24 +37,24 @@
 
  02/04/2012	(drs)	added calculation of swc at SWPcrit for each vegetation
  type and layer to function 'init_site_info()' added vwc/swc at SWPcrit to
- '_echo_inputs()'
+ 'echo_inputs()'
 
  05/24/2012  (DLM) edited SW_SIT_read(void) function to be able to read in Soil
  Temperature constants from siteparam.in file
 
- 05/24/2012  (DLM) edited _echo_inputs(void) function to echo the Soil
+ 05/24/2012  (DLM) edited echo_inputs(void) function to echo the Soil
  Temperature constants to the logfile
 
  05/25/2012  (DLM) edited _read_layers( void) function to read in the initial
  soil temperature for each layer
 
- 05/25/2012  (DLM) edited _echo_inputs( void) function to echo the read in soil
+ 05/25/2012  (DLM) edited echo_inputs( void) function to echo the read in soil
  temperatures for each layer
 
- 05/30/2012  (DLM) edited _read_layers & _echo_inputs functions to read in/echo
+ 05/30/2012  (DLM) edited _read_layers & echo_inputs functions to read in/echo
  the deltaX parameter
 
- 05/31/2012  (DLM) edited _read_layers & _echo_inputs functions to read in/echo
+ 05/31/2012  (DLM) edited _read_layers & echo_inputs functions to read in/echo
  stMaxDepth & use_soil_temp variables
 
  05/31/2012  (DLM) edited init_site_info(void) to check if stMaxDepth & stDeltaX
@@ -63,13 +63,13 @@
  11/06/2012	(clk)	In SW_SIT_read(void), added lines to read in aspect and
  slope from siteparam.in
 
- 11/06/2012	(clk)	In _echo_inputs(void), added lines to echo aspect and
+ 11/06/2012	(clk)	In echo_inputs(void), added lines to echo aspect and
  slope to logfile
 
  11/30/2012	(clk)	In SW_SIT_read(void), added lines to read in
  percentRunoff from siteparam.in
 
- 11/30/2012	(clk)	In _echo_inputs(void), added lines to echo percentRunoff
+ 11/30/2012	(clk)	In echo_inputs(void), added lines to echo percentRunoff
  to logfile
 
  04/16/2013	(clk)	changed the water_eqn to use the fraction of gravel
@@ -118,11 +118,11 @@
 #include "include/SW_Main_lib.h"    // for sw_init_logs
 #include "include/SW_SoilWater.h"   // for SW_SWRC_SWCtoSWP, SW_SWRC_SWPtoSWC
 #include "include/SW_VegProd.h"     // for key2veg, get_critical_rank, sum_...
+#include <limits.h>                 // for UINT_MAX
 #include <math.h>                   // for fmod
 #include <stdio.h>                  // for printf, sscanf, FILE, NULL, stdout
-#include <stdlib.h>                 // for atof, atoi, free
-#include <string.h>                 // for strcpy, memset
-
+#include <stdlib.h>                 // for free, strod, strtol
+#include <string.h>                 // for memset
 
 /* =================================================== */
 /*                  Global Variables                   */
@@ -135,7 +135,9 @@
     - Order must exactly match "indices of `swrc2str`"
     - See details in section \ref swrc_ptf
 */
-char const *swrc2str[N_SWRCs] = {"Campbell1974", "vanGenuchten1980", "FXW"};
+const char *const swrc2str[N_SWRCs] = {
+    "Campbell1974", "vanGenuchten1980", "FXW"
+};
 
 /** Character representation of implemented Pedotransfer Functions (PTF)
 
@@ -145,7 +147,7 @@ char const *swrc2str[N_SWRCs] = {"Campbell1974", "vanGenuchten1980", "FXW"};
     - See details in section \ref swrc_ptf
     - `rSOILWAT2` may implemented additional PTFs
 */
-char const *ptf2str[N_PTFs] = {"Cosby1984AndOthers", "Cosby1984"};
+const char *const ptf2str[N_PTFs] = {"Cosby1984AndOthers", "Cosby1984"};
 
 /* =================================================== */
 /*             Local Function Definitions              */
@@ -164,7 +166,7 @@ static Bool SW_check_soil_properties(
 ) {
 
     int k;
-    RealD fval = 0;
+    double fval = 0;
     char *errtype = NULL;
     Bool res = swTRUE;
 
@@ -272,7 +274,7 @@ static double lower_limit_of_theta_min(
 @brief User-input based minimum volumetric water content
 
 This function returns minimum soil water content `theta_min` determined
-by user input via #SW_SITE._SWCMinVal as
+by user input via #SW_SITE.SWCMinVal as
     * a fixed VWC value,
     * a fixed SWP value, or
     * a realistic lower limit from `lower_limit_of_theta_min()`,
@@ -284,7 +286,7 @@ by user input via #SW_SITE._SWCMinVal as
       (independently of the selected SWRC).
 
 @param[in] ui_sm_min User input of requested minimum soil moisture,
-    see _SWCMinVal
+    see SWCMinVal
 @param[in] gravel Coarse fragments (> 2 mm; e.g., gravel)
     of the whole soil [m3/m3]
 @param[in] width Soil layer width [cm]
@@ -294,7 +296,7 @@ by user input via #SW_SITE._SWCMinVal as
 @param[in] swrc_type Identification number of selected SWRC
 @param[in] *swrcp Vector of SWRC parameters
 @param[in] legacy_mode If true then legacy behavior (see details)
-@param[in] _SWCMinVal Lower bound on swc.
+@param[in] SWCMinVal Lower bound on swc.
 
 @return Minimum volumetric water content of the matric soil [cm / cm]
 */
@@ -308,10 +310,11 @@ static double ui_theta_min(
     unsigned int swrc_type,
     double *swrcp,
     Bool legacy_mode,
-    RealD _SWCMinVal,
+    double SWCMinVal,
     LOG_INFO *LogInfo
 ) {
-    double vwc_min = SW_MISSING, tmp_vwcmin;
+    double vwc_min = SW_MISSING;
+    double tmp_vwcmin;
 
     if (LT(ui_sm_min, 0.0)) {
         /* user input: request to estimate minimum theta */
@@ -339,17 +342,17 @@ static double ui_theta_min(
             }
         }
 
-    } else if (GE(_SWCMinVal, 1.0)) {
-        /* user input: fixed (matric) SWP value; unit(_SWCMinVal) == -bar */
+    } else if (GE(SWCMinVal, 1.0)) {
+        /* user input: fixed (matric) SWP value; unit(SWCMinVal) == -bar */
         vwc_min =
             SWRC_SWPtoSWC(
-                _SWCMinVal, swrc_type, swrcp, gravel, width, LOGERROR, LogInfo
+                SWCMinVal, swrc_type, swrcp, gravel, width, LOGERROR, LogInfo
             ) /
             ((1. - gravel) * width);
 
     } else {
-        /* user input: fixed matric VWC; unit(_SWCMinVal) == cm/cm */
-        vwc_min = _SWCMinVal / width;
+        /* user input: fixed matric VWC; unit(SWCMinVal) == cm/cm */
+        vwc_min = SWCMinVal / width;
     }
 
     return vwc_min;
@@ -436,12 +439,9 @@ void SWRC_PTF_estimate_parameters(
 ) {
 
     /* Initialize swrcp[] to 0 */
-    memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
+    memset(swrcp, 0, SWRC_PARAM_NMAX * sizeof(swrcp[0]));
 
-    if (ptf_type == sw_Cosby1984AndOthers) {
-        SWRC_PTF_Cosby1984_for_Campbell1974(swrcp, sand, clay);
-
-    } else if (ptf_type == sw_Cosby1984) {
+    if (ptf_type == sw_Cosby1984AndOthers || ptf_type == sw_Cosby1984) {
         SWRC_PTF_Cosby1984_for_Campbell1974(swrcp, sand, clay);
 
     } else {
@@ -535,7 +535,7 @@ The arguments `ptf_type`, `sand`, and `clay` are utilized only if
 */
 double SW_swcBulk_saturated(
     unsigned int swrc_type,
-    double *swrcp,
+    const double *swrcp,
     double gravel,
     double width,
     unsigned int ptf_type,
@@ -601,11 +601,11 @@ are utilized only in legacy mode, i.e., `ptf` equal to
 @param[in] width Soil layer width [cm]
 @param[in] ptf_type Identification number of selected PTF
 @param[in] ui_sm_min User input of requested minimum soil moisture,
-    see #SW_SITE._SWCMinVal
+    see #SW_SITE.SWCMinVal
 @param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
 @param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
 @param[in] swcBulk_sat Saturated water content of the bulk soil [cm]
-@param[in] _SWCMinVal Lower bound on swc.
+@param[in] SWCMinVal Lower bound on swc.
 @param[out] LogInfo Holds information on warnings and errors
 
 @return Minimum water content of the bulk soil [cm]
@@ -620,10 +620,11 @@ double SW_swcBulk_minimum(
     double sand,
     double clay,
     double swcBulk_sat,
-    RealD _SWCMinVal,
+    double SWCMinVal,
     LOG_INFO *LogInfo
 ) {
-    double theta_min_sim, theta_min_theoretical = SW_MISSING;
+    double theta_min_sim;
+    double theta_min_theoretical = SW_MISSING;
 
     /* `theta_min` based on theoretical SWRC */
     switch (swrc_type) {
@@ -664,7 +665,7 @@ double SW_swcBulk_minimum(
         // test:
         //   error: "no known conversion from 'bool' to 'Bool'"
         ptf_type == sw_Cosby1984AndOthers ? swTRUE : swFALSE,
-        _SWCMinVal,
+        SWCMinVal,
         LogInfo
     );
 
@@ -1025,7 +1026,11 @@ Bool SWRC_check_parameters_for_FXW(double *swrcp, LOG_INFO *LogInfo) {
 void PTF_Saxton2006(
     double *theta_sat, double sand, double clay, LOG_INFO *LogInfo
 ) {
-    double OM = 0., theta_33, theta_33t, theta_S33, theta_S33t;
+    double OM = 0.;
+    double theta_33;
+    double theta_33t;
+    double theta_S33;
+    double theta_S33t;
 
     /* Eq. 2: 33 kPa moisture */
     theta_33t = +0.299 - 0.251 * sand + 0.195 * clay + 0.011 * OM +
@@ -1166,7 +1171,7 @@ Based on equation 20 from Saxton. @cite Saxton2006.
 Similarly, estimate soil bulk density from `theta_sat` with
 `2.65 * (1. - theta_sat * (1. - fractionGravel))`.
 */
-RealD calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel) {
+double calculate_soilBulkDensity(double matricDensity, double fractionGravel) {
     return matricDensity * (1. - fractionGravel) + fractionGravel * 2.65;
 }
 
@@ -1175,8 +1180,8 @@ RealD calculate_soilBulkDensity(RealD matricDensity, RealD fractionGravel) {
 
 Based on equation 20 from Saxton. @cite Saxton2006
 */
-RealD calculate_soilMatricDensity(
-    RealD bulkDensity, RealD fractionGravel, LOG_INFO *LogInfo
+double calculate_soilMatricDensity(
+    double bulkDensity, double fractionGravel, LOG_INFO *LogInfo
 ) {
     double res;
 
@@ -1211,8 +1216,9 @@ The count stops at first layer with 0.
     about every soil layer in the simulation
 @param[in] n_layers Number of layers of soil within the simulation run
 */
-LyrIndex nlayers_bsevap(RealD *evap_coeff, LyrIndex n_layers) {
-    LyrIndex s, n = 0;
+LyrIndex nlayers_bsevap(double *evap_coeff, LyrIndex n_layers) {
+    LyrIndex s;
+    LyrIndex n = 0;
 
     ForEachSoilLayer(s, n_layers) {
         if (GT(evap_coeff[s], 0.0)) {
@@ -1238,7 +1244,7 @@ The count stops at first layer with 0 per vegetation type.
 void nlayers_vegroots(
     LyrIndex n_layers,
     LyrIndex n_transp_lyrs[],
-    RealD transp_coeff[][MAX_LAYERS]
+    double transp_coeff[][MAX_LAYERS]
 ) {
     LyrIndex s;
     int k;
@@ -1312,16 +1318,25 @@ void SW_SIT_read(
     /* 5-Feb-2002 (cwb) Removed rgntop requirement in
      *    transpiration regions section of input
      */
-    FILE *f;
-    int lineno = 0, x;
-    int rgnlow; /* lower layer of region */
-    int region; /* transp region definition number */
 #ifdef SWDEBUG
     int debug = 0;
 #endif
+
+    FILE *f;
+    int lineno = 0;
+    int x;
+    int rgnlow = 0; /* lower layer of region */
+    int region = 0; /* transp region definition number */
     LyrIndex r;
     Bool too_many_regions = swFALSE;
     char inbuf[MAX_FILENAMESIZE];
+    int intRes = 0;
+    int resSNP;
+    double doubleRes = 0.;
+    char rgnStr[2][10] = {{'\0'}};
+
+    Bool doDoubleConv;
+    Bool strLine;
 
     /* note that Files.read() must be called prior to this. */
     char *MyFileName = InFiles[eSite];
@@ -1332,108 +1347,128 @@ void SW_SIT_read(
     }
 
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+
+        strLine = (Bool) (lineno == 35 || lineno == 37 || lineno == 38);
+
+        if (!strLine && lineno <= 38) {
+            /* Check to see if the line number contains a double or integer
+             * value */
+            doDoubleConv = (Bool) ((lineno >= 0 && lineno <= 2) ||
+                                   (lineno >= 5 && lineno <= 31));
+
+            if (doDoubleConv) {
+                doubleRes = sw_strtod(inbuf, MyFileName, LogInfo);
+            } else {
+                intRes = sw_strtoi(inbuf, MyFileName, LogInfo);
+            }
+
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
+        }
+
         switch (lineno) {
         case 0:
-            SW_Site->_SWCMinVal = atof(inbuf);
+            SW_Site->SWCMinVal = doubleRes;
             break;
         case 1:
-            SW_Site->_SWCInitVal = atof(inbuf);
+            SW_Site->SWCInitVal = doubleRes;
             break;
         case 2:
-            SW_Site->_SWCWetVal = atof(inbuf);
+            SW_Site->SWCWetVal = doubleRes;
             break;
         case 3:
-            SW_Site->reset_yr = itob(atoi(inbuf));
+            SW_Site->reset_yr = itob(intRes);
             break;
         case 4:
-            SW_Site->deepdrain = itob(atoi(inbuf));
+            SW_Site->deepdrain = itob(intRes);
             break;
         case 5:
-            SW_Site->pet_scale = atof(inbuf);
+            SW_Site->pet_scale = doubleRes;
             break;
         case 6:
-            SW_Site->percentRunoff = atof(inbuf);
+            SW_Site->percentRunoff = doubleRes;
             break;
         case 7:
-            SW_Site->percentRunon = atof(inbuf);
+            SW_Site->percentRunon = doubleRes;
             break;
         case 8:
-            SW_Site->TminAccu2 = atof(inbuf);
+            SW_Site->TminAccu2 = doubleRes;
             break;
         case 9:
-            SW_Site->TmaxCrit = atof(inbuf);
+            SW_Site->TmaxCrit = doubleRes;
             break;
         case 10:
-            SW_Site->lambdasnow = atof(inbuf);
+            SW_Site->lambdasnow = doubleRes;
             break;
         case 11:
-            SW_Site->RmeltMin = atof(inbuf);
+            SW_Site->RmeltMin = doubleRes;
             break;
         case 12:
-            SW_Site->RmeltMax = atof(inbuf);
+            SW_Site->RmeltMax = doubleRes;
             break;
         case 13:
-            SW_Site->slow_drain_coeff = atof(inbuf);
+            SW_Site->slow_drain_coeff = doubleRes;
             break;
         case 14:
-            SW_Site->evap.xinflec = atof(inbuf);
+            SW_Site->evap.xinflec = doubleRes;
             break;
         case 15:
-            SW_Site->evap.slope = atof(inbuf);
+            SW_Site->evap.slope = doubleRes;
             break;
         case 16:
-            SW_Site->evap.yinflec = atof(inbuf);
+            SW_Site->evap.yinflec = doubleRes;
             break;
         case 17:
-            SW_Site->evap.range = atof(inbuf);
+            SW_Site->evap.range = doubleRes;
             break;
         case 18:
-            SW_Site->transp.xinflec = atof(inbuf);
+            SW_Site->transp.xinflec = doubleRes;
             break;
         case 19:
-            SW_Site->transp.slope = atof(inbuf);
+            SW_Site->transp.slope = doubleRes;
             break;
         case 20:
-            SW_Site->transp.yinflec = atof(inbuf);
+            SW_Site->transp.yinflec = doubleRes;
             break;
         case 21:
-            SW_Site->transp.range = atof(inbuf);
+            SW_Site->transp.range = doubleRes;
             break;
         case 22:
-            SW_Site->bmLimiter = atof(inbuf);
+            SW_Site->bmLimiter = doubleRes;
             break;
         case 23:
-            SW_Site->t1Param1 = atof(inbuf);
+            SW_Site->t1Param1 = doubleRes;
             break;
         case 24:
-            SW_Site->t1Param2 = atof(inbuf);
+            SW_Site->t1Param2 = doubleRes;
             break;
         case 25:
-            SW_Site->t1Param3 = atof(inbuf);
+            SW_Site->t1Param3 = doubleRes;
             break;
         case 26:
-            SW_Site->csParam1 = atof(inbuf);
+            SW_Site->csParam1 = doubleRes;
             break;
         case 27:
-            SW_Site->csParam2 = atof(inbuf);
+            SW_Site->csParam2 = doubleRes;
             break;
         case 28:
-            SW_Site->shParam = atof(inbuf);
+            SW_Site->shParam = doubleRes;
             break;
         case 29:
-            SW_Site->Tsoil_constant = atof(inbuf);
+            SW_Site->Tsoil_constant = doubleRes;
             break;
         case 30:
-            SW_Site->stDeltaX = atof(inbuf);
+            SW_Site->stDeltaX = doubleRes;
             break;
         case 31:
-            SW_Site->stMaxDepth = atof(inbuf);
+            SW_Site->stMaxDepth = doubleRes;
             break;
         case 32:
-            SW_Site->use_soil_temp = itob(atoi(inbuf));
+            SW_Site->use_soil_temp = itob(intRes);
             break;
         case 33:
-            SW_Carbon->use_bio_mult = itob(atoi(inbuf));
+            SW_Carbon->use_bio_mult = itob(intRes);
 #ifdef SWDEBUG
             if (debug) {
                 sw_printf(
@@ -1444,7 +1479,7 @@ void SW_SIT_read(
 #endif
             break;
         case 34:
-            SW_Carbon->use_wue_mult = itob(atoi(inbuf));
+            SW_Carbon->use_wue_mult = itob(intRes);
 #ifdef SWDEBUG
             if (debug) {
                 sw_printf(
@@ -1455,7 +1490,19 @@ void SW_SIT_read(
 #endif
             break;
         case 35:
-            strcpy(SW_Carbon->scenario, inbuf);
+            resSNP = snprintf(
+                SW_Carbon->scenario, sizeof SW_Carbon->scenario, "%s", inbuf
+            );
+            if (resSNP < 0 ||
+                (unsigned) resSNP >= (sizeof SW_Carbon->scenario)) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Atmospheric [CO2] scenario name is too long: '%s'.",
+                    inbuf
+                );
+                goto closeFile;
+            }
 #ifdef SWDEBUG
             if (debug) {
                 sw_printf(
@@ -1465,23 +1512,46 @@ void SW_SIT_read(
 #endif
             break;
         case 36:
-            SW_Site->type_soilDensityInput = atoi(inbuf);
+            SW_Site->type_soilDensityInput = intRes;
             break;
         case 37:
-            strcpy(SW_Site->site_swrc_name, inbuf);
+            resSNP = snprintf(
+                SW_Site->site_swrc_name,
+                sizeof SW_Site->site_swrc_name,
+                "%s",
+                inbuf
+            );
+            if (resSNP < 0 ||
+                (unsigned) resSNP >= (sizeof SW_Site->site_swrc_name)) {
+                LogError(
+                    LogInfo, LOGERROR, "SWRC name is too long: '%s'.", inbuf
+                );
+                goto closeFile;
+            }
             SW_Site->site_swrc_type =
                 encode_str2swrc(SW_Site->site_swrc_name, LogInfo);
             if (LogInfo->stopRun) {
-                CloseFile(&f, LogInfo);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             break;
         case 38:
-            strcpy(SW_Site->site_ptf_name, inbuf);
+            resSNP = snprintf(
+                SW_Site->site_ptf_name,
+                sizeof SW_Site->site_ptf_name,
+                "%s",
+                inbuf
+            );
+            if (resSNP < 0 ||
+                (unsigned) resSNP >= (sizeof SW_Site->site_ptf_name)) {
+                LogError(
+                    LogInfo, LOGERROR, "PTF name is too long: '%s'.", inbuf
+                );
+                goto closeFile;
+            }
             SW_Site->site_ptf_type = encode_str2ptf(SW_Site->site_ptf_name);
             break;
         case 39:
-            SW_Site->site_has_swrcp = itob(atoi(inbuf));
+            SW_Site->site_has_swrcp = itob(intRes);
             break;
 
         default:
@@ -1493,9 +1563,21 @@ void SW_SIT_read(
                 too_many_regions = swTRUE;
                 goto Label_End_Read;
             }
-            x = sscanf(inbuf, "%d %d", &region, &rgnlow);
+            x = sscanf(inbuf, "%9s %9s", rgnStr[0], rgnStr[1]);
+
+            if (x == 2) {
+                region = sw_strtoi(rgnStr[0], MyFileName, LogInfo);
+                if (LogInfo->stopRun) {
+                    goto closeFile;
+                }
+
+                rgnlow = sw_strtoi(rgnStr[1], MyFileName, LogInfo);
+                if (LogInfo->stopRun) {
+                    goto closeFile;
+                }
+            }
+
             if (x < 2 || region < 1 || rgnlow < 1) {
-                CloseFile(&f, LogInfo);
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -1503,9 +1585,9 @@ void SW_SIT_read(
                     MyFileName,
                     lineno
                 );
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
-            SW_Site->_TranspRgnBounds[region - 1] = (LyrIndex) (rgnlow - 1);
+            SW_Site->TranspRgnBounds[region - 1] = (LyrIndex) (rgnlow - 1);
             SW_Site->n_transp_rgn++;
         }
 
@@ -1513,8 +1595,6 @@ void SW_SIT_read(
     }
 
 Label_End_Read:
-
-    CloseFile(&f, LogInfo);
 
     if (LT(SW_Site->percentRunoff, 0.) || GT(SW_Site->percentRunoff, 1.)) {
         LogError(
@@ -1525,7 +1605,7 @@ Label_End_Read:
             MyFileName,
             SW_Site->percentRunoff
         );
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     if (LT(SW_Site->percentRunon, 0.)) {
@@ -1537,7 +1617,7 @@ Label_End_Read:
             MyFileName,
             SW_Site->percentRunon
         );
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     if (too_many_regions) {
@@ -1550,21 +1630,23 @@ Label_End_Read:
             SW_Site->n_transp_rgn,
             MAX_TRANSP_REGIONS
         );
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     /* check for any discontinuities (reversals) in the transpiration regions */
     for (r = 1; r < SW_Site->n_transp_rgn; r++) {
-        if (SW_Site->_TranspRgnBounds[r - 1] >= SW_Site->_TranspRgnBounds[r]) {
+        if (SW_Site->TranspRgnBounds[r - 1] >= SW_Site->TranspRgnBounds[r]) {
             LogError(
                 LogInfo,
                 LOGERROR,
                 "%s : Discontinuity/reversal in transpiration regions.\n",
                 InFiles[eSite]
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
     }
+
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /** Reads soil layers and soil properties from input file
@@ -1581,10 +1663,36 @@ void SW_LYR_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
 
     FILE *f;
     LyrIndex lyrno;
-    int x, k;
-    RealF dmin = 0.0, dmax, evco, trco_veg[NVEGTYPES], psand, pclay,
-          soildensity, imperm, soiltemp, f_gravel;
+    int x;
+    int k;
+    int index;
+    double dmin = 0.0;
+    double dmax;
+    double evco;
+    double trco_veg[NVEGTYPES];
+    double psand;
+    double pclay;
+    double soildensity;
+    double imperm;
+    double soiltemp;
+    double f_gravel;
     char inbuf[MAX_FILENAMESIZE];
+    char inDoubleStrs[12][20] = {{'\0'}};
+    double *inDoubleVals[] = {
+        &dmax,
+        &soildensity,
+        &f_gravel,
+        &evco,
+        &trco_veg[SW_GRASS],
+        &trco_veg[SW_SHRUB],
+        &trco_veg[SW_TREES],
+        &trco_veg[SW_FORBS],
+        &psand,
+        &pclay,
+        &imperm,
+        &soiltemp
+    };
+    const int numDoubleInStrings = 12;
 
     /* note that Files.read() must be called prior to this. */
     char *MyFileName = InFiles[eLayers];
@@ -1599,25 +1707,24 @@ void SW_LYR_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
 
         x = sscanf(
             inbuf,
-            "%f %f %f %f %f %f %f %f %f %f %f %f",
-            &dmax,
-            &soildensity,
-            &f_gravel,
-            &evco,
-            &trco_veg[SW_GRASS],
-            &trco_veg[SW_SHRUB],
-            &trco_veg[SW_TREES],
-            &trco_veg[SW_FORBS],
-            &psand,
-            &pclay,
-            &imperm,
-            &soiltemp
+            "%19s %19s %19s %19s %19s %19s %19s %19s %19s %19s %19s %19s",
+            inDoubleStrs[0],
+            inDoubleStrs[1],
+            inDoubleStrs[2],
+            inDoubleStrs[3],
+            inDoubleStrs[4],
+            inDoubleStrs[5],
+            inDoubleStrs[6],
+            inDoubleStrs[7],
+            inDoubleStrs[8],
+            inDoubleStrs[9],
+            inDoubleStrs[10],
+            inDoubleStrs[11]
         );
 
         /* Check that we have 12 values per layer */
         /* Adjust number if new variables are added */
         if (x != 12) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -1625,7 +1732,16 @@ void SW_LYR_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
                 MyFileName,
                 lyrno + 1
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
+        }
+
+        /* Convert strings to doubles */
+        for (index = 0; index < numDoubleInStrings; index++) {
+            *(inDoubleVals[index]) =
+                sw_strtod(inDoubleStrs[index], MyFileName, LogInfo);
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
         }
 
         SW_Site->width[lyrno] = dmax - dmin;
@@ -1645,7 +1761,6 @@ void SW_LYR_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
         SW_Site->avgLyrTempInit[lyrno] = soiltemp;
 
         if (lyrno >= MAX_LAYERS) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -1655,11 +1770,11 @@ void SW_LYR_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
                 lyrno + 1,
                 MAX_LAYERS
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
     }
 
-    CloseFile(&f, LogInfo);
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**
@@ -1712,27 +1827,28 @@ void set_soillayers(
     SW_VEGPROD *SW_VegProd,
     SW_SITE *SW_Site,
     LyrIndex nlyrs,
-    RealF *dmax,
-    RealF *bd,
-    RealF *f_gravel,
-    RealF *evco,
-    RealF *trco_grass,
-    RealF *trco_shrub,
-    RealF *trco_tree,
-    RealF *trco_forb,
-    RealF *psand,
-    RealF *pclay,
-    RealF *imperm,
-    RealF *soiltemp,
+    const double *dmax,
+    const double *bd,
+    const double *f_gravel,
+    const double *evco,
+    const double *trco_grass,
+    const double *trco_shrub,
+    const double *trco_tree,
+    const double *trco_forb,
+    const double *psand,
+    const double *pclay,
+    const double *imperm,
+    const double *soiltemp,
     int nRegions,
-    RealD *regionLowerBounds,
+    double *regionLowerBounds,
     LOG_INFO *LogInfo
 ) {
 
-    RealF dmin = 0.0;
+    double dmin = 0.0;
 
     LyrIndex lyrno;
-    unsigned int i, k;
+    unsigned int i;
+    unsigned int k;
 
     // De-allocate and delete previous soil layers and reset counters
     SW_SIT_init_counts(SW_Site);
@@ -1762,6 +1878,8 @@ void set_soillayers(
                 break;
             case SW_GRASS:
                 SW_Site->transp_coeff[k][lyrno] = trco_grass[i];
+                break;
+            default:
                 break;
             }
         }
@@ -1796,21 +1914,26 @@ void set_soillayers(
 @param[out] LogInfo Holds information on warnings and errors
 
 @sideeffect
-    \ref SW_SITE._TranspRgnBounds and \ref SW_SITE.n_transp_rgn will be
+    \ref SW_SITE.TranspRgnBounds and \ref SW_SITE.n_transp_rgn will be
     derived from the input and from the soil information.
 
 @note
 - \p nRegions does NOT determine how many regions will be derived. It only
   defines the size of the \p regionLowerBounds array. For example, if your
   input parameters are `(4, { 10, 20, 40 })`, but there is a soil layer from
-  41 to 60 cm, it will be placed in `_TranspRgnBounds[4]`.
+  41 to 60 cm, it will be placed in `TranspRgnBounds[4]`.
 */
 void derive_soilRegions(
-    SW_SITE *SW_Site, int nRegions, RealD *regionLowerBounds, LOG_INFO *LogInfo
+    SW_SITE *SW_Site,
+    unsigned int nRegions,
+    const double *regionLowerBounds,
+    LOG_INFO *LogInfo
 ) {
-    int i, j;
-    RealD totalDepth = 0;
-    LyrIndex layer, UNDEFINED_LAYER = 999;
+    unsigned int i;
+    unsigned int j;
+    double totalDepth = 0;
+    LyrIndex layer;
+    LyrIndex UNDEFINED_LAYER = 999;
 
     /* ------------- Error checking --------------- */
     if (nRegions < 1 || nRegions > MAX_TRANSP_REGIONS) {
@@ -1826,7 +1949,7 @@ void derive_soilRegions(
     /* --------------- Clear out the array ------------------ */
     for (i = 0; i < MAX_TRANSP_REGIONS; ++i) {
         // Setting bounds to a ridiculous number so we know how many get set.
-        SW_Site->_TranspRgnBounds[i] = UNDEFINED_LAYER;
+        SW_Site->TranspRgnBounds[i] = UNDEFINED_LAYER;
     }
 
     /* ----------------- Derive Regions ------------------- */
@@ -1834,13 +1957,13 @@ void derive_soilRegions(
     layer = 0; // SW_Site.lyr is base0-indexed
     totalDepth = 0;
     for (i = 0; i < nRegions; ++i) {
-        SW_Site->_TranspRgnBounds[i] = layer;
+        SW_Site->TranspRgnBounds[i] = layer;
         // Find the layer that pushes us out of the region.
         // It becomes the bound.
         while (totalDepth < regionLowerBounds[i] && layer < SW_Site->n_layers &&
                sum_across_vegtypes(SW_Site->transp_coeff, layer)) {
             totalDepth += SW_Site->width[layer];
-            SW_Site->_TranspRgnBounds[i] = layer;
+            SW_Site->TranspRgnBounds[i] = layer;
             layer++;
         }
     }
@@ -1849,19 +1972,18 @@ void derive_soilRegions(
     for (i = 0; i < nRegions - 1; ++i) {
         // If there is a duplicate bound we will remove it by left shifting the
         // array, overwriting the duplicate.
-        if (SW_Site->_TranspRgnBounds[i] == SW_Site->_TranspRgnBounds[i + 1]) {
+        if (SW_Site->TranspRgnBounds[i] == SW_Site->TranspRgnBounds[i + 1]) {
             for (j = i + 1; j < nRegions - 1; ++j) {
-                SW_Site->_TranspRgnBounds[j] = SW_Site->_TranspRgnBounds[j + 1];
+                SW_Site->TranspRgnBounds[j] = SW_Site->TranspRgnBounds[j + 1];
             }
-            SW_Site->_TranspRgnBounds[MAX_TRANSP_REGIONS - 1] = UNDEFINED_LAYER;
+            SW_Site->TranspRgnBounds[MAX_TRANSP_REGIONS - 1] = UNDEFINED_LAYER;
         }
     }
 
     /* -------------- Derive n_transp_rgn --------------- */
     SW_Site->n_transp_rgn = 0;
     while (SW_Site->n_transp_rgn < MAX_TRANSP_REGIONS &&
-           SW_Site->_TranspRgnBounds[SW_Site->n_transp_rgn] != UNDEFINED_LAYER
-    ) {
+           SW_Site->TranspRgnBounds[SW_Site->n_transp_rgn] != UNDEFINED_LAYER) {
         SW_Site->n_transp_rgn++;
     }
 }
@@ -1881,10 +2003,14 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
     }
 
     FILE *f;
-    LyrIndex lyrno = 0, k;
+    LyrIndex lyrno = 0;
+    LyrIndex k;
     int x;
-    RealF tmp_swrcp[SWRC_PARAM_NMAX];
+    int index;
+    double tmp_swrcp[SWRC_PARAM_NMAX];
     char inbuf[MAX_FILENAMESIZE];
+    char swrcpDoubleStrs[6][20] = {{'\0'}};
+    const int numDoubleInStrings = 6;
 
     /* note that Files.read() must be called prior to this. */
     char *MyFileName = InFiles[eSWRCp];
@@ -1897,13 +2023,13 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
         x = sscanf(
             inbuf,
-            "%f %f %f %f %f %f",
-            &tmp_swrcp[0],
-            &tmp_swrcp[1],
-            &tmp_swrcp[2],
-            &tmp_swrcp[3],
-            &tmp_swrcp[4],
-            &tmp_swrcp[5]
+            "%19s %19s %19s %19s %19s %19s",
+            swrcpDoubleStrs[0],
+            swrcpDoubleStrs[1],
+            swrcpDoubleStrs[2],
+            swrcpDoubleStrs[3],
+            swrcpDoubleStrs[4],
+            swrcpDoubleStrs[5]
         );
 
         /* Note: `SW_SIT_init_run()` will call function to check for valid
@@ -1911,7 +2037,6 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
 
         /* Check that we have n = `SWRC_PARAM_NMAX` values per layer */
         if (x != SWRC_PARAM_NMAX) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -1920,12 +2045,20 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
                 x,
                 SWRC_PARAM_NMAX
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
+        }
+
+        /* Convert strings to doubles */
+        for (index = 0; index < numDoubleInStrings; index++) {
+            tmp_swrcp[index] =
+                sw_strtod(swrcpDoubleStrs[index], MyFileName, LogInfo);
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
         }
 
         /* Check that we are within `SW_Site.n_layers` */
         if (lyrno >= SW_Site->n_layers) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -1935,7 +2068,7 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
                 lyrno + 1,
                 SW_Site->n_layers
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
 
         /* Copy values into structure */
@@ -1946,7 +2079,7 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
         lyrno++;
     }
 
-    CloseFile(&f, LogInfo);
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**
@@ -1981,14 +2114,20 @@ void SW_SIT_init_run(
     /* 5-Mar-2002 (cwb) added normalization for ev and tr coefficients */
     /* 1-Oct-03 (cwb) removed sum_evap_coeff and sum_transp_coeff  */
 
-    LyrIndex s, r, curregion;
-    int k, flagswpcrit = 0;
-    RealD evsum = 0., trsum_veg[NVEGTYPES] = {0.}, tmp;
-    double acc = 0.0;
-
 #ifdef SWDEBUG
     int debug = 0;
 #endif
+
+    LyrIndex s;
+    LyrIndex r;
+    LyrIndex curregion;
+    int k;
+    int flagswpcrit = 0;
+    double evsum = 0.;
+    double trsum_veg[NVEGTYPES] = {0.};
+    double tmp;
+    double acc = 0.0;
+    double tmp_stNRGR;
 
 
     /* Determine number of layers with potential for
@@ -2178,11 +2317,11 @@ void SW_SIT_init_run(
             SW_Site->fractionVolBulk_gravel[s],
             SW_Site->width[s],
             SW_Site->ptf_type[s],
-            SW_Site->_SWCMinVal,
+            SW_Site->SWCMinVal,
             SW_Site->fractionWeightMatric_sand[s],
             SW_Site->fractionWeightMatric_clay[s],
             SW_Site->swcBulk_saturated[s],
-            SW_Site->_SWCMinVal,
+            SW_Site->SWCMinVal,
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -2192,18 +2331,18 @@ void SW_SIT_init_run(
 
         /* Calculate wet limit of SWC for what inputs defined as wet */
         SW_Site->swcBulk_wet[s] =
-            GE(SW_Site->_SWCWetVal, 1.0) ?
-                SW_SWRC_SWPtoSWC(SW_Site->_SWCWetVal, SW_Site, s, LogInfo) :
-                SW_Site->_SWCWetVal * SW_Site->width[s];
+            GE(SW_Site->SWCWetVal, 1.0) ?
+                SW_SWRC_SWPtoSWC(SW_Site->SWCWetVal, SW_Site, s, LogInfo) :
+                SW_Site->SWCWetVal * SW_Site->width[s];
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
         /* Calculate initial SWC based on inputs */
         SW_Site->swcBulk_init[s] =
-            GE(SW_Site->_SWCInitVal, 1.0) ?
-                SW_SWRC_SWPtoSWC(SW_Site->_SWCInitVal, SW_Site, s, LogInfo) :
-                SW_Site->_SWCInitVal * SW_Site->width[s];
+            GE(SW_Site->SWCInitVal, 1.0) ?
+                SW_SWRC_SWPtoSWC(SW_Site->SWCInitVal, SW_Site, s, LogInfo) :
+                SW_Site->SWCInitVal * SW_Site->width[s];
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -2372,7 +2511,7 @@ void SW_SIT_init_run(
              * base1 but s is base0.*/
             curregion = 0;
             ForEachTranspRegion(r, SW_Site->n_transp_rgn) {
-                if (s < SW_Site->_TranspRgnBounds[r]) {
+                if (s < SW_Site->TranspRgnBounds[r]) {
                     if (ZRO(SW_Site->transp_coeff[k][s])) {
                         break; /* end of transpiring layers */
                     }
@@ -2381,7 +2520,7 @@ void SW_SIT_init_run(
                 }
             }
 
-            if (curregion || SW_Site->_TranspRgnBounds[curregion] == 0) {
+            if (curregion || SW_Site->TranspRgnBounds[curregion] == 0) {
                 SW_Site->my_transp_rgn[k][s] = curregion;
                 SW_Site->n_transp_lyrs[k] = MAX(SW_Site->n_transp_lyrs[k], s);
 
@@ -2513,7 +2652,13 @@ void SW_SIT_init_run(
 
     // getting the number of regressions, for use in the soil_temperature
     // function
-    SW_Site->stNRGR = (SW_Site->stMaxDepth / SW_Site->stDeltaX) - 1;
+    tmp_stNRGR = (SW_Site->stMaxDepth / SW_Site->stDeltaX);
+    if (tmp_stNRGR > (double) UINT_MAX) {
+        SW_Site->stNRGR = MAX_ST_RGR + 1;
+    } else {
+        SW_Site->stNRGR = (unsigned int) tmp_stNRGR - 1;
+    }
+
     Bool too_many_RGR = (Bool) (SW_Site->stNRGR + 1 >= MAX_ST_RGR);
 
     if (!EQ(fmod(SW_Site->stMaxDepth, SW_Site->stDeltaX), 0.0) ||
@@ -2574,7 +2719,7 @@ void SW_SIT_init_counts(SW_SITE *SW_Site) {
 @param[in] SW_Model Struct of type SW_MODEL holding basic time information
     about the simulation
 */
-void _echo_inputs(SW_SITE *SW_Site, SW_MODEL *SW_Model) {
+void echo_inputs(SW_SITE *SW_Site, SW_MODEL *SW_Model) {
     /* =================================================== */
     LyrIndex i;
     LOG_INFO LogInfo;

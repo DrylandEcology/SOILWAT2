@@ -24,10 +24,10 @@
  20090826 (drs) added return; after LBL_Normal_Exit:
 
  06/26/2013	(rjm)	closed open files in function SW_VES_read() or if
- LogError() with LOGERROR is called in _read_spp()
+ LogError() with LOGERROR is called in read_spp()
 
- 08/21/2013	(clk)	changed the line v = SW_VegEstab.parms[ _new_species()
- ]; -> v = SW_VegEstab.parms[ count ], where count = _new_species(); for some
+ 08/21/2013	(clk)	changed the line v = SW_VegEstab.parms[ new_species()
+ ]; -> v = SW_VegEstab.parms[ count ], where count = new_species(); for some
  reason, without this change, a segmenation fault was occuring
  */
 /********************************************************/
@@ -40,7 +40,7 @@
 
 #include "include/SW_VegEstab.h"    // for SW_ESTAB_BARS, SW_GERM_BARS, SW_...
 #include "include/filefuncs.h"      // for LogError, CloseFile, GetALine
-#include "include/generic.h"        // for IntU, LOGERROR, RealD, isnull, LT
+#include "include/generic.h"        // for IntU, LOGERROR, isnull, LT
 #include "include/myMemory.h"       // for Mem_Calloc, Mem_ReAlloc
 #include "include/SW_datastructs.h" // for SW_VEGESTAB_INFO, LOG_INFO, SW_V...
 #include "include/SW_Defines.h"     // for TimeInt, eSW_Year, MAX_FILENAMESIZE
@@ -50,35 +50,35 @@
 #include "include/SW_VegProd.h"     // for key2veg
 #include <math.h>                   // for fabs
 #include <stdio.h>                  // for NULL, snprintf, FILE, printf
-#include <stdlib.h>                 // for atoi, atof, free
-#include <string.h>                 // for strcpy, strcat, strlen, memset
+#include <stdlib.h>                 // for free
+#include <string.h>                 // for memccpy, strlen, memset
 
 
 /* =================================================== */
 /*             Private Function Declarations           */
 /* --------------------------------------------------- */
-static void _sanity_check(
+static void sanity_check(
     unsigned int sppnum,
-    RealD swcBulk_wiltpt[],
+    double swcBulk_wiltpt[],
     LyrIndex n_transp_lyrs[],
     SW_VEGESTAB_INFO **parms,
     LOG_INFO *LogInfo
 );
 
-static void _read_spp(
+static void read_spp(
     const char *infile, SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo
 );
 
-static void _checkit(
+static void checkit(
     TimeInt doy,
     unsigned int sppnum,
     SW_WEATHER_NOW *wn,
-    RealD swcBulk[][MAX_LAYERS],
+    double swcBulk[][MAX_LAYERS],
     TimeInt firstdoy,
     SW_VEGESTAB_INFO **parms
 );
 
-static void _zero_state(unsigned int sppnum, SW_VEGESTAB_INFO **parms);
+static void zero_state(unsigned int sppnum, SW_VEGESTAB_INFO **parms);
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -181,7 +181,7 @@ void SW_VES_deconstruct(SW_VEGESTAB *SW_VegEstab) {
             SW_VegEstab->parms[i] = NULL;
         }
 
-        free(SW_VegEstab->parms);
+        free((void *) SW_VegEstab->parms);
         SW_VegEstab->parms = NULL;
     }
 
@@ -233,14 +233,17 @@ void SW_VES_new_year(IntU count) {
 @param[in,out] SW_VegEstab Struct of type SW_VEGESTAB holding all information
     about vegetation establishment within the simulation
 @param[in] InFiles Array of program in/output files
-@param[in] _ProjDir Project directory
+@param[in] SW_ProjDir Project directory
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_VES_read(
-    SW_VEGESTAB *SW_VegEstab, char *InFiles[], char *_ProjDir, LOG_INFO *LogInfo
+    SW_VEGESTAB *SW_VegEstab,
+    char *InFiles[],
+    char *SW_ProjDir,
+    LOG_INFO *LogInfo
 ) {
 
-    SW_VES_read2(SW_VegEstab, swTRUE, swTRUE, InFiles, _ProjDir, LogInfo);
+    SW_VES_read2(SW_VegEstab, swTRUE, swTRUE, InFiles, SW_ProjDir, LogInfo);
 }
 
 /**
@@ -253,7 +256,7 @@ void SW_VES_read(
 @param[in] consider_InputFlag Should the user input flag read from `"estab.in"`
     be considered for turning on/off calculations of vegetation establishment.
 @param[in] InFiles Array of program in/output files
-@param[in] _ProjDir Project directory
+@param[in] SW_ProjDir Project directory
 @param[out] LogInfo Holds information on warnings and errors
 
 @note
@@ -271,7 +274,7 @@ void SW_VES_read2(
     Bool use_VegEstab,
     Bool consider_InputFlag,
     char *InFiles[],
-    char *_ProjDir,
+    char *SW_ProjDir,
     LOG_INFO *LogInfo
 ) {
 
@@ -284,7 +287,9 @@ void SW_VES_read2(
 
     SW_VegEstab->use = use_VegEstab;
 
-    char buf[FILENAME_MAX], inbuf[MAX_FILENAMESIZE];
+    int resSNP;
+    char buf[FILENAME_MAX];
+    char inbuf[MAX_FILENAMESIZE];
     FILE *f;
 
     if (SW_VegEstab->use) {
@@ -308,24 +313,31 @@ void SW_VES_read2(
                      and read those files one by one
             */
             while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
-                // add `_ProjDir` to path, e.g., for STEPWAT2
-                strcpy(buf, _ProjDir);
-                strcat(buf, inbuf);
-                _read_spp(buf, SW_VegEstab, LogInfo);
+                // add `SW_ProjDir` to path, e.g., for STEPWAT2
+                resSNP = snprintf(buf, sizeof buf, "%s%s", SW_ProjDir, inbuf);
+                if (resSNP < 0 || (unsigned) resSNP >= (sizeof buf)) {
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "Establishment parameter file name is too long: '%s'.",
+                        inbuf
+                    );
+                    goto closeFile;
+                }
+
+                read_spp(buf, SW_VegEstab, LogInfo);
                 if (LogInfo->stopRun) {
-                    CloseFile(&f, LogInfo);
-                    return; // Exit function prematurely due to error
+                    goto closeFile;
                 }
             }
 
             SW_VegEstab_alloc_outptrs(SW_VegEstab, LogInfo);
             if (LogInfo->stopRun) {
-                CloseFile(&f, LogInfo);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
         }
 
-        CloseFile(&f, LogInfo);
+    closeFile: { CloseFile(&f, LogInfo); }
     }
 }
 
@@ -404,7 +416,7 @@ void SW_VES_init_run(
     IntU i;
 
     for (i = 0; i < count; i++) {
-        _spp_init(parms, i, SW_Site, n_transp_lyrs, LogInfo);
+        spp_init(parms, i, SW_Site, n_transp_lyrs, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -427,16 +439,16 @@ void SW_VES_init_run(
 void SW_VES_checkestab(
     SW_VEGESTAB_INFO **parms,
     SW_WEATHER *SW_Weather,
-    RealD swcBulk[][MAX_LAYERS],
+    double swcBulk[][MAX_LAYERS],
     TimeInt doy,
     TimeInt firstdoy,
     IntU count
 ) {
     /* =================================================== */
-    IntUS i;
+    IntU i;
 
     for (i = 0; i < count; i++) {
-        _checkit(doy, i, &SW_Weather->now, swcBulk, firstdoy, parms);
+        checkit(doy, i, &SW_Weather->now, swcBulk, firstdoy, parms);
     }
 }
 
@@ -444,11 +456,11 @@ void SW_VES_checkestab(
 /*            Local Function Definitions               */
 /* --------------------------------------------------- */
 
-static void _checkit(
+static void checkit(
     TimeInt doy,
     unsigned int sppnum,
     SW_WEATHER_NOW *wn,
-    RealD swcBulk[][MAX_LAYERS],
+    double swcBulk[][MAX_LAYERS],
     TimeInt firstdoy,
     SW_VEGESTAB_INFO **parms
 ) {
@@ -456,11 +468,11 @@ static void _checkit(
     SW_VEGESTAB_INFO *v = parms[sppnum];
 
     IntU i;
-    RealF avgtemp = wn->temp_avg; /* avg of today's min/max temp */
-    RealF avgswc;                 /* avg_swc today */
+    double avgtemp = wn->temp_avg; /* avg of today's min/max temp */
+    double avgswc;                 /* avg_swc today */
 
     if (doy == firstdoy) {
-        _zero_state(sppnum, parms);
+        zero_state(sppnum, parms);
     }
 
     if (v->no_estab || v->estab_doy > 0) {
@@ -501,10 +513,11 @@ static void _checkit(
 
         /* any dry period (> max_drydays) or temp out of range
          * after germination means restart */
-        for (i = avgswc = 0; i < v->estab_lyrs;) {
+        avgswc = 0.;
+        for (i = 0; i < v->estab_lyrs;) {
             avgswc += swcBulk[Today][i++];
         }
-        avgswc /= (RealF) v->estab_lyrs;
+        avgswc /= (double) v->estab_lyrs;
         if (LT(avgswc, v->min_swc_estab)) {
             v->drydays_postgerm++;
             v->wetdays_for_estab = 0;
@@ -545,7 +558,7 @@ LBL_Normal_Exit:
     return;
 }
 
-static void _zero_state(unsigned int sppnum, SW_VEGESTAB_INFO **parms) {
+static void zero_state(unsigned int sppnum, SW_VEGESTAB_INFO **parms) {
     /* =================================================== */
     /* zero any values that need it for the new growing season */
 
@@ -557,27 +570,42 @@ static void _zero_state(unsigned int sppnum, SW_VEGESTAB_INFO **parms) {
     parms_sppnum->wetdays_for_germ = parms_sppnum->wetdays_for_estab = 0;
 }
 
-static void _read_spp(
+static void read_spp(
     const char *infile, SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo
 ) {
     /* =================================================== */
+
     SW_VEGESTAB_INFO *v;
     const int nitems = 16;
     FILE *f;
     int lineno = 0;
+    int resSNP;
     char name[80]; /* only allow 4 char sppnames */
     char inbuf[MAX_FILENAMESIZE];
+    int inBufintRes = 0;
+    double inBufDoubleVal = 0.;
+
+    Bool doIntConv;
 
     IntU count;
 
-    count = _new_species(SW_VegEstab, LogInfo);
+    count = new_species(SW_VegEstab, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
     v = SW_VegEstab->parms[count];
 
     // have to copy before the pointer infile gets reset below by getAline
-    strcpy(v->sppFileName, infile);
+    resSNP = snprintf(v->sppFileName, sizeof v->sppFileName, "%s", infile);
+    if (resSNP < 0 || (unsigned) resSNP >= (sizeof v->sppFileName)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Establishment parameter file name is too long: '%s'.",
+            infile
+        );
+        return; // Exit function prematurely due to error
+    }
 
     f = OpenFile(infile, "r", LogInfo);
     if (LogInfo->stopRun) {
@@ -585,60 +613,96 @@ static void _read_spp(
     }
 
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+
+        if (lineno >= 1 && lineno <= 15) {
+            /* Check to see if the line number contains an integer or double
+             * value */
+            doIntConv = (Bool) ((lineno >= 1 && lineno <= 2) ||
+                                (lineno >= 5 && lineno <= 11));
+
+            if (doIntConv) {
+                inBufintRes = sw_strtoi(inbuf, infile, LogInfo);
+            } else {
+                inBufDoubleVal = sw_strtod(inbuf, infile, LogInfo);
+            }
+
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
+        }
+
         switch (lineno) {
         case 0:
-            strcpy(name, inbuf);
+            resSNP = snprintf(name, sizeof name, "%s", inbuf);
+            if (resSNP < 0 || (unsigned) resSNP >= (sizeof name)) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Establishment species name is too long: '%s'.",
+                    inbuf
+                );
+                goto closeFile;
+            }
             break;
         case 1:
-            v->vegType = atoi(inbuf);
+            v->vegType = inBufintRes;
             break;
         case 2:
-            v->estab_lyrs = atoi(inbuf);
+            v->estab_lyrs = inBufintRes;
             break;
         case 3:
-            v->bars[SW_GERM_BARS] = fabs(atof(inbuf));
+            v->bars[SW_GERM_BARS] = fabs(inBufDoubleVal);
             break;
         case 4:
-            v->bars[SW_ESTAB_BARS] = fabs(atof(inbuf));
+            v->bars[SW_ESTAB_BARS] = fabs(inBufDoubleVal);
             break;
         case 5:
-            v->min_pregerm_days = atoi(inbuf);
+            v->min_pregerm_days = inBufintRes;
             break;
         case 6:
-            v->max_pregerm_days = atoi(inbuf);
+            v->max_pregerm_days = inBufintRes;
             break;
         case 7:
-            v->min_wetdays_for_germ = atoi(inbuf);
+            v->min_wetdays_for_germ = inBufintRes;
             break;
         case 8:
-            v->max_drydays_postgerm = atoi(inbuf);
+            v->max_drydays_postgerm = inBufintRes;
             break;
         case 9:
-            v->min_wetdays_for_estab = atoi(inbuf);
+            v->min_wetdays_for_estab = inBufintRes;
             break;
         case 10:
-            v->min_days_germ2estab = atoi(inbuf);
+            v->min_days_germ2estab = inBufintRes;
             break;
         case 11:
-            v->max_days_germ2estab = atoi(inbuf);
+            v->max_days_germ2estab = inBufintRes;
             break;
         case 12:
-            v->min_temp_germ = atof(inbuf);
+            v->min_temp_germ = inBufDoubleVal;
             break;
         case 13:
-            v->max_temp_germ = atof(inbuf);
+            v->max_temp_germ = inBufDoubleVal;
             break;
         case 14:
-            v->min_temp_estab = atof(inbuf);
+            v->min_temp_estab = inBufDoubleVal;
             break;
         case 15:
-            v->max_temp_estab = atof(inbuf);
+            v->max_temp_estab = inBufDoubleVal;
+            break;
+        default:
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "read_spp(): incorrect format of input file '%s'.",
+                infile
+            );
+            goto closeFile;
             break;
         }
+
         /* check for valid name first */
         if (0 == lineno) {
             if (strlen(name) > MAX_SPECIESNAMELEN) {
-                CloseFile(&f, LogInfo);
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -648,23 +712,22 @@ static void _read_spp(
                     name,
                     MAX_SPECIESNAMELEN
                 );
-                return; // Exit function prematurely due to error
-            } else {
-                strcpy(v->sppname, name);
+                goto closeFile;
             }
+
+            (void) sw_memccpy(v->sppname, name, '\0', sizeof(v->sppname));
         }
 
         lineno++; /*only increments when there's a value */
     }
 
-    CloseFile(&f, LogInfo);
-
     if (lineno != nitems) {
         LogError(
             LogInfo, LOGERROR, "%s : Too few/many input parameters.\n", infile
         );
-        return; // Exit function prematurely due to error
     }
+
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**
@@ -678,7 +741,7 @@ other function call.
 @param[in] n_transp_lyrs Layer index of deepest transp. region.
 @param[out] LogInfo Holds information on warnings and errors
 */
-void _spp_init(
+void spp_init(
     SW_VEGESTAB_INFO **parms,
     unsigned int sppnum,
     SW_SITE *SW_Site,
@@ -710,16 +773,16 @@ void _spp_init(
             return; // Exit function prematurely due to error
         }
     }
-    parms_sppnum->min_swc_estab /= parms_sppnum->estab_lyrs;
+    parms_sppnum->min_swc_estab /= (double) parms_sppnum->estab_lyrs;
 
-    _sanity_check(
+    sanity_check(
         sppnum, SW_Site->swcBulk_wiltpt, n_transp_lyrs, parms, LogInfo
     );
 }
 
-static void _sanity_check(
+static void sanity_check(
     unsigned int sppnum,
-    RealD swcBulk_wiltpt[],
+    double swcBulk_wiltpt[],
     LyrIndex n_transp_lyrs[],
     SW_VEGESTAB_INFO **parms,
     LOG_INFO *LogInfo
@@ -799,7 +862,7 @@ static void _sanity_check(
     for (i = 0; i < parms_sppnum->estab_lyrs; i++) {
         mean_wiltpt += swcBulk_wiltpt[i];
     }
-    mean_wiltpt /= parms_sppnum->estab_lyrs;
+    mean_wiltpt /= (double) parms_sppnum->estab_lyrs;
 
     if (LT(parms_sppnum->min_swc_estab, mean_wiltpt)) {
         LogError(
@@ -827,7 +890,7 @@ required.  For each species thereafter realloc() is called.
 
 @return (++SW_VegEstab->count) - 1
 */
-IntU _new_species(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo) {
+IntU new_species(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo) {
 
     const char *me = "SW_VegEstab_newspecies()";
 
@@ -837,7 +900,7 @@ IntU _new_species(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo) {
                 SW_VegEstab->count + 1, sizeof(SW_VEGESTAB_INFO *), me, LogInfo
             ) :
             (SW_VEGESTAB_INFO **) Mem_ReAlloc(
-                SW_VegEstab->parms,
+                (void *) SW_VegEstab->parms,
                 sizeof(SW_VEGESTAB_INFO *) * (SW_VegEstab->count + 1),
                 LogInfo
             );
@@ -861,12 +924,20 @@ IntU _new_species(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo) {
 @param[in] count Held within type SW_VEGESTAB to determine
     how many species to check
 */
-void _echo_VegEstab(RealD width[], SW_VEGESTAB_INFO **parms, IntU count) {
+void echo_VegEstab(const double width[], SW_VEGESTAB_INFO **parms, IntU count) {
     /* --------------------------------------------------- */
     IntU i;
-    char outstr[2048], errstr[MAX_ERROR];
+    char outstr[MAX_ERROR];
+    char errstr[MAX_ERROR];
 
-    snprintf(
+    const char *endDispStr =
+        "\n-----------------  End of Establishment Parameters ------------\n";
+
+    size_t writeSize = MAX_ERROR;
+    char *writePtr = outstr;
+    char *resPtr = NULL;
+
+    (void) snprintf(
         errstr,
         MAX_ERROR,
         "\n=========================================================\n\n"
@@ -876,9 +947,10 @@ void _echo_VegEstab(RealD width[], SW_VEGESTAB_INFO **parms, IntU count) {
         count
     );
 
-    strcpy(outstr, errstr);
+    (void) sw_memccpy(outstr, errstr, '\0', sizeof outstr);
+
     for (i = 0; i < count; i++) {
-        snprintf(
+        (void) snprintf(
             errstr,
             MAX_ERROR,
             "Species: %s (vegetation type %s [%d])\n----------------\n"
@@ -904,7 +976,7 @@ void _echo_VegEstab(RealD width[], SW_VEGESTAB_INFO **parms, IntU count) {
             parms[i]->min_wetdays_for_germ
         );
 
-        snprintf(
+        (void) snprintf(
             errstr,
             MAX_ERROR,
             "Establishment parameters:\n"
@@ -931,12 +1003,13 @@ void _echo_VegEstab(RealD width[], SW_VEGESTAB_INFO **parms, IntU count) {
             parms[i]->max_drydays_postgerm
         );
 
-        strcat(outstr, errstr);
+        resPtr = (char *) sw_memccpy(
+            (void *) writePtr, (void *) errstr, '\0', writeSize
+        );
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - outstr - 1);
     }
-    strcat(
-        outstr,
-        "\n-----------------  End of Establishment Parameters ------------\n"
-    );
+    sw_memccpy(outstr, (char *) endDispStr, '\0', writeSize);
 
     printf("%s\n", outstr);
 }

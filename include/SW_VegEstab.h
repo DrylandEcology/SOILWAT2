@@ -15,7 +15,7 @@
 #ifndef SW_VEGESTAB_H
 #define SW_VEGESTAB_H
 
-#include "include/generic.h"        // for Bool, RealD, IntU
+#include "include/generic.h"        // for Bool, IntU
 #include "include/SW_datastructs.h" // for SW_VEGESTAB, SW_VEGESTAB_INFO, SW_...
 #include "include/SW_Defines.h"     // for LyrIndex, TimeInt
 
@@ -33,7 +33,10 @@ extern "C" {
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_VES_read(
-    SW_VEGESTAB *SW_VegEstab, char *InFiles[], char *_ProjDir, LOG_INFO *LogInfo
+    SW_VEGESTAB *SW_VegEstab,
+    char *InFiles[],
+    char *SW_ProjDir,
+    LOG_INFO *LogInfo
 );
 
 void SW_VES_read2(
@@ -41,7 +44,7 @@ void SW_VES_read2(
     Bool use_VegEstab,
     Bool consider_InputFlag,
     char *InFiles[],
-    char *_ProjDir,
+    char *SW_ProjDir,
     LOG_INFO *LogInfo
 );
 
@@ -66,7 +69,7 @@ void SW_VES_init_run(
 void SW_VES_checkestab(
     SW_VEGESTAB_INFO **parms,
     SW_WEATHER *SW_Weather,
-    RealD swcBulk[][MAX_LAYERS],
+    double swcBulk[][MAX_LAYERS],
     TimeInt doy,
     TimeInt firstdoy,
     IntU count
@@ -74,7 +77,7 @@ void SW_VES_checkestab(
 
 void SW_VES_new_year(IntU count);
 
-void _spp_init(
+void spp_init(
     SW_VEGESTAB_INFO **parms,
     unsigned int sppnum,
     SW_SITE *SW_Site,
@@ -82,9 +85,9 @@ void _spp_init(
     LOG_INFO *LogInfo
 );
 
-IntU _new_species(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo);
+IntU new_species(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo);
 
-void _echo_VegEstab(RealD width[], SW_VEGESTAB_INFO **parms, IntU count);
+void echo_VegEstab(const double width[], SW_VEGESTAB_INFO **parms, IntU count);
 
 
 /* COMMENT-1

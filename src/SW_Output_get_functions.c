@@ -18,16 +18,20 @@ History:
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
 
-#include "include/generic.h"        // for RealD, IntU
+#include "include/generic.h"        // for IntU
+#include "include/myMemory.h"       // for sw_memccpy_custom
 #include "include/SW_datastructs.h" // for SW_RUN, SW_OUTTEXT
-#include "include/SW_Defines.h"     // for _OUTSEP, OUT_DIGITS, OUTSTRLEN
+#include "include/SW_Defines.h"     // for OUTSEP, OUT_DIGITS, OUTSTRLEN
 #include "include/SW_Output.h"      // for get_aet_text, get_biomass_text
 #include "include/SW_SoilWater.h"   // for SW_SWRC_SWCtoSWP
 #include "include/SW_VegProd.h"     // for BIO_INDEX, WUE_INDEX
-#include <stdio.h>                  // for snprintf, NULL
 
 #if defined(SWNETCDF)
 #include <netcdf.h> // defines NC_FILL_DOUBLE
+#endif
+
+#if defined(SWNETCDF) || defined(RSOILWAT)
+#include <stddef.h> // for NULL
 #endif
 
 // Array-based output declarations:
@@ -36,7 +40,8 @@ History:
 #endif
 
 #if defined(SW_OUTTEXT)
-#include <string.h> // for strcat
+#include <stdio.h>  // for snprintf, NULL
+#include <string.h> // for memccpy
 #endif
 
 
@@ -46,46 +51,61 @@ History:
 
 #ifdef STEPWAT
 static void format_IterationSummary(
-    RealD *p, RealD *psd, OutPeriod pd, IntUS N, SW_RUN *sw, size_t nrow_OUT[]
+    double *p,
+    double *psd,
+    OutPeriod pd,
+    IntUS N,
+    SW_RUN *sw,
+    const size_t nrow_OUT[]
 ) {
     IntUS i;
     size_t n;
-    RealD sd;
+    double sd;
     char str[OUTSTRLEN];
+    size_t writeSize = OUTSTRLEN;
+    char *writePtr = sw->OutRun.sw_outstr_agg;
+    char *resPtr = NULL;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     for (i = 0; i < N; i++) {
         n = iOUT(i, OutRun->irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
         sd = final_running_sd(sw->Model.runModelIterations, psd[n]);
 
-        snprintf(
+        (void) snprintf(
             str,
             OUTSTRLEN,
             "%c%.*f%c%.*f",
-            _OUTSEP,
+            OUTSEP,
             OUT_DIGITS,
             p[n],
-            _OUTSEP,
+            OUTSEP,
             OUT_DIGITS,
             sd
         );
-        strcat(OutRun->sw_outstr_agg, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr_agg - 1);
     }
 }
 
 static void format_IterationSummary2(
-    RealD *p,
-    RealD *psd,
+    double *p,
+    double *psd,
     OutPeriod pd,
     IntUS N1,
     IntUS offset,
     SW_RUN *sw,
-    size_t nrow_OUT[]
+    const size_t nrow_OUT[]
 ) {
-    IntUS k, i;
+    int k;
+    LyrIndex i;
     size_t n;
-    RealD sd;
+    double sd;
     char str[OUTSTRLEN];
+    size_t strLen = strlen(sw->OutRun.sw_outstr_agg);
+    size_t writeSize = OUTSTRLEN - strLen;
+    char *writePtr = sw->OutRun.sw_outstr_agg + strLen;
+    char *resPtr = NULL;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     for (k = 0; k < N1; k++) {
@@ -95,18 +115,20 @@ static void format_IterationSummary2(
             );
             sd = final_running_sd(sw->Model.runModelIterations, psd[n]);
 
-            snprintf(
+            (void) snprintf(
                 str,
                 OUTSTRLEN,
                 "%c%.*f%c%.*f",
-                _OUTSEP,
+                OUTSEP,
                 OUT_DIGITS,
                 p[n],
-                _OUTSEP,
+                OUTSEP,
                 OUT_DIGITS,
                 sd
             );
-            strcat(OutRun->sw_outstr_agg, str);
+            resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+            writePtr = resPtr - 1;
+            writeSize -= (resPtr - OutRun->sw_outstr_agg - 1);
         }
     }
 }
@@ -174,30 +196,37 @@ void get_co2effects_text(OutPeriod pd, SW_RUN *sw) {
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
     TimeInt simyear = sw->Model.simyear;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     (void) pd; // hack to silence "-Wunused-parameter"
 
     ForEachVegType(k) {
-        snprintf(
+        (void) snprintf(
             str,
             OUTSTRLEN,
             "%c%.*f",
-            _OUTSEP,
+            OUTSEP,
             OUT_DIGITS,
             sw->VegProd.veg[k].co2_multipliers[BIO_INDEX][simyear]
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
     ForEachVegType(k) {
-        snprintf(
+        (void) snprintf(
             str,
             OUTSTRLEN,
             "%c%.*f",
-            _OUTSEP,
+            OUTSEP,
             OUT_DIGITS,
             sw->VegProd.veg[k].co2_multipliers[WUE_INDEX][simyear]
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 }
 #endif
@@ -207,7 +236,7 @@ void get_co2effects_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     int k;
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
-    RealD *p = OutRun->p_OUT[eSW_CO2Effects][pd];
+    double *p = OutRun->p_OUT[eSW_CO2Effects][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -267,8 +296,8 @@ void get_co2effects_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_CO2Effects][pd],
-          *psd = OutRun->p_OUTsd[eSW_CO2Effects][pd];
+    double *p = OutRun->p_OUT[eSW_CO2Effects][pd];
+    double *psd = OutRun->p_OUTsd[eSW_CO2Effects][pd];
 
     ForEachVegType(k) {
         iOUTIndex = iOUT(
@@ -313,67 +342,90 @@ void get_biomass_text(OutPeriod pd, SW_RUN *sw) {
     int k;
     SW_VEGPROD_OUTPUTS *vo = sw->VegProd.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
     // fCover for NVEGTYPES plus bare-ground
-    snprintf(
+    (void) snprintf(
         str,
         OUTSTRLEN,
         "%c%.*f",
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         sw->VegProd.bare_cov.fCover
     );
-    strcat(OutRun->sw_outstr, str);
+    resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+    writePtr = resPtr - 1;
+    writeSize -= (resPtr - OutRun->sw_outstr - 1);
+
     ForEachVegType(k) {
-        snprintf(
+        (void) snprintf(
             str,
             OUTSTRLEN,
             "%c%.*f",
-            _OUTSEP,
+            OUTSEP,
             OUT_DIGITS,
             sw->VegProd.veg[k].cov.fCover
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 
     // biomass (g/m2 as component of total) for NVEGTYPES plus totals and litter
-    snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->biomass_total);
-    strcat(OutRun->sw_outstr, str);
+    (void
+    ) snprintf(str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->biomass_total);
+    resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+    writePtr = resPtr - 1;
+    writeSize -= (resPtr - OutRun->sw_outstr - 1);
+
     ForEachVegType(k) {
-        snprintf(
+        (void) snprintf(
             str,
             OUTSTRLEN,
             "%c%.*f",
-            _OUTSEP,
+            OUTSEP,
             OUT_DIGITS,
             vo->veg[k].biomass_inveg
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
-    snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->litter_total);
-    strcat(OutRun->sw_outstr, str);
+    (void
+    ) snprintf(str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->litter_total);
+    resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+    writePtr = resPtr - 1;
+    writeSize -= (resPtr - OutRun->sw_outstr - 1);
 
     // biolive (g/m2 as component of total) for NVEGTYPES plus totals
-    snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->biolive_total);
-    strcat(OutRun->sw_outstr, str);
+    (void
+    ) snprintf(str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->biolive_total);
+    resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+    writePtr = resPtr - 1;
+    writeSize -= (resPtr - OutRun->sw_outstr - 1);
+
     ForEachVegType(k) {
-        snprintf(
+        (void) snprintf(
             str,
             OUTSTRLEN,
             "%c%.*f",
-            _OUTSEP,
+            OUTSEP,
             OUT_DIGITS,
             vo->veg[k].biolive_inveg
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 
     // leaf area index [m2/m2]
-    snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->LAI);
-    strcat(OutRun->sw_outstr, str);
+    (void) snprintf(str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->LAI);
+    sw_memccpy(writePtr, str, '\0', writeSize);
 }
 #endif
 
@@ -384,7 +436,7 @@ void get_biomass_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Biomass][pd];
+    double *p = OutRun->p_OUT[eSW_Biomass][pd];
 
 #if defined(RSOILWAT)
     int i;
@@ -544,13 +596,14 @@ void get_biomass_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(STEPWAT)
 void get_biomass_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
-    int k, i;
+    int k;
+    int i;
     SW_VEGPROD_OUTPUTS *vo = sw->VegProd.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Biomass][pd],
-          *psd = OutRun->p_OUTsd[eSW_Biomass][pd];
+    double *p = OutRun->p_OUT[eSW_Biomass][pd];
+    double *psd = OutRun->p_OUTsd[eSW_Biomass][pd];
 
     // fCover for NVEGTYPES plus bare-ground
     iOUTIndex =
@@ -656,17 +709,22 @@ establish this year.  This check is for OUTTEXT.
 void get_estab_text(OutPeriod pd, SW_RUN *sw) {
     IntU i;
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
-    i = (IntU) pd; // silence `-Wunused-parameter`
+    (void) pd; // silence `-Wunused-parameter`
 
     for (i = 0; i < sw->VegEstab.count; i++) {
-        snprintf(
-            str, OUTSTRLEN, "%c%d", _OUTSEP, sw->VegEstab.parms[i]->estab_doy
+        (void) snprintf(
+            str, OUTSTRLEN, "%c%d", OUTSEP, sw->VegEstab.parms[i]->estab_doy
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 }
 #endif
@@ -692,7 +750,7 @@ void get_estab_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Estab][pd];
+    double *p = OutRun->p_OUT[eSW_Estab][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -736,8 +794,8 @@ void get_estab_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Estab][pd],
-          *psd = OutRun->p_OUTsd[eSW_Estab][pd];
+    double *p = OutRun->p_OUT[eSW_Estab][pd];
+    double *psd = OutRun->p_OUTsd[eSW_Estab][pd];
 
     for (i = 0; i < sw->VegEstab.count; i++) {
         iOUTIndex = iOUT(
@@ -777,26 +835,26 @@ void get_temp_text(OutPeriod pd, SW_RUN *sw) {
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     OutRun->sw_outstr[0] = '\0';
-    snprintf(
+    (void) snprintf(
         OutRun->sw_outstr,
         sizeof OutRun->sw_outstr,
         "%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f",
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->temp_max,
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->temp_min,
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->temp_avg,
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->surfaceMax,
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->surfaceMin,
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->surfaceAvg
     );
@@ -819,7 +877,7 @@ void get_temp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Temp][pd];
+    double *p = OutRun->p_OUT[eSW_Temp][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -915,8 +973,8 @@ void get_temp_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Temp][pd],
-          *psd = OutRun->p_OUTsd[eSW_Temp][pd];
+    double *p = OutRun->p_OUT[eSW_Temp][pd];
+    double *psd = OutRun->p_OUTsd[eSW_Temp][pd];
 
     iOUTIndex =
         iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
@@ -997,23 +1055,23 @@ void get_precip_text(OutPeriod pd, SW_RUN *sw) {
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     OutRun->sw_outstr[0] = '\0';
-    snprintf(
+    (void) snprintf(
         OutRun->sw_outstr,
         sizeof OutRun->sw_outstr,
         "%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f",
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->ppt,
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->rain,
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->snow,
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->snowmelt,
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->snowloss
     );
@@ -1037,7 +1095,7 @@ void get_precip_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Precip][pd];
+    double *p = OutRun->p_OUT[eSW_Precip][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -1122,8 +1180,8 @@ void get_precip_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Precip][pd],
-          *psd = OutRun->p_OUTsd[eSW_Precip][pd];
+    double *p = OutRun->p_OUT[eSW_Precip][pd];
+    double *psd = OutRun->p_OUTsd[eSW_Precip][pd];
 
     iOUTIndex =
         iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
@@ -1197,21 +1255,26 @@ void get_vwcBulk_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
     ForEachSoilLayer(i, sw->Site.n_layers) {
         /* vwcBulk at this point is identical to swcBulk */
-        snprintf(
+        (void) snprintf(
             str,
             OUTSTRLEN,
             "%c%.*f",
-            _OUTSEP,
+            OUTSEP,
             OUT_DIGITS,
             vo->vwcBulk[i] / sw->Site.width[i]
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 }
 #endif
@@ -1233,7 +1296,7 @@ void get_vwcBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_VWCBulk][pd];
+    double *p = OutRun->p_OUT[eSW_VWCBulk][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -1289,8 +1352,8 @@ void get_vwcBulk_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_VWCBulk][pd],
-          *psd = OutRun->p_OUTsd[eSW_VWCBulk][pd];
+    double *p = OutRun->p_OUT[eSW_VWCBulk][pd];
+    double *psd = OutRun->p_OUTsd[eSW_VWCBulk][pd];
 
     ForEachSoilLayer(i, sw->Site.n_layers) {
         /* vwcBulk at this point is identical to swcBulk */
@@ -1330,9 +1393,12 @@ void get_vwcBulk_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 */
 void get_vwcMatric_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
-    RealD convert;
+    double convert;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
@@ -1342,15 +1408,17 @@ void get_vwcMatric_text(OutPeriod pd, SW_RUN *sw) {
         convert =
             1. / (1. - sw->Site.fractionVolBulk_gravel[i]) / sw->Site.width[i];
 
-        snprintf(
+        (void) snprintf(
             str,
             OUTSTRLEN,
             "%c%.*f",
-            _OUTSEP,
+            OUTSEP,
             OUT_DIGITS,
             vo->vwcMatric[i] * convert
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 }
 #endif
@@ -1368,12 +1436,12 @@ void get_vwcMatric_text(OutPeriod pd, SW_RUN *sw) {
 */
 void get_vwcMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
-    RealD convert;
+    double convert;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_VWCMatric][pd];
+    double *p = OutRun->p_OUT[eSW_VWCMatric][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -1427,13 +1495,13 @@ void get_vwcMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 */
 void get_vwcMatric_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
-    RealD convert;
+    double convert;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_VWCMatric][pd],
-          *psd = OutRun->p_OUTsd[eSW_VWCMatric][pd];
+    double *p = OutRun->p_OUT[eSW_VWCMatric][pd];
+    double *psd = OutRun->p_OUTsd[eSW_VWCMatric][pd];
 
     ForEachSoilLayer(i, sw->Site.n_layers) {
         /* vwcMatric at this point is identical to swcBulk */
@@ -1476,21 +1544,26 @@ void get_swa_text(OutPeriod pd, SW_RUN *sw) {
     int k;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
     ForEachVegType(k) {
         ForEachSoilLayer(i, sw->Site.n_layers) {
-            snprintf(
+            (void) snprintf(
                 str,
                 OUTSTRLEN,
                 "%c%.*f",
-                _OUTSEP,
+                OUTSEP,
                 OUT_DIGITS,
                 vo->SWA_VegType[k][i]
             );
-            strcat(OutRun->sw_outstr, str);
+            resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+            writePtr = resPtr - 1;
+            writeSize -= (resPtr - OutRun->sw_outstr - 1);
         }
     }
 }
@@ -1514,7 +1587,7 @@ void get_swa_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SWA][pd];
+    double *p = OutRun->p_OUT[eSW_SWA][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -1579,7 +1652,8 @@ void get_swa_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SWA][pd], *psd = OutRun->p_OUTsd[eSW_SWA][pd];
+    double *p = OutRun->p_OUT[eSW_SWA][pd];
+    double *psd = OutRun->p_OUTsd[eSW_SWA][pd];
 
     ForEachVegType(k) {
         ForEachSoilLayer(i, sw->Site.n_layers) {
@@ -1618,13 +1692,20 @@ void get_swcBulk_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
     ForEachSoilLayer(i, sw->Site.n_layers) {
-        snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->swcBulk[i]);
-        strcat(OutRun->sw_outstr, str);
+        (void) snprintf(
+            str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->swcBulk[i]
+        );
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 }
 #endif
@@ -1646,7 +1727,7 @@ void get_swcBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SWCBulk][pd];
+    double *p = OutRun->p_OUT[eSW_SWCBulk][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -1701,8 +1782,8 @@ void get_swcBulk_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SWCBulk][pd],
-          *psd = OutRun->p_OUTsd[eSW_SWCBulk][pd];
+    double *p = OutRun->p_OUT[eSW_SWCBulk][pd];
+    double *psd = OutRun->p_OUTsd[eSW_SWCBulk][pd];
 
     ForEachSoilLayer(i, sw->Site.n_layers) {
         iOUTIndex = iOUT(
@@ -1764,10 +1845,13 @@ converting the averged swc.  This also avoids converting for each day. added
     information that do not change throughout simulation runs
 */
 void get_swpMatric_text(OutPeriod pd, SW_RUN *sw) {
-    RealD val;
+    double val;
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     /* Local LOG_INFO only because `SW_SWRC_SWCtoSWP()` requires it */
     LOG_INFO local_log;
@@ -1781,8 +1865,10 @@ void get_swpMatric_text(OutPeriod pd, SW_RUN *sw) {
         val = SW_SWRC_SWCtoSWP(vo->swpMatric[i], &sw->Site, i, &local_log);
 
 
-        snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, val);
-        strcat(OutRun->sw_outstr, str);
+        (void) snprintf(str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, val);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 }
 #endif
@@ -1805,7 +1891,7 @@ void get_swpMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SWPMatric][pd];
+    double *p = OutRun->p_OUT[eSW_SWPMatric][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -1857,15 +1943,15 @@ void get_swpMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     information that do not change throughout simulation runs
 */
 void get_swpMatric_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
-    RealD val;
+    double val;
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     LOG_INFO local_log;
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SWPMatric][pd],
-          *psd = OutRun->p_OUTsd[eSW_SWPMatric][pd];
+    double *p = OutRun->p_OUT[eSW_SWPMatric][pd];
+    double *psd = OutRun->p_OUTsd[eSW_SWPMatric][pd];
 
     ForEachSoilLayer(i, sw->Site.n_layers) {
         /* swpMatric at this point is identical to swcBulk */
@@ -1903,13 +1989,20 @@ void get_swaBulk_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
     ForEachSoilLayer(i, sw->Site.n_layers) {
-        snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->swaBulk[i]);
-        strcat(OutRun->sw_outstr, str);
+        (void) snprintf(
+            str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->swaBulk[i]
+        );
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 }
 #endif
@@ -1931,7 +2024,7 @@ void get_swaBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SWABulk][pd];
+    double *p = OutRun->p_OUT[eSW_SWABulk][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -1986,8 +2079,8 @@ void get_swaBulk_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SWABulk][pd],
-          *psd = OutRun->p_OUTsd[eSW_SWABulk][pd];
+    double *p = OutRun->p_OUT[eSW_SWABulk][pd];
+    double *psd = OutRun->p_OUTsd[eSW_SWABulk][pd];
 
     ForEachSoilLayer(i, sw->Site.n_layers) {
         iOUTIndex = iOUT(
@@ -2019,9 +2112,12 @@ void get_swaBulk_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 */
 void get_swaMatric_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
-    RealD convert;
+    double convert;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
@@ -2030,15 +2126,17 @@ void get_swaMatric_text(OutPeriod pd, SW_RUN *sw) {
         /* swaMatric at this point is identical to swaBulk */
         convert = 1. / (1. - sw->Site.fractionVolBulk_gravel[i]);
 
-        snprintf(
+        (void) snprintf(
             str,
             OUTSTRLEN,
             "%c%.*f",
-            _OUTSEP,
+            OUTSEP,
             OUT_DIGITS,
             vo->swaMatric[i] * convert
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 }
 #endif
@@ -2056,12 +2154,12 @@ void get_swaMatric_text(OutPeriod pd, SW_RUN *sw) {
 */
 void get_swaMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
-    RealD convert;
+    double convert;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SWAMatric][pd];
+    double *p = OutRun->p_OUT[eSW_SWAMatric][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -2114,13 +2212,13 @@ void get_swaMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 */
 void get_swaMatric_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
-    RealD convert;
+    double convert;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SWAMatric][pd],
-          *psd = OutRun->p_OUTsd[eSW_SWAMatric][pd];
+    double *p = OutRun->p_OUT[eSW_SWAMatric][pd];
+    double *psd = OutRun->p_OUTsd[eSW_SWAMatric][pd];
 
     ForEachSoilLayer(i, sw->Site.n_layers) {
         /* swaMatric at this point is identical to swaBulk */
@@ -2161,11 +2259,11 @@ void get_surfaceWater_text(OutPeriod pd, SW_RUN *sw) {
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     OutRun->sw_outstr[0] = '\0';
-    snprintf(
+    (void) snprintf(
         OutRun->sw_outstr,
         sizeof OutRun->sw_outstr,
         "%c%.*f",
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->surfaceWater
     );
@@ -2188,7 +2286,7 @@ void get_surfaceWater_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SurfaceWater][pd];
+    double *p = OutRun->p_OUT[eSW_SurfaceWater][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -2224,8 +2322,8 @@ void get_surfaceWater_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SurfaceWater][pd],
-          *psd = OutRun->p_OUTsd[eSW_SurfaceWater][pd];
+    double *p = OutRun->p_OUT[eSW_SurfaceWater][pd];
+    double *psd = OutRun->p_OUTsd[eSW_SurfaceWater][pd];
 
     iOUTIndex =
         iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
@@ -2255,27 +2353,27 @@ OUTTEXT.
     information that do not change throughout simulation runs
 */
 void get_runoffrunon_text(OutPeriod pd, SW_RUN *sw) {
-    RealD net;
+    double net;
     SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     net = vo->surfaceRunoff + vo->snowRunoff - vo->surfaceRunon;
 
     OutRun->sw_outstr[0] = '\0';
-    snprintf(
+    (void) snprintf(
         OutRun->sw_outstr,
         sizeof OutRun->sw_outstr,
         "%c%.*f%c%.*f%c%.*f%c%.*f",
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         net,
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->surfaceRunoff,
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->snowRunoff,
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->surfaceRunon
     );
@@ -2299,7 +2397,7 @@ void get_runoffrunon_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Runoff][pd];
+    double *p = OutRun->p_OUT[eSW_Runoff][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -2368,13 +2466,13 @@ STEPWAT.
     information that do not change throughout simulation runs
 */
 void get_runoffrunon_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
-    RealD net;
+    double net;
     SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Runoff][pd],
-          *psd = OutRun->p_OUTsd[eSW_Runoff][pd];
+    double *p = OutRun->p_OUT[eSW_Runoff][pd];
+    double *psd = OutRun->p_OUTsd[eSW_Runoff][pd];
 
     net = vo->surfaceRunoff + vo->snowRunoff - vo->surfaceRunon;
 
@@ -2416,29 +2514,37 @@ void get_runoffrunon_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     information that do not change throughout simulation runs
 */
 void get_transp_text(OutPeriod pd, SW_RUN *sw) {
-    LyrIndex i, n_layers = sw->Site.n_layers;
+    LyrIndex i;
+    LyrIndex n_layers = sw->Site.n_layers;
     int k;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    char *writeStr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
-    char str[OUTSTRLEN];
+    char str[OUTSTRLEN] = {'\0'};
     OutRun->sw_outstr[0] = '\0';
 
     /* total transpiration */
     ForEachSoilLayer(i, n_layers) {
-        snprintf(
-            str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->transp_total[i]
+        (void) snprintf(
+            str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->transp_total[i]
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writeStr, str, '\0', writeSize);
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
+        writeStr = resPtr - 1;
     }
 
     /* transpiration for each vegetation type */
     ForEachVegType(k) {
         ForEachSoilLayer(i, n_layers) {
-            snprintf(
-                str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->transp[k][i]
+            (void) snprintf(
+                str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->transp[k][i]
             );
-            strcat(OutRun->sw_outstr, str);
+            resPtr = (char *) sw_memccpy(writeStr, str, '\0', writeSize);
+            writeSize -= (resPtr - OutRun->sw_outstr - 1);
+            writeStr = resPtr - 1;
         }
     }
 }
@@ -2456,13 +2562,14 @@ void get_transp_text(OutPeriod pd, SW_RUN *sw) {
     information that do not change throughout simulation runs
 */
 void get_transp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
-    LyrIndex i, n_layers = sw->Site.n_layers;
+    LyrIndex i;
+    LyrIndex n_layers = sw->Site.n_layers;
     int k;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Transp][pd];
+    double *p = OutRun->p_OUT[eSW_Transp][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -2554,14 +2661,15 @@ void get_transp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     information that do not change throughout simulation runs
 */
 void get_transp_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
-    LyrIndex i, n_layers = sw->Site.n_layers;
+    LyrIndex i;
+    LyrIndex n_layers = sw->Site.n_layers;
     int k;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Transp][pd],
-          *psd = OutRun->p_OUTsd[eSW_Transp][pd];
+    double *p = OutRun->p_OUT[eSW_Transp][pd];
+    double *psd = OutRun->p_OUTsd[eSW_Transp][pd];
 
     /* total transpiration */
     ForEachSoilLayer(i, n_layers) {
@@ -2648,15 +2756,20 @@ void get_evapSoil_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
     ForEachEvapLayer(i, sw->Site.n_evap_lyrs) {
-        snprintf(
-            str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->evap_baresoil[i]
+        (void) snprintf(
+            str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->evap_baresoil[i]
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 }
 #endif
@@ -2678,7 +2791,7 @@ void get_evapSoil_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_EvapSoil][pd];
+    double *p = OutRun->p_OUT[eSW_EvapSoil][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -2733,8 +2846,8 @@ void get_evapSoil_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_EvapSoil][pd],
-          *psd = OutRun->p_OUTsd[eSW_EvapSoil][pd];
+    double *p = OutRun->p_OUT[eSW_EvapSoil][pd];
+    double *psd = OutRun->p_OUTsd[eSW_EvapSoil][pd];
 
     ForEachEvapLayer(i, sw->Site.n_evap_lyrs) {
         iOUTIndex = iOUT(
@@ -2771,38 +2884,40 @@ void get_evapSurface_text(OutPeriod pd, SW_RUN *sw) {
     int k;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
-    snprintf(
-        OutRun->sw_outstr,
-        sizeof OutRun->sw_outstr,
-        "%c%.*f",
-        _OUTSEP,
-        OUT_DIGITS,
-        vo->total_evap
-    );
+    (void
+    ) snprintf(str, sizeof str, "%c%.*f", OUTSEP, OUT_DIGITS, vo->total_evap);
+    resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+    writePtr = resPtr - 1;
+    writeSize -= (resPtr - OutRun->sw_outstr - 1);
 
     ForEachVegType(k) {
-        snprintf(
-            str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->evap_veg[k]
+        (void) snprintf(
+            str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->evap_veg[k]
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 
-    snprintf(
+    (void) snprintf(
         str,
         OUTSTRLEN,
         "%c%.*f%c%.*f",
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->litter_evap,
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->surfaceWater_evap
     );
-    strcat(OutRun->sw_outstr, str);
+    sw_memccpy(writePtr, str, '\0', writeSize);
 }
 #endif
 
@@ -2823,7 +2938,7 @@ void get_evapSurface_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_EvapSurface][pd];
+    double *p = OutRun->p_OUT[eSW_EvapSurface][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -2913,8 +3028,8 @@ void get_evapSurface_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_EvapSurface][pd],
-          *psd = OutRun->p_OUTsd[eSW_EvapSurface][pd];
+    double *p = OutRun->p_OUT[eSW_EvapSurface][pd];
+    double *psd = OutRun->p_OUTsd[eSW_EvapSurface][pd];
 
     iOUTIndex =
         iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
@@ -2968,26 +3083,31 @@ void get_interception_text(OutPeriod pd, SW_RUN *sw) {
     int k;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
-    snprintf(
-        OutRun->sw_outstr,
-        sizeof OutRun->sw_outstr,
-        "%c%.*f",
-        _OUTSEP,
-        OUT_DIGITS,
-        vo->total_int
-    );
+    (void
+    ) snprintf(str, sizeof str, "%c%.*f", OUTSEP, OUT_DIGITS, vo->total_int);
+    resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+    writePtr = resPtr - 1;
+    writeSize -= (resPtr - OutRun->sw_outstr - 1);
 
     ForEachVegType(k) {
-        snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->int_veg[k]);
-        strcat(OutRun->sw_outstr, str);
+        (void) snprintf(
+            str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->int_veg[k]
+        );
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 
-    snprintf(str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->litter_int);
-    strcat(OutRun->sw_outstr, str);
+    (void
+    ) snprintf(str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->litter_int);
+    sw_memccpy(writePtr, str, '\0', writeSize);
 }
 #endif
 
@@ -3008,7 +3128,7 @@ void get_interception_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Interception][pd];
+    double *p = OutRun->p_OUT[eSW_Interception][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -3082,8 +3202,8 @@ void get_interception_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Interception][pd],
-          *psd = OutRun->p_OUTsd[eSW_Interception][pd];
+    double *p = OutRun->p_OUT[eSW_Interception][pd];
+    double *psd = OutRun->p_OUTsd[eSW_Interception][pd];
 
     iOUTIndex =
         iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
@@ -3134,11 +3254,11 @@ void get_soilinf_text(OutPeriod pd, SW_RUN *sw) {
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     OutRun->sw_outstr[0] = '\0';
-    snprintf(
+    (void) snprintf(
         OutRun->sw_outstr,
         sizeof OutRun->sw_outstr,
         "%c%.*f",
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->soil_inf
     );
@@ -3161,7 +3281,7 @@ void get_soilinf_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SoilInf][pd];
+    double *p = OutRun->p_OUT[eSW_SoilInf][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -3197,8 +3317,8 @@ void get_soilinf_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SoilInf][pd],
-          *psd = OutRun->p_OUTsd[eSW_SoilInf][pd];
+    double *p = OutRun->p_OUT[eSW_SoilInf][pd];
+    double *psd = OutRun->p_OUTsd[eSW_SoilInf][pd];
 
     iOUTIndex =
         iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
@@ -3231,15 +3351,20 @@ void get_lyrdrain_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
     for (i = 0; i < sw->Site.n_layers - 1; i++) {
-        snprintf(
-            str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->lyrdrain[i]
+        (void) snprintf(
+            str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->lyrdrain[i]
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 }
 #endif
@@ -3261,7 +3386,7 @@ void get_lyrdrain_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_LyrDrain][pd];
+    double *p = OutRun->p_OUT[eSW_LyrDrain][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -3316,8 +3441,8 @@ void get_lyrdrain_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_LyrDrain][pd],
-          *psd = OutRun->p_OUTsd[eSW_LyrDrain][pd];
+    double *p = OutRun->p_OUT[eSW_LyrDrain][pd];
+    double *psd = OutRun->p_OUTsd[eSW_LyrDrain][pd];
 
     for (i = 0; i < sw->Site.n_layers - 1; i++) {
         iOUTIndex = iOUT(
@@ -3350,29 +3475,37 @@ void get_lyrdrain_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 */
 void get_hydred_text(OutPeriod pd, SW_RUN *sw) {
     /* 20101020 (drs) added */
-    LyrIndex i, n_layers = sw->Site.n_layers;
+    LyrIndex i;
+    LyrIndex n_layers = sw->Site.n_layers;
     int k;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
     /* total hydraulic redistribution */
     ForEachSoilLayer(i, n_layers) {
-        snprintf(
-            str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->hydred_total[i]
+        (void) snprintf(
+            str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->hydred_total[i]
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 
     /* hydraulic redistribution for each vegetation type */
     ForEachVegType(k) {
         ForEachSoilLayer(i, n_layers) {
-            snprintf(
-                str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->hydred[k][i]
+            (void) snprintf(
+                str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->hydred[k][i]
             );
-            strcat(OutRun->sw_outstr, str);
+            resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+            writePtr = resPtr - 1;
+            writeSize -= (resPtr - OutRun->sw_outstr - 1);
         }
     }
 }
@@ -3390,13 +3523,14 @@ void get_hydred_text(OutPeriod pd, SW_RUN *sw) {
     information that do not change throughout simulation runs
 */
 void get_hydred_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
-    LyrIndex i, n_layers = sw->Site.n_layers;
+    LyrIndex i;
+    LyrIndex n_layers = sw->Site.n_layers;
     int k;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_HydRed][pd];
+    double *p = OutRun->p_OUT[eSW_HydRed][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -3493,14 +3627,15 @@ void get_hydred_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     information that do not change throughout simulation runs
 */
 void get_hydred_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
-    LyrIndex i, n_layers = sw->Site.n_layers;
+    LyrIndex i;
+    LyrIndex n_layers = sw->Site.n_layers;
     int k;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_HydRed][pd],
-          *psd = OutRun->p_OUTsd[eSW_HydRed][pd];
+    double *p = OutRun->p_OUT[eSW_HydRed][pd];
+    double *psd = OutRun->p_OUTsd[eSW_HydRed][pd];
 
     /* total hydraulic redistribution */
     ForEachSoilLayer(i, n_layers) {
@@ -3557,26 +3692,26 @@ void get_aet_text(OutPeriod pd, SW_RUN *sw) {
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     OutRun->sw_outstr[0] = '\0';
-    snprintf(
+    (void) snprintf(
         OutRun->sw_outstr,
         sizeof OutRun->sw_outstr,
         "%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f",
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->aet,
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->tran,
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->esoil,
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->ecnw,
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->esurf,
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo2->snowloss // should be `vo->esnow`
     );
@@ -3600,7 +3735,7 @@ void get_aet_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_AET][pd];
+    double *p = OutRun->p_OUT[eSW_AET][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -3697,7 +3832,8 @@ void get_aet_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_AET][pd], *psd = OutRun->p_OUTsd[eSW_AET][pd];
+    double *p = OutRun->p_OUT[eSW_AET][pd];
+    double *psd = OutRun->p_OUTsd[eSW_AET][pd];
 
     iOUTIndex =
         iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
@@ -3771,23 +3907,23 @@ void get_pet_text(OutPeriod pd, SW_RUN *sw) {
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     OutRun->sw_outstr[0] = '\0';
-    snprintf(
+    (void) snprintf(
         OutRun->sw_outstr,
         sizeof OutRun->sw_outstr,
         "%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f",
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->pet,
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->H_oh,
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->H_ot,
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->H_gh,
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->H_gt
     );
@@ -3810,7 +3946,7 @@ void get_pet_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_PET][pd];
+    double *p = OutRun->p_OUT[eSW_PET][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -3888,7 +4024,8 @@ void get_pet_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_PET][pd], *psd = OutRun->p_OUTsd[eSW_PET][pd];
+    double *p = OutRun->p_OUT[eSW_PET][pd];
+    double *psd = OutRun->p_OUTsd[eSW_PET][pd];
 
     iOUTIndex =
         iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
@@ -3933,26 +4070,35 @@ void get_pet_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     information that do not change throughout simulation runs
 */
 void get_wetdays_text(OutPeriod pd, SW_RUN *sw) {
-    LyrIndex i, n_layers = sw->Site.n_layers;
+    LyrIndex i;
+    LyrIndex n_layers = sw->Site.n_layers;
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
     if (pd == eSW_Day) {
         ForEachSoilLayer(i, n_layers) {
-            snprintf(
-                str, OUTSTRLEN, "%c%i", _OUTSEP, (sw->SoilWat.is_wet[i]) ? 1 : 0
+            (void) snprintf(
+                str, OUTSTRLEN, "%c%i", OUTSEP, (sw->SoilWat.is_wet[i]) ? 1 : 0
             );
-            strcat(OutRun->sw_outstr, str);
+            resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+            writePtr = resPtr - 1;
+            writeSize -= (resPtr - OutRun->sw_outstr - 1);
         }
 
     } else {
         SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
         ForEachSoilLayer(i, n_layers) {
-            snprintf(str, OUTSTRLEN, "%c%i", _OUTSEP, (int) vo->wetdays[i]);
-            strcat(OutRun->sw_outstr, str);
+            (void
+            ) snprintf(str, OUTSTRLEN, "%c%i", OUTSEP, (int) vo->wetdays[i]);
+            resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+            writePtr = resPtr - 1;
+            writeSize -= (resPtr - OutRun->sw_outstr - 1);
         }
     }
 }
@@ -3974,7 +4120,7 @@ void get_wetdays_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_WetDays][pd];
+    double *p = OutRun->p_OUT[eSW_WetDays][pd];
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
 
 #if defined(RSOILWAT)
@@ -4033,8 +4179,8 @@ void get_wetdays_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_WetDays][pd],
-          *psd = OutRun->p_OUTsd[eSW_WetDays][pd];
+    double *p = OutRun->p_OUT[eSW_WetDays][pd];
+    double *psd = OutRun->p_OUTsd[eSW_WetDays][pd];
 
     if (pd == eSW_Day) {
         ForEachSoilLayer(i, sw->Site.n_layers) {
@@ -4088,14 +4234,14 @@ void get_snowpack_text(OutPeriod pd, SW_RUN *sw) {
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     OutRun->sw_outstr[0] = '\0';
-    snprintf(
+    (void) snprintf(
         OutRun->sw_outstr,
         sizeof OutRun->sw_outstr,
         "%c%.*f%c%.*f",
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->snowpack,
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->snowdepth
     );
@@ -4118,7 +4264,7 @@ void get_snowpack_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SnowPack][pd];
+    double *p = OutRun->p_OUT[eSW_SnowPack][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -4166,8 +4312,8 @@ void get_snowpack_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SnowPack][pd],
-          *psd = OutRun->p_OUTsd[eSW_SnowPack][pd];
+    double *p = OutRun->p_OUT[eSW_SnowPack][pd];
+    double *psd = OutRun->p_OUTsd[eSW_SnowPack][pd];
 
     iOUTIndex =
         iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
@@ -4204,11 +4350,11 @@ void get_deepswc_text(OutPeriod pd, SW_RUN *sw) {
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     OutRun->sw_outstr[0] = '\0';
-    snprintf(
+    (void) snprintf(
         OutRun->sw_outstr,
         sizeof OutRun->sw_outstr,
         "%c%.*f",
-        _OUTSEP,
+        OUTSEP,
         OUT_DIGITS,
         vo->deep
     );
@@ -4231,7 +4377,7 @@ void get_deepswc_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_DeepSWC][pd];
+    double *p = OutRun->p_OUT[eSW_DeepSWC][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -4267,8 +4413,8 @@ void get_deepswc_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_DeepSWC][pd],
-          *psd = OutRun->p_OUTsd[eSW_DeepSWC][pd];
+    double *p = OutRun->p_OUT[eSW_DeepSWC][pd];
+    double *psd = OutRun->p_OUTsd[eSW_DeepSWC][pd];
 
     iOUTIndex =
         iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
@@ -4300,35 +4446,44 @@ void get_soiltemp_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
     ForEachSoilLayer(i, sw->Site.n_layers) {
-        snprintf(
+        (void) snprintf(
             str,
             OUTSTRLEN,
             "%c%.*f",
-            _OUTSEP,
+            OUTSEP,
             OUT_DIGITS,
             vo->maxLyrTemperature[i]
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
 
-        snprintf(
+        (void) snprintf(
             str,
             OUTSTRLEN,
             "%c%.*f",
-            _OUTSEP,
+            OUTSEP,
             OUT_DIGITS,
             vo->minLyrTemperature[i]
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
 
-        snprintf(
-            str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->avgLyrTemp[i]
+        (void) snprintf(
+            str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->avgLyrTemp[i]
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 }
 #endif
@@ -4350,7 +4505,7 @@ void get_soiltemp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SoilTemp][pd];
+    double *p = OutRun->p_OUT[eSW_SoilTemp][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -4460,8 +4615,8 @@ void get_soiltemp_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_SoilTemp][pd],
-          *psd = OutRun->p_OUTsd[eSW_SoilTemp][pd];
+    double *p = OutRun->p_OUT[eSW_SoilTemp][pd];
+    double *psd = OutRun->p_OUTsd[eSW_SoilTemp][pd];
 
     ForEachSoilLayer(i, sw->Site.n_layers) {
         iOUTIndex = iOUT(
@@ -4519,15 +4674,20 @@ void get_frozen_text(OutPeriod pd, SW_RUN *sw) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
+    size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
+    char *writePtr = OutRun->sw_outstr;
+    char *resPtr = NULL;
 
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
     ForEachSoilLayer(i, sw->Site.n_layers) {
-        snprintf(
-            str, OUTSTRLEN, "%c%.*f", _OUTSEP, OUT_DIGITS, vo->lyrFrozen[i]
+        (void) snprintf(
+            str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->lyrFrozen[i]
         );
-        strcat(OutRun->sw_outstr, str);
+        resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
+        writePtr = resPtr - 1;
+        writeSize -= (resPtr - OutRun->sw_outstr - 1);
     }
 }
 #endif
@@ -4549,7 +4709,7 @@ void get_frozen_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Frozen][pd];
+    double *p = OutRun->p_OUT[eSW_Frozen][pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -4604,8 +4764,8 @@ void get_frozen_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
-    RealD *p = OutRun->p_OUT[eSW_Frozen][pd],
-          *psd = OutRun->p_OUTsd[eSW_Frozen][pd];
+    double *p = OutRun->p_OUT[eSW_Frozen][pd];
+    double *psd = OutRun->p_OUTsd[eSW_Frozen][pd];
 
     ForEachSoilLayer(i, sw->Site.n_layers) {
         iOUTIndex = iOUT(

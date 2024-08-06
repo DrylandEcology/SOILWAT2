@@ -144,9 +144,9 @@ typedef struct {
         firstdoy, /* start day for this year */
         lastdoy,  /* 366 if leapyear or endend if endyr */
         doy, week, month, year, simyear, /* current model time */
-        _prevweek,                       /* check for new week */
-        _prevmonth,                      /* check for new month */
-        _prevyear;                       /* check for new year */
+        prevweek,                        /* check for new week */
+        prevmonth,                       /* check for new month */
+        prevyear;                        /* check for new year */
     /* however, week and month are base0 because they
      * are used as array indices, so take care.
      * doy and year are base1. */
@@ -164,9 +164,9 @@ typedef struct {
 
     // ********** END of copying SW_DOMAIN's data *************
 
-    RealD longitude, /* longitude of the site (radians)        */
-        latitude,    /* latitude of the site (radians)        */
-        elevation,   /* elevation a.s.l (m) of the site */
+    double longitude, /* longitude of the site (radians) */
+        latitude,     /* latitude of the site (radians) */
+        elevation,    /* elevation a.s.l (m) of the site */
         slope, /* slope of the site (radians): between 0 (horizontal) and pi / 2
                   (vertical) */
         aspect; /* aspect of the site (radians): A value of \ref SW_MISSING
@@ -227,7 +227,7 @@ typedef struct {
 
 #if defined(SWNETCDF)
     char **ncOutFiles[SW_OUTNKEYS][SW_OUTNPERIODS];
-    int numOutFiles;
+    unsigned int numOutFiles;
 #endif
 
 } SW_FILE_STATUS;
@@ -254,8 +254,8 @@ typedef struct {
         n_transp_lyrs[NVEGTYPES], /* layer index of deepest transp. region */
         deep_lyr; /* index of deep drainage layer if deepdrain, 0 otherwise */
 
-    RealD slow_drain_coeff, /* low soil water drainage coefficient   */
-        pet_scale,          /* changes relative effect of PET calculation */
+    double slow_drain_coeff, /* low soil water drainage coefficient   */
+        pet_scale,           /* changes relative effect of PET calculation */
         /* SWAT2K model parameters : Neitsch S, Arnold J, Kiniry J, Williams J.
            2005. Soil and water assessment tool (SWAT) theoretical
            documentation. version 2005. Blackland Research Center, Texas
@@ -304,17 +304,17 @@ typedef struct {
 
     /* transpiration regions  shallow, moderately shallow,  */
     /* deep and very deep. units are in layer numbers. */
-    LyrIndex _TranspRgnBounds[MAX_TRANSP_REGIONS];
-    RealD _SWCInitVal, /* initialization value for swc */
-        _SWCWetVal,    /* value for a "wet" day,       */
-        _SWCMinVal;    /* lower bound on swc.          */
+    LyrIndex TranspRgnBounds[MAX_TRANSP_REGIONS];
+    double SWCInitVal, /* initialization value for swc */
+        SWCWetVal,     /* value for a "wet" day,       */
+        SWCMinVal;     /* lower bound on swc.          */
 
     /* bulk = relating to the whole soil, i.e., matric + rock/gravel/coarse
      * fragments */
     /* matric = relating to the < 2 mm fraction of the soil, i.e., sand, clay,
      * and silt */
 
-    RealD
+    double
         /* Inputs */
         width[MAX_LAYERS],            /* width of the soil layer (cm) */
         soilDensityInput[MAX_LAYERS], /* soil density [g / cm3]: either of the
@@ -377,7 +377,7 @@ typedef struct {
                      `swrcp` but we need to loop over soil layers for every
                      vegetation type in `my_transp_rng`
     */
-    RealD swrcp[MAX_LAYERS][SWRC_PARAM_NMAX];
+    double swrcp[MAX_LAYERS][SWRC_PARAM_NMAX];
     /**< Parameters of SWRC: parameter interpretation varies with selected SWRC,
      * see `SWRC_check_parameters()` */
     LyrIndex my_transp_rgn[NVEGTYPES][MAX_LAYERS]; /* which transp zones from
@@ -391,7 +391,7 @@ typedef struct {
 
 /** Data type that describes cover attributes of a surface type */
 typedef struct {
-    RealD
+    double
         /** The cover contribution to the total plot [0-1];
           user input from file `Input/veg.in` */
         fCover,
@@ -414,14 +414,14 @@ typedef struct {
     /** Constant canopy height: if > 0 then constant canopy height [cm] and
       overriding cnpy-tangens = f(biomass);
       user input from file `Input/veg.in` */
-    RealD canopy_height_constant;
+    double canopy_height_constant;
 
     tanfunc_t
         /** Shading effect on transpiration based on live and dead biomass;
           user input from file `Input/veg.in` */
         tr_shade_effects;
 
-    RealD
+    double
         /** Parameter of live and dead biomass shading effects;
           user input from file `Input/veg.in` */
         shade_scale,
@@ -429,7 +429,7 @@ typedef struct {
           user input from file `Input/veg.in` */
         shade_deadmax;
 
-    RealD
+    double
         /** Monthly litter amount [g / m2] as if this vegetation type covers
           100% of the simulated surface; user input from file `Input/veg.in` */
         litter[MAX_MONTHS],
@@ -444,7 +444,7 @@ typedef struct {
           user input from file `Input/veg.in` */
         lai_conv[MAX_MONTHS];
 
-    RealD
+    double
         /** Daily litter amount [g / m2] */
         litter_daily[MAX_DAYS + 1],
         /** Daily aboveground biomass [g / m2] */
@@ -472,7 +472,7 @@ typedef struct {
           user input from file `Input/veg.in` */
         flagHydraulicRedistribution;
 
-    RealD
+    double
         /** Parameter for hydraulic redistribution: maximum radial soil-root
           conductance of the entire active root system for water
           [cm / (-bar * day)];
@@ -488,13 +488,13 @@ typedef struct {
           user input from file `Input/veg.in` */
         shapeCond;
 
-    RealD
+    double
         /** Critical soil water potential below which vegetation cannot sustain
           transpiration [-bar];
           user input from file `Input/veg.in` */
         SWPcrit;
 
-    RealD
+    double
         /** Parameter for vegetation interception;
           user input from file `Input/veg.in` */
         veg_kSmax,
@@ -505,7 +505,7 @@ typedef struct {
           user input from file `Input/veg.in` */
         lit_kSmax;
 
-    RealD
+    double
         /** Parameter for partitioning potential rates of bare-soil evaporation
           and transpiration;
           user input from file `Input/veg.in` */
@@ -514,7 +514,7 @@ typedef struct {
           user input from file `Input/veg.in` */
         Es_param_limit;
 
-    RealD
+    double
         /** Parameter for CO2-effects on biomass;
           user input from file `Input/veg.in` */
         co2_bio_coeff1,
@@ -528,7 +528,7 @@ typedef struct {
           user input from file `Input/veg.in` */
         co2_wue_coeff2;
 
-    RealD
+    double
         /** Calculated multipliers for CO2-effects:
           - column \ref BIO_INDEX holds biomass multipliers
           - column \ref WUE_INDEX holds water-use-efficiency multipliers
@@ -541,14 +541,14 @@ typedef struct {
     // biomass [g/m2] per vegetation type as observed in total vegetation
     // (reduced from 100% cover per vegtype (inputs) to actual cover
     // (simulated))
-    RealD biomass_inveg, biolive_inveg, litter_inveg;
+    double biomass_inveg, biolive_inveg, litter_inveg;
 } VegTypeOut;
 
 typedef struct {
     // biomass [g/m2] per vegetation type as observed in total vegetation
     VegTypeOut veg[NVEGTYPES];
     // biomass [g/m2] of total vegetation
-    RealD biomass_total, biolive_total, litter_total, LAI;
+    double biomass_total, biolive_total, litter_total, LAI;
 } SW_VEGPROD_OUTPUTS;
 
 /** Data type to describe the surface cover of a SOILWAT2 simulation run */
@@ -565,7 +565,7 @@ typedef struct {
           user input from file `Input/outsetup.in` */
         use_SWA;
 
-    RealD
+    double
         // storing values in same order as defined in STEPWAT2/rgroup.in
         // (0=tree, 1=shrub, 2=grass, 3=forb)
         critSoilWater[NVEGTYPES];
@@ -619,23 +619,23 @@ typedef struct {
 
 typedef struct {
     /* Weather values of the current simulation day */
-    RealD temp_avg, temp_max, temp_min, ppt, rain, cloudCover, windSpeed,
+    double temp_avg, temp_max, temp_min, ppt, rain, cloudCover, windSpeed,
         relHumidity, shortWaveRad, actualVaporPressure;
 } SW_WEATHER_NOW;
 
 typedef struct {
     /* Daily weather values for one year */
-    RealD temp_max[MAX_DAYS], temp_min[MAX_DAYS], temp_avg[MAX_DAYS],
+    double temp_max[MAX_DAYS], temp_min[MAX_DAYS], temp_avg[MAX_DAYS],
         ppt[MAX_DAYS], cloudcov_daily[MAX_DAYS], windspeed_daily[MAX_DAYS],
         r_humidity_daily[MAX_DAYS], shortWaveRad[MAX_DAYS],
         actualVaporPressure[MAX_DAYS];
-    // RealD temp_month_avg[MAX_MONTHS], temp_year_avg; // currently not used
+    // double temp_month_avg[MAX_MONTHS], temp_year_avg; // currently not used
 } SW_WEATHER_HIST;
 
 /* accumulators for output values hold only the */
 /* current period's values (eg, weekly or monthly) */
 typedef struct {
-    RealD temp_max, temp_min, temp_avg, ppt, rain, snow, snowmelt,
+    double temp_max, temp_min, temp_avg, ppt, rain, snow, snowmelt,
         snowloss, /* 20091015 (drs) ppt is divided into rain and snow */
         snowRunoff, surfaceRunoff, surfaceRunon, soil_inf, et, aet, pet,
         surfaceAvg, surfaceMax, surfaceMin;
@@ -652,7 +652,7 @@ dimension represents year.
 @note Number of years is variable and determined at runtime.
 */
 typedef struct {
-    RealD *
+    double *
         *PPTMon_cm, /**< 2D array containing monthly amount precipitation [cm]*/
         *PPT_cm,    /**< Array containing annual precipitation amount [cm]*/
         *PPT7thMon_mm, /**< Array containing July precipitation amount in July
@@ -691,7 +691,7 @@ represent across-year standard devations and the 1D array dimension represents
 different variables, see `averageClimateAcrossYears()`.
 */
 typedef struct {
-    RealD *meanTempMon_C, /**< Array of size MAX_MONTHS containing sum of
+    double *meanTempMon_C, /**< Array of size MAX_MONTHS containing sum of
                              monthly mean temperatures [C]*/
         *maxTempMon_C, /**< Array of size MAX_MONTHS containing sum of monthly
                           maximum temperatures [C]*/
@@ -731,14 +731,14 @@ typedef struct {
 } SW_CLIMATE_CLIM;
 
 typedef struct {
-    RealD **meanMonthlyTemp_C, **maxMonthlyTemp_C, **minMonthlyTemp_C,
+    double **meanMonthlyTemp_C, **maxMonthlyTemp_C, **minMonthlyTemp_C,
         **monthlyPPT_cm, *annualPPT_cm, *meanAnnualTemp_C, *JulyMinTemp,
         *frostFreeDays_days, *ddAbove65F_degday, *JulyPPT_mm,
         *meanTempDriestQuarter_C, *minTempFebruary_C;
 } SW_CLIMATE_CALC;
 
 typedef struct {
-    RealD *meanMonthlyTempAnn, *maxMonthlyTempAnn, *minMonthlyTempAnn,
+    double *meanMonthlyTempAnn, *maxMonthlyTempAnn, *minMonthlyTempAnn,
         *meanMonthlyPPTAnn, *sdC4, *sdCheatgrass, MAT_C, MAP_cm, JulyPPTAnn_mm,
         meanTempDriestQuarterAnn_C, minTempFebruaryAnn_C, ddAbove65F_degdayAnn,
         frostFreeAnn, JulyMinTempAnn;
@@ -757,16 +757,16 @@ typedef struct {
 
     int rng_seed; // initial state for `mark
 
-    RealD pct_snowdrift, pct_snowRunoff;
-    RealD scale_precip[MAX_MONTHS], scale_temp_max[MAX_MONTHS],
+    double pct_snowdrift, pct_snowRunoff;
+    double scale_precip[MAX_MONTHS], scale_temp_max[MAX_MONTHS],
         scale_temp_min[MAX_MONTHS], scale_skyCover[MAX_MONTHS],
         scale_wind[MAX_MONTHS], scale_rH[MAX_MONTHS],
         scale_actVapPress[MAX_MONTHS], scale_shortWaveRad[MAX_MONTHS];
     char name_prefix[MAX_FILENAMESIZE - 5]; // subtract 4-digit 'year' file type
                                             // extension
-    RealD snowRunoff, surfaceRunoff, surfaceRunon, soil_inf, surfaceAvg;
-    RealD snow, snowmelt, snowloss, surfaceMax, surfaceMin;
-    RealD temp_snow; // Snow temperature
+    double snowRunoff, surfaceRunoff, surfaceRunon, soil_inf, surfaceAvg;
+    double snow, snowmelt, snowloss, surfaceMax, surfaceMin;
+    double temp_snow; // Snow temperature
 
     Bool use_cloudCoverMonthly, use_windSpeedMonthly, use_humidityMonthly;
     Bool dailyInputFlags[MAX_INPUT_COLUMNS];
@@ -807,14 +807,14 @@ typedef struct {
     int method; /* method: 1=average; 2=hist+/- stderr */
     SW_TIMES yr;
     char *file_prefix; /* prefix to historical swc filenames */
-    RealD swc[MAX_DAYS][MAX_LAYERS], std_err[MAX_DAYS][MAX_LAYERS];
+    double swc[MAX_DAYS][MAX_LAYERS], std_err[MAX_DAYS][MAX_LAYERS];
 
 } SW_SOILWAT_HIST;
 
 /* accumulators for output values hold only the */
 /* current period's values (eg, weekly or monthly) */
 typedef struct {
-    RealD wetdays[MAX_LAYERS],
+    double wetdays[MAX_LAYERS],
         vwcBulk[MAX_LAYERS], /* soil water content cm/cm */
         vwcMatric[MAX_LAYERS],
         swcBulk[MAX_LAYERS],   /* soil water content cm/layer */
@@ -846,7 +846,7 @@ typedef struct {
 typedef struct {
     /* current daily soil water related values */
     Bool is_wet[MAX_LAYERS]; /* swc sufficient to count as wet today */
-    RealD swcBulk[TWO_DAYS][MAX_LAYERS], SWA_VegType[TWO_DAYS][MAX_LAYERS],
+    double swcBulk[TWO_DAYS][MAX_LAYERS], SWA_VegType[TWO_DAYS][MAX_LAYERS],
         snowpack[TWO_DAYS], /* swe of snowpack, if accumulation flag set */
         snowdepth, transpiration[NVEGTYPES][MAX_LAYERS],
         evap_baresoil[MAX_LAYERS], /* bare-soil evaporation [cm/layer] */
@@ -864,15 +864,15 @@ typedef struct {
         maxLyrTemperature[MAX_LAYERS]; // Holds the maximum temperature
                                        // estimation of each layer
 
-    RealD veg_int_storage[NVEGTYPES], // storage of intercepted rain by the
-                                      // vegetation
+    double veg_int_storage[NVEGTYPES], // storage of intercepted rain by the
+                                       // vegetation
         litter_int_storage, // storage of intercepted rain by the litter layer
         standingWater[TWO_DAYS]; /* water on soil surface if layer below is
                                     saturated */
 
-    RealF swa_master[NVEGTYPES][NVEGTYPES]
-                    [MAX_LAYERS]; // veg_type, crit_val, layer
-    RealF dSWA_repartitioned_sum[NVEGTYPES][MAX_LAYERS];
+    double swa_master[NVEGTYPES][NVEGTYPES]
+                     [MAX_LAYERS]; // veg_type, crit_val, layer
+    double dSWA_repartitioned_sum[NVEGTYPES][MAX_LAYERS];
 
     Bool soiltempError; // soil temperature error indicator
 #ifdef SWDEBUG
@@ -916,7 +916,7 @@ typedef struct {
 
 typedef struct {
     char *InFiles[SW_NFILES];
-    char _ProjDir[FILENAME_MAX];
+    char SW_ProjDir[FILENAME_MAX]; // SW_ProjDir
     char weather_prefix[FILENAME_MAX];
     char output_prefix[FILENAME_MAX];
 } PATH_INFO;
@@ -926,7 +926,7 @@ typedef struct {
 /* --------------------------------------------------- */
 
 typedef struct {
-    RealD cloudcov[MAX_MONTHS],     /* monthly cloud cover (frac) */
+    double cloudcov[MAX_MONTHS],    /* monthly cloud cover (frac) */
         windspeed[MAX_MONTHS],      /* windspeed (m/s) */
         r_humidity[MAX_MONTHS],     /* relative humidity (%) */
         snow_density[MAX_MONTHS],   /* snow density (kg/m3) */
@@ -934,7 +934,7 @@ typedef struct {
                                        (currently used in interception
                                        functions) */
 
-    RealD snow_density_daily[MAX_DAYS + 1]; /* interpolated daily snow density
+    double snow_density_daily[MAX_DAYS + 1]; /* interpolated daily snow density
                                                (kg/m3) */
 
 } SW_SKY;
@@ -982,7 +982,7 @@ typedef struct {
         estab_lyrs;   /* estab could conceivably need more than one layer */
                       /* swc is averaged over these top layers to compare to */
                       /* the converted value from min_swc_estab */
-    RealF bars[2],    /* read from input, saved for reporting */
+    double bars[2],   /* read from input, saved for reporting */
         min_swc_germ, /* wetting point required for germination converted from
                        */
         /* bars to cm per layer for efficiency in the loop */
@@ -1023,14 +1023,14 @@ typedef struct {
     /* pointers to arrays of probabilities for each day saves some space */
     /* by not being allocated if markov weather not requested by user */
     /* alas, multi-dimensional arrays aren't so convenient */
-    RealD *wetprob, /* probability of being wet today given a wet yesterday */
-        *dryprob,   /* probability of being wet today given a dry yesterday */
-        *avg_ppt,   /* mean precip (cm) of wet days */
-        *std_ppt,   /* std dev. for precip of wet days */
-        *cfxw,      /*correction factor for tmax for wet days */
-        *cfxd,      /*correction factor for tmax for dry days */
-        *cfnw,      /*correction factor for tmin for wet days */
-        *cfnd,      /*correction factor for tmin for dry days */
+    double *wetprob, /* probability of being wet today given a wet yesterday */
+        *dryprob,    /* probability of being wet today given a dry yesterday */
+        *avg_ppt,    /* mean precip (cm) of wet days */
+        *std_ppt,    /* std dev. for precip of wet days */
+        *cfxw,       /*correction factor for tmax for wet days */
+        *cfxd,       /*correction factor for tmax for dry days */
+        *cfnw,       /*correction factor for tmin for wet days */
+        *cfnd,       /*correction factor for tmin for dry days */
         u_cov[MAX_WEEKS][2], /* mean weekly maximum and minimum temperature in
                                 degree Celsius */
         v_cov[MAX_WEEKS][2][2]; /* covariance matrix */
@@ -1341,13 +1341,13 @@ typedef struct {
     The variable p_OUT used by rSOILWAT2 for output, by STEPWAT2 for
     mean aggregation, and by SOILWAT2 when user requests netCDF output files.
     */
-    RealD *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
+    double *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
 
     size_t irow_OUT[SW_OUTNPERIODS]; /**< current output time step index */
 #endif
 
 #ifdef STEPWAT
-    RealD *p_OUTsd[SW_OUTNKEYS][SW_OUTNPERIODS];
+    double *p_OUTsd[SW_OUTNKEYS][SW_OUTNPERIODS];
 
     char sw_outstr_agg[MAX_LAYERS * OUTSTRLEN];
 
@@ -1357,22 +1357,22 @@ typedef struct {
     /* Variables from SXW_t (STEPWAT2) used in SOILWAT2 */
     // transpXXX: monthly sum of soilwat's transpiration by soil layer
     // * these are dynamic arrays that are indexed by Ilp()
-    RealD transpTotal[MAX_LAYERS][MAX_MONTHS], // total transpiration, i.e., sum
-                                               // across vegetation types
+    double transpTotal[MAX_LAYERS][MAX_MONTHS], // total transpiration, i.e.,
+                                                // sum across vegetation types
         transpVeg[NVEGTYPES][MAX_LAYERS]
                  [MAX_MONTHS]; // transpiration as contributed by vegetation
                                // types
-    RealF swc[MAX_LAYERS]
-             [MAX_MONTHS]; // monthly mean SWCbulk for each soil layer
+    double swc[MAX_LAYERS]
+              [MAX_MONTHS]; // monthly mean SWCbulk for each soil layer
 
     // fixed monthly array:
-    RealF ppt_monthly[MAX_MONTHS];  // monthly sum of soilwat's precipitation
-    RealF temp_monthly[MAX_MONTHS]; // monthly mean soilwat's air temperature
+    double ppt_monthly[MAX_MONTHS];  // monthly sum of soilwat's precipitation
+    double temp_monthly[MAX_MONTHS]; // monthly mean soilwat's air temperature
 
     // annual values:
-    RealF temp, // annual mean soilwat's air temperature
-        ppt,    // annual sum of soilwat's precipitation
-        aet;    // annual sum of soilwat's evapotranspiration
+    double temp, // annual mean soilwat's air temperature
+        ppt,     // annual sum of soilwat's precipitation
+        aet;     // annual sum of soilwat's evapotranspiration
 #endif
 } SW_OUT_RUN;
 
