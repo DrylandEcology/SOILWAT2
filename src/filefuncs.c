@@ -670,15 +670,18 @@ void MkDir(const char *dname, LOG_INFO *LogInfo) {
                     LogInfo, LOGERROR, "Failed to create directory '%s'", buffer
                 );
                 goto freeMem; // Exit function prematurely due to error
-            } else {
+            } else if (isnull(resPtr)) {
                 /* Directory was created but not by the expected name */
                 LogError(
                     LogInfo,
                     LOGWARN,
-                    "Could not create the desired directory. The path created"
-                    "instead is %s.",
+                    "Could not create the desired directory. The path created "
+                    "instead is '%s'.",
                     buffer
                 );
+
+                /* No longer attempt to concatenate the directory */
+                goto freeMem;
             }
         }
 
