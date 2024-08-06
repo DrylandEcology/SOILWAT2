@@ -3784,7 +3784,8 @@ void SW_NC_create_output_files(
             1 :
             (unsigned int) ceil((double) numYears / strideOutYears);
 
-    yearOffset = (strideOutYears == -1) ? numYears : strideOutYears;
+    yearOffset =
+        (strideOutYears == -1) ? numYears : (unsigned int) strideOutYears;
 
     yearFormat = (strideOutYears == 1) ? (char *) "%d" : (char *) "%d-%d";
 

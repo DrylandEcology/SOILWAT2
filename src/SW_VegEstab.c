@@ -582,8 +582,8 @@ static void read_spp(
     int resSNP;
     char name[80]; /* only allow 4 char sppnames */
     char inbuf[MAX_FILENAMESIZE];
-    int inBufintRes;
-    double inBufDoubleVal;
+    int inBufintRes = 0;
+    double inBufDoubleVal = 0.;
 
     Bool doIntConv;
 
