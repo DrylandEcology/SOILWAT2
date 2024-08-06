@@ -239,7 +239,7 @@ endif
 # see https://github.com/google/googletest/pull/2839#issue-613300962
 
 set_std := -std=c99
-set_std++_tests := -std=c++14
+set_std++_tests := -std=c++17
 
 
 #------ FLAGS
