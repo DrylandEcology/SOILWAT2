@@ -1,6 +1,9 @@
 # NEWS
 
 # SOILWAT2 v8.1.0-devel
+* This version produces nearly identical simulation output as previously.
+  Small deviations arise from replacing all remaining variables of type float
+  with type double (see commit 62237ae on 2024-July-30).
 
 
 # SOILWAT2 v8.0.0
