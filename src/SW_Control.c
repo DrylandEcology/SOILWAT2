@@ -1082,14 +1082,6 @@ void SW_CTL_run_sw(
     }
 
 #if defined(SWNETCDF)
-    SW_WALLTIME wallTime;
-    WallTimeSpec toutput;
-    Bool ok;
-
-    SW_WT_StartTime(&wallTime);
-
-    set_walltime(&toutput, &ok);
-
     SW_NC_write_output(
         &SW_Domain->OutDom,
         local_sw.OutRun.p_OUT,
@@ -1099,14 +1091,6 @@ void SW_CTL_run_sw(
         SW_Domain->DomainType,
         LogInfo
     );
-
-    SW_WT_TimeRun(toutput, ok, &wallTime);
-
-    SW_WT_ReportTime(wallTime, LogInfo);
-
-    printf("\n=====================");
-
-    // printf("DONE\n");
 #endif
 
 // Clear local instance of SW_RUN
