@@ -1337,7 +1337,14 @@ static void create_netCDF_var(
     if (!isnull(chunkSizes)) {
         if (nc_def_var_chunking(*ncFileID, *varID, NC_CHUNKED, chunkSizes) !=
             NC_NOERR) {
-            LogError(LogInfo, LOGERROR, "Just here.", varName);
+
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Could not chunk variable '%s' when creating it in "
+                "output netCDF.",
+                varName
+            );
             return; // Exit prematurely due to error
         }
     }
@@ -1797,7 +1804,7 @@ freeMem:
 @param[in] primCRSIsGeo Specifies if the current CRS type is geographic
 @param[in] domType Type of domain in which simulations are running
     (gridcell/sites)
-@param[asdf] deflateLevel Level of deflation that will be used for the created
+@param[in] deflateLevel Level of deflation that will be used for the created
 variable
 @param[out] LogInfo Holds information on warnings and errors
 */
@@ -1873,7 +1880,7 @@ static void fill_domain_netCDF_domain(
     variable (lat or y)
 @param[out] XVarID Variable identifier of the X-axis horizontal coordinate
     variable (lon or x)
-@param[asdf] deflateLevel Level of deflation that will be used for the created
+@param[in] deflateLevel Level of deflation that will be used for the created
 variable
 @param[out] LogInfo Holds information on warnings and errors
 */
@@ -2005,7 +2012,7 @@ static void fill_domain_netCDF_s(
     bounds variable (lat_bnds or y_bnds)
 @param[out] XVarID Variable identifier of the X-axis horizontal coordinate
     bounds variable (lon_bnds or x_bnds)
-@param[asdf] deflateLevel Level of deflation that will be used for the created
+@param[in] deflateLevel Level of deflation that will be used for the created
 variable
 @param[out] LogInfo Holds information on warnings and errors
 */
@@ -2590,7 +2597,7 @@ the variable "time_bnds" and fills the variable "time"
 @param[in,out] startTime Start number of days when dealing with
     years between netCDF files
 @param[in] pd Current output netCDF period
-@param[adf] deflateLevel Level of deflation that will be used for the created
+@param[in] deflateLevel Level of deflation that will be used for the created
 variable
 @param[out] LogInfo Holds information dealing with logfile output
 */
@@ -2726,7 +2733,7 @@ the variable "vertical_bnds" and fills the variable "vertical"
     run within domain have identical soil layer depths
     (though potentially variable number of soil layers)
 @param[in] lyrDepths Depths of soil layers (cm)
-@param[iasdf] deflateLevel Level of deflation that will be used for the created
+@param[in] deflateLevel Level of deflation that will be used for the created
 variable
 @param[out] LogInfo Holds information dealing with logfile output
 */
@@ -2829,7 +2836,7 @@ if needed
     years between netCDF files
 @param[in] startYr Start year of the simulation
 @param[in] pd Current output netCDF period
-@param[adsf] deflateLevel Level of deflation that will be used for the created
+@param[in] deflateLevel Level of deflation that will be used for the created
 variable
 @param[out] LogInfo Holds information dealing with logfile output
 */
@@ -3341,7 +3348,7 @@ SW_OUTNPERIODS).
 @param[in] baseCalendarYear First year of the entire simulation
 @param[in,out] startTime Start number of days when dealing with
     years between netCDF files (returns updated value)
-@param[d] deflateLevel Level of deflation that will be used for the created
+@param[in] deflateLevel Level of deflation that will be used for the created
 variable
 @param[in] LogInfo Holds information on warnings and errors
 */
