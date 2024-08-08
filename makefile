@@ -229,7 +229,7 @@ endif
 
 
 #------ STANDARDS
-# googletest requires c++14 and POSIX API
+# googletest requires c++17 and POSIX API
 # see https://github.com/google/oss-policies-info/blob/main/foundational-cxx-support-matrix.md
 #
 # cygwin does not enable POSIX API by default

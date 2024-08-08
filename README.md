@@ -88,7 +88,7 @@ A full code documentation may be built, see [here](#get_documentation).
   * Requirements:
     - the `gcc` or `clang/llvm` toolchains compliant with `C99`
       - for unit tests (using `googletest`)
-        - toolchains compliant with `C++14`
+        - toolchains compliant with `C++17`
         - `POSIX API`
     - GNU-compliant `make`
     - On Windows OS: an installation of `cygwin`
