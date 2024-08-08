@@ -3747,7 +3747,7 @@ void SW_NC_write_output(
                 // Get size of the "time" dimension
                 get_dimlen_from_dimname(currFileID, "time", &timeSize, LogInfo);
                 if (LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
+                    goto closeFile; // Exit function prematurely due to error
                 }
 
 
@@ -3761,7 +3761,8 @@ void SW_NC_write_output(
                     // Locate correct slice in netCDF to write to
                     get_var_identifier(currFileID, varName, &varID, LogInfo);
                     if (LogInfo->stopRun) {
-                        return; // Exit function prematurely due to error
+                        /* Exit function prematurely due to error */
+                        goto closeFile;
                     }
 
                     get_vardim_write_counts(
@@ -3778,7 +3779,8 @@ void SW_NC_write_output(
                         fileName, varName, currFileID, varID, count, LogInfo
                     );
                     if (LogInfo->stopRun) {
-                        return; // Exit function prematurely due to error
+                        /* Exit function prematurely due to error*/
+                        goto closeFile;
                     }
 #endif // SWDEBUG
 
@@ -3829,7 +3831,8 @@ void SW_NC_write_output(
                         LogInfo
                     );
                     if (LogInfo->stopRun) {
-                        return; // Exit function prematurely due to error
+                        goto closeFile; // Exit function prematurely due to
+                                        // error
                     }
                 }
 
@@ -3840,6 +3843,8 @@ void SW_NC_write_output(
             }
         }
     }
+
+closeFile: { nc_close(currFileID); }
 }
 
 /**
@@ -5105,7 +5110,7 @@ void SW_NC_read_out_vars(
 
     SW_NC_alloc_output_var_info(OutDom, LogInfo);
     if (LogInfo->stopRun) {
-        return; // Exit prematurely due to error
+        goto closeFile; // Exit prematurely due to error
     }
 
     GetALine(f, inbuf, MAX_FILENAMESIZE); // Ignore the first row (column names)
@@ -5143,7 +5148,7 @@ void SW_NC_read_out_vars(
                 scanRes,
                 NOUT_VAR_INPUTS
             );
-            return; // Exit function prematurely due to error
+            goto closeFile; // Exit function prematurely due to error
         }
 
         // Check if the variable was requested to be output
@@ -5151,7 +5156,7 @@ void SW_NC_read_out_vars(
 
         doOutputVal = sw_strtoi(input[doOutInd], MyFileName, LogInfo);
         if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
+            goto closeFile; // Exit function prematurely due to error
         }
 
         if (doOutputVal) {
@@ -5170,7 +5175,7 @@ void SW_NC_read_out_vars(
                     "nc-output variable name '%s' is too long.",
                     varKey
                 );
-                return; // Exit function prematurely due to error
+                goto closeFile; // Exit function prematurely due to error
             }
 
             get_2d_output_key(varKey, &currOutKey, &varNum, OutDom->nvar_OUT);
@@ -5302,14 +5307,16 @@ void SW_NC_read_out_vars(
                         }
 
                         if (LogInfo->stopRun) {
-                            return; // Exit function prematurely due to error
+                            /* Exit function prematurely due to error */
+                            goto closeFile;
                         }
                     }
                 } else {
                     OutDom->outputVarInfo[currOutKey][varNum][index] =
                         Str_Dup(copyStr, LogInfo);
                     if (LogInfo->stopRun) {
-                        return; // Exit function prematurely due to error
+                        /* Exit function prematurely due to error */
+                        goto closeFile;
                     }
                 }
             }
@@ -5322,14 +5329,15 @@ void SW_NC_read_out_vars(
                     OutDom->units_sw[currOutKey][estVar] =
                         Str_Dup(SWVarUnits[currOutKey][varNumUnits], LogInfo);
                     if (LogInfo->stopRun) {
-                        return; // Exit function prematurely due to error
+                        /* Exit function prematurely due to error */
+                        goto closeFile;
                     }
                 }
             } else {
                 OutDom->units_sw[currOutKey][varNum] =
                     Str_Dup(SWVarUnits[currOutKey][varNumUnits], LogInfo);
                 if (LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
+                    goto closeFile; // Exit function prematurely due to error
                 }
             }
         }
@@ -5342,6 +5350,8 @@ void SW_NC_read_out_vars(
             OutDom->use[index] = swFALSE;
         }
     }
+
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /** Create unit converters for output variables
