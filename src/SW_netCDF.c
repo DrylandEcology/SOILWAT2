@@ -1434,8 +1434,8 @@ static void alloc_netCDF_domain_vars(
 
     double **vars[] = {valsY, valsX};
     double **bndsVars[] = {valsYBnds, valsXBnds};
-    const int numVars = 2;
-    const int numBnds = 2;
+    const unsigned int numVars = 2;
+    const unsigned int numBnds = 2;
     unsigned int varNum;
     unsigned int bndVarNum;
     unsigned int numVals;
