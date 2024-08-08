@@ -9,7 +9,7 @@
 #
 #   # Run nc-based SOILWAT2 on example simulation
 #   rm -r tests/example/Output
-#   CPPFLAGS='-DSWNETCDF -DSWUDUNITS' make clean bin_run
+#   CPPFLAGS='-DSWNC' make clean bin_run
 #   mv tests/example/Input_nc/domain_template.nc tests/example/Input_nc/domain.nc
 #   bin/SOILWAT2 -d ./tests/example -f files.in
 #   cp -R tests/example/Output tests/example/Output_comps-nc

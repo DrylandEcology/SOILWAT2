@@ -105,8 +105,8 @@ A full code documentation may be built, see [here](#get_documentation).
   * Build with `make` (see `make help` to print information about all
     available targets). For instance,
 ```{.sh}
-        make                                    # text-based mode
-        CPPFLAGS='-DSWNETCDF -DUDUNITS2' make   # netCDF-based mode with units
+        make CPPFLAGS=-DSWTXT   # text-based mode (equivalent to `make`)
+        make CPPFLAGS=-DSWNC    # netCDF-based mode with units
 ```
 <br>
 

@@ -114,20 +114,24 @@ on your side.
 ```{.sh}
     make
 ```
+    or
+```{.sh}
+    make CPPFLAGS=-DSWTXT
+```
 
   * Compile an executable binary with [netCDF][] support, e.g.,
 ```{.sh}
-    CPPFLAGS=-DSWNETCDF make
+    make CPPFLAGS=-DSWNC
 ```
 
   * User-specified paths to [netCDF][] header and library can be provided, e.g.,
 ```{.sh}
-    CPPFLAGS=-DSWNETCDF NC_CFLAGS="-I/path/to/include" NC_LIBS="-L/path/to/lib" make
+    make CPPFLAGS=-DSWNETCDF NC_CFLAGS="-I/path/to/include" NC_LIBS="-L/path/to/lib"
 ```
 
   * User-specified username and hostname, e.g.,
 ```{.sh}
-    USERNAME=nobody HOSTNAME=nowhere make
+    make USERNAME=nobody HOSTNAME=nowhere
 ```
 
 <br>
