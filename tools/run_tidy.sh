@@ -40,7 +40,7 @@ echo $'\n'\
 "Tidy text-based SOILWAT2"$'\n'\
 --------------------------------------------------
 
-res=$(make CPPFLAGS='-DSWDEBUG' tidy-bin 2>/dev/null)
+res=$(make CPPFLAGS='-DSWTXT -DSWDEBUG' tidy-bin 2>/dev/null)
 status=$?
 process_clangtidy_results $status "$res"
 
@@ -50,7 +50,7 @@ echo $'\n'\
 "Tidy nc-based SOILWAT2"$'\n'\
 --------------------------------------------------
 
-res=$(make CPPFLAGS='-DSWNETCDF -DSWUDUNITS -DSWDEBUG' tidy-bin 2>/dev/null)
+res=$(make CPPFLAGS='-DSWNC -DSWDEBUG' tidy-bin 2>/dev/null)
 status=$?
 process_clangtidy_results $status "$res"
 

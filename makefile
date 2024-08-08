@@ -1,4 +1,12 @@
 #-------------------------------------------------------------------------------
+# SOILWAT2
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+# text-based SOILWAT2: CPPFLAGS=-DSWTXT
+# netCDF-based SOILWAT2: CPPFLAGS=-DSWNC
+#
+#-------------------------------------------------------------------------------
 # commands         explanations
 #-------------------------------------------------------------------------------
 # make help        display the top of this file, i.e., print explanations
@@ -132,9 +140,18 @@ lib_gmock := $(dir_build_test)/lib$(gmock).a
 # RM = rm
 
 
-#------ netCDF SUPPORT
-# `CPPFLAGS=-DSWNETCDF make all`
+#------ txt-based SOILWAT2
+# `CPPFLAGS=-DSWTXT make all`
+# is equivalent to
+# `make all`
+
+#------ netCDF-based SOILWAT2
+# `CPPFLAGS=-DSWNC make all`
+# is equivalent to
 # `CPPFLAGS='-DSWNETCDF -DSWUDUNITS' make all`
+
+# netCDF support but not udunits2, e.g.,
+# `CPPFLAGS=-DSWNETCDF make all`
 
 # User-specified paths to netCDF header and library:
 #   `CPPFLAGS=-DSWNETCDF NC_CFLAGS="-I/path/to/include" NC_LIBS="-L/path/to/lib" make all`
@@ -142,17 +159,37 @@ lib_gmock := $(dir_build_test)/lib$(gmock).a
 # User-specified paths to headers and libraries of netCDF, udunits2 and expat:
 #   `CPPFLAGS='-DSWNETCDF -DSWUDUNITS' NC_CFLAGS="-I/path/to/include" UD_CFLAGS="-I/path/to/include" EX_CFLAGS="-I/path/to/include" NC_LIBS="-L/path/to/lib" UD_LIBS="-L/path/to/lib" EX_LIBS="-L/path/to/lib" make all`
 
-ifneq (,$(findstring -DSWNETCDF,$(CPPFLAGS)))
-  # define makefile variable SWNETCDF if defined via CPPFLAGS
-  SWNETCDF = 1
+ifeq (,$(findstring -DSWTXT,$(CPPFLAGS)))
+  # not txt-based SOILWAT2
+
+  # check if nc-based SOILWAT2
+  ifneq (,$(findstring -DSWNC,$(CPPFLAGS)))
+    # define makefile variables SWNETCDF and SWUDUNITS if defined via CPPFLAGS
+    SWNC = 1
+    override CPPFLAGS += -DSWNETCDF -DSWUDUNITS
+
+  else
+    # if SWNC is not defined, then check for SWNETCDF and SWUDUNITS individually
+    ifneq (,$(findstring -DSWNETCDF,$(CPPFLAGS)))
+      # define makefile variable SWNETCDF if defined via CPPFLAGS
+      SWNETCDF = 1
+    endif
+
+    ifneq (,$(findstring -DSWUDUNITS,$(CPPFLAGS)))
+      # define makefile variable SWUDUNITS if defined via CPPFLAGS
+      SWUDUNITS = 1
+    endif
+  endif
 endif
 
-ifneq (,$(findstring -DSWUDUNITS,$(CPPFLAGS)))
-  # define makefile variable SWUDUNITS if defined via CPPFLAGS
+ifdef SWNC
+  SWNETCDF = 1
   SWUDUNITS = 1
 endif
 
+
 ifdef SWNETCDF
+  # nc-based SOILWAT2
   ifndef NC_CFLAGS
     # use `nc-config` if user did not provide NC_CFLAGS
     sw_NC_CFLAGS := $(shell nc-config --cflags)
