@@ -5,48 +5,48 @@
 #include "include/SW_Flow_lib_PET.h"     // for SW_PET_init_run, solar_radi...
 #include "include/SW_Main_lib.h"         // for sw_fail_on_error, sw_init_logs
 #include "tests/gtests/sw_testhelpers.h" // for tol3, tol0, tol1, tol6, mis...
-#include "gmock/gmock.h"                 // for StrEq
 #include "gtest/gtest.h"                 // for Test, EXPECT_NEAR, TestInfo...
 #include <cmath>                         // for round, NAN, isfinite
 #include <memory>                        // for allocator
 #include <sstream>                       // for char_traits, basic_ostream
 #include <stdio.h>                       // for NULL (fprintf, fflush, FILE)
 
-#if defined(SW2_PET_Test__petfunc_by_temps) ||                    \
-    defined(SW2_SolarPosition_Test__hourangles_by_lat_and_doy) || \
-    defined(SW2_SolarPosition_Test__hourangles_by_lats)
-#include <string.h> // for strcat, strcpy
-#endif
-
 #if defined(SW2_SolarPosition_Test__hourangles_by_lat_and_doy)
 #include <stdlib.h> // for free, malloc
 #endif
 
 
-using ::testing::StrEq;
-
 namespace {
 // Test solar position
 TEST(AtmDemandTest, SolarPosSolarPosition) {
-    double declin, reldist, lat,
-        six_hours = 6. * swPI / 12.,
-        // Min/max solar declination = angle of Earth's axial tilt/obliquity
-        //   value for 2020 based on Astronomical Almanac 2010
-        declin_max = 23.43668 * deg_to_rad, declin_min = -declin_max,
-        // Min/max relative sun-earth distance
-        //   values based on Astronomical Almanac 2010
-        reldist_max = 1.01671, reldist_min = 0.98329;
+    double declin;
+    double reldist;
+    double lat;
+    double const six_hours = 6. * swPI / 12.;
+    // Min/max solar declination = angle of Earth's axial tilt/obliquity
+    //   value for 2020 based on Astronomical Almanac 2010
+    double const declin_max = 23.43668 * deg_to_rad;
+    double const declin_min = -declin_max;
+    // Min/max relative sun-earth distance
+    //   values based on Astronomical Almanac 2010
+    double const reldist_max = 1.01671;
+    double const reldist_min = 0.98329;
 
-    int i,
-        // Dates of equinoxes and solstices (day of nonleap year):
-        //   - March equinox (March 19-21)
-        //   - June solstice (Jun 20-22)
-        //   - September equinox (Sep 21-24)
-        //   - December solistice (Dec 20-23)
-        doy_Mar_equinox[2] = {79, 81}, doy_Sep_equinox[2] = {264, 266},
-        doy_Jun_solstice[2] = {171, 173}, doy_Dec_solstice[2] = {354, 357},
-        // Dates of perihelion and aphelion
-        doy_perihelion[2] = {2, 5}, doy_aphelion[2] = {184, 187};
+    int i;
+
+    // Dates of equinoxes and solstices (day of nonleap year):
+    //   - March equinox (March 19-21)
+    //   - June solstice (Jun 20-22)
+    //   - September equinox (Sep 21-24)
+    //   - December solistice (Dec 20-23)
+    int const doy_Mar_equinox[2] = {79, 81};
+    int const doy_Sep_equinox[2] = {264, 266};
+    int const doy_Jun_solstice[2] = {171, 173};
+    int const doy_Dec_solstice[2] = {354, 357};
+
+    // Dates of perihelion and aphelion
+    int const doy_perihelion[2] = {2, 5};
+    int const doy_aphelion[2] = {184, 187};
 
 
     for (i = 1; i <= 366; i++) {
@@ -139,14 +139,29 @@ TEST(AtmDemandTest, SolarPosSW_HourAnglesSymmetries) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    int k, k2, ilat, itime, isl, iasp,
-        doys[14] =
-            {1, 17, 47, 75, 105, 135, 162, 198, 228, 258, 288, 318, 344, 366},
-        doy_used[4][14], doy_Jun_solstice = 172;
-    double rad_to_hours = 12. / swPI, latitude, latitude_used[4][14], slope,
-           aspect, aspect_used[4][14], o[4][14][7], int_cos_theta[2],
-           int_sin_beta[2], daylength[4][14];
-    std::ostringstream msg, msg2;
+    int k;
+    int k2;
+    int ilat;
+    int itime;
+    int isl;
+    int iasp;
+    int const doys[14] = {
+        1, 17, 47, 75, 105, 135, 162, 198, 228, 258, 288, 318, 344, 366
+    };
+    int doy_used[4][14];
+    int const doy_Jun_solstice = 172;
+    double const rad_to_hours = 12. / swPI;
+    double latitude;
+    double latitude_used[4][14];
+    double slope;
+    double aspect;
+    double aspect_used[4][14];
+    double o[4][14][7];
+    double int_cos_theta[2];
+    double int_sin_beta[2];
+    double daylength[4][14];
+    std::ostringstream msg;
+    std::ostringstream msg2;
 
 
     for (isl = 0; isl <= 8; isl++) {
@@ -327,15 +342,45 @@ TEST(AtmDemandTest, SolarPosSW_HourAnglesSymmetries) {
 //   Rscript
 //   tools/rscripts/Rscript__SW2_SolarPosition_Test__hourangles_by_lat_and_doy.R
 // ```
+
+int fname_SolarPosHourAnglesByLatAndDoy(
+    char *buffer, size_t bufsz, double slope, double aspect
+) {
+    return snprintf(
+        buffer,
+        bufsz,
+        "%s/%s__%s%d__%s%d.%s",
+        "Output",
+        "Table__SW2_SolarPosition_Test__hourangles_by_lat_and_doy",
+        "slope",
+        (int) slope,
+        "aspect",
+        (int) aspect,
+        "csv"
+    );
+}
+
 TEST(AtmDemandTest, SolarPosHourAnglesByLatAndDoy) {
-    int k, ilat, idoy, isl, iasp, length_strnum;
-    double rad_to_hours = 12. / swPI, slope = 0., aspect = 0.,
-           aspects[9] = {-180., -120., -90., -60., 0., 60., 90., 120., 180.},
-           sun_angles[7], int_cos_theta[2], int_sin_beta[2], daylength_H,
-           daylength_T;
+    int k;
+    int ilat;
+    int idoy;
+    int isl;
+    int iasp;
+    int length_strnum;
+    const double rad_to_hours = 12. / swPI;
+    double slope = 0.;
+    double aspect = 0.;
+    double sun_angles[7];
+    double int_cos_theta[2];
+    double int_sin_beta[2];
+    double daylength_H;
+    double daylength_T;
+    const double aspects[9] = {
+        -180., -120., -90., -60., 0., 60., 90., 120., 180.
+    };
 
     FILE *fp;
-    char *strnum, fname[FILENAME_MAX];
+    char *fname = NULL;
 
     SW_ATMD SW_AtmDemand;
     SW_PET_init_run(&SW_AtmDemand); // Init radiation memoization
@@ -359,36 +404,19 @@ TEST(AtmDemandTest, SolarPosHourAnglesByLatAndDoy) {
             */
 
             // Output file
-            strcpy(fname, "Output/");
-            strcat(
-                fname,
-                "Table__SW2_SolarPosition_Test__hourangles_by_lat_and_doy"
+            length_strnum =
+                fname_SolarPosHourAnglesByLatAndDoy(NULL, 0, slope, aspect);
+            fname = (char *) malloc(length_strnum + 1);
+            (void) fname_SolarPosHourAnglesByLatAndDoy(
+                fname, length_strnum + 1, slope, aspect
             );
-
-            strcat(fname, "__slope");
-            length_strnum = snprintf(NULL, 0, "%d", (int) slope);
-            strnum = (char *) malloc(length_strnum + 1);
-            snprintf(strnum, length_strnum + 1, "%d", (int) slope);
-            strcat(fname, strnum);
-            free(strnum);
-            strnum = NULL;
-
-            strcat(fname, "__aspect");
-            length_strnum = snprintf(NULL, 0, "%d", (int) aspect);
-            strnum = (char *) malloc(length_strnum + 1);
-            snprintf(strnum, length_strnum + 1, "%d", (int) aspect);
-            strcat(fname, strnum);
-            free(strnum);
-            strnum = NULL;
-
-            strcat(fname, ".csv");
 
             fp = OpenFile(fname, "w", &LogInfo);
             sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
             // Column names
-            fprintf(
+            (void) fprintf(
                 fp,
                 "DOY, Latitude, Slope, Aspect, Declination"
                 ", omega_indicator, "
@@ -402,7 +430,7 @@ TEST(AtmDemandTest, SolarPosHourAnglesByLatAndDoy) {
             // Loop over each DOY and 1-degree latitude bands
             for (ilat = -90; ilat <= 90; ilat++) {
                 for (idoy = 1; idoy <= 366; idoy++) {
-                    fprintf(
+                    (void) fprintf(
                         fp,
                         "%d, %d, %.2f, %.2f, %f",
                         idoy,
@@ -424,7 +452,7 @@ TEST(AtmDemandTest, SolarPosHourAnglesByLatAndDoy) {
                     );
 
                     for (k = 0; k < 7; k++) {
-                        fprintf(fp, ", %f", sun_angles[k]);
+                        (void) fprintf(fp, ", %f", sun_angles[k]);
                     }
 
                     // Calculate numbers of daylight hours
@@ -438,14 +466,14 @@ TEST(AtmDemandTest, SolarPosHourAnglesByLatAndDoy) {
                                       sun_angles[5] - sun_angles[4];
                     }
 
-                    fprintf(
+                    (void) fprintf(
                         fp,
                         ", %f, %f\n",
                         daylength_H * rad_to_hours,
                         daylength_T * rad_to_hours
                     );
 
-                    fflush(fp);
+                    (void) fflush(fp);
                 }
 
                 // Re-init radiation memoization (for new latitude)
@@ -455,6 +483,8 @@ TEST(AtmDemandTest, SolarPosHourAnglesByLatAndDoy) {
 
             // Clean up
             CloseFile(&fp, &LogInfo);
+            free(fname);
+            fname = NULL;
             sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
             if (isl == 0) {
@@ -479,14 +509,23 @@ TEST(AtmDemandTest, SolarPosHourAnglesByLatAndDoy) {
 //   tools/rscripts/Rscript__SW2_SolarPosition_Test__hourangles_by_lats.R
 // ```
 TEST(AtmDemandTest, SolarPosHourAnglesByLats) {
-    int k, ilat, idoy, isl, iasp, iasp2;
+    int k;
+    int ilat;
+    int idoy;
+    int isl;
+    int iasp;
+    int iasp2;
 
     // doys: day of nonleap year Mar 18 (one day before equinox), Jun 21
     // (solstice), Sep 24 (one day before equinox), and Dep 21 (solstice)
-    int doys[4] = {79, 172, 263, 355};
-    double rlat, rslope, raspect;
-    double dangle2[5] = {-10., -1., 0., 1., 10.};
-    double sun_angles[7], int_cos_theta[2], int_sin_beta[2];
+    const int doys[4] = {79, 172, 263, 355};
+    double rlat;
+    double rslope;
+    double raspect;
+    const double dangle2[5] = {-10., -1., 0., 1., 10.};
+    double sun_angles[7];
+    double int_cos_theta[2];
+    double int_sin_beta[2];
 
     FILE *fp;
     char fname[FILENAME_MAX];
@@ -498,14 +537,18 @@ TEST(AtmDemandTest, SolarPosHourAnglesByLats) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    strcpy(fname, "Output/");
-    strcat(fname, "Table__SW2_SolarPosition_Test__hourangles_by_lats.csv");
+    (void) snprintf(
+        fname,
+        sizeof fname,
+        "%s",
+        "Output/Table__SW2_SolarPosition_Test__hourangles_by_lats.csv"
+    );
     fp = OpenFile(fname, "w", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
     // Column names
-    fprintf(
+    (void) fprintf(
         fp,
         "DOY, Latitude, Slope, Aspect, Declination"
         ", omega_indicator, "
@@ -529,7 +572,7 @@ TEST(AtmDemandTest, SolarPosHourAnglesByLats) {
 
                     for (idoy = 0; idoy < 4; idoy++) {
 
-                        fprintf(
+                        (void) fprintf(
                             fp,
                             "%d, %.2f, %.2f, %.2f, %f",
                             doys[idoy],
@@ -551,10 +594,10 @@ TEST(AtmDemandTest, SolarPosHourAnglesByLats) {
                         );
 
                         for (k = 0; k < 7; k++) {
-                            fprintf(fp, ", %f", sun_angles[k]);
+                            (void) fprintf(fp, ", %f", sun_angles[k]);
                         }
 
-                        fprintf(
+                        (void) fprintf(
                             fp,
                             ", %f, %f, %f, %f\n",
                             int_cos_theta[0],
@@ -563,7 +606,7 @@ TEST(AtmDemandTest, SolarPosHourAnglesByLats) {
                             int_sin_beta[1]
                         );
 
-                        fflush(fp);
+                        (void) fflush(fp);
                     }
 
                     // Re-init radiation memoization
@@ -586,14 +629,22 @@ TEST(AtmDemandTest, SolarPosHourAnglesByLats) {
 TEST(AtmDemandTest, SolarRadiationExtraterrestrial) {
     SW_ATMD SW_AtmDemand;
 
-    unsigned int k1, k2, doy;
-    double lat,
-        lat_Madison_WI = 43. * deg_to_rad,  // Duffie & Beckman 2013: Ex 1.6.1
-        lat_StLouis_MO = 38.6 * deg_to_rad, // Duffie & Beckman 2013: Ex 2.11.1
-        sun_angles[7], int_cos_theta[2], int_sin_beta[2], H_o[2], res_ratio;
+    unsigned int k1;
+    unsigned int k2;
+    unsigned int doy;
+    double lat;
+    // Madison_WI: Duffie & Beckman 2013: Ex 1.6.1
+    double const lat_Madison_WI = 43. * deg_to_rad;
+    // StLouis_MO: Duffie & Beckman 2013: Ex 2.11.1
+    double const lat_StLouis_MO = 38.6 * deg_to_rad;
+    double sun_angles[7];
+    double int_cos_theta[2];
+    double int_sin_beta[2];
+    double H_o[2];
+    double res_ratio;
 
     // Duffie & Beckman 2013: Table 1.10.1
-    unsigned int doys_Table1_6_1[12] = {
+    unsigned int const doys_Table1_6_1[12] = {
         17, 47, 75, 105, 135, 162, 198, 228, 258, 288, 318, 344
     };
 
@@ -601,11 +652,11 @@ TEST(AtmDemandTest, SolarRadiationExtraterrestrial) {
     // during shifts between permanent sun and night
     //   * lat = +85: Mar = 2.2, Sep = 6.4
     //   * lat = -90: Mar = 6.2, Sep = 1.4, Oct = 20.4
-    double lats_Table1_10_1[9] = {
+    double const lats_Table1_10_1[9] = {
         85., 45., 30., 15., 0., -10., -45., -60., -90.
     };
 
-    double H_oh_Table1_10_1[9][12] = {
+    double const H_oh_Table1_10_1[9][12] = {
         // clang-format off
         {0.0, 0.0, NAN, 19.2, 37.0, 44.7, 41.0, 26.4, NAN, 0.0, 0.0, 0.0},
         {12.2, 17.4, 25.1, 33.2, 39.2, 41.7, 40.4, 35.3, 27.8, 19.6, 13.3, 10.7},
@@ -752,15 +803,22 @@ TEST(AtmDemandTest, SolarRadiationGlobal) {
     unsigned int k;
 
     // Duffie & Beckman 2013: Table 1.6.1
-    unsigned int doys_Table1_6_1[12] = {
+    unsigned int const doys_Table1_6_1[12] = {
         17, 47, 75, 105, 135, 162, 198, 228, 258, 288, 318, 344
     };
-    unsigned int desc_rsds = 0; // `rsds` represents daily irradiation [MJ / m2]
+    // `rsds` represents daily irradiation [MJ / m2]
+    unsigned int const desc_rsds = 0;
 
-    double H_gt, H_ot, H_oh, H_gh, rsds, cc, actual_vap_pressure;
+    double H_gt;
+    double H_ot;
+    double H_oh;
+    double H_gh;
+    double rsds;
+    double cc;
+    double actual_vap_pressure;
 
     // Duffie & Beckman 2013: Example 2.19.1
-    double H_Ex2_19_1[3][12] = {
+    double const H_Ex2_19_1[3][12] = {
         // clang-format off
         // H_oh [MJ / m2]
         {13.37, 18.81, 26.03, 33.78, 39.42, 41.78, 40.56, 35.92, 28.80, 20.90, 14.62, 11.91},
@@ -771,7 +829,7 @@ TEST(AtmDemandTest, SolarRadiationGlobal) {
         // clang-format on
     };
 
-    double albedo[12] = {
+    double const albedo[12] = {
         0.7, 0.7, 0.4, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.4
     };
 
@@ -786,25 +844,25 @@ TEST(AtmDemandTest, SolarRadiationGlobal) {
     // {66.25, 66.25, 70, 67.5, 65, 60, 57.5, 57.5, 60, 63.75, 72.5, 71.25},
     // replaced observed with estimated values to match `H_Ex2_19_1`:
     // replaced ~ -61 + 1.661 * observed
-    double cloud_cover1[12] = {
+    double const cloud_cover1[12] = {
         53., 47.5, 54., 53., 40., 35., 35., 30., 46., 50., 63., 52.
     };
 
     // cloud_cover2: derived from observed `rsds` (`H_Ex2_19_1["H_gh"][]`)
     // and calculated `H_gh`
     // note: this should be identical to `cloud_cover1[]`
-    double cloud_cover2[12] = {
+    double const cloud_cover2[12] = {
         39.9, 37.7, 45.6, 49.0, 36.2, 32.9, 30.6, 28.7, 40.6, 41.8, 50.7, 37.6
     };
 
     // Element 11:  Relative Humidity (%), MN3HRLY (Statistic 94):  Mean of
     // 3-Hourly Observations
-    double rel_humidity[12] = {
+    double const rel_humidity[12] = {
         74.5, 73.1, 71.4, 66.3, 65.8, 68.3, 71.0, 74.4, 76.8, 73.2, 76.9, 78.5
     };
 
     // Element 01:  Dry Bulb Temperature (deg C)
-    double air_temp_mean[12] = {
+    double const air_temp_mean[12] = {
         -8.9, -6.3, 0.2, 7.4, 13.6, 19, 21.7, 20.2, 15.4, 9.4, 1.9, -5.7
     };
 
@@ -874,6 +932,7 @@ TEST(AtmDemandTest, SolarRadiationGlobal) {
             &LogInfo
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        (void) H_gt;
 
         // Expect: observed `rsds` (for `desc_rsds = 0`) is equal to `H_gh`
         EXPECT_DOUBLE_EQ(rsds, H_gh);
@@ -930,38 +989,36 @@ TEST(AtmDemandTest, SolarRadiationGlobal) {
 // Test saturation vapor pressure functions
 TEST(AtmDemandTest, PETsvp) {
     int i;
-    double
-        // Temperature [C]
-        temp_C[] = {-30, -20, -10, 0, 10, 20, 30, 40, 50, 60},
-
-        // Expected saturation vapor pressure [kPa]
-        check_svp,
-        expected_svp[] =
-            {0.0380009,
-             0.103226,
-             0.2598657,
-             0.6112912,
-             1.2281879,
-             2.3393207,
-             4.247004,
-             7.3849328,
-             12.3517837,
-             19.9461044},
-
-        // Expected slope of svp - temperature curve [kPa / K]
-        check_svp_to_t,
-        expected_svp_to_T[] = {
-            0.0039537,
-            0.0099076,
-            0.0230775,
-            0.0503666,
-            0.0822986,
-            0.1449156,
-            0.2437929,
-            0.3937122,
-            0.6129093,
-            0.9231149
-        };
+    // Temperature [C]
+    double const temp_C[] = {-30, -20, -10, 0, 10, 20, 30, 40, 50, 60};
+    double check_svp;
+    // Expected saturation vapor pressure [kPa]
+    double const expected_svp[] = {
+        0.0380009,
+        0.103226,
+        0.2598657,
+        0.6112912,
+        1.2281879,
+        2.3393207,
+        4.247004,
+        7.3849328,
+        12.3517837,
+        19.9461044
+    };
+    double check_svp_to_t;
+    // Expected slope of svp - temperature curve [kPa / K]
+    double const expected_svp_to_T[] = {
+        0.0039537,
+        0.0099076,
+        0.0230775,
+        0.0503666,
+        0.0822986,
+        0.1449156,
+        0.2437929,
+        0.3937122,
+        0.6129093,
+        0.9231149
+    };
 
     for (i = 0; i < 10; i++) {
         check_svp = svp(temp_C[i], &check_svp_to_t);
@@ -981,32 +1038,43 @@ TEST(AtmDemandTest, PETpetfunc) {
 
 
     int i;
-    unsigned int doy = 2, desc_rsds = 0;
-    double check_pet, rsds = SW_MISSING, H_gt, H_oh, H_ot, H_gh;
-    double lat = 39. * deg_to_rad, elev = 1000., slope0 = 0.;
-    double sloped = 5. * deg_to_rad;
-    double aspect = -90. * deg_to_rad; // East-facing slope
-    double reflec = 0.15, temp = 25., RH = 61., windsp = 1.3, cloudcov = 71.;
+    unsigned int const doy = 2;
+    unsigned int const desc_rsds = 0;
+    double check_pet;
+    double const rsds = SW_MISSING;
+    double H_gt;
+    double H_oh;
+    double H_ot;
+    double H_gh;
+    double const lat = 39. * deg_to_rad;
+    double const elev = 1000.;
+    double const slope0 = 0.;
+    double const sloped = 5. * deg_to_rad;
+    double const aspect = -90. * deg_to_rad; // East-facing slope
+    double const reflec = 0.15;
+    double const temp = 25.;
+    double const RH = 61.;
+    double const windsp = 1.3;
+    double cloudcov = 71.;
     double actual_vap_pressure;
 
 
     // TEST `petfunc()` for varying average daily air temperature `avgtemp` [C]
-    double
-        // Inputs
-        avgtemps[] = {-30, -20, -10, 0, 10, 20, 30, 40, 50, 60},
-        // Expected PET
-        expected_pet_avgtemps[] = {
-            0.0100,
-            0.0184,
-            0.0346,
-            0.0576,
-            0.0896,
-            0.1290,
-            0.1867,
-            0.2736,
-            0.4027,
-            0.5890
-        };
+    // Inputs
+    double const avgtemps[] = {-30, -20, -10, 0, 10, 20, 30, 40, 50, 60};
+    // Expected PET
+    double const expected_pet_avgtemps[] = {
+        0.0100,
+        0.0184,
+        0.0346,
+        0.0576,
+        0.0896,
+        0.1290,
+        0.1867,
+        0.2736,
+        0.4027,
+        0.5890
+    };
 
     SW_PET_init_run(&SW_AtmDemand); // Init radiation memoization
 
@@ -1042,15 +1110,14 @@ TEST(AtmDemandTest, PETpetfunc) {
 
 
     // TEST `petfunc()` for varying latitude `lat` [± pi / 2]
-    double
-        // Inputs
-        lats[] = {-90., -45., 0., 45., 90.},
-        // Expected PET
-        expected_pet_lats[] = {
-            0.416576, 0.435964, 0.359670, 0.121564, 0.042131
-        };
+    // Inputs
+    double const lats[] = {-90., -45., 0., 45., 90.};
+    // Expected PET
+    double const expected_pet_lats[] = {
+        0.416576, 0.435964, 0.359670, 0.121564, 0.042131
+    };
 
-    double e_a = actualVaporPressure1(RH, temp);
+    double const e_a = actualVaporPressure1(RH, temp);
 
     for (i = 0; i < 5; i++) {
         SW_PET_init_run(&SW_AtmDemand); // Re-init radiation memoization
@@ -1084,11 +1151,12 @@ TEST(AtmDemandTest, PETpetfunc) {
 
     // TEST `petfunc()` for varying elevation [m a.s.l.]
     // Testing from -413 meters (Death Valley) to 8727 meters (~Everest).
-    double
-        // Inputs
-        elevs[] = {-413, 0, 1000, 4418, 8727},
-        // Expected PET
-        expected_pet_elevs[] = {0.1670, 0.1634, 0.1550, 0.1305, 0.1093};
+    // Inputs
+    double const elevs[] = {-413, 0, 1000, 4418, 8727};
+    // Expected PET
+    double const expected_pet_elevs[] = {
+        0.1670, 0.1634, 0.1550, 0.1305, 0.1093
+    };
 
     for (i = 0; i < 5; i++) {
         SW_PET_init_run(&SW_AtmDemand); // Re-init radiation memoization
@@ -1122,11 +1190,12 @@ TEST(AtmDemandTest, PETpetfunc) {
 
 
     // TEST `petfunc()` for varying slope [0 - pi / 2; radians]
-    double
-        // Inputs
-        slopes[] = {0., 15., 34., 57., 90.},
-        // Expected PET
-        expected_pet_slopes[] = {0.1550, 0.1542, 0.1512, 0.1429, 0.1200};
+    // Inputs
+    double const slopes[] = {0., 15., 34., 57., 90.};
+    // Expected PET
+    double const expected_pet_slopes[] = {
+        0.1550, 0.1542, 0.1512, 0.1429, 0.1200
+    };
 
     for (i = 0; i < 5; i++) {
         SW_PET_init_run(&SW_AtmDemand); // Re-init radiation memoization
@@ -1160,13 +1229,12 @@ TEST(AtmDemandTest, PETpetfunc) {
 
     // TEST `petfunc()` for varying aspect
     //   [South facing slope = 0, East = -pi / 2, West = pi / 2, North = ±pi]
-    double
-        // Inputs
-        aspects[] = {-180, -90, -45, 0, 45, 90, 180},
-        // Expected PET
-        expected_pet_aspects[] = {
-            0.1357, 0.1549, 0.1681, 0.1736, 0.1681, 0.1549, 0.1357
-        };
+    // Inputs
+    double const aspects[] = {-180, -90, -45, 0, 45, 90, 180};
+    // Expected PET
+    double const expected_pet_aspects[] = {
+        0.1357, 0.1549, 0.1681, 0.1736, 0.1681, 0.1549, 0.1357
+    };
 
     for (i = 0; i < 7; i++) {
         SW_PET_init_run(&SW_AtmDemand); // Re-init radiation memoization
@@ -1199,11 +1267,12 @@ TEST(AtmDemandTest, PETpetfunc) {
 
 
     // TEST `petfunc()` for varying albedo [0-1]
-    double
-        // Inputs
-        reflecs[] = {0., 0.22, 0.46, 0.55, 1.},
-        // Expected PET
-        expected_pet_reflecs[] = {0.1745, 0.1457, 0.1141, 0.1022, 0.0421};
+    // Inputs
+    double const reflecs[] = {0., 0.22, 0.46, 0.55, 1.};
+    // Expected PET
+    double const expected_pet_reflecs[] = {
+        0.1745, 0.1457, 0.1141, 0.1022, 0.0421
+    };
 
     for (i = 0; i < 5; i++) {
         SW_PET_init_run(&SW_AtmDemand); // Re-init radiation memoization
@@ -1237,11 +1306,10 @@ TEST(AtmDemandTest, PETpetfunc) {
 
 
     // TEST `petfunc()` for varying relative humidity [0-100; %]
-    double
-        // Inputs
-        RHs[] = {0, 34, 56, 79, 100},
-        // Expected PET
-        expected_pet_RHs[] = {0.2267, 0.2123, 0.1662, 0.1128, 0.0612};
+    // Inputs
+    double const RHs[] = {0, 34, 56, 79, 100};
+    // Expected PET
+    double const expected_pet_RHs[] = {0.2267, 0.2123, 0.1662, 0.1128, 0.0612};
 
     for (i = 0; i < 5; i++) {
         SW_PET_init_run(&SW_AtmDemand); // Re-init radiation memoization
@@ -1277,11 +1345,12 @@ TEST(AtmDemandTest, PETpetfunc) {
 
 
     // TEST `petfunc()` for varying wind speed [m / s]
-    double
-        // Inputs
-        windsps[] = {0., 1., 5., 10., 20.},
-        // Expected PET
-        expected_pet_windsps[] = {0.1016, 0.1426, 0.3070, 0.5124, 0.9232};
+    // Inputs
+    double const windsps[] = {0., 1., 5., 10., 20.};
+    // Expected PET
+    double const expected_pet_windsps[] = {
+        0.1016, 0.1426, 0.3070, 0.5124, 0.9232
+    };
 
     SW_PET_init_run(&SW_AtmDemand); // Re-init radiation memoization
 
@@ -1315,11 +1384,12 @@ TEST(AtmDemandTest, PETpetfunc) {
 
 
     // TEST `petfunc()` for varying cloud cover [0-100; %]
-    double
-        // Inputs
-        cloudcovs[] = {0, 12, 36, 76, 100},
-        // Expected PET
-        expected_pet_cloudcovs[] = {0.1253, 0.1303, 0.1404, 0.1571, 0.1671};
+    // Inputs
+    double cloudcovs[] = {0, 12, 36, 76, 100};
+    // Expected PET
+    double const expected_pet_cloudcovs[] = {
+        0.1253, 0.1303, 0.1404, 0.1571, 0.1671
+    };
     // Note: increasing cloud cover decreases H_gt and increases PET
 
     for (i = 0; i < 5; i++) {
@@ -1374,24 +1444,46 @@ TEST(AtmDemandTest, PETPetfuncByTemps) {
     sw_init_logs(NULL, &LogInfo);
 
 
-    int doy, k1, k2, k3, k4, k5;
+    int doy;
+    int k1;
+    int k2;
+    int k3;
+    int k4;
+    int k5;
 
-    unsigned int desc_rsds = 0;
+    const unsigned int desc_rsds = 0;
 
-    double pet, temp, RH, windspeed, cloudcover, fH_gt,
-        rsds = SW_MISSING, H_gt, H_oh, H_ot, H_gh, elev = 0., lat = 40.,
-        slope = 0., aspect = SW_MISSING, reflec = 0.15;
+    double pet;
+    double temp;
+    double RH;
+    double windspeed;
+    double cloudcover;
+    double fH_gt;
+    const double rsds = SW_MISSING;
+    double H_gt;
+    double H_oh;
+    double H_ot;
+    double H_gh;
+    const double elev = 0.;
+    const double lat = 40.;
+    const double slope = 0.;
+    const double aspect = SW_MISSING;
+    const double reflec = 0.15;
 
     FILE *fp;
     char fname[FILENAME_MAX];
 
-    strcpy(fname, "Output/");
-    strcat(fname, "Table__SW2_PET_Test__petfunc_by_temps.csv");
+    (void) snprintf(
+        fname,
+        sizeof fname,
+        "%s",
+        "Output/Table__SW2_PET_Test__petfunc_by_temps.csv"
+    );
     fp = OpenFile(fname, "w", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Column names
-    fprintf(
+    (void) fprintf(
         fp,
         "Temperature_C, RH_pct, windspeed_m_per_s, cloudcover_pct, fH_gt, "
         "PET_mm"
@@ -1453,7 +1545,7 @@ TEST(AtmDemandTest, PETPetfuncByTemps) {
                             sw_fail_on_error(&LogInfo);
                         }
 
-                        fprintf(
+                        (void) fprintf(
                             fp,
                             "%f, %f, %f, %f, %f, %f\n",
                             temp,
@@ -1464,7 +1556,7 @@ TEST(AtmDemandTest, PETPetfuncByTemps) {
                             pet
                         );
 
-                        fflush(fp);
+                        (void) fflush(fp);
                     }
                 }
             }

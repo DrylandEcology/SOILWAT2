@@ -71,11 +71,8 @@ jobs:
         sudo apt-get update
         sudo apt-get install libnetcdf-dev libudunits2-dev
 
-    - name: Build binary with netCDF support
-      run: CPPFLAGS=-DSWNETCDF make clean all
-
     - name: Build binary with netCDF and udunits2 support
-      run: CPPFLAGS='-DSWNETCDF -DSWUDUNITS' make clean all
+      run: CPPFLAGS=-DSWNC make clean all
 
 
 

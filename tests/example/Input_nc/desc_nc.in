@@ -52,3 +52,4 @@ proj_false_northing                0
 #------ Output file information
 strideOutYears   20                 # Specifies the number of years to put into a single output netCDF -- may be 1, X (e.g., 10), or "Inf" (all years in one file), defaults to "Inf" if this line is not found
 baseCalendarYear 1980
+deflateLevel     0                  # Specifies how much output files will be deflated - may be 0 (off) or 1-9 (intensity of deflation), defaults to 0 if this line is not found

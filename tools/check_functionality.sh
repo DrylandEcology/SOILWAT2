@@ -56,7 +56,7 @@ run_fresh_sw2() {
   fi
 
   if [ "${mode}" = "nc" ]; then
-    mflags+=("CPPFLAGS=-DSWNETCDF -DSWUDUNITS")
+    mflags+=("CPPFLAGS=-DSWNC")
   fi
 
   clean_example_inputs > /dev/null 2>&1

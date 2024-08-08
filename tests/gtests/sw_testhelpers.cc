@@ -1,6 +1,6 @@
 
 #include "tests/gtests/sw_testhelpers.h"
-#include "include/generic.h"    // for RealF, swFALSE, swTRUE, RealD
+#include "include/generic.h"    // for swFALSE, swTRUE
 #include "include/myMemory.h"   // for Str_Dup
 #include "include/SW_Control.h" // for SW_CTL_alloc_outptrs, SW_CTL_clear_m...
 #include "include/SW_Files.h"   // for eFirst
@@ -13,8 +13,11 @@
 #include <string.h>             // for strcpy
 
 
+// NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
 SW_RUN template_SW_Run;
 SW_DOMAIN template_SW_Domain;
+
+// NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
 
 /**
 @brief Creates soil layers based on function arguments (instead of reading
@@ -34,7 +37,7 @@ void create_test_soillayers(
 ) {
 
     if (nlayers <= 0 || nlayers > MAX_LAYERS) {
-        fprintf(
+        (void) fprintf(
             stderr,
             "create_test_soillayers(): "
             "requested number of soil layers (n = %d) is not accepted.\n",
@@ -44,53 +47,54 @@ void create_test_soillayers(
         exit(-1);
     }
 
-    RealF dmax[MAX_LAYERS] = {5,  6,  10, 11, 12, 20,  21, 22, 25,
-                              30, 40, 41, 42, 50, 51,  52, 53, 54,
-                              55, 60, 70, 80, 90, 110, 150};
-    RealF bulkd[MAX_LAYERS] = {1.430, 1.410, 1.390, 1.390, 1.380, 1.150, 1.130,
-                               1.130, 1.430, 1.410, 1.390, 1.390, 1.380, 1.150,
-                               1.130, 1.130, 1.430, 1.410, 1.390, 1.390, 1.380,
-                               1.150, 1.130, 1.130, 1.400};
-    RealF f_gravel[MAX_LAYERS] = {0.1, 0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.2, 0.2,
-                                  0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2,
-                                  0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2};
-    RealF evco[MAX_LAYERS] = {0.813, 0.153, 0.034, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                              0,     0,     0,     0, 0, 0, 0, 0, 0, 0, 0, 0};
-    RealF trco_grass[MAX_LAYERS] = {0.0158, 0.0155, 0.0314, 0.0314, 0.0314,
+    double dmax[MAX_LAYERS] = {5,  6,  10, 11, 12, 20,  21, 22, 25,
+                               30, 40, 41, 42, 50, 51,  52, 53, 54,
+                               55, 60, 70, 80, 90, 110, 150};
+    double bulkd[MAX_LAYERS] = {1.430, 1.410, 1.390, 1.390, 1.380, 1.150, 1.130,
+                                1.130, 1.430, 1.410, 1.390, 1.390, 1.380, 1.150,
+                                1.130, 1.130, 1.430, 1.410, 1.390, 1.390, 1.380,
+                                1.150, 1.130, 1.130, 1.400};
+    double f_gravel[MAX_LAYERS] = {0.1, 0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.2, 0.2,
+                                   0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2,
+                                   0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2};
+    double evco[MAX_LAYERS] = {0.813, 0.153, 0.034, 0, 0, 0, 0, 0, 0,
+                               0,     0,     0,     0, 0, 0, 0, 0, 0,
+                               0,     0,     0,     0, 0, 0, 0};
+    double trco_grass[MAX_LAYERS] = {0.0158, 0.0155, 0.0314, 0.0314, 0.0314,
+                                     0.0624, 0.0624, 0.0624, 0.0155, 0.0155,
+                                     0.0314, 0.0314, 0.0314, 0.0624, 0.0624,
+                                     0.0624, 0.0155, 0.0155, 0.0314, 0.0314,
+                                     0.0314, 0.0624, 0.0624, 0.0624, 0.0625};
+    double trco_shrub[MAX_LAYERS] = {0.0413, 0.0294, 0.055,  0.0547, 0.0344,
+                                     0.0341, 0.0316, 0.0316, 0.0419, 0.0294,
+                                     0.055,  0.0547, 0.0344, 0.0341, 0.0316,
+                                     0.0316, 0.0419, 0.0294, 0.0550, 0.0547,
+                                     0.0344, 0.0341, 0.0316, 0.0316, 0.0625};
+    double trco_tree[MAX_LAYERS] = {0.0158, 0.0155, 0.0314, 0.0314, 0.0314,
                                     0.0624, 0.0624, 0.0624, 0.0155, 0.0155,
                                     0.0314, 0.0314, 0.0314, 0.0624, 0.0624,
                                     0.0624, 0.0155, 0.0155, 0.0314, 0.0314,
                                     0.0314, 0.0624, 0.0624, 0.0624, 0.0625};
-    RealF trco_shrub[MAX_LAYERS] = {0.0413, 0.0294, 0.055,  0.0547, 0.0344,
+    double trco_forb[MAX_LAYERS] = {0.0413, 0.0294, 0.055,  0.0547, 0.0344,
                                     0.0341, 0.0316, 0.0316, 0.0419, 0.0294,
                                     0.055,  0.0547, 0.0344, 0.0341, 0.0316,
                                     0.0316, 0.0419, 0.0294, 0.0550, 0.0547,
                                     0.0344, 0.0341, 0.0316, 0.0316, 0.0625};
-    RealF trco_tree[MAX_LAYERS] = {0.0158, 0.0155, 0.0314, 0.0314, 0.0314,
-                                   0.0624, 0.0624, 0.0624, 0.0155, 0.0155,
-                                   0.0314, 0.0314, 0.0314, 0.0624, 0.0624,
-                                   0.0624, 0.0155, 0.0155, 0.0314, 0.0314,
-                                   0.0314, 0.0624, 0.0624, 0.0624, 0.0625};
-    RealF trco_forb[MAX_LAYERS] = {0.0413, 0.0294, 0.055,  0.0547, 0.0344,
-                                   0.0341, 0.0316, 0.0316, 0.0419, 0.0294,
-                                   0.055,  0.0547, 0.0344, 0.0341, 0.0316,
-                                   0.0316, 0.0419, 0.0294, 0.0550, 0.0547,
-                                   0.0344, 0.0341, 0.0316, 0.0316, 0.0625};
-    RealF psand[MAX_LAYERS] = {0.51, 0.44, 0.35, 0.32, 0.31, 0.32, 0.57,
-                               0.57, 0.51, 0.44, 0.35, 0.32, 0.31, 0.32,
-                               0.57, 0.57, 0.51, 0.44, 0.35, 0.32, 0.31,
-                               0.32, 0.57, 0.57, 0.58};
-    RealF pclay[MAX_LAYERS] = {0.15, 0.26, 0.41, 0.45, 0.47, 0.47, 0.28,
-                               0.28, 0.15, 0.26, 0.41, 0.45, 0.47, 0.47,
-                               0.28, 0.28, 0.15, 0.26, 0.41, 0.45, 0.47,
-                               0.47, 0.28, 0.28, 0.29};
-    RealF imperm[MAX_LAYERS] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    RealF soiltemp[MAX_LAYERS] = {-1, -1, -1, -1, 0, 0, 1, 1, 1, 1, 1, 1, 1,
-                                  1,  1,  1,  2,  2, 2, 2, 2, 2, 2, 2, 2};
+    double psand[MAX_LAYERS] = {0.51, 0.44, 0.35, 0.32, 0.31, 0.32, 0.57,
+                                0.57, 0.51, 0.44, 0.35, 0.32, 0.31, 0.32,
+                                0.57, 0.57, 0.51, 0.44, 0.35, 0.32, 0.31,
+                                0.32, 0.57, 0.57, 0.58};
+    double pclay[MAX_LAYERS] = {0.15, 0.26, 0.41, 0.45, 0.47, 0.47, 0.28,
+                                0.28, 0.15, 0.26, 0.41, 0.45, 0.47, 0.47,
+                                0.28, 0.28, 0.15, 0.26, 0.41, 0.45, 0.47,
+                                0.47, 0.28, 0.28, 0.29};
+    double imperm[MAX_LAYERS] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    double soiltemp[MAX_LAYERS] = {-1, -1, -1, -1, 0, 0, 1, 1, 1, 1, 1, 1, 1,
+                                   1,  1,  1,  2,  2, 2, 2, 2, 2, 2, 2, 2};
 
-    int nRegions = 3;
-    RealD regionLowerBounds[3] = {20., 50., 100.};
+    int const nRegions = 3;
+    double regionLowerBounds[3] = {20., 50., 100.};
 
     set_soillayers(
         SW_VegProd,
@@ -121,9 +125,9 @@ void setup_SW_Site_for_tests(SW_SITE *SW_Site) {
 
     SW_Site->deepdrain = swTRUE;
 
-    SW_Site->_SWCMinVal = 100;
-    SW_Site->_SWCWetVal = 15;
-    SW_Site->_SWCInitVal = 15;
+    SW_Site->SWCMinVal = 100;
+    SW_Site->SWCWetVal = 15;
+    SW_Site->SWCInitVal = 15;
 
     SW_Site->stMaxDepth = 990;
     SW_Site->stDeltaX = 15;
@@ -131,10 +135,20 @@ void setup_SW_Site_for_tests(SW_SITE *SW_Site) {
     SW_Site->slow_drain_coeff = 0.02;
 
     SW_Site->site_has_swrcp = swFALSE;
-    strcpy(SW_Site->site_swrc_name, (char *) "Campbell1974");
+    (void) snprintf(
+        SW_Site->site_swrc_name,
+        sizeof SW_Site->site_swrc_name,
+        "%s",
+        "Campbell1974"
+    );
     SW_Site->site_swrc_type =
         encode_str2swrc(SW_Site->site_swrc_name, &LogInfo);
-    strcpy(SW_Site->site_ptf_name, (char *) "Cosby1984AndOthers");
+    (void) snprintf(
+        SW_Site->site_ptf_name,
+        sizeof SW_Site->site_ptf_name,
+        "%s",
+        "Cosby1984AndOthers"
+    );
     SW_Site->site_ptf_type = encode_str2ptf(SW_Site->site_ptf_name);
 }
 
@@ -163,7 +177,7 @@ int setup_testGlobalSoilwatTemplate() {
 
     template_SW_Domain.PathInfo.InFiles[eFirst] =
         Str_Dup(DFLT_FIRSTFILE, &LogInfo);
-    if (LogInfo.stopRun) {
+    if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
 
@@ -171,14 +185,14 @@ int setup_testGlobalSoilwatTemplate() {
     userSUID = 0;
 
     SW_CTL_setup_domain(userSUID, &template_SW_Domain, &LogInfo);
-    if (LogInfo.stopRun) {
+    if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
 
     SW_CTL_setup_model(
         &template_SW_Run, &template_SW_Domain.OutDom, swTRUE, &LogInfo
     );
-    if (LogInfo.stopRun) {
+    if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
     template_SW_Run.Model.doOutput = swFALSE; /* turn off output during tests */
@@ -186,13 +200,13 @@ int setup_testGlobalSoilwatTemplate() {
     SW_MDL_get_ModelRun(
         &template_SW_Run.Model, &template_SW_Domain, NULL, &LogInfo
     );
-    if (LogInfo.stopRun) {
+    if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
 
     /* allocate memory for output pointers */
     SW_CTL_alloc_outptrs(&template_SW_Run, &LogInfo);
-    if (LogInfo.stopRun) {
+    if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
 
@@ -202,7 +216,7 @@ int setup_testGlobalSoilwatTemplate() {
         &template_SW_Domain.PathInfo,
         &LogInfo
     );
-    if (LogInfo.stopRun) {
+    if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
 
@@ -224,12 +238,12 @@ int setup_testGlobalSoilwatTemplate() {
         template_SW_Run.Model.days_in_month,
         &LogInfo
     );
-    if (LogInfo.stopRun) {
+    if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
 
     SW_CTL_init_run(&template_SW_Run, &LogInfo);
-    if (LogInfo.stopRun) {
+    if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
 
@@ -240,12 +254,12 @@ int setup_testGlobalSoilwatTemplate() {
         &template_SW_Domain.OutDom,
         &LogInfo
     );
-    if (LogInfo.stopRun) {
+    if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
 
 finishProgram: {
-    if (LogInfo.stopRun) {
+    if (LogInfo.stopRun != 0u) {
         success = 1; // failure
     }
 }

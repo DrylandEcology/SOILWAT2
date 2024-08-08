@@ -84,7 +84,10 @@ void SW_CBN_read(
     /* Reading carbon.in */
     FILE *f;
     char scenario[64];
+    char yearStr[5];
+    char ppmStr[20];
     int year;
+    int scanRes;
     int simstartyr = (int) SW_Model->startyr + SW_Model->addtl_yr;
     int simendyr = (int) SW_Model->endyr + SW_Model->addtl_yr;
 
@@ -93,7 +96,8 @@ void SW_CBN_read(
     double ppm = 1.;
     int existing_years[MAX_NYEAR] = {0};
     short fileWasEmpty = 1;
-    char *MyFileName, inbuf[MAX_FILENAMESIZE];
+    char *MyFileName;
+    char inbuf[MAX_FILENAMESIZE];
 
     MyFileName = InFiles[eCarbon];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -121,11 +125,46 @@ void SW_CBN_read(
         // Read the year standalone because if it's 0 it marks a change in the
         // scenario, in which case we'll need to read in a string instead of an
         // int
-        sscanf(inbuf, "%d", &year);
+        scanRes = sscanf(inbuf, "%4s", yearStr);
+
+        if (scanRes < 1) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Not enough values when reading in the year from %s.",
+                MyFileName
+            );
+            goto closeFile;
+        }
+
+        year = sw_strtoi(yearStr, MyFileName, LogInfo);
+        if (LogInfo->stopRun) {
+            goto closeFile;
+        }
 
         // Find scenario
         if (year == 0) {
-            sscanf(inbuf, "%d %63s", &year, scenario);
+            scanRes = sscanf(inbuf, "%4s %63s", yearStr, scenario);
+
+            if (scanRes < 2) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Not enough values when reading in the year and "
+                    "scenario from %s.",
+                    MyFileName
+                );
+                goto closeFile;
+            }
+
+            year = sw_strtoi(yearStr, MyFileName, LogInfo);
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
+
+            /* Silence clang-tidy clang-analyzer-deadcode.DeadStores */
+            (void) year;
+
             continue; // Skip to the ppm values
         }
         if (strcmp(scenario, SW_Carbon->scenario) != 0) {
@@ -135,10 +174,30 @@ void SW_CBN_read(
             continue; // We aren't using this year
         }
 
-        sscanf(inbuf, "%d %lf", &year, &ppm);
+        scanRes = sscanf(inbuf, "%4s %19s", yearStr, ppmStr);
+
+        if (scanRes < 2) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Not enough values when reading in the year and "
+                "ppm from %s.",
+                MyFileName
+            );
+            goto closeFile;
+        }
+
+        year = sw_strtoi(yearStr, MyFileName, LogInfo);
+        if (LogInfo->stopRun) {
+            goto closeFile;
+        }
+
+        ppm = sw_strtod(ppmStr, MyFileName, LogInfo);
+        if (LogInfo->stopRun) {
+            goto closeFile;
+        }
 
         if (year < 0) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -148,7 +207,7 @@ void SW_CBN_read(
                 year,
                 SW_Carbon->scenario
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
 
         SW_Carbon->ppm[year] = ppm;
@@ -168,7 +227,6 @@ void SW_CBN_read(
            1][year].grass != 1.0, due to floating point precision and the chance
            that a multiplier of 1.0 was actually calculated */
         if (existing_years[year] != 0) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -178,13 +236,10 @@ void SW_CBN_read(
                 year,
                 SW_Carbon->scenario
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
         existing_years[year] = 1;
     }
-
-    CloseFile(&f, LogInfo);
-
 
     /* Error checking */
 
@@ -199,7 +254,7 @@ void SW_CBN_read(
             " debugging purposes, SOILWAT2 read in file '%s'\n",
             MyFileName
         );
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     // A scenario must be found in order for ppm to have a positive value
@@ -211,7 +266,7 @@ void SW_CBN_read(
             " was not found in carbon.in\n",
             SW_Carbon->scenario
         );
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     // Ensure that the desired years were calculated
@@ -226,9 +281,11 @@ void SW_CBN_read(
                 year,
                 SW_Carbon->scenario
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
     }
+
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**
@@ -255,12 +312,14 @@ void SW_CBN_init_run(
     SW_CARBON *SW_Carbon,
     LOG_INFO *LogInfo
 ) {
-    int k;
-    TimeInt year, simendyr = SW_Model->endyr + SW_Model->addtl_yr;
-    double ppm;
 #ifdef SWDEBUG
     short debug = 0;
 #endif
+
+    int k;
+    TimeInt year;
+    TimeInt simendyr = SW_Model->endyr + SW_Model->addtl_yr;
+    double ppm;
 
     if (!SW_Carbon->use_bio_mult && !SW_Carbon->use_wue_mult) {
         return;

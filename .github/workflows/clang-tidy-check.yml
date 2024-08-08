@@ -1,0 +1,29 @@
+name: clang-tidy check
+
+# ubuntu-24.04 comes with clang v18 as default
+# ubuntu-latest as of 2024-Aug-01 points to ubuntu-22.04 with clang v14
+
+on:
+  push:
+    branches: [master, main, release/**]
+  pull_request:
+    branches: [master, main, release/**]
+
+jobs:
+  formatting-check:
+    name: Tidy Check
+    runs-on: ubuntu-24.04
+
+    steps:
+    - name: Checkout repository and submodules
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install netCDF-C and udunits2
+      run: |
+        sudo apt-get update
+        sudo apt-get install libnetcdf-dev libudunits2-dev
+
+    - name: Run
+      run: ./tools/run_tidy.sh

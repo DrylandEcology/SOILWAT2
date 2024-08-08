@@ -1,5 +1,17 @@
 # NEWS
 
+# SOILWAT2 v8.1.0-devel
+* This version produces nearly identical simulation output as previously.
+  Small deviations arise from replacing all remaining variables of type float
+  with type double (see commit 62237ae on 2024-July-30).
+
+* The two models of SOILWAT2 can now be compiled with the following flags:
+    * `make CPPFLAGS=-DSWTXT` (or as previously `make all`) for txt-based
+    * `make CPPFLAGS=-DSWNC` for nc-based SOILWAT2.
+
+* Tests now require `c++17` and utilize `googletest` `v1.15.2` (issue #427).
+
+
 # SOILWAT2 v8.0.0
 * Simulation output remains the same as the previous version.
   However, output of establishment/recruitment for two species is now

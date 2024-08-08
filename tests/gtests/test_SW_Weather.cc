@@ -10,9 +10,9 @@
 #include "tests/gtests/sw_testhelpers.h" // for WeatherFixtureTest, tol6
 #include "gmock/gmock.h"                 // for HasSubstr, MakePredicateFor...
 #include "gtest/gtest.h"                 // for Test, Message, TestPartResul...
-#include <cmath>                         // for isnan
-#include <stdio.h>                       // for NULL
-#include <string.h>                      // for strcpy
+#include <cmath>                         // for isnan, sqrt
+#include <stdio.h>                       // for snprintf, NULL
+
 
 using ::testing::HasSubstr;
 
@@ -73,7 +73,12 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesDays) {
     SW_Run.Weather.generateWeatherMethod = 2;
 
     // Change directory to get input files with some missing data
-    strcpy(SW_Run.Weather.name_prefix, "Input/data_weather_missing/weath");
+    (void) snprintf(
+        SW_Run.Weather.name_prefix,
+        sizeof SW_Run.Weather.name_prefix,
+        "%s",
+        "Input/data_weather_missing/weath"
+    );
 
     SW_MKV_setup(
         &SW_Run.Markov,
@@ -109,11 +114,17 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesDays) {
 
 TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesYears) {
 
-    int year, day;
+    int year;
+    int day;
     SW_Run.Weather.generateWeatherMethod = 2;
 
     // Change directory to get input files with some missing data
-    strcpy(SW_Run.Weather.name_prefix, "Input/data_weather_missing/weath");
+    (void) snprintf(
+        SW_Run.Weather.name_prefix,
+        sizeof SW_Run.Weather.name_prefix,
+        "%s",
+        "Input/data_weather_missing/weath"
+    );
 
     SW_MKV_setup(
         &SW_Run.Markov,
@@ -140,17 +151,18 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesYears) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
-    // Check everyday's value and test if it's `MISSING`
+    // Check everyday's value and check that it is not `MISSING`
     for (year = 0; year < 2; year++) {
         for (day = 0; day < 365; day++) {
-            EXPECT_TRUE(!missing(SW_Run.Weather.allHist[year]->temp_max[day]));
+            EXPECT_FALSE(missing(SW_Run.Weather.allHist[year]->temp_max[day]));
         }
     }
 }
 
 TEST_F(WeatherFixtureTest, WeatherWeatherGeneratorOnly) {
 
-    int year, day;
+    int year;
+    int day;
 
     SW_Run.Weather.generateWeatherMethod = 2;
     SW_Run.Weather.use_weathergenerator_only = swTRUE;
@@ -165,7 +177,12 @@ TEST_F(WeatherFixtureTest, WeatherWeatherGeneratorOnly) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Change directory to get input files with some missing data
-    strcpy(SW_Run.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
+    (void) snprintf(
+        SW_Run.Weather.name_prefix,
+        sizeof SW_Run.Weather.name_prefix,
+        "%s",
+        "Input/data_weather_nonexisting/weath"
+    );
 
     SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -179,10 +196,10 @@ TEST_F(WeatherFixtureTest, WeatherWeatherGeneratorOnly) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    // Check everyday's value and test if it's `MISSING`
+    // Check everyday's value and check that it is not `MISSING`
     for (year = 0; year < 31; year++) {
         for (day = 0; day < 365; day++) {
-            EXPECT_TRUE(!missing(SW_Run.Weather.allHist[year]->temp_max[day]));
+            EXPECT_FALSE(missing(SW_Run.Weather.allHist[year]->temp_max[day]));
         }
     }
 }
@@ -192,7 +209,12 @@ TEST_F(WeatherFixtureTest, ReadAllWeatherTooManyMissingForLOCFDeathTest) {
     // Error: too many missing values and weather generator turned off
 
     // Change to directory without input files
-    strcpy(SW_Run.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
+    (void) snprintf(
+        SW_Run.Weather.name_prefix,
+        sizeof SW_Run.Weather.name_prefix,
+        "%s",
+        "Input/data_weather_nonexisting/weath"
+    );
 
     // Set LOCF (temp) + 0 (PPT) method
     SW_Run.Weather.generateWeatherMethod = 1;
@@ -224,7 +246,7 @@ TEST_F(WeatherFixtureTest, ClimateVariableClimateFromDefaultWeather) {
     SW_CLIMATE_YEARLY climateOutput;
     SW_CLIMATE_CLIM climateAverages;
 
-    Bool inNorthHem = swTRUE;
+    Bool const inNorthHem = swTRUE;
 
     // Allocate memory
     // 31 = number of years used in test
@@ -337,7 +359,7 @@ TEST_F(WeatherFixtureTest, ClimateVariableClimateFromOneYearWeather) {
     SW_CLIMATE_YEARLY climateOutput;
     SW_CLIMATE_CLIM climateAverages;
 
-    Bool inNorthHem = swTRUE;
+    Bool const inNorthHem = swTRUE;
 
     // Allocate memory
     // 1 = number of years used in test
@@ -462,7 +484,7 @@ TEST_F(WeatherFixtureTest, ClimateFromDefaultWeatherSouth) {
 
     // "South" and not "North" to reduce confusion when calling
     // `calcSiteClimate()`
-    Bool inSouthHem = swFALSE;
+    Bool const inSouthHem = swFALSE;
 
     // Allocate memory
     // 31 = number of years used in test
@@ -578,9 +600,9 @@ TEST_F(WeatherFixtureTest, ClimateVariableClimateFromConstantWeather) {
     SW_CLIMATE_CLIM climateAverages;
     SW_WEATHER_HIST **allHist = NULL;
 
-    unsigned int n_years = 2;
+    unsigned int const n_years = 2;
 
-    Bool inNorthHem = swTRUE;
+    Bool const inNorthHem = swTRUE;
 
     // Allocate memory
     allocateClimateStructs(n_years, &climateOutput, &climateAverages, &LogInfo);
@@ -683,22 +705,23 @@ TEST_F(
     WeatherFixtureTest, ClimateVariableAverageTemperatureOfDriestQuarterTest
 ) {
 
-    double monthlyPPT[MAX_MONTHS] = {
+    double const monthlyPPT[MAX_MONTHS] = {
         .5, .5, .1, .4, .9, 1.0, 1.2, 6.5, 7.5, 1.2, 4., .6
     };
-    double monthlyTemp[MAX_MONTHS] = {
+    double const monthlyTemp[MAX_MONTHS] = {
         -3.2, -.4, 1.2, 3.5, 7.5, 4.5, 6.5, 8.2, 2.0, 3., .1, -.3
     };
     double result[2]; // 2 = max number of years in test
 
-    int month, year;
+    int month;
+    int year;
 
     double **PPTMon_cm;
     PPTMon_cm = new double *[MAX_MONTHS];
 
     double **meanTempMon_C = new double *[MAX_MONTHS];
 
-    Bool inNorthHem = swTRUE;
+    Bool const inNorthHem = swTRUE;
 
     for (month = 0; month < MAX_MONTHS; month++) {
         PPTMon_cm[month] = new double[2];
@@ -767,7 +790,8 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyInputPrioritization) {
      */
 
     // Initialize any variables
-    int yearIndex = 0, midJanDay = 14;
+    int const yearIndex = 0;
+    int const midJanDay = 14;
 
     /* Test if monthly values are not being used */
     SW_WTH_setup(
@@ -814,8 +838,11 @@ TEST_F(WeatherFixtureTest, WeatherInputDailyGridMet) {
        * This section uses the test directory "*_gridmet".
      */
 
-    double result, expectedResult;
-    int yearIndex = 0, year = 1980, midJanDay = 14;
+    double result;
+    double expectedResult;
+    int const yearIndex = 0;
+    int const year = 1980;
+    int const midJanDay = 14;
 
     /* Test correct priority is being given to input values from DAYMET */
     SW_WTH_setup(
@@ -827,7 +854,12 @@ TEST_F(WeatherFixtureTest, WeatherInputDailyGridMet) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Switch directory to gridmet input folder
-    strcpy(SW_Run.Weather.name_prefix, "Input/data_weather_gridmet/weath");
+    (void) snprintf(
+        SW_Run.Weather.name_prefix,
+        sizeof SW_Run.Weather.name_prefix,
+        "%s",
+        "Input/data_weather_gridmet/weath"
+    );
 
     // Turn off monthly flags
     SW_Run.Weather.use_cloudCoverMonthly = swFALSE;
@@ -850,10 +882,10 @@ TEST_F(WeatherFixtureTest, WeatherInputDailyGridMet) {
     SW_Run.Weather.desc_rsds = 1; // gridMET rsds is flux density over 24 hours
 
     // Reset daily weather values
-    _clear_hist_weather(SW_Run.Weather.allHist[0]);
+    clear_hist_weather(SW_Run.Weather.allHist[0]);
 
     // Using the new inputs folder, read in year = 1980
-    _read_weather_hist(
+    read_weather_hist(
         year,
         SW_Run.Weather.allHist[0],
         SW_Run.Weather.name_prefix,
@@ -921,8 +953,12 @@ TEST_F(WeatherFixtureTest, WeatherInputDayMet) {
        * This section uses the test directory "*_daymet".
      */
 
-    double result, expectedResult, tempSlope;
-    int yearIndex = 0, year = 1980, midJanDay = 14;
+    double result;
+    double expectedResult;
+    double tempSlope;
+    int const yearIndex = 0;
+    int const year = 1980;
+    int const midJanDay = 14;
 
     /* Test correct priority is being given to input values from DAYMET */
     SW_WTH_setup(
@@ -934,7 +970,12 @@ TEST_F(WeatherFixtureTest, WeatherInputDayMet) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Switch directory to daymet input folder
-    strcpy(SW_Run.Weather.name_prefix, "Input/data_weather_daymet/weath");
+    (void) snprintf(
+        SW_Run.Weather.name_prefix,
+        sizeof SW_Run.Weather.name_prefix,
+        "%s",
+        "Input/data_weather_daymet/weath"
+    );
 
     // Turn off monthly flags
     SW_Run.Weather.use_cloudCoverMonthly = swFALSE;
@@ -954,10 +995,10 @@ TEST_F(WeatherFixtureTest, WeatherInputDayMet) {
     SW_Run.Weather.desc_rsds = 2;
 
     // Reset daily weather values
-    _clear_hist_weather(SW_Run.Weather.allHist[0]);
+    clear_hist_weather(SW_Run.Weather.allHist[0]);
 
     // Using the new inputs folder, read in year = 1980
-    _read_weather_hist(
+    read_weather_hist(
         year,
         SW_Run.Weather.allHist[0],
         SW_Run.Weather.name_prefix,
@@ -1027,8 +1068,11 @@ TEST_F(WeatherFixtureTest, WeatherInputMACA) {
         * This section uses the test directory "*_maca".
      */
 
-    double result, expectedResult;
-    int yearIndex = 0, year = 1980, midJanDay = 14;
+    double result;
+    double expectedResult;
+    int const yearIndex = 0;
+    int const year = 1980;
+    int const midJanDay = 14;
 
     /* Test correct priority is being given to input values from MACA */
 
@@ -1041,7 +1085,12 @@ TEST_F(WeatherFixtureTest, WeatherInputMACA) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Switch directory to daymet input folder
-    strcpy(SW_Run.Weather.name_prefix, "Input/data_weather_maca/weath");
+    (void) snprintf(
+        SW_Run.Weather.name_prefix,
+        sizeof SW_Run.Weather.name_prefix,
+        "%s",
+        "Input/data_weather_maca/weath"
+    );
 
     // Turn off monthly flags
     SW_Run.Weather.use_cloudCoverMonthly = swFALSE;
@@ -1066,10 +1115,10 @@ TEST_F(WeatherFixtureTest, WeatherInputMACA) {
     SW_Run.Weather.desc_rsds = 1; // MACA rsds is flux density over 24 hours
 
     // Reset daily weather values
-    _clear_hist_weather(SW_Run.Weather.allHist[0]);
+    clear_hist_weather(SW_Run.Weather.allHist[0]);
 
     // Using the new inputs folder, read in year = 1980
-    _read_weather_hist(
+    read_weather_hist(
         year,
         SW_Run.Weather.allHist[0],
         SW_Run.Weather.name_prefix,
@@ -1138,9 +1187,12 @@ TEST_F(WeatherFixtureTest, WeatherDailyLOCFInputValues) {
        We want to make sure when the weather generator method is equal to 1,
        LOCF is performed on these variables and not ignored
     */
-    int numDaysLOCFTolerance = 366, yearIndex = 0, day;
-    double cloudCovTestVal = .5, actVapPressTestVal = 4.23,
-           windSpeedTestVal = 2.12;
+    int const numDaysLOCFTolerance = 366;
+    int const yearIndex = 0;
+    int day;
+    double const cloudCovTestVal = .5;
+    double const actVapPressTestVal = 4.23;
+    double const windSpeedTestVal = 2.12;
 
     // Setup and read in weather
     SW_WTH_setup(
@@ -1212,7 +1264,7 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputWrongColumnNumberDeathTest) {
      */
 
     // Initialize any variables
-    TimeInt year = 1980;
+    TimeInt const year = 1980;
 
     /* Not the same number of flags as columns */
     // Run weather functions and expect an failure (error)
@@ -1224,7 +1276,7 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputWrongColumnNumberDeathTest) {
     // not the columns being read in
     SW_Run.Weather.n_input_forcings = 0;
 
-    _read_weather_hist(
+    read_weather_hist(
         year,
         SW_Run.Weather.allHist[0],
         SW_Run.Weather.name_prefix,
