@@ -1132,6 +1132,10 @@ typedef struct {
     int baseCalendarYear; /**< Calendar year that is the reference basis of the
                              time units (e.g., days since YYYY-01-01) of every
                              output netCDFs */
+
+    /* Specify the deflation level for when creating the output variables */
+    int deflateLevel;
+
 } SW_NETCDF;
 
 struct SW_OUT_DOM {

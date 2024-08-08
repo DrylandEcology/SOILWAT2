@@ -31,7 +31,7 @@
 #define NUM_NC_IN_KEYS 2
 
 /** Number of possible keys within `attributes_nc.in` */
-#define NUM_ATT_IN_KEYS 27
+#define NUM_ATT_IN_KEYS 28
 
 /** Progress status: SUID is ready for simulation */
 #define PRGRSS_READY ((signed char) 0)
@@ -222,7 +222,8 @@ static void nc_read_atts(
         "proj_false_northing",
 
         "strideOutYears",
-        "baseCalendarYear"
+        "baseCalendarYear",
+        "deflateLevel"
     };
     static const Bool requiredKeys[NUM_ATT_IN_KEYS] = {
         swTRUE,  swTRUE,  swTRUE,  swFALSE, swFALSE, swTRUE,  swTRUE,
@@ -302,7 +303,7 @@ static void nc_read_atts(
         // set_hasKey() does not produce errors, only warnings possible
 
         /* Check to see if the line number contains a double or integer value */
-        doIntConv = (Bool) (keyID >= 23 && keyID <= 25);
+        doIntConv = (Bool) (keyID >= 23 && keyID <= 27);
         doDoubleConv = (Bool) ((keyID >= 9 && keyID <= 11) ||
                                (keyID >= 15 && keyID <= 17) ||
                                (keyID >= 21 && keyID <= 22));
@@ -462,6 +463,9 @@ static void nc_read_atts(
         case 26:
             SW_netCDF->baseCalendarYear = inBufintRes;
             break;
+        case 27:
+            SW_netCDF->deflateLevel = inBufintRes;
+            break;
         case KEY_NOT_FOUND:
         default:
             LogError(
@@ -557,6 +561,35 @@ static void get_2d_output_key(
                 }
             }
         }
+    }
+}
+
+/*
+@brief Write a dummy value to a newly created netCDF file so that
+the first write does not occur during the first simulation run;
+this function should only be called when there is no deflate
+activated
+
+@param[in] ncFileID Identifier of the open netCDF file to write to
+@param[in] varType Type of the first variable being written to the file
+@param[in] varID Identifier of the variable to write to
+*/
+static void writeDummyVal(int ncFileID, int varType, int varID) {
+    size_t start[MAX_NUM_DIMS] = {0};
+    size_t count[MAX_NUM_DIMS] = {1, 1, 1, 1, 1};
+    double doubleFill[] = {NC_FILL_DOUBLE};
+    unsigned char byteFill[] = {(unsigned char) NC_FILL_BYTE};
+
+    switch (varType) {
+    case NC_DOUBLE:
+        nc_put_vara_double(ncFileID, varID, start, count, &doubleFill[0]);
+        break;
+    case NC_BYTE:
+        nc_put_vara_ubyte(ncFileID, varID, start, count, &byteFill[0]);
+        break;
+    default:
+        /* No other types should be expected */
+        break;
     }
 }
 
@@ -1268,6 +1301,9 @@ static void create_netCDF_dim(
 @param[in] ncFileID Domain netCDF file ID
 @param[in] varType The type in which the new variable will be
 @param[in] numDims Number of dimensions the new variable will hold
+@param[in] chunkSizes Custom chunk sizes for the variable being created
+@param[in] deflateLevel Level of deflation that will be used for the created
+variable
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void create_netCDF_var(
@@ -1277,13 +1313,14 @@ static void create_netCDF_var(
     const int *ncFileID,
     int varType,
     int numDims,
+    size_t chunkSizes[],
+    int deflateLevel,
     LOG_INFO *LogInfo
 ) {
 
     // Deflate information
     int shuffle = 1; // 0 or 1
     int deflate = 1; // 0 or 1
-    int level = 5;   // 0 to 9
 
     if (nc_def_var(*ncFileID, varName, varType, numDims, dimIDs, varID) !=
         NC_NOERR) {
@@ -1297,12 +1334,28 @@ static void create_netCDF_var(
         return; // Exit prematurely due to error
     }
 
+    if (!isnull(chunkSizes)) {
+        if (nc_def_var_chunking(*ncFileID, *varID, NC_CHUNKED, chunkSizes) !=
+            NC_NOERR) {
+
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Could not chunk variable '%s' when creating it in "
+                "output netCDF.",
+                varName
+            );
+            return; // Exit prematurely due to error
+        }
+    }
+
     // Do not compress the CRS variables
-    if (strcmp(varName, "crs_geogsc") != 0 &&
+    if (deflateLevel > 0 && strcmp(varName, "crs_geogsc") != 0 &&
         strcmp(varName, "crs_projsc") != 0 && varType != NC_STRING) {
 
-        if (nc_def_var_deflate(*ncFileID, *varID, shuffle, deflate, level) !=
-            NC_NOERR) {
+        if (nc_def_var_deflate(
+                *ncFileID, *varID, shuffle, deflate, deflateLevel
+            ) != NC_NOERR) {
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -1751,6 +1804,8 @@ freeMem:
 @param[in] primCRSIsGeo Specifies if the current CRS type is geographic
 @param[in] domType Type of domain in which simulations are running
     (gridcell/sites)
+@param[in] deflateLevel Level of deflation that will be used for the created
+variable
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void fill_domain_netCDF_domain(
@@ -1761,6 +1816,7 @@ static void fill_domain_netCDF_domain(
     int nDomainDims,
     Bool primCRSIsGeo,
     const char *domType,
+    int deflateLevel,
     LOG_INFO *LogInfo
 ) {
 
@@ -1786,6 +1842,8 @@ static void fill_domain_netCDF_domain(
         &domFileID,
         NC_UINT,
         nDomainDims,
+        NULL,
+        deflateLevel,
         LogInfo
     );
 
@@ -1822,6 +1880,8 @@ static void fill_domain_netCDF_domain(
     variable (lat or y)
 @param[out] XVarID Variable identifier of the X-axis horizontal coordinate
     variable (lon or x)
+@param[in] deflateLevel Level of deflation that will be used for the created
+variable
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void fill_domain_netCDF_s(
@@ -1831,6 +1891,7 @@ static void fill_domain_netCDF_s(
     int *sVarID,
     int *YVarID,
     int *XVarID,
+    int deflateLevel,
     LOG_INFO *LogInfo
 ) {
 
@@ -1884,6 +1945,8 @@ static void fill_domain_netCDF_s(
             domFileID,
             NC_DOUBLE,
             1,
+            NULL,
+            deflateLevel,
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -1949,6 +2012,8 @@ static void fill_domain_netCDF_s(
     bounds variable (lat_bnds or y_bnds)
 @param[out] XVarID Variable identifier of the X-axis horizontal coordinate
     bounds variable (lon_bnds or x_bnds)
+@param[in] deflateLevel Level of deflation that will be used for the created
+variable
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void fill_domain_netCDF_xy(
@@ -1960,6 +2025,7 @@ static void fill_domain_netCDF_xy(
     int *XVarID,
     int *YBndsID,
     int *XBndsID,
+    int deflateLevel,
     LOG_INFO *LogInfo
 ) {
 
@@ -2042,6 +2108,8 @@ static void fill_domain_netCDF_xy(
             domFileID,
             NC_DOUBLE,
             1,
+            NULL,
+            deflateLevel,
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -2058,6 +2126,8 @@ static void fill_domain_netCDF_xy(
             domFileID,
             NC_DOUBLE,
             2,
+            NULL,
+            deflateLevel,
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -2439,8 +2509,9 @@ static void fill_netCDF_with_invariants(
     int proj_id = 0;
     const char *fx = "fx";
 
+    /* Do not deflate crs_geogsc */
     create_netCDF_var(
-        &geo_id, "crs_geogsc", NULL, ncFileID, NC_BYTE, 0, LogInfo
+        &geo_id, "crs_geogsc", NULL, ncFileID, NC_BYTE, 0, NULL, 0, LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -2460,8 +2531,10 @@ static void fill_netCDF_with_invariants(
 
     // Projected CRS variable/attributes
     if (!SW_netCDF->primary_crs_is_geographic) {
+
+        /* Do not deflate crs_projsc */
         create_netCDF_var(
-            &proj_id, "crs_projsc", NULL, ncFileID, NC_BYTE, 0, LogInfo
+            &proj_id, "crs_projsc", NULL, ncFileID, NC_BYTE, 0, NULL, 0, LogInfo
         );
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -2524,6 +2597,8 @@ the variable "time_bnds" and fills the variable "time"
 @param[in,out] startTime Start number of days when dealing with
     years between netCDF files
 @param[in] pd Current output netCDF period
+@param[in] deflateLevel Level of deflation that will be used for the created
+variable
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static void create_time_vars(
@@ -2534,6 +2609,7 @@ static void create_time_vars(
     unsigned int startYr,
     double *startTime,
     OutPeriod pd,
+    int deflateLevel,
     LOG_INFO *LogInfo
 ) {
 
@@ -2550,7 +2626,15 @@ static void create_time_vars(
 
 
     create_netCDF_var(
-        &bndsID, "time_bnds", dimIDs, &ncFileID, NC_DOUBLE, numBnds, LogInfo
+        &bndsID,
+        "time_bnds",
+        dimIDs,
+        &ncFileID,
+        NC_DOUBLE,
+        numBnds,
+        NULL,
+        deflateLevel,
+        LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -2649,6 +2733,8 @@ the variable "vertical_bnds" and fills the variable "vertical"
     run within domain have identical soil layer depths
     (though potentially variable number of soil layers)
 @param[in] lyrDepths Depths of soil layers (cm)
+@param[in] deflateLevel Level of deflation that will be used for the created
+variable
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static void create_vert_vars(
@@ -2658,6 +2744,7 @@ static void create_vert_vars(
     int dimVarID,
     Bool hasConsistentSoilLayerDepths,
     const double lyrDepths[],
+    int deflateLevel,
     LOG_INFO *LogInfo
 ) {
 
@@ -2676,6 +2763,8 @@ static void create_vert_vars(
         &ncFileID,
         NC_DOUBLE,
         numBnds,
+        NULL,
+        deflateLevel,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -2747,6 +2836,8 @@ if needed
     years between netCDF files
 @param[in] startYr Start year of the simulation
 @param[in] pd Current output netCDF period
+@param[in] deflateLevel Level of deflation that will be used for the created
+variable
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static void fill_dimVar(
@@ -2760,6 +2851,7 @@ static void fill_dimVar(
     int dimNum,
     unsigned int startYr,
     OutPeriod pd,
+    int deflateLevel,
     LOG_INFO *LogInfo
 ) {
 
@@ -2791,6 +2883,7 @@ static void fill_dimVar(
                     varID,
                     hasConsistentSoilLayerDepths,
                     lyrDepths,
+                    deflateLevel,
                     LogInfo
                 );
             }
@@ -2804,6 +2897,7 @@ static void fill_dimVar(
                     startYr,
                     startTime,
                     pd,
+                    deflateLevel,
                     LogInfo
                 );
             }
@@ -2832,6 +2926,8 @@ and fill the variable with the respective information
 @param[in] baseCalendarYear First year of the entire simulation
 @param[in] startYr Start year of the simulation
 @param[in] pd Current output netCDF period
+@param[in] deflateLevel Level of deflation that will be used for the created
+variable
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static void create_output_dimVar(
@@ -2845,6 +2941,7 @@ static void create_output_dimVar(
     unsigned int baseCalendarYear,
     unsigned int startYr,
     OutPeriod pd,
+    int deflateLevel,
     LOG_INFO *LogInfo
 ) {
 
@@ -2904,7 +3001,15 @@ static void create_output_dimVar(
         dimIDs[0] = *dimID;
 
         create_netCDF_var(
-            &varID, name, dimIDs, &ncFileID, varType, numDims, LogInfo
+            &varID,
+            name,
+            dimIDs,
+            &ncFileID,
+            varType,
+            numDims,
+            NULL,
+            deflateLevel,
+            LogInfo
         );
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -2921,6 +3026,7 @@ static void create_output_dimVar(
             dimNum,
             startYr,
             pd,
+            deflateLevel,
             LogInfo
         );
 
@@ -2982,6 +3088,8 @@ and writing attributes
 @param[in] baseCalendarYear First year of the entire simulation
 @param[in] startYr Start year of the simulation
 @param[in] pd Current output netCDF period
+@param[in] deflateLevel Level of deflation that will be used for the created
+variable
 @param[in,out] LogInfo Holds information dealing with logfile output
 */
 static void create_full_var(
@@ -3001,6 +3109,7 @@ static void create_full_var(
     unsigned int baseCalendarYear,
     unsigned int startYr,
     OutPeriod pd,
+    int deflateLevel,
     LOG_INFO *LogInfo
 ) {
 
@@ -3018,7 +3127,8 @@ static void create_full_var(
     char *dimVarName;
     size_t timeVertVegVals[] = {timeSize, vertSize, pftSize};
     unsigned int numTimeVertVegVals = 3;
-    unsigned int varVal;
+    unsigned int varVal = 0;
+    size_t chunkSizes[MAX_NUM_DIMS] = {1, 1, 1, 1, 1};
 
 
     for (index = 0; index < numConstDims; index++) {
@@ -3048,6 +3158,7 @@ static void create_full_var(
                     baseCalendarYear,
                     startYr,
                     pd,
+                    deflateLevel,
                     LogInfo
                 );
             } else {
@@ -3063,9 +3174,26 @@ static void create_full_var(
         }
     }
 
+    for (index = numConstDims; index < MAX_NUM_DIMS; index++) {
+        if (index - numConstDims < 3) {
+            varVal = timeVertVegVals[index - numConstDims];
+
+            if (varVal > 0) {
+                chunkSizes[index] = varVal;
+            }
+        }
+    }
 
     create_netCDF_var(
-        &varID, varName, dimIDs, ncFileID, newVarType, dimArrSize, LogInfo
+        &varID,
+        varName,
+        dimIDs,
+        ncFileID,
+        newVarType,
+        dimArrSize,
+        chunkSizes,
+        deflateLevel,
+        LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -3078,6 +3206,13 @@ static void create_full_var(
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
+    }
+
+    if (deflateLevel == 0) {
+        /* Write a dummy value so that the first write is not in the sim loop;
+           otherwise, the first simulation loop takes an order of magnitude
+           longer than following simulations */
+        writeDummyVal(*ncFileID, newVarType, varID);
     }
 }
 
@@ -3213,6 +3348,8 @@ SW_OUTNPERIODS).
 @param[in] baseCalendarYear First year of the entire simulation
 @param[in,out] startTime Start number of days when dealing with
     years between netCDF files (returns updated value)
+@param[in] deflateLevel Level of deflation that will be used for the created
+variable
 @param[in] LogInfo Holds information on warnings and errors
 */
 static void create_output_file(
@@ -3231,6 +3368,7 @@ static void create_output_file(
     unsigned int startYr,
     int baseCalendarYear,
     double *startTime,
+    int deflateLevel,
     LOG_INFO *LogInfo
 ) {
 
@@ -3307,6 +3445,7 @@ static void create_output_file(
                 baseCalendarYear,
                 startYr,
                 pd,
+                deflateLevel,
                 LogInfo
             );
 
@@ -3883,6 +4022,7 @@ void SW_NC_create_output_files(
                                 rangeStart,
                                 baseCalendarYear,
                                 &startTime[pd],
+                                SW_Domain->netCDFInfo.deflateLevel,
                                 LogInfo
                             );
                             if (LogInfo->stopRun) {
@@ -4393,7 +4533,14 @@ void SW_NC_create_domain_template(
 
         // Create s dimension/domain variables
         fill_domain_netCDF_s(
-            SW_Domain, domFileID, &sDimID, &sVarID, &YVarID, &XVarID, LogInfo
+            SW_Domain,
+            domFileID,
+            &sDimID,
+            &sVarID,
+            &YVarID,
+            &XVarID,
+            SW_Domain->netCDFInfo.deflateLevel,
+            LogInfo
         );
 
         if (LogInfo->stopRun) {
@@ -4415,6 +4562,7 @@ void SW_NC_create_domain_template(
             &XVarID,
             &YBndsID,
             &XBndsID,
+            SW_Domain->netCDFInfo.deflateLevel,
             LogInfo
         );
 
@@ -4436,6 +4584,7 @@ void SW_NC_create_domain_template(
         nDomainDims,
         SW_netCDF->primary_crs_is_geographic,
         SW_Domain->DomainType,
+        SW_Domain->netCDFInfo.deflateLevel,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -4609,6 +4758,7 @@ void SW_NC_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             0,
             0,
             0,
+            SW_Domain->netCDFInfo.deflateLevel,
             LogInfo
         );
 
@@ -5336,6 +5486,7 @@ void SW_NC_init_ptrs(SW_NETCDF *SW_netCDF) {
     SW_netCDF->crs_projsc.standard_parallel[1] = NAN;
 
     SW_netCDF->strideOutYears = -1;
+    SW_netCDF->deflateLevel = 0;
 
     for (index = 0; index < numAllocVars; index++) {
         *allocArr[index] = NULL;
