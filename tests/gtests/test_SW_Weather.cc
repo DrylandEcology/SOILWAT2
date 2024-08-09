@@ -20,7 +20,7 @@ namespace {
 TEST_F(WeatherFixtureTest, WeatherDefaultValues) {
 
     // Testing to fill allHist from `SW_Weather`
-    SW_SKY_read(SW_Domain.PathInfo.InFiles, &SW_Run.Sky, &LogInfo);
+    SW_SKY_read(SW_Domain.SW_PathInputs.InFiles, &SW_Run.Sky, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     readAllWeather(
@@ -84,7 +84,7 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesDays) {
         &SW_Run.Markov,
         SW_Run.Weather.rng_seed,
         SW_Run.Weather.generateWeatherMethod,
-        SW_Domain.PathInfo.InFiles,
+        SW_Domain.SW_PathInputs.InFiles,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -130,7 +130,7 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesYears) {
         &SW_Run.Markov,
         SW_Run.Weather.rng_seed,
         SW_Run.Weather.generateWeatherMethod,
-        SW_Domain.PathInfo.InFiles,
+        SW_Domain.SW_PathInputs.InFiles,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -171,7 +171,7 @@ TEST_F(WeatherFixtureTest, WeatherWeatherGeneratorOnly) {
         &SW_Run.Markov,
         SW_Run.Weather.rng_seed,
         SW_Run.Weather.generateWeatherMethod,
-        SW_Domain.PathInfo.InFiles,
+        SW_Domain.SW_PathInputs.InFiles,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -796,8 +796,8 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyInputPrioritization) {
     /* Test if monthly values are not being used */
     SW_WTH_setup(
         &SW_Run.Weather,
-        SW_Domain.PathInfo.InFiles,
-        SW_Domain.PathInfo.weather_prefix,
+        SW_Domain.SW_PathInputs.InFiles,
+        SW_Domain.SW_PathInputs.weather_prefix,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -847,8 +847,8 @@ TEST_F(WeatherFixtureTest, WeatherInputDailyGridMet) {
     /* Test correct priority is being given to input values from DAYMET */
     SW_WTH_setup(
         &SW_Run.Weather,
-        SW_Domain.PathInfo.InFiles,
-        SW_Domain.PathInfo.weather_prefix,
+        SW_Domain.SW_PathInputs.InFiles,
+        SW_Domain.SW_PathInputs.weather_prefix,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -963,8 +963,8 @@ TEST_F(WeatherFixtureTest, WeatherInputDayMet) {
     /* Test correct priority is being given to input values from DAYMET */
     SW_WTH_setup(
         &SW_Run.Weather,
-        SW_Domain.PathInfo.InFiles,
-        SW_Domain.PathInfo.weather_prefix,
+        SW_Domain.SW_PathInputs.InFiles,
+        SW_Domain.SW_PathInputs.weather_prefix,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1078,8 +1078,8 @@ TEST_F(WeatherFixtureTest, WeatherInputMACA) {
 
     SW_WTH_setup(
         &SW_Run.Weather,
-        SW_Domain.PathInfo.InFiles,
-        SW_Domain.PathInfo.weather_prefix,
+        SW_Domain.SW_PathInputs.InFiles,
+        SW_Domain.SW_PathInputs.weather_prefix,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1197,8 +1197,8 @@ TEST_F(WeatherFixtureTest, WeatherDailyLOCFInputValues) {
     // Setup and read in weather
     SW_WTH_setup(
         &SW_Run.Weather,
-        SW_Domain.PathInfo.InFiles,
-        SW_Domain.PathInfo.weather_prefix,
+        SW_Domain.SW_PathInputs.InFiles,
+        SW_Domain.SW_PathInputs.weather_prefix,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error

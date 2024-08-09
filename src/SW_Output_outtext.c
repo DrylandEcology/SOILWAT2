@@ -193,16 +193,15 @@ freeMem:
 /**
 @brief Create `csv` output files for specified time step
 
-@param[in,out] SW_FileStatus SW_FileStatus Struct of type
-    SW_FILE_STATUS which holds basic information about output files
-    and values
+@param[in,out] SW_PathOutputs Struct of type SW_PATH_OUTPUTS which
+    holds basic information about output files and values
 @param[in] pd The output time step.
 @param[in] InFiles Array of program in/output files
 @param[out] LogInfo Holds information on warnings and errors
 */
 /***********************************************************/
 static void create_csv_files(
-    SW_FILE_STATUS *SW_FileStatus,
+    SW_PATH_OUTPUTS *SW_PathOutputs,
     OutPeriod pd,
     char *InFiles[],
     LOG_INFO *LogInfo
@@ -212,16 +211,16 @@ static void create_csv_files(
     // allows subsetting such as `eOutputFile[pd]` or append time period to
     // a basename, etc.
 
-    if (SW_FileStatus->make_regular[pd]) {
-        SW_FileStatus->fp_reg[pd] =
+    if (SW_PathOutputs->make_regular[pd]) {
+        SW_PathOutputs->fp_reg[pd] =
             OpenFile(InFiles[eOutputDaily + pd], "w", LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
     }
 
-    if (SW_FileStatus->make_soil[pd]) {
-        SW_FileStatus->fp_soil[pd] =
+    if (SW_PathOutputs->make_soil[pd]) {
+        SW_PathOutputs->fp_soil[pd] =
             OpenFile(InFiles[eOutputDaily_soil + pd], "w", LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -329,8 +328,8 @@ If `-o` flag is used, then this function creates only one set of output files.
 @param iteration Current iteration value (base1) that is used for the file
 name if -i flag used in STEPWAT2. Set to a negative value otherwise.
 @param pd The output time step.
-@param FileStatus Struct of type SW_FILE_STATUS which holds basic information
-    about output files and values
+@param SW_PathOutputs Struct of type SW_PATH_OUTPUTS which
+holds basic information about output files and values
 @param LogInfo Holds information on warnings and errors
 */
 /***********************************************************/
@@ -338,14 +337,14 @@ static void create_csv_file_ST(
     int iteration,
     OutPeriod pd,
     char *InFiles[],
-    SW_FILE_STATUS *FileStatus,
+    SW_PATH_OUTPUTS *SW_PathOutputs,
     LOG_INFO *LogInfo
 ) {
     char filename[FILENAME_MAX];
 
     if (iteration <= 0) {
         // STEPWAT2: aggregated values over all iterations
-        if (FileStatus->make_regular[pd]) {
+        if (SW_PathOutputs->make_regular[pd]) {
             // PROGRAMMER Note: `eOutputDaily + pd` is not very elegant and
             // assumes a specific order of `SW_FileIndex` --> fix and create
             // something that allows subsetting such as `eOutputFile[pd]` or
@@ -362,13 +361,13 @@ static void create_csv_file_ST(
                 return; // Exit function prematurely due to error
             }
 
-            FileStatus->fp_reg_agg[pd] = OpenFile(filename, "w", LogInfo);
+            SW_PathOutputs->fp_reg_agg[pd] = OpenFile(filename, "w", LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
         }
 
-        if (FileStatus->make_soil[pd]) {
+        if (SW_PathOutputs->make_soil[pd]) {
             create_filename_ST(
                 InFiles[eOutputDaily_soil + pd],
                 "agg",
@@ -381,7 +380,7 @@ static void create_csv_file_ST(
                 return; // Exit function prematurely due to error
             }
 
-            FileStatus->fp_soil_agg[pd] = OpenFile(filename, "w", LogInfo);
+            SW_PathOutputs->fp_soil_agg[pd] = OpenFile(filename, "w", LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
@@ -391,15 +390,15 @@ static void create_csv_file_ST(
         // STEPWAT2: storing values for every iteration
         if (iteration > 1) {
             // close files from previous iteration
-            if (FileStatus->make_regular[pd]) {
-                CloseFile(&FileStatus->fp_reg[pd], LogInfo);
+            if (SW_PathOutputs->make_regular[pd]) {
+                CloseFile(&SW_PathOutputs->fp_reg[pd], LogInfo);
             }
-            if (FileStatus->make_soil[pd]) {
-                CloseFile(&FileStatus->fp_soil[pd], LogInfo);
+            if (SW_PathOutputs->make_soil[pd]) {
+                CloseFile(&SW_PathOutputs->fp_soil[pd], LogInfo);
             }
         }
 
-        if (FileStatus->make_regular[pd]) {
+        if (SW_PathOutputs->make_regular[pd]) {
             create_filename_ST(
                 InFiles[eOutputDaily + pd],
                 "rep",
@@ -412,13 +411,13 @@ static void create_csv_file_ST(
                 return; // Exit function prematurely due to error
             }
 
-            FileStatus->fp_reg[pd] = OpenFile(filename, "w", LogInfo);
+            SW_PathOutputs->fp_reg[pd] = OpenFile(filename, "w", LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
         }
 
-        if (FileStatus->make_soil[pd]) {
+        if (SW_PathOutputs->make_soil[pd]) {
             create_filename_ST(
                 InFiles[eOutputDaily_soil + pd],
                 "rep",
@@ -431,7 +430,7 @@ static void create_csv_file_ST(
                 return; // Exit function prematurely due to error
             }
 
-            FileStatus->fp_soil[pd] = OpenFile(filename, "w", LogInfo);
+            SW_PathOutputs->fp_soil[pd] = OpenFile(filename, "w", LogInfo);
         }
     }
 }
@@ -450,15 +449,15 @@ static void create_csv_file_ST(
 
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
-@param[in,out] SW_FileStatus Struct of type SW_FILE_STATUS which holds basic
-    information about output files and values
+@param[in,out] SW_PathOutputs Struct of type SW_PATH_OUTPUTS which
+holds basic information about output files and values
 @param[in] n_layers Number of layers of soil within the simulation run
 @param[in] InFiles Array of program in/output files
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_OUT_create_textfiles(
     SW_OUT_DOM *OutDom,
-    SW_FILE_STATUS *SW_FileStatus,
+    SW_PATH_OUTPUTS *SW_PathOutputs,
     LyrIndex n_layers,
     char *InFiles[],
     LOG_INFO *LogInfo
@@ -468,7 +467,7 @@ void SW_OUT_create_textfiles(
 
     ForEachOutPeriod(pd) {
         if (OutDom->use_OutPeriod[pd]) {
-            create_csv_files(SW_FileStatus, pd, InFiles, LogInfo);
+            create_csv_files(SW_PathOutputs, pd, InFiles, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
@@ -476,11 +475,11 @@ void SW_OUT_create_textfiles(
             write_headers_to_csv(
                 OutDom,
                 pd,
-                SW_FileStatus->fp_reg[pd],
-                SW_FileStatus->fp_soil[pd],
+                SW_PathOutputs->fp_reg[pd],
+                SW_PathOutputs->fp_soil[pd],
                 swFALSE,
-                SW_FileStatus->make_regular,
-                SW_FileStatus->make_soil,
+                SW_PathOutputs->make_regular,
+                SW_PathOutputs->make_soil,
                 n_layers,
                 LogInfo
             );
@@ -495,7 +494,7 @@ void SW_OUT_create_textfiles(
 
 void SW_OUT_create_summary_files(
     SW_OUT_DOM *OutDom,
-    SW_FILE_STATUS *SW_FileStatus,
+    SW_PATH_OUTPUTS *SW_PathOutputs,
     char *InFiles[],
     LyrIndex n_layers,
     LOG_INFO *LogInfo
@@ -505,7 +504,7 @@ void SW_OUT_create_summary_files(
 
     ForEachOutPeriod(p) {
         if (OutDom->use_OutPeriod[p]) {
-            create_csv_file_ST(-1, p, InFiles, SW_FileStatus, LogInfo);
+            create_csv_file_ST(-1, p, InFiles, SW_PathOutputs, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
@@ -513,11 +512,11 @@ void SW_OUT_create_summary_files(
             write_headers_to_csv(
                 OutDom,
                 p,
-                SW_FileStatus->fp_reg_agg[p],
-                SW_FileStatus->fp_soil_agg[p],
+                SW_PathOutputs->fp_reg_agg[p],
+                SW_PathOutputs->fp_soil_agg[p],
                 swTRUE,
-                SW_FileStatus->make_regular,
-                SW_FileStatus->make_soil,
+                SW_PathOutputs->make_regular,
+                SW_PathOutputs->make_soil,
                 n_layers,
                 LogInfo
             );
@@ -530,7 +529,7 @@ void SW_OUT_create_summary_files(
 
 void SW_OUT_create_iteration_files(
     SW_OUT_DOM *OutDom,
-    SW_FILE_STATUS *SW_FileStatus,
+    SW_PATH_OUTPUTS *SW_PathOutputs,
     int iteration,
     char *InFiles[],
     LyrIndex n_layers,
@@ -541,7 +540,7 @@ void SW_OUT_create_iteration_files(
 
     ForEachOutPeriod(p) {
         if (OutDom->use_OutPeriod[p]) {
-            create_csv_file_ST(iteration, p, InFiles, SW_FileStatus, LogInfo);
+            create_csv_file_ST(iteration, p, InFiles, SW_PathOutputs, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
@@ -549,11 +548,11 @@ void SW_OUT_create_iteration_files(
             write_headers_to_csv(
                 OutDom,
                 p,
-                SW_FileStatus->fp_reg[p],
-                SW_FileStatus->fp_soil[p],
+                SW_PathOutputs->fp_reg[p],
+                SW_PathOutputs->fp_soil[p],
                 swFALSE,
-                SW_FileStatus->make_regular,
-                SW_FileStatus->make_soil,
+                SW_PathOutputs->make_regular,
+                SW_PathOutputs->make_soil,
                 n_layers,
                 LogInfo
             );
@@ -766,14 +765,14 @@ void find_TXToutputSoilReg_inUse(
 
 call this routine at the end of the program run.
 
-@param[in,out] SW_FileStatus Struct of type SW_FILE_STATUS which
-    holds basic information about output files and values
+@param[in,out] SW_PathOutputs Struct of type SW_PATH_OUTPUTS which
+holds basic information about output files and values
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_OUT_close_textfiles(
-    SW_FILE_STATUS *SW_FileStatus, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
+    SW_PATH_OUTPUTS *SW_PathOutputs, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
 
     Bool close_regular = swFALSE;
@@ -784,36 +783,36 @@ void SW_OUT_close_textfiles(
 
     ForEachOutPeriod(p) {
 #if defined(SOILWAT)
-        close_regular = SW_FileStatus->make_regular[p];
-        close_layers = SW_FileStatus->make_soil[p];
+        close_regular = SW_PathOutputs->make_regular[p];
+        close_layers = SW_PathOutputs->make_soil[p];
         close_aggs = swFALSE;
 
 #elif defined(STEPWAT)
-        close_regular = (Bool) (SW_FileStatus->make_regular[p] &&
+        close_regular = (Bool) (SW_PathOutputs->make_regular[p] &&
                                 OutDom->storeAllIterations);
         close_layers =
-            (Bool) (SW_FileStatus->make_soil[p] && OutDom->storeAllIterations);
-        close_aggs = (Bool) ((SW_FileStatus->make_regular[p] ||
-                              SW_FileStatus->make_soil[p]) &&
+            (Bool) (SW_PathOutputs->make_soil[p] && OutDom->storeAllIterations);
+        close_aggs = (Bool) ((SW_PathOutputs->make_regular[p] ||
+                              SW_PathOutputs->make_soil[p]) &&
                              OutDom->prepare_IterationSummary);
 
 #endif
 
         if (OutDom->use_OutPeriod[p]) {
             if (close_regular) {
-                CloseFile(&SW_FileStatus->fp_reg[p], LogInfo);
+                CloseFile(&SW_PathOutputs->fp_reg[p], LogInfo);
             }
 
             if (close_layers) {
-                CloseFile(&SW_FileStatus->fp_soil[p], LogInfo);
+                CloseFile(&SW_PathOutputs->fp_soil[p], LogInfo);
             }
 
             if (close_aggs) {
 #ifdef STEPWAT
-                CloseFile(&SW_FileStatus->fp_reg_agg[p], LogInfo);
+                CloseFile(&SW_PathOutputs->fp_reg_agg[p], LogInfo);
 
                 if (close_layers) {
-                    CloseFile(&SW_FileStatus->fp_soil_agg[p], LogInfo);
+                    CloseFile(&SW_PathOutputs->fp_soil_agg[p], LogInfo);
                 }
 #endif
             }

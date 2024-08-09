@@ -35,7 +35,7 @@
 #include "include/filefuncs.h"      // for CloseFile, LogError, DirExists
 #include "include/generic.h"        // for LOGERROR, isnull, IntUS, LOGWARN
 #include "include/myMemory.h"       // for Str_Dup
-#include "include/SW_datastructs.h" // for LOG_INFO, SW_NFILES, PATH_INFO
+#include "include/SW_datastructs.h" // for LOG_INFO, SW_NFILES, SW_PATH_INPUTS
 #include "include/SW_Defines.h"     // for MAX_FILENAMESIZE
 #include <stdio.h>                  // for FILENAME_MAX, NULL, FILE, stderr
 #include <stdlib.h>                 // for free
@@ -81,8 +81,8 @@ void SW_CSV_F_INIT(const char *s, LOG_INFO *LogInfo) {
 @brief Read `first` input file `eFirst` that contains names of the remaining
 input files.
 
-@param[in,out] PathInfo truct holding all information about the programs
-    path/files
+@param[in,out] SW_PathInputs Struct of type SW_PATH_INPUTS which
+holds basic information about input files and values
 @param[out] LogInfo Holds information on warnings and errors
 
 @note If input file `eFirst` changes, particularly if the locations of the
@@ -90,13 +90,13 @@ input files.
 line numbers.
 
 @sideeffect
-Update values of variables within PATH_INFO:
+Update values of variables within SW_PATH_INPUTS:
     - `weather_prefix`
     - `output_prefix`
     - `InFiles`
     - `logfp` for SOILWAT2-standalone
 */
-void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
+void SW_F_read(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
 #ifdef SWDEBUG
     int debug = 0;
 #endif
@@ -108,7 +108,7 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
     char buf[FILENAME_MAX];
     char inbuf[MAX_FILENAMESIZE];
 
-    char *MyFileName = PathInfo->InFiles[eFirst];
+    char *MyFileName = SW_PathInputs->InFiles[eFirst];
     f = OpenFile(MyFileName, "r", LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -127,13 +127,13 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
         switch (lineno) {
         case 10:
             resSNP = snprintf(
-                PathInfo->weather_prefix,
-                sizeof PathInfo->weather_prefix,
+                SW_PathInputs->weather_prefix,
+                sizeof SW_PathInputs->weather_prefix,
                 "%s",
                 inbuf
             );
             if (resSNP < 0 ||
-                (unsigned) resSNP >= (sizeof PathInfo->weather_prefix)) {
+                (unsigned) resSNP >= (sizeof SW_PathInputs->weather_prefix)) {
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -145,13 +145,13 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
             break;
         case 18:
             resSNP = snprintf(
-                PathInfo->output_prefix,
-                sizeof PathInfo->output_prefix,
+                SW_PathInputs->output_prefix,
+                sizeof SW_PathInputs->output_prefix,
                 "%s",
                 inbuf
             );
             if (resSNP < 0 ||
-                (unsigned) resSNP >= (sizeof PathInfo->output_prefix)) {
+                (unsigned) resSNP >= (sizeof SW_PathInputs->output_prefix)) {
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -162,73 +162,76 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
             }
             break;
         case 20:
-            PathInfo->InFiles[eOutputDaily] = Str_Dup(inbuf, LogInfo);
+            SW_PathInputs->InFiles[eOutputDaily] = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
             ++fileno;
-            SW_CSV_F_INIT(PathInfo->InFiles[eOutputDaily], LogInfo);
+            SW_CSV_F_INIT(SW_PathInputs->InFiles[eOutputDaily], LogInfo);
             break;
         case 21:
-            PathInfo->InFiles[eOutputWeekly] = Str_Dup(inbuf, LogInfo);
+            SW_PathInputs->InFiles[eOutputWeekly] = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
             ++fileno;
-            SW_CSV_F_INIT(PathInfo->InFiles[eOutputWeekly], LogInfo);
+            SW_CSV_F_INIT(SW_PathInputs->InFiles[eOutputWeekly], LogInfo);
             // printf("filename: %s \n",InFiles[eOutputWeekly]);
             break;
         case 22:
-            PathInfo->InFiles[eOutputMonthly] = Str_Dup(inbuf, LogInfo);
+            SW_PathInputs->InFiles[eOutputMonthly] = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
             ++fileno;
-            SW_CSV_F_INIT(PathInfo->InFiles[eOutputMonthly], LogInfo);
+            SW_CSV_F_INIT(SW_PathInputs->InFiles[eOutputMonthly], LogInfo);
             // printf("filename: %s \n",InFiles[eOutputMonthly]);
             break;
         case 23:
-            PathInfo->InFiles[eOutputYearly] = Str_Dup(inbuf, LogInfo);
+            SW_PathInputs->InFiles[eOutputYearly] = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
             ++fileno;
-            SW_CSV_F_INIT(PathInfo->InFiles[eOutputYearly], LogInfo);
+            SW_CSV_F_INIT(SW_PathInputs->InFiles[eOutputYearly], LogInfo);
             break;
         case 24:
-            PathInfo->InFiles[eOutputDaily_soil] = Str_Dup(inbuf, LogInfo);
+            SW_PathInputs->InFiles[eOutputDaily_soil] = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
             ++fileno;
-            SW_CSV_F_INIT(PathInfo->InFiles[eOutputDaily_soil], LogInfo);
+            SW_CSV_F_INIT(SW_PathInputs->InFiles[eOutputDaily_soil], LogInfo);
             // printf("filename: %s \n",InFiles[eOutputDaily]);
             break;
         case 25:
-            PathInfo->InFiles[eOutputWeekly_soil] = Str_Dup(inbuf, LogInfo);
+            SW_PathInputs->InFiles[eOutputWeekly_soil] =
+                Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
             ++fileno;
-            SW_CSV_F_INIT(PathInfo->InFiles[eOutputWeekly_soil], LogInfo);
+            SW_CSV_F_INIT(SW_PathInputs->InFiles[eOutputWeekly_soil], LogInfo);
             // printf("filename: %s \n",InFiles[eOutputWeekly]);
             break;
         case 26:
-            PathInfo->InFiles[eOutputMonthly_soil] = Str_Dup(inbuf, LogInfo);
+            SW_PathInputs->InFiles[eOutputMonthly_soil] =
+                Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
             ++fileno;
-            SW_CSV_F_INIT(PathInfo->InFiles[eOutputMonthly_soil], LogInfo);
+            SW_CSV_F_INIT(SW_PathInputs->InFiles[eOutputMonthly_soil], LogInfo);
             // printf("filename: %s \n",InFiles[eOutputMonthly]);
             break;
         case 27:
-            PathInfo->InFiles[eOutputYearly_soil] = Str_Dup(inbuf, LogInfo);
+            SW_PathInputs->InFiles[eOutputYearly_soil] =
+                Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
             ++fileno;
-            SW_CSV_F_INIT(PathInfo->InFiles[eOutputYearly_soil], LogInfo);
+            SW_CSV_F_INIT(SW_PathInputs->InFiles[eOutputYearly_soil], LogInfo);
             break;
 
         default:
@@ -236,12 +239,13 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
                 break;
             }
 
-            if (!isnull(PathInfo->InFiles[fileno])) {
-                free(PathInfo->InFiles[fileno]);
+            if (!isnull(SW_PathInputs->InFiles[fileno])) {
+                free(SW_PathInputs->InFiles[fileno]);
             }
 
-            resSNP =
-                snprintf(buf, sizeof buf, "%s%s", PathInfo->SW_ProjDir, inbuf);
+            resSNP = snprintf(
+                buf, sizeof buf, "%s%s", SW_PathInputs->SW_ProjDir, inbuf
+            );
             if (resSNP < 0 || (unsigned) resSNP >= (sizeof buf)) {
                 LogError(
                     LogInfo, LOGERROR, "input file name is too long: '%s'.", buf
@@ -249,7 +253,7 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
                 goto closeFile;
             }
 
-            PathInfo->InFiles[fileno] = Str_Dup(buf, LogInfo);
+            SW_PathInputs->InFiles[fileno] = Str_Dup(buf, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
@@ -270,27 +274,29 @@ void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
         goto closeFile;
     }
 
-    if (!DirExists(PathInfo->output_prefix)) {
-        MkDir(PathInfo->output_prefix, LogInfo);
+    if (!DirExists(SW_PathInputs->output_prefix)) {
+        MkDir(SW_PathInputs->output_prefix, LogInfo);
         if (LogInfo->stopRun) {
             goto closeFile;
         }
     }
 
 #ifdef SOILWAT
-    if (0 == strcmp(PathInfo->InFiles[eLog], "stdout")) {
+    if (0 == strcmp(SW_PathInputs->InFiles[eLog], "stdout")) {
         LogInfo->logfp = stdout;
-    } else if (0 == strcmp(PathInfo->InFiles[eLog], "stderr")) {
+    } else if (0 == strcmp(SW_PathInputs->InFiles[eLog], "stderr")) {
         LogInfo->logfp = stderr;
     } else {
-        LogInfo->logfp = OpenFile(PathInfo->InFiles[eLog], "w", LogInfo);
+        LogInfo->logfp = OpenFile(SW_PathInputs->InFiles[eLog], "w", LogInfo);
     }
 #endif
 
 closeFile: { CloseFile(&f, LogInfo); }
 }
 
-void SW_F_deepCopy(PATH_INFO *source, PATH_INFO *dest, LOG_INFO *LogInfo) {
+void SW_F_deepCopy(
+    SW_PATH_INPUTS *source, SW_PATH_INPUTS *dest, LOG_INFO *LogInfo
+) {
     int file;
 
     memcpy(dest, source, sizeof(*dest));

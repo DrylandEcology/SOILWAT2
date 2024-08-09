@@ -2,7 +2,7 @@
 #define SWNETCDF_H
 
 #include "include/generic.h"        // for Bool, IntUS
-#include "include/SW_datastructs.h" // for SW_DOMAIN, SW_NETCDF, S...
+#include "include/SW_datastructs.h" // for SW_DOMAIN, SW_NETCDF_OUT, S...
 #include "include/SW_Defines.h"     // for OutPeriod, SW_OUTNPERIODS, SW_OUTN...
 #include <stdio.h>                  // for size_t
 
@@ -14,10 +14,10 @@ extern "C" {
 /*                  Local Definitions                  */
 /* --------------------------------------------------- */
 
-/** Domain netCDF index within `InFilesNC` and `varNC` (SW_NETCDF) */
+/** Domain netCDF index within `InFilesNC` and `varNC` (SW_NETCDF_OUT) */
 #define vNCdom 0
 
-/** Progress netCDF index within `InFilesNC` and `varNC` (SW_NETCDF) */
+/** Progress netCDF index within `InFilesNC` and `varNC` (SW_NETCDF_OUT) */
 #define vNCprog 1
 
 #define DOMAIN_TEMP "Input_nc/domain_template.nc"
@@ -127,7 +127,12 @@ void SW_NC_read_inputs(
 
 void SW_NC_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
 
-void SW_NC_read(SW_NETCDF *SW_netCDF, PATH_INFO *PathInfo, LOG_INFO *LogInfo);
+void SW_NC_read(
+    SW_NETCDF_IN *SW_netCDFIn,
+    SW_NETCDF_OUT *SW_netCDFOut,
+    SW_PATH_INPUTS *SW_PathInputs,
+    LOG_INFO *LogInfo
+);
 
 void SW_NC_read_out_vars(
     SW_OUT_DOM *OutDom,
@@ -138,15 +143,21 @@ void SW_NC_read_out_vars(
 
 void SW_NC_create_units_converters(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
-void SW_NC_init_ptrs(SW_NETCDF *SW_netCDF);
+void SW_NC_init_ptrs(SW_NETCDF_OUT *SW_netCDFOut, SW_NETCDF_IN *SW_netCDFIn);
 
-void SW_NC_deconstruct(SW_NETCDF *SW_netCDF);
+void SW_NC_deconstruct(SW_NETCDF_OUT *SW_netCDFOut, SW_NETCDF_IN *SW_netCDFIn);
 
-void SW_NC_open_dom_prog_files(SW_NETCDF *SW_netCDF, LOG_INFO *LogInfo);
+void SW_NC_open_dom_prog_files(SW_NETCDF_IN *SW_netCDFIn, LOG_INFO *LogInfo);
 
-void SW_NC_close_files(SW_NETCDF *SW_netCDF);
+void SW_NC_close_files(SW_NETCDF_IN *SW_netCDFIn);
 
-void SW_NC_deepCopy(SW_NETCDF *source, SW_NETCDF *dest, LOG_INFO *LogInfo);
+void SW_NC_deepCopy(
+    SW_NETCDF_OUT *source_output,
+    SW_NETCDF_OUT *dest_output,
+    SW_NETCDF_IN *source_input,
+    SW_NETCDF_IN *dest_input,
+    LOG_INFO *LogInfo
+);
 
 void SW_NC_dealloc_outputkey_var_info(SW_OUT_DOM *OutDom, IntUS k);
 

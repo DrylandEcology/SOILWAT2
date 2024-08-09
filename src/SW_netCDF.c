@@ -1,15 +1,15 @@
 /* =================================================== */
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
-#include "include/SW_netCDF.h"          // for vNCdom, vNCprog, VARNAME_INDEX
-#include "include/filefuncs.h"          // for LogError, FileExists, CloseFile
-#include "include/generic.h"            // for Bool, swFALSE, LOGERROR, swTRUE
-#include "include/myMemory.h"           // for Str_Dup, Mem_Malloc
-#include "include/SW_datastructs.h"     // for LOG_INFO, SW_NETCDF, SW_DOMAIN
-#include "include/SW_Defines.h"         // for MAX_FILENAMESIZE, OutPeriod
-#include "include/SW_Domain.h"          // for SW_DOM_calc_ncSuid
-#include "include/SW_Files.h"           // for eNCInAtt, eNCIn, eNCOutVars
-#include "include/SW_Output.h"          // for ForEachOutKey, SW_ESTAB, pd2...
+#include "include/SW_netCDF.h"      // for vNCdom, vNCprog, VARNAME_INDEX
+#include "include/filefuncs.h"      // for LogError, FileExists, CloseFile
+#include "include/generic.h"        // for Bool, swFALSE, LOGERROR, swTRUE
+#include "include/myMemory.h"       // for Str_Dup, Mem_Malloc
+#include "include/SW_datastructs.h" // for LOG_INFO, SW_NETCDF_OUT, SW_DOMAIN
+#include "include/SW_Defines.h"     // for MAX_FILENAMESIZE, OutPeriod
+#include "include/SW_Domain.h"      // for SW_DOM_calc_ncSuid
+#include "include/SW_Files.h"       // for eNCInAtt, eNCIn, eNCOutVars
+#include "include/SW_Output.h"      // for ForEachOutKey, SW_ESTAB, pd2...
 #include "include/SW_Output_outarray.h" // for iOUTnc
 #include "include/SW_VegProd.h"         // for key2veg
 #include "include/Times.h"              // for isleapyear, timeStringISO8601
@@ -182,14 +182,16 @@ static const char *const SWVarUnits[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
 /**
 @brief Read invariant netCDF information (attributes/CRS) from input file
 
-@param[in,out] SW_netCDF Struct of type SW_NETCDF holding constant
+@param[in,out] SW_netCDFOut Struct of type SW_NETCDF_OUT holding constant
     netCDF file information
-@param[in,out] PathInfo Struct holding all information about the programs
+@param[in,out] SW_PathInputs Struct holding all information about the programs
     path/files
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void nc_read_atts(
-    SW_NETCDF *SW_netCDF, PATH_INFO *PathInfo, LOG_INFO *LogInfo
+    SW_NETCDF_OUT *SW_netCDFOut,
+    SW_PATH_INPUTS *SW_PathInputs,
+    LOG_INFO *LogInfo
 ) {
 
     static const char *possibleKeys[NUM_ATT_IN_KEYS] = {
@@ -255,14 +257,14 @@ static void nc_read_atts(
     Bool doIntConv;
     Bool doDoubleConv;
 
-    MyFileName = PathInfo->InFiles[eNCInAtt];
+    MyFileName = SW_PathInputs->InFiles[eNCInAtt];
     f = OpenFile(MyFileName, "r", LogInfo);
     if (LogInfo->stopRun) {
         LogError(
             LogInfo,
             LOGERROR,
             "Could not open the required file %s",
-            PathInfo->InFiles[eNCInAtt]
+            SW_PathInputs->InFiles[eNCInAtt]
         );
         return; // Exit function prematurely due to error
     }
@@ -326,25 +328,25 @@ static void nc_read_atts(
 
         switch (keyID) {
         case 0:
-            SW_netCDF->title = Str_Dup(value, LogInfo);
+            SW_netCDFOut->title = Str_Dup(value, LogInfo);
             break;
         case 1:
-            SW_netCDF->author = Str_Dup(value, LogInfo);
+            SW_netCDFOut->author = Str_Dup(value, LogInfo);
             break;
         case 2:
-            SW_netCDF->institution = Str_Dup(value, LogInfo);
+            SW_netCDFOut->institution = Str_Dup(value, LogInfo);
             break;
         case 3:
-            SW_netCDF->comment = Str_Dup(value, LogInfo);
+            SW_netCDFOut->comment = Str_Dup(value, LogInfo);
             break;
         case 4: // coordinate_system is calculated
             break;
 
         case 5:
             if (strcmp(value, "geographic") == 0) {
-                SW_netCDF->primary_crs_is_geographic = swTRUE;
+                SW_netCDFOut->primary_crs_is_geographic = swTRUE;
             } else if (strcmp(value, "projected") == 0) {
-                SW_netCDF->primary_crs_is_geographic = swFALSE;
+                SW_netCDFOut->primary_crs_is_geographic = swFALSE;
             } else {
                 LogError(
                     LogInfo,
@@ -358,48 +360,52 @@ static void nc_read_atts(
             }
             break;
         case 6:
-            SW_netCDF->crs_geogsc.long_name = Str_Dup(value, LogInfo);
+            SW_netCDFOut->crs_geogsc.long_name = Str_Dup(value, LogInfo);
             geoCRSFound = swTRUE;
             break;
         case 7:
-            SW_netCDF->crs_geogsc.grid_mapping_name = Str_Dup(value, LogInfo);
+            SW_netCDFOut->crs_geogsc.grid_mapping_name =
+                Str_Dup(value, LogInfo);
             break;
         case 8:
-            SW_netCDF->crs_geogsc.crs_wkt = Str_Dup(value, LogInfo);
+            SW_netCDFOut->crs_geogsc.crs_wkt = Str_Dup(value, LogInfo);
             break;
         case 9:
-            SW_netCDF->crs_geogsc.longitude_of_prime_meridian = inBufdoubleRes;
+            SW_netCDFOut->crs_geogsc.longitude_of_prime_meridian =
+                inBufdoubleRes;
             break;
         case 10:
-            SW_netCDF->crs_geogsc.semi_major_axis = inBufdoubleRes;
+            SW_netCDFOut->crs_geogsc.semi_major_axis = inBufdoubleRes;
             break;
         case 11:
-            SW_netCDF->crs_geogsc.inverse_flattening = inBufdoubleRes;
+            SW_netCDFOut->crs_geogsc.inverse_flattening = inBufdoubleRes;
             break;
         case 12:
-            SW_netCDF->crs_projsc.long_name = Str_Dup(value, LogInfo);
+            SW_netCDFOut->crs_projsc.long_name = Str_Dup(value, LogInfo);
             projCRSFound = swTRUE;
             break;
         case 13:
-            SW_netCDF->crs_projsc.grid_mapping_name = Str_Dup(value, LogInfo);
+            SW_netCDFOut->crs_projsc.grid_mapping_name =
+                Str_Dup(value, LogInfo);
             break;
         case 14:
-            SW_netCDF->crs_projsc.crs_wkt = Str_Dup(value, LogInfo);
+            SW_netCDFOut->crs_projsc.crs_wkt = Str_Dup(value, LogInfo);
             break;
         case 15:
-            SW_netCDF->crs_projsc.longitude_of_prime_meridian = inBufdoubleRes;
+            SW_netCDFOut->crs_projsc.longitude_of_prime_meridian =
+                inBufdoubleRes;
             break;
         case 16:
-            SW_netCDF->crs_projsc.semi_major_axis = inBufdoubleRes;
+            SW_netCDFOut->crs_projsc.semi_major_axis = inBufdoubleRes;
             break;
         case 17:
-            SW_netCDF->crs_projsc.inverse_flattening = inBufdoubleRes;
+            SW_netCDFOut->crs_projsc.inverse_flattening = inBufdoubleRes;
             break;
         case 18:
-            SW_netCDF->crs_projsc.datum = Str_Dup(value, LogInfo);
+            SW_netCDFOut->crs_projsc.datum = Str_Dup(value, LogInfo);
             break;
         case 19:
-            SW_netCDF->crs_projsc.units = Str_Dup(value, LogInfo);
+            SW_netCDFOut->crs_projsc.units = Str_Dup(value, LogInfo);
             break;
         case 20:
             // Re-scan for 1 or 2 values of standard parallel(s)
@@ -431,28 +437,29 @@ static void nc_read_atts(
                 goto closeFile;
             }
 
-            SW_netCDF->crs_projsc.standard_parallel[0] = num1;
-            SW_netCDF->crs_projsc.standard_parallel[1] = (n == 3) ? num2 : NAN;
+            SW_netCDFOut->crs_projsc.standard_parallel[0] = num1;
+            SW_netCDFOut->crs_projsc.standard_parallel[1] =
+                (n == 3) ? num2 : NAN;
             break;
         case 21:
-            SW_netCDF->crs_projsc.longitude_of_central_meridian =
+            SW_netCDFOut->crs_projsc.longitude_of_central_meridian =
                 inBufdoubleRes;
             break;
         case 22:
-            SW_netCDF->crs_projsc.latitude_of_projection_origin =
+            SW_netCDFOut->crs_projsc.latitude_of_projection_origin =
                 inBufdoubleRes;
             break;
         case 23:
-            SW_netCDF->crs_projsc.false_easting = inBufintRes;
+            SW_netCDFOut->crs_projsc.false_easting = inBufintRes;
             break;
         case 24:
-            SW_netCDF->crs_projsc.false_northing = inBufintRes;
+            SW_netCDFOut->crs_projsc.false_northing = inBufintRes;
             break;
         case 25:
             if (!infVal) {
-                SW_netCDF->strideOutYears = inBufintRes;
+                SW_netCDFOut->strideOutYears = inBufintRes;
 
-                if (SW_netCDF->strideOutYears <= 0) {
+                if (SW_netCDFOut->strideOutYears <= 0) {
                     LogError(
                         LogInfo, LOGERROR, "The value for 'strideOutYears' <= 0"
                     );
@@ -461,10 +468,10 @@ static void nc_read_atts(
             }
             break;
         case 26:
-            SW_netCDF->baseCalendarYear = inBufintRes;
+            SW_netCDFOut->baseCalendarYear = inBufintRes;
             break;
         case 27:
-            SW_netCDF->deflateLevel = inBufintRes;
+            SW_netCDFOut->deflateLevel = inBufintRes;
             break;
         case KEY_NOT_FOUND:
         default:
@@ -493,15 +500,16 @@ static void nc_read_atts(
     }
 
 
-    if ((SW_netCDF->primary_crs_is_geographic && !geoCRSFound) ||
-        (!SW_netCDF->primary_crs_is_geographic && !projCRSFound)) {
+    if ((SW_netCDFOut->primary_crs_is_geographic && !geoCRSFound) ||
+        (!SW_netCDFOut->primary_crs_is_geographic && !projCRSFound)) {
         LogError(
             LogInfo,
             LOGERROR,
             "'%s': type of primary CRS is '%s' but "
             "attributes (including '*_long_name') for such a CRS are missing.",
-            PathInfo->InFiles[eNCInAtt],
-            (SW_netCDF->primary_crs_is_geographic) ? "geographic" : "projected"
+            SW_PathInputs->InFiles[eNCInAtt],
+            (SW_netCDFOut->primary_crs_is_geographic) ? "geographic" :
+                                                        "projected"
         );
         goto closeFile;
     }
@@ -515,15 +523,15 @@ static void nc_read_atts(
             "SOILWAT2 requires either a primary CRS of "
             "type 'geographic' CRS or a primary CRS of "
             "'projected' with a geographic CRS.",
-            PathInfo->InFiles[eNCInAtt]
+            SW_PathInputs->InFiles[eNCInAtt]
         );
         goto closeFile;
     }
 
-    SW_netCDF->coordinate_system =
-        (SW_netCDF->primary_crs_is_geographic) ?
-            Str_Dup(SW_netCDF->crs_geogsc.long_name, LogInfo) :
-            Str_Dup(SW_netCDF->crs_projsc.long_name, LogInfo);
+    SW_netCDFOut->coordinate_system =
+        (SW_netCDFOut->primary_crs_is_geographic) ?
+            Str_Dup(SW_netCDFOut->crs_geogsc.long_name, LogInfo) :
+            Str_Dup(SW_netCDFOut->crs_projsc.long_name, LogInfo);
 
 closeFile: { CloseFile(&f, LogInfo); }
 }
@@ -1219,16 +1227,16 @@ static void write_string_vals(
 */
 static void fill_prog_netCDF_vals(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
-    int domVarID = SW_Domain->netCDFInfo.ncVarIDs[vNCdom];
-    int progVarID = SW_Domain->netCDFInfo.ncVarIDs[vNCprog];
+    int domVarID = SW_Domain->netCDFInput.ncVarIDs[vNCdom];
+    int progVarID = SW_Domain->netCDFInput.ncVarIDs[vNCprog];
     unsigned int domStatus;
     unsigned long suid;
     unsigned long ncSuid[2];
     unsigned long nSUIDs = SW_Domain->nSUIDs;
     unsigned long nDimY = SW_Domain->nDimY;
     unsigned long nDimX = SW_Domain->nDimX;
-    int progFileID = SW_Domain->netCDFInfo.ncFileIDs[vNCprog];
-    int domFileID = SW_Domain->netCDFInfo.ncFileIDs[vNCdom];
+    int progFileID = SW_Domain->netCDFInput.ncFileIDs[vNCprog];
+    int domFileID = SW_Domain->netCDFInput.ncFileIDs[vNCdom];
     size_t start1D[] = {0};
     size_t start2D[] = {0, 0};
     size_t count1D[] = {nSUIDs};
@@ -1895,10 +1903,12 @@ static void fill_domain_netCDF_s(
     LOG_INFO *LogInfo
 ) {
 
-    char *geo_long_name = SW_Domain->netCDFInfo.crs_geogsc.long_name;
-    char *proj_long_name = SW_Domain->netCDFInfo.crs_projsc.long_name;
-    Bool primCRSIsGeo = SW_Domain->netCDFInfo.primary_crs_is_geographic;
-    char *units = SW_Domain->netCDFInfo.crs_projsc.units;
+    SW_NETCDF_OUT *netCDFOutput = &SW_Domain->OutDom.netCDFOutput;
+
+    char *geo_long_name = netCDFOutput->crs_geogsc.long_name;
+    char *proj_long_name = netCDFOutput->crs_projsc.long_name;
+    Bool primCRSIsGeo = netCDFOutput->primary_crs_is_geographic;
+    char *units = netCDFOutput->crs_projsc.units;
 
     const int numSiteAtt = 3;
     const int numLatAtt = 4;
@@ -2029,10 +2039,11 @@ static void fill_domain_netCDF_xy(
     LOG_INFO *LogInfo
 ) {
 
-    char *geo_long_name = SW_Domain->netCDFInfo.crs_geogsc.long_name;
-    char *proj_long_name = SW_Domain->netCDFInfo.crs_projsc.long_name;
-    Bool primCRSIsGeo = SW_Domain->netCDFInfo.primary_crs_is_geographic;
-    char *units = SW_Domain->netCDFInfo.crs_projsc.units;
+    char *geo_long_name = SW_Domain->OutDom.netCDFOutput.crs_geogsc.long_name;
+    char *proj_long_name = SW_Domain->OutDom.netCDFOutput.crs_projsc.long_name;
+    Bool primCRSIsGeo =
+        SW_Domain->OutDom.netCDFOutput.primary_crs_is_geographic;
+    char *units = SW_Domain->OutDom.netCDFOutput.crs_projsc.units;
 
     int bndsID = 0;
     int bndVarDims[2]; // Used for bound variables in the netCDF file
@@ -2340,7 +2351,7 @@ static void fill_netCDF_with_geo_CRS_atts(
 /**
 @brief Fill the given netCDF with global attributes
 
-@param[in] SW_netCDF Struct of type SW_NETCDF holding constant
+@param[in] SW_netCDFOut Struct of type SW_NETCDF_OUT holding constant
     netCDF file information
 @param[in] ncFileID Identifier of the open netCDF file to write all information
 @param[in] domType Type of domain in which simulations are running
@@ -2352,7 +2363,7 @@ static void fill_netCDF_with_geo_CRS_atts(
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void fill_netCDF_with_global_atts(
-    SW_NETCDF *SW_netCDF,
+    SW_NETCDF_OUT *SW_netCDFOut,
     const int *ncFileID,
     const char *domType,
     const char *freqAtt,
@@ -2394,11 +2405,11 @@ static void fill_netCDF_with_global_atts(
     }
 
     const char *attVals[] = {
-        SW_netCDF->title,
-        SW_netCDF->author,
-        SW_netCDF->institution,
-        SW_netCDF->comment,
-        SW_netCDF->coordinate_system,
+        SW_netCDFOut->title,
+        SW_netCDFOut->author,
+        SW_netCDFOut->institution,
+        SW_netCDFOut->comment,
+        SW_netCDFOut->coordinate_system,
         "CF-1.10",
         sourceStr,
         "SOILWAT2",
@@ -2489,7 +2500,7 @@ static void update_netCDF_global_atts(
 i.e., global attributes (including time created) and CRS information
 (including the creation of these variables)
 
-@param[in] SW_netCDF Struct of type SW_NETCDF holding constant
+@param[in] SW_netCDFOut Struct of type SW_NETCDF_OUT holding constant
     netCDF file information
 @param[in] domType Type of domain in which simulations are running
     (gridcell/sites)
@@ -2498,7 +2509,7 @@ i.e., global attributes (including time created) and CRS information
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void fill_netCDF_with_invariants(
-    SW_NETCDF *SW_netCDF,
+    SW_NETCDF_OUT *SW_netCDFOut,
     char *domType,
     int *ncFileID,
     Bool isInputFile,
@@ -2519,9 +2530,9 @@ static void fill_netCDF_with_invariants(
 
     // Geographic CRS attributes
     fill_netCDF_with_geo_CRS_atts(
-        &SW_netCDF->crs_geogsc,
+        &SW_netCDFOut->crs_geogsc,
         ncFileID,
-        SW_netCDF->coordinate_system,
+        SW_netCDFOut->coordinate_system,
         geo_id,
         LogInfo
     );
@@ -2530,7 +2541,7 @@ static void fill_netCDF_with_invariants(
     }
 
     // Projected CRS variable/attributes
-    if (!SW_netCDF->primary_crs_is_geographic) {
+    if (!SW_netCDFOut->primary_crs_is_geographic) {
 
         /* Do not deflate crs_projsc */
         create_netCDF_var(
@@ -2541,7 +2552,7 @@ static void fill_netCDF_with_invariants(
         }
 
         fill_netCDF_with_proj_CRS_atts(
-            &SW_netCDF->crs_projsc, ncFileID, proj_id, LogInfo
+            &SW_netCDFOut->crs_projsc, ncFileID, proj_id, LogInfo
         );
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -2550,7 +2561,7 @@ static void fill_netCDF_with_invariants(
 
     // Write global attributes
     fill_netCDF_with_global_atts(
-        SW_netCDF, ncFileID, domType, fx, isInputFile, LogInfo
+        SW_netCDFOut, ncFileID, domType, fx, isInputFile, LogInfo
     );
 }
 
@@ -3417,9 +3428,10 @@ static void create_output_file(
 
     // Add output variables
     for (index = 0; index < nVar; index++) {
-        if (OutDom->reqOutputVars[key][index]) {
-            varInfo = OutDom->outputVarInfo[key][index];
-            varName = OutDom->outputVarInfo[key][index][VARNAME_INDEX];
+        if (OutDom->netCDFOutput.reqOutputVars[key][index]) {
+            varInfo = OutDom->netCDFOutput.outputVarInfo[key][index];
+            varName =
+                OutDom->netCDFOutput.outputVarInfo[key][index][VARNAME_INDEX];
 
             numAtts = gather_var_attributes(
                 varInfo, key, pd, index, attVals, sumType, LogInfo
@@ -3752,11 +3764,12 @@ void SW_NC_write_output(
 
 
                 for (varNum = 0; varNum < OutDom->nvar_OUT[key]; varNum++) {
-                    if (!OutDom->reqOutputVars[key][varNum]) {
+                    if (!OutDom->netCDFOutput.reqOutputVars[key][varNum]) {
                         continue; // Skip variable iteration
                     }
 
-                    varName = OutDom->outputVarInfo[key][varNum][VARNAME_INDEX];
+                    varName = OutDom->netCDFOutput
+                                  .outputVarInfo[key][varNum][VARNAME_INDEX];
 
                     // Locate correct slice in netCDF to write to
                     get_var_identifier(currFileID, varName, &varID, LogInfo);
@@ -3788,7 +3801,8 @@ void SW_NC_write_output(
                     /* Point to contiguous memory where values change fastest
                        for vegtypes, then soil layers, then time, then variables
                     */
-                    pOUTIndex = OutDom->iOUToffset[key][pd][varNum];
+                    pOUTIndex =
+                        OutDom->netCDFOutput.iOUToffset[key][pd][varNum];
                     if (startTime > 0) {
                         // 1 if no soil layers
                         vertSize = (OutDom->nsl_OUT[key][varNum] > 0) ?
@@ -3807,9 +3821,9 @@ void SW_NC_write_output(
 
 /* Convert units if udunits2 and if converter available */
 #if defined(SWUDUNITS)
-                    if (!isnull(OutDom->uconv[key][varNum])) {
+                    if (!isnull(OutDom->netCDFOutput.uconv[key][varNum])) {
                         cv_convert_doubles(
-                            OutDom->uconv[key][varNum],
+                            OutDom->netCDFOutput.uconv[key][varNum],
                             p_OUTValPtr,
                             countTotal,
                             p_OUTValPtr
@@ -4022,7 +4036,7 @@ void SW_NC_create_output_files(
                                 rangeStart,
                                 baseCalendarYear,
                                 &startTime[pd],
-                                SW_Domain->netCDFInfo.deflateLevel,
+                                SW_Domain->OutDom.netCDFOutput.deflateLevel,
                                 LogInfo
                             );
                             if (LogInfo->stopRun) {
@@ -4137,9 +4151,10 @@ void SW_NC_check(
         }
     }
 
-    SW_CRS *crs_geogsc = &SW_Domain->netCDFInfo.crs_geogsc;
-    SW_CRS *crs_projsc = &SW_Domain->netCDFInfo.crs_projsc;
-    Bool geoIsPrimCRS = SW_Domain->netCDFInfo.primary_crs_is_geographic;
+    SW_CRS *crs_geogsc = &SW_Domain->OutDom.netCDFOutput.crs_geogsc;
+    SW_CRS *crs_projsc = &SW_Domain->OutDom.netCDFOutput.crs_projsc;
+    Bool geoIsPrimCRS =
+        SW_Domain->OutDom.netCDFOutput.primary_crs_is_geographic;
     char strAttVal[LARGE_VALUE];
     double doubleAttVal;
     const char *geoCRS = "crs_geogsc";
@@ -4191,8 +4206,8 @@ void SW_NC_check(
     };
 
     const char *strProjAttVals[] = {
-        SW_Domain->netCDFInfo.crs_projsc.datum,
-        SW_Domain->netCDFInfo.crs_projsc.units
+        SW_Domain->OutDom.netCDFOutput.crs_projsc.datum,
+        SW_Domain->OutDom.netCDFOutput.crs_projsc.units
     };
     const double doubleProjAttVals[] = {
         crs_projsc->longitude_of_central_meridian,
@@ -4483,8 +4498,7 @@ void SW_NC_create_domain_template(
     SW_DOMAIN *SW_Domain, char *fileName, LOG_INFO *LogInfo
 ) {
 
-    SW_NETCDF *SW_netCDF = &SW_Domain->netCDFInfo;
-    int *domFileID = &SW_Domain->netCDFInfo.ncFileIDs[vNCdom];
+    int *domFileID = &SW_Domain->netCDFInput.ncFileIDs[vNCdom];
     int sDimID = 0;
     int YDimID = 0;
     int XDimID = 0;
@@ -4539,7 +4553,7 @@ void SW_NC_create_domain_template(
             &sVarID,
             &YVarID,
             &XVarID,
-            SW_Domain->netCDFInfo.deflateLevel,
+            SW_Domain->OutDom.netCDFOutput.deflateLevel,
             LogInfo
         );
 
@@ -4562,7 +4576,7 @@ void SW_NC_create_domain_template(
             &XVarID,
             &YBndsID,
             &XBndsID,
-            SW_Domain->netCDFInfo.deflateLevel,
+            SW_Domain->OutDom.netCDFOutput.deflateLevel,
             LogInfo
         );
 
@@ -4577,14 +4591,14 @@ void SW_NC_create_domain_template(
 
     // Create domain variable
     fill_domain_netCDF_domain(
-        SW_netCDF->varNC[vNCdom],
+        SW_Domain->netCDFInput.varNC[vNCdom],
         &domVarID,
         domDims,
         *domFileID,
         nDomainDims,
-        SW_netCDF->primary_crs_is_geographic,
+        SW_Domain->OutDom.netCDFOutput.primary_crs_is_geographic,
         SW_Domain->DomainType,
-        SW_Domain->netCDFInfo.deflateLevel,
+        SW_Domain->OutDom.netCDFOutput.deflateLevel,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -4593,7 +4607,11 @@ void SW_NC_create_domain_template(
     }
 
     fill_netCDF_with_invariants(
-        SW_netCDF, SW_Domain->DomainType, domFileID, swTRUE, LogInfo
+        &SW_Domain->OutDom.netCDFOutput,
+        SW_Domain->DomainType,
+        domFileID,
+        swTRUE,
+        LogInfo
     );
     if (LogInfo->stopRun) {
         nc_close(*domFileID);
@@ -4668,8 +4686,9 @@ void SW_NC_create_template(
 */
 void SW_NC_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
-    SW_NETCDF *SW_netCDF = &SW_Domain->netCDFInfo;
-    Bool primCRSIsGeo = SW_Domain->netCDFInfo.primary_crs_is_geographic;
+    SW_NETCDF_IN *SW_netCDFIn = &SW_Domain->netCDFInput;
+    Bool primCRSIsGeo =
+        SW_Domain->OutDom.netCDFOutput.primary_crs_is_geographic;
     Bool domTypeIsS = (Bool) (strcmp(SW_Domain->DomainType, "s") == 0);
     const char *projGridMap = "crs_projsc: x y crs_geogsc: lat lon";
     const char *geoGridMap = "crs_geogsc";
@@ -4687,13 +4706,13 @@ void SW_NC_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     const signed char flagVals[] = {PRGRSS_FAIL, PRGRSS_READY, PRGRSS_DONE};
     const char *flagMeanings =
         "simulation_error ready_to_simulate simulation_complete";
-    const char *progVarName = SW_netCDF->varNC[vNCprog];
+    const char *progVarName = SW_netCDFIn->varNC[vNCprog];
     const char *freq = "fx";
 
-    int *progFileID = &SW_netCDF->ncFileIDs[vNCprog];
-    const char *domFileName = SW_netCDF->InFilesNC[vNCdom];
-    const char *progFileName = SW_netCDF->InFilesNC[vNCprog];
-    int *progVarID = &SW_netCDF->ncVarIDs[vNCprog];
+    int *progFileID = &SW_netCDFIn->ncFileIDs[vNCprog];
+    const char *domFileName = SW_netCDFIn->InFilesNC[vNCdom];
+    const char *progFileName = SW_netCDFIn->InFilesNC[vNCprog];
+    int *progVarID = &SW_netCDFIn->ncVarIDs[vNCprog];
 
     // create_full_var/SW_NC_create_template
     // No time variable/dimension
@@ -4758,7 +4777,7 @@ void SW_NC_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             0,
             0,
             0,
-            SW_Domain->netCDFInfo.deflateLevel,
+            SW_Domain->OutDom.netCDFOutput.deflateLevel,
             LogInfo
         );
 
@@ -4891,7 +4910,7 @@ void SW_NC_read_inputs(
     const int numInFilesNC = 1;
     const int numDomVals = 2;
     const int numVals[] = {numDomVals};
-    const int ncFileIDs[] = {SW_Domain->netCDFInfo.ncFileIDs[vNCdom]};
+    const int ncFileIDs[] = {SW_Domain->netCDFInput.ncFileIDs[vNCdom]};
     const char *domLatVar = "lat";
     const char *domLonVar = "lon";
     const char *varNames[][2] = {{domLatVar, domLonVar}};
@@ -4940,11 +4959,11 @@ void SW_NC_read_inputs(
 void SW_NC_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     int file;
 
-    for (file = 0; file < SW_NVARNC; file++) {
+    for (file = 0; file < SW_NVARDOM; file++) {
         SW_NC_check(
             SW_Domain,
-            SW_Domain->netCDFInfo.ncFileIDs[file],
-            SW_Domain->netCDFInfo.InFilesNC[file],
+            SW_Domain->netCDFInput.ncFileIDs[file],
+            SW_Domain->netCDFInput.InFilesNC[file],
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -4956,13 +4975,20 @@ void SW_NC_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 /**
 @brief Read input files for netCDF related actions
 
-@param[in,out] SW_netCDF Struct of type SW_NETCDF holding constant
-    netCDF file information
-@param[in,out] PathInfo Struct holding all information about the programs
+@param[in,out] SW_netCDFIn Struct of type SW_NETCDF_IN holding
+constant input netCDF information
+@param[in,out] SW_netCDFOut Struct of type SW_NETCDF_OUT holding
+output information regarding netCDFs
+@param[in,out] SW_PathOutputs Struct holding all information about the programs
     path/files
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_NC_read(SW_NETCDF *SW_netCDF, PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
+void SW_NC_read(
+    SW_NETCDF_IN *SW_netCDFIn,
+    SW_NETCDF_OUT *SW_netCDFOut,
+    SW_PATH_INPUTS *SW_PathInputs,
+    LOG_INFO *LogInfo
+) {
     static const char *possibleKeys[NUM_NC_IN_KEYS] = {"domain", "progress"};
     static const Bool requiredKeys[NUM_NC_IN_KEYS] = {swTRUE, swTRUE};
     Bool hasKeys[NUM_NC_IN_KEYS] = {swFALSE, swFALSE};
@@ -4976,7 +5002,7 @@ void SW_NC_read(SW_NETCDF *SW_netCDF, PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
     int keyID;
     int scanRes;
 
-    MyFileName = PathInfo->InFiles[eNCIn];
+    MyFileName = SW_PathInputs->InFiles[eNCIn];
     f = OpenFile(MyFileName, "r", LogInfo);
 
     // Get domain file name
@@ -5001,12 +5027,12 @@ void SW_NC_read(SW_NETCDF *SW_netCDF, PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
 
         switch (keyID) {
         case vNCdom:
-            SW_netCDF->varNC[vNCdom] = Str_Dup(varName, LogInfo);
-            SW_netCDF->InFilesNC[vNCdom] = Str_Dup(path, LogInfo);
+            SW_netCDFIn->varNC[vNCdom] = Str_Dup(varName, LogInfo);
+            SW_netCDFIn->InFilesNC[vNCdom] = Str_Dup(path, LogInfo);
             break;
         case vNCprog:
-            SW_netCDF->varNC[vNCprog] = Str_Dup(varName, LogInfo);
-            SW_netCDF->InFilesNC[vNCprog] = Str_Dup(path, LogInfo);
+            SW_netCDFIn->varNC[vNCprog] = Str_Dup(varName, LogInfo);
+            SW_netCDFIn->InFilesNC[vNCprog] = Str_Dup(path, LogInfo);
             break;
         default:
             LogError(
@@ -5029,7 +5055,7 @@ void SW_NC_read(SW_NETCDF *SW_netCDF, PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
     }
 
     // Read CRS and attributes for netCDFs
-    nc_read_atts(SW_netCDF, PathInfo, LogInfo);
+    nc_read_atts(SW_netCDFOut, SW_PathInputs, LogInfo);
 
 closeFile: { CloseFile(&f, LogInfo); }
 }
@@ -5252,7 +5278,7 @@ void SW_NC_read_out_vars(
                 }
             }
 
-            OutDom->reqOutputVars[currOutKey][varNum] = swTRUE;
+            OutDom->netCDFOutput.reqOutputVars[currOutKey][varNum] = swTRUE;
 
             // Read in the rest of the attributes
             // Output variable name, long name, comment, units, and cell_method
@@ -5287,8 +5313,10 @@ void SW_NC_read_out_vars(
 
                         switch (index) {
                         case VARNAME_INDEX:
-                            OutDom->reqOutputVars[currOutKey][estVar] = swTRUE;
-                            OutDom->outputVarInfo[currOutKey][estVar][index] =
+                            OutDom->netCDFOutput
+                                .reqOutputVars[currOutKey][estVar] = swTRUE;
+                            OutDom->netCDFOutput
+                                .outputVarInfo[currOutKey][estVar][index] =
                                 Str_Dup(parms[estVar]->sppname, LogInfo);
                             break;
 
@@ -5296,12 +5324,14 @@ void SW_NC_read_out_vars(
                             (void) sw_memccpy(
                                 establn, copyStr, '\0', MAX_ATTVAL_SIZE
                             );
-                            OutDom->outputVarInfo[currOutKey][estVar][index] =
+                            OutDom->netCDFOutput
+                                .outputVarInfo[currOutKey][estVar][index] =
                                 Str_Dup(establn, LogInfo);
                             break;
 
                         default:
-                            OutDom->outputVarInfo[currOutKey][estVar][index] =
+                            OutDom->netCDFOutput
+                                .outputVarInfo[currOutKey][estVar][index] =
                                 Str_Dup(copyStr, LogInfo);
                             break;
                         }
@@ -5312,7 +5342,8 @@ void SW_NC_read_out_vars(
                         }
                     }
                 } else {
-                    OutDom->outputVarInfo[currOutKey][varNum][index] =
+                    OutDom->netCDFOutput
+                        .outputVarInfo[currOutKey][varNum][index] =
                         Str_Dup(copyStr, LogInfo);
                     if (LogInfo->stopRun) {
                         /* Exit function prematurely due to error */
@@ -5326,7 +5357,7 @@ void SW_NC_read_out_vars(
             if (currOutKey == eSW_Estab) {
                 for (estVar = 0; estVar < OutDom->nvar_OUT[currOutKey];
                      estVar++) {
-                    OutDom->units_sw[currOutKey][estVar] =
+                    OutDom->netCDFOutput.units_sw[currOutKey][estVar] =
                         Str_Dup(SWVarUnits[currOutKey][varNumUnits], LogInfo);
                     if (LogInfo->stopRun) {
                         /* Exit function prematurely due to error */
@@ -5334,7 +5365,7 @@ void SW_NC_read_out_vars(
                     }
                 }
             } else {
-                OutDom->units_sw[currOutKey][varNum] =
+                OutDom->netCDFOutput.units_sw[currOutKey][varNum] =
                     Str_Dup(SWVarUnits[currOutKey][varNumUnits], LogInfo);
                 if (LogInfo->stopRun) {
                     goto closeFile; // Exit function prematurely due to error
@@ -5370,6 +5401,8 @@ void SW_NC_create_units_converters(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     int varIndex;
     int key;
 
+    SW_NETCDF_OUT *netCDFOutput = &OutDom->netCDFOutput;
+
 #if defined(SWUDUNITS)
     ut_system *system;
     ut_unit *unitFrom;
@@ -5388,28 +5421,30 @@ void SW_NC_create_units_converters(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         }
 
         for (varIndex = 0; varIndex < OutDom->nvar_OUT[key]; varIndex++) {
-            if (!OutDom->reqOutputVars[key][varIndex]) {
+            if (netCDFOutput->reqOutputVars[key][varIndex]) {
                 continue; // Skip variable iteration
             }
 
 #if defined(SWUDUNITS)
-            if (!isnull(OutDom->units_sw[key][varIndex])) {
-                unitFrom =
-                    ut_parse(system, OutDom->units_sw[key][varIndex], UT_UTF8);
+            if (!isnull(netCDFOutput->units_sw[key][varIndex])) {
+                unitFrom = ut_parse(
+                    system, netCDFOutput->units_sw[key][varIndex], UT_UTF8
+                );
                 unitTo = ut_parse(
                     system,
-                    OutDom->outputVarInfo[key][varIndex][UNITS_INDEX],
+                    OutDom->netCDFOutput
+                        .outputVarInfo[key][varIndex][UNITS_INDEX],
                     UT_UTF8
                 );
 
                 if (ut_are_convertible(unitFrom, unitTo)) {
-                    // OutDom.uconv[key][varIndex] was previously initialized
-                    // to NULL
-                    OutDom->uconv[key][varIndex] =
+                    // netCDFOutput.uconv[key][varIndex] was previously
+                    // to NULL initialized
+                    netCDFOutput->uconv[key][varIndex] =
                         ut_get_converter(unitFrom, unitTo);
                 }
 
-                if (isnull(OutDom->uconv[key][varIndex])) {
+                if (isnull(netCDFOutput->uconv[key][varIndex])) {
                     // ut_are_convertible() is false or ut_get_converter()
                     // failed
                     LogError(
@@ -5418,15 +5453,17 @@ void SW_NC_create_units_converters(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
                         "Units of variable '%s' cannot get converted from "
                         "internal '%s' to requested '%s'. "
                         "Output will use internal units.",
-                        OutDom->outputVarInfo[key][varIndex][VARNAME_INDEX],
-                        OutDom->units_sw[key][varIndex],
-                        OutDom->outputVarInfo[key][varIndex][UNITS_INDEX]
+                        netCDFOutput
+                            ->outputVarInfo[key][varIndex][VARNAME_INDEX],
+                        netCDFOutput->units_sw[key][varIndex],
+                        netCDFOutput->outputVarInfo[key][varIndex][UNITS_INDEX]
                     );
 
                     /* converter is not available: output in internal units */
-                    free(OutDom->outputVarInfo[key][varIndex][UNITS_INDEX]);
-                    OutDom->outputVarInfo[key][varIndex][UNITS_INDEX] =
-                        Str_Dup(OutDom->units_sw[key][varIndex], LogInfo);
+                    free(netCDFOutput->outputVarInfo[key][varIndex][UNITS_INDEX]
+                    );
+                    netCDFOutput->outputVarInfo[key][varIndex][UNITS_INDEX] =
+                        Str_Dup(netCDFOutput->units_sw[key][varIndex], LogInfo);
                 }
 
                 ut_free(unitFrom);
@@ -5435,10 +5472,10 @@ void SW_NC_create_units_converters(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 
 #else
             /* udunits2 is not available: output in internal units */
-            free(OutDom->outputVarInfo[key][varIndex][UNITS_INDEX]);
-            if (!isnull(OutDom->units_sw[key][varIndex])) {
-                OutDom->outputVarInfo[key][varIndex][UNITS_INDEX] =
-                    Str_Dup(OutDom->units_sw[key][varIndex], LogInfo);
+            free(netCDFOutput->outputVarInfo[key][varIndex][UNITS_INDEX]);
+            if (!isnull(netCDFOutput->units_sw[key][varIndex])) {
+                netCDFOutput->outputVarInfo[key][varIndex][UNITS_INDEX] =
+                    Str_Dup(netCDFOutput->units_sw[key][varIndex], LogInfo);
             }
 #endif
 
@@ -5455,48 +5492,51 @@ void SW_NC_create_units_converters(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 }
 
 /**
-@brief Initializes pointers within the type SW_NETCDF and SW_CRS
+@brief Initializes pointers within the type SW_NETCDF_OUT and SW_CRS
 
-@param[in,out] SW_netCDF Struct of type SW_NETCDF holding constant
-    netCDF input/output file information
+@param[in,out] SW_netCDFOut Struct of type SW_NETCDF_OUT holding
+output information regarding netCDFs
+@param[in,out] SW_netCDFIn Struct of type SW_NETCDF_IN holding
+constant input netCDF information
 */
-void SW_NC_init_ptrs(SW_NETCDF *SW_netCDF) {
+void SW_NC_init_ptrs(SW_NETCDF_OUT *SW_netCDFOut, SW_NETCDF_IN *SW_netCDFIn) {
 
     int index;
     const int numAllocVars = 13;
     char **allocArr[] = {
-        &SW_netCDF->title,
-        &SW_netCDF->author,
-        &SW_netCDF->institution,
-        &SW_netCDF->comment,
-        &SW_netCDF->coordinate_system,
+        &SW_netCDFOut->title,
+        &SW_netCDFOut->author,
+        &SW_netCDFOut->institution,
+        &SW_netCDFOut->comment,
+        &SW_netCDFOut->coordinate_system,
 
-        &SW_netCDF->crs_geogsc.long_name,
-        &SW_netCDF->crs_geogsc.grid_mapping_name,
-        &SW_netCDF->crs_geogsc.crs_wkt, // geogsc does not use datum and units
+        &SW_netCDFOut->crs_geogsc.long_name,
+        &SW_netCDFOut->crs_geogsc.grid_mapping_name,
+        &SW_netCDFOut->crs_geogsc
+             .crs_wkt, // geogsc does not use datum and units
 
-        &SW_netCDF->crs_projsc.long_name,
-        &SW_netCDF->crs_projsc.grid_mapping_name,
-        &SW_netCDF->crs_projsc.crs_wkt,
-        &SW_netCDF->crs_projsc.datum,
-        &SW_netCDF->crs_projsc.units
+        &SW_netCDFOut->crs_projsc.long_name,
+        &SW_netCDFOut->crs_projsc.grid_mapping_name,
+        &SW_netCDFOut->crs_projsc.crs_wkt,
+        &SW_netCDFOut->crs_projsc.datum,
+        &SW_netCDFOut->crs_projsc.units
     };
 
-    SW_netCDF->crs_projsc.standard_parallel[0] = NAN;
-    SW_netCDF->crs_projsc.standard_parallel[1] = NAN;
+    SW_netCDFOut->crs_projsc.standard_parallel[0] = NAN;
+    SW_netCDFOut->crs_projsc.standard_parallel[1] = NAN;
 
-    SW_netCDF->strideOutYears = -1;
-    SW_netCDF->deflateLevel = 0;
+    SW_netCDFOut->strideOutYears = -1;
+    SW_netCDFOut->deflateLevel = 0;
 
     for (index = 0; index < numAllocVars; index++) {
         *allocArr[index] = NULL;
     }
 
     // Files/variables
-    for (index = 0; index < SW_NVARNC; index++) {
+    for (index = 0; index < SW_NVARDOM; index++) {
 
-        SW_netCDF->varNC[index] = NULL;
-        SW_netCDF->InFilesNC[index] = NULL;
+        SW_netCDFIn->varNC[index] = NULL;
+        SW_netCDFIn->InFilesNC[index] = NULL;
     }
 
     (void) allocArr; // Silence compiler
@@ -5505,29 +5545,29 @@ void SW_NC_init_ptrs(SW_NETCDF *SW_netCDF) {
 /**
 @brief Deconstruct netCDF-related information
 
-@param[in,out] SW_netCDF Struct of type SW_NETCDF holding constant
+@param[in,out] SW_netCDFOut Struct of type SW_NETCDF_OUT holding constant
     netCDF input/output file information
 */
-void SW_NC_deconstruct(SW_NETCDF *SW_netCDF) {
+void SW_NC_deconstruct(SW_NETCDF_OUT *SW_netCDFOut, SW_NETCDF_IN *SW_netCDFIn) {
 
     int index;
     const int numFreeVars = 13;
     char *freeArr[] = {
-        SW_netCDF->title,
-        SW_netCDF->author,
-        SW_netCDF->institution,
-        SW_netCDF->comment,
-        SW_netCDF->coordinate_system,
+        SW_netCDFOut->title,
+        SW_netCDFOut->author,
+        SW_netCDFOut->institution,
+        SW_netCDFOut->comment,
+        SW_netCDFOut->coordinate_system,
 
-        SW_netCDF->crs_geogsc.long_name,
-        SW_netCDF->crs_geogsc.grid_mapping_name,
-        SW_netCDF->crs_geogsc.crs_wkt, // geogsc does not use datum and units
+        SW_netCDFOut->crs_geogsc.long_name,
+        SW_netCDFOut->crs_geogsc.grid_mapping_name,
+        SW_netCDFOut->crs_geogsc.crs_wkt, // geogsc does not use datum and units
 
-        SW_netCDF->crs_projsc.long_name,
-        SW_netCDF->crs_projsc.grid_mapping_name,
-        SW_netCDF->crs_projsc.crs_wkt,
-        SW_netCDF->crs_projsc.datum,
-        SW_netCDF->crs_projsc.units
+        SW_netCDFOut->crs_projsc.long_name,
+        SW_netCDFOut->crs_projsc.grid_mapping_name,
+        SW_netCDFOut->crs_projsc.crs_wkt,
+        SW_netCDFOut->crs_projsc.datum,
+        SW_netCDFOut->crs_projsc.units
     };
 
     for (index = 0; index < numFreeVars; index++) {
@@ -5537,15 +5577,15 @@ void SW_NC_deconstruct(SW_NETCDF *SW_netCDF) {
         }
     }
 
-    for (index = 0; index < SW_NVARNC; index++) {
-        if (!isnull(SW_netCDF->varNC[index])) {
-            free(SW_netCDF->varNC[index]);
-            SW_netCDF->varNC[index] = NULL;
+    for (index = 0; index < SW_NVARDOM; index++) {
+        if (!isnull(SW_netCDFIn->varNC[index])) {
+            free(SW_netCDFIn->varNC[index]);
+            SW_netCDFIn->varNC[index] = NULL;
         }
 
-        if (!isnull(SW_netCDF->InFilesNC[index])) {
-            free(SW_netCDF->InFilesNC[index]);
-            SW_netCDF->InFilesNC[index] = NULL;
+        if (!isnull(SW_netCDFIn->InFilesNC[index])) {
+            free(SW_netCDFIn->InFilesNC[index]);
+            SW_netCDFIn->InFilesNC[index] = NULL;
         }
     }
 }
@@ -5557,23 +5597,23 @@ These files are kept open during simulations
     * to read geographic coordinates from the domain
     * to identify and update progress
 
-@param[in,out] SW_netCDF Struct of type SW_NETCDF holding constant
+@param[in,out] SW_netCDFIn Struct of type SW_NETCDF_OUT holding constant
 netCDF file information
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_NC_open_dom_prog_files(SW_NETCDF *SW_netCDF, LOG_INFO *LogInfo) {
+void SW_NC_open_dom_prog_files(SW_NETCDF_IN *SW_netCDFIn, LOG_INFO *LogInfo) {
     int fileNum;
     int openType = NC_WRITE;
     int *fileID;
     char *fileName;
-    char *domFile = SW_netCDF->InFilesNC[vNCdom];
-    char *progFile = SW_netCDF->InFilesNC[vNCprog];
+    char *domFile = SW_netCDFIn->InFilesNC[vNCdom];
+    char *progFile = SW_netCDFIn->InFilesNC[vNCprog];
     Bool progFileDomain = (Bool) (strcmp(domFile, progFile) == 0);
 
     // Open the domain/progress netCDF
     for (fileNum = vNCdom; fileNum <= vNCprog; fileNum++) {
-        fileName = SW_netCDF->InFilesNC[fileNum];
-        fileID = &SW_netCDF->ncFileIDs[fileNum];
+        fileName = SW_netCDFIn->InFilesNC[fileNum];
+        fileID = &SW_netCDFIn->ncFileIDs[fileNum];
 
         if (FileExists(fileName)) {
             if (nc_open(fileName, openType, fileID) != NC_NOERR) {
@@ -5591,12 +5631,12 @@ void SW_NC_open_dom_prog_files(SW_NETCDF *SW_netCDF, LOG_INFO *LogInfo) {
               it is not in the domain netCDF or it exists in the domain netCDF
             */
             if (fileNum == vNCdom || !progFileDomain ||
-                varExists(*fileID, SW_netCDF->varNC[fileNum])) {
+                varExists(*fileID, SW_netCDFIn->varNC[fileNum])) {
 
                 get_var_identifier(
                     *fileID,
-                    SW_netCDF->varNC[fileNum],
-                    &SW_netCDF->ncVarIDs[fileNum],
+                    SW_netCDFIn->varNC[fileNum],
+                    &SW_netCDFIn->ncVarIDs[fileNum],
                     LogInfo
                 );
                 if (LogInfo->stopRun) {
@@ -5610,55 +5650,62 @@ void SW_NC_open_dom_prog_files(SW_NETCDF *SW_netCDF, LOG_INFO *LogInfo) {
     // close the (redundant) progress file identifier
     // and use instead the (equivalent) domain file identifier
     if (progFileDomain) {
-        nc_close(SW_netCDF->ncFileIDs[vNCprog]);
-        SW_netCDF->ncFileIDs[vNCprog] = SW_netCDF->ncFileIDs[vNCdom];
+        nc_close(SW_netCDFIn->ncFileIDs[vNCprog]);
+        SW_netCDFIn->ncFileIDs[vNCprog] = SW_netCDFIn->ncFileIDs[vNCdom];
     }
 }
 
 /**
 @brief Close all netCDF files that have been opened while the program ran
 
-@param[in,out] SW_netCDF Struct of type SW_NETCDF holding constant
-netCDF file information
+@param[in,out] SW_netCDFIn Struct of type SW_NETCDF_IN holding
+constant input netCDF information
 */
-void SW_NC_close_files(SW_NETCDF *SW_netCDF) {
+void SW_NC_close_files(SW_NETCDF_IN *SW_netCDFIn) {
     int fileNum;
 
-    for (fileNum = 0; fileNum < SW_NVARNC; fileNum++) {
-        nc_close(SW_netCDF->ncFileIDs[fileNum]);
+    for (fileNum = 0; fileNum < SW_NVARDOM; fileNum++) {
+        nc_close(SW_netCDFIn->ncFileIDs[fileNum]);
     }
 }
 
 /**
-@brief Deep copy a source instance of SW_NETCDF into a destination instance
+@brief Deep copy a source instance of SW_NETCDF_OUT into a destination instance
 
-@param[in] source Source struct of type SW_NETCDF to copy
-@param[out] dest Destination struct of type SW_NETCDF to be copied into
+@param[in] source Source struct of type SW_NETCDF_OUT to copy
+@param[out] dest Destination struct of type SW_NETCDF_OUT to be copied into
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_NC_deepCopy(SW_NETCDF *source, SW_NETCDF *dest, LOG_INFO *LogInfo) {
+void SW_NC_deepCopy(
+    SW_NETCDF_OUT *source_output,
+    SW_NETCDF_OUT *dest_output,
+    SW_NETCDF_IN *source_input,
+    SW_NETCDF_IN *dest_input,
+    LOG_INFO *LogInfo
+) {
     int index;
     int numIndivCopy = 5;
 
     char *srcStrs[] = {
-        source->title,
-        source->author,
-        source->institution,
-        source->comment,
-        source->coordinate_system
+        source_output->title,
+        source_output->author,
+        source_output->institution,
+        source_output->comment,
+        source_output->coordinate_system
     };
 
     char **destStrs[] = {
-        &dest->title,
-        &dest->author,
-        &dest->institution,
-        &dest->comment,
-        &dest->coordinate_system
+        &dest_output->title,
+        &dest_output->author,
+        &dest_output->institution,
+        &dest_output->comment,
+        &dest_output->coordinate_system
     };
 
-    memcpy(dest, source, sizeof(*dest));
+    memcpy(dest_output, source_output, sizeof(*dest_output));
+    memcpy(dest_input, source_input, sizeof(*dest_input));
 
-    SW_NC_init_ptrs(dest);
+    SW_NC_init_ptrs(dest_output, dest_input);
 
     for (index = 0; index < numIndivCopy; index++) {
         *destStrs[index] = Str_Dup(srcStrs[index], LogInfo);
@@ -5667,13 +5714,14 @@ void SW_NC_deepCopy(SW_NETCDF *source, SW_NETCDF *dest, LOG_INFO *LogInfo) {
         }
     }
 
-    for (index = 0; index < SW_NVARNC; index++) {
-        dest->varNC[index] = Str_Dup(source->varNC[index], LogInfo);
+    for (index = 0; index < SW_NVARDOM; index++) {
+        dest_input->varNC[index] = Str_Dup(source_input->varNC[index], LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
-        dest->InFilesNC[index] = Str_Dup(source->InFilesNC[index], LogInfo);
+        dest_input->InFilesNC[index] =
+            Str_Dup(source_input->InFilesNC[index], LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -5703,87 +5751,96 @@ void SW_NC_alloc_outputkey_var_info(
     SW_OUT_DOM *OutDom, int key, LOG_INFO *LogInfo
 ) {
 
-    alloc_outReq(&OutDom->reqOutputVars[key], OutDom->nvar_OUT[key], LogInfo);
+    SW_NETCDF_OUT *netCDFOutput = &OutDom->netCDFOutput;
+
+    alloc_outReq(
+        &netCDFOutput->reqOutputVars[key], OutDom->nvar_OUT[key], LogInfo
+    );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    alloc_outvars(&OutDom->outputVarInfo[key], OutDom->nvar_OUT[key], LogInfo);
+    alloc_outvars(
+        &netCDFOutput->outputVarInfo[key], OutDom->nvar_OUT[key], LogInfo
+    );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    alloc_unitssw(&OutDom->units_sw[key], OutDom->nvar_OUT[key], LogInfo);
+    alloc_unitssw(&netCDFOutput->units_sw[key], OutDom->nvar_OUT[key], LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    alloc_uconv(&OutDom->uconv[key], OutDom->nvar_OUT[key], LogInfo);
+    alloc_uconv(&netCDFOutput->uconv[key], OutDom->nvar_OUT[key], LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 }
 
 void SW_NC_dealloc_outputkey_var_info(SW_OUT_DOM *OutDom, IntUS k) {
-    if (!isnull(OutDom->outputVarInfo[k])) {
+    if (!isnull(OutDom->netCDFOutput.outputVarInfo[k])) {
 
         for (int varNum = 0; varNum < OutDom->nvar_OUT[k]; varNum++) {
 
-            if (!isnull(OutDom->outputVarInfo[k][varNum])) {
+            if (!isnull(OutDom->netCDFOutput.outputVarInfo[k][varNum])) {
 
                 for (int attNum = 0; attNum < NUM_OUTPUT_INFO; attNum++) {
 
-                    if (!isnull(OutDom->outputVarInfo[k][varNum][attNum])) {
-                        free(OutDom->outputVarInfo[k][varNum][attNum]);
-                        OutDom->outputVarInfo[k][varNum][attNum] = NULL;
+                    if (!isnull(OutDom->netCDFOutput
+                                    .outputVarInfo[k][varNum][attNum])) {
+                        free(OutDom->netCDFOutput
+                                 .outputVarInfo[k][varNum][attNum]);
+                        OutDom->netCDFOutput.outputVarInfo[k][varNum][attNum] =
+                            NULL;
                     }
                 }
 
-                free((void *) OutDom->outputVarInfo[k][varNum]);
-                OutDom->outputVarInfo[k][varNum] = NULL;
+                free((void *) OutDom->netCDFOutput.outputVarInfo[k][varNum]);
+                OutDom->netCDFOutput.outputVarInfo[k][varNum] = NULL;
             }
         }
 
-        free((void *) OutDom->outputVarInfo[k]);
-        OutDom->outputVarInfo[k] = NULL;
+        free((void *) OutDom->netCDFOutput.outputVarInfo[k]);
+        OutDom->netCDFOutput.outputVarInfo[k] = NULL;
     }
 
-    if (!isnull(OutDom->units_sw[k])) {
+    if (!isnull(OutDom->netCDFOutput.units_sw[k])) {
         for (int varNum = 0; varNum < OutDom->nvar_OUT[k]; varNum++) {
-            if (!isnull(OutDom->units_sw[k][varNum])) {
-                free(OutDom->units_sw[k][varNum]);
-                OutDom->units_sw[k][varNum] = NULL;
+            if (!isnull(OutDom->netCDFOutput.units_sw[k][varNum])) {
+                free(OutDom->netCDFOutput.units_sw[k][varNum]);
+                OutDom->netCDFOutput.units_sw[k][varNum] = NULL;
             }
         }
 
-        free((void *) OutDom->units_sw[k]);
-        OutDom->units_sw[k] = NULL;
+        free((void *) OutDom->netCDFOutput.units_sw[k]);
+        OutDom->netCDFOutput.units_sw[k] = NULL;
     }
 
-    if (!isnull(OutDom->uconv[k])) {
+    if (!isnull(OutDom->netCDFOutput.uconv[k])) {
         for (int varNum = 0; varNum < OutDom->nvar_OUT[k]; varNum++) {
-            if (!isnull(OutDom->uconv[k][varNum])) {
+            if (!isnull(OutDom->netCDFOutput.uconv[k][varNum])) {
 #if defined(SWNETCDF) && defined(SWUDUNITS)
-                cv_free(OutDom->uconv[k][varNum]);
+                cv_free(OutDom->netCDFOutput.uconv[k][varNum]);
 #else
-                free(OutDom->uconv[k][varNum]);
+                free(OutDom->netCDFOutput.uconv[k][varNum]);
 #endif
-                OutDom->uconv[k][varNum] = NULL;
+                OutDom->netCDFOutput.uconv[k][varNum] = NULL;
             }
         }
 
-        free((void *) OutDom->uconv[k]);
-        OutDom->uconv[k] = NULL;
+        free((void *) OutDom->netCDFOutput.uconv[k]);
+        OutDom->netCDFOutput.uconv[k] = NULL;
     }
 
-    if (!isnull(OutDom->reqOutputVars[k])) {
-        free(OutDom->reqOutputVars[k]);
-        OutDom->reqOutputVars[k] = NULL;
+    if (!isnull(OutDom->netCDFOutput.reqOutputVars[k])) {
+        free(OutDom->netCDFOutput.reqOutputVars[k]);
+        OutDom->netCDFOutput.reqOutputVars[k] = NULL;
     }
 }
 
 /**
-@brief Allocate memory for files within SW_FILE_STATUS for future
+@brief Allocate memory for files within SW_PATH_OUTPUTS for future
 functions to write to/create
 
 @param[out] ncOutFiles Output file names storage array

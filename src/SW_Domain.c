@@ -215,7 +215,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     Bool doDoubleConv;
 
-    MyFileName = SW_Domain->PathInfo.InFiles[eDomain];
+    MyFileName = SW_Domain->SW_PathInputs.InFiles[eDomain];
     f = OpenFile(MyFileName, "r", LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -517,8 +517,8 @@ void SW_DOM_SimSet(
     int progVarID = 0;  // Value does not matter if SWNETCDF is not defined
 
 #if defined(SWNETCDF)
-    progFileID = SW_Domain->netCDFInfo.ncFileIDs[vNCprog];
-    progVarID = SW_Domain->netCDFInfo.ncVarIDs[vNCprog];
+    progFileID = SW_Domain->netCDFInput.ncFileIDs[vNCprog];
+    progVarID = SW_Domain->netCDFInput.ncVarIDs[vNCprog];
 #endif
 
     if (userSUID > 0) {
@@ -563,13 +563,19 @@ void SW_DOM_deepCopy(SW_DOMAIN *source, SW_DOMAIN *dest, LOG_INFO *LogInfo) {
 
     SW_OUTDOM_deepCopy(&source->OutDom, &dest->OutDom, LogInfo);
 
-    SW_F_deepCopy(&dest->PathInfo, &source->PathInfo, LogInfo);
+    SW_F_deepCopy(&dest->SW_PathInputs, &source->SW_PathInputs, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
 #if defined(SWNETCDF)
-    SW_NC_deepCopy(&dest->netCDFInfo, &source->netCDFInfo, LogInfo);
+    SW_NC_deepCopy(
+        &dest->OutDom.netCDFOutput,
+        &source->OutDom.netCDFOutput,
+        &dest->netCDFInput,
+        &source->netCDFInput,
+        LogInfo
+    );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -580,10 +586,10 @@ void SW_DOM_init_ptrs(SW_DOMAIN *SW_Domain) {
 
     SW_OUTDOM_init_ptrs(&SW_Domain->OutDom);
 
-    SW_F_init_ptrs(SW_Domain->PathInfo.InFiles);
+    SW_F_init_ptrs(SW_Domain->SW_PathInputs.InFiles);
 
 #if defined(SWNETCDF)
-    SW_NC_init_ptrs(&SW_Domain->netCDFInfo);
+    SW_NC_init_ptrs(&SW_Domain->OutDom.netCDFOutput, &SW_Domain->netCDFInput);
 #endif
 }
 
@@ -591,12 +597,12 @@ void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
     int k;
     int i;
 
-    SW_F_deconstruct(SW_Domain->PathInfo.InFiles);
+    SW_F_deconstruct(SW_Domain->SW_PathInputs.InFiles);
 
 #if defined(SWNETCDF)
 
-    SW_NC_deconstruct(&SW_Domain->netCDFInfo);
-    SW_NC_close_files(&SW_Domain->netCDFInfo);
+    SW_NC_deconstruct(&SW_Domain->OutDom.netCDFOutput, &SW_Domain->netCDFInput);
+    SW_NC_close_files(&SW_Domain->netCDFInput);
 
     ForEachOutKey(k) {
         SW_NC_dealloc_outputkey_var_info(&SW_Domain->OutDom, k);

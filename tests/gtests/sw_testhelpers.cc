@@ -166,6 +166,7 @@ int setup_testGlobalSoilwatTemplate() {
     int success = 0;
     unsigned long userSUID;
     LOG_INFO LogInfo;
+    Bool renameDomainTemplateNC = swTRUE;
 
     // Initialize SOILWAT2 variables and read values from example input file
     sw_init_logs(NULL, &LogInfo);
@@ -173,9 +174,7 @@ int setup_testGlobalSoilwatTemplate() {
     SW_DOM_init_ptrs(&template_SW_Domain);
     SW_CTL_init_ptrs(&template_SW_Run);
 
-    template_SW_Domain.netCDFInfo.renameDomainTemplateNC = swTRUE;
-
-    template_SW_Domain.PathInfo.InFiles[eFirst] =
+    template_SW_Domain.SW_PathInputs.InFiles[eFirst] =
         Str_Dup(DFLT_FIRSTFILE, &LogInfo);
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;
@@ -184,7 +183,9 @@ int setup_testGlobalSoilwatTemplate() {
     // userSUID: 0 means no user input for suid, i.e., entire simulation domain
     userSUID = 0;
 
-    SW_CTL_setup_domain(userSUID, &template_SW_Domain, &LogInfo);
+    SW_CTL_setup_domain(
+        userSUID, renameDomainTemplateNC, &template_SW_Domain, &LogInfo
+    );
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
@@ -213,7 +214,7 @@ int setup_testGlobalSoilwatTemplate() {
     SW_CTL_read_inputs_from_disk(
         &template_SW_Run,
         &template_SW_Domain.OutDom,
-        &template_SW_Domain.PathInfo,
+        &template_SW_Domain.SW_PathInputs,
         &LogInfo
     );
     if (LogInfo.stopRun != 0u) {

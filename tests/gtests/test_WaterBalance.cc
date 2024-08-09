@@ -91,7 +91,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
         &SW_Run.Markov,
         SW_Run.Weather.rng_seed,
         SW_Run.Weather.generateWeatherMethod,
-        SW_Domain.PathInfo.InFiles,
+        SW_Domain.SW_PathInputs.InFiles,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -151,7 +151,7 @@ TEST_F(
         &SW_Run.Markov,
         SW_Run.Weather.rng_seed,
         SW_Run.Weather.generateWeatherMethod,
-        SW_Domain.PathInfo.InFiles,
+        SW_Domain.SW_PathInputs.InFiles,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -294,13 +294,13 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
     SW_Run.Site.site_ptf_type = encode_str2ptf(SW_Run.Site.site_ptf_name);
     SW_Run.Site.site_has_swrcp = swTRUE;
 
-    free(SW_Domain.PathInfo.InFiles[eSWRCp]);
-    SW_Domain.PathInfo.InFiles[eSWRCp] =
+    free(SW_Domain.SW_PathInputs.InFiles[eSWRCp]);
+    SW_Domain.SW_PathInputs.InFiles[eSWRCp] =
         Str_Dup("Input/swrc_params_vanGenuchten1980.in", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Read SWRC parameter input file (which is not read by default)
-    SW_SWRC_read(&SW_Run.Site, SW_Domain.PathInfo.InFiles, &LogInfo);
+    SW_SWRC_read(&SW_Run.Site, SW_Domain.SW_PathInputs.InFiles, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Update soils
@@ -341,13 +341,13 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
     SW_Run.Site.site_ptf_type = encode_str2ptf(SW_Run.Site.site_ptf_name);
     SW_Run.Site.site_has_swrcp = swTRUE;
 
-    free(SW_Domain.PathInfo.InFiles[eSWRCp]);
-    SW_Domain.PathInfo.InFiles[eSWRCp] =
+    free(SW_Domain.SW_PathInputs.InFiles[eSWRCp]);
+    SW_Domain.SW_PathInputs.InFiles[eSWRCp] =
         Str_Dup("Input/swrc_params_FXW.in", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Read SWRC parameter input file (which is not read by default)
-    SW_SWRC_read(&SW_Run.Site, SW_Domain.PathInfo.InFiles, &LogInfo);
+    SW_SWRC_read(&SW_Run.Site, SW_Domain.SW_PathInputs.InFiles, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Update soils

@@ -28,7 +28,7 @@
 #endif
 
 #define SW_NFILES 27 // For `InFiles`
-#define SW_NVARNC 2  // For `InFilesNC`
+#define SW_NVARDOM 2 // For `InFilesNC`
 
 /* Declare SW_RUN & SW_OUT_DOM structs for SW_OUT_DOM and SW_DOMAIN to see */
 typedef struct SW_RUN SW_RUN;
@@ -230,7 +230,7 @@ typedef struct {
     unsigned int numOutFiles;
 #endif
 
-} SW_FILE_STATUS;
+} SW_PATH_OUTPUTS;
 
 /* =================================================== */
 /*                     Site structs                    */
@@ -919,7 +919,7 @@ typedef struct {
     char SW_ProjDir[FILENAME_MAX]; // SW_ProjDir
     char weather_prefix[FILENAME_MAX];
     char output_prefix[FILENAME_MAX];
-} PATH_INFO;
+} SW_PATH_INPUTS;
 
 /* =================================================== */
 /*                    Sky structs                      */
@@ -1107,7 +1107,7 @@ typedef struct {
 } SW_CRS;
 
 /* =================================================== */
-/*                SOILWAT2 netCDF struct               */
+/*               SOILWAT2 netCDF structs               */
 /* --------------------------------------------------- */
 
 typedef struct {
@@ -1116,16 +1116,6 @@ typedef struct {
     Bool primary_crs_is_geographic;
 
     SW_CRS crs_geogsc, crs_projsc;
-
-    char *varNC[SW_NVARNC];
-    char *InFilesNC[SW_NVARNC];
-
-    /** Should a domain template netCDF file be automatically renamed
-    to provided file name for domain? */
-    Bool renameDomainTemplateNC;
-
-    int ncFileIDs[SW_NVARNC];
-    int ncVarIDs[SW_NVARNC];
 
     int strideOutYears;   /**< How many years to write out in a single output
                              netCDF -- 1, X (e.g., 10) or Inf (-1) */
@@ -1136,7 +1126,40 @@ typedef struct {
     /* Specify the deflation level for when creating the output variables */
     int deflateLevel;
 
-} SW_NETCDF;
+#if defined(SWNETCDF)
+    size_t iOUToffset[SW_OUTNKEYS][SW_OUTNPERIODS]
+                     [SW_OUTNMAXVARS]; /**< offset positions of output variables
+                                          for indexing p_OUT */
+
+    Bool *reqOutputVars[SW_OUTNKEYS]; /**< Do/don't output a variable in the
+                            netCDF output files (dynamically allocated array
+                            over output variables) */
+    char **
+        *outputVarInfo[SW_OUTNKEYS]; /**< Attributes of output variables in
+                           netCDF output files (dynamically allcoated 2-d array:
+                           `[varIndex][attIndex]`) */
+    char *
+        *units_sw[SW_OUTNKEYS]; /**< Units internally utilized by SOILWAT2
+                      (dynamically    allocated array over output variables) */
+    sw_converter_t *
+        *uconv[SW_OUTNKEYS]; /**< udunits2 unit converter from internal SOILWAT2
+                   units to user-requested units (dynamically
+                   allocated array over output variables) */
+#endif
+
+} SW_NETCDF_OUT;
+
+typedef struct {
+
+    /* NC information that will stay constant through program run
+       domain information - domain and progress variables/files */
+    char *varNC[SW_NVARDOM];
+    char *InFilesNC[SW_NVARDOM];
+
+    int ncFileIDs[SW_NVARDOM];
+    int ncVarIDs[SW_NVARDOM];
+
+} SW_NETCDF_IN;
 
 struct SW_OUT_DOM {
 
@@ -1199,27 +1222,6 @@ struct SW_OUT_DOM {
     size_t nrow_OUT[SW_OUTNPERIODS]; /**< number of output time steps */
 #endif
 
-#if defined(SWNETCDF)
-    size_t iOUToffset[SW_OUTNKEYS][SW_OUTNPERIODS]
-                     [SW_OUTNMAXVARS]; /**< offset positions of output variables
-                                          for indexing p_OUT */
-
-    Bool *reqOutputVars[SW_OUTNKEYS]; /**< Do/don't output a variable in the
-                            netCDF output files (dynamically allocated array
-                            over output variables) */
-    char **
-        *outputVarInfo[SW_OUTNKEYS]; /**< Attributes of output variables in
-                           netCDF output files (dynamically allcoated 2-d array:
-                           `[varIndex][attIndex]`) */
-    char *
-        *units_sw[SW_OUTNKEYS]; /**< Units internally utilized by SOILWAT2
-                      (dynamically    allocated array over output variables) */
-    sw_converter_t *
-        *uconv[SW_OUTNKEYS]; /**< udunits2 unit converter from internal SOILWAT2
-                   units to user-requested units (dynamically
-                   allocated array over output variables) */
-#endif
-
     OutKey mykey[SW_OUTNKEYS];
     ObjType myobj[SW_OUTNKEYS];
     OutSum sumtype[SW_OUTNKEYS];
@@ -1254,6 +1256,8 @@ struct SW_OUT_DOM {
     /** pointer to output routine for STEPWAT in-memory output */
     void (*pfunc_SXW[SW_OUTNKEYS])(OutPeriod, SW_RUN *, SW_OUT_DOM *);
 #endif
+
+    SW_NETCDF_OUT netCDFOutput;
 };
 
 /* =================================================== */
@@ -1311,13 +1315,13 @@ typedef struct {
                                                domain */
 
     // Information on input files
-    PATH_INFO PathInfo;
+    SW_PATH_INPUTS SW_PathInputs;
 
     // Data for (optional) spinup
     SW_SPINUP SW_SpinUp;
 
     // Information dealing with netCDFs
-    SW_NETCDF netCDFInfo;
+    SW_NETCDF_IN netCDFInput;
 
     // Information that is constant through simulation runs
     SW_OUT_DOM OutDom;
@@ -1390,7 +1394,7 @@ struct SW_RUN {
     SW_SKY Sky;
     SW_CARBON Carbon;
     ST_RGR_VALUES StRegValues;
-    SW_FILE_STATUS FileStatus;
+    SW_PATH_OUTPUTS SW_PathOutputs;
     SW_MARKOV Markov;
     SW_OUT_RUN OutRun;
 

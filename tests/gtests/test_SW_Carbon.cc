@@ -33,7 +33,7 @@ TEST_F(CarbonFixtureTest, CarbonReadInputFile) {
     SW_Run.Carbon.use_bio_mult = 0;
 
     SW_CBN_read(
-        &SW_Run.Carbon, &SW_Run.Model, SW_Domain.PathInfo.InFiles, &LogInfo
+        &SW_Run.Carbon, &SW_Run.Model, SW_Domain.SW_PathInputs.InFiles, &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -55,7 +55,7 @@ TEST_F(CarbonFixtureTest, CarbonReadInputFile) {
     SW_Run.Model.addtl_yr = 0;
 
     SW_CBN_read(
-        &SW_Run.Carbon, &SW_Run.Model, SW_Domain.PathInfo.InFiles, &LogInfo
+        &SW_Run.Carbon, &SW_Run.Model, SW_Domain.SW_PathInputs.InFiles, &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -80,7 +80,7 @@ TEST_F(CarbonFixtureTest, CarbonCO2multipliers) {
     SW_Run.Model.addtl_yr = 0;
 
     SW_CBN_read(
-        &SW_Run.Carbon, &SW_Run.Model, SW_Domain.PathInfo.InFiles, &LogInfo
+        &SW_Run.Carbon, &SW_Run.Model, SW_Domain.SW_PathInputs.InFiles, &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
