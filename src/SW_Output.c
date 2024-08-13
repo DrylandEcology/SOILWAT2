@@ -57,7 +57,8 @@ History:
 #endif
 
 #if defined(SWNETCDF)
-#include "include/SW_netCDF.h"
+#include "include/SW_netCDF_General.h"
+#include "include/SW_netCDF_Output.h"
 #include <stdlib.h> // for free
 #endif
 
@@ -1317,17 +1318,12 @@ void SW_OUTDOM_init_ptrs(SW_OUT_DOM *OutDom) {
         }
     }
 
-    // #if defined(SWNETCDF)
-    //     ForEachOutKey(key) {
-    //         OutDom->outputVarInfo[key] = NULL;
-    //         OutDom->reqOutputVars[key] = NULL;
-    //         OutDom->units_sw[key] = NULL;
-    //         OutDom->uconv[key] = NULL;
-    //     }
-    // #endif
-
 #ifdef RSOILWAT
     ForEachOutKey(key) { OutDom->outfile[key] = NULL; }
+#endif
+
+#if defined(SWNETCDF)
+    SW_NCOUT_init_ptrs(&OutDom->netCDFOutput);
 #endif
 }
 
@@ -3662,7 +3658,7 @@ void SW_OUT_create_files(
     );
 
 #elif defined(SWNETCDF)
-    SW_NC_create_output_files(
+    SW_NCOUT_create_output_files(
         SW_Domain->netCDFInput.InFilesNC[vNCdom],
         SW_Domain->DomainType,
         SW_Domain->SW_PathInputs.output_prefix,
@@ -3826,7 +3822,7 @@ void SW_FILESTATUS_deepCopy(
         if (OutDom->nvar_OUT[key] > 0 && OutDom->use[key]) {
             ForEachOutPeriod(pd) {
                 if (OutDom->use_OutPeriod[pd]) {
-                    SW_NC_alloc_files(
+                    SW_NCOUT_alloc_files(
                         &dest_files->ncOutFiles[key][pd], numFiles, LogInfo
                     );
                     if (LogInfo->stopRun) {

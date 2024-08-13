@@ -16,7 +16,9 @@
 #include <string.h>                 // for strcmp, memcpy, memset
 
 #if defined(SWNETCDF)
-#include "include/SW_netCDF.h"
+#include "include/SW_netCDF_General.h"
+#include "include/SW_netCDF_Input.h"
+#include "include/SW_netCDF_Output.h"
 #endif
 
 #if defined(SOILWAT)
@@ -92,7 +94,7 @@ Bool SW_DOM_CheckProgress(
     LOG_INFO *LogInfo
 ) {
 #if defined(SWNETCDF)
-    return SW_NC_check_progress(progFileID, progVarID, ncSuid, LogInfo);
+    return SW_NCIN_check_progress(progFileID, progVarID, ncSuid, LogInfo);
 #else
     (void) progFileID;
     (void) progVarID;
@@ -113,7 +115,7 @@ Bool SW_DOM_CheckProgress(
 */
 void SW_DOM_CreateProgress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 #if defined(SWNETCDF)
-    SW_NC_create_progress(SW_Domain, LogInfo);
+    SW_NCIN_create_progress(SW_Domain, LogInfo);
 #else
     (void) SW_Domain;
     (void) LogInfo;
@@ -483,7 +485,7 @@ void SW_DOM_SetProgress(
 ) {
 
 #if defined(SWNETCDF)
-    SW_NC_set_progress(
+    SW_NCIN_set_progress(
         isFailure, domType, progFileID, progVarID, ncSuid, LogInfo
     );
 #else
@@ -571,8 +573,8 @@ void SW_DOM_deepCopy(SW_DOMAIN *source, SW_DOMAIN *dest, LOG_INFO *LogInfo) {
 #if defined(SWNETCDF)
     SW_NC_deepCopy(
         &dest->OutDom.netCDFOutput,
-        &source->OutDom.netCDFOutput,
         &dest->netCDFInput,
+        &source->OutDom.netCDFOutput,
         &source->netCDFInput,
         LogInfo
     );
@@ -589,7 +591,7 @@ void SW_DOM_init_ptrs(SW_DOMAIN *SW_Domain) {
     SW_F_init_ptrs(SW_Domain->SW_PathInputs.InFiles);
 
 #if defined(SWNETCDF)
-    SW_NC_init_ptrs(&SW_Domain->OutDom.netCDFOutput, &SW_Domain->netCDFInput);
+    SW_NCIN_init_ptrs(&SW_Domain->netCDFInput);
 #endif
 }
 
@@ -602,10 +604,10 @@ void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
 #if defined(SWNETCDF)
 
     SW_NC_deconstruct(&SW_Domain->OutDom.netCDFOutput, &SW_Domain->netCDFInput);
-    SW_NC_close_files(&SW_Domain->netCDFInput);
+    SW_NCIN_close_files(&SW_Domain->netCDFInput);
 
     ForEachOutKey(k) {
-        SW_NC_dealloc_outputkey_var_info(&SW_Domain->OutDom, k);
+        SW_NCOUT_dealloc_outputkey_var_info(&SW_Domain->OutDom, k);
     }
 #endif
     ForEachOutKey(k) {
@@ -653,7 +655,7 @@ void SW_DOM_soilProfile(
 ) {
 
 #if defined(SWNETCDF)
-    SW_NC_soilProfile(
+    SW_NCIN_soilProfile(
         hasConsistentSoilLayerDepths,
         nMaxSoilLayers,
         nMaxEvapLayers,

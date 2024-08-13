@@ -57,7 +57,9 @@
 
 
 #if defined(SWNETCDF)
-#include "include/SW_netCDF.h"
+#include "include/SW_netCDF_General.h"
+#include "include/SW_netCDF_Input.h"
+#include "include/SW_netCDF_Output.h"
 #include "include/SW_Output_outarray.h"
 #endif
 
@@ -466,7 +468,9 @@ void SW_CTL_setup_domain(
         (renameDomainTemp) ? SW_Domain->netCDFInput.InFilesNC[vNCdom] : NULL;
 
     if (!FileExists(SW_Domain->netCDFInput.InFilesNC[vNCdom])) {
-        SW_NC_create_domain_template(SW_Domain, fnameDomainTemplateNC, LogInfo);
+        SW_NCIN_create_domain_template(
+            SW_Domain, fnameDomainTemplateNC, LogInfo
+        );
         if (LogInfo->stopRun) {
             return; // Exit prematurely due to error
         }
@@ -486,7 +490,7 @@ void SW_CTL_setup_domain(
     }
 
     // Open necessary netCDF input files and check for consistency with domain
-    SW_NC_open_dom_prog_files(&SW_Domain->netCDFInput, LogInfo);
+    SW_NCIN_open_dom_prog_files(&SW_Domain->netCDFInput, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -1073,7 +1077,7 @@ void SW_CTL_run_sw(
 
 // Obtain suid-specific inputs
 #if defined(SWNETCDF)
-    SW_NC_read_inputs(&local_sw, SW_Domain, ncSuid, LogInfo);
+    SW_NCIN_read_inputs(&local_sw, SW_Domain, ncSuid, LogInfo);
     if (LogInfo->stopRun) {
         goto freeMem;
     }
@@ -1102,7 +1106,7 @@ void SW_CTL_run_sw(
     }
 
 #if defined(SWNETCDF)
-    SW_NC_write_output(
+    SW_NCOUT_write_output(
         &SW_Domain->OutDom,
         local_sw.OutRun.p_OUT,
         local_sw.SW_PathOutputs.numOutFiles,

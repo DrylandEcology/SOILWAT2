@@ -30,7 +30,9 @@
 
 
 #if defined(SWNETCDF)
-#include "include/SW_netCDF.h"
+#include "include/SW_netCDF_General.h"
+#include "include/SW_netCDF_Input.h"
+#include "include/SW_netCDF_Output.h"
 #endif
 
 
@@ -114,7 +116,7 @@ int main(int argc, char **argv) {
     }
 
 #if defined(SWNETCDF)
-    SW_NC_check_input_files(&SW_Domain, &LogInfo);
+    SW_NCIN_check_input_files(&SW_Domain, &LogInfo);
 #endif
 
     // finalize daily weather
@@ -163,7 +165,7 @@ int main(int argc, char **argv) {
     }
 
 #if defined(SWNETCDF)
-    SW_NC_read_out_vars(
+    SW_NCOUT_read_out_vars(
         &SW_Domain.OutDom,
         SW_Domain.SW_PathInputs.InFiles,
         sw_template.VegEstab.parms,
@@ -172,7 +174,7 @@ int main(int argc, char **argv) {
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
-    SW_NC_create_units_converters(&SW_Domain.OutDom, &LogInfo);
+    SW_NCOUT_create_units_converters(&SW_Domain.OutDom, &LogInfo);
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
