@@ -2055,7 +2055,7 @@ void SW_NCOUT_create_units_converters(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         }
 
         for (varIndex = 0; varIndex < OutDom->nvar_OUT[key]; varIndex++) {
-            if (netCDFOutput->reqOutputVars[key][varIndex]) {
+            if (!netCDFOutput->reqOutputVars[key][varIndex]) {
                 continue; // Skip variable iteration
             }
 
