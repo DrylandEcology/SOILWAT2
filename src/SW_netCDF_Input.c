@@ -38,6 +38,36 @@
 /* --------------------------------------------------- */
 
 /**
+@brief Fills a variable with value(s) of type unsigned integer
+
+@param[in] ncFileID Identifier of the open netCDF file to write the value(s)
+@param[in] varID Identifier to the variable within the given netCDF file
+@param[in] values Individual or list of input variables
+@param[in] startIndices Specification of where the C-provided netCDF
+    should start writing values within the specified variable
+@param[in] count How many values to write into the given variable
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void fill_netCDF_var_uint(
+    int ncFileID,
+    int varID,
+    unsigned int values[],
+    size_t startIndices[],
+    size_t count[],
+    LOG_INFO *LogInfo
+) {
+
+    if (nc_put_vara_uint(ncFileID, varID, startIndices, count, &values[0]) !=
+        NC_NOERR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not fill variable (unsigned int) "
+            "with the given value(s)."
+        );
+    }
+}
+/**
 @brief Helper function to `fill_domain_netCDF_vars()` to allocate
 memory for writing out values
 
@@ -280,16 +310,15 @@ static void fill_domain_netCDF_vals(
         numVars = 2;
 
         // Sites are filled with the same values as the domain variable
-        SW_NC_write_vals(
-            &siteID,
+        fill_netCDF_var_uint(
             domFileID,
-            NULL,
+            siteID,
             domVals,
             start,
             domCount,
-            "unsigned integer",
             LogInfo
-        );
+         );
+
         if (LogInfo->stopRun) {
             goto freeMem; // Exit function prematurely due to error
         }
