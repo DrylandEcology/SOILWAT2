@@ -166,7 +166,7 @@ int setup_testGlobalSoilwatTemplate() {
     int success = 0;
     unsigned long userSUID;
     LOG_INFO LogInfo;
-    Bool renameDomainTemplateNC = swTRUE;
+    const Bool renameDomainTemplateNC = swTRUE;
 
     // Initialize SOILWAT2 variables and read values from example input file
     sw_init_logs(NULL, &LogInfo);

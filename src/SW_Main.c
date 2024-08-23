@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
     SW_DOMAIN SW_Domain;
     LOG_INFO LogInfo;
     Bool EchoInits = swFALSE;
-    Bool renameDomainFile = swFALSE;
+    Bool renameDomainTemplateNC = swFALSE;
 
     unsigned long userSUID;
 
@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
         &SW_Domain.SW_PathInputs.InFiles[eFirst],
         &userSUID,
         &SW_WallTime.wallTimeLimit,
-        &renameDomainFile,
+        &renameDomainTemplateNC,
         &LogInfo
     );
     if (LogInfo.stopRun) {
@@ -90,7 +90,7 @@ int main(int argc, char **argv) {
     }
 
     // setup and construct domain
-    SW_CTL_setup_domain(userSUID, renameDomainFile, &SW_Domain, &LogInfo);
+    SW_CTL_setup_domain(userSUID, renameDomainTemplateNC, &SW_Domain, &LogInfo);
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
