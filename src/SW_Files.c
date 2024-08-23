@@ -315,33 +315,34 @@ void SW_F_deepCopy(
 /**
 @brief Initialize all input files to NULL (`InFiles`)
 
-@param[in,out] InFiles Array of program in/output files
+@param[in,out] SW_PathInputs Struct of type SW_PATH_INPUTS which
+holds basic information about input files and values
 */
-void SW_F_init_ptrs(char *InFiles[]) {
+void SW_F_init_ptrs(SW_PATH_INPUTS *SW_PathInputs) {
     int file;
 
     // Initialize `InFile` pointers to NULL
     for (file = 0; file < SW_NFILES; file++) {
-        InFiles[file] = NULL;
+        SW_PathInputs->InFiles[file] = NULL;
     }
 }
 
 /**
 @brief Determines string length of file being read in combined with SW_ProjDir.
 
-@param[in] *firstfile File to be read in.
-@param[out] SW_ProjDir Project directory
+@param[in,out] SW_PathInputs Struct of type SW_PATH_INPUTS which
+holds basic information about input files and values
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_F_construct(
-    const char *firstfile, char SW_ProjDir[], LOG_INFO *LogInfo
-) {
+void SW_F_construct(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
     /* =================================================== */
     /* 10-May-02 (cwb) enhancement allows model to be run
      *    in one directory while getting its input from another.
      *    This was done mostly in support of STEPWAT but
      *    it could be useful in a standalone run.
      */
+
+    const char *firstfile = SW_PathInputs->InFiles[eFirst];
     char *c;
     char *p;
     char dirString[FILENAME_MAX];
@@ -354,32 +355,33 @@ void SW_F_construct(
     c = dirString;
 
     if (c) {
-        (void) sw_memccpy(SW_ProjDir, c, '\0', sizeof dirString);
+        (void) sw_memccpy(SW_PathInputs->SW_ProjDir, c, '\0', sizeof dirString);
         c = localfirstfile;
-        p = c + strlen(SW_ProjDir);
+        p = c + strlen(SW_PathInputs->SW_ProjDir);
         while (*p) {
             *(c++) = *(p++);
         }
         *c = '\0';
     } else {
-        SW_ProjDir[0] = '\0';
+        SW_PathInputs->SW_ProjDir[0] = '\0';
     }
 
     free(localfirstfile);
 }
 
 /**
-@brief Deconstructor for each of the SW_NFILES.
+@brief Deconstructor for the struct SW_PATH_INPUTS.
 
-@param[in,out] InFiles Array of program in/output files
+@param[in,out] SW_PathInputs Struct of type SW_PATH_INPUTS which
+holds basic information about output files and values
 */
-void SW_F_deconstruct(char *InFiles[]) {
+void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
     IntUS i;
 
     for (i = 0; i < SW_NFILES; i++) {
-        if (!isnull(InFiles[i])) {
-            free(InFiles[i]);
-            InFiles[i] = NULL;
+        if (!isnull(SW_PathInputs->InFiles[i])) {
+            free(SW_PathInputs->InFiles[i]);
+            SW_PathInputs->InFiles[i] = NULL;
         }
     }
 }

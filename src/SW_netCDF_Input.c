@@ -1750,12 +1750,12 @@ void SW_NCIN_open_dom_prog_files(SW_NETCDF_IN *SW_netCDFIn, LOG_INFO *LogInfo) {
               it is not in the domain netCDF or it exists in the domain netCDF
             */
             if (fileNum == vNCdom || !progFileDomain ||
-                SW_NC_varExists(*fileID, SW_netCDFIn->varNC[fileNum])) {
+                SW_NC_varExists(*fileID, varName)) {
 
                 SW_NC_get_var_identifier(
                     *fileID,
-                    SW_netCDFIn->varNC[fileNum],
-                    &SW_netCDFIn->ncVarIDs[fileNum],
+                    varName,
+                    &SW_netCDFIn->ncDomVarIDs[fileNum],
                     LogInfo
                 );
                 if (LogInfo->stopRun) {
@@ -1769,21 +1769,21 @@ void SW_NCIN_open_dom_prog_files(SW_NETCDF_IN *SW_netCDFIn, LOG_INFO *LogInfo) {
     // close the (redundant) progress file identifier
     // and use instead the (equivalent) domain file identifier
     if (progFileDomain) {
-        nc_close(SW_netCDFIn->ncFileIDs[vNCprog]);
-        SW_netCDFIn->ncFileIDs[vNCprog] = SW_netCDFIn->ncFileIDs[vNCdom];
+        nc_close(ncDomFileIDs[vNCprog]);
+        ncDomFileIDs[vNCprog] = ncDomFileIDs[vNCdom];
     }
 }
 
 /**
 @brief Close all netCDF files that have been opened while the program ran
 
-@param[in,out] SW_netCDFIn Constant netCDF input file information
+@param[in,out] ncDomFileIDs List of all nc domain file IDs
 */
-void SW_NCIN_close_files(SW_NETCDF_IN *SW_netCDFIn) {
+void SW_NCIN_close_files(int ncDomFileIDs[]) {
     int fileNum;
 
     for (fileNum = 0; fileNum < SW_NVARDOM; fileNum++) {
-        nc_close(SW_netCDFIn->ncFileIDs[fileNum]);
+        nc_close(ncDomFileIDs[fileNum]);
     }
 }
 
@@ -1793,12 +1793,16 @@ void SW_NCIN_close_files(SW_NETCDF_IN *SW_netCDFIn) {
 @param[in,out] SW_netCDFIn Constant netCDF input file information
 */
 void SW_NCIN_init_ptrs(SW_NETCDF_IN *SW_netCDFIn) {
-    int index;
+    int k;
 
-    for (index = 0; index < SW_NVARDOM; index++) {
-        SW_netCDFIn->varNC[index] = NULL;
-        SW_netCDFIn->InFilesNC[index] = NULL;
+    ForEachNCInKey(k) {
+        SW_netCDFIn->inVarInfo[k] = NULL;
+        SW_netCDFIn->units_sw[k] = NULL;
+        SW_netCDFIn->uconv[k] = NULL;
+        SW_netCDFIn->readInVars[k] = NULL;
     }
+
+    SW_netCDFIn->weathCalOverride = NULL;
 }
 
 /**

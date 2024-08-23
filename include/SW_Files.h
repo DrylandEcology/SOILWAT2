@@ -78,13 +78,11 @@ void SW_F_deepCopy(
     SW_PATH_INPUTS *source, SW_PATH_INPUTS *dest, LOG_INFO *LogInfo
 );
 
-void SW_F_init_ptrs(char *InFiles[]);
+void SW_F_init_ptrs(SW_PATH_INPUTS *SW_PathInputs);
 
-void SW_F_construct(
-    const char *firstfile, char SW_ProjDir[], LOG_INFO *LogInfo
-);
+void SW_F_construct(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo);
 
-void SW_F_deconstruct(char *InFiles[]);
+void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs);
 
 void SW_CSV_F_INIT(const char *s, LOG_INFO *LogInfo);
 

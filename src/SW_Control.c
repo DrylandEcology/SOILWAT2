@@ -289,8 +289,8 @@ void SW_CTL_RunSimSet(
     int progVarID = 0;  // Value does not matter if SWNETCDF is not defined
 
 #if defined(SWNETCDF)
-    progFileID = SW_Domain->netCDFInput.ncFileIDs[vNCprog];
-    progVarID = SW_Domain->netCDFInput.ncVarIDs[vNCprog];
+    progFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprog];
+    progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprog];
 #endif
 
     set_walltime(&tss, &ok_tss);
@@ -425,11 +425,7 @@ void SW_CTL_setup_domain(
     LOG_INFO *LogInfo
 ) {
 
-    SW_F_construct(
-        SW_Domain->SW_PathInputs.InFiles[eFirst],
-        SW_Domain->SW_PathInputs.SW_ProjDir,
-        LogInfo
-    );
+    SW_F_construct(&SW_Domain->SW_PathInputs, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -490,15 +486,17 @@ void SW_CTL_setup_domain(
     }
 
     // Open necessary netCDF input files and check for consistency with domain
-    SW_NCIN_open_dom_prog_files(&SW_Domain->netCDFInput, LogInfo);
+    SW_NCIN_open_dom_prog_files(
+        &SW_Domain->netCDFInput, &SW_Domain->SW_PathInputs, LogInfo
+    );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
     SW_NC_check(
         SW_Domain,
-        SW_Domain->netCDFInput.ncFileIDs[vNCdom],
-        SW_Domain->netCDFInput.InFilesNC[vNCdom],
+        SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom],
+        SW_Domain->SW_PathInputs.inFileNames[eSW_InDomain][vNCdom],
         LogInfo
     );
     if (LogInfo->stopRun) {

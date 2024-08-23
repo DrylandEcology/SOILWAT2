@@ -565,7 +565,7 @@ void SW_DOM_deepCopy(SW_DOMAIN *source, SW_DOMAIN *dest, LOG_INFO *LogInfo) {
 
     SW_OUTDOM_deepCopy(&source->OutDom, &dest->OutDom, LogInfo);
 
-    SW_F_deepCopy(&dest->SW_PathInputs, &source->SW_PathInputs, LogInfo);
+    SW_F_deepCopy(&source->SW_PathInputs, &dest->SW_PathInputs, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -588,7 +588,7 @@ void SW_DOM_init_ptrs(SW_DOMAIN *SW_Domain) {
 
     SW_OUTDOM_init_ptrs(&SW_Domain->OutDom);
 
-    SW_F_init_ptrs(SW_Domain->SW_PathInputs.InFiles);
+    SW_F_init_ptrs(&SW_Domain->SW_PathInputs);
 
 #if defined(SWNETCDF)
     SW_NCIN_init_ptrs(&SW_Domain->netCDFInput);

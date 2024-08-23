@@ -919,6 +919,36 @@ typedef struct {
     char SW_ProjDir[FILENAME_MAX]; // SW_ProjDir
     char weather_prefix[FILENAME_MAX];
     char output_prefix[FILENAME_MAX];
+
+#if defined(SWNETCDF)
+    char **inFileNames[SW_NINKEYSNC]; /**< Names of all the input netCDF files;
+                                           dynamically allocated 2-d array
+                                           `[varNum][fileNum]` */
+
+    char ***weathInFiles; /**< Generated weather file names to read input from;
+                               dynamically allocated for every weather variable
+                               and a list of file names */
+
+    unsigned int *numInWeathFiles; /**< Only capture the number of weather files
+                                        generated given the stride input
+                                        information; dynamically allocated for
+                                        each weather input variable */
+
+    int **inWeathStrideInfo; /**< Number of years held within
+                                a weather netCDF file;
+                                dynamically allocated for each weather
+                                variable holding two pieces of information:
+                                stride start and years per stride */
+
+    unsigned int ***weathInStartEnd; /**< Start/end years of each weather input
+                                        netCDF; dynamically allocated for every
+                                        weather var, number of files within said
+                                        variable, and 2 values for start/end */
+
+    /* NC information that will stay constant through program run
+       domain information - domain and progress file IDs */
+    int ncDomFileIDs[SW_NVARDOM];
+#endif
 } SW_PATH_INPUTS;
 
 /* =================================================== */
@@ -1107,7 +1137,7 @@ typedef struct {
 } SW_CRS;
 
 /* =================================================== */
-/*               SOILWAT2 netCDF structs               */
+/*            SOILWAT2 netCDF structs/enums            */
 /* --------------------------------------------------- */
 
 typedef struct {
@@ -1152,12 +1182,28 @@ typedef struct {
 typedef struct {
 
     /* NC information that will stay constant through program run
-       domain information - domain and progress variables/files */
-    char *varNC[SW_NVARDOM];
-    char *InFilesNC[SW_NVARDOM];
+       domain information - domain and progress variables */
+    int ncDomVarIDs[SW_NVARDOM];
 
-    int ncFileIDs[SW_NVARDOM];
-    int ncVarIDs[SW_NVARDOM];
+    Bool *readInVars[SW_NINKEYSNC]; /**< Do/don't read a variable from input
+                                         netCDFs (dynamically allocated array
+                                         over input variables) */
+
+    char **weathCalOverride; /**< Calendars that the user may provide for
+                                  the program to use (dynamically allocated
+                                  for the number of variables in weather) */
+
+    char ***inVarInfo[SW_NINKEYSNC]; /**< Attributes of input variables in
+                                           netCDF input files (dynamically
+                                           allocated 2-d array) */
+
+    char **units_sw[SW_NINKEYSNC]; /**< Units internally utilized by SOILWAT2
+                      (dynamically allocated array over output variables) */
+
+    sw_converter_t **
+        uconv[SW_NINKEYSNC]; /**< udunits2 unit converter from internal SOILWAT2
+                                 units to user-requested units (dynamicall    y
+                                 allocated array over output variables) */
 
 } SW_NETCDF_IN;
 
@@ -1259,6 +1305,18 @@ struct SW_OUT_DOM {
 
     SW_NETCDF_OUT netCDFOutput;
 };
+
+typedef enum {
+    eSW_NoInKey = -1,
+    eSW_InDomain,
+    eSW_InSpatial,
+    eSW_InTopo,
+    eSW_InSoil,
+    eSW_InVeg,
+    eSW_InWeather,
+    eSW_InClimate,
+    eSW_LastInKey
+} InKeys;
 
 /* =================================================== */
 /*                    Domain structs                   */

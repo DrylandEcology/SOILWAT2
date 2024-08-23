@@ -16,6 +16,20 @@ extern "C" {
 
 #define DOMAIN_TEMP "Input_nc/domain_template.nc"
 
+/* Specifies the number of input variables per key a user
+can provide; This number includes a variable for an index
+file after and including the input key `inTopo` */
+static const int numVarsInKey[] = {
+    2,  /* inDomain */
+    2,  /* inSpatial */
+    4,  /* inTopo */
+    22, /* inSoil */
+    22, /* inVeg */
+    15, /* inWeather */
+    6   /* inClimate */
+};
+
+#define ForEachNCInKey(k) for ((k) = 0; (k) < eSW_LastInKey; (k)++)
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
