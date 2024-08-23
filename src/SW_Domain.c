@@ -519,8 +519,8 @@ void SW_DOM_SimSet(
     int progVarID = 0;  // Value does not matter if SWNETCDF is not defined
 
 #if defined(SWNETCDF)
-    progFileID = SW_Domain->netCDFInput.ncFileIDs[vNCprog];
-    progVarID = SW_Domain->netCDFInput.ncVarIDs[vNCprog];
+    progFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprog];
+    progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprog];
 #endif
 
     if (userSUID > 0) {
@@ -599,15 +599,18 @@ void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
     int k;
     int i;
 
-    SW_F_deconstruct(SW_Domain->SW_PathInputs.InFiles);
+    SW_F_deconstruct(&SW_Domain->SW_PathInputs);
 
 #if defined(SWNETCDF)
 
-    SW_NC_deconstruct(&SW_Domain->OutDom.netCDFOutput, &SW_Domain->netCDFInput);
-    SW_NCIN_close_files(&SW_Domain->netCDFInput);
+    SW_NC_deconstruct(&SW_Domain->OutDom.netCDFOutput);
 
     ForEachOutKey(k) {
         SW_NCOUT_dealloc_outputkey_var_info(&SW_Domain->OutDom, k);
+    }
+
+    ForEachNCInKey(k) {
+        SW_NCIN_dealloc_inputkey_var_info(&SW_Domain->netCDFInput, k);
     }
 #endif
     ForEachOutKey(k) {

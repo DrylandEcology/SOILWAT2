@@ -25,6 +25,8 @@ extern "C" {
 /** Number of possible keys within `attributes_nc.in` */
 #define NUM_ATT_IN_KEYS 28
 
+#define MAX_ATTVAL_SIZE 256
+
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
@@ -130,6 +132,8 @@ void SW_NC_create_full_var(
     unsigned int startYr,
     OutPeriod pd,
     int deflateLevel,
+    const char *latName,
+    const char *lonName,
     LOG_INFO *LogInfo
 );
 
@@ -157,7 +161,7 @@ void SW_NC_create_template(
     LOG_INFO *LogInfo
 );
 
-void SW_NC_deconstruct(SW_NETCDF_OUT *SW_netCDFOut, SW_NETCDF_IN *SW_netCDFIn);
+void SW_NC_deconstruct(SW_NETCDF_OUT *SW_netCDFOut);
 
 void SW_NC_deepCopy(
     SW_NETCDF_OUT *source_output,
@@ -171,6 +175,30 @@ void SW_NC_read(
     SW_NETCDF_IN *SW_netCDFIn,
     SW_NETCDF_OUT *SW_netCDFOut,
     SW_PATH_INPUTS *SW_PathInputs,
+    TimeInt startYr,
+    TimeInt endYr,
+    LOG_INFO *LogInfo
+);
+
+void SW_NC_alloc_unitssw(char ***units_sw, int nVar, LOG_INFO *LogInfo);
+
+void SW_NC_alloc_uconv(sw_converter_t ***uconv, int nVar, LOG_INFO *LogInfo);
+
+void SW_NC_alloc_req(Bool **reqOutVar, int nVar, LOG_INFO *LogInfo);
+
+void SW_NC_alloc_vars(
+    char ****keyVars, int nVar, int numAtts, LOG_INFO *LogInfo
+);
+
+void SW_NC_create_units_converters(
+    sw_converter_t **uconv[],
+    char **units_sw[],
+    Bool *reqVars[],
+    char ***varInfo[],
+    Bool out_use[],
+    int numVars[],
+    int varNameInd,
+    int varUnitsInd,
     LOG_INFO *LogInfo
 );
 

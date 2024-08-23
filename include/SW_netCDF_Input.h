@@ -30,6 +30,22 @@ static const int numVarsInKey[] = {
 };
 
 #define ForEachNCInKey(k) for ((k) = 0; (k) < eSW_LastInKey; (k)++)
+
+/* Indices within `inVarInfo` for specific information of a variable */
+#define SW_INUNIT 0
+#define SW_INFILENAME 1
+#define SW_INNCVARNAME 2
+#define SW_INVARUNITS 3
+#define SW_INGRIDTYPE 4
+#define SW_INCRSNAME 5
+#define SW_INCRSEQUIV 6
+#define SW_INXAXIS 7
+#define SW_INYAXIS 8
+#define SW_INZAXIS 9
+#define SW_INTAXIS 10
+#define SW_INSTPATRN 11
+#define SW_INVAXIS 12
+
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
@@ -70,16 +86,47 @@ void SW_NCIN_read_inputs(
 
 void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
 
-void SW_NCIN_open_dom_prog_files(SW_NETCDF_IN *SW_netCDFIn, LOG_INFO *LogInfo);
+void SW_NCIN_open_dom_prog_files(
+    SW_NETCDF_IN *SW_netCDFIn, SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo
+);
 
-void SW_NCIN_close_files(SW_NETCDF_IN *SW_netCDFIn);
+void SW_NCIN_close_files(int ncDomFileIDs[]);
 
 void SW_NCIN_init_ptrs(SW_NETCDF_IN *SW_netCDFIn);
 
-void SW_NCIN_deconstruct(SW_NETCDF_IN *SW_netCDFIn);
+void SW_NCIN_dealloc_inputkey_var_info(SW_NETCDF_IN *SW_netCDFIn, int key);
 
 void SW_NCIN_deepCopy(
     SW_NETCDF_IN *source_input, SW_NETCDF_IN *dest_input, LOG_INFO *LogInfo
+);
+
+void SW_NCIN_alloc_input_var_info(SW_NETCDF_IN *SW_netCDFIn, LOG_INFO *LogInfo);
+
+void SW_NCIN_alloc_inputkey_var_info(
+    SW_NETCDF_IN *SW_netCDFIn, int key, LOG_INFO *LogInfo
+);
+
+void SW_NCIN_read_input_vars(
+    SW_NETCDF_IN *SW_netCDFIn,
+    SW_PATH_INPUTS *SW_PathInputs,
+    TimeInt startYr,
+    TimeInt endYr,
+    LOG_INFO *LogInfo
+);
+
+void SW_NCIN_alloc_file_information(
+    int numInVars,
+    int key,
+    char ***inputFiles,
+    unsigned int **numInWeathFiles,
+    unsigned int ****weathInStartEnd,
+    char ****weathInFiles,
+    int ***inWeathStrideInfo,
+    LOG_INFO *LogInfo
+);
+
+void SW_NCIN_create_units_converters(
+    SW_NETCDF_IN *SW_netCDFIn, LOG_INFO *LogInfo
 );
 
 #ifdef __cplusplus

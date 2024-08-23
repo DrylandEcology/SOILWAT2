@@ -217,7 +217,7 @@ void SW_RUN_deepCopy(
     }
 
 #ifdef SWNETCDF
-    SW_FILESTATUS_deepCopy(
+    SW_PATHOUT_deepCopy(
         &dest->SW_PathOutputs, &source->SW_PathOutputs, OutDom, LogInfo
     );
     if (LogInfo->stopRun) {
@@ -437,18 +437,6 @@ void SW_CTL_setup_domain(
 
     SW_DOM_construct(SW_Domain->SW_SpinUp.rng_seed, SW_Domain);
 
-#if defined(SWNETCDF)
-    SW_NC_read(
-        &SW_Domain->netCDFInput,
-        &SW_Domain->OutDom.netCDFOutput,
-        &SW_Domain->SW_PathInputs,
-        LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-#endif
-
     SW_DOM_read(SW_Domain, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -457,13 +445,33 @@ void SW_CTL_setup_domain(
     SW_DOM_calc_nSUIDs(SW_Domain);
 
 #if defined(SWNETCDF)
+    SW_NC_read(
+        &SW_Domain->netCDFInput,
+        &SW_Domain->OutDom.netCDFOutput,
+        &SW_Domain->SW_PathInputs,
+        SW_Domain->startyr,
+        SW_Domain->endyr,
+        LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    SW_NCIN_create_units_converters(&SW_Domain->netCDFInput, LogInfo);
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     // Create domain template if it does not exist (and exit)
     char *fnameDomainTemplateNC;
 
     fnameDomainTemplateNC =
-        (renameDomainTemp) ? SW_Domain->netCDFInput.InFilesNC[vNCdom] : NULL;
+        (renameDomainTemp) ?
+            SW_Domain->SW_PathInputs.inFileNames[eSW_InDomain][vNCdom] :
+            NULL;
 
-    if (!FileExists(SW_Domain->netCDFInput.InFilesNC[vNCdom])) {
+    if (!FileExists(SW_Domain->SW_PathInputs.inFileNames[eSW_InDomain][vNCdom]
+        )) {
         SW_NCIN_create_domain_template(
             SW_Domain, fnameDomainTemplateNC, LogInfo
         );

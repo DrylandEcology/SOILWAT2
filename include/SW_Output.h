@@ -284,7 +284,7 @@ void SW_OUT_set_SXWrequests(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 #endif
 
 #if defined(SWNETCDF)
-void SW_FILESTATUS_deepCopy(
+void SW_PATHOUT_deepCopy(
     SW_PATH_OUTPUTS *dest_files,
     SW_PATH_OUTPUTS *source_files,
     SW_OUT_DOM *OutDom,

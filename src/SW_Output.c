@@ -38,13 +38,14 @@ History:
 #include "include/SW_datastructs.h" // for SW_RUN, SW_OUTTEXT, LOG_INFO
 #include "include/SW_Defines.h"     // for eSWC, OutPeriod, NVEGTYPES
 #include "include/SW_Files.h"       // for eOutput, eSite
-#include "include/SW_Site.h"        // for echo_inputs
-#include "include/SW_Times.h"       // for Today, Yesterday
-#include "include/SW_VegEstab.h"    // for echo_VegEstab
-#include "include/SW_VegProd.h"     // for echo_VegProd
-#include "include/Times.h"          // for Time_days_in_month, WKDAYS
-#include <stdio.h>                  // for snprintf, fprintf, printf
-#include <string.h>                 // for strcmp, memccpy, memset
+#include "include/SW_netCDF_Input.h" // for eSW_InDomain, vNCdom
+#include "include/SW_Site.h"         // for echo_inputs
+#include "include/SW_Times.h"        // for Today, Yesterday
+#include "include/SW_VegEstab.h"     // for echo_VegEstab
+#include "include/SW_VegProd.h"      // for echo_VegProd
+#include "include/Times.h"           // for Time_days_in_month, WKDAYS
+#include <stdio.h>                   // for snprintf, fprintf, printf
+#include <string.h>                  // for strcmp, memccpy, memset
 
 // Array-based output declarations:
 #if defined(SW_OUTARRAY) || defined(SWNETCDF)
@@ -3804,7 +3805,7 @@ netCDF output files stored in SW_PATH_OUTPUTS
     information that do not change throughout simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_FILESTATUS_deepCopy(
+void SW_PATHOUT_deepCopy(
     SW_PATH_OUTPUTS *dest_files,
     SW_PATH_OUTPUTS *source_files,
     SW_OUT_DOM *OutDom,
@@ -3879,61 +3880,61 @@ void SW_OUTDOM_deepCopy(
             }
         }
 
-        // #if defined(SWNETCDF)
-        //         int varNum;
-        //         int attNum;
+#if defined(SWNETCDF)
+        int varNum;
+        int attNum;
 
-        //         if (source->nvar_OUT[k] > 0 && source->use[k]) {
+        SW_NETCDF_OUT *netCDFOut_src = &source->netCDFOutput;
+        SW_NETCDF_OUT *netCDFOut_dest = &dest->netCDFOutput;
 
-        //             SW_NC_alloc_outputkey_var_info(dest, k, LogInfo);
-        //             if (LogInfo->stopRun) {
-        //                 return; // Exit function prematurely due to error
-        //             }
+        if (source->nvar_OUT[k] > 0 && source->use[k]) {
 
-        //             if (!isnull(source->reqOutputVars[k])) {
-        //                 for (varNum = 0; varNum < source->nvar_OUT[k];
-        //                 varNum++) {
-        //                     dest->reqOutputVars[k][varNum] =
-        //                         source->reqOutputVars[k][varNum];
+            SW_NCOUT_alloc_outputkey_var_info(dest, k, LogInfo);
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 
-        //                     if (dest->reqOutputVars[k][varNum]) {
-        //                         for (attNum = 0; attNum < MAX_NATTS;
-        //                         attNum++) {
-        //                             if
-        //                             (!isnull(source->outputVarInfo[k][varNum][attNum]
-        //                                 )) {
-        //                                 dest->outputVarInfo[k][varNum]
-        //                                                    [attNum] =
-        //                                                    Str_Dup(
-        //                                     source->outputVarInfo[k][varNum][attNum],
-        //                                     LogInfo
-        //                                 );
-        //                                 if (LogInfo->stopRun) {
-        //                                     return; // Exit function
-        //                                     prematurely due to
-        //                                             // error
-        //                                 }
-        //                             }
-        //                         }
+            if (!isnull(netCDFOut_src->reqOutputVars[k])) {
+                for (varNum = 0; varNum < source->nvar_OUT[k]; varNum++) {
+                    netCDFOut_dest->reqOutputVars[k][varNum] =
+                        netCDFOut_src->reqOutputVars[k][varNum];
 
-        //                         dest[k].units_sw[k][varNum] =
-        //                             Str_Dup(source->units_sw[k][varNum],
-        //                             LogInfo);
-        //                         if (LogInfo->stopRun) {
-        //                             return; // Exit function prematurely due
-        //                             to error
-        //                         }
-        //                     }
-        //                 }
-        //             }
+                    if (netCDFOut_dest->reqOutputVars[k][varNum]) {
+                        for (attNum = 0; attNum < MAX_NATTS; attNum++) {
+                            if (!isnull(netCDFOut_src->outputVarInfo[k][varNum]
+                                                                    [attNum])) {
+                                netCDFOut_dest
+                                    ->outputVarInfo[k][varNum][attNum] =
+                                    Str_Dup(
+                                        netCDFOut_src
+                                            ->outputVarInfo[k][varNum][attNum],
+                                        LogInfo
+                                    );
+                                if (LogInfo->stopRun) {
+                                    return; // Exit function prematurely due to
+                                            // error
+                                }
+                            }
+                        }
 
-        //         } else {
-        //             dest->reqOutputVars[k] = NULL;
-        //             dest->outputVarInfo[k] = NULL;
-        //             dest->units_sw[k] = NULL;
-        //             dest->uconv[k] = NULL;
-        //         }
-        // #endif
+                        netCDFOut_dest->units_sw[k][varNum] = Str_Dup(
+                            netCDFOut_src->units_sw[k][varNum], LogInfo
+                        );
+                        if (LogInfo->stopRun) {
+                            return; // Exit function prematurely due
+                                    // to error
+                        }
+                    }
+                }
+            }
+
+        } else {
+            netCDFOut_dest->reqOutputVars[k] = NULL;
+            netCDFOut_dest->outputVarInfo[k] = NULL;
+            netCDFOut_dest->units_sw[k] = NULL;
+            netCDFOut_dest->uconv[k] = NULL;
+        }
+#endif
     }
 }
 

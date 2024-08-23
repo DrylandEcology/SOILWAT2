@@ -2,14 +2,15 @@
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
 #include "include/SW_netCDF_Output.h" // for SW_NCOUT_read_out_vars, ...
-#include "include/filefuncs.h"      // for LogError, FileExists, CloseFile
-#include "include/generic.h"        // for Bool, swFALSE, LOGERROR, swTRUE
-#include "include/myMemory.h"       // for Str_Dup, Mem_Malloc
-#include "include/SW_datastructs.h" // for LOG_INFO, SW_NETCDF_OUT, SW_DOMAIN
-#include "include/SW_Defines.h"     // for MAX_FILENAMESIZE, OutPeriod
-#include "include/SW_Domain.h"      // for SW_DOM_calc_ncSuid
-#include "include/SW_Files.h"       // for eNCInAtt, eNCIn, eNCOutVars
-#include "include/SW_netCDF_General.h"  // for SW_NC_create_netCDF_var, ...
+#include "include/filefuncs.h"        // for LogError, FileExists, CloseFile
+#include "include/generic.h"          // for Bool, swFALSE, LOGERROR, swTRUE
+#include "include/myMemory.h"         // for Str_Dup, Mem_Malloc
+#include "include/SW_datastructs.h"   // for LOG_INFO, SW_NETCDF_OUT, SW_DOMAIN
+#include "include/SW_Defines.h"       // for MAX_FILENAMESIZE, OutPeriod
+#include "include/SW_Domain.h"        // for SW_DOM_calc_ncSuid
+#include "include/SW_Files.h"         // for eNCInAtt, eNCIn, eNCOutVars
+#include "include/SW_netCDF_General.h"
+#include "include/SW_netCDF_Input.h"    // for SW_NCOUT_read_out_vars, ...
 #include "include/SW_Output.h"          // for ForEachOutKey, SW_ESTAB, pd2...
 #include "include/SW_Output_outarray.h" // for iOUTnc
 #include "include/SW_VegProd.h"         // for key2veg
@@ -27,9 +28,6 @@
 
 /** Number of columns in 'Input_nc/SW2_netCDF_output_variables.tsv' */
 #define NOUT_VAR_INPUTS 12
-
-/** Maximum number of attributes an output variable may have */
-#define MAX_NATTS 6
 
 /** Number of columns within the output variable netCDF of interest */
 #define NUM_OUTPUT_INFO 6
@@ -209,57 +207,6 @@ static void get_2d_output_key(
                         }
                     }
                 }
-            }
-        }
-    }
-}
-
-/**
-@brief Allocate memory for information in regards to output variables
-within SW_OUT_DOM
-
-@param[out] outkeyVars Holds all information about output variables
-    in netCDFs (e.g., output variable name)
-@param[in] nVar Number of variables available for current output key
-@param[out] LogInfo Holds information on warnings and errors
-*/
-static void alloc_outvars(char ****outkeyVars, int nVar, LOG_INFO *LogInfo) {
-
-    *outkeyVars = NULL;
-
-    if (nVar > 0) {
-
-        int index;
-        int varNum;
-        int attNum;
-
-        // Allocate all memory for the variable information in the current
-        // output key
-        *outkeyVars = (char ***) Mem_Malloc(
-            sizeof(char **) * nVar, "alloc_outvars()", LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
-
-        for (index = 0; index < nVar; index++) {
-            (*outkeyVars)[index] = NULL;
-        }
-
-        for (index = 0; index < nVar; index++) {
-            (*outkeyVars)[index] = (char **) Mem_Malloc(
-                sizeof(char *) * NUM_OUTPUT_INFO, "alloc_outvars()", LogInfo
-            );
-            if (LogInfo->stopRun) {
-                for (varNum = 0; varNum < index; varNum++) {
-                    free((void *) (*outkeyVars)[varNum]);
-                }
-                free((void *) *outkeyVars);
-                return; // Exit function prematurely due to error
-            }
-
-            for (attNum = 0; attNum < NUM_OUTPUT_INFO; attNum++) {
-                (*outkeyVars)[index][attNum] = NULL;
             }
         }
     }
@@ -907,59 +854,6 @@ static void check_counts_against_vardim(
 #endif // SWDEBUG
 
 /**
-@brief Allocate memory for internal SOILWAT2 units
-
-@param[out] units_sw Array of text representations of SOILWAT2 units
-@param[in] nVar Number of variables available for current output key
-@param[out] LogInfo Holds information on warnings and errors
-*/
-static void alloc_unitssw(char ***units_sw, int nVar, LOG_INFO *LogInfo) {
-
-    *units_sw = NULL;
-
-    if (nVar > 0) {
-
-        // Initialize the variable within SW_OUT_DOM
-        *units_sw = (char **) Mem_Malloc(
-            sizeof(char *) * nVar, "alloc_unitssw()", LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
-
-        for (int index = 0; index < nVar; index++) {
-            (*units_sw)[index] = NULL;
-        }
-    }
-}
-
-/**
-@brief Allocate memory for udunits2 unit converter
-
-@param[out] uconv Array of pointers to udunits2 unit converter
-@param[in] nVar Number of variables available for current output key
-@param[out] LogInfo Holds information on warnings and errors
-*/
-static void alloc_uconv(sw_converter_t ***uconv, int nVar, LOG_INFO *LogInfo) {
-
-    *uconv = NULL;
-
-    if (nVar > 0) {
-
-        *uconv = (sw_converter_t **) Mem_Malloc(
-            sizeof(sw_converter_t *) * nVar, "alloc_uconv()", LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
-
-        for (int index = 0; index < nVar; index++) {
-            (*uconv)[index] = NULL;
-        }
-    }
-}
-
-/**
 @brief Create and fill a new output netCDF file
 
 \p hasConsistentSoilLayerDepths determines if vertical dimension (soil depth)
@@ -1120,34 +1014,6 @@ static void create_output_file(
     // Only close the file if it was created
     if (newFileID > -1) {
         nc_close(newFileID);
-    }
-}
-
-/**
-@brief Allocate information about whether or not a variable should be output
-
-@param[out] reqOutVar Specifies the number of variables that can be output
-    for a given output key
-@param[in] nVar Number of variables available for current output key
-@param[out] LogInfo Holds information on warnings and errors
-*/
-static void alloc_outReq(Bool **reqOutVar, int nVar, LOG_INFO *LogInfo) {
-
-    *reqOutVar = NULL;
-
-    if (nVar > 0) {
-
-        // Initialize the variable within SW_OUT_DOM which specifies if a
-        // variable is to be written out or not
-        *reqOutVar =
-            (Bool *) Mem_Malloc(sizeof(Bool) * nVar, "alloc_outReq()", LogInfo);
-        if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
-
-        for (int index = 0; index < nVar; index++) {
-            (*reqOutVar)[index] = swFALSE;
-        }
     }
 }
 
@@ -1715,26 +1581,33 @@ void SW_NCOUT_alloc_outputkey_var_info(
 
     SW_NETCDF_OUT *netCDFOutput = &OutDom->netCDFOutput;
 
-    alloc_outReq(
+    SW_NC_alloc_req(
         &netCDFOutput->reqOutputVars[key], OutDom->nvar_OUT[key], LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    alloc_outvars(
-        &netCDFOutput->outputVarInfo[key], OutDom->nvar_OUT[key], LogInfo
+    SW_NC_alloc_vars(
+        &netCDFOutput->outputVarInfo[key],
+        OutDom->nvar_OUT[key],
+        NUM_OUTPUT_INFO,
+        LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    alloc_unitssw(&netCDFOutput->units_sw[key], OutDom->nvar_OUT[key], LogInfo);
+    SW_NC_alloc_unitssw(
+        &netCDFOutput->units_sw[key], OutDom->nvar_OUT[key], LogInfo
+    );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    alloc_uconv(&netCDFOutput->uconv[key], OutDom->nvar_OUT[key], LogInfo);
+    SW_NC_alloc_uconv(
+        &netCDFOutput->uconv[key], OutDom->nvar_OUT[key], LogInfo
+    );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }

@@ -9,7 +9,7 @@
 #include "include/SW_Defines.h"        // for MAX_FILENAMESIZE, OutPeriod
 #include "include/SW_Domain.h"         // for SW_DOM_calc_ncSuid
 #include "include/SW_Files.h"          // for eNCInAtt, eNCIn, eNCOutVars
-#include "include/SW_netCDF_General.h" // for vNCdom, vNCprog, VARNAME_INDEX
+#include "include/SW_netCDF_General.h" // for vNCdom, vNCprog
 #include "include/SW_Output.h"         // for ForEachOutKey, SW_ESTAB, pd2...
 #include "include/SW_Output_outarray.h" // for iOUTnc
 #include "include/SW_VegProd.h"         // for key2veg
@@ -32,6 +32,167 @@
 
 /** Progress status: SUID failed to simulate */
 #define PRGRSS_FAIL ((signed char) -1)
+
+#define NIN_VAR_INPUTS 20
+
+/* Columns of interest, and excludes:
+    - Input key and input name
+    - "do input" flags in value
+    - Input file name/pattern
+    - St years and stride years start
+    - Calendar override
+    - User comment */
+#define NUM_INPUT_INFO 13
+
+/* Maximum number of variables per input key */
+#define SW_INNMAXVARS 22
+
+/* Indices within `inWeathStrideInfo` for stride year and stride start */
+#define SW_INSTRIDEYR 0
+#define SW_INSTRIDESTART 1
+
+/* This array and `possVarNames` must line up the variables within each key */
+static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] =
+    {
+        {"1", "1"},                      /* inDomain */
+        {"degree_north", "degree_east"}, /* inSpatial */
+        {"1", "m", "degree", "degree"},  /* inTopo */
+        {
+            "1",       "cm", "cm",   "g/cm3", "cm3/cm3", "g/g", "g/g",
+            "g/g", /*inSoil*/
+            "cm3/cm3", "1",  "degC", "1",     "1",       "1",   "1",
+            "1",       "1",  "1",    "1",     "1",       "1",   "1"
+        },
+        {"1",      "m2 m-2", "m2 m-2", "g m-2", "g m-2",
+         "1",      "NA", /*inVeg*/
+         "m2 m-2", "g m-2",  "g m-2",  "1",     "NA",
+         "m2 m-2", "g m-2",  "g m-2",  "1",     "NA",
+         "m2 m-2", "g m-2",  "g m-2",  "1",     "NA"},
+        {"1", /* inWeather */
+         "degC",
+         "degC",
+         "cm",
+         "%",
+         "m/s",
+         "m/s",
+         "m/s",
+         "%",
+         "%",
+         "%",
+         "%",
+         "degC",
+         "kPa",
+         "NA"},
+        {"1", "%", "m/s", "%", "kg/m3", "1"} /* inClimate */
+};
+
+static const char *const possVarNames[SW_NINKEYSNC][SW_INNMAXVARS] = {
+    {/* inDomain */
+     "domain",
+     "progress"
+    },
+
+    {/* inSpatial */
+     "latitude",
+     "longitude"
+    },
+
+    {/* inTopo */
+     "indexSpatial",
+     "elevation",
+     "slope",
+     "aspect"
+    },
+
+    {
+        /* inSoil */
+        "indexSpatial",
+        "depth",
+        "width",
+        "soilDensityInput",
+        "fractionVolBulk_gravel",
+        "fractionWeightMatric_sand",
+        "fractionWeightMatric_clay",
+        "fractionWeightMatric_silt",
+        "soc",
+        "impermeability",
+        "avgLyrTempInit",
+        "evap_coeff",
+
+        "transp_coeff[SW_TREES]",
+        "transp_coeff[SW_SHRUB]",
+        "transp_coeff[SW_FORB]",
+        "transp_coeff[SW_GRASS]",
+
+        "swrcp[1]",
+        "swrcp[2]",
+        "swrcp[3]",
+        "swrcp[4]",
+        "swrcp[5]",
+        "swrcp[6]",
+    },
+
+    {/* inVeg */
+     "indexSpatial",     "bareGround.fCover",
+
+     "Trees.fCover",     "Trees.litter",      "Trees.biomass",
+     "Trees.pct_live",   "Trees.lai_conv",
+
+     "Shrubs.fCover",    "Shrubs.litter",     "Shrubs.biomass",
+     "Shrubs.pct_live",  "Shrubs.lai_conv",
+
+     "Forbs.fCover",     "Forbs.litter",      "Forbs.biomass",
+     "Forbs.pct_live",   "Forbs.lai_conv",
+
+     "Grasses.fCover",   "Grasses.litter",    "Grasses.biomass",
+     "Grasses.pct_live", "Grasses.lai_conv"
+    },
+
+    {/* inWeather */
+     "indexSpatial",
+     "temp_max",
+     "temp_min",
+     "ppt",
+     "cloudcov",
+     "windspeed",
+     "windspeed_east",
+     "windspeed_north",
+     "r_humidity",
+     "rmax_humidity",
+     "rmin_humidity",
+     "spec_humidity",
+     "temp_dewpoint",
+     "actualVaporPressure",
+     "shortWaveRad"
+    },
+
+    {/* inClimate */
+     "indexSpatial",
+     "cloudcov",
+     "windspeed",
+     "r_humidity",
+     "snow_density",
+     "n_rain_per_day"
+    }
+};
+
+static const char *const generalVegNames[] = {
+    "<veg>.fCover",
+    "<veg>.litter",
+    "<veg>.biomass",
+    "<veg>.pct_live",
+    "<veg>.lai_conv"
+};
+
+static const char *const possInKeys[] = {
+    "inDomain",
+    "inSpatial",
+    "inTopo",
+    "inSoil",
+    "inVeg",
+    "inWeather",
+    "inClimate"
+};
 
 /* =================================================== */
 /*             Local Function Definitions              */
@@ -67,6 +228,253 @@ static void fill_netCDF_var_uint(
         );
     }
 }
+
+/*
+@brief Translate an input keys into indices the program can understand
+
+@param[in] varKey Read-in variable key/category from input file
+@param[in] varName Read-in variable SW2 variable name from input file
+@param[out] inKey Translated key from read-in values to local arrays
+@param[out] inVarNum Translated key from read-in values to local arrays
+@param[out] isIndex Specifies that the read-in values were related to an index
+file
+@param[out] isGeneralVeg Specifies that the read-in values were a generalization
+of veg variables
+*/
+static void get_2d_input_key(
+    char *varKey,
+    char *varName,
+    int *inKey,
+    int *inVarNum,
+    Bool *isIndex,
+    Bool *isGeneralVeg
+) {
+
+    int keyNum;
+    int varNum;
+    const int numGeneralVegNames = 5;
+
+    *inKey = eSW_NoInKey;
+    *inVarNum = KEY_NOT_FOUND;
+    *isIndex = swFALSE;
+    *isGeneralVeg = swFALSE;
+
+    for (keyNum = 0; keyNum < SW_NINKEYSNC && *inKey == eSW_NoInKey; keyNum++) {
+        if (strcmp(varKey, possInKeys[keyNum]) == 0) {
+            *inKey = keyNum;
+        }
+    }
+
+    if (*inKey != eSW_NoInKey) {
+        for (varNum = 0; varNum < numVarsInKey[*inKey]; varNum++) {
+            if (strcmp(possVarNames[*inKey][varNum], varName) == 0) {
+                if (varNum == 0 && keyNum != eSW_InDomain &&
+                    keyNum != eSW_InSpatial) {
+
+                    *isIndex = swTRUE;
+                }
+
+                *inVarNum = varNum;
+                return;
+            }
+        }
+
+        if (*inKey == eSW_InVeg) {
+            for (varNum = 0; varNum < numGeneralVegNames; varNum++) {
+                if (strcmp(generalVegNames[varNum], varName) == 0) {
+                    *isGeneralVeg = swTRUE;
+                    *inVarNum = varNum;
+                    return;
+                }
+            }
+        }
+    }
+}
+
+/**
+@brief Check that the required variable information was input through
+the input variable file
+
+@param[in] inputInfo Attribute information for a specific input variable
+@param[in] inWeathStrideInfo List of stride information for weather variables
+@param[in] weathReadInVar Specifies which weather variables are to be input
+@param[in] key Current category of input variables being tested
+@param[in] varNum Variable number within the given key
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void check_variable_for_required(
+    char ***inputInfo,
+    int **inWeathStrideInfo,
+    Bool *weathReadInVar,
+    int key,
+    int varNum,
+    LOG_INFO *LogInfo
+) {
+
+    int attNum;
+    int mustTestAttInd[] = {
+        SW_INNCVARNAME,
+        SW_INGRIDTYPE,
+        SW_INCRSNAME,
+        SW_INCRSEQUIV,
+        SW_INXAXIS,
+        SW_INYAXIS
+    };
+    const char *mustTestAttNames[] = {
+        "ncVarName",
+        "ncGridType",
+        "ncCRSName",
+        "ncCRSEquivalency",
+        "ncXAxisName",
+        "ncYAxisName"
+    };
+    int mustTestAtts = 6;
+    int testInd;
+    int numVars = numVarsInKey[eSW_InWeather];
+    int inVarNum;
+
+    /* Indices are based on the global array `possVarNames` under `inVeg` */
+    Bool isLitter =
+        (Bool) (varNum == 3 || varNum == 8 || varNum == 13 || varNum == 18);
+    Bool isBio =
+        (Bool) (varNum == 4 || varNum == 9 || varNum == 14 || varNum == 19);
+    Bool isPctLive =
+        (Bool) (varNum == 5 || varNum == 10 || varNum == 15 || varNum == 20);
+    Bool isLAI =
+        (Bool) (varNum == 6 || varNum == 11 || varNum == 16 || varNum == 21);
+
+    Bool testVeg = swFALSE;
+
+    Bool isIndex = (Bool) (key > eSW_InSpatial && varNum == 0);
+
+    char *varName = inputInfo[varNum][SW_INNCVARNAME];
+
+    /* Make sure that the universally required attributes are filled in
+       skip the testing of the nc var units (can be NA) */
+    for (attNum = 0; attNum < mustTestAtts; attNum++) {
+        testInd = mustTestAttInd[attNum];
+
+        if (strcmp(inputInfo[varNum][testInd], "NA") == 0) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "The input column '%s' contains a value of 'NA' for the "
+                "NC variable name '%s'. This is a required column and "
+                "must have information.",
+                mustTestAttNames[attNum],
+                varName
+            );
+            return; /* Exit function prematurely due to error */
+        }
+    }
+
+    if (!isIndex) {
+        testVeg = (Bool)
+            (key == eSW_InVeg && (isLitter || isBio || isPctLive || isLAI));
+
+        if (key == eSW_InSoil) {
+            if (strcmp(inputInfo[varNum][SW_INZAXIS], "NA") == 0) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "The input column '%s' contains a value of 'NA' for the "
+                    "NC variable name '%s'. This is a required column and "
+                    "must have information.",
+                    "ncZAxisName",
+                    varName
+                );
+                return; /* Exit function prematurely due to error */
+            }
+        } else if (key == eSW_InWeather || key == eSW_InClimate || testVeg) {
+            if (strcmp(inputInfo[varNum][SW_INTAXIS], "NA") == 0) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "The input column '%s' contains a value of 'NA' for the "
+                    "NC variable name '%s'. This is a required column and "
+                    "must have information.",
+                    "ncTAxisName",
+                    varName
+                );
+                return; /* Exit function prematurely due to error */
+            }
+        }
+
+        if (key == eSW_InWeather) {
+            if (inWeathStrideInfo[varNum][SW_INSTRIDEYR] > -1) {
+                if (inWeathStrideInfo[varNum][SW_INSTRIDESTART] == -1 ||
+                    strcmp(inputInfo[varNum][SW_INSTPATRN], "NA") == 0) {
+
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "The input column 'ncStrideStart' and/or "
+                        "'ncStridePattern' "
+                        "contains a value of 'NA' for the NC variable name "
+                        "'%s'. "
+                        "These are required columns when 'ncStrideYears' is "
+                        "not "
+                        "'Inf' and must have information.",
+                        varName
+                    );
+                    return; /* Exit function prematurely due to error */
+                }
+            }
+
+            for (inVarNum = 1; inVarNum < numVars; inVarNum++) {
+                if (!weathReadInVar[inVarNum]) {
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "All weather variables must be turned on or off."
+                    );
+                    return; /* Exit function prematurely due to error */
+                }
+            }
+        }
+    }
+}
+
+/**
+@brief Wrapper function to test all input variables for required
+input columns
+
+@param[in] inputInfo Attribute information for all input variables
+@param[in] inWeathStrideInfo List of stride information for weather variables
+@param[in] readInVars Specifies which variables are to be read-in as input
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void check_variables(
+    char ****inputInfo,
+    int **inWeathStrideInfo,
+    Bool *readInVars[],
+    LOG_INFO *LogInfo
+) {
+    int key;
+    int varNum;
+
+    ForEachNCInKey(key) {
+        if (readInVars[key][0]) {
+            for (varNum = 0; varNum < numVarsInKey[key]; varNum++) {
+                if (readInVars[key][varNum + 1]) {
+                    check_variable_for_required(
+                        inputInfo[key],
+                        inWeathStrideInfo,
+                        readInVars[key],
+                        key,
+                        varNum,
+                        LogInfo
+                    );
+                    if (LogInfo->stopRun) {
+                        /* Exit function prematurely due to failed test */
+                        return;
+                    }
+                }
+            }
+        }
+    }
+}
+
 /**
 @brief Helper function to `fill_domain_netCDF_vars()` to allocate
 memory for writing out values
@@ -311,13 +719,8 @@ static void fill_domain_netCDF_vals(
 
         // Sites are filled with the same values as the domain variable
         fill_netCDF_var_uint(
-            domFileID,
-            siteID,
-            domVals,
-            start,
-            domCount,
-            LogInfo
-         );
+            domFileID, siteID, domVals, start, domCount, LogInfo
+        );
 
         if (LogInfo->stopRun) {
             goto freeMem; // Exit function prematurely due to error
@@ -1127,16 +1530,16 @@ static void fill_netCDF_with_invariants(
 */
 static void fill_prog_netCDF_vals(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
-    int domVarID = SW_Domain->netCDFInput.ncVarIDs[vNCdom];
-    int progVarID = SW_Domain->netCDFInput.ncVarIDs[vNCprog];
+    int domVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCdom];
+    int progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprog];
     unsigned int domStatus;
     unsigned long suid;
     unsigned long ncSuid[2];
     unsigned long nSUIDs = SW_Domain->nSUIDs;
     unsigned long nDimY = SW_Domain->nDimY;
     unsigned long nDimX = SW_Domain->nDimX;
-    int progFileID = SW_Domain->netCDFInput.ncFileIDs[vNCprog];
-    int domFileID = SW_Domain->netCDFInput.ncFileIDs[vNCdom];
+    int progFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprog];
+    int domFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom];
     size_t start1D[] = {0};
     size_t start2D[] = {0, 0};
     size_t count1D[] = {nSUIDs};
@@ -1180,6 +1583,331 @@ static void fill_prog_netCDF_vals(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 // Free allocated memory
 freeMem:
     free(vals);
+}
+
+/*
+@brief Allocate space for input weather override calendars
+
+@param[out] overrideCalendars Array holding a single override
+calendar for every weather variable
+@param[in] numInVars Maximum number of variables that are contained in
+in the weather category
+@param[out] LogInfo LogInfo Holds information on warnings and errors
+*/
+static void alloc_overrideCalendars(
+    char ***overrideCalendars, int numInVars, LOG_INFO *LogInfo
+) {
+    int varNum;
+
+    (*overrideCalendars) = (char **) Mem_Malloc(
+        sizeof(char *) * numInVars, "alloc_overrideCalendars()", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return; /* Exit function prematurely due to error */
+    }
+
+    for (varNum = 0; varNum < numInVars; varNum++) {
+        (*overrideCalendars)[varNum] = NULL;
+    }
+}
+
+/*
+@brief Allocate all information that pertains to weather input files
+
+@param[out] numInWeathFiles Specifies how many weather input files are
+used for each weather variable
+@param[out] weathInStartEnd Specifies the start/end year of each generated
+input file
+@param[out] weathInFiles Weather input file formats
+@param[out] inWeathStrideInfo Specifies the stride of each weather variable
+that all files will use to calculate the years in which they cover
+@param[in] numInVars Maximum number of variables that are contained in
+in the weather category
+@param[out] LogInfo LogInfo Holds information on warnings and errors
+*/
+static void alloc_weath_input_files(
+    unsigned int **numInWeathFiles,
+    unsigned int ****weathInStartEnd,
+    char ****weathInFiles,
+    int ***inWeathStrideInfo,
+    int numInVars,
+    LOG_INFO *LogInfo
+) {
+
+    int varNum;
+
+    /* Allocate/initialize number of weather input files */
+    (*numInWeathFiles) = (unsigned int *) Mem_Malloc(
+        sizeof(unsigned int) * numInVars, "alloc_input_files()", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return; /* Exit functionality prematurely due to error */
+    }
+
+    for (varNum = 0; varNum < numInVars; varNum++) {
+        (*numInWeathFiles)[varNum] = 0;
+    }
+
+    /* Allocate/initialize weather input file start/end information */
+    (*weathInStartEnd) = (unsigned int ***) Mem_Malloc(
+        sizeof(unsigned int **) * numInVars, "alloc_input_files()", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return; /* Exit functionality prematurely due to error */
+    }
+
+    for (varNum = 0; varNum < numInVars; varNum++) {
+        (*weathInStartEnd)[varNum] = NULL;
+    }
+
+    /* Allocate/initialize weather stride information */
+    (*inWeathStrideInfo) = (int **) Mem_Malloc(
+        sizeof(int *) * numInVars, "alloc_input_files()", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return; /* Exit functionality prematurely due to error */
+    }
+
+    for (varNum = 0; varNum < numInVars; varNum++) {
+        (*inWeathStrideInfo)[varNum] = NULL;
+    }
+
+    for (varNum = 0; varNum < numInVars; varNum++) {
+        (*inWeathStrideInfo)[varNum] =
+            (int *) Mem_Malloc(sizeof(int) * 2, "alloc_input_files()", LogInfo);
+        if (LogInfo->stopRun) {
+            return; /* Exit functionality prematurely due to error */
+        }
+
+        (*inWeathStrideInfo)[varNum][0] = 0;
+        (*inWeathStrideInfo)[varNum][1] = 0;
+    }
+
+    /* Allocate/initialize weather input files */
+    (*weathInFiles) = (char ***) Mem_Malloc(
+        sizeof(char **) * numInVars, "alloc_input_files()", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return; /* Exit functionality prematurely due to error */
+    }
+
+    for (varNum = 0; varNum < numInVars; varNum++) {
+        (*weathInFiles)[varNum] = NULL;
+    }
+}
+
+static void alloc_weath_input_info(
+    char ****outWeathFileNames,
+    unsigned int ****weathInStartEnd,
+    int numWeathIn,
+    int weathVar,
+    LOG_INFO *LogInfo
+) {
+
+    int inFileNum;
+
+    (*outWeathFileNames)[weathVar] = (char **) Mem_Malloc(
+        sizeof(char *) * numWeathIn, "alloc_weath_input_info()", LogInfo
+    );
+
+    if (LogInfo->stopRun) {
+        return; /* Exit function prematurely due to error */
+    }
+
+    for (inFileNum = 0; inFileNum < numWeathIn; inFileNum++) {
+        (*outWeathFileNames)[weathVar][inFileNum] = NULL;
+    }
+
+    (*weathInStartEnd)[weathVar] = (unsigned int **) Mem_Malloc(
+        sizeof(unsigned int *) * numWeathIn, "alloc_weath_input_info()", LogInfo
+    );
+
+    if (LogInfo->stopRun) {
+        return; /* Exit function prematurely due to error */
+    }
+
+    for (inFileNum = 0; inFileNum < numWeathIn; inFileNum++) {
+        (*weathInStartEnd)[weathVar][inFileNum] = NULL;
+    }
+
+    for (inFileNum = 0; inFileNum < numWeathIn; inFileNum++) {
+        (*weathInStartEnd)[weathVar][inFileNum] = (unsigned int *) Mem_Malloc(
+            sizeof(unsigned int) * 2, "alloc_weath_input_info()", LogInfo
+        );
+    }
+
+    for (inFileNum = 0; inFileNum < numWeathIn; inFileNum++) {
+        (*weathInStartEnd)[weathVar][inFileNum][0] = 0;
+        (*weathInStartEnd)[weathVar][inFileNum][1] = 0;
+    }
+}
+
+/*
+@brief Generate expected input weather file names based on various
+information provided by the user
+
+@param[in] weathNameFormat User-inputted weather file name format for
+every weather variable
+@param[in] strideInfo Specifies the start/number of years that the
+weather files will follow
+@param[in] weatherInputInfo Specifies
+@param[in] startYr Start year of the simulation
+@param[in] endYr End year of the simulation
+@param[out] outWeathFileNames Generated input file names based on stride
+informatoin
+@param[out] weathInStartEnd Specifies that start/end years of each input
+weather file
+@param[out] numWeathInFiles Specifies the number of input files each
+weather variable has
+@param[out] LogInfo LogInfo Holds information on warnings and errors
+*/
+static void generate_weather_filenames(
+    char **weathNameFormat,
+    int **strideInfo,
+    char ***weatherInputInfo,
+    TimeInt startYr,
+    TimeInt endYr,
+    char ****outWeathFileNames,
+    unsigned int ****weathInStartEnd,
+    unsigned int *numWeathInFiles,
+    LOG_INFO *LogInfo
+) {
+
+    int numStYr;
+    int numStStart;
+    int weathVar;
+    char *stridePattern = NULL;
+    unsigned int beginFileYr;
+    unsigned int endFileYr;
+    Bool doubleStrVal = swFALSE;
+    Bool singleStrVal = swFALSE;
+    Bool naStrVal = swFALSE;
+    int sprintfRes = 0;
+    int numWeathIn = 0;
+    int inFileNum;
+    const int infNAVal = -1;
+
+    char newFileName[MAX_FILENAMESIZE] = {'\0'};
+
+    for (weathVar = 1; weathVar < numVarsInKey[eSW_InWeather]; weathVar++) {
+
+        numStYr = strideInfo[weathVar][SW_INSTRIDEYR];
+        numStStart = strideInfo[weathVar][SW_INSTRIDESTART];
+        stridePattern = weatherInputInfo[weathVar][SW_INSTPATRN];
+
+
+        doubleStrVal = (Bool) (strcmp(stridePattern, "%4d-%4d") == 0 ||
+                               strcmp(stridePattern, "%4d_%4d") == 0);
+        singleStrVal = (Bool) (strcmp(stridePattern, "%4d") == 0);
+        naStrVal = (Bool) (strcmp(stridePattern, "NA") == 0);
+
+        if (numStStart > (int) endYr) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Stride start year for weather variable '%s' is greater "
+                "than the end year of the program (%d).",
+                weatherInputInfo[weathVar][SW_INNCVARNAME],
+                endYr
+            );
+            return; /* Exit function prematurely due to error */
+        }
+
+        if (numStYr == infNAVal) {
+            numStYr = (int) (endYr - startYr + 1);
+            numStStart = (int) startYr;
+        }
+
+        /* Calculate the number of weather files and start/end year of
+           the first one */
+        numWeathIn =
+            (naStrVal) ?
+                1 :
+                (int) ceil((double) (endYr - numStStart + 1) / numStYr);
+        numWeathInFiles[weathVar] = numWeathIn;
+
+        beginFileYr = numStStart;
+        endFileYr = beginFileYr + numStYr - 1;
+
+        alloc_weath_input_info(
+            outWeathFileNames, weathInStartEnd, numWeathIn, weathVar, LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; /* Exit function prematurely due to error */
+        }
+
+        /* Handle if there is only one input file which does not
+           have a year format */
+        if (naStrVal) {
+            (*outWeathFileNames)[weathVar][0] =
+                Str_Dup(weathNameFormat[weathVar], LogInfo);
+            if (LogInfo->stopRun) {
+                return; /* Exit function prematurely due to error */
+            }
+
+            numWeathInFiles[weathVar] = 1;
+
+            (*weathInStartEnd)[weathVar][0][0] = numStYr;
+            (*weathInStartEnd)[weathVar][0][1] = endYr;
+
+            continue;
+        }
+
+        /* Generate every input file */
+        inFileNum = 0;
+        while (beginFileYr <= endYr) {
+            if (doubleStrVal) {
+                sprintfRes = snprintf(
+                    newFileName,
+                    MAX_FILENAMESIZE,
+                    weathNameFormat[weathVar],
+                    beginFileYr,
+                    endFileYr
+                );
+            } else if (singleStrVal) {
+                sprintfRes = snprintf(
+                    newFileName,
+                    MAX_FILENAMESIZE,
+                    weathNameFormat[weathVar],
+                    beginFileYr
+                );
+            } else {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Could not understand stride pattern '%s' for file "
+                    "format '%s'.",
+                    stridePattern,
+                    weathNameFormat[weathVar]
+                );
+                return; /* Exit function prematurely due to error */
+            }
+
+            if (sprintfRes < 0) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Could not create input file name from '%s'.",
+                    weathNameFormat[weathVar]
+                );
+                return; /* Exit function prematurely due to error */
+            }
+
+            (*outWeathFileNames)[weathVar][inFileNum] =
+                Str_Dup(newFileName, LogInfo);
+            if (LogInfo->stopRun) {
+                return; /* Exit function prematurely due to error */
+            }
+
+            (*weathInStartEnd)[weathVar][inFileNum][0] = beginFileYr;
+            (*weathInStartEnd)[weathVar][inFileNum][1] = endFileYr;
+
+            beginFileYr += numStYr;
+            endFileYr += numStYr;
+
+            inFileNum++;
+        }
+    }
 }
 
 /* =================================================== */
@@ -1255,13 +1983,14 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     const signed char flagVals[] = {PRGRSS_FAIL, PRGRSS_READY, PRGRSS_DONE};
     const char *flagMeanings =
         "simulation_error ready_to_simulate simulation_complete";
-    const char *progVarName = SW_netCDFIn->varNC[vNCprog];
+    const char *progVarName =
+        SW_netCDFIn->inVarInfo[eSW_InDomain][vNCprog][SW_INNCVARNAME];
     const char *freq = "fx";
 
-    int *progFileID = &SW_netCDFIn->ncFileIDs[vNCprog];
-    const char *domFileName = SW_netCDFIn->InFilesNC[vNCdom];
-    const char *progFileName = SW_netCDFIn->InFilesNC[vNCprog];
-    int *progVarID = &SW_netCDFIn->ncVarIDs[vNCprog];
+    int *progFileID = &SW_PathInputs->ncDomFileIDs[vNCprog];
+    const char *domFileName = inDomFileNames[vNCdom];
+    const char *progFileName = inDomFileNames[vNCprog];
+    int *progVarID = &SW_netCDFIn->ncDomVarIDs[vNCprog];
 
     // SW_NC_create_full_var/SW_NC_create_template
     // No time variable/dimension
@@ -1463,7 +2192,9 @@ void SW_NCIN_create_domain_template(
     SW_DOMAIN *SW_Domain, char *fileName, LOG_INFO *LogInfo
 ) {
 
-    int *domFileID = &SW_Domain->netCDFInput.ncFileIDs[vNCdom];
+    int *domFileID = &SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom];
+    char *domVarName =
+        SW_Domain->netCDFInput.inVarInfo[eSW_InDomain][vNCdom][SW_INNCVARNAME];
     int sDimID = 0;
     int YDimID = 0;
     int XDimID = 0;
@@ -1556,7 +2287,7 @@ void SW_NCIN_create_domain_template(
 
     // Create domain variable
     fill_domain_netCDF_domain(
-        SW_Domain->netCDFInput.varNC[vNCdom],
+        domVarName,
         &domVarID,
         domDims,
         *domFileID,
@@ -1700,8 +2431,8 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     for (file = 0; file < SW_NVARDOM; file++) {
         SW_NC_check(
             SW_Domain,
-            SW_Domain->netCDFInput.ncFileIDs[file],
-            SW_Domain->netCDFInput.InFilesNC[file],
+            SW_Domain->SW_PathInputs.ncDomFileIDs[file],
+            SW_Domain->SW_PathInputs.inFileNames[eSW_InDomain][file],
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -1718,21 +2449,32 @@ These files are kept open during simulations
     * to identify and update progress
 
 @param[in,out] SW_netCDFIn Constant netCDF input file information
+@param[in,out] SW_PathInputs Struct of type SW_PATH_INPUTS which
+holds basic information about input files and values
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_NCIN_open_dom_prog_files(SW_NETCDF_IN *SW_netCDFIn, LOG_INFO *LogInfo) {
+void SW_NCIN_open_dom_prog_files(
+    SW_NETCDF_IN *SW_netCDFIn, SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo
+) {
+
+    char **inDomFileNames = SW_PathInputs->inFileNames[eSW_InDomain];
+    char ***inDomVarInfo = SW_netCDFIn->inVarInfo[eSW_InDomain];
+    int *ncDomFileIDs = SW_PathInputs->ncDomFileIDs;
+
     int fileNum;
     int openType = NC_WRITE;
     int *fileID;
     char *fileName;
-    char *domFile = SW_netCDFIn->InFilesNC[vNCdom];
-    char *progFile = SW_netCDFIn->InFilesNC[vNCprog];
+    char *domFile = inDomFileNames[vNCdom];
+    char *progFile = inDomFileNames[vNCprog];
+    char *varName;
     Bool progFileDomain = (Bool) (strcmp(domFile, progFile) == 0);
 
     // Open the domain/progress netCDF
     for (fileNum = vNCdom; fileNum <= vNCprog; fileNum++) {
-        fileName = SW_netCDFIn->InFilesNC[fileNum];
-        fileID = &SW_netCDFIn->ncFileIDs[fileNum];
+        fileName = inDomFileNames[fileNum];
+        fileID = &ncDomFileIDs[fileNum];
+        varName = inDomVarInfo[fileNum][SW_INNCVARNAME];
 
         if (FileExists(fileName)) {
             if (nc_open(fileName, openType, fileID) != NC_NOERR) {
@@ -1809,20 +2551,84 @@ void SW_NCIN_init_ptrs(SW_NETCDF_IN *SW_netCDFIn) {
 @brief Deconstruct input netCDF information
 
 @param[in,out] SW_netCDFIn Constant netCDF input file information
+@param[in] key Category of input variables that is being deconstructed
 */
-void SW_NCIN_deconstruct(SW_NETCDF_IN *SW_netCDFIn) {
-    int index;
+void SW_NCIN_dealloc_inputkey_var_info(SW_NETCDF_IN *SW_netCDFIn, int key) {
+    int varNum;
+    int varsInKey;
+    int attNum;
+    char *attStr;
 
-    for (index = 0; index < SW_NVARDOM; index++) {
-        if (!isnull(SW_netCDFIn->varNC[index])) {
-            free(SW_netCDFIn->varNC[index]);
-            SW_netCDFIn->varNC[index] = NULL;
+    varsInKey = numVarsInKey[key];
+
+    if (key == eSW_InWeather) {
+        if (!isnull(SW_netCDFIn->weathCalOverride)) {
+            for (varNum = 0; varNum < numVarsInKey[eSW_InWeather]; varNum++) {
+                if (!isnull(SW_netCDFIn->weathCalOverride[varNum])) {
+                    free((void *) SW_netCDFIn->weathCalOverride[varNum]);
+                    SW_netCDFIn->weathCalOverride[varNum] = NULL;
+                }
+            }
+
+            free((void *) SW_netCDFIn->weathCalOverride);
+            SW_netCDFIn->weathCalOverride = NULL;
+        }
+    }
+
+    if (!isnull(SW_netCDFIn->inVarInfo[key])) {
+        for (varNum = 0; varNum < varsInKey; varNum++) {
+            if (!isnull(SW_netCDFIn->inVarInfo[key][varNum])) {
+                for (attNum = 0; attNum < NUM_INPUT_INFO; attNum++) {
+                    attStr = SW_netCDFIn->inVarInfo[key][varNum][attNum];
+
+                    if (!isnull(attStr)) {
+                        free(
+                            (void *) SW_netCDFIn->inVarInfo[key][varNum][attNum]
+                        );
+                        SW_netCDFIn->inVarInfo[key][varNum][attNum] = NULL;
+                    }
+                }
+
+                free((void *) SW_netCDFIn->inVarInfo[key][varNum]);
+                SW_netCDFIn->inVarInfo[key][varNum] = NULL;
+            }
         }
 
-        if (!isnull(SW_netCDFIn->InFilesNC[index])) {
-            free(SW_netCDFIn->InFilesNC[index]);
-            SW_netCDFIn->InFilesNC[index] = NULL;
+        free((void *) SW_netCDFIn->inVarInfo[key]);
+        SW_netCDFIn->inVarInfo[key] = NULL;
+    }
+
+    if (!isnull(SW_netCDFIn->units_sw[key])) {
+        for (varNum = 0; varNum < varsInKey; varNum++) {
+            if (!isnull((void *) SW_netCDFIn->units_sw[key][varNum])) {
+                free((void *) SW_netCDFIn->units_sw[key][varNum]);
+                SW_netCDFIn->units_sw[key][varNum] = NULL;
+            }
         }
+
+        free((void *) SW_netCDFIn->units_sw[key]);
+        SW_netCDFIn->units_sw[key] = NULL;
+    }
+
+    if (!isnull(SW_netCDFIn->uconv[key])) {
+        for (int varNum = 0; varNum < varsInKey; varNum++) {
+            if (!isnull(SW_netCDFIn->uconv[key][varNum])) {
+#if defined(SWNETCDF) && defined(SWUDUNITS)
+                cv_free(SW_netCDFIn->uconv[key][varNum]);
+#else
+                free((void *) SW_netCDFIn->uconv[key][varNum]);
+#endif
+                SW_netCDFIn->uconv[key][varNum] = NULL;
+            }
+        }
+
+        free((void *) SW_netCDFIn->uconv[key]);
+        SW_netCDFIn->uconv[key] = NULL;
+    }
+
+    if (!isnull((void *) SW_netCDFIn->readInVars[key])) {
+        free((void *) SW_netCDFIn->readInVars[key]);
+        SW_netCDFIn->readInVars[key] = NULL;
     }
 }
 
@@ -1837,18 +2643,617 @@ into from it's source counterpart
 void SW_NCIN_deepCopy(
     SW_NETCDF_IN *source_input, SW_NETCDF_IN *dest_input, LOG_INFO *LogInfo
 ) {
-    int index;
+    int k;
+    int numVars;
+    int varNum;
+    int atNum;
 
-    for (index = 0; index < SW_NVARDOM; index++) {
-        dest_input->varNC[index] = Str_Dup(source_input->varNC[index], LogInfo);
+    memcpy(dest_input, source_input, sizeof(*dest_input));
+
+    ForEachNCInKey(k) {
+        SW_NCIN_alloc_inputkey_var_info(dest_input, k, LogInfo);
         if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
+            return; /* Exit function prematurely due to error */
+        }
+        if (!isnull(source_input->inVarInfo[k])) {
+            numVars = numVarsInKey[k];
+
+            dest_input->readInVars[k][0] = source_input->readInVars[k][0];
+
+            for (varNum = 0; varNum < numVars; varNum++) {
+                dest_input->readInVars[k][varNum + 1] =
+                    source_input->readInVars[k][varNum + 1];
+
+                if (!isnull(source_input->inVarInfo[k][varNum])) {
+                    for (atNum = 0; atNum < NUM_INPUT_INFO; atNum++) {
+
+                        if (!isnull(source_input->inVarInfo[k][varNum][atNum]
+                            )) {
+
+                            dest_input->inVarInfo[k][varNum][atNum] = Str_Dup(
+                                source_input->inVarInfo[k][varNum][atNum],
+                                LogInfo
+                            );
+                            if (LogInfo->stopRun) {
+                                return; /* Exit function prematurely due
+                                            to error */
+                            }
+                        }
+                    }
+                }
+
+                if (!isnull(source_input->units_sw[k][varNum])) {
+                    dest_input->units_sw[k][varNum] =
+                        Str_Dup(source_input->units_sw[k][varNum], LogInfo);
+                    if (LogInfo->stopRun) {
+                        return; // Exit function prematurely due
+                                // to error
+                    }
+                }
+            }
+        }
+    }
+}
+
+/*
+@brief Read input netCDF variables that the user will provide
+
+@param[in,out] SW_netCDFIn Constant netCDF input file information
+@param[in] SW_PathInputs Struct of type SW_PATH_INPUTS which
+holds basic information about input files and values
+@param[in] startYr End year of the simulation
+@param[in] endYr End year of the simulation
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NCIN_read_input_vars(
+    SW_NETCDF_IN *SW_netCDFIn,
+    SW_PATH_INPUTS *SW_PathInputs,
+    TimeInt startYr,
+    TimeInt endYr,
+    LOG_INFO *LogInfo
+) {
+
+    FILE *f;
+    int lineno = 0;
+    char *MyFileName;
+    int scanRes;
+    int infoIndex;
+    int copyInfoIndex = 0;
+    int index;
+    int strideInfoIndex;
+    char *tempPtr = NULL;
+    char inbuf[LARGE_VALUE] = {'\0'};
+    char input[NIN_VAR_INPUTS][MAX_ATTVAL_SIZE] = {"\0"};
+    const char *readLineFormat =
+        "%10[^\t]\t%50[^\t]\t%20[^\t]\t%1[^\t]\t%255[^\t]\t%50[^\t]\t"
+        "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t"
+        "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t"
+        "%255[^\t]\t%255[^\t]";
+
+    const int keyInd = 0;
+    const int SWVarNameInd = 1;
+    const int SWUnitInd = 2;
+    const int doInputInd = 3;
+    const int ncFileNameInd = 4;
+    const int ncVarNameInd = 5;
+    const int ncVarUnitsInd = 6;
+    const int ncGridTypeInd = 7;
+    const int ncCRSNameInd = 8;
+    const int ncCRSEquivInd = 9;
+    const int ncXAxisInd = 10;
+    const int ncYAxisInd = 11;
+    const int ncZAxisInd = 12;
+    const int ncTAxisInd = 13;
+    const int ncStYrInd = 14;
+    const int ncStStartInd = 15;
+    const int ncStPatInd = 16;
+    const int ncCalendarInd = 17;
+    const int ncVAxisInd = 18;
+    const int userComInd = 19;
+
+    int inKey = -1;
+    int inVarNum = -1;
+    int doInput = 0;
+    int maxVarIter = 1;
+    int varIter;
+    const int genVegInc = 5;
+
+    Bool copyInfo = swFALSE;
+    Bool isIndexFile = swFALSE;
+    Bool isGeneralVeg = swFALSE;
+
+    MyFileName = SW_PathInputs->InFiles[eNCIn];
+    f = OpenFile(MyFileName, "r", LogInfo);
+    if (LogInfo->stopRun) {
+        return; /* Exit function prematurely due to error */
+    }
+
+    SW_NCIN_alloc_input_var_info(SW_netCDFIn, LogInfo);
+    if (LogInfo->stopRun) {
+        return; /* Exit function prematurely due to error */
+    }
+
+    /* Ignore the first row (column names) */
+    GetALine(f, inbuf, MAX_FILENAMESIZE);
+
+    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+        lineno++;
+
+        scanRes = sscanf(
+            inbuf,
+            readLineFormat,
+            input[keyInd],
+            input[SWVarNameInd],
+            input[SWUnitInd],
+            input[doInputInd],
+            input[ncFileNameInd],
+            input[ncVarNameInd],
+            input[ncVarUnitsInd],
+            input[ncGridTypeInd],
+            input[ncCRSNameInd],
+            input[ncCRSEquivInd],
+            input[ncXAxisInd],
+            input[ncYAxisInd],
+            input[ncZAxisInd],
+            input[ncTAxisInd],
+            input[ncStYrInd],
+            input[ncStStartInd],
+            input[ncStPatInd],
+            input[ncCalendarInd],
+            input[ncVAxisInd],
+            input[userComInd]
+        );
+
+        if (scanRes != NIN_VAR_INPUTS) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "%s [row %d]: %d instead of %d columns found. "
+                "Enter 'NA' if value should not have anything.",
+                MyFileName,
+                lineno + 1,
+                scanRes,
+                NIN_VAR_INPUTS
+            );
+            goto closeFile; /* Exit function prematurely due to error */
         }
 
-        dest_input->InFilesNC[index] =
-            Str_Dup(source_input->InFilesNC[index], LogInfo);
+        doInput = sw_strtoi(input[doInputInd], MyFileName, LogInfo);
+        if (LogInfo->stopRun) {
+            goto closeFile;
+        }
+
+        if (doInput) {
+            get_2d_input_key(
+                input[keyInd],
+                input[SWVarNameInd],
+                &inKey,
+                &inVarNum,
+                &isIndexFile,
+                &isGeneralVeg
+            );
+
+            if (isIndexFile) {
+                if (inVarNum == KEY_NOT_FOUND) {
+                    LogError(
+                        LogInfo,
+                        LOGWARN,
+                        "Could not find a match for the index name '%s'."
+                        "This will be skipped.",
+                        input[SWVarNameInd]
+                    );
+                    continue;
+                }
+            } else if (inKey == eSW_NoInKey || inVarNum == KEY_NOT_FOUND) {
+                LogError(
+                    LogInfo,
+                    LOGWARN,
+                    "Could not determine what the variable '%s' is "
+                    "within the key '%s', this will be skipped.",
+                    input[SWVarNameInd],
+                    input[keyInd]
+                );
+                continue;
+            }
+
+            if (isGeneralVeg) {
+                maxVarIter = NVEGTYPES;
+                inVarNum = (inVarNum == 0) ? 2 : inVarNum + 2;
+            } else {
+                maxVarIter = 1;
+            }
+
+            /* Copy various information including the weather/input
+               variable information;
+               If the current variable is a general one
+               (see `generalVegNames`), loop through NVEGTYPES to copy
+               the same information for the same variables across
+               all vegetation types;
+               if a variable is already seen, it's skipped */
+            for (varIter = 0; varIter < maxVarIter; varIter++) {
+                copyInfoIndex = 0;
+
+                /* Ignore this entry if this input has been seen already */
+                if (SW_netCDFIn->readInVars[inKey][inVarNum + 1]) {
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "The input variable '%s' has already been read-in.",
+                        input[SWVarNameInd]
+                    );
+                    goto closeFile;
+                }
+
+                /* Check to see if the key hasn't been input before and
+                if correct, allocate file space for the key */
+                if (!SW_netCDFIn->readInVars[inKey][0]) {
+                    SW_NCIN_alloc_file_information(
+                        numVarsInKey[inKey],
+                        inKey,
+                        &SW_PathInputs->inFileNames[inKey],
+                        &SW_PathInputs->numInWeathFiles,
+                        &SW_PathInputs->weathInStartEnd,
+                        &SW_PathInputs->weathInFiles,
+                        &SW_PathInputs->inWeathStrideInfo,
+                        LogInfo
+                    );
+                    if (LogInfo->stopRun) {
+                        /* Exit function prematurely due to error */
+                        goto closeFile;
+                    }
+                }
+
+                // /* Handle weather-only information */
+                if (inKey == eSW_InWeather) {
+                    strideInfoIndex = SW_INSTRIDEYR;
+
+                    /* Copy stride number of years and stride start year*/
+                    for (index = ncStYrInd; index <= ncStStartInd; index++) {
+                        if (strcmp(input[index], "Inf") == 0 ||
+                            strcmp(input[index], "NA") == 0) {
+
+                            SW_PathInputs
+                                ->inWeathStrideInfo[inVarNum][strideInfoIndex] =
+                                -1;
+                        } else {
+                            SW_PathInputs
+                                ->inWeathStrideInfo[inVarNum][strideInfoIndex] =
+                                sw_strtoi(input[index], MyFileName, LogInfo);
+                        }
+                        if (LogInfo->stopRun) {
+                            goto closeFile; /* Exit function prematurely due to
+                                            error */
+                        }
+
+                        strideInfoIndex++;
+                    }
+
+                    SW_netCDFIn->weathCalOverride[inVarNum] =
+                        Str_Dup(input[ncCalendarInd], LogInfo);
+                    if (LogInfo->stopRun) {
+                        goto closeFile; /* Exit function prematurely due to
+                                           error */
+                    }
+                }
+
+                SW_netCDFIn->readInVars[inKey][inVarNum + 1] = swTRUE;
+
+                /* Shortcut the flags in the first index to reduce checking
+                   in the future */
+                SW_netCDFIn->readInVars[inKey][0] = swTRUE;
+
+                // /* Save file to input file list */
+                SW_PathInputs->inFileNames[inKey][inVarNum] =
+                    Str_Dup(input[ncFileNameInd], LogInfo);
+                if (LogInfo->stopRun) {
+                    goto closeFile; /* Exit function prematurely due to error */
+                }
+
+                // /* Copy variable unit for SW2 */
+                tempPtr = input[SWUnitInd];
+                if (strcmp(tempPtr, swInVarUnits[inKey][inVarNum]) != 0) {
+                    tempPtr = (char *) swInVarUnits[inKey][inVarNum];
+                    LogError(
+                        LogInfo,
+                        LOGWARN,
+                        "Input column, 'SW2 units', value does not match "
+                        "the units of SW2, the units '%s' will be "
+                        "used instead for the SW2 variable '%s', %s.",
+                        tempPtr,
+                        input[SWVarNameInd],
+                        input[SWUnitInd]
+                    );
+                }
+                SW_netCDFIn->units_sw[inKey][inVarNum] =
+                    Str_Dup(tempPtr, LogInfo);
+                if (LogInfo->stopRun) {
+                    goto closeFile; /* Exit function prematurely due to error */
+                }
+
+
+                // /* Copy other useful information that is not soley for
+                // weather or specifying if the weather variable is to be input
+                // */
+                for (infoIndex = SWUnitInd; infoIndex < userComInd;
+                     infoIndex++) {
+                    copyInfo = (Bool) (infoIndex != doInputInd &&
+                                       infoIndex != ncStYrInd &&
+                                       infoIndex != ncStStartInd &&
+                                       infoIndex != ncCalendarInd);
+
+                    if (copyInfo) {
+                        SW_netCDFIn->inVarInfo[inKey][inVarNum][copyInfoIndex] =
+                            Str_Dup(input[infoIndex], LogInfo);
+
+                        if (LogInfo->stopRun) {
+                            goto closeFile; /* Exit function prematurely due to
+                                               error */
+                        }
+
+                        copyInfoIndex++;
+                    }
+                }
+
+                if (inKey == eSW_InSoil && !isIndexFile) {
+                    if (strcmp(input[ncZAxisInd], "NA") == 0) {
+                        LogError(
+                            LogInfo,
+                            LOGERROR,
+                            "Soil variable '%s' does not have a name for the "
+                            "Z-axis where one is required.",
+                            input[SWVarNameInd]
+                        );
+                        goto closeFile;
+                    }
+                }
+
+                inVarNum += (inVarNum == 1) ? 1 : genVegInc;
+            }
+        }
+    }
+
+    check_variables(
+        SW_netCDFIn->inVarInfo,
+        SW_PathInputs->inWeathStrideInfo,
+        SW_netCDFIn->readInVars,
+        LogInfo
+    );
+    if (LogInfo->stopRun) {
+        goto closeFile;
+    }
+
+    if (SW_netCDFIn->readInVars[eSW_InWeather][0]) {
+        generate_weather_filenames(
+            SW_PathInputs->inFileNames[eSW_InWeather],
+            SW_PathInputs->inWeathStrideInfo,
+            SW_netCDFIn->inVarInfo[eSW_InWeather],
+            startYr,
+            endYr,
+            &SW_PathInputs->weathInFiles,
+            &SW_PathInputs->weathInStartEnd,
+            SW_PathInputs->numInWeathFiles,
+            LogInfo
+        );
+    }
+
+closeFile: { CloseFile(&f, LogInfo); }
+}
+
+/**
+@brief Wrapper function to allocate input request variables
+and input variable information
+
+@param[out] SW_netCDFIn Constant netCDF input file information
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NCIN_alloc_input_var_info(
+    SW_NETCDF_IN *SW_netCDFIn, LOG_INFO *LogInfo
+) {
+    int key;
+
+    ForEachNCInKey(key) {
+        SW_NCIN_alloc_inputkey_var_info(SW_netCDFIn, key, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
     }
+}
+
+/*
+@brief Allocate/initialize input information based on an input category
+
+@param[out] SW_netCDFIn Constant netCDF input file information
+@param[in] key Category of input information that is being initialized
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NCIN_alloc_inputkey_var_info(
+    SW_NETCDF_IN *SW_netCDFIn, int key, LOG_INFO *LogInfo
+) {
+
+    if (key == eSW_InWeather) {
+        alloc_overrideCalendars(
+            &SW_netCDFIn->weathCalOverride, numVarsInKey[key], LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+    }
+
+    SW_NC_alloc_req(
+        &SW_netCDFIn->readInVars[key], numVarsInKey[key] + 1, LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return; /* Exit function prematurely due to error */
+    }
+
+    SW_NC_alloc_vars(
+        &SW_netCDFIn->inVarInfo[key], numVarsInKey[key], NUM_INPUT_INFO, LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return; /* Exit function prematurely due to error */
+    }
+
+    SW_NC_alloc_unitssw(
+        &SW_netCDFIn->units_sw[key], numVarsInKey[key], LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return; /* Exit function prematurely due to error */
+    }
+
+    SW_NC_alloc_uconv(&SW_netCDFIn->uconv[key], numVarsInKey[key], LogInfo);
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+}
+
+/*
+@brief Allocate/initialize all input file information
+
+@param[in] numInVars Maximum number of variables within the given
+input key
+@param[in] key Category of input information that is being initialized
+@param[out] inputFiles List of user-provided input files
+@param[out] numInWeathFiles List of number of weather input files
+@param[out] weathInStartEnd List of start/end years of every input weather file
+@param[out] weathInFiles List of all weather input files
+@param[out] inWeathStrideInfo List of stride information for weather variables
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NCIN_alloc_file_information(
+    int numInVars,
+    int key,
+    char ***inputFiles,
+    unsigned int **numInWeathFiles,
+    unsigned int ****weathInStartEnd,
+    char ****weathInFiles,
+    int ***inWeathStrideInfo,
+    LOG_INFO *LogInfo
+) {
+
+    int varNum;
+
+    /* Allocate/intiialize input and initialize index files */
+    *inputFiles = (char **) Mem_Malloc(
+        sizeof(char *) * numInVars, "alloc_input_files()", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return; /* Exit function prematurely due to error */
+    }
+
+    for (varNum = 0; varNum < numInVars; varNum++) {
+        (*inputFiles)[varNum] = NULL;
+    }
+
+    if (key == eSW_InWeather) {
+        alloc_weath_input_files(
+            numInWeathFiles,
+            weathInStartEnd,
+            weathInFiles,
+            inWeathStrideInfo,
+            numInVars,
+            LogInfo
+        );
+    }
+}
+
+/**
+Create unit converters for input variables
+
+This function requires previous calls to
+    - SW_NCIN_alloc_output_var_info() to initialize
+      SW_NETCDF_IN.uconv[varIndex] to NULL
+    - SW_NCIN_read_input_vars() to obtain user requested input units
+
+@param[in,out] SW_netCDFIn Constant netCDF input file information
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NCIN_create_units_converters(
+    SW_NETCDF_IN *SW_netCDFIn, LOG_INFO *LogInfo
+) {
+    int varIndex;
+    int key;
+
+#if defined(SWUDUNITS)
+    ut_system *system;
+    ut_unit *unitFrom;
+    ut_unit *unitTo;
+
+    /* silence udunits2 error messages */
+    ut_set_error_message_handler(ut_ignore);
+
+    /* Load unit system database */
+    system = ut_read_xml(NULL);
+#endif
+
+    ForEachNCInKey(key) {
+        if (!SW_netCDFIn->readInVars[key][0]) {
+            continue;
+        }
+
+        for (varIndex = 0; varIndex < numVarsInKey[key]; varIndex++) {
+            if (!SW_netCDFIn->readInVars[key][varIndex + 1]) {
+                continue; // Skip variable iteration
+            }
+
+#if defined(SWUDUNITS)
+            if (!isnull(SW_netCDFIn->units_sw[key][varIndex])) {
+                unitFrom = ut_parse(
+                    system, SW_netCDFIn->units_sw[key][varIndex], UT_UTF8
+                );
+                unitTo = ut_parse(
+                    system,
+                    SW_netCDFIn->inVarInfo[key][varIndex][SW_INVARUNITS],
+                    UT_UTF8
+                );
+
+                if (ut_are_convertible(unitFrom, unitTo)) {
+                    // SW_netCDFIn.uconv[key][varIndex] was previously
+                    // to NULL initialized
+                    SW_netCDFIn->uconv[key][varIndex] =
+                        ut_get_converter(unitFrom, unitTo);
+                }
+
+                if (isnull(SW_netCDFIn->uconv[key][varIndex])) {
+                    // ut_are_convertible() is false or ut_get_converter()
+                    // failed
+                    LogError(
+                        LogInfo,
+                        LOGWARN,
+                        "Units of variable '%s' cannot get converted from "
+                        "internal '%s' to requested '%s'. "
+                        "Input will use internal units.",
+                        SW_netCDFIn->inVarInfo[key][varIndex][SW_INNCVARNAME],
+                        SW_netCDFIn->units_sw[key][varIndex],
+                        SW_netCDFIn->inVarInfo[key][varIndex][SW_INVARUNITS]
+                    );
+
+                    /* converter is not available: output in internal units */
+                    free(SW_netCDFIn->inVarInfo[key][varIndex][SW_INVARUNITS]);
+                    SW_netCDFIn->inVarInfo[key][varIndex][SW_INVARUNITS] =
+                        Str_Dup(SW_netCDFIn->units_sw[key][varIndex], LogInfo);
+                }
+
+                ut_free(unitFrom);
+                ut_free(unitTo);
+            }
+
+#else
+            /* udunits2 is not available: output in internal units */
+            free(SW_netCDFIn->inVarInfo[key][varIndex][SW_INVARUNITS]);
+            if (!isnull(SW_netCDFIn->units_sw[key][varIndex])) {
+                SW_netCDFIn->inVarInfo[key][varIndex][SW_INVARUNITS] =
+                    Str_Dup(SW_netCDFIn->units_sw[key][varIndex], LogInfo);
+            }
+#endif
+
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+        }
+    }
+
+
+#if defined(SWUDUNITS)
+    ut_free_system(system);
+#endif
 }

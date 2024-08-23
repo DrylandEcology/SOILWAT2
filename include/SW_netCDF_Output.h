@@ -11,6 +11,13 @@ extern "C" {
 #endif
 
 /* =================================================== */
+/*                  Local Definitions                  */
+/* --------------------------------------------------- */
+
+/** Maximum number of attributes an output variable may have */
+#define MAX_NATTS 6
+
+/* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 

@@ -41,6 +41,11 @@
 #include <stdlib.h>                 // for free
 #include <string.h>                 // for memccpy, strcmp, strlen, memcpy
 
+#if defined(SWNETCDF)
+#include "include/SW_netCDF_General.h"
+#include "include/SW_netCDF_Input.h"
+#endif
+
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
@@ -297,11 +302,11 @@ closeFile: { CloseFile(&f, LogInfo); }
 void SW_F_deepCopy(
     SW_PATH_INPUTS *source, SW_PATH_INPUTS *dest, LOG_INFO *LogInfo
 ) {
-    int file;
+    unsigned int file;
 
     memcpy(dest, source, sizeof(*dest));
 
-    SW_F_init_ptrs(dest->InFiles);
+    SW_F_init_ptrs(dest);
 
     for (file = 0; file < SW_NFILES; file++) {
         dest->InFiles[file] = Str_Dup(source->InFiles[file], LogInfo);
@@ -310,6 +315,124 @@ void SW_F_deepCopy(
             return; // Exit prematurely due to error
         }
     }
+
+#if defined(SWNETCDF)
+    int k;
+    int varNum;
+    unsigned int numFiles;
+
+    ForEachNCInKey(k) {
+        if (!isnull(source->inFileNames[k])) {
+            SW_NCIN_alloc_file_information(
+                numVarsInKey[k],
+                k,
+                &dest->inFileNames[k],
+                &dest->numInWeathFiles,
+                &dest->weathInStartEnd,
+                &dest->weathInFiles,
+                &dest->inWeathStrideInfo,
+                LogInfo
+            );
+
+            if (LogInfo->stopRun) {
+                return; /* Exit function prematurely due to error */
+            }
+
+            for (varNum = 0; varNum < numVarsInKey[k]; varNum++) {
+                if (!isnull(source->inFileNames[k][varNum])) {
+                    dest->inFileNames[k][varNum] =
+                        Str_Dup(source->inFileNames[k][varNum], LogInfo);
+                    if (LogInfo->stopRun) {
+                        return; /* Exit function prematurely due to error */
+                    }
+                }
+            }
+        }
+    }
+
+    if (!isnull(source->numInWeathFiles)) {
+
+        for (varNum = 0; varNum < numVarsInKey[eSW_InWeather]; varNum++) {
+            dest->numInWeathFiles[varNum] = source->numInWeathFiles[varNum];
+        }
+
+        if (!isnull(source->inWeathStrideInfo)) {
+            for (varNum = 0; varNum < numVarsInKey[eSW_InWeather]; varNum++) {
+                if (!isnull(source->inWeathStrideInfo[varNum])) {
+                    dest->inWeathStrideInfo[varNum][0] =
+                        source->inWeathStrideInfo[varNum][0];
+
+                    dest->inWeathStrideInfo[varNum][1] =
+                        source->inWeathStrideInfo[varNum][1];
+                }
+            }
+        }
+
+        if (!isnull(source->weathInFiles)) {
+            for (varNum = 0; varNum < numVarsInKey[eSW_InWeather]; varNum++) {
+                numFiles = source->numInWeathFiles[varNum];
+
+                if (!isnull(source->weathInFiles[varNum])) {
+                    dest->weathInFiles[varNum] = (char **) Mem_Malloc(
+                        sizeof(char *) * numFiles, "SW_F_deepCopy()", LogInfo
+                    );
+                    if (LogInfo->stopRun) {
+                        return; /* Exit function prematurely due to error */
+                    }
+
+                    for (file = 0; file < numFiles; file++) {
+                        if (!isnull(source->weathInFiles[varNum][file])) {
+                            dest->weathInFiles[varNum][file] = Str_Dup(
+                                source->weathInFiles[varNum][file], LogInfo
+                            );
+                            if (LogInfo->stopRun) {
+                                return; /* Exit prematurely due to error */
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!isnull(source->weathInStartEnd)) {
+            for (varNum = 0; varNum < numVarsInKey[eSW_InWeather]; varNum++) {
+                numFiles = source->numInWeathFiles[varNum];
+
+                if (!isnull(source->weathInStartEnd[varNum])) {
+                    dest->weathInStartEnd[varNum] =
+                        (unsigned int **) Mem_Malloc(
+                            sizeof(unsigned int *) * numFiles,
+                            "SW_F_deepCopy()",
+                            LogInfo
+                        );
+                    if (LogInfo->stopRun) {
+                        return; /* Exit function prematurely due to error */
+                    }
+
+                    for (file = 0; file < numFiles; file++) {
+                        if (!isnull(source->weathInStartEnd[varNum][file])) {
+                            dest->weathInStartEnd[varNum][file] =
+                                (unsigned int *) Mem_Malloc(
+                                    sizeof(unsigned int) * 2,
+                                    "SW_F_deepCopy()",
+                                    LogInfo
+                                );
+                            if (LogInfo->stopRun) {
+                                return; /* Exit function prematurely due to
+                                           error */
+                            }
+
+                            dest->weathInStartEnd[varNum][file][0] =
+                                source->weathInStartEnd[varNum][file][0];
+                            dest->weathInStartEnd[varNum][file][1] =
+                                source->weathInStartEnd[varNum][file][1];
+                        }
+                    }
+                }
+            }
+        }
+    }
+#endif
 }
 
 /**
@@ -325,6 +448,17 @@ void SW_F_init_ptrs(SW_PATH_INPUTS *SW_PathInputs) {
     for (file = 0; file < SW_NFILES; file++) {
         SW_PathInputs->InFiles[file] = NULL;
     }
+
+#if defined(SWNETCDF)
+    int k;
+
+    ForEachNCInKey(k) { SW_PathInputs->inFileNames[k] = NULL; }
+
+    SW_PathInputs->weathInFiles = NULL;
+    SW_PathInputs->numInWeathFiles = NULL;
+    SW_PathInputs->inWeathStrideInfo = NULL;
+    SW_PathInputs->weathInStartEnd = NULL;
+#endif
 }
 
 /**
@@ -367,6 +501,13 @@ void SW_F_construct(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
     }
 
     free(localfirstfile);
+
+#if defined(SWNETCDF)
+    SW_PathInputs->ncDomFileIDs[vNCdom] = -1;
+    SW_PathInputs->ncDomFileIDs[vNCprog] = -1;
+
+    SW_PathInputs->numInWeathFiles = 0;
+#endif
 }
 
 /**
@@ -384,4 +525,90 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
             SW_PathInputs->InFiles[i] = NULL;
         }
     }
+
+#if defined(SWNETCDF)
+
+    unsigned int numFiles;
+    unsigned int file;
+    int k;
+    int varNum;
+
+    ForEachNCInKey(k) {
+        if (!isnull(SW_PathInputs->inFileNames[k])) {
+            for (varNum = 0; varNum < numVarsInKey[k]; varNum++) {
+                if (!isnull(SW_PathInputs->inFileNames[k][varNum])) {
+                    free(SW_PathInputs->inFileNames[k][varNum]);
+                    SW_PathInputs->inFileNames[k][varNum] = NULL;
+                }
+            }
+
+            free((void *) SW_PathInputs->inFileNames[k]);
+            SW_PathInputs->inFileNames[k] = NULL;
+        }
+    }
+
+    if (!isnull(SW_PathInputs->numInWeathFiles)) {
+        if (!isnull(SW_PathInputs->weathInFiles)) {
+            for (varNum = 0; varNum < numVarsInKey[eSW_InWeather]; varNum++) {
+                numFiles = SW_PathInputs->numInWeathFiles[varNum];
+
+                if (!isnull(SW_PathInputs->weathInFiles[varNum])) {
+                    for (file = 0; file < numFiles; file++) {
+                        if (!isnull(SW_PathInputs->weathInFiles[varNum][file]
+                            )) {
+                            free((void *)
+                                     SW_PathInputs->weathInFiles[varNum][file]);
+                            SW_PathInputs->weathInFiles[varNum][file] = NULL;
+                        }
+                    }
+
+                    free((void *) SW_PathInputs->weathInFiles[varNum]);
+                    SW_PathInputs->weathInFiles[varNum] = NULL;
+                }
+            }
+
+            free((void *) SW_PathInputs->weathInFiles);
+            SW_PathInputs->weathInFiles = NULL;
+        }
+
+        if (!isnull(SW_PathInputs->weathInStartEnd)) {
+            for (varNum = 0; varNum < numVarsInKey[eSW_InWeather]; varNum++) {
+                numFiles = SW_PathInputs->numInWeathFiles[varNum];
+                if (!isnull(SW_PathInputs->weathInStartEnd[varNum])) {
+                    for (file = 0; file < numFiles; file++) {
+                        if (!isnull(SW_PathInputs->weathInStartEnd[varNum][file]
+                            )) {
+                            free((void *) SW_PathInputs
+                                     ->weathInStartEnd[varNum][file]);
+                            SW_PathInputs->weathInStartEnd[varNum][file] = NULL;
+                        }
+                    }
+                }
+
+                free((void *) SW_PathInputs->weathInStartEnd[varNum]);
+                SW_PathInputs->weathInStartEnd[varNum] = NULL;
+            }
+
+            free((void *) SW_PathInputs->weathInStartEnd);
+            SW_PathInputs->weathInStartEnd = NULL;
+        }
+
+        free((void *) SW_PathInputs->numInWeathFiles);
+        SW_PathInputs->numInWeathFiles = NULL;
+    }
+
+    if (!isnull((void *) SW_PathInputs->inWeathStrideInfo)) {
+        for (varNum = 0; varNum < numVarsInKey[eSW_InWeather]; varNum++) {
+            if (!isnull(SW_PathInputs->inWeathStrideInfo[varNum])) {
+                free((void *) SW_PathInputs->inWeathStrideInfo[varNum]);
+                SW_PathInputs->inWeathStrideInfo[varNum] = NULL;
+            }
+        }
+
+        free((void *) SW_PathInputs->inWeathStrideInfo);
+        SW_PathInputs->inWeathStrideInfo = NULL;
+    }
+
+    SW_NCIN_close_files(SW_PathInputs->ncDomFileIDs);
+#endif
 }

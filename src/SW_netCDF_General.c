@@ -1170,11 +1170,9 @@ void SW_NC_create_netCDF_var(
 @brief Deconstruct netCDF-related information
 
 @param[in,out] SW_netCDFOut Constant netCDF output file information
-@param[in,out] SW_netCDFIn Constant netCDF input file information
 */
-void SW_NC_deconstruct(SW_NETCDF_OUT *SW_netCDFOut, SW_NETCDF_IN *SW_netCDFIn) {
+void SW_NC_deconstruct(SW_NETCDF_OUT *SW_netCDFOut) {
     SW_NCOUT_deconstruct(SW_netCDFOut);
-    SW_NCIN_deconstruct(SW_netCDFIn);
 }
 
 /**
@@ -1202,8 +1200,8 @@ void SW_NC_deepCopy(
     SW_NCOUT_init_ptrs(dest_output);
     SW_NCIN_init_ptrs(dest_input);
 
+    SW_NCOUT_deepCopy(source_output, dest_output, LogInfo);
     if (LogInfo->stopRun) {
-        SW_NCOUT_deepCopy(source_output, source_output, LogInfo);
         return; /* Exit function prematurely due to error */
     }
 
@@ -1217,81 +1215,160 @@ void SW_NC_deepCopy(
 @param[in,out] SW_netCDFOut Constant netCDF output file information
 @param[in,out] SW_PathInputs Struct holding all information about the programs
     path/files
+@param[in] startYr Start year of the simulation
+@param[in] endYr End year of the simulation
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_read(
     SW_NETCDF_IN *SW_netCDFIn,
     SW_NETCDF_OUT *SW_netCDFOut,
     SW_PATH_INPUTS *SW_PathInputs,
+    TimeInt startYr,
+    TimeInt endYr,
     LOG_INFO *LogInfo
 ) {
-    static const char *possibleKeys[NUM_NC_IN_KEYS] = {"domain", "progress"};
-    static const Bool requiredKeys[NUM_NC_IN_KEYS] = {swTRUE, swTRUE};
-    Bool hasKeys[NUM_NC_IN_KEYS] = {swFALSE, swFALSE};
-
-    FILE *f;
-    char inbuf[MAX_FILENAMESIZE];
-    char *MyFileName;
-    char key[15]; // 15 - Max key size
-    char varName[MAX_FILENAMESIZE];
-    char path[MAX_FILENAMESIZE];
-    int keyID;
-    int scanRes;
-
-    MyFileName = SW_PathInputs->InFiles[eNCIn];
-    f = OpenFile(MyFileName, "r", LogInfo);
-
-    // Get domain file name
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
-        scanRes = sscanf(inbuf, "%14s %s %s", key, varName, path);
-
-        if (scanRes < 3) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "Not enough values found in %s (should be key, variable "
-                "name, path to input).",
-                MyFileName
-            );
-            goto closeFile;
-        }
-
-        keyID = key_to_id(key, possibleKeys, NUM_NC_IN_KEYS);
-        set_hasKey(
-            keyID, possibleKeys, hasKeys, LogInfo
-        ); // no error, only warnings possible
-
-        switch (keyID) {
-        case vNCdom:
-            SW_netCDFIn->varNC[vNCdom] = Str_Dup(varName, LogInfo);
-            SW_netCDFIn->InFilesNC[vNCdom] = Str_Dup(path, LogInfo);
-            break;
-        case vNCprog:
-            SW_netCDFIn->varNC[vNCprog] = Str_Dup(varName, LogInfo);
-            SW_netCDFIn->InFilesNC[vNCprog] = Str_Dup(path, LogInfo);
-            break;
-        default:
-            LogError(
-                LogInfo,
-                LOGWARN,
-                "Ignoring unknown key in %s, %s",
-                MyFileName,
-                key
-            );
-            break;
-        }
-    }
-
-    // Check if all required input was provided
-    check_requiredKeys(
-        hasKeys, requiredKeys, possibleKeys, NUM_NC_IN_KEYS, LogInfo
-    );
+    SW_NCIN_read_input_vars(SW_netCDFIn, SW_PathInputs, startYr, endYr, LogInfo);
     if (LogInfo->stopRun) {
-        goto closeFile;
+        return; /* Exit function prematurely due to error */
     }
 
     // Read CRS and attributes for netCDFs
     SW_NCOUT_read_atts(SW_netCDFOut, SW_PathInputs, LogInfo);
+}
 
-closeFile: { CloseFile(&f, LogInfo); }
+/**
+@brief Allocate memory for internal SOILWAT2 units
+
+@param[out] units_sw Array of text representations of SOILWAT2 units
+@param[in] nVar Number of variables available for current output key
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NC_alloc_unitssw(char ***units_sw, int nVar, LOG_INFO *LogInfo) {
+
+    *units_sw = NULL;
+
+    if (nVar > 0) {
+
+        // Initialize the variable within SW_OUT_DOM
+        *units_sw = (char **) Mem_Malloc(
+            sizeof(char *) * nVar, "SW_NC_alloc_unitssw()", LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        for (int index = 0; index < nVar; index++) {
+            (*units_sw)[index] = NULL;
+        }
+    }
+}
+
+/**
+@brief Allocate memory for udunits2 unit converter
+
+@param[out] uconv Array of pointers to udunits2 unit converter
+@param[in] nVar Number of variables available for current output key
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NC_alloc_uconv(sw_converter_t ***uconv, int nVar, LOG_INFO *LogInfo) {
+
+    *uconv = NULL;
+
+    if (nVar > 0) {
+
+        *uconv = (sw_converter_t **) Mem_Malloc(
+            sizeof(sw_converter_t *) * nVar, "SW_NC_alloc_uconv()", LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        for (int index = 0; index < nVar; index++) {
+            (*uconv)[index] = NULL;
+        }
+    }
+}
+
+/**
+@brief Allocate information about whether or not a variable should be
+output/input
+
+@param[out] reqOutVar Specifies the number of variables that can be output
+    for a given output key
+@param[in] nVar Number of variables available for current output key
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NC_alloc_req(Bool **reqOutVar, int nVar, LOG_INFO *LogInfo) {
+
+    *reqOutVar = NULL;
+
+    if (nVar > 0) {
+
+        // Initialize the variable within SW_OUT_DOM which specifies if a
+        // variable is to be written out or not
+        *reqOutVar = (Bool *) Mem_Malloc(
+            sizeof(Bool) * nVar, "SW_NC_alloc_outReq()", LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        for (int index = 0; index < nVar; index++) {
+            (*reqOutVar)[index] = swFALSE;
+        }
+    }
+}
+
+/**
+@brief Allocate memory for information in regards to output/input variables
+
+@param[out] keyVars Holds all information about output variables
+    in netCDFs (e.g., output variable name)
+@param[in] nVar Number of variables available for current output key
+@param[in] numAtts Number of attributes that the variable(s) will contain
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NC_alloc_vars(
+    char ****keyVars, int nVar, int numAtts, LOG_INFO *LogInfo
+) {
+
+    *keyVars = NULL;
+
+    if (nVar > 0) {
+
+        int index;
+        int varNum;
+        int attNum;
+
+        // Allocate all memory for the variable information in the current
+        // output key
+        *keyVars = (char ***) Mem_Malloc(
+            sizeof(char **) * nVar, "SW_NC_alloc_vars()", LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        for (index = 0; index < nVar; index++) {
+            (*keyVars)[index] = NULL;
+        }
+
+        for (index = 0; index < nVar; index++) {
+            (*keyVars)[index] = (char **) Mem_Malloc(
+                sizeof(char *) * numAtts, "SW_NC_alloc_vars()", LogInfo
+            );
+            if (LogInfo->stopRun) {
+                for (varNum = 0; varNum < index; varNum++) {
+                    free((void *) (*keyVars)[varNum]);
+                    (*keyVars)[varNum] = NULL;
+                }
+                free((void *) *keyVars);
+                return; // Exit function prematurely due to error
+            }
+
+            for (attNum = 0; attNum < numAtts; attNum++) {
+                (*keyVars)[index][attNum] = NULL;
+            }
+        }
+    }
 }
