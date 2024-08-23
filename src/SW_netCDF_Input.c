@@ -297,7 +297,6 @@ the input variable file
 
 @param[in] inputInfo Attribute information for a specific input variable
 @param[in] inWeathStrideInfo List of stride information for weather variables
-@param[in] weathReadInVar Specifies which weather variables are to be input
 @param[in] key Current category of input variables being tested
 @param[in] varNum Variable number within the given key
 @param[out] LogInfo Holds information on warnings and errors
@@ -305,7 +304,6 @@ the input variable file
 static void check_variable_for_required(
     char ***inputInfo,
     int **inWeathStrideInfo,
-    const Bool *weathReadInVar,
     int key,
     int varNum,
     LOG_INFO *LogInfo
@@ -330,8 +328,6 @@ static void check_variable_for_required(
     };
     int mustTestAtts = 6;
     int testInd;
-    int numVars = numVarsInKey[eSW_InWeather];
-    int inVarNum;
 
     /* Indices are based on the global array `possVarNames` under `inVeg` */
     Bool isLitter =
@@ -420,17 +416,6 @@ static void check_variable_for_required(
                     return; /* Exit function prematurely due to error */
                 }
             }
-
-            for (inVarNum = 1; inVarNum < numVars; inVarNum++) {
-                if (!weathReadInVar[inVarNum]) {
-                    LogError(
-                        LogInfo,
-                        LOGERROR,
-                        "All weather variables must be turned on or off."
-                    );
-                    return; /* Exit function prematurely due to error */
-                }
-            }
         }
     }
 }
@@ -444,7 +429,7 @@ input columns
 @param[in] readInVars Specifies which variables are to be read-in as input
 @param[out] LogInfo Holds information on warnings and errors
 */
-static void check_variables(
+static void check_input_variables(
     char ****inputInfo,
     int **inWeathStrideInfo,
     Bool *readInVars[],
@@ -452,6 +437,8 @@ static void check_variables(
 ) {
     int key;
     int varNum;
+    int numWeathInputs = 0;
+    int numWeathVars = numVarsInKey[eSW_InWeather];
 
     ForEachNCInKey(key) {
         if (readInVars[key][0]) {
@@ -460,7 +447,6 @@ static void check_variables(
                     check_variable_for_required(
                         inputInfo[key],
                         inWeathStrideInfo,
-                        readInVars[key],
                         key,
                         varNum,
                         LogInfo
@@ -469,9 +455,23 @@ static void check_variables(
                         /* Exit function prematurely due to failed test */
                         return;
                     }
+
+                    if(key == eSW_InWeather && varNum > 0) {
+                        numWeathInputs++;
+                    }
                 }
             }
         }
+    }
+
+    /* Check that all weather variables are activated, not including
+       the index file */
+    if(numWeathInputs > 0 && numWeathInputs < numWeathVars - 1) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "All weather variables must be turned on or off."
+        );
     }
 }
 
@@ -3127,7 +3127,7 @@ void SW_NCIN_read_input_vars(
         }
     }
 
-    check_variables(
+    check_input_variables(
         SW_netCDFIn->inVarInfo,
         SW_PathInputs->inWeathStrideInfo,
         SW_netCDFIn->readInVars,
