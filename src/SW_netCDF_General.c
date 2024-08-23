@@ -212,6 +212,12 @@ void SW_NC_check(
 
     Bool fileWasClosed = (ncFileID < 0) ? swTRUE : swFALSE;
 
+    /* Get latitude/longitude names that were read-in from domain input file */
+    char *readinLatName =
+        SW_Domain->netCDFInput.inVarInfo[eSW_InDomain][vNCdom][SW_INYAXIS];
+    char *readinLonName =
+        SW_Domain->netCDFInput.inVarInfo[eSW_InDomain][vNCdom][SW_INXAXIS];
+
     if (fileWasClosed) {
         // "Once a netCDF dataset is opened, it is referred to by a netCDF ID,
         // which is a small non-negative integer"
@@ -333,31 +339,16 @@ void SW_NC_check(
 
         dimMismatch = (Bool) (SDimVal != SW_Domain->nDimS);
     } else if (strcmp(impliedDomType, "xy") == 0) {
-        if (geoIsPrimCRS && geoCRSExists) {
-            SW_NC_get_dimlen_from_dimname(ncFileID, "lat", &latDimVal, LogInfo);
-            if (LogInfo->stopRun) {
-                goto wrapUp; // Exit function prematurely due to error
-            }
-            SW_NC_get_dimlen_from_dimname(ncFileID, "lon", &lonDimVal, LogInfo);
-            if (LogInfo->stopRun) {
-                goto wrapUp; // Exit function prematurely due to error
-            }
-        } else if (!geoIsPrimCRS && projCRSExists) {
-            SW_NC_get_dimlen_from_dimname(ncFileID, "y", &latDimVal, LogInfo);
-            if (LogInfo->stopRun) {
-                goto wrapUp; // Exit function prematurely due to error
-            }
-            SW_NC_get_dimlen_from_dimname(ncFileID, "x", &lonDimVal, LogInfo);
-            if (LogInfo->stopRun) {
-                goto wrapUp; // Exit function prematurely due to error
-            }
-        } else {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "Could not find the proper CRS variable "
-                "for the domain type/primary CRS."
-            );
+        SW_NC_get_dimlen_from_dimname(
+            ncFileID, readinLatName, &latDimVal, LogInfo
+        );
+        if (LogInfo->stopRun) {
+            goto wrapUp; // Exit function prematurely due to error
+        }
+        SW_NC_get_dimlen_from_dimname(
+            ncFileID, readinLonName, &lonDimVal, LogInfo
+        );
+        if (LogInfo->stopRun) {
             goto wrapUp; // Exit function prematurely due to error
         }
 
@@ -923,6 +914,8 @@ and writing attributes
 @param[in] pd Current output netCDF period
 @param[in] deflateLevel Level of deflation that will be used for the created
 variable
+@param[in] latName User-provided latitude name
+@param[in] lonName User-provided longitude name
 @param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_NC_create_full_var(
@@ -943,6 +936,8 @@ void SW_NC_create_full_var(
     unsigned int startYr,
     OutPeriod pd,
     int deflateLevel,
+    const char *latName,
+    const char *lonName,
     LOG_INFO *LogInfo
 ) {
 
@@ -950,8 +945,6 @@ void SW_NC_create_full_var(
     int varID = 0;
     unsigned int index;
     int dimIDs[MAX_NUM_DIMS];
-    const char *latName = (SW_NC_dimExists("lat", *ncFileID)) ? "lat" : "y";
-    const char *lonName = (SW_NC_dimExists("lon", *ncFileID)) ? "lon" : "x";
     Bool domTypeIsSites = (Bool) (strcmp(domType, "s") == 0);
     unsigned int numConstDims = (domTypeIsSites) ? 1 : 2;
     const char *thirdDim = (domTypeIsSites) ? "site" : latName;
@@ -1227,7 +1220,9 @@ void SW_NC_read(
     TimeInt endYr,
     LOG_INFO *LogInfo
 ) {
-    SW_NCIN_read_input_vars(SW_netCDFIn, SW_PathInputs, startYr, endYr, LogInfo);
+    SW_NCIN_read_input_vars(
+        SW_netCDFIn, SW_PathInputs, startYr, endYr, LogInfo
+    );
     if (LogInfo->stopRun) {
         return; /* Exit function prematurely due to error */
     }

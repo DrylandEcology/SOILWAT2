@@ -889,6 +889,8 @@ SW_OUTNPERIODS).
     years between netCDF files (returns updated value)
 @param[in] deflateLevel Level of deflation that will be used for the created
 variable
+@param[in] latName User-provided latitude name
+@param[in] lonName User-provided longitude name
 @param[in] LogInfo Holds information on warnings and errors
 */
 static void create_output_file(
@@ -908,6 +910,8 @@ static void create_output_file(
     int baseCalendarYear,
     double *startTime,
     int deflateLevel,
+    const char *latName,
+    const char *lonName,
     LOG_INFO *LogInfo
 ) {
 
@@ -986,6 +990,8 @@ static void create_output_file(
                 startYr,
                 pd,
                 deflateLevel,
+                latName,
+                lonName,
                 LogInfo
             );
 
@@ -1757,6 +1763,12 @@ void SW_NCOUT_create_output_files(
     LOG_INFO *LogInfo
 ) {
 
+    /* Get latitude/longitude names that were read-in from input file */
+    char *readinLatName =
+        SW_Domain->netCDFInput.inVarInfo[eSW_InDomain][vNCdom][SW_INYAXIS];
+    char *readinLonName =
+        SW_Domain->netCDFInput.inVarInfo[eSW_InDomain][vNCdom][SW_INXAXIS];
+
     int key;
     int ip;
     int resSNP;
@@ -1876,6 +1888,8 @@ void SW_NCOUT_create_output_files(
                                 baseCalendarYear,
                                 &startTime[pd],
                                 SW_Domain->OutDom.netCDFOutput.deflateLevel,
+                                readinLatName,
+                                readinLonName,
                                 LogInfo
                             );
                             if (LogInfo->stopRun) {
