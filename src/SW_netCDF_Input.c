@@ -2492,11 +2492,9 @@ void SW_NCIN_read_inputs(
     const int numDomVals = 2;
     const int numVals[] = {numDomVals};
     const int ncFileIDs[] = {SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom]};
-    const char *domLatVar = readinLatName;
-    const char *domLonVar = readinLonName;
-    const char *varNames[][2] = {{domLatVar, domLonVar}};
+    const char *varNames[][2] = {{readinLatName, readinLonName}};
     int ncIndex;
-    int varID = 0;
+    int varID;
 
     double *values[][2] = {{&sw->Model.latitude, &sw->Model.longitude}};
 
@@ -2509,6 +2507,7 @@ void SW_NCIN_read_inputs(
     */
     for (file = 0; file < numInFilesNC; file++) {
         for (varNum = 0; varNum < numVals[file]; varNum++) {
+            varID = -1;
             ncIndex = (domTypeS) ? 0 : varNum % 2;
 
             SW_NC_get_single_val(
