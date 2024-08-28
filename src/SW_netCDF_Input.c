@@ -3332,12 +3332,12 @@ variables
 void SW_NCIN_alloc_weath_input_info(
     char ****outWeathFileNames,
     unsigned int ***weathInStartEnd,
-    int numWeathIn,
+    unsigned int numWeathIn,
     int weathVar,
     LOG_INFO *LogInfo
 ) {
 
-    int inFileNum;
+    unsigned int inFileNum;
 
     (*outWeathFileNames)[weathVar] = (char **) Mem_Malloc(
         sizeof(char *) * numWeathIn, "SW_NCIN_alloc_weath_input_info()", LogInfo
