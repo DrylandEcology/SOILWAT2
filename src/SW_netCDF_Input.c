@@ -3041,6 +3041,7 @@ void SW_NCIN_read_input_vars(
                 /* Copy other useful information that is not soley for
                 weather or specifying if the weather variable is to be input
                 */
+                varInfoPtr = SW_netCDFIn->inVarInfo[inKey][inVarNum];
                 for (infoIndex = SWUnitInd; infoIndex < userComInd;
                      infoIndex++) {
                     copyInfo = (Bool) (infoIndex != doInputInd &&
@@ -3049,8 +3050,13 @@ void SW_NCIN_read_input_vars(
                                        infoIndex != ncCalendarInd);
 
                     if (copyInfo) {
-                        SW_netCDFIn->inVarInfo[inKey][inVarNum][copyInfoIndex] =
-                            Str_Dup(input[infoIndex], LogInfo);
+                        if (infoIndex == ncVarNameInd) {
+                            varInfoPtr[copyInfoIndex] =
+                                Str_Dup(possVarNames[inKey][inVarNum], LogInfo);
+                        } else {
+                            varInfoPtr[copyInfoIndex] =
+                                Str_Dup(input[infoIndex], LogInfo);
+                        }
 
                         if (LogInfo->stopRun) {
                             goto closeFile; /* Exit function prematurely due to
