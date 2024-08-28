@@ -57,33 +57,31 @@ static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] =
         {"1", "1"},                      /* inDomain */
         {"degree_north", "degree_east"}, /* inSpatial */
         {"1", "m", "degree", "degree"},  /* inTopo */
-        {
-            "1",       "cm", "cm",   "g/cm3", "cm3/cm3", "g/g", "g/g",
-            "g/g", /*inSoil*/
-            "cm3/cm3", "1",  "degC", "1",     "1",       "1",   "1",
-            "1",       "1",  "1",    "1",     "1",       "1",   "1"
-        },
+        {"1",        "cm", "cm",   "g cm-3", "cm3 cm-3", "g g-1", "g g-1",
+         "g g-1", /*inSoil*/
+         "cm3 cm-3", "1",  "degC", "1",      "1",        "1",     "1",
+         "1",        "1",  "1",    "1",      "1",        "1",     "1"},
         {"1",      "m2 m-2", "m2 m-2", "g m-2", "g m-2",
-         "1",      "NA", /*inVeg*/
-         "m2 m-2", "g m-2",  "g m-2",  "1",     "NA",
-         "m2 m-2", "g m-2",  "g m-2",  "1",     "NA",
-         "m2 m-2", "g m-2",  "g m-2",  "1",     "NA"},
+         "1",      "g m-2", /*inVeg*/
+         "m2 m-2", "g m-2",  "g m-2",  "1",     "g m-2",
+         "m2 m-2", "g m-2",  "g m-2",  "1",     "g m-2",
+         "m2 m-2", "g m-2",  "g m-2",  "1",     "g m-2"},
         {"1", /* inWeather */
          "degC",
          "degC",
          "cm",
          "%",
-         "m/s",
-         "m/s",
-         "m/s",
+         "m s-1",
+         "m s-1",
+         "m s-1",
          "%",
          "%",
          "%",
          "%",
          "degC",
          "kPa",
-         "NA"},
-        {"1", "%", "m/s", "%", "kg/m3", "1"} /* inClimate */
+         "m s-1"},
+        {"1", "%", "m s-1", "%", "kg m-3", "1"} /* inClimate */
 };
 
 static const char *const possVarNames[SW_NINKEYSNC][SW_INNMAXVARS] = {
@@ -119,10 +117,10 @@ static const char *const possVarNames[SW_NINKEYSNC][SW_INNMAXVARS] = {
         "avgLyrTempInit",
         "evap_coeff",
 
-        "transp_coeff[SW_TREES]",
-        "transp_coeff[SW_SHRUB]",
-        "transp_coeff[SW_FORB]",
-        "transp_coeff[SW_GRASS]",
+        "Trees.transp_coeff",
+        "Shrubs.transp_coeff",
+        "Forbs.transp_coeff",
+        "Grasses.transp_coeff",
 
         "swrcp[1]",
         "swrcp[2]",
@@ -184,6 +182,8 @@ static const char *const generalVegNames[] = {
     "<veg>.lai_conv"
 };
 
+static const char *const generalSoilNames[] = {"<veg>.transp_coeff"};
+
 static const char *const possInKeys[] = {
     "inDomain",
     "inSpatial",
@@ -207,8 +207,8 @@ static const char *const possInKeys[] = {
 @param[out] inVarNum Translated key from read-in values to local arrays
 @param[out] isIndex Specifies that the read-in values were related to an index
 file
-@param[out] isGeneralVeg Specifies that the read-in values were a generalization
-of veg variables
+@param[out] isGenVar Specifies that the read-in values were a generalization
+of veg or soil variables
 */
 static void get_2d_input_key(
     char *varKey,
@@ -216,7 +216,7 @@ static void get_2d_input_key(
     int *inKey,
     int *inVarNum,
     Bool *isIndex,
-    Bool *isGeneralVeg
+    Bool *isGenVar
 ) {
 
     int keyNum;
@@ -226,7 +226,7 @@ static void get_2d_input_key(
     *inKey = eSW_NoInKey;
     *inVarNum = KEY_NOT_FOUND;
     *isIndex = swFALSE;
-    *isGeneralVeg = swFALSE;
+    *isGenVar = swFALSE;
 
     for (keyNum = 0; keyNum < SW_NINKEYSNC && *inKey == eSW_NoInKey; keyNum++) {
         if (strcmp(varKey, possInKeys[keyNum]) == 0) {
@@ -251,10 +251,15 @@ static void get_2d_input_key(
         if (*inKey == eSW_InVeg) {
             for (varNum = 0; varNum < numGeneralVegNames; varNum++) {
                 if (strcmp(generalVegNames[varNum], varName) == 0) {
-                    *isGeneralVeg = swTRUE;
+                    *isGenVar = swTRUE;
                     *inVarNum = varNum;
                     return;
                 }
+            }
+        } else if (*inKey == eSW_InSoil) {
+            if (strcmp(generalSoilNames[0], varName) == 0) {
+                *isGenVar = swTRUE;
+                *inVarNum = 0;
             }
         }
     }
@@ -427,10 +432,14 @@ static void check_inputkey_columns(
                             LOGERROR,
                             "The variable '%s' within the input key '%s' "
                             "has a column that does not match the others "
-                            "from 'ncGridType' to 'ncVAxisName'.",
+                            "from 'ncGridType' to 'ncVAxisName' with a "
+                            "value of '%s' instead of '%s'.",
                             inputInfo[varNum][SW_INNCVARNAME],
-                            possInKeys[key]
+                            possInKeys[key],
+                            currAtt,
+                            cmpAtt
                         );
+                        return; /* Exit function prematurely due to error */
                     }
                 }
             }
@@ -2795,8 +2804,10 @@ void SW_NCIN_read_input_vars(
 
     Bool copyInfo = swFALSE;
     Bool isIndexFile = swFALSE;
-    Bool isGeneralVeg = swFALSE;
+    Bool isGenVar = swFALSE;
 
+    /* Acceptable non-numerical values for stride year and stride start,
+       respectively */
     const char *accStrVal[] = {"Inf", "NA"};
     char **varInfoPtr = NULL;
 
@@ -2868,7 +2879,7 @@ void SW_NCIN_read_input_vars(
                 &inKey,
                 &inVarNum,
                 &isIndexFile,
-                &isGeneralVeg
+                &isGenVar
             );
 
             if (isIndexFile) {
@@ -2894,9 +2905,14 @@ void SW_NCIN_read_input_vars(
                 continue;
             }
 
-            if (isGeneralVeg) {
+            if (isGenVar) {
                 maxVarIter = NVEGTYPES;
-                inVarNum = (inVarNum == 0) ? 2 : inVarNum + 2;
+
+                if (inKey == eSW_InVeg) {
+                    inVarNum = (inVarNum == 0) ? 2 : inVarNum + 2;
+                } else {
+                    inVarNum = 12; /* Start variable at `Trees.trans_coeff` */
+                }
             } else {
                 maxVarIter = 1;
             }
@@ -3080,7 +3096,15 @@ void SW_NCIN_read_input_vars(
                     }
                 }
 
-                inVarNum += (inVarNum == 1) ? 1 : genVegInc;
+                /* Increment variable number based on:
+                   1) If the current key is eSW_InSoil and/or the variable
+                        is a general one: 1
+                   2) If the current key (i.e., eSW_InVeg) and is a general
+                        variable: 4
+                   3) Otherwise, the increment does not matter since we do not
+                        deal with a general variable (which covers multiple
+                        variables in the code) */
+                inVarNum += (inKey == eSW_InSoil || !isGenVar) ? 1 : genVegInc;
             }
         }
     }
