@@ -198,37 +198,6 @@ static const char *const possInKeys[] = {
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
-/**
-@brief Fills a variable with value(s) of type unsigned integer
-
-@param[in] ncFileID Identifier of the open netCDF file to write the value(s)
-@param[in] varID Identifier to the variable within the given netCDF file
-@param[in] values Individual or list of input variables
-@param[in] startIndices Specification of where the C-provided netCDF
-    should start writing values within the specified variable
-@param[in] count How many values to write into the given variable
-@param[out] LogInfo Holds information on warnings and errors
-*/
-static void fill_netCDF_var_uint(
-    int ncFileID,
-    int varID,
-    unsigned int values[],
-    size_t startIndices[],
-    size_t count[],
-    LOG_INFO *LogInfo
-) {
-
-    if (nc_put_vara_uint(ncFileID, varID, startIndices, count, &values[0]) !=
-        NC_NOERR) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Could not fill variable (unsigned int) "
-            "with the given value(s)."
-        );
-    }
-}
-
 /*
 @brief Translate an input keys into indices the program can understand
 
@@ -718,8 +687,15 @@ static void fill_domain_netCDF_vals(
         numVars = 2;
 
         // Sites are filled with the same values as the domain variable
-        fill_netCDF_var_uint(
-            domFileID, siteID, domVals, start, domCount, LogInfo
+        SW_NC_write_vals(
+            &siteID,
+            domFileID,
+            NULL,
+            (void *) domVals,
+            start,
+            domCount,
+            "unsigned int",
+            LogInfo
         );
 
         if (LogInfo->stopRun) {
@@ -964,6 +940,7 @@ static void fill_domain_netCDF_s(
 
     int varNum;
     int attNum;
+    int ncType;
 
     SW_NC_create_netCDF_dim(
         "site", SW_Domain->nDimS, domFileID, sDimID, LogInfo
@@ -975,12 +952,15 @@ static void fill_domain_netCDF_s(
     // Create all variables above (may or may not include "x" and "y")
     // Then fill them with their respective attributes
     for (varNum = 0; varNum < numVarsToWrite; varNum++) {
+        /* Make sure the "site" variable is an unsigned integer */
+        ncType = (varNum == 0) ? NC_UINT : NC_DOUBLE;
+
         SW_NC_create_netCDF_var(
             &varIDs[varNum],
             varNames[varNum],
             sDimID,
             domFileID,
-            NC_DOUBLE,
+            ncType,
             1,
             NULL,
             deflateLevel,
