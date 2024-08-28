@@ -3016,23 +3016,24 @@ void SW_NCIN_read_input_vars(
                     goto closeFile; /* Exit function prematurely due to error */
                 }
 
-                tempPtr = input[SWUnitInd];
-                if (strcmp(tempPtr, swInVarUnits[inKey][inVarNum]) != 0) {
-                    tempPtr = (char *) swInVarUnits[inKey][inVarNum];
                 /* Copy variable unit for SW2 */
+                if (strcmp(input[SWUnitInd], "NA") != 0 &&
+                    strcmp(input[SWUnitInd], swInVarUnits[inKey][inVarNum]) !=
+                        0) {
+
                     LogError(
                         LogInfo,
                         LOGWARN,
                         "Input column, 'SW2 units', value does not match "
-                        "the units of SW2, the units '%s' will be "
-                        "used instead for the SW2 variable '%s', %s.",
-                        tempPtr,
-                        input[SWVarNameInd],
-                        input[SWUnitInd]
+                        "the units of SW2. The units '%s' will be "
+                        "used instead of '%s' for the nc variable '%s'.",
+                        swInVarUnits[inKey][inVarNum],
+                        input[SWUnitInd],
+                        input[ncVarNameInd]
                     );
                 }
                 SW_netCDFIn->units_sw[inKey][inVarNum] =
-                    Str_Dup(tempPtr, LogInfo);
+                    Str_Dup(swInVarUnits[inKey][inVarNum], LogInfo);
                 if (LogInfo->stopRun) {
                     goto closeFile; /* Exit function prematurely due to error */
                 }
