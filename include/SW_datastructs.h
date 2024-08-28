@@ -929,20 +929,13 @@ typedef struct {
                                dynamically allocated for every weather variable
                                and a list of file names */
 
-    unsigned int *numInWeathFiles; /**< Only capture the number of weather files
+    unsigned int numInWeathFiles; /**< Only capture the number of weather files
                                         generated given the stride input
-                                        information; dynamically allocated for
-                                        each weather input variable */
+                                        information */
 
-    int **inWeathStrideInfo; /**< Number of years held within
-                                a weather netCDF file;
-                                dynamically allocated for each weather
-                                variable holding two pieces of information:
-                                stride start and years per stride */
-
-    unsigned int ***weathInStartEnd; /**< Start/end years of each weather input
+    unsigned int **weathInStartEnd; /**< Start/end years of each weather input
                                         netCDF; dynamically allocated for every
-                                        weather var, number of files within said
+                                        number of files within every
                                         variable, and 2 values for start/end */
 
     /* NC information that will stay constant through program run

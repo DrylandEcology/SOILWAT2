@@ -118,15 +118,20 @@ void SW_NCIN_alloc_file_information(
     int numInVars,
     int key,
     char ***inputFiles,
-    unsigned int **numInWeathFiles,
-    unsigned int ****weathInStartEnd,
     char ****weathInFiles,
-    int ***inWeathStrideInfo,
     LOG_INFO *LogInfo
 );
 
 void SW_NCIN_create_units_converters(
     SW_NETCDF_IN *SW_netCDFIn, LOG_INFO *LogInfo
+);
+
+void SW_NCIN_alloc_weath_input_info(
+    char ****outWeathFileNames,
+    unsigned int ***weathInStartEnd,
+    int numWeathIn,
+    int weathVar,
+    LOG_INFO *LogInfo
 );
 
 #ifdef __cplusplus

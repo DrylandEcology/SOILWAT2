@@ -303,7 +303,7 @@ the input variable file
 */
 static void check_variable_for_required(
     char ***inputInfo,
-    int **inWeathStrideInfo,
+    const int inWeathStrideInfo[],
     int key,
     int varNum,
     LOG_INFO *LogInfo
@@ -397,8 +397,8 @@ static void check_variable_for_required(
         }
 
         if (key == eSW_InWeather) {
-            if (inWeathStrideInfo[varNum][SW_INSTRIDEYR] > -1) {
-                if (inWeathStrideInfo[varNum][SW_INSTRIDESTART] == -1 ||
+            if (inWeathStrideInfo[SW_INSTRIDEYR] > -1) {
+                if (inWeathStrideInfo[SW_INSTRIDESTART] == -1 ||
                     strcmp(inputInfo[varNum][SW_INSTPATRN], "NA") == 0) {
 
                     LogError(
@@ -431,7 +431,7 @@ input columns
 */
 static void check_input_variables(
     char ****inputInfo,
-    int **inWeathStrideInfo,
+    int inWeathStrideInfo[],
     Bool *readInVars[],
     LOG_INFO *LogInfo
 ) {
@@ -1711,74 +1711,16 @@ static void alloc_overrideCalendars(
 /*
 @brief Allocate all information that pertains to weather input files
 
-@param[out] numInWeathFiles Specifies how many weather input files are
-used for each weather variable
-@param[out] weathInStartEnd Specifies the start/end year of each generated
-input file
 @param[out] weathInFiles Weather input file formats
-@param[out] inWeathStrideInfo Specifies the stride of each weather variable
-that all files will use to calculate the years in which they cover
 @param[in] numInVars Maximum number of variables that are contained in
 in the weather category
 @param[out] LogInfo LogInfo Holds information on warnings and errors
 */
 static void alloc_weath_input_files(
-    unsigned int **numInWeathFiles,
-    unsigned int ****weathInStartEnd,
-    char ****weathInFiles,
-    int ***inWeathStrideInfo,
-    int numInVars,
-    LOG_INFO *LogInfo
+    char ****weathInFiles, int numInVars, LOG_INFO *LogInfo
 ) {
 
     int varNum;
-
-    /* Allocate/initialize number of weather input files */
-    (*numInWeathFiles) = (unsigned int *) Mem_Malloc(
-        sizeof(unsigned int) * numInVars, "alloc_input_files()", LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return; /* Exit functionality prematurely due to error */
-    }
-
-    for (varNum = 0; varNum < numInVars; varNum++) {
-        (*numInWeathFiles)[varNum] = 0;
-    }
-
-    /* Allocate/initialize weather input file start/end information */
-    (*weathInStartEnd) = (unsigned int ***) Mem_Malloc(
-        sizeof(unsigned int **) * numInVars, "alloc_input_files()", LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return; /* Exit functionality prematurely due to error */
-    }
-
-    for (varNum = 0; varNum < numInVars; varNum++) {
-        (*weathInStartEnd)[varNum] = NULL;
-    }
-
-    /* Allocate/initialize weather stride information */
-    (*inWeathStrideInfo) = (int **) Mem_Malloc(
-        sizeof(int *) * numInVars, "alloc_input_files()", LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return; /* Exit functionality prematurely due to error */
-    }
-
-    for (varNum = 0; varNum < numInVars; varNum++) {
-        (*inWeathStrideInfo)[varNum] = NULL;
-    }
-
-    for (varNum = 0; varNum < numInVars; varNum++) {
-        (*inWeathStrideInfo)[varNum] =
-            (int *) Mem_Malloc(sizeof(int) * 2, "alloc_input_files()", LogInfo);
-        if (LogInfo->stopRun) {
-            return; /* Exit functionality prematurely due to error */
-        }
-
-        (*inWeathStrideInfo)[varNum][0] = 0;
-        (*inWeathStrideInfo)[varNum][1] = 0;
-    }
 
     /* Allocate/initialize weather input files */
     (*weathInFiles) = (char ***) Mem_Malloc(
@@ -1790,52 +1732,6 @@ static void alloc_weath_input_files(
 
     for (varNum = 0; varNum < numInVars; varNum++) {
         (*weathInFiles)[varNum] = NULL;
-    }
-}
-
-static void alloc_weath_input_info(
-    char ****outWeathFileNames,
-    unsigned int ****weathInStartEnd,
-    int numWeathIn,
-    int weathVar,
-    LOG_INFO *LogInfo
-) {
-
-    int inFileNum;
-
-    (*outWeathFileNames)[weathVar] = (char **) Mem_Malloc(
-        sizeof(char *) * numWeathIn, "alloc_weath_input_info()", LogInfo
-    );
-
-    if (LogInfo->stopRun) {
-        return; /* Exit function prematurely due to error */
-    }
-
-    for (inFileNum = 0; inFileNum < numWeathIn; inFileNum++) {
-        (*outWeathFileNames)[weathVar][inFileNum] = NULL;
-    }
-
-    (*weathInStartEnd)[weathVar] = (unsigned int **) Mem_Malloc(
-        sizeof(unsigned int *) * numWeathIn, "alloc_weath_input_info()", LogInfo
-    );
-
-    if (LogInfo->stopRun) {
-        return; /* Exit function prematurely due to error */
-    }
-
-    for (inFileNum = 0; inFileNum < numWeathIn; inFileNum++) {
-        (*weathInStartEnd)[weathVar][inFileNum] = NULL;
-    }
-
-    for (inFileNum = 0; inFileNum < numWeathIn; inFileNum++) {
-        (*weathInStartEnd)[weathVar][inFileNum] = (unsigned int *) Mem_Malloc(
-            sizeof(unsigned int) * 2, "alloc_weath_input_info()", LogInfo
-        );
-    }
-
-    for (inFileNum = 0; inFileNum < numWeathIn; inFileNum++) {
-        (*weathInStartEnd)[weathVar][inFileNum][0] = 0;
-        (*weathInStartEnd)[weathVar][inFileNum][1] = 0;
     }
 }
 
@@ -1860,18 +1756,19 @@ weather variable has
 */
 static void generate_weather_filenames(
     char **weathNameFormat,
-    int **strideInfo,
+    const int strideInfo[],
     char ***weatherInputInfo,
     TimeInt startYr,
     TimeInt endYr,
     char ****outWeathFileNames,
-    unsigned int ****weathInStartEnd,
+    unsigned int ***weathInStartEnd,
     unsigned int *numWeathInFiles,
+    const Bool readInVars[],
     LOG_INFO *LogInfo
 ) {
 
-    int numStYr;
-    int numStStart;
+    int numStYr = strideInfo[SW_INSTRIDEYR];
+    int numStStart = strideInfo[SW_INSTRIDESTART];
     int weathVar;
     char *stridePattern = NULL;
     unsigned int beginFileYr;
@@ -1880,18 +1777,18 @@ static void generate_weather_filenames(
     Bool singleStrVal = swFALSE;
     Bool naStrVal = swFALSE;
     int sprintfRes = 0;
-    int numWeathIn = 0;
+    int numWeathIn = -1;
     int inFileNum;
     const int infNAVal = -1;
 
     char newFileName[MAX_FILENAMESIZE] = {'\0'};
 
     for (weathVar = 1; weathVar < numVarsInKey[eSW_InWeather]; weathVar++) {
+        if (!readInVars[weathVar + 1]) {
+            continue;
+        }
 
-        numStYr = strideInfo[weathVar][SW_INSTRIDEYR];
-        numStStart = strideInfo[weathVar][SW_INSTRIDESTART];
         stridePattern = weatherInputInfo[weathVar][SW_INSTPATRN];
-
 
         doubleStrVal = (Bool) (strcmp(stridePattern, "%4d-%4d") == 0 ||
                                strcmp(stridePattern, "%4d_%4d") == 0);
@@ -1917,16 +1814,18 @@ static void generate_weather_filenames(
 
         /* Calculate the number of weather files and start/end year of
            the first one */
-        numWeathIn =
-            (naStrVal) ?
-                1 :
-                (int) ceil((double) (endYr - numStStart + 1) / numStYr);
-        numWeathInFiles[weathVar] = numWeathIn;
+        if (numWeathIn == -1) {
+            numWeathIn =
+                (naStrVal) ?
+                    1 :
+                    (int) ceil((double) (endYr - numStStart + 1) / numStYr);
+            *numWeathInFiles = numWeathIn;
+        }
 
         beginFileYr = numStStart;
         endFileYr = beginFileYr + numStYr - 1;
 
-        alloc_weath_input_info(
+        SW_NCIN_alloc_weath_input_info(
             outWeathFileNames, weathInStartEnd, numWeathIn, weathVar, LogInfo
         );
         if (LogInfo->stopRun) {
@@ -1942,10 +1841,10 @@ static void generate_weather_filenames(
                 return; /* Exit function prematurely due to error */
             }
 
-            numWeathInFiles[weathVar] = 1;
+            *numWeathInFiles = 1;
 
-            (*weathInStartEnd)[weathVar][0][0] = numStYr;
-            (*weathInStartEnd)[weathVar][0][1] = endYr;
+            (*weathInStartEnd)[0][0] = numStYr;
+            (*weathInStartEnd)[0][1] = endYr;
 
             continue;
         }
@@ -1996,8 +1895,8 @@ static void generate_weather_filenames(
                 return; /* Exit function prematurely due to error */
             }
 
-            (*weathInStartEnd)[weathVar][inFileNum][0] = beginFileYr;
-            (*weathInStartEnd)[weathVar][inFileNum][1] = endFileYr;
+            (*weathInStartEnd)[inFileNum][0] = beginFileYr;
+            (*weathInStartEnd)[inFileNum][1] = endFileYr;
 
             beginFileYr += numStYr;
             endFileYr += numStYr;
@@ -2834,8 +2733,7 @@ void SW_NCIN_read_input_vars(
     int infoIndex;
     int copyInfoIndex = 0;
     int index;
-    int strideInfoIndex;
-    char *tempPtr = NULL;
+    int strInfoInd;
     char inbuf[LARGE_VALUE] = {'\0'};
     char input[NIN_VAR_INPUTS][MAX_ATTVAL_SIZE] = {"\0"};
     const char *readLineFormat =
@@ -2843,6 +2741,14 @@ void SW_NCIN_read_input_vars(
         "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t"
         "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t"
         "%255[^\t]\t%255[^\t]";
+
+    /* Locally handle the weather stride information where -2 is
+       the default value so we can tell that the value hasn't been set yet
+
+       0: number of years within a stride
+       1: stride start year */
+    int inWeathStrideInfo[2] = {-2, -2};
+    int tempStrideInfo[2];
 
     const int keyInd = 0;
     const int SWVarNameInd = 1;
@@ -2875,6 +2781,9 @@ void SW_NCIN_read_input_vars(
     Bool copyInfo = swFALSE;
     Bool isIndexFile = swFALSE;
     Bool isGeneralVeg = swFALSE;
+
+    const char *accStrVal[] = {"Inf", "NA"};
+    char **varInfoPtr = NULL;
 
     MyFileName = SW_PathInputs->InFiles[eNCIn];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -3005,10 +2914,7 @@ void SW_NCIN_read_input_vars(
                         numVarsInKey[inKey],
                         inKey,
                         &SW_PathInputs->inFileNames[inKey],
-                        &SW_PathInputs->numInWeathFiles,
-                        &SW_PathInputs->weathInStartEnd,
                         &SW_PathInputs->weathInFiles,
-                        &SW_PathInputs->inWeathStrideInfo,
                         LogInfo
                     );
                     if (LogInfo->stopRun) {
@@ -3017,29 +2923,61 @@ void SW_NCIN_read_input_vars(
                     }
                 }
 
-                // /* Handle weather-only information */
-                if (inKey == eSW_InWeather) {
-                    strideInfoIndex = SW_INSTRIDEYR;
+                /* Handle weather-only information */
+                if (inKey == eSW_InWeather && !isIndexFile) {
+                    strInfoInd = SW_INSTRIDEYR;
 
                     /* Copy stride number of years and stride start year*/
                     for (index = ncStYrInd; index <= ncStStartInd; index++) {
-                        if (strcmp(input[index], "Inf") == 0 ||
-                            strcmp(input[index], "NA") == 0) {
-
-                            SW_PathInputs
-                                ->inWeathStrideInfo[inVarNum][strideInfoIndex] =
-                                -1;
+                        if (strcmp(input[index], accStrVal[strInfoInd]) == 0) {
+                            tempStrideInfo[strInfoInd] = -1;
                         } else {
-                            SW_PathInputs
-                                ->inWeathStrideInfo[inVarNum][strideInfoIndex] =
+                            tempStrideInfo[strInfoInd] =
                                 sw_strtoi(input[index], MyFileName, LogInfo);
+
+                            if (index == ncStYrInd &&
+                                tempStrideInfo[strInfoInd] <= 0) {
+                                LogError(
+                                    LogInfo,
+                                    LOGERROR,
+                                    "Start year of weather input file for '%s'"
+                                    " is <= 0.",
+                                    input[ncVarNameInd]
+                                );
+                                goto closeFile;
+                            }
                         }
                         if (LogInfo->stopRun) {
-                            goto closeFile; /* Exit function prematurely due to
-                                            error */
+                            /* Exit function prematurely due to error */
+                            goto closeFile;
                         }
 
-                        strideInfoIndex++;
+                        strInfoInd++;
+                    }
+
+                    /* If the stride informatoin has never been set before,
+                       set it; once it's set, check to make sure that the
+                       succeeding weather input variables have the same
+                       stride start/number of years */
+                    if (inWeathStrideInfo[0] == -2) {
+                        inWeathStrideInfo[0] = tempStrideInfo[0];
+                        inWeathStrideInfo[1] = tempStrideInfo[1];
+                    } else {
+                        if (inWeathStrideInfo[0] != tempStrideInfo[0] ||
+                            inWeathStrideInfo[1] != tempStrideInfo[1]) {
+
+                            LogError(
+                                LogInfo,
+                                LOGERROR,
+                                "Weather variable '%s' does not have the same "
+                                "stride start year and/or length as the "
+                                "other weather variable(s).",
+                                input[ncVarNameInd]
+                            );
+
+                            /* Exit function prematurely due to error */
+                            goto closeFile;
+                        }
                     }
 
                     SW_netCDFIn->weathCalOverride[inVarNum] =
@@ -3128,7 +3066,7 @@ void SW_NCIN_read_input_vars(
 
     check_input_variables(
         SW_netCDFIn->inVarInfo,
-        SW_PathInputs->inWeathStrideInfo,
+        inWeathStrideInfo,
         SW_netCDFIn->readInVars,
         LogInfo
     );
@@ -3139,13 +3077,14 @@ void SW_NCIN_read_input_vars(
     if (SW_netCDFIn->readInVars[eSW_InWeather][0]) {
         generate_weather_filenames(
             SW_PathInputs->inFileNames[eSW_InWeather],
-            SW_PathInputs->inWeathStrideInfo,
+            inWeathStrideInfo,
             SW_netCDFIn->inVarInfo[eSW_InWeather],
             startYr,
             endYr,
             &SW_PathInputs->weathInFiles,
             &SW_PathInputs->weathInStartEnd,
-            SW_PathInputs->numInWeathFiles,
+            &SW_PathInputs->numInWeathFiles,
+            SW_netCDFIn->readInVars[eSW_InWeather],
             LogInfo
         );
     }
@@ -3227,20 +3166,14 @@ void SW_NCIN_alloc_inputkey_var_info(
 input key
 @param[in] key Category of input information that is being initialized
 @param[out] inputFiles List of user-provided input files
-@param[out] numInWeathFiles List of number of weather input files
-@param[out] weathInStartEnd List of start/end years of every input weather file
 @param[out] weathInFiles List of all weather input files
-@param[out] inWeathStrideInfo List of stride information for weather variables
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCIN_alloc_file_information(
     int numInVars,
     int key,
     char ***inputFiles,
-    unsigned int **numInWeathFiles,
-    unsigned int ****weathInStartEnd,
     char ****weathInFiles,
-    int ***inWeathStrideInfo,
     LOG_INFO *LogInfo
 ) {
 
@@ -3259,14 +3192,7 @@ void SW_NCIN_alloc_file_information(
     }
 
     if (key == eSW_InWeather) {
-        alloc_weath_input_files(
-            numInWeathFiles,
-            weathInStartEnd,
-            weathInFiles,
-            inWeathStrideInfo,
-            numInVars,
-            LogInfo
-        );
+        alloc_weath_input_files(weathInFiles, numInVars, LogInfo);
     }
 }
 
@@ -3370,4 +3296,64 @@ void SW_NCIN_create_units_converters(
 #if defined(SWUDUNITS)
     ut_free_system(system);
 #endif
+}
+
+/**
+@brief Allocate input file information for individual weather
+variables
+
+@param[out] outWeathFileNames List of all weather input files for a variable
+@param[out] weathInStartEnd Start/end years of each weather input file
+@param[in] numWeathIn Number of input weather files
+@param[in] weathVar Weather variable index
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NCIN_alloc_weath_input_info(
+    char ****outWeathFileNames,
+    unsigned int ***weathInStartEnd,
+    int numWeathIn,
+    int weathVar,
+    LOG_INFO *LogInfo
+) {
+
+    int inFileNum;
+
+    (*outWeathFileNames)[weathVar] = (char **) Mem_Malloc(
+        sizeof(char *) * numWeathIn, "SW_NCIN_alloc_weath_input_info()", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return; /* Exit function prematurely due to error */
+    }
+
+    for (inFileNum = 0; inFileNum < numWeathIn; inFileNum++) {
+        (*outWeathFileNames)[weathVar][inFileNum] = NULL;
+    }
+
+    if (isnull(*weathInStartEnd)) {
+        (*weathInStartEnd) = (unsigned int **) Mem_Malloc(
+            sizeof(unsigned int *) * numWeathIn,
+            "SW_NCIN_alloc_weath_input_info()",
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; /* Exit function prematurely due to error */
+        }
+
+        for (inFileNum = 0; inFileNum < numWeathIn; inFileNum++) {
+            (*weathInStartEnd)[inFileNum] = NULL;
+        }
+
+        for (inFileNum = 0; inFileNum < numWeathIn; inFileNum++) {
+            (*weathInStartEnd)[inFileNum] = (unsigned int *) Mem_Malloc(
+                sizeof(unsigned int) * 2,
+                "SW_NCIN_alloc_weath_input_info()",
+                LogInfo
+            );
+        }
+
+        for (inFileNum = 0; inFileNum < numWeathIn; inFileNum++) {
+            (*weathInStartEnd)[inFileNum][0] = 0;
+            (*weathInStartEnd)[inFileNum][1] = 0;
+        }
+    }
 }
