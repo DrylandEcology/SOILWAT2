@@ -1150,9 +1150,8 @@ typedef struct {
     int deflateLevel;
 
 #if defined(SWNETCDF)
-    size_t iOUToffset[SW_OUTNKEYS][SW_OUTNPERIODS]
-                     [SW_OUTNMAXVARS]; /**< offset positions of output variables
-                                          for indexing p_OUT */
+    /** offset positions of output variables for indexing p_OUT */
+    size_t iOUToffset[SW_OUTNKEYS][SW_OUTNPERIODS][SW_OUTNMAXVARS];
 
     Bool *reqOutputVars[SW_OUTNKEYS]; /**< Do/don't output a variable in the
                             netCDF output files (dynamically allocated array

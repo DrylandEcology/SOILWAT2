@@ -1132,7 +1132,6 @@ static void fill_domain_netCDF_xy(
         readinLatName,
         readinLonName
     };
-    // const char *bndVarNames[] = {"lat_bnds", "lon_bnds", "y_bnds", "x_bnds"};
     char bndVarNames[4][MAX_FILENAMESIZE] = {{'\0'}};
     const char *varAttNames[][5] = {
         {"long_name", "standard_name", "units", "axis", "bounds"},
@@ -2974,17 +2973,17 @@ void SW_NCIN_read_input_vars(
                    in the future */
                 SW_netCDFIn->readInVars[inKey][0] = swTRUE;
 
-                // /* Save file to input file list */
+                /* Save file to input file list */
                 SW_PathInputs->inFileNames[inKey][inVarNum] =
                     Str_Dup(input[ncFileNameInd], LogInfo);
                 if (LogInfo->stopRun) {
                     goto closeFile; /* Exit function prematurely due to error */
                 }
 
-                // /* Copy variable unit for SW2 */
                 tempPtr = input[SWUnitInd];
                 if (strcmp(tempPtr, swInVarUnits[inKey][inVarNum]) != 0) {
                     tempPtr = (char *) swInVarUnits[inKey][inVarNum];
+                /* Copy variable unit for SW2 */
                     LogError(
                         LogInfo,
                         LOGWARN,
@@ -3002,10 +3001,9 @@ void SW_NCIN_read_input_vars(
                     goto closeFile; /* Exit function prematurely due to error */
                 }
 
-
-                // /* Copy other useful information that is not soley for
-                // weather or specifying if the weather variable is to be input
-                // */
+                /* Copy other useful information that is not soley for
+                weather or specifying if the weather variable is to be input
+                */
                 for (infoIndex = SWUnitInd; infoIndex < userComInd;
                      infoIndex++) {
                     copyInfo = (Bool) (infoIndex != doInputInd &&
