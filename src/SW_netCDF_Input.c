@@ -390,8 +390,57 @@ static void check_variable_for_required(
 }
 
 /**
+@brief Given a certain input key, make sure that specified input columns
+are the same throughout each active input variable
+
+@param[in] inputInfo Attribute information for all input variables
+@param[in] readInVars Specifies which variables are to be read-in as input
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void check_inputkey_columns(
+    char ***inputInfo, const Bool readInVars[], int key, LOG_INFO *LogInfo
+) {
+
+    int compIndex = -1;
+    int varNum;
+    int varStart = (key > eSW_InSpatial) ? 1 : 0;
+    int numVars = numVarsInKey[key];
+    int attStart = SW_INGRIDTYPE;
+    int attEnd = SW_INVAXIS;
+    int attNum;
+
+    char *cmpAtt = NULL;
+    char *currAtt = NULL;
+
+    for (varNum = varStart; varNum < numVars; varNum++) {
+        if (readInVars[varNum + 1]) {
+            if (compIndex == -1) {
+                compIndex = varNum;
+            } else {
+                for (attNum = attStart; attNum <= attEnd; attNum++) {
+                    currAtt = inputInfo[varNum][attNum];
+                    cmpAtt = inputInfo[compIndex][attNum];
+
+                    if (strcmp(currAtt, cmpAtt) != 0) {
+                        LogError(
+                            LogInfo,
+                            LOGERROR,
+                            "The variable '%s' within the input key '%s' "
+                            "has a column that does not match the others "
+                            "from 'ncGridType' to 'ncVAxisName'.",
+                            inputInfo[varNum][SW_INNCVARNAME],
+                            possInKeys[key]
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
 @brief Wrapper function to test all input variables for required
-input columns
+input columns and the same values for input columns within a given input key
 
 @param[in] inputInfo Attribute information for all input variables
 @param[in] inWeathStrideInfo List of stride information for weather variables
@@ -406,41 +455,28 @@ static void check_input_variables(
 ) {
     int key;
     int varNum;
-    int numWeathInputs = 0;
-    int numWeathVars = numVarsInKey[eSW_InWeather];
 
     ForEachNCInKey(key) {
         if (readInVars[key][0]) {
             for (varNum = 0; varNum < numVarsInKey[key]; varNum++) {
                 if (readInVars[key][varNum + 1]) {
                     check_variable_for_required(
-                        inputInfo[key],
-                        inWeathStrideInfo,
-                        key,
-                        varNum,
-                        LogInfo
+                        inputInfo[key], inWeathStrideInfo, key, varNum, LogInfo
                     );
                     if (LogInfo->stopRun) {
                         /* Exit function prematurely due to failed test */
                         return;
                     }
-
-                    if(key == eSW_InWeather && varNum > 0) {
-                        numWeathInputs++;
-                    }
                 }
             }
-        }
-    }
 
-    /* Check that all weather variables are activated, not including
-       the index file */
-    if(numWeathInputs > 0 && numWeathInputs < numWeathVars - 1) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "All weather variables must be turned on or off."
-        );
+            check_inputkey_columns(
+                inputInfo[key], readInVars[key], key, LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return; /* Exit function prematurely due to failed test */
+            }
+        }
     }
 }
 
