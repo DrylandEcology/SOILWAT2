@@ -2676,11 +2676,11 @@ int SW_OUT_read_onekey(
     size_t sizeof_msg,
     Bool *VegProd_use_SWA,
     Bool deepdrain,
-    char *InFiles[]
+    char *txtInFiles[]
 ) {
     int res = 0; // return value indicating type of message if any
 
-    char *MyFileName = InFiles[eOutput];
+    char *MyFileName = txtInFiles[eOutput];
     msg[0] = '\0';
 
     // Convert strings to index numbers
@@ -2746,7 +2746,7 @@ int SW_OUT_read_onekey(
             "%s : DEEPSWC cannot produce output if deep drainage is "
             "not simulated (flag not set in %s).",
             MyFileName,
-            InFiles[eSite]
+            txtInFiles[eSite]
         );
         return (LOGWARN);
     }
@@ -2789,11 +2789,11 @@ We have two options to specify time steps:
     dealt with in SOILWAT2
 @param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
-@param[in] InFiles Array of program in/output files
+@param[in] txtInFiles Array of program in/output files
 @param[out] LogInfo Holds information on warnings and errors
  */
 void SW_OUT_read(
-    SW_RUN *sw, SW_OUT_DOM *OutDom, char *InFiles[], LOG_INFO *LogInfo
+    SW_RUN *sw, SW_OUT_DOM *OutDom, char *txtInFiles[], LOG_INFO *LogInfo
 ) {
     /* =================================================== */
     /* read input file for output parameter setup info.
@@ -2839,7 +2839,7 @@ void SW_OUT_read(
     int first;
     int last = -1; /* first doy for output */
 
-    char *MyFileName = InFiles[eOutput];
+    char *MyFileName = txtInFiles[eOutput];
     f = OpenFile(MyFileName, "r", LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -2976,7 +2976,7 @@ void SW_OUT_read(
             sizeof msg,
             &sw->VegProd.use_SWA,
             sw->Site.deepdrain,
-            InFiles
+            txtInFiles
         );
 
         if (msg_type == LOGWARN || msg_type == LOGERROR) {
@@ -3654,15 +3654,15 @@ void SW_OUT_create_files(
         &SW_Domain->OutDom,
         SW_PathOutputs,
         SW_Domain->nMaxSoilLayers,
-        SW_Domain->SW_PathInputs.InFiles,
+        SW_Domain->SW_PathInputs.txtInFiles,
         LogInfo
     );
 
 #elif defined(SWNETCDF)
     SW_NCOUT_create_output_files(
-        SW_Domain->SW_PathInputs.inFileNames[eSW_InDomain][vNCdom],
+        SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom],
         SW_Domain->DomainType,
-        SW_Domain->SW_PathInputs.output_prefix,
+        SW_Domain->SW_PathInputs.outputPrefix,
         SW_Domain,
         SW_Domain->OutDom.timeSteps,
         SW_Domain->OutDom.used_OUTNPERIODS,

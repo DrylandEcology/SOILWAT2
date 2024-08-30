@@ -174,7 +174,7 @@ int setup_testGlobalSoilwatTemplate() {
     SW_DOM_init_ptrs(&template_SW_Domain);
     SW_CTL_init_ptrs(&template_SW_Run);
 
-    template_SW_Domain.SW_PathInputs.InFiles[eFirst] =
+    template_SW_Domain.SW_PathInputs.txtInFiles[eFirst] =
         Str_Dup(DFLT_FIRSTFILE, &LogInfo);
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;

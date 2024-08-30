@@ -14,13 +14,13 @@
  10-May-02 -- Added conditionals for interfacing STEPPE.
 
  09/30/2011	(drs)	added function SW_WeatherPrefix(): so that SW_Weather
- can access local variable weather_prefix that is read in now in SW_F_read() new
- module-level variable static char weather_prefix[FILENAME_MAX]; read in in
- function SW_F_read() from file files.in line 6
+ can access local variable txtWeatherPrefix that is read in now in SW_F_read()
+ new module-level variable static char txtWeatherPrefix[FILENAME_MAX]; read in
+ in function SW_F_read() from file files.in line 6
 
  09/30/2011	(drs)	added function SW_OutputPrefix(): so that SW_Output can
- access local variable output_prefix that is read in now in SW_F_read() new
- module-level variable static char output_prefix[FILENAME_MAX]; read in in
+ access local variable outputPrefix that is read in now in SW_F_read() new
+ module-level variable static char outputPrefix[FILENAME_MAX]; read in in
  function SW_F_read() from file files.in line 12: / for same directory, or e.g.,
  Output/
  */
@@ -91,14 +91,14 @@ holds basic information about input files and values
 @param[out] LogInfo Holds information on warnings and errors
 
 @note If input file `eFirst` changes, particularly if the locations of the
-`weather_prefix` and/or `output_prefix` change; then update the hard-coded
+`txtWeatherPrefix` and/or `outputPrefix` change; then update the hard-coded
 line numbers.
 
 @sideeffect
 Update values of variables within SW_PATH_INPUTS:
-    - `weather_prefix`
-    - `output_prefix`
-    - `InFiles`
+    - `txtWeatherPrefix`
+    - `outputPrefix`
+    - `txtInFiles`
     - `logfp` for SOILWAT2-standalone
 */
 void SW_F_read(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
@@ -113,7 +113,7 @@ void SW_F_read(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
     char buf[FILENAME_MAX];
     char inbuf[MAX_FILENAMESIZE];
 
-    char *MyFileName = SW_PathInputs->InFiles[eFirst];
+    char *MyFileName = SW_PathInputs->txtInFiles[eFirst];
     f = OpenFile(MyFileName, "r", LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -132,13 +132,13 @@ void SW_F_read(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
         switch (lineno) {
         case 10:
             resSNP = snprintf(
-                SW_PathInputs->weather_prefix,
-                sizeof SW_PathInputs->weather_prefix,
+                SW_PathInputs->txtWeatherPrefix,
+                sizeof SW_PathInputs->txtWeatherPrefix,
                 "%s",
                 inbuf
             );
             if (resSNP < 0 ||
-                (unsigned) resSNP >= (sizeof SW_PathInputs->weather_prefix)) {
+                (unsigned) resSNP >= (sizeof SW_PathInputs->txtWeatherPrefix)) {
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -150,13 +150,13 @@ void SW_F_read(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
             break;
         case 18:
             resSNP = snprintf(
-                SW_PathInputs->output_prefix,
-                sizeof SW_PathInputs->output_prefix,
+                SW_PathInputs->outputPrefix,
+                sizeof SW_PathInputs->outputPrefix,
                 "%s",
                 inbuf
             );
             if (resSNP < 0 ||
-                (unsigned) resSNP >= (sizeof SW_PathInputs->output_prefix)) {
+                (unsigned) resSNP >= (sizeof SW_PathInputs->outputPrefix)) {
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -167,76 +167,85 @@ void SW_F_read(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
             }
             break;
         case 20:
-            SW_PathInputs->InFiles[eOutputDaily] = Str_Dup(inbuf, LogInfo);
+            SW_PathInputs->txtInFiles[eOutputDaily] = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
             ++fileno;
-            SW_CSV_F_INIT(SW_PathInputs->InFiles[eOutputDaily], LogInfo);
+            SW_CSV_F_INIT(SW_PathInputs->txtInFiles[eOutputDaily], LogInfo);
             break;
         case 21:
-            SW_PathInputs->InFiles[eOutputWeekly] = Str_Dup(inbuf, LogInfo);
+            SW_PathInputs->txtInFiles[eOutputWeekly] = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
             ++fileno;
-            SW_CSV_F_INIT(SW_PathInputs->InFiles[eOutputWeekly], LogInfo);
-            // printf("filename: %s \n",InFiles[eOutputWeekly]);
+            SW_CSV_F_INIT(SW_PathInputs->txtInFiles[eOutputWeekly], LogInfo);
+            // printf("filename: %s \n",txtInFiles[eOutputWeekly]);
             break;
         case 22:
-            SW_PathInputs->InFiles[eOutputMonthly] = Str_Dup(inbuf, LogInfo);
+            SW_PathInputs->txtInFiles[eOutputMonthly] = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
             ++fileno;
-            SW_CSV_F_INIT(SW_PathInputs->InFiles[eOutputMonthly], LogInfo);
-            // printf("filename: %s \n",InFiles[eOutputMonthly]);
+            SW_CSV_F_INIT(SW_PathInputs->txtInFiles[eOutputMonthly], LogInfo);
+            // printf("filename: %s \n",txtInFiles[eOutputMonthly]);
             break;
         case 23:
-            SW_PathInputs->InFiles[eOutputYearly] = Str_Dup(inbuf, LogInfo);
+            SW_PathInputs->txtInFiles[eOutputYearly] = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
             ++fileno;
-            SW_CSV_F_INIT(SW_PathInputs->InFiles[eOutputYearly], LogInfo);
+            SW_CSV_F_INIT(SW_PathInputs->txtInFiles[eOutputYearly], LogInfo);
             break;
         case 24:
-            SW_PathInputs->InFiles[eOutputDaily_soil] = Str_Dup(inbuf, LogInfo);
+            SW_PathInputs->txtInFiles[eOutputDaily_soil] =
+                Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
             ++fileno;
-            SW_CSV_F_INIT(SW_PathInputs->InFiles[eOutputDaily_soil], LogInfo);
-            // printf("filename: %s \n",InFiles[eOutputDaily]);
+            SW_CSV_F_INIT(
+                SW_PathInputs->txtInFiles[eOutputDaily_soil], LogInfo
+            );
+            // printf("filename: %s \n",txtInFiles[eOutputDaily]);
             break;
         case 25:
-            SW_PathInputs->InFiles[eOutputWeekly_soil] =
+            SW_PathInputs->txtInFiles[eOutputWeekly_soil] =
                 Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
             ++fileno;
-            SW_CSV_F_INIT(SW_PathInputs->InFiles[eOutputWeekly_soil], LogInfo);
-            // printf("filename: %s \n",InFiles[eOutputWeekly]);
+            SW_CSV_F_INIT(
+                SW_PathInputs->txtInFiles[eOutputWeekly_soil], LogInfo
+            );
+            // printf("filename: %s \n",txtInFiles[eOutputWeekly]);
             break;
         case 26:
-            SW_PathInputs->InFiles[eOutputMonthly_soil] =
+            SW_PathInputs->txtInFiles[eOutputMonthly_soil] =
                 Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
             ++fileno;
-            SW_CSV_F_INIT(SW_PathInputs->InFiles[eOutputMonthly_soil], LogInfo);
-            // printf("filename: %s \n",InFiles[eOutputMonthly]);
+            SW_CSV_F_INIT(
+                SW_PathInputs->txtInFiles[eOutputMonthly_soil], LogInfo
+            );
+            // printf("filename: %s \n",txtInFiles[eOutputMonthly]);
             break;
         case 27:
-            SW_PathInputs->InFiles[eOutputYearly_soil] =
+            SW_PathInputs->txtInFiles[eOutputYearly_soil] =
                 Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
             ++fileno;
-            SW_CSV_F_INIT(SW_PathInputs->InFiles[eOutputYearly_soil], LogInfo);
+            SW_CSV_F_INIT(
+                SW_PathInputs->txtInFiles[eOutputYearly_soil], LogInfo
+            );
             break;
 
         default:
@@ -244,8 +253,8 @@ void SW_F_read(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
                 break;
             }
 
-            if (!isnull(SW_PathInputs->InFiles[fileno])) {
-                free(SW_PathInputs->InFiles[fileno]);
+            if (!isnull(SW_PathInputs->txtInFiles[fileno])) {
+                free(SW_PathInputs->txtInFiles[fileno]);
             }
 
             resSNP = snprintf(
@@ -258,7 +267,7 @@ void SW_F_read(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
                 goto closeFile;
             }
 
-            SW_PathInputs->InFiles[fileno] = Str_Dup(buf, LogInfo);
+            SW_PathInputs->txtInFiles[fileno] = Str_Dup(buf, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
@@ -279,20 +288,21 @@ void SW_F_read(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
         goto closeFile;
     }
 
-    if (!DirExists(SW_PathInputs->output_prefix)) {
-        MkDir(SW_PathInputs->output_prefix, LogInfo);
+    if (!DirExists(SW_PathInputs->outputPrefix)) {
+        MkDir(SW_PathInputs->outputPrefix, LogInfo);
         if (LogInfo->stopRun) {
             goto closeFile;
         }
     }
 
 #ifdef SOILWAT
-    if (0 == strcmp(SW_PathInputs->InFiles[eLog], "stdout")) {
+    if (0 == strcmp(SW_PathInputs->txtInFiles[eLog], "stdout")) {
         LogInfo->logfp = stdout;
-    } else if (0 == strcmp(SW_PathInputs->InFiles[eLog], "stderr")) {
+    } else if (0 == strcmp(SW_PathInputs->txtInFiles[eLog], "stderr")) {
         LogInfo->logfp = stderr;
     } else {
-        LogInfo->logfp = OpenFile(SW_PathInputs->InFiles[eLog], "w", LogInfo);
+        LogInfo->logfp =
+            OpenFile(SW_PathInputs->txtInFiles[eLog], "w", LogInfo);
     }
 #endif
 
@@ -309,7 +319,7 @@ void SW_F_deepCopy(
     SW_F_init_ptrs(dest);
 
     for (file = 0; file < SW_NFILES; file++) {
-        dest->InFiles[file] = Str_Dup(source->InFiles[file], LogInfo);
+        dest->txtInFiles[file] = Str_Dup(source->txtInFiles[file], LogInfo);
 
         if (LogInfo->stopRun) {
             return; // Exit prematurely due to error
@@ -319,15 +329,15 @@ void SW_F_deepCopy(
 #if defined(SWNETCDF)
     int k;
     int varNum;
-    unsigned int numFiles = source->numInWeathFiles;
+    unsigned int numFiles = source->ncNumWeatherInFiles;
 
     ForEachNCInKey(k) {
-        if (!isnull(source->inFileNames[k])) {
+        if (!isnull(source->ncInFiles[k])) {
             SW_NCIN_alloc_file_information(
                 numVarsInKey[k],
                 k,
-                &dest->inFileNames[k],
-                &dest->weathInFiles,
+                &dest->ncInFiles[k],
+                &dest->ncWeatherInFiles,
                 LogInfo
             );
 
@@ -336,9 +346,9 @@ void SW_F_deepCopy(
             }
 
             for (varNum = 0; varNum < numVarsInKey[k]; varNum++) {
-                if (!isnull(source->inFileNames[k][varNum])) {
-                    dest->inFileNames[k][varNum] =
-                        Str_Dup(source->inFileNames[k][varNum], LogInfo);
+                if (!isnull(source->ncInFiles[k][varNum])) {
+                    dest->ncInFiles[k][varNum] =
+                        Str_Dup(source->ncInFiles[k][varNum], LogInfo);
                     if (LogInfo->stopRun) {
                         return; /* Exit function prematurely due to error */
                     }
@@ -347,15 +357,15 @@ void SW_F_deepCopy(
         }
     }
 
-    dest->numInWeathFiles = source->numInWeathFiles;
+    dest->ncNumWeatherInFiles = source->ncNumWeatherInFiles;
 
-    if (!isnull(source->weathInFiles)) {
+    if (!isnull(source->ncWeatherInFiles)) {
         for (varNum = 0; varNum < numVarsInKey[eSW_InWeather]; varNum++) {
 
-            if (!isnull(source->weathInFiles[varNum])) {
+            if (!isnull(source->ncWeatherInFiles[varNum])) {
                 SW_NCIN_alloc_weath_input_info(
-                    &dest->weathInFiles,
-                    &dest->weathInStartEnd,
+                    &dest->ncWeatherInFiles,
+                    &dest->ncWeatherInStartEnd,
                     numFiles,
                     varNum,
                     LogInfo
@@ -365,9 +375,9 @@ void SW_F_deepCopy(
                 }
 
                 for (file = 0; file < numFiles; file++) {
-                    if (!isnull(source->weathInFiles[varNum][file])) {
-                        dest->weathInFiles[varNum][file] = Str_Dup(
-                            source->weathInFiles[varNum][file], LogInfo
+                    if (!isnull(source->ncWeatherInFiles[varNum][file])) {
+                        dest->ncWeatherInFiles[varNum][file] = Str_Dup(
+                            source->ncWeatherInFiles[varNum][file], LogInfo
                         );
                         if (LogInfo->stopRun) {
                             return; /* Exit prematurely due to error */
@@ -377,12 +387,12 @@ void SW_F_deepCopy(
             }
         }
 
-        if (!isnull(source->weathInStartEnd)) {
+        if (!isnull(source->ncWeatherInStartEnd)) {
             for (file = 0; file < numFiles; file++) {
-                dest->weathInStartEnd[file][0] =
-                    source->weathInStartEnd[file][0];
-                dest->weathInStartEnd[file][1] =
-                    source->weathInStartEnd[file][1];
+                dest->ncWeatherInStartEnd[file][0] =
+                    source->ncWeatherInStartEnd[file][0];
+                dest->ncWeatherInStartEnd[file][1] =
+                    source->ncWeatherInStartEnd[file][1];
             }
         }
     }
@@ -390,7 +400,7 @@ void SW_F_deepCopy(
 }
 
 /**
-@brief Initialize all input files to NULL (`InFiles`)
+@brief Initialize all input files to NULL (`txtInFiles`)
 
 @param[in,out] SW_PathInputs Struct of type SW_PATH_INPUTS which
 holds basic information about input files and values
@@ -400,16 +410,16 @@ void SW_F_init_ptrs(SW_PATH_INPUTS *SW_PathInputs) {
 
     // Initialize `InFile` pointers to NULL
     for (file = 0; file < SW_NFILES; file++) {
-        SW_PathInputs->InFiles[file] = NULL;
+        SW_PathInputs->txtInFiles[file] = NULL;
     }
 
 #if defined(SWNETCDF)
     int k;
 
-    ForEachNCInKey(k) { SW_PathInputs->inFileNames[k] = NULL; }
+    ForEachNCInKey(k) { SW_PathInputs->ncInFiles[k] = NULL; }
 
-    SW_PathInputs->weathInFiles = NULL;
-    SW_PathInputs->weathInStartEnd = NULL;
+    SW_PathInputs->ncWeatherInFiles = NULL;
+    SW_PathInputs->ncWeatherInStartEnd = NULL;
 #endif
 }
 
@@ -428,7 +438,7 @@ void SW_F_construct(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
      *    it could be useful in a standalone run.
      */
 
-    const char *firstfile = SW_PathInputs->InFiles[eFirst];
+    const char *firstfile = SW_PathInputs->txtInFiles[eFirst];
     char *c;
     char *p;
     char dirString[FILENAME_MAX];
@@ -458,7 +468,7 @@ void SW_F_construct(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
     SW_PathInputs->ncDomFileIDs[vNCdom] = -1;
     SW_PathInputs->ncDomFileIDs[vNCprog] = -1;
 
-    SW_PathInputs->numInWeathFiles = 0;
+    SW_PathInputs->ncNumWeatherInFiles = 0;
 #endif
 }
 
@@ -472,63 +482,64 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
     IntUS i;
 
     for (i = 0; i < SW_NFILES; i++) {
-        if (!isnull(SW_PathInputs->InFiles[i])) {
-            free(SW_PathInputs->InFiles[i]);
-            SW_PathInputs->InFiles[i] = NULL;
+        if (!isnull(SW_PathInputs->txtInFiles[i])) {
+            free(SW_PathInputs->txtInFiles[i]);
+            SW_PathInputs->txtInFiles[i] = NULL;
         }
     }
 
 #if defined(SWNETCDF)
 
-    unsigned int numFiles = SW_PathInputs->numInWeathFiles;
+    unsigned int numFiles = SW_PathInputs->ncNumWeatherInFiles;
     unsigned int file;
     int k;
     int varNum;
 
     ForEachNCInKey(k) {
-        if (!isnull(SW_PathInputs->inFileNames[k])) {
+        if (!isnull(SW_PathInputs->ncInFiles[k])) {
             for (varNum = 0; varNum < numVarsInKey[k]; varNum++) {
-                if (!isnull(SW_PathInputs->inFileNames[k][varNum])) {
-                    free(SW_PathInputs->inFileNames[k][varNum]);
-                    SW_PathInputs->inFileNames[k][varNum] = NULL;
+                if (!isnull(SW_PathInputs->ncInFiles[k][varNum])) {
+                    free(SW_PathInputs->ncInFiles[k][varNum]);
+                    SW_PathInputs->ncInFiles[k][varNum] = NULL;
                 }
             }
 
-            free((void *) SW_PathInputs->inFileNames[k]);
-            SW_PathInputs->inFileNames[k] = NULL;
+            free((void *) SW_PathInputs->ncInFiles[k]);
+            SW_PathInputs->ncInFiles[k] = NULL;
         }
     }
 
-    if (!isnull(SW_PathInputs->weathInFiles)) {
+    if (!isnull(SW_PathInputs->ncWeatherInFiles)) {
         for (varNum = 0; varNum < numVarsInKey[eSW_InWeather]; varNum++) {
-            if (!isnull(SW_PathInputs->weathInFiles[varNum])) {
+            if (!isnull(SW_PathInputs->ncWeatherInFiles[varNum])) {
                 for (file = 0; file < numFiles; file++) {
-                    if (!isnull(SW_PathInputs->weathInFiles[varNum][file])) {
-                        free((void *) SW_PathInputs->weathInFiles[varNum][file]
-                        );
-                        SW_PathInputs->weathInFiles[varNum][file] = NULL;
+                    if (!isnull(SW_PathInputs->ncWeatherInFiles[varNum][file]
+                        )) {
+                        free((void *)
+                                 SW_PathInputs->ncWeatherInFiles[varNum][file]);
+                        SW_PathInputs->ncWeatherInFiles[varNum][file] = NULL;
                     }
                 }
 
-                free((void *) SW_PathInputs->weathInFiles[varNum]);
-                SW_PathInputs->weathInFiles[varNum] = NULL;
+                free((void *) SW_PathInputs->ncWeatherInFiles[varNum]);
+                SW_PathInputs->ncWeatherInFiles[varNum] = NULL;
             }
         }
 
-        free((void *) SW_PathInputs->weathInFiles);
-        SW_PathInputs->weathInFiles = NULL;
+        free((void *) SW_PathInputs->ncWeatherInFiles);
+        SW_PathInputs->ncWeatherInFiles = NULL;
     }
 
-    if (!isnull(SW_PathInputs->weathInStartEnd)) {
+    if (!isnull(SW_PathInputs->ncWeatherInStartEnd)) {
         for (file = 0; file < numFiles; file++) {
-            if (!isnull(SW_PathInputs->weathInStartEnd[file])) {
-                free((void *) SW_PathInputs->weathInStartEnd[file]);
-                SW_PathInputs->weathInStartEnd[file] = NULL;
+            if (!isnull(SW_PathInputs->ncWeatherInStartEnd[file])) {
+                free((void *) SW_PathInputs->ncWeatherInStartEnd[file]);
+                SW_PathInputs->ncWeatherInStartEnd[file] = NULL;
             }
         }
 
-        free((void *) SW_PathInputs->weathInStartEnd);
-        SW_PathInputs->weathInStartEnd = NULL;
+        free((void *) SW_PathInputs->ncWeatherInStartEnd);
+        SW_PathInputs->ncWeatherInStartEnd = NULL;
     }
 
     SW_NCIN_close_files(SW_PathInputs->ncDomFileIDs);

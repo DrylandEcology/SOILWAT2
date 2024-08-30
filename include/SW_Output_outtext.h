@@ -33,7 +33,7 @@ void SW_OUT_create_textfiles(
     SW_OUT_DOM *OutDom,
     SW_PATH_OUTPUTS *SW_PathOutputs,
     LyrIndex n_layers,
-    char *InFiles[],
+    char *txtInFiles[],
     LOG_INFO *LogInfo
 );
 
@@ -41,7 +41,7 @@ void SW_OUT_create_textfiles(
 void SW_OUT_create_summary_files(
     SW_OUT_DOM *OutDom,
     SW_PATH_OUTPUTS *SW_PathOutputs,
-    char *InFiles[],
+    char *txtInFiles[],
     LyrIndex n_layers,
     LOG_INFO *LogInfo
 );
@@ -50,7 +50,7 @@ void SW_OUT_create_iteration_files(
     SW_OUT_DOM *OutDom,
     SW_PATH_OUTPUTS *SW_PathOutputs,
     int iteration,
-    char *InFiles[],
+    char *txtInFiles[],
     LyrIndex n_layers,
     LOG_INFO *LogInfo
 );

@@ -59,9 +59,11 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
     SW_PATH_INPUTS SW_PathInput;
     SW_F_init_ptrs(&SW_PathInput);
 
-    SW_PathInput.InFiles[eMarkovCov] = Str_Dup("Input/mkv_covar.in", &LogInfo);
+    SW_PathInput.txtInFiles[eMarkovCov] =
+        Str_Dup("Input/mkv_covar.in", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
-    SW_PathInput.InFiles[eMarkovProb] = Str_Dup("Input/mkv_prob.in", &LogInfo);
+    SW_PathInput.txtInFiles[eMarkovProb] =
+        Str_Dup("Input/mkv_prob.in", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     int rng_seed;
@@ -89,7 +91,7 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
         &SW_Markov,
         rng_seed,
         generateWeatherMethod,
-        SW_PathInput.InFiles,
+        SW_PathInput.txtInFiles,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -114,7 +116,7 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
         &SW_Markov,
         rng_seed,
         generateWeatherMethod,
-        SW_PathInput.InFiles,
+        SW_PathInput.txtInFiles,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -145,7 +147,7 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
         &SW_Markov,
         rng_seed,
         generateWeatherMethod,
-        SW_PathInput.InFiles,
+        SW_PathInput.txtInFiles,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error

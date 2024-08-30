@@ -38,7 +38,7 @@ void SW_NCOUT_create_output_dimVar(
 
 void SW_NCOUT_read_out_vars(
     SW_OUT_DOM *OutDom,
-    char *InFiles[],
+    char *txtInFiles[],
     SW_VEGESTAB_INFO **parms,
     LOG_INFO *LogInfo
 );
@@ -60,7 +60,7 @@ void SW_NCOUT_dealloc_outputkey_var_info(SW_OUT_DOM *OutDom, IntUS k);
 void SW_NCOUT_create_output_files(
     const char *domFile,
     const char *domType,
-    const char *output_prefix,
+    const char *outputPrefix,
     SW_DOMAIN *SW_Domain,
     OutPeriod timeSteps[][SW_OUTNPERIODS],
     IntUS used_OUTNPERIODS,

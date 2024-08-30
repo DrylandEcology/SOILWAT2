@@ -289,7 +289,10 @@ void SW_SIT_construct(SW_SITE *SW_Site);
 void SW_SIT_init_counts(SW_SITE *SW_Site);
 
 void SW_SIT_read(
-    SW_SITE *SW_Site, char *InFiles[], SW_CARBON *SW_Carbon, LOG_INFO *LogInfo
+    SW_SITE *SW_Site,
+    char *txtInFiles[],
+    SW_CARBON *SW_Carbon,
+    LOG_INFO *LogInfo
 );
 
 void SW_SIT_init_run(
@@ -300,9 +303,9 @@ void echo_inputs(SW_SITE *SW_Site, SW_MODEL *SW_Model);
 
 
 /* these used to be in Layers */
-void SW_LYR_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo);
+void SW_LYR_read(SW_SITE *SW_Site, char *txtInFiles[], LOG_INFO *LogInfo);
 
-void SW_SWRC_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo);
+void SW_SWRC_read(SW_SITE *SW_Site, char *txtInFiles[], LOG_INFO *LogInfo);
 
 void add_deepdrain_layer(SW_SITE *SW_Site);
 

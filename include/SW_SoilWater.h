@@ -132,7 +132,7 @@ void SW_SWC_new_year(
 );
 
 void SW_SWC_read(
-    SW_SOILWAT *SW_SoilWat, TimeInt endyr, char *InFiles[], LOG_INFO *LogInfo
+    SW_SOILWAT *SW_SoilWat, TimeInt endyr, char *txtInFiles[], LOG_INFO *LogInfo
 );
 
 void SW_SWC_init_run(

@@ -27,7 +27,7 @@
 #define SW_OUTTEXT
 #endif
 
-#define SW_NFILES 27 // For `InFiles`
+#define SW_NFILES 27 // For `txtInFiles`
 #define SW_NVARDOM 2 // For `InFilesNC`
 
 /* Declare SW_RUN & SW_OUT_DOM structs for SW_OUT_DOM and SW_DOMAIN to see */
@@ -915,27 +915,27 @@ typedef struct {
 } LOG_INFO;
 
 typedef struct {
-    char *InFiles[SW_NFILES];
+    char *txtInFiles[SW_NFILES];
     char SW_ProjDir[FILENAME_MAX]; // SW_ProjDir
-    char weather_prefix[FILENAME_MAX];
-    char output_prefix[FILENAME_MAX];
+    char txtWeatherPrefix[FILENAME_MAX];
+    char outputPrefix[FILENAME_MAX];
 
 #if defined(SWNETCDF)
-    char **inFileNames[SW_NINKEYSNC]; /**< Names of all the input netCDF files;
+    char **ncInFiles[SW_NINKEYSNC]; /**< Names of all the input netCDF files;
                                            dynamically allocated 2-d array
                                            `[varNum][fileNum]` */
 
-    char ***weathInFiles; /**< Generated weather file names to read input from;
-                               dynamically allocated for every weather variable
-                               and a list of file names */
+    char ***ncWeatherInFiles; /**< Generated weather file names to read input
+                               from; dynamically allocated for every weather
+                               variable and a list of file names */
 
-    unsigned int numInWeathFiles; /**< Only capture the number of weather files
-                                        generated given the stride input
+    unsigned int ncNumWeatherInFiles; /**< Only capture the number of weather
+                                        files generated given the stride input
                                         information */
 
-    unsigned int **weathInStartEnd; /**< Start/end years of each weather input
-                                        netCDF; dynamically allocated for every
-                                        number of files within every
+    unsigned int **ncWeatherInStartEnd; /**< Start/end years of each weather
+                                        input netCDF; dynamically allocated for
+                                        every number of files within every
                                         variable, and 2 values for start/end */
 
     /* NC information that will stay constant through program run

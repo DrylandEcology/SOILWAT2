@@ -71,7 +71,7 @@ int main(int argc, char **argv) {
         argc,
         argv,
         &EchoInits,
-        &SW_Domain.SW_PathInputs.InFiles[eFirst],
+        &SW_Domain.SW_PathInputs.txtInFiles[eFirst],
         &userSUID,
         &SW_WallTime.wallTimeLimit,
         &renameDomainTemplateNC,
@@ -167,7 +167,7 @@ int main(int argc, char **argv) {
 #if defined(SWNETCDF)
     SW_NCOUT_read_out_vars(
         &SW_Domain.OutDom,
-        SW_Domain.SW_PathInputs.InFiles,
+        SW_Domain.SW_PathInputs.txtInFiles,
         sw_template.VegEstab.parms,
         &LogInfo
     );

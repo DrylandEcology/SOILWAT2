@@ -118,7 +118,7 @@ void SW_NCIN_alloc_file_information(
     int numInVars,
     int key,
     char ***inputFiles,
-    char ****weathInFiles,
+    char ****ncWeatherInFiles,
     LOG_INFO *LogInfo
 );
 
@@ -128,7 +128,7 @@ void SW_NCIN_create_units_converters(
 
 void SW_NCIN_alloc_weath_input_info(
     char ****outWeathFileNames,
-    unsigned int ***weathInStartEnd,
+    unsigned int ***ncWeatherInStartEnd,
     unsigned int numWeathIn,
     int weathVar,
     LOG_INFO *LogInfo

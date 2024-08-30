@@ -57,8 +57,8 @@ extern "C" {
 /* --------------------------------------------------- */
 void SW_WTH_setup(
     SW_WEATHER *SW_Weather,
-    char *InFiles[],
-    char *weather_prefix,
+    char *txtInFiles[],
+    char *txtWeatherPrefix,
     LOG_INFO *LogInfo
 );
 
@@ -146,7 +146,7 @@ void deallocateClimateStructs(
 void read_weather_hist(
     TimeInt year,
     SW_WEATHER_HIST *yearWeather,
-    char weather_prefix[],
+    char txtWeatherPrefix[],
     unsigned int n_input_forcings,
     const unsigned int *dailyInputIndices,
     const Bool *dailyInputFlags,
@@ -158,7 +158,7 @@ void readAllWeather(
     unsigned int startYear,
     unsigned int n_years,
     Bool use_weathergenerator_only,
-    char weather_prefix[],
+    char txtWeatherPrefix[],
     Bool use_cloudCoverMonthly,
     Bool use_humidityMonthly,
     Bool use_windSpeedMonthly,

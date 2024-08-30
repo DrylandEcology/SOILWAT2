@@ -1202,14 +1202,14 @@ This function requires previous calls to
 
 @param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
-@param[in] InFiles Array of program in/output files
+@param[in] txtInFiles Array of program in/output files
 @param[in] parms Array of type SW_VEGESTAB_INFO holding information about
     species
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCOUT_read_out_vars(
     SW_OUT_DOM *OutDom,
-    char *InFiles[],
+    char *txtInFiles[],
     SW_VEGESTAB_INFO **parms,
     LOG_INFO *LogInfo
 ) {
@@ -1253,7 +1253,7 @@ void SW_NCOUT_read_out_vars(
     const int cellMethodInd = 10;
     const int usercommentInd = 11;
 
-    MyFileName = InFiles[eNCOutVars];
+    MyFileName = txtInFiles[eNCOutVars];
     f = OpenFile(MyFileName, "r", LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit prematurely due to error
@@ -1718,7 +1718,7 @@ is represented by
 @param[in] domFile Name of the domain netCDF
 @param[in] domType Type of domain in which simulations are running
     (gridcell/sites)
-@param[in] output_prefix Directory path of output files.
+@param[in] outputPrefix Directory path of output files.
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
 @param[in] timeSteps Requested time steps
@@ -1745,7 +1745,7 @@ SW_OUTNPERIODS).
 void SW_NCOUT_create_output_files(
     const char *domFile,
     const char *domType,
-    const char *output_prefix,
+    const char *outputPrefix,
     SW_DOMAIN *SW_Domain,
     OutPeriod timeSteps[][SW_OUTNPERIODS],
     IntUS used_OUTNPERIODS,
@@ -1836,7 +1836,7 @@ void SW_NCOUT_create_output_files(
                             fileNameBuf,
                             sizeof fileNameBuf,
                             "%s%s_%s_%s.nc",
-                            output_prefix,
+                            outputPrefix,
                             key2str[key],
                             yearBuff,
                             periodSuffix
@@ -2355,14 +2355,14 @@ void SW_NCOUT_read_atts(
     Bool doIntConv;
     Bool doDoubleConv;
 
-    MyFileName = SW_PathInputs->InFiles[eNCInAtt];
+    MyFileName = SW_PathInputs->txtInFiles[eNCInAtt];
     f = OpenFile(MyFileName, "r", LogInfo);
     if (LogInfo->stopRun) {
         LogError(
             LogInfo,
             LOGERROR,
             "Could not open the required file %s",
-            SW_PathInputs->InFiles[eNCInAtt]
+            SW_PathInputs->txtInFiles[eNCInAtt]
         );
         return; // Exit function prematurely due to error
     }
@@ -2605,7 +2605,7 @@ void SW_NCOUT_read_atts(
             LOGERROR,
             "'%s': type of primary CRS is '%s' but "
             "attributes (including '*_long_name') for such a CRS are missing.",
-            SW_PathInputs->InFiles[eNCInAtt],
+            SW_PathInputs->txtInFiles[eNCInAtt],
             (SW_netCDFOut->primary_crs_is_geographic) ? "geographic" :
                                                         "projected"
         );
@@ -2621,7 +2621,7 @@ void SW_NCOUT_read_atts(
             "SOILWAT2 requires either a primary CRS of "
             "type 'geographic' CRS or a primary CRS of "
             "'projected' with a geographic CRS.",
-            SW_PathInputs->InFiles[eNCInAtt]
+            SW_PathInputs->txtInFiles[eNCInAtt]
         );
         goto closeFile;
     }

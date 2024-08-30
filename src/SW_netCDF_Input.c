@@ -1735,19 +1735,19 @@ static void alloc_overrideCalendars(
 /*
 @brief Allocate all information that pertains to weather input files
 
-@param[out] weathInFiles Weather input file formats
+@param[out] ncWeatherInFiles Weather input file formats
 @param[in] numInVars Maximum number of variables that are contained in
 in the weather category
 @param[out] LogInfo LogInfo Holds information on warnings and errors
 */
 static void alloc_weath_input_files(
-    char ****weathInFiles, int numInVars, LOG_INFO *LogInfo
+    char ****ncWeatherInFiles, int numInVars, LOG_INFO *LogInfo
 ) {
 
     int varNum;
 
     /* Allocate/initialize weather input files */
-    (*weathInFiles) = (char ***) Mem_Malloc(
+    (*ncWeatherInFiles) = (char ***) Mem_Malloc(
         sizeof(char **) * numInVars, "alloc_input_files()", LogInfo
     );
     if (LogInfo->stopRun) {
@@ -1755,7 +1755,7 @@ static void alloc_weath_input_files(
     }
 
     for (varNum = 0; varNum < numInVars; varNum++) {
-        (*weathInFiles)[varNum] = NULL;
+        (*ncWeatherInFiles)[varNum] = NULL;
     }
 }
 
@@ -1772,9 +1772,9 @@ weather files will follow
 @param[in] endYr End year of the simulation
 @param[out] outWeathFileNames Generated input file names based on stride
 informatoin
-@param[out] weathInStartEnd Specifies that start/end years of each input
+@param[out] ncWeatherInStartEnd Specifies that start/end years of each input
 weather file
-@param[out] numWeathInFiles Specifies the number of input files each
+@param[out] numncWeatherInFiles Specifies the number of input files each
 weather variable has
 @param[out] LogInfo LogInfo Holds information on warnings and errors
 */
@@ -1785,8 +1785,8 @@ static void generate_weather_filenames(
     TimeInt startYr,
     TimeInt endYr,
     char ****outWeathFileNames,
-    unsigned int ***weathInStartEnd,
-    unsigned int *numWeathInFiles,
+    unsigned int ***ncWeatherInStartEnd,
+    unsigned int *numncWeatherInFiles,
     const Bool readInVars[],
     LOG_INFO *LogInfo
 ) {
@@ -1843,14 +1843,18 @@ static void generate_weather_filenames(
                 (naStrVal) ?
                     1 :
                     (int) ceil((double) (endYr - numStStart + 1) / numStYr);
-            *numWeathInFiles = numWeathIn;
+            *numncWeatherInFiles = numWeathIn;
         }
 
         beginFileYr = numStStart;
         endFileYr = beginFileYr + numStYr - 1;
 
         SW_NCIN_alloc_weath_input_info(
-            outWeathFileNames, weathInStartEnd, numWeathIn, weathVar, LogInfo
+            outWeathFileNames,
+            ncWeatherInStartEnd,
+            numWeathIn,
+            weathVar,
+            LogInfo
         );
         if (LogInfo->stopRun) {
             return; /* Exit function prematurely due to error */
@@ -1865,10 +1869,10 @@ static void generate_weather_filenames(
                 return; /* Exit function prematurely due to error */
             }
 
-            *numWeathInFiles = 1;
+            *numncWeatherInFiles = 1;
 
-            (*weathInStartEnd)[0][0] = numStYr;
-            (*weathInStartEnd)[0][1] = endYr;
+            (*ncWeatherInStartEnd)[0][0] = numStYr;
+            (*ncWeatherInStartEnd)[0][1] = endYr;
 
             continue;
         }
@@ -1919,8 +1923,8 @@ static void generate_weather_filenames(
                 return; /* Exit function prematurely due to error */
             }
 
-            (*weathInStartEnd)[inFileNum][0] = beginFileYr;
-            (*weathInStartEnd)[inFileNum][1] = endFileYr;
+            (*ncWeatherInStartEnd)[inFileNum][0] = beginFileYr;
+            (*ncWeatherInStartEnd)[inFileNum][1] = endFileYr;
 
             beginFileYr += numStYr;
             endFileYr += numStYr;
@@ -1985,7 +1989,7 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     SW_NETCDF_IN *SW_netCDFIn = &SW_Domain->netCDFInput;
     SW_PATH_INPUTS *SW_PathInputs = &SW_Domain->SW_PathInputs;
-    char **inDomFileNames = SW_PathInputs->inFileNames[eSW_InDomain];
+    char **inDomFileNames = SW_PathInputs->ncInFiles[eSW_InDomain];
 
     /* Get latitude/longitude names that were read-in from input file */
     char *readinLatName =
@@ -2469,7 +2473,7 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         SW_NC_check(
             SW_Domain,
             SW_Domain->SW_PathInputs.ncDomFileIDs[file],
-            SW_Domain->SW_PathInputs.inFileNames[eSW_InDomain][file],
+            SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][file],
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -2494,7 +2498,7 @@ void SW_NCIN_open_dom_prog_files(
     SW_NETCDF_IN *SW_netCDFIn, SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo
 ) {
 
-    char **inDomFileNames = SW_PathInputs->inFileNames[eSW_InDomain];
+    char **inDomFileNames = SW_PathInputs->ncInFiles[eSW_InDomain];
     char ***inDomVarInfo = SW_netCDFIn->inVarInfo[eSW_InDomain];
     int *ncDomFileIDs = SW_PathInputs->ncDomFileIDs;
 
@@ -2811,7 +2815,7 @@ void SW_NCIN_read_input_vars(
     const char *accStrVal[] = {"Inf", "NA"};
     char **varInfoPtr = NULL;
 
-    MyFileName = SW_PathInputs->InFiles[eNCIn];
+    MyFileName = SW_PathInputs->txtInFiles[eNCIn];
     f = OpenFile(MyFileName, "r", LogInfo);
     if (LogInfo->stopRun) {
         return; /* Exit function prematurely due to error */
@@ -2944,8 +2948,8 @@ void SW_NCIN_read_input_vars(
                     SW_NCIN_alloc_file_information(
                         numVarsInKey[inKey],
                         inKey,
-                        &SW_PathInputs->inFileNames[inKey],
-                        &SW_PathInputs->weathInFiles,
+                        &SW_PathInputs->ncInFiles[inKey],
+                        &SW_PathInputs->ncWeatherInFiles,
                         LogInfo
                     );
                     if (LogInfo->stopRun) {
@@ -3026,7 +3030,7 @@ void SW_NCIN_read_input_vars(
                 SW_netCDFIn->readInVars[inKey][0] = swTRUE;
 
                 /* Save file to input file list */
-                SW_PathInputs->inFileNames[inKey][inVarNum] =
+                SW_PathInputs->ncInFiles[inKey][inVarNum] =
                     Str_Dup(input[ncFileNameInd], LogInfo);
                 if (LogInfo->stopRun) {
                     goto closeFile; /* Exit function prematurely due to error */
@@ -3121,14 +3125,14 @@ void SW_NCIN_read_input_vars(
 
     if (SW_netCDFIn->readInVars[eSW_InWeather][0]) {
         generate_weather_filenames(
-            SW_PathInputs->inFileNames[eSW_InWeather],
+            SW_PathInputs->ncInFiles[eSW_InWeather],
             inWeathStrideInfo,
             SW_netCDFIn->inVarInfo[eSW_InWeather],
             startYr,
             endYr,
-            &SW_PathInputs->weathInFiles,
-            &SW_PathInputs->weathInStartEnd,
-            &SW_PathInputs->numInWeathFiles,
+            &SW_PathInputs->ncWeatherInFiles,
+            &SW_PathInputs->ncWeatherInStartEnd,
+            &SW_PathInputs->ncNumWeatherInFiles,
             SW_netCDFIn->readInVars[eSW_InWeather],
             LogInfo
         );
@@ -3211,14 +3215,14 @@ void SW_NCIN_alloc_inputkey_var_info(
 input key
 @param[in] key Category of input information that is being initialized
 @param[out] inputFiles List of user-provided input files
-@param[out] weathInFiles List of all weather input files
+@param[out] ncWeatherInFiles List of all weather input files
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCIN_alloc_file_information(
     int numInVars,
     int key,
     char ***inputFiles,
-    char ****weathInFiles,
+    char ****ncWeatherInFiles,
     LOG_INFO *LogInfo
 ) {
 
@@ -3237,7 +3241,7 @@ void SW_NCIN_alloc_file_information(
     }
 
     if (key == eSW_InWeather) {
-        alloc_weath_input_files(weathInFiles, numInVars, LogInfo);
+        alloc_weath_input_files(ncWeatherInFiles, numInVars, LogInfo);
     }
 }
 
@@ -3348,14 +3352,14 @@ void SW_NCIN_create_units_converters(
 variables
 
 @param[out] outWeathFileNames List of all weather input files for a variable
-@param[out] weathInStartEnd Start/end years of each weather input file
+@param[out] ncWeatherInStartEnd Start/end years of each weather input file
 @param[in] numWeathIn Number of input weather files
 @param[in] weathVar Weather variable index
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCIN_alloc_weath_input_info(
     char ****outWeathFileNames,
-    unsigned int ***weathInStartEnd,
+    unsigned int ***ncWeatherInStartEnd,
     unsigned int numWeathIn,
     int weathVar,
     LOG_INFO *LogInfo
@@ -3374,8 +3378,8 @@ void SW_NCIN_alloc_weath_input_info(
         (*outWeathFileNames)[weathVar][inFileNum] = NULL;
     }
 
-    if (isnull(*weathInStartEnd)) {
-        (*weathInStartEnd) = (unsigned int **) Mem_Malloc(
+    if (isnull(*ncWeatherInStartEnd)) {
+        (*ncWeatherInStartEnd) = (unsigned int **) Mem_Malloc(
             sizeof(unsigned int *) * numWeathIn,
             "SW_NCIN_alloc_weath_input_info()",
             LogInfo
@@ -3385,11 +3389,11 @@ void SW_NCIN_alloc_weath_input_info(
         }
 
         for (inFileNum = 0; inFileNum < numWeathIn; inFileNum++) {
-            (*weathInStartEnd)[inFileNum] = NULL;
+            (*ncWeatherInStartEnd)[inFileNum] = NULL;
         }
 
         for (inFileNum = 0; inFileNum < numWeathIn; inFileNum++) {
-            (*weathInStartEnd)[inFileNum] = (unsigned int *) Mem_Malloc(
+            (*ncWeatherInStartEnd)[inFileNum] = (unsigned int *) Mem_Malloc(
                 sizeof(unsigned int) * 2,
                 "SW_NCIN_alloc_weath_input_info()",
                 LogInfo
@@ -3397,8 +3401,8 @@ void SW_NCIN_alloc_weath_input_info(
         }
 
         for (inFileNum = 0; inFileNum < numWeathIn; inFileNum++) {
-            (*weathInStartEnd)[inFileNum][0] = 0;
-            (*weathInStartEnd)[inFileNum][1] = 0;
+            (*ncWeatherInStartEnd)[inFileNum][0] = 0;
+            (*ncWeatherInStartEnd)[inFileNum][1] = 0;
         }
     }
 }

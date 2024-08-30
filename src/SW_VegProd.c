@@ -122,10 +122,12 @@ const char *const key2veg[NVEGTYPES] = {"Trees", "Shrubs", "Forbs", "Grasses"};
 
 @param[in,out] SW_VegProd Struct of type SW_VEGPROD describing surface
     cover conditions in the simulation
-@param[in] InFiles Array of program in/output files
+@param[in] txtInFiles Array of program in/output files
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *InFiles[], LOG_INFO *LogInfo) {
+void SW_VPD_read(
+    SW_VEGPROD *SW_VegProd, char *txtInFiles[], LOG_INFO *LogInfo
+) {
     /* =================================================== */
 
     const char *const lineErrStrings[] = {
@@ -184,7 +186,7 @@ void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *InFiles[], LOG_INFO *LogInfo) {
     const int numMonthVals = 4;
     int expectedNumInVals;
 
-    MyFileName = InFiles[eVegProd];
+    MyFileName = txtInFiles[eVegProd];
     f = OpenFile(MyFileName, "r", LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error

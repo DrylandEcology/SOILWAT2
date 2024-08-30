@@ -467,11 +467,10 @@ void SW_CTL_setup_domain(
 
     fnameDomainTemplateNC =
         (renameDomainTemp) ?
-            SW_Domain->SW_PathInputs.inFileNames[eSW_InDomain][vNCdom] :
+            SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom] :
             NULL;
 
-    if (!FileExists(SW_Domain->SW_PathInputs.inFileNames[eSW_InDomain][vNCdom]
-        )) {
+    if (!FileExists(SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom])) {
         SW_NCIN_create_domain_template(
             SW_Domain, fnameDomainTemplateNC, LogInfo
         );
@@ -504,7 +503,7 @@ void SW_CTL_setup_domain(
     SW_NC_check(
         SW_Domain,
         SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom],
-        SW_Domain->SW_PathInputs.inFileNames[eSW_InDomain][vNCdom],
+        SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom],
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -899,7 +898,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_MDL_read(&sw->Model, SW_PathInputs->InFiles, LogInfo);
+    SW_MDL_read(&sw->Model, SW_PathInputs->txtInFiles, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -911,8 +910,8 @@ void SW_CTL_read_inputs_from_disk(
 
     SW_WTH_setup(
         &sw->Weather,
-        SW_PathInputs->InFiles,
-        SW_PathInputs->weather_prefix,
+        SW_PathInputs->txtInFiles,
+        SW_PathInputs->txtWeatherPrefix,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -923,7 +922,7 @@ void SW_CTL_read_inputs_from_disk(
         sw_printf(" > 'weather setup'");
     }
 #endif
-    SW_SKY_read(SW_PathInputs->InFiles, &sw->Sky, LogInfo);
+    SW_SKY_read(SW_PathInputs->txtInFiles, &sw->Sky, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -938,7 +937,7 @@ void SW_CTL_read_inputs_from_disk(
             &sw->Markov,
             sw->Weather.rng_seed,
             sw->Weather.generateWeatherMethod,
-            SW_PathInputs->InFiles,
+            SW_PathInputs->txtInFiles,
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -961,7 +960,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_VPD_read(&sw->VegProd, SW_PathInputs->InFiles, LogInfo);
+    SW_VPD_read(&sw->VegProd, SW_PathInputs->txtInFiles, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -971,7 +970,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_SIT_read(&sw->Site, SW_PathInputs->InFiles, &sw->Carbon, LogInfo);
+    SW_SIT_read(&sw->Site, SW_PathInputs->txtInFiles, &sw->Carbon, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -981,7 +980,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_LYR_read(&sw->Site, SW_PathInputs->InFiles, LogInfo);
+    SW_LYR_read(&sw->Site, SW_PathInputs->txtInFiles, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -991,7 +990,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_SWRC_read(&sw->Site, SW_PathInputs->InFiles, LogInfo);
+    SW_SWRC_read(&sw->Site, SW_PathInputs->txtInFiles, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -1003,7 +1002,7 @@ void SW_CTL_read_inputs_from_disk(
 
     SW_VES_read(
         &sw->VegEstab,
-        SW_PathInputs->InFiles,
+        SW_PathInputs->txtInFiles,
         SW_PathInputs->SW_ProjDir,
         LogInfo
     );
@@ -1016,7 +1015,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_OUT_read(sw, OutDom, SW_PathInputs->InFiles, LogInfo);
+    SW_OUT_read(sw, OutDom, SW_PathInputs->txtInFiles, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -1026,7 +1025,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_CBN_read(&sw->Carbon, &sw->Model, SW_PathInputs->InFiles, LogInfo);
+    SW_CBN_read(&sw->Carbon, &sw->Model, SW_PathInputs->txtInFiles, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -1036,7 +1035,9 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_SWC_read(&sw->SoilWat, sw->Model.endyr, SW_PathInputs->InFiles, LogInfo);
+    SW_SWC_read(
+        &sw->SoilWat, sw->Model.endyr, SW_PathInputs->txtInFiles, LogInfo
+    );
 #ifdef SWDEBUG
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error

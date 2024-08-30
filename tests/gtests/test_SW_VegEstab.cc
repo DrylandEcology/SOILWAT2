@@ -13,7 +13,7 @@ TEST_F(VegEstabFixtureTest, SimulateWithVegEstab) {
         &SW_Run.VegEstab,
         swTRUE,
         swFALSE,
-        SW_Domain.SW_PathInputs.InFiles,
+        SW_Domain.SW_PathInputs.txtInFiles,
         SW_Domain.SW_PathInputs.SW_ProjDir,
         &LogInfo
     );

@@ -216,11 +216,11 @@ int SW_OUT_read_onekey(
     size_t sizeof_msg,
     Bool *VegProd_use_SWA,
     Bool deepdrain,
-    char *InFiles[]
+    char *txtInFiles[]
 );
 
 void SW_OUT_read(
-    SW_RUN *sw, SW_OUT_DOM *OutDom, char *InFiles[], LOG_INFO *LogInfo
+    SW_RUN *sw, SW_OUT_DOM *OutDom, char *txtInFiles[], LOG_INFO *LogInfo
 );
 
 void SW_OUT_sum_today(

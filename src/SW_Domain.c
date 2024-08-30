@@ -217,7 +217,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     Bool doDoubleConv;
 
-    MyFileName = SW_Domain->SW_PathInputs.InFiles[eDomain];
+    MyFileName = SW_Domain->SW_PathInputs.txtInFiles[eDomain];
     f = OpenFile(MyFileName, "r", LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error

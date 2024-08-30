@@ -196,14 +196,14 @@ freeMem:
 @param[in,out] SW_PathOutputs Struct of type SW_PATH_OUTPUTS which
     holds basic information about output files and values
 @param[in] pd The output time step.
-@param[in] InFiles Array of program in/output files
+@param[in] txtInFiles Array of program in/output files
 @param[out] LogInfo Holds information on warnings and errors
 */
 /***********************************************************/
 static void create_csv_files(
     SW_PATH_OUTPUTS *SW_PathOutputs,
     OutPeriod pd,
-    char *InFiles[],
+    char *txtInFiles[],
     LOG_INFO *LogInfo
 ) {
     // PROGRAMMER Note: `eOutputDaily + pd` is not very elegant and assumes
@@ -213,7 +213,7 @@ static void create_csv_files(
 
     if (SW_PathOutputs->make_regular[pd]) {
         SW_PathOutputs->fp_reg[pd] =
-            OpenFile(InFiles[eOutputDaily + pd], "w", LogInfo);
+            OpenFile(txtInFiles[eOutputDaily + pd], "w", LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -221,7 +221,7 @@ static void create_csv_files(
 
     if (SW_PathOutputs->make_soil[pd]) {
         SW_PathOutputs->fp_soil[pd] =
-            OpenFile(InFiles[eOutputDaily_soil + pd], "w", LogInfo);
+            OpenFile(txtInFiles[eOutputDaily_soil + pd], "w", LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -336,7 +336,7 @@ holds basic information about output files and values
 static void create_csv_file_ST(
     int iteration,
     OutPeriod pd,
-    char *InFiles[],
+    char *txtInFiles[],
     SW_PATH_OUTPUTS *SW_PathOutputs,
     LOG_INFO *LogInfo
 ) {
@@ -350,7 +350,7 @@ static void create_csv_file_ST(
             // something that allows subsetting such as `eOutputFile[pd]` or
             // append time period to a basename, etc.
             create_filename_ST(
-                InFiles[eOutputDaily + pd],
+                txtInFiles[eOutputDaily + pd],
                 "agg",
                 0,
                 filename,
@@ -369,7 +369,7 @@ static void create_csv_file_ST(
 
         if (SW_PathOutputs->make_soil[pd]) {
             create_filename_ST(
-                InFiles[eOutputDaily_soil + pd],
+                txtInFiles[eOutputDaily_soil + pd],
                 "agg",
                 0,
                 filename,
@@ -400,7 +400,7 @@ static void create_csv_file_ST(
 
         if (SW_PathOutputs->make_regular[pd]) {
             create_filename_ST(
-                InFiles[eOutputDaily + pd],
+                txtInFiles[eOutputDaily + pd],
                 "rep",
                 iteration,
                 filename,
@@ -419,7 +419,7 @@ static void create_csv_file_ST(
 
         if (SW_PathOutputs->make_soil[pd]) {
             create_filename_ST(
-                InFiles[eOutputDaily_soil + pd],
+                txtInFiles[eOutputDaily_soil + pd],
                 "rep",
                 iteration,
                 filename,
@@ -452,14 +452,14 @@ static void create_csv_file_ST(
 @param[in,out] SW_PathOutputs Struct of type SW_PATH_OUTPUTS which
 holds basic information about output files and values
 @param[in] n_layers Number of layers of soil within the simulation run
-@param[in] InFiles Array of program in/output files
+@param[in] txtInFiles Array of program in/output files
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_OUT_create_textfiles(
     SW_OUT_DOM *OutDom,
     SW_PATH_OUTPUTS *SW_PathOutputs,
     LyrIndex n_layers,
-    char *InFiles[],
+    char *txtInFiles[],
     LOG_INFO *LogInfo
 ) {
 
@@ -467,7 +467,7 @@ void SW_OUT_create_textfiles(
 
     ForEachOutPeriod(pd) {
         if (OutDom->use_OutPeriod[pd]) {
-            create_csv_files(SW_PathOutputs, pd, InFiles, LogInfo);
+            create_csv_files(SW_PathOutputs, pd, txtInFiles, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
@@ -495,7 +495,7 @@ void SW_OUT_create_textfiles(
 void SW_OUT_create_summary_files(
     SW_OUT_DOM *OutDom,
     SW_PATH_OUTPUTS *SW_PathOutputs,
-    char *InFiles[],
+    char *txtInFiles[],
     LyrIndex n_layers,
     LOG_INFO *LogInfo
 ) {
@@ -504,7 +504,7 @@ void SW_OUT_create_summary_files(
 
     ForEachOutPeriod(p) {
         if (OutDom->use_OutPeriod[p]) {
-            create_csv_file_ST(-1, p, InFiles, SW_PathOutputs, LogInfo);
+            create_csv_file_ST(-1, p, txtInFiles, SW_PathOutputs, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
@@ -531,7 +531,7 @@ void SW_OUT_create_iteration_files(
     SW_OUT_DOM *OutDom,
     SW_PATH_OUTPUTS *SW_PathOutputs,
     int iteration,
-    char *InFiles[],
+    char *txtInFiles[],
     LyrIndex n_layers,
     LOG_INFO *LogInfo
 ) {
@@ -540,7 +540,9 @@ void SW_OUT_create_iteration_files(
 
     ForEachOutPeriod(p) {
         if (OutDom->use_OutPeriod[p]) {
-            create_csv_file_ST(iteration, p, InFiles, SW_PathOutputs, LogInfo);
+            create_csv_file_ST(
+                iteration, p, txtInFiles, SW_PathOutputs, LogInfo
+            );
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }

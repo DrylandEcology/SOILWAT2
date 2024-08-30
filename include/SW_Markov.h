@@ -35,15 +35,19 @@ void copyMKV(SW_MARKOV *dest_MKV, SW_MARKOV *template_MKV);
 
 void SW_MKV_deconstruct(SW_MARKOV *SW_Markov);
 
-Bool SW_MKV_read_prob(char *InFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo);
+Bool SW_MKV_read_prob(
+    char *txtInFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo
+);
 
-Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo);
+Bool SW_MKV_read_cov(
+    char *txtInFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo
+);
 
 void SW_MKV_setup(
     SW_MARKOV *SW_Markov,
     unsigned long Weather_rng_seed,
     unsigned int Weather_genWeathMethod,
-    char *InFiles[],
+    char *txtInFiles[],
     LOG_INFO *LogInfo
 );
 

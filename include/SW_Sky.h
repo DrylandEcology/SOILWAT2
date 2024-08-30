@@ -36,7 +36,7 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_SKY_read(char *InFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo);
+void SW_SKY_read(char *txtInFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo);
 void SW_SKY_new_year(
     SW_MODEL *SW_Model,
     double snow_density[MAX_MONTHS],
