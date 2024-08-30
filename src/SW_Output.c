@@ -38,14 +38,13 @@ History:
 #include "include/SW_datastructs.h" // for SW_RUN, SW_OUTTEXT, LOG_INFO
 #include "include/SW_Defines.h"     // for eSWC, OutPeriod, NVEGTYPES
 #include "include/SW_Files.h"       // for eOutput, eSite
-#include "include/SW_netCDF_Input.h" // for eSW_InDomain, vNCdom
-#include "include/SW_Site.h"         // for echo_inputs
-#include "include/SW_Times.h"        // for Today, Yesterday
-#include "include/SW_VegEstab.h"     // for echo_VegEstab
-#include "include/SW_VegProd.h"      // for echo_VegProd
-#include "include/Times.h"           // for Time_days_in_month, WKDAYS
-#include <stdio.h>                   // for snprintf, fprintf, printf
-#include <string.h>                  // for strcmp, memccpy, memset
+#include "include/SW_Site.h"        // for echo_inputs
+#include "include/SW_Times.h"       // for Today, Yesterday
+#include "include/SW_VegEstab.h"    // for echo_VegEstab
+#include "include/SW_VegProd.h"     // for echo_VegProd
+#include "include/Times.h"          // for Time_days_in_month, WKDAYS
+#include <stdio.h>                  // for snprintf, fprintf, printf
+#include <string.h>                 // for strcmp, memccpy, memset
 
 // Array-based output declarations:
 #if defined(SW_OUTARRAY) || defined(SWNETCDF)
@@ -59,6 +58,7 @@ History:
 
 #if defined(SWNETCDF)
 #include "include/SW_netCDF_General.h"
+#include "include/SW_netCDF_Input.h" // for eSW_InDomain, vNCdom
 #include "include/SW_netCDF_Output.h"
 #include <stdlib.h> // for free
 #endif
