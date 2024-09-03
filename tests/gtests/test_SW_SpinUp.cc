@@ -344,7 +344,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
         fname,
         sizeof fname,
         "%s%s",
-        SW_Domain.SW_PathInputs.output_prefix,
+        SW_Domain.SW_PathInputs.outputPrefix,
         "Table__SW2_SpinupEvaluation.csv"
     );
 
