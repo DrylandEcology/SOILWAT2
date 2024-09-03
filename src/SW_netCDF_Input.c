@@ -207,7 +207,7 @@ static const char *const possInKeys[] = {
 @param[out] inVarNum Translated key from read-in values to local arrays
 @param[out] isIndex Specifies that the read-in values were related to an index
 file
-@param[out] isGenVar Specifies that the read-in values were a generalization
+@param[out] isAllVegVar Specifies that the read-in values were a generalization
 of veg or soil variables
 */
 static void get_2d_input_key(
@@ -216,7 +216,7 @@ static void get_2d_input_key(
     int *inKey,
     int *inVarNum,
     Bool *isIndex,
-    Bool *isGenVar
+    Bool *isAllVegVar
 ) {
 
     int keyNum;
@@ -226,7 +226,7 @@ static void get_2d_input_key(
     *inKey = eSW_NoInKey;
     *inVarNum = KEY_NOT_FOUND;
     *isIndex = swFALSE;
-    *isGenVar = swFALSE;
+    *isAllVegVar = swFALSE;
 
     for (keyNum = 0; keyNum < SW_NINKEYSNC && *inKey == eSW_NoInKey; keyNum++) {
         if (strcmp(varKey, possInKeys[keyNum]) == 0) {
@@ -251,14 +251,14 @@ static void get_2d_input_key(
         if (*inKey == eSW_InVeg) {
             for (varNum = 0; varNum < numGeneralVegNames; varNum++) {
                 if (strcmp(generalVegNames[varNum], varName) == 0) {
-                    *isGenVar = swTRUE;
+                    *isAllVegVar = swTRUE;
                     *inVarNum = varNum;
                     return;
                 }
             }
         } else if (*inKey == eSW_InSoil) {
             if (strcmp(generalSoilNames[0], varName) == 0) {
-                *isGenVar = swTRUE;
+                *isAllVegVar = swTRUE;
                 *inVarNum = 0;
             }
         }
@@ -417,16 +417,31 @@ static void check_inputkey_columns(
     char *cmpAtt = NULL;
     char *currAtt = NULL;
 
+    Bool ignoreAtt;
+
     for (varNum = varStart; varNum < numVars; varNum++) {
         if (readInVars[varNum + 1]) {
             if (compIndex == -1) {
                 compIndex = varNum;
             } else {
+                ignoreAtt = swFALSE;
+
                 for (attNum = attStart; attNum <= attEnd; attNum++) {
                     currAtt = inputInfo[varNum][attNum];
                     cmpAtt = inputInfo[compIndex][attNum];
 
-                    if (strcmp(currAtt, cmpAtt) != 0) {
+                    /* Ignore the checking of the V-axis of certain variables
+                       in the input keys `eSW_InVeg` and `SW_InSoil` since
+                       they were already checked in `SW_NCIN_read_input_vars()`
+                    */
+                    if (key == eSW_InVeg) {
+                        ignoreAtt = (Bool) (varNum > 1 && attNum == attEnd);
+                    } else if (key == eSW_InSoil) {
+                        ignoreAtt = (Bool) (varNum >= 12 && varNum <= 15 &&
+                                            attNum == attEnd);
+                    }
+
+                    if (!ignoreAtt && strcmp(currAtt, cmpAtt) != 0) {
                         LogError(
                             LogInfo,
                             LOGERROR,
@@ -2804,11 +2819,11 @@ void SW_NCIN_read_input_vars(
     int doInput = 0;
     int maxVarIter = 1;
     int varIter;
-    const int genVegInc = 5;
+    const int allVegInc = 5;
 
     Bool copyInfo = swFALSE;
     Bool isIndexFile = swFALSE;
-    Bool isGenVar = swFALSE;
+    Bool isAllVegVar = swFALSE;
 
     /* Acceptable non-numerical values for stride year and stride start,
        respectively */
@@ -2883,7 +2898,7 @@ void SW_NCIN_read_input_vars(
                 &inKey,
                 &inVarNum,
                 &isIndexFile,
-                &isGenVar
+                &isAllVegVar
             );
 
             if (isIndexFile) {
@@ -2909,7 +2924,7 @@ void SW_NCIN_read_input_vars(
                 continue;
             }
 
-            if (isGenVar) {
+            if (isAllVegVar) {
                 maxVarIter = NVEGTYPES;
 
                 if (inKey == eSW_InVeg) {
@@ -2936,7 +2951,7 @@ void SW_NCIN_read_input_vars(
                     LogError(
                         LogInfo,
                         LOGERROR,
-                        "The input variable '%s' has already been read-in.",
+                        "The SW2 input variable '%s' has more than one entry.",
                         input[SWVarNameInd]
                     );
                     goto closeFile;
@@ -3102,13 +3117,41 @@ void SW_NCIN_read_input_vars(
 
                 /* Increment variable number based on:
                    1) If the current key is eSW_InSoil and/or the variable
-                        is a general one: 1
-                   2) If the current key (i.e., eSW_InVeg) and is a general
-                        variable: 4
+                        is meant for all four vegetation types: 1
+                   2) If the current key (i.e., eSW_InVeg) and use used for the
+                        four vegetation types: 4
                    3) Otherwise, the increment does not matter since we do not
-                        deal with a general variable (which covers multiple
-                        variables in the code) */
-                inVarNum += (inKey == eSW_InSoil || !isGenVar) ? 1 : genVegInc;
+                        deal with all four variable types (which covers
+                        multiple variables in the code) */
+                inVarNum += (inKey == eSW_InSoil || !isAllVegVar) ?
+                                                            1 : allVegInc;
+            }
+
+            if (isAllVegVar) {
+                if (strcmp(input[ncVAxisInd], "NA") == 0) {
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "The variable '%s' within the input key '%s' "
+                        "has a value of 'NA' for the column 'ncVAxisName'.",
+                        input[SWVarNameInd],
+                        possInKeys[inKey]
+                    );
+                    goto closeFile; /* Exit function prematurely due to error */
+                }
+            } else if (inKey == eSW_InVeg || inKey == eSW_InSoil) {
+                if (strcmp(input[ncVAxisInd], "NA") != 0) {
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "The variable '%s' within the input key '%s' "
+                        "has an unexpected value that is not 'NA' for "
+                        "the column 'ncVAxisName'.",
+                        input[SWVarNameInd],
+                        possInKeys[inKey]
+                    );
+                }
+                goto closeFile; /* Exit function prematurely due to error */
             }
         }
     }
