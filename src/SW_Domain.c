@@ -30,7 +30,7 @@
 /*                   Local Defines                     */
 /* --------------------------------------------------- */
 
-#define NUM_DOM_IN_KEYS 17 // Number of possible keys within `domain.in`
+#define NUM_DOM_IN_KEYS 18 // Number of possible keys within `domain.in`
 
 /* =================================================== */
 /*             Private Function Declarations           */
@@ -181,7 +181,8 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         "SpinupMode",
         "SpinupScope",
         "SpinupDuration",
-        "SpinupSeed"
+        "SpinupSeed",
+        "SpatialTolerance"
     };
     static const Bool requiredKeys[NUM_DOM_IN_KEYS] = {
         swTRUE,
@@ -200,6 +201,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         swTRUE,
         swTRUE,
         swTRUE,
+        swTRUE,
         swTRUE
     };
     Bool hasKeys[NUM_DOM_IN_KEYS] = {swFALSE};
@@ -209,8 +211,8 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     int keyID;
     char inbuf[LARGE_VALUE];
     char *MyFileName;
-    char key[15];
-    char value[LARGE_VALUE]; // 15 - Max key size
+    char key[17]; /* 17 - max key size plus null-terminating character */
+    char value[LARGE_VALUE];
     int intRes = 0;
     int scanRes;
     double doubleRes = 0.;
@@ -225,7 +227,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     // Set SW_DOMAIN
     while (GetALine(f, inbuf, LARGE_VALUE)) {
-        scanRes = sscanf(inbuf, "%14s %s", key, value);
+        scanRes = sscanf(inbuf, "%16s %s", key, value);
 
         if (scanRes < 2) {
             LogError(
@@ -241,11 +243,11 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
         /* Make sure we are not trying to convert a string with no numerical
          * value */
-        if (keyID > 0 && keyID <= 16 && keyID != 8) {
+        if (keyID > 0 && keyID <= 17 && keyID != 8) {
 
             /* Check to see if the line number contains a double or integer
              * value */
-            doDoubleConv = (Bool) (keyID >= 9 && keyID <= 12);
+            doDoubleConv = (Bool) ((keyID >= 9 && keyID <= 12) || keyID == 17);
 
             if (doDoubleConv) {
                 doubleRes = sw_strtod(value, MyFileName, LogInfo);
@@ -384,6 +386,13 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             break;
         case 16: // Spinup Seed
             SW_Domain->SW_SpinUp.rng_seed = intRes;
+            break;
+        case 17:
+            SW_Domain->spatialTol = doubleRes;
+
+            if (LT(SW_Domain->spatialTol, 0.0)) {
+                LogError(LogInfo, LOGERROR, "Spatial tolerance must be >= 0.");
+            }
             break;
 
         case KEY_NOT_FOUND: // Unknown key

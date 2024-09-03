@@ -1364,6 +1364,9 @@ typedef struct {
                                                consistent across simulation
                                                domain */
 
+    double spatialTol; /**< Tolerence when comparing domain coordinates
+                             between nc input files and the nc domain file */
+
     // Information on input files
     SW_PATH_INPUTS SW_PathInputs;
 
