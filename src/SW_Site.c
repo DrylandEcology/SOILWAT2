@@ -499,7 +499,7 @@ void SWRC_PTF_Cosby1984_for_Campbell1974(
     swrcp[2] = -0.3 * sand + 15.7 * clay + 3.10;
     /* swrcp[3] = K_saturated: originally with units [inches / day]
        here re-formulated with units [cm / day] */
-    swrcp[3] = 2.54 * 24. * powe(10.0, 1.26 * sand - 6.4 * clay - 0.60);
+    swrcp[3] = 2.54 * 24. * powe(10.0, 1.26 * sand - 0.64 * clay - 0.60);
 }
 
 /**
