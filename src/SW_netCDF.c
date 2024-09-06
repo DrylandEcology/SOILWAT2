@@ -16,7 +16,7 @@
 #include <math.h>                       // for NAN, ceil, isnan
 #include <netcdf.h>                     // for NC_NOERR, nc_close, NC_DOUBLE
 #include <stdio.h>                      // for size_t, NULL, snprintf, sscanf
-#include <stdlib.h>                     // for free, atof, atoi
+#include <stdlib.h>                     // for free, strtod
 #include <string.h>                     // for strcmp, strlen, strstr, memcpy
 
 #if defined(SWUDUNITS)
@@ -31,7 +31,7 @@
 #define NUM_NC_IN_KEYS 2
 
 /** Number of possible keys within `attributes_nc.in` */
-#define NUM_ATT_IN_KEYS 27
+#define NUM_ATT_IN_KEYS 28
 
 /** Progress status: SUID is ready for simulation */
 #define PRGRSS_READY ((signed char) 0)
@@ -47,7 +47,7 @@
 const int times[] = {MAX_DAYS - 1, MAX_WEEKS, MAX_MONTHS, 1};
 
 
-static const char *possKeys[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
+static const char *const possKeys[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
     {NULL}, // WTHR
     {"TEMP__temp_max",
      "TEMP__temp_min",
@@ -138,7 +138,7 @@ static const char *possKeys[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
      "BIOMASS__LAI"}
 };
 
-static const char *SWVarUnits[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
+static const char *const SWVarUnits[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
     {NULL},                                           /* WTHR */
     {"degC", "degC", "degC", "degC", "degC", "degC"}, /* TEMP */
     {"cm", "cm", "cm", "cm", "cm"},                   /* PRECIP */
@@ -222,7 +222,8 @@ static void nc_read_atts(
         "proj_false_northing",
 
         "strideOutYears",
-        "baseCalendarYear"
+        "baseCalendarYear",
+        "deflateLevel"
     };
     static const Bool requiredKeys[NUM_ATT_IN_KEYS] = {
         swTRUE,  swTRUE,  swTRUE,  swFALSE, swFALSE, swTRUE,  swTRUE,
@@ -233,13 +234,26 @@ static void nc_read_atts(
     Bool hasKeys[NUM_ATT_IN_KEYS] = {swFALSE};
 
     FILE *f;
-    char inbuf[LARGE_VALUE], value[LARGE_VALUE];
+    char inbuf[LARGE_VALUE];
+    char value[LARGE_VALUE];
     char key[35]; // 35 - Max key size
     char *MyFileName;
     int keyID;
     int n;
-    float num1 = 0, num2 = 0;
-    Bool geoCRSFound = swFALSE, projCRSFound = swFALSE;
+    int scanRes;
+    double num1 = 0;
+    double num2 = 0;
+    Bool geoCRSFound = swFALSE;
+    Bool projCRSFound = swFALSE;
+    Bool infVal = swFALSE;
+
+    double inBufdoubleRes = 0.;
+    int inBufintRes = 0;
+    char numOneStr[20];
+    char numTwoStr[20];
+
+    Bool doIntConv;
+    Bool doDoubleConv;
 
     MyFileName = PathInfo->InFiles[eNCInAtt];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -254,19 +268,61 @@ static void nc_read_atts(
     }
 
     while (GetALine(f, inbuf, LARGE_VALUE)) {
-        sscanf(inbuf, "%34s %s", key, value);
+
+        scanRes = sscanf(inbuf, "%34s %s", key, value);
+
+        if (scanRes < 2) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Not enough values for a valid key-value pair in %s.",
+                MyFileName
+            );
+            goto closeFile;
+        }
 
         // Check if the key is "long_name" or "crs_wkt"
         if (strstr(key, "long_name") != NULL ||
             strstr(key, "crs_wkt") != NULL) {
 
             // Reread the like and get the entire value (includes spaces)
-            sscanf(inbuf, "%34s %[^\n]", key, value);
+            scanRes = sscanf(inbuf, "%34s %[^\n]", key, value);
+            if (scanRes < 2) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Not enough values for a valid key-value pair in %s.",
+                    MyFileName
+                );
+                goto closeFile;
+            }
         }
 
         keyID = key_to_id(key, possibleKeys, NUM_ATT_IN_KEYS);
         set_hasKey(keyID, possibleKeys, hasKeys, LogInfo);
         // set_hasKey() does not produce errors, only warnings possible
+
+        /* Check to see if the line number contains a double or integer value */
+        doIntConv = (Bool) (keyID >= 23 && keyID <= 27);
+        doDoubleConv = (Bool) ((keyID >= 9 && keyID <= 11) ||
+                               (keyID >= 15 && keyID <= 17) ||
+                               (keyID >= 21 && keyID <= 22));
+
+        if (doIntConv || doDoubleConv) {
+            if (doIntConv) {
+                infVal = (Bool) (Str_CompareI(value, (char *) "Inf") == 0);
+
+                if (!infVal) {
+                    inBufintRes = sw_strtoi(value, MyFileName, LogInfo);
+                }
+            } else {
+                inBufdoubleRes = sw_strtod(value, MyFileName, LogInfo);
+            }
+
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
+        }
 
         switch (keyID) {
         case 0:
@@ -298,8 +354,7 @@ static void nc_read_atts(
                     "geographic and projected.",
                     value
                 );
-                CloseFile(&f, LogInfo);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             break;
         case 6:
@@ -313,13 +368,13 @@ static void nc_read_atts(
             SW_netCDF->crs_geogsc.crs_wkt = Str_Dup(value, LogInfo);
             break;
         case 9:
-            SW_netCDF->crs_geogsc.longitude_of_prime_meridian = atof(value);
+            SW_netCDF->crs_geogsc.longitude_of_prime_meridian = inBufdoubleRes;
             break;
         case 10:
-            SW_netCDF->crs_geogsc.semi_major_axis = atof(value);
+            SW_netCDF->crs_geogsc.semi_major_axis = inBufdoubleRes;
             break;
         case 11:
-            SW_netCDF->crs_geogsc.inverse_flattening = atof(value);
+            SW_netCDF->crs_geogsc.inverse_flattening = inBufdoubleRes;
             break;
         case 12:
             SW_netCDF->crs_projsc.long_name = Str_Dup(value, LogInfo);
@@ -332,13 +387,13 @@ static void nc_read_atts(
             SW_netCDF->crs_projsc.crs_wkt = Str_Dup(value, LogInfo);
             break;
         case 15:
-            SW_netCDF->crs_projsc.longitude_of_prime_meridian = atof(value);
+            SW_netCDF->crs_projsc.longitude_of_prime_meridian = inBufdoubleRes;
             break;
         case 16:
-            SW_netCDF->crs_projsc.semi_major_axis = atof(value);
+            SW_netCDF->crs_projsc.semi_major_axis = inBufdoubleRes;
             break;
         case 17:
-            SW_netCDF->crs_projsc.inverse_flattening = atof(value);
+            SW_netCDF->crs_projsc.inverse_flattening = inBufdoubleRes;
             break;
         case 18:
             SW_netCDF->crs_projsc.datum = Str_Dup(value, LogInfo);
@@ -349,39 +404,70 @@ static void nc_read_atts(
         case 20:
             // Re-scan for 1 or 2 values of standard parallel(s)
             // the user may separate values by white-space, comma, etc.
-            n = sscanf(inbuf, "%34s %f%*[^-.0123456789]%f", key, &num1, &num2);
+            n = sscanf(
+                inbuf,
+                "%34s %19s%*[^-.0123456789]%19s",
+                key,
+                numOneStr,
+                numTwoStr
+            );
+
+            if (n < 2) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Not enough values to read in for the standard parallel(s)."
+                );
+                goto closeFile;
+            }
+
+            num1 = sw_strtod(numOneStr, MyFileName, LogInfo);
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
+
+            num2 = sw_strtod(numTwoStr, MyFileName, LogInfo);
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
 
             SW_netCDF->crs_projsc.standard_parallel[0] = num1;
             SW_netCDF->crs_projsc.standard_parallel[1] = (n == 3) ? num2 : NAN;
             break;
         case 21:
-            SW_netCDF->crs_projsc.longitude_of_central_meridian = atof(value);
+            SW_netCDF->crs_projsc.longitude_of_central_meridian =
+                inBufdoubleRes;
             break;
         case 22:
-            SW_netCDF->crs_projsc.latitude_of_projection_origin = atof(value);
+            SW_netCDF->crs_projsc.latitude_of_projection_origin =
+                inBufdoubleRes;
             break;
         case 23:
-            SW_netCDF->crs_projsc.false_easting = atoi(value);
+            SW_netCDF->crs_projsc.false_easting = inBufintRes;
             break;
         case 24:
-            SW_netCDF->crs_projsc.false_northing = atoi(value);
+            SW_netCDF->crs_projsc.false_northing = inBufintRes;
             break;
         case 25:
-            if (Str_CompareI(value, (char *) "Inf") != 0) {
-                SW_netCDF->strideOutYears = atoi(value);
+            if (!infVal) {
+                SW_netCDF->strideOutYears = inBufintRes;
 
                 if (SW_netCDF->strideOutYears <= 0) {
                     LogError(
                         LogInfo, LOGERROR, "The value for 'strideOutYears' <= 0"
                     );
-                    return; // Exit function due to invalid input
+                    goto closeFile;
                 }
             }
             break;
         case 26:
-            SW_netCDF->baseCalendarYear = atoi(value);
+            SW_netCDF->baseCalendarYear = inBufintRes;
+            break;
+        case 27:
+            SW_netCDF->deflateLevel = inBufintRes;
             break;
         case KEY_NOT_FOUND:
+        default:
             LogError(
                 LogInfo,
                 LOGWARN,
@@ -393,12 +479,9 @@ static void nc_read_atts(
         }
 
         if (LogInfo->stopRun) {
-            CloseFile(&f, LogInfo);
-            return; // Exist function prematurely due to error
+            goto closeFile;
         }
     }
-
-    CloseFile(&f, LogInfo);
 
 
     // Check if all required input was provided
@@ -406,7 +489,7 @@ static void nc_read_atts(
         hasKeys, requiredKeys, possibleKeys, NUM_ATT_IN_KEYS, LogInfo
     );
     if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
 
@@ -420,7 +503,7 @@ static void nc_read_atts(
             PathInfo->InFiles[eNCInAtt],
             (SW_netCDF->primary_crs_is_geographic) ? "geographic" : "projected"
         );
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     if (projCRSFound && !geoCRSFound) {
@@ -434,13 +517,15 @@ static void nc_read_atts(
             "'projected' with a geographic CRS.",
             PathInfo->InFiles[eNCInAtt]
         );
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     SW_netCDF->coordinate_system =
         (SW_netCDF->primary_crs_is_geographic) ?
             Str_Dup(SW_netCDF->crs_geogsc.long_name, LogInfo) :
             Str_Dup(SW_netCDF->crs_projsc.long_name, LogInfo);
+
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**
@@ -448,10 +533,11 @@ static void nc_read_atts(
 it's respective numeric values
 */
 static void get_2d_output_key(
-    char *varKey, OutKey *outKey, int *outVarNum, IntUS nvar_OUT[]
+    char *varKey, OutKey *outKey, int *outVarNum, const IntUS nvar_OUT[]
 ) {
 
-    int k, varNum;
+    int k;
+    int varNum;
     const int establSize = 6;
 
     *outKey = eSW_NoKey;
@@ -463,16 +549,47 @@ static void get_2d_output_key(
         ForEachOutKey(k) {
             if (k != eSW_Estab) {
                 for (varNum = 0; varNum < nvar_OUT[k]; varNum++) {
-                    if (strcmp(possKeys[k][varNum], varKey) == 0) {
+                    if (!isnull(possKeys[k][varNum])) {
+                        if (strcmp(possKeys[k][varNum], varKey) == 0) {
 
-                        *outKey = (OutKey) k;
-                        *outVarNum = varNum;
+                            *outKey = (OutKey) k;
+                            *outVarNum = varNum;
 
-                        return;
+                            return;
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+/*
+@brief Write a dummy value to a newly created netCDF file so that
+the first write does not occur during the first simulation run;
+this function should only be called when there is no deflate
+activated
+
+@param[in] ncFileID Identifier of the open netCDF file to write to
+@param[in] varType Type of the first variable being written to the file
+@param[in] varID Identifier of the variable to write to
+*/
+static void writeDummyVal(int ncFileID, int varType, int varID) {
+    size_t start[MAX_NUM_DIMS] = {0};
+    size_t count[MAX_NUM_DIMS] = {1, 1, 1, 1, 1};
+    double doubleFill[] = {NC_FILL_DOUBLE};
+    unsigned char byteFill[] = {(unsigned char) NC_FILL_BYTE};
+
+    switch (varType) {
+    case NC_DOUBLE:
+        nc_put_vara_double(ncFileID, varID, start, count, &doubleFill[0]);
+        break;
+    case NC_BYTE:
+        nc_put_vara_ubyte(ncFileID, varID, start, count, &byteFill[0]);
+        break;
+    default:
+        /* No other types should be expected */
+        break;
     }
 }
 
@@ -536,7 +653,9 @@ static void get_str_att_val(
     LOG_INFO *LogInfo
 ) {
 
-    int varID = 0, attCallRes, attLenCallRes;
+    int varID = 0;
+    int attCallRes;
+    int attLenCallRes;
     size_t attLen = 0;
     get_var_identifier(ncFileID, varName, &varID, LogInfo);
     if (LogInfo->stopRun) {
@@ -553,7 +672,6 @@ static void get_str_att_val(
             attName,
             varName
         );
-        return; // Exit function prematurely due to error
     } else if (attLenCallRes != NC_NOERR) {
         LogError(
             LogInfo,
@@ -564,6 +682,11 @@ static void get_str_att_val(
             attName
         );
     }
+
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
 
     attCallRes = nc_get_att_text(ncFileID, varID, attName, strVal);
     if (attCallRes != NC_NOERR) {
@@ -598,7 +721,8 @@ static void get_double_att_val(
     LOG_INFO *LogInfo
 ) {
 
-    int varID = 0, attCallRes;
+    int varID = 0;
+    int attCallRes;
     get_var_identifier(ncFileID, varName, &varID, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -1077,11 +1201,11 @@ static void write_double_vals(
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void write_string_vals(
-    int ncFileID, int varID, const char **varVals, LOG_INFO *LogInfo
+    int ncFileID, int varID, const char *const varVals[], LOG_INFO *LogInfo
 ) {
 
-
-    if (nc_put_var_string(ncFileID, varID, &varVals[0]) != NC_NOERR) {
+    if (nc_put_var_string(ncFileID, varID, (const char **) &varVals[0]) !=
+        NC_NOERR) {
         LogError(LogInfo, LOGERROR, "Could not write string values.");
     }
 }
@@ -1098,12 +1222,17 @@ static void fill_prog_netCDF_vals(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     int domVarID = SW_Domain->netCDFInfo.ncVarIDs[vNCdom];
     int progVarID = SW_Domain->netCDFInfo.ncVarIDs[vNCprog];
     unsigned int domStatus;
-    unsigned long suid, ncSuid[2], nSUIDs = SW_Domain->nSUIDs;
-    unsigned long nDimY = SW_Domain->nDimY, nDimX = SW_Domain->nDimX;
+    unsigned long suid;
+    unsigned long ncSuid[2];
+    unsigned long nSUIDs = SW_Domain->nSUIDs;
+    unsigned long nDimY = SW_Domain->nDimY;
+    unsigned long nDimX = SW_Domain->nDimX;
     int progFileID = SW_Domain->netCDFInfo.ncFileIDs[vNCprog];
     int domFileID = SW_Domain->netCDFInfo.ncFileIDs[vNCdom];
-    size_t start1D[] = {0}, start2D[] = {0, 0};
-    size_t count1D[] = {nSUIDs}, count2D[] = {nDimY, nDimX};
+    size_t start1D[] = {0};
+    size_t start2D[] = {0, 0};
+    size_t count1D[] = {nSUIDs};
+    size_t count2D[] = {nDimY, nDimX};
     size_t *start =
         (strcmp(SW_Domain->DomainType, "s") == 0) ? start1D : start2D;
     size_t *count =
@@ -1147,7 +1276,7 @@ freeMem:
 static void create_netCDF_dim(
     const char *dimName,
     unsigned long size,
-    int *ncFileID,
+    const int *ncFileID,
     int *dimID,
     LOG_INFO *LogInfo
 ) {
@@ -1172,21 +1301,26 @@ static void create_netCDF_dim(
 @param[in] ncFileID Domain netCDF file ID
 @param[in] varType The type in which the new variable will be
 @param[in] numDims Number of dimensions the new variable will hold
+@param[in] chunkSizes Custom chunk sizes for the variable being created
+@param[in] deflateLevel Level of deflation that will be used for the created
+variable
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void create_netCDF_var(
     int *varID,
     const char *varName,
     int *dimIDs,
-    int *ncFileID,
+    const int *ncFileID,
     int varType,
     int numDims,
+    size_t chunkSizes[],
+    int deflateLevel,
     LOG_INFO *LogInfo
 ) {
 
     // Deflate information
-    int shuffle = 1, deflate = 1; // 0 or 1
-    int level = 5;                // 0 to 9
+    int shuffle = 1; // 0 or 1
+    int deflate = 1; // 0 or 1
 
     if (nc_def_var(*ncFileID, varName, varType, numDims, dimIDs, varID) !=
         NC_NOERR) {
@@ -1200,12 +1334,28 @@ static void create_netCDF_var(
         return; // Exit prematurely due to error
     }
 
+    if (!isnull(chunkSizes)) {
+        if (nc_def_var_chunking(*ncFileID, *varID, NC_CHUNKED, chunkSizes) !=
+            NC_NOERR) {
+
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Could not chunk variable '%s' when creating it in "
+                "output netCDF.",
+                varName
+            );
+            return; // Exit prematurely due to error
+        }
+    }
+
     // Do not compress the CRS variables
-    if (strcmp(varName, "crs_geogsc") != 0 &&
+    if (deflateLevel > 0 && strcmp(varName, "crs_geogsc") != 0 &&
         strcmp(varName, "crs_projsc") != 0 && varType != NC_STRING) {
 
-        if (nc_def_var_deflate(*ncFileID, *varID, shuffle, deflate, level) !=
-            NC_NOERR) {
+        if (nc_def_var_deflate(
+                *ncFileID, *varID, shuffle, deflate, deflateLevel
+            ) != NC_NOERR) {
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -1271,7 +1421,7 @@ memory for writing out values
 */
 static void alloc_netCDF_domain_vars(
     Bool domTypeIsSite,
-    int nSUIDs,
+    unsigned long nSUIDs,
     unsigned int numY,
     unsigned int numX,
     double **valsY,
@@ -1284,8 +1434,11 @@ static void alloc_netCDF_domain_vars(
 
     double **vars[] = {valsY, valsX};
     double **bndsVars[] = {valsYBnds, valsXBnds};
-    const int numVars = 2, numBnds = 2;
-    int varNum, bndVarNum, numVals;
+    const unsigned int numVars = 2;
+    const unsigned int numBnds = 2;
+    unsigned int varNum;
+    unsigned int bndVarNum;
+    unsigned int numVals;
 
     for (varNum = 0; varNum < numVars; varNum++) {
         numVals = (varNum % 2 == 0) ? numY : numX;
@@ -1302,7 +1455,7 @@ static void alloc_netCDF_domain_vars(
             numVals = (bndVarNum % 2 == 0) ? numY : numX;
 
             *(bndsVars[bndVarNum]) = (double *) Mem_Malloc(
-                numVals * numBnds * sizeof(double),
+                (size_t) (numVals * numBnds) * sizeof(double),
                 "alloc_netCDF_domain_vars()",
                 LogInfo
             );
@@ -1333,7 +1486,9 @@ static void alloc_outvars(char ****outkeyVars, int nVar, LOG_INFO *LogInfo) {
 
     if (nVar > 0) {
 
-        int index, varNum, attNum;
+        int index;
+        int varNum;
+        int attNum;
 
         // Allocate all memory for the variable information in the current
         // output key
@@ -1354,9 +1509,9 @@ static void alloc_outvars(char ****outkeyVars, int nVar, LOG_INFO *LogInfo) {
             );
             if (LogInfo->stopRun) {
                 for (varNum = 0; varNum < index; varNum++) {
-                    free((*outkeyVars)[varNum]);
+                    free((void *) (*outkeyVars)[varNum]);
                 }
-                free(*outkeyVars);
+                free((void *) *outkeyVars);
                 return; // Exit function prematurely due to error
             }
 
@@ -1504,15 +1659,22 @@ static void fill_domain_netCDF_vals(
 ) {
 
     Bool domTypeIsSite = (Bool) (strcmp(SW_Domain->DomainType, "s") == 0);
-    unsigned int suidNum, gridNum = 0, *domVals = NULL, bndsIndex;
-    double *valsY = NULL, *valsX = NULL;
-    double *valsYBnds = NULL, *valsXBnds = NULL;
+    unsigned int suidNum;
+    unsigned int gridNum = 0;
+    unsigned int *domVals = NULL;
+    unsigned int bndsIndex;
+    double *valsY = NULL;
+    double *valsX = NULL;
+    double *valsYBnds = NULL;
+    double *valsXBnds = NULL;
     size_t start[] = {0, 0};
     size_t domCount[2]; // domCount: 2 - [#lat dim, #lon dim] or [#sites, 0]
-    size_t fillCountY[1], fillCountX[1];
+    size_t fillCountY[1];
+    size_t fillCountX[1];
     size_t fillCountYBnds[] = {SW_Domain->nDimY, 2};
     size_t fillCountXBnds[] = {SW_Domain->nDimX, 2};
-    double resY, resX;
+    double resY;
+    double resX;
     unsigned int numX = (domTypeIsSite) ? SW_Domain->nDimS : SW_Domain->nDimX;
     unsigned int numY = (domTypeIsSite) ? SW_Domain->nDimS : SW_Domain->nDimY;
 
@@ -1521,7 +1683,8 @@ static void fill_domain_netCDF_vals(
     size_t *fillCounts[] = {
         fillCountY, fillCountX, fillCountYBnds, fillCountXBnds
     };
-    int numVars, varNum;
+    int numVars;
+    int varNum;
 
     alloc_netCDF_domain_vars(
         domTypeIsSite,
@@ -1641,16 +1804,19 @@ freeMem:
 @param[in] primCRSIsGeo Specifies if the current CRS type is geographic
 @param[in] domType Type of domain in which simulations are running
     (gridcell/sites)
+@param[in] deflateLevel Level of deflation that will be used for the created
+variable
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void fill_domain_netCDF_domain(
     const char *domainVarName,
-    int *domID,
+    int *domVarID,
     int domDims[],
     int domFileID,
     int nDomainDims,
     Bool primCRSIsGeo,
     const char *domType,
+    int deflateLevel,
     LOG_INFO *LogInfo
 ) {
 
@@ -1670,10 +1836,18 @@ static void fill_domain_netCDF_domain(
     const int numAtts = 4;
 
     create_netCDF_var(
-        domID, domainVarName, domDims, &domFileID, NC_UINT, nDomainDims, LogInfo
+        domVarID,
+        domainVarName,
+        domDims,
+        &domFileID,
+        NC_UINT,
+        nDomainDims,
+        NULL,
+        deflateLevel,
+        LogInfo
     );
 
-    write_uint_att("_FillValue", NC_FILL_UINT, *domID, domFileID, LogInfo);
+    write_uint_att("_FillValue", NC_FILL_UINT, *domVarID, domFileID, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -1681,7 +1855,11 @@ static void fill_domain_netCDF_domain(
     // Write all attributes to the domain variable
     for (attNum = 0; attNum < numAtts; attNum++) {
         write_str_att(
-            strAttNames[attNum], strAttVals[attNum], *domID, domFileID, LogInfo
+            strAttNames[attNum],
+            strAttVals[attNum],
+            *domVarID,
+            domFileID,
+            LogInfo
         );
 
         if (LogInfo->stopRun) {
@@ -1702,6 +1880,8 @@ static void fill_domain_netCDF_domain(
     variable (lat or y)
 @param[out] XVarID Variable identifier of the X-axis horizontal coordinate
     variable (lon or x)
+@param[in] deflateLevel Level of deflation that will be used for the created
+variable
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void fill_domain_netCDF_s(
@@ -1711,6 +1891,7 @@ static void fill_domain_netCDF_s(
     int *sVarID,
     int *YVarID,
     int *XVarID,
+    int deflateLevel,
     LOG_INFO *LogInfo
 ) {
 
@@ -1719,8 +1900,11 @@ static void fill_domain_netCDF_s(
     Bool primCRSIsGeo = SW_Domain->netCDFInfo.primary_crs_is_geographic;
     char *units = SW_Domain->netCDFInfo.crs_projsc.units;
 
-    const int numSiteAtt = 3, numLatAtt = 4, numLonAtt = 4;
-    const int numYAtt = 3, numXAtt = 3;
+    const int numSiteAtt = 3;
+    const int numLatAtt = 4;
+    const int numLonAtt = 4;
+    const int numYAtt = 3;
+    const int numXAtt = 3;
     // numVarsToWrite: Do or do not write "x" and "y"
     int numVarsToWrite = (primCRSIsGeo) ? 3 : 5;
     const char *attNames[][4] = {
@@ -1743,7 +1927,8 @@ static void fill_domain_netCDF_s(
     int varIDs[5]; // 5 - Maximum number of variables to create
     const int numAtts[] = {numSiteAtt, numLatAtt, numLonAtt, numYAtt, numXAtt};
 
-    int varNum, attNum;
+    int varNum;
+    int attNum;
 
     create_netCDF_dim("site", SW_Domain->nDimS, domFileID, sDimID, LogInfo);
     if (LogInfo->stopRun) {
@@ -1760,6 +1945,8 @@ static void fill_domain_netCDF_s(
             domFileID,
             NC_DOUBLE,
             1,
+            NULL,
+            deflateLevel,
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -1825,6 +2012,8 @@ static void fill_domain_netCDF_s(
     bounds variable (lat_bnds or y_bnds)
 @param[out] XVarID Variable identifier of the X-axis horizontal coordinate
     bounds variable (lon_bnds or x_bnds)
+@param[in] deflateLevel Level of deflation that will be used for the created
+variable
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void fill_domain_netCDF_xy(
@@ -1836,6 +2025,7 @@ static void fill_domain_netCDF_xy(
     int *XVarID,
     int *YBndsID,
     int *XBndsID,
+    int deflateLevel,
     LOG_INFO *LogInfo
 ) {
 
@@ -1846,7 +2036,9 @@ static void fill_domain_netCDF_xy(
 
     int bndsID = 0;
     int bndVarDims[2]; // Used for bound variables in the netCDF file
-    int dimNum, varNum, attNum;
+    int dimNum;
+    int varNum;
+    int attNum;
 
     const int numVars = (primCRSIsGeo) ? 2 : 4; // lat/lon or lat/lon + x/y vars
     const char *varNames[] = {"lat", "lon", "y", "x"};
@@ -1870,7 +2062,10 @@ static void fill_domain_netCDF_xy(
          units,
          "x_bnds"}
     };
-    int numLatAtt = 5, numLonAtt = 5, numYAtt = 4, numXAtt = 4;
+    int numLatAtt = 5;
+    int numLonAtt = 5;
+    int numYAtt = 4;
+    int numXAtt = 4;
     int numAtts[] = {numLatAtt, numLonAtt, numYAtt, numXAtt};
 
     const int numDims = 3;
@@ -1913,6 +2108,8 @@ static void fill_domain_netCDF_xy(
             domFileID,
             NC_DOUBLE,
             1,
+            NULL,
+            deflateLevel,
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -1929,6 +2126,8 @@ static void fill_domain_netCDF_xy(
             domFileID,
             NC_DOUBLE,
             2,
+            NULL,
+            deflateLevel,
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -1992,11 +2191,14 @@ static void fill_domain_netCDF_xy(
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void fill_netCDF_with_proj_CRS_atts(
-    SW_CRS *crs_projsc, int *ncFileID, int proj_id, LOG_INFO *LogInfo
+    SW_CRS *crs_projsc, const int *ncFileID, int proj_id, LOG_INFO *LogInfo
 ) {
 
-    const int numStrAtts = 5, numDoubleAtts = 8;
-    int strAttNum, doubleAttNum, numValsToWrite;
+    const int numStrAtts = 5;
+    const int numDoubleAtts = 8;
+    int strAttNum;
+    int doubleAttNum;
+    int numValsToWrite;
     const char *strAttNames[] = {
         "long_name", "grid_mapping_name", "datum", "units", "crs_wkt"
     };
@@ -2074,13 +2276,15 @@ static void fill_netCDF_with_proj_CRS_atts(
 */
 static void fill_netCDF_with_geo_CRS_atts(
     SW_CRS *crs_geogsc,
-    int *ncFileID,
+    const int *ncFileID,
     char *coord_sys,
     int geo_id,
     LOG_INFO *LogInfo
 ) {
 
-    int attNum, numStrAtts = 3, numDoubleAtts = 3;
+    int attNum;
+    int numStrAtts = 3;
+    int numDoubleAtts = 3;
     const int numValsToWrite = 1;
     const char *strAttNames[] = {"grid_mapping_name", "long_name", "crs_wkt"};
     const char *doubleAttNames[] = {
@@ -2149,7 +2353,7 @@ static void fill_netCDF_with_geo_CRS_atts(
 */
 static void fill_netCDF_with_global_atts(
     SW_NETCDF *SW_netCDF,
-    int *ncFileID,
+    const int *ncFileID,
     const char *domType,
     const char *freqAtt,
     Bool isInputFile,
@@ -2207,7 +2411,7 @@ static void fill_netCDF_with_global_atts(
     };
 
     // Fill `sourceStr` and `creationDateStr`
-    snprintf(sourceStr, 40, "SOILWAT2%s", SW2_VERSION);
+    (void) snprintf(sourceStr, 40, "SOILWAT2%s", SW2_VERSION);
     timeStringISO8601(creationDateStr, sizeof creationDateStr);
 
     // Write out the necessary global attributes that are listed above
@@ -2234,7 +2438,7 @@ static void fill_netCDF_with_global_atts(
 @param[in,out] LogInfo Holds information dealing with logfile output
 */
 static void update_netCDF_global_atts(
-    int *ncFileID,
+    const int *ncFileID,
     const char *domType,
     const char *freqAtt,
     Bool isInputFile,
@@ -2266,7 +2470,7 @@ static void update_netCDF_global_atts(
     };
 
     // Fill `sourceStr` and `creationDateStr`
-    snprintf(sourceStr, 40, "SOILWAT2%s", SW2_VERSION);
+    (void) snprintf(sourceStr, 40, "SOILWAT2%s", SW2_VERSION);
     timeStringISO8601(creationDateStr, sizeof creationDateStr);
 
     // Write out the necessary global attributes that are listed above
@@ -2301,11 +2505,13 @@ static void fill_netCDF_with_invariants(
     LOG_INFO *LogInfo
 ) {
 
-    int geo_id = 0, proj_id = 0;
+    int geo_id = 0;
+    int proj_id = 0;
     const char *fx = "fx";
 
+    /* Do not deflate crs_geogsc */
     create_netCDF_var(
-        &geo_id, "crs_geogsc", NULL, ncFileID, NC_BYTE, 0, LogInfo
+        &geo_id, "crs_geogsc", NULL, ncFileID, NC_BYTE, 0, NULL, 0, LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -2325,8 +2531,10 @@ static void fill_netCDF_with_invariants(
 
     // Projected CRS variable/attributes
     if (!SW_netCDF->primary_crs_is_geographic) {
+
+        /* Do not deflate crs_projsc */
         create_netCDF_var(
-            &proj_id, "crs_projsc", NULL, ncFileID, NC_BYTE, 0, LogInfo
+            &proj_id, "crs_projsc", NULL, ncFileID, NC_BYTE, 0, NULL, 0, LogInfo
         );
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -2355,12 +2563,15 @@ static void fill_netCDF_with_invariants(
     (e.g., 60 months in 5 years, or 731 days in 1980-1981)
 @param[in] pd Current output netCDF period
 */
-static double calc_timeSize(
-    int rangeStart, int rangeEnd, int baseTime, OutPeriod pd
+static unsigned int calc_timeSize(
+    unsigned int rangeStart,
+    unsigned int rangeEnd,
+    unsigned int baseTime,
+    OutPeriod pd
 ) {
 
-    double numLeapYears = 0.0;
-    int year;
+    unsigned int numLeapYears = 0;
+    unsigned int year;
 
     if (pd == eSW_Day) {
         for (year = rangeStart; year < rangeEnd; year++) {
@@ -2370,7 +2581,7 @@ static double calc_timeSize(
         }
     }
 
-    return (double) (baseTime * (rangeEnd - rangeStart)) + numLeapYears;
+    return baseTime * (rangeEnd - rangeStart) + numLeapYears;
 }
 
 /**
@@ -2386,29 +2597,44 @@ the variable "time_bnds" and fills the variable "time"
 @param[in,out] startTime Start number of days when dealing with
     years between netCDF files
 @param[in] pd Current output netCDF period
+@param[in] deflateLevel Level of deflation that will be used for the created
+variable
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static void create_time_vars(
     int ncFileID,
     int dimIDs[],
-    int size,
+    unsigned int size,
     int dimVarID,
-    int startYr,
+    unsigned int startYr,
     double *startTime,
     OutPeriod pd,
+    int deflateLevel,
     LOG_INFO *LogInfo
 ) {
 
-    double *bndsVals = NULL, *dimVarVals = NULL;
-    size_t numBnds = 2;
-    size_t start[] = {0, 0}, count[] = {(size_t) size, 0};
-    int currYear = startYr;
-    int month = 0, week = 0, numDays = 0;
+    double *bndsVals = NULL;
+    double *dimVarVals = NULL;
+    const int numBnds = 2;
+    size_t start[] = {0, 0};
+    size_t count[] = {(size_t) size, 0};
+    unsigned int currYear = startYr;
+    unsigned int month = 0;
+    unsigned int week = 0;
+    unsigned int numDays = 0;
     int bndsID = 0;
 
 
     create_netCDF_var(
-        &bndsID, "time_bnds", dimIDs, &ncFileID, NC_DOUBLE, numBnds, LogInfo
+        &bndsID,
+        "time_bnds",
+        dimIDs,
+        &ncFileID,
+        NC_DOUBLE,
+        numBnds,
+        NULL,
+        deflateLevel,
+        LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -2422,7 +2648,7 @@ static void create_time_vars(
     }
 
     bndsVals = (double *) Mem_Malloc(
-        size * numBnds * sizeof(double), "create_time_vars", LogInfo
+        (size_t) (size * numBnds) * sizeof(double), "create_time_vars", LogInfo
     );
     if (LogInfo->stopRun) {
         free(dimVarVals);
@@ -2444,7 +2670,7 @@ static void create_time_vars(
                 numDays = WKDAYS;
             }
 
-            currYear += (index % MAX_WEEKS == 0) ? 1.0 : 0.0;
+            currYear += (index % MAX_WEEKS == 0) ? 1 : 0;
             week = (week + 1) % MAX_WEEKS;
             break;
 
@@ -2455,7 +2681,7 @@ static void create_time_vars(
                 numDays = monthdays[month];
             }
 
-            currYear += (index % MAX_MONTHS == 0) ? 1.0 : 0.0;
+            currYear += (index % MAX_MONTHS == 0) ? 1 : 0;
             month = (month + 1) % MAX_MONTHS;
             break;
 
@@ -2507,21 +2733,27 @@ the variable "vertical_bnds" and fills the variable "vertical"
     run within domain have identical soil layer depths
     (though potentially variable number of soil layers)
 @param[in] lyrDepths Depths of soil layers (cm)
+@param[in] deflateLevel Level of deflation that will be used for the created
+variable
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static void create_vert_vars(
     int ncFileID,
     int dimIDs[],
-    int size,
+    unsigned int size,
     int dimVarID,
     Bool hasConsistentSoilLayerDepths,
-    double lyrDepths[],
+    const double lyrDepths[],
+    int deflateLevel,
     LOG_INFO *LogInfo
 ) {
 
-    double *dimVarVals = NULL, *bndVals = NULL, lyrStart = 0.0;
-    size_t numBnds = 2;
-    size_t start[] = {0, 0}, count[] = {(size_t) size, 0};
+    double *dimVarVals = NULL;
+    double *bndVals = NULL;
+    double lyrStart = 0.0;
+    const int numBnds = 2;
+    size_t start[] = {0, 0};
+    size_t count[] = {(size_t) size, 0};
     int bndIndex = 0;
 
     create_netCDF_var(
@@ -2531,6 +2763,8 @@ static void create_vert_vars(
         &ncFileID,
         NC_DOUBLE,
         numBnds,
+        NULL,
+        deflateLevel,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -2545,7 +2779,7 @@ static void create_vert_vars(
     }
 
     bndVals = (double *) Mem_Malloc(
-        size * numBnds * sizeof(double), "create_vert_vars", LogInfo
+        (size_t) (size * numBnds) * sizeof(double), "create_vert_vars", LogInfo
     );
     if (LogInfo->stopRun) {
         free(dimVarVals);
@@ -2555,8 +2789,9 @@ static void create_vert_vars(
     for (size_t index = 0; index < (size_t) size; index++) {
         // if hasConsistentSoilLayerDepths,
         // then use soil layer depth, else soil layer number
-        dimVarVals[index] =
-            (hasConsistentSoilLayerDepths) ? lyrDepths[index] : (index + 1);
+        dimVarVals[index] = (hasConsistentSoilLayerDepths) ?
+                                lyrDepths[index] :
+                                (double) (index + 1);
 
         bndVals[index * 2] = lyrStart;
         bndVals[index * 2 + 1] = dimVarVals[index];
@@ -2601,23 +2836,28 @@ if needed
     years between netCDF files
 @param[in] startYr Start year of the simulation
 @param[in] pd Current output netCDF period
+@param[in] deflateLevel Level of deflation that will be used for the created
+variable
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static void fill_dimVar(
     int ncFileID,
     int dimIDs[],
-    int size,
+    unsigned int size,
     int varID,
     Bool hasConsistentSoilLayerDepths,
     double lyrDepths[],
     double *startTime,
     int dimNum,
-    int startYr,
+    unsigned int startYr,
     OutPeriod pd,
+    int deflateLevel,
     LOG_INFO *LogInfo
 ) {
 
-    const int vertInd = 0, timeInd = 1, pftInd = 2;
+    const int vertInd = 0;
+    const int timeInd = 1;
+    const int pftInd = 2;
     const int numBnds = 2;
 
 
@@ -2643,6 +2883,7 @@ static void fill_dimVar(
                     varID,
                     hasConsistentSoilLayerDepths,
                     lyrDepths,
+                    deflateLevel,
                     LogInfo
                 );
             }
@@ -2656,6 +2897,7 @@ static void fill_dimVar(
                     startYr,
                     startTime,
                     pd,
+                    deflateLevel,
                     LogInfo
                 );
             }
@@ -2684,26 +2926,33 @@ and fill the variable with the respective information
 @param[in] baseCalendarYear First year of the entire simulation
 @param[in] startYr Start year of the simulation
 @param[in] pd Current output netCDF period
+@param[in] deflateLevel Level of deflation that will be used for the created
+variable
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static void create_output_dimVar(
     char *name,
-    int size,
+    unsigned int size,
     int ncFileID,
     int *dimID,
     Bool hasConsistentSoilLayerDepths,
     double lyrDepths[],
     double *startTime,
-    int baseCalendarYear,
-    int startYr,
+    unsigned int baseCalendarYear,
+    unsigned int startYr,
     OutPeriod pd,
+    int deflateLevel,
     LOG_INFO *LogInfo
 ) {
 
     char *dimNames[3] = {(char *) "vertical", (char *) "time", (char *) "pft"};
-    const int vertIndex = 0, timeIndex = 1, pftIndex = 2, timeUnitIndex = 2;
+    const int vertIndex = 0;
+    const int timeIndex = 1;
+    const int pftIndex = 2;
+    const int timeUnitIndex = 2;
     int dimNum;
-    int varID, index;
+    int varID;
+    int index;
     int dimIDs[2] = {0, 0};
     int varType;
     double tempVal = 1.0;
@@ -2729,6 +2978,15 @@ static void create_output_dimVar(
             break;
         }
     }
+    if (dimNum >= 3) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "create_output_dimVar() does not support requested dimension '%s'.",
+            name
+        );
+        return; // Exit function prematurely due to error
+    }
 
     varType = (dimNum == pftIndex) ? NC_STRING : NC_DOUBLE;
 
@@ -2743,7 +3001,15 @@ static void create_output_dimVar(
         dimIDs[0] = *dimID;
 
         create_netCDF_var(
-            &varID, name, dimIDs, &ncFileID, varType, numDims, LogInfo
+            &varID,
+            name,
+            dimIDs,
+            &ncFileID,
+            varType,
+            numDims,
+            NULL,
+            deflateLevel,
+            LogInfo
         );
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -2760,11 +3026,12 @@ static void create_output_dimVar(
             dimNum,
             startYr,
             pd,
+            deflateLevel,
             LogInfo
         );
 
         if (dimNum == timeIndex) {
-            snprintf(
+            (void) snprintf(
                 outAttVals[timeIndex][timeUnitIndex],
                 MAX_FILENAMESIZE,
                 "days since %d-01-01 00:00:00",
@@ -2775,8 +3042,11 @@ static void create_output_dimVar(
         if (dimNum == vertIndex && !hasConsistentSoilLayerDepths) {
             // Use soil layers as dimension variable values
             // because soil layer depths are not consistent across domain
-            snprintf(outAttVals[vertIndex][0], MAX_FILENAMESIZE, "soil layer");
-            snprintf(outAttVals[vertIndex][2], MAX_FILENAMESIZE, "1");
+            (void) sw_memccpy(
+                outAttVals[vertIndex][0], "soil layer", '\0', MAX_FILENAMESIZE
+            );
+            (void
+            ) sw_memccpy(outAttVals[vertIndex][2], "1", '\0', MAX_FILENAMESIZE);
         }
 
         for (index = 0; index < numVarAtts[dimNum]; index++) {
@@ -2818,6 +3088,8 @@ and writing attributes
 @param[in] baseCalendarYear First year of the entire simulation
 @param[in] startYr Start year of the simulation
 @param[in] pd Current output netCDF period
+@param[in] deflateLevel Level of deflation that will be used for the created
+variable
 @param[in,out] LogInfo Holds information dealing with logfile output
 */
 static void create_full_var(
@@ -2830,28 +3102,33 @@ static void create_full_var(
     const char *varName,
     const char *attNames[],
     const char *attVals[],
-    int numAtts,
+    unsigned int numAtts,
     Bool hasConsistentSoilLayerDepths,
     double lyrDepths[],
     double *startTime,
-    int baseCalendarYear,
-    int startYr,
+    unsigned int baseCalendarYear,
+    unsigned int startYr,
     OutPeriod pd,
+    int deflateLevel,
     LOG_INFO *LogInfo
 ) {
 
-    int dimArrSize = 0, index, varID = 0;
+    int dimArrSize = 0;
+    int varID = 0;
+    unsigned int index;
     int dimIDs[MAX_NUM_DIMS];
     const char *latName = (dimExists("lat", *ncFileID)) ? "lat" : "y";
     const char *lonName = (dimExists("lon", *ncFileID)) ? "lon" : "x";
     Bool domTypeIsSites = (Bool) (strcmp(domType, "s") == 0);
-    int numConstDims = (domTypeIsSites) ? 1 : 2;
+    unsigned int numConstDims = (domTypeIsSites) ? 1 : 2;
     const char *thirdDim = (domTypeIsSites) ? "site" : latName;
     const char *constDimNames[] = {thirdDim, lonName};
     const char *timeVertVegNames[] = {"time", "vertical", "pft"};
     char *dimVarName;
     size_t timeVertVegVals[] = {timeSize, vertSize, pftSize};
-    int numTimeVertVegVals = 3, varVal;
+    unsigned int numTimeVertVegVals = 3;
+    unsigned int varVal = 0;
+    size_t chunkSizes[MAX_NUM_DIMS] = {1, 1, 1, 1, 1};
 
 
     for (index = 0; index < numConstDims; index++) {
@@ -2881,6 +3158,7 @@ static void create_full_var(
                     baseCalendarYear,
                     startYr,
                     pd,
+                    deflateLevel,
                     LogInfo
                 );
             } else {
@@ -2896,9 +3174,26 @@ static void create_full_var(
         }
     }
 
+    for (index = numConstDims; index < MAX_NUM_DIMS; index++) {
+        if (index - numConstDims < 3) {
+            varVal = timeVertVegVals[index - numConstDims];
+
+            if (varVal > 0) {
+                chunkSizes[index] = varVal;
+            }
+        }
+    }
 
     create_netCDF_var(
-        &varID, varName, dimIDs, ncFileID, newVarType, dimArrSize, LogInfo
+        &varID,
+        varName,
+        dimIDs,
+        ncFileID,
+        newVarType,
+        dimArrSize,
+        chunkSizes,
+        deflateLevel,
+        LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -2911,6 +3206,13 @@ static void create_full_var(
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
+    }
+
+    if (deflateLevel == 0) {
+        /* Write a dummy value so that the first write is not in the sim loop;
+           otherwise, the first simulation loop takes an order of magnitude
+           longer than following simulations */
+        writeDummyVal(*ncFileID, newVarType, varID);
     }
 }
 
@@ -2938,18 +3240,30 @@ static int gather_var_attributes(
     OutSum sumType,
     LOG_INFO *LogInfo
 ) {
-    int fillSize = 0, varIndex;
-    char cellRedef[MAX_FILENAMESIZE], establOrginName[MAX_FILENAMESIZE];
+    int fillSize = 0;
+    int varIndex;
+    int resSNP;
+    char cellRedef[MAX_FILENAMESIZE];
+    char establOrginName[MAX_FILENAMESIZE];
 
     // Determine attribute 'original_name'
     if (key == eSW_Estab) {
-        snprintf(
+        resSNP = snprintf(
             establOrginName,
-            MAX_FILENAMESIZE,
+            sizeof establOrginName,
             "%s__%s",
             SW_ESTAB,
             varInfo[VARNAME_INDEX]
         );
+
+        if (resSNP < 0 || (unsigned) resSNP >= (sizeof establOrginName)) {
+            LogError(
+                LogInfo,
+                LOGWARN,
+                "attribute 'original_name' of variable '%s' was truncated.",
+                varInfo[VARNAME_INDEX]
+            );
+        }
 
         resAtts[fillSize] = Str_Dup(establOrginName, LogInfo);
         if (LogInfo->stopRun) {
@@ -2968,13 +3282,23 @@ static int gather_var_attributes(
     }
 
     if (pd > eSW_Day) {
-        snprintf(
+        resSNP = snprintf(
             cellRedef,
-            MAX_FILENAMESIZE,
+            sizeof cellRedef,
             "%s within days time: %s over days",
             resAtts[fillSize - 1],
             styp2longstr[sumType]
         );
+
+        if (resSNP < 0 || (unsigned) resSNP >= (sizeof cellRedef)) {
+            LogError(
+                LogInfo,
+                LOGWARN,
+                "attribute 'cell_methods' of variable '%s' was truncated.",
+                varInfo[VARNAME_INDEX]
+            );
+        }
+
         Str_ToLower(cellRedef, cellRedef);
         resAtts[fillSize - 1] = Str_Dup(cellRedef, LogInfo);
         if (LogInfo->stopRun) {
@@ -3024,6 +3348,8 @@ SW_OUTNPERIODS).
 @param[in] baseCalendarYear First year of the entire simulation
 @param[in,out] startTime Start number of days when dealing with
     years between netCDF files (returns updated value)
+@param[in] deflateLevel Level of deflation that will be used for the created
+variable
 @param[in] LogInfo Holds information on warnings and errors
 */
 static void create_output_file(
@@ -3038,10 +3364,11 @@ static void create_output_file(
     IntUS npft[],
     Bool hasConsistentSoilLayerDepths,
     double lyrDepths[],
-    int originTimeSize,
-    int startYr,
+    unsigned int originTimeSize,
+    unsigned int startYr,
     int baseCalendarYear,
     double *startTime,
+    int deflateLevel,
     LOG_INFO *LogInfo
 ) {
 
@@ -3066,7 +3393,7 @@ static void create_output_file(
     char *varName;
     char **varInfo;
 
-    snprintf(frequency, 9, "%s", pd2longstr[pd]);
+    (void) sw_memccpy(frequency, (char *) pd2longstr[pd], '\0', 9);
     Str_ToLower(frequency, frequency);
 
 
@@ -3118,6 +3445,7 @@ static void create_output_file(
                 baseCalendarYear,
                 startYr,
                 pd,
+                deflateLevel,
                 LogInfo
             );
 
@@ -3168,7 +3496,8 @@ static void get_vardim_write_counts(
     size_t count[],
     size_t *countTotal
 ) {
-    int dimIndex, ndimsp;
+    int dimIndex;
+    int ndimsp;
     int nSpaceDims = (strcmp(domType, "s") == 0) ? 1 : 2;
 
     /* Fill 1s into space dimensions (we write one site/xy-gridcell per run) */
@@ -3227,7 +3556,8 @@ static void check_counts_against_vardim(
     LOG_INFO *LogInfo
 ) {
 
-    int dimIndex, ndimsp;
+    int dimIndex;
+    int ndimsp;
     int nSpaceDims = dimExists("site", ncFileID) ? 1 : 2;
     int dimidsp[MAX_NUM_DIMS] = {0};
     char dimname[NC_MAX_NAME + 1];
@@ -3350,24 +3680,32 @@ output netCDF files
 */
 void SW_NC_write_output(
     SW_OUT_DOM *OutDom,
-    RealD *p_OUT[][SW_OUTNPERIODS],
-    int numFilesPerKey,
+    double *p_OUT[][SW_OUTNPERIODS],
+    unsigned int numFilesPerKey,
     char **ncOutFileNames[][SW_OUTNPERIODS],
-    size_t ncSuid[],
+    const size_t ncSuid[],
     const char *domType,
     LOG_INFO *LogInfo
 ) {
 
     int key;
     OutPeriod pd;
-    RealD *p_OUTValPtr = NULL;
-    int fileNum, currFileID = 0, varNum, varID = -1;
+    double *p_OUTValPtr = NULL;
+    unsigned int fileNum;
+    int currFileID = 0;
+    int varNum;
+    int varID = -1;
 
-    char *fileName, *varName;
+    char *fileName;
+    char *varName;
     size_t count[MAX_NUM_DIMS] = {0};
     size_t start[MAX_NUM_DIMS] = {0};
-    size_t pOUTIndex, startTime, timeSize = 0, countTotal = 0;
-    int vertSize, pftSize;
+    size_t pOUTIndex;
+    size_t startTime;
+    size_t timeSize = 0;
+    size_t countTotal = 0;
+    int vertSize;
+    int pftSize;
 
     start[0] = ncSuid[0];
     start[1] = ncSuid[1];
@@ -3409,7 +3747,7 @@ void SW_NC_write_output(
                 // Get size of the "time" dimension
                 get_dimlen_from_dimname(currFileID, "time", &timeSize, LogInfo);
                 if (LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
+                    goto closeFile; // Exit function prematurely due to error
                 }
 
 
@@ -3423,7 +3761,8 @@ void SW_NC_write_output(
                     // Locate correct slice in netCDF to write to
                     get_var_identifier(currFileID, varName, &varID, LogInfo);
                     if (LogInfo->stopRun) {
-                        return; // Exit function prematurely due to error
+                        /* Exit function prematurely due to error */
+                        goto closeFile;
                     }
 
                     get_vardim_write_counts(
@@ -3440,7 +3779,8 @@ void SW_NC_write_output(
                         fileName, varName, currFileID, varID, count, LogInfo
                     );
                     if (LogInfo->stopRun) {
-                        return; // Exit function prematurely due to error
+                        /* Exit function prematurely due to error*/
+                        goto closeFile;
                     }
 #endif // SWDEBUG
 
@@ -3491,7 +3831,8 @@ void SW_NC_write_output(
                         LogInfo
                     );
                     if (LogInfo->stopRun) {
-                        return; // Exit function prematurely due to error
+                        goto closeFile; // Exit function prematurely due to
+                                        // error
                     }
                 }
 
@@ -3502,6 +3843,8 @@ void SW_NC_write_output(
             }
         }
     }
+
+closeFile: { nc_close(currFileID); }
 }
 
 /**
@@ -3553,32 +3896,40 @@ void SW_NC_create_output_files(
     Bool hasConsistentSoilLayerDepths,
     double lyrDepths[],
     int strideOutYears,
-    int startYr,
-    int endYr,
+    unsigned int startYr,
+    unsigned int endYr,
     int baseCalendarYear,
-    int *numFilesPerKey,
+    unsigned int *numFilesPerKey,
     char **ncOutFileNames[][SW_OUTNPERIODS],
     LOG_INFO *LogInfo
 ) {
 
-    int key, ip;
+    int key;
+    int ip;
+    int resSNP;
     OutPeriod pd;
-    int rangeStart, rangeEnd, fileNum;
+    unsigned int rangeStart;
+    unsigned int rangeEnd;
+    unsigned int fileNum;
 
-    int numYears = endYr - startYr + 1, yearOffset;
+    unsigned int numYears = endYr - startYr + 1;
+    unsigned int yearOffset;
     char fileNameBuf[MAX_FILENAMESIZE];
     char yearBuff[10]; // 10 - hold up to YYYY-YYYY
-    int timeSize = 0, baseTime = 0;
+    unsigned int timeSize = 0;
+    unsigned int baseTime = 0;
     double startTime[SW_OUTNPERIODS];
 
     char periodSuffix[10];
     char *yearFormat;
 
-    *numFilesPerKey = (strideOutYears == -1) ?
-                          1 :
-                          (int) ceil((double) numYears / strideOutYears);
+    *numFilesPerKey =
+        (strideOutYears == -1) ?
+            1 :
+            (unsigned int) ceil((double) numYears / strideOutYears);
 
-    yearOffset = (strideOutYears == -1) ? numYears : strideOutYears;
+    yearOffset =
+        (strideOutYears == -1) ? numYears : (unsigned int) strideOutYears;
 
     yearFormat = (strideOutYears == 1) ? (char *) "%d" : (char *) "%d-%d";
 
@@ -3595,7 +3946,9 @@ void SW_NC_create_output_files(
                     baseTime = times[pd];
                     rangeStart = startYr;
 
-                    snprintf(periodSuffix, 9, "%s", pd2longstr[pd]);
+                    (void) sw_memccpy(
+                        periodSuffix, (char *) pd2longstr[pd], '\0', 9
+                    );
                     Str_ToLower(periodSuffix, periodSuffix);
 
                     SW_NC_alloc_files(
@@ -3611,18 +3964,29 @@ void SW_NC_create_output_files(
                             rangeEnd = rangeStart + yearOffset;
                         }
 
-                        snprintf(
+                        (void) snprintf(
                             yearBuff, 10, yearFormat, rangeStart, rangeEnd - 1
                         );
-                        snprintf(
+                        resSNP = snprintf(
                             fileNameBuf,
-                            MAX_FILENAMESIZE,
+                            sizeof fileNameBuf,
                             "%s%s_%s_%s.nc",
                             output_prefix,
                             key2str[key],
                             yearBuff,
                             periodSuffix
                         );
+
+                        if (resSNP < 0 ||
+                            (unsigned) resSNP >= (sizeof fileNameBuf)) {
+                            LogError(
+                                LogInfo,
+                                LOGERROR,
+                                "nc-output file name '%s' is too long.",
+                                fileNameBuf
+                            );
+                            return; // Exit function prematurely due to error
+                        }
 
                         ncOutFileNames[key][pd][fileNum] =
                             Str_Dup(fileNameBuf, LogInfo);
@@ -3658,6 +4022,7 @@ void SW_NC_create_output_files(
                                 rangeStart,
                                 baseCalendarYear,
                                 &startTime[pd],
+                                SW_Domain->netCDFInfo.deflateLevel,
                                 LogInfo
                             );
                             if (LogInfo->stopRun) {
@@ -3777,12 +4142,15 @@ void SW_NC_check(
     Bool geoIsPrimCRS = SW_Domain->netCDFInfo.primary_crs_is_geographic;
     char strAttVal[LARGE_VALUE];
     double doubleAttVal;
-    const char *geoCRS = "crs_geogsc", *projCRS = "crs_projsc";
+    const char *geoCRS = "crs_geogsc";
+    const char *projCRS = "crs_projsc";
     Bool geoCRSExists = varExists(ncFileID, geoCRS);
     Bool projCRSExists = varExists(ncFileID, projCRS);
     const char *impliedDomType = (dimExists("site", ncFileID)) ? "s" : "xy";
     Bool dimMismatch = swFALSE;
-    size_t latDimVal = 0, lonDimVal = 0, SDimVal = 0;
+    size_t latDimVal = 0;
+    size_t lonDimVal = 0;
+    size_t SDimVal = 0;
 
     const char *strAttsToComp[] = {"long_name", "grid_mapping_name", "crs_wkt"};
     const char *doubleAttsToComp[] = {
@@ -3833,7 +4201,9 @@ void SW_NC_check(
         crs_projsc->false_northing,
     };
 
-    const int numNormAtts = 3, numProjStrAtts = 2, numProjDoubleAtts = 4;
+    const int numNormAtts = 3;
+    const int numProjStrAtts = 2;
+    const int numProjDoubleAtts = 4;
     double projStdParallel[2]; // Compare to standard_parallel is projected CRS
     int attNum;
 
@@ -4115,10 +4485,17 @@ void SW_NC_create_domain_template(
 
     SW_NETCDF *SW_netCDF = &SW_Domain->netCDFInfo;
     int *domFileID = &SW_Domain->netCDFInfo.ncFileIDs[vNCdom];
-    int sDimID = 0, YDimID = 0, XDimID = 0;
+    int sDimID = 0;
+    int YDimID = 0;
+    int XDimID = 0;
     int domDims[2]; // Either [YDimID, XDimID] or [sDimID, 0]
-    int nDomainDims, domVarID = 0, YVarID = 0, XVarID = 0, sVarID = 0;
-    int YBndsID = 0, XBndsID = 0;
+    int nDomainDims;
+    int domVarID = 0;
+    int YVarID = 0;
+    int XVarID = 0;
+    int sVarID = 0;
+    int YBndsID = 0;
+    int XBndsID = 0;
 
     if (isnull(fileName)) {
         fileName = (char *) DOMAIN_TEMP;
@@ -4156,7 +4533,14 @@ void SW_NC_create_domain_template(
 
         // Create s dimension/domain variables
         fill_domain_netCDF_s(
-            SW_Domain, domFileID, &sDimID, &sVarID, &YVarID, &XVarID, LogInfo
+            SW_Domain,
+            domFileID,
+            &sDimID,
+            &sVarID,
+            &YVarID,
+            &XVarID,
+            SW_Domain->netCDFInfo.deflateLevel,
+            LogInfo
         );
 
         if (LogInfo->stopRun) {
@@ -4178,6 +4562,7 @@ void SW_NC_create_domain_template(
             &XVarID,
             &YBndsID,
             &XBndsID,
+            SW_Domain->netCDFInfo.deflateLevel,
             LogInfo
         );
 
@@ -4199,6 +4584,7 @@ void SW_NC_create_domain_template(
         nDomainDims,
         SW_netCDF->primary_crs_is_geographic,
         SW_Domain->DomainType,
+        SW_Domain->netCDFInfo.deflateLevel,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -4372,6 +4758,7 @@ void SW_NC_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             0,
             0,
             0,
+            SW_Domain->netCDFInfo.deflateLevel,
             LogInfo
         );
 
@@ -4453,7 +4840,8 @@ void SW_NC_set_progress(
 ) {
 
     const signed char mark = (isFailure) ? PRGRSS_FAIL : PRGRSS_DONE;
-    size_t count1D[] = {1}, count2D[] = {1, 1};
+    size_t count1D[] = {1};
+    size_t count2D[] = {1, 1};
     size_t *count = (strcmp(domType, "s") == 0) ? count1D : count2D;
 
     fill_netCDF_var_byte(progFileID, progVarID, &mark, ncSUID, count, LogInfo);
@@ -4496,18 +4884,20 @@ void SW_NC_read_inputs(
     SW_RUN *sw, SW_DOMAIN *SW_Domain, size_t ncSUID[], LOG_INFO *LogInfo
 ) {
 
-    int file, varNum;
+    int file;
+    int varNum;
     Bool domTypeS =
         (Bool) (Str_CompareI(SW_Domain->DomainType, (char *) "s") == 0);
     const int numInFilesNC = 1;
     const int numDomVals = 2;
     const int numVals[] = {numDomVals};
     const int ncFileIDs[] = {SW_Domain->netCDFInfo.ncFileIDs[vNCdom]};
-    const char *domLatVar = "lat", *domLonVar = "lon";
+    const char *domLatVar = "lat";
+    const char *domLonVar = "lon";
     const char *varNames[][2] = {{domLatVar, domLonVar}};
     int ncIndex;
 
-    RealD *values[][2] = {{&sw->Model.latitude, &sw->Model.longitude}};
+    double *values[][2] = {{&sw->Model.latitude, &sw->Model.longitude}};
 
     /*
         Gather all values being requested within the array "values"
@@ -4578,17 +4968,31 @@ void SW_NC_read(SW_NETCDF *SW_netCDF, PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
     Bool hasKeys[NUM_NC_IN_KEYS] = {swFALSE, swFALSE};
 
     FILE *f;
-    char inbuf[MAX_FILENAMESIZE], *MyFileName;
+    char inbuf[MAX_FILENAMESIZE];
+    char *MyFileName;
     char key[15]; // 15 - Max key size
-    char varName[MAX_FILENAMESIZE], path[MAX_FILENAMESIZE];
+    char varName[MAX_FILENAMESIZE];
+    char path[MAX_FILENAMESIZE];
     int keyID;
+    int scanRes;
 
     MyFileName = PathInfo->InFiles[eNCIn];
     f = OpenFile(MyFileName, "r", LogInfo);
 
     // Get domain file name
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
-        sscanf(inbuf, "%14s %s %s", key, varName, path);
+        scanRes = sscanf(inbuf, "%14s %s %s", key, varName, path);
+
+        if (scanRes < 3) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Not enough values found in %s (should be key, variable "
+                "name, path to input).",
+                MyFileName
+            );
+            goto closeFile;
+        }
 
         keyID = key_to_id(key, possibleKeys, NUM_NC_IN_KEYS);
         set_hasKey(
@@ -4616,18 +5020,18 @@ void SW_NC_read(SW_NETCDF *SW_netCDF, PATH_INFO *PathInfo, LOG_INFO *LogInfo) {
         }
     }
 
-    CloseFile(&f, LogInfo);
-
     // Check if all required input was provided
     check_requiredKeys(
         hasKeys, requiredKeys, possibleKeys, NUM_NC_IN_KEYS, LogInfo
     );
     if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     // Read CRS and attributes for netCDFs
     nc_read_atts(SW_netCDF, PathInfo, LogInfo);
+
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**
@@ -4661,28 +5065,42 @@ void SW_NC_read_out_vars(
 
     FILE *f;
     OutKey currOutKey;
-    char inbuf[MAX_FILENAMESIZE], *MyFileName;
+    char inbuf[MAX_FILENAMESIZE];
+    char *MyFileName;
     char varKey[MAX_FILENAMESIZE + 1];
-    int varNum = 0, lineno = 0;
+    int varNum = 0;
+    int lineno = 0;
 
     Bool estabFound = swFALSE;
     Bool used_OutKeys[SW_OUTNKEYS] = {swFALSE};
     int varNumUnits;
-    int index, estVar;
+    int index;
+    int estVar;
+    int resSNP;
     char *copyStr = NULL;
     char input[NOUT_VAR_INPUTS][MAX_ATTVAL_SIZE] = {"\0"};
     char establn[MAX_ATTVAL_SIZE] = {"\0"};
-    int scanRes = 0, defToLocalInd = 0;
+    int scanRes = 0;
+    int defToLocalInd = 0;
     // in readLineFormat: 255 must be equal to MAX_ATTVAL_SIZE - 1
     const char *readLineFormat =
         "%13[^\t]\t%50[^\t]\t%50[^\t]\t%10[^\t]\t%4[^\t]\t%1[^\t]\t"
         "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]";
+    int doOutputVal;
 
     // Column indices
-    const int keyInd = 0, SWVarNameInd = 1, SWTxtNameInd = 2, SWUnitsInd = 3,
-              dimInd = 4, doOutInd = 5, outVarNameInd = 6, longNameInd = 7,
-              commentInd = 8, outUnits = 9, cellMethodInd = 10,
-              usercommentInd = 11;
+    const int keyInd = 0;
+    const int SWVarNameInd = 1;
+    const int SWTxtNameInd = 2;
+    const int SWUnitsInd = 3;
+    const int dimInd = 4;
+    const int doOutInd = 5;
+    const int outVarNameInd = 6;
+    const int longNameInd = 7;
+    const int commentInd = 8;
+    const int outUnits = 9;
+    const int cellMethodInd = 10;
+    const int usercommentInd = 11;
 
     MyFileName = InFiles[eNCOutVars];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -4692,7 +5110,7 @@ void SW_NC_read_out_vars(
 
     SW_NC_alloc_output_var_info(OutDom, LogInfo);
     if (LogInfo->stopRun) {
-        return; // Exit prematurely due to error
+        goto closeFile; // Exit prematurely due to error
     }
 
     GetALine(f, inbuf, MAX_FILENAMESIZE); // Ignore the first row (column names)
@@ -4730,20 +5148,35 @@ void SW_NC_read_out_vars(
                 scanRes,
                 NOUT_VAR_INPUTS
             );
-            return; // Exit function prematurely due to error
+            goto closeFile; // Exit function prematurely due to error
         }
 
         // Check if the variable was requested to be output
         // Store attribute information for each variable (including names)
-        if (atoi(input[doOutInd])) {
 
-            snprintf(
+        doOutputVal = sw_strtoi(input[doOutInd], MyFileName, LogInfo);
+        if (LogInfo->stopRun) {
+            goto closeFile; // Exit function prematurely due to error
+        }
+
+        if (doOutputVal) {
+            resSNP = snprintf(
                 varKey,
-                MAX_FILENAMESIZE + 1,
+                sizeof varKey,
                 "%s__%s",
                 input[keyInd],
                 input[SWVarNameInd]
             );
+
+            if (resSNP < 0 || (unsigned) resSNP >= (sizeof varKey)) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "nc-output variable name '%s' is too long.",
+                    varKey
+                );
+                goto closeFile; // Exit function prematurely due to error
+            }
 
             get_2d_output_key(varKey, &currOutKey, &varNum, OutDom->nvar_OUT);
 
@@ -4860,11 +5293,8 @@ void SW_NC_read_out_vars(
                             break;
 
                         case LONGNAME_INDEX:
-                            snprintf(
-                                establn,
-                                MAX_ATTVAL_SIZE - 1,
-                                copyStr,
-                                parms[estVar]->sppname
+                            (void) sw_memccpy(
+                                establn, copyStr, '\0', MAX_ATTVAL_SIZE
                             );
                             OutDom->outputVarInfo[currOutKey][estVar][index] =
                                 Str_Dup(establn, LogInfo);
@@ -4877,14 +5307,16 @@ void SW_NC_read_out_vars(
                         }
 
                         if (LogInfo->stopRun) {
-                            return; // Exit function prematurely due to error
+                            /* Exit function prematurely due to error */
+                            goto closeFile;
                         }
                     }
                 } else {
                     OutDom->outputVarInfo[currOutKey][varNum][index] =
                         Str_Dup(copyStr, LogInfo);
                     if (LogInfo->stopRun) {
-                        return; // Exit function prematurely due to error
+                        /* Exit function prematurely due to error */
+                        goto closeFile;
                     }
                 }
             }
@@ -4897,14 +5329,15 @@ void SW_NC_read_out_vars(
                     OutDom->units_sw[currOutKey][estVar] =
                         Str_Dup(SWVarUnits[currOutKey][varNumUnits], LogInfo);
                     if (LogInfo->stopRun) {
-                        return; // Exit function prematurely due to error
+                        /* Exit function prematurely due to error */
+                        goto closeFile;
                     }
                 }
             } else {
                 OutDom->units_sw[currOutKey][varNum] =
                     Str_Dup(SWVarUnits[currOutKey][varNumUnits], LogInfo);
                 if (LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
+                    goto closeFile; // Exit function prematurely due to error
                 }
             }
         }
@@ -4917,6 +5350,8 @@ void SW_NC_read_out_vars(
             OutDom->use[index] = swFALSE;
         }
     }
+
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /** Create unit converters for output variables
@@ -4932,11 +5367,13 @@ This function requires previous calls to
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_create_units_converters(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
-    int varIndex, key;
+    int varIndex;
+    int key;
 
 #if defined(SWUDUNITS)
     ut_system *system;
-    ut_unit *unitFrom, *unitTo;
+    ut_unit *unitFrom;
+    ut_unit *unitTo;
 
     /* silence udunits2 error messages */
     ut_set_error_message_handler(ut_ignore);
@@ -5049,6 +5486,7 @@ void SW_NC_init_ptrs(SW_NETCDF *SW_netCDF) {
     SW_netCDF->crs_projsc.standard_parallel[1] = NAN;
 
     SW_netCDF->strideOutYears = -1;
+    SW_netCDF->deflateLevel = 0;
 
     for (index = 0; index < numAllocVars; index++) {
         *allocArr[index] = NULL;
@@ -5124,8 +5562,11 @@ netCDF file information
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_open_dom_prog_files(SW_NETCDF *SW_netCDF, LOG_INFO *LogInfo) {
-    int fileNum, openType = NC_WRITE, *fileID;
-    char *fileName, *domFile = SW_netCDF->InFilesNC[vNCdom];
+    int fileNum;
+    int openType = NC_WRITE;
+    int *fileID;
+    char *fileName;
+    char *domFile = SW_netCDF->InFilesNC[vNCdom];
     char *progFile = SW_netCDF->InFilesNC[vNCprog];
     Bool progFileDomain = (Bool) (strcmp(domFile, progFile) == 0);
 
@@ -5196,7 +5637,8 @@ void SW_NC_close_files(SW_NETCDF *SW_netCDF) {
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_deepCopy(SW_NETCDF *source, SW_NETCDF *dest, LOG_INFO *LogInfo) {
-    int index, numIndivCopy = 5;
+    int index;
+    int numIndivCopy = 5;
 
     char *srcStrs[] = {
         source->title,
@@ -5297,12 +5739,12 @@ void SW_NC_dealloc_outputkey_var_info(SW_OUT_DOM *OutDom, IntUS k) {
                     }
                 }
 
-                free(OutDom->outputVarInfo[k][varNum]);
+                free((void *) OutDom->outputVarInfo[k][varNum]);
                 OutDom->outputVarInfo[k][varNum] = NULL;
             }
         }
 
-        free(OutDom->outputVarInfo[k]);
+        free((void *) OutDom->outputVarInfo[k]);
         OutDom->outputVarInfo[k] = NULL;
     }
 
@@ -5314,7 +5756,7 @@ void SW_NC_dealloc_outputkey_var_info(SW_OUT_DOM *OutDom, IntUS k) {
             }
         }
 
-        free(OutDom->units_sw[k]);
+        free((void *) OutDom->units_sw[k]);
         OutDom->units_sw[k] = NULL;
     }
 
@@ -5330,7 +5772,7 @@ void SW_NC_dealloc_outputkey_var_info(SW_OUT_DOM *OutDom, IntUS k) {
             }
         }
 
-        free(OutDom->uconv[k]);
+        free((void *) OutDom->uconv[k]);
         OutDom->uconv[k] = NULL;
     }
 
@@ -5348,9 +5790,11 @@ functions to write to/create
 @param[in] numFiles Number of file names to store/allocate memory for
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_NC_alloc_files(char ***ncOutFiles, int numFiles, LOG_INFO *LogInfo) {
+void SW_NC_alloc_files(
+    char ***ncOutFiles, unsigned int numFiles, LOG_INFO *LogInfo
+) {
 
-    int varNum;
+    unsigned int varNum;
 
     *ncOutFiles = (char **) Mem_Malloc(
         numFiles * sizeof(char *), "SW_NC_create_output_files()", LogInfo

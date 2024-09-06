@@ -29,9 +29,9 @@ static void uncomment_cstyle(char *p) {
      cwb - 9/11/01
      -------------------------------------------*/
 
-    char *e; /* end of comment */
+    char *e = strchr(p + 2, '*'); /* end of comment */
 
-    if ((e = strchr(p + 2, '*'))) {
+    if (e) {
         if (*(++e) == '/') {
             e++;
             while (*e) {
@@ -56,7 +56,8 @@ char *Str_TrimLeft(char *s) {
      cwb - 18-Nov-02
      -------------------------------------------*/
 
-    char *q, *p;
+    char *q;
+    char *p;
     q = p = s;
     while (*q && isspace((int) *(q))) {
         q++; /* goto nonblank */
@@ -97,10 +98,11 @@ char *Str_TrimRight(char *s) {
      cwb - 9/11/01 moved this from Uncomment
      -------------------------------------------*/
 
-    char *p = s + strlen(s);
+    char *p = s + strlen(s) - 1;
 
-    while ((--p) >= s && isspace((int) *p))
-        ;
+    while (p >= s && isspace((int) *p)) {
+        p--;
+    }
     *(++p) = '\0';
 
     return s;
@@ -114,7 +116,8 @@ char *Str_ToUpper(char *s, char *r) {
 
      cwb - 10/5/01
      -------------------------------------------*/
-    char *p = s, *q = r;
+    char *p = s;
+    char *q = r;
     while (*p) {
         *(q++) = (char) toupper((int) (*(p++)));
     }
@@ -130,7 +133,8 @@ char *Str_ToLower(char *s, char *r) {
 
      cwb - 10/5/01
      -------------------------------------------*/
-    char *p = s, *q = r;
+    char *p = s;
+    char *q = r;
     while (*p) {
         *(q++) = (char) tolower((int) (*(p++)));
     }
@@ -144,7 +148,8 @@ int Str_CompareI(char *t, char *s) {
      * works like strcmp() except case-insensitive
      * cwb 4-Sep-03
      */
-    char *tChar = t, *sChar = s;
+    char *tChar = t;
+    char *sChar = s;
 
     // While t and s characters are not '\0' (null)
     // and the lower case character of t and s are the same
@@ -165,9 +170,9 @@ int Str_CompareI(char *t, char *s) {
 This is a thread-safe replacement for strtok.
 */
 char *sw_strtok(
-    char inputStr[], int *startIndex, int *strLen, const char *delim
+    char inputStr[], size_t *startIndex, size_t *strLen, const char *delim
 ) {
-    int index = *startIndex;
+    size_t index = *startIndex;
     char *newPtr = NULL;
 
     if (*startIndex == 0) {
@@ -237,12 +242,16 @@ void UnComment(char *s) {
      cwb - 9/11/01 added c-style comment code and
      split out the different tasks.
      -------------------------------------------*/
-    char *p;
+    char *p = strchr(s, '#');
 
-    if ((p = strchr(s, '#'))) {
+    if (!isnull(p)) {
         *p = '\0';
-    } else if ((p = strstr(s, "/*"))) {
-        uncomment_cstyle(p);
+    } else {
+        p = strstr(s, "/*");
+
+        if (!isnull(p)) {
+            uncomment_cstyle(p);
+        }
     }
 
     Str_TrimRight(s);
@@ -308,7 +317,9 @@ void st_getBounds(
     if (LT(depth, bounds[0])) {
         *x2 = 0;
         return;
-    } else if (GT(depth, bounds[size - 1])) {
+    }
+
+    if (GT(depth, bounds[size - 1])) {
         *x1 = size - 1;
         *x2 = -1;
         return;
@@ -352,8 +363,12 @@ void st_getBounds(
  HISTORY:
  05/29/2012 (DLM) initial coding
  **************************************************************************************************************************************/
-double lobfM(double xs[], double ys[], unsigned int n) {
-    double sumX, sumY, sumXY, sumX2, temp;
+double lobfM(const double xs[], const double ys[], unsigned int n) {
+    double sumX;
+    double sumY;
+    double sumXY;
+    double sumX2;
+    double temp;
     unsigned int i;
 
     sumX = sumY = sumXY = sumX2 = 0.0; // init values to 0
@@ -381,7 +396,9 @@ double lobfM(double xs[], double ys[], unsigned int n) {
  05/29/2012 (DLM) initial coding
  **************************************************************************************************************************************/
 double lobfB(double xs[], double ys[], unsigned int n) {
-    double sumX, sumY, temp;
+    double sumX;
+    double sumY;
+    double temp;
     unsigned int i;
 
     sumX = sumY = 0.0;
@@ -518,10 +535,12 @@ double final_running_sd(unsigned int n, double ssqr) {
 @note When a value is SW_MISSING, the function sees it as a value to skip and
 ignores it to not influence the mean.
 */
-double mean(double values[], int length) {
+double mean(const double values[], unsigned int length) {
 
-    int index, finalLength = 0;
-    double total = 0.0, currentVal;
+    unsigned int index;
+    unsigned int finalLength = 0;
+    double total = 0.0;
+    double currentVal;
 
     for (index = 0; index < length; index++) {
         currentVal = values[index];
@@ -548,10 +567,13 @@ double mean(double values[], int length) {
 @note When a value is SW_MISSING, the function sees it as a value to skip and
 ignores it to not influence the standard deviation.
 */
-double standardDeviation(double inputArray[], int length) {
+double standardDeviation(double inputArray[], unsigned int length) {
 
-    int index, finalLength = 0;
-    double arrayMean = mean(inputArray, length), total = 0.0, currentVal;
+    unsigned int index;
+    unsigned int finalLength = 0;
+    double arrayMean = mean(inputArray, length);
+    double total = 0.0;
+    double currentVal;
 
     for (index = 0; index < length; index++) {
         currentVal = inputArray[index];

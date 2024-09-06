@@ -78,7 +78,9 @@ void SW_F_deepCopy(PATH_INFO *source, PATH_INFO *dest, LOG_INFO *LogInfo);
 
 void SW_F_init_ptrs(char *InFiles[]);
 
-void SW_F_construct(const char *firstfile, char _ProjDir[], LOG_INFO *LogInfo);
+void SW_F_construct(
+    const char *firstfile, char SW_ProjDir[], LOG_INFO *LogInfo
+);
 
 void SW_F_deconstruct(char *InFiles[]);
 

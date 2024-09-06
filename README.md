@@ -88,7 +88,7 @@ A full code documentation may be built, see [here](#get_documentation).
   * Requirements:
     - the `gcc` or `clang/llvm` toolchains compliant with `C99`
       - for unit tests (using `googletest`)
-        - toolchains compliant with `C++14`
+        - toolchains compliant with `C++17`
         - `POSIX API`
     - GNU-compliant `make`
     - On Windows OS: an installation of `cygwin`
@@ -105,8 +105,8 @@ A full code documentation may be built, see [here](#get_documentation).
   * Build with `make` (see `make help` to print information about all
     available targets). For instance,
 ```{.sh}
-        make                                    # text-based mode
-        CPPFLAGS='-DSWNETCDF -DUDUNITS2' make   # netCDF-based mode with units
+        make CPPFLAGS=-DSWTXT   # text-based mode (equivalent to `make`)
+        make CPPFLAGS=-DSWNC    # netCDF-based mode with units
 ```
 <br>
 
