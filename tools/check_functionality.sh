@@ -21,17 +21,6 @@ exists() {
   command -v "$1" > /dev/null 2>&1
 }
 
-#--- Function to clean example inputs
-clean_example_inputs() {
-  rm tests/example/Input_nc/progress.nc
-  rm tests/example/Input_nc/domain.nc
-  rm tests/example/Input_nc/domain_template.nc
-}
-
-#--- Function to delete example output
-clean_example_outputs() {
-  rm -r tests/example/Output
-}
 
 #--- Function to run example SOILWAT2 simulation with fresh inputs
 # $1 Compiler, e.g., CC=clang, CXX=g++, or (if not specify a compiler) CC=
@@ -59,8 +48,7 @@ run_fresh_sw2() {
     mflags+=("CPPFLAGS=-DSWNC")
   fi
 
-  clean_example_inputs > /dev/null 2>&1
-  clean_example_outputs > /dev/null 2>&1
+  res=$(make clean_example)
 
   res=$(make "${mflags[@]}" clean "${target}" 2>&1)
   status=$?

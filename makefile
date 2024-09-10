@@ -76,6 +76,7 @@
 #                  does not clean artifacts from code coverage or documentation
 # make clean_bin   delete 'bin/' (binary and test executables and library)
 # make clean_build delete binary executable build artifacts
+# make clean_example delete output and input artifacts of example simulation
 # make clean_test  delete test executable build artifacts
 # make clean_cov   delete code coverage artifacts
 # make clean_doc   delete documentation
@@ -511,7 +512,7 @@ $(dir_bin) $(dir_build_sw2) $(dir_build_test):
 #--- Convenience targets for testing
 .PHONY : bin_run
 bin_run : all
-		$(bin_sw2) -d ./tests/example -f files.in
+		$(bin_sw2) -d ./tests/example -f files.in -r
 
 .PHONY : test_run
 test_run : test
@@ -591,6 +592,13 @@ clean_bin:
 clean_build:
 		-@$(RM) -r $(dir_build_sw2)
 		-@$(RM) -f $(bin_sw2) $(lib_sw2) $(lib_rsw2)
+
+.PHONY : clean_example
+clean_example:
+		-@$(RM) -r tests/example/Output
+		-@$(RM) -f tests/example/Input_nc/domain_template.nc
+		-@$(RM) -f tests/example/Input_nc/domain.nc
+		-@$(RM) -f tests/example/Input_nc/progress.nc
 
 .PHONY : clean_test
 clean_test:
