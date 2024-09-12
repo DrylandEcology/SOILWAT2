@@ -1149,6 +1149,12 @@ typedef struct {
     /* Specify the deflation level for when creating the output variables */
     int deflateLevel;
 
+    char *geo_XAxisName;
+    char *geo_YAxisName;
+    char *proj_XAxisName;
+    char *proj_YAxisName;
+    char *siteName;
+
 #if defined(SWNETCDF)
     /** offset positions of output variables for indexing p_OUT */
     size_t iOUToffset[SW_OUTNKEYS][SW_OUTNPERIODS][SW_OUTNMAXVARS];
@@ -1318,9 +1324,8 @@ typedef struct {
     // Spatial domain information
     // SUID = simulation unit identifier
 
+    /**< Type of domain: 'xy' (grid), 's' (sites) (3 = 2 characters + '\0') */
     char DomainType[3];
-    /**< Type of domain: 'xy' (grid), 's' (sites) */ // (3 = 2 characters +
-                                                     // '\0')
 
     unsigned long // to clarify, "long" = "long int", not double
         nDimX,  /**< Number of grid cells along x dimension (used if domainType

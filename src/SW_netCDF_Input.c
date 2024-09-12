@@ -847,6 +847,11 @@ freeMem:
 @param[in,out] domID Identifier of the "domain"
     (or another user-specified name) variable
 @param[in] domDims Set dimensions for the domain variable
+@param[in] readinGeoYName User-provided geographical y-axis name
+@param[in] readinGeoXName User-provided geographical x-axis name
+@param[in] readinProgYName User-provided projected y-axis name
+@param[in] readinProgXName User-provided projected x-axis name
+@param[in] siteName User-provided site dimension/variable "site" name
 @param[in] domFileID Domain netCDF file identifier
 @param[in] nDomainDims Number of dimensions the domain variable will have
 @param[in] primCRSIsGeo Specifies if the current CRS type is geographic
@@ -860,6 +865,11 @@ static void fill_domain_netCDF_domain(
     const char *domainVarName,
     int *domVarID,
     int domDims[],
+    const char *readinGeoYName,
+    const char *readinGeoXName,
+    const char *readinProgYName,
+    const char *readinProgXName,
+    const char *siteName,
     int domFileID,
     int nDomainDims,
     Bool primCRSIsGeo,
@@ -868,21 +878,52 @@ static void fill_domain_netCDF_domain(
     LOG_INFO *LogInfo
 ) {
 
-    const char *gridMapVal =
-        (primCRSIsGeo) ? "crs_geogsc" : "crs_projsc: x y crs_geogsc: lat lon";
+    char *gridMapVal =
+        (primCRSIsGeo) ? "crs_geogsc" : "crs_projsc: %s %s crs_geogsc: %s %s";
 
-    const char *coordVal =
-        (strcmp(domType, "s") == 0) ? "lat lon site" : "lat lon";
+    char *coordVal = (strcmp(domType, "s") == 0) ? "%s %s %s" : "%s %s";
 
     const char *strAttNames[] = {
         "long_name", "units", "grid_mapping", "coordinates"
     };
 
+    char gridMapStr[MAX_FILENAMESIZE] = "\0";
+    char coordStr[MAX_FILENAMESIZE] = "\0";
     const char *strAttVals[] = {"simulation domain", "1", gridMapVal, coordVal};
     unsigned int uintFillVal = NC_FILL_UINT;
 
     int attNum;
     const int numAtts = 4;
+
+    /* Fill dynamic coordinate names and replace them in `strAttNames` */
+    if (strcmp(domType, "s") == 0) {
+        snprintf(
+            coordStr,
+            MAX_FILENAMESIZE,
+            coordVal,
+            readinGeoXName,
+            readinGeoYName,
+            siteName
+        );
+    } else {
+        snprintf(
+            coordStr, MAX_FILENAMESIZE, coordVal, readinGeoYName, readinGeoXName
+        );
+    }
+    strAttVals[numAtts - 1] = coordStr;
+
+    if (!primCRSIsGeo) {
+        snprintf(
+            gridMapStr,
+            MAX_FILENAMESIZE,
+            gridMapVal,
+            readinProgXName,
+            readinProgYName,
+            readinGeoYName,
+            readinGeoXName
+        );
+        strAttVals[numAtts - 2] = gridMapStr;
+    }
 
     SW_NC_create_netCDF_var(
         domVarID,
@@ -955,10 +996,11 @@ static void fill_domain_netCDF_s(
     SW_NETCDF_OUT *netCDFOutput = &SW_Domain->OutDom.netCDFOutput;
 
     /* Get latitude/longitude names that were read-in from input file */
-    char *readinLatName =
-        SW_Domain->netCDFInput.inVarInfo[eSW_InDomain][vNCdom][SW_INYAXIS];
-    char *readinLonName =
-        SW_Domain->netCDFInput.inVarInfo[eSW_InDomain][vNCdom][SW_INXAXIS];
+    char *readinGeoYName = SW_Domain->OutDom.netCDFOutput.geo_YAxisName;
+    char *readinGeoXName = SW_Domain->OutDom.netCDFOutput.geo_XAxisName;
+    char *readinProjYName = SW_Domain->OutDom.netCDFOutput.proj_YAxisName;
+    char *readinProjXName = SW_Domain->OutDom.netCDFOutput.proj_XAxisName;
+    char *siteName = SW_Domain->OutDom.netCDFOutput.siteName;
 
     char *geo_long_name = netCDFOutput->crs_geogsc.long_name;
     char *proj_long_name = netCDFOutput->crs_projsc.long_name;
@@ -989,11 +1031,11 @@ static void fill_domain_netCDF_s(
     };
 
     const char *varNames[] = {
-        "site",
-        (primCRSIsGeo) ? readinLatName : "lat",
-        (primCRSIsGeo) ? readinLonName : "lon",
-        readinLatName,
-        readinLonName
+        siteName,
+        (primCRSIsGeo) ? readinGeoYName : readinProjYName,
+        (primCRSIsGeo) ? readinGeoXName : readinProjXName,
+        readinGeoYName,
+        readinGeoXName
     };
     int varIDs[5]; // 5 - Maximum number of variables to create
     const int numAtts[] = {numSiteAtt, numLatAtt, numLonAtt, numYAtt, numXAtt};
@@ -1003,7 +1045,7 @@ static void fill_domain_netCDF_s(
     int ncType;
 
     SW_NC_create_netCDF_dim(
-        "site", SW_Domain->nDimS, domFileID, sDimID, LogInfo
+        siteName, SW_Domain->nDimS, domFileID, sDimID, LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit prematurely due to error
@@ -1076,16 +1118,20 @@ static void fill_domain_netCDF_s(
 
 @param[out] bndNames Resulting bound names following the naming scheme "*_bnds"
 @param[in] primCRSIsGeo Specifies if the domain CRS is geographical
-@param[in] latName Read-in latitude name
-@param[in] lonName Read-in longitude name
+@param[in] yGeoName Read-in geographical y-axis name
+@param[in] xGeoName Read-in geographical x-axis name
+@param[in] yProjName Read-in projected y-axis name
+@param[in] xProjName Read-in projected x-axis name
 @param[in] numVars Number of variables to create
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void create_bnd_names(
     char bndNames[][MAX_FILENAMESIZE],
     Bool primCRSIsGeo,
-    const char *latName,
-    const char *lonName,
+    const char *yGeoName,
+    const char *xGeoName,
+    const char *yProjName,
+    const char *xProjName,
     int numVars,
     LOG_INFO *LogInfo
 ) {
@@ -1098,10 +1144,10 @@ static void create_bnd_names(
     };
 
     const char *const writeBndsNames[] = {
-        (primCRSIsGeo) ? latName : "lat",
-        (primCRSIsGeo) ? lonName : "lon",
-        latName,
-        lonName
+        (primCRSIsGeo) ? yGeoName : yProjName,
+        (primCRSIsGeo) ? xGeoName : xProjName,
+        yGeoName,
+        xGeoName
     };
 
     const char *const suffixes[] = {
@@ -1174,10 +1220,10 @@ static void fill_domain_netCDF_xy(
     char *units = SW_Domain->OutDom.netCDFOutput.crs_projsc.units;
 
     /* Get latitude/longitude names that were read-in from input file */
-    char *readinLatName =
-        SW_Domain->netCDFInput.inVarInfo[eSW_InDomain][vNCdom][SW_INYAXIS];
-    char *readinLonName =
-        SW_Domain->netCDFInput.inVarInfo[eSW_InDomain][vNCdom][SW_INXAXIS];
+    char *readinGeoYName = SW_Domain->OutDom.netCDFOutput.geo_YAxisName;
+    char *readinGeoXName = SW_Domain->OutDom.netCDFOutput.geo_XAxisName;
+    char *readinProjYName = SW_Domain->OutDom.netCDFOutput.proj_YAxisName;
+    char *readinProjXName = SW_Domain->OutDom.netCDFOutput.proj_XAxisName;
 
     int bndsID = 0;
     int bndVarDims[2]; // Used for bound variables in the netCDF file
@@ -1187,10 +1233,10 @@ static void fill_domain_netCDF_xy(
 
     const int numVars = (primCRSIsGeo) ? 2 : 4; // lat/lon or lat/lon + x/y vars
     const char *varNames[] = {
-        (primCRSIsGeo) ? readinLatName : "lat",
-        (primCRSIsGeo) ? readinLonName : "lon",
-        readinLatName,
-        readinLonName
+        (primCRSIsGeo) ? readinGeoYName : readinProjYName,
+        (primCRSIsGeo) ? readinGeoXName : readinProjXName,
+        readinGeoYName,
+        readinGeoXName
     };
     char bndVarNames[4][MAX_FILENAMESIZE] = {{'\0'}};
     const char *varAttNames[][5] = {
@@ -1219,8 +1265,8 @@ static void fill_domain_netCDF_xy(
     int numAtts[] = {numLatAtt, numLonAtt, numYAtt, numXAtt};
 
     const int numDims = 3;
-    const char *YDimName = readinLatName;
-    const char *XDimName = readinLonName;
+    const char *YDimName = readinGeoYName;
+    const char *XDimName = readinGeoXName;
 
     const char *dimNames[] = {YDimName, XDimName, "bnds"};
     const unsigned long dimVals[] = {SW_Domain->nDimY, SW_Domain->nDimX, 2};
@@ -1233,8 +1279,10 @@ static void fill_domain_netCDF_xy(
     create_bnd_names(
         bndVarNames,
         primCRSIsGeo,
-        readinLatName,
-        readinLonName,
+        readinGeoYName,
+        readinGeoXName,
+        readinProjYName,
+        readinProjXName,
         numVars,
         LogInfo
     );
@@ -2007,20 +2055,21 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     char **inDomFileNames = SW_PathInputs->ncInFiles[eSW_InDomain];
 
     /* Get latitude/longitude names that were read-in from input file */
-    char *readinLatName =
-        SW_Domain->netCDFInput.inVarInfo[eSW_InDomain][vNCprog][SW_INYAXIS];
-    char *readinLonName =
-        SW_Domain->netCDFInput.inVarInfo[eSW_InDomain][vNCprog][SW_INXAXIS];
+    char *readinGeoYName = SW_Domain->OutDom.netCDFOutput.geo_YAxisName;
+    char *readinGeoXName = SW_Domain->OutDom.netCDFOutput.geo_XAxisName;
+    char *siteName = SW_Domain->OutDom.netCDFOutput.siteName;
 
     Bool primCRSIsGeo =
         SW_Domain->OutDom.netCDFOutput.primary_crs_is_geographic;
     Bool domTypeIsS = (Bool) (strcmp(SW_Domain->DomainType, "s") == 0);
-    const char *projGridMap = "crs_projsc: x y crs_geogsc: lat lon";
+    const char *projGridMap = "crs_projsc: %s %s crs_geogsc: %s %s";
     const char *geoGridMap = "crs_geogsc";
-    const char *sCoord = "lat lon site";
-    const char *xyCoord = "lat lon";
+    const char *sCoord = "%s %s %s";
+    const char *xyCoord = "%s %s";
     const char *coord = domTypeIsS ? sCoord : xyCoord;
     const char *grid_map = primCRSIsGeo ? geoGridMap : projGridMap;
+    char coordStr[MAX_FILENAMESIZE] = "\0";
+    char gridMapStr[MAX_FILENAMESIZE] = "\0";
     const char *attNames[] = {
         "long_name", "units", "grid_mapping", "coordinates"
     };
@@ -2044,11 +2093,40 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     // No time variable/dimension
     double startTime = 0;
 
-    Bool progFileIsDom = (Bool) (strcmp(progFileName, domFileName) == 0);
+    Bool progFileIsiteDom = (Bool) (strcmp(progFileName, domFileName) == 0);
     Bool progFileExists = FileExists(progFileName);
     Bool progVarExists = SW_NC_varExists(*progFileID, progVarName);
     Bool createOrModFile =
-        (Bool) (!progFileExists || (progFileIsDom && !progVarExists));
+        (Bool) (!progFileExists || (progFileIsiteDom && !progVarExists));
+
+    /* Fill dynamic coordinate names */
+    if (domTypeIsS) {
+        snprintf(
+            coordStr,
+            MAX_FILENAMESIZE,
+            coord,
+            readinGeoYName,
+            readinGeoXName,
+            siteName
+        );
+    } else {
+        snprintf(coordStr, MAX_FILENAMESIZE, coord, readinGeoYName, readinGeoXName);
+    }
+    attVals[numAtts - 1] = coordStr;
+
+    if (!primCRSIsGeo) {
+        snprintf(
+            gridMapStr,
+            MAX_FILENAMESIZE,
+            grid_map,
+            SW_Domain->OutDom.netCDFOutput.proj_XAxisName,
+            SW_Domain->OutDom.netCDFOutput.proj_YAxisName,
+            readinGeoYName,
+            readinGeoXName
+        );
+
+        attVals[numAtts - 2] = gridMapStr;
+    }
 
     /*
       If the progress file is not to be created or modified, check it
@@ -2103,8 +2181,8 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             0,
             0,
             SW_Domain->OutDom.netCDFOutput.deflateLevel,
-            readinLatName,
-            readinLonName,
+            readinGeoYName,
+            readinGeoXName,
             LogInfo
         );
 
@@ -2242,6 +2320,10 @@ void SW_NCIN_create_domain_template(
     SW_DOMAIN *SW_Domain, char *fileName, LOG_INFO *LogInfo
 ) {
 
+    /* Get latitude/longitude names that were read-in from input file */
+    char *readinGeoYName = SW_Domain->OutDom.netCDFOutput.geo_YAxisName;
+    char *readinGeoXName = SW_Domain->OutDom.netCDFOutput.geo_XAxisName;
+
     int *domFileID = &SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom];
     char *domVarName =
         SW_Domain->netCDFInput.inVarInfo[eSW_InDomain][vNCdom][SW_INNCVARNAME];
@@ -2340,6 +2422,11 @@ void SW_NCIN_create_domain_template(
         domVarName,
         &domVarID,
         domDims,
+        readinGeoYName,
+        readinGeoXName,
+        SW_Domain->OutDom.netCDFOutput.geo_YAxisName,
+        SW_Domain->OutDom.netCDFOutput.geo_XAxisName,
+        SW_Domain->OutDom.netCDFOutput.siteName,
         *domFileID,
         nDomainDims,
         SW_Domain->OutDom.netCDFOutput.primary_crs_is_geographic,
@@ -2425,16 +2512,14 @@ void SW_NCIN_read_inputs(
         (Bool) (Str_CompareI(SW_Domain->DomainType, (char *) "s") == 0);
 
     /* Get latitude/longitude names that were read-in from input file */
-    char *readinLatName =
-        SW_Domain->netCDFInput.inVarInfo[eSW_InDomain][vNCdom][SW_INYAXIS];
-    char *readinLonName =
-        SW_Domain->netCDFInput.inVarInfo[eSW_InDomain][vNCdom][SW_INXAXIS];
+    char *readinGeoYName = SW_Domain->OutDom.netCDFOutput.geo_YAxisName;
+    char *readinGeoXName = SW_Domain->OutDom.netCDFOutput.geo_XAxisName;
 
     const int numInFilesNC = 1;
     const int numDomVals = 2;
     const int numVals[] = {numDomVals};
     const int ncFileIDs[] = {SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom]};
-    const char *varNames[][2] = {{readinLatName, readinLonName}};
+    const char *varNames[][2] = {{readinGeoYName, readinGeoXName}};
     int ncIndex;
     int varID;
 
@@ -2507,14 +2592,16 @@ These files are kept open during simulations
 @param[in,out] SW_netCDFIn Constant netCDF input file information
 @param[in,out] SW_PathInputs Struct of type SW_PATH_INPUTS which
 holds basic information about input files and values
+@param[in] readinYName User-provided geographical y-axis name
+@param[in] readinXName User-provided geographical x-axis name
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCIN_open_dom_prog_files(
-    SW_NETCDF_IN *SW_netCDFIn, SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo
+    SW_NETCDF_IN *SW_netCDFIn, SW_PATH_INPUTS *SW_PathInputs,
+    char *readinYName, char *readinXName, LOG_INFO *LogInfo
 ) {
 
     char **inDomFileNames = SW_PathInputs->ncInFiles[eSW_InDomain];
-    char ***inDomVarInfo = SW_netCDFIn->inVarInfo[eSW_InDomain];
     int *ncDomFileIDs = SW_PathInputs->ncDomFileIDs;
 
     int fileNum;
@@ -2525,12 +2612,13 @@ void SW_NCIN_open_dom_prog_files(
     char *progFile = inDomFileNames[vNCprog];
     char *varName;
     Bool progFileDomain = (Bool) (strcmp(domFile, progFile) == 0);
+    char *varNames[] = {readinYName, readinXName};
 
     // Open the domain/progress netCDF
     for (fileNum = vNCdom; fileNum <= vNCprog; fileNum++) {
         fileName = inDomFileNames[fileNum];
         fileID = &ncDomFileIDs[fileNum];
-        varName = inDomVarInfo[fileNum][SW_INNCVARNAME];
+        varName = varNames[fileNum];
 
         if (FileExists(fileName)) {
             if (nc_open(fileName, openType, fileID) != NC_NOERR) {
@@ -2689,7 +2777,7 @@ void SW_NCIN_dealloc_inputkey_var_info(SW_NETCDF_IN *SW_netCDFIn, int key) {
 }
 
 /**
-@brief Deep copy a source instance of SW_NETCDF_OUT into a destination instance
+@brief Deep copy a source instance of SW_NETCDF_IN into a destination instance
 
 @param[in] source_input Source input netCDF information to copy
 @param[out] dest_input Destination input netCDF information to be copied

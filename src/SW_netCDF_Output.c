@@ -966,7 +966,16 @@ static void create_output_file(
                 OutDom->netCDFOutput.outputVarInfo[key][index][VARNAME_INDEX];
 
             numAtts = gather_var_attributes(
-                varInfo, key, pd, index, attVals, sumType, LogInfo
+                varInfo,
+                key,
+                pd,
+                index,
+                attVals,
+                sumType,
+                siteDom,
+                latName,
+                lonName,
+                LogInfo
             );
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
@@ -1518,7 +1527,7 @@ closeFile: { CloseFile(&f, LogInfo); }
 void SW_NCOUT_init_ptrs(SW_NETCDF_OUT *SW_netCDFOut) {
 
     int index;
-    const int numAllocVars = 13;
+    const int numAllocVars = 18;
     char **allocArr[] = {
         &SW_netCDFOut->title,
         &SW_netCDFOut->author,
@@ -1535,7 +1544,12 @@ void SW_NCOUT_init_ptrs(SW_NETCDF_OUT *SW_netCDFOut) {
         &SW_netCDFOut->crs_projsc.grid_mapping_name,
         &SW_netCDFOut->crs_projsc.crs_wkt,
         &SW_netCDFOut->crs_projsc.datum,
-        &SW_netCDFOut->crs_projsc.units
+        &SW_netCDFOut->crs_projsc.units,
+        &SW_netCDFOut->geo_XAxisName,
+        &SW_netCDFOut->geo_YAxisName,
+        &SW_netCDFOut->proj_XAxisName,
+        &SW_netCDFOut->proj_YAxisName,
+        &SW_netCDFOut->siteName
     };
 
     SW_netCDFOut->crs_projsc.standard_parallel[0] = NAN;
@@ -1764,10 +1778,8 @@ void SW_NCOUT_create_output_files(
 ) {
 
     /* Get latitude/longitude names that were read-in from input file */
-    char *readinLatName =
-        SW_Domain->netCDFInput.inVarInfo[eSW_InDomain][vNCdom][SW_INYAXIS];
-    char *readinLonName =
-        SW_Domain->netCDFInput.inVarInfo[eSW_InDomain][vNCdom][SW_INXAXIS];
+    char *readinYName = SW_Domain->OutDom.netCDFOutput.geo_YAxisName;
+    char *readinXName = SW_Domain->OutDom.netCDFOutput.geo_XAxisName;
 
     int key;
     int ip;
@@ -1888,8 +1900,8 @@ void SW_NCOUT_create_output_files(
                                 baseCalendarYear,
                                 &startTime[pd],
                                 SW_Domain->OutDom.netCDFOutput.deflateLevel,
-                                readinLatName,
-                                readinLonName,
+                                readinYName,
+                                readinXName,
                                 LogInfo
                             );
                             if (LogInfo->stopRun) {
@@ -2212,7 +2224,7 @@ closeFile: { nc_close(currFileID); }
 void SW_NCOUT_deconstruct(SW_NETCDF_OUT *SW_netCDFOut) {
 
     int index;
-    const int numFreeVars = 13;
+    const int numFreeVars = 18;
     char *freeArr[] = {
         SW_netCDFOut->title,
         SW_netCDFOut->author,
@@ -2228,7 +2240,12 @@ void SW_NCOUT_deconstruct(SW_NETCDF_OUT *SW_netCDFOut) {
         SW_netCDFOut->crs_projsc.grid_mapping_name,
         SW_netCDFOut->crs_projsc.crs_wkt,
         SW_netCDFOut->crs_projsc.datum,
-        SW_netCDFOut->crs_projsc.units
+        SW_netCDFOut->crs_projsc.units,
+        SW_netCDFOut->geo_XAxisName,
+        SW_netCDFOut->geo_YAxisName,
+        SW_netCDFOut->proj_XAxisName,
+        SW_netCDFOut->proj_YAxisName,
+        SW_netCDFOut->siteName
     };
 
     for (index = 0; index < numFreeVars; index++) {
@@ -2323,13 +2340,18 @@ void SW_NCOUT_read_atts(
 
         "strideOutYears",
         "baseCalendarYear",
-        "deflateLevel"
+        "deflateLevel",
+        "geo_XAxisName",
+        "geo_YAxisName",
+        "proj_XAxisName",
+        "proj_YAxisName",
+        "siteName"
     };
     static const Bool requiredKeys[NUM_ATT_IN_KEYS] = {
-        swTRUE,  swTRUE,  swTRUE,  swFALSE, swFALSE, swTRUE,  swTRUE,
-        swTRUE,  swTRUE,  swTRUE,  swTRUE,  swTRUE,  swFALSE, swFALSE,
-        swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swFALSE,
-        swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swTRUE
+        swTRUE,  swTRUE,  swTRUE,  swFALSE, swFALSE, swTRUE,  swTRUE,  swTRUE,
+        swTRUE,  swTRUE,  swTRUE,  swTRUE,  swFALSE, swFALSE, swFALSE, swFALSE,
+        swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swFALSE,
+        swFALSE, swFALSE, swTRUE,  swTRUE,  swTRUE,  swTRUE,  swTRUE,  swTRUE
     };
     Bool hasKeys[NUM_ATT_IN_KEYS] = {swFALSE};
 
@@ -2570,6 +2592,21 @@ void SW_NCOUT_read_atts(
             break;
         case 27:
             SW_netCDFOut->deflateLevel = inBufintRes;
+            break;
+        case 28:
+            SW_netCDFOut->geo_XAxisName = Str_Dup(value, LogInfo);
+            break;
+        case 29:
+            SW_netCDFOut->geo_YAxisName = Str_Dup(value, LogInfo);
+            break;
+        case 30:
+            SW_netCDFOut->proj_XAxisName = Str_Dup(value, LogInfo);
+            break;
+        case 31:
+            SW_netCDFOut->proj_YAxisName = Str_Dup(value, LogInfo);
+            break;
+        case 32:
+            SW_netCDFOut->siteName = Str_Dup(value, LogInfo);
             break;
         case KEY_NOT_FOUND:
         default:

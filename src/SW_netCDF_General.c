@@ -213,10 +213,8 @@ void SW_NC_check(
     Bool fileWasClosed = (ncFileID < 0) ? swTRUE : swFALSE;
 
     /* Get latitude/longitude names that were read-in from domain input file */
-    char *readinLatName =
-        SW_Domain->netCDFInput.inVarInfo[eSW_InDomain][vNCdom][SW_INYAXIS];
-    char *readinLonName =
-        SW_Domain->netCDFInput.inVarInfo[eSW_InDomain][vNCdom][SW_INXAXIS];
+    char *readinYName = SW_Domain->OutDom.netCDFOutput.geo_YAxisName;
+    char *readinXName = SW_Domain->OutDom.netCDFOutput.geo_XAxisName;
 
     if (fileWasClosed) {
         // "Once a netCDF dataset is opened, it is referred to by a netCDF ID,
@@ -340,13 +338,13 @@ void SW_NC_check(
         dimMismatch = (Bool) (SDimVal != SW_Domain->nDimS);
     } else if (strcmp(impliedDomType, "xy") == 0) {
         SW_NC_get_dimlen_from_dimname(
-            ncFileID, readinLatName, &latDimVal, LogInfo
+            ncFileID, readinYName, &latDimVal, LogInfo
         );
         if (LogInfo->stopRun) {
             goto wrapUp; // Exit function prematurely due to error
         }
         SW_NC_get_dimlen_from_dimname(
-            ncFileID, readinLonName, &lonDimVal, LogInfo
+            ncFileID, readinXName, &lonDimVal, LogInfo
         );
         if (LogInfo->stopRun) {
             goto wrapUp; // Exit function prematurely due to error

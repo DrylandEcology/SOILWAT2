@@ -15,7 +15,7 @@ extern "C" {
 /* --------------------------------------------------- */
 
 /** Maximum number of attributes an output variable may have */
-#define MAX_NATTS 6
+#define MAX_NATTS 7
 
 /* =================================================== */
 /*             Global Function Declarations            */
