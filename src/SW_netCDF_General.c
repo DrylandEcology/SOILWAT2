@@ -235,6 +235,7 @@ void SW_NC_check(
     SW_CRS *crs_projsc = &SW_Domain->OutDom.netCDFOutput.crs_projsc;
     Bool geoIsPrimCRS =
         SW_Domain->OutDom.netCDFOutput.primary_crs_is_geographic;
+    char *siteName = SW_Domain->OutDom.netCDFOutput.siteName;
     char strAttVal[LARGE_VALUE];
     double doubleAttVal;
     const char *geoCRS = "crs_geogsc";
@@ -242,7 +243,7 @@ void SW_NC_check(
     Bool geoCRSExists = SW_NC_varExists(ncFileID, geoCRS);
     Bool projCRSExists = SW_NC_varExists(ncFileID, projCRS);
     const char *impliedDomType =
-        (SW_NC_dimExists("site", ncFileID)) ? "s" : "xy";
+        (SW_NC_dimExists(siteName, ncFileID)) ? "s" : "xy";
     Bool dimMismatch = swFALSE;
     size_t latDimVal = 0;
     size_t lonDimVal = 0;
@@ -330,7 +331,7 @@ void SW_NC_check(
        domain input file
     */
     if (strcmp(impliedDomType, "s") == 0) {
-        SW_NC_get_dimlen_from_dimname(ncFileID, "site", &SDimVal, LogInfo);
+        SW_NC_get_dimlen_from_dimname(ncFileID, siteName, &SDimVal, LogInfo);
         if (LogInfo->stopRun) {
             goto wrapUp; // Exit function prematurely due to error
         }
@@ -940,6 +941,7 @@ void SW_NC_create_full_var(
     int deflateLevel,
     const char *latName,
     const char *lonName,
+    const char *siteName,
     const int coordAttIndex,
     LOG_INFO *LogInfo
 ) {
@@ -950,7 +952,7 @@ void SW_NC_create_full_var(
     int dimIDs[MAX_NUM_DIMS];
     Bool domTypeIsSites = (Bool) (strcmp(domType, "s") == 0);
     unsigned int numConstDims = (domTypeIsSites) ? 1 : 2;
-    const char *thirdDim = (domTypeIsSites) ? "site" : latName;
+    const char *thirdDim = (domTypeIsSites) ? siteName : latName;
     const char *constDimNames[] = {thirdDim, lonName};
     const char *timeVertVegNames[] = {"time", "vertical", "pft"};
     char *dimVarName;

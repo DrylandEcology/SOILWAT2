@@ -638,7 +638,8 @@ static Bool is_wgs84(char *crs_name) {
 within the domain netCDF
 
 @note A more descriptive explanation of the scenarios to write out the
-values of a variable would be
+values of a variable would be (names are user-provided, so the ones below
+are not hard-coded)
 
 CRS bounding box - geographic
     - Domain type "xy" (primary CRS - geographic & projected)
@@ -2183,10 +2184,10 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             SW_Domain->OutDom.netCDFOutput.deflateLevel,
             readinGeoYName,
             readinGeoXName,
+            SW_Domain->OutDom.netCDFOutput.siteName,
             -1,
             LogInfo
         );
-
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }

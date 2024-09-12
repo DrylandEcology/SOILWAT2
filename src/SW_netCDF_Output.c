@@ -771,6 +771,7 @@ static void get_vardim_write_counts(
 @param[in] ncFileID Output netCDF file ID
 @param[in] varID Output netCDF variable ID
 @param[in] count Array with established the output dimensions
+@param[in] siteName User-provided site dimension/variable "site" name
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void check_counts_against_vardim(
@@ -779,12 +780,13 @@ static void check_counts_against_vardim(
     int ncFileID,
     int varID,
     size_t count[],
+    char *siteName,
     LOG_INFO *LogInfo
 ) {
 
     int dimIndex;
     int ndimsp;
-    int nSpaceDims = SW_NC_dimExists("site", ncFileID) ? 1 : 2;
+    int nSpaceDims = SW_NC_dimExists(siteName, ncFileID) ? 1 : 2;
     int dimidsp[MAX_NUM_DIMS] = {0};
     char dimname[NC_MAX_NAME + 1];
     size_t ccheck[MAX_NUM_DIMS] = {0};
@@ -1034,6 +1036,7 @@ static void create_output_file(
                 deflateLevel,
                 latName,
                 lonName,
+                OutDom->netCDFOutput.siteName,
                 coordAttInd,
                 LogInfo
             );
@@ -2183,7 +2186,13 @@ void SW_NCOUT_write_output(
 
 #if defined(SWDEBUG)
                     check_counts_against_vardim(
-                        fileName, varName, currFileID, varID, count, LogInfo
+                        fileName,
+                        varName,
+                        currFileID,
+                        varID,
+                        count,
+                        OutDom->netCDFOutput.siteName,
+                        LogInfo
                     );
                     if (LogInfo->stopRun) {
                         /* Exit function prematurely due to error*/
