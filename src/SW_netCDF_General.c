@@ -1005,11 +1005,11 @@ void SW_NC_create_full_var(
                 return; // Exit function prematurely due to error
             }
 
-            tempCoordPtr = sw_memccpy(writePtr, " ", '\0', writeSize);
+            tempCoordPtr = (char *) sw_memccpy(writePtr, " ", '\0', writeSize);
             writeSize--;
             writePtr = tempCoordPtr - 1;
 
-            tempCoordPtr = sw_memccpy(
+            tempCoordPtr = (char *) sw_memccpy(
                 writePtr, (char *) timeVertVegNames[index], '\0', writeSize
             );
             writeSize -= (int) (tempCoordPtr - coordValBuf - 1);

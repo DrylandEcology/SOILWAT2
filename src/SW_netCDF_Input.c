@@ -879,10 +879,12 @@ static void fill_domain_netCDF_domain(
     LOG_INFO *LogInfo
 ) {
 
-    char *gridMapVal =
-        (primCRSIsGeo) ? "crs_geogsc" : "crs_projsc: %s %s crs_geogsc: %s %s";
+    char *gridMapVal = (primCRSIsGeo) ?
+                           (char *) "crs_geogsc" :
+                           (char *) "crs_projsc: %s %s crs_geogsc: %s %s";
 
-    char *coordVal = (strcmp(domType, "s") == 0) ? "%s %s %s" : "%s %s";
+    char *coordVal =
+        (strcmp(domType, "s") == 0) ? (char *) "%s %s %s" : (char *) "%s %s";
 
     const char *strAttNames[] = {
         "long_name", "units", "grid_mapping", "coordinates"
