@@ -494,7 +494,8 @@ void SW_CTL_setup_domain(
 
     // Open necessary netCDF input files and check for consistency with domain
     SW_NCIN_open_dom_prog_files(
-        &SW_Domain->netCDFInput, &SW_Domain->SW_PathInputs,
+        &SW_Domain->netCDFInput,
+        &SW_Domain->SW_PathInputs,
         SW_Domain->OutDom.netCDFOutput.geo_YAxisName,
         SW_Domain->OutDom.netCDFOutput.geo_XAxisName,
         LogInfo

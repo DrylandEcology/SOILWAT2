@@ -2113,7 +2113,9 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             siteName
         );
     } else {
-        snprintf(coordStr, MAX_FILENAMESIZE, coord, readinGeoYName, readinGeoXName);
+        snprintf(
+            coordStr, MAX_FILENAMESIZE, coord, readinGeoYName, readinGeoXName
+        );
     }
     attVals[numAtts - 1] = coordStr;
 
@@ -2601,8 +2603,11 @@ holds basic information about input files and values
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCIN_open_dom_prog_files(
-    SW_NETCDF_IN *SW_netCDFIn, SW_PATH_INPUTS *SW_PathInputs,
-    char *readinYName, char *readinXName, LOG_INFO *LogInfo
+    SW_NETCDF_IN *SW_netCDFIn,
+    SW_PATH_INPUTS *SW_PathInputs,
+    char *readinYName,
+    char *readinXName,
+    LOG_INFO *LogInfo
 ) {
 
     char **inDomFileNames = SW_PathInputs->ncInFiles[eSW_InDomain];
@@ -3215,8 +3220,8 @@ void SW_NCIN_read_input_vars(
                    3) Otherwise, the increment does not matter since we do not
                         deal with all four variable types (which covers
                         multiple variables in the code) */
-                inVarNum += (inKey == eSW_InSoil || !isAllVegVar) ?
-                                                            1 : allVegInc;
+                inVarNum +=
+                    (inKey == eSW_InSoil || !isAllVegVar) ? 1 : allVegInc;
             }
 
             if (isAllVegVar) {
