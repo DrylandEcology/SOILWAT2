@@ -1324,7 +1324,7 @@ typedef struct {
     // Spatial domain information
     // SUID = simulation unit identifier
 
-    /**< Type of domain: 'xy' (grid), 's' (sites) (3 = 2 characters + '\0') */
+    /** Type of domain: 'xy' (grid), 's' (sites) (3 = 2 characters + '\0') */
     char DomainType[3];
 
     unsigned long // to clarify, "long" = "long int", not double
