@@ -588,6 +588,9 @@ into one location to write out
     variable information
 @param[out] resAtts Resulting attributes to write out
 @param[in] sumType Sum type of the output key
+@param[in] siteDom Specifies if the domain is site-oriented
+@param[in] readinYName User-provided geographical y-axis name
+@param[in] readinXName User-provided geographical x-axis name
 @param[out] LogInfo Holds information on warnings and errors
 */
 static int gather_var_attributes(
@@ -597,6 +600,9 @@ static int gather_var_attributes(
     int varNum,
     char *resAtts[],
     OutSum sumType,
+    Bool siteDom,
+    const char *readinYName,
+    const char *readinXName,
     LOG_INFO *LogInfo
 ) {
     int fillSize = 0;
@@ -604,6 +610,7 @@ static int gather_var_attributes(
     int resSNP;
     char cellRedef[MAX_FILENAMESIZE];
     char establOrginName[MAX_FILENAMESIZE];
+    char coordsAtt[MAX_FILENAMESIZE];
 
     // Determine attribute 'original_name'
     if (key == eSW_Estab) {
@@ -664,6 +671,29 @@ static int gather_var_attributes(
             return 0; // Exit function prematurely due to error
         }
     }
+
+    /* Fill coordinates attribute */
+    snprintf(
+        coordsAtt,
+        MAX_FILENAMESIZE,
+        (siteDom) ? "%s %s site" : "%s %s",
+        readinYName,
+        readinXName
+    );
+    if (resSNP < 0 || (unsigned) resSNP >= (sizeof coordsAtt)) {
+        LogError(
+            LogInfo,
+            LOGWARN,
+            "attribute 'coordinates' of variable '%s' was truncated.",
+            varInfo[VARNAME_INDEX]
+        );
+    }
+
+    resAtts[fillSize] = Str_Dup(coordsAtt, LogInfo);
+    if (LogInfo->stopRun) {
+        return 0; // Exit function prematurely due to error
+    }
+    fillSize++;
 
     if (key == eSW_Temp || key == eSW_SoilTemp) {
         resAtts[fillSize] = (char *) "temperature: on_scale";
@@ -923,13 +953,16 @@ static void create_output_file(
         "comment",
         "units",
         "cell_method",
+        "coordinates",
         "units_metadata"
     };
     char *attVals[MAX_NATTS] = {NULL};
     OutSum sumType = OutDom->sumtype[key];
+    Bool siteDom = (Bool) (strcmp(domType, "s") == 0);
 
     int numAtts = 0;
     const int nameAtt = 0;
+    const int coordAttInd = 5;
 
     int newFileID = -1; // Default to not created
     int cellMethAttInd = 0;
@@ -1001,6 +1034,7 @@ static void create_output_file(
                 deflateLevel,
                 latName,
                 lonName,
+                coordAttInd,
                 LogInfo
             );
 
@@ -1008,8 +1042,8 @@ static void create_output_file(
                 if (newFileID > -1) {
                     // new file was created
                     cellMethAttInd = (key == eSW_Temp || key == eSW_SoilTemp) ?
-                                         numAtts - 2 :
-                                         numAtts - 1;
+                                         numAtts - 3 :
+                                         numAtts - 2;
                 }
                 if (!isnull(attVals[cellMethAttInd])) {
                     free(attVals[cellMethAttInd]);
@@ -1018,18 +1052,24 @@ static void create_output_file(
             }
             if (key == eSW_Estab && !isnull(attVals[nameAtt])) {
                 free(attVals[nameAtt]);
+                attVals[nameAtt] = NULL;
+            }
+            if (!isnull(attVals[coordAttInd])) {
+                free(attVals[coordAttInd]);
+                attVals[coordAttInd] = NULL;
             }
             if (LogInfo->stopRun && FileExists(newFileName)) {
-                nc_close(newFileID);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
         }
     }
 
+closeFile: {
     // Only close the file if it was created
     if (newFileID > -1) {
         nc_close(newFileID);
     }
+}
 }
 
 /* =================================================== */

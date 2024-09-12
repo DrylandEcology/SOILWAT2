@@ -770,6 +770,7 @@ void SW_NC_get_str_att_val(
     int attCallRes;
     int attLenCallRes;
     size_t attLen = 0;
+
     SW_NC_get_var_identifier(ncFileID, varName, &varID, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -914,6 +915,9 @@ and writing attributes
 variable
 @param[in] latName User-provided latitude name
 @param[in] lonName User-provided longitude name
+@param[in] coordAttIndex Specifies the coordinate attribute location
+within the provided `attNames`/`attVals` (if there isn't an attribute
+of this name, it's value should be -1)
 @param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_NC_create_full_var(
@@ -936,6 +940,7 @@ void SW_NC_create_full_var(
     int deflateLevel,
     const char *latName,
     const char *lonName,
+    const int coordAttIndex,
     LOG_INFO *LogInfo
 ) {
 
@@ -953,7 +958,11 @@ void SW_NC_create_full_var(
     unsigned int numTimeVertVegVals = 3;
     unsigned int varVal = 0;
     size_t chunkSizes[MAX_NUM_DIMS] = {1, 1, 1, 1, 1};
-
+    char coordValBuf[MAX_FILENAMESIZE] = "";
+    char *writePtr = coordValBuf;
+    char *tempCoordPtr;
+    int writeSize = MAX_FILENAMESIZE;
+    char finalCoordVal[MAX_FILENAMESIZE];
 
     for (index = 0; index < numConstDims; index++) {
         SW_NC_get_dim_identifier(
@@ -994,7 +1003,33 @@ void SW_NC_create_full_var(
                 return; // Exit function prematurely due to error
             }
 
+            tempCoordPtr = sw_memccpy(writePtr, " ", '\0', writeSize);
+            writeSize--;
+            writePtr = tempCoordPtr - 1;
+
+            tempCoordPtr = sw_memccpy(
+                writePtr, (char *) timeVertVegNames[index], '\0', writeSize
+            );
+            writeSize -= (int) (tempCoordPtr - coordValBuf - 1);
+            writePtr = tempCoordPtr - 1;
+
             dimArrSize++;
+        }
+    }
+
+    if (coordAttIndex > -1 && !isnull(attVals[coordAttIndex])) {
+        snprintf(
+            finalCoordVal,
+            MAX_FILENAMESIZE,
+            "%s%s",
+            attVals[coordAttIndex],
+            coordValBuf
+        );
+
+        free((void *) ((char *) attVals[coordAttIndex]));
+        attVals[coordAttIndex] = Str_Dup(finalCoordVal, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
         }
     }
 

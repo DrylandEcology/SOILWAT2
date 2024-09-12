@@ -2183,6 +2183,7 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             SW_Domain->OutDom.netCDFOutput.deflateLevel,
             readinGeoYName,
             readinGeoXName,
+            -1,
             LogInfo
         );
 

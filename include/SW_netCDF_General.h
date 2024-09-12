@@ -134,6 +134,7 @@ void SW_NC_create_full_var(
     int deflateLevel,
     const char *latName,
     const char *lonName,
+    const int coordAttIndex,
     LOG_INFO *LogInfo
 );
 
