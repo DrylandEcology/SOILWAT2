@@ -919,6 +919,7 @@ variable
 @param[in] coordAttIndex Specifies the coordinate attribute location
 within the provided `attNames`/`attVals` (if there isn't an attribute
 of this name, it's value should be -1)
+@param[in] siteName User-provided site dimension/variable "site" name
 @param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_NC_create_full_var(
