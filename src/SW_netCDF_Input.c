@@ -850,8 +850,8 @@ freeMem:
 @param[in] domDims Set dimensions for the domain variable
 @param[in] readinGeoYName User-provided geographical y-axis name
 @param[in] readinGeoXName User-provided geographical x-axis name
-@param[in] readinProgYName User-provided projected y-axis name
-@param[in] readinProgXName User-provided projected x-axis name
+@param[in] readinProjYName User-provided projected y-axis name
+@param[in] readinProjXName User-provided projected x-axis name
 @param[in] siteName User-provided site dimension/variable "site" name
 @param[in] domFileID Domain netCDF file identifier
 @param[in] nDomainDims Number of dimensions the domain variable will have
@@ -868,8 +868,8 @@ static void fill_domain_netCDF_domain(
     int domDims[],
     const char *readinGeoYName,
     const char *readinGeoXName,
-    const char *readinProgYName,
-    const char *readinProgXName,
+    const char *readinProjYName,
+    const char *readinProjXName,
     const char *siteName,
     int domFileID,
     int nDomainDims,
@@ -920,8 +920,8 @@ static void fill_domain_netCDF_domain(
             gridMapStr,
             MAX_FILENAMESIZE,
             gridMapVal,
-            readinProgXName,
-            readinProgYName,
+            readinProjXName,
+            readinProjYName,
             readinGeoYName,
             readinGeoXName
         );
