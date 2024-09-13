@@ -32,19 +32,20 @@ static const int numVarsInKey[] = {
 #define ForEachNCInKey(k) for ((k) = 0; (k) < eSW_LastInKey; (k)++)
 
 /* Indices within `inVarInfo` for specific information of a variable */
-#define SW_INUNIT 0
-#define SW_INFILENAME 1
-#define SW_INNCVARNAME 2
-#define SW_INVARUNITS 3
-#define SW_INGRIDTYPE 4
-#define SW_INCRSNAME 5
-#define SW_INCRSEQUIV 6
-#define SW_INXAXIS 7
-#define SW_INYAXIS 8
-#define SW_INZAXIS 9
-#define SW_INTAXIS 10
-#define SW_INSTPATRN 11
-#define SW_INVAXIS 12
+#define INUNIT 0
+#define INFILENAME 1
+#define INNCVARNAME 2
+#define INVARUNITS 3
+#define INDOMTYPE 4
+#define INSITENAME 5
+#define INCRSNAME 6
+#define INGRIDMAPPING 7
+#define INXAXIS 8
+#define INYAXIS 9
+#define INZAXIS 10
+#define INTAXIS 11
+#define INSTPATRN 12
+#define INVAXIS 13
 
 /* =================================================== */
 /*             Global Function Declarations            */
@@ -112,6 +113,7 @@ void SW_NCIN_alloc_inputkey_var_info(
 
 void SW_NCIN_read_input_vars(
     SW_NETCDF_IN *SW_netCDFIn,
+    SW_NETCDF_OUT *SW_netCDFOut,
     SW_PATH_INPUTS *SW_PathInputs,
     TimeInt startYr,
     TimeInt endYr,

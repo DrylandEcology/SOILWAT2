@@ -1256,15 +1256,15 @@ void SW_NC_read(
     TimeInt endYr,
     LOG_INFO *LogInfo
 ) {
-    SW_NCIN_read_input_vars(
-        SW_netCDFIn, SW_PathInputs, startYr, endYr, LogInfo
-    );
+    // Read CRS and attributes for netCDFs
+    SW_NCOUT_read_atts(SW_netCDFOut, SW_PathInputs, LogInfo);
     if (LogInfo->stopRun) {
         return; /* Exit function prematurely due to error */
     }
 
-    // Read CRS and attributes for netCDFs
-    SW_NCOUT_read_atts(SW_netCDFOut, SW_PathInputs, LogInfo);
+    SW_NCIN_read_input_vars(
+        SW_netCDFIn, SW_netCDFOut, SW_PathInputs, startYr, endYr, LogInfo
+    );
 }
 
 /**

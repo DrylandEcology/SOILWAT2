@@ -33,7 +33,7 @@
 /** Progress status: SUID failed to simulate */
 #define PRGRSS_FAIL ((signed char) -1)
 
-#define NIN_VAR_INPUTS 20
+#define NIN_VAR_INPUTS 21
 
 /* Columns of interest, and excludes:
     - Input key and input name
@@ -42,7 +42,7 @@
     - St years and stride years start
     - Calendar override
     - User comment */
-#define NUM_INPUT_INFO 13
+#define NUM_INPUT_INFO 14
 
 /* Maximum number of variables per input key */
 #define SW_INNMAXVARS 22
@@ -266,6 +266,56 @@ static void get_2d_input_key(
 }
 
 /**
+@brief Test to see if the information grid and spatial information
+provided in `desc_nc.in` is consistent with that of what is provided in
+the input spreadsheet
+
+@param[in] SW_netCDFOut Constant netCDF output file information
+@param[in] inputInfo Attribute information for a specific input variable
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void check_spatial_information(
+    SW_NETCDF_OUT *SW_netCDFOut, char **inputInfo, LOG_INFO *LogInfo
+) {
+
+    Bool primCRSIsGeo = SW_netCDFOut->primary_crs_is_geographic;
+    char *ncCRSGridMapName = inputInfo[INGRIDMAPPING];
+    char *ncYAxisName = inputInfo[INYAXIS];
+    char *ncXAxisName = inputInfo[INXAXIS];
+    char *geoGridMapName = SW_netCDFOut->crs_geogsc.grid_mapping_name;
+    char *projGridMapName = SW_netCDFOut->crs_projsc.grid_mapping_name;
+    char *geoYAxisName = SW_netCDFOut->geo_YAxisName;
+    char *geoXAxisName = SW_netCDFOut->geo_XAxisName;
+    char *projYAxisName = SW_netCDFOut->proj_YAxisName;
+    char *projXAxisName = SW_netCDFOut->proj_XAxisName;
+
+    Bool failedGeoTest =
+        (Bool) (primCRSIsGeo &&
+                (strcmp(ncCRSGridMapName, "latitude_longitude") != 0 ||
+                 strcmp(ncCRSGridMapName, geoGridMapName) != 0 ||
+                 strcmp(ncYAxisName, geoYAxisName) != 0 ||
+                 strcmp(ncXAxisName, geoXAxisName) != 0));
+
+    Bool failedProjTest =
+        (Bool) (!failedGeoTest && !primCRSIsGeo &&
+                (strcmp(ncCRSGridMapName, "latitude_longitude") == 0 ||
+                 strcmp(ncCRSGridMapName, projGridMapName) != 0 ||
+                 strcmp(ncYAxisName, projYAxisName) != 0 ||
+                 strcmp(ncXAxisName, projXAxisName) != 0));
+
+    if (failedGeoTest || failedProjTest) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "The geographical spatial information provided for "
+            "'ncCRSGridMappingName', 'ncXAxisName', and 'ncYAxisName' "
+            "do not match expected values for a %s domain.",
+            (failedGeoTest) ? "geographical" : "projected"
+        );
+    }
+}
+
+/**
 @brief Check that the required variable information was input through
 the input variable file
 
@@ -285,22 +335,24 @@ static void check_variable_for_required(
 
     int attNum;
     int mustTestAttInd[] = {
-        SW_INNCVARNAME,
-        SW_INGRIDTYPE,
-        SW_INCRSNAME,
-        SW_INCRSEQUIV,
-        SW_INXAXIS,
-        SW_INYAXIS
+        INNCVARNAME,
+        INDOMTYPE,
+        INSITENAME,
+        INCRSNAME,
+        INGRIDMAPPING,
+        INXAXIS,
+        INYAXIS
     };
     const char *mustTestAttNames[] = {
         "ncVarName",
-        "ncGridType",
+        "ncDomType",
+        "ncSiteName",
         "ncCRSName",
-        "ncCRSEquivalency",
+        "ncCRSGridMappingName",
         "ncXAxisName",
         "ncYAxisName"
     };
-    int mustTestAtts = 6;
+    int mustTestAtts = 7;
     int testInd;
 
     /* Indices are based on the global array `possVarNames` under `inVeg` */
@@ -314,17 +366,21 @@ static void check_variable_for_required(
         (Bool) (varNum == 6 || varNum == 11 || varNum == 16 || varNum == 21);
 
     Bool testVeg = swFALSE;
+    Bool canBeNA;
 
     Bool isIndex = (Bool) (key > eSW_InSpatial && varNum == 0);
+    Bool inputDomIsSite =
+        (Bool) (strcmp(inputInfo[varNum][INDOMTYPE], "s") == 0);
 
-    char *varName = inputInfo[varNum][SW_INNCVARNAME];
+    char *varName = inputInfo[varNum][INNCVARNAME];
 
     /* Make sure that the universally required attributes are filled in
        skip the testing of the nc var units (can be NA) */
     for (attNum = 0; attNum < mustTestAtts; attNum++) {
         testInd = mustTestAttInd[attNum];
+        canBeNA = (Bool) (testInd == INSITENAME && !inputDomIsSite);
 
-        if (strcmp(inputInfo[varNum][testInd], "NA") == 0) {
+        if (!canBeNA && strcmp(inputInfo[varNum][testInd], "NA") == 0) {
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -343,7 +399,7 @@ static void check_variable_for_required(
                           (isLitter || isBio || isPctLive || isLAI));
 
         if (key == eSW_InSoil) {
-            if (strcmp(inputInfo[varNum][SW_INZAXIS], "NA") == 0) {
+            if (strcmp(inputInfo[varNum][INZAXIS], "NA") == 0) {
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -356,7 +412,7 @@ static void check_variable_for_required(
                 return; /* Exit function prematurely due to error */
             }
         } else if (key == eSW_InWeather || key == eSW_InClimate || testVeg) {
-            if (strcmp(inputInfo[varNum][SW_INTAXIS], "NA") == 0) {
+            if (strcmp(inputInfo[varNum][INTAXIS], "NA") == 0) {
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -373,7 +429,7 @@ static void check_variable_for_required(
         if (key == eSW_InWeather) {
             if (inWeathStrideInfo[SW_INSTRIDEYR] > -1) {
                 if (inWeathStrideInfo[SW_INSTRIDESTART] == -1 ||
-                    strcmp(inputInfo[varNum][SW_INSTPATRN], "NA") == 0) {
+                    strcmp(inputInfo[varNum][INSTPATRN], "NA") == 0) {
 
                     LogError(
                         LogInfo,
@@ -410,8 +466,8 @@ static void check_inputkey_columns(
     int varNum;
     int varStart = (key > eSW_InSpatial) ? 1 : 0;
     int numVars = numVarsInKey[key];
-    int attStart = SW_INGRIDTYPE;
-    int attEnd = SW_INVAXIS;
+    int attStart = INDOMTYPE;
+    int attEnd = INVAXIS;
     int attNum;
 
     char *cmpAtt = NULL;
@@ -449,7 +505,7 @@ static void check_inputkey_columns(
                             "has a column that does not match the others "
                             "from 'ncGridType' to 'ncVAxisName' with a "
                             "value of '%s' instead of '%s'.",
-                            inputInfo[varNum][SW_INNCVARNAME],
+                            inputInfo[varNum][INNCVARNAME],
                             possInKeys[key],
                             currAtt,
                             cmpAtt
@@ -466,12 +522,14 @@ static void check_inputkey_columns(
 @brief Wrapper function to test all input variables for required
 input columns and the same values for input columns within a given input key
 
+@param[in] SW_netCDFOut Constant netCDF output file information
 @param[in] inputInfo Attribute information for all input variables
 @param[in] inWeathStrideInfo List of stride information for weather variables
 @param[in] readInVars Specifies which variables are to be read-in as input
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void check_input_variables(
+    SW_NETCDF_OUT *SW_netCDFOut,
     char ****inputInfo,
     int inWeathStrideInfo[],
     Bool *readInVars[],
@@ -479,11 +537,20 @@ static void check_input_variables(
 ) {
     int key;
     int varNum;
+    int testVarIndex;
+    int varStart;
 
     ForEachNCInKey(key) {
         if (readInVars[key][0]) {
-            for (varNum = 0; varNum < numVarsInKey[key]; varNum++) {
+            testVarIndex = -1;
+            varStart = (key > eSW_InSpatial) ? 1 : 0;
+
+            for (varNum = varStart; varNum < numVarsInKey[key]; varNum++) {
                 if (readInVars[key][varNum + 1]) {
+                    if (testVarIndex == -1) {
+                        testVarIndex = varNum;
+                    }
+
                     check_variable_for_required(
                         inputInfo[key], inWeathStrideInfo, key, varNum, LogInfo
                     );
@@ -496,6 +563,13 @@ static void check_input_variables(
 
             check_inputkey_columns(
                 inputInfo[key], readInVars[key], key, LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return; /* Exit function prematurely due to failed test */
+            }
+
+            check_spatial_information(
+                SW_netCDFOut, inputInfo[key][testVarIndex], LogInfo
             );
             if (LogInfo->stopRun) {
                 return; /* Exit function prematurely due to failed test */
@@ -1878,7 +1952,7 @@ static void generate_weather_filenames(
             continue;
         }
 
-        stridePattern = weatherInputInfo[weathVar][SW_INSTPATRN];
+        stridePattern = weatherInputInfo[weathVar][INSTPATRN];
 
         doubleStrVal = (Bool) (strcmp(stridePattern, "%4d-%4d") == 0 ||
                                strcmp(stridePattern, "%4d_%4d") == 0);
@@ -1891,7 +1965,7 @@ static void generate_weather_filenames(
                 LOGERROR,
                 "Stride start year for weather variable '%s' is greater "
                 "than the end year of the program (%d).",
-                weatherInputInfo[weathVar][SW_INNCVARNAME],
+                weatherInputInfo[weathVar][INNCVARNAME],
                 endYr
             );
             return; /* Exit function prematurely due to error */
@@ -2084,7 +2158,7 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     const char *flagMeanings =
         "simulation_error ready_to_simulate simulation_complete";
     const char *progVarName =
-        SW_netCDFIn->inVarInfo[eSW_InDomain][vNCprog][SW_INNCVARNAME];
+        SW_netCDFIn->inVarInfo[eSW_InDomain][vNCprog][INNCVARNAME];
     const char *freq = "fx";
 
     int *progFileID = &SW_PathInputs->ncDomFileIDs[vNCprog];
@@ -2332,7 +2406,7 @@ void SW_NCIN_create_domain_template(
 
     int *domFileID = &SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom];
     char *domVarName =
-        SW_Domain->netCDFInput.inVarInfo[eSW_InDomain][vNCdom][SW_INNCVARNAME];
+        SW_Domain->netCDFInput.inVarInfo[eSW_InDomain][vNCdom][INNCVARNAME];
     int sDimID = 0;
     int YDimID = 0;
     int XDimID = 0;
@@ -2852,6 +2926,7 @@ void SW_NCIN_deepCopy(
 @brief Read input netCDF variables that the user will provide
 
 @param[in,out] SW_netCDFIn Constant netCDF input file information
+@param[in] SW_netCDFOut Constant netCDF output file information
 @param[in] SW_PathInputs Struct of type SW_PATH_INPUTS which
 holds basic information about input files and values
 @param[in] startYr End year of the simulation
@@ -2860,6 +2935,7 @@ holds basic information about input files and values
 */
 void SW_NCIN_read_input_vars(
     SW_NETCDF_IN *SW_netCDFIn,
+    SW_NETCDF_OUT *SW_netCDFOut,
     SW_PATH_INPUTS *SW_PathInputs,
     TimeInt startYr,
     TimeInt endYr,
@@ -2880,7 +2956,7 @@ void SW_NCIN_read_input_vars(
         "%10[^\t]\t%50[^\t]\t%20[^\t]\t%1[^\t]\t%255[^\t]\t%50[^\t]\t"
         "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t"
         "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t"
-        "%255[^\t]\t%255[^\t]";
+        "%255[^\t]\t%255[^\t]\t%255[^\t]";
 
     /* Locally handle the weather stride information where -2 is
        the default value so we can tell that the value hasn't been set yet
@@ -2897,19 +2973,20 @@ void SW_NCIN_read_input_vars(
     const int ncFileNameInd = 4;
     const int ncVarNameInd = 5;
     const int ncVarUnitsInd = 6;
-    const int ncGridTypeInd = 7;
-    const int ncCRSNameInd = 8;
-    const int ncCRSEquivInd = 9;
-    const int ncXAxisInd = 10;
-    const int ncYAxisInd = 11;
-    const int ncZAxisInd = 12;
-    const int ncTAxisInd = 13;
-    const int ncStYrInd = 14;
-    const int ncStStartInd = 15;
-    const int ncStPatInd = 16;
-    const int ncCalendarInd = 17;
-    const int ncVAxisInd = 18;
-    const int userComInd = 19;
+    const int ncDomTypeInd = 7;
+    const int ncSiteNameInd = 8;
+    const int ncCRSNameInd = 9;
+    const int ncGridMapInd = 10;
+    const int ncXAxisInd = 11;
+    const int ncYAxisInd = 12;
+    const int ncZAxisInd = 13;
+    const int ncTAxisInd = 14;
+    const int ncStYrInd = 15;
+    const int ncStStartInd = 16;
+    const int ncStPatInd = 17;
+    const int ncCalendarInd = 18;
+    const int ncVAxisInd = 19;
+    const int userComInd = 20;
 
     int inKey = -1;
     int inVarNum = -1;
@@ -2954,9 +3031,10 @@ void SW_NCIN_read_input_vars(
             input[ncFileNameInd],
             input[ncVarNameInd],
             input[ncVarUnitsInd],
-            input[ncGridTypeInd],
+            input[ncDomTypeInd],
+            input[ncSiteNameInd],
             input[ncCRSNameInd],
-            input[ncCRSEquivInd],
+            input[ncGridMapInd],
             input[ncXAxisInd],
             input[ncYAxisInd],
             input[ncZAxisInd],
@@ -3139,7 +3217,9 @@ void SW_NCIN_read_input_vars(
 
                 /* Shortcut the flags in the first index to reduce checking
                    in the future */
-                SW_netCDFIn->readInVars[inKey][0] = swTRUE;
+                if (!isIndexFile) {
+                    SW_netCDFIn->readInVars[inKey][0] = swTRUE;
+                }
 
                 /* Save file to input file list */
                 SW_PathInputs->ncInFiles[inKey][inVarNum] =
@@ -3254,6 +3334,7 @@ void SW_NCIN_read_input_vars(
     }
 
     check_input_variables(
+        SW_netCDFOut,
         SW_netCDFIn->inVarInfo,
         inWeathStrideInfo,
         SW_netCDFIn->readInVars,
@@ -3431,7 +3512,7 @@ void SW_NCIN_create_units_converters(
                 );
                 unitTo = ut_parse(
                     system,
-                    SW_netCDFIn->inVarInfo[key][varIndex][SW_INVARUNITS],
+                    SW_netCDFIn->inVarInfo[key][varIndex][INVARUNITS],
                     UT_UTF8
                 );
 
@@ -3451,14 +3532,14 @@ void SW_NCIN_create_units_converters(
                         "Units of variable '%s' cannot get converted from "
                         "internal '%s' to requested '%s'. "
                         "Input will use internal units.",
-                        SW_netCDFIn->inVarInfo[key][varIndex][SW_INNCVARNAME],
+                        SW_netCDFIn->inVarInfo[key][varIndex][INNCVARNAME],
                         SW_netCDFIn->units_sw[key][varIndex],
-                        SW_netCDFIn->inVarInfo[key][varIndex][SW_INVARUNITS]
+                        SW_netCDFIn->inVarInfo[key][varIndex][INVARUNITS]
                     );
 
                     /* converter is not available: output in internal units */
-                    free(SW_netCDFIn->inVarInfo[key][varIndex][SW_INVARUNITS]);
-                    SW_netCDFIn->inVarInfo[key][varIndex][SW_INVARUNITS] =
+                    free(SW_netCDFIn->inVarInfo[key][varIndex][INVARUNITS]);
+                    SW_netCDFIn->inVarInfo[key][varIndex][INVARUNITS] =
                         Str_Dup(SW_netCDFIn->units_sw[key][varIndex], LogInfo);
                 }
 
@@ -3468,9 +3549,9 @@ void SW_NCIN_create_units_converters(
 
 #else
             /* udunits2 is not available: output in internal units */
-            free(SW_netCDFIn->inVarInfo[key][varIndex][SW_INVARUNITS]);
+            free(SW_netCDFIn->inVarInfo[key][varIndex][INVARUNITS]);
             if (!isnull(SW_netCDFIn->units_sw[key][varIndex])) {
-                SW_netCDFIn->inVarInfo[key][varIndex][SW_INVARUNITS] =
+                SW_netCDFIn->inVarInfo[key][varIndex][INVARUNITS] =
                     Str_Dup(SW_netCDFIn->units_sw[key][varIndex], LogInfo);
             }
 #endif
