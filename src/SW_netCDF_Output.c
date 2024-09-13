@@ -44,6 +44,21 @@
 
 const int times[] = {MAX_DAYS - 1, MAX_WEEKS, MAX_MONTHS, 1};
 
+static const char *const expectedColNames[] = {
+    "SW2 input group",
+    "SW2 variable",
+    "SW2 txt output",
+    "SW2 units",
+    "XY+Dim",
+    "Do output?",
+    "netCDF variable name",
+    "netCDF long_name",
+    "netCDF comment",
+    "netCDF units",
+    "netCDF cell_method",
+    "User comment"
+};
+
 static const char *const SWVarUnits[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
     {NULL},                                           /* WTHR */
     {"degC", "degC", "degC", "degC", "degC", "degC"}, /* TEMP */
@@ -1281,13 +1296,14 @@ void SW_NCOUT_read_out_vars(
     int estVar;
     int resSNP;
     char *copyStr = NULL;
+    char *tempStr = NULL;
     char input[NOUT_VAR_INPUTS][MAX_ATTVAL_SIZE] = {"\0"};
     char establn[MAX_ATTVAL_SIZE] = {"\0"};
     int scanRes = 0;
     int defToLocalInd = 0;
     // in readLineFormat: 255 must be equal to MAX_ATTVAL_SIZE - 1
     const char *readLineFormat =
-        "%13[^\t]\t%50[^\t]\t%50[^\t]\t%10[^\t]\t%4[^\t]\t%1[^\t]\t"
+        "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t"
         "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]";
     int doOutputVal;
 
@@ -1316,11 +1332,7 @@ void SW_NCOUT_read_out_vars(
         goto closeFile; // Exit prematurely due to error
     }
 
-    GetALine(f, inbuf, MAX_FILENAMESIZE); // Ignore the first row (column names)
-
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
-        lineno++;
-
         // Ignore additional columns
         scanRes = sscanf(
             inbuf,
@@ -1352,6 +1364,28 @@ void SW_NCOUT_read_out_vars(
                 NOUT_VAR_INPUTS
             );
             goto closeFile; // Exit function prematurely due to error
+        }
+
+        if (lineno == 0) {
+            for (index = keyInd; index <= cellMethodInd; index++) {
+                tempStr = (char *) expectedColNames[index];
+
+                if (strcmp(input[index], tempStr) != 0) {
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "Column '%s' was found instead of '%s' in the "
+                        "input file '%s'.",
+                        input[index],
+                        expectedColNames[index],
+                        MyFileName
+                    );
+                    goto closeFile; /* Exit function prematurely due to error */
+                }
+            }
+
+            lineno++;
+            continue;
         }
 
         // Check if the variable was requested to be output
@@ -1549,6 +1583,8 @@ void SW_NCOUT_read_out_vars(
                 }
             }
         }
+
+        lineno++;
     }
 
 

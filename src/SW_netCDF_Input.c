@@ -51,6 +51,16 @@
 #define SW_INSTRIDEYR 0
 #define SW_INSTRIDESTART 1
 
+static const char *const expectedColNames[] = {
+    "SW2 input group",    "SW2 variable",         "SW2 units",
+    "Do nc-input?",       "ncFileName",           "ncVarName",
+    "ncVarUnits",         "ncDomainType",         "ncSiteName",
+    "ncCRSName",          "ncCRSGridMappingName", "ncXAxisName",
+    "ncYAxisName",        "ncZAxisName",          "ncTAxisName",
+    "ncStrideYears",      "ncStrideStart",        "ncStridePattern",
+    "ncCalendarOverride", "ncVAxisName",          "Comment"
+};
+
 /* This array and `possVarNames` must line up the variables within each key */
 static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] =
     {
@@ -2950,13 +2960,14 @@ void SW_NCIN_read_input_vars(
     int copyInfoIndex = 0;
     int index;
     int strInfoInd;
+    char *tempPtr;
     char inbuf[LARGE_VALUE] = {'\0'};
     char input[NIN_VAR_INPUTS][MAX_ATTVAL_SIZE] = {"\0"};
     const char *readLineFormat =
-        "%10[^\t]\t%50[^\t]\t%20[^\t]\t%1[^\t]\t%255[^\t]\t%50[^\t]\t"
         "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t"
         "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t"
-        "%255[^\t]\t%255[^\t]\t%255[^\t]";
+        "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t"
+        "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]";
 
     /* Locally handle the weather stride information where -2 is
        the default value so we can tell that the value hasn't been set yet
@@ -3015,12 +3026,7 @@ void SW_NCIN_read_input_vars(
         return; /* Exit function prematurely due to error */
     }
 
-    /* Ignore the first row (column names) */
-    GetALine(f, inbuf, MAX_FILENAMESIZE);
-
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
-        lineno++;
-
         scanRes = sscanf(
             inbuf,
             readLineFormat,
@@ -3059,6 +3065,26 @@ void SW_NCIN_read_input_vars(
                 NIN_VAR_INPUTS
             );
             goto closeFile; /* Exit function prematurely due to error */
+        }
+
+        if (lineno == 0) {
+            for (index = keyInd; index <= userComInd; index++) {
+                tempPtr = (char *) expectedColNames[index];
+                if (strcmp(input[index], tempPtr) != 0) {
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "Column '%s' was found instead of '%s' in the "
+                        "input file '%s'.",
+                        input[index],
+                        expectedColNames[index],
+                        MyFileName
+                    );
+                    goto closeFile; /* Exit function prematurely due to error */
+                }
+            }
+            lineno++;
+            continue;
         }
 
         doInput = sw_strtoi(input[doInputInd], MyFileName, LogInfo);
@@ -3331,6 +3357,8 @@ void SW_NCIN_read_input_vars(
                 goto closeFile; /* Exit function prematurely due to error */
             }
         }
+
+        lineno++;
     }
 
     check_input_variables(
