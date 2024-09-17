@@ -45,7 +45,7 @@
 const int times[] = {MAX_DAYS - 1, MAX_WEEKS, MAX_MONTHS, 1};
 
 static const char *const expectedColNames[] = {
-    "SW2 input group",
+    "SW2 output group",
     "SW2 variable",
     "SW2 txt output",
     "SW2 units",
