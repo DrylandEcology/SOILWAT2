@@ -284,43 +284,66 @@ the input spreadsheet
 @param[in] inputInfo Attribute information for a specific input variable
 @param[out] LogInfo Holds information on warnings and errors
 */
-static void check_spatial_information(
+static void check_domain_information(
     SW_NETCDF_OUT *SW_netCDFOut, char **inputInfo, LOG_INFO *LogInfo
 ) {
-
     Bool primCRSIsGeo = SW_netCDFOut->primary_crs_is_geographic;
     char *ncCRSGridMapName = inputInfo[INGRIDMAPPING];
     char *ncYAxisName = inputInfo[INYAXIS];
     char *ncXAxisName = inputInfo[INXAXIS];
+    char *ncCRSName = inputInfo[INCRSNAME];
     char *geoGridMapName = SW_netCDFOut->crs_geogsc.grid_mapping_name;
     char *projGridMapName = SW_netCDFOut->crs_projsc.grid_mapping_name;
     char *geoYAxisName = SW_netCDFOut->geo_YAxisName;
     char *geoXAxisName = SW_netCDFOut->geo_XAxisName;
     char *projYAxisName = SW_netCDFOut->proj_YAxisName;
     char *projXAxisName = SW_netCDFOut->proj_XAxisName;
+    char *siteName = SW_netCDFOut->siteName;
 
-    Bool failedGeoTest =
+    Bool incorrGeo =
         (Bool) (primCRSIsGeo &&
                 (strcmp(ncCRSGridMapName, "latitude_longitude") != 0 ||
                  strcmp(ncCRSGridMapName, geoGridMapName) != 0 ||
                  strcmp(ncYAxisName, geoYAxisName) != 0 ||
                  strcmp(ncXAxisName, geoXAxisName) != 0));
 
-    Bool failedProjTest =
-        (Bool) (!failedGeoTest && !primCRSIsGeo &&
+    Bool incorrProj =
+        (Bool) (!primCRSIsGeo &&
                 (strcmp(ncCRSGridMapName, "latitude_longitude") == 0 ||
                  strcmp(ncCRSGridMapName, projGridMapName) != 0 ||
                  strcmp(ncYAxisName, projYAxisName) != 0 ||
                  strcmp(ncXAxisName, projXAxisName) != 0));
 
-    if (failedGeoTest || failedProjTest) {
+    /* Test that the following columns are consistent when testing the domain
+       input:
+       - ncCRSGridMappingName, ncXAxisName, ncYAxisName
+       - ncCRSName
+       - ncSiteName */
+    if ((incorrGeo && primCRSIsGeo) || (incorrProj && !primCRSIsGeo)) {
         LogError(
             LogInfo,
             LOGERROR,
             "The geographical spatial information provided for "
             "'ncCRSGridMappingName', 'ncXAxisName', and 'ncYAxisName' "
             "do not match expected values for a %s domain.",
-            (failedGeoTest) ? "geographical" : "projected"
+            (incorrGeo) ? "geographical" : "projected"
+        );
+    } else if ((!primCRSIsGeo && strcmp(ncCRSName, "crs_geogsc") == 0) ||
+               (primCRSIsGeo && strcmp(ncCRSName, "crs_projsc") == 0)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Mismatch column 'ncCRSName' value compared to the primary "
+            "CRS found in `desc_nc.in`."
+        );
+    } else if (strcmp(siteName, inputInfo[INSITENAME]) != 0) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Site name of '%s' in `desc_nc.in` does not match that given "
+            "in the input spreadsheet ('%s').",
+            siteName,
+            inputInfo[INSITENAME]
         );
     }
 }
@@ -578,11 +601,13 @@ static void check_input_variables(
                 return; /* Exit function prematurely due to failed test */
             }
 
-            check_spatial_information(
-                SW_netCDFOut, inputInfo[key][testVarIndex], LogInfo
-            );
-            if (LogInfo->stopRun) {
-                return; /* Exit function prematurely due to failed test */
+            if (key == eSW_InDomain) {
+                check_domain_information(
+                    SW_netCDFOut, inputInfo[key][testVarIndex], LogInfo
+                );
+                if (LogInfo->stopRun) {
+                    return; /* Exit function prematurely due to failed test */
+                }
             }
         }
     }
