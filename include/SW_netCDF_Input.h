@@ -88,11 +88,7 @@ void SW_NCIN_read_inputs(
 void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
 
 void SW_NCIN_open_dom_prog_files(
-    SW_NETCDF_IN *SW_netCDFIn,
-    SW_PATH_INPUTS *SW_PathInputs,
-    char *readinYName,
-    char *readinXName,
-    LOG_INFO *LogInfo
+    SW_NETCDF_IN *SW_netCDFIn, SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo
 );
 
 void SW_NCIN_close_files(int ncDomFileIDs[]);

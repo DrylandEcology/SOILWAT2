@@ -1119,10 +1119,10 @@ static void fill_domain_netCDF_s(
 
     const char *varNames[] = {
         siteName,
-        (primCRSIsGeo) ? readinGeoYName : readinProjYName,
-        (primCRSIsGeo) ? readinGeoXName : readinProjXName,
         readinGeoYName,
-        readinGeoXName
+        readinGeoXName,
+        readinProjYName,
+        readinProjXName
     };
     int varIDs[5]; // 5 - Maximum number of variables to create
     const int numAtts[] = {numSiteAtt, numLatAtt, numLonAtt, numYAtt, numXAtt};
@@ -1320,10 +1320,7 @@ static void fill_domain_netCDF_xy(
 
     const int numVars = (primCRSIsGeo) ? 2 : 4; // lat/lon or lat/lon + x/y vars
     const char *varNames[] = {
-        (primCRSIsGeo) ? readinGeoYName : readinProjYName,
-        (primCRSIsGeo) ? readinGeoXName : readinProjXName,
-        readinGeoYName,
-        readinGeoXName
+        readinGeoYName, readinGeoXName, readinProjYName, readinProjXName
     };
     char bndVarNames[4][MAX_FILENAMESIZE] = {{'\0'}};
     const char *varAttNames[][5] = {
@@ -2682,16 +2679,10 @@ These files are kept open during simulations
 @param[in,out] SW_netCDFIn Constant netCDF input file information
 @param[in,out] SW_PathInputs Struct of type SW_PATH_INPUTS which
 holds basic information about input files and values
-@param[in] readinYName User-provided geographical y-axis name
-@param[in] readinXName User-provided geographical x-axis name
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCIN_open_dom_prog_files(
-    SW_NETCDF_IN *SW_netCDFIn,
-    SW_PATH_INPUTS *SW_PathInputs,
-    char *readinYName,
-    char *readinXName,
-    LOG_INFO *LogInfo
+    SW_NETCDF_IN *SW_netCDFIn, SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo
 ) {
 
     char **inDomFileNames = SW_PathInputs->ncInFiles[eSW_InDomain];
@@ -2700,18 +2691,18 @@ void SW_NCIN_open_dom_prog_files(
     int fileNum;
     int openType = NC_WRITE;
     int *fileID;
+    char ***inDomVarInfo = SW_netCDFIn->inVarInfo[eSW_InDomain];
     char *fileName;
     char *domFile = inDomFileNames[vNCdom];
     char *progFile = inDomFileNames[vNCprog];
     char *varName;
     Bool progFileDomain = (Bool) (strcmp(domFile, progFile) == 0);
-    char *varNames[] = {readinYName, readinXName};
 
     // Open the domain/progress netCDF
     for (fileNum = vNCdom; fileNum <= vNCprog; fileNum++) {
         fileName = inDomFileNames[fileNum];
         fileID = &ncDomFileIDs[fileNum];
-        varName = varNames[fileNum];
+        varName = inDomVarInfo[fileNum][INNCVARNAME];
 
         if (FileExists(fileName)) {
             if (nc_open(fileName, openType, fileID) != NC_NOERR) {
