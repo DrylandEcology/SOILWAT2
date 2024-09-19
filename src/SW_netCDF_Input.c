@@ -3369,8 +3369,8 @@ void SW_NCIN_read_input_vars(
                         input[SWVarNameInd],
                         possInKeys[inKey]
                     );
+                    goto closeFile; /* Exit function prematurely due to error */
                 }
-                goto closeFile; /* Exit function prematurely due to error */
             }
         }
 
