@@ -524,7 +524,8 @@ static void check_inputkey_columns(
                        they were already checked in `SW_NCIN_read_input_vars()`
                     */
                     if (key == eSW_InVeg) {
-                        ignoreAtt = (Bool) (varNum > 1 && attNum == attEnd);
+                        ignoreAtt = (Bool) ((varNum > 1 && attNum == attEnd) ||
+                                            (attNum == INTAXIS));
                     } else if (key == eSW_InSoil) {
                         ignoreAtt = (Bool) (varNum >= 12 && varNum <= 15 &&
                                             attNum == attEnd);
