@@ -11,6 +11,26 @@
 
 * Tests now require `c++17` and utilize `googletest` `v1.15.2` (issue #427).
 
+* SOILWAT2 can now represent the influence of soil organic matter on
+  soil water retention (#397; @dschlaep). The implemented approach first
+  determines organic matter properties for the soil layers assuming
+  fibric peat characteristics at the soil surface and characteristics of
+  sapric peat at a user-specified depth. Then, bulk soil parameters of
+  the soil water retention curve are estimated as linear combinations of
+  properties for the mineral soil component and of properties
+  for the organic matter soil component using the proportion of
+  organic matter in the bulk soil as weights.
+
+## Changes to inputs
+* New input via `"siteparam.in"` to specify the depth at which characteristics
+  of organic matter have completely switched from fibric to sapric peat
+  (default is 50 cm).
+* New input via `"soils.in"` to provide the proportion of soil organic matter
+  to bulk soil by weight for each soil layer.
+* New input via `"swrc_params*.in"` to provide parameter values of the
+  soil water retention curve representing fibric and sapric peat.
+  Note: Some parameter values for the `"FXW"` SWRC are missing.
+
 
 # SOILWAT2 v8.0.0
 * Simulation output remains the same as the previous version.

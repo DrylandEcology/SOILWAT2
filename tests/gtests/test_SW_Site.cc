@@ -449,7 +449,6 @@ TEST(SiteTest, SWRCBulkSoilParameters) {
         EXPECT_GT(swrcp[k], swrcpMin[k]);
         EXPECT_LT(swrcp[k], swrcpOrg[0][k]);
     }
-
 }
 
 // Test 'PTF_RawlsBrakensiek1985'
@@ -462,6 +461,7 @@ TEST(SiteTest, SitePTFRawlsBrakensiek1985) {
     double theta_min;
     double clay = 0.1;
     double sand = 0.6;
+    double fom = 0.;
     double porosity = 0.4;
     int k1;
     int k2;
@@ -469,27 +469,27 @@ TEST(SiteTest, SitePTFRawlsBrakensiek1985) {
 
     //--- EXPECT SW_MISSING if soil texture is out of range
     // within range: sand [0.05, 0.7], clay [0.05, 0.6], porosity [0.1, 1[
-    PTF_RawlsBrakensiek1985(&theta_min, 0., clay, porosity, &LogInfo);
+    PTF_RawlsBrakensiek1985(&theta_min, 0., clay, fom, porosity, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
-    PTF_RawlsBrakensiek1985(&theta_min, 0.75, clay, porosity, &LogInfo);
+    PTF_RawlsBrakensiek1985(&theta_min, 0.75, clay, fom, porosity, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
-    PTF_RawlsBrakensiek1985(&theta_min, sand, 0., porosity, &LogInfo);
+    PTF_RawlsBrakensiek1985(&theta_min, sand, 0., fom, porosity, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
-    PTF_RawlsBrakensiek1985(&theta_min, sand, 0.65, porosity, &LogInfo);
+    PTF_RawlsBrakensiek1985(&theta_min, sand, 0.65, fom, porosity, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
-    PTF_RawlsBrakensiek1985(&theta_min, sand, clay, 0., &LogInfo);
+    PTF_RawlsBrakensiek1985(&theta_min, sand, clay, fom, 0., &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
-    PTF_RawlsBrakensiek1985(&theta_min, sand, clay, 1., &LogInfo);
+    PTF_RawlsBrakensiek1985(&theta_min, sand, clay, fom, 1., &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
@@ -505,7 +505,7 @@ TEST(SiteTest, SitePTFRawlsBrakensiek1985) {
                 porosity = 0.1 + (double) k3 / 5. * (0.99 - 0.1);
 
                 PTF_RawlsBrakensiek1985(
-                    &theta_min, sand, clay, porosity, &LogInfo
+                    &theta_min, sand, clay, fom, porosity, &LogInfo
                 );
                 // exit test program if unexpected error
                 sw_fail_on_error(&LogInfo);
@@ -516,8 +516,8 @@ TEST(SiteTest, SitePTFRawlsBrakensiek1985) {
         }
     }
 
-    // Expect theta_min = 0 if sand = 0.4, clay = 0.5, and porosity = 0.1
-    PTF_RawlsBrakensiek1985(&theta_min, 0.4, 0.5, 0.1, &LogInfo);
+    // Expect theta_min = 0 if sand = 0.4, clay = 0.5, fom = 0., porosity = 0.1
+    PTF_RawlsBrakensiek1985(&theta_min, 0.4, 0.5, 0.0, 0.1, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     EXPECT_DOUBLE_EQ(theta_min, 0);
 }

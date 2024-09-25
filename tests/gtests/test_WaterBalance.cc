@@ -276,6 +276,16 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
     unsigned int i;
 
+    // Set PTF (Cosby1984AndOthers handles OM only up to 8%)
+    (void) snprintf(
+        SW_Run.Site.site_ptf_name,
+        sizeof SW_Run.Site.site_ptf_name,
+        "%s",
+        "Cosby1984"
+    );
+    SW_Run.Site.site_ptf_type = encode_str2ptf(SW_Run.Site.site_ptf_name);
+    SW_Run.Site.site_has_swrcpMineralSoil = swTRUE;
+
     // Set organic matter > 0
     SW_Run.Site.fractionWeight_om[0] = 1.;
     for (i = 1; i < SW_Run.Site.n_layers; i++) {
@@ -323,7 +333,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
         "Rosetta3"
     );
     SW_Run.Site.site_ptf_type = encode_str2ptf(SW_Run.Site.site_ptf_name);
-    SW_Run.Site.site_has_swrcp = swTRUE;
+    SW_Run.Site.site_has_swrcpMineralSoil = swTRUE;
 
     free(SW_Domain.PathInfo.InFiles[eSWRCp]);
     SW_Domain.PathInfo.InFiles[eSWRCp] =
@@ -371,7 +381,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
         "neuroFX2021"
     );
     SW_Run.Site.site_ptf_type = encode_str2ptf(SW_Run.Site.site_ptf_name);
-    SW_Run.Site.site_has_swrcp = swTRUE;
+    SW_Run.Site.site_has_swrcpMineralSoil = swTRUE;
 
     free(SW_Domain.PathInfo.InFiles[eSWRCp]);
     SW_Domain.PathInfo.InFiles[eSWRCp] =

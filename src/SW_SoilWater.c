@@ -1264,8 +1264,9 @@ void SW_SWC_end_day(SW_SOILWAT *SW_SoilWat, LyrIndex n_layers) {
     /* =================================================== */
     LyrIndex i;
 
-    ForEachSoilLayer(i, n_layers) SW_SoilWat->swcBulk[Yesterday][i] =
-        SW_SoilWat->swcBulk[Today][i];
+    ForEachSoilLayer(i, n_layers) {
+        SW_SoilWat->swcBulk[Yesterday][i] = SW_SoilWat->swcBulk[Today][i];
+    }
 
     SW_SoilWat->snowpack[Yesterday] = SW_SoilWat->snowpack[Today];
 }

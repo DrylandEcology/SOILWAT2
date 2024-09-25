@@ -82,6 +82,11 @@ RCP85
 0
 
 
+# --- Organic matter ---
+# Depth [cm] at which characteristics of organic matter have completely switched from fibric to sapric peat
+50
+
+
 #--- Soil water retention curve (SWRC) ------
 #
 # Implemented options (`swrc_name`/`ptf_name`, see `swrc2str[]`/`ptf2str[]`):
@@ -99,7 +104,7 @@ Campbell1974				# Specify soil water retention curve
 Cosby1984AndOthers	# Specify pedotransfer function
 										# (if not implemented, then provide SWRC parameters via "swrc_params.in")
 
-0			# Has SWRC parameters (see `has_swrcp`)?
+0			# Has SWRC parameters for the mineral soil component (see `has_swrcp`)?
 			#    0: Estimate with specified pedotransfer function
 			#    1: Use values from "swrc_params.in"
 
