@@ -192,6 +192,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
 
     // Re-calculate soils
     SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
+    SW_SWC_init_run(&SW_Run.SoilWat, &SW_Run.Site, &SW_Run.Weather.temp_snow);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
@@ -305,6 +306,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
 
     // Update soils
     SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
+    SW_SWC_init_run(&SW_Run.SoilWat, &SW_Run.Site, &SW_Run.Weather.temp_snow);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
@@ -352,6 +354,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
 
     // Update soils
     SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
+    SW_SWC_init_run(&SW_Run.SoilWat, &SW_Run.Site, &SW_Run.Weather.temp_snow);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
