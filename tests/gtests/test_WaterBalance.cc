@@ -352,7 +352,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
 }
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
-    int i;
+    unsigned int i;
 
     // Set SWRC and PTF (and SWRC parameter input filename)
     (void) snprintf(
@@ -381,6 +381,13 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
     // Read SWRC parameter input file (which is not read by default)
     SW_SWRC_read(&SW_Run.Site, SW_Domain.PathInfo.InFiles, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    // FXW doesn't yet handle organic matter:
+    // not all values for organic SWRC parameters have been determined
+    // (see "tests/example/Input/swrc_params_FXW.in")
+    for (i = 0; i < SW_Run.Site.n_layers; i++) {
+        SW_Run.Site.fractionWeight_om[i] = 0.;
+    }
 
     // Update soils
     SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
