@@ -273,6 +273,36 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
     }
 }
 
+TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
+    unsigned int i;
+
+    // Set organic matter > 0
+    SW_Run.Site.fractionWeight_om[0] = 1.;
+    for (i = 1; i < SW_Run.Site.n_layers; i++) {
+        SW_Run.Site.fractionWeight_om[i] = 0.5;
+    }
+
+    // Update soils
+    SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
+    SW_SWC_init_run(&SW_Run.SoilWat, &SW_Run.Site, &SW_Run.Weather.temp_snow);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    // Two simulation years are sufficient
+    SW_Run.Model.startyr = 1980;
+    SW_Run.Model.endyr = 1981;
+
+    // Run the simulation
+    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+        EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
+            << "Water balance error in test " << i << ": "
+            << SW_Run.SoilWat.wbErrorNames[i];
+    }
+}
+
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
     int i;
 

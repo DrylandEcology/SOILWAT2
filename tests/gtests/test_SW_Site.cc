@@ -371,6 +371,87 @@ TEST(SiteTest, SiteSWRCpChecks) {
     swrcp[5] = tmp;
 }
 
+// Test 'SWRC_bulkSoilParameters'
+TEST(SiteTest, SWRCBulkSoilParameters) {
+    double swrcp[SWRC_PARAM_NMAX];
+    double swrcpMin[SWRC_PARAM_NMAX];
+    double swrcpOrg[2][SWRC_PARAM_NMAX];
+    double fom;
+    double depthSapric = 50.;
+    double depthT = 0.;
+    double depthB = 10.;
+
+    unsigned int k;
+
+    // Initialize swrcps
+    for (k = 0; k < SWRC_PARAM_NMAX; k++) {
+        swrcpMin[k] = 1.;
+        swrcpOrg[0][k] = 10.;
+        swrcpOrg[1][k] = 20.;
+    }
+
+    // Expect swrcp = mineral if organic matter is 0
+    fom = 0.;
+    SWRC_bulkSoilParameters(
+        swrcp, swrcpMin, swrcpOrg, fom, depthSapric, depthT, depthB
+    );
+
+    for (k = 0; k < SWRC_PARAM_NMAX; k++) {
+        EXPECT_DOUBLE_EQ(swrcp[k], swrcpMin[k]);
+    }
+
+    // Expect swrcp = fibric if organic matter is 1 and layer at surface
+    fom = 1.;
+    depthT = 0.;
+    depthB = 0.;
+    SWRC_bulkSoilParameters(
+        swrcp, swrcpMin, swrcpOrg, fom, depthSapric, depthT, depthB
+    );
+
+    for (k = 0; k < SWRC_PARAM_NMAX; k++) {
+        EXPECT_DOUBLE_EQ(swrcp[k], swrcpOrg[0][k]);
+    }
+
+    // Expect fibric < swrcp < sapric if organic matter is 1 and layer medium
+    fom = 1.;
+    depthT = depthSapric / 4.;
+    depthB = depthT + depthSapric / 4.;
+    SWRC_bulkSoilParameters(
+        swrcp, swrcpMin, swrcpOrg, fom, depthSapric, depthT, depthB
+    );
+
+    for (k = 0; k < SWRC_PARAM_NMAX; k++) {
+        EXPECT_GT(swrcp[k], swrcpOrg[0][k]);
+        EXPECT_LT(swrcp[k], swrcpOrg[1][k]);
+    }
+
+    // Expect swrcp = sapric if organic matter is 1 and layer is at depth
+    fom = 1.;
+    depthT = depthSapric;
+    depthB = depthT + 10.;
+    SWRC_bulkSoilParameters(
+        swrcp, swrcpMin, swrcpOrg, fom, depthSapric, depthT, depthB
+    );
+
+    for (k = 0; k < SWRC_PARAM_NMAX; k++) {
+        EXPECT_DOUBLE_EQ(swrcp[k], swrcpOrg[1][k]);
+    }
+
+    // Expect min < swrcp < fibric if organic matter is 0-1 and layer at surface
+    fom = 0.5;
+    depthT = 0.;
+    depthB = 0.;
+    SWRC_bulkSoilParameters(
+        swrcp, swrcpMin, swrcpOrg, fom, depthSapric, depthT, depthB
+    );
+
+    for (k = 0; k < SWRC_PARAM_NMAX; k++) {
+        EXPECT_GT(swrcp[k], swrcpMin[k]);
+        EXPECT_LT(swrcp[k], swrcpOrg[0][k]);
+    }
+
+}
+
 // Test 'PTF_RawlsBrakensiek1985'
 TEST(SiteTest, SitePTFRawlsBrakensiek1985) {
     LOG_INFO LogInfo;
