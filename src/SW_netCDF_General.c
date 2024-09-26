@@ -21,10 +21,6 @@
 #include <stdlib.h>                     // for free, strtod
 #include <string.h>                     // for strcmp, strlen, strstr, memcpy
 
-#if defined(SWUDUNITS)
-#include <udunits2.h> // for ut_free, ut_parse, utEncoding
-#endif
-
 /* =================================================== */
 /*                   Local Defines                     */
 /* --------------------------------------------------- */

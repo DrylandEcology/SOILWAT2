@@ -3943,6 +3943,9 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                 freq,
                 LogInfo
             );
+            if (LogInfo->stopRun) {
+                return;
+            }
         }
         SW_NC_create_full_var(
             progFileID,

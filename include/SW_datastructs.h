@@ -1208,7 +1208,7 @@ typedef struct {
 
     sw_converter_t **
         uconv[SW_NINKEYSNC]; /**< udunits2 unit converter from internal SOILWAT2
-                                 units to user-requested units (dynamicall    y
+                                 units to user-requested units (dynamically
                                  allocated array over output variables) */
 
     double *domYCoordsGeo;
