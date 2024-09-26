@@ -1014,8 +1014,8 @@ static void fill_domain_netCDF_domain(
             coordStr,
             MAX_FILENAMESIZE,
             coordVal,
-            readinGeoXName,
             readinGeoYName,
+            readinGeoXName,
             siteName
         );
     } else {
