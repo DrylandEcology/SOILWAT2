@@ -33,19 +33,18 @@ static const int numVarsInKey[] = {
 
 /* Indices within `inVarInfo` for specific information of a variable */
 #define INUNIT 0
-#define INFILENAME 1
-#define INNCVARNAME 2
-#define INVARUNITS 3
-#define INDOMTYPE 4
-#define INSITENAME 5
-#define INCRSNAME 6
-#define INGRIDMAPPING 7
-#define INXAXIS 8
-#define INYAXIS 9
-#define INZAXIS 10
-#define INTAXIS 11
-#define INSTPATRN 12
-#define INVAXIS 13
+#define INNCVARNAME 1
+#define INVARUNITS 2
+#define INDOMTYPE 3
+#define INSITENAME 4
+#define INCRSNAME 5
+#define INGRIDMAPPING 6
+#define INXAXIS 7
+#define INYAXIS 8
+#define INZAXIS 9
+#define INTAXIS 10
+#define INSTPATRN 11
+#define INVAXIS 12
 
 /* =================================================== */
 /*             Global Function Declarations            */

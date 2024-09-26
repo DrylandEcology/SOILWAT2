@@ -3177,7 +3177,9 @@ void SW_NCIN_read_input_vars(
 
                 /* Check to see if the key hasn't been input before and
                 if correct, allocate file space for the key */
-                if (!SW_netCDFIn->readInVars[inKey][0]) {
+                if (!SW_netCDFIn->readInVars[inKey][0] &&
+                    isnull(SW_PathInputs->ncInFiles[inKey])) {
+
                     SW_NCIN_alloc_file_information(
                         numVarsInKey[inKey],
                         inKey,
@@ -3302,7 +3304,8 @@ void SW_NCIN_read_input_vars(
                     copyInfo = (Bool) (infoIndex != doInputInd &&
                                        infoIndex != ncStYrInd &&
                                        infoIndex != ncStStartInd &&
-                                       infoIndex != ncCalendarInd);
+                                       infoIndex != ncCalendarInd &&
+                                       infoIndex != ncFileNameInd);
 
                     if (copyInfo) {
                         if (infoIndex == ncVarNameInd) {
