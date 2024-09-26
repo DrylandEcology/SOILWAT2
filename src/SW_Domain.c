@@ -618,9 +618,7 @@ void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
         SW_NCOUT_dealloc_outputkey_var_info(&SW_Domain->OutDom, k);
     }
 
-    ForEachNCInKey(k) {
-        SW_NCIN_dealloc_inputkey_var_info(&SW_Domain->netCDFInput, k);
-    }
+    SW_NCIN_deconstruct(&SW_Domain->netCDFInput);
 #endif
     ForEachOutKey(k) {
         for (i = 0; i < 5 * NVEGTYPES + MAX_LAYERS; i++) {

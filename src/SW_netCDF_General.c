@@ -170,6 +170,58 @@ void SW_NC_get_dimlen_from_dimid(
 }
 
 /**
+@brief Get the dimension identifiers of a given variable within
+a netCDF file
+
+@param[in] ncFileID Identifier of the open netCDF file to access
+@param[in] varID Variable identifier within the given netCDF
+(-1 if it is unknown what the ID is before the call to this function)
+@param[in] varName Name of the variable to get the dimension sizes of
+@param[out] dimIDs Resulting IDs of the dimensions for the given variable
+@param[out] nDims Number of dimensions the variable has
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NC_get_vardimids(
+    int ncFileID,
+    int varID,
+    char *varName,
+    int dimIDs[],
+    int *nDims,
+    LOG_INFO *LogInfo
+) {
+    if (varID == -1 && nc_inq_varid(ncFileID, varName, &varID) != NC_NOERR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not get identifier of the variable '%s'.",
+            "site"
+        );
+        return;
+    }
+
+    if (nc_inq_varndims(ncFileID, varID, nDims) != NC_NOERR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not get the number of dimensions for the variable "
+            "'%s'.",
+            varName
+        );
+        return;
+    }
+
+    if (nc_inq_vardimid(ncFileID, varID, dimIDs) != NC_NOERR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not get the identifiers of the dimension of the "
+            "variable '%s'.",
+            "site"
+        );
+    }
+}
+
+/**
 @brief Get a dimension identifier within a given netCDF
 
 @param[in] ncFileID Identifier of the open netCDF file to access
@@ -1401,5 +1453,39 @@ void SW_NC_alloc_vars(
                 (*keyVars)[index][attNum] = NULL;
             }
         }
+    }
+}
+
+/**
+@brief Generalized function to get values of any type from a netCDF
+files
+
+@param[in] ncFileID Identifier of the open netCDF file to test
+@param[in] varID Variable identifier within the given netCDF
+@param[in] varName Name of the variable to access
+@param[out] values Value(s) to write in
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NC_get_vals(
+    int ncFileID,
+    int *varID,
+    const char *varName,
+    void *values,
+    LOG_INFO *LogInfo
+) {
+    if (*varID < 0 && !isnull(varName)) {
+        SW_NC_get_var_identifier(ncFileID, varName, varID, LogInfo);
+        if (LogInfo->stopRun) {
+            return; /* Exit function prematurely due to unknown variable */
+        }
+    }
+
+    if (nc_get_var(ncFileID, *varID, values) != NC_NOERR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not read the values of variable '%s'.",
+            varName
+        );
     }
 }

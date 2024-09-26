@@ -94,6 +94,8 @@ void SW_NCIN_close_files(int ncDomFileIDs[]);
 
 void SW_NCIN_init_ptrs(SW_NETCDF_IN *SW_netCDFIn);
 
+void SW_NCIN_deconstruct(SW_NETCDF_IN *SW_netCDFIn);
+
 void SW_NCIN_dealloc_inputkey_var_info(SW_NETCDF_IN *SW_netCDFIn, int key);
 
 void SW_NCIN_deepCopy(
@@ -129,11 +131,13 @@ void SW_NCIN_create_units_converters(
 
 void SW_NCIN_alloc_weath_input_info(
     char ****outWeathFileNames,
-    unsigned int ***ncWeatherInStartEnd,
+    unsigned int ***ncWeatherInStartEndYrs,
     unsigned int numWeathIn,
     int weathVar,
     LOG_INFO *LogInfo
 );
+
+void SW_NCIN_precalc_lookups(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
 
 #ifdef __cplusplus
 }

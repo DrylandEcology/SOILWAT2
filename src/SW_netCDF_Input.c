@@ -1945,7 +1945,7 @@ weather files will follow
 @param[in] endYr End year of the simulation
 @param[out] outWeathFileNames Generated input file names based on stride
 informatoin
-@param[out] ncWeatherInStartEnd Specifies that start/end years of each input
+@param[out] ncWeatherInStartEndYrs Specifies that start/end years of each input
 weather file
 @param[out] numncWeatherInFiles Specifies the number of input files each
 weather variable has
@@ -1958,7 +1958,7 @@ static void generate_weather_filenames(
     TimeInt startYr,
     TimeInt endYr,
     char ****outWeathFileNames,
-    unsigned int ***ncWeatherInStartEnd,
+    unsigned int ***ncWeatherInStartEndYrs,
     unsigned int *numncWeatherInFiles,
     const Bool readInVars[],
     LOG_INFO *LogInfo
@@ -2024,7 +2024,7 @@ static void generate_weather_filenames(
 
         SW_NCIN_alloc_weath_input_info(
             outWeathFileNames,
-            ncWeatherInStartEnd,
+            ncWeatherInStartEndYrs,
             numWeathIn,
             weathVar,
             LogInfo
@@ -2044,8 +2044,8 @@ static void generate_weather_filenames(
 
             *numncWeatherInFiles = 1;
 
-            (*ncWeatherInStartEnd)[0][0] = numStYr;
-            (*ncWeatherInStartEnd)[0][1] = endYr;
+            (*ncWeatherInStartEndYrs)[0][0] = numStYr;
+            (*ncWeatherInStartEndYrs)[0][1] = endYr;
 
             continue;
         }
@@ -2096,13 +2096,1280 @@ static void generate_weather_filenames(
                 return; /* Exit function prematurely due to error */
             }
 
-            (*ncWeatherInStartEnd)[inFileNum][0] = beginFileYr;
-            (*ncWeatherInStartEnd)[inFileNum][1] = endFileYr;
+            (*ncWeatherInStartEndYrs)[inFileNum][0] = beginFileYr;
+            (*ncWeatherInStartEndYrs)[inFileNum][1] = endFileYr;
 
             beginFileYr += numStYr;
             endFileYr += numStYr;
 
             inFileNum++;
+        }
+    }
+}
+
+/**
+@brief Get the type of a given variable
+
+@param[in] ncFileID Identifier of the open netCDF file to write all information
+@param[in] varID Current variable identifier
+@param[in] varName Variable to get the type of
+@param[out] ncType Resulting nc type of the variable in question
+@param[out] LogInfo LogInfo Holds information on warnings and errors
+*/
+static void get_var_type(
+    int ncFileID, int varID, char *varName, nc_type *ncType, LOG_INFO *LogInfo
+) {
+    if (nc_inq_vartype(ncFileID, varID, ncType) != NC_NOERR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not read the type of the variable '%s'.",
+            varName
+        );
+    }
+}
+
+/**
+@brief Determine if a spatial variable within an input file is
+2-dimensional (1D and 2D are handled differently)
+
+@param[in] ncFileID Identifier of the open netCDF file to write all information
+@param[in] yName Latitude/y variable/dimension name
+@param[out] LogInfo LogInfo Holds information on warnings and errors
+
+@return Result of the check that the y variable has two dimensions
+*/
+static Bool spatial_var_is_2d(int ncFileID, char *yName, LOG_INFO *LogInfo) {
+
+    int varID = -1;
+    int nDims = 0;
+
+    SW_NC_get_var_identifier(ncFileID, yName, &varID, LogInfo);
+    if (LogInfo->stopRun) {
+        return swFALSE;
+    }
+
+    if (nc_inq_varndims(ncFileID, varID, &nDims) != NC_NOERR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not get the number of dimensions from the variable '%s'.",
+            yName
+        );
+    }
+
+    return (Bool) (nDims == 2);
+}
+
+/**
+@brief Retrieve the dimension sizes of a given variable
+
+@param[in] ncFileID Identifier of the open netCDF file to write all informatio
+@param[in] numDims Number of dimensions to read
+@param[out] dimSizes All dimension sizes that the variable contains
+@param[in] varName Variable to get the dimension size(s) of
+@param[in] varID Current variable identifier
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void get_var_dimsizes(
+    int ncFileID,
+    const int numDims,
+    size_t **dimSizes,
+    char *varName,
+    int *varID,
+    LOG_INFO *LogInfo
+) {
+    int index;
+    int dimID[2] = {0};
+
+    for (index = 0; index < numDims; index++) {
+        if (nc_inq_varid(ncFileID, varName, varID) != NC_NOERR) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Could not get identifier of the variable '%s'.",
+                varName
+            );
+            return;
+        }
+
+        if (nc_inq_vardimid(ncFileID, *varID, dimID) != NC_NOERR) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Could not get the identifiers of the dimension of the "
+                "variable '%s'.",
+                varName
+            );
+            return;
+        }
+
+        SW_NC_get_dimlen_from_dimid(
+            ncFileID, dimID[index], dimSizes[index], LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+    }
+}
+
+/**
+@brief Helper function to allocate memory for storing the spatial coordinate
+values of the programs domain
+
+@param[out] domCoordArrs List holding the arrays to be allocated
+@param[in] domCoordSizes List holding the sizes that the arrays should be
+@param[in] numCoords Number of variables to allocate
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void alloc_dom_coord_info(
+    double **domCoordArrs[],
+    size_t *domCoordSizes[],
+    const int numCoords,
+    LOG_INFO *LogInfo
+) {
+    size_t coordArr;
+    size_t coordIndex;
+    size_t allocSize;
+
+    for (coordArr = 0; coordArr < (size_t) numCoords; coordArr++) {
+        allocSize = *domCoordSizes[coordArr % 2];
+        *domCoordArrs[coordArr] = (double *) Mem_Malloc(
+            sizeof(double) * allocSize, "alloc_dom_coord_info()", LogInfo
+        );
+
+        for (coordIndex = 0; coordIndex < allocSize; coordIndex++) {
+            (*domCoordArrs[coordArr])[coordIndex] = 0.0;
+        }
+    }
+}
+
+/**
+@brief Read/store the spatial coordinates that the program contains
+
+@param[out] SW_netCDFIn Constant netCDF input file information
+@param[in] domCoordVarNames A list of the two latitude/y and longitude/x
+coordinate variable/dimension names
+@param[in] siteName User-provided site dimension/variable "site" name
+@param[in] domFileID Domain file identifier
+@param[in] domType Type of domain - "s" or "xy"
+@param[in] primCRSIsGeo Specifies if the current CRS type is geographic
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void read_domain_coordinates(
+    SW_NETCDF_IN *SW_netCDFIn,
+    char *domCoordVarNames[],
+    char *siteName,
+    int domFileID,
+    char *domType,
+    Bool primCRSIsGeo,
+    LOG_INFO *LogInfo
+) {
+    int index;
+    int varID;
+    const int numReadInDims = (primCRSIsGeo) ? 2 : 4;
+    const int numDims = 2;
+
+    char *domCoordNames[2]; /* Set later */
+
+    size_t *domCoordSizes[] = {
+        &SW_netCDFIn->domYCoordGeoSize,
+        &SW_netCDFIn->domXCoordGeoSize,
+        &SW_netCDFIn->domYCoordProjSize,
+        &SW_netCDFIn->domXCoordProjSize
+    };
+    double **domCoordArrs[] = {
+        &SW_netCDFIn->domYCoordsGeo,
+        &SW_netCDFIn->domXCoordsGeo,
+        &SW_netCDFIn->domYCoordsProj,
+        &SW_netCDFIn->domXCoordsProj
+    };
+
+    /* Determine the dimension lengths from the currect dimension
+       names matching site/xy and geographical/projected */
+    if (strcmp("s", domType) == 0) {
+        domCoordNames[0] = siteName;
+        domCoordNames[1] = siteName;
+    } else {
+        if (primCRSIsGeo) {
+            domCoordNames[0] = domCoordVarNames[0];
+            domCoordNames[1] = domCoordVarNames[1];
+        } else {
+            domCoordNames[0] = domCoordVarNames[2];
+            domCoordNames[1] = domCoordVarNames[3];
+        }
+    }
+
+    for (index = 0; index < numDims; index++) {
+        SW_NC_get_dimlen_from_dimname(
+            domFileID, domCoordNames[index], domCoordSizes[index], LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; /* Exit function prematurely due to error */
+        }
+
+        /* Match the same for projected sizes (may not be used) */
+        *(domCoordSizes[index + 2]) = *(domCoordSizes[index]);
+    }
+
+    alloc_dom_coord_info(domCoordArrs, domCoordSizes, numReadInDims, LogInfo);
+    if (LogInfo->stopRun) {
+        return; /* Exit function prematurely due to error */
+    }
+
+    for (index = 0; index < numReadInDims; index++) {
+        varID = -1;
+
+        SW_NC_get_vals(
+            domFileID,
+            &varID,
+            domCoordVarNames[index],
+            *domCoordArrs[index],
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; /* Exit prematurely due to error */
+        }
+    }
+}
+
+/**
+@brief Compare the coordinate values from an input file against those of
+the domain input file and determine if the program should use an index file(s)
+
+@param[in] domYCoordsGeo Domain latitude/y coordinates
+@param[in] domXCoordsGeo Domain longitude/x coordinates
+@param[in] readinY Read-in latitude/y values
+@param[in] readinX Read-in longitude/x values
+@param[in] ySize Size of the latitude/y dimension
+@param[in] xSize Size of the longitude/x dimension
+@param[in] spatialTol User-provided tolerance for comparing spatial coordinates
+@param[out] useIndexFile Specifies if the program should use an index file(s)
+*/
+static void determine_index_file_use(
+    const double *domYCoords,
+    const double *domXCoords,
+    double *readinY,
+    double *readinX,
+    size_t ySize,
+    size_t xSize,
+    double spatialTol,
+    Bool *useIndexFile
+) {
+    size_t coordIndex = 0;
+    double domCordVal = 0.0;
+
+    /* Check to see if the read-in coordinates are the same
+       as that of domain, if not set a flag staying that
+       an index file must be used */
+    while (!*useIndexFile && (coordIndex < ySize || coordIndex < xSize)) {
+        if (coordIndex < ySize) {
+            domCordVal = domYCoords[coordIndex];
+            *useIndexFile =
+                (Bool) (!EQ_w_tol(readinY[coordIndex], domCordVal, spatialTol));
+        }
+
+        if (!*useIndexFile && coordIndex < xSize) {
+            domCordVal = domXCoords[coordIndex];
+            *useIndexFile =
+                (Bool) (!EQ_w_tol(readinX[coordIndex], domCordVal, spatialTol));
+        }
+
+        coordIndex++;
+    }
+    *useIndexFile = (Bool) !*useIndexFile;
+}
+
+/**
+@brief Read one-dimensional input coordinate variables from an input file
+
+@param[in] SW_netCDFIn Constant netCDF input file information
+@param[in] ncFileID Identifier of the open netCDF file to write all information
+@param[out] readinYVals Read-in latitude/y values
+@param[out] readinXVals Read-in longitude/x values
+@param[out] dimSizes Sizes of the dimensions of the variables to read
+@param[in] yxVarNames A list of two variable names for the input variables
+that contain latitude/y and longitude/x coordinate values
+@param[in] numReadInDims Number of dimensions to read in
+@param[out] useIndexFile Specifies to create/use an index file
+@param[in] compareCoords Specifies if the function should compare the
+coordinates to the domain coordinates
+@param[in] spatialTol User-provided tolerance for comparing spatial coordinates
+@param[in] inPrimCRSIsGeo Specifies if the input file has a primary
+CRS of geographical
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void get_1D_input_coordinates(
+    SW_NETCDF_IN *SW_netCDFIn,
+    int ncFileID,
+    double **readinYVals,
+    double **readinXVals,
+    size_t *dimSizes[],
+    char **yxVarNames,
+    const int numReadInDims,
+    Bool *useIndexFile,
+    Bool compareCoords,
+    double spatialTol,
+    Bool inPrimCRSIsGeo,
+    LOG_INFO *LogInfo
+) {
+    int index;
+    int varID;
+
+    double **xyVals[] = {readinYVals, readinXVals};
+    float *tempFVals = NULL;
+    void *valPtr = NULL;
+    nc_type varType;
+    double *domYVals = (inPrimCRSIsGeo) ? SW_netCDFIn->domYCoordsGeo :
+                                          SW_netCDFIn->domYCoordsProj;
+    double *domXVals = (inPrimCRSIsGeo) ? SW_netCDFIn->domXCoordsGeo :
+                                          SW_netCDFIn->domXCoordsProj;
+
+    size_t *ySize = dimSizes[0];
+    size_t *xSize = dimSizes[1];
+    size_t copyIndex;
+
+    get_var_dimsizes(
+        ncFileID, numReadInDims, dimSizes, yxVarNames[0], &varID, LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    get_var_type(ncFileID, varID, yxVarNames[0], &varType, LogInfo);
+    if(LogInfo->stopRun) {
+        return;
+    }
+
+    for (index = 0; index < numReadInDims; index++) {
+        varID = -1;
+
+        *(xyVals[index]) = (double *) Mem_Malloc(
+            sizeof(double) * *dimSizes[index],
+            "get_1D_input_coordinates()",
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+        valPtr = (void *) *(xyVals[index]);
+
+        if (varType == NC_FLOAT) {
+            tempFVals = (float *) Mem_Malloc(
+                sizeof(float) * *dimSizes[index],
+                "get_1D_input_coordinates()",
+                LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
+            }
+
+            valPtr = (void *) tempFVals;
+        }
+
+        SW_NC_get_vals(ncFileID, &varID, yxVarNames[index], valPtr, LogInfo);
+        if (LogInfo->stopRun) {
+            goto freeTempVals; /* Exit prematurely due to error */
+        }
+
+        if (varType == NC_FLOAT) {
+            for (copyIndex = 0; copyIndex < *dimSizes[index]; copyIndex++) {
+                (*xyVals[index])[copyIndex] = (double) tempFVals[copyIndex];
+            }
+        }
+
+        free((void *) tempFVals);
+        tempFVals = NULL;
+    }
+
+    if (compareCoords) {
+        *useIndexFile = (Bool) (*ySize != SW_netCDFIn->domYCoordGeoSize ||
+                                *xSize != SW_netCDFIn->domXCoordGeoSize);
+
+        if (!*useIndexFile) {
+            determine_index_file_use(
+                domYVals,
+                domXVals,
+                *readinYVals,
+                *readinXVals,
+                *ySize,
+                *xSize,
+                spatialTol,
+                useIndexFile
+            );
+        }
+    }
+
+freeTempVals:
+    if (!isnull(tempFVals)) {
+        free((void *) tempFVals);
+    }
+}
+
+/**
+@brief Read two-dimensional input coordinate variables from an input file
+
+@param[in] SW_netCDFIn Constant netCDF input file information
+@param[in] ncFileID Identifier of the open netCDF file to write all information
+@param[out] readinYVals Read-in latitude/y values to store
+@param[out] readinXVals Read-in longitude/x values
+@param[out] dimSizes Sizes of the dimensions of the variables to read
+@param[in] yxVarNames A list of two variable names for the input variables
+that contain latitude/y and longitude/x coordinate values
+@param[in] numReadInDims Number of dimensions to read in
+@param[out] useIndexFile Specifies to create/use an index file
+@param[in] compareCoords Specifies if the function should compare the
+coordinates to the domain coordinates
+@param[in] spatialTol User-provided tolerance for comparing spatial coordinates
+@param[in] inPrimCRSIsGeo Specifies if the input file has a primary
+CRS of geographical
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void get_2D_input_coordinates(
+    SW_NETCDF_IN *SW_netCDFIn,
+    int ncFileID,
+    double **readinYVals,
+    double **readinXVals,
+    size_t **dimSizes,
+    char **yxVarNames,
+    const int numReadInDims,
+    Bool *useIndexFile,
+    Bool compareCoords,
+    double spatialTol,
+    Bool inPrimCRSIsGeo,
+    LOG_INFO *LogInfo
+) {
+
+    size_t yDimSize = 0UL;
+    size_t xDimSize = 0UL;
+    size_t *allDimSizes[2] = {&yDimSize, &xDimSize};
+    size_t numPoints = 0UL;
+    nc_type varType;
+    float *tempFVals = NULL;
+    size_t copyIndex;
+    void *valPtr = NULL;
+    double *domYVals = (inPrimCRSIsGeo) ? SW_netCDFIn->domYCoordsGeo :
+                                          SW_netCDFIn->domYCoordsProj;
+    double *domXVals = (inPrimCRSIsGeo) ? SW_netCDFIn->domXCoordsGeo :
+                                          SW_netCDFIn->domXCoordsProj;
+
+    int varIDs[2] = {-1, -1};
+    int varNum;
+
+    double **xyVals[] = {readinYVals, readinXVals};
+
+    /* === Latitude/longitude sizes === */
+    for (varNum = 0; varNum < numReadInDims; varNum++) {
+        get_var_dimsizes(
+            ncFileID,
+            numReadInDims,
+            allDimSizes,
+            yxVarNames[varNum],
+            &varIDs[varNum],
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; /* Exit function prematurely due to error */
+        }
+    }
+
+    *dimSizes[0] = yDimSize;
+    *dimSizes[1] = xDimSize;
+    numPoints = yDimSize * xDimSize;
+
+    get_var_type(ncFileID, varIDs[0], yxVarNames[0], &varType, LogInfo);
+    if(LogInfo->stopRun) {
+        return;
+    }
+
+    for (varNum = 0; varNum < numReadInDims; varNum++) {
+        valPtr = (void *) *(xyVals[varNum]);
+
+        if (varType == NC_FLOAT) {
+            tempFVals = (float *) Mem_Malloc(
+                sizeof(float) * numPoints, "get_2D_input_coordinates()", LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return; /* Exit function prematurely due to error */
+            }
+
+            valPtr = (void *) tempFVals;
+        }
+        (*xyVals[varNum]) = (double *) Mem_Malloc(
+            sizeof(double) * numPoints, "get_2D_input_coordinates()", LogInfo
+        );
+        if (LogInfo->stopRun) {
+            free(tempFVals);
+            return; /* Exit function prematurely due to error */
+        }
+
+        SW_NC_get_vals(
+            ncFileID, &varIDs[varNum], yxVarNames[varNum], valPtr, LogInfo
+        );
+        if (LogInfo->stopRun) {
+            free(tempFVals);
+            return; /* Exit function prematurely due to error */
+        }
+
+        if (varType == NC_FLOAT) {
+            for (copyIndex = 0; copyIndex < numPoints; copyIndex++) {
+                (*xyVals[varNum])[copyIndex] = tempFVals[copyIndex];
+            }
+        }
+    }
+
+    if (compareCoords) {
+        *useIndexFile = swFALSE;
+
+        determine_index_file_use(
+            domYVals,
+            domXVals,
+            *readinYVals,
+            *readinXVals,
+            numPoints,
+            numPoints,
+            spatialTol,
+            useIndexFile
+        );
+    }
+}
+
+/**
+@brief Read coordinates from the given input file and read them differently
+depending on if they are 1D or 2D
+
+@param[in,out] SW_netCDFIn Constant netCDF input file information
+@param[in] ncFileID Identifier of the open netCDF file to write all information
+@param[in] inFileName Name of the current file being read
+@param[in] dimSizes Sizes of the dimensions of the variables to read
+@param[out] coordVarIs2D Specifies if the variables are 2D
+@param[in] k Input key that is being read in (e.g., weather, `eSW_InWeather`)
+@param[in] spatialTol User-provided tolerance for comparing spatial coordinates
+@param[out] readinYVals Read-in latitude/y values
+@param[out] readinXVals Read-in longitude/x values
+@param[in] yxVarNames A list of two variable names for the input variables
+that contain latitude/y and longitude/x coordinate values
+@param[in] compareCoords Specifies if the function should compare the
+coordinates to the domain coordinates
+@param[in] inPrimCRSIsGeo Specifies if the input file has a primary
+CRS of geographical
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void get_input_coordinates(
+    SW_NETCDF_IN *SW_netCDFIn,
+    int *ncFileID,
+    char *inFileName,
+    size_t **dimSizes,
+    Bool *coordVarIs2D,
+    int k,
+    double spatialTol,
+    double **readinYVals,
+    double **readinXVals,
+    char **yxVarNames,
+    Bool compareCoords,
+    Bool inPrimCRSIsGeo,
+    LOG_INFO *LogInfo
+) {
+    const int numReadInDims = 2;
+
+    if (*ncFileID == -1 && !isnull(inFileName)) {
+        if (nc_open(inFileName, NC_NOWRITE, ncFileID) != NC_NOERR) {
+            LogError(
+                LogInfo, LOGERROR, "Could not open nc file '%s'.", inFileName
+            );
+            return;
+        }
+    }
+
+    *coordVarIs2D = spatial_var_is_2d(*ncFileID, yxVarNames[0], LogInfo);
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    if (*coordVarIs2D) {
+        get_2D_input_coordinates(
+            SW_netCDFIn,
+            *ncFileID,
+            readinYVals,
+            readinXVals,
+            dimSizes,
+            yxVarNames,
+            numReadInDims,
+            &SW_netCDFIn->useIndexFile[k],
+            compareCoords,
+            spatialTol,
+            inPrimCRSIsGeo,
+            LogInfo
+        );
+    } else {
+        get_1D_input_coordinates(
+            SW_netCDFIn,
+            *ncFileID,
+            readinYVals,
+            readinXVals,
+            dimSizes,
+            yxVarNames,
+            numReadInDims,
+            &SW_netCDFIn->useIndexFile[k],
+            compareCoords,
+            spatialTol,
+            inPrimCRSIsGeo,
+            LogInfo
+        );
+    }
+}
+
+/**
+@brief Make sure that a calendar for the input weather files is one that
+we accept
+
+@param[in] calType Input file provided calendar type
+@param[in] calUnit Input file provided start date (unit) for the first
+weather file
+@param[in] calIsNoLeap Specifies if the calendar only contains 365 days
+@param[in] fileName Weather input file name
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void determine_valid_cal(
+    char *calType,
+    char *calUnit,
+    Bool *calIsNoLeap,
+    char *fileName,
+    LOG_INFO *LogInfo
+) {
+
+    const char *const acceptableCals[] = {
+        /* 365 - 366 days */
+        "standard",
+        "gregorian",
+        "proleptic_gregorian",
+
+        /* Always has 366 days and will discard values */
+        "all_leap",
+        "alleap",
+        "366day",
+        "366_day",
+
+        /* No leap day */
+        "no_leap",
+        "noleap",
+        "365day",
+        "365_day"
+    };
+
+    const int numPossCals = 11;
+    int index;
+    Bool matchFound = swFALSE;
+    int year = 0;
+    char monthDay[MAX_FILENAMESIZE] = {'\0'};
+    char yearStr[5] = {'\0'}; /* Hold 4-digit year and '\0' */
+    int scanRes;
+
+    for (index = 0; index < numPossCals && !matchFound; index++) {
+        if (Str_CompareI(calType, (char *) acceptableCals[index]) == 0) {
+            /* Gregorian calendars that are not used before August 10, 1582 */
+            /* days since <year>-01-01 00:00:00 */
+            if (index == 0 || index == 1) {
+                scanRes =
+                    sscanf(calUnit, "days since %4s-%s", yearStr, monthDay);
+
+                if (scanRes < 0 || scanRes > MAX_FILENAMESIZE) {
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "Could not read input file calendar units."
+                    );
+                    return; /* Exit function prematurely due to error */
+                }
+
+                year = sw_strtoi(yearStr, fileName, LogInfo);
+                if (LogInfo->stopRun) {
+                    return; /* Exit function prematurely due to error */
+                }
+
+                if (year <= 1582) {
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "Starting year <= 1582 is not supported."
+                    );
+                    return; /* Exit function prematurely due to error */
+                }
+
+            } else if (index >= 3 && index <= 6) { /* All leap calendars */
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "The usage of the calendar '%s' has been detected. "
+                    "When not a leap year, this will result in the 366th "
+                    "value within the year being ignored.",
+                    calType
+                );
+            } else if (index >= 7 && index <= 11) { /* No leap calendars */
+                LogError(
+                    LogInfo,
+                    LOGWARN,
+                    "The usage of the calendar '%s' has been detected. "
+                    "This results in missing values on leap days.",
+                    calType
+                );
+                *calIsNoLeap = swTRUE;
+            }
+
+            matchFound = swTRUE;
+        }
+    }
+
+    if (!matchFound) {
+        LogError(
+            LogInfo, LOGERROR, "Calendary type '%s' is not supported.", calType
+        );
+    }
+}
+
+/**
+@brief Helper function to allocate weather input file indices
+
+@param[out] ncWeatherStartEndIndices Start/end indices for the current
+weather input file
+@param[in] numStartEndIndices Number of start/end index pairs
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void alloc_weather_indices(
+    unsigned int ***ncWeatherStartEndIndices,
+    unsigned int numStartEndIndices,
+    LOG_INFO *LogInfo
+) {
+    unsigned int index;
+
+    (*ncWeatherStartEndIndices) = (unsigned int **) Mem_Malloc(
+        sizeof(unsigned int *) * numStartEndIndices,
+        "alloc_weather_indices()",
+        LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return; /* Exit function prematurely due to error */
+    }
+
+    for (index = 0; index < numStartEndIndices; index++) {
+        (*ncWeatherStartEndIndices)[index] = NULL;
+    }
+
+    for (index = 0; index < numStartEndIndices; index++) {
+        (*ncWeatherStartEndIndices)[index] = (unsigned int *) Mem_Malloc(
+            sizeof(unsigned int) * 2, "alloc_weather_indices()", LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; /* Exit function prematurely due to error */
+        }
+    }
+}
+
+#if defined(SWUDUNITS)
+/**
+@brief Convert a given number of days from one start date to another
+
+@param[in] system Conversion system used for translating from one
+unit to another
+@param[in] hasTimeUnit Start unit for number of days
+@param[in] reqTimeUnit Destination unit for number of days
+*/
+static double conv_times(
+    ut_system *system, char *hasTimeUnit, char *reqTimeUnit
+) {
+    double res;
+    ut_unit *unitFrom = ut_parse(system, reqTimeUnit, UT_UTF8);
+    ut_unit *unitTo = ut_parse(system, hasTimeUnit, UT_UTF8);
+    cv_converter *conv = ut_get_converter(unitFrom, unitTo);
+
+    res = cv_convert_double(conv, 1) - 1;
+
+    ut_free(unitFrom);
+    ut_free(unitTo);
+    cv_free(conv);
+
+    return res;
+}
+#endif
+
+/**
+@brief Read the temporal values of a weather input file
+
+@param[in] ncFileID Identifier of the open netCDF file to write all information
+@param[out] timeVals Temporal values that were contained in the input file
+@param[in] timeName User-provided name for "time" dimension/variable
+@param[in] timeSize Time dimension size
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void get_temporal_vals(
+    int ncFileID,
+    double **timeVals,
+    char *timeName,
+    size_t *timeSize,
+    LOG_INFO *LogInfo
+) {
+    size_t valNum;
+    int varID = -1;
+    nc_type ncVarType = 0;
+    size_t *timeSizeArr[] = {timeSize};
+    char *timeNameArr[] = {timeName};
+    int *tempIntVals = NULL;
+    float *tempFloatVals = NULL;
+    void *valPtr = NULL;
+
+    get_var_dimsizes(ncFileID, 1, timeSizeArr, timeNameArr[0], &varID, LogInfo);
+    if (LogInfo->stopRun) {
+        return; /* Exit function prematurely due to error */
+    }
+
+    if (nc_inq_vartype(ncFileID, varID, &ncVarType) != NC_NOERR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not get the type of the variable '%s'.",
+            timeName
+        );
+        return;
+    }
+
+    *timeVals = (double *) Mem_Malloc(
+        sizeof(double) * *timeSize, "get_temporal_vals()", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return; /* Exit function prematurely due to error */
+    }
+
+    valPtr = (void *) *timeVals;
+
+    switch (ncVarType) {
+    case NC_INT:
+        tempIntVals = (int *) Mem_Malloc(
+            sizeof(int) * *timeSize, "get_temporal_vals()", LogInfo
+        );
+        valPtr = (void *) tempIntVals;
+        break;
+    case NC_FLOAT:
+        tempFloatVals = (float *) Mem_Malloc(
+            sizeof(float) * *timeSize, "get_temporal_vals()", LogInfo
+        );
+        valPtr = (void *) tempFloatVals;
+        break;
+    default: /* Do nothing - type is NC_FLOAT */
+        break;
+    }
+    if (LogInfo->stopRun) {
+        return; /* Exit function prematurely due to error */
+    }
+
+    SW_NC_get_vals(ncFileID, &varID, timeName, valPtr, LogInfo);
+    if (LogInfo->stopRun) {
+        goto freeTempMem;
+    }
+
+    if (ncVarType == NC_INT || ncVarType == NC_FLOAT) {
+        for (valNum = 0; valNum < *timeSize; valNum++) {
+            switch (ncVarType) {
+            case NC_INT:
+                (*timeVals)[valNum] = (double) tempIntVals[valNum];
+                break;
+            case NC_FLOAT:
+                (*timeVals)[valNum] = (double) tempFloatVals[valNum];
+                break;
+            default:
+                break;
+            }
+        }
+    }
+
+freeTempMem:
+    if (!isnull(tempIntVals)) {
+        free(tempIntVals);
+        tempIntVals = NULL;
+    }
+
+    if (!isnull(tempFloatVals)) {
+        free(tempFloatVals);
+        tempFloatVals = NULL;
+    }
+}
+
+/**
+@brief Convert number of days since the input-provided start date to
+file-specific indices to know the start/end indices of the temporal
+dimension for weather
+
+@param[out] ncWeatherStartEndIndices Start/end indices for the current
+weather input file
+@param[in] timeVals List of time values from the current weather input file
+@param[in] timeSize Time dimension size
+@param[in] target Start temporal value that we will search for to get the
+index
+@param[in] year Current year we are calculating the indices for
+@param[in] fileName Weather input file name that is being searched
+@param[in] timeName User-provided time variable/dimension name
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void get_startend_indices(
+    unsigned int *ncWeatherStartEndIndices,
+    const double *timeVals,
+    size_t timeSize,
+    double target,
+    TimeInt year,
+    char *fileName,
+    char *timeName,
+    LOG_INFO *LogInfo
+) {
+    unsigned int left = 0;
+    unsigned int right = (unsigned int) timeSize - 1;
+    unsigned int middle;
+
+    /* base 0 */
+    int numDays = (MAX_DAYS - 1) + (isleapyear(year) ? 1 : 0) - 1;
+
+    while (left <= right) {
+        middle = left + (right - left) / 2;
+
+        if (timeVals[middle] > target) {
+            right = middle - 1;
+        } else if (timeVals[middle] < target) {
+            left = middle + 1;
+        } else {
+            /* Set start/end indices */
+            ncWeatherStartEndIndices[0] = middle;
+            ncWeatherStartEndIndices[1] = middle + numDays;
+
+            return; /* No longer search for results, they were found */
+        }
+    }
+
+    LogError(
+        LogInfo,
+        LOGERROR,
+        "Could not find the '%s' value '%f' in '%s'.",
+        timeName,
+        target,
+        fileName
+    );
+}
+
+/**
+@brief Similar to that of the spatial coordinates, the temporal information
+provided in weather input files will not be something that the program can
+understand, so this function will generate indices that we can understand
+and use to index through the time dimension in weather input files
+
+@param[in] SW_netCDFIn Constant netCDF input file information
+@param[out] SW_PathInputs Struct of type SW_PATH_INPUTS which
+holds basic information about input files and values
+@param[in] startYr Start year of the simulation
+@param[in] endYr End year of the simulation
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void calc_temporal_weather_indices(
+    SW_NETCDF_IN *SW_netCDFIn,
+    SW_PATH_INPUTS *SW_PathInputs,
+    TimeInt startYr,
+    TimeInt endYr,
+    LOG_INFO *LogInfo
+) {
+
+    TimeInt year;
+    int fileIndex = 0;
+    int probeIndex = -1;
+    int varIndex = 1;
+    unsigned int numStartEndIndices;
+    unsigned int weatherEnd;
+    Bool hasCalOverride = swFALSE;
+    Bool checkedCal = swFALSE;
+    char *weatherCal = NULL;
+    char *fileName;
+    double valDoy1 = 0.0;
+    double valDoy1Add = 0.0;
+
+    unsigned int numWeathFiles = SW_PathInputs->ncNumWeatherInFiles;
+    char **weathInFiles = NULL;
+
+    int ncFileID = -1;
+
+    char newCalUnit[MAX_FILENAMESIZE] = "\0";
+    char currCalType[MAX_FILENAMESIZE] = "\0";
+    char currCalUnit[MAX_FILENAMESIZE] = "\0";
+    char *timeName = NULL;
+    Bool calIsNoLeap = swFALSE;
+    double *timeVals = NULL;
+    size_t timeSize = 0;
+
+#if defined(SWUDUNITS)
+    ut_system *system;
+
+    /* silence udunits2 error messages */
+    ut_set_error_message_handler(ut_ignore);
+
+    /* Load unit system database */
+    system = ut_read_xml(NULL);
+#endif
+
+    /* Get the first available list of input files */
+    while (probeIndex == -1) {
+        probeIndex = (SW_netCDFIn->readInVars[eSW_InWeather][varIndex + 1]) ?
+                         varIndex :
+                         -1;
+
+        if (probeIndex == -1) {
+            varIndex++;
+        }
+    }
+
+    weathInFiles = SW_PathInputs->ncWeatherInFiles[varIndex];
+    timeName = SW_netCDFIn->inVarInfo[eSW_InWeather][varIndex][INTAXIS];
+
+    weatherCal = SW_netCDFIn->weathCalOverride[varIndex];
+    hasCalOverride = (Bool) (strcmp(weatherCal, "NA") != 0);
+
+    /* Determine the first weather input file to start with */
+    while (SW_PathInputs->ncWeatherInStartEndYrs[fileIndex][1] < startYr) {
+        fileIndex++;
+    }
+
+    numStartEndIndices = numWeathFiles - fileIndex;
+
+    alloc_weather_indices(
+        &SW_PathInputs->ncWeatherStartEndIndices, numStartEndIndices, LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return; /* Exit function prematurely due to error */
+    }
+
+    /* Go through each year and get the indices within the input file(s) */
+    for (year = startYr; year <= endYr; year++) {
+        weatherEnd = SW_PathInputs->ncWeatherInStartEndYrs[fileIndex][1];
+        fileName = weathInFiles[fileIndex];
+
+        /* Increment file and reset all information for a new file */
+        if (year > weatherEnd) {
+            fileIndex++;
+            currCalType[0] = currCalUnit[0] = newCalUnit[0] = '\0';
+
+            ncFileID = -1;
+        }
+
+        if (ncFileID == -1 &&
+            nc_open(fileName, NC_NOWRITE, &ncFileID) != NC_NOERR) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Could not open weather input file '%s'.",
+                fileName
+            );
+            return;
+        }
+        /* Get information from new file if it's newly opened */
+        if (currCalUnit[0] == '\0') {
+            if (!checkedCal) {
+                if (!hasCalOverride) {
+                    SW_NC_get_str_att_val(
+                        ncFileID, timeName, "calendar", currCalType, LogInfo
+                    );
+                    if (LogInfo->stopRun) {
+                        goto freeMem;
+                    }
+                    weatherCal = currCalType;
+                }
+            }
+            SW_NC_get_str_att_val(
+                ncFileID, timeName, "units", currCalUnit, LogInfo
+            );
+            if (LogInfo->stopRun) {
+                goto freeMem;
+            }
+
+            if (!checkedCal) {
+                determine_valid_cal(
+                    weatherCal, currCalUnit, &calIsNoLeap, fileName, LogInfo
+                );
+                if (LogInfo->stopRun) {
+                    goto freeMem;
+                }
+
+                checkedCal = swTRUE;
+            }
+        }
+
+        snprintf(
+            newCalUnit, MAX_FILENAMESIZE, "days since %u-01-01 00:00:00", year
+        );
+
+        get_temporal_vals(ncFileID, &timeVals, timeName, &timeSize, LogInfo);
+        if (LogInfo->stopRun) {
+            goto freeMem;
+        }
+
+#if defined(SWUDUNITS)
+        /* Calculate the first day of the year in nc file
+           the provided time values may be double whole numbers
+           rather than x.5, so check to see if you do the + 0.5
+           at the end of the calculation */
+        valDoy1Add = (fmod(timeVals[timeSize - 1], 1.0) == 0.0) ? 0.0 : 0.5;
+        valDoy1 =
+            (double) conv_times(system, currCalUnit, newCalUnit) + valDoy1Add;
+#endif
+
+        get_startend_indices(
+            SW_PathInputs->ncWeatherStartEndIndices[fileIndex],
+            timeVals,
+            timeSize,
+            valDoy1,
+            year,
+            fileName,
+            timeName,
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            goto freeMem;
+        }
+
+        free(timeVals);
+        timeVals = NULL;
+    }
+
+freeMem: {
+    if (!isnull(timeVals)) {
+        free(timeVals);
+        timeVals = NULL;
+    }
+
+    if (ncFileID == -1) {
+        nc_close(ncFileID);
+    }
+#if defined(SWUDUNITS)
+    ut_free_system(system);
+#endif
+}
+}
+
+/**
+@brief Free provided temporary locations for coordinate values
+and close open files
+
+@param[out] tempCoords A list holding all of the temporary coordinate
+lists to (possibly) be freed
+@param[out] fileIDs A list holding all nc file identifiers to (possibly)
+close
+@param[in] numCoordVars Number of coordinate variables to free
+@param[in] numFiles Number of nc files to close
+*/
+static void free_close_temp_coords(
+    double ***tempCoords, int *fileIDs[], int numCoordVars, int numFiles
+) {
+    int index;
+
+    for (index = 0; index < numCoordVars; index++) {
+        if (!isnull(*(tempCoords[index]))) {
+            free((void *) *(tempCoords[index]));
+            *(tempCoords[index]) = NULL;
+        }
+    }
+
+    for (index = 0; index < numFiles; index++) {
+        if (*(fileIDs[index]) > -1) {
+            nc_close(*(fileIDs[index]));
+        }
+    }
+}
+
+/**
+@brief Determine if the spatial coordinates within the input file
+being tested is the same as that of which the program understands
+(our own domain generated in `domain.nc`)
+
+@param[in,out] SW_netCDFIn Constant netCDF input file information
+@param[in] spatialTol User-provided tolerance for comparing spatial coordinates
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void determine_indexfile_use(
+    SW_NETCDF_IN *SW_netCDFIn,
+    SW_PATH_INPUTS *SW_PathInputs,
+    const double spatialTol,
+    LOG_INFO *LogInfo
+) {
+    int k;
+    int ncFileID;
+    int fIndex;
+
+    char *fileName;
+    char *axisNames[2] = {NULL, NULL}; /* Set later */
+    char *crsName;
+
+    size_t ySize = 0;
+    size_t xSize = 0;
+    size_t *dimSizes[] = {&ySize, &xSize};
+    Bool coordVarIs2D = swFALSE;
+    Bool inPrimCRSIsGeo;
+
+    double *tempY = NULL;
+    double *tempX = NULL;
+    double **freeArr[] = {&tempY, &tempX};
+    const int numFreeArr = 2;
+    const int numFileClose = 0;
+
+    ForEachNCInKey(k) {
+        if (k > eSW_InSpatial && SW_netCDFIn->readInVars[k][0]) {
+            fIndex = 1;
+            ncFileID = -1;
+
+            /* Find the first input file within the key */
+            while (!SW_netCDFIn->readInVars[k][fIndex + 1]) {
+                fIndex++;
+            }
+
+            if (k == eSW_InWeather) {
+                fileName = SW_PathInputs->ncWeatherInFiles[fIndex][0];
+            } else {
+                fileName = SW_PathInputs->ncInFiles[k][fIndex];
+            }
+
+            axisNames[0] = SW_netCDFIn->inVarInfo[k][fIndex][INYAXIS];
+            axisNames[1] = SW_netCDFIn->inVarInfo[k][fIndex][INXAXIS];
+
+            crsName = SW_netCDFIn->inVarInfo[k][fIndex][INCRSNAME];
+            inPrimCRSIsGeo = (Bool) (strcmp(crsName, "crs_geogsc") == 0);
+
+            get_input_coordinates(
+                SW_netCDFIn,
+                &ncFileID,
+                fileName,
+                dimSizes,
+                &coordVarIs2D,
+                k,
+                spatialTol,
+                &tempY,
+                &tempX,
+                axisNames,
+                swTRUE,
+                inPrimCRSIsGeo,
+                LogInfo
+            );
+            if (LogInfo->stopRun) {
+                goto freeMem;
+            }
+
+            if (SW_netCDFIn->useIndexFile[k] &&
+                !SW_netCDFIn->readInVars[k][1]) {
+
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Detected need to use index file for the input key "
+                    "'%s' but index file ('indexSpatial') input is "
+                    "turned off.",
+                    possInKeys[k]
+                );
+            }
+
+        freeMem:
+            nc_close(ncFileID);
+
+            free_close_temp_coords(freeArr, NULL, numFreeArr, numFileClose);
         }
     }
 }
@@ -2799,10 +4066,36 @@ void SW_NCIN_init_ptrs(SW_NETCDF_IN *SW_netCDFIn) {
     }
 
     SW_netCDFIn->weathCalOverride = NULL;
+    SW_netCDFIn->domXCoordsGeo = NULL;
+    SW_netCDFIn->domYCoordsGeo = NULL;
+    SW_netCDFIn->domXCoordsProj = NULL;
+    SW_netCDFIn->domYCoordsProj = NULL;
+}
+
+void SW_NCIN_deconstruct(SW_NETCDF_IN *SW_netCDFIn) {
+
+    int k;
+    int freeIndex;
+    const int numFreeVals = 4;
+    double **freeArray[] = {
+        &SW_netCDFIn->domXCoordsGeo,
+        &SW_netCDFIn->domYCoordsGeo,
+        &SW_netCDFIn->domYCoordsProj,
+        &SW_netCDFIn->domYCoordsProj
+    };
+
+    for (freeIndex = 0; freeIndex < numFreeVals; freeIndex++) {
+        if (!isnull(*freeArray[freeIndex])) {
+            free(*freeArray[freeIndex]);
+            *freeArray[freeIndex] = NULL;
+        }
+    }
+
+    ForEachNCInKey(k) { SW_NCIN_dealloc_inputkey_var_info(SW_netCDFIn, k); }
 }
 
 /**
-@brief Deconstruct input netCDF information
+@brief Deconstruct netCDF input variable information
 
 @param[in,out] SW_netCDFIn Constant netCDF input file information
 @param[in] key Category of input variables that is being deconstructed
@@ -2956,7 +4249,7 @@ void SW_NCIN_deepCopy(
 @param[in] SW_netCDFOut Constant netCDF output file information
 @param[in] SW_PathInputs Struct of type SW_PATH_INPUTS which
 holds basic information about input files and values
-@param[in] startYr End year of the simulation
+@param[in] startYr Start year of the simulation
 @param[in] endYr End year of the simulation
 @param[out] LogInfo Holds information on warnings and errors
 */
@@ -3400,7 +4693,7 @@ void SW_NCIN_read_input_vars(
             startYr,
             endYr,
             &SW_PathInputs->ncWeatherInFiles,
-            &SW_PathInputs->ncWeatherInStartEnd,
+            &SW_PathInputs->ncWeatherInStartEndYrs,
             &SW_PathInputs->ncNumWeatherInFiles,
             SW_netCDFIn->readInVars[eSW_InWeather],
             LogInfo
@@ -3621,14 +4914,14 @@ void SW_NCIN_create_units_converters(
 variables
 
 @param[out] outWeathFileNames List of all weather input files for a variable
-@param[out] ncWeatherInStartEnd Start/end years of each weather input file
+@param[out] ncWeatherInStartEndYrs Start/end years of each weather input file
 @param[in] numWeathIn Number of input weather files
 @param[in] weathVar Weather variable index
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCIN_alloc_weath_input_info(
     char ****outWeathFileNames,
-    unsigned int ***ncWeatherInStartEnd,
+    unsigned int ***ncWeatherInStartEndYrs,
     unsigned int numWeathIn,
     int weathVar,
     LOG_INFO *LogInfo
@@ -3647,8 +4940,8 @@ void SW_NCIN_alloc_weath_input_info(
         (*outWeathFileNames)[weathVar][inFileNum] = NULL;
     }
 
-    if (isnull(*ncWeatherInStartEnd)) {
-        (*ncWeatherInStartEnd) = (unsigned int **) Mem_Malloc(
+    if (isnull(*ncWeatherInStartEndYrs)) {
+        (*ncWeatherInStartEndYrs) = (unsigned int **) Mem_Malloc(
             sizeof(unsigned int *) * numWeathIn,
             "SW_NCIN_alloc_weath_input_info()",
             LogInfo
@@ -3658,11 +4951,11 @@ void SW_NCIN_alloc_weath_input_info(
         }
 
         for (inFileNum = 0; inFileNum < numWeathIn; inFileNum++) {
-            (*ncWeatherInStartEnd)[inFileNum] = NULL;
+            (*ncWeatherInStartEndYrs)[inFileNum] = NULL;
         }
 
         for (inFileNum = 0; inFileNum < numWeathIn; inFileNum++) {
-            (*ncWeatherInStartEnd)[inFileNum] = (unsigned int *) Mem_Malloc(
+            (*ncWeatherInStartEndYrs)[inFileNum] = (unsigned int *) Mem_Malloc(
                 sizeof(unsigned int) * 2,
                 "SW_NCIN_alloc_weath_input_info()",
                 LogInfo
@@ -3670,8 +4963,76 @@ void SW_NCIN_alloc_weath_input_info(
         }
 
         for (inFileNum = 0; inFileNum < numWeathIn; inFileNum++) {
-            (*ncWeatherInStartEnd)[inFileNum][0] = 0;
-            (*ncWeatherInStartEnd)[inFileNum][1] = 0;
+            (*ncWeatherInStartEndYrs)[inFileNum][0] = 0;
+            (*ncWeatherInStartEndYrs)[inFileNum][1] = 0;
+        }
+    }
+}
+
+/**
+@brief Calculate information that will be used many times throughout
+simulation runs so they do not need to be calculated again, more specifically,
+storing the domain coordinates, if each input file key should use an
+index file, and temporal indices for weather inputs
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NCIN_precalc_lookups(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
+
+    SW_NETCDF_IN *SW_netCDFIn = &SW_Domain->netCDFInput;
+
+    int domFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom];
+    Bool primCRSIsGeo =
+        SW_Domain->OutDom.netCDFOutput.primary_crs_is_geographic;
+    char *domCoordVarNamesNonSite[4] = {
+        SW_Domain->OutDom.netCDFOutput.geo_YAxisName,
+        SW_Domain->OutDom.netCDFOutput.geo_XAxisName,
+        SW_Domain->OutDom.netCDFOutput.proj_YAxisName,
+        SW_Domain->OutDom.netCDFOutput.proj_XAxisName
+    };
+
+    read_domain_coordinates(
+        SW_netCDFIn,
+        domCoordVarNamesNonSite,
+        SW_Domain->OutDom.netCDFOutput.siteName,
+        domFileID,
+        SW_Domain->DomainType,
+        primCRSIsGeo,
+        LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return; /* Exit prematurely due to error */
+    }
+
+    determine_indexfile_use(
+        SW_netCDFIn, &SW_Domain->SW_PathInputs, SW_Domain->spatialTol, LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return; /* Exit function prematurely due to error */
+    }
+
+    /* Precalculate temperature temporal nc indices */
+    if (SW_netCDFIn->readInVars[eSW_InWeather][0]) {
+#if defined(SWUDUNITS)
+        calc_temporal_weather_indices(
+            SW_netCDFIn,
+            &SW_Domain->SW_PathInputs,
+            SW_Domain->startyr,
+            SW_Domain->endyr,
+            LogInfo
+        );
+#else
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "SWUDUNITS is not enabled, so we cannot calculate temporal "
+            "information."
+        );
+#endif
+    }
+}
         }
     }
 }

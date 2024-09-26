@@ -365,7 +365,7 @@ void SW_F_deepCopy(
             if (!isnull(source->ncWeatherInFiles[varNum])) {
                 SW_NCIN_alloc_weath_input_info(
                     &dest->ncWeatherInFiles,
-                    &dest->ncWeatherInStartEnd,
+                    &dest->ncWeatherInStartEndYrs,
                     numFiles,
                     varNum,
                     LogInfo
@@ -387,12 +387,12 @@ void SW_F_deepCopy(
             }
         }
 
-        if (!isnull(source->ncWeatherInStartEnd)) {
+        if (!isnull(source->ncWeatherInStartEndYrs)) {
             for (file = 0; file < numFiles; file++) {
-                dest->ncWeatherInStartEnd[file][0] =
-                    source->ncWeatherInStartEnd[file][0];
-                dest->ncWeatherInStartEnd[file][1] =
-                    source->ncWeatherInStartEnd[file][1];
+                dest->ncWeatherInStartEndYrs[file][0] =
+                    source->ncWeatherInStartEndYrs[file][0];
+                dest->ncWeatherInStartEndYrs[file][1] =
+                    source->ncWeatherInStartEndYrs[file][1];
             }
         }
     }
@@ -419,7 +419,8 @@ void SW_F_init_ptrs(SW_PATH_INPUTS *SW_PathInputs) {
     ForEachNCInKey(k) { SW_PathInputs->ncInFiles[k] = NULL; }
 
     SW_PathInputs->ncWeatherInFiles = NULL;
-    SW_PathInputs->ncWeatherInStartEnd = NULL;
+    SW_PathInputs->ncWeatherInStartEndYrs = NULL;
+    SW_PathInputs->ncWeatherStartEndIndices = NULL;
 #endif
 }
 
@@ -530,16 +531,16 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
         SW_PathInputs->ncWeatherInFiles = NULL;
     }
 
-    if (!isnull(SW_PathInputs->ncWeatherInStartEnd)) {
+    if (!isnull(SW_PathInputs->ncWeatherInStartEndYrs)) {
         for (file = 0; file < numFiles; file++) {
-            if (!isnull(SW_PathInputs->ncWeatherInStartEnd[file])) {
-                free((void *) SW_PathInputs->ncWeatherInStartEnd[file]);
-                SW_PathInputs->ncWeatherInStartEnd[file] = NULL;
+            if (!isnull(SW_PathInputs->ncWeatherInStartEndYrs[file])) {
+                free((void *) SW_PathInputs->ncWeatherInStartEndYrs[file]);
+                SW_PathInputs->ncWeatherInStartEndYrs[file] = NULL;
             }
         }
 
-        free((void *) SW_PathInputs->ncWeatherInStartEnd);
-        SW_PathInputs->ncWeatherInStartEnd = NULL;
+        free((void *) SW_PathInputs->ncWeatherInStartEndYrs);
+        SW_PathInputs->ncWeatherInStartEndYrs = NULL;
     }
 
     SW_NCIN_close_files(SW_PathInputs->ncDomFileIDs);

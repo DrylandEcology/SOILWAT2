@@ -933,10 +933,12 @@ typedef struct {
                                         files generated given the stride input
                                         information */
 
-    unsigned int **ncWeatherInStartEnd; /**< Start/end years of each weather
+    unsigned int **ncWeatherInStartEndYrs; /**< Start/end years of each weather
                                         input netCDF; dynamically allocated for
                                         every number of files within every
                                         variable, and 2 values for start/end */
+
+    unsigned int **ncWeatherStartEndIndices;
 
     /* NC information that will stay constant through program run
        domain information - domain and progress file IDs */
@@ -1203,6 +1205,17 @@ typedef struct {
                                  units to user-requested units (dynamicall    y
                                  allocated array over output variables) */
 
+    double *domYCoordsGeo;
+    double *domXCoordsGeo;
+    double *domYCoordsProj;
+    double *domXCoordsProj;
+
+    size_t domYCoordGeoSize;
+    size_t domXCoordGeoSize;
+    size_t domYCoordProjSize;
+    size_t domXCoordProjSize;
+
+    Bool useIndexFile[SW_NINKEYSNC];
 } SW_NETCDF_IN;
 
 struct SW_OUT_DOM {

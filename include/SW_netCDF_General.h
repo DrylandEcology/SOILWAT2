@@ -35,6 +35,15 @@ void SW_NC_get_dimlen_from_dimid(
     int ncFileID, int dimID, size_t *dimVal, LOG_INFO *LogInfo
 );
 
+void SW_NC_get_vardimids(
+    int ncFileID,
+    int varID,
+    char *varName,
+    int dimIDs[],
+    int *nDims,
+    LOG_INFO *LogInfo
+);
+
 void SW_NC_get_dim_identifier(
     int ncFileID, const char *dimName, int *dimID, LOG_INFO *LogInfo
 );
@@ -201,6 +210,14 @@ void SW_NC_create_units_converters(
     int numVars[],
     int varNameInd,
     int varUnitsInd,
+    LOG_INFO *LogInfo
+);
+
+void SW_NC_get_vals(
+    int ncFileID,
+    int *varID,
+    const char *varName,
+    void *values,
     LOG_INFO *LogInfo
 );
 
