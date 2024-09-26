@@ -139,6 +139,8 @@ void SW_NCIN_alloc_weath_input_info(
 
 void SW_NCIN_precalc_lookups(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
 
+void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
+
 #ifdef __cplusplus
 }
 #endif

@@ -120,6 +120,12 @@ int main(int argc, char **argv) {
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
+
+    SW_NCIN_create_indices(&SW_Domain, &LogInfo);
+    if (LogInfo.stopRun) {
+        goto finishProgram;
+    };
+
     SW_NCIN_check_input_files(&SW_Domain, &LogInfo);
 #endif
 

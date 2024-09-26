@@ -3374,6 +3374,408 @@ static void determine_indexfile_use(
     }
 }
 
+/**
+@brief Create the individual index variable(s) that were determined in
+`get_index_vars_info()`
+
+@param[out] varIDs
+@param[in] numVarsToWrite Number of variables to write into the index file
+@param[in] indexVarNames A list of all index variable names that are to be
+created
+@param[in] dimIDs Dimension identifiers for the index variables
+@param[in] templateID New index file identifier to write to
+@param[in] nDims Number of dimensions for each coordinate variable
+@param[in] deflateLevel Level of deflation that will be used for the created
+variable
+@param[in] inDomIsSite Specifies if the input file has sites or is gridded
+@param[in] siteDom Specifies that the programs domain has sites, otherwise
+it is gridded
+@param[in] numAtts Number of attributes to give to each index variable(s)
+@param[in] key Current input key these variables/file is meant for
+@param[in] indexFileName Name of the newly created index file
+@param[in] geoYCoordName Name of the geographical coordinate variable/dimension
+latitude/y (user-provided)
+@param[in] geoXCoordName Name of the geographical coordinate variable/dimension
+longitude/x (user-provided)
+@param[in] domSiteName User-provided site variable/dimension name (if domain is
+not gridded)
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void create_index_vars(
+    int varIDs[],
+    int numVarsToWrite,
+    char *indexVarNames[],
+    int dimIDs[][2],
+    int templateID,
+    int nDims,
+    int deflateLevel,
+    Bool inDomIsSite,
+    Bool siteDom,
+    int numAtts,
+    int key,
+    char *indexFileName,
+    char *geoYCoordName,
+    char *geoXCoordName,
+    char *domSiteName,
+    LOG_INFO *LogInfo
+) {
+    int varNum;
+    int attNum;
+
+    size_t chunkSizes[] = {1, 1};
+    char *indexVarAttNames[] = {
+        (char *) "long_name",
+        (char *) "comment",
+        (char *) "units",
+        (char *) "coordinates"
+    };
+    char *coordString = (siteDom) ? (char *) "%s %s %s" : (char *) "%s %s";
+
+    /* Size 3 - "long_name", "comment", "units" */
+    /* Size 2 - maximum possible values to write out for variable(s) */
+    char *indexVarAttVals[4][2] = {
+        {/* long_name, set later dynamically */
+         NULL,
+         NULL
+        },
+        {/* comment */
+         (char *) "Spatial index (base 0) between simulation domain and inputs "
+                  "of %s"
+        },
+        {/* units */
+         (char *) "1"
+        },
+        {/* coordinates, set later */
+         NULL
+        }
+    };
+
+    char tempIndexVal[MAX_FILENAMESIZE];
+    char tempCoord[MAX_FILENAMESIZE];
+    char *tempIndexValPtr;
+
+    for (varNum = 0; varNum < numVarsToWrite; varNum++) {
+        SW_NC_create_netCDF_var(
+            &varIDs[varNum],
+            indexVarNames[varNum],
+            dimIDs[varNum],
+            &templateID,
+            NC_UINT,
+            nDims,
+            chunkSizes,
+            deflateLevel,
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        if (inDomIsSite) {
+            indexVarAttVals[0][0] = (char *) "site-position of %s";
+        } else {
+            indexVarAttVals[0][0] = (char *) "y-position of %s";
+            indexVarAttVals[0][1] = (char *) "x-position of %s";
+        }
+
+        if (siteDom) {
+            snprintf(
+                tempCoord,
+                MAX_FILENAMESIZE,
+                coordString,
+                geoYCoordName,
+                geoXCoordName,
+                domSiteName
+            );
+        } else {
+            snprintf(
+                tempCoord,
+                MAX_FILENAMESIZE,
+                coordString,
+                geoYCoordName,
+                geoXCoordName
+            );
+        }
+        indexVarAttVals[3][0] = (char *) tempCoord;
+
+        for (attNum = 0; attNum < numAtts; attNum++) {
+            tempIndexVal[0] = '\0';
+
+            tempIndexValPtr = tempIndexVal;
+            switch (attNum) {
+            case 0:
+                snprintf(
+                    tempIndexVal,
+                    MAX_FILENAMESIZE,
+                    indexVarAttVals[attNum][varNum],
+                    possInKeys[key]
+                );
+                break;
+            case 1:
+                snprintf(
+                    tempIndexVal,
+                    MAX_FILENAMESIZE,
+                    indexVarAttVals[attNum][0],
+                    indexFileName
+                );
+                break;
+            default:
+                tempIndexValPtr = indexVarAttVals[attNum][0];
+                break;
+            }
+
+            SW_NC_write_string_att(
+                indexVarAttNames[attNum],
+                tempIndexValPtr,
+                varIDs[varNum],
+                templateID,
+                LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
+            }
+        }
+    }
+}
+
+/**
+@brief Determine and write indices for the given input key, in other
+words, find and write out the translation index from what the programs
+domain knows to the closest spatial point that the input file(s) provide
+
+@param[in] domYCoords Latitude/y domain coordinates pertaining
+@param[in] domXCoords Longitude/x domain coordinates pertaining
+@param[in] yDomSize Latitude/y domain dimension size
+@param[in] xDomSize Latitude/y domain dimension size
+@param[in] yCoords Latitude/y coordinates read-in from the user-provided file
+@param[in] xCoords Longitude/x coordinates read-in from the user-provided file
+@param[in] inIsGridded Specifies that the provided input file is gridded
+@param[in] siteDom Specifies that the programs domain has sites, otherwise
+it is gridded
+@param[in] inPrimCRSIsGeo Specifies if the CRS in the provided input file is
+geographical or projected
+@param[in] indexVarIDs Identifiers of the created variable(s) in the new
+index file that will be written to
+@param[in] templateID New index file identifier to write to
+@param[in] indexVarName Variable name(s) within the new index file to
+write to and will hold the indices to translate from the programs domain
+to the input file's domain
+@param[in] indexFileName Name of the newly created index file
+@param[in] inFileDimSizes Dimension sizes of the spatial coordinates within
+the input file that the index file is being created for
+@param[in] numVars Number of variables that was created within the index file
+("s_index", or "y_index"/"x_index")
+@param[in] has2DCoordVars Specifies if the read-in coordinates from an input
+file came from a 2-dimensional variable
+@param[in] spatialTol User-provided tolerance for comparing spatial coordinates
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void write_indices(
+    const double *domYCoords,
+    const double *domXCoords,
+    size_t yDomSize,
+    size_t xDomSize,
+    double *yCoords,
+    double *xCoords,
+    Bool inIsGridded,
+    Bool siteDom,
+    Bool inPrimCRSIsGeo,
+    int indexVarIDs[],
+    int templateID,
+    char *indexVarName[],
+    char *indexFileName,
+    size_t **inFileDimSizes,
+    int numVars,
+    Bool has2DCoordVars,
+    double spatialTol,
+    LOG_INFO *LogInfo
+) {
+    SW_KD_NODE *treeRoot = NULL;
+    SW_KD_NODE *nearNeighbor = NULL;
+
+    double bestDist;
+    double queryCoords[2] = {0};
+
+    size_t yIndex;
+    size_t xIndex;
+    size_t syWritePos = 0;
+    size_t xWritePos = 0;
+    size_t writeCount[] = {1, 1};
+
+    SW_DATA_create_tree(
+        &treeRoot,
+        yCoords,
+        xCoords,
+        *(inFileDimSizes[0]),
+        *(inFileDimSizes[1]),
+        inIsGridded,
+        has2DCoordVars,
+        inPrimCRSIsGeo,
+        LogInfo
+    );
+    if (LogInfo->stopRun) {
+        goto freeTree;
+    }
+
+    for (yIndex = 0UL; yIndex < yDomSize; yIndex++) {
+        queryCoords[1] = domYCoords[yIndex];
+        syWritePos = yIndex;
+
+        for (xIndex = 0UL; xIndex < xDomSize; xIndex++) {
+            queryCoords[0] = domXCoords[xIndex];
+            xWritePos = xIndex;
+
+            bestDist = DBL_MAX;
+            nearNeighbor = NULL;
+
+            if (siteDom) {
+                queryCoords[1] = domYCoords[xIndex];
+                syWritePos = xIndex;
+            }
+
+            SW_DATA_queryTree(
+                treeRoot,
+                queryCoords,
+                0,
+                inPrimCRSIsGeo,
+                &nearNeighbor,
+                &bestDist
+            );
+
+            if (!isnull(nearNeighbor)) {
+                SW_NC_write_vals(
+                    (numVars == 2) ? &indexVarIDs[1] : &indexVarIDs[0],
+                    templateID,
+                    (numVars == 2) ? indexVarName[1] : indexVarName[0],
+                    &nearNeighbor->indices[1],
+                    &syWritePos,
+                    writeCount,
+                    "unsigned int",
+                    LogInfo
+                );
+                if (LogInfo->stopRun) {
+                    goto freeTree;
+                }
+
+                if (numVars == 2) {
+                    SW_NC_write_vals(
+                        &indexVarIDs[0],
+                        templateID,
+                        indexVarName[0],
+                        &nearNeighbor->indices[0],
+                        &xWritePos,
+                        writeCount,
+                        "unsigned int",
+                        LogInfo
+                    );
+                    if (LogInfo->stopRun) {
+                        goto freeTree;
+                    }
+                }
+            } else {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Could not find a best match for the "
+                    "edge coordinates (%f, %f) when creating the "
+                    "index file '%s'.",
+                    queryCoords[0],
+                    queryCoords[1],
+                    indexFileName
+                );
+                goto freeTree;
+            }
+
+            if (siteDom && !inIsGridded) {
+                if (!EQ_w_tol(
+                        nearNeighbor->coords[0], queryCoords[0], spatialTol
+                    ) ||
+                    !EQ_w_tol(
+                        nearNeighbor->coords[1], queryCoords[1], spatialTol
+                    )) {
+
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "Could not find a direct match within tolerance for "
+                        "site with the coordinates of [%f, %f].",
+                        queryCoords[0],
+                        queryCoords[1]
+                    );
+
+                    goto freeTree;
+                }
+            }
+        }
+
+        if (siteDom) {
+            goto freeTree;
+        }
+    }
+
+freeTree:
+    treeRoot = SW_DATA_destroyTree(treeRoot);
+}
+
+/**
+@brief Get the names and dimension lengths of the index variables that
+will be created as a translation between the spatial coordinates contained
+in the programs domain and the input file domain(s)
+
+@param[in] siteDom Specifies that the programs domain has sites, otherwise
+it is gridded
+@param[in] inFileID Input file identifier
+@param[in] templateID Identifier of the newly created index file
+@param[in] domYName Name of the programs domain latitude/y axis/variable
+@param[in] domXName Name of the programs domain longitude/x axis/variable
+@param[in] inHasSite Specifies if the input file has sites or is gridded
+@param[out] nDims Number of dimensions for each coordinate variable
+@param[out] dimIDs Identifier of the coordinate dimensions
+@param[out] indexVarNames A list of all index variable names that are to be
+created
+@param[out] numVars Number of variables to create (1 - site, 2 - gridded)
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void get_index_vars_info(
+    Bool siteDom,
+    int inFileID,
+    int *nDims,
+    int templateID,
+    char *domYName,
+    char *domXName,
+    int dimIDs[][2],
+    Bool *inHasSite,
+    char *indexVarNames[],
+    int *numVars,
+    LOG_INFO *LogInfo
+) {
+    int varNum;
+    char *varNames[] = {domYName, domXName};
+
+    *inHasSite = SW_NC_dimExists("site", inFileID);
+    if (*inHasSite && !siteDom) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Input file has sites while the domain is an xy domain."
+        );
+        return;
+    }
+
+    indexVarNames[0] =
+        (*inHasSite) ? (char *) "site_index" : (char *) "y_index";
+    indexVarNames[1] = (*inHasSite) ? (char *) "" : (char *) "x_index";
+    *numVars = (*inHasSite) ? 1 : 2;
+
+    for (varNum = 0; varNum < *numVars; varNum++) {
+        SW_NC_get_vardimids(
+            templateID, -1, varNames[varNum], dimIDs[varNum], nDims, LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+    }
+}
+
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
@@ -5033,6 +5435,225 @@ void SW_NCIN_precalc_lookups(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 #endif
     }
 }
+
+/**
+@brief Create index files as an interface between the domain that
+the program uses and the domain provided in input netCDFs
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
+    SW_NETCDF_IN *SW_netCDFIn = &SW_Domain->netCDFInput;
+
+    int k;
+    int varIDs[2];
+    char *indexName = NULL;
+    int dimIDs[2][2] = {{0}}; /* Up to two dims for two variables */
+    Bool inHasSite = swFALSE;
+    Bool siteDom = (Bool) (strcmp(SW_Domain->DomainType, "s") == 0);
+    char *siteName = SW_Domain->OutDom.netCDFOutput.siteName;
+    char *domYName = SW_Domain->OutDom.netCDFOutput.geo_YAxisName;
+    char *domXName = SW_Domain->OutDom.netCDFOutput.geo_XAxisName;
+    char *indexVarNames[2] = {NULL};
+    const int numAtts = 4;
+    Bool inPrimCRSIsGeo;
+
+    size_t ySize = 0UL;
+    size_t xSize = 0UL;
+    size_t *dimSizes[] = {&ySize, &xSize};
+    size_t domYSize;
+    size_t domXSize;
+
+    int fIndex;
+    int templateID = -1;
+    int ncFileID = -1;
+    char *frequency = (char *) "fx";
+    const char *domFile =
+        SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom];
+    char *fileName;
+    int indexVarNDims = 0;
+    int numVarsToWrite = 0;
+    Bool has2DCoordVars;
+
+    char *yxVarNames[2];
+    double *inputYVals = NULL;
+    double *inputXVals = NULL;
+    double *useDomYVals;
+    double *useDomXVals;
+
+    double **freeArr[] = {&inputYVals, &inputXVals};
+    int *fileIDs[] = {&templateID, &ncFileID};
+    const int numFree = 2;
+
+#if defined(SOILWAT)
+    if (LogInfo->printProgressMsg) {
+        sw_message("is creating any necessary index files ...");
+    }
+#endif
+
+    ForEachNCInKey(k) {
+        if (SW_netCDFIn->readInVars[k][0] && SW_netCDFIn->useIndexFile[k]) {
+            fIndex = 1;
+            indexVarNames[0] = indexVarNames[1] = NULL;
+            has2DCoordVars = swFALSE;
+            varIDs[0] = varIDs[1] = -1;
+
+            indexName = SW_Domain->SW_PathInputs.ncInFiles[k][0];
+
+            if (!FileExists(indexName)) {
+                /* Find the first input file within the key */
+                while (!SW_netCDFIn->readInVars[k][fIndex + 1]) {
+                    fIndex++;
+                }
+
+                yxVarNames[0] = SW_netCDFIn->inVarInfo[k][fIndex][INYAXIS];
+                yxVarNames[1] = SW_netCDFIn->inVarInfo[k][fIndex][INXAXIS];
+
+                if (k == eSW_InWeather) {
+                    fileName =
+                        SW_Domain->SW_PathInputs.ncWeatherInFiles[fIndex][0];
+                } else {
+                    fileName = SW_Domain->SW_PathInputs.ncInFiles[k][fIndex];
+                }
+
+                inPrimCRSIsGeo =
+                    (Bool) (strcmp(
+                                SW_netCDFIn->inVarInfo[k][fIndex][INCRSNAME],
+                                "crs_geogsc"
+                            ) == 0);
+
+                if (inPrimCRSIsGeo) {
+                    useDomYVals = SW_netCDFIn->domYCoordsGeo;
+                    useDomXVals = SW_netCDFIn->domXCoordsGeo;
+                    domYSize = SW_netCDFIn->domYCoordGeoSize;
+                    domXSize = SW_netCDFIn->domXCoordGeoSize;
+                } else {
+                    useDomYVals = SW_netCDFIn->domYCoordsProj;
+                    useDomXVals = SW_netCDFIn->domXCoordsProj;
+                    domYSize = SW_netCDFIn->domYCoordProjSize;
+                    domXSize = SW_netCDFIn->domXCoordProjSize;
+                }
+
+                if (nc_open(fileName, NC_NOWRITE, &ncFileID) != NC_NOERR) {
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "Could not open input file '%s'.",
+                        fileName
+                    );
+                }
+
+                SW_NC_create_template(
+                    SW_Domain->DomainType,
+                    domFile,
+                    indexName,
+                    &templateID,
+                    swTRUE,
+                    frequency,
+                    LogInfo
+                );
+                if (LogInfo->stopRun) {
+                    return; /* Exit function prematurely due to error */
+                }
+
+                get_index_vars_info(
+                    siteDom,
+                    ncFileID,
+                    &indexVarNDims,
+                    templateID,
+                    domYName,
+                    domXName,
+                    dimIDs,
+                    &inHasSite,
+                    indexVarNames,
+                    &numVarsToWrite,
+                    LogInfo
+                );
+                if (LogInfo->stopRun) {
+                    return;
+                }
+
+                create_index_vars(
+                    varIDs,
+                    numVarsToWrite,
+                    indexVarNames,
+                    dimIDs,
+                    templateID,
+                    indexVarNDims,
+                    SW_Domain->OutDom.netCDFOutput.deflateLevel,
+                    inHasSite,
+                    siteDom,
+                    numAtts,
+                    k,
+                    indexName,
+                    domYName,
+                    domXName,
+                    siteName,
+                    LogInfo
+                );
+                if (LogInfo->stopRun) {
+                    goto freeMem;
+                }
+
+                get_input_coordinates(
+                    SW_netCDFIn,
+                    &ncFileID,
+                    NULL,
+                    dimSizes,
+                    &has2DCoordVars,
+                    k,
+                    SW_Domain->spatialTol,
+                    &inputYVals,
+                    &inputXVals,
+                    yxVarNames,
+                    swFALSE,
+                    inPrimCRSIsGeo,
+                    LogInfo
+                );
+                if (LogInfo->stopRun) {
+                    goto freeMem;
+                }
+
+                nc_close(ncFileID);
+                ncFileID = -1;
+
+                /* Create and query the KD-tree then write to the index file */
+                nc_enddef(templateID);
+
+                write_indices(
+                    useDomYVals,
+                    useDomXVals,
+                    domYSize,
+                    domXSize,
+                    inputYVals,
+                    inputXVals,
+                    (Bool) !inHasSite,
+                    siteDom,
+                    inPrimCRSIsGeo,
+                    varIDs,
+                    templateID,
+                    indexVarNames,
+                    indexName,
+                    dimSizes,
+                    numVarsToWrite,
+                    has2DCoordVars,
+                    SW_Domain->spatialTol,
+                    LogInfo
+                );
+                if (LogInfo->stopRun) {
+                    goto freeMem;
+                }
+
+                nc_close(templateID);
+                templateID = -1;
+
+                free_close_temp_coords(freeArr, fileIDs, numFree, numFree);
+            }
         }
     }
+
+freeMem:
+    free_close_temp_coords(freeArr, fileIDs, numFree, numFree);
 }
