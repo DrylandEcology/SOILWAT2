@@ -30,9 +30,15 @@
 #define SW_NFILES 27 // For `txtInFiles`
 #define SW_NVARDOM 2 // For `InFilesNC`
 
+/* KD-tree related defines */
+#define KD_NDIMS 2    /* Number of dimensions the nodes will contain */
+#define KD_NINDICES 2 /* Number of indices that will be stored in nodes */
+
 /* Declare SW_RUN & SW_OUT_DOM structs for SW_OUT_DOM and SW_DOMAIN to see */
 typedef struct SW_RUN SW_RUN;
 typedef struct SW_OUT_DOM SW_OUT_DOM;
+
+typedef struct SW_KD_NODE SW_KD_NODE;
 
 /* =================================================== */
 /*                   Carbon structs                    */
@@ -1470,6 +1476,51 @@ struct SW_RUN {
     SW_OUT_RUN OutRun;
 
     SW_ATMD AtmDemand;
+};
+
+/* =================================================== */
+/*                KD-tree Functionality                */
+/* --------------------------------------------------- */
+
+void SW_DATA_create_tree(
+    SW_KD_NODE **treeRoot,
+    double *yCoords,
+    double *xCoords,
+    size_t ySize,
+    size_t xSize,
+    Bool inIsGridded,
+    Bool has2DCoordVars,
+    Bool inPrimCRSIsGeo,
+    LOG_INFO *LogInfo
+);
+
+SW_KD_NODE *SW_DATA_addNode(
+    SW_KD_NODE *currNode,
+    double coords[],
+    unsigned int indices[],
+    double maxDist,
+    int level,
+    LOG_INFO *LogInfo
+);
+
+SW_KD_NODE *SW_DATA_destroyTree(SW_KD_NODE *currNode);
+
+void SW_DATA_queryTree(
+    SW_KD_NODE *currNode,
+    double queryCoords[],
+    int level,
+    Bool primCRSIsGeo,
+    SW_KD_NODE **bestNode,
+    double *bestDist
+);
+
+struct SW_KD_NODE {
+    double coords[KD_NDIMS];
+    unsigned int indices[KD_NINDICES];
+
+    double maxDist;
+
+    SW_KD_NODE *left, *right;
 };
 
 #endif // DATATYPES_H
