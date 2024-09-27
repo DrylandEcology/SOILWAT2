@@ -902,7 +902,7 @@ void SW_DATA_create_tree(
         yCoords,
         xCoords,
         0,
-        numPoints - 1,
+        (int) numPoints - 1,
         ySize,
         xSize,
         0,
