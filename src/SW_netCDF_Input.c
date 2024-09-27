@@ -3027,6 +3027,7 @@ static void get_startend_indices(
     while (left <= right) {
         middle = left + (right - left) / 2;
 
+        // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
         if (timeVals[middle] > target) {
             right = middle - 1;
         } else if (timeVals[middle] < target) {
@@ -3199,6 +3200,17 @@ static void calc_temporal_weather_indices(
             goto freeMem;
         }
 
+        if(timeSize <= 0) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Time dimension size must be > 0 in '%s'.",
+                fileName
+            );
+            goto freeMem;
+        }
+
+        // NOLINTBEGIN(clang-analyzer-core.NullDereference)
 #if defined(SWUDUNITS)
         /* Calculate the first day of the year in nc file
            the provided time values may be double whole numbers
@@ -3206,7 +3218,7 @@ static void calc_temporal_weather_indices(
            at the end of the calculation */
         valDoy1Add = (fmod(timeVals[timeSize - 1], 1.0) == 0.0) ? 0.0 : 0.5;
         valDoy1 =
-            (double) conv_times(system, currCalUnit, newCalUnit) + valDoy1Add;
+            conv_times(system, currCalUnit, newCalUnit) + valDoy1Add;
 #endif
 
         get_startend_indices(
@@ -3219,6 +3231,7 @@ static void calc_temporal_weather_indices(
             timeName,
             LogInfo
         );
+        // NOLINTEND(clang-analyzer-core.NullDereference)
         if (LogInfo->stopRun) {
             goto freeMem;
         }
