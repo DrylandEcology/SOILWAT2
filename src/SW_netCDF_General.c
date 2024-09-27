@@ -267,15 +267,9 @@ void SW_NC_check(
     if (fileWasClosed) {
         // "Once a netCDF dataset is opened, it is referred to by a netCDF ID,
         // which is a small non-negative integer"
-        if (nc_open(fileName, NC_NOWRITE, &ncFileID) != NC_NOERR) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "An error occurred when attempting "
-                "to open the file %s.",
-                fileName
-            );
-            return; // Exit function prematurely due to error
+        SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
+        if (LogInfo->stopRun) {
+            return; /* Exit function prematurely due to error */
         }
     }
 
@@ -1154,15 +1148,9 @@ void SW_NC_create_template(
         return; // Exit function prematurely due to error
     }
 
-    if (nc_open(fileName, NC_WRITE, newFileID) != NC_NOERR) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "An error occurred when attempting "
-            "to access the new file %s.",
-            fileName
-        );
-        return; // Exit function prematurely due to error
+    SW_NC_open(fileName, NC_WRITE, newFileID, LogInfo);
+    if (LogInfo->stopRun) {
+        return; /* Exit function prematurely due to error */
     }
 
     update_netCDF_global_atts(newFileID, domType, freq, isInput, LogInfo);
@@ -1483,5 +1471,13 @@ void SW_NC_get_vals(
             "Could not read the values of variable '%s'.",
             varName
         );
+    }
+}
+
+void SW_NC_open(
+    const char *ncFileName, int openMode, int *fileID, LOG_INFO *LogInfo
+) {
+    if (nc_open(ncFileName, openMode, fileID) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "Could not open file '%s'.", ncFileName);
     }
 }

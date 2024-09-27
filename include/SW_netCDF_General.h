@@ -221,6 +221,10 @@ void SW_NC_get_vals(
     LOG_INFO *LogInfo
 );
 
+void SW_NC_open(
+    const char *ncFileName, int openMode, int *fileID, LOG_INFO *LogInfo
+);
+
 #ifdef __cplusplus
 }
 #endif

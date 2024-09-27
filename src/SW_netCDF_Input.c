@@ -2437,7 +2437,7 @@ static void get_1D_input_coordinates(
     }
 
     get_var_type(ncFileID, varID, yxVarNames[0], &varType, LogInfo);
-    if(LogInfo->stopRun) {
+    if (LogInfo->stopRun) {
         return;
     }
 
@@ -2578,7 +2578,7 @@ static void get_2D_input_coordinates(
     numPoints = yDimSize * xDimSize;
 
     get_var_type(ncFileID, varIDs[0], yxVarNames[0], &varType, LogInfo);
-    if(LogInfo->stopRun) {
+    if (LogInfo->stopRun) {
         return;
     }
 
@@ -2673,10 +2673,8 @@ static void get_input_coordinates(
     const int numReadInDims = 2;
 
     if (*ncFileID == -1 && !isnull(inFileName)) {
-        if (nc_open(inFileName, NC_NOWRITE, ncFileID) != NC_NOERR) {
-            LogError(
-                LogInfo, LOGERROR, "Could not open nc file '%s'.", inFileName
-            );
+        SW_NC_open(inFileName, NC_NOWRITE, ncFileID, LogInfo);
+        if (LogInfo->stopRun) {
             return;
         }
     }
@@ -3153,16 +3151,13 @@ static void calc_temporal_weather_indices(
             ncFileID = -1;
         }
 
-        if (ncFileID == -1 &&
-            nc_open(fileName, NC_NOWRITE, &ncFileID) != NC_NOERR) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "Could not open weather input file '%s'.",
-                fileName
-            );
-            return;
+        if (ncFileID == -1) {
+            SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
+            if (LogInfo->stopRun) {
+                goto freeMem;
+            }
         }
+
         /* Get information from new file if it's newly opened */
         if (currCalUnit[0] == '\0') {
             if (!checkedCal) {
@@ -4403,14 +4398,9 @@ void SW_NCIN_open_dom_prog_files(
         varName = inDomVarInfo[fileNum][INNCVARNAME];
 
         if (FileExists(fileName)) {
-            if (nc_open(fileName, openType, fileID) != NC_NOERR) {
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "An error occurred when opening %s.",
-                    fileName
-                );
-                return; // Exit function prematurely due to error
+            SW_NC_open(fileName, openType, fileID, LogInfo);
+            if (LogInfo->stopRun) {
+                return;
             }
 
             /*
@@ -5539,13 +5529,9 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     domXSize = SW_netCDFIn->domXCoordProjSize;
                 }
 
-                if (nc_open(fileName, NC_NOWRITE, &ncFileID) != NC_NOERR) {
-                    LogError(
-                        LogInfo,
-                        LOGERROR,
-                        "Could not open input file '%s'.",
-                        fileName
-                    );
+                SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
+                if (LogInfo->stopRun) {
+                    return;
                 }
 
                 SW_NC_create_template(

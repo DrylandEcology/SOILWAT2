@@ -2175,14 +2175,9 @@ void SW_NCOUT_write_output(
                     continue;
                 }
 
-                if (nc_open(fileName, NC_WRITE, &currFileID) != NC_NOERR) {
-                    LogError(
-                        LogInfo,
-                        LOGERROR,
-                        "Could not open output file %s.",
-                        fileName
-                    );
-                    return; // Exit function prematurely due to error
+                SW_NC_open(fileName, NC_WRITE, &currFileID, LogInfo);
+                if (LogInfo->stopRun) {
+                    return;
                 }
 
                 // Get size of the "time" dimension
