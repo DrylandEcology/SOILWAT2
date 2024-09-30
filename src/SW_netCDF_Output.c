@@ -622,7 +622,7 @@ static int gather_var_attributes(
 ) {
     int fillSize = 0;
     int varIndex;
-    int resSNP;
+    int resSNP = 0;
     char cellRedef[MAX_FILENAMESIZE];
     char establOrginName[MAX_FILENAMESIZE];
     char coordsAtt[MAX_FILENAMESIZE];
@@ -688,7 +688,7 @@ static int gather_var_attributes(
     }
 
     /* Fill coordinates attribute */
-    snprintf(
+    resSNP = snprintf(
         coordsAtt,
         MAX_FILENAMESIZE,
         (siteDom) ? "%s %s site" : "%s %s",
@@ -1862,7 +1862,7 @@ void SW_NCOUT_create_output_files(
 
     int key;
     int ip;
-    int resSNP;
+    int resSNP = 0;
     OutPeriod pd;
     unsigned int rangeStart;
     unsigned int rangeEnd;
