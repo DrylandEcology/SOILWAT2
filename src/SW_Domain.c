@@ -216,6 +216,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     int intRes = 0;
     int scanRes;
     double doubleRes = 0.;
+    char *errDim = NULL;
 
     Bool doDoubleConv;
 
@@ -253,6 +254,39 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                 doubleRes = sw_strtod(value, MyFileName, LogInfo);
             } else {
                 intRes = sw_strtoi(value, MyFileName, LogInfo);
+
+                /* Check to see if there are any unexpected negative or
+                   zero values */
+                if(intRes <= 0) {
+                    if(keyID >= 1 && keyID <= 3) { /* > 0 */
+                        if(keyID == 1) {
+                            errDim = (char *) "X";
+                        } else {
+                            errDim = (keyID == 2) ? (char *) "Y" : (char *) "S";
+                        }
+                        LogError(
+                            LogInfo,
+                            LOGERROR,
+                            "%s: Dimension '%s' should be > 0.",
+                            MyFileName,
+                            errDim
+                        );
+                    } else if(keyID >= 4 && keyID <= 5) { /* >= 0 */
+                        if (intRes < 0) {
+                            LogError(
+                                LogInfo,
+                                LOGERROR,
+                                "%s: Negative %s year (%d)",
+                                MyFileName,
+                                (keyID == 4) ? "start" : "end",
+                                intRes
+                            );
+                        }
+                    }
+                }
+                if(LogInfo->stopRun) {
+                    goto closeFile;
+                }
             }
 
             if (LogInfo->stopRun) {
@@ -288,34 +322,10 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             break;
 
         case 4: // Start year
-            y = intRes;
-
-            if (y < 0) {
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "%s: Negative start year (%d)",
-                    MyFileName,
-                    y
-                );
-                goto closeFile;
-            }
-            SW_Domain->startyr = yearto4digit((TimeInt) y);
+            SW_Domain->startyr = yearto4digit((TimeInt) intRes);
             break;
         case 5: // End year
-            y = intRes;
-
-            if (y < 0) {
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "%s: Negative ending year (%d)",
-                    MyFileName,
-                    y
-                );
-                goto closeFile;
-            }
-            SW_Domain->endyr = yearto4digit((TimeInt) y);
+            SW_Domain->endyr = yearto4digit((TimeInt) intRes);
             break;
         case 6: // Start day of year
             SW_Domain->startstart = intRes;
