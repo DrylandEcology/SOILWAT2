@@ -127,6 +127,9 @@ int main(int argc, char **argv) {
     };
 
     SW_NCIN_check_input_files(&SW_Domain, &LogInfo);
+    if (LogInfo.stopRun) {
+        goto finishProgram;
+    }
 #endif
 
     // finalize daily weather
