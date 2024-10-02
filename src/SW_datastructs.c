@@ -36,8 +36,8 @@ elements
 static void compareElemX(double *elemOne, double *elemTwo, int *res) {
     *res = 0;
 
-    if (!EQ(elemOne[0], elemTwo[0])) {
-        *res = (LT(elemOne[0], elemTwo[0])) ? -1 : 1;
+    if (!EQ(elemOne[1], elemTwo[1])) {
+        *res = (LT(elemOne[1], elemTwo[1])) ? -1 : 1;
     }
 }
 
@@ -53,8 +53,8 @@ elements
 static void compareElemY(double *elemOne, double *elemTwo, int *res) {
     *res = 0;
 
-    if (!EQ(elemOne[1], elemTwo[1])) {
-        *res = (LT(elemOne[1], elemTwo[1])) ? -1 : 1;
+    if (!EQ(elemOne[0], elemTwo[0])) {
+        *res = (LT(elemOne[0], elemTwo[0])) ? -1 : 1;
     }
 }
 
@@ -368,8 +368,9 @@ static double calcMaxNodeDist(
             xIndexOffset = -1;
             break;
         }
-        neighborCoord[0] = yCoords[indices[0] + xIndexOffset];
-        neighborCoord[1] = xCoords[indices[1] + yIndexOffset];
+
+        neighborCoord[0] = yCoords[indices[0] + yIndexOffset];
+        neighborCoord[1] = xCoords[indices[1] + xIndexOffset];
 
         resVals[0] = fabs(indices[0] - neighborCoord[0]);
         resVals[1] = fabs(indices[1] - neighborCoord[1]);
@@ -382,8 +383,8 @@ static double calcMaxNodeDist(
             yIndexOffset = (location == TOP) ? 1 : -1;
         }
 
-        neighborCoord[0] = yCoords[indices[0] + xIndexOffset];
-        neighborCoord[1] = xCoords[indices[1] + yIndexOffset];
+        neighborCoord[0] = yCoords[indices[0] + yIndexOffset];
+        neighborCoord[1] = xCoords[indices[1] + xIndexOffset];
 
         resVals[0] = fabs(yCoords[indices[0]] - neighborCoord[0]);
         resVals[1] = fabs(xCoords[indices[1]] - neighborCoord[1]);
@@ -394,14 +395,14 @@ static double calcMaxNodeDist(
             xIndexOffset = -1;
         }
 
-        neighborCoord[0] = yCoords[indices[0] + xIndexOffset];
-        neighborCoord[1] = xCoords[indices[1] + yIndexOffset];
+        neighborCoord[0] = yCoords[indices[0] + yIndexOffset];
+        neighborCoord[1] = xCoords[indices[1] + xIndexOffset];
 
         resCalcY = fabs(yCoords[indices[0]] - neighborCoord[0]);
         resCalcX = fabs(yCoords[indices[1]] - neighborCoord[1]);
 
-        resVals[1] = (resCalcY > resVals[0]) ? resCalcY : resVals[1];
-        resVals[0] = (resCalcX > resVals[1]) ? resCalcX : resVals[0];
+        resVals[0] = (resCalcY > resVals[0]) ? resCalcY : resVals[0];
+        resVals[1] = (resCalcX > resVals[1]) ? resCalcX : resVals[1];
     }
 
     maxDist = calcDistance(neighborCoord, resVals, inPrimCRSIsGeo);
@@ -416,33 +417,33 @@ if it the coordinate pair is on the edge of the grid to later calculate
 the maximum distance allowed for a coordinate pair to be outside of the
 grid
 
-@param[in] yCoord Current latitude/y coordinate
-@param[in] xCoord Current longitude/x coordinate
+@param[in] yIndex Current latitude/y coordinate
+@param[in] xIndex Current longitude/x coordinate
 @param[in] ySize Size of the latitude/y dimension
 @param[in] xSize Size of the longitude/x dimension
 @param[out] posLocation Resulting position within the grid, default value is
 `WITHIN_GRID`
 */
 static void getCoordLocInGrid(
-    const unsigned int yCoord,
-    const unsigned int xCoord,
+    const unsigned int yIndex,
+    const unsigned int xIndex,
     const size_t ySize,
     const size_t xSize,
     int *posLocation
 ) {
-    Bool onYEdge = (Bool) (yCoord == 0 || yCoord == ySize - 1);
-    Bool onXEdge = (Bool) (xCoord == 0 || xCoord == xSize - 1);
+    Bool onYEdge = (Bool) (yIndex == 0 || yIndex == ySize - 1);
+    Bool onXEdge = (Bool) (xIndex == 0 || xIndex == xSize - 1);
 
     if (onXEdge && onYEdge) {
-        if (xCoord == 0) {
-            *posLocation = (yCoord == 0) ? TOP_LEFT : BOTTOM_LEFT;
+        if (xIndex == 0) {
+            *posLocation = (yIndex == 0) ? TOP_LEFT : BOTTOM_LEFT;
         } else {
-            *posLocation = (yCoord == 0) ? TOP_RIGHT : BOTTOM_RIGHT;
+            *posLocation = (yIndex == 0) ? TOP_RIGHT : BOTTOM_RIGHT;
         }
     } else if (onXEdge) {
-        *posLocation = (xCoord == 0) ? LEFT : RIGHT;
+        *posLocation = (xIndex == 0) ? LEFT : RIGHT;
     } else if (onYEdge) {
-        *posLocation = (yCoord == 0) ? TOP : BOTTOM;
+        *posLocation = (yIndex == 0) ? TOP : BOTTOM;
     }
 }
 
@@ -452,7 +453,7 @@ coordinate pairs to find the nearest neighbor to the programs spatial
 domain; construct the tree determinisitically instead of randomly
 putting points into the tree
 
-@param[in] xyCoords Preconstructed coordinate pairs to add into the tree
+@param[in] yxCoords Preconstructed coordinate pairs to add into the tree
 @param[in] yCoords Individual latitude/y coordiantes
 @param[in] xCoords Individual longitude/x coordiantes
 @param[in] left Lower index of the coordinate pair list to sort/recursively
@@ -480,7 +481,7 @@ no parent node, it is the root node of the entire tree (at depth 0)
 */
 // NOLINTBEGIN(misc-no-recursion)
 static SW_KD_NODE *constructTree(
-    double **xyCoords,
+    double **yxCoords,
     double *yCoords,
     double *xCoords,
     int left,
@@ -500,14 +501,14 @@ static SW_KD_NODE *constructTree(
     int posLocation = WITHIN_GRID;
     void (*compFunc)(const double *, const double *, int *) =
         (depth % 2 == 0) ?
-            (void (*)(const double *, const double *, int *)) compareElemX :
-            (void (*)(const double *, const double *, int *)) compareElemY;
+            (void (*)(const double *, const double *, int *)) compareElemY :
+            (void (*)(const double *, const double *, int *)) compareElemX;
 
     if (left > right) {
         return NULL;
     }
 
-    quickSort(xyCoords, indices, left, right, compFunc);
+    quickSort(yxCoords, indices, left, right, compFunc);
 
     if (inIsGridded) {
         getCoordLocInGrid(
@@ -521,10 +522,10 @@ static SW_KD_NODE *constructTree(
         }
     }
 
-    newNode = createNode(xyCoords[middle], indices[middle], maxDist, LogInfo);
+    newNode = createNode(yxCoords[middle], indices[middle], maxDist, LogInfo);
 
     newNode->left = constructTree(
-        xyCoords,
+        yxCoords,
         yCoords,
         xCoords,
         left,
@@ -539,7 +540,7 @@ static SW_KD_NODE *constructTree(
     );
 
     newNode->right = constructTree(
-        xyCoords,
+        yxCoords,
         yCoords,
         xCoords,
         middle + 1,
@@ -852,15 +853,9 @@ void SW_DATA_create_tree(
     double **coordPairs = NULL;
     size_t yIndex;
     size_t xIndex;
-    size_t writeYIndex;
-    size_t writeXIndex;
     size_t numPoints = ySize * xSize;
     size_t pair = 0;
     unsigned int **indices = NULL;
-    Bool revY = (Bool) (yCoords[0] > yCoords[ySize - 1] &&
-                        xCoords[0] < xCoords[ySize - 1]);
-    Bool revX = (Bool) (!revY && yCoords[0] < yCoords[xSize - 1] &&
-                        xCoords[0] > xCoords[xSize - 1]);
 
     alloc_coords_indices(&coordPairs, &indices, numPoints, LogInfo);
     if (LogInfo->stopRun) {
@@ -874,23 +869,20 @@ void SW_DATA_create_tree(
        meaning all coordinate pairs should be created */
     if (has2DCoordVars) {
         for (pair = 0UL; pair < numPoints; pair++) {
-            coordPairs[pair][0] = xCoords[pair];
-            coordPairs[pair][1] = yCoords[pair];
+            coordPairs[pair][0] = yCoords[pair];
+            coordPairs[pair][1] = xCoords[pair];
 
-            indices[pair][0] = pair % xSize;
-            indices[pair][1] = pair / xSize;
+            indices[pair][0] = pair / xSize;
+            indices[pair][1] = pair % xSize;
         }
     } else {
-        for (xIndex = 0; xIndex < xSize; xIndex++) {
-            for (yIndex = 0; yIndex < ySize; yIndex++) {
-                writeYIndex = (revY) ? ySize - 1 - xIndex : xIndex;
-                writeXIndex = (revX) ? xSize - 1 - yIndex : yIndex;
+        for (yIndex = 0; yIndex < ySize; yIndex++) {
+            for (xIndex = 0; xIndex < xSize; xIndex++) {
+                indices[pair][0] = yIndex;
+                indices[pair][1] = xIndex;
 
-                indices[pair][0] = writeXIndex;
-                indices[pair][1] = writeYIndex;
-
-                coordPairs[pair][0] = xCoords[writeXIndex];
-                coordPairs[pair][1] = yCoords[writeYIndex];
+                coordPairs[pair][0] = yCoords[yIndex];
+                coordPairs[pair][1] = xCoords[xIndex];
 
                 pair++;
             }

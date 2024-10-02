@@ -3571,8 +3571,6 @@ to the input file's domain
 @param[in] indexFileName Name of the newly created index file
 @param[in] inFileDimSizes Dimension sizes of the spatial coordinates within
 the input file that the index file is being created for
-@param[in] numVars Number of variables that was created within the index file
-("s_index", or "y_index"/"x_index")
 @param[in] has2DCoordVars Specifies if the read-in coordinates from an input
 file came from a 2-dimensional variable
 @param[in] spatialTol User-provided tolerance for comparing spatial coordinates
@@ -3593,7 +3591,6 @@ static void write_indices(
     char *indexVarName[],
     char *indexFileName,
     size_t **inFileDimSizes,
-    int numVars,
     Bool has2DCoordVars,
     double spatialTol,
     LOG_INFO *LogInfo
@@ -3626,18 +3623,18 @@ static void write_indices(
     }
 
     for (yIndex = 0UL; yIndex < yDomSize; yIndex++) {
-        queryCoords[1] = domYCoords[yIndex];
+        queryCoords[0] = domYCoords[yIndex];
         syWritePos = yIndex;
 
         for (xIndex = 0UL; xIndex < xDomSize; xIndex++) {
-            queryCoords[0] = domXCoords[xIndex];
+            queryCoords[1] = domXCoords[xIndex];
             xWritePos = xIndex;
 
             bestDist = DBL_MAX;
             nearNeighbor = NULL;
 
             if (siteDom) {
-                queryCoords[1] = domYCoords[xIndex];
+                queryCoords[0] = domYCoords[xIndex];
                 syWritePos = xIndex;
             }
 
@@ -3652,9 +3649,9 @@ static void write_indices(
 
             if (!isnull(nearNeighbor)) {
                 SW_NC_write_vals(
-                    (numVars == 2) ? &indexVarIDs[1] : &indexVarIDs[0],
+                    (siteDom) ? &indexVarIDs[1] : &indexVarIDs[0],
                     templateID,
-                    (numVars == 2) ? indexVarName[1] : indexVarName[0],
+                    (siteDom) ? indexVarName[1] : indexVarName[0],
                     &nearNeighbor->indices[1],
                     &syWritePos,
                     writeCount,
@@ -3665,7 +3662,7 @@ static void write_indices(
                     goto freeTree;
                 }
 
-                if (numVars == 2) {
+                if (siteDom) {
                     SW_NC_write_vals(
                         &indexVarIDs[0],
                         templateID,
@@ -6014,7 +6011,6 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     indexVarNames,
                     indexName,
                     dimSizes,
-                    numVarsToWrite,
                     has2DCoordVars,
                     SW_Domain->spatialTol,
                     LogInfo
