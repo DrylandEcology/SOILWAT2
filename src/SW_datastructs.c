@@ -290,7 +290,7 @@ static double calcDistance(
         yDiff = coordsTwo[0] - coordsOne[0];
         xDiff = coordsTwo[1] - coordsOne[1];
         yMean = ((coordsTwo[0] + coordsOne[0]) / 2) * deg_to_rad;
-        cosRes = cos(yMean * deg_to_rad);
+        cosRes = cos(yMean);
         cosResSquared = pow(cosRes, 2);
         cosResCubed = pow(cosRes, 3);
 
