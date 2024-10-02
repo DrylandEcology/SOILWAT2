@@ -233,9 +233,8 @@ void SW_NC_get_dim_identifier(
         LogError(
             LogInfo,
             LOGERROR,
-            "An error occurred attempting to "
-            "retrieve the dimension identifier "
-            "of the dimension %s.",
+            "An error occurred attempting to retrieve the "
+            "identifier of the dimension %s.",
             dimName
         );
     }
