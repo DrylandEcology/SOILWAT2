@@ -2377,7 +2377,6 @@ static void determine_index_file_use(
 
         coordIndex++;
     }
-    *useIndexFile = (Bool) !*useIndexFile;
 }
 
 /**
