@@ -94,9 +94,9 @@ the two dimensions
 @param[out] indices List of indices in which the coordinates exist within the
 input files that will be sorted with the coordinates to match coordinates
 to the coorect indices
-@param[] left Lower bound of the sorting while recursing through the
+@param[in] left Lower bound of the sorting while recursing through the
 function
-@param[] right Upper bound of the sorting while recursing through the
+@param[in] right Upper bound of the sorting while recursing through the
 function
 @param[in,out] lIndex Lower pointer (index) that will be used to swap
 elements given a center pivot point
