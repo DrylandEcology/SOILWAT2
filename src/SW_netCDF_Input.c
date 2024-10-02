@@ -3280,6 +3280,7 @@ static void free_tempcoords_close_files(
     for (index = 0; index < numFiles; index++) {
         if (*(fileIDs[index]) > -1) {
             nc_close(*(fileIDs[index]));
+            *(fileIDs[index]) = -1;
         }
     }
 }
