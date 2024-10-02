@@ -3016,9 +3016,9 @@ static void get_startend_indices(
     char *timeName,
     LOG_INFO *LogInfo
 ) {
-    unsigned int left = 0;
-    unsigned int right = (unsigned int) timeSize - 1;
-    unsigned int middle;
+    int left = 0;
+    int right = (int) timeSize - 1;
+    int middle;
 
     /* base 0 */
     int numDays = (MAX_DAYS - 1) + (isleapyear(year) ? 1 : 0) - 1;
