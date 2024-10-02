@@ -257,9 +257,9 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
                 /* Check to see if there are any unexpected negative or
                    zero values */
-                if(intRes <= 0) {
-                    if(keyID >= 1 && keyID <= 3) { /* > 0 */
-                        if(keyID == 1) {
+                if (intRes <= 0) {
+                    if (keyID >= 1 && keyID <= 3) { /* > 0 */
+                        if (keyID == 1) {
                             errDim = (char *) "X";
                         } else {
                             errDim = (keyID == 2) ? (char *) "Y" : (char *) "S";
@@ -271,7 +271,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                             MyFileName,
                             errDim
                         );
-                    } else if(keyID >= 4 && keyID <= 5) { /* >= 0 */
+                    } else if (keyID >= 4 && keyID <= 5) { /* >= 0 */
                         if (intRes < 0) {
                             LogError(
                                 LogInfo,
@@ -284,7 +284,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                         }
                     }
                 }
-                if(LogInfo->stopRun) {
+                if (LogInfo->stopRun) {
                     goto closeFile;
                 }
             }

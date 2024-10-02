@@ -3199,7 +3199,7 @@ static void calc_temporal_weather_indices(
             goto freeMem;
         }
 
-        if(timeSize <= 0) {
+        if (timeSize <= 0) {
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -3216,8 +3216,7 @@ static void calc_temporal_weather_indices(
            rather than x.5, so check to see if you do the + 0.5
            at the end of the calculation */
         valDoy1Add = (fmod(timeVals[timeSize - 1], 1.0) == 0.0) ? 0.0 : 0.5;
-        valDoy1 =
-            conv_times(system, currCalUnit, newCalUnit) + valDoy1Add;
+        valDoy1 = conv_times(system, currCalUnit, newCalUnit) + valDoy1Add;
 #endif
 
         get_startend_indices(
