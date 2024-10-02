@@ -3305,7 +3305,7 @@ static void determine_indexfile_use(
 
     char *fileName;
     char *axisNames[2] = {NULL, NULL}; /* Set later */
-    char *crsName;
+    char *gridMap;
 
     size_t ySize = 0;
     size_t xSize = 0;
@@ -3338,8 +3338,9 @@ static void determine_indexfile_use(
             axisNames[0] = SW_netCDFIn->inVarInfo[k][fIndex][INYAXIS];
             axisNames[1] = SW_netCDFIn->inVarInfo[k][fIndex][INXAXIS];
 
-            crsName = SW_netCDFIn->inVarInfo[k][fIndex][INCRSNAME];
-            inPrimCRSIsGeo = (Bool) (strcmp(crsName, "crs_geogsc") == 0);
+            gridMap = SW_netCDFIn->inVarInfo[k][fIndex][INGRIDMAPPING];
+            inPrimCRSIsGeo =
+                (Bool) (strcmp(gridMap, (char *) "latitude_longitude") == 0);
 
             get_input_coordinates(
                 SW_netCDFIn,
@@ -3749,7 +3750,8 @@ static void get_index_vars_info(
     char *domYName,
     char *domXName,
     int dimIDs[][2],
-    Bool *inHasSite,
+    Bool inHasSite,
+    char *siteName,
     char *indexVarNames[],
     int *numVars,
     LOG_INFO *LogInfo
@@ -3757,8 +3759,15 @@ static void get_index_vars_info(
     int varNum;
     char *varNames[] = {domYName, domXName};
 
-    *inHasSite = SW_NC_dimExists("site", inFileID);
-    if (*inHasSite && !siteDom) {
+    if (inHasSite && !SW_NC_dimExists(siteName, inFileID)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Input spreadsheet claims to have site variable '%s' "
+            "but it is not seen in the input nc file itself.",
+            siteName
+        );
+    } else if (inHasSite && !siteDom) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -3767,10 +3776,9 @@ static void get_index_vars_info(
         return;
     }
 
-    indexVarNames[0] =
-        (*inHasSite) ? (char *) "site_index" : (char *) "y_index";
-    indexVarNames[1] = (*inHasSite) ? (char *) "" : (char *) "x_index";
-    *numVars = (*inHasSite) ? 1 : 2;
+    indexVarNames[0] = (inHasSite) ? (char *) "site_index" : (char *) "y_index";
+    indexVarNames[1] = (inHasSite) ? (char *) "" : (char *) "x_index";
+    *numVars = (inHasSite) ? 1 : 2;
 
     for (varNum = 0; varNum < *numVars; varNum++) {
         SW_NC_get_vardimids(
@@ -5865,6 +5873,8 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     int *fileIDs[] = {&templateID, &ncFileID};
     const int numFree = 2;
 
+    char ***varInfo = NULL;
+
 #if defined(SOILWAT)
     if (LogInfo->printProgressMsg) {
         sw_message("is creating any necessary index files ...");
@@ -5886,8 +5896,10 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     fIndex++;
                 }
 
-                yxVarNames[0] = SW_netCDFIn->inVarInfo[k][fIndex][INYAXIS];
-                yxVarNames[1] = SW_netCDFIn->inVarInfo[k][fIndex][INXAXIS];
+                varInfo = SW_netCDFIn->inVarInfo[k];
+
+                yxVarNames[0] = varInfo[fIndex][INYAXIS];
+                yxVarNames[1] = varInfo[fIndex][INXAXIS];
 
                 if (k == eSW_InWeather) {
                     fileName =
@@ -5896,11 +5908,10 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     fileName = SW_Domain->SW_PathInputs.ncInFiles[k][fIndex];
                 }
 
-                inPrimCRSIsGeo =
-                    (Bool) (strcmp(
-                                SW_netCDFIn->inVarInfo[k][fIndex][INCRSNAME],
-                                "crs_geogsc"
-                            ) == 0);
+                inPrimCRSIsGeo = (Bool) (strcmp(
+                                             varInfo[fIndex][INGRIDMAPPING],
+                                             "latitude_longitude"
+                                         ) == 0);
 
                 if (inPrimCRSIsGeo) {
                     useDomYVals = SW_netCDFIn->domYCoordsGeo;
@@ -5932,6 +5943,9 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     return; /* Exit function prematurely due to error */
                 }
 
+                inHasSite =
+                    (Bool) (strcmp(varInfo[fIndex][INDOMTYPE], "s") == 0);
+
                 get_index_vars_info(
                     siteDom,
                     ncFileID,
@@ -5940,7 +5954,8 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     domYName,
                     domXName,
                     dimIDs,
-                    &inHasSite,
+                    inHasSite,
+                    varInfo[fIndex][INSITENAME],
                     indexVarNames,
                     &numVarsToWrite,
                     LogInfo
