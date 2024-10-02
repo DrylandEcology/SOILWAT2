@@ -3786,6 +3786,283 @@ static void get_index_vars_info(
     }
 }
 
+/**
+@brief Get attribute values of type double
+
+@param[in] ncFileID File identifier to get value(s) from
+@param[in] varID Variable identifier to get value(s) from
+@param[in] attName Attribute name to get the value(s) of
+@param[out] vals List of read-in values from the variable's attribute
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void get_att_double(
+    int ncFileID, int varID, char *attName, double *vals, LOG_INFO *LogInfo
+) {
+    if (nc_get_att_double(ncFileID, varID, attName, vals) != NC_NOERR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not get a value from the attribute '%s'.",
+            attName
+        );
+    }
+}
+
+/**
+@brief Helper function to test if a variable has an attribute by the
+given name
+
+@param[in] ncFileID File identifier to test within
+@param[in] varID Variable identifier to test if it contains the queried
+attribute
+@param[in] attName Attribute name to test for
+@param[out] attSize If the attribute exists, this will hold the number of
+values the attribute contains
+@param[out] attExists Specifies if the attribute we are querying exists within
+the provided variable
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void att_exists(
+    int ncFileID,
+    int varID,
+    char *attName,
+    size_t *attSize,
+    Bool *attExists,
+    LOG_INFO *LogInfo
+) {
+    int result = nc_inq_attlen(ncFileID, varID, attName, attSize);
+
+    if (result != NC_NOERR && result != NC_ENOTATT) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not get information on the attribute '%s'.",
+            attName
+        );
+    }
+
+    *attExists = (Bool) (result != NC_ENOTATT && !LogInfo->stopRun);
+}
+
+/**
+@brief Compare a user-provided input file against the program-generated/
+user-provided index file to make sure the following criteria matches:
+    * (Auxilary) Spatial coordinate variable names
+    * Certain attributes of the CRS that we should expect
+
+@param[in] indexFileID Index file identifier
+@param[in] testFileID Testing file (input) identifier
+@param[in] spatialNames Spatial variable names to test for
+@param[in] numSpatialVars The number of spatial variables to test for
+@param[in] indexFileName The name of the index file
+@param[in] testFileName The name of user-provided input
+@param[in] indexCRSName The name of the CRS variable within the index file
+@param[in] testCRSName The name of the CRS variable within the input file
+@param[in,out] LogInfo Holds information on warnings and errors
+*/
+static void check_input_file_against_index(
+    int indexFileID,
+    int testFileID,
+    char **spatialNames,
+    int numSpatialVars,
+    char *indexFileName,
+    char *testFileName,
+    char *indexCRSName,
+    char *testCRSName,
+    LOG_INFO *LogInfo
+) {
+    int index;
+    int att;
+    const int numDimsAndVars = 2;
+    nc_type attType;
+
+    size_t indexAttSize = 0;
+    size_t testAttSize = 0;
+    size_t *attSizes[] = {&indexAttSize, &testAttSize};
+    Bool indexHasVar;
+    Bool testHasVar;
+    Bool indexAttExists;
+    Bool testAttExists;
+    Bool *attExists[] = {&indexAttExists, &testAttExists};
+    Bool indexCRSExists = SW_NC_varExists(indexFileID, indexCRSName);
+    Bool testCRSExists = SW_NC_varExists(testFileID, testCRSName);
+
+    int fileIDs[] = {indexFileID, testFileID};
+    int indexVarID = -1;
+    int testVarID = -1;
+    int *varIDs[] = {&indexVarID, &testVarID};
+    char indexCRSAtt[MAX_FILENAMESIZE];
+    char testCRSAtt[MAX_FILENAMESIZE];
+    char *crsAttVals[] = {indexCRSAtt, testCRSAtt};
+    const int numCrsAtts = 9;
+    char *crsAttNames[] = {
+        "grid_mapping_name",
+        "semi_major_axis",
+        "inverse_flattening",
+        "longitude_of_prime_meridian",
+        "longitude_of_central_meridian",
+        "latitude_of_projection_origin",
+        "false_easting",
+        "false_northing",
+        "standard_parallel"
+    };
+    char *CRSNames[] = {indexCRSName, testCRSName};
+
+    /* Standard parallel values 1 or 2 */
+    double indexDoubleVals[2] = {0.0};
+    double testDoubleVals[2] = {0.0};
+    double *doubleVals[] = {indexDoubleVals, testDoubleVals};
+
+    /* Identical spatial coordinate variable names */
+    for (index = 0; index < numSpatialVars; index++) {
+        indexHasVar = SW_NC_varExists(indexFileID, spatialNames[index]);
+        testHasVar = SW_NC_varExists(testFileID, spatialNames[index]);
+
+        if (!indexHasVar && !testHasVar) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Both the index file, '%s', and the input file, '%s',"
+                "do not have the expected variable '%s'.",
+                indexFileName,
+                testFileName,
+                spatialNames[index]
+            );
+        } else if (!indexHasVar || !testHasVar) {
+            /* Example error message:
+               "The input file, 'Input_nc/inWeather/weather.nc', does not have
+                the spatial variable 'latitude' while the index counterpart,
+                'Input_nc/inWeather/index_weather.nc', does." */
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "The %s file, '%s', does not have the spatial "
+                "variable '%s' while the %s counterpart, '%s', does.",
+                (!indexHasVar) ? (char *) "index" : (char *) "input",
+                (!indexHasVar) ? indexFileName : testFileName,
+                spatialNames[index],
+                (!indexHasVar) ? (char *) "input" : (char *) "index",
+                (!indexHasVar) ? testFileName : indexFileName
+            );
+        }
+        if (LogInfo->stopRun) {
+            return;
+        }
+    }
+
+    /* Identical CRS if present this includes testing for
+       grid_mapping_name, semi_major_axis, inverse_flattening,
+       longitude_of_central_meridian, latitude_of_projection_origin,
+       false_easting, false_northing, and standard_parallel (if they exist);
+       The for-loops that are contained within this conditional loop through
+       the index file information (0) and the input file information (1),
+       the specific type of information is dependent on the loop instance */
+    if (indexCRSExists && testCRSExists) {
+        for (index = 0; index < numDimsAndVars; index++) {
+            SW_NC_get_var_identifier(
+                fileIDs[index], CRSNames[index], varIDs[index], LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
+            }
+        }
+
+        for (att = 0; att < numCrsAtts; att++) {
+            for (index = 0; index < numDimsAndVars; index++) {
+                att_exists(
+                    fileIDs[index],
+                    *varIDs[index],
+                    crsAttNames[att],
+                    attSizes[index],
+                    attExists[index],
+                    LogInfo
+                );
+                if (LogInfo->stopRun) {
+                    return;
+                }
+            }
+
+            if (indexAttExists && testAttExists) {
+                if (nc_inq_atttype(
+                        testFileID, testVarID, crsAttNames[att], &attType
+                    ) != NC_NOERR) {
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "Could not get type of attribute '%s' under the "
+                        "variable '%s'.",
+                        crsAttNames[att],
+                        testCRSName
+                    );
+                    return;
+                }
+
+                if (attType == NC_CHAR || attType == NC_STRING) {
+                    for (index = 0; index < numDimsAndVars; index++) {
+                        SW_NC_get_str_att_val(
+                            fileIDs[index],
+                            CRSNames[index],
+                            crsAttNames[att],
+                            crsAttVals[index],
+                            LogInfo
+                        );
+                        if (LogInfo->stopRun) {
+                            return;
+                        }
+                    }
+
+                    if (strcmp(indexCRSAtt, testCRSAtt) != 0) {
+                        LogError(
+                            LogInfo,
+                            LOGERROR,
+                            "The attribute '%s' under the CRS variables '%s' "
+                            "and '%s' do not match.",
+                            crsAttNames[att],
+                            indexCRSName,
+                            testCRSName
+                        );
+                        return;
+                    }
+                } else if (attType == NC_DOUBLE) {
+                    /* Compare the values of attributes that are of type
+                       NC_DOUBLE, "standard_parallel" may have one or
+                       two values, others should have one */
+                    for (index = 0; index < numDimsAndVars; index++) {
+                        get_att_double(
+                            fileIDs[index],
+                            *varIDs[index],
+                            crsAttNames[att],
+                            doubleVals[index],
+                            LogInfo
+                        );
+                        if (LogInfo->stopRun) {
+                            return;
+                        }
+                    }
+
+                    if (indexAttSize == testAttSize) {
+                        if (!EQ(indexDoubleVals[0], testDoubleVals[0]) ||
+                            (indexAttSize == 2 &&
+                             !EQ(indexDoubleVals[1], testDoubleVals[1]))) {
+
+                            LogError(
+                                LogInfo,
+                                LOGERROR,
+                                "The value(s) for the attribute '%s' do not "
+                                "match between the input file and index "
+                                "file.",
+                                indexCRSName,
+                                testCRSName
+                            );
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
@@ -4362,8 +4639,25 @@ void SW_NCIN_read_inputs(
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
+    int inKey;
     int file;
+    int indexFileID = -1;
+    int inFileID = -1;
+    int *fileID;
+    int numSpatialVars;
+    int *fileIDs[] = {&indexFileID, &inFileID};
+    const int numFiles = 2;
 
+    char *spatialNames[4];
+    char **fileNames;
+    char **varInfo;
+    char **indexVarInfo;
+    Bool **readInVars = SW_Domain->netCDFInput.readInVars;
+    Bool *useIndexFile = SW_Domain->netCDFInput.useIndexFile;
+    Bool fileIsIndex;
+    Bool primCRSIsGeo;
+
+    /* Check the domain files */
     for (file = 0; file < SW_NVARDOM; file++) {
         SW_NC_check(
             SW_Domain,
@@ -4375,6 +4669,86 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             return; // Exit function prematurely due to inconsistent data
         }
     }
+
+    /* Check actual input files provided by the user */
+    ForEachNCInKey(inKey) {
+        if (readInVars[inKey][0]) {
+            indexVarInfo = SW_Domain->netCDFInput.inVarInfo[inKey][0];
+            fileNames = SW_Domain->SW_PathInputs.ncInFiles[inKey];
+
+            for (file = 0; file < numVarsInKey[inKey]; file++) {
+                if (readInVars[inKey][file + 1] &&
+                    (file > 0 || (file == 0 && useIndexFile[inKey]))) {
+
+                    fileIsIndex = (Bool) (file == 0);
+                    fileID = (fileIsIndex) ? &indexFileID : &inFileID;
+                    varInfo = SW_Domain->netCDFInput.inVarInfo[inKey][file];
+                    primCRSIsGeo =
+                        (Bool) (strcmp(
+                                    varInfo[INGRIDMAPPING], "latitude_longitude"
+                                ) == 0);
+
+                    SW_NC_open(fileNames[file], NC_NOWRITE, fileID, LogInfo);
+                    if (LogInfo->stopRun) {
+                        return;
+                    }
+
+                    /* Get spatial coordinate names to make sure they're
+                        identical between the index and input files including
+                        auxilary coordinate variables */
+                    if (primCRSIsGeo) {
+                        spatialNames[0] = varInfo[INYAXIS];
+                        spatialNames[1] = varInfo[INXAXIS];
+                        numSpatialVars = 2;
+                    } else {
+                        spatialNames[0] =
+                            SW_Domain->OutDom.netCDFOutput.geo_YAxisName;
+                        spatialNames[1] =
+                            SW_Domain->OutDom.netCDFOutput.geo_XAxisName;
+                        spatialNames[2] = varInfo[INYAXIS];
+                        spatialNames[3] = varInfo[INXAXIS];
+                        numSpatialVars = 4;
+                    }
+
+                    /* Check the current input file either against the
+                       domain (current file is an index file or the input
+                       file's domain matches the programs domain exactly),
+                       otherwise, compare the input file against the
+                       provided index file */
+                    if (fileIsIndex || !useIndexFile[inKey]) {
+                        SW_NC_check(
+                            SW_Domain, *fileID, fileNames[file], LogInfo
+                        );
+                    } else {
+                        check_input_file_against_index(
+                            indexFileID,
+                            inFileID,
+                            spatialNames,
+                            numSpatialVars,
+                            fileNames[0],
+                            fileNames[file],
+                            indexVarInfo[INCRSNAME],
+                            varInfo[INCRSNAME],
+                            LogInfo
+                        );
+                    }
+                    if (LogInfo->stopRun) {
+                        goto closeFile;
+                    }
+
+                    if (file > 0) {
+                        free_tempcoords_close_files(NULL, fileIDs, 0, numFiles);
+                    }
+                }
+            }
+
+            nc_close(indexFileID);
+            indexFileID = -1;
+        }
+    }
+
+closeFile:
+    free_tempcoords_close_files(NULL, fileIDs, 0, numFiles);
 }
 
 /**
