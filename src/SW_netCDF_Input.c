@@ -3266,7 +3266,7 @@ close
 @param[in] numCoordVars Number of coordinate variables to free
 @param[in] numFiles Number of nc files to close
 */
-static void free_close_temp_coords(
+static void free_tempcoords_close_files(
     double ***tempCoords, int *fileIDs[], int numCoordVars, int numFiles
 ) {
     int index;
@@ -3377,7 +3377,9 @@ static void determine_indexfile_use(
         freeMem:
             nc_close(ncFileID);
 
-            free_close_temp_coords(freeArr, NULL, numFreeArr, numFileClose);
+            free_tempcoords_close_files(
+                freeArr, NULL, numFreeArr, numFileClose
+            );
         }
     }
 }
@@ -5651,11 +5653,11 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                 nc_close(templateID);
                 templateID = -1;
 
-                free_close_temp_coords(freeArr, fileIDs, numFree, numFree);
+                free_tempcoords_close_files(freeArr, fileIDs, numFree, numFree);
             }
         }
     }
 
 freeMem:
-    free_close_temp_coords(freeArr, fileIDs, numFree, numFree);
+    free_tempcoords_close_files(freeArr, fileIDs, numFree, numFree);
 }
