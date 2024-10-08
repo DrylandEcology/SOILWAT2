@@ -141,8 +141,8 @@ void SW_NC_create_full_var(
     unsigned int startYr,
     OutPeriod pd,
     int deflateLevel,
-    const char *latName,
-    const char *lonName,
+    const char *yName,
+    const char *xName,
     const char *siteName,
     const int coordAttIndex,
     LOG_INFO *LogInfo

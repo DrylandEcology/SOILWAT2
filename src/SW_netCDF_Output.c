@@ -936,8 +936,8 @@ SW_OUTNPERIODS).
     years between netCDF files (returns updated value)
 @param[in] deflateLevel Level of deflation that will be used for the created
 variable
-@param[in] latName User-provided latitude name
-@param[in] lonName User-provided longitude name
+@param[in] yName User-provided latitude/y name
+@param[in] xName User-provided longitude/x name
 @param[in] LogInfo Holds information on warnings and errors
 */
 static void create_output_file(
@@ -957,8 +957,8 @@ static void create_output_file(
     int baseCalendarYear,
     double *startTime,
     int deflateLevel,
-    const char *latName,
-    const char *lonName,
+    const char *yName,
+    const char *xName,
     LOG_INFO *LogInfo
 ) {
 
@@ -1023,8 +1023,8 @@ static void create_output_file(
                 attVals,
                 sumType,
                 siteDom,
-                latName,
-                lonName,
+                yName,
+                xName,
                 LogInfo
             );
             if (LogInfo->stopRun) {
@@ -1049,8 +1049,8 @@ static void create_output_file(
                 startYr,
                 pd,
                 deflateLevel,
-                latName,
-                lonName,
+                yName,
+                xName,
                 OutDom->netCDFOutput.siteName,
                 coordAttInd,
                 LogInfo
@@ -1855,10 +1855,16 @@ void SW_NCOUT_create_output_files(
     char **ncOutFileNames[][SW_OUTNPERIODS],
     LOG_INFO *LogInfo
 ) {
+    Bool primCRSIsGeo =
+        SW_Domain->OutDom.netCDFOutput.primary_crs_is_geographic;
 
     /* Get latitude/longitude names that were read-in from input file */
-    char *readinYName = SW_Domain->OutDom.netCDFOutput.geo_YAxisName;
-    char *readinXName = SW_Domain->OutDom.netCDFOutput.geo_XAxisName;
+    char *readinYName = (primCRSIsGeo) ?
+                            SW_Domain->OutDom.netCDFOutput.geo_YAxisName :
+                            SW_Domain->OutDom.netCDFOutput.proj_YAxisName;
+    char *readinXName = (primCRSIsGeo) ?
+                            SW_Domain->OutDom.netCDFOutput.geo_XAxisName :
+                            SW_Domain->OutDom.netCDFOutput.proj_XAxisName;
 
     int key;
     int ip;

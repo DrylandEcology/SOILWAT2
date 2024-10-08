@@ -960,8 +960,8 @@ and writing attributes
 @param[in] pd Current output netCDF period
 @param[in] deflateLevel Level of deflation that will be used for the created
 variable
-@param[in] latName User-provided latitude name
-@param[in] lonName User-provided longitude name
+@param[in] yName User-provided latitude/y name
+@param[in] xName User-provided longitude/x name
 @param[in] coordAttIndex Specifies the coordinate attribute location
 within the provided `attNames`/`attVals` (if there isn't an attribute
 of this name, it's value should be -1)
@@ -986,8 +986,8 @@ void SW_NC_create_full_var(
     unsigned int startYr,
     OutPeriod pd,
     int deflateLevel,
-    const char *latName,
-    const char *lonName,
+    const char *yName,
+    const char *xName,
     const char *siteName,
     const int coordAttIndex,
     LOG_INFO *LogInfo
@@ -999,8 +999,8 @@ void SW_NC_create_full_var(
     int dimIDs[MAX_NUM_DIMS];
     Bool domTypeIsSites = (Bool) (strcmp(domType, "s") == 0);
     unsigned int numConstDims = (domTypeIsSites) ? 1 : 2;
-    const char *thirdDim = (domTypeIsSites) ? siteName : latName;
-    const char *constDimNames[] = {thirdDim, lonName};
+    const char *thirdDim = (domTypeIsSites) ? siteName : yName;
+    const char *constDimNames[] = {thirdDim, xName};
     const char *timeVertVegNames[] = {"time", "vertical", "pft"};
     char *dimVarName;
     size_t timeVertVegVals[] = {timeSize, vertSize, pftSize};

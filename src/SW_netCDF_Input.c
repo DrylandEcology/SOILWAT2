@@ -4575,10 +4575,16 @@ void SW_NCIN_read_inputs(
     int varNum;
     Bool domTypeS =
         (Bool) (Str_CompareI(SW_Domain->DomainType, (char *) "s") == 0);
+    Bool primCRSIsGeo =
+        SW_Domain->OutDom.netCDFOutput.primary_crs_is_geographic;
 
     /* Get latitude/longitude names that were read-in from input file */
-    char *readinGeoYName = SW_Domain->OutDom.netCDFOutput.geo_YAxisName;
-    char *readinGeoXName = SW_Domain->OutDom.netCDFOutput.geo_XAxisName;
+    char *readinGeoYName = (primCRSIsGeo) ?
+                               SW_Domain->OutDom.netCDFOutput.geo_YAxisName :
+                               SW_Domain->OutDom.netCDFOutput.proj_YAxisName;
+    char *readinGeoXName = (primCRSIsGeo) ?
+                               SW_Domain->OutDom.netCDFOutput.geo_XAxisName :
+                               SW_Domain->OutDom.netCDFOutput.proj_XAxisName;
 
     const int numInFilesNC = 1;
     const int numDomVals = 2;
