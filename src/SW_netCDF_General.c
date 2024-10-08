@@ -258,10 +258,17 @@ void SW_NC_check(
 ) {
 
     Bool fileWasClosed = (ncFileID < 0) ? swTRUE : swFALSE;
+    Bool geoIsPrimCRS =
+        SW_Domain->OutDom.netCDFOutput.primary_crs_is_geographic;
 
-    /* Get latitude/longitude names that were read-in from domain input file */
-    char *readinYName = SW_Domain->OutDom.netCDFOutput.geo_YAxisName;
-    char *readinXName = SW_Domain->OutDom.netCDFOutput.geo_XAxisName;
+    /* Get latitude/longitude or x/y names that were read-in from domain
+       input file */
+    char *readinYName = (geoIsPrimCRS) ?
+                            SW_Domain->OutDom.netCDFOutput.geo_YAxisName :
+                            SW_Domain->OutDom.netCDFOutput.proj_YAxisName;
+    char *readinXName = (geoIsPrimCRS) ?
+                            SW_Domain->OutDom.netCDFOutput.geo_XAxisName :
+                            SW_Domain->OutDom.netCDFOutput.proj_XAxisName;
 
     if (fileWasClosed) {
         // "Once a netCDF dataset is opened, it is referred to by a netCDF ID,
@@ -274,8 +281,6 @@ void SW_NC_check(
 
     SW_CRS *crs_geogsc = &SW_Domain->OutDom.netCDFOutput.crs_geogsc;
     SW_CRS *crs_projsc = &SW_Domain->OutDom.netCDFOutput.crs_projsc;
-    Bool geoIsPrimCRS =
-        SW_Domain->OutDom.netCDFOutput.primary_crs_is_geographic;
     char *siteName = SW_Domain->OutDom.netCDFOutput.siteName;
     char strAttVal[LARGE_VALUE];
     double doubleAttVal;
