@@ -109,7 +109,11 @@ int main(int argc, char **argv) {
 
     // read user inputs
     SW_CTL_read_inputs_from_disk(
-        &sw_template, &SW_Domain.OutDom, &SW_Domain.SW_PathInputs, &LogInfo
+        &sw_template,
+        &SW_Domain.OutDom,
+        &SW_Domain.SW_PathInputs,
+        SW_Domain.netCDFInput.readInVars[eSW_InWeather][0],
+        &LogInfo
     );
     if (LogInfo.stopRun) {
         goto finishProgram;
@@ -133,16 +137,22 @@ int main(int argc, char **argv) {
 #endif
 
     // finalize daily weather
-    SW_WTH_finalize_all_weather(
-        &sw_template.Markov,
-        &sw_template.Weather,
-        sw_template.Model.cum_monthdays,
-        sw_template.Model.days_in_month,
-        &LogInfo
-    );
-    if (LogInfo.stopRun) {
-        goto finishProgram;
+#if defined(SWNETCDF)
+    if (!SW_Domain.netCDFInput.readInVars[eSW_InWeather][0]) {
+#endif
+        SW_WTH_finalize_all_weather(
+            &sw_template.Markov,
+            &sw_template.Weather,
+            sw_template.Model.cum_monthdays,
+            sw_template.Model.days_in_month,
+            &LogInfo
+        );
+        if (LogInfo.stopRun) {
+            goto finishProgram;
+        }
+#if defined(SWNETCDF)
     }
+#endif
 
     // initialize simulation run (based on user inputs)
     SW_CTL_init_run(&sw_template, &LogInfo);

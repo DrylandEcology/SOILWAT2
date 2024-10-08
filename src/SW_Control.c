@@ -880,12 +880,16 @@ reSet: {
     information that do not change throughout simulation runs
 @param[in,out] SW_PathInputs Struct of type SW_PATH_INPUTS which
 holds basic information about output files and values
+@param[in] readWeatherVarsNC Specifies if the function should read in
+text weather variables or skip them and read weather nc files later
+in the program
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_read_inputs_from_disk(
     SW_RUN *sw,
     SW_OUT_DOM *OutDom,
     SW_PATH_INPUTS *SW_PathInputs,
+    Bool readWeatherVarsNC,
     LOG_INFO *LogInfo
 ) {
 #ifdef SWDEBUG
@@ -907,16 +911,24 @@ void SW_CTL_read_inputs_from_disk(
         sw_printf(" > 'model'");
     }
 #endif
-
-    SW_WTH_setup(
-        &sw->Weather,
-        SW_PathInputs->txtInFiles,
-        SW_PathInputs->txtWeatherPrefix,
-        LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
+#if defined(SWNETCDF)
+    if (readWeatherVarsNC) {
+#endif
+        SW_WTH_setup(
+            &sw->Weather,
+            SW_PathInputs->txtInFiles,
+            SW_PathInputs->txtWeatherPrefix,
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+#if defined(SWNETCDF)
     }
+#else
+    (void) readWeatherVarsNC;
+#endif
+
 #ifdef SWDEBUG
     if (debug) {
         sw_printf(" > 'weather setup'");
@@ -950,10 +962,17 @@ void SW_CTL_read_inputs_from_disk(
 #endif
     }
 
-    SW_WTH_read(&sw->Weather, &sw->Sky, &sw->Model, LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
+#if defined(SWNETCDF)
+    if (!readWeatherVarsNC) {
+#endif
+        SW_WTH_read(&sw->Weather, &sw->Sky, &sw->Model, LogInfo);
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+#if defined(SWNETCDF)
     }
+#endif
+
 #ifdef SWDEBUG
     if (debug) {
         sw_printf(" > 'weather read'");

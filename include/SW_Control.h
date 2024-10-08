@@ -55,6 +55,7 @@ void SW_CTL_read_inputs_from_disk(
     SW_RUN *sw,
     SW_OUT_DOM *OutDom,
     SW_PATH_INPUTS *SW_PathInputs,
+    Bool readWeatherVarsNC,
     LOG_INFO *LogInfo
 );
 
