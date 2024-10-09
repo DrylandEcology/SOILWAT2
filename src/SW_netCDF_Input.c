@@ -3803,7 +3803,11 @@ static void get_index_vars_info(
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void get_att_double(
-    int ncFileID, int varID, const char *attName, double *vals, LOG_INFO *LogInfo
+    int ncFileID,
+    int varID,
+    const char *attName,
+    double *vals,
+    LOG_INFO *LogInfo
 ) {
     if (nc_get_att_double(ncFileID, varID, attName, vals) != NC_NOERR) {
         LogError(
@@ -4423,7 +4427,7 @@ void SW_NCIN_create_domain_template(
             "Projected CRS with a geographical bounding box detected."
         );
     }
-    if(LogInfo->stopRun) {
+    if (LogInfo->stopRun) {
         return;
     }
 
