@@ -3653,10 +3653,10 @@ static void write_indices(
 
             if (!isnull(nearNeighbor)) {
                 SW_NC_write_vals(
-                    (siteDom) ? &indexVarIDs[1] : &indexVarIDs[0],
+                    (siteDom) ? &indexVarIDs[0] : &indexVarIDs[1],
                     templateID,
-                    (siteDom) ? indexVarName[1] : indexVarName[0],
-                    &nearNeighbor->indices[1],
+                    (siteDom) ? indexVarName[0] : indexVarName[1],
+                    &nearNeighbor->indices[0],
                     &syWritePos,
                     writeCount,
                     "unsigned int",
@@ -3666,7 +3666,7 @@ static void write_indices(
                     goto freeTree;
                 }
 
-                if (siteDom) {
+                if (!siteDom) {
                     SW_NC_write_vals(
                         &indexVarIDs[0],
                         templateID,
