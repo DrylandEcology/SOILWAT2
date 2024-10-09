@@ -53,9 +53,8 @@ void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *LogInfo);
 
 void SW_CTL_read_inputs_from_disk(
     SW_RUN *sw,
-    SW_OUT_DOM *OutDom,
-    SW_PATH_INPUTS *SW_PathInputs,
-    Bool readWeatherVarsNC,
+    SW_DOMAIN *SW_Domain,
+    Bool *hasConsistentSoilLayerDepths,
     LOG_INFO *LogInfo
 );
 

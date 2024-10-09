@@ -110,9 +110,8 @@ int main(int argc, char **argv) {
     // read user inputs
     SW_CTL_read_inputs_from_disk(
         &sw_template,
-        &SW_Domain.OutDom,
-        &SW_Domain.SW_PathInputs,
-        SW_Domain.netCDFInput.readInVars[eSW_InWeather][0],
+        &SW_Domain,
+        &SW_Domain.hasConsistentSoilLayerDepths,
         &LogInfo
     );
     if (LogInfo.stopRun) {

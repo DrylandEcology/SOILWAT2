@@ -213,9 +213,8 @@ int setup_testGlobalSoilwatTemplate() {
 
     SW_CTL_read_inputs_from_disk(
         &template_SW_Run,
-        &template_SW_Domain.OutDom,
-        &template_SW_Domain.SW_PathInputs,
-        template_SW_Domain.netCDFInput.readInVars[eSW_InWeather][0],
+        &template_SW_Domain,
+        &template_SW_Domain.hasConsistentSoilLayerDepths,
         &LogInfo
     );
     if (LogInfo.stopRun != 0u) {

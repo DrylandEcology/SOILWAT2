@@ -875,25 +875,27 @@ reSet: {
         in doing so.
 
 @param[in,out] sw Comprehensive struct of type SW_RUN containing
-  all information in the simulation
-@param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
-    information that do not change throughout simulation runs
-@param[in,out] SW_PathInputs Struct of type SW_PATH_INPUTS which
-holds basic information about output files and values
-@param[in] readWeatherVarsNC Specifies if the function should read in
-text weather variables or skip them and read weather nc files later
-in the program
+all information in the simulation
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[out] hasConsistentSoilLayerDepths Holds the specification if the
+input soil layers have the same depth throughout all inputs (only used
+when dealing with nc inputs)
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_read_inputs_from_disk(
     SW_RUN *sw,
-    SW_OUT_DOM *OutDom,
-    SW_PATH_INPUTS *SW_PathInputs,
-    Bool readWeatherVarsNC,
+    SW_DOMAIN *SW_Domain,
+    Bool *hasConsistentSoilLayerDepths,
     LOG_INFO *LogInfo
 ) {
+    SW_PATH_INPUTS *SW_PathInputs = &SW_Domain->SW_PathInputs;
 #ifdef SWDEBUG
     int debug = 0;
+#endif
+#if defined(SWNETCDF)
+    Bool readWeatherVarsNC =
+        SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
 #endif
 
 #ifdef SWDEBUG
@@ -925,8 +927,6 @@ void SW_CTL_read_inputs_from_disk(
         }
 #if defined(SWNETCDF)
     }
-#else
-    (void) readWeatherVarsNC;
 #endif
 
 #ifdef SWDEBUG
