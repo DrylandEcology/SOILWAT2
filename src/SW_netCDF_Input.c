@@ -2311,14 +2311,14 @@ static void read_domain_coordinates(
 
         for (val = 0; val < *domCoordSizes[index]; val++) {
             /* Check latitude */
-            validY =
-                (index % 2 == 0 && (GE(*(domCoordArrs[index])[val], -90.0) &&
-                                    LE(*(domCoordArrs[index])[val], 90.0)));
+            validY = (Bool) (index % 2 == 0 &&
+                             (GE(*(domCoordArrs[index])[val], -90.0) &&
+                              LE(*(domCoordArrs[index])[val], 90.0)));
 
             /* Check longitude */
-            validX =
-                (index % 2 == 1 && (GE(*(domCoordArrs[index])[val], -180.0) &&
-                                    LE(*(domCoordArrs[index])[val], 180.0)));
+            validX = (Bool) (index % 2 == 1 &&
+                             (GE(*(domCoordArrs[index])[val], -180.0) &&
+                              LE(*(domCoordArrs[index])[val], 180.0)));
 
             if ((index % 2 == 0 && !validY) || (index % 2 == 1 && !validX)) {
                 LogError(

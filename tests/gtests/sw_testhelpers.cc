@@ -215,6 +215,7 @@ int setup_testGlobalSoilwatTemplate() {
         &template_SW_Run,
         &template_SW_Domain.OutDom,
         &template_SW_Domain.SW_PathInputs,
+        template_SW_Domain.netCDFInput.readInVars[eSW_InWeather][0],
         &LogInfo
     );
     if (LogInfo.stopRun != 0u) {
