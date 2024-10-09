@@ -2242,8 +2242,11 @@ static void read_domain_coordinates(
 ) {
     int index;
     int varID;
+    size_t val;
     const int numReadInDims = (primCRSIsGeo) ? 2 : 4;
     const int numDims = 2;
+    Bool validY;
+    Bool validX;
 
     char *domCoordNames[2]; /* Set later */
 
@@ -2304,6 +2307,31 @@ static void read_domain_coordinates(
         );
         if (LogInfo->stopRun) {
             return; /* Exit prematurely due to error */
+        }
+
+        for (val = 0; val < *domCoordSizes[index]; val++) {
+            /* Check latitude */
+            validY =
+                (index % 2 == 0 && (GE(*(domCoordArrs[index])[val], -90.0) &&
+                                    LE(*(domCoordArrs[index])[val], 90.0)));
+
+            /* Check longitude */
+            validX =
+                (index % 2 == 1 && (GE(*(domCoordArrs[index])[val], -180.0) &&
+                                    LE(*(domCoordArrs[index])[val], 180.0)));
+
+            if ((index % 2 == 0 && !validY) || (index % 2 == 1 && !validX)) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Read-in coordinate value for '%s' is not within "
+                    "[%f, %f].",
+                    domCoordVarNames[index],
+                    (index % 2 == 0) ? -90.0 : -180.0,
+                    (index % 2 == 0) ? 90.0 : 180.0
+                );
+                return;
+            }
         }
     }
 }
