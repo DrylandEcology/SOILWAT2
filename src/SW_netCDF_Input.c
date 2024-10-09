@@ -70,7 +70,7 @@ static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] =
         {"1",        "cm", "cm",   "g cm-3", "cm3 cm-3", "g g-1", "g g-1",
          "g g-1", /*inSoil*/
          "cm3 cm-3", "1",  "degC", "1",      "1",        "1",     "1",
-         "1",        "1",  "1",    "1",      "1",        "1",     "1"},
+         "1",        "NA", "NA",   "NA",     "NA",       "NA",    "NA"},
         {"1",      "m2 m-2", "m2 m-2", "g m-2", "g m-2",
          "1",      "g m-2", /*inVeg*/
          "m2 m-2", "g m-2",  "g m-2",  "1",     "g m-2",
