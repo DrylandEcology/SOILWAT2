@@ -292,6 +292,7 @@ void SW_SIT_read(
     SW_SITE *SW_Site,
     char *txtInFiles[],
     SW_CARBON *SW_Carbon,
+    Bool *hasConsistentSoilLayerDepths,
     LOG_INFO *LogInfo
 );
 

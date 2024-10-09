@@ -989,7 +989,13 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_SIT_read(&sw->Site, SW_PathInputs->txtInFiles, &sw->Carbon, LogInfo);
+    SW_SIT_read(
+        &sw->Site,
+        SW_PathInputs->txtInFiles,
+        &sw->Carbon,
+        hasConsistentSoilLayerDepths,
+        LogInfo
+    );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
