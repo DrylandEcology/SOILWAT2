@@ -912,7 +912,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 #if defined(SWNETCDF)
-    if (readWeatherVarsNC) {
+    if (!readWeatherVarsNC) {
 #endif
         SW_WTH_setup(
             &sw->Weather,
