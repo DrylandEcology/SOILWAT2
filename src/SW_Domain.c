@@ -646,50 +646,59 @@ void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
     }
 }
 
-/** Identify soil profile information across simulation domain
+/**
+@brief Identify soil profile information across simulation domain
 
-    @param[out] hasConsistentSoilLayerDepths Flag indicating if all simulation
-        run within domain have identical soil layer depths
-        (though potentially variable number of soil layers)
-    @param[out] nMaxSoilLayers Largest number of soil layers across
-        simulation domain
-    @param[out] nMaxEvapLayers Largest number of soil layers from which
-        bare-soil evaporation may extract water across simulation domain
-    @param[out] depthsAllSoilLayers Lower soil layer depths [cm] if
-        consistent across simulation domain
-    @param[in] default_n_layers Default number of soil layer
-    @param[in] default_n_evap_lyrs Default number of soil layer used for
-        bare-soil evaporation
-    @param[in] default_depths Default values of soil layer depths [cm]
-    @param[out] LogInfo Holds information on warnings and errors
+@param[in] SW_netCDFIn Constant netCDF input file information
+@param[in] SW_PathInputs
+@param[out] hasConsistentSoilLayerDepths Flag indicating if all simulation
+    run within domain have identical soil layer depths
+    (though potentially variable number of soil layers)
+@param[out] nMaxSoilLayers Largest number of soil layers across
+    simulation domain
+@param[out] nMaxEvapLayers Largest number of soil layers from which
+    bare-soil evaporation may extract water across simulation domain
+@param[out] depthsAllSoilLayers Lower soil layer depths [cm] if
+    consistent across simulation domain
+@param[in] default_n_layers Default number of soil layer
+@param[in] default_n_evap_lyrs Default number of soil layer used for
+    bare-soil evaporation
+@param[in] default_depths Default values of soil layer depths [cm]
+@param[out] LogInfo Holds information on warnings and errors
 */
 void SW_DOM_soilProfile(
-    Bool *hasConsistentSoilLayerDepths,
+    SW_NETCDF_IN *SW_netCDFIn,
+    SW_PATH_INPUTS *SW_PathInputs,
+    Bool hasConsistentSoilLayerDepths,
     LyrIndex *nMaxSoilLayers,
     LyrIndex *nMaxEvapLayers,
     double depthsAllSoilLayers[],
     LyrIndex default_n_layers,
     LyrIndex default_n_evap_lyrs,
-    double default_depths[],
+    const double default_depths[],
     LOG_INFO *LogInfo
 ) {
 
 #if defined(SWNETCDF)
-    SW_NCIN_soilProfile(
-        hasConsistentSoilLayerDepths,
-        nMaxSoilLayers,
-        nMaxEvapLayers,
-        depthsAllSoilLayers,
-        default_n_layers,
-        default_n_evap_lyrs,
-        default_depths,
-        LogInfo
-    );
+    if (SW_netCDFIn->readInVars[eSW_InSoil][0]) {
+        SW_NCIN_soilProfile(
+            SW_netCDFIn,
+            SW_PathInputs->ncInFiles[eSW_InSoil],
+            hasConsistentSoilLayerDepths,
+            nMaxSoilLayers,
+            nMaxEvapLayers,
+            depthsAllSoilLayers,
+            LogInfo
+        );
+    }
+
+    (void) default_n_layers;
+    (void) default_n_evap_lyrs;
+    (void) default_depths;
 
 #else
 
     // Assume default/template values are consistent
-    *hasConsistentSoilLayerDepths = swTRUE;
     *nMaxSoilLayers = default_n_layers;
     *nMaxEvapLayers = default_n_evap_lyrs;
 
@@ -700,6 +709,9 @@ void SW_DOM_soilProfile(
     );
 
     (void) LogInfo;
+    (void) SW_netCDFIn;
+    (void) SW_PathInputs;
+    (void) hasConsistentSoilLayerDepths;
 
 #endif // !SWNETCDF
 }

@@ -161,7 +161,9 @@ int main(int argc, char **argv) {
 
     // identify domain-wide soil profile information
     SW_DOM_soilProfile(
-        &SW_Domain.hasConsistentSoilLayerDepths,
+        &SW_Domain.netCDFInput,
+        &SW_Domain.SW_PathInputs,
+        SW_Domain.hasConsistentSoilLayerDepths,
         &SW_Domain.nMaxSoilLayers,
         &SW_Domain.nMaxEvapLayers,
         SW_Domain.depthsAllSoilLayers,
