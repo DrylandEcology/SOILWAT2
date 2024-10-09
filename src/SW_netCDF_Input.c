@@ -3829,23 +3829,19 @@ user-provided index file to make sure the following criteria matches:
     * (Auxilary) Spatial coordinate variable names
     * Certain attributes of the CRS that we should expect
 
+@param[in] inVarInfo List of lists that holds variable information for the
+varible being checked within the given nc file
 @param[in] indexFileID Index file identifier
 @param[in] testFileID Testing file (input) identifier
-@param[in] spatialNames Spatial variable names to test for
 @param[in] numSpatialVars The number of spatial variables to test for
-@param[in] indexFileName The name of the index file
-@param[in] testFileName The name of user-provided input
 @param[in] indexCRSName The name of the CRS variable within the index file
 @param[in] testCRSName The name of the CRS variable within the input file
 @param[in,out] LogInfo Holds information on warnings and errors
 */
 static void check_input_file_against_index(
+    char **inVarInfo,
     int indexFileID,
     int testFileID,
-    char **spatialNames,
-    int numSpatialVars,
-    char *indexFileName,
-    char *testFileName,
     char *indexCRSName,
     char *testCRSName,
     LOG_INFO *LogInfo
@@ -3858,8 +3854,6 @@ static void check_input_file_against_index(
     size_t indexAttSize = 0;
     size_t testAttSize = 0;
     size_t *attSizes[] = {&indexAttSize, &testAttSize};
-    Bool indexHasVar;
-    Bool testHasVar;
     Bool indexAttExists;
     Bool testAttExists;
     Bool *attExists[] = {&indexAttExists, &testAttExists};
@@ -3872,6 +3866,7 @@ static void check_input_file_against_index(
     int *varIDs[] = {&indexVarID, &testVarID};
     char indexCRSAtt[MAX_FILENAMESIZE];
     char testCRSAtt[MAX_FILENAMESIZE];
+    char unitsAtt[MAX_FILENAMESIZE];
     char *crsAttVals[] = {indexCRSAtt, testCRSAtt};
     const int numCrsAtts = 9;
     const char *crsAttNames[] = {
@@ -3891,43 +3886,6 @@ static void check_input_file_against_index(
     double indexDoubleVals[2] = {0.0};
     double testDoubleVals[2] = {0.0};
     double *doubleVals[] = {indexDoubleVals, testDoubleVals};
-
-    /* Identical spatial coordinate variable names */
-    for (index = 0; index < numSpatialVars; index++) {
-        indexHasVar = SW_NC_varExists(indexFileID, spatialNames[index]);
-        testHasVar = SW_NC_varExists(testFileID, spatialNames[index]);
-
-        if (!indexHasVar && !testHasVar) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "Both the index file, '%s', and the input file, '%s',"
-                "do not have the expected variable '%s'.",
-                indexFileName,
-                testFileName,
-                spatialNames[index]
-            );
-        } else if (!indexHasVar || !testHasVar) {
-            /* Example error message:
-               "The input file, 'Input_nc/inWeather/weather.nc', does not have
-                the spatial variable 'latitude' while the index counterpart,
-                'Input_nc/inWeather/index_weather.nc', does." */
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "The %s file, '%s', does not have the spatial "
-                "variable '%s' while the %s counterpart, '%s', does.",
-                (!indexHasVar) ? (char *) "index" : (char *) "input",
-                (!indexHasVar) ? indexFileName : testFileName,
-                spatialNames[index],
-                (!indexHasVar) ? (char *) "input" : (char *) "index",
-                (!indexHasVar) ? testFileName : indexFileName
-            );
-        }
-        if (LogInfo->stopRun) {
-            return;
-        }
-    }
 
     /* Identical CRS if present this includes testing for
        grid_mapping_name, semi_major_axis, inverse_flattening,
@@ -4039,6 +3997,28 @@ static void check_input_file_against_index(
                 }
             }
         }
+    }
+
+    /* Check input variable units */
+    SW_NC_get_str_att_val(
+        testFileID, inVarInfo[INNCVARNAME], "units", unitsAtt, LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    if (strcmp(inVarInfo[INVARUNITS], "NA") != 0 &&
+        strcmp(inVarInfo[INVARUNITS], unitsAtt) != 0) {
+
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Units of the variable '%s' differ between the input spreadsheet "
+            "and input netCDF ('%s' versus '%s').",
+            inVarInfo[INNCVARNAME],
+            inVarInfo[INVARUNITS],
+            unitsAtt
+        );
     }
 }
 
@@ -4643,11 +4623,11 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     int indexFileID = -1;
     int inFileID = -1;
     int *fileID;
-    int numSpatialVars;
     int *fileIDs[] = {&indexFileID, &inFileID};
     const int numFiles = 2;
 
     char *spatialNames[4];
+    char *fileName;
     char **fileNames;
     char **varInfo;
     char **indexVarInfo;
@@ -4686,8 +4666,12 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                         (Bool) (strcmp(
                                     varInfo[INGRIDMAPPING], "latitude_longitude"
                                 ) == 0);
+                    fileName =
+                        (inKey == eSW_InWeather) ?
+                            SW_Domain->SW_PathInputs.ncWeatherInFiles[file][0] :
+                            fileNames[file];
 
-                    SW_NC_open(fileNames[file], NC_NOWRITE, fileID, LogInfo);
+                    SW_NC_open(fileName, NC_NOWRITE, fileID, LogInfo);
                     if (LogInfo->stopRun) {
                         return;
                     }
@@ -4698,7 +4682,6 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     if (primCRSIsGeo) {
                         spatialNames[0] = varInfo[INYAXIS];
                         spatialNames[1] = varInfo[INXAXIS];
-                        numSpatialVars = 2;
                     } else {
                         spatialNames[0] =
                             SW_Domain->OutDom.netCDFOutput.geo_YAxisName;
@@ -4706,7 +4689,6 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                             SW_Domain->OutDom.netCDFOutput.geo_XAxisName;
                         spatialNames[2] = varInfo[INYAXIS];
                         spatialNames[3] = varInfo[INXAXIS];
-                        numSpatialVars = 4;
                     }
 
                     /* Check the current input file either against the
@@ -4720,12 +4702,9 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                         );
                     } else {
                         check_input_file_against_index(
+                            SW_Domain->netCDFInput.inVarInfo[inKey][file],
                             indexFileID,
                             inFileID,
-                            spatialNames,
-                            numSpatialVars,
-                            fileNames[0],
-                            fileNames[file],
                             indexVarInfo[INCRSNAME],
                             varInfo[INCRSNAME],
                             LogInfo
