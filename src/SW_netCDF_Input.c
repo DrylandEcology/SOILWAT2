@@ -4438,7 +4438,7 @@ static size_t get_max_inconsistent_soil_layers(
     LOG_INFO *LogInfo
 ) {
     int varNum;
-    int ncFileID;
+    int ncFileID = -1;
 
     char *fileName;
     char **varInfo;
@@ -4837,7 +4837,6 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     int *fileIDs[] = {&indexFileID, &inFileID};
     const int numFiles = 2;
 
-    char *spatialNames[4];
     char *fileName;
     char **fileNames;
     char **varInfo;
@@ -4845,7 +4844,6 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     Bool **readInVars = SW_Domain->netCDFInput.readInVars;
     Bool *useIndexFile = SW_Domain->netCDFInput.useIndexFile;
     Bool fileIsIndex;
-    Bool primCRSIsGeo;
 
     /* Check the domain files */
     for (file = 0; file < SW_NVARDOM; file++) {
@@ -4873,10 +4871,7 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     fileIsIndex = (Bool) (file == 0);
                     fileID = (fileIsIndex) ? &indexFileID : &inFileID;
                     varInfo = SW_Domain->netCDFInput.inVarInfo[inKey][file];
-                    primCRSIsGeo =
-                        (Bool) (strcmp(
-                                    varInfo[INGRIDMAPPING], "latitude_longitude"
-                                ) == 0);
+
                     fileName =
                         (inKey == eSW_InWeather) ?
                             SW_Domain->SW_PathInputs.ncWeatherInFiles[file][0] :
@@ -4885,21 +4880,6 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     SW_NC_open(fileName, NC_NOWRITE, fileID, LogInfo);
                     if (LogInfo->stopRun) {
                         return;
-                    }
-
-                    /* Get spatial coordinate names to make sure they're
-                        identical between the index and input files including
-                        auxilary coordinate variables */
-                    if (primCRSIsGeo) {
-                        spatialNames[0] = varInfo[INYAXIS];
-                        spatialNames[1] = varInfo[INXAXIS];
-                    } else {
-                        spatialNames[0] =
-                            SW_Domain->OutDom.netCDFOutput.geo_YAxisName;
-                        spatialNames[1] =
-                            SW_Domain->OutDom.netCDFOutput.geo_XAxisName;
-                        spatialNames[2] = varInfo[INYAXIS];
-                        spatialNames[3] = varInfo[INXAXIS];
                     }
 
                     /* Check the current input file either against the
