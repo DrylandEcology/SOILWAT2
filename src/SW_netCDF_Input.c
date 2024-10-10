@@ -2315,20 +2315,22 @@ static void read_domain_coordinates(
                              (GE(*(domCoordArrs[index])[val], -90.0) &&
                               LE(*(domCoordArrs[index])[val], 90.0)));
 
-            /* Check longitude */
+            /* Check longitude - can be [-180, 180] or [0, 360] */
             validX = (Bool) (index % 2 == 1 &&
-                             (GE(*(domCoordArrs[index])[val], -180.0) &&
-                              LE(*(domCoordArrs[index])[val], 180.0)));
+                             ((GE(*(domCoordArrs[index])[val], -180.0) &&
+                              LE(*(domCoordArrs[index])[val], 180.0)) ||
+                              (GE(*(domCoordArrs[index])[val], 0.0) &&
+                               LE(*(domCoordArrs[index])[val], 360.0))));
 
             if ((index % 2 == 0 && !validY) || (index % 2 == 1 && !validX)) {
                 LogError(
                     LogInfo,
                     LOGERROR,
-                    "Read-in coordinate value for '%s' is not within "
-                    "[%f, %f].",
-                    domCoordVarNames[index],
-                    (index % 2 == 0) ? -90.0 : -180.0,
-                    (index % 2 == 0) ? 90.0 : 180.0
+                    "Coordinate value of '%f' does not fit within the range "
+                    "%s for the variable '%s'.",
+                    *(domCoordArrs[index])[val],
+                    (index % 2 == 0) ? "[-90, 90]" : "[-180, 180]/[0, 360]",
+                    domCoordVarNames[index]
                 );
                 return;
             }
