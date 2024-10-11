@@ -5858,7 +5858,10 @@ void SW_NCIN_create_units_converters(
         }
 
         for (varIndex = 0; varIndex < numVarsInKey[key]; varIndex++) {
-            if (!SW_netCDFIn->readInVars[key][varIndex + 1]) {
+            if (!SW_netCDFIn->readInVars[key][varIndex + 1] ||
+                strcmp(
+                    SW_netCDFIn->inVarInfo[key][varIndex][INVARUNITS], "NA"
+                ) == 0) {
                 continue; // Skip variable iteration
             }
 
