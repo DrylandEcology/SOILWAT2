@@ -4069,6 +4069,9 @@ about the simulation
 key
 @param[in] ncSUID Current simulation unit identifier for which is used
 to get data from netCDF
+@param[in] spatialConv A list of UDUNITS2 converters that were created
+to convert input data to units the program can understand within the
+"inSpatial" input key
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void read_spatial_inputs(
@@ -4076,6 +4079,7 @@ static void read_spatial_inputs(
     SW_MODEL *SW_Model,
     char **spatialInFiles,
     size_t ncSUID[],
+    sw_converter_t **spatialConv,
     LOG_INFO *LogInfo
 ) {
     char ***inVarInfo = SW_Domain->netCDFInput.inVarInfo[eSW_InSpatial];
@@ -4163,9 +4167,16 @@ static void read_spatial_inputs(
             *values[varNum] = (double) floatVal;
         }
 
-        /* Convert latitude/longitude to radians */
-        *values[varNum] *= deg_to_rad;
+        /* Convert latitude/longitude */
+#if defined(SWUDUNITS)
+        if (strcmp(inVarInfo[varNum][INVARUNITS], "NA") != 0 &&
+            !isnull(spatialConv[varNum])) {
 
+            cv_convert_doubles(
+                spatialConv[varNum], values[varNum], 1, values[varNum]
+            );
+        }
+#endif
         nc_close(ncFileID);
         ncFileID = -1;
     }
@@ -4883,16 +4894,28 @@ void SW_NCIN_read_inputs(
 ) {
     char ***ncInFiles = SW_Domain->SW_PathInputs.ncInFiles;
     Bool **readInputs = SW_Domain->netCDFInput.readInVars;
+    sw_converter_t ***convs = SW_Domain->netCDFInput.uconv;
 
     /*
         Gather inputs from nc input files from every input key
         except "eSW_InDomain" if they were turned on (input) by the user
     */
 
-    if(readInputs[eSW_InSpatial][0]) {
+    if (readInputs[eSW_InSpatial][0]) {
         read_spatial_inputs(
-            SW_Domain, &sw->Model, ncInFiles[eSW_InSpatial], ncSUID, LogInfo
+            SW_Domain,
+            &sw->Model,
+            ncInFiles[eSW_InSpatial],
+            ncSUID,
+            convs[eSW_InSpatial],
+            LogInfo
         );
+        if (LogInfo->stopRun) {
+            return;
+        }
+    }
+
+    if (readInputs[eSW_InTopo][0]) {
     }
 }
 
