@@ -167,15 +167,17 @@ TEST(SWFlowTest, SWFlowSaturatedPercolation) {
     double pptleft = 5.0;
     double standingWater;
     double drainout;
+    double swc0init = 0.8;
 
     // ***** Tests when nlyrs = 1 ***** //
     ///  provide inputs
     int nlyrs = 1;
-    double swc[1] = {0.8};
+    double swc[1];
     double swcfc[1] = {1.1};
     double swcsat[1] = {1.6};
     double impermeability[1] = {0.};
     double drain[1] = {0.};
+    double ksat[1] = {1e6}; // very large number
 
     infiltrate_water_high(
         swc,
@@ -185,6 +187,7 @@ TEST(SWFlowTest, SWFlowSaturatedPercolation) {
         nlyrs,
         swcfc,
         swcsat,
+        ksat,
         impermeability,
         &standingWater,
         lyrFrozen
@@ -201,7 +204,7 @@ TEST(SWFlowTest, SWFlowSaturatedPercolation) {
     EXPECT_DOUBLE_EQ(drainout, drain[0]);
 
     /* Test when pptleft and standingWater are 0 (No drainage) */
-    pptleft = 0.0, standingWater = 0.0, drain[0] = 0., swc[0] = 0.8,
+    pptleft = 0.0, standingWater = 0.0, drain[0] = 0., swc[0] = swc0init,
     swcfc[0] = 1.1, swcsat[0] = 1.6;
 
     infiltrate_water_high(
@@ -212,6 +215,7 @@ TEST(SWFlowTest, SWFlowSaturatedPercolation) {
         nlyrs,
         swcfc,
         swcsat,
+        ksat,
         impermeability,
         &standingWater,
         lyrFrozen
@@ -223,8 +227,9 @@ TEST(SWFlowTest, SWFlowSaturatedPercolation) {
 
     /* Test when impermeability is greater than 0 and large precipitation */
     pptleft = 20.0;
+    standingWater = 0.;
     impermeability[0] = 1.;
-    swc[0] = 0.8, drain[0] = 0.;
+    swc[0] = swc0init, drain[0] = 0.;
 
     infiltrate_water_high(
         swc,
@@ -234,6 +239,7 @@ TEST(SWFlowTest, SWFlowSaturatedPercolation) {
         nlyrs,
         swcfc,
         swcsat,
+        ksat,
         impermeability,
         &standingWater,
         lyrFrozen
@@ -242,9 +248,39 @@ TEST(SWFlowTest, SWFlowSaturatedPercolation) {
     // When impermeability is 1, drainage should be 0
     EXPECT_DOUBLE_EQ(0., drain[0]);
 
-    /* When impermeability is 1,standingWater should be equivalent to
-     * pptLeft + swc[0] - swcsat[0]) */
-    EXPECT_DOUBLE_EQ(standingWater, (pptleft + 0.8) - swcsat[0]);
+    /* When impermeability is 1, standingWater should be equivalent to
+     * pptLeft + swc0init - swcsat[0]) */
+    EXPECT_DOUBLE_EQ(standingWater, (pptleft + swc0init) - swcsat[0]);
+
+
+    /* Test when ksat is 0 and large precipitation */
+    ksat[0] = 0.;
+    standingWater = 0.;
+    pptleft = 20.0;
+    impermeability[0] = 0.;
+    swc[0] = swc0init, drain[0] = 0.;
+
+    infiltrate_water_high(
+        swc,
+        drain,
+        &drainout,
+        pptleft,
+        nlyrs,
+        swcfc,
+        swcsat,
+        ksat,
+        impermeability,
+        &standingWater,
+        lyrFrozen
+    );
+
+    // When ksat is 0, drainage should be 0
+    EXPECT_DOUBLE_EQ(0., drain[0]);
+
+    /* When ksat is 0, standingWater should be equivalent to
+     * pptLeft + swc0init - swcsat[0]) */
+    EXPECT_DOUBLE_EQ(standingWater, (pptleft + swc0init) - swcsat[0]);
+
 
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     /// generate inputs using a for loop
@@ -253,6 +289,7 @@ TEST(SWFlowTest, SWFlowSaturatedPercolation) {
     double *swc2 = new double[nlyrs];
     double *swcfc2 = new double[nlyrs];
     double *swcsat2 = new double[nlyrs];
+    double *ksat2 = new double[nlyrs];
     double *impermeability2 = new double[nlyrs];
     double *drain2 = new double[nlyrs];
 
@@ -264,6 +301,7 @@ TEST(SWFlowTest, SWFlowSaturatedPercolation) {
         swcfc2[i] = RandNorm(1, .5, &infiltrate_rng);
         // swcsat will always be greater than swcfc in each layer
         swcsat2[i] = swcfc2[i] + .1;
+        ksat2[i] = 1e6; // very large number
         impermeability2[i] = 0.0;
     }
 
@@ -275,6 +313,7 @@ TEST(SWFlowTest, SWFlowSaturatedPercolation) {
         nlyrs,
         swcfc2,
         swcsat2,
+        ksat2,
         impermeability2,
         &standingWater,
         lyrFrozen
@@ -316,6 +355,7 @@ TEST(SWFlowTest, SWFlowSaturatedPercolation) {
         nlyrs,
         swcfc3,
         swcsat3,
+        ksat2,
         impermeability2,
         &standingWater,
         lyrFrozen
@@ -344,7 +384,7 @@ TEST(SWFlowTest, SWFlowSaturatedPercolation) {
     }
 
     // Need to hard code this value because swc4 is altered by function
-    swc4[0] = 0.8;
+    swc4[0] = swc0init;
 
     infiltrate_water_high(
         swc4,
@@ -354,14 +394,15 @@ TEST(SWFlowTest, SWFlowSaturatedPercolation) {
         nlyrs,
         swcfc4,
         swcsat4,
+        ksat2,
         impermeability4,
         &standingWater,
         lyrFrozen
     );
 
-    /* When impermeability is 1,standingWater should be equivalent to  pptLeft +
-     * swc[0] - swcsat[0]) */
-    EXPECT_DOUBLE_EQ(standingWater, (pptleft + 0.8) - swcsat4[0]);
+    /* When impermeability is 1,standingWater should be equivalent to
+        pptLeft + swc0init - swcsat[0]) */
+    EXPECT_DOUBLE_EQ(standingWater, (pptleft + swc0init) - swcsat4[0]);
 
     for (i = 0; i < MAX_LAYERS; i++) {
         // When impermeability is 1, drainage should be 0
@@ -394,6 +435,7 @@ TEST(SWFlowTest, SWFlowSaturatedPercolation) {
         nlyrs,
         swcfc5,
         swcsat5,
+        ksat2,
         impermeability5,
         &standingWater,
         lyrFrozen
@@ -411,6 +453,7 @@ TEST(SWFlowTest, SWFlowSaturatedPercolation) {
 
     // deallocate pointers
     double *array_list[] = {
+        ksat2,
         impermeability2,
         drain2,
         swc2,

@@ -1,9 +1,13 @@
 # NEWS
 
 # SOILWAT2 v8.1.0-devel
-* This version produces nearly identical simulation output as previously.
-  Small deviations arise from replacing all remaining variables of type float
-  with type double (see commit 62237ae on 2024-July-30).
+* This version produces similar but not identical simulation output
+  as previously because of the following changes:
+    * Small deviations arise from replacing all remaining variables of
+      type float with type double (see commit 62237ae on 2024-July-30).
+    * Saturated percolation is now limited which leads to different outcomes
+      during periods of high infiltration (e.g., snowmelt) and during conditions
+      of low hydraulic conductivity (e.g., frozen soils, sapric organic matter).
 
 * The two models of SOILWAT2 can now be compiled with the following flags:
     * `make CPPFLAGS=-DSWTXT` (or as previously `make all`) for txt-based
@@ -11,15 +15,24 @@
 
 * Tests now require `c++17` and utilize `googletest` `v1.15.2` (issue #427).
 
-* SOILWAT2 can now represent the influence of soil organic matter on
-  soil water retention (#397; @dschlaep). The implemented approach first
-  determines organic matter properties for the soil layers assuming
-  fibric peat characteristics at the soil surface and characteristics of
-  sapric peat at a user-specified depth. Then, bulk soil parameters of
-  the soil water retention curve are estimated as linear combinations of
-  properties for the mineral soil component and of properties
-  for the organic matter soil component using the proportion of
-  organic matter in the bulk soil as weights.
+* SOILWAT2 can now represent the influence of soil organic matter on the
+  soil water retention curve and the saturated hydraulic conductivity
+  parameter (#397; @dschlaep). The implemented approach first determines
+  organic matter properties for the soil layers assuming fibric peat
+  characteristics at the soil surface and characteristics of sapric peat
+  at a user-specified depth. Then, bulk soil parameters of the soil water
+  retention curve are estimated as linear combinations of properties for
+  the mineral soil component and of properties for the organic matter soil
+  component using the proportion of organic matter in the bulk soil as weights.
+  The bulk soil saturated hydraulic conductivity parameter accounts for
+  flow pathways through organic matter above a threshold and assumes
+  conductivities through mineral and organic components in series outside of
+  those pathways.
+
+* Saturated percolation is now limited. The upper bound is a function based on
+  the saturated hydraulic conductivity parameter
+  (which includes effects of organic matter), frozen soils, and a
+  user-specified `"permeability"` factor.
 
 ## Changes to inputs
 * New input via `"siteparam.in"` to specify the depth at which characteristics

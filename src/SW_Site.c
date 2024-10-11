@@ -139,6 +139,16 @@ const char *const swrc2str[N_SWRCs] = {
     "Campbell1974", "vanGenuchten1980", "FXW"
 };
 
+
+/** Index to saturated hydraulic conductivity parameter for each SWRC
+
+@note Code maintenance:
+    - Order must exactly match "indices of `swrc2str`" (see also \ref swrc2str)
+    - See details in section \ref swrc_ptf
+*/
+const unsigned int swrcp2ksat[N_SWRCs] = {3, 4, 4};
+
+
 /** Character representation of implemented Pedotransfer Functions (PTF)
 
 @note Code maintenance:
@@ -368,6 +378,17 @@ static double ui_theta_min(
     }
 
     return vwc_min;
+}
+
+/** Extract saturated hydraulic conductivity from SWRC parameters
+
+@param[in] swrc_type Identification number of selected SWRC
+@param[in] *swrcp Vector of SWRC parameters
+
+@return Saturated hydraulic conductivity [cm day-1]
+*/
+static double SWRC_get_ksat(unsigned int swrc_type, double *swrcp) {
+    return swrcp[swrcp2ksat[swrc_type]];
 }
 
 /* =================================================== */
@@ -1268,6 +1289,9 @@ parameters of the organic and mineral components.
 Parameters of the organic component are interpolate between
 fibric peat characteristics assumed at surface and sapric peat at depth.
 
+Bulk soil saturated hydraulic conductivity accounts for connected pathways
+that only consist of organic matter above a threshold value of organic matter.
+
 @param[out] *swrcp Vector of SWRC parameters of the bulk soil
 @param[in] *swrcpMS Vector of SWRC parameters of the mineral component
 @param[in] swrcOM Array of length two of vectors of SWRC parameters
@@ -1280,6 +1304,7 @@ fibric peat characteristics assumed at surface and sapric peat at depth.
 @param[in] depthB Depth at bottom of soil layer [`cm`]
 */
 void SWRC_bulkSoilParameters(
+    unsigned int swrc_type,
     double *swrcp,
     const double *swrcpMS,
     const double swrcOM[2][SWRC_PARAM_NMAX],
@@ -1288,24 +1313,54 @@ void SWRC_bulkSoilParameters(
     double depthT,
     double depthB
 ) {
-    int k;
+    unsigned int k;
+    unsigned int iksat = swrcp2ksat[swrc_type];
     double pOM;
+    double fperc;
+    double unconnectedKsat;
 
-    if (GT(fom, 0.)) {
+    static const double percBeta = 0.139; /* percolation exponent */
+    static const double fthreshold = 0.5; /* percolation threshold */
+
+    if (fom > 0.) {
         /* Has organic matter:
            interpolate between organic and mineral components */
+
         for (k = 0; k < SWRC_PARAM_NMAX; k++) {
+            /* Interpolate organic parameter from surface to depth conditions */
             pOM = interpolateFibricSapric(
                 swrcOM[0][k], swrcOM[1][k], depthSapric, depthT, depthB
             );
-            /* Note: this approach does not account for effects of
-               connected flow pathways if fom > threshold for
-               saturated hydraulic conductivity */
-            swrcp[k] = fom * pOM + (1 - fom) * swrcpMS[k];
+
+            if (k == iksat) {
+                /* ksat: account for effects of connected flow pathways */
+
+                if (fom >= fthreshold) {
+                    /* (1 - fperc) is the sum of the fraction of mineral soil
+                       and the fraction of non-percolating organic component */
+                    fperc = fom * pow(1. - fthreshold, -percBeta) *
+                            pow(fom - fthreshold, percBeta);
+                } else {
+                    fperc = 0.;
+                }
+
+                /* non-connected fraction assumes conductivities
+                   through mineral and organic components in series */
+                unconnectedKsat =
+                    (fom < 1.) ?
+                        1. / ((1. - fom) / swrcpMS[k] + (fom - fperc) / pOM) :
+                        0.;
+
+                swrcp[k] = fperc * pOM + (1. - fperc) * unconnectedKsat;
+
+            } else {
+                /* other swrcp: weighted average of organic and mineral param */
+                swrcp[k] = fom * pOM + (1. - fom) * swrcpMS[k];
+            }
         }
 
     } else {
-        /* No organic matter: use mineral components */
+        /* No organic matter: bulk soil corresponds to mineral components */
         for (k = 0; k < SWRC_PARAM_NMAX; k++) {
             swrcp[k] = swrcpMS[k];
         }
@@ -2480,6 +2535,7 @@ void SW_SIT_init_run(
 
         /* Calculate bulk soil SWRCp from organic and mineral soil components */
         SWRC_bulkSoilParameters(
+            SW_Site->swrc_type[s],
             SW_Site->swrcp[s],
             SW_Site->swrcpMineralSoil[s],
             SW_Site->swrcpOM,
@@ -2503,6 +2559,10 @@ void SW_SIT_init_run(
             );
             return; // Exit function prematurely due to error
         }
+
+        /* Extract ksat from swrcp */
+        SW_Site->ksat[s] =
+            SWRC_get_ksat(SW_Site->swrc_type[s], SW_Site->swrcp[s]);
 
         /* Calculate SWC at field capacity and at wilting point */
         SW_Site->swcBulk_fieldcap[s] =

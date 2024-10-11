@@ -382,6 +382,7 @@ TEST(SiteTest, SWRCBulkSoilParameters) {
     double depthB = 10.;
 
     unsigned int k;
+    unsigned int swrc_type = 1;
 
     // Initialize swrcps
     for (k = 0; k < SWRC_PARAM_NMAX; k++) {
@@ -393,7 +394,7 @@ TEST(SiteTest, SWRCBulkSoilParameters) {
     // Expect swrcp = mineral if organic matter is 0
     fom = 0.;
     SWRC_bulkSoilParameters(
-        swrcp, swrcpMin, swrcpOrg, fom, depthSapric, depthT, depthB
+        swrc_type, swrcp, swrcpMin, swrcpOrg, fom, depthSapric, depthT, depthB
     );
 
     for (k = 0; k < SWRC_PARAM_NMAX; k++) {
@@ -405,7 +406,7 @@ TEST(SiteTest, SWRCBulkSoilParameters) {
     depthT = 0.;
     depthB = 0.;
     SWRC_bulkSoilParameters(
-        swrcp, swrcpMin, swrcpOrg, fom, depthSapric, depthT, depthB
+        swrc_type, swrcp, swrcpMin, swrcpOrg, fom, depthSapric, depthT, depthB
     );
 
     for (k = 0; k < SWRC_PARAM_NMAX; k++) {
@@ -417,7 +418,7 @@ TEST(SiteTest, SWRCBulkSoilParameters) {
     depthT = depthSapric / 4.;
     depthB = depthT + depthSapric / 4.;
     SWRC_bulkSoilParameters(
-        swrcp, swrcpMin, swrcpOrg, fom, depthSapric, depthT, depthB
+        swrc_type, swrcp, swrcpMin, swrcpOrg, fom, depthSapric, depthT, depthB
     );
 
     for (k = 0; k < SWRC_PARAM_NMAX; k++) {
@@ -430,7 +431,7 @@ TEST(SiteTest, SWRCBulkSoilParameters) {
     depthT = depthSapric;
     depthB = depthT + 10.;
     SWRC_bulkSoilParameters(
-        swrcp, swrcpMin, swrcpOrg, fom, depthSapric, depthT, depthB
+        swrc_type, swrcp, swrcpMin, swrcpOrg, fom, depthSapric, depthT, depthB
     );
 
     for (k = 0; k < SWRC_PARAM_NMAX; k++) {
@@ -442,7 +443,7 @@ TEST(SiteTest, SWRCBulkSoilParameters) {
     depthT = 0.;
     depthB = 0.;
     SWRC_bulkSoilParameters(
-        swrcp, swrcpMin, swrcpOrg, fom, depthSapric, depthT, depthB
+        swrc_type, swrcp, swrcpMin, swrcpOrg, fom, depthSapric, depthT, depthB
     );
 
     for (k = 0; k < SWRC_PARAM_NMAX; k++) {

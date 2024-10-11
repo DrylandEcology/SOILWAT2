@@ -366,7 +366,11 @@ typedef struct {
 
         /* Saxton et al. 2006 */
         swcBulk_saturated[MAX_LAYERS]; /* saturated bulk SWC [cm] */
-                                       // currently, not used;
+
+    /** Saturated hydraulic conductivity of the bulk soil */
+    double ksat[MAX_LAYERS];
+
+    // currently, not used;
     // Saxton2006_K_sat_matric, /* saturated matric conductivity [cm / day] */
     // Saxton2006_K_sat_bulk, /* saturated bulk conductivity [cm / day] */
     // Saxton2006_fK_gravel, /* gravel-correction factor for conductivity [1] */

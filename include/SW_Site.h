@@ -259,6 +259,7 @@ double SW_swcBulk_minimum(
     LOG_INFO *LogInfo
 );
 
+
 void PTF_Saxton2006(
     double *theta_sat, double sand, double clay, double fom, LOG_INFO *LogInfo
 );
@@ -273,6 +274,7 @@ void PTF_RawlsBrakensiek1985(
 );
 
 void SWRC_bulkSoilParameters(
+    unsigned int swrc_type,
     double *swrcp,
     const double *swrcpMS,
     const double swrcOM[2][SWRC_PARAM_NMAX],
