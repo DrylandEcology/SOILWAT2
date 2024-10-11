@@ -4845,19 +4845,6 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     Bool *useIndexFile = SW_Domain->netCDFInput.useIndexFile;
     Bool fileIsIndex;
 
-    /* Check the domain files */
-    for (file = 0; file < SW_NVARDOM; file++) {
-        SW_NC_check(
-            SW_Domain,
-            SW_Domain->SW_PathInputs.ncDomFileIDs[file],
-            SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][file],
-            LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to inconsistent data
-        }
-    }
-
     /* Check actual input files provided by the user */
     ForEachNCInKey(inKey) {
         if (readInVars[inKey][0]) {
@@ -4868,7 +4855,7 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                 if (readInVars[inKey][file + 1] &&
                     (file > 0 || (file == 0 && useIndexFile[inKey]))) {
 
-                    fileIsIndex = (Bool) (file == 0);
+                    fileIsIndex = (Bool) (inKey > eSW_InSpatial && file == 0);
                     fileID = (fileIsIndex) ? &indexFileID : &inFileID;
                     varInfo = SW_Domain->netCDFInput.inVarInfo[inKey][file];
 
@@ -4887,11 +4874,12 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                        file's domain matches the programs domain exactly),
                        otherwise, compare the input file against the
                        provided index file */
-                    if (fileIsIndex || !useIndexFile[inKey]) {
+                    if (fileIsIndex || inKey <= eSW_InSpatial) {
                         SW_NC_check(
                             SW_Domain, *fileID, fileNames[file], LogInfo
                         );
-                    } else {
+                    } else if (readInVars[inKey][1] &&
+                               useIndexFile[inKey]) { /* index file exists */
                         check_input_file_against_index(
                             SW_Domain->netCDFInput.inVarInfo[inKey][file],
                             indexFileID,
