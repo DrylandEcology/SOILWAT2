@@ -4056,6 +4056,126 @@ static void check_input_file_against_index(
     }
 }
 
+/**
+@brief Read inputs that pertain to the input key "inSpatial" and store the
+following inputs
+    - Latitude/longitude
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[out] SW_Model Struct of type SW_MODEL holding basic time information
+about the simulation
+@param[in] spatialInFiles List of input files pertaining to the spatial input
+key
+@param[in] ncSUID Current simulation unit identifier for which is used
+to get data from netCDF
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void read_spatial_inputs(
+    SW_DOMAIN *SW_Domain,
+    SW_MODEL *SW_Model,
+    char **spatialInFiles,
+    size_t ncSUID[],
+    LOG_INFO *LogInfo
+) {
+    char ***inVarInfo = SW_Domain->netCDFInput.inVarInfo[eSW_InSpatial];
+    Bool *readInput = SW_Domain->netCDFInput.readInVars[eSW_InSpatial];
+
+    size_t start[2] = {0, 0}; /* [s, 0] or [y, x] */
+    nc_type varType;
+    int varNum;
+    int ncFileID = -1;
+    int varID;
+    int ncIndex;
+    char *fileName;
+    char *varName;
+    Bool siteInDom;
+    Bool twoDimVar;
+    const int numVars = numVarsInKey[eSW_InSpatial];
+    const char *yAxisName = inVarInfo[0][INYAXIS];
+    const char *xAxisName = inVarInfo[0][INXAXIS];
+    const char *varNames[] = {yAxisName, xAxisName};
+    float floatVal = 0.0f;
+    void *valPtr;
+
+    double *values[] = {&SW_Model->latitude, &SW_Model->longitude};
+
+    for (varNum = 0; varNum < numVars; varNum++) {
+        if (!readInput[varNum]) {
+            continue;
+        }
+
+        varID = -1;
+        fileName = spatialInFiles[varNum];
+        varName = (varNum == 0) ? inVarInfo[varNum][INYAXIS] :
+                                  inVarInfo[varNum][INXAXIS];
+
+        SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        /* Get information about the spatial variables */
+        twoDimVar = spatial_var_is_2d(ncFileID, varName, LogInfo);
+        if (LogInfo->stopRun) {
+            goto closeFile;
+        }
+
+        SW_NC_get_var_identifier(ncFileID, varName, &varID, LogInfo);
+        if (LogInfo->stopRun) {
+            goto closeFile;
+        }
+
+        if (nc_inq_vartype(ncFileID, varID, &varType) != NC_NOERR) {
+            LogError(LogInfo, LOGERROR, "Could not get variable type.");
+            goto closeFile;
+        }
+
+        siteInDom = (Bool) (strcmp(inVarInfo[varNum][INDOMTYPE], "s") == 0);
+
+        /* Calculate suid and set the proper variable location for result */
+        if (twoDimVar) {
+            start[0] = ncSUID[0];
+            start[1] = ncSUID[1];
+        } else {
+            ncIndex = (siteInDom) ? 0 : varNum % 2;
+            start[0] = ncSUID[ncIndex];
+        }
+
+        switch (varType) {
+        case NC_DOUBLE:
+            valPtr = (void *) values[varNum];
+            break;
+        default: /* NC_FLOAT */
+            valPtr = (void *) &floatVal;
+            break;
+        }
+
+        /* Read latitude/longitude */
+        SW_NC_get_single_val(
+            ncFileID, &varID, varNames[varNum], start, valPtr, "double", LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        if (varType == NC_FLOAT) {
+            *values[varNum] = (double) floatVal;
+        }
+
+        /* Convert latitude/longitude to radians */
+        *values[varNum] *= deg_to_rad;
+
+        nc_close(ncFileID);
+        ncFileID = -1;
+    }
+
+closeFile:
+    if (ncFileID > -1) {
+        nc_close(ncFileID);
+    }
+}
+
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
@@ -4761,64 +4881,19 @@ to SW_Run
 void SW_NCIN_read_inputs(
     SW_RUN *sw, SW_DOMAIN *SW_Domain, size_t ncSUID[], LOG_INFO *LogInfo
 ) {
-
-    int file;
-    int varNum;
-    Bool domTypeS =
-        (Bool) (Str_CompareI(SW_Domain->DomainType, (char *) "s") == 0);
-    Bool primCRSIsGeo =
-        SW_Domain->OutDom.netCDFOutput.primary_crs_is_geographic;
-
-    /* Get latitude/longitude names that were read-in from input file */
-    char *readinGeoYName = (primCRSIsGeo) ?
-                               SW_Domain->OutDom.netCDFOutput.geo_YAxisName :
-                               SW_Domain->OutDom.netCDFOutput.proj_YAxisName;
-    char *readinGeoXName = (primCRSIsGeo) ?
-                               SW_Domain->OutDom.netCDFOutput.geo_XAxisName :
-                               SW_Domain->OutDom.netCDFOutput.proj_XAxisName;
-
-    const int numInFilesNC = 1;
-    const int numDomVals = 2;
-    const int numVals[] = {numDomVals};
-    const int ncFileIDs[] = {SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom]};
-    const char *varNames[][2] = {{readinGeoYName, readinGeoXName}};
-    int ncIndex;
-    int varID;
-
-    double *values[][2] = {{&sw->Model.latitude, &sw->Model.longitude}};
+    char ***ncInFiles = SW_Domain->SW_PathInputs.ncInFiles;
+    Bool **readInputs = SW_Domain->netCDFInput.readInVars;
 
     /*
-        Gather all values being requested within the array "values"
-        The index within the netCDF file for domain type "s" is simply the
-        first index in "ncSUID"
-        For the domain type "xy", the index of the variable "y" is the first
-        in "ncSUID" and the index of the variable "x" is the second in "ncSUID"
+        Gather inputs from nc input files from every input key
+        except "eSW_InDomain" if they were turned on (input) by the user
     */
-    for (file = 0; file < numInFilesNC; file++) {
-        for (varNum = 0; varNum < numVals[file]; varNum++) {
-            varID = -1;
-            ncIndex = (domTypeS) ? 0 : varNum % 2;
 
-            SW_NC_get_single_val(
-                ncFileIDs[file],
-                &varID,
-                varNames[file][varNum],
-                &ncSUID[ncIndex],
-                (void *) values[file][varNum],
-                "double",
-                LogInfo
-            );
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
-        }
+    if(readInputs[eSW_InSpatial][0]) {
+        read_spatial_inputs(
+            SW_Domain, &sw->Model, ncInFiles[eSW_InSpatial], ncSUID, LogInfo
+        );
     }
-
-
-    /* Convert units */
-    /* Convert latitude/longitude to radians */
-    sw->Model.latitude *= deg_to_rad;
-    sw->Model.longitude *= deg_to_rad;
 }
 
 /**
