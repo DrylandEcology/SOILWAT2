@@ -4187,6 +4187,130 @@ closeFile:
     }
 }
 
+/**
+@brief Read user-provided topographical variable values
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[out] SW_Model Struct of type SW_MODEL holding basic time information
+about the simulation
+@param[in] topoInFiles List of input files pertaining to the topo input
+key
+@param[in] ncSUID Current simulation unit identifier for which is used
+to get data from netCDF
+@param[in] topoConv A list of UDUNITS2 converters that were created
+to convert input data to units the program can understand within the
+"inTopo" input key
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void read_topo_inputs(
+    SW_DOMAIN *SW_Domain,
+    SW_MODEL *SW_Model,
+    char **topoInFiles,
+    size_t ncSUID[],
+    sw_converter_t **topoConv,
+    LOG_INFO *LogInfo
+) {
+    char ***inVarInfo = SW_Domain->netCDFInput.inVarInfo[eSW_InTopo];
+    Bool *readInput = SW_Domain->netCDFInput.readInVars[eSW_InTopo];
+
+    int varNum;
+    int fIndex = 1;
+    int varID = -1;
+    int ncFileID = -1;
+    char *fileName;
+    char *varName;
+    nc_type varType;
+
+    double *values[] = {
+        &SW_Model->elevation, &SW_Model->slope, &SW_Model->aspect
+    };
+    float floatVal = 0.0f;
+    double doubleVal = 0.0;
+    void *valPtr;
+
+    while (!readInput[fIndex + 1]) {
+        fIndex++;
+    }
+
+    for (varNum = fIndex; varNum < numVarsInKey[eSW_InTopo]; varNum++) {
+        if (!readInput[varNum + 1]) {
+            continue;
+        }
+
+        varID = -1;
+        fileName = topoInFiles[varNum];
+        varName = inVarInfo[varNum][INNCVARNAME];
+
+        SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        SW_NC_get_var_identifier(ncFileID, varName, &varID, LogInfo);
+        if (LogInfo->stopRun) {
+            goto closeFile;
+        }
+
+        if (nc_inq_vartype(ncFileID, varID, &varType) != NC_NOERR) {
+            goto closeFile;
+        }
+
+        switch (varType) {
+        case NC_DOUBLE:
+            valPtr = (void *) &doubleVal;
+            break;
+        case NC_FLOAT:
+            valPtr = (void *) &floatVal;
+            break;
+        default: /* Any other variable type */
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Cannot understand types of variable '%s' other than "
+                "double and float.",
+                varName
+            );
+            goto closeFile;
+            break;
+        }
+
+        /* Read elevation, slope, and aspect */
+        SW_NC_get_single_val(
+            ncFileID, &varID, varName, ncSUID, valPtr, "double", LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        *values[varNum - 1] =
+            (varType == NC_FLOAT) ? (double) floatVal : doubleVal;
+
+        /* Set aspect to missing if the read value is greater than 180 */
+        if (varNum == 3 &&
+            (GT(*values[varNum - 1], 180.0) || LT(*values[varNum - 1], -180.0))) {
+
+            *values[varNum - 1] = SW_MISSING;
+        }
+
+#if defined(SWUDUNITS)
+        if (strcmp(inVarInfo[varNum][INVARUNITS], "NA") != 0 &&
+            !isnull(topoConv[varNum])) {
+
+            cv_convert_doubles(
+                topoConv[varNum], values[varNum], 1, values[varNum]
+            );
+        }
+#endif
+        nc_close(ncFileID);
+        ncFileID = -1;
+    }
+
+closeFile:
+    if (ncFileID > -1) {
+        nc_close(ncFileID);
+    }
+}
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
@@ -4916,6 +5040,14 @@ void SW_NCIN_read_inputs(
     }
 
     if (readInputs[eSW_InTopo][0]) {
+        read_topo_inputs(
+            SW_Domain,
+            &sw->Model,
+            ncInFiles[eSW_InTopo],
+            ncSUID,
+            convs[eSW_InTopo],
+            LogInfo
+        );
     }
 }
 
