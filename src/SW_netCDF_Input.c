@@ -4311,6 +4311,141 @@ closeFile:
         nc_close(ncFileID);
     }
 }
+/**
+@brief Read user-provided cliamte variable values
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[out] SW_Sky Struct of type SW_SKY which describes sky conditions
+over the simulated site
+@param[in] climInFiles List of input files pertaining to the climate input
+key
+@param[in] ncSUID Current simulation unit identifier for which is used
+to get data from netCDF
+@param[in] climateConv A list of UDUNITS2 converters that were created
+to convert input data to units the program can understand within the
+"inTopo" input key
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void read_climate_inputs(
+    SW_DOMAIN *SW_Domain,
+    SW_SKY *SW_Sky,
+    char **climInFiles,
+    size_t ncSUID[],
+    sw_converter_t **climateConv,
+    LOG_INFO *LogInfo
+) {
+    char ***inVarInfo = SW_Domain->netCDFInput.inVarInfo[eSW_InClimate];
+    Bool *readInput = SW_Domain->netCDFInput.readInVars[eSW_InClimate];
+
+    int varNum;
+    int setIndex;
+    int fIndex = 1;
+    int varID = -1;
+    int ncFileID = -1;
+    char *fileName;
+    char *varName;
+    nc_type varType;
+    size_t count[] = {1, 0, 0};
+
+    double *values[] = {
+        SW_Sky->cloudcov, SW_Sky->windspeed, SW_Sky->windspeed,
+        SW_Sky->r_humidity, SW_Sky->snow_density, SW_Sky->n_rain_per_day
+    };
+    float floatVal[MAX_MONTHS] = {0.0f};
+    double doubleVal[MAX_MONTHS] = {0.0};
+    void *valPtr;
+
+    while (!readInput[fIndex + 1]) {
+        fIndex++;
+    }
+
+    if(strcmp(inVarInfo[fIndex][INDOMTYPE], "s") == 0) {
+        count[1] = MAX_MONTHS;
+    } else {
+        count[1] = 0;
+        count[2] = MAX_MONTHS;
+    }
+
+    for (varNum = fIndex; varNum < numVarsInKey[eSW_InClimate]; varNum++) {
+        if (!readInput[varNum + 1]) {
+            continue;
+        }
+
+        varID = -1;
+        fileName = climInFiles[varNum];
+        varName = inVarInfo[varNum][INNCVARNAME];
+
+        SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        SW_NC_get_var_identifier(ncFileID, varName, &varID, LogInfo);
+        if (LogInfo->stopRun) {
+            goto closeFile;
+        }
+
+        if (nc_inq_vartype(ncFileID, varID, &varType) != NC_NOERR) {
+            goto closeFile;
+        }
+
+        switch (varType) {
+        case NC_DOUBLE:
+            valPtr = (void *) doubleVal;
+            break;
+        case NC_FLOAT:
+            valPtr = (void *) floatVal;
+            break;
+        default: /* Any other variable type */
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Cannot understand types of variable '%s' other than "
+                "double and float.",
+                varName
+            );
+            goto closeFile;
+            break;
+        }
+
+        /* Read elevation, slope, and aspect */
+        nc_get_vara(
+            ncFileID,
+            varID,
+            ncSUID,
+            count,
+            valPtr
+        );
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        for(setIndex = 0; setIndex < MAX_MONTHS; setIndex++) {
+            values[varNum - 1][setIndex] =
+                (varType == NC_FLOAT) ? (double) floatVal[setIndex] :
+                                                 doubleVal[setIndex];
+        }
+
+#if defined(SWUDUNITS)
+        if (strcmp(inVarInfo[varNum][INVARUNITS], "NA") != 0 &&
+            !isnull(climateConv[varNum])) {
+
+            cv_convert_doubles(
+                climateConv[varNum], values[varNum], MAX_MONTHS, values[varNum]
+            );
+        }
+#endif
+        nc_close(ncFileID);
+        ncFileID = -1;
+    }
+
+closeFile:
+    if (ncFileID > -1) {
+        nc_close(ncFileID);
+    }
+}
+
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
@@ -5046,6 +5181,20 @@ void SW_NCIN_read_inputs(
             ncInFiles[eSW_InTopo],
             ncSUID,
             convs[eSW_InTopo],
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+    }
+
+    if(readInputs[eSW_InClimate][0]) {
+        read_climate_inputs(
+            SW_Domain,
+            &sw->Sky,
+            ncInFiles[eSW_InClimate],
+            ncSUID,
+            convs[eSW_InClimate],
             LogInfo
         );
     }
