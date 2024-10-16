@@ -208,6 +208,42 @@ static const char *const possInKeys[] = {
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
+/**
+@brief Read in more than one value from an nc input file
+when given a start index of a variable with how many values to
+read
+
+@param[in] ncFileID Identifier of the open nc file to read all information
+@param[in] varID Identifier of the nc variable to read
+@param[in] start List of numbers specifying the start index
+of every dimension of the variable
+@param[in] count List of numbers specifying the number of
+values per dimension of the variable to read in
+@param[in] varName Name of the variable we are trying to read the
+values of
+@param[out] valPtr Pointer holding the results of the read-in
+values
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void get_values_multiple(
+    int ncFileID,
+    int varID,
+    size_t start[],
+    size_t count[],
+    const char *varName,
+    void *valPtr,
+    LOG_INFO *LogInfo
+) {
+    if (nc_get_vara(ncFileID, varID, start, count, valPtr) != NC_NOERR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not read values from the variable '%s'.",
+            varName
+        );
+    }
+}
+
 /*
 @brief Translate an input keys into indices the program can understand
 
@@ -4311,6 +4347,7 @@ closeFile:
         nc_close(ncFileID);
     }
 }
+
 /**
 @brief Read user-provided cliamte variable values
 
@@ -4409,14 +4446,9 @@ static void read_climate_inputs(
             break;
         }
 
-        /* Read elevation, slope, and aspect */
-        nc_get_vara(
-            ncFileID,
-            varID,
-            ncSUID,
-            count,
-            valPtr
-        );
+        /* Read current climate variable */
+        get_values_multiple(ncFileID, varID, ncSUID, count, varName,
+                            valPtr, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -4433,6 +4465,204 @@ static void read_climate_inputs(
 
             cv_convert_doubles(
                 climateConv[varNum], values[varNum], MAX_MONTHS, values[varNum]
+            );
+        }
+#endif
+        nc_close(ncFileID);
+        ncFileID = -1;
+    }
+
+closeFile:
+    if (ncFileID > -1) {
+        nc_close(ncFileID);
+    }
+}
+
+/**
+@brief Read user-provided vegetation variable values
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[out] SW_VegProd Struct of type SW_VEGPROD describing surface
+cover conditions in the simulation
+@param[in] vegInFiles List of input files pertaining to the vegetation
+input key
+@param[in] ncSUID simulation unit identifier for which is used
+to get data from netCDF
+@param[in] vegConv A list of UDUNITS2 converters that were created
+to convert input data to units the program can understand within the
+"inVeg" input key
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void read_veg_inputs(
+    SW_DOMAIN *SW_Domain,
+    SW_VEGPROD *SW_VegProd,
+    char **vegInFiles,
+    size_t ncSUID[],
+    sw_converter_t **vegConv,
+    LOG_INFO *LogInfo
+) {
+    char ***inVarInfo = SW_Domain->netCDFInput.inVarInfo[eSW_InVeg];
+    Bool *readInput = SW_Domain->netCDFInput.readInVars[eSW_InVeg];
+    Bool siteDom;
+
+    int varNum;
+    int setIndex;
+    int fIndex = 1;
+    int varID = -1;
+    int ncFileID = -1;
+    char *fileName;
+    char *varName;
+    nc_type varType;
+    size_t count[] = {1, 0, 0, 0};
+    size_t start[] = {0, 0, 0, 0};
+    int cWriteIndex = 0;
+    Bool varHasTime;
+    int timeIndex = -1;
+    int noTimeIndex = -1;
+    Bool hasPFT;
+
+    double *valuesWithTime[] = {
+        SW_VegProd->veg[SW_TREES].litter,
+        SW_VegProd->veg[SW_TREES].biomass,
+        SW_VegProd->veg[SW_TREES].pct_live,
+        SW_VegProd->veg[SW_TREES].lai_conv,
+
+        SW_VegProd->veg[SW_SHRUB].litter,
+        SW_VegProd->veg[SW_SHRUB].biomass,
+        SW_VegProd->veg[SW_SHRUB].pct_live,
+        SW_VegProd->veg[SW_SHRUB].lai_conv,
+
+        SW_VegProd->veg[SW_FORBS].litter,
+        SW_VegProd->veg[SW_FORBS].biomass,
+        SW_VegProd->veg[SW_FORBS].pct_live,
+        SW_VegProd->veg[SW_FORBS].lai_conv,
+
+        SW_VegProd->veg[SW_GRASS].litter,
+        SW_VegProd->veg[SW_GRASS].biomass,
+        SW_VegProd->veg[SW_GRASS].pct_live,
+        SW_VegProd->veg[SW_GRASS].lai_conv,
+    };
+
+    double *valuesWOTime[] = {
+        &SW_VegProd->bare_cov.fCover,
+        &SW_VegProd->veg[SW_TREES].cov.fCover,
+        &SW_VegProd->veg[SW_SHRUB].cov.fCover,
+        &SW_VegProd->veg[SW_FORBS].cov.fCover,
+        &SW_VegProd->veg[SW_GRASS].cov.fCover,
+    };
+    float floatMonIn[MAX_MONTHS] = {0.0f};
+    float floatValIn = 0.0f;
+    double doubleMonIn[MAX_MONTHS] = {0.0};
+    double doubleValIn = 0.0;
+    void *valPtr;
+
+    while (!readInput[fIndex + 1]) {
+        fIndex++;
+    }
+
+    siteDom = (Bool) (strcmp(inVarInfo[fIndex][INDOMTYPE], "s") == 0);
+    cWriteIndex = (siteDom) ? 1 : 2;
+
+    if (!siteDom) {
+        count[1] = 1;
+        start[1] = ncSUID[1];
+    }
+
+    for (varNum = fIndex; varNum < numVarsInKey[eSW_InVeg]; varNum++) {
+        /* Bare ground cover does not have time (index 1),
+           otherwise, the first variable of every veg group doesn't have
+           time, otherwise, the current variable has a time dimension */
+        varHasTime = (Bool) (varNum == 1 || (varNum - 2) % (NVEGTYPES + 1) > 0);
+        if (varHasTime) {
+            timeIndex++;
+        } else {
+            noTimeIndex++;
+        }
+
+        if (!readInput[varNum + 1]) {
+            continue;
+        }
+
+        varID = -1;
+        fileName = vegInFiles[varNum];
+        varName = inVarInfo[varNum][INNCVARNAME];
+        hasPFT = (Bool) (strcmp(inVarInfo[varNum][INVAXIS], "NA") != 0);
+
+        if (hasPFT) {
+            start[cWriteIndex] = ((varNum - 2) / (NVEGTYPES + 1));
+            count[cWriteIndex] = 1;
+            count[cWriteIndex + 1] = (varHasTime) ? MAX_MONTHS : 1;
+        } else {
+            start[cWriteIndex] = start[cWriteIndex + 1] = 0;
+            count[cWriteIndex] = (varHasTime) ? MAX_MONTHS : 1;
+        }
+
+        SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        SW_NC_get_var_identifier(ncFileID, varName, &varID, LogInfo);
+        if (LogInfo->stopRun) {
+            goto closeFile;
+        }
+
+        if (nc_inq_vartype(ncFileID, varID, &varType) != NC_NOERR) {
+            goto closeFile;
+        }
+
+        switch (varType) {
+        case NC_DOUBLE:
+            valPtr =
+                (varHasTime) ? (void *) doubleMonIn : (void *) &doubleValIn;
+            break;
+        case NC_FLOAT:
+            valPtr = (varHasTime) ? (void *) floatMonIn : (void *) &floatValIn;
+            break;
+        default: /* Any other variable type */
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Cannot understand types of variable '%s' other than "
+                "double and float.",
+                varName
+            );
+            goto closeFile;
+            break;
+        }
+
+        /* Read current vegetation input (see `valuesWOTime()` and
+           `valuesWithTime()`) */
+        get_values_multiple(
+            ncFileID, varID, start, count, varName, valPtr, LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        if (varHasTime) {
+            for (setIndex = 0; setIndex < MAX_MONTHS; setIndex++) {
+                valuesWithTime[timeIndex][setIndex] =
+                    (varType == NC_FLOAT) ? (double) floatMonIn[setIndex] :
+                                            doubleMonIn[setIndex];
+            }
+        } else {
+            *valuesWOTime[noTimeIndex] =
+                (varType == NC_FLOAT) ? (double) floatValIn : doubleValIn;
+        }
+
+#if defined(SWUDUNITS)
+        if (strcmp(inVarInfo[varNum][INVARUNITS], "NA") != 0 &&
+            !isnull(vegConv[varNum])) {
+
+            cv_convert_doubles(
+                vegConv[varNum],
+                (varHasTime) ? valuesWithTime[timeIndex] :
+                               valuesWOTime[noTimeIndex],
+                (varHasTime) ? MAX_MONTHS : 1,
+                (varHasTime) ? valuesWithTime[timeIndex] :
+                               valuesWOTime[noTimeIndex]
             );
         }
 #endif
@@ -5197,6 +5427,20 @@ void SW_NCIN_read_inputs(
             convs[eSW_InClimate],
             LogInfo
         );
+        if(LogInfo->stopRun) {
+            return;
+        }
+    }
+
+    if (readInputs[eSW_InVeg][0]) {
+        read_veg_inputs(
+            SW_Domain,
+            &sw->VegProd,
+            ncInFiles[eSW_InVeg],
+            ncSUID,
+            convs[eSW_InVeg],
+            LogInfo
+        );
     }
 }
 
@@ -5921,13 +6165,8 @@ void SW_NCIN_read_input_vars(
                                        infoIndex != ncFileNameInd);
 
                     if (copyInfo) {
-                        if (infoIndex == ncVarNameInd) {
-                            varInfoPtr[copyInfoIndex] =
-                                Str_Dup(possVarNames[inKey][inVarNum], LogInfo);
-                        } else {
-                            varInfoPtr[copyInfoIndex] =
-                                Str_Dup(input[infoIndex], LogInfo);
-                        }
+                        varInfoPtr[copyInfoIndex] =
+                            Str_Dup(input[infoIndex], LogInfo);
 
                         if (LogInfo->stopRun) {
                             goto closeFile; /* Exit function prematurely due to
