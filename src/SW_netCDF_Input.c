@@ -4386,8 +4386,12 @@ static void read_climate_inputs(
     size_t count[] = {1, 0, 0};
 
     double *values[] = {
-        SW_Sky->cloudcov, SW_Sky->windspeed, SW_Sky->windspeed,
-        SW_Sky->r_humidity, SW_Sky->snow_density, SW_Sky->n_rain_per_day
+        SW_Sky->cloudcov,
+        SW_Sky->windspeed,
+        SW_Sky->windspeed,
+        SW_Sky->r_humidity,
+        SW_Sky->snow_density,
+        SW_Sky->n_rain_per_day
     };
     float floatVal[MAX_MONTHS] = {0.0f};
     double doubleVal[MAX_MONTHS] = {0.0};
@@ -4397,10 +4401,10 @@ static void read_climate_inputs(
         fIndex++;
     }
 
-    if(strcmp(inVarInfo[fIndex][INDOMTYPE], "s") == 0) {
+    if (strcmp(inVarInfo[fIndex][INDOMTYPE], "s") == 0) {
         count[1] = MAX_MONTHS;
     } else {
-        count[1] = 0;
+        count[1] = ncSUID[1];
         count[2] = MAX_MONTHS;
     }
 
@@ -4447,16 +4451,17 @@ static void read_climate_inputs(
         }
 
         /* Read current climate variable */
-        get_values_multiple(ncFileID, varID, ncSUID, count, varName,
-                            valPtr, LogInfo);
+        get_values_multiple(
+            ncFileID, varID, ncSUID, count, varName, valPtr, LogInfo
+        );
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
-        for(setIndex = 0; setIndex < MAX_MONTHS; setIndex++) {
-            values[varNum - 1][setIndex] =
-                (varType == NC_FLOAT) ? (double) floatVal[setIndex] :
-                                                 doubleVal[setIndex];
+        for (setIndex = 0; setIndex < MAX_MONTHS; setIndex++) {
+            values[varNum - 1][setIndex] = (varType == NC_FLOAT) ?
+                                               (double) floatVal[setIndex] :
+                                               doubleVal[setIndex];
         }
 
 #if defined(SWUDUNITS)
