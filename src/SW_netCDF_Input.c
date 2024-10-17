@@ -4092,6 +4092,73 @@ static void check_input_file_against_index(
     }
 }
 
+/*
+@brief Helper function to set the first one or two dimensional
+start indices to read inputs from, this mainly comes into play
+when dealing with an index file
+
+@param[in] useIndexFile Flag specifying if the current input key
+must use the respective index file
+@param[in] indexFileName Name of the respective index file to use
+@param[in] inSiteDom Flag specifying if the input variable has a domain
+of sites or is gridded
+@param[in] ncSUID Current simulation unit identifier for which is used
+to get data from netCDF
+@param[out] start Start indices to figure out and write to
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void get_read_start(
+    Bool useIndexFile,
+    char *indexFileName,
+    Bool inSiteDom,
+    size_t ncSUID[],
+    size_t start[],
+    LOG_INFO *LogInfo
+) {
+    char *indexVarNames[] = {NULL, NULL};
+    int indexFileID = -1;
+    int varNum;
+    int indexVarID;
+    int numIndexVars = (inSiteDom) ? 1 : 2;
+
+    /* Get the closest site from the index file if needed */
+    if (useIndexFile) {
+        indexVarNames[0] =
+            (inSiteDom) ? (char *) "site_index" : (char *) "y_index";
+        indexVarNames[1] = (inSiteDom) ? (char *) "" : (char *) "x_index";
+
+        SW_NC_open(indexFileName, NC_NOWRITE, &indexFileID, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        for (varNum = 0; varNum < numIndexVars; varNum++) {
+            indexVarID = -1;
+
+            SW_NC_get_single_val(
+                indexFileID,
+                &indexVarID,
+                indexVarNames[varNum],
+                ncSUID,
+                &start[varNum],
+                "unsigned int",
+                LogInfo
+            );
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
+        }
+    } else {
+        start[0] = ncSUID[0];
+        start[1] = ncSUID[1];
+    }
+
+closeFile:
+    if (indexFileID > -1) {
+        nc_close(indexFileID);
+    }
+}
+
 /**
 @brief Condensed function to read topographical, spatial,
 and climate inputs and convert the units from input nc files,
@@ -4125,9 +4192,11 @@ static void read_spatial_topo_climate_inputs(
 ) {
     char ***inVarInfo;
     Bool *readInput;
+    Bool useIndexFile;
 
     size_t count[] = {1, 0, 0};
-    size_t start[] = {ncSUID[0], ncSUID[1], 0};
+    size_t start[] = {0, 0, 0};
+    Bool inSiteDom;
     int varNum;
     int setIndex;
     int adjVarNum;
@@ -4165,6 +4234,7 @@ static void read_spatial_topo_climate_inputs(
         inVarInfo = SW_Domain->netCDFInput.inVarInfo[currKey];
         readInput = SW_Domain->netCDFInput.readInVars[currKey];
         fIndex = (currKey == eSW_InSpatial) ? 0 : 1;
+        useIndexFile = SW_Domain->netCDFInput.useIndexFile[currKey];
 
         if (!readInput[0]) {
             continue;
@@ -4174,13 +4244,31 @@ static void read_spatial_topo_climate_inputs(
             fIndex++;
         }
 
+        inSiteDom = (Bool) (strcmp(inVarInfo[fIndex][INDOMTYPE], "s") == 0);
+
         /* Determine how many values we will be reading from the variables
            within this input key */
-        if (strcmp(inVarInfo[fIndex][INDOMTYPE], "s") == 0) {
+        if (inSiteDom) {
             count[1] = (currKey != eSW_InClimate) ? 0 : MAX_MONTHS;
         } else {
             count[1] = 1;
             count[2] = (currKey != eSW_InClimate) ? 0 : MAX_MONTHS;
+        }
+
+        /* Get the start indices based on if we need to use the respective
+           index file */
+        if (currKey > eSW_InSpatial) {
+            get_read_start(
+                useIndexFile,
+                inFiles[currKey][0],
+                inSiteDom,
+                ncSUID,
+                start,
+                LogInfo
+            );
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
         }
 
         for (varNum = fIndex; varNum < numVarsInKey[currKey]; varNum++) {
