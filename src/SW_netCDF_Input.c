@@ -4093,388 +4093,183 @@ static void check_input_file_against_index(
 }
 
 /**
-@brief Read inputs that pertain to the input key "inSpatial" and store the
-following inputs
-    - Latitude/longitude
+@brief Condensed function to read topographical, spatial,
+and climate inputs and convert the units from input nc files,
+rather than having separate functions, this will specifically read
+    - Latitude/longitude                             (inSpatial)
+    - Elevation, slope, and aspect                   (inTopo)
+    - Cloud cover, wind speed, relative humidity,
+      snow density, and number of days with rain     (inClimate)
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
 @param[out] SW_Model Struct of type SW_MODEL holding basic time information
 about the simulation
-@param[in] spatialInFiles List of input files pertaining to the spatial input
-key
-@param[in] ncSUID Current simulation unit identifier for which is used
-to get data from netCDF
-@param[in] spatialConv A list of UDUNITS2 converters that were created
-to convert input data to units the program can understand within the
-"inSpatial" input key
-@param[out] LogInfo Holds information on warnings and errors
-*/
-static void read_spatial_inputs(
-    SW_DOMAIN *SW_Domain,
-    SW_MODEL *SW_Model,
-    char **spatialInFiles,
-    size_t ncSUID[],
-    sw_converter_t **spatialConv,
-    LOG_INFO *LogInfo
-) {
-    char ***inVarInfo = SW_Domain->netCDFInput.inVarInfo[eSW_InSpatial];
-    Bool *readInput = SW_Domain->netCDFInput.readInVars[eSW_InSpatial];
-
-    size_t start[2] = {0, 0}; /* [s, 0] or [y, x] */
-    nc_type varType;
-    int varNum;
-    int ncFileID = -1;
-    int varID;
-    int ncIndex;
-    char *fileName;
-    char *varName;
-    Bool siteInDom;
-    Bool twoDimVar;
-    const int numVars = numVarsInKey[eSW_InSpatial];
-    const char *yAxisName = inVarInfo[0][INYAXIS];
-    const char *xAxisName = inVarInfo[0][INXAXIS];
-    const char *varNames[] = {yAxisName, xAxisName};
-    float floatVal = 0.0f;
-    void *valPtr;
-
-    double *values[] = {&SW_Model->latitude, &SW_Model->longitude};
-
-    for (varNum = 0; varNum < numVars; varNum++) {
-        if (!readInput[varNum]) {
-            continue;
-        }
-
-        varID = -1;
-        fileName = spatialInFiles[varNum];
-        varName = (varNum == 0) ? inVarInfo[varNum][INYAXIS] :
-                                  inVarInfo[varNum][INXAXIS];
-
-        SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
-        if (LogInfo->stopRun) {
-            return;
-        }
-
-        /* Get information about the spatial variables */
-        twoDimVar = spatial_var_is_2d(ncFileID, varName, LogInfo);
-        if (LogInfo->stopRun) {
-            goto closeFile;
-        }
-
-        SW_NC_get_var_identifier(ncFileID, varName, &varID, LogInfo);
-        if (LogInfo->stopRun) {
-            goto closeFile;
-        }
-
-        if (nc_inq_vartype(ncFileID, varID, &varType) != NC_NOERR) {
-            LogError(LogInfo, LOGERROR, "Could not get variable type.");
-            goto closeFile;
-        }
-
-        siteInDom = (Bool) (strcmp(inVarInfo[varNum][INDOMTYPE], "s") == 0);
-
-        /* Calculate suid and set the proper variable location for result */
-        if (twoDimVar) {
-            start[0] = ncSUID[0];
-            start[1] = ncSUID[1];
-        } else {
-            ncIndex = (siteInDom) ? 0 : varNum % 2;
-            start[0] = ncSUID[ncIndex];
-        }
-
-        switch (varType) {
-        case NC_DOUBLE:
-            valPtr = (void *) values[varNum];
-            break;
-        default: /* NC_FLOAT */
-            valPtr = (void *) &floatVal;
-            break;
-        }
-
-        /* Read latitude/longitude */
-        SW_NC_get_single_val(
-            ncFileID, &varID, varNames[varNum], start, valPtr, "double", LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
-
-        if (varType == NC_FLOAT) {
-            *values[varNum] = (double) floatVal;
-        }
-
-        /* Convert latitude/longitude */
-#if defined(SWUDUNITS)
-        if (strcmp(inVarInfo[varNum][INVARUNITS], "NA") != 0 &&
-            !isnull(spatialConv[varNum])) {
-
-            cv_convert_doubles(
-                spatialConv[varNum], values[varNum], 1, values[varNum]
-            );
-        }
-#endif
-        nc_close(ncFileID);
-        ncFileID = -1;
-    }
-
-closeFile:
-    if (ncFileID > -1) {
-        nc_close(ncFileID);
-    }
-}
-
-/**
-@brief Read user-provided topographical variable values
-
-@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
-temporal/spatial information for a set of simulation runs
-@param[out] SW_Model Struct of type SW_MODEL holding basic time information
-about the simulation
-@param[in] topoInFiles List of input files pertaining to the topo input
-key
-@param[in] ncSUID Current simulation unit identifier for which is used
-to get data from netCDF
-@param[in] topoConv A list of UDUNITS2 converters that were created
-to convert input data to units the program can understand within the
-"inTopo" input key
-@param[out] LogInfo Holds information on warnings and errors
-*/
-static void read_topo_inputs(
-    SW_DOMAIN *SW_Domain,
-    SW_MODEL *SW_Model,
-    char **topoInFiles,
-    size_t ncSUID[],
-    sw_converter_t **topoConv,
-    LOG_INFO *LogInfo
-) {
-    char ***inVarInfo = SW_Domain->netCDFInput.inVarInfo[eSW_InTopo];
-    Bool *readInput = SW_Domain->netCDFInput.readInVars[eSW_InTopo];
-
-    int varNum;
-    int fIndex = 1;
-    int varID = -1;
-    int ncFileID = -1;
-    char *fileName;
-    char *varName;
-    nc_type varType;
-
-    double *values[] = {
-        &SW_Model->elevation, &SW_Model->slope, &SW_Model->aspect
-    };
-    float floatVal = 0.0f;
-    double doubleVal = 0.0;
-    void *valPtr;
-
-    while (!readInput[fIndex + 1]) {
-        fIndex++;
-    }
-
-    for (varNum = fIndex; varNum < numVarsInKey[eSW_InTopo]; varNum++) {
-        if (!readInput[varNum + 1]) {
-            continue;
-        }
-
-        varID = -1;
-        fileName = topoInFiles[varNum];
-        varName = inVarInfo[varNum][INNCVARNAME];
-
-        SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
-        if (LogInfo->stopRun) {
-            return;
-        }
-
-        SW_NC_get_var_identifier(ncFileID, varName, &varID, LogInfo);
-        if (LogInfo->stopRun) {
-            goto closeFile;
-        }
-
-        if (nc_inq_vartype(ncFileID, varID, &varType) != NC_NOERR) {
-            goto closeFile;
-        }
-
-        switch (varType) {
-        case NC_DOUBLE:
-            valPtr = (void *) &doubleVal;
-            break;
-        case NC_FLOAT:
-            valPtr = (void *) &floatVal;
-            break;
-        default: /* Any other variable type */
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "Cannot understand types of variable '%s' other than "
-                "double and float.",
-                varName
-            );
-            goto closeFile;
-            break;
-        }
-
-        /* Read elevation, slope, and aspect */
-        SW_NC_get_single_val(
-            ncFileID, &varID, varName, ncSUID, valPtr, "double", LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
-
-        *values[varNum - 1] =
-            (varType == NC_FLOAT) ? (double) floatVal : doubleVal;
-
-        /* Set aspect to missing if the read value is greater than 180 */
-        if (varNum == 3 &&
-            (GT(*values[varNum - 1], 180.0) || LT(*values[varNum - 1], -180.0))) {
-
-            *values[varNum - 1] = SW_MISSING;
-        }
-
-#if defined(SWUDUNITS)
-        if (strcmp(inVarInfo[varNum][INVARUNITS], "NA") != 0 &&
-            !isnull(topoConv[varNum])) {
-
-            cv_convert_doubles(
-                topoConv[varNum], values[varNum], 1, values[varNum]
-            );
-        }
-#endif
-        nc_close(ncFileID);
-        ncFileID = -1;
-    }
-
-closeFile:
-    if (ncFileID > -1) {
-        nc_close(ncFileID);
-    }
-}
-
-/**
-@brief Read user-provided cliamte variable values
-
-@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
-temporal/spatial information for a set of simulation runs
 @param[out] SW_Sky Struct of type SW_SKY which describes sky conditions
 over the simulated site
-@param[in] climInFiles List of input files pertaining to the climate input
-key
+@param[in] inFiles List of all input files throughout all input keys
 @param[in] ncSUID Current simulation unit identifier for which is used
 to get data from netCDF
-@param[in] climateConv A list of UDUNITS2 converters that were created
-to convert input data to units the program can understand within the
-"inTopo" input key
+@param[in] convs List of all conversion systems throughout all
+input keys
 @param[out] LogInfo Holds information on warnings and errors
 */
-static void read_climate_inputs(
+static void read_spatial_topo_climate_inputs(
     SW_DOMAIN *SW_Domain,
+    SW_MODEL *SW_Model,
     SW_SKY *SW_Sky,
-    char **climInFiles,
+    char ***inFiles,
     size_t ncSUID[],
-    sw_converter_t **climateConv,
+    sw_converter_t ***convs,
     LOG_INFO *LogInfo
 ) {
-    char ***inVarInfo = SW_Domain->netCDFInput.inVarInfo[eSW_InClimate];
-    Bool *readInput = SW_Domain->netCDFInput.readInVars[eSW_InClimate];
+    char ***inVarInfo;
+    Bool *readInput;
 
+    size_t count[] = {1, 0, 0};
+    size_t start[] = {ncSUID[0], ncSUID[1], 0};
     int varNum;
     int setIndex;
-    int fIndex = 1;
+    int adjVarNum;
+    int adjSetIndex;
+    int keyNum;
+    int fIndex;
     int varID = -1;
     int ncFileID = -1;
     char *fileName;
     char *varName;
     nc_type varType;
-    size_t count[] = {1, 0, 0};
-
-    double *values[] = {
-        SW_Sky->cloudcov,
-        SW_Sky->windspeed,
-        SW_Sky->windspeed,
-        SW_Sky->r_humidity,
-        SW_Sky->snow_density,
-        SW_Sky->n_rain_per_day
-    };
-    float floatVal[MAX_MONTHS] = {0.0f};
-    double doubleVal[MAX_MONTHS] = {0.0};
+    const int numKeys = 3;
     void *valPtr;
 
-    while (!readInput[fIndex + 1]) {
-        fIndex++;
-    }
+    const InKeys keys[] = {eSW_InSpatial, eSW_InTopo, eSW_InClimate};
+    InKeys currKey;
 
-    if (strcmp(inVarInfo[fIndex][INDOMTYPE], "s") == 0) {
-        count[1] = MAX_MONTHS;
-    } else {
-        count[1] = ncSUID[1];
-        count[2] = MAX_MONTHS;
-    }
+    double *values[][5] = {
+        {&SW_Model->latitude, &SW_Model->longitude},
+        {&SW_Model->elevation, &SW_Model->slope, &SW_Model->aspect},
+        {SW_Sky->cloudcov,
+         SW_Sky->windspeed,
+         SW_Sky->r_humidity,
+         SW_Sky->snow_density,
+         SW_Sky->n_rain_per_day}
+    };
 
-    for (varNum = fIndex; varNum < numVarsInKey[eSW_InClimate]; varNum++) {
-        if (!readInput[varNum + 1]) {
+    float floatVal = 0.0f;
+    double doubleVal = 0.0;
+    float monFloatVals[MAX_MONTHS] = {0.0f};
+    double monDoubleVals[MAX_MONTHS] = {0.0};
+
+    for (keyNum = 0; keyNum < numKeys; keyNum++) {
+        currKey = keys[keyNum];
+        inVarInfo = SW_Domain->netCDFInput.inVarInfo[currKey];
+        readInput = SW_Domain->netCDFInput.readInVars[currKey];
+        fIndex = (currKey == eSW_InSpatial) ? 0 : 1;
+
+        if (!readInput[0]) {
             continue;
         }
 
-        varID = -1;
-        fileName = climInFiles[varNum];
-        varName = inVarInfo[varNum][INNCVARNAME];
-
-        SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
-        if (LogInfo->stopRun) {
-            return;
+        while (!readInput[fIndex + 1]) {
+            fIndex++;
         }
 
-        SW_NC_get_var_identifier(ncFileID, varName, &varID, LogInfo);
-        if (LogInfo->stopRun) {
-            goto closeFile;
+        /* Determine how many values we will be reading from the variables
+           within this input key */
+        if (strcmp(inVarInfo[fIndex][INDOMTYPE], "s") == 0) {
+            count[1] = (currKey != eSW_InClimate) ? 0 : MAX_MONTHS;
+        } else {
+            count[1] = 1;
+            count[2] = (currKey != eSW_InClimate) ? 0 : MAX_MONTHS;
         }
 
-        if (nc_inq_vartype(ncFileID, varID, &varType) != NC_NOERR) {
-            goto closeFile;
-        }
+        for (varNum = fIndex; varNum < numVarsInKey[currKey]; varNum++) {
+            varID = -1;
+            adjVarNum = (currKey == eSW_InSpatial) ? varNum : varNum + 1;
+            adjSetIndex = (currKey == eSW_InSpatial) ? varNum : varNum - 1;
+            if (!readInput[adjVarNum]) {
+                continue;
+            }
 
-        switch (varType) {
-        case NC_DOUBLE:
-            valPtr = (void *) doubleVal;
-            break;
-        case NC_FLOAT:
-            valPtr = (void *) floatVal;
-            break;
-        default: /* Any other variable type */
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "Cannot understand types of variable '%s' other than "
-                "double and float.",
-                varName
+            fileName = inFiles[currKey][varNum];
+            varName = inVarInfo[varNum][INNCVARNAME];
+
+            SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
+            if (LogInfo->stopRun) {
+                return;
+            }
+
+            SW_NC_get_var_identifier(ncFileID, varName, &varID, LogInfo);
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
+
+            if (nc_inq_vartype(ncFileID, varID, &varType) != NC_NOERR) {
+                goto closeFile;
+            }
+
+            switch (varType) {
+            case NC_DOUBLE:
+                valPtr = (currKey == eSW_InClimate) ? (void *) monDoubleVals :
+                                                      (void *) &doubleVal;
+                break;
+            case NC_FLOAT:
+                valPtr = (currKey == eSW_InClimate) ? (void *) monFloatVals :
+                                                      (void *) &floatVal;
+                break;
+            default: /* Any other variable type */
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Cannot understand types of variable '%s' other than "
+                    "double and float.",
+                    varName
+                );
+                goto closeFile;
+                break;
+            }
+
+            get_values_multiple(
+                ncFileID, varID, start, count, varName, valPtr, LogInfo
             );
-            goto closeFile;
-            break;
-        }
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
 
-        /* Read current climate variable */
-        get_values_multiple(
-            ncFileID, varID, ncSUID, count, varName, valPtr, LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
-
-        for (setIndex = 0; setIndex < MAX_MONTHS; setIndex++) {
-            values[varNum - 1][setIndex] = (varType == NC_FLOAT) ?
-                                               (double) floatVal[setIndex] :
-                                               doubleVal[setIndex];
-        }
+            if (currKey == eSW_InClimate) {
+                for (setIndex = 0; setIndex < MAX_MONTHS; setIndex++) {
+                    values[keyNum][adjSetIndex][setIndex] =
+                        (varType == NC_FLOAT) ? monFloatVals[setIndex] :
+                                                monDoubleVals[setIndex];
+                }
+            } else {
+                *(values[keyNum][adjSetIndex]) =
+                    (varType == NC_FLOAT) ? floatVal : doubleVal;
+            }
 
 #if defined(SWUDUNITS)
-        if (strcmp(inVarInfo[varNum][INVARUNITS], "NA") != 0 &&
-            !isnull(climateConv[varNum])) {
+            if (strcmp(inVarInfo[varNum][INVARUNITS], "NA") != 0 &&
+                !isnull(convs[currKey][varNum])) {
 
-            cv_convert_doubles(
-                climateConv[varNum], values[varNum], MAX_MONTHS, values[varNum]
-            );
-        }
+                cv_convert_doubles(
+                    convs[currKey][varNum],
+                    values[keyNum][adjSetIndex],
+                    (currKey == eSW_InClimate) ? MAX_MONTHS : 1,
+                    values[keyNum][adjSetIndex]
+                );
+            }
 #endif
-        nc_close(ncFileID);
-        ncFileID = -1;
+
+            if (currKey == eSW_InTopo && varNum == 3 &&
+                (GT(*values[keyNum][adjSetIndex], 180.0) ||
+                 LT(*values[keyNum][adjSetIndex], -180.0))) {
+
+                *(values[keyNum][adjSetIndex]) = SW_MISSING;
+            }
+
+            nc_close(ncFileID);
+            ncFileID = -1;
+        }
     }
 
 closeFile:
@@ -5390,49 +5185,13 @@ void SW_NCIN_read_inputs(
     Bool **readInputs = SW_Domain->netCDFInput.readInVars;
     sw_converter_t ***convs = SW_Domain->netCDFInput.uconv;
 
-    /*
-        Gather inputs from nc input files from every input key
-        except "eSW_InDomain" if they were turned on (input) by the user
-    */
+    if (readInputs[eSW_InSpatial][0] || readInputs[eSW_InTopo][0] ||
+        readInputs[eSW_InClimate][0]) {
 
-    if (readInputs[eSW_InSpatial][0]) {
-        read_spatial_inputs(
-            SW_Domain,
-            &sw->Model,
-            ncInFiles[eSW_InSpatial],
-            ncSUID,
-            convs[eSW_InSpatial],
-            LogInfo
+        read_spatial_topo_climate_inputs(
+            SW_Domain, &sw->Model, &sw->Sky, ncInFiles, ncSUID, convs, LogInfo
         );
         if (LogInfo->stopRun) {
-            return;
-        }
-    }
-
-    if (readInputs[eSW_InTopo][0]) {
-        read_topo_inputs(
-            SW_Domain,
-            &sw->Model,
-            ncInFiles[eSW_InTopo],
-            ncSUID,
-            convs[eSW_InTopo],
-            LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return;
-        }
-    }
-
-    if(readInputs[eSW_InClimate][0]) {
-        read_climate_inputs(
-            SW_Domain,
-            &sw->Sky,
-            ncInFiles[eSW_InClimate],
-            ncSUID,
-            convs[eSW_InClimate],
-            LogInfo
-        );
-        if(LogInfo->stopRun) {
             return;
         }
     }
