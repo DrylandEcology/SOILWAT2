@@ -385,6 +385,81 @@ static void check_domain_information(
 }
 
 /**
+@brief There are certain combinations of domain/inputs the program
+accepts, this function checks the input spreadsheet that the
+given configurations is an acceptable one
+
+@param[in] primCRSIsGeo Specifies if the current CRS type is geographic
+@param[in] inputInfo List of information pertaining to a specific input key
+@param[in] inFileName First active input's file name within an input key
+@param[in] domDomType Specifies the domain type that the program is
+making use of
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void check_correct_spatial_config(
+    Bool primCRSIsGeo,
+    char **inputInfo,
+    char *inFileName,
+    char *domDomType,
+    LOG_INFO *LogInfo
+) {
+    Bool siteDom = (Bool) (strcmp(domDomType, "s") == 0);
+    Bool inSiteDom = (Bool) (strcmp(inputInfo[INDOMTYPE], "s") == 0);
+    Bool inGeoCRS =
+        (Bool) (strcmp(inputInfo[INGRIDMAPPING], "latitude_longitude") == 0);
+    Bool failedCaseOne = swFALSE;
+    Bool failedCaseTwo = swFALSE;
+    Bool failedCaseThree = swFALSE;
+    Bool failedCaseFour = swFALSE;
+    Bool failedCaseFive = swFALSE;
+    Bool failedCaseSix = swFALSE;
+    Bool failedCaseSeven = swFALSE;
+
+    /* Gather information if fail case 1 - 3 is true; these cases cover:
+        - Site, geo CRS domain with site, proj CRS input
+        - Site, geo CRS domain with xy (gridded), proj CRS input
+        - XY (gridded), geo CRS domain with xy (gridded), geo CRS input */
+    failedCaseOne = (Bool) (siteDom && primCRSIsGeo && inSiteDom && !inGeoCRS);
+    failedCaseTwo = (Bool) (siteDom && primCRSIsGeo && !inSiteDom && !inGeoCRS);
+    failedCaseThree =
+        (Bool) (!siteDom && primCRSIsGeo && !inSiteDom && inGeoCRS);
+
+    if (failedCaseOne || failedCaseTwo || failedCaseThree) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Simulation domain has geographic CRS but input of %s has a "
+            "projected CRS.",
+            inFileName
+        );
+        return;
+    }
+
+    /* Gather information if fail case 4 - 7 is true; these cases cover:
+        - XY (gridded), geo CRS domain with site, geo CRS input
+        - XY (gridded), geo CRS domain with site, proj CRS input
+        - XY (gridded), proj CRS domain with site, geo CRS input
+        - XY (gridded), proj CRS domain with site, proj CRS input */
+    if (!siteDom) {
+        failedCaseFour = (Bool) (primCRSIsGeo && inSiteDom && inGeoCRS);
+        failedCaseFive = (Bool) (primCRSIsGeo && inSiteDom && !inGeoCRS);
+        failedCaseSix = (Bool) (!primCRSIsGeo && inSiteDom && inGeoCRS);
+        failedCaseSeven = (Bool) (!primCRSIsGeo && inSiteDom && !inGeoCRS);
+
+        if (failedCaseFour || failedCaseFive || failedCaseSix ||
+            failedCaseSeven) {
+
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Simulation domain is 'xy' but input domain of %s is 's'.",
+                inFileName
+            );
+        }
+    }
+}
+
+/**
 @brief Check that the required variable information was input through
 the input variable file
 
@@ -600,6 +675,8 @@ input columns and the same values for input columns within a given input key
 */
 static void check_input_variables(
     SW_NETCDF_OUT *SW_netCDFOut,
+    char **ncInFiles[],
+    char ***ncWeatherInFiles,
     char ****inputInfo,
     int inWeathStrideInfo[],
     Bool *readInVars[],
@@ -642,9 +719,18 @@ static void check_input_variables(
                 check_domain_information(
                     SW_netCDFOut, inputInfo[key][testVarIndex], LogInfo
                 );
-                if (LogInfo->stopRun) {
-                    return; /* Exit function prematurely due to failed test */
-                }
+            } else {
+                check_correct_spatial_config(
+                    SW_netCDFOut->primary_crs_is_geographic,
+                    inputInfo[key][testVarIndex],
+                    (key != eSW_InWeather) ? ncInFiles[key][testVarIndex] :
+                                             ncWeatherInFiles[testVarIndex][0],
+                    inputInfo[eSW_InDomain][0][INDOMTYPE],
+                    LogInfo
+                );
+            }
+            if (LogInfo->stopRun) {
+                return; /* Exit function prematurely due to failed test */
             }
         }
     }
@@ -3769,8 +3855,6 @@ freeTree:
 will be created as a translation between the spatial coordinates contained
 in the programs domain and the input file domain(s)
 
-@param[in] siteDom Specifies that the programs domain has sites, otherwise
-it is gridded
 @param[in] inFileID Input file identifier
 @param[in] templateID Identifier of the newly created index file
 @param[in] domYName Name of the programs domain latitude/y axis/variable
@@ -3784,7 +3868,6 @@ created
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static void get_index_vars_info(
-    Bool siteDom,
     int inFileID,
     int *nDims,
     int templateID,
@@ -3808,13 +3891,6 @@ static void get_index_vars_info(
             "but it is not seen in the input nc file itself.",
             siteName
         );
-    } else if (inHasSite && !siteDom) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Input file has sites while the domain is an xy domain."
-        );
-        return;
     }
 
     indexVarNames[0] = (inHasSite) ? (char *) "site_index" : (char *) "y_index";
@@ -6087,6 +6163,8 @@ void SW_NCIN_read_input_vars(
 
     check_input_variables(
         SW_netCDFOut,
+        SW_PathInputs->ncInFiles,
+        SW_PathInputs->ncWeatherInFiles,
         SW_netCDFIn->inVarInfo,
         inWeathStrideInfo,
         SW_netCDFIn->readInVars,
@@ -6573,7 +6651,6 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     (Bool) (strcmp(varInfo[fIndex][INDOMTYPE], "s") == 0);
 
                 get_index_vars_info(
-                    siteDom,
                     ncFileID,
                     &indexVarNDims,
                     templateID,
