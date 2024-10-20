@@ -2364,11 +2364,9 @@ static void read_domain_coordinates(
 ) {
     int index;
     int varID;
-    size_t val;
     const int numReadInDims = (primCRSIsGeo) ? 2 : 4;
     const int numDims = 2;
     Bool validY;
-    Bool validX;
 
     char *domCoordNames[2]; /* Set later */
 
@@ -2431,27 +2429,21 @@ static void read_domain_coordinates(
             return; /* Exit prematurely due to error */
         }
 
-        for (val = 0; val < *domCoordSizes[index]; val++) {
-            /* Check latitude */
-            validY = (Bool) (index % 2 == 0 &&
-                             (GE(*(domCoordArrs[index])[val], -90.0) &&
-                              LE(*(domCoordArrs[index])[val], 90.0)));
+        if (primCRSIsGeo && index == 0) {
+            /* Check first and laste value of latitude */
+            validY = (Bool) ((GE(*(domCoordArrs[index])[0], -90.0) &&
+                              LE(*(domCoordArrs[index])[0], 90.0)) ||
+                             (GE(*(domCoordArrs[index])[*domCoordSizes[0] - 1],
+                                 -90.0) &&
+                              LE(*(domCoordArrs[index])[*domCoordSizes[0] - 1],
+                                 90.0)));
 
-            /* Check longitude - can be [-180, 180] or [0, 360] */
-            validX = (Bool) (index % 2 == 1 &&
-                             ((GE(*(domCoordArrs[index])[val], -180.0) &&
-                              LE(*(domCoordArrs[index])[val], 180.0)) ||
-                              (GE(*(domCoordArrs[index])[val], 0.0) &&
-                               LE(*(domCoordArrs[index])[val], 360.0))));
-
-            if ((index % 2 == 0 && !validY) || (index % 2 == 1 && !validX)) {
+            if (!validY) {
                 LogError(
                     LogInfo,
                     LOGERROR,
-                    "Coordinate value of '%f' does not fit within the range "
-                    "%s for the variable '%s'.",
-                    *(domCoordArrs[index])[val],
-                    (index % 2 == 0) ? "[-90, 90]" : "[-180, 180]/[0, 360]",
+                    "Coordinate value(s) do not fit within the "
+                    "range [-90, 90] for the variable '%s'.",
                     domCoordVarNames[index]
                 );
                 return;
