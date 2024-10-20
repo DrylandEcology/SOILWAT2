@@ -653,7 +653,7 @@ If missing, set values to #SW_MISSING.
 @param[in] n_years Number of years in simulation
 @param[in] use_weathergenerator_only A boolean; if #swFALSE, code attempts to
     read weather files from disk.
-@param[in] weather_prefix File name of weather data without extension.
+@param[in] txtWeatherPrefix File name of weather data without extension.
 @param[in] use_cloudCoverMonthly A boolean; if #swTRUE, function will
     interpolate mean monthly values provided by \p cloudcov to daily time series
 @param[in] use_humidityMonthly A boolean; if #swTRUE, function will interpolate
@@ -681,7 +681,7 @@ void readAllWeather(
     unsigned int startYear,
     unsigned int n_years,
     Bool use_weathergenerator_only,
-    char weather_prefix[],
+    char txtWeatherPrefix[],
     Bool use_cloudCoverMonthly,
     Bool use_humidityMonthly,
     Bool use_windSpeedMonthly,
@@ -747,7 +747,7 @@ void readAllWeather(
             read_weather_hist(
                 year,
                 allHist[yearIndex],
-                weather_prefix,
+                txtWeatherPrefix,
                 n_input_forcings,
                 dailyInputIndices,
                 dailyInputFlags,
@@ -1737,14 +1737,14 @@ void SW_WTH_new_day(
 
 @param[in,out] SW_Weather Struct of type SW_WEATHER holding all relevant
     information pretaining to meteorological input data
-@param[in] InFiles Array of program in/output files
-@param[out] weather_prefix File name of weather data without extension.
+@param[in] txtInFiles Array of program in/output files
+@param[out] txtWeatherPrefix File name of weather data without extension.
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_WTH_setup(
     SW_WEATHER *SW_Weather,
-    char *InFiles[],
-    char *weather_prefix,
+    char *txtInFiles[],
+    char *txtWeatherPrefix,
     LOG_INFO *LogInfo
 ) {
     /* =================================================== */
@@ -1777,7 +1777,7 @@ void SW_WTH_setup(
 
     Bool *dailyInputFlags = SW_Weather->dailyInputFlags;
 
-    char *MyFileName = InFiles[eWeather];
+    char *MyFileName = txtInFiles[eWeather];
     f = OpenFile(MyFileName, "r", LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -1982,14 +1982,14 @@ void SW_WTH_setup(
         SW_Weather->name_prefix,
         sizeof SW_Weather->name_prefix,
         "%s",
-        weather_prefix
+        txtWeatherPrefix
     );
     if (resSNP < 0 || (unsigned) resSNP >= (sizeof SW_Weather->name_prefix)) {
         LogError(
             LogInfo,
             LOGERROR,
             "Weather input path name is too long: '%s'.",
-            weather_prefix
+            txtWeatherPrefix
         );
         return; // Exit function prematurely due to error
     }
@@ -2247,7 +2247,7 @@ Format of a input file (white-space separated values):
 @param year Current year within the simulation
 @param yearWeather Current year's weather array that is to be filled by
     function
-@param weather_prefix File name of weather data without extension.
+@param txtWeatherPrefix File name of weather data without extension.
 @param n_input_forcings Number of read-in columns from disk
 @param dailyInputIndices An array of size MAX_INPUT_COLUMNS holding the
     calculated column number of which a certain variable resides
@@ -2258,7 +2258,7 @@ Format of a input file (white-space separated values):
 void read_weather_hist(
     TimeInt year,
     SW_WEATHER_HIST *yearWeather,
-    char weather_prefix[],
+    char txtWeatherPrefix[],
     unsigned int n_input_forcings,
     const unsigned int *dailyInputIndices,
     const Bool *dailyInputFlags,
@@ -2313,7 +2313,7 @@ void read_weather_hist(
     char weathInStrs[15][20];
 
     // Create file name: `[weather-file prefix].[year]`
-    resSNP = snprintf(fname, sizeof fname, "%s.%4d", weather_prefix, year);
+    resSNP = snprintf(fname, sizeof fname, "%s.%4d", txtWeatherPrefix, year);
 
     if (resSNP < 0 || (unsigned) resSNP >= (sizeof fname)) {
         LogError(

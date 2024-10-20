@@ -1307,12 +1307,19 @@ void SW_SIT_construct(SW_SITE *SW_Site) {
 @brief Reads in file for input values.
 
 @param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
-@param[in] InFiles Array of program in/output files
+@param[in] txtInFiles Array of program in/output files
 @param[out] SW_Carbon Struct of type SW_CARBON holding all CO2-related data
+@param[out] hasConsistentSoilLayerDepths  Holds the specification if the
+input soil layers have the same depth throughout all inputs (only used
+when dealing with nc inputs)
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_SIT_read(
-    SW_SITE *SW_Site, char *InFiles[], SW_CARBON *SW_Carbon, LOG_INFO *LogInfo
+    SW_SITE *SW_Site,
+    char *txtInFiles[],
+    SW_CARBON *SW_Carbon,
+    Bool *hasConsistentSoilLayerDepths,
+    LOG_INFO *LogInfo
 ) {
     /* =================================================== */
     /* 5-Feb-2002 (cwb) Removed rgntop requirement in
@@ -1339,7 +1346,7 @@ void SW_SIT_read(
     Bool strLine;
 
     /* note that Files.read() must be called prior to this. */
-    char *MyFileName = InFiles[eSite];
+    char *MyFileName = txtInFiles[eSite];
 
     f = OpenFile(MyFileName, "r", LogInfo);
     if (LogInfo->stopRun) {
@@ -1512,9 +1519,12 @@ void SW_SIT_read(
 #endif
             break;
         case 36:
-            SW_Site->type_soilDensityInput = intRes;
+            *hasConsistentSoilLayerDepths = itob(intRes);
             break;
         case 37:
+            SW_Site->type_soilDensityInput = intRes;
+            break;
+        case 38:
             resSNP = snprintf(
                 SW_Site->site_swrc_name,
                 sizeof SW_Site->site_swrc_name,
@@ -1534,7 +1544,7 @@ void SW_SIT_read(
                 goto closeFile;
             }
             break;
-        case 38:
+        case 39:
             resSNP = snprintf(
                 SW_Site->site_ptf_name,
                 sizeof SW_Site->site_ptf_name,
@@ -1550,12 +1560,12 @@ void SW_SIT_read(
             }
             SW_Site->site_ptf_type = encode_str2ptf(SW_Site->site_ptf_name);
             break;
-        case 39:
+        case 40:
             SW_Site->site_has_swrcp = itob(intRes);
             break;
 
         default:
-            if (lineno > 39 + MAX_TRANSP_REGIONS) {
+            if (lineno > 40 + MAX_TRANSP_REGIONS) {
                 break; /* skip extra lines */
             }
 
@@ -1640,7 +1650,7 @@ Label_End_Read:
                 LogInfo,
                 LOGERROR,
                 "%s : Discontinuity/reversal in transpiration regions.\n",
-                InFiles[eSite]
+                txtInFiles[eSite]
             );
             goto closeFile;
         }
@@ -1652,12 +1662,12 @@ closeFile: { CloseFile(&f, LogInfo); }
 /** Reads soil layers and soil properties from input file
 
 @param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
-@param[in] InFiles Array of program in/output files
+@param[in] txtInFiles Array of program in/output files
 @param[out] LogInfo Holds information on warnings and errors
 
 @note Previously, the function was static and named `_read_layers()`.
 */
-void SW_LYR_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
+void SW_LYR_read(SW_SITE *SW_Site, char *txtInFiles[], LOG_INFO *LogInfo) {
     /* =================================================== */
     /* 5-Feb-2002 (cwb) removed dmin requirement in input file */
 
@@ -1695,7 +1705,7 @@ void SW_LYR_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
     const int numDoubleInStrings = 12;
 
     /* note that Files.read() must be called prior to this. */
-    char *MyFileName = InFiles[eLayers];
+    char *MyFileName = txtInFiles[eLayers];
 
     f = OpenFile(MyFileName, "r", LogInfo);
     if (LogInfo->stopRun) {
@@ -1991,11 +2001,11 @@ void derive_soilRegions(
 /** Obtain soil water retention curve parameters from disk
  *
  * @param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
- * @param[in] InFiles Array of program in/output files
+ * @param[in] txtInFiles Array of program in/output files
  * @param[out] LogInfo Holds information on warnings and errors
  *
  */
-void SW_SWRC_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
+void SW_SWRC_read(SW_SITE *SW_Site, char *txtInFiles[], LOG_INFO *LogInfo) {
 
     /* Don't read values from disk if they will be estimated via a PTF */
     if (!SW_Site->site_has_swrcp) {
@@ -2013,7 +2023,7 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *InFiles[], LOG_INFO *LogInfo) {
     const int numDoubleInStrings = 6;
 
     /* note that Files.read() must be called prior to this. */
-    char *MyFileName = InFiles[eSWRCp];
+    char *MyFileName = txtInFiles[eSWRCp];
 
     f = OpenFile(MyFileName, "r", LogInfo);
     if (LogInfo->stopRun) {

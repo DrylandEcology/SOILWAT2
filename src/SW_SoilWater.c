@@ -1345,11 +1345,11 @@ See read_swc_hist() for reading historical files.
 @param[in,out] SW_SoilWat Struct of type SW_SOILWAT containing
     soil water related values
 @param[in] endyr Ending year for model run
-@param[in] InFiles Array of program in/output files
+@param[in] txtInFiles Array of program in/output files
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_SWC_read(
-    SW_SOILWAT *SW_SoilWat, TimeInt endyr, char *InFiles[], LOG_INFO *LogInfo
+    SW_SOILWAT *SW_SoilWat, TimeInt endyr, char *txtInFiles[], LOG_INFO *LogInfo
 ) {
     /* =================================================== */
     /* HISTORY
@@ -1364,7 +1364,7 @@ void SW_SWC_read(
     int inBufintRes = 0;
     Bool convertInput;
 
-    char *MyFileName = InFiles[eSoilwat];
+    char *MyFileName = txtInFiles[eSoilwat];
     f = OpenFile(MyFileName, "r", LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error

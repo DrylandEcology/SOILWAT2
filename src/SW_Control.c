@@ -57,7 +57,9 @@
 
 
 #if defined(SWNETCDF)
-#include "include/SW_netCDF.h"
+#include "include/SW_netCDF_General.h"
+#include "include/SW_netCDF_Input.h"
+#include "include/SW_netCDF_Output.h"
 #include "include/SW_Output_outarray.h"
 #endif
 
@@ -215,8 +217,8 @@ void SW_RUN_deepCopy(
     }
 
 #ifdef SWNETCDF
-    SW_FILESTATUS_deepCopy(
-        &dest->FileStatus, &source->FileStatus, OutDom, LogInfo
+    SW_PATHOUT_deepCopy(
+        &dest->SW_PathOutputs, &source->SW_PathOutputs, OutDom, LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit prematurely due to error
@@ -287,8 +289,8 @@ void SW_CTL_RunSimSet(
     int progVarID = 0;  // Value does not matter if SWNETCDF is not defined
 
 #if defined(SWNETCDF)
-    progFileID = SW_Domain->netCDFInfo.ncFileIDs[vNCprog];
-    progVarID = SW_Domain->netCDFInfo.ncVarIDs[vNCprog];
+    progFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprog];
+    progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprog];
 #endif
 
     set_walltime(&tss, &ok_tss);
@@ -410,59 +412,73 @@ void SW_CTL_alloc_outptrs(SW_RUN *sw, LOG_INFO *LogInfo) {
 
 @param[in] userSUID Simulation Unit Identifier requested by the user (base1);
     0 indicates that all simulations units within domain are requested
+@param[in] renameDomainTemp Specifies if the created domain netCDF file
+will automatically be renamed
 @param[out] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_setup_domain(
-    unsigned long userSUID, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
+    unsigned long userSUID,
+    Bool renameDomainTemp,
+    SW_DOMAIN *SW_Domain,
+    LOG_INFO *LogInfo
 ) {
 
-    SW_F_construct(
-        SW_Domain->PathInfo.InFiles[eFirst],
-        SW_Domain->PathInfo.SW_ProjDir,
-        LogInfo
-    );
+    SW_F_construct(&SW_Domain->SW_PathInputs, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    SW_F_read(&SW_Domain->PathInfo, LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-
-#if defined(SWNETCDF)
-    SW_NC_read(&SW_Domain->netCDFInfo, &SW_Domain->PathInfo, LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-#endif
-
-    SW_DOM_read(SW_Domain, LogInfo);
+    SW_F_read(&SW_Domain->SW_PathInputs, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
     SW_DOM_construct(SW_Domain->SW_SpinUp.rng_seed, SW_Domain);
 
+    SW_DOM_read(SW_Domain, LogInfo);
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     SW_DOM_calc_nSUIDs(SW_Domain);
 
 #if defined(SWNETCDF)
+    SW_NC_read(
+        &SW_Domain->netCDFInput,
+        &SW_Domain->OutDom.netCDFOutput,
+        &SW_Domain->SW_PathInputs,
+        SW_Domain->startyr,
+        SW_Domain->endyr,
+        LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    SW_NCIN_create_units_converters(&SW_Domain->netCDFInput, LogInfo);
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     // Create domain template if it does not exist (and exit)
     char *fnameDomainTemplateNC;
 
-    fnameDomainTemplateNC = (SW_Domain->netCDFInfo.renameDomainTemplateNC) ?
-                                SW_Domain->netCDFInfo.InFilesNC[vNCdom] :
-                                NULL;
+    fnameDomainTemplateNC =
+        (renameDomainTemp) ?
+            SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom] :
+            NULL;
 
-    if (!FileExists(SW_Domain->netCDFInfo.InFilesNC[vNCdom])) {
-        SW_NC_create_domain_template(SW_Domain, fnameDomainTemplateNC, LogInfo);
+    if (!FileExists(SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom])) {
+        SW_NCIN_create_domain_template(
+            SW_Domain, fnameDomainTemplateNC, LogInfo
+        );
         if (LogInfo->stopRun) {
             return; // Exit prematurely due to error
         }
 
-        if (!SW_Domain->netCDFInfo.renameDomainTemplateNC) {
+        if (!renameDomainTemp) {
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -477,20 +493,24 @@ void SW_CTL_setup_domain(
     }
 
     // Open necessary netCDF input files and check for consistency with domain
-    SW_NC_open_dom_prog_files(&SW_Domain->netCDFInfo, LogInfo);
+    SW_NCIN_open_dom_prog_files(
+        &SW_Domain->netCDFInput, &SW_Domain->SW_PathInputs, LogInfo
+    );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
     SW_NC_check(
         SW_Domain,
-        SW_Domain->netCDFInfo.ncFileIDs[vNCdom],
-        SW_Domain->netCDFInfo.InFilesNC[vNCdom],
+        SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom],
+        SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom],
         LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
+#else
+    (void) renameDomainTemp;
 #endif
 
     SW_DOM_CreateProgress(SW_Domain, LogInfo);
@@ -524,7 +544,7 @@ void SW_CTL_setup_model(
     SW_VPD_construct(&sw->VegProd);
     // SW_FLW_construct() not needed
     SW_OUT_construct(
-        zeroOutInfo, &sw->FileStatus, OutDom, &sw->OutRun, LogInfo
+        zeroOutInfo, &sw->SW_PathOutputs, OutDom, &sw->OutRun, LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -855,18 +875,27 @@ reSet: {
         in doing so.
 
 @param[in,out] sw Comprehensive struct of type SW_RUN containing
-  all information in the simulation
-@param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
-    information that do not change throughout simulation runs
-@param[in,out] PathInfo Struct holding all information about the programs
-path/files
+all information in the simulation
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[out] hasConsistentSoilLayerDepths Holds the specification if the
+input soil layers have the same depth throughout all inputs (only used
+when dealing with nc inputs)
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_read_inputs_from_disk(
-    SW_RUN *sw, SW_OUT_DOM *OutDom, PATH_INFO *PathInfo, LOG_INFO *LogInfo
+    SW_RUN *sw,
+    SW_DOMAIN *SW_Domain,
+    Bool *hasConsistentSoilLayerDepths,
+    LOG_INFO *LogInfo
 ) {
+    SW_PATH_INPUTS *SW_PathInputs = &SW_Domain->SW_PathInputs;
 #ifdef SWDEBUG
     int debug = 0;
+#endif
+#if defined(SWNETCDF)
+    Bool readWeatherVarsNC =
+        SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
 #endif
 
 #ifdef SWDEBUG
@@ -875,7 +904,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_MDL_read(&sw->Model, PathInfo->InFiles, LogInfo);
+    SW_MDL_read(&sw->Model, SW_PathInputs->txtInFiles, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -884,19 +913,28 @@ void SW_CTL_read_inputs_from_disk(
         sw_printf(" > 'model'");
     }
 #endif
-
-    SW_WTH_setup(
-        &sw->Weather, PathInfo->InFiles, PathInfo->weather_prefix, LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
+#if defined(SWNETCDF)
+    if (!readWeatherVarsNC) {
+#endif
+        SW_WTH_setup(
+            &sw->Weather,
+            SW_PathInputs->txtInFiles,
+            SW_PathInputs->txtWeatherPrefix,
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+#if defined(SWNETCDF)
     }
+#endif
+
 #ifdef SWDEBUG
     if (debug) {
         sw_printf(" > 'weather setup'");
     }
 #endif
-    SW_SKY_read(PathInfo->InFiles, &sw->Sky, LogInfo);
+    SW_SKY_read(SW_PathInputs->txtInFiles, &sw->Sky, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -911,7 +949,7 @@ void SW_CTL_read_inputs_from_disk(
             &sw->Markov,
             sw->Weather.rng_seed,
             sw->Weather.generateWeatherMethod,
-            PathInfo->InFiles,
+            SW_PathInputs->txtInFiles,
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -924,17 +962,24 @@ void SW_CTL_read_inputs_from_disk(
 #endif
     }
 
-    SW_WTH_read(&sw->Weather, &sw->Sky, &sw->Model, LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
+#if defined(SWNETCDF)
+    if (!readWeatherVarsNC) {
+#endif
+        SW_WTH_read(&sw->Weather, &sw->Sky, &sw->Model, LogInfo);
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+#if defined(SWNETCDF)
     }
+#endif
+
 #ifdef SWDEBUG
     if (debug) {
         sw_printf(" > 'weather read'");
     }
 #endif
 
-    SW_VPD_read(&sw->VegProd, PathInfo->InFiles, LogInfo);
+    SW_VPD_read(&sw->VegProd, SW_PathInputs->txtInFiles, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -944,7 +989,13 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_SIT_read(&sw->Site, PathInfo->InFiles, &sw->Carbon, LogInfo);
+    SW_SIT_read(
+        &sw->Site,
+        SW_PathInputs->txtInFiles,
+        &sw->Carbon,
+        hasConsistentSoilLayerDepths,
+        LogInfo
+    );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -954,7 +1005,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_LYR_read(&sw->Site, PathInfo->InFiles, LogInfo);
+    SW_LYR_read(&sw->Site, SW_PathInputs->txtInFiles, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -964,7 +1015,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_SWRC_read(&sw->Site, PathInfo->InFiles, LogInfo);
+    SW_SWRC_read(&sw->Site, SW_PathInputs->txtInFiles, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -975,7 +1026,10 @@ void SW_CTL_read_inputs_from_disk(
 #endif
 
     SW_VES_read(
-        &sw->VegEstab, PathInfo->InFiles, PathInfo->SW_ProjDir, LogInfo
+        &sw->VegEstab,
+        SW_PathInputs->txtInFiles,
+        SW_PathInputs->SW_ProjDir,
+        LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -986,7 +1040,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_OUT_read(sw, OutDom, PathInfo->InFiles, LogInfo);
+    SW_OUT_read(sw, &SW_Domain->OutDom, SW_PathInputs->txtInFiles, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -996,7 +1050,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_CBN_read(&sw->Carbon, &sw->Model, PathInfo->InFiles, LogInfo);
+    SW_CBN_read(&sw->Carbon, &sw->Model, SW_PathInputs->txtInFiles, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -1006,7 +1060,9 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_SWC_read(&sw->SoilWat, sw->Model.endyr, PathInfo->InFiles, LogInfo);
+    SW_SWC_read(
+        &sw->SoilWat, sw->Model.endyr, SW_PathInputs->txtInFiles, LogInfo
+    );
 #ifdef SWDEBUG
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -1053,7 +1109,7 @@ void SW_CTL_run_sw(
 
 // Obtain suid-specific inputs
 #if defined(SWNETCDF)
-    SW_NC_read_inputs(&local_sw, SW_Domain, ncSuid, LogInfo);
+    SW_NCIN_read_inputs(&local_sw, SW_Domain, ncSuid, LogInfo);
     if (LogInfo->stopRun) {
         goto freeMem;
     }
@@ -1082,11 +1138,11 @@ void SW_CTL_run_sw(
     }
 
 #if defined(SWNETCDF)
-    SW_NC_write_output(
+    SW_NCOUT_write_output(
         &SW_Domain->OutDom,
         local_sw.OutRun.p_OUT,
-        local_sw.FileStatus.numOutFiles,
-        local_sw.FileStatus.ncOutFiles,
+        local_sw.SW_PathOutputs.numOutFiles,
+        local_sw.SW_PathOutputs.ncOutFiles,
         ncSuid,
         SW_Domain->DomainType,
         LogInfo

@@ -108,7 +108,7 @@ extern const char *const key2veg[NVEGTYPES];
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *InFiles[], LOG_INFO *LogInfo);
+void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *txtInFiles[], LOG_INFO *LogInfo);
 
 void SW_VPD_new_year(SW_VEGPROD *SW_VegProd, SW_MODEL *SW_Model);
 

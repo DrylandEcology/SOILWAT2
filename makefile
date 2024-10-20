@@ -379,7 +379,10 @@ sources_core := \
 	$(dir_src)/SW_Output_outtext.c
 
 ifdef SWNETCDF
-sources_core += $(dir_src)/SW_netCDF.c
+sources_core += $(dir_src)/SW_netCDF_General.c
+sources_core += $(dir_src)/SW_netCDF_Input.c
+sources_core += $(dir_src)/SW_netCDF_Output.c
+sources_core += $(dir_src)/SW_datastructs.c
 endif
 
 sources_lib = $(sources_core)
