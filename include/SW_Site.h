@@ -277,7 +277,7 @@ void SWRC_bulkSoilParameters(
     unsigned int swrc_type,
     double *swrcp,
     const double *swrcpMS,
-    const double swrcOM[2][SWRC_PARAM_NMAX],
+    const double swrcpOM[2][SWRC_PARAM_NMAX],
     double fom,
     double depthSapric,
     double depthT,

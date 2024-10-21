@@ -377,12 +377,12 @@ TEST(SiteTest, SWRCBulkSoilParameters) {
     double swrcpMin[SWRC_PARAM_NMAX];
     double swrcpOrg[2][SWRC_PARAM_NMAX];
     double fom;
-    double depthSapric = 50.;
+    const double depthSapric = 50.;
     double depthT = 0.;
     double depthB = 10.;
 
     unsigned int k;
-    unsigned int swrc_type = 1;
+    const unsigned int swrc_type = 1;
 
     // Initialize swrcps
     for (k = 0; k < SWRC_PARAM_NMAX; k++) {
@@ -462,7 +462,7 @@ TEST(SiteTest, SitePTFRawlsBrakensiek1985) {
     double theta_min;
     double clay = 0.1;
     double sand = 0.6;
-    double fom = 0.;
+    const double fom = 0.;
     double porosity = 0.4;
     int k1;
     int k2;

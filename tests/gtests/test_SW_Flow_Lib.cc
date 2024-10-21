@@ -167,7 +167,7 @@ TEST(SWFlowTest, SWFlowSaturatedPercolation) {
     double pptleft = 5.0;
     double standingWater;
     double drainout;
-    double swc0init = 0.8;
+    const double swc0init = 0.8;
 
     // ***** Tests when nlyrs = 1 ***** //
     ///  provide inputs
@@ -452,28 +452,10 @@ TEST(SWFlowTest, SWFlowSaturatedPercolation) {
 
 
     // deallocate pointers
-    double *array_list[] = {
-        ksat2,
-        impermeability2,
-        drain2,
-        swc2,
-        swcfc2,
-        swcsat2,
-        drain3,
-        swc3,
-        swcfc3,
-        swcsat3,
-        impermeability4,
-        drain4,
-        swc4,
-        swcfc4,
-        swcsat4,
-        impermeability5,
-        drain5,
-        swc5,
-        swcfc5,
-        swcsat5
-    };
+    double *array_list[] = {drain2, swc2, swcfc2, swcsat2, impermeability2,
+                            drain3, swc3, swcfc3, swcsat3, impermeability4,
+                            drain4, swc4, swcfc4, swcsat4, impermeability5,
+                            drain5, swc5, swcfc5, swcsat5, ksat2};
 
     for (i = 0; i < sw_length(array_list); i++) {
         delete[] array_list[i];

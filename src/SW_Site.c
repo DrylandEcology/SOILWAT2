@@ -1292,9 +1292,10 @@ fibric peat characteristics assumed at surface and sapric peat at depth.
 Bulk soil saturated hydraulic conductivity accounts for connected pathways
 that only consist of organic matter above a threshold value of organic matter.
 
+@param[in] swrc_type Identification number of selected SWRC
 @param[out] *swrcp Vector of SWRC parameters of the bulk soil
 @param[in] *swrcpMS Vector of SWRC parameters of the mineral component
-@param[in] swrcOM Array of length two of vectors of SWRC parameters
+@param[in] swrcpOM Array of length two of vectors of SWRC parameters
     of fibric peat (surface conditions) and
     of sapric peat (at depth `depthSapric`)
 @param[in] fom Proportion by weight of organic matter to bulk soil
@@ -1307,7 +1308,7 @@ void SWRC_bulkSoilParameters(
     unsigned int swrc_type,
     double *swrcp,
     const double *swrcpMS,
-    const double swrcOM[2][SWRC_PARAM_NMAX],
+    const double swrcpOM[2][SWRC_PARAM_NMAX],
     double fom,
     double depthSapric,
     double depthT,
@@ -1329,7 +1330,7 @@ void SWRC_bulkSoilParameters(
         for (k = 0; k < SWRC_PARAM_NMAX; k++) {
             /* Interpolate organic parameter from surface to depth conditions */
             pOM = interpolateFibricSapric(
-                swrcOM[0][k], swrcOM[1][k], depthSapric, depthT, depthB
+                swrcpOM[0][k], swrcpOM[1][k], depthSapric, depthT, depthB
             );
 
             if (k == iksat) {
