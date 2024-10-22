@@ -444,11 +444,11 @@ static void check_correct_spatial_config(
     /* Gather information if fail case 1 - 3 is true; these cases cover:
         - Site, geo CRS domain with site, proj CRS input
         - Site, geo CRS domain with xy (gridded), proj CRS input
-        - XY (gridded), geo CRS domain with xy (gridded), geo CRS input */
+        - XY (gridded), geo CRS domain with xy (gridded), proj CRS input */
     failedCaseOne = (Bool) (siteDom && primCRSIsGeo && inSiteDom && !inGeoCRS);
     failedCaseTwo = (Bool) (siteDom && primCRSIsGeo && !inSiteDom && !inGeoCRS);
     failedCaseThree =
-        (Bool) (!siteDom && primCRSIsGeo && !inSiteDom && inGeoCRS);
+        (Bool) (!siteDom && primCRSIsGeo && !inSiteDom && !inGeoCRS);
 
     if (failedCaseOne || failedCaseTwo || failedCaseThree) {
         LogError(
