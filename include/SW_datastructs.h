@@ -946,6 +946,29 @@ typedef struct {
 
     unsigned int **ncWeatherStartEndIndices;
 
+    int *inVarIDs[SW_NINKEYSNC]; /**< Store the identifier of the
+                                        variables within the input
+                                        files; dynamically allocated
+                                        1-d array `[varNum]` */
+
+    int *inVarTypes[SW_NINKEYSNC]; /**< Store the variable type within
+                                          each input file; dynamically
+                                          allocated 1-d array `[varNum]` */
+
+    Bool
+        *hasScaleAndAddFact[SW_NINKEYSNC]; /**< Store if the input variables
+                                                have the attributes
+                                                'scale_factor' and 'add_factor';
+                                                dynamically allocated 1-d array
+                                                `[varNum]` */
+
+    double **scaleAndAddFactVals[SW_NINKEYSNC]; /**< Store scale/add factors
+                                                    for every variable if
+                                                    it they are both provided;
+                                                    dynamically allocated 2-d
+                                                    array `[varNum][scale/add]`
+                                                    */
+
     /* NC information that will stay constant through program run
        domain information - domain and progress file IDs */
     int ncDomFileIDs[SW_NVARDOM];

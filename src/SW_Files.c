@@ -466,6 +466,15 @@ void SW_F_construct(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
     free(localfirstfile);
 
 #if defined(SWNETCDF)
+    int inKey;
+
+    ForEachNCInKey(inKey) {
+        SW_PathInputs->inVarTypes[inKey] = NULL;
+        SW_PathInputs->inVarIDs[inKey] = NULL;
+        SW_PathInputs->hasScaleAndAddFact[inKey] = NULL;
+        SW_PathInputs->scaleAndAddFactVals[inKey] = NULL;
+    }
+
     SW_PathInputs->ncDomFileIDs[vNCdom] = -1;
     SW_PathInputs->ncDomFileIDs[vNCprog] = -1;
 
@@ -507,6 +516,34 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
 
             free((void *) SW_PathInputs->ncInFiles[k]);
             SW_PathInputs->ncInFiles[k] = NULL;
+        }
+
+        if (!isnull(SW_PathInputs->inVarTypes[k])) {
+            free((void *) SW_PathInputs->inVarTypes[k]);
+            SW_PathInputs->inVarTypes[k] = NULL;
+        }
+
+        if (!isnull(SW_PathInputs->inVarIDs[k])) {
+            free((void *) SW_PathInputs->inVarIDs[k]);
+            SW_PathInputs->inVarIDs[k] = NULL;
+        }
+
+        if (!isnull(SW_PathInputs->hasScaleAndAddFact[k])) {
+            free((void *) SW_PathInputs->hasScaleAndAddFact[k]);
+            SW_PathInputs->hasScaleAndAddFact[k] = NULL;
+        }
+
+        if (!isnull(SW_PathInputs->scaleAndAddFactVals[k])) {
+            for (varNum = 0; varNum < numVarsInKey[k]; varNum++) {
+                if (!isnull(SW_PathInputs->scaleAndAddFactVals[k])) {
+                    free((void *) SW_PathInputs->scaleAndAddFactVals[k][varNum]
+                    );
+                    SW_PathInputs->scaleAndAddFactVals[k][varNum] = NULL;
+                }
+            }
+
+            free((void *) SW_PathInputs->scaleAndAddFactVals[k]);
+            SW_PathInputs->scaleAndAddFactVals[k] = NULL;
         }
     }
 

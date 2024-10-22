@@ -244,6 +244,32 @@ static void get_values_multiple(
     }
 }
 
+/**
+@brief Gets the type of an attribute
+
+@param[in] ncFileID File identifier of the file to get information from
+@param[in] varID Variable identifier to get the attribute value from
+@param[in] attName Attribute name to get the type of
+@param[out] attType Resulting attribute type gathered
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void get_att_type(
+    int ncFileID,
+    int varID,
+    const char *attName,
+    nc_type *attType,
+    LOG_INFO *LogInfo
+) {
+    if (nc_inq_atttype(ncFileID, varID, attName, attType) != NC_NOERR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not get the type of attribute '%s'.",
+            attName
+        );
+    }
+}
+
 /*
 @brief Translate an input keys into indices the program can understand
 
@@ -3926,6 +3952,28 @@ static void get_att_double(
 }
 
 /**
+@brief Get attribute values of type float
+
+@param[in] ncFileID File identifier to get value(s) from
+@param[in] varID Variable identifier to get value(s) from
+@param[in] attName Attribute name to get the value(s) of
+@param[out] vals List of read-in values from the variable's attribute
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void get_att_float(
+    int ncFileID, int varID, const char *attName, float *vals, LOG_INFO *LogInfo
+) {
+    if (nc_get_att_float(ncFileID, varID, attName, vals) != NC_NOERR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not get a value from the attribute '%s'.",
+            attName
+        );
+    }
+}
+
+/**
 @brief Helper function to test if a variable has an attribute by the
 given name
 
@@ -4265,6 +4313,8 @@ static void read_spatial_topo_climate_inputs(
     size_t count[] = {1, 0, 0};
     size_t start[] = {0, 0, 0};
     Bool inSiteDom;
+    Bool *keyAttFlags;
+    Bool varHasAddScaleAtts;
     int varNum;
     int setIndex;
     int adjVarNum;
@@ -4275,10 +4325,12 @@ static void read_spatial_topo_climate_inputs(
     int ncFileID = -1;
     char *fileName;
     char *varName;
+    nc_type *varTypes;
     nc_type varType;
     const int numKeys = 3;
     void *valPtr;
 
+    double **scaleAddFactors;
     const InKeys keys[] = {eSW_InSpatial, eSW_InTopo, eSW_InClimate};
     InKeys currKey;
 
@@ -4313,6 +4365,10 @@ static void read_spatial_topo_climate_inputs(
         }
 
         inSiteDom = (Bool) (strcmp(inVarInfo[fIndex][INDOMTYPE], "s") == 0);
+        varIDs = SW_Domain->SW_PathInputs.inVarIDs[keyNum];
+        varTypes = SW_Domain->SW_PathInputs.inVarTypes[keyNum];
+        keyAttFlags = SW_Domain->SW_PathInputs.hasScaleAndAddFact[keyNum];
+        scaleAddFactors = SW_Domain->SW_PathInputs.scaleAndAddFactVals[keyNum];
 
         /* Determine how many values we will be reading from the variables
            within this input key */
@@ -4347,42 +4403,22 @@ static void read_spatial_topo_climate_inputs(
                 continue;
             }
 
+            varID = varIDs[varNum];
+            varType = varTypes[varNum];
             fileName = inFiles[currKey][varNum];
             varName = inVarInfo[varNum][INNCVARNAME];
+            varHasAddScaleAtts = keyAttFlags[varNum];
 
             SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
             if (LogInfo->stopRun) {
                 return;
             }
 
-            SW_NC_get_var_identifier(ncFileID, varName, &varID, LogInfo);
-            if (LogInfo->stopRun) {
-                goto closeFile;
-            }
-
             if (nc_inq_vartype(ncFileID, varID, &varType) != NC_NOERR) {
                 goto closeFile;
             }
 
-            switch (varType) {
-            case NC_DOUBLE:
-                valPtr = (currKey == eSW_InClimate) ? (void *) monDoubleVals :
-                                                      (void *) &doubleVal;
-                break;
-            case NC_FLOAT:
-                valPtr = (currKey == eSW_InClimate) ? (void *) monFloatVals :
-                                                      (void *) &floatVal;
-                break;
-            default: /* Any other variable type */
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "Cannot understand types of variable '%s' other than "
-                    "double and float.",
-                    varName
-                );
                 goto closeFile;
-                break;
             }
 
             get_values_multiple(
@@ -4416,11 +4452,254 @@ static void read_spatial_topo_climate_inputs(
             }
 #endif
 
-            if (currKey == eSW_InTopo && varNum == 3 &&
-                (GT(*values[keyNum][adjSetIndex], 180.0) ||
-                 LT(*values[keyNum][adjSetIndex], -180.0))) {
+            nc_close(ncFileID);
+            ncFileID = -1;
+        }
+    }
+
+closeFile:
+    if (ncFileID > -1) {
+        nc_close(ncFileID);
+    }
+}
+
+/**
+@brief Allocate space for information pertaining to input variables
+that will be used throughout simulations rather than gaining the same
+information many times during said simulation runs
+
+@param[in] numVars Number of variables to allocate for
+@param[out] inVarIDs Identifiers of variables of a specific input
+key within provide nc files
+@param[out] inVarType Types of variables of a specific input
+key within provide nc files
+@param[out] hasScaleAndAddFact Flags specifying if a variable has both
+attributes "scale_factor" and "add_offset"
+@param[out] scaleAndAddFactVals A list that contains values of the attributes
+"scale_factor" and "add_offset" if both are present
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void alloc_sim_var_information(
+    int numVars,
+    int **inVarIDs,
+    nc_type **inVarType,
+    Bool **hasScaleAndAddFact,
+    double ***scaleAndAddFactVals,
+    LOG_INFO *LogInfo
+) {
+    int varNum;
 
                 *(values[keyNum][adjSetIndex]) = SW_MISSING;
+    *inVarIDs = (int *) Mem_Malloc(
+        sizeof(int) * numVars, "alloc_sim_var_information()", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+    *inVarType = (nc_type *) Mem_Malloc(
+        sizeof(nc_type) * numVars, "alloc_sim_var_information()", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    *hasScaleAndAddFact = (Bool *) Mem_Malloc(
+        sizeof(Bool) * numVars, "alloc_sim_var_information()", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    *scaleAndAddFactVals = (double **) Mem_Malloc(
+        sizeof(double *) * numVars, "alloc_sim_var_information()", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    for (varNum = 0; varNum < numVars; varNum++) {
+        (*scaleAndAddFactVals)[varNum] = NULL;
+    }
+
+    for (varNum = 0; varNum < numVars; varNum++) {
+        (*scaleAndAddFactVals)[varNum] = (double *) Mem_Malloc(
+            sizeof(double) * 2, "alloc_sim_var_information()", LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        (*scaleAndAddFactVals)[varNum][0] = SW_MISSING;
+        (*scaleAndAddFactVals)[varNum][1] = SW_MISSING;
+    }
+
+    for (varNum = 0; varNum < numVars; varNum++) {
+        (*inVarIDs)[varNum] = -1;
+        (*inVarType)[varNum] = 0;
+        (*hasScaleAndAddFact)[varNum] = swFALSE;
+    }
+}
+
+/**
+@brief Before reading inputs, it is best to get certain information
+to not have the need to query the information during the simulations
+and being read many times; the information this function gathers is:
+    - Variable identifiers
+    - Variable types
+    - Flags/values for having scale and add factor attribute per variable
+
+@param[in] SW_netCDFIn Constant netCDF input file information
+@param[out] SW_PathInputs Struct of type SW_PATH_INPUTS which
+holds basic information about input files and values
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void get_invar_information(
+    SW_NETCDF_IN *SW_netCDFIn, SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo
+) {
+    int inKey;
+    int attNum;
+    const int numAtts = 2;
+    int *varID;
+    int ncFileID = -1;
+    int varNum;
+    char ***inVarInfo;
+    Bool **readInVars = SW_netCDFIn->readInVars;
+    char **ncInFiles;
+    char *fileName;
+    Bool *hasScaleAddAtts;
+    char *varName;
+    nc_type *varType;
+    nc_type attType;
+    size_t attSize = 0; /* Not used */
+    Bool scaleAttExists = swFALSE;
+    Bool addAttExists = swFALSE;
+    int startVar;
+
+    float floatAttVal;
+    double doubleAttVal;
+
+    Bool *attFlags[] = {&scaleAttExists, &addAttExists};
+    char *attNames[] = {(char *) "scale_factor", (char *) "add_offset"};
+
+    ForEachNCInKey(inKey) {
+        if (!readInVars[inKey][0] || inKey == eSW_InDomain) {
+            continue;
+        }
+
+        inVarInfo = SW_netCDFIn->inVarInfo[inKey];
+        ncInFiles = SW_PathInputs->ncInFiles[inKey];
+        startVar = (inKey != eSW_InSpatial) ? 1 : 0;
+
+        alloc_sim_var_information(
+            (inKey == eSW_InSpatial) ? numVarsInKey[inKey] :
+                                       numVarsInKey[inKey] - 1,
+            &SW_PathInputs->inVarIDs[inKey],
+            &SW_PathInputs->inVarTypes[inKey],
+            &SW_PathInputs->hasScaleAndAddFact[inKey],
+            &SW_PathInputs->scaleAndAddFactVals[inKey],
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        for (varNum = startVar; varNum < numVarsInKey[inKey]; varNum++) {
+            /* Check if this variable is not input by the user */
+            if (!readInVars[inKey][varNum + 1]) {
+                continue;
+            }
+
+            varID = &SW_PathInputs->inVarIDs[inKey][varNum];
+            varName = inVarInfo[varNum][INNCVARNAME];
+            varType = &SW_PathInputs->inVarTypes[inKey][varNum];
+            hasScaleAddAtts = &SW_PathInputs->hasScaleAndAddFact[inKey][varNum];
+            fileName = (inKey != eSW_InWeather) ?
+                           ncInFiles[varNum] :
+                           SW_PathInputs->ncWeatherInFiles[varNum][0];
+
+            /* Open file */
+            SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
+            if (LogInfo->stopRun) {
+                return;
+            }
+
+            /* Get the variable identifier */
+            SW_NC_get_var_identifier(ncFileID, varName, varID, LogInfo);
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
+
+            /* Get variable type */
+            get_var_type(ncFileID, *varID, varName, varType, LogInfo);
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
+
+            /* Get flags for if the variable has scale and add factors */
+            for (attNum = 0; attNum < numAtts; attNum++) {
+                att_exists(
+                    ncFileID,
+                    *varID,
+                    attNames[attNum],
+                    &attSize,
+                    attFlags[attNum],
+                    LogInfo
+                );
+                if (LogInfo->stopRun) {
+                    goto closeFile;
+                }
+            }
+
+            *hasScaleAddAtts = (Bool) (scaleAttExists && addAttExists);
+
+            /* If both flags exist, store the values */
+            if (*hasScaleAddAtts) {
+                for (attNum = 0; attNum < numAtts; attNum++) {
+                    get_att_type(
+                        ncFileID, *varID, attNames[attNum], &attType, LogInfo
+                    );
+                    if (LogInfo->stopRun) {
+                        goto closeFile;
+                    }
+
+                    if (attType == NC_FLOAT) {
+                        get_att_float(
+                            ncFileID,
+                            *varID,
+                            attNames[attNum],
+                            &floatAttVal,
+                            LogInfo
+                        );
+                    } else {
+                        get_att_double(
+                            ncFileID,
+                            *varID,
+                            attNames[attNum],
+                            &doubleAttVal,
+                            LogInfo
+                        );
+                    }
+                    if (LogInfo->stopRun) {
+                        goto closeFile;
+                    }
+                }
+            }
+
+            if (!*hasScaleAddAtts &&
+                (*varType == NC_BYTE || *varType == NC_UBYTE ||
+                 *varType == NC_SHORT || *varType == NC_USHORT ||
+                 *varType == NC_INT || *varType == NC_UINT)) {
+
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Detected a variable ('%s') with type integer, "
+                    "short, unsigned short, or byte assuming it contains "
+                    "packed values, and must have both attributes "
+                    "'scale_factor' and 'add_factor'.",
+                    varName
+                );
+                goto closeFile;
             }
 
             nc_close(ncFileID);
@@ -6507,6 +6786,9 @@ void SW_NCIN_precalc_lookups(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             SW_Domain->endyr,
             LogInfo
         );
+        if (LogInfo->stopRun) {
+            return;
+        }
 #else
         LogError(
             LogInfo,
@@ -6516,6 +6798,8 @@ void SW_NCIN_precalc_lookups(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         );
 #endif
     }
+
+    get_invar_information(SW_netCDFIn, &SW_Domain->SW_PathInputs, LogInfo);
 }
 
 /**
