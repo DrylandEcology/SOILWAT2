@@ -4276,6 +4276,124 @@ closeFile:
 }
 
 /**
+@brief Set a void pointer destination to put values in the correct
+type location (e.g., uint into uint and not uint into double)
+
+@param[in] varType Type of variable we are reading in
+@param[in] currKey Current input key we are setting the destination for
+@param[in] valPtrList List of void pointers that we can set `valPtr` to
+@param[in] varName Variable name we are setting the destination pointer for
+@param[in] resVals Actual structure destination of type double, which we can
+be used if the variable is of type double
+@param[out] valPtr Resulting void pointer destination that will have
+values written to
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void get_val_dest(
+    nc_type varType,
+    int currKey,
+    void *valPtrList[][2],
+    char *varName,
+    double *resVals,
+    void **valPtr,
+    LOG_INFO *LogInfo
+) {
+    int listIndex = (varType != NC_BYTE) ? varType - 2 : varType - 1;
+
+    /* Specify if the pointer should be a single value
+       or month values */
+    const int subArrIndex = (currKey != eSW_InClimate) ? 0 : 1;
+
+    if (varType == NC_BYTE + 1 || varType > NC_UINT) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Cannot understand types of variable '%s' other than "
+            "float and double for unpacked values or byte, unsigned "
+            "byte, short, unsigned short, integer, or unsigned integer "
+            "for packed values.",
+            varName
+        );
+    }
+
+    if (varType != NC_DOUBLE) {
+        *valPtr = valPtrList[listIndex][subArrIndex];
+    } else {
+        *valPtr = resVals;
+    }
+}
+
+/**
+@brief When reading in values from an nc file, we cannot expect them
+to be the same type of NC_DOUBLE, so this function makes use of
+a provided void pointer and converts the read value(s) from
+the provides type to double and if we are to "unpack" the values,
+this function also does that calculation given a value of
+"scale_factor" and "add_offset"
+
+@param[in] varType Type of the variable that was read-in and will
+be set with those value(s)
+@param[in] currKey Current key that is being read in
+@param[in] valPtrList List of void value pointers to access for
+read-in value(s)
+@param[in] scale_factor User-provided factor to multiply the read-in
+values to "unpack" the value into a float/double (may be 0 if the
+variable is not to be unpacked)
+@param[in] add_offset User-provided offset to add to the product of
+the read-in value(s) and scale_factor to "unpack" the value(s)
+(may be 0 if the variable is not to be unpacked)
+@param[out] resultingVals Destination value/list to put the
+float/unpacked values
+*/
+static void set_read_vals(
+    nc_type varType,
+    int currKey,
+    void *valPtrList[][2],
+    double scale_factor,
+    double add_offset,
+    double *resultingVals
+) {
+    int valIndex;
+    int numVals = (currKey != eSW_InClimate) ? 1 : MAX_MONTHS;
+    int listIndex = (varType != NC_BYTE) ? varType - 2 : varType - 1;
+    double doubleVal = 0.0;
+
+    /* Specify if the pointer should be a single value
+       or month values */
+    const int subArrIndex = (currKey != eSW_InClimate) ? 0 : 1;
+    void *valPtr = valPtrList[listIndex][subArrIndex];
+
+    for (valIndex = 0; valIndex < numVals; valIndex++) {
+        if (varType == NC_FLOAT) {
+            resultingVals[valIndex] = (double) ((float *) valPtr)[valIndex];
+        } else {
+            switch (varType) {
+            case NC_BYTE:
+                doubleVal = (double) ((char *) valPtr)[valIndex];
+                break;
+            case NC_SHORT:
+                doubleVal = (double) ((short *) valPtr)[valIndex];
+                break;
+            case NC_INT:
+                doubleVal = (double) ((int *) valPtr)[valIndex];
+                break;
+            case NC_UBYTE:
+                doubleVal = (double) ((unsigned char *) valPtr)[valIndex];
+                break;
+            case NC_USHORT:
+                doubleVal = (double) ((unsigned short *) valPtr)[valIndex];
+                break;
+            default: /* NC_UINT */
+                doubleVal = (double) ((unsigned int *) valPtr)[valIndex];
+                break;
+            }
+
+            resultingVals[valIndex] = doubleVal * scale_factor + add_offset;
+        }
+    }
+}
+
+/**
 @brief Condensed function to read topographical, spatial,
 and climate inputs and convert the units from input nc files,
 rather than having separate functions, this will specifically read
@@ -4316,12 +4434,11 @@ static void read_spatial_topo_climate_inputs(
     Bool *keyAttFlags;
     Bool varHasAddScaleAtts;
     int varNum;
-    int setIndex;
     int adjVarNum;
     int adjSetIndex;
     int keyNum;
     int fIndex;
-    int varID = -1;
+    int varID;
     int ncFileID = -1;
     char *fileName;
     char *varName;
@@ -4329,6 +4446,12 @@ static void read_spatial_topo_climate_inputs(
     nc_type varType;
     const int numKeys = 3;
     void *valPtr;
+    int *varIDs;
+    double scaleFactor;
+    double addOffset;
+    const int doubleList = 4;
+    const int singleDoubleIndex = 0;
+    const int monDoubleIndex = 1;
 
     double **scaleAddFactors;
     const InKeys keys[] = {eSW_InSpatial, eSW_InTopo, eSW_InClimate};
@@ -4345,9 +4468,49 @@ static void read_spatial_topo_climate_inputs(
     };
 
     float floatVal = 0.0f;
-    double doubleVal = 0.0;
+    int intVal = 0;
+    unsigned int uIntVal = 0;
+    short shortVal = 0;
+    unsigned short ushortVal = 0;
+    char byteVal = 0;
+    unsigned char uByteVal = 0;
+
     float monFloatVals[MAX_MONTHS] = {0.0f};
-    double monDoubleVals[MAX_MONTHS] = {0.0};
+    int monIntVals[MAX_MONTHS] = {0};
+    unsigned int monUIntVals[MAX_MONTHS] = {0};
+    short monShortVals[MAX_MONTHS] = {0};
+    unsigned short monUShortVals[MAX_MONTHS] = {0};
+    char monByteVals[MAX_MONTHS] = {0};
+    unsigned char monUByteVals[MAX_MONTHS] = {0};
+
+    /* List is in increasing order of their netCDF definition
+       (e.g., NC_BYTE = 1 and NC_SHORT = 3) */
+    void *valPtrList[][2] = {
+        /* Single byte/monthly bytes */
+        {(void *) &byteVal, (void *) monByteVals},
+
+        /* Single short/monthly shorts */
+        {(void *) &shortVal, (void *) monShortVals},
+
+        /* Single integer/monthly integers */
+        {(void *) &intVal, (void *) monIntVals},
+
+        /* Single float/monthly floats */
+        {(void *) &floatVal, (void *) monFloatVals},
+
+        /* Single double/monthly double - set later to fill with
+           actual destinations (from `values`) */
+        {NULL, NULL},
+
+        /* Single unsigned byte/monthly unsigned byte */
+        {(void *) &uByteVal, (void *) monUByteVals},
+
+        /* Single unsigned short/monthly unsigned shorts */
+        {(void *) &ushortVal, (void *) monUShortVals},
+
+        /* Single unsigned integer/monthly unsigned integers */
+        {(void *) &uIntVal, (void *) monUIntVals}
+    };
 
     for (keyNum = 0; keyNum < numKeys; keyNum++) {
         currKey = keys[keyNum];
@@ -4396,7 +4559,6 @@ static void read_spatial_topo_climate_inputs(
         }
 
         for (varNum = fIndex; varNum < numVarsInKey[currKey]; varNum++) {
-            varID = -1;
             adjVarNum = (currKey == eSW_InSpatial) ? varNum : varNum + 1;
             adjSetIndex = (currKey == eSW_InSpatial) ? varNum : varNum - 1;
             if (!readInput[adjVarNum]) {
@@ -4414,10 +4576,27 @@ static void read_spatial_topo_climate_inputs(
                 return;
             }
 
-            if (nc_inq_vartype(ncFileID, varID, &varType) != NC_NOERR) {
-                goto closeFile;
+            /* Set double destination to have single and monthly be
+               the same so that when we set the destination it does not
+               matter which index is chosen, it will result in the
+               correct place either way */
+            if (varType == NC_DOUBLE) {
+                valPtrList[doubleList][singleDoubleIndex] =
+                    (void *) values[keyNum][varNum];
+                valPtrList[doubleList][monDoubleIndex] =
+                    (void *) values[keyNum][varNum];
             }
 
+            get_val_dest(
+                varType,
+                keyNum,
+                valPtrList,
+                varName,
+                values[keyNum][varNum],
+                &valPtr,
+                LogInfo
+            );
+            if (LogInfo->stopRun) {
                 goto closeFile;
             }
 
@@ -4428,20 +4607,36 @@ static void read_spatial_topo_climate_inputs(
                 return; // Exit function prematurely due to error
             }
 
-            if (currKey == eSW_InClimate) {
-                for (setIndex = 0; setIndex < MAX_MONTHS; setIndex++) {
-                    values[keyNum][adjSetIndex][setIndex] =
-                        (varType == NC_FLOAT) ? monFloatVals[setIndex] :
-                                                monDoubleVals[setIndex];
-                }
+            if (varHasAddScaleAtts) {
+                scaleFactor = scaleAddFactors[varNum][0];
+                addOffset = scaleAddFactors[varNum][1];
             } else {
-                *(values[keyNum][adjSetIndex]) =
-                    (varType == NC_FLOAT) ? floatVal : doubleVal;
+                scaleFactor = 0.0;
+                addOffset = 0.0;
+            }
+
+            if (varType != NC_DOUBLE) {
+                set_read_vals(
+                    varType,
+                    currKey,
+                    valPtrList,
+                    scaleFactor,
+                    addOffset,
+                    values[keyNum][varNum]
+                );
+            }
+
+            if (currKey == eSW_InTopo && varNum == 3 &&
+                (GT(*values[keyNum][adjSetIndex], 180.0) ||
+                 LT(*values[keyNum][adjSetIndex], -180.0))) {
+
+                *(values[keyNum][adjSetIndex]) = SW_MISSING;
             }
 
 #if defined(SWUDUNITS)
             if (strcmp(inVarInfo[varNum][INVARUNITS], "NA") != 0 &&
-                !isnull(convs[currKey][varNum])) {
+                !isnull(convs[currKey][varNum]) &&
+                !missing(*(values[keyNum][adjSetIndex]))) {
 
                 cv_convert_doubles(
                     convs[currKey][varNum],
@@ -4489,7 +4684,6 @@ static void alloc_sim_var_information(
 ) {
     int varNum;
 
-                *(values[keyNum][adjSetIndex]) = SW_MISSING;
     *inVarIDs = (int *) Mem_Malloc(
         sizeof(int) * numVars, "alloc_sim_var_information()", LogInfo
     );
