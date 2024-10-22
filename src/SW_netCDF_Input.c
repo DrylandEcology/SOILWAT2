@@ -2557,8 +2557,9 @@ static void get_1D_input_coordinates(
     Bool inPrimCRSIsGeo,
     LOG_INFO *LogInfo
 ) {
-    int index;
+    int varNum;
     int varID;
+    const int lonVarNum = 1;
 
     double **xyVals[] = {readinYVals, readinXVals};
     float *tempFVals = NULL;
@@ -2585,22 +2586,22 @@ static void get_1D_input_coordinates(
         return;
     }
 
-    for (index = 0; index < numReadInDims; index++) {
+    for (varNum = 0; varNum < numReadInDims; varNum++) {
         varID = -1;
 
-        *(xyVals[index]) = (double *) Mem_Malloc(
-            sizeof(double) * *dimSizes[index],
+        *(xyVals[varNum]) = (double *) Mem_Malloc(
+            sizeof(double) * *dimSizes[varNum],
             "get_1D_input_coordinates()",
             LogInfo
         );
         if (LogInfo->stopRun) {
             return;
         }
-        valPtr = (void *) *(xyVals[index]);
+        valPtr = (void *) *(xyVals[varNum]);
 
         if (varType == NC_FLOAT) {
             tempFVals = (float *) Mem_Malloc(
-                sizeof(float) * *dimSizes[index],
+                sizeof(float) * *dimSizes[varNum],
                 "get_1D_input_coordinates()",
                 LogInfo
             );
@@ -2611,14 +2612,22 @@ static void get_1D_input_coordinates(
             valPtr = (void *) tempFVals;
         }
 
-        SW_NC_get_vals(ncFileID, &varID, yxVarNames[index], valPtr, LogInfo);
+        SW_NC_get_vals(ncFileID, &varID, yxVarNames[varNum], valPtr, LogInfo);
         if (LogInfo->stopRun) {
             goto freeTempVals; /* Exit prematurely due to error */
         }
 
-        if (varType == NC_FLOAT) {
-            for (copyIndex = 0; copyIndex < *dimSizes[index]; copyIndex++) {
-                (*xyVals[index])[copyIndex] = (double) tempFVals[copyIndex];
+        for (copyIndex = 0; copyIndex < *dimSizes[varNum]; copyIndex++) {
+            if (varType == NC_FLOAT) {
+                (*xyVals[varNum])[copyIndex] = (double) tempFVals[copyIndex];
+            }
+
+            /* Adjust the read-in longitude coordinates to be within
+               [-180, 180] to compare with the domain rather than
+               [0, 360] (all values may already be within [-180, 180]) */
+            if (varNum == lonVarNum) {
+                (*xyVals[varNum])[copyIndex] =
+                    fmod((180.0 + (*xyVals[varNum])[copyIndex]), 360.0) - 180.0;
             }
         }
 
@@ -2699,6 +2708,7 @@ static void get_2D_input_coordinates(
 
     int varIDs[2] = {-1, -1};
     int varNum;
+    const int lonVarNum = 1;
 
     double **xyVals[] = {readinYVals, readinXVals};
 
@@ -2755,9 +2765,17 @@ static void get_2D_input_coordinates(
             return; /* Exit function prematurely due to error */
         }
 
-        if (varType == NC_FLOAT) {
-            for (copyIndex = 0; copyIndex < numPoints; copyIndex++) {
+        for (copyIndex = 0; copyIndex < numPoints; copyIndex++) {
+            if (varType == NC_FLOAT) {
                 (*xyVals[varNum])[copyIndex] = tempFVals[copyIndex];
+            }
+
+            /* Adjust the read-in longitude coordinates to be within
+               [-180, 180] to compare with the domain rather than
+               [0, 360] (all values may already be within [-180, 180]) */
+            if (varNum == lonVarNum) {
+                (*xyVals[varNum])[copyIndex] =
+                    fmod(180.0 + (*xyVals[varNum])[copyIndex], 360.0) - 180.0;
             }
         }
     }
