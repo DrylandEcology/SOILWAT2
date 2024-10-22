@@ -690,30 +690,30 @@ void SW_DOM_soilProfile(
             depthsAllSoilLayers,
             LogInfo
         );
+    } else {
+#endif // !SWNETCDF
+
+        // Assume default/template values are consistent
+        *nMaxSoilLayers = default_n_layers;
+        *nMaxEvapLayers = default_n_evap_lyrs;
+        memcpy(
+            depthsAllSoilLayers,
+            default_depths,
+            sizeof(default_depths[0]) * default_n_layers
+        );
+
+#if defined(SWNETCDF)
     }
+#endif // !SWNETCDF
 
-    (void) default_n_layers;
-    (void) default_n_evap_lyrs;
-    (void) default_depths;
-
-#else
-
-    // Assume default/template values are consistent
-    *nMaxSoilLayers = default_n_layers;
-    *nMaxEvapLayers = default_n_evap_lyrs;
-
-    memcpy(
-        depthsAllSoilLayers,
-        default_depths,
-        sizeof(default_depths[0]) * default_n_layers
-    );
-
-    (void) LogInfo;
+    /* If we have text inputs, we don't use these variables, cast them
+       to void to silence the compiler */
+#if !defined(SWNETCDF)
     (void) SW_netCDFIn;
     (void) SW_PathInputs;
     (void) hasConsistentSoilLayerDepths;
-
-#endif // !SWNETCDF
+    (void) LogInfo;
+#endif
 }
 
 /* =================================================== */
