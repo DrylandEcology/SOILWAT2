@@ -486,6 +486,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             n_layers,
             sw->Site.swcBulk_fieldcap,
             sw->Site.swcBulk_saturated,
+            sw->Site.ksat,
             sw->Site.impermeability,
             &UpNeigh_standingWater,
             sw->SoilWat.lyrFrozen
@@ -517,6 +518,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         n_layers,
         sw->Site.swcBulk_fieldcap,
         sw->Site.swcBulk_saturated,
+        sw->Site.ksat,
         sw->Site.impermeability,
         standingWaterToday,
         sw->SoilWat.lyrFrozen

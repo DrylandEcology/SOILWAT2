@@ -205,7 +205,7 @@ unsigned int encode_str2ptf(char *ptf_name);
 
 void SWRC_PTF_estimate_parameters(
     unsigned int ptf_type,
-    double *swrcp,
+    double *swrcpMineralSoil,
     double sand,
     double clay,
     double gravel,
@@ -214,7 +214,7 @@ void SWRC_PTF_estimate_parameters(
 );
 
 void SWRC_PTF_Cosby1984_for_Campbell1974(
-    double *swrcp, double sand, double clay
+    double *swrcpMineralSoil, double sand, double clay
 );
 
 
@@ -240,6 +240,7 @@ double SW_swcBulk_saturated(
     unsigned int ptf_type,
     double sand,
     double clay,
+    double fom,
     LOG_INFO *LogInfo
 );
 
@@ -252,23 +253,36 @@ double SW_swcBulk_minimum(
     double ui_sm_min,
     double sand,
     double clay,
+    double fom,
     double swcBulk_sat,
     double SWCMinVal,
     LOG_INFO *LogInfo
 );
 
+
 void PTF_Saxton2006(
-    double *theta_sat, double sand, double clay, LOG_INFO *LogInfo
+    double *theta_sat, double sand, double clay, double fom, LOG_INFO *LogInfo
 );
 
 void PTF_RawlsBrakensiek1985(
     double *theta_min,
     double sand,
     double clay,
+    double fom,
     double porosity,
     LOG_INFO *LogInfo
 );
 
+void SWRC_bulkSoilParameters(
+    unsigned int swrc_type,
+    double *swrcp,
+    const double *swrcpMS,
+    double swrcpOM[][SWRC_PARAM_NMAX],
+    double fom,
+    double depthSapric,
+    double depthT,
+    double depthB
+);
 
 double calculate_soilBulkDensity(double matricDensity, double fractionGravel);
 
@@ -322,6 +336,7 @@ void set_soillayers(
     const double *pclay,
     const double *imperm,
     const double *soiltemp,
+    const double *pom,
     int nRegions,
     double *regionLowerBounds,
     LOG_INFO *LogInfo

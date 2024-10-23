@@ -376,6 +376,7 @@ void litter_intercepted_water(
 (cm H<SUB>2</SUB>O).
 @param swcsat Soilwater content in each layer at saturation
     (m<SUP>3</SUP>H<SUB>2</SUB>O).
+@param ksat Saturated hydraulic conductivity [cm day-1]
 @param impermeability Impermeability measures for each layer.
 @param *standingWater Remaining water on the surface
     (m<SUP>3</SUP>H<SUB>2</SUB>O).
@@ -404,6 +405,7 @@ void infiltrate_water_high(
     unsigned int nlyrs,
     const double swcfc[],
     double swcsat[],
+    double ksat[],
     const double impermeability[],
     double *standingWater,
     double lyrFrozen[]
@@ -411,7 +413,6 @@ void infiltrate_water_high(
 
     unsigned int i;
     unsigned int j;
-    double d[MAX_LAYERS] = {0};
     double push;
     double ksat_rel;
 
@@ -427,19 +428,21 @@ void infiltrate_water_high(
             ksat_rel = 1.;
         }
 
+        ksat_rel *= (1. - impermeability[i]);
+
         /* calculate potential saturated percolation */
-        d[i] =
-            fmax(0., ksat_rel * (1. - impermeability[i]) * (swc[i] - swcfc[i]));
-        drain[i] = d[i];
+        drain[i] = ksat_rel * fmin(ksat[i], swc[i] - swcfc[i]);
+        drain[i] = fmax(0., drain[i]);
+
 
         if (i < nlyrs - 1) {
             /* percolate up to next-to-last layer */
-            swc[i + 1] += d[i];
-            swc[i] -= d[i];
+            swc[i + 1] += drain[i];
+            swc[i] -= drain[i];
         } else {
             /* percolate last layer */
-            (*drainout) = d[i];
-            swc[i] -= (*drainout);
+            (*drainout) = drain[i];
+            swc[i] -= drain[i];
         }
     }
 
