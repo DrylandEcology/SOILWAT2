@@ -165,7 +165,7 @@ TEST(SWFlowTest, SWFlowSaturatedPercolation) {
 
     // declare inputs
     double pptleft = 5.0;
-    double standingWater;
+    double standingWater = 0.;
     double drainout;
     const double swc0init = 0.8;
 
@@ -286,6 +286,7 @@ TEST(SWFlowTest, SWFlowSaturatedPercolation) {
     /// generate inputs using a for loop
     unsigned int i;
     nlyrs = MAX_LAYERS, pptleft = 5.0;
+    standingWater = 0.;
     double *swc2 = new double[nlyrs];
     double *swcfc2 = new double[nlyrs];
     double *swcsat2 = new double[nlyrs];
@@ -373,6 +374,7 @@ TEST(SWFlowTest, SWFlowSaturatedPercolation) {
     double *swcfc4 = new double[nlyrs];
     double *swcsat4 = new double[nlyrs];
     pptleft = 20.0;
+    standingWater = 0.;
 
     for (i = 0; i < MAX_LAYERS; i++) {
         swc4[i] = RandNorm(1., 0.5, &infiltrate_rng);
@@ -400,7 +402,7 @@ TEST(SWFlowTest, SWFlowSaturatedPercolation) {
         lyrFrozen
     );
 
-    /* When impermeability is 1,standingWater should be equivalent to
+    /* When impermeability is 1, standingWater should be equivalent to
         pptLeft + swc0init - swcsat[0]) */
     EXPECT_DOUBLE_EQ(standingWater, (pptleft + swc0init) - swcsat4[0]);
 
@@ -416,6 +418,7 @@ TEST(SWFlowTest, SWFlowSaturatedPercolation) {
     double *swcfc5 = new double[nlyrs];
     double *swcsat5 = new double[nlyrs];
     pptleft = 5.0;
+    standingWater = 0.;
 
     for (i = 0; i < MAX_LAYERS; i++) {
         swc5[i] = RandNorm(1.2, 0.5, &infiltrate_rng);
