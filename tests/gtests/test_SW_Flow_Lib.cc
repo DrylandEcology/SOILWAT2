@@ -172,7 +172,7 @@ TEST(SWFlowTest, SWFlowSaturatedPercolation) {
     // ***** Tests when nlyrs = 1 ***** //
     ///  provide inputs
     int nlyrs = 1;
-    double swc[1];
+    double swc[1] = {swc0init};
     double swcfc[1] = {1.1};
     double swcsat[1] = {1.6};
     double impermeability[1] = {0.};
