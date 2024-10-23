@@ -41,29 +41,29 @@
 #-------------------------------------------------------------------------------
 # Check text-based SOILWAT2
 make clean
-make -k CC=include-what-you-use CFLAGS="-Xiwyu --error_always"
+make -k CC=include-what-you-use CPPFLAGS="-DSWTXT" CFLAGS="-Xiwyu --error_always"
 
 # Check text-based SOILWAT2 with debug flag
 make clean
-make -k CC=include-what-you-use CPPFLAGS="-DSWDEBUG" CFLAGS="-Xiwyu --error_always"
+make -k CC=include-what-you-use CPPFLAGS="-DSWTXT -DSWDEBUG" CFLAGS="-Xiwyu --error_always"
 
 # Check text-based SOILWAT2 tests
 make clean
-make -k CXX=include-what-you-use CXXFLAGS="-Xiwyu --error_always" test
+make -k CXX=include-what-you-use CPPFLAGS="-DSWTXT" CXXFLAGS="-Xiwyu --error_always" test
 
 
 #-------------------------------------------------------------------------------
 # Check nc-based SOILWAT2
 make clean
-make -k CC=include-what-you-use CPPFLAGS="-DSWNETCDF -DSWUDUNITS" CFLAGS="-Xiwyu --error_always"
+make -k CC=include-what-you-use CPPFLAGS="-DSWNC" CFLAGS="-Xiwyu --error_always"
 
 # Check nc-based SOILWAT2 with debug flag
 make clean
-make -k CC=include-what-you-use CPPFLAGS="-DSWNETCDF -DSWUDUNITS -DSWDEBUG" CFLAGS="-Xiwyu --error_always"
+make -k CC=include-what-you-use CPPFLAGS="-DSWNC -DSWDEBUG" CFLAGS="-Xiwyu --error_always"
 
 # Check nc-based SOILWAT2 tests
 make clean
-make -k CXX=include-what-you-use CPPFLAGS="-DSWNETCDF -DSWUDUNITS" CXXFLAGS="-Xiwyu --error_always" test
+make -k CXX=include-what-you-use CPPFLAGS="-DSWNC" CXXFLAGS="-Xiwyu --error_always" test
 
 
 #-------------------------------------------------------------------------------

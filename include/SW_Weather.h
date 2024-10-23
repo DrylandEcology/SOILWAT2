@@ -37,7 +37,7 @@
 #ifndef SW_WEATHER_H
 #define SW_WEATHER_H
 
-#include "include/generic.h"        // for Bool, RealD
+#include "include/generic.h"        // for Bool
 #include "include/SW_datastructs.h" // for SW_WEATHER, SW_SKY, SW_MODEL, LOG_...
 #include "include/SW_Defines.h"     // for TimeInt
 
@@ -58,7 +58,7 @@ extern "C" {
 void SW_WTH_setup(
     SW_WEATHER *SW_Weather,
     char *InFiles[],
-    char *_weather_prefix,
+    char *weather_prefix,
     LOG_INFO *LogInfo
 );
 
@@ -70,7 +70,7 @@ void SW_WTH_read(
 );
 
 void set_dailyInputIndices(
-    Bool dailyInputFlags[MAX_INPUT_COLUMNS],
+    const Bool dailyInputFlags[MAX_INPUT_COLUMNS],
     unsigned int dailyInputIndices[MAX_INPUT_COLUMNS],
     unsigned int *n_input_forcings
 );
@@ -85,7 +85,7 @@ void check_and_update_dailyInputFlags(
 
 void averageClimateAcrossYears(
     SW_CLIMATE_YEARLY *climateOutput,
-    int numYears,
+    unsigned int numYears,
     SW_CLIMATE_CLIM *climateAverages
 );
 
@@ -93,8 +93,8 @@ void calcSiteClimate(
     SW_WEATHER_HIST **allHist,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
-    int numYears,
-    int startYear,
+    unsigned int numYears,
+    unsigned int startYear,
     Bool inNorthHem,
     SW_CLIMATE_YEARLY *climateOutput
 );
@@ -103,13 +103,13 @@ void calcSiteClimateLatInvariants(
     SW_WEATHER_HIST **allHist,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
-    int numYears,
-    int startYear,
+    unsigned int numYears,
+    unsigned int startYear,
     SW_CLIMATE_YEARLY *climateOutput
 );
 
 void findDriestQtr(
-    int numYears,
+    unsigned int numYears,
     Bool inNorthHem,
     double *meanTempDriestQtr_C,
     double **meanTempMon_C,
@@ -117,13 +117,13 @@ void findDriestQtr(
 );
 
 void driestQtrSouthAdjMonYears(
-    int month,
-    int *adjustedYearZero,
-    int *adjustedYearOne,
-    int *adjustedYearTwo,
-    int *adjustedMonth,
-    int *prevMonth,
-    int *nextMonth
+    unsigned int month,
+    unsigned int *adjustedYearZero,
+    unsigned int *adjustedYearOne,
+    unsigned int *adjustedYearTwo,
+    unsigned int *adjustedMonth,
+    unsigned int *prevMonth,
+    unsigned int *nextMonth
 );
 
 void initializeClimatePtrs(
@@ -133,7 +133,7 @@ void initializeClimatePtrs(
 void initializeMonthlyClimatePtrs(SW_CLIMATE_YEARLY *climateOutput);
 
 void allocateClimateStructs(
-    int numYears,
+    unsigned int numYears,
     SW_CLIMATE_YEARLY *climateOutput,
     SW_CLIMATE_CLIM *climateAverages,
     LOG_INFO *LogInfo
@@ -143,19 +143,19 @@ void deallocateClimateStructs(
     SW_CLIMATE_YEARLY *climateOutput, SW_CLIMATE_CLIM *climateAverages
 );
 
-void _read_weather_hist(
+void read_weather_hist(
     TimeInt year,
     SW_WEATHER_HIST *yearWeather,
     char weather_prefix[],
     unsigned int n_input_forcings,
-    unsigned int *dailyInputIndices,
-    Bool *dailyInputFlags,
+    const unsigned int *dailyInputIndices,
+    const Bool *dailyInputFlags,
     LOG_INFO *LogInfo
 );
 
 void readAllWeather(
     SW_WEATHER_HIST **allHist,
-    int startYear,
+    unsigned int startYear,
     unsigned int n_years,
     Bool use_weathergenerator_only,
     char weather_prefix[],
@@ -165,9 +165,9 @@ void readAllWeather(
     unsigned int n_input_forcings,
     unsigned int *dailyInputIndices,
     Bool *dailyInputFlags,
-    RealD *cloudcov,
-    RealD *windspeed,
-    RealD *r_humidity,
+    double *cloudcov,
+    double *windspeed,
+    double *r_humidity,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
     LOG_INFO *LogInfo
@@ -183,16 +183,16 @@ void finalizeAllWeather(
 
 void scaleAllWeather(
     SW_WEATHER_HIST **allHist,
-    int startYear,
+    unsigned int startYear,
     unsigned int n_years,
     double *scale_temp_max,
     double *scale_temp_min,
     double *scale_precip,
     double *scale_skyCover,
-    double *scale_wind,
+    const double *scale_wind,
     double *scale_rH,
-    double *scale_actVapPress,
-    double *scale_shortWaveRad,
+    const double *scale_actVapPress,
+    const double *scale_shortWaveRad,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[]
 );
@@ -200,7 +200,7 @@ void scaleAllWeather(
 void generateMissingWeather(
     SW_MARKOV *SW_Markov,
     SW_WEATHER_HIST **allHist,
-    int startYear,
+    unsigned int startYear,
     unsigned int n_years,
     unsigned int method,
     unsigned int optLOCF_nMax,
@@ -217,7 +217,7 @@ void initializeAllWeatherPtrs(SW_WEATHER_HIST **allHist, unsigned int n_years);
 
 void deallocateAllWeather(SW_WEATHER_HIST **allHist, unsigned int n_years);
 
-void _clear_hist_weather(SW_WEATHER_HIST *yearWeather);
+void clear_hist_weather(SW_WEATHER_HIST *yearWeather);
 
 void SW_WTH_finalize_all_weather(
     SW_MARKOV *SW_Markov,
@@ -240,7 +240,7 @@ void SW_WTH_deconstruct(SW_WEATHER *SW_Weather);
 void SW_WTH_new_day(
     SW_WEATHER *SW_Weather,
     SW_SITE *SW_Site,
-    RealD snowpack[],
+    double snowpack[],
     TimeInt doy,
     TimeInt year,
     LOG_INFO *LogInfo

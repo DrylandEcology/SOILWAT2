@@ -1,4 +1,4 @@
-#include "include/generic.h"             // for Bool, swFALSE, swTRUE, RealD
+#include "include/generic.h"             // for Bool, swFALSE, swTRUE
 #include "include/SW_datastructs.h"      // for LOG_INFO, SW_WALLTIME
 #include "include/SW_Defines.h"          // for MAX_MONTHS, TimeInt, MAX_DAYS
 #include "include/SW_Main_lib.h"         // for sw_init_logs
@@ -9,12 +9,16 @@
 
 namespace {
 TEST(TimesTest, TimesLeapYear) {
-    TimeInt days_in_month[MAX_MONTHS], cum_monthdays[MAX_MONTHS];
+    TimeInt days_in_month[MAX_MONTHS];
+    TimeInt cum_monthdays[MAX_MONTHS];
 
-    unsigned int k, lpadd,
-        years[] = {1900, 1980, 1981, 2000}; // noleap, leap, noleap, leap years
+    unsigned int k;
+    unsigned int lpadd;
+    // years[]: noleap, leap, noleap, leap years
+    unsigned int const years[] = {1900, 1980, 1981, 2000};
 
-    Bool kleap, isleap[] = {swFALSE, swTRUE, swFALSE, swTRUE};
+    Bool kleap;
+    Bool const isleap[] = {swFALSE, swTRUE, swFALSE, swTRUE};
 
     Time_init_model(days_in_month);
 
@@ -23,7 +27,7 @@ TEST(TimesTest, TimesLeapYear) {
         Time_new_year(years[k], days_in_month, cum_monthdays);
 
         kleap = isleapyear(years[k]);
-        lpadd = kleap ? 1 : 0;
+        lpadd = (kleap != 0u) ? 1 : 0;
 
         EXPECT_EQ(kleap, isleap[k]);
         EXPECT_EQ(Time_days_in_month(Feb, days_in_month), 28 + lpadd);
@@ -69,19 +73,23 @@ double valXd(double v1, double v2, int sign, int mday, int delta_days) {
 
 TEST(TimesTest, TimesInterpolateMonthlyValues) {
     // point to the structure that contains cloud coverage monthly values
-    RealD cloudcov_monthly[MAX_MONTHS];
+    double cloudcov_monthly[MAX_MONTHS];
 
     // `interpolate_monthlyValues()` needs an array of length `MAX_DAYS + 1`
     // if `interpAsBase1` is TRUE
-    RealD cloudcov_daily[MAX_DAYS + 1];
+    double cloudcov_daily[MAX_DAYS + 1];
 
 
-    TimeInt days_in_month[MAX_MONTHS], cum_monthdays[MAX_MONTHS];
+    TimeInt days_in_month[MAX_MONTHS];
+    TimeInt cum_monthdays[MAX_MONTHS];
 
-    Bool interpAsBase1 = swFALSE;
+    Bool const interpAsBase1 = swFALSE;
 
-    unsigned int i, k, doy, lpadd,
-        years[] = {1980, 1981}; // leap year, non-leap year
+    unsigned int i;
+    unsigned int k;
+    unsigned int doy;
+    unsigned int lpadd;
+    unsigned int const years[] = {1980, 1981}; // leap year, non-leap year
 
     Bool isMon1;
 
@@ -90,7 +98,7 @@ TEST(TimesTest, TimesInterpolateMonthlyValues) {
     // Loop through years and tests
     for (k = 0; k < sw_length(years); k++) {
         Time_new_year(years[k], days_in_month, cum_monthdays);
-        lpadd = isleapyear(years[k]) ? 1 : 0;
+        lpadd = (isleapyear(years[k]) != 0u) ? 1 : 0;
 
         // Test: all monthlyValues equal to 10
         //   (not affected by leap/nonleap yrs)
@@ -223,14 +231,15 @@ TEST(TimesTest, TimeTracking) {
     SW_WALLTIME wt;
     WallTimeSpec start;
     Bool ok;
-    int k, n_runs = 10;
+    int k;
+    int const n_runs = 10;
     LOG_INFO LogInfo;
 
 
     // Time difference between start and stop
     set_walltime(&start, &ok);
     // ... do some work
-    if (ok) {
+    if (ok != 0u) {
         EXPECT_GE(diff_walltime(start, ok), 0.);
     }
 
@@ -251,7 +260,7 @@ TEST(TimesTest, TimeTracking) {
     LogInfo.QuietMode = swTRUE;
     SW_WT_ReportTime(wt, &LogInfo);
 
-    if (wt.has_walltime) {
+    if (wt.has_walltime != 0u) {
         EXPECT_EQ(wt.nTimedRuns, n_runs);
         EXPECT_GE(wt.timeMean, 0.);
     } else {

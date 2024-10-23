@@ -12,8 +12,8 @@
 #include "include/SW_Weather.h"          // for SW_WTH_finalize_all_weather
 #include "tests/gtests/sw_testhelpers.h" // for WaterBalanceFixtureTest
 #include "gtest/gtest.h"                 // for Message, EXPECT_EQ, TEST_F
+#include <stdio.h>                       // for snprintf
 #include <stdlib.h>                      // for free
-#include <string.h>                      // for strcpy
 
 namespace {
 /* Test daily water balance and water cycling:
@@ -37,7 +37,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceExample1) {
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 
@@ -55,7 +55,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSoilTemperature) {
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 
@@ -75,7 +75,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithPondedWaterRunonRunoff) {
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 
@@ -97,7 +97,12 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Point to nonexisting weather data
-    strcpy(SW_Run.Weather.name_prefix, "Input/data_weather_nonexisting/weath");
+    (void) snprintf(
+        SW_Run.Weather.name_prefix,
+        sizeof SW_Run.Weather.name_prefix,
+        "%s",
+        "Input/data_weather_nonexisting/weath"
+    );
 
     // Prepare weather data
     SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
@@ -120,7 +125,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 
@@ -134,7 +139,12 @@ TEST_F(
     SW_Run.Weather.generateWeatherMethod = 2;
 
     // Point to partial weather data
-    strcpy(SW_Run.Weather.name_prefix, "Input/data_weather_missing/weath");
+    (void) snprintf(
+        SW_Run.Weather.name_prefix,
+        sizeof SW_Run.Weather.name_prefix,
+        "%s",
+        "Input/data_weather_missing/weath"
+    );
 
     // Read Markov weather generator input files (they are not normally read)
     SW_MKV_setup(
@@ -167,7 +177,7 @@ TEST_F(
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 
@@ -182,6 +192,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
 
     // Re-calculate soils
     SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
+    SW_SWC_init_run(&SW_Run.SoilWat, &SW_Run.Site, &SW_Run.Weather.temp_snow);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
@@ -192,7 +203,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 
@@ -214,7 +225,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOneSoilLayer) {
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 
@@ -236,7 +247,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMaxSoilLayers) {
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 
@@ -258,7 +269,47 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
+    }
+}
+
+TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
+    unsigned int i;
+
+    // Set PTF (Cosby1984AndOthers handles OM only up to 8%)
+    (void) snprintf(
+        SW_Run.Site.site_ptf_name,
+        sizeof SW_Run.Site.site_ptf_name,
+        "%s",
+        "Cosby1984"
+    );
+    SW_Run.Site.site_ptf_type = encode_str2ptf(SW_Run.Site.site_ptf_name);
+    SW_Run.Site.site_has_swrcpMineralSoil = swTRUE;
+
+    // Set organic matter > 0
+    SW_Run.Site.fractionWeight_om[0] = 1.;
+    for (i = 1; i < SW_Run.Site.n_layers; i++) {
+        SW_Run.Site.fractionWeight_om[i] = 0.5;
+    }
+
+    // Update soils
+    SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
+    SW_SWC_init_run(&SW_Run.SoilWat, &SW_Run.Site, &SW_Run.Weather.temp_snow);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    // Two simulation years are sufficient
+    SW_Run.Model.startyr = 1980;
+    SW_Run.Model.endyr = 1981;
+
+    // Run the simulation
+    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+        EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
+            << "Water balance error in test " << i << ": "
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 
@@ -266,13 +317,23 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
     int i;
 
     // Set SWRC and PTF (and SWRC parameter input filename)
-    strcpy(SW_Run.Site.site_swrc_name, (char *) "vanGenuchten1980");
+    (void) snprintf(
+        SW_Run.Site.site_swrc_name,
+        sizeof SW_Run.Site.site_swrc_name,
+        "%s",
+        "vanGenuchten1980"
+    );
     SW_Run.Site.site_swrc_type =
         encode_str2swrc(SW_Run.Site.site_swrc_name, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
-    strcpy(SW_Run.Site.site_ptf_name, (char *) "Rosetta3");
+    (void) snprintf(
+        SW_Run.Site.site_ptf_name,
+        sizeof SW_Run.Site.site_ptf_name,
+        "%s",
+        "Rosetta3"
+    );
     SW_Run.Site.site_ptf_type = encode_str2ptf(SW_Run.Site.site_ptf_name);
-    SW_Run.Site.site_has_swrcp = swTRUE;
+    SW_Run.Site.site_has_swrcpMineralSoil = swTRUE;
 
     free(SW_Domain.PathInfo.InFiles[eSWRCp]);
     SW_Domain.PathInfo.InFiles[eSWRCp] =
@@ -285,6 +346,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
 
     // Update soils
     SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
+    SW_SWC_init_run(&SW_Run.SoilWat, &SW_Run.Site, &SW_Run.Weather.temp_snow);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
@@ -295,21 +357,31 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
-    int i;
+    unsigned int i;
 
     // Set SWRC and PTF (and SWRC parameter input filename)
-    strcpy(SW_Run.Site.site_swrc_name, (char *) "FXW");
+    (void) snprintf(
+        SW_Run.Site.site_swrc_name,
+        sizeof SW_Run.Site.site_swrc_name,
+        "%s",
+        "FXW"
+    );
     SW_Run.Site.site_swrc_type =
         encode_str2swrc(SW_Run.Site.site_swrc_name, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
-    strcpy(SW_Run.Site.site_ptf_name, (char *) "neuroFX2021");
+    (void) snprintf(
+        SW_Run.Site.site_ptf_name,
+        sizeof SW_Run.Site.site_ptf_name,
+        "%s",
+        "neuroFX2021"
+    );
     SW_Run.Site.site_ptf_type = encode_str2ptf(SW_Run.Site.site_ptf_name);
-    SW_Run.Site.site_has_swrcp = swTRUE;
+    SW_Run.Site.site_has_swrcpMineralSoil = swTRUE;
 
     free(SW_Domain.PathInfo.InFiles[eSWRCp]);
     SW_Domain.PathInfo.InFiles[eSWRCp] =
@@ -320,8 +392,16 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
     SW_SWRC_read(&SW_Run.Site, SW_Domain.PathInfo.InFiles, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
+    // FXW doesn't yet handle organic matter:
+    // not all values for organic SWRC parameters have been determined
+    // (see "tests/example/Input/swrc_params_FXW.in")
+    for (i = 0; i < SW_Run.Site.n_layers; i++) {
+        SW_Run.Site.fractionWeight_om[i] = 0.;
+    }
+
     // Update soils
     SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
+    SW_SWC_init_run(&SW_Run.SoilWat, &SW_Run.Site, &SW_Run.Weather.temp_snow);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
@@ -332,7 +412,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 
@@ -340,7 +420,12 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
     int i;
 
     // Point to Daymet weather data
-    strcpy(SW_Run.Weather.name_prefix, "Input/data_weather_daymet/weath");
+    (void) snprintf(
+        SW_Run.Weather.name_prefix,
+        sizeof SW_Run.Weather.name_prefix,
+        "%s",
+        "Input/data_weather_daymet/weath"
+    );
 
     // Adjust simulation years: we have 2 years of Daymet inputs
     SW_Run.Model.startyr = 1980;
@@ -380,7 +465,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 
@@ -388,7 +473,12 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGRIDMET) {
     int i;
 
     // Point to gridMET weather data
-    strcpy(SW_Run.Weather.name_prefix, "Input/data_weather_gridmet/weath");
+    (void) snprintf(
+        SW_Run.Weather.name_prefix,
+        sizeof SW_Run.Weather.name_prefix,
+        "%s",
+        "Input/data_weather_gridmet/weath"
+    );
 
     // Adjust simulation years: we have 2 years of gridMET inputs
     SW_Run.Model.startyr = 1980;
@@ -431,7 +521,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGRIDMET) {
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 
@@ -439,7 +529,12 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACA) {
     int i;
 
     // Point to MACA weather data
-    strcpy(SW_Run.Weather.name_prefix, "Input/data_weather_maca/weath");
+    (void) snprintf(
+        SW_Run.Weather.name_prefix,
+        sizeof SW_Run.Weather.name_prefix,
+        "%s",
+        "Input/data_weather_maca/weath"
+    );
 
     // Adjust simulation years: we have 2 years of MACA inputs
     SW_Run.Model.startyr = 1980;
@@ -484,7 +579,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACA) {
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 
@@ -509,7 +604,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSpinup) {
     for (i = 0; i < N_WBCHECKS; i++) {
         EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
             << "Water balance error in test " << i << ": "
-            << (char *) SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWat.wbErrorNames[i];
     }
 }
 } // namespace

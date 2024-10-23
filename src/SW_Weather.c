@@ -57,7 +57,7 @@
  06/21/2013	(DLM)	variable 'tail' got too large by 1 and leaked memory
  when accessing array runavg_list[] in function _runavg_temp(): changed test
  from '(tail < SW_Weather.days_in_runavg)' to '(tail <
- (SW_Weather.days_in_runavg-1))' in function _clear_hist_weather() temp_max was
+ (SW_Weather.days_in_runavg-1))' in function clear_hist_weather() temp_max was
  tested twice, one should be temp_min
 
  06/24/2013	(rjm) added function void SW_WTH_clear_runavg_list(void) to free
@@ -93,8 +93,8 @@
 #include "include/Times.h"           // for Time_get_lastdoy_y, Time_days_i...
 #include <math.h>                    // for exp, fmin, fmax
 #include <stdio.h>                   // for NULL, sscanf, FILE, fclose, fopen
-#include <stdlib.h>                  // for atoi, free
-#include <string.h>                  // for memset, NULL, strcpy
+#include <stdlib.h>                  // for free
+#include <string.h>                  // for memset, NULL
 
 /* =================================================== */
 /*             Local Function Definitions              */
@@ -113,11 +113,11 @@ averages and standard deviations output by `averageClimateAcrossYears()`
 */
 void averageClimateAcrossYears(
     SW_CLIMATE_YEARLY *climateOutput,
-    int numYears,
+    unsigned int numYears,
     SW_CLIMATE_CLIM *climateAverages
 ) {
 
-    int month;
+    unsigned int month;
 
     // Take long-term average of monthly mean, maximum and minimum temperature
     // and precipitation throughout "numYears"
@@ -210,32 +210,47 @@ void calcSiteClimate(
     SW_WEATHER_HIST **allHist,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
-    int numYears,
-    int startYear,
+    unsigned int numYears,
+    unsigned int startYear,
     Bool inNorthHem,
     SW_CLIMATE_YEARLY *climateOutput
 ) {
 
-    int month, yearIndex, year, day, numDaysYear, currMonDay;
-    int numDaysMonth, adjustedDoy, adjustedYear = 0, secondMonth, seventhMonth;
-    int adjustedStartYear, calendarYearDays;
+    unsigned int month;
+    unsigned int yearIndex;
+    unsigned int year;
+    unsigned int day;
+    unsigned int numDaysYear;
+    unsigned int currMonDay;
+    unsigned int numDaysMonth;
+    unsigned int adjustedDoy;
+    unsigned int adjustedYear = 0;
+    unsigned int secondMonth;
+    unsigned int seventhMonth;
+    unsigned int adjustedStartYear;
+    unsigned int calendarYearDays;
 
-    double currentTempMin, currentTempMean, totalAbove65, current7thMonMin,
-        PPT7thMon, consecNonFrost, currentNonFrost;
+    double currentTempMin;
+    double currentTempMean;
+    double totalAbove65;
+    double current7thMonMin;
+    double PPT7thMon;
+    double consecNonFrost;
+    double currentNonFrost;
 
     size_t size_nyrs = sizeof(double) * numYears;
 
     // Initialize accumulated value arrays to all zeros
     for (month = 0; month < MAX_MONTHS; month++) {
-        memset(climateOutput->meanTempMon_C[month], 0., size_nyrs);
-        memset(climateOutput->maxTempMon_C[month], 0., size_nyrs);
-        memset(climateOutput->minTempMon_C[month], 0., size_nyrs);
-        memset(climateOutput->PPTMon_cm[month], 0., size_nyrs);
+        memset(climateOutput->meanTempMon_C[month], 0, size_nyrs);
+        memset(climateOutput->maxTempMon_C[month], 0, size_nyrs);
+        memset(climateOutput->minTempMon_C[month], 0, size_nyrs);
+        memset(climateOutput->PPTMon_cm[month], 0, size_nyrs);
     }
-    memset(climateOutput->PPT_cm, 0., size_nyrs);
-    memset(climateOutput->meanTemp_C, 0., size_nyrs);
-    memset(climateOutput->minTemp2ndMon_C, 0., size_nyrs);
-    memset(climateOutput->minTemp7thMon_C, 0., size_nyrs);
+    memset(climateOutput->PPT_cm, 0, size_nyrs);
+    memset(climateOutput->meanTemp_C, 0, size_nyrs);
+    memset(climateOutput->minTemp2ndMon_C, 0, size_nyrs);
+    memset(climateOutput->minTemp7thMon_C, 0, size_nyrs);
 
     calcSiteClimateLatInvariants(
         allHist,
@@ -307,7 +322,6 @@ void calcSiteClimate(
                 totalAbove65 = SW_MISSING;
                 currentNonFrost = SW_MISSING;
                 consecNonFrost = SW_MISSING;
-                currMonDay = SW_MISSING;
                 break;
             }
 
@@ -366,6 +380,7 @@ void calcSiteClimate(
                 totalAbove65 += (currentTempMean > 0.0) ? currentTempMean : 0.0;
             }
         }
+
         // Set all values
         climateOutput->minTemp7thMon_C[yearIndex] = current7thMonMin;
         climateOutput->PPT7thMon_mm[yearIndex] = PPT7thMon;
@@ -403,13 +418,18 @@ void calcSiteClimateLatInvariants(
     SW_WEATHER_HIST **allHist,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
-    int numYears,
-    int startYear,
+    unsigned int numYears,
+    unsigned int startYear,
     SW_CLIMATE_YEARLY *climateOutput
 ) {
 
-    int month = Jan, numDaysMonth = Time_days_in_month(month, days_in_month),
-        yearIndex, day, numDaysYear, currMonDay, year;
+    unsigned int month = Jan;
+    unsigned int numDaysMonth = Time_days_in_month(month, days_in_month);
+    unsigned int yearIndex;
+    unsigned int day;
+    unsigned int numDaysYear;
+    unsigned int currMonDay;
+    unsigned int year;
 
     for (yearIndex = 0; yearIndex < numYears; yearIndex++) {
         year = yearIndex + startYear;
@@ -462,24 +482,33 @@ during the driest quarter of the year
     numYears
 */
 void findDriestQtr(
-    int numYears,
+    unsigned int numYears,
     Bool inNorthHem,
     double *meanTempDriestQtr_C,
     double **meanTempMon_C,
     double **PPTMon_cm
 ) {
 
-    int yearIndex, month, prevMonth, nextMonth,
-        adjustedMonth = 0, numQuarterMonths = 3,
-        endNumYears = (inNorthHem) ? numYears : numYears - 1;
+    unsigned int yearIndex;
+    unsigned int month;
+    unsigned int prevMonth;
+    unsigned int nextMonth;
+    unsigned int adjustedMonth = 0;
+    unsigned int numQuarterMonths = 3;
+    unsigned int endNumYears = (inNorthHem) ? numYears : numYears - 1;
 
     // NOTE: These variables are the same throughout the program if site is in
     // northern hempisphere
     // The main purpose of these are to easily control the correct year when
     // dealing with adjusted years in the southern hempisphere
-    int adjustedYearZero = 0, adjustedYearOne = 0, adjustedYearTwo = 0;
+    unsigned int adjustedYearZero = 0;
+    unsigned int adjustedYearOne = 0;
+    unsigned int adjustedYearTwo = 0;
 
-    double driestThreeMonPPT, driestMeanTemp, currentQtrPPT, currentQtrTemp;
+    double driestThreeMonPPT;
+    double driestMeanTemp;
+    double currentQtrPPT;
+    double currentQtrTemp;
 
     for (yearIndex = 0; yearIndex < endNumYears; yearIndex++) {
         driestThreeMonPPT = SW_MISSING;
@@ -555,13 +584,13 @@ years.
 @param[in,out] nextMonth Month following current input month
 */
 void driestQtrSouthAdjMonYears(
-    int month,
-    int *adjustedYearZero,
-    int *adjustedYearOne,
-    int *adjustedYearTwo,
-    int *adjustedMonth,
-    int *prevMonth,
-    int *nextMonth
+    unsigned int month,
+    unsigned int *adjustedYearZero,
+    unsigned int *adjustedYearOne,
+    unsigned int *adjustedYearTwo,
+    unsigned int *adjustedMonth,
+    unsigned int *prevMonth,
+    unsigned int *nextMonth
 ) {
     *adjustedMonth = month + Jul;
     *adjustedMonth %= MAX_MONTHS;
@@ -649,7 +678,7 @@ series
 */
 void readAllWeather(
     SW_WEATHER_HIST **allHist,
-    int startYear,
+    unsigned int startYear,
     unsigned int n_years,
     Bool use_weathergenerator_only,
     char weather_prefix[],
@@ -659,14 +688,15 @@ void readAllWeather(
     unsigned int n_input_forcings,
     unsigned int *dailyInputIndices,
     Bool *dailyInputFlags,
-    RealD *cloudcov,
-    RealD *windspeed,
-    RealD *r_humidity,
+    double *cloudcov,
+    double *windspeed,
+    double *r_humidity,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
     LOG_INFO *LogInfo
 ) {
-    unsigned int yearIndex, year;
+    unsigned int yearIndex;
+    unsigned int year;
 
     /* Interpolation is to be in base0 in `interpolate_monthlyValues()` */
     Bool interpAsBase1 = swFALSE;
@@ -675,7 +705,7 @@ void readAllWeather(
         year = yearIndex + startYear;
 
         // Set all daily weather values to missing
-        _clear_hist_weather(allHist[yearIndex]);
+        clear_hist_weather(allHist[yearIndex]);
 
         // Update yearly day/month information needed when interpolating
         // cloud cover, wind speed, and relative humidity if necessary
@@ -714,7 +744,7 @@ void readAllWeather(
         // Read daily weather values from disk
         if (!use_weathergenerator_only) {
 
-            _read_weather_hist(
+            read_weather_hist(
                 year,
                 allHist[yearIndex],
                 weather_prefix,
@@ -754,7 +784,8 @@ void finalizeAllWeather(
     LOG_INFO *LogInfo
 ) {
 
-    unsigned int day, yearIndex;
+    unsigned int day;
+    unsigned int yearIndex;
 
     // Impute missing values
     generateMissingWeather(
@@ -859,22 +890,25 @@ minimum and maximum air temperature.
 */
 void scaleAllWeather(
     SW_WEATHER_HIST **allHist,
-    int startYear,
+    unsigned int startYear,
     unsigned int n_years,
     double *scale_temp_max,
     double *scale_temp_min,
     double *scale_precip,
     double *scale_skyCover,
-    double *scale_wind,
+    const double *scale_wind,
     double *scale_rH,
-    double *scale_actVapPress,
-    double *scale_shortWaveRad,
+    const double *scale_actVapPress,
+    const double *scale_shortWaveRad,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[]
 ) {
 
-    int year, month;
-    unsigned int yearIndex, numDaysYear, day;
+    unsigned int year;
+    unsigned int month;
+    unsigned int yearIndex;
+    unsigned int numDaysYear;
+    unsigned int day;
 
     Bool trivial = swTRUE;
 
@@ -1025,25 +1059,37 @@ this requires that appropriate structures are initialized.
 void generateMissingWeather(
     SW_MARKOV *SW_Markov,
     SW_WEATHER_HIST **allHist,
-    int startYear,
+    unsigned int startYear,
     unsigned int n_years,
     unsigned int method,
     unsigned int optLOCF_nMax,
     LOG_INFO *LogInfo
 ) {
 
-    int year;
-    unsigned int yearIndex, numDaysYear, day, iMissing;
+    unsigned int year;
+    unsigned int yearIndex;
+    unsigned int numDaysYear;
+    unsigned int day;
+    unsigned int iMissing;
 
-    double yesterdayPPT = 0., yesterdayTempMin = 0., yesterdayTempMax = 0.,
-           yesterdayCloudCov = 0., yesterdayWindSpeed = 0.,
-           yesterdayRelHum = 0., yesterdayShortWR = 0., yesterdayActVP = 0.;
+    double yesterdayPPT = 0.;
+    double yesterdayTempMin = 0.;
+    double yesterdayTempMax = 0.;
+    double yesterdayCloudCov = 0.;
+    double yesterdayWindSpeed = 0.;
+    double yesterdayRelHum = 0.;
+    double yesterdayShortWR = 0.;
+    double yesterdayActVP = 0.;
 
     Bool any_missing;
-    Bool missing_Tmax = swFALSE, missing_Tmin = swFALSE, missing_PPT = swFALSE,
-         missing_CloudCov = swFALSE, missing_WindSpeed = swFALSE,
-         missing_RelHum = swFALSE, missing_ActVP = swFALSE,
-         missing_ShortWR = swFALSE;
+    Bool missing_Tmax = swFALSE;
+    Bool missing_Tmin = swFALSE;
+    Bool missing_PPT = swFALSE;
+    Bool missing_CloudCov = swFALSE;
+    Bool missing_WindSpeed = swFALSE;
+    Bool missing_RelHum = swFALSE;
+    Bool missing_ActVP = swFALSE;
+    Bool missing_ShortWR = swFALSE;
 
 
     // Pass through method: return early
@@ -1203,10 +1249,13 @@ crash.
 void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
 
     // Initialize any variables
-    TimeInt year, doy, numDaysInYear;
+    TimeInt year;
+    TimeInt doy;
+    TimeInt numDaysInYear;
     SW_WEATHER_HIST **weathHist = weather->allHist;
 
-    double dailyMinTemp, dailyMaxTemp;
+    double dailyMinTemp;
+    double dailyMaxTemp;
 
     // Loop through `allHist` years
     for (year = 0; year < weather->n_years; year++) {
@@ -1235,7 +1284,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
                     doy + 1,
                     year + weather->startYear
                 );
-                return; // Exit function prematurely due to error
+                // Will exit function prematurely due to error
 
             } else if ((!missing(dailyMaxTemp) && !missing(dailyMinTemp)) &&
                        ((dailyMinTemp > 100. || dailyMinTemp < -100.) ||
@@ -1253,7 +1302,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
                     doy,
                     year + weather->startYear
                 );
-                return; // Exit function prematurely due to error
+                // Will exit function prematurely due to error
 
             } else if (!missing(weathHist[year]->ppt[doy]) &&
                        weathHist[year]->ppt[doy] < 0) {
@@ -1269,7 +1318,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
                     doy + 1,
                     year + weather->startYear
                 );
-                return; // Exit function prematurely due to error
+                // Will exit function prematurely due to error
 
             } else if (!missing(weathHist[year]->r_humidity_daily[doy]) &&
                        (weathHist[year]->r_humidity_daily[doy] < 0. ||
@@ -1286,7 +1335,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
                     "%f). ",
                     weathHist[year]->r_humidity_daily[doy]
                 );
-                return; // Exit function prematurely due to error
+                // Will exit function prematurely due to error
 
             } else if (!missing(weathHist[year]->cloudcov_daily[doy]) &&
                        (weathHist[year]->cloudcov_daily[doy] < 0. ||
@@ -1302,7 +1351,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
                     " not fall in the range [0, 100] (cloud cover = %f). ",
                     weathHist[year]->cloudcov_daily[doy]
                 );
-                return; // Exit function prematurely due to error
+                // Will exit function prematurely due to error
 
             } else if (!missing(weathHist[year]->windspeed_daily[doy]) &&
                        weathHist[year]->windspeed_daily[doy] < 0.) {
@@ -1318,7 +1367,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
                     doy + 1,
                     year + weather->startYear
                 );
-                return; // Exit function prematurely due to error
+                // Will exit function prematurely due to error
 
             } else if (!missing(weathHist[year]->shortWaveRad[doy]) &&
                        weathHist[year]->shortWaveRad[doy] < 0.) {
@@ -1334,7 +1383,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
                     doy + 1,
                     year + weather->startYear
                 );
-                return; // Exit function prematurely due to error
+                // Will exit function prematurely due to error
 
             } else if (!missing(weathHist[year]->actualVaporPressure[doy]) &&
                        weathHist[year]->actualVaporPressure[doy] < 0.) {
@@ -1351,6 +1400,10 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
                     doy + 1,
                     year + weather->startYear
                 );
+                // Will exit function prematurely due to error
+            }
+
+            if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
         }
@@ -1361,7 +1414,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
 @brief Clears weather history.
 @note Used by rSOILWAT2
 */
-void _clear_hist_weather(SW_WEATHER_HIST *yearWeather) {
+void clear_hist_weather(SW_WEATHER_HIST *yearWeather) {
     /* --------------------------------------------------- */
     TimeInt d;
 
@@ -1537,7 +1590,7 @@ void deallocateAllWeather(SW_WEATHER_HIST **allHist, unsigned int n_years) {
             }
         }
 
-        free(allHist);
+        free((void *) allHist);
         allHist = NULL;
     }
 }
@@ -1579,7 +1632,7 @@ void SW_WTH_init_run(SW_WEATHER *SW_Weather) {
 void SW_WTH_new_day(
     SW_WEATHER *SW_Weather,
     SW_SITE *SW_Site,
-    RealD snowpack[],
+    double snowpack[],
     TimeInt doy,
     TimeInt year,
     LOG_INFO *LogInfo
@@ -1600,8 +1653,8 @@ void SW_WTH_new_day(
     SW_WEATHER_NOW *wn = &SW_Weather->now;
 
     /* Indices to today's weather record in `allHist` */
-    TimeInt doy0 = doy - 1,
-            doy1 = doy; // Used for call to SW_SWC_adjust_snow()
+    TimeInt doy0 = doy - 1;
+    TimeInt doy1 = doy; // Used for call to SW_SWC_adjust_snow()
     TimeInt yearIndex = year - SW_Weather->startYear;
 
     /*
@@ -1685,22 +1738,42 @@ void SW_WTH_new_day(
 @param[in,out] SW_Weather Struct of type SW_WEATHER holding all relevant
     information pretaining to meteorological input data
 @param[in] InFiles Array of program in/output files
-@param[out] _weather_prefix File name of weather data without extension.
+@param[out] weather_prefix File name of weather data without extension.
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_WTH_setup(
     SW_WEATHER *SW_Weather,
     char *InFiles[],
-    char *_weather_prefix,
+    char *weather_prefix,
     LOG_INFO *LogInfo
 ) {
     /* =================================================== */
     const int nitems = 35;
     FILE *f;
-    int lineno = 0, month, x;
-    RealF sppt, stmax, stmin;
-    RealF sky, wind, rH, actVP, shortWaveRad;
+    int lineno = 0;
+    int month;
+    int x;
+    int index;
+    int resSNP;
+    double sppt;
+    double stmax;
+    double stmin;
+    double sky;
+    double wind;
+    double rH;
+    double actVP;
+    double shortWaveRad;
     char inbuf[MAX_FILENAMESIZE];
+    int inBufintRes = 0;
+    double inBufdoubleRes = 0.;
+
+    char weathInputStrs[9][20] = {{'\0'}};
+    double *inDoubleVals[8] = {
+        &sppt, &stmax, &stmin, &sky, &wind, &rH, &actVP, &shortWaveRad
+    };
+    const int numInDefaultVars = 9;
+
+    Bool doIntConv;
 
     Bool *dailyInputFlags = SW_Weather->dailyInputFlags;
 
@@ -1711,22 +1784,35 @@ void SW_WTH_setup(
     }
 
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+        doIntConv = (Bool) (lineno <= 22 && (lineno != 1 && lineno != 2));
+
+        if (lineno <= 22) {
+            if (doIntConv) {
+                inBufintRes = sw_strtoi(inbuf, MyFileName, LogInfo);
+            } else {
+                inBufdoubleRes = sw_strtod(inbuf, MyFileName, LogInfo);
+            }
+
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
+        }
+
         switch (lineno) {
         case 0:
-            SW_Weather->use_snow = itob(atoi(inbuf));
+            SW_Weather->use_snow = itob(inBufintRes);
             break;
         case 1:
-            SW_Weather->pct_snowdrift = atoi(inbuf);
+            SW_Weather->pct_snowdrift = inBufdoubleRes;
             break;
         case 2:
-            SW_Weather->pct_snowRunoff = atoi(inbuf);
+            SW_Weather->pct_snowRunoff = inBufdoubleRes;
             break;
 
         case 3:
-            x = atoi(inbuf);
             SW_Weather->use_weathergenerator_only = swFALSE;
 
-            switch (x) {
+            switch (inBufintRes) {
             case 0:
                 // As is
                 SW_Weather->generateWeatherMethod = 0;
@@ -1749,92 +1835,92 @@ void SW_WTH_setup(
                 break;
 
             default:
-                CloseFile(&f, LogInfo);
                 LogError(
                     LogInfo,
                     LOGERROR,
-                    "%s : Bad missing weather method %d.",
+                    "%s : Requested weather generator method '%d' is not "
+                    "implemented.",
                     MyFileName,
-                    x
+                    inBufintRes
                 );
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             break;
 
         case 4:
-            SW_Weather->rng_seed = atoi(inbuf);
+            SW_Weather->rng_seed = inBufintRes;
             break;
 
         case 5:
-            SW_Weather->use_cloudCoverMonthly = itob(atoi(inbuf));
+            SW_Weather->use_cloudCoverMonthly = itob(inBufintRes);
             break;
 
         case 6:
-            SW_Weather->use_windSpeedMonthly = itob(atoi(inbuf));
+            SW_Weather->use_windSpeedMonthly = itob(inBufintRes);
             break;
 
         case 7:
-            SW_Weather->use_humidityMonthly = itob(atoi(inbuf));
+            SW_Weather->use_humidityMonthly = itob(inBufintRes);
             break;
 
         case 8:
-            SW_Weather->dailyInputFlags[TEMP_MAX] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[TEMP_MAX] = itob(inBufintRes);
             break;
 
         case 9:
-            SW_Weather->dailyInputFlags[TEMP_MIN] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[TEMP_MIN] = itob(inBufintRes);
             break;
 
         case 10:
-            SW_Weather->dailyInputFlags[PPT] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[PPT] = itob(inBufintRes);
             break;
 
         case 11:
-            SW_Weather->dailyInputFlags[CLOUD_COV] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[CLOUD_COV] = itob(inBufintRes);
             break;
 
         case 12:
-            SW_Weather->dailyInputFlags[WIND_SPEED] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[WIND_SPEED] = itob(inBufintRes);
             break;
 
         case 13:
-            SW_Weather->dailyInputFlags[WIND_EAST] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[WIND_EAST] = itob(inBufintRes);
             break;
 
         case 14:
-            SW_Weather->dailyInputFlags[WIND_NORTH] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[WIND_NORTH] = itob(inBufintRes);
             break;
 
         case 15:
-            SW_Weather->dailyInputFlags[REL_HUMID] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[REL_HUMID] = itob(inBufintRes);
             break;
 
         case 16:
-            SW_Weather->dailyInputFlags[REL_HUMID_MAX] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[REL_HUMID_MAX] = itob(inBufintRes);
             break;
 
         case 17:
-            SW_Weather->dailyInputFlags[REL_HUMID_MIN] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[REL_HUMID_MIN] = itob(inBufintRes);
             break;
 
         case 18:
-            SW_Weather->dailyInputFlags[SPEC_HUMID] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[SPEC_HUMID] = itob(inBufintRes);
             break;
 
         case 19:
-            SW_Weather->dailyInputFlags[TEMP_DEWPOINT] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[TEMP_DEWPOINT] = itob(inBufintRes);
             break;
 
         case 20:
-            SW_Weather->dailyInputFlags[ACTUAL_VP] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[ACTUAL_VP] = itob(inBufintRes);
             break;
 
         case 21:
-            SW_Weather->dailyInputFlags[SHORT_WR] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[SHORT_WR] = itob(inBufintRes);
             break;
 
         case 22:
-            SW_Weather->desc_rsds = atoi(inbuf);
+            SW_Weather->desc_rsds = inBufintRes;
             break;
 
 
@@ -1845,24 +1931,37 @@ void SW_WTH_setup(
 
             x = sscanf(
                 inbuf,
-                "%d %f %f %f %f %f %f %f %f",
-                &month,
-                &sppt,
-                &stmax,
-                &stmin,
-                &sky,
-                &wind,
-                &rH,
-                &actVP,
-                &shortWaveRad
+                "%19s %19s %19s %19s %19s %19s %19s %19s %19s",
+                weathInputStrs[0],
+                weathInputStrs[1],
+                weathInputStrs[2],
+                weathInputStrs[3],
+                weathInputStrs[4],
+                weathInputStrs[5],
+                weathInputStrs[6],
+                weathInputStrs[7],
+                weathInputStrs[8]
             );
 
-            if (x != 9) {
-                CloseFile(&f, LogInfo);
+            if (x != numInDefaultVars) {
                 LogError(
                     LogInfo, LOGERROR, "%s : Bad record %d.", MyFileName, lineno
                 );
-                return; // Exit function prematurely due to error
+                goto closeFile;
+            }
+
+            for (index = 0; index < numInDefaultVars; index++) {
+                if (index == 0) {
+                    month =
+                        sw_strtoi(weathInputStrs[index], MyFileName, LogInfo);
+                } else {
+                    *(inDoubleVals[index - 1]) =
+                        sw_strtod(weathInputStrs[index], MyFileName, LogInfo);
+                }
+
+                if (LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
             }
 
             month--; // convert to base0
@@ -1879,8 +1978,21 @@ void SW_WTH_setup(
         lineno++;
     }
 
-    strcpy(SW_Weather->name_prefix, _weather_prefix);
-    CloseFile(&f, LogInfo);
+    resSNP = snprintf(
+        SW_Weather->name_prefix,
+        sizeof SW_Weather->name_prefix,
+        "%s",
+        weather_prefix
+    );
+    if (resSNP < 0 || (unsigned) resSNP >= (sizeof SW_Weather->name_prefix)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Weather input path name is too long: '%s'.",
+            weather_prefix
+        );
+        return; // Exit function prematurely due to error
+    }
 
     if (lineno < nitems) {
         LogError(LogInfo, LOGERROR, "%s : Too few input lines.", MyFileName);
@@ -1901,6 +2013,8 @@ void SW_WTH_setup(
         dailyInputFlags,
         LogInfo
     );
+
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**
@@ -1913,7 +2027,7 @@ void SW_WTH_setup(
 @param[out] n_input_forcings The number of active daily input variables.
 */
 void set_dailyInputIndices(
-    Bool dailyInputFlags[MAX_INPUT_COLUMNS],
+    const Bool dailyInputFlags[MAX_INPUT_COLUMNS],
     unsigned int dailyInputIndices[MAX_INPUT_COLUMNS],
     unsigned int *n_input_forcings
 ) {
@@ -1944,7 +2058,7 @@ void set_dailyInputIndices(
   * Turn off necessary flags. This happens after the calculation of
     input indices due to the fact that setting before calculating may
     result in an incorrect `n_input_forcings` in SW_WEATHER, and unexpectedly
-    crash the program in `_read_weather_hist()`.
+    crash the program in `read_weather_hist()`.
 
   * Check if monthly flags have been chosen to override daily flags.
   * Aside from checking for purely a monthly flag, we must make sure we have
@@ -2141,13 +2255,13 @@ Format of a input file (white-space separated values):
     specifying what variable has daily input on disk
 @param[out] LogInfo Holds information on warnings and errors
 */
-void _read_weather_hist(
+void read_weather_hist(
     TimeInt year,
     SW_WEATHER_HIST *yearWeather,
     char weather_prefix[],
     unsigned int n_input_forcings,
-    unsigned int *dailyInputIndices,
-    Bool *dailyInputFlags,
+    const unsigned int *dailyInputIndices,
+    const Bool *dailyInputFlags,
     LOG_INFO *LogInfo
 ) {
     /* =================================================== */
@@ -2166,11 +2280,13 @@ void _read_weather_hist(
      */
 
     FILE *f;
-    unsigned int x, lineno = 0;
-    int doy;
-    // TimeInt mon, j, k = 0;
-    // RealF acc = 0.0;
-    RealD weathInput[MAX_INPUT_COLUMNS];
+    unsigned int x;
+    unsigned int lineno = 0;
+    unsigned int index;
+    int doy = 0;
+    int resSNP;
+
+    double weathInput[MAX_INPUT_COLUMNS];
 
     Bool hasMaxMinTemp =
         (Bool) (dailyInputFlags[TEMP_MAX] && dailyInputFlags[TEMP_MIN]);
@@ -2185,14 +2301,33 @@ void _read_weather_hist(
         (Bool) (hasMaxMinRelHumid || dailyInputFlags[REL_HUMID] ||
                 dailyInputFlags[SPEC_HUMID] || dailyInputFlags[ACTUAL_VP]);
 
-    double es, e, relHum, tempSlope, svpVal;
+    double es;
+    double e;
+    double relHum;
+    double tempSlope;
+    double svpVal;
 
-    char fname[MAX_FILENAMESIZE], inbuf[MAX_FILENAMESIZE];
+    char fname[MAX_FILENAMESIZE];
+    char inbuf[MAX_FILENAMESIZE];
+
+    char weathInStrs[15][20];
 
     // Create file name: `[weather-file prefix].[year]`
-    snprintf(fname, MAX_FILENAMESIZE, "%s.%4d", weather_prefix, year);
+    resSNP = snprintf(fname, sizeof fname, "%s.%4d", weather_prefix, year);
 
-    if (NULL == (f = fopen(fname, "r"))) {
+    if (resSNP < 0 || (unsigned) resSNP >= (sizeof fname)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Weather input file name is too long for year = %d",
+            year
+        );
+        return; // Exit function prematurely due to error
+    }
+
+    f = fopen(fname, "r");
+    if (isnull(f)) {
+        // no weather input file --> use generator
         return;
     }
 
@@ -2200,26 +2335,26 @@ void _read_weather_hist(
         lineno++;
         x = sscanf(
             inbuf,
-            "%d %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
-            &doy,
-            &weathInput[0],
-            &weathInput[1],
-            &weathInput[2],
-            &weathInput[3],
-            &weathInput[4],
-            &weathInput[5],
-            &weathInput[6],
-            &weathInput[7],
-            &weathInput[8],
-            &weathInput[9],
-            &weathInput[10],
-            &weathInput[11],
-            &weathInput[12],
-            &weathInput[13]
+            "%19s %19s %19s %19s %19s %19s %19s %19s %19s %19s "
+            "%19s %19s %19s %19s %19s",
+            weathInStrs[0],
+            weathInStrs[1],
+            weathInStrs[2],
+            weathInStrs[3],
+            weathInStrs[4],
+            weathInStrs[5],
+            weathInStrs[6],
+            weathInStrs[7],
+            weathInStrs[8],
+            weathInStrs[9],
+            weathInStrs[10],
+            weathInStrs[11],
+            weathInStrs[12],
+            weathInStrs[13],
+            weathInStrs[14]
         );
 
         if (x != n_input_forcings + 1) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -2228,10 +2363,9 @@ void _read_weather_hist(
                 lineno,
                 doy
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
         if (x > MAX_INPUT_COLUMNS + 1) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -2240,10 +2374,23 @@ void _read_weather_hist(
                 lineno,
                 doy
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
+
+        for (index = 0; index < n_input_forcings + 1; index++) {
+            if (index == 0) {
+                doy = sw_strtoi(weathInStrs[index], fname, LogInfo);
+            } else {
+                weathInput[index - 1] =
+                    sw_strtod(weathInStrs[index], fname, LogInfo);
+            }
+
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
+        }
+
         if (doy < 1 || doy > MAX_DAYS) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -2251,7 +2398,7 @@ void _read_weather_hist(
                 fname,
                 lineno
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
 
         /* --- Make the assignments ---- */
@@ -2455,7 +2602,7 @@ void _read_weather_hist(
           }
     */
 
-    fclose(f);
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 void initializeClimatePtrs(
@@ -2495,13 +2642,13 @@ void initializeMonthlyClimatePtrs(SW_CLIMATE_YEARLY *climateOutput) {
 }
 
 void allocateClimateStructs(
-    int numYears,
+    unsigned int numYears,
     SW_CLIMATE_YEARLY *climateOutput,
     SW_CLIMATE_CLIM *climateAverages,
     LOG_INFO *LogInfo
 ) {
 
-    int month;
+    unsigned int month;
 
     initializeClimatePtrs(climateOutput, climateAverages);
 
@@ -2663,8 +2810,10 @@ void deallocateClimateStructs(
     SW_CLIMATE_YEARLY *climateOutput, SW_CLIMATE_CLIM *climateAverages
 ) {
 
-    int month, pointer;
-    const int numSinglePtrs = 14, numDoublePtrs = 4;
+    int month;
+    int pointer;
+    const int numSinglePtrs = 14;
+    const int numDoublePtrs = 4;
 
     double *singlePtrs[] = {
         climateOutput->PPT_cm,
@@ -2708,7 +2857,7 @@ void deallocateClimateStructs(
                 }
             }
 
-            free(doublePtrs[pointer]);
+            free((void *) doublePtrs[pointer]);
         }
     }
 }

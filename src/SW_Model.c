@@ -47,7 +47,6 @@
 #include "include/SW_Files.h"       // for eModel
 #include "include/Times.h"          // for Time_get_lastdoy_y, Time_init_model
 #include <stdio.h>                  // for FILE
-#include <stdlib.h>                 // for atof
 #include <string.h>                 // for memcpy
 
 
@@ -55,7 +54,7 @@
 /*                   Local Variable                    */
 /* --------------------------------------------------- */
 
-const TimeInt _notime = 0xffff; /* init value for _prev* */
+const TimeInt notime = 0xffff; /* init value for _prev* */
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -115,8 +114,9 @@ void SW_MDL_read(SW_MODEL *SW_Model, char *InFiles[], LOG_INFO *LogInfo) {
      */
     FILE *f;
     int lineno;
-    char *MyFileName, inbuf[MAX_FILENAMESIZE];
-    double temp;
+    char *MyFileName;
+    char inbuf[MAX_FILENAMESIZE];
+    double value;
 
     MyFileName = InFiles[eModel];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -131,31 +131,37 @@ void SW_MDL_read(SW_MODEL *SW_Model, char *InFiles[], LOG_INFO *LogInfo) {
      */
     lineno = 0;
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+        if (lineno <= 4) {
+            value = sw_strtod(inbuf, MyFileName, LogInfo);
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
+        }
+
         switch (lineno) {
         case 0: // Longitude
             // longitude is currently not used by the code, but may be used in
             // the future it is present in the `siteparam.in` input file to
             // completely document site location
-            SW_Model->longitude = atof(inbuf) * deg_to_rad;
+            SW_Model->longitude = value * deg_to_rad;
             break;
 
         case 1: // Latitude
-            SW_Model->latitude = atof(inbuf) * deg_to_rad;
+            SW_Model->latitude = value * deg_to_rad;
             // Calculate hemisphere based on latitude
             SW_Model->isnorth = (GT(SW_Model->latitude, 0.)) ? swTRUE : swFALSE;
             break;
 
         case 2: // Elevation
-            SW_Model->elevation = atof(inbuf);
+            SW_Model->elevation = value;
             break;
 
         case 3: // Slope
-            SW_Model->slope = atof(inbuf) * deg_to_rad;
+            SW_Model->slope = value * deg_to_rad;
             break;
 
         case 4: // Aspect
-            temp = atof(inbuf);
-            SW_Model->aspect = missing(temp) ? temp : temp * deg_to_rad;
+            SW_Model->aspect = missing(value) ? value : value * deg_to_rad;
             break;
 
         default: // More lines than expected
@@ -165,14 +171,14 @@ void SW_MDL_read(SW_MODEL *SW_Model, char *InFiles[], LOG_INFO *LogInfo) {
                 "More lines read than expected."
                 "Please double check your `modelrun.in` file."
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
 
             break;
         }
         lineno++;
     }
 
-    CloseFile(&f, LogInfo);
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**
@@ -187,7 +193,7 @@ void SW_MDL_new_year(SW_MODEL *SW_Model) {
      */
     TimeInt year = SW_Model->year;
 
-    SW_Model->_prevweek = SW_Model->_prevmonth = SW_Model->_prevyear = _notime;
+    SW_Model->prevweek = SW_Model->prevmonth = SW_Model->prevyear = notime;
 
     Time_new_year(year, SW_Model->days_in_month, SW_Model->cum_monthdays);
     SW_Model->simyear = SW_Model->year + SW_Model->addtl_yr;
@@ -225,19 +231,19 @@ void SW_MDL_new_day(SW_MODEL *SW_Model) {
         return;
     }
 
-    if (SW_Model->month != SW_Model->_prevmonth) {
+    if (SW_Model->month != SW_Model->prevmonth) {
         SW_Model->newperiod[eSW_Month] =
-            (SW_Model->_prevmonth != _notime) ? swTRUE : swFALSE;
-        SW_Model->_prevmonth = SW_Model->month;
+            (SW_Model->prevmonth != notime) ? swTRUE : swFALSE;
+        SW_Model->prevmonth = SW_Model->month;
     } else {
         SW_Model->newperiod[eSW_Month] = swFALSE;
     }
 
-    /*  if (SW_Model.week != _prevweek || SW_Model.month == NoMonth) { */
-    if (SW_Model->week != SW_Model->_prevweek) {
+    /*  if (SW_Model.week != prevweek || SW_Model.month == NoMonth) { */
+    if (SW_Model->week != SW_Model->prevweek) {
         SW_Model->newperiod[eSW_Week] =
-            (SW_Model->_prevweek != _notime) ? swTRUE : swFALSE;
-        SW_Model->_prevweek = SW_Model->week;
+            (SW_Model->prevweek != notime) ? swTRUE : swFALSE;
+        SW_Model->prevweek = SW_Model->week;
     } else {
         SW_Model->newperiod[eSW_Week] = swFALSE;
     }
