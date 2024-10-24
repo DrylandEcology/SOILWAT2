@@ -3944,7 +3944,7 @@ static void get_index_vars_info(
 }
 
 /**
-@brief Get attribute values of type double
+@brief Get attribute values of any type
 
 @param[in] ncFileID File identifier to get value(s) from
 @param[in] varID Variable identifier to get value(s) from
@@ -3952,40 +3952,14 @@ static void get_index_vars_info(
 @param[out] vals List of read-in values from the variable's attribute
 @param[out] LogInfo Holds information on warnings and errors
 */
-static void get_att_double(
-    int ncFileID,
-    int varID,
-    const char *attName,
-    double *vals,
-    LOG_INFO *LogInfo
+static void get_att_vals(
+    int ncFileID, int varID, const char *attName, void *vals, LOG_INFO *LogInfo
 ) {
-    if (nc_get_att_double(ncFileID, varID, attName, vals) != NC_NOERR) {
+    if (nc_get_att(ncFileID, varID, attName, vals) != NC_NOERR) {
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not get a value from the attribute '%s'.",
-            attName
-        );
-    }
-}
-
-/**
-@brief Get attribute values of type float
-
-@param[in] ncFileID File identifier to get value(s) from
-@param[in] varID Variable identifier to get value(s) from
-@param[in] attName Attribute name to get the value(s) of
-@param[out] vals List of read-in values from the variable's attribute
-@param[out] LogInfo Holds information on warnings and errors
-*/
-static void get_att_float(
-    int ncFileID, int varID, const char *attName, float *vals, LOG_INFO *LogInfo
-) {
-    if (nc_get_att_float(ncFileID, varID, attName, vals) != NC_NOERR) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Could not get a value from the attribute '%s'.",
+            "Could not get values from attribute '%s'.",
             attName
         );
     }
@@ -4169,11 +4143,11 @@ static void check_input_file_against_index(
                        NC_DOUBLE, "standard_parallel" may have one or
                        two values, others should have one */
                     for (index = 0; index < numDimsAndVars; index++) {
-                        get_att_double(
+                        get_att_vals(
                             fileIDs[index],
                             *varIDs[index],
                             crsAttNames[att],
-                            doubleVals[index],
+                            (void *) doubleVals[index],
                             LogInfo
                         );
                         if (LogInfo->stopRun) {
@@ -4312,8 +4286,8 @@ static void get_val_dest(
     int currKey,
     void *valPtrList[][2],
     char *varName,
-    double *resVals,
     void **valPtr,
+    char **typeStr,
     LOG_INFO *LogInfo
 ) {
     int listIndex = (varType != NC_BYTE) ? varType - 2 : varType - 1;
@@ -4321,6 +4295,16 @@ static void get_val_dest(
     /* Specify if the pointer should be a single value
        or month values */
     const int subArrIndex = (currKey != eSW_InClimate) ? 0 : 1;
+    char *types[] = {
+        "byte",
+        "short",
+        "integer",
+        "float",
+        "double",
+        "unsigned byte",
+        "unsigned short",
+        "unsigned int"
+    };
 
     if (varType == NC_BYTE + 1 || varType > NC_UINT) {
         LogError(
@@ -4334,21 +4318,112 @@ static void get_val_dest(
         );
     }
 
-    if (varType != NC_DOUBLE) {
-        *valPtr = valPtrList[listIndex][subArrIndex];
+    *typeStr = types[listIndex];
+    *valPtr = valPtrList[listIndex][subArrIndex];
+}
+
+/**
+@brief Once we read-in values from input, we need to check if any values
+are missing and set them to SW_MISSING, that's what this function does,
+this function is called on one value at a time; this function also
+does converting from user-provided units to SW2 units
+
+@param[in] varType Type of the value that is being tested
+@param[in] valHasMissing A list of flags that specify the methods
+of determining a missing value that was provided by the user
+@param[in] missingVals If there are any methods `valHasMissing` provided
+by the user, this is a list of missing value(s) to compare the value
+to and see if it is missing
+@param[in] varNum Variable number within an input key that is in question
+@param[in] unitConv Unit converter to convert from user-provided units
+to SW2 units
+@param[in,out] value Updated value after either setting it to missing
+or converted value
+*/
+static void set_missing_val(
+    nc_type varType,
+    Bool *valHasMissing,
+    double **missingVals,
+    int varNum,
+    sw_converter_t *unitConv,
+    double *value
+) {
+    const int missVal = 1;
+    const int fillVal = 2;
+    const int validMax = 3;
+    const int validMin = 4;
+    const int validRange = 5;
+    double ncMissVal;
+    double *ncMissValArr;
+    Bool setMissing = swFALSE;
+
+    if (valHasMissing[0] && !isnull(missingVals)) {
+        ncMissValArr = missingVals[varNum];
+
+        setMissing =
+            (Bool) (((valHasMissing[missVal] || valHasMissing[fillVal]) &&
+                     EQ(*value, ncMissValArr[0])) ||
+
+                    (((valHasMissing[validMax] && valHasMissing[validMin]) ||
+                      valHasMissing[validRange]) &&
+                     (LT(*value, ncMissValArr[0]) || GT(*value, ncMissValArr[1])
+                     )));
     } else {
-        *valPtr = resVals;
+        switch (varType) {
+        case NC_BYTE:
+            ncMissVal = (double) (NC_FILL_BYTE);
+            break;
+        case NC_SHORT:
+            ncMissVal = (double) (NC_FILL_SHORT);
+            break;
+        case NC_INT:
+            ncMissVal = (double) (NC_FILL_INT);
+            break;
+        case NC_FLOAT:
+            ncMissVal = (double) (NC_FILL_FLOAT);
+            break;
+        case NC_DOUBLE:
+            ncMissVal = (double) (NC_FILL_DOUBLE);
+            break;
+        case NC_UBYTE:
+            ncMissVal = (double) (NC_FILL_UBYTE);
+            break;
+        case NC_USHORT:
+            ncMissVal = (double) (NC_FILL_USHORT);
+            break;
+        default: /* NC_UINT */
+            ncMissVal = (double) (NC_FILL_UINT);
+            break;
+        }
+
+        setMissing = (Bool) EQ(*value, ncMissVal);
     }
+    if (setMissing) {
+        *value = SW_MISSING;
+    }
+
+#if defined(SWUDUNITS)
+    if (!isnull(unitConv) && !missing(*value)) {
+        *value = cv_convert_double(unitConv, *value);
+    }
+#endif
 }
 
 /**
 @brief When reading in values from an nc file, we cannot expect them
 to be the same type of NC_DOUBLE, so this function makes use of
 a provided void pointer and converts the read value(s) from
-the provides type to double and if we are to "unpack" the values,
+the provided type to double (helper) and if we are to "unpack" the values,
 this function also does that calculation given a value of
 "scale_factor" and "add_offset"
 
+@param[in] valHasMissing A list of flags specifying what type(s)
+(if any) of methods the user provided for specifying how to
+detect a missing input value
+@param[in] missingVals Value(s) that specify when to determine
+if a read-in value is missing (can be a single value or a range)
+@param[in] varNum Specifies the variable number within an input key
+to access the missing value information if allocated
 @param[in] varType Type of the variable that was read-in and will
 be set with those value(s)
 @param[in] currKey Current key that is being read in
@@ -4360,15 +4435,21 @@ variable is not to be unpacked)
 @param[in] add_offset User-provided offset to add to the product of
 the read-in value(s) and scale_factor to "unpack" the value(s)
 (may be 0 if the variable is not to be unpacked)
+@param[in] unitConv Unit converter for the current variable that
+we read in
 @param[out] resultingVals Destination value/list to put the
 float/unpacked values
 */
 static void set_read_vals(
+    Bool *valHasMissing,
+    double **missingVals,
+    int varNum,
     nc_type varType,
     int currKey,
     void *valPtrList[][2],
     double scale_factor,
     double add_offset,
+    sw_converter_t *unitConv,
     double *resultingVals
 ) {
     int valIndex;
@@ -4382,8 +4463,10 @@ static void set_read_vals(
     void *valPtr = valPtrList[listIndex][subArrIndex];
 
     for (valIndex = 0; valIndex < numVals; valIndex++) {
-        if (varType == NC_FLOAT) {
-            resultingVals[valIndex] = (double) ((float *) valPtr)[valIndex];
+        if (varType == NC_DOUBLE) {
+            doubleVal = ((double *) valPtr)[valIndex];
+        } else if (varType == NC_FLOAT) {
+            doubleVal = (double) ((float *) valPtr)[valIndex];
         } else {
             switch (varType) {
             case NC_BYTE:
@@ -4395,6 +4478,9 @@ static void set_read_vals(
             case NC_INT:
                 doubleVal = (double) ((int *) valPtr)[valIndex];
                 break;
+            case NC_FLOAT:
+                doubleVal = (double) ((float *) valPtr)[valIndex];
+                break;
             case NC_UBYTE:
                 doubleVal = (double) ((unsigned char *) valPtr)[valIndex];
                 break;
@@ -4405,9 +4491,18 @@ static void set_read_vals(
                 doubleVal = (double) ((unsigned int *) valPtr)[valIndex];
                 break;
             }
-
-            resultingVals[valIndex] = doubleVal * scale_factor + add_offset;
         }
+
+        resultingVals[valIndex] = doubleVal * scale_factor + add_offset;
+
+        set_missing_val(
+            varType,
+            valHasMissing,
+            missingVals,
+            varNum,
+            unitConv,
+            &resultingVals[valIndex]
+        );
     }
 }
 
@@ -4467,9 +4562,8 @@ static void read_spatial_topo_climate_inputs(
     int *varIDs;
     double scaleFactor;
     double addOffset;
-    const int doubleList = 4;
-    const int singleDoubleIndex = 0;
-    const int monDoubleIndex = 1;
+    Bool **missValFlags;
+    double **doubleMissVals;
 
     double **scaleAddFactors;
     const InKeys keys[] = {eSW_InSpatial, eSW_InTopo, eSW_InClimate};
@@ -4485,7 +4579,9 @@ static void read_spatial_topo_climate_inputs(
          SW_Sky->n_rain_per_day}
     };
 
+    char *typeStr = "";
     float floatVal = 0.0f;
+    double doubleVal = 0.0;
     int intVal = 0;
     unsigned int uIntVal = 0;
     short shortVal = 0;
@@ -4494,6 +4590,7 @@ static void read_spatial_topo_climate_inputs(
     unsigned char uByteVal = 0;
 
     float monFloatVals[MAX_MONTHS] = {0.0f};
+    double monDoubleVals[MAX_MONTHS] = {0.0};
     int monIntVals[MAX_MONTHS] = {0};
     unsigned int monUIntVals[MAX_MONTHS] = {0};
     short monShortVals[MAX_MONTHS] = {0};
@@ -4518,7 +4615,7 @@ static void read_spatial_topo_climate_inputs(
 
         /* Single double/monthly double - set later to fill with
            actual destinations (from `values`) */
-        {NULL, NULL},
+        {(void *) &doubleVal, (void *) monDoubleVals},
 
         /* Single unsigned byte/monthly unsigned byte */
         {(void *) &uByteVal, (void *) monUByteVals},
@@ -4546,10 +4643,12 @@ static void read_spatial_topo_climate_inputs(
         }
 
         inSiteDom = (Bool) (strcmp(inVarInfo[fIndex][INDOMTYPE], "s") == 0);
-        varIDs = SW_Domain->SW_PathInputs.inVarIDs[keyNum];
-        varTypes = SW_Domain->SW_PathInputs.inVarTypes[keyNum];
-        keyAttFlags = SW_Domain->SW_PathInputs.hasScaleAndAddFact[keyNum];
-        scaleAddFactors = SW_Domain->SW_PathInputs.scaleAndAddFactVals[keyNum];
+        varIDs = SW_Domain->SW_PathInputs.inVarIDs[currKey];
+        varTypes = SW_Domain->SW_PathInputs.inVarTypes[currKey];
+        keyAttFlags = SW_Domain->SW_PathInputs.hasScaleAndAddFact[currKey];
+        scaleAddFactors = SW_Domain->SW_PathInputs.scaleAndAddFactVals[currKey];
+        missValFlags = SW_Domain->SW_PathInputs.missValFlags[currKey];
+        doubleMissVals = SW_Domain->SW_PathInputs.doubleMissVals[currKey];
 
         /* Determine how many values we will be reading from the variables
            within this input key */
@@ -4594,24 +4693,13 @@ static void read_spatial_topo_climate_inputs(
                 return;
             }
 
-            /* Set double destination to have single and monthly be
-               the same so that when we set the destination it does not
-               matter which index is chosen, it will result in the
-               correct place either way */
-            if (varType == NC_DOUBLE) {
-                valPtrList[doubleList][singleDoubleIndex] =
-                    (void *) values[keyNum][varNum];
-                valPtrList[doubleList][monDoubleIndex] =
-                    (void *) values[keyNum][varNum];
-            }
-
             get_val_dest(
                 varType,
-                keyNum,
+                currKey,
                 valPtrList,
                 varName,
-                values[keyNum][varNum],
                 &valPtr,
+                &typeStr,
                 LogInfo
             );
             if (LogInfo->stopRun) {
@@ -4629,41 +4717,22 @@ static void read_spatial_topo_climate_inputs(
                 scaleFactor = scaleAddFactors[varNum][0];
                 addOffset = scaleAddFactors[varNum][1];
             } else {
-                scaleFactor = 0.0;
+                scaleFactor = 1.0;
                 addOffset = 0.0;
             }
 
-            if (varType != NC_DOUBLE) {
-                set_read_vals(
-                    varType,
-                    currKey,
-                    valPtrList,
-                    scaleFactor,
-                    addOffset,
-                    values[keyNum][varNum]
-                );
-            }
-
-            if (currKey == eSW_InTopo && varNum == 3 &&
-                (GT(*values[keyNum][adjSetIndex], 180.0) ||
-                 LT(*values[keyNum][adjSetIndex], -180.0))) {
-
-                *(values[keyNum][adjSetIndex]) = SW_MISSING;
-            }
-
-#if defined(SWUDUNITS)
-            if (strcmp(inVarInfo[varNum][INVARUNITS], "NA") != 0 &&
-                !isnull(convs[currKey][varNum]) &&
-                !missing(*(values[keyNum][adjSetIndex]))) {
-
-                cv_convert_doubles(
-                    convs[currKey][varNum],
-                    values[keyNum][adjSetIndex],
-                    (currKey == eSW_InClimate) ? MAX_MONTHS : 1,
-                    values[keyNum][adjSetIndex]
-                );
-            }
-#endif
+            set_read_vals(
+                missValFlags[varNum],
+                doubleMissVals,
+                adjSetIndex,
+                varType,
+                currKey,
+                valPtrList,
+                scaleFactor,
+                addOffset,
+                convs[currKey][adjSetIndex],
+                values[keyNum][adjSetIndex]
+            );
 
             nc_close(ncFileID);
             ncFileID = -1;
@@ -4690,6 +4759,8 @@ key within provide nc files
 attributes "scale_factor" and "add_offset"
 @param[out] scaleAndAddFactVals A list that contains values of the attributes
 "scale_factor" and "add_offset" if both are present
+@param[out] missValFlags A list of flags specifying the user-provided
+information to specify a missing value in input files
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static void alloc_sim_var_information(
@@ -4698,9 +4769,13 @@ static void alloc_sim_var_information(
     nc_type **inVarType,
     Bool **hasScaleAndAddFact,
     double ***scaleAndAddFactVals,
+    Bool ***missValFlags,
     LOG_INFO *LogInfo
 ) {
     int varNum;
+    size_t val;
+    const size_t numFactVals = 2;
+    const size_t numFlags = 6;
 
     *inVarIDs = (int *) Mem_Malloc(
         sizeof(int) * numVars, "alloc_sim_var_information()", LogInfo
@@ -4729,6 +4804,13 @@ static void alloc_sim_var_information(
         return;
     }
 
+    *missValFlags = (Bool **) Mem_Malloc(
+        sizeof(Bool *) * numVars, "alloc_sim_var_information()", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+
     for (varNum = 0; varNum < numVars; varNum++) {
         (*scaleAndAddFactVals)[varNum] = NULL;
     }
@@ -4741,14 +4823,265 @@ static void alloc_sim_var_information(
             return;
         }
 
-        (*scaleAndAddFactVals)[varNum][0] = SW_MISSING;
-        (*scaleAndAddFactVals)[varNum][1] = SW_MISSING;
-    }
+        (*missValFlags)[varNum] = (Bool *) Mem_Malloc(
+            sizeof(Bool) * numFlags, "alloc_sim_var_information()", LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
 
-    for (varNum = 0; varNum < numVars; varNum++) {
+        for (val = 0; val < numFlags; val++) {
+            if (val < numFactVals) {
+                (*scaleAndAddFactVals)[varNum][0] = SW_MISSING;
+                (*scaleAndAddFactVals)[varNum][0] = SW_MISSING;
+                (*scaleAndAddFactVals)[varNum][1] = SW_MISSING;
+                (*scaleAndAddFactVals)[varNum][0] = SW_MISSING;
+                (*scaleAndAddFactVals)[varNum][1] = SW_MISSING;
+            }
+
+            (*missValFlags)[varNum][val] = swFALSE;
+        }
+
         (*inVarIDs)[varNum] = -1;
         (*inVarType)[varNum] = 0;
         (*hasScaleAndAddFact)[varNum] = swFALSE;
+    }
+}
+
+/**
+@brief Allocate space for values specifying how to detect if an input
+through nc files are missing
+
+@param[in] numVars Number of variables to allocate for within an input key
+@param[out] doubleMissVals List to allocate space for to store the
+missing values
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void alloc_miss_vals(
+    int numVars, double ***doubleMissVals, LOG_INFO *LogInfo
+) {
+    int varNum;
+    int wkgVarNum;
+    const size_t numVals = 2;
+
+    if (isnull(*doubleMissVals)) {
+        /*
+            Allocate 2 values to store the maximum number of expected
+            missing value specifying values
+        */
+        for (varNum = 0; varNum < numVars + 1; varNum++) {
+            if (varNum > 0) {
+                (*doubleMissVals)[varNum - 1] = (double *) Mem_Malloc(
+                    sizeof(double) * numVals, "alloc_miss_vals()", LogInfo
+                );
+                (*doubleMissVals)[varNum - 1][0] = 0.0;
+                (*doubleMissVals)[varNum - 1][1] = 0.0;
+            } else {
+                *doubleMissVals = (double **) Mem_Malloc(
+                    sizeof(double *) * numVars, "alloc_miss_vals()", LogInfo
+                );
+                for (wkgVarNum = 0; wkgVarNum < numVars; wkgVarNum++) {
+                    (*doubleMissVals)[wkgVarNum] = NULL;
+                }
+            }
+        }
+        if (LogInfo->stopRun) {
+            return;
+        }
+    }
+}
+
+/**
+@brief Read an attribute value(s) to specify a way to detect
+a missing value when reading inputs later programs before running
+simulations
+
+@param[in] ncFileID Identifier of the file that contains the variable
+with the attribute to read
+@param[in] varID Identifier of the variable that has the attribute to read
+@param[in] varNum Variable number within an input key
+@param[in] attName Name of the attribute that will be read
+@param[in] attType Type of the attribute to give proper storage
+to
+@param[out] doubleMissValsRes Array of two values for every
+variable within an input key to specify missing values
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void read_miss_vals(
+    int ncFileID,
+    int varID,
+    int varNum,
+    char *attName,
+    nc_type attType,
+    double **doubleMissValsRes,
+    LOG_INFO *LogInfo
+) {
+    int typeIndex = (attType != NC_BYTE) ? attType - 2 : attType - 1;
+    char byteMissVals[] = {0, 0};
+    short shortMissVals[] = {0, 0};
+    int intMissVals[] = {0, 0};
+    float floatMissVals[] = {0, 0};
+    double doubleMissVals[] = {0, 0};
+    unsigned char uByteMissVals[] = {0, 0};
+    unsigned short uShortMissVals[] = {0, 0};
+    unsigned int uIntMissVals[] = {0, 0};
+    void **valPtrs[] = {
+        (void **) byteMissVals,
+        (void **) shortMissVals,
+        (void **) intMissVals,
+        (void **) floatMissVals,
+        (void **) doubleMissVals,
+        (void **) uByteMissVals,
+        (void **) uShortMissVals,
+        (void **) uIntMissVals
+    };
+    void *valPtr = (valPtrs[typeIndex])[varNum];
+    double tempMaxMissVal = SW_MISSING;
+
+    if (attType < NC_BYTE || attType == NC_BYTE + 1 || attType > NC_DOUBLE) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Retrieved a type of attribute that is not supported. The "
+            "attribute types for missing value specifiers ('missing_value', "
+            "'range_max', 'range_min', 'valid_range', '_FillValue') are "
+            "byte, ubyte, short, ushort, int, uint, float, and double."
+        );
+        return;
+    }
+
+    get_att_vals(ncFileID, varID, attName, valPtr, LogInfo);
+
+    if (strcmp(attName, "valid_min") == 0) {
+        tempMaxMissVal = doubleMissValsRes[varNum][0];
+    }
+
+    switch (attType) {
+    case NC_BYTE:
+        doubleMissValsRes[varNum][0] = (double) byteMissVals[0];
+        doubleMissValsRes[varNum][1] = (double) byteMissVals[1];
+        break;
+    case NC_SHORT:
+        doubleMissValsRes[varNum][0] = (double) shortMissVals[0];
+        doubleMissValsRes[varNum][1] = (double) shortMissVals[1];
+        break;
+    case NC_INT:
+        doubleMissValsRes[varNum][0] = (double) intMissVals[0];
+        doubleMissValsRes[varNum][1] = (double) intMissVals[1];
+        break;
+    case NC_FLOAT:
+        doubleMissValsRes[varNum][0] = (double) floatMissVals[0];
+        doubleMissValsRes[varNum][1] = (double) floatMissVals[1];
+        break;
+    case NC_DOUBLE:
+        doubleMissValsRes[varNum][0] = doubleMissVals[0];
+        doubleMissValsRes[varNum][1] = doubleMissVals[1];
+        break;
+    case NC_UBYTE:
+        doubleMissValsRes[varNum][0] = (double) uByteMissVals[0];
+        doubleMissValsRes[varNum][1] = (double) uByteMissVals[1];
+        break;
+    case NC_USHORT:
+        doubleMissValsRes[varNum][0] = (double) uShortMissVals[0];
+        doubleMissValsRes[varNum][1] = (double) uShortMissVals[1];
+        break;
+    default: /* NC_UINT */
+        doubleMissValsRes[varNum][0] = (double) uIntMissVals[0];
+        doubleMissValsRes[varNum][1] = (double) uIntMissVals[1];
+        break;
+    }
+
+    /* Set the variable max/min to be [min, max] in `doubleMissValsRes */
+    if (strcmp(attName, "valid_min") == 0) {
+        doubleMissValsRes[varNum][1] = tempMaxMissVal;
+    }
+}
+
+/**
+@brief Gather values (if any) that will specify how to know values
+are missing when reading input through nc files
+
+@param[in] ncFileID Identifier of the file that contains the variable
+with the attribute to read
+@param[in] varID Identifier of the variable that has the attribute to read
+@param[in] varNum Variable number within an input key
+@param[in] inKey Current input key we are gathering missing information for
+@param[out] missValFlags A list of flags for every variable of the input key
+that specify the attribute-provided missing values
+@param[out] doubleMissVals A list of values for every variable of the input key
+that specify if a read-in value from nc files is missing
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void gather_missing_information(
+    int ncFileID,
+    int varID,
+    int varNum,
+    int inKey,
+    Bool **missValFlags,
+    double **doubleMissVals,
+    LOG_INFO *LogInfo
+) {
+    const int numMissAtts = 5;
+    const char *missAttNames[] = {
+        (char *) "missing_value",
+        (char *) "_FillValue",
+        (char *) "valid_max",
+        (char *) "valid_min",
+        (char *) "valid_range"
+    };
+
+    int attNum;
+    Bool *hasMissFlag;
+    size_t attSize;
+    nc_type missAttType;
+
+    for (attNum = 0; attNum < numMissAtts; attNum++) {
+        hasMissFlag = &missValFlags[varNum][attNum + 1];
+
+        att_exists(
+            ncFileID,
+            varID,
+            (char *) missAttNames[attNum],
+            &attSize,
+            hasMissFlag,
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        if (*hasMissFlag) {
+            missValFlags[varNum][0] = swTRUE;
+
+            get_att_type(
+                ncFileID,
+                varID,
+                (char *) missAttNames[attNum],
+                &missAttType,
+                LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
+            }
+
+            alloc_miss_vals(numVarsInKey[inKey], &doubleMissVals, LogInfo);
+            if (LogInfo->stopRun) {
+                return;
+            }
+
+            read_miss_vals(
+                ncFileID,
+                varID,
+                varNum,
+                (char *) missAttNames[attNum],
+                missAttType,
+                doubleMissVals,
+                LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
+            }
+        }
     }
 }
 
@@ -4759,6 +5092,7 @@ and being read many times; the information this function gathers is:
     - Variable identifiers
     - Variable types
     - Flags/values for having scale and add factor attribute per variable
+    - Missing value specifiers
 
 @param[in] SW_netCDFIn Constant netCDF input file information
 @param[out] SW_PathInputs Struct of type SW_PATH_INPUTS which
@@ -4770,7 +5104,7 @@ static void get_invar_information(
 ) {
     int inKey;
     int attNum;
-    const int numAtts = 2;
+    const int numUnpackAtts = 2;
     int *varID;
     int ncFileID = -1;
     int varNum;
@@ -4786,12 +5120,14 @@ static void get_invar_information(
     Bool scaleAttExists = swFALSE;
     Bool addAttExists = swFALSE;
     int startVar;
+    Bool **missValFlags;
+    void *attPtr;
 
     float floatAttVal;
     double doubleAttVal;
 
     Bool *attFlags[] = {&scaleAttExists, &addAttExists};
-    char *attNames[] = {(char *) "scale_factor", (char *) "add_offset"};
+    char *unpackAttNames[] = {(char *) "scale_factor", (char *) "add_offset"};
 
     ForEachNCInKey(inKey) {
         if (!readInVars[inKey][0] || inKey == eSW_InDomain) {
@@ -4803,17 +5139,19 @@ static void get_invar_information(
         startVar = (inKey != eSW_InSpatial) ? 1 : 0;
 
         alloc_sim_var_information(
-            (inKey == eSW_InSpatial) ? numVarsInKey[inKey] :
-                                       numVarsInKey[inKey] - 1,
+            numVarsInKey[inKey],
             &SW_PathInputs->inVarIDs[inKey],
             &SW_PathInputs->inVarTypes[inKey],
             &SW_PathInputs->hasScaleAndAddFact[inKey],
             &SW_PathInputs->scaleAndAddFactVals[inKey],
+            &SW_PathInputs->missValFlags[inKey],
             LogInfo
         );
         if (LogInfo->stopRun) {
             return;
         }
+
+        missValFlags = SW_PathInputs->missValFlags[inKey];
 
         for (varNum = startVar; varNum < numVarsInKey[inKey]; varNum++) {
             /* Check if this variable is not input by the user */
@@ -4848,11 +5186,11 @@ static void get_invar_information(
             }
 
             /* Get flags for if the variable has scale and add factors */
-            for (attNum = 0; attNum < numAtts; attNum++) {
+            for (attNum = 0; attNum < numUnpackAtts; attNum++) {
                 att_exists(
                     ncFileID,
                     *varID,
-                    attNames[attNum],
+                    unpackAttNames[attNum],
                     &attSize,
                     attFlags[attNum],
                     LogInfo
@@ -4866,31 +5204,27 @@ static void get_invar_information(
 
             /* If both flags exist, store the values */
             if (*hasScaleAddAtts) {
-                for (attNum = 0; attNum < numAtts; attNum++) {
+                for (attNum = 0; attNum < numUnpackAtts; attNum++) {
                     get_att_type(
-                        ncFileID, *varID, attNames[attNum], &attType, LogInfo
+                        ncFileID,
+                        *varID,
+                        unpackAttNames[attNum],
+                        &attType,
+                        LogInfo
                     );
                     if (LogInfo->stopRun) {
                         goto closeFile;
                     }
 
-                    if (attType == NC_FLOAT) {
-                        get_att_float(
-                            ncFileID,
-                            *varID,
-                            attNames[attNum],
-                            &floatAttVal,
-                            LogInfo
-                        );
-                    } else {
-                        get_att_double(
-                            ncFileID,
-                            *varID,
-                            attNames[attNum],
-                            &doubleAttVal,
-                            LogInfo
-                        );
-                    }
+                    attPtr = (attType == NC_FLOAT) ? (void *) &floatAttVal :
+                                                     (void *) &doubleAttVal;
+                    get_att_vals(
+                        ncFileID,
+                        *varID,
+                        unpackAttNames[attNum],
+                        attPtr,
+                        LogInfo
+                    );
                     if (LogInfo->stopRun) {
                         goto closeFile;
                     }
@@ -4911,6 +5245,20 @@ static void get_invar_information(
                     "'scale_factor' and 'add_factor'.",
                     varName
                 );
+                goto closeFile;
+            }
+
+            /* Get missing value information (if any) */
+            gather_missing_information(
+                ncFileID,
+                *varID,
+                varNum,
+                inKey,
+                missValFlags,
+                SW_PathInputs->doubleMissVals[inKey],
+                LogInfo
+            );
+            if (LogInfo->stopRun) {
                 goto closeFile;
             }
 

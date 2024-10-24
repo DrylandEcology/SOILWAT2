@@ -473,6 +473,8 @@ void SW_F_construct(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
         SW_PathInputs->inVarIDs[inKey] = NULL;
         SW_PathInputs->hasScaleAndAddFact[inKey] = NULL;
         SW_PathInputs->scaleAndAddFactVals[inKey] = NULL;
+        SW_PathInputs->missValFlags[inKey] = NULL;
+        SW_PathInputs->doubleMissVals[inKey] = NULL;
     }
 
     SW_PathInputs->ncDomFileIDs[vNCdom] = -1;
@@ -535,7 +537,7 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
 
         if (!isnull(SW_PathInputs->scaleAndAddFactVals[k])) {
             for (varNum = 0; varNum < numVarsInKey[k]; varNum++) {
-                if (!isnull(SW_PathInputs->scaleAndAddFactVals[k])) {
+                if (!isnull(SW_PathInputs->scaleAndAddFactVals[k][varNum])) {
                     free((void *) SW_PathInputs->scaleAndAddFactVals[k][varNum]
                     );
                     SW_PathInputs->scaleAndAddFactVals[k][varNum] = NULL;
@@ -544,6 +546,30 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
 
             free((void *) SW_PathInputs->scaleAndAddFactVals[k]);
             SW_PathInputs->scaleAndAddFactVals[k] = NULL;
+        }
+
+        if (!isnull(SW_PathInputs->missValFlags[k])) {
+            for (varNum = 0; varNum < numVarsInKey[k]; varNum++) {
+                if (!isnull(SW_PathInputs->missValFlags[k][varNum])) {
+                    free((void *) SW_PathInputs->missValFlags[k][varNum]);
+                    SW_PathInputs->missValFlags[k][varNum] = NULL;
+                }
+            }
+
+            free(SW_PathInputs->missValFlags[k]);
+            SW_PathInputs->missValFlags[k] = NULL;
+        }
+
+        if (!isnull(SW_PathInputs->doubleMissVals[k])) {
+            for (varNum = 0; varNum < numVarsInKey[k]; varNum++) {
+                if (!isnull(SW_PathInputs->doubleMissVals[k][varNum])) {
+                    free((void *) SW_PathInputs->doubleMissVals[k][varNum]);
+                    SW_PathInputs->doubleMissVals[k][varNum] = NULL;
+                }
+            }
+
+            free(SW_PathInputs->doubleMissVals[k]);
+            SW_PathInputs->doubleMissVals[k] = NULL;
         }
     }
 

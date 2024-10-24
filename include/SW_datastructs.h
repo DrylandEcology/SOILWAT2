@@ -992,6 +992,24 @@ typedef struct {
                                                     array `[varNum][scale/add]`
                                                     */
 
+    /*
+        Store the flags of different methods to know a missing value when
+        reading input; there are multiple attributes (5) which, in order
+        of priority, are:
+            - General flag if there exists a missing value specifier
+            - missing_value
+            - _FillValue
+            - valid_max
+            - valid_min (must have both min and max)
+            - valid_range
+        it is expected that the user will provide these, if none are given,
+        we will use the default nc-provided NC_FILL_<type> to detect missing
+        values;
+        dynamically allocated 2-d array `[varNum][flag]` (6 flags)
+    */
+    Bool **missValFlags[SW_NINKEYSNC];
+    double **doubleMissVals[SW_NINKEYSNC];
+
     /* NC information that will stay constant through program run
        domain information - domain and progress file IDs */
     int ncDomFileIDs[SW_NVARDOM];
