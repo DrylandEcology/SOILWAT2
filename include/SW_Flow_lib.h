@@ -95,6 +95,7 @@ void infiltrate_water_high(
     unsigned int nlyrs,
     const double swcfc[],
     double swcsat[],
+    double ksat[],
     const double impermeability[],
     double *standingWater,
     double lyrFrozen[]

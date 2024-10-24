@@ -92,6 +92,8 @@ void create_test_soillayers(
                                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     double soiltemp[MAX_LAYERS] = {-1, -1, -1, -1, 0, 0, 1, 1, 1, 1, 1, 1, 1,
                                    1,  1,  1,  2,  2, 2, 2, 2, 2, 2, 2, 2};
+    double om[MAX_LAYERS] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
     int const nRegions = 3;
     double regionLowerBounds[3] = {20., 50., 100.};
@@ -112,6 +114,7 @@ void create_test_soillayers(
         pclay,
         imperm,
         soiltemp,
+        om,
         nRegions,
         regionLowerBounds,
         LogInfo
@@ -134,7 +137,7 @@ void setup_SW_Site_for_tests(SW_SITE *SW_Site) {
 
     SW_Site->slow_drain_coeff = 0.02;
 
-    SW_Site->site_has_swrcp = swFALSE;
+    SW_Site->site_has_swrcpMineralSoil = swFALSE;
     (void) snprintf(
         SW_Site->site_swrc_name,
         sizeof SW_Site->site_swrc_name,
@@ -150,6 +153,18 @@ void setup_SW_Site_for_tests(SW_SITE *SW_Site) {
         "Cosby1984AndOthers"
     );
     SW_Site->site_ptf_type = encode_str2ptf(SW_Site->site_ptf_name);
+
+    SW_Site->swrcpOM[0][0] = 1.03;
+    SW_Site->swrcpOM[1][0] = 1.01;
+
+    SW_Site->swrcpOM[0][1] = 0.93;
+    SW_Site->swrcpOM[1][1] = 0.83;
+
+    SW_Site->swrcpOM[0][2] = 2.7;
+    SW_Site->swrcpOM[1][2] = 12.0;
+
+    SW_Site->swrcpOM[0][3] = 2419.2;
+    SW_Site->swrcpOM[1][3] = 0.864;
 }
 
 /* Set up global variables for testing and read in values from SOILWAT2 example

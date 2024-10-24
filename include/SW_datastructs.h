@@ -305,8 +305,9 @@ typedef struct {
 
     char site_swrc_name[64], site_ptf_name[64];
 
-    Bool site_has_swrcp; /**< Are `swrcp` already (TRUE) or not yet estimated
-                            (FALSE)? */
+    /** Are `swrcp` of the mineral soil already (TRUE) or not yet estimated
+        (FALSE)? */
+    Bool site_has_swrcpMineralSoil;
 
     /* transpiration regions  shallow, moderately shallow,  */
     /* deep and very deep. units are in layer numbers. */
@@ -315,10 +316,13 @@ typedef struct {
         SWCWetVal,     /* value for a "wet" day,       */
         SWCMinVal;     /* lower bound on swc.          */
 
-    /* bulk = relating to the whole soil, i.e., matric + rock/gravel/coarse
-     * fragments */
-    /* matric = relating to the < 2 mm fraction of the soil, i.e., sand, clay,
-     * and silt */
+    /* Soil components
+            * bulk = relating to the whole soil
+              i.e., matric + coarse fragment (gravel)
+            * matric component = relating to the < 2 mm fraction of the soil
+            * mineral component = sand, clay, silt
+            * organic component = organic matter
+     */
 
     double
         /* Inputs */
@@ -341,6 +345,8 @@ typedef struct {
                                        (0=permeable, 1=impermeable)    */
         avgLyrTempInit[MAX_LAYERS], /* initial soil temperature for each soil
                                        layer */
+        /** Organic matter content as weight fraction of bulk soil [g g-1] */
+        fractionWeight_om[MAX_LAYERS],
 
         /* Derived soil characteristics */
         soilMatric_density[MAX_LAYERS], /* matric soil density of the < 2 mm
@@ -366,13 +372,20 @@ typedef struct {
 
         /* Saxton et al. 2006 */
         swcBulk_saturated[MAX_LAYERS]; /* saturated bulk SWC [cm] */
-                                       // currently, not used;
+
+    /** Saturated hydraulic conductivity of the bulk soil */
+    double ksat[MAX_LAYERS];
+
+    // currently, not used;
     // Saxton2006_K_sat_matric, /* saturated matric conductivity [cm / day] */
     // Saxton2006_K_sat_bulk, /* saturated bulk conductivity [cm / day] */
     // Saxton2006_fK_gravel, /* gravel-correction factor for conductivity [1] */
     // Saxton2006_lambda; /* Slope of logarithmic tension-moisture curve */
 
     double depths[MAX_LAYERS]; // soil layer depths of SoilWat soil
+
+    /** Depth [cm] at which soil properties reach values of sapric peat */
+    double depthSapric;
 
     /* Soil water retention curve (SWRC) */
     unsigned int swrc_type[MAX_LAYERS], /**< Type of SWRC (see #swrc2str) */
@@ -383,9 +396,19 @@ typedef struct {
                      `swrcp` but we need to loop over soil layers for every
                      vegetation type in `my_transp_rng`
     */
+    /** SWRC parameters of the bulk soil
+        (weighted average of mineral and organic SWRC).
+
+        Note: parameter interpretation varies with selected SWRC,
+        see `SWRC_check_parameters()`
+    */
     double swrcp[MAX_LAYERS][SWRC_PARAM_NMAX];
-    /**< Parameters of SWRC: parameter interpretation varies with selected SWRC,
-     * see `SWRC_check_parameters()` */
+    /** SWRC parameters of the mineral soil component */
+    double swrcpMineralSoil[MAX_LAYERS][SWRC_PARAM_NMAX];
+    /** SWRC parameters of the organic soil component
+        for (1) fibric and (2) sapric peat. */
+    double swrcpOM[2][SWRC_PARAM_NMAX];
+
     LyrIndex my_transp_rgn[NVEGTYPES][MAX_LAYERS]; /* which transp zones from
                                                       Site am I in? */
 
