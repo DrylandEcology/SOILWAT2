@@ -4418,6 +4418,44 @@ static void set_read_vals(
 }
 
 /**
+@brief Given an order of start/count indices, rearrange these values
+to make the order found in the variable the values will be used for;
+the order is based on that determined in `get_variable_dim_order()`
+
+@param[in] indices Pre-determined numbers that represent the index
+within start/count certain values/spots should be placed to match
+the variable's dimensions that's being read
+@param[in,out] start A list of indices that specify where to start
+reading a variable from
+@param[in,out] count A list of numbers that specify how many values
+from every dimension of a variable should be read
+*/
+static void arrange_start_count(
+    int indices[], size_t start[], size_t count[]
+) {
+    int index = 0;
+    int startIndex = 0;
+    const int indexArrSize = 5;
+    size_t tempVal = 0UL;
+
+    while(index + 1 < indexArrSize) {
+        if(indices[index] > -1) {
+            tempVal = start[startIndex];
+            start[startIndex] = start[indices[index]];
+            start[indices[index]] = tempVal;
+
+            tempVal = count[startIndex];
+            count[startIndex] = count[indices[index]];
+            count[indices[index]] = tempVal;
+
+            startIndex++;
+        }
+
+        index++;
+    }
+}
+
+/**
 @brief Condensed function to read topographical, spatial,
 and climate inputs and convert the units from input nc files,
 rather than having separate functions, this will specifically read
@@ -4474,6 +4512,7 @@ static void read_spatial_topo_climate_inputs(
     double addOffset;
     Bool **missValFlags;
     double **doubleMissVals;
+    int **dimOrderInVar;
 
     double **scaleAddFactors;
     const InKeys keys[] = {eSW_InSpatial, eSW_InTopo, eSW_InClimate};
@@ -4512,6 +4551,7 @@ static void read_spatial_topo_climate_inputs(
         scaleAddFactors = SW_Domain->SW_PathInputs.scaleAndAddFactVals[currKey];
         missValFlags = SW_Domain->SW_PathInputs.missValFlags[currKey];
         doubleMissVals = SW_Domain->SW_PathInputs.doubleMissVals[currKey];
+        dimOrderInVar = SW_Domain->netCDFInput.dimOrderInVar[currKey];
 
         /* Determine how many values we will be reading from the variables
            within this input key */
@@ -4538,12 +4578,15 @@ static void read_spatial_topo_climate_inputs(
             }
         }
 
+
         for (varNum = fIndex; varNum < numVarsInKey[currKey]; varNum++) {
             adjVarNum = (currKey == eSW_InSpatial) ? varNum : varNum + 1;
             adjSetIndex = (currKey == eSW_InSpatial) ? varNum : varNum - 1;
             if (!readInput[adjVarNum]) {
                 continue;
             }
+
+            arrange_start_count(dimOrderInVar[adjSetIndex], start, count);
 
             varID = varIDs[varNum];
             varType = varTypes[varNum];
@@ -4633,12 +4676,14 @@ static void alloc_sim_var_information(
     Bool **hasScaleAndAddFact,
     double ***scaleAndAddFactVals,
     Bool ***missValFlags,
+    int ***dimOrderInVar,
     LOG_INFO *LogInfo
 ) {
     int varNum;
     size_t val;
     const size_t numFactVals = 2;
     const size_t numFlags = 6;
+    const size_t maxNumIndices = 5;
 
     *inVarIDs = (int *) Mem_Malloc(
         sizeof(int) * numVars, "alloc_sim_var_information()", LogInfo
@@ -4667,6 +4712,10 @@ static void alloc_sim_var_information(
         return;
     }
 
+    for (varNum = 0; varNum < numVars; varNum++) {
+        (*scaleAndAddFactVals)[varNum] = NULL;
+    }
+
     *missValFlags = (Bool **) Mem_Malloc(
         sizeof(Bool *) * numVars, "alloc_sim_var_information()", LogInfo
     );
@@ -4674,8 +4723,11 @@ static void alloc_sim_var_information(
         return;
     }
 
-    for (varNum = 0; varNum < numVars; varNum++) {
-        (*scaleAndAddFactVals)[varNum] = NULL;
+    *dimOrderInVar = (int **) Mem_Malloc(
+        sizeof(int *) * numVars, "alloc_sim_var_information()", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
     }
 
     for (varNum = 0; varNum < numVars; varNum++) {
@@ -4693,6 +4745,13 @@ static void alloc_sim_var_information(
             return;
         }
 
+        (*dimOrderInVar)[varNum] = (int *) Mem_Malloc(
+            sizeof(int) * maxNumIndices, "alloc_sim_var_information()", LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+
         for (val = 0; val < numFlags; val++) {
             if (val < numFactVals) {
                 (*scaleAndAddFactVals)[varNum][0] = SW_MISSING;
@@ -4700,6 +4759,9 @@ static void alloc_sim_var_information(
                 (*scaleAndAddFactVals)[varNum][1] = SW_MISSING;
                 (*scaleAndAddFactVals)[varNum][0] = SW_MISSING;
                 (*scaleAndAddFactVals)[varNum][1] = SW_MISSING;
+
+            if(val < maxNumIndices) {
+                (*dimOrderInVar)[varNum][val] = -1;
             }
 
             (*missValFlags)[varNum][val] = swFALSE;
@@ -4949,6 +5011,83 @@ static void gather_missing_information(
 }
 
 /**
+@brief Understand the ordering of a variable's dimensions to use
+later for understanding how to read information from input files
+
+@param[in] ncFileID File identifier of the nc file being read
+@param[in] varID Identifier of the nc variable to read
+@param[in] varInfo Variable information for the variable we are
+gathering dimension information from
+@param[out] indices A list of indices that specify the order of the
+dimensions in the variable header
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void get_variable_dim_order(
+    int ncFileID, int varID, char **varInfo, int *indices,
+    LOG_INFO *LogInfo
+) {
+    int axisNum;
+    int orderIndex = 0;
+    const int maxNumDims = 5;
+    int axisID;
+    int readAxisID = 0;
+    Bool varSiteDom = (Bool) (strcmp(varInfo[INDOMTYPE], "s") == 0);
+    char *axisNames[] = {
+        (varSiteDom) ? varInfo[INSITENAME] : varInfo[INXAXIS],
+        varInfo[INYAXIS],
+        varInfo[INZAXIS],
+        varInfo[INTAXIS],
+        varInfo[INVAXIS]
+    };
+    int varDimIndex = 0;
+    int dimIDs[] = {-1, -1, -1, -1, -1};
+    int readVarDimIDs[] = {-1, -1, -1, -1, -1};
+    Bool hasDim;
+
+    /* Get the global dimension information (IDs if they exist) */
+    for(axisNum = 0; axisNum < maxNumDims; axisNum++) {
+        hasDim = SW_NC_dimExists(axisNames[axisNum], ncFileID);
+
+        if(hasDim) {
+            SW_NC_get_dim_identifier(ncFileID, axisNames[axisNum],
+                                     &dimIDs[axisNum], LogInfo);
+            if(LogInfo->stopRun) {
+                return;
+            }
+        }
+    }
+
+    /* Get a list of dimension IDs from the current variable
+       and compare that to the order of `axisNames` to specify
+       what index a dimension should be placed when reading
+       values from the variable, see `dimOrderInVar` within SW_NETCDF_IN
+       for more information */
+    if(nc_inq_vardimid(ncFileID, varID, readVarDimIDs) != NC_NOERR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not get dimension identifiers of variable from inputs."
+        );
+    }
+
+    for(axisNum = 0; axisNum < maxNumDims; axisNum++) {
+        axisID = dimIDs[axisNum];
+
+        if(axisID > -1) {
+            for(varDimIndex = 0; varDimIndex < maxNumDims; varDimIndex++) {
+                readAxisID = readVarDimIDs[varDimIndex];
+
+                if(readAxisID == axisID) {
+                    indices[orderIndex] = varDimIndex;
+                }
+            }
+        }
+
+        orderIndex++;
+    }
+}
+
+/**
 @brief Before reading inputs, it is best to get certain information
 to not have the need to query the information during the simulations
 and being read many times; the information this function gathers is:
@@ -5008,6 +5147,7 @@ static void get_invar_information(
             &SW_PathInputs->hasScaleAndAddFact[inKey],
             &SW_PathInputs->scaleAndAddFactVals[inKey],
             &SW_PathInputs->missValFlags[inKey],
+            &SW_netCDFIn->dimOrderInVar[inKey],
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -5125,6 +5265,17 @@ static void get_invar_information(
                 goto closeFile;
             }
 
+            get_variable_dim_order(
+                ncFileID,
+                *varID,
+                inVarInfo[varNum],
+                SW_netCDFIn->dimOrderInVar[inKey][varNum - 1],
+                LogInfo
+            );
+            if(LogInfo->stopRun) {
+                goto closeFile;
+            }
+
             nc_close(ncFileID);
             ncFileID = -1;
         }
@@ -5179,6 +5330,7 @@ static void read_veg_inputs(
     int timeIndex = -1;
     int noTimeIndex = -1;
     Bool hasPFT;
+    int **dimOrderInVar = SW_Domain->netCDFInput.dimOrderInVar[eSW_InVeg];
 
     double *valuesWithTime[] = {
         SW_VegProd->veg[SW_TREES].litter,
@@ -5244,6 +5396,8 @@ static void read_veg_inputs(
         varName = inVarInfo[varNum][INNCVARNAME];
         hasPFT = (Bool) (strcmp(inVarInfo[varNum][INVAXIS], "NA") != 0);
         numSetVals = (varHasTime) ? MAX_MONTHS : 1;
+
+        arrange_start_count(dimOrderInVar[varNum - 1], start, count);
 
         if (hasPFT) {
             start[cWriteIndex] = ((varNum - 2) / (NVEGTYPES + 1));
@@ -6224,6 +6378,7 @@ void SW_NCIN_init_ptrs(SW_NETCDF_IN *SW_netCDFIn) {
         SW_netCDFIn->units_sw[k] = NULL;
         SW_netCDFIn->uconv[k] = NULL;
         SW_netCDFIn->readInVars[k] = NULL;
+        SW_netCDFIn->dimOrderInVar[k] = NULL;
     }
 
     SW_netCDFIn->weathCalOverride = NULL;
@@ -6337,6 +6492,18 @@ void SW_NCIN_dealloc_inputkey_var_info(SW_NETCDF_IN *SW_netCDFIn, int key) {
     if (!isnull((void *) SW_netCDFIn->readInVars[key])) {
         free((void *) SW_netCDFIn->readInVars[key]);
         SW_netCDFIn->readInVars[key] = NULL;
+    }
+
+    if(!isnull((void *) SW_netCDFIn->dimOrderInVar[key])) {
+        for (varNum = 0; varNum < varsInKey; varNum++) {
+            if(!isnull((void *) SW_netCDFIn->dimOrderInVar[key][varNum])) {
+                free((void *) SW_netCDFIn->dimOrderInVar[key][varNum]);
+                SW_netCDFIn->dimOrderInVar[key][varNum] = NULL;
+            }
+        }
+
+        free((void *) SW_netCDFIn->dimOrderInVar[key]);
+        SW_netCDFIn->dimOrderInVar[key] = NULL;
     }
 }
 

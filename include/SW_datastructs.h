@@ -1286,6 +1286,26 @@ typedef struct {
     size_t domXCoordProjSize;
 
     Bool useIndexFile[SW_NINKEYSNC];
+
+    /*
+        Pre-calculate the location of dimensions within variable headers
+        to rearrange start/count indices/values so we can match the current
+        dimension read/count size;
+        The program by default expects the variable dimension order
+            variable(y, x, vertical, time, pft) or
+            variable(site, vertical, time, pft)
+        where these will not always be true, so we need to be able to
+        read any order of or variation (less) dimensions compared to
+        the example above;
+        Example:
+            variable(pft=4, time=12, vertical=8, y=1, x=1) the array would be
+            [3, 4, 2, 1, 0] this will result in the count values to be
+            shifted from (example numbers)
+            [1, 1, 8, 12, 4] to [4, 12, 8, 1, 1] and start is similar,
+            the values are not expected to be as explicit as count
+            (i.e., start will contain mostly if not all zeroes)
+    */
+    int **dimOrderInVar[SW_NINKEYSNC];
 } SW_NETCDF_IN;
 
 struct SW_OUT_DOM {
