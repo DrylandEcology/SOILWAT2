@@ -4754,11 +4754,8 @@ static void alloc_sim_var_information(
 
         for (val = 0; val < numFlags; val++) {
             if (val < numFactVals) {
-                (*scaleAndAddFactVals)[varNum][0] = SW_MISSING;
-                (*scaleAndAddFactVals)[varNum][0] = SW_MISSING;
-                (*scaleAndAddFactVals)[varNum][1] = SW_MISSING;
-                (*scaleAndAddFactVals)[varNum][0] = SW_MISSING;
-                (*scaleAndAddFactVals)[varNum][1] = SW_MISSING;
+                (*scaleAndAddFactVals)[varNum][val] = SW_MISSING;
+            }
 
             if(val < maxNumIndices) {
                 (*dimOrderInVar)[varNum][val] = -1;
