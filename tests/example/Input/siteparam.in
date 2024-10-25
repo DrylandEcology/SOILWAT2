@@ -79,7 +79,7 @@ RCP85
 
 # --- Soil characterization ---
 # Is the soil layer depth profile and number of soil layers identical (1) across the entire domain or do they vary among sites/gridcells (0)?
-0
+1
 
 # Are inputs of density representing bulk soil (type 1) or the matric component (type 0)?
 0
