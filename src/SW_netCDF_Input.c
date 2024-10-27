@@ -4369,11 +4369,12 @@ detect a missing input value
 if a read-in value is missing (can be a single value or a range)
 @param[in] readVals Temporary list of read-in double values to
 transfer to `resVals`
+@param[in] numVals Number of values that were read in to transfer from
+one array to another
 @param[in] varNum Specifies the variable number within an input key
 to access the missing value information if allocated
 @param[in] varType Type of the variable that was read-in and will
 be set with those value(s)
-@param[in] currKey Current key that is being read in
 @param[in] scale_factor User-provided factor to multiply the read-in
 values to "unpack" the value into a float/double (may be 0 if the
 variable is not to be unpacked)
@@ -4390,16 +4391,15 @@ static void set_read_vals(
     Bool *valHasMissing,
     double **missingVals,
     double *readVals,
+    int numVals,
     int varNum,
     nc_type varType,
-    int currKey,
     double scale_factor,
     double add_offset,
     sw_converter_t *unitConv,
     double *resVals
 ) {
     int valIndex;
-    int numVals = (currKey != eSW_InClimate) ? 1 : MAX_MONTHS;
 
     for (valIndex = 0; valIndex < numVals; valIndex++) {
         resVals[valIndex] = readVals[valIndex];
@@ -4513,6 +4513,7 @@ static void read_spatial_topo_climate_inputs(
     Bool **missValFlags;
     double **doubleMissVals;
     int **dimOrderInVar;
+    int numVals;
 
     double **scaleAddFactors;
     const InKeys keys[] = {eSW_InSpatial, eSW_InTopo, eSW_InClimate};
@@ -4534,6 +4535,7 @@ static void read_spatial_topo_climate_inputs(
         inVarInfo = SW_Domain->netCDFInput.inVarInfo[currKey];
         readInput = SW_Domain->netCDFInput.readInVars[currKey];
         fIndex = (currKey == eSW_InSpatial) ? 0 : 1;
+        numVals = (currKey == eSW_InClimate) ? MAX_MONTHS : 1;
         useIndexFile = SW_Domain->netCDFInput.useIndexFile[currKey];
 
         if (!readInput[0]) {
@@ -4631,9 +4633,9 @@ static void read_spatial_topo_climate_inputs(
                 missValFlags[varNum],
                 doubleMissVals,
                 tempVals,
+                numVals,
                 adjSetIndex,
                 varType,
-                currKey,
                 scaleFactor,
                 addOffset,
                 convs[currKey][adjSetIndex],
@@ -5266,7 +5268,7 @@ static void get_invar_information(
                 ncFileID,
                 *varID,
                 inVarInfo[varNum],
-                SW_netCDFIn->dimOrderInVar[inKey][varNum - 1],
+                SW_netCDFIn->dimOrderInVar[inKey][varNum],
                 LogInfo
             );
             if(LogInfo->stopRun) {
@@ -5313,7 +5315,6 @@ static void read_veg_inputs(
     Bool siteDom;
 
     int varNum;
-    int setIndex;
     int fIndex = 1;
     int varID = -1;
     int ncFileID = -1;
@@ -5324,41 +5325,45 @@ static void read_veg_inputs(
     size_t start[] = {0, 0, 0, 0};
     int cWriteIndex = 0;
     Bool varHasTime;
-    int timeIndex = -1;
-    int noTimeIndex = -1;
     Bool hasPFT;
+    Bool varHasAddScaleAtts;
+    double scaleFactor;
+    double addOffset;
     int **dimOrderInVar = SW_Domain->netCDFInput.dimOrderInVar[eSW_InVeg];
+    Bool *keyAttFlags = SW_Domain->SW_PathInputs.hasScaleAndAddFact[eSW_InVeg];
+    double **scaleAddFactors = SW_Domain->SW_PathInputs.scaleAndAddFactVals[eSW_InVeg];
+    Bool **missValFlags = SW_Domain->SW_PathInputs.missValFlags[eSW_InVeg];
+    double **doubleMissVals = SW_Domain->SW_PathInputs.doubleMissVals[eSW_InVeg];
 
-    double *valuesWithTime[] = {
+    double *values[] = {
+        &SW_VegProd->bare_cov.fCover,
+
+        &SW_VegProd->veg[SW_TREES].cov.fCover,
         SW_VegProd->veg[SW_TREES].litter,
         SW_VegProd->veg[SW_TREES].biomass,
         SW_VegProd->veg[SW_TREES].pct_live,
         SW_VegProd->veg[SW_TREES].lai_conv,
 
+        &SW_VegProd->veg[SW_SHRUB].cov.fCover,
         SW_VegProd->veg[SW_SHRUB].litter,
         SW_VegProd->veg[SW_SHRUB].biomass,
         SW_VegProd->veg[SW_SHRUB].pct_live,
         SW_VegProd->veg[SW_SHRUB].lai_conv,
 
+        &SW_VegProd->veg[SW_FORBS].cov.fCover,
         SW_VegProd->veg[SW_FORBS].litter,
         SW_VegProd->veg[SW_FORBS].biomass,
         SW_VegProd->veg[SW_FORBS].pct_live,
         SW_VegProd->veg[SW_FORBS].lai_conv,
 
+        &SW_VegProd->veg[SW_GRASS].cov.fCover,
         SW_VegProd->veg[SW_GRASS].litter,
         SW_VegProd->veg[SW_GRASS].biomass,
         SW_VegProd->veg[SW_GRASS].pct_live,
         SW_VegProd->veg[SW_GRASS].lai_conv,
     };
 
-    double *valuesWOTime[] = {
-        &SW_VegProd->bare_cov.fCover,
-        &SW_VegProd->veg[SW_TREES].cov.fCover,
-        &SW_VegProd->veg[SW_SHRUB].cov.fCover,
-        &SW_VegProd->veg[SW_FORBS].cov.fCover,
-        &SW_VegProd->veg[SW_GRASS].cov.fCover,
-    };
-    double doubleVals[MAX_MONTHS] = {0.0};
+    double tempVals[MAX_MONTHS] = {0.0};
     int numSetVals;
 
     while (!readInput[fIndex + 1]) {
@@ -5377,13 +5382,7 @@ static void read_veg_inputs(
         /* Bare ground cover does not have time (index 1),
            otherwise, the first variable of every veg group doesn't have
            time, otherwise, the current variable has a time dimension */
-        varHasTime = (Bool) (varNum == 1 || (varNum - 2) % (NVEGTYPES + 1) > 0);
-        if (varHasTime) {
-            timeIndex++;
-        } else {
-            noTimeIndex++;
-        }
-
+        varHasTime = (Bool) !(varNum == 1 || (varNum - 2) % (NVEGTYPES + 1) == 0);
         if (!readInput[varNum + 1]) {
             continue;
         }
@@ -5394,8 +5393,6 @@ static void read_veg_inputs(
         hasPFT = (Bool) (strcmp(inVarInfo[varNum][INVAXIS], "NA") != 0);
         numSetVals = (varHasTime) ? MAX_MONTHS : 1;
 
-        arrange_start_count(dimOrderInVar[varNum - 1], start, count);
-
         if (hasPFT) {
             start[cWriteIndex] = ((varNum - 2) / (NVEGTYPES + 1));
             count[cWriteIndex] = 1;
@@ -5404,6 +5401,8 @@ static void read_veg_inputs(
             start[cWriteIndex] = start[cWriteIndex + 1] = 0;
             count[cWriteIndex] = (varHasTime) ? MAX_MONTHS : 1;
         }
+
+        arrange_start_count(dimOrderInVar[varNum - 1], start, count);
 
         SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
         if (LogInfo->stopRun) {
@@ -5419,37 +5418,37 @@ static void read_veg_inputs(
             goto closeFile;
         }
 
-        /* Read current vegetation input (see `valuesWOTime()` and
-           `valuesWithTime()`) */
+        varHasAddScaleAtts = keyAttFlags[varNum];
+
+        if (varHasAddScaleAtts) {
+            scaleFactor = scaleAddFactors[varNum][0];
+            addOffset = scaleAddFactors[varNum][1];
+        } else {
+            scaleFactor = 1.0;
+            addOffset = 0.0;
+        }
+
+        /* Read current vegetation input */
         get_values_multiple(
-            ncFileID, varID, start, count, varName, doubleVals, LogInfo
+            ncFileID, varID, start, count, varName, tempVals, LogInfo
         );
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
-        if (varHasTime) {
-            for (setIndex = 0; setIndex < numSetVals; setIndex++) {
-                valuesWithTime[timeIndex][setIndex] = doubleVals[setIndex];
-            }
-        } else {
-            *valuesWOTime[noTimeIndex] = doubleVals[setIndex];
-        }
+        set_read_vals(
+            missValFlags[varNum],
+            doubleMissVals,
+            tempVals,
+            numSetVals,
+            varNum - 1,
+            varType,
+            scaleFactor,
+            addOffset,
+            vegConv[varNum - 1],
+            values[varNum - 1]
+        );
 
-#if defined(SWUDUNITS)
-        if (strcmp(inVarInfo[varNum][INVARUNITS], "NA") != 0 &&
-            !isnull(vegConv[varNum])) {
-
-            cv_convert_doubles(
-                vegConv[varNum],
-                (varHasTime) ? valuesWithTime[timeIndex] :
-                               valuesWOTime[noTimeIndex],
-                (varHasTime) ? MAX_MONTHS : 1,
-                (varHasTime) ? valuesWithTime[timeIndex] :
-                               valuesWOTime[noTimeIndex]
-            );
-        }
-#endif
         nc_close(ncFileID);
         ncFileID = -1;
     }
