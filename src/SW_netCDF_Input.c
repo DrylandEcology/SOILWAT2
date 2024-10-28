@@ -391,8 +391,8 @@ static void check_domain_information(
             (incorrGeo) ? "geographical" : "projected"
         );
     } else if (strcmp(ncCRSName, "NA") != 0 &&
-              ((!primCRSIsGeo && strcmp(ncCRSName, "crs_geogsc") == 0) ||
-               (primCRSIsGeo && strcmp(ncCRSName, "crs_projsc") == 0))) {
+               ((!primCRSIsGeo && strcmp(ncCRSName, "crs_geogsc") == 0) ||
+                (primCRSIsGeo && strcmp(ncCRSName, "crs_projsc") == 0))) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -550,7 +550,7 @@ static void check_variable_for_required(
     for (attNum = 0; attNum < mustTestAtts; attNum++) {
         testInd = mustTestAttInd[attNum];
         canBeNA = (Bool) ((testInd == INSITENAME && !inputDomIsSite) ||
-                           testInd == INCRSNAME);
+                          testInd == INCRSNAME);
 
         if (!canBeNA && strcmp(inputInfo[varNum][testInd], "NA") == 0) {
             LogError(
@@ -4432,16 +4432,14 @@ reading a variable from
 @param[in,out] count A list of numbers that specify how many values
 from every dimension of a variable should be read
 */
-static void arrange_start_count(
-    int indices[], size_t start[], size_t count[]
-) {
+static void arrange_start_count(int indices[], size_t start[], size_t count[]) {
     int index = 0;
     int startIndex = 0;
     const int indexArrSize = 5;
     size_t tempVal = 0UL;
 
-    while(index + 1 < indexArrSize) {
-        if(indices[index] > -1) {
+    while (index + 1 < indexArrSize) {
+        if (indices[index] > -1) {
             tempVal = start[startIndex];
             start[startIndex] = start[indices[index]];
             start[indices[index]] = tempVal;
@@ -4761,7 +4759,7 @@ static void alloc_sim_var_information(
                 (*scaleAndAddFactVals)[varNum][val] = SW_MISSING;
             }
 
-            if(val < maxNumIndices) {
+            if (val < maxNumIndices) {
                 (*dimOrderInVar)[varNum][val] = -1;
             }
 
@@ -5024,8 +5022,7 @@ dimensions in the variable header
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static void get_variable_dim_order(
-    int ncFileID, int varID, char **varInfo, int *indices,
-    LOG_INFO *LogInfo
+    int ncFileID, int varID, char **varInfo, int *indices, LOG_INFO *LogInfo
 ) {
     int axisNum;
     int orderIndex = 0;
@@ -5046,13 +5043,14 @@ static void get_variable_dim_order(
     Bool hasDim;
 
     /* Get the global dimension information (IDs if they exist) */
-    for(axisNum = 0; axisNum < maxNumDims; axisNum++) {
+    for (axisNum = 0; axisNum < maxNumDims; axisNum++) {
         hasDim = SW_NC_dimExists(axisNames[axisNum], ncFileID);
 
-        if(hasDim) {
-            SW_NC_get_dim_identifier(ncFileID, axisNames[axisNum],
-                                     &dimIDs[axisNum], LogInfo);
-            if(LogInfo->stopRun) {
+        if (hasDim) {
+            SW_NC_get_dim_identifier(
+                ncFileID, axisNames[axisNum], &dimIDs[axisNum], LogInfo
+            );
+            if (LogInfo->stopRun) {
                 return;
             }
         }
@@ -5063,7 +5061,7 @@ static void get_variable_dim_order(
        what index a dimension should be placed when reading
        values from the variable, see `dimOrderInVar` within SW_NETCDF_IN
        for more information */
-    if(nc_inq_vardimid(ncFileID, varID, readVarDimIDs) != NC_NOERR) {
+    if (nc_inq_vardimid(ncFileID, varID, readVarDimIDs) != NC_NOERR) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -5071,14 +5069,14 @@ static void get_variable_dim_order(
         );
     }
 
-    for(axisNum = 0; axisNum < maxNumDims; axisNum++) {
+    for (axisNum = 0; axisNum < maxNumDims; axisNum++) {
         axisID = dimIDs[axisNum];
 
-        if(axisID > -1) {
-            for(varDimIndex = 0; varDimIndex < maxNumDims; varDimIndex++) {
+        if (axisID > -1) {
+            for (varDimIndex = 0; varDimIndex < maxNumDims; varDimIndex++) {
                 readAxisID = readVarDimIDs[varDimIndex];
 
-                if(readAxisID == axisID) {
+                if (readAxisID == axisID) {
                     indices[orderIndex] = varDimIndex;
                 }
             }
@@ -5273,7 +5271,7 @@ static void get_invar_information(
                 SW_netCDFIn->dimOrderInVar[inKey][varNum],
                 LogInfo
             );
-            if(LogInfo->stopRun) {
+            if (LogInfo->stopRun) {
                 goto closeFile;
             }
 
@@ -5333,9 +5331,11 @@ static void read_veg_inputs(
     double addOffset;
     int **dimOrderInVar = SW_Domain->netCDFInput.dimOrderInVar[eSW_InVeg];
     Bool *keyAttFlags = SW_Domain->SW_PathInputs.hasScaleAndAddFact[eSW_InVeg];
-    double **scaleAddFactors = SW_Domain->SW_PathInputs.scaleAndAddFactVals[eSW_InVeg];
+    double **scaleAddFactors =
+        SW_Domain->SW_PathInputs.scaleAndAddFactVals[eSW_InVeg];
     Bool **missValFlags = SW_Domain->SW_PathInputs.missValFlags[eSW_InVeg];
-    double **doubleMissVals = SW_Domain->SW_PathInputs.doubleMissVals[eSW_InVeg];
+    double **doubleMissVals =
+        SW_Domain->SW_PathInputs.doubleMissVals[eSW_InVeg];
 
     double *values[] = {
         &SW_VegProd->bare_cov.fCover,
@@ -5384,7 +5384,8 @@ static void read_veg_inputs(
         /* Bare ground cover does not have time (index 1),
            otherwise, the first variable of every veg group doesn't have
            time, otherwise, the current variable has a time dimension */
-        varHasTime = (Bool) !(varNum == 1 || (varNum - 2) % (NVEGTYPES + 1) == 0);
+        varHasTime =
+            (Bool) !(varNum == 1 || (varNum - 2) % (NVEGTYPES + 1) == 0);
         if (!readInput[varNum + 1]) {
             continue;
         }
@@ -6492,9 +6493,9 @@ void SW_NCIN_dealloc_inputkey_var_info(SW_NETCDF_IN *SW_netCDFIn, int key) {
         SW_netCDFIn->readInVars[key] = NULL;
     }
 
-    if(!isnull((void *) SW_netCDFIn->dimOrderInVar[key])) {
+    if (!isnull((void *) SW_netCDFIn->dimOrderInVar[key])) {
         for (varNum = 0; varNum < varsInKey; varNum++) {
-            if(!isnull((void *) SW_netCDFIn->dimOrderInVar[key][varNum])) {
+            if (!isnull((void *) SW_netCDFIn->dimOrderInVar[key][varNum])) {
                 free((void *) SW_netCDFIn->dimOrderInVar[key][varNum]);
                 SW_netCDFIn->dimOrderInVar[key][varNum] = NULL;
             }
