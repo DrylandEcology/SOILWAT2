@@ -390,8 +390,9 @@ static void check_domain_information(
             "do not match expected values for a %s domain.",
             (incorrGeo) ? "geographical" : "projected"
         );
-    } else if ((!primCRSIsGeo && strcmp(ncCRSName, "crs_geogsc") == 0) ||
-               (primCRSIsGeo && strcmp(ncCRSName, "crs_projsc") == 0)) {
+    } else if (strcmp(ncCRSName, "NA") != 0 &&
+              ((!primCRSIsGeo && strcmp(ncCRSName, "crs_geogsc") == 0) ||
+               (primCRSIsGeo && strcmp(ncCRSName, "crs_projsc") == 0))) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -548,7 +549,8 @@ static void check_variable_for_required(
        skip the testing of the nc var units (can be NA) */
     for (attNum = 0; attNum < mustTestAtts; attNum++) {
         testInd = mustTestAttInd[attNum];
-        canBeNA = (Bool) (testInd == INSITENAME && !inputDomIsSite);
+        canBeNA = (Bool) ((testInd == INSITENAME && !inputDomIsSite) ||
+                           testInd == INCRSNAME);
 
         if (!canBeNA && strcmp(inputInfo[varNum][testInd], "NA") == 0) {
             LogError(
