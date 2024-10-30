@@ -12,6 +12,7 @@
 #include "include/SW_netCDF_General.h" // for vNCdom, vNCprog
 #include "include/SW_Output.h"         // for ForEachOutKey, SW_ESTAB, pd2...
 #include "include/SW_Output_outarray.h" // for iOUTnc
+#include "include/SW_Site.h"            // for SW_SIT_init_run
 #include "include/SW_VegProd.h"         // for key2veg
 #include "include/Times.h"              // for isleapyear, timeStringISO8601
 #include <math.h>                       // for NAN, ceil, isnan
@@ -4385,6 +4386,12 @@ the read-in value(s) and scale_factor to "unpack" the value(s)
 (may be 0 if the variable is not to be unpacked)
 @param[in] unitConv Unit converter for the current variable that
 we read in
+@param[in] swrcpInput A flag specifying if the read values are swrcp; this
+variable's value setting needs to be handled in a different manner
+@param[in] swrcpIndex A value specifying the number of swrcp we are dealing
+with, [1, SWRC_PARAM_NMAX] or [0, SWRC_PARAM_NMAX - 1] for this index
+@param[in] swrcpLyr A value specifying the layer we are setting the values
+of within swrcp
 @param[in,out] resVals Resulting values which the actual destination
 within a struct used within a simulation run, and values are scaled/set to
 missing as needed
@@ -4399,22 +4406,23 @@ static void set_read_vals(
     double scale_factor,
     double add_offset,
     sw_converter_t *unitConv,
+    Bool swrcpInput,
+    int swrcpIndex,
+    LyrIndex swrcpLyr,
     double *resVals
 ) {
     int valIndex;
+    double *dest;
 
     for (valIndex = 0; valIndex < numVals; valIndex++) {
-        resVals[valIndex] = readVals[valIndex];
-        resVals[valIndex] *= scale_factor;
-        resVals[valIndex] += add_offset;
+        dest = (!swrcpInput) ? &resVals[valIndex] : &resVals[swrcpIndex];
+
+        *dest = (!swrcpInput) ? readVals[valIndex] : readVals[swrcpLyr];
+        *dest *= scale_factor;
+        *dest += add_offset;
 
         set_missing_val(
-            varType,
-            valHasMissing,
-            missingVals,
-            varNum,
-            unitConv,
-            &resVals[valIndex]
+            varType, valHasMissing, missingVals, varNum, unitConv, dest
         );
     }
 }
@@ -4639,6 +4647,9 @@ static void read_spatial_topo_climate_inputs(
                 scaleFactor,
                 addOffset,
                 convs[currKey][adjSetIndex],
+                swFALSE,
+                0,
+                0,
                 values[keyNum][adjSetIndex]
             );
 
@@ -4659,6 +4670,7 @@ that will be used throughout simulations rather than gaining the same
 information many times during said simulation runs
 
 @param[in] numVars Number of variables to allocate for
+@param[in] currKey Current input key being allocated for
 @param[out] inVarIDs Identifiers of variables of a specific input
 key within provide nc files
 @param[out] inVarType Types of variables of a specific input
@@ -4669,16 +4681,20 @@ attributes "scale_factor" and "add_offset"
 "scale_factor" and "add_offset" if both are present
 @param[out] missValFlags A list of flags specifying the user-provided
 information to specify a missing value in input files
+@param[out] numSoilVarLyrs A list holding the number of soil layers for
+all soil input key variables
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static void alloc_sim_var_information(
     int numVars,
+    int currKey,
     int **inVarIDs,
     nc_type **inVarType,
     Bool **hasScaleAndAddFact,
     double ***scaleAndAddFactVals,
     Bool ***missValFlags,
     int ***dimOrderInVar,
+    LyrIndex **numSoilVarLyrs,
     LOG_INFO *LogInfo
 ) {
     int varNum;
@@ -4769,6 +4785,16 @@ static void alloc_sim_var_information(
         (*inVarIDs)[varNum] = -1;
         (*inVarType)[varNum] = 0;
         (*hasScaleAndAddFact)[varNum] = swFALSE;
+    }
+
+    if (currKey == eSW_InSoil) {
+        *numSoilVarLyrs = (LyrIndex *) Mem_Malloc(
+            sizeof(LyrIndex) * numVars, "alloc_sim_var_information()", LogInfo
+        );
+
+        for (varNum = 0; varNum < numVars; varNum++) {
+            (*numSoilVarLyrs)[varNum] = 0;
+        }
     }
 }
 
@@ -5096,12 +5122,17 @@ and being read many times; the information this function gathers is:
     - Missing value specifiers
 
 @param[in] SW_netCDFIn Constant netCDF input file information
+@param[in] hasConstSoilLyrs Specifies of all soil inputs provided
+by the user (if any) are the same depths/number of layers
 @param[out] SW_PathInputs Struct of type SW_PATH_INPUTS which
 holds basic information about input files and values
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static void get_invar_information(
-    SW_NETCDF_IN *SW_netCDFIn, SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo
+    SW_NETCDF_IN *SW_netCDFIn,
+    Bool hasConstSoilLyrs,
+    SW_PATH_INPUTS *SW_PathInputs,
+    LOG_INFO *LogInfo
 ) {
     int inKey;
     int attNum;
@@ -5122,7 +5153,10 @@ static void get_invar_information(
     Bool addAttExists = swFALSE;
     int startVar;
     Bool **missValFlags;
+    LyrIndex **numSoilVarLyrs = &SW_PathInputs->numSoilVarLyrs;
     void *attPtr;
+    LyrIndex testNumLyrs = 0;
+    int numReadSoilVars = 0;
 
     float floatAttVal;
     double doubleAttVal;
@@ -5141,12 +5175,14 @@ static void get_invar_information(
 
         alloc_sim_var_information(
             numVarsInKey[inKey],
+            inKey,
             &SW_PathInputs->inVarIDs[inKey],
             &SW_PathInputs->inVarTypes[inKey],
             &SW_PathInputs->hasScaleAndAddFact[inKey],
             &SW_PathInputs->scaleAndAddFactVals[inKey],
             &SW_PathInputs->missValFlags[inKey],
             &SW_netCDFIn->dimOrderInVar[inKey],
+            numSoilVarLyrs,
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -5275,9 +5311,50 @@ static void get_invar_information(
                 goto closeFile;
             }
 
+            if (inKey == eSW_InSoil) {
+                numReadSoilVars++;
+
+                SW_NC_get_dimlen_from_dimname(
+                    ncFileID,
+                    inVarInfo[varNum][INZAXIS],
+                    (size_t *) &(*numSoilVarLyrs)[varNum],
+                    LogInfo
+                );
+                if (LogInfo->stopRun) {
+                    return;
+                }
+
+                if (testNumLyrs == 0) {
+                    testNumLyrs = (*numSoilVarLyrs)[varNum];
+                } else if (hasConstSoilLyrs &&
+                           testNumLyrs != (*numSoilVarLyrs)[varNum]) {
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "User reported soil layers are consistent "
+                        "through inputs, it was detected that this is not "
+                        "true, please check `siteparam.in`."
+                    );
+                    goto closeFile;
+                }
+            }
+
             nc_close(ncFileID);
             ncFileID = -1;
         }
+    }
+
+    if (!hasConstSoilLyrs && numReadSoilVars < numVarsInKey[eSW_InSoil] - 1) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "It was specified that the soil layers are not consistent through "
+            "all simulations, however not every (individual) variable within "
+            "'inSoil' was turned on, only %d / %d were. This does not include "
+            "the index variable or general '<veg>.transp_coeff' variables.",
+            numReadSoilVars,
+            numVarsInKey[eSW_InSoil] - 1
+        );
     }
 
 closeFile:
@@ -5449,11 +5526,227 @@ static void read_veg_inputs(
             scaleFactor,
             addOffset,
             vegConv[varNum - 1],
+            swFALSE,
+            0,
+            0,
             values[varNum - 1]
         );
 
         nc_close(ncFileID);
         ncFileID = -1;
+    }
+
+closeFile:
+    if (ncFileID > -1) {
+        nc_close(ncFileID);
+    }
+}
+
+/**
+@brief Read inputs relating to the input key 'inSoil'
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[out] SW_Site Struct of type SW_SITE describing the simulated site
+@param[in] soilInFiles List of input files the user provided for the
+input key 'inSoil'
+@param[in] hasConstSoilLyrs Specifies of all soil inputs provided
+by the user (if any) are the same depths/number of layers
+@param[in] soilConv A UDUNITS2 converter used to convert user-provided
+units to units that SW2 understands
+@param[in] ncSUID Current simulation unit identifier for which is used
+to get data from netCDF
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void read_soil_inputs(
+    SW_DOMAIN *SW_Domain,
+    SW_SITE *SW_Site,
+    char **soilInFiles,
+    Bool hasConstSoilLyrs,
+    sw_converter_t **soilConv,
+    size_t ncSUID[],
+    LOG_INFO *LogInfo
+) {
+    SW_SOILS newSoils;
+    SW_SOILS *currSoils = &SW_Site->soils;
+
+    char ***inVarInfo = SW_Domain->netCDFInput.inVarInfo[eSW_InSoil];
+    Bool *readInputs = SW_Domain->netCDFInput.readInVars[eSW_InSoil];
+    int **dimOrderInVar = SW_Domain->netCDFInput.dimOrderInVar[eSW_InSoil];
+    double tempSilt[MAX_LAYERS];
+
+    int *varIDs = SW_Domain->SW_PathInputs.inVarIDs[eSW_InSoil];
+    nc_type *varTypes = SW_Domain->SW_PathInputs.inVarTypes[eSW_InSoil];
+    Bool *keyAttFlags = SW_Domain->SW_PathInputs.hasScaleAndAddFact[eSW_InSoil];
+    double **scaleAddFactors =
+        SW_Domain->SW_PathInputs.scaleAndAddFactVals[eSW_InSoil];
+    Bool **missValFlags = SW_Domain->SW_PathInputs.missValFlags[eSW_InSoil];
+    double **doubleMissVals =
+        SW_Domain->SW_PathInputs.doubleMissVals[eSW_InSoil];
+
+    double *values1D[] = {
+        (hasConstSoilLyrs) ? currSoils->depths : newSoils.depths,
+        (hasConstSoilLyrs) ? currSoils->width : newSoils.width,
+        (hasConstSoilLyrs) ? currSoils->soilDensityInput :
+                             newSoils.soilDensityInput,
+        (hasConstSoilLyrs) ? currSoils->fractionVolBulk_gravel :
+                             newSoils.fractionVolBulk_gravel,
+        (hasConstSoilLyrs) ? currSoils->fractionWeightMatric_sand :
+                             newSoils.fractionWeightMatric_sand,
+        (hasConstSoilLyrs) ? currSoils->fractionWeightMatric_clay :
+                             newSoils.fractionWeightMatric_clay,
+        tempSilt,
+        (hasConstSoilLyrs) ? currSoils->fractionWeight_om :
+                             newSoils.fractionWeight_om,
+        (hasConstSoilLyrs) ? currSoils->impermeability :
+                             newSoils.impermeability,
+        (hasConstSoilLyrs) ? currSoils->evap_coeff : newSoils.evap_coeff
+    };
+
+    double(*trans_coeff)[MAX_LAYERS] =
+        (hasConstSoilLyrs) ? currSoils->transp_coeff : newSoils.transp_coeff;
+    double(*swrcp)[SWRC_PARAM_NMAX] =
+        (hasConstSoilLyrs) ? currSoils->swrcp : newSoils.swrcp;
+    double tempswrcp[MAX_LAYERS];
+    double *doublePtr;
+    int numVals;
+
+    int ncFileID = -1;
+    int varID;
+    size_t start[] = {0, 0, 0, 0};
+    size_t count[] = {1, 0, 0, 0};
+    const int pftIndex = 4;
+    const int swrcpStartInd = 16;
+    const int transStartInd = 12;
+    Bool hasPFT;
+    Bool inSiteDom;
+    Bool isSwrcpVar;
+    Bool useIndexFile = SW_Domain->netCDFInput.useIndexFile[eSW_InSoil];
+    int numVarsInSoilKey = numVarsInKey[eSW_InSoil];
+    int writeIndex;
+    char *fileName;
+    char *varName;
+    int vegIndex = 0;
+    int setIter;
+    int loopIter;
+    size_t defSetStart[2];
+    LyrIndex numLyrs;
+    size_t pftStartIndex = 0;
+
+    Bool varHasAddScaleAtts;
+    double scaleFactor;
+    double addOffset;
+
+    int varNum;
+    int fIndex = 1;
+
+    while (fIndex < numVarsInSoilKey && !readInputs[fIndex + 1]) {
+        fIndex++;
+    }
+
+    inSiteDom = (Bool) (strcmp(inVarInfo[fIndex][INDOMTYPE], "s") == 0);
+    writeIndex = (inSiteDom) ? 1 : 2;
+
+    get_read_start(
+        useIndexFile, soilInFiles[0], inSiteDom, ncSUID, defSetStart, LogInfo
+    );
+    if (LogInfo->stopRun) {
+        goto closeFile;
+    }
+
+    for (varNum = 1; varNum < numVarsInSoilKey; varNum++) {
+        if (!readInputs[varNum + 1] || (varNum == 1 && hasConstSoilLyrs)) {
+            continue;
+        }
+
+        numLyrs = (size_t) SW_Domain->SW_PathInputs.numSoilVarLyrs[varNum];
+        hasPFT = (Bool) (dimOrderInVar[varNum][pftIndex] > -1);
+        varID = varIDs[varNum];
+        fileName = soilInFiles[varNum];
+        varName = inVarInfo[varNum][INNCVARNAME];
+        varHasAddScaleAtts = keyAttFlags[varNum];
+        isSwrcpVar = (Bool) (varNum >= swrcpStartInd);
+
+        start[0] = defSetStart[0];
+        start[1] = defSetStart[1];
+        count[0] = 1;
+        count[1] = (!inSiteDom) ? 1 : 0;
+        count[2] = count[3] = 0;
+        count[writeIndex] = numLyrs;
+
+        if (hasPFT) {
+            count[writeIndex + 1] = 1;
+            start[writeIndex + 1] = pftStartIndex;
+            pftStartIndex++;
+        }
+
+        arrange_start_count(dimOrderInVar[varNum], start, count);
+
+        if (varNum >= transStartInd) {
+            /* Set pointer for trans_coeff (12+) and/or swrcp (16+) */
+            if (varNum >= transStartInd && varNum <= swrcpStartInd) {
+                doublePtr = (double *) trans_coeff[vegIndex];
+                numVals = NVEGTYPES * MAX_LAYERS;
+            } else {
+                doublePtr = (double *) tempswrcp;
+                numVals = MAX_LAYERS * SWRC_PARAM_NMAX;
+            }
+        } else {
+            doublePtr = values1D[varNum - 1];
+            numVals = MAX_LAYERS;
+        }
+
+        SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        get_values_multiple(
+            ncFileID, varID, start, count, varName, doublePtr, LogInfo
+        );
+        if (LogInfo->stopRun) {
+            goto closeFile;
+        }
+
+        if (varHasAddScaleAtts) {
+            scaleFactor = scaleAddFactors[varNum][0];
+            addOffset = scaleAddFactors[varNum][1];
+        } else {
+            scaleFactor = 1.0;
+            addOffset = 0.0;
+        }
+
+        if (isSwrcpVar) {
+            setIter = (int) numLyrs;
+        } else {
+            setIter = 1;
+        }
+
+        for (loopIter = 0; loopIter < setIter; loopIter++) {
+            set_read_vals(
+                missValFlags[varNum],
+                doubleMissVals,
+                doublePtr,
+                (!isSwrcpVar) ? numVals : 1,
+                varNum - 1,
+                varTypes[varNum],
+                scaleFactor,
+                addOffset,
+                soilConv[varNum - 1],
+                isSwrcpVar,
+                (!isSwrcpVar) ? 0 : (varNum - swrcpStartInd),
+                loopIter,
+                (!isSwrcpVar) ? doublePtr : swrcp[loopIter]
+            );
+        }
+
+        if (varNum >= transStartInd) {
+            vegIndex++;
+        }
+    }
+
+    if (hasConstSoilLyrs) {
+        SW_Site->soils = newSoils;
     }
 
 closeFile:
@@ -6191,6 +6484,21 @@ void SW_NCIN_read_inputs(
             convs[eSW_InVeg],
             LogInfo
         );
+    }
+
+    if (readInputs[eSW_InSoil][0]) {
+        read_soil_inputs(
+            SW_Domain,
+            &sw->Site,
+            ncInFiles[eSW_InSoil],
+            SW_Domain->hasConsistentSoilLayerDepths,
+            convs[eSW_InSoil],
+            ncSUID,
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
     }
 }
 
@@ -7363,7 +7671,12 @@ void SW_NCIN_precalc_lookups(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 #endif
     }
 
-    get_invar_information(SW_netCDFIn, &SW_Domain->SW_PathInputs, LogInfo);
+    get_invar_information(
+        SW_netCDFIn,
+        SW_Domain->hasConsistentSoilLayerDepths,
+        &SW_Domain->SW_PathInputs,
+        LogInfo
+    );
 }
 
 /**

@@ -528,7 +528,7 @@ TEST_F(SiteFixtureTest, SiteSoilEvaporationParametersDeathTest) {
 
     // Check error for bad bare-soil evaporation coefficient (should be [0-1])
 
-    SW_Run.Site.evap_coeff[0] = -0.5;
+    SW_Run.Site.soils.evap_coeff[0] = -0.5;
 
     SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
@@ -544,7 +544,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationParametersDeathTest) {
 
     // Check error for bad transpiration coefficient (should be [0-1])
 
-    SW_Run.Site.transp_coeff[SW_GRASS][1] = 1.5;
+    SW_Run.Site.soils.transp_coeff[SW_GRASS][1] = 1.5;
     SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
@@ -583,7 +583,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
         // Quickly calculate soil depth for current region as output information
         soildepth = 0.;
         for (id = 0; id <= SW_Run.Site.TranspRgnBounds[i]; ++id) {
-            soildepth += SW_Run.Site.width[id];
+            soildepth += SW_Run.Site.soils.width[id];
         }
 
         EXPECT_EQ(prevTranspRgnBounds[i], SW_Run.Site.TranspRgnBounds[i])
@@ -606,7 +606,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
 
     // Check that setting one region for one soil layer works
     nRegions = 1;
-    double regionLowerBounds3[] = {SW_Run.Site.width[0]};
+    double regionLowerBounds3[] = {SW_Run.Site.soils.width[0]};
     derive_soilRegions(&SW_Run.Site, nRegions, regionLowerBounds3, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -623,7 +623,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     // Example: one region each for the topmost soil layers
     soildepth = 0.;
     for (i = 0; i < nRegions; ++i) {
-        soildepth += SW_Run.Site.width[i];
+        soildepth += SW_Run.Site.soils.width[i];
         regionLowerBounds4[i] = soildepth;
     }
     derive_soilRegions(&SW_Run.Site, nRegions, regionLowerBounds4, &LogInfo);
@@ -689,7 +689,7 @@ TEST_F(SiteFixtureTest, SiteSoilDensityTypes) {
 
     // Inputs represent matric density
     SW_Run.Site.type_soilDensityInput = SW_MATRIC;
-    SW_Run.Site.fractionVolBulk_gravel[0] = fcoarse;
+    SW_Run.Site.soils.fractionVolBulk_gravel[0] = fcoarse;
     SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -700,7 +700,7 @@ TEST_F(SiteFixtureTest, SiteSoilDensityTypes) {
 
     // Inputs represent bulk density
     SW_Run.Site.type_soilDensityInput = SW_BULK;
-    SW_Run.Site.fractionVolBulk_gravel[0] = fcoarse;
+    SW_Run.Site.soils.fractionVolBulk_gravel[0] = fcoarse;
     SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 

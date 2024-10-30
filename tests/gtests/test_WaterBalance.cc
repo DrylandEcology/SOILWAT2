@@ -63,7 +63,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithPondedWaterRunonRunoff) {
     int i;
 
     // Turn on impermeability of first soil layer, runon, and runoff
-    SW_Run.Site.impermeability[0] = 0.95;
+    SW_Run.Site.soils.impermeability[0] = 0.95;
     SW_Run.Site.percentRunoff = 0.5;
     SW_Run.Site.percentRunon = 1.25;
 
@@ -187,7 +187,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
 
     // Set high gravel volume in all soil layers
     ForEachSoilLayer(s, SW_Run.Site.n_layers) {
-        SW_Run.Site.fractionVolBulk_gravel[s] = 0.99;
+        SW_Run.Site.soils.fractionVolBulk_gravel[s] = 0.99;
     }
 
     // Re-calculate soils
@@ -287,9 +287,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
     SW_Run.Site.site_has_swrcpMineralSoil = swTRUE;
 
     // Set organic matter > 0
-    SW_Run.Site.fractionWeight_om[0] = 1.;
+    SW_Run.Site.soils.fractionWeight_om[0] = 1.;
     for (i = 1; i < SW_Run.Site.n_layers; i++) {
-        SW_Run.Site.fractionWeight_om[i] = 0.5;
+        SW_Run.Site.soils.fractionWeight_om[i] = 0.5;
     }
 
     // Update soils
@@ -396,7 +396,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
     // not all values for organic SWRC parameters have been determined
     // (see "tests/example/Input/swrc_params_FXW.in")
     for (i = 0; i < SW_Run.Site.n_layers; i++) {
-        SW_Run.Site.fractionWeight_om[i] = 0.;
+        SW_Run.Site.soils.fractionWeight_om[i] = 0.;
     }
 
     // Update soils

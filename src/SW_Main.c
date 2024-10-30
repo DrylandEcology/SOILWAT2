@@ -169,7 +169,7 @@ int main(int argc, char **argv) {
         SW_Domain.depthsAllSoilLayers,
         sw_template.Site.n_layers,
         sw_template.Site.n_evap_lyrs,
-        sw_template.Site.depths,
+        sw_template.Site.soils.depths,
         &LogInfo
     );
     if (LogInfo.stopRun) {

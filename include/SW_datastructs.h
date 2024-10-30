@@ -242,6 +242,39 @@ typedef struct {
 /*                     Site structs                    */
 /* --------------------------------------------------- */
 
+typedef struct {
+    double width[MAX_LAYERS],         /**< width of the soil layer (cm) */
+        depths[MAX_LAYERS],           /**< soil layer depths of SoilWat soil */
+        soilDensityInput[MAX_LAYERS], /**< soil density [g / cm3]: either of
+                                           the matric component or bulk soil */
+        evap_coeff[MAX_LAYERS],       /**< prop. of total soil evap from
+                                           this layer */
+        transp_coeff[NVEGTYPES][MAX_LAYERS],
+
+        /* prop. of total transp from this layer    */
+        fractionVolBulk_gravel[MAX_LAYERS],    /* gravel content (> 2 mm) as
+                                                  volume-fraction of bulk soil
+                                                  (g/cm3) */
+        fractionWeightMatric_sand[MAX_LAYERS], /* sand content (< 2 mm & > . mm)
+                                                  as weight-fraction of matric
+                                                  soil (g/g) */
+        fractionWeightMatric_clay[MAX_LAYERS], /* clay content (< . mm & > . mm)
+                                                  as weight-fraction of matric
+                                                  soil (g/g) */
+        /** Organic matter content as weight fraction of bulk soil [g g-1] */
+        fractionWeight_om[MAX_LAYERS],
+        impermeability[MAX_LAYERS], /* fraction of how impermeable a layer is
+                                       (0=permeable, 1=impermeable)    */
+        avgLyrTempInit[MAX_LAYERS]; /* initial soil temperature for each soil
+                                       layer */
+    /** SWRC parameters of the bulk soil
+        (weighted average of mineral and organic SWRC).
+
+        Note: parameter interpretation varies with selected SWRC,
+        see `SWRC_check_parameters()`
+    */
+    double swrcp[MAX_LAYERS][SWRC_PARAM_NMAX];
+} SW_SOILS;
 
 typedef struct {
 
@@ -325,29 +358,6 @@ typedef struct {
      */
 
     double
-        /* Inputs */
-        width[MAX_LAYERS],            /* width of the soil layer (cm) */
-        soilDensityInput[MAX_LAYERS], /* soil density [g / cm3]: either of the
-                                         matric component or bulk soil */
-        evap_coeff[MAX_LAYERS], /* prop. of total soil evap from this layer */
-        transp_coeff[NVEGTYPES][MAX_LAYERS],
-        /* prop. of total transp from this layer    */
-        fractionVolBulk_gravel[MAX_LAYERS],    /* gravel content (> 2 mm) as
-                                                  volume-fraction of bulk soil
-                                                  (g/cm3) */
-        fractionWeightMatric_sand[MAX_LAYERS], /* sand content (< 2 mm & > . mm)
-                                                  as weight-fraction of matric
-                                                  soil (g/g) */
-        fractionWeightMatric_clay[MAX_LAYERS], /* clay content (< . mm & > . mm)
-                                                  as weight-fraction of matric
-                                                  soil (g/g) */
-        impermeability[MAX_LAYERS], /* fraction of how impermeable a layer is
-                                       (0=permeable, 1=impermeable)    */
-        avgLyrTempInit[MAX_LAYERS], /* initial soil temperature for each soil
-                                       layer */
-        /** Organic matter content as weight fraction of bulk soil [g g-1] */
-        fractionWeight_om[MAX_LAYERS],
-
         /* Derived soil characteristics */
         soilMatric_density[MAX_LAYERS], /* matric soil density of the < 2 mm
                                            fraction, i.e., gravel component
@@ -382,8 +392,6 @@ typedef struct {
     // Saxton2006_fK_gravel, /* gravel-correction factor for conductivity [1] */
     // Saxton2006_lambda; /* Slope of logarithmic tension-moisture curve */
 
-    double depths[MAX_LAYERS]; // soil layer depths of SoilWat soil
-
     /** Depth [cm] at which soil properties reach values of sapric peat */
     double depthSapric;
 
@@ -396,13 +404,7 @@ typedef struct {
                      `swrcp` but we need to loop over soil layers for every
                      vegetation type in `my_transp_rng`
     */
-    /** SWRC parameters of the bulk soil
-        (weighted average of mineral and organic SWRC).
 
-        Note: parameter interpretation varies with selected SWRC,
-        see `SWRC_check_parameters()`
-    */
-    double swrcp[MAX_LAYERS][SWRC_PARAM_NMAX];
     /** SWRC parameters of the mineral soil component */
     double swrcpMineralSoil[MAX_LAYERS][SWRC_PARAM_NMAX];
     /** SWRC parameters of the organic soil component
@@ -412,6 +414,8 @@ typedef struct {
     LyrIndex my_transp_rgn[NVEGTYPES][MAX_LAYERS]; /* which transp zones from
                                                       Site am I in? */
 
+    /* Inputs */
+    SW_SOILS soils;
 } SW_SITE;
 
 /* =================================================== */
@@ -1009,6 +1013,8 @@ typedef struct {
     */
     Bool **missValFlags[SW_NINKEYSNC];
     double **doubleMissVals[SW_NINKEYSNC];
+
+    LyrIndex *numSoilVarLyrs;
 
     /* NC information that will stay constant through program run
        domain information - domain and progress file IDs */

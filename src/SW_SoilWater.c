@@ -1819,9 +1819,9 @@ double SW_SWRC_SWCtoSWP(
     return SWRC_SWCtoSWP(
         swcBulk,
         SW_Site->swrc_type[layerno],
-        SW_Site->swrcp[layerno],
-        SW_Site->fractionVolBulk_gravel[layerno],
-        SW_Site->width[layerno],
+        SW_Site->soils.swrcp[layerno],
+        SW_Site->soils.fractionVolBulk_gravel[layerno],
+        SW_Site->soils.width[layerno],
         LOGERROR,
         LogInfo
     );
@@ -2193,9 +2193,9 @@ double SW_SWRC_SWPtoSWC(
     return SWRC_SWPtoSWC(
         swpMatric,
         SW_Site->swrc_type[layerno],
-        SW_Site->swrcp[layerno],
-        SW_Site->fractionVolBulk_gravel[layerno],
-        SW_Site->width[layerno],
+        SW_Site->soils.swrcp[layerno],
+        SW_Site->soils.fractionVolBulk_gravel[layerno],
+        SW_Site->soils.width[layerno],
         LOGERROR,
         LogInfo
     );

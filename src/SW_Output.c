@@ -3789,7 +3789,7 @@ void echo_all_inputs(SW_RUN *sw, SW_OUT_DOM *OutDom) {
     }
 
     echo_inputs(&sw->Site, &sw->Model);
-    echo_VegEstab(sw->Site.width, sw->VegEstab.parms, sw->VegEstab.count);
+    echo_VegEstab(sw->Site.soils.width, sw->VegEstab.parms, sw->VegEstab.count);
     echo_VegProd(sw->VegProd.veg, sw->VegProd.bare_cov);
     echo_outputs(OutDom);
 }

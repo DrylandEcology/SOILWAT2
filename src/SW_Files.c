@@ -479,6 +479,7 @@ void SW_F_construct(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
 
     SW_PathInputs->ncDomFileIDs[vNCdom] = -1;
     SW_PathInputs->ncDomFileIDs[vNCprog] = -1;
+    SW_PathInputs->numSoilVarLyrs = NULL;
 
     SW_PathInputs->ncNumWeatherInFiles = 0;
 #endif
@@ -604,6 +605,11 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
 
         free((void *) SW_PathInputs->ncWeatherInStartEndYrs);
         SW_PathInputs->ncWeatherInStartEndYrs = NULL;
+    }
+
+    if (!isnull(SW_PathInputs->numSoilVarLyrs)) {
+        free((void *) SW_PathInputs->numSoilVarLyrs);
+        SW_PathInputs->numSoilVarLyrs = NULL;
     }
 
     SW_NCIN_close_files(SW_PathInputs->ncDomFileIDs);

@@ -1270,7 +1270,7 @@ void get_vwcBulk_text(OutPeriod pd, SW_RUN *sw) {
             "%c%.*f",
             OUTSEP,
             OUT_DIGITS,
-            vo->vwcBulk[i] / sw->Site.width[i]
+            vo->vwcBulk[i] / sw->Site.soils.width[i]
         );
         resPtr = (char *) sw_memccpy(writePtr, str, '\0', writeSize);
         writePtr = resPtr - 1;
@@ -1319,7 +1319,7 @@ void get_vwcBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 #endif
 
         /* vwcBulk at this point is identical to swcBulk */
-        p[iOUTIndex] = vo->vwcBulk[i] / sw->Site.width[i];
+        p[iOUTIndex] = vo->vwcBulk[i] / sw->Site.soils.width[i];
     }
 
 #if defined(SWNETCDF)
@@ -1365,7 +1365,7 @@ void get_vwcBulk_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
             psd,
             iOUTIndex,
             OutRun->currIter,
-            vo->vwcBulk[i] / sw->Site.width[i]
+            vo->vwcBulk[i] / sw->Site.soils.width[i]
         );
     }
 
@@ -1405,8 +1405,8 @@ void get_vwcMatric_text(OutPeriod pd, SW_RUN *sw) {
 
     ForEachSoilLayer(i, sw->Site.n_layers) {
         /* vwcMatric at this point is identical to swcBulk */
-        convert =
-            1. / (1. - sw->Site.fractionVolBulk_gravel[i]) / sw->Site.width[i];
+        convert = 1. / (1. - sw->Site.soils.fractionVolBulk_gravel[i]) /
+                  sw->Site.soils.width[i];
 
         (void) snprintf(
             str,
@@ -1464,8 +1464,8 @@ void get_vwcMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 #endif
 
         /* vwcMatric at this point is identical to swcBulk */
-        convert =
-            1. / (1. - sw->Site.fractionVolBulk_gravel[i]) / sw->Site.width[i];
+        convert = 1. / (1. - sw->Site.soils.fractionVolBulk_gravel[i]) /
+                  sw->Site.soils.width[i];
         p[iOUTIndex] = vo->vwcMatric[i] * convert;
     }
 
@@ -1505,8 +1505,8 @@ void get_vwcMatric_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
     ForEachSoilLayer(i, sw->Site.n_layers) {
         /* vwcMatric at this point is identical to swcBulk */
-        convert =
-            1. / (1. - sw->Site.fractionVolBulk_gravel[i]) / sw->Site.width[i];
+        convert = 1. / (1. - sw->Site.soils.fractionVolBulk_gravel[i]) /
+                  sw->Site.soils.width[i];
 
         iOUTIndex = iOUT(
             i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
@@ -2124,7 +2124,7 @@ void get_swaMatric_text(OutPeriod pd, SW_RUN *sw) {
 
     ForEachSoilLayer(i, sw->Site.n_layers) {
         /* swaMatric at this point is identical to swaBulk */
-        convert = 1. / (1. - sw->Site.fractionVolBulk_gravel[i]);
+        convert = 1. / (1. - sw->Site.soils.fractionVolBulk_gravel[i]);
 
         (void) snprintf(
             str,
@@ -2182,7 +2182,7 @@ void get_swaMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 #endif
 
         /* swaMatric at this point is identical to swaBulk */
-        convert = 1. / (1. - sw->Site.fractionVolBulk_gravel[i]);
+        convert = 1. / (1. - sw->Site.soils.fractionVolBulk_gravel[i]);
         p[iOUTIndex] = vo->swaMatric[i] * convert;
     }
 
@@ -2222,7 +2222,7 @@ void get_swaMatric_agg(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
     ForEachSoilLayer(i, sw->Site.n_layers) {
         /* swaMatric at this point is identical to swaBulk */
-        convert = 1. / (1. - sw->Site.fractionVolBulk_gravel[i]);
+        convert = 1. / (1. - sw->Site.soils.fractionVolBulk_gravel[i]);
 
         iOUTIndex = iOUT(
             i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
