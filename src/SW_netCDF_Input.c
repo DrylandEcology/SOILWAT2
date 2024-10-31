@@ -5724,6 +5724,56 @@ closeFile:
     }
 }
 
+/**
+@brief Compare the strings provided by the user contained in a PFT
+variable against the expected values/order the program expects
+(i.e., "Trees", "Shrubs", "Forbs", "Grasses")
+
+@param[in] ncFileID File identifier of the nc file being read
+@param[in] pftName Name of the PFT variable to test the values of
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void compare_pft_strings(
+    int ncFileID, char *pftName, LOG_INFO *LogInfo
+) {
+    int varID;
+    int pftStr;
+    const char *const expPFTStrings[] = {"Trees", "Shrubs", "Forbs", "Grasses"};
+    char readPFTVals[NVEGTYPES][MAX_FILENAMESIZE] = {{'\0'}};
+    char *names[] = {
+        readPFTVals[0], readPFTVals[1], readPFTVals[2], readPFTVals[3]
+    };
+
+    SW_NC_get_var_identifier(ncFileID, pftName, &varID, LogInfo);
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    if (nc_get_var_string(ncFileID, varID, names) != NC_NOERR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not get the string values of '%s'.",
+            pftName
+        );
+        return;
+    }
+
+    for (pftStr = 0; pftStr < NVEGTYPES; pftStr++) {
+        if (strcmp(names[pftStr], expPFTStrings[pftStr]) != 0) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "The variable '%s' does not match the ordering the "
+                "program expects to have for a PFT variable. These values "
+                "should match 'Trees', 'Shrubs', 'Forbs', 'Grasses'.",
+                pftName
+            );
+            return;
+        }
+    }
+}
+
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
@@ -6982,6 +7032,15 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     }
                     if (LogInfo->stopRun) {
                         goto closeFile;
+                    }
+
+                    if (strcmp(varInfo[INVAXIS], "NA") != 0) {
+                        compare_pft_strings(
+                            inFileID, varInfo[INVAXIS], LogInfo
+                        );
+                        if (LogInfo->stopRun) {
+                            goto closeFile;
+                        }
                     }
 
                     if (file > 0) {
