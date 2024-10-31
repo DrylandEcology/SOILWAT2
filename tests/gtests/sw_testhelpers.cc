@@ -182,6 +182,7 @@ int setup_testGlobalSoilwatTemplate() {
     unsigned long userSUID;
     LOG_INFO LogInfo;
     const Bool renameDomainTemplateNC = swTRUE;
+    const Bool estVeg = swTRUE;
 
     // Initialize SOILWAT2 variables and read values from example input file
     sw_init_logs(NULL, &LogInfo);
@@ -204,6 +205,13 @@ int setup_testGlobalSoilwatTemplate() {
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
+
+#if defined(SWNETCDF)
+    /* Turn off weather inputs if SWNETCDF and nc-weather is enabled */
+    if (template_SW_Domain.netCDFInput.readInVars[eSW_InWeather][0]) {
+        template_SW_Domain.netCDFInput.readInVars[eSW_InWeather][0] = swFALSE;
+    }
+#endif
 
     SW_CTL_setup_model(
         &template_SW_Run, &template_SW_Domain.OutDom, swTRUE, &LogInfo
@@ -258,7 +266,7 @@ int setup_testGlobalSoilwatTemplate() {
         goto finishProgram;
     }
 
-    SW_CTL_init_run(&template_SW_Run, &LogInfo);
+    SW_CTL_init_run(&template_SW_Run, estVeg, &LogInfo);
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }

@@ -62,7 +62,7 @@ TEST_F(WeatherFixtureTest, WeatherNoMemoryLeakIfDecreasedNumberOfYears) {
     SW_Run.Model.endyr = 1982;
 
     // Real expectation is that there is no memory leak for `allHist`
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
+    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     EXPECT_EQ(SW_Run.Weather.n_years, 2);
@@ -89,7 +89,7 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesDays) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
+    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_finalize_all_weather(
@@ -138,7 +138,7 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesYears) {
     SW_Run.Model.startyr = 1981;
     SW_Run.Model.endyr = 1982;
 
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
+    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_finalize_all_weather(
@@ -184,7 +184,7 @@ TEST_F(WeatherFixtureTest, WeatherWeatherGeneratorOnly) {
         "Input/data_weather_nonexisting/weath"
     );
 
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
+    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_finalize_all_weather(
@@ -222,7 +222,7 @@ TEST_F(WeatherFixtureTest, ReadAllWeatherTooManyMissingForLOCFDeathTest) {
     SW_Run.Model.startyr = 1981;
     SW_Run.Model.endyr = 1981;
 
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
+    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_finalize_all_weather(
@@ -608,7 +608,7 @@ TEST_F(WeatherFixtureTest, ClimateVariableClimateFromConstantWeather) {
     allocateClimateStructs(n_years, &climateOutput, &climateAverages, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    allocateAllWeather(&allHist, n_years, &LogInfo);
+    SW_WTH_allocateAllWeather(&allHist, n_years, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
@@ -777,7 +777,7 @@ TEST_F(
 
 TEST_F(WeatherFixtureTest, WeatherReadInitialization) {
 
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
+    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     EXPECT_FLOAT_EQ(SW_Run.Weather.allHist[0]->temp_max[0], -.52);
@@ -803,7 +803,7 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyInputPrioritization) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Read in all weather
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
+    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Test the middle of January in year 1980 and see if it's not equal to
@@ -1210,7 +1210,7 @@ TEST_F(WeatherFixtureTest, WeatherDailyLOCFInputValues) {
     SW_Run.Weather.use_humidityMonthly = swFALSE;
     SW_Run.Weather.use_windSpeedMonthly = swFALSE;
 
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
+    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Setup values/flags for `generateMissingWeather()` to deal with
@@ -1269,7 +1269,7 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputWrongColumnNumberDeathTest) {
     /* Not the same number of flags as columns */
     // Run weather functions and expect an failure (error)
 
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
+    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Set SW_WEATHER's n_input_forcings to a number that is
@@ -1297,7 +1297,7 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputBadTemperatureDeathTest) {
 
     // Edit SW_WEATHER_HIST values from their original value
 
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
+    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Make temperature unreasonable (not within [-100, 100])
@@ -1321,7 +1321,7 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputBadPrecipitationDeathTest) {
 
     // Edit SW_WEATHER_HIST values from their original value
 
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
+    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Make precipitation unresonable (< 0)
@@ -1342,7 +1342,7 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputBadHumidityDeathTest) {
 
     // Edit SW_WEATHER_HIST values from their original value
 
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
+    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Make relative humidity unreasonable (< 0%)

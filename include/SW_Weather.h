@@ -66,6 +66,7 @@ void SW_WTH_read(
     SW_WEATHER *SW_Weather,
     SW_SKY *SW_Sky,
     SW_MODEL *SW_Model,
+    Bool readTextInputs,
     LOG_INFO *LogInfo
 );
 
@@ -153,6 +154,19 @@ void read_weather_hist(
     LOG_INFO *LogInfo
 );
 
+void SW_WTH_setWeathUsingClimate(
+    SW_WEATHER_HIST *yearWeather,
+    unsigned int year,
+    Bool use_cloudCoverMonthly,
+    Bool use_humidityMonthly,
+    Bool use_windSpeedMonthly,
+    TimeInt cum_monthdays[],
+    TimeInt days_in_month[],
+    double *cloudcov,
+    double *windspeed,
+    double *r_humidity
+);
+
 void readAllWeather(
     SW_WEATHER_HIST **allHist,
     unsigned int startYear,
@@ -209,7 +223,7 @@ void generateMissingWeather(
 
 void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo);
 
-void allocateAllWeather(
+void SW_WTH_allocateAllWeather(
     SW_WEATHER_HIST ***allHist, unsigned int n_years, LOG_INFO *LogInfo
 );
 

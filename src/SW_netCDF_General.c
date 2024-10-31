@@ -602,7 +602,7 @@ void SW_NC_get_single_val(
     int ncFileID,
     int *varID,
     const char *varName,
-    size_t index[],
+    const size_t index[],
     void *value,
     const char *type,
     LOG_INFO *LogInfo

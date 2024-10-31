@@ -33,7 +33,11 @@ void SW_CTL_init_ptrs(SW_RUN *sw);
 void SW_CTL_alloc_outptrs(SW_RUN *sw, LOG_INFO *LogInfo);
 
 void SW_RUN_deepCopy(
-    SW_RUN *source, SW_RUN *dest, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
+    SW_RUN *source,
+    SW_RUN *dest,
+    SW_OUT_DOM *OutDom,
+    Bool copyWeatherHist,
+    LOG_INFO *LogInfo
 );
 
 void SW_CTL_setup_domain(
@@ -49,7 +53,7 @@ void SW_CTL_setup_model(
 
 void SW_CTL_clear_model(Bool full_reset, SW_RUN *sw);
 
-void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *LogInfo);
+void SW_CTL_init_run(SW_RUN *sw, Bool estVegFromText, LOG_INFO *LogInfo);
 
 void SW_CTL_read_inputs_from_disk(
     SW_RUN *sw,

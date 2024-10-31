@@ -9,11 +9,13 @@
 #include "include/SW_Defines.h"        // for MAX_FILENAMESIZE, OutPeriod
 #include "include/SW_Domain.h"         // for SW_DOM_calc_ncSuid
 #include "include/SW_Files.h"          // for eNCInAtt, eNCIn, eNCOutVars
+#include "include/SW_Flow_lib_PET.h"   // for actualVaporPressure3, svp...
 #include "include/SW_netCDF_General.h" // for vNCdom, vNCprog
 #include "include/SW_Output.h"         // for ForEachOutKey, SW_ESTAB, pd2...
 #include "include/SW_Output_outarray.h" // for iOUTnc
 #include "include/SW_Site.h"            // for SW_SIT_init_run
 #include "include/SW_VegProd.h"         // for key2veg
+#include "include/SW_Weather.h"         // for SW_WTH_allocateAllWeather...
 #include "include/Times.h"              // for isleapyear, timeStringISO8601
 #include <math.h>                       // for NAN, ceil, isnan
 #include <netcdf.h>                     // for NC_NOERR, nc_close, NC_DOUBLE
@@ -419,7 +421,7 @@ given configurations is an acceptable one
 
 @param[in] primCRSIsGeo Specifies if the current CRS type is geographic
 @param[in] inputInfo List of information pertaining to a specific input key
-@param[in] inFileName First active input's file name within an input key
+@param[in] varName First active input variable name within an input key
 @param[in] domDomType Specifies the domain type that the program is
 making use of
 @param[out] LogInfo Holds information on warnings and errors
@@ -427,7 +429,7 @@ making use of
 static void check_correct_spatial_config(
     Bool primCRSIsGeo,
     char **inputInfo,
-    char *inFileName,
+    char *varName,
     char *domDomType,
     LOG_INFO *LogInfo
 ) {
@@ -456,9 +458,9 @@ static void check_correct_spatial_config(
         LogError(
             LogInfo,
             LOGERROR,
-            "Simulation domain has geographic CRS but input of %s has a "
-            "projected CRS.",
-            inFileName
+            "Simulation domain has geographic CRS but input file containing "
+            "'%s' has a projected CRS.",
+            varName
         );
         return;
     }
@@ -480,8 +482,9 @@ static void check_correct_spatial_config(
             LogError(
                 LogInfo,
                 LOGERROR,
-                "Simulation domain is 'xy' but input domain of %s is 's'.",
-                inFileName
+                "Simulation domain is 'xy' but input domain of the file "
+                "containing '%s' is 's'.",
+                varName
             );
         }
     }
@@ -704,8 +707,6 @@ input columns and the same values for input columns within a given input key
 */
 static void check_input_variables(
     SW_NETCDF_OUT *SW_netCDFOut,
-    char **ncInFiles[],
-    char ***ncWeatherInFiles,
     char ****inputInfo,
     int inWeathStrideInfo[],
     Bool *readInVars[],
@@ -752,8 +753,7 @@ static void check_input_variables(
                 check_correct_spatial_config(
                     SW_netCDFOut->primary_crs_is_geographic,
                     inputInfo[key][testVarIndex],
-                    (key != eSW_InWeather) ? ncInFiles[key][testVarIndex] :
-                                             ncWeatherInFiles[testVarIndex][0],
+                    inputInfo[key][testVarIndex][INNCVARNAME],
                     inputInfo[eSW_InDomain][0][INDOMTYPE],
                     LogInfo
                 );
@@ -3262,6 +3262,7 @@ static void calc_temporal_weather_indices(
     Bool calIsNoLeap = swFALSE;
     double *timeVals = NULL;
     size_t timeSize = 0;
+    int tempStart = -1;
 
 #if defined(SWUDUNITS)
     ut_system *system;
@@ -3291,8 +3292,18 @@ static void calc_temporal_weather_indices(
     hasCalOverride = (Bool) (strcmp(weatherCal, "NA") != 0);
 
     /* Determine the first weather input file to start with */
-    while (SW_PathInputs->ncWeatherInStartEndYrs[fileIndex][1] < startYr) {
+    while (fileIndex < (int) numWeathFiles &&
+           SW_PathInputs->ncWeatherInStartEndYrs[fileIndex][1] < startYr) {
         fileIndex++;
+    }
+    if (fileIndex == (int) numWeathFiles) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not find a weather input file that overlaps with the "
+            "start year."
+        );
+        return;
     }
 
     numStartEndIndices = numWeathFiles - fileIndex;
@@ -3311,10 +3322,13 @@ static void calc_temporal_weather_indices(
 
         /* Increment file and reset all information for a new file */
         if (year > weatherEnd) {
+            SW_PathInputs->ncWeatherStartEndIndices[fileIndex][0] =
+                (unsigned int) tempStart;
             fileIndex++;
             currCalType[0] = currCalUnit[0] = newCalUnit[0] = '\0';
 
             ncFileID = -1;
+            tempStart = -1;
         }
 
         if (ncFileID == -1) {
@@ -3400,8 +3414,18 @@ static void calc_temporal_weather_indices(
             goto freeMem;
         }
 
+        if (tempStart == -1) {
+            tempStart =
+                (int) SW_PathInputs->ncWeatherStartEndIndices[fileIndex][0];
+        }
+
         free(timeVals);
         timeVals = NULL;
+    }
+
+    if (tempStart > -1) {
+        SW_PathInputs->ncWeatherStartEndIndices[fileIndex][0] =
+            (unsigned int) tempStart;
     }
 
 freeMem: {
@@ -3448,6 +3472,35 @@ static void free_tempcoords_close_files(
             *(fileIDs[index]) = -1;
         }
     }
+}
+
+/**
+@brief Similar to what is done with text weather, find out the flags
+for each weather input, this uses the "read in variable" flags instead
+of those in the weather `weathsetup.in`
+
+@param[in] SW_netCDFIn Constant netCDF input file information
+@param[out] SW_Weather Struct of type SW_WEATHER holding all relevant
+information pretaining to meteorological input data
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void get_weather_flags(
+    SW_NETCDF_IN *SW_netCDFIn, SW_WEATHER *SW_Weather, LOG_INFO *LogInfo
+) {
+    int varNum;
+    Bool *weathVarFlags = SW_netCDFIn->readInVars[eSW_InWeather];
+
+    for (varNum = 1; varNum < numVarsInKey[eSW_InWeather]; varNum++) {
+        SW_Weather->dailyInputFlags[varNum - 1] = weathVarFlags[varNum + 1];
+    }
+
+    check_and_update_dailyInputFlags(
+        SW_Weather->use_cloudCoverMonthly,
+        SW_Weather->use_humidityMonthly,
+        SW_Weather->use_windSpeedMonthly,
+        SW_Weather->dailyInputFlags,
+        LogInfo
+    );
 }
 
 /**
@@ -4222,7 +4275,7 @@ static void get_read_start(
     Bool useIndexFile,
     char *indexFileName,
     Bool inSiteDom,
-    size_t ncSUID[],
+    const size_t ncSUID[],
     size_t start[],
     LOG_INFO *LogInfo
 ) {
@@ -6446,6 +6499,430 @@ Bool SW_NCIN_check_progress(
 }
 
 /**
+@brief Set the daily weather values into their correct location
+within the allocated weather history
+
+@param[out] yearWeather Instance of SW_WEATHER_HIST holding various
+information on the weather input for a specific year
+@param[in] dailyInputFlags List of flags specifying which weather
+variables were input from nc files
+@param[in] weatherIndex Weather variable index (TEMP_MAX, TEMP_MIN, etc.)
+@param[in] yearlyValues List of yearly values read from an nc file to
+put into the respective place
+@param[in] counterpartHelper Helper list to hold the counter part values
+to a calculation, e.g., this will contain maximum temperature when trying
+to store minimum temperature to calculate average temperature
+@param[in] numDays Number of days in the year
+@param[in] varConv Conversion system instance to translate into
+SW2 units
+*/
+static void set_weather_daily(
+    SW_WEATHER_HIST *yearWeather,
+    const Bool *dailyInputFlags,
+    int weatherIndex,
+    const double yearlyValues[],
+    double counterpartHelper[],
+    TimeInt numDays,
+    sw_converter_t *varConv,
+    nc_type varType,
+    Bool *valHasMissing,
+    double **missingVals,
+    Bool unpack,
+    double scaleFactor,
+    double addOffset,
+    int varNum
+) {
+    TimeInt doy;
+    double es;
+    double e;
+    double relHum;
+    double tempSlope;
+    double svpVal;
+    double dayVal = 0;
+
+    Bool hasMaxMinTemp =
+        (Bool) (dailyInputFlags[TEMP_MAX] && dailyInputFlags[TEMP_MIN]);
+    Bool hasMaxMinRelHumid = (Bool) (dailyInputFlags[REL_HUMID_MAX] &&
+                                     dailyInputFlags[REL_HUMID_MIN]);
+    Bool hasEastNorthWind =
+        (Bool) (dailyInputFlags[WIND_EAST] && dailyInputFlags[WIND_NORTH]);
+
+    // Calculate if daily input values of humidity are to be used instead of
+    // being interpolated from monthly values
+    Bool useHumidityDaily =
+        (Bool) (hasMaxMinRelHumid || dailyInputFlags[REL_HUMID] ||
+                dailyInputFlags[SPEC_HUMID] || dailyInputFlags[ACTUAL_VP]);
+
+    for (doy = 0; doy < numDays; doy++) {
+        dayVal = yearlyValues[doy];
+
+        if (unpack) {
+            dayVal = (dayVal * scaleFactor + addOffset);
+        }
+
+        set_missing_val(
+            varType, valHasMissing, missingVals, varNum, varConv, &dayVal
+        );
+        // printf("%f\n", dayVal);
+
+        if ((weatherIndex >= TEMP_MAX && weatherIndex <= CLOUD_COV) ||
+            weatherIndex == SHORT_WR) {
+            switch (weatherIndex) {
+            case TEMP_MAX:
+                yearWeather->temp_max[doy] = dayVal;
+                break;
+            case TEMP_MIN:
+                yearWeather->temp_min[doy] = dayVal;
+
+                // Calculate average air temperature if min/max not missing
+                if (!missing(counterpartHelper[doy]) &&
+                    !missing(yearWeather->temp_min[doy])) {
+
+                    /* upArrHelper -> maximum temperature */
+                    yearWeather->temp_avg[doy] =
+                        (counterpartHelper[doy] + yearWeather->temp_min[doy]) /
+                        2.0;
+                }
+                break;
+            case PPT:
+                yearWeather->ppt[doy] = dayVal;
+                break;
+            case CLOUD_COV:
+                yearWeather->cloudcov_daily[doy] = dayVal;
+                break;
+            default: /* SHORT_WR */
+                yearWeather->shortWaveRad[doy] = dayVal;
+                break;
+            }
+        } else {
+            if (weatherIndex == WIND_SPEED || weatherIndex == WIND_NORTH) {
+                if (weatherIndex == WIND_SPEED) {
+                    yearWeather->windspeed_daily[doy] = dayVal;
+                } else if (hasEastNorthWind) {
+                    /* Make sure wind is not averaged calculated with any
+                       instances of SW_MISSING
+                       counterpartHelper  -> east wind
+                       dayVal             -> north wind */
+                    if (!missing(counterpartHelper[doy]) && !missing(dayVal)) {
+
+                        yearWeather->windspeed_daily[doy] = sqrt(
+                            squared(counterpartHelper[doy]) + squared(dayVal)
+                        );
+                    } else {
+                        yearWeather->windspeed_daily[doy] = SW_MISSING;
+                    }
+                }
+            } else if (useHumidityDaily) {
+                if (weatherIndex == REL_HUMID_MIN && hasMaxMinRelHumid) {
+                    // Make sure relative humidity is not averaged from any
+                    // instances of SW_MISSING
+                    if (!missing(counterpartHelper[doy]) && !missing(dayVal)) {
+
+                        /* counterpartHelper  -> maximum relative humidity
+                           dayVal             -> minimum relative humidity */
+                        yearWeather->r_humidity_daily[doy] =
+                            (counterpartHelper[doy] + dayVal) / 2.0;
+                    }
+
+                } else if (weatherIndex == REL_HUMID) {
+                    yearWeather->r_humidity_daily[doy] = dayVal;
+                } else if (weatherIndex == SPEC_HUMID) {
+                    // Make sure the calculation of relative humidity will not
+                    // be executed while average temperature and/or specific
+                    // humidity are holding the value "SW_MISSING"
+                    if (!missing(yearWeather->temp_avg[doy]) &&
+                        !missing(dayVal)) {
+
+                        // Specific Humidity (Bolton 1980)
+                        es =
+                            (6.112 * exp(17.67 * yearWeather->temp_avg[doy]) /
+                             (yearWeather->temp_avg[doy] + 243.5));
+
+                        e = (yearlyValues[doy] * 1013.25) /
+                            (.378 * yearlyValues[doy] + .622);
+
+                        relHum = e / es;
+                        relHum = fmax(0., relHum);
+
+                        yearWeather->r_humidity_daily[doy] = fmin(100., relHum);
+
+                    } else {
+                        // Set relative humidity to "SW_MISSING"
+                        yearWeather->r_humidity_daily[doy] = SW_MISSING;
+                    }
+                }
+
+                // Deal with actual vapor pressure
+                if (weatherIndex == ACTUAL_VP) {
+                    yearWeather->actualVaporPressure[doy] = dayVal;
+                } else if (weatherIndex == TEMP_DEWPOINT && !missing(dayVal)) {
+                    yearWeather->actualVaporPressure[doy] =
+                        actualVaporPressure3(dayVal);
+                } else if (weatherIndex == REL_HUMID_MIN && hasMaxMinTemp &&
+                           hasMaxMinRelHumid) {
+                    /* Make sure the calculation of actual vapor pressure will
+                     not be executed while max and/or min temperature and/or
+                     relative humidity are holding the value "SW_MISSING"
+                     counterpartHelper  -> maximum relative humidity
+                     dayVal             -> minimum relative humidity */
+                    if (!missing(yearWeather->temp_max[doy]) &&
+                        !missing(yearWeather->temp_min[doy]) &&
+                        !missing(counterpartHelper[doy]) && !missing(dayVal)) {
+
+                        yearWeather->actualVaporPressure[doy] =
+                            actualVaporPressure2(
+                                counterpartHelper[doy],
+                                dayVal,
+                                yearWeather->temp_max[doy],
+                                yearWeather->temp_min[doy]
+                            );
+                    } else {
+                        // Set actual vapor pressure to "SW_MISSING"
+                        yearWeather->actualVaporPressure[doy] = SW_MISSING;
+                    }
+
+                } else if (weatherIndex == REL_HUMID ||
+                           weatherIndex == SPEC_HUMID) {
+
+                    // Make sure the daily values for relative humidity and
+                    // average temperature are not SW_MISSING
+                    if (!missing(yearWeather->r_humidity_daily[doy]) &&
+                        !missing(yearWeather->temp_avg[doy])) {
+
+                        yearWeather->actualVaporPressure[doy] =
+                            actualVaporPressure1(
+                                yearWeather->r_humidity_daily[doy],
+                                yearWeather->temp_avg[doy]
+                            );
+                    } else {
+                        yearWeather->actualVaporPressure[doy] = SW_MISSING;
+                    }
+                }
+
+                // Check if a calculation of relative humidity is available
+                // using dewpoint temperature or actual vapor pressure, but only
+                // if the daily value of relative humidity is "SW_MISSING"
+                if (missing(yearWeather->r_humidity_daily[doy]) &&
+                    (weatherIndex == ACTUAL_VP || weatherIndex == TEMP_DEWPOINT
+                    )) {
+
+                    // Make sure the calculation of relative humidity will not
+                    // be executed while average temperature and/or actual vapor
+                    // pressure hold the value "SW_MISSING"
+                    if (!missing(yearWeather->temp_avg[doy]) &&
+                        !missing(yearWeather->actualVaporPressure[doy])) {
+
+                        svpVal = svp(yearWeather->temp_avg[doy], &tempSlope);
+
+                        yearWeather->r_humidity_daily[doy] =
+                            yearWeather->actualVaporPressure[doy] / svpVal;
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+@brief Read weather input from nc file(s) provided by the user and
+store them for the next simulation run
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[out] SW_Weather Struct of type SW_WEATHER holding all relevant
+information pretaining to meteorological input data
+@param[in] weathInFiles List of expected input file names the
+program generated based on user input
+@param[in] indexFileName Name of the index file that may or may not
+have been created for the input key 'inWeather'
+@param[in] ncSUID Current simulation unit identifier for which is used
+to get data from netCDF
+@param[in] weathConv A list of UDUNITS2 converters that were created
+to convert input data to units the program can understand within the
+"inWeather" input key
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void read_weather_input(
+    SW_DOMAIN *SW_Domain,
+    SW_WEATHER *SW_Weather,
+    char ***weathInFiles,
+    char *indexFileName,
+    const size_t ncSUID[],
+    sw_converter_t **weathConv,
+    LOG_INFO *LogInfo
+) {
+    unsigned int **weathStartEndYrs =
+        SW_Domain->SW_PathInputs.ncWeatherInStartEndYrs;
+    char ***inVarInfo = SW_Domain->netCDFInput.inVarInfo[eSW_InWeather];
+    Bool *readInput = SW_Domain->netCDFInput.readInVars[eSW_InWeather];
+    unsigned int numWeathFiles = SW_Domain->SW_PathInputs.ncNumWeatherInFiles;
+    int varNum = 1;
+    int setIndex;
+    size_t start[4]; /* Up to four dimensions per variable */
+    size_t count[4]; /* Up to four dimensions per variable */
+    TimeInt numDays;
+    TimeInt yearIndex;
+    TimeInt year;
+    Bool inSiteDom = swFALSE;
+    int fIndex = 1;
+    int varID = -1;
+    int ncFileID = -1;
+    char *fileName;
+    char *varName;
+    unsigned int weathFileIndex = 0;
+    double doubleInputs[MAX_DAYS];
+    int adjVarNum;
+    Bool varHasAddScaleAtts;
+    nc_type *varTypes = SW_Domain->SW_PathInputs.inVarTypes[eSW_InWeather];
+    Bool *keyAttFlags =
+        SW_Domain->SW_PathInputs.hasScaleAndAddFact[eSW_InWeather];
+    Bool useIndexFile = SW_Domain->netCDFInput.useIndexFile[eSW_InWeather];
+    double **scaleAddFactors =
+        SW_Domain->SW_PathInputs.scaleAndAddFactVals[eSW_InWeather];
+    Bool **missValFlags = SW_Domain->SW_PathInputs.missValFlags[eSW_InWeather];
+    double **doubleMissVals =
+        SW_Domain->SW_PathInputs.doubleMissVals[eSW_InWeather];
+    int **dimOrderInVar = SW_Domain->netCDFInput.dimOrderInVar[eSW_InWeather];
+    unsigned int **weatherIndices =
+        SW_Domain->SW_PathInputs.ncWeatherStartEndIndices;
+    double tempVals[MAX_DAYS] = {0.0};
+    double counterpartVals[MAX_DAYS] = {0.0}; /* Max/min or north/east wind */
+    double *upArrHelper;
+    double scaleFactor;
+    double addOffset;
+    int timeIndex;
+    int timePlaceIndex = 3;
+    unsigned int beforeFileIndex;
+
+    while (!readInput[fIndex + 1]) {
+        fIndex++;
+    }
+
+    inSiteDom = (Bool) (strcmp(inVarInfo[fIndex][INDOMTYPE], "s") == 0);
+
+    for (varNum = fIndex; varNum < numVarsInKey[eSW_InWeather]; varNum++) {
+        if (!readInput[varNum + 1]) {
+            continue;
+        }
+        adjVarNum = varNum - 1;
+        varHasAddScaleAtts = keyAttFlags[varNum];
+        varID = SW_Domain->SW_PathInputs.inVarIDs[eSW_InWeather][varNum];
+
+        start[1] = start[2] = start[3] = 0;
+        count[2] = count[3] = 0;
+
+        count[0] = 1;
+        count[1] = (inSiteDom) ? 0 : 1;
+
+        get_read_start(
+            useIndexFile, indexFileName, inSiteDom, ncSUID, start, LogInfo
+        );
+        if (LogInfo->stopRun) {
+            goto closeFile;
+        }
+
+        weathFileIndex = 0;
+        timeIndex = dimOrderInVar[varNum][timePlaceIndex];
+        for (yearIndex = 0; yearIndex < SW_Weather->n_years; yearIndex++) {
+            year = SW_Domain->startyr + yearIndex;
+
+            beforeFileIndex = weathFileIndex;
+            while (weathFileIndex < numWeathFiles &&
+                   weathStartEndYrs[weathFileIndex][1] < year) {
+                weathFileIndex++;
+            }
+
+            numDays = Time_get_lastdoy_y(year);
+            count[timeIndex] = numDays;
+            doubleInputs[MAX_DAYS - 1] = SW_MISSING;
+            fileName = weathInFiles[varNum][weathFileIndex];
+            varName = inVarInfo[varNum][INNCVARNAME];
+
+            /* Check to see if a different file has to be opened,
+               if so, we need to make sure the correct start index
+               is applied to the start index array */
+            if (weathFileIndex > beforeFileIndex) {
+                start[timeIndex] = weatherIndices[weathFileIndex][0];
+
+                if (ncFileID > -1) {
+                    nc_close(ncFileID);
+                    ncFileID = -1;
+                }
+            }
+
+            SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
+            if (LogInfo->stopRun) {
+                return;
+            }
+
+            if (yearIndex == 0) {
+                arrange_start_count(dimOrderInVar[varNum], start, count);
+            }
+
+            /* Read in an entire year's worth of weather data */
+            get_values_multiple(
+                ncFileID, varID, start, count, varName, tempVals, LogInfo
+            );
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
+
+            /* Gather counter part information so we can calculate
+               values using two sets of values max/min or east/west */
+            if (adjVarNum == WIND_EAST || adjVarNum == REL_HUMID_MAX) {
+                for (setIndex = 0; setIndex < MAX_DAYS; setIndex++) {
+                    counterpartVals[setIndex] = tempVals[setIndex];
+                }
+            }
+
+            if (adjVarNum == TEMP_MIN) {
+                upArrHelper = SW_Weather->allHist[yearIndex]->temp_max;
+            } else if (adjVarNum == WIND_NORTH || adjVarNum == REL_HUMID_MIN) {
+                upArrHelper = counterpartVals;
+            }
+
+            if (varHasAddScaleAtts) {
+                scaleFactor = scaleAddFactors[varNum][0];
+                addOffset = scaleAddFactors[varNum][1];
+            } else {
+                scaleFactor = 1.0;
+                addOffset = 0.0;
+            }
+
+            set_weather_daily(
+                SW_Weather->allHist[yearIndex],
+                SW_Weather->dailyInputFlags,
+                varNum - 1, /* Equivalent of TEMP_MAX, TEMP_MIN, etc. */
+                tempVals,
+                upArrHelper,
+                numDays,
+                weathConv[varNum],
+                varTypes[varNum],
+                missValFlags[varNum],
+                doubleMissVals,
+                varHasAddScaleAtts,
+                scaleFactor,
+                addOffset,
+                varNum
+            );
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
+
+            start[timeIndex] += count[timeIndex];
+        }
+
+        nc_close(ncFileID);
+        ncFileID = -1;
+    }
+
+closeFile:
+    if (ncFileID > -1) {
+        nc_close(ncFileID);
+    }
+}
+
+/**
 @brief Read values from netCDF input files for available variables and copy
 to SW_Run
 
@@ -6460,22 +6937,76 @@ to SW_Run
 void SW_NCIN_read_inputs(
     SW_RUN *sw, SW_DOMAIN *SW_Domain, size_t ncSUID[], LOG_INFO *LogInfo
 ) {
+    SW_WEATHER *SW_Weather = &sw->Weather;
     char ***ncInFiles = SW_Domain->SW_PathInputs.ncInFiles;
     Bool **readInputs = SW_Domain->netCDFInput.readInVars;
     sw_converter_t ***convs = SW_Domain->netCDFInput.uconv;
+    unsigned int yearIndex;
+    unsigned int year;
+    Bool readSpatial = readInputs[eSW_InSpatial][0];
+    Bool readClimate = readInputs[eSW_InClimate][0];
+    Bool readTopo = readInputs[eSW_InTopo][0];
+    Bool readWeather = readInputs[eSW_InWeather][0];
+    Bool readVeg = readInputs[eSW_InVeg][0];
+    Bool readSoil = readInputs[eSW_InSoil][0];
 
-    if (readInputs[eSW_InSpatial][0] || readInputs[eSW_InTopo][0] ||
-        readInputs[eSW_InClimate][0]) {
+    /* Allocate information before gathering inputs */
+    if (readWeather) {
+        SW_WTH_allocateAllWeather(
+            &SW_Weather->allHist, SW_Weather->n_years, LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
 
+        for (yearIndex = 0; yearIndex < SW_Weather->n_years; yearIndex++) {
+            clear_hist_weather(SW_Weather->allHist[yearIndex]);
+        }
+    }
+
+    /* Read all activated inputs */
+    if (readSpatial || readTopo || readClimate) {
         read_spatial_topo_climate_inputs(
             SW_Domain, &sw->Model, &sw->Sky, ncInFiles, ncSUID, convs, LogInfo
         );
         if (LogInfo->stopRun) {
             return;
         }
+
+        for (yearIndex = 0; yearIndex < SW_Weather->n_years; yearIndex++) {
+            year = yearIndex + SW_Weather->startYear;
+
+            SW_WTH_setWeathUsingClimate(
+                SW_Weather->allHist[yearIndex],
+                year,
+                SW_Weather->use_cloudCoverMonthly,
+                SW_Weather->use_humidityMonthly,
+                SW_Weather->use_windSpeedMonthly,
+                sw->Model.cum_monthdays,
+                sw->Model.days_in_month,
+                sw->Sky.cloudcov,
+                sw->Sky.windspeed,
+                sw->Sky.r_humidity
+            );
+        }
     }
 
-    if (readInputs[eSW_InVeg][0]) {
+    if (readWeather && !SW_Weather->use_weathergenerator_only) {
+        read_weather_input(
+            SW_Domain,
+            &sw->Weather,
+            SW_Domain->SW_PathInputs.ncWeatherInFiles,
+            ncInFiles[eSW_InWeather][0],
+            ncSUID,
+            convs[eSW_InWeather],
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+    }
+
+    if (readVeg) {
         read_veg_inputs(
             SW_Domain,
             &sw->VegProd,
@@ -6484,9 +7015,12 @@ void SW_NCIN_read_inputs(
             convs[eSW_InVeg],
             LogInfo
         );
+        if (LogInfo->stopRun) {
+            return;
+        }
     }
 
-    if (readInputs[eSW_InSoil][0]) {
+    if (readSoil) {
         read_soil_inputs(
             SW_Domain,
             &sw->Site,
@@ -7306,8 +7840,6 @@ void SW_NCIN_read_input_vars(
 
     check_input_variables(
         SW_netCDFOut,
-        SW_PathInputs->ncInFiles,
-        SW_PathInputs->ncWeatherInFiles,
         SW_netCDFIn->inVarInfo,
         inWeathStrideInfo,
         SW_netCDFIn->readInVars,
@@ -7612,9 +8144,13 @@ index file, and temporal indices for weather inputs
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
+@param[out] SW_Weather Struct of type SW_WEATHER holding all relevant
+information pretaining to meteorological input data
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_NCIN_precalc_lookups(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
+void SW_NCIN_precalc_lookups(
+    SW_DOMAIN *SW_Domain, SW_WEATHER *SW_Weather, LOG_INFO *LogInfo
+) {
 
     SW_NETCDF_IN *SW_netCDFIn = &SW_Domain->netCDFInput;
 
@@ -7661,13 +8197,21 @@ void SW_NCIN_precalc_lookups(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         if (LogInfo->stopRun) {
             return;
         }
+
+        get_weather_flags(SW_netCDFIn, SW_Weather, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
 #else
+        (void) SW_Weather;
+
         LogError(
             LogInfo,
             LOGERROR,
             "SWUDUNITS is not enabled, so we cannot calculate temporal "
             "information."
         );
+        return;
 #endif
     }
 

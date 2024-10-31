@@ -162,6 +162,7 @@ void SW_VPD_init_run(
     SW_VEGPROD *SW_VegProd,
     SW_WEATHER *SW_Weather,
     SW_MODEL *SW_Model,
+    Bool estVegFromText,
     LOG_INFO *LogInfo
 );
 

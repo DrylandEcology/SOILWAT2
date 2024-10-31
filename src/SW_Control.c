@@ -147,10 +147,17 @@ static void end_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 @param[out] dest Destination struct of type SW_RUN to be copied into
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
+@param[in] copyWeatherHist Specifies if the weather data should be copied;
+this only has the chance to be false when the program is dealing with
+nc inputs
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_RUN_deepCopy(
-    SW_RUN *source, SW_RUN *dest, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
+    SW_RUN *source,
+    SW_RUN *dest,
+    SW_OUT_DOM *OutDom,
+    Bool copyWeatherHist,
+    LOG_INFO *LogInfo
 ) {
 
     memcpy(dest, source, sizeof(*dest));
@@ -165,18 +172,20 @@ void SW_RUN_deepCopy(
 
     /* Allocate memory and copy daily weather */
     dest->Weather.allHist = NULL;
-    allocateAllWeather(
-        &dest->Weather.allHist, source->Weather.n_years, LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return; // Exit prematurely due to error
-    }
-    for (unsigned int year = 0; year < source->Weather.n_years; year++) {
-        memcpy(
-            dest->Weather.allHist[year],
-            source->Weather.allHist[year],
-            sizeof(*dest->Weather.allHist[year])
+    if (copyWeatherHist) {
+        SW_WTH_allocateAllWeather(
+            &dest->Weather.allHist, source->Weather.n_years, LogInfo
         );
+        if (LogInfo->stopRun) {
+            return; // Exit prematurely due to error
+        }
+        for (unsigned int year = 0; year < source->Weather.n_years; year++) {
+            memcpy(
+                dest->Weather.allHist[year],
+                source->Weather.allHist[year],
+                sizeof(*dest->Weather.allHist[year])
+            );
+        }
     }
 
     /* Allocate memory and copy weather generator parameters */
@@ -589,9 +598,11 @@ i.e., after calling begin_year()
 
 @param[in,out] sw Comprehensive structure holding all information
     dealt with in SOILWAT2
+@param[in] estVeg Flag specifying if the vegetation should be
+estimated
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
+void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
 
     // SW_F_init_run() not needed
     // SW_MDL_init_run() not needed
@@ -616,7 +627,7 @@ void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
         return; // Exit function prematurely due to error
     }
 
-    SW_VPD_init_run(&sw->VegProd, &sw->Weather, &sw->Model, LogInfo);
+    SW_VPD_init_run(&sw->VegProd, &sw->Weather, &sw->Model, estVeg, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -893,9 +904,10 @@ void SW_CTL_read_inputs_from_disk(
 #ifdef SWDEBUG
     int debug = 0;
 #endif
+    Bool readTextInputs = swFALSE;
 #if defined(SWNETCDF)
-    Bool readWeatherVarsNC =
-        SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
+    readTextInputs =
+        (Bool) !SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
 #endif
 
 #ifdef SWDEBUG
@@ -913,21 +925,16 @@ void SW_CTL_read_inputs_from_disk(
         sw_printf(" > 'model'");
     }
 #endif
-#if defined(SWNETCDF)
-    if (!readWeatherVarsNC) {
-#endif
-        SW_WTH_setup(
-            &sw->Weather,
-            SW_PathInputs->txtInFiles,
-            SW_PathInputs->txtWeatherPrefix,
-            LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
-#if defined(SWNETCDF)
+
+    SW_WTH_setup(
+        &sw->Weather,
+        SW_PathInputs->txtInFiles,
+        SW_PathInputs->txtWeatherPrefix,
+        LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
     }
-#endif
 
 #ifdef SWDEBUG
     if (debug) {
@@ -962,16 +969,10 @@ void SW_CTL_read_inputs_from_disk(
 #endif
     }
 
-#if defined(SWNETCDF)
-    if (!readWeatherVarsNC) {
-#endif
-        SW_WTH_read(&sw->Weather, &sw->Sky, &sw->Model, LogInfo);
-        if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
-#if defined(SWNETCDF)
+    SW_WTH_read(&sw->Weather, &sw->Sky, &sw->Model, readTextInputs, LogInfo);
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
     }
-#endif
 
 #ifdef SWDEBUG
     if (debug) {
@@ -1100,9 +1101,16 @@ void SW_CTL_run_sw(
 #endif
 
     SW_RUN local_sw;
+    Bool copyWeather = swTRUE;
+
+#if defined(SWNETCDF)
+    copyWeather = (Bool) !SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
+#endif
 
     // Copy template SW_RUN to local instance
-    SW_RUN_deepCopy(sw_template, &local_sw, &SW_Domain->OutDom, LogInfo);
+    SW_RUN_deepCopy(
+        sw_template, &local_sw, &SW_Domain->OutDom, copyWeather, LogInfo
+    );
     if (LogInfo->stopRun) {
         goto freeMem; // Free memory and skip simulation run
     }
@@ -1112,6 +1120,19 @@ void SW_CTL_run_sw(
     SW_NCIN_read_inputs(&local_sw, SW_Domain, ncSuid, LogInfo);
     if (LogInfo->stopRun) {
         goto freeMem;
+    }
+
+    if (!copyWeather) {
+        SW_WTH_finalize_all_weather(
+            &local_sw.Markov,
+            &local_sw.Weather,
+            local_sw.Model.cum_monthdays,
+            local_sw.Model.days_in_month,
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            goto freeMem;
+        }
     }
 #endif
 

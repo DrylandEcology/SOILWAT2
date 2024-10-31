@@ -54,6 +54,7 @@ int main(int argc, char **argv) {
     LOG_INFO LogInfo;
     Bool EchoInits = swFALSE;
     Bool renameDomainTemplateNC = swFALSE;
+    Bool estVeg = swTRUE;
 
     unsigned long userSUID;
 
@@ -119,7 +120,7 @@ int main(int argc, char **argv) {
     }
 
 #if defined(SWNETCDF)
-    SW_NCIN_precalc_lookups(&SW_Domain, &LogInfo);
+    SW_NCIN_precalc_lookups(&SW_Domain, &sw_template.Weather, &LogInfo);
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
@@ -153,8 +154,12 @@ int main(int argc, char **argv) {
     }
 #endif
 
+#if defined(SWNETCDF)
+    estVeg = (Bool) (!SW_Domain.netCDFInput.readInVars[eSW_InWeather][0]);
+#endif
+
     // initialize simulation run (based on user inputs)
-    SW_CTL_init_run(&sw_template, &LogInfo);
+    SW_CTL_init_run(&sw_template, estVeg, &LogInfo);
     if (LogInfo.stopRun) {
         goto finishProgram;
     }

@@ -105,7 +105,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
     );
 
     // Prepare weather data
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
+    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_finalize_all_weather(
@@ -157,7 +157,7 @@ TEST_F(
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Prepare weather data
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
+    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_finalize_all_weather(
@@ -258,7 +258,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
     SW_Run.VegProd.veg_method = 1;
 
     // Re-calculate vegetation
-    SW_VPD_init_run(&SW_Run.VegProd, &SW_Run.Weather, &SW_Run.Model, &LogInfo);
+    SW_VPD_init_run(
+        &SW_Run.VegProd, &SW_Run.Weather, &SW_Run.Model, swTRUE, &LogInfo
+    );
     sw_fail_on_error(&LogInfo);
 
     // Run the simulation
@@ -445,7 +447,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
     SW_Run.Weather.desc_rsds = 2;
 
     // Prepare weather data
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
+    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_finalize_all_weather(
@@ -501,7 +503,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGRIDMET) {
     SW_Run.Weather.desc_rsds = 1; // gridMET rsds is flux density over 24 hours
 
     // Prepare weather data
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
+    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_finalize_all_weather(
@@ -559,7 +561,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACA) {
     SW_Run.Weather.desc_rsds = 1; // MACA rsds is flux density over 24 hours
 
     // Prepare weather data
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
+    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_finalize_all_weather(

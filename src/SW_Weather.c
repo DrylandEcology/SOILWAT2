@@ -640,6 +640,78 @@ void driestQtrSouthAdjMonYears(
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
+/**
+@brief Interpolate monthly climate values into daily values
+(if the user selected the option(s) to)
+
+@param[out] yearWeather A list (MAX_DAYS or 366) of daily weather
+for a certain year
+@param[in] year Current year the variable `yearWeather` holds
+values for
+@param[in] use_cloudCoverMonthly User-specified flag to interpolate
+monthly cloud values into daily
+@param[in] use_humidityMonthly User-specified flag to interpolate
+monthly humidity values into daily
+@param[in] use_windSpeedMonthly User-specified flag to interpolate
+monthly wind speed values into daily
+@param[in] cum_monthdays Monthly cumulative number of days for "current" year
+@param[in,out] days_in_month Number of days per month for "current" year
+@param[in] cloudcov Array of size #MAX_MONTHS holding monthly cloud cover
+values to be interpolated
+@param[in] windspeed Array of size #MAX_MONTHS holding monthly wind speed
+values to be interpolated
+@param[in] r_humidity Array of size #MAX_MONTHS holding monthly relative
+humidity values to be interpolated
+*/
+void SW_WTH_setWeathUsingClimate(
+    SW_WEATHER_HIST *yearWeather,
+    unsigned int year,
+    Bool use_cloudCoverMonthly,
+    Bool use_humidityMonthly,
+    Bool use_windSpeedMonthly,
+    TimeInt cum_monthdays[],
+    TimeInt days_in_month[],
+    double *cloudcov,
+    double *windspeed,
+    double *r_humidity
+) {
+    /* Interpolation is to be in base0 in `interpolate_monthlyValues()` */
+    Bool interpAsBase1 = swFALSE;
+
+    // Update yearly day/month information needed when interpolating
+    // cloud cover, wind speed, and relative humidity if necessary
+    Time_new_year(year, days_in_month, cum_monthdays);
+
+    if (use_cloudCoverMonthly) {
+        interpolate_monthlyValues(
+            cloudcov,
+            interpAsBase1,
+            cum_monthdays,
+            days_in_month,
+            yearWeather->cloudcov_daily
+        );
+    }
+
+    if (use_humidityMonthly) {
+        interpolate_monthlyValues(
+            r_humidity,
+            interpAsBase1,
+            cum_monthdays,
+            days_in_month,
+            yearWeather->r_humidity_daily
+        );
+    }
+
+    if (use_windSpeedMonthly) {
+        interpolate_monthlyValues(
+            windspeed,
+            interpAsBase1,
+            cum_monthdays,
+            days_in_month,
+            yearWeather->windspeed_daily
+        );
+    }
+}
 
 /**
 @brief Reads in all weather data
@@ -698,48 +770,24 @@ void readAllWeather(
     unsigned int yearIndex;
     unsigned int year;
 
-    /* Interpolation is to be in base0 in `interpolate_monthlyValues()` */
-    Bool interpAsBase1 = swFALSE;
-
     for (yearIndex = 0; yearIndex < n_years; yearIndex++) {
         year = yearIndex + startYear;
 
         // Set all daily weather values to missing
         clear_hist_weather(allHist[yearIndex]);
 
-        // Update yearly day/month information needed when interpolating
-        // cloud cover, wind speed, and relative humidity if necessary
-        Time_new_year(year, days_in_month, cum_monthdays);
-
-        if (use_cloudCoverMonthly) {
-            interpolate_monthlyValues(
-                cloudcov,
-                interpAsBase1,
-                cum_monthdays,
-                days_in_month,
-                allHist[yearIndex]->cloudcov_daily
-            );
-        }
-
-        if (use_humidityMonthly) {
-            interpolate_monthlyValues(
-                r_humidity,
-                interpAsBase1,
-                cum_monthdays,
-                days_in_month,
-                allHist[yearIndex]->r_humidity_daily
-            );
-        }
-
-        if (use_windSpeedMonthly) {
-            interpolate_monthlyValues(
-                windspeed,
-                interpAsBase1,
-                cum_monthdays,
-                days_in_month,
-                allHist[yearIndex]->windspeed_daily
-            );
-        }
+        SW_WTH_setWeathUsingClimate(
+            allHist[yearIndex],
+            year,
+            use_cloudCoverMonthly,
+            use_humidityMonthly,
+            use_windSpeedMonthly,
+            cum_monthdays,
+            days_in_month,
+            cloudcov,
+            windspeed,
+            r_humidity
+        );
 
         // Read daily weather values from disk
         if (!use_weathergenerator_only) {
@@ -1532,14 +1580,16 @@ void SW_WTH_deconstruct(SW_WEATHER *SW_Weather) {
 @param[in] n_years Number of years in simulation
 @param[out] LogInfo Holds information on warnings and errors
 */
-void allocateAllWeather(
+void SW_WTH_allocateAllWeather(
     SW_WEATHER_HIST ***allHist, unsigned int n_years, LOG_INFO *LogInfo
 ) {
 
     unsigned int year;
 
     *allHist = (SW_WEATHER_HIST **) Mem_Malloc(
-        sizeof(SW_WEATHER_HIST *) * n_years, "allocateAllWeather()", LogInfo
+        sizeof(SW_WEATHER_HIST *) * n_years,
+        "SW_WTH_allocateAllWeather()",
+        LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -1550,7 +1600,7 @@ void allocateAllWeather(
     for (year = 0; year < n_years; year++) {
 
         (*allHist)[year] = (SW_WEATHER_HIST *) Mem_Malloc(
-            sizeof(SW_WEATHER_HIST), "allocateAllWeather()", LogInfo
+            sizeof(SW_WEATHER_HIST), "SW_WTH_allocateAllWeather()", LogInfo
         );
 
         if (LogInfo->stopRun) {
@@ -2187,12 +2237,15 @@ monthly climate parameters, see `SW_WTH_finalize_all_weather()` instead.
     of the simulated site
 @param[in] SW_Model Struct of type SW_MODEL holding basic time information
     about the simulation
+@param[in] readTextInputs Specifies to read text weather inputs, this may
+be turned off when dealing with nc inputs
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_WTH_read(
     SW_WEATHER *SW_Weather,
     SW_SKY *SW_Sky,
     SW_MODEL *SW_Model,
+    Bool readTextInputs,
     LOG_INFO *LogInfo
 ) {
 
@@ -2205,32 +2258,36 @@ void SW_WTH_read(
     SW_Weather->n_years = SW_Model->endyr - SW_Model->startyr + 1;
     SW_Weather->startYear = SW_Model->startyr;
 
-    // Allocate new `allHist` (based on current `SW_Weather.n_years`)
-    allocateAllWeather(&SW_Weather->allHist, SW_Weather->n_years, LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
+    if (readTextInputs) {
+        // Allocate new `allHist` (based on current `SW_Weather.n_years`)
+        SW_WTH_allocateAllWeather(
+            &SW_Weather->allHist, SW_Weather->n_years, LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 
-    // Read daily meteorological input from disk (if available)
-    readAllWeather(
-        SW_Weather->allHist,
-        SW_Weather->startYear,
-        SW_Weather->n_years,
-        SW_Weather->use_weathergenerator_only,
-        SW_Weather->name_prefix,
-        SW_Weather->use_cloudCoverMonthly,
-        SW_Weather->use_humidityMonthly,
-        SW_Weather->use_windSpeedMonthly,
-        SW_Weather->n_input_forcings,
-        SW_Weather->dailyInputIndices,
-        SW_Weather->dailyInputFlags,
-        SW_Sky->cloudcov,
-        SW_Sky->windspeed,
-        SW_Sky->r_humidity,
-        SW_Model->cum_monthdays,
-        SW_Model->days_in_month,
-        LogInfo
-    );
+        // Read daily meteorological input from disk (if available)
+        readAllWeather(
+            SW_Weather->allHist,
+            SW_Weather->startYear,
+            SW_Weather->n_years,
+            SW_Weather->use_weathergenerator_only,
+            SW_Weather->name_prefix,
+            SW_Weather->use_cloudCoverMonthly,
+            SW_Weather->use_humidityMonthly,
+            SW_Weather->use_windSpeedMonthly,
+            SW_Weather->n_input_forcings,
+            SW_Weather->dailyInputIndices,
+            SW_Weather->dailyInputFlags,
+            SW_Sky->cloudcov,
+            SW_Sky->windspeed,
+            SW_Sky->r_humidity,
+            SW_Model->cum_monthdays,
+            SW_Model->days_in_month,
+            LogInfo
+        );
+    }
 }
 
 /**
