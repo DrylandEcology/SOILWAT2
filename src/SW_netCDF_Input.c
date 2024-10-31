@@ -67,9 +67,9 @@ static const char *const expectedColNames[] = {
 /* This array and `possVarNames` must line up the variables within each key */
 static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] =
     {
-        {"1", "1"},                      /* inDomain */
-        {"degree_north", "degree_east"}, /* inSpatial */
-        {"1", "m", "degree", "degree"},  /* inTopo */
+        {"1", "1"},                           /* inDomain */
+        {"1", "degree_north", "degree_east"}, /* inSpatial */
+        {"1", "m", "degree", "degree"},       /* inTopo */
         {"1",        "cm", "cm",   "g cm-3", "cm3 cm-3", "g g-1", "g g-1",
          "g g-1", /*inSoil*/
          "cm3 cm-3", "1",  "degC", "1",      "1",        "1",     "1",
@@ -104,6 +104,7 @@ static const char *const possVarNames[SW_NINKEYSNC][SW_INNMAXVARS] = {
     },
 
     {/* inSpatial */
+     "indexSpatial",
      "latitude",
      "longitude"
     },
@@ -312,9 +313,7 @@ static void get_2d_input_key(
     if (*inKey != eSW_NoInKey) {
         for (varNum = 0; varNum < numVarsInKey[*inKey]; varNum++) {
             if (strcmp(possVarNames[*inKey][varNum], varName) == 0) {
-                if (varNum == 0 && keyNum != eSW_InDomain &&
-                    keyNum != eSW_InSpatial) {
-
+                if (varNum == 0 && keyNum != eSW_InDomain) {
                     *isIndex = swTRUE;
                 }
 
@@ -543,7 +542,7 @@ static void check_variable_for_required(
     Bool testVeg = swFALSE;
     Bool canBeNA;
 
-    Bool isIndex = (Bool) (key > eSW_InSpatial && varNum == 0);
+    Bool isIndex = (Bool) (key > eSW_InDomain && varNum == 0);
     Bool inputDomIsSite =
         (Bool) (strcmp(inputInfo[varNum][INDOMTYPE], "s") == 0);
 
@@ -640,7 +639,7 @@ static void check_inputkey_columns(
 
     int compIndex = -1;
     int varNum;
-    int varStart = (key > eSW_InSpatial) ? 1 : 0;
+    int varStart = (key > eSW_InDomain) ? 1 : 0;
     int numVars = numVarsInKey[key];
     int attStart = INDOMTYPE;
     int attEnd = INVAXIS;
@@ -720,7 +719,7 @@ static void check_input_variables(
     ForEachNCInKey(key) {
         if (readInVars[key][0]) {
             testVarIndex = -1;
-            varStart = (key > eSW_InSpatial) ? 1 : 0;
+            varStart = (key > eSW_InDomain) ? 1 : 0;
 
             for (varNum = varStart; varNum < numVarsInKey[key]; varNum++) {
                 if (readInVars[key][varNum + 1]) {
@@ -3452,7 +3451,7 @@ static void determine_indexfile_use(
     const int numFileClose = 0;
 
     ForEachNCInKey(k) {
-        if (k > eSW_InSpatial && SW_netCDFIn->readInVars[k][0]) {
+        if (SW_netCDFIn->readInVars[k][0]) {
             fIndex = 1;
             ncFileID = -1;
 
@@ -4511,7 +4510,7 @@ static void read_spatial_topo_climate_inputs(
         currKey = keys[keyNum];
         inVarInfo = SW_Domain->netCDFInput.inVarInfo[currKey];
         readInput = SW_Domain->netCDFInput.readInVars[currKey];
-        fIndex = (currKey == eSW_InSpatial) ? 0 : 1;
+        fIndex = 1;
         numVals = (currKey == eSW_InClimate) ? MAX_MONTHS : 1;
         useIndexFile = SW_Domain->netCDFInput.useIndexFile[currKey];
 
@@ -4543,24 +4542,16 @@ static void read_spatial_topo_climate_inputs(
 
         /* Get the start indices based on if we need to use the respective
            index file */
-        if (currKey > eSW_InSpatial) {
-            get_read_start(
-                useIndexFile,
-                inFiles[currKey][0],
-                inSiteDom,
-                ncSUID,
-                start,
-                LogInfo
-            );
-            if (LogInfo->stopRun) {
-                goto closeFile;
-            }
+        get_read_start(
+            useIndexFile, inFiles[currKey][0], inSiteDom, ncSUID, start, LogInfo
+        );
+        if (LogInfo->stopRun) {
+            goto closeFile;
         }
 
-
         for (varNum = fIndex; varNum < numVarsInKey[currKey]; varNum++) {
-            adjVarNum = (currKey == eSW_InSpatial) ? varNum : varNum + 1;
-            adjSetIndex = (currKey == eSW_InSpatial) ? varNum : varNum - 1;
+            adjVarNum = varNum + 1;
+            adjSetIndex = varNum - 1;
             if (!readInput[adjVarNum]) {
                 continue;
             }
@@ -5138,7 +5129,7 @@ static void get_invar_information(
 
         inVarInfo = SW_netCDFIn->inVarInfo[inKey];
         ncInFiles = SW_PathInputs->ncInFiles[inKey];
-        startVar = (inKey != eSW_InSpatial) ? 1 : 0;
+        startVar = 1;
 
         alloc_sim_var_information(
             numVarsInKey[inKey],
@@ -6996,7 +6987,7 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                 if (readInVars[inKey][file + 1] &&
                     (file > 0 || (file == 0 && useIndexFile[inKey]))) {
 
-                    fileIsIndex = (Bool) (inKey > eSW_InSpatial && file == 0);
+                    fileIsIndex = (Bool) (inKey > eSW_InDomain && file == 0);
                     fileID = (fileIsIndex) ? &indexFileID : &inFileID;
                     varInfo = SW_Domain->netCDFInput.inVarInfo[inKey][file];
 
@@ -7015,7 +7006,7 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                        file's domain matches the programs domain exactly),
                        otherwise, compare the input file against the
                        provided index file */
-                    if (fileIsIndex || inKey <= eSW_InSpatial) {
+                    if (fileIsIndex) {
                         SW_NC_check(
                             SW_Domain, *fileID, fileNames[file], LogInfo
                         );
@@ -7686,6 +7677,7 @@ void SW_NCIN_read_input_vars(
                         input[ncVarNameInd]
                     );
                 }
+
                 SW_netCDFIn->units_sw[inKey][inVarNum] =
                     Str_Dup(swInVarUnits[inKey][inVarNum], LogInfo);
                 if (LogInfo->stopRun) {

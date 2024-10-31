@@ -21,7 +21,7 @@ can provide; This number includes a variable for an index
 file after and including the input key `inTopo` */
 static const int numVarsInKey[] = {
     2,  /* inDomain */
-    2,  /* inSpatial */
+    3,  /* inSpatial */
     4,  /* inTopo */
     22, /* inSoil */
     22, /* inVeg */
