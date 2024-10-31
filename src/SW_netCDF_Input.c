@@ -2562,12 +2562,8 @@ static void get_1D_input_coordinates(
 ) {
     int varNum;
     int varID;
-    const int lonVarNum = 1;
 
     double **xyVals[] = {readinYVals, readinXVals};
-    float *tempFVals = NULL;
-    void *valPtr = NULL;
-    nc_type varType;
     double *domYVals = (inPrimCRSIsGeo) ? SW_netCDFIn->domYCoordsGeo :
                                           SW_netCDFIn->domYCoordsProj;
     double *domXVals = (inPrimCRSIsGeo) ? SW_netCDFIn->domXCoordsGeo :
@@ -2575,7 +2571,8 @@ static void get_1D_input_coordinates(
 
     size_t *ySize = dimSizes[0];
     size_t *xSize = dimSizes[1];
-    size_t copyIndex;
+    size_t start[] = {0};
+    size_t count[] = {0};
 
     get_var_dimsizes(
         ncFileID, numReadInDims, dimSizes, yxVarNames[0], &varID, LogInfo
@@ -2584,13 +2581,9 @@ static void get_1D_input_coordinates(
         return;
     }
 
-    get_var_type(ncFileID, varID, yxVarNames[0], &varType, LogInfo);
-    if (LogInfo->stopRun) {
-        return;
-    }
-
     for (varNum = 0; varNum < numReadInDims; varNum++) {
         varID = -1;
+        count[0] = *dimSizes[varNum];
 
         *(xyVals[varNum]) = (double *) Mem_Malloc(
             sizeof(double) * *dimSizes[varNum],
@@ -2600,42 +2593,24 @@ static void get_1D_input_coordinates(
         if (LogInfo->stopRun) {
             return;
         }
-        valPtr = (void *) *(xyVals[varNum]);
 
-        if (varType == NC_FLOAT) {
-            tempFVals = (float *) Mem_Malloc(
-                sizeof(float) * *dimSizes[varNum],
-                "get_1D_input_coordinates()",
-                LogInfo
-            );
-            if (LogInfo->stopRun) {
-                return;
-            }
-
-            valPtr = (void *) tempFVals;
-        }
-
-        SW_NC_get_vals(ncFileID, &varID, yxVarNames[varNum], valPtr, LogInfo);
+        SW_NC_get_var_identifier(ncFileID, yxVarNames[varNum], &varID, LogInfo);
         if (LogInfo->stopRun) {
-            goto freeTempVals; /* Exit prematurely due to error */
+            return;
         }
 
-        for (copyIndex = 0; copyIndex < *dimSizes[varNum]; copyIndex++) {
-            if (varType == NC_FLOAT) {
-                (*xyVals[varNum])[copyIndex] = (double) tempFVals[copyIndex];
-            }
-
-            /* Adjust the read-in longitude coordinates to be within
-               [-180, 180] to compare with the domain rather than
-               [0, 360] (all values may already be within [-180, 180]) */
-            if (varNum == lonVarNum) {
-                (*xyVals[varNum])[copyIndex] =
-                    fmod((180.0 + (*xyVals[varNum])[copyIndex]), 360.0) - 180.0;
-            }
+        get_values_multiple(
+            ncFileID,
+            varID,
+            start,
+            count,
+            yxVarNames[varNum],
+            *(xyVals[varNum]),
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; /* Exit prematurely due to error */
         }
-
-        free((void *) tempFVals);
-        tempFVals = NULL;
     }
 
     if (compareCoords) {
@@ -2654,11 +2629,6 @@ static void get_1D_input_coordinates(
                 useIndexFile
             );
         }
-    }
-
-freeTempVals:
-    if (!isnull(tempFVals)) {
-        free((void *) tempFVals);
     }
 }
 
@@ -2695,15 +2665,10 @@ static void get_2D_input_coordinates(
     Bool inPrimCRSIsGeo,
     LOG_INFO *LogInfo
 ) {
-
     size_t yDimSize = 0UL;
     size_t xDimSize = 0UL;
     size_t *allDimSizes[2] = {&yDimSize, &xDimSize};
     size_t numPoints = 0UL;
-    nc_type varType;
-    float *tempFVals = NULL;
-    size_t copyIndex;
-    void *valPtr = NULL;
     double *domYVals = (inPrimCRSIsGeo) ? SW_netCDFIn->domYCoordsGeo :
                                           SW_netCDFIn->domYCoordsProj;
     double *domXVals = (inPrimCRSIsGeo) ? SW_netCDFIn->domXCoordsGeo :
@@ -2711,7 +2676,10 @@ static void get_2D_input_coordinates(
 
     int varIDs[2] = {-1, -1};
     int varNum;
-    const int lonVarNum = 1;
+    size_t start[] = {0, 0};
+    size_t count[] = {0, 0};
+    int firstDimID = 0;
+    int varDimIDs[2] = {0};
 
     double **xyVals[] = {readinYVals, readinXVals};
 
@@ -2730,56 +2698,47 @@ static void get_2D_input_coordinates(
         }
     }
 
-    *dimSizes[0] = yDimSize;
-    *dimSizes[1] = xDimSize;
-    numPoints = yDimSize * xDimSize;
-
-    get_var_type(ncFileID, varIDs[0], yxVarNames[0], &varType, LogInfo);
+    /* Get information to decide the order of lat/lon for coordinate
+       variables */
+    SW_NC_get_dim_identifier(ncFileID, yxVarNames[0], &firstDimID, LogInfo);
     if (LogInfo->stopRun) {
         return;
     }
 
+    if (nc_inq_vardimid(ncFileID, varIDs[0], varDimIDs) != NC_NOERR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not get the dimension IDs of the variable '%s'.",
+            yxVarNames[0]
+        );
+    }
+
+    *dimSizes[0] = yDimSize;
+    *dimSizes[1] = xDimSize;
+    count[0] = (varDimIDs[0] == firstDimID) ? yDimSize : xDimSize;
+    count[1] = (varDimIDs[0] = firstDimID) ? xDimSize : yDimSize;
+    numPoints = yDimSize * xDimSize;
+
     for (varNum = 0; varNum < numReadInDims; varNum++) {
-        valPtr = (void *) *(xyVals[varNum]);
-
-        if (varType == NC_FLOAT) {
-            tempFVals = (float *) Mem_Malloc(
-                sizeof(float) * numPoints, "get_2D_input_coordinates()", LogInfo
-            );
-            if (LogInfo->stopRun) {
-                return; /* Exit function prematurely due to error */
-            }
-
-            valPtr = (void *) tempFVals;
-        }
         (*xyVals[varNum]) = (double *) Mem_Malloc(
             sizeof(double) * numPoints, "get_2D_input_coordinates()", LogInfo
         );
         if (LogInfo->stopRun) {
-            free(tempFVals);
             return; /* Exit function prematurely due to error */
         }
 
-        SW_NC_get_vals(
-            ncFileID, &varIDs[varNum], yxVarNames[varNum], valPtr, LogInfo
+        get_values_multiple(
+            ncFileID,
+            varIDs[varNum],
+            start,
+            count,
+            yxVarNames[varNum],
+            *(xyVals[varNum]),
+            LogInfo
         );
         if (LogInfo->stopRun) {
-            free(tempFVals);
-            return; /* Exit function prematurely due to error */
-        }
-
-        for (copyIndex = 0; copyIndex < numPoints; copyIndex++) {
-            if (varType == NC_FLOAT) {
-                (*xyVals[varNum])[copyIndex] = tempFVals[copyIndex];
-            }
-
-            /* Adjust the read-in longitude coordinates to be within
-               [-180, 180] to compare with the domain rather than
-               [0, 360] (all values may already be within [-180, 180]) */
-            if (varNum == lonVarNum) {
-                (*xyVals[varNum])[copyIndex] =
-                    fmod(180.0 + (*xyVals[varNum])[copyIndex], 360.0) - 180.0;
-            }
+            return;
         }
     }
 
@@ -3071,14 +3030,12 @@ static void get_temporal_vals(
     size_t *timeSize,
     LOG_INFO *LogInfo
 ) {
-    size_t valNum;
     int varID = -1;
     nc_type ncVarType = 0;
     size_t *timeSizeArr[] = {timeSize};
     char *timeNameArr[] = {timeName};
-    int *tempIntVals = NULL;
-    float *tempFloatVals = NULL;
-    void *valPtr = NULL;
+    size_t start[] = {0};
+    size_t count[] = {0};
 
     get_var_dimsizes(ncFileID, 1, timeSizeArr, timeNameArr[0], &varID, LogInfo);
     if (LogInfo->stopRun) {
@@ -3102,57 +3059,13 @@ static void get_temporal_vals(
         return; /* Exit function prematurely due to error */
     }
 
-    valPtr = (void *) *timeVals;
+    count[0] = *timeSize;
 
-    switch (ncVarType) {
-    case NC_INT:
-        tempIntVals = (int *) Mem_Malloc(
-            sizeof(int) * *timeSize, "get_temporal_vals()", LogInfo
-        );
-        valPtr = (void *) tempIntVals;
-        break;
-    case NC_FLOAT:
-        tempFloatVals = (float *) Mem_Malloc(
-            sizeof(float) * *timeSize, "get_temporal_vals()", LogInfo
-        );
-        valPtr = (void *) tempFloatVals;
-        break;
-    default: /* Do nothing - type is NC_FLOAT */
-        break;
-    }
+    get_values_multiple(
+        ncFileID, varID, start, count, timeNameArr[0], *timeVals, LogInfo
+    );
     if (LogInfo->stopRun) {
-        return; /* Exit function prematurely due to error */
-    }
-
-    SW_NC_get_vals(ncFileID, &varID, timeName, valPtr, LogInfo);
-    if (LogInfo->stopRun) {
-        goto freeTempMem;
-    }
-
-    if (ncVarType == NC_INT || ncVarType == NC_FLOAT) {
-        for (valNum = 0; valNum < *timeSize; valNum++) {
-            switch (ncVarType) {
-            case NC_INT:
-                (*timeVals)[valNum] = (double) tempIntVals[valNum];
-                break;
-            case NC_FLOAT:
-                (*timeVals)[valNum] = (double) tempFloatVals[valNum];
-                break;
-            default:
-                break;
-            }
-        }
-    }
-
-freeTempMem:
-    if (!isnull(tempIntVals)) {
-        free(tempIntVals);
-        tempIntVals = NULL;
-    }
-
-    if (!isnull(tempFloatVals)) {
-        free(tempFloatVals);
-        tempFloatVals = NULL;
+        return;
     }
 }
 
@@ -3847,7 +3760,10 @@ static void write_indices(
         syWritePos = yIndex;
 
         for (xIndex = 0UL; xIndex < xDomSize; xIndex++) {
-            queryCoords[1] = domXCoords[xIndex];
+            queryCoords[1] =
+                (inPrimCRSIsGeo) ?
+                    fmod(180.0 + domXCoords[xIndex], 360.0) - 180.0 :
+                    domXCoords[xIndex];
             xWritePos = xIndex;
 
             bestDist = DBL_MAX;
@@ -4384,7 +4300,7 @@ static void set_missing_val(
             ncMissVal = (double) (NC_FILL_FLOAT);
             break;
         case NC_DOUBLE:
-            ncMissVal = (double) (NC_FILL_DOUBLE);
+            ncMissVal = NC_FILL_DOUBLE;
             break;
         case NC_UBYTE:
             ncMissVal = (double) (NC_FILL_UBYTE);
@@ -5207,12 +5123,10 @@ static void get_invar_information(
     int startVar;
     Bool **missValFlags;
     LyrIndex **numSoilVarLyrs = &SW_PathInputs->numSoilVarLyrs;
-    void *attPtr;
     LyrIndex testNumLyrs = 0;
     int numReadSoilVars = 0;
 
-    float floatAttVal;
-    double doubleAttVal;
+    double *attVal;
 
     Bool *attFlags[] = {&scaleAttExists, &addAttExists};
     char *unpackAttNames[] = {(char *) "scale_factor", (char *) "add_offset"};
@@ -5296,6 +5210,9 @@ static void get_invar_information(
             /* If both flags exist, store the values */
             if (*hasScaleAddAtts) {
                 for (attNum = 0; attNum < numUnpackAtts; attNum++) {
+                    attVal = &SW_PathInputs
+                                  ->scaleAndAddFactVals[inKey][varNum][attNum];
+
                     get_att_type(
                         ncFileID,
                         *varID,
@@ -5307,16 +5224,15 @@ static void get_invar_information(
                         goto closeFile;
                     }
 
-                    attPtr = (attType == NC_FLOAT) ? (void *) &floatAttVal :
-                                                     (void *) &doubleAttVal;
-                    get_att_vals(
-                        ncFileID,
-                        *varID,
-                        unpackAttNames[attNum],
-                        attPtr,
-                        LogInfo
-                    );
-                    if (LogInfo->stopRun) {
+                    if (nc_get_att_double(
+                            ncFileID, *varID, unpackAttNames[attNum], attVal
+                        ) != NC_NOERR) {
+                        LogError(
+                            LogInfo,
+                            LOGERROR,
+                            "Could not get the attribute value of '%s'.",
+                            unpackAttNames[attNum]
+                        );
                         goto closeFile;
                     }
                 }
@@ -6070,6 +5986,10 @@ they are consistent
 
 @param[in] ncFileID File identifier of the nc file being read
 @param[in] zAxisName User-provided Z-axis name for soil layers
+@param[in] soilIndices A list of indices telling the order of
+dimensions for the soil variable
+@param[in] varSiteDom Flag specifying if the variable we are reading
+is a site domain or gridded
 @param[out] depthsAllSoilLayers Depths of all the soil layers,
 read-in from the provided nc file
 @param[out] LogInfo Holds information on warnings and errors
@@ -6077,27 +5997,26 @@ read-in from the provided nc file
 static size_t get_nconsistent_soil_layers(
     int ncFileID,
     char *zAxisName,
+    int soilIndices[],
+    Bool varSiteDom,
     double depthsAllSoilLayers[],
     LOG_INFO *LogInfo
 ) {
     int varID = 0;
     nc_type varType;
     size_t maxVertSize = 0;
-    size_t lyr;
-
-    void *valPtr = NULL;
-    int *intValPtr = NULL;
-    double *doubValPtr = NULL;
-    float *floatValPtr = NULL;
+    size_t start[3] = {0};       /* Maximum of three dimensions for soil */
+    size_t count[3] = {1, 0, 0}; /* Maximum of three dimensions for soil */
+    int writeIndex = (varSiteDom) ? 1 : 2;
 
     SW_NC_get_dimlen_from_dimname(ncFileID, zAxisName, &maxVertSize, LogInfo);
     if (LogInfo->stopRun) {
-        goto freeMem;
+        return 0;
     }
 
     SW_NC_get_var_identifier(ncFileID, zAxisName, &varID, LogInfo);
     if (LogInfo->stopRun) {
-        goto freeMem;
+        return 0;
     }
 
     if (nc_inq_vartype(ncFileID, varID, &varType) != NC_NOERR) {
@@ -6107,64 +6026,17 @@ static size_t get_nconsistent_soil_layers(
             "Could not get the type of the variable '%s'.",
             zAxisName
         );
-        goto freeMem;
+        return 0;
     }
 
-    switch (varType) {
-    case NC_INT:
-        intValPtr = (int *) Mem_Malloc(
-            sizeof(int) * maxVertSize, "SW_NCIN_soilProfile()", LogInfo
-        );
-        valPtr = intValPtr;
-        break;
-    case NC_DOUBLE:
-        doubValPtr = (double *) Mem_Malloc(
-            sizeof(double) * maxVertSize, "SW_NCIN_soilProfile()", LogInfo
-        );
-        valPtr = doubValPtr;
-        break;
-    default: /* NC_FLOAT */
-        floatValPtr = (float *) Mem_Malloc(
-            sizeof(float) * maxVertSize, "SW_NCIN_soilProfile()", LogInfo
-        );
-        valPtr = floatValPtr;
-        break;
-    }
-    if (LogInfo->stopRun) {
-        goto freeMem;
-    }
+    count[writeIndex] = (varSiteDom) ? maxVertSize : 1;
+    count[writeIndex + 1] = (varSiteDom) ? 0 : maxVertSize;
 
-    SW_NC_get_vals(ncFileID, &varID, zAxisName, valPtr, LogInfo);
-    if (LogInfo->stopRun) {
-        goto freeMem;
-    }
+    arrange_start_count(soilIndices, start, count);
 
-    for (lyr = 0; lyr < maxVertSize; lyr++) {
-        switch (varType) {
-        case NC_INT:
-            depthsAllSoilLayers[lyr] = (double) intValPtr[lyr];
-            break;
-        case NC_DOUBLE:
-            depthsAllSoilLayers[lyr] = doubValPtr[lyr];
-            break;
-        default: /* NC_FLOAT */
-            depthsAllSoilLayers[lyr] = (double) floatValPtr[lyr];
-            break;
-        }
-    }
-
-freeMem:
-    if (!isnull(intValPtr)) {
-        free(intValPtr);
-    }
-
-    if (!isnull(doubValPtr)) {
-        free(doubValPtr);
-    }
-
-    if (!isnull(floatValPtr)) {
-        free(floatValPtr);
-    }
+    get_values_multiple(
+        ncFileID, varID, start, count, zAxisName, depthsAllSoilLayers, LogInfo
+    );
 
     return maxVertSize;
 }
@@ -6262,6 +6134,8 @@ void SW_NCIN_soilProfile(
     char *fileName;
     size_t maxVertSize = 0;
     int fIndex = 1;
+    char *domType = SW_netCDFIn->inVarInfo[eSW_InSoil][fIndex][INDOMTYPE];
+    Bool siteDom = (Bool) (strcmp(domType, "s") == 0);
 
     while (!SW_netCDFIn->readInVars[eSW_InSoil][fIndex + 1]) {
         fIndex++;
@@ -6277,6 +6151,8 @@ void SW_NCIN_soilProfile(
         maxVertSize = (LyrIndex) get_nconsistent_soil_layers(
             ncFileID,
             SW_netCDFIn->inVarInfo[eSW_InSoil][fIndex][INZAXIS],
+            SW_netCDFIn->dimOrderInVar[eSW_InSoil][fIndex],
+            siteDom,
             depthsAllSoilLayers,
             LogInfo
         );

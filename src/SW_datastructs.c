@@ -522,6 +522,12 @@ static SW_KD_NODE *constructTree(
         }
     }
 
+    if (inPrimCRSIsGeo) {
+        /* Convert the possibility of [0, 360] to [-180, 180] before
+        inserting into the KD-tree */
+        yxCoords[middle][1] = fmod(180.0 + yxCoords[middle][1], 360.0) - 180.0;
+    }
+
     newNode = createNode(yxCoords[middle], indices[middle], maxDist, LogInfo);
 
     newNode->left = constructTree(
