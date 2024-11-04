@@ -5707,7 +5707,7 @@ static void read_soil_inputs(
         }
     }
 
-    if (hasConstSoilLyrs) {
+    if (!hasConstSoilLyrs) {
         SW_Site->soils = newSoils;
     }
 
