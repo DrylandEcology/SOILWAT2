@@ -4258,7 +4258,7 @@ or converted value
 */
 static void set_missing_val(
     nc_type varType,
-    Bool *valHasMissing,
+    const Bool *valHasMissing,
     double **missingVals,
     int varNum,
     sw_converter_t *unitConv,
@@ -4365,9 +4365,9 @@ within a struct used within a simulation run, and values are scaled/set to
 missing as needed
 */
 static void set_read_vals(
-    Bool *valHasMissing,
+    const Bool *valHasMissing,
     double **missingVals,
-    double *readVals,
+    const double *readVals,
     int numVals,
     int varNum,
     nc_type varType,
@@ -4408,7 +4408,9 @@ reading a variable from
 @param[in,out] count A list of numbers that specify how many values
 from every dimension of a variable should be read
 */
-static void arrange_start_count(int indices[], size_t start[], size_t count[]) {
+static void arrange_start_count(
+    const int indices[], size_t start[], size_t count[]
+) {
     int index = 0;
     int startIndex = 0;
     const int indexArrSize = 5;
@@ -4458,7 +4460,7 @@ static void read_spatial_topo_climate_inputs(
     SW_MODEL *SW_Model,
     SW_SKY *SW_Sky,
     char ***inFiles,
-    size_t ncSUID[],
+    const size_t ncSUID[],
     sw_converter_t ***convs,
     LOG_INFO *LogInfo
 ) {
@@ -4827,28 +4829,28 @@ static void read_miss_vals(
     LOG_INFO *LogInfo
 ) {
     int typeIndex = (attType != NC_BYTE) ? attType - 2 : attType - 1;
-    char byteMissVals[] = {0, 0};
+    char byteMissVals[] = {(char) 0, (char) 0};
     short shortMissVals[] = {0, 0};
     int intMissVals[] = {0, 0};
-    float floatMissVals[] = {0, 0};
-    double doubleMissVals[] = {0, 0};
+    float floatMissVals[] = {0.0f, 0.0f};
+    double doubleMissVals[] = {0.0, 0.0};
     unsigned char uByteMissVals[] = {0, 0};
     unsigned short uShortMissVals[] = {0, 0};
     unsigned int uIntMissVals[] = {0, 0};
-    void **valPtrs[] = {
-        (void **) byteMissVals,
-        (void **) shortMissVals,
-        (void **) intMissVals,
-        (void **) floatMissVals,
-        (void **) doubleMissVals,
-        (void **) uByteMissVals,
-        (void **) uShortMissVals,
-        (void **) uIntMissVals
+    void *valPtrs[] = {
+        (void *) byteMissVals,
+        (void *) shortMissVals,
+        (void *) intMissVals,
+        (void *) floatMissVals,
+        (void *) doubleMissVals,
+        (void *) uByteMissVals,
+        (void *) uShortMissVals,
+        (void *) uIntMissVals
     };
-    void *valPtr = (valPtrs[typeIndex])[varNum];
+    void *valPtr = valPtrs[typeIndex];
     double tempMaxMissVal = SW_MISSING;
 
-    if (attType < NC_BYTE || attType == NC_BYTE + 1 || attType > NC_DOUBLE) {
+    if (attType < NC_BYTE || attType == NC_CHAR || attType > NC_DOUBLE) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -5343,7 +5345,7 @@ static void read_veg_inputs(
     SW_DOMAIN *SW_Domain,
     SW_VEGPROD *SW_VegProd,
     char **vegInFiles,
-    size_t ncSUID[],
+    const size_t ncSUID[],
     sw_converter_t **vegConv,
     LOG_INFO *LogInfo
 ) {
@@ -5524,7 +5526,7 @@ static void read_soil_inputs(
     char **soilInFiles,
     Bool hasConstSoilLyrs,
     sw_converter_t **soilConv,
-    size_t ncSUID[],
+    const size_t ncSUID[],
     LOG_INFO *LogInfo
 ) {
     SW_SOILS newSoils;
@@ -6442,7 +6444,7 @@ static void set_weather_daily(
     TimeInt numDays,
     sw_converter_t *varConv,
     nc_type varType,
-    Bool *valHasMissing,
+    const Bool *valHasMissing,
     double **missingVals,
     Bool unpack,
     double scaleFactor,
@@ -6704,7 +6706,7 @@ static void read_weather_input(
         SW_Domain->SW_PathInputs.ncWeatherStartEndIndices;
     double tempVals[MAX_DAYS] = {0.0};
     double counterpartVals[MAX_DAYS] = {0.0}; /* Max/min or north/east wind */
-    double *upArrHelper;
+    double *upArrHelper = NULL;
     double scaleFactor;
     double addOffset;
     int timeIndex;
@@ -6852,7 +6854,7 @@ to SW_Run
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCIN_read_inputs(
-    SW_RUN *sw, SW_DOMAIN *SW_Domain, size_t ncSUID[], LOG_INFO *LogInfo
+    SW_RUN *sw, SW_DOMAIN *SW_Domain, const size_t ncSUID[], LOG_INFO *LogInfo
 ) {
     SW_WEATHER *SW_Weather = &sw->Weather;
     char ***ncInFiles = SW_Domain->SW_PathInputs.ncInFiles;

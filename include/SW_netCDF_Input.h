@@ -80,7 +80,7 @@ Bool SW_NCIN_check_progress(
 );
 
 void SW_NCIN_read_inputs(
-    SW_RUN *sw, SW_DOMAIN *SW_Domain, size_t ncSUID[], LOG_INFO *LogInfo
+    SW_RUN *sw, SW_DOMAIN *SW_Domain, const size_t ncSUID[], LOG_INFO *LogInfo
 );
 
 void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);

@@ -368,7 +368,11 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
 
                 // deep copy of template
                 SW_RUN_deepCopy(
-                    &SW_Run, &local_sw, &SW_Domain.OutDom, &local_LogInfo
+                    &SW_Run,
+                    &local_sw,
+                    &SW_Domain.OutDom,
+                    swTRUE,
+                    &local_LogInfo
                 );
                 // exit test program if unexpected error
                 sw_fail_on_error(&local_LogInfo);

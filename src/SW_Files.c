@@ -557,7 +557,7 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
                 }
             }
 
-            free(SW_PathInputs->missValFlags[k]);
+            free((void *) SW_PathInputs->missValFlags[k]);
             SW_PathInputs->missValFlags[k] = NULL;
         }
 
@@ -569,7 +569,7 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
                 }
             }
 
-            free(SW_PathInputs->doubleMissVals[k]);
+            free((void *) SW_PathInputs->doubleMissVals[k]);
             SW_PathInputs->doubleMissVals[k] = NULL;
         }
     }
