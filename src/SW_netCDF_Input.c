@@ -6029,10 +6029,6 @@ they are consistent
 
 @param[in] ncFileID File identifier of the nc file being read
 @param[in] zAxisName User-provided Z-axis name for soil layers
-@param[in] soilIndices A list of indices telling the order of
-dimensions for the soil variable
-@param[in] varSiteDom Flag specifying if the variable we are reading
-is a site domain or gridded
 @param[out] depthsAllSoilLayers Depths of all the soil layers,
 read-in from the provided nc file
 @param[out] LogInfo Holds information on warnings and errors
@@ -6040,17 +6036,13 @@ read-in from the provided nc file
 static size_t get_nconsistent_soil_layers(
     int ncFileID,
     char *zAxisName,
-    int soilIndices[],
-    Bool varSiteDom,
     double depthsAllSoilLayers[],
     LOG_INFO *LogInfo
 ) {
     int varID = 0;
-    nc_type varType;
     size_t maxVertSize = 0;
-    size_t start[3] = {0};       /* Maximum of three dimensions for soil */
-    size_t count[3] = {1, 0, 0}; /* Maximum of three dimensions for soil */
-    int writeIndex = (varSiteDom) ? 1 : 2;
+    size_t start[1] = {0};       /* Maximum of one dimension for soil */
+    size_t count[1] = {0};       /* Maximum of one dimension for soil */
 
     SW_NC_get_dimlen_from_dimname(ncFileID, zAxisName, &maxVertSize, LogInfo);
     if (LogInfo->stopRun) {
@@ -6062,20 +6054,7 @@ static size_t get_nconsistent_soil_layers(
         return 0;
     }
 
-    if (nc_inq_vartype(ncFileID, varID, &varType) != NC_NOERR) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Could not get the type of the variable '%s'.",
-            zAxisName
-        );
-        return 0;
-    }
-
-    count[writeIndex] = (varSiteDom) ? maxVertSize : 1;
-    count[writeIndex + 1] = (varSiteDom) ? 0 : maxVertSize;
-
-    arrange_start_count(soilIndices, start, count);
+    count[0] = maxVertSize;
 
     get_values_multiple(
         ncFileID, varID, start, count, zAxisName, depthsAllSoilLayers, LogInfo
@@ -6177,15 +6156,10 @@ void SW_NCIN_soilProfile(
     char *fileName;
     size_t maxVertSize = 0;
     int fIndex = 1;
-    char *domType;
-    Bool siteDom;
 
     while (!SW_netCDFIn->readInVars[eSW_InSoil][fIndex + 1]) {
         fIndex++;
     }
-
-    domType = SW_netCDFIn->inVarInfo[eSW_InSoil][fIndex][INDOMTYPE];
-    siteDom = (Bool) (strcmp(domType, "s") == 0);
 
     if (hasConsistentSoilLayerDepths) {
         fileName = ncInFiles[fIndex];
@@ -6197,8 +6171,6 @@ void SW_NCIN_soilProfile(
         maxVertSize = (LyrIndex) get_nconsistent_soil_layers(
             ncFileID,
             SW_netCDFIn->inVarInfo[eSW_InSoil][fIndex][INZAXIS],
-            SW_netCDFIn->dimOrderInVar[eSW_InSoil][fIndex],
-            siteDom,
             depthsAllSoilLayers,
             LogInfo
         );
