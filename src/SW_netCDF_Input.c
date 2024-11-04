@@ -6177,12 +6177,15 @@ void SW_NCIN_soilProfile(
     char *fileName;
     size_t maxVertSize = 0;
     int fIndex = 1;
-    char *domType = SW_netCDFIn->inVarInfo[eSW_InSoil][fIndex][INDOMTYPE];
-    Bool siteDom = (Bool) (strcmp(domType, "s") == 0);
+    char *domType;
+    Bool siteDom;
 
     while (!SW_netCDFIn->readInVars[eSW_InSoil][fIndex + 1]) {
         fIndex++;
     }
+
+    domType = SW_netCDFIn->inVarInfo[eSW_InSoil][fIndex][INDOMTYPE];
+    siteDom = (Bool) (strcmp(domType, "s") == 0);
 
     if (hasConsistentSoilLayerDepths) {
         fileName = ncInFiles[fIndex];
