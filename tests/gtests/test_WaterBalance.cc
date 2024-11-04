@@ -113,6 +113,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
         &SW_Run.Weather,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
+        swTRUE,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -165,6 +166,7 @@ TEST_F(
         &SW_Run.Weather,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
+        swTRUE,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -455,6 +457,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
         &SW_Run.Weather,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
+        swTRUE,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -511,6 +514,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGRIDMET) {
         &SW_Run.Weather,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
+        swTRUE,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -569,6 +573,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACA) {
         &SW_Run.Weather,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
+        swTRUE,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error

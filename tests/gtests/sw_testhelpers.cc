@@ -260,6 +260,7 @@ int setup_testGlobalSoilwatTemplate() {
         &template_SW_Run.Weather,
         template_SW_Run.Model.cum_monthdays,
         template_SW_Run.Model.days_in_month,
+        swTRUE,
         &LogInfo
     );
     if (LogInfo.stopRun != 0u) {
