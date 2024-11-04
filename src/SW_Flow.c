@@ -232,21 +232,20 @@
 void SW_FLW_init_run(SW_SOILWAT *SW_SoilWat) {
     /* 06/26/2013	(rjm) added function SW_FLW_init_run() to init global
      * variables between consecutive calls to SoilWat as dynamic library */
-    int i;
+    int lyr;
     int k;
 
 
     // These only have to be cleared if a loop is wrong in the code.
-    for (i = 0; i < MAX_LAYERS; i++) {
+    ForEachSoilLayer(lyr, MAX_LAYERS) {
         ForEachVegType(k) {
-            SW_SoilWat->transpiration[k][i] = 0.;
-            SW_SoilWat->hydred[k][i] = 0;
+            SW_SoilWat->transpiration[k][lyr] = 0.;
+            SW_SoilWat->hydred[k][lyr] = 0;
         }
 
-        SW_SoilWat->swcBulk[Today][i] = 0.;
-        SW_SoilWat->drain[i] = 0.;
+        SW_SoilWat->swcBulk[Today][lyr] = 0.;
 
-        SW_SoilWat->avgLyrTemp[i] = 0.;
+        SW_SoilWat->avgLyrTemp[lyr] = 0.;
     }
 
     // When running as a library make sure these are set to zero.
