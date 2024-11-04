@@ -6043,8 +6043,8 @@ static size_t get_nconsistent_soil_layers(
 ) {
     int varID = 0;
     size_t maxVertSize = 0;
-    size_t start[1] = {0};       /* Maximum of one dimension for soil */
-    size_t count[1] = {0};       /* Maximum of one dimension for soil */
+    size_t start[1] = {0}; /* Maximum of one dimension for soil */
+    size_t count[1] = {0}; /* Maximum of one dimension for soil */
 
     SW_NC_get_dimlen_from_dimname(ncFileID, zAxisName, &maxVertSize, LogInfo);
     if (LogInfo->stopRun) {
