@@ -192,6 +192,7 @@ void finalizeAllWeather(
     SW_WEATHER *w,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
+    Bool scaleWeather,
     LOG_INFO *LogInfo
 );
 
@@ -238,6 +239,7 @@ void SW_WTH_finalize_all_weather(
     SW_WEATHER *SW_Weather,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
+    Bool scaleWeather,
     LOG_INFO *LogInfo
 );
 

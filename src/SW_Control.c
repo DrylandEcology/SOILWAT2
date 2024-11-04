@@ -1121,19 +1121,6 @@ void SW_CTL_run_sw(
     if (LogInfo->stopRun) {
         goto freeMem;
     }
-
-    if (!copyWeather) {
-        SW_WTH_finalize_all_weather(
-            &local_sw.Markov,
-            &local_sw.Weather,
-            local_sw.Model.cum_monthdays,
-            local_sw.Model.days_in_month,
-            LogInfo
-        );
-        if (LogInfo->stopRun) {
-            goto freeMem;
-        }
-    }
 #endif
 
 // Run simulation for suid

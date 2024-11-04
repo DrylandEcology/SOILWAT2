@@ -15,6 +15,8 @@
 #include "include/SW_Output_outarray.h" // for iOUTnc
 #include "include/SW_Site.h"            // for SW_SIT_init_run
 #include "include/SW_VegProd.h"         // for key2veg
+#include "include/SW_VegEstab.h"        // for SW_VES_init_run
+#include "include/SW_SoilWater.h"       // for SW_SWC_init_run
 #include "include/SW_Weather.h"         // for SW_WTH_allocateAllWeather...
 #include "include/Times.h"              // for isleapyear, timeStringISO8601
 #include <math.h>                       // for NAN, ceil, isnan
@@ -6898,6 +6900,20 @@ void SW_NCIN_read_inputs(
         if (LogInfo->stopRun) {
             return;
         }
+
+        SW_WTH_finalize_all_weather(
+            &sw->Markov,
+            &sw->Weather,
+            sw->Model.cum_monthdays,
+            sw->Model.days_in_month,
+            swFALSE,
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        SW_WTH_init_run(&sw->Weather);
     }
 
     if (readVeg) {
@@ -6908,6 +6924,13 @@ void SW_NCIN_read_inputs(
             ncSUID,
             convs[eSW_InVeg],
             LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        SW_VPD_init_run(
+            &sw->VegProd, &sw->Weather, &sw->Model, swTRUE, LogInfo
         );
         if (LogInfo->stopRun) {
             return;
@@ -6927,6 +6950,21 @@ void SW_NCIN_read_inputs(
         if (LogInfo->stopRun) {
             return;
         }
+
+        SW_SIT_init_run(&sw->VegProd, &sw->Site, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        SW_VES_init_run(
+            sw->VegEstab.parms,
+            &sw->Site,
+            sw->Site.n_transp_lyrs,
+            sw->VegEstab.count,
+            LogInfo
+        );
+
+        SW_SWC_init_run(&sw->SoilWat, &sw->Site, &sw->Weather.temp_snow);
     }
 }
 
