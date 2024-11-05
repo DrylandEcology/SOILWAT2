@@ -3739,7 +3739,7 @@ static void write_indices(
     size_t xIndex;
     size_t syWritePos = 0;
     size_t xWritePos = 0;
-    size_t writeCount[] = {1, 1};
+    size_t writeCount[] = {1};
 
     SW_DATA_create_tree(
         &treeRoot,
@@ -3786,9 +3786,9 @@ static void write_indices(
 
             if (!isnull(nearNeighbor)) {
                 SW_NC_write_vals(
-                    (siteDom) ? &indexVarIDs[0] : &indexVarIDs[1],
+                    &indexVarIDs[0],
                     templateID,
-                    (siteDom) ? indexVarName[0] : indexVarName[1],
+                    indexVarName[0],
                     &nearNeighbor->indices[0],
                     &syWritePos,
                     writeCount,
@@ -3801,10 +3801,10 @@ static void write_indices(
 
                 if (!siteDom) {
                     SW_NC_write_vals(
-                        &indexVarIDs[0],
+                        &indexVarIDs[1],
                         templateID,
-                        indexVarName[0],
-                        &nearNeighbor->indices[0],
+                        indexVarName[1],
+                        &nearNeighbor->indices[1],
                         &xWritePos,
                         writeCount,
                         "unsigned int",
