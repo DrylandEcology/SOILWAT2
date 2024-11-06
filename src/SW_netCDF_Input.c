@@ -5564,6 +5564,8 @@ static void read_soil_inputs(
                              newSoils.fractionWeight_om,
         (hasConstSoilLyrs) ? currSoils->impermeability :
                              newSoils.impermeability,
+        (hasConstSoilLyrs) ? currSoils->avgLyrTempInit :
+                             newSoils.avgLyrTempInit,
         (hasConstSoilLyrs) ? currSoils->evap_coeff : newSoils.evap_coeff
     };
 
@@ -5577,8 +5579,8 @@ static void read_soil_inputs(
 
     int ncFileID = -1;
     int varID;
-    size_t start[] = {0, 0, 0, 0};
-    size_t count[] = {1, 0, 0, 0};
+    size_t start[4] = {0}; /* Maximum of four dimensions */
+    size_t count[4] = {0}; /* Maximum of four dimensions */
     const int pftIndex = 4;
     const int swrcpStartInd = 16;
     const int transStartInd = 12;
@@ -5604,7 +5606,7 @@ static void read_soil_inputs(
     int varNum;
     int fIndex = 1;
 
-    while (fIndex < numVarsInSoilKey && !readInputs[fIndex + 1]) {
+    while (!readInputs[fIndex + 1]) {
         fIndex++;
     }
 
@@ -5635,7 +5637,7 @@ static void read_soil_inputs(
         start[1] = defSetStart[1];
         count[0] = 1;
         count[1] = (!inSiteDom) ? 1 : 0;
-        count[2] = count[3] = 0;
+        start[2] = start[3] = count[2] = count[3] = 0;
         count[writeIndex] = numLyrs;
 
         if (hasPFT) {
@@ -5648,16 +5650,16 @@ static void read_soil_inputs(
 
         if (varNum >= transStartInd) {
             /* Set pointer for trans_coeff (12+) and/or swrcp (16+) */
-            if (varNum >= transStartInd && varNum <= swrcpStartInd) {
+            if (varNum >= transStartInd && varNum < swrcpStartInd) {
                 doublePtr = (double *) trans_coeff[vegIndex];
-                numVals = NVEGTYPES * MAX_LAYERS;
+                numVals = NVEGTYPES * numLyrs;
             } else {
                 doublePtr = (double *) tempswrcp;
-                numVals = MAX_LAYERS * SWRC_PARAM_NMAX;
+                numVals = numLyrs * SWRC_PARAM_NMAX;
             }
         } else {
             doublePtr = values1D[varNum - 1];
-            numVals = MAX_LAYERS;
+            numVals = numLyrs;
         }
 
         SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
@@ -5680,11 +5682,7 @@ static void read_soil_inputs(
             addOffset = 0.0;
         }
 
-        if (isSwrcpVar) {
-            setIter = (int) numLyrs;
-        } else {
-            setIter = 1;
-        }
+        setIter = (isSwrcpVar) ? (int) numLyrs : 1;
 
         for (loopIter = 0; loopIter < setIter; loopIter++) {
             set_read_vals(
