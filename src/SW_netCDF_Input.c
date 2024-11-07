@@ -3493,7 +3493,7 @@ static void determine_indexfile_use(
     const int numFileClose = 0;
 
     ForEachNCInKey(k) {
-        if (SW_netCDFIn->readInVars[k][0]) {
+        if (SW_netCDFIn->readInVars[k][0] && k > eSW_InDomain) {
             fIndex = 1;
             ncFileID = -1;
 
@@ -3553,6 +3553,9 @@ static void determine_indexfile_use(
             free_tempcoords_close_files(
                 freeArr, NULL, numFreeArr, numFileClose
             );
+            if (LogInfo->stopRun) {
+                return;
+            }
         }
     }
 }
