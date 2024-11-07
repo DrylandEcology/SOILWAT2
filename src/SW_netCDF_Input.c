@@ -3839,7 +3839,7 @@ static void write_indices(
                     goto freeTree;
                 }
 
-                if (!siteDom) {
+                if (inIsGridded) {
                     SW_NC_write_vals(
                         &indexVarIDs[1],
                         templateID,
