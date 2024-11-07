@@ -2647,8 +2647,12 @@ static void get_1D_input_coordinates(
     }
 
     if (compareCoords) {
-        *useIndexFile = (Bool) (*ySize != SW_netCDFIn->domYCoordGeoSize ||
-                                *xSize != SW_netCDFIn->domXCoordGeoSize);
+        *useIndexFile = (Bool) ((inPrimCRSIsGeo &&
+                                 (*ySize != SW_netCDFIn->domYCoordGeoSize ||
+                                  *xSize != SW_netCDFIn->domXCoordGeoSize)) ||
+                                (!inPrimCRSIsGeo &&
+                                 (*ySize != SW_netCDFIn->domYCoordProjSize ||
+                                  *xSize != SW_netCDFIn->domXCoordProjSize)));
 
         if (!*useIndexFile) {
             determine_index_file_use(
