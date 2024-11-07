@@ -6717,7 +6717,6 @@ static void read_weather_input(
     char *fileName;
     char *varName;
     unsigned int weathFileIndex = 0;
-    double doubleInputs[MAX_DAYS];
     int adjVarNum;
     Bool varHasAddScaleAtts;
     nc_type *varTypes = SW_Domain->SW_PathInputs.inVarTypes[eSW_InWeather];
@@ -6781,7 +6780,7 @@ static void read_weather_input(
 
             numDays = Time_get_lastdoy_y(year);
             count[timeIndex] = numDays;
-            doubleInputs[MAX_DAYS - 1] = SW_MISSING;
+            tempVals[MAX_DAYS - 1] = SW_MISSING;
             fileName = weathInFiles[varNum][weathFileIndex];
             varName = inVarInfo[varNum][INNCVARNAME];
 
