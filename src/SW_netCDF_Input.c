@@ -2353,20 +2353,32 @@ static void alloc_dom_coord_info(
     double **domCoordArrs[],
     size_t *domCoordSizes[],
     const int numCoords,
+    int domFileID,
+    Bool allocArrays[],
+    char *varNames[],
     LOG_INFO *LogInfo
 ) {
     size_t coordArr;
     size_t coordIndex;
     size_t allocSize;
+    const int numGeo = 2;
 
     for (coordArr = 0; coordArr < (size_t) numCoords; coordArr++) {
-        allocSize = *domCoordSizes[coordArr % 2];
-        *domCoordArrs[coordArr] = (double *) Mem_Malloc(
-            sizeof(double) * allocSize, "alloc_dom_coord_info()", LogInfo
-        );
+        allocArrays[coordArr] = SW_NC_varExists(domFileID, varNames[coordArr]);
 
-        for (coordIndex = 0; coordIndex < allocSize; coordIndex++) {
-            (*domCoordArrs[coordArr])[coordIndex] = 0.0;
+        if (allocArrays[coordArr]) {
+            allocSize = *domCoordSizes[coordArr];
+            if (numCoords > numGeo && coordArr < numGeo) {
+                allocSize *= *domCoordSizes[coordArr + 1];
+            }
+
+            *domCoordArrs[coordArr] = (double *) Mem_Malloc(
+                sizeof(double) * allocSize, "alloc_dom_coord_info()", LogInfo
+            );
+
+            for (coordIndex = 0; coordIndex < allocSize; coordIndex++) {
+                (*domCoordArrs[coordArr])[coordIndex] = 0.0;
+            }
         }
     }
 }
@@ -2396,6 +2408,8 @@ static void read_domain_coordinates(
     int varID;
     const int numReadInDims = (primCRSIsGeo) ? 2 : 4;
     const int numDims = 2;
+    Bool siteDom = (Bool) (strcmp("s", domType) == 0);
+    Bool allocArrays[] = {swFALSE, swFALSE, swFALSE, swFALSE};
     Bool validY;
 
     char *domCoordNames[2]; /* Set later */
@@ -2415,7 +2429,7 @@ static void read_domain_coordinates(
 
     /* Determine the dimension lengths from the currect dimension
        names matching site/xy and geographical/projected */
-    if (strcmp("s", domType) == 0) {
+    if (siteDom) {
         domCoordNames[0] = siteName;
         domCoordNames[1] = siteName;
     } else {
@@ -2437,10 +2451,23 @@ static void read_domain_coordinates(
         }
 
         /* Match the same for projected sizes (may not be used) */
-        *(domCoordSizes[index + 2]) = *(domCoordSizes[index]);
+        *(domCoordSizes[index + numDims]) = *(domCoordSizes[index]);
     }
 
-    alloc_dom_coord_info(domCoordArrs, domCoordSizes, numReadInDims, LogInfo);
+    if (!siteDom && !primCRSIsGeo) {
+        *(domCoordSizes[0]) = *(domCoordSizes[1]) =
+            (*(domCoordSizes[2]) * *(domCoordSizes[3]));
+    }
+
+    alloc_dom_coord_info(
+        domCoordArrs,
+        domCoordSizes,
+        numReadInDims,
+        domFileID,
+        allocArrays,
+        domCoordNames,
+        LogInfo
+    );
     if (LogInfo->stopRun) {
         return; /* Exit function prematurely due to error */
     }
@@ -2448,35 +2475,38 @@ static void read_domain_coordinates(
     for (index = 0; index < numReadInDims; index++) {
         varID = -1;
 
-        SW_NC_get_vals(
-            domFileID,
-            &varID,
-            domCoordVarNames[index],
-            *domCoordArrs[index],
-            LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return; /* Exit prematurely due to error */
-        }
+        if (allocArrays[index]) {
+            SW_NC_get_vals(
+                domFileID,
+                &varID,
+                domCoordVarNames[index],
+                *domCoordArrs[index],
+                LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return; /* Exit prematurely due to error */
+            }
 
-        if (primCRSIsGeo && index == 0) {
-            /* Check first and laste value of latitude */
-            validY = (Bool) ((GE(*(domCoordArrs[index])[0], -90.0) &&
-                              LE(*(domCoordArrs[index])[0], 90.0)) ||
-                             (GE(*(domCoordArrs[index])[*domCoordSizes[0] - 1],
-                                 -90.0) &&
-                              LE(*(domCoordArrs[index])[*domCoordSizes[0] - 1],
-                                 90.0)));
+            if (primCRSIsGeo && index == 0) {
+                /* Check first and laste value of latitude */
+                validY =
+                    (Bool) ((GE(*(domCoordArrs[index])[0], -90.0) &&
+                             LE(*(domCoordArrs[index])[0], 90.0)) ||
+                            (GE(*(domCoordArrs[index])[*domCoordSizes[0] - 1],
+                                -90.0) &&
+                             LE(*(domCoordArrs[index])[*domCoordSizes[0] - 1],
+                                90.0)));
 
-            if (!validY) {
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "Coordinate value(s) do not fit within the "
-                    "range [-90, 90] for the variable '%s'.",
-                    domCoordVarNames[index]
-                );
-                return;
+                if (!validY) {
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "Coordinate value(s) do not fit within the "
+                        "range [-90, 90] for the variable '%s'.",
+                        domCoordVarNames[index]
+                    );
+                    return;
+                }
             }
         }
     }
@@ -2807,6 +2837,17 @@ static void get_input_coordinates(
     *coordVarIs2D = spatial_var_is_2d(*ncFileID, yxVarNames[0], LogInfo);
     if (LogInfo->stopRun) {
         return;
+    }
+
+    if (inPrimCRSIsGeo && (isnull(SW_netCDFIn->domYCoordsGeo) ||
+                           isnull(SW_netCDFIn->domXCoordsGeo))) {
+
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Programs domain does not provide geographic coordinates to "
+            "use for geographic input domains."
+        );
     }
 
     if (*coordVarIs2D) {
