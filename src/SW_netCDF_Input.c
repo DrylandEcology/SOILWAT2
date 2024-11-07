@@ -7044,7 +7044,7 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     /* Check actual input files provided by the user */
     ForEachNCInKey(inKey) {
-        if (readInVars[inKey][0]) {
+        if (readInVars[inKey][0] && inKey > eSW_InDomain) {
             indexVarInfo = SW_Domain->netCDFInput.inVarInfo[inKey][0];
             fileNames = SW_Domain->SW_PathInputs.ncInFiles[inKey];
 
@@ -7052,12 +7052,11 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                 if (readInVars[inKey][file + 1] &&
                     (file > 0 || (file == 0 && useIndexFile[inKey]))) {
 
-                    fileIsIndex = (Bool) (inKey > eSW_InDomain && file == 0);
+                    fileIsIndex = (Bool) (file == 0);
                     fileID = (fileIsIndex) ? &indexFileID : &inFileID;
                     varInfo = SW_Domain->netCDFInput.inVarInfo[inKey][file];
-
                     fileName =
-                        (inKey == eSW_InWeather) ?
+                        (inKey == eSW_InWeather && file > 0) ?
                             SW_Domain->SW_PathInputs.ncWeatherInFiles[file][0] :
                             fileNames[file];
 
@@ -7075,8 +7074,8 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                         SW_NC_check(
                             SW_Domain, *fileID, fileNames[file], LogInfo
                         );
-                    } else if (readInVars[inKey][1] &&
-                               useIndexFile[inKey]) { /* index file exists */
+                    } else if (readInVars[inKey][1] && useIndexFile[inKey]) {
+                        /* index file exists */
                         check_input_file_against_index(
                             SW_Domain->netCDFInput.inVarInfo[inKey][file],
                             indexFileID,
@@ -7100,7 +7099,8 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     }
 
                     if (file > 0) {
-                        free_tempcoords_close_files(NULL, fileIDs, 0, numFiles);
+                        nc_close(inFileID);
+                        inFileID = -1;
                     }
                 }
             }
