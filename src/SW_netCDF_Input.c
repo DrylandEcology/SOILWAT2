@@ -14,9 +14,9 @@
 #include "include/SW_Output.h"         // for ForEachOutKey, SW_ESTAB, pd2...
 #include "include/SW_Output_outarray.h" // for iOUTnc
 #include "include/SW_Site.h"            // for SW_SIT_init_run
-#include "include/SW_VegProd.h"         // for key2veg
-#include "include/SW_VegEstab.h"        // for SW_VES_init_run
 #include "include/SW_SoilWater.h"       // for SW_SWC_init_run
+#include "include/SW_VegEstab.h"        // for SW_VES_init_run
+#include "include/SW_VegProd.h"         // for key2veg
 #include "include/SW_Weather.h"         // for SW_WTH_allocateAllWeather...
 #include "include/Times.h"              // for isleapyear, timeStringISO8601
 #include <math.h>                       // for NAN, ceil, isnan
@@ -7226,10 +7226,10 @@ void SW_NCIN_deconstruct(SW_NETCDF_IN *SW_netCDFIn) {
     int freeIndex;
     const int numFreeVals = 4;
     double **freeArray[] = {
-        &SW_netCDFIn->domXCoordsGeo,
         &SW_netCDFIn->domYCoordsGeo,
+        &SW_netCDFIn->domXCoordsGeo,
         &SW_netCDFIn->domYCoordsProj,
-        &SW_netCDFIn->domYCoordsProj
+        &SW_netCDFIn->domXCoordsProj
     };
 
     for (freeIndex = 0; freeIndex < numFreeVals; freeIndex++) {
