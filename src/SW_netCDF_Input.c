@@ -2594,7 +2594,7 @@ static void get_1D_input_coordinates(
     int varNum;
     int varID;
 
-    double **xyVals[] = {readinYVals, readinXVals};
+    double **yxVals[] = {readinYVals, readinXVals};
     double *domYVals = (inPrimCRSIsGeo) ? SW_netCDFIn->domYCoordsGeo :
                                           SW_netCDFIn->domYCoordsProj;
     double *domXVals = (inPrimCRSIsGeo) ? SW_netCDFIn->domXCoordsGeo :
@@ -2605,18 +2605,20 @@ static void get_1D_input_coordinates(
     size_t start[] = {0};
     size_t count[] = {0};
 
-    get_var_dimsizes(
-        ncFileID, numReadInDims, dimSizes, yxVarNames[0], &varID, LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return;
+    for (varNum = 0; varNum < numReadInDims; varNum++) {
+        get_var_dimsizes(
+            ncFileID, 1, &dimSizes[varNum], yxVarNames[varNum], &varID, LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
     }
 
     for (varNum = 0; varNum < numReadInDims; varNum++) {
         varID = -1;
         count[0] = *dimSizes[varNum];
 
-        *(xyVals[varNum]) = (double *) Mem_Malloc(
+        *(yxVals[varNum]) = (double *) Mem_Malloc(
             sizeof(double) * *dimSizes[varNum],
             "get_1D_input_coordinates()",
             LogInfo
@@ -2636,7 +2638,7 @@ static void get_1D_input_coordinates(
             start,
             count,
             yxVarNames[varNum],
-            *(xyVals[varNum]),
+            *(yxVals[varNum]),
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -2715,18 +2717,11 @@ static void get_2D_input_coordinates(
     double **xyVals[] = {readinYVals, readinXVals};
 
     /* === Latitude/longitude sizes === */
-    for (varNum = 0; varNum < numReadInDims; varNum++) {
-        get_var_dimsizes(
-            ncFileID,
-            numReadInDims,
-            allDimSizes,
-            yxVarNames[varNum],
-            &varIDs[varNum],
-            LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return; /* Exit function prematurely due to error */
-        }
+    get_var_dimsizes(
+        ncFileID, 2, allDimSizes, yxVarNames[0], &varIDs[0], LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return; /* Exit function prematurely due to error */
     }
 
     /* Get information to decide the order of lat/lon for coordinate
