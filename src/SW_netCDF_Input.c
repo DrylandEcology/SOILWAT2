@@ -5396,7 +5396,7 @@ static void read_veg_inputs(
 ) {
     char ***inVarInfo = SW_Domain->netCDFInput.inVarInfo[eSW_InVeg];
     Bool *readInput = SW_Domain->netCDFInput.readInVars[eSW_InVeg];
-    Bool siteDom;
+    Bool inSiteDom;
 
     int varNum;
     int fIndex = 1;
@@ -5420,6 +5420,10 @@ static void read_veg_inputs(
     Bool **missValFlags = SW_Domain->SW_PathInputs.missValFlags[eSW_InVeg];
     double **doubleMissVals =
         SW_Domain->SW_PathInputs.doubleMissVals[eSW_InVeg];
+    int *varIDs = SW_Domain->SW_PathInputs.inVarIDs[eSW_InVeg];
+    nc_type *varTypes = SW_Domain->SW_PathInputs.inVarTypes[eSW_InVeg];
+    Bool useIndexFile = SW_Domain->netCDFInput.useIndexFile[eSW_InVeg];
+    char **inFiles = SW_Domain->SW_PathInputs.ncInFiles[eSW_InVeg];
 
     double *values[] = {
         &SW_VegProd->bare_cov.fCover,
@@ -5456,37 +5460,52 @@ static void read_veg_inputs(
         fIndex++;
     }
 
-    siteDom = (Bool) (strcmp(inVarInfo[fIndex][INDOMTYPE], "s") == 0);
-    cWriteIndex = (siteDom) ? 1 : 2;
-
-    if (!siteDom) {
-        count[1] = 1;
-        start[1] = ncSUID[1];
-    }
+    inSiteDom = (Bool) (strcmp(inVarInfo[fIndex][INDOMTYPE], "s") == 0);
+    cWriteIndex = (inSiteDom) ? 1 : 2;
 
     for (varNum = fIndex; varNum < numVarsInKey[eSW_InVeg]; varNum++) {
+        if (!readInput[varNum + 1]) {
+            continue;
+        }
+
         /* Bare ground cover does not have time (index 1),
            otherwise, the first variable of every veg group doesn't have
            time, otherwise, the current variable has a time dimension */
         varHasTime =
             (Bool) !(varNum == 1 || (varNum - 2) % (NVEGTYPES + 1) == 0);
-        if (!readInput[varNum + 1]) {
-            continue;
-        }
 
-        varID = -1;
+        varID = varIDs[varNum];
+        varType = varTypes[varNum];
         fileName = vegInFiles[varNum];
         varName = inVarInfo[varNum][INNCVARNAME];
         hasPFT = (Bool) (strcmp(inVarInfo[varNum][INVAXIS], "NA") != 0);
         numSetVals = (varHasTime) ? MAX_MONTHS : 1;
 
+        start[0] = start[1] = start[2] = start[3] = 0;
+        count[2] = count[3] = 0;
+        count[0] = 1;
+        count[1] = (!inSiteDom) ? 1 : 0;
+
+        /* Get the start indices based on if we need to use the respective
+           index file */
+        get_read_start(
+            useIndexFile, inFiles[0], inSiteDom, ncSUID, start, LogInfo
+        );
+        if (LogInfo->stopRun) {
+            goto closeFile;
+        }
+
+        count[cWriteIndex] = (varHasTime) ? MAX_MONTHS : 0;
         if (hasPFT) {
-            start[cWriteIndex] = ((varNum - 2) / (NVEGTYPES + 1));
-            count[cWriteIndex] = 1;
-            count[cWriteIndex + 1] = (varHasTime) ? MAX_MONTHS : 1;
+            if (varHasTime) {
+                start[cWriteIndex + 1] = ((varNum - 2) / (NVEGTYPES + 1));
+                count[cWriteIndex + 1] = 1;
+            } else {
+                start[cWriteIndex] = ((varNum - 2) / (NVEGTYPES + 1));
+                count[cWriteIndex] = 1;
+            }
         } else {
             start[cWriteIndex] = start[cWriteIndex + 1] = 0;
-            count[cWriteIndex] = (varHasTime) ? MAX_MONTHS : 1;
         }
 
         arrange_start_count(dimOrderInVar[varNum - 1], start, count);
@@ -5494,15 +5513,6 @@ static void read_veg_inputs(
         SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
         if (LogInfo->stopRun) {
             return;
-        }
-
-        SW_NC_get_var_identifier(ncFileID, varName, &varID, LogInfo);
-        if (LogInfo->stopRun) {
-            goto closeFile;
-        }
-
-        if (nc_inq_vartype(ncFileID, varID, &varType) != NC_NOERR) {
-            goto closeFile;
         }
 
         varHasAddScaleAtts = keyAttFlags[varNum];
@@ -5520,7 +5530,7 @@ static void read_veg_inputs(
             ncFileID, varID, start, count, varName, tempVals, LogInfo
         );
         if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
+            goto closeFile; // Exit function prematurely due to error
         }
 
         set_read_vals(
