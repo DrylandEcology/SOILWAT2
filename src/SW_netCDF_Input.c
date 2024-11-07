@@ -3780,9 +3780,9 @@ static void write_indices(
 
     size_t yIndex;
     size_t xIndex;
-    size_t syWritePos = 0;
-    size_t xWritePos = 0;
-    size_t writeCount[] = {1};
+    size_t syWritePos[] = {0, 0};
+    size_t xWritePos[] = {0, 0};
+    size_t writeCount[] = {1, 0};
 
     SW_DATA_create_tree(
         &treeRoot,
@@ -3799,23 +3799,27 @@ static void write_indices(
         goto freeTree;
     }
 
+    writeCount[1] = (inIsGridded) ? 1 : 0;
+
     for (yIndex = 0UL; yIndex < yDomSize; yIndex++) {
         queryCoords[0] = domYCoords[yIndex];
-        syWritePos = yIndex;
+        syWritePos[0] = yIndex;
+        xWritePos[0] = yIndex;
 
         for (xIndex = 0UL; xIndex < xDomSize; xIndex++) {
             queryCoords[1] =
                 (inPrimCRSIsGeo) ?
                     fmod(180.0 + domXCoords[xIndex], 360.0) - 180.0 :
                     domXCoords[xIndex];
-            xWritePos = xIndex;
 
             bestDist = DBL_MAX;
             nearNeighbor = NULL;
 
             if (siteDom) {
                 queryCoords[0] = domYCoords[xIndex];
-                syWritePos = xIndex;
+                syWritePos[0] = xIndex;
+            } else {
+                xWritePos[1] = syWritePos[1] = xIndex;
             }
 
             SW_DATA_queryTree(
@@ -3833,7 +3837,7 @@ static void write_indices(
                     templateID,
                     indexVarName[0],
                     &nearNeighbor->indices[0],
-                    &syWritePos,
+                    syWritePos,
                     writeCount,
                     "unsigned int",
                     LogInfo
@@ -3848,7 +3852,7 @@ static void write_indices(
                         templateID,
                         indexVarName[1],
                         &nearNeighbor->indices[1],
-                        &xWritePos,
+                        xWritePos,
                         writeCount,
                         "unsigned int",
                         LogInfo
@@ -4263,7 +4267,7 @@ static void get_read_start(
                 indexFileID,
                 &indexVarID,
                 indexVarNames[varNum],
-                ncSUID,
+                (inSiteDom) ? &ncSUID[0] : ncSUID,
                 &start[varNum],
                 "unsigned int",
                 LogInfo
