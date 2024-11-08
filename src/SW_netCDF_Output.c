@@ -1053,6 +1053,7 @@ static void create_output_file(
                 xName,
                 OutDom->netCDFOutput.siteName,
                 coordAttInd,
+                NULL,
                 LogInfo
             );
 
