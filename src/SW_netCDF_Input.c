@@ -3803,8 +3803,7 @@ static void write_indices(
 
     for (yIndex = 0UL; yIndex < yDomSize; yIndex++) {
         queryCoords[0] = domYCoords[yIndex];
-        syWritePos[0] = yIndex;
-        xWritePos[0] = yIndex;
+        syWritePos[0] = xWritePos[0] = yIndex;
 
         for (xIndex = 0UL; xIndex < xDomSize; xIndex++) {
             queryCoords[1] =
@@ -3817,7 +3816,7 @@ static void write_indices(
 
             if (siteDom) {
                 queryCoords[0] = domYCoords[xIndex];
-                syWritePos[0] = xIndex;
+                xWritePos[0] = syWritePos[0] = xIndex;
             } else {
                 xWritePos[1] = syWritePos[1] = xIndex;
             }
