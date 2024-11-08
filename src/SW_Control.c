@@ -904,7 +904,7 @@ void SW_CTL_read_inputs_from_disk(
 #ifdef SWDEBUG
     int debug = 0;
 #endif
-    Bool readTextInputs = swFALSE;
+    Bool readTextInputs = swTRUE;
 #if defined(SWNETCDF)
     readTextInputs =
         (Bool) !SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
