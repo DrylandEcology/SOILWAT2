@@ -40,11 +40,13 @@ static const int numVarsInKey[] = {
 #define INCRSNAME 5
 #define INGRIDMAPPING 6
 #define INXAXIS 7
-#define INYAXIS 8
-#define INZAXIS 9
-#define INTAXIS 10
-#define INSTPATRN 11
-#define INVAXIS 12
+#define INXDIM 8
+#define INYAXIS 9
+#define INYDIM 10
+#define INZAXIS 11
+#define INTAXIS 12
+#define INSTPATRN 13
+#define INVAXIS 14
 
 /* =================================================== */
 /*             Global Function Declarations            */

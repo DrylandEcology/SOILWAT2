@@ -38,7 +38,7 @@
 /** Progress status: SUID failed to simulate */
 #define PRGRSS_FAIL ((signed char) -1)
 
-#define NIN_VAR_INPUTS 21
+#define NIN_VAR_INPUTS 23
 
 /* Columns of interest, and excludes:
     - Input key and input name
@@ -47,7 +47,7 @@
     - St years and stride years start
     - Calendar override
     - User comment */
-#define NUM_INPUT_INFO 14
+#define NUM_INPUT_INFO 16
 
 /* Maximum number of variables per input key */
 #define SW_INNMAXVARS 22
@@ -61,9 +61,10 @@ static const char *const expectedColNames[] = {
     "Do nc-input?",       "ncFileName",           "ncVarName",
     "ncVarUnits",         "ncDomainType",         "ncSiteName",
     "ncCRSName",          "ncCRSGridMappingName", "ncXAxisName",
-    "ncYAxisName",        "ncZAxisName",          "ncTAxisName",
-    "ncStrideYears",      "ncStrideStart",        "ncStridePattern",
-    "ncCalendarOverride", "ncVAxisName",          "Comment"
+    "ncXDimName",         "ncYAxisName",          "ncYDimName",
+    "ncZAxisName",        "ncTAxisName",          "ncStrideYears",
+    "ncStrideStart",      "ncStridePattern",      "ncCalendarOverride",
+    "ncVAxisName",        "Comment"
 };
 
 /* This array and `possVarNames` must line up the variables within each key */
@@ -633,6 +634,7 @@ are the same throughout each active input variable
 
 @param[in] inputInfo Attribute information for all input variables
 @param[in] readInVars Specifies which variables are to be read-in as input
+@param[in] key Current input key the variable is in
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void check_inputkey_columns(
@@ -681,7 +683,7 @@ static void check_inputkey_columns(
                             LOGERROR,
                             "The variable '%s' within the input key '%s' "
                             "has a column that does not match the others "
-                            "from 'ncGridType' to 'ncVAxisName' with a "
+                            "from 'ncDomType' to 'ncVAxisName' with a "
                             "value of '%s' instead of '%s'.",
                             inputInfo[varNum][INNCVARNAME],
                             possInKeys[key],
@@ -7449,7 +7451,7 @@ void SW_NCIN_read_input_vars(
         "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t"
         "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t"
         "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t"
-        "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]";
+        "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]";
 
     /* Locally handle the weather stride information where -2 is
        the default value so we can tell that the value hasn't been set yet
@@ -7471,15 +7473,17 @@ void SW_NCIN_read_input_vars(
     const int ncCRSNameInd = 9;
     const int ncGridMapInd = 10;
     const int ncXAxisInd = 11;
-    const int ncYAxisInd = 12;
-    const int ncZAxisInd = 13;
-    const int ncTAxisInd = 14;
-    const int ncStYrInd = 15;
-    const int ncStStartInd = 16;
-    const int ncStPatInd = 17;
-    const int ncCalendarInd = 18;
-    const int ncVAxisInd = 19;
-    const int userComInd = 20;
+    const int ncXDimInd = 12;
+    const int ncYAxisInd = 13;
+    const int ncYDimInd = 14;
+    const int ncZAxisInd = 15;
+    const int ncTAxisInd = 16;
+    const int ncStYrInd = 17;
+    const int ncStStartInd = 18;
+    const int ncStPatInd = 19;
+    const int ncCalendarInd = 20;
+    const int ncVAxisInd = 21;
+    const int userComInd = 22;
 
     int inKey = -1;
     int inVarNum = -1;
@@ -7524,7 +7528,9 @@ void SW_NCIN_read_input_vars(
             input[ncCRSNameInd],
             input[ncGridMapInd],
             input[ncXAxisInd],
+            input[ncXDimInd],
             input[ncYAxisInd],
+            input[ncYDimInd],
             input[ncZAxisInd],
             input[ncTAxisInd],
             input[ncStYrInd],
