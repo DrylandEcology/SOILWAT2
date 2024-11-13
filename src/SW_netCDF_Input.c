@@ -2072,12 +2072,17 @@ weather files will follow
 @param[in] weatherInputInfo Specifies
 @param[in] startYr Start year of the simulation
 @param[in] endYr End year of the simulation
+@param[in] readInVars A list of flags specifying the variables that are
+to be read in within the weather input key
 @param[out] outWeathFileNames Generated input file names based on stride
 informatoin
 @param[out] ncWeatherInStartEndYrs Specifies that start/end years of each input
 weather file
 @param[out] numncWeatherInFiles Specifies the number of input files each
 weather variable has
+@param[out] weathStartFileIndex Specifies the index, or file number,
+the generated list of files should start (i.e., we should not assume
+all lists of files start at index 0)
 @param[out] LogInfo LogInfo Holds information on warnings and errors
 */
 static void generate_weather_filenames(
@@ -2086,10 +2091,11 @@ static void generate_weather_filenames(
     char ***weatherInputInfo,
     TimeInt startYr,
     TimeInt endYr,
+    const Bool readInVars[],
     char ****outWeathFileNames,
     unsigned int ***ncWeatherInStartEndYrs,
     unsigned int *numncWeatherInFiles,
-    const Bool readInVars[],
+    unsigned int *weathStartFileIndex,
     LOG_INFO *LogInfo
 ) {
 
@@ -2233,6 +2239,22 @@ static void generate_weather_filenames(
 
             inFileNum++;
         }
+    }
+
+    inFileNum = 0;
+    while (inFileNum < (int) *numncWeatherInFiles &&
+           (*ncWeatherInStartEndYrs)[inFileNum][1] < startYr) {
+        inFileNum++;
+    }
+    *weathStartFileIndex = inFileNum;
+
+    if(inFileNum == (int) *numncWeatherInFiles) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not find a weather input file that overlaps with the "
+            "start year."
+        );
     }
 }
 
@@ -3149,9 +3171,9 @@ static void get_startend_indices(
         middle = left + (right - left) / 2;
 
         // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
-        if (timeVals[middle] > target) {
+        if (GT(timeVals[middle], target)) {
             right = middle - 1;
-        } else if (timeVals[middle] < target) {
+        } else if (LT(timeVals[middle], target)) {
             left = middle + 1;
         } else {
             /* Set start/end indices */
@@ -3194,10 +3216,9 @@ static void calc_temporal_weather_indices(
 ) {
 
     TimeInt year;
-    int fileIndex = 0;
+    int fileIndex = SW_PathInputs->weathStartFileIndex;
     int probeIndex = -1;
     int varIndex = 1;
-    unsigned int numStartEndIndices;
     unsigned int weatherEnd;
     Bool hasCalOverride = swFALSE;
     Bool checkedCal = swFALSE;
@@ -3247,25 +3268,8 @@ static void calc_temporal_weather_indices(
     weatherCal = SW_netCDFIn->weathCalOverride[varIndex];
     hasCalOverride = (Bool) (strcmp(weatherCal, "NA") != 0);
 
-    /* Determine the first weather input file to start with */
-    while (fileIndex < (int) numWeathFiles &&
-           SW_PathInputs->ncWeatherInStartEndYrs[fileIndex][1] < startYr) {
-        fileIndex++;
-    }
-    if (fileIndex == (int) numWeathFiles) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Could not find a weather input file that overlaps with the "
-            "start year."
-        );
-        return;
-    }
-
-    numStartEndIndices = numWeathFiles - fileIndex;
-
     alloc_weather_indices(
-        &SW_PathInputs->ncWeatherStartEndIndices, numStartEndIndices, LogInfo
+        &SW_PathInputs->ncWeatherStartEndIndices, numWeathFiles, LogInfo
     );
     if (LogInfo->stopRun) {
         return; /* Exit function prematurely due to error */
@@ -3274,7 +3278,6 @@ static void calc_temporal_weather_indices(
     /* Go through each year and get the indices within the input file(s) */
     for (year = startYr; year <= endYr; year++) {
         weatherEnd = SW_PathInputs->ncWeatherInStartEndYrs[fileIndex][1];
-        fileName = weathInFiles[fileIndex];
 
         /* Increment file and reset all information for a new file */
         if (year > weatherEnd) {
@@ -3286,6 +3289,8 @@ static void calc_temporal_weather_indices(
             ncFileID = -1;
             tempStart = -1;
         }
+
+        fileName = weathInFiles[fileIndex];
 
         if (ncFileID == -1) {
             SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
@@ -3354,7 +3359,6 @@ static void calc_temporal_weather_indices(
         valDoy1Add = (fmod(timeVals[timeSize - 1], 1.0) == 0.0) ? 0.0 : 0.5;
         valDoy1 = conv_times(system, currCalUnit, newCalUnit) + valDoy1Add;
 #endif
-
         get_startend_indices(
             SW_PathInputs->ncWeatherStartEndIndices[fileIndex],
             timeVals,
@@ -3465,6 +3469,8 @@ being tested is the same as that of which the program understands
 (our own domain generated in `domain.nc`)
 
 @param[in,out] SW_netCDFIn Constant netCDF input file information
+@param[in] SW_PathInputs Struct of type SW_PATH_INPUTS which
+holds basic information about input files and values
 @param[in] spatialTol User-provided tolerance for comparing spatial coordinates
 @param[out] LogInfo Holds information dealing with logfile output
 */
@@ -3493,6 +3499,7 @@ static void determine_indexfile_use(
     double **freeArr[] = {&tempY, &tempX};
     const int numFreeArr = 2;
     const int numFileClose = 0;
+    int weathFileIndex = SW_PathInputs->weathStartFileIndex;
 
     ForEachNCInKey(k) {
         if (SW_netCDFIn->readInVars[k][0] && k > eSW_InDomain) {
@@ -3505,7 +3512,7 @@ static void determine_indexfile_use(
             }
 
             if (k == eSW_InWeather) {
-                fileName = SW_PathInputs->ncWeatherInFiles[fIndex][0];
+                fileName = SW_PathInputs->ncWeatherInFiles[fIndex][weathFileIndex];
             } else {
                 fileName = SW_PathInputs->ncInFiles[k][fIndex];
             }
@@ -3934,11 +3941,13 @@ static void get_index_vars_info(
     Bool inHasSite,
     char *siteName,
     char *indexVarNames[],
+    char *domName,
     int *numVars,
     LOG_INFO *LogInfo
 ) {
     int varNum;
     char *varNames[] = {domYName, domXName};
+    char *varName;
 
     if (inHasSite && !SW_NC_dimExists(siteName, inFileID)) {
         LogError(
@@ -3955,8 +3964,10 @@ static void get_index_vars_info(
     *numVars = (inHasSite) ? 1 : 2;
 
     for (varNum = 0; varNum < *numVars; varNum++) {
+        varName = (inHasSite) ? varNames[varNum] : domName;
+
         SW_NC_get_vardimids(
-            templateID, -1, varNames[varNum], dimIDs[varNum], nDims, LogInfo
+            templateID, -1, varName, dimIDs[varNum], nDims, LogInfo
         );
         if (LogInfo->stopRun) {
             return;
@@ -4242,11 +4253,14 @@ static void get_read_start(
     Bool inSiteDom,
     const size_t ncSUID[],
     size_t start[],
+    const int latIndex,
+    const int lonIndex,
     LOG_INFO *LogInfo
 ) {
     char *indexVarNames[] = {NULL, NULL};
     int indexFileID = -1;
     int varNum;
+    int latLonIndex[] = {latIndex, lonIndex};
     int indexVarID;
     int numIndexVars = (inSiteDom) ? 1 : 2;
 
@@ -4269,7 +4283,7 @@ static void get_read_start(
                 &indexVarID,
                 indexVarNames[varNum],
                 (inSiteDom) ? &ncSUID[0] : ncSUID,
-                &start[varNum],
+                &start[latLonIndex[varNum]],
                 "unsigned int",
                 LogInfo
             );
@@ -4278,8 +4292,11 @@ static void get_read_start(
             }
         }
     } else {
-        start[0] = ncSUID[0];
-        start[1] = ncSUID[1];
+        start[latIndex] = ncSUID[0];
+
+        if (lonIndex > -1) {
+            start[lonIndex] = ncSUID[1];
+        }
     }
 
 closeFile:
@@ -4301,8 +4318,6 @@ of determining a missing value that was provided by the user
 by the user, this is a list of missing value(s) to compare the value
 to and see if it is missing
 @param[in] varNum Variable number within an input key that is in question
-@param[in] unitConv Unit converter to convert from user-provided units
-to SW2 units
 @param[in,out] value Updated value after either setting it to missing
 or converted value
 */
@@ -4311,7 +4326,6 @@ static void set_missing_val(
     const Bool *valHasMissing,
     double **missingVals,
     int varNum,
-    sw_converter_t *unitConv,
     double *value
 ) {
     const int missVal = 1;
@@ -4367,12 +4381,6 @@ static void set_missing_val(
     if (setMissing) {
         *value = SW_MISSING;
     }
-
-#if defined(SWUDUNITS)
-    if (!isnull(unitConv) && !missing(*value)) {
-        *value = cv_convert_double(unitConv, *value);
-    }
-#endif
 }
 
 /**
@@ -4431,17 +4439,25 @@ static void set_read_vals(
 ) {
     int valIndex;
     double *dest;
+    Bool missingBefore;
 
     for (valIndex = 0; valIndex < numVals; valIndex++) {
         dest = (!swrcpInput) ? &resVals[valIndex] : &resVals[swrcpIndex];
 
-        *dest = (!swrcpInput) ? readVals[valIndex] : readVals[swrcpLyr];
-        *dest *= scale_factor;
-        *dest += add_offset;
+        missingBefore = (Bool) (missing(*dest));
+        set_missing_val(varType, valHasMissing, missingVals, varNum, dest);
 
-        set_missing_val(
-            varType, valHasMissing, missingVals, varNum, unitConv, dest
-        );
+        if (missingBefore || !missing(*dest)) {
+            *dest = (!swrcpInput) ? readVals[valIndex] : readVals[swrcpLyr];
+            *dest *= scale_factor;
+            *dest += add_offset;
+
+#if defined(SWUDUNITS)
+            if (!isnull(unitConv)) {
+                *dest = cv_convert_double(unitConv, *dest);
+            }
+#endif
+        }
     }
 }
 
@@ -4594,9 +4610,10 @@ static void read_spatial_topo_climate_inputs(
 
         /* Get the start indices based on if we need to use the respective
            index file */
-        get_read_start(
-            useIndexFile, inFiles[currKey][0], inSiteDom, ncSUID, start, LogInfo
-        );
+        // get_read_start(
+        //     useIndexFile, inFiles[currKey][0], inSiteDom, ncSUID, start,
+        //     LogInfo
+        // );
         if (LogInfo->stopRun) {
             goto closeFile;
         }
@@ -5069,8 +5086,8 @@ static void get_variable_dim_order(
     int readAxisID = 0;
     Bool varSiteDom = (Bool) (strcmp(varInfo[INDOMTYPE], "s") == 0);
     char *axisNames[] = {
-        (varSiteDom) ? varInfo[INSITENAME] : varInfo[INXAXIS],
-        varInfo[INYAXIS],
+        (varSiteDom) ? varInfo[INSITENAME] : varInfo[INYAXIS],
+        varInfo[INXAXIS],
         varInfo[INZAXIS],
         varInfo[INTAXIS],
         varInfo[INVAXIS]
@@ -5168,6 +5185,7 @@ static void get_invar_information(
     LyrIndex **numSoilVarLyrs = &SW_PathInputs->numSoilVarLyrs;
     LyrIndex testNumLyrs = 0;
     int numReadSoilVars = 0;
+    int weathFileIndex = SW_PathInputs->weathStartFileIndex;
 
     double *attVal;
 
@@ -5211,9 +5229,12 @@ static void get_invar_information(
             varName = inVarInfo[varNum][INNCVARNAME];
             varType = &SW_PathInputs->inVarTypes[inKey][varNum];
             hasScaleAddAtts = &SW_PathInputs->hasScaleAndAddFact[inKey][varNum];
-            fileName = (inKey != eSW_InWeather) ?
-                           ncInFiles[varNum] :
-                           SW_PathInputs->ncWeatherInFiles[varNum][0];
+
+            if (inKey != eSW_InWeather) {
+                fileName = ncInFiles[varNum];
+            } else {
+                fileName = SW_PathInputs->ncWeatherInFiles[varNum][weathFileIndex];
+            }
 
             /* Open file */
             SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
@@ -5493,9 +5514,9 @@ static void read_veg_inputs(
 
         /* Get the start indices based on if we need to use the respective
            index file */
-        get_read_start(
-            useIndexFile, inFiles[0], inSiteDom, ncSUID, start, LogInfo
-        );
+        // get_read_start(
+        //     useIndexFile, inFiles[0], inSiteDom, ncSUID, start, LogInfo
+        // );
         if (LogInfo->stopRun) {
             goto closeFile;
         }
@@ -5671,9 +5692,9 @@ static void read_soil_inputs(
     inSiteDom = (Bool) (strcmp(inVarInfo[fIndex][INDOMTYPE], "s") == 0);
     writeIndex = (inSiteDom) ? 1 : 2;
 
-    get_read_start(
-        useIndexFile, soilInFiles[0], inSiteDom, ncSUID, defSetStart, LogInfo
-    );
+    // get_read_start(
+    //     useIndexFile, soilInFiles[0], inSiteDom, ncSUID, defSetStart, LogInfo
+    // );
     if (LogInfo->stopRun) {
         goto closeFile;
     }
@@ -5932,7 +5953,7 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         (Bool) (!progFileExists || (progFileIsiteDom && !progVarExists));
     size_t overrideChunking[2] = {0};
 
-    if(domTypeIsS) {
+    if (domTypeIsS) {
         overrideChunking[0] = SW_Domain->nDimS;
     } else {
         overrideChunking[0] = SW_Domain->nDimY;
@@ -6470,25 +6491,35 @@ variables were input from nc files
 @param[in] weatherIndex Weather variable index (TEMP_MAX, TEMP_MIN, etc.)
 @param[in] yearlyValues List of yearly values read from an nc file to
 put into the respective place
-@param[in] counterpartHelper Helper list to hold the counter part values
-to a calculation, e.g., this will contain maximum temperature when trying
-to store minimum temperature to calculate average temperature
 @param[in] numDays Number of days in the year
 @param[in] varConv Conversion system instance to translate into
 SW2 units
+@param[in] varType Numerical value specifying the variable type
+within the nc file
+@param[in] valHasMissing A list of flags for the current variable
+specifying the method of missing value specification within
+the nc file
+@param[in] missingVals A list of lists that hold missing values
+for the current variable for every possible source of missing
+value specification
+@param[in] scaleFactor A value, if provided by the user, specifying
+a value to multiply each value by
+@param[in] addOffsaet A value, if provided by the user, specifying
+a value to add to every value after multiplying it by the
+scale factor
+@param[in] varNum A numerical value specifying the placement within
+an input key the variable resides
 */
 static void set_weather_daily(
     SW_WEATHER_HIST *yearWeather,
     const Bool *dailyInputFlags,
     int weatherIndex,
     const double yearlyValues[],
-    double counterpartHelper[],
     TimeInt numDays,
     sw_converter_t *varConv,
     nc_type varType,
     const Bool *valHasMissing,
     double **missingVals,
-    Bool unpack,
     double scaleFactor,
     double addOffset,
     int varNum
@@ -6517,17 +6548,25 @@ static void set_weather_daily(
     for (doy = 0; doy < numDays; doy++) {
         dayVal = yearlyValues[doy];
 
-        if (unpack) {
-            dayVal = (dayVal * scaleFactor + addOffset);
-        }
-
-        set_missing_val(
-            varType, valHasMissing, missingVals, varNum, varConv, &dayVal
+        set_read_vals(
+            valHasMissing,
+            missingVals,
+            &dayVal,
+            1,
+            varNum,
+            varType,
+            scaleFactor,
+            addOffset,
+            varConv,
+            swFALSE,
+            0,
+            0,
+            &dayVal
         );
-        // printf("%f\n", dayVal);
 
         if ((weatherIndex >= TEMP_MAX && weatherIndex <= CLOUD_COV) ||
-            weatherIndex == SHORT_WR) {
+            weatherIndex == SHORT_WR || weatherIndex == WIND_EAST ||
+            weatherIndex == REL_HUMID_MAX) {
             switch (weatherIndex) {
             case TEMP_MAX:
                 yearWeather->temp_max[doy] = dayVal;
@@ -6536,13 +6575,13 @@ static void set_weather_daily(
                 yearWeather->temp_min[doy] = dayVal;
 
                 // Calculate average air temperature if min/max not missing
-                if (!missing(counterpartHelper[doy]) &&
+                if (!missing(yearWeather->temp_max[doy]) &&
                     !missing(yearWeather->temp_min[doy])) {
 
                     /* upArrHelper -> maximum temperature */
-                    yearWeather->temp_avg[doy] =
-                        (counterpartHelper[doy] + yearWeather->temp_min[doy]) /
-                        2.0;
+                    yearWeather->temp_avg[doy] = (yearWeather->temp_max[doy] +
+                                                  yearWeather->temp_min[doy]) /
+                                                 2.0;
                 }
                 break;
             case PPT:
@@ -6551,6 +6590,11 @@ static void set_weather_daily(
             case CLOUD_COV:
                 yearWeather->cloudcov_daily[doy] = dayVal;
                 break;
+            case WIND_EAST:
+                yearWeather->windspeed_daily[doy] = dayVal;
+                break;
+            case REL_HUMID_MAX:
+                yearWeather->r_humidity_daily[doy] = dayVal;
             default: /* SHORT_WR */
                 yearWeather->shortWaveRad[doy] = dayVal;
                 break;
@@ -6562,12 +6606,14 @@ static void set_weather_daily(
                 } else if (hasEastNorthWind) {
                     /* Make sure wind is not averaged calculated with any
                        instances of SW_MISSING
-                       counterpartHelper  -> east wind
+                       windspeed_daily    -> east wind
                        dayVal             -> north wind */
-                    if (!missing(counterpartHelper[doy]) && !missing(dayVal)) {
+                    if (!missing(yearWeather->windspeed_daily[doy]) &&
+                        !missing(dayVal)) {
 
                         yearWeather->windspeed_daily[doy] = sqrt(
-                            squared(counterpartHelper[doy]) + squared(dayVal)
+                            squared(yearWeather->windspeed_daily[doy]) +
+                            squared(dayVal)
                         );
                     } else {
                         yearWeather->windspeed_daily[doy] = SW_MISSING;
@@ -6577,12 +6623,15 @@ static void set_weather_daily(
                 if (weatherIndex == REL_HUMID_MIN && hasMaxMinRelHumid) {
                     // Make sure relative humidity is not averaged from any
                     // instances of SW_MISSING
-                    if (!missing(counterpartHelper[doy]) && !missing(dayVal)) {
+                    if (!missing(yearWeather->r_humidity_daily[doy]) &&
+                        !missing(dayVal)) {
 
-                        /* counterpartHelper  -> maximum relative humidity
+                        /* r_humidity_daily   -> maximum relative humidity
                            dayVal             -> minimum relative humidity */
                         yearWeather->r_humidity_daily[doy] =
-                            (counterpartHelper[doy] + dayVal) / 2.0;
+                            (yearWeather->r_humidity_daily[doy] + dayVal) / 2.0;
+                    } else {
+                        yearWeather->r_humidity_daily[doy] = SW_MISSING;
                     }
 
                 } else if (weatherIndex == REL_HUMID) {
@@ -6624,15 +6673,16 @@ static void set_weather_daily(
                     /* Make sure the calculation of actual vapor pressure will
                      not be executed while max and/or min temperature and/or
                      relative humidity are holding the value "SW_MISSING"
-                     counterpartHelper  -> maximum relative humidity
+                     r_humidity_daily   -> maximum relative humidity
                      dayVal             -> minimum relative humidity */
                     if (!missing(yearWeather->temp_max[doy]) &&
                         !missing(yearWeather->temp_min[doy]) &&
-                        !missing(counterpartHelper[doy]) && !missing(dayVal)) {
+                        !missing(yearWeather->r_humidity_daily[doy]) &&
+                        !missing(dayVal)) {
 
                         yearWeather->actualVaporPressure[doy] =
                             actualVaporPressure2(
-                                counterpartHelper[doy],
+                                yearWeather->r_humidity_daily[doy],
                                 dayVal,
                                 yearWeather->temp_max[doy],
                                 yearWeather->temp_min[doy]
@@ -6677,6 +6727,8 @@ static void set_weather_daily(
 
                         yearWeather->r_humidity_daily[doy] =
                             yearWeather->actualVaporPressure[doy] / svpVal;
+                    } else {
+                        yearWeather->r_humidity_daily[doy] = SW_MISSING;
                     }
                 }
             }
@@ -6718,7 +6770,6 @@ static void read_weather_input(
     Bool *readInput = SW_Domain->netCDFInput.readInVars[eSW_InWeather];
     unsigned int numWeathFiles = SW_Domain->SW_PathInputs.ncNumWeatherInFiles;
     int varNum = 1;
-    int setIndex;
     size_t start[4]; /* Up to four dimensions per variable */
     size_t count[4]; /* Up to four dimensions per variable */
     TimeInt numDays;
@@ -6731,7 +6782,6 @@ static void read_weather_input(
     char *fileName;
     char *varName;
     unsigned int weathFileIndex = 0;
-    int adjVarNum;
     Bool varHasAddScaleAtts;
     nc_type *varTypes = SW_Domain->SW_PathInputs.inVarTypes[eSW_InWeather];
     Bool *keyAttFlags =
@@ -6746,13 +6796,13 @@ static void read_weather_input(
     unsigned int **weatherIndices =
         SW_Domain->SW_PathInputs.ncWeatherStartEndIndices;
     double tempVals[MAX_DAYS] = {0.0};
-    double counterpartVals[MAX_DAYS] = {0.0}; /* Max/min or north/east wind */
-    double *upArrHelper = NULL;
     double scaleFactor;
     double addOffset;
-    int timeIndex;
     int timePlaceIndex = 3;
     unsigned int beforeFileIndex;
+    int latIndex;
+    int lonIndex;
+    int timeIndex;
 
     while (!readInput[fIndex + 1]) {
         fIndex++;
@@ -6764,25 +6814,36 @@ static void read_weather_input(
         if (!readInput[varNum + 1]) {
             continue;
         }
-        adjVarNum = varNum - 1;
+
         varHasAddScaleAtts = keyAttFlags[varNum];
         varID = SW_Domain->SW_PathInputs.inVarIDs[eSW_InWeather][varNum];
+        latIndex = dimOrderInVar[varNum][0];
+        lonIndex = dimOrderInVar[varNum][1];
+        timeIndex = dimOrderInVar[varNum][3];
 
-        start[1] = start[2] = start[3] = 0;
+        start[0] = start[1] = start[2] = start[3] = 0;
         count[2] = count[3] = 0;
 
-        count[0] = 1;
-        count[1] = (inSiteDom) ? 0 : 1;
+        count[latIndex] = 1;
+        if (lonIndex > -1) {
+            count[lonIndex] = (inSiteDom) ? 0 : 1;
+        }
 
         get_read_start(
-            useIndexFile, indexFileName, inSiteDom, ncSUID, start, LogInfo
+            useIndexFile,
+            indexFileName,
+            inSiteDom,
+            ncSUID,
+            start,
+            latIndex,
+            lonIndex,
+            LogInfo
         );
         if (LogInfo->stopRun) {
             goto closeFile;
         }
 
-        weathFileIndex = 0;
-        timeIndex = dimOrderInVar[varNum][timePlaceIndex];
+        weathFileIndex = SW_Domain->SW_PathInputs.weathStartFileIndex;
         for (yearIndex = 0; yearIndex < SW_Weather->n_years; yearIndex++) {
             year = SW_Domain->startyr + yearIndex;
 
@@ -6792,11 +6853,12 @@ static void read_weather_input(
                 weathFileIndex++;
             }
 
+            fileName = weathInFiles[varNum][weathFileIndex];
+            varName = inVarInfo[varNum][INNCVARNAME];
+
             numDays = Time_get_lastdoy_y(year);
             count[timeIndex] = numDays;
             tempVals[MAX_DAYS - 1] = SW_MISSING;
-            fileName = weathInFiles[varNum][weathFileIndex];
-            varName = inVarInfo[varNum][INNCVARNAME];
 
             /* Check to see if a different file has to be opened,
                if so, we need to make sure the correct start index
@@ -6815,30 +6877,12 @@ static void read_weather_input(
                 return;
             }
 
-            if (yearIndex == 0) {
-                arrange_start_count(dimOrderInVar[varNum], start, count);
-            }
-
             /* Read in an entire year's worth of weather data */
             get_values_multiple(
                 ncFileID, varID, start, count, varName, tempVals, LogInfo
             );
             if (LogInfo->stopRun) {
                 goto closeFile;
-            }
-
-            /* Gather counter part information so we can calculate
-               values using two sets of values max/min or east/west */
-            if (adjVarNum == WIND_EAST || adjVarNum == REL_HUMID_MAX) {
-                for (setIndex = 0; setIndex < MAX_DAYS; setIndex++) {
-                    counterpartVals[setIndex] = tempVals[setIndex];
-                }
-            }
-
-            if (adjVarNum == TEMP_MIN) {
-                upArrHelper = SW_Weather->allHist[yearIndex]->temp_max;
-            } else if (adjVarNum == WIND_NORTH || adjVarNum == REL_HUMID_MIN) {
-                upArrHelper = counterpartVals;
             }
 
             if (varHasAddScaleAtts) {
@@ -6854,13 +6898,11 @@ static void read_weather_input(
                 SW_Weather->dailyInputFlags,
                 varNum - 1, /* Equivalent of TEMP_MAX, TEMP_MIN, etc. */
                 tempVals,
-                upArrHelper,
                 numDays,
                 weathConv[varNum],
                 varTypes[varNum],
                 missValFlags[varNum],
                 doubleMissVals,
-                varHasAddScaleAtts,
                 scaleFactor,
                 addOffset,
                 varNum
@@ -7055,6 +7097,12 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     Bool **readInVars = SW_Domain->netCDFInput.readInVars;
     Bool *useIndexFile = SW_Domain->netCDFInput.useIndexFile;
     Bool fileIsIndex;
+    int weathFileIndex = SW_Domain->SW_PathInputs.weathStartFileIndex;
+    const unsigned int numWeathFiles =
+        SW_Domain->SW_PathInputs.ncNumWeatherInFiles;
+    unsigned int **weathStartEndYrs =
+        SW_Domain->SW_PathInputs.ncWeatherInStartEndYrs;
+    const unsigned int startYr = SW_Domain->startyr;
 
     /* Check actual input files provided by the user */
     ForEachNCInKey(inKey) {
@@ -7071,7 +7119,7 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     varInfo = SW_Domain->netCDFInput.inVarInfo[inKey][file];
                     fileName =
                         (inKey == eSW_InWeather && file > 0) ?
-                            SW_Domain->SW_PathInputs.ncWeatherInFiles[file][0] :
+                            SW_Domain->SW_PathInputs.ncWeatherInFiles[file][weathFileIndex] :
                             fileNames[file];
 
                     SW_NC_open(fileName, NC_NOWRITE, fileID, LogInfo);
@@ -7866,10 +7914,11 @@ void SW_NCIN_read_input_vars(
             SW_netCDFIn->inVarInfo[eSW_InWeather],
             startYr,
             endYr,
+            SW_netCDFIn->readInVars[eSW_InWeather],
             &SW_PathInputs->ncWeatherInFiles,
             &SW_PathInputs->ncWeatherInStartEndYrs,
             &SW_PathInputs->ncNumWeatherInFiles,
-            SW_netCDFIn->readInVars[eSW_InWeather],
+            &SW_PathInputs->weathStartFileIndex,
             LogInfo
         );
     }
@@ -8026,12 +8075,12 @@ void SW_NCIN_create_units_converters(
 #if defined(SWUDUNITS)
             if (!isnull(SW_netCDFIn->units_sw[key][varIndex])) {
                 unitFrom = ut_parse(
-                    system, SW_netCDFIn->units_sw[key][varIndex], UT_UTF8
-                );
-                unitTo = ut_parse(
                     system,
                     SW_netCDFIn->inVarInfo[key][varIndex][INVARUNITS],
                     UT_UTF8
+                );
+                unitTo = ut_parse(
+                    system, SW_netCDFIn->units_sw[key][varIndex], UT_UTF8
                 );
 
                 if (ut_are_convertible(unitFrom, unitTo)) {
@@ -8188,7 +8237,10 @@ void SW_NCIN_precalc_lookups(
     }
 
     determine_indexfile_use(
-        SW_netCDFIn, &SW_Domain->SW_PathInputs, SW_Domain->spatialTol, LogInfo
+        SW_netCDFIn,
+        &SW_Domain->SW_PathInputs,
+        SW_Domain->spatialTol,
+        LogInfo
     );
     if (LogInfo->stopRun) {
         return; /* Exit function prematurely due to error */
@@ -8269,6 +8321,9 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     char *frequency = (char *) "fx";
     const char *domFile =
         SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom];
+    char *domVarName =
+        SW_Domain->netCDFInput.inVarInfo[eSW_InDomain][0][INNCVARNAME];
+    int weatherFileIndex = SW_Domain->SW_PathInputs.weathStartFileIndex;
     char *fileName;
     int indexVarNDims = 0;
     int numVarsToWrite = 0;
@@ -8314,7 +8369,7 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
                 if (k == eSW_InWeather) {
                     fileName =
-                        SW_Domain->SW_PathInputs.ncWeatherInFiles[fIndex][0];
+                        SW_Domain->SW_PathInputs.ncWeatherInFiles[fIndex][weatherFileIndex];
                 } else {
                     fileName = SW_Domain->SW_PathInputs.ncInFiles[k][fIndex];
                 }
@@ -8367,6 +8422,7 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     inHasSite,
                     varInfo[fIndex][INSITENAME],
                     indexVarNames,
+                    domVarName,
                     &numVarsToWrite,
                     LogInfo
                 );

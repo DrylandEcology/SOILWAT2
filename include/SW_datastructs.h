@@ -971,6 +971,7 @@ typedef struct {
                                         variable, and 2 values for start/end */
 
     unsigned int **ncWeatherStartEndIndices;
+    unsigned int weathStartFileIndex;
 
     int *inVarIDs[SW_NINKEYSNC]; /**< Store the identifier of the
                                         variables within the input
