@@ -96,7 +96,7 @@ static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] =
          "%",
          "degC",
          "kPa",
-         "m s-1"},
+         "NA"},
         {"1", "%", "m s-1", "%", "kg m-3", "1"} /* inClimate */
 };
 
@@ -8083,31 +8083,41 @@ void SW_NCIN_create_units_converters(
                     system, SW_netCDFIn->units_sw[key][varIndex], UT_UTF8
                 );
 
-                if (ut_are_convertible(unitFrom, unitTo)) {
-                    // SW_netCDFIn.uconv[key][varIndex] was previously
-                    // to NULL initialized
-                    SW_netCDFIn->uconv[key][varIndex] =
-                        ut_get_converter(unitFrom, unitTo);
-                }
+                /* If the input variable is shortwave radiation or
+                   swrcp, the internal units should be NA */
+                if (!((key == eSW_InWeather && varIndex == 14) ||
+                      (key == eSW_InSoil && varIndex >= 15 && varIndex <= 21)
+                    )) {
 
-                if (isnull(SW_netCDFIn->uconv[key][varIndex])) {
-                    // ut_are_convertible() is false or ut_get_converter()
-                    // failed
-                    LogError(
-                        LogInfo,
-                        LOGWARN,
-                        "Units of variable '%s' cannot get converted from "
-                        "internal '%s' to requested '%s'. "
-                        "Input will use internal units.",
-                        SW_netCDFIn->inVarInfo[key][varIndex][INNCVARNAME],
-                        SW_netCDFIn->units_sw[key][varIndex],
-                        SW_netCDFIn->inVarInfo[key][varIndex][INVARUNITS]
-                    );
+                    if (ut_are_convertible(unitFrom, unitTo)) {
+                        // SW_netCDFIn.uconv[key][varIndex] was previously
+                        // to NULL initializeda
+                        SW_netCDFIn->uconv[key][varIndex] =
+                            ut_get_converter(unitFrom, unitTo);
+                    }
 
-                    /* converter is not available: output in internal units */
-                    free(SW_netCDFIn->inVarInfo[key][varIndex][INVARUNITS]);
-                    SW_netCDFIn->inVarInfo[key][varIndex][INVARUNITS] =
-                        Str_Dup(SW_netCDFIn->units_sw[key][varIndex], LogInfo);
+                    if (isnull(SW_netCDFIn->uconv[key][varIndex])) {
+                        // ut_are_convertible() is false or ut_get_converter()
+                        // failed
+                        LogError(
+                            LogInfo,
+                            LOGWARN,
+                            "Units of variable '%s' cannot get converted from "
+                            "internal '%s' to requested '%s'. "
+                            "Input will use internal units.",
+                            SW_netCDFIn->inVarInfo[key][varIndex][INNCVARNAME],
+                            SW_netCDFIn->units_sw[key][varIndex],
+                            SW_netCDFIn->inVarInfo[key][varIndex][INVARUNITS]
+                        );
+
+                        /* converter is not available: output in internal units
+                         */
+                        free(SW_netCDFIn->inVarInfo[key][varIndex][INVARUNITS]);
+                        SW_netCDFIn->inVarInfo[key][varIndex][INVARUNITS] =
+                            Str_Dup(
+                                SW_netCDFIn->units_sw[key][varIndex], LogInfo
+                            );
+                    }
                 }
 
                 ut_free(unitFrom);
