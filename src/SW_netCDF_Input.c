@@ -5951,14 +5951,7 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     Bool progVarExists = SW_NC_varExists(*progFileID, progVarName);
     Bool createOrModFile =
         (Bool) (!progFileExists || (progFileIsiteDom && !progVarExists));
-    size_t overrideChunking[2] = {0};
-
-    if (domTypeIsS) {
-        overrideChunking[0] = SW_Domain->nDimS;
-    } else {
-        overrideChunking[0] = SW_Domain->nDimY;
-        overrideChunking[1] = SW_Domain->nDimX;
-    }
+    Bool useDefaultChunking = swTRUE;
 
     /* Fill dynamic coordinate names */
     if (domTypeIsS) {
@@ -6051,7 +6044,7 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             readinGeoXName,
             SW_Domain->OutDom.netCDFOutput.siteName,
             -1,
-            overrideChunking,
+            useDefaultChunking,
             LogInfo
         );
         if (LogInfo->stopRun) {

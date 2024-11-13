@@ -145,7 +145,7 @@ void SW_NC_create_full_var(
     const char *xName,
     const char *siteName,
     const int coordAttIndex,
-    size_t *overrideChunkSizes,
+    Bool useDefaultChunking,
     LOG_INFO *LogInfo
 );
 

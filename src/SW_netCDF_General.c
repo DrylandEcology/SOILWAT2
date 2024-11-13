@@ -966,9 +966,8 @@ variable
 within the provided `attNames`/`attVals` (if there isn't an attribute
 of this name, it's value should be -1)
 @param[in] siteName User-provided site dimension/variable "site" name
-@param[in] overrideChunkSizes A list of chunk sizes that the calling
-function would prefer to use, this is currently only used when
-creating the progress file
+@param[in] ouseDefaultChunking A flag specifying if, when creating the
+variable, to use the default chunk sizes or program-provided sizes
 @param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_NC_create_full_var(
@@ -993,7 +992,7 @@ void SW_NC_create_full_var(
     const char *xName,
     const char *siteName,
     const int coordAttIndex,
-    size_t *overrideChunkSizes,
+    Bool useDefaultChunking,
     LOG_INFO *LogInfo
 ) {
 
@@ -1103,7 +1102,7 @@ void SW_NC_create_full_var(
         ncFileID,
         newVarType,
         dimArrSize,
-        (isnull(overrideChunkSizes)) ? chunkSizes : overrideChunkSizes,
+        (useDefaultChunking) ? NULL : chunkSizes,
         deflateLevel,
         LogInfo
     );
