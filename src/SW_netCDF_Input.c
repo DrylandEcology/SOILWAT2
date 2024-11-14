@@ -4260,7 +4260,6 @@ static void get_read_start(
     char *indexVarNames[] = {NULL, NULL};
     int indexFileID = -1;
     int varNum;
-    int latLonIndex[] = {latIndex, lonIndex};
     int indexVarID;
     int numIndexVars = (inSiteDom) ? 1 : 2;
 
@@ -4283,7 +4282,7 @@ static void get_read_start(
                 &indexVarID,
                 indexVarNames[varNum],
                 (inSiteDom) ? &ncSUID[0] : ncSUID,
-                &start[latLonIndex[varNum]],
+                &start[varNum],
                 "unsigned int",
                 LogInfo
             );
@@ -4462,44 +4461,6 @@ static void set_read_vals(
 }
 
 /**
-@brief Given an order of start/count indices, rearrange these values
-to make the order found in the variable the values will be used for;
-the order is based on that determined in `get_variable_dim_order()`
-
-@param[in] indices Pre-determined numbers that represent the index
-within start/count certain values/spots should be placed to match
-the variable's dimensions that's being read
-@param[in,out] start A list of indices that specify where to start
-reading a variable from
-@param[in,out] count A list of numbers that specify how many values
-from every dimension of a variable should be read
-*/
-static void arrange_start_count(
-    const int indices[], size_t start[], size_t count[]
-) {
-    int index = 0;
-    int startIndex = 0;
-    const int indexArrSize = 5;
-    size_t tempVal = 0UL;
-
-    while (index + 1 < indexArrSize) {
-        if (indices[index] > -1) {
-            tempVal = start[startIndex];
-            start[startIndex] = start[indices[index]];
-            start[indices[index]] = tempVal;
-
-            tempVal = count[startIndex];
-            count[startIndex] = count[indices[index]];
-            count[indices[index]] = tempVal;
-
-            startIndex++;
-        }
-
-        index++;
-    }
-}
-
-/**
 @brief Condensed function to read topographical, spatial,
 and climate inputs and convert the units from input nc files,
 rather than having separate functions, this will specifically read
@@ -4558,6 +4519,10 @@ static void read_spatial_topo_climate_inputs(
     double **doubleMissVals;
     int **dimOrderInVar;
     int numVals;
+    int latIndex;
+    int lonIndex;
+    int timeIndex;
+    size_t defSetStart[2] = {0};
 
     double **scaleAddFactors;
     const InKeys keys[] = {eSW_InSpatial, eSW_InTopo, eSW_InClimate};
@@ -4598,22 +4563,24 @@ static void read_spatial_topo_climate_inputs(
         missValFlags = SW_Domain->SW_PathInputs.missValFlags[currKey];
         doubleMissVals = SW_Domain->SW_PathInputs.doubleMissVals[currKey];
         dimOrderInVar = SW_Domain->netCDFInput.dimOrderInVar[currKey];
-
-        /* Determine how many values we will be reading from the variables
-           within this input key */
-        if (inSiteDom) {
-            count[1] = (currKey != eSW_InClimate) ? 0 : MAX_MONTHS;
-        } else {
-            count[1] = 1;
-            count[2] = (currKey != eSW_InClimate) ? 0 : MAX_MONTHS;
-        }
+        latIndex = dimOrderInVar[fIndex][0];
+        lonIndex = dimOrderInVar[fIndex][1];
+        timeIndex = dimOrderInVar[fIndex][3];
+        start[0] = start[1] = start[2] = 0;
+        count[0] = count[1] = count[2] = 0;
 
         /* Get the start indices based on if we need to use the respective
            index file */
-        // get_read_start(
-        //     useIndexFile, inFiles[currKey][0], inSiteDom, ncSUID, start,
-        //     LogInfo
-        // );
+        get_read_start(
+            useIndexFile,
+            inFiles[currKey][0],
+            inSiteDom,
+            ncSUID,
+            defSetStart,
+            latIndex,
+            lonIndex,
+            LogInfo
+        );
         if (LogInfo->stopRun) {
             goto closeFile;
         }
@@ -4625,13 +4592,28 @@ static void read_spatial_topo_climate_inputs(
                 continue;
             }
 
-            arrange_start_count(dimOrderInVar[adjSetIndex], start, count);
-
             varID = varIDs[varNum];
             varType = varTypes[varNum];
             fileName = inFiles[currKey][varNum];
             varName = inVarInfo[varNum][INNCVARNAME];
             varHasAddScaleAtts = keyAttFlags[varNum];
+            latIndex = dimOrderInVar[varNum][0];
+            lonIndex = dimOrderInVar[varNum][1];
+            timeIndex = dimOrderInVar[varNum][3];
+
+            start[latIndex] = defSetStart[0];
+            count[latIndex] = 1;
+
+            if(lonIndex > - 1) {
+                start[lonIndex] = defSetStart[1];
+                count[lonIndex] = 1;
+            }
+
+            /* Determine how many values we will be reading from the variables
+            within this input key */
+            if (timeIndex > -1) {
+                count[timeIndex] = MAX_MONTHS;
+            }
 
             SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
             if (LogInfo->stopRun) {
@@ -5433,7 +5415,6 @@ static void read_veg_inputs(
     nc_type varType;
     size_t count[] = {1, 0, 0, 0};
     size_t start[] = {0, 0, 0, 0};
-    int cWriteIndex = 0;
     Bool varHasTime;
     Bool hasPFT;
     Bool varHasAddScaleAtts;
@@ -5450,6 +5431,11 @@ static void read_veg_inputs(
     nc_type *varTypes = SW_Domain->SW_PathInputs.inVarTypes[eSW_InVeg];
     Bool useIndexFile = SW_Domain->netCDFInput.useIndexFile[eSW_InVeg];
     char **inFiles = SW_Domain->SW_PathInputs.ncInFiles[eSW_InVeg];
+    int latIndex;
+    int lonIndex;
+    int timeIndex;
+    int pftIndex;
+    size_t defSetStart[2] = {0};
 
     double *values[] = {
         &SW_VegProd->bare_cov.fCover,
@@ -5487,7 +5473,24 @@ static void read_veg_inputs(
     }
 
     inSiteDom = (Bool) (strcmp(inVarInfo[fIndex][INDOMTYPE], "s") == 0);
-    cWriteIndex = (inSiteDom) ? 1 : 2;
+    latIndex = dimOrderInVar[fIndex][0];
+    lonIndex = dimOrderInVar[fIndex][1];
+
+    /* Get the start indices based on if we need to use the respective
+        index file */
+    get_read_start(
+        useIndexFile,
+        inFiles[0],
+        inSiteDom,
+        ncSUID,
+        defSetStart,
+        latIndex,
+        lonIndex,
+        LogInfo
+    );
+    if (LogInfo->stopRun) {
+        goto closeFile;
+    }
 
     for (varNum = fIndex; varNum < numVarsInKey[eSW_InVeg]; varNum++) {
         if (!readInput[varNum + 1]) {
@@ -5506,35 +5509,28 @@ static void read_veg_inputs(
         varName = inVarInfo[varNum][INNCVARNAME];
         hasPFT = (Bool) (strcmp(inVarInfo[varNum][INVAXIS], "NA") != 0);
         numSetVals = (varHasTime) ? MAX_MONTHS : 1;
+        latIndex = dimOrderInVar[varNum][0];
+        lonIndex = dimOrderInVar[varNum][1];
+        timeIndex = dimOrderInVar[varNum][3];
+        pftIndex = dimOrderInVar[varNum][4];
 
         start[0] = start[1] = start[2] = start[3] = 0;
-        count[2] = count[3] = 0;
-        count[0] = 1;
-        count[1] = (!inSiteDom) ? 1 : 0;
+        count[0] = count[1] = count[2] = count[3] = 0;
+        start[latIndex] = defSetStart[0];
+        count[latIndex] = 1;
 
-        /* Get the start indices based on if we need to use the respective
-           index file */
-        // get_read_start(
-        //     useIndexFile, inFiles[0], inSiteDom, ncSUID, start, LogInfo
-        // );
-        if (LogInfo->stopRun) {
-            goto closeFile;
+        if (lonIndex > -1) {
+            start[lonIndex] = defSetStart[1];
+            count[lonIndex] = (!inSiteDom) ? 1 : 0;
         }
 
-        count[cWriteIndex] = (varHasTime) ? MAX_MONTHS : 0;
+        count[timeIndex] = (varHasTime) ? MAX_MONTHS : 0;
         if (hasPFT) {
-            if (varHasTime) {
-                start[cWriteIndex + 1] = ((varNum - 2) / (NVEGTYPES + 1));
-                count[cWriteIndex + 1] = 1;
-            } else {
-                start[cWriteIndex] = ((varNum - 2) / (NVEGTYPES + 1));
-                count[cWriteIndex] = 1;
-            }
+            start[pftIndex] = ((varNum - 2) / (NVEGTYPES + 1));
+            count[pftIndex] = 1;
         } else {
-            start[cWriteIndex] = start[cWriteIndex + 1] = 0;
+            start[pftIndex] = 0;
         }
-
-        arrange_start_count(dimOrderInVar[varNum - 1], start, count);
 
         SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
         if (LogInfo->stopRun) {
@@ -5668,15 +5664,18 @@ static void read_soil_inputs(
     Bool isSwrcpVar;
     Bool useIndexFile = SW_Domain->netCDFInput.useIndexFile[eSW_InSoil];
     int numVarsInSoilKey = numVarsInKey[eSW_InSoil];
-    int writeIndex;
     char *fileName;
     char *varName;
     int vegIndex = 0;
     int setIter;
     int loopIter;
-    size_t defSetStart[2];
+    size_t defSetStart[2] = {0};
     LyrIndex numLyrs;
     size_t pftStartIndex = 0;
+    int latIndex;
+    int lonIndex;
+    int vertIndex;
+    int pftWriteIndex;
 
     Bool varHasAddScaleAtts;
     double scaleFactor;
@@ -5690,16 +5689,24 @@ static void read_soil_inputs(
     }
 
     inSiteDom = (Bool) (strcmp(inVarInfo[fIndex][INDOMTYPE], "s") == 0);
-    writeIndex = (inSiteDom) ? 1 : 2;
+    latIndex = dimOrderInVar[fIndex][0];
+    lonIndex = dimOrderInVar[fIndex][1];
 
-    // get_read_start(
-    //     useIndexFile, soilInFiles[0], inSiteDom, ncSUID, defSetStart, LogInfo
-    // );
+    get_read_start(
+        useIndexFile,
+        soilInFiles[0],
+        inSiteDom,
+        ncSUID,
+        defSetStart,
+        latIndex,
+        lonIndex,
+        LogInfo
+    );
     if (LogInfo->stopRun) {
-        goto closeFile;
+        return;
     }
 
-    for (varNum = 1; varNum < numVarsInSoilKey; varNum++) {
+    for (varNum = fIndex; varNum < numVarsInSoilKey; varNum++) {
         if (!readInputs[varNum + 1] || (varNum == 1 && hasConstSoilLyrs)) {
             continue;
         }
@@ -5711,21 +5718,27 @@ static void read_soil_inputs(
         varName = inVarInfo[varNum][INNCVARNAME];
         varHasAddScaleAtts = keyAttFlags[varNum];
         isSwrcpVar = (Bool) (varNum >= swrcpStartInd);
+        latIndex = dimOrderInVar[varNum][0];
+        lonIndex = dimOrderInVar[varNum][1];
+        vertIndex = dimOrderInVar[varNum][2];
+        pftWriteIndex = dimOrderInVar[varNum][4];
 
-        start[0] = defSetStart[0];
-        start[1] = defSetStart[1];
-        count[0] = 1;
-        count[1] = (!inSiteDom) ? 1 : 0;
-        start[2] = start[3] = count[2] = count[3] = 0;
-        count[writeIndex] = numLyrs;
+        start[0] = start[1] = start[2] = start[3] = 0;
+        count[0] = count[1] = count[2] = count[3] = 0;
+        start[latIndex] = defSetStart[0];
+        count[latIndex] = 1;
+        count[vertIndex] = numLyrs;
 
-        if (hasPFT) {
-            count[writeIndex + 1] = 1;
-            start[writeIndex + 1] = pftStartIndex;
-            pftStartIndex++;
+        if (lonIndex > -1) {
+            start[lonIndex] = defSetStart[1];
+            count[lonIndex] = 1;
         }
 
-        arrange_start_count(dimOrderInVar[varNum], start, count);
+        if (hasPFT) {
+            count[pftWriteIndex] = 1;
+            start[pftWriteIndex] = pftStartIndex;
+            pftStartIndex++;
+        }
 
         if (varNum >= transStartInd) {
             /* Set pointer for trans_coeff (12+) and/or swrcp (16+) */
@@ -6791,8 +6804,8 @@ static void read_weather_input(
     double tempVals[MAX_DAYS] = {0.0};
     double scaleFactor;
     double addOffset;
-    int timePlaceIndex = 3;
     unsigned int beforeFileIndex;
+    size_t defSetStart[2] = {0};
     int latIndex;
     int lonIndex;
     int timeIndex;
@@ -6802,6 +6815,22 @@ static void read_weather_input(
     }
 
     inSiteDom = (Bool) (strcmp(inVarInfo[fIndex][INDOMTYPE], "s") == 0);
+    latIndex = dimOrderInVar[fIndex][0];
+    lonIndex = dimOrderInVar[fIndex][1];
+
+    get_read_start(
+        useIndexFile,
+        indexFileName,
+        inSiteDom,
+        ncSUID,
+        defSetStart,
+        latIndex,
+        lonIndex,
+        LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
 
     for (varNum = fIndex; varNum < numVarsInKey[eSW_InWeather]; varNum++) {
         if (!readInput[varNum + 1]) {
@@ -6814,26 +6843,13 @@ static void read_weather_input(
         lonIndex = dimOrderInVar[varNum][1];
         timeIndex = dimOrderInVar[varNum][3];
 
-        start[0] = start[1] = start[2] = start[3] = 0;
-        count[2] = count[3] = 0;
-
+        start[timeIndex] = 0;
+        start[latIndex] = defSetStart[0];
         count[latIndex] = 1;
-        if (lonIndex > -1) {
-            count[lonIndex] = (inSiteDom) ? 0 : 1;
-        }
 
-        get_read_start(
-            useIndexFile,
-            indexFileName,
-            inSiteDom,
-            ncSUID,
-            start,
-            latIndex,
-            lonIndex,
-            LogInfo
-        );
-        if (LogInfo->stopRun) {
-            goto closeFile;
+        if (lonIndex > -1) {
+            count[lonIndex] = 1;
+            start[lonIndex] = defSetStart[1];
         }
 
         weathFileIndex = SW_Domain->SW_PathInputs.weathStartFileIndex;
