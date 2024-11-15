@@ -57,14 +57,29 @@
 #define SW_INSTRIDESTART 1
 
 static const char *const expectedColNames[] = {
-    "SW2 input group",    "SW2 variable",         "SW2 units",
-    "Do nc-input?",       "ncFileName",           "ncVarName",
-    "ncVarUnits",         "ncDomainType",         "ncSiteName",
-    "ncCRSName",          "ncCRSGridMappingName", "ncXAxisName",
-    "ncXDimName",         "ncYAxisName",          "ncYDimName",
-    "ncZAxisName",        "ncTAxisName",          "ncStrideYears",
-    "ncStrideStart",      "ncStridePattern",      "ncCalendarOverride",
-    "ncVAxisName",        "Comment"
+    "SW2 input group",
+    "SW2 variable",
+    "SW2 units",
+    "Do nc-input?",
+    "ncFileName",
+    "ncVarName",
+    "ncVarUnits",
+    "ncDomainType",
+    "ncSiteName",
+    "ncCRSName",
+    "ncCRSGridMappingName",
+    "ncXAxisName",
+    "ncXDimName",
+    "ncYAxisName",
+    "ncYDimName",
+    "ncZAxisName",
+    "ncTAxisName",
+    "ncStrideYears",
+    "ncStrideStart",
+    "ncStridePattern",
+    "ncCalendarOverride",
+    "ncVAxisName",
+    "Comment"
 };
 
 /* This array and `possVarNames` must line up the variables within each key */
@@ -1291,8 +1306,8 @@ static void fill_domain_netCDF_s(
 
     const char *attVals[][4] = {
         {"simulation site", "1", "timeseries_id"},
-        {"latitude", "latitude", "degrees_north", "Y"},
-        {"longitude", "longitude", "degrees_east", "X"},
+        {"latitude", "latitude", "degree_north", "Y"},
+        {"longitude", "longitude", "degree_east", "X"},
         {"y coordinate of projection", "projection_y_coordinate", units},
         {"x coordinate of projection", "projection_x_coordinate", units}
     };
@@ -1485,8 +1500,8 @@ static void fill_domain_netCDF_gridded(
     };
 
     const char *varAttVals[][5] = {
-        {"latitude", "latitude", "degrees_north", "Y", "lat_bnds"},
-        {"longitude", "longitude", "degrees_east", "X", "lon_bnds"},
+        {"latitude", "latitude", "degree_north", "Y", "lat_bnds"},
+        {"longitude", "longitude", "degree_east", "X", "lon_bnds"},
         {"y coordinate of projection",
          "projection_y_coordinate",
          units,
@@ -2248,7 +2263,7 @@ static void generate_weather_filenames(
     }
     *weathStartFileIndex = inFileNum;
 
-    if(inFileNum == (int) *numncWeatherInFiles) {
+    if (inFileNum == (int) *numncWeatherInFiles) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -3572,7 +3587,8 @@ static void determine_indexfile_use(
             }
 
             if (k == eSW_InWeather) {
-                fileName = SW_PathInputs->ncWeatherInFiles[fIndex][weathFileIndex];
+                fileName =
+                    SW_PathInputs->ncWeatherInFiles[fIndex][weathFileIndex];
             } else {
                 fileName = SW_PathInputs->ncInFiles[k][fIndex];
             }
@@ -4664,7 +4680,7 @@ static void read_spatial_topo_climate_inputs(
             start[latIndex] = defSetStart[0];
             count[latIndex] = 1;
 
-            if(lonIndex > - 1) {
+            if (lonIndex > -1) {
                 start[lonIndex] = defSetStart[1];
                 count[lonIndex] = 1;
             }
@@ -5275,7 +5291,8 @@ static void get_invar_information(
             if (inKey != eSW_InWeather) {
                 fileName = ncInFiles[varNum];
             } else {
-                fileName = SW_PathInputs->ncWeatherInFiles[varNum][weathFileIndex];
+                fileName =
+                    SW_PathInputs->ncWeatherInFiles[varNum][weathFileIndex];
             }
 
             /* Open file */
@@ -8323,10 +8340,7 @@ void SW_NCIN_precalc_lookups(
     }
 
     determine_indexfile_use(
-        SW_netCDFIn,
-        &SW_Domain->SW_PathInputs,
-        SW_Domain->spatialTol,
-        LogInfo
+        SW_netCDFIn, &SW_Domain->SW_PathInputs, SW_Domain->spatialTol, LogInfo
     );
     if (LogInfo->stopRun) {
         return; /* Exit function prematurely due to error */
@@ -8454,8 +8468,8 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                 yxVarNames[1] = varInfo[fIndex][INXAXIS];
 
                 if (k == eSW_InWeather) {
-                    fileName =
-                        SW_Domain->SW_PathInputs.ncWeatherInFiles[fIndex][weatherFileIndex];
+                    fileName = SW_Domain->SW_PathInputs
+                                   .ncWeatherInFiles[fIndex][weatherFileIndex];
                 } else {
                     fileName = SW_Domain->SW_PathInputs.ncInFiles[k][fIndex];
                 }
