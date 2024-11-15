@@ -2435,6 +2435,14 @@ static void read_domain_coordinates(
     Bool siteDom = (Bool) (strcmp("s", domType) == 0);
     Bool allocArrays[] = {swFALSE, swFALSE, swFALSE, swFALSE};
     Bool validY;
+    int numDimsInVar = 0;
+    int dimIDs[] = {-1, -1};
+    int numIter;
+    int varIDs[] = {-1, -1};
+    int result;
+    int dimIter;
+    int firstDimID;
+    int temp;
 
     char *domCoordNames[2]; /* Set later */
 
@@ -2467,20 +2475,72 @@ static void read_domain_coordinates(
     }
 
     for (index = 0; index < numDims; index++) {
-        SW_NC_get_dimlen_from_dimname(
-            domFileID, domCoordNames[index], domCoordSizes[index], LogInfo
+        SW_NC_get_var_identifier(
+            domFileID, domCoordNames[index], &varIDs[index], LogInfo
         );
         if (LogInfo->stopRun) {
-            return; /* Exit function prematurely due to error */
+            return;
         }
-
-        /* Match the same for projected sizes (may not be used) */
-        *(domCoordSizes[index + numDims]) = *(domCoordSizes[index]);
     }
 
-    if (!siteDom && !primCRSIsGeo) {
-        *(domCoordSizes[0]) = *(domCoordSizes[1]) =
-            (*(domCoordSizes[2]) * *(domCoordSizes[3]));
+    if (nc_inq_varndims(domFileID, varIDs[0], &numDimsInVar) != NC_NOERR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not get the number of dimensions from the variable '%s'.",
+            domCoordNames[0]
+        );
+        return;
+    }
+    if (numDimsInVar > 2) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Domain file contains domain variables with more than two "
+            "dimensions."
+        );
+        return;
+    }
+
+    numIter = (numDimsInVar == 1) ? numDims : 1;
+    for (index = 0; index < numIter; index++) {
+        result = nc_inq_vardimid(
+            domFileID, varIDs[index], (numIter == 1) ? dimIDs : &dimIDs[index]
+        );
+        if (result != NC_NOERR) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Could not get the dimension IDs of the variable '%s'.",
+                domCoordNames[index]
+            );
+            return;
+        }
+
+        for (dimIter = 0; dimIter < numDimsInVar; dimIter++) {
+            SW_NC_get_dimlen_from_dimid(
+                domFileID,
+                dimIDs[dimIter + index],
+                domCoordSizes[dimIter + index],
+                LogInfo
+            );
+        }
+    }
+
+    SW_NC_get_dim_identifier(domFileID, domCoordNames[0], &firstDimID, LogInfo);
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    if (numDimsInVar == 2 && firstDimID == dimIDs[1]) {
+        temp = *(domCoordSizes[0]);
+        *(domCoordSizes[0]) = *(domCoordSizes[1]);
+        *(domCoordSizes[1]) = temp;
+    }
+
+    if (!primCRSIsGeo) {
+        *(domCoordSizes[2]) = *(domCoordSizes[0]);
+        *(domCoordSizes[3]) = *(domCoordSizes[1]);
     }
 
     alloc_dom_coord_info(
