@@ -7166,12 +7166,9 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     Bool **readInVars = SW_Domain->netCDFInput.readInVars;
     Bool *useIndexFile = SW_Domain->netCDFInput.useIndexFile;
     Bool fileIsIndex;
+    Bool primCRSIsGeo;
+    char *crsName;
     int weathFileIndex = SW_Domain->SW_PathInputs.weathStartFileIndex;
-    const unsigned int numWeathFiles =
-        SW_Domain->SW_PathInputs.ncNumWeatherInFiles;
-    unsigned int **weathStartEndYrs =
-        SW_Domain->SW_PathInputs.ncWeatherInStartEndYrs;
-    const unsigned int startYr = SW_Domain->startyr;
 
     /* Check actual input files provided by the user */
     ForEachNCInKey(inKey) {
@@ -7186,10 +7183,14 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     fileIsIndex = (Bool) (file == 0);
                     fileID = (fileIsIndex) ? &indexFileID : &inFileID;
                     varInfo = SW_Domain->netCDFInput.inVarInfo[inKey][file];
-                    fileName =
-                        (inKey == eSW_InWeather && file > 0) ?
-                            SW_Domain->SW_PathInputs.ncWeatherInFiles[file][weathFileIndex] :
-                            fileNames[file];
+                    fileName = (inKey == eSW_InWeather && file > 0) ?
+                                   SW_Domain->SW_PathInputs
+                                       .ncWeatherInFiles[file][weathFileIndex] :
+                                   fileNames[file];
+                    primCRSIsGeo =
+                        (Bool) (strcmp(
+                                    varInfo[INCRSNAME], "latitude_longitude"
+                                ) == 0);
 
                     SW_NC_open(fileName, NC_NOWRITE, fileID, LogInfo);
                     if (LogInfo->stopRun) {
@@ -7206,12 +7207,18 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                             SW_Domain, *fileID, fileNames[file], LogInfo
                         );
                     } else if (readInVars[inKey][1] && useIndexFile[inKey]) {
+                        if (primCRSIsGeo) {
+                            crsName = indexVarInfo[INCRSNAME];
+                        } else {
+                            crsName = varInfo[INCRSNAME];
+                        }
+
                         /* index file exists */
                         check_input_file_against_index(
                             SW_Domain->netCDFInput.inVarInfo[inKey][file],
                             indexFileID,
                             inFileID,
-                            indexVarInfo[INCRSNAME],
+                            crsName,
                             varInfo[INCRSNAME],
                             LogInfo
                         );
