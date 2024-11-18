@@ -617,19 +617,58 @@ typedef struct {
 /*                   Weather structs                   */
 /* --------------------------------------------------- */
 
+/** Weather values of the current simulation day */
 typedef struct {
-    /* Weather values of the current simulation day */
-    RealD temp_avg, temp_max, temp_min, ppt, rain, cloudCover, windSpeed,
-        relHumidity, shortWaveRad, actualVaporPressure;
+    /** Daily near-surface average air temperature [C] */
+    double temp_avg;
+    /** Daily near-surface maximum air temperature [C] */
+    double temp_max;
+    /** Daily near-surface minimum air temperature [C] */
+    double temp_min;
+    /** Daily precipitation amount [cm] */
+    double ppt;
+    /** Daily precipitation amount that falls as rain [cm] */
+    double rain;
+    /** Daily cloud cover [%] */
+    double cloudCover;
+    /** Daily mean near-surface wind speed [m s-1] */
+    double windSpeed;
+    /** Daily mean near-surface relative humidity [%] */
+    double relHumidity;
+    /** Daily downward surface shortwave radiation:
+        global horizontal irradiation [MJ / m2] or flux density [W / m2],
+        see #SW_WEATHER.desc_rsds
+    */
+    double shortWaveRad;
+    /** Daily mean near-surface actual vapor pressure [kPa] */
+    double actualVaporPressure;
 } SW_WEATHER_NOW;
 
+/** Daily weather values for one calendar year */
 typedef struct {
-    /* Daily weather values for one year */
-    RealD temp_max[MAX_DAYS], temp_min[MAX_DAYS], temp_avg[MAX_DAYS],
-        ppt[MAX_DAYS], cloudcov_daily[MAX_DAYS], windspeed_daily[MAX_DAYS],
-        r_humidity_daily[MAX_DAYS], shortWaveRad[MAX_DAYS],
-        actualVaporPressure[MAX_DAYS];
-    // RealD temp_month_avg[MAX_MONTHS], temp_year_avg; // currently not used
+    /** Daily maximum near-surface air temperature [C] */
+    double temp_max[MAX_DAYS];
+    /** Daily minimum near-surface air temperature [C] */
+    double temp_min[MAX_DAYS];
+    /** Daily average near-surface air temperature [C] */
+    double temp_avg[MAX_DAYS];
+    /** Daily precipitation amount [cm] */
+    double ppt[MAX_DAYS];
+    /** Daily cloud cover [%] */
+    double cloudcov_daily[MAX_DAYS];
+    /** Daily mean near-surface wind speed [m s-1] */
+    double windspeed_daily[MAX_DAYS];
+    /** Daily mean near-surface relative humidity [%] */
+    double r_humidity_daily[MAX_DAYS];
+    /** Daily downward surface shortwave radiation:
+        global horizontal irradiation [MJ / m2] or flux density [W / m2],
+        see #SW_WEATHER.desc_rsds
+    */
+    double shortWaveRad[MAX_DAYS];
+    /** Daily mean near-surface actual vapor pressure [kPa] */
+    double actualVaporPressure[MAX_DAYS];
+
+    // double temp_month_avg[MAX_MONTHS], temp_year_avg; // currently not used
 } SW_WEATHER_HIST;
 
 /* accumulators for output values hold only the */
@@ -925,18 +964,23 @@ typedef struct {
 /*                    Sky structs                      */
 /* --------------------------------------------------- */
 
+/** Across-year mean monthly climate variables */
 typedef struct {
-    RealD cloudcov[MAX_MONTHS],     /* monthly cloud cover (frac) */
-        windspeed[MAX_MONTHS],      /* windspeed (m/s) */
-        r_humidity[MAX_MONTHS],     /* relative humidity (%) */
-        snow_density[MAX_MONTHS],   /* snow density (kg/m3) */
-        n_rain_per_day[MAX_MONTHS]; /* number of precipitation events per month
-                                       (currently used in interception
-                                       functions) */
+    /** Across-year mean monthly mean cloud cover [%] */
+    double cloudcov[MAX_MONTHS];
+    /** Across-year mean mean monthly mean near-surface wind speed [m s-1] */
+    double windspeed[MAX_MONTHS];
+    /** Across-year mean monthly mean near-surface relative humidity [%] */
+    double r_humidity[MAX_MONTHS];
+    /** Across-year mean monthly mean snow density [kg m-3] */
+    double snow_density[MAX_MONTHS];
+    /** Across-year mean monthly count of precipitation events */
+    /* currently used in interception functions */
+    double n_rain_per_day[MAX_MONTHS];
 
-    RealD snow_density_daily[MAX_DAYS + 1]; /* interpolated daily snow density
-                                               (kg/m3) */
-
+    /** Across-year mean daily snow density [kg m-3],
+        interpolated from monthly values */
+    double snow_density_daily[MAX_DAYS + 1];
 } SW_SKY;
 
 /* =================================================== */
