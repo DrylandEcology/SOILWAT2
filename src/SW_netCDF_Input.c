@@ -2782,6 +2782,9 @@ static void get_1D_input_coordinates(
 @param[out] dimSizes Sizes of the dimensions of the variables to read
 @param[in] yxVarNames A list of two variable names for the input variables
 that contain latitude/y and longitude/x coordinate values
+@param[in] yDimName A user-provided name of the y-dimension, in
+general this is separate from the coordinate variable name
+but it can be the exact same
 @param[in] numReadInDims Number of dimensions to read in
 @param[out] useIndexFile Specifies to create/use an index file
 @param[in] compareCoords Specifies if the function should compare the
@@ -2798,6 +2801,7 @@ static void get_2D_input_coordinates(
     double **readinXVals,
     size_t **dimSizes,
     char **yxVarNames,
+    char *yDimName,
     const int numReadInDims,
     Bool *useIndexFile,
     Bool compareCoords,
@@ -2831,9 +2835,13 @@ static void get_2D_input_coordinates(
         return; /* Exit function prematurely due to error */
     }
 
-    /* Get information to decide the order of lat/lon for coordinate
-       variables */
-    SW_NC_get_dim_identifier(ncFileID, yxVarNames[0], &firstDimID, LogInfo);
+    SW_NC_get_var_identifier(ncFileID, yxVarNames[1], &varIDs[1], LogInfo);
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    /* Get information to decide the order of lat/lon or y/x dimensions */
+    SW_NC_get_dim_identifier(ncFileID, yDimName, &firstDimID, LogInfo);
     if (LogInfo->stopRun) {
         return;
     }
@@ -2850,7 +2858,7 @@ static void get_2D_input_coordinates(
     *dimSizes[0] = yDimSize;
     *dimSizes[1] = xDimSize;
     count[0] = (varDimIDs[0] == firstDimID) ? yDimSize : xDimSize;
-    count[1] = (varDimIDs[0] = firstDimID) ? xDimSize : yDimSize;
+    count[1] = (varDimIDs[0] == firstDimID) ? xDimSize : yDimSize;
     numPoints = yDimSize * xDimSize;
 
     for (varNum = 0; varNum < numReadInDims; varNum++) {
@@ -2906,6 +2914,8 @@ depending on if they are 1D or 2D
 @param[out] readinXVals Read-in longitude/x values
 @param[in] yxVarNames A list of two variable names for the input variables
 that contain latitude/y and longitude/x coordinate values
+@param[in] yDimName User-provided name for the y-dimension (may or
+may not be the same as the coordinate variable)
 @param[in] compareCoords Specifies if the function should compare the
 coordinates to the domain coordinates
 @param[in] inPrimCRSIsGeo Specifies if the input file has a primary
@@ -2923,6 +2933,7 @@ static void get_input_coordinates(
     double **readinYVals,
     double **readinXVals,
     char **yxVarNames,
+    char *yDimName,
     Bool compareCoords,
     Bool inPrimCRSIsGeo,
     LOG_INFO *LogInfo
@@ -2960,6 +2971,7 @@ static void get_input_coordinates(
             readinXVals,
             dimSizes,
             yxVarNames,
+            yDimName,
             numReadInDims,
             &SW_netCDFIn->useIndexFile[k],
             compareCoords,
@@ -3565,6 +3577,7 @@ static void determine_indexfile_use(
 
     char *fileName;
     char *axisNames[2] = {NULL, NULL}; /* Set later */
+    char *yDimName;
     char *gridMap;
 
     size_t ySize = 0;
@@ -3599,6 +3612,11 @@ static void determine_indexfile_use(
 
             axisNames[0] = SW_netCDFIn->inVarInfo[k][fIndex][INYAXIS];
             axisNames[1] = SW_netCDFIn->inVarInfo[k][fIndex][INXAXIS];
+            yDimName = SW_netCDFIn->inVarInfo[k][fIndex][INYDIM];
+
+            if (strcmp(yDimName, "NA") == 0) {
+                yDimName = axisNames[0];
+            }
 
             gridMap = SW_netCDFIn->inVarInfo[k][fIndex][INGRIDMAPPING];
             inPrimCRSIsGeo =
@@ -3615,6 +3633,7 @@ static void determine_indexfile_use(
                 &tempY,
                 &tempX,
                 axisNames,
+                yDimName,
                 swTRUE,
                 inPrimCRSIsGeo,
                 LogInfo
@@ -5147,9 +5166,11 @@ static void get_variable_dim_order(
     int axisID;
     int readAxisID = 0;
     Bool varSiteDom = (Bool) (strcmp(varInfo[INDOMTYPE], "s") == 0);
+    char *yDim = (strcmp(varInfo[INYDIM], "NA") == 0) ? varInfo[INYAXIS] : varInfo[INYDIM];
+    char *xDim = (strcmp(varInfo[INXDIM], "NA") == 0) ? varInfo[INXAXIS] : varInfo[INXDIM];
     char *axisNames[] = {
-        (varSiteDom) ? varInfo[INSITENAME] : varInfo[INYAXIS],
-        varInfo[INXAXIS],
+        (varSiteDom) ? varInfo[INSITENAME] : yDim,
+        xDim,
         varInfo[INZAXIS],
         varInfo[INTAXIS],
         varInfo[INVAXIS]
@@ -8409,7 +8430,8 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     char *siteName = SW_Domain->OutDom.netCDFOutput.siteName;
     char *domYName = SW_Domain->OutDom.netCDFOutput.geo_YAxisName;
     char *domXName = SW_Domain->OutDom.netCDFOutput.geo_XAxisName;
-    char *indexVarNames[2] = {NULL};
+    char *indexVarNames[2] = {NULL, NULL};
+    char *yDimName;
     const int numAtts = 4;
     Bool inPrimCRSIsGeo;
 
@@ -8470,6 +8492,11 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
                 yxVarNames[0] = varInfo[fIndex][INYAXIS];
                 yxVarNames[1] = varInfo[fIndex][INXAXIS];
+                yDimName = SW_netCDFIn->inVarInfo[k][fIndex][INYDIM];
+
+                if (strcmp(yDimName, "NA") == 0) {
+                    yDimName = yxVarNames[0];
+                }
 
                 if (k == eSW_InWeather) {
                     fileName = SW_Domain->SW_PathInputs
@@ -8567,6 +8594,7 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     &inputYVals,
                     &inputXVals,
                     yxVarNames,
+                    yDimName,
                     swFALSE,
                     inPrimCRSIsGeo,
                     LogInfo
