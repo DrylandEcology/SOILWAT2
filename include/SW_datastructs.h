@@ -972,6 +972,7 @@ typedef struct {
 
     unsigned int **ncWeatherStartEndIndices;
     unsigned int weathStartFileIndex;
+    Bool noLeapCal;
 
     int *inVarIDs[SW_NINKEYSNC]; /**< Store the identifier of the
                                         variables within the input

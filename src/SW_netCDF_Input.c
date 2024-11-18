@@ -3327,7 +3327,7 @@ static void calc_temporal_weather_indices(
     char currCalType[MAX_FILENAMESIZE] = "\0";
     char currCalUnit[MAX_FILENAMESIZE] = "\0";
     char *timeName = NULL;
-    Bool calIsNoLeap = swFALSE;
+    Bool *calIsNoLeap = &SW_PathInputs->noLeapCal;
     double *timeVals = NULL;
     size_t timeSize = 0;
     int tempStart = -1;
@@ -3341,6 +3341,8 @@ static void calc_temporal_weather_indices(
     /* Load unit system database */
     system = ut_read_xml(NULL);
 #endif
+
+    *calIsNoLeap = swFALSE;
 
     /* Get the first available list of input files */
     while (probeIndex == -1) {
@@ -3412,7 +3414,7 @@ static void calc_temporal_weather_indices(
 
             if (!checkedCal) {
                 determine_valid_cal(
-                    weatherCal, currCalUnit, &calIsNoLeap, fileName, LogInfo
+                    weatherCal, currCalUnit, calIsNoLeap, fileName, LogInfo
                 );
                 if (LogInfo->stopRun) {
                     goto freeMem;
@@ -6876,10 +6878,11 @@ static void read_weather_input(
         SW_Domain->SW_PathInputs.ncWeatherInStartEndYrs;
     char ***inVarInfo = SW_Domain->netCDFInput.inVarInfo[eSW_InWeather];
     Bool *readInput = SW_Domain->netCDFInput.readInVars[eSW_InWeather];
+    Bool noLeap = SW_Domain->SW_PathInputs.noLeapCal;
     unsigned int numWeathFiles = SW_Domain->SW_PathInputs.ncNumWeatherInFiles;
     int varNum = 1;
-    size_t start[4]; /* Up to four dimensions per variable */
-    size_t count[4]; /* Up to four dimensions per variable */
+    size_t start[4] = {0}; /* Up to four dimensions per variable */
+    size_t count[4] = {0}; /* Up to four dimensions per variable */
     TimeInt numDays;
     TimeInt yearIndex;
     TimeInt year;
@@ -6968,6 +6971,7 @@ static void read_weather_input(
             varName = inVarInfo[varNum][INNCVARNAME];
 
             numDays = Time_get_lastdoy_y(year);
+            numDays = (noLeap) ? numDays - 1 : numDays;
             count[timeIndex] = numDays;
             tempVals[MAX_DAYS - 1] = SW_MISSING;
 
