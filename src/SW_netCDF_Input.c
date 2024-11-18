@@ -5,6 +5,7 @@
 #include "include/filefuncs.h"         // for LogError, FileExists, CloseFile
 #include "include/generic.h"           // for Bool, swFALSE, LOGERROR, swTRUE
 #include "include/myMemory.h"          // for Str_Dup, Mem_Malloc
+#include "include/SW_Carbon.h"         // for SW_CBN_init_run
 #include "include/SW_datastructs.h"    // for LOG_INFO, SW_NETCDF_OUT, SW_DOMAIN
 #include "include/SW_Defines.h"        // for MAX_FILENAMESIZE, OutPeriod
 #include "include/SW_Domain.h"         // for SW_DOM_calc_ncSuid
@@ -7153,6 +7154,11 @@ void SW_NCIN_read_inputs(
         SW_VPD_init_run(
             &sw->VegProd, &sw->Weather, &sw->Model, swTRUE, LogInfo
         );
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        SW_CBN_init_run(sw->VegProd.veg, &sw->Model, &sw->Carbon, LogInfo);
         if (LogInfo->stopRun) {
             return;
         }
