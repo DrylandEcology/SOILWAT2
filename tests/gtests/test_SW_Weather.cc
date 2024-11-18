@@ -1117,6 +1117,178 @@ TEST_F(WeatherFixtureTest, WeatherInputMACA) {
         SW_Run.Weather.allHist[yearIndex]->r_humidity_daily[midJanDay],
         SW_Run.Sky.r_humidity[0]
     );
+}
+
+TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
+
+    /*
+       This section assures that a variable aside from humidity-related ones,
+       wind speed in this case, is calculated reasonably based on its
+       components.
+
+        * This section uses the test directory "*_maca-type2" (huss)
+     */
+
+    double result;
+    double expectedResult;
+    double tmean;
+    double es;
+    double e;
+    int const yearIndex = 0;
+    int const year = 1980;
+    int const midJanDay = 14;
+    int doy;
+    double snowpack[TWO_DAYS] = {0.};
+
+    /* Test correct priority is being given to input values from MACA */
+
+    SW_WTH_setup(
+        &SW_Run.Weather,
+        SW_Domain.PathInfo.InFiles,
+        SW_Domain.PathInfo.weather_prefix,
+        &LogInfo
+    );
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    // Switch directory to the input folder of the
+    // second type of MACA (huss)
+    (void) snprintf(
+        SW_Run.Weather.name_prefix,
+        sizeof SW_Run.Weather.name_prefix,
+        "%s",
+        "Input/data_weather_maca-type2/weath"
+    );
+
+    // Turn off monthly flags
+    SW_Run.Weather.use_cloudCoverMonthly = swFALSE;
+    SW_Run.Weather.use_windSpeedMonthly = swFALSE;
+    SW_Run.Weather.use_humidityMonthly = swFALSE;
+
+    // Manually edit index/flag arrays in SW_WEATHER to make test as
+    // realistic as possible
+    // Note: Indices are based on the directory:
+    // Input/data_weather_maca-type1/weath.1980
+    SW_Run.Weather.dailyInputIndices[TEMP_MAX] = 0;
+    SW_Run.Weather.dailyInputIndices[TEMP_MIN] = 1;
+    SW_Run.Weather.dailyInputIndices[PPT] = 2;
+    SW_Run.Weather.dailyInputIndices[CLOUD_COV] = 0;
+    SW_Run.Weather.dailyInputIndices[WIND_SPEED] = 0;
+    SW_Run.Weather.dailyInputIndices[WIND_EAST] = 3;
+    SW_Run.Weather.dailyInputIndices[WIND_NORTH] = 4;
+    SW_Run.Weather.dailyInputIndices[REL_HUMID] = 0;
+    SW_Run.Weather.dailyInputIndices[REL_HUMID_MAX] = 0;
+    SW_Run.Weather.dailyInputIndices[REL_HUMID_MIN] = 0;
+    SW_Run.Weather.dailyInputIndices[SPEC_HUMID] = 5;
+    SW_Run.Weather.dailyInputIndices[TEMP_DEWPOINT] = 0;
+    SW_Run.Weather.dailyInputIndices[ACTUAL_VP] = 0;
+    SW_Run.Weather.dailyInputIndices[SHORT_WR] = 6;
+
+    SW_Run.Weather.dailyInputFlags[TEMP_MAX] = swTRUE;
+    SW_Run.Weather.dailyInputFlags[TEMP_MIN] = swTRUE;
+    SW_Run.Weather.dailyInputFlags[PPT] = swTRUE;
+    SW_Run.Weather.dailyInputFlags[CLOUD_COV] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[WIND_SPEED] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[WIND_EAST] = swTRUE;
+    SW_Run.Weather.dailyInputFlags[WIND_NORTH] = swTRUE;
+    SW_Run.Weather.dailyInputFlags[REL_HUMID] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[REL_HUMID_MAX] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[REL_HUMID_MIN] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[SPEC_HUMID] = swTRUE;
+    SW_Run.Weather.dailyInputFlags[TEMP_DEWPOINT] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[ACTUAL_VP] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[SHORT_WR] = swTRUE;
+
+    SW_Run.Weather.n_input_forcings = 7;
+    SW_Run.Weather.desc_rsds = 1; // MACA rsds is flux density over 24 hours
+
+    // Reset daily weather values
+    clear_hist_weather(SW_Run.Weather.allHist[0]);
+
+    // Using the new inputs folder, read in year = 1980
+    read_weather_hist(
+        year,
+        SW_Run.Weather.allHist[0],
+        SW_Run.Weather.name_prefix,
+        SW_Run.Weather.n_input_forcings,
+        SW_Run.Weather.dailyInputIndices,
+        SW_Run.Weather.dailyInputFlags,
+        &LogInfo
+    );
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+
+    // Check that weather contains reasonable values
+    checkAllWeather(&SW_Run.Weather, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+
+    // Check that no value is missing
+    for (doy = 1; doy < 366; doy++) {
+        SW_WTH_new_day(
+            &SW_Run.Weather, &SW_Run.Site, snowpack, doy, year, &LogInfo
+        );
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    }
+
+
+    // Check wind speed
+    result = SW_Run.Weather.allHist[yearIndex]->windspeed_daily[0];
+
+    // Get expected result from Input/data_weather_maca-type1/weath.1980 day 1
+    // uas_mPERs = 3.31 and vas_mPERs = -.85
+    expectedResult = sqrt(squared(3.31) + squared(-.85));
+
+    // Test if wind speed was calculated within reasonable range to
+    // the expected result
+    EXPECT_NEAR(result, expectedResult, tol6);
+
+    // Expect that daily wind speed is derived from uas_mPERs and vas_mPERs
+    // (and is not interpolated from mean monthly values)
+    expectedResult = sqrt(squared(2.82) + squared(-.4));
+
+    EXPECT_NEAR(
+        SW_Run.Weather.allHist[yearIndex]->windspeed_daily[midJanDay],
+        expectedResult,
+        tol6
+    );
+
+    EXPECT_NE(
+        SW_Run.Weather.allHist[yearIndex]->windspeed_daily[midJanDay],
+        SW_Run.Sky.windspeed[0]
+    );
+
+
+    // Check relative humidity [0, 100] % ---
+    // Expect that relative humidity is calculated from huss
+
+    // Check on day 1 (values from Input/data_weather_gridmet/weath.1980)
+    // Calculate relative humidity from huss (1.92), tmax (-.01), tmin (-11.99)
+    tmean = (-.01 - 11.99) / 2.;
+    es = 6.112 * exp((17.67 * tmean) / (tmean + 243.5));
+    e = (1.92 * 1.01325) / (.000378 * 1.92 + .622);
+    EXPECT_NEAR(
+        SW_Run.Weather.allHist[yearIndex]->r_humidity_daily[0],
+        100. * e / es,
+        tol6
+    );
+
+    // Check on day 15 (values from Input/data_weather_gridmet/weath.1980)
+    // Calculate relative humidity from huss (1.30), tmax (-4.31), tmin (-17.34)
+    tmean = (-4.31 - 17.34) / 2.;
+    es = 6.112 * exp((17.67 * tmean) / (tmean + 243.5));
+    e = (1.30 * 1.01325) / (.000378 * 1.30 + .622);
+    EXPECT_NEAR(
+        SW_Run.Weather.allHist[yearIndex]->r_humidity_daily[midJanDay],
+        100. * e / es,
+        tol6
+    );
+
+    // Check that value on day 15 is not interpolated from mean monthly values
+    EXPECT_NE(
+        SW_Run.Weather.allHist[yearIndex]->r_humidity_daily[midJanDay],
+        SW_Run.Sky.r_humidity[0]
+    );
+
 
     // We have observed radiation and missing cloud cover
     EXPECT_FALSE(missing(SW_Run.Weather.allHist[yearIndex]->shortWaveRad[0]));
