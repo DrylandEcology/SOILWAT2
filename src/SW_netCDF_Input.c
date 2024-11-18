@@ -2250,7 +2250,11 @@ static void generate_weather_filenames(
             (*ncWeatherInStartEndYrs)[inFileNum][1] = endFileYr;
 
             beginFileYr += numStYr;
-            endFileYr += numStYr;
+            if (endFileYr + numStYr <= endYr) {
+                endFileYr += numStYr;
+            } else {
+                endFileYr = endYr;
+            }
 
             inFileNum++;
         }
