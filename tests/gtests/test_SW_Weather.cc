@@ -978,34 +978,34 @@ TEST_F(WeatherFixtureTest, WeatherInputDayMet) {
     // input value from Input/data_weather_daymet/weath.1980 day 1
     EXPECT_NEAR(result, expectedResult, tol6);
 
-    result = SW_Run.Weather.allHist[yearIndex]->r_humidity_daily[0];
 
-    // Get expected result from Input/data_weather_daymet/weath.1980 day 1
-    // Tmax_C = -.37, Tmin_C = -9.2, and vp_kPa = .3
-    expectedResult = (-.37 - 9.2) / 2.;
-    expectedResult = svp(expectedResult, &tempSlope);
-    expectedResult = .3 / expectedResult;
+    // Check relative humidity [0, 100] % ---
+    // Expect that relative humidity is calculated from vp, tmax, and tmin
 
-    // Based on actual vapor pressure, test if relative humidity
-    // was calculated reasonably
-    EXPECT_NEAR(result, expectedResult, tol6);
+    // Check on day 1 (values from Input/data_weather_daymet/weath.1980)
+    // Calculate relative humidity from vp (0.3), tmax (-.37), and tmin (-9.2)
+    expectedResult = 100. * .3 / svp((-.37 - 9.2) / 2., &tempSlope);
+    EXPECT_NEAR(
+        SW_Run.Weather.allHist[yearIndex]->r_humidity_daily[0],
+        expectedResult,
+        tol6
+    );
 
-    // Expect that daily relative humidity is derived from vp_kPa, Tmax_C, and
-    // Tmin_C (and is not interpolated from mean monthly values)
-    expectedResult = (-.81 - 9.7) / 2.;
-    expectedResult = svp(expectedResult, &tempSlope);
-    expectedResult = .29 / expectedResult;
-
+    // Check on day 15 (values from Input/data_weather_daymet/weath.1980)
+    // Calculate relative humidity from vp (0.29), tmax (-.81), and tmin (-9.7)
+    expectedResult = 100. * .29 / svp((-.81 - 9.7) / 2., &tempSlope);
     EXPECT_NEAR(
         SW_Run.Weather.allHist[yearIndex]->r_humidity_daily[midJanDay],
         expectedResult,
         tol6
     );
 
+    // Check that value on day 15 is not interpolated from mean monthly values
     EXPECT_NE(
         SW_Run.Weather.allHist[yearIndex]->r_humidity_daily[midJanDay],
         SW_Run.Sky.r_humidity[0]
     );
+
 
     // We have observed radiation and missing cloud cover
     EXPECT_FALSE(missing(SW_Run.Weather.allHist[yearIndex]->shortWaveRad[0]));
