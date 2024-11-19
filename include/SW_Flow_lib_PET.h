@@ -96,15 +96,17 @@ double petfunc(
     LOG_INFO *LogInfo
 );
 
+double atmospheric_pressure(double elev);
+
+double psychrometric_constant(double pressure);
 
 double svp(double T, double *slope_svp_to_t);
 
 double svp2(double temp);
 
-double atmospheric_pressure(double elev);
+double relativeHumidity1(double vp, double meanTemp);
 
-double psychrometric_constant(double pressure);
-
+double relativeHumidity2(double huss, double meanTemp, double elevation);
 
 double actualVaporPressure1(double hurs, double meanTemp);
 
@@ -114,6 +116,7 @@ double actualVaporPressure2(
 
 double actualVaporPressure3(double dewpointTemp);
 
+double actualVaporPressure4(double huss, double elevation);
 
 #ifdef __cplusplus
 }

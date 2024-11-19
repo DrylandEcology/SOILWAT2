@@ -1243,6 +1243,35 @@ double svp2(double temp) {
 }
 
 /**
+@brief Calculate relative humidity from vapor pressure and temperature
+
+@param vp Daily mean vapor pressure [kPa]
+@param meanTemp Daily mean air temperature [C]
+
+@return Calculated relative humidity [0-100 %]
+*/
+double relativeHumidity1(double vp, double meanTemp) {
+    double tempSlope;
+    double svpVal = svp(meanTemp, &tempSlope);
+    return 100. * vp / svpVal;
+}
+
+/**
+@brief Calculate relative humidity from specific humidity and temperature
+
+@param huss Daily mean specific humidity [g kg-1]
+@param meanTemp Daily mean air temperature [C]
+@param elevation Site elevation [m above mean sea level]
+
+@return Calculated relative humidity [0-100 %]
+*/
+double relativeHumidity2(double huss, double meanTemp, double elevation) {
+    double vpVal = actualVaporPressure4(huss, elevation);
+
+    return relativeHumidity1(vpVal, meanTemp);
+}
+
+/**
 @brief Calculate actual vapor pressure based on relative humidity and mean
 temperature
 
@@ -1292,6 +1321,34 @@ Implements equation 7 and 8 by Allen et al. (2005) @cite ASCE2005
 double actualVaporPressure3(double dewpointTemp) {
     // Allen et al. 2005 eqs 7 and 8
     return svp2(dewpointTemp);
+}
+
+/**
+@brief Calculate actual vapor pressure from specific humidity and elevation
+
+@param huss Daily mean specific humidity [g kg-1]
+@param elevation Site elevation [m above mean sea level].
+
+@return Calculated actual vapor pressure [kPa]
+*/
+double actualVaporPressure4(double huss, double elevation) {
+    // Rd = specific gas constant for dry air (J kg−1 K−1)
+    // Rv = specific gas constant for water vapor (J kg−1 K−1)
+    // e = vapor pressure (Pa)
+    // p = air pressure (Pa)
+
+    double vpVal;
+
+    /* Rd / Rv = 287.052874 [J kg−1 K−1] / 461.50 [J kg−1 K−1] */
+    static const double RdToRv = 0.6220;
+    double p = atmospheric_pressure(elevation);
+
+    huss *= 1e-3; /* convert [g kg-1] to [kg kg-1] */
+
+    /* huss = q = Rd / Rv * e / (p - e * (1 - Rd / Rv)) */
+    vpVal = huss * p / (RdToRv + huss * (1. - RdToRv));
+
+    return vpVal;
 }
 
 /**

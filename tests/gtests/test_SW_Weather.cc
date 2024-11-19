@@ -38,6 +38,7 @@ TEST_F(WeatherFixtureTest, WeatherDefaultValues) {
         SW_Run.Sky.cloudcov,
         SW_Run.Sky.windspeed,
         SW_Run.Sky.r_humidity,
+        SW_Run.Model.elevation,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
         &LogInfo
@@ -860,6 +861,7 @@ TEST_F(WeatherFixtureTest, WeatherInputDailyGridMet) {
         SW_Run.Weather.n_input_forcings,
         SW_Run.Weather.dailyInputIndices,
         SW_Run.Weather.dailyInputFlags,
+        SW_Run.Model.elevation,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -921,8 +923,11 @@ TEST_F(WeatherFixtureTest, WeatherInputDayMet) {
        * This section uses the test directory "*_daymet".
      */
 
-    double result, expectedResult, tempSlope;
-    int yearIndex = 0, year = 1980, midJanDay = 14;
+    double result;
+    double expectedResult;
+    int const yearIndex = 0;
+    int const year = 1980;
+    int const midJanDay = 14;
 
     /* Test correct priority is being given to input values from DAYMET */
     SW_WTH_setup(
@@ -964,6 +969,7 @@ TEST_F(WeatherFixtureTest, WeatherInputDayMet) {
         SW_Run.Weather.n_input_forcings,
         SW_Run.Weather.dailyInputIndices,
         SW_Run.Weather.dailyInputFlags,
+        SW_Run.Model.elevation,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -984,19 +990,17 @@ TEST_F(WeatherFixtureTest, WeatherInputDayMet) {
 
     // Check on day 1 (values from Input/data_weather_daymet/weath.1980)
     // Calculate relative humidity from vp (0.3), tmax (-.37), and tmin (-9.2)
-    expectedResult = 100. * .3 / svp((-.37 - 9.2) / 2., &tempSlope);
     EXPECT_NEAR(
         SW_Run.Weather.allHist[yearIndex]->r_humidity_daily[0],
-        expectedResult,
+        relativeHumidity1(0.30, (-0.37 - 9.2) / 2.),
         tol6
     );
 
     // Check on day 15 (values from Input/data_weather_daymet/weath.1980)
     // Calculate relative humidity from vp (0.29), tmax (-.81), and tmin (-9.7)
-    expectedResult = 100. * .29 / svp((-.81 - 9.7) / 2., &tempSlope);
     EXPECT_NEAR(
         SW_Run.Weather.allHist[yearIndex]->r_humidity_daily[midJanDay],
-        expectedResult,
+        relativeHumidity1(0.29, (-0.81 - 9.7) / 2.),
         tol6
     );
 
@@ -1076,6 +1080,7 @@ TEST_F(WeatherFixtureTest, WeatherInputMACA) {
         SW_Run.Weather.n_input_forcings,
         SW_Run.Weather.dailyInputIndices,
         SW_Run.Weather.dailyInputFlags,
+        SW_Run.Model.elevation,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1131,9 +1136,7 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
 
     double result;
     double expectedResult;
-    double tmean;
-    double es;
-    double e;
+    double elevation = SW_Run.Model.elevation;
     int const yearIndex = 0;
     int const year = 1980;
     int const midJanDay = 14;
@@ -1212,6 +1215,7 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
         SW_Run.Weather.n_input_forcings,
         SW_Run.Weather.dailyInputIndices,
         SW_Run.Weather.dailyInputFlags,
+        SW_Run.Model.elevation,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1263,23 +1267,17 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
 
     // Check on day 1 (values from Input/data_weather_gridmet/weath.1980)
     // Calculate relative humidity from huss (1.92), tmax (-.01), tmin (-11.99)
-    tmean = (-.01 - 11.99) / 2.;
-    es = 6.112 * exp((17.67 * tmean) / (tmean + 243.5));
-    e = (1.92 * 1.01325) / (.000378 * 1.92 + .622);
     EXPECT_NEAR(
         SW_Run.Weather.allHist[yearIndex]->r_humidity_daily[0],
-        100. * e / es,
+        relativeHumidity2(1.92, (-0.01 - 11.99) / 2., elevation),
         tol6
     );
 
     // Check on day 15 (values from Input/data_weather_gridmet/weath.1980)
     // Calculate relative humidity from huss (1.30), tmax (-4.31), tmin (-17.34)
-    tmean = (-4.31 - 17.34) / 2.;
-    es = 6.112 * exp((17.67 * tmean) / (tmean + 243.5));
-    e = (1.30 * 1.01325) / (.000378 * 1.30 + .622);
     EXPECT_NEAR(
         SW_Run.Weather.allHist[yearIndex]->r_humidity_daily[midJanDay],
-        100. * e / es,
+        relativeHumidity2(1.30, (-4.31 - 17.34) / 2., elevation),
         tol6
     );
 
@@ -1403,6 +1401,7 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputWrongColumnNumberDeathTest) {
         SW_Run.Weather.n_input_forcings,
         SW_Run.Weather.dailyInputIndices,
         SW_Run.Weather.dailyInputFlags,
+        SW_Run.Model.elevation,
         &LogInfo
     );
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`

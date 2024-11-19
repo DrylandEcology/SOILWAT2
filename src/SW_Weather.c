@@ -643,6 +643,9 @@ series
     values to be interpolated
 @param[in] r_humidity Array of size #MAX_MONTHS holding monthly relative
     humidity values to be interpolated
+@param[in] elevation Site elevation above sea level [m];
+    utilized only if specific humidity is provided as input for
+    calculating relative humidity
 @param[in] cum_monthdays Monthly cumulative number of days for "current" year
 @param[in] days_in_month Number of days per month for "current" year
 @param[out] LogInfo Holds information on warnings and errors
@@ -662,6 +665,7 @@ void readAllWeather(
     RealD *cloudcov,
     RealD *windspeed,
     RealD *r_humidity,
+    double elevation,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
     LOG_INFO *LogInfo
@@ -721,6 +725,7 @@ void readAllWeather(
                 n_input_forcings,
                 dailyInputIndices,
                 dailyInputFlags,
+                elevation,
                 LogInfo
             );
 
@@ -2124,6 +2129,7 @@ void SW_WTH_read(
         SW_Sky->cloudcov,
         SW_Sky->windspeed,
         SW_Sky->r_humidity,
+        SW_Model->elevation,
         SW_Model->cum_monthdays,
         SW_Model->days_in_month,
         LogInfo
@@ -2133,7 +2139,7 @@ void SW_WTH_read(
 /**
 @brief Read the historical (observed) weather file for a simulation year.
 
-The naming convection of the weather input files:
+The naming convention of the weather input files:
     `[weather-data path/][weather-file prefix].[year]`
 
 Format of a input file (white-space separated values):
@@ -2150,6 +2156,9 @@ Format of a input file (white-space separated values):
     calculated column number of which a certain variable resides
 @param dailyInputFlags An array of size MAX_INPUT_COLUMNS holding booleans
     specifying what variable has daily input on disk
+@param elevation Site elevation above sea level [m];
+    utilized only if specific humidity is provided as input
+    for calculating relative humidity
 @param[out] LogInfo Holds information on warnings and errors
 */
 void _read_weather_hist(
@@ -2159,6 +2168,7 @@ void _read_weather_hist(
     unsigned int n_input_forcings,
     unsigned int *dailyInputIndices,
     Bool *dailyInputFlags,
+    double elevation,
     LOG_INFO *LogInfo
 ) {
     /* =================================================== */
@@ -2196,9 +2206,8 @@ void _read_weather_hist(
         (Bool) (hasMaxMinRelHumid || dailyInputFlags[REL_HUMID] ||
                 dailyInputFlags[SPEC_HUMID] || dailyInputFlags[ACTUAL_VP]);
 
-    double es, e, relHum, tempSlope, svpVal;
-
-    char fname[MAX_FILENAMESIZE], inbuf[MAX_FILENAMESIZE];
+    char fname[MAX_FILENAMESIZE];
+    char inbuf[MAX_FILENAMESIZE];
 
     // Create file name: `[weather-file prefix].[year]`
     snprintf(fname, MAX_FILENAMESIZE, "%s.%4d", weather_prefix, year);
@@ -2340,20 +2349,37 @@ void _read_weather_hist(
                 // are holding the value "SW_MISSING"
                 if (!missing(yearWeather->temp_avg[doy]) &&
                     !missing(weathInput[dailyInputIndices[SPEC_HUMID]])) {
-                    // Relative humidity [0-100 %] from
-                    // specific humidity [g kg-1] and temperature [C]
-                    es =
-                        (6.112 * exp(17.67 * yearWeather->temp_avg[doy]) /
-                         (yearWeather->temp_avg[doy] + 243.5)); // Bolton 1980
 
-                    e = (weathInput[dailyInputIndices[SPEC_HUMID]] * 1013.25) /
-                        (.378 * weathInput[dailyInputIndices[SPEC_HUMID]] + .622
+                    // Relative humidity [0-100 %] calculated from
+                    // specific humidity [g kg-1] and temperature [C]
+                    yearWeather->r_humidity_daily[doy] = relativeHumidity2(
+                        weathInput[dailyInputIndices[SPEC_HUMID]],
+                        yearWeather->temp_avg[doy],
+                        elevation
+                    );
+
+                    // Snap relative humidity in 100-150% to 100%
+                    if (yearWeather->r_humidity_daily[doy] > 100. &&
+                        yearWeather->r_humidity_daily[doy] <= 150.) {
+                        LogError(
+                            LogInfo,
+                            LOGWARN,
+                            "Year %d - day %d: relative humidity set to 100%%: "
+                            "based on assumption that "
+                            "a presumed minor mismatch in inputs "
+                            "(specific humidity (%f), "
+                            "temperature (%f) and elevation (%f)) "
+                            "caused the calculated value (%f) to exceed 100%%.",
+                            year,
+                            doy,
+                            weathInput[dailyInputIndices[SPEC_HUMID]],
+                            yearWeather->temp_avg[doy],
+                            elevation,
+                            yearWeather->r_humidity_daily[doy]
                         );
 
-                    relHum = e / es;
-                    relHum = fmax(0., relHum);
-
-                    yearWeather->r_humidity_daily[doy] = fmin(100., relHum);
+                        yearWeather->r_humidity_daily[doy] = 100.;
+                    }
 
                 } else {
                     // Set relative humidity to "SW_MISSING"
@@ -2431,11 +2457,11 @@ void _read_weather_hist(
                 if (!missing(yearWeather->temp_avg[doy]) &&
                     !missing(yearWeather->actualVaporPressure[doy])) {
 
-                    svpVal = svp(yearWeather->temp_avg[doy], &tempSlope);
-
                     // Relative humidity [0-100 %]
-                    yearWeather->r_humidity_daily[doy] =
-                        yearWeather->actualVaporPressure[doy] / svpVal;
+                    yearWeather->r_humidity_daily[doy] = relativeHumidity1(
+                        yearWeather->actualVaporPressure[doy],
+                        yearWeather->temp_avg[doy]
+                    );
                 }
             }
         }
