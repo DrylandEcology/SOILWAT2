@@ -4545,10 +4545,16 @@ static void set_read_vals(
     for (valIndex = 0; valIndex < numVals; valIndex++) {
         dest = (!swrcpInput) ? &resVals[valIndex] : &resVals[swrcpIndex];
 
-        missingBefore = (Bool) (missing(*dest));
-        set_missing_val(varType, valHasMissing, missingVals, varNum, dest);
+        missingBefore = (Bool) (missing(*readVals));
+        set_missing_val(
+            varType,
+            valHasMissing,
+            missingVals,
+            varNum,
+            (double *) &readVals[valIndex]
+        );
 
-        if (missingBefore || !missing(*dest)) {
+        if (missingBefore || !missing(readVals[valIndex])) {
             *dest = (!swrcpInput) ? readVals[valIndex] : readVals[swrcpLyr];
             *dest *= scale_factor;
             *dest += add_offset;
@@ -4558,6 +4564,8 @@ static void set_read_vals(
                 *dest = cv_convert_double(unitConv, *dest);
             }
 #endif
+        } else {
+            *dest = SW_MISSING;
         }
     }
 }
