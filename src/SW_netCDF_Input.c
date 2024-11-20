@@ -5784,7 +5784,6 @@ static void read_soil_inputs(
     int loopIter;
     size_t defSetStart[2] = {0};
     LyrIndex numLyrs;
-    size_t pftStartIndex = 0;
     int latIndex;
     int lonIndex;
     int vertIndex;
@@ -5847,24 +5846,23 @@ static void read_soil_inputs(
             count[lonIndex] = 1;
         }
 
-        if (hasPFT) {
-            count[pftWriteIndex] = 1;
-            start[pftWriteIndex] = pftStartIndex;
-            pftStartIndex++;
-        }
-
         if (varNum >= transStartInd) {
+            numVals = numLyrs;
             /* Set pointer for trans_coeff (12+) and/or swrcp (16+) */
             if (varNum >= transStartInd && varNum < swrcpStartInd) {
+                vegIndex = varNum - transStartInd;
                 doublePtr = (double *) trans_coeff[vegIndex];
-                numVals = NVEGTYPES * numLyrs;
             } else {
                 doublePtr = (double *) tempswrcp;
-                numVals = numLyrs * SWRC_PARAM_NMAX;
             }
         } else {
             doublePtr = values1D[varNum - 1];
             numVals = numLyrs;
+        }
+
+        if (hasPFT) {
+            count[pftWriteIndex] = 1;
+            start[pftWriteIndex] = vegIndex;
         }
 
         SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
@@ -5905,10 +5903,6 @@ static void read_soil_inputs(
                 loopIter,
                 (!isSwrcpVar) ? doublePtr : swrcp[loopIter]
             );
-        }
-
-        if (varNum >= transStartInd) {
-            vegIndex++;
         }
     }
 
