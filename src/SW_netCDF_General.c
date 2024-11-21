@@ -968,6 +968,9 @@ of this name, it's value should be -1)
 @param[in] siteName User-provided site dimension/variable "site" name
 @param[in] ouseDefaultChunking A flag specifying if, when creating the
 variable, to use the default chunk sizes or program-provided sizes
+@param[in] defFillVal A fill value that can be sent in to give to the
+variable before the chance of filling the variable with a default
+value
 @param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_NC_create_full_var(
@@ -993,6 +996,7 @@ void SW_NC_create_full_var(
     const char *siteName,
     const int coordAttIndex,
     Bool useDefaultChunking,
+    void *defFillVal,
     LOG_INFO *LogInfo
 ) {
 
@@ -1113,6 +1117,21 @@ void SW_NC_create_full_var(
     for (index = 0; index < numAtts; index++) {
         SW_NC_write_string_att(
             attNames[index], attVals[index], varID, *ncFileID, LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+    }
+
+    if (!isnull(defFillVal)) {
+        SW_NC_write_att(
+            "_FillValue",
+            (void *) defFillVal,
+            varID,
+            *ncFileID,
+            1,
+            NC_BYTE,
+            LogInfo
         );
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error

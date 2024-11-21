@@ -146,6 +146,7 @@ void SW_NC_create_full_var(
     const char *siteName,
     const int coordAttIndex,
     Bool useDefaultChunking,
+    void *defFillVal,
     LOG_INFO *LogInfo
 );
 

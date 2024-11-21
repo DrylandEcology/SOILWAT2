@@ -6049,7 +6049,7 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     const char *attVals[] = {"simulation progress", "1", grid_map, coord};
     const int numAtts = 4;
     int numValsToWrite;
-    const signed char fillVal = NC_FILL_BYTE;
+    const signed char fillVal[] = {NC_FILL_BYTE};
     const signed char flagVals[] = {PRGRSS_FAIL, PRGRSS_READY, PRGRSS_DONE};
     const char *flagMeanings =
         "simulation_error ready_to_simulate simulation_complete";
@@ -6068,7 +6068,8 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     Bool progFileIsiteDom = (Bool) (strcmp(progFileName, domFileName) == 0);
     Bool progFileExists = FileExists(progFileName);
-    Bool progVarExists = SW_NC_varExists(*progFileID, progVarName);
+    Bool progVarExists =
+        (Bool) (progFileExists && SW_NC_varExists(*progFileID, progVarName));
     Bool createOrModFile =
         (Bool) (!progFileExists || (progFileIsiteDom && !progVarExists));
     Bool useDefaultChunking = swTRUE;
@@ -6165,6 +6166,7 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             SW_Domain->OutDom.netCDFOutput.siteName,
             -1,
             useDefaultChunking,
+            (void *) fillVal,
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -6179,21 +6181,6 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         // If the progress existed before this function was called,
         // do not set the new attributes
         if (!progVarExists) {
-            // Add attribute "_FillValue" to the progress variable
-            numValsToWrite = 1;
-            SW_NC_write_att(
-                "_FillValue",
-                (void *) &fillVal,
-                *progVarID,
-                *progFileID,
-                numValsToWrite,
-                NC_BYTE,
-                LogInfo
-            );
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
-
             // Add attributes "flag_values" and "flag_meanings"
             numValsToWrite = 3;
             SW_NC_write_att(
