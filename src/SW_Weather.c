@@ -2206,10 +2206,21 @@ void _read_weather_hist(
         (Bool) (hasMaxMinRelHumid || dailyInputFlags[REL_HUMID] ||
                 dailyInputFlags[SPEC_HUMID] || dailyInputFlags[ACTUAL_VP]);
 
+    if (useHumidityDaily && !hasMaxMinRelHumid && !dailyInputFlags[REL_HUMID] &&
+        dailyInputFlags[SPEC_HUMID] && missing(elevation)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Elevation is missing but required to calculate relative humidity "
+            "from specific humidity."
+        );
+        return; // Exit function prematurely due to error
+    }
+
+    // Create file name: `[weather-file prefix].[year]`
     char fname[MAX_FILENAMESIZE];
     char inbuf[MAX_FILENAMESIZE];
 
-    // Create file name: `[weather-file prefix].[year]`
     snprintf(fname, MAX_FILENAMESIZE, "%s.%4d", weather_prefix, year);
 
     if (NULL == (f = fopen(fname, "r"))) {
