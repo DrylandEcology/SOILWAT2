@@ -287,9 +287,9 @@ static double calcDistance(
            cos(x * yMean) where 1 <= x <= 5 (T1 through T5),
            in other words, Tn of cos(x) is the same as cos(nx) */
 
-        yDiff = coordsTwo[0] - coordsOne[0];
-        xDiff = coordsTwo[1] - coordsOne[1];
-        yMean = ((coordsTwo[0] + coordsOne[0]) / 2) * deg_to_rad;
+        yDiff = (coordsTwo[0] - coordsOne[0]) * rad_to_deg;
+        xDiff = (coordsTwo[1] - coordsOne[1]) * rad_to_deg;
+        yMean = (coordsTwo[0] + coordsOne[0]) / 2;
         cosRes = cos(yMean);
         cosResSquared = pow(cosRes, 2);
         cosResCubed = pow(cosRes, 3);

@@ -86,9 +86,9 @@ static const char *const expectedColNames[] = {
 /* This array and `possVarNames` must line up the variables within each key */
 static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] =
     {
-        {"1", "1"},                           /* inDomain */
-        {"1", "degree_north", "degree_east"}, /* inSpatial */
-        {"1", "m", "degree", "degree"},       /* inTopo */
+        {"1", "1"},                       /* inDomain */
+        {"1", "radians", "radians"},      /* inSpatial */
+        {"1", "m", "radians", "radians"}, /* inTopo */
         {"1",        "cm", "cm",   "g cm-3", "cm3 cm-3", "g g-1", "g g-1",
          "g g-1", /*inSoil*/
          "cm3 cm-3", "1",  "degC", "1",      "1",        "1",     "1",
@@ -4612,7 +4612,6 @@ static void read_spatial_topo_climate_inputs(
     Bool varHasAddScaleAtts;
     int varNum;
     int adjVarNum;
-    int adjSetIndex;
     int keyNum;
     int fIndex;
     int varID;
@@ -4697,7 +4696,6 @@ static void read_spatial_topo_climate_inputs(
 
         for (varNum = fIndex; varNum < numVarsInKey[currKey]; varNum++) {
             adjVarNum = varNum + 1;
-            adjSetIndex = varNum - 1;
             if (!readInput[adjVarNum]) {
                 continue;
             }
@@ -4763,15 +4761,15 @@ static void read_spatial_topo_climate_inputs(
                 doubleMissVals,
                 tempVals,
                 numVals,
-                adjSetIndex,
+                varNum,
                 varType,
                 scaleFactor,
                 addOffset,
-                convs[currKey][adjSetIndex],
+                convs[currKey][varNum],
                 swFALSE,
                 0,
                 0,
-                values[keyNum][adjSetIndex]
+                values[keyNum][varNum - 1]
             );
 
             nc_close(ncFileID);
