@@ -46,13 +46,22 @@
 
 
 # SOILWAT2 v8.0.1
+* Simulation output remains the same as the previous version unless
+  relative humidity is calculated from vapor pressure or specific humidity.
+
 * Fix the calculation of relative humidity (#435; @dschlaep).
   Previously, relative humidity was incorrectly calculated if based on
   vapor pressure or specific humidity.
+  The calculation of relative humidity from specific humidity now
+  also uses elevation (to estimate air pressure).
+
 * Fix the count of days on which a missing weather value was replaced by a
   non-missing value from the preceding day for the method `"LOCF"`
   (last observation carried forward; #437; @dschlaep). Previously, any day
   with a missing weather value was counted.
+
+## Changes to inputs
+* Units of specific humidity inputs changed from `"%"` to `"g kg-1"`.
 
 
 # SOILWAT2 v8.0.0
