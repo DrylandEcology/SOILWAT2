@@ -2473,6 +2473,27 @@ void _read_weather_hist(
                         yearWeather->actualVaporPressure[doy],
                         yearWeather->temp_avg[doy]
                     );
+
+                    // Snap relative humidity in 100-150% to 100%
+                    if (yearWeather->r_humidity_daily[doy] > 100. &&
+                        yearWeather->r_humidity_daily[doy] <= 150.) {
+                        LogError(
+                            LogInfo,
+                            LOGWARN,
+                            "Year %d - day %d: relative humidity set to 100%%: "
+                            "based on assumption that "
+                            "a presumed minor mismatch in inputs "
+                            "(vapor pressure (%f) and temperature (%f)) "
+                            "caused the calculated value (%f) to exceed 100%%.",
+                            year,
+                            doy,
+                            yearWeather->actualVaporPressure[doy],
+                            yearWeather->temp_avg[doy],
+                            yearWeather->r_humidity_daily[doy]
+                        );
+
+                        yearWeather->r_humidity_daily[doy] = 100.;
+                    }
                 }
             }
         }
