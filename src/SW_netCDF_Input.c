@@ -7179,9 +7179,14 @@ void SW_NCIN_read_inputs(
             sw->VegEstab.count,
             LogInfo
         );
+        if (LogInfo->stopRun) {
+            return;
+        }
 
         SW_SWC_init_run(&sw->SoilWat, &sw->Site, &sw->Weather.temp_snow);
     }
+
+    SW_PET_init_run(&sw->AtmDemand);
 }
 
 /**
