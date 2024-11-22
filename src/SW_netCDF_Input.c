@@ -4777,6 +4777,8 @@ static void read_spatial_topo_climate_inputs(
         }
     }
 
+    SW_Model->isnorth = (Bool) (GT(SW_Model->latitude, 0.0));
+
 closeFile:
     if (ncFileID > -1) {
         nc_close(ncFileID);

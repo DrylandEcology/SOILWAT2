@@ -1053,12 +1053,8 @@ void estimateVegetationFromClimate(
 
     Bool fillEmptyWithBareGround = swTRUE;
     Bool warnExtrapolation = swTRUE;
-    Bool inNorthHem = swTRUE;
+    Bool inNorthHem = SW_Model->isnorth;
     Bool fixBareGround = swTRUE;
-
-    if (SW_Model->latitude < 0.0) {
-        inNorthHem = swFALSE;
-    }
 
     // Allocate climate structs' memory
     allocateClimateStructs(numYears, &climateOutput, &climateAverages, LogInfo);
