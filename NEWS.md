@@ -4,6 +4,10 @@
 * Fix the calculation of relative humidity (#435; @dschlaep).
   Previously, relative humidity was incorrectly calculated if based on
   vapor pressure or specific humidity.
+* Fix the count of days on which a missing weather value was replaced by a
+  non-missing value from the preceding day for the method `"LOCF"`
+  (last observation carried forward; #437; @dschlaep). Previously, any day
+  with a missing weather value was counted.
 
 
 # SOILWAT2 v8.0.0
