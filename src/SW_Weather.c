@@ -96,6 +96,15 @@
 #include <stdlib.h>                  // for atoi, free
 #include <string.h>                  // for memset, NULL, strcpy
 
+
+/* Weather generation methods */
+/** Markov weather generator method, see generateMissingWeather() */
+const static unsigned int wgMKV = 2;
+
+/** Weather generation method LOCF, see generateMissingWeather() */
+const static unsigned int wgLOCF = 1;
+
+
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
@@ -1037,12 +1046,20 @@ void generateMissingWeather(
     LOG_INFO *LogInfo
 ) {
 
-    int year;
-    unsigned int yearIndex, numDaysYear, day, iMissing;
+    unsigned int year;
+    unsigned int yearIndex;
+    unsigned int numDaysYear;
+    unsigned int day;
+    unsigned int nFilledLOCF;
 
-    double yesterdayPPT = 0., yesterdayTempMin = 0., yesterdayTempMax = 0.,
-           yesterdayCloudCov = 0., yesterdayWindSpeed = 0.,
-           yesterdayRelHum = 0., yesterdayShortWR = 0., yesterdayActVP = 0.;
+    double yesterdayPPT = SW_MISSING;
+    double yesterdayTempMin = SW_MISSING;
+    double yesterdayTempMax = SW_MISSING;
+    double yesterdayCloudCov = SW_MISSING;
+    double yesterdayWindSpeed = SW_MISSING;
+    double yesterdayRelHum = SW_MISSING;
+    double yesterdayShortWR = SW_MISSING;
+    double yesterdayActVP = SW_MISSING;
 
     Bool any_missing;
     Bool missing_Tmax = swFALSE, missing_Tmin = swFALSE, missing_PPT = swFALSE,
@@ -1073,15 +1090,16 @@ void generateMissingWeather(
     for (yearIndex = 0; yearIndex < n_years; yearIndex++) {
         year = yearIndex + startYear;
         numDaysYear = Time_get_lastdoy_y(year);
-        iMissing = 0;
+        nFilledLOCF = 0;
 
         for (day = 0; day < numDaysYear; day++) {
+            /* Determine variables with missing values */
+
             missing_Tmax = (Bool) missing(allHist[yearIndex]->temp_max[day]);
             missing_Tmin = (Bool) missing(allHist[yearIndex]->temp_min[day]);
             missing_PPT = (Bool) missing(allHist[yearIndex]->ppt[day]);
 
-            if (method != 2) {
-                // `SW_MKV_today()` currently generates only Tmax, Tmin, and PPT
+            if (method == wgLOCF) {
                 missing_CloudCov =
                     (Bool) missing(allHist[yearIndex]->cloudcov_daily[day]);
                 missing_WindSpeed =
@@ -1102,8 +1120,8 @@ void generateMissingWeather(
             if (any_missing) {
                 // some of today's values are missing
 
-                if (method == 2) {
-                    // Weather generator
+                if (method == wgMKV) {
+                    // Markov weather generator (Tmax, Tmin, and PPT)
                     allHist[yearIndex]->ppt[day] = yesterdayPPT;
                     SW_MKV_today(
                         SW_Markov,
@@ -1118,7 +1136,7 @@ void generateMissingWeather(
                         return; // Exit function prematurely due to error
                     }
 
-                } else if (method == 1) {
+                } else if (method == wgLOCF) {
                     // LOCF (temp, cloud cover, wind speed, relative humidity,
                     // shortwave radiation, and actual vapor pressure) + 0 (PPT)
                     allHist[yearIndex]->temp_max[day] =
@@ -1157,11 +1175,23 @@ void generateMissingWeather(
                         missing_PPT ? 0. : allHist[yearIndex]->ppt[day];
 
 
-                    // Throw an error if too many values per calendar year are
-                    // missing
-                    iMissing++;
+                    // Throw an error if too many missing values have
+                    // been replaced with non-missing values by the LOCF method
+                    // per calendar year
+                    if (
+                        (missing_Tmax && !missing(yesterdayTempMax)) ||
+                        (missing_Tmin && !missing(yesterdayTempMin)) ||
+                        (missing_PPT && !missing(allHist[yearIndex]->ppt[day])) ||
+                        (missing_CloudCov && !missing(yesterdayCloudCov)) ||
+                        (missing_WindSpeed && !missing(yesterdayWindSpeed)) ||
+                        (missing_RelHum && !missing(yesterdayRelHum)) ||
+                        (missing_ShortWR && !missing(yesterdayShortWR)) ||
+                        (missing_ActVP && !missing(yesterdayActVP))
+                    ) {
+                        nFilledLOCF++;
+                    }
 
-                    if (iMissing > optLOCF_nMax) {
+                    if (nFilledLOCF > optLOCF_nMax) {
                         LogError(
                             LogInfo,
                             LOGERROR,
@@ -1184,13 +1214,16 @@ void generateMissingWeather(
             }
 
             yesterdayPPT = allHist[yearIndex]->ppt[day];
-            yesterdayTempMax = allHist[yearIndex]->temp_max[day];
-            yesterdayTempMin = allHist[yearIndex]->temp_min[day];
-            yesterdayCloudCov = allHist[yearIndex]->cloudcov_daily[day];
-            yesterdayWindSpeed = allHist[yearIndex]->windspeed_daily[day];
-            yesterdayRelHum = allHist[yearIndex]->r_humidity_daily[day];
-            yesterdayShortWR = allHist[yearIndex]->shortWaveRad[day];
-            yesterdayActVP = allHist[yearIndex]->actualVaporPressure[day];
+
+            if (method == wgLOCF) {
+                yesterdayTempMax = allHist[yearIndex]->temp_max[day];
+                yesterdayTempMin = allHist[yearIndex]->temp_min[day];
+                yesterdayCloudCov = allHist[yearIndex]->cloudcov_daily[day];
+                yesterdayWindSpeed = allHist[yearIndex]->windspeed_daily[day];
+                yesterdayRelHum = allHist[yearIndex]->r_humidity_daily[day];
+                yesterdayShortWR = allHist[yearIndex]->shortWaveRad[day];
+                yesterdayActVP = allHist[yearIndex]->actualVaporPressure[day];
+            }
         }
     }
 }
@@ -1750,18 +1783,18 @@ void SW_WTH_setup(
 
             case 1:
                 // weather generator
-                SW_Weather->generateWeatherMethod = 2;
+                SW_Weather->generateWeatherMethod = wgMKV;
                 break;
 
             case 2:
                 // weather generatory only
-                SW_Weather->generateWeatherMethod = 2;
+                SW_Weather->generateWeatherMethod = wgMKV;
                 SW_Weather->use_weathergenerator_only = swTRUE;
                 break;
 
             case 3:
                 // LOCF (temp) + 0 (PPT)
-                SW_Weather->generateWeatherMethod = 1;
+                SW_Weather->generateWeatherMethod = wgLOCF;
                 break;
 
             default:
