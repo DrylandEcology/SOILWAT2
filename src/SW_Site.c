@@ -233,12 +233,6 @@ static Bool SW_check_soil_properties(
     } else if (LT(SW_Site->soils.evap_coeff[layerno], 0.) ||
                GT(SW_Site->soils.evap_coeff[layerno], 1.)) {
         res = swFALSE;
-        fval = SW_Site->soils.fractionWeight_om[layerno];
-        errtype = Str_Dup("organic matter content", LogInfo);
-
-    } else if (LT(SW_Site->soils.evap_coeff[layerno], 0.) ||
-               GT(SW_Site->soils.evap_coeff[layerno], 1.)) {
-        res = swFALSE;
         fval = SW_Site->soils.evap_coeff[layerno];
         errtype = Str_Dup("bare-soil evaporation coefficient", LogInfo);
 

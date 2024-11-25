@@ -416,11 +416,20 @@ void SW_F_init_ptrs(SW_PATH_INPUTS *SW_PathInputs) {
 #if defined(SWNETCDF)
     int k;
 
-    ForEachNCInKey(k) { SW_PathInputs->ncInFiles[k] = NULL; }
+    ForEachNCInKey(k) {
+        SW_PathInputs->ncInFiles[k] = NULL;
+        SW_PathInputs->inVarIDs[k] = NULL;
+        SW_PathInputs->inVarTypes[k] = NULL;
+        SW_PathInputs->hasScaleAndAddFact[k] = NULL;
+        SW_PathInputs->scaleAndAddFactVals[k] = NULL;
+        SW_PathInputs->missValFlags[k] = NULL;
+        SW_PathInputs->doubleMissVals[k] = NULL;
+    }
 
     SW_PathInputs->ncWeatherInFiles = NULL;
     SW_PathInputs->ncWeatherInStartEndYrs = NULL;
     SW_PathInputs->ncWeatherStartEndIndices = NULL;
+    SW_PathInputs->numSoilVarLyrs = NULL;
 #endif
 }
 
