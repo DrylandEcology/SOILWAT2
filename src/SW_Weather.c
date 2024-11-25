@@ -104,7 +104,6 @@ const static unsigned int wgMKV = 2;
 /** Weather generation method LOCF, see generateMissingWeather() */
 const static unsigned int wgLOCF = 1;
 
-
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
@@ -1178,16 +1177,15 @@ void generateMissingWeather(
                     // Throw an error if too many missing values have
                     // been replaced with non-missing values by the LOCF method
                     // per calendar year
-                    if (
-                        (missing_Tmax && !missing(yesterdayTempMax)) ||
+                    if ((missing_Tmax && !missing(yesterdayTempMax)) ||
                         (missing_Tmin && !missing(yesterdayTempMin)) ||
-                        (missing_PPT && !missing(allHist[yearIndex]->ppt[day])) ||
+                        (missing_PPT && !missing(allHist[yearIndex]->ppt[day])
+                        ) ||
                         (missing_CloudCov && !missing(yesterdayCloudCov)) ||
                         (missing_WindSpeed && !missing(yesterdayWindSpeed)) ||
                         (missing_RelHum && !missing(yesterdayRelHum)) ||
                         (missing_ShortWR && !missing(yesterdayShortWR)) ||
-                        (missing_ActVP && !missing(yesterdayActVP))
-                    ) {
+                        (missing_ActVP && !missing(yesterdayActVP))) {
                         nFilledLOCF++;
                     }
 
