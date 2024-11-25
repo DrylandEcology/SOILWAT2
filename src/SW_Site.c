@@ -2320,7 +2320,7 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *txtInFiles[], LOG_INFO *LogInfo) {
         /* Copy values into structure */
         for (k = 0; k < SWRC_PARAM_NMAX; k++) {
             if (isMineral) {
-                SW_Site->swrcpMineralSoil[lyrno][k] = tmp_swrcp[k];
+                SW_Site->soils.swrcpMineralSoil[lyrno][k] = tmp_swrcp[k];
             } else {
                 SW_Site->swrcpOM[lyrno][k] = tmp_swrcp[k];
             }
@@ -2520,7 +2520,7 @@ void SW_SIT_init_run(
             */
             SWRC_PTF_estimate_parameters(
                 SW_Site->ptf_type[s],
-                SW_Site->swrcpMineralSoil[s],
+                SW_Site->soils.swrcpMineralSoil[s],
                 SW_Site->soils.fractionWeightMatric_sand[s],
                 SW_Site->soils.fractionWeightMatric_clay[s],
                 SW_Site->soils.fractionVolBulk_gravel[s],
@@ -2534,7 +2534,9 @@ void SW_SIT_init_run(
 
         /* Check parameters of mineral soil SWRC */
         if (!SWRC_check_parameters(
-                SW_Site->swrc_type[s], SW_Site->swrcpMineralSoil[s], LogInfo
+                SW_Site->swrc_type[s],
+                SW_Site->soils.swrcpMineralSoil[s],
+                LogInfo
             )) {
             LogError(
                 LogInfo,
@@ -2550,8 +2552,8 @@ void SW_SIT_init_run(
         /* Calculate bulk soil SWRCp from organic and mineral soil components */
         SWRC_bulkSoilParameters(
             SW_Site->swrc_type[s],
-            SW_Site->soils.swrcp[s],
-            SW_Site->swrcpMineralSoil[s],
+            SW_Site->swrcp[s],
+            SW_Site->soils.swrcpMineralSoil[s],
             SW_Site->swrcpOM,
             SW_Site->soils.fractionWeight_om[s],
             SW_Site->depthSapric,
@@ -2561,7 +2563,7 @@ void SW_SIT_init_run(
 
         /* Check parameters of bulk soil SWRC */
         if (!SWRC_check_parameters(
-                SW_Site->swrc_type[s], SW_Site->swrcpMineralSoil[s], LogInfo
+                SW_Site->swrc_type[s], SW_Site->swrcp[s], LogInfo
             )) {
             LogError(
                 LogInfo,
@@ -2576,7 +2578,7 @@ void SW_SIT_init_run(
 
         /* Extract ksat from swrcp */
         SW_Site->ksat[s] =
-            SWRC_get_ksat(SW_Site->swrc_type[s], SW_Site->soils.swrcp[s]);
+            SWRC_get_ksat(SW_Site->swrc_type[s], SW_Site->swrcp[s]);
 
         /* Calculate SWC at field capacity and at wilting point */
         SW_Site->swcBulk_fieldcap[s] =
@@ -2614,7 +2616,7 @@ void SW_SIT_init_run(
         /* Extract or estimate additional properties */
         SW_Site->swcBulk_saturated[s] = SW_swcBulk_saturated(
             SW_Site->swrc_type[s],
-            SW_Site->soils.swrcp[s],
+            SW_Site->swrcp[s],
             SW_Site->soils.fractionVolBulk_gravel[s],
             SW_Site->soils.width[s],
             SW_Site->ptf_type[s],
@@ -2629,7 +2631,7 @@ void SW_SIT_init_run(
 
         SW_Site->swcBulk_min[s] = SW_swcBulk_minimum(
             SW_Site->swrc_type[s],
-            SW_Site->soils.swrcp[s],
+            SW_Site->swrcp[s],
             SW_Site->soils.fractionVolBulk_gravel[s],
             SW_Site->soils.width[s],
             SW_Site->ptf_type[s],
@@ -3268,12 +3270,12 @@ void echo_inputs(SW_SITE *SW_Site, SW_MODEL *SW_Model) {
         printf(
             "  %3d%11.4f%11.4f%11.4f%11.4f%11.4f%11.4f\n",
             i + 1,
-            SW_Site->soils.swrcp[i][0],
-            SW_Site->soils.swrcp[i][1],
-            SW_Site->soils.swrcp[i][2],
-            SW_Site->soils.swrcp[i][3],
-            SW_Site->soils.swrcp[i][4],
-            SW_Site->soils.swrcp[i][5]
+            SW_Site->swrcp[i][0],
+            SW_Site->swrcp[i][1],
+            SW_Site->swrcp[i][2],
+            SW_Site->swrcp[i][3],
+            SW_Site->swrcp[i][4],
+            SW_Site->swrcp[i][5]
         );
     }
 

@@ -267,13 +267,9 @@ typedef struct {
                                        (0=permeable, 1=impermeable)    */
         avgLyrTempInit[MAX_LAYERS]; /* initial soil temperature for each soil
                                        layer */
-    /** SWRC parameters of the bulk soil
-        (weighted average of mineral and organic SWRC).
 
-        Note: parameter interpretation varies with selected SWRC,
-        see `SWRC_check_parameters()`
-    */
-    double swrcp[MAX_LAYERS][SWRC_PARAM_NMAX];
+    /** SWRC parameters of the mineral soil component */
+    double swrcpMineralSoil[MAX_LAYERS][SWRC_PARAM_NMAX];
 } SW_SOILS;
 
 typedef struct {
@@ -404,8 +400,14 @@ typedef struct {
                      `swrcp` but we need to loop over soil layers for every
                      vegetation type in `my_transp_rng`
     */
-    /** SWRC parameters of the mineral soil component */
-    double swrcpMineralSoil[MAX_LAYERS][SWRC_PARAM_NMAX];
+    /** SWRC parameters of the bulk soil
+        (weighted average of mineral and organic SWRC).
+
+        Note: parameter interpretation varies with selected SWRC,
+        see `SWRC_check_parameters()`
+    */
+    double swrcp[MAX_LAYERS][SWRC_PARAM_NMAX];
+
     /** SWRC parameters of the organic soil component
         for (1) fibric and (2) sapric peat. */
     double swrcpOM[2][SWRC_PARAM_NMAX];

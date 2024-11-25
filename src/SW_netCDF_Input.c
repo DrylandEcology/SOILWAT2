@@ -155,12 +155,12 @@ static const char *const possVarNames[SW_NINKEYSNC][SW_INNMAXVARS] = {
         "Forbs.transp_coeff",
         "Grasses.transp_coeff",
 
-        "swrcp[1]",
-        "swrcp[2]",
-        "swrcp[3]",
-        "swrcp[4]",
-        "swrcp[5]",
-        "swrcp[6]",
+        "swrcpMineralSoil[1]",
+        "swrcpMineralSoil[2]",
+        "swrcpMineralSoil[3]",
+        "swrcpMineralSoil[4]",
+        "swrcpMineralSoil[5]",
+        "swrcpMineralSoil[6]",
     },
 
     {/* inVeg */
@@ -5759,8 +5759,9 @@ static void read_soil_inputs(
 
     double(*trans_coeff)[MAX_LAYERS] =
         (hasConstSoilLyrs) ? currSoils->transp_coeff : newSoils.transp_coeff;
-    double(*swrcp)[SWRC_PARAM_NMAX] =
-        (hasConstSoilLyrs) ? currSoils->swrcp : newSoils.swrcp;
+    double(*swrcpMS)[SWRC_PARAM_NMAX] = (hasConstSoilLyrs) ?
+                                            currSoils->swrcpMineralSoil :
+                                            newSoils.swrcpMineralSoil;
     double tempswrcp[MAX_LAYERS];
     double *doublePtr;
     int numVals;
@@ -5901,7 +5902,7 @@ static void read_soil_inputs(
                 isSwrcpVar,
                 (!isSwrcpVar) ? 0 : (varNum - swrcpStartInd),
                 loopIter,
-                (!isSwrcpVar) ? doublePtr : swrcp[loopIter]
+                (!isSwrcpVar) ? doublePtr : swrcpMS[loopIter]
             );
         }
     }
