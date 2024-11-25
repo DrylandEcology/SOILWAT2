@@ -99,10 +99,10 @@
 
 /* Weather generation methods */
 /** Markov weather generator method, see generateMissingWeather() */
-const static unsigned int wgMKV = 2;
+static const unsigned int wgMKV = 2;
 
 /** Weather generation method LOCF, see generateMissingWeather() */
-const static unsigned int wgLOCF = 1;
+static const unsigned int wgLOCF = 1;
 
 /* =================================================== */
 /*             Local Function Definitions              */
