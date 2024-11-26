@@ -1560,14 +1560,14 @@ void SW_SIT_read(
 
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
 
-        strLine = (Bool) (lineno == 35 || lineno == 38 || lineno == 39);
+        strLine = (Bool) (lineno == 35 || lineno == 39 || lineno == 40);
 
         if (!strLine && lineno <= 39) {
             /* Check to see if the line number contains a double or integer
              * value */
             doDoubleConv =
                 (Bool) ((lineno >= 0 && lineno <= 2) ||
-                        (lineno >= 5 && lineno <= 31) || lineno == 37);
+                        (lineno >= 5 && lineno <= 31) || lineno == 38);
 
             if (doDoubleConv) {
                 doubleRes = sw_strtod(inbuf, MyFileName, LogInfo);
