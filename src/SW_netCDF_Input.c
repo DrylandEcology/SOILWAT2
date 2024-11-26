@@ -3195,13 +3195,6 @@ static void determine_valid_cal(
                 );
                 *calIsAllLeap = swTRUE;
             } else if (index >= 7 && index <= 11) { /* No leap calendars */
-                LogError(
-                    LogInfo,
-                    LOGWARN,
-                    "The usage of the calendar '%s' has been detected. "
-                    "This results in missing values on leap days.",
-                    calType
-                );
                 *calIsNoLeap = swTRUE;
             }
 
