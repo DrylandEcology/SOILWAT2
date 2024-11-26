@@ -19,7 +19,6 @@
 #include "include/generic.h"        // for Bool, swFALSE, swTRUE
 #include "include/SW_Control.h"     // for SW_CTL_RunSimSet, SW_CTL_clear_m...
 #include "include/SW_datastructs.h" // for LOG_INFO, SW_RUN, SW_DOMAIN, SW_...
-#include "include/SW_Defines.h"     // for SW_OUTNKEYS
 #include "include/SW_Domain.h"      // for SW_DOM_deconstruct, SW_DOM_init_...
 #include "include/SW_Files.h"       // for eFirst
 #include "include/SW_Main_lib.h"    // for sw_fail_on_error, sw_init_args
@@ -54,7 +53,6 @@ int main(int argc, char **argv) {
     Bool EchoInits = swFALSE;
 
     unsigned long userSUID;
-
 
     // Start overall wall time
     SW_WT_StartTime(&SW_WallTime);
@@ -185,7 +183,7 @@ int main(int argc, char **argv) {
     }
 
     if (EchoInits) {
-        _echo_all_inputs(&sw_template, &SW_Domain.OutDom);
+        echo_all_inputs(&sw_template, &SW_Domain.OutDom);
     }
 
     // run simulations: loop over simulation set

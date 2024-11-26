@@ -33,7 +33,7 @@ void RandSeed(
 
 double RandUni(sw_random_t *pcg_rng);
 
-int RandUniIntRange(const long first, const long last, sw_random_t *pcg_rng);
+long RandUniIntRange(const long first, const long last, sw_random_t *pcg_rng);
 
 float RandUniFloatRange(const float min, const float max, sw_random_t *pcg_rng);
 
@@ -48,7 +48,7 @@ void RandUniList(
     LOG_INFO *LogInfo
 );
 
-float RandBeta(float aa, float bb, sw_random_t *pcg_rng, LOG_INFO *LogInfo);
+double RandBeta(double aa, double bb, sw_random_t *pcg_rng, LOG_INFO *LogInfo);
 
 
 #ifdef __cplusplus

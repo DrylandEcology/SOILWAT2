@@ -59,7 +59,9 @@ even if they occurred during the same system time.
 @param[in,out] pcg_rng The random number generator to set.
 */
 void RandSeed(
-    unsigned long initstate, unsigned long initseq, sw_random_t *pcg_rng
+    unsigned long initstate,
+    unsigned long initseq,
+    sw_random_t *pcg_rng // NOLINT(readability-non-const-parameter)
 ) {
 // R uses its own random number generators
 #ifndef RSOILWAT
@@ -93,6 +95,7 @@ If `pcg_rng` was not initialized with `RandSeed()`, then the first call to
 
 @return A pseudo-random number between 0 and 1.
 */
+// NOLINTNEXTLINE(readability-non-const-parameter)
 double RandUni(sw_random_t *pcg_rng) {
 
     double res;
@@ -122,7 +125,11 @@ double RandUni(sw_random_t *pcg_rng) {
 
 \return Random number between the two bounds defined.
 */
-int RandUniIntRange(const long first, const long last, sw_random_t *pcg_rng) {
+long RandUniIntRange(
+    const long first,
+    const long last,
+    sw_random_t *pcg_rng // NOLINT(readability-non-const-parameter)
+) {
     /* History:
         Return a randomly selected integer between
         first and last, inclusive.
@@ -140,7 +147,9 @@ int RandUniIntRange(const long first, const long last, sw_random_t *pcg_rng) {
         - first = -5, last = 5, result = 0
     */
 
-    long f, l, res;
+    long f;
+    long l;
+    long res;
 
     if (first == last) {
         return first;
@@ -163,7 +172,7 @@ int RandUniIntRange(const long first, const long last, sw_random_t *pcg_rng) {
     (void) pcg_rng; // silence compile warnings [-Wunused-parameter]
 
     GetRNGstate();
-    res = (long) runif(f, l);
+    res = (long) runif((double) f, (double) l);
     PutRNGstate();
 #endif
 
@@ -197,7 +206,9 @@ float RandUniFloatRange(
             - first = 4.5, last = -1.1, result = -.32
             - first = -5, last = 5, result = 0
     */
-    float f, l, r;
+    float f;
+    float l;
+    float r;
 
     if (max == min) {
         return min;
@@ -243,7 +254,11 @@ void RandUniList(
     LOG_INFO *LogInfo
 ) {
 
-    long i, j, c, range, *klist;
+    long i;
+    long j;
+    long c;
+    long range;
+    long *klist;
 
     range = last - first + 1;
 
@@ -268,7 +283,7 @@ void RandUniList(
     /* if count <= 2, handle things directly */
     /* for less complexity and more speed    */
     if (count <= 2) {
-        list[0] = (long) RandUniIntRange(first, last, pcg_rng);
+        list[0] = RandUniIntRange(first, last, pcg_rng);
 
         if (count == 2) {
             while ((list[1] = RandUniIntRange(first, last, pcg_rng)) == list[0])
@@ -334,7 +349,11 @@ If compiled with defined `RSOILWAT`, then `rnorm()` from header
 @param stddev Standard deviation of the distribution.
 @param[in,out] *pcg_rng The random number generator to use.
 */
-double RandNorm(double mean, double stddev, sw_random_t *pcg_rng) {
+double RandNorm(
+    double mean,
+    double stddev,
+    sw_random_t *pcg_rng // NOLINT(readability-non-const-parameter)
+) {
     /* History:
         cwb - 6/20/00
         This routine is
@@ -353,7 +372,9 @@ double RandNorm(double mean, double stddev, sw_random_t *pcg_rng) {
     double res;
 
 #ifndef RSOILWAT
-    double v1, v2, r;
+    double v1;
+    double v2;
+    double r;
 
 #ifdef RANDNORMSTATIC
     /* original, non-reentrant code: issue #326 */
@@ -428,27 +449,27 @@ This code is distributed under the GNU LGPL license.
 @param[out] LogInfo Holds information on warnings and errors
 \return A random variate of a beta distribution.
 */
-float RandBeta(float aa, float bb, sw_random_t *pcg_rng, LOG_INFO *LogInfo) {
-    float a;
-    float alpha;
-    float b;
-    float beta;
-    float delta;
-    float gamma;
-    float k1;
-    float k2;
-    const float log4 = 1.3862943611198906188;
-    const float log5 = 1.6094379124341003746;
-    float r;
-    float s;
-    float t;
-    float u1;
-    float u2;
-    float v;
-    float value;
-    float w;
-    float y;
-    float z;
+double RandBeta(double aa, double bb, sw_random_t *pcg_rng, LOG_INFO *LogInfo) {
+    double a;
+    double alpha;
+    double b;
+    double beta;
+    double delta;
+    double gamma;
+    double k1;
+    double k2;
+    const double log4 = 1.3862943611198906188;
+    const double log5 = 1.6094379124341003746;
+    double r;
+    double s;
+    double t;
+    double u1;
+    double u2;
+    double v;
+    double value;
+    double w;
+    double y;
+    double z;
 
     if (aa <= 0.0) {
         LogError(LogInfo, LOGERROR, "RandBeta - Fatal error: AA <= 0.0\n");

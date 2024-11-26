@@ -16,7 +16,7 @@
 #ifndef SW_OUTPUT_ARRAY_H
 #define SW_OUTPUT_ARRAY_H
 
-#include "include/generic.h"        // for Bool, RealD
+#include "include/generic.h"        // for Bool
 #include "include/SW_datastructs.h" // for SW_MODEL, L...
 #include "include/SW_Defines.h"     // for OutPeriod, SW_OUTNPERIODS, SW_OUTN...
 #include <stdio.h>                  // for size_t
@@ -110,7 +110,7 @@ extern const IntUS ncol_TimeOUT[SW_OUTNPERIODS];
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_OUT_set_nrow(
-    SW_MODEL *SW_Model, Bool use_OutPeriod[], size_t nrow_OUT[]
+    SW_MODEL *SW_Model, const Bool use_OutPeriod[], size_t nrow_OUT[]
 );
 
 void SW_OUT_construct_outarray(
@@ -123,20 +123,20 @@ void SW_OUT_deconstruct_outarray(SW_OUT_RUN *OutRun);
 void get_outvalleader(
     SW_MODEL *SW_Model,
     OutPeriod pd,
-    size_t irow_OUT[],
-    size_t nrow_OUT[],
+    const size_t irow_OUT[],
+    const size_t nrow_OUT[],
     TimeInt tOffset,
-    RealD *p
+    double *p
 );
 #endif
 
 #if defined(STEPWAT)
-void do_running_agg(RealD *p, RealD *psd, size_t k, IntU n, RealD x);
+void do_running_agg(double *p, double *psd, size_t k, IntU n, double x);
 #endif
 
 void SW_OUT_calc_iOUToffset(
-    size_t nrow_OUT[],
-    IntUS nvar_OUT[],
+    const size_t nrow_OUT[],
+    const IntUS nvar_OUT[],
     IntUS nsl_OUT[][SW_OUTNMAXVARS],
     IntUS npft_OUT[][SW_OUTNMAXVARS],
     size_t iOUToffset[][SW_OUTNPERIODS][SW_OUTNMAXVARS]
