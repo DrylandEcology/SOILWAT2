@@ -1340,6 +1340,8 @@ typedef struct {
 
     Bool useIndexFile[SW_NINKEYSNC];
 
+    sw_converter_t *projCoordConvs[SW_NINKEYSNC][2];
+
     /*
         Pre-calculate the location of dimensions within variable headers
         to rearrange start/count indices/values so we can match the current
@@ -1628,6 +1630,7 @@ void SW_DATA_create_tree(
     Bool inIsGridded,
     Bool has2DCoordVars,
     Bool inPrimCRSIsGeo,
+    sw_converter_t *yxConvs[],
     LOG_INFO *LogInfo
 );
 

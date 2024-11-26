@@ -3914,6 +3914,8 @@ the input file that the index file is being created for
 @param[in] has2DCoordVars Specifies if the read-in coordinates from an input
 file came from a 2-dimensional variable
 @param[in] spatialTol User-provided tolerance for comparing spatial coordinates
+@param[in] yxConvs A list of two unit converters for the coordinate variables
+(one for y and one for x)
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static void write_indices(
@@ -3933,6 +3935,7 @@ static void write_indices(
     size_t **inFileDimSizes,
     Bool has2DCoordVars,
     double spatialTol,
+    sw_converter_t *yxConvs[],
     LOG_INFO *LogInfo
 ) {
     SW_KD_NODE *treeRoot = NULL;
@@ -3956,6 +3959,7 @@ static void write_indices(
         inIsGridded,
         has2DCoordVars,
         inPrimCRSIsGeo,
+        yxConvs,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -5287,6 +5291,82 @@ static void get_variable_dim_order(
     }
 }
 
+#if defined(SWNETCDF) && defined(SWUDUNITS)
+/**
+@brief Read the units of coordinate variables to convert from later
+(if different than "m")
+
+@param[in] ncFileID File identifier of the nc file being read
+@param[in] yVarName Name of the y coordinate variable
+@param[in] xVarName Name of the x coordinate variable
+@param[out] varConv A list of two unit converters for the coordinate variables
+(one for y and one for x)
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void get_proj_nc_units(
+    int ncFileID,
+    char *yVarName,
+    char *xVarName,
+    sw_converter_t *varConv[],
+    LOG_INFO *LogInfo
+) {
+    int varNum;
+    const int numVars = 2;
+    char *varNames[] = {yVarName, xVarName};
+    char varUnit[FILENAME_MAX] = {'\0'};
+    const char *attName = "units";
+
+    ut_system *system = NULL;
+    ut_unit *unitFrom;
+    ut_unit *unitTo;
+    Bool convertible;
+
+    /* silence udunits2 error messages */
+    ut_set_error_message_handler(ut_ignore);
+
+    /* Load unit system database */
+    system = ut_read_xml(NULL);
+
+    unitTo = ut_parse(system, "m", UT_UTF8);
+
+    /* Get information about the projected variables so we
+       can gather the attributes */
+    for (varNum = 0; varNum < numVars; varNum++) {
+        if (SW_NC_varExists(ncFileID, varNames[varNum])) {
+            SW_NC_get_str_att_val(
+                ncFileID, varNames[varNum], attName, varUnit, LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
+            }
+
+            unitFrom = ut_parse(system, varUnit, UT_UTF8);
+            convertible = (Bool) (ut_are_convertible(unitFrom, unitTo) != 0);
+
+            if (convertible) {
+                varConv[varNum] = ut_get_converter(unitFrom, unitTo);
+            } else {
+                LogError(
+                    LogInfo,
+                    LOGWARN,
+                    "The coordinate variable '%s' is of a unit that is not "
+                    "convertible from '%s'. The unit '%s' will be used.",
+                    varNames[varNum],
+                    "m",
+                    varUnit
+                );
+                return;
+            }
+
+            ut_free(unitFrom);
+        }
+    }
+
+    ut_free(unitTo);
+    ut_free_system(system);
+}
+#endif /* SWNETCDF & SWUDUNITS */
+
 /**
 @brief Before reading inputs, it is best to get certain information
 to not have the need to query the information during the simulations
@@ -5332,6 +5412,7 @@ static void get_invar_information(
     LyrIndex testNumLyrs = 0;
     int numReadSoilVars = 0;
     int weathFileIndex = SW_PathInputs->weathStartFileIndex;
+    Bool projCRS;
 
     double *attVal;
 
@@ -5346,6 +5427,15 @@ static void get_invar_information(
         inVarInfo = SW_netCDFIn->inVarInfo[inKey];
         ncInFiles = SW_PathInputs->ncInFiles[inKey];
         startVar = 1;
+
+        while (!readInVars[inKey][startVar + 1]) {
+            startVar++;
+        }
+
+        projCRS =
+            (Bool) (strcmp(
+                        inVarInfo[startVar][INDOMTYPE], "latitude_longitude"
+                    ) != 0);
 
         alloc_sim_var_information(
             numVarsInKey[inKey],
@@ -5518,6 +5608,21 @@ static void get_invar_information(
                     goto closeFile;
                 }
             }
+
+#if defined(SWNETCDF) && defined(SWUDUNITS)
+            if (projCRS && varNum == startVar) {
+                get_proj_nc_units(
+                    ncFileID,
+                    inVarInfo[varNum][INYAXIS],
+                    inVarInfo[varNum][INXAXIS],
+                    SW_netCDFIn->projCoordConvs[inKey],
+                    LogInfo
+                );
+                if (LogInfo->stopRun) {
+                    return;
+                }
+            }
+#endif
 
             nc_close(ncFileID);
             ncFileID = -1;
@@ -7439,6 +7544,8 @@ void SW_NCIN_close_files(int ncDomFileIDs[]) {
 */
 void SW_NCIN_init_ptrs(SW_NETCDF_IN *SW_netCDFIn) {
     int k;
+    int coordNum;
+    const int numCoords = 2;
 
     ForEachNCInKey(k) {
         SW_netCDFIn->inVarInfo[k] = NULL;
@@ -7446,6 +7553,10 @@ void SW_NCIN_init_ptrs(SW_NETCDF_IN *SW_netCDFIn) {
         SW_netCDFIn->uconv[k] = NULL;
         SW_netCDFIn->readInVars[k] = NULL;
         SW_netCDFIn->dimOrderInVar[k] = NULL;
+
+        for (coordNum = 0; coordNum < numCoords; coordNum++) {
+            SW_netCDFIn->projCoordConvs[k][coordNum] = NULL;
+        }
     }
 
     SW_netCDFIn->weathCalOverride = NULL;
@@ -7488,6 +7599,8 @@ void SW_NCIN_dealloc_inputkey_var_info(SW_NETCDF_IN *SW_netCDFIn, int key) {
     int varsInKey;
     int attNum;
     char *attStr;
+    int coordNum;
+    const int numCoords = 2;
 
     varsInKey = numVarsInKey[key];
 
@@ -7571,6 +7684,19 @@ void SW_NCIN_dealloc_inputkey_var_info(SW_NETCDF_IN *SW_netCDFIn, int key) {
 
         free((void *) SW_netCDFIn->dimOrderInVar[key]);
         SW_netCDFIn->dimOrderInVar[key] = NULL;
+    }
+
+    if (!isnull((void *) SW_netCDFIn->projCoordConvs[key])) {
+        for (coordNum = 0; coordNum < numCoords; coordNum++) {
+            if (!isnull((void *) SW_netCDFIn->projCoordConvs[key][coordNum])) {
+#if defined(SWNETCDF) && defined(SWUDUNITS)
+                cv_free(SW_netCDFIn->projCoordConvs[key][coordNum]);
+#else
+                free((void *) SW_netCDFIn->projCoordConvs[key][coordNum]);
+#endif
+                SW_netCDFIn->projCoordConvs[key][coordNum] = NULL;
+            }
+        }
     }
 }
 
@@ -8681,6 +8807,7 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     dimSizes,
                     has2DCoordVars,
                     SW_Domain->spatialTol,
+                    SW_netCDFIn->projCoordConvs[k],
                     LogInfo
                 );
                 if (LogInfo->stopRun) {

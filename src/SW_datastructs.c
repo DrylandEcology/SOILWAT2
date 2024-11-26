@@ -843,6 +843,8 @@ SW_KD_NODE *SW_DATA_addNode(
 @param[in] has2DCoordVars Specifies if the coordinates that are being sent in
 originated from coordinate variables that we 2D, i.e., in matrix form
 @param[in] inPrimCRSIsGeo Specifies if the current CRS type is geographic
+@param[in] yxConvs A list of two unit converters for the coordinate variables
+(one for y and one for x)
 @param[out] LogInfo Holds information dealing with logfile output
 */
 void SW_DATA_create_tree(
@@ -854,6 +856,7 @@ void SW_DATA_create_tree(
     Bool inIsGridded,
     Bool has2DCoordVars,
     Bool inPrimCRSIsGeo,
+    sw_converter_t *yxConvs[],
     LOG_INFO *LogInfo
 ) {
     double **coordPairs = NULL;
@@ -873,25 +876,37 @@ void SW_DATA_create_tree(
        If they are, we simply need to pair the coordinates one-to-one;
        Otherwise, we need to construct the grid from the coordinates
        meaning all coordinate pairs should be created */
-    if (has2DCoordVars) {
-        for (pair = 0UL; pair < numPoints; pair++) {
-            coordPairs[pair][0] = yCoords[pair];
-            coordPairs[pair][1] = xCoords[pair];
+    for (yIndex = 0; yIndex < ySize; yIndex++) {
+        for (xIndex = 0; xIndex < xSize; xIndex++) {
+            if (has2DCoordVars) {
+                coordPairs[pair][0] = yCoords[pair];
+                coordPairs[pair][1] = xCoords[pair];
 
-            indices[pair][0] = pair / xSize;
-            indices[pair][1] = pair % xSize;
-        }
-    } else {
-        for (yIndex = 0; yIndex < ySize; yIndex++) {
-            for (xIndex = 0; xIndex < xSize; xIndex++) {
+                indices[pair][0] = pair / xSize;
+                indices[pair][1] = pair % xSize;
+            } else {
                 indices[pair][0] = yIndex;
                 indices[pair][1] = xIndex;
 
                 coordPairs[pair][0] = yCoords[yIndex];
                 coordPairs[pair][1] = xCoords[xIndex];
-
-                pair++;
             }
+
+#if defined(SWNETCDF) && defined(SWUDUNITS)
+            if (!inPrimCRSIsGeo) {
+                if (!isnull(yxConvs[0])) {
+                    coordPairs[pair][0] =
+                        cv_convert_double(yxConvs[0], coordPairs[pair][0]);
+                }
+
+                if (!isnull(yxConvs[1])) {
+                    coordPairs[pair][1] =
+                        cv_convert_double(yxConvs[1], coordPairs[pair][1]);
+                }
+            }
+#endif
+
+            pair++;
         }
     }
 
