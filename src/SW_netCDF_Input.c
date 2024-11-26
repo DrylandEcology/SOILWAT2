@@ -4964,6 +4964,9 @@ static void alloc_sim_var_information(
     if (LogInfo->stopRun) {
         return;
     }
+    for (varNum = 0; varNum < numVars; varNum++) {
+        (*hasScaleAndAddFact)[varNum] = swFALSE;
+    }
 
     *scaleAndAddFactVals = (double **) Mem_Malloc(
         sizeof(double *) * numVars, "alloc_sim_var_information()", LogInfo
@@ -4982,12 +4985,18 @@ static void alloc_sim_var_information(
     if (LogInfo->stopRun) {
         return;
     }
+    for (varNum = 0; varNum < numVars; varNum++) {
+        (*missValFlags)[varNum] = NULL;
+    }
 
     *dimOrderInVar = (int **) Mem_Malloc(
         sizeof(int *) * numVars, "alloc_sim_var_information()", LogInfo
     );
     if (LogInfo->stopRun) {
         return;
+    }
+    for (varNum = 0; varNum < numVars; varNum++) {
+        (*dimOrderInVar)[varNum] = NULL;
     }
 
     for (varNum = 0; varNum < numVars; varNum++) {
