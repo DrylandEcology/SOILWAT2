@@ -438,10 +438,36 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
     SW_Run.Weather.use_windSpeedMonthly = swTRUE;
     SW_Run.Weather.use_humidityMonthly = swFALSE;
 
+    SW_Run.Weather.dailyInputIndices[TEMP_MAX] = 0;
+    SW_Run.Weather.dailyInputIndices[TEMP_MIN] = 1;
+    SW_Run.Weather.dailyInputIndices[PPT] = 2;
+    SW_Run.Weather.dailyInputIndices[CLOUD_COV] = 0;
+    SW_Run.Weather.dailyInputIndices[WIND_SPEED] = 0;
+    SW_Run.Weather.dailyInputIndices[WIND_EAST] = 0;
+    SW_Run.Weather.dailyInputIndices[WIND_NORTH] = 0;
+    SW_Run.Weather.dailyInputIndices[REL_HUMID] = 0;
+    SW_Run.Weather.dailyInputIndices[REL_HUMID_MAX] = 0;
+    SW_Run.Weather.dailyInputIndices[REL_HUMID_MIN] = 0;
+    SW_Run.Weather.dailyInputIndices[SPEC_HUMID] = 0;
+    SW_Run.Weather.dailyInputIndices[TEMP_DEWPOINT] = 0;
     SW_Run.Weather.dailyInputIndices[ACTUAL_VP] = 3;
     SW_Run.Weather.dailyInputIndices[SHORT_WR] = 4;
+
+    SW_Run.Weather.dailyInputFlags[TEMP_MAX] = swTRUE;
+    SW_Run.Weather.dailyInputFlags[TEMP_MIN] = swTRUE;
+    SW_Run.Weather.dailyInputFlags[PPT] = swTRUE;
+    SW_Run.Weather.dailyInputFlags[CLOUD_COV] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[WIND_SPEED] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[WIND_EAST] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[WIND_NORTH] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[REL_HUMID] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[REL_HUMID_MAX] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[REL_HUMID_MIN] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[SPEC_HUMID] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[TEMP_DEWPOINT] = swFALSE;
     SW_Run.Weather.dailyInputFlags[ACTUAL_VP] = swTRUE;
     SW_Run.Weather.dailyInputFlags[SHORT_WR] = swTRUE;
+
     SW_Run.Weather.n_input_forcings = 5;
     // Daymet rsds is flux density over daylight period
     SW_Run.Weather.desc_rsds = 2;
@@ -471,7 +497,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
     }
 }
 
-TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGRIDMET) {
+TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGridMET) {
     int i;
 
     // Point to gridMET weather data
@@ -491,14 +517,36 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGRIDMET) {
     SW_Run.Weather.use_windSpeedMonthly = swFALSE;
     SW_Run.Weather.use_humidityMonthly = swFALSE;
 
+    SW_Run.Weather.dailyInputIndices[TEMP_MAX] = 0;
+    SW_Run.Weather.dailyInputIndices[TEMP_MIN] = 1;
+    SW_Run.Weather.dailyInputIndices[PPT] = 2;
+    SW_Run.Weather.dailyInputIndices[CLOUD_COV] = 0;
     SW_Run.Weather.dailyInputIndices[WIND_SPEED] = 3;
+    SW_Run.Weather.dailyInputIndices[WIND_EAST] = 0;
+    SW_Run.Weather.dailyInputIndices[WIND_NORTH] = 0;
+    SW_Run.Weather.dailyInputIndices[REL_HUMID] = 0;
     SW_Run.Weather.dailyInputIndices[REL_HUMID_MAX] = 4;
     SW_Run.Weather.dailyInputIndices[REL_HUMID_MIN] = 5;
+    SW_Run.Weather.dailyInputIndices[SPEC_HUMID] = 0;
+    SW_Run.Weather.dailyInputIndices[TEMP_DEWPOINT] = 0;
+    SW_Run.Weather.dailyInputIndices[ACTUAL_VP] = 0;
     SW_Run.Weather.dailyInputIndices[SHORT_WR] = 6;
+
+    SW_Run.Weather.dailyInputFlags[TEMP_MAX] = swTRUE;
+    SW_Run.Weather.dailyInputFlags[TEMP_MIN] = swTRUE;
+    SW_Run.Weather.dailyInputFlags[PPT] = swTRUE;
+    SW_Run.Weather.dailyInputFlags[CLOUD_COV] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[WIND_SPEED] = swTRUE;
+    SW_Run.Weather.dailyInputFlags[WIND_EAST] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[WIND_NORTH] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[REL_HUMID] = swFALSE;
     SW_Run.Weather.dailyInputFlags[REL_HUMID_MAX] = swTRUE;
     SW_Run.Weather.dailyInputFlags[REL_HUMID_MIN] = swTRUE;
-    SW_Run.Weather.dailyInputFlags[WIND_SPEED] = swTRUE;
+    SW_Run.Weather.dailyInputFlags[SPEC_HUMID] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[TEMP_DEWPOINT] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[ACTUAL_VP] = swFALSE;
     SW_Run.Weather.dailyInputFlags[SHORT_WR] = swTRUE;
+
     SW_Run.Weather.n_input_forcings = 7;
     SW_Run.Weather.desc_rsds = 1; // gridMET rsds is flux density over 24 hours
 
@@ -527,15 +575,16 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGRIDMET) {
     }
 }
 
-TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACA) {
+TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype1) {
     int i;
 
-    // Point to MACA weather data
+    // Switch directory to the input folder of the
+    // first type of MACA (hursmin, hursmax)
     (void) snprintf(
         SW_Run.Weather.name_prefix,
         sizeof SW_Run.Weather.name_prefix,
         "%s",
-        "Input/data_weather_maca/weath"
+        "Input/data_weather_maca-type1/weath"
     );
 
     // Adjust simulation years: we have 2 years of MACA inputs
@@ -547,21 +596,120 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACA) {
     SW_Run.Weather.use_windSpeedMonthly = swFALSE;
     SW_Run.Weather.use_humidityMonthly = swFALSE;
 
+    SW_Run.Weather.dailyInputIndices[TEMP_MAX] = 0;
+    SW_Run.Weather.dailyInputIndices[TEMP_MIN] = 1;
+    SW_Run.Weather.dailyInputIndices[PPT] = 2;
+    SW_Run.Weather.dailyInputIndices[CLOUD_COV] = 0;
+    SW_Run.Weather.dailyInputIndices[WIND_SPEED] = 0;
     SW_Run.Weather.dailyInputIndices[WIND_EAST] = 3;
     SW_Run.Weather.dailyInputIndices[WIND_NORTH] = 4;
+    SW_Run.Weather.dailyInputIndices[REL_HUMID] = 0;
     SW_Run.Weather.dailyInputIndices[REL_HUMID_MAX] = 5;
     SW_Run.Weather.dailyInputIndices[REL_HUMID_MIN] = 6;
+    SW_Run.Weather.dailyInputIndices[SPEC_HUMID] = 0;
+    SW_Run.Weather.dailyInputIndices[TEMP_DEWPOINT] = 0;
+    SW_Run.Weather.dailyInputIndices[ACTUAL_VP] = 0;
     SW_Run.Weather.dailyInputIndices[SHORT_WR] = 7;
+
+    SW_Run.Weather.dailyInputFlags[TEMP_MAX] = swTRUE;
+    SW_Run.Weather.dailyInputFlags[TEMP_MIN] = swTRUE;
+    SW_Run.Weather.dailyInputFlags[PPT] = swTRUE;
+    SW_Run.Weather.dailyInputFlags[CLOUD_COV] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[WIND_SPEED] = swFALSE;
     SW_Run.Weather.dailyInputFlags[WIND_EAST] = swTRUE;
     SW_Run.Weather.dailyInputFlags[WIND_NORTH] = swTRUE;
+    SW_Run.Weather.dailyInputFlags[REL_HUMID] = swFALSE;
     SW_Run.Weather.dailyInputFlags[REL_HUMID_MAX] = swTRUE;
     SW_Run.Weather.dailyInputFlags[REL_HUMID_MIN] = swTRUE;
+    SW_Run.Weather.dailyInputFlags[SPEC_HUMID] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[TEMP_DEWPOINT] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[ACTUAL_VP] = swFALSE;
     SW_Run.Weather.dailyInputFlags[SHORT_WR] = swTRUE;
+
     SW_Run.Weather.n_input_forcings = 8;
     SW_Run.Weather.desc_rsds = 1; // MACA rsds is flux density over 24 hours
 
     // Prepare weather data
     SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    SW_WTH_finalize_all_weather(
+        &SW_Run.Markov,
+        &SW_Run.Weather,
+        SW_Run.Model.cum_monthdays,
+        SW_Run.Model.days_in_month,
+        &LogInfo
+    );
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    // Run the simulation
+    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+        EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
+            << "Water balance error in test " << i << ": "
+            << SW_Run.SoilWat.wbErrorNames[i];
+    }
+}
+
+TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
+    int i;
+
+    // Switch directory to the input folder of the
+    // second type of MACA (huss)
+    (void) snprintf(
+        SW_Run.Weather.name_prefix,
+        sizeof SW_Run.Weather.name_prefix,
+        "%s",
+        "Input/data_weather_maca-type2/weath"
+    );
+
+    // Adjust simulation years: we have 2 years of MACA inputs
+    SW_Run.Model.startyr = 1980;
+    SW_Run.Model.endyr = 1981;
+
+    // Describe daily MACA inputs
+    SW_Run.Weather.use_cloudCoverMonthly = swFALSE;
+    SW_Run.Weather.use_windSpeedMonthly = swFALSE;
+    SW_Run.Weather.use_humidityMonthly = swFALSE;
+
+    SW_Run.Weather.dailyInputIndices[TEMP_MAX] = 0;
+    SW_Run.Weather.dailyInputIndices[TEMP_MIN] = 1;
+    SW_Run.Weather.dailyInputIndices[PPT] = 2;
+    SW_Run.Weather.dailyInputIndices[CLOUD_COV] = 0;
+    SW_Run.Weather.dailyInputIndices[WIND_SPEED] = 0;
+    SW_Run.Weather.dailyInputIndices[WIND_EAST] = 3;
+    SW_Run.Weather.dailyInputIndices[WIND_NORTH] = 4;
+    SW_Run.Weather.dailyInputIndices[REL_HUMID] = 0;
+    SW_Run.Weather.dailyInputIndices[REL_HUMID_MAX] = 0;
+    SW_Run.Weather.dailyInputIndices[REL_HUMID_MIN] = 0;
+    SW_Run.Weather.dailyInputIndices[SPEC_HUMID] = 5;
+    SW_Run.Weather.dailyInputIndices[TEMP_DEWPOINT] = 0;
+    SW_Run.Weather.dailyInputIndices[ACTUAL_VP] = 0;
+    SW_Run.Weather.dailyInputIndices[SHORT_WR] = 6;
+
+    SW_Run.Weather.dailyInputFlags[TEMP_MAX] = swTRUE;
+    SW_Run.Weather.dailyInputFlags[TEMP_MIN] = swTRUE;
+    SW_Run.Weather.dailyInputFlags[PPT] = swTRUE;
+    SW_Run.Weather.dailyInputFlags[CLOUD_COV] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[WIND_SPEED] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[WIND_EAST] = swTRUE;
+    SW_Run.Weather.dailyInputFlags[WIND_NORTH] = swTRUE;
+    SW_Run.Weather.dailyInputFlags[REL_HUMID] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[REL_HUMID_MAX] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[REL_HUMID_MIN] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[SPEC_HUMID] = swTRUE;
+    SW_Run.Weather.dailyInputFlags[TEMP_DEWPOINT] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[ACTUAL_VP] = swFALSE;
+    SW_Run.Weather.dailyInputFlags[SHORT_WR] = swTRUE;
+
+    SW_Run.Weather.n_input_forcings = 7;
+    SW_Run.Weather.desc_rsds = 1; // MACA rsds is flux density over 24 hours
+
+    // Prepare weather data
+    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_finalize_all_weather(
