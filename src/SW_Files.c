@@ -430,6 +430,7 @@ void SW_F_init_ptrs(SW_PATH_INPUTS *SW_PathInputs) {
     SW_PathInputs->ncWeatherInStartEndYrs = NULL;
     SW_PathInputs->ncWeatherStartEndIndices = NULL;
     SW_PathInputs->numSoilVarLyrs = NULL;
+    SW_PathInputs->numDaysInYear = NULL;
 #endif
 }
 
@@ -619,6 +620,11 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
     if (!isnull(SW_PathInputs->numSoilVarLyrs)) {
         free((void *) SW_PathInputs->numSoilVarLyrs);
         SW_PathInputs->numSoilVarLyrs = NULL;
+    }
+
+    if (!isnull(SW_PathInputs->numDaysInYear)) {
+        free((void *) SW_PathInputs->numDaysInYear);
+        SW_PathInputs->numDaysInYear = NULL;
     }
 
     SW_NCIN_close_files(SW_PathInputs->ncDomFileIDs);

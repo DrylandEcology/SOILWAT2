@@ -293,6 +293,31 @@ static void get_att_type(
     }
 }
 
+/**
+@brief Calculate the number of days within a given year based on the
+calendar provided within nc files
+
+@param[in] year Current year of the simulation to calculate the number of
+days for
+@param[in] allLeap Flag specifying if the nc-provided calendar is all
+366 days
+@param[in] noLeap Flag specifying if the nc-provided calendar is all
+365 days
+*/
+static int num_nc_days_in_year(unsigned int year, Bool allLeap, Bool noLeap) {
+    int result = 0;
+
+    if (allLeap) {
+        result = MAX_DAYS;
+    } else if (noLeap) {
+        result = MAX_DAYS - 1;
+    } else {
+        result = Time_get_lastdoy_y(year);
+    }
+
+    return result;
+}
+
 /*
 @brief Translate an input keys into indices the program can understand
 
@@ -3006,6 +3031,7 @@ we accept
 @param[in] calUnit Input file provided start date (unit) for the first
 weather file
 @param[in] calIsNoLeap Specifies if the calendar only contains 365 days
+@param[in] calIsAllLeap Specifies if the calendar only contains 366 days
 @param[in] fileName Weather input file name
 @param[out] LogInfo Holds information dealing with logfile output
 */
@@ -3013,6 +3039,7 @@ static void determine_valid_cal(
     char *calType,
     char *calUnit,
     Bool *calIsNoLeap,
+    Bool *calIsAllLeap,
     char *fileName,
     LOG_INFO *LogInfo
 ) {
@@ -3084,6 +3111,7 @@ static void determine_valid_cal(
                     "value within the year being ignored.",
                     calType
                 );
+                *calIsAllLeap = swTRUE;
             } else if (index >= 7 && index <= 11) { /* No leap calendars */
                 LogError(
                     LogInfo,
@@ -3112,18 +3140,23 @@ static void determine_valid_cal(
 @param[out] ncWeatherStartEndIndices Start/end indices for the current
 weather input file
 @param[in] numStartEndIndices Number of start/end index pairs
+@param[in] numDaysInYear A list of values specifying the number
+of days within every year of the simulation
+@param[in] numYears Number of years within the simulation
 @param[out] LogInfo Holds information dealing with logfile output
 */
-static void alloc_weather_indices(
+static void alloc_weather_indices_years(
     unsigned int ***ncWeatherStartEndIndices,
     unsigned int numStartEndIndices,
+    unsigned int **numDaysInYear,
+    unsigned int numYears,
     LOG_INFO *LogInfo
 ) {
     unsigned int index;
 
     (*ncWeatherStartEndIndices) = (unsigned int **) Mem_Malloc(
         sizeof(unsigned int *) * numStartEndIndices,
-        "alloc_weather_indices()",
+        "alloc_weather_indices_years()",
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -3136,11 +3169,21 @@ static void alloc_weather_indices(
 
     for (index = 0; index < numStartEndIndices; index++) {
         (*ncWeatherStartEndIndices)[index] = (unsigned int *) Mem_Malloc(
-            sizeof(unsigned int) * 2, "alloc_weather_indices()", LogInfo
+            sizeof(unsigned int) * 2, "alloc_weather_indices_years()", LogInfo
         );
         if (LogInfo->stopRun) {
             return; /* Exit function prematurely due to error */
         }
+    }
+
+    (*numDaysInYear) = (unsigned int *) Mem_Malloc(
+        sizeof(unsigned int) * numYears,
+        "alloc_weather_indices_years()",
+        LogInfo
+    );
+
+    for (index = 0; index < numYears; index++) {
+        (*numDaysInYear)[index] = 0;
     }
 }
 
@@ -3234,10 +3277,11 @@ dimension for weather
 @param[out] ncWeatherStartEndIndices Start/end indices for the current
 weather input file
 @param[in] timeVals List of time values from the current weather input file
+@param[in] numDays A value specifying the number of days within the current
+year we are calculating indices for (base0)
 @param[in] timeSize Time dimension size
 @param[in] target Start temporal value that we will search for to get the
 index
-@param[in] year Current year we are calculating the indices for
 @param[in] fileName Weather input file name that is being searched
 @param[in] timeName User-provided time variable/dimension name
 @param[out] LogInfo Holds information dealing with logfile output
@@ -3245,9 +3289,9 @@ index
 static void get_startend_indices(
     unsigned int *ncWeatherStartEndIndices,
     const double *timeVals,
+    unsigned int numDays,
     size_t timeSize,
     double target,
-    TimeInt year,
     char *fileName,
     char *timeName,
     LOG_INFO *LogInfo
@@ -3255,9 +3299,6 @@ static void get_startend_indices(
     int left = 0;
     int right = (int) timeSize - 1;
     int middle;
-
-    /* base 0 */
-    int numDays = (MAX_DAYS - 1) + (isleapyear(year) ? 1 : 0) - 1;
 
     while (left <= right) {
         middle = left + (right - left) / 2;
@@ -3328,7 +3369,8 @@ static void calc_temporal_weather_indices(
     char currCalType[MAX_FILENAMESIZE] = "\0";
     char currCalUnit[MAX_FILENAMESIZE] = "\0";
     char *timeName = NULL;
-    Bool *calIsNoLeap = &SW_PathInputs->noLeapCal;
+    Bool calIsNoLeap = swFALSE;
+    Bool calIsAllLeap = swFALSE;
     double *timeVals = NULL;
     size_t timeSize = 0;
     int tempStart = -1;
@@ -3342,8 +3384,6 @@ static void calc_temporal_weather_indices(
     /* Load unit system database */
     system = ut_read_xml(NULL);
 #endif
-
-    *calIsNoLeap = swFALSE;
 
     /* Get the first available list of input files */
     while (probeIndex == -1) {
@@ -3362,8 +3402,12 @@ static void calc_temporal_weather_indices(
     weatherCal = SW_netCDFIn->weathCalOverride[varIndex];
     hasCalOverride = (Bool) (strcmp(weatherCal, "NA") != 0);
 
-    alloc_weather_indices(
-        &SW_PathInputs->ncWeatherStartEndIndices, numWeathFiles, LogInfo
+    alloc_weather_indices_years(
+        &SW_PathInputs->ncWeatherStartEndIndices,
+        numWeathFiles,
+        &SW_PathInputs->numDaysInYear,
+        endYr - startYr + 1,
+        LogInfo
     );
     if (LogInfo->stopRun) {
         return; /* Exit function prematurely due to error */
@@ -3415,7 +3459,12 @@ static void calc_temporal_weather_indices(
 
             if (!checkedCal) {
                 determine_valid_cal(
-                    weatherCal, currCalUnit, calIsNoLeap, fileName, LogInfo
+                    weatherCal,
+                    currCalUnit,
+                    &calIsNoLeap,
+                    &calIsAllLeap,
+                    fileName,
+                    LogInfo
                 );
                 if (LogInfo->stopRun) {
                     goto freeMem;
@@ -3453,12 +3502,15 @@ static void calc_temporal_weather_indices(
         valDoy1Add = (fmod(timeVals[timeSize - 1], 1.0) == 0.0) ? 0.0 : 0.5;
         valDoy1 = conv_times(system, currCalUnit, newCalUnit) + valDoy1Add;
 #endif
+        SW_PathInputs->numDaysInYear[year - startYr] =
+            num_nc_days_in_year(year, calIsAllLeap, calIsNoLeap);
+
         get_startend_indices(
             SW_PathInputs->ncWeatherStartEndIndices[fileIndex],
             timeVals,
+            SW_PathInputs->numDaysInYear[year - startYr] - 1, /* base0 */
             timeSize,
             valDoy1,
-            year,
             fileName,
             timeName,
             LogInfo
@@ -6869,7 +6921,6 @@ static void read_weather_input(
         SW_Domain->SW_PathInputs.ncWeatherInStartEndYrs;
     char ***inVarInfo = SW_Domain->netCDFInput.inVarInfo[eSW_InWeather];
     Bool *readInput = SW_Domain->netCDFInput.readInVars[eSW_InWeather];
-    Bool noLeap = SW_Domain->SW_PathInputs.noLeapCal;
     unsigned int numWeathFiles = SW_Domain->SW_PathInputs.ncNumWeatherInFiles;
     int varNum = 1;
     size_t start[4] = {0}; /* Up to four dimensions per variable */
@@ -6884,6 +6935,7 @@ static void read_weather_input(
     char *fileName;
     char *varName;
     unsigned int weathFileIndex = 0;
+    unsigned int *numDaysInYears = SW_Domain->SW_PathInputs.numDaysInYear;
     Bool varHasAddScaleAtts;
     nc_type *varTypes = SW_Domain->SW_PathInputs.inVarTypes[eSW_InWeather];
     Bool *keyAttFlags =
@@ -6961,8 +7013,7 @@ static void read_weather_input(
             fileName = weathInFiles[varNum][weathFileIndex];
             varName = inVarInfo[varNum][INNCVARNAME];
 
-            numDays = Time_get_lastdoy_y(year);
-            numDays = (noLeap) ? numDays - 1 : numDays;
+            numDays = numDaysInYears[yearIndex];
             count[timeIndex] = numDays;
             tempVals[MAX_DAYS - 1] = SW_MISSING;
 
