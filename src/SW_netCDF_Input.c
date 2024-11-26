@@ -3052,7 +3052,7 @@ static void determine_valid_cal(
 
         /* Always has 366 days and will discard values */
         "all_leap",
-        "alleap",
+        "allleap",
         "366day",
         "366_day",
 
@@ -3105,7 +3105,7 @@ static void determine_valid_cal(
             } else if (index >= 3 && index <= 6) { /* All leap calendars */
                 LogError(
                     LogInfo,
-                    LOGERROR,
+                    LOGWARN,
                     "The usage of the calendar '%s' has been detected. "
                     "When not a leap year, this will result in the 366th "
                     "value within the year being ignored.",
