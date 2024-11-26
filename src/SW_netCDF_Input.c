@@ -318,6 +318,88 @@ static int num_nc_days_in_year(unsigned int year, Bool allLeap, Bool noLeap) {
     return result;
 }
 
+/**
+@brief Check to see the input spreadsheet variable has the same units
+as that provided in the provided nc file
+
+@param[in] ncVarUnit User-provided variable unit from input spreadsheet
+@param[in] ncUnit Nc file-provided variable unit
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void invalid_conv(char *ncVarUnit, char *ncUnit, LOG_INFO *LogInfo) {
+    Bool sameUnit = (Bool) (strcmp(ncVarUnit, ncUnit) == 0);
+
+#if defined(SWUDUNITS)
+    ut_system *system = NULL;
+    ut_unit *unitFrom = NULL;
+    ut_unit *unitTo = NULL;
+    cv_converter *conv = NULL;
+    ut_status status;
+
+    Bool convertible;
+    double testVal = 1;
+    double res = 0;
+
+    /* silence udunits2 error messages */
+    ut_set_error_message_handler(ut_ignore);
+
+    /* Load unit system database */
+    system = ut_read_xml(NULL);
+
+    unitFrom = ut_parse(system, ncVarUnit, UT_UTF8);
+    unitTo = ut_parse(system, ncUnit, UT_UTF8);
+
+    if (!sameUnit) {
+        status = ut_get_status();
+
+        if (status == UT_UNKNOWN) {
+            LogError(
+                LogInfo,
+                LOGWARN,
+                "The units '%s' are unknown and '%s' will be used instead.",
+                ncUnit,
+                ncVarUnit
+            );
+        } else {
+            convertible = (Bool) (ut_are_convertible(unitFrom, unitTo) != 0);
+
+            if (convertible) {
+                conv = ut_get_converter(unitFrom, unitTo);
+                res = cv_convert_double(conv, testVal);
+
+                if (res != testVal) {
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "The units '%s' are not equivalent to '%s'.",
+                        ncVarUnit,
+                        ncUnit
+                    );
+                }
+            } else {
+                LogError(
+                    LogInfo,
+                    LOGWARN,
+                    "The units '%s' and '%s' cannot be converted. The unit "
+                    "'%s' will be used.",
+                    ncVarUnit,
+                    ncUnit,
+                    ncVarUnit
+                );
+            }
+        }
+    }
+
+    ut_free(unitFrom);
+    ut_free(unitTo);
+    ut_free_system(system);
+
+    if (!isnull(conv)) {
+        cv_free(conv);
+    }
+#endif
+}
+
 /*
 @brief Translate an input keys into indices the program can understand
 
@@ -4375,18 +4457,8 @@ static void check_input_file_against_index(
         return;
     }
 
-    if (strcmp(inVarInfo[INVARUNITS], "NA") != 0 &&
-        strcmp(inVarInfo[INVARUNITS], unitsAtt) != 0) {
-
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Units of the variable '%s' differ between the input spreadsheet "
-            "and input netCDF ('%s' versus '%s').",
-            inVarInfo[INNCVARNAME],
-            inVarInfo[INVARUNITS],
-            unitsAtt
-        );
+    if (strcmp(inVarInfo[INVARUNITS], "NA") != 0) {
+        invalid_conv(inVarInfo[INVARUNITS], unitsAtt, LogInfo);
     }
 }
 
