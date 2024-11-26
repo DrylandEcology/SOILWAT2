@@ -5307,8 +5307,10 @@ static void get_variable_dim_order(
     int axisID;
     int readAxisID = 0;
     Bool varSiteDom = (Bool) (strcmp(varInfo[INDOMTYPE], "s") == 0);
-    char *yDim = (strcmp(varInfo[INYDIM], "NA") == 0) ? varInfo[INYAXIS] : varInfo[INYDIM];
-    char *xDim = (strcmp(varInfo[INXDIM], "NA") == 0) ? varInfo[INXAXIS] : varInfo[INXDIM];
+    char *yDim = (strcmp(varInfo[INYDIM], "NA") == 0) ? varInfo[INYAXIS] :
+                                                        varInfo[INYDIM];
+    char *xDim = (strcmp(varInfo[INXDIM], "NA") == 0) ? varInfo[INXAXIS] :
+                                                        varInfo[INXDIM];
     char *axisNames[] = {
         (varSiteDom) ? varInfo[INSITENAME] : yDim,
         xDim,
@@ -5671,7 +5673,8 @@ static void get_invar_information(
                 if (testNumLyrs == 0) {
                     testNumLyrs = (LyrIndex) (*numSoilVarLyrs)[varNum];
                 } else if (hasConstSoilLyrs &&
-                           testNumLyrs != (LyrIndex) (*numSoilVarLyrs)[varNum]) {
+                           testNumLyrs !=
+                               (LyrIndex) (*numSoilVarLyrs)[varNum]) {
                     LogError(
                         LogInfo,
                         LOGERROR,
