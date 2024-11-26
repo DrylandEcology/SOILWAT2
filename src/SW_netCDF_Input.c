@@ -5510,7 +5510,7 @@ static void get_invar_information(
 
         projCRS =
             (Bool) (strcmp(
-                        inVarInfo[startVar][INDOMTYPE], "latitude_longitude"
+                        inVarInfo[startVar][INGRIDMAPPING], "latitude_longitude"
                     ) != 0);
 
         alloc_sim_var_information(
@@ -7468,7 +7468,7 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                                    fileNames[file];
                     primCRSIsGeo =
                         (Bool) (strcmp(
-                                    varInfo[INCRSNAME], "latitude_longitude"
+                                    varInfo[INGRIDMAPPING], "latitude_longitude"
                                 ) == 0);
 
                     SW_NC_open(fileName, NC_NOWRITE, fileID, LogInfo);
@@ -7487,9 +7487,9 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                         );
                     } else if (readInVars[inKey][1] && useIndexFile[inKey]) {
                         if (primCRSIsGeo) {
-                            crsName = indexVarInfo[INCRSNAME];
-                        } else {
                             crsName = varInfo[INCRSNAME];
+                        } else {
+                            crsName = indexVarInfo[INCRSNAME];
                         }
 
                         /* index file exists */
