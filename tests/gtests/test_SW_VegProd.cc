@@ -245,7 +245,6 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
         &SW_Run.Weather,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
-        swTRUE,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -824,7 +823,6 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
         &SW_Run.Weather,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
-        swTRUE,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1408,7 +1406,6 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne1DeathTest) {
         &SW_Run.Weather,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
-        swTRUE,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1523,7 +1520,6 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne2DeathTest) {
         &SW_Run.Weather,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
-        swTRUE,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error

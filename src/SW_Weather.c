@@ -818,8 +818,6 @@ void readAllWeather(
     information pretaining to meteorological input data
 @param[in] cum_monthdays Monthly cumulative number of days for "current" year
 @param[in] days_in_month Number of days per month for "current" year
-@param[in] scaleWeather A flag specifying if the weather should be scaled,
-this should only be false when the program deals with nc inputs
 @param[out] LogInfo Holds information on warnings and errors
 
 Finalize weather values after they have been read in via
@@ -831,7 +829,6 @@ void finalizeAllWeather(
     SW_WEATHER *w,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
-    Bool scaleWeather,
     LOG_INFO *LogInfo
 ) {
 
@@ -874,23 +871,21 @@ void finalizeAllWeather(
 
 
     // Scale with monthly additive/multiplicative parameters
-    if (scaleWeather) {
-        scaleAllWeather(
-            w->allHist,
-            w->startYear,
-            w->n_years,
-            w->scale_temp_max,
-            w->scale_temp_min,
-            w->scale_precip,
-            w->scale_skyCover,
-            w->scale_wind,
-            w->scale_rH,
-            w->scale_actVapPress,
-            w->scale_shortWaveRad,
-            cum_monthdays,
-            days_in_month
-        );
-    }
+    scaleAllWeather(
+        w->allHist,
+        w->startYear,
+        w->n_years,
+        w->scale_temp_max,
+        w->scale_temp_min,
+        w->scale_precip,
+        w->scale_skyCover,
+        w->scale_wind,
+        w->scale_rH,
+        w->scale_actVapPress,
+        w->scale_shortWaveRad,
+        cum_monthdays,
+        days_in_month
+    );
 
     // Make sure all input, scaled, generated, and calculated daily weather
     // values are within reason
@@ -902,17 +897,11 @@ void SW_WTH_finalize_all_weather(
     SW_WEATHER *SW_Weather,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
-    Bool scaleWeather,
     LOG_INFO *LogInfo
 ) {
 
     finalizeAllWeather(
-        SW_Markov,
-        SW_Weather,
-        cum_monthdays,
-        days_in_month,
-        scaleWeather,
-        LogInfo
+        SW_Markov, SW_Weather, cum_monthdays, days_in_month, LogInfo
     );
 }
 

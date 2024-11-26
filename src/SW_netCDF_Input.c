@@ -7118,7 +7118,6 @@ void SW_NCIN_read_inputs(
             &sw->Weather,
             sw->Model.cum_monthdays,
             sw->Model.days_in_month,
-            swFALSE,
             LogInfo
         );
         if (LogInfo->stopRun) {

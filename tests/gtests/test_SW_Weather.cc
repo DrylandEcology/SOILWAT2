@@ -97,7 +97,6 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesDays) {
         &SW_Run.Weather,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
-        swTRUE,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -147,7 +146,6 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesYears) {
         &SW_Run.Weather,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
-        swTRUE,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -194,7 +192,6 @@ TEST_F(WeatherFixtureTest, WeatherWeatherGeneratorOnly) {
         &SW_Run.Weather,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
-        swTRUE,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -233,7 +230,6 @@ TEST_F(WeatherFixtureTest, ReadAllWeatherTooManyMissingForLOCFDeathTest) {
         &SW_Run.Weather,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
-        swTRUE,
         &LogInfo
     );
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`

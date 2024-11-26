@@ -145,7 +145,6 @@ int main(int argc, char **argv) {
             &sw_template.Weather,
             sw_template.Model.cum_monthdays,
             sw_template.Model.days_in_month,
-            swTRUE,
             &LogInfo
         );
         if (LogInfo.stopRun) {
