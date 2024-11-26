@@ -659,7 +659,7 @@ void SW_VPD_init_run(
         }
     }
 
-    if (estVeg) {
+    if (estVeg && SW_VegProd->veg_method > 0) {
         estimateVegetationFromClimate(
             SW_VegProd, SW_Weather->allHist, SW_Model, LogInfo
         );
