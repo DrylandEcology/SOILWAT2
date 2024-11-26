@@ -722,7 +722,8 @@ void SW_DATA_queryTree(
 
     currDist = calcDistance(currNode->coords, queryCoords, primCRSIsGeo);
 
-    if (LT(fabs(currDist), *bestDist)) {
+    if (LT(fabs(currDist), *bestDist) &&
+        (EQ(currNode->maxDist, -1.0) || LE(currDist, currNode->maxDist))) {
         *bestNode = currNode;
         *bestDist = currDist;
     }
