@@ -150,6 +150,7 @@ void read_weather_hist(
     unsigned int n_input_forcings,
     const unsigned int *dailyInputIndices,
     const Bool *dailyInputFlags,
+    double elevation,
     LOG_INFO *LogInfo
 );
 
@@ -168,6 +169,7 @@ void readAllWeather(
     double *cloudcov,
     double *windspeed,
     double *r_humidity,
+    double elevation,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
     LOG_INFO *LogInfo
