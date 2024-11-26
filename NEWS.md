@@ -1,5 +1,15 @@
 # NEWS
 
+# SOILWAT2 v8.0.1
+* Fix the calculation of relative humidity (#435; @dschlaep).
+  Previously, relative humidity was incorrectly calculated if based on
+  vapor pressure or specific humidity.
+* Fix the count of days on which a missing weather value was replaced by a
+  non-missing value from the preceding day for the method `"LOCF"`
+  (last observation carried forward; #437; @dschlaep). Previously, any day
+  with a missing weather value was counted.
+
+
 # SOILWAT2 v8.0.0
 * Simulation output remains the same as the previous version.
   However, output of establishment/recruitment for two species is now
