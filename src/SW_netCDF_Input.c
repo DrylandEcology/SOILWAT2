@@ -4867,7 +4867,7 @@ static void alloc_sim_var_information(
     double ***scaleAndAddFactVals,
     Bool ***missValFlags,
     int ***dimOrderInVar,
-    LyrIndex **numSoilVarLyrs,
+    size_t **numSoilVarLyrs,
     LOG_INFO *LogInfo
 ) {
     int varNum;
@@ -4961,8 +4961,8 @@ static void alloc_sim_var_information(
     }
 
     if (currKey == eSW_InSoil) {
-        *numSoilVarLyrs = (LyrIndex *) Mem_Malloc(
-            sizeof(LyrIndex) * numVars, "alloc_sim_var_information()", LogInfo
+        *numSoilVarLyrs = (size_t *) Mem_Malloc(
+            sizeof(size_t) * numVars, "alloc_sim_var_information()", LogInfo
         );
 
         for (varNum = 0; varNum < numVars; varNum++) {
@@ -5328,7 +5328,7 @@ static void get_invar_information(
     Bool addAttExists = swFALSE;
     int startVar;
     Bool **missValFlags;
-    LyrIndex **numSoilVarLyrs = &SW_PathInputs->numSoilVarLyrs;
+    size_t **numSoilVarLyrs = &SW_PathInputs->numSoilVarLyrs;
     LyrIndex testNumLyrs = 0;
     int numReadSoilVars = 0;
     int weathFileIndex = SW_PathInputs->weathStartFileIndex;
@@ -5497,7 +5497,7 @@ static void get_invar_information(
                 SW_NC_get_dimlen_from_dimname(
                     ncFileID,
                     inVarInfo[varNum][INZAXIS],
-                    (size_t *) &(*numSoilVarLyrs)[varNum],
+                    &(*numSoilVarLyrs)[varNum],
                     LogInfo
                 );
                 if (LogInfo->stopRun) {
@@ -5505,9 +5505,9 @@ static void get_invar_information(
                 }
 
                 if (testNumLyrs == 0) {
-                    testNumLyrs = (*numSoilVarLyrs)[varNum];
+                    testNumLyrs = (LyrIndex) (*numSoilVarLyrs)[varNum];
                 } else if (hasConstSoilLyrs &&
-                           testNumLyrs != (*numSoilVarLyrs)[varNum]) {
+                           testNumLyrs != (LyrIndex) (*numSoilVarLyrs)[varNum]) {
                     LogError(
                         LogInfo,
                         LOGERROR,
@@ -5876,7 +5876,7 @@ static void read_soil_inputs(
             continue;
         }
 
-        numLyrs = (size_t) SW_Domain->SW_PathInputs.numSoilVarLyrs[varNum];
+        numLyrs = SW_Domain->SW_PathInputs.numSoilVarLyrs[varNum];
         hasPFT = (Bool) (dimOrderInVar[varNum][pftIndex] > -1);
         varID = varIDs[varNum];
         fileName = soilInFiles[varNum];

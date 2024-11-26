@@ -1017,7 +1017,7 @@ typedef struct {
     Bool **missValFlags[SW_NINKEYSNC];
     double **doubleMissVals[SW_NINKEYSNC];
 
-    LyrIndex *numSoilVarLyrs;
+    size_t *numSoilVarLyrs;
 
     /* NC information that will stay constant through program run
        domain information - domain and progress file IDs */
