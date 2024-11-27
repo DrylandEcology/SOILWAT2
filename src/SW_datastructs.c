@@ -286,10 +286,9 @@ static double calcDistance(
            with Chebyshev Polynomials to replace
            cos(x * yMean) where 1 <= x <= 5 (T1 through T5),
            in other words, Tn of cos(x) is the same as cos(nx) */
-
-        yDiff = (coordsTwo[0] - coordsOne[0]) * rad_to_deg;
-        xDiff = (coordsTwo[1] - coordsOne[1]) * rad_to_deg;
-        yMean = (coordsTwo[0] + coordsOne[0]) / 2;
+        yDiff = (coordsTwo[0] - coordsOne[0]);
+        xDiff = (coordsTwo[1] - coordsOne[1]);
+        yMean = ((coordsTwo[0] + coordsOne[0]) / 2) * deg_to_rad;
         cosRes = cos(yMean);
         cosResSquared = pow(cosRes, 2);
         cosResCubed = pow(cosRes, 3);
@@ -341,13 +340,12 @@ static double calcMaxNodeDist(
     Bool inPrimCRSIsGeo
 ) {
     double maxDist = -1.0;
+    double tempDist = 0.0;
     long yIndexOffset = 0UL;
     long xIndexOffset = 0UL;
+    double calcCoords[] = {yCoords[indices[0]], xCoords[indices[1]]};
 
     double neighborCoord[2] = {0}; /* [yCoord, xCoord] */
-    double resVals[2] = {0};       /* [yRes, xRes] */
-    double resCalcY = 0.0;
-    double resCalcX = 0.0;
 
     if (location >= TOP_LEFT) {
         switch (location) {
@@ -371,9 +369,6 @@ static double calcMaxNodeDist(
 
         neighborCoord[0] = yCoords[indices[0] + yIndexOffset];
         neighborCoord[1] = xCoords[indices[1] + xIndexOffset];
-
-        resVals[0] = fabs(indices[0] - neighborCoord[0]);
-        resVals[1] = fabs(indices[1] - neighborCoord[1]);
     } else {
         if (location == LEFT || location == RIGHT) {
             xIndexOffset = (location == LEFT) ? 1 : -1;
@@ -386,8 +381,7 @@ static double calcMaxNodeDist(
         neighborCoord[0] = yCoords[indices[0] + yIndexOffset];
         neighborCoord[1] = xCoords[indices[1] + xIndexOffset];
 
-        resVals[0] = fabs(yCoords[indices[0]] - neighborCoord[0]);
-        resVals[1] = fabs(xCoords[indices[1]] - neighborCoord[1]);
+        tempDist = calcDistance(neighborCoord, calcCoords, inPrimCRSIsGeo);
 
         if (location == LEFT || location == RIGHT) {
             yIndexOffset = -1;
@@ -397,15 +391,10 @@ static double calcMaxNodeDist(
 
         neighborCoord[0] = yCoords[indices[0] + yIndexOffset];
         neighborCoord[1] = xCoords[indices[1] + xIndexOffset];
-
-        resCalcY = fabs(yCoords[indices[0]] - neighborCoord[0]);
-        resCalcX = fabs(yCoords[indices[1]] - neighborCoord[1]);
-
-        resVals[0] = (resCalcY > resVals[0]) ? resCalcY : resVals[0];
-        resVals[1] = (resCalcX > resVals[1]) ? resCalcX : resVals[1];
     }
 
-    maxDist = calcDistance(neighborCoord, resVals, inPrimCRSIsGeo);
+    maxDist = calcDistance(neighborCoord, calcCoords, inPrimCRSIsGeo);
+    maxDist = (GT(tempDist, maxDist)) ? tempDist : maxDist;
 
     return maxDist;
 }
@@ -879,6 +868,19 @@ void SW_DATA_create_tree(
        meaning all coordinate pairs should be created */
     for (yIndex = 0; yIndex < ySize; yIndex++) {
         for (xIndex = 0; xIndex < xSize; xIndex++) {
+#if defined(SWNETCDF) && defined(SWUDUNITS)
+            if (!inPrimCRSIsGeo) {
+                if (!isnull(yxConvs[0]) && xIndex == 0) {
+                    yCoords[yIndex] =
+                        cv_convert_double(yxConvs[0], yCoords[yIndex]);
+                }
+
+                if (!isnull(yxConvs[1]) && yIndex == 0) {
+                    xCoords[xIndex] =
+                        cv_convert_double(yxConvs[1], xCoords[xIndex]);
+                }
+            }
+#endif
             if (has2DCoordVars) {
                 coordPairs[pair][0] = yCoords[pair];
                 coordPairs[pair][1] = xCoords[pair];
@@ -892,20 +894,6 @@ void SW_DATA_create_tree(
                 coordPairs[pair][0] = yCoords[yIndex];
                 coordPairs[pair][1] = xCoords[xIndex];
             }
-
-#if defined(SWNETCDF) && defined(SWUDUNITS)
-            if (!inPrimCRSIsGeo) {
-                if (!isnull(yxConvs[0])) {
-                    coordPairs[pair][0] =
-                        cv_convert_double(yxConvs[0], coordPairs[pair][0]);
-                }
-
-                if (!isnull(yxConvs[1])) {
-                    coordPairs[pair][1] =
-                        cv_convert_double(yxConvs[1], coordPairs[pair][1]);
-                }
-            }
-#endif
 
             pair++;
         }
