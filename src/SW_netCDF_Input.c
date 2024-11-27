@@ -304,8 +304,8 @@ days for
 @param[in] noLeap Flag specifying if the nc-provided calendar is all
 365 days
 */
-static int num_nc_days_in_year(unsigned int year, Bool allLeap, Bool noLeap) {
-    int result = 0;
+static TimeInt num_nc_days_in_year(unsigned int year, Bool allLeap, Bool noLeap) {
+    TimeInt result = 0;
 
     if (allLeap) {
         result = MAX_DAYS;
@@ -2569,7 +2569,7 @@ static void read_domain_coordinates(
     int result;
     int dimIter;
     int firstDimID;
-    int temp;
+    size_t temp;
 
     char *domCoordNames[2]; /* Set later */
 
@@ -2676,7 +2676,7 @@ static void read_domain_coordinates(
         numReadInDims,
         domFileID,
         allocArrays,
-        domCoordNames,
+        domCoordVarNames,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -3424,7 +3424,7 @@ static void calc_temporal_weather_indices(
 ) {
 
     TimeInt year;
-    int fileIndex = SW_PathInputs->weathStartFileIndex;
+    unsigned int fileIndex = SW_PathInputs->weathStartFileIndex;
     int probeIndex = -1;
     int varIndex = 1;
     unsigned int weatherEnd;
@@ -3721,7 +3721,7 @@ static void determine_indexfile_use(
     double **freeArr[] = {&tempY, &tempX};
     const int numFreeArr = 2;
     const int numFileClose = 0;
-    int weathFileIndex = SW_PathInputs->weathStartFileIndex;
+    unsigned int weathFileIndex = SW_PathInputs->weathStartFileIndex;
 
     ForEachNCInKey(k) {
         if (SW_netCDFIn->readInVars[k][0] && k > eSW_InDomain) {
@@ -4795,7 +4795,6 @@ static void read_spatial_topo_climate_inputs(
         dimOrderInVar = SW_Domain->netCDFInput.dimOrderInVar[currKey];
         latIndex = dimOrderInVar[fIndex][0];
         lonIndex = dimOrderInVar[fIndex][1];
-        timeIndex = dimOrderInVar[fIndex][3];
         start[0] = start[1] = start[2] = 0;
         count[0] = count[1] = count[2] = 0;
 
@@ -5487,7 +5486,7 @@ static void get_invar_information(
     size_t **numSoilVarLyrs = &SW_PathInputs->numSoilVarLyrs;
     LyrIndex testNumLyrs = 0;
     int numReadSoilVars = 0;
-    int weathFileIndex = SW_PathInputs->weathStartFileIndex;
+    unsigned int weathFileIndex = SW_PathInputs->weathStartFileIndex;
     Bool projCRS;
 
     double *attVal;
@@ -6082,7 +6081,7 @@ static void read_soil_inputs(
         }
 
         if (varNum >= transStartInd) {
-            numVals = numLyrs;
+            numVals = (int) numLyrs;
             /* Set pointer for trans_coeff (12+) and/or swrcp (16+) */
             if (varNum >= transStartInd && varNum < swrcpStartInd) {
                 vegIndex = varNum - transStartInd;
@@ -6092,7 +6091,7 @@ static void read_soil_inputs(
             }
         } else {
             doublePtr = values1D[varNum - 1];
-            numVals = numLyrs;
+            numVals = (int) numLyrs;
         }
 
         if (hasPFT) {
@@ -7447,7 +7446,7 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     Bool fileIsIndex;
     Bool primCRSIsGeo;
     char *crsName;
-    int weathFileIndex = SW_Domain->SW_PathInputs.weathStartFileIndex;
+    unsigned int weathFileIndex = SW_Domain->SW_PathInputs.weathStartFileIndex;
 
     /* Check actual input files provided by the user */
     ForEachNCInKey(inKey) {
@@ -8707,7 +8706,7 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom];
     char *domVarName =
         SW_Domain->netCDFInput.inVarInfo[eSW_InDomain][0][INNCVARNAME];
-    int weatherFileIndex = SW_Domain->SW_PathInputs.weathStartFileIndex;
+    unsigned int weatherFileIndex = SW_Domain->SW_PathInputs.weathStartFileIndex;
     char *fileName;
     int indexVarNDims = 0;
     int numVarsToWrite = 0;

@@ -224,7 +224,7 @@ input files
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static SW_KD_NODE *createNode(
-    double coords[], unsigned int indices[], double maxDist, LOG_INFO *LogInfo
+    double coords[], const unsigned int indices[], double maxDist, LOG_INFO *LogInfo
 ) {
     SW_KD_NODE *newNode = NULL;
 
@@ -336,7 +336,7 @@ static double calcMaxNodeDist(
     const double *yCoords,
     const double *xCoords,
     int location,
-    unsigned int indices[],
+    const unsigned int indices[],
     Bool inPrimCRSIsGeo
 ) {
     double maxDist = -1.0;
@@ -794,7 +794,7 @@ on the edge of the domain
 SW_KD_NODE *SW_DATA_addNode(
     SW_KD_NODE *currNode,
     double coords[],
-    unsigned int indices[],
+    const unsigned int indices[],
     double maxDist,
     int level,
     LOG_INFO *LogInfo

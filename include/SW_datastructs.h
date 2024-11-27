@@ -1637,7 +1637,7 @@ void SW_DATA_create_tree(
 SW_KD_NODE *SW_DATA_addNode(
     SW_KD_NODE *currNode,
     double coords[],
-    unsigned int indices[],
+    const unsigned int indices[],
     double maxDist,
     int level,
     LOG_INFO *LogInfo

@@ -1126,7 +1126,7 @@ void SW_NC_create_full_var(
     if (!isnull(defFillVal)) {
         SW_NC_write_att(
             "_FillValue",
-            (void *) defFillVal,
+            defFillVal,
             varID,
             *ncFileID,
             1,
