@@ -1333,8 +1333,8 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
 
     SW_WTH_setup(
         &SW_Run.Weather,
-        SW_Domain.PathInfo.InFiles,
-        SW_Domain.PathInfo.weather_prefix,
+        SW_Domain.SW_PathInputs.txtInFiles,
+        SW_Domain.SW_PathInputs.txtWeatherPrefix,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
