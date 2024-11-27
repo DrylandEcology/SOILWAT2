@@ -2418,7 +2418,6 @@ void read_weather_hist(
     char fname[MAX_FILENAMESIZE];
     char inbuf[MAX_FILENAMESIZE];
 
-    snprintf(fname, MAX_FILENAMESIZE, "%s.%4d", txtWeatherPrefix, year);
     resSNP = snprintf(fname, sizeof fname, "%s.%4d", txtWeatherPrefix, year);
 
     if (resSNP < 0 || (unsigned) resSNP >= (sizeof fname)) {
