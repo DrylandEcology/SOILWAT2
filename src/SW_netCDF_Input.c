@@ -553,7 +553,8 @@ static void check_domain_information(
             "Mismatch column 'ncCRSName' value compared to the primary "
             "CRS found in `desc_nc.in`."
         );
-    } else if (strcmp(siteName, inputInfo[INSITENAME]) != 0) {
+    } else if (strcmp(inputInfo[INSITENAME], "s") == 0 &&
+               strcmp(siteName, inputInfo[INSITENAME]) != 0) {
         LogError(
             LogInfo,
             LOGERROR,
