@@ -249,16 +249,17 @@ static SW_KD_NODE *createNode(
 /**
 @brief Calculate the distance between two coordinate pairs
 
-@note If the primary nc CRS is Geographical, we use Euclidean distance
-calculations, otherwise, the primary CRS is projected and this function will use
-the Great-circle distance calculation
+@note If the primary nc CRS is projected, we use Euclidean distance
+calculations, otherwise, the primary CRS is geographical and this function
+will use a FCC's formula for geographic distance
 
 @param[in] coordsOne Current coordinate pair
 @param[in] coordsTwo Coordinate pair that we want to know the distance from the
 current primary coordinate pair (coordsOne)
-@param[in] primCRSIsGeo Specifies if the current primary CRS is Geographical
+@param[in] primCRSIsGeo Specifies if the current primary CRS is geographical
 
-@return Distance between the two provided points
+@return Square of the distance between the two provided points with the units
+of 'km' for a geographic CRS and 'm' for projected CRS
 */
 
 // NOLINTBEGIN(misc-no-recursion)
