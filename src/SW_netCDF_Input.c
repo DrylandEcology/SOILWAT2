@@ -455,9 +455,10 @@ static void get_2d_input_key(
     *isIndex = swFALSE;
     *isAllVegVar = swFALSE;
 
-    for (keyNum = 0; keyNum < SW_NINKEYSNC && *inKey == eSW_NoInKey; keyNum++) {
+    for (keyNum = 0; keyNum < SW_NINKEYSNC; keyNum++) {
         if (strcmp(varKey, possInKeys[keyNum]) == 0) {
             *inKey = keyNum;
+            break;
         }
     }
 
