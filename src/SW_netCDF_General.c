@@ -25,9 +25,6 @@
 /*                   Local Defines                     */
 /* --------------------------------------------------- */
 
-/** Number of possible keys within `files_nc.in` */
-#define NUM_NC_IN_KEYS 2
-
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
