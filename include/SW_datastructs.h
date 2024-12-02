@@ -858,10 +858,10 @@ typedef struct {
 
 
     /* Daily weather record */
-    SW_WEATHER_HIST *
-        *allHist; /**< Daily weather values; array of length `n_years` of
-                     pointers to struct #SW_WEATHER_HIST where the first
-                     represents values for calendar year `startYear` */
+    SW_WEATHER_HIST
+    *allHist; /**< Daily weather values; array of length `n_years` of
+                 pointers to struct #SW_WEATHER_HIST where the first
+                 represents values for calendar year `startYear` */
     unsigned int n_years;   /**< Length of `allHist`, i.e., number of years of
                                daily weather */
     unsigned int startYear; /**< Calendar year corresponding to first year of

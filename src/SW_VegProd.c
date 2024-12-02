@@ -1019,7 +1019,7 @@ calculated and averaged, then values are estimated
 */
 void estimateVegetationFromClimate(
     SW_VEGPROD *SW_VegProd,
-    SW_WEATHER_HIST **Weather_hist,
+    SW_WEATHER_HIST *Weather_hist,
     SW_MODEL *SW_Model,
     LOG_INFO *LogInfo
 ) {

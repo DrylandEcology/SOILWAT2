@@ -7262,7 +7262,7 @@ static void read_weather_input(
             }
 
             set_weather_daily(
-                SW_Weather->allHist[yearIndex],
+                &SW_Weather->allHist[yearIndex],
                 SW_Weather->dailyInputFlags,
                 varNum - 1, /* Equivalent of TEMP_MAX, TEMP_MIN, etc. */
                 tempVals,
@@ -7330,7 +7330,7 @@ void SW_NCIN_read_inputs(
         }
 
         for (yearIndex = 0; yearIndex < SW_Weather->n_years; yearIndex++) {
-            clear_hist_weather(SW_Weather->allHist[yearIndex]);
+            clear_hist_weather(&SW_Weather->allHist[yearIndex]);
         }
     }
 
@@ -7347,7 +7347,7 @@ void SW_NCIN_read_inputs(
             year = yearIndex + SW_Weather->startYear;
 
             SW_WTH_setWeathUsingClimate(
-                SW_Weather->allHist[yearIndex],
+                &SW_Weather->allHist[yearIndex],
                 year,
                 SW_Weather->use_cloudCoverMonthly,
                 SW_Weather->use_humidityMonthly,

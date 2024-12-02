@@ -181,9 +181,9 @@ void SW_RUN_deepCopy(
         }
         for (unsigned int year = 0; year < source->Weather.n_years; year++) {
             memcpy(
-                dest->Weather.allHist[year],
-                source->Weather.allHist[year],
-                sizeof(*dest->Weather.allHist[year])
+                &dest->Weather.allHist[year],
+                &source->Weather.allHist[year],
+                sizeof(dest->Weather.allHist[year])
             );
         }
     }

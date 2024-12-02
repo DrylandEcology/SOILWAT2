@@ -122,7 +122,7 @@ void SW_VPD_alloc_outptrs(SW_VEGPROD *SW_VegProd, LOG_INFO *LogInfo);
 
 void estimateVegetationFromClimate(
     SW_VEGPROD *SW_VegProd,
-    SW_WEATHER_HIST **Weather_hist,
+    SW_WEATHER_HIST *Weather_hist,
     SW_MODEL *SW_Model,
     LOG_INFO *LogInfo
 );
