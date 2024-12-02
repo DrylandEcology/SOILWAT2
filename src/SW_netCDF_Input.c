@@ -319,6 +319,31 @@ static TimeInt num_nc_days_in_year(unsigned int year, Bool allLeap, Bool noLeap)
 }
 
 /**
+@brief Check that the read-in spreadsheet conains the necessary
+domain and progress file inputs, fail if not
+
+@param[in] readDomInVars A list of flags specifying if the variables
+within the key 'inDomain' are turned on or off
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void check_for_input_domain(Bool readDomInVars[], LOG_INFO *LogInfo) {
+    if (!readDomInVars[1] && !readDomInVars[2]) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Both domain and progress variables were not provided."
+        );
+    } else if (!readDomInVars[1] || !readDomInVars[2]) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "The %s input variable is not turned on.",
+            (!readDomInVars[1]) ? "'domain'" : "'progress'"
+        );
+    }
+}
+
+/**
 @brief Check to see the input spreadsheet variable has the same units
 as that provided in the provided nc file
 
@@ -8269,6 +8294,11 @@ void SW_NCIN_read_input_vars(
         }
 
         lineno++;
+    }
+
+    check_for_input_domain(SW_netCDFIn->readInVars[eSW_InDomain], LogInfo);
+    if (LogInfo->stopRun) {
+        goto closeFile;
     }
 
     check_input_variables(
