@@ -5508,6 +5508,8 @@ static void get_invar_information(
     size_t attSize = 0; /* Not used */
     Bool scaleAttExists = swFALSE;
     Bool addAttExists = swFALSE;
+    int numScaleAddAtts;
+    const int errorNumScaleAddAtt = 1;
     int startVar;
     Bool **missValFlags;
     size_t **numSoilVarLyrs = &SW_PathInputs->numSoilVarLyrs;
@@ -5567,6 +5569,7 @@ static void get_invar_information(
             varName = inVarInfo[varNum][INNCVARNAME];
             varType = &SW_PathInputs->inVarTypes[inKey][varNum];
             hasScaleAddAtts = &SW_PathInputs->hasScaleAndAddFact[inKey][varNum];
+            numScaleAddAtts = 0;
 
             if (inKey != eSW_InWeather) {
                 fileName = ncInFiles[varNum];
@@ -5606,6 +5609,8 @@ static void get_invar_information(
                 if (LogInfo->stopRun) {
                     goto closeFile;
                 }
+
+                numScaleAddAtts += (attFlags[attNum]) ? 1 : 0;
             }
 
             *hasScaleAddAtts = (Bool) (scaleAttExists && addAttExists);
@@ -5641,7 +5646,7 @@ static void get_invar_information(
                 }
             }
 
-            if (!*hasScaleAddAtts &&
+            if (numScaleAddAtts == errorNumScaleAddAtt &&
                 (*varType == NC_BYTE || *varType == NC_UBYTE ||
                  *varType == NC_SHORT || *varType == NC_USHORT ||
                  *varType == NC_INT || *varType == NC_UINT)) {
@@ -5649,10 +5654,8 @@ static void get_invar_information(
                 LogError(
                     LogInfo,
                     LOGERROR,
-                    "Detected a variable ('%s') with type integer, "
-                    "short, unsigned short, or byte assuming it contains "
-                    "packed values, and must have both attributes "
-                    "'scale_factor' and 'add_factor'.",
+                    "Detected a variable ('%s') which has one out of the "
+                    "two attributes 'scale_factor' or 'add_offset'.",
                     varName
                 );
                 goto closeFile;
