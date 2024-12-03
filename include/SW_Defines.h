@@ -227,7 +227,7 @@ typedef unsigned short OutPeriod;
 
 #define SW_OUTNMAXVARS 8 // maximum number of output variables per OutKey
 
-/* Number of keys that will be read-in for input netCDFs */
+/** Number of keys that will be read-in for input netCDFs */
 #define SW_NINKEYSNC 7
 
 /*------------ DON'T CHANGE ANYTHING BELOW THIS LINE ------------*/

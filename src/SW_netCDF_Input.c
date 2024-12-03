@@ -84,87 +84,79 @@ static const char *const expectedColNames[] = {
 };
 
 /* This array and `possVarNames` must line up the variables within each key */
-static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] =
-    {
-        {"1", "1"},                       /* inDomain */
-        {"1", "radians", "radians"},      /* inSpatial */
-        {"1", "m", "radians", "radians"}, /* inTopo */
-        {"1",        "cm", "cm",   "g cm-3", "cm3 cm-3", "g g-1", "g g-1",
-         "g g-1", /*inSoil*/
-         "cm3 cm-3", "1",  "degC", "1",      "1",        "1",     "1",
-         "1",        "NA", "NA",   "NA",     "NA",       "NA",    "NA"},
-        {"1",      "m2 m-2", "m2 m-2", "g m-2", "g m-2",
-         "1",      "g m-2", /*inVeg*/
-         "m2 m-2", "g m-2",  "g m-2",  "1",     "g m-2",
-         "m2 m-2", "g m-2",  "g m-2",  "1",     "g m-2",
-         "m2 m-2", "g m-2",  "g m-2",  "1",     "g m-2"},
-        {"1", /* inWeather */
-         "degC",
-         "degC",
-         "cm",
-         "%",
-         "m s-1",
-         "m s-1",
-         "m s-1",
-         "%",
-         "%",
-         "%",
-         "%",
-         "degC",
-         "kPa",
-         "NA"},
-        {"1", "%", "m s-1", "%", "kg m-3", "1"} /* inClimate */
+static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] = {
+    /* inDomain */
+    {"1", "1"},
+    /* inSpatial */
+    {"1", "radians", "radians"},
+    /* inTopo */
+    {"1", "m", "radians", "radians"},
+    /*inSoil*/
+    {"1",        "cm", "cm",   "g cm-3", "cm3 cm-3", "g g-1", "g g-1", "g g-1",
+     "cm3 cm-3", "1",  "degC", "1",      "1",        "1",     "1",     "1",
+     "NA",       "NA", "NA",   "NA",     "NA",       "NA"},
+    /*inVeg*/
+    {"1",     "m2 m-2", "m2 m-2", "g m-2", "g m-2",  "1",     "g m-2", "m2 m-2",
+     "g m-2", "g m-2",  "1",      "g m-2", "m2 m-2", "g m-2", "g m-2", "1",
+     "g m-2", "m2 m-2", "g m-2",  "g m-2", "1",      "g m-2"},
+    /* inWeather */
+    {"1",
+     "degC",
+     "degC",
+     "cm",
+     "%",
+     "m s-1",
+     "m s-1",
+     "m s-1",
+     "%",
+     "%",
+     "%",
+     "%",
+     "degC",
+     "kPa",
+     "NA"},
+    /* inClimate */
+    {"1", "%", "m s-1", "%", "kg m-3", "1"}
 };
 
 static const char *const possVarNames[SW_NINKEYSNC][SW_INNMAXVARS] = {
-    {/* inDomain */
-     "domain",
-     "progress"
-    },
+    /* inDomain */
+    {"domain", "progress"},
 
-    {/* inSpatial */
-     "indexSpatial",
-     "latitude",
-     "longitude"
-    },
+    /* inSpatial */
+    {"indexSpatial", "latitude", "longitude"},
 
-    {/* inTopo */
-     "indexSpatial",
-     "elevation",
-     "slope",
-     "aspect"
-    },
+    /* inTopo */
+    {"indexSpatial", "elevation", "slope", "aspect"},
 
-    {
-        /* inSoil */
-        "indexSpatial",
-        "depth",
-        "width",
-        "soilDensityInput",
-        "fractionVolBulk_gravel",
-        "fractionWeightMatric_sand",
-        "fractionWeightMatric_clay",
-        "fractionWeightMatric_silt",
-        "soc",
-        "impermeability",
-        "avgLyrTempInit",
-        "evap_coeff",
+    /* inSoil */
+    {"indexSpatial",
+     "depth",
+     "width",
+     "soilDensityInput",
+     "fractionVolBulk_gravel",
+     "fractionWeightMatric_sand",
+     "fractionWeightMatric_clay",
+     "fractionWeightMatric_silt",
+     "soc",
+     "impermeability",
+     "avgLyrTempInit",
+     "evap_coeff",
 
-        "Trees.transp_coeff",
-        "Shrubs.transp_coeff",
-        "Forbs.transp_coeff",
-        "Grasses.transp_coeff",
+     "Trees.transp_coeff",
+     "Shrubs.transp_coeff",
+     "Forbs.transp_coeff",
+     "Grasses.transp_coeff",
 
-        "swrcpMineralSoil[1]",
-        "swrcpMineralSoil[2]",
-        "swrcpMineralSoil[3]",
-        "swrcpMineralSoil[4]",
-        "swrcpMineralSoil[5]",
-        "swrcpMineralSoil[6]",
-    },
+     "swrcpMineralSoil[1]",
+     "swrcpMineralSoil[2]",
+     "swrcpMineralSoil[3]",
+     "swrcpMineralSoil[4]",
+     "swrcpMineralSoil[5]",
+     "swrcpMineralSoil[6]"},
 
-    {/* inVeg */
-     "indexSpatial",     "bareGround.fCover",
+    /* inVeg */
+    {"indexSpatial",     "bareGround.fCover",
 
      "Trees.fCover",     "Trees.litter",      "Trees.biomass",
      "Trees.pct_live",   "Trees.lai_conv",
@@ -176,11 +168,10 @@ static const char *const possVarNames[SW_NINKEYSNC][SW_INNMAXVARS] = {
      "Forbs.pct_live",   "Forbs.lai_conv",
 
      "Grasses.fCover",   "Grasses.litter",    "Grasses.biomass",
-     "Grasses.pct_live", "Grasses.lai_conv"
-    },
+     "Grasses.pct_live", "Grasses.lai_conv"},
 
-    {/* inWeather */
-     "indexSpatial",
+    /* inWeather */
+    {"indexSpatial",
      "temp_max",
      "temp_min",
      "ppt",
@@ -194,18 +185,83 @@ static const char *const possVarNames[SW_NINKEYSNC][SW_INNMAXVARS] = {
      "spec_humidity",
      "temp_dewpoint",
      "actualVaporPressure",
-     "shortWaveRad"
-    },
+     "shortWaveRad"},
 
-    {/* inClimate */
-     "indexSpatial",
+    /* inClimate */
+    {"indexSpatial",
      "cloudcov",
      "windspeed",
      "r_humidity",
      "snow_density",
-     "n_rain_per_day"
-    }
+     "n_rain_per_day"}
 };
+
+
+/** @defgroup eiv Indices to netCDF input variables
+The `eiv_*` provide the index to variable positions in #possVarNames,
+#SW_NETCDF_IN.inVarInfo and others, e.g.,
+    `possVarNames[eSW_InDomain][eiv_domain]`.
+However, we need to add one to correctly index #SW_NETCDF_IN.readInVars, e.g.,
+    `readInVars[eSW_InDomain][eiv_domain + 1]`.
+*  @{
+*/
+/** The index to the variable to the spatial index is 0 for each `inkey`
+(exception is #eSW_InDomain which does not have an spatial index)
+*/
+static const int eiv_indexSpatial = 0;
+/* inDomain (no indexSpatial) */
+static const int eiv_domain = 0;
+static const int eiv_progress = 1;
+/* inSpatial */
+static const int eiv_latitude = 1;
+static const int eiv_longitude = 2;
+/* inTopo */
+// static const int eiv_elevation = 1;
+// static const int eiv_slope = 2;
+// static const int eiv_aspect = 3;
+/* inSoil */
+// static const int eiv_soilLayerDepth = 1;
+// static const int eiv_soilLayerWidth = 2;
+// static const int eiv_soilDensity = 3;
+// static const int eiv_gravel = 4;
+// static const int eiv_sand = 5;
+// static const int eiv_clay = 6;
+// static const int eiv_silt = 7;
+// static const int eiv_som = 8;
+// static const int eiv_impermeability = 9;
+// static const int eiv_avgLyrTempInit = 10;
+// static const int eiv_evapCoeff = 11;
+static const int eiv_transpCoeff[NVEGTYPES] = {12, 13, 14, 15};
+static const int eiv_swrcpMS[SWRC_PARAM_NMAX] = {16, 17, 18, 19, 20, 21};
+/* inVeg */
+static const int eiv_bareGroundfCover = 1;
+static const int eiv_vegfCover[NVEGTYPES] = {2, 7, 12, 17};
+static const int eiv_vegLitter[NVEGTYPES] = {3, 8, 13, 18};
+static const int eiv_vegBiomass[NVEGTYPES] = {4, 9, 14, 19};
+static const int eiv_vegPctlive[NVEGTYPES] = {5, 10, 15, 20};
+static const int eiv_vegLAIconv[NVEGTYPES] = {6, 11, 16, 21};
+/* inWeather */
+// static const int eiv_temp_max = 1 + TEMP_MAX;
+// static const int eiv_temp_min = 1 + TEMP_MIN;
+// static const int eiv_ppt = 1 + PPT;
+// static const int eiv_cloudcov = 1 + CLOUD_COV;
+// static const int eiv_windspeed = 1 + WIND_SPEED;
+// static const int eiv_windspeed_east = 1 + WIND_EAST;
+// static const int eiv_windspeed_north = 1 + WIND_NORTH;
+// static const int eiv_r_humidity = 1 + REL_HUMID;
+// static const int eiv_rmax_humidity = 1 + REL_HUMID_MAX;
+// static const int eiv_rmin_humidity = 1 + REL_HUMID_MIN;
+// static const int eiv_spec_humidity = 1 + SPEC_HUMID;
+// static const int eiv_temp_dewpoint = 1 + TEMP_DEWPOINT;
+// static const int eiv_actualVaporPressure = 1 + ACTUAL_VP;
+static const int eiv_shortWaveRad = 1 + SHORT_WR;
+/* inClimate */
+// static const int eiv_monthlyCloudcov = 1;
+// static const int eiv_monthlyWindspeed = 2;
+// static const int eiv_monthlyRHumidity = 3;
+// static const int eiv_monthlySnowDensity = 4;
+// static const int eiv_monthlyNRainPerDay = 5;
+/** @} */ // end of documentation of eiv
 
 static const char *const generalVegNames[] = {
     "<veg>.fCover",
@@ -361,24 +417,28 @@ static TimeInt num_nc_days_in_year(
 domain and progress file inputs, fail if not
 
 @param[in] readDomInVars A list of flags specifying if the variables
-within the key 'inDomain' are turned on or off
+    within the key 'inDomain' are turned on or off. Position 0 indicates
+    if any are turned on.
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void check_for_input_domain(
     const Bool readDomInVars[], LOG_INFO *LogInfo
 ) {
-    if (!readDomInVars[1] && !readDomInVars[2]) {
+    if (!readDomInVars[0]) {
         LogError(
             LogInfo,
             LOGERROR,
             "Both domain and progress variables were not provided."
         );
-    } else if (!readDomInVars[1] || !readDomInVars[2]) {
+    } else if (!readDomInVars[eiv_domain + 1] ||
+               !readDomInVars[eiv_progress + 1]) {
         LogError(
             LogInfo,
             LOGERROR,
-            "The %s input variable is not turned on.",
-            (!readDomInVars[1]) ? "'domain'" : "'progress'"
+            "The '%s' input variable is not turned on.",
+            (!readDomInVars[eiv_domain + 1]) ?
+                possVarNames[eSW_InDomain][eiv_domain] :
+                possVarNames[eSW_InDomain][eiv_progress]
         );
     }
 }
@@ -505,7 +565,7 @@ static void get_2d_input_key(
     if (*inKey != eSW_NoInKey) {
         for (varNum = 0; varNum < numVarsInKey[*inKey]; varNum++) {
             if (strcmp(possVarNames[*inKey][varNum], varName) == 0) {
-                if (varNum == 0 && keyNum != eSW_InDomain) {
+                if (varNum == eiv_indexSpatial && keyNum != eSW_InDomain) {
                     *isIndex = swTRUE;
                 }
 
@@ -737,25 +797,30 @@ static void check_variable_for_required(
     };
     int mustTestAtts = 7;
     int testInd;
+    int k;
 
     /* Indices are based on the global array `possVarNames` under `inVeg` */
-    Bool isLitter =
-        (Bool) (varNum == 3 || varNum == 8 || varNum == 13 || varNum == 18);
-    Bool isBio =
-        (Bool) (varNum == 4 || varNum == 9 || varNum == 14 || varNum == 19);
-    Bool isPctLive =
-        (Bool) (varNum == 5 || varNum == 10 || varNum == 15 || varNum == 20);
-    Bool isLAI =
-        (Bool) (varNum == 6 || varNum == 11 || varNum == 16 || varNum == 21);
+    Bool isLitter = swFALSE;
+    Bool isBio = swFALSE;
+    Bool isPctLive = swFALSE;
+    Bool isLAI = swFALSE;
 
     Bool testVeg = swFALSE;
     Bool canBeNA;
 
-    Bool isIndex = (Bool) (key > eSW_InDomain && varNum == 0);
+    Bool isIndex = (Bool) (key > eSW_InDomain && varNum == eiv_indexSpatial);
     Bool inputDomIsSite =
         (Bool) (strcmp(inputInfo[varNum][INDOMTYPE], "s") == 0);
 
     char *varName = inputInfo[varNum][INNCVARNAME];
+
+
+    ForEachVegType(k) {
+        isLitter = (Bool) (isLitter || varNum == eiv_vegLitter[k]);
+        isBio = (Bool) (isBio || varNum == eiv_vegBiomass[k]);
+        isPctLive = (Bool) (isPctLive || varNum == eiv_vegPctlive[k]);
+        isLAI = (Bool) (isLAI || varNum == eiv_vegLAIconv[k]);
+    }
 
     /* Make sure that the universally required attributes are filled in
        skip the testing of the nc var units (can be NA) */
@@ -876,11 +941,14 @@ static void check_inputkey_columns(
                        they were already checked in `SW_NCIN_read_input_vars()`
                     */
                     if (key == eSW_InVeg) {
-                        ignoreAtt = (Bool) ((varNum > 1 && attNum == attEnd) ||
+                        ignoreAtt = (Bool) ((varNum > eiv_bareGroundfCover &&
+                                             attNum == attEnd) ||
                                             (attNum == INTAXIS));
                     } else if (key == eSW_InSoil) {
-                        ignoreAtt = (Bool) (varNum >= 12 && varNum <= 15 &&
-                                            attNum == attEnd);
+                        ignoreAtt =
+                            (Bool) (varNum >= eiv_transpCoeff[0] &&
+                                    varNum <= eiv_transpCoeff[NVEGTYPES - 1] &&
+                                    attNum == attEnd);
                     }
 
                     if (!ignoreAtt && strcmp(currAtt, cmpAtt) != 0) {
@@ -4900,15 +4968,17 @@ static void read_spatial_topo_climate_inputs(
     int lonIndex;
     int timeIndex;
     size_t defSetStart[2] = {0};
-    const int lonVarNum = 1;
 
     double **scaleAddFactors;
     const InKeys keys[] = {eSW_InSpatial, eSW_InTopo, eSW_InClimate};
     InKeys currKey;
 
     double *values[][5] = {
+        /* must match possVarNames[eSW_InSpatial] */
         {&SW_Model->latitude, &SW_Model->longitude},
+        /* must match possVarNames[eSW_InTopo] (without spatial index) */
         {&SW_Model->elevation, &SW_Model->slope, &SW_Model->aspect},
+        /* must match possVarNames[eSW_InClimate] (without spatial index) */
         {SW_Sky->cloudcov,
          SW_Sky->windspeed,
          SW_Sky->r_humidity,
@@ -4983,8 +5053,8 @@ static void read_spatial_topo_climate_inputs(
                (latitide index = -1) or in the case where longitude
                is 2D, treat it normally */
             if ((currKey != eSW_InSpatial ||
-                 (currKey == eSW_InSpatial && varNum - 1 != lonVarNum)) ||
-                (currKey == eSW_InSpatial && varNum - 1 == lonVarNum &&
+                 (currKey == eSW_InSpatial && varNum == eiv_latitude)) ||
+                (currKey == eSW_InSpatial && varNum == eiv_longitude &&
                  latIndex > -1)) {
 
                 start[latIndex] = defSetStart[0];
@@ -5927,7 +5997,7 @@ static void read_veg_inputs(
     nc_type varType;
     size_t count[] = {1, 0, 0, 0};
     size_t start[] = {0, 0, 0, 0};
-    Bool varHasTime;
+    Bool varHasNotTime;
     Bool hasPFT;
     Bool varHasAddScaleAtts;
     double scaleFactor;
@@ -5947,8 +6017,10 @@ static void read_veg_inputs(
     int lonIndex;
     int timeIndex;
     int pftIndex;
+    int k;
     size_t defSetStart[2] = {0};
 
+    /* must match possVarNames[eSW_InVeg] (without spatial index) */
     double *values[] = {
         &SW_VegProd->bare_cov.fCover,
 
@@ -6009,18 +6081,21 @@ static void read_veg_inputs(
             continue;
         }
 
-        /* Bare ground cover does not have time (index 1),
-           otherwise, the first variable of every veg group doesn't have
-           time, otherwise, the current variable has a time dimension */
-        varHasTime =
-            (Bool) !(varNum == 1 || (varNum - 2) % (NVEGTYPES + 1) == 0);
+        /* Bare ground and vegetation cover do not have time,
+           otherwise, the current variable has a time dimension */
+        varHasNotTime = (Bool) (varNum == eiv_bareGroundfCover);
+
+        ForEachVegType(k) {
+            varHasNotTime =
+                (Bool) (varHasNotTime || varNum == eiv_vegfCover[k]);
+        }
 
         varID = varIDs[varNum];
         varType = varTypes[varNum];
         fileName = vegInFiles[varNum];
         varName = inVarInfo[varNum][INNCVARNAME];
         hasPFT = (Bool) (strcmp(inVarInfo[varNum][INVAXIS], "NA") != 0);
-        numSetVals = (varHasTime) ? MAX_MONTHS : 1;
+        numSetVals = (varHasNotTime) ? 1 : MAX_MONTHS;
         latIndex = dimOrderInVar[varNum][0];
         lonIndex = dimOrderInVar[varNum][1];
         timeIndex = dimOrderInVar[varNum][3];
@@ -6036,7 +6111,7 @@ static void read_veg_inputs(
             count[lonIndex] = (!inSiteDom) ? 1 : 0;
         }
 
-        count[timeIndex] = (varHasTime) ? MAX_MONTHS : 0;
+        count[timeIndex] = (varHasNotTime) ? 0 : MAX_MONTHS;
         if (hasPFT) {
             start[pftIndex] = ((varNum - 2) / (NVEGTYPES + 1));
             count[pftIndex] = 1;
@@ -6135,6 +6210,7 @@ static void read_soil_inputs(
     double **doubleMissVals =
         SW_Domain->SW_PathInputs.doubleMissVals[eSW_InSoil];
 
+    /* must match possVarNames[eSW_InSoil] (without spatial index) */
     double *values1D[] = {
         (hasConstSoilLyrs) ? currSoils->depths : newSoils.depths,
         (hasConstSoilLyrs) ? currSoils->width : newSoils.width,
@@ -6170,8 +6246,6 @@ static void read_soil_inputs(
     size_t start[4] = {0}; /* Maximum of four dimensions */
     size_t count[4] = {0}; /* Maximum of four dimensions */
     const int pftIndex = 4;
-    const int swrcpStartInd = 16;
-    const int transStartInd = 12;
     Bool hasPFT;
     Bool inSiteDom;
     Bool isSwrcpVar;
@@ -6229,7 +6303,7 @@ static void read_soil_inputs(
         fileName = soilInFiles[varNum];
         varName = inVarInfo[varNum][INNCVARNAME];
         varHasAddScaleAtts = keyAttFlags[varNum];
-        isSwrcpVar = (Bool) (varNum >= swrcpStartInd);
+        isSwrcpVar = (Bool) (varNum >= eiv_swrcpMS[0]);
         latIndex = dimOrderInVar[varNum][0];
         lonIndex = dimOrderInVar[varNum][1];
         vertIndex = dimOrderInVar[varNum][2];
@@ -6246,18 +6320,21 @@ static void read_soil_inputs(
             count[lonIndex] = 1;
         }
 
-        if (varNum >= transStartInd) {
-            numVals = (int) numLyrs;
-            /* Set pointer for trans_coeff (12+) and/or swrcp (16+) */
-            if (varNum >= transStartInd && varNum < swrcpStartInd) {
-                vegIndex = varNum - transStartInd;
-                doublePtr = (double *) trans_coeff[vegIndex];
-            } else {
-                doublePtr = (double *) tempswrcp;
-            }
+        numVals = (int) numLyrs;
+
+        if (varNum >= eiv_transpCoeff[0] &&
+            varNum <= eiv_transpCoeff[NVEGTYPES - 1]) {
+            /* Set trans_coeff */
+            vegIndex = varNum - eiv_transpCoeff[0];
+            doublePtr = (double *) trans_coeff[vegIndex];
+
+        } else if (varNum >= eiv_swrcpMS[0] &&
+                   varNum <= eiv_swrcpMS[SWRC_PARAM_NMAX - 1]) {
+            /* Set swrcp (16+) */
+            doublePtr = (double *) tempswrcp;
+
         } else {
             doublePtr = values1D[varNum - 1];
-            numVals = (int) numLyrs;
         }
 
         if (hasPFT) {
@@ -6299,7 +6376,7 @@ static void read_soil_inputs(
                 addOffset,
                 soilConv[varNum - 1],
                 isSwrcpVar,
-                (!isSwrcpVar) ? 0 : (varNum - swrcpStartInd),
+                (!isSwrcpVar) ? 0 : (varNum - eiv_swrcpMS[0]),
                 loopIter,
                 (!isSwrcpVar) ? doublePtr : swrcpMS[loopIter]
             );
@@ -7983,7 +8060,8 @@ void SW_NCIN_read_input_vars(
                 if (inKey == eSW_InVeg) {
                     inVarNum = (inVarNum == 0) ? 2 : inVarNum + 2;
                 } else {
-                    inVarNum = 12; /* Start variable at `Trees.trans_coeff` */
+                    /* Start variable at `Trees.trans_coeff` */
+                    inVarNum = eiv_transpCoeff[0];
                 }
             } else {
                 maxVarIter = 1;
@@ -8406,13 +8484,13 @@ void SW_NCIN_create_units_converters(
 
                 /* If the input variable is shortwave radiation or
                    swrcp, the internal units should be NA */
-                if (!((key == eSW_InWeather && varIndex == 14) ||
-                      (key == eSW_InSoil && varIndex >= 15 && varIndex <= 21)
-                    )) {
+                if (!((key == eSW_InWeather && varIndex == eiv_shortWaveRad) ||
+                      (key == eSW_InSoil && varIndex >= eiv_swrcpMS[0] &&
+                       varIndex <= eiv_swrcpMS[SWRC_PARAM_NMAX - 1]))) {
 
                     if (ut_are_convertible(unitFrom, unitTo)) {
                         // SW_netCDFIn.uconv[key][varIndex] was previously
-                        // to NULL initializeda
+                        // to NULL initialized
                         SW_netCDFIn->uconv[key][varIndex] =
                             ut_get_converter(unitFrom, unitTo);
                     }

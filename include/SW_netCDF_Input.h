@@ -16,9 +16,10 @@ extern "C" {
 
 #define DOMAIN_TEMP "Input_nc/domain_template.nc"
 
-/* Specifies the number of input variables per key a user
+/** Specifies the number of input variables per key a user
 can provide; This number includes a variable for an index
-file after and including the input key `inTopo` */
+file after and including the input key `inSpatial`.
+These numbers must match up with `possVarNames` */
 static const int numVarsInKey[] = {
     2,  /* inDomain */
     3,  /* inSpatial */

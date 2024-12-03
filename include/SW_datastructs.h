@@ -1323,9 +1323,19 @@ typedef struct {
        domain information - domain and progress variables */
     int ncDomVarIDs[SW_NVARDOM];
 
-    Bool *readInVars[SW_NINKEYSNC]; /**< Do/don't read a variable from input
-                                         netCDFs (dynamically allocated array
-                                         over input variables) */
+    /** Indicates which variables are provided by netCDF inputs
+
+    This is an array over the `inkey` #SW_NINKEYSNC, and each element is
+    a pointer to a dynamically allocated array of length 1 + #numVarsInKey.
+
+    The element 0 summarizes whether any variable of an `inkey` is provided
+    by netCDF inputs.
+    The element 1 indicates whether the index of that `inkey`
+    is used (if that `inkey` contains an index, i.e., all but #eSW_InDomain).
+    The remaining elements indicate if each input variables
+    (see #possVarNames) is provided by netCDF inputs or not.
+    */
+    Bool *readInVars[SW_NINKEYSNC];
 
     char **weathCalOverride; /**< Calendars that the user may provide for
                                   the program to use (dynamically allocated
