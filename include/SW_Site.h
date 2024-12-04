@@ -298,6 +298,8 @@ void nlayers_vegroots(
     double transp_coeff[][MAX_LAYERS]
 );
 
+void SW_SOIL_construct(SW_SOILS *SW_Soils);
+
 void SW_SIT_construct(SW_SITE *SW_Site);
 
 void SW_SIT_init_counts(SW_SITE *SW_Site);

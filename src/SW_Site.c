@@ -1494,6 +1494,11 @@ void add_deepdrain_layer(SW_SITE *SW_Site) {
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
+
+void SW_SOIL_construct(SW_SOILS *SW_Soils) {
+    memset(SW_Soils, 0, sizeof(SW_SOILS));
+}
+
 /**
 @brief Initialized memory for SW_Site
 
