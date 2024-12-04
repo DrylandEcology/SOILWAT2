@@ -2271,15 +2271,14 @@ static void fill_prog_netCDF_vals(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     for (suid = 0; suid < nSUIDs; suid++) {
         SW_DOM_calc_ncSuid(SW_Domain, suid, ncSuid);
 
-        SW_NC_get_single_val(
-            domFileID,
-            &domVarID,
-            "domain",
-            ncSuid,
-            (void *) &domStatus,
-            LogInfo
-        );
-        if (LogInfo->stopRun) {
+        if (nc_get_var1_long(domFileID, domVarID, ncSuid, &domStatus) !=
+            NC_NOERR) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Could not read domain status for SUID #%lu.",
+                suid
+            );
             goto freeMem; // Exit function prematurely due to error
         }
 
