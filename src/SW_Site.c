@@ -1776,7 +1776,7 @@ void SW_SIT_read(
             SW_Site->site_ptf_type = encode_str2ptf(SW_Site->site_ptf_name);
             break;
         case 41:
-            SW_Site->site_has_swrcpMineralSoil = itob(intRes);
+            SW_Site->inputsProvideSWRCp = itob(intRes);
             break;
 
         default:
@@ -2267,7 +2267,7 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *txtInFiles[], LOG_INFO *LogInfo) {
 
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
         /* PTF used for mineral swrcp: read only organic parameters from disk */
-        if (isMineral && !SW_Site->site_has_swrcpMineralSoil) {
+        if (isMineral && !SW_Site->inputsProvideSWRCp) {
             goto closeFile;
         }
 
@@ -2338,6 +2338,9 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *txtInFiles[], LOG_INFO *LogInfo) {
             lyrno = 0;
         }
     }
+
+    SW_Site->site_has_swrcpMineralSoil =
+        (Bool) (isMineral && SW_Site->inputsProvideSWRCp);
 
 closeFile: { CloseFile(&f, LogInfo); }
 }
@@ -2862,6 +2865,8 @@ void SW_SIT_init_run(
         }
     } /*end ForEachSoilLayer */
 
+    SW_Site->site_has_swrcpMineralSoil = swTRUE;
+
 
     /* Re-calculate `swcBulk_atSWPcrit` if it was below `swcBulk_min`
        for any vegetation x soil layer combination using adjusted `SWPcrit`
@@ -3017,6 +3022,8 @@ void SW_SIT_init_counts(SW_SITE *SW_Site) {
     SW_Site->n_transp_rgn = 0;
 
     ForEachVegType(k) { SW_Site->n_transp_lyrs[k] = 0; }
+
+    SW_Site->site_has_swrcpMineralSoil = swFALSE;
 }
 
 /**

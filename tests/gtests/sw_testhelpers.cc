@@ -138,6 +138,8 @@ void setup_SW_Site_for_tests(SW_SITE *SW_Site) {
     SW_Site->slow_drain_coeff = 0.02;
 
     SW_Site->site_has_swrcpMineralSoil = swFALSE;
+    SW_Site->inputsProvideSWRCp = swFALSE;
+
     (void) snprintf(
         SW_Site->site_swrc_name,
         sizeof SW_Site->site_swrc_name,

@@ -337,6 +337,8 @@ typedef struct {
     /** Are `swrcp` of the mineral soil already (TRUE) or not yet estimated
         (FALSE)? */
     Bool site_has_swrcpMineralSoil;
+    /** Are `swrcp` provided as inputs (TRUE) or estimated via a PTF? (FALSE) */
+    Bool inputsProvideSWRCp;
 
     /* transpiration regions  shallow, moderately shallow,  */
     /* deep and very deep. units are in layer numbers. */

@@ -6310,6 +6310,8 @@ static void read_soil_inputs(
         SW_Site->soils = newSoils;
     }
 
+    SW_Site->site_has_swrcpMineralSoil = SW_Site->inputsProvideSWRCp;
+
 closeFile:
     if (ncFileID > -1) {
         nc_close(ncFileID);
