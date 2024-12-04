@@ -4794,7 +4794,7 @@ static void set_read_vals(
     for (valIndex = 0; valIndex < numVals; valIndex++) {
         dest = (!swrcpInput) ? &resVals[valIndex] : &resVals[swrcpIndex];
 
-        missingBefore = (Bool) (missing(*readVals));
+        missingBefore = (Bool) (missing(readVals[valIndex]));
         set_missing_val(
             varType,
             valHasMissing,
