@@ -923,12 +923,12 @@ TEST_F(WeatherFixtureTest, WeatherInputGridMET) {
     SW_Run.Weather.desc_rsds = 1; // gridMET rsds is flux density over 24 hours
 
     // Reset daily weather values
-    clear_hist_weather(SW_Run.Weather.allHist[0]);
+    clear_hist_weather(&SW_Run.Weather.allHist[0]);
 
     // Using the new inputs folder, read in year = 1980
     read_weather_hist(
         year,
-        SW_Run.Weather.allHist[0],
+        &SW_Run.Weather.allHist[0],
         SW_Run.Weather.name_prefix,
         SW_Run.Weather.n_input_forcings,
         SW_Run.Weather.dailyInputIndices,
@@ -1076,12 +1076,12 @@ TEST_F(WeatherFixtureTest, WeatherInputDaymet) {
     SW_Run.Weather.desc_rsds = 2;
 
     // Reset daily weather values
-    clear_hist_weather(SW_Run.Weather.allHist[0]);
+    clear_hist_weather(&SW_Run.Weather.allHist[0]);
 
     // Using the new inputs folder, read in year = 1980
     read_weather_hist(
         year,
-        SW_Run.Weather.allHist[0],
+        &SW_Run.Weather.allHist[0],
         SW_Run.Weather.name_prefix,
         SW_Run.Weather.n_input_forcings,
         SW_Run.Weather.dailyInputIndices,
@@ -1220,12 +1220,12 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype1) {
     SW_Run.Weather.desc_rsds = 1; // MACA rsds is flux density over 24 hours
 
     // Reset daily weather values
-    clear_hist_weather(SW_Run.Weather.allHist[0]);
+    clear_hist_weather(&SW_Run.Weather.allHist[0]);
 
     // Using the new inputs folder, read in year = 1980
     read_weather_hist(
         year,
-        SW_Run.Weather.allHist[0],
+        &SW_Run.Weather.allHist[0],
         SW_Run.Weather.name_prefix,
         SW_Run.Weather.n_input_forcings,
         SW_Run.Weather.dailyInputIndices,
@@ -1389,12 +1389,12 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
     SW_Run.Weather.desc_rsds = 1; // MACA rsds is flux density over 24 hours
 
     // Reset daily weather values
-    clear_hist_weather(SW_Run.Weather.allHist[0]);
+    clear_hist_weather(&SW_Run.Weather.allHist[0]);
 
     // Using the new inputs folder, read in year = 1980
     read_weather_hist(
         year,
-        SW_Run.Weather.allHist[0],
+        &SW_Run.Weather.allHist[0],
         SW_Run.Weather.name_prefix,
         SW_Run.Weather.n_input_forcings,
         SW_Run.Weather.dailyInputIndices,
@@ -1578,7 +1578,7 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputWrongColumnNumberDeathTest) {
 
     read_weather_hist(
         year,
-        SW_Run.Weather.allHist[0],
+        &SW_Run.Weather.allHist[0],
         SW_Run.Weather.name_prefix,
         SW_Run.Weather.n_input_forcings,
         SW_Run.Weather.dailyInputIndices,
