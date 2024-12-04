@@ -601,7 +601,6 @@ void SW_NC_get_single_val(
     const char *varName,
     const size_t index[],
     void *value,
-    const char *type,
     LOG_INFO *LogInfo
 ) {
 
@@ -616,9 +615,9 @@ void SW_NC_get_single_val(
         LogError(
             LogInfo,
             LOGERROR,
-            "An error occurred when trying to "
-            "read a value from a variable of type %s.",
-            type
+            "An error occurred when trying to read a value from "
+            "the %s variable.",
+            varName
         );
     }
 }

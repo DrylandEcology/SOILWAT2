@@ -294,6 +294,42 @@ static void get_att_type(
 }
 
 /**
+@brief Helper function to test if a variable has an attribute by the
+given name
+
+@param[in] ncFileID File identifier to test within
+@param[in] varID Variable identifier to test if it contains the queried
+attribute
+@param[in] attName Attribute name to test for
+@param[out] attSize If the attribute exists, this will hold the number of
+values the attribute contains
+@param[out] attExists Specifies if the attribute we are querying exists within
+the provided variable
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void att_exists(
+    int ncFileID,
+    int varID,
+    const char *attName,
+    size_t *attSize,
+    Bool *attExists,
+    LOG_INFO *LogInfo
+) {
+    int result = nc_inq_attlen(ncFileID, varID, attName, attSize);
+
+    if (result != NC_NOERR && result != NC_ENOTATT) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not get information on the attribute '%s'.",
+            attName
+        );
+    }
+
+    *attExists = (Bool) (result != NC_ENOTATT && !LogInfo->stopRun);
+}
+
+/**
 @brief Calculate the number of days within a given year based on the
 calendar provided within nc files
 
@@ -2095,6 +2131,93 @@ static void fill_netCDF_with_invariants(
 }
 
 /**
+@brief Dynamically get the value of the attribute '_FillValue' from the
+domain variable
+
+@param[in] domFileID Identifier of the domain file
+@param[in] domVarID Identifier of the domain variable within the domain file
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static long get_dom_fill_value(int domFileID, int domVarID, LOG_INFO *LogInfo) {
+    signed char byteVal;
+    short twoByteVal;
+    unsigned short uTwoByteVal;
+    int fourByteVal;
+    unsigned int uFourByteVal;
+    float floatVal;
+    double doubleVal;
+
+    nc_type fillValType = 0;
+    long result = 0;
+    int callResult = NC_NOERR;
+
+    get_att_type(domFileID, domVarID, "_FillValue", &fillValType, LogInfo);
+    if (LogInfo->stopRun) {
+        return (long) (NC_FILL_UINT);
+    }
+
+    switch (fillValType) {
+    case NC_BYTE:
+        callResult =
+            nc_get_att_schar(domFileID, domVarID, "_FillValue", &byteVal);
+        result = (long) byteVal;
+        break;
+    case NC_SHORT:
+        callResult =
+            nc_get_att_short(domFileID, domVarID, "_FillValue", &twoByteVal);
+        result = (long) twoByteVal;
+        break;
+    case NC_USHORT:
+        callResult =
+            nc_get_att_ushort(domFileID, domVarID, "_FillValue", &uTwoByteVal);
+        result = (long) uTwoByteVal;
+        break;
+    case NC_INT:
+        callResult =
+            nc_get_att_int(domFileID, domVarID, "_FillValue", &fourByteVal);
+        result = (long) fourByteVal;
+        break;
+    case NC_UINT:
+        callResult =
+            nc_get_att_uint(domFileID, domVarID, "_FillValue", &uFourByteVal);
+        result = (long) uFourByteVal;
+        break;
+    case NC_FLOAT:
+        callResult =
+            nc_get_att_float(domFileID, domVarID, "_FillValue", &floatVal);
+        result = (long) floatVal;
+        break;
+    default: /* NC_DOUBLE */
+        callResult =
+            nc_get_att_double(domFileID, domVarID, "_FillValue", &doubleVal);
+        result = (long) doubleVal;
+        break;
+    }
+
+    if (callResult != NC_NOERR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not read the value of the attribute '_FillValue' for "
+            "the domain variable."
+        );
+        return (long) NC_FILL_UINT;
+    }
+
+    if ((fillValType == NC_DOUBLE || fillValType == NC_FLOAT) &&
+        (!EQ(fmod(fillValType, 1.0), 0.0))) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Domain variable attribute '_FillValue' must be a whole number "
+            "when holding a floating-point type."
+        );
+    }
+
+    return result;
+}
+
+/**
 @brief Fill the progress variable in the progress netCDF with values
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
@@ -2105,7 +2228,7 @@ static void fill_prog_netCDF_vals(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     int domVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCdom];
     int progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprog];
-    unsigned int domStatus;
+    long domStatus;
     unsigned long suid;
     unsigned long ncSuid[2];
     unsigned long nSUIDs = SW_Domain->nSUIDs;
@@ -2129,23 +2252,38 @@ static void fill_prog_netCDF_vals(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         return; // Exit function prematurely due to error
     }
 
+    size_t attSize = 0; /* Not used */
+    Bool domFillAttExists = swFALSE;
+    long fillVal = (long) (NC_FILL_UINT);
+
+    att_exists(
+        domFileID, domVarID, "_FillValue", &attSize, &domFillAttExists, LogInfo
+    );
+    if (LogInfo->stopRun) {
+        goto freeMem;
+    }
+
+    fillVal = get_dom_fill_value(domFileID, domVarID, LogInfo);
+    if (LogInfo->stopRun) {
+        goto freeMem;
+    }
+
     for (suid = 0; suid < nSUIDs; suid++) {
         SW_DOM_calc_ncSuid(SW_Domain, suid, ncSuid);
 
         SW_NC_get_single_val(
             domFileID,
             &domVarID,
-            NULL,
+            "domain",
             ncSuid,
             (void *) &domStatus,
-            "unsigned integer",
             LogInfo
         );
         if (LogInfo->stopRun) {
             goto freeMem; // Exit function prematurely due to error
         }
 
-        vals[suid] = (domStatus == NC_FILL_UINT) ? NC_FILL_BYTE : PRGRSS_READY;
+        vals[suid] = (domStatus == fillVal) ? NC_FILL_BYTE : PRGRSS_READY;
     }
 
     SW_NC_write_vals(
@@ -4258,42 +4396,6 @@ static void get_att_vals(
 }
 
 /**
-@brief Helper function to test if a variable has an attribute by the
-given name
-
-@param[in] ncFileID File identifier to test within
-@param[in] varID Variable identifier to test if it contains the queried
-attribute
-@param[in] attName Attribute name to test for
-@param[out] attSize If the attribute exists, this will hold the number of
-values the attribute contains
-@param[out] attExists Specifies if the attribute we are querying exists within
-the provided variable
-@param[out] LogInfo Holds information on warnings and errors
-*/
-static void att_exists(
-    int ncFileID,
-    int varID,
-    const char *attName,
-    size_t *attSize,
-    Bool *attExists,
-    LOG_INFO *LogInfo
-) {
-    int result = nc_inq_attlen(ncFileID, varID, attName, attSize);
-
-    if (result != NC_NOERR && result != NC_ENOTATT) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Could not get information on the attribute '%s'.",
-            attName
-        );
-    }
-
-    *attExists = (Bool) (result != NC_ENOTATT && !LogInfo->stopRun);
-}
-
-/**
 @brief Compare a user-provided input file against the program-generated/
 user-provided index file to make sure the following criteria matches:
     * (Auxilary) Spatial coordinate variable names
@@ -4533,7 +4635,6 @@ static void get_read_start(
                 indexVarNames[varNum],
                 (inSiteDom) ? &ncSUID[0] : ncSUID,
                 &start[varNum],
-                "unsigned int",
                 LogInfo
             );
             if (LogInfo->stopRun) {
@@ -6838,7 +6939,7 @@ Bool SW_NCIN_check_progress(
     signed char progVal = 0;
 
     SW_NC_get_single_val(
-        progFileID, &progVarID, NULL, ncSUID, (void *) &progVal, "byte", LogInfo
+        progFileID, &progVarID, "progress", ncSUID, (void *) &progVal, LogInfo
     );
 
     return (Bool) (!LogInfo->stopRun && progVal == PRGRSS_READY);
