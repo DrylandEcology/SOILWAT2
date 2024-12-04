@@ -1535,6 +1535,7 @@ void SW_SIT_read(
 #endif
 
     FILE *f;
+    const int nLinesWithoutTR = 41;
     int lineno = 0;
     int x;
     int rgnlow = 0; /* lower layer of region */
@@ -1542,9 +1543,9 @@ void SW_SIT_read(
     LyrIndex r;
     Bool too_many_regions = swFALSE;
     char inbuf[MAX_FILENAMESIZE];
-    int intRes = 0;
+    int intRes;
     int resSNP;
-    double doubleRes = 0.;
+    double doubleRes;
     char rgnStr[2][10] = {{'\0'}};
 
     Bool doDoubleConv;
@@ -1559,10 +1560,12 @@ void SW_SIT_read(
     }
 
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+        doubleRes = SW_MISSING;
+        intRes = SW_MISSING;
 
         strLine = (Bool) (lineno == 35 || lineno == 39 || lineno == 40);
 
-        if (!strLine && lineno <= 39) {
+        if (!strLine && lineno <= nLinesWithoutTR) {
             /* Check to see if the line number contains a double or integer
              * value */
             doDoubleConv =
@@ -1777,7 +1780,7 @@ void SW_SIT_read(
             break;
 
         default:
-            if (lineno > 41 + MAX_TRANSP_REGIONS) {
+            if (lineno > nLinesWithoutTR + MAX_TRANSP_REGIONS) {
                 break; /* skip extra lines */
             }
 
