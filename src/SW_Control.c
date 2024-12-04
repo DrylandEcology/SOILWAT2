@@ -51,6 +51,7 @@
 #include "include/SW_VegProd.h"      // for SW_VPD_alloc_outptrs, SW_VPD_co...
 #include "include/SW_Weather.h"      // for SW_WTH_alloc_outptrs, SW_WTH_co...
 #include "include/Times.h"           // for diff_walltime, set_walltime
+#include <signal.h>                  // for signal
 #include <stdio.h>                   // for NULL, snprintf
 #include <stdlib.h>                  // for free
 #include <string.h>                  // for memcpy, NULL
@@ -63,10 +64,30 @@
 #include "include/SW_Output_outarray.h"
 #endif
 
+static volatile sig_atomic_t runSims = 1;
 
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
+
+/**
+@brief Handle an interrupt provided by the OS to stop the program;
+the current supported interrupts are terminations (SIGTERM) and
+interrupts (SIGINT, commonly CTRL+C on the keyboard)
+
+@param[in] signal Numerical value of the signal that was recieved
+(currently not used)
+*/
+static void handle_interrupt(int signal) {
+    (void) signal; /* Silence compiler */
+    runSims = 0;
+
+#if defined(SOILWAT)
+    sw_message("Program was killed early. Shutting down after the current "
+               "simulation run...");
+#endif
+}
+
 /**
 @brief Initiate/update variables for a new simulation year.
       In addition to the timekeeper (Model), usually only modules
@@ -293,6 +314,8 @@ void SW_CTL_RunSimSet(
     Bool ok_tss = swFALSE;
     Bool ok_tsr = swFALSE;
     Bool ok_suid;
+    unsigned long startSim = SW_Domain->startSimSet;
+    unsigned long endSim = SW_Domain->endSimSet;
 
     int progFileID = 0; // Value does not matter if SWNETCDF is not defined
     int progVarID = 0;  // Value does not matter if SWNETCDF is not defined
@@ -310,8 +333,13 @@ void SW_CTL_RunSimSet(
     }
 #endif
 
+    /* Set up interrupt handlers so if the program is interrupted
+       during simulation, we can exit smoothly and not abruptly */
+    signal(SIGINT, handle_interrupt);
+    signal(SIGTERM, handle_interrupt);
+
     /* Loop over suids in simulation set of domain */
-    for (suid = SW_Domain->startSimSet; suid < SW_Domain->endSimSet; suid++) {
+    for (suid = startSim; suid < endSim && runSims; suid++) {
         /* Check wall time against limit */
         if (SW_WallTime->has_walltime &&
             GT(diff_walltime(SW_WallTime->timeStart, swTRUE),
@@ -330,7 +358,7 @@ void SW_CTL_RunSimSet(
         ok_suid =
             SW_DOM_CheckProgress(progFileID, progVarID, ncSuid, &local_LogInfo);
 
-        if (ok_suid && !local_LogInfo.stopRun) {
+        if (ok_suid && !local_LogInfo.stopRun && runSims) {
             /* Count simulation run */
             nSims++;
 
