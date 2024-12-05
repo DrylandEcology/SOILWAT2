@@ -146,12 +146,11 @@ void deallocateClimateStructs(
 
 void read_weather_hist(
     TimeInt year,
-    SW_WEATHER_HIST *yearWeather,
+    double **yearWeather,
     char txtWeatherPrefix[],
     unsigned int n_input_forcings,
     const unsigned int *dailyInputIndices,
     const Bool *dailyInputFlags,
-    double elevation,
     LOG_INFO *LogInfo
 );
 
@@ -167,6 +166,22 @@ void SW_WTH_setWeathUsingClimate(
     double *windspeed,
     double *r_humidity
 );
+
+void SW_WTH_setWeatherValues(
+    TimeInt startYear,
+    TimeInt nYears,
+    Bool *inputFlags,
+    double ***tempWeather,
+    double elevation,
+    SW_WEATHER_HIST *yearlyWeather,
+    LOG_INFO *LogInfo
+);
+
+void allocate_temp_weather(
+    TimeInt nYears, double ****fullWeathHist, LOG_INFO *LogInfo
+);
+
+void deallocate_temp_weather(TimeInt nYears, double ****fullWeathHist);
 
 void readAllWeather(
     SW_WEATHER_HIST *allHist,
@@ -233,7 +248,7 @@ void initializeAllWeatherPtrs(SW_WEATHER_HIST **allHist, unsigned int n_years);
 
 void deallocateAllWeather(SW_WEATHER_HIST **allHist);
 
-void clear_hist_weather(SW_WEATHER_HIST *yearWeather);
+void clear_hist_weather(SW_WEATHER_HIST *yearWeather, double **fullWeathHist);
 
 void SW_WTH_finalize_all_weather(
     SW_MARKOV *SW_Markov,

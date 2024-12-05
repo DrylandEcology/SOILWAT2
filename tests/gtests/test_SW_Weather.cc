@@ -862,6 +862,7 @@ TEST_F(WeatherFixtureTest, WeatherInputGridMET) {
     int const midJanDay = 14;
     int doy;
     double snowpack[TWO_DAYS] = {0.};
+    double ***tempWeatherHist = NULL;
 
     /* Test correct priority is being given to input values from DAYMET */
     SW_WTH_setup(
@@ -922,22 +923,40 @@ TEST_F(WeatherFixtureTest, WeatherInputGridMET) {
     SW_Run.Weather.n_input_forcings = 7;
     SW_Run.Weather.desc_rsds = 1; // gridMET rsds is flux density over 24 hours
 
+    // Allocate temporary location for weather
+    allocate_temp_weather(1, &tempWeatherHist, &LogInfo);
+    sw_fail_on_error(&LogInfo);
+
     // Reset daily weather values
-    clear_hist_weather(&SW_Run.Weather.allHist[0]);
+    clear_hist_weather(&SW_Run.Weather.allHist[0], tempWeatherHist[0]);
 
     // Using the new inputs folder, read in year = 1980
     read_weather_hist(
         year,
-        &SW_Run.Weather.allHist[0],
+        tempWeatherHist[0],
         SW_Run.Weather.name_prefix,
         SW_Run.Weather.n_input_forcings,
         SW_Run.Weather.dailyInputIndices,
         SW_Run.Weather.dailyInputFlags,
-        SW_Run.Model.elevation,
         &LogInfo
     );
+    if (LogInfo.stopRun) {
+        deallocate_temp_weather(1, &tempWeatherHist);
+    }
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
+    // Transfer values from temporary to permanent location (`SW_WEATHER_HIST`)
+    SW_WTH_setWeatherValues(
+        SW_Run.Model.startyr,
+        1,
+        SW_Run.Weather.dailyInputFlags,
+        tempWeatherHist,
+        SW_Run.Model.elevation,
+        &SW_Run.Weather.allHist[0],
+        &LogInfo
+    );
+    deallocate_temp_weather(1, &tempWeatherHist);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Check that weather contains reasonable values
     checkAllWeather(&SW_Run.Weather, &LogInfo);
@@ -1014,6 +1033,7 @@ TEST_F(WeatherFixtureTest, WeatherInputDaymet) {
     int const yearIndex = 0;
     int const year = 1980;
     int const midJanDay = 14;
+    double ***tempWeatherHist = NULL;
 
     /* Test correct priority is being given to input values from DAYMET */
     SW_WTH_setup(
@@ -1075,20 +1095,39 @@ TEST_F(WeatherFixtureTest, WeatherInputDaymet) {
     // DayMet rsds is flux density over daylight period
     SW_Run.Weather.desc_rsds = 2;
 
+    // Allocate temporary location for weather
+    allocate_temp_weather(1, &tempWeatherHist, &LogInfo);
+    sw_fail_on_error(&LogInfo);
+
     // Reset daily weather values
-    clear_hist_weather(&SW_Run.Weather.allHist[0]);
+    clear_hist_weather(&SW_Run.Weather.allHist[0], tempWeatherHist[0]);
 
     // Using the new inputs folder, read in year = 1980
     read_weather_hist(
         year,
-        &SW_Run.Weather.allHist[0],
+        tempWeatherHist[0],
         SW_Run.Weather.name_prefix,
         SW_Run.Weather.n_input_forcings,
         SW_Run.Weather.dailyInputIndices,
         SW_Run.Weather.dailyInputFlags,
-        SW_Run.Model.elevation,
         &LogInfo
     );
+    if (LogInfo.stopRun) {
+        deallocate_temp_weather(1, &tempWeatherHist);
+    }
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    // Transfer values from temporary to permanent location (`SW_WEATHER_HIST`)
+    SW_WTH_setWeatherValues(
+        SW_Run.Model.startyr,
+        1,
+        SW_Run.Weather.dailyInputFlags,
+        tempWeatherHist,
+        SW_Run.Model.elevation,
+        &SW_Run.Weather.allHist[0],
+        &LogInfo
+    );
+    deallocate_temp_weather(1, &tempWeatherHist);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
@@ -1157,6 +1196,7 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype1) {
     int const midJanDay = 14;
     int doy;
     double snowpack[TWO_DAYS] = {0.};
+    double ***tempWeatherHist = NULL;
 
     /* Test correct priority is being given to input values from MACA */
 
@@ -1219,22 +1259,40 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype1) {
     SW_Run.Weather.n_input_forcings = 8;
     SW_Run.Weather.desc_rsds = 1; // MACA rsds is flux density over 24 hours
 
+    // Allocate temporary location for weather
+    allocate_temp_weather(1, &tempWeatherHist, &LogInfo);
+    sw_fail_on_error(&LogInfo);
+
     // Reset daily weather values
-    clear_hist_weather(&SW_Run.Weather.allHist[0]);
+    clear_hist_weather(&SW_Run.Weather.allHist[0], tempWeatherHist[0]);
 
     // Using the new inputs folder, read in year = 1980
     read_weather_hist(
         year,
-        &SW_Run.Weather.allHist[0],
+        tempWeatherHist[0],
         SW_Run.Weather.name_prefix,
         SW_Run.Weather.n_input_forcings,
         SW_Run.Weather.dailyInputIndices,
         SW_Run.Weather.dailyInputFlags,
-        SW_Run.Model.elevation,
         &LogInfo
     );
+    if (LogInfo.stopRun) {
+        deallocate_temp_weather(1, &tempWeatherHist);
+    }
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
+    // Transfer values from temporary to permanent location (`SW_WEATHER_HIST`)
+    SW_WTH_setWeatherValues(
+        year,
+        1,
+        SW_Run.Weather.dailyInputFlags,
+        tempWeatherHist,
+        SW_Run.Model.elevation,
+        &SW_Run.Weather.allHist[0],
+        &LogInfo
+    );
+    deallocate_temp_weather(1, &tempWeatherHist);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Check that weather contains reasonable values
     checkAllWeather(&SW_Run.Weather, &LogInfo);
@@ -1326,6 +1384,7 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
     int const midJanDay = 14;
     int doy;
     double snowpack[TWO_DAYS] = {0.};
+    double ***tempWeatherHist = NULL;
 
     /* Test correct priority is being given to input values from MACA */
 
@@ -1388,22 +1447,40 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
     SW_Run.Weather.n_input_forcings = 7;
     SW_Run.Weather.desc_rsds = 1; // MACA rsds is flux density over 24 hours
 
+    // Allocate temporary location for weather
+    allocate_temp_weather(1, &tempWeatherHist, &LogInfo);
+    sw_fail_on_error(&LogInfo);
+
     // Reset daily weather values
-    clear_hist_weather(&SW_Run.Weather.allHist[0]);
+    clear_hist_weather(&SW_Run.Weather.allHist[0], tempWeatherHist[0]);
 
     // Using the new inputs folder, read in year = 1980
     read_weather_hist(
         year,
-        &SW_Run.Weather.allHist[0],
+        tempWeatherHist[0],
         SW_Run.Weather.name_prefix,
         SW_Run.Weather.n_input_forcings,
         SW_Run.Weather.dailyInputIndices,
         SW_Run.Weather.dailyInputFlags,
-        SW_Run.Model.elevation,
         &LogInfo
     );
+    if (LogInfo.stopRun) {
+        deallocate_temp_weather(1, &tempWeatherHist);
+    }
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
+    // Transfer values from temporary to permanent location (`SW_WEATHER_HIST`)
+    SW_WTH_setWeatherValues(
+        SW_Run.Model.startyr,
+        1,
+        SW_Run.Weather.dailyInputFlags,
+        tempWeatherHist,
+        SW_Run.Model.elevation,
+        &SW_Run.Weather.allHist[0],
+        &LogInfo
+    );
+    deallocate_temp_weather(1, &tempWeatherHist);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Check that weather contains reasonable values
     checkAllWeather(&SW_Run.Weather, &LogInfo);
@@ -1565,11 +1642,22 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputWrongColumnNumberDeathTest) {
 
     // Initialize any variables
     TimeInt const year = 1980;
+    double ***tempWeatherHist = NULL;
 
     /* Not the same number of flags as columns */
     // Run weather functions and expect an failure (error)
 
+    // Allocate temporary location for weather
+    allocate_temp_weather(1, &tempWeatherHist, &LogInfo);
+    sw_fail_on_error(&LogInfo);
+
+    // Reset daily weather values
+    clear_hist_weather(&SW_Run.Weather.allHist[0], tempWeatherHist[0]);
+
     SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
+    if (LogInfo.stopRun) {
+        deallocate_temp_weather(1, &tempWeatherHist);
+    }
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Set SW_WEATHER's n_input_forcings to a number that is
@@ -1578,18 +1666,19 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputWrongColumnNumberDeathTest) {
 
     read_weather_hist(
         year,
-        &SW_Run.Weather.allHist[0],
+        tempWeatherHist[0],
         SW_Run.Weather.name_prefix,
         SW_Run.Weather.n_input_forcings,
         SW_Run.Weather.dailyInputIndices,
         SW_Run.Weather.dailyInputFlags,
-        SW_Run.Model.elevation,
         &LogInfo
     );
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
     // Detect failure by error message
     EXPECT_THAT(LogInfo.errorMsg, HasSubstr("Incomplete record 1"));
+
+    deallocate_temp_weather(1, &tempWeatherHist);
 }
 
 TEST_F(WeatherFixtureTest, WeatherDailyInputBadTemperatureDeathTest) {
