@@ -1370,7 +1370,7 @@ static void fill_domain_netCDF_domain(
 
     /* Fill dynamic coordinate names and replace them in `strAttNames` */
     if (strcmp(domType, "s") == 0) {
-        snprintf(
+        (void) snprintf(
             coordStr,
             MAX_FILENAMESIZE,
             coordVal,
@@ -1379,14 +1379,14 @@ static void fill_domain_netCDF_domain(
             siteName
         );
     } else {
-        snprintf(
+        (void) snprintf(
             coordStr, MAX_FILENAMESIZE, coordVal, readinGeoYName, readinGeoXName
         );
     }
     strAttVals[numAtts - 1] = coordStr;
 
     if (!primCRSIsGeo) {
-        snprintf(
+        (void) snprintf(
             gridMapStr,
             MAX_FILENAMESIZE,
             gridMapVal,
@@ -3733,7 +3733,7 @@ static void calc_temporal_weather_indices(
             }
         }
 
-        snprintf(
+        (void) snprintf(
             newCalUnit, MAX_FILENAMESIZE, "days since %u-01-01 00:00:00", year
         );
 
@@ -4086,7 +4086,7 @@ static void create_index_vars(
         }
 
         if (siteDom) {
-            snprintf(
+            (void) snprintf(
                 tempCoord,
                 MAX_FILENAMESIZE,
                 coordString,
@@ -4095,7 +4095,7 @@ static void create_index_vars(
                 domSiteName
             );
         } else {
-            snprintf(
+            (void) snprintf(
                 tempCoord,
                 MAX_FILENAMESIZE,
                 coordString,
@@ -4111,7 +4111,7 @@ static void create_index_vars(
             tempIndexValPtr = tempIndexVal;
             switch (attNum) {
             case 0:
-                snprintf(
+                (void) snprintf(
                     tempIndexVal,
                     MAX_FILENAMESIZE,
                     indexVarAttVals[attNum][varNum],
@@ -4119,7 +4119,7 @@ static void create_index_vars(
                 );
                 break;
             case 1:
-                snprintf(
+                (void) snprintf(
                     tempIndexVal,
                     MAX_FILENAMESIZE,
                     indexVarAttVals[attNum][0],
@@ -6476,7 +6476,7 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     /* Fill dynamic coordinate names */
     if (domTypeIsS) {
-        snprintf(
+        (void) snprintf(
             coordStr,
             MAX_FILENAMESIZE,
             coord,
@@ -6485,14 +6485,14 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             siteName
         );
     } else {
-        snprintf(
+        (void) snprintf(
             coordStr, MAX_FILENAMESIZE, coord, readinGeoYName, readinGeoXName
         );
     }
     attVals[numAtts - 1] = coordStr;
 
     if (!primCRSIsGeo) {
-        snprintf(
+        (void) snprintf(
             gridMapStr,
             MAX_FILENAMESIZE,
             grid_map,

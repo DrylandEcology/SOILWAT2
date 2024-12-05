@@ -1070,7 +1070,7 @@ void SW_NC_create_full_var(
     }
 
     if (coordAttIndex > -1 && !isnull(attVals[coordAttIndex])) {
-        snprintf(
+        (void) snprintf(
             finalCoordVal,
             MAX_FILENAMESIZE,
             "%s%s",
