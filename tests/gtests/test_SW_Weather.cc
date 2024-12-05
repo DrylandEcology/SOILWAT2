@@ -940,7 +940,7 @@ TEST_F(WeatherFixtureTest, WeatherInputGridMET) {
         SW_Run.Weather.dailyInputFlags,
         &LogInfo
     );
-    if (LogInfo.stopRun) {
+    if (LogInfo.stopRun != 0u) {
         deallocate_temp_weather(1, &tempWeatherHist);
     }
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1112,7 +1112,7 @@ TEST_F(WeatherFixtureTest, WeatherInputDaymet) {
         SW_Run.Weather.dailyInputFlags,
         &LogInfo
     );
-    if (LogInfo.stopRun) {
+    if (LogInfo.stopRun != 0u) {
         deallocate_temp_weather(1, &tempWeatherHist);
     }
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1276,7 +1276,7 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype1) {
         SW_Run.Weather.dailyInputFlags,
         &LogInfo
     );
-    if (LogInfo.stopRun) {
+    if (LogInfo.stopRun != 0u) {
         deallocate_temp_weather(1, &tempWeatherHist);
     }
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1464,7 +1464,7 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
         SW_Run.Weather.dailyInputFlags,
         &LogInfo
     );
-    if (LogInfo.stopRun) {
+    if (LogInfo.stopRun != 0u) {
         deallocate_temp_weather(1, &tempWeatherHist);
     }
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1655,7 +1655,7 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputWrongColumnNumberDeathTest) {
     clear_hist_weather(&SW_Run.Weather.allHist[0], tempWeatherHist[0]);
 
     SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
-    if (LogInfo.stopRun) {
+    if (LogInfo.stopRun != 0u) {
         deallocate_temp_weather(1, &tempWeatherHist);
     }
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error

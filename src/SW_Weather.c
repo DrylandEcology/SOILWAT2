@@ -742,7 +742,7 @@ for all years within the simulation
 void SW_WTH_setWeatherValues(
     TimeInt startYear,
     TimeInt nYears,
-    Bool *inputFlags,
+    const Bool *inputFlags,
     double ***tempWeather,
     double elevation,
     SW_WEATHER_HIST *yearlyWeather,

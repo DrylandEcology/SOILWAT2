@@ -568,6 +568,20 @@ static void check_domain_information(
                  strcmp(ncYAxisName, projYAxisName) != 0 ||
                  strcmp(ncXAxisName, projXAxisName) != 0));
 
+    /* Test that the provided domain CRS in the input spreadsheet match */
+    if ((primCRSIsGeo && strcmp(geoCRS, ncCRSName) != 0) ||
+        (!primCRSIsGeo && strcmp(projCRS, ncCRSName) != 0)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Input spreadsheet domain CRS name(s) ('%s' versus '%s') do "
+            "not match.",
+            (primCRSIsGeo) ? geoCRS : projCRS,
+            ncCRSName
+        );
+        return;
+    }
+
     /* Test that the following columns are consistent when testing the domain
        input:
        - ncCRSGridMappingName, ncXAxisName, ncYAxisName
@@ -582,7 +596,6 @@ static void check_domain_information(
             "do not match expected values for a %s domain.",
             (incorrGeo) ? "geographical" : "projected"
         );
-        return;
     } else if (strcmp(ncCRSName, "NA") != 0 &&
                ((!primCRSIsGeo && strcmp(ncCRSName, "crs_geogsc") == 0) ||
                 (primCRSIsGeo && strcmp(ncCRSName, "crs_projsc") == 0))) {
@@ -592,7 +605,6 @@ static void check_domain_information(
             "Mismatch column 'ncCRSName' value compared to the primary "
             "CRS found in `desc_nc.in`."
         );
-        return;
     } else if (strcmp(inputInfo[INSITENAME], "s") == 0 &&
                strcmp(siteName, inputInfo[INSITENAME]) != 0) {
         LogError(
@@ -602,20 +614,6 @@ static void check_domain_information(
             "in the input spreadsheet ('%s').",
             siteName,
             inputInfo[INSITENAME]
-        );
-        return;
-    }
-
-    /* Test that the provided domain CRS in the input spreadsheet match */
-    if ((primCRSIsGeo && strcmp(geoCRS, ncCRSName) != 0) ||
-        (!primCRSIsGeo && strcmp(projCRS, ncCRSName) != 0)) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Input spreadsheet domain CRS name(s) ('%s' versus '%s') do "
-            "not match.",
-            (primCRSIsGeo) ? geoCRS : projCRS,
-            ncCRSName
         );
     }
 }

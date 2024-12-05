@@ -64,6 +64,7 @@
 #include "include/SW_Output_outarray.h"
 #endif
 
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static volatile sig_atomic_t runSims = 1;
 
 /* =================================================== */
@@ -83,6 +84,7 @@ static void handle_interrupt(int signal) {
     runSims = 0;
 
 #if defined(SOILWAT)
+    // NOLINTNEXTLINE(bugprone-signal-handler,cert-msc54-cpp,cert-sig30-c)
     sw_message("Program was killed early. Shutting down after the current "
                "simulation run...");
 #endif
@@ -335,8 +337,8 @@ void SW_CTL_RunSimSet(
 
     /* Set up interrupt handlers so if the program is interrupted
        during simulation, we can exit smoothly and not abruptly */
-    signal(SIGINT, handle_interrupt);
-    signal(SIGTERM, handle_interrupt);
+    (void) signal(SIGINT, handle_interrupt);
+    (void) signal(SIGTERM, handle_interrupt);
 
     /* Loop over suids in simulation set of domain */
     for (suid = startSim; suid < endSim && runSims; suid++) {
