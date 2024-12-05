@@ -27,12 +27,18 @@
 #define SW_OUTTEXT
 #endif
 
-#define SW_NFILES 27 // For `InFiles`
-#define SW_NVARNC 2  // For `InFilesNC`
+#define SW_NFILES 27 // For `txtInFiles`
+#define SW_NVARDOM 2 // For `InFilesNC`
+
+/* KD-tree related defines */
+#define KD_NDIMS 2    /* Number of dimensions the nodes will contain */
+#define KD_NINDICES 2 /* Number of indices that will be stored in nodes */
 
 /* Declare SW_RUN & SW_OUT_DOM structs for SW_OUT_DOM and SW_DOMAIN to see */
 typedef struct SW_RUN SW_RUN;
 typedef struct SW_OUT_DOM SW_OUT_DOM;
+
+typedef struct SW_KD_NODE SW_KD_NODE;
 
 /* =================================================== */
 /*                   Carbon structs                    */
@@ -230,12 +236,41 @@ typedef struct {
     unsigned int numOutFiles;
 #endif
 
-} SW_FILE_STATUS;
+} SW_PATH_OUTPUTS;
 
 /* =================================================== */
 /*                     Site structs                    */
 /* --------------------------------------------------- */
 
+typedef struct {
+    double width[MAX_LAYERS],         /**< width of the soil layer (cm) */
+        depths[MAX_LAYERS],           /**< soil layer depths of SoilWat soil */
+        soilDensityInput[MAX_LAYERS], /**< soil density [g / cm3]: either of
+                                           the matric component or bulk soil */
+        evap_coeff[MAX_LAYERS],       /**< prop. of total soil evap from
+                                           this layer */
+        transp_coeff[NVEGTYPES][MAX_LAYERS],
+
+        /* prop. of total transp from this layer    */
+        fractionVolBulk_gravel[MAX_LAYERS],    /* gravel content (> 2 mm) as
+                                                  volume-fraction of bulk soil
+                                                  (g/cm3) */
+        fractionWeightMatric_sand[MAX_LAYERS], /* sand content (< 2 mm & > . mm)
+                                                  as weight-fraction of matric
+                                                  soil (g/g) */
+        fractionWeightMatric_clay[MAX_LAYERS], /* clay content (< . mm & > . mm)
+                                                  as weight-fraction of matric
+                                                  soil (g/g) */
+        /** Organic matter content as weight fraction of bulk soil [g g-1] */
+        fractionWeight_om[MAX_LAYERS],
+        impermeability[MAX_LAYERS], /* fraction of how impermeable a layer is
+                                       (0=permeable, 1=impermeable)    */
+        avgLyrTempInit[MAX_LAYERS]; /* initial soil temperature for each soil
+                                       layer */
+
+    /** SWRC parameters of the mineral soil component */
+    double swrcpMineralSoil[MAX_LAYERS][SWRC_PARAM_NMAX];
+} SW_SOILS;
 
 typedef struct {
 
@@ -319,29 +354,6 @@ typedef struct {
      */
 
     double
-        /* Inputs */
-        width[MAX_LAYERS],            /* width of the soil layer (cm) */
-        soilDensityInput[MAX_LAYERS], /* soil density [g / cm3]: either of the
-                                         matric component or bulk soil */
-        evap_coeff[MAX_LAYERS], /* prop. of total soil evap from this layer */
-        transp_coeff[NVEGTYPES][MAX_LAYERS],
-        /* prop. of total transp from this layer    */
-        fractionVolBulk_gravel[MAX_LAYERS],    /* gravel content (> 2 mm) as
-                                                  volume-fraction of bulk soil
-                                                  (g/cm3) */
-        fractionWeightMatric_sand[MAX_LAYERS], /* sand content (< 2 mm & > . mm)
-                                                  as weight-fraction of matric
-                                                  soil (g/g) */
-        fractionWeightMatric_clay[MAX_LAYERS], /* clay content (< . mm & > . mm)
-                                                  as weight-fraction of matric
-                                                  soil (g/g) */
-        impermeability[MAX_LAYERS], /* fraction of how impermeable a layer is
-                                       (0=permeable, 1=impermeable)    */
-        avgLyrTempInit[MAX_LAYERS], /* initial soil temperature for each soil
-                                       layer */
-        /** Organic matter content as weight fraction of bulk soil [g g-1] */
-        fractionWeight_om[MAX_LAYERS],
-
         /* Derived soil characteristics */
         soilMatric_density[MAX_LAYERS], /* matric soil density of the < 2 mm
                                            fraction, i.e., gravel component
@@ -376,8 +388,6 @@ typedef struct {
     // Saxton2006_fK_gravel, /* gravel-correction factor for conductivity [1] */
     // Saxton2006_lambda; /* Slope of logarithmic tension-moisture curve */
 
-    double depths[MAX_LAYERS]; // soil layer depths of SoilWat soil
-
     /** Depth [cm] at which soil properties reach values of sapric peat */
     double depthSapric;
 
@@ -397,8 +407,7 @@ typedef struct {
         see `SWRC_check_parameters()`
     */
     double swrcp[MAX_LAYERS][SWRC_PARAM_NMAX];
-    /** SWRC parameters of the mineral soil component */
-    double swrcpMineralSoil[MAX_LAYERS][SWRC_PARAM_NMAX];
+
     /** SWRC parameters of the organic soil component
         for (1) fibric and (2) sapric peat. */
     double swrcpOM[2][SWRC_PARAM_NMAX];
@@ -406,6 +415,8 @@ typedef struct {
     LyrIndex my_transp_rgn[NVEGTYPES][MAX_LAYERS]; /* which transp zones from
                                                       Site am I in? */
 
+    /* Inputs */
+    SW_SOILS soils;
 } SW_SITE;
 
 /* =================================================== */
@@ -847,10 +858,10 @@ typedef struct {
 
 
     /* Daily weather record */
-    SW_WEATHER_HIST *
-        *allHist; /**< Daily weather values; array of length `n_years` of
-                     pointers to struct #SW_WEATHER_HIST where the first
-                     represents values for calendar year `startYear` */
+    SW_WEATHER_HIST
+    *allHist; /**< Daily weather values; array of length `n_years` of
+                 pointers to struct #SW_WEATHER_HIST where the first
+                 represents values for calendar year `startYear` */
     unsigned int n_years;   /**< Length of `allHist`, i.e., number of years of
                                daily weather */
     unsigned int startYear; /**< Calendar year corresponding to first year of
@@ -977,11 +988,81 @@ typedef struct {
 } LOG_INFO;
 
 typedef struct {
-    char *InFiles[SW_NFILES];
+    char *txtInFiles[SW_NFILES];
     char SW_ProjDir[FILENAME_MAX]; // SW_ProjDir
-    char weather_prefix[FILENAME_MAX];
-    char output_prefix[FILENAME_MAX];
-} PATH_INFO;
+    char txtWeatherPrefix[FILENAME_MAX];
+    char outputPrefix[FILENAME_MAX];
+
+#if defined(SWNETCDF)
+    char **ncInFiles[SW_NINKEYSNC]; /**< Names of all the input netCDF files;
+                                           dynamically allocated 2-d array
+                                           `[varNum][fileNum]` */
+
+    char ***ncWeatherInFiles; /**< Generated weather file names to read input
+                               from; dynamically allocated for every weather
+                               variable and a list of file names */
+
+    unsigned int ncNumWeatherInFiles; /**< Only capture the number of weather
+                                        files generated given the stride input
+                                        information */
+
+    unsigned int **ncWeatherInStartEndYrs; /**< Start/end years of each weather
+                                        input netCDF; dynamically allocated for
+                                        every number of files within every
+                                        variable, and 2 values for start/end */
+
+    unsigned int **ncWeatherStartEndIndices;
+    unsigned int weathStartFileIndex;
+    unsigned int *numDaysInYear;
+
+    int *inVarIDs[SW_NINKEYSNC]; /**< Store the identifier of the
+                                        variables within the input
+                                        files; dynamically allocated
+                                        1-d array `[varNum]` */
+
+    int *inVarTypes[SW_NINKEYSNC]; /**< Store the variable type within
+                                          each input file; dynamically
+                                          allocated 1-d array `[varNum]` */
+
+    Bool
+        *hasScaleAndAddFact[SW_NINKEYSNC]; /**< Store if the input variables
+                                                have the attributes
+                                                'scale_factor' and 'add_factor';
+                                                dynamically allocated 1-d array
+                                                `[varNum]` */
+
+    double **scaleAndAddFactVals[SW_NINKEYSNC]; /**< Store scale/add factors
+                                                    for every variable if
+                                                    it they are both provided;
+                                                    dynamically allocated 2-d
+                                                    array `[varNum][scale/add]`
+                                                    */
+
+    /*
+        Store the flags of different methods to know a missing value when
+        reading input; there are multiple attributes (5) which, in order
+        of priority, are:
+            - General flag if there exists a missing value specifier
+            - missing_value
+            - _FillValue
+            - valid_max
+            - valid_min (must have both min and max)
+            - valid_range
+        it is expected that the user will provide these, if none are given,
+        we will use the default nc-provided NC_FILL_<type> to detect missing
+        values;
+        dynamically allocated 2-d array `[varNum][flag]` (6 flags)
+    */
+    Bool **missValFlags[SW_NINKEYSNC];
+    double **doubleMissVals[SW_NINKEYSNC];
+
+    size_t *numSoilVarLyrs;
+
+    /* NC information that will stay constant through program run
+       domain information - domain and progress file IDs */
+    int ncDomFileIDs[SW_NVARDOM];
+#endif
+} SW_PATH_INPUTS;
 
 /* =================================================== */
 /*                    Sky structs                      */
@@ -1171,10 +1252,11 @@ typedef struct {
                                  // be missing (NAN)
     double longitude_of_central_meridian, latitude_of_projection_origin,
         false_easting, false_northing;
+    char *crs_name;
 } SW_CRS;
 
 /* =================================================== */
-/*                SOILWAT2 netCDF struct               */
+/*            SOILWAT2 netCDF structs/enums            */
 /* --------------------------------------------------- */
 
 typedef struct {
@@ -1183,16 +1265,6 @@ typedef struct {
     Bool primary_crs_is_geographic;
 
     SW_CRS crs_geogsc, crs_projsc;
-
-    char *varNC[SW_NVARNC];
-    char *InFilesNC[SW_NVARNC];
-
-    /** Should a domain template netCDF file be automatically renamed
-    to provided file name for domain? */
-    Bool renameDomainTemplateNC;
-
-    int ncFileIDs[SW_NVARNC];
-    int ncVarIDs[SW_NVARNC];
 
     int strideOutYears;   /**< How many years to write out in a single output
                              netCDF -- 1, X (e.g., 10) or Inf (-1) */
@@ -1203,7 +1275,94 @@ typedef struct {
     /* Specify the deflation level for when creating the output variables */
     int deflateLevel;
 
-} SW_NETCDF;
+    char *geo_XAxisName;
+    char *geo_YAxisName;
+    char *proj_XAxisName;
+    char *proj_YAxisName;
+    char *siteName;
+
+#if defined(SWNETCDF)
+    /** offset positions of output variables for indexing p_OUT */
+    size_t iOUToffset[SW_OUTNKEYS][SW_OUTNPERIODS][SW_OUTNMAXVARS];
+
+    Bool *reqOutputVars[SW_OUTNKEYS]; /**< Do/don't output a variable in the
+                            netCDF output files (dynamically allocated array
+                            over output variables) */
+    char **
+        *outputVarInfo[SW_OUTNKEYS]; /**< Attributes of output variables in
+                           netCDF output files (dynamically allcoated 2-d array:
+                           `[varIndex][attIndex]`) */
+    char *
+        *units_sw[SW_OUTNKEYS]; /**< Units internally utilized by SOILWAT2
+                      (dynamically    allocated array over output variables) */
+    sw_converter_t *
+        *uconv[SW_OUTNKEYS]; /**< udunits2 unit converter from internal SOILWAT2
+                   units to user-requested units (dynamically
+                   allocated array over output variables) */
+#endif
+
+} SW_NETCDF_OUT;
+
+typedef struct {
+
+    /* NC information that will stay constant through program run
+       domain information - domain and progress variables */
+    int ncDomVarIDs[SW_NVARDOM];
+
+    Bool *readInVars[SW_NINKEYSNC]; /**< Do/don't read a variable from input
+                                         netCDFs (dynamically allocated array
+                                         over input variables) */
+
+    char **weathCalOverride; /**< Calendars that the user may provide for
+                                  the program to use (dynamically allocated
+                                  for the number of variables in weather) */
+
+    char ***inVarInfo[SW_NINKEYSNC]; /**< Attributes of input variables in
+                                           netCDF input files (dynamically
+                                           allocated 2-d array) */
+
+    char **units_sw[SW_NINKEYSNC]; /**< Units internally utilized by SOILWAT2
+                      (dynamically allocated array over output variables) */
+
+    sw_converter_t **
+        uconv[SW_NINKEYSNC]; /**< udunits2 unit converter from internal SOILWAT2
+                                 units to user-requested units (dynamically
+                                 allocated array over output variables) */
+
+    double *domYCoordsGeo;
+    double *domXCoordsGeo;
+    double *domYCoordsProj;
+    double *domXCoordsProj;
+
+    size_t domYCoordGeoSize;
+    size_t domXCoordGeoSize;
+    size_t domYCoordProjSize;
+    size_t domXCoordProjSize;
+
+    Bool useIndexFile[SW_NINKEYSNC];
+
+    sw_converter_t *projCoordConvs[SW_NINKEYSNC][2];
+
+    /*
+        Pre-calculate the location of dimensions within variable headers
+        to rearrange start/count indices/values so we can match the current
+        dimension read/count size;
+        The program by default expects the variable dimension order
+            variable(y, x, vertical, time, pft) or
+            variable(site, vertical, time, pft)
+        where these will not always be true, so we need to be able to
+        read any order of or variation (less) dimensions compared to
+        the example above;
+        Example:
+            variable(pft=4, time=12, vertical=8, y=1, x=1) the array would be
+            [3, 4, 2, 1, 0] this will result in the count values to be
+            shifted from (example numbers)
+            [1, 1, 8, 12, 4] to [4, 12, 8, 1, 1] and start is similar,
+            the values are not expected to be as explicit as count
+            (i.e., start will contain mostly if not all zeroes)
+    */
+    int **dimOrderInVar[SW_NINKEYSNC];
+} SW_NETCDF_IN;
 
 struct SW_OUT_DOM {
 
@@ -1266,27 +1425,6 @@ struct SW_OUT_DOM {
     size_t nrow_OUT[SW_OUTNPERIODS]; /**< number of output time steps */
 #endif
 
-#if defined(SWNETCDF)
-    size_t iOUToffset[SW_OUTNKEYS][SW_OUTNPERIODS]
-                     [SW_OUTNMAXVARS]; /**< offset positions of output variables
-                                          for indexing p_OUT */
-
-    Bool *reqOutputVars[SW_OUTNKEYS]; /**< Do/don't output a variable in the
-                            netCDF output files (dynamically allocated array
-                            over output variables) */
-    char **
-        *outputVarInfo[SW_OUTNKEYS]; /**< Attributes of output variables in
-                           netCDF output files (dynamically allcoated 2-d array:
-                           `[varIndex][attIndex]`) */
-    char *
-        *units_sw[SW_OUTNKEYS]; /**< Units internally utilized by SOILWAT2
-                      (dynamically    allocated array over output variables) */
-    sw_converter_t *
-        *uconv[SW_OUTNKEYS]; /**< udunits2 unit converter from internal SOILWAT2
-                   units to user-requested units (dynamically
-                   allocated array over output variables) */
-#endif
-
     OutKey mykey[SW_OUTNKEYS];
     ObjType myobj[SW_OUTNKEYS];
     OutSum sumtype[SW_OUTNKEYS];
@@ -1321,7 +1459,21 @@ struct SW_OUT_DOM {
     /** pointer to output routine for STEPWAT in-memory output */
     void (*pfunc_SXW[SW_OUTNKEYS])(OutPeriod, SW_RUN *, SW_OUT_DOM *);
 #endif
+
+    SW_NETCDF_OUT netCDFOutput;
 };
+
+typedef enum {
+    eSW_NoInKey = -1,
+    eSW_InDomain,
+    eSW_InSpatial,
+    eSW_InTopo,
+    eSW_InSoil,
+    eSW_InVeg,
+    eSW_InWeather,
+    eSW_InClimate,
+    eSW_LastInKey
+} InKeys;
 
 /* =================================================== */
 /*                    Domain structs                   */
@@ -1331,9 +1483,8 @@ typedef struct {
     // Spatial domain information
     // SUID = simulation unit identifier
 
+    /** Type of domain: 'xy' (grid), 's' (sites) (3 = 2 characters + '\0') */
     char DomainType[3];
-    /**< Type of domain: 'xy' (grid), 's' (sites) */ // (3 = 2 characters +
-                                                     // '\0')
 
     unsigned long // to clarify, "long" = "long int", not double
         nDimX,  /**< Number of grid cells along x dimension (used if domainType
@@ -1377,14 +1528,17 @@ typedef struct {
                                                consistent across simulation
                                                domain */
 
+    double spatialTol; /**< Tolerence when comparing domain coordinates
+                             between nc input files and the nc domain file */
+
     // Information on input files
-    PATH_INFO PathInfo;
+    SW_PATH_INPUTS SW_PathInputs;
 
     // Data for (optional) spinup
     SW_SPINUP SW_SpinUp;
 
     // Information dealing with netCDFs
-    SW_NETCDF netCDFInfo;
+    SW_NETCDF_IN netCDFInput;
 
     // Information that is constant through simulation runs
     SW_OUT_DOM OutDom;
@@ -1457,11 +1611,57 @@ struct SW_RUN {
     SW_SKY Sky;
     SW_CARBON Carbon;
     ST_RGR_VALUES StRegValues;
-    SW_FILE_STATUS FileStatus;
+    SW_PATH_OUTPUTS SW_PathOutputs;
     SW_MARKOV Markov;
     SW_OUT_RUN OutRun;
 
     SW_ATMD AtmDemand;
+};
+
+/* =================================================== */
+/*                KD-tree Functionality                */
+/* --------------------------------------------------- */
+
+void SW_DATA_create_tree(
+    SW_KD_NODE **treeRoot,
+    double *yCoords,
+    double *xCoords,
+    size_t ySize,
+    size_t xSize,
+    Bool inIsGridded,
+    Bool has2DCoordVars,
+    Bool inPrimCRSIsGeo,
+    sw_converter_t *yxConvs[],
+    LOG_INFO *LogInfo
+);
+
+SW_KD_NODE *SW_DATA_addNode(
+    SW_KD_NODE *currNode,
+    double coords[],
+    const unsigned int indices[],
+    double maxDist,
+    int level,
+    LOG_INFO *LogInfo
+);
+
+SW_KD_NODE *SW_DATA_destroyTree(SW_KD_NODE *currNode);
+
+void SW_DATA_queryTree(
+    SW_KD_NODE *currNode,
+    double queryCoords[],
+    int level,
+    Bool primCRSIsGeo,
+    SW_KD_NODE **bestNode,
+    double *bestDist
+);
+
+struct SW_KD_NODE {
+    double coords[KD_NDIMS];
+    unsigned int indices[KD_NINDICES];
+
+    double maxDist;
+
+    SW_KD_NODE *left, *right;
 };
 
 #endif // DATATYPES_H

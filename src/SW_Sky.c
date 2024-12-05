@@ -51,12 +51,12 @@
 /**
 @brief Reads in file for sky.
 
-@param[in] InFiles Array of program in/output files
+@param[in] txtInFiles Array of program in/output files
 @param[out] SW_Sky Struct of type SW_SKY which describes sky conditions
     over the simulated site
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_SKY_read(char *InFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
+void SW_SKY_read(char *txtInFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
     /* =================================================== */
     /* 6-Oct-03 (cwb) - all this time I had lines 1 & 3
      *                  switched!
@@ -77,7 +77,7 @@ void SW_SKY_read(char *InFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
     char inbuf[MAX_FILENAMESIZE];
     char tmpStrs[MAX_MONTHS][20] = {{'\0'}};
 
-    MyFileName = InFiles[eSky];
+    MyFileName = txtInFiles[eSky];
     f = OpenFile(MyFileName, "r", LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
