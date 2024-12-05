@@ -7089,7 +7089,9 @@ static void read_weather_input(
         for (yearIndex = 0; yearIndex < SW_Weather->n_years; yearIndex++) {
             year = SW_Domain->startyr + yearIndex;
 
-            clear_hist_weather(NULL, tempWeatherHist[yearIndex]);
+            if (varNum == fIndex) {
+                clear_hist_weather(NULL, tempWeatherHist[yearIndex]);
+            }
 
             beforeFileIndex = weathFileIndex;
             while (weathFileIndex < numWeathFiles &&
