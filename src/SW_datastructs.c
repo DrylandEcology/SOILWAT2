@@ -224,7 +224,10 @@ input files
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static SW_KD_NODE *createNode(
-    double coords[], const unsigned int indices[], double maxDist, LOG_INFO *LogInfo
+    double coords[],
+    const unsigned int indices[],
+    double maxDist,
+    LOG_INFO *LogInfo
 ) {
     SW_KD_NODE *newNode = NULL;
 

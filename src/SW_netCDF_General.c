@@ -1121,13 +1121,7 @@ void SW_NC_create_full_var(
 
     if (!isnull(defFillVal)) {
         SW_NC_write_att(
-            "_FillValue",
-            defFillVal,
-            varID,
-            *ncFileID,
-            1,
-            NC_BYTE,
-            LogInfo
+            "_FillValue", defFillVal, varID, *ncFileID, 1, NC_BYTE, LogInfo
         );
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error

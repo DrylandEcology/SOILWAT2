@@ -1162,7 +1162,7 @@ void readAllWeather(
     double ***tempWeatherHist = NULL;
 
     allocate_temp_weather(n_years, &tempWeatherHist, LogInfo);
-    if(LogInfo->stopRun) {
+    if (LogInfo->stopRun) {
         return;
     }
 

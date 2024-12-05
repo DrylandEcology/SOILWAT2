@@ -340,7 +340,9 @@ days for
 @param[in] noLeap Flag specifying if the nc-provided calendar is all
 365 days
 */
-static TimeInt num_nc_days_in_year(unsigned int year, Bool allLeap, Bool noLeap) {
+static TimeInt num_nc_days_in_year(
+    unsigned int year, Bool allLeap, Bool noLeap
+) {
     TimeInt result = 0;
 
     if (allLeap) {
@@ -362,7 +364,9 @@ domain and progress file inputs, fail if not
 within the key 'inDomain' are turned on or off
 @param[out] LogInfo Holds information on warnings and errors
 */
-static void check_for_input_domain(Bool readDomInVars[], LOG_INFO *LogInfo) {
+static void check_for_input_domain(
+    const Bool readDomInVars[], LOG_INFO *LogInfo
+) {
     if (!readDomInVars[1] && !readDomInVars[2]) {
         LogError(
             LogInfo,
