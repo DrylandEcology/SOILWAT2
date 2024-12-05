@@ -4900,6 +4900,7 @@ static void read_spatial_topo_climate_inputs(
     int lonIndex;
     int timeIndex;
     size_t defSetStart[2] = {0};
+    const int lonVarNum = 1;
 
     double **scaleAddFactors;
     const InKeys keys[] = {eSW_InSpatial, eSW_InTopo, eSW_InClimate};
@@ -4976,10 +4977,24 @@ static void read_spatial_topo_climate_inputs(
             lonIndex = dimOrderInVar[varNum][1];
             timeIndex = dimOrderInVar[varNum][3];
 
-            start[latIndex] = defSetStart[0];
-            count[latIndex] = 1;
+            /* Make sure longitude is handled properly by putting the
+               start/count into the first slot instead of the second,
+               which would result resulting in a segmentation fault
+               (latitide index = -1) or in the case where longitude
+               is 2D, treat it normally */
+            if ((currKey != eSW_InSpatial ||
+                 (currKey == eSW_InSpatial && varNum - 1 != lonVarNum)) ||
+                (currKey == eSW_InSpatial && varNum - 1 == lonVarNum &&
+                 latIndex > -1)) {
 
-            if (lonIndex > -1) {
+                start[latIndex] = defSetStart[0];
+                count[latIndex] = 1;
+
+                if (lonIndex > -1) {
+                    start[lonIndex] = defSetStart[1];
+                    count[lonIndex] = 1;
+                }
+            } else {
                 start[lonIndex] = defSetStart[1];
                 count[lonIndex] = 1;
             }
