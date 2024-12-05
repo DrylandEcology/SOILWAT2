@@ -892,7 +892,7 @@ void SW_VPD_new_year(SW_VEGPROD *SW_VegProd, SW_MODEL *SW_Model) {
 /**
 @brief Sum up values across vegetation types
 
-@param[in] x Array of size \ref NVEGTYPES
+@param[in] x Array of size \ref NVEGTYPES by \ref MAX_LAYERS
 @param[in] layerno Current layer which is being worked with
 @return Sum across `*x`
 */

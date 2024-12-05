@@ -1538,8 +1538,8 @@ void SW_SIT_read(
     const int nLinesWithoutTR = 41;
     int lineno = 0;
     int x;
-    int rgnlow = 0; /* lower layer of region */
-    int region = 0; /* transp region definition number */
+    double rgnlow = 0; /* lower depth of region */
+    int region = 0;    /* transp region definition number */
     LyrIndex r;
     Bool too_many_regions = swFALSE;
     char inbuf[MAX_FILENAMESIZE];
@@ -1796,13 +1796,13 @@ void SW_SIT_read(
                     goto closeFile;
                 }
 
-                rgnlow = sw_strtoi(rgnStr[1], MyFileName, LogInfo);
+                rgnlow = sw_strtod(rgnStr[1], MyFileName, LogInfo);
                 if (LogInfo->stopRun) {
                     goto closeFile;
                 }
             }
 
-            if (x < 2 || region < 1 || rgnlow < 1) {
+            if (x < 2 || region < 1 || rgnlow < 0) {
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -1812,7 +1812,7 @@ void SW_SIT_read(
                 );
                 goto closeFile;
             }
-            SW_Site->TranspRgnBounds[region - 1] = (LyrIndex) (rgnlow - 1);
+            SW_Site->TranspRgnDepths[region - 1] = rgnlow;
             SW_Site->n_transp_rgn++;
         }
 
@@ -1872,7 +1872,7 @@ Label_End_Read:
 
     /* check for any discontinuities (reversals) in the transpiration regions */
     for (r = 1; r < SW_Site->n_transp_rgn; r++) {
-        if (SW_Site->TranspRgnBounds[r - 1] >= SW_Site->TranspRgnBounds[r]) {
+        if (SW_Site->TranspRgnDepths[r - 1] >= SW_Site->TranspRgnDepths[r]) {
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -2136,9 +2136,17 @@ void set_soillayers(
         SW_Site->soils.fractionWeight_om[lyrno] = pom[i];
     }
 
-
-    // Guess soil transpiration regions
-    derive_soilRegions(SW_Site, nRegions, regionLowerBounds, LogInfo);
+    /* Identify transpiration regions by soil layers */
+    derive_TranspRgnBounds(
+        &SW_Site->n_transp_rgn,
+        SW_Site->TranspRgnBounds,
+        nRegions,
+        regionLowerBounds,
+        SW_Site->n_layers,
+        SW_Site->soils.width,
+        SW_Site->soils.transp_coeff,
+        LogInfo
+    );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -2148,31 +2156,32 @@ void set_soillayers(
 }
 
 /**
-@brief Resets soil regions based on input parameters.
+@brief Translates transpiration regions depths to soil layers
 
-@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
-@param[in] nRegions The number of transpiration regions to create. Must be
+@param[out] n_transp_rgn The size of array \p TranspRgnBounds
+    between 1 and \ref MAX_TRANSP_REGIONS
+    (currently, shallow, moderate, deep, very deep).
+@param[out] TranspRgnBounds Array of size \ref MAX_TRANSP_REGIONS
+    that identifies the deepest soil layer (by number) that belongs to
+    each of the transpiration regions.
+@param[in] nRegions The size of array \p TranspRgnDepths. Must be
     between 1 and \ref MAX_TRANSP_REGIONS.
-@param[in] regionLowerBounds Array of size \p nRegions containing the lower
-    depth [cm] of each region in ascending (in value) order. If you think about
-    this from the perspective of soil, it would mean the shallowest bound is at
-    `lowerBounds[0]`.
+@param[in] TranspRgnDepths Array of size \p nRegions containing the lower
+    depth [cm] from the soil surface (sorted shallowest to deepest depth).
+@param[in] n_layers Number of layers of soil within the simulation run
+@param[in] width The width of the layers (cm).
+@param[in] transp_coeff Transpiration coefficients,
+    an array of size \ref NVEGTYPES by \ref MAX_LAYERS
 @param[out] LogInfo Holds information on warnings and errors
-
-@sideeffect
-    \ref SW_SITE.TranspRgnBounds and \ref SW_SITE.n_transp_rgn will be
-    derived from the input and from the soil information.
-
-@note
-- \p nRegions does NOT determine how many regions will be derived. It only
-  defines the size of the \p regionLowerBounds array. For example, if your
-  input parameters are `(4, { 10, 20, 40 })`, but there is a soil layer from
-  41 to 60 cm, it will be placed in `TranspRgnBounds[4]`.
 */
-void derive_soilRegions(
-    SW_SITE *SW_Site,
-    unsigned int nRegions,
-    const double *regionLowerBounds,
+void derive_TranspRgnBounds(
+    LyrIndex *n_transp_rgn,
+    LyrIndex TranspRgnBounds[],
+    const LyrIndex nRegions,
+    const double TranspRgnDepths[],
+    const LyrIndex n_layers,
+    const double width[],
+    double transp_coeff[][MAX_LAYERS],
     LOG_INFO *LogInfo
 ) {
     unsigned int i;
@@ -2186,7 +2195,7 @@ void derive_soilRegions(
         LogError(
             LogInfo,
             LOGERROR,
-            "derive_soilRegions: invalid number of regions (%d)\n",
+            "derive_TranspRgnBounds: invalid number of regions (%d)\n",
             nRegions
         );
         return; // Exit function prematurely due to error
@@ -2195,21 +2204,22 @@ void derive_soilRegions(
     /* --------------- Clear out the array ------------------ */
     for (i = 0; i < MAX_TRANSP_REGIONS; ++i) {
         // Setting bounds to a ridiculous number so we know how many get set.
-        SW_Site->TranspRgnBounds[i] = UNDEFINED_LAYER;
+        TranspRgnBounds[i] = UNDEFINED_LAYER;
     }
 
     /* ----------------- Derive Regions ------------------- */
     // Loop through the regions the user wants to derive
     layer = 0; // SW_Site.lyr is base0-indexed
     totalDepth = 0;
-    for (i = 0; i < nRegions; ++i) {
-        SW_Site->TranspRgnBounds[i] = layer;
-        // Find the layer that pushes us out of the region.
+    for (i = 0; i < nRegions && layer < n_layers; ++i) {
+        TranspRgnBounds[i] = layer;
+        // Find the last soil layer that is completely contained within a region
         // It becomes the bound.
-        while (totalDepth < regionLowerBounds[i] && layer < SW_Site->n_layers &&
-               sum_across_vegtypes(SW_Site->soils.transp_coeff, layer)) {
-            totalDepth += SW_Site->soils.width[layer];
-            SW_Site->TranspRgnBounds[i] = layer;
+        while (layer < n_layers && LE(totalDepth, TranspRgnDepths[i]) &&
+               LE((totalDepth + width[layer]), TranspRgnDepths[i]) &&
+               sum_across_vegtypes(transp_coeff, layer)) {
+            totalDepth += width[layer];
+            TranspRgnBounds[i] = layer;
             layer++;
         }
     }
@@ -2218,19 +2228,19 @@ void derive_soilRegions(
     for (i = 0; i < nRegions - 1; ++i) {
         // If there is a duplicate bound we will remove it by left shifting the
         // array, overwriting the duplicate.
-        if (SW_Site->TranspRgnBounds[i] == SW_Site->TranspRgnBounds[i + 1]) {
+        if (TranspRgnBounds[i] == TranspRgnBounds[i + 1]) {
             for (j = i + 1; j < nRegions - 1; ++j) {
-                SW_Site->TranspRgnBounds[j] = SW_Site->TranspRgnBounds[j + 1];
+                TranspRgnBounds[j] = TranspRgnBounds[j + 1];
             }
-            SW_Site->TranspRgnBounds[MAX_TRANSP_REGIONS - 1] = UNDEFINED_LAYER;
+            TranspRgnBounds[MAX_TRANSP_REGIONS - 1] = UNDEFINED_LAYER;
         }
     }
 
     /* -------------- Derive n_transp_rgn --------------- */
-    SW_Site->n_transp_rgn = 0;
-    while (SW_Site->n_transp_rgn < MAX_TRANSP_REGIONS &&
-           SW_Site->TranspRgnBounds[SW_Site->n_transp_rgn] != UNDEFINED_LAYER) {
-        SW_Site->n_transp_rgn++;
+    *n_transp_rgn = 0;
+    while (*n_transp_rgn < MAX_TRANSP_REGIONS &&
+           TranspRgnBounds[*n_transp_rgn] != UNDEFINED_LAYER) {
+        (*n_transp_rgn)++;
     }
 }
 
@@ -2401,6 +2411,20 @@ void SW_SIT_init_run(
         SW_Site->n_layers, SW_Site->n_transp_lyrs, SW_Site->soils.transp_coeff
     );
 
+    /* Identify transpiration regions by soil layers */
+    derive_TranspRgnBounds(
+        &SW_Site->n_transp_rgn,
+        SW_Site->TranspRgnBounds,
+        SW_Site->n_transp_rgn,
+        SW_Site->TranspRgnDepths,
+        SW_Site->n_layers,
+        SW_Site->soils.width,
+        SW_Site->soils.transp_coeff,
+        LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
     /* Manage deep drainage */
     add_deepdrain_layer(SW_Site);

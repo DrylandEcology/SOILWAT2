@@ -340,9 +340,21 @@ typedef struct {
     /** Are `swrcp` provided as inputs (TRUE) or estimated via a PTF? (FALSE) */
     Bool inputsProvideSWRCp;
 
-    /* transpiration regions  shallow, moderately shallow,  */
-    /* deep and very deep. units are in layer numbers. */
+    /** Lower bounds of transpiration regions [layers]
+
+    Possible levels are: shallow, moderately shallow, deep and very deep.
+    Calculated as the number of the deepest soil layer that still is within
+    the corresponding soil depth #TranspRgnDepths.
+    */
     LyrIndex TranspRgnBounds[MAX_TRANSP_REGIONS];
+
+    /** Lower bounds of transpiration regions [cm]
+
+    Possible levels are: shallow, moderately shallow, deep and very deep.
+    User provided values in [cm].
+    */
+    double TranspRgnDepths[MAX_TRANSP_REGIONS];
+
     double SWCInitVal, /* initialization value for swc */
         SWCWetVal,     /* value for a "wet" day,       */
         SWCMinVal;     /* lower bound on swc.          */
