@@ -962,7 +962,7 @@ variable
 within the provided `attNames`/`attVals` (if there isn't an attribute
 of this name, it's value should be -1)
 @param[in] siteName User-provided site dimension/variable "site" name
-@param[in] ouseDefaultChunking A flag specifying if, when creating the
+@param[in] useDefaultChunking A flag specifying if, when creating the
 variable, to use the default chunk sizes or program-provided sizes
 @param[in] defFillVal A fill value that can be sent in to give to the
 variable before the chance of filling the variable with a default
