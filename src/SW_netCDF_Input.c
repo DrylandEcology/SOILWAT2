@@ -5870,7 +5870,8 @@ static void get_invar_information(
         }
     }
 
-    if (!hasConstSoilLyrs && numReadSoilVars < numVarsInKey[eSW_InSoil] - 1) {
+    if (readInVars[eSW_InSoil][0] &&
+        !hasConstSoilLyrs && numReadSoilVars < numVarsInKey[eSW_InSoil] - 1) {
         LogError(
             LogInfo,
             LOGERROR,
