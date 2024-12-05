@@ -1608,7 +1608,7 @@ closeFile: { CloseFile(&f, LogInfo); }
 void SW_NCOUT_init_ptrs(SW_NETCDF_OUT *SW_netCDFOut) {
 
     int index;
-    const int numAllocVars = 18;
+    const int numAllocVars = 20;
     char **allocArr[] = {
         &SW_netCDFOut->title,
         &SW_netCDFOut->author,
@@ -1630,7 +1630,9 @@ void SW_NCOUT_init_ptrs(SW_NETCDF_OUT *SW_netCDFOut) {
         &SW_netCDFOut->geo_YAxisName,
         &SW_netCDFOut->proj_XAxisName,
         &SW_netCDFOut->proj_YAxisName,
-        &SW_netCDFOut->siteName
+        &SW_netCDFOut->siteName,
+        &SW_netCDFOut->crs_geogsc.crs_name,
+        &SW_netCDFOut->crs_projsc.crs_name
     };
 
     SW_netCDFOut->crs_projsc.standard_parallel[0] = NAN;
@@ -2312,7 +2314,7 @@ closeFile: { nc_close(currFileID); }
 void SW_NCOUT_deconstruct(SW_NETCDF_OUT *SW_netCDFOut) {
 
     int index;
-    const int numFreeVars = 18;
+    const int numFreeVars = 20;
     char *freeArr[] = {
         SW_netCDFOut->title,
         SW_netCDFOut->author,
@@ -2333,7 +2335,9 @@ void SW_NCOUT_deconstruct(SW_NETCDF_OUT *SW_netCDFOut) {
         SW_netCDFOut->geo_YAxisName,
         SW_netCDFOut->proj_XAxisName,
         SW_netCDFOut->proj_YAxisName,
-        SW_netCDFOut->siteName
+        SW_netCDFOut->siteName,
+        SW_netCDFOut->crs_geogsc.crs_name,
+        SW_netCDFOut->crs_projsc.crs_name
     };
 
     for (index = 0; index < numFreeVars; index++) {
@@ -2405,6 +2409,7 @@ void SW_NCOUT_read_atts(
         "coordinate_system",
         "primary_crs",
 
+        "geo_crs_name",
         "geo_long_name",
         "geo_grid_mapping_name",
         "geo_crs_wkt",
@@ -2412,6 +2417,7 @@ void SW_NCOUT_read_atts(
         "geo_semi_major_axis",
         "geo_inverse_flattening",
 
+        "proj_crs_name",
         "proj_long_name",
         "proj_grid_mapping_name",
         "proj_crs_wkt",
@@ -2436,10 +2442,11 @@ void SW_NCOUT_read_atts(
         "siteName"
     };
     static const Bool requiredKeys[NUM_ATT_IN_KEYS] = {
-        swTRUE,  swTRUE,  swTRUE,  swFALSE, swFALSE, swTRUE,  swTRUE,  swTRUE,
-        swTRUE,  swTRUE,  swTRUE,  swTRUE,  swFALSE, swFALSE, swFALSE, swFALSE,
-        swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swFALSE,
-        swFALSE, swFALSE, swTRUE,  swTRUE,  swTRUE,  swTRUE,  swTRUE,  swTRUE
+        swTRUE,  swTRUE,  swTRUE,  swFALSE, swFALSE, swTRUE,  swTRUE,
+        swTRUE,  swTRUE,  swTRUE,  swTRUE,  swTRUE,  swTRUE,  swTRUE,
+        swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swFALSE,
+        swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swFALSE,
+        swTRUE,  swTRUE,  swTRUE,  swTRUE,  swTRUE,  swTRUE
     };
     Bool hasKeys[NUM_ATT_IN_KEYS] = {swFALSE};
 
@@ -2513,10 +2520,10 @@ void SW_NCOUT_read_atts(
         // set_hasKey() does not produce errors, only warnings possible
 
         /* Check to see if the line number contains a double or integer value */
-        doIntConv = (Bool) (keyID >= 23 && keyID <= 27);
-        doDoubleConv = (Bool) ((keyID >= 9 && keyID <= 11) ||
-                               (keyID >= 15 && keyID <= 17) ||
-                               (keyID >= 21 && keyID <= 22));
+        doIntConv = (Bool) (keyID >= 25 && keyID <= 29);
+        doDoubleConv = (Bool) ((keyID >= 10 && keyID <= 12) ||
+                               (keyID >= 17 && keyID <= 19) ||
+                               (keyID >= 23 && keyID <= 24));
 
         if (doIntConv || doDoubleConv) {
             if (doIntConv) {
@@ -2568,54 +2575,60 @@ void SW_NCOUT_read_atts(
             }
             break;
         case 6:
+            SW_netCDFOut->crs_geogsc.crs_name = Str_Dup(value, LogInfo);
+            break;
+        case 7:
             SW_netCDFOut->crs_geogsc.long_name = Str_Dup(value, LogInfo);
             geoCRSFound = swTRUE;
             break;
-        case 7:
+        case 8:
             SW_netCDFOut->crs_geogsc.grid_mapping_name =
                 Str_Dup(value, LogInfo);
             break;
-        case 8:
+        case 9:
             SW_netCDFOut->crs_geogsc.crs_wkt = Str_Dup(value, LogInfo);
             break;
-        case 9:
+        case 10:
             SW_netCDFOut->crs_geogsc.longitude_of_prime_meridian =
                 inBufdoubleRes;
             break;
-        case 10:
+        case 11:
             SW_netCDFOut->crs_geogsc.semi_major_axis = inBufdoubleRes;
             break;
-        case 11:
+        case 12:
             SW_netCDFOut->crs_geogsc.inverse_flattening = inBufdoubleRes;
             break;
-        case 12:
+        case 13:
+            SW_netCDFOut->crs_projsc.crs_name = Str_Dup(value, LogInfo);
+            break;
+        case 14:
             SW_netCDFOut->crs_projsc.long_name = Str_Dup(value, LogInfo);
             projCRSFound = swTRUE;
             break;
-        case 13:
+        case 15:
             SW_netCDFOut->crs_projsc.grid_mapping_name =
                 Str_Dup(value, LogInfo);
             break;
-        case 14:
+        case 16:
             SW_netCDFOut->crs_projsc.crs_wkt = Str_Dup(value, LogInfo);
             break;
-        case 15:
+        case 17:
             SW_netCDFOut->crs_projsc.longitude_of_prime_meridian =
                 inBufdoubleRes;
             break;
-        case 16:
+        case 18:
             SW_netCDFOut->crs_projsc.semi_major_axis = inBufdoubleRes;
             break;
-        case 17:
+        case 19:
             SW_netCDFOut->crs_projsc.inverse_flattening = inBufdoubleRes;
             break;
-        case 18:
+        case 20:
             SW_netCDFOut->crs_projsc.datum = Str_Dup(value, LogInfo);
             break;
-        case 19:
+        case 21:
             SW_netCDFOut->crs_projsc.units = Str_Dup(value, LogInfo);
             break;
-        case 20:
+        case 22:
             // Re-scan for 1 or 2 values of standard parallel(s)
             // the user may separate values by white-space, comma, etc.
             n = sscanf(
@@ -2649,21 +2662,21 @@ void SW_NCOUT_read_atts(
             SW_netCDFOut->crs_projsc.standard_parallel[1] =
                 (n == 3) ? num2 : NAN;
             break;
-        case 21:
+        case 23:
             SW_netCDFOut->crs_projsc.longitude_of_central_meridian =
                 inBufdoubleRes;
             break;
-        case 22:
+        case 24:
             SW_netCDFOut->crs_projsc.latitude_of_projection_origin =
                 inBufdoubleRes;
             break;
-        case 23:
+        case 25:
             SW_netCDFOut->crs_projsc.false_easting = inBufintRes;
             break;
-        case 24:
+        case 26:
             SW_netCDFOut->crs_projsc.false_northing = inBufintRes;
             break;
-        case 25:
+        case 27:
             if (!infVal) {
                 SW_netCDFOut->strideOutYears = inBufintRes;
 
@@ -2675,25 +2688,25 @@ void SW_NCOUT_read_atts(
                 }
             }
             break;
-        case 26:
+        case 28:
             SW_netCDFOut->baseCalendarYear = inBufintRes;
             break;
-        case 27:
+        case 29:
             SW_netCDFOut->deflateLevel = inBufintRes;
             break;
-        case 28:
+        case 30:
             SW_netCDFOut->geo_XAxisName = Str_Dup(value, LogInfo);
             break;
-        case 29:
+        case 31:
             SW_netCDFOut->geo_YAxisName = Str_Dup(value, LogInfo);
             break;
-        case 30:
+        case 32:
             SW_netCDFOut->proj_XAxisName = Str_Dup(value, LogInfo);
             break;
-        case 31:
+        case 33:
             SW_netCDFOut->proj_YAxisName = Str_Dup(value, LogInfo);
             break;
-        case 32:
+        case 34:
             SW_netCDFOut->siteName = Str_Dup(value, LogInfo);
             break;
         case KEY_NOT_FOUND:

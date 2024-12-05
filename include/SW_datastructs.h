@@ -1252,6 +1252,7 @@ typedef struct {
                                  // be missing (NAN)
     double longitude_of_central_meridian, latitude_of_projection_origin,
         false_easting, false_northing;
+    char *crs_name;
 } SW_CRS;
 
 /* =================================================== */

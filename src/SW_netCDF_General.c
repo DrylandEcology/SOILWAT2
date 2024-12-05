@@ -281,8 +281,8 @@ void SW_NC_check(
     char *siteName = SW_Domain->OutDom.netCDFOutput.siteName;
     char strAttVal[LARGE_VALUE];
     double doubleAttVal;
-    const char *geoCRS = "crs_geogsc";
-    const char *projCRS = "crs_projsc";
+    const char *geoCRS = crs_geogsc->crs_name;
+    const char *projCRS = crs_projsc->crs_name;
     Bool geoCRSExists = SW_NC_varExists(ncFileID, geoCRS);
     Bool projCRSExists = SW_NC_varExists(ncFileID, projCRS);
     const char *impliedDomType =

@@ -544,6 +544,8 @@ static void check_domain_information(
     char *ncYAxisName = inputInfo[INYAXIS];
     char *ncXAxisName = inputInfo[INXAXIS];
     char *ncCRSName = inputInfo[INCRSNAME];
+    char *geoCRS = SW_netCDFOut->crs_geogsc.crs_name;
+    char *projCRS = SW_netCDFOut->crs_projsc.crs_name;
     char *geoGridMapName = SW_netCDFOut->crs_geogsc.grid_mapping_name;
     char *projGridMapName = SW_netCDFOut->crs_projsc.grid_mapping_name;
     char *geoYAxisName = SW_netCDFOut->geo_YAxisName;
@@ -580,6 +582,7 @@ static void check_domain_information(
             "do not match expected values for a %s domain.",
             (incorrGeo) ? "geographical" : "projected"
         );
+        return;
     } else if (strcmp(ncCRSName, "NA") != 0 &&
                ((!primCRSIsGeo && strcmp(ncCRSName, "crs_geogsc") == 0) ||
                 (primCRSIsGeo && strcmp(ncCRSName, "crs_projsc") == 0))) {
@@ -589,6 +592,7 @@ static void check_domain_information(
             "Mismatch column 'ncCRSName' value compared to the primary "
             "CRS found in `desc_nc.in`."
         );
+        return;
     } else if (strcmp(inputInfo[INSITENAME], "s") == 0 &&
                strcmp(siteName, inputInfo[INSITENAME]) != 0) {
         LogError(
@@ -598,6 +602,20 @@ static void check_domain_information(
             "in the input spreadsheet ('%s').",
             siteName,
             inputInfo[INSITENAME]
+        );
+        return;
+    }
+
+    /* Test that the provided domain CRS in the input spreadsheet match */
+    if ((primCRSIsGeo && strcmp(geoCRS, ncCRSName) != 0) ||
+        (!primCRSIsGeo && strcmp(projCRS, ncCRSName) != 0)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Input spreadsheet domain CRS name(s) ('%s' versus '%s') do "
+            "not match.",
+            (primCRSIsGeo) ? geoCRS : projCRS,
+            ncCRSName
         );
     }
 }
@@ -6399,8 +6417,8 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     char *siteName = SW_Domain->OutDom.netCDFOutput.siteName;
 
     Bool domTypeIsS = (Bool) (strcmp(SW_Domain->DomainType, "s") == 0);
-    const char *projGridMap = "crs_projsc: %s %s crs_geogsc: %s %s";
-    const char *geoGridMap = "crs_geogsc";
+    const char *projGridMap = "%s: %s %s %s: %s %s";
+    const char *geoGridMap = SW_Domain->OutDom.netCDFOutput.crs_geogsc.crs_name;
     const char *sCoord = "%s %s %s";
     const char *xyCoord = "%s %s";
     const char *coord = domTypeIsS ? sCoord : xyCoord;
@@ -6460,8 +6478,10 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             gridMapStr,
             MAX_FILENAMESIZE,
             grid_map,
+            SW_Domain->OutDom.netCDFOutput.crs_projsc.crs_name,
             SW_Domain->OutDom.netCDFOutput.proj_XAxisName,
             SW_Domain->OutDom.netCDFOutput.proj_YAxisName,
+            geoGridMap,
             readinGeoYName,
             readinGeoXName
         );

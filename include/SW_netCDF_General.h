@@ -23,7 +23,7 @@ extern "C" {
 #define MAX_NUM_DIMS 5
 
 /** Number of possible keys within `attributes_nc.in` */
-#define NUM_ATT_IN_KEYS 33
+#define NUM_ATT_IN_KEYS 35
 
 #define MAX_ATTVAL_SIZE 256
 
