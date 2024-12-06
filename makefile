@@ -600,6 +600,7 @@ clean_example:
 		-@$(RM) -f tests/example/Input_nc/domain_template.nc
 		-@$(RM) -f tests/example/Input_nc/domain.nc
 		-@$(RM) -f tests/example/Input_nc/progress.nc
+		-@find tests/example/Input_nc -type f -name 'index*.nc' -delete
 
 .PHONY : clean_test
 clean_test:
