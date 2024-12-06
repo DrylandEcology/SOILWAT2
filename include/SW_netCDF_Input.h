@@ -86,6 +86,13 @@ void SW_NCIN_read_inputs(
     SW_RUN *sw, SW_DOMAIN *SW_Domain, const size_t ncSUID[], LOG_INFO *LogInfo
 );
 
+void SW_NCIN_check_input_config(
+    SW_NETCDF_IN *SW_netCDFIn,
+    Bool hasConsistentSoilLayerDepths,
+    Bool inputsProvideSWRCp,
+    LOG_INFO *LogInfo
+);
+
 void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
 
 void SW_NCIN_open_dom_prog_files(

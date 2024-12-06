@@ -220,17 +220,17 @@ static const int eiv_longitude = 2;
 // static const int eiv_slope = 2;
 // static const int eiv_aspect = 3;
 /* inSoil */
-// static const int eiv_soilLayerDepth = 1;
-// static const int eiv_soilLayerWidth = 2;
-// static const int eiv_soilDensity = 3;
-// static const int eiv_gravel = 4;
-// static const int eiv_sand = 5;
-// static const int eiv_clay = 6;
-// static const int eiv_silt = 7;
-// static const int eiv_som = 8;
-// static const int eiv_impermeability = 9;
-// static const int eiv_avgLyrTempInit = 10;
-// static const int eiv_evapCoeff = 11;
+static const int eiv_soilLayerDepth = 1;
+static const int eiv_soilLayerWidth = 2;
+static const int eiv_soilDensity = 3;
+static const int eiv_gravel = 4;
+static const int eiv_sand = 5;
+static const int eiv_clay = 6;
+static const int eiv_silt = 7;
+static const int eiv_som = 8;
+static const int eiv_impermeability = 9;
+static const int eiv_avgLyrTempInit = 10;
+static const int eiv_evapCoeff = 11;
 static const int eiv_transpCoeff[NVEGTYPES] = {12, 13, 14, 15};
 static const int eiv_swrcpMS[SWRC_PARAM_NMAX] = {16, 17, 18, 19, 20, 21};
 /* inVeg */
@@ -1038,6 +1038,158 @@ static void check_input_variables(
             if (LogInfo->stopRun) {
                 return; /* Exit function prematurely due to failed test */
             }
+        }
+    }
+}
+
+/**
+@brief Helper function to check for availability of required soil inputs
+
+Required soil properties if not constant soils:
+    1. one out of {width, depth}
+    2. soil density
+    3. gravel
+    4. two out of {sand, silt, clay}
+    5. soil organic matter
+    6. evaporation coefficients
+    7. transpiration coefficients
+    8. SWRCp
+
+Soil properties that are not required (value of 0 will be assumed if missing):
+    9. impermeability
+    10. initial soil temperature
+
+@param[in] readInVarsSoils Specifies which variables are to be read-in as
+    soil inputs
+@param[in] hasConsistentSoilLayerDepths Flag indicating if all simulation
+    run within domain have identical soil layer depths
+    (though potentially variable number of soil layers)
+@param[in] inputsProvideSWRCp Are SWRC parameters obtained from
+    input files (TRUE) or estimated with a PTF (FALSE)
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void checkRequiredSoils(
+    const Bool readInVarsSoils[],
+    Bool hasConsistentSoilLayerDepths,
+    Bool inputsProvideSWRCp,
+    LOG_INFO *LogInfo
+) {
+    char soilErrorMsg[MAX_FILENAMESIZE] = "";
+    char tmpStr[100] = "";
+    char *writePtr = soilErrorMsg;
+    char *tempWritePtr;
+    int writeSize = MAX_FILENAMESIZE;
+    int tmp;
+    int k;
+    const int nRequired1Var = 4;
+    int required1Vars[4] = {
+        eiv_soilDensity, eiv_gravel, eiv_som, eiv_evapCoeff
+    };
+    const int nSuggested1Vars = 2;
+    int suggested1Vars[2] = {eiv_impermeability, eiv_avgLyrTempInit};
+
+    /* Check that we have sufficient soil inputs */
+    if (hasConsistentSoilLayerDepths) {
+        // Check that netCDF inputs have same number of soil layers as text
+
+    } else {
+        // Check that we have sufficient netCDF inputs to create complete soils
+
+        // Check conditions that are warnings
+        for (k = 0; k < nSuggested1Vars; k++) {
+            if (!readInVarsSoils[suggested1Vars[k] + 1]) {
+                LogError(
+                    LogInfo,
+                    LOGWARN,
+                    "'%s' is suggested but not provided as soil input: "
+                    "a default value of 0 will be used",
+                    possVarNames[eSW_InSoil][suggested1Vars[k]]
+                );
+            }
+        }
+
+        // Check conditions that are errors
+        for (k = 0; k < nRequired1Var; k++) {
+            if (!readInVarsSoils[required1Vars[k] + 1]) {
+                (void) snprintf(
+                    tmpStr,
+                    sizeof tmpStr,
+                    "'%s' is required; ",
+                    possVarNames[eSW_InSoil][required1Vars[k]]
+                );
+                tempWritePtr =
+                    (char *) sw_memccpy(writePtr, tmpStr, '\0', writeSize);
+                writeSize -= (int) (tempWritePtr - soilErrorMsg - 1);
+                writePtr = tempWritePtr - 1;
+            }
+        }
+
+        // Required: one out of {width, depth}
+        tmp = (int) readInVarsSoils[eiv_soilLayerDepth + 1] +
+              (int) readInVarsSoils[eiv_soilLayerWidth + 1];
+        if (tmp < 1) {
+            tempWritePtr = (char *) sw_memccpy(
+                writePtr,
+                "either layer depth or layer width is required; ",
+                '\0',
+                writeSize
+            );
+            writeSize -= (int) (tempWritePtr - soilErrorMsg - 1);
+            writePtr = tempWritePtr - 1;
+        }
+
+        // Required: two out of {sand, silt, clay}
+        tmp = (int) readInVarsSoils[eiv_sand + 1] +
+              (int) readInVarsSoils[eiv_silt + 1] +
+              (int) readInVarsSoils[eiv_clay + 1];
+        if (tmp < 2) {
+            tempWritePtr = (char *) sw_memccpy(
+                writePtr,
+                "two out of sand, silt, clay are required; ",
+                '\0',
+                writeSize
+            );
+            writeSize -= (int) (tempWritePtr - soilErrorMsg - 1);
+            writePtr = tempWritePtr - 1;
+        }
+
+        // Required: all transpiration coefficients
+        tmp = 0;
+        ForEachVegType(k) {
+            tmp += (int) readInVarsSoils[eiv_transpCoeff[k] + 1];
+        }
+        if (tmp != NVEGTYPES) {
+            tempWritePtr = (char *) sw_memccpy(
+                writePtr,
+                "all transpiration coefficients are required; ",
+                '\0',
+                writeSize
+            );
+            writeSize -= (int) (tempWritePtr - soilErrorMsg - 1);
+            writePtr = tempWritePtr - 1;
+        }
+
+        // Required: all SWRCp required unless estimated via PTF
+        if (inputsProvideSWRCp) {
+            tmp = 0;
+            for (k = 0; k < SWRC_PARAM_NMAX; k++) {
+                tmp += (int) readInVarsSoils[eiv_swrcpMS[k] + 1];
+            }
+            if (tmp != SWRC_PARAM_NMAX) {
+                tempWritePtr = (char *) sw_memccpy(
+                    writePtr,
+                    "all SWRC parameters are required; ",
+                    '\0',
+                    writeSize
+                );
+                writeSize -= (int) (tempWritePtr - soilErrorMsg - 1);
+            }
+        }
+
+        if (writeSize != MAX_FILENAMESIZE) {
+            LogError(
+                LogInfo, LOGERROR, "Incomplete soil inputs: %s", soilErrorMsg
+            );
         }
     }
 }
@@ -5719,7 +5871,6 @@ static void get_invar_information(
     Bool **missValFlags;
     size_t **numSoilVarLyrs = &SW_PathInputs->numSoilVarLyrs;
     LyrIndex testNumLyrs = 0;
-    int numReadSoilVars = 0;
     unsigned int weathFileIndex = SW_PathInputs->weathStartFileIndex;
     Bool projCRS;
 
@@ -5892,8 +6043,6 @@ static void get_invar_information(
             }
 
             if (inKey == eSW_InSoil) {
-                numReadSoilVars++;
-
                 SW_NC_get_dimlen_from_dimname(
                     ncFileID,
                     inVarInfo[varNum][INZAXIS],
@@ -5938,20 +6087,6 @@ static void get_invar_information(
             nc_close(ncFileID);
             ncFileID = -1;
         }
-    }
-
-    if (readInVars[eSW_InSoil][0] && !hasConstSoilLyrs &&
-        numReadSoilVars < numVarsInKey[eSW_InSoil] - 1) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "It was specified that the soil layers are not consistent through "
-            "all simulations, however not every (individual) variable within "
-            "'inSoil' was turned on, only %d / %d were. This does not include "
-            "the index variable or general '<veg>.transp_coeff' variables.",
-            numReadSoilVars,
-            numVarsInKey[eSW_InSoil] - 1
-        );
     }
 
 closeFile:
@@ -7439,6 +7574,32 @@ void SW_NCIN_read_inputs(
 }
 
 /**
+@brief Additional checks on the netCDF input configuration
+
+@param[in] SW_netCDFIn Constant netCDF input file information
+@param[in] hasConsistentSoilLayerDepths Flag indicating if all simulation
+    run within domain have identical soil layer depths
+    (though potentially variable number of soil layers)
+@param[in] inputsProvideSWRCp Are SWRC parameters obtained from
+    input files (TRUE) or estimated with a PTF (FALSE)
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NCIN_check_input_config(
+    SW_NETCDF_IN *SW_netCDFIn,
+    Bool hasConsistentSoilLayerDepths,
+    Bool inputsProvideSWRCp,
+    LOG_INFO *LogInfo
+) {
+    /* Check inSoils for required inputs */
+    checkRequiredSoils(
+        SW_netCDFIn->readInVars[eSW_InSoil],
+        hasConsistentSoilLayerDepths,
+        inputsProvideSWRCp,
+        LogInfo
+    );
+}
+
+/**
 @brief Check that all available netCDF input files are consistent with domain
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
@@ -7862,7 +8023,7 @@ void SW_NCIN_deepCopy(
 @param[in,out] SW_netCDFIn Constant netCDF input file information
 @param[in] SW_netCDFOut Constant netCDF output file information
 @param[in] SW_PathInputs Struct of type SW_PATH_INPUTS which
-holds basic information about input files and values
+    holds basic information about input files and values
 @param[in] startYr Start year of the simulation
 @param[in] endYr End year of the simulation
 @param[out] LogInfo Holds information on warnings and errors
@@ -8295,6 +8456,7 @@ void SW_NCIN_read_input_vars(
         goto closeFile;
     }
 
+    /* Check columns of tsv input file */
     check_input_variables(
         SW_netCDFOut,
         SW_netCDFIn->inVarInfo,
