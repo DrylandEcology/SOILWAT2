@@ -2936,17 +2936,6 @@ void SW_OUT_read(
             goto closeFile;
         }
 
-// For now: rSOILWAT2's function `onGet_SW_OUT` requires that
-// `OutDom->outfile[k]` is allocated here
-#if defined(RSOILWAT)
-        OutDom->outfile[k] = Str_Dup(outfile, LogInfo);
-        if (LogInfo->stopRun) {
-            goto closeFile;
-        }
-#else
-        outfile[0] = '\0';
-#endif
-
         first = sw_strtoi(firstStr, MyFileName, LogInfo);
         if (LogInfo->stopRun) {
             goto closeFile;
@@ -2964,6 +2953,17 @@ void SW_OUT_read(
         if (LogInfo->stopRun) {
             goto closeFile;
         }
+
+// For now: rSOILWAT2's function `onGet_SW_OUT` requires that
+// `OutDom->outfile[k]` is allocated here
+#if defined(RSOILWAT)
+        OutDom->outfile[k] = Str_Dup(outfile, LogInfo);
+        if (LogInfo->stopRun) {
+            goto closeFile;
+        }
+#else
+        outfile[0] = '\0';
+#endif
 
         // Fill information into `sw->Output[k]`
         msg_type = SW_OUT_read_onekey(
