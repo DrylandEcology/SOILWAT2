@@ -29,7 +29,7 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_MDL_read(SW_MODEL *SW_Model, char *InFiles[], LOG_INFO *LogInfo);
+void SW_MDL_read(SW_MODEL *SW_Model, char *txtInFiles[], LOG_INFO *LogInfo);
 
 void SW_MDL_construct(SW_MODEL *SW_Model);
 

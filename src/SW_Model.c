@@ -95,10 +95,10 @@ void SW_MDL_deconstruct(void) {}
 
 @param[in,out] SW_Model Struct of type SW_MODEL holding basic time information
         about the simulation
-@param[in] InFiles Array of program in/output files
+@param[in] txtInFiles Array of program in/output files
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_MDL_read(SW_MODEL *SW_Model, char *InFiles[], LOG_INFO *LogInfo) {
+void SW_MDL_read(SW_MODEL *SW_Model, char *txtInFiles[], LOG_INFO *LogInfo) {
     /* =================================================== */
     /*
      * 1/24/02 - added code for partial start and end years
@@ -118,7 +118,7 @@ void SW_MDL_read(SW_MODEL *SW_Model, char *InFiles[], LOG_INFO *LogInfo) {
     char inbuf[MAX_FILENAMESIZE];
     double value;
 
-    MyFileName = InFiles[eModel];
+    MyFileName = txtInFiles[eModel];
     f = OpenFile(MyFileName, "r", LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error

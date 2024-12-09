@@ -51,7 +51,7 @@ void SW_CBN_deconstruct(void) {}
 @param[in,out] SW_Carbon Struct of type SW_CARBON holding all CO2-related data
 @param[in] SW_Model Struct of type SW_MODEL holding basic time information
     about the simulation
-@param[in] InFiles Array of program in/output files
+@param[in] txtInFiles Array of program in/output files
 @param[out] LogInfo Holds information on warnings and errors
 
 Additionally, check for the following issues:
@@ -62,7 +62,10 @@ Additionally, check for the following issues:
     5. Negative year.
 */
 void SW_CBN_read(
-    SW_CARBON *SW_Carbon, SW_MODEL *SW_Model, char *InFiles[], LOG_INFO *LogInfo
+    SW_CARBON *SW_Carbon,
+    SW_MODEL *SW_Model,
+    char *txtInFiles[],
+    LOG_INFO *LogInfo
 ) {
 #ifdef SWDEBUG
     short debug = 0;
@@ -99,7 +102,7 @@ void SW_CBN_read(
     char *MyFileName;
     char inbuf[MAX_FILENAMESIZE];
 
-    MyFileName = InFiles[eCarbon];
+    MyFileName = txtInFiles[eCarbon];
     f = OpenFile(MyFileName, "r", LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
