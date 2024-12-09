@@ -82,12 +82,6 @@ interrupts (SIGINT, commonly CTRL+C on the keyboard)
 static void handle_interrupt(int signal) {
     (void) signal; /* Silence compiler */
     runSims = 0;
-
-#if defined(SOILWAT)
-    // NOLINTNEXTLINE(bugprone-signal-handler,cert-msc54-cpp,cert-sig30-c)
-    sw_message("Program was killed early. Shutting down after the current "
-               "simulation run...");
-#endif
 }
 
 /**
@@ -408,6 +402,12 @@ void SW_CTL_RunSimSet(
     }
 
 wrapUp:
+#if defined(SOILWAT)
+    if (runSims == 0) {
+        sw_message("Program was killed early. Shutting down...");
+    }
+#endif
+
     SW_WallTime->timeSimSet = diff_walltime(tss, ok_tss);
 }
 
