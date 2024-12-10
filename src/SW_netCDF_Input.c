@@ -7951,27 +7951,28 @@ void SW_NCIN_read_input_vars(
                 &isAllVegVar
             );
 
-            if (isIndexFile) {
-                if (inVarNum == KEY_NOT_FOUND) {
+            if ((isIndexFile && inVarNum == KEY_NOT_FOUND) ||
+                (inKey == eSW_NoInKey || inVarNum == KEY_NOT_FOUND)) {
+
+                if (isIndexFile && inVarNum == KEY_NOT_FOUND) {
                     LogError(
                         LogInfo,
-                        LOGWARN,
-                        "Could not find a match for the index name '%s'."
-                        "This will be skipped.",
+                        LOGERROR,
+                        "Could not find a match for the index name '%s'.",
                         input[SWVarNameInd]
                     );
-                    continue;
+                } else {
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "Could not determine what the variable '%s' is "
+                        "within the key '%s'.",
+                        input[SWVarNameInd],
+                        input[keyInd]
+                    );
                 }
-            } else if (inKey == eSW_NoInKey || inVarNum == KEY_NOT_FOUND) {
-                LogError(
-                    LogInfo,
-                    LOGWARN,
-                    "Could not determine what the variable '%s' is "
-                    "within the key '%s', this will be skipped.",
-                    input[SWVarNameInd],
-                    input[keyInd]
-                );
-                continue;
+
+                goto closeFile;
             }
 
             if (isAllVegVar) {
@@ -8845,3 +8846,8 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 freeMem:
     free_tempcoords_close_files(freeArr, fileIDs, numFree, numFree);
 }
+
+/**
+ * Would be ~263 lines longer without helper functions
+ * A total of 487 lines instead of the current 224 lines
+ */
