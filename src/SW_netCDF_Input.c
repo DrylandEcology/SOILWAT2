@@ -9218,8 +9218,3 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 freeMem:
     free_tempcoords_close_files(freeArr, fileIDs, numFree, numFree);
 }
-
-/**
- * Would be ~263 lines longer without helper functions
- * A total of 487 lines instead of the current 224 lines
- */
