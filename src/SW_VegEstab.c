@@ -232,18 +232,18 @@ void SW_VES_new_year(IntU count) {
 
 @param[in,out] SW_VegEstab Struct of type SW_VEGESTAB holding all information
     about vegetation establishment within the simulation
-@param[in] InFiles Array of program in/output files
+@param[in] txtInFiles Array of program in/output files
 @param[in] SW_ProjDir Project directory
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_VES_read(
     SW_VEGESTAB *SW_VegEstab,
-    char *InFiles[],
+    char *txtInFiles[],
     char *SW_ProjDir,
     LOG_INFO *LogInfo
 ) {
 
-    SW_VES_read2(SW_VegEstab, swTRUE, swTRUE, InFiles, SW_ProjDir, LogInfo);
+    SW_VES_read2(SW_VegEstab, swTRUE, swTRUE, txtInFiles, SW_ProjDir, LogInfo);
 }
 
 /**
@@ -255,7 +255,7 @@ void SW_VES_read(
     establishment should be processed.
 @param[in] consider_InputFlag Should the user input flag read from `"estab.in"`
     be considered for turning on/off calculations of vegetation establishment.
-@param[in] InFiles Array of program in/output files
+@param[in] txtInFiles Array of program in/output files
 @param[in] SW_ProjDir Project directory
 @param[out] LogInfo Holds information on warnings and errors
 
@@ -273,7 +273,7 @@ void SW_VES_read2(
     SW_VEGESTAB *SW_VegEstab,
     Bool use_VegEstab,
     Bool consider_InputFlag,
-    char *InFiles[],
+    char *txtInFiles[],
     char *SW_ProjDir,
     LOG_INFO *LogInfo
 ) {
@@ -293,7 +293,7 @@ void SW_VES_read2(
     FILE *f;
 
     if (SW_VegEstab->use) {
-        char *MyFileName = InFiles[eVegEstab];
+        char *MyFileName = txtInFiles[eVegEstab];
         f = OpenFile(MyFileName, "r", LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
