@@ -88,10 +88,10 @@ static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] = {
     /* inDomain */
     {"1", "1"},
     /* inSpatial */
-    {"1", "radians", "radians"},
+    {"1", "radian", "radian"},
     /* inTopo */
-    {"1", "m", "radians", "radians"},
-    /*inSoil*/
+    {"1", "m", "radian", "radian"},
+    /* inSoil */
     {"1",        "cm", "cm",   "g cm-3", "cm3 cm-3", "g g-1", "g g-1", "g g-1",
      "cm3 cm-3", "1",  "degC", "1",      "1",        "1",     "1",     "1",
      "NA",       "NA", "NA",   "NA",     "NA",       "NA"},
@@ -131,14 +131,14 @@ static const char *const possVarNames[SW_NINKEYSNC][SW_INNMAXVARS] = {
 
     /* inSoil */
     {"indexSpatial",
-     "depth",
-     "width",
+     "layerDepth",
+     "layerWidth",
      "soilDensityInput",
      "fractionVolBulk_gravel",
      "fractionWeightMatric_sand",
      "fractionWeightMatric_clay",
      "fractionWeightMatric_silt",
-     "soc",
+     "fractionWeight_om",
      "impermeability",
      "avgLyrTempInit",
      "evap_coeff",
