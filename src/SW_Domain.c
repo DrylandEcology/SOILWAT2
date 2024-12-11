@@ -686,11 +686,13 @@ void SW_DOM_soilProfile(
     if (SW_netCDFIn->readInVars[eSW_InSoil][0]) {
         SW_NCIN_soilProfile(
             SW_netCDFIn,
-            SW_PathInputs->ncInFiles[eSW_InSoil],
             hasConsistentSoilLayerDepths,
             nMaxSoilLayers,
             nMaxEvapLayers,
             depthsAllSoilLayers,
+            SW_PathInputs->numSoilVarLyrs,
+            default_n_layers,
+            default_depths,
             LogInfo
         );
     } else {
@@ -698,8 +700,8 @@ void SW_DOM_soilProfile(
         *nMaxEvapLayers = default_n_layers;
 
 #else // !SWNETCDF
-        /* text-mode produces soil evaporation output only for evap layers */
-        *nMaxEvapLayers = default_n_evap_lyrs;
+    /* text-mode produces soil evaporation output only for evap layers */
+    *nMaxEvapLayers = default_n_evap_lyrs;
 #endif
 
         // Assume default/template values are consistent

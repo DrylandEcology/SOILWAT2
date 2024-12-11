@@ -78,8 +78,24 @@ RCP85
 
 
 # --- Soil characterization ---
-# Is the soil layer depth profile and number of soil layers identical (1) across the entire domain or do they vary among sites/gridcells (0)?
-1
+# Simulated soil layer number determination:
+#   txt-mode: layers provided in "soils.in" and "swrc_params.in"
+#   nc-mode:  the first n layers with depth and width/thickness that are
+#             neither zero nor missing (if provided as input)
+
+1   # 0 = depth/thickness of soil layers vary among sites/gridcells
+    #     nc-mode: Vertical axis of outputs represents soil layers (units "1").
+    #              The soil is created from netCDF inputs; thus, all required
+    #              soil properties must be provided as netCDF inputs.
+    #
+    # 1 = depths/thickness of soil layers are equal among sites/gridcells
+    #     nc-mode: Vertical axis of outputs represents soil depth (units "cm").
+    #              The soil is based on text input files
+    #              ("soils.in" and "swrc_params.in"); soil properties provided
+    #              as netCDF inputs replace the values from the text inputs.
+    #              Thus, the soil input text files must contain the
+    #              maximum number of soil layers and the same depths/thickness
+    #              as netCDF soil inputs.
 
 # Are inputs of density representing bulk soil (type 1) or the matric component (type 0)?
 0

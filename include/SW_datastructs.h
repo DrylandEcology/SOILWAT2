@@ -1539,18 +1539,28 @@ typedef struct {
         endend; /**< Last day in last calendar year of the simulation runs */
 
     // Vertical domain information
-    Bool hasConsistentSoilLayerDepths; /**< Flag indicating if all simulation
-                                          run within domain have identical soil
-                                          layer depths (though potentially
-                                          variable number of soil layers) */
-    LyrIndex nMaxSoilLayers,           /**< Largest number of soil layers across
-                                          simulation domain */
-        nMaxEvapLayers; /**< Largest number of soil layers from which bare-soil
-                           evaporation may extract water across simulation
-                           domain */
-    double depthsAllSoilLayers[MAX_LAYERS]; /**< Lower soil layer depths [cm] if
-                                               consistent across simulation
-                                               domain */
+
+    /** Indicator of depths/thickness of soil layers among sites/gridcells:
+
+        - `swTRUE` if depths/thickness of soil layers are equal among
+          sites/gridcells (even if they have varying numbers of soil layers);
+        - `swFALSE` if depth/thickness of soil layers vary among sites/gridcells
+    */
+    Bool hasConsistentSoilLayerDepths;
+
+    /** Largest number of soil layers across domain */
+    LyrIndex nMaxSoilLayers;
+
+    /** Largest number of soil layers from which bare-soil evaporation may
+    extract water across simulation domain */
+    LyrIndex nMaxEvapLayers;
+
+    /** Soil layer depths profile
+
+    Values represent the bottom depth of soil layers [cm].
+    Used if #hasConsistentSoilLayerDepths.
+    */
+    double depthsAllSoilLayers[MAX_LAYERS];
 
     double spatialTol; /**< Tolerence when comparing domain coordinates
                              between nc input files and the nc domain file */

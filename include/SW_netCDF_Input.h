@@ -55,11 +55,13 @@ static const int numVarsInKey[] = {
 
 void SW_NCIN_soilProfile(
     SW_NETCDF_IN *SW_netCDFIn,
-    char **ncInFiles,
     Bool hasConsistentSoilLayerDepths,
     LyrIndex *nMaxSoilLayers,
     LyrIndex *nMaxEvapLayers,
     double depthsAllSoilLayers[],
+    const size_t numSoilVarLyrs[],
+    LyrIndex default_n_layers,
+    const double default_depths[],
     LOG_INFO *LogInfo
 );
 
