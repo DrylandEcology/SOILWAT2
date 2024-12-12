@@ -2407,6 +2407,11 @@ void SW_SIT_init_run(
     double acc = 0.0;
     double tmp_stNRGR;
 
+    char errorMsg[LARGE_VALUE] = "";
+    char tmpStr[100] = "";
+    char *writePtr = NULL;
+    char *tempWritePtr;
+    int writeSize;
 
     /* Determine number of layers with potential for
        bare-soil evaporation and transpiration */
@@ -2939,55 +2944,78 @@ void SW_SIT_init_run(
     }
 
     /* normalize the evap and transp coefficients separately
-     * to avoid obfuscation in the above loop */
+     * to avoid obfuscation in the above loop
+     * inputs are not more precise than at most 3-4 digits */
     if (!EQ_w_tol(evsum, 1.0, 1e-4)) {
-        // inputs are not more precise than at most 3-4 digits
-        LogError(
-            LogInfo,
-            LOGWARN,
-            "Soils: Evaporation coefficients were normalized: "
-            "sum of coefficients was %f, but must be 1.0. "
-            "New coefficients are:",
-            evsum
-        );
+        errorMsg[0] = '\0';
+        writePtr = errorMsg;
+        writeSize = LARGE_VALUE;
 
         ForEachEvapLayer(s, SW_Site->n_evap_lyrs) {
             SW_Site->soils.evap_coeff[s] /= evsum;
-            LogError(
-                LogInfo,
-                LOGWARN,
-                "  Layer %2d : evco = %.4f",
-                s + 1,
-                SW_Site->soils.evap_coeff[s]
-            );
+
+            if (writeSize > 0) {
+                (void) snprintf(
+                    tmpStr,
+                    sizeof tmpStr,
+                    " evco[%d] = %.4f",
+                    s + 1,
+                    SW_Site->soils.evap_coeff[s]
+                );
+                tempWritePtr =
+                    (char *) sw_memccpy(writePtr, tmpStr, '\0', writeSize);
+                writeSize -= (int) (tempWritePtr - errorMsg - 1);
+                writePtr = tempWritePtr - 1;
+            }
         }
+
+        LogError(
+            LogInfo,
+            LOGWARN,
+            "Evaporation coefficients summed to %.4f "
+            "across soil layers (expected sum = 1); new coefficients: %s",
+            evsum,
+            errorMsg
+        );
     }
 
     ForEachVegType(k) {
+        // inputs are not more precise than at most 3-4 digits
         if (!EQ_w_tol(trsum_veg[k], 1.0, 1e-4)) {
-            // inputs are not more precise than at most 3-4 digits
-            LogError(
-                LogInfo,
-                LOGWARN,
-                "Soils: Transpiration coefficients were normalized for %s: "
-                "sum of coefficients was %f, but must be 1.0. "
-                "New coefficients are:",
-                key2veg[k],
-                trsum_veg[k]
-            );
+            errorMsg[0] = '\0';
+            writePtr = errorMsg;
+            writeSize = LARGE_VALUE;
 
             ForEachSoilLayer(s, SW_Site->n_layers) {
                 if (GT(SW_Site->soils.transp_coeff[k][s], 0.)) {
                     SW_Site->soils.transp_coeff[k][s] /= trsum_veg[k];
-                    LogError(
-                        LogInfo,
-                        LOGWARN,
-                        "  Layer %2d : trco = %.4f",
-                        s + 1,
-                        SW_Site->soils.transp_coeff[k][s]
-                    );
+
+                    if (writeSize > 0) {
+                        (void) snprintf(
+                            tmpStr,
+                            sizeof tmpStr,
+                            " trco[%d] = %.4f",
+                            s + 1,
+                            SW_Site->soils.transp_coeff[k][s]
+                        );
+                        tempWritePtr = (char *) sw_memccpy(
+                            writePtr, tmpStr, '\0', writeSize
+                        );
+                        writeSize -= (int) (tempWritePtr - errorMsg - 1);
+                        writePtr = tempWritePtr - 1;
+                    }
                 }
             }
+
+            LogError(
+                LogInfo,
+                LOGWARN,
+                "Transpiration coefficients for '%s' summed to %.4f "
+                "across soil layers (expected sum = 1); new coefficients: %s",
+                key2veg[k],
+                trsum_veg[k],
+                errorMsg
+            );
         }
     }
 
@@ -3010,22 +3038,37 @@ void SW_SIT_init_run(
             LogError(
                 LogInfo,
                 LOGWARN,
-                "\nSOIL_TEMP FUNCTION ERROR: the number of regressions is > "
-                "the "
-                "maximum number of regressions.  resetting max depth, deltaX, "
-                "nRgr "
-                "values to 180, 15, & 11 respectively\n"
+                "Number of layers for soil temperature %d [cm] is larger than "
+                "the implemented MAX_ST_RGR of %d; "
+                "simulation will use default values instead of inputs: "
+                "number of layers set to %d (from %d); "
+                "depth now %f [cm] (from %f); "
+                "width/thickness of layers set to %f [cm] (from %f).",
+                180.0,
+                SW_Site->stMaxDepth,
+                11,
+                SW_Site->stNRGR,
+                15.,
+                SW_Site->stDeltaX
             );
         } else {
             // because we don't deal with partial layers
             LogError(
                 LogInfo,
                 LOGWARN,
-                "\nSOIL_TEMP FUNCTION ERROR: max depth is not evenly divisible "
-                "by "
-                "deltaX (ie the remainder != 0).  resetting max depth, deltaX, "
-                "nRgr "
-                "values to 180, 15, & 11 respectively\n"
+                "The depth %d [cm] for soil temperature is not "
+                "evenly divisible by the width/thickness of layers (%f [cm]); "
+                "the implemented MAX_ST_RGR of %d; "
+                "simulation will use default values instead of inputs: "
+                "number of layers set to %d (from %d); "
+                "depth now %f [cm] (from %f); "
+                "width/thickness of layers set to %f [cm] (from %f).",
+                180.0,
+                SW_Site->stMaxDepth,
+                11,
+                SW_Site->stNRGR,
+                15.,
+                SW_Site->stDeltaX
             );
         }
 
