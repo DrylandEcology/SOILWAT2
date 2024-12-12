@@ -6130,8 +6130,8 @@ static void read_veg_inputs(
     char *fileName;
     char *varName;
     nc_type varType;
-    size_t count[] = {1, 0, 0, 0};
-    size_t start[] = {0, 0, 0, 0};
+    size_t count[4] = {0};
+    size_t start[4] = {0};
     Bool varHasNotTime;
     Bool hasPFT;
     Bool varHasAddScaleAtts;
@@ -6246,12 +6246,12 @@ static void read_veg_inputs(
             count[lonIndex] = (!inSiteDom) ? 1 : 0;
         }
 
-        count[timeIndex] = (varHasNotTime) ? 0 : MAX_MONTHS;
-        if (hasPFT) {
+        if (!varHasNotTime && timeIndex > -1) {
+            count[timeIndex] = MAX_MONTHS;
+        }
+        if (hasPFT && pftIndex > -1) {
             start[pftIndex] = ((varNum - 2) / (NVEGTYPES + 1));
             count[pftIndex] = 1;
-        } else {
-            start[pftIndex] = 0;
         }
 
         SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
