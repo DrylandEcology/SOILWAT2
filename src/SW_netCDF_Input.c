@@ -6290,13 +6290,7 @@ closeFile:
     }
 }
 
-/**
-@brief Read inputs relating to the input key 'inSoil'
-
-Uses soil information from the text input files if \p hasConstSoilDepths,
-and replaces values of properties that are provided by nc-inputs.
-Otherwise (i.e., if not \p hasConstSoilDepths), a new soil is created
-from scratch and all information is obtained from nc-inputs.
+/** Derive missing soil properties from available properties and checks
 
 The number of soil layers is inferred from the first n layers
 with depth and width/thickness (if provided as input)
@@ -6317,6 +6311,199 @@ calculated if possible
 The function also checks for consistency
     - between depth and width (if both provided as inputs)
     - between sand, silt, and clay (if all provided as nc-inputs)
+
+
+@param[out] n_layers
+@param[in,out] soilValues Array of pointers to soil variable arrays,
+    see read_soil_inputs(), organized as #possVarNames[eSW_InSoil]
+    (but without spatial index, transpiration coefficients, and SWRCp)
+@param[in] readInVarsSoils Specifies which variables are to be read-in as
+    soil inputs
+@param[in] hasConstSoilDepths Specifies of all soil inputs provided
+    by the user (if any) have the same depth profile
+@param[in] depthsAllSoilLayers Depths of soil layers (cm),
+    used if \p hasConstSoilDepths
+@param[in] nMaxSoilLayers Largest number of soil layers across
+    simulation domain
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void derive_missing_soils(
+    LyrIndex *n_layers,
+    double **soilValues,
+    const Bool *readInVarsSoils,
+    Bool hasConstSoilDepths,
+    const double depthsAllSoilLayers[],
+    LyrIndex nMaxSoilLayers,
+    LOG_INFO *LogInfo
+) {
+    Bool noDepth;
+    Bool noWidth;
+    double cumWidth = 0.;
+    double sumTexture;
+
+    for (int slNum = 0; slNum < MAX_LAYERS; slNum++) {
+        // Note: SW_SIT_init_run() will determine:
+        //       n_evap_lyrs, n_transp_lyrs, deep_lyr
+        // Here, determine new number of soil layers:
+        //      soil layers end if depth or width is missing or 0
+        noDepth =
+            (hasConstSoilDepths || readInVarsSoils[eiv_soilLayerDepth + 1]) ?
+                (Bool) (missing(soilValues[eiv_soilLayerDepth - 1][slNum]) ||
+                        ZRO(soilValues[eiv_soilLayerDepth - 1][slNum])) :
+                swFALSE;
+
+        noWidth =
+            (hasConstSoilDepths || readInVarsSoils[eiv_soilLayerWidth + 1]) ?
+                (Bool) (missing(soilValues[eiv_soilLayerWidth - 1][slNum]) ||
+                        ZRO(soilValues[eiv_soilLayerWidth - 1][slNum])) :
+                swFALSE;
+
+        if (noDepth || noWidth) {
+            break;
+        }
+
+        (*n_layers)++;
+
+        if (hasConstSoilDepths) {
+            // Check that depth is consistent with depthsAllSoilLayers
+            if (!EQ(soilValues[eiv_soilLayerDepth - 1][slNum],
+                    depthsAllSoilLayers[slNum])) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Depth (%f cm) of soil layer %d disagrees with "
+                    "expected depth (%f cm).",
+                    soilValues[eiv_soilLayerDepth - 1][slNum],
+                    slNum,
+                    depthsAllSoilLayers[slNum]
+                );
+                return; // Exit function prematurely due to error
+            }
+
+        } else {
+            // Calculate depth if width provided but not depth
+            if (!readInVarsSoils[eiv_soilLayerDepth + 1] &&
+                readInVarsSoils[eiv_soilLayerWidth + 1]) {
+                if (slNum == 0) {
+                    soilValues[eiv_soilLayerDepth - 1][slNum] =
+                        soilValues[eiv_soilLayerWidth - 1][slNum];
+                } else {
+                    soilValues[eiv_soilLayerDepth - 1][slNum] +=
+                        soilValues[eiv_soilLayerWidth - 1][slNum];
+                }
+            }
+
+            // Calculate width if depth provided but not width
+            if (readInVarsSoils[eiv_soilLayerDepth + 1] &&
+                !readInVarsSoils[eiv_soilLayerWidth + 1]) {
+                if (slNum == 0) {
+                    soilValues[eiv_soilLayerWidth - 1][slNum] =
+                        soilValues[eiv_soilLayerDepth - 1][slNum];
+                } else {
+                    soilValues[eiv_soilLayerWidth - 1][slNum] =
+                        soilValues[eiv_soilLayerDepth - 1][slNum] -
+                        soilValues[eiv_soilLayerDepth - 1][slNum - 1];
+                }
+            }
+
+            // Calculate sand if clay and silt provided but not sand
+            if (!readInVarsSoils[eiv_sand + 1] &&
+                readInVarsSoils[eiv_silt + 1] &&
+                readInVarsSoils[eiv_clay + 1]) {
+                soilValues[eiv_sand - 1][slNum] =
+                    1 - (soilValues[eiv_silt - 1][slNum] +
+                         soilValues[eiv_clay - 1][slNum]);
+            }
+
+            // Calculate clay if sand and silt provided but not clay
+            if (readInVarsSoils[eiv_sand + 1] &&
+                readInVarsSoils[eiv_silt + 1] &&
+                !readInVarsSoils[eiv_clay + 1]) {
+                soilValues[eiv_clay - 1][slNum] =
+                    1 - (soilValues[eiv_silt - 1][slNum] +
+                         soilValues[eiv_sand - 1][slNum]);
+            }
+
+            // Set impermeability to 0 if not provided
+            if (!readInVarsSoils[eiv_impermeability + 1]) {
+                soilValues[eiv_impermeability - 1][slNum] = 0.;
+            }
+
+            // Set avgLyrTempInit to 0 if not provided
+            if (!readInVarsSoils[eiv_avgLyrTempInit + 1]) {
+                soilValues[eiv_avgLyrTempInit - 1][slNum] = 0.;
+            }
+        }
+
+        // Check consistency between depth and width if both provided
+        // (depth is provided by default if hasConstSoilDepths)
+        if ((readInVarsSoils[eiv_soilLayerDepth + 1] || hasConstSoilDepths) &&
+            readInVarsSoils[eiv_soilLayerWidth + 1]) {
+            cumWidth += soilValues[eiv_soilLayerWidth - 1][slNum];
+
+            if (!EQ(soilValues[eiv_soilLayerDepth - 1][slNum], cumWidth)) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Soil layer depth (%f cm) and "
+                    "width (%f cm, cumulative = %f) are provided as inputs, "
+                    "but they disagree in soil layer %d.",
+                    soilValues[eiv_soilLayerDepth - 1][slNum],
+                    soilValues[eiv_soilLayerWidth - 1][slNum],
+                    cumWidth,
+                    slNum
+                );
+                return; // Exit function prematurely due to error
+            }
+        }
+
+        // Check consistency between sand, silt, and clay if all provided
+        if (readInVarsSoils[eiv_sand + 1] && readInVarsSoils[eiv_silt + 1] &&
+            readInVarsSoils[eiv_clay + 1]) {
+            sumTexture = soilValues[eiv_sand - 1][slNum] +
+                         soilValues[eiv_silt - 1][slNum] +
+                         soilValues[eiv_clay - 1][slNum];
+
+            if (GT(sumTexture, 1.)) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Sum of sand (%f), silt (%f) and clay (%f) is larger "
+                    "than 1 in soil layer %d.",
+                    soilValues[eiv_sand - 1][slNum],
+                    soilValues[eiv_silt - 1][slNum],
+                    soilValues[eiv_clay - 1][slNum],
+                    slNum + 1
+                );
+                return; // Exit function prematurely due to error
+            }
+        }
+    }
+
+
+    if (*n_layers > nMaxSoilLayers) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Number of soil layers (%d) is larger than "
+            "domain-wide expected maximum number of soil layers (%d).",
+            *n_layers,
+            nMaxSoilLayers
+        );
+    }
+}
+
+/**
+@brief Read inputs relating to the input key 'inSoil'
+
+Uses soil information from the text input files if \p hasConstSoilDepths,
+and replaces values of properties that are provided by nc-inputs.
+Otherwise (i.e., if not \p hasConstSoilDepths), a new soil is created
+from scratch and all information is obtained from nc-inputs.
+
+See also derive_missing_soils() for determination of number of soil layers,
+estimation of missing soil properties from available properties, and
+consistency checks.
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
@@ -6423,11 +6610,6 @@ static void read_soil_inputs(
 
     int varNum;
     int fIndex = 1;
-    int slNum;
-    Bool noDepth;
-    Bool noWidth;
-    double cumWidth = 0.;
-    double sumTexture;
 
     while (!readInputs[fIndex + 1]) {
         fIndex++;
@@ -6546,156 +6728,21 @@ static void read_soil_inputs(
     }
 
 
-    // Derive missing soil properties from available properties
-    for (slNum = 0; slNum < MAX_LAYERS; slNum++) {
-        // Note: SW_SIT_init_run() will determine:
-        //       n_evap_lyrs, n_transp_lyrs, deep_lyr
-        // Here, determine new number of soil layers:
-        //      soil layers end if depth or width is missing or 0
-        noDepth =
-            (hasConstSoilDepths || readInputs[eiv_soilLayerDepth + 1]) ?
-                (Bool) (missing(values1D[eiv_soilLayerDepth - 1][slNum]) ||
-                        ZRO(values1D[eiv_soilLayerDepth - 1][slNum])) :
-                swFALSE;
+    /* Derive missing soil properties and check others */
+    derive_missing_soils(
+        &SW_Site->n_layers,
+        values1D,
+        readInputs,
+        hasConstSoilDepths,
+        depthsAllSoilLayers,
+        SW_Domain->nMaxSoilLayers,
+        LogInfo
+    );
 
-        noWidth =
-            (hasConstSoilDepths || readInputs[eiv_soilLayerWidth + 1]) ?
-                (Bool) (missing(values1D[eiv_soilLayerWidth - 1][slNum]) ||
-                        ZRO(values1D[eiv_soilLayerWidth - 1][slNum])) :
-                swFALSE;
-
-        if (noDepth || noWidth) {
-            break;
-        }
-
-        SW_Site->n_layers++;
-
-        if (hasConstSoilDepths) {
-            // Check that depth is consistent with depthsAllSoilLayers
-            if (!EQ(values1D[eiv_soilLayerDepth - 1][slNum],
-                    depthsAllSoilLayers[slNum])) {
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "Depth (%f cm) of soil layer %d disagrees with "
-                    "expected depth (%f cm).",
-                    values1D[eiv_soilLayerDepth - 1][slNum],
-                    slNum,
-                    depthsAllSoilLayers[slNum]
-                );
-                goto closeFile;
-            }
-
-        } else {
-            // Calculate depth if width provided but not depth
-            if (!readInputs[eiv_soilLayerDepth + 1] &&
-                readInputs[eiv_soilLayerWidth + 1]) {
-                if (slNum == 0) {
-                    values1D[eiv_soilLayerDepth - 1][slNum] =
-                        values1D[eiv_soilLayerWidth - 1][slNum];
-                } else {
-                    values1D[eiv_soilLayerDepth - 1][slNum] +=
-                        values1D[eiv_soilLayerWidth - 1][slNum];
-                }
-            }
-
-            // Calculate width if depth provided but not width
-            if (readInputs[eiv_soilLayerDepth + 1] &&
-                !readInputs[eiv_soilLayerWidth + 1]) {
-                if (slNum == 0) {
-                    values1D[eiv_soilLayerWidth - 1][slNum] =
-                        values1D[eiv_soilLayerDepth - 1][slNum];
-                } else {
-                    values1D[eiv_soilLayerWidth - 1][slNum] =
-                        values1D[eiv_soilLayerDepth - 1][slNum] -
-                        values1D[eiv_soilLayerDepth - 1][slNum - 1];
-                }
-            }
-
-            // Calculate sand if clay and silt provided but not sand
-            if (!readInputs[eiv_sand + 1] && readInputs[eiv_silt + 1] &&
-                readInputs[eiv_clay + 1]) {
-                values1D[eiv_sand - 1][slNum] =
-                    1 - (values1D[eiv_silt - 1][slNum] +
-                         values1D[eiv_clay - 1][slNum]);
-            }
-
-            // Calculate clay if sand and silt provided but not clay
-            if (readInputs[eiv_sand + 1] && readInputs[eiv_silt + 1] &&
-                !readInputs[eiv_clay + 1]) {
-                values1D[eiv_clay - 1][slNum] =
-                    1 - (values1D[eiv_silt - 1][slNum] +
-                         values1D[eiv_sand - 1][slNum]);
-            }
-
-            // Set impermeability to 0 if not provided
-            if (!readInputs[eiv_impermeability + 1]) {
-                values1D[eiv_impermeability - 1][slNum] = 0.;
-            }
-
-            // Set avgLyrTempInit to 0 if not provided
-            if (!readInputs[eiv_avgLyrTempInit + 1]) {
-                values1D[eiv_avgLyrTempInit - 1][slNum] = 0.;
-            }
-        }
-
-        // Check consistency between depth and width if both provided
-        // (depth is provided by default if hasConstSoilDepths)
-        if ((readInputs[eiv_soilLayerDepth + 1] || hasConstSoilDepths) &&
-            readInputs[eiv_soilLayerWidth + 1]) {
-            cumWidth += values1D[eiv_soilLayerWidth - 1][slNum];
-
-            if (!EQ(values1D[eiv_soilLayerDepth - 1][slNum], cumWidth)) {
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "Soil layer depth (%f cm) and "
-                    "width (%f cm, cumulative = %f) are provided as inputs, "
-                    "but they disagree in soil layer %d.",
-                    values1D[eiv_soilLayerDepth - 1][slNum],
-                    values1D[eiv_soilLayerWidth - 1][slNum],
-                    cumWidth,
-                    slNum
-                );
-                goto closeFile;
-            }
-        }
-
-        // Check consistency between sand, silt, and clay if all provided
-        if (readInputs[eiv_sand + 1] && readInputs[eiv_silt + 1] &&
-            readInputs[eiv_clay + 1]) {
-            sumTexture = values1D[eiv_sand - 1][slNum] +
-                         values1D[eiv_silt - 1][slNum] +
-                         values1D[eiv_clay - 1][slNum];
-
-            if (GT(sumTexture, 1.)) {
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "Sum of sand (%f), silt (%f) and clay (%f) is larger "
-                    "than 1 in soil layer %d.",
-                    values1D[eiv_sand - 1][slNum],
-                    values1D[eiv_silt - 1][slNum],
-                    values1D[eiv_clay - 1][slNum],
-                    slNum + 1
-                );
-                goto closeFile;
-            }
-        }
+    if (LogInfo->stopRun) {
+        goto closeFile;
     }
 
-
-    if (SW_Site->n_layers > SW_Domain->nMaxSoilLayers) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Number of soil layers (%d) is larger than "
-            "domain-wide expected maximum number of soil layers (%d).",
-            SW_Site->n_layers,
-            SW_Domain->nMaxSoilLayers
-        );
-        goto closeFile; // Exit function prematurely due to error
-    }
 
     if (!hasConstSoilDepths) {
         SW_Site->soils = newSoils;
