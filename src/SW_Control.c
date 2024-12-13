@@ -1132,9 +1132,11 @@ void SW_CTL_run_sw(
 
     SW_RUN local_sw;
     Bool copyWeather = swTRUE;
+    Bool estVeg = swTRUE;
 
 #if defined(SWNETCDF)
     copyWeather = (Bool) !SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
+    estVeg = (Bool) (!SW_Domain->netCDFInput.readInVars[eSW_InWeather][0]);
 #endif
 
 #ifdef SWDEBUG
@@ -1168,6 +1170,12 @@ void SW_CTL_run_sw(
         );
     }
 #endif
+
+    // Initialize run-time variables
+    SW_CTL_init_run(&local_sw, estVeg, LogInfo);
+    if (LogInfo->stopRun) {
+        goto freeMem; // Exit function prematurely due to error
+    }
 
     // Run spinup for suid
     if (SW_Domain->SW_SpinUp.spinup) {

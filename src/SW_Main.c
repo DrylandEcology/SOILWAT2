@@ -54,7 +54,6 @@ int main(int argc, char **argv) {
     LOG_INFO LogInfo;
     Bool EchoInits = swFALSE;
     Bool renameDomainTemplateNC = swFALSE;
-    Bool estVeg = swTRUE;
 
     unsigned long userSUID;
 
@@ -163,16 +162,6 @@ int main(int argc, char **argv) {
 #if defined(SWNETCDF)
     }
 #endif
-
-#if defined(SWNETCDF)
-    estVeg = (Bool) (!SW_Domain.netCDFInput.readInVars[eSW_InWeather][0]);
-#endif
-
-    // initialize simulation run (based on user inputs)
-    SW_CTL_init_run(&sw_template, estVeg, &LogInfo);
-    if (LogInfo.stopRun) {
-        goto finishProgram;
-    }
 
     // identify domain-wide soil profile information
     SW_DOM_soilProfile(

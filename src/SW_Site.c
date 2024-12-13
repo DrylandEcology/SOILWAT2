@@ -1989,6 +1989,7 @@ void SW_LYR_read(SW_SITE *SW_Site, char *txtInFiles[], LOG_INFO *LogInfo) {
             }
         }
 
+        SW_Site->soils.depths[lyrno] = dmax;
         SW_Site->soils.width[lyrno] = dmax - dmin;
 
         /* checks for valid values now carried out by `SW_SIT_init_run()` */
@@ -2021,6 +2022,10 @@ void SW_LYR_read(SW_SITE *SW_Site, char *txtInFiles[], LOG_INFO *LogInfo) {
             goto closeFile;
         }
     }
+
+
+    SW_Site->n_evap_lyrs =
+        nlayers_bsevap(SW_Site->soils.evap_coeff, SW_Site->n_layers);
 
 closeFile: { CloseFile(&f, LogInfo); }
 }

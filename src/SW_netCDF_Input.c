@@ -7675,8 +7675,6 @@ void SW_NCIN_read_inputs(
         if (LogInfo->stopRun) {
             return;
         }
-
-        SW_WTH_init_run(&sw->Weather);
     }
 
     if (readVeg) {
@@ -7688,18 +7686,6 @@ void SW_NCIN_read_inputs(
             convs[eSW_InVeg],
             LogInfo
         );
-        if (LogInfo->stopRun) {
-            return;
-        }
-
-        SW_VPD_init_run(
-            &sw->VegProd, &sw->Weather, &sw->Model, swTRUE, LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return;
-        }
-
-        SW_CBN_init_run(sw->VegProd.veg, &sw->Model, &sw->Carbon, LogInfo);
         if (LogInfo->stopRun) {
             return;
         }
@@ -7719,27 +7705,7 @@ void SW_NCIN_read_inputs(
         if (LogInfo->stopRun) {
             return;
         }
-
-        SW_SIT_init_run(&sw->VegProd, &sw->Site, LogInfo);
-        if (LogInfo->stopRun) {
-            return;
-        }
-
-        SW_VES_init_run(
-            sw->VegEstab.parms,
-            &sw->Site,
-            sw->Site.n_transp_lyrs,
-            sw->VegEstab.count,
-            LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return;
-        }
-
-        SW_SWC_init_run(&sw->SoilWat, &sw->Site, &sw->Weather.temp_snow);
     }
-
-    SW_PET_init_run(&sw->AtmDemand);
 }
 
 /**
