@@ -120,6 +120,16 @@ int main(int argc, char **argv) {
     }
 
 #if defined(SWNETCDF)
+    SW_NCIN_check_input_config(
+        &SW_Domain.netCDFInput,
+        SW_Domain.hasConsistentSoilLayerDepths,
+        sw_template.Site.inputsProvideSWRCp,
+        &LogInfo
+    );
+    if (LogInfo.stopRun) {
+        goto finishProgram;
+    }
+
     SW_NCIN_precalc_lookups(&SW_Domain, &sw_template.Weather, &LogInfo);
     if (LogInfo.stopRun) {
         goto finishProgram;

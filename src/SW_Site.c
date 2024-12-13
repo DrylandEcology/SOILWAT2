@@ -1494,6 +1494,11 @@ void add_deepdrain_layer(SW_SITE *SW_Site) {
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
+
+void SW_SOIL_construct(SW_SOILS *SW_Soils) {
+    memset(SW_Soils, 0, sizeof(SW_SOILS));
+}
+
 /**
 @brief Initialized memory for SW_Site
 
@@ -1535,16 +1540,17 @@ void SW_SIT_read(
 #endif
 
     FILE *f;
+    const int nLinesWithoutTR = 41;
     int lineno = 0;
     int x;
-    int rgnlow = 0; /* lower layer of region */
-    int region = 0; /* transp region definition number */
+    double rgnlow = 0; /* lower depth of region */
+    int region = 0;    /* transp region definition number */
     LyrIndex r;
     Bool too_many_regions = swFALSE;
     char inbuf[MAX_FILENAMESIZE];
-    int intRes = 0;
+    int intRes;
     int resSNP;
-    double doubleRes = 0.;
+    double doubleRes;
     char rgnStr[2][10] = {{'\0'}};
 
     Bool doDoubleConv;
@@ -1559,10 +1565,12 @@ void SW_SIT_read(
     }
 
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+        doubleRes = SW_MISSING;
+        intRes = SW_MISSING;
 
         strLine = (Bool) (lineno == 35 || lineno == 39 || lineno == 40);
 
-        if (!strLine && lineno <= 39) {
+        if (!strLine && lineno <= nLinesWithoutTR) {
             /* Check to see if the line number contains a double or integer
              * value */
             doDoubleConv =
@@ -1773,11 +1781,11 @@ void SW_SIT_read(
             SW_Site->site_ptf_type = encode_str2ptf(SW_Site->site_ptf_name);
             break;
         case 41:
-            SW_Site->site_has_swrcpMineralSoil = itob(intRes);
+            SW_Site->inputsProvideSWRCp = itob(intRes);
             break;
 
         default:
-            if (lineno > 41 + MAX_TRANSP_REGIONS) {
+            if (lineno > nLinesWithoutTR + MAX_TRANSP_REGIONS) {
                 break; /* skip extra lines */
             }
 
@@ -1793,13 +1801,13 @@ void SW_SIT_read(
                     goto closeFile;
                 }
 
-                rgnlow = sw_strtoi(rgnStr[1], MyFileName, LogInfo);
+                rgnlow = sw_strtod(rgnStr[1], MyFileName, LogInfo);
                 if (LogInfo->stopRun) {
                     goto closeFile;
                 }
             }
 
-            if (x < 2 || region < 1 || rgnlow < 1) {
+            if (x < 2 || region < 1 || rgnlow < 0) {
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -1809,7 +1817,7 @@ void SW_SIT_read(
                 );
                 goto closeFile;
             }
-            SW_Site->TranspRgnBounds[region - 1] = (LyrIndex) (rgnlow - 1);
+            SW_Site->TranspRgnDepths[region - 1] = rgnlow;
             SW_Site->n_transp_rgn++;
         }
 
@@ -1869,7 +1877,7 @@ Label_End_Read:
 
     /* check for any discontinuities (reversals) in the transpiration regions */
     for (r = 1; r < SW_Site->n_transp_rgn; r++) {
-        if (SW_Site->TranspRgnBounds[r - 1] >= SW_Site->TranspRgnBounds[r]) {
+        if (SW_Site->TranspRgnDepths[r - 1] >= SW_Site->TranspRgnDepths[r]) {
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -2133,9 +2141,17 @@ void set_soillayers(
         SW_Site->soils.fractionWeight_om[lyrno] = pom[i];
     }
 
-
-    // Guess soil transpiration regions
-    derive_soilRegions(SW_Site, nRegions, regionLowerBounds, LogInfo);
+    /* Identify transpiration regions by soil layers */
+    derive_TranspRgnBounds(
+        &SW_Site->n_transp_rgn,
+        SW_Site->TranspRgnBounds,
+        nRegions,
+        regionLowerBounds,
+        SW_Site->n_layers,
+        SW_Site->soils.width,
+        SW_Site->soils.transp_coeff,
+        LogInfo
+    );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -2145,31 +2161,32 @@ void set_soillayers(
 }
 
 /**
-@brief Resets soil regions based on input parameters.
+@brief Translates transpiration regions depths to soil layers
 
-@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
-@param[in] nRegions The number of transpiration regions to create. Must be
+@param[out] n_transp_rgn The size of array \p TranspRgnBounds
+    between 1 and \ref MAX_TRANSP_REGIONS
+    (currently, shallow, moderate, deep, very deep).
+@param[out] TranspRgnBounds Array of size \ref MAX_TRANSP_REGIONS
+    that identifies the deepest soil layer (by number) that belongs to
+    each of the transpiration regions.
+@param[in] nRegions The size of array \p TranspRgnDepths. Must be
     between 1 and \ref MAX_TRANSP_REGIONS.
-@param[in] regionLowerBounds Array of size \p nRegions containing the lower
-    depth [cm] of each region in ascending (in value) order. If you think about
-    this from the perspective of soil, it would mean the shallowest bound is at
-    `lowerBounds[0]`.
+@param[in] TranspRgnDepths Array of size \p nRegions containing the lower
+    depth [cm] from the soil surface (sorted shallowest to deepest depth).
+@param[in] n_layers Number of layers of soil within the simulation run
+@param[in] width The width of the layers (cm).
+@param[in] transp_coeff Transpiration coefficients,
+    an array of size \ref NVEGTYPES by \ref MAX_LAYERS
 @param[out] LogInfo Holds information on warnings and errors
-
-@sideeffect
-    \ref SW_SITE.TranspRgnBounds and \ref SW_SITE.n_transp_rgn will be
-    derived from the input and from the soil information.
-
-@note
-- \p nRegions does NOT determine how many regions will be derived. It only
-  defines the size of the \p regionLowerBounds array. For example, if your
-  input parameters are `(4, { 10, 20, 40 })`, but there is a soil layer from
-  41 to 60 cm, it will be placed in `TranspRgnBounds[4]`.
 */
-void derive_soilRegions(
-    SW_SITE *SW_Site,
-    unsigned int nRegions,
-    const double *regionLowerBounds,
+void derive_TranspRgnBounds(
+    LyrIndex *n_transp_rgn,
+    LyrIndex TranspRgnBounds[],
+    const LyrIndex nRegions,
+    const double TranspRgnDepths[],
+    const LyrIndex n_layers,
+    const double width[],
+    double transp_coeff[][MAX_LAYERS],
     LOG_INFO *LogInfo
 ) {
     unsigned int i;
@@ -2183,7 +2200,7 @@ void derive_soilRegions(
         LogError(
             LogInfo,
             LOGERROR,
-            "derive_soilRegions: invalid number of regions (%d)\n",
+            "derive_TranspRgnBounds: invalid number of regions (%d)\n",
             nRegions
         );
         return; // Exit function prematurely due to error
@@ -2192,21 +2209,22 @@ void derive_soilRegions(
     /* --------------- Clear out the array ------------------ */
     for (i = 0; i < MAX_TRANSP_REGIONS; ++i) {
         // Setting bounds to a ridiculous number so we know how many get set.
-        SW_Site->TranspRgnBounds[i] = UNDEFINED_LAYER;
+        TranspRgnBounds[i] = UNDEFINED_LAYER;
     }
 
     /* ----------------- Derive Regions ------------------- */
     // Loop through the regions the user wants to derive
     layer = 0; // SW_Site.lyr is base0-indexed
     totalDepth = 0;
-    for (i = 0; i < nRegions; ++i) {
-        SW_Site->TranspRgnBounds[i] = layer;
-        // Find the layer that pushes us out of the region.
+    for (i = 0; i < nRegions && layer < n_layers; ++i) {
+        TranspRgnBounds[i] = layer;
+        // Find the last soil layer that is completely contained within a region
         // It becomes the bound.
-        while (totalDepth < regionLowerBounds[i] && layer < SW_Site->n_layers &&
-               sum_across_vegtypes(SW_Site->soils.transp_coeff, layer)) {
-            totalDepth += SW_Site->soils.width[layer];
-            SW_Site->TranspRgnBounds[i] = layer;
+        while (layer < n_layers && LE(totalDepth, TranspRgnDepths[i]) &&
+               LE((totalDepth + width[layer]), TranspRgnDepths[i]) &&
+               sum_across_vegtypes(transp_coeff, layer)) {
+            totalDepth += width[layer];
+            TranspRgnBounds[i] = layer;
             layer++;
         }
     }
@@ -2215,19 +2233,19 @@ void derive_soilRegions(
     for (i = 0; i < nRegions - 1; ++i) {
         // If there is a duplicate bound we will remove it by left shifting the
         // array, overwriting the duplicate.
-        if (SW_Site->TranspRgnBounds[i] == SW_Site->TranspRgnBounds[i + 1]) {
+        if (TranspRgnBounds[i] == TranspRgnBounds[i + 1]) {
             for (j = i + 1; j < nRegions - 1; ++j) {
-                SW_Site->TranspRgnBounds[j] = SW_Site->TranspRgnBounds[j + 1];
+                TranspRgnBounds[j] = TranspRgnBounds[j + 1];
             }
-            SW_Site->TranspRgnBounds[MAX_TRANSP_REGIONS - 1] = UNDEFINED_LAYER;
+            TranspRgnBounds[MAX_TRANSP_REGIONS - 1] = UNDEFINED_LAYER;
         }
     }
 
     /* -------------- Derive n_transp_rgn --------------- */
-    SW_Site->n_transp_rgn = 0;
-    while (SW_Site->n_transp_rgn < MAX_TRANSP_REGIONS &&
-           SW_Site->TranspRgnBounds[SW_Site->n_transp_rgn] != UNDEFINED_LAYER) {
-        SW_Site->n_transp_rgn++;
+    *n_transp_rgn = 0;
+    while (*n_transp_rgn < MAX_TRANSP_REGIONS &&
+           TranspRgnBounds[*n_transp_rgn] != UNDEFINED_LAYER) {
+        (*n_transp_rgn)++;
     }
 }
 
@@ -2264,7 +2282,7 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *txtInFiles[], LOG_INFO *LogInfo) {
 
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
         /* PTF used for mineral swrcp: read only organic parameters from disk */
-        if (isMineral && !SW_Site->site_has_swrcpMineralSoil) {
+        if (isMineral && !SW_Site->inputsProvideSWRCp) {
             goto closeFile;
         }
 
@@ -2336,6 +2354,9 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *txtInFiles[], LOG_INFO *LogInfo) {
         }
     }
 
+    SW_Site->site_has_swrcpMineralSoil =
+        (Bool) (isMineral && SW_Site->inputsProvideSWRCp);
+
 closeFile: { CloseFile(&f, LogInfo); }
 }
 
@@ -2386,6 +2407,11 @@ void SW_SIT_init_run(
     double acc = 0.0;
     double tmp_stNRGR;
 
+    char errorMsg[LARGE_VALUE] = "";
+    char tmpStr[100] = "";
+    char *writePtr = NULL;
+    char *tempWritePtr;
+    int writeSize;
 
     /* Determine number of layers with potential for
        bare-soil evaporation and transpiration */
@@ -2395,6 +2421,20 @@ void SW_SIT_init_run(
         SW_Site->n_layers, SW_Site->n_transp_lyrs, SW_Site->soils.transp_coeff
     );
 
+    /* Identify transpiration regions by soil layers */
+    derive_TranspRgnBounds(
+        &SW_Site->n_transp_rgn,
+        SW_Site->TranspRgnBounds,
+        SW_Site->n_transp_rgn,
+        SW_Site->TranspRgnDepths,
+        SW_Site->n_layers,
+        SW_Site->soils.width,
+        SW_Site->soils.transp_coeff,
+        LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
     /* Manage deep drainage */
     add_deepdrain_layer(SW_Site);
@@ -2859,6 +2899,8 @@ void SW_SIT_init_run(
         }
     } /*end ForEachSoilLayer */
 
+    SW_Site->site_has_swrcpMineralSoil = swTRUE;
+
 
     /* Re-calculate `swcBulk_atSWPcrit` if it was below `swcBulk_min`
        for any vegetation x soil layer combination using adjusted `SWPcrit`
@@ -2902,55 +2944,78 @@ void SW_SIT_init_run(
     }
 
     /* normalize the evap and transp coefficients separately
-     * to avoid obfuscation in the above loop */
+     * to avoid obfuscation in the above loop
+     * inputs are not more precise than at most 3-4 digits */
     if (!EQ_w_tol(evsum, 1.0, 1e-4)) {
-        // inputs are not more precise than at most 3-4 digits
-        LogError(
-            LogInfo,
-            LOGWARN,
-            "Soils: Evaporation coefficients were normalized: "
-            "sum of coefficients was %f, but must be 1.0. "
-            "New coefficients are:",
-            evsum
-        );
+        errorMsg[0] = '\0';
+        writePtr = errorMsg;
+        writeSize = LARGE_VALUE;
 
         ForEachEvapLayer(s, SW_Site->n_evap_lyrs) {
             SW_Site->soils.evap_coeff[s] /= evsum;
-            LogError(
-                LogInfo,
-                LOGWARN,
-                "  Layer %2d : evco = %.4f",
-                s + 1,
-                SW_Site->soils.evap_coeff[s]
-            );
+
+            if (writeSize > 0) {
+                (void) snprintf(
+                    tmpStr,
+                    sizeof tmpStr,
+                    " evco[%d] = %.4f",
+                    s + 1,
+                    SW_Site->soils.evap_coeff[s]
+                );
+                tempWritePtr =
+                    (char *) sw_memccpy(writePtr, tmpStr, '\0', writeSize);
+                writeSize -= (int) (tempWritePtr - errorMsg - 1);
+                writePtr = tempWritePtr - 1;
+            }
         }
+
+        LogError(
+            LogInfo,
+            LOGWARN,
+            "Evaporation coefficients summed to %.4f "
+            "across soil layers (expected sum = 1); new coefficients: %s",
+            evsum,
+            errorMsg
+        );
     }
 
     ForEachVegType(k) {
+        // inputs are not more precise than at most 3-4 digits
         if (!EQ_w_tol(trsum_veg[k], 1.0, 1e-4)) {
-            // inputs are not more precise than at most 3-4 digits
-            LogError(
-                LogInfo,
-                LOGWARN,
-                "Soils: Transpiration coefficients were normalized for %s: "
-                "sum of coefficients was %f, but must be 1.0. "
-                "New coefficients are:",
-                key2veg[k],
-                trsum_veg[k]
-            );
+            errorMsg[0] = '\0';
+            writePtr = errorMsg;
+            writeSize = LARGE_VALUE;
 
             ForEachSoilLayer(s, SW_Site->n_layers) {
                 if (GT(SW_Site->soils.transp_coeff[k][s], 0.)) {
                     SW_Site->soils.transp_coeff[k][s] /= trsum_veg[k];
-                    LogError(
-                        LogInfo,
-                        LOGWARN,
-                        "  Layer %2d : trco = %.4f",
-                        s + 1,
-                        SW_Site->soils.transp_coeff[k][s]
-                    );
+
+                    if (writeSize > 0) {
+                        (void) snprintf(
+                            tmpStr,
+                            sizeof tmpStr,
+                            " trco[%d] = %.4f",
+                            s + 1,
+                            SW_Site->soils.transp_coeff[k][s]
+                        );
+                        tempWritePtr = (char *) sw_memccpy(
+                            writePtr, tmpStr, '\0', writeSize
+                        );
+                        writeSize -= (int) (tempWritePtr - errorMsg - 1);
+                        writePtr = tempWritePtr - 1;
+                    }
                 }
             }
+
+            LogError(
+                LogInfo,
+                LOGWARN,
+                "Transpiration coefficients for '%s' summed to %.4f "
+                "across soil layers (expected sum = 1); new coefficients: %s",
+                key2veg[k],
+                trsum_veg[k],
+                errorMsg
+            );
         }
     }
 
@@ -2973,22 +3038,37 @@ void SW_SIT_init_run(
             LogError(
                 LogInfo,
                 LOGWARN,
-                "\nSOIL_TEMP FUNCTION ERROR: the number of regressions is > "
-                "the "
-                "maximum number of regressions.  resetting max depth, deltaX, "
-                "nRgr "
-                "values to 180, 15, & 11 respectively\n"
+                "Number of layers for soil temperature %d [cm] is larger than "
+                "the implemented MAX_ST_RGR of %d; "
+                "simulation will use default values instead of inputs: "
+                "number of layers set to %d (from %d); "
+                "depth now %f [cm] (from %f); "
+                "width/thickness of layers set to %f [cm] (from %f).",
+                180.0,
+                SW_Site->stMaxDepth,
+                11,
+                SW_Site->stNRGR,
+                15.,
+                SW_Site->stDeltaX
             );
         } else {
             // because we don't deal with partial layers
             LogError(
                 LogInfo,
                 LOGWARN,
-                "\nSOIL_TEMP FUNCTION ERROR: max depth is not evenly divisible "
-                "by "
-                "deltaX (ie the remainder != 0).  resetting max depth, deltaX, "
-                "nRgr "
-                "values to 180, 15, & 11 respectively\n"
+                "The depth %d [cm] for soil temperature is not "
+                "evenly divisible by the width/thickness of layers (%f [cm]); "
+                "the implemented MAX_ST_RGR of %d; "
+                "simulation will use default values instead of inputs: "
+                "number of layers set to %d (from %d); "
+                "depth now %f [cm] (from %f); "
+                "width/thickness of layers set to %f [cm] (from %f).",
+                180.0,
+                SW_Site->stMaxDepth,
+                11,
+                SW_Site->stNRGR,
+                15.,
+                SW_Site->stDeltaX
             );
         }
 
@@ -3014,6 +3094,8 @@ void SW_SIT_init_counts(SW_SITE *SW_Site) {
     SW_Site->n_transp_rgn = 0;
 
     ForEachVegType(k) { SW_Site->n_transp_lyrs[k] = 0; }
+
+    SW_Site->site_has_swrcpMineralSoil = swFALSE;
 }
 
 /**

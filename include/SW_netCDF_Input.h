@@ -16,9 +16,10 @@ extern "C" {
 
 #define DOMAIN_TEMP "Input_nc/domain_template.nc"
 
-/* Specifies the number of input variables per key a user
+/** Specifies the number of input variables per key a user
 can provide; This number includes a variable for an index
-file after and including the input key `inTopo` */
+file after and including the input key `inSpatial`.
+These numbers must match up with `possVarNames` */
 static const int numVarsInKey[] = {
     2,  /* inDomain */
     3,  /* inSpatial */
@@ -54,11 +55,13 @@ static const int numVarsInKey[] = {
 
 void SW_NCIN_soilProfile(
     SW_NETCDF_IN *SW_netCDFIn,
-    char **ncInFiles,
     Bool hasConsistentSoilLayerDepths,
     LyrIndex *nMaxSoilLayers,
     LyrIndex *nMaxEvapLayers,
     double depthsAllSoilLayers[],
+    const size_t numSoilVarLyrs[],
+    LyrIndex default_n_layers,
+    const double default_depths[],
     LOG_INFO *LogInfo
 );
 
@@ -83,6 +86,13 @@ Bool SW_NCIN_check_progress(
 
 void SW_NCIN_read_inputs(
     SW_RUN *sw, SW_DOMAIN *SW_Domain, const size_t ncSUID[], LOG_INFO *LogInfo
+);
+
+void SW_NCIN_check_input_config(
+    SW_NETCDF_IN *SW_netCDFIn,
+    Bool hasConsistentSoilLayerDepths,
+    Bool inputsProvideSWRCp,
+    LOG_INFO *LogInfo
 );
 
 void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);

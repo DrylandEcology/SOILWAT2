@@ -1137,6 +1137,12 @@ void SW_CTL_run_sw(
     copyWeather = (Bool) !SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
 #endif
 
+#ifdef SWDEBUG
+    if (debug) {
+        sw_printf("SW_CTL_run_sw(): suid = %zu/%zu", ncSuid[0], ncSuid[1]);
+    }
+#endif
+
     // Copy template SW_RUN to local instance
     SW_RUN_deepCopy(
         sw_template, &local_sw, &SW_Domain->OutDom, copyWeather, LogInfo
@@ -1145,37 +1151,54 @@ void SW_CTL_run_sw(
         goto freeMem; // Free memory and skip simulation run
     }
 
-// Obtain suid-specific inputs
 #if defined(SWNETCDF)
+    // Obtain suid-specific inputs
     SW_NCIN_read_inputs(&local_sw, SW_Domain, ncSuid, LogInfo);
     if (LogInfo->stopRun) {
         goto freeMem;
     }
 #endif
 
-// Run simulation for suid
 #ifdef SWDEBUG
     if (debug) {
         sw_printf(
-            "SW_CTL_run_sw(): suid = %zu/%zu, lon/lat = (%f, %f)\n",
-            ncSuid[0],
-            ncSuid[1],
-            local_sw.Model.longitude,
-            local_sw.Model.latitude
+            " -- inputs at lon/lat = (%f, %f)",
+            local_sw.Model.longitude * rad_to_deg,
+            local_sw.Model.latitude * rad_to_deg
         );
     }
 #endif
 
+    // Run spinup for suid
     if (SW_Domain->SW_SpinUp.spinup) {
+#ifdef SWDEBUG
+        if (debug) {
+            sw_printf(" -- spinup");
+        }
+#endif
         SW_CTL_run_spinup(&local_sw, &SW_Domain->OutDom, LogInfo);
+        if (LogInfo->stopRun) {
+            goto freeMem; // Exit function prematurely due to error
+        }
     }
 
+    // Run simulation for suid
+#ifdef SWDEBUG
+    if (debug) {
+        sw_printf(" -- run");
+    }
+#endif
     SW_CTL_main(&local_sw, &SW_Domain->OutDom, LogInfo);
     if (LogInfo->stopRun) {
         goto freeMem; // Free memory and exit function prematurely due to error
     }
 
 #if defined(SWNETCDF)
+#ifdef SWDEBUG
+    if (debug) {
+        sw_printf(" -- nc-output");
+    }
+#endif
     SW_NCOUT_write_output(
         &SW_Domain->OutDom,
         local_sw.OutRun.p_OUT,
@@ -1189,6 +1212,11 @@ void SW_CTL_run_sw(
 
 // Clear local instance of SW_RUN
 freeMem:
+#ifdef SWDEBUG
+    if (debug) {
+        sw_printf(" -- end.\n");
+    }
+#endif
     SW_CTL_clear_model(swTRUE, &local_sw);
 
     (void) SW_Domain;

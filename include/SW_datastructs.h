@@ -337,10 +337,24 @@ typedef struct {
     /** Are `swrcp` of the mineral soil already (TRUE) or not yet estimated
         (FALSE)? */
     Bool site_has_swrcpMineralSoil;
+    /** Are `swrcp` provided as inputs (TRUE) or estimated via a PTF? (FALSE) */
+    Bool inputsProvideSWRCp;
 
-    /* transpiration regions  shallow, moderately shallow,  */
-    /* deep and very deep. units are in layer numbers. */
+    /** Lower bounds of transpiration regions [layers]
+
+    Possible levels are: shallow, moderately shallow, deep and very deep.
+    Calculated as the number of the deepest soil layer that still is within
+    the corresponding soil depth #TranspRgnDepths.
+    */
     LyrIndex TranspRgnBounds[MAX_TRANSP_REGIONS];
+
+    /** Lower bounds of transpiration regions [cm]
+
+    Possible levels are: shallow, moderately shallow, deep and very deep.
+    User provided values in [cm].
+    */
+    double TranspRgnDepths[MAX_TRANSP_REGIONS];
+
     double SWCInitVal, /* initialization value for swc */
         SWCWetVal,     /* value for a "wet" day,       */
         SWCMinVal;     /* lower bound on swc.          */
@@ -1309,9 +1323,19 @@ typedef struct {
        domain information - domain and progress variables */
     int ncDomVarIDs[SW_NVARDOM];
 
-    Bool *readInVars[SW_NINKEYSNC]; /**< Do/don't read a variable from input
-                                         netCDFs (dynamically allocated array
-                                         over input variables) */
+    /** Indicates which variables are provided by netCDF inputs
+
+    This is an array over the `inkey` #SW_NINKEYSNC, and each element is
+    a pointer to a dynamically allocated array of length 1 + #numVarsInKey.
+
+    The element 0 summarizes whether any variable of an `inkey` is provided
+    by netCDF inputs.
+    The element 1 indicates whether the index of that `inkey`
+    is used (if that `inkey` contains an index, i.e., all but #eSW_InDomain).
+    The remaining elements indicate if each input variables
+    (see #possVarNames) is provided by netCDF inputs or not.
+    */
+    Bool *readInVars[SW_NINKEYSNC];
 
     char **weathCalOverride; /**< Calendars that the user may provide for
                                   the program to use (dynamically allocated
@@ -1515,18 +1539,28 @@ typedef struct {
         endend; /**< Last day in last calendar year of the simulation runs */
 
     // Vertical domain information
-    Bool hasConsistentSoilLayerDepths; /**< Flag indicating if all simulation
-                                          run within domain have identical soil
-                                          layer depths (though potentially
-                                          variable number of soil layers) */
-    LyrIndex nMaxSoilLayers,           /**< Largest number of soil layers across
-                                          simulation domain */
-        nMaxEvapLayers; /**< Largest number of soil layers from which bare-soil
-                           evaporation may extract water across simulation
-                           domain */
-    double depthsAllSoilLayers[MAX_LAYERS]; /**< Lower soil layer depths [cm] if
-                                               consistent across simulation
-                                               domain */
+
+    /** Indicator of depths/thickness of soil layers among sites/gridcells:
+
+        - `swTRUE` if depths/thickness of soil layers are equal among
+          sites/gridcells (even if they have varying numbers of soil layers);
+        - `swFALSE` if depth/thickness of soil layers vary among sites/gridcells
+    */
+    Bool hasConsistentSoilLayerDepths;
+
+    /** Largest number of soil layers across domain */
+    LyrIndex nMaxSoilLayers;
+
+    /** Largest number of soil layers from which bare-soil evaporation may
+    extract water across simulation domain */
+    LyrIndex nMaxEvapLayers;
+
+    /** Soil layer depths profile
+
+    Values represent the bottom depth of soil layers [cm].
+    Used if #hasConsistentSoilLayerDepths.
+    */
+    double depthsAllSoilLayers[MAX_LAYERS];
 
     double spatialTol; /**< Tolerence when comparing domain coordinates
                              between nc input files and the nc domain file */

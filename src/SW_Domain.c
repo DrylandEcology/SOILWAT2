@@ -649,6 +649,9 @@ void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
 /**
 @brief Identify soil profile information across simulation domain
 
+nc-mode uses the same vertical size for every soil nc-output file, i.e.,
+it sets nMaxEvapLayers to nMaxSoilLayers.
+
 @param[in] SW_netCDFIn Constant netCDF input file information
 @param[in] SW_PathInputs
 @param[out] hasConsistentSoilLayerDepths Flag indicating if all simulation
@@ -662,7 +665,7 @@ void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
     consistent across simulation domain
 @param[in] default_n_layers Default number of soil layer
 @param[in] default_n_evap_lyrs Default number of soil layer used for
-    bare-soil evaporation
+    bare-soil evaporation (only used in text-mode)
 @param[in] default_depths Default values of soil layer depths [cm]
 @param[out] LogInfo Holds information on warnings and errors
 */
@@ -683,19 +686,26 @@ void SW_DOM_soilProfile(
     if (SW_netCDFIn->readInVars[eSW_InSoil][0]) {
         SW_NCIN_soilProfile(
             SW_netCDFIn,
-            SW_PathInputs->ncInFiles[eSW_InSoil],
             hasConsistentSoilLayerDepths,
             nMaxSoilLayers,
             nMaxEvapLayers,
             depthsAllSoilLayers,
+            SW_PathInputs->numSoilVarLyrs,
+            default_n_layers,
+            default_depths,
             LogInfo
         );
     } else {
-#endif // !SWNETCDF
+        /* nc-mode produces soil output across all soil layers */
+        *nMaxEvapLayers = default_n_layers;
+
+#else // !SWNETCDF
+    /* text-mode produces soil evaporation output only for evap layers */
+    *nMaxEvapLayers = default_n_evap_lyrs;
+#endif
 
         // Assume default/template values are consistent
         *nMaxSoilLayers = default_n_layers;
-        *nMaxEvapLayers = default_n_evap_lyrs;
         memcpy(
             depthsAllSoilLayers,
             default_depths,
@@ -706,9 +716,10 @@ void SW_DOM_soilProfile(
     }
 #endif // !SWNETCDF
 
-    /* If we have text inputs, we don't use these variables, cast them
-       to void to silence the compiler */
-#if !defined(SWNETCDF)
+    /* Cast unused variables to void to silence the compiler */
+#if defined(SWNETCDF)
+    (void) default_n_evap_lyrs;
+#else
     (void) SW_netCDFIn;
     (void) SW_PathInputs;
     (void) hasConsistentSoilLayerDepths;

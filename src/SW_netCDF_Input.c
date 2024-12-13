@@ -84,87 +84,79 @@ static const char *const expectedColNames[] = {
 };
 
 /* This array and `possVarNames` must line up the variables within each key */
-static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] =
-    {
-        {"1", "1"},                       /* inDomain */
-        {"1", "radians", "radians"},      /* inSpatial */
-        {"1", "m", "radians", "radians"}, /* inTopo */
-        {"1",        "cm", "cm",   "g cm-3", "cm3 cm-3", "g g-1", "g g-1",
-         "g g-1", /*inSoil*/
-         "cm3 cm-3", "1",  "degC", "1",      "1",        "1",     "1",
-         "1",        "NA", "NA",   "NA",     "NA",       "NA",    "NA"},
-        {"1",      "m2 m-2", "m2 m-2", "g m-2", "g m-2",
-         "1",      "g m-2", /*inVeg*/
-         "m2 m-2", "g m-2",  "g m-2",  "1",     "g m-2",
-         "m2 m-2", "g m-2",  "g m-2",  "1",     "g m-2",
-         "m2 m-2", "g m-2",  "g m-2",  "1",     "g m-2"},
-        {"1", /* inWeather */
-         "degC",
-         "degC",
-         "cm",
-         "%",
-         "m s-1",
-         "m s-1",
-         "m s-1",
-         "%",
-         "%",
-         "%",
-         "%",
-         "degC",
-         "kPa",
-         "NA"},
-        {"1", "%", "m s-1", "%", "kg m-3", "1"} /* inClimate */
+static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] = {
+    /* inDomain */
+    {"1", "1"},
+    /* inSpatial */
+    {"1", "radian", "radian"},
+    /* inTopo */
+    {"1", "m", "radian", "radian"},
+    /* inSoil */
+    {"1",        "cm", "cm",   "g cm-3", "cm3 cm-3", "g g-1", "g g-1", "g g-1",
+     "cm3 cm-3", "1",  "degC", "1",      "1",        "1",     "1",     "1",
+     "NA",       "NA", "NA",   "NA",     "NA",       "NA"},
+    /*inVeg*/
+    {"1",     "m2 m-2", "m2 m-2", "g m-2", "g m-2",  "1",     "g m-2", "m2 m-2",
+     "g m-2", "g m-2",  "1",      "g m-2", "m2 m-2", "g m-2", "g m-2", "1",
+     "g m-2", "m2 m-2", "g m-2",  "g m-2", "1",      "g m-2"},
+    /* inWeather */
+    {"1",
+     "degC",
+     "degC",
+     "cm",
+     "%",
+     "m s-1",
+     "m s-1",
+     "m s-1",
+     "%",
+     "%",
+     "%",
+     "%",
+     "degC",
+     "kPa",
+     "NA"},
+    /* inClimate */
+    {"1", "%", "m s-1", "%", "kg m-3", "1"}
 };
 
 static const char *const possVarNames[SW_NINKEYSNC][SW_INNMAXVARS] = {
-    {/* inDomain */
-     "domain",
-     "progress"
-    },
+    /* inDomain */
+    {"domain", "progress"},
 
-    {/* inSpatial */
-     "indexSpatial",
-     "latitude",
-     "longitude"
-    },
+    /* inSpatial */
+    {"indexSpatial", "latitude", "longitude"},
 
-    {/* inTopo */
-     "indexSpatial",
-     "elevation",
-     "slope",
-     "aspect"
-    },
+    /* inTopo */
+    {"indexSpatial", "elevation", "slope", "aspect"},
 
-    {
-        /* inSoil */
-        "indexSpatial",
-        "depth",
-        "width",
-        "soilDensityInput",
-        "fractionVolBulk_gravel",
-        "fractionWeightMatric_sand",
-        "fractionWeightMatric_clay",
-        "fractionWeightMatric_silt",
-        "soc",
-        "impermeability",
-        "avgLyrTempInit",
-        "evap_coeff",
+    /* inSoil */
+    {"indexSpatial",
+     "layerDepth",
+     "layerWidth",
+     "soilDensityInput",
+     "fractionVolBulk_gravel",
+     "fractionWeightMatric_sand",
+     "fractionWeightMatric_clay",
+     "fractionWeightMatric_silt",
+     "fractionWeight_om",
+     "impermeability",
+     "avgLyrTempInit",
+     "evap_coeff",
 
-        "Trees.transp_coeff",
-        "Shrubs.transp_coeff",
-        "Forbs.transp_coeff",
-        "Grasses.transp_coeff",
+     "Trees.transp_coeff",
+     "Shrubs.transp_coeff",
+     "Forbs.transp_coeff",
+     "Grasses.transp_coeff",
 
-        "swrcpMineralSoil[1]",
-        "swrcpMineralSoil[2]",
-        "swrcpMineralSoil[3]",
-        "swrcpMineralSoil[4]",
-        "swrcpMineralSoil[5]",
-        "swrcpMineralSoil[6]",
-    },
+     "swrcpMineralSoil[1]",
+     "swrcpMineralSoil[2]",
+     "swrcpMineralSoil[3]",
+     "swrcpMineralSoil[4]",
+     "swrcpMineralSoil[5]",
+     "swrcpMineralSoil[6]"},
 
-    {/* inVeg */
-     "indexSpatial",     "bareGround.fCover",
+    /* inVeg */
+    {"indexSpatial",     "bareGround.fCover",
 
      "Trees.fCover",     "Trees.litter",      "Trees.biomass",
      "Trees.pct_live",   "Trees.lai_conv",
@@ -176,11 +168,10 @@ static const char *const possVarNames[SW_NINKEYSNC][SW_INNMAXVARS] = {
      "Forbs.pct_live",   "Forbs.lai_conv",
 
      "Grasses.fCover",   "Grasses.litter",    "Grasses.biomass",
-     "Grasses.pct_live", "Grasses.lai_conv"
-    },
+     "Grasses.pct_live", "Grasses.lai_conv"},
 
-    {/* inWeather */
-     "indexSpatial",
+    /* inWeather */
+    {"indexSpatial",
      "temp_max",
      "temp_min",
      "ppt",
@@ -194,18 +185,83 @@ static const char *const possVarNames[SW_NINKEYSNC][SW_INNMAXVARS] = {
      "spec_humidity",
      "temp_dewpoint",
      "actualVaporPressure",
-     "shortWaveRad"
-    },
+     "shortWaveRad"},
 
-    {/* inClimate */
-     "indexSpatial",
+    /* inClimate */
+    {"indexSpatial",
      "cloudcov",
      "windspeed",
      "r_humidity",
      "snow_density",
-     "n_rain_per_day"
-    }
+     "n_rain_per_day"}
 };
+
+
+/** @defgroup eiv Indices to netCDF input variables
+The `eiv_*` provide the index to variable positions in #possVarNames,
+#SW_NETCDF_IN.inVarInfo and others, e.g.,
+    `possVarNames[eSW_InDomain][eiv_domain]`.
+However, we need to add one to correctly index #SW_NETCDF_IN.readInVars, e.g.,
+    `readInVars[eSW_InDomain][eiv_domain + 1]`.
+*  @{
+*/
+/** The index to the variable to the spatial index is 0 for each `inkey`
+(exception is #eSW_InDomain which does not have an spatial index)
+*/
+static const int eiv_indexSpatial = 0;
+/* inDomain (no indexSpatial) */
+static const int eiv_domain = 0;
+static const int eiv_progress = 1;
+/* inSpatial */
+static const int eiv_latitude = 1;
+static const int eiv_longitude = 2;
+/* inTopo */
+// static const int eiv_elevation = 1;
+// static const int eiv_slope = 2;
+// static const int eiv_aspect = 3;
+/* inSoil */
+static const int eiv_soilLayerDepth = 1;
+static const int eiv_soilLayerWidth = 2;
+static const int eiv_soilDensity = 3;
+static const int eiv_gravel = 4;
+static const int eiv_sand = 5;
+static const int eiv_clay = 6;
+static const int eiv_silt = 7;
+static const int eiv_som = 8;
+static const int eiv_impermeability = 9;
+static const int eiv_avgLyrTempInit = 10;
+static const int eiv_evapCoeff = 11;
+static const int eiv_transpCoeff[NVEGTYPES] = {12, 13, 14, 15};
+static const int eiv_swrcpMS[SWRC_PARAM_NMAX] = {16, 17, 18, 19, 20, 21};
+/* inVeg */
+static const int eiv_bareGroundfCover = 1;
+static const int eiv_vegfCover[NVEGTYPES] = {2, 7, 12, 17};
+static const int eiv_vegLitter[NVEGTYPES] = {3, 8, 13, 18};
+static const int eiv_vegBiomass[NVEGTYPES] = {4, 9, 14, 19};
+static const int eiv_vegPctlive[NVEGTYPES] = {5, 10, 15, 20};
+static const int eiv_vegLAIconv[NVEGTYPES] = {6, 11, 16, 21};
+/* inWeather */
+// static const int eiv_temp_max = 1 + TEMP_MAX;
+// static const int eiv_temp_min = 1 + TEMP_MIN;
+// static const int eiv_ppt = 1 + PPT;
+// static const int eiv_cloudcov = 1 + CLOUD_COV;
+// static const int eiv_windspeed = 1 + WIND_SPEED;
+// static const int eiv_windspeed_east = 1 + WIND_EAST;
+// static const int eiv_windspeed_north = 1 + WIND_NORTH;
+// static const int eiv_r_humidity = 1 + REL_HUMID;
+// static const int eiv_rmax_humidity = 1 + REL_HUMID_MAX;
+// static const int eiv_rmin_humidity = 1 + REL_HUMID_MIN;
+// static const int eiv_spec_humidity = 1 + SPEC_HUMID;
+// static const int eiv_temp_dewpoint = 1 + TEMP_DEWPOINT;
+// static const int eiv_actualVaporPressure = 1 + ACTUAL_VP;
+static const int eiv_shortWaveRad = 1 + SHORT_WR;
+/* inClimate */
+// static const int eiv_monthlyCloudcov = 1;
+// static const int eiv_monthlyWindspeed = 2;
+// static const int eiv_monthlyRHumidity = 3;
+// static const int eiv_monthlySnowDensity = 4;
+// static const int eiv_monthlyNRainPerDay = 5;
+/** @} */ // end of documentation of eiv
 
 static const char *const generalVegNames[] = {
     "<veg>.fCover",
@@ -361,24 +417,28 @@ static TimeInt num_nc_days_in_year(
 domain and progress file inputs, fail if not
 
 @param[in] readDomInVars A list of flags specifying if the variables
-within the key 'inDomain' are turned on or off
+    within the key 'inDomain' are turned on or off. Position 0 indicates
+    if any are turned on.
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void check_for_input_domain(
     const Bool readDomInVars[], LOG_INFO *LogInfo
 ) {
-    if (!readDomInVars[1] && !readDomInVars[2]) {
+    if (!readDomInVars[0]) {
         LogError(
             LogInfo,
             LOGERROR,
             "Both domain and progress variables were not provided."
         );
-    } else if (!readDomInVars[1] || !readDomInVars[2]) {
+    } else if (!readDomInVars[eiv_domain + 1] ||
+               !readDomInVars[eiv_progress + 1]) {
         LogError(
             LogInfo,
             LOGERROR,
-            "The %s input variable is not turned on.",
-            (!readDomInVars[1]) ? "'domain'" : "'progress'"
+            "The '%s' input variable is not turned on.",
+            (!readDomInVars[eiv_domain + 1]) ?
+                possVarNames[eSW_InDomain][eiv_domain] :
+                possVarNames[eSW_InDomain][eiv_progress]
         );
     }
 }
@@ -505,7 +565,7 @@ static void get_2d_input_key(
     if (*inKey != eSW_NoInKey) {
         for (varNum = 0; varNum < numVarsInKey[*inKey]; varNum++) {
             if (strcmp(possVarNames[*inKey][varNum], varName) == 0) {
-                if (varNum == 0 && keyNum != eSW_InDomain) {
+                if (varNum == eiv_indexSpatial && keyNum != eSW_InDomain) {
                     *isIndex = swTRUE;
                 }
 
@@ -737,25 +797,30 @@ static void check_variable_for_required(
     };
     int mustTestAtts = 7;
     int testInd;
+    int k;
 
     /* Indices are based on the global array `possVarNames` under `inVeg` */
-    Bool isLitter =
-        (Bool) (varNum == 3 || varNum == 8 || varNum == 13 || varNum == 18);
-    Bool isBio =
-        (Bool) (varNum == 4 || varNum == 9 || varNum == 14 || varNum == 19);
-    Bool isPctLive =
-        (Bool) (varNum == 5 || varNum == 10 || varNum == 15 || varNum == 20);
-    Bool isLAI =
-        (Bool) (varNum == 6 || varNum == 11 || varNum == 16 || varNum == 21);
+    Bool isLitter = swFALSE;
+    Bool isBio = swFALSE;
+    Bool isPctLive = swFALSE;
+    Bool isLAI = swFALSE;
 
     Bool testVeg = swFALSE;
     Bool canBeNA;
 
-    Bool isIndex = (Bool) (key > eSW_InDomain && varNum == 0);
+    Bool isIndex = (Bool) (key > eSW_InDomain && varNum == eiv_indexSpatial);
     Bool inputDomIsSite =
         (Bool) (strcmp(inputInfo[varNum][INDOMTYPE], "s") == 0);
 
     char *varName = inputInfo[varNum][INNCVARNAME];
+
+
+    ForEachVegType(k) {
+        isLitter = (Bool) (isLitter || varNum == eiv_vegLitter[k]);
+        isBio = (Bool) (isBio || varNum == eiv_vegBiomass[k]);
+        isPctLive = (Bool) (isPctLive || varNum == eiv_vegPctlive[k]);
+        isLAI = (Bool) (isLAI || varNum == eiv_vegLAIconv[k]);
+    }
 
     /* Make sure that the universally required attributes are filled in
        skip the testing of the nc var units (can be NA) */
@@ -876,11 +941,14 @@ static void check_inputkey_columns(
                        they were already checked in `SW_NCIN_read_input_vars()`
                     */
                     if (key == eSW_InVeg) {
-                        ignoreAtt = (Bool) ((varNum > 1 && attNum == attEnd) ||
+                        ignoreAtt = (Bool) ((varNum > eiv_bareGroundfCover &&
+                                             attNum == attEnd) ||
                                             (attNum == INTAXIS));
                     } else if (key == eSW_InSoil) {
-                        ignoreAtt = (Bool) (varNum >= 12 && varNum <= 15 &&
-                                            attNum == attEnd);
+                        ignoreAtt =
+                            (Bool) (varNum >= eiv_transpCoeff[0] &&
+                                    varNum <= eiv_transpCoeff[NVEGTYPES - 1] &&
+                                    attNum == attEnd);
                     }
 
                     if (!ignoreAtt && strcmp(currAtt, cmpAtt) != 0) {
@@ -970,6 +1038,164 @@ static void check_input_variables(
             if (LogInfo->stopRun) {
                 return; /* Exit function prematurely due to failed test */
             }
+        }
+    }
+}
+
+/**
+@brief Helper function to check for availability of required soil inputs
+
+Required soil properties if not constant soils:
+    1. one out of {width, depth}
+    2. soil density
+    3. gravel
+    4. two out of {sand, silt, clay}
+    5. soil organic matter
+    6. evaporation coefficients
+    7. transpiration coefficients
+    8. SWRCp
+
+Soil properties that are not required (value of 0 will be assumed if missing):
+    9. impermeability
+    10. initial soil temperature
+
+@param[in] readInVarsSoils Specifies which variables are to be read-in as
+    soil inputs
+@param[in] hasConsistentSoilLayerDepths Flag indicating if all simulation
+    run within domain have identical soil layer depths
+    (though potentially variable number of soil layers)
+@param[in] inputsProvideSWRCp Are SWRC parameters obtained from
+    input files (TRUE) or estimated with a PTF (FALSE)
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void checkRequiredSoils(
+    const Bool readInVarsSoils[],
+    Bool hasConsistentSoilLayerDepths,
+    Bool inputsProvideSWRCp,
+    LOG_INFO *LogInfo
+) {
+    char soilErrorMsg[MAX_FILENAMESIZE] = "";
+    char tmpStr[100] = "";
+    char *writePtr = soilErrorMsg;
+    char *tempWritePtr;
+    int writeSize = MAX_FILENAMESIZE;
+    int tmp;
+    int k;
+    const int nRequired1Var = 4;
+    int required1Vars[4] = {
+        eiv_soilDensity, eiv_gravel, eiv_som, eiv_evapCoeff
+    };
+    const int nSuggested1Vars = 2;
+    int suggested1Vars[2] = {eiv_impermeability, eiv_avgLyrTempInit};
+
+    /* Check that we have sufficient soil inputs */
+    if (hasConsistentSoilLayerDepths) {
+        /* Note: SW_NCIN_soilProfile() warns if any soil nc-input has
+          fewer layers than nMaxSoilLayers
+        */
+        /* Note: read_soil_inputs() will check that input
+           layerDepth and layerWidth are consistent with depthsAllSoilLayers
+           for each site/gridcell
+        */
+
+    } else {
+        // Check that we have sufficient netCDF inputs to create complete soils
+
+        // Check conditions that are warnings
+        for (k = 0; k < nSuggested1Vars; k++) {
+            if (!readInVarsSoils[suggested1Vars[k] + 1]) {
+                LogError(
+                    LogInfo,
+                    LOGWARN,
+                    "'%s' is suggested but not provided as soil input: "
+                    "a default value of 0 will be used",
+                    possVarNames[eSW_InSoil][suggested1Vars[k]]
+                );
+            }
+        }
+
+        // Check conditions that are errors
+        for (k = 0; k < nRequired1Var; k++) {
+            if (!readInVarsSoils[required1Vars[k] + 1]) {
+                (void) snprintf(
+                    tmpStr,
+                    sizeof tmpStr,
+                    "'%s' is required; ",
+                    possVarNames[eSW_InSoil][required1Vars[k]]
+                );
+                tempWritePtr =
+                    (char *) sw_memccpy(writePtr, tmpStr, '\0', writeSize);
+                writeSize -= (int) (tempWritePtr - soilErrorMsg - 1);
+                writePtr = tempWritePtr - 1;
+            }
+        }
+
+        // Required: one out of {width, depth}
+        tmp = (int) readInVarsSoils[eiv_soilLayerDepth + 1] +
+              (int) readInVarsSoils[eiv_soilLayerWidth + 1];
+        if (tmp < 1) {
+            tempWritePtr = (char *) sw_memccpy(
+                writePtr,
+                "either layer depth or layer width is required; ",
+                '\0',
+                writeSize
+            );
+            writeSize -= (int) (tempWritePtr - soilErrorMsg - 1);
+            writePtr = tempWritePtr - 1;
+        }
+
+        // Required: two out of {sand, silt, clay}
+        tmp = (int) readInVarsSoils[eiv_sand + 1] +
+              (int) readInVarsSoils[eiv_silt + 1] +
+              (int) readInVarsSoils[eiv_clay + 1];
+        if (tmp < 2) {
+            tempWritePtr = (char *) sw_memccpy(
+                writePtr,
+                "two out of sand, silt, clay are required; ",
+                '\0',
+                writeSize
+            );
+            writeSize -= (int) (tempWritePtr - soilErrorMsg - 1);
+            writePtr = tempWritePtr - 1;
+        }
+
+        // Required: all transpiration coefficients
+        tmp = 0;
+        ForEachVegType(k) {
+            tmp += (int) readInVarsSoils[eiv_transpCoeff[k] + 1];
+        }
+        if (tmp != NVEGTYPES) {
+            tempWritePtr = (char *) sw_memccpy(
+                writePtr,
+                "all transpiration coefficients are required; ",
+                '\0',
+                writeSize
+            );
+            writeSize -= (int) (tempWritePtr - soilErrorMsg - 1);
+            writePtr = tempWritePtr - 1;
+        }
+
+        // Required: all SWRCp required unless estimated via PTF
+        if (inputsProvideSWRCp) {
+            tmp = 0;
+            for (k = 0; k < SWRC_PARAM_NMAX; k++) {
+                tmp += (int) readInVarsSoils[eiv_swrcpMS[k] + 1];
+            }
+            if (tmp != SWRC_PARAM_NMAX) {
+                tempWritePtr = (char *) sw_memccpy(
+                    writePtr,
+                    "all SWRC parameters are required; ",
+                    '\0',
+                    writeSize
+                );
+                writeSize -= (int) (tempWritePtr - soilErrorMsg - 1);
+            }
+        }
+
+        if (writeSize != MAX_FILENAMESIZE) {
+            LogError(
+                LogInfo, LOGERROR, "Incomplete soil inputs: %s", soilErrorMsg
+            );
         }
     }
 }
@@ -4900,15 +5126,17 @@ static void read_spatial_topo_climate_inputs(
     int lonIndex;
     int timeIndex;
     size_t defSetStart[2] = {0};
-    const int lonVarNum = 1;
 
     double **scaleAddFactors;
     const InKeys keys[] = {eSW_InSpatial, eSW_InTopo, eSW_InClimate};
     InKeys currKey;
 
     double *values[][5] = {
+        /* must match possVarNames[eSW_InSpatial] */
         {&SW_Model->latitude, &SW_Model->longitude},
+        /* must match possVarNames[eSW_InTopo] (without spatial index) */
         {&SW_Model->elevation, &SW_Model->slope, &SW_Model->aspect},
+        /* must match possVarNames[eSW_InClimate] (without spatial index) */
         {SW_Sky->cloudcov,
          SW_Sky->windspeed,
          SW_Sky->r_humidity,
@@ -4983,8 +5211,8 @@ static void read_spatial_topo_climate_inputs(
                (latitide index = -1) or in the case where longitude
                is 2D, treat it normally */
             if ((currKey != eSW_InSpatial ||
-                 (currKey == eSW_InSpatial && varNum - 1 != lonVarNum)) ||
-                (currKey == eSW_InSpatial && varNum - 1 == lonVarNum &&
+                 (currKey == eSW_InSpatial && varNum == eiv_latitude)) ||
+                (currKey == eSW_InSpatial && varNum == eiv_longitude &&
                  latIndex > -1)) {
 
                 start[latIndex] = defSetStart[0];
@@ -5612,19 +5840,16 @@ and being read many times; the information this function gathers is:
     - Variable types
     - Flags/values for having scale and add factor attribute per variable
     - Missing value specifiers
+    - Size of the vertical dimension (number of soil layers) of each soil
+      input
 
 @param[in] SW_netCDFIn Constant netCDF input file information
-@param[in] hasConstSoilLyrs Specifies of all soil inputs provided
-by the user (if any) are the same depths/number of layers
 @param[out] SW_PathInputs Struct of type SW_PATH_INPUTS which
 holds basic information about input files and values
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static void get_invar_information(
-    SW_NETCDF_IN *SW_netCDFIn,
-    Bool hasConstSoilLyrs,
-    SW_PATH_INPUTS *SW_PathInputs,
-    LOG_INFO *LogInfo
+    SW_NETCDF_IN *SW_netCDFIn, SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo
 ) {
     int inKey;
     int attNum;
@@ -5648,8 +5873,6 @@ static void get_invar_information(
     int startVar;
     Bool **missValFlags;
     size_t **numSoilVarLyrs = &SW_PathInputs->numSoilVarLyrs;
-    LyrIndex testNumLyrs = 0;
-    int numReadSoilVars = 0;
     unsigned int weathFileIndex = SW_PathInputs->weathStartFileIndex;
     Bool projCRS;
 
@@ -5822,8 +6045,6 @@ static void get_invar_information(
             }
 
             if (inKey == eSW_InSoil) {
-                numReadSoilVars++;
-
                 SW_NC_get_dimlen_from_dimname(
                     ncFileID,
                     inVarInfo[varNum][INZAXIS],
@@ -5831,21 +6052,6 @@ static void get_invar_information(
                     LogInfo
                 );
                 if (LogInfo->stopRun) {
-                    return;
-                }
-
-                if (testNumLyrs == 0) {
-                    testNumLyrs = (LyrIndex) (*numSoilVarLyrs)[varNum];
-                } else if (hasConstSoilLyrs &&
-                           testNumLyrs !=
-                               (LyrIndex) (*numSoilVarLyrs)[varNum]) {
-                    LogError(
-                        LogInfo,
-                        LOGERROR,
-                        "User reported soil layers are consistent "
-                        "through inputs, it was detected that this is not "
-                        "true, please check `siteparam.in`."
-                    );
                     goto closeFile;
                 }
             }
@@ -5860,7 +6066,7 @@ static void get_invar_information(
                     LogInfo
                 );
                 if (LogInfo->stopRun) {
-                    return;
+                    goto closeFile;
                 }
             }
 #endif
@@ -5868,20 +6074,6 @@ static void get_invar_information(
             nc_close(ncFileID);
             ncFileID = -1;
         }
-    }
-
-    if (readInVars[eSW_InSoil][0] && !hasConstSoilLyrs &&
-        numReadSoilVars < numVarsInKey[eSW_InSoil] - 1) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "It was specified that the soil layers are not consistent through "
-            "all simulations, however not every (individual) variable within "
-            "'inSoil' was turned on, only %d / %d were. This does not include "
-            "the index variable or general '<veg>.transp_coeff' variables.",
-            numReadSoilVars,
-            numVarsInKey[eSW_InSoil] - 1
-        );
     }
 
 closeFile:
@@ -5925,9 +6117,9 @@ static void read_veg_inputs(
     char *fileName;
     char *varName;
     nc_type varType;
-    size_t count[] = {1, 0, 0, 0};
-    size_t start[] = {0, 0, 0, 0};
-    Bool varHasTime;
+    size_t count[4] = {0};
+    size_t start[4] = {0};
+    Bool varHasNotTime;
     Bool hasPFT;
     Bool varHasAddScaleAtts;
     double scaleFactor;
@@ -5947,8 +6139,10 @@ static void read_veg_inputs(
     int lonIndex;
     int timeIndex;
     int pftIndex;
+    int k;
     size_t defSetStart[2] = {0};
 
+    /* must match possVarNames[eSW_InVeg] (without spatial index) */
     double *values[] = {
         &SW_VegProd->bare_cov.fCover,
 
@@ -6009,18 +6203,21 @@ static void read_veg_inputs(
             continue;
         }
 
-        /* Bare ground cover does not have time (index 1),
-           otherwise, the first variable of every veg group doesn't have
-           time, otherwise, the current variable has a time dimension */
-        varHasTime =
-            (Bool) !(varNum == 1 || (varNum - 2) % (NVEGTYPES + 1) == 0);
+        /* Bare ground and vegetation cover do not have time,
+           otherwise, the current variable has a time dimension */
+        varHasNotTime = (Bool) (varNum == eiv_bareGroundfCover);
+
+        ForEachVegType(k) {
+            varHasNotTime =
+                (Bool) (varHasNotTime || varNum == eiv_vegfCover[k]);
+        }
 
         varID = varIDs[varNum];
         varType = varTypes[varNum];
         fileName = vegInFiles[varNum];
         varName = inVarInfo[varNum][INNCVARNAME];
         hasPFT = (Bool) (strcmp(inVarInfo[varNum][INVAXIS], "NA") != 0);
-        numSetVals = (varHasTime) ? MAX_MONTHS : 1;
+        numSetVals = (varHasNotTime) ? 1 : MAX_MONTHS;
         latIndex = dimOrderInVar[varNum][0];
         lonIndex = dimOrderInVar[varNum][1];
         timeIndex = dimOrderInVar[varNum][3];
@@ -6036,12 +6233,12 @@ static void read_veg_inputs(
             count[lonIndex] = (!inSiteDom) ? 1 : 0;
         }
 
-        count[timeIndex] = (varHasTime) ? MAX_MONTHS : 0;
-        if (hasPFT) {
+        if (!varHasNotTime && timeIndex > -1) {
+            count[timeIndex] = MAX_MONTHS;
+        }
+        if (hasPFT && pftIndex > -1) {
             start[pftIndex] = ((varNum - 2) / (NVEGTYPES + 1));
             count[pftIndex] = 1;
-        } else {
-            start[pftIndex] = 0;
         }
 
         SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
@@ -6093,33 +6290,252 @@ closeFile:
     }
 }
 
+/** Derive missing soil properties from available properties and checks
+
+The number of soil layers is inferred from the first n layers
+with depth and width/thickness (if provided as input)
+that are neither zero nor missing.
+
+If \p hasConstSoilDepths, then the function checks that depth values are
+consistent with the default soil depths (from text input "soils.in").
+
+Otherwise (i.e., if not \p hasConstSoilDepths), missing properties are
+calculated if possible
+    - depth if width/thickness is provided as nc-input but not depth
+    - width/thickness is provided as nc-input but not width/thickness
+    - sand if clay and silt are provided but not sand
+    - clay if sand and silt are provided but not clay
+    - impermeability is set to 0 if not provided as nc-input
+    - initial soil temperature is set to 0 if not provided as nc-input
+
+The function also checks for consistency
+    - between depth and width (if both provided as inputs)
+    - between sand, silt, and clay (if all provided as nc-inputs)
+
+
+@param[out] n_layers
+@param[in,out] soilValues Array of pointers to soil variable arrays,
+    see read_soil_inputs(), organized as #possVarNames[eSW_InSoil]
+    (but without spatial index, transpiration coefficients, and SWRCp)
+@param[in] readInVarsSoils Specifies which variables are to be read-in as
+    soil inputs
+@param[in] hasConstSoilDepths Specifies of all soil inputs provided
+    by the user (if any) have the same depth profile
+@param[in] depthsAllSoilLayers Depths of soil layers (cm),
+    used if \p hasConstSoilDepths
+@param[in] nMaxSoilLayers Largest number of soil layers across
+    simulation domain
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void derive_missing_soils(
+    LyrIndex *n_layers,
+    double **soilValues,
+    const Bool *readInVarsSoils,
+    Bool hasConstSoilDepths,
+    const double depthsAllSoilLayers[],
+    LyrIndex nMaxSoilLayers,
+    LOG_INFO *LogInfo
+) {
+    Bool noDepth;
+    Bool noWidth;
+    double cumWidth = 0.;
+    double sumTexture;
+
+    for (int slNum = 0; slNum < MAX_LAYERS; slNum++) {
+        // Note: SW_SIT_init_run() will determine:
+        //       n_evap_lyrs, n_transp_lyrs, deep_lyr
+        // Here, determine new number of soil layers:
+        //      soil layers end if depth or width is missing or 0
+        noDepth =
+            (hasConstSoilDepths || readInVarsSoils[eiv_soilLayerDepth + 1]) ?
+                (Bool) (missing(soilValues[eiv_soilLayerDepth - 1][slNum]) ||
+                        ZRO(soilValues[eiv_soilLayerDepth - 1][slNum])) :
+                swFALSE;
+
+        noWidth =
+            (hasConstSoilDepths || readInVarsSoils[eiv_soilLayerWidth + 1]) ?
+                (Bool) (missing(soilValues[eiv_soilLayerWidth - 1][slNum]) ||
+                        ZRO(soilValues[eiv_soilLayerWidth - 1][slNum])) :
+                swFALSE;
+
+        if (noDepth || noWidth) {
+            break;
+        }
+
+        (*n_layers)++;
+
+        if (hasConstSoilDepths) {
+            // Check that depth is consistent with depthsAllSoilLayers
+            if (!EQ(soilValues[eiv_soilLayerDepth - 1][slNum],
+                    depthsAllSoilLayers[slNum])) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Depth (%f cm) of soil layer %d disagrees with "
+                    "expected depth (%f cm).",
+                    soilValues[eiv_soilLayerDepth - 1][slNum],
+                    slNum,
+                    depthsAllSoilLayers[slNum]
+                );
+                return; // Exit function prematurely due to error
+            }
+
+        } else {
+            // Calculate depth if width provided but not depth
+            if (!readInVarsSoils[eiv_soilLayerDepth + 1] &&
+                readInVarsSoils[eiv_soilLayerWidth + 1]) {
+                if (slNum == 0) {
+                    soilValues[eiv_soilLayerDepth - 1][slNum] =
+                        soilValues[eiv_soilLayerWidth - 1][slNum];
+                } else {
+                    soilValues[eiv_soilLayerDepth - 1][slNum] +=
+                        soilValues[eiv_soilLayerWidth - 1][slNum];
+                }
+            }
+
+            // Calculate width if depth provided but not width
+            if (readInVarsSoils[eiv_soilLayerDepth + 1] &&
+                !readInVarsSoils[eiv_soilLayerWidth + 1]) {
+                if (slNum == 0) {
+                    soilValues[eiv_soilLayerWidth - 1][slNum] =
+                        soilValues[eiv_soilLayerDepth - 1][slNum];
+                } else {
+                    soilValues[eiv_soilLayerWidth - 1][slNum] =
+                        soilValues[eiv_soilLayerDepth - 1][slNum] -
+                        soilValues[eiv_soilLayerDepth - 1][slNum - 1];
+                }
+            }
+
+            // Calculate sand if clay and silt provided but not sand
+            if (!readInVarsSoils[eiv_sand + 1] &&
+                readInVarsSoils[eiv_silt + 1] &&
+                readInVarsSoils[eiv_clay + 1]) {
+                soilValues[eiv_sand - 1][slNum] =
+                    1 - (soilValues[eiv_silt - 1][slNum] +
+                         soilValues[eiv_clay - 1][slNum]);
+            }
+
+            // Calculate clay if sand and silt provided but not clay
+            if (readInVarsSoils[eiv_sand + 1] &&
+                readInVarsSoils[eiv_silt + 1] &&
+                !readInVarsSoils[eiv_clay + 1]) {
+                soilValues[eiv_clay - 1][slNum] =
+                    1 - (soilValues[eiv_silt - 1][slNum] +
+                         soilValues[eiv_sand - 1][slNum]);
+            }
+
+            // Set impermeability to 0 if not provided
+            if (!readInVarsSoils[eiv_impermeability + 1]) {
+                soilValues[eiv_impermeability - 1][slNum] = 0.;
+            }
+
+            // Set avgLyrTempInit to 0 if not provided
+            if (!readInVarsSoils[eiv_avgLyrTempInit + 1]) {
+                soilValues[eiv_avgLyrTempInit - 1][slNum] = 0.;
+            }
+        }
+
+        // Check consistency between depth and width if both provided
+        // (depth is provided by default if hasConstSoilDepths)
+        if ((readInVarsSoils[eiv_soilLayerDepth + 1] || hasConstSoilDepths) &&
+            readInVarsSoils[eiv_soilLayerWidth + 1]) {
+            cumWidth += soilValues[eiv_soilLayerWidth - 1][slNum];
+
+            if (!EQ(soilValues[eiv_soilLayerDepth - 1][slNum], cumWidth)) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Soil layer depth (%f cm) and "
+                    "width (%f cm, cumulative = %f) are provided as inputs, "
+                    "but they disagree in soil layer %d.",
+                    soilValues[eiv_soilLayerDepth - 1][slNum],
+                    soilValues[eiv_soilLayerWidth - 1][slNum],
+                    cumWidth,
+                    slNum
+                );
+                return; // Exit function prematurely due to error
+            }
+        }
+
+        // Check consistency between sand, silt, and clay if all provided
+        if (readInVarsSoils[eiv_sand + 1] && readInVarsSoils[eiv_silt + 1] &&
+            readInVarsSoils[eiv_clay + 1]) {
+            sumTexture = soilValues[eiv_sand - 1][slNum] +
+                         soilValues[eiv_silt - 1][slNum] +
+                         soilValues[eiv_clay - 1][slNum];
+
+            if (GT(sumTexture, 1.)) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Sum of sand (%f), silt (%f) and clay (%f) is larger "
+                    "than 1 in soil layer %d.",
+                    soilValues[eiv_sand - 1][slNum],
+                    soilValues[eiv_silt - 1][slNum],
+                    soilValues[eiv_clay - 1][slNum],
+                    slNum + 1
+                );
+                return; // Exit function prematurely due to error
+            }
+        }
+    }
+
+
+    if (*n_layers > nMaxSoilLayers) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Number of soil layers (%d) is larger than "
+            "domain-wide expected maximum number of soil layers (%d).",
+            *n_layers,
+            nMaxSoilLayers
+        );
+    }
+}
+
 /**
 @brief Read inputs relating to the input key 'inSoil'
 
+Uses soil information from the text input files if \p hasConstSoilDepths,
+and replaces values of properties that are provided by nc-inputs.
+Otherwise (i.e., if not \p hasConstSoilDepths), a new soil is created
+from scratch and all information is obtained from nc-inputs.
+
+See also derive_missing_soils() for determination of number of soil layers,
+estimation of missing soil properties from available properties, and
+consistency checks.
+
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
-temporal/spatial information for a set of simulation runs
+    temporal/spatial information for a set of simulation runs
 @param[out] SW_Site Struct of type SW_SITE describing the simulated site
 @param[in] soilInFiles List of input files the user provided for the
-input key 'inSoil'
-@param[in] hasConstSoilLyrs Specifies of all soil inputs provided
-by the user (if any) are the same depths/number of layers
+    input key 'inSoil'
+@param[in] hasConstSoilDepths Specifies of all soil inputs provided
+    by the user (if any) have the same depth profile
+@param[in] depthsAllSoilLayers Depths of soil layers (cm),
+    used if \p hasConstSoilDepths
 @param[in] soilConv A UDUNITS2 converter used to convert user-provided
-units to units that SW2 understands
+    units to units that SW2 understands
 @param[in] ncSUID Current simulation unit identifier for which is used
-to get data from netCDF
+    to get data from netCDF
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void read_soil_inputs(
     SW_DOMAIN *SW_Domain,
     SW_SITE *SW_Site,
     char **soilInFiles,
-    Bool hasConstSoilLyrs,
+    Bool hasConstSoilDepths,
+    const double depthsAllSoilLayers[],
     sw_converter_t **soilConv,
     const size_t ncSUID[],
     LOG_INFO *LogInfo
 ) {
     SW_SOILS newSoils;
     SW_SOILS *currSoils = &SW_Site->soils;
+
+    /* Initialize soils */
+    SW_Site->n_layers = 0;
+    SW_SOIL_construct(&newSoils);
 
     char ***inVarInfo = SW_Domain->netCDFInput.inVarInfo[eSW_InSoil];
     Bool *readInputs = SW_Domain->netCDFInput.readInVars[eSW_InSoil];
@@ -6135,30 +6551,31 @@ static void read_soil_inputs(
     double **doubleMissVals =
         SW_Domain->SW_PathInputs.doubleMissVals[eSW_InSoil];
 
+    /* must match possVarNames[eSW_InSoil] (without spatial index) */
     double *values1D[] = {
-        (hasConstSoilLyrs) ? currSoils->depths : newSoils.depths,
-        (hasConstSoilLyrs) ? currSoils->width : newSoils.width,
-        (hasConstSoilLyrs) ? currSoils->soilDensityInput :
-                             newSoils.soilDensityInput,
-        (hasConstSoilLyrs) ? currSoils->fractionVolBulk_gravel :
-                             newSoils.fractionVolBulk_gravel,
-        (hasConstSoilLyrs) ? currSoils->fractionWeightMatric_sand :
-                             newSoils.fractionWeightMatric_sand,
-        (hasConstSoilLyrs) ? currSoils->fractionWeightMatric_clay :
-                             newSoils.fractionWeightMatric_clay,
+        (hasConstSoilDepths) ? currSoils->depths : newSoils.depths,
+        (hasConstSoilDepths) ? currSoils->width : newSoils.width,
+        (hasConstSoilDepths) ? currSoils->soilDensityInput :
+                               newSoils.soilDensityInput,
+        (hasConstSoilDepths) ? currSoils->fractionVolBulk_gravel :
+                               newSoils.fractionVolBulk_gravel,
+        (hasConstSoilDepths) ? currSoils->fractionWeightMatric_sand :
+                               newSoils.fractionWeightMatric_sand,
+        (hasConstSoilDepths) ? currSoils->fractionWeightMatric_clay :
+                               newSoils.fractionWeightMatric_clay,
         tempSilt,
-        (hasConstSoilLyrs) ? currSoils->fractionWeight_om :
-                             newSoils.fractionWeight_om,
-        (hasConstSoilLyrs) ? currSoils->impermeability :
-                             newSoils.impermeability,
-        (hasConstSoilLyrs) ? currSoils->avgLyrTempInit :
-                             newSoils.avgLyrTempInit,
-        (hasConstSoilLyrs) ? currSoils->evap_coeff : newSoils.evap_coeff
+        (hasConstSoilDepths) ? currSoils->fractionWeight_om :
+                               newSoils.fractionWeight_om,
+        (hasConstSoilDepths) ? currSoils->impermeability :
+                               newSoils.impermeability,
+        (hasConstSoilDepths) ? currSoils->avgLyrTempInit :
+                               newSoils.avgLyrTempInit,
+        (hasConstSoilDepths) ? currSoils->evap_coeff : newSoils.evap_coeff
     };
 
     double(*trans_coeff)[MAX_LAYERS] =
-        (hasConstSoilLyrs) ? currSoils->transp_coeff : newSoils.transp_coeff;
-    double(*swrcpMS)[SWRC_PARAM_NMAX] = (hasConstSoilLyrs) ?
+        (hasConstSoilDepths) ? currSoils->transp_coeff : newSoils.transp_coeff;
+    double(*swrcpMS)[SWRC_PARAM_NMAX] = (hasConstSoilDepths) ?
                                             currSoils->swrcpMineralSoil :
                                             newSoils.swrcpMineralSoil;
     double tempswrcp[MAX_LAYERS];
@@ -6170,8 +6587,6 @@ static void read_soil_inputs(
     size_t start[4] = {0}; /* Maximum of four dimensions */
     size_t count[4] = {0}; /* Maximum of four dimensions */
     const int pftIndex = 4;
-    const int swrcpStartInd = 16;
-    const int transStartInd = 12;
     Bool hasPFT;
     Bool inSiteDom;
     Bool isSwrcpVar;
@@ -6219,17 +6634,20 @@ static void read_soil_inputs(
     }
 
     for (varNum = fIndex; varNum < numVarsInSoilKey; varNum++) {
-        if (!readInputs[varNum + 1] || (varNum == 1 && hasConstSoilLyrs)) {
+        if (!readInputs[varNum + 1] || (varNum == 1 && hasConstSoilDepths)) {
             continue;
         }
 
-        numLyrs = SW_Domain->SW_PathInputs.numSoilVarLyrs[varNum];
+        /* Don't read more than the max simulated number of soil layers */
+        numLyrs =
+            MIN(SW_Domain->SW_PathInputs.numSoilVarLyrs[varNum],
+                SW_Domain->nMaxSoilLayers);
         hasPFT = (Bool) (dimOrderInVar[varNum][pftIndex] > -1);
         varID = varIDs[varNum];
         fileName = soilInFiles[varNum];
         varName = inVarInfo[varNum][INNCVARNAME];
         varHasAddScaleAtts = keyAttFlags[varNum];
-        isSwrcpVar = (Bool) (varNum >= swrcpStartInd);
+        isSwrcpVar = (Bool) (varNum >= eiv_swrcpMS[0]);
         latIndex = dimOrderInVar[varNum][0];
         lonIndex = dimOrderInVar[varNum][1];
         vertIndex = dimOrderInVar[varNum][2];
@@ -6246,18 +6664,21 @@ static void read_soil_inputs(
             count[lonIndex] = 1;
         }
 
-        if (varNum >= transStartInd) {
-            numVals = (int) numLyrs;
-            /* Set pointer for trans_coeff (12+) and/or swrcp (16+) */
-            if (varNum >= transStartInd && varNum < swrcpStartInd) {
-                vegIndex = varNum - transStartInd;
-                doublePtr = (double *) trans_coeff[vegIndex];
-            } else {
-                doublePtr = (double *) tempswrcp;
-            }
+        numVals = (int) numLyrs;
+
+        if (varNum >= eiv_transpCoeff[0] &&
+            varNum <= eiv_transpCoeff[NVEGTYPES - 1]) {
+            /* Set trans_coeff */
+            vegIndex = varNum - eiv_transpCoeff[0];
+            doublePtr = (double *) trans_coeff[vegIndex];
+
+        } else if (varNum >= eiv_swrcpMS[0] &&
+                   varNum <= eiv_swrcpMS[SWRC_PARAM_NMAX - 1]) {
+            /* Set swrcp */
+            doublePtr = (double *) tempswrcp;
+
         } else {
             doublePtr = values1D[varNum - 1];
-            numVals = (int) numLyrs;
         }
 
         if (hasPFT) {
@@ -6299,16 +6720,35 @@ static void read_soil_inputs(
                 addOffset,
                 soilConv[varNum - 1],
                 isSwrcpVar,
-                (!isSwrcpVar) ? 0 : (varNum - swrcpStartInd),
+                (!isSwrcpVar) ? 0 : (varNum - eiv_swrcpMS[0]),
                 loopIter,
                 (!isSwrcpVar) ? doublePtr : swrcpMS[loopIter]
             );
         }
     }
 
-    if (!hasConstSoilLyrs) {
+
+    /* Derive missing soil properties and check others */
+    derive_missing_soils(
+        &SW_Site->n_layers,
+        values1D,
+        readInputs,
+        hasConstSoilDepths,
+        depthsAllSoilLayers,
+        SW_Domain->nMaxSoilLayers,
+        LogInfo
+    );
+
+    if (LogInfo->stopRun) {
+        goto closeFile;
+    }
+
+
+    if (!hasConstSoilDepths) {
         SW_Site->soils = newSoils;
     }
+
+    SW_Site->site_has_swrcpMineralSoil = SW_Site->inputsProvideSWRCp;
 
 closeFile:
     if (ncFileID > -1) {
@@ -6614,114 +7054,25 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 }
 
 /**
-@brief Get the number of soil layers of all soil input files if
-they are consistent
-
-@param[in] ncFileID File identifier of the nc file being read
-@param[in] zAxisName User-provided Z-axis name for soil layers
-@param[out] depthsAllSoilLayers Depths of all the soil layers,
-read-in from the provided nc file
-@param[out] LogInfo Holds information on warnings and errors
-*/
-static size_t get_nconsistent_soil_layers(
-    int ncFileID,
-    char *zAxisName,
-    double depthsAllSoilLayers[],
-    LOG_INFO *LogInfo
-) {
-    int varID = 0;
-    size_t maxVertSize = 0;
-    size_t start[1] = {0}; /* Maximum of one dimension for soil */
-    size_t count[1] = {0}; /* Maximum of one dimension for soil */
-
-    SW_NC_get_dimlen_from_dimname(ncFileID, zAxisName, &maxVertSize, LogInfo);
-    if (LogInfo->stopRun) {
-        return 0;
-    }
-
-    SW_NC_get_var_identifier(ncFileID, zAxisName, &varID, LogInfo);
-    if (LogInfo->stopRun) {
-        return 0;
-    }
-
-    count[0] = maxVertSize;
-
-    get_values_multiple(
-        ncFileID, varID, start, count, zAxisName, depthsAllSoilLayers, LogInfo
-    );
-
-    return maxVertSize;
-}
-
-/**
-@brief Search through the soil input files to find the maximum number of
-layers to expect when reading input
-
-@param[in] fileNum File number, or variable number, within the input key
-`eSW_InSoil` that we are starting the search with
-@param[in] varInfoSoils User-provided information on soils
-@param[in] readInVarsSoils A list of flags that specify to use specific
-variables within the input key `eSW_InSoils`
-@param[in] ncInFilesSoils List of user-provided input files meant for the
-input key `eSW_InSoil`
-@param[out] LogInfo Holds information on warnings and errors
-*/
-static size_t get_max_inconsistent_soil_layers(
-    int fileNum,
-    char ***varInfoSoils,
-    const Bool *readInVarsSoils,
-    char **ncInFilesSoils,
-    LOG_INFO *LogInfo
-) {
-    int varNum;
-    int ncFileID = -1;
-
-    char *fileName;
-    char **varInfo;
-
-    size_t maxVertSize = 0;
-    size_t dimSize = 0;
-
-    for (varNum = fileNum; varNum < numVarsInKey[eSW_InSoil]; varNum++) {
-        if (readInVarsSoils[varNum + 1]) {
-            varInfo = varInfoSoils[varNum];
-            fileName = ncInFilesSoils[varNum];
-
-            SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
-            if (LogInfo->stopRun) {
-                goto closeFile;
-            }
-
-            SW_NC_get_dimlen_from_dimname(
-                ncFileID, varInfo[INZAXIS], &dimSize, LogInfo
-            );
-            if (LogInfo->stopRun) {
-                goto closeFile;
-            }
-
-            if (dimSize > maxVertSize) {
-                maxVertSize = dimSize;
-            }
-
-            nc_close(ncFileID);
-            ncFileID = -1;
-        }
-    }
-
-closeFile:
-    if (ncFileID > -1) {
-        nc_close(ncFileID);
-    }
-
-    return maxVertSize;
-}
-
-/**
 @brief Identify soil profile information across simulation domain from netCDF
-nMaxEvapLayers is set to nMaxSoilLayers.
+
+If \p hasConsistentSoilLayerDepths, then
+    - \p nMaxSoilLayers is set equal to \p default_n_layers
+    - \p nMaxEvapLayers is set equal to \p nMaxSoilLayers
+    - \p depthsAllSoilLayers is set equal to \p default_depths
+    - a warning is produced if any soil nc-input has fewer layers than
+      \p nMaxSoilLayers
+
+If not \p hasConsistentSoilLayerDepths, then
+    - \p nMaxSoilLayers is set to the size of the vertical dimension of
+      soil layer inputs or soil layer width/thickness (if provided)
+    - \p nMaxEvapLayers is set equal to \p nMaxSoilLayers
+    - an error is produced if any soil nc-input has fewer layers than
+      \p nMaxSoilLayers
+
+An error is produced if \p *nMaxSoilLayers > MAX_LAYERS.
 
 @param[in] SW_netCDFIn Constant netCDF input file information
-@param[in] ncInFiles List of input nc files for the soil input key
 @param[out] hasConsistentSoilLayerDepths Flag indicating if all simulation
     run within domain have identical soil layer depths
     (though potentially variable number of soil layers)
@@ -6729,64 +7080,95 @@ nMaxEvapLayers is set to nMaxSoilLayers.
     simulation domain
 @param[out] nMaxEvapLayers Largest number of soil layers from which
     bare-soil evaporation may extract water across simulation domain
+    (nMaxEvapLayers is set to nMaxSoilLayers).
 @param[out] depthsAllSoilLayers Lower soil layer depths [cm] if
     consistent across simulation domain
+@param[in] numSoilVarLyrs An array with the number of soil layers for
+    all soil input key variables
+@param[in] default_n_layers Default number of soil layers
+@param[in] default_depths Default values of soil layer depths [cm]
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCIN_soilProfile(
     SW_NETCDF_IN *SW_netCDFIn,
-    char **ncInFiles,
     Bool hasConsistentSoilLayerDepths,
     LyrIndex *nMaxSoilLayers,
     LyrIndex *nMaxEvapLayers,
     double depthsAllSoilLayers[],
+    const size_t numSoilVarLyrs[],
+    LyrIndex default_n_layers,
+    const double default_depths[],
     LOG_INFO *LogInfo
 ) {
-    int ncFileID = -1;
-    char *fileName;
-    size_t maxVertSize = 0;
-    int fIndex = 1;
-
-    while (!SW_netCDFIn->readInVars[eSW_InSoil][fIndex + 1]) {
-        fIndex++;
-    }
+    int varNum;
+    Bool *readInVarsSoils = SW_netCDFIn->readInVars[eSW_InSoil];
 
     if (hasConsistentSoilLayerDepths) {
-        fileName = ncInFiles[fIndex];
-        SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
-        if (LogInfo->stopRun) {
-            return;
-        }
+        /* Set maximum number of soil layers */
+        *nMaxSoilLayers = default_n_layers;
 
-        maxVertSize = (LyrIndex) get_nconsistent_soil_layers(
-            ncFileID,
-            SW_netCDFIn->inVarInfo[eSW_InSoil][fIndex][INZAXIS],
+        /* Set soil layer depths from default */
+        memcpy(
             depthsAllSoilLayers,
-            LogInfo
+            default_depths,
+            sizeof(default_depths[0]) * default_n_layers
         );
-    } else {
-        maxVertSize = (LyrIndex) get_max_inconsistent_soil_layers(
-            fIndex,
-            SW_netCDFIn->inVarInfo[eSW_InSoil],
-            SW_netCDFIn->readInVars[eSW_InSoil],
-            ncInFiles,
-            LogInfo
-        );
-    }
 
-    *nMaxSoilLayers = *nMaxEvapLayers = (LyrIndex) maxVertSize;
+        /* Note: read_soil_inputs() will check that input
+           layerDepth and layerWidth are consistent with depthsAllSoilLayers
+           for each site/gridcell
+        */
+
+    } else {
+        /* Determine maximum number of soil layers */
+        if (readInVarsSoils[eiv_soilLayerDepth + 1]) {
+            *nMaxSoilLayers = numSoilVarLyrs[eiv_soilLayerDepth];
+
+        } else if (readInVarsSoils[eiv_soilLayerWidth + 1]) {
+            *nMaxSoilLayers = numSoilVarLyrs[eiv_soilLayerWidth];
+
+        } else {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "User indicated that soil layer depth and width/thickness "
+                "varies among sites/grid cells but neither depth "
+                "nor width/thickness of soil layers is provided as input."
+            );
+            return; // Exit function prematurely due to error
+        }
+    }
 
     if (*nMaxSoilLayers > MAX_LAYERS) {
         LogError(
             LogInfo,
             LOGERROR,
             "Domain-wide maximum number of soil layers (%d) "
-            "is larger than allowed (MAX_LAYERS = %d).\n",
+            "is larger than allowed (MAX_LAYERS = %d).",
             *nMaxSoilLayers,
             MAX_LAYERS
         );
         return; // Exit function prematurely due to error
     }
+
+    /* Check that all soil nc-inputs have nVertical >= *nMaxSoilLayers */
+    for (varNum = 1; varNum < numVarsInKey[eSW_InSoil]; varNum++) {
+        if (readInVarsSoils[varNum + 1] &&
+            *nMaxSoilLayers < numSoilVarLyrs[varNum]) {
+            LogError(
+                LogInfo,
+                hasConsistentSoilLayerDepths ? LOGWARN : LOGERROR,
+                "Expected %d soil layers but nc-input '%s' has only %d layers.",
+                *nMaxSoilLayers,
+                possVarNames[eSW_InSoil][varNum],
+                numSoilVarLyrs[varNum]
+            );
+            return; // Exit function prematurely due to error
+        }
+    }
+
+    /* nc-mode produces soil output for every soil layer */
+    *nMaxEvapLayers = *nMaxSoilLayers;
 }
 
 /**
@@ -7329,6 +7711,7 @@ void SW_NCIN_read_inputs(
             &sw->Site,
             ncInFiles[eSW_InSoil],
             SW_Domain->hasConsistentSoilLayerDepths,
+            SW_Domain->depthsAllSoilLayers,
             convs[eSW_InSoil],
             ncSUID,
             LogInfo
@@ -7357,6 +7740,32 @@ void SW_NCIN_read_inputs(
     }
 
     SW_PET_init_run(&sw->AtmDemand);
+}
+
+/**
+@brief Additional checks on the netCDF input configuration
+
+@param[in] SW_netCDFIn Constant netCDF input file information
+@param[in] hasConsistentSoilLayerDepths Flag indicating if all simulation
+    run within domain have identical soil layer depths
+    (though potentially variable number of soil layers)
+@param[in] inputsProvideSWRCp Are SWRC parameters obtained from
+    input files (TRUE) or estimated with a PTF (FALSE)
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NCIN_check_input_config(
+    SW_NETCDF_IN *SW_netCDFIn,
+    Bool hasConsistentSoilLayerDepths,
+    Bool inputsProvideSWRCp,
+    LOG_INFO *LogInfo
+) {
+    /* Check inSoils for required inputs */
+    checkRequiredSoils(
+        SW_netCDFIn->readInVars[eSW_InSoil],
+        hasConsistentSoilLayerDepths,
+        inputsProvideSWRCp,
+        LogInfo
+    );
 }
 
 /**
@@ -7783,7 +8192,7 @@ void SW_NCIN_deepCopy(
 @param[in,out] SW_netCDFIn Constant netCDF input file information
 @param[in] SW_netCDFOut Constant netCDF output file information
 @param[in] SW_PathInputs Struct of type SW_PATH_INPUTS which
-holds basic information about input files and values
+    holds basic information about input files and values
 @param[in] startYr Start year of the simulation
 @param[in] endYr End year of the simulation
 @param[out] LogInfo Holds information on warnings and errors
@@ -7981,7 +8390,8 @@ void SW_NCIN_read_input_vars(
                 if (inKey == eSW_InVeg) {
                     inVarNum = (inVarNum == 0) ? 2 : inVarNum + 2;
                 } else {
-                    inVarNum = 12; /* Start variable at `Trees.trans_coeff` */
+                    /* Start variable at `Trees.trans_coeff` */
+                    inVarNum = eiv_transpCoeff[0];
                 }
             } else {
                 maxVarIter = 1;
@@ -8215,6 +8625,7 @@ void SW_NCIN_read_input_vars(
         goto closeFile;
     }
 
+    /* Check columns of tsv input file */
     check_input_variables(
         SW_netCDFOut,
         SW_netCDFIn->inVarInfo,
@@ -8404,13 +8815,13 @@ void SW_NCIN_create_units_converters(
 
                 /* If the input variable is shortwave radiation or
                    swrcp, the internal units should be NA */
-                if (!((key == eSW_InWeather && varIndex == 14) ||
-                      (key == eSW_InSoil && varIndex >= 15 && varIndex <= 21)
-                    )) {
+                if (!((key == eSW_InWeather && varIndex == eiv_shortWaveRad) ||
+                      (key == eSW_InSoil && varIndex >= eiv_swrcpMS[0] &&
+                       varIndex <= eiv_swrcpMS[SWRC_PARAM_NMAX - 1]))) {
 
                     if (ut_are_convertible(unitFrom, unitTo)) {
                         // SW_netCDFIn.uconv[key][varIndex] was previously
-                        // to NULL initializeda
+                        // to NULL initialized
                         SW_netCDFIn->uconv[key][varIndex] =
                             ut_get_converter(unitFrom, unitTo);
                     }
@@ -8603,12 +9014,7 @@ void SW_NCIN_precalc_lookups(
 #endif
     }
 
-    get_invar_information(
-        SW_netCDFIn,
-        SW_Domain->hasConsistentSoilLayerDepths,
-        &SW_Domain->SW_PathInputs,
-        LogInfo
-    );
+    get_invar_information(SW_netCDFIn, &SW_Domain->SW_PathInputs, LogInfo);
 }
 
 /**

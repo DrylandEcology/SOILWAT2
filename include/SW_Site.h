@@ -298,6 +298,8 @@ void nlayers_vegroots(
     double transp_coeff[][MAX_LAYERS]
 );
 
+void SW_SOIL_construct(SW_SOILS *SW_Soils);
+
 void SW_SIT_construct(SW_SITE *SW_Site);
 
 void SW_SIT_init_counts(SW_SITE *SW_Site);
@@ -346,10 +348,14 @@ void set_soillayers(
     LOG_INFO *LogInfo
 );
 
-void derive_soilRegions(
-    SW_SITE *SW_Site,
-    unsigned int nRegions,
-    const double *regionLowerBounds,
+void derive_TranspRgnBounds(
+    LyrIndex *n_transp_rgn,
+    LyrIndex TranspRgnBounds[],
+    const LyrIndex nRegions,
+    const double TranspRgnDepths[],
+    const LyrIndex n_layers,
+    const double width[],
+    double transp_coeff[][MAX_LAYERS],
     LOG_INFO *LogInfo
 );
 
