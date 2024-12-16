@@ -2929,7 +2929,7 @@ static void alloc_dom_coord_info(
 
         if (allocArrays[coordArr]) {
             allocSize = *domCoordSizes[coordArr];
-            if (numCoords > numGeo && coordArr < numGeo) {
+            if (numCoords > numGeo && coordArr < (size_t) numGeo) {
                 allocSize *= *domCoordSizes[coordArr + 1];
             }
 
@@ -5160,8 +5160,6 @@ static void read_spatial_topo_climate_inputs(
         missValFlags = SW_Domain->SW_PathInputs.missValFlags[currKey];
         doubleMissVals = SW_Domain->SW_PathInputs.doubleMissVals[currKey];
         dimOrderInVar = SW_Domain->netCDFInput.dimOrderInVar[currKey];
-        latIndex = dimOrderInVar[fIndex][0];
-        lonIndex = dimOrderInVar[fIndex][1];
         start[0] = start[1] = start[2] = 0;
         count[0] = count[1] = count[2] = 0;
 
@@ -6168,8 +6166,6 @@ static void read_veg_inputs(
     }
 
     inSiteDom = (Bool) (strcmp(inVarInfo[fIndex][INDOMTYPE], "s") == 0);
-    latIndex = dimOrderInVar[fIndex][0];
-    lonIndex = dimOrderInVar[fIndex][1];
 
     /* Get the start indices based on if we need to use the respective
         index file */
@@ -6598,8 +6594,6 @@ static void read_soil_inputs(
     }
 
     inSiteDom = (Bool) (strcmp(inVarInfo[fIndex][INDOMTYPE], "s") == 0);
-    latIndex = dimOrderInVar[fIndex][0];
-    lonIndex = dimOrderInVar[fIndex][1];
 
     get_read_start(
         useIndexFile, soilInFiles[0], inSiteDom, ncSUID, defSetStart, LogInfo
@@ -7421,8 +7415,6 @@ static void read_weather_input(
     }
 
     inSiteDom = (Bool) (strcmp(inVarInfo[fIndex][INDOMTYPE], "s") == 0);
-    latIndex = dimOrderInVar[fIndex][0];
-    lonIndex = dimOrderInVar[fIndex][1];
 
     allocate_temp_weather(SW_Weather->n_years, &tempWeatherHist, LogInfo);
     if (LogInfo->stopRun) {
