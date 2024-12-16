@@ -5608,7 +5608,7 @@ static void gather_missing_information(
     int varNum,
     int inKey,
     Bool **missValFlags,
-    double **doubleMissVals,
+    double ***doubleMissVals,
     LOG_INFO *LogInfo
 ) {
     const int numMissAtts = 5;
@@ -5654,7 +5654,7 @@ static void gather_missing_information(
                 return;
             }
 
-            alloc_miss_vals(numVarsInKey[inKey], &doubleMissVals, LogInfo);
+            alloc_miss_vals(numVarsInKey[inKey], doubleMissVals, LogInfo);
             if (LogInfo->stopRun) {
                 return;
             }
@@ -5665,7 +5665,7 @@ static void gather_missing_information(
                 varNum,
                 (char *) missAttNames[attNum],
                 missAttType,
-                doubleMissVals,
+                *doubleMissVals,
                 LogInfo
             );
             if (LogInfo->stopRun) {
@@ -6026,7 +6026,7 @@ static void get_invar_information(
                 varNum,
                 inKey,
                 missValFlags,
-                SW_PathInputs->doubleMissVals[inKey],
+                &SW_PathInputs->doubleMissVals[inKey],
                 LogInfo
             );
             if (LogInfo->stopRun) {
