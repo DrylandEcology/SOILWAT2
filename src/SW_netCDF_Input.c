@@ -4850,8 +4850,6 @@ static void get_read_start(
     Bool inSiteDom,
     const size_t ncSUID[],
     size_t start[],
-    const int latIndex,
-    const int lonIndex,
     LOG_INFO *LogInfo
 ) {
     char *indexVarNames[] = {NULL, NULL};
@@ -4887,11 +4885,8 @@ static void get_read_start(
             }
         }
     } else {
-        start[latIndex] = ncSUID[0];
-
-        if (lonIndex > -1) {
-            start[lonIndex] = ncSUID[1];
-        }
+        start[0] = ncSUID[0];
+        start[1] = ncSUID[1]; /* May not be used */
     }
 
 closeFile:
@@ -5035,21 +5030,17 @@ static void set_read_vals(
     int valIndex;
     double *dest;
     Bool missingBefore;
+    double readVal;
 
     for (valIndex = 0; valIndex < numVals; valIndex++) {
         dest = (!swrcpInput) ? &resVals[valIndex] : &resVals[swrcpIndex];
 
         missingBefore = (Bool) (missing(readVals[valIndex]));
-        set_missing_val(
-            varType,
-            valHasMissing,
-            missingVals,
-            varNum,
-            (double *) &readVals[valIndex]
-        );
+        readVal = (!swrcpInput) ? readVals[valIndex] : readVals[swrcpLyr];
+        set_missing_val(varType, valHasMissing, missingVals, varNum, &readVal);
 
-        if (missingBefore || !missing(readVals[valIndex])) {
-            *dest = (!swrcpInput) ? readVals[valIndex] : readVals[swrcpLyr];
+        if (missingBefore || !missing(readVal)) {
+            *dest = readVal;
             *dest *= scale_factor;
             *dest += add_offset;
 
@@ -5182,8 +5173,6 @@ static void read_spatial_topo_climate_inputs(
             inSiteDom,
             ncSUID,
             defSetStart,
-            latIndex,
-            lonIndex,
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -6185,14 +6174,7 @@ static void read_veg_inputs(
     /* Get the start indices based on if we need to use the respective
         index file */
     get_read_start(
-        useIndexFile,
-        inFiles[0],
-        inSiteDom,
-        ncSUID,
-        defSetStart,
-        latIndex,
-        lonIndex,
-        LogInfo
+        useIndexFile, inFiles[0], inSiteDom, ncSUID, defSetStart, LogInfo
     );
     if (LogInfo->stopRun) {
         goto closeFile;
@@ -6540,7 +6522,7 @@ static void read_soil_inputs(
     char ***inVarInfo = SW_Domain->netCDFInput.inVarInfo[eSW_InSoil];
     Bool *readInputs = SW_Domain->netCDFInput.readInVars[eSW_InSoil];
     int **dimOrderInVar = SW_Domain->netCDFInput.dimOrderInVar[eSW_InSoil];
-    double tempSilt[MAX_LAYERS];
+    double tempSilt[MAX_LAYERS] = {0.};
 
     int *varIDs = SW_Domain->SW_PathInputs.inVarIDs[eSW_InSoil];
     nc_type *varTypes = SW_Domain->SW_PathInputs.inVarTypes[eSW_InSoil];
@@ -6620,14 +6602,7 @@ static void read_soil_inputs(
     lonIndex = dimOrderInVar[fIndex][1];
 
     get_read_start(
-        useIndexFile,
-        soilInFiles[0],
-        inSiteDom,
-        ncSUID,
-        defSetStart,
-        latIndex,
-        lonIndex,
-        LogInfo
+        useIndexFile, soilInFiles[0], inSiteDom, ncSUID, defSetStart, LogInfo
     );
     if (LogInfo->stopRun) {
         return;
@@ -7455,14 +7430,7 @@ static void read_weather_input(
     }
 
     get_read_start(
-        useIndexFile,
-        indexFileName,
-        inSiteDom,
-        ncSUID,
-        defSetStart,
-        latIndex,
-        lonIndex,
-        LogInfo
+        useIndexFile, indexFileName, inSiteDom, ncSUID, defSetStart, LogInfo
     );
     if (LogInfo->stopRun) {
         return;
