@@ -1635,29 +1635,40 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     fname <- file.path(dir_testRun, "Input", "soils.in")
 
     fin <- suppressWarnings(readLines(fname))
-    lid <- max(which(nchar(fin) > 0L)) # last line with values
-    ids1 <- seq_len(lid)
-    idsExtra <- seq(from = 0L - nExtraSoilLayers + 1L, to = 0L, by = 1L)
 
-    fextra <- strsplit(fin[lid + idsExtra], split = "[ ]+")
-    fextra <- lapply(fextra, function(x) x[nchar(x) > 0L])
-    stopifnot(length(unique(lengths(fextra))) == 1L)
+    # Count number of soil layers in "soils.in"
+    nhas <- intersect(
+      grep("(^#)", x = trimws(fin), invert = TRUE),
+      which(nchar(trimws(fin)) > 0L)
+    ) |>
+      unique() |>
+      length()
 
-    fextra <- mapply(
-      function(sl, d) {
-        c(as.character(d), sl[-1L])
-      },
-      fextra,
-      cumsum(hzthkTestRun)[length(hzthkTestRun) + idsExtra],
-      SIMPLIFY = FALSE
-    )
+    if (nhas == nSoilLayersDefault && nExtraSoilLayers > 0L) {
+      lid <- max(which(nchar(fin) > 0L)) # last line with values
+      ids1 <- seq_len(lid)
+      idsExtra <- seq(from = 0L - nExtraSoilLayers + 1L, to = 0L, by = 1L)
 
-    fin2 <- c(
-      fin,
-      vapply(fextra, paste, FUN.VALUE = NA_character_, collapse = " ")
-    )
+      fextra <- strsplit(fin[lid + idsExtra], split = "[ ]+")
+      fextra <- lapply(fextra, function(x) x[nchar(x) > 0L])
+      stopifnot(length(unique(lengths(fextra))) == 1L)
 
-    writeLines(fin2, con = fname)
+      fextra <- mapply(
+        function(sl, d) {
+          c(as.character(d), sl[-1L])
+        },
+        fextra,
+        cumsum(hzthkTestRun)[length(hzthkTestRun) + idsExtra],
+        SIMPLIFY = FALSE
+      )
+
+      fin2 <- c(
+        fin,
+        vapply(fextra, paste, FUN.VALUE = NA_character_, collapse = " ")
+      )
+
+      writeLines(fin2, con = fname)
+    }
   }
 
 
