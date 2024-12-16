@@ -584,6 +584,18 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
         }
     }
 
+    if (!isnull(SW_PathInputs->ncWeatherStartEndIndices)) {
+        for (file = 0; file < numFiles; file++) {
+            if (!isnull(SW_PathInputs->ncWeatherStartEndIndices[file])) {
+                free((void *) SW_PathInputs->ncWeatherStartEndIndices[file]);
+                SW_PathInputs->ncWeatherStartEndIndices[file] = NULL;
+            }
+        }
+
+        free((void *) SW_PathInputs->ncWeatherStartEndIndices);
+        SW_PathInputs->ncWeatherStartEndIndices = NULL;
+    }
+
     if (!isnull(SW_PathInputs->ncWeatherInFiles)) {
         for (varNum = 0; varNum < numVarsInKey[eSW_InWeather]; varNum++) {
             if (!isnull(SW_PathInputs->ncWeatherInFiles[varNum])) {

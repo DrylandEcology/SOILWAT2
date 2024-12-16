@@ -6771,10 +6771,7 @@ static void compare_pft_strings(
     int varID;
     int pftStr;
     const char *const expPFTStrings[] = {"Trees", "Shrubs", "Forbs", "Grasses"};
-    char readPFTVals[NVEGTYPES][MAX_FILENAMESIZE] = {{'\0'}};
-    char *names[] = {
-        readPFTVals[0], readPFTVals[1], readPFTVals[2], readPFTVals[3]
-    };
+    char *names[] = {NULL, NULL, NULL, NULL};
 
     SW_NC_get_var_identifier(ncFileID, pftName, &varID, LogInfo);
     if (LogInfo->stopRun) {
@@ -6788,7 +6785,7 @@ static void compare_pft_strings(
             "Could not get the string values of '%s'.",
             pftName
         );
-        return;
+        goto freeMem;
     }
 
     for (pftStr = 0; pftStr < NVEGTYPES; pftStr++) {
@@ -6801,7 +6798,15 @@ static void compare_pft_strings(
                 "should match 'Trees', 'Shrubs', 'Forbs', 'Grasses'.",
                 pftName
             );
-            return;
+            goto freeMem;
+        }
+    }
+
+freeMem:
+    for (pftStr = 0; pftStr < NVEGTYPES; pftStr++) {
+        if (!isnull(names)) {
+            free(names[pftStr]);
+            names[pftStr] = NULL;
         }
     }
 }
