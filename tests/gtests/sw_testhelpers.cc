@@ -138,6 +138,8 @@ void setup_SW_Site_for_tests(SW_SITE *SW_Site) {
     SW_Site->slow_drain_coeff = 0.02;
 
     SW_Site->site_has_swrcpMineralSoil = swFALSE;
+    SW_Site->inputsProvideSWRCp = swFALSE;
+
     (void) snprintf(
         SW_Site->site_swrc_name,
         sizeof SW_Site->site_swrc_name,
@@ -181,6 +183,8 @@ int setup_testGlobalSoilwatTemplate() {
     int success = 0;
     unsigned long userSUID;
     LOG_INFO LogInfo;
+    const Bool renameDomainTemplateNC = swTRUE;
+    const Bool estVeg = swTRUE;
 
     // Initialize SOILWAT2 variables and read values from example input file
     sw_init_logs(NULL, &LogInfo);
@@ -188,9 +192,7 @@ int setup_testGlobalSoilwatTemplate() {
     SW_DOM_init_ptrs(&template_SW_Domain);
     SW_CTL_init_ptrs(&template_SW_Run);
 
-    template_SW_Domain.netCDFInfo.renameDomainTemplateNC = swTRUE;
-
-    template_SW_Domain.PathInfo.InFiles[eFirst] =
+    template_SW_Domain.SW_PathInputs.txtInFiles[eFirst] =
         Str_Dup(DFLT_FIRSTFILE, &LogInfo);
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;
@@ -199,10 +201,19 @@ int setup_testGlobalSoilwatTemplate() {
     // userSUID: 0 means no user input for suid, i.e., entire simulation domain
     userSUID = 0;
 
-    SW_CTL_setup_domain(userSUID, &template_SW_Domain, &LogInfo);
+    SW_CTL_setup_domain(
+        userSUID, renameDomainTemplateNC, &template_SW_Domain, &LogInfo
+    );
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
+
+#if defined(SWNETCDF)
+    /* Turn off weather inputs if SWNETCDF and nc-weather is enabled */
+    if (template_SW_Domain.netCDFInput.readInVars[eSW_InWeather][0]) {
+        template_SW_Domain.netCDFInput.readInVars[eSW_InWeather][0] = swFALSE;
+    }
+#endif
 
     SW_CTL_setup_model(
         &template_SW_Run, &template_SW_Domain.OutDom, swTRUE, &LogInfo
@@ -227,8 +238,8 @@ int setup_testGlobalSoilwatTemplate() {
 
     SW_CTL_read_inputs_from_disk(
         &template_SW_Run,
-        &template_SW_Domain.OutDom,
-        &template_SW_Domain.PathInfo,
+        &template_SW_Domain,
+        &template_SW_Domain.hasConsistentSoilLayerDepths,
         &LogInfo
     );
     if (LogInfo.stopRun != 0u) {
@@ -257,7 +268,7 @@ int setup_testGlobalSoilwatTemplate() {
         goto finishProgram;
     }
 
-    SW_CTL_init_run(&template_SW_Run, &LogInfo);
+    SW_CTL_init_run(&template_SW_Run, estVeg, &LogInfo);
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }

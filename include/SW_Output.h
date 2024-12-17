@@ -164,7 +164,7 @@ void SW_OUTDOM_construct(SW_OUT_DOM *OutDom);
 
 void SW_OUT_construct(
     Bool zeroOutStruct,
-    SW_FILE_STATUS *FileStatus,
+    SW_PATH_OUTPUTS *SW_PathOutputs,
     SW_OUT_DOM *OutDom,
     SW_OUT_RUN *OutRun,
     LOG_INFO *LogInfo
@@ -216,11 +216,11 @@ int SW_OUT_read_onekey(
     size_t sizeof_msg,
     Bool *VegProd_use_SWA,
     Bool deepdrain,
-    char *InFiles[]
+    char *txtInFiles[]
 );
 
 void SW_OUT_read(
-    SW_RUN *sw, SW_OUT_DOM *OutDom, char *InFiles[], LOG_INFO *LogInfo
+    SW_RUN *sw, SW_OUT_DOM *OutDom, char *txtInFiles[], LOG_INFO *LogInfo
 );
 
 void SW_OUT_sum_today(
@@ -253,11 +253,11 @@ void collect_values(
 );
 
 void SW_OUT_close_files(
-    SW_FILE_STATUS *SW_FileStatus, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
+    SW_PATH_OUTPUTS *SW_PathOutputs, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 );
 
 void SW_OUT_create_files(
-    SW_FILE_STATUS *SW_FileStatus, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
+    SW_PATH_OUTPUTS *SW_PathOutputs, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
 );
 
 void echo_outputs(SW_OUT_DOM *OutDom);
@@ -284,9 +284,9 @@ void SW_OUT_set_SXWrequests(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 #endif
 
 #if defined(SWNETCDF)
-void SW_FILESTATUS_deepCopy(
-    SW_FILE_STATUS *dest_files,
-    SW_FILE_STATUS *source_files,
+void SW_PATHOUT_deepCopy(
+    SW_PATH_OUTPUTS *dest_files,
+    SW_PATH_OUTPUTS *source_files,
     SW_OUT_DOM *OutDom,
     LOG_INFO *LogInfo
 );

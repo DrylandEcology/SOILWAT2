@@ -57,8 +57,8 @@ extern "C" {
 /* --------------------------------------------------- */
 void SW_WTH_setup(
     SW_WEATHER *SW_Weather,
-    char *InFiles[],
-    char *weather_prefix,
+    char *txtInFiles[],
+    char *txtWeatherPrefix,
     LOG_INFO *LogInfo
 );
 
@@ -66,6 +66,7 @@ void SW_WTH_read(
     SW_WEATHER *SW_Weather,
     SW_SKY *SW_Sky,
     SW_MODEL *SW_Model,
+    Bool readTextInputs,
     LOG_INFO *LogInfo
 );
 
@@ -90,7 +91,7 @@ void averageClimateAcrossYears(
 );
 
 void calcSiteClimate(
-    SW_WEATHER_HIST **allHist,
+    SW_WEATHER_HIST *allHist,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
     unsigned int numYears,
@@ -100,7 +101,7 @@ void calcSiteClimate(
 );
 
 void calcSiteClimateLatInvariants(
-    SW_WEATHER_HIST **allHist,
+    SW_WEATHER_HIST *allHist,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
     unsigned int numYears,
@@ -145,21 +146,49 @@ void deallocateClimateStructs(
 
 void read_weather_hist(
     TimeInt year,
-    SW_WEATHER_HIST *yearWeather,
-    char weather_prefix[],
+    double **yearWeather,
+    char txtWeatherPrefix[],
     unsigned int n_input_forcings,
     const unsigned int *dailyInputIndices,
     const Bool *dailyInputFlags,
-    double elevation,
     LOG_INFO *LogInfo
 );
 
+void SW_WTH_setWeathUsingClimate(
+    SW_WEATHER_HIST *yearWeather,
+    unsigned int year,
+    Bool use_cloudCoverMonthly,
+    Bool use_humidityMonthly,
+    Bool use_windSpeedMonthly,
+    TimeInt cum_monthdays[],
+    TimeInt days_in_month[],
+    double *cloudcov,
+    double *windspeed,
+    double *r_humidity
+);
+
+void SW_WTH_setWeatherValues(
+    TimeInt startYear,
+    TimeInt nYears,
+    const Bool *inputFlags,
+    double ***tempWeather,
+    double elevation,
+    SW_WEATHER_HIST *yearlyWeather,
+    LOG_INFO *LogInfo
+);
+
+void allocate_temp_weather(
+    TimeInt nYears, double ****fullWeathHist, LOG_INFO *LogInfo
+);
+
+void deallocate_temp_weather(TimeInt nYears, double ****fullWeathHist);
+
 void readAllWeather(
-    SW_WEATHER_HIST **allHist,
+    SW_WEATHER_HIST *allHist,
     unsigned int startYear,
     unsigned int n_years,
     Bool use_weathergenerator_only,
-    char weather_prefix[],
+    char txtWeatherPrefix[],
     Bool use_cloudCoverMonthly,
     Bool use_humidityMonthly,
     Bool use_windSpeedMonthly,
@@ -184,7 +213,7 @@ void finalizeAllWeather(
 );
 
 void scaleAllWeather(
-    SW_WEATHER_HIST **allHist,
+    SW_WEATHER_HIST *allHist,
     unsigned int startYear,
     unsigned int n_years,
     double *scale_temp_max,
@@ -201,7 +230,7 @@ void scaleAllWeather(
 
 void generateMissingWeather(
     SW_MARKOV *SW_Markov,
-    SW_WEATHER_HIST **allHist,
+    SW_WEATHER_HIST *allHist,
     unsigned int startYear,
     unsigned int n_years,
     unsigned int method,
@@ -211,15 +240,15 @@ void generateMissingWeather(
 
 void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo);
 
-void allocateAllWeather(
-    SW_WEATHER_HIST ***allHist, unsigned int n_years, LOG_INFO *LogInfo
+void SW_WTH_allocateAllWeather(
+    SW_WEATHER_HIST **allHist, unsigned int n_years, LOG_INFO *LogInfo
 );
 
 void initializeAllWeatherPtrs(SW_WEATHER_HIST **allHist, unsigned int n_years);
 
-void deallocateAllWeather(SW_WEATHER_HIST **allHist, unsigned int n_years);
+void deallocateAllWeather(SW_WEATHER_HIST **allHist);
 
-void clear_hist_weather(SW_WEATHER_HIST *yearWeather);
+void clear_hist_weather(SW_WEATHER_HIST *yearWeather, double **fullWeathHist);
 
 void SW_WTH_finalize_all_weather(
     SW_MARKOV *SW_Markov,
