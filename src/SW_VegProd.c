@@ -224,14 +224,14 @@ void SW_VPD_read(
             }
 
             ForEachVegType(k) {
-                help_veg[k] = sw_strtof(vegStrs[k], MyFileName, LogInfo);
+                help_veg[k] = sw_strtod(vegStrs[k], MyFileName, LogInfo);
                 if (LogInfo->stopRun) {
                     goto closeFile;
                 }
             }
 
             if (x == NVEGTYPES + 1) {
-                help_bareGround = sw_strtof(bareGroundStr, MyFileName, LogInfo);
+                help_bareGround = sw_strtod(bareGroundStr, MyFileName, LogInfo);
                 if (LogInfo->stopRun) {
                     goto closeFile;
                 }
@@ -479,7 +479,7 @@ void SW_VPD_read(
 
             for (index = 0; index < numMonthVals; index++) {
                 *(monBioVals[index]) =
-                    sw_strtof(vegStrs[index], MyFileName, LogInfo);
+                    sw_strtod(vegStrs[index], MyFileName, LogInfo);
                 if (LogInfo->stopRun) {
                     goto closeFile;
                 }
