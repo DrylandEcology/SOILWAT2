@@ -1326,14 +1326,14 @@ typedef struct {
     /** Indicates which variables are provided by netCDF inputs
 
     This is an array over the `inkey` #SW_NINKEYSNC, and each element is
-    a pointer to a dynamically allocated array of length 1 + #numVarsInKey.
+    a pointer to a dynamically allocated array of length 1 + numVarsInKey.
 
     The element 0 summarizes whether any variable of an `inkey` is provided
     by netCDF inputs.
     The element 1 indicates whether the index of that `inkey`
     is used (if that `inkey` contains an index, i.e., all but #eSW_InDomain).
     The remaining elements indicate if each input variables
-    (see #possVarNames) is provided by netCDF inputs or not.
+    (see possVarNames) is provided by netCDF inputs or not.
     */
     Bool *readInVars[SW_NINKEYSNC];
 

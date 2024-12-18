@@ -57,6 +57,7 @@
 #define SW_INSTRIDEYR 0
 #define SW_INSTRIDESTART 1
 
+/** The tsv nc-input file must contain the following column names */
 static const char *const expectedColNames[] = {
     "SW2 input group",
     "SW2 variable",
@@ -83,7 +84,7 @@ static const char *const expectedColNames[] = {
     "Comment"
 };
 
-/* This array and `possVarNames` must line up the variables within each key */
+/** Values of the column "SW2 units" of the tsv nc-input file */
 static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] = {
     /* inDomain */
     {"1", "1"},
@@ -119,6 +120,7 @@ static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] = {
     {"1", "%", "m s-1", "%", "kg m-3", "1"}
 };
 
+/** Values of the column "SW2 variable" of the tsv nc-input file */
 static const char *const possVarNames[SW_NINKEYSNC][SW_INNMAXVARS] = {
     /* inDomain */
     {"domain", "progress"},
@@ -198,7 +200,7 @@ static const char *const possVarNames[SW_NINKEYSNC][SW_INNMAXVARS] = {
 
 
 /** @defgroup eiv Indices to netCDF input variables
-The `eiv_*` provide the index to variable positions in #possVarNames,
+The `eiv_*` provide the index to variable positions in possVarNames,
 #SW_NETCDF_IN.inVarInfo and others, e.g.,
     `possVarNames[eSW_InDomain][eiv_domain]`.
 However, we need to add one to correctly index #SW_NETCDF_IN.readInVars, e.g.,
@@ -273,6 +275,7 @@ static const char *const generalVegNames[] = {
 
 static const char *const generalSoilNames[] = {"<veg>.transp_coeff"};
 
+/** Possible values of the column "SW2 input group" of the tsv nc-input file */
 static const char *const possInKeys[] = {
     "inDomain",
     "inSpatial",
