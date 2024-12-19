@@ -310,6 +310,15 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
 
     if (identical(resTestRuns[k0, "CheckRun"], "ok")) {
+
+      testTolerance <- switch(
+        EXPR = tolower(listTestRuns[k0, "inputVarType"]),
+        float = sqrt(
+          (.Machine[["double.base"]] ^ (.Machine[["double.ulp.digits"]] / 2)) / 2
+        ),
+        double = sqrt(.Machine[["double.eps"]])
+      )
+
       #--- Identify simulation run corresponding to example site
       idSimExampleSite <-
         file.path(dir_testRunOutput, basename(fnames_ref[[1L]])) |>
@@ -355,7 +364,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
               checkValues = checkValues,
               limitVerticalToRef = !identical(
                 listTestRuns[k0, "inputSoilProfile"], "standard"
-              )
+              ),
+              tolerance = testTolerance
             ),
             silent = TRUE
           )
@@ -385,7 +395,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         if (testRunTags[[k0]] == "testRun-01__dom-s-1-geog_in-s-geog-1") {
           msg <- compareEqualityNCs(
             dir1 = dir_refOutput,
-            dir2 = dir_testRunOutput
+            dir2 = dir_testRunOutput,
+            tolerance = testTolerance
           )
 
           if (!isTRUE(msg)) {
@@ -437,7 +448,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
           compareNCWeather(
             input = listCompToWeather[[kr]][["input"]],
             output = listCompToWeather[[kr]][["output"]],
-            idExampleSite = idSimExampleSite
+            idExampleSite = idSimExampleSite,
+            tolerance = sqrt(.Machine[["double.eps"]])
           ),
           silent = TRUE
         )

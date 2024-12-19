@@ -1036,13 +1036,14 @@ getVerticalNC <- function(nc, vars) {
 }
 
 compareNC <- function(
-    fn,
+  fn,
   path,
   vars_required,
   vars_other,
   checkValues = TRUE,
   idExampleSite = 1L,
-  limitVerticalToRef = FALSE
+  limitVerticalToRef = FALSE,
+  tolerance = sqrt(.Machine[["double.eps"]])
 ) {
   stopifnot(requireNamespace("RNetCDF"))
   resMsg <- NULL
@@ -1076,12 +1077,15 @@ compareNC <- function(
     )
 
     msg <- if (isTRUE(checkValues)) {
-      all.equal(target = targetVals, current = currentVals)
+      all.equal(
+        target = targetVals, current = currentVals, tolerance = tolerance
+      )
     } else {
       # Don't check values --> set all values to 0
       all.equal(
         target = zeroOutNestedList(targetVals),
-        current = zeroOutNestedList(currentVals)
+        current = zeroOutNestedList(currentVals),
+        tolerance = tolerance
       )
     }
 
@@ -1104,7 +1108,12 @@ compareNC <- function(
 }
 
 
-compareNCWeather <- function(input, output, idExampleSite) {
+compareNCWeather <- function(
+  input,
+  output,
+  idExampleSite,
+  tolerance = sqrt(.Machine[["double.eps"]])
+) {
   stopifnot(requireNamespace("RNetCDF"))
   stopifnot(requireNamespace("units"))
 
@@ -1200,7 +1209,9 @@ compareNCWeather <- function(input, output, idExampleSite) {
     idsTime <- seq_len(ntime)
 
     msg <- all.equal(
-      target = targetVals[idsTime], current = currentVals[idsTime]
+      target = targetVals[idsTime],
+      current = currentVals[idsTime],
+      tolerance = tolerance
     )
 
     if (isTRUE(msg)) {
@@ -1229,7 +1240,11 @@ compareNCWeather <- function(input, output, idExampleSite) {
   resMsg
 }
 
-compareEqualityNCs <- function(dir1, dir2) {
+compareEqualityNCs <- function(
+  dir1,
+  dir2,
+  tolerance = sqrt(.Machine[["double.eps"]])
+) {
   stopifnot(requireNamespace("RNetCDF"))
 
   tag1 <- shQuote(file.path(basename(dirname(dir1)), basename(dir1)))
@@ -1258,7 +1273,9 @@ compareEqualityNCs <- function(dir1, dir2) {
   for (k in seq_along(testFileNames)) {
     nc1 <- RNetCDF::open.nc(file.path(dir1, testFileNames[[k]]))
     nc2 <- RNetCDF::open.nc(file.path(dir2, testFileNames[[k]]))
-    tmp <- all.equal(RNetCDF::read.nc(nc1), RNetCDF::read.nc(nc2))
+    tmp <- all.equal(
+      RNetCDF::read.nc(nc1), RNetCDF::read.nc(nc2), tolerance = tolerance
+    )
     RNetCDF::close.nc(nc1)
     RNetCDF::close.nc(nc2)
     if (!isTRUE(tmp)) {

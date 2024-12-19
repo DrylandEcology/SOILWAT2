@@ -282,7 +282,15 @@ npfts <- length(pfts)
 veg_params <- c("fCover", "litter", "biomass", "pct_live", "lai_conv")
 
 soilsDefault <- swin@soils@Layers
-pSWRCDefault <- swin@soils@SWRCp
+# Calculate SWRCp for "Campbell1974" with PTF "Cosby1984AndOthers"
+pSWRCDefault <- rSOILWAT2::ptf_estimate(
+  sand = soilsDefault[, "sand_frac"],
+  clay = soilsDefault[, "clay_frac"],
+  fcoarse = soilsDefault[, "gravel_content"],
+  swrc_name = rSOILWAT2::swSite_SWRCflags(swin)[["swrc_name"]],
+  ptf_name = rSOILWAT2::swSite_SWRCflags(swin)[["ptf_name"]]
+)
+
 nSoilLayersDefault <- nrow(soilsDefault)
 hzthkDefault <- round(
   diff(c(0, soilsDefault[, "depth_cm", drop = TRUE])), digits = 0L
@@ -516,6 +524,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
 
   #--- ..** Copy SOILWAT2/tests/example ------
+  # Exclude all netCDF files
   stopifnot(copySW2Example(from = dir_swex, to = dir_testRun))
 
   dir_testrun_swinnc <- file.path(dir_testRun, "Input_nc")
@@ -776,7 +785,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       stopifnot()
   }
 
-    stopifnot(file.exists(fname_inputTemplate))
+  stopifnot(file.exists(fname_inputTemplate))
 
 
   #--- ....*** Adjust domain to 0-360 longitude ------
@@ -849,7 +858,11 @@ for (k0 in seq_len(nrow(listTestRuns))) {
   fname_topo <- file.path(dir_topo, "topo.nc")
 
   if (!file.exists(fname_topo)) {
-    IntrinsicSiteParams <- round(swin@site@IntrinsicSiteParams, digits = 2L)
+    nDigsTopo = 2L
+    IntrinsicSiteParams <- round(
+      swin@site@IntrinsicSiteParams,
+      digits = nDigsTopo
+    )
 
     copyInputTemplateNC(
       fname_topo,
@@ -1015,7 +1028,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       nc,
       variable = "cloudcov",
       data = createTestRunData(
-        x = Cloud["SkyCoverPCT", , drop = TRUE],
+        x = round(Cloud["SkyCoverPCT", , drop = TRUE], digits = nDigsClim),
         otherValues = 0,
         dims = inDimCounts[["clim"]],
         dimPermutation = inDimPerms[["clim"]],
@@ -1038,7 +1051,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       nc,
       variable = "windspeed",
       data = createTestRunData(
-        x = Cloud["WindSpeed_m/s", , drop = TRUE],
+        x = round(Cloud["WindSpeed_m/s", , drop = TRUE], digits = nDigsClim),
         otherValues = 0,
         dims = inDimCounts[["clim"]],
         dimPermutation = inDimPerms[["clim"]],
@@ -1061,7 +1074,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       nc,
       variable = "r_humidity",
       data = createTestRunData(
-        x = Cloud["HumidityPCT", , drop = TRUE],
+        x = round(Cloud["HumidityPCT", , drop = TRUE], digits = nDigsClim),
         otherValues = 10,
         dims = inDimCounts[["clim"]],
         dimPermutation = inDimPerms[["clim"]],
@@ -1084,7 +1097,9 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       nc,
       variable = "snow_density",
       data = createTestRunData(
-        x = Cloud["SnowDensity_kg/m^3", , drop = TRUE],
+        x = round(
+          Cloud["SnowDensity_kg/m^3", , drop = TRUE], digits = nDigsClim
+        ),
         otherValues = 0,
         dims = inDimCounts[["clim"]],
         dimPermutation = inDimPerms[["clim"]],
@@ -1107,7 +1122,9 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       nc,
       variable = "n_rain_per_day",
       data = createTestRunData(
-        x = Cloud["RainEvents_per_day", , drop = TRUE],
+        x = round(
+          Cloud["RainEvents_per_day", , drop = TRUE], digits = nDigsClim
+        ),
         otherValues = NULL,
         dims = inDimCounts[["clim"]],
         dimPermutation = inDimPerms[["clim"]],
@@ -1491,8 +1508,6 @@ for (k0 in seq_len(nrow(listTestRuns))) {
   fname_soil <- file.path(dir_soil, "swrcp.nc")
 
   if (!file.exists(fname_soil)) {
-    nDigsSWRC <- 6L
-
     copyInputTemplateNC(
       fname_soil,
       template = fname_inputTemplate,
@@ -1547,7 +1562,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         nc,
         variable = var,
         data = createTestRunSoils(
-          soilData = round(pSWRCTestRun[, k, drop = TRUE], digits = nDigsSWRC),
+          # No rounding of SWRCp inputs because reference uses internal PTF
+          soilData = pSWRCTestRun[, k, drop = TRUE],
           dims = inDimCounts[["soil"]],
           dimPermutation = inDimPerms[["soil"]],
           idExampleSite = idInputExampleSite,
@@ -1565,6 +1581,16 @@ for (k0 in seq_len(nrow(listTestRuns))) {
   #------ . ------
   #--- ..** inSoil: set ncinputs.tsv ------
   toggleNCInputTSV(filename = fname_ncintsv, inkeys = "inSoil", value = 1L)
+
+  if (!identical(listTestRuns[k0, "inputsProvideSWRCp", drop = TRUE], "TRUE")) {
+    # Deactivate inputs from SWRCp
+    toggleNCInputTSV(
+      filename = fname_ncintsv,
+      inkeys = rep("inSoil", ncol(pSWRCTestRun)),
+      sw2vars = paste0("swrcpMineralSoil[", seq_len(ncol(pSWRCTestRun)), "]"),
+      value = 0L
+    )
+  }
 
   if (identical(listTestRuns[k0, "pft", drop = TRUE], "dim")) {
     # Deactivate pft as variable (pft as dimension is activated)
@@ -1612,15 +1638,25 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
 
   #--- ..** inSoil: set siteparam.in ------
+  fname <- file.path(dir_testRun, "Input", "siteparam.in")
+
   if (
     identical(listTestRuns[k0, "inputSoilProfile"], "variableSoilLayerThickness")
   ) {
-    fname <- file.path(dir_testRun, "Input", "siteparam.in")
-
     setTxtInput(
       filename = fname,
       tag = "# 0 = depth/thickness of soil layers vary among sites/gridcells$",
       value = 0L, # change to 0 from default 1
+      classic = TRUE
+    )
+  }
+
+  if (identical(listTestRuns[k0, "inputsProvideSWRCp", drop = TRUE], "TRUE")) {
+    # Activate inputs from SWRCp
+    setTxtInput(
+      filename = fname,
+      tag = "# Has SWRC parameters for the mineral soil component",
+      value = 1L, # change to 1 from default 0
       classic = TRUE
     )
   }
