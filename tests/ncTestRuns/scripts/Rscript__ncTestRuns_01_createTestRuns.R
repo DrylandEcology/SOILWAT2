@@ -1582,7 +1582,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
   #--- ..** inSoil: set ncinputs.tsv ------
   toggleNCInputTSV(filename = fname_ncintsv, inkeys = "inSoil", value = 1L)
 
-  if (!identical(listTestRuns[k0, "inputsProvideSWRCp", drop = TRUE], "TRUE")) {
+  if (!identical(listTestRuns[k0, "inputsProvideSWRCp", drop = TRUE], "yes")) {
     # Deactivate inputs from SWRCp
     toggleNCInputTSV(
       filename = fname_ncintsv,
@@ -1651,11 +1651,11 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
   }
 
-  if (identical(listTestRuns[k0, "inputsProvideSWRCp", drop = TRUE], "TRUE")) {
+  if (identical(listTestRuns[k0, "inputsProvideSWRCp", drop = TRUE], "yes")) {
     # Activate inputs from SWRCp
     setTxtInput(
       filename = fname,
-      tag = "# Has SWRC parameters for the mineral soil component",
+      tag = "# Are SWRC parameters for the mineral soil component",
       value = 1L, # change to 1 from default 0
       classic = TRUE
     )

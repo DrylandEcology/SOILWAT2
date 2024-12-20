@@ -1083,6 +1083,7 @@ static void checkRequiredSoils(
     char *tempWritePtr;
     int writeSize = MAX_FILENAMESIZE;
     int tmp;
+    int nSWRCInputs;
     int k;
     const int nRequired1Var = 4;
     int required1Vars[4] = {
@@ -1090,6 +1091,24 @@ static void checkRequiredSoils(
     };
     const int nSuggested1Vars = 2;
     int suggested1Vars[2] = {eiv_impermeability, eiv_avgLyrTempInit};
+
+
+    /* Count number of input SWRCp */
+    nSWRCInputs = 0;
+    for (k = 0; k < SWRC_PARAM_NMAX; k++) {
+        nSWRCInputs += (int) readInVarsSoils[eiv_swrcpMS[k] + 1];
+    }
+
+    /* Warn user if both PTF and any SWRCp nc-input are turned on */
+    if (!inputsProvideSWRCp && nSWRCInputs > 0) {
+        LogError(
+            LogInfo,
+            LOGWARN,
+            "Requested pedotransfer function will overwrite "
+            "provided SWRCp inputs: activate one or the other but not both."
+        );
+    }
+
 
     /* Check that we have sufficient soil inputs */
     if (hasConsistentSoilLayerDepths) {
@@ -1179,20 +1198,11 @@ static void checkRequiredSoils(
         }
 
         // Required: all SWRCp required unless estimated via PTF
-        if (inputsProvideSWRCp) {
-            tmp = 0;
-            for (k = 0; k < SWRC_PARAM_NMAX; k++) {
-                tmp += (int) readInVarsSoils[eiv_swrcpMS[k] + 1];
-            }
-            if (tmp != SWRC_PARAM_NMAX) {
-                tempWritePtr = (char *) sw_memccpy(
-                    writePtr,
-                    "all SWRC parameters are required; ",
-                    '\0',
-                    writeSize
-                );
-                writeSize -= (int) (tempWritePtr - soilErrorMsg - 1);
-            }
+        if (inputsProvideSWRCp && nSWRCInputs != SWRC_PARAM_NMAX) {
+            tempWritePtr = (char *) sw_memccpy(
+                writePtr, "all SWRC parameters are required; ", '\0', writeSize
+            );
+            writeSize -= (int) (tempWritePtr - soilErrorMsg - 1);
         }
 
         if (writeSize != MAX_FILENAMESIZE) {
