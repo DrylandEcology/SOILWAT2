@@ -122,10 +122,12 @@ const char *const key2veg[NVEGTYPES] = {"Trees", "Shrubs", "Forbs", "Grasses"};
 
 @param[in,out] SW_VegProd Struct of type SW_VEGPROD describing surface
     cover conditions in the simulation
-@param[in] InFiles Array of program in/output files
+@param[in] txtInFiles Array of program in/output files
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *InFiles[], LOG_INFO *LogInfo) {
+void SW_VPD_read(
+    SW_VEGPROD *SW_VegProd, char *txtInFiles[], LOG_INFO *LogInfo
+) {
     /* =================================================== */
 
     const char *const lineErrStrings[] = {
@@ -184,7 +186,7 @@ void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *InFiles[], LOG_INFO *LogInfo) {
     const int numMonthVals = 4;
     int expectedNumInVals;
 
-    MyFileName = InFiles[eVegProd];
+    MyFileName = txtInFiles[eVegProd];
     f = OpenFile(MyFileName, "r", LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -222,14 +224,14 @@ void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *InFiles[], LOG_INFO *LogInfo) {
             }
 
             ForEachVegType(k) {
-                help_veg[k] = sw_strtof(vegStrs[k], MyFileName, LogInfo);
+                help_veg[k] = sw_strtod(vegStrs[k], MyFileName, LogInfo);
                 if (LogInfo->stopRun) {
                     goto closeFile;
                 }
             }
 
             if (x == NVEGTYPES + 1) {
-                help_bareGround = sw_strtof(bareGroundStr, MyFileName, LogInfo);
+                help_bareGround = sw_strtod(bareGroundStr, MyFileName, LogInfo);
                 if (LogInfo->stopRun) {
                     goto closeFile;
                 }
@@ -477,7 +479,7 @@ void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *InFiles[], LOG_INFO *LogInfo) {
 
             for (index = 0; index < numMonthVals; index++) {
                 *(monBioVals[index]) =
-                    sw_strtof(vegStrs[index], MyFileName, LogInfo);
+                    sw_strtod(vegStrs[index], MyFileName, LogInfo);
                 if (LogInfo->stopRun) {
                     goto closeFile;
                 }
@@ -642,6 +644,7 @@ void SW_VPD_init_run(
     SW_VEGPROD *SW_VegProd,
     SW_WEATHER *SW_Weather,
     SW_MODEL *SW_Model,
+    Bool estVeg,
     LOG_INFO *LogInfo
 ) {
 
@@ -656,7 +659,7 @@ void SW_VPD_init_run(
         }
     }
 
-    if (SW_VegProd->veg_method > 0) {
+    if (estVeg && SW_VegProd->veg_method > 0) {
         estimateVegetationFromClimate(
             SW_VegProd, SW_Weather->allHist, SW_Model, LogInfo
         );
@@ -889,7 +892,7 @@ void SW_VPD_new_year(SW_VEGPROD *SW_VegProd, SW_MODEL *SW_Model) {
 /**
 @brief Sum up values across vegetation types
 
-@param[in] x Array of size \ref NVEGTYPES
+@param[in] x Array of size \ref NVEGTYPES by \ref MAX_LAYERS
 @param[in] layerno Current layer which is being worked with
 @return Sum across `*x`
 */
@@ -1016,7 +1019,7 @@ calculated and averaged, then values are estimated
 */
 void estimateVegetationFromClimate(
     SW_VEGPROD *SW_VegProd,
-    SW_WEATHER_HIST **Weather_hist,
+    SW_WEATHER_HIST *Weather_hist,
     SW_MODEL *SW_Model,
     LOG_INFO *LogInfo
 ) {
@@ -1050,12 +1053,8 @@ void estimateVegetationFromClimate(
 
     Bool fillEmptyWithBareGround = swTRUE;
     Bool warnExtrapolation = swTRUE;
-    Bool inNorthHem = swTRUE;
+    Bool inNorthHem = SW_Model->isnorth;
     Bool fixBareGround = swTRUE;
-
-    if (SW_Model->latitude < 0.0) {
-        inNorthHem = swFALSE;
-    }
 
     // Allocate climate structs' memory
     allocateClimateStructs(numYears, &climateOutput, &climateAverages, LogInfo);

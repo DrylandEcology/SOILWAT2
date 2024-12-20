@@ -1086,7 +1086,7 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
 
         ForEachSoilLayer(i, nlyrs) {
             // Setup: initial swc to some example value, here SWC at 20% VWC
-            swc_init[i] = 0.2 * SW_Site.width[i];
+            swc_init[i] = 0.2 * SW_Site.soils.width[i];
             // Setup: water extraction coefficient, some example value, here 0.5
             coeff[i] = 0.5;
         }
@@ -1288,9 +1288,9 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
 
         // Initialize soil arrays to be independent of soil texture...
         ForEachSoilLayer(i, nlyrs) {
-            SW_Site.swcBulk_fieldcap[i] = 0.25 * SW_Site.width[i];
-            SW_Site.swcBulk_min[i] = 0.05 * SW_Site.width[i];
-            SW_Site.swcBulk_saturated[i] = 0.35 * SW_Site.width[i];
+            SW_Site.swcBulk_fieldcap[i] = 0.25 * SW_Site.soils.width[i];
+            SW_Site.swcBulk_min[i] = 0.05 * SW_Site.soils.width[i];
+            SW_Site.swcBulk_saturated[i] = 0.35 * SW_Site.soils.width[i];
         }
 
 

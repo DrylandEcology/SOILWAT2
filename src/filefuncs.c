@@ -417,46 +417,6 @@ double sw_strtod(const char *str, const char *errMsg, LOG_INFO *LogInfo) {
     return resd;
 }
 
-/**
-@brief Convert string to float with error handling
-
-This function implements cert-err34-c
-"Detect errors when converting a string to a number".
-
-@param[in] str Pointer to string to be converted.
-@param[in] errMsg Pointer to string included in error message.
-@param[out] LogInfo Holds information on warnings and errors
-*/
-float sw_strtof(const char *str, const char *errMsg, LOG_INFO *LogInfo) {
-    float resf = HUGE_VALF;
-    char *endStr;
-
-    errno = 0;
-
-    resf = strtof(str, &endStr);
-
-    if (endStr == str || '\0' != *endStr) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "%s: converting '%s' to float failed.",
-            errMsg,
-            str
-        );
-
-    } else if (HUGE_VALF == resf && ERANGE == errno) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "%s: '%s' out of range of type float.",
-            errMsg,
-            str
-        );
-    }
-
-    return resf;
-}
-
 /**************************************************************/
 Bool GetALine(FILE *f, char buf[], int numChars) {
     /* Read a line of possibly commented input from the file *f.

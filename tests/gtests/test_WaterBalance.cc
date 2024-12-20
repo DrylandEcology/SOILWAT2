@@ -63,7 +63,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithPondedWaterRunonRunoff) {
     int i;
 
     // Turn on impermeability of first soil layer, runon, and runoff
-    SW_Run.Site.impermeability[0] = 0.95;
+    SW_Run.Site.soils.impermeability[0] = 0.95;
     SW_Run.Site.percentRunoff = 0.5;
     SW_Run.Site.percentRunon = 1.25;
 
@@ -91,7 +91,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
         &SW_Run.Markov,
         SW_Run.Weather.rng_seed,
         SW_Run.Weather.generateWeatherMethod,
-        SW_Domain.PathInfo.InFiles,
+        SW_Domain.SW_PathInputs.txtInFiles,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -105,7 +105,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
     );
 
     // Prepare weather data
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
+    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_finalize_all_weather(
@@ -151,13 +151,13 @@ TEST_F(
         &SW_Run.Markov,
         SW_Run.Weather.rng_seed,
         SW_Run.Weather.generateWeatherMethod,
-        SW_Domain.PathInfo.InFiles,
+        SW_Domain.SW_PathInputs.txtInFiles,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Prepare weather data
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
+    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_finalize_all_weather(
@@ -187,7 +187,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
 
     // Set high gravel volume in all soil layers
     ForEachSoilLayer(s, SW_Run.Site.n_layers) {
-        SW_Run.Site.fractionVolBulk_gravel[s] = 0.99;
+        SW_Run.Site.soils.fractionVolBulk_gravel[s] = 0.99;
     }
 
     // Re-calculate soils
@@ -258,7 +258,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
     SW_Run.VegProd.veg_method = 1;
 
     // Re-calculate vegetation
-    SW_VPD_init_run(&SW_Run.VegProd, &SW_Run.Weather, &SW_Run.Model, &LogInfo);
+    SW_VPD_init_run(
+        &SW_Run.VegProd, &SW_Run.Weather, &SW_Run.Model, swTRUE, &LogInfo
+    );
     sw_fail_on_error(&LogInfo);
 
     // Run the simulation
@@ -284,12 +286,13 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
         "Cosby1984"
     );
     SW_Run.Site.site_ptf_type = encode_str2ptf(SW_Run.Site.site_ptf_name);
-    SW_Run.Site.site_has_swrcpMineralSoil = swTRUE;
+    SW_Run.Site.site_has_swrcpMineralSoil = swFALSE;
+    SW_Run.Site.inputsProvideSWRCp = swFALSE;
 
     // Set organic matter > 0
-    SW_Run.Site.fractionWeight_om[0] = 1.;
+    SW_Run.Site.soils.fractionWeight_om[0] = 1.;
     for (i = 1; i < SW_Run.Site.n_layers; i++) {
-        SW_Run.Site.fractionWeight_om[i] = 0.5;
+        SW_Run.Site.soils.fractionWeight_om[i] = 0.5;
     }
 
     // Update soils
@@ -333,15 +336,16 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
         "Rosetta3"
     );
     SW_Run.Site.site_ptf_type = encode_str2ptf(SW_Run.Site.site_ptf_name);
-    SW_Run.Site.site_has_swrcpMineralSoil = swTRUE;
+    SW_Run.Site.site_has_swrcpMineralSoil = swFALSE;
+    SW_Run.Site.inputsProvideSWRCp = swTRUE;
 
-    free(SW_Domain.PathInfo.InFiles[eSWRCp]);
-    SW_Domain.PathInfo.InFiles[eSWRCp] =
+    free(SW_Domain.SW_PathInputs.txtInFiles[eSWRCp]);
+    SW_Domain.SW_PathInputs.txtInFiles[eSWRCp] =
         Str_Dup("Input/swrc_params_vanGenuchten1980.in", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Read SWRC parameter input file (which is not read by default)
-    SW_SWRC_read(&SW_Run.Site, SW_Domain.PathInfo.InFiles, &LogInfo);
+    SW_SWRC_read(&SW_Run.Site, SW_Domain.SW_PathInputs.txtInFiles, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Update soils
@@ -381,22 +385,23 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
         "neuroFX2021"
     );
     SW_Run.Site.site_ptf_type = encode_str2ptf(SW_Run.Site.site_ptf_name);
-    SW_Run.Site.site_has_swrcpMineralSoil = swTRUE;
+    SW_Run.Site.site_has_swrcpMineralSoil = swFALSE;
+    SW_Run.Site.inputsProvideSWRCp = swTRUE;
 
-    free(SW_Domain.PathInfo.InFiles[eSWRCp]);
-    SW_Domain.PathInfo.InFiles[eSWRCp] =
+    free(SW_Domain.SW_PathInputs.txtInFiles[eSWRCp]);
+    SW_Domain.SW_PathInputs.txtInFiles[eSWRCp] =
         Str_Dup("Input/swrc_params_FXW.in", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Read SWRC parameter input file (which is not read by default)
-    SW_SWRC_read(&SW_Run.Site, SW_Domain.PathInfo.InFiles, &LogInfo);
+    SW_SWRC_read(&SW_Run.Site, SW_Domain.SW_PathInputs.txtInFiles, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // FXW doesn't yet handle organic matter:
     // not all values for organic SWRC parameters have been determined
     // (see "tests/example/Input/swrc_params_FXW.in")
     for (i = 0; i < SW_Run.Site.n_layers; i++) {
-        SW_Run.Site.fractionWeight_om[i] = 0.;
+        SW_Run.Site.soils.fractionWeight_om[i] = 0.;
     }
 
     // Update soils
@@ -471,7 +476,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
     SW_Run.Weather.desc_rsds = 2;
 
     // Prepare weather data
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
+    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_finalize_all_weather(
@@ -549,7 +554,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGridMET) {
     SW_Run.Weather.desc_rsds = 1; // gridMET rsds is flux density over 24 hours
 
     // Prepare weather data
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
+    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_finalize_all_weather(
@@ -628,7 +633,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype1) {
     SW_Run.Weather.desc_rsds = 1; // MACA rsds is flux density over 24 hours
 
     // Prepare weather data
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
+    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_finalize_all_weather(
@@ -707,7 +712,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
     SW_Run.Weather.desc_rsds = 1; // MACA rsds is flux density over 24 hours
 
     // Prepare weather data
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
+    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_finalize_all_weather(

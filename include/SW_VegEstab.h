@@ -34,7 +34,7 @@ extern "C" {
 /* --------------------------------------------------- */
 void SW_VES_read(
     SW_VEGESTAB *SW_VegEstab,
-    char *InFiles[],
+    char *txtInFiles[],
     char *SW_ProjDir,
     LOG_INFO *LogInfo
 );
@@ -43,7 +43,7 @@ void SW_VES_read2(
     SW_VEGESTAB *SW_VegEstab,
     Bool use_VegEstab,
     Bool consider_InputFlag,
-    char *InFiles[],
+    char *txtInFiles[],
     char *SW_ProjDir,
     LOG_INFO *LogInfo
 );

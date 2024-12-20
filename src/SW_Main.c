@@ -30,7 +30,9 @@
 
 
 #if defined(SWNETCDF)
-#include "include/SW_netCDF.h"
+#include "include/SW_netCDF_General.h"
+#include "include/SW_netCDF_Input.h"
+#include "include/SW_netCDF_Output.h"
 #endif
 
 
@@ -51,6 +53,7 @@ int main(int argc, char **argv) {
     SW_DOMAIN SW_Domain;
     LOG_INFO LogInfo;
     Bool EchoInits = swFALSE;
+    Bool renameDomainTemplateNC = swFALSE;
 
     unsigned long userSUID;
 
@@ -68,10 +71,10 @@ int main(int argc, char **argv) {
         argc,
         argv,
         &EchoInits,
-        &SW_Domain.PathInfo.InFiles[eFirst],
+        &SW_Domain.SW_PathInputs.txtInFiles[eFirst],
         &userSUID,
         &SW_WallTime.wallTimeLimit,
-        &SW_Domain.netCDFInfo.renameDomainTemplateNC,
+        &renameDomainTemplateNC,
         &LogInfo
     );
     if (LogInfo.stopRun) {
@@ -87,7 +90,7 @@ int main(int argc, char **argv) {
     }
 
     // setup and construct domain
-    SW_CTL_setup_domain(userSUID, &SW_Domain, &LogInfo);
+    SW_CTL_setup_domain(userSUID, renameDomainTemplateNC, &SW_Domain, &LogInfo);
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
@@ -106,43 +109,71 @@ int main(int argc, char **argv) {
 
     // read user inputs
     SW_CTL_read_inputs_from_disk(
-        &sw_template, &SW_Domain.OutDom, &SW_Domain.PathInfo, &LogInfo
-    );
-    if (LogInfo.stopRun) {
-        goto finishProgram;
-    }
-
-#if defined(SWNETCDF)
-    SW_NC_check_input_files(&SW_Domain, &LogInfo);
-#endif
-
-    // finalize daily weather
-    SW_WTH_finalize_all_weather(
-        &sw_template.Markov,
-        &sw_template.Weather,
-        sw_template.Model.cum_monthdays,
-        sw_template.Model.days_in_month,
+        &sw_template,
+        &SW_Domain,
+        &SW_Domain.hasConsistentSoilLayerDepths,
         &LogInfo
     );
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
 
-    // initialize simulation run (based on user inputs)
-    SW_CTL_init_run(&sw_template, &LogInfo);
+#if defined(SWNETCDF)
+    SW_NCIN_check_input_config(
+        &SW_Domain.netCDFInput,
+        SW_Domain.hasConsistentSoilLayerDepths,
+        sw_template.Site.inputsProvideSWRCp,
+        &LogInfo
+    );
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
 
+    SW_NCIN_precalc_lookups(&SW_Domain, &sw_template.Weather, &LogInfo);
+    if (LogInfo.stopRun) {
+        goto finishProgram;
+    }
+
+    SW_NCIN_create_indices(&SW_Domain, &LogInfo);
+    if (LogInfo.stopRun) {
+        goto finishProgram;
+    };
+
+    SW_NCIN_check_input_files(&SW_Domain, &LogInfo);
+    if (LogInfo.stopRun) {
+        goto finishProgram;
+    }
+#endif
+
+    // finalize daily weather
+#if defined(SWNETCDF)
+    if (!SW_Domain.netCDFInput.readInVars[eSW_InWeather][0]) {
+#endif
+        SW_WTH_finalize_all_weather(
+            &sw_template.Markov,
+            &sw_template.Weather,
+            sw_template.Model.cum_monthdays,
+            sw_template.Model.days_in_month,
+            &LogInfo
+        );
+        if (LogInfo.stopRun) {
+            goto finishProgram;
+        }
+#if defined(SWNETCDF)
+    }
+#endif
+
     // identify domain-wide soil profile information
     SW_DOM_soilProfile(
-        &SW_Domain.hasConsistentSoilLayerDepths,
+        &SW_Domain.netCDFInput,
+        &SW_Domain.SW_PathInputs,
+        SW_Domain.hasConsistentSoilLayerDepths,
         &SW_Domain.nMaxSoilLayers,
         &SW_Domain.nMaxEvapLayers,
         SW_Domain.depthsAllSoilLayers,
         sw_template.Site.n_layers,
         sw_template.Site.n_evap_lyrs,
-        sw_template.Site.depths,
+        sw_template.Site.soils.depths,
         &LogInfo
     );
     if (LogInfo.stopRun) {
@@ -162,22 +193,22 @@ int main(int argc, char **argv) {
     }
 
 #if defined(SWNETCDF)
-    SW_NC_read_out_vars(
+    SW_NCOUT_read_out_vars(
         &SW_Domain.OutDom,
-        SW_Domain.PathInfo.InFiles,
+        SW_Domain.SW_PathInputs.txtInFiles,
         sw_template.VegEstab.parms,
         &LogInfo
     );
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
-    SW_NC_create_units_converters(&SW_Domain.OutDom, &LogInfo);
+    SW_NCOUT_create_units_converters(&SW_Domain.OutDom, &LogInfo);
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
 #endif // SWNETCDF
 
-    SW_OUT_create_files(&sw_template.FileStatus, &SW_Domain, &LogInfo);
+    SW_OUT_create_files(&sw_template.SW_PathOutputs, &SW_Domain, &LogInfo);
     if (LogInfo.stopRun) {
         goto closeFiles;
     }
@@ -191,7 +222,9 @@ int main(int argc, char **argv) {
 
 closeFiles: {
     // finish-up output (not used with rSOILWAT2)
-    SW_OUT_close_files(&sw_template.FileStatus, &SW_Domain.OutDom, &LogInfo);
+    SW_OUT_close_files(
+        &sw_template.SW_PathOutputs, &SW_Domain.OutDom, &LogInfo
+    );
 }
 
 finishProgram: {

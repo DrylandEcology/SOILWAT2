@@ -57,8 +57,6 @@ int sw_strtoi(const char *str, const char *errMsg, LOG_INFO *LogInfo);
 
 double sw_strtod(const char *str, const char *errMsg, LOG_INFO *LogInfo);
 
-float sw_strtof(const char *str, const char *errMsg, LOG_INFO *LogInfo);
-
 int key_to_id(const char *key, const char **possibleKeys, int numPossKeys);
 
 void set_hasKey(

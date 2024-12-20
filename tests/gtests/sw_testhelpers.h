@@ -68,7 +68,11 @@ class AllTestFixture : public ::testing::Test {
         sw_fail_on_error(&LogInfo);
 
         SW_RUN_deepCopy(
-            &template_SW_Run, &SW_Run, &template_SW_Domain.OutDom, &LogInfo
+            &template_SW_Run,
+            &SW_Run,
+            &template_SW_Domain.OutDom,
+            swTRUE,
+            &LogInfo
         );
         sw_fail_on_error(&LogInfo);
     }
