@@ -168,6 +168,8 @@ void SW_VPD_init_run(
 
 void SW_VPD_deconstruct(SW_VEGPROD *SW_VegProd);
 
+void checkBiomass(SW_VEGPROD *SW_VegProd, LOG_INFO *LogInfo);
+
 void apply_biomassCO2effect(
     double *new_biomass, const double *biomass, double multiplier
 );
