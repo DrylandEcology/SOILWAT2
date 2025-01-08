@@ -98,7 +98,6 @@ typedef struct {
 
     Bool soil_temp_init; // simply keeps track of whether or not the values for
                          // the soil_temperature function have been initialized.
-    Bool do_once_at_soiltempError;
     Bool
         fusion_pool_init; // simply keeps track of whether or not the values for
                           // the soil fusion (thawing/freezing) section of the
