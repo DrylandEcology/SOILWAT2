@@ -2970,6 +2970,14 @@ static void create_output_dimVar(
         {"time", "time", "", "T", "standard", "time_bnds"},
         {"biological_taxon_name"}
     };
+    char *endSoilDepthPtr =
+        outAttVals[vertIndex][0] + sizeof outAttVals[vertIndex][0] - 1;
+    char *endCentiPtr =
+        outAttVals[vertIndex][2] + sizeof outAttVals[vertIndex][2] - 1;
+    size_t soilDepthSize = MAX_FILENAMESIZE - strlen(outAttVals[vertIndex][0]);
+    size_t centiSize = MAX_FILENAMESIZE - strlen(outAttVals[vertIndex][2]);
+    Bool soilDepthBuffFull = swFALSE;
+    Bool centiBuffFull = swFALSE;
 
     const int numVarAtts[] = {6, 6, 1};
 
@@ -3042,11 +3050,25 @@ static void create_output_dimVar(
         if (dimNum == vertIndex && !hasConsistentSoilLayerDepths) {
             // Use soil layers as dimension variable values
             // because soil layer depths are not consistent across domain
-            (void) sw_memccpy(
-                outAttVals[vertIndex][0], "soil layer", '\0', MAX_FILENAMESIZE
+            soilDepthBuffFull = sw_memccpy_inc(
+                (void **) &outAttVals[vertIndex][0],
+                (void *) "soil layer",
+                '\0',
+                &soilDepthSize
             );
-            (void
-            ) sw_memccpy(outAttVals[vertIndex][2], "1", '\0', MAX_FILENAMESIZE);
+            if (LogInfo->stopRun) {
+                goto reportFullBuffer;
+            }
+
+            centiBuffFull = sw_memccpy_inc(
+                (void **) &outAttVals[vertIndex][2],
+                (void *) "1",
+                '\0',
+                &centiSize
+            );
+            if (LogInfo->stopRun) {
+                goto reportFullBuffer;
+            }
         }
 
         for (index = 0; index < numVarAtts[dimNum]; index++) {
@@ -3061,6 +3083,13 @@ static void create_output_dimVar(
                 return; // Exit function prematurely due to error
             }
         }
+    }
+
+reportFullBuffer:
+    sw_memccpy_report(swTRUE, soilDepthBuffFull, endSoilDepthPtr, LogInfo);
+
+    if (!LogInfo->stopRun) {
+        sw_memccpy_report(swTRUE, centiBuffFull, endCentiPtr, LogInfo);
     }
 }
 
@@ -3393,7 +3422,7 @@ static void create_output_file(
     char *varName;
     char **varInfo;
 
-    (void) sw_memccpy(frequency, (char *) pd2longstr[pd], '\0', 9);
+    (void) sw_memccpy(frequency, (char *) pd2longstr[pd], '\0', 10);
     Str_ToLower(frequency, frequency);
 
 
@@ -3947,7 +3976,7 @@ void SW_NC_create_output_files(
                     rangeStart = startYr;
 
                     (void) sw_memccpy(
-                        periodSuffix, (char *) pd2longstr[pd], '\0', 9
+                        periodSuffix, (char *) pd2longstr[pd], '\0', 10
                     );
                     Str_ToLower(periodSuffix, periodSuffix);
 

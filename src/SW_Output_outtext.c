@@ -92,9 +92,14 @@ static void create_csv_headers(
     size_t writeSizeReg = (size_t) (2 * OUTSTRLEN);
     size_t writeSizeSoil = (size_t) (n_layers) *OUTSTRLEN;
     char *writePtrHelp = NULL;
-    char *resPtr = NULL;
+    char *endHelpPtr = NULL;
     char *writePtrSoil = NULL;
+    char *endSoilPtr = NULL;
     char *writePtrReg = NULL;
+    char *endRegPtr = NULL;
+    Bool helpBufFull = swFALSE;
+    Bool soilBufFull = swFALSE;
+    Bool regBufFull = swFALSE;
 
     str_help1 = (char *) Mem_Malloc(
         sizeof(char) * size_help, "create_csv_headers()", LogInfo
@@ -117,9 +122,12 @@ static void create_csv_headers(
 
     writePtrReg = str_reg;
     writePtrSoil = str_soil;
+    endRegPtr = str_reg + writeSizeReg - 1;
+    endSoilPtr = str_soil + writeSizeSoil - 1;
 
     ForEachOutKey(k) {
         writePtrHelp = str_help2;
+        endHelpPtr = str_help2 + size_help - 1;
 
         isTrue = (Bool) (OutDom->use[k] && has_OutPeriod_inUse(
                                                pd,
@@ -160,30 +168,49 @@ static void create_csv_headers(
                     goto freeMem; // Exit function prematurely due to error
                 }
 
-                resPtr = (char *) sw_memccpy(
-                    writePtrHelp, str_help1, '\0', writeSizeHelp
+                helpBufFull = sw_memccpy_inc(
+                    (void **) &writePtrHelp,
+                    (void *) str_help1,
+                    '\0',
+                    &writeSizeHelp
                 );
-                writePtrHelp = resPtr - 1;
-                writeSizeHelp -= (resPtr - writePtrHelp - 1);
+                if (helpBufFull) {
+                    goto freeMem;
+                }
             }
 
             if (OutDom->has_sl[k]) {
-                resPtr = (char *) sw_memccpy(
-                    writePtrSoil, str_help2, '\0', writeSizeSoil
+                soilBufFull = sw_memccpy_inc(
+                    (void **) &writePtrSoil,
+                    (void *) str_help2,
+                    '\0',
+                    &writeSizeSoil
                 );
-                writeSizeSoil -= (resPtr - str_soil - 1);
-                writePtrSoil = resPtr - 1;
             } else {
-                resPtr = (char *) sw_memccpy(
-                    writePtrReg, str_help2, '\0', writeSizeReg
+                regBufFull = sw_memccpy_inc(
+                    (void **) &writePtrReg,
+                    (void *) str_help2,
+                    '\0',
+                    &writeSizeReg
                 );
-                writeSizeReg -= (resPtr - str_reg - 1);
-                writePtrReg = resPtr - 1;
+            }
+            if (soilBufFull || regBufFull) {
+                goto freeMem;
             }
         }
     }
 
 freeMem:
+    sw_memccpy_report(swTRUE, helpBufFull, endHelpPtr, LogInfo);
+
+    if (!LogInfo->stopRun) {
+        sw_memccpy_report(swTRUE, soilBufFull, endSoilPtr, LogInfo);
+    }
+
+    if (LogInfo->stopRun) {
+        sw_memccpy_report(swTRUE, regBufFull, endRegPtr, LogInfo);
+    }
+
     free(str_help1);
     free(str_help2);
 }

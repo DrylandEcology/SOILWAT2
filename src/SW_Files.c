@@ -62,11 +62,19 @@ void SW_CSV_F_INIT(const char *s, LOG_INFO *LogInfo) {
 
     char inbuf[MAX_FILENAMESIZE];
     char dirString[FILENAME_MAX];
+    char *resPtr = NULL;
+    char *endInbuf = inbuf + sizeof inbuf - 1;
 
     DirName(s, dirString);
 
     if (DirExists(dirString)) {
-        (void) sw_memccpy(inbuf, (char *) s, '\0', sizeof inbuf);
+        resPtr =
+            (char *) sw_memccpy((void *) inbuf, (char *) s, '\0', sizeof inbuf);
+        if (isnull(resPtr)) {
+            sw_memccpy_report(swTRUE, swTRUE, endInbuf, LogInfo);
+            return;
+        }
+
         if (!RemoveFiles(inbuf, LogInfo)) {
             LogError(
                 LogInfo, LOGWARN, "Can't remove old csv output file: %s\n", s
@@ -338,6 +346,8 @@ void SW_F_construct(
      */
     char *c;
     char *p;
+    char *resPtr = NULL;
+    char *endProjDir = SW_ProjDir + MAX_FILENAMESIZE - 1;
     char dirString[FILENAME_MAX];
     char *localfirstfile = Str_Dup(firstfile, LogInfo);
     if (LogInfo->stopRun) {
@@ -348,7 +358,13 @@ void SW_F_construct(
     c = dirString;
 
     if (c) {
-        (void) sw_memccpy(SW_ProjDir, c, '\0', sizeof dirString);
+        resPtr = (char *) sw_memccpy(
+            (void *) SW_ProjDir, (void *) c, '\0', sizeof dirString
+        );
+        if (isnull(resPtr)) {
+            sw_memccpy_report(swFALSE, swTRUE, endProjDir, LogInfo);
+        }
+
         c = localfirstfile;
         p = c + strlen(SW_ProjDir);
         while (*p) {

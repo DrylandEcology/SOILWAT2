@@ -1381,464 +1381,522 @@ void SW_OUTDOM_construct(SW_OUT_DOM *OutDom) {
         case eSW_Temp:
 #if defined(SW_OUTTEXT)
             OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_temp_text;
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_temp_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_temp_mem;
 #elif defined(STEPWAT)
             OutDom->pfunc_agg[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_temp_agg;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_temp_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_temp_SXW;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_temp_SXW;
 #endif
             break;
 
         case eSW_Precip:
 #if defined(SW_OUTTEXT)
             OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_precip_text;
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_precip_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_precip_mem;
 #elif defined(STEPWAT)
             OutDom->pfunc_agg[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_precip_agg;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_precip_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_precip_SXW;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_precip_SXW;
 #endif
             break;
 
         case eSW_VWCBulk:
 #if defined(SW_OUTTEXT)
             OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_vwcBulk_text;
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_vwcBulk_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_vwcBulk_mem;
 #elif defined(STEPWAT)
             OutDom->pfunc_agg[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_vwcBulk_agg;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_vwcBulk_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
 #endif
             break;
 
         case eSW_VWCMatric:
 #if defined(SW_OUTTEXT)
             OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_vwcMatric_text;
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_vwcMatric_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_vwcMatric_mem;
 #elif defined(STEPWAT)
             OutDom->pfunc_agg[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_vwcMatric_agg;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_vwcMatric_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
 #endif
             break;
 
         case eSW_SWCBulk:
 #if defined(SW_OUTTEXT)
             OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_swcBulk_text;
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_swcBulk_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_swcBulk_mem;
 #elif defined(STEPWAT)
             OutDom->pfunc_agg[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_swcBulk_agg;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_swcBulk_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_swcBulk_SXW;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_swcBulk_SXW;
 #endif
             break;
 
         case eSW_SWPMatric:
 #if defined(SW_OUTTEXT)
             OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_swpMatric_text;
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_swpMatric_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_swpMatric_mem;
 #elif defined(STEPWAT)
             OutDom->pfunc_agg[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_swpMatric_agg;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_swpMatric_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
 #endif
             break;
 
         case eSW_SWABulk:
 #if defined(SW_OUTTEXT)
             OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_swaBulk_text;
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_swaBulk_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_swaBulk_mem;
 #elif defined(STEPWAT)
             OutDom->pfunc_agg[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_swaBulk_agg;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_swaBulk_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
 #endif
             break;
 
         case eSW_SWAMatric:
 #if defined(SW_OUTTEXT)
             OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_swaMatric_text;
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_swaMatric_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_swaMatric_mem;
 #elif defined(STEPWAT)
             OutDom->pfunc_agg[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_swaMatric_agg;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_swaMatric_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
 #endif
             break;
 
         case eSW_SWA:
 #if defined(SW_OUTTEXT)
             OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_swa_text;
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_swa_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_swa_mem;
 #elif defined(STEPWAT)
             OutDom->pfunc_agg[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_swa_agg;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_swa_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
 #endif
             break;
 
         case eSW_SurfaceWater:
 #if defined(SW_OUTTEXT)
-            OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_surfaceWater_text;
+            OutDom->pfunc_text[k] = (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)
+            ) get_surfaceWater_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
             ) get_surfaceWater_mem;
 #elif defined(STEPWAT)
-            OutDom->pfunc_agg[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
-            ) get_surfaceWater_agg;
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_surfaceWater_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
 #endif
             break;
 
         case eSW_Runoff:
 #if defined(SW_OUTTEXT)
-            OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_runoffrunon_text;
+            OutDom->pfunc_text[k] = (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)
+            ) get_runoffrunon_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
             ) get_runoffrunon_mem;
 #elif defined(STEPWAT)
-            OutDom->pfunc_agg[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
-            ) get_runoffrunon_agg;
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_runoffrunon_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
 #endif
             break;
 
         case eSW_Transp:
 #if defined(SW_OUTTEXT)
             OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_transp_text;
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_transp_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_transp_mem;
 #elif defined(STEPWAT)
             OutDom->pfunc_agg[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_transp_agg;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_transp_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_transp_SXW;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_transp_SXW;
 #endif
             break;
 
         case eSW_EvapSoil:
 #if defined(SW_OUTTEXT)
             OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_evapSoil_text;
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_evapSoil_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_evapSoil_mem;
 #elif defined(STEPWAT)
             OutDom->pfunc_agg[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_evapSoil_agg;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_evapSoil_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
 #endif
             break;
 
         case eSW_EvapSurface:
 #if defined(SW_OUTTEXT)
-            OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_evapSurface_text;
+            OutDom->pfunc_text[k] = (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)
+            ) get_evapSurface_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
             ) get_evapSurface_mem;
 #elif defined(STEPWAT)
-            OutDom->pfunc_agg[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
-            ) get_evapSurface_agg;
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_evapSurface_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
 #endif
             break;
 
         case eSW_Interception:
 #if defined(SW_OUTTEXT)
-            OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_interception_text;
+            OutDom->pfunc_text[k] = (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)
+            ) get_interception_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
             ) get_interception_mem;
 #elif defined(STEPWAT)
-            OutDom->pfunc_agg[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
-            ) get_interception_agg;
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_interception_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
 #endif
             break;
 
         case eSW_SoilInf:
 #if defined(SW_OUTTEXT)
             OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_soilinf_text;
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_soilinf_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_soilinf_mem;
 #elif defined(STEPWAT)
             OutDom->pfunc_agg[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_soilinf_agg;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_soilinf_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
 #endif
             break;
 
         case eSW_LyrDrain:
 #if defined(SW_OUTTEXT)
             OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_lyrdrain_text;
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_lyrdrain_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_lyrdrain_mem;
 #elif defined(STEPWAT)
             OutDom->pfunc_agg[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_lyrdrain_agg;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_lyrdrain_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
 #endif
             break;
 
         case eSW_HydRed:
 #if defined(SW_OUTTEXT)
             OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_hydred_text;
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_hydred_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_hydred_mem;
 #elif defined(STEPWAT)
             OutDom->pfunc_agg[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_hydred_agg;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_hydred_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
 #endif
             break;
 
         case eSW_AET:
 #if defined(SW_OUTTEXT)
             OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_aet_text;
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_aet_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_aet_mem;
 #elif defined(STEPWAT)
             OutDom->pfunc_agg[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_aet_agg;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_aet_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_aet_SXW;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_aet_SXW;
 #endif
             break;
 
         case eSW_PET:
 #if defined(SW_OUTTEXT)
             OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_pet_text;
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_pet_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_pet_mem;
 #elif defined(STEPWAT)
             OutDom->pfunc_agg[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_pet_agg;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_pet_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
 #endif
             break;
 
         case eSW_WetDays:
 #if defined(SW_OUTTEXT)
             OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_wetdays_text;
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_wetdays_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_wetdays_mem;
 #elif defined(STEPWAT)
             OutDom->pfunc_agg[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_wetdays_agg;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_wetdays_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
 #endif
             break;
 
         case eSW_SnowPack:
 #if defined(SW_OUTTEXT)
             OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_snowpack_text;
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_snowpack_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_snowpack_mem;
 #elif defined(STEPWAT)
             OutDom->pfunc_agg[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_snowpack_agg;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_snowpack_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
 #endif
             break;
 
         case eSW_DeepSWC:
 #if defined(SW_OUTTEXT)
             OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_deepswc_text;
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_deepswc_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_deepswc_mem;
 #elif defined(STEPWAT)
             OutDom->pfunc_agg[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_deepswc_agg;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_deepswc_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
 #endif
             break;
 
         case eSW_SoilTemp:
 #if defined(SW_OUTTEXT)
             OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_soiltemp_text;
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_soiltemp_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_soiltemp_mem;
 #elif defined(STEPWAT)
             OutDom->pfunc_agg[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_soiltemp_agg;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_soiltemp_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
 #endif
             break;
 
         case eSW_Frozen:
 #if defined(SW_OUTTEXT)
             OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_frozen_text;
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_frozen_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_frozen_mem;
 #elif defined(STEPWAT)
             OutDom->pfunc_agg[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_frozen_agg;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_frozen_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
 #endif
             break;
 
         case eSW_Estab:
 #if defined(SW_OUTTEXT)
             OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_estab_text;
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_estab_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_estab_mem;
 #elif defined(STEPWAT)
             OutDom->pfunc_agg[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_estab_agg;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_estab_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
 #endif
             break;
 
         case eSW_CO2Effects:
 #if defined(SW_OUTTEXT)
             OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_co2effects_text;
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_co2effects_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
             ) get_co2effects_mem;
 #elif defined(STEPWAT)
-            OutDom->pfunc_agg[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
-            ) get_co2effects_agg;
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_co2effects_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
 #endif
             break;
 
         case eSW_Biomass:
 #if defined(SW_OUTTEXT)
             OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_biomass_text;
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_biomass_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_biomass_mem;
 #elif defined(STEPWAT)
             OutDom->pfunc_agg[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_biomass_agg;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_biomass_agg;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
 #endif
             break;
 
         default:
 #if defined(SW_OUTTEXT)
             OutDom->pfunc_text[k] =
-                (void (*)(OutPeriod, SW_RUN *)) get_none_text;
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_none_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
             OutDom->pfunc_mem[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
 #elif defined(STEPWAT)
             OutDom->pfunc_agg[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
             OutDom->pfunc_SXW[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
 #endif
             break;
         }
@@ -3037,7 +3095,6 @@ void collect_values(
     TimeInt tOffset,
     LOG_INFO *LogInfo
 ) {
-
     SW_OUT_sum_today(sw, OutDom, eSWC, bFlush_output, tOffset, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -3217,9 +3274,10 @@ void SW_OUT_write_today(
     int k;
     int i;
     int outPeriod;
+    Bool soilBufFull = swFALSE;
+    Bool regBufFull = swFALSE;
 
 #ifdef SW_OUTTEXT
-    char *resPtr = NULL;
 
     char *soilWritePtr[SW_OUTNPERIODS] = {
         sw->FileStatus.buf_soil[0],
@@ -3238,6 +3296,8 @@ void SW_OUT_write_today(
 #ifdef STEPWAT
     Bool use_help_txt;
     Bool use_help_SXW;
+    Bool soilAggBufFull = swFALSE;
+    Bool regAggBufFull = swFALSE;
 
     char *soilAggWritePtr[SW_OUTNPERIODS] = {
         sw->FileStatus.buf_soil[0],
@@ -3377,7 +3437,7 @@ void SW_OUT_write_today(
                 );
             }
 #endif
-            OutDom->pfunc_text[k](outPeriod, sw);
+            OutDom->pfunc_text[k](outPeriod, sw, LogInfo);
 
 #elif defined(RSOILWAT) || defined(SWNETCDF)
 #ifdef SWDEBUG
@@ -3388,6 +3448,9 @@ void SW_OUT_write_today(
             }
 #endif
             OutDom->pfunc_mem[k](outPeriod, sw, OutDom);
+
+            (void) soilBufFull;
+            (void) regBufFull;
 
 #elif defined(STEPWAT)
             if (use_help_SXW) {
@@ -3400,7 +3463,12 @@ void SW_OUT_write_today(
                     );
                 }
 #endif
-                OutDom->pfunc_SXW[k](OutDom->timeSteps_SXW[k][i], sw, OutDom);
+                OutDom->pfunc_SXW[k](
+                    OutDom->timeSteps_SXW[k][i], sw, OutDom, LogInfo
+                );
+                if (LogInfo->stopRun) {
+                    return;
+                }
             }
 
             if (!use_help_txt) {
@@ -3415,7 +3483,10 @@ void SW_OUT_write_today(
                     );
                 }
 #endif
-                OutDom->pfunc_agg[k](outPeriod, sw, OutDom);
+                OutDom->pfunc_agg[k](outPeriod, sw, OutDom, LogInfo);
+                if (LogInfo->stopRun) {
+                    return;
+                }
             }
 
             if (OutDom->print_SW_Output) {
@@ -3427,9 +3498,12 @@ void SW_OUT_write_today(
                     );
                 }
 #endif
-                OutDom->pfunc_text[k](outPeriod, sw);
+                OutDom->pfunc_text[k](outPeriod, sw, LogInfo);
             }
 #endif
+            if (LogInfo->stopRun) {
+                return;
+            }
 
 #ifdef SWDEBUG
             if (debug) {
@@ -3448,25 +3522,36 @@ void SW_OUT_write_today(
                 );
 
                 if (OutDom->has_sl[k]) {
-                    resPtr = (char *) sw_memccpy(
-                        soilWritePtr[outPeriod],
-                        tempstr,
+                    soilBufFull = sw_memccpy_inc(
+                        (void **) &soilWritePtr[outPeriod],
+                        (void *) tempstr,
                         '\0',
-                        writeSizeSoil[outPeriod]
+                        &writeSizeSoil[outPeriod]
                     );
-                    soilWritePtr[outPeriod] = resPtr - 1;
-                    writeSizeSoil[outPeriod] -=
-                        (resPtr - soilWritePtr[outPeriod] - 1);
+                    sw_memccpy_report(
+                        swTRUE,
+                        soilBufFull,
+                        soilWritePtr[outPeriod] +
+                            sizeof soilWritePtr[outPeriod] - 1,
+                        LogInfo
+                    );
                 } else {
-                    resPtr = (char *) sw_memccpy(
-                        regWritePtr[outPeriod],
-                        tempstr,
+                    regBufFull = sw_memccpy_inc(
+                        (void **) &regWritePtr[outPeriod],
+                        (void *) tempstr,
                         '\0',
-                        writeSizeReg[outPeriod]
+                        &writeSizeReg[outPeriod]
                     );
-                    regWritePtr[outPeriod] = resPtr - 1;
-                    writeSizeReg[outPeriod] -=
-                        (resPtr - regWritePtr[outPeriod] - 1);
+                    sw_memccpy_report(
+                        swTRUE,
+                        regBufFull,
+                        regWritePtr[outPeriod] + sizeof regWritePtr[outPeriod] -
+                            1,
+                        LogInfo
+                    );
+                }
+                if (LogInfo->stopRun) {
+                    return;
                 }
             }
 
@@ -3481,25 +3566,36 @@ void SW_OUT_write_today(
                 );
 
                 if (OutDom->has_sl[k]) {
-                    resPtr = sw_memccpy(
-                        soilAggWritePtr[outPeriod],
-                        tempstr,
+                    soilAggBufFull = sw_memccpy_inc(
+                        (void **) &soilAggWritePtr[outPeriod],
+                        (void *) tempstr,
                         '\0',
-                        writeSizeSoilAgg[outPeriod]
+                        &writeSizeSoilAgg[outPeriod]
                     );
-                    soilAggWritePtr[outPeriod] = resPtr - 1;
-                    writeSizeSoilAgg[outPeriod] -=
-                        (resPtr - soilAggWritePtr[outPeriod] - 1);
+                    sw_memccpy_report(
+                        swTRUE,
+                        soilAggBufFull,
+                        soilAggWritePtr[outPeriod] +
+                            sizeof soilAggWritePtr[outPeriod] - 1,
+                        LogInfo
+                    );
                 } else {
-                    resPtr = sw_memccpy(
-                        regAggWritePtr[outPeriod],
-                        tempstr,
+                    regAggBufFull = sw_memccpy_inc(
+                        (void **) &regAggWritePtr[outPeriod],
+                        (void *) tempstr,
                         '\0',
-                        writeSizeRegAgg[outPeriod]
+                        &writeSizeRegAgg[outPeriod]
                     );
-                    regAggWritePtr[outPeriod] = resPtr - 1;
-                    writeSizeRegAgg[outPeriod] -=
-                        (resPtr - regAggWritePtr[outPeriod] - 1);
+                    sw_memccpy_report(
+                        swTRUE,
+                        regAggBufFull,
+                        regAggWritePtr[outPeriod] +
+                            sizeof regAggWritePtr[outPeriod] - 1,
+                        LogInfo
+                    );
+                }
+                if (LogInfo->stopRun) {
+                    return;
                 }
             }
 #endif
@@ -3722,7 +3818,6 @@ void echo_outputs(SW_OUT_DOM *OutDom) {
     char errstr[MAX_ERROR];
     size_t writeSize = MAX_ERROR;
     char *writePtr = errstr;
-    char *resPtr = NULL;
     char *cpyPtr = NULL;
     const int numWriteStrs = 6;
     const size_t errHeaderSize = 75;
@@ -3775,9 +3870,9 @@ void echo_outputs(SW_OUT_DOM *OutDom) {
                 cpyPtr = str;
             }
 
-            resPtr = (char *) sw_memccpy(writePtr, cpyPtr, '\0', writeSize);
-            writeSize -= (resPtr - writePtr - 1);
-            writePtr = resPtr - 1;
+            (void) sw_memccpy_inc(
+                (void **) &writePtr, (void *) cpyPtr, '\0', &writeSize
+            );
         }
     }
 
@@ -3785,14 +3880,16 @@ void echo_outputs(SW_OUT_DOM *OutDom) {
     printf("%s\n", errstr);
 }
 
-void echo_all_inputs(SW_RUN *sw, SW_OUT_DOM *OutDom) {
+void echo_all_inputs(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 
     if (!sw->VegEstab.use) {
         printf("Establishment not used.\n");
     }
 
     echo_inputs(&sw->Site, &sw->Model);
-    echo_VegEstab(sw->Site.width, sw->VegEstab.parms, sw->VegEstab.count);
+    echo_VegEstab(
+        sw->Site.width, sw->VegEstab.parms, sw->VegEstab.count, LogInfo
+    );
     echo_VegProd(sw->VegProd.veg, sw->VegProd.bare_cov);
     echo_outputs(OutDom);
 }

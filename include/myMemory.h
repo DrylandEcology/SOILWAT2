@@ -35,6 +35,14 @@ void *sw_memccpy_custom(
     void *__restrict dest, void *__restrict src, int c, size_t n
 );
 
+Bool sw_memccpy_inc(
+    void **__restrict charPtr, void *__restrict str, int c, size_t *n
+);
+
+void sw_memccpy_report(
+    Bool forOutput, Bool fullBuffer, char *endPtr, LOG_INFO *LogInfo
+);
+
 #ifdef __cplusplus
 }
 #endif

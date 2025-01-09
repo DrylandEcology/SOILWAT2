@@ -633,11 +633,11 @@ void MkDir(const char *dname, LOG_INFO *LogInfo) {
     const char *delim = "\\/"; /* path separators */
     char buffer[MAX_ERROR];
     char *writePtr = buffer;
-    char *resPtr = NULL;
 
     size_t startIndex = 0;
     size_t strLen = 0; // For `sw_strtok()`
     size_t writeSize = 256;
+    Bool fullBuffer = swFALSE;
 
     if (isnull(dname)) {
         return;
@@ -657,20 +657,20 @@ void MkDir(const char *dname, LOG_INFO *LogInfo) {
 
     buffer[0] = '\0';
     for (i = 0; i < n; i++) {
-        if (!isnull(resPtr) || i == 0) {
-            resPtr = (char *) sw_memccpy(writePtr, a[i], '\0', writeSize);
-            writeSize -= (resPtr - buffer - 1);
-            writePtr = resPtr - 1;
+        if (!fullBuffer || i == 0) {
+            fullBuffer = sw_memccpy_inc(
+                (void **) &writePtr, (void *) a[i], '\0', &writeSize
+            );
         }
 
-        if (!DirExists(buffer) || isnull(resPtr)) {
+        if (!DirExists(buffer) || fullBuffer) {
             if (0 != mkdir(buffer, 0777)) {
                 // directory failed to create -> report error
                 LogError(
                     LogInfo, LOGERROR, "Failed to create directory '%s'", buffer
                 );
                 goto freeMem; // Exit function prematurely due to error
-            } else if (isnull(resPtr)) {
+            } else if (fullBuffer) {
                 /* Directory was created but not by the expected name */
                 LogError(
                     LogInfo,
@@ -685,10 +685,10 @@ void MkDir(const char *dname, LOG_INFO *LogInfo) {
             }
         }
 
-        if (!isnull(resPtr)) {
-            resPtr = (char *) sw_memccpy(writePtr, "/", '\0', writeSize);
-            writePtr = resPtr - 1;
-            writeSize--;
+        if (!fullBuffer) {
+            fullBuffer = sw_memccpy_inc(
+                (void **) &writePtr, (void *) "/", '\0', &writeSize
+            );
         }
     }
 
@@ -713,7 +713,7 @@ Bool RemoveFiles(const char *fspec, LOG_INFO *LogInfo) {
 
     char **flist;
     char fname[FILENAME_MAX];
-    char *resPtr = NULL;
+    char *fNamePlusDLen;
     int i;
     int nfiles;
     int result = swTRUE;
@@ -730,9 +730,10 @@ Bool RemoveFiles(const char *fspec, LOG_INFO *LogInfo) {
         DirName(fspec, fname); // Transfer `fspec` into `fname`
         dlen = strlen(fname);
         for (i = 0; i < nfiles; i++) {
-            resPtr =
-                (char *) sw_memccpy(fname + dlen, flist[i], '\0', writeSize);
-            writeSize -= (resPtr - (fname + dlen) - 1);
+            fNamePlusDLen = fname + dlen;
+            (void) sw_memccpy_inc(
+                (void **) &fNamePlusDLen, (void *) flist[i], '\0', &writeSize
+            );
             if (0 != remove(fname)) {
                 result = swFALSE;
                 break;

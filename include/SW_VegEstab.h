@@ -87,7 +87,12 @@ void spp_init(
 
 IntU new_species(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo);
 
-void echo_VegEstab(const double width[], SW_VEGESTAB_INFO **parms, IntU count);
+void echo_VegEstab(
+    const double width[],
+    SW_VEGESTAB_INFO **parms,
+    IntU count,
+    LOG_INFO *LogInfo
+);
 
 
 /* COMMENT-1

@@ -1307,7 +1307,7 @@ struct SW_OUT_DOM {
 
 #if defined(SW_OUTTEXT)
     /** pointer to output routine for text output */
-    void (*pfunc_text[SW_OUTNKEYS])(OutPeriod, SW_RUN *);
+    void (*pfunc_text[SW_OUTNKEYS])(OutPeriod, SW_RUN *, LOG_INFO *);
 #endif
 
 #if defined(RSOILWAT) || defined(SWNETCDF)
@@ -1317,9 +1317,11 @@ struct SW_OUT_DOM {
 #elif defined(STEPWAT)
     /** pointer to output routine for aggregated output across STEPWAT
      * iterations */
-    void (*pfunc_agg[SW_OUTNKEYS])(OutPeriod, SW_RUN *, SW_OUT_DOM *);
+    void (*pfunc_agg
+              [SW_OUTNKEYS])(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *);
     /** pointer to output routine for STEPWAT in-memory output */
-    void (*pfunc_SXW[SW_OUTNKEYS])(OutPeriod, SW_RUN *, SW_OUT_DOM *);
+    void (*pfunc_SXW
+              [SW_OUTNKEYS])(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *);
 #endif
 };
 
