@@ -288,6 +288,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     double drainout = 0;
     double *standingWaterToday = &sw->SoilWat.standingWater[Today];
     double *standingWaterYesterday = &sw->SoilWat.standingWater[Yesterday];
+    double snowdepth0;
 
     TimeInt doy;
     TimeInt month;
@@ -380,8 +381,8 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     }
 
 
-    /* snowdepth scaling */
-    sw->SoilWat.snowdepth = SW_SnowDepth(
+    /* snowdepth scaling based on snowpack at start of day (before snowloss) */
+    snowdepth0 = SW_SnowDepth(
         sw->SoilWat.snowpack[Today], sw->Sky.snow_density_daily[doy]
     );
     /* if snow depth is deeper than vegetation height then
@@ -395,8 +396,8 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         scale_veg[k] = sw->VegProd.veg[k].cov.fCover;
 
         if (GT(sw->VegProd.veg[k].veg_height_daily[doy], 0.)) {
-            scale_veg[k] *= 1. - sw->SoilWat.snowdepth /
-                                     sw->VegProd.veg[k].veg_height_daily[doy];
+            scale_veg[k] *=
+                1. - snowdepth0 / sw->VegProd.veg[k].veg_height_daily[doy];
         }
     }
 
@@ -673,6 +674,12 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             see functions `SW_SWC_adjust_snow` and `SW_SWC_snowloss`*/
     sw->Weather.snowloss =
         SW_SWC_snowloss(sw->SoilWat.pet, &sw->SoilWat.snowpack[Today]);
+
+    /* Calculate snowdepth for output based on today's final snowpack */
+    sw->SoilWat.snowdepth = SW_SnowDepth(
+        sw->SoilWat.snowpack[Today], sw->Sky.snow_density_daily[doy]
+    );
+
     pet2 = fmax(0., sw->SoilWat.pet - sw->Weather.snowloss);
 
     /* Potential evaporation rates of intercepted and surface water */
@@ -975,7 +982,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             sw->Site.csParam1,
             sw->Site.csParam2,
             sw->Site.shParam,
-            sw->SoilWat.snowdepth,
+            snowdepth0,
             sw->Site.Tsoil_constant,
             sw->Site.stDeltaX,
             sw->Site.stMaxDepth,
