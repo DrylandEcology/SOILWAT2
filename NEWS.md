@@ -8,6 +8,7 @@
     * Saturated percolation is now limited which leads to different outcomes
       during periods of high infiltration (e.g., snowmelt) and during conditions
       of low hydraulic conductivity (e.g., frozen soils, sapric organic matter).
+    * Depth of snowpack is now consistent with snowpack water content.
 
 * The two modes of SOILWAT2 can now be compiled with the following flags:
     * `make CPPFLAGS=-DSWTXT` (or as previously `make all`) for txt-based
@@ -57,6 +58,11 @@
   (which includes effects of organic matter), frozen soils, and a
   user-specified `"permeability"` factor.
 
+* Fix the calculation of depth of snowpack (#441; @dschlaep).
+  Depth of snowpack is now calculated after sublimation occurred and
+  is based on snowpack density that now is always larger than 0; this now makes
+  depth of snowpack and snowpack water content consistent.
+
 ## Changes to inputs
 * New input via `"siteparam.in"` to specify the depth at which characteristics
   of organic matter have completely switched from fibric to sapric peat
@@ -66,6 +72,8 @@
 * New input via `"swrc_params*.in"` to provide parameter values of the
   soil water retention curve representing fibric and sapric peat.
   Note: Some parameter values for the `"FXW"` SWRC are missing.
+* `"climate.in"`: new snow density values for July, August and September
+  estimated with linear interpolation from June and October values.
 
 ## Changes to inputs for nc-based SOILWAT2
 * New tab-separated value `"tsv"` input file `"SW2_netCDF_input_variables.tsv"`
