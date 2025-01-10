@@ -42,6 +42,8 @@ void SW_SKY_new_year(
     double snow_density[MAX_MONTHS],
     double snow_density_daily[MAX_MONTHS]
 );
+void checkSky(SW_SKY *SW_Sky, LOG_INFO *LogInfo);
+void SW_SKY_init_run(SW_SKY *SW_Sky, LOG_INFO *LogInfo);
 
 #ifdef __cplusplus
 }
