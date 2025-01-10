@@ -724,7 +724,9 @@ static void read_spp(
 
             sppPtr = v->sppname;
 
-            sppFull = sw_memccpy_inc((void **) &sppPtr, (void *) name, '\0', &sppWritesize);
+            sppFull = sw_memccpy_inc(
+                (void **) &sppPtr, (void *) name, '\0', &sppWritesize
+            );
             if (sppFull) {
                 goto closeFile;
             }
@@ -972,7 +974,7 @@ void echo_VegEstab(
     );
 
     fullErrBuffer =
-        sw_memccpy_inc((void **) &outstr, (void *) errstr, '\0', &writeSize);
+        sw_memccpy_inc((void **) &writePtr, (void *) errstr, '\0', &writeSize);
     if (fullErrBuffer) {
         goto reportFullBuffer;
     }
