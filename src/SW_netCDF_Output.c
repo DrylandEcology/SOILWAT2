@@ -986,7 +986,7 @@ static void create_output_file(
     char *varName;
     char **varInfo;
 
-    (void) sw_memccpy(frequency, (char *) pd2longstr[pd], '\0', 9);
+    (void) sw_memccpy(frequency, (char *) pd2longstr[pd], '\0', 10);
     Str_ToLower(frequency, frequency);
 
 
@@ -1913,7 +1913,7 @@ void SW_NCOUT_create_output_files(
                     rangeStart = startYr;
 
                     (void) sw_memccpy(
-                        periodSuffix, (char *) pd2longstr[pd], '\0', 9
+                        periodSuffix, (char *) pd2longstr[pd], '\0', 10
                     );
                     Str_ToLower(periodSuffix, periodSuffix);
 

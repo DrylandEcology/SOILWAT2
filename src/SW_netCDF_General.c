@@ -1012,9 +1012,10 @@ void SW_NC_create_full_var(
     size_t chunkSizes[MAX_NUM_DIMS] = {1, 1, 1, 1, 1};
     char coordValBuf[MAX_FILENAMESIZE] = "";
     char *writePtr = coordValBuf;
-    char *tempCoordPtr;
-    int writeSize = MAX_FILENAMESIZE;
+    char *endWritePtr = writePtr + sizeof coordValBuf - 1;
+    size_t writeSize = MAX_FILENAMESIZE;
     char finalCoordVal[MAX_FILENAMESIZE];
+    Bool fullBuffer = swFALSE;
 
     for (index = 0; index < numConstDims; index++) {
         SW_NC_get_dim_identifier(
@@ -1055,15 +1056,23 @@ void SW_NC_create_full_var(
                 return; // Exit function prematurely due to error
             }
 
-            tempCoordPtr = (char *) sw_memccpy(writePtr, " ", '\0', writeSize);
-            writeSize--;
-            writePtr = tempCoordPtr - 1;
-
-            tempCoordPtr = (char *) sw_memccpy(
-                writePtr, (char *) timeVertVegNames[index], '\0', writeSize
+            fullBuffer = sw_memccpy_inc(
+                (void **) &writePtr, endWritePtr, (void *) " ", '\0', &writeSize
             );
-            writeSize -= (int) (tempCoordPtr - coordValBuf - 1);
-            writePtr = tempCoordPtr - 1;
+            if (fullBuffer) {
+                goto reportFullBuffer;
+            }
+
+            fullBuffer = sw_memccpy_inc(
+                (void **) &writePtr,
+                endWritePtr,
+                (void *) timeVertVegNames[index],
+                '\0',
+                &writeSize
+            );
+            if (fullBuffer) {
+                goto reportFullBuffer;
+            }
 
             dimArrSize++;
         }
@@ -1133,6 +1142,11 @@ void SW_NC_create_full_var(
            otherwise, the first simulation loop takes an order of magnitude
            longer than following simulations */
         writeDummyVal(*ncFileID, newVarType, varID);
+    }
+
+reportFullBuffer:
+    if (fullBuffer) {
+        reportFullBuffer(LOGERROR, LogInfo);
     }
 }
 

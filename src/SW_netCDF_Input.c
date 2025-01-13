@@ -1080,8 +1080,8 @@ static void checkRequiredSoils(
     char soilErrorMsg[MAX_FILENAMESIZE] = "";
     char tmpStr[100] = "";
     char *writePtr = soilErrorMsg;
-    char *tempWritePtr;
-    int writeSize = MAX_FILENAMESIZE;
+    char *endWritePtr = soilErrorMsg + sizeof soilErrorMsg - 1;
+    size_t writeSize = MAX_FILENAMESIZE;
     int tmp;
     int nSWRCInputs;
     int k;
@@ -1091,6 +1091,7 @@ static void checkRequiredSoils(
     };
     const int nSuggested1Vars = 2;
     int suggested1Vars[2] = {eiv_impermeability, eiv_avgLyrTempInit};
+    Bool fullBuffer = swFALSE;
 
 
     /* Count number of input SWRCp */
@@ -1145,10 +1146,17 @@ static void checkRequiredSoils(
                     "'%s' is required; ",
                     possVarNames[eSW_InSoil][required1Vars[k]]
                 );
-                tempWritePtr =
-                    (char *) sw_memccpy(writePtr, tmpStr, '\0', writeSize);
-                writeSize -= (int) (tempWritePtr - soilErrorMsg - 1);
-                writePtr = tempWritePtr - 1;
+
+                fullBuffer = sw_memccpy_inc(
+                    (void **) &writePtr,
+                    endWritePtr,
+                    (void *) tmpStr,
+                    '\0',
+                    &writeSize
+                );
+                if (fullBuffer) {
+                    goto reportFullBuffer;
+                }
             }
         }
 
@@ -1156,14 +1164,16 @@ static void checkRequiredSoils(
         tmp = (int) readInVarsSoils[eiv_soilLayerDepth + 1] +
               (int) readInVarsSoils[eiv_soilLayerWidth + 1];
         if (tmp < 1) {
-            tempWritePtr = (char *) sw_memccpy(
-                writePtr,
-                "either layer depth or layer width is required; ",
+            fullBuffer = sw_memccpy_inc(
+                (void **) &writePtr,
+                endWritePtr,
+                (void *) "either layer depth or layer width is required; ",
                 '\0',
-                writeSize
+                &writeSize
             );
-            writeSize -= (int) (tempWritePtr - soilErrorMsg - 1);
-            writePtr = tempWritePtr - 1;
+            if (fullBuffer) {
+                goto reportFullBuffer;
+            }
         }
 
         // Required: two out of {sand, silt, clay}
@@ -1171,14 +1181,16 @@ static void checkRequiredSoils(
               (int) readInVarsSoils[eiv_silt + 1] +
               (int) readInVarsSoils[eiv_clay + 1];
         if (tmp < 2) {
-            tempWritePtr = (char *) sw_memccpy(
-                writePtr,
-                "two out of sand, silt, clay are required; ",
+            fullBuffer = sw_memccpy_inc(
+                (void **) &writePtr,
+                endWritePtr,
+                (void *) "two out of sand, silt, clay are required; ",
                 '\0',
-                writeSize
+                &writeSize
             );
-            writeSize -= (int) (tempWritePtr - soilErrorMsg - 1);
-            writePtr = tempWritePtr - 1;
+            if (fullBuffer) {
+                goto reportFullBuffer;
+            }
         }
 
         // Required: all transpiration coefficients
@@ -1187,22 +1199,30 @@ static void checkRequiredSoils(
             tmp += (int) readInVarsSoils[eiv_transpCoeff[k] + 1];
         }
         if (tmp != NVEGTYPES) {
-            tempWritePtr = (char *) sw_memccpy(
-                writePtr,
-                "all transpiration coefficients are required; ",
+            fullBuffer = sw_memccpy_inc(
+                (void **) &writePtr,
+                endWritePtr,
+                (void *) "all transpiration coefficients are required; ",
                 '\0',
-                writeSize
+                &writeSize
             );
-            writeSize -= (int) (tempWritePtr - soilErrorMsg - 1);
-            writePtr = tempWritePtr - 1;
+            if (fullBuffer) {
+                goto reportFullBuffer;
+            }
         }
 
         // Required: all SWRCp required unless estimated via PTF
         if (inputsProvideSWRCp && nSWRCInputs != SWRC_PARAM_NMAX) {
-            tempWritePtr = (char *) sw_memccpy(
-                writePtr, "all SWRC parameters are required; ", '\0', writeSize
+            fullBuffer = sw_memccpy_inc(
+                (void **) &writePtr,
+                endWritePtr,
+                (void *) "all SWRC parameters are required; ",
+                '\0',
+                &writeSize
             );
-            writeSize -= (int) (tempWritePtr - soilErrorMsg - 1);
+            if (fullBuffer) {
+                goto reportFullBuffer;
+            }
         }
 
         if (writeSize != MAX_FILENAMESIZE) {
@@ -1210,6 +1230,11 @@ static void checkRequiredSoils(
                 LogInfo, LOGERROR, "Incomplete soil inputs: %s", soilErrorMsg
             );
         }
+    }
+
+reportFullBuffer:
+    if (fullBuffer) {
+        reportFullBuffer(LOGWARN, LogInfo);
     }
 }
 
