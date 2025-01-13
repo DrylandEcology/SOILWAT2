@@ -584,9 +584,13 @@ static void read_spp(
     char inbuf[MAX_FILENAMESIZE];
     int inBufintRes = 0;
     double inBufDoubleVal = 0.;
+    char *endSppPtr = NULL;
+    char *sppPtr = NULL;
 
     Bool doIntConv;
+    Bool sppFull = swFALSE;
 
+    size_t sppWritesize = 0;
     IntU count;
 
     count = new_species(SW_VegEstab, LogInfo);
@@ -594,6 +598,9 @@ static void read_spp(
         return; // Exit function prematurely due to error
     }
     v = SW_VegEstab->parms[count];
+
+    endSppPtr = v->sppname + sizeof v->sppname - 1;
+    sppWritesize = sizeof v->sppname;
 
     // have to copy before the pointer infile gets reset below by getAline
     resSNP = snprintf(v->sppFileName, sizeof v->sppFileName, "%s", infile);
@@ -715,7 +722,15 @@ static void read_spp(
                 goto closeFile;
             }
 
-            (void) sw_memccpy(v->sppname, name, '\0', sizeof(v->sppname));
+            sppPtr = v->sppname;
+
+            sppFull = sw_memccpy_inc(
+                (void **) &sppPtr, endSppPtr, (void *) name, '\0', &sppWritesize
+            );
+            if (sppFull) {
+                reportFullBuffer(LOGERROR, LogInfo);
+                goto closeFile;
+            }
         }
 
         lineno++; /*only increments when there's a value */
@@ -923,19 +938,26 @@ IntU new_species(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo) {
     information about every vegetation species
 @param[in] count Held within type SW_VEGESTAB to determine
     how many species to check
+@param[out] LogInfo Holds information on warnings and errors
 */
-void echo_VegEstab(const double width[], SW_VEGESTAB_INFO **parms, IntU count) {
+void echo_VegEstab(
+    const double width[],
+    SW_VEGESTAB_INFO **parms,
+    IntU count,
+    LOG_INFO *LogInfo
+) {
     /* --------------------------------------------------- */
     IntU i;
+    Bool fullBuffer = swFALSE;
     char outstr[MAX_ERROR];
     char errstr[MAX_ERROR];
+    char *endOutstr = errstr + sizeof errstr - 1;
 
     const char *endDispStr =
         "\n-----------------  End of Establishment Parameters ------------\n";
 
     size_t writeSize = MAX_ERROR;
     char *writePtr = outstr;
-    char *resPtr = NULL;
 
     (void) snprintf(
         errstr,
@@ -947,7 +969,12 @@ void echo_VegEstab(const double width[], SW_VEGESTAB_INFO **parms, IntU count) {
         count
     );
 
-    (void) sw_memccpy(outstr, errstr, '\0', sizeof outstr);
+    fullBuffer = sw_memccpy_inc(
+        (void **) &writePtr, endOutstr, (void *) errstr, '\0', &writeSize
+    );
+    if (fullBuffer) {
+        goto reportFullBuffer;
+    }
 
     for (i = 0; i < count; i++) {
         (void) snprintf(
@@ -976,6 +1003,13 @@ void echo_VegEstab(const double width[], SW_VEGESTAB_INFO **parms, IntU count) {
             parms[i]->min_wetdays_for_germ
         );
 
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endOutstr, (void *) errstr, '\0', &writeSize
+        );
+        if (fullBuffer) {
+            goto reportFullBuffer;
+        }
+
         (void) snprintf(
             errstr,
             MAX_ERROR,
@@ -1003,13 +1037,21 @@ void echo_VegEstab(const double width[], SW_VEGESTAB_INFO **parms, IntU count) {
             parms[i]->max_drydays_postgerm
         );
 
-        resPtr = (char *) sw_memccpy(
-            (void *) writePtr, (void *) errstr, '\0', writeSize
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endOutstr, (void *) errstr, '\0', &writeSize
         );
-        writePtr = resPtr - 1;
-        writeSize -= (resPtr - outstr - 1);
+        if (fullBuffer) {
+            goto reportFullBuffer;
+        }
     }
-    sw_memccpy(outstr, (char *) endDispStr, '\0', writeSize);
+    fullBuffer = sw_memccpy_inc(
+        (void **) &writePtr, endOutstr, (void *) endDispStr, '\0', &writeSize
+    );
+
+reportFullBuffer:
+    if (fullBuffer) {
+        reportFullBuffer(LOGWARN, LogInfo);
+    }
 
     printf("%s\n", outstr);
 }

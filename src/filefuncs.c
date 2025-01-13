@@ -593,11 +593,12 @@ void MkDir(const char *dname, LOG_INFO *LogInfo) {
     const char *delim = "\\/"; /* path separators */
     char buffer[MAX_ERROR];
     char *writePtr = buffer;
-    char *resPtr = NULL;
+    char *endBuffer = buffer + sizeof buffer - 1;
 
     size_t startIndex = 0;
     size_t strLen = 0; // For `sw_strtok()`
     size_t writeSize = 256;
+    Bool fullBuffer = swFALSE;
 
     if (isnull(dname)) {
         return;
@@ -617,42 +618,38 @@ void MkDir(const char *dname, LOG_INFO *LogInfo) {
 
     buffer[0] = '\0';
     for (i = 0; i < n; i++) {
-        if (!isnull(resPtr) || i == 0) {
-            resPtr = (char *) sw_memccpy(writePtr, a[i], '\0', writeSize);
-            writeSize -= (resPtr - buffer - 1);
-            writePtr = resPtr - 1;
+        if (i == 0) {
+            fullBuffer = sw_memccpy_inc(
+                (void **) &writePtr, endBuffer, (void *) a[i], '\0', &writeSize
+            );
+            if (fullBuffer) {
+                goto freeMem;
+            }
         }
 
-        if (!DirExists(buffer) || isnull(resPtr)) {
+        if (!DirExists(buffer)) {
             if (0 != mkdir(buffer, 0777)) {
                 // directory failed to create -> report error
                 LogError(
                     LogInfo, LOGERROR, "Failed to create directory '%s'", buffer
                 );
                 goto freeMem; // Exit function prematurely due to error
-            } else if (isnull(resPtr)) {
-                /* Directory was created but not by the expected name */
-                LogError(
-                    LogInfo,
-                    LOGWARN,
-                    "Could not create the desired directory. The path created "
-                    "instead is '%s'.",
-                    buffer
-                );
-
-                /* No longer attempt to concatenate the directory */
-                goto freeMem;
             }
         }
 
-        if (!isnull(resPtr)) {
-            resPtr = (char *) sw_memccpy(writePtr, "/", '\0', writeSize);
-            writePtr = resPtr - 1;
-            writeSize--;
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endBuffer, (void *) "/", '\0', &writeSize
+        );
+        if (fullBuffer) {
+            goto freeMem;
         }
     }
 
 freeMem:
+    if (fullBuffer) {
+        reportFullBuffer(LOGERROR, LogInfo);
+    }
+
     free(c);
 }
 
@@ -673,12 +670,14 @@ Bool RemoveFiles(const char *fspec, LOG_INFO *LogInfo) {
 
     char **flist;
     char fname[FILENAME_MAX];
-    char *resPtr = NULL;
+    char *endFnamePtr = fname + sizeof fname - 1;
+    char *fNamePlusDLen;
     int i;
     int nfiles;
     int result = swTRUE;
     size_t dlen;
     size_t writeSize = FILENAME_MAX;
+    Bool bufferFull = swFALSE;
 
     if (fspec == NULL) {
         return swTRUE;
@@ -690,9 +689,19 @@ Bool RemoveFiles(const char *fspec, LOG_INFO *LogInfo) {
         DirName(fspec, fname); // Transfer `fspec` into `fname`
         dlen = strlen(fname);
         for (i = 0; i < nfiles; i++) {
-            resPtr =
-                (char *) sw_memccpy(fname + dlen, flist[i], '\0', writeSize);
-            writeSize -= (resPtr - (fname + dlen) - 1);
+            fNamePlusDLen = fname + dlen;
+            (void) sw_memccpy_inc(
+                (void **) &fNamePlusDLen,
+                endFnamePtr,
+                (void *) flist[i],
+                '\0',
+                &writeSize
+            );
+            if (bufferFull) {
+                reportFullBuffer(LOGERROR, LogInfo);
+                break;
+            }
+
             if (0 != remove(fname)) {
                 result = swFALSE;
                 break;

@@ -199,7 +199,7 @@ compatible in Clang and GCC
 @param[in] src Character array to copy from
 @param[in] c Target character which, upon finding, is one of the stopping
 condiditions
-@param[in] n The number of bytes to copy from src to dest, and is the
+@param[in] n The maximum number of bytes to copy from src to dest, and is the
 second stopping condition
 
 @return
@@ -225,6 +225,65 @@ void *sw_memccpy_custom(
     }
 
     return 0;
+}
+
+/**
+@brief Wrapper function to `sw_memccpy()` which copies data of a
+    but this function also removes the repetitve action of decreasing
+    the available size left in the allocated string location; this function
+    will also set a null-terminating character if the string buffer is full
+    after the copying
+
+@note This function uses the compiler macro '__restrict' instead of simply
+'restrict' due to C++ standards not supporting it, so '__restrict' is
+compatible in Clang and GCC
+
+@param[in,out] charPtr Pointer holding the location of the writing
+start location of the string; returns the updated pointer of where to
+write in following calls
+@param[out] endPtr Pointer holding the end of string `charPtr` refers to
+and is written to if the buffer is full, adding an ending '\0'
+@param[in] str Array of characters to copy/concatenate into `charPtr`
+@param[in] c Target character which, upon finding, is one of the stopping
+condiditions
+@param[in,out] n The maximum number of bytes to copy from src to dest, and
+is the second stopping condition; returns the updated allowed number of bytes
+after writing to the target string
+
+@return A flag specifying if the buffer we are copying/concatenating into
+is full
+ */
+Bool sw_memccpy_inc(
+    void **__restrict charPtr,
+    char *__restrict endPtr,
+    void *__restrict str,
+    int c,
+    size_t *n
+) {
+    Bool fullBuffer = swTRUE;
+    char *resPtr = NULL;
+
+    resPtr = (char *) sw_memccpy(*charPtr, str, (char) c, *n);
+    if (!isnull(resPtr)) {
+        *n -= (resPtr - (char *) *charPtr - 1);
+        *charPtr = resPtr - 1;
+        fullBuffer = swFALSE;
+    } else {
+        *endPtr = '\0';
+    }
+
+    return fullBuffer;
+}
+
+/**
+@brief Report a full string buffer
+
+@param[in] errmode Specifies if the full string buffer message should be an
+error or a warning
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void reportFullBuffer(int errmode, LOG_INFO *LogInfo) {
+    LogError(LogInfo, errmode, "String buffer was too short.", LogInfo);
 }
 
 /* ===============  end of block from gen_funcs.c ----------------- */
