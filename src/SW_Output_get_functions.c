@@ -85,10 +85,11 @@ static void format_IterationSummary(
             OUT_DIGITS,
             sd
         );
-        fullBuffer =
-            sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endOutstrAgg, (void *) str, '\0', &writeSize
+        );
         if (fullBuffer) {
-            sw_memccpy_report(swTRUE, fullBuffer, endOutstrAgg, LogInfo);
+            reportFullBuffer(LOGERROR, LogInfo);
             return;
         }
     }
@@ -136,10 +137,14 @@ static void format_IterationSummary2(
                 sd
             );
             fullBuffer = sw_memccpy_inc(
-                (void **) &writePtr, (void *) str, '\0', &writeSize
+                (void **) &writePtr,
+                endOutstrAgg,
+                (void *) str,
+                '\0',
+                &writeSize
             );
             if (fullBuffer) {
-                sw_memccpy_report(swTRUE, fullBuffer, endOutstrAgg, LogInfo);
+                reportFullBuffer(LOGERROR, LogInfo);
                 return;
             }
         }
@@ -230,8 +235,9 @@ void get_co2effects_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
             OUT_DIGITS,
             sw->VegProd.veg[k].co2_multipliers[BIO_INDEX][simyear]
         );
-        fullBuffer =
-            sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+        );
         if (fullBuffer) {
             goto reportFullBuffer;
         }
@@ -245,15 +251,18 @@ void get_co2effects_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
             OUT_DIGITS,
             sw->VegProd.veg[k].co2_multipliers[WUE_INDEX][simyear]
         );
-        fullBuffer =
-            sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+        );
         if (fullBuffer) {
             goto reportFullBuffer;
         }
     }
 
 reportFullBuffer:
-    sw_memccpy_report(swTRUE, fullBuffer, endOutstr, LogInfo);
+    if (fullBuffer) {
+        reportFullBuffer(LOGERROR, LogInfo);
+    }
 }
 #endif
 
@@ -393,7 +402,9 @@ void get_biomass_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
         OUT_DIGITS,
         sw->VegProd.bare_cov.fCover
     );
-    (void) sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+    (void) sw_memccpy_inc(
+        (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+    );
     if (fullBuffer) {
         goto reportFullBuffer;
     }
@@ -407,8 +418,9 @@ void get_biomass_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
             OUT_DIGITS,
             sw->VegProd.veg[k].cov.fCover
         );
-        (void
-        ) sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+        (void) sw_memccpy_inc(
+            (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+        );
         if (fullBuffer) {
             goto reportFullBuffer;
         }
@@ -417,8 +429,9 @@ void get_biomass_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     // biomass (g/m2 as component of total) for NVEGTYPES plus totals and litter
     (void
     ) snprintf(str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->biomass_total);
-    fullBuffer =
-        sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+    fullBuffer = sw_memccpy_inc(
+        (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+    );
     if (fullBuffer) {
         goto reportFullBuffer;
     }
@@ -432,16 +445,18 @@ void get_biomass_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
             OUT_DIGITS,
             vo->veg[k].biomass_inveg
         );
-        fullBuffer =
-            sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+        );
         if (fullBuffer) {
             goto reportFullBuffer;
         }
     }
     (void
     ) snprintf(str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->litter_total);
-    fullBuffer =
-        sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+    fullBuffer = sw_memccpy_inc(
+        (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+    );
     if (fullBuffer) {
         goto reportFullBuffer;
     }
@@ -449,8 +464,9 @@ void get_biomass_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     // biolive (g/m2 as component of total) for NVEGTYPES plus totals
     (void
     ) snprintf(str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->biolive_total);
-    fullBuffer =
-        sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+    fullBuffer = sw_memccpy_inc(
+        (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+    );
     if (fullBuffer) {
         goto reportFullBuffer;
     }
@@ -464,8 +480,9 @@ void get_biomass_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
             OUT_DIGITS,
             vo->veg[k].biolive_inveg
         );
-        fullBuffer =
-            sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+        );
         if (fullBuffer) {
             goto reportFullBuffer;
         }
@@ -473,11 +490,14 @@ void get_biomass_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
 
     // leaf area index [m2/m2]
     (void) snprintf(str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->LAI);
-    fullBuffer =
-        sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+    fullBuffer = sw_memccpy_inc(
+        (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+    );
 
 reportFullBuffer:
-    sw_memccpy_report(swTRUE, fullBuffer, endOutstr, LogInfo);
+    if (fullBuffer) {
+        reportFullBuffer(LOGERROR, LogInfo);
+    }
 }
 #endif
 
@@ -782,15 +802,18 @@ void get_estab_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%d", OUTSEP, sw->VegEstab.parms[i]->estab_doy
         );
-        fullBuffer =
-            sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+        );
         if (fullBuffer) {
             goto reportFullBuffer;
         }
     }
 
 reportFullBuffer:
-    sw_memccpy_report(swTRUE, fullBuffer, endOutstr, LogInfo);
+    if (fullBuffer) {
+        reportFullBuffer(LOGERROR, LogInfo);
+    }
 }
 #endif
 
@@ -1378,15 +1401,18 @@ void get_vwcBulk_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
             OUT_DIGITS,
             vo->vwcBulk[i] / sw->Site.width[i]
         );
-        fullBuffer =
-            sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+        );
         if (fullBuffer) {
             goto reportFullBuffer;
         }
     }
 
 reportFullBuffer:
-    sw_memccpy_report(swTRUE, fullBuffer, endOutstr, LogInfo);
+    if (fullBuffer) {
+        reportFullBuffer(LOGERROR, LogInfo);
+    }
 }
 #endif
 
@@ -1536,15 +1562,18 @@ void get_vwcMatric_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
             OUT_DIGITS,
             vo->vwcMatric[i] * convert
         );
-        fullBuffer =
-            sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+        );
         if (fullBuffer) {
             goto reportFullBuffer;
         }
     }
 
 reportFullBuffer:
-    sw_memccpy_report(swTRUE, fullBuffer, endOutstr, LogInfo);
+    if (fullBuffer) {
+        reportFullBuffer(LOGERROR, LogInfo);
+    }
 }
 #endif
 
@@ -1696,7 +1725,7 @@ void get_swa_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
                 vo->SWA_VegType[k][i]
             );
             fullBuffer = sw_memccpy_inc(
-                (void **) &writePtr, (void *) str, '\0', &writeSize
+                (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
             );
             if (fullBuffer) {
                 goto reportFullBuffer;
@@ -1705,7 +1734,9 @@ void get_swa_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     }
 
 reportFullBuffer:
-    sw_memccpy_report(swTRUE, fullBuffer, endOutstr, LogInfo);
+    if (fullBuffer) {
+        reportFullBuffer(LOGERROR, LogInfo);
+    }
 }
 #endif
 
@@ -1846,15 +1877,18 @@ void get_swcBulk_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->swcBulk[i]
         );
-        fullBuffer =
-            sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+        );
         if (fullBuffer) {
             goto reportFullBuffer;
         }
     }
 
 reportFullBuffer:
-    sw_memccpy_report(swTRUE, fullBuffer, endOutstr, LogInfo);
+    if (fullBuffer) {
+        reportFullBuffer(LOGERROR, LogInfo);
+    }
 }
 #endif
 
@@ -2029,15 +2063,18 @@ void get_swpMatric_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
 
 
         (void) snprintf(str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, val);
-        fullBuffer =
-            sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+        );
         if (fullBuffer) {
             goto reportFullBuffer;
         }
     }
 
 reportFullBuffer:
-    sw_memccpy_report(swTRUE, fullBuffer, endOutstr, LogInfo);
+    if (fullBuffer) {
+        reportFullBuffer(LOGERROR, LogInfo);
+    }
 }
 #endif
 
@@ -2177,15 +2214,18 @@ void get_swaBulk_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->swaBulk[i]
         );
-        fullBuffer =
-            sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+        );
         if (fullBuffer) {
             goto reportFullBuffer;
         }
     }
 
 reportFullBuffer:
-    sw_memccpy_report(swTRUE, fullBuffer, endOutstr, LogInfo);
+    if (fullBuffer) {
+        reportFullBuffer(LOGERROR, LogInfo);
+    }
 }
 #endif
 
@@ -2325,15 +2365,18 @@ void get_swaMatric_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
             OUT_DIGITS,
             vo->swaMatric[i] * convert
         );
-        fullBuffer =
-            sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+        );
         if (fullBuffer) {
             goto reportFullBuffer;
         }
     }
 
 reportFullBuffer:
-    sw_memccpy_report(swTRUE, fullBuffer, endOutstr, LogInfo);
+    if (fullBuffer) {
+        reportFullBuffer(LOGERROR, LogInfo);
+    }
 }
 #endif
 
@@ -2756,8 +2799,9 @@ void get_transp_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->transp_total[i]
         );
-        fullBuffer =
-            sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+        );
         if (fullBuffer) {
             goto reportFullBuffer;
         }
@@ -2770,7 +2814,7 @@ void get_transp_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
                 str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->transp[k][i]
             );
             fullBuffer = sw_memccpy_inc(
-                (void **) &writePtr, (void *) str, '\0', &writeSize
+                (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
             );
             if (fullBuffer) {
                 goto reportFullBuffer;
@@ -2779,7 +2823,9 @@ void get_transp_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     }
 
 reportFullBuffer:
-    sw_memccpy_report(swTRUE, fullBuffer, endOutstr, LogInfo);
+    if (fullBuffer) {
+        reportFullBuffer(LOGERROR, LogInfo);
+    }
 }
 #endif
 
@@ -3016,15 +3062,18 @@ void get_evapSoil_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->evap_baresoil[i]
         );
-        fullBuffer =
-            sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+        );
         if (fullBuffer) {
             goto reportFullBuffer;
         }
     }
 
 reportFullBuffer:
-    sw_memccpy_report(swTRUE, fullBuffer, endOutstr, LogInfo);
+    if (fullBuffer) {
+        reportFullBuffer(LOGERROR, LogInfo);
+    }
 }
 #endif
 
@@ -3156,8 +3205,9 @@ void get_evapSurface_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
 
     (void
     ) snprintf(str, sizeof str, "%c%.*f", OUTSEP, OUT_DIGITS, vo->total_evap);
-    fullBuffer =
-        sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+    fullBuffer = sw_memccpy_inc(
+        (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+    );
     if (fullBuffer) {
         goto reportFullBuffer;
     }
@@ -3166,8 +3216,9 @@ void get_evapSurface_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->evap_veg[k]
         );
-        fullBuffer =
-            sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+        );
         if (fullBuffer) {
             goto reportFullBuffer;
         }
@@ -3184,11 +3235,14 @@ void get_evapSurface_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
         OUT_DIGITS,
         vo->surfaceWater_evap
     );
-    fullBuffer =
-        sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+    fullBuffer = sw_memccpy_inc(
+        (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+    );
 
 reportFullBuffer:
-    sw_memccpy_report(swTRUE, fullBuffer, endOutstr, LogInfo);
+    if (fullBuffer) {
+        reportFullBuffer(LOGERROR, LogInfo);
+    }
 }
 #endif
 
@@ -3372,8 +3426,9 @@ void get_interception_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
 
     (void
     ) snprintf(str, sizeof str, "%c%.*f", OUTSEP, OUT_DIGITS, vo->total_int);
-    fullBuffer =
-        sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+    fullBuffer = sw_memccpy_inc(
+        (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+    );
     if (fullBuffer) {
         goto reportFullBuffer;
     }
@@ -3382,8 +3437,9 @@ void get_interception_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->int_veg[k]
         );
-        fullBuffer =
-            sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+        );
         if (fullBuffer) {
             goto reportFullBuffer;
         }
@@ -3391,11 +3447,14 @@ void get_interception_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
 
     (void
     ) snprintf(str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->litter_int);
-    fullBuffer =
-        sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+    fullBuffer = sw_memccpy_inc(
+        (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+    );
 
 reportFullBuffer:
-    sw_memccpy_report(swTRUE, fullBuffer, endOutstr, LogInfo);
+    if (fullBuffer) {
+        reportFullBuffer(LOGERROR, LogInfo);
+    }
 }
 #endif
 
@@ -3669,15 +3728,18 @@ void get_lyrdrain_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->lyrdrain[i]
         );
-        fullBuffer =
-            sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+        );
         if (fullBuffer) {
             goto reportFullBuffer;
         }
     }
 
 reportFullBuffer:
-    sw_memccpy_report(swTRUE, fullBuffer, endOutstr, LogInfo);
+    if (fullBuffer) {
+        reportFullBuffer(LOGERROR, LogInfo);
+    }
 }
 #endif
 
@@ -3814,8 +3876,9 @@ void get_hydred_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->hydred_total[i]
         );
-        fullBuffer =
-            sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+        );
         if (fullBuffer) {
             goto reportFullBuffer;
         }
@@ -3828,7 +3891,7 @@ void get_hydred_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
                 str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->hydred[k][i]
             );
             fullBuffer = sw_memccpy_inc(
-                (void **) &writePtr, (void *) str, '\0', &writeSize
+                (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
             );
             if (fullBuffer) {
                 goto reportFullBuffer;
@@ -3837,7 +3900,9 @@ void get_hydred_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     }
 
 reportFullBuffer:
-    sw_memccpy_report(swTRUE, fullBuffer, endOutstr, LogInfo);
+    if (fullBuffer) {
+        reportFullBuffer(LOGERROR, LogInfo);
+    }
 }
 #endif
 
@@ -4438,7 +4503,7 @@ void get_wetdays_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
                 str, OUTSTRLEN, "%c%i", OUTSEP, (sw->SoilWat.is_wet[i]) ? 1 : 0
             );
             fullBuffer = sw_memccpy_inc(
-                (void **) &writePtr, (void *) str, '\0', &writeSize
+                (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
             );
             if (fullBuffer) {
                 goto reportFullBuffer;
@@ -4452,7 +4517,7 @@ void get_wetdays_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
             (void
             ) snprintf(str, OUTSTRLEN, "%c%i", OUTSEP, (int) vo->wetdays[i]);
             fullBuffer = sw_memccpy_inc(
-                (void **) &writePtr, (void *) str, '\0', &writeSize
+                (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
             );
             if (fullBuffer) {
                 goto reportFullBuffer;
@@ -4461,7 +4526,9 @@ void get_wetdays_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     }
 
 reportFullBuffer:
-    sw_memccpy_report(swTRUE, fullBuffer, endOutstr, LogInfo);
+    if (fullBuffer) {
+        reportFullBuffer(LOGERROR, LogInfo);
+    }
 }
 #endif
 
@@ -4853,8 +4920,9 @@ void get_soiltemp_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
             OUT_DIGITS,
             vo->maxLyrTemperature[i]
         );
-        fullBuffer =
-            sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+        );
         if (fullBuffer) {
             goto reportFullBuffer;
         }
@@ -4867,8 +4935,9 @@ void get_soiltemp_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
             OUT_DIGITS,
             vo->minLyrTemperature[i]
         );
-        fullBuffer =
-            sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+        );
         if (fullBuffer) {
             goto reportFullBuffer;
         }
@@ -4876,15 +4945,18 @@ void get_soiltemp_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->avgLyrTemp[i]
         );
-        fullBuffer =
-            sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+        );
         if (fullBuffer) {
             goto reportFullBuffer;
         }
     }
 
 reportFullBuffer:
-    sw_memccpy_report(swTRUE, fullBuffer, endOutstr, LogInfo);
+    if (fullBuffer) {
+        reportFullBuffer(LOGERROR, LogInfo);
+    }
 }
 #endif
 
@@ -5095,15 +5167,18 @@ void get_frozen_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->lyrFrozen[i]
         );
-        fullBuffer =
-            sw_memccpy_inc((void **) &writePtr, (void *) str, '\0', &writeSize);
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
+        );
         if (fullBuffer) {
             goto reportFullBuffer;
         }
     }
 
 reportFullBuffer:
-    sw_memccpy_report(swTRUE, fullBuffer, endOutstr, LogInfo);
+    if (fullBuffer) {
+        reportFullBuffer(LOGERROR, LogInfo);
+    }
 }
 #endif
 

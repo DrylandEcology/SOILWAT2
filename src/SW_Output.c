@@ -3274,10 +3274,9 @@ void SW_OUT_write_today(
     int k;
     int i;
     int outPeriod;
-    Bool soilBufFull = swFALSE;
-    Bool regBufFull = swFALSE;
 
 #ifdef SW_OUTTEXT
+    Bool fullBuffer = swFALSE;
 
     char *soilWritePtr[SW_OUTNPERIODS] = {
         sw->FileStatus.buf_soil[0],
@@ -3296,8 +3295,6 @@ void SW_OUT_write_today(
 #ifdef STEPWAT
     Bool use_help_txt;
     Bool use_help_SXW;
-    Bool soilAggBufFull = swFALSE;
-    Bool regAggBufFull = swFALSE;
 
     char *soilAggWritePtr[SW_OUTNPERIODS] = {
         sw->FileStatus.buf_soil[0],
@@ -3449,9 +3446,6 @@ void SW_OUT_write_today(
 #endif
             OutDom->pfunc_mem[k](outPeriod, sw, OutDom);
 
-            (void) soilBufFull;
-            (void) regBufFull;
-
 #elif defined(STEPWAT)
             if (use_help_SXW) {
 #ifdef SWDEBUG
@@ -3522,35 +3516,26 @@ void SW_OUT_write_today(
                 );
 
                 if (OutDom->has_sl[k]) {
-                    soilBufFull = sw_memccpy_inc(
+                    fullBuffer = sw_memccpy_inc(
                         (void **) &soilWritePtr[outPeriod],
+                        (soilWritePtr[outPeriod] +
+                         sizeof soilWritePtr[outPeriod] - 1),
                         (void *) tempstr,
                         '\0',
                         &writeSizeSoil[outPeriod]
                     );
-                    sw_memccpy_report(
-                        swTRUE,
-                        soilBufFull,
-                        soilWritePtr[outPeriod] +
-                            sizeof soilWritePtr[outPeriod] - 1,
-                        LogInfo
-                    );
                 } else {
-                    regBufFull = sw_memccpy_inc(
+                    fullBuffer = sw_memccpy_inc(
                         (void **) &regWritePtr[outPeriod],
+                        (regWritePtr[outPeriod] +
+                         sizeof regWritePtr[outPeriod] - 1),
                         (void *) tempstr,
                         '\0',
                         &writeSizeReg[outPeriod]
                     );
-                    sw_memccpy_report(
-                        swTRUE,
-                        regBufFull,
-                        regWritePtr[outPeriod] + sizeof regWritePtr[outPeriod] -
-                            1,
-                        LogInfo
-                    );
                 }
-                if (LogInfo->stopRun) {
+                if (fullBuffer) {
+                    reportFullBuffer(LOGERROR, LogInfo);
                     return;
                 }
             }
@@ -3566,35 +3551,26 @@ void SW_OUT_write_today(
                 );
 
                 if (OutDom->has_sl[k]) {
-                    soilAggBufFull = sw_memccpy_inc(
+                    fullBuffer = sw_memccpy_inc(
                         (void **) &soilAggWritePtr[outPeriod],
+                        (soilAggWritePtr[outPeriod] +
+                         sizeof soilAggWritePtr[outPeriod] - 1),
                         (void *) tempstr,
                         '\0',
                         &writeSizeSoilAgg[outPeriod]
                     );
-                    sw_memccpy_report(
-                        swTRUE,
-                        soilAggBufFull,
-                        soilAggWritePtr[outPeriod] +
-                            sizeof soilAggWritePtr[outPeriod] - 1,
-                        LogInfo
-                    );
                 } else {
-                    regAggBufFull = sw_memccpy_inc(
+                    fullBuffer = sw_memccpy_inc(
                         (void **) &regAggWritePtr[outPeriod],
+                        (regAggWritePtr[outPeriod] +
+                         sizeof regAggWritePtr[outPeriod] - 1),
                         (void *) tempstr,
                         '\0',
                         &writeSizeRegAgg[outPeriod]
                     );
-                    sw_memccpy_report(
-                        swTRUE,
-                        regAggBufFull,
-                        regAggWritePtr[outPeriod] +
-                            sizeof regAggWritePtr[outPeriod] - 1,
-                        LogInfo
-                    );
                 }
-                if (LogInfo->stopRun) {
+                if (fullBuffer) {
+                    reportFullBuffer(LOGERROR, LogInfo);
                     return;
                 }
             }
@@ -3810,7 +3786,7 @@ void SW_OUT_close_files(
 #endif
 }
 
-void echo_outputs(SW_OUT_DOM *OutDom) {
+void echo_outputs(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     int k;
     int index;
     int writeValIndex = 0;
@@ -3818,9 +3794,10 @@ void echo_outputs(SW_OUT_DOM *OutDom) {
     char errstr[MAX_ERROR];
     size_t writeSize = MAX_ERROR;
     char *writePtr = errstr;
+    char *endErrstr = errstr + sizeof errstr - 1;
     char *cpyPtr = NULL;
     const int numWriteStrs = 6;
-    const size_t errHeaderSize = 75;
+    Bool fullBuffer = swFALSE;
 
     const char *errStrHeader = "---------------------------\nKey ";
 
@@ -3845,8 +3822,12 @@ void echo_outputs(SW_OUT_DOM *OutDom) {
         OutDom->last_orig[0]   /* Overwrite in loop below */
     };
 
-    (void) sw_memccpy(errstr, (char *) errStrConf, '\0', errHeaderSize);
-
+    fullBuffer = sw_memccpy_inc(
+        (void **) &writePtr, endErrstr, (void *) errStrConf, '\0', &writeSize
+    );
+    if (fullBuffer) {
+        goto printOutput;
+    }
 
     ForEachOutKey(k) {
         if (OutDom->use[k]) {
@@ -3870,13 +3851,28 @@ void echo_outputs(SW_OUT_DOM *OutDom) {
                 cpyPtr = str;
             }
 
-            (void) sw_memccpy_inc(
-                (void **) &writePtr, (void *) cpyPtr, '\0', &writeSize
+            fullBuffer = sw_memccpy_inc(
+                (void **) &writePtr,
+                endErrstr,
+                (void *) cpyPtr,
+                '\0',
+                &writeSize
             );
+            if (fullBuffer) {
+                goto printOutput;
+            }
         }
     }
 
-    sw_memccpy(writePtr, (char *) errStrFooter, '\0', writeSize);
+    fullBuffer = sw_memccpy_inc(
+        (void **) &writePtr, endErrstr, (void *) errStrFooter, '\0', &writeSize
+    );
+
+printOutput:
+    if (fullBuffer) {
+        reportFullBuffer(LOGWARN, LogInfo);
+    }
+
     printf("%s\n", errstr);
 }
 
@@ -3891,7 +3887,7 @@ void echo_all_inputs(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         sw->Site.width, sw->VegEstab.parms, sw->VegEstab.count, LogInfo
     );
     echo_VegProd(sw->VegProd.veg, sw->VegProd.bare_cov);
-    echo_outputs(OutDom);
+    echo_outputs(OutDom, LogInfo);
 }
 
 #if defined(SWNETCDF)

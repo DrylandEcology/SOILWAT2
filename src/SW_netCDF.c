@@ -2976,8 +2976,7 @@ static void create_output_dimVar(
         outAttVals[vertIndex][2] + sizeof outAttVals[vertIndex][2] - 1;
     size_t soilDepthSize = MAX_FILENAMESIZE - strlen(outAttVals[vertIndex][0]);
     size_t centiSize = MAX_FILENAMESIZE - strlen(outAttVals[vertIndex][2]);
-    Bool soilDepthBuffFull = swFALSE;
-    Bool centiBuffFull = swFALSE;
+    Bool fullBuffer = swFALSE;
 
     const int numVarAtts[] = {6, 6, 1};
 
@@ -3050,23 +3049,25 @@ static void create_output_dimVar(
         if (dimNum == vertIndex && !hasConsistentSoilLayerDepths) {
             // Use soil layers as dimension variable values
             // because soil layer depths are not consistent across domain
-            soilDepthBuffFull = sw_memccpy_inc(
+            fullBuffer = sw_memccpy_inc(
                 (void **) &outAttVals[vertIndex][0],
+                endSoilDepthPtr,
                 (void *) "soil layer",
                 '\0',
                 &soilDepthSize
             );
-            if (LogInfo->stopRun) {
+            if (fullBuffer) {
                 goto reportFullBuffer;
             }
 
-            centiBuffFull = sw_memccpy_inc(
+            fullBuffer = sw_memccpy_inc(
                 (void **) &outAttVals[vertIndex][2],
+                endCentiPtr,
                 (void *) "1",
                 '\0',
                 &centiSize
             );
-            if (LogInfo->stopRun) {
+            if (fullBuffer) {
                 goto reportFullBuffer;
             }
         }
@@ -3086,10 +3087,8 @@ static void create_output_dimVar(
     }
 
 reportFullBuffer:
-    sw_memccpy_report(swTRUE, soilDepthBuffFull, endSoilDepthPtr, LogInfo);
-
-    if (!LogInfo->stopRun) {
-        sw_memccpy_report(swTRUE, centiBuffFull, endCentiPtr, LogInfo);
+    if (fullBuffer) {
+        reportFullBuffer(LOGERROR, LogInfo);
     }
 }
 

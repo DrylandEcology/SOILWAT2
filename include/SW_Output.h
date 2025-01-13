@@ -260,7 +260,7 @@ void SW_OUT_create_files(
     SW_FILE_STATUS *SW_FileStatus, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
 );
 
-void echo_outputs(SW_OUT_DOM *OutDom);
+void echo_outputs(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
 void echo_all_inputs(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 

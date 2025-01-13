@@ -97,9 +97,7 @@ static void create_csv_headers(
     char *endSoilPtr = NULL;
     char *writePtrReg = NULL;
     char *endRegPtr = NULL;
-    Bool helpBufFull = swFALSE;
-    Bool soilBufFull = swFALSE;
-    Bool regBufFull = swFALSE;
+    Bool fullBuffer = swFALSE;
 
     str_help1 = (char *) Mem_Malloc(
         sizeof(char) * size_help, "create_csv_headers()", LogInfo
@@ -168,47 +166,48 @@ static void create_csv_headers(
                     goto freeMem; // Exit function prematurely due to error
                 }
 
-                helpBufFull = sw_memccpy_inc(
+                fullBuffer = sw_memccpy_inc(
                     (void **) &writePtrHelp,
+                    endHelpPtr,
                     (void *) str_help1,
                     '\0',
                     &writeSizeHelp
                 );
-                if (helpBufFull) {
+                if (fullBuffer) {
                     goto freeMem;
                 }
+                printf("%s %zu\n", str_help1, writeSizeHelp);
             }
 
             if (OutDom->has_sl[k]) {
-                soilBufFull = sw_memccpy_inc(
+                fullBuffer = sw_memccpy_inc(
                     (void **) &writePtrSoil,
+                    endSoilPtr,
                     (void *) str_help2,
                     '\0',
                     &writeSizeSoil
                 );
+                if (fullBuffer) {
+                    goto freeMem;
+                }
             } else {
-                regBufFull = sw_memccpy_inc(
+                fullBuffer = sw_memccpy_inc(
                     (void **) &writePtrReg,
+                    endRegPtr,
                     (void *) str_help2,
                     '\0',
                     &writeSizeReg
                 );
-            }
-            if (soilBufFull || regBufFull) {
-                goto freeMem;
+                if (fullBuffer) {
+                    goto freeMem;
+                }
             }
         }
     }
 
 freeMem:
-    sw_memccpy_report(swTRUE, helpBufFull, endHelpPtr, LogInfo);
-
-    if (!LogInfo->stopRun) {
-        sw_memccpy_report(swTRUE, soilBufFull, endSoilPtr, LogInfo);
-    }
-
-    if (LogInfo->stopRun) {
-        sw_memccpy_report(swTRUE, regBufFull, endRegPtr, LogInfo);
+    if (fullBuffer) {
+        reportFullBuffer(LOGERROR, LogInfo);
     }
 
     free(str_help1);

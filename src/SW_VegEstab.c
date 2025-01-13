@@ -725,9 +725,10 @@ static void read_spp(
             sppPtr = v->sppname;
 
             sppFull = sw_memccpy_inc(
-                (void **) &sppPtr, (void *) name, '\0', &sppWritesize
+                (void **) &sppPtr, endSppPtr, (void *) name, '\0', &sppWritesize
             );
             if (sppFull) {
+                reportFullBuffer(LOGERROR, LogInfo);
                 goto closeFile;
             }
         }
@@ -741,11 +742,7 @@ static void read_spp(
         );
     }
 
-closeFile: {
-    sw_memccpy_report(swFALSE, sppFull, endSppPtr, LogInfo);
-
-    CloseFile(&f, LogInfo);
-}
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**
@@ -955,7 +952,6 @@ void echo_VegEstab(
     char outstr[MAX_ERROR];
     char errstr[MAX_ERROR];
     char *endOutstr = errstr + sizeof errstr - 1;
-    Bool fullErrBuffer = swFALSE;
 
     const char *endDispStr =
         "\n-----------------  End of Establishment Parameters ------------\n";
@@ -973,9 +969,10 @@ void echo_VegEstab(
         count
     );
 
-    fullErrBuffer =
-        sw_memccpy_inc((void **) &writePtr, (void *) errstr, '\0', &writeSize);
-    if (fullErrBuffer) {
+    fullBuffer = sw_memccpy_inc(
+        (void **) &writePtr, endOutstr, (void *) errstr, '\0', &writeSize
+    );
+    if (fullBuffer) {
         goto reportFullBuffer;
     }
 
@@ -1007,7 +1004,7 @@ void echo_VegEstab(
         );
 
         fullBuffer = sw_memccpy_inc(
-            (void **) &writePtr, (void *) errstr, '\0', &writeSize
+            (void **) &writePtr, endOutstr, (void *) errstr, '\0', &writeSize
         );
         if (fullBuffer) {
             goto reportFullBuffer;
@@ -1041,18 +1038,20 @@ void echo_VegEstab(
         );
 
         fullBuffer = sw_memccpy_inc(
-            (void **) &writePtr, (void *) errstr, '\0', &writeSize
+            (void **) &writePtr, endOutstr, (void *) errstr, '\0', &writeSize
         );
         if (fullBuffer) {
             goto reportFullBuffer;
         }
     }
-    fullErrBuffer = sw_memccpy_inc(
-        (void **) &writePtr, (void *) endDispStr, '\0', &writeSize
+    fullBuffer = sw_memccpy_inc(
+        (void **) &writePtr, endOutstr, (void *) endDispStr, '\0', &writeSize
     );
 
 reportFullBuffer:
-    sw_memccpy_report(swFALSE, fullErrBuffer, endOutstr, LogInfo);
+    if (fullBuffer) {
+        reportFullBuffer(LOGWARN, LogInfo);
+    }
 
     printf("%s\n", outstr);
 }
