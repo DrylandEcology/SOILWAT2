@@ -1885,8 +1885,8 @@ void SW_OUTDOM_construct(SW_OUT_DOM *OutDom) {
                 (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_none_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
-            OutDom->pfunc_mem[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+            OutDom->pfunc_mem[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
+            ) get_none_outarray_mem;
 #elif defined(STEPWAT)
             OutDom->pfunc_agg[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)

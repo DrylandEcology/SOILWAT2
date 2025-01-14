@@ -309,9 +309,15 @@ void SW_OUTDOM_deepCopy(
  * 05-Mar-03 (cwb) Added code for max,min,avg. Previously, only avg was output.
  * 22 June-15 (akt)  Added code for adding surfaceAvg at output
  */
+#if defined(RSOILWAT) || defined(SWNETCDF)
+void get_none_outarray_mem(
+    OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom
+); /* default until defined for rSOILWAT2 and netCDF outarray output */
+#else
 void get_none_outarray(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
-); /* default until defined for outarray output */
+); /* default until defined for STEPWAT2 outarray output */
+#endif
 void get_none_text(
     OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo
 ); /* default until defined for text */
