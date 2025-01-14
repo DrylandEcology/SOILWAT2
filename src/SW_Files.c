@@ -67,14 +67,18 @@ void SW_CSV_F_INIT(const char *s, LOG_INFO *LogInfo) {
 
     char inbuf[MAX_FILENAMESIZE];
     char dirString[FILENAME_MAX];
-    char *resPtr = NULL;
+    char *writePtr = inbuf;
+    char *endInbuf = inbuf + sizeof inbuf - 1;
+    Bool fullBuffer = swFALSE;
+    size_t writeSize = sizeof inbuf;
 
     DirName(s, dirString);
 
     if (DirExists(dirString)) {
-        resPtr =
-            (char *) sw_memccpy((void *) inbuf, (char *) s, '\0', sizeof inbuf);
-        if (isnull(resPtr)) {
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endInbuf, (void *) s, '\0', &writeSize
+        );
+        if (fullBuffer) {
             reportFullBuffer(LOGERROR, LogInfo);
             return;
         }
@@ -460,7 +464,10 @@ void SW_F_construct(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
     char *c;
     char *p;
     char *projDirPtr = SW_PathInputs->SW_ProjDir;
-    char *resPtr = NULL;
+    char *endProjDirPtr =
+        SW_PathInputs->SW_ProjDir + sizeof SW_PathInputs->SW_ProjDir - 1;
+    Bool fullBuffer = swFALSE;
+    size_t writeSize = sizeof SW_PathInputs->SW_ProjDir - 1;
     char dirString[FILENAME_MAX];
     char *localfirstfile = Str_Dup(firstfile, LogInfo);
     if (LogInfo->stopRun) {
@@ -471,11 +478,12 @@ void SW_F_construct(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
     c = dirString;
 
     if (c) {
-        resPtr = (char *) sw_memccpy(
-            (void *) projDirPtr, (void *) c, '\0', sizeof dirString
+        fullBuffer = sw_memccpy_inc(
+            (void **) &projDirPtr, endProjDirPtr, (void *) c, '\0', &writeSize
         );
-        if (isnull(resPtr)) {
-            reportFullBuffer(LOGWARN, LogInfo);
+        if (fullBuffer) {
+            reportFullBuffer(LOGERROR, LogInfo);
+            return;
         }
 
         c = localfirstfile;

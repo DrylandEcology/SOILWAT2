@@ -690,7 +690,7 @@ Bool RemoveFiles(const char *fspec, LOG_INFO *LogInfo) {
         dlen = strlen(fname);
         for (i = 0; i < nfiles; i++) {
             fNamePlusDLen = fname + dlen;
-            (void) sw_memccpy_inc(
+            bufferFull = sw_memccpy_inc(
                 (void **) &fNamePlusDLen,
                 endFnamePtr,
                 (void *) flist[i],
