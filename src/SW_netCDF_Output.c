@@ -1159,6 +1159,13 @@ void SW_NCOUT_create_output_dimVar(
         {"time", "time", "", "T", "standard", "time_bnds"},
         {"biological_taxon_name"}
     };
+    char *endSoilDepthPtr =
+        outAttVals[vertIndex][0] + sizeof outAttVals[vertIndex][0] - 1;
+    char *endCentiPtr =
+        outAttVals[vertIndex][2] + sizeof outAttVals[vertIndex][2] - 1;
+    size_t soilDepthSize = MAX_FILENAMESIZE - strlen(outAttVals[vertIndex][0]);
+    size_t centiSize = MAX_FILENAMESIZE - strlen(outAttVals[vertIndex][2]);
+    Bool fullBuffer = swFALSE;
 
     const int numVarAtts[] = {6, 6, 1};
 
@@ -1232,11 +1239,27 @@ void SW_NCOUT_create_output_dimVar(
         if (dimNum == vertIndex && !hasConsistentSoilLayerDepths) {
             // Use soil layers as dimension variable values
             // because soil layer depths are not consistent across domain
-            (void) sw_memccpy(
-                outAttVals[vertIndex][0], "soil layer", '\0', MAX_FILENAMESIZE
+            fullBuffer = sw_memccpy_inc(
+                (void **) &outAttVals[vertIndex][0],
+                endSoilDepthPtr,
+                (void *) "soil layer",
+                '\0',
+                &soilDepthSize
             );
-            (void
-            ) sw_memccpy(outAttVals[vertIndex][2], "1", '\0', MAX_FILENAMESIZE);
+            if (fullBuffer) {
+                goto reportFullBuffer;
+            }
+
+            fullBuffer = sw_memccpy_inc(
+                (void **) &outAttVals[vertIndex][2],
+                endCentiPtr,
+                (void *) "1",
+                '\0',
+                &centiSize
+            );
+            if (fullBuffer) {
+                goto reportFullBuffer;
+            }
         }
 
         for (index = 0; index < numVarAtts[dimNum]; index++) {
@@ -1251,6 +1274,11 @@ void SW_NCOUT_create_output_dimVar(
                 return; // Exit function prematurely due to error
             }
         }
+    }
+
+reportFullBuffer:
+    if (fullBuffer) {
+        reportFullBuffer(LOGERROR, LogInfo);
     }
 }
 
