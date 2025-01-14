@@ -176,7 +176,6 @@ static void create_csv_headers(
                 if (fullBuffer) {
                     goto freeMem;
                 }
-                printf("%s %zu\n", str_help1, writeSizeHelp);
             }
 
             if (OutDom->has_sl[k]) {
