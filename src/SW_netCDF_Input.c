@@ -8422,8 +8422,7 @@ void SW_NCIN_read_input_vars(
                                 LogError(
                                     LogInfo,
                                     LOGERROR,
-                                    "Start year of weather input file for '%s'"
-                                    " is <= 0.",
+                                    "The variable '%s' has stride years <= 0.",
                                     input[ncVarNameInd]
                                 );
                                 goto closeFile;
