@@ -1159,6 +1159,8 @@ void SW_NCOUT_create_output_dimVar(
         {"time", "time", "", "T", "standard", "time_bnds"},
         {"biological_taxon_name"}
     };
+    char *soilWritePtr = outAttVals[vertIndex][0];
+    char *centiWritePtr = outAttVals[vertIndex][2];
     char *endSoilDepthPtr =
         outAttVals[vertIndex][0] + sizeof outAttVals[vertIndex][0] - 1;
     char *endCentiPtr =
@@ -1240,7 +1242,7 @@ void SW_NCOUT_create_output_dimVar(
             // Use soil layers as dimension variable values
             // because soil layer depths are not consistent across domain
             fullBuffer = sw_memccpy_inc(
-                (void **) &outAttVals[vertIndex][0],
+                (void **) &soilWritePtr,
                 endSoilDepthPtr,
                 (void *) "soil layer",
                 '\0',
@@ -1251,7 +1253,7 @@ void SW_NCOUT_create_output_dimVar(
             }
 
             fullBuffer = sw_memccpy_inc(
-                (void **) &outAttVals[vertIndex][2],
+                (void **) &centiWritePtr,
                 endCentiPtr,
                 (void *) "1",
                 '\0',
