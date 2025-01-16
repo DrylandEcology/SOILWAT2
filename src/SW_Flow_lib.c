@@ -3277,6 +3277,21 @@ void soil_temperature(
     for (i = 0; i < nlyrs; i++) {
         maxTempSoil[i] = meanTempSoil[i] + (temperatureRange[i] / 2);
         minTempSoil[i] = meanTempSoil[i] - (temperatureRange[i] / 2);
+
+        if (minTempSoil[i] < -100 || maxTempSoil[i] > 100) {
+            *ptr_stError = swTRUE;
+
+            LogError(
+                LogInfo,
+                LOGWARN,
+                "%d-%d: soil temperature (%f [C]) in layer %d "
+                "outside [-100,100] [C].",
+                year,
+                doy,
+                (minTempSoil[i] < -100) ? minTempSoil[i] : maxTempSoil[i],
+                i
+            );
+        }
     }
 
 #ifdef SWDEBUG
