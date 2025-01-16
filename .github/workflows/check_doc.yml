@@ -18,10 +18,10 @@ jobs:
         submodules: recursive
 
     - name: Install doxygen and dependencies
-      # SOILWAT2 documentation uses bibtex to build references
-      run: |
-        sudo apt-get update
-        sudo apt-get install doxygen doxygen-latex graphviz
+      # SOILWAT2 documentation requires doxygen > v1.9.8
+      uses: ssiwr/doxygen-install@v1
+      with:
+        version: "1.11.0"
 
     - name: Build documentation and check for warnings
       run: make clean clean_doc doc
