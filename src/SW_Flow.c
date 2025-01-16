@@ -968,6 +968,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             sw->SoilWat.avgLyrTemp,
             sw->SoilWat.maxLyrTemperature,
             sw->SoilWat.lyrFrozen,
+            sw->Site.methodSurfaceTemperature,
             sw->SoilWat.snowpack[Today],
             sw->Weather.now.temp_min,
             sw->Weather.now.temp_avg,

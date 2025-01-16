@@ -9,6 +9,8 @@
       during periods of high infiltration (e.g., snowmelt) and during conditions
       of low hydraulic conductivity (e.g., frozen soils, sapric organic matter).
     * Depth of snowpack is now consistent with snowpack water content.
+    * Surface temperature extremes are now less sensitive to high biomass, and
+      average surface temperature is now more consistent with daily extremes.
 
 * The two modes of SOILWAT2 can now be compiled with the following flags:
     * `make CPPFLAGS=-DSWTXT` (or as previously `make all`) for txt-based
@@ -63,10 +65,25 @@
   is based on snowpack density that now is always larger than 0; this now makes
   depth of snowpack and snowpack water content consistent.
 
+* Fix the estimation of surface temperature (#440; @dschlaep).
+  Biomass effects are now capped at a value at which
+  cooling and heating effects on minimum and maximum surface temperature
+  result, across average conditions, in no change for mean surface temperature.
+  Effects of maximum air temperature on maximum surface temperature are limited
+  to air temperatures above freezing.
+  Minimum and maximum surface temperature are now set to their average
+  (with a warning) if the initial estimate of minimum surface temperature is
+  larger than the initial estimate of maximum surface temperature.
+  Average surface temperature is now (by default) estimated from minimum and
+  maximum surface temperature (instead of independently as previously), but
+  the old method can be selected.
+
 ## Changes to inputs
 * New input via `"siteparam.in"` to specify the depth at which characteristics
   of organic matter have completely switched from fibric to sapric peat
   (default is 50 cm).
+* New input via `"siteparam.in"` to select the method for estimating
+  surface temperature (with a new default).
 * New input via `"soils.in"` to provide the proportion of soil organic matter
   to bulk soil by weight for each soil layer.
 * New input via `"swrc_params*.in"` to provide parameter values of the

@@ -2705,9 +2705,28 @@ void soil_temperature_today(
 /**
 @brief Calculate surface temperature
 
+Biomass effects are capped at 550 [g m-2] which is the biomass value at which
+cooling and heating effects on minimum and maximum surface temperature
+result, across average conditions, in no change for mean surface temperature
+based on Parton 1984 @cite Parton1984 considering 80-700 [g m-2].
+
+Minimum and maximum surface temperature are set to the average of the two values
+(with a warning) if the initial estimate of minimum surface temperature is
+larger than the initial estimate of maximum surface temperature.
+
+Effects of maximum air temperature on maximum surface temperature are limited
+to air temperatures above freezing.
+
+Method 0 (Parton 1978) may result in average surface temperature to
+fall outside the min-max range (with a warning).
+
 @param[out] minTempSurface Minimum surface temperature (&deg;C)
 @param[out] meanTempSurface Average surface temperature (&deg;C)
 @param[out] maxTempSurface Maxmimum surface temperature (&deg;C)
+@param[in] method The requested method for average surface temperature
+    (see @ref SW_SITE.methodSurfaceTemperature):
+    - 0, based on Parton 1978 (default prior to v8.1.0);
+    - 1, based on Parton 1984 (default since v8.1.0)
 @param[in] snow Snow-water-equivalent of the area (cm).
 @param[in] minTempAir Minimum air temperature of Today (&deg;C)
 @param[in] meanTempAir Average daily air temperature (&deg;C).
@@ -2720,11 +2739,13 @@ void soil_temperature_today(
 @param[in] t1Param1 Constant for the avg temp at the top of soil equation (15).
 @param[in] t1Param2 Constant for the avg temp at the top of soil equation (-4).
 @param[in] t1Param3 Constant for the avg temp at the top of soil equation (600).
+@param[out] LogInfo Holds information on warnings and errors
 */
 void surface_temperature(
     double *minTempSurface,
     double *meanTempSurface,
     double *maxTempSurface,
+    unsigned int method,
     double snow,
     double minTempAir,
     double meanTempAir,
@@ -2739,104 +2760,118 @@ void surface_temperature(
     double t1Param3,
     LOG_INFO *LogInfo
 ) {
+    double biomassCapped = fmin(550., biomass);
+    double offset;
+    double tmp;
+
 #ifdef SWDEBUG
     int debug = 0;
 #endif
-
-    double offset;
 
     if (GT(snow, 0.0)) {
         // underneath snow, based on Parton 1998
         *meanTempSurface = surface_temperature_under_snow(meanTempAir, snow);
         *minTempSurface = *maxTempSurface = *meanTempSurface;
 
-#ifdef SWDEBUG
-        if (debug) {
-            sw_printf(
-                "\nTsurface (min/mean/max) = %f/%f/%f (underneath snowpack)\n",
-                *minTempSurface,
-                *meanTempSurface,
-                *maxTempSurface
-            );
-        }
-#endif
-
     } else {
-        // No snow cover
-
-        // Calculate max/min surface temperature based on eqations 4 and 5 from
-        // Parton 1984 maxTempSurface uses effect on plant canopy (E_B) which
-        // uses the equation in figure 1b Radiation calculation (second line of
-        // calculation) is based off of figure 2 in Parton 1984
+        /* Estimate max/min surface temperature based on Parton 1984
+           maxTempSurface (equation 4, Figs 1b and 2): biomass and radiation
+           minTempSurface (equation 5): biomass
+        */
         offset =
-            (exp(-.0048 * biomass) - .13) *
-            (0.35 * maxTempAir + 24.07 * (1.0 - exp(-.000038 * H_gt * 1000)));
+            (exp(-0.0048 * biomassCapped) - 0.13) *
+            (0.35 * fmax(0., maxTempAir) + 24.07 * (1. - exp(-0.038 * H_gt)));
         *maxTempSurface = maxTempAir + offset;
 
-        offset = .006 * biomass - 1.82;
+        offset = 0.006 * biomassCapped - 1.82;
         *minTempSurface = minTempAir + offset;
 
-        if (LE(biomass, bmLimiter)) {
-            // bmLimiter = 300
 
-            // t1Param1 = 15; drs (Dec 16, 2014): this interpretation of
-            // Parton 1978's 2.20 equation (the printed version misses a
-            // closing parenthesis) removes a jump of T1 for biomass =
-            // bmLimiter
-            offset =
-                t1Param1 * pet * (1. - aet / pet) * (1. - biomass / bmLimiter);
+        if (*maxTempSurface < *minTempSurface) {
+            tmp = (*maxTempSurface + *minTempSurface) / 2.;
+
+            LogError(
+                LogInfo,
+                LOGWARN,
+                "minTempSurface > maxTempSurface (%f > %f [C]); "
+                "they are reset to the average of the two (%f [C]).",
+                *minTempSurface,
+                *maxTempSurface,
+                tmp
+            );
+
+            *maxTempSurface = *minTempSurface = tmp;
+        }
+
+
+        /* Estimate average surface temperature */
+        switch (method) {
+        case 0: /* Parton 1978 (default prior to v8.1.0) */
+            /* drs (Dec 16, 2014): this interpretation of
+               Parton 1978's 2.20 equation removes a jump at biomass = bmLimiter
+               (the printed version misses a closing parenthesis)
+               default parameter values:
+                   t1Param1 = 15; bmLimiter = 300;
+                   t1Param2 = -4; t1Param3 = 600
+            */
+            offset = LE(biomassCapped, bmLimiter) ?
+                         t1Param1 * pet * (1. - aet / pet) *
+                             (1. - biomassCapped / bmLimiter) :
+                         t1Param2 * (biomassCapped - bmLimiter) / t1Param3;
+
             *meanTempSurface = meanTempAir + offset;
-#ifdef SWDEBUG
-            if (debug) {
-                sw_printf(
-                    "\nTsurface (min/mean/max) = %f/%f/%f"
-                    "\n  Tair (min/mean/max) = %f/%f/%f"
-                    "\n  mean = %f + %f * %f * (1 - %f / %f) * (1 - %f / %f)\n",
-                    *minTempSurface,
+
+            if (*meanTempSurface < *minTempSurface ||
+                *meanTempSurface > *maxTempSurface) {
+                LogError(
+                    LogInfo,
+                    LOGWARN,
+                    "meanTempSurface (%f [C]) is outside min-max range "
+                    "[%f,%f] [C]",
                     *meanTempSurface,
-                    *maxTempSurface,
-                    minTempAir,
-                    meanTempAir,
-                    maxTempAir,
-                    meanTempAir,
-                    t1Param1,
-                    pet,
-                    aet,
-                    pet,
-                    biomass,
-                    bmLimiter
+                    *minTempSurface,
+                    *maxTempSurface
                 );
             }
-#endif
 
-        } else {
-            // t1Param2 = -4, t1Param3 = 600; math is correct
-            offset = t1Param2 * (biomass - bmLimiter) / t1Param3;
-            *meanTempSurface = meanTempAir + offset;
-#ifdef SWDEBUG
-            if (debug) {
-                sw_printf(
-                    "\nTsurface (min/mean/max) = %f/%f/%f"
-                    "\n  Tair (min/mean/max) = %f/%f/%f"
-                    "\n  mean= %f + %f * (%f - %f) / %f\n",
-                    *minTempSurface,
-                    *meanTempSurface,
-                    *maxTempSurface,
-                    minTempAir,
-                    meanTempAir,
-                    maxTempAir,
-                    meanTempAir,
-                    t1Param2,
-                    biomass,
-                    bmLimiter,
-                    t1Param3
-                );
-            }
-#endif
+            break;
+
+        case 1: /* Parton 1984 (default since v8.1.0) */
+            *meanTempSurface =
+                0.41 * (*maxTempSurface) + 0.59 * (*minTempSurface);
+            break;
+
+        default:
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Surface temperature method %u is not implemented.",
+                method
+            );
+            break;
         }
     }
 
-    (void) LogInfo;
+#ifdef SWDEBUG
+    if (debug) {
+        sw_printf(
+            "\nTsurface method=%d (min|mean|max) = %f|%f|%f"
+            "\n  Tair (min|mean|max) = %f|%f|%f"
+            "\n  snow = %f"
+            "\n  biomass (capped|all) = %f|%f\n",
+            method,
+            *minTempSurface,
+            *meanTempSurface,
+            *maxTempSurface,
+            minTempAir,
+            meanTempAir,
+            maxTempAir,
+            snow,
+            biomass,
+            biomassCapped
+        );
+    }
+#endif
 }
 
 /**********************************************************************
@@ -2979,6 +3014,8 @@ Parton 1978. @cite Parton1978, Parton 1984. @cite Parton1984
 @param[out] maxTempSoil An array holding all of the layers maximum
     temperature (&deg;C)
 @param[out] lyrFrozen Frozen information at each layer.
+@param[in] methodSurfaceTemperature The requested method to estimate
+    average surface temperature, see `surface_temperature()`.
 @param[in] snow Snow-water-equivalent of the area (cm).
 @param[in] minTempAir Minimum air temperature of Today (&deg;C)
 @param[in] meanTempAir Average daily air temperature (&deg;C).
@@ -3025,6 +3062,7 @@ void soil_temperature(
     double meanTempSoil[],
     double maxTempSoil[],
     double lyrFrozen[],
+    unsigned int methodSurfaceTemperature,
     double snow,
     double minTempAir,
     double meanTempAir,
@@ -3117,6 +3155,7 @@ void soil_temperature(
         minTempSurface,
         meanTempSurface,
         maxTempSurface,
+        methodSurfaceTemperature,
         snow,
         minTempAir,
         meanTempAir,

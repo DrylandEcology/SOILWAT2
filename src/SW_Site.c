@@ -1540,7 +1540,7 @@ void SW_SIT_read(
 #endif
 
     FILE *f;
-    const int nLinesWithoutTR = 41;
+    const int nLinesWithoutTR = 42;
     int lineno = 0;
     int x;
     double rgnlow = 0; /* lower depth of region */
@@ -1568,14 +1568,15 @@ void SW_SIT_read(
         doubleRes = SW_MISSING;
         intRes = SW_MISSING;
 
-        strLine = (Bool) (lineno == 35 || lineno == 39 || lineno == 40);
+        strLine = (Bool) (lineno == 36 || lineno == 40 || lineno == 41);
 
         if (!strLine && lineno <= nLinesWithoutTR) {
             /* Check to see if the line number contains a double or integer
-             * value */
+             * value
+               lineno with integers: 3, 4, 32, 33, 34, 35, 37, 38, 42 */
             doDoubleConv =
                 (Bool) ((lineno >= 0 && lineno <= 2) ||
-                        (lineno >= 5 && lineno <= 31) || lineno == 38);
+                        (lineno >= 5 && lineno <= 31) || lineno == 39);
 
             if (doDoubleConv) {
                 doubleRes = sw_strtod(inbuf, MyFileName, LogInfo);
@@ -1655,6 +1656,8 @@ void SW_SIT_read(
         case 21:
             SW_Site->transp.range = doubleRes;
             break;
+
+        /* Surface and soil temperature */
         case 22:
             SW_Site->bmLimiter = doubleRes;
             break;
@@ -1689,6 +1692,10 @@ void SW_SIT_read(
             SW_Site->use_soil_temp = itob(intRes);
             break;
         case 33:
+            SW_Site->methodSurfaceTemperature = intRes;
+            break;
+
+        case 34:
             SW_Carbon->use_bio_mult = itob(intRes);
 #ifdef SWDEBUG
             if (debug) {
@@ -1699,7 +1706,7 @@ void SW_SIT_read(
             }
 #endif
             break;
-        case 34:
+        case 35:
             SW_Carbon->use_wue_mult = itob(intRes);
 #ifdef SWDEBUG
             if (debug) {
@@ -1710,7 +1717,7 @@ void SW_SIT_read(
             }
 #endif
             break;
-        case 35:
+        case 36:
             resSNP = snprintf(
                 SW_Carbon->scenario, sizeof SW_Carbon->scenario, "%s", inbuf
             );
@@ -1732,19 +1739,19 @@ void SW_SIT_read(
             }
 #endif
             break;
-        case 36:
+        case 37:
             *hasConsistentSoilLayerDepths = itob(intRes);
             break;
 
-        case 37:
+        case 38:
             SW_Site->type_soilDensityInput = intRes;
             break;
 
-        case 38:
+        case 39:
             SW_Site->depthSapric = doubleRes;
             break;
 
-        case 39:
+        case 40:
             resSNP = snprintf(
                 SW_Site->site_swrc_name,
                 sizeof SW_Site->site_swrc_name,
@@ -1764,7 +1771,7 @@ void SW_SIT_read(
                 goto closeFile;
             }
             break;
-        case 40:
+        case 41:
             resSNP = snprintf(
                 SW_Site->site_ptf_name,
                 sizeof SW_Site->site_ptf_name,
@@ -1780,7 +1787,7 @@ void SW_SIT_read(
             }
             SW_Site->site_ptf_type = encode_str2ptf(SW_Site->site_ptf_name);
             break;
-        case 41:
+        case 42:
             SW_Site->inputsProvideSWRCp = itob(intRes);
             break;
 

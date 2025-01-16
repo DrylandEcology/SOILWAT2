@@ -301,10 +301,21 @@ typedef struct {
         lambdasnow, /* Relative contribution of avg. air temperature to todays
                        snow temperture vs. yesterday's snow temperature (0-1) */
         RmeltMin,   /* Minimum snow melt rate on winter solstice (cm/day/C) */
-        RmeltMax,   /* Maximum snow melt rate on summer solstice (cm/day/C) */
-        t1Param1,   /* Soil temperature constants */
-        t1Param2,   /* t1Params are the parameters for the avg daily temperature
-                       at the top of the soil (T1) equation */
+        RmeltMax;   /* Maximum snow melt rate on summer solstice (cm/day/C) */
+
+
+    /* Constants for surface and soil temperature */
+
+    /** Method for average surface temperature:
+        0 (Parton 1978); 1 (Parton 1984) */
+    unsigned int methodSurfaceTemperature;
+
+    /** number of layers used by soil temperatur */
+    unsigned int stNRGR;
+
+    double t1Param1,
+        t1Param2, /* t1Params are the parameters for the avg daily temperature
+                     at the top of the soil (T1) equation */
         t1Param3, csParam1, /* csParams are the parameters for the soil thermal
                                conductivity (cs) equation */
         csParam2, shParam,  /* shParam is the parameter for the specific heat
@@ -316,14 +327,13 @@ typedef struct {
                            as the mean air temperature */
         stDeltaX,   /* for the soil_temperature function, deltaX is the distance
                        between profile points (default: 15) */
-        stMaxDepth, /* for the soil_temperature function, the maxDepth of the
+        stMaxDepth; /* for the soil_temperature function, the maxDepth of the
                        interpolation function */
-        percentRunoff, /* the percentage of surface water lost daily */
-        percentRunon; /* the percentage of water that is added to surface gained
-                         daily */
 
-    unsigned int stNRGR; /* number of interpolations, for the soil_temperature
-                            function */
+    double percentRunoff; /* the percentage of surface water lost daily */
+    double percentRunon;  /* the percentage of water that is added to surface
+                          gained  daily */
+
     /* params for tanfunc rate calculations for evap and transp. */
     /* tanfunc() creates a logistic-type graph if shift is positive,
      * the graph has a negative slope, if shift is 0, slope is positive.

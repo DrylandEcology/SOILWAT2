@@ -56,6 +56,166 @@ TEST(SWFlowTempTest, SWFlowTempSurfaceTemperatureUnderSnow) {
     EXPECT_EQ(-2.0, tSoilAvg);
 }
 
+TEST(SWFlowTempTest, SWFlowTempSurfaceTemperature) {
+    // Initialize logs and silence warn/error reporting
+    LOG_INFO LogInfo;
+    sw_init_logs(NULL, &LogInfo);
+
+    unsigned int km;
+
+    /* Output to check */
+    double TempSurface1[3];
+    double TempSurface2[3];
+
+    /* Inputs to vary */
+    unsigned int methodSurfaceTemperature;
+    double biomass;
+    double minTempAir;
+    double meanTempAir;
+    double maxTempAir;
+    double H_gt;
+
+    /* Inputs held constant for this set of tests */
+    double const pet = 5.0;
+    double const aet = 4.0;
+    double const snow = 0;
+
+    /* Parameters */
+    double const bmLimiter = 300.;
+    double const t1Param1 = 15.;
+    double const t1Param2 = -4.;
+    double const t1Param3 = 600.;
+
+
+    /* Set variable inputs to reasonable values */
+    minTempAir = 0.;
+    meanTempAir = 5.;
+    maxTempAir = 10.;
+    H_gt = 100.;
+
+
+    /* Expect that output does not change if biomass > cap = 1146 */
+    methodSurfaceTemperature = 1;
+
+    biomass = 1200.;
+    surface_temperature(
+        &TempSurface1[0],
+        &TempSurface1[1],
+        &TempSurface1[2],
+        methodSurfaceTemperature,
+        snow,
+        minTempAir,
+        meanTempAir,
+        maxTempAir,
+        H_gt,
+        pet,
+        aet,
+        biomass,
+        bmLimiter,
+        t1Param1,
+        t1Param2,
+        t1Param3,
+        &LogInfo
+    );
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    EXPECT_EQ(LogInfo.numWarnings, 0) << LogInfo.warningMsgs[0];
+
+    biomass = 2000.;
+    surface_temperature(
+        &TempSurface2[0],
+        &TempSurface2[1],
+        &TempSurface2[2],
+        methodSurfaceTemperature,
+        snow,
+        minTempAir,
+        meanTempAir,
+        maxTempAir,
+        H_gt,
+        pet,
+        aet,
+        biomass,
+        bmLimiter,
+        t1Param1,
+        t1Param2,
+        t1Param3,
+        &LogInfo
+    );
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    EXPECT_EQ(LogInfo.numWarnings, 0) << LogInfo.warningMsgs[0];
+
+    EXPECT_DOUBLE_EQ(TempSurface1[0], TempSurface2[0]);
+    EXPECT_DOUBLE_EQ(TempSurface1[1], TempSurface2[1]);
+    EXPECT_DOUBLE_EQ(TempSurface1[2], TempSurface2[2]);
+
+
+    /* Expect warning minTempSurface > maxTempSurface if low air temp range */
+    biomass = 500.;
+    minTempAir = 4.;
+    meanTempAir = 5.;
+    maxTempAir = 6.;
+
+    for (km = 0; km <= 1; km++) {
+        methodSurfaceTemperature = km;
+        surface_temperature(
+            &TempSurface1[0],
+            &TempSurface1[1],
+            &TempSurface1[2],
+            methodSurfaceTemperature,
+            snow,
+            minTempAir,
+            meanTempAir,
+            maxTempAir,
+            H_gt,
+            pet,
+            aet,
+            biomass,
+            bmLimiter,
+            t1Param1,
+            t1Param2,
+            t1Param3,
+            &LogInfo
+        );
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+        EXPECT_THAT(
+            LogInfo.warningMsgs[0], HasSubstr("minTempSurface > maxTempSurface")
+        );
+        sw_init_logs(NULL, &LogInfo);
+    }
+
+
+    /* Expect warning meanTempSurface outside min-max range for method 0 */
+    methodSurfaceTemperature = 0;
+    biomass = 500.;
+    minTempAir = 3.;
+    meanTempAir = 5.;
+    maxTempAir = 7.;
+
+    surface_temperature(
+        &TempSurface1[0],
+        &TempSurface1[1],
+        &TempSurface1[2],
+        methodSurfaceTemperature,
+        snow,
+        minTempAir,
+        meanTempAir,
+        maxTempAir,
+        H_gt,
+        pet,
+        aet,
+        biomass,
+        bmLimiter,
+        t1Param1,
+        t1Param2,
+        t1Param3,
+        &LogInfo
+    );
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    EXPECT_THAT(LogInfo.warningMsgs[0], HasSubstr("outside min-max range"));
+    sw_init_logs(NULL, &LogInfo);
+}
+
 // Test the soil temperature initialization function 'soil_temperature_setup'
 TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
     SW_SITE SW_Site;
@@ -679,6 +839,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
     unsigned int k;
     unsigned int const year = 1980;
     unsigned int const doy = 1;
+    unsigned int methodSurfaceTemperature = 0; // default prior to v8.1.0
 
     // *****  Test when nlyrs = 1  ***** //
     unsigned int const nlyrs = 1;
@@ -753,6 +914,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
         meanTempSoil,
         maxTempSoil,
         lyrFrozen,
+        methodSurfaceTemperature,
         snow,
         minTempAir,
         meanTempAir,
@@ -817,6 +979,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
         meanTempSoil,
         maxTempSoil,
         lyrFrozen,
+        methodSurfaceTemperature,
         snow,
         minTempAir,
         meanTempAir,
@@ -879,6 +1042,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
         meanTempSoil,
         maxTempSoil,
         lyrFrozen,
+        methodSurfaceTemperature,
         snow,
         minTempAir,
         meanTempAir,
@@ -969,6 +1133,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
         meanTempSoil,
         maxTempSoil,
         lyrFrozen,
+        methodSurfaceTemperature,
         snow,
         minTempAir,
         meanTempAir,
@@ -1018,6 +1183,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
 
     double lyrFrozen[MAX_LAYERS] = {0};
 
+    unsigned int methodSurfaceTemperature = 0; // default prior to v8.1.0
 
     // *****  Test when nlyrs = MAX_LAYERS  ***** //
     sw_random_t soilTemp_rng;
@@ -1137,6 +1303,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
         sTemp3,
         maxTempSoil,
         lyrFrozen,
+        methodSurfaceTemperature,
         snow,
         minTempAir,
         meanTempAir,
@@ -1201,6 +1368,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
         sTemp3,
         maxTempSoil,
         lyrFrozen,
+        methodSurfaceTemperature,
         snow,
         minTempAir,
         meanTempAir,
@@ -1262,6 +1430,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
         sTemp3,
         maxTempSoil,
         lyrFrozen,
+        methodSurfaceTemperature,
         snow,
         minTempAir,
         meanTempAir,
@@ -1344,6 +1513,8 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunctionDeathTest) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
+    unsigned int methodSurfaceTemperature = 0; // default prior to v8.1.0
+
     double lyrFrozen[MAX_LAYERS] = {0};
     double depths[MAX_LAYERS] = {0};
 
@@ -1392,6 +1563,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunctionDeathTest) {
         meanTempSoil,
         maxTempSoil,
         lyrFrozen,
+        methodSurfaceTemperature,
         snow,
         minTempAir,
         meanTempAir,
