@@ -108,7 +108,7 @@ extern const char *const key2veg[NVEGTYPES];
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *InFiles[], LOG_INFO *LogInfo);
+void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *txtInFiles[], LOG_INFO *LogInfo);
 
 void SW_VPD_new_year(SW_VEGPROD *SW_VegProd, SW_MODEL *SW_Model);
 
@@ -122,7 +122,7 @@ void SW_VPD_alloc_outptrs(SW_VEGPROD *SW_VegProd, LOG_INFO *LogInfo);
 
 void estimateVegetationFromClimate(
     SW_VEGPROD *SW_VegProd,
-    SW_WEATHER_HIST **Weather_hist,
+    SW_WEATHER_HIST *Weather_hist,
     SW_MODEL *SW_Model,
     LOG_INFO *LogInfo
 );
@@ -162,6 +162,7 @@ void SW_VPD_init_run(
     SW_VEGPROD *SW_VegProd,
     SW_WEATHER *SW_Weather,
     SW_MODEL *SW_Model,
+    Bool estVegFromText,
     LOG_INFO *LogInfo
 );
 

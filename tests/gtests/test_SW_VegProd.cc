@@ -100,7 +100,9 @@ TEST_F(VegProdFixtureTest, VegProdConstructor) {
     SW_VPD_alloc_outptrs(&SW_VegProd, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    SW_VPD_init_run(&SW_VegProd, &SW_Run.Weather, &SW_Run.Model, &LogInfo);
+    SW_VPD_init_run(
+        &SW_VegProd, &SW_Run.Weather, &SW_Run.Model, swTRUE, &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     ForEachVegType(k) {
@@ -235,7 +237,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
     SW_Run.Model.latitude = 90.0;
 
     // Reset "SW_Run.Weather.allHist"
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
+    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     finalizeAllWeather(
@@ -813,7 +815,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
 
 
     // Reset "SW_Run.Weather.allHist"
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
+    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     finalizeAllWeather(
@@ -1396,7 +1398,7 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne1DeathTest) {
 
 
     // Reset "SW_Run.Weather.allHist"
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
+    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     finalizeAllWeather(
@@ -1510,7 +1512,7 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne2DeathTest) {
         ===============================================================  */
 
     // Reset "SW_Run.Weather.allHist"
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, &LogInfo);
+    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     finalizeAllWeather(

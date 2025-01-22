@@ -522,7 +522,7 @@ void SW_MKV_today(
 @brief Reads prob file in and checks input variables for errors, then stores
 files in SW_Markov.
 
-@param[in] InFiles Array of program in/output files
+@param[in] txtInFiles Array of program in/output files
 @param[out] SW_Markov Struct of type SW_MARKOV which holds values
         related to temperature and weather generator
 @param[out] LogInfo Holds information on warnings and errors
@@ -530,7 +530,7 @@ files in SW_Markov.
 @return swTRUE Returns true if prob file is correctly opened and closed.
 */
 Bool SW_MKV_read_prob(
-    char *InFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo
+    char *txtInFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo
 ) {
     /* =================================================== */
     const int nitems = 5;
@@ -553,7 +553,7 @@ Bool SW_MKV_read_prob(
     Bool result = swTRUE;
 
     /* note that Files.read() must be called prior to this. */
-    char *MyFileName = InFiles[eMarkovProb];
+    char *MyFileName = txtInFiles[eMarkovProb];
     f = OpenFile(MyFileName, "r", LogInfo);
     if (LogInfo->stopRun) {
         return swFALSE;
@@ -677,14 +677,16 @@ closeFile: { CloseFile(&f, LogInfo); }
 @brief Reads cov file in and checks input variables for errors, then stores
 files in SW_Markov.
 
-@param[in] InFiles Array of program in/output files
+@param[in] txtInFiles Array of program in/output files
 @param[out] SW_Markov Struct of type SW_MARKOV which holds values
         related to temperature and weather generator
 @param[out] LogInfo Holds information on warnings and errors
 
 @return Returns true if cov file is correctly opened and closed.
 */
-Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo) {
+Bool SW_MKV_read_cov(
+    char *txtInFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo
+) {
     /* =================================================== */
     const int nitems = 11;
     FILE *f;
@@ -711,7 +713,7 @@ Bool SW_MKV_read_cov(char *InFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo) {
     const int numDoubleVals = 10;
     Bool result = swTRUE;
 
-    char *MyFileName = InFiles[eMarkovCov];
+    char *MyFileName = txtInFiles[eMarkovCov];
     f = OpenFile(MyFileName, "r", LogInfo);
     if (LogInfo->stopRun) {
         return swFALSE;
@@ -872,7 +874,7 @@ void SW_MKV_setup(
     SW_MARKOV *SW_Markov,
     unsigned long Weather_rng_seed,
     unsigned int Weather_genWeathMethod,
-    char *InFiles[],
+    char *txtInFiles[],
     LOG_INFO *LogInfo
 ) {
 
@@ -885,7 +887,7 @@ void SW_MKV_setup(
         return; // Exit function prematurely due to error
     }
 
-    read_prob = SW_MKV_read_prob(InFiles, SW_Markov, LogInfo);
+    read_prob = SW_MKV_read_prob(txtInFiles, SW_Markov, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -895,12 +897,12 @@ void SW_MKV_setup(
             LogInfo,
             LOGERROR,
             "Weather generator requested but could not open %s",
-            InFiles[eMarkovProb]
+            txtInFiles[eMarkovProb]
         );
         return; // Exit function prematurely due to error
     }
 
-    read_cov = SW_MKV_read_cov(InFiles, SW_Markov, LogInfo);
+    read_cov = SW_MKV_read_cov(txtInFiles, SW_Markov, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -910,7 +912,7 @@ void SW_MKV_setup(
             LogInfo,
             LOGERROR,
             "Weather generator requested but could not open %s",
-            InFiles[eMarkovCov]
+            txtInFiles[eMarkovCov]
         );
     }
 }

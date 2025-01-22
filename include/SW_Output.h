@@ -164,7 +164,7 @@ void SW_OUTDOM_construct(SW_OUT_DOM *OutDom);
 
 void SW_OUT_construct(
     Bool zeroOutStruct,
-    SW_FILE_STATUS *FileStatus,
+    SW_PATH_OUTPUTS *SW_PathOutputs,
     SW_OUT_DOM *OutDom,
     SW_OUT_RUN *OutRun,
     LOG_INFO *LogInfo
@@ -216,11 +216,11 @@ int SW_OUT_read_onekey(
     size_t sizeof_msg,
     Bool *VegProd_use_SWA,
     Bool deepdrain,
-    char *InFiles[]
+    char *txtInFiles[]
 );
 
 void SW_OUT_read(
-    SW_RUN *sw, SW_OUT_DOM *OutDom, char *InFiles[], LOG_INFO *LogInfo
+    SW_RUN *sw, SW_OUT_DOM *OutDom, char *txtInFiles[], LOG_INFO *LogInfo
 );
 
 void SW_OUT_sum_today(
@@ -253,11 +253,11 @@ void collect_values(
 );
 
 void SW_OUT_close_files(
-    SW_FILE_STATUS *SW_FileStatus, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
+    SW_PATH_OUTPUTS *SW_PathOutputs, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 );
 
 void SW_OUT_create_files(
-    SW_FILE_STATUS *SW_FileStatus, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
+    SW_PATH_OUTPUTS *SW_PathOutputs, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
 );
 
 void echo_outputs(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
@@ -284,9 +284,9 @@ void SW_OUT_set_SXWrequests(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 #endif
 
 #if defined(SWNETCDF)
-void SW_FILESTATUS_deepCopy(
-    SW_FILE_STATUS *dest_files,
-    SW_FILE_STATUS *source_files,
+void SW_PATHOUT_deepCopy(
+    SW_PATH_OUTPUTS *dest_files,
+    SW_PATH_OUTPUTS *source_files,
     SW_OUT_DOM *OutDom,
     LOG_INFO *LogInfo
 );
@@ -309,9 +309,15 @@ void SW_OUTDOM_deepCopy(
  * 05-Mar-03 (cwb) Added code for max,min,avg. Previously, only avg was output.
  * 22 June-15 (akt)  Added code for adding surfaceAvg at output
  */
+#if defined(RSOILWAT) || defined(SWNETCDF)
+void get_none_outarray_mem(
+    OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom
+); /* default until defined for rSOILWAT2 and netCDF outarray output */
+#else
 void get_none_outarray(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
-); /* default until defined for outarray output */
+); /* default until defined for STEPWAT2 outarray output */
+#endif
 void get_none_text(
     OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo
 ); /* default until defined for text */

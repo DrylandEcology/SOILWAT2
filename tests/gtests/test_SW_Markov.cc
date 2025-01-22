@@ -56,14 +56,14 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    char *InFiles[SW_NFILES];
-    for (short file = 0; file < SW_NFILES; file++) {
-        InFiles[file] = NULL;
-    }
+    SW_PATH_INPUTS SW_PathInput;
+    SW_F_init_ptrs(&SW_PathInput);
 
-    InFiles[eMarkovCov] = Str_Dup("Input/mkv_covar.in", &LogInfo);
+    SW_PathInput.txtInFiles[eMarkovCov] =
+        Str_Dup("Input/mkv_covar.in", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
-    InFiles[eMarkovProb] = Str_Dup("Input/mkv_prob.in", &LogInfo);
+    SW_PathInput.txtInFiles[eMarkovProb] =
+        Str_Dup("Input/mkv_prob.in", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     int rng_seed;
@@ -88,7 +88,11 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
     rng_seed = seed;
     SW_MKV_init_ptrs(&SW_Markov);
     SW_MKV_setup(
-        &SW_Markov, rng_seed, generateWeatherMethod, InFiles, &LogInfo
+        &SW_Markov,
+        rng_seed,
+        generateWeatherMethod,
+        SW_PathInput.txtInFiles,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -109,7 +113,11 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
     rng_seed = 0;
     SW_MKV_init_ptrs(&SW_Markov);
     SW_MKV_setup(
-        &SW_Markov, rng_seed, generateWeatherMethod, InFiles, &LogInfo
+        &SW_Markov,
+        rng_seed,
+        generateWeatherMethod,
+        SW_PathInput.txtInFiles,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -136,7 +144,11 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
     rng_seed = seed;
     SW_MKV_init_ptrs(&SW_Markov);
     SW_MKV_setup(
-        &SW_Markov, rng_seed, generateWeatherMethod, InFiles, &LogInfo
+        &SW_Markov,
+        rng_seed,
+        generateWeatherMethod,
+        SW_PathInput.txtInFiles,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -161,7 +173,7 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
     delete[] tmin0;
     delete[] ppt0;
 
-    SW_F_deconstruct(InFiles);
+    SW_F_deconstruct(&SW_PathInput);
 }
 
 // Test drawing multivariate normal variates for daily maximum/minimum temp

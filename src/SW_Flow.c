@@ -232,21 +232,20 @@
 void SW_FLW_init_run(SW_SOILWAT *SW_SoilWat) {
     /* 06/26/2013	(rjm) added function SW_FLW_init_run() to init global
      * variables between consecutive calls to SoilWat as dynamic library */
-    int i;
+    int lyr;
     int k;
 
 
     // These only have to be cleared if a loop is wrong in the code.
-    for (i = 0; i < MAX_LAYERS; i++) {
+    ForEachSoilLayer(lyr, MAX_LAYERS) {
         ForEachVegType(k) {
-            SW_SoilWat->transpiration[k][i] = 0.;
-            SW_SoilWat->hydred[k][i] = 0;
+            SW_SoilWat->transpiration[k][lyr] = 0.;
+            SW_SoilWat->hydred[k][lyr] = 0;
         }
 
-        SW_SoilWat->swcBulk[Today][i] = 0.;
-        SW_SoilWat->drain[i] = 0.;
+        SW_SoilWat->swcBulk[Today][lyr] = 0.;
 
-        SW_SoilWat->avgLyrTemp[i] = 0.;
+        SW_SoilWat->avgLyrTemp[lyr] = 0.;
     }
 
     // When running as a library make sure these are set to zero.
@@ -487,7 +486,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             sw->Site.swcBulk_fieldcap,
             sw->Site.swcBulk_saturated,
             sw->Site.ksat,
-            sw->Site.impermeability,
+            sw->Site.soils.impermeability,
             &UpNeigh_standingWater,
             sw->SoilWat.lyrFrozen
         );
@@ -519,7 +518,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         sw->Site.swcBulk_fieldcap,
         sw->Site.swcBulk_saturated,
         sw->Site.ksat,
-        sw->Site.impermeability,
+        sw->Site.soils.impermeability,
         standingWaterToday,
         sw->SoilWat.lyrFrozen
     );
@@ -755,7 +754,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             &sw->Site,
             &sw->SoilWat.aet,
             sw->Site.n_evap_lyrs,
-            sw->Site.evap_coeff,
+            sw->Site.soils.evap_coeff,
             soil_evap_rate_bs,
             sw->Site.swcBulk_halfwiltpt,
             sw->SoilWat.lyrFrozen,
@@ -796,7 +795,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
                 &sw->Site,
                 &sw->SoilWat.aet,
                 sw->Site.n_evap_lyrs,
-                sw->Site.evap_coeff,
+                sw->Site.soils.evap_coeff,
                 soil_evap_rate[k],
                 sw->Site.swcBulk_halfwiltpt,
                 sw->SoilWat.lyrFrozen,
@@ -813,7 +812,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
                 &sw->Site,
                 &sw->SoilWat.aet,
                 sw->Site.n_transp_lyrs[k],
-                sw->Site.transp_coeff[k],
+                sw->Site.soils.transp_coeff[k],
                 transp_rate[k],
                 sw->Site.swcBulk_atSWPcrit[k],
                 sw->SoilWat.lyrFrozen,
@@ -965,7 +964,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             sw->SoilWat.swcBulk[Today],
             sw->Site.swcBulk_saturated,
             sw->Site.soilBulk_density,
-            sw->Site.width,
+            sw->Site.soils.width,
             sw->SoilWat.avgLyrTemp,
             &sw->Weather.surfaceAvg,
             n_layers,
@@ -987,7 +986,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             sw->SoilWat.H_gt,
             sw->Model.year,
             sw->Model.doy,
-            sw->Site.depths,
+            sw->Site.soils.depths,
             sw->SoilWat.maxLyrTemperature,
             sw->SoilWat.minLyrTemperature,
             &sw->SoilWat.soiltempError,

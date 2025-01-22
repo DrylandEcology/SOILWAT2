@@ -1,0 +1,4 @@
+# Ignore results produced by ncTestRuns and any external daily weather data
+data-raw/inWeather/**/data/*.nc
+results/
+*/.~lock*

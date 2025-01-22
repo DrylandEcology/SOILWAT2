@@ -89,7 +89,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
     wp[0] = fc[0] - 0.6; // wp will always be less than fc
 
     SW_Site.n_layers = nlyrs;
-    SW_Site.width[0] = SW_Site.depths[0] = width[0];
+    SW_Site.soils.width[0] = SW_Site.soils.depths[0] = width[0];
     /// test standard conditions
     soil_temperature_setup(
         &SW_StRegValues,
@@ -103,7 +103,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
         deltaX,
         theMaxDepth,
         nRgr,
-        SW_Site.depths,
+        SW_Site.soils.depths,
         &ptr_stError,
         &SW_StRegValues.soil_temp_init,
         &LogInfo
@@ -116,7 +116,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
         sizeof(double) * MAX_ST_RGR * (MAX_LAYERS + 1)
     );
 
-    iStart = (unsigned int) ceil(SW_Site.depths[nlyrs - 1] / deltaX);
+    iStart = (unsigned int) ceil(SW_Site.soils.depths[nlyrs - 1] / deltaX);
     for (i = iStart; i < nRgr + 1; i++) {
         EXPECT_EQ(SW_StRegValues.tlyrs_by_slyrs[i][nlyrs], -deltaX);
         // Values should be equal to -deltaX when i > the depth of the soil
@@ -125,7 +125,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
 
     // Other init test
     // sum of inputs width = maximum depth; in my example 20
-    EXPECT_EQ(SW_Site.depths[nlyrs - 1], 20);
+    EXPECT_EQ(SW_Site.soils.depths[nlyrs - 1], 20);
 
     // nRgr = (MaxDepth/deltaX) - 1
     EXPECT_EQ((SW_StRegValues.depthsR[nRgr] / deltaX) - 1, nRgr);
@@ -149,9 +149,9 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
 
     SW_Site.n_layers = nlyrs;
     for (i = 0; i < nlyrs; i++) {
-        SW_Site.width[i] = width2[i];
+        SW_Site.soils.width[i] = width2[i];
         acc += width2[i];
-        SW_Site.depths[i] = acc;
+        SW_Site.soils.depths[i] = acc;
     }
 
     soil_temperature_setup(
@@ -166,7 +166,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
         deltaX,
         theMaxDepth,
         nRgr,
-        SW_Site.depths,
+        SW_Site.soils.depths,
         &ptr_stError,
         &SW_StRegValues.soil_temp_init,
         &LogInfo
@@ -179,7 +179,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
         sizeof(double) * MAX_ST_RGR * (MAX_LAYERS + 1)
     );
 
-    iStart = (unsigned int) ceil(SW_Site.depths[nlyrs - 1] / deltaX);
+    iStart = (unsigned int) ceil(SW_Site.soils.depths[nlyrs - 1] / deltaX);
     for (i = iStart; i < nRgr + 1; i++) {
         EXPECT_EQ(SW_StRegValues.tlyrs_by_slyrs[i][nlyrs], -deltaX);
         // Values should be equal to -deltaX when i > the depth of the soil
@@ -188,7 +188,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
 
     // Other init test
     // sum of inputs width = maximum depth; in my example 295
-    EXPECT_EQ(SW_Site.depths[nlyrs - 1], 295);
+    EXPECT_EQ(SW_Site.soils.depths[nlyrs - 1], 295);
 
     // nRgr = (MaxDepth/deltaX) - 1
     EXPECT_EQ((SW_StRegValues.depthsR[nRgr] / deltaX) - 1, nRgr);
@@ -232,7 +232,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInitDeathTest) {
         fc2[i] = RandNorm(1.5, 0.5, &STInitDeath_rng);
         wp2[i] = fc2[i] - 0.6; // wp will always be less than fc
         acc += width2[i];
-        SW_Site.depths[i] = acc;
+        SW_Site.soils.depths[i] = acc;
     }
 
     /// test when theMaxDepth is less than soil layer depth - function should
@@ -252,7 +252,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInitDeathTest) {
         deltaX,
         theMaxDepth2,
         nRgr,
-        SW_Site.depths,
+        SW_Site.soils.depths,
         &ptr_stError,
         &SW_StRegValues.soil_temp_init,
         &LogInfo
@@ -309,7 +309,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
     wp[0] = fmax(fc[0] - 0.6, .1); // wp will always be less than fc
 
     SW_Site.n_layers = nlyrs;
-    SW_Site.width[0] = SW_Site.depths[0] = width[0];
+    SW_Site.soils.width[0] = SW_Site.soils.depths[0] = width[0];
     soil_temperature_setup(
         &SW_StRegValues,
         bDensity,
@@ -322,7 +322,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
         deltaX,
         theMaxDepth,
         nRgr,
-        SW_Site.depths,
+        SW_Site.soils.depths,
         &ptr_stError,
         &SW_StRegValues.soil_temp_init,
         &LogInfo
@@ -340,7 +340,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
         EXPECT_GT(SW_StRegValues.wpR[i], 0);
     }
 
-    iStart = (unsigned int) ceil(SW_Site.depths[nlyrs - 1] / deltaX);
+    iStart = (unsigned int) ceil(SW_Site.soils.depths[nlyrs - 1] / deltaX);
     for (i = iStart; i < nRgr + 1; i++) {
         // The TempLayer values that are at depths greater than the max
         // SoilLayer depth should be uniform
@@ -400,7 +400,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
     SW_Site.n_layers = nlyrs;
     for (i = 0; i < nlyrs; i++) {
         acc += width2[i];
-        SW_Site.depths[i] = acc;
+        SW_Site.soils.depths[i] = acc;
     }
 
     soil_temperature_setup(
@@ -415,7 +415,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
         deltaX,
         theMaxDepth,
         nRgr,
-        SW_Site.depths,
+        SW_Site.soils.depths,
         &ptr_stError,
         &SW_StRegValues.soil_temp_init,
         &LogInfo
@@ -430,7 +430,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
         EXPECT_GT(SW_StRegValues.wpR[i], 0);
     }
 
-    iStart = (unsigned int) ceil(SW_Site.depths[nlyrs - 1] / deltaX);
+    iStart = (unsigned int) ceil(SW_Site.soils.depths[nlyrs - 1] / deltaX);
     for (i = iStart; i < nRgr + 1; i++) {
         // The TempLayer values that are at depths greater than the max
         // SoilLayer depth should be uniform
@@ -714,8 +714,8 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
     SW_Site.stNRGR = nRgr;
 
     SW_Site.soilBulk_density[0] = 1.8;
-    SW_Site.width[0] = SW_Site.depths[0] = 20;
-    SW_Site.avgLyrTempInit[0] = 5.0;
+    SW_Site.soils.width[0] = SW_Site.soils.depths[0] = 20;
+    SW_Site.soils.avgLyrTempInit[0] = 5.0;
     SW_Site.Tsoil_constant = 4.15;
     SW_Site.swcBulk_fieldcap[0] = 2.6;
     SW_Site.swcBulk_wiltpt[0] = 1.0;
@@ -773,7 +773,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
         H_gt,
         year,
         doy,
-        SW_Site.depths,
+        SW_Site.soils.depths,
         min_temp,
         max_temp,
         &ptr_stError,
@@ -797,7 +797,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
     snowdepth = 0;
 
     for (k = 0; k < nlyrs; k++) {
-        sTemp[k] = SW_Site.avgLyrTempInit[k];
+        sTemp[k] = SW_Site.soils.avgLyrTempInit[k];
     }
 
     soil_temperature(
@@ -834,7 +834,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
         H_gt,
         year,
         doy,
-        SW_Site.depths,
+        SW_Site.soils.depths,
         min_temp,
         max_temp,
         &ptr_stError,
@@ -856,7 +856,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
     biomass = 305;
 
     for (k = 0; k < nlyrs; k++) {
-        sTemp[k] = SW_Site.avgLyrTempInit[k];
+        sTemp[k] = SW_Site.soils.avgLyrTempInit[k];
     }
 
     soil_temperature(
@@ -893,7 +893,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
         H_gt,
         year,
         doy,
-        SW_Site.depths,
+        SW_Site.soils.depths,
         min_temp,
         max_temp,
         &ptr_stError,
@@ -982,7 +982,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
         H_gt,
         year,
         doy,
-        SW_Site.depths,
+        SW_Site.soils.depths,
         min_temp,
         max_temp,
         &ptr_stError,
@@ -1068,7 +1068,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
     acc = 0.;
 
     for (i = 0; i < nlyrs2; i++) {
-        SW_Site.avgLyrTempInit[i] = sTempInit3[i];
+        SW_Site.soils.avgLyrTempInit[i] = sTempInit3[i];
         // SWC(wilting point): width > swc_wp > 0
         SW_Site.swcBulk_wiltpt[i] = 0.1 * width2[i];
         // SWC(field capacity): width > swc_fc > swc_wp
@@ -1085,9 +1085,9 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
         );
 
         SW_Site.soilBulk_density[i] = 1.;
-        SW_Site.width[i] = width2[i];
+        SW_Site.soils.width[i] = width2[i];
         acc += width2[i];
-        SW_Site.depths[i] = acc;
+        SW_Site.soils.depths[i] = acc;
         SW_Site.swcBulk_fieldcap[0] = 2.6;
         SW_Site.swcBulk_wiltpt[0] = 1.0;
         SW_Site.stDeltaX = 15;
@@ -1152,7 +1152,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
         H_gt,
         year,
         doy,
-        SW_Site.depths,
+        SW_Site.soils.depths,
         min_temp,
         max_temp,
         &ptr_stError,
@@ -1213,7 +1213,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
         H_gt,
         year,
         doy,
-        SW_Site.depths,
+        SW_Site.soils.depths,
         min_temp,
         max_temp,
         &ptr_stError,
@@ -1234,7 +1234,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
     // Test surface temp equals equation when biomass < blimititer & snow = 0
     biomass = 305;
     for (k = 0; k < nlyrs2; k++) {
-        sTemp3[k] = SW_Site.avgLyrTempInit[k];
+        sTemp3[k] = SW_Site.soils.avgLyrTempInit[k];
     }
 
     soil_temperature(
@@ -1271,7 +1271,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
         H_gt,
         year,
         doy,
-        SW_Site.depths,
+        SW_Site.soils.depths,
         min_temp,
         max_temp,
         &ptr_stError,

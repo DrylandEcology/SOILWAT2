@@ -529,14 +529,14 @@ void transp_weighted_avg(
 
         for (i = 0; i < n_layers; i++) {
             if (tr_regions[i] == r) {
-                swp += SW_Site->transp_coeff[VegType][i] *
+                swp += SW_Site->soils.transp_coeff[VegType][i] *
                        SW_SWRC_SWCtoSWP(swc[i], SW_Site, i, LogInfo);
 
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }
 
-                sumco += SW_Site->transp_coeff[VegType][i];
+                sumco += SW_Site->soils.transp_coeff[VegType][i];
             }
         }
 
@@ -659,10 +659,10 @@ void pot_soil_evap(
 
     /* get the weighted average of swp in the evap layers */
     for (i = 0; i < nelyrs; i++) {
-        if (ZRO(SW_Site->evap_coeff[i])) {
+        if (ZRO(SW_Site->soils.evap_coeff[i])) {
             break;
         }
-        x = SW_Site->width[i] * SW_Site->evap_coeff[i];
+        x = SW_Site->soils.width[i] * SW_Site->soils.evap_coeff[i];
         sumwidth += x;
         avswp += x * SW_SWRC_SWCtoSWP(swc[i], SW_Site, i, LogInfo);
         if (LogInfo->stopRun) {
@@ -736,7 +736,7 @@ void pot_soil_evap_bs(
 
     /* get the weighted average of swp in the evap layers */
     for (i = 0; i < nelyrs; i++) {
-        x = SW_Site->width[i] * SW_Site->evap_coeff[i];
+        x = SW_Site->soils.width[i] * SW_Site->soils.evap_coeff[i];
         sumwidth += x;
         avswp += x * SW_SWRC_SWCtoSWP(swc[i], SW_Site, i, LogInfo);
         if (LogInfo->stopRun) {
@@ -1141,7 +1141,7 @@ void percolate_unsaturated(
                 );
 
                 tmp1 = slow_drain_depth * SW_Site->swcBulk_fieldcap[i] /
-                       SW_Site->width[i];
+                       SW_Site->soils.width[i];
                 tmp2 = exp(-tmp1);
 
                 if (LT(tmp2, 1.)) {
@@ -1152,7 +1152,7 @@ void percolate_unsaturated(
                 }
             }
 
-            d[i] = kunsat_rel * (1. - SW_Site->impermeability[i]) *
+            d[i] = kunsat_rel * (1. - SW_Site->soils.impermeability[i]) *
                    fmin(swc_avail, fmax(0., drainpot));
         }
 
@@ -1323,12 +1323,13 @@ void hydraulic_redistribution(
                         -> truncate to source layer width
                         (original equation assumed identical layer widths)
                 */
-                mlyrRootCo[0] = SW_Site->transp_coeff[vegk][idso];
-                mlyrRootCo[1] = SW_Site->transp_coeff[vegk][idre];
+                mlyrRootCo[0] = SW_Site->soils.transp_coeff[vegk][idso];
+                mlyrRootCo[1] = SW_Site->soils.transp_coeff[vegk][idre];
 
-                if (LT(SW_Site->width[idso], SW_Site->width[idre])) {
+                if (LT(SW_Site->soils.width[idso],
+                       SW_Site->soils.width[idre])) {
                     mlyrRootCo[1] *=
-                        SW_Site->width[idso] / SW_Site->width[idre];
+                        SW_Site->soils.width[idso] / SW_Site->soils.width[idre];
                 }
 
 
@@ -1357,8 +1358,8 @@ void hydraulic_redistribution(
                         idso,
                         idre,
                         tmp,
-                        SW_Site->width[idso],
-                        SW_Site->width[idre],
+                        SW_Site->soils.width[idso],
+                        SW_Site->soils.width[idre],
                         swc[idso],
                         swc[idre],
                         -0.1 * swp[idso],
@@ -1873,8 +1874,8 @@ void SW_ST_setup_run(
         soil_temperature_setup(
             SW_StRegValues,
             SW_Site->soilBulk_density,
-            SW_Site->width,
-            SW_Site->avgLyrTempInit,
+            SW_Site->soils.width,
+            SW_Site->soils.avgLyrTempInit,
             SW_Site->Tsoil_constant,
             SW_Site->n_layers,
             SW_Site->swcBulk_fieldcap,
@@ -1882,7 +1883,7 @@ void SW_ST_setup_run(
             SW_Site->stDeltaX,
             SW_Site->stMaxDepth,
             SW_Site->stNRGR,
-            SW_Site->depths,
+            SW_Site->soils.depths,
             ptr_stError,
             soil_temp_init,
             LogInfo
@@ -1894,15 +1895,15 @@ void SW_ST_setup_run(
         /* Initialize soil temperature and frozen status across the soil layer
          * profile. */
         ForEachSoilLayer(i, SW_Site->n_layers) {
-            avgLyrTemp[i] = SW_Site->avgLyrTempInit[i];
+            avgLyrTemp[i] = SW_Site->soils.avgLyrTempInit[i];
         }
 
         set_frozen_unfrozen(
             SW_Site->n_layers,
-            SW_Site->avgLyrTempInit,
+            SW_Site->soils.avgLyrTempInit,
             swc,
             SW_Site->swcBulk_saturated,
-            SW_Site->width,
+            SW_Site->soils.width,
             lyrFrozen
         );
 

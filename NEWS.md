@@ -9,9 +9,29 @@
       during periods of high infiltration (e.g., snowmelt) and during conditions
       of low hydraulic conductivity (e.g., frozen soils, sapric organic matter).
 
-* The two models of SOILWAT2 can now be compiled with the following flags:
+* The two modes of SOILWAT2 can now be compiled with the following flags:
     * `make CPPFLAGS=-DSWTXT` (or as previously `make all`) for txt-based
     * `make CPPFLAGS=-DSWNC` for nc-based SOILWAT2.
+
+* nc-based SOILWAT2 can now use a large variety of `"netCDF"` data sources
+  as inputs (#389; @N1ckP3rsl3y, @dschlaep).
+  The user identifies in `"SW2_netCDF_input_variables.tsv"` which
+  input variables are provided by `"netCDF"`
+  (and vary among simulation runs, i.e., sites or grid cells);
+  remaining inputs are obtained from the same text files as in txt-based mode
+  (and are constant among simulation runs).
+
+* `"ncTestRuns"` provide a new framework that comprehensively tests
+  nc-based SOILWAT2 via the script `"tools/check_ncTestRuns.sh"` by
+  creating, executing, and checking more than 40 test runs.
+    * Comprehensive set of spatial configurations of simulation domains and
+      input netCDFs (see `"tests/ncTestRuns/data-raw/metadata_testRuns.csv"`)
+    * Runs with daily inputs from external data sources
+      including `"Daymet"`, `"gridMET"`, and `"MACAv2METDATA"` (if available)
+    * One site/grid cell in the simulation domain is set up to correspond
+      to the reference run (which, by default, is equivalent to
+      `"tests/example"` in txt-based mode); output at that site/grid cell is
+      compared against the reference output
 
 * Tests now require `c++17` and utilize `googletest` `v1.15.2` (issue #427).
 
@@ -43,6 +63,22 @@
 * New input via `"swrc_params*.in"` to provide parameter values of the
   soil water retention curve representing fibric and sapric peat.
   Note: Some parameter values for the `"FXW"` SWRC are missing.
+
+## Changes to inputs for nc-based SOILWAT2
+* New tab-separated value `"tsv"` input file `"SW2_netCDF_input_variables.tsv"`
+  that lists, activates, and describes each input from `"netCDF"` files.
+  This file replaces `"files_nc.in"`.
+* `"desc_nc.in"` provides new inputs for the names of
+  geographic and projected `"CRS"` variables as well as names for the spatial
+  coordinate axes and variables.
+* New example inputs as `"netCDF"` files that exactly txt-based inputs
+    * `"inClimate/monthlyClimate.nc"` corresponding to `"climate.in"`
+    * `"inSoil/soil.nc"` and `"inSoil/swrcp.nc"`
+      corresponding to `"soils.in"` and `"swrc_params.in"`
+    * `"inTopo/topo.nc"` corresponding to `"modelrun.in"`
+    * `"inVeg/veg2.nc"` and `"inVeg/vegPFT.nc"`
+      corresponding to `"veg.in"`
+    * `"inWeather/weather.nc"` corresponding to `"data_weather/weath.*"`
 
 
 # SOILWAT2 v8.0.1

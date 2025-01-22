@@ -57,7 +57,9 @@ History:
 #endif
 
 #if defined(SWNETCDF)
-#include "include/SW_netCDF.h"
+#include "include/SW_netCDF_General.h"
+#include "include/SW_netCDF_Input.h" // for eSW_InDomain, vNCdom
+#include "include/SW_netCDF_Output.h"
 #include <stdlib.h> // for free
 #endif
 
@@ -1317,17 +1319,12 @@ void SW_OUTDOM_init_ptrs(SW_OUT_DOM *OutDom) {
         }
     }
 
-#if defined(SWNETCDF)
-    ForEachOutKey(key) {
-        OutDom->outputVarInfo[key] = NULL;
-        OutDom->reqOutputVars[key] = NULL;
-        OutDom->units_sw[key] = NULL;
-        OutDom->uconv[key] = NULL;
-    }
-#endif
-
 #ifdef RSOILWAT
     ForEachOutKey(key) { OutDom->outfile[key] = NULL; }
+#endif
+
+#if defined(SWNETCDF)
+    SW_NCOUT_init_ptrs(&OutDom->netCDFOutput);
 #endif
 }
 
@@ -1888,8 +1885,8 @@ void SW_OUTDOM_construct(SW_OUT_DOM *OutDom) {
                 (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_none_text;
 #endif
 #if defined(RSOILWAT) || defined(SWNETCDF)
-            OutDom->pfunc_mem[k] =
-                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_none_outarray;
+            OutDom->pfunc_mem[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
+            ) get_none_outarray_mem;
 #elif defined(STEPWAT)
             OutDom->pfunc_agg[k] =
                 (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
@@ -1905,7 +1902,7 @@ void SW_OUTDOM_construct(SW_OUT_DOM *OutDom) {
 
 void SW_OUT_construct(
     Bool zeroOutStruct,
-    SW_FILE_STATUS *FileStatus,
+    SW_PATH_OUTPUTS *SW_PathOutputs,
     SW_OUT_DOM *OutDom,
     SW_OUT_RUN *OutRun,
     LOG_INFO *LogInfo
@@ -1919,12 +1916,12 @@ void SW_OUT_construct(
 
 #if defined(SW_OUTTEXT)
     ForEachOutPeriod(p) {
-        FileStatus->make_soil[p] = swFALSE;
-        FileStatus->make_regular[p] = swFALSE;
+        SW_PathOutputs->make_soil[p] = swFALSE;
+        SW_PathOutputs->make_regular[p] = swFALSE;
     }
 #else
     /* Silence compiler */
-    (void) FileStatus;
+    (void) SW_PathOutputs;
 #endif
 
 #if defined(SW_OUTARRAY)
@@ -1963,22 +1960,22 @@ void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw) {
 
     ForEachOutKey(k) {
         ForEachOutPeriod(pd) {
-            if (!isnull(sw->FileStatus.ncOutFiles[k][pd])) {
-                for (file = 0; file < sw->FileStatus.numOutFiles; file++) {
-                    if (!isnull(sw->FileStatus.ncOutFiles[k][pd][file])) {
+            if (!isnull(sw->SW_PathOutputs.ncOutFiles[k][pd])) {
+                for (file = 0; file < sw->SW_PathOutputs.numOutFiles; file++) {
+                    if (!isnull(sw->SW_PathOutputs.ncOutFiles[k][pd][file])) {
 
-                        free(sw->FileStatus.ncOutFiles[k][pd][file]);
-                        sw->FileStatus.ncOutFiles[k][pd][file] = NULL;
+                        free(sw->SW_PathOutputs.ncOutFiles[k][pd][file]);
+                        sw->SW_PathOutputs.ncOutFiles[k][pd][file] = NULL;
                     }
                 }
 
-                free((void *) sw->FileStatus.ncOutFiles[k][pd]);
-                sw->FileStatus.ncOutFiles[k][pd] = NULL;
+                free((void *) sw->SW_PathOutputs.ncOutFiles[k][pd]);
+                sw->SW_PathOutputs.ncOutFiles[k][pd] = NULL;
             }
 
-            if (!isnull(sw->FileStatus.ncOutFiles[k][pd])) {
-                free((void *) sw->FileStatus.ncOutFiles[k][pd]);
-                sw->FileStatus.ncOutFiles[k][pd] = NULL;
+            if (!isnull(sw->SW_PathOutputs.ncOutFiles[k][pd])) {
+                free((void *) sw->SW_PathOutputs.ncOutFiles[k][pd]);
+                sw->SW_PathOutputs.ncOutFiles[k][pd] = NULL;
             }
         }
     }
@@ -2681,7 +2678,7 @@ void SW_OUT_setup_output(
         OutDom->nvar_OUT,
         OutDom->nsl_OUT,
         OutDom->npft_OUT,
-        OutDom->iOUToffset
+        OutDom->netCDFOutput.iOUToffset
     );
     (void) LogInfo;
 
@@ -2737,11 +2734,11 @@ int SW_OUT_read_onekey(
     size_t sizeof_msg,
     Bool *VegProd_use_SWA,
     Bool deepdrain,
-    char *InFiles[]
+    char *txtInFiles[]
 ) {
     int res = 0; // return value indicating type of message if any
 
-    char *MyFileName = InFiles[eOutput];
+    char *MyFileName = txtInFiles[eOutput];
     msg[0] = '\0';
 
     // Convert strings to index numbers
@@ -2807,7 +2804,7 @@ int SW_OUT_read_onekey(
             "%s : DEEPSWC cannot produce output if deep drainage is "
             "not simulated (flag not set in %s).",
             MyFileName,
-            InFiles[eSite]
+            txtInFiles[eSite]
         );
         return (LOGWARN);
     }
@@ -2850,11 +2847,11 @@ We have two options to specify time steps:
     dealt with in SOILWAT2
 @param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
-@param[in] InFiles Array of program in/output files
+@param[in] txtInFiles Array of program in/output files
 @param[out] LogInfo Holds information on warnings and errors
  */
 void SW_OUT_read(
-    SW_RUN *sw, SW_OUT_DOM *OutDom, char *InFiles[], LOG_INFO *LogInfo
+    SW_RUN *sw, SW_OUT_DOM *OutDom, char *txtInFiles[], LOG_INFO *LogInfo
 ) {
     /* =================================================== */
     /* read input file for output parameter setup info.
@@ -2900,7 +2897,7 @@ void SW_OUT_read(
     int first;
     int last = -1; /* first doy for output */
 
-    char *MyFileName = InFiles[eOutput];
+    char *MyFileName = txtInFiles[eOutput];
     f = OpenFile(MyFileName, "r", LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -2997,17 +2994,6 @@ void SW_OUT_read(
             goto closeFile;
         }
 
-// For now: rSOILWAT2's function `onGet_SW_OUT` requires that
-// `OutDom->outfile[k]` is allocated here
-#if defined(RSOILWAT)
-        OutDom->outfile[k] = Str_Dup(outfile, LogInfo);
-        if (LogInfo->stopRun) {
-            goto closeFile;
-        }
-#else
-        outfile[0] = '\0';
-#endif
-
         first = sw_strtoi(firstStr, MyFileName, LogInfo);
         if (LogInfo->stopRun) {
             goto closeFile;
@@ -3026,6 +3012,17 @@ void SW_OUT_read(
             goto closeFile;
         }
 
+// For now: rSOILWAT2's function `onGet_SW_OUT` requires that
+// `OutDom->outfile[k]` is allocated here
+#if defined(RSOILWAT)
+        OutDom->outfile[k] = Str_Dup(outfile, LogInfo);
+        if (LogInfo->stopRun) {
+            goto closeFile;
+        }
+#else
+        outfile[0] = '\0';
+#endif
+
         // Fill information into `sw->Output[k]`
         msg_type = SW_OUT_read_onekey(
             OutDom,
@@ -3037,7 +3034,7 @@ void SW_OUT_read(
             sizeof msg,
             &sw->VegProd.use_SWA,
             sw->Site.deepdrain,
-            InFiles
+            txtInFiles
         );
 
         if (msg_type == LOGWARN || msg_type == LOGERROR) {
@@ -3072,8 +3069,8 @@ void SW_OUT_read(
     // Determine for which output periods text output per soil layer or
     // 'regular' is requested:
     find_TXToutputSoilReg_inUse(
-        sw->FileStatus.make_soil,
-        sw->FileStatus.make_regular,
+        sw->SW_PathOutputs.make_soil,
+        sw->SW_PathOutputs.make_regular,
         OutDom->has_sl,
         OutDom->timeSteps,
         OutDom->used_OUTNPERIODS
@@ -3279,16 +3276,16 @@ void SW_OUT_write_today(
     Bool fullBuffer = swFALSE;
 
     char *soilWritePtr[SW_OUTNPERIODS] = {
-        sw->FileStatus.buf_soil[0],
-        sw->FileStatus.buf_soil[1],
-        sw->FileStatus.buf_soil[2],
-        sw->FileStatus.buf_soil[3]
+        sw->SW_PathOutputs.buf_soil[0],
+        sw->SW_PathOutputs.buf_soil[1],
+        sw->SW_PathOutputs.buf_soil[2],
+        sw->SW_PathOutputs.buf_soil[3]
     };
     char *regWritePtr[SW_OUTNPERIODS] = {
-        sw->FileStatus.buf_reg[0],
-        sw->FileStatus.buf_reg[1],
-        sw->FileStatus.buf_reg[2],
-        sw->FileStatus.buf_reg[3]
+        sw->SW_PathOutputs.buf_reg[0],
+        sw->SW_PathOutputs.buf_reg[1],
+        sw->SW_PathOutputs.buf_reg[2],
+        sw->SW_PathOutputs.buf_reg[3]
     };
 #endif
 
@@ -3297,16 +3294,16 @@ void SW_OUT_write_today(
     Bool use_help_SXW;
 
     char *soilAggWritePtr[SW_OUTNPERIODS] = {
-        sw->FileStatus.buf_soil[0],
-        sw->FileStatus.buf_soil[1],
-        sw->FileStatus.buf_soil[2],
-        sw->FileStatus.buf_soil[3]
+        sw->SW_PathOutputs.buf_soil[0],
+        sw->SW_PathOutputs.buf_soil[1],
+        sw->SW_PathOutputs.buf_soil[2],
+        sw->SW_PathOutputs.buf_soil[3]
     };
     char *regAggWritePtr[SW_OUTNPERIODS] = {
-        sw->FileStatus.buf_reg[0],
-        sw->FileStatus.buf_reg[1],
-        sw->FileStatus.buf_reg[2],
-        sw->FileStatus.buf_reg[3]
+        sw->SW_PathOutputs.buf_reg[0],
+        sw->SW_PathOutputs.buf_reg[1],
+        sw->SW_PathOutputs.buf_reg[2],
+        sw->SW_PathOutputs.buf_reg[3]
     };
 #endif
 
@@ -3319,12 +3316,12 @@ void SW_OUT_write_today(
 
     // We don't really need all of these buffers to init every day
     ForEachOutPeriod(p) {
-        sw->FileStatus.buf_reg[p][0] = '\0';
-        sw->FileStatus.buf_soil[p][0] = '\0';
+        sw->SW_PathOutputs.buf_reg[p][0] = '\0';
+        sw->SW_PathOutputs.buf_soil[p][0] = '\0';
 
 #ifdef STEPWAT
-        sw->FileStatus.buf_reg_agg[p][0] = '\0';
-        sw->FileStatus.buf_soil_agg[p][0] = '\0';
+        sw->SW_PathOutputs.buf_reg_agg[p][0] = '\0';
+        sw->SW_PathOutputs.buf_soil_agg[p][0] = '\0';
 #endif
     }
 #else
@@ -3589,13 +3586,13 @@ void SW_OUT_write_today(
         if (OutDom->use_OutPeriod[p] && writeit[p]) {
             get_outstrleader(p, sizeof str_time, &sw->Model, tOffset, str_time);
 
-            if (sw->FileStatus.make_regular[p]) {
+            if (sw->SW_PathOutputs.make_regular[p]) {
                 if (OutDom->print_SW_Output) {
                     fprintRes = fprintf(
-                        sw->FileStatus.fp_reg[p],
+                        sw->SW_PathOutputs.fp_reg[p],
                         "%s%s\n",
                         str_time,
-                        sw->FileStatus.buf_reg[p]
+                        sw->SW_PathOutputs.buf_reg[p]
                     );
 
                     if (fprintRes < 0) {
@@ -3610,7 +3607,7 @@ void SW_OUT_write_today(
                     // STEPWAT2 needs a fflush for yearly output;
                     // other time steps, the soil-layer files, and SOILWAT2 work
                     // fine without it...
-                    if (fflush(sw->FileStatus.fp_reg[p]) == EOF) {
+                    if (fflush(sw->SW_PathOutputs.fp_reg[p]) == EOF) {
                         LogError(
                             LogInfo,
                             LOGERROR,
@@ -3623,10 +3620,10 @@ void SW_OUT_write_today(
 #ifdef STEPWAT
                 if (OutDom->print_IterationSummary) {
                     fprintRes = fprintf(
-                        sw->FileStatus.fp_reg_agg[p],
+                        sw->SW_PathOutputs.fp_reg_agg[p],
                         "%s%s\n",
                         str_time,
-                        sw->FileStatus.buf_reg_agg[p]
+                        sw->SW_PathOutputs.buf_reg_agg[p]
                     );
 
                     if (fprintRes < 0) {
@@ -3642,13 +3639,13 @@ void SW_OUT_write_today(
 #endif
             }
 
-            if (sw->FileStatus.make_soil[p]) {
+            if (sw->SW_PathOutputs.make_soil[p]) {
                 if (OutDom->print_SW_Output) {
                     fprintRes = fprintf(
-                        sw->FileStatus.fp_soil[p],
+                        sw->SW_PathOutputs.fp_soil[p],
                         "%s%s\n",
                         str_time,
-                        sw->FileStatus.buf_soil[p]
+                        sw->SW_PathOutputs.buf_soil[p]
                     );
 
                     if (fprintRes < 0) {
@@ -3664,10 +3661,10 @@ void SW_OUT_write_today(
 #ifdef STEPWAT
                 if (OutDom->print_IterationSummary) {
                     fprintRes = fprintf(
-                        sw->FileStatus.fp_soil_agg[p],
+                        sw->SW_PathOutputs.fp_soil_agg[p],
                         "%s%s\n",
                         str_time,
-                        sw->FileStatus.buf_soil_agg[p]
+                        sw->SW_PathOutputs.buf_soil_agg[p]
                     );
 
                     if (fprintRes < 0) {
@@ -3705,8 +3702,8 @@ void SW_OUT_write_today(
 /**
 @brief create all of the user-specified output files.
 
-@param[in,out] SW_FileStatus Struct of type SW_FILE_STATUS which holds basic
-    information about output files and values
+@param[in,out] SW_PathOutputs Struct of type SW_PATH_OUTPUTS which
+holds basic information about output files and values
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
 @param[out] LogInfo Holds information on warnings and errors
@@ -3715,7 +3712,7 @@ void SW_OUT_write_today(
 after SW_OUT_read() which sets the global variable use_OutPeriod.
 */
 void SW_OUT_create_files(
-    SW_FILE_STATUS *SW_FileStatus, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
+    SW_PATH_OUTPUTS *SW_PathOutputs, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
 ) {
 
 #if defined(SOILWAT)
@@ -3727,17 +3724,17 @@ void SW_OUT_create_files(
 #if defined(SOILWAT) && defined(SW_OUTTEXT)
     SW_OUT_create_textfiles(
         &SW_Domain->OutDom,
-        SW_FileStatus,
+        SW_PathOutputs,
         SW_Domain->nMaxSoilLayers,
-        SW_Domain->PathInfo.InFiles,
+        SW_Domain->SW_PathInputs.txtInFiles,
         LogInfo
     );
 
 #elif defined(SWNETCDF)
-    SW_NC_create_output_files(
-        SW_Domain->netCDFInfo.InFilesNC[vNCdom],
+    SW_NCOUT_create_output_files(
+        SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom],
         SW_Domain->DomainType,
-        SW_Domain->PathInfo.output_prefix,
+        SW_Domain->SW_PathInputs.outputPrefix,
         SW_Domain,
         SW_Domain->OutDom.timeSteps,
         SW_Domain->OutDom.used_OUTNPERIODS,
@@ -3746,17 +3743,17 @@ void SW_OUT_create_files(
         SW_Domain->OutDom.npft_OUT,
         SW_Domain->hasConsistentSoilLayerDepths,
         SW_Domain->depthsAllSoilLayers,
-        SW_Domain->netCDFInfo.strideOutYears,
+        SW_Domain->OutDom.netCDFOutput.strideOutYears,
         SW_Domain->startyr,
         SW_Domain->endyr,
-        SW_Domain->netCDFInfo.baseCalendarYear,
-        &SW_FileStatus->numOutFiles,
-        SW_FileStatus->ncOutFiles,
+        SW_Domain->OutDom.netCDFOutput.baseCalendarYear,
+        &SW_PathOutputs->numOutFiles,
+        SW_PathOutputs->ncOutFiles,
         LogInfo
     );
 
 #else
-    (void) SW_FileStatus;
+    (void) SW_PathOutputs;
     (void) SW_Domain;
     (void) LogInfo;
 #endif
@@ -3767,20 +3764,20 @@ void SW_OUT_create_files(
 
 call this routine at the end of the program run.
 
-@param[in,out] SW_FileStatus Struct of type SW_FILE_STATUS which holds basic
+@param[in,out] SW_PathOutputs Struct of type SW_PATH_OUTPUTS which holds basic
     information about output files and values
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_OUT_close_files(
-    SW_FILE_STATUS *SW_FileStatus, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
+    SW_PATH_OUTPUTS *SW_PathOutputs, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
 
 #if defined(SW_OUTTEXT)
-    SW_OUT_close_textfiles(SW_FileStatus, OutDom, LogInfo);
+    SW_OUT_close_textfiles(SW_PathOutputs, OutDom, LogInfo);
 #else
-    (void) SW_FileStatus;
+    (void) SW_PathOutputs;
     (void) OutDom;
     (void) LogInfo;
 #endif
@@ -3884,7 +3881,7 @@ void echo_all_inputs(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 
     echo_inputs(&sw->Site, &sw->Model);
     echo_VegEstab(
-        sw->Site.width, sw->VegEstab.parms, sw->VegEstab.count, LogInfo
+        sw->Site.soils.width, sw->VegEstab.parms, sw->VegEstab.count, LogInfo
     );
     echo_VegProd(sw->VegProd.veg, sw->VegProd.bare_cov);
     echo_outputs(OutDom, LogInfo);
@@ -3893,17 +3890,17 @@ void echo_all_inputs(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 #if defined(SWNETCDF)
 /**
 @brief Deep copy instances with information in regards to
-netCDF output files stored in SW_FILE_STATUS
+netCDF output files stored in SW_PATH_OUTPUTS
 
-@param[out] dest_files Destination instance of netCDF files (SW_FILE_STATUS)
-@param[in] source_files Source instance of netCDF files (SW_FILE_STATUS)
+@param[out] dest_files Destination instance of netCDF files (SW_PATH_OUTPUTS)
+@param[in] source_files Source instance of netCDF files (SW_PATH_OUTPUTS)
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_FILESTATUS_deepCopy(
-    SW_FILE_STATUS *dest_files,
-    SW_FILE_STATUS *source_files,
+void SW_PATHOUT_deepCopy(
+    SW_PATH_OUTPUTS *dest_files,
+    SW_PATH_OUTPUTS *source_files,
     SW_OUT_DOM *OutDom,
     LOG_INFO *LogInfo
 ) {
@@ -3919,7 +3916,7 @@ void SW_FILESTATUS_deepCopy(
         if (OutDom->nvar_OUT[key] > 0 && OutDom->use[key]) {
             ForEachOutPeriod(pd) {
                 if (OutDom->use_OutPeriod[pd]) {
-                    SW_NC_alloc_files(
+                    SW_NCOUT_alloc_files(
                         &dest_files->ncOutFiles[key][pd], numFiles, LogInfo
                     );
                     if (LogInfo->stopRun) {
@@ -3980,27 +3977,32 @@ void SW_OUTDOM_deepCopy(
         int varNum;
         int attNum;
 
+        SW_NETCDF_OUT *netCDFOut_src = &source->netCDFOutput;
+        SW_NETCDF_OUT *netCDFOut_dest = &dest->netCDFOutput;
+
         if (source->nvar_OUT[k] > 0 && source->use[k]) {
 
-            SW_NC_alloc_outputkey_var_info(dest, k, LogInfo);
+            SW_NCOUT_alloc_outputkey_var_info(dest, k, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
 
-            if (!isnull(source->reqOutputVars[k])) {
+            if (!isnull(netCDFOut_src->reqOutputVars[k])) {
                 for (varNum = 0; varNum < source->nvar_OUT[k]; varNum++) {
-                    dest->reqOutputVars[k][varNum] =
-                        source->reqOutputVars[k][varNum];
+                    netCDFOut_dest->reqOutputVars[k][varNum] =
+                        netCDFOut_src->reqOutputVars[k][varNum];
 
-                    if (dest->reqOutputVars[k][varNum]) {
+                    if (netCDFOut_dest->reqOutputVars[k][varNum]) {
                         for (attNum = 0; attNum < MAX_NATTS; attNum++) {
-                            if (!isnull(source->outputVarInfo[k][varNum][attNum]
-                                )) {
-                                dest->outputVarInfo[k][varNum]
-                                                   [attNum] = Str_Dup(
-                                    source->outputVarInfo[k][varNum][attNum],
-                                    LogInfo
-                                );
+                            if (!isnull(netCDFOut_src->outputVarInfo[k][varNum]
+                                                                    [attNum])) {
+                                netCDFOut_dest
+                                    ->outputVarInfo[k][varNum][attNum] =
+                                    Str_Dup(
+                                        netCDFOut_src
+                                            ->outputVarInfo[k][varNum][attNum],
+                                        LogInfo
+                                    );
                                 if (LogInfo->stopRun) {
                                     return; // Exit function prematurely due to
                                             // error
@@ -4008,20 +4010,22 @@ void SW_OUTDOM_deepCopy(
                             }
                         }
 
-                        dest[k].units_sw[k][varNum] =
-                            Str_Dup(source->units_sw[k][varNum], LogInfo);
+                        netCDFOut_dest->units_sw[k][varNum] = Str_Dup(
+                            netCDFOut_src->units_sw[k][varNum], LogInfo
+                        );
                         if (LogInfo->stopRun) {
-                            return; // Exit function prematurely due to error
+                            return; // Exit function prematurely due
+                                    // to error
                         }
                     }
                 }
             }
 
         } else {
-            dest->reqOutputVars[k] = NULL;
-            dest->outputVarInfo[k] = NULL;
-            dest->units_sw[k] = NULL;
-            dest->uconv[k] = NULL;
+            netCDFOut_dest->reqOutputVars[k] = NULL;
+            netCDFOut_dest->outputVarInfo[k] = NULL;
+            netCDFOut_dest->units_sw[k] = NULL;
+            netCDFOut_dest->uconv[k] = NULL;
         }
 #endif
     }

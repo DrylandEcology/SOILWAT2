@@ -155,7 +155,13 @@ on your side.
 ### Example
   * The source code contains a complete example simulation project in
     `tests/example/`
-  * Modify inputs as desired and run a simulation, e.g.,
+
+  * The inputs comprise the configuration file `files.in` and
+    the content of the `Input/` folder and `Input_nc/` folder if in nc-mode.
+    Inputs are explained in detail
+    [here](doc/additional_pages/SOILWAT2_Inputs.md).
+
+  * Run the example simulation in text-mode, e.g.,
 ```{.sh}
     make bin_run
 ```
@@ -165,15 +171,21 @@ on your side.
     bin/SOILWAT2 -d ./tests/example -f files.in
 ```
 
-  * The inputs comprise the master file `files.in` and the content of the
-    `Input/` folder. They are explained in detail
-    [here](doc/additional_pages/SOILWAT2_Inputs.md).
+  * Run the example simulation in nc-mode, e.g.,
+```{.sh}
+    make CPPFLAGS=-DSWNC bin_run
+```
+    or, equivalently,
+```{.sh}
+    make CPPFLAGS=-DSWNC
+    bin/SOILWAT2 -d ./tests/example -f files.in
+```
+
   * The outputs are written to `Output/` including a logfile that contains
-    warnings and errors. The output files are in `.csv` format and can be
-    opened by a spreadsheet program (e.g., `LibreOffice` or `Excel`) or
-    imported into `R`
-    (e.g., `data <- read.csv("tests/example/Output/sw2_yearly.csv")`).
-    Outputs are explained in detail
+    warnings and errors.
+        * In text-mode, the output files are in `.csv` format
+        * In nc-mode, the output files are in `.nc` format
+  * Outputs are explained in detail
     [here](doc/additional_pages/SOILWAT2_Inputs.md).
 
 <br>
