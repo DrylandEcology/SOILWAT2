@@ -13,6 +13,9 @@
     * `make CPPFLAGS=-DSWTXT` (or as previously `make all`) for txt-based
     * `make CPPFLAGS=-DSWNC` for nc-based SOILWAT2.
 
+* SOILWAT2 now ends gracefully with termination (SIGTERM) and
+  interrupt (SIGINT, commonly CTRL+C on the keyboard) signals.
+
 * nc-based SOILWAT2 can now use a large variety of `"netCDF"` data sources
   as inputs (#389; @N1ckP3rsl3y, @dschlaep).
   The user identifies in `"SW2_netCDF_input_variables.tsv"` which
