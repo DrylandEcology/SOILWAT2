@@ -639,7 +639,12 @@ void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
     SW_WTH_init_run(&sw->Weather);
     // SW_MKV_init_run() not needed
     SW_PET_init_run(&sw->AtmDemand);
-    // SW_SKY_init_run() not needed
+
+    SW_SKY_init_run(&sw->Sky, LogInfo);
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
     SW_SIT_init_run(&sw->VegProd, &sw->Site, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error

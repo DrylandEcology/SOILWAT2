@@ -200,3 +200,45 @@ void SW_SKY_new_year(
         );
     }
 }
+
+/**
+@brief Validate mean monthly climate values
+
+Note: This function does not check r_humidity, cloudcov, and windspeed;
+these variables are checked by checkAllWeather() at a daily time step.
+
+@param[in] SW_Sky Struct of type SW_SKY which describes sky conditions
+    of the simulated site
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void checkSky(SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
+    unsigned int mon;
+
+    for (mon = 0; mon < MAX_MONTHS; mon++) {
+        if (SW_Sky->snow_density[mon] <= 0) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "snowdensity (%.4f) is zero or negative in month %d.",
+                SW_Sky->snow_density[mon],
+                mon + 1
+            );
+            return;
+        }
+
+        if (SW_Sky->n_rain_per_day[mon] <= 0) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "n_rain_per_day (%.4f) is zero or negative in month %d.",
+                SW_Sky->n_rain_per_day[mon],
+                mon + 1
+            );
+            return;
+        }
+    }
+}
+
+void SW_SKY_init_run(SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
+    checkSky(SW_Sky, LogInfo);
+}

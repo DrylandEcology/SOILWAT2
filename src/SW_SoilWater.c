@@ -401,9 +401,9 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
 
     LyrIndex i;
     IntUS k;
-    int debugi[N_WBCHECKS] = {
-        1, 1, 1, 1, 1, 1, 1, 1, 1
-    }; // print output for each check yes/no
+    // debugging with 'debugi': turn messages on/off for each check separately
+    int debugi[N_WBCHECKS] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+    int snowChecks[3];
     char flag[16];
     double Etotal;
     double Etotalsurf;
@@ -422,7 +422,11 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
     double deepDrainage;
     double runoff;
     double runon;
+    double snowfall;
     double snowmelt;
+    double snowpackWater;
+    double snowpackRecently;
+    double snowpackDepth;
     double rain;
     double arriving_water;
     double intercepted;
@@ -493,6 +497,13 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
     rain = sw->Weather.now.rain;
 
     arriving_water = rain + snowmelt + runon;
+
+    // Get snow
+    snowfall = sw->Weather.snow;
+    snowpackDepth = sw->SoilWat.snowdepth;
+    snowpackWater = sw->SoilWat.snowpack[Today];
+    snowpackRecently =
+        sw->SoilWat.snowpack[Today] + sw->SoilWat.snowpack[Yesterday];
 
     // Get state change values
     intercepted = sw->SoilWat.litter_int + int_veg_total;
@@ -755,6 +766,55 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
         }
     }
 
+    // Consistency between snowpack, snowdepth, snowmelt, snowloss
+    if (!sw->SoilWat.is_wbError_init) {
+        sw->SoilWat.wbErrorNames[9] = Str_Dup("Snow consistency", LogInfo);
+
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+    }
+
+    snowChecks[0] = (ZRO(snowpackWater) && ZRO(snowpackDepth)) ||
+                    (snowpackWater > 0 && snowpackDepth > 0);
+    snowChecks[1] = ZRO(snowmelt) ||
+                    (snowmelt > 0 && (snowpackRecently > 0 || snowfall > 0));
+    snowChecks[2] =
+        ZRO(Esnow) || (Esnow > 0 && (snowpackRecently > 0 || snowfall > 0));
+
+    if (!snowChecks[0] || !snowChecks[1] || !snowChecks[2]) {
+        sw->SoilWat.wbError[9]++;
+        if (debugi[9]) {
+            if (!snowChecks[0]) {
+                sw_printf(
+                    "%s: snowpack = %f, snowdepth = %f\n",
+                    flag,
+                    snowpackWater,
+                    snowpackDepth
+                );
+            }
+            if (!snowChecks[1]) {
+                sw_printf(
+                    "%s: snowmelt = %f, snowpack = %f|%f, snowfall = %f\n",
+                    flag,
+                    snowmelt,
+                    snowpackWater,
+                    snowpackRecently,
+                    snowfall
+                );
+            }
+            if (!snowChecks[2]) {
+                sw_printf(
+                    "%s: Esnow = %f, snowpack = %f|%f, snowfall = %f\n",
+                    flag,
+                    Esnow,
+                    snowpackWater,
+                    snowpackRecently,
+                    snowfall
+                );
+            }
+        }
+    }
 
     // Setup only once
     if (!sw->SoilWat.is_wbError_init) {

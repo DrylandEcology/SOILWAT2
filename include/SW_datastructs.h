@@ -927,7 +927,7 @@ typedef struct {
 } SW_SOILWAT_OUTPUTS;
 
 #ifdef SWDEBUG
-#define N_WBCHECKS 9 // number of water balance checks
+#define N_WBCHECKS 10 // number of water balance checks
 #endif
 
 typedef struct {
