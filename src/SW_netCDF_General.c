@@ -1244,7 +1244,9 @@ void SW_NC_create_netCDF_var(
     }
 
     // Do not compress the CRS variables
-    if (deflateLevel > 0 && strcmp(varName, "crs_geogsc") != 0 &&
+    // Run the deflate function even if deflate is 0
+    // to create default chunking when delation is turned on or off
+    if (strcmp(varName, "crs_geogsc") != 0 &&
         strcmp(varName, "crs_projsc") != 0 && varType != NC_STRING) {
 
         if (nc_def_var_deflate(

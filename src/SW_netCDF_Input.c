@@ -2512,7 +2512,6 @@ static void fill_prog_netCDF_vals(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     int domVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCdom];
     int progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprog];
-    long domStatus;
     unsigned long suid;
     unsigned long ncSuid[2];
     unsigned long nSUIDs = SW_Domain->nSUIDs;
@@ -2528,7 +2527,17 @@ static void fill_prog_netCDF_vals(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         (strcmp(SW_Domain->DomainType, "s") == 0) ? start1D : start2D;
     size_t *count =
         (strcmp(SW_Domain->DomainType, "s") == 0) ? count1D : count2D;
+    Bool siteDom = (Bool) (strcmp(SW_Domain->DomainType, "s") == 0);
+    unsigned int subVal;
+    size_t chunkSizes[2] = {1, 1};
+    int storageType;
+    size_t startRead[2] = {0, 0};
+    size_t countRead[2] = {0, 0};
+    size_t numChunkReads = 0;
+    size_t numChunkInYAxis;
+    size_t numChunkInXAxis;
 
+    long *readDomVals = NULL;
     signed char *vals = (signed char *) Mem_Malloc(
         nSUIDs * sizeof(signed char), "fill_prog_netCDF_vals()", LogInfo
     );
@@ -2552,21 +2561,65 @@ static void fill_prog_netCDF_vals(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         goto freeMem;
     }
 
-    for (suid = 0; suid < nSUIDs; suid++) {
+    if (nc_inq_var_chunking(domFileID, domVarID, &storageType, chunkSizes) !=
+        NC_NOERR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not get chunking information on domain variable."
+        );
+        goto freeMem;
+    }
+
+    readDomVals = (long *) Mem_Malloc(
+        sizeof(long) * chunkSizes[0] * chunkSizes[1],
+        "fill_prog_netCDF_vals()",
+        LogInfo
+    );
+    if (LogInfo->stopRun) {
+        goto freeMem;
+    }
+
+    // Calculate how many chunks are held within the entirety of
+    // the vertical (or site) axis for the program's domain
+    countRead[0] = chunkSizes[0];
+    numChunkInYAxis = (siteDom) ? SW_Domain->nDimS : SW_Domain->nDimY;
+    numChunkInYAxis /= chunkSizes[0];
+    if (!siteDom) {
+        countRead[1] = chunkSizes[1];
+        numChunkInXAxis = SW_Domain->nDimX / chunkSizes[1];
+    }
+
+    for (suid = 0; suid < nSUIDs;) {
         SW_DOM_calc_ncSuid(SW_Domain, suid, ncSuid);
 
-        if (nc_get_var1_long(domFileID, domVarID, ncSuid, &domStatus) !=
-            NC_NOERR) {
+        // Set the new chunks start position(s) for the next read
+        startRead[0] = (numChunkReads / numChunkInYAxis) * chunkSizes[0];
+        if (!siteDom) {
+            startRead[1] = (numChunkReads % numChunkInXAxis) * chunkSizes[1];
+        }
+
+        if (nc_get_vara_long(
+                domFileID, domVarID, startRead, countRead, readDomVals
+            ) != NC_NOERR) {
             LogError(
                 LogInfo,
                 LOGERROR,
-                "Could not read domain status for SUID #%lu.",
-                suid
+                "Could not read domain status for SUIDs #%lu - #%lu.",
+                suid,
+                suid + (chunkSizes[0] * chunkSizes[1])
             );
-            goto freeMem; // Exit function prematurely due to error
         }
 
-        vals[suid] = (domStatus == fillVal) ? NC_FILL_BYTE : PRGRSS_READY;
+        for (subVal = 0;
+             subVal < chunkSizes[0] * chunkSizes[1] && suid < nSUIDs;
+             subVal++) {
+            vals[suid] =
+                (readDomVals[subVal] == fillVal) ? NC_FILL_BYTE : PRGRSS_READY;
+            suid++;
+        }
+
+        numChunkReads++;
     }
 
     SW_NC_write_vals(
@@ -2576,7 +2629,13 @@ static void fill_prog_netCDF_vals(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
 // Free allocated memory
 freeMem:
-    free(vals);
+    if (!isnull(vals)) {
+        free(vals);
+    }
+
+    if (!isnull(readDomVals)) {
+        free(readDomVals);
+    }
 }
 
 /*
