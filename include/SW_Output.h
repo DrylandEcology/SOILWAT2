@@ -220,7 +220,11 @@ int SW_OUT_read_onekey(
 );
 
 void SW_OUT_read(
-    SW_RUN *sw, SW_OUT_DOM *OutDom, char *txtInFiles[], LOG_INFO *LogInfo
+    SW_RUN *sw,
+    SW_OUT_DOM *OutDom,
+    char *txtInFiles[],
+    char outDir[],
+    LOG_INFO *LogInfo
 );
 
 void SW_OUT_sum_today(

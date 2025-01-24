@@ -39,7 +39,6 @@ typedef enum {
     eDomain,
     /* Description of a model run */
     eModel,
-    eLog,
     /* Description of simulated site */
     eSite,
     eLayers,
@@ -58,6 +57,7 @@ typedef enum {
     eSoilwat,
     /* Simulation outputs */
     eOutput,
+    eLog,
     eOutputDaily,
     eOutputWeekly,
     eOutputMonthly,
@@ -84,7 +84,7 @@ void SW_F_construct(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo);
 
 void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs);
 
-void SW_CSV_F_INIT(const char *s, LOG_INFO *LogInfo);
+void SW_F_CleanOutDir(char *outDir, LOG_INFO *LogInfo);
 
 
 #ifdef __cplusplus

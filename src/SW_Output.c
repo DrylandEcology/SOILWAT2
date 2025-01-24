@@ -2848,10 +2848,16 @@ We have two options to specify time steps:
 @param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
 @param[in] txtInFiles Array of program in/output files
+@param[in,out] outDir Directory output files will be written to;
+return an updated name to this directory after reading output input file
 @param[out] LogInfo Holds information on warnings and errors
  */
 void SW_OUT_read(
-    SW_RUN *sw, SW_OUT_DOM *OutDom, char *txtInFiles[], LOG_INFO *LogInfo
+    SW_RUN *sw,
+    SW_OUT_DOM *OutDom,
+    char *txtInFiles[],
+    char outDir[],
+    LOG_INFO *LogInfo
 ) {
     /* =================================================== */
     /* read input file for output parameter setup info.
@@ -2896,6 +2902,11 @@ void SW_OUT_read(
     char inbuf[MAX_FILENAMESIZE];
     int first;
     int last = -1; /* first doy for output */
+    const int numReadInKeys = 28;
+    const int outDirLineNo = numReadInKeys + 2;
+    char relOutFileName[MAX_FILENAMESIZE] = {'\0'};
+    int resSNP;
+    int outTxtIndex;
 
     char *MyFileName = txtInFiles[eOutput];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -2908,156 +2919,199 @@ void SW_OUT_read(
     // period can be specified
     *used_OUTNPERIODS = 1;
 
-
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
         itemno++; /* note: extra lines will cause an error */
-
-        x = sscanf(
-            inbuf,
-            "%s %s %s %3s %3s %s",
-            keyname,
-            sumtype,
-            period,
-            firstStr,
-            lastStr,
-            outfile
-        );
-
-        // Check whether we have read in `TIMESTEP`, `OUTSEP`, or one of the
-        // 'key' lines
-        if (Str_CompareI(keyname, (char *) "TIMESTEP") == 0) {
-            // condition to read in the TIMESTEP line in outsetup.in
-            // need to rescan the line because you are looking for all strings,
-            // unlike the original scan
-
-            // maximum number of possible timeStep is SW_OUTNPERIODS
-            *used_OUTNPERIODS = sscanf(
+        if (itemno <= numReadInKeys + 1) {
+            x = sscanf(
                 inbuf,
-                "%9s %9s %9s %9s %9s",
+                "%s %s %s %3s %3s %s",
                 keyname,
-                timeStep[0],
-                timeStep[1],
-                timeStep[2],
-                timeStep[3]
+                sumtype,
+                period,
+                firstStr,
+                lastStr,
+                outfile
             );
 
-            // decrement the count to make sure to not count keyname in the
-            // number of periods
-            (*used_OUTNPERIODS)--;
+            // Check whether we have read in `TIMESTEP`, `OUTSEP`, or one of the
+            // 'key' lines
+            if (Str_CompareI(keyname, (char *) "TIMESTEP") == 0) {
+                // condition to read in the TIMESTEP line in outsetup.in
+                // need to rescan the line because you are looking for all
+                // strings, unlike the original scan
 
-            // make sure that `TIMESTEP` line did contain time periods;
-            // otherwise, use values from the `period` column
-            if (*used_OUTNPERIODS > 0) {
-                useTimeStep = swTRUE;
+                // maximum number of possible timeStep is SW_OUTNPERIODS
+                *used_OUTNPERIODS = sscanf(
+                    inbuf,
+                    "%9s %9s %9s %9s %9s",
+                    keyname,
+                    timeStep[0],
+                    timeStep[1],
+                    timeStep[2],
+                    timeStep[3]
+                );
 
-                if (*used_OUTNPERIODS > SW_OUTNPERIODS) {
-                    LogError(
-                        LogInfo,
-                        LOGERROR,
-                        "SW_OUT_read: used_OUTNPERIODS = %d > "
-                        "SW_OUTNPERIODS = %d which is illegal.\n",
-                        *used_OUTNPERIODS,
-                        SW_OUTNPERIODS
-                    );
+                // decrement the count to make sure to not count keyname in the
+                // number of periods
+                (*used_OUTNPERIODS)--;
+
+                // make sure that `TIMESTEP` line did contain time periods;
+                // otherwise, use values from the `period` column
+                if (*used_OUTNPERIODS > 0) {
+                    useTimeStep = swTRUE;
+
+                    if (*used_OUTNPERIODS > SW_OUTNPERIODS) {
+                        LogError(
+                            LogInfo,
+                            LOGERROR,
+                            "SW_OUT_read: used_OUTNPERIODS = %d > "
+                            "SW_OUTNPERIODS = %d which is illegal.\n",
+                            *used_OUTNPERIODS,
+                            SW_OUTNPERIODS
+                        );
+                        goto closeFile;
+                    }
+                }
+
+                continue; // read next line of `outsetup.in`
+            }
+
+            if (Str_CompareI(keyname, (char *) "OUTSEP") == 0) {
+                // Notify the user that this functionality has been removed
+                LogError(
+                    LogInfo,
+                    LOGWARN,
+                    "`outsetup.in`: The functionality to specify a separation "
+                    "character in output files has been removed. Only CSV "
+                    "files will be created. It is recommended to "
+                    "remove the \'OUTSEP\' line from your file."
+                );
+
+                continue; // read next line of `outsetup.in`
+            }
+
+            // we have read a line that specifies an output key/type
+            // make sure that we got enough input
+            if (x < 6) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "%s : Insufficient input for key %s item %d.",
+                    MyFileName,
+                    keyname,
+                    itemno
+                );
+                goto closeFile;
+            }
+
+            first = sw_strtoi(firstStr, MyFileName, LogInfo);
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
+
+            if (Str_CompareI(lastStr, (char *) "END") != 0) {
+                last = sw_strtoi(lastStr, MyFileName, LogInfo);
+                if (LogInfo->stopRun) {
                     goto closeFile;
                 }
             }
 
-            continue; // read next line of `outsetup.in`
-        }
-
-        if (Str_CompareI(keyname, (char *) "OUTSEP") == 0) {
-            // Notify the user that this functionality has been removed
-            LogError(
-                LogInfo,
-                LOGWARN,
-                "`outsetup.in`: The functionality to specify a separation "
-                "character in output files has been removed. Only CSV "
-                "files will be created. It is recommended to "
-                "remove the \'OUTSEP\' line from your file."
-            );
-
-            continue; // read next line of `outsetup.in`
-        }
-
-        // we have read a line that specifies an output key/type
-        // make sure that we got enough input
-        if (x < 6) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "%s : Insufficient input for key %s item %d.",
-                MyFileName,
-                keyname,
-                itemno
-            );
-            goto closeFile;
-        }
-
-        first = sw_strtoi(firstStr, MyFileName, LogInfo);
-        if (LogInfo->stopRun) {
-            goto closeFile;
-        }
-
-        if (Str_CompareI(lastStr, (char *) "END") != 0) {
-            last = sw_strtoi(lastStr, MyFileName, LogInfo);
+            // Convert strings to index numbers
+            k = str2key(Str_ToUpper(keyname, upkey), LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
-        }
-
-        // Convert strings to index numbers
-        k = str2key(Str_ToUpper(keyname, upkey), LogInfo);
-        if (LogInfo->stopRun) {
-            goto closeFile;
-        }
 
 // For now: rSOILWAT2's function `onGet_SW_OUT` requires that
 // `OutDom->outfile[k]` is allocated here
 #if defined(RSOILWAT)
-        OutDom->outfile[k] = Str_Dup(outfile, LogInfo);
-        if (LogInfo->stopRun) {
-            goto closeFile;
-        }
-#else
-        outfile[0] = '\0';
-#endif
-
-        // Fill information into `sw->Output[k]`
-        msg_type = SW_OUT_read_onekey(
-            OutDom,
-            k,
-            str2stype(Str_ToUpper(sumtype, upsum), LogInfo),
-            first,
-            (Str_CompareI(lastStr, (char *) "END") == 0) ? 366 : last,
-            msg,
-            sizeof msg,
-            &sw->VegProd.use_SWA,
-            sw->Site.deepdrain,
-            txtInFiles
-        );
-
-        if (msg_type == LOGWARN || msg_type == LOGERROR) {
-            LogError(LogInfo, msg_type, "%s", msg);
-
-            if (msg_type == LOGERROR) {
+            OutDom->outfile[k] = Str_Dup(outfile, LogInfo);
+            if (LogInfo->stopRun) {
                 goto closeFile;
             }
-        }
+#else
+            outfile[0] = '\0';
+#endif
 
-        // Specify which output time periods are requested for this output
-        // key/type
-        if (OutDom->use[k]) {
-            if (useTimeStep) {
-                // `timeStep` was read in earlier on the `TIMESTEP` line; ignore
-                // `period`
-                for (i = 0; i < *used_OUTNPERIODS; i++) {
-                    OutDom->timeSteps[k][i] =
-                        str2period(Str_ToUpper(timeStep[i], ext));
+            // Fill information into `sw->Output[k]`
+            msg_type = SW_OUT_read_onekey(
+                OutDom,
+                k,
+                str2stype(Str_ToUpper(sumtype, upsum), LogInfo),
+                first,
+                (Str_CompareI(lastStr, (char *) "END") == 0) ? 366 : last,
+                msg,
+                sizeof msg,
+                &sw->VegProd.use_SWA,
+                sw->Site.deepdrain,
+                txtInFiles
+            );
+
+            if (msg_type == LOGWARN || msg_type == LOGERROR) {
+                LogError(LogInfo, msg_type, "%s", msg);
+
+                if (msg_type == LOGERROR) {
+                    goto closeFile;
                 }
+            }
 
+            // Specify which output time periods are requested for this output
+            // key/type
+            if (OutDom->use[k]) {
+                if (useTimeStep) {
+                    // `timeStep` was read in earlier on the `TIMESTEP` line;
+                    // ignore `period`
+                    for (i = 0; i < *used_OUTNPERIODS; i++) {
+                        OutDom->timeSteps[k][i] =
+                            str2period(Str_ToUpper(timeStep[i], ext));
+                    }
+
+                } else {
+                    OutDom->timeSteps[k][0] =
+                        str2period(Str_ToUpper(period, ext));
+                }
+            }
+        } else { // Read output file names
+            if (itemno == outDirLineNo) {
+                resSNP = snprintf(outDir, FILENAME_MAX, "%s", inbuf);
+                if (resSNP < 0 || (unsigned) resSNP >= FILENAME_MAX) {
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "output path name is too long: '%s'.",
+                        inbuf
+                    );
+                }
             } else {
-                OutDom->timeSteps[k][0] = str2period(Str_ToUpper(period, ext));
+                if (!isnull(outDir)) {
+                    resSNP = snprintf(
+                        relOutFileName,
+                        sizeof relOutFileName,
+                        "%s%s",
+                        outDir,
+                        inbuf
+                    );
+                    if (resSNP < 0 ||
+                        (unsigned) resSNP >= sizeof relOutFileName) {
+                        LogError(
+                            LogInfo,
+                            LOGERROR,
+                            "Output filename is too long: <output dir> + '%s'. "
+                            "The output directory is automatically prepended "
+                            "to the filename so the file is relative to it.",
+                            inbuf
+                        );
+                    }
+                    if (LogInfo->stopRun) {
+                        return;
+                    }
+
+                    outTxtIndex = SW_NINFILES + itemno - outDirLineNo - 1;
+                    txtInFiles[outTxtIndex] = Str_Dup(relOutFileName, LogInfo);
+                }
+            }
+            if (LogInfo->stopRun) {
+                return;
             }
         }
     } // end of while-loop
@@ -3081,6 +3135,26 @@ void SW_OUT_read(
     // Determine number of used years/months/weeks/days in simulation period
     SW_OUT_set_nrow(&sw->Model, OutDom->use_OutPeriod, OutDom->nrow_OUT);
 #endif
+
+    if (DirExists(outDir)) {
+        SW_F_CleanOutDir(outDir, LogInfo);
+    } else {
+        MkDir(outDir, LogInfo);
+    }
+    if (LogInfo->stopRun) {
+        goto closeFile;
+    }
+
+#ifdef SOILWAT
+    if (0 == strcmp(txtInFiles[eLog], "stdout")) {
+        LogInfo->logfp = stdout;
+    } else if (0 == strcmp(txtInFiles[eLog], "stderr")) {
+        LogInfo->logfp = stderr;
+    } else {
+        LogInfo->logfp = OpenFile(txtInFiles[eLog], "w", LogInfo);
+    }
+#endif
+
 
 closeFile: { CloseFile(&f, LogInfo); }
 }

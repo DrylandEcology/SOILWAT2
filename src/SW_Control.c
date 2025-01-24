@@ -1076,7 +1076,13 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_OUT_read(sw, &SW_Domain->OutDom, SW_PathInputs->txtInFiles, LogInfo);
+    SW_OUT_read(
+        sw,
+        &SW_Domain->OutDom,
+        SW_PathInputs->txtInFiles,
+        SW_PathInputs->outputPrefix,
+        LogInfo
+    );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }

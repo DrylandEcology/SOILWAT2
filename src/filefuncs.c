@@ -62,7 +62,9 @@ static void freeGetfilesEarly(char **flist, int nfound, DIR *dir, char *fname) {
     }
 }
 
-static char **getfiles(const char *fspec, int *nfound, LOG_INFO *LogInfo) {
+static char **getfiles(
+    const char *fspec, int *nfound, Bool clearDir, LOG_INFO *LogInfo
+) {
     /* return a list of files described by fspec
      * fspec is as described in RemoveFiles(),
      * **flist is a dynamic char array containing pointers to the
@@ -116,12 +118,25 @@ static char **getfiles(const char *fspec, int *nfound, LOG_INFO *LogInfo) {
 
     while ((ent = readdir(dir)) != NULL) {
         match = swTRUE;
-        if (fn1) {
-            match = (0 == strncmp(ent->d_name, fn1, len1)) ? swTRUE : swFALSE;
-        }
-        if (match && fn2) {
-            p2 = ent->d_name + (strlen(ent->d_name) - len2);
-            match = (0 == strcmp(fn2, p2)) ? swTRUE : swFALSE;
+
+        // When clearing the directory, make sure we don't include
+        // previous directories ('.' and '..')
+        if (!clearDir || strcmp(ent->d_name, ".") != 0 ||
+            strcmp(ent->d_name, "..") != 0) {
+            if (fn1) {
+#if defined(STEPWAT)
+                match = (Bool) (0 == strncmp(ent->d_name, fn1, len1));
+#else
+                match = (Bool) (!isnull(strstr(ent->d_name, fname)) &&
+                                strcmp(ent->d_name, ".") != 0 &&
+                                strcmp(ent->d_name, "..") != 0);
+                (void) len1;
+#endif
+            }
+            if (match && fn2) {
+                p2 = ent->d_name + (strlen(ent->d_name) - len2);
+                match = (Bool) (0 == strcmp(fn2, p2));
+            }
         }
 
         if (match) {
@@ -656,7 +671,7 @@ freeMem:
 #undef mkdir
 
 /**************************************************************/
-Bool RemoveFiles(const char *fspec, LOG_INFO *LogInfo) {
+Bool RemoveFiles(const char *fspec, Bool clearDir, LOG_INFO *LogInfo) {
     /* delete files matching fspec. ASSUMES terminal element
      *   describes files, ie, is not a directory.
      * fspec may contain leading path (eg, here/and/now/files)
@@ -676,20 +691,21 @@ Bool RemoveFiles(const char *fspec, LOG_INFO *LogInfo) {
     int nfiles;
     int result = swTRUE;
     size_t dlen;
-    size_t writeSize = FILENAME_MAX;
+    size_t writeSize;
     Bool bufferFull = swFALSE;
 
     if (fspec == NULL) {
         return swTRUE;
     }
 
-    flist = getfiles(fspec, &nfiles, LogInfo);
+    flist = getfiles(fspec, &nfiles, clearDir, LogInfo);
 
     if (!isnull(flist)) {
         DirName(fspec, fname); // Transfer `fspec` into `fname`
         dlen = strlen(fname);
         for (i = 0; i < nfiles; i++) {
             fNamePlusDLen = fname + dlen;
+            writeSize = FILENAME_MAX - sizeof dlen;
             bufferFull = sw_memccpy_inc(
                 (void **) &fNamePlusDLen,
                 endFnamePtr,

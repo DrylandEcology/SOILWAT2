@@ -51,45 +51,36 @@
 /* --------------------------------------------------- */
 
 /**
-@brief Removes old output and/or create the output directories if needed.
+@brief Removes all *.csv files from the specified directory.
 
-@param *s Name of the first file to read for filenames, or NULL. If NULL, then
-    read from DFLT_FIRSTFILE or whichever filename was set previously.
+@param[in] outDir Name of the output directory to clean
 @param[out] LogInfo Holds information on warnings and errors
 
 @sideeffect *s Updated name of the first file to read for filenames, or NULL.
 If NULL, then read from DFLT_FIRSTFILE or whichever filename was set previously.
 */
-void SW_CSV_F_INIT(const char *s, LOG_INFO *LogInfo) {
+void SW_F_CleanOutDir(char *outDir, LOG_INFO *LogInfo) {
     /* AKT 08/28/2016
      *  remove old output and/or create the output directories if needed */
     /* borrow inbuf for filenames */
 
-    char inbuf[MAX_FILENAMESIZE];
-    char dirString[FILENAME_MAX];
-    char *writePtr = inbuf;
-    char *endInbuf = inbuf + sizeof inbuf - 1;
-    Bool fullBuffer = swFALSE;
-    size_t writeSize = sizeof inbuf;
+    char inbuf[FILENAME_MAX] = {'\0'};
+    Bool clearDir = swTRUE;
 
-    DirName(s, dirString);
+#if defined(SWNETCDF)
+    clearDir = swFALSE;
+    (void) snprintf(inbuf, FILENAME_MAX, "%s.csv", outDir);
+#else
+    (void) snprintf(inbuf, FILENAME_MAX, "%s", outDir);
+#endif
 
-    if (DirExists(dirString)) {
-        fullBuffer = sw_memccpy_inc(
-            (void **) &writePtr, endInbuf, (void *) s, '\0', &writeSize
+    if (!RemoveFiles(inbuf, clearDir, LogInfo)) {
+        LogError(
+            LogInfo,
+            LOGWARN,
+            "Couldn't remove CSV files the directory '%s'.\n",
+            outDir
         );
-        if (fullBuffer) {
-            reportFullBuffer(LOGERROR, LogInfo);
-            return;
-        }
-
-        if (!RemoveFiles(inbuf, LogInfo)) {
-            LogError(
-                LogInfo, LOGWARN, "Can't remove old csv output file: %s\n", s
-            );
-        }
-    } else {
-        MkDir(dirString, LogInfo);
     }
 }
 
@@ -141,7 +132,7 @@ void SW_F_read(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
 #endif
 
         switch (lineno) {
-        case 10:
+        case 9:
             resSNP = snprintf(
                 SW_PathInputs->txtWeatherPrefix,
                 sizeof SW_PathInputs->txtWeatherPrefix,
@@ -159,108 +150,8 @@ void SW_F_read(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
                 goto closeFile;
             }
             break;
-        case 18:
-            resSNP = snprintf(
-                SW_PathInputs->outputPrefix,
-                sizeof SW_PathInputs->outputPrefix,
-                "%s",
-                inbuf
-            );
-            if (resSNP < 0 ||
-                (unsigned) resSNP >= (sizeof SW_PathInputs->outputPrefix)) {
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "output path name is too long: '%s'.",
-                    inbuf
-                );
-                goto closeFile;
-            }
-            break;
-        case 20:
-            SW_PathInputs->txtInFiles[eOutputDaily] = Str_Dup(inbuf, LogInfo);
-            if (LogInfo->stopRun) {
-                goto closeFile;
-            }
-            ++fileno;
-            SW_CSV_F_INIT(SW_PathInputs->txtInFiles[eOutputDaily], LogInfo);
-            break;
-        case 21:
-            SW_PathInputs->txtInFiles[eOutputWeekly] = Str_Dup(inbuf, LogInfo);
-            if (LogInfo->stopRun) {
-                goto closeFile;
-            }
-            ++fileno;
-            SW_CSV_F_INIT(SW_PathInputs->txtInFiles[eOutputWeekly], LogInfo);
-            // printf("filename: %s \n",txtInFiles[eOutputWeekly]);
-            break;
-        case 22:
-            SW_PathInputs->txtInFiles[eOutputMonthly] = Str_Dup(inbuf, LogInfo);
-            if (LogInfo->stopRun) {
-                goto closeFile;
-            }
-            ++fileno;
-            SW_CSV_F_INIT(SW_PathInputs->txtInFiles[eOutputMonthly], LogInfo);
-            // printf("filename: %s \n",txtInFiles[eOutputMonthly]);
-            break;
-        case 23:
-            SW_PathInputs->txtInFiles[eOutputYearly] = Str_Dup(inbuf, LogInfo);
-            if (LogInfo->stopRun) {
-                goto closeFile;
-            }
-            ++fileno;
-            SW_CSV_F_INIT(SW_PathInputs->txtInFiles[eOutputYearly], LogInfo);
-            break;
-        case 24:
-            SW_PathInputs->txtInFiles[eOutputDaily_soil] =
-                Str_Dup(inbuf, LogInfo);
-            if (LogInfo->stopRun) {
-                goto closeFile;
-            }
-            ++fileno;
-            SW_CSV_F_INIT(
-                SW_PathInputs->txtInFiles[eOutputDaily_soil], LogInfo
-            );
-            // printf("filename: %s \n",txtInFiles[eOutputDaily]);
-            break;
-        case 25:
-            SW_PathInputs->txtInFiles[eOutputWeekly_soil] =
-                Str_Dup(inbuf, LogInfo);
-            if (LogInfo->stopRun) {
-                goto closeFile;
-            }
-            ++fileno;
-            SW_CSV_F_INIT(
-                SW_PathInputs->txtInFiles[eOutputWeekly_soil], LogInfo
-            );
-            // printf("filename: %s \n",txtInFiles[eOutputWeekly]);
-            break;
-        case 26:
-            SW_PathInputs->txtInFiles[eOutputMonthly_soil] =
-                Str_Dup(inbuf, LogInfo);
-            if (LogInfo->stopRun) {
-                goto closeFile;
-            }
-            ++fileno;
-            SW_CSV_F_INIT(
-                SW_PathInputs->txtInFiles[eOutputMonthly_soil], LogInfo
-            );
-            // printf("filename: %s \n",txtInFiles[eOutputMonthly]);
-            break;
-        case 27:
-            SW_PathInputs->txtInFiles[eOutputYearly_soil] =
-                Str_Dup(inbuf, LogInfo);
-            if (LogInfo->stopRun) {
-                goto closeFile;
-            }
-            ++fileno;
-            SW_CSV_F_INIT(
-                SW_PathInputs->txtInFiles[eOutputYearly_soil], LogInfo
-            );
-            break;
-
         default:
-            if (++fileno == SW_NFILES) {
+            if (++fileno == SW_NINFILES) {
                 break;
             }
 
@@ -284,38 +175,15 @@ void SW_F_read(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
             }
         }
 
-        // Check if something went wrong in `SW_CSV_F_INIT()`
-        if (LogInfo->stopRun) {
-            goto closeFile;
-        }
-
         lineno++;
     }
 
-    if (fileno < eEndFile - 1) {
+    if (fileno < SW_NINFILES - 1) {
         LogError(
             LogInfo, LOGERROR, "Too few files (%d) in %s", fileno, MyFileName
         );
         goto closeFile;
     }
-
-    if (!DirExists(SW_PathInputs->outputPrefix)) {
-        MkDir(SW_PathInputs->outputPrefix, LogInfo);
-        if (LogInfo->stopRun) {
-            goto closeFile;
-        }
-    }
-
-#ifdef SOILWAT
-    if (0 == strcmp(SW_PathInputs->txtInFiles[eLog], "stdout")) {
-        LogInfo->logfp = stdout;
-    } else if (0 == strcmp(SW_PathInputs->txtInFiles[eLog], "stderr")) {
-        LogInfo->logfp = stderr;
-    } else {
-        LogInfo->logfp =
-            OpenFile(SW_PathInputs->txtInFiles[eLog], "w", LogInfo);
-    }
-#endif
 
 closeFile: { CloseFile(&f, LogInfo); }
 }

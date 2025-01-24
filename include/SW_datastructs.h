@@ -27,8 +27,10 @@
 #define SW_OUTTEXT
 #endif
 
-#define SW_NFILES 27 // For `txtInFiles`
-#define SW_NVARDOM 2 // For `InFilesNC`
+#define SW_NINFILES 18                       // For input `txtInFiles`
+#define SW_NOUTFILES 9                       // For output `txtInFiles`
+#define SW_NFILES SW_NINFILES + SW_NOUTFILES // For `txtInFiles`
+#define SW_NVARDOM 2                         // For `InFilesNC`
 
 /* KD-tree related defines */
 #define KD_NDIMS 2    /* Number of dimensions the nodes will contain */
