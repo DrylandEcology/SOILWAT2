@@ -65,7 +65,11 @@ cat(
   " on example simulation ...\n",
   sep = ""
 )
-swr <- rSOILWAT2::sw_exec(rSOILWAT2::sw_exampleData)
+
+# Run rSOILWAT2 with inputs from SOILWAT2/tests/example
+# (instead of rSOILWAT2::sw_exampleData) because
+# rSOILWAT2 turns off "ESTABL" by default (SOILWAT2 default: on)
+swr <- rSOILWAT2::sw_exec(dir = dir_example)
 
 
 #--- . ------
@@ -384,8 +388,36 @@ has_out <- apply(
   function(x) all(!vapply(x, is.null, FUN.VALUE = NA))
 )
 
+has_out2 <- apply(
+  diffs,
+  MARGIN = 1L:2L,
+  function(xt) {
+    if (length(dim(xt[[1L]])) == 2L) {
+      ids <- apply(xt[[1L]], 1L, anyNA)
+      if (any(ids)) {
+        unique(xt[[1L]][ids, c("diff", "key")])
+      }
+    }
+  }
+)
+
+has_out3 <- if (!is.null(has_out2)) {
+  tmp <- unique(do.call(rbind, args = has_out2))
+  tapply(
+    tmp[["diff"]], INDEX = tmp[["key"]], FUN = function(x) toString(x)
+  )
+}
+
+
 cat("* Output keys with output:", toString(names(has_out)[has_out]), "\n")
 cat("* Output keys without output:", toString(names(has_out)[!has_out]), "\n")
+if (!is.null(has_out3)) {
+  cat(
+    "* Output keys without output for certain comparisons:",
+    paste(paste(names(has_out3), has_out3, sep = ": "), collapse = "; "),
+    "\n"
+  )
+}
 
 
 
@@ -397,7 +429,8 @@ if (any(has_out)) {
     ddiffs <- do.call(rbind, args = diffs[, pd])
 
     tol <- 1e-6 # sqrt(.Machine[["double.eps"]])
-    idsgt0 <- abs(ddiffs[, "X0."]) > tol | abs(ddiffs[, "X100."]) > tol
+    idsgt0 <- which(abs(ddiffs[, "X0."]) > tol | abs(ddiffs[, "X100."]) > tol)
+    idsgt0 <- na.omit(idsgt0)
 
     nt <- table(
       ddiffs[idsgt0, "diff"],
@@ -435,7 +468,7 @@ if (any(has_out)) {
   if (ndiffs > 0L) {
     cat("* Failure: relevant differences in output.\n")
   } else {
-    cat("* Success: no differences in output.\n")
+    cat("* Success: no differences in available output.\n")
   }
 
 } else {
