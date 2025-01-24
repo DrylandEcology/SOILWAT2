@@ -987,14 +987,14 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
   #------ . ------
   #--- * inClimate ------
-  nDigsClim <- 2L
+  nDigsClim <- 3L
   dir_climate <- file.path(dir_testrun_swinnc, "inClimate")
   dir.create(dir_climate, recursive = TRUE, showWarnings = FALSE)
 
   fname_climate <- file.path(dir_climate, "monthlyClimate.nc")
 
   if (!file.exists(fname_climate)) {
-    Cloud <- round(swin@cloud@Cloud, digits = 2L)
+    Cloud <- swin@cloud@Cloud
 
     copyInputTemplateNC(
       fname_climate,
