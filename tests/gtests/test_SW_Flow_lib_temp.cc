@@ -241,7 +241,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
     // *****  Test when nlyrs = 1  ***** //
     unsigned int i = 0;
     nlyrs = 1;
-    double width[] = {20};
+    const double width[] = {20};
     double sTempInit[] = {1};
     double bDensity[] = {RandNorm(1., 0.5, &STInit_rng)};
     double fc[] = {RandNorm(1.5, 0.5, &STInit_rng)};
@@ -294,8 +294,8 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     /// generate inputs using a for loop
     nlyrs = MAX_LAYERS;
-    double width2[] = {5,  5,  5,  10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
-                       10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
+    const double width2[] = {5,  5,  5,  10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+                             10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
     double sTempInit2[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3,
                            3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
     double *bDensity2 = new double[nlyrs];
@@ -379,8 +379,8 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInitDeathTest) {
     unsigned int i = 0;
     Bool ptr_stError = swFALSE;
     nlyrs = MAX_LAYERS;
-    double width2[] = {5,  5,  5,  10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
-                       10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
+    const double width2[] = {5,  5,  5,  10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+                             10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
     double sTempInit2[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3,
                            3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
     double *bDensity2 = new double[nlyrs];
@@ -462,7 +462,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
     unsigned int i = 0;
     nlyrs = 1;
     double tmp;
-    double width[] = {20};
+    const double width[] = {20};
     double sTempInit[] = {1};
     tmp = RandNorm(1.5, 0.5, &SLIF_rng);
     double bDensity[] = {fmax(tmp, 0.1)};
@@ -541,8 +541,8 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     /// generate inputs using a for loop
     nlyrs = MAX_LAYERS;
-    double width2[] = {5,  5,  5,  10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
-                       10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
+    const double width2[] = {5,  5,  5,  10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+                             10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
     double sTempInit2[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3,
                            3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
     double *bDensity2 = new double[nlyrs];
@@ -645,7 +645,7 @@ TEST(SWFlowTempTest, SWFlowTempSetFrozenUnfrozen) {
     double meanTempSoil[] = {-5};
     double swc[] = {1.5};
     double swc_sat[] = {1.8};
-    double width[] = {5};
+    const double width[] = {5};
 
     set_frozen_unfrozen(nlyrs, meanTempSoil, swc, swc_sat, width, lyrFrozen);
 
@@ -664,8 +664,8 @@ TEST(SWFlowTempTest, SWFlowTempSetFrozenUnfrozen) {
 
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     nlyrs = MAX_LAYERS;
-    double width2[] = {5,  5,  5,  10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
-                       10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
+    const double width2[] = {5,  5,  5,  10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+                             10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
     double *sTemp3 = new double[nlyrs];
     double *sTemp4 = new double[nlyrs];
     double *swc2 = new double[nlyrs];
@@ -839,7 +839,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
     unsigned int k;
     unsigned int const year = 1980;
     unsigned int const doy = 1;
-    unsigned int methodSurfaceTemperature = 0; // default prior to v8.1.0
+    const unsigned int methodSurfaceTemperature = 0; // default prior to v8.1.0
 
     // *****  Test when nlyrs = 1  ***** //
     unsigned int const nlyrs = 1;
@@ -870,7 +870,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
     double swc[] = {1.0};
     double swc_sat[] = {1.5};
     double bDensity[] = {1.8};
-    double width[] = {20};
+    const double width[] = {20};
     double meanTempSoil[1];
     double minTempSoil[] = {10.0};
     double maxTempSoil[] = {1.0};
@@ -1183,7 +1183,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
 
     double lyrFrozen[MAX_LAYERS] = {0};
 
-    unsigned int methodSurfaceTemperature = 0; // default prior to v8.1.0
+    const unsigned int methodSurfaceTemperature = 0; // default prior to v8.1.0
 
     // *****  Test when nlyrs = MAX_LAYERS  ***** //
     sw_random_t soilTemp_rng;
@@ -1222,8 +1222,8 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
     Bool ptr_stError = swFALSE;
 
     unsigned int const nlyrs2 = MAX_LAYERS;
-    double width2[] = {5,  5,  5,  10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
-                       10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
+    const double width2[] = {5,  5,  5,  10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+                             10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20};
     double const sTempInit3[] = {1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3,
                                  3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
     double sTemp3[MAX_LAYERS];
@@ -1513,7 +1513,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunctionDeathTest) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    unsigned int methodSurfaceTemperature = 0; // default prior to v8.1.0
+    const unsigned int methodSurfaceTemperature = 0; // default prior to v8.1.0
 
     double lyrFrozen[MAX_LAYERS] = {0};
     double depths[MAX_LAYERS] = {0};
