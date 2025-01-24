@@ -1529,7 +1529,17 @@ void SW_NCOUT_read_out_vars(
                 defToLocalInd = index + doOutInd;
 
                 if (strcmp(input[defToLocalInd], "NA") == 0) {
-                    copyStr = (char *) "";
+                    if (index > VARNAME_INDEX) {
+                        copyStr = (char *) "";
+                    } else {
+                        LogError(
+                            LogInfo,
+                            LOGERROR,
+                            "Output variable names cannot be 'NA' (line %d).",
+                            lineno + 1
+                        );
+                        return;
+                    }
                 } else {
                     copyStr = input[defToLocalInd];
                 }
