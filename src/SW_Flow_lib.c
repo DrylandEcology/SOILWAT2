@@ -3317,7 +3317,7 @@ void soil_temperature(
         maxTempSoil[i] = meanTempSoil[i] + (temperatureRange[i] / 2);
         minTempSoil[i] = meanTempSoil[i] - (temperatureRange[i] / 2);
 
-        if (minTempSoil[i] < -100 || maxTempSoil[i] > 100) {
+        if (LT(minTempSoil[i], -100.) || GT(maxTempSoil[i], 100.)) {
             *ptr_stError = swTRUE;
 
             LogError(
@@ -3327,7 +3327,7 @@ void soil_temperature(
                 "outside [-100,100] [C].",
                 year,
                 doy,
-                (minTempSoil[i] < -100) ? minTempSoil[i] : maxTempSoil[i],
+                LT(minTempSoil[i], -100.) ? minTempSoil[i] : maxTempSoil[i],
                 i
             );
         }
