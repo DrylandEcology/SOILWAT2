@@ -663,7 +663,12 @@ void SW_VPD_init_run(
         estimateVegetationFromClimate(
             SW_VegProd, SW_Weather->allHist, SW_Model, LogInfo
         );
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
     }
+
+    checkBiomass(SW_VegProd, LogInfo);
 }
 
 /**
@@ -685,6 +690,72 @@ void SW_VPD_deconstruct(SW_VEGPROD *SW_VegProd) {
         if (!isnull(SW_VegProd->p_accu[pd])) {
             free(SW_VegProd->p_accu[pd]);
             SW_VegProd->p_accu[pd] = NULL;
+        }
+    }
+}
+
+/**
+@brief Validate monthly biomass values
+
+@param[in] SW_VegProd Struct of type SW_VEGPROD describing surface
+    cover conditions in the simulation
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void checkBiomass(SW_VEGPROD *SW_VegProd, LOG_INFO *LogInfo) {
+    unsigned int k;
+    unsigned int mon;
+
+    ForEachVegType(k) {
+        for (mon = 0; mon < MAX_MONTHS; mon++) {
+
+            if (SW_VegProd->veg[k].litter[mon] < 0) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "%s litter (%.4f) is negative in month %d.",
+                    key2veg[k],
+                    SW_VegProd->veg[k].litter[mon],
+                    mon + 1
+                );
+                return;
+            }
+
+            if (SW_VegProd->veg[k].biomass[mon] < 0) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "%s biomass (%.4f) is negative in month %d.",
+                    key2veg[k],
+                    SW_VegProd->veg[k].biomass[mon],
+                    mon + 1
+                );
+                return;
+            }
+
+            if (SW_VegProd->veg[k].pct_live[mon] < 0 ||
+                SW_VegProd->veg[k].pct_live[mon] > 1) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "%s pct_live (%.4f) not within [0,1] in month %d.",
+                    key2veg[k],
+                    SW_VegProd->veg[k].pct_live[mon],
+                    mon + 1
+                );
+                return;
+            }
+
+            if (SW_VegProd->veg[k].lai_conv[mon] < 0) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "%s lai_conv (%.4f) is negative in month %d.",
+                    key2veg[k],
+                    SW_VegProd->veg[k].lai_conv[mon],
+                    mon + 1
+                );
+                return;
+            }
         }
     }
 }
