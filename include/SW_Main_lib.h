@@ -26,6 +26,7 @@ void sw_init_args(
     unsigned long *userSUID,
     double *wallTimeLimit,
     Bool *renameDomainTemplateNC,
+    Bool *prepareFiles,
     LOG_INFO *LogInfo
 );
 

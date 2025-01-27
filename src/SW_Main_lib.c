@@ -56,6 +56,7 @@ static void sw_print_usage(void) {
         "  -t : wall time limit in seconds\n"
         "  -r : rename netCDF domain template file "
         "[name provided in 'Input_nc/files_nc.in']\n"
+        "  -p : solely prepare domain/progress, index, and output files\n"
     );
 }
 
@@ -114,6 +115,9 @@ void sw_print_version(void) {
             (default value is set by SW_WT_StartTime())
 @param[out] renameDomainTemplateNC Should a domain template netCDF file be
             automatically renamed to provided file name for domain?
+@param[out] prepareFiles Should we only prepare domain/progress, index,
+            and output files? If so, simulations will occur without this
+            flag being turned on
 @param[out] LogInfo Holds information on warnings and errors
 */
 void sw_init_args(
@@ -124,6 +128,7 @@ void sw_init_args(
     unsigned long *userSUID,
     double *wallTimeLimit,
     Bool *renameDomainTemplateNC,
+    Bool *prepareFiles,
     LOG_INFO *LogInfo
 ) {
 
@@ -144,10 +149,12 @@ void sw_init_args(
     const char *errMsg = "command-line";
 
     /* valid options */
-    char const *opts[] = {"-d", "-f", "-e", "-q", "-v", "-h", "-s", "-t", "-r"};
+    char const *opts[] = {
+        "-d", "-f", "-e", "-q", "-v", "-h", "-s", "-t", "-r", "-p"
+    };
 
     /* indicates options with values: 0=none, 1=required, -1=optional */
-    int valopts[] = {1, 1, 0, 0, 0, 0, 1, 1, 0};
+    int valopts[] = {1, 1, 0, 0, 0, 0, 1, 1, 0, 0};
 
     int i;  /* looper through all cmdline arguments */
     int a;  /* current valid argument-value position */
@@ -291,6 +298,14 @@ void sw_init_args(
 
         case 8: /* -r */
             *renameDomainTemplateNC = swTRUE;
+            break;
+
+        case 9: /* -p */
+#if defined(SWNETCDF)
+            *prepareFiles = swTRUE;
+#else
+            *prepareFiles = swFALSE;
+#endif
             break;
 
         default:

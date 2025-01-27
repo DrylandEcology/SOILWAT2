@@ -91,6 +91,8 @@
   Note: Some parameter values for the `"FXW"` SWRC are missing.
 * `"climate.in"`: new snow density values for July, August and September
   estimated with linear interpolation from June and October values.
+* New command line option `"-p"` to prepare the domain/progress,
+  index, and output files; with this flag, no simulations will be run.
 
 ## Changes to inputs for nc-based SOILWAT2
 * New tab-separated value `"tsv"` input file `"SW2_netCDF_input_variables.tsv"`

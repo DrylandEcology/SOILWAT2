@@ -54,6 +54,7 @@ int main(int argc, char **argv) {
     LOG_INFO LogInfo;
     Bool EchoInits = swFALSE;
     Bool renameDomainTemplateNC = swFALSE;
+    Bool prepareFiles = swFALSE;
 
     unsigned long userSUID;
 
@@ -75,6 +76,7 @@ int main(int argc, char **argv) {
         &userSUID,
         &SW_WallTime.wallTimeLimit,
         &renameDomainTemplateNC,
+        &prepareFiles,
         &LogInfo
     );
     if (LogInfo.stopRun) {
@@ -100,7 +102,6 @@ int main(int argc, char **argv) {
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
-
 
     SW_MDL_get_ModelRun(&sw_template.Model, &SW_Domain, NULL, &LogInfo);
     if (LogInfo.stopRun) {
@@ -147,7 +148,7 @@ int main(int argc, char **argv) {
 
     // finalize daily weather
 #if defined(SWNETCDF)
-    if (!SW_Domain.netCDFInput.readInVars[eSW_InWeather][0]) {
+    if (!SW_Domain.netCDFInput.readInVars[eSW_InWeather][0] && !prepareFiles) {
 #endif
         SW_WTH_finalize_all_weather(
             &sw_template.Markov,
@@ -202,14 +203,21 @@ int main(int argc, char **argv) {
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
-    SW_NCOUT_create_units_converters(&SW_Domain.OutDom, &LogInfo);
-    if (LogInfo.stopRun) {
-        goto finishProgram;
+
+    if (!prepareFiles) {
+        SW_NCOUT_create_units_converters(&SW_Domain.OutDom, &LogInfo);
+        if (LogInfo.stopRun) {
+            goto finishProgram;
+        }
     }
 #endif // SWNETCDF
 
     SW_OUT_create_files(&sw_template.SW_PathOutputs, &SW_Domain, &LogInfo);
-    if (LogInfo.stopRun) {
+    if (LogInfo.stopRun || prepareFiles) {
+        if (prepareFiles) {
+            sw_message("completed simulation preparations.");
+        }
+
         goto closeFiles;
     }
 
