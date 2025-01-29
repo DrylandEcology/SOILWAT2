@@ -633,13 +633,11 @@ void MkDir(const char *dname, LOG_INFO *LogInfo) {
 
     buffer[0] = '\0';
     for (i = 0; i < n; i++) {
-        if (i == 0) {
-            fullBuffer = sw_memccpy_inc(
-                (void **) &writePtr, endBuffer, (void *) a[i], '\0', &writeSize
-            );
-            if (fullBuffer) {
-                goto freeMem;
-            }
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endBuffer, (void *) a[i], '\0', &writeSize
+        );
+        if (fullBuffer) {
+            goto freeMem;
         }
 
         if (!DirExists(buffer)) {
