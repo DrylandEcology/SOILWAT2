@@ -366,6 +366,19 @@ static void create_csv_file_ST(
     LOG_INFO *LogInfo
 ) {
     char filename[FILENAME_MAX];
+    char regDirName[FILENAME_MAX];
+    char soilDirName[FILENAME_MAX];
+
+    DirName(txtInFiles[eOutputDaily + pd], regDirName);
+    DirName(txtInFiles[eOutputDaily_soil + pd], soilDirName);
+
+    if (!DirExists(regDirName) && SW_PathOutputs->make_regular[pd]) {
+        MkDir(regDirName, LogInfo);
+    }
+
+    if (!DirExists(soilDirName) && SW_PathOutputs->make_soil[pd]) {
+        MkDir(soilDirName, LogInfo);
+    }
 
     if (iteration <= 0) {
         // STEPWAT2: aggregated values over all iterations
