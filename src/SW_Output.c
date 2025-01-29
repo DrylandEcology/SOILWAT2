@@ -3368,16 +3368,16 @@ void SW_OUT_write_today(
     Bool use_help_SXW;
 
     char *soilAggWritePtr[SW_OUTNPERIODS] = {
-        sw->SW_PathOutputs.buf_soil[0],
-        sw->SW_PathOutputs.buf_soil[1],
-        sw->SW_PathOutputs.buf_soil[2],
-        sw->SW_PathOutputs.buf_soil[3]
+        sw->SW_PathOutputs.buf_soil_agg[0],
+        sw->SW_PathOutputs.buf_soil_agg[1],
+        sw->SW_PathOutputs.buf_soil_agg[2],
+        sw->SW_PathOutputs.buf_soil_agg[3]
     };
     char *regAggWritePtr[SW_OUTNPERIODS] = {
-        sw->SW_PathOutputs.buf_reg[0],
-        sw->SW_PathOutputs.buf_reg[1],
-        sw->SW_PathOutputs.buf_reg[2],
-        sw->SW_PathOutputs.buf_reg[3]
+        sw->SW_PathOutputs.buf_reg_agg[0],
+        sw->SW_PathOutputs.buf_reg_agg[1],
+        sw->SW_PathOutputs.buf_reg_agg[2],
+        sw->SW_PathOutputs.buf_reg_agg[3]
     };
 #endif
 
