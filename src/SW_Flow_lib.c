@@ -3103,7 +3103,7 @@ void soil_temperature(
     unsigned int i;
     unsigned int sFadjusted_avgLyrTemp;
     double oldavgLyrTemp[MAX_LAYERS];
-    double vwc[MAX_LAYERS];
+    double vwc[MAX_LAYERS] = {0};
     double vwcR[MAX_ST_RGR];
     double avgLyrTempR[MAX_ST_RGR];
     double temperatureRangeR[MAX_ST_RGR];
