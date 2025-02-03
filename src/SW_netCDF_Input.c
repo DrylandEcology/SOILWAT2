@@ -4122,7 +4122,7 @@ freeMem: {
         timeVals = NULL;
     }
 
-    if (ncFileID == -1) {
+    if (ncFileID > -1) {
         nc_close(ncFileID);
     }
 #if defined(SWUDUNITS)
@@ -6791,6 +6791,9 @@ static void read_soil_inputs(
                 (!isSwrcpVar) ? doublePtr : swrcpMS[loopIter]
             );
         }
+
+        nc_close(ncFileID);
+        ncFileID = -1;
     }
 
 
@@ -7578,9 +7581,11 @@ static void read_weather_input(
                 }
             }
 
-            SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
-            if (LogInfo->stopRun) {
-                return;
+            if (ncFileID == -1) {
+                SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
+                if (LogInfo->stopRun) {
+                    return;
+                }
             }
 
             /* Read in an entire year's worth of weather data */
@@ -7619,6 +7624,8 @@ static void read_weather_input(
             }
 
             start[timeIndex] += count[timeIndex];
+            nc_close(ncFileID);
+            ncFileID = -1;
         }
 
         nc_close(ncFileID);
