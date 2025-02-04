@@ -34,7 +34,7 @@
 #include "include/generic.h"        // for LOGERROR, byte, isnull
 #include "include/SW_datastructs.h" // for LOG_INFO
 #include <stdlib.h>                 // for free, malloc, realloc
-#include <string.h>                 // for strlen, memcpy, memset, strcpy
+#include <string.h>                 // for strlen, memset, strcpy
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -60,7 +60,7 @@ char *Str_Dup(const char *s, LOG_INFO *LogInfo) {
         return NULL; // Exit function prematurely due to error
     }
 
-    strcpy(p, s);
+    strcpy(p, s); // NOLINT(clang-analyzer-security.insecureAPI.strcpy)
 
     return p;
 }
@@ -80,7 +80,17 @@ void *Mem_Malloc(size_t size, const char *funcname, LOG_INFO *LogInfo) {
      consistent with other modules.
      -------------------------------------------*/
 
-    void *p;
+    void *p = NULL;
+
+    if (LogInfo->stopRun) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Mem_Malloc() by %s() called with existing error.",
+            funcname
+        );
+        return p; // Exit function prematurely due to error
+    }
 
     p = malloc(size);
 
@@ -139,7 +149,7 @@ void *Mem_ReAlloc(void *block, size_t sizeNew, LOG_INFO *LogInfo) {
         return NULL;
     }
 
-    void *res = (void *) realloc(block, sizeNew);
+    void *res = realloc(block, sizeNew);
 
     if (isnull(res)) {
         free(block);
@@ -171,6 +181,109 @@ void Mem_Copy(void *dest, const void *src, size_t n) {
      -------------------------------------------*/
 
     memcpy(dest, src, n);
+}
+
+/*
+@brief Custom functionality that mimics that of `sw_memccpy()` and is used
+when the correct dependencies for `sw_memccpy()` are not available
+
+@note This implementation is based off one suggested by Martin Sebor in
+the article
+https://developers.redhat.com/blog/2019/08/12/efficient-string-copying-and-concatenation-in-c#
+
+@note This function uses the compiler macro '__restrict' instead of simply
+'restrict' due to C++ standards not supporting it, so '__restrict' is
+compatible in Clang and GCC
+
+@param[in,out] dest Character array to copy into
+@param[in] src Character array to copy from
+@param[in] c Target character which, upon finding, is one of the stopping
+condiditions
+@param[in] n The maximum number of bytes to copy from src to dest, and is the
+second stopping condition
+
+@return
+Upon finding the target character: the pointer to the next byte in dest after
+the copy Upon not finding the target character: null pointer character
+*/
+void *sw_memccpy_custom(
+    void *__restrict dest, void *__restrict src, int c, size_t n
+) {
+    char *s = (char *) src;
+    char *ret = (char *) dest;
+
+    while (n > 0) {
+        *ret = *s;
+
+        if ((unsigned char) *ret == (unsigned char) c) {
+            return ret + 1;
+        }
+
+        ret++;
+        s++;
+        n--;
+    }
+
+    return 0;
+}
+
+/**
+@brief Wrapper function to `sw_memccpy()` which copies data of a
+    but this function also removes the repetitve action of decreasing
+    the available size left in the allocated string location; this function
+    will also set a null-terminating character if the string buffer is full
+    after the copying
+
+@note This function uses the compiler macro '__restrict' instead of simply
+'restrict' due to C++ standards not supporting it, so '__restrict' is
+compatible in Clang and GCC
+
+@param[in,out] charPtr Pointer holding the location of the writing
+start location of the string; returns the updated pointer of where to
+write in following calls
+@param[out] endPtr Pointer holding the end of string `charPtr` refers to
+and is written to if the buffer is full, adding an ending '\0'
+@param[in] str Array of characters to copy/concatenate into `charPtr`
+@param[in] c Target character which, upon finding, is one of the stopping
+condiditions
+@param[in,out] n The maximum number of bytes to copy from src to dest, and
+is the second stopping condition; returns the updated allowed number of bytes
+after writing to the target string
+
+@return A flag specifying if the buffer we are copying/concatenating into
+is full
+ */
+Bool sw_memccpy_inc(
+    void **__restrict charPtr,
+    char *__restrict endPtr,
+    void *__restrict str,
+    int c,
+    size_t *n
+) {
+    Bool fullBuffer = swTRUE;
+    char *resPtr = NULL;
+
+    resPtr = (char *) sw_memccpy(*charPtr, str, (char) c, *n);
+    if (!isnull(resPtr)) {
+        *n -= (resPtr - (char *) *charPtr - 1);
+        *charPtr = resPtr - 1;
+        fullBuffer = swFALSE;
+    } else {
+        *endPtr = '\0';
+    }
+
+    return fullBuffer;
+}
+
+/**
+@brief Report a full string buffer
+
+@param[in] errmode Specifies if the full string buffer message should be an
+error or a warning
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void reportFullBuffer(int errmode, LOG_INFO *LogInfo) {
+    LogError(LogInfo, errmode, "String buffer was too short.", LogInfo);
 }
 
 /* ===============  end of block from gen_funcs.c ----------------- */

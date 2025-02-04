@@ -16,10 +16,12 @@
 *-Ex.R
 /Debug/
 
-# Test project output
+# Files produced by example run
 /tests/example/Output/*
 /tests/example/Output_*
-
+/tests/example/Input_nc/domain.nc
+/tests/example/Input_nc/progress.nc
+/tests/example/Input_nc/*/index_*.nc
 
 # Figures created by scripts in tools/
 /tools/Fig*

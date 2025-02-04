@@ -16,7 +16,7 @@
 #ifndef SW_FILES_H
 #define SW_FILES_H
 
-#include "include/SW_datastructs.h" // for PATH_INFO, LOG_INFO
+#include "include/SW_datastructs.h" // for SW_PATH_INPUTS, LOG_INFO
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,7 +39,6 @@ typedef enum {
     eDomain,
     /* Description of a model run */
     eModel,
-    eLog,
     /* Description of simulated site */
     eSite,
     eLayers,
@@ -58,6 +57,7 @@ typedef enum {
     eSoilwat,
     /* Simulation outputs */
     eOutput,
+    eLog,
     eOutputDaily,
     eOutputWeekly,
     eOutputMonthly,
@@ -72,17 +72,19 @@ typedef enum {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_F_read(PATH_INFO *PathInfo, LOG_INFO *LogInfo);
+void SW_F_read(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo);
 
-void SW_F_deepCopy(PATH_INFO *source, PATH_INFO *dest, LOG_INFO *LogInfo);
+void SW_F_deepCopy(
+    SW_PATH_INPUTS *source, SW_PATH_INPUTS *dest, LOG_INFO *LogInfo
+);
 
-void SW_F_init_ptrs(char *InFiles[]);
+void SW_F_init_ptrs(SW_PATH_INPUTS *SW_PathInputs);
 
-void SW_F_construct(const char *firstfile, char _ProjDir[], LOG_INFO *LogInfo);
+void SW_F_construct(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo);
 
-void SW_F_deconstruct(char *InFiles[]);
+void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs);
 
-void SW_CSV_F_INIT(const char *s, LOG_INFO *LogInfo);
+void SW_F_CleanOutDir(char *outDir, LOG_INFO *LogInfo);
 
 
 #ifdef __cplusplus

@@ -23,8 +23,8 @@
 #include "include/SW_datastructs.h" // for LOG_INFO
 #include "include/SW_Defines.h"     // for MAX_MSGS, MAX_LOG_SIZE, BUILD_DATE
 #include <stdio.h>                  // for fprintf, stderr, fflush, stdout
-#include <stdlib.h>                 // for atof, atoll, exit, free, EXIT_FA...
-#include <string.h>                 // for strcpy, strncmp
+#include <stdlib.h>                 // for exit, free, EXIT_FA...
+#include <string.h>                 // for strncmp
 
 #ifdef RSOILWAT
 #include <R.h> // for error(), and warning() from <R_ext/Error.h>
@@ -56,6 +56,7 @@ static void sw_print_usage(void) {
         "  -t : wall time limit in seconds\n"
         "  -r : rename netCDF domain template file "
         "[name provided in 'Input_nc/files_nc.in']\n"
+        "  -p : solely prepare domain/progress, index, and output files\n"
     );
 }
 
@@ -106,7 +107,7 @@ void sw_print_version(void) {
 @param[in] argc Number (count) of command line arguments.
 @param[in] argv Values of command line arguments.
 @param[out] EchoInits Flag to control if inputs are to be output to the user
-@param[out] _firstfile First file name to be filled in the program run
+@param[out] firstfile First file name to be filled in the program run
 @param[out] userSUID Simulation Unit Identifier requested by the user (base1);
             0 indicates that all simulations units within domain are requested
 @param[out] wallTimeLimit Terminate simulations early when
@@ -114,16 +115,20 @@ void sw_print_version(void) {
             (default value is set by SW_WT_StartTime())
 @param[out] renameDomainTemplateNC Should a domain template netCDF file be
             automatically renamed to provided file name for domain?
+@param[out] prepareFiles Should we only prepare domain/progress, index,
+            and output files? If so, simulations will occur without this
+            flag being turned on
 @param[out] LogInfo Holds information on warnings and errors
 */
 void sw_init_args(
     int argc,
     char **argv,
     Bool *EchoInits,
-    char **_firstfile,
+    char **firstfile,
     unsigned long *userSUID,
     double *wallTimeLimit,
     Bool *renameDomainTemplateNC,
+    Bool *prepareFiles,
     LOG_INFO *LogInfo
 ) {
 
@@ -141,20 +146,24 @@ void sw_init_args(
      *                   at end of program.
      */
     char str[1024];
+    const char *errMsg = "command-line";
 
     /* valid options */
-    char const *opts[] = {"-d", "-f", "-e", "-q", "-v", "-h", "-s", "-t", "-r"};
+    char const *opts[] = {
+        "-d", "-f", "-e", "-q", "-v", "-h", "-s", "-t", "-r", "-p"
+    };
 
     /* indicates options with values: 0=none, 1=required, -1=optional */
-    int valopts[] = {1, 1, 0, 0, 0, 0, 1, 1, 0};
+    int valopts[] = {1, 1, 0, 0, 0, 0, 1, 1, 0, 0};
 
-    int i,  /* looper through all cmdline arguments */
-        a,  /* current valid argument-value position */
-        op, /* position number of found option */
-        nopts = sizeof(opts) / sizeof(char *);
+    int i;  /* looper through all cmdline arguments */
+    int a;  /* current valid argument-value position */
+    int op; /* position number of found option */
+    int nopts = sizeof(opts) / sizeof(char *);
+    double doubleUserSUID = 0.;
 
     /* Defaults */
-    *_firstfile = Str_Dup(DFLT_FIRSTFILE, LogInfo);
+    *firstfile = Str_Dup(DFLT_FIRSTFILE, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -180,117 +189,136 @@ void sw_init_args(
             sw_print_usage();
             LogError(LogInfo, LOGERROR, "\nInvalid option %s\n", argv[a]);
             return; // Exit function prematurely due to error
+        }
 
-        } else {
-            // Use `valopts[op]` in else-branch to avoid
-            // `warning: array subscript 6 is above array bounds of 'int[6]'
-            // [-Warray-bounds]`
+        // Use `valopts[op]` in else-branch to avoid
+        // `warning: array subscript 6 is above array bounds of 'int[6]'
+        // [-Warray-bounds]`
 
-            *str = '\0';
-            /* extract value part of option-value pair */
-            if (valopts[op]) {
-                if ('\0' != argv[a][2]) {
-                    /* no space betw opt-value */
-                    strcpy(str, (argv[a] + 2));
+        *str = '\0';
+        /* extract value part of option-value pair */
+        if (valopts[op]) {
+            if ('\0' != argv[a][2]) {
+                /* no space betw opt-value */
+                (void) snprintf(str, sizeof str, "%s", (argv[a] + 2));
 
-                } else if ('-' != *argv[a + 1]) {
-                    /* space betw opt-value */
-                    strcpy(str, argv[++a]);
+            } else if ('-' != *argv[a + 1]) {
+                /* space betw opt-value */
+                (void) snprintf(str, sizeof str, "%s", argv[++a]);
 
-                } else if (0 < valopts[op]) {
-                    /* required opt-val not found */
-                    sw_print_usage();
-                    LogError(
-                        LogInfo, LOGERROR, "\nIncomplete option %s\n", opts[op]
-                    );
-                    return; // Exit function prematurely due to error
-                }
-                /* opt-val not required */
-            }
-
-            /* tell us what to do here                   */
-            /* set indicators/variables based on results */
-            switch (op) {
-            case 0: /* -d */
-                if (!ChDir(str)) {
-                    LogError(
-                        LogInfo, LOGERROR, "Invalid project directory (%s)", str
-                    );
-                    return; // Exit function prematurely due to error
-                }
-                break;
-
-            case 1: /* -f */
-                free(*_firstfile);
-                *_firstfile = Str_Dup(str, LogInfo);
-                if (LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
-                }
-                break;
-
-            case 2: /* -e */
-                *EchoInits = swTRUE;
-                break;
-
-            case 3: /* -q */
-                LogInfo->QuietMode = swTRUE;
-                break;
-
-            case 4: /* -v */
-                sw_print_version();
-                LogError(LogInfo, LOGERROR, "");
-                if (LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
-                }
-                break;
-
-            case 5: /* -h */
+            } else if (0 < valopts[op]) {
+                /* required opt-val not found */
                 sw_print_usage();
-                LogError(LogInfo, LOGERROR, "");
-                if (LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
-                }
-                break;
-
-            case 6: /* -s */
-                *userSUID = atoll(str);
-                /* Check that user input can be represented by userSUID
-                 * (currently, unsigned long) */
-                /* Expect that conversion of string to double results in the
-                 * same value as conversion of userSUID to double */
-                if (!EQ(atof(str), (double) *userSUID)) {
-                    LogError(
-                        LogInfo,
-                        LOGERROR,
-                        "User input not recognized as a simulation unit "
-                        "('-s %s' vs. %lu).",
-                        str,
-                        *userSUID
-                    );
-                    return; // Exit function prematurely due to error
-                }
-                break;
-
-            case 7: /* -t */
-                *wallTimeLimit = atof(str);
-                break;
-
-            case 8: /* -r */
-                *renameDomainTemplateNC = swTRUE;
-                break;
-
-            default:
                 LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "Programmer: bad option in main:sw_init_args:switch"
+                    LogInfo, LOGERROR, "\nIncomplete option %s\n", opts[op]
                 );
+                return; // Exit function prematurely due to error
+            }
+            /* opt-val not required */
+        }
 
+        /* tell us what to do here                   */
+        /* set indicators/variables based on results */
+        switch (op) {
+        case 0: /* -d */
+            if (!ChDir(str)) {
+                LogError(
+                    LogInfo, LOGERROR, "Invalid project directory (%s)", str
+                );
+                return; // Exit function prematurely due to error
+            }
+            break;
+
+        case 1: /* -f */
+            free(*firstfile);
+            *firstfile = Str_Dup(str, LogInfo);
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+            break;
+
+        case 2: /* -e */
+            *EchoInits = swTRUE;
+            break;
+
+        case 3: /* -q */
+            LogInfo->QuietMode = swTRUE;
+            break;
+
+        case 4: /* -v */
+            sw_print_version();
+            LogError(LogInfo, LOGERROR, "");
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+            break;
+
+        case 5: /* -h */
+            sw_print_usage();
+            LogError(LogInfo, LOGERROR, "");
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+            break;
+
+        case 6: /* -s */
+            *userSUID = sw_strtoul(str, errMsg, LogInfo);
+            if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
 
-            a++; /* move to next valid arg-value position */
+            /* Check that user input can be represented by userSUID
+             * (currently, unsigned long) */
+            /* Expect that conversion of string to double results in the
+             * same value as conversion of userSUID to double */
+            doubleUserSUID = sw_strtod(str, errMsg, LogInfo);
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+            if (!EQ(doubleUserSUID, (double) *userSUID)) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "User input not recognized as a simulation unit "
+                    "('-s %s' vs. %lu).",
+                    str,
+                    *userSUID
+                );
+                return; // Exit function prematurely due to error
+            }
+            break;
+
+        case 7: /* -t */
+            *wallTimeLimit = sw_strtod(str, errMsg, LogInfo);
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+            break;
+
+        case 8: /* -r */
+            *renameDomainTemplateNC = swTRUE;
+            break;
+
+        case 9: /* -p */
+#if defined(SWNETCDF)
+            *prepareFiles = swTRUE;
+#else
+            *prepareFiles = swFALSE;
+#endif
+            break;
+
+        default:
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Programmer: bad option in main:sw_init_args:switch"
+            );
+
+            return; // Exit function prematurely due to error
         }
+
+        a++; /* move to next valid arg-value position */
     } /* end for(i) */
 }
 
@@ -312,7 +340,7 @@ void sw_fail_on_error(LOG_INFO *LogInfo) {
 #else
     if (LogInfo->stopRun) {
         if (!LogInfo->QuietMode) {
-            fprintf(stderr, "%s", LogInfo->errorMsg);
+            (void) fprintf(stderr, "%s", LogInfo->errorMsg);
         }
         if (LogInfo->printProgressMsg) {
             sw_message("ended.");
@@ -352,7 +380,8 @@ simulation run
 */
 void sw_write_warnings(const char *header, LOG_INFO *LogInfo) {
 
-    int warnMsgNum, warningUpperBound = LogInfo->numWarnings;
+    int warnMsgNum;
+    int warningUpperBound = LogInfo->numWarnings;
     Bool tooManyWarns = swFALSE;
     char tooManyWarnsStr[MAX_LOG_SIZE];
 
@@ -361,7 +390,7 @@ void sw_write_warnings(const char *header, LOG_INFO *LogInfo) {
         warningUpperBound = MAX_MSGS;
         tooManyWarns = swTRUE;
 
-        snprintf(
+        (void) snprintf(
             tooManyWarnsStr,
             MAX_LOG_SIZE,
             "There were a total of %d warnings and only %d were printed.\n",
@@ -384,26 +413,47 @@ void sw_write_warnings(const char *header, LOG_INFO *LogInfo) {
         }
     }
 #else
+    int writeRes = 0;
+
     /* SOILWAT2: do print warnings and don't notify user if quiet */
     if (!isnull(LogInfo->logfp)) {
         for (warnMsgNum = 0; warnMsgNum < warningUpperBound; warnMsgNum++) {
-            fprintf(
+            writeRes = fprintf(
                 LogInfo->logfp, "%s%s", header, LogInfo->warningMsgs[warnMsgNum]
             );
+
+            if (writeRes < 0) {
+                goto writeErrMsg;
+            }
         }
 
         if (tooManyWarns) {
-            fprintf(LogInfo->logfp, "%s%s", header, tooManyWarnsStr);
+            writeRes = fprintf(LogInfo->logfp, "%s%s", header, tooManyWarnsStr);
+            if (writeRes < 0) {
+                goto writeErrMsg;
+            }
         }
 
         if (LogInfo->stopRun) {
             /* Write error message to log file here;
                later (sw_fail_on_error()), we will write it to stderr and crash
              */
-            fprintf(LogInfo->logfp, "%s%s", header, LogInfo->errorMsg);
+            writeRes =
+                fprintf(LogInfo->logfp, "%s%s", header, LogInfo->errorMsg);
+            if (writeRes < 0) {
+                goto writeErrMsg;
+            }
         }
 
-        fflush(LogInfo->logfp);
+        writeRes = fflush(LogInfo->logfp);
+
+    writeErrMsg: {
+        if (writeRes < 0) {
+            sw_message(
+                "Failed to write all warning/error messages to logfile.\n"
+            );
+        }
+    }
     }
 #endif
 }
@@ -428,10 +478,11 @@ void sw_wrapup_logs(LOG_INFO *LogInfo) {
     if ((LogInfo->numDomainErrors > 0 || LogInfo->numDomainWarnings > 0 ||
          LogInfo->stopRun || LogInfo->numWarnings > 0) &&
         !QuietMode && LogInfo->logfp != stdout && LogInfo->logfp != stderr) {
-        fprintf(stderr, "\nCheck logfile for warnings and error messages.\n");
+        (void
+        ) fprintf(stderr, "\nCheck logfile for warnings and error messages.\n");
 
         if (LogInfo->numDomainWarnings > 0) {
-            fprintf(
+            (void) fprintf(
                 stderr,
                 "Simulation units with warnings: n = %lu\n",
                 LogInfo->numDomainWarnings
@@ -439,7 +490,7 @@ void sw_wrapup_logs(LOG_INFO *LogInfo) {
         }
 
         if (LogInfo->numDomainErrors > 0) {
-            fprintf(
+            (void) fprintf(
                 stderr,
                 "Simulation units with an error: n = %lu\n",
                 LogInfo->numDomainErrors

@@ -31,15 +31,15 @@ void DirName(const char *p, char *outString);
 
 const char *BaseName(const char *p);
 
-Bool FileExists(const char *f);
+Bool FileExists(const char *name);
 
 Bool DirExists(const char *d);
 
 Bool ChDir(const char *d);
 
-Bool MkDir(const char *dname, LOG_INFO *LogInfo);
+void MkDir(const char *dname, LOG_INFO *LogInfo);
 
-Bool RemoveFiles(const char *fspec, LOG_INFO *LogInfo);
+Bool RemoveFiles(const char *fspec, Bool clearDir, LOG_INFO *LogInfo);
 
 Bool CopyFile(const char *from, const char *to, LOG_INFO *LogInfo);
 
@@ -47,6 +47,15 @@ void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...);
 
 void sw_message(const char *msg);
 
+unsigned long int sw_strtoul(
+    const char *str, const char *errMsg, LOG_INFO *LogInfo
+);
+
+long int sw_strtol(const char *str, const char *errMsg, LOG_INFO *LogInfo);
+
+int sw_strtoi(const char *str, const char *errMsg, LOG_INFO *LogInfo);
+
+double sw_strtod(const char *str, const char *errMsg, LOG_INFO *LogInfo);
 
 int key_to_id(const char *key, const char **possibleKeys, int numPossKeys);
 
@@ -55,7 +64,7 @@ void set_hasKey(
 );
 
 void check_requiredKeys(
-    Bool *hasKeys,
+    const Bool *hasKeys,
     const Bool *requiredKeys,
     const char **possibleKeys,
     int numKeys,

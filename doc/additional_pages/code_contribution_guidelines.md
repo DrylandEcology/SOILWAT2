@@ -12,6 +12,7 @@
 [netCDF]: https://downloads.unidata.ucar.edu/netcdf/
 [udunits2]: https://downloads.unidata.ucar.edu/udunits/
 [ClangFormat]: https://clang.llvm.org/docs/ClangFormat.html
+[clang-tidy]: https://clang.llvm.org/extra/clang-tidy
 [iwyu]:https://include-what-you-use.org/
 
 
@@ -21,8 +22,9 @@ Go back to the [main page](README.md).
 1. [SOILWAT2 code](#SOILWAT2_code)
 2. [Code guidelines](#guidelines)
     1. [Code format](#code_format)
-    2. [Include directives](#includes)
-    3. [Other guidelines](#other_guidelines)
+    2. [Code checks](#code_checks)
+    3. [Include directives](#includes)
+    4. [Other guidelines](#other_guidelines)
 3. [Code documentation](#code_documentation)
 4. [Code tests](#code_tests)
     1. [Unit tests](#unit_tests)
@@ -135,6 +137,27 @@ checks code style for pull requests into the main branch and release branches.
 <br>
 
 
+
+<a name="code_checks"></a>
+### Code checks
+
+We use [clang-tidy][] to check code in the `SOILWAT2` repository.
+
+The files `".clang-tidy"` and `".clang-tidy_swtests"` document all details
+related to these code checks.
+
+We have `make` targets `"tidy-bin"` and `"tidy-test"` to run these checks on
+the code and on the test code respectively.
+
+We also have a script `"tools/run_tidy.sh"` that runs all appropriate checks.
+The script exits with a failure code if any check reports code issues.
+
+A github action workflow `".github/workflows/clang-tidy-check.yml"`
+checks code for pull requests into the main branch and release branches.
+
+<br>
+
+
 <a name="includes"></a>
 ### Include directives
 
@@ -209,8 +232,13 @@ Most of these tests and checks can be run with the following steps
     tools/check_functionality.sh check_SOILWAT2 "CC=" "CXX=" "txt" "tests/example/Output_ref" "false"
     tools/check_functionality.sh check_SOILWAT2 "CC=" "CXX=" "nc" "tests/example/Output_ref" "false"
 
+    # Compare output between text-based, nc-based SOILWAT2 and rSOILWAT2
     tools/check_outputModes.sh
 
+    # Check output of a large set of nc-based simulation experiments agains a reference
+    tools/check_ncTestRuns.nc
+
+    # Run checks with additional special use flags
     tools/check_extras.sh
 ```
 
@@ -241,9 +269,9 @@ causes some complications, see `makefile`.
 
 Run unit tests locally on the command-line with
 ```{.sh}
-      make test_run              # compiles and executes the tests
-      make test_severe           # compiles/executes with strict/severe flags
-      make clean_test            # cleans build artifacts
+    make test_run              # compiles and executes the tests
+    make test_severe           # compiles/executes with strict/severe flags
+    make clean_test            # cleans build artifacts
 ```
 
 
@@ -265,15 +293,40 @@ Please note that this script currently works only with `macports`.
 We use integration tests to check that the entire simulation model works
 as expected when used in a real-world application setting.
 
+
+#### Example
+
 The folder `tests/example/` contains all necessary inputs to run `SOILWAT2`
 for one generic location
 (it is a relatively wet and cool site in the sagebrush steppe).
 
 ```{.sh}
-      make bin_run
+    make bin_run                      # text-based SOILWAT2
+    make CPPFLAGS=-DSWNC bin_run      # nc-based SOILWAT2
 ```
 
 The simulated output is stored at `tests/example/Output/`.
+
+
+#### ncTestRuns
+
+The folder `tests/ncTestRuns` contains several complete simulation projects
+for nc-based SOILWAT2.
+They are designed to cover the most common combinations of simulation domains
+and inputs, e.g., gridded vs. site-based, geographic vs. projected CRS,
+external weather datasets.
+
+One site/grid cell in the simulation domain is set up to correspond
+to the reference run (which, by default, is equivalent to `tests/example`);
+the output of that site/grid cell is compared against the reference output.
+
+```{.sh}
+    tools/check_ncTestRuns.sh --help    # Display a help page
+    tools/check_ncTestRuns.sh           # Do all tests
+```
+
+
+#### Output from different modes
 
 SOILWAT2 is can be used in text-based or netCDF-based mode (or via rSOILWAT2),
 this script makes sure that output between the different versions is the same
@@ -291,6 +344,7 @@ should be exported. For instance,
 ```
 
 
+#### Output comparison to another version
 
 Another use case is to compare output of a new (development) branch to output
 from a previous (reference) release.
@@ -302,18 +356,18 @@ differ in specific ways in specific variables.
 The following steps provide a starting point for such comparisons:
 
 ```{.sh}
-      # Simulate on reference branch and copy output to "Output_ref"
-      git checkout master
-      make bin_run
-      cp -r tests/example/Output tests/example/Output_ref
+    # Simulate on reference branch and copy output to "Output_ref"
+    git checkout master
+    make bin_run
+    cp -r tests/example/Output tests/example/Output_ref
 
-      # Switch to development branch <branch_xxx> and run the same simulation
-      git checkout <branch_xxx>
-      make bin_run
+    # Switch to development branch <branch_xxx> and run the same simulation
+    git checkout <branch_xxx>
+    make bin_run
 
-      # Compare the two sets of outputs
-      #   * Lists all output files and determine if they are exactly they same
-      diff tests/example/Output/ tests/example/Output_ref/ -qs
+    # Compare the two sets of outputs
+    #   * Lists all output files and determine if they are exactly they same
+    diff tests/example/Output/ tests/example/Output_ref/ -qs
 ```
 
 <br>

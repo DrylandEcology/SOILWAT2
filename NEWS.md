@@ -1,13 +1,133 @@
 # NEWS
 
+# SOILWAT2 v8.1.0
+* This version produces similar but not identical simulation output
+  as previously because of the following changes:
+    * Small deviations arise from replacing all remaining variables of
+      type float with type double (see commit 62237ae on 2024-July-30).
+    * Saturated percolation is now limited which leads to different outcomes
+      during periods of high infiltration (e.g., snowmelt) and during conditions
+      of low hydraulic conductivity (e.g., frozen soils, sapric organic matter).
+    * Depth of snowpack is now consistent with snowpack water content.
+    * Surface temperature extremes are now less sensitive to high biomass, and
+      average surface temperature is now more consistent with daily extremes.
+
+* The two modes of SOILWAT2 can now be compiled with the following flags:
+    * `make CPPFLAGS=-DSWTXT` (or as previously `make all`) for txt-based
+    * `make CPPFLAGS=-DSWNC` for nc-based SOILWAT2.
+
+* SOILWAT2 now ends gracefully with termination (SIGTERM) and
+  interrupt (SIGINT, commonly CTRL+C on the keyboard) signals.
+
+* nc-based SOILWAT2 can now use a large variety of `"netCDF"` data sources
+  as inputs (#389; @N1ckP3rsl3y, @dschlaep).
+  The user identifies in `"SW2_netCDF_input_variables.tsv"` which
+  input variables are provided by `"netCDF"`
+  (and vary among simulation runs, i.e., sites or grid cells);
+  remaining inputs are obtained from the same text files as in txt-based mode
+  (and are constant among simulation runs).
+
+* `"ncTestRuns"` provide a new framework that comprehensively tests
+  nc-based SOILWAT2 via the script `"tools/check_ncTestRuns.sh"` by
+  creating, executing, and checking more than 40 test runs.
+    * Comprehensive set of spatial configurations of simulation domains and
+      input netCDFs (see `"tests/ncTestRuns/data-raw/metadata_testRuns.csv"`)
+    * Runs with daily inputs from external data sources
+      including `"Daymet"`, `"gridMET"`, and `"MACAv2METDATA"` (if available)
+    * One site/grid cell in the simulation domain is set up to correspond
+      to the reference run (which, by default, is equivalent to
+      `"tests/example"` in txt-based mode); output at that site/grid cell is
+      compared against the reference output
+
+* Tests now require `c++17` and utilize `googletest` `v1.15.2` (issue #427).
+
+* SOILWAT2 can now represent the influence of soil organic matter on the
+  soil water retention curve and the saturated hydraulic conductivity
+  parameter (#397; @dschlaep). The implemented approach first determines
+  organic matter properties for the soil layers assuming fibric peat
+  characteristics at the soil surface and characteristics of sapric peat
+  at a user-specified depth. Then, bulk soil parameters of the soil water
+  retention curve are estimated as linear combinations of properties for
+  the mineral soil component and of properties for the organic matter soil
+  component using the proportion of organic matter in the bulk soil as weights.
+  The bulk soil saturated hydraulic conductivity parameter accounts for
+  flow pathways through organic matter above a threshold and assumes
+  conductivities through mineral and organic components in series outside of
+  those pathways.
+
+* Saturated percolation is now limited. The upper bound is a function based on
+  the saturated hydraulic conductivity parameter
+  (which includes effects of organic matter), frozen soils, and a
+  user-specified `"permeability"` factor.
+
+* Fix the calculation of depth of snowpack (#441; @dschlaep).
+  Depth of snowpack is now calculated after sublimation occurred and
+  is based on snowpack density that now is always larger than 0; this now makes
+  depth of snowpack and snowpack water content consistent.
+
+* Fix the estimation of surface temperature (#440; @dschlaep).
+  Biomass effects are now capped at a value at which
+  cooling and heating effects on minimum and maximum surface temperature
+  result, across average conditions, in no change for mean surface temperature.
+  Effects of maximum air temperature on maximum surface temperature are limited
+  to air temperatures above freezing.
+  Minimum and maximum surface temperature are now set to their average
+  (with a warning) if the initial estimate of minimum surface temperature is
+  larger than the initial estimate of maximum surface temperature.
+  Average surface temperature is now (by default) estimated from minimum and
+  maximum surface temperature (instead of independently as previously), but
+  the old method can be selected.
+
+## Changes to inputs
+* New input via `"siteparam.in"` to specify the depth at which characteristics
+  of organic matter have completely switched from fibric to sapric peat
+  (default is 50 cm).
+* New input via `"siteparam.in"` to select the method for estimating
+  surface temperature (with a new default).
+* New input via `"soils.in"` to provide the proportion of soil organic matter
+  to bulk soil by weight for each soil layer.
+* New input via `"swrc_params*.in"` to provide parameter values of the
+  soil water retention curve representing fibric and sapric peat.
+  Note: Some parameter values for the `"FXW"` SWRC are missing.
+* `"climate.in"`: new snow density values for July, August and September
+  estimated with linear interpolation from June and October values.
+* New command line option `"-p"` to prepare the domain/progress,
+  index, and output files; with this flag, no simulations will be run.
+
+## Changes to inputs for nc-based SOILWAT2
+* New tab-separated value `"tsv"` input file `"SW2_netCDF_input_variables.tsv"`
+  that lists, activates, and describes each input from `"netCDF"` files.
+  This file replaces `"files_nc.in"`.
+* `"desc_nc.in"` provides new inputs for the names of
+  geographic and projected `"CRS"` variables as well as names for the spatial
+  coordinate axes and variables.
+* New example inputs as `"netCDF"` files that exactly txt-based inputs
+    * `"inClimate/monthlyClimate.nc"` corresponding to `"climate.in"`
+    * `"inSoil/soil.nc"` and `"inSoil/swrcp.nc"`
+      corresponding to `"soils.in"` and `"swrc_params.in"`
+    * `"inTopo/topo.nc"` corresponding to `"modelrun.in"`
+    * `"inVeg/veg2.nc"` and `"inVeg/vegPFT.nc"`
+      corresponding to `"veg.in"`
+    * `"inWeather/weather.nc"` corresponding to `"data_weather/weath.*"`
+
+
 # SOILWAT2 v8.0.1
+* Simulation output remains the same as the previous version unless
+  relative humidity is calculated from vapor pressure or specific humidity.
+
 * Fix the calculation of relative humidity (#435; @dschlaep).
   Previously, relative humidity was incorrectly calculated if based on
   vapor pressure or specific humidity.
+  The calculation of relative humidity from specific humidity now
+  also uses elevation (to estimate air pressure).
+
 * Fix the count of days on which a missing weather value was replaced by a
   non-missing value from the preceding day for the method `"LOCF"`
   (last observation carried forward; #437; @dschlaep). Previously, any day
   with a missing weather value was counted.
+
+## Changes to inputs
+* Units of specific humidity inputs changed from `"%"` to `"g kg-1"`.
 
 
 # SOILWAT2 v8.0.0

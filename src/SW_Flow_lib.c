@@ -376,6 +376,7 @@ void litter_intercepted_water(
 (cm H<SUB>2</SUB>O).
 @param swcsat Soilwater content in each layer at saturation
     (m<SUP>3</SUP>H<SUB>2</SUB>O).
+@param ksat Saturated hydraulic conductivity [cm day-1]
 @param impermeability Impermeability measures for each layer.
 @param *standingWater Remaining water on the surface
     (m<SUP>3</SUP>H<SUB>2</SUB>O).
@@ -401,18 +402,19 @@ void infiltrate_water_high(
     double drain[],
     double *drainout,
     double pptleft,
-    int nlyrs,
-    double swcfc[],
+    unsigned int nlyrs,
+    const double swcfc[],
     double swcsat[],
-    double impermeability[],
+    double ksat[],
+    const double impermeability[],
     double *standingWater,
     double lyrFrozen[]
 ) {
 
-    int i;
-    int j;
-    double d[MAX_LAYERS] = {0};
-    double push, ksat_rel;
+    unsigned int i;
+    unsigned int j;
+    double push;
+    double ksat_rel;
 
     // Infiltration
     swc[0] += pptleft + *standingWater;
@@ -426,25 +428,29 @@ void infiltrate_water_high(
             ksat_rel = 1.;
         }
 
+        ksat_rel *= (1. - impermeability[i]);
+
         /* calculate potential saturated percolation */
-        d[i] =
-            fmax(0., ksat_rel * (1. - impermeability[i]) * (swc[i] - swcfc[i]));
-        drain[i] = d[i];
+        drain[i] = ksat_rel * fmin(ksat[i], swc[i] - swcfc[i]);
+        drain[i] = fmax(0., drain[i]);
+
 
         if (i < nlyrs - 1) {
             /* percolate up to next-to-last layer */
-            swc[i + 1] += d[i];
-            swc[i] -= d[i];
+            swc[i + 1] += drain[i];
+            swc[i] -= drain[i];
         } else {
             /* percolate last layer */
-            (*drainout) = d[i];
-            swc[i] -= (*drainout);
+            (*drainout) = drain[i];
+            swc[i] -= drain[i];
         }
     }
 
     /* adjust (i.e., push water upwards) if water content of a layer is now
      * above saturated water content */
-    for (j = nlyrs - 1; j >= 0; j--) {
+
+    /* reverse for-loop with j in [nlyrs - 1, 0] */
+    for (j = nlyrs; j-- > 0;) {
         if (GT(swc[j], swcsat[j])) {
             push = swc[j] - swcsat[j];
             swc[j] -= push;
@@ -484,7 +490,7 @@ void transp_weighted_avg(
     SW_SITE *SW_Site,
     unsigned int n_tr_rgns,
     LyrIndex n_layers,
-    unsigned int tr_regions[],
+    const unsigned int tr_regions[],
     double swc[],
     int VegType,
     LOG_INFO *LogInfo
@@ -512,8 +518,10 @@ void transp_weighted_avg(
      1-Oct-03 - local sumco replaces previous sum_tr_coeff[]
 
      **********************************************************************/
-    unsigned int r, i;
-    double swp, sumco;
+    unsigned int r;
+    unsigned int i;
+    double swp;
+    double sumco;
 
     *swp_avg = 0;
     for (r = 1; r <= n_tr_rgns; r++) {
@@ -521,14 +529,14 @@ void transp_weighted_avg(
 
         for (i = 0; i < n_layers; i++) {
             if (tr_regions[i] == r) {
-                swp += SW_Site->transp_coeff[VegType][i] *
+                swp += SW_Site->soils.transp_coeff[VegType][i] *
                        SW_SWRC_SWCtoSWP(swc[i], SW_Site, i, LogInfo);
 
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }
 
-                sumco += SW_Site->transp_coeff[VegType][i];
+                sumco += SW_Site->soils.transp_coeff[VegType][i];
             }
         }
 
@@ -644,15 +652,17 @@ void pot_soil_evap(
      swpotentl - compute soilwater potential
      **********************************************************************/
 
-    double x, avswp = 0.0, sumwidth = 0.0;
+    double x;
+    double avswp = 0.0;
+    double sumwidth = 0.0;
     unsigned int i;
 
     /* get the weighted average of swp in the evap layers */
     for (i = 0; i < nelyrs; i++) {
-        if (ZRO(SW_Site->evap_coeff[i])) {
+        if (ZRO(SW_Site->soils.evap_coeff[i])) {
             break;
         }
-        x = SW_Site->width[i] * SW_Site->evap_coeff[i];
+        x = SW_Site->soils.width[i] * SW_Site->soils.evap_coeff[i];
         sumwidth += x;
         avswp += x * SW_SWRC_SWCtoSWP(swc[i], SW_Site, i, LogInfo);
         if (LogInfo->stopRun) {
@@ -719,12 +729,14 @@ void pot_soil_evap_bs(
      swpotentl - compute soilwater potential
      **********************************************************************/
 
-    double x, avswp = 0.0, sumwidth = 0.0;
+    double x;
+    double avswp = 0.0;
+    double sumwidth = 0.0;
     unsigned int i;
 
     /* get the weighted average of swp in the evap layers */
     for (i = 0; i < nelyrs; i++) {
-        x = SW_Site->width[i] * SW_Site->evap_coeff[i];
+        x = SW_Site->soils.width[i] * SW_Site->soils.evap_coeff[i];
         sumwidth += x;
         avswp += x * SW_SWRC_SWCtoSWP(swc[i], SW_Site, i, LogInfo);
         if (LogInfo->stopRun) {
@@ -812,7 +824,9 @@ void pot_transp(
      tanfunc - tangent function
      **********************************************************************/
 
-    double par1, par2, shadeaf;
+    double par1;
+    double par2;
+    double shadeaf;
 
     if (LE(biolive, 0.)) {
         *bstrate = 0.;
@@ -878,7 +892,9 @@ double watrate(
 
      **********************************************************************/
 
-    double par1, par2, result;
+    double par1;
+    double par2;
+    double result;
 
     if (LT(petday, .2)) {
         par1 = 3.0;
@@ -965,7 +981,7 @@ void remove_from_soil(
     SW_SITE *SW_Site,
     double *aet,
     unsigned int nlyrs,
-    double coeff[],
+    const double coeff[],
     double rate,
     double swcmin[],
     double lyrFrozen[],
@@ -984,7 +1000,12 @@ HISTORY: 10 Jan 2002 - cwb - replaced two previous functions with
      **********************************************************************/
 
     unsigned int i;
-    double swpfrac[MAX_LAYERS], sumswp = 0.0, swc_avail, q, tmpswp, d = 0.;
+    double swpfrac[MAX_LAYERS];
+    double sumswp = 0.0;
+    double swc_avail;
+    double q;
+    double tmpswp;
+    double d = 0.;
 
     for (i = 0; i < nlyrs; i++) {
         tmpswp = SW_SWRC_SWCtoSWP(swc[i], SW_Site, i, LogInfo);
@@ -1061,9 +1082,16 @@ void percolate_unsaturated(
 ) {
 
     unsigned int i;
-    int j;
-    double drainlw = 0.0, swc_avail, drainpot, d[MAX_LAYERS] = {0}, push,
-           kunsat_rel, swcrel, tmp1, tmp2;
+    unsigned int j;
+    double drainlw = 0.0;
+    double swc_avail;
+    double drainpot;
+    double d[MAX_LAYERS] = {0};
+    double push;
+    double kunsat_rel;
+    double swcrel;
+    double tmp1;
+    double tmp2;
 
 
     /* Note that this function calculates percolation as if no gravel
@@ -1113,7 +1141,7 @@ void percolate_unsaturated(
                 );
 
                 tmp1 = slow_drain_depth * SW_Site->swcBulk_fieldcap[i] /
-                       SW_Site->width[i];
+                       SW_Site->soils.width[i];
                 tmp2 = exp(-tmp1);
 
                 if (LT(tmp2, 1.)) {
@@ -1124,7 +1152,7 @@ void percolate_unsaturated(
                 }
             }
 
-            d[i] = kunsat_rel * (1. - SW_Site->impermeability[i]) *
+            d[i] = kunsat_rel * (1. - SW_Site->soils.impermeability[i]) *
                    fmin(swc_avail, fmax(0., drainpot));
         }
 
@@ -1144,8 +1172,10 @@ void percolate_unsaturated(
 
 
     /* adjust (i.e., push water upwards) if water content of a layer is
-             now above saturated water content */
-    for (j = nlyrs - 1; j >= 0; j--) {
+       now above saturated water content */
+
+    /* reverse for-loop with j in [nlyrs - 1, 0] */
+    for (j = nlyrs; j-- > 0;) {
         if (GT(swc[j], SW_Site->swcBulk_saturated[j])) {
             push = swc[j] - SW_Site->swcBulk_saturated[j];
             swc[j] -= push;
@@ -1195,7 +1225,7 @@ void hydraulic_redistribution(
     SW_SITE *SW_Site,
     unsigned int vegk,
     unsigned int nlyrs,
-    double lyrFrozen[],
+    const double lyrFrozen[],
     double maxCondroot,
     double swp50,
     double shapeCond,
@@ -1211,18 +1241,26 @@ void hydraulic_redistribution(
      point 03/23/2012 (drs) excluded hydraulic redistribution from top soil
      layer (assuming that this layer is <= 5 cm deep)
      **********************************************************************/
-
-    unsigned int i, j, idso, idre, nit;
-    Bool is_hd_adj;
-    double swa[MAX_LAYERS] = {0}, swp[MAX_LAYERS] = {0},
-           relCondroot[MAX_LAYERS] = {0}, mlyrRootCo[2] = {0.},
-           hydredmat[MAX_LAYERS][MAX_LAYERS] = {{0}};
-    double hdnet, hdin, hdout, tmp;
-
 #ifdef SWDEBUG
     short debug = 0;
     double hdnet2;
 #endif
+
+    unsigned int i;
+    unsigned int j;
+    unsigned int idso;
+    unsigned int idre;
+    unsigned int nit;
+    Bool is_hd_adj;
+    double swa[MAX_LAYERS] = {0};
+    double swp[MAX_LAYERS] = {0};
+    double relCondroot[MAX_LAYERS] = {0};
+    double mlyrRootCo[2] = {0.};
+    double hydredmat[MAX_LAYERS][MAX_LAYERS] = {{0}};
+    double hdnet;
+    double hdin;
+    double hdout;
+    double tmp;
 
 #ifdef SWDEBUG
     if (debug) {
@@ -1285,12 +1323,13 @@ void hydraulic_redistribution(
                         -> truncate to source layer width
                         (original equation assumed identical layer widths)
                 */
-                mlyrRootCo[0] = SW_Site->transp_coeff[vegk][idso];
-                mlyrRootCo[1] = SW_Site->transp_coeff[vegk][idre];
+                mlyrRootCo[0] = SW_Site->soils.transp_coeff[vegk][idso];
+                mlyrRootCo[1] = SW_Site->soils.transp_coeff[vegk][idre];
 
-                if (LT(SW_Site->width[idso], SW_Site->width[idre])) {
+                if (LT(SW_Site->soils.width[idso],
+                       SW_Site->soils.width[idre])) {
                     mlyrRootCo[1] *=
-                        SW_Site->width[idso] / SW_Site->width[idre];
+                        SW_Site->soils.width[idso] / SW_Site->soils.width[idre];
                 }
 
 
@@ -1319,8 +1358,8 @@ void hydraulic_redistribution(
                         idso,
                         idre,
                         tmp,
-                        SW_Site->width[idso],
-                        SW_Site->width[idre],
+                        SW_Site->soils.width[idso],
+                        SW_Site->soils.width[idre],
                         swc[idso],
                         swc[idre],
                         -0.1 * swp[idso],
@@ -1469,13 +1508,15 @@ void lyrTemp_to_lyrSoil_temperature(
     double temperatureRangeR[],
     double temperatureRange[]
 ) {
-
-    // i: index to soil temperature layer (i = 0 is surface)
-    // j: index to soil layer (j = 0 is first soil layer)
-    unsigned int i = 0, j, n;
 #ifdef SWDEBUG
     int debug = 0;
 #endif
+
+    // i: index to soil temperature layer (i = 0 is surface)
+    // j: index to soil layer (j = 0 is first soil layer)
+    unsigned int i = 0;
+    unsigned int j;
+    unsigned int n;
     double acc;
 
     // interpolate soil temperature values for depth of soil profile layers
@@ -1570,20 +1611,23 @@ depths/layers.
 */
 void lyrSoil_to_lyrTemp_temperature(
     unsigned int nlyrSoil,
-    double depth_Soil[],
-    double avgLyrTemp[],
+    const double depth_Soil[],
+    const double avgLyrTemp[],
     double endTemp,
     unsigned int nlyrTemp,
     double depth_Temp[],
     double maxTempDepth,
     double avgLyrTempR[]
 ) {
-
-    unsigned int i, j1 = 0, j2;
 #ifdef SWDEBUG
     int debug = 0;
 #endif
-    double depth_Soil2[MAX_LAYERS + 1] = {0}, avgLyrTemp2[MAX_LAYERS + 1] = {0};
+
+    unsigned int i;
+    unsigned int j1 = 0;
+    unsigned int j2;
+    double depth_Soil2[MAX_LAYERS + 1] = {0};
+    double avgLyrTemp2[MAX_LAYERS + 1] = {0};
 
     // transfer data to include bottom conditions; do not include surface
     // temperature in interpolations
@@ -1671,25 +1715,28 @@ to soil temperature layer values.
 void lyrSoil_to_lyrTemp(
     double cor[MAX_ST_RGR][MAX_LAYERS + 1],
     unsigned int nlyrSoil,
-    double width_Soil[],
-    double var[],
+    const double width_Soil[],
+    const double var[],
     unsigned int nlyrTemp,
     double width_Temp,
     double res[]
 ) {
-
-    unsigned int i, j = 0;
 #ifdef SWDEBUG
     int debug = 0;
 #endif
-    double acc, ratio, sum;
+
+    unsigned int i;
+    unsigned int j = 0;
+    double acc;
+    double ratio;
+    double sum;
 
     for (i = 0; i < nlyrTemp + 1; i++) {
         res[i] = 0.0;
         acc = 0.0;
         sum = 0.0;
         while (LT(acc, width_Temp) && j < nlyrSoil + 1) {
-            if (GE(cor[i][j], 0.0)) {
+            if (GE(cor[i][j], 0.0) && j < nlyrSoil) {
                 // there are soil layers to add
                 ratio = cor[i][j] / width_Soil[j];
                 res[i] += var[j] * ratio;
@@ -1701,8 +1748,10 @@ void lyrSoil_to_lyrTemp(
             } else if (LT(cor[i][j], 0.0)) {
                 // negative cor values indicate end of soil layer profile
                 // copying values from deepest soil layer
-                ratio = -cor[i][j] / width_Soil[j - 1];
-                res[i] += var[j - 1] * ratio;
+                // NOLINTBEGIN(clang-analyzer-core.UndefinedBinaryOperatorResult)
+                ratio = -cor[i][j] / width_Soil[nlyrSoil - 1];
+                res[i] += var[nlyrSoil - 1] * ratio;
+                // NOLINTEND(clang-analyzer-core.UndefinedBinaryOperatorResult)
                 sum += ratio;
                 acc += (-cor[i][j]);
             }
@@ -1742,22 +1791,23 @@ double surface_temperature_under_snow(double airTempAvg, double snow) {
     double kSnow;          // the effect of snow based on swe
     double tSoilAvg = 0.0; // the average temeperature of the soil surface
                            // Parton et al. 1998. Equation 6.
-    if (snow == 0) {
-        return 0.0;
-    } else if (snow > 0 && airTempAvg >= 0) {
-        tSoilAvg = -2.0;
-    } else if (snow > 0 && airTempAvg < 0) {
-        // Parton et al. 1998. Equation 5.
-        kSnow = fmax((-0.15 * snow + 1.0), 0.0);
-        tSoilAvg = 0.3 * airTempAvg * kSnow + -2.0;
+
+    if (snow > 0) {
+        if (airTempAvg >= 0) {
+            tSoilAvg = -2.0;
+        } else {
+            // Parton et al. 1998. Equation 5.
+            kSnow = fmax((-0.15 * snow + 1.0), 0.0);
+            tSoilAvg = 0.3 * airTempAvg * kSnow + -2.0;
+        }
     }
+
     return tSoilAvg;
 }
 
 void SW_ST_init_run(ST_RGR_VALUES *StRegValues) {
     StRegValues->soil_temp_init = swFALSE;
     StRegValues->fusion_pool_init = swFALSE;
-    StRegValues->do_once_at_soiltempError = swTRUE;
     StRegValues->delta_time = SEC_PER_DAY;
 }
 
@@ -1799,12 +1849,11 @@ void SW_ST_setup_run(
     double *lyrFrozen,
     LOG_INFO *LogInfo
 ) {
-
-    LyrIndex i;
-
 #ifdef SWDEBUG
     int debug = 0;
 #endif
+
+    LyrIndex i;
 
     if (!(*soil_temp_init)) {
 #ifdef SWDEBUG
@@ -1824,8 +1873,8 @@ void SW_ST_setup_run(
         soil_temperature_setup(
             SW_StRegValues,
             SW_Site->soilBulk_density,
-            SW_Site->width,
-            SW_Site->avgLyrTempInit,
+            SW_Site->soils.width,
+            SW_Site->soils.avgLyrTempInit,
             SW_Site->Tsoil_constant,
             SW_Site->n_layers,
             SW_Site->swcBulk_fieldcap,
@@ -1833,7 +1882,7 @@ void SW_ST_setup_run(
             SW_Site->stDeltaX,
             SW_Site->stMaxDepth,
             SW_Site->stNRGR,
-            SW_Site->depths,
+            SW_Site->soils.depths,
             ptr_stError,
             soil_temp_init,
             LogInfo
@@ -1845,15 +1894,15 @@ void SW_ST_setup_run(
         /* Initialize soil temperature and frozen status across the soil layer
          * profile. */
         ForEachSoilLayer(i, SW_Site->n_layers) {
-            avgLyrTemp[i] = SW_Site->avgLyrTempInit[i];
+            avgLyrTemp[i] = SW_Site->soils.avgLyrTempInit[i];
         }
 
         set_frozen_unfrozen(
             SW_Site->n_layers,
-            SW_Site->avgLyrTempInit,
+            SW_Site->soils.avgLyrTempInit,
             swc,
             SW_Site->swcBulk_saturated,
-            SW_Site->width,
+            SW_Site->soils.width,
             lyrFrozen
         );
 
@@ -1896,8 +1945,8 @@ void soil_temperature_setup(
     double avgLyrTempInit[],
     double sTconst,
     unsigned int nlyrs,
-    double fc[],
-    double wp[],
+    const double fc[],
+    const double wp[],
     double deltaX,
     double theMaxDepth,
     unsigned int nRgr,
@@ -1906,15 +1955,21 @@ void soil_temperature_setup(
     Bool *soil_temp_init,
     LOG_INFO *LogInfo
 ) {
-
-    // local vars
-    unsigned int x1 = 0, x2 = 0, j = 0, i;
 #ifdef SWDEBUG
     int debug = 0;
 #endif
-    double d1 = 0.0, d2 = 0.0, acc = 0.0;
+
+    // local vars
+    unsigned int x1 = 0;
+    unsigned int x2 = 0;
+    unsigned int j = 0;
+    unsigned int i;
+    double d1 = 0.0;
+    double d2 = 0.0;
+    double acc = 0.0;
     // double fc_vwc[nlyrs], wp_vwc[nlyrs];
-    double fc_vwc[MAX_LAYERS] = {0}, wp_vwc[MAX_LAYERS] = {0};
+    double fc_vwc[MAX_LAYERS] = {0};
+    double wp_vwc[MAX_LAYERS] = {0};
 
     // set `soil_temp_init` to 1 to indicate that this function was already
     // called and shouldn't be called again
@@ -2165,7 +2220,7 @@ void set_frozen_unfrozen(
     double avgLyrTemp[],
     double swc[],
     double swc_sat[],
-    double width[],
+    const double width[],
     double lyrFrozen[]
 ) {
 
@@ -2199,7 +2254,7 @@ Based on equations from Eitzinger 2000. @cite Eitzinger2000
 @param vwc An array of temperature-layer VWC values (cm/layer).
 @param bDensity An array of the bulk density of the whole soil per soil layer
     (g/cm<SUP>3</SUP>).
-@param[in] fusion_pool_init Specifies if the values for the soil fusion
+@param[in,out] fusion_pool_init Specifies if the values for the soil fusion
     (thawing/freezing) section of `soil_temperature()` have been initialized
 @param oldsFusionPool_actual Yesterdays actual fusion pool at each soil layer
 
@@ -2207,13 +2262,13 @@ Based on equations from Eitzinger 2000. @cite Eitzinger2000
 freezing/thawing
 */
 unsigned int adjust_Tsoil_by_freezing_and_thawing(
-    double oldavgLyrTemp[],
-    double avgLyrTemp[],
+    const double oldavgLyrTemp[],
+    const double avgLyrTemp[],
     double shParam,
     unsigned int nlyrs,
-    double vwc[],
-    double bDensity[],
-    Bool fusion_pool_init,
+    const double vwc[],
+    const double bDensity[],
+    Bool *fusion_pool_init,
     double oldsFusionPool_actual[]
 ) {
     // Calculate fusion pools based on soil profile layers, soil
@@ -2227,13 +2282,16 @@ unsigned int adjust_Tsoil_by_freezing_and_thawing(
 
     //	double deltaTemp, Cis, sFusionPool[nlyrs], sFusionPool_actual[nlyrs];
     // To avoid compiler warnings "warning: parameter set but not used"
-    double temp;
-    temp = oldavgLyrTemp[0] + avgLyrTemp[0] + shParam + nlyrs + vwc[0] +
-           bDensity[0];
-    temp += temp;
+    (void) oldavgLyrTemp;
+    (void) avgLyrTemp;
+    (void) shParam;
+    (void) nlyrs;
+    (void) vwc;
+    (void) bDensity;
     // end avoid compiler warnings
 
-    unsigned int i, sFadjusted_avgLyrTemp;
+    unsigned int i;
+    unsigned int sFadjusted_avgLyrTemp;
 
     /* local variables explained:
      debug - 1 to print out debug messages & then exit the program after
@@ -2252,11 +2310,11 @@ unsigned int adjust_Tsoil_by_freezing_and_thawing(
      */
 
 
-    if (!fusion_pool_init) {
+    if (!(*fusion_pool_init)) {
         for (i = 0; i < nlyrs; i++) {
             oldsFusionPool_actual[i] = 0.;
         }
-        fusion_pool_init = swTRUE;
+        *fusion_pool_init = swTRUE;
     }
 
     sFadjusted_avgLyrTemp = 0;
@@ -2359,30 +2417,23 @@ void soil_temperature_today(
     double deltaX,
     double sT1,
     double sTconst,
-    int nRgr,
+    unsigned int nRgr,
     double avgLyrTempR[],
-    double oldavgLyrTempR[],
-    double vwcR[],
-    double wpR[],
-    double fcR[],
-    double bDensityR[],
+    const double oldavgLyrTempR[],
+    const double vwcR[],
+    const double wpR[],
+    const double fcR[],
+    const double bDensityR[],
     double csParam1,
     double csParam2,
     double shParam,
     Bool *ptr_stError,
     double surface_range,
     double temperatureRangeR[],
-    double depthsR[],
+    const double depthsR[],
     TimeInt year,
     TimeInt doy
 ) {
-
-    int i, k, m, Nsteps_per_day = 1;
-    double pe, cs, sh, dT_to_dX2, alpha, part2;
-    double oldavgLyrTempR2[MAX_ST_RGR];
-
-    Bool Tsoil_not_exploded = swTRUE;
-
 #ifdef SWDEBUG
     int debug = 0;
     if (year == 1981 && doy > 180 && doy < 191) {
@@ -2393,6 +2444,20 @@ void soil_temperature_today(
     (void) year;
     (void) doy;
 #endif
+
+    unsigned int i;
+    unsigned int k;
+    unsigned int m;
+    unsigned int Nsteps_per_day = 1;
+    double pe;
+    double cs;
+    double sh;
+    double dT_to_dX2;
+    double alpha;
+    double part2;
+    double oldavgLyrTempR2[MAX_ST_RGR];
+
+    Bool Tsoil_not_exploded = swTRUE;
 
     // upper boundary condition; index 0 indicates surface and not first layer
     // --> required for interpolation from soil temperature layers to soil
@@ -2637,6 +2702,178 @@ void soil_temperature_today(
     }
 }
 
+/**
+@brief Calculate surface temperature
+
+Biomass effects are capped at 550 [g m-2] which is the biomass value at which
+cooling and heating effects on minimum and maximum surface temperature
+result, across average conditions, in no change for mean surface temperature
+based on Parton 1984 @cite Parton1984 considering 80-700 [g m-2].
+
+Minimum and maximum surface temperature are set to the average of the two values
+(with a warning) if the initial estimate of minimum surface temperature is
+larger than the initial estimate of maximum surface temperature.
+
+Effects of maximum air temperature on maximum surface temperature are limited
+to air temperatures above freezing.
+
+Method 0 (Parton 1978) may result in average surface temperature to
+fall outside the min-max range (with a warning).
+
+@param[out] minTempSurface Minimum surface temperature (&deg;C)
+@param[out] meanTempSurface Average surface temperature (&deg;C)
+@param[out] maxTempSurface Maxmimum surface temperature (&deg;C)
+@param[in] method The requested method for average surface temperature
+    (see @ref SW_SITE.methodSurfaceTemperature):
+    - 0, based on Parton 1978 (default prior to v8.1.0);
+    - 1, based on Parton 1984 (default since v8.1.0)
+@param[in] snow Snow-water-equivalent of the area (cm).
+@param[in] minTempAir Minimum air temperature of Today (&deg;C)
+@param[in] meanTempAir Average daily air temperature (&deg;C).
+@param[in] maxTempAir Maximum air temperature of Today (&deg;C)
+@param[in] H_gt Daily global (tilted) irradiation [MJ / m2]
+@param[in] pet Potential evapotranspiration rate (cm/day).
+@param[in] aet Actual evapotranspiration (cm/day).
+@param[in] biomass Standing-crop biomass (g/m<SUP>2</SUP>).
+@param[in] bmLimiter Biomass limiter constant (300 g/m<SUP>2</SUP>).
+@param[in] t1Param1 Constant for the avg temp at the top of soil equation (15).
+@param[in] t1Param2 Constant for the avg temp at the top of soil equation (-4).
+@param[in] t1Param3 Constant for the avg temp at the top of soil equation (600).
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void surface_temperature(
+    double *minTempSurface,
+    double *meanTempSurface,
+    double *maxTempSurface,
+    unsigned int method,
+    double snow,
+    double minTempAir,
+    double meanTempAir,
+    double maxTempAir,
+    double H_gt,
+    double pet,
+    double aet,
+    double biomass,
+    double bmLimiter,
+    double t1Param1,
+    double t1Param2,
+    double t1Param3,
+    LOG_INFO *LogInfo
+) {
+    double biomassCapped = fmin(550., biomass);
+    double offset;
+    double tmp;
+
+#ifdef SWDEBUG
+    int debug = 0;
+#endif
+
+    if (GT(snow, 0.0)) {
+        // underneath snow, based on Parton 1998
+        *meanTempSurface = surface_temperature_under_snow(meanTempAir, snow);
+        *minTempSurface = *maxTempSurface = *meanTempSurface;
+
+    } else {
+        /* Estimate max/min surface temperature based on Parton 1984
+           maxTempSurface (equation 4, Figs 1b and 2): biomass and radiation
+           minTempSurface (equation 5): biomass
+        */
+        offset =
+            (exp(-0.0048 * biomassCapped) - 0.13) *
+            (0.35 * fmax(0., maxTempAir) + 24.07 * (1. - exp(-0.038 * H_gt)));
+        *maxTempSurface = maxTempAir + offset;
+
+        offset = 0.006 * biomassCapped - 1.82;
+        *minTempSurface = minTempAir + offset;
+
+
+        if (*maxTempSurface < *minTempSurface) {
+            tmp = (*maxTempSurface + *minTempSurface) / 2.;
+
+            LogError(
+                LogInfo,
+                LOGWARN,
+                "minTempSurface > maxTempSurface (%f > %f [C]); "
+                "they are reset to the average of the two (%f [C]).",
+                *minTempSurface,
+                *maxTempSurface,
+                tmp
+            );
+
+            *maxTempSurface = *minTempSurface = tmp;
+        }
+
+
+        /* Estimate average surface temperature */
+        switch (method) {
+        case 0: /* Parton 1978 (default prior to v8.1.0) */
+            /* drs (Dec 16, 2014): this interpretation of
+               Parton 1978's 2.20 equation removes a jump at biomass = bmLimiter
+               (the printed version misses a closing parenthesis)
+               default parameter values:
+                   t1Param1 = 15; bmLimiter = 300;
+                   t1Param2 = -4; t1Param3 = 600
+            */
+            offset = LE(biomassCapped, bmLimiter) ?
+                         t1Param1 * pet * (1. - aet / pet) *
+                             (1. - biomassCapped / bmLimiter) :
+                         t1Param2 * (biomassCapped - bmLimiter) / t1Param3;
+
+            *meanTempSurface = meanTempAir + offset;
+
+            if (*meanTempSurface < *minTempSurface ||
+                *meanTempSurface > *maxTempSurface) {
+                LogError(
+                    LogInfo,
+                    LOGWARN,
+                    "meanTempSurface (%f [C]) is outside min-max range "
+                    "[%f,%f] [C]",
+                    *meanTempSurface,
+                    *minTempSurface,
+                    *maxTempSurface
+                );
+            }
+
+            break;
+
+        case 1: /* Parton 1984 (default since v8.1.0) */
+            *meanTempSurface =
+                0.41 * (*maxTempSurface) + 0.59 * (*minTempSurface);
+            break;
+
+        default:
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Surface temperature method %u is not implemented.",
+                method
+            );
+            break;
+        }
+    }
+
+#ifdef SWDEBUG
+    if (debug) {
+        sw_printf(
+            "\nTsurface method=%d (min|mean|max) = %f|%f|%f"
+            "\n  Tair (min|mean|max) = %f|%f|%f"
+            "\n  snow = %f"
+            "\n  biomass (capped|all) = %f|%f\n",
+            method,
+            *minTempSurface,
+            *meanTempSurface,
+            *maxTempSurface,
+            minTempAir,
+            meanTempAir,
+            maxTempAir,
+            snow,
+            biomass,
+            biomassCapped
+        );
+    }
+#endif
+}
+
 /**********************************************************************
 PURPOSE: Calculate soil temperature for each layer
 * based on Parton 1978, ch. 2.2.2 Temperature-profile Submodel
@@ -2760,17 +2997,30 @@ avgLyrTemp - soil layer temperatures in celsius
 **********************************************************************/
 
 /**
-@brief Calculate soil temperature for each layer.
+@brief Calculate temperature at surface and in the soil for each layer.
 
 Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000,
 Parton 1978. @cite Parton1978, Parton 1984. @cite Parton1984
 
 @param[in,out] SW_StRegValues Struct of type SW_StRegValues which keeps
      track of variables used within `soil_temperature()`
-@param[out] *surface_max Maxmimum surface temperature (&deg;C)
-@param[out] *surface_min Minimum surface temperature (&deg;C)
+@param[out] minTempSurface Minimum surface temperature (&deg;C)
+@param[out] meanTempSurface Average surface temperature (&deg;C)
+@param[out] maxTempSurface Maxmimum surface temperature (&deg;C)
+@param[out] minTempSoil An array holding all of the layers minimum
+    temperature (&deg;C)
+@param[in,out] meanTempSoil Temperature values of soil layers
+    (yesterday's values for input; today's values as output)  (&deg;C).
+@param[out] maxTempSoil An array holding all of the layers maximum
+    temperature (&deg;C)
 @param[out] lyrFrozen Frozen information at each layer.
-@param[in] airTemp Average daily air temperature (&deg;C).
+@param[in] methodSurfaceTemperature The requested method to estimate
+    average surface temperature, see `surface_temperature()`.
+@param[in] snow Snow-water-equivalent of the area (cm).
+@param[in] minTempAir Minimum air temperature of Today (&deg;C)
+@param[in] meanTempAir Average daily air temperature (&deg;C).
+@param[in] maxTempAir Maximum air temperature of Today (&deg;C)
+@param[in] H_gt Daily global (tilted) irradiation [MJ / m2]
 @param[in] pet Potential evapotranspiration rate (cm/day).
 @param[in] aet Actual evapotranspiration (cm/day).
 @param[in] biomass Standing-crop biomass (g/m<SUP>2</SUP>).
@@ -2780,9 +3030,7 @@ Parton 1978. @cite Parton1978, Parton 1984. @cite Parton1984
 @param[in] bDensity An array of the bulk density of the whole soil per soil
     layer (g/cm<SUP>3</SUP>).
 @param[in] width The width of the layers (cm).
-@param[in,out] avgLyrTemp Temperature values of soil layers
-    (yesterday's values for input; today's values as output)  (&deg;C).
-@param[out] surfaceAvg Average daily surface air temperature
+@param[in] depths Depths of soil layers (cm)
 @param[in] nlyrs Number of layers in the soil profile.
 @param[in] bmLimiter Biomass limiter constant (300 g/m<SUP>2</SUP>).
 @param[in] t1Param1 Constant for the avg temp at the top of soil equation (15).
@@ -2793,7 +3041,6 @@ Parton 1978. @cite Parton1978, Parton 1984. @cite Parton1984
 @param[in] csParam2 Constant for the soil thermal conductivity equation
     (0.00030).
 @param[in] shParam Constant for the specific heat capacity equation (0.18).
-@param[in] snowdepth Depth of snow cover (cm)
 @param[in] sTconst Constant soil temperature (&deg;C).
 @param[in] deltaX Distance between profile points (default is 15 cm from
     Parton's equation @cite Parton1984).
@@ -2801,26 +3048,26 @@ Parton 1978. @cite Parton1978, Parton 1984. @cite Parton1984
     Parton's equation @cite Parton1984).
 @param[in] nRgr Number of regressions (1 extra value is needed for the
     avgLyrTempR and oldavgLyrTempR for the last layer.
-@param[in] snow Snow-water-equivalent of the area (cm).
-@param[in] max_air_temp Maximum air temperature of Today (&deg;C)
-@param[in] min_air_temp Minimum air temperature of Today (&deg;C)
-@param[in] H_gt Daily global (tilted) irradiation [MJ / m2]
 @param[in] year Current year in simulation
 @param[in] doy Day of the year (base1) [1-366]
-@param[in] depths Depths of soil layers (cm)
-@param[out] maxLyrTemperature An array holding all of the layers maximum
-    temperature (&deg;C)
-@param[out] minLyrTemperature An array holding all of the layers minimum
-    temperature (&deg;C)
 @param[out] *ptr_stError Boolean indicating whether there was an error.
 @param[out] LogInfo Holds information on warnings and errors
 */
 void soil_temperature(
     ST_RGR_VALUES *SW_StRegValues,
-    double *surface_max,
-    double *surface_min,
+    double *minTempSurface,
+    double *meanTempSurface,
+    double *maxTempSurface,
+    double minTempSoil[],
+    double meanTempSoil[],
+    double maxTempSoil[],
     double lyrFrozen[],
-    double airTemp,
+    unsigned int methodSurfaceTemperature,
+    double snow,
+    double minTempAir,
+    double meanTempAir,
+    double maxTempAir,
+    double H_gt,
     double pet,
     double aet,
     double biomass,
@@ -2828,8 +3075,7 @@ void soil_temperature(
     double swc_sat[],
     double bDensity[],
     double width[],
-    double avgLyrTemp[],
-    double *surfaceAvg,
+    double depths[],
     unsigned int nlyrs,
     double bmLimiter,
     double t1Param1,
@@ -2838,41 +3084,38 @@ void soil_temperature(
     double csParam1,
     double csParam2,
     double shParam,
-    double snowdepth,
     double sTconst,
     double deltaX,
     double theMaxDepth,
     unsigned int nRgr,
-    double snow,
-    double max_air_temp,
-    double min_air_temp,
-    double H_gt,
     TimeInt year,
     TimeInt doy,
-    double depths[],
-    double maxLyrTemperature[],
-    double minLyrTemperature[],
     Bool *ptr_stError,
     LOG_INFO *LogInfo
 ) {
-
-    unsigned int i, sFadjusted_avgLyrTemp;
 #ifdef SWDEBUG
     int debug = 0;
     if (year == 1980 && doy < 10) {
         debug = 0;
     }
 #endif
-    double oldavgLyrTemp[MAX_LAYERS], vwc[MAX_LAYERS], vwcR[MAX_ST_RGR],
-        avgLyrTempR[MAX_ST_RGR], temperatureRangeR[MAX_ST_RGR],
-        temperatureRange[MAX_LAYERS], surface_range;
+
+    unsigned int i;
+    unsigned int sFadjusted_avgLyrTemp;
+    double oldavgLyrTemp[MAX_LAYERS];
+    double vwc[MAX_LAYERS] = {0};
+    double vwcR[MAX_ST_RGR];
+    double avgLyrTempR[MAX_ST_RGR];
+    double temperatureRangeR[MAX_ST_RGR];
+    double temperatureRange[MAX_LAYERS];
+    double surface_range;
 
     /* local variables explained:
      debug - 1 to print out debug messages & then exit the program after
      completing the function, 0 to not.  default is 0.
 
-     T1 = surfaceAvg - the average daily temperature at the top of the soil in
-     celsius
+     T1 = meanTempSurface - the average daily temperature at the top of the soil
+     in celsius
 
      vwc - volumetric soil-water content
 
@@ -2908,111 +3151,27 @@ void soil_temperature(
     }
 
     // calculating min/mean/max surface temperature
-    if (GT(snowdepth, 0.0)) {
-        // underneath snow, based on Parton 1998
-        *surfaceAvg = surface_temperature_under_snow(airTemp, snow);
-        *surface_min = *surface_max = *surfaceAvg;
+    surface_temperature(
+        minTempSurface,
+        meanTempSurface,
+        maxTempSurface,
+        methodSurfaceTemperature,
+        snow,
+        minTempAir,
+        meanTempAir,
+        maxTempAir,
+        H_gt,
+        pet,
+        aet,
+        biomass,
+        bmLimiter,
+        t1Param1,
+        t1Param2,
+        t1Param3,
+        LogInfo
+    );
 
-#ifdef SWDEBUG
-        if (debug) {
-            sw_printf(
-                "\nTsurface (min/mean/max) = %f/%f/%f (underneath snowpack)\n",
-                *surface_min,
-                *surfaceAvg,
-                *surface_max
-            );
-        }
-#endif
-
-    } else {
-        // No snow cover
-
-        // Calculate max/min surface temperature based on eqations 4 and 5 from
-        // Parton 1984 surface_max uses effect on plant canopy (E_B) which uses
-        // the equation in figure 1b Radiation calculation (second line of
-        // calculation) is based off of figure 2 in Parton 1984
-        *surface_max = exp(-.0048 * biomass) - .13;
-        *surface_max *=
-            ((0.35 * max_air_temp) +
-             24.07 * (1.0 - exp(-.000038 * (H_gt * 1000))));
-        *surface_max += max_air_temp;
-        *surface_min = min_air_temp + (.006 * biomass) - 1.82;
-
-        if (LE(biomass, bmLimiter)) {
-            // bmLimiter = 300
-
-            // t1Param1 = 15; drs (Dec 16, 2014): this interpretation of
-            // Parton 1978's 2.20 equation (the printed version misses a
-            // closing parenthesis) removes a jump of T1 for biomass =
-            // bmLimiter
-            *surfaceAvg = airTemp + (t1Param1 * pet * (1. - (aet / pet)) *
-                                     (1. - (biomass / bmLimiter)));
-#ifdef SWDEBUG
-            if (debug) {
-                sw_printf(
-                    "\nTsurface (min/mean/max) = %f/%f/%f "
-                    "\n  mean = %f + (%f * %f * (1 - (%f / %f)) * (1 - (%f / "
-                    "%f)) ) )\n",
-                    *surface_min,
-                    *surfaceAvg,
-                    *surface_max,
-                    airTemp,
-                    t1Param1,
-                    pet,
-                    aet,
-                    pet,
-                    biomass,
-                    bmLimiter
-                );
-            }
-#endif
-
-        } else {
-            // t1Param2 = -4, t1Param3 = 600; math is correct
-            *surfaceAvg =
-                airTemp + ((t1Param2 * (biomass - bmLimiter)) / t1Param3);
-#ifdef SWDEBUG
-            if (debug) {
-                sw_printf(
-                    "\nTsurface (min/mean/max) = %f/%f/%f "
-                    "\n  mean= %f + ((%f * (%f - %f)) / %f)\n",
-                    *surface_min,
-                    *surfaceAvg,
-                    *surface_max,
-                    airTemp,
-                    t1Param2,
-                    biomass,
-                    bmLimiter,
-                    t1Param3
-                );
-            }
-#endif
-        }
-    }
-
-    surface_range = *surface_max - *surface_min;
-
-
-    if (*ptr_stError) {
-        /* we return early (but after calculating surface temperature) and
-                        without attempt to calculate soil temperature again */
-        if (SW_StRegValues->do_once_at_soiltempError) {
-            for (i = 0; i < nlyrs; i++) {
-                // reset soil temperature values
-                avgLyrTemp[i] = SW_MISSING;
-                // make sure that no soil layer is stuck in frozen status
-                lyrFrozen[i] = swFALSE;
-            }
-
-            SW_StRegValues->do_once_at_soiltempError = swFALSE;
-        }
-
-#ifdef SWDEBUG
-        if (debug) {
-            sw_printf("\n");
-        }
-#endif
-
+    if (LogInfo->stopRun || *ptr_stError) {
         return; // Exit function prematurely due to error
     }
 
@@ -3022,7 +3181,7 @@ void soil_temperature(
         vwc[i] = swc[i] / width[i];
 
         // save yesterday's values for later use
-        oldavgLyrTemp[i] = avgLyrTemp[i];
+        oldavgLyrTemp[i] = meanTempSoil[i];
     }
 
     lyrSoil_to_lyrTemp(
@@ -3063,10 +3222,12 @@ void soil_temperature(
 #endif
 
     // calculate the new soil temperature for each layer
+    surface_range = *maxTempSurface - *minTempSurface;
+
     soil_temperature_today(
         &SW_StRegValues->delta_time,
         deltaX,
-        *surfaceAvg,
+        *meanTempSurface,
         sTconst,
         nRgr,
         avgLyrTempR,
@@ -3086,19 +3247,6 @@ void soil_temperature(
         doy
     );
 
-    // question: should we ever reset delta_time to SEC_PER_DAY?
-
-    if (*ptr_stError) {
-        LogError(
-            LogInfo,
-            LOGWARN,
-            "SOILWAT2 ERROR in soil temperature module: "
-            "stability criterion failed despite reduced time step = %f "
-            "seconds; "
-            "soil temperature is being turned off\n",
-            SW_StRegValues->delta_time
-        );
-    }
 
 #ifdef SWDEBUG
     if (debug) {
@@ -3118,7 +3266,7 @@ void soil_temperature(
 
 
     // convert soil temperature of soil temperature profile 'avgLyrTempR' to
-    // soil profile layers 'avgLyrTemp'
+    // soil profile layers 'meanTempSoil'
     lyrTemp_to_lyrSoil_temperature(
         SW_StRegValues->tlyrs_by_slyrs,
         nRgr,
@@ -3127,7 +3275,7 @@ void soil_temperature(
         nlyrs,
         depths,
         width,
-        avgLyrTemp,
+        meanTempSoil,
         temperatureRangeR,
         temperatureRange
     );
@@ -3137,22 +3285,22 @@ void soil_temperature(
     // then adjust soil temperature
     sFadjusted_avgLyrTemp = adjust_Tsoil_by_freezing_and_thawing(
         oldavgLyrTemp,
-        avgLyrTemp,
+        meanTempSoil,
         shParam,
         nlyrs,
         vwc,
         bDensity,
-        SW_StRegValues->fusion_pool_init,
+        &SW_StRegValues->fusion_pool_init,
         SW_StRegValues->oldsFusionPool_actual
     );
 
-    // update avgLyrTempR if avgLyrTemp were changed due to soil
+    // update avgLyrTempR if meanTempSoil were changed due to soil
     // freezing/thawing
     if (sFadjusted_avgLyrTemp) {
         lyrSoil_to_lyrTemp_temperature(
             nlyrs,
             depths,
-            avgLyrTemp,
+            meanTempSoil,
             sTconst,
             nRgr,
             SW_StRegValues->depthsR,
@@ -3162,12 +3310,27 @@ void soil_temperature(
     }
 
     // determine frozen/unfrozen status of soil layers
-    set_frozen_unfrozen(nlyrs, avgLyrTemp, swc, swc_sat, width, lyrFrozen);
+    set_frozen_unfrozen(nlyrs, meanTempSoil, swc, swc_sat, width, lyrFrozen);
 
     // Add/subtract the interpolated range to/from average layer temperature
     for (i = 0; i < nlyrs; i++) {
-        maxLyrTemperature[i] = avgLyrTemp[i] + (temperatureRange[i] / 2);
-        minLyrTemperature[i] = avgLyrTemp[i] - (temperatureRange[i] / 2);
+        maxTempSoil[i] = meanTempSoil[i] + (temperatureRange[i] / 2);
+        minTempSoil[i] = meanTempSoil[i] - (temperatureRange[i] / 2);
+
+        if (LT(minTempSoil[i], -100.) || GT(maxTempSoil[i], 100.)) {
+            *ptr_stError = swTRUE;
+
+            LogError(
+                LogInfo,
+                LOGWARN,
+                "%d-%d: soil temperature (%f [C]) in layer %d "
+                "outside [-100,100] [C].",
+                year,
+                doy,
+                LT(minTempSoil[i], -100.) ? minTempSoil[i] : maxTempSoil[i],
+                i
+            );
+        }
     }
 
 #ifdef SWDEBUG
@@ -3175,7 +3338,7 @@ void soil_temperature(
         sw_printf(
             "\navgLyrTemp %f surface; soil temperature adjusted by "
             "freeze/thaw: %i",
-            *surfaceAvg,
+            *meanTempSurface,
             sFadjusted_avgLyrTemp
         );
 
@@ -3193,11 +3356,11 @@ void soil_temperature(
         sw_printf("\nSoil profile layer temperatures:");
         for (i = 0; i < nlyrs; i++) {
             sw_printf(
-                "\ni %d oldTemp %f avgLyrTemp %f swc %f, swc_sat %f depth %f "
+                "\ni %d oldTemp %f meanTempSoil %f swc %f, swc_sat %f depth %f "
                 "frozen %f",
                 i,
                 oldavgLyrTemp[i],
-                avgLyrTemp[i],
+                meanTempSoil[i],
                 swc[i],
                 swc_sat[i],
                 depths[i],
@@ -3215,11 +3378,25 @@ void soil_temperature(
         SW_StRegValues->oldavgLyrTempR[i] = avgLyrTempR[i];
     }
 
-#ifdef SWDEBUG
-    if (debug) {
+    // question: should we ever reset delta_time to SEC_PER_DAY?
+    if (*ptr_stError) {
         LogError(
-            LogInfo, LOGERROR, "Stop at end of soil temperature calculations.\n"
+            LogInfo,
+            LOGWARN,
+            "%d-%d: soil temperature failed with time step = %f [seconds]; "
+            "soil temperature was turned off",
+            year,
+            doy,
+            SW_StRegValues->delta_time
         );
+
+        // reset values on error
+        for (i = 0; i < nlyrs; i++) {
+            meanTempSoil[i] = SW_MISSING;
+            maxTempSoil[i] = SW_MISSING;
+            minTempSoil[i] = SW_MISSING;
+            // make sure that no soil layer is stuck in frozen status
+            lyrFrozen[i] = swFALSE;
+        }
     }
-#endif
 }

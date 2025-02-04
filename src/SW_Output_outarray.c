@@ -18,7 +18,7 @@ History:
 /* --------------------------------------------------- */
 
 #include "include/SW_Output_outarray.h" // for SW_OUT_calc_iOUToffset, SW_O...
-#include "include/generic.h"            // for IntUS, IntU, Bool, RealD
+#include "include/generic.h"            // for IntUS, IntU, Bool
 #include "include/SW_datastructs.h"     // for LOG_INFO, SW_MODEL
 #include "include/SW_Defines.h"         // for eSW_Day, SW_OUTNMAXVARS, SW_...
 #include "include/SW_Output.h"          // for ForEachOutKey
@@ -70,16 +70,17 @@ const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = {2, 2, 2, 1};
 @param[out] nrow_OUT Number of output rows for each output period
 */
 void SW_OUT_set_nrow(
-    SW_MODEL *SW_Model, Bool use_OutPeriod[], size_t nrow_OUT[]
+    SW_MODEL *SW_Model, const Bool use_OutPeriod[], size_t nrow_OUT[]
 ) {
-    TimeInt i;
-    size_t n_yrs;
-    IntU startyear, endyear;
 #ifdef SWDEBUG
     int debug = 0;
 #endif
 
-    startyear = SW_Model->startyr;
+    TimeInt i;
+    size_t n_yrs;
+    IntU startyear = SW_Model->startyr;
+    IntU endyear;
+
 
 #ifdef STEPWAT
     n_yrs = SW_Model->runModelYears;
@@ -134,7 +135,8 @@ void SW_OUT_set_nrow(
     information that may change throughout simulation runs
 */
 void SW_OUT_deconstruct_outarray(SW_OUT_RUN *OutRun) {
-    IntUS i, k;
+    int i;
+    int k;
 
     ForEachOutKey(k) {
         for (i = 0; i < SW_OUTNPERIODS; i++) {
@@ -175,10 +177,10 @@ void SW_OUT_deconstruct_outarray(SW_OUT_RUN *OutRun) {
 void get_outvalleader(
     SW_MODEL *SW_Model,
     OutPeriod pd,
-    size_t irow_OUT[],
-    size_t nrow_OUT[],
+    const size_t irow_OUT[],
+    const size_t nrow_OUT[],
     TimeInt tOffset,
-    RealD *p
+    double *p
 ) {
 
     p[irow_OUT[pd] + nrow_OUT[pd] * 0] = SW_Model->simyear;
@@ -199,6 +201,7 @@ void get_outvalleader(
         break;
 
     case eSW_Year:
+    default:
         break;
     }
 }
@@ -217,8 +220,8 @@ void get_outvalleader(
 @param[in] x The new value to add to the running mean and
     running standard deviation
 */
-void do_running_agg(RealD *p, RealD *psd, size_t k, IntU n, RealD x) {
-    RealD prev_val = p[k];
+void do_running_agg(double *p, double *psd, size_t k, IntU n, double x) {
+    double prev_val = p[k];
 
     p[k] = get_running_mean(n, prev_val, x);
     psd[k] =
@@ -244,8 +247,10 @@ Note: Compare with function `setGlobalrSOILWAT2_OutputVariables` in
 void SW_OUT_construct_outarray(
     SW_OUT_DOM *OutDom, SW_OUT_RUN *OutRun, LOG_INFO *LogInfo
 ) {
-    IntUS i, k;
-    size_t size, s = sizeof(RealD);
+    int i;
+    int k;
+    size_t size;
+    size_t s = sizeof(double);
     OutPeriod timeStepOutPeriod;
 
     ForEachOutKey(k) {
@@ -258,7 +263,7 @@ void SW_OUT_construct_outarray(
                 size = OutDom->nrow_OUT[timeStepOutPeriod] *
                        (OutDom->ncol_OUT[k] + ncol_TimeOUT[timeStepOutPeriod]);
 
-                OutRun->p_OUT[k][timeStepOutPeriod] = (RealD *) Mem_Calloc(
+                OutRun->p_OUT[k][timeStepOutPeriod] = (double *) Mem_Calloc(
                     size, s, "SW_OUT_construct_outarray()", LogInfo
                 );
                 if (LogInfo->stopRun) {
@@ -267,7 +272,7 @@ void SW_OUT_construct_outarray(
 #endif
 
 #if defined(STEPWAT)
-                OutRun->p_OUTsd[k][timeStepOutPeriod] = (RealD *) Mem_Calloc(
+                OutRun->p_OUTsd[k][timeStepOutPeriod] = (double *) Mem_Calloc(
                     size, s, "SW_OUT_construct_outarray()", LogInfo
                 );
                 if (LogInfo->stopRun) {
@@ -301,14 +306,20 @@ void SW_OUT_construct_outarray(
     p_OUT (array of size SW_OUTNKEYS by SW_OUTNPERIODS by SW_OUTNMAXVARS).
 */
 void SW_OUT_calc_iOUToffset(
-    size_t nrow_OUT[],
-    IntUS nvar_OUT[],
+    const size_t nrow_OUT[],
+    const IntUS nvar_OUT[],
     IntUS nsl_OUT[][SW_OUTNMAXVARS],
     IntUS npft_OUT[][SW_OUTNMAXVARS],
     size_t iOUToffset[][SW_OUTNPERIODS][SW_OUTNMAXVARS]
 ) {
-    int key, ivar, iprev, pd;
-    size_t tmp, tmp_nsl, tmp_npft, tmp_header;
+    int key;
+    int ivar;
+    int iprev;
+    int pd;
+    size_t tmp;
+    size_t tmp_nsl;
+    size_t tmp_npft;
+    size_t tmp_header;
 
     ForEachOutPeriod(pd) {
         tmp_header = nrow_OUT[pd] * ncol_TimeOUT[pd];

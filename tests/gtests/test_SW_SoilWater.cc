@@ -1,4 +1,4 @@
-#include "include/generic.h"             // for RealD, LOGERROR, LOGWARN
+#include "include/generic.h"             // for LOGERROR, LOGWARN
 #include "include/SW_datastructs.h"      // for LOG_INFO, SW_SITE
 #include "include/SW_Defines.h"          // for SW_MISSING, SWRC_PARAM_NMAX
 #include "include/SW_Main_lib.h"         // for sw_fail_on_error, sw_init_logs
@@ -19,8 +19,15 @@ namespace {
 
 TEST(SoilWaterTest, SoilWaterSWCadjustSnow) {
     // setup variables
-    RealD doy = 1, temp_min = 0, temp_max = 10, ppt = 1, rain = 1.5, snow = 1.5,
-          snowmelt = 1.2, temp_snow = 0, snowpack[TWO_DAYS] = {0};
+    const unsigned int doy = 1;
+    double const temp_min = 0;
+    double const temp_max = 10;
+    double const ppt = 1;
+    double rain = 1.5;
+    double snow = 1.5;
+    double snowmelt = 1.2;
+    double temp_snow = 0;
+    double snowpack[TWO_DAYS] = {0};
 
     SW_SITE SW_Site;
 
@@ -80,8 +87,15 @@ TEST(SoilWaterTest, SoilWaterSWCadjustSnow) {
 }
 
 TEST(SoilWaterTest, SoilWaterSWCadjustSnow2) {
-    RealD doy = 1, temp_min = 0, temp_max = 22, ppt = 1, rain = 1.5, snow = 1.5,
-          snowmelt = 1.2, temp_snow = 0, snowpack[TWO_DAYS] = {0};
+    const unsigned int doy = 1;
+    double const temp_min = 0;
+    double const temp_max = 22;
+    double const ppt = 1;
+    double rain = 1.5;
+    double snow = 1.5;
+    double snowmelt = 1.2;
+    double temp_snow = 0;
+    double snowpack[TWO_DAYS] = {0};
 
     SW_SITE SW_Site;
 
@@ -122,30 +136,42 @@ TEST(SoilWaterTest, SoilWaterTranslateBetweenSWCandSWP) {
     sw_init_logs(NULL, &LogInfo);
 
     // set up mock variables
-    unsigned int swrc_type, ptf_type, k;
+    unsigned int swrc_type;
+    unsigned int ptf_type;
+    unsigned int k;
     const int em = LOGERROR;
-    RealD phi, swcBulk, swc_sat, swc_fc, swc_wp, swp, swrcp[SWRC_PARAM_NMAX];
-    RealD sand = 0.33, clay = 0.33, gravel = 0.2, bdensity = 1.4, width = 10.;
+    double phi;
+    double swcBulk;
+    double swc_sat;
+    double swc_fc;
+    double swc_wp;
+    double swp;
+    double swrcp[SWRC_PARAM_NMAX];
+    double const sand = 0.33;
+    double const clay = 0.33;
+    double const gravel = 0.2;
+    double const bdensity = 1.4;
+    double const width = 10.;
     // SWP values in [0, Inf[ but FXW maxes out at 6178.19079 bar
-    RealD swpsb[12] = {
+    double const swpsb[12] = {
         0., 0.001, 0.01, 0.026, 0.027, 0.33, 15., 30., 100., 300., 1000., 6178.
     };
     // SWP values in [fc, Inf[ but FXW maxes out at 6178.19079 bar
-    RealD swpsi[7] = {0.33, 15., 30., 100., 300., 1000., 6178.};
+    double const swpsi[7] = {0.33, 15., 30., 100., 300., 1000., 6178.};
 
     std::ostringstream msg;
 
 
     // Loop over SWRCs
     for (swrc_type = 0; swrc_type < N_SWRCs; swrc_type++) {
-        memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
+        memset(swrcp, 0, SWRC_PARAM_NMAX * sizeof(swrcp[0]));
 
         // Find a suitable PTF to generate `SWRCp`
         for (ptf_type = 0;
              ptf_type < N_PTFs &&
-             !check_SWRC_vs_PTF(
-                 (char *) swrc2str[swrc_type], (char *) ptf2str[ptf_type]
-             );
+             (check_SWRC_vs_PTF(
+                  (char *) swrc2str[swrc_type], (char *) ptf2str[ptf_type]
+              ) == 0u);
              ptf_type++) {
         }
 
@@ -341,7 +367,9 @@ TEST(SoilWaterTest, SoilWaterSWCtoSWPDeathTest) {
     sw_init_logs(NULL, &LogInfo);
 
     // set up mock variables
-    RealD swrcp[SWRC_PARAM_NMAX], gravel = 0.1, width = 10.;
+    double swrcp[SWRC_PARAM_NMAX];
+    double const gravel = 0.1;
+    double const width = 10.;
 
     unsigned int swrc_type;
 
@@ -426,7 +454,7 @@ TEST(SoilWaterTest, SoilWaterSWCtoSWPDeathTest) {
     swrc_type = encode_str2swrc((char *) "vanGenuchten1980", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
+    memset(swrcp, 0, SWRC_PARAM_NMAX * sizeof(swrcp[0]));
     swrcp[0] = 0.1246;
     swrcp[1] = 0.4445;
     swrcp[2] = 0.0112;
@@ -458,7 +486,9 @@ TEST(SoilWaterTest, SoilWaterSWPtoSWCDeathTest) {
     sw_init_logs(NULL, &LogInfo);
 
     // set up mock variables
-    RealD swrcp[SWRC_PARAM_NMAX], gravel = 0.1, width = 10.;
+    double swrcp[SWRC_PARAM_NMAX];
+    double const gravel = 0.1;
+    double const width = 10.;
 
     unsigned int swrc_type;
 

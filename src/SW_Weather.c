@@ -57,7 +57,7 @@
  06/21/2013	(DLM)	variable 'tail' got too large by 1 and leaked memory
  when accessing array runavg_list[] in function _runavg_temp(): changed test
  from '(tail < SW_Weather.days_in_runavg)' to '(tail <
- (SW_Weather.days_in_runavg-1))' in function _clear_hist_weather() temp_max was
+ (SW_Weather.days_in_runavg-1))' in function clear_hist_weather() temp_max was
  tested twice, one should be temp_min
 
  06/24/2013	(rjm) added function void SW_WTH_clear_runavg_list(void) to free
@@ -93,8 +93,8 @@
 #include "include/Times.h"           // for Time_get_lastdoy_y, Time_days_i...
 #include <math.h>                    // for exp, fmin, fmax
 #include <stdio.h>                   // for NULL, sscanf, FILE, fclose, fopen
-#include <stdlib.h>                  // for atoi, free
-#include <string.h>                  // for memset, NULL, strcpy
+#include <stdlib.h>                  // for free
+#include <string.h>                  // for memset, NULL
 
 
 /* Weather generation methods */
@@ -121,11 +121,11 @@ averages and standard deviations output by `averageClimateAcrossYears()`
 */
 void averageClimateAcrossYears(
     SW_CLIMATE_YEARLY *climateOutput,
-    int numYears,
+    unsigned int numYears,
     SW_CLIMATE_CLIM *climateAverages
 ) {
 
-    int month;
+    unsigned int month;
 
     // Take long-term average of monthly mean, maximum and minimum temperature
     // and precipitation throughout "numYears"
@@ -215,35 +215,50 @@ Calendar year vs. adjusted year:
 */
 
 void calcSiteClimate(
-    SW_WEATHER_HIST **allHist,
+    SW_WEATHER_HIST *allHist,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
-    int numYears,
-    int startYear,
+    unsigned int numYears,
+    unsigned int startYear,
     Bool inNorthHem,
     SW_CLIMATE_YEARLY *climateOutput
 ) {
 
-    int month, yearIndex, year, day, numDaysYear, currMonDay;
-    int numDaysMonth, adjustedDoy, adjustedYear = 0, secondMonth, seventhMonth;
-    int adjustedStartYear, calendarYearDays;
+    unsigned int month;
+    unsigned int yearIndex;
+    unsigned int year;
+    unsigned int day;
+    unsigned int numDaysYear;
+    unsigned int currMonDay;
+    unsigned int numDaysMonth;
+    unsigned int adjustedDoy;
+    unsigned int adjustedYear = 0;
+    unsigned int secondMonth;
+    unsigned int seventhMonth;
+    unsigned int adjustedStartYear;
+    unsigned int calendarYearDays;
 
-    double currentTempMin, currentTempMean, totalAbove65, current7thMonMin,
-        PPT7thMon, consecNonFrost, currentNonFrost;
+    double currentTempMin;
+    double currentTempMean;
+    double totalAbove65;
+    double current7thMonMin;
+    double PPT7thMon;
+    double consecNonFrost;
+    double currentNonFrost;
 
     size_t size_nyrs = sizeof(double) * numYears;
 
     // Initialize accumulated value arrays to all zeros
     for (month = 0; month < MAX_MONTHS; month++) {
-        memset(climateOutput->meanTempMon_C[month], 0., size_nyrs);
-        memset(climateOutput->maxTempMon_C[month], 0., size_nyrs);
-        memset(climateOutput->minTempMon_C[month], 0., size_nyrs);
-        memset(climateOutput->PPTMon_cm[month], 0., size_nyrs);
+        memset(climateOutput->meanTempMon_C[month], 0, size_nyrs);
+        memset(climateOutput->maxTempMon_C[month], 0, size_nyrs);
+        memset(climateOutput->minTempMon_C[month], 0, size_nyrs);
+        memset(climateOutput->PPTMon_cm[month], 0, size_nyrs);
     }
-    memset(climateOutput->PPT_cm, 0., size_nyrs);
-    memset(climateOutput->meanTemp_C, 0., size_nyrs);
-    memset(climateOutput->minTemp2ndMon_C, 0., size_nyrs);
-    memset(climateOutput->minTemp7thMon_C, 0., size_nyrs);
+    memset(climateOutput->PPT_cm, 0, size_nyrs);
+    memset(climateOutput->meanTemp_C, 0, size_nyrs);
+    memset(climateOutput->minTemp2ndMon_C, 0, size_nyrs);
+    memset(climateOutput->minTemp7thMon_C, 0, size_nyrs);
 
     calcSiteClimateLatInvariants(
         allHist,
@@ -315,20 +330,19 @@ void calcSiteClimate(
                 totalAbove65 = SW_MISSING;
                 currentNonFrost = SW_MISSING;
                 consecNonFrost = SW_MISSING;
-                currMonDay = SW_MISSING;
                 break;
             }
 
             currMonDay++;
-            currentTempMin = allHist[adjustedYear]->temp_min[adjustedDoy];
-            currentTempMean = allHist[adjustedYear]->temp_avg[adjustedDoy];
+            currentTempMin = allHist[adjustedYear].temp_min[adjustedDoy];
+            currentTempMean = allHist[adjustedYear].temp_avg[adjustedDoy];
 
             // Part of code that deals with gathering seventh month information
             if (month == seventhMonth) {
                 current7thMonMin = (currentTempMin < current7thMonMin) ?
                                        currentTempMin :
                                        current7thMonMin;
-                PPT7thMon += allHist[adjustedYear]->ppt[adjustedDoy] * 10;
+                PPT7thMon += allHist[adjustedYear].ppt[adjustedDoy] * 10;
             }
 
             // Part of code dealing with consecutive amount of days without
@@ -345,7 +359,7 @@ void calcSiteClimate(
             // Gather minimum temperature of second month of year
             if (month == secondMonth) {
                 climateOutput->minTemp2ndMon_C[yearIndex] +=
-                    allHist[adjustedYear]->temp_min[adjustedDoy];
+                    allHist[adjustedYear].temp_min[adjustedDoy];
             }
 
             // Once we have reached the end of the month days,
@@ -374,6 +388,7 @@ void calcSiteClimate(
                 totalAbove65 += (currentTempMean > 0.0) ? currentTempMean : 0.0;
             }
         }
+
         // Set all values
         climateOutput->minTemp7thMon_C[yearIndex] = current7thMonMin;
         climateOutput->PPT7thMon_mm[yearIndex] = PPT7thMon;
@@ -408,16 +423,21 @@ independant of the site being in the northern/southern hemisphere.
     precipitation values
 */
 void calcSiteClimateLatInvariants(
-    SW_WEATHER_HIST **allHist,
+    SW_WEATHER_HIST *allHist,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
-    int numYears,
-    int startYear,
+    unsigned int numYears,
+    unsigned int startYear,
     SW_CLIMATE_YEARLY *climateOutput
 ) {
 
-    int month = Jan, numDaysMonth = Time_days_in_month(month, days_in_month),
-        yearIndex, day, numDaysYear, currMonDay, year;
+    unsigned int month = Jan;
+    unsigned int numDaysMonth = Time_days_in_month(month, days_in_month);
+    unsigned int yearIndex;
+    unsigned int day;
+    unsigned int numDaysYear;
+    unsigned int currMonDay;
+    unsigned int year;
 
     for (yearIndex = 0; yearIndex < numYears; yearIndex++) {
         year = yearIndex + startYear;
@@ -428,16 +448,16 @@ void calcSiteClimateLatInvariants(
         for (day = 0; day < numDaysYear; day++) {
             currMonDay++;
             climateOutput->meanTempMon_C[month][yearIndex] +=
-                allHist[yearIndex]->temp_avg[day];
+                allHist[yearIndex].temp_avg[day];
             climateOutput->maxTempMon_C[month][yearIndex] +=
-                allHist[yearIndex]->temp_max[day];
+                allHist[yearIndex].temp_max[day];
             climateOutput->minTempMon_C[month][yearIndex] +=
-                allHist[yearIndex]->temp_min[day];
+                allHist[yearIndex].temp_min[day];
             climateOutput->PPTMon_cm[month][yearIndex] +=
-                allHist[yearIndex]->ppt[day];
-            climateOutput->PPT_cm[yearIndex] += allHist[yearIndex]->ppt[day];
+                allHist[yearIndex].ppt[day];
+            climateOutput->PPT_cm[yearIndex] += allHist[yearIndex].ppt[day];
             climateOutput->meanTemp_C[yearIndex] +=
-                allHist[yearIndex]->temp_avg[day];
+                allHist[yearIndex].temp_avg[day];
 
             if (currMonDay == numDaysMonth) {
                 climateOutput->meanTempMon_C[month][yearIndex] /= numDaysMonth;
@@ -470,24 +490,33 @@ during the driest quarter of the year
     numYears
 */
 void findDriestQtr(
-    int numYears,
+    unsigned int numYears,
     Bool inNorthHem,
     double *meanTempDriestQtr_C,
     double **meanTempMon_C,
     double **PPTMon_cm
 ) {
 
-    int yearIndex, month, prevMonth, nextMonth,
-        adjustedMonth = 0, numQuarterMonths = 3,
-        endNumYears = (inNorthHem) ? numYears : numYears - 1;
+    unsigned int yearIndex;
+    unsigned int month;
+    unsigned int prevMonth;
+    unsigned int nextMonth;
+    unsigned int adjustedMonth = 0;
+    unsigned int numQuarterMonths = 3;
+    unsigned int endNumYears = (inNorthHem) ? numYears : numYears - 1;
 
     // NOTE: These variables are the same throughout the program if site is in
     // northern hempisphere
     // The main purpose of these are to easily control the correct year when
     // dealing with adjusted years in the southern hempisphere
-    int adjustedYearZero = 0, adjustedYearOne = 0, adjustedYearTwo = 0;
+    unsigned int adjustedYearZero = 0;
+    unsigned int adjustedYearOne = 0;
+    unsigned int adjustedYearTwo = 0;
 
-    double driestThreeMonPPT, driestMeanTemp, currentQtrPPT, currentQtrTemp;
+    double driestThreeMonPPT;
+    double driestMeanTemp;
+    double currentQtrPPT;
+    double currentQtrTemp;
 
     for (yearIndex = 0; yearIndex < endNumYears; yearIndex++) {
         driestThreeMonPPT = SW_MISSING;
@@ -563,13 +592,13 @@ years.
 @param[in,out] nextMonth Month following current input month
 */
 void driestQtrSouthAdjMonYears(
-    int month,
-    int *adjustedYearZero,
-    int *adjustedYearOne,
-    int *adjustedYearTwo,
-    int *adjustedMonth,
-    int *prevMonth,
-    int *nextMonth
+    unsigned int month,
+    unsigned int *adjustedYearZero,
+    unsigned int *adjustedYearOne,
+    unsigned int *adjustedYearTwo,
+    unsigned int *adjustedMonth,
+    unsigned int *prevMonth,
+    unsigned int *nextMonth
 ) {
     *adjustedMonth = month + Jul;
     *adjustedMonth %= MAX_MONTHS;
@@ -619,6 +648,456 @@ void driestQtrSouthAdjMonYears(
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
+/**
+@brief Interpolate monthly climate values into daily values
+(if the user selected the option(s) to)
+
+@param[out] yearWeather A list (MAX_DAYS or 366) of daily weather
+for a certain year
+@param[in] year Current year the variable `yearWeather` holds
+values for
+@param[in] use_cloudCoverMonthly User-specified flag to interpolate
+monthly cloud values into daily
+@param[in] use_humidityMonthly User-specified flag to interpolate
+monthly humidity values into daily
+@param[in] use_windSpeedMonthly User-specified flag to interpolate
+monthly wind speed values into daily
+@param[in] cum_monthdays Monthly cumulative number of days for "current" year
+@param[in,out] days_in_month Number of days per month for "current" year
+@param[in] cloudcov Array of size #MAX_MONTHS holding monthly cloud cover
+values to be interpolated
+@param[in] windspeed Array of size #MAX_MONTHS holding monthly wind speed
+values to be interpolated
+@param[in] r_humidity Array of size #MAX_MONTHS holding monthly relative
+humidity values to be interpolated
+*/
+void SW_WTH_setWeathUsingClimate(
+    SW_WEATHER_HIST *yearWeather,
+    unsigned int year,
+    Bool use_cloudCoverMonthly,
+    Bool use_humidityMonthly,
+    Bool use_windSpeedMonthly,
+    TimeInt cum_monthdays[],
+    TimeInt days_in_month[],
+    double *cloudcov,
+    double *windspeed,
+    double *r_humidity
+) {
+    /* Interpolation is to be in base0 in `interpolate_monthlyValues()` */
+    Bool interpAsBase1 = swFALSE;
+
+    // Update yearly day/month information needed when interpolating
+    // cloud cover, wind speed, and relative humidity if necessary
+    Time_new_year(year, days_in_month, cum_monthdays);
+
+    if (use_cloudCoverMonthly) {
+        interpolate_monthlyValues(
+            cloudcov,
+            interpAsBase1,
+            cum_monthdays,
+            days_in_month,
+            yearWeather->cloudcov_daily
+        );
+    }
+
+    if (use_humidityMonthly) {
+        interpolate_monthlyValues(
+            r_humidity,
+            interpAsBase1,
+            cum_monthdays,
+            days_in_month,
+            yearWeather->r_humidity_daily
+        );
+    }
+
+    if (use_windSpeedMonthly) {
+        interpolate_monthlyValues(
+            windspeed,
+            interpAsBase1,
+            cum_monthdays,
+            days_in_month,
+            yearWeather->windspeed_daily
+        );
+    }
+}
+
+/**
+@brief Takes all of the input weather values throughout
+`n_years` number of years and calculates any known variables to
+SW_WEATHER_HIST that was input with multiple parts
+
+@param[in] startYear Start year of the simulation
+@param[in] nYears Number of years within the simulation
+@param[in] inputFlags A list of flags specifying which input variables
+have been input
+@param[in] tempWeather A list of all read-in variable values to
+transfer/calculate to SW_WEATHER_HIST for the simulation
+@param elevation Site elevation above sea level [m];
+    utilized only if specific humidity is provided as input
+    for calculating relative humidity
+@param[out] yearlyWeather Destination for temporary/calculated values
+for all years within the simulation
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_WTH_setWeatherValues(
+    TimeInt startYear,
+    TimeInt nYears,
+    const Bool *inputFlags,
+    double ***tempWeather,
+    double elevation,
+    SW_WEATHER_HIST *yearlyWeather,
+    LOG_INFO *LogInfo
+) {
+    TimeInt year;
+    TimeInt yearIndex;
+    TimeInt doy;
+
+    Bool hasMaxMinTemp = (Bool) (inputFlags[TEMP_MAX] && inputFlags[TEMP_MIN]);
+    Bool hasMaxMinRelHumid =
+        (Bool) (inputFlags[REL_HUMID_MAX] && inputFlags[REL_HUMID_MIN]);
+    Bool hasEastNorthWind =
+        (Bool) (inputFlags[WIND_EAST] && inputFlags[WIND_NORTH]);
+
+    // Calculate if daily input values of humidity are to be used instead of
+    // being interpolated from monthly values
+    Bool useHumidityDaily =
+        (Bool) (hasMaxMinRelHumid || inputFlags[REL_HUMID] ||
+                inputFlags[SPEC_HUMID] || inputFlags[ACTUAL_VP]);
+
+    if (useHumidityDaily && !hasMaxMinRelHumid && !inputFlags[REL_HUMID] &&
+        inputFlags[SPEC_HUMID] && missing(elevation)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Elevation is missing but required to calculate relative humidity "
+            "from specific humidity."
+        );
+        return; // Exit function prematurely due to error
+    }
+
+    for (yearIndex = 0; yearIndex < nYears; yearIndex++) {
+        year = yearIndex + startYear;
+
+        for (doy = 0; doy < MAX_DAYS; doy++) {
+            // Temperature [C]
+            yearlyWeather[yearIndex].temp_max[doy] =
+                tempWeather[yearIndex][TEMP_MAX][doy];
+            yearlyWeather[yearIndex].temp_min[doy] =
+                tempWeather[yearIndex][TEMP_MIN][doy];
+
+            // Precipitation [cm]
+            yearlyWeather[yearIndex].ppt[doy] =
+                tempWeather[yearIndex][PPT][doy];
+
+            // Calculate average air temperature [C] if min/max not missing
+            if (!missing(yearlyWeather[yearIndex].temp_max[doy]) &&
+                !missing(yearlyWeather[yearIndex].temp_min[doy])) {
+
+                yearlyWeather[yearIndex].temp_avg[doy] =
+                    (yearlyWeather[yearIndex].temp_max[doy] +
+                     yearlyWeather[yearIndex].temp_min[doy]) /
+                    2.0;
+            }
+
+            if (inputFlags[CLOUD_COV]) {
+                // Cloud cover [0-100 %]
+                yearlyWeather[yearIndex].cloudcov_daily[doy] =
+                    tempWeather[yearIndex][CLOUD_COV][doy];
+            }
+
+            if (inputFlags[WIND_SPEED]) {
+                // Wind speed [m s-1]
+                yearlyWeather[yearIndex].windspeed_daily[doy] =
+                    tempWeather[yearIndex][WIND_SPEED][doy];
+
+            } else if (hasEastNorthWind) {
+
+                // Make sure wind is not averaged calculated with any instances
+                // of SW_MISSING
+                if (!missing(tempWeather[yearIndex][WIND_EAST][doy]) &&
+                    !missing(tempWeather[yearIndex][WIND_NORTH][doy])) {
+
+                    // Wind speed [m s-1]
+                    yearlyWeather[yearIndex].windspeed_daily[doy] = sqrt(
+                        squared(tempWeather[yearIndex][WIND_EAST][doy]) +
+                        squared(tempWeather[yearIndex][WIND_NORTH][doy])
+                    );
+                } else {
+                    yearlyWeather[yearIndex].windspeed_daily[doy] = SW_MISSING;
+                }
+            }
+
+            // Check to see if daily humidity values are being used
+            if (useHumidityDaily) {
+                if (hasMaxMinRelHumid) {
+
+                    // Make sure relative humidity is not averaged from any
+                    // instances of SW_MISSING
+                    if (!missing(tempWeather[yearIndex][REL_HUMID_MAX][doy]) &&
+                        !missing(tempWeather[yearIndex][REL_HUMID_MIN][doy])) {
+
+                        // Relative humidity [0-100 %]
+                        yearlyWeather[yearIndex].r_humidity_daily[doy] =
+                            (tempWeather[yearIndex][REL_HUMID_MAX][doy] +
+                             tempWeather[yearIndex][REL_HUMID_MIN][doy]) /
+                            2;
+                    }
+
+                } else if (inputFlags[REL_HUMID]) {
+                    // Relative humidity [0-100 %]
+                    yearlyWeather[yearIndex].r_humidity_daily[doy] =
+                        tempWeather[yearIndex][REL_HUMID][doy];
+
+                } else if (inputFlags[SPEC_HUMID]) {
+
+                    // Make sure the calculation of relative humidity will not
+                    // be executed while average temperature and/or specific
+                    // humidity are holding the value "SW_MISSING"
+                    if (!missing(yearlyWeather[yearIndex].temp_avg[doy]) &&
+                        !missing(tempWeather[yearIndex][SPEC_HUMID][doy])) {
+
+                        // Relative humidity [0-100 %] calculated from
+                        // specific humidity [g kg-1] and temperature [C]
+                        yearlyWeather[yearIndex].r_humidity_daily[doy] =
+                            relativeHumidity2(
+                                tempWeather[yearIndex][SPEC_HUMID][doy],
+                                yearlyWeather[yearIndex].temp_avg[doy],
+                                elevation
+                            );
+
+                        // Snap relative humidity in 100-150% to 100%
+                        if (yearlyWeather[yearIndex].r_humidity_daily[doy] >
+                                100. &&
+                            yearlyWeather[yearIndex].r_humidity_daily[doy] <=
+                                150.) {
+                            LogError(
+                                LogInfo,
+                                LOGWARN,
+                                "Year %d - day %d: relative humidity set to "
+                                "100%%: "
+                                "based on assumption that "
+                                "a presumed minor mismatch in inputs "
+                                "(specific humidity (%f), "
+                                "temperature (%f) and elevation (%f)) "
+                                "caused the calculated value (%f) to exceed "
+                                "100%%.",
+                                year,
+                                doy,
+                                tempWeather[yearIndex][SPEC_HUMID][doy],
+                                yearlyWeather[yearIndex].temp_avg[doy],
+                                elevation,
+                                yearlyWeather[yearIndex].r_humidity_daily[doy]
+                            );
+
+                            yearlyWeather[yearIndex].r_humidity_daily[doy] =
+                                100.;
+                        }
+
+                    } else {
+                        // Set relative humidity to "SW_MISSING"
+                        yearlyWeather[yearIndex].r_humidity_daily[doy] =
+                            SW_MISSING;
+                    }
+                }
+
+                // Deal with actual vapor pressure
+                if (inputFlags[ACTUAL_VP]) {
+
+                    // Actual vapor pressure [kPa]
+                    yearlyWeather[yearIndex].actualVaporPressure[doy] =
+                        tempWeather[yearIndex][ACTUAL_VP][doy];
+
+                } else if (inputFlags[TEMP_DEWPOINT] &&
+                           !missing(tempWeather[yearIndex][TEMP_DEWPOINT][doy]
+                           )) {
+
+                    // Actual vapor pressure [kPa] from dewpoint temperature [C]
+                    yearlyWeather[yearIndex].actualVaporPressure[doy] =
+                        actualVaporPressure3(
+                            tempWeather[yearIndex][TEMP_DEWPOINT][doy]
+                        );
+
+                } else if (hasMaxMinTemp && hasMaxMinRelHumid) {
+
+                    // Make sure the calculation of actual vapor pressure will
+                    // not be executed while max and/or min temperature and/or
+                    // relative humidity are holding the value "SW_MISSING"
+                    if (!missing(yearlyWeather[yearIndex].temp_max[doy]) &&
+                        !missing(yearlyWeather[yearIndex].temp_min[doy]) &&
+                        !missing(tempWeather[yearIndex][REL_HUMID_MAX][doy]) &&
+                        !missing(tempWeather[yearIndex][REL_HUMID_MIN][doy])) {
+
+                        // Actual vapor pressure [kPa]
+                        yearlyWeather[yearIndex].actualVaporPressure[doy] =
+                            actualVaporPressure2(
+                                tempWeather[yearIndex][REL_HUMID_MAX][doy],
+                                tempWeather[yearIndex][REL_HUMID_MIN][doy],
+                                yearlyWeather[yearIndex].temp_max[doy],
+                                yearlyWeather[yearIndex].temp_min[doy]
+                            );
+                    } else {
+                        // Set actual vapor pressure to "SW_MISSING"
+                        yearlyWeather[yearIndex].actualVaporPressure[doy] =
+                            SW_MISSING;
+                    }
+
+                } else if (inputFlags[REL_HUMID] || inputFlags[SPEC_HUMID]) {
+                    // Make sure the daily values for relative humidity and
+                    // average temperature are not SW_MISSING
+                    if (!missing(yearlyWeather[yearIndex].r_humidity_daily[doy]
+                        ) &&
+                        !missing(yearlyWeather[yearIndex].temp_avg[doy])) {
+
+                        // Actual vapor pressure [kPa]
+                        yearlyWeather[yearIndex].actualVaporPressure[doy] =
+                            actualVaporPressure1(
+                                yearlyWeather[yearIndex].r_humidity_daily[doy],
+                                yearlyWeather[yearIndex].temp_avg[doy]
+                            );
+                    } else {
+                        yearlyWeather[yearIndex].actualVaporPressure[doy] =
+                            SW_MISSING;
+                    }
+                }
+
+                // Check if a calculation of relative humidity is available
+                // using dewpoint temperature or actual vapor pressure, but only
+                // if the daily value of relative humidity is "SW_MISSING"
+                if (missing(yearlyWeather[yearIndex].r_humidity_daily[doy]) &&
+                    (inputFlags[ACTUAL_VP] || inputFlags[TEMP_DEWPOINT])) {
+
+                    // Make sure the calculation of relative humidity will not
+                    // be executed while average temperature and/or actual vapor
+                    // pressure hold the value "SW_MISSING"
+                    if (!missing(yearlyWeather[yearIndex].temp_avg[doy]) &&
+                        !missing(
+                            yearlyWeather[yearIndex].actualVaporPressure[doy]
+                        )) {
+
+                        // Relative humidity [0-100 %]
+                        yearlyWeather[yearIndex]
+                            .r_humidity_daily[doy] = relativeHumidity1(
+                            yearlyWeather[yearIndex].actualVaporPressure[doy],
+                            yearlyWeather[yearIndex].temp_avg[doy]
+                        );
+
+                        // Snap relative humidity in 100-150% to 100%
+                        if (yearlyWeather[yearIndex].r_humidity_daily[doy] >
+                                100. &&
+                            yearlyWeather[yearIndex].r_humidity_daily[doy] <=
+                                150.) {
+                            LogError(
+                                LogInfo,
+                                LOGWARN,
+                                "Year %d - day %d: relative humidity set to "
+                                "100%%: "
+                                "based on assumption that "
+                                "a presumed minor mismatch in inputs "
+                                "(vapor pressure (%f) and temperature (%f)) "
+                                "caused the calculated value (%f) to exceed "
+                                "100%%.",
+                                year,
+                                doy,
+                                yearlyWeather[yearIndex]
+                                    .actualVaporPressure[doy],
+                                yearlyWeather[yearIndex].temp_avg[doy],
+                                yearlyWeather[yearIndex].r_humidity_daily[doy]
+                            );
+
+                            yearlyWeather[yearIndex].r_humidity_daily[doy] =
+                                100.;
+                        }
+                    }
+                }
+            }
+
+            if (inputFlags[SHORT_WR]) {
+                yearlyWeather[yearIndex].shortWaveRad[doy] =
+                    tempWeather[yearIndex][SHORT_WR][doy];
+            }
+        }
+    }
+}
+
+/**
+@brief Allocate temporary locations for the entirety of the
+simulations weather history
+
+@param[in] nYears Number of years within the simulation
+@param[out] fullWeathHist A list of values to temporarily store
+the weather history for every possible input variable
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void allocate_temp_weather(
+    TimeInt nYears, double ****fullWeathHist, LOG_INFO *LogInfo
+) {
+    TimeInt year;
+    int tempVar;
+
+    *fullWeathHist = (double ***) Mem_Malloc(
+        sizeof(double **) * nYears, "allocate_temp_weather()", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    for (year = 0; year < nYears; year++) {
+        (*fullWeathHist)[year] = NULL;
+    }
+
+    for (year = 0; year < nYears; year++) {
+        (*fullWeathHist)[year] = (double **) Mem_Malloc(
+            sizeof(double *) * MAX_INPUT_COLUMNS,
+            "allocate_temp_weather()",
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+        for (tempVar = 0; tempVar < MAX_INPUT_COLUMNS; tempVar++) {
+            (*fullWeathHist)[year][tempVar] = NULL;
+        }
+    }
+
+
+    for (year = 0; year < nYears; year++) {
+        for (tempVar = 0; tempVar < MAX_INPUT_COLUMNS; tempVar++) {
+            (*fullWeathHist)[year][tempVar] = (double *) Mem_Malloc(
+                sizeof(double) * MAX_DAYS, "allocate_temp_weather()", LogInfo
+            );
+        }
+    }
+}
+
+/**
+@brief Deallocate temporary locations for the entirety of the
+simulations weather history
+
+@param[in] nYears Number of years within the simulation
+@param[out] fullWeathHist A list of values to temporarily store
+the weather history for every possible input variable
+*/
+void deallocate_temp_weather(TimeInt nYears, double ****fullWeathHist) {
+    TimeInt year;
+    int tempVar;
+
+    if (!isnull(*fullWeathHist)) {
+        for (year = 0; year < nYears; year++) {
+            if (!isnull((*fullWeathHist)[year])) {
+                for (tempVar = 0; tempVar < MAX_INPUT_COLUMNS; tempVar++) {
+                    if (!isnull((*fullWeathHist)[year][tempVar])) {
+                        free((void *) (*fullWeathHist)[year][tempVar]);
+                        (*fullWeathHist)[year][tempVar] = NULL;
+                    }
+                }
+                free((void *) (*fullWeathHist)[year]);
+                (*fullWeathHist)[year] = NULL;
+            }
+        }
+        free((void *) *fullWeathHist);
+        *fullWeathHist = NULL;
+    }
+}
 
 /**
 @brief Reads in all weather data
@@ -627,12 +1106,12 @@ Reads in weather data from disk (if available) for all years and
 stores values in global SW_Weather's SW_WEATHER::allHist.
 If missing, set values to #SW_MISSING.
 
-@param[out] allHist 2D array holding all weather data gathered
+@param[out] allHist 1D array holding all weather data gathered
 @param[in] startYear Start year of the simulation
 @param[in] n_years Number of years in simulation
 @param[in] use_weathergenerator_only A boolean; if #swFALSE, code attempts to
     read weather files from disk.
-@param[in] weather_prefix File name of weather data without extension.
+@param[in] txtWeatherPrefix File name of weather data without extension.
 @param[in] use_cloudCoverMonthly A boolean; if #swTRUE, function will
     interpolate mean monthly values provided by \p cloudcov to daily time series
 @param[in] use_humidityMonthly A boolean; if #swTRUE, function will interpolate
@@ -659,89 +1138,84 @@ series
 @param[out] LogInfo Holds information on warnings and errors
 */
 void readAllWeather(
-    SW_WEATHER_HIST **allHist,
-    int startYear,
+    SW_WEATHER_HIST *allHist,
+    unsigned int startYear,
     unsigned int n_years,
     Bool use_weathergenerator_only,
-    char weather_prefix[],
+    char txtWeatherPrefix[],
     Bool use_cloudCoverMonthly,
     Bool use_humidityMonthly,
     Bool use_windSpeedMonthly,
     unsigned int n_input_forcings,
     unsigned int *dailyInputIndices,
     Bool *dailyInputFlags,
-    RealD *cloudcov,
-    RealD *windspeed,
-    RealD *r_humidity,
+    double *cloudcov,
+    double *windspeed,
+    double *r_humidity,
     double elevation,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
     LOG_INFO *LogInfo
 ) {
-    unsigned int yearIndex, year;
+    unsigned int yearIndex;
+    unsigned int year;
+    double ***tempWeatherHist = NULL;
 
-    /* Interpolation is to be in base0 in `interpolate_monthlyValues()` */
-    Bool interpAsBase1 = swFALSE;
+    allocate_temp_weather(n_years, &tempWeatherHist, LogInfo);
+    if (LogInfo->stopRun) {
+        return;
+    }
 
     for (yearIndex = 0; yearIndex < n_years; yearIndex++) {
         year = yearIndex + startYear;
 
         // Set all daily weather values to missing
-        _clear_hist_weather(allHist[yearIndex]);
+        clear_hist_weather(&allHist[yearIndex], tempWeatherHist[yearIndex]);
 
-        // Update yearly day/month information needed when interpolating
-        // cloud cover, wind speed, and relative humidity if necessary
-        Time_new_year(year, days_in_month, cum_monthdays);
-
-        if (use_cloudCoverMonthly) {
-            interpolate_monthlyValues(
-                cloudcov,
-                interpAsBase1,
-                cum_monthdays,
-                days_in_month,
-                allHist[yearIndex]->cloudcov_daily
-            );
-        }
-
-        if (use_humidityMonthly) {
-            interpolate_monthlyValues(
-                r_humidity,
-                interpAsBase1,
-                cum_monthdays,
-                days_in_month,
-                allHist[yearIndex]->r_humidity_daily
-            );
-        }
-
-        if (use_windSpeedMonthly) {
-            interpolate_monthlyValues(
-                windspeed,
-                interpAsBase1,
-                cum_monthdays,
-                days_in_month,
-                allHist[yearIndex]->windspeed_daily
-            );
-        }
+        SW_WTH_setWeathUsingClimate(
+            &allHist[yearIndex],
+            year,
+            use_cloudCoverMonthly,
+            use_humidityMonthly,
+            use_windSpeedMonthly,
+            cum_monthdays,
+            days_in_month,
+            cloudcov,
+            windspeed,
+            r_humidity
+        );
 
         // Read daily weather values from disk
         if (!use_weathergenerator_only) {
-
-            _read_weather_hist(
+            read_weather_hist(
                 year,
-                allHist[yearIndex],
-                weather_prefix,
+                tempWeatherHist[yearIndex],
+                txtWeatherPrefix,
                 n_input_forcings,
                 dailyInputIndices,
                 dailyInputFlags,
-                elevation,
                 LogInfo
             );
-
             if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto freeTempWeather; // Exit function prematurely due to error
             }
         }
     }
+
+    if (!use_weathergenerator_only) {
+        SW_WTH_setWeatherValues(
+            startYear,
+            n_years,
+            dailyInputFlags,
+            tempWeatherHist,
+            elevation,
+            allHist,
+            LogInfo
+        );
+    }
+
+freeTempWeather:
+    deallocate_temp_weather(n_years, &tempWeatherHist);
 }
 
 /**
@@ -767,7 +1241,8 @@ void finalizeAllWeather(
     LOG_INFO *LogInfo
 ) {
 
-    unsigned int day, yearIndex;
+    unsigned int day;
+    unsigned int yearIndex;
 
     // Impute missing values
     generateMissingWeather(
@@ -790,13 +1265,13 @@ void finalizeAllWeather(
 
                 // Make sure calculation of actual vapor pressure is not
                 // polluted by values of `SW_MISSING`
-                if (!missing(w->allHist[yearIndex]->r_humidity_daily[day]) &&
-                    !missing(w->allHist[yearIndex]->temp_avg[day])) {
+                if (!missing(w->allHist[yearIndex].r_humidity_daily[day]) &&
+                    !missing(w->allHist[yearIndex].temp_avg[day])) {
 
-                    w->allHist[yearIndex]->actualVaporPressure[day] =
+                    w->allHist[yearIndex].actualVaporPressure[day] =
                         actualVaporPressure1(
-                            w->allHist[yearIndex]->r_humidity_daily[day],
-                            w->allHist[yearIndex]->temp_avg[day]
+                            w->allHist[yearIndex].r_humidity_daily[day],
+                            w->allHist[yearIndex].temp_avg[day]
                         );
                 }
             }
@@ -843,7 +1318,7 @@ void SW_WTH_finalize_all_weather(
 @brief Apply temperature, precipitation, cloud cover, relative humidity, and
 wind speed scaling to daily weather values
 
-@param[in,out] allHist 2D array holding all weather data
+@param[in,out] allHist 1D array holding all weather data
 @param[in] startYear Start year of the simulation (and `allHist`)
 @param[in] n_years Number of years in simulation (length of `allHist`)
 @param[in] scale_temp_max Array of monthly, additive scaling parameters to
@@ -871,23 +1346,26 @@ minimum and maximum air temperature.
 @note Missing values in `allHist` remain unchanged.
 */
 void scaleAllWeather(
-    SW_WEATHER_HIST **allHist,
-    int startYear,
+    SW_WEATHER_HIST *allHist,
+    unsigned int startYear,
     unsigned int n_years,
     double *scale_temp_max,
     double *scale_temp_min,
     double *scale_precip,
     double *scale_skyCover,
-    double *scale_wind,
+    const double *scale_wind,
     double *scale_rH,
-    double *scale_actVapPress,
-    double *scale_shortWaveRad,
+    const double *scale_actVapPress,
+    const double *scale_shortWaveRad,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[]
 ) {
 
-    int year, month;
-    unsigned int yearIndex, numDaysYear, day;
+    unsigned int year;
+    unsigned int month;
+    unsigned int yearIndex;
+    unsigned int numDaysYear;
+    unsigned int day;
 
     Bool trivial = swTRUE;
 
@@ -910,70 +1388,70 @@ void scaleAllWeather(
             for (day = 0; day < numDaysYear; day++) {
                 month = doy2month(day + 1, cum_monthdays);
 
-                if (!missing(allHist[yearIndex]->temp_max[day])) {
-                    allHist[yearIndex]->temp_max[day] += scale_temp_max[month];
+                if (!missing(allHist[yearIndex].temp_max[day])) {
+                    allHist[yearIndex].temp_max[day] += scale_temp_max[month];
                 }
 
-                if (!missing(allHist[yearIndex]->temp_min[day])) {
-                    allHist[yearIndex]->temp_min[day] += scale_temp_min[month];
+                if (!missing(allHist[yearIndex].temp_min[day])) {
+                    allHist[yearIndex].temp_min[day] += scale_temp_min[month];
                 }
 
-                if (!missing(allHist[yearIndex]->ppt[day])) {
-                    allHist[yearIndex]->ppt[day] *= scale_precip[month];
+                if (!missing(allHist[yearIndex].ppt[day])) {
+                    allHist[yearIndex].ppt[day] *= scale_precip[month];
                 }
 
-                if (!missing(allHist[yearIndex]->cloudcov_daily[day])) {
-                    allHist[yearIndex]->cloudcov_daily[day] = fmin(
+                if (!missing(allHist[yearIndex].cloudcov_daily[day])) {
+                    allHist[yearIndex].cloudcov_daily[day] = fmin(
                         100.,
                         fmax(
                             0.0,
                             scale_skyCover[month] +
-                                allHist[yearIndex]->cloudcov_daily[day]
+                                allHist[yearIndex].cloudcov_daily[day]
                         )
                     );
                 }
 
-                if (!missing(allHist[yearIndex]->windspeed_daily[day])) {
-                    allHist[yearIndex]->windspeed_daily[day] = fmax(
+                if (!missing(allHist[yearIndex].windspeed_daily[day])) {
+                    allHist[yearIndex].windspeed_daily[day] = fmax(
                         0.0,
                         scale_wind[month] *
-                            allHist[yearIndex]->windspeed_daily[day]
+                            allHist[yearIndex].windspeed_daily[day]
                     );
                 }
 
-                if (!missing(allHist[yearIndex]->r_humidity_daily[day])) {
-                    allHist[yearIndex]->r_humidity_daily[day] = fmin(
+                if (!missing(allHist[yearIndex].r_humidity_daily[day])) {
+                    allHist[yearIndex].r_humidity_daily[day] = fmin(
                         100.,
                         fmax(
                             0.0,
                             scale_rH[month] +
-                                allHist[yearIndex]->r_humidity_daily[day]
+                                allHist[yearIndex].r_humidity_daily[day]
                         )
                     );
                 }
 
-                if (!missing(allHist[yearIndex]->actualVaporPressure[day])) {
-                    allHist[yearIndex]->actualVaporPressure[day] = fmax(
+                if (!missing(allHist[yearIndex].actualVaporPressure[day])) {
+                    allHist[yearIndex].actualVaporPressure[day] = fmax(
                         0.0,
                         scale_actVapPress[month] *
-                            allHist[yearIndex]->actualVaporPressure[day]
+                            allHist[yearIndex].actualVaporPressure[day]
                     );
                 }
 
-                if (!missing(allHist[yearIndex]->shortWaveRad[day])) {
-                    allHist[yearIndex]->shortWaveRad[day] = fmax(
+                if (!missing(allHist[yearIndex].shortWaveRad[day])) {
+                    allHist[yearIndex].shortWaveRad[day] = fmax(
                         0.0,
                         scale_shortWaveRad[month] *
-                            allHist[yearIndex]->shortWaveRad[day]
+                            allHist[yearIndex].shortWaveRad[day]
                     );
                 }
 
                 /* re-calculate average air temperature */
-                if (!missing(allHist[yearIndex]->temp_max[day]) &&
-                    !missing(allHist[yearIndex]->temp_min[day])) {
-                    allHist[yearIndex]->temp_avg[day] =
-                        (allHist[yearIndex]->temp_max[day] +
-                         allHist[yearIndex]->temp_min[day]) /
+                if (!missing(allHist[yearIndex].temp_max[day]) &&
+                    !missing(allHist[yearIndex].temp_min[day])) {
+                    allHist[yearIndex].temp_avg[day] =
+                        (allHist[yearIndex].temp_max[day] +
+                         allHist[yearIndex].temp_min[day]) /
                         2.;
                 }
             }
@@ -1024,7 +1502,7 @@ any historical weather data files from disk
 (i.e., the weather generator is used);
 this requires that appropriate structures are initialized.
 
-@param[in,out] allHist 2D array holding all weather data
+@param[in,out] allHist 1D array holding all weather data
 @param[in,out] SW_Markov Struct of type SW_MARKOV which holds values
     related to temperature and weather generator
 @param[in] startYear Start year of the simulation
@@ -1037,8 +1515,8 @@ this requires that appropriate structures are initialized.
 */
 void generateMissingWeather(
     SW_MARKOV *SW_Markov,
-    SW_WEATHER_HIST **allHist,
-    int startYear,
+    SW_WEATHER_HIST *allHist,
+    unsigned int startYear,
     unsigned int n_years,
     unsigned int method,
     unsigned int optLOCF_nMax,
@@ -1061,10 +1539,14 @@ void generateMissingWeather(
     double yesterdayActVP = SW_MISSING;
 
     Bool any_missing;
-    Bool missing_Tmax = swFALSE, missing_Tmin = swFALSE, missing_PPT = swFALSE,
-         missing_CloudCov = swFALSE, missing_WindSpeed = swFALSE,
-         missing_RelHum = swFALSE, missing_ActVP = swFALSE,
-         missing_ShortWR = swFALSE;
+    Bool missing_Tmax = swFALSE;
+    Bool missing_Tmin = swFALSE;
+    Bool missing_PPT = swFALSE;
+    Bool missing_CloudCov = swFALSE;
+    Bool missing_WindSpeed = swFALSE;
+    Bool missing_RelHum = swFALSE;
+    Bool missing_ActVP = swFALSE;
+    Bool missing_ShortWR = swFALSE;
 
 
     // Pass through method: return early
@@ -1094,21 +1576,21 @@ void generateMissingWeather(
         for (day = 0; day < numDaysYear; day++) {
             /* Determine variables with missing values */
 
-            missing_Tmax = (Bool) missing(allHist[yearIndex]->temp_max[day]);
-            missing_Tmin = (Bool) missing(allHist[yearIndex]->temp_min[day]);
-            missing_PPT = (Bool) missing(allHist[yearIndex]->ppt[day]);
+            missing_Tmax = (Bool) missing(allHist[yearIndex].temp_max[day]);
+            missing_Tmin = (Bool) missing(allHist[yearIndex].temp_min[day]);
+            missing_PPT = (Bool) missing(allHist[yearIndex].ppt[day]);
 
             if (method == wgLOCF) {
                 missing_CloudCov =
-                    (Bool) missing(allHist[yearIndex]->cloudcov_daily[day]);
+                    (Bool) missing(allHist[yearIndex].cloudcov_daily[day]);
                 missing_WindSpeed =
-                    (Bool) missing(allHist[yearIndex]->windspeed_daily[day]);
+                    (Bool) missing(allHist[yearIndex].windspeed_daily[day]);
                 missing_RelHum =
-                    (Bool) missing(allHist[yearIndex]->r_humidity_daily[day]);
+                    (Bool) missing(allHist[yearIndex].r_humidity_daily[day]);
                 missing_ShortWR =
-                    (Bool) missing(allHist[yearIndex]->shortWaveRad[day]);
-                missing_ActVP = (Bool
-                ) missing(allHist[yearIndex]->actualVaporPressure[day]);
+                    (Bool) missing(allHist[yearIndex].shortWaveRad[day]);
+                missing_ActVP =
+                    (Bool) missing(allHist[yearIndex].actualVaporPressure[day]);
             }
 
             any_missing =
@@ -1121,14 +1603,14 @@ void generateMissingWeather(
 
                 if (method == wgMKV) {
                     // Markov weather generator (Tmax, Tmin, and PPT)
-                    allHist[yearIndex]->ppt[day] = yesterdayPPT;
+                    allHist[yearIndex].ppt[day] = yesterdayPPT;
                     SW_MKV_today(
                         SW_Markov,
                         day,
                         year,
-                        &allHist[yearIndex]->temp_max[day],
-                        &allHist[yearIndex]->temp_min[day],
-                        &allHist[yearIndex]->ppt[day],
+                        &allHist[yearIndex].temp_max[day],
+                        &allHist[yearIndex].temp_min[day],
+                        &allHist[yearIndex].ppt[day],
                         LogInfo
                     );
                     if (LogInfo->stopRun) {
@@ -1138,40 +1620,40 @@ void generateMissingWeather(
                 } else if (method == wgLOCF) {
                     // LOCF (temp, cloud cover, wind speed, relative humidity,
                     // shortwave radiation, and actual vapor pressure) + 0 (PPT)
-                    allHist[yearIndex]->temp_max[day] =
+                    allHist[yearIndex].temp_max[day] =
                         missing_Tmax ? yesterdayTempMax :
-                                       allHist[yearIndex]->temp_max[day];
+                                       allHist[yearIndex].temp_max[day];
 
-                    allHist[yearIndex]->temp_min[day] =
+                    allHist[yearIndex].temp_min[day] =
                         missing_Tmin ? yesterdayTempMin :
-                                       allHist[yearIndex]->temp_min[day];
+                                       allHist[yearIndex].temp_min[day];
 
-                    allHist[yearIndex]->cloudcov_daily[day] =
+                    allHist[yearIndex].cloudcov_daily[day] =
                         missing_CloudCov ?
                             yesterdayCloudCov :
-                            allHist[yearIndex]->cloudcov_daily[day];
+                            allHist[yearIndex].cloudcov_daily[day];
 
-                    allHist[yearIndex]->windspeed_daily[day] =
+                    allHist[yearIndex].windspeed_daily[day] =
                         missing_WindSpeed ?
                             yesterdayWindSpeed :
-                            allHist[yearIndex]->windspeed_daily[day];
+                            allHist[yearIndex].windspeed_daily[day];
 
-                    allHist[yearIndex]->r_humidity_daily[day] =
+                    allHist[yearIndex].r_humidity_daily[day] =
                         missing_RelHum ?
                             yesterdayRelHum :
-                            allHist[yearIndex]->r_humidity_daily[day];
+                            allHist[yearIndex].r_humidity_daily[day];
 
-                    allHist[yearIndex]->shortWaveRad[day] =
+                    allHist[yearIndex].shortWaveRad[day] =
                         missing_ShortWR ? yesterdayShortWR :
-                                          allHist[yearIndex]->shortWaveRad[day];
+                                          allHist[yearIndex].shortWaveRad[day];
 
-                    allHist[yearIndex]->actualVaporPressure[day] =
+                    allHist[yearIndex].actualVaporPressure[day] =
                         missing_ActVP ?
                             yesterdayActVP :
-                            allHist[yearIndex]->actualVaporPressure[day];
+                            allHist[yearIndex].actualVaporPressure[day];
 
-                    allHist[yearIndex]->ppt[day] =
-                        missing_PPT ? 0. : allHist[yearIndex]->ppt[day];
+                    allHist[yearIndex].ppt[day] =
+                        missing_PPT ? 0. : allHist[yearIndex].ppt[day];
 
 
                     // Throw an error if too many missing values have
@@ -1179,7 +1661,7 @@ void generateMissingWeather(
                     // per calendar year
                     if ((missing_Tmax && !missing(yesterdayTempMax)) ||
                         (missing_Tmin && !missing(yesterdayTempMin)) ||
-                        (missing_PPT && !missing(allHist[yearIndex]->ppt[day])
+                        (missing_PPT && !missing(allHist[yearIndex].ppt[day])
                         ) ||
                         (missing_CloudCov && !missing(yesterdayCloudCov)) ||
                         (missing_WindSpeed && !missing(yesterdayWindSpeed)) ||
@@ -1205,22 +1687,22 @@ void generateMissingWeather(
 
 
                 // Re-calculate average air temperature
-                allHist[yearIndex]->temp_avg[day] =
-                    (allHist[yearIndex]->temp_max[day] +
-                     allHist[yearIndex]->temp_min[day]) /
+                allHist[yearIndex].temp_avg[day] =
+                    (allHist[yearIndex].temp_max[day] +
+                     allHist[yearIndex].temp_min[day]) /
                     2.;
             }
 
-            yesterdayPPT = allHist[yearIndex]->ppt[day];
+            yesterdayPPT = allHist[yearIndex].ppt[day];
 
             if (method == wgLOCF) {
-                yesterdayTempMax = allHist[yearIndex]->temp_max[day];
-                yesterdayTempMin = allHist[yearIndex]->temp_min[day];
-                yesterdayCloudCov = allHist[yearIndex]->cloudcov_daily[day];
-                yesterdayWindSpeed = allHist[yearIndex]->windspeed_daily[day];
-                yesterdayRelHum = allHist[yearIndex]->r_humidity_daily[day];
-                yesterdayShortWR = allHist[yearIndex]->shortWaveRad[day];
-                yesterdayActVP = allHist[yearIndex]->actualVaporPressure[day];
+                yesterdayTempMax = allHist[yearIndex].temp_max[day];
+                yesterdayTempMin = allHist[yearIndex].temp_min[day];
+                yesterdayCloudCov = allHist[yearIndex].cloudcov_daily[day];
+                yesterdayWindSpeed = allHist[yearIndex].windspeed_daily[day];
+                yesterdayRelHum = allHist[yearIndex].r_humidity_daily[day];
+                yesterdayShortWR = allHist[yearIndex].shortWaveRad[day];
+                yesterdayActVP = allHist[yearIndex].actualVaporPressure[day];
             }
         }
     }
@@ -1239,10 +1721,13 @@ crash.
 void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
 
     // Initialize any variables
-    TimeInt year, doy, numDaysInYear;
-    SW_WEATHER_HIST **weathHist = weather->allHist;
+    TimeInt year;
+    TimeInt doy;
+    TimeInt numDaysInYear;
+    SW_WEATHER_HIST *weathHist = weather->allHist;
 
-    double dailyMinTemp, dailyMaxTemp;
+    double dailyMinTemp;
+    double dailyMaxTemp;
 
     // Loop through `allHist` years
     for (year = 0; year < weather->n_years; year++) {
@@ -1251,8 +1736,8 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
         // Loop through `allHist` days
         for (doy = 0; doy < numDaysInYear; doy++) {
 
-            dailyMaxTemp = weathHist[year]->temp_max[doy];
-            dailyMinTemp = weathHist[year]->temp_min[doy];
+            dailyMaxTemp = weathHist[year].temp_max[doy];
+            dailyMinTemp = weathHist[year].temp_min[doy];
 
             if (!missing(dailyMaxTemp) && !missing(dailyMinTemp) &&
                 dailyMinTemp > dailyMaxTemp) {
@@ -1271,7 +1756,7 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
                     doy + 1,
                     year + weather->startYear
                 );
-                return; // Exit function prematurely due to error
+                // Will exit function prematurely due to error
 
             } else if ((!missing(dailyMaxTemp) && !missing(dailyMinTemp)) &&
                        ((dailyMinTemp > 100. || dailyMinTemp < -100.) ||
@@ -1289,10 +1774,10 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
                     doy,
                     year + weather->startYear
                 );
-                return; // Exit function prematurely due to error
+                // Will exit function prematurely due to error
 
-            } else if (!missing(weathHist[year]->ppt[doy]) &&
-                       weathHist[year]->ppt[doy] < 0) {
+            } else if (!missing(weathHist[year].ppt[doy]) &&
+                       weathHist[year].ppt[doy] < 0) {
                 // Otherwise, check if precipitation is less than 0cm
 
                 // Fail
@@ -1301,27 +1786,27 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
                     LOGERROR,
                     "Invalid daily precipitation value: %f cm (< 0) on day %d "
                     "of year %d.",
-                    weathHist[year]->ppt[doy],
+                    weathHist[year].ppt[doy],
                     doy + 1,
                     year + weather->startYear
                 );
-                return; // Exit function prematurely due to error
+                // Will exit function prematurely due to error
 
-            } else if (!missing(weathHist[year]->r_humidity_daily[doy]) &&
-                       (weathHist[year]->r_humidity_daily[doy] <= 1. ||
-                        weathHist[year]->r_humidity_daily[doy] > 100.)) {
+            } else if (!missing(weathHist[year].r_humidity_daily[doy]) &&
+                       (weathHist[year].r_humidity_daily[doy] <= 1. ||
+                        weathHist[year].r_humidity_daily[doy] > 100.)) {
                 // Otherwise, check if relative humidity is less than 0% or
                 // greater than 100%
 
-                if ((weathHist[year]->r_humidity_daily[doy] >= 0.) &&
-                    (weathHist[year]->r_humidity_daily[doy] <= 1.)) {
+                if ((weathHist[year].r_humidity_daily[doy] >= 0.) &&
+                    (weathHist[year].r_humidity_daily[doy] <= 1.)) {
                     LogError(
                         LogInfo,
                         LOGWARN,
                         "Daily/calculated relative humidity value (%f) is "
                         "within [0, 1] indicating a possibly incorrect unit "
                         "(expectation: value within [0, 100] %%).",
-                        weathHist[year]->r_humidity_daily[doy]
+                        weathHist[year].r_humidity_daily[doy]
                     );
                 } else {
                     LogError(
@@ -1330,14 +1815,14 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
                         "Invalid daily/calculated relative humidity value did"
                         " not fall in the range [0, 100] (relative humidity = "
                         "%f). ",
-                        weathHist[year]->r_humidity_daily[doy]
+                        weathHist[year].r_humidity_daily[doy]
                     );
                     return; // Exit function prematurely due to error
                 }
 
-            } else if (!missing(weathHist[year]->cloudcov_daily[doy]) &&
-                       (weathHist[year]->cloudcov_daily[doy] < 0. ||
-                        weathHist[year]->cloudcov_daily[doy] > 100.)) {
+            } else if (!missing(weathHist[year].cloudcov_daily[doy]) &&
+                       (weathHist[year].cloudcov_daily[doy] < 0. ||
+                        weathHist[year].cloudcov_daily[doy] > 100.)) {
                 // Otherwise, check if cloud cover was input and
                 // if the value is less than 0% or greater than 100%
 
@@ -1347,12 +1832,12 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
                     LOGERROR,
                     "Invalid daily/calculated cloud cover value did"
                     " not fall in the range [0, 100] (cloud cover = %f). ",
-                    weathHist[year]->cloudcov_daily[doy]
+                    weathHist[year].cloudcov_daily[doy]
                 );
-                return; // Exit function prematurely due to error
+                // Will exit function prematurely due to error
 
-            } else if (!missing(weathHist[year]->windspeed_daily[doy]) &&
-                       weathHist[year]->windspeed_daily[doy] < 0.) {
+            } else if (!missing(weathHist[year].windspeed_daily[doy]) &&
+                       weathHist[year].windspeed_daily[doy] < 0.) {
                 // Otherwise, check if wind speed is less than 0 m/s
 
                 // Fail
@@ -1361,14 +1846,14 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
                     LOGERROR,
                     "Invalid daily wind speed value is less than zero."
                     "(wind speed = %f) on day %d of year %d. ",
-                    weathHist[year]->windspeed_daily[doy],
+                    weathHist[year].windspeed_daily[doy],
                     doy + 1,
                     year + weather->startYear
                 );
-                return; // Exit function prematurely due to error
+                // Will exit function prematurely due to error
 
-            } else if (!missing(weathHist[year]->shortWaveRad[doy]) &&
-                       weathHist[year]->shortWaveRad[doy] < 0.) {
+            } else if (!missing(weathHist[year].shortWaveRad[doy]) &&
+                       weathHist[year].shortWaveRad[doy] < 0.) {
                 // Otherwise, check if radiation if less than 0 W/m^2
 
                 // Fail
@@ -1377,14 +1862,14 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
                     LOGERROR,
                     "Invalid daily shortwave radiation value is less than zero."
                     "(shortwave radation = %f) on day %d of year %d. ",
-                    weathHist[year]->shortWaveRad[doy],
+                    weathHist[year].shortWaveRad[doy],
                     doy + 1,
                     year + weather->startYear
                 );
-                return; // Exit function prematurely due to error
+                // Will exit function prematurely due to error
 
-            } else if (!missing(weathHist[year]->actualVaporPressure[doy]) &&
-                       weathHist[year]->actualVaporPressure[doy] < 0.) {
+            } else if (!missing(weathHist[year].actualVaporPressure[doy]) &&
+                       weathHist[year].actualVaporPressure[doy] < 0.) {
                 // Otherwise, check if actual vapor pressure is less than 0 kPa
 
                 // Fail
@@ -1394,10 +1879,14 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
                     "Invalid daily actual vapor pressure value is less than "
                     "zero."
                     "(actual vapor pressure = %f) on day %d of year %d. ",
-                    weathHist[year]->actualVaporPressure[doy],
+                    weathHist[year].actualVaporPressure[doy],
                     doy + 1,
                     year + weather->startYear
                 );
+                // Will exit function prematurely due to error
+            }
+
+            if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
         }
@@ -1408,20 +1897,29 @@ void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo) {
 @brief Clears weather history.
 @note Used by rSOILWAT2
 */
-void _clear_hist_weather(SW_WEATHER_HIST *yearWeather) {
+void clear_hist_weather(SW_WEATHER_HIST *yearWeather, double **fullWeathHist) {
     /* --------------------------------------------------- */
     TimeInt d;
+    int weathVar;
 
     for (d = 0; d < MAX_DAYS; d++) {
-        yearWeather->ppt[d] = SW_MISSING;
-        yearWeather->temp_max[d] = SW_MISSING;
-        yearWeather->temp_min[d] = SW_MISSING;
-        yearWeather->temp_avg[d] = SW_MISSING;
-        yearWeather->cloudcov_daily[d] = SW_MISSING;
-        yearWeather->windspeed_daily[d] = SW_MISSING;
-        yearWeather->r_humidity_daily[d] = SW_MISSING;
-        yearWeather->shortWaveRad[d] = SW_MISSING;
-        yearWeather->actualVaporPressure[d] = SW_MISSING;
+        if (!isnull(yearWeather)) {
+            yearWeather->ppt[d] = SW_MISSING;
+            yearWeather->temp_max[d] = SW_MISSING;
+            yearWeather->temp_min[d] = SW_MISSING;
+            yearWeather->temp_avg[d] = SW_MISSING;
+            yearWeather->cloudcov_daily[d] = SW_MISSING;
+            yearWeather->windspeed_daily[d] = SW_MISSING;
+            yearWeather->r_humidity_daily[d] = SW_MISSING;
+            yearWeather->shortWaveRad[d] = SW_MISSING;
+            yearWeather->actualVaporPressure[d] = SW_MISSING;
+        }
+
+        if (!isnull(fullWeathHist)) {
+            for (weathVar = 0; weathVar < MAX_INPUT_COLUMNS; weathVar++) {
+                fullWeathHist[weathVar][d] = SW_MISSING;
+            }
+        }
     }
 }
 
@@ -1516,7 +2014,7 @@ void SW_WTH_deconstruct(SW_WEATHER *SW_Weather) {
         }
     }
 
-    deallocateAllWeather(SW_Weather->allHist, SW_Weather->n_years);
+    deallocateAllWeather(&SW_Weather->allHist);
 }
 
 /**
@@ -1526,45 +2024,16 @@ void SW_WTH_deconstruct(SW_WEATHER *SW_Weather) {
 @param[in] n_years Number of years in simulation
 @param[out] LogInfo Holds information on warnings and errors
 */
-void allocateAllWeather(
-    SW_WEATHER_HIST ***allHist, unsigned int n_years, LOG_INFO *LogInfo
+void SW_WTH_allocateAllWeather(
+    SW_WEATHER_HIST **allHist, unsigned int n_years, LOG_INFO *LogInfo
 ) {
-
-    unsigned int year;
-
-    *allHist = (SW_WEATHER_HIST **) Mem_Malloc(
-        sizeof(SW_WEATHER_HIST *) * n_years, "allocateAllWeather()", LogInfo
+    *allHist = (SW_WEATHER_HIST *) Mem_Malloc(
+        sizeof(SW_WEATHER_HIST) * n_years,
+        "SW_WTH_allocateAllWeather()",
+        LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
-    }
-
-    initializeAllWeatherPtrs(*allHist, n_years);
-
-    for (year = 0; year < n_years; year++) {
-
-        (*allHist)[year] = (SW_WEATHER_HIST *) Mem_Malloc(
-            sizeof(SW_WEATHER_HIST), "allocateAllWeather()", LogInfo
-        );
-
-        if (LogInfo->stopRun) {
-            deallocateAllWeather(*allHist, n_years);
-            return; // Exit function prematurely due to error
-        }
-    }
-}
-
-/**
-@brief Initialize all `allHist` pointers to NULL
-
-@param[out] allHist Array containing all historical data of a site
-@param[in] n_years Number of years in simulation
-*/
-void initializeAllWeatherPtrs(SW_WEATHER_HIST **allHist, unsigned int n_years) {
-    unsigned int year;
-
-    for (year = 0; year < n_years; year++) {
-        allHist[year] = NULL;
     }
 }
 
@@ -1572,20 +2041,11 @@ void initializeAllWeatherPtrs(SW_WEATHER_HIST **allHist, unsigned int n_years) {
 @brief Helper function to SW_WTH_deconstruct to deallocate `allHist` of `w`.
 
 @param[in,out] allHist Array containing all historical data of a site
-@param[in] n_years Number of years in simulation
 */
-void deallocateAllWeather(SW_WEATHER_HIST **allHist, unsigned int n_years) {
-    unsigned int year;
-
-    if (!isnull(allHist)) {
-        for (year = 0; year < n_years; year++) {
-            if (!isnull(allHist[year])) {
-                free(allHist[year]);
-            }
-        }
-
-        free(allHist);
-        allHist = NULL;
+void deallocateAllWeather(SW_WEATHER_HIST **allHist) {
+    if (!isnull(*allHist)) {
+        free((void *) *allHist);
+        *allHist = NULL;
     }
 }
 
@@ -1626,7 +2086,7 @@ void SW_WTH_init_run(SW_WEATHER *SW_Weather) {
 void SW_WTH_new_day(
     SW_WEATHER *SW_Weather,
     SW_SITE *SW_Site,
-    RealD snowpack[],
+    double snowpack[],
     TimeInt doy,
     TimeInt year,
     LOG_INFO *LogInfo
@@ -1647,8 +2107,8 @@ void SW_WTH_new_day(
     SW_WEATHER_NOW *wn = &SW_Weather->now;
 
     /* Indices to today's weather record in `allHist` */
-    TimeInt doy0 = doy - 1,
-            doy1 = doy; // Used for call to SW_SWC_adjust_snow()
+    TimeInt doy0 = doy - 1;
+    TimeInt doy1 = doy; // Used for call to SW_SWC_adjust_snow()
     TimeInt yearIndex = year - SW_Weather->startYear;
 
     /*
@@ -1666,13 +2126,13 @@ void SW_WTH_new_day(
          1. shortwave radiation can be missing if cloud cover is not missing
          2. cloud cover can be missing if shortwave radiation is not missing
     */
-    if (missing(SW_Weather->allHist[yearIndex]->temp_avg[doy0]) ||
-        missing(SW_Weather->allHist[yearIndex]->ppt[doy0]) ||
-        missing(SW_Weather->allHist[yearIndex]->windspeed_daily[doy0]) ||
-        missing(SW_Weather->allHist[yearIndex]->r_humidity_daily[doy0]) ||
-        missing(SW_Weather->allHist[yearIndex]->actualVaporPressure[doy0]) ||
-        (missing(SW_Weather->allHist[yearIndex]->shortWaveRad[doy0]) &&
-         missing(SW_Weather->allHist[yearIndex]->cloudcov_daily[doy0]))) {
+    if (missing(SW_Weather->allHist[yearIndex].temp_avg[doy0]) ||
+        missing(SW_Weather->allHist[yearIndex].ppt[doy0]) ||
+        missing(SW_Weather->allHist[yearIndex].windspeed_daily[doy0]) ||
+        missing(SW_Weather->allHist[yearIndex].r_humidity_daily[doy0]) ||
+        missing(SW_Weather->allHist[yearIndex].actualVaporPressure[doy0]) ||
+        (missing(SW_Weather->allHist[yearIndex].shortWaveRad[doy0]) &&
+         missing(SW_Weather->allHist[yearIndex].cloudcov_daily[doy0]))) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -1681,28 +2141,28 @@ void SW_WTH_new_day(
             "cloud=%.2f\n",
             year,
             doy,
-            SW_Weather->allHist[yearIndex]->temp_avg[doy0],
-            SW_Weather->allHist[yearIndex]->ppt[doy0],
-            SW_Weather->allHist[yearIndex]->windspeed_daily[doy0],
-            SW_Weather->allHist[yearIndex]->r_humidity_daily[doy0],
-            SW_Weather->allHist[yearIndex]->actualVaporPressure[doy0],
-            SW_Weather->allHist[yearIndex]->shortWaveRad[doy0],
-            SW_Weather->allHist[yearIndex]->cloudcov_daily[doy0]
+            SW_Weather->allHist[yearIndex].temp_avg[doy0],
+            SW_Weather->allHist[yearIndex].ppt[doy0],
+            SW_Weather->allHist[yearIndex].windspeed_daily[doy0],
+            SW_Weather->allHist[yearIndex].r_humidity_daily[doy0],
+            SW_Weather->allHist[yearIndex].actualVaporPressure[doy0],
+            SW_Weather->allHist[yearIndex].shortWaveRad[doy0],
+            SW_Weather->allHist[yearIndex].cloudcov_daily[doy0]
         );
         return; // Prematurely return the function
     }
 
-    wn->temp_max = SW_Weather->allHist[yearIndex]->temp_max[doy0];
-    wn->temp_min = SW_Weather->allHist[yearIndex]->temp_min[doy0];
-    wn->ppt = SW_Weather->allHist[yearIndex]->ppt[doy0];
-    wn->cloudCover = SW_Weather->allHist[yearIndex]->cloudcov_daily[doy0];
-    wn->windSpeed = SW_Weather->allHist[yearIndex]->windspeed_daily[doy0];
-    wn->relHumidity = SW_Weather->allHist[yearIndex]->r_humidity_daily[doy0];
-    wn->shortWaveRad = SW_Weather->allHist[yearIndex]->shortWaveRad[doy0];
+    wn->temp_max = SW_Weather->allHist[yearIndex].temp_max[doy0];
+    wn->temp_min = SW_Weather->allHist[yearIndex].temp_min[doy0];
+    wn->ppt = SW_Weather->allHist[yearIndex].ppt[doy0];
+    wn->cloudCover = SW_Weather->allHist[yearIndex].cloudcov_daily[doy0];
+    wn->windSpeed = SW_Weather->allHist[yearIndex].windspeed_daily[doy0];
+    wn->relHumidity = SW_Weather->allHist[yearIndex].r_humidity_daily[doy0];
+    wn->shortWaveRad = SW_Weather->allHist[yearIndex].shortWaveRad[doy0];
     wn->actualVaporPressure =
-        SW_Weather->allHist[yearIndex]->actualVaporPressure[doy0];
+        SW_Weather->allHist[yearIndex].actualVaporPressure[doy0];
 
-    wn->temp_avg = SW_Weather->allHist[yearIndex]->temp_avg[doy0];
+    wn->temp_avg = SW_Weather->allHist[yearIndex].temp_avg[doy0];
 
     SW_Weather->snow = SW_Weather->snowmelt = SW_Weather->snowloss = 0.;
     SW_Weather->snowRunoff = SW_Weather->surfaceRunoff =
@@ -1731,49 +2191,82 @@ void SW_WTH_new_day(
 
 @param[in,out] SW_Weather Struct of type SW_WEATHER holding all relevant
     information pretaining to meteorological input data
-@param[in] InFiles Array of program in/output files
-@param[out] _weather_prefix File name of weather data without extension.
+@param[in] txtInFiles Array of program in/output files
+@param[out] txtWeatherPrefix File name of weather data without extension.
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_WTH_setup(
     SW_WEATHER *SW_Weather,
-    char *InFiles[],
-    char *_weather_prefix,
+    char *txtInFiles[],
+    char *txtWeatherPrefix,
     LOG_INFO *LogInfo
 ) {
     /* =================================================== */
     const int nitems = 35;
     FILE *f;
-    int lineno = 0, month, x;
-    RealF sppt, stmax, stmin;
-    RealF sky, wind, rH, actVP, shortWaveRad;
+    int lineno = 0;
+    int month;
+    int x;
+    int index;
+    int resSNP;
+    double sppt;
+    double stmax;
+    double stmin;
+    double sky;
+    double wind;
+    double rH;
+    double actVP;
+    double shortWaveRad;
     char inbuf[MAX_FILENAMESIZE];
+    int inBufintRes = 0;
+    double inBufdoubleRes = 0.;
+
+    char weathInputStrs[9][20] = {{'\0'}};
+    double *inDoubleVals[8] = {
+        &sppt, &stmax, &stmin, &sky, &wind, &rH, &actVP, &shortWaveRad
+    };
+    const int numInDefaultVars = 9;
+
+    Bool doIntConv;
 
     Bool *dailyInputFlags = SW_Weather->dailyInputFlags;
 
-    char *MyFileName = InFiles[eWeather];
+    char *MyFileName = txtInFiles[eWeather];
     f = OpenFile(MyFileName, "r", LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+        doIntConv = (Bool) (lineno <= 22 && (lineno != 1 && lineno != 2));
+
+        if (lineno <= 22) {
+            if (doIntConv) {
+                inBufintRes = sw_strtoi(inbuf, MyFileName, LogInfo);
+            } else {
+                inBufdoubleRes = sw_strtod(inbuf, MyFileName, LogInfo);
+            }
+
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
+        }
+
         switch (lineno) {
         case 0:
-            SW_Weather->use_snow = itob(atoi(inbuf));
+            SW_Weather->use_snow = itob(inBufintRes);
             break;
         case 1:
-            SW_Weather->pct_snowdrift = atoi(inbuf);
+            SW_Weather->pct_snowdrift = inBufdoubleRes;
             break;
         case 2:
-            SW_Weather->pct_snowRunoff = atoi(inbuf);
+            SW_Weather->pct_snowRunoff = inBufdoubleRes;
             break;
 
         case 3:
-            x = atoi(inbuf);
             SW_Weather->use_weathergenerator_only = swFALSE;
 
-            switch (x) {
+            switch (inBufintRes) {
             case 0:
                 // As is
                 SW_Weather->generateWeatherMethod = 0;
@@ -1796,92 +2289,92 @@ void SW_WTH_setup(
                 break;
 
             default:
-                CloseFile(&f, LogInfo);
                 LogError(
                     LogInfo,
                     LOGERROR,
-                    "%s : Bad missing weather method %d.",
+                    "%s : Requested weather generator method '%d' is not "
+                    "implemented.",
                     MyFileName,
-                    x
+                    inBufintRes
                 );
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             break;
 
         case 4:
-            SW_Weather->rng_seed = atoi(inbuf);
+            SW_Weather->rng_seed = inBufintRes;
             break;
 
         case 5:
-            SW_Weather->use_cloudCoverMonthly = itob(atoi(inbuf));
+            SW_Weather->use_cloudCoverMonthly = itob(inBufintRes);
             break;
 
         case 6:
-            SW_Weather->use_windSpeedMonthly = itob(atoi(inbuf));
+            SW_Weather->use_windSpeedMonthly = itob(inBufintRes);
             break;
 
         case 7:
-            SW_Weather->use_humidityMonthly = itob(atoi(inbuf));
+            SW_Weather->use_humidityMonthly = itob(inBufintRes);
             break;
 
         case 8:
-            SW_Weather->dailyInputFlags[TEMP_MAX] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[TEMP_MAX] = itob(inBufintRes);
             break;
 
         case 9:
-            SW_Weather->dailyInputFlags[TEMP_MIN] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[TEMP_MIN] = itob(inBufintRes);
             break;
 
         case 10:
-            SW_Weather->dailyInputFlags[PPT] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[PPT] = itob(inBufintRes);
             break;
 
         case 11:
-            SW_Weather->dailyInputFlags[CLOUD_COV] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[CLOUD_COV] = itob(inBufintRes);
             break;
 
         case 12:
-            SW_Weather->dailyInputFlags[WIND_SPEED] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[WIND_SPEED] = itob(inBufintRes);
             break;
 
         case 13:
-            SW_Weather->dailyInputFlags[WIND_EAST] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[WIND_EAST] = itob(inBufintRes);
             break;
 
         case 14:
-            SW_Weather->dailyInputFlags[WIND_NORTH] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[WIND_NORTH] = itob(inBufintRes);
             break;
 
         case 15:
-            SW_Weather->dailyInputFlags[REL_HUMID] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[REL_HUMID] = itob(inBufintRes);
             break;
 
         case 16:
-            SW_Weather->dailyInputFlags[REL_HUMID_MAX] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[REL_HUMID_MAX] = itob(inBufintRes);
             break;
 
         case 17:
-            SW_Weather->dailyInputFlags[REL_HUMID_MIN] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[REL_HUMID_MIN] = itob(inBufintRes);
             break;
 
         case 18:
-            SW_Weather->dailyInputFlags[SPEC_HUMID] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[SPEC_HUMID] = itob(inBufintRes);
             break;
 
         case 19:
-            SW_Weather->dailyInputFlags[TEMP_DEWPOINT] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[TEMP_DEWPOINT] = itob(inBufintRes);
             break;
 
         case 20:
-            SW_Weather->dailyInputFlags[ACTUAL_VP] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[ACTUAL_VP] = itob(inBufintRes);
             break;
 
         case 21:
-            SW_Weather->dailyInputFlags[SHORT_WR] = itob(atoi(inbuf));
+            SW_Weather->dailyInputFlags[SHORT_WR] = itob(inBufintRes);
             break;
 
         case 22:
-            SW_Weather->desc_rsds = atoi(inbuf);
+            SW_Weather->desc_rsds = inBufintRes;
             break;
 
 
@@ -1892,24 +2385,37 @@ void SW_WTH_setup(
 
             x = sscanf(
                 inbuf,
-                "%d %f %f %f %f %f %f %f %f",
-                &month,
-                &sppt,
-                &stmax,
-                &stmin,
-                &sky,
-                &wind,
-                &rH,
-                &actVP,
-                &shortWaveRad
+                "%19s %19s %19s %19s %19s %19s %19s %19s %19s",
+                weathInputStrs[0],
+                weathInputStrs[1],
+                weathInputStrs[2],
+                weathInputStrs[3],
+                weathInputStrs[4],
+                weathInputStrs[5],
+                weathInputStrs[6],
+                weathInputStrs[7],
+                weathInputStrs[8]
             );
 
-            if (x != 9) {
-                CloseFile(&f, LogInfo);
+            if (x != numInDefaultVars) {
                 LogError(
                     LogInfo, LOGERROR, "%s : Bad record %d.", MyFileName, lineno
                 );
-                return; // Exit function prematurely due to error
+                goto closeFile;
+            }
+
+            for (index = 0; index < numInDefaultVars; index++) {
+                if (index == 0) {
+                    month =
+                        sw_strtoi(weathInputStrs[index], MyFileName, LogInfo);
+                } else {
+                    *(inDoubleVals[index - 1]) =
+                        sw_strtod(weathInputStrs[index], MyFileName, LogInfo);
+                }
+
+                if (LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
             }
 
             month--; // convert to base0
@@ -1926,8 +2432,21 @@ void SW_WTH_setup(
         lineno++;
     }
 
-    strcpy(SW_Weather->name_prefix, _weather_prefix);
-    CloseFile(&f, LogInfo);
+    resSNP = snprintf(
+        SW_Weather->name_prefix,
+        sizeof SW_Weather->name_prefix,
+        "%s",
+        txtWeatherPrefix
+    );
+    if (resSNP < 0 || (unsigned) resSNP >= (sizeof SW_Weather->name_prefix)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Weather input path name is too long: '%s'.",
+            txtWeatherPrefix
+        );
+        return; // Exit function prematurely due to error
+    }
 
     if (lineno < nitems) {
         LogError(LogInfo, LOGERROR, "%s : Too few input lines.", MyFileName);
@@ -1948,6 +2467,8 @@ void SW_WTH_setup(
         dailyInputFlags,
         LogInfo
     );
+
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**
@@ -1960,7 +2481,7 @@ void SW_WTH_setup(
 @param[out] n_input_forcings The number of active daily input variables.
 */
 void set_dailyInputIndices(
-    Bool dailyInputFlags[MAX_INPUT_COLUMNS],
+    const Bool dailyInputFlags[MAX_INPUT_COLUMNS],
     unsigned int dailyInputIndices[MAX_INPUT_COLUMNS],
     unsigned int *n_input_forcings
 ) {
@@ -1991,7 +2512,7 @@ void set_dailyInputIndices(
   * Turn off necessary flags. This happens after the calculation of
     input indices due to the fact that setting before calculating may
     result in an incorrect `n_input_forcings` in SW_WEATHER, and unexpectedly
-    crash the program in `_read_weather_hist()`.
+    crash the program in `read_weather_hist()`.
 
   * Check if monthly flags have been chosen to override daily flags.
   * Aside from checking for purely a monthly flag, we must make sure we have
@@ -2120,51 +2641,58 @@ monthly climate parameters, see `SW_WTH_finalize_all_weather()` instead.
     of the simulated site
 @param[in] SW_Model Struct of type SW_MODEL holding basic time information
     about the simulation
+@param[in] readTextInputs Specifies to read text weather inputs, this may
+be turned off when dealing with nc inputs
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_WTH_read(
     SW_WEATHER *SW_Weather,
     SW_SKY *SW_Sky,
     SW_MODEL *SW_Model,
+    Bool readTextInputs,
     LOG_INFO *LogInfo
 ) {
 
     // Deallocate (previous, if any) `allHist`
     // (using value of `SW_Weather.n_years` previously used to allocate)
     // `SW_WTH_construct()` sets `n_years` to zero
-    deallocateAllWeather(SW_Weather->allHist, SW_Weather->n_years);
+    deallocateAllWeather(&SW_Weather->allHist);
 
     // Update number of years and first calendar year represented
     SW_Weather->n_years = SW_Model->endyr - SW_Model->startyr + 1;
     SW_Weather->startYear = SW_Model->startyr;
 
-    // Allocate new `allHist` (based on current `SW_Weather.n_years`)
-    allocateAllWeather(&SW_Weather->allHist, SW_Weather->n_years, LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
+    if (readTextInputs) {
+        // Allocate new `allHist` (based on current `SW_Weather.n_years`)
+        SW_WTH_allocateAllWeather(
+            &SW_Weather->allHist, SW_Weather->n_years, LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 
-    // Read daily meteorological input from disk (if available)
-    readAllWeather(
-        SW_Weather->allHist,
-        SW_Weather->startYear,
-        SW_Weather->n_years,
-        SW_Weather->use_weathergenerator_only,
-        SW_Weather->name_prefix,
-        SW_Weather->use_cloudCoverMonthly,
-        SW_Weather->use_humidityMonthly,
-        SW_Weather->use_windSpeedMonthly,
-        SW_Weather->n_input_forcings,
-        SW_Weather->dailyInputIndices,
-        SW_Weather->dailyInputFlags,
-        SW_Sky->cloudcov,
-        SW_Sky->windspeed,
-        SW_Sky->r_humidity,
-        SW_Model->elevation,
-        SW_Model->cum_monthdays,
-        SW_Model->days_in_month,
-        LogInfo
-    );
+        // Read daily meteorological input from disk (if available)
+        readAllWeather(
+            SW_Weather->allHist,
+            SW_Weather->startYear,
+            SW_Weather->n_years,
+            SW_Weather->use_weathergenerator_only,
+            SW_Weather->name_prefix,
+            SW_Weather->use_cloudCoverMonthly,
+            SW_Weather->use_humidityMonthly,
+            SW_Weather->use_windSpeedMonthly,
+            SW_Weather->n_input_forcings,
+            SW_Weather->dailyInputIndices,
+            SW_Weather->dailyInputFlags,
+            SW_Sky->cloudcov,
+            SW_Sky->windspeed,
+            SW_Sky->r_humidity,
+            SW_Model->elevation,
+            SW_Model->cum_monthdays,
+            SW_Model->days_in_month,
+            LogInfo
+        );
+    }
 }
 
 /**
@@ -2181,25 +2709,21 @@ Format of a input file (white-space separated values):
 @param year Current year within the simulation
 @param yearWeather Current year's weather array that is to be filled by
     function
-@param weather_prefix File name of weather data without extension.
+@param txtWeatherPrefix File name of weather data without extension.
 @param n_input_forcings Number of read-in columns from disk
 @param dailyInputIndices An array of size MAX_INPUT_COLUMNS holding the
     calculated column number of which a certain variable resides
 @param dailyInputFlags An array of size MAX_INPUT_COLUMNS holding booleans
     specifying what variable has daily input on disk
-@param elevation Site elevation above sea level [m];
-    utilized only if specific humidity is provided as input
-    for calculating relative humidity
 @param[out] LogInfo Holds information on warnings and errors
 */
-void _read_weather_hist(
+void read_weather_hist(
     TimeInt year,
-    SW_WEATHER_HIST *yearWeather,
-    char weather_prefix[],
+    double **yearWeather,
+    char txtWeatherPrefix[],
     unsigned int n_input_forcings,
-    unsigned int *dailyInputIndices,
-    Bool *dailyInputFlags,
-    double elevation,
+    const unsigned int *dailyInputIndices,
+    const Bool *dailyInputFlags,
     LOG_INFO *LogInfo
 ) {
     /* =================================================== */
@@ -2218,43 +2742,35 @@ void _read_weather_hist(
      */
 
     FILE *f;
-    unsigned int x, lineno = 0;
-    int doy;
-    // TimeInt mon, j, k = 0;
-    // RealF acc = 0.0;
-    RealD weathInput[MAX_INPUT_COLUMNS];
+    unsigned int x;
+    unsigned int lineno = 0;
+    unsigned int index;
+    int doy = 0;
+    int resSNP;
+    int varNum;
 
-    Bool hasMaxMinTemp =
-        (Bool) (dailyInputFlags[TEMP_MAX] && dailyInputFlags[TEMP_MIN]);
-    Bool hasMaxMinRelHumid = (Bool) (dailyInputFlags[REL_HUMID_MAX] &&
-                                     dailyInputFlags[REL_HUMID_MIN]);
-    Bool hasEastNorthWind =
-        (Bool) (dailyInputFlags[WIND_EAST] && dailyInputFlags[WIND_NORTH]);
-
-    // Calculate if daily input values of humidity are to be used instead of
-    // being interpolated from monthly values
-    Bool useHumidityDaily =
-        (Bool) (hasMaxMinRelHumid || dailyInputFlags[REL_HUMID] ||
-                dailyInputFlags[SPEC_HUMID] || dailyInputFlags[ACTUAL_VP]);
-
-    if (useHumidityDaily && !hasMaxMinRelHumid && !dailyInputFlags[REL_HUMID] &&
-        dailyInputFlags[SPEC_HUMID] && missing(elevation)) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Elevation is missing but required to calculate relative humidity "
-            "from specific humidity."
-        );
-        return; // Exit function prematurely due to error
-    }
+    double weathInput[MAX_INPUT_COLUMNS];
+    char weathInStrs[15][20];
 
     // Create file name: `[weather-file prefix].[year]`
     char fname[MAX_FILENAMESIZE];
     char inbuf[MAX_FILENAMESIZE];
 
-    snprintf(fname, MAX_FILENAMESIZE, "%s.%4d", weather_prefix, year);
+    resSNP = snprintf(fname, sizeof fname, "%s.%4d", txtWeatherPrefix, year);
 
-    if (NULL == (f = fopen(fname, "r"))) {
+    if (resSNP < 0 || (unsigned) resSNP >= (sizeof fname)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Weather input file name is too long for year = %d",
+            year
+        );
+        return; // Exit function prematurely due to error
+    }
+
+    f = fopen(fname, "r");
+    if (isnull(f)) {
+        // no weather input file --> use generator
         return;
     }
 
@@ -2262,26 +2778,26 @@ void _read_weather_hist(
         lineno++;
         x = sscanf(
             inbuf,
-            "%d %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
-            &doy,
-            &weathInput[0],
-            &weathInput[1],
-            &weathInput[2],
-            &weathInput[3],
-            &weathInput[4],
-            &weathInput[5],
-            &weathInput[6],
-            &weathInput[7],
-            &weathInput[8],
-            &weathInput[9],
-            &weathInput[10],
-            &weathInput[11],
-            &weathInput[12],
-            &weathInput[13]
+            "%19s %19s %19s %19s %19s %19s %19s %19s %19s %19s "
+            "%19s %19s %19s %19s %19s",
+            weathInStrs[0],
+            weathInStrs[1],
+            weathInStrs[2],
+            weathInStrs[3],
+            weathInStrs[4],
+            weathInStrs[5],
+            weathInStrs[6],
+            weathInStrs[7],
+            weathInStrs[8],
+            weathInStrs[9],
+            weathInStrs[10],
+            weathInStrs[11],
+            weathInStrs[12],
+            weathInStrs[13],
+            weathInStrs[14]
         );
 
         if (x != n_input_forcings + 1) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -2290,10 +2806,9 @@ void _read_weather_hist(
                 lineno,
                 doy
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
         if (x > MAX_INPUT_COLUMNS + 1) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -2302,10 +2817,23 @@ void _read_weather_hist(
                 lineno,
                 doy
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
+
+        for (index = 0; index < n_input_forcings + 1; index++) {
+            if (index == 0) {
+                doy = sw_strtoi(weathInStrs[index], fname, LogInfo);
+            } else {
+                weathInput[index - 1] =
+                    sw_strtod(weathInStrs[index], fname, LogInfo);
+            }
+
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
+        }
+
         if (doy < 1 || doy > MAX_DAYS) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -2313,228 +2841,20 @@ void _read_weather_hist(
                 fname,
                 lineno
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
 
         /* --- Make the assignments ---- */
         doy--; // base1 -> base0
-        // Temperature [C]
-        yearWeather->temp_max[doy] = weathInput[dailyInputIndices[TEMP_MAX]];
-        yearWeather->temp_min[doy] = weathInput[dailyInputIndices[TEMP_MIN]];
 
-        // Precipitation [cm]
-        yearWeather->ppt[doy] = weathInput[dailyInputIndices[PPT]];
-
-        // Calculate average air temperature [C] if min/max not missing
-        if (!missing(weathInput[dailyInputIndices[TEMP_MAX]]) &&
-            !missing(weathInput[dailyInputIndices[TEMP_MIN]])) {
-
-            yearWeather->temp_avg[doy] =
-                (weathInput[dailyInputIndices[TEMP_MAX]] +
-                 weathInput[dailyInputIndices[TEMP_MIN]]) /
-                2.0;
-        }
-
-        if (dailyInputFlags[CLOUD_COV]) {
-            // Cloud cover [0-100 %]
-            yearWeather->cloudcov_daily[doy] =
-                weathInput[dailyInputIndices[CLOUD_COV]];
-        }
-
-        if (dailyInputFlags[WIND_SPEED]) {
-            // Wind speed [m s-1]
-            yearWeather->windspeed_daily[doy] =
-                weathInput[dailyInputIndices[WIND_SPEED]];
-
-        } else if (hasEastNorthWind) {
-
-            // Make sure wind is not averaged calculated with any instances of
-            // SW_MISSING
-            if (!missing(weathInput[dailyInputIndices[WIND_EAST]]) &&
-                !missing(weathInput[dailyInputIndices[WIND_NORTH]])) {
-
-                // Wind speed [m s-1]
-                yearWeather->windspeed_daily[doy] = sqrt(
-                    squared(weathInput[dailyInputIndices[WIND_EAST]]) +
-                    squared(weathInput[dailyInputIndices[WIND_NORTH]])
-                );
-            } else {
-                yearWeather->windspeed_daily[doy] = SW_MISSING;
+        /* Copy the daily values for every variable into the weather
+           location; do not do any special calculations */
+        for (varNum = 0; varNum < MAX_INPUT_COLUMNS; varNum++) {
+            if (dailyInputFlags[varNum]) {
+                yearWeather[varNum][doy] =
+                    weathInput[dailyInputIndices[varNum]];
             }
         }
-
-        // Check to see if daily humidity values are being used
-        if (useHumidityDaily) {
-            if (hasMaxMinRelHumid) {
-
-                // Make sure relative humidity is not averaged from any
-                // instances of SW_MISSING
-                if (!missing(weathInput[dailyInputIndices[REL_HUMID_MAX]]) &&
-                    !missing(weathInput[dailyInputIndices[REL_HUMID_MIN]])) {
-
-                    // Relative humidity [0-100 %]
-                    yearWeather->r_humidity_daily[doy] =
-                        (weathInput[dailyInputIndices[REL_HUMID_MAX]] +
-                         weathInput[dailyInputIndices[REL_HUMID_MIN]]) /
-                        2;
-                }
-
-            } else if (dailyInputFlags[REL_HUMID]) {
-                // Relative humidity [0-100 %]
-                yearWeather->r_humidity_daily[doy] =
-                    weathInput[dailyInputIndices[REL_HUMID]];
-
-            } else if (dailyInputFlags[SPEC_HUMID]) {
-
-                // Make sure the calculation of relative humidity will not be
-                // executed while average temperature and/or specific humidity
-                // are holding the value "SW_MISSING"
-                if (!missing(yearWeather->temp_avg[doy]) &&
-                    !missing(weathInput[dailyInputIndices[SPEC_HUMID]])) {
-
-                    // Relative humidity [0-100 %] calculated from
-                    // specific humidity [g kg-1] and temperature [C]
-                    yearWeather->r_humidity_daily[doy] = relativeHumidity2(
-                        weathInput[dailyInputIndices[SPEC_HUMID]],
-                        yearWeather->temp_avg[doy],
-                        elevation
-                    );
-
-                    // Snap relative humidity in 100-150% to 100%
-                    if (yearWeather->r_humidity_daily[doy] > 100. &&
-                        yearWeather->r_humidity_daily[doy] <= 150.) {
-                        LogError(
-                            LogInfo,
-                            LOGWARN,
-                            "Year %d - day %d: relative humidity set to 100%%: "
-                            "based on assumption that "
-                            "a presumed minor mismatch in inputs "
-                            "(specific humidity (%f), "
-                            "temperature (%f) and elevation (%f)) "
-                            "caused the calculated value (%f) to exceed 100%%.",
-                            year,
-                            doy,
-                            weathInput[dailyInputIndices[SPEC_HUMID]],
-                            yearWeather->temp_avg[doy],
-                            elevation,
-                            yearWeather->r_humidity_daily[doy]
-                        );
-
-                        yearWeather->r_humidity_daily[doy] = 100.;
-                    }
-
-                } else {
-                    // Set relative humidity to "SW_MISSING"
-                    yearWeather->r_humidity_daily[doy] = SW_MISSING;
-                }
-            }
-
-            // Deal with actual vapor pressure
-            if (dailyInputFlags[ACTUAL_VP]) {
-
-                // Actual vapor pressure [kPa]
-                yearWeather->actualVaporPressure[doy] =
-                    weathInput[dailyInputIndices[ACTUAL_VP]];
-
-            } else if (dailyInputFlags[TEMP_DEWPOINT] &&
-                       !missing(weathInput[dailyInputIndices[TEMP_DEWPOINT]])) {
-
-                // Actual vapor pressure [kPa] from dewpoint temperature [C]
-                yearWeather->actualVaporPressure[doy] = actualVaporPressure3(
-                    weathInput[dailyInputIndices[TEMP_DEWPOINT]]
-                );
-
-            } else if (hasMaxMinTemp && hasMaxMinRelHumid) {
-
-                // Make sure the calculation of actual vapor pressure will not
-                // be executed while max and/or min temperature and/or relative
-                // humidity are holding the value "SW_MISSING"
-                if (!missing(yearWeather->temp_max[doy]) &&
-                    !missing(yearWeather->temp_min[doy]) &&
-                    !missing(weathInput[dailyInputIndices[REL_HUMID_MAX]]) &&
-                    !missing(weathInput[dailyInputIndices[REL_HUMID_MIN]])) {
-
-                    // Actual vapor pressure [kPa]
-                    yearWeather->actualVaporPressure[doy] =
-                        actualVaporPressure2(
-                            weathInput[dailyInputIndices[REL_HUMID_MAX]],
-                            weathInput[dailyInputIndices[REL_HUMID_MIN]],
-                            weathInput[dailyInputIndices[TEMP_MAX]],
-                            weathInput[dailyInputIndices[TEMP_MIN]]
-                        );
-                } else {
-                    // Set actual vapor pressure to "SW_MISSING"
-                    yearWeather->actualVaporPressure[doy] = SW_MISSING;
-                }
-
-            } else if (dailyInputFlags[REL_HUMID] ||
-                       dailyInputFlags[SPEC_HUMID]) {
-
-                // Make sure the daily values for relative humidity and average
-                // temperature are not SW_MISSING
-                if (!missing(yearWeather->r_humidity_daily[doy]) &&
-                    !missing(yearWeather->temp_avg[doy])) {
-
-                    // Actual vapor pressure [kPa]
-                    yearWeather->actualVaporPressure[doy] =
-                        actualVaporPressure1(
-                            yearWeather->r_humidity_daily[doy],
-                            yearWeather->temp_avg[doy]
-                        );
-                } else {
-                    yearWeather->actualVaporPressure[doy] = SW_MISSING;
-                }
-            }
-
-            // Check if a calculation of relative humidity is available using
-            // dewpoint temperature or actual vapor pressure, but only if the
-            // daily value of relative humidity is "SW_MISSING"
-            if (missing(yearWeather->r_humidity_daily[doy]) &&
-                (dailyInputFlags[ACTUAL_VP] || dailyInputFlags[TEMP_DEWPOINT]
-                )) {
-
-                // Make sure the calculation of relative humidity will not be
-                // executed while average temperature and/or actual vapor
-                // pressure hold the value "SW_MISSING"
-                if (!missing(yearWeather->temp_avg[doy]) &&
-                    !missing(yearWeather->actualVaporPressure[doy])) {
-
-                    // Relative humidity [0-100 %]
-                    yearWeather->r_humidity_daily[doy] = relativeHumidity1(
-                        yearWeather->actualVaporPressure[doy],
-                        yearWeather->temp_avg[doy]
-                    );
-
-                    // Snap relative humidity in 100-150% to 100%
-                    if (yearWeather->r_humidity_daily[doy] > 100. &&
-                        yearWeather->r_humidity_daily[doy] <= 150.) {
-                        LogError(
-                            LogInfo,
-                            LOGWARN,
-                            "Year %d - day %d: relative humidity set to 100%%: "
-                            "based on assumption that "
-                            "a presumed minor mismatch in inputs "
-                            "(vapor pressure (%f) and temperature (%f)) "
-                            "caused the calculated value (%f) to exceed 100%%.",
-                            year,
-                            doy,
-                            yearWeather->actualVaporPressure[doy],
-                            yearWeather->temp_avg[doy],
-                            yearWeather->r_humidity_daily[doy]
-                        );
-
-                        yearWeather->r_humidity_daily[doy] = 100.;
-                    }
-                }
-            }
-        }
-
-
-        if (dailyInputFlags[SHORT_WR]) {
-            yearWeather->shortWaveRad[doy] =
-                weathInput[dailyInputIndices[SHORT_WR]];
-        }
-
 
         // Calculate annual average temperature based on historical input, i.e.,
         // the `temp_year_avg` calculated here is prospective and unsuitable
@@ -2568,7 +2888,7 @@ void _read_weather_hist(
           }
     */
 
-    fclose(f);
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 void initializeClimatePtrs(
@@ -2608,13 +2928,13 @@ void initializeMonthlyClimatePtrs(SW_CLIMATE_YEARLY *climateOutput) {
 }
 
 void allocateClimateStructs(
-    int numYears,
+    unsigned int numYears,
     SW_CLIMATE_YEARLY *climateOutput,
     SW_CLIMATE_CLIM *climateAverages,
     LOG_INFO *LogInfo
 ) {
 
-    int month;
+    unsigned int month;
 
     initializeClimatePtrs(climateOutput, climateAverages);
 
@@ -2776,8 +3096,10 @@ void deallocateClimateStructs(
     SW_CLIMATE_YEARLY *climateOutput, SW_CLIMATE_CLIM *climateAverages
 ) {
 
-    int month, pointer;
-    const int numSinglePtrs = 14, numDoublePtrs = 4;
+    int month;
+    int pointer;
+    const int numSinglePtrs = 14;
+    const int numDoublePtrs = 4;
 
     double *singlePtrs[] = {
         climateOutput->PPT_cm,
@@ -2821,7 +3143,7 @@ void deallocateClimateStructs(
                 }
             }
 
-            free(doublePtrs[pointer]);
+            free((void *) doublePtrs[pointer]);
         }
     }
 }

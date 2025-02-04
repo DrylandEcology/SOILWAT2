@@ -1,4 +1,12 @@
 #-------------------------------------------------------------------------------
+# SOILWAT2
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+# text-based SOILWAT2: CPPFLAGS=-DSWTXT
+# netCDF-based SOILWAT2: CPPFLAGS=-DSWNC
+#
+#-------------------------------------------------------------------------------
 # commands         explanations
 #-------------------------------------------------------------------------------
 # make help        display the top of this file, i.e., print explanations
@@ -68,6 +76,7 @@
 #                  does not clean artifacts from code coverage or documentation
 # make clean_bin   delete 'bin/' (binary and test executables and library)
 # make clean_build delete binary executable build artifacts
+# make clean_example delete output and input artifacts of example simulation
 # make clean_test  delete test executable build artifacts
 # make clean_cov   delete code coverage artifacts
 # make clean_doc   delete documentation
@@ -132,9 +141,18 @@ lib_gmock := $(dir_build_test)/lib$(gmock).a
 # RM = rm
 
 
-#------ netCDF SUPPORT
-# `CPPFLAGS=-DSWNETCDF make all`
+#------ txt-based SOILWAT2
+# `CPPFLAGS=-DSWTXT make all`
+# is equivalent to
+# `make all`
+
+#------ netCDF-based SOILWAT2
+# `CPPFLAGS=-DSWNC make all`
+# is equivalent to
 # `CPPFLAGS='-DSWNETCDF -DSWUDUNITS' make all`
+
+# netCDF support but not udunits2, e.g.,
+# `CPPFLAGS=-DSWNETCDF make all`
 
 # User-specified paths to netCDF header and library:
 #   `CPPFLAGS=-DSWNETCDF NC_CFLAGS="-I/path/to/include" NC_LIBS="-L/path/to/lib" make all`
@@ -142,17 +160,37 @@ lib_gmock := $(dir_build_test)/lib$(gmock).a
 # User-specified paths to headers and libraries of netCDF, udunits2 and expat:
 #   `CPPFLAGS='-DSWNETCDF -DSWUDUNITS' NC_CFLAGS="-I/path/to/include" UD_CFLAGS="-I/path/to/include" EX_CFLAGS="-I/path/to/include" NC_LIBS="-L/path/to/lib" UD_LIBS="-L/path/to/lib" EX_LIBS="-L/path/to/lib" make all`
 
-ifneq (,$(findstring -DSWNETCDF,$(CPPFLAGS)))
-  # define makefile variable SWNETCDF if defined via CPPFLAGS
-  SWNETCDF = 1
+ifeq (,$(findstring -DSWTXT,$(CPPFLAGS)))
+  # not txt-based SOILWAT2
+
+  # check if nc-based SOILWAT2
+  ifneq (,$(findstring -DSWNC,$(CPPFLAGS)))
+    # define makefile variables SWNETCDF and SWUDUNITS if defined via CPPFLAGS
+    SWNC = 1
+    override CPPFLAGS += -DSWNETCDF -DSWUDUNITS
+
+  else
+    # if SWNC is not defined, then check for SWNETCDF and SWUDUNITS individually
+    ifneq (,$(findstring -DSWNETCDF,$(CPPFLAGS)))
+      # define makefile variable SWNETCDF if defined via CPPFLAGS
+      SWNETCDF = 1
+    endif
+
+    ifneq (,$(findstring -DSWUDUNITS,$(CPPFLAGS)))
+      # define makefile variable SWUDUNITS if defined via CPPFLAGS
+      SWUDUNITS = 1
+    endif
+  endif
 endif
 
-ifneq (,$(findstring -DSWUDUNITS,$(CPPFLAGS)))
-  # define makefile variable SWUDUNITS if defined via CPPFLAGS
+ifdef SWNC
+  SWNETCDF = 1
   SWUDUNITS = 1
 endif
 
+
 ifdef SWNETCDF
+  # nc-based SOILWAT2
   ifndef NC_CFLAGS
     # use `nc-config` if user did not provide NC_CFLAGS
     sw_NC_CFLAGS := $(shell nc-config --cflags)
@@ -229,7 +267,7 @@ endif
 
 
 #------ STANDARDS
-# googletest requires c++14 and POSIX API
+# googletest requires c++17 and POSIX API
 # see https://github.com/google/oss-policies-info/blob/main/foundational-cxx-support-matrix.md
 #
 # cygwin does not enable POSIX API by default
@@ -239,7 +277,7 @@ endif
 # see https://github.com/google/googletest/pull/2839#issue-613300962
 
 set_std := -std=c99
-set_std++_tests := -std=c++14
+set_std++_tests := -std=c++17
 
 
 #------ FLAGS
@@ -341,7 +379,10 @@ sources_core := \
 	$(dir_src)/SW_Output_outtext.c
 
 ifdef SWNETCDF
-sources_core += $(dir_src)/SW_netCDF.c
+sources_core += $(dir_src)/SW_netCDF_General.c
+sources_core += $(dir_src)/SW_netCDF_Input.c
+sources_core += $(dir_src)/SW_netCDF_Output.c
+sources_core += $(dir_src)/SW_datastructs.c
 endif
 
 sources_lib = $(sources_core)
@@ -472,7 +513,7 @@ $(dir_bin) $(dir_build_sw2) $(dir_build_test):
 #--- Convenience targets for testing
 .PHONY : bin_run
 bin_run : all
-		$(bin_sw2) -d ./tests/example -f files.in
+		$(bin_sw2) -d ./tests/example -f files.in -r
 
 .PHONY : test_run
 test_run : test
@@ -521,6 +562,14 @@ cov :
 		./tools/run_gcov.sh
 
 
+#--- Targets for clang-tidy
+tidy-bin: $(sources_lib) $(sources_bin)
+	clang-tidy --config-file=.clang-tidy $(sources_lib) $(sources_bin) -- $(sw_CPPFLAGS_bin) $(sw_CFLAGS) $(bin_flags) $(warning_flags) $(set_std)
+
+tidy-test: $(sources_test)
+	clang-tidy --config-file=.clang-tidy_swtest $(sources_test) -- $(sw_CPPFLAGS_test) $(sw_CXXFLAGS) $(gtest_flags) $(debug_flags) $(warning_flags) $(instr_flags) $(set_std++_tests) -isystem ${dir_gmock}/include -isystem ${dir_gtest}/include
+
+
 #--- Convenience targets for documentation
 .PHONY : doc
 doc :
@@ -544,6 +593,14 @@ clean_bin:
 clean_build:
 		-@$(RM) -r $(dir_build_sw2)
 		-@$(RM) -f $(bin_sw2) $(lib_sw2) $(lib_rsw2)
+
+.PHONY : clean_example
+clean_example:
+		-@$(RM) -r tests/example/Output
+		-@$(RM) -f tests/example/Input_nc/domain_template.nc
+		-@$(RM) -f tests/example/Input_nc/domain.nc
+		-@$(RM) -f tests/example/Input_nc/progress.nc
+		-@find tests/example/Input_nc -type f -name 'index*.nc' -delete
 
 .PHONY : clean_test
 clean_test:

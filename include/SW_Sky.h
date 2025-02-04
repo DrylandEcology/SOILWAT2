@@ -17,7 +17,7 @@ History:
 estimate snow depth
 
 09/26/2011 (drs) added a daily variable for each monthly input in struct
-SW_SKY: RealD cloudcov_daily, windspeed_daily, r_humidity_daily,
+SW_SKY: double cloudcov_daily, windspeed_daily, r_humidity_daily,
 transmission_daily, snow_density_daily each of [MAX_DAYS]
 */
 /********************************************************/
@@ -26,7 +26,6 @@ transmission_daily, snow_density_daily each of [MAX_DAYS]
 #ifndef SW_SKY_H
 #define SW_SKY_H
 
-#include "include/generic.h"        // for RealD
 #include "include/SW_datastructs.h" // for LOG_INFO, SW_MODEL, SW_SKY
 #include "include/SW_Defines.h"     // for MAX_MONTHS
 
@@ -37,12 +36,14 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_SKY_read(char *InFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo);
+void SW_SKY_read(char *txtInFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo);
 void SW_SKY_new_year(
     SW_MODEL *SW_Model,
-    RealD snow_density[MAX_MONTHS],
-    RealD snow_density_daily[MAX_MONTHS]
+    double snow_density[MAX_MONTHS],
+    double snow_density_daily[MAX_MONTHS]
 );
+void checkSky(SW_SKY *SW_Sky, LOG_INFO *LogInfo);
+void SW_SKY_init_run(SW_SKY *SW_Sky, LOG_INFO *LogInfo);
 
 #ifdef __cplusplus
 }

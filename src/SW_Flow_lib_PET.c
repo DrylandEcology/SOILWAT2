@@ -50,7 +50,8 @@ static const double G_sc = 118.1088;
 @param[in,out] SW_AtmDem Memoized variables pertaining to atmospheric demand
 */
 void SW_PET_init_run(SW_ATMD *SW_AtmDem) {
-    int k1, k2;
+    int k1;
+    int k2;
 
     for (k1 = 0; k1 < 366; k1++) {
         SW_AtmDem->memoized_G_o[k1][0] = SW_MISSING;
@@ -204,8 +205,8 @@ void sun_hourangles(
     double int_cos_theta[],
     double int_sin_beta[]
 ) {
-    unsigned int i,
-        doy0 = doy - 1; // doy is base1
+    unsigned int i;
+    unsigned int doy0 = doy - 1; // doy is base1
     Bool isTrue = swFALSE;
 
     if (missing(SW_AtmDem->msun_angles[doy0][0])) {
@@ -214,9 +215,32 @@ void sun_hourangles(
         // effects
         static const double tol = 1e-9;
 
-        double declin, a, b, c, g, h, f1, f2, f3, f4, f5, tmp, tmp1, tmp2, tmp3,
-            X, omega1, trig_omega1, omega1b, cos_theta1b, omega2, trig_omega2,
-            omega2b, cos_theta2b, cos_theta_sunrise, cos_theta_sunset;
+        double declin;
+        double a;
+        double b;
+        double c;
+        double g;
+        double h;
+        double f1;
+        double f2;
+        double f3;
+        double f4;
+        double f5;
+        double tmp;
+        double tmp1;
+        double tmp2;
+        double tmp3;
+        double X;
+        double omega1;
+        double trig_omega1;
+        double omega1b;
+        double cos_theta1b;
+        double omega2;
+        double trig_omega2;
+        double omega2b;
+        double cos_theta2b;
+        double cos_theta_sunrise;
+        double cos_theta_sunset;
 
 
         // Calculate solar declination
@@ -325,8 +349,12 @@ void sun_hourangles(
 #ifndef sun_hourangles_Duffie2013_2205
                 // Use Allen et al. 2006 to calculate tilted sunrise/sunset
 
-                double omega1x, cos_theta1, cos_theta1x, omega2x, cos_theta2,
-                    cos_theta2x;
+                double omega1x;
+                double cos_theta1;
+                double cos_theta1x;
+                double omega2x;
+                double cos_theta2;
+                double cos_theta2x;
 
                 // Candidate sunrise and sunset hour angles on tilted surface
                 cos_theta1 = -a + b * cos(omega1) + c * sin(omega1);
@@ -746,7 +774,9 @@ as cited by Allen et al. 2006 @cite allen2006AaFM
 @return Clearness index of direct beam radiation for cloudless conditions [-]
 */
 double clearsky_directbeam(double P, double e_a, double int_sin_beta) {
-    double W, Kt = 1., K_b;
+    double W;
+    double Kt = 1.;
+    double K_b;
 
     /* Allen et al. 2006: "Kt is an empirical turbidity coefficient,
        0 < Kt <= 1.0 where Kt = 1.0 for clean air (typical of regions of
@@ -899,10 +929,29 @@ double solar_radiation(
     double *H_gh,
     LOG_INFO *LogInfo
 ) {
-    double P, sun_angles[7], int_cos_theta[2], int_sin_beta[2], H_o[2],
-        k_c = SW_MISSING, dl, convert_rsds_to_H_gh = 1., tau_h_obs, H_bh_calc,
-        H_dh_calc, K_bh_calc, K_dh_calc, K_bh_obs, K_dh_obs, H_bt, H_dt, H_rt,
-        K_bt_calc, f_ia, f_i, f_B, H_g;
+    double P;
+    double sun_angles[7];
+    double int_cos_theta[2];
+    double int_sin_beta[2];
+    double H_o[2];
+    double k_c = SW_MISSING;
+    double dl;
+    double convert_rsds_to_H_gh = 1.;
+    double tau_h_obs;
+    double H_bh_calc;
+    double H_dh_calc;
+    double K_bh_calc;
+    double K_dh_calc;
+    double K_bh_obs;
+    double K_dh_obs;
+    double H_bt;
+    double H_dt;
+    double H_rt;
+    double K_bt_calc;
+    double f_ia;
+    double f_i;
+    double f_B;
+    double H_g;
 
 
     //--- Calculate daily integration of cos(theta) and sin(beta)
@@ -1199,7 +1248,13 @@ The slope of the svp-T curve is obtained by derivation for temperature.
 @return Saturation vapor pressure [kPa]
 */
 double svp(double T, double *slope_svp_to_t) {
-    double tmp, tmp0, tmp1, tmp2, tmp3, dp, svp;
+    double tmp;
+    double tmp0;
+    double tmp1;
+    double tmp2;
+    double tmp3;
+    double dp;
+    double svp;
 
     if (T > 0) {
         // Derivation for Huang 2018: eq. 17
@@ -1381,7 +1436,16 @@ double petfunc(
     LOG_INFO *LogInfo
 ) {
 
-    double Ea, Rn, Rc, Rbb, delta, clrsky, ea, P_kPa, gamma, pet;
+    double Ea;
+    double Rn;
+    double Rc;
+    double Rbb;
+    double delta;
+    double clrsky;
+    double ea;
+    double P_kPa;
+    double gamma;
+    double pet;
 
     /* Unit conversion factors:
      1 langley = 1 ly = 41840 J/m2 = 0.0168 evaporative-mm
@@ -1394,12 +1458,18 @@ double petfunc(
     static const double
         // [mmHg / F] = [kPa / K] * [mmHg / kPa] =
         //            = [kPa / K] * (760. / 101.325)
-        convert_kPa__to__mmHg = 7.5006168,
+        convert_kPa__to__mmHg = 7.5006168;
 
+    static const double
+        // [mmHg / F] = [kPa / K] * [mmHg / kPa] =
+        //            = [kPa / K] * (760. / 101.325)
         // [miles / day] = [m / s] * [miles / m] * [s / day] =
         //               = [m / s] * (1 / 1609.344) * 86400
-        convert_m_per_s__to__miles_per_day = 53.686471,
+        convert_m_per_s__to__miles_per_day = 53.686471;
 
+    static const double
+        // [mmHg / F] = [kPa / K] * [mmHg / kPa] =
+        //            = [kPa / K] * (760. / 101.325)
         // [langley] = [evaporative mm] * [kJ / m2] / [heat of vaporization] =
         //           = [evaporative mm] * (41.840) / 2490
         // 2490 [kJ/kg heat of vaporization at about T = 10-15 C], see also
@@ -1408,8 +1478,11 @@ double petfunc(
         // [W / m2] = [evaporative mm / day] * [kJ / s / m2] * [s / day] / [heat
         // of vaporization] =
         //            [evaporative mm / day] * 1e-3 * 86400 / 2490
-        convert_W_per_m2__to__mm_per_day = 0.0346988,
+        convert_W_per_m2__to__mm_per_day = 0.0346988;
 
+    static const double
+        // [mmHg / F] = [kPa / K] * [mmHg / kPa] =
+        //            = [kPa / K] * (760. / 101.325)
         // [MJ / m2] = [evaporative mm / day] * [1e3 kJ / m2] / [heat of
         // vaporization] =
         //             [evaporative mm / day] * 1e3 / 2490

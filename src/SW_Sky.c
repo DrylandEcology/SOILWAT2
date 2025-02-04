@@ -37,7 +37,7 @@
 /* --------------------------------------------------- */
 #include "include/SW_Sky.h"         // for SW_SKY_new_year, SW_SKY_read
 #include "include/filefuncs.h"      // for CloseFile, GetALine, LogError
-#include "include/generic.h"        // for RealD, Bool, LOGERROR, swTRUE
+#include "include/generic.h"        // for Bool, LOGERROR, swTRUE
 #include "include/SW_datastructs.h" // for LOG_INFO, SW_MODEL, SW_SKY
 #include "include/SW_Defines.h"     // for MAX_FILENAMESIZE, MAX_MONTHS
 #include "include/SW_Files.h"       // for eSky
@@ -51,12 +51,12 @@
 /**
 @brief Reads in file for sky.
 
-@param[in] InFiles Array of program in/output files
+@param[in] txtInFiles Array of program in/output files
 @param[out] SW_Sky Struct of type SW_SKY which describes sky conditions
     over the simulated site
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_SKY_read(char *InFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
+void SW_SKY_read(char *txtInFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
     /* =================================================== */
     /* 6-Oct-03 (cwb) - all this time I had lines 1 & 3
      *                  switched!
@@ -66,112 +66,42 @@ void SW_SKY_read(char *InFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
      * and cloud cover from line 3 instead -> SW_SKY_read() is now reading as
      * the input files are formatted
      */
-    FILE *f;
-    int lineno = 0, x = 0;
-    char *MyFileName, inbuf[MAX_FILENAMESIZE];
 
-    MyFileName = InFiles[eSky];
+    FILE *f;
+    int lineno = 0;
+    int x = 0;
+    int k;
+    int index;
+    double tmp[MAX_MONTHS];
+    char *MyFileName;
+    char inbuf[MAX_FILENAMESIZE];
+    char tmpStrs[MAX_MONTHS][20] = {{'\0'}};
+
+    MyFileName = txtInFiles[eSky];
     f = OpenFile(MyFileName, "r", LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
-        switch (lineno) {
-        case 0:
-            x = sscanf(
-                inbuf,
-                "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
-                &SW_Sky->cloudcov[0],
-                &SW_Sky->cloudcov[1],
-                &SW_Sky->cloudcov[2],
-                &SW_Sky->cloudcov[3],
-                &SW_Sky->cloudcov[4],
-                &SW_Sky->cloudcov[5],
-                &SW_Sky->cloudcov[6],
-                &SW_Sky->cloudcov[7],
-                &SW_Sky->cloudcov[8],
-                &SW_Sky->cloudcov[9],
-                &SW_Sky->cloudcov[10],
-                &SW_Sky->cloudcov[11]
-            );
-            break;
-        case 1:
-            x = sscanf(
-                inbuf,
-                "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
-                &SW_Sky->windspeed[0],
-                &SW_Sky->windspeed[1],
-                &SW_Sky->windspeed[2],
-                &SW_Sky->windspeed[3],
-                &SW_Sky->windspeed[4],
-                &SW_Sky->windspeed[5],
-                &SW_Sky->windspeed[6],
-                &SW_Sky->windspeed[7],
-                &SW_Sky->windspeed[8],
-                &SW_Sky->windspeed[9],
-                &SW_Sky->windspeed[10],
-                &SW_Sky->windspeed[11]
-            );
-            break;
-        case 2:
-            x = sscanf(
-                inbuf,
-                "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
-                &SW_Sky->r_humidity[0],
-                &SW_Sky->r_humidity[1],
-                &SW_Sky->r_humidity[2],
-                &SW_Sky->r_humidity[3],
-                &SW_Sky->r_humidity[4],
-                &SW_Sky->r_humidity[5],
-                &SW_Sky->r_humidity[6],
-                &SW_Sky->r_humidity[7],
-                &SW_Sky->r_humidity[8],
-                &SW_Sky->r_humidity[9],
-                &SW_Sky->r_humidity[10],
-                &SW_Sky->r_humidity[11]
-            );
-            break;
-        case 3:
-            x = sscanf(
-                inbuf,
-                "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
-                &SW_Sky->snow_density[0],
-                &SW_Sky->snow_density[1],
-                &SW_Sky->snow_density[2],
-                &SW_Sky->snow_density[3],
-                &SW_Sky->snow_density[4],
-                &SW_Sky->snow_density[5],
-                &SW_Sky->snow_density[6],
-                &SW_Sky->snow_density[7],
-                &SW_Sky->snow_density[8],
-                &SW_Sky->snow_density[9],
-                &SW_Sky->snow_density[10],
-                &SW_Sky->snow_density[11]
-            );
-            break;
-        case 4:
-            x = sscanf(
-                inbuf,
-                "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
-                &SW_Sky->n_rain_per_day[0],
-                &SW_Sky->n_rain_per_day[1],
-                &SW_Sky->n_rain_per_day[2],
-                &SW_Sky->n_rain_per_day[3],
-                &SW_Sky->n_rain_per_day[4],
-                &SW_Sky->n_rain_per_day[5],
-                &SW_Sky->n_rain_per_day[6],
-                &SW_Sky->n_rain_per_day[7],
-                &SW_Sky->n_rain_per_day[8],
-                &SW_Sky->n_rain_per_day[9],
-                &SW_Sky->n_rain_per_day[10],
-                &SW_Sky->n_rain_per_day[11]
-            );
-            break;
-        }
+        x = sscanf(
+            inbuf,
+            "%19s %19s %19s %19s %19s %19s %19s %19s %19s %19s %19s %19s",
+            tmpStrs[0],
+            tmpStrs[1],
+            tmpStrs[2],
+            tmpStrs[3],
+            tmpStrs[4],
+            tmpStrs[5],
+            tmpStrs[6],
+            tmpStrs[7],
+            tmpStrs[8],
+            tmpStrs[9],
+            tmpStrs[10],
+            tmpStrs[11]
+        );
 
-        if (x < 12) {
-            CloseFile(&f, LogInfo);
+        if (x != 12) {
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -179,14 +109,60 @@ void SW_SKY_read(char *InFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
                 MyFileName,
                 lineno
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
 
-        x = 0;
+        for (index = 0; index < MAX_MONTHS; index++) {
+            tmp[index] = sw_strtod(tmpStrs[index], MyFileName, LogInfo);
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
+        }
+
+        switch (lineno) {
+        case 0:
+            for (k = 0; k < MAX_MONTHS; k++) {
+                SW_Sky->cloudcov[k] = tmp[k];
+            }
+            break;
+        case 1:
+            for (k = 0; k < MAX_MONTHS; k++) {
+                SW_Sky->windspeed[k] = tmp[k];
+            }
+            break;
+        case 2:
+            for (k = 0; k < MAX_MONTHS; k++) {
+                SW_Sky->r_humidity[k] = tmp[k];
+            }
+            break;
+        case 3:
+            for (k = 0; k < MAX_MONTHS; k++) {
+                SW_Sky->snow_density[k] = tmp[k];
+            }
+            break;
+        case 4:
+            for (k = 0; k < MAX_MONTHS; k++) {
+                SW_Sky->n_rain_per_day[k] = tmp[k];
+            }
+            break;
+
+        default:
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "%s : too many rows %d.\n",
+                MyFileName,
+                lineno
+            );
+            goto closeFile;
+
+            break;
+        }
+
         lineno++;
     }
 
-    CloseFile(&f, LogInfo);
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**
@@ -203,8 +179,8 @@ prior to this function.
 */
 void SW_SKY_new_year(
     SW_MODEL *SW_Model,
-    RealD snow_density[MAX_MONTHS],
-    RealD snow_density_daily[MAX_MONTHS]
+    double snow_density[MAX_MONTHS],
+    double snow_density_daily[MAX_MONTHS]
 ) {
 
     Bool interpAsBase1 = swTRUE;
@@ -223,4 +199,46 @@ void SW_SKY_new_year(
             snow_density_daily
         );
     }
+}
+
+/**
+@brief Validate mean monthly climate values
+
+Note: This function does not check r_humidity, cloudcov, and windspeed;
+these variables are checked by checkAllWeather() at a daily time step.
+
+@param[in] SW_Sky Struct of type SW_SKY which describes sky conditions
+    of the simulated site
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void checkSky(SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
+    unsigned int mon;
+
+    for (mon = 0; mon < MAX_MONTHS; mon++) {
+        if (SW_Sky->snow_density[mon] <= 0) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "snowdensity (%.4f) is zero or negative in month %d.",
+                SW_Sky->snow_density[mon],
+                mon + 1
+            );
+            return;
+        }
+
+        if (SW_Sky->n_rain_per_day[mon] <= 0) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "n_rain_per_day (%.4f) is zero or negative in month %d.",
+                SW_Sky->n_rain_per_day[mon],
+                mon + 1
+            );
+            return;
+        }
+    }
+}
+
+void SW_SKY_init_run(SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
+    checkSky(SW_Sky, LogInfo);
 }

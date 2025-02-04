@@ -5,7 +5,7 @@
 #include "include/SW_VegProd.h"          // for BIO_INDEX, WUE_INDEX
 #include "tests/gtests/sw_testhelpers.h" // for CarbonFixtureTest
 #include "gtest/gtest.h"                 // for Message, Test, CmpHelperGT
-#include <string.h>                      // for strcpy
+#include <stdio.h>                       // for snprintf
 
 namespace {
 // Test the SW_Carbon constructor 'SW_CBN_construct'
@@ -22,7 +22,8 @@ TEST(CarbonTest, CarbonConstructor) {
 
 // Test reading yearly CO2 data from disk file
 TEST_F(CarbonFixtureTest, CarbonReadInputFile) {
-    TimeInt year, simendyr = SW_Run.Model.endyr + SW_Run.Model.addtl_yr;
+    TimeInt year;
+    TimeInt const simendyr = SW_Run.Model.endyr + SW_Run.Model.addtl_yr;
     double sum_CO2;
 
     // Test if CO2-effects are turned off -> no CO2 concentration data are read
@@ -32,7 +33,10 @@ TEST_F(CarbonFixtureTest, CarbonReadInputFile) {
     SW_Run.Carbon.use_bio_mult = 0;
 
     SW_CBN_read(
-        &SW_Run.Carbon, &SW_Run.Model, SW_Domain.PathInfo.InFiles, &LogInfo
+        &SW_Run.Carbon,
+        &SW_Run.Model,
+        SW_Domain.SW_PathInputs.txtInFiles,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -45,13 +49,19 @@ TEST_F(CarbonFixtureTest, CarbonReadInputFile) {
     // Test if CO2-effects are turned on -> CO2 concentration data are read from
     // file
     SW_CBN_construct(&SW_Run.Carbon);
-    strcpy(SW_Run.Carbon.scenario, "RCP85");
+    (void) snprintf(
+        SW_Run.Carbon.scenario, sizeof SW_Run.Carbon.scenario, "%s", "RCP85"
+    );
+
     SW_Run.Carbon.use_wue_mult = 1;
     SW_Run.Carbon.use_bio_mult = 1;
     SW_Run.Model.addtl_yr = 0;
 
     SW_CBN_read(
-        &SW_Run.Carbon, &SW_Run.Model, SW_Domain.PathInfo.InFiles, &LogInfo
+        &SW_Run.Carbon,
+        &SW_Run.Model,
+        SW_Domain.SW_PathInputs.txtInFiles,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -63,17 +73,23 @@ TEST_F(CarbonFixtureTest, CarbonReadInputFile) {
 
 // Test the calculation of CO2-effect multipliers
 TEST_F(CarbonFixtureTest, CarbonCO2multipliers) {
-    TimeInt year, simendyr = SW_Run.Model.endyr + SW_Run.Model.addtl_yr;
+    TimeInt year;
+    TimeInt const simendyr = SW_Run.Model.endyr + SW_Run.Model.addtl_yr;
     int k;
 
     SW_CBN_construct(&SW_Run.Carbon);
-    strcpy(SW_Run.Carbon.scenario, "RCP85");
+    (void) snprintf(
+        SW_Run.Carbon.scenario, sizeof SW_Run.Carbon.scenario, "%s", "RCP85"
+    );
     SW_Run.Carbon.use_wue_mult = 1;
     SW_Run.Carbon.use_bio_mult = 1;
     SW_Run.Model.addtl_yr = 0;
 
     SW_CBN_read(
-        &SW_Run.Carbon, &SW_Run.Model, SW_Domain.PathInfo.InFiles, &LogInfo
+        &SW_Run.Carbon,
+        &SW_Run.Model,
+        SW_Domain.SW_PathInputs.txtInFiles,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 

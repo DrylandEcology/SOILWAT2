@@ -34,7 +34,7 @@ if [[ "${res}" == *"make failed"* ]]; then
 else
     cp -R tests/example/Output tests/example/Output_comps-nc > /dev/null 2>&1
 fi
-clean_example_inputs > /dev/null 2>&1
+res=$(make clean_example)
 
 unset noflags
 

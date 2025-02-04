@@ -1,0 +1,29 @@
+dataset	SW2 input group	SW2 variable	ncFileName	ncVarName	ncVarUnits	ncDomainType	ncSiteName	ncCRSName	ncCRSGridMappingName	ncXAxisName	ncXDimName	ncYAxisName	ncYDimName	ncTAxisName	ncStrideYears	ncStrideStart	ncStridePattern	ncCalendarOverride
+gridMET	inWeather	temp_max	tmmx_%4d.nc	air_temperature	K	xy	NA	NA	latitude_longitude	lon	NA	lat	NA	day	1	1979	%4d	NA
+gridMET	inWeather	temp_min	tmmn_%4d.nc	air_temperature	K	xy	NA	NA	latitude_longitude	lon	NA	lat	NA	day	1	1979	%4d	NA
+gridMET	inWeather	ppt	pr_%4d.nc	precipitation_amount	mm	xy	NA	NA	latitude_longitude	lon	NA	lat	NA	day	1	1979	%4d	NA
+gridMET	inWeather	windspeed	vs_%4d.nc	wind_speed	m s-1	xy	NA	NA	latitude_longitude	lon	NA	lat	NA	day	1	1979	%4d	NA
+gridMET	inWeather	rmax_humidity	rmax_%4d.nc	relative_humidity	%	xy	NA	NA	latitude_longitude	lon	NA	lat	NA	day	1	1979	%4d	NA
+gridMET	inWeather	rmin_humidity	rmin_%4d.nc	relative_humidity	%	xy	NA	NA	latitude_longitude	lon	NA	lat	NA	day	1	1979	%4d	NA
+gridMET	inWeather	shortWaveRad	srad_%4d.nc	surface_downwelling_shortwave_flux_in_air	W m-2	xy	NA	NA	latitude_longitude	lon	NA	lat	NA	day	1	1979	%4d	NA
+																		
+MACAv2METDATA	inWeather	temp_max	macav2metdata_tasmax_HadGEM2-ES365_r1i1p1_historical_%4d_%4d_CONUS_daily.nc	air_temperature	K	xy	NA	NA	latitude_longitude	lon	NA	lat	NA	time	5	1950	%4d_%4d	NA
+MACAv2METDATA	inWeather	temp_min	macav2metdata_tasmin_HadGEM2-ES365_r1i1p1_historical_%4d_%4d_CONUS_daily.nc	air_temperature	K	xy	NA	NA	latitude_longitude	lon	NA	lat	NA	time	5	1950	%4d_%4d	NA
+MACAv2METDATA	inWeather	ppt	macav2metdata_pr_HadGEM2-ES365_r1i1p1_historical_%4d_%4d_CONUS_daily.nc	precipitation	mm	xy	NA	NA	latitude_longitude	lon	NA	lat	NA	time	5	1950	%4d_%4d	NA
+MACAv2METDATA	inWeather	windspeed_east	macav2metdata_uas_HadGEM2-ES365_r1i1p1_historical_%4d_%4d_CONUS_daily.nc	eastward_wind	m s-1	xy	NA	NA	latitude_longitude	lon	NA	lat	NA	time	5	1950	%4d_%4d	NA
+MACAv2METDATA	inWeather	windspeed_north	macav2metdata_vas_HadGEM2-ES365_r1i1p1_historical_%4d_%4d_CONUS_daily.nc	northward_wind	m s-1	xy	NA	NA	latitude_longitude	lon	NA	lat	NA	time	5	1950	%4d_%4d	NA
+MACAv2METDATA	inWeather	rmax_humidity	macav2metdata_rhsmax_HadGEM2-ES365_r1i1p1_historical_%4d_%4d_CONUS_daily.nc	relative_humidity	%	xy	NA	NA	latitude_longitude	lon	NA	lat	NA	time	5	1950	%4d_%4d	NA
+MACAv2METDATA	inWeather	rmin_humidity	macav2metdata_rhsmin_HadGEM2-ES365_r1i1p1_historical_%4d_%4d_CONUS_daily.nc	relative_humidity	%	xy	NA	NA	latitude_longitude	lon	NA	lat	NA	time	5	1950	%4d_%4d	NA
+MACAv2METDATA	inWeather	shortWaveRad	macav2metdata_rsds_HadGEM2-ES365_r1i1p1_historical_%4d_%4d_CONUS_daily.nc	surface_downwelling_shortwave_flux_in_air	W m-2	xy	NA	NA	latitude_longitude	lon	NA	lat	NA	time	5	1950	%4d_%4d	NA
+																		
+Daymet	inWeather	temp_max	daymet_v4_daily_na_tmax_%4d.nc	tmax	degrees_C	xy	NA	lambert_conformal_conic	lambert_conformal_conic	x	NA	y	NA	time	1	1980	%4d	noleap
+Daymet	inWeather	temp_min	daymet_v4_daily_na_tmin_%4d.nc	tmin	degrees_C	xy	NA	lambert_conformal_conic	lambert_conformal_conic	x	NA	y	NA	time	1	1980	%4d	noleap
+Daymet	inWeather	ppt	daymet_v4_daily_na_prcp_%4d.nc	prcp	mm	xy	NA	lambert_conformal_conic	lambert_conformal_conic	x	NA	y	NA	time	1	1980	%4d	noleap
+Daymet	inWeather	actualVaporPressure	daymet_v4_daily_na_vp_%4d.nc	vp	Pa	xy	NA	lambert_conformal_conic	lambert_conformal_conic	x	NA	y	NA	time	1	1980	%4d	noleap
+Daymet	inWeather	shortWaveRad	daymet_v4_daily_na_srad_%4d.nc	srad	W m-2	xy	NA	lambert_conformal_conic	lambert_conformal_conic	x	NA	y	NA	time	1	1980	%4d	noleap
+																		
+Daymet	inWeather	temp_max	daymet_v4_daily_na_tmax_%4d.nc	tmax	degrees_C	xy	NA	NA	latitude_longitude	lon	x	lat	y	time	1	1980	%4d	noleap
+Daymet	inWeather	temp_min	daymet_v4_daily_na_tmin_%4d.nc	tmin	degrees_C	xy	NA	NA	latitude_longitude	lon	x	lat	y	time	1	1980	%4d	noleap
+Daymet	inWeather	ppt	daymet_v4_daily_na_prcp_%4d.nc	prcp	mm	xy	NA	NA	latitude_longitude	lon	x	lat	y	time	1	1980	%4d	noleap
+Daymet	inWeather	actualVaporPressure	daymet_v4_daily_na_vp_%4d.nc	vp	Pa	xy	NA	NA	latitude_longitude	lon	x	lat	y	time	1	1980	%4d	noleap
+Daymet	inWeather	shortWaveRad	daymet_v4_daily_na_srad_%4d.nc	srad	W m-2	xy	NA	NA	latitude_longitude	lon	x	lat	y	time	1	1980	%4d	noleap

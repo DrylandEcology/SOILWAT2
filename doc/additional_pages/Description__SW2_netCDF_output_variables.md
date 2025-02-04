@@ -1,0 +1,16 @@
+### Description of SW2_netCDF_output_variables.tsv
+
+| Column                      | Description                                                                                | Requirements                                                                                                |
+|:--------------------------- |:------------------------------------------------------------------------------------------ |:----------------------------------------------------------------------------------------------------------- |
+| SW2 output group            | SOILWAT2 internal name of output variables groups                                          | See \ref outsetupin for available output "KEY"s                                                             |
+| SW2 variable                | SOILWAT2 internal name of output variable                                                  | Must be consistent with "SW2 output group"                                                                  |
+| SW2 txt output              | Name of output variable in txt-mode                                                        | For reference only; do not modify                                                                           |
+| SW2 units                   | SOILWAT2 internal units of output variable                                                 | For reference only; do not modify                                                                           |
+| XY+Dim                      | Non-spatial dimensions of output variable:<br>`T` = time; `Z` = vertical; `v` = plant type | For reference only; do not modify                                                                           |
+| Do output?                  | Enable/disable output for this variable                                                    | `0` = disable output; `1` = enable output                                                                   |
+| netCDF variable name        | Name of the output (netCDF variable name)                                                  | Required                                                                                                    |
+| netCDF long_name            | Attribute "long_name" of the netCDF variable                                               | `NA` results in an empty attribute                                                                          |
+| netCDF comment              | Attribute "comment" of the netCDF variable                                                 | `NA` results in an empty attribute                                                                          |
+| netCDF units                | Units of the output variable and attribute "units" of the netCDF variable                  | Units must be covertible from "SW2 units" by `"udunits2"`; if `NA`, then "SW2 units" are used               |
+| netCDF cell_method          | Attribute "cell_method" of the netCDF variable for variable summary within a day           | SOILWAT2 adds temporal information for output periods longer than 1 day; `NA` results in an empty attribute |
+| User comment                | User comments; ignored by SOILWAT2                                                         |                                                                                                             |

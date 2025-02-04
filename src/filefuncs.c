@@ -15,12 +15,15 @@
 #include "include/SW_Defines.h"     // for MAX_LOG_SIZE, KEY_NOT_FOUND, MAX...
 #include "include/Times.h"          // for timeStringISO8601
 #include <assert.h>                 // for assert
+#include <ctype.h>                  // for isspace
 #include <dirent.h>                 // for dirent, closedir, DIR, opendir, re...
-#include <errno.h>                  // for errno, EACCES
+#include <errno.h>                  // for errno, ERANGE
+#include <limits.h>                 // for LONG_MIN, LONG_MAX, INT_MIN, INT_MAX
+#include <math.h>                   // for HUGE_VAL, HUGE_VALF
 #include <stdarg.h>                 // for va_end, va_start
 #include <stdio.h>                  // for NULL, fclose, FILE, fopen, EOF
-#include <stdlib.h>                 // for free
-#include <string.h>                 // for strlen, strrchr, strcpy, strchr
+#include <stdlib.h>                 // for free, strtod, strtof, strtol
+#include <string.h>                 // for strlen, strrchr, memccpy, strchr
 #include <sys/stat.h>               // for stat, mkdir, S_ISDIR, S_ISREG
 #include <unistd.h>                 // for chdir
 
@@ -47,7 +50,7 @@ static void freeGetfilesEarly(char **flist, int nfound, DIR *dir, char *fname) {
             }
         }
 
-        free(flist);
+        free((void *) flist);
         flist = NULL;
     }
 
@@ -59,7 +62,9 @@ static void freeGetfilesEarly(char **flist, int nfound, DIR *dir, char *fname) {
     }
 }
 
-static char **getfiles(const char *fspec, int *nfound, LOG_INFO *LogInfo) {
+static char **getfiles(
+    const char *fspec, int *nfound, Bool clearDir, LOG_INFO *LogInfo
+) {
     /* return a list of files described by fspec
      * fspec is as described in RemoveFiles(),
      * **flist is a dynamic char array containing pointers to the
@@ -67,13 +72,20 @@ static char **getfiles(const char *fspec, int *nfound, LOG_INFO *LogInfo) {
      * nfound is the number of files found, also, num elements in flist
      */
 
-    char **flist = NULL, *fname, *fn1, *fn2, *p2;
+    char **flist = NULL;
+    char *fname;
+    char *fn1;
+    char *fn2;
+    char *p2;
     char dname[FILENAME_MAX];
 
-    int startIndex = 0, strLen = 0; // For `sw_strtok()`
+    size_t startIndex = 0;
+    size_t strLen = 0; // For `sw_strtok()`
 
-    int len1, len2;
-    Bool match, alloc = swFALSE;
+    size_t len1;
+    size_t len2;
+    Bool match;
+    Bool alloc = swFALSE;
 
     DIR *dir;
     struct dirent *ent;
@@ -97,27 +109,41 @@ static char **getfiles(const char *fspec, int *nfound, LOG_INFO *LogInfo) {
     len2 = (fn2) ? strlen(fn2) : 0;
 
     (*nfound) = 0;
+    dir = opendir(dname);
 
-    if ((dir = opendir(dname)) == NULL) {
+    if (isnull(dir)) {
         free(fname);
         return NULL;
     }
 
     while ((ent = readdir(dir)) != NULL) {
         match = swTRUE;
-        if (fn1) {
-            match = (0 == strncmp(ent->d_name, fn1, len1)) ? swTRUE : swFALSE;
-        }
-        if (match && fn2) {
-            p2 = ent->d_name + (strlen(ent->d_name) - len2);
-            match = (0 == strcmp(fn2, p2)) ? swTRUE : swFALSE;
+
+        // When clearing the directory, make sure we don't include
+        // previous directories ('.' and '..')
+        if (!clearDir || strcmp(ent->d_name, ".") != 0 ||
+            strcmp(ent->d_name, "..") != 0) {
+            if (fn1) {
+#if defined(STEPWAT)
+                match = (Bool) (0 == strncmp(ent->d_name, fn1, len1));
+#else
+                match = (Bool) (!isnull(strstr(ent->d_name, fname)) &&
+                                strcmp(ent->d_name, ".") != 0 &&
+                                strcmp(ent->d_name, "..") != 0);
+                (void) len1;
+#endif
+            }
+            if (match && fn2) {
+                p2 = ent->d_name + (strlen(ent->d_name) - len2);
+                match = (Bool) (0 == strcmp(fn2, p2));
+            }
         }
 
         if (match) {
             (*nfound)++;
             if (alloc) {
                 flist = (char **) Mem_ReAlloc(
-                    flist, sizeof(char *) * (*nfound), LogInfo
+                    (void *) flist, sizeof(char *) * (*nfound), LogInfo
                 );
 
                 if (LogInfo->stopRun) {
@@ -176,53 +202,61 @@ void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...) {
     int nextWarn = LogInfo->numWarnings;
     va_list args;
     int expectedWriteSize;
+    char *writePtr = msgType;
 
     va_start(args, fmt);
 
     if (LOGWARN & mode) {
-        strcpy(msgType, "WARNING: ");
+        (void) sw_memccpy(writePtr, "WARNING: ", '\0', MAX_LOG_SIZE);
     } else if (LOGERROR & mode) {
-        strcpy(msgType, "ERROR: ");
+        (void) sw_memccpy(writePtr, "ERROR: ", '\0', MAX_LOG_SIZE);
     }
 
     expectedWriteSize = snprintf(outfmt, MAX_LOG_SIZE, "%s%s\n", msgType, fmt);
     if (expectedWriteSize > MAX_LOG_SIZE) {
         // Silence gcc (>= 7.1) compiler flag `-Wformat-truncation=`, i.e.,
         // handle output truncation
-        fprintf(stderr, "Programmer: message exceeds the maximum size.\n");
+        (void
+        ) fprintf(stderr, "Programmer: message exceeds the maximum size.\n");
 #ifdef SWDEBUG
         exit(EXIT_FAILURE);
 #endif
     }
 
+    // NOLINTNEXTLINE(clang-analyzer-valist.Uninitialized)
     expectedWriteSize = vsnprintf(buf, MAX_LOG_SIZE, outfmt, args);
 #ifdef SWDEBUG
     if (expectedWriteSize > MAX_LOG_SIZE) {
-        fprintf(
+        (void) fprintf(
             stderr,
             "Programmer: Injecting arguments to final message buffer "
             "makes it exceed the maximum size.\n"
         );
         exit(EXIT_FAILURE);
     }
+#else
+    (void) expectedWriteSize; /* Silence clang-tidy
+                                 clang-analyzer-deadcode.DeadStores */
 #endif
 
     if (LOGWARN & mode) {
         if (nextWarn < MAX_MSGS) {
-            strcpy(LogInfo->warningMsgs[nextWarn], buf);
+            (void) sw_memccpy(
+                LogInfo->warningMsgs[nextWarn], buf, '\0', MAX_LOG_SIZE
+            );
         }
         LogInfo->numWarnings++;
     } else if (LOGERROR & mode) {
 
 #ifdef STEPWAT
-        fprintf(stderr, "%s", buf);
+        (void) fprintf(stderr, "%s", buf);
 
         // Consider updating STEPWAT2: instead of exiting/crashing, do catch
         // errors, recoil, and use `sw_write_warnings(); sw_fail_on_error()`
         // as SOILWAT2 >= 7.2.0
         exit(EXIT_FAILURE);
 #else
-        strcpy(LogInfo->errorMsg, buf);
+        (void) sw_memccpy(LogInfo->errorMsg, buf, '\0', MAX_LOG_SIZE);
         LogInfo->stopRun = swTRUE;
 #endif
     }
@@ -242,6 +276,162 @@ void sw_message(const char *msg) {
     sw_printf("SOILWAT2 (%s) %s\n", timeString, msg);
 }
 
+/**
+@brief Convert string to unsigned long integer with error handling
+
+This function implements cert-err34-c
+"Detect errors when converting a string to a number".
+
+@param[in] str Pointer to string to be converted.
+@param[in] errMsg Pointer to string included in error message.
+@param[out] LogInfo Holds information on warnings and errors
+*/
+unsigned long int sw_strtoul(
+    const char *str, const char *errMsg, LOG_INFO *LogInfo
+) {
+    unsigned long int resul = ULONG_MAX;
+    char *endStr;
+
+    errno = 0;
+
+    resul = strtoul(str, &endStr, 10);
+
+    if (endStr == str || '\0' != *endStr) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "%s: converting '%s' to unsigned long integer failed.",
+            errMsg,
+            str
+        );
+
+    } else if (ULONG_MAX == resul && ERANGE == errno) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "%s: '%s' out of range of type unsigned long integer.",
+            errMsg,
+            str
+        );
+    }
+
+    return resul;
+}
+
+/**
+@brief Convert string to long integer with error handling
+
+This function implements cert-err34-c
+"Detect errors when converting a string to a number".
+
+@param[in] str Pointer to string to be converted.
+@param[in] errMsg Pointer to string included in error message.
+@param[out] LogInfo Holds information on warnings and errors
+*/
+long int sw_strtol(const char *str, const char *errMsg, LOG_INFO *LogInfo) {
+    long int resl = LONG_MIN;
+    char *endStr;
+
+    errno = 0;
+
+    resl = strtol(str, &endStr, 10);
+
+    if (endStr == str || '\0' != *endStr) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "%s: converting '%s' to long integer failed.",
+            errMsg,
+            str
+        );
+
+    } else if ((LONG_MIN == resl || LONG_MAX == resl) && ERANGE == errno) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "%s: '%s' out of range of type long integer.",
+            errMsg,
+            str
+        );
+    }
+
+    return resl;
+}
+
+/**
+@brief Convert string to integer with error handling
+
+This function implements cert-err34-c
+"Detect errors when converting a string to a number".
+
+@param[in] str Pointer to string to be converted.
+@param[in] errMsg Pointer to string included in error message.
+@param[out] LogInfo Holds information on warnings and errors
+*/
+int sw_strtoi(const char *str, const char *errMsg, LOG_INFO *LogInfo) {
+    long int resl;
+    int resi = INT_MIN;
+
+    resl = sw_strtol(str, errMsg, LogInfo);
+
+    if (!LogInfo->stopRun) {
+        if (resl > INT_MAX || resl < INT_MIN) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "%s: '%s' out of range of type integer.",
+                errMsg,
+                str
+            );
+
+        } else {
+            resi = (int) resl;
+        }
+    }
+
+    return resi;
+}
+
+/**
+@brief Convert string to double with error handling
+
+This function implements cert-err34-c
+"Detect errors when converting a string to a number".
+
+@param[in] str Pointer to string to be converted.
+@param[in] errMsg Pointer to string included in error message.
+@param[out] LogInfo Holds information on warnings and errors
+*/
+double sw_strtod(const char *str, const char *errMsg, LOG_INFO *LogInfo) {
+    double resd = HUGE_VAL;
+    char *endStr;
+
+    errno = 0;
+
+    resd = strtod(str, &endStr);
+
+    if (endStr == str || '\0' != *endStr) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "%s: converting '%s' to double failed.",
+            errMsg,
+            str
+        );
+
+    } else if (HUGE_VAL == resd && ERANGE == errno) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "%s: '%s' out of range of type double.",
+            errMsg,
+            str
+        );
+    }
+
+    return resd;
+}
+
 /**************************************************************/
 Bool GetALine(FILE *f, char buf[], int numChars) {
     /* Read a line of possibly commented input from the file *f.
@@ -251,7 +441,8 @@ Bool GetALine(FILE *f, char buf[], int numChars) {
     char *p;
     Bool not_eof = swFALSE;
     while (!isnull(fgets(buf, numChars, f))) {
-        if (!isnull(p = strchr(buf, (int) '\n'))) {
+        p = strchr(buf, '\n');
+        if (!isnull(p)) {
             *p = '\0';
         }
 
@@ -270,13 +461,16 @@ void DirName(const char *p, char *outString) {
      * Be sure to copy the return value to a more stable buffer
      * before moving on.
      */
-    char *c;
-    int l;
-    char sep1 = '/', sep2 = '\\';
+    const char *c;
+    long int l;
+    char sep1 = '/';
+    char sep2 = '\\';
 
     *outString = '\0';
-    if (!(c = (char *) strrchr(p, (int) sep1))) {
-        c = (char *) strrchr(p, (int) sep2);
+    c = strrchr(p, (int) sep1);
+
+    if (!c) {
+        c = strrchr(p, (int) sep2);
     }
 
     if (c) {
@@ -291,14 +485,16 @@ const char *BaseName(const char *p) {
     /* return a pointer to the terminal element (file) of a path. */
     /* Doesn't modify the string, but you'll probably want to
      * copy the result to a stable buffer. */
-    char *c;
-    char sep1 = '/', sep2 = '\\';
+    const char *c;
+    char sep1 = '/';
+    char sep2 = '\\';
 
-    if (!(c = (char *) strrchr(p, (int) sep1))) {
-        c = (char *) strrchr(p, (int) sep2);
+    c = strrchr(p, (int) sep1);
+    if (!c) {
+        c = strrchr(p, (int) sep2);
     }
 
-    return ((c != NULL) ? c + 1 : p);
+    return (isnull(c) ? p : c + 1);
 }
 
 /**************************************************************/
@@ -306,10 +502,8 @@ FILE *OpenFile(const char *name, const char *mode, LOG_INFO *LogInfo) {
     FILE *fp;
     fp = fopen(name, mode);
     if (isnull(fp)) {
-        LogError(
-            LogInfo, LOGERROR, "Cannot open file %s: %s", name, strerror(errno)
-        );
-        return NULL; // Exit function prematurely due to error
+        // Report error if file couldn't be opened
+        LogError(LogInfo, LOGERROR, "Cannot open file '%s'", name);
     }
     return (fp);
 }
@@ -325,13 +519,14 @@ void CloseFile(FILE **f, LOG_INFO *LogInfo) {
      */
     if (*f == NULL) {
         LogError(
-            LogInfo,
-            LOGWARN,
-            "Tried to close file that doesn't exist or isn't open!"
+            LogInfo, LOGWARN, "CloseFile: file doesn't exist or isn't open!"
         );
         return;
     }
-    fclose(*f);
+
+    if (fclose(*f) == EOF) {
+        LogError(LogInfo, LOGERROR, "CloseFile: Could not close file.");
+    }
 
     *f = NULL;
 }
@@ -387,14 +582,14 @@ Bool ChDir(const char *dname) {
 #define mkdir(d, m) mkdir(d, m)
 #endif
 
-Bool MkDir(const char *dname, LOG_INFO *LogInfo) {
+// Errors are reported via LogInfo
+void MkDir(const char *dname, LOG_INFO *LogInfo) {
     /* make a path with 'mkdir -p' -like behavior. provides an
      * interface for portability problems.
      * RELATIVE PATH ONLY solves problems like "C:\etc" and null
      * first element in absolute path.
      * if you need to make an absolute path, use ChDir() first.
      * if you care about mode of new dir, use mkdir(), not MkDir()
-     * if MkDir returns FALSE, check errno.
      *
      * Notes:
      * - portability issues seem to be quite problematic, at least
@@ -402,56 +597,79 @@ Bool MkDir(const char *dname, LOG_INFO *LogInfo) {
      *   error code is EACCES, so if something else happens (and it
      *   well might in unix), more tests have to be included, perhaps
      *   with macros that test the compiler/platform.
-     * - we're borrowing errstr to build the path to facilitate the
+     * - we're borrowing buffer to build the path to facilitate the
      *   -p behavior.
      */
 
-    int r, i, n;
-    Bool result = swTRUE;
+    int i;
+    int n;
     char *a[256] = {0}; /* points to each path element for mkdir -p behavior */
     char *c;            /* duplicate of dname so we don't change it */
     const char *delim = "\\/"; /* path separators */
-    char errstr[MAX_ERROR];
+    char buffer[MAX_ERROR];
+    char *writePtr = buffer;
+    char *endBuffer = buffer + sizeof buffer - 1;
 
-    int startIndex = 0, strLen = 0; // For `sw_strtok()`
+    size_t startIndex = 0;
+    size_t strLen = 0; // For `sw_strtok()`
+    size_t writeSize = 256;
+    Bool fullBuffer = swFALSE;
 
     if (isnull(dname)) {
-        return swFALSE;
+        return;
     }
 
     c = Str_Dup(dname, LogInfo);
     if (LogInfo->stopRun) {
-        return swFALSE; // Exit function prematurely due to error
+        return; // Exit function prematurely due to error
     }
 
     /* parse path */
     n = 0;
-    while (NULL != (a[n++] = sw_strtok(c, &startIndex, &strLen, delim)))
-        ;
+    while (NULL != (a[n] = sw_strtok(c, &startIndex, &strLen, delim)) && n < 256
+    ) {
+        n++;
+    }
 
-    n--;
-    errstr[0] = '\0';
+    buffer[0] = '\0';
     for (i = 0; i < n; i++) {
-        strcat(errstr, a[i]);
-        if (!DirExists(errstr)) {
-            if (0 != (r = mkdir(errstr, 0777))) {
-                if (errno == EACCES) {
-                    result = swFALSE;
-                    break;
-                }
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endBuffer, (void *) a[i], '\0', &writeSize
+        );
+        if (fullBuffer) {
+            goto freeMem;
+        }
+
+        if (!DirExists(buffer)) {
+            if (0 != mkdir(buffer, 0777)) {
+                // directory failed to create -> report error
+                LogError(
+                    LogInfo, LOGERROR, "Failed to create directory '%s'", buffer
+                );
+                goto freeMem; // Exit function prematurely due to error
             }
         }
-        strcat(errstr, "/");
+
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, endBuffer, (void *) "/", '\0', &writeSize
+        );
+        if (fullBuffer) {
+            goto freeMem;
+        }
+    }
+
+freeMem:
+    if (fullBuffer) {
+        reportFullBuffer(LOGERROR, LogInfo);
     }
 
     free(c);
-    return result;
 }
 
 #undef mkdir
 
 /**************************************************************/
-Bool RemoveFiles(const char *fspec, LOG_INFO *LogInfo) {
+Bool RemoveFiles(const char *fspec, Bool clearDir, LOG_INFO *LogInfo) {
     /* delete files matching fspec. ASSUMES terminal element
      *   describes files, ie, is not a directory.
      * fspec may contain leading path (eg, here/and/now/files)
@@ -461,42 +679,58 @@ Bool RemoveFiles(const char *fspec, LOG_INFO *LogInfo) {
      *   eg: /here/now/fi*les, /here/now/files*
      *   or /here/now/files
      * Returns TRUE if all files removed, FALSE otherwise.
-     * Check errno if return is FALSE.
      */
 
-    char **flist, fname[FILENAME_MAX];
-    int i, nfiles, dlen, result = swTRUE;
+    char **flist;
+    char fname[FILENAME_MAX];
+    char *endFnamePtr = fname + sizeof fname - 1;
+    char *fNamePlusDLen;
+    int i;
+    int nfiles;
+    int result = swTRUE;
+    size_t dlen;
+    size_t writeSize;
+    Bool bufferFull = swFALSE;
 
     if (fspec == NULL) {
         return swTRUE;
     }
 
-    if ((flist = getfiles(fspec, &nfiles, LogInfo))) {
+    flist = getfiles(fspec, &nfiles, clearDir, LogInfo);
+
+    if (!isnull(flist)) {
         DirName(fspec, fname); // Transfer `fspec` into `fname`
         dlen = strlen(fname);
         for (i = 0; i < nfiles; i++) {
-            strcpy(fname + dlen, flist[i]);
+            fNamePlusDLen = fname + dlen;
+            writeSize = FILENAME_MAX - sizeof dlen;
+            bufferFull = sw_memccpy_inc(
+                (void **) &fNamePlusDLen,
+                endFnamePtr,
+                (void *) flist[i],
+                '\0',
+                &writeSize
+            );
+            if (bufferFull) {
+                reportFullBuffer(LOGERROR, LogInfo);
+                break;
+            }
+
             if (0 != remove(fname)) {
                 result = swFALSE;
                 break;
             }
         }
-    }
-    if (!isnull(flist)) {
+
         for (i = 0; i < nfiles; i++) {
             if (!isnull(flist[i])) {
                 free(flist[i]);
             }
         }
-        free(flist);
+        free((void *) flist);
     }
 
-    if (LogInfo->stopRun) {
-        return swFALSE;
-    }
-
-
-    return (Bool) result;
+    return (Bool) (result && !LogInfo->stopRun);
 }
 
 /**
@@ -511,7 +745,8 @@ Bool RemoveFiles(const char *fspec, LOG_INFO *LogInfo) {
 Bool CopyFile(const char *from, const char *to, LOG_INFO *LogInfo) {
     char buffer[4096]; // or any other constant that is a multiple of 512
     size_t n;
-    FILE *ffrom, *fto;
+    FILE *ffrom;
+    FILE *fto;
 
     ffrom = fopen(from, "r");
     if (ffrom == NULL) {
@@ -526,7 +761,6 @@ Bool CopyFile(const char *from, const char *to, LOG_INFO *LogInfo) {
 
     fto = fopen(to, "w");
     if (fto == NULL) {
-        fclose(ffrom);
         LogError(
             LogInfo,
             LOGERROR,
@@ -541,8 +775,8 @@ Bool CopyFile(const char *from, const char *to, LOG_INFO *LogInfo) {
             LogError(
                 LogInfo, LOGERROR, "CopyFile: error while copying to %s.\n", to
             );
-            fclose(ffrom);
-            fclose(fto);
+            (void) fclose(ffrom);
+            (void) fclose(fto);
             return swFALSE; // Exit function prematurely due to error
         }
     }
@@ -551,8 +785,8 @@ Bool CopyFile(const char *from, const char *to, LOG_INFO *LogInfo) {
         LogError(
             LogInfo, LOGERROR, "CopyFile: error reading source file %s.\n", from
         );
-        fclose(ffrom);
-        fclose(fto);
+        (void) fclose(ffrom);
+        (void) fclose(fto);
         return swFALSE; // Exit function prematurely due to error
     }
 
@@ -632,7 +866,7 @@ void set_hasKey(
 @param[out] LogInfo Holds information on warnings and errors
 */
 void check_requiredKeys(
-    Bool *hasKeys,
+    const Bool *hasKeys,
     const Bool *requiredKeys,
     const char **possibleKeys,
     int numKeys,

@@ -17,7 +17,7 @@
 #define SW_OUTPUT_TXT_H
 
 #include "include/generic.h"        // for Bool
-#include "include/SW_datastructs.h" // for SW_FILE_STATUS, LOG_INFO
+#include "include/SW_datastructs.h" // for SW_PATH_OUTPUTS, LOG_INFO
 #include "include/SW_Defines.h"     // for SW_OUTNPERIODS
 #include <stdio.h>                  // for size_t
 
@@ -31,26 +31,26 @@ extern "C" {
 #if defined(SOILWAT)
 void SW_OUT_create_textfiles(
     SW_OUT_DOM *OutDom,
-    SW_FILE_STATUS *SW_FileStatus,
+    SW_PATH_OUTPUTS *SW_PathOutputs,
     LyrIndex n_layers,
-    char *InFiles[],
+    char *txtInFiles[],
     LOG_INFO *LogInfo
 );
 
 #elif defined(STEPWAT)
 void SW_OUT_create_summary_files(
     SW_OUT_DOM *OutDom,
-    SW_FILE_STATUS *SW_FileStatus,
-    char *InFiles[],
+    SW_PATH_OUTPUTS *SW_PathOutputs,
+    char *txtInFiles[],
     LyrIndex n_layers,
     LOG_INFO *LogInfo
 );
 
 void SW_OUT_create_iteration_files(
     SW_OUT_DOM *OutDom,
-    SW_FILE_STATUS *SW_FileStatus,
+    SW_PATH_OUTPUTS *SW_PathOutputs,
     int iteration,
-    char *InFiles[],
+    char *txtInFiles[],
     LyrIndex n_layers,
     LOG_INFO *LogInfo
 );
@@ -70,8 +70,8 @@ void write_headers_to_csv(
     FILE *fp_reg,
     FILE *fp_soil,
     Bool does_agg,
-    Bool make_regular[],
-    Bool make_soil[],
+    const Bool make_regular[],
+    const Bool make_soil[],
     LyrIndex n_layers,
     LOG_INFO *LogInfo
 );
@@ -79,13 +79,13 @@ void write_headers_to_csv(
 void find_TXToutputSoilReg_inUse(
     Bool make_soil[],
     Bool make_regular[],
-    Bool has_sl[],
+    const Bool has_sl[],
     OutPeriod timeSteps[][SW_OUTNPERIODS],
     IntUS used_OUTNPERIODS
 );
 
 void SW_OUT_close_textfiles(
-    SW_FILE_STATUS *SW_FileStatus, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
+    SW_PATH_OUTPUTS *SW_PathOutputs, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 );
 
 

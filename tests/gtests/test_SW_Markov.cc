@@ -1,4 +1,4 @@
-#include "include/generic.h"        // for RealD, GT, fmin
+#include "include/generic.h"        // for GT, fmin
 #include "include/myMemory.h"       // for Str_Dup
 #include "include/SW_datastructs.h" // for LOG_INFO, SW_MARKOV, SW_NFILES
 #include "include/SW_Defines.h"     // for sw_random_t
@@ -11,10 +11,13 @@
 
 using ::testing::HasSubstr;
 
-extern void (*test_mvnorm)(RealD *, RealD *, RealD, RealD, RealD, RealD, RealD, sw_random_t *, LOG_INFO *);
+// NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
+extern void (*test_mvnorm)(double *, double *, double, double, double, double, double, sw_random_t *, LOG_INFO *);
 extern void (*test_temp_correct_wetdry)(
-    RealD *, RealD *, RealD, RealD, RealD, RealD, RealD
+    double *, double *, double, double, double, double, double
 );
+
+// NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
 
 namespace {
 // Test the SW_MARKOV constructor 'SW_MKV_construct'
@@ -25,7 +28,7 @@ TEST(WeatherGeneratorTest, WeatherGeneratorConstructor) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    int rng_seed = 8;
+    int const rng_seed = 8;
 
     SW_MKV_init_ptrs(&SW_Markov);
     SW_MKV_construct(rng_seed, &SW_Markov);
@@ -53,23 +56,30 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    char *InFiles[SW_NFILES];
-    for (short file = 0; file < SW_NFILES; file++) {
-        InFiles[file] = NULL;
-    }
+    SW_PATH_INPUTS SW_PathInput;
+    SW_F_init_ptrs(&SW_PathInput);
 
-    InFiles[eMarkovCov] = Str_Dup("Input/mkv_covar.in", &LogInfo);
+    SW_PathInput.txtInFiles[eMarkovCov] =
+        Str_Dup("Input/mkv_covar.in", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
-    InFiles[eMarkovProb] = Str_Dup("Input/mkv_prob.in", &LogInfo);
+    SW_PathInput.txtInFiles[eMarkovProb] =
+        Str_Dup("Input/mkv_prob.in", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    int rng_seed,
-        // Turn on Markov weather generator
-        generateWeatherMethod = 2;
+    int rng_seed;
+    // Turn on Markov weather generator
+    unsigned int const generateWeatherMethod = 2;
 
-    short k, n = 18, seed = 42, year = 1980;
-    RealD tmax, tmin, ppt;
-    RealD *tmax0 = new double[n], *tmin0 = new double[n], *ppt0 = new double[n];
+    short k;
+    short const n = 18;
+    short const seed = 42;
+    short const year = 1980;
+    double tmax;
+    double tmin;
+    double ppt;
+    double *tmax0 = new double[n];
+    double *tmin0 = new double[n];
+    double *ppt0 = new double[n];
 
 
     //--- Generate some weather values with fixed seed ------
@@ -78,7 +88,11 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
     rng_seed = seed;
     SW_MKV_init_ptrs(&SW_Markov);
     SW_MKV_setup(
-        &SW_Markov, rng_seed, generateWeatherMethod, InFiles, &LogInfo
+        &SW_Markov,
+        rng_seed,
+        generateWeatherMethod,
+        SW_PathInput.txtInFiles,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -99,7 +113,11 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
     rng_seed = 0;
     SW_MKV_init_ptrs(&SW_Markov);
     SW_MKV_setup(
-        &SW_Markov, rng_seed, generateWeatherMethod, InFiles, &LogInfo
+        &SW_Markov,
+        rng_seed,
+        generateWeatherMethod,
+        SW_PathInput.txtInFiles,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -126,7 +144,11 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
     rng_seed = seed;
     SW_MKV_init_ptrs(&SW_Markov);
     SW_MKV_setup(
-        &SW_Markov, rng_seed, generateWeatherMethod, InFiles, &LogInfo
+        &SW_Markov,
+        rng_seed,
+        generateWeatherMethod,
+        SW_PathInput.txtInFiles,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -151,7 +173,7 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
     delete[] tmin0;
     delete[] ppt0;
 
-    SW_F_deconstruct(InFiles);
+    SW_F_deconstruct(&SW_PathInput);
 }
 
 // Test drawing multivariate normal variates for daily maximum/minimum temp
@@ -162,9 +184,12 @@ TEST(WeatherGeneratorTest, WeatherGeneratormvnorm) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    int rng_seed = 9;
-    short k, n = 3;
-    RealD tmax = 0., tmin = 0., tval;
+    int const rng_seed = 9;
+    short k;
+    short const n = 3;
+    double tmax = 0.;
+    double tmin = 0.;
+    double tval;
 
     SW_MKV_init_ptrs(&SW_Markov);
     SW_MKV_construct(rng_seed, &SW_Markov); // initialize markov_rng
@@ -249,8 +274,9 @@ TEST(WeatherGeneratorTest, WeatherGeneratormvnormDeathTest) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    int rng_seed = 11;
-    RealD tmax = 0., tmin = 0.;
+    int const rng_seed = 11;
+    double tmax = 0.;
+    double tmin = 0.;
 
     SW_MKV_init_ptrs(&SW_Markov);
     SW_MKV_construct(rng_seed, &SW_Markov); // initialize markov_rng
@@ -276,9 +302,16 @@ TEST(WeatherGeneratorTest, WeatherGeneratorWetDryTemperatureCorrection) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    int rng_seed = 13;
-    RealD tmax = 0., tmin = 0., t0 = 0., t10 = 10., wet = 1., dry = 0.,
-          cf0 = 0., cf_pos = 5., cf_neg = -5.;
+    int const rng_seed = 13;
+    double tmax = 0.;
+    double tmin = 0.;
+    double const t0 = 0.;
+    double const t10 = 10.;
+    double const wet = 1.;
+    double const dry = 0.;
+    double const cf0 = 0.;
+    double const cf_pos = 5.;
+    double const cf_neg = -5.;
 
     SW_MKV_init_ptrs(&SW_Markov);
     SW_MKV_construct(rng_seed, &SW_Markov); // initialize markov_rng

@@ -31,6 +31,19 @@ void Mem_Set(void *block, byte c, size_t n);
 
 void Mem_Copy(void *dest, const void *src, size_t n);
 
+void *sw_memccpy_custom(
+    void *__restrict dest, void *__restrict src, int c, size_t n
+);
+
+Bool sw_memccpy_inc(
+    void **__restrict charPtr,
+    char *__restrict endPtr,
+    void *__restrict str,
+    int c,
+    size_t *n
+);
+
+void reportFullBuffer(int errmode, LOG_INFO *LogInfo);
 
 #ifdef __cplusplus
 }

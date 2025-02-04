@@ -27,12 +27,20 @@
 #define SW_OUTTEXT
 #endif
 
-#define SW_NFILES 27 // For `InFiles`
-#define SW_NVARNC 2  // For `InFilesNC`
+#define SW_NINFILES 18                       // For input `txtInFiles`
+#define SW_NOUTFILES 9                       // For output `txtInFiles`
+#define SW_NFILES SW_NINFILES + SW_NOUTFILES // For `txtInFiles`
+#define SW_NVARDOM 2                         // For `InFilesNC`
+
+/* KD-tree related defines */
+#define KD_NDIMS 2    /* Number of dimensions the nodes will contain */
+#define KD_NINDICES 2 /* Number of indices that will be stored in nodes */
 
 /* Declare SW_RUN & SW_OUT_DOM structs for SW_OUT_DOM and SW_DOMAIN to see */
 typedef struct SW_RUN SW_RUN;
 typedef struct SW_OUT_DOM SW_OUT_DOM;
+
+typedef struct SW_KD_NODE SW_KD_NODE;
 
 /* =================================================== */
 /*                   Carbon structs                    */
@@ -90,7 +98,6 @@ typedef struct {
 
     Bool soil_temp_init; // simply keeps track of whether or not the values for
                          // the soil_temperature function have been initialized.
-    Bool do_once_at_soiltempError;
     Bool
         fusion_pool_init; // simply keeps track of whether or not the values for
                           // the soil fusion (thawing/freezing) section of the
@@ -144,9 +151,9 @@ typedef struct {
         firstdoy, /* start day for this year */
         lastdoy,  /* 366 if leapyear or endend if endyr */
         doy, week, month, year, simyear, /* current model time */
-        _prevweek,                       /* check for new week */
-        _prevmonth,                      /* check for new month */
-        _prevyear;                       /* check for new year */
+        prevweek,                        /* check for new week */
+        prevmonth,                       /* check for new month */
+        prevyear;                        /* check for new year */
     /* however, week and month are base0 because they
      * are used as array indices, so take care.
      * doy and year are base1. */
@@ -164,9 +171,9 @@ typedef struct {
 
     // ********** END of copying SW_DOMAIN's data *************
 
-    RealD longitude, /* longitude of the site (radians)        */
-        latitude,    /* latitude of the site (radians)        */
-        elevation,   /* elevation a.s.l (m) of the site */
+    double longitude, /* longitude of the site (radians) */
+        latitude,     /* latitude of the site (radians) */
+        elevation,    /* elevation a.s.l (m) of the site */
         slope, /* slope of the site (radians): between 0 (horizontal) and pi / 2
                   (vertical) */
         aspect; /* aspect of the site (radians): A value of \ref SW_MISSING
@@ -227,15 +234,44 @@ typedef struct {
 
 #if defined(SWNETCDF)
     char **ncOutFiles[SW_OUTNKEYS][SW_OUTNPERIODS];
-    int numOutFiles;
+    unsigned int numOutFiles;
 #endif
 
-} SW_FILE_STATUS;
+} SW_PATH_OUTPUTS;
 
 /* =================================================== */
 /*                     Site structs                    */
 /* --------------------------------------------------- */
 
+typedef struct {
+    double width[MAX_LAYERS],         /**< width of the soil layer (cm) */
+        depths[MAX_LAYERS],           /**< soil layer depths of SoilWat soil */
+        soilDensityInput[MAX_LAYERS], /**< soil density [g / cm3]: either of
+                                           the matric component or bulk soil */
+        evap_coeff[MAX_LAYERS],       /**< prop. of total soil evap from
+                                           this layer */
+        transp_coeff[NVEGTYPES][MAX_LAYERS],
+
+        /* prop. of total transp from this layer    */
+        fractionVolBulk_gravel[MAX_LAYERS],    /* gravel content (> 2 mm) as
+                                                  volume-fraction of bulk soil
+                                                  (g/cm3) */
+        fractionWeightMatric_sand[MAX_LAYERS], /* sand content (< 2 mm & > . mm)
+                                                  as weight-fraction of matric
+                                                  soil (g/g) */
+        fractionWeightMatric_clay[MAX_LAYERS], /* clay content (< . mm & > . mm)
+                                                  as weight-fraction of matric
+                                                  soil (g/g) */
+        /** Organic matter content as weight fraction of bulk soil [g g-1] */
+        fractionWeight_om[MAX_LAYERS],
+        impermeability[MAX_LAYERS], /* fraction of how impermeable a layer is
+                                       (0=permeable, 1=impermeable)    */
+        avgLyrTempInit[MAX_LAYERS]; /* initial soil temperature for each soil
+                                       layer */
+
+    /** SWRC parameters of the mineral soil component */
+    double swrcpMineralSoil[MAX_LAYERS][SWRC_PARAM_NMAX];
+} SW_SOILS;
 
 typedef struct {
 
@@ -254,8 +290,8 @@ typedef struct {
         n_transp_lyrs[NVEGTYPES], /* layer index of deepest transp. region */
         deep_lyr; /* index of deep drainage layer if deepdrain, 0 otherwise */
 
-    RealD slow_drain_coeff, /* low soil water drainage coefficient   */
-        pet_scale,          /* changes relative effect of PET calculation */
+    double slow_drain_coeff, /* low soil water drainage coefficient   */
+        pet_scale,           /* changes relative effect of PET calculation */
         /* SWAT2K model parameters : Neitsch S, Arnold J, Kiniry J, Williams J.
            2005. Soil and water assessment tool (SWAT) theoretical
            documentation. version 2005. Blackland Research Center, Texas
@@ -265,10 +301,21 @@ typedef struct {
         lambdasnow, /* Relative contribution of avg. air temperature to todays
                        snow temperture vs. yesterday's snow temperature (0-1) */
         RmeltMin,   /* Minimum snow melt rate on winter solstice (cm/day/C) */
-        RmeltMax,   /* Maximum snow melt rate on summer solstice (cm/day/C) */
-        t1Param1,   /* Soil temperature constants */
-        t1Param2,   /* t1Params are the parameters for the avg daily temperature
-                       at the top of the soil (T1) equation */
+        RmeltMax;   /* Maximum snow melt rate on summer solstice (cm/day/C) */
+
+
+    /* Constants for surface and soil temperature */
+
+    /** Method for average surface temperature:
+        0 (Parton 1978); 1 (Parton 1984) */
+    unsigned int methodSurfaceTemperature;
+
+    /** number of layers used by soil temperatur */
+    unsigned int stNRGR;
+
+    double t1Param1,
+        t1Param2, /* t1Params are the parameters for the avg daily temperature
+                     at the top of the soil (T1) equation */
         t1Param3, csParam1, /* csParams are the parameters for the soil thermal
                                conductivity (cs) equation */
         csParam2, shParam,  /* shParam is the parameter for the specific heat
@@ -280,14 +327,13 @@ typedef struct {
                            as the mean air temperature */
         stDeltaX,   /* for the soil_temperature function, deltaX is the distance
                        between profile points (default: 15) */
-        stMaxDepth, /* for the soil_temperature function, the maxDepth of the
+        stMaxDepth; /* for the soil_temperature function, the maxDepth of the
                        interpolation function */
-        percentRunoff, /* the percentage of surface water lost daily */
-        percentRunon; /* the percentage of water that is added to surface gained
-                         daily */
 
-    unsigned int stNRGR; /* number of interpolations, for the soil_temperature
-                            function */
+    double percentRunoff; /* the percentage of surface water lost daily */
+    double percentRunon;  /* the percentage of water that is added to surface
+                          gained  daily */
+
     /* params for tanfunc rate calculations for evap and transp. */
     /* tanfunc() creates a logistic-type graph if shift is positive,
      * the graph has a negative slope, if shift is 0, slope is positive.
@@ -299,43 +345,40 @@ typedef struct {
 
     char site_swrc_name[64], site_ptf_name[64];
 
-    Bool site_has_swrcp; /**< Are `swrcp` already (TRUE) or not yet estimated
-                            (FALSE)? */
+    /** Are `swrcp` of the mineral soil already (TRUE) or not yet estimated
+        (FALSE)? */
+    Bool site_has_swrcpMineralSoil;
+    /** Are `swrcp` provided as inputs (TRUE) or estimated via a PTF? (FALSE) */
+    Bool inputsProvideSWRCp;
 
-    /* transpiration regions  shallow, moderately shallow,  */
-    /* deep and very deep. units are in layer numbers. */
-    LyrIndex _TranspRgnBounds[MAX_TRANSP_REGIONS];
-    RealD _SWCInitVal, /* initialization value for swc */
-        _SWCWetVal,    /* value for a "wet" day,       */
-        _SWCMinVal;    /* lower bound on swc.          */
+    /** Lower bounds of transpiration regions [layers]
 
-    /* bulk = relating to the whole soil, i.e., matric + rock/gravel/coarse
-     * fragments */
-    /* matric = relating to the < 2 mm fraction of the soil, i.e., sand, clay,
-     * and silt */
+    Possible levels are: shallow, moderately shallow, deep and very deep.
+    Calculated as the number of the deepest soil layer that still is within
+    the corresponding soil depth #TranspRgnDepths.
+    */
+    LyrIndex TranspRgnBounds[MAX_TRANSP_REGIONS];
 
-    RealD
-        /* Inputs */
-        width[MAX_LAYERS],            /* width of the soil layer (cm) */
-        soilDensityInput[MAX_LAYERS], /* soil density [g / cm3]: either of the
-                                         matric component or bulk soil */
-        evap_coeff[MAX_LAYERS], /* prop. of total soil evap from this layer */
-        transp_coeff[NVEGTYPES][MAX_LAYERS],
-        /* prop. of total transp from this layer    */
-        fractionVolBulk_gravel[MAX_LAYERS],    /* gravel content (> 2 mm) as
-                                                  volume-fraction of bulk soil
-                                                  (g/cm3) */
-        fractionWeightMatric_sand[MAX_LAYERS], /* sand content (< 2 mm & > . mm)
-                                                  as weight-fraction of matric
-                                                  soil (g/g) */
-        fractionWeightMatric_clay[MAX_LAYERS], /* clay content (< . mm & > . mm)
-                                                  as weight-fraction of matric
-                                                  soil (g/g) */
-        impermeability[MAX_LAYERS], /* fraction of how impermeable a layer is
-                                       (0=permeable, 1=impermeable)    */
-        avgLyrTempInit[MAX_LAYERS], /* initial soil temperature for each soil
-                                       layer */
+    /** Lower bounds of transpiration regions [cm]
 
+    Possible levels are: shallow, moderately shallow, deep and very deep.
+    User provided values in [cm].
+    */
+    double TranspRgnDepths[MAX_TRANSP_REGIONS];
+
+    double SWCInitVal, /* initialization value for swc */
+        SWCWetVal,     /* value for a "wet" day,       */
+        SWCMinVal;     /* lower bound on swc.          */
+
+    /* Soil components
+            * bulk = relating to the whole soil
+              i.e., matric + coarse fragment (gravel)
+            * matric component = relating to the < 2 mm fraction of the soil
+            * mineral component = sand, clay, silt
+            * organic component = organic matter
+     */
+
+    double
         /* Derived soil characteristics */
         soilMatric_density[MAX_LAYERS], /* matric soil density of the < 2 mm
                                            fraction, i.e., gravel component
@@ -360,13 +403,18 @@ typedef struct {
 
         /* Saxton et al. 2006 */
         swcBulk_saturated[MAX_LAYERS]; /* saturated bulk SWC [cm] */
-                                       // currently, not used;
+
+    /** Saturated hydraulic conductivity of the bulk soil */
+    double ksat[MAX_LAYERS];
+
+    // currently, not used;
     // Saxton2006_K_sat_matric, /* saturated matric conductivity [cm / day] */
     // Saxton2006_K_sat_bulk, /* saturated bulk conductivity [cm / day] */
     // Saxton2006_fK_gravel, /* gravel-correction factor for conductivity [1] */
     // Saxton2006_lambda; /* Slope of logarithmic tension-moisture curve */
 
-    double depths[MAX_LAYERS]; // soil layer depths of SoilWat soil
+    /** Depth [cm] at which soil properties reach values of sapric peat */
+    double depthSapric;
 
     /* Soil water retention curve (SWRC) */
     unsigned int swrc_type[MAX_LAYERS], /**< Type of SWRC (see #swrc2str) */
@@ -377,12 +425,23 @@ typedef struct {
                      `swrcp` but we need to loop over soil layers for every
                      vegetation type in `my_transp_rng`
     */
-    RealD swrcp[MAX_LAYERS][SWRC_PARAM_NMAX];
-    /**< Parameters of SWRC: parameter interpretation varies with selected SWRC,
-     * see `SWRC_check_parameters()` */
+    /** SWRC parameters of the bulk soil
+        (weighted average of mineral and organic SWRC).
+
+        Note: parameter interpretation varies with selected SWRC,
+        see `SWRC_check_parameters()`
+    */
+    double swrcp[MAX_LAYERS][SWRC_PARAM_NMAX];
+
+    /** SWRC parameters of the organic soil component
+        for (1) fibric and (2) sapric peat. */
+    double swrcpOM[2][SWRC_PARAM_NMAX];
+
     LyrIndex my_transp_rgn[NVEGTYPES][MAX_LAYERS]; /* which transp zones from
                                                       Site am I in? */
 
+    /* Inputs */
+    SW_SOILS soils;
 } SW_SITE;
 
 /* =================================================== */
@@ -391,7 +450,7 @@ typedef struct {
 
 /** Data type that describes cover attributes of a surface type */
 typedef struct {
-    RealD
+    double
         /** The cover contribution to the total plot [0-1];
           user input from file `Input/veg.in` */
         fCover,
@@ -414,14 +473,14 @@ typedef struct {
     /** Constant canopy height: if > 0 then constant canopy height [cm] and
       overriding cnpy-tangens = f(biomass);
       user input from file `Input/veg.in` */
-    RealD canopy_height_constant;
+    double canopy_height_constant;
 
     tanfunc_t
         /** Shading effect on transpiration based on live and dead biomass;
           user input from file `Input/veg.in` */
         tr_shade_effects;
 
-    RealD
+    double
         /** Parameter of live and dead biomass shading effects;
           user input from file `Input/veg.in` */
         shade_scale,
@@ -429,7 +488,7 @@ typedef struct {
           user input from file `Input/veg.in` */
         shade_deadmax;
 
-    RealD
+    double
         /** Monthly litter amount [g / m2] as if this vegetation type covers
           100% of the simulated surface; user input from file `Input/veg.in` */
         litter[MAX_MONTHS],
@@ -444,7 +503,7 @@ typedef struct {
           user input from file `Input/veg.in` */
         lai_conv[MAX_MONTHS];
 
-    RealD
+    double
         /** Daily litter amount [g / m2] */
         litter_daily[MAX_DAYS + 1],
         /** Daily aboveground biomass [g / m2] */
@@ -472,7 +531,7 @@ typedef struct {
           user input from file `Input/veg.in` */
         flagHydraulicRedistribution;
 
-    RealD
+    double
         /** Parameter for hydraulic redistribution: maximum radial soil-root
           conductance of the entire active root system for water
           [cm / (-bar * day)];
@@ -488,13 +547,13 @@ typedef struct {
           user input from file `Input/veg.in` */
         shapeCond;
 
-    RealD
+    double
         /** Critical soil water potential below which vegetation cannot sustain
           transpiration [-bar];
           user input from file `Input/veg.in` */
         SWPcrit;
 
-    RealD
+    double
         /** Parameter for vegetation interception;
           user input from file `Input/veg.in` */
         veg_kSmax,
@@ -505,7 +564,7 @@ typedef struct {
           user input from file `Input/veg.in` */
         lit_kSmax;
 
-    RealD
+    double
         /** Parameter for partitioning potential rates of bare-soil evaporation
           and transpiration;
           user input from file `Input/veg.in` */
@@ -514,7 +573,7 @@ typedef struct {
           user input from file `Input/veg.in` */
         Es_param_limit;
 
-    RealD
+    double
         /** Parameter for CO2-effects on biomass;
           user input from file `Input/veg.in` */
         co2_bio_coeff1,
@@ -528,7 +587,7 @@ typedef struct {
           user input from file `Input/veg.in` */
         co2_wue_coeff2;
 
-    RealD
+    double
         /** Calculated multipliers for CO2-effects:
           - column \ref BIO_INDEX holds biomass multipliers
           - column \ref WUE_INDEX holds water-use-efficiency multipliers
@@ -541,14 +600,14 @@ typedef struct {
     // biomass [g/m2] per vegetation type as observed in total vegetation
     // (reduced from 100% cover per vegtype (inputs) to actual cover
     // (simulated))
-    RealD biomass_inveg, biolive_inveg, litter_inveg;
+    double biomass_inveg, biolive_inveg, litter_inveg;
 } VegTypeOut;
 
 typedef struct {
     // biomass [g/m2] per vegetation type as observed in total vegetation
     VegTypeOut veg[NVEGTYPES];
     // biomass [g/m2] of total vegetation
-    RealD biomass_total, biolive_total, litter_total, LAI;
+    double biomass_total, biolive_total, litter_total, LAI;
 } SW_VEGPROD_OUTPUTS;
 
 /** Data type to describe the surface cover of a SOILWAT2 simulation run */
@@ -565,7 +624,7 @@ typedef struct {
           user input from file `Input/outsetup.in` */
         use_SWA;
 
-    RealD
+    double
         // storing values in same order as defined in STEPWAT2/rgroup.in
         // (0=tree, 1=shrub, 2=grass, 3=forb)
         critSoilWater[NVEGTYPES];
@@ -674,7 +733,7 @@ typedef struct {
 /* accumulators for output values hold only the */
 /* current period's values (eg, weekly or monthly) */
 typedef struct {
-    RealD temp_max, temp_min, temp_avg, ppt, rain, snow, snowmelt,
+    double temp_max, temp_min, temp_avg, ppt, rain, snow, snowmelt,
         snowloss, /* 20091015 (drs) ppt is divided into rain and snow */
         snowRunoff, surfaceRunoff, surfaceRunon, soil_inf, et, aet, pet,
         surfaceAvg, surfaceMax, surfaceMin;
@@ -691,7 +750,7 @@ dimension represents year.
 @note Number of years is variable and determined at runtime.
 */
 typedef struct {
-    RealD *
+    double *
         *PPTMon_cm, /**< 2D array containing monthly amount precipitation [cm]*/
         *PPT_cm,    /**< Array containing annual precipitation amount [cm]*/
         *PPT7thMon_mm, /**< Array containing July precipitation amount in July
@@ -730,7 +789,7 @@ represent across-year standard devations and the 1D array dimension represents
 different variables, see `averageClimateAcrossYears()`.
 */
 typedef struct {
-    RealD *meanTempMon_C, /**< Array of size MAX_MONTHS containing sum of
+    double *meanTempMon_C, /**< Array of size MAX_MONTHS containing sum of
                              monthly mean temperatures [C]*/
         *maxTempMon_C, /**< Array of size MAX_MONTHS containing sum of monthly
                           maximum temperatures [C]*/
@@ -770,14 +829,14 @@ typedef struct {
 } SW_CLIMATE_CLIM;
 
 typedef struct {
-    RealD **meanMonthlyTemp_C, **maxMonthlyTemp_C, **minMonthlyTemp_C,
+    double **meanMonthlyTemp_C, **maxMonthlyTemp_C, **minMonthlyTemp_C,
         **monthlyPPT_cm, *annualPPT_cm, *meanAnnualTemp_C, *JulyMinTemp,
         *frostFreeDays_days, *ddAbove65F_degday, *JulyPPT_mm,
         *meanTempDriestQuarter_C, *minTempFebruary_C;
 } SW_CLIMATE_CALC;
 
 typedef struct {
-    RealD *meanMonthlyTempAnn, *maxMonthlyTempAnn, *minMonthlyTempAnn,
+    double *meanMonthlyTempAnn, *maxMonthlyTempAnn, *minMonthlyTempAnn,
         *meanMonthlyPPTAnn, *sdC4, *sdCheatgrass, MAT_C, MAP_cm, JulyPPTAnn_mm,
         meanTempDriestQuarterAnn_C, minTempFebruaryAnn_C, ddAbove65F_degdayAnn,
         frostFreeAnn, JulyMinTempAnn;
@@ -796,16 +855,16 @@ typedef struct {
 
     int rng_seed; // initial state for `mark
 
-    RealD pct_snowdrift, pct_snowRunoff;
-    RealD scale_precip[MAX_MONTHS], scale_temp_max[MAX_MONTHS],
+    double pct_snowdrift, pct_snowRunoff;
+    double scale_precip[MAX_MONTHS], scale_temp_max[MAX_MONTHS],
         scale_temp_min[MAX_MONTHS], scale_skyCover[MAX_MONTHS],
         scale_wind[MAX_MONTHS], scale_rH[MAX_MONTHS],
         scale_actVapPress[MAX_MONTHS], scale_shortWaveRad[MAX_MONTHS];
     char name_prefix[MAX_FILENAMESIZE - 5]; // subtract 4-digit 'year' file type
                                             // extension
-    RealD snowRunoff, surfaceRunoff, surfaceRunon, soil_inf, surfaceAvg;
-    RealD snow, snowmelt, snowloss, surfaceMax, surfaceMin;
-    RealD temp_snow; // Snow temperature
+    double snowRunoff, surfaceRunoff, surfaceRunon, soil_inf, surfaceAvg;
+    double snow, snowmelt, snowloss, surfaceMax, surfaceMin;
+    double temp_snow; // Snow temperature
 
     Bool use_cloudCoverMonthly, use_windSpeedMonthly, use_humidityMonthly;
     Bool dailyInputFlags[MAX_INPUT_COLUMNS];
@@ -824,10 +883,10 @@ typedef struct {
 
 
     /* Daily weather record */
-    SW_WEATHER_HIST *
-        *allHist; /**< Daily weather values; array of length `n_years` of
-                     pointers to struct #SW_WEATHER_HIST where the first
-                     represents values for calendar year `startYear` */
+    SW_WEATHER_HIST
+    *allHist; /**< Daily weather values; array of length `n_years` holding
+                 instances of the struct #SW_WEATHER_HIST where the first
+                 represents values for calendar year `startYear` */
     unsigned int n_years;   /**< Length of `allHist`, i.e., number of years of
                                daily weather */
     unsigned int startYear; /**< Calendar year corresponding to first year of
@@ -846,14 +905,14 @@ typedef struct {
     int method; /* method: 1=average; 2=hist+/- stderr */
     SW_TIMES yr;
     char *file_prefix; /* prefix to historical swc filenames */
-    RealD swc[MAX_DAYS][MAX_LAYERS], std_err[MAX_DAYS][MAX_LAYERS];
+    double swc[MAX_DAYS][MAX_LAYERS], std_err[MAX_DAYS][MAX_LAYERS];
 
 } SW_SOILWAT_HIST;
 
 /* accumulators for output values hold only the */
 /* current period's values (eg, weekly or monthly) */
 typedef struct {
-    RealD wetdays[MAX_LAYERS],
+    double wetdays[MAX_LAYERS],
         vwcBulk[MAX_LAYERS], /* soil water content cm/cm */
         vwcMatric[MAX_LAYERS],
         swcBulk[MAX_LAYERS],   /* soil water content cm/layer */
@@ -879,13 +938,13 @@ typedef struct {
 } SW_SOILWAT_OUTPUTS;
 
 #ifdef SWDEBUG
-#define N_WBCHECKS 9 // number of water balance checks
+#define N_WBCHECKS 10 // number of water balance checks
 #endif
 
 typedef struct {
     /* current daily soil water related values */
     Bool is_wet[MAX_LAYERS]; /* swc sufficient to count as wet today */
-    RealD swcBulk[TWO_DAYS][MAX_LAYERS], SWA_VegType[TWO_DAYS][MAX_LAYERS],
+    double swcBulk[TWO_DAYS][MAX_LAYERS], SWA_VegType[TWO_DAYS][MAX_LAYERS],
         snowpack[TWO_DAYS], /* swe of snowpack, if accumulation flag set */
         snowdepth, transpiration[NVEGTYPES][MAX_LAYERS],
         evap_baresoil[MAX_LAYERS], /* bare-soil evaporation [cm/layer] */
@@ -903,15 +962,15 @@ typedef struct {
         maxLyrTemperature[MAX_LAYERS]; // Holds the maximum temperature
                                        // estimation of each layer
 
-    RealD veg_int_storage[NVEGTYPES], // storage of intercepted rain by the
-                                      // vegetation
+    double veg_int_storage[NVEGTYPES], // storage of intercepted rain by the
+                                       // vegetation
         litter_int_storage, // storage of intercepted rain by the litter layer
         standingWater[TWO_DAYS]; /* water on soil surface if layer below is
                                     saturated */
 
-    RealF swa_master[NVEGTYPES][NVEGTYPES]
-                    [MAX_LAYERS]; // veg_type, crit_val, layer
-    RealF dSWA_repartitioned_sum[NVEGTYPES][MAX_LAYERS];
+    double swa_master[NVEGTYPES][NVEGTYPES]
+                     [MAX_LAYERS]; // veg_type, crit_val, layer
+    double dSWA_repartitioned_sum[NVEGTYPES][MAX_LAYERS];
 
     Bool soiltempError; // soil temperature error indicator
 #ifdef SWDEBUG
@@ -954,11 +1013,81 @@ typedef struct {
 } LOG_INFO;
 
 typedef struct {
-    char *InFiles[SW_NFILES];
-    char _ProjDir[FILENAME_MAX];
-    char weather_prefix[FILENAME_MAX];
-    char output_prefix[FILENAME_MAX];
-} PATH_INFO;
+    char *txtInFiles[SW_NFILES];
+    char SW_ProjDir[FILENAME_MAX]; // SW_ProjDir
+    char txtWeatherPrefix[FILENAME_MAX];
+    char outputPrefix[FILENAME_MAX];
+
+#if defined(SWNETCDF)
+    char **ncInFiles[SW_NINKEYSNC]; /**< Names of all the input netCDF files;
+                                           dynamically allocated 2-d array
+                                           `[varNum][fileNum]` */
+
+    char ***ncWeatherInFiles; /**< Generated weather file names to read input
+                               from; dynamically allocated for every weather
+                               variable and a list of file names */
+
+    unsigned int ncNumWeatherInFiles; /**< Only capture the number of weather
+                                        files generated given the stride input
+                                        information */
+
+    unsigned int **ncWeatherInStartEndYrs; /**< Start/end years of each weather
+                                        input netCDF; dynamically allocated for
+                                        every number of files within every
+                                        variable, and 2 values for start/end */
+
+    unsigned int **ncWeatherStartEndIndices;
+    unsigned int weathStartFileIndex;
+    unsigned int *numDaysInYear;
+
+    int *inVarIDs[SW_NINKEYSNC]; /**< Store the identifier of the
+                                        variables within the input
+                                        files; dynamically allocated
+                                        1-d array `[varNum]` */
+
+    int *inVarTypes[SW_NINKEYSNC]; /**< Store the variable type within
+                                          each input file; dynamically
+                                          allocated 1-d array `[varNum]` */
+
+    Bool
+        *hasScaleAndAddFact[SW_NINKEYSNC]; /**< Store if the input variables
+                                                have the attributes
+                                                'scale_factor' and 'add_factor';
+                                                dynamically allocated 1-d array
+                                                `[varNum]` */
+
+    double **scaleAndAddFactVals[SW_NINKEYSNC]; /**< Store scale/add factors
+                                                    for every variable if
+                                                    it they are both provided;
+                                                    dynamically allocated 2-d
+                                                    array `[varNum][scale/add]`
+                                                    */
+
+    /*
+        Store the flags of different methods to know a missing value when
+        reading input; there are multiple attributes (5) which, in order
+        of priority, are:
+            - General flag if there exists a missing value specifier
+            - missing_value
+            - _FillValue
+            - valid_max
+            - valid_min (must have both min and max)
+            - valid_range
+        it is expected that the user will provide these, if none are given,
+        we will use the default nc-provided NC_FILL_<type> to detect missing
+        values;
+        dynamically allocated 2-d array `[varNum][flag]` (6 flags)
+    */
+    Bool **missValFlags[SW_NINKEYSNC];
+    double **doubleMissVals[SW_NINKEYSNC];
+
+    size_t *numSoilVarLyrs;
+
+    /* NC information that will stay constant through program run
+       domain information - domain and progress file IDs */
+    int ncDomFileIDs[SW_NVARDOM];
+#endif
+} SW_PATH_INPUTS;
 
 /* =================================================== */
 /*                    Sky structs                      */
@@ -1026,7 +1155,7 @@ typedef struct {
         estab_lyrs;   /* estab could conceivably need more than one layer */
                       /* swc is averaged over these top layers to compare to */
                       /* the converted value from min_swc_estab */
-    RealF bars[2],    /* read from input, saved for reporting */
+    double bars[2],   /* read from input, saved for reporting */
         min_swc_germ, /* wetting point required for germination converted from
                        */
         /* bars to cm per layer for efficiency in the loop */
@@ -1067,14 +1196,14 @@ typedef struct {
     /* pointers to arrays of probabilities for each day saves some space */
     /* by not being allocated if markov weather not requested by user */
     /* alas, multi-dimensional arrays aren't so convenient */
-    RealD *wetprob, /* probability of being wet today given a wet yesterday */
-        *dryprob,   /* probability of being wet today given a dry yesterday */
-        *avg_ppt,   /* mean precip (cm) of wet days */
-        *std_ppt,   /* std dev. for precip of wet days */
-        *cfxw,      /*correction factor for tmax for wet days */
-        *cfxd,      /*correction factor for tmax for dry days */
-        *cfnw,      /*correction factor for tmin for wet days */
-        *cfnd,      /*correction factor for tmin for dry days */
+    double *wetprob, /* probability of being wet today given a wet yesterday */
+        *dryprob,    /* probability of being wet today given a dry yesterday */
+        *avg_ppt,    /* mean precip (cm) of wet days */
+        *std_ppt,    /* std dev. for precip of wet days */
+        *cfxw,       /*correction factor for tmax for wet days */
+        *cfxd,       /*correction factor for tmax for dry days */
+        *cfnw,       /*correction factor for tmin for wet days */
+        *cfnd,       /*correction factor for tmin for dry days */
         u_cov[MAX_WEEKS][2], /* mean weekly maximum and minimum temperature in
                                 degree Celsius */
         v_cov[MAX_WEEKS][2][2]; /* covariance matrix */
@@ -1148,10 +1277,11 @@ typedef struct {
                                  // be missing (NAN)
     double longitude_of_central_meridian, latitude_of_projection_origin,
         false_easting, false_northing;
+    char *crs_name;
 } SW_CRS;
 
 /* =================================================== */
-/*                SOILWAT2 netCDF struct               */
+/*            SOILWAT2 netCDF structs/enums            */
 /* --------------------------------------------------- */
 
 typedef struct {
@@ -1161,22 +1291,113 @@ typedef struct {
 
     SW_CRS crs_geogsc, crs_projsc;
 
-    char *varNC[SW_NVARNC];
-    char *InFilesNC[SW_NVARNC];
-
-    /** Should a domain template netCDF file be automatically renamed
-    to provided file name for domain? */
-    Bool renameDomainTemplateNC;
-
-    int ncFileIDs[SW_NVARNC];
-    int ncVarIDs[SW_NVARNC];
-
     int strideOutYears;   /**< How many years to write out in a single output
                              netCDF -- 1, X (e.g., 10) or Inf (-1) */
     int baseCalendarYear; /**< Calendar year that is the reference basis of the
                              time units (e.g., days since YYYY-01-01) of every
                              output netCDFs */
-} SW_NETCDF;
+
+    /* Specify the deflation level for when creating the output variables */
+    int deflateLevel;
+
+    char *geo_XAxisName;
+    char *geo_YAxisName;
+    char *proj_XAxisName;
+    char *proj_YAxisName;
+    char *siteName;
+
+#if defined(SWNETCDF)
+    /** offset positions of output variables for indexing p_OUT */
+    size_t iOUToffset[SW_OUTNKEYS][SW_OUTNPERIODS][SW_OUTNMAXVARS];
+
+    Bool *reqOutputVars[SW_OUTNKEYS]; /**< Do/don't output a variable in the
+                            netCDF output files (dynamically allocated array
+                            over output variables) */
+    char **
+        *outputVarInfo[SW_OUTNKEYS]; /**< Attributes of output variables in
+                           netCDF output files (dynamically allcoated 2-d array:
+                           `[varIndex][attIndex]`) */
+    char *
+        *units_sw[SW_OUTNKEYS]; /**< Units internally utilized by SOILWAT2
+                      (dynamically    allocated array over output variables) */
+    sw_converter_t *
+        *uconv[SW_OUTNKEYS]; /**< udunits2 unit converter from internal SOILWAT2
+                   units to user-requested units (dynamically
+                   allocated array over output variables) */
+#endif
+
+} SW_NETCDF_OUT;
+
+typedef struct {
+
+    /* NC information that will stay constant through program run
+       domain information - domain and progress variables */
+    int ncDomVarIDs[SW_NVARDOM];
+
+    /** Indicates which variables are provided by netCDF inputs
+
+    This is an array over the `inkey` #SW_NINKEYSNC, and each element is
+    a pointer to a dynamically allocated array of length 1 + numVarsInKey.
+
+    The element 0 summarizes whether any variable of an `inkey` is provided
+    by netCDF inputs.
+    The element 1 indicates whether the index of that `inkey`
+    is used (if that `inkey` contains an index, i.e., all but #eSW_InDomain).
+    The remaining elements indicate if each input variables
+    (see possVarNames) is provided by netCDF inputs or not.
+    */
+    Bool *readInVars[SW_NINKEYSNC];
+
+    char **weathCalOverride; /**< Calendars that the user may provide for
+                                  the program to use (dynamically allocated
+                                  for the number of variables in weather) */
+
+    char ***inVarInfo[SW_NINKEYSNC]; /**< Attributes of input variables in
+                                           netCDF input files (dynamically
+                                           allocated 2-d array) */
+
+    char **units_sw[SW_NINKEYSNC]; /**< Units internally utilized by SOILWAT2
+                      (dynamically allocated array over output variables) */
+
+    sw_converter_t **
+        uconv[SW_NINKEYSNC]; /**< udunits2 unit converter from internal SOILWAT2
+                                 units to user-requested units (dynamically
+                                 allocated array over output variables) */
+
+    double *domYCoordsGeo;
+    double *domXCoordsGeo;
+    double *domYCoordsProj;
+    double *domXCoordsProj;
+
+    size_t domYCoordGeoSize;
+    size_t domXCoordGeoSize;
+    size_t domYCoordProjSize;
+    size_t domXCoordProjSize;
+
+    Bool useIndexFile[SW_NINKEYSNC];
+
+    sw_converter_t *projCoordConvs[SW_NINKEYSNC][2];
+
+    /*
+        Pre-calculate the location of dimensions within variable headers
+        to rearrange start/count indices/values so we can match the current
+        dimension read/count size;
+        The program by default expects the variable dimension order
+            variable(y, x, vertical, time, pft) or
+            variable(site, vertical, time, pft)
+        where these will not always be true, so we need to be able to
+        read any order of or variation (less) dimensions compared to
+        the example above;
+        Example:
+            variable(pft=4, time=12, vertical=8, y=1, x=1) the array would be
+            [3, 4, 2, 1, 0] this will result in the count values to be
+            shifted from (example numbers)
+            [1, 1, 8, 12, 4] to [4, 12, 8, 1, 1] and start is similar,
+            the values are not expected to be as explicit as count
+            (i.e., start will contain mostly if not all zeroes)
+    */
+    int **dimOrderInVar[SW_NINKEYSNC];
+} SW_NETCDF_IN;
 
 struct SW_OUT_DOM {
 
@@ -1239,27 +1460,6 @@ struct SW_OUT_DOM {
     size_t nrow_OUT[SW_OUTNPERIODS]; /**< number of output time steps */
 #endif
 
-#if defined(SWNETCDF)
-    size_t iOUToffset[SW_OUTNKEYS][SW_OUTNPERIODS]
-                     [SW_OUTNMAXVARS]; /**< offset positions of output variables
-                                          for indexing p_OUT */
-
-    Bool *reqOutputVars[SW_OUTNKEYS]; /**< Do/don't output a variable in the
-                            netCDF output files (dynamically allocated array
-                            over output variables) */
-    char **
-        *outputVarInfo[SW_OUTNKEYS]; /**< Attributes of output variables in
-                           netCDF output files (dynamically allcoated 2-d array:
-                           `[varIndex][attIndex]`) */
-    char *
-        *units_sw[SW_OUTNKEYS]; /**< Units internally utilized by SOILWAT2
-                      (dynamically    allocated array over output variables) */
-    sw_converter_t *
-        *uconv[SW_OUTNKEYS]; /**< udunits2 unit converter from internal SOILWAT2
-                   units to user-requested units (dynamically
-                   allocated array over output variables) */
-#endif
-
     OutKey mykey[SW_OUTNKEYS];
     ObjType myobj[SW_OUTNKEYS];
     OutSum sumtype[SW_OUTNKEYS];
@@ -1280,7 +1480,7 @@ struct SW_OUT_DOM {
 
 #if defined(SW_OUTTEXT)
     /** pointer to output routine for text output */
-    void (*pfunc_text[SW_OUTNKEYS])(OutPeriod, SW_RUN *);
+    void (*pfunc_text[SW_OUTNKEYS])(OutPeriod, SW_RUN *, LOG_INFO *);
 #endif
 
 #if defined(RSOILWAT) || defined(SWNETCDF)
@@ -1290,11 +1490,27 @@ struct SW_OUT_DOM {
 #elif defined(STEPWAT)
     /** pointer to output routine for aggregated output across STEPWAT
      * iterations */
-    void (*pfunc_agg[SW_OUTNKEYS])(OutPeriod, SW_RUN *, SW_OUT_DOM *);
+    void (*pfunc_agg
+              [SW_OUTNKEYS])(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *);
     /** pointer to output routine for STEPWAT in-memory output */
-    void (*pfunc_SXW[SW_OUTNKEYS])(OutPeriod, SW_RUN *, SW_OUT_DOM *);
+    void (*pfunc_SXW
+              [SW_OUTNKEYS])(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *);
 #endif
+
+    SW_NETCDF_OUT netCDFOutput;
 };
+
+typedef enum {
+    eSW_NoInKey = -1,
+    eSW_InDomain,
+    eSW_InSpatial,
+    eSW_InTopo,
+    eSW_InSoil,
+    eSW_InVeg,
+    eSW_InWeather,
+    eSW_InClimate,
+    eSW_LastInKey
+} InKeys;
 
 /* =================================================== */
 /*                    Domain structs                   */
@@ -1304,9 +1520,8 @@ typedef struct {
     // Spatial domain information
     // SUID = simulation unit identifier
 
+    /** Type of domain: 'xy' (grid), 's' (sites) (3 = 2 characters + '\0') */
     char DomainType[3];
-    /**< Type of domain: 'xy' (grid), 's' (sites) */ // (3 = 2 characters +
-                                                     // '\0')
 
     unsigned long // to clarify, "long" = "long int", not double
         nDimX,  /**< Number of grid cells along x dimension (used if domainType
@@ -1337,27 +1552,40 @@ typedef struct {
         endend; /**< Last day in last calendar year of the simulation runs */
 
     // Vertical domain information
-    Bool hasConsistentSoilLayerDepths; /**< Flag indicating if all simulation
-                                          run within domain have identical soil
-                                          layer depths (though potentially
-                                          variable number of soil layers) */
-    LyrIndex nMaxSoilLayers,           /**< Largest number of soil layers across
-                                          simulation domain */
-        nMaxEvapLayers; /**< Largest number of soil layers from which bare-soil
-                           evaporation may extract water across simulation
-                           domain */
-    double depthsAllSoilLayers[MAX_LAYERS]; /**< Lower soil layer depths [cm] if
-                                               consistent across simulation
-                                               domain */
+
+    /** Indicator of depths/thickness of soil layers among sites/gridcells:
+
+        - `swTRUE` if depths/thickness of soil layers are equal among
+          sites/gridcells (even if they have varying numbers of soil layers);
+        - `swFALSE` if depth/thickness of soil layers vary among sites/gridcells
+    */
+    Bool hasConsistentSoilLayerDepths;
+
+    /** Largest number of soil layers across domain */
+    LyrIndex nMaxSoilLayers;
+
+    /** Largest number of soil layers from which bare-soil evaporation may
+    extract water across simulation domain */
+    LyrIndex nMaxEvapLayers;
+
+    /** Soil layer depths profile
+
+    Values represent the bottom depth of soil layers [cm].
+    Used if #hasConsistentSoilLayerDepths.
+    */
+    double depthsAllSoilLayers[MAX_LAYERS];
+
+    double spatialTol; /**< Tolerence when comparing domain coordinates
+                             between nc input files and the nc domain file */
 
     // Information on input files
-    PATH_INFO PathInfo;
+    SW_PATH_INPUTS SW_PathInputs;
 
     // Data for (optional) spinup
     SW_SPINUP SW_SpinUp;
 
     // Information dealing with netCDFs
-    SW_NETCDF netCDFInfo;
+    SW_NETCDF_IN netCDFInput;
 
     // Information that is constant through simulation runs
     SW_OUT_DOM OutDom;
@@ -1385,13 +1613,13 @@ typedef struct {
     The variable p_OUT used by rSOILWAT2 for output, by STEPWAT2 for
     mean aggregation, and by SOILWAT2 when user requests netCDF output files.
     */
-    RealD *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
+    double *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
 
     size_t irow_OUT[SW_OUTNPERIODS]; /**< current output time step index */
 #endif
 
 #ifdef STEPWAT
-    RealD *p_OUTsd[SW_OUTNKEYS][SW_OUTNPERIODS];
+    double *p_OUTsd[SW_OUTNKEYS][SW_OUTNPERIODS];
 
     char sw_outstr_agg[MAX_LAYERS * OUTSTRLEN];
 
@@ -1401,22 +1629,22 @@ typedef struct {
     /* Variables from SXW_t (STEPWAT2) used in SOILWAT2 */
     // transpXXX: monthly sum of soilwat's transpiration by soil layer
     // * these are dynamic arrays that are indexed by Ilp()
-    RealD transpTotal[MAX_LAYERS][MAX_MONTHS], // total transpiration, i.e., sum
-                                               // across vegetation types
+    double transpTotal[MAX_LAYERS][MAX_MONTHS], // total transpiration, i.e.,
+                                                // sum across vegetation types
         transpVeg[NVEGTYPES][MAX_LAYERS]
                  [MAX_MONTHS]; // transpiration as contributed by vegetation
                                // types
-    RealF swc[MAX_LAYERS]
-             [MAX_MONTHS]; // monthly mean SWCbulk for each soil layer
+    double swc[MAX_LAYERS]
+              [MAX_MONTHS]; // monthly mean SWCbulk for each soil layer
 
     // fixed monthly array:
-    RealF ppt_monthly[MAX_MONTHS];  // monthly sum of soilwat's precipitation
-    RealF temp_monthly[MAX_MONTHS]; // monthly mean soilwat's air temperature
+    double ppt_monthly[MAX_MONTHS];  // monthly sum of soilwat's precipitation
+    double temp_monthly[MAX_MONTHS]; // monthly mean soilwat's air temperature
 
     // annual values:
-    RealF temp, // annual mean soilwat's air temperature
-        ppt,    // annual sum of soilwat's precipitation
-        aet;    // annual sum of soilwat's evapotranspiration
+    double temp, // annual mean soilwat's air temperature
+        ppt,     // annual sum of soilwat's precipitation
+        aet;     // annual sum of soilwat's evapotranspiration
 #endif
 } SW_OUT_RUN;
 
@@ -1430,11 +1658,57 @@ struct SW_RUN {
     SW_SKY Sky;
     SW_CARBON Carbon;
     ST_RGR_VALUES StRegValues;
-    SW_FILE_STATUS FileStatus;
+    SW_PATH_OUTPUTS SW_PathOutputs;
     SW_MARKOV Markov;
     SW_OUT_RUN OutRun;
 
     SW_ATMD AtmDemand;
+};
+
+/* =================================================== */
+/*                KD-tree Functionality                */
+/* --------------------------------------------------- */
+
+void SW_DATA_create_tree(
+    SW_KD_NODE **treeRoot,
+    double *yCoords,
+    double *xCoords,
+    size_t ySize,
+    size_t xSize,
+    Bool inIsGridded,
+    Bool has2DCoordVars,
+    Bool inPrimCRSIsGeo,
+    sw_converter_t *yxConvs[],
+    LOG_INFO *LogInfo
+);
+
+SW_KD_NODE *SW_DATA_addNode(
+    SW_KD_NODE *currNode,
+    double coords[],
+    const unsigned int indices[],
+    double maxDist,
+    int level,
+    LOG_INFO *LogInfo
+);
+
+SW_KD_NODE *SW_DATA_destroyTree(SW_KD_NODE *currNode);
+
+void SW_DATA_queryTree(
+    SW_KD_NODE *currNode,
+    double queryCoords[],
+    int level,
+    Bool primCRSIsGeo,
+    SW_KD_NODE **bestNode,
+    double *bestDist
+);
+
+struct SW_KD_NODE {
+    double coords[KD_NDIMS];
+    unsigned int indices[KD_NINDICES];
+
+    double maxDist;
+
+    SW_KD_NODE *left, *right;
 };
 
 #endif // DATATYPES_H

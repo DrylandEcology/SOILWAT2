@@ -5,18 +5,20 @@
 #include "include/SW_Domain.h"      // for SW_DOM_CheckProgress, SW_DOM_Cre...
 #include "include/filefuncs.h"      // for LogError, CloseFile, key_to_id
 #include "include/generic.h"        // for swTRUE, LOGERROR, swFALSE, Bool
-#include "include/myMemory.h"       // for Str_Dup
+#include "include/myMemory.h"       // for sw_memccpy_custom
 #include "include/SW_datastructs.h" // for SW_DOMAIN, LOG_INFO
 #include "include/SW_Defines.h"     // for LyrIndex, LARGE_VALUE, TimeInt
 #include "include/SW_Files.h"       // for SW_F_deconstruct, SW_F_deepCopy
 #include "include/SW_Output.h"      // for ForEachOutKey
 #include "include/Times.h"          // for yearto4digit, Time_get_lastdoy_y
 #include <stdio.h>                  // for sscanf, FILE
-#include <stdlib.h>                 // for atoi, atof
-#include <string.h>                 // for strcmp, memcpy, strcpy, memset
+#include <stdlib.h>                 // for strtod, strtol
+#include <string.h>                 // for strcmp, memcpy, memset
 
 #if defined(SWNETCDF)
-#include "include/SW_netCDF.h"
+#include "include/SW_netCDF_General.h"
+#include "include/SW_netCDF_Input.h"
+#include "include/SW_netCDF_Output.h"
 #endif
 
 #if defined(SOILWAT)
@@ -28,7 +30,7 @@
 /*                   Local Defines                     */
 /* --------------------------------------------------- */
 
-#define NUM_DOM_IN_KEYS 17 // Number of possible keys within `domain.in`
+#define NUM_DOM_IN_KEYS 18 // Number of possible keys within `domain.in`
 
 /* =================================================== */
 /*             Private Function Declarations           */
@@ -86,10 +88,13 @@ TRUE if simulation for \p ncSuid has not been completed yet;
 FALSE if simulation for \p ncSuid has been completed (i.e., skip).
 */
 Bool SW_DOM_CheckProgress(
-    int progFileID, int progVarID, unsigned long ncSuid[], LOG_INFO *LogInfo
+    int progFileID,
+    int progVarID,
+    unsigned long ncSuid[], // NOLINT(readability-non-const-parameter)
+    LOG_INFO *LogInfo
 ) {
 #if defined(SWNETCDF)
-    return SW_NC_check_progress(progFileID, progVarID, ncSuid, LogInfo);
+    return SW_NCIN_check_progress(progFileID, progVarID, ncSuid, LogInfo);
 #else
     (void) progFileID;
     (void) progVarID;
@@ -110,7 +115,7 @@ Bool SW_DOM_CheckProgress(
 */
 void SW_DOM_CreateProgress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 #if defined(SWNETCDF)
-    SW_NC_create_progress(SW_Domain, LogInfo);
+    SW_NCIN_create_progress(SW_Domain, LogInfo);
 #else
     (void) SW_Domain;
     (void) LogInfo;
@@ -143,7 +148,7 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
     SW_Domain->hasConsistentSoilLayerDepths = swFALSE;
     memset(
         &SW_Domain->depthsAllSoilLayers,
-        0.,
+        0,
         sizeof(&SW_Domain->depthsAllSoilLayers[0]) * MAX_LAYERS
     );
 
@@ -176,7 +181,8 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         "SpinupMode",
         "SpinupScope",
         "SpinupDuration",
-        "SpinupSeed"
+        "SpinupSeed",
+        "SpatialTolerance"
     };
     static const Bool requiredKeys[NUM_DOM_IN_KEYS] = {
         swTRUE,
@@ -195,16 +201,26 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         swTRUE,
         swTRUE,
         swTRUE,
+        swTRUE,
         swTRUE
     };
     Bool hasKeys[NUM_DOM_IN_KEYS] = {swFALSE};
 
     FILE *f;
-    int y, keyID;
-    char inbuf[LARGE_VALUE], *MyFileName;
-    char key[15], value[LARGE_VALUE]; // 15 - Max key size
+    int y;
+    int keyID;
+    char inbuf[LARGE_VALUE];
+    char *MyFileName;
+    char key[17]; /* 17 - max key size plus null-terminating character */
+    char value[LARGE_VALUE];
+    int intRes = 0;
+    int scanRes;
+    double doubleRes = 0.;
+    char *errDim = NULL;
 
-    MyFileName = SW_Domain->PathInfo.InFiles[eDomain];
+    Bool doDoubleConv;
+
+    MyFileName = SW_Domain->SW_PathInputs.txtInFiles[eDomain];
     f = OpenFile(MyFileName, "r", LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -212,12 +228,71 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     // Set SW_DOMAIN
     while (GetALine(f, inbuf, LARGE_VALUE)) {
-        sscanf(inbuf, "%14s %s", key, value);
+        scanRes = sscanf(inbuf, "%16s %s", key, value);
+
+        if (scanRes < 2) {
+            LogError(
+                LogInfo, LOGERROR, "Invalid key-value pair in %s.", MyFileName
+            );
+            goto closeFile;
+        }
 
         keyID = key_to_id(key, possibleKeys, NUM_DOM_IN_KEYS);
 
         set_hasKey(keyID, possibleKeys, hasKeys, LogInfo);
         // set_hasKey() produces never an error, only possibly warnings
+
+        /* Make sure we are not trying to convert a string with no numerical
+         * value */
+        if (keyID > 0 && keyID <= 17 && keyID != 8) {
+
+            /* Check to see if the line number contains a double or integer
+             * value */
+            doDoubleConv = (Bool) ((keyID >= 9 && keyID <= 12) || keyID == 17);
+
+            if (doDoubleConv) {
+                doubleRes = sw_strtod(value, MyFileName, LogInfo);
+            } else {
+                intRes = sw_strtoi(value, MyFileName, LogInfo);
+
+                /* Check to see if there are any unexpected negative or
+                   zero values */
+                if (intRes <= 0) {
+                    if (keyID >= 1 && keyID <= 3) { /* > 0 */
+                        if (keyID == 1) {
+                            errDim = (char *) "X";
+                        } else {
+                            errDim = (keyID == 2) ? (char *) "Y" : (char *) "S";
+                        }
+                        LogError(
+                            LogInfo,
+                            LOGERROR,
+                            "%s: Dimension '%s' should be > 0.",
+                            MyFileName,
+                            errDim
+                        );
+                    } else if (keyID >= 4 && keyID <= 5) { /* >= 0 */
+                        if (intRes < 0) {
+                            LogError(
+                                LogInfo,
+                                LOGERROR,
+                                "%s: Negative %s year (%d)",
+                                MyFileName,
+                                (keyID == 4) ? "start" : "end",
+                                intRes
+                            );
+                        }
+                    }
+                }
+                if (LogInfo->stopRun) {
+                    goto closeFile;
+                }
+            }
+
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
+        }
 
         switch (keyID) {
         case 0: // Domain type
@@ -230,82 +305,70 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     MyFileName,
                     value
                 );
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
-            strcpy(SW_Domain->DomainType, value);
+            (void) sw_memccpy(
+                SW_Domain->DomainType, value, '\0', sizeof SW_Domain->DomainType
+            );
             break;
         case 1: // Number of X slots
-            SW_Domain->nDimX = atoi(value);
+            SW_Domain->nDimX = intRes;
             break;
         case 2: // Number of Y slots
-            SW_Domain->nDimY = atoi(value);
+            SW_Domain->nDimY = intRes;
             break;
         case 3: // Number of S slots
-            SW_Domain->nDimS = atoi(value);
+            SW_Domain->nDimS = intRes;
             break;
 
         case 4: // Start year
-            y = atoi(value);
-
-            if (y < 0) {
-                CloseFile(&f, LogInfo);
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "%s: Negative start year (%d)",
-                    MyFileName,
-                    y
-                );
-                return; // Exit function prematurely due to error
-            }
-            SW_Domain->startyr = yearto4digit((TimeInt) y);
+            SW_Domain->startyr = yearto4digit((TimeInt) intRes);
             break;
         case 5: // End year
-            y = atoi(value);
-
-            if (y < 0) {
-                CloseFile(&f, LogInfo);
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "%s: Negative ending year (%d)",
-                    MyFileName,
-                    y
-                );
-                return; // Exit function prematurely due to error
-            }
-            SW_Domain->endyr = yearto4digit((TimeInt) y);
+            SW_Domain->endyr = yearto4digit((TimeInt) intRes);
             break;
         case 6: // Start day of year
-            SW_Domain->startstart = atoi(value);
+            SW_Domain->startstart = intRes;
             break;
         case 7: // End day of year
-            SW_Domain->endend = atoi(value);
+            SW_Domain->endend = intRes;
             break;
 
         case 8: // CRS box
             // Re-scan and get the entire value (including spaces)
-            sscanf(inbuf, "%9s %27[^\n]", key, value);
-            strcpy(SW_Domain->crs_bbox, value);
+            scanRes = sscanf(inbuf, "%9s %27[^\n]", key, value);
+
+            if (scanRes < 2) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Invalid key-value pair for CRS box in %s.",
+                    MyFileName
+                );
+                goto closeFile;
+            }
+
+            (void) sw_memccpy(
+                SW_Domain->crs_bbox, value, '\0', sizeof SW_Domain->crs_bbox
+            );
             break;
         case 9: // Minimum x coordinate
-            SW_Domain->min_x = atof(value);
+            SW_Domain->min_x = doubleRes;
             break;
         case 10: // Minimum y coordinate
-            SW_Domain->min_y = atof(value);
+            SW_Domain->min_y = doubleRes;
             break;
         case 11: // Maximum x coordinate
-            SW_Domain->max_x = atof(value);
+            SW_Domain->max_x = doubleRes;
             break;
         case 12: // Maximum y coordinate
-            SW_Domain->max_y = atof(value);
+            SW_Domain->max_y = doubleRes;
             break;
 
         case 13: // Spinup Mode
-            y = atoi(value);
+            y = intRes;
 
             if (y != 1 && y != 2) {
-                CloseFile(&f, LogInfo);
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -314,15 +377,15 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     MyFileName,
                     y
                 );
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             SW_Domain->SW_SpinUp.mode = y;
             break;
         case 14: // Spinup Scope
-            SW_Domain->SW_SpinUp.scope = atoi(value);
+            SW_Domain->SW_SpinUp.scope = intRes;
             break;
         case 15: // Spinup Duration
-            SW_Domain->SW_SpinUp.duration = atoi(value);
+            SW_Domain->SW_SpinUp.duration = intRes;
 
             // Set the spinup flag to true if duration > 0
             if (SW_Domain->SW_SpinUp.duration <= 0) {
@@ -332,10 +395,19 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             }
             break;
         case 16: // Spinup Seed
-            SW_Domain->SW_SpinUp.rng_seed = atoi(value);
+            SW_Domain->SW_SpinUp.rng_seed = intRes;
+            break;
+        case 17:
+            SW_Domain->spatialTol = doubleRes;
+
+            if (LT(SW_Domain->spatialTol, 0.0)) {
+                LogError(LogInfo, LOGERROR, "Spatial tolerance must be >= 0.");
+            }
             break;
 
         case KEY_NOT_FOUND: // Unknown key
+
+        default:
             LogError(
                 LogInfo,
                 LOGWARN,
@@ -347,20 +419,18 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         }
     }
 
-    CloseFile(&f, LogInfo);
-
 
     // Check if all required input was provided
     check_requiredKeys(
         hasKeys, requiredKeys, possibleKeys, NUM_DOM_IN_KEYS, LogInfo
     );
     if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     if (SW_Domain->endyr < SW_Domain->startyr) {
         LogError(LogInfo, LOGERROR, "%s: Start Year > End Year", MyFileName);
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     // Check if start day of year was not found
@@ -389,12 +459,12 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     // Check bounding box coordinates
     if (GT(SW_Domain->min_x, SW_Domain->max_x)) {
         LogError(LogInfo, LOGERROR, "Domain.in: bbox x-axis min > max.");
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     if (GT(SW_Domain->min_y, SW_Domain->max_y)) {
         LogError(LogInfo, LOGERROR, "Domain.in: bbox y-axis min > max.");
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
 
     // Check if scope value is out of range
@@ -407,8 +477,9 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             MyFileName,
             SW_Domain->SW_SpinUp.scope
         );
-        return; // Exit function prematurely due to error
     }
+
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**
@@ -428,12 +499,12 @@ void SW_DOM_SetProgress(
     const char *domType,
     int progFileID,
     int progVarID,
-    unsigned long ncSuid[],
+    unsigned long ncSuid[], // NOLINT(readability-non-const-parameter)
     LOG_INFO *LogInfo
 ) {
 
 #if defined(SWNETCDF)
-    SW_NC_set_progress(
+    SW_NCIN_set_progress(
         isFailure, domType, progFileID, progVarID, ncSuid, LogInfo
     );
 #else
@@ -460,15 +531,15 @@ void SW_DOM_SimSet(
 ) {
 
     Bool progFound;
-    unsigned long *startSimSet = &SW_Domain->startSimSet,
-                  *endSimSet = &SW_Domain->endSimSet,
-                  startSuid[2]; // 2 -> [y, x] or [0, s]
+    unsigned long *startSimSet = &SW_Domain->startSimSet;
+    unsigned long *endSimSet = &SW_Domain->endSimSet;
+    unsigned long startSuid[2]; // 2 -> [y, x] or [0, s]
     int progFileID = 0; // Value does not matter if SWNETCDF is not defined
     int progVarID = 0;  // Value does not matter if SWNETCDF is not defined
 
 #if defined(SWNETCDF)
-    progFileID = SW_Domain->netCDFInfo.ncFileIDs[vNCprog];
-    progVarID = SW_Domain->netCDFInfo.ncVarIDs[vNCprog];
+    progFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprog];
+    progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprog];
 #endif
 
     if (userSUID > 0) {
@@ -513,13 +584,19 @@ void SW_DOM_deepCopy(SW_DOMAIN *source, SW_DOMAIN *dest, LOG_INFO *LogInfo) {
 
     SW_OUTDOM_deepCopy(&source->OutDom, &dest->OutDom, LogInfo);
 
-    SW_F_deepCopy(&dest->PathInfo, &source->PathInfo, LogInfo);
+    SW_F_deepCopy(&source->SW_PathInputs, &dest->SW_PathInputs, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
 #if defined(SWNETCDF)
-    SW_NC_deepCopy(&dest->netCDFInfo, &source->netCDFInfo, LogInfo);
+    SW_NC_deepCopy(
+        &dest->OutDom.netCDFOutput,
+        &dest->netCDFInput,
+        &source->OutDom.netCDFOutput,
+        &source->netCDFInput,
+        LogInfo
+    );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -530,26 +607,28 @@ void SW_DOM_init_ptrs(SW_DOMAIN *SW_Domain) {
 
     SW_OUTDOM_init_ptrs(&SW_Domain->OutDom);
 
-    SW_F_init_ptrs(SW_Domain->PathInfo.InFiles);
+    SW_F_init_ptrs(&SW_Domain->SW_PathInputs);
 
 #if defined(SWNETCDF)
-    SW_NC_init_ptrs(&SW_Domain->netCDFInfo);
+    SW_NCIN_init_ptrs(&SW_Domain->netCDFInput);
 #endif
 }
 
 void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
-    IntUS k, i;
+    int k;
+    int i;
 
-    SW_F_deconstruct(SW_Domain->PathInfo.InFiles);
+    SW_F_deconstruct(&SW_Domain->SW_PathInputs);
 
 #if defined(SWNETCDF)
 
-    SW_NC_deconstruct(&SW_Domain->netCDFInfo);
-    SW_NC_close_files(&SW_Domain->netCDFInfo);
+    SW_NC_deconstruct(&SW_Domain->OutDom.netCDFOutput);
 
     ForEachOutKey(k) {
-        SW_NC_dealloc_outputkey_var_info(&SW_Domain->OutDom, k);
+        SW_NCOUT_dealloc_outputkey_var_info(&SW_Domain->OutDom, k);
     }
+
+    SW_NCIN_deconstruct(&SW_Domain->netCDFInput);
 #endif
     ForEachOutKey(k) {
         for (i = 0; i < 5 * NVEGTYPES + MAX_LAYERS; i++) {
@@ -567,62 +646,85 @@ void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
     }
 }
 
-/** Identify soil profile information across simulation domain
+/**
+@brief Identify soil profile information across simulation domain
 
-    @param[out] hasConsistentSoilLayerDepths Flag indicating if all simulation
-        run within domain have identical soil layer depths
-        (though potentially variable number of soil layers)
-    @param[out] nMaxSoilLayers Largest number of soil layers across
-        simulation domain
-    @param[out] nMaxEvapLayers Largest number of soil layers from which
-        bare-soil evaporation may extract water across simulation domain
-    @param[out] depthsAllSoilLayers Lower soil layer depths [cm] if
-        consistent across simulation domain
-    @param[in] default_n_layers Default number of soil layer
-    @param[in] default_n_evap_lyrs Default number of soil layer used for
-        bare-soil evaporation
-    @param[in] default_depths Default values of soil layer depths [cm]
-    @param[out] LogInfo Holds information on warnings and errors
+nc-mode uses the same vertical size for every soil nc-output file, i.e.,
+it sets nMaxEvapLayers to nMaxSoilLayers.
+
+@param[in] SW_netCDFIn Constant netCDF input file information
+@param[in] SW_PathInputs
+@param[out] hasConsistentSoilLayerDepths Flag indicating if all simulation
+    run within domain have identical soil layer depths
+    (though potentially variable number of soil layers)
+@param[out] nMaxSoilLayers Largest number of soil layers across
+    simulation domain
+@param[out] nMaxEvapLayers Largest number of soil layers from which
+    bare-soil evaporation may extract water across simulation domain
+@param[out] depthsAllSoilLayers Lower soil layer depths [cm] if
+    consistent across simulation domain
+@param[in] default_n_layers Default number of soil layer
+@param[in] default_n_evap_lyrs Default number of soil layer used for
+    bare-soil evaporation (only used in text-mode)
+@param[in] default_depths Default values of soil layer depths [cm]
+@param[out] LogInfo Holds information on warnings and errors
 */
 void SW_DOM_soilProfile(
-    Bool *hasConsistentSoilLayerDepths,
+    SW_NETCDF_IN *SW_netCDFIn,
+    SW_PATH_INPUTS *SW_PathInputs,
+    Bool hasConsistentSoilLayerDepths,
     LyrIndex *nMaxSoilLayers,
     LyrIndex *nMaxEvapLayers,
     double depthsAllSoilLayers[],
     LyrIndex default_n_layers,
     LyrIndex default_n_evap_lyrs,
-    double default_depths[],
+    const double default_depths[],
     LOG_INFO *LogInfo
 ) {
 
 #if defined(SWNETCDF)
-    SW_NC_soilProfile(
-        hasConsistentSoilLayerDepths,
-        nMaxSoilLayers,
-        nMaxEvapLayers,
-        depthsAllSoilLayers,
-        default_n_layers,
-        default_n_evap_lyrs,
-        default_depths,
-        LogInfo
-    );
+    if (SW_netCDFIn->readInVars[eSW_InSoil][0]) {
+        SW_NCIN_soilProfile(
+            SW_netCDFIn,
+            hasConsistentSoilLayerDepths,
+            nMaxSoilLayers,
+            nMaxEvapLayers,
+            depthsAllSoilLayers,
+            SW_PathInputs->numSoilVarLyrs,
+            default_n_layers,
+            default_depths,
+            LogInfo
+        );
+    } else {
+        /* nc-mode produces soil output across all soil layers */
+        *nMaxEvapLayers = default_n_layers;
 
-#else
-
-    // Assume default/template values are consistent
-    *hasConsistentSoilLayerDepths = swTRUE;
-    *nMaxSoilLayers = default_n_layers;
+#else // !SWNETCDF
+    /* text-mode produces soil evaporation output only for evap layers */
     *nMaxEvapLayers = default_n_evap_lyrs;
+#endif
 
-    memcpy(
-        depthsAllSoilLayers,
-        default_depths,
-        sizeof(default_depths[0]) * default_n_layers
-    );
+        // Assume default/template values are consistent
+        *nMaxSoilLayers = default_n_layers;
+        memcpy(
+            depthsAllSoilLayers,
+            default_depths,
+            sizeof(default_depths[0]) * default_n_layers
+        );
 
-    (void) LogInfo;
-
+#if defined(SWNETCDF)
+    }
 #endif // !SWNETCDF
+
+    /* Cast unused variables to void to silence the compiler */
+#if defined(SWNETCDF)
+    (void) default_n_evap_lyrs;
+#else
+    (void) SW_netCDFIn;
+    (void) SW_PathInputs;
+    (void) hasConsistentSoilLayerDepths;
+    (void) LogInfo;
+#endif
 }
 
 /* =================================================== */

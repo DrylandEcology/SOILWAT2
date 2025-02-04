@@ -20,11 +20,12 @@ Note: this document is best viewed as part of the doxygen-built documentation
     bin/SOILWAT2 -d ./tests/example -f files.in
 ```
 
-  * The inputs comprise the master file `files.in` and the content of the
+  * The inputs comprise the main file `files.in` and the content of the
     `Input/` folder. They are explained in detail
     [here](doc/additional_pages/SOILWAT2_Inputs.md).
   * The user can turn on/off different types of outputs via the
-    input file \ref outsetupin.
+    input file \ref outsetupin in text-mode and
+    \ref SW2_netCDF_output_variables in nc-mode.
   * The outputs are written to the folder `Output/` including a
     logfile that contains warnings and errors. Outputs are explained in detail
     \ref explain_outputs "below".
@@ -35,6 +36,7 @@ Note: this document is best viewed as part of the doxygen-built documentation
 <hr>
 \section explain_outputs Outputs
 
+### Output in text-mode
 SOILWAT2 may produce up to eight output files (depending on the value of
 `TIMESTEP` which is a user in input in file \ref outsetupin).
 The output files are text files in a `comma-separated values` (`.csv`)
@@ -54,6 +56,12 @@ The names of the output files are user inputs in the file \ref filesin.
   * Output file for weekly output time period
   * Output file for monthly output time period
   * Output file for yearly output time period
+
+### Output in nc-mode
+SOILWAT2 may produce many `"netCDF"` output files. All details including
+variable names, units, and file names are provided via
+\ref SW2_netCDF_output_variables.
+
 
 <br>
 

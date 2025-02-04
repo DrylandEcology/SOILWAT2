@@ -22,8 +22,7 @@
 #ifndef SOILW_DEF_H
 #define SOILW_DEF_H
 
-#include "include/generic.h" // for IntUS, RealF
-#include <time.h>            // for time_t, timespec
+#include <time.h> // for time_t, timespec
 
 #if !defined(RSOILWAT)              /* rSOILWAT2 uses R's RNGs */
 #include "external/pcg/pcg_basic.h" // for pcg32_random_t
@@ -119,7 +118,7 @@ extern "C" {
 #define OUT_DIGITS 6
 
 /** Separator used when generating text-based output files (csv-format) */
-#define _OUTSEP ','
+#define OUTSEP ','
 
 // was 256 & 1024...
 #define MAX_FILENAMESIZE 512
@@ -171,9 +170,8 @@ extern "C" {
 #define MAX_WEEKS 53
 #define MAX_DAYS 366
 
-#define SWRC_PARAM_NMAX                                  \
-    6 /**< Maximal number of SWRC parameters implemented \
-       */
+/** Maximal number of SWRC parameters implemented */
+#define SWRC_PARAM_NMAX 6
 
 /*
    Indices to daily input flags/indices (dailyInputFlags & dailyInputIndices in
@@ -217,8 +215,8 @@ extern "C" {
 #define eSW_Year 3
 #define eSW_NoTime 999 // no time period
 // c++ doesn't support (pd)++ for pd as a typedef enum OutPeriod in
-// macro `ForEachOutPeriod` --> instead, define as type `IntUS`
-typedef IntUS OutPeriod;
+// macro `ForEachOutPeriod` --> instead, define as type unsigned int
+typedef unsigned short OutPeriod;
 
 /*
   * Number of output keys
@@ -229,6 +227,8 @@ typedef IntUS OutPeriod;
 
 #define SW_OUTNMAXVARS 8 // maximum number of output variables per OutKey
 
+/** Number of keys that will be read-in for input netCDFs */
+#define SW_NINKEYSNC 7
 
 /*------------ DON'T CHANGE ANYTHING BELOW THIS LINE ------------*/
 /* Macros to simplify and add consistency to common tasks */
@@ -281,7 +281,7 @@ typedef IntUS OutPeriod;
  * before I got the documentation.
  */
 typedef struct {
-    RealF xinflec, yinflec, range, slope;
+    double xinflec, yinflec, range, slope;
 } tanfunc_t;
 
 /* standardize the test for missing */
@@ -317,6 +317,14 @@ typedef struct timespec WallTimeSpec;
 typedef time_t WallTimeSpec;
 #endif
 
+/* Memory copying via `sw_memccpy()` and SOILWAT2's custom function */
+#if (defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200809L) || \
+    (defined(__STDC__) && defined(__STDC_VERSION__) &&          \
+     __STDC_VERSION__ >= 202311L)
+#define sw_memccpy memccpy
+#else
+#define sw_memccpy sw_memccpy_custom
+#endif
 
 /* =================================================== */
 /*                   RNG structs                    */

@@ -73,7 +73,7 @@
 
 #include "include/SW_SoilWater.h"   // for FXW_h0, FXW_hr, SWRC_SWCtoSWP
 #include "include/filefuncs.h"      // for LogError, CloseFile, GetALine
-#include "include/generic.h"        // for RealD, LOGERROR, GT, LT, fmax
+#include "include/generic.h"        // for LOGERROR, GT, LT, fmax
 #include "include/myMemory.h"       // for Mem_Calloc, Str_Dup
 #include "include/SW_datastructs.h" // for LOG_INFO, SW_SOILWAT, SW_SITE
 #include "include/SW_Defines.h"     // for NVEGTYPES, LyrIndex, MAX_LAYERS
@@ -84,7 +84,7 @@
 #include "include/Times.h"          // for yearto4digit
 #include <math.h>                   // for fabs, pow, log, ceil, copysign
 #include <stdio.h>                  // for NULL, FILE, sscanf, snprintf
-#include <stdlib.h>                 // for atoi, free
+#include <stdlib.h>                 // for free
 #include <string.h>                 // for memset
 
 
@@ -97,9 +97,9 @@
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
-static void _clear_hist(
-    RealD SoilWat_hist_swc[][MAX_LAYERS],
-    RealD SoilWat_hist_std_err[][MAX_LAYERS]
+static void clear_hist(
+    double SoilWat_hist_swc[][MAX_LAYERS],
+    double SoilWat_hist_std_err[][MAX_LAYERS]
 ) {
     TimeInt d;
     LyrIndex z;
@@ -111,7 +111,7 @@ static void _clear_hist(
     }
 }
 
-static void _reset_swc(SW_SOILWAT *SW_SoilWat, SW_SITE *SW_Site) {
+static void reset_swc(SW_SOILWAT *SW_SoilWat, SW_SITE *SW_Site) {
     LyrIndex lyr;
 
     /* reset swc */
@@ -140,7 +140,10 @@ use `SWRC_SWPtoSWC_FXW()` instead.
 @return Volumetric soil water content of the matric soil [cm / cm]
 */
 static double FXW_phi_to_theta(double phi, double *swrcp) {
-    double tmp, res, S_e, C_f;
+    double tmp;
+    double res;
+    double S_e;
+    double C_f;
 
     if (GE(phi, FXW_h0)) {
         res = 0.;
@@ -198,16 +201,34 @@ here](https://en.wikipedia.org/wiki/ITP_method)
 */
 
 static double itp_FXW_for_phi(double theta, double *swrcp, LOG_INFO *LogInfo) {
-    double tol2 = 2e-9, // tolerance convergence
-        a = 0.,         // lower bound of bracket: a < b && f(a) < 0
-        b = FXW_h0,     // upper bound of bracket: b > a && f(b) > 0
-        diff_ba = FXW_h0, diff_hf, x_f, x_t, x_itp, y_a, y_b, y_itp, k1, k2,
-           x_half, r, delta, sigma, phi;
-    int j = 0, n0, n_max;
-
 #ifdef SWDEBUG
     short debug = 0;
 #endif
+
+    // tol2: tolerance convergence
+    double tol2 = 2e-9;
+    // a: lower bound of bracket: a < b && f(a) < 0
+    double a = 0.;
+    // b: upper bound of bracket: b > a && f(b) > 0
+    double b = FXW_h0;
+    double diff_ba = FXW_h0;
+    double diff_hf;
+    double x_f;
+    double x_t;
+    double x_itp;
+    double y_a;
+    double y_b;
+    double y_itp;
+    double k1;
+    double k2;
+    double x_half;
+    double r;
+    double delta;
+    double sigma;
+    double phi;
+    int j = 0;
+    int n0;
+    int n_max;
 
 
     // Evaluate at starting bracket (and checks)
@@ -216,7 +237,7 @@ static double itp_FXW_for_phi(double theta, double *swrcp, LOG_INFO *LogInfo) {
 
 
     // Set hyper-parameters
-    k1 = 3.174603e-08; // 0 < k1 = 0.2 / (b - a) < inf
+    // k1 = 3.174603e-08; // 0 < k1 = 0.2 / (b - a) < inf
     /*
     k1 = 2. converges in about 31-33 iterations
     k1 = 0.2 converges in 28-30 iterations
@@ -378,20 +399,46 @@ static double itp_FXW_for_phi(double theta, double *swrcp, LOG_INFO *LogInfo) {
 #ifdef SWDEBUG
 void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
 
-    IntUS i, k;
-    int debugi[N_WBCHECKS] = {
-        1, 1, 1, 1, 1, 1, 1, 1, 1
-    }; // print output for each check yes/no
+    LyrIndex i;
+    IntUS k;
+    // debugging with 'debugi': turn messages on/off for each check separately
+    int debugi[N_WBCHECKS] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+    int snowChecks[3];
     char flag[16];
-    RealD Etotal, Etotalsurf, Etotalint, Eponded, Elitter, Esnow,
-        Esoil = 0., Eveg = 0., Ttotal = 0., Ttotalj[MAX_LAYERS],
-        percolationIn[MAX_LAYERS + 1], percolationOut[MAX_LAYERS + 1],
-        hydraulicRedistribution[MAX_LAYERS], infiltration, deepDrainage, runoff,
-        runon, snowmelt, rain, arriving_water, intercepted, int_veg_total = 0.,
-        delta_surfaceWater, delta_swc_total = 0., delta_swcj[MAX_LAYERS];
-    RealD lhs, rhs, wbtol = 1e-9;
+    double Etotal;
+    double Etotalsurf;
+    double Etotalint;
+    double Eponded;
+    double Elitter;
+    double Esnow;
+    double Esoil = 0.;
+    double Eveg = 0.;
+    double Ttotal = 0.;
+    double Ttotalj[MAX_LAYERS];
+    double percolationIn[MAX_LAYERS + 1];
+    double percolationOut[MAX_LAYERS + 1];
+    double hydraulicRedistribution[MAX_LAYERS];
+    double infiltration;
+    double deepDrainage;
+    double runoff;
+    double runon;
+    double snowfall;
+    double snowmelt;
+    double snowpackWater;
+    double snowpackRecently;
+    double snowpackDepth;
+    double rain;
+    double arriving_water;
+    double intercepted;
+    double int_veg_total = 0.;
+    double delta_surfaceWater;
+    double delta_swc_total = 0.;
+    double delta_swcj[MAX_LAYERS];
+    double lhs;
+    double rhs;
+    double wbtol = 1e-9;
 
-    static RealD surfaceWater_yesterday;
+    static double surfaceWater_yesterday;
     static Bool debug = swFALSE;
     LyrIndex n_layers = sw->Site.n_layers;
 
@@ -451,6 +498,13 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
 
     arriving_water = rain + snowmelt + runon;
 
+    // Get snow
+    snowfall = sw->Weather.snow;
+    snowpackDepth = sw->SoilWat.snowdepth;
+    snowpackWater = sw->SoilWat.snowpack[Today];
+    snowpackRecently =
+        sw->SoilWat.snowpack[Today] + sw->SoilWat.snowpack[Yesterday];
+
     // Get state change values
     intercepted = sw->SoilWat.litter_int + int_veg_total;
 
@@ -466,7 +520,7 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
     }
 
     if (debug) {
-        snprintf(
+        (void) snprintf(
             flag, sizeof flag, "WB (%d-%d)", sw->Model.year, sw->Model.doy
         );
     }
@@ -712,6 +766,55 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
         }
     }
 
+    // Consistency between snowpack, snowdepth, snowmelt, snowloss
+    if (!sw->SoilWat.is_wbError_init) {
+        sw->SoilWat.wbErrorNames[9] = Str_Dup("Snow consistency", LogInfo);
+
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+    }
+
+    snowChecks[0] = (ZRO(snowpackWater) && ZRO(snowpackDepth)) ||
+                    (snowpackWater > 0 && snowpackDepth > 0);
+    snowChecks[1] = ZRO(snowmelt) ||
+                    (snowmelt > 0 && (snowpackRecently > 0 || snowfall > 0));
+    snowChecks[2] =
+        ZRO(Esnow) || (Esnow > 0 && (snowpackRecently > 0 || snowfall > 0));
+
+    if (!snowChecks[0] || !snowChecks[1] || !snowChecks[2]) {
+        sw->SoilWat.wbError[9]++;
+        if (debugi[9]) {
+            if (!snowChecks[0]) {
+                sw_printf(
+                    "%s: snowpack = %f, snowdepth = %f\n",
+                    flag,
+                    snowpackWater,
+                    snowpackDepth
+                );
+            }
+            if (!snowChecks[1]) {
+                sw_printf(
+                    "%s: snowmelt = %f, snowpack = %f|%f, snowfall = %f\n",
+                    flag,
+                    snowmelt,
+                    snowpackWater,
+                    snowpackRecently,
+                    snowfall
+                );
+            }
+            if (!snowChecks[2]) {
+                sw_printf(
+                    "%s: Esnow = %f, snowpack = %f|%f, snowfall = %f\n",
+                    flag,
+                    Esnow,
+                    snowpackWater,
+                    snowpackRecently,
+                    snowfall
+                );
+            }
+        }
+    }
 
     // Setup only once
     if (!sw->SoilWat.is_wbError_init) {
@@ -837,12 +940,11 @@ water flow, and check if swc is above threshold for "wet" condition.
 */
 void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     /* =================================================== */
-
-
-    LyrIndex i;
 #ifdef SWDEBUG
     int debug = 0;
 #endif
+
+    LyrIndex i;
 
     /* if there's no swc observation for today,
      * it shows up as SW_MISSING.  The input must
@@ -934,16 +1036,18 @@ use in get_dSWAbulk(). Must be call after `SW_SWC_water_flow()` is executed.
 /***********************************************************/
 void calculate_repartitioned_soilwater(
     SW_SOILWAT *SW_SoilWat,
-    RealD swcBulk_atSWPcrit[][MAX_LAYERS],
+    double swcBulk_atSWPcrit[][MAX_LAYERS],
     SW_VEGPROD *SW_VegProd,
     LyrIndex n_layers
 ) {
 
     // this will run for every day of every year
     LyrIndex i;
-    RealD val = SW_MISSING;
-    int j, k;
-    float curr_crit_val, new_crit_val;
+    double val = SW_MISSING;
+    int j;
+    int k;
+    double curr_crit_val;
+    double new_crit_val;
 
     ForEachSoilLayer(i, n_layers) {
         val = SW_SoilWat->swcBulk[Today][i];
@@ -1018,23 +1122,32 @@ the available soilwater of each veg type above so start at bottom move up.
 */
 /***********************************************************/
 void get_dSWAbulk(
-    int i,
+    unsigned int i,
     SW_VEGPROD *SW_VegProd,
-    RealF swa_master[][NVEGTYPES][MAX_LAYERS],
-    RealF dSWA_repart_sum[][MAX_LAYERS]
+    double swa_master[][NVEGTYPES][MAX_LAYERS],
+    double dSWA_repart_sum[][MAX_LAYERS]
 ) {
 
-    int j, kv, curr_vegType, curr_crit_rank_index, kv_veg_type,
-        prev_crit_veg_type, greater_veg_type;
-    float crit_val, prev_crit_val, smallestCritVal, vegFractionSum, newFraction;
+    int j;
+    int kv;
+    int curr_vegType;
+    int curr_crit_rank_index;
+    int kv_veg_type;
+    int prev_crit_veg_type;
+    int greater_veg_type;
+    double crit_val;
+    double prev_crit_val;
+    double smallestCritVal;
     // set to current veg type fraction value to avoid multiple if loops. should
     // just need 1 instead of 3 now.
-    float veg_type_in_use;
-    float inner_loop_veg_type; // set to inner loop veg type
+    double veg_type_in_use;
+    double vegFractionSum;
+    double newFraction;
+    double inner_loop_veg_type; // set to inner loop veg type
     smallestCritVal = SW_VegProd->critSoilWater[SW_VegProd->rank_SWPcrits[0]];
-    RealF dSWA_bulk[NVEGTYPES * NVEGTYPES][NVEGTYPES * NVEGTYPES][MAX_LAYERS];
-    RealF dSWA_bulk_repartioned[NVEGTYPES * NVEGTYPES][NVEGTYPES * NVEGTYPES]
-                               [MAX_LAYERS];
+    double dSWA_bulk[NVEGTYPES * NVEGTYPES][NVEGTYPES * NVEGTYPES][MAX_LAYERS];
+    double dSWA_bulk_repartioned[NVEGTYPES * NVEGTYPES][NVEGTYPES * NVEGTYPES]
+                                [MAX_LAYERS];
 
     // need to initialize to 0
     for (curr_vegType = 0; curr_vegType < NVEGTYPES; curr_vegType++) {
@@ -1211,14 +1324,15 @@ void SW_SWC_end_day(SW_SOILWAT *SW_SoilWat, LyrIndex n_layers) {
     /* =================================================== */
     LyrIndex i;
 
-    ForEachSoilLayer(i, n_layers) SW_SoilWat->swcBulk[Yesterday][i] =
-        SW_SoilWat->swcBulk[Today][i];
+    ForEachSoilLayer(i, n_layers) {
+        SW_SoilWat->swcBulk[Yesterday][i] = SW_SoilWat->swcBulk[Today][i];
+    }
 
     SW_SoilWat->snowpack[Yesterday] = SW_SoilWat->snowpack[Today];
 }
 
 void SW_SWC_init_run(
-    SW_SOILWAT *SW_SoilWat, SW_SITE *SW_Site, RealD *temp_snow
+    SW_SOILWAT *SW_SoilWat, SW_SITE *SW_Site, double *temp_snow
 ) {
 
     SW_SoilWat->soiltempError = swFALSE;
@@ -1229,7 +1343,7 @@ void SW_SWC_init_run(
 
     *temp_snow = 0.; // Snow temperature
 
-    _reset_swc(SW_SoilWat, SW_Site);
+    reset_swc(SW_SoilWat, SW_Site);
 }
 
 /**
@@ -1249,7 +1363,7 @@ void SW_SWC_new_year(
     LyrIndex lyr;
 
     if (SW_Site->reset_yr) {
-        _reset_swc(SW_SoilWat, SW_Site);
+        reset_swc(SW_SoilWat, SW_Site);
 
     } else {
         /* update swc */
@@ -1265,7 +1379,7 @@ void SW_SWC_new_year(
     /* update historical (measured) values, if needed */
     if (SW_SoilWat->hist_use && year >= SW_SoilWat->hist.yr.first) {
 #ifndef RSOILWAT
-        _read_swc_hist(&SW_SoilWat->hist, year, LogInfo);
+        read_swc_hist(&SW_SoilWat->hist, year, LogInfo);
 #else
         LogError(
             LogInfo,
@@ -1275,7 +1389,7 @@ void SW_SWC_new_year(
 
         if (swFALSE) {
             // read from disk:
-            _read_swc_hist(&SW_SoilWat->hist, year, LogInfo);
+            read_swc_hist(&SW_SoilWat->hist, year, LogInfo);
         } else {
             // copy from R memory
             // onSet_SW_SWC_hist(LogInfo);
@@ -1287,16 +1401,16 @@ void SW_SWC_new_year(
 /**
 @brief Like all of the other functions, read() reads in the setup parameters.
 
-See _read_swc_hist() for reading historical files.
+See read_swc_hist() for reading historical files.
 
 @param[in,out] SW_SoilWat Struct of type SW_SOILWAT containing
     soil water related values
 @param[in] endyr Ending year for model run
-@param[in] InFiles Array of program in/output files
+@param[in] txtInFiles Array of program in/output files
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_SWC_read(
-    SW_SOILWAT *SW_SoilWat, TimeInt endyr, char *InFiles[], LOG_INFO *LogInfo
+    SW_SOILWAT *SW_SoilWat, TimeInt endyr, char *txtInFiles[], LOG_INFO *LogInfo
 ) {
     /* =================================================== */
     /* HISTORY
@@ -1305,41 +1419,59 @@ void SW_SWC_read(
      *          structure element.
      */
     FILE *f;
-    int lineno = 0, nitems = 4;
+    int lineno = 0;
+    int nitems = 4;
     char inbuf[MAX_FILENAMESIZE];
+    int inBufintRes = 0;
+    Bool convertInput;
 
-    char *MyFileName = InFiles[eSoilwat];
+    char *MyFileName = txtInFiles[eSoilwat];
     f = OpenFile(MyFileName, "r", LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+        convertInput = (Bool) (lineno >= 0 && lineno <= 3 && lineno != 1);
+
+        if (convertInput) {
+            inBufintRes = sw_strtoi(inbuf, MyFileName, LogInfo);
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
+        }
+
         switch (lineno) {
         case 0:
-            SW_SoilWat->hist_use = (atoi(inbuf)) ? swTRUE : swFALSE;
+            SW_SoilWat->hist_use = (inBufintRes) ? swTRUE : swFALSE;
             break;
         case 1:
-            SW_SoilWat->hist.file_prefix = (char *) Str_Dup(inbuf, LogInfo);
+            SW_SoilWat->hist.file_prefix = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
-                CloseFile(&f, LogInfo);
-                return; // Exit function prematurely due to error
+                goto closeFile;
             }
             break;
         case 2:
-            SW_SoilWat->hist.yr.first = yearto4digit(atoi(inbuf));
+            SW_SoilWat->hist.yr.first = yearto4digit((TimeInt) inBufintRes);
             break;
         case 3:
-            SW_SoilWat->hist.method = atoi(inbuf);
+            SW_SoilWat->hist.method = inBufintRes;
+            break;
+        default:
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "SW_SWC_read(): incorrect format of input file '%s'.",
+                MyFileName
+            );
+            goto closeFile;
             break;
         }
         lineno++;
     }
 
-    CloseFile(&f, LogInfo);
-
     if (!SW_SoilWat->hist_use) {
-        return;
+        goto closeFile;
     }
     if (lineno < nitems) {
         LogError(
@@ -1348,17 +1480,19 @@ void SW_SWC_read(
             "%s : Insufficient parameters specified.",
             MyFileName
         );
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
     if (SW_SoilWat->hist.method < 1 || SW_SoilWat->hist.method > 2) {
         LogError(
             LogInfo, LOGERROR, "%s : Invalid swc adjustment method.", MyFileName
         );
-        return; // Exit function prematurely due to error
+        goto closeFile;
     }
     SW_SoilWat->hist.yr.last = endyr;
     SW_SoilWat->hist.yr.total =
         SW_SoilWat->hist.yr.last - SW_SoilWat->hist.yr.first + 1;
+
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**
@@ -1372,7 +1506,7 @@ to make the input file name.
 @param[in] year Four digit number for desired year, measured in years.
 @param[out] LogInfo Holds information on warnings and errors
 */
-void _read_swc_hist(
+void read_swc_hist(
     SW_SOILWAT_HIST *SoilWat_hist, TimeInt year, LOG_INFO *LogInfo
 ) {
     /* =================================================== */
@@ -1404,16 +1538,32 @@ void _read_swc_hist(
      * cause problems in the flow model.
      */
     FILE *f;
-    int x, lyr, recno = 0, doy;
-    RealF swc, st_err;
-    char fname[MAX_FILENAMESIZE], inbuf[MAX_FILENAMESIZE];
+    int x;
+    int lyr = 0;
+    int recno = 0;
+    int doy = 0;
+    int index;
+    int resSNP;
+    double swc = 0.;
+    double st_err = 0.;
+    char fname[MAX_FILENAMESIZE];
+    char inbuf[MAX_FILENAMESIZE];
+    char varStrs[4][20] = {{'\0'}};
+    int *inBufIntVals[] = {&doy, &lyr};
+    double *inBufDoubleVals[] = {&swc, &st_err};
+    const int numInValsPerType = 2;
 
-    snprintf(
-        fname, MAX_FILENAMESIZE, "%s.%4d", SoilWat_hist->file_prefix, year
+    resSNP = snprintf(
+        fname, sizeof fname, "%s.%4d", SoilWat_hist->file_prefix, year
     );
 
-    if (!FileExists(fname)) {
-        LogError(LogInfo, LOGWARN, "Historical SWC file %s not found.", fname);
+    if (resSNP < 0 || (unsigned) resSNP >= (sizeof fname)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "SWC-hist file name is too long for year = %d",
+            year
+        );
         return; // Exit function prematurely due to error
     }
 
@@ -1422,13 +1572,20 @@ void _read_swc_hist(
         return; // Exit function prematurely due to error
     }
 
-    _clear_hist(SoilWat_hist->swc, SoilWat_hist->std_err);
+    clear_hist(SoilWat_hist->swc, SoilWat_hist->std_err);
 
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
         recno++;
-        x = sscanf(inbuf, "%d %d %f %f", &doy, &lyr, &swc, &st_err);
+        x = sscanf(
+            inbuf,
+            "%19s %19s %19s %19s",
+            varStrs[0],
+            varStrs[1],
+            varStrs[2],
+            varStrs[3]
+        );
+
         if (x < 4) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -1437,10 +1594,9 @@ void _read_swc_hist(
                 fname,
                 recno
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
         if (x > 4) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -1449,10 +1605,23 @@ void _read_swc_hist(
                 fname,
                 recno
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
+
+        for (index = 0; index < numInValsPerType; index++) {
+            *(inBufIntVals[index]) = sw_strtoi(varStrs[index], fname, LogInfo);
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
+
+            *(inBufDoubleVals[index]) =
+                sw_strtod(varStrs[index + 2], fname, LogInfo);
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
+        }
+
         if (doy < 1 || doy > MAX_DAYS) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -1460,10 +1629,9 @@ void _read_swc_hist(
                 fname,
                 recno
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
         if (lyr < 1 || lyr > MAX_LAYERS) {
-            CloseFile(&f, LogInfo);
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -1473,13 +1641,14 @@ void _read_swc_hist(
                 MAX_LAYERS,
                 recno
             );
-            return; // Exit function prematurely due to error
+            goto closeFile;
         }
 
         SoilWat_hist->swc[doy - 1][lyr - 1] = swc;
         SoilWat_hist->std_err[doy - 1][lyr - 1] = st_err;
     }
-    CloseFile(&f, LogInfo);
+
+closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**
@@ -1494,8 +1663,8 @@ void _read_swc_hist(
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_SWC_adjust_swc(
-    RealD swcBulk[][MAX_LAYERS],
-    RealD swcBulk_min[],
+    double swcBulk[][MAX_LAYERS],
+    double swcBulk_min[],
     TimeInt doy,
     SW_SOILWAT_HIST SoilWat_hist,
     LyrIndex n_layers,
@@ -1505,7 +1674,8 @@ void SW_SWC_adjust_swc(
     /* =================================================== */
     /* 01/07/02 (cwb) added final loop to guarantee swc > swcBulk_min
      */
-    RealD lower, upper;
+    double lower;
+    double upper;
     LyrIndex lyrIndex;
     TimeInt dy = doy - 1;
 
@@ -1569,16 +1739,16 @@ Equations based on SWAT2K routines. @cite Neitsch2005
 */
 
 void SW_SWC_adjust_snow(
-    RealD *temp_snow,
-    RealD snowpack[],
+    double *temp_snow,
+    double snowpack[],
     SW_SITE *SW_Site,
-    RealD temp_min,
-    RealD temp_max,
-    RealD ppt,
+    double temp_min,
+    double temp_max,
+    double ppt,
     TimeInt doy,
-    RealD *rain,
-    RealD *snow,
-    RealD *snowmelt
+    double *rain,
+    double *snow,
+    double *snowmelt
 ) {
 
     /***************************************************************************
@@ -1595,9 +1765,12 @@ void SW_SWC_adjust_snow(
 
     ***********************************************************************/
 
-    const RealD snow_cov = 1.;
-    RealD *snowpack_today = &snowpack[Today], temp_ave, Rmelt, SnowAccu = 0.,
-          SnowMelt = 0.;
+    const double snow_cov = 1.;
+    double *snowpack_today = &snowpack[Today];
+    double temp_ave;
+    double Rmelt;
+    double SnowAccu = 0.;
+    double SnowMelt = 0.;
 
     temp_ave = (temp_min + temp_max) / 2.;
 
@@ -1652,9 +1825,9 @@ measured in cm.
 cm.
 
 */
-RealD SW_SWC_snowloss(RealD pet, RealD *snowpack) {
-    const RealD cov_soil = 0.5;
-    RealD snowloss;
+double SW_SWC_snowloss(double pet, double *snowpack) {
+    const double cov_soil = 0.5;
+    double snowloss;
 
     if (GT(*snowpack, 0.)) {
         snowloss = fmax(0., fmin(*snowpack, cov_soil * pet));
@@ -1675,18 +1848,14 @@ RealD SW_SWC_snowloss(RealD pet, RealD *snowpack) {
 @return SW_SnowDepth Snow depth, measured in cm.
 */
 
-RealD SW_SnowDepth(RealD SWE, RealD snowdensity) {
+double SW_SnowDepth(double SWE, double snowdensity) {
     /*---------------------
      08/22/2011	(drs)	calculates depth of snowpack
      Input:	SWE: snow water equivalents (cm = 10kg/m2)
      snowdensity (kg/m3)
      Output: snow depth (cm)
      ---------------------*/
-    if (GT(snowdensity, 0.)) {
-        return SWE / snowdensity * 10. * 100.;
-    } else {
-        return 0.;
-    }
+    return (GT(snowdensity, 0.)) ? (SWE / snowdensity * 10. * 100.) : 0.;
 }
 
 /**
@@ -1704,15 +1873,15 @@ See #swrc2str() for implemented SWRCs.
 
 @return Soil water potential [-bar]
 */
-RealD SW_SWRC_SWCtoSWP(
-    RealD swcBulk, SW_SITE *SW_Site, LyrIndex layerno, LOG_INFO *LogInfo
+double SW_SWRC_SWCtoSWP(
+    double swcBulk, SW_SITE *SW_Site, LyrIndex layerno, LOG_INFO *LogInfo
 ) {
     return SWRC_SWCtoSWP(
         swcBulk,
         SW_Site->swrc_type[layerno],
         SW_Site->swrcp[layerno],
-        SW_Site->fractionVolBulk_gravel[layerno],
-        SW_Site->width[layerno],
+        SW_Site->soils.fractionVolBulk_gravel[layerno],
+        SW_Site->soils.width[layerno],
         LOGERROR,
         LogInfo
     );
@@ -1855,7 +2024,9 @@ double SWRC_SWCtoSWP_Campbell1974(
     LOG_INFO *LogInfo
 ) {
     // assume that we have soil moisture
-    double theta, tmp, res;
+    double theta;
+    double tmp;
+    double res;
 
     // convert bulk SWC [cm] to theta = matric VWC [cm / cm]
     theta = swcBulk / (width * (1. - gravel));
@@ -1925,7 +2096,9 @@ double SWRC_SWCtoSWP_vanGenuchten1980(
     const int errmode,
     LOG_INFO *LogInfo
 ) {
-    double res, tmp, theta;
+    double res;
+    double tmp;
+    double theta;
 
     // convert bulk SWC [cm] to theta = matric VWC [cm / cm]
     theta = swcBulk / (width * (1. - gravel));
@@ -2013,7 +2186,8 @@ double SWRC_SWCtoSWP_FXW(
     const int errmode,
     LOG_INFO *LogInfo
 ) {
-    double res, theta;
+    double res;
+    double theta;
 
     // convert bulk SWC [cm] to theta = matric VWC [cm / cm]
     theta = swcBulk / (width * (1. - gravel));
@@ -2073,15 +2247,15 @@ See #swrc2str() for implemented SWRCs.
 
 @return Soil water content in the layer [cm]
 */
-RealD SW_SWRC_SWPtoSWC(
-    RealD swpMatric, SW_SITE *SW_Site, LyrIndex layerno, LOG_INFO *LogInfo
+double SW_SWRC_SWPtoSWC(
+    double swpMatric, SW_SITE *SW_Site, LyrIndex layerno, LOG_INFO *LogInfo
 ) {
     return SWRC_SWPtoSWC(
         swpMatric,
         SW_Site->swrc_type[layerno],
         SW_Site->swrcp[layerno],
-        SW_Site->fractionVolBulk_gravel[layerno],
-        SW_Site->width[layerno],
+        SW_Site->soils.fractionVolBulk_gravel[layerno],
+        SW_Site->soils.width[layerno],
         LOGERROR,
         LogInfo
     );
@@ -2189,7 +2363,8 @@ are the inverse of each other for `(phi, theta)` between
 double SWRC_SWPtoSWC_Campbell1974(
     double swpMatric, double *swrcp, double gravel, double width
 ) {
-    double phi, res;
+    double phi;
+    double res;
 
     // convert SWP [-bar] to phi [cm of H20; SOILWAT2 legacy value]
     phi = swpMatric * 1024.;
@@ -2227,9 +2402,11 @@ are the inverse of each other for `(phi, theta)` between
 @return Soil water content in the layer [cm]
 */
 double SWRC_SWPtoSWC_vanGenuchten1980(
-    double swpMatric, double *swrcp, double gravel, double width
+    double swpMatric, const double *swrcp, double gravel, double width
 ) {
-    double phi, tmp, res;
+    double phi;
+    double tmp;
+    double res;
 
     // convert SWP [-bar] to phi [cm of H2O at 4 C;
     // value from `soilDB::KSSL_VG_model()`]
@@ -2266,7 +2443,8 @@ are the inverse of each other for `(phi, theta)` between
 double SWRC_SWPtoSWC_FXW(
     double swpMatric, double *swrcp, double gravel, double width
 ) {
-    double phi, res;
+    double phi;
+    double res;
 
     // convert SWP [-bar] to phi [cm of H2O at 4 C;
     // value from `soilDB::KSSL_VG_model()`]

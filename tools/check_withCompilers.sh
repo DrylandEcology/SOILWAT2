@@ -12,7 +12,7 @@
 
 
 # Notes:
-# - googletests (July 2023) requires a C++14 compliant compilers,
+# - googletests (August 2024) requires a C++17 compliant compilers,
 #   gcc >= 7.3.1 or clang >= 7.0.0,
 #   and POSIX API (e.g., `_POSIX_C_SOURCE=200809L`)
 #   which is not enabled by default on all systems

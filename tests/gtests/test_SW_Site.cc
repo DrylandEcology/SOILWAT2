@@ -1,4 +1,4 @@
-#include "include/generic.h"             // for RealD, Bool, swFALSE
+#include "include/generic.h"             // for Bool, swFALSE
 #include "include/SW_datastructs.h"      // for LOG_INFO
 #include "include/SW_Defines.h"          // for SWRC_PARAM_NMAX, SW_MISSING
 #include "include/SW_Main_lib.h"         // for sw_fail_on_error, sw_init_logs
@@ -13,21 +13,21 @@ using ::testing::HasSubstr;
 
 namespace {
 // List SWRC Campbell1974: all PTFs
-const char *ns_ptfca2C1974[] = {
+const char *const ns_ptfca2C1974[] = {
     "Campbell1974", "Cosby1984AndOthers", "Cosby1984"
 };
 
 // List SWRC vanGenuchten1980: all PTFs
-const char *ns_ptfa2vG1980[] = {"vanGenuchten1980", "Rosetta3"};
+const char *const ns_ptfa2vG1980[] = {"vanGenuchten1980", "Rosetta3"};
 
 // List SWRC vanGenuchten1980: PTFs implemented in SOILWAT2
-const char *ns_ptfc2vG1980[] = {"vanGenuchten1980"};
+const char *const ns_ptfc2vG1980[] = {"vanGenuchten1980"};
 
 // List SWRC FXW: all PTFs
-const char *ns_ptfa2FXW[] = {"FXW", "neuroFX2021"};
+const char *const ns_ptfa2FXW[] = {"FXW", "neuroFX2021"};
 
 // List SWRC FXW: PTFs implemented in SOILWAT2
-const char *ns_ptfc2FXW[] = {"FXW"};
+const char *const ns_ptfc2FXW[] = {"FXW"};
 
 // Test pedotransfer functions
 TEST(SiteTest, SitePTFs) {
@@ -36,9 +36,13 @@ TEST(SiteTest, SitePTFs) {
     sw_init_logs(NULL, &LogInfo);
 
     // inputs
-    RealD swrcp[SWRC_PARAM_NMAX];
-    RealD sand = 0.33, clay = 0.33, gravel = 0.1, bdensity = 1.4;
-    unsigned int swrc_type, k;
+    double swrcp[SWRC_PARAM_NMAX];
+    double const sand = 0.33;
+    double const clay = 0.33;
+    double const gravel = 0.1;
+    double const bdensity = 1.4;
+    unsigned int swrc_type;
+    unsigned int k;
 
 
     //--- Matching PTF-SWRC pairs
@@ -108,8 +112,11 @@ TEST(SiteTest, SitePTFsDeathTest) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    RealD swrcp[SWRC_PARAM_NMAX];
-    RealD sand = 0.33, clay = 0.33, gravel = 0.1, bdensity = 1.4;
+    double swrcp[SWRC_PARAM_NMAX];
+    double const sand = 0.33;
+    double const clay = 0.33;
+    double const gravel = 0.1;
+    double const bdensity = 1.4;
     unsigned int ptf_type;
 
 
@@ -191,7 +198,7 @@ TEST(SiteTest, SiteSWRCpChecksDeathTest) {
     sw_init_logs(NULL, &LogInfo);
 
     // inputs
-    RealD swrcp[SWRC_PARAM_NMAX];
+    double swrcp[SWRC_PARAM_NMAX];
     unsigned int swrc_type;
 
 
@@ -212,14 +219,15 @@ TEST(SiteTest, SiteSWRCpChecks) {
     sw_init_logs(NULL, &LogInfo);
 
     // inputs
-    RealD swrcp[SWRC_PARAM_NMAX], tmp;
+    double swrcp[SWRC_PARAM_NMAX];
+    double tmp;
     unsigned int swrc_type;
 
 
     //--- SWRC: Campbell1974
     swrc_type = encode_str2swrc((char *) "Campbell1974", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
-    memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
+    memset(swrcp, 0, SWRC_PARAM_NMAX * sizeof(swrcp[0]));
     swrcp[0] = 24.2159;
     swrcp[1] = 0.4436;
     swrcp[2] = 10.3860;
@@ -255,7 +263,7 @@ TEST(SiteTest, SiteSWRCpChecks) {
     //--- Fail SWRC: vanGenuchten1980
     swrc_type = encode_str2swrc((char *) "vanGenuchten1980", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
-    memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
+    memset(swrcp, 0, SWRC_PARAM_NMAX * sizeof(swrcp[0]));
     swrcp[0] = 0.1246;
     swrcp[1] = 0.4445;
     swrcp[2] = 0.0112;
@@ -306,7 +314,7 @@ TEST(SiteTest, SiteSWRCpChecks) {
     //--- Fail SWRC: FXW
     swrc_type = encode_str2swrc((char *) "FXW", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
-    memset(swrcp, 0., SWRC_PARAM_NMAX * sizeof(swrcp[0]));
+    memset(swrcp, 0, SWRC_PARAM_NMAX * sizeof(swrcp[0]));
     swrcp[0] = 0.437461;
     swrcp[1] = 0.050757;
     swrcp[2] = 1.247689;
@@ -363,6 +371,87 @@ TEST(SiteTest, SiteSWRCpChecks) {
     swrcp[5] = tmp;
 }
 
+// Test 'SWRC_bulkSoilParameters'
+TEST(SiteTest, SWRCBulkSoilParameters) {
+    double swrcp[SWRC_PARAM_NMAX];
+    double swrcpMin[SWRC_PARAM_NMAX];
+    double swrcpOrg[2][SWRC_PARAM_NMAX];
+    double fom;
+    const double depthSapric = 50.;
+    double depthT = 0.;
+    double depthB = 10.;
+
+    unsigned int k;
+    const unsigned int swrc_type = 1;
+
+    // Initialize swrcps
+    for (k = 0; k < SWRC_PARAM_NMAX; k++) {
+        swrcpMin[k] = 1.;
+        swrcpOrg[0][k] = 10.;
+        swrcpOrg[1][k] = 20.;
+    }
+
+    // Expect swrcp = mineral if organic matter is 0
+    fom = 0.;
+    SWRC_bulkSoilParameters(
+        swrc_type, swrcp, swrcpMin, swrcpOrg, fom, depthSapric, depthT, depthB
+    );
+
+    for (k = 0; k < SWRC_PARAM_NMAX; k++) {
+        EXPECT_DOUBLE_EQ(swrcp[k], swrcpMin[k]);
+    }
+
+    // Expect swrcp = fibric if organic matter is 1 and layer at surface
+    fom = 1.;
+    depthT = 0.;
+    depthB = 0.;
+    SWRC_bulkSoilParameters(
+        swrc_type, swrcp, swrcpMin, swrcpOrg, fom, depthSapric, depthT, depthB
+    );
+
+    for (k = 0; k < SWRC_PARAM_NMAX; k++) {
+        EXPECT_DOUBLE_EQ(swrcp[k], swrcpOrg[0][k]);
+    }
+
+    // Expect fibric < swrcp < sapric if organic matter is 1 and layer medium
+    fom = 1.;
+    depthT = depthSapric / 4.;
+    depthB = depthT + depthSapric / 4.;
+    SWRC_bulkSoilParameters(
+        swrc_type, swrcp, swrcpMin, swrcpOrg, fom, depthSapric, depthT, depthB
+    );
+
+    for (k = 0; k < SWRC_PARAM_NMAX; k++) {
+        EXPECT_GT(swrcp[k], swrcpOrg[0][k]);
+        EXPECT_LT(swrcp[k], swrcpOrg[1][k]);
+    }
+
+    // Expect swrcp = sapric if organic matter is 1 and layer is at depth
+    fom = 1.;
+    depthT = depthSapric;
+    depthB = depthT + 10.;
+    SWRC_bulkSoilParameters(
+        swrc_type, swrcp, swrcpMin, swrcpOrg, fom, depthSapric, depthT, depthB
+    );
+
+    for (k = 0; k < SWRC_PARAM_NMAX; k++) {
+        EXPECT_DOUBLE_EQ(swrcp[k], swrcpOrg[1][k]);
+    }
+
+    // Expect min < swrcp < fibric if organic matter is 0-1 and layer at surface
+    fom = 0.5;
+    depthT = 0.;
+    depthB = 0.;
+    SWRC_bulkSoilParameters(
+        swrc_type, swrcp, swrcpMin, swrcpOrg, fom, depthSapric, depthT, depthB
+    );
+
+    for (k = 0; k < SWRC_PARAM_NMAX; k++) {
+        EXPECT_GT(swrcp[k], swrcpMin[k]);
+        EXPECT_LT(swrcp[k], swrcpOrg[0][k]);
+    }
+}
+
 // Test 'PTF_RawlsBrakensiek1985'
 TEST(SiteTest, SitePTFRawlsBrakensiek1985) {
     LOG_INFO LogInfo;
@@ -370,32 +459,38 @@ TEST(SiteTest, SitePTFRawlsBrakensiek1985) {
     sw_init_logs(NULL, &LogInfo);
 
     // declare mock INPUTS
-    double theta_min, clay = 0.1, sand = 0.6, porosity = 0.4;
-    int k1, k2, k3;
+    double theta_min;
+    double clay = 0.1;
+    double sand = 0.6;
+    const double fom = 0.;
+    double porosity = 0.4;
+    int k1;
+    int k2;
+    int k3;
 
     //--- EXPECT SW_MISSING if soil texture is out of range
     // within range: sand [0.05, 0.7], clay [0.05, 0.6], porosity [0.1, 1[
-    PTF_RawlsBrakensiek1985(&theta_min, 0., clay, porosity, &LogInfo);
+    PTF_RawlsBrakensiek1985(&theta_min, 0., clay, fom, porosity, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
-    PTF_RawlsBrakensiek1985(&theta_min, 0.75, clay, porosity, &LogInfo);
+    PTF_RawlsBrakensiek1985(&theta_min, 0.75, clay, fom, porosity, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
-    PTF_RawlsBrakensiek1985(&theta_min, sand, 0., porosity, &LogInfo);
+    PTF_RawlsBrakensiek1985(&theta_min, sand, 0., fom, porosity, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
-    PTF_RawlsBrakensiek1985(&theta_min, sand, 0.65, porosity, &LogInfo);
+    PTF_RawlsBrakensiek1985(&theta_min, sand, 0.65, fom, porosity, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
-    PTF_RawlsBrakensiek1985(&theta_min, sand, clay, 0., &LogInfo);
+    PTF_RawlsBrakensiek1985(&theta_min, sand, clay, fom, 0., &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
-    PTF_RawlsBrakensiek1985(&theta_min, sand, clay, 1., &LogInfo);
+    PTF_RawlsBrakensiek1985(&theta_min, sand, clay, fom, 1., &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
@@ -411,7 +506,7 @@ TEST(SiteTest, SitePTFRawlsBrakensiek1985) {
                 porosity = 0.1 + (double) k3 / 5. * (0.99 - 0.1);
 
                 PTF_RawlsBrakensiek1985(
-                    &theta_min, sand, clay, porosity, &LogInfo
+                    &theta_min, sand, clay, fom, porosity, &LogInfo
                 );
                 // exit test program if unexpected error
                 sw_fail_on_error(&LogInfo);
@@ -422,8 +517,8 @@ TEST(SiteTest, SitePTFRawlsBrakensiek1985) {
         }
     }
 
-    // Expect theta_min = 0 if sand = 0.4, clay = 0.5, and porosity = 0.1
-    PTF_RawlsBrakensiek1985(&theta_min, 0.4, 0.5, 0.1, &LogInfo);
+    // Expect theta_min = 0 if sand = 0.4, clay = 0.5, fom = 0., porosity = 0.1
+    PTF_RawlsBrakensiek1985(&theta_min, 0.4, 0.5, 0.0, 0.1, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     EXPECT_DOUBLE_EQ(theta_min, 0);
 }
@@ -433,7 +528,7 @@ TEST_F(SiteFixtureTest, SiteSoilEvaporationParametersDeathTest) {
 
     // Check error for bad bare-soil evaporation coefficient (should be [0-1])
 
-    SW_Run.Site.evap_coeff[0] = -0.5;
+    SW_Run.Site.soils.evap_coeff[0] = -0.5;
 
     SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
@@ -449,7 +544,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationParametersDeathTest) {
 
     // Check error for bad transpiration coefficient (should be [0-1])
 
-    SW_Run.Site.transp_coeff[SW_GRASS][1] = 1.5;
+    SW_Run.Site.soils.transp_coeff[SW_GRASS][1] = 1.5;
     SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
@@ -464,77 +559,165 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationParametersDeathTest) {
 TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     /* Notes:
         - SW_Site.n_layers is base1
-        - soil layer information in _TranspRgnBounds is base0
+        - soil layer information in TranspRgnBounds is base0
     */
 
-    LyrIndex i, id, nRegions, prev_TranspRgnBounds[MAX_TRANSP_REGIONS] = {0};
-    RealD soildepth;
+    LyrIndex i;
+    LyrIndex nRegions;
+    LyrIndex expectedNRegions;
+    const LyrIndex expectedTranspRgnBounds[MAX_TRANSP_REGIONS] = {2, 4, 7, 999};
+    double soildepth[MAX_LAYERS] = {0};
+    double sd = 0;
+
+    // Quickly calculate soil depth for current region as output information
+    for (i = 0; i < SW_Run.Site.n_layers; i++) {
+        sd += SW_Run.Site.soils.width[i];
+        soildepth[i] = sd;
+    }
+
 
     for (i = 0; i < MAX_TRANSP_REGIONS; ++i) {
-        prev_TranspRgnBounds[i] = SW_Run.Site._TranspRgnBounds[i];
+        EXPECT_EQ(expectedTranspRgnBounds[i], SW_Run.Site.TranspRgnBounds[i])
+            << "for default transpiration region = " << i + 1
+            << " at a soil depth of "
+            << soildepth[SW_Run.Site.TranspRgnBounds[i]] << " cm";
     }
 
 
     // Check that "default" values do not change region bounds
     nRegions = 3;
-    RealD regionLowerBounds1[] = {20., 40., 100.};
-    derive_soilRegions(&SW_Run.Site, nRegions, regionLowerBounds1, &LogInfo);
+    expectedNRegions = 3;
+    double regionLowerBounds1[] = {20., 40., 100.};
+    derive_TranspRgnBounds(
+        &SW_Run.Site.n_transp_rgn,
+        SW_Run.Site.TranspRgnBounds,
+        nRegions,
+        regionLowerBounds1,
+        SW_Run.Site.n_layers,
+        SW_Run.Site.soils.width,
+        SW_Run.Site.soils.transp_coeff,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    for (i = 0; i < nRegions; ++i) {
-        // Quickly calculate soil depth for current region as output information
-        soildepth = 0.;
-        for (id = 0; id <= SW_Run.Site._TranspRgnBounds[i]; ++id) {
-            soildepth += SW_Run.Site.width[id];
-        }
-
-        EXPECT_EQ(prev_TranspRgnBounds[i], SW_Run.Site._TranspRgnBounds[i])
+    for (i = 0; i < SW_Run.Site.n_transp_rgn; ++i) {
+        EXPECT_EQ(expectedTranspRgnBounds[i], SW_Run.Site.TranspRgnBounds[i])
             << "for transpiration region = " << i + 1 << " at a soil depth of "
-            << soildepth << " cm";
+            << soildepth[SW_Run.Site.TranspRgnBounds[i]] << " cm";
     }
+
+    EXPECT_EQ(SW_Run.Site.n_transp_rgn, expectedNRegions);
 
 
     // Check that setting one region for all soil layers works
     nRegions = 1;
-    RealD regionLowerBounds2[] = {100.};
-    derive_soilRegions(&SW_Run.Site, nRegions, regionLowerBounds2, &LogInfo);
+    expectedNRegions = 1;
+    const LyrIndex expectedTranspRgnBounds2[] = {SW_Run.Site.n_layers - 1};
+    double regionLowerBounds2[] = {100.};
+
+    derive_TranspRgnBounds(
+        &SW_Run.Site.n_transp_rgn,
+        SW_Run.Site.TranspRgnBounds,
+        nRegions,
+        regionLowerBounds2,
+        SW_Run.Site.n_layers,
+        SW_Run.Site.soils.width,
+        SW_Run.Site.soils.transp_coeff,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    for (i = 0; i < nRegions; ++i) {
-        EXPECT_EQ(SW_Run.Site.n_layers - 1, SW_Run.Site._TranspRgnBounds[i])
+    for (i = 0; i < SW_Run.Site.n_transp_rgn; ++i) {
+        EXPECT_EQ(expectedTranspRgnBounds2[i], SW_Run.Site.TranspRgnBounds[i])
             << "for a single transpiration region across all soil layers";
     }
+
+    EXPECT_EQ(SW_Run.Site.n_transp_rgn, expectedNRegions);
 
 
     // Check that setting one region for one soil layer works
     nRegions = 1;
-    RealD regionLowerBounds3[] = {SW_Run.Site.width[0]};
-    derive_soilRegions(&SW_Run.Site, nRegions, regionLowerBounds3, &LogInfo);
+    expectedNRegions = 1;
+    const LyrIndex expectedTranspRgnBounds3[] = {0};
+    double regionLowerBounds3[] = {SW_Run.Site.soils.width[0]};
+
+    derive_TranspRgnBounds(
+        &SW_Run.Site.n_transp_rgn,
+        SW_Run.Site.TranspRgnBounds,
+        nRegions,
+        regionLowerBounds3,
+        SW_Run.Site.n_layers,
+        SW_Run.Site.soils.width,
+        SW_Run.Site.soils.transp_coeff,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    for (i = 0; i < nRegions; ++i) {
+    for (i = 0; i < SW_Run.Site.n_transp_rgn; ++i) {
         EXPECT_EQ(
-            0, SW_Run.Site._TranspRgnBounds[i]
+            expectedTranspRgnBounds3[i], SW_Run.Site.TranspRgnBounds[i]
         ) << "for a single transpiration region for the shallowest soil layer";
     }
+
+    EXPECT_EQ(SW_Run.Site.n_transp_rgn, expectedNRegions);
 
 
     // Check that setting the maximal number of regions works
     nRegions = MAX_TRANSP_REGIONS;
-    RealD *regionLowerBounds4 = new RealD[nRegions];
+    expectedNRegions = MAX_TRANSP_REGIONS;
+    double *regionLowerBounds4 = new double[nRegions];
     // Example: one region each for the topmost soil layers
-    soildepth = 0.;
+    sd = 0.;
     for (i = 0; i < nRegions; ++i) {
-        soildepth += SW_Run.Site.width[i];
-        regionLowerBounds4[i] = soildepth;
+        sd += SW_Run.Site.soils.width[i];
+        regionLowerBounds4[i] = sd;
     }
-    derive_soilRegions(&SW_Run.Site, nRegions, regionLowerBounds4, &LogInfo);
+
+    derive_TranspRgnBounds(
+        &SW_Run.Site.n_transp_rgn,
+        SW_Run.Site.TranspRgnBounds,
+        nRegions,
+        regionLowerBounds4,
+        SW_Run.Site.n_layers,
+        SW_Run.Site.soils.width,
+        SW_Run.Site.soils.transp_coeff,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    for (i = 0; i < nRegions; ++i) {
-        EXPECT_EQ(i, SW_Run.Site._TranspRgnBounds[i])
+    for (i = 0; i < SW_Run.Site.n_transp_rgn; ++i) {
+        EXPECT_EQ(i, SW_Run.Site.TranspRgnBounds[i])
             << "for transpiration region for the " << i + 1 << "-th soil layer";
     }
+
+    EXPECT_EQ(SW_Run.Site.n_transp_rgn, expectedNRegions);
+
+
+    // Check region assignment of deeper soil layers
+    nRegions = 4;
+    expectedNRegions = 3;
+    const LyrIndex expectedTranspRgnBounds5[] = {2, 4, 7};
+    double regionLowerBounds5[] = {25., 45., 150., 200.};
+
+    derive_TranspRgnBounds(
+        &SW_Run.Site.n_transp_rgn,
+        SW_Run.Site.TranspRgnBounds,
+        nRegions,
+        regionLowerBounds5,
+        SW_Run.Site.n_layers,
+        SW_Run.Site.soils.width,
+        SW_Run.Site.soils.transp_coeff,
+        &LogInfo
+    );
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    for (i = 0; i < SW_Run.Site.n_transp_rgn; ++i) {
+        EXPECT_EQ(expectedTranspRgnBounds5[i], SW_Run.Site.TranspRgnBounds[i])
+            << "for transpiration region = " << i + 1 << " at a soil depth of "
+            << soildepth[SW_Run.Site.TranspRgnBounds[i]] << " cm";
+    }
+
+    EXPECT_EQ(SW_Run.Site.n_transp_rgn, expectedNRegions);
 
     delete[] regionLowerBounds4;
 }
@@ -545,7 +728,8 @@ TEST(SiteTest, SiteSoilDensity) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    double soildensity = 1.4, fcoarse = 0.1;
+    double const soildensity = 1.4;
+    double const fcoarse = 0.1;
 
 
     // Check that matric density is zero if coarse fragments is 100%
@@ -586,11 +770,11 @@ TEST(SiteTest, SiteSoilDensity) {
 }
 
 TEST_F(SiteFixtureTest, SiteSoilDensityTypes) {
-    double fcoarse = 0.1;
+    double const fcoarse = 0.1;
 
     // Inputs represent matric density
     SW_Run.Site.type_soilDensityInput = SW_MATRIC;
-    SW_Run.Site.fractionVolBulk_gravel[0] = fcoarse;
+    SW_Run.Site.soils.fractionVolBulk_gravel[0] = fcoarse;
     SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -601,7 +785,7 @@ TEST_F(SiteFixtureTest, SiteSoilDensityTypes) {
 
     // Inputs represent bulk density
     SW_Run.Site.type_soilDensityInput = SW_BULK;
-    SW_Run.Site.fractionVolBulk_gravel[0] = fcoarse;
+    SW_Run.Site.soils.fractionVolBulk_gravel[0] = fcoarse;
     SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 

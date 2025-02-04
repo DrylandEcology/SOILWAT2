@@ -14,10 +14,18 @@ TEST(MemoryTest, MemoryRealloc) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    int *ptr0, *ptr1;
-    int k, n_old = 5, n_new = 7;
-    size_t size_old = sizeof ptr0 * n_old, size_new = sizeof ptr0 * n_new;
+    int *ptr0;
+    int *ptr1;
+    int k;
+    int const n_old = 5;
+    int const n_new = 7;
+    size_t const size_old = sizeof ptr0 * n_old;
+    size_t const size_new = sizeof ptr0 * n_new;
 
+
+    // The cast `(int *) Mem_*()` avoids
+    // "error: assigning to 'int *' from incompatible type 'void *'"
+    // However, it triggers [cppcoreguidelines-pro-type-cstyle-cast]
 
     //--- Expect to reallocate previously allocated memory ------
     ptr0 = (int *) Mem_Malloc(size_old, "MemoryRealloc", &LogInfo);
