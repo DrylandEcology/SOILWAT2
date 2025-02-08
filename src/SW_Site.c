@@ -808,18 +808,18 @@ Campbell1974 has four parameters (three are used for the SWRC):
 Bool SWRC_check_parameters_for_Campbell1974(double *swrcp, LOG_INFO *LogInfo) {
     Bool res = swTRUE;
 
-    if (LE(swrcp[0], 0.0)) {
+    if (!isfinite(swrcp[0]) || LE(swrcp[0], 0.0)) {
         res = swFALSE;
         LogError(
             LogInfo,
             LOGWARN,
             "SWRC_check_parameters_for_Campbell1974(): invalid value of "
             "psi(saturated, matric, [cm]) = %f (must > 0)\n",
-            swrcp[1]
+            swrcp[0]
         );
     }
 
-    if (LE(swrcp[1], 0.0) || GT(swrcp[1], 1.0)) {
+    if (!isfinite(swrcp[1]) || LE(swrcp[1], 0.0) || GT(swrcp[1], 1.0)) {
         res = swFALSE;
         LogError(
             LogInfo,
@@ -830,7 +830,7 @@ Bool SWRC_check_parameters_for_Campbell1974(double *swrcp, LOG_INFO *LogInfo) {
         );
     }
 
-    if (ZRO(swrcp[2])) {
+    if (!isfinite(swrcp[2]) || ZRO(swrcp[2])) {
         res = swFALSE;
         LogError(
             LogInfo,
@@ -841,7 +841,7 @@ Bool SWRC_check_parameters_for_Campbell1974(double *swrcp, LOG_INFO *LogInfo) {
         );
     }
 
-    if (LE(swrcp[3], 0.0)) {
+    if (!isfinite(swrcp[3]) || LE(swrcp[3], 0.0)) {
         res = swFALSE;
         LogError(
             LogInfo,
@@ -881,7 +881,7 @@ Bool SWRC_check_parameters_for_vanGenuchten1980(
 ) {
     Bool res = swTRUE;
 
-    if (LE(swrcp[0], 0.0) || GT(swrcp[0], 1.)) {
+    if (!isfinite(swrcp[0]) || LE(swrcp[0], 0.0) || GT(swrcp[0], 1.)) {
         res = swFALSE;
         LogError(
             LogInfo,
@@ -892,7 +892,7 @@ Bool SWRC_check_parameters_for_vanGenuchten1980(
         );
     }
 
-    if (LE(swrcp[1], 0.0) || GT(swrcp[1], 1.)) {
+    if (!isfinite(swrcp[1]) || LE(swrcp[1], 0.0) || GT(swrcp[1], 1.)) {
         res = swFALSE;
         LogError(
             LogInfo,
@@ -917,7 +917,7 @@ Bool SWRC_check_parameters_for_vanGenuchten1980(
         );
     }
 
-    if (LE(swrcp[2], 0.0)) {
+    if (!isfinite(swrcp[2]) || LE(swrcp[2], 0.0)) {
         res = swFALSE;
         LogError(
             LogInfo,
@@ -928,7 +928,7 @@ Bool SWRC_check_parameters_for_vanGenuchten1980(
         );
     }
 
-    if (LE(swrcp[3], 1.0)) {
+    if (!isfinite(swrcp[3]) || LE(swrcp[3], 1.0)) {
         res = swFALSE;
         LogError(
             LogInfo,
@@ -939,7 +939,7 @@ Bool SWRC_check_parameters_for_vanGenuchten1980(
         );
     }
 
-    if (LE(swrcp[4], 0.0)) {
+    if (!isfinite(swrcp[4]) || LE(swrcp[4], 0.0)) {
         res = swFALSE;
         LogError(
             LogInfo,
@@ -988,7 +988,7 @@ Table 1 in \cite wang2022WRRa.
 Bool SWRC_check_parameters_for_FXW(double *swrcp, LOG_INFO *LogInfo) {
     Bool res = swTRUE;
 
-    if (LE(swrcp[0], 0.0) || GT(swrcp[0], 1.)) {
+    if (!isfinite(swrcp[0]) || LE(swrcp[0], 0.0) || GT(swrcp[0], 1.)) {
         res = swFALSE;
         LogError(
             LogInfo,
@@ -999,7 +999,7 @@ Bool SWRC_check_parameters_for_FXW(double *swrcp, LOG_INFO *LogInfo) {
         );
     }
 
-    if (LE(swrcp[1], 0.0)) {
+    if (!isfinite(swrcp[1]) || LE(swrcp[1], 0.0)) {
         res = swFALSE;
         LogError(
             LogInfo,
@@ -1010,7 +1010,7 @@ Bool SWRC_check_parameters_for_FXW(double *swrcp, LOG_INFO *LogInfo) {
         );
     }
 
-    if (LE(swrcp[2], 1.0) || GT(swrcp[2], 10.)) {
+    if (!isfinite(swrcp[2]) || LE(swrcp[2], 1.0) || GT(swrcp[2], 10.)) {
         res = swFALSE;
         LogError(
             LogInfo,
@@ -1021,7 +1021,7 @@ Bool SWRC_check_parameters_for_FXW(double *swrcp, LOG_INFO *LogInfo) {
         );
     }
 
-    if (LE(swrcp[3], 0.0) || GT(swrcp[3], 1.5)) {
+    if (!isfinite(swrcp[3]) || LE(swrcp[3], 0.0) || GT(swrcp[3], 1.5)) {
         res = swFALSE;
         LogError(
             LogInfo,
@@ -1032,7 +1032,7 @@ Bool SWRC_check_parameters_for_FXW(double *swrcp, LOG_INFO *LogInfo) {
         );
     }
 
-    if (LE(swrcp[4], 0.0)) {
+    if (!isfinite(swrcp[4]) || LE(swrcp[4], 0.0)) {
         res = swFALSE;
         LogError(
             LogInfo,
@@ -1043,7 +1043,7 @@ Bool SWRC_check_parameters_for_FXW(double *swrcp, LOG_INFO *LogInfo) {
         );
     }
 
-    if (LE(swrcp[5], 0.)) {
+    if (!isfinite(swrcp[5]) || LE(swrcp[5], 0.)) {
         res = swFALSE;
         LogError(
             LogInfo,
@@ -2419,6 +2419,8 @@ void SW_SIT_init_run(
     double acc = 0.0;
     double tmp_stNRGR;
 
+    Bool hasOM = swFALSE;
+
     char errorMsg[LARGE_VALUE] = "";
     char tmpStr[100] = "";
     char *writePtr = NULL;
@@ -2468,29 +2470,38 @@ void SW_SIT_init_run(
         }
     }
 
-    /* Check parameters of organic SWRC */
-    if (!SWRC_check_parameters(
-            SW_Site->site_swrc_type, SW_Site->swrcpOM[0], LogInfo
-        )) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Checks of parameters for SWRC '%s' in fibric peat failed.",
-            swrc2str[SW_Site->site_swrc_type]
-        );
-        return; // Exit function prematurely due to error
+    /* Check if there is organic matter in soil layers */
+    for (s = 0; s < SW_Site->n_layers && !hasOM; s++) {
+        if (GT(SW_Site->soils.fractionWeight_om[s], 0.)) {
+            hasOM = swTRUE;
+        }
     }
 
-    if (!SWRC_check_parameters(
-            SW_Site->site_swrc_type, SW_Site->swrcpOM[1], LogInfo
-        )) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Checks of parameters for SWRC '%s' in sapric peat failed.",
-            swrc2str[SW_Site->site_swrc_type]
-        );
-        return; // Exit function prematurely due to error
+    /* Check parameters of organic SWRC */
+    if (hasOM) {
+        if (!SWRC_check_parameters(
+                SW_Site->site_swrc_type, SW_Site->swrcpOM[0], LogInfo
+            )) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Checks of parameters for SWRC '%s' in fibric peat failed.",
+                swrc2str[SW_Site->site_swrc_type]
+            );
+            return; // Exit function prematurely due to error
+        }
+
+        if (!SWRC_check_parameters(
+                SW_Site->site_swrc_type, SW_Site->swrcpOM[1], LogInfo
+            )) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Checks of parameters for SWRC '%s' in sapric peat failed.",
+                swrc2str[SW_Site->site_swrc_type]
+            );
+            return; // Exit function prematurely due to error
+        }
     }
 
 
