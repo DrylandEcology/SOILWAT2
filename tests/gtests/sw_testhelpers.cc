@@ -2,7 +2,7 @@
 #include "tests/gtests/sw_testhelpers.h"
 #include "include/generic.h"    // for swFALSE, swTRUE
 #include "include/myMemory.h"   // for Str_Dup
-#include "include/SW_Control.h" // for SW_CTL_alloc_outptrs, SW_CTL_clear_m...
+#include "include/SW_Control.h" // for SW_CTL_clear_m...
 #include "include/SW_Files.h"   // for eFirst
 #include "include/SW_Model.h"   // for SW_MDL_get_ModelRun
 #include "include/SW_Output.h"  // for SW_OUT_setup_output
@@ -226,12 +226,6 @@ int setup_testGlobalSoilwatTemplate() {
     SW_MDL_get_ModelRun(
         &template_SW_Run.Model, &template_SW_Domain, NULL, &LogInfo
     );
-    if (LogInfo.stopRun != 0u) {
-        goto finishProgram;
-    }
-
-    /* allocate memory for output pointers */
-    SW_CTL_alloc_outptrs(&template_SW_Run, &LogInfo);
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }

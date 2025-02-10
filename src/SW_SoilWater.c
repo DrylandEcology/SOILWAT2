@@ -830,14 +830,6 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
     soil water related values
 */
 void SW_SWC_init_ptrs(SW_SOILWAT *SW_SoilWat) {
-    OutPeriod pd;
-
-    // Initialize output structures:
-    ForEachOutPeriod(pd) {
-        SW_SoilWat->p_accu[pd] = NULL;
-        SW_SoilWat->p_oagg[pd] = NULL;
-    }
-
     SW_SoilWat->hist.file_prefix = NULL;
 
 #ifdef SWDEBUG
@@ -866,53 +858,7 @@ void SW_SWC_construct(SW_SOILWAT *SW_SoilWat) {
     memset(SW_SoilWat, 0, sizeof(SW_SOILWAT));
 }
 
-/**
-@brief Allocate dynamic memory for output pointers in SW_SOILWAT struct
-
-@param[out] SW_SoilWat SW_SoilWat Struct of type SW_SOILWAT containing
-    soil water related values
-@param[out] LogInfo Holds information on warnings and errors
-*/
-void SW_SWC_alloc_outptrs(SW_SOILWAT *SW_SoilWat, LOG_INFO *LogInfo) {
-    OutPeriod pd;
-
-    // Allocate output structures:
-    ForEachOutPeriod(pd) {
-        SW_SoilWat->p_accu[pd] = (SW_SOILWAT_OUTPUTS *) Mem_Calloc(
-            1, sizeof(SW_SOILWAT_OUTPUTS), "SW_SWC_alloc_outptrs()", LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
-
-        if (pd > eSW_Day) {
-            SW_SoilWat->p_oagg[pd] = (SW_SOILWAT_OUTPUTS *) Mem_Calloc(
-                1, sizeof(SW_SOILWAT_OUTPUTS), "SW_SWC_alloc_outptrs()", LogInfo
-            );
-
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
-        }
-    }
-}
-
 void SW_SWC_deconstruct(SW_SOILWAT *SW_SoilWat) {
-    OutPeriod pd;
-
-    // De-allocate output structures:
-    ForEachOutPeriod(pd) {
-        if (pd > eSW_Day && !isnull(SW_SoilWat->p_oagg[pd])) {
-            free(SW_SoilWat->p_oagg[pd]);
-            SW_SoilWat->p_oagg[pd] = NULL;
-        }
-
-        if (!isnull(SW_SoilWat->p_accu[pd])) {
-            free(SW_SoilWat->p_accu[pd]);
-            SW_SoilWat->p_accu[pd] = NULL;
-        }
-    }
-
     if (!isnull(SW_SoilWat->hist.file_prefix)) {
         free(SW_SoilWat->hist.file_prefix);
         SW_SoilWat->hist.file_prefix = NULL;

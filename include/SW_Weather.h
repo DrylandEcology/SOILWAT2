@@ -262,8 +262,6 @@ void SW_WTH_init_run(SW_WEATHER *SW_Weather);
 
 void SW_WTH_construct(SW_WEATHER *SW_Weather);
 
-void SW_WTH_alloc_outptrs(SW_WEATHER *SW_Weather, LOG_INFO *LogInfo);
-
 void SW_WTH_init_ptrs(SW_WEATHER *SW_Weather);
 
 void SW_WTH_deconstruct(SW_WEATHER *SW_Weather);

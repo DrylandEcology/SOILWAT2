@@ -93,14 +93,15 @@ static void zero_state(unsigned int sppnum, SW_VEGESTAB_INFO **parms);
 void SW_VES_init_ptrs(SW_VEGESTAB *SW_VegEstab) {
     OutPeriod pd;
 
-    // Initalize output structures:
-    ForEachOutPeriod(pd) {
-        SW_VegEstab->p_accu[pd] = NULL;
-        SW_VegEstab->p_oagg[pd] = NULL;
-    }
-
     SW_VegEstab->parms = NULL;
     SW_VegEstab->count = 0;
+
+    // Allocate output structures:
+    ForEachOutPeriod(pd) {
+        // Intiailize p_accu and p_oagg to NULL to eliminate the chance of
+        // deallocating unallocated memory
+        SW_VegEstab->p_accu[pd].days = SW_VegEstab->p_oagg[pd].days = NULL;
+    }
 }
 
 /**
@@ -119,49 +120,6 @@ void SW_VES_construct(SW_VEGESTAB *SW_VegEstab) {
 
     // Clear the module structure:
     memset(SW_VegEstab, 0, sizeof(SW_VEGESTAB));
-}
-
-/**
-@brief Allocate dynamic memory for output pointers in the SW_VEGESTAB struct
-
-@param[out] SW_VegEstab SW_VegEstab Struct of type SW_VEGESTAB holding all
-    information about vegetation within the simulation
-@param[out] LogInfo Holds information on warnings and errors
-*/
-void SW_VES_alloc_outptrs(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo) {
-    OutPeriod pd;
-
-    // Allocate output structures:
-    ForEachOutPeriod(pd) {
-        SW_VegEstab->p_accu[pd] = (SW_VEGESTAB_OUTPUTS *) Mem_Calloc(
-            1, sizeof(SW_VEGESTAB_OUTPUTS), "SW_VES_alloc_outptrs()", LogInfo
-        );
-
-        if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
-
-        // Intiailize p_accu to NULL to eliminate the chance of
-        // deallocating unallocated memory
-        SW_VegEstab->p_accu[pd]->days = NULL;
-
-        if (pd > eSW_Day) {
-            SW_VegEstab->p_oagg[pd] = (SW_VEGESTAB_OUTPUTS *) Mem_Calloc(
-                1,
-                sizeof(SW_VEGESTAB_OUTPUTS),
-                "SW_VES_alloc_outptrs()",
-                LogInfo
-            );
-
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
-
-            // Intiailize p_accu to NULL to eliminate the chance of
-            // deallocating unallocated memory
-            SW_VegEstab->p_oagg[pd]->days = NULL;
-        }
-    }
 }
 
 /**
@@ -189,26 +147,15 @@ void SW_VES_deconstruct(SW_VEGESTAB *SW_VegEstab) {
     ForEachOutPeriod(pd) {
         // De-allocate days and parameters
         if (SW_VegEstab->count > 0) {
-            if (pd > eSW_Day && !isnull(SW_VegEstab->p_oagg[pd]->days)) {
-                free(SW_VegEstab->p_oagg[eSW_Year]->days);
-                SW_VegEstab->p_oagg[eSW_Year]->days = NULL;
+            if (pd > eSW_Day && !isnull(SW_VegEstab->p_oagg[pd].days)) {
+                free(SW_VegEstab->p_oagg[eSW_Year].days);
+                SW_VegEstab->p_oagg[eSW_Year].days = NULL;
             }
 
-            if (!isnull(SW_VegEstab->p_accu[pd]->days)) {
-                free(SW_VegEstab->p_accu[eSW_Year]->days);
-                SW_VegEstab->p_accu[eSW_Year]->days = NULL;
+            if (!isnull(SW_VegEstab->p_accu[pd].days)) {
+                free(SW_VegEstab->p_accu[eSW_Year].days);
+                SW_VegEstab->p_accu[eSW_Year].days = NULL;
             }
-        }
-
-        // De-allocate output structures
-        if (pd > eSW_Day && !isnull(SW_VegEstab->p_oagg[pd])) {
-            free(SW_VegEstab->p_oagg[pd]);
-            SW_VegEstab->p_oagg[pd] = NULL;
-        }
-
-        if (!isnull(SW_VegEstab->p_accu[pd])) {
-            free(SW_VegEstab->p_accu[pd]);
-            SW_VegEstab->p_accu[pd] = NULL;
         }
     }
 }
@@ -280,10 +227,6 @@ void SW_VES_read2(
 
     SW_VES_deconstruct(SW_VegEstab);
     SW_VES_construct(SW_VegEstab);
-    SW_VES_alloc_outptrs(SW_VegEstab, LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
 
     SW_VegEstab->use = use_VegEstab;
 
@@ -350,28 +293,7 @@ void SW_VES_read2(
 */
 void SW_VegEstab_alloc_outptrs(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo) {
     if (SW_VegEstab->count > 0) {
-
-        if (isnull(SW_VegEstab->p_oagg[eSW_Year])) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "SW_VegEstab_alloc_outptrs: 'p_oagg[eSW_Year]' is unexpectedly "
-                "NULL."
-            );
-            return; // Exit function prematurely due to error
-        }
-
-        if (isnull(SW_VegEstab->p_accu[eSW_Year])) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "SW_VegEstab_alloc_outptrs: 'p_accu[eSW_Year]' is unexpectedly "
-                "NULL."
-            );
-            return; // Exit function prematurely due to error
-        }
-
-        SW_VegEstab->p_oagg[eSW_Year]->days = (TimeInt *) Mem_Calloc(
+        SW_VegEstab->p_oagg[eSW_Year].days = (TimeInt *) Mem_Calloc(
             SW_VegEstab->count,
             sizeof(TimeInt),
             "SW_VegEstab_alloc_outptrs()",
@@ -381,7 +303,7 @@ void SW_VegEstab_alloc_outptrs(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo) {
             return; // Exit function prematurely due to error
         }
 
-        SW_VegEstab->p_accu[eSW_Year]->days = (TimeInt *) Mem_Calloc(
+        SW_VegEstab->p_accu[eSW_Year].days = (TimeInt *) Mem_Calloc(
             SW_VegEstab->count,
             sizeof(TimeInt),
             "SW_VegEstab_alloc_outptrs()",

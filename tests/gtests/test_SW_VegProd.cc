@@ -96,9 +96,6 @@ TEST_F(VegProdFixtureTest, VegProdConstructor) {
     int k;
 
     SW_VPD_construct(&SW_VegProd);
-    // allocate memory for output pointers
-    SW_VPD_alloc_outptrs(&SW_VegProd, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_VPD_init_run(
         &SW_VegProd, &SW_Run.Weather, &SW_Run.Model, swTRUE, &LogInfo
@@ -116,8 +113,6 @@ TEST_F(VegProdFixtureTest, VegProdConstructor) {
             1., SW_VegProd.veg[k].co2_multipliers[WUE_INDEX][MAX_NYEAR - 1]
         );
     }
-
-    SW_VPD_deconstruct(&SW_VegProd);
 }
 
 // Test the application of the biomass CO2-effect

@@ -46,10 +46,10 @@
 #include "include/SW_Output.h"       // for SW_GENOUT_deepCopy, SW_GENOUT_i...
 #include "include/SW_Site.h"         // for SW_LYR_read, SW_SIT_construct
 #include "include/SW_Sky.h"          // for SW_SKY_new_year, SW_SKY_read
-#include "include/SW_SoilWater.h"    // for SW_SWC_alloc_outptrs, SW_SWC_co...
+#include "include/SW_SoilWater.h"    // for SW_SWC_co...
 #include "include/SW_VegEstab.h"     // for SW_VES_init_ptrs, SW_VES_alloc_...
-#include "include/SW_VegProd.h"      // for SW_VPD_alloc_outptrs, SW_VPD_co...
-#include "include/SW_Weather.h"      // for SW_WTH_alloc_outptrs, SW_WTH_co...
+#include "include/SW_VegProd.h"      // for SW_VPD_co...
+#include "include/SW_Weather.h"      // for SW_WTH_co...
 #include "include/Times.h"           // for diff_walltime, set_walltime
 #include <signal.h>                  // for signal
 #include <stdio.h>                   // for NULL, snprintf
@@ -179,12 +179,6 @@ void SW_RUN_deepCopy(
 
     memcpy(dest, source, sizeof(*dest));
 
-    /* Allocate memory for output pointers */
-    SW_CTL_alloc_outptrs(dest, LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit prematurely due to error
-    }
-
     dest->SoilWat.hist.file_prefix = NULL; /* currently unused */
 
     /* Allocate memory and copy daily weather */
@@ -218,7 +212,6 @@ void SW_RUN_deepCopy(
 
     /* Allocate memory and copy vegetation establishment parameters */
     SW_VES_init_ptrs(&dest->VegEstab);
-    SW_VES_alloc_outptrs(&dest->VegEstab, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit prematurely due to error
     }
@@ -422,28 +415,9 @@ void SW_CTL_init_ptrs(SW_RUN *sw) {
     SW_WTH_init_ptrs(&sw->Weather);
     SW_MKV_init_ptrs(&sw->Markov);
     SW_VES_init_ptrs(&sw->VegEstab);
-    SW_VPD_init_ptrs(&sw->VegProd);
+    // SW_VPD_init_ptrs() not needed
     SW_OUT_init_ptrs(&sw->OutRun);
     SW_SWC_init_ptrs(&sw->SoilWat);
-}
-
-/**
-@brief Allocate dynamic memory for output aggregate and accumulation pointers
-
-@param[out] sw Comprehensive struct of type SW_RUN containing
-    all information in the simulation
-@param[out] LogInfo Holds information on warnings and errors
-*/
-void SW_CTL_alloc_outptrs(SW_RUN *sw, LOG_INFO *LogInfo) {
-    SW_VPD_alloc_outptrs(&sw->VegProd, LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit prematurely due to error
-    }
-    SW_SWC_alloc_outptrs(&sw->SoilWat, LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit prematurely due to error
-    }
-    SW_WTH_alloc_outptrs(&sw->Weather, LogInfo);
 }
 
 /**
@@ -614,7 +588,7 @@ void SW_CTL_clear_model(Bool full_reset, SW_RUN *sw) {
     // SW_SKY_deconstruct() not needed
     // SW_SIT_deconstruct() not needed
     SW_VES_deconstruct(&sw->VegEstab);
-    SW_VPD_deconstruct(&sw->VegProd);
+    // SW_VPD_deconstruct() not needed
     // SW_FLW_deconstruct() not needed
     SW_SWC_deconstruct(&sw->SoilWat);
     SW_CBN_deconstruct();

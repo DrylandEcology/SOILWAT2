@@ -404,7 +404,7 @@ void get_co2effects_agg(
 #ifdef SW_OUTTEXT
 void get_biomass_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     int k;
-    SW_VEGPROD_OUTPUTS *vo = sw->VegProd.p_oagg[pd];
+    SW_VEGPROD_OUTPUTS *vo = &sw->VegProd.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
     size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
     char *writePtr = OutRun->sw_outstr;
@@ -525,7 +525,7 @@ reportFullBuffer:
 #if defined(RSOILWAT) || defined(SWNETCDF)
 void get_biomass_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     int k;
-    SW_VEGPROD_OUTPUTS *vo = sw->VegProd.p_oagg[pd];
+    SW_VEGPROD_OUTPUTS *vo = &sw->VegProd.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -693,7 +693,7 @@ void get_biomass_agg(
 ) {
     int k;
     int i;
-    SW_VEGPROD_OUTPUTS *vo = sw->VegProd.p_oagg[pd];
+    SW_VEGPROD_OUTPUTS *vo = &sw->VegProd.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -950,7 +950,7 @@ void get_estab_agg(
 @param[out] LogInfo Holds information on warnings and errors
 */
 void get_temp_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
-    SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo = &sw->Weather.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     OutRun->sw_outstr[0] = '\0';
@@ -994,7 +994,7 @@ void get_temp_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     information that do not change throughout simulation runs
 */
 void get_temp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
-    SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo = &sw->Weather.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -1093,7 +1093,7 @@ void get_temp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 void get_temp_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
-    SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo = &sw->Weather.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -1154,7 +1154,7 @@ void get_temp_SXW(
     TimeInt tOffset;
 
     if (pd == eSW_Month || pd == eSW_Year) {
-        SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+        SW_WEATHER_OUTPUTS *vo = &sw->Weather.p_oagg[pd];
         SW_OUT_RUN *OutRun = &sw->OutRun;
         tOffset = OutRun->tOffset;
 
@@ -1186,7 +1186,7 @@ OUTTEXT.
 @param[out] LogInfo Holds information on warnings and errors
 */
 void get_precip_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
-    SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo = &sw->Weather.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     OutRun->sw_outstr[0] = '\0';
@@ -1228,7 +1228,7 @@ RSOILWAT.
     information that do not change throughout simulation runs
 */
 void get_precip_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
-    SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo = &sw->Weather.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -1316,7 +1316,7 @@ STEPWAT.
 void get_precip_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
-    SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo = &sw->Weather.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -1373,7 +1373,7 @@ void get_precip_SXW(
     TimeInt tOffset;
 
     if (pd == eSW_Month || pd == eSW_Year) {
-        SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+        SW_WEATHER_OUTPUTS *vo = &sw->Weather.p_oagg[pd];
         SW_OUT_RUN *OutRun = &sw->OutRun;
         tOffset = OutRun->tOffset;
 
@@ -1402,7 +1402,7 @@ void get_precip_SXW(
 */
 void get_vwcBulk_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     LyrIndex i;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
     size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
     char *writePtr = OutRun->sw_outstr;
@@ -1450,7 +1450,7 @@ reportFullBuffer:
 */
 void get_vwcBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -1509,7 +1509,7 @@ void get_vwcBulk_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
     LyrIndex i;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -1560,7 +1560,7 @@ void get_vwcBulk_agg(
 void get_vwcMatric_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     LyrIndex i;
     double convert;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
     size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
     char *writePtr = OutRun->sw_outstr;
@@ -1612,7 +1612,7 @@ reportFullBuffer:
 void get_vwcMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
     double convert;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -1674,7 +1674,7 @@ void get_vwcMatric_agg(
 ) {
     LyrIndex i;
     double convert;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -1725,7 +1725,7 @@ void get_swa_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     /* added 21-Oct-03, cwb */
     LyrIndex i;
     int k;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
     size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
     char *writePtr = OutRun->sw_outstr;
@@ -1775,7 +1775,7 @@ reportFullBuffer:
 void get_swa_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
     int k;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -1843,7 +1843,7 @@ void get_swa_agg(
 ) {
     LyrIndex i;
     int k;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -1884,7 +1884,7 @@ void get_swa_agg(
 void get_swcBulk_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     /* added 21-Oct-03, cwb */
     LyrIndex i;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
     size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
     char *writePtr = OutRun->sw_outstr;
@@ -1926,7 +1926,7 @@ reportFullBuffer:
 */
 void get_swcBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -1984,7 +1984,7 @@ void get_swcBulk_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
     LyrIndex i;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -2031,7 +2031,7 @@ void get_swcBulk_SXW(
 
     if (pd == eSW_Month) {
         LyrIndex i;
-        SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+        SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
         SW_OUT_RUN *OutRun = &sw->OutRun;
         month = sw->Model.month - OutRun->tOffset;
 
@@ -2064,7 +2064,7 @@ converting the averged swc.  This also avoids converting for each day. added
 void get_swpMatric_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     double val;
     LyrIndex i;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
     size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
     char *writePtr = OutRun->sw_outstr;
@@ -2112,7 +2112,7 @@ reportFullBuffer:
 */
 void get_swpMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     LOG_INFO local_log;
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
@@ -2174,7 +2174,7 @@ void get_swpMatric_agg(
 ) {
     double val;
     LyrIndex i;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     LOG_INFO local_log;
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
@@ -2221,7 +2221,7 @@ void get_swpMatric_agg(
 */
 void get_swaBulk_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     LyrIndex i;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
     size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
     char *writePtr = OutRun->sw_outstr;
@@ -2263,7 +2263,7 @@ reportFullBuffer:
 */
 void get_swaBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -2321,7 +2321,7 @@ void get_swaBulk_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
     LyrIndex i;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -2364,7 +2364,7 @@ void get_swaBulk_agg(
 void get_swaMatric_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     LyrIndex i;
     double convert;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
     size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
     char *writePtr = OutRun->sw_outstr;
@@ -2415,7 +2415,7 @@ reportFullBuffer:
 void get_swaMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
     double convert;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -2476,7 +2476,7 @@ void get_swaMatric_agg(
 ) {
     LyrIndex i;
     double convert;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -2523,7 +2523,7 @@ void get_swaMatric_agg(
 @param[out] LogInfo Holds information on warnings and errors
 */
 void get_surfaceWater_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     OutRun->sw_outstr[0] = '\0';
@@ -2552,7 +2552,7 @@ void get_surfaceWater_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     information that do not change throughout simulation runs
 */
 void get_surfaceWater_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -2591,7 +2591,7 @@ void get_surfaceWater_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 void get_surfaceWater_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -2632,7 +2632,7 @@ OUTTEXT.
 */
 void get_runoffrunon_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     double net;
-    SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo = &sw->Weather.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     net = vo->surfaceRunoff + vo->snowRunoff - vo->surfaceRunon;
@@ -2673,7 +2673,7 @@ RSOILWAT.
     information that do not change throughout simulation runs
 */
 void get_runoffrunon_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
-    SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo = &sw->Weather.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -2750,7 +2750,7 @@ void get_runoffrunon_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
     double net;
-    SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo = &sw->Weather.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -2806,7 +2806,7 @@ void get_transp_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     LyrIndex n_layers = sw->Site.n_layers;
     int k;
     size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
     char *writePtr = OutRun->sw_outstr;
     char *endOutstr = OutRun->sw_outstr + sizeof OutRun->sw_outstr - 1;
@@ -2865,7 +2865,7 @@ void get_transp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
     LyrIndex n_layers = sw->Site.n_layers;
     int k;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -2967,7 +2967,7 @@ void get_transp_agg(
     LyrIndex i;
     LyrIndex n_layers = sw->Site.n_layers;
     int k;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -3033,7 +3033,7 @@ void get_transp_SXW(
     if (pd == eSW_Month) {
         LyrIndex i;
         int k;
-        SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+        SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
         SW_OUT_RUN *OutRun = &sw->OutRun;
         month = sw->Model.month - OutRun->tOffset;
 
@@ -3069,7 +3069,7 @@ void get_transp_SXW(
 */
 void get_evapSoil_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     LyrIndex i;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
     size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
     char *writePtr = OutRun->sw_outstr;
@@ -3111,7 +3111,7 @@ reportFullBuffer:
 */
 void get_evapSoil_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -3169,7 +3169,7 @@ void get_evapSoil_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
     LyrIndex i;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -3214,7 +3214,7 @@ void get_evapSoil_agg(
 */
 void get_evapSurface_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     int k;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
     size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
     char *writePtr = OutRun->sw_outstr;
@@ -3280,7 +3280,7 @@ reportFullBuffer:
 */
 void get_evapSurface_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     int k;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -3373,7 +3373,7 @@ void get_evapSurface_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
     int k;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -3435,7 +3435,7 @@ void get_evapSurface_agg(
 */
 void get_interception_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     int k;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
     size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
     char *writePtr = OutRun->sw_outstr;
@@ -3492,7 +3492,7 @@ reportFullBuffer:
 */
 void get_interception_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     int k;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -3569,7 +3569,7 @@ void get_interception_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
     int k;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -3626,7 +3626,7 @@ void get_soilinf_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     /* 20110219 (drs) added runoff */
     /* 12/13/2012	(clk)	moved runoff, now named snowRunoff, to
      * get_runoffrunon(); */
-    SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo = &sw->Weather.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     OutRun->sw_outstr[0] = '\0';
@@ -3655,7 +3655,7 @@ void get_soilinf_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     information that do not change throughout simulation runs
 */
 void get_soilinf_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
-    SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo = &sw->Weather.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -3694,7 +3694,7 @@ void get_soilinf_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 void get_soilinf_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
-    SW_WEATHER_OUTPUTS *vo = sw->Weather.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo = &sw->Weather.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -3735,7 +3735,7 @@ void get_soilinf_agg(
 void get_lyrdrain_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     /* 20100202 (drs) added */
     LyrIndex i;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
     size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
     char *writePtr = OutRun->sw_outstr;
@@ -3777,7 +3777,7 @@ reportFullBuffer:
 */
 void get_lyrdrain_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -3836,7 +3836,7 @@ void get_lyrdrain_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
     LyrIndex i;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -3882,7 +3882,7 @@ void get_hydred_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     LyrIndex i;
     LyrIndex n_layers = sw->Site.n_layers;
     int k;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
     size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
     char *writePtr = OutRun->sw_outstr;
@@ -3942,7 +3942,7 @@ void get_hydred_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
     LyrIndex n_layers = sw->Site.n_layers;
     int k;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -4051,7 +4051,7 @@ void get_hydred_agg(
     LyrIndex i;
     LyrIndex n_layers = sw->Site.n_layers;
     int k;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -4112,8 +4112,8 @@ void get_hydred_agg(
 @param[out] LogInfo Holds information on warnings and errors
 */
 void get_aet_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-    SW_WEATHER_OUTPUTS *vo2 = sw->Weather.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo2 = &sw->Weather.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     OutRun->sw_outstr[0] = '\0';
@@ -4157,8 +4157,8 @@ void get_aet_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     information that do not change throughout simulation runs
 */
 void get_aet_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-    SW_WEATHER_OUTPUTS *vo2 = sw->Weather.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo2 = &sw->Weather.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -4257,8 +4257,8 @@ void get_aet_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 void get_aet_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
-    SW_WEATHER_OUTPUTS *vo2 = sw->Weather.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo2 = &sw->Weather.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -4312,7 +4312,7 @@ void get_aet_SXW(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
     if (pd == eSW_Year) {
-        SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+        SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
         SW_OUT_RUN *OutRun = &sw->OutRun;
 
         OutRun->aet = vo->aet;
@@ -4337,7 +4337,7 @@ OUTTEXT
 @param[out] LogInfo Holds information on warnings and errors
 */
 void get_pet_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     OutRun->sw_outstr[0] = '\0';
@@ -4378,7 +4378,7 @@ void get_pet_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     information that do not change throughout simulation runs
 */
 void get_pet_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -4458,7 +4458,7 @@ void get_pet_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 void get_pet_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -4532,7 +4532,7 @@ void get_wetdays_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
         }
 
     } else {
-        SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+        SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
 
         ForEachSoilLayer(i, n_layers) {
             (void
@@ -4570,7 +4570,7 @@ void get_wetdays_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     double *p = OutRun->p_OUT[eSW_WetDays][pd];
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
 
 #if defined(RSOILWAT)
     get_outvalleader(
@@ -4650,7 +4650,7 @@ void get_wetdays_agg(
         }
 
     } else {
-        SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+        SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
 
         ForEachSoilLayer(i, sw->Site.n_layers) {
             iOUTIndex = iOUT(
@@ -4688,7 +4688,7 @@ void get_wetdays_agg(
 @param[out] LogInfo Holds information on warnings and errors
 */
 void get_snowpack_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     OutRun->sw_outstr[0] = '\0';
@@ -4720,7 +4720,7 @@ void get_snowpack_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     information that do not change throughout simulation runs
 */
 void get_snowpack_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -4771,7 +4771,7 @@ void get_snowpack_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 void get_snowpack_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -4814,7 +4814,7 @@ void get_snowpack_agg(
 @param[out] LogInfo Holds information on warnings and errors
 */
 void get_deepswc_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     OutRun->sw_outstr[0] = '\0';
@@ -4843,7 +4843,7 @@ void get_deepswc_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     information that do not change throughout simulation runs
 */
 void get_deepswc_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -4882,7 +4882,7 @@ void get_deepswc_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 void get_deepswc_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -4922,7 +4922,7 @@ void get_deepswc_agg(
 */
 void get_soiltemp_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     LyrIndex i;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
     size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
     char *writePtr = OutRun->sw_outstr;
@@ -4994,7 +4994,7 @@ reportFullBuffer:
 */
 void get_soiltemp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -5108,7 +5108,7 @@ void get_soiltemp_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
     LyrIndex i;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -5174,7 +5174,7 @@ OUTTEXT.
 */
 void get_frozen_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     LyrIndex i;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
     size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
     char *writePtr = OutRun->sw_outstr;
@@ -5216,7 +5216,7 @@ reportFullBuffer:
 */
 void get_frozen_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -5275,7 +5275,7 @@ void get_frozen_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
     LyrIndex i;
-    SW_SOILWAT_OUTPUTS *vo = sw->SoilWat.p_oagg[pd];
+    SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 

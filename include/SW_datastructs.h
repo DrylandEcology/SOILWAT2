@@ -637,9 +637,9 @@ typedef struct {
 
     SW_VEGPROD_OUTPUTS
     /** output accumulator: summed values for each output time period */
-    *p_accu[SW_OUTNPERIODS],
+    p_accu[SW_OUTNPERIODS],
         /** output aggregator: mean or sum for each output time periods */
-        *p_oagg[SW_OUTNPERIODS];
+        p_oagg[SW_OUTNPERIODS];
 } SW_VEGPROD;
 
 /* =================================================== */
@@ -876,10 +876,10 @@ typedef struct {
 
     /* This section is required for computing the output quantities.  */
     SW_WEATHER_OUTPUTS
-    *p_accu[SW_OUTNPERIODS], // output accumulator: summed values for each time
-                             // period
-        *p_oagg[SW_OUTNPERIODS]; // output aggregator: mean or sum for each time
-                                 // periods
+    p_accu[SW_OUTNPERIODS], // output accumulator: summed values for each time
+                            // period
+        p_oagg[SW_OUTNPERIODS]; // output aggregator: mean or sum for each time
+                                // periods
 
 
     /* Daily weather record */
@@ -981,10 +981,10 @@ typedef struct {
 #endif
 
     SW_SOILWAT_OUTPUTS
-    *p_accu[SW_OUTNPERIODS], // output accumulator: summed values for each time
-                             // period
-        *p_oagg[SW_OUTNPERIODS]; // output aggregator: mean or sum for each time
-                                 // periods
+    p_accu[SW_OUTNPERIODS], // output accumulator: summed values for each time
+                            // period
+        p_oagg[SW_OUTNPERIODS]; // output aggregator: mean or sum for each time
+                                // periods
     Bool hist_use;
     SW_SOILWAT_HIST hist;
 
@@ -1178,12 +1178,12 @@ typedef struct {
 typedef struct {
     Bool use;   /* if swTRUE use establishment parms and chkestab() */
     IntU count; /* number of species to check */
-    SW_VEGESTAB_INFO **parms;    /* dynamic array of parms for each species */
-    SW_VEGESTAB_OUTPUTS          /* only yearly element will be used */
-        *p_accu[SW_OUTNPERIODS], // output accumulator: summed values for each
-                                 // time period
-        *p_oagg[SW_OUTNPERIODS]; // output aggregator: mean or sum for each time
-                                 // periods
+    SW_VEGESTAB_INFO **parms;   /* dynamic array of parms for each species */
+    SW_VEGESTAB_OUTPUTS         /* only yearly element will be used */
+        p_accu[SW_OUTNPERIODS], // output accumulator: summed values for each
+                                // time period
+        p_oagg[SW_OUTNPERIODS]; // output aggregator: mean or sum for each time
+                                // periods
 
 } SW_VEGESTAB;
 

@@ -80,7 +80,7 @@
 /* =================================================== */
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
-#include "include/SW_Weather.h"      // for SW_WTH_alloc_outptrs, SW_WTH_co...
+#include "include/SW_Weather.h"      // for SW_WTH_co...
 #include "include/filefuncs.h"       // for LogError, CloseFile, GetALine
 #include "include/generic.h"         // for Bool, mean, LOGERROR, swFALSE
 #include "include/myMemory.h"        // for Mem_Malloc, Mem_Calloc
@@ -1934,17 +1934,7 @@ void clear_hist_weather(SW_WEATHER_HIST *yearWeather, double **fullWeathHist) {
 @param[in,out] SW_Weather Struct of type SW_WEATHER holding all relevant
     information pretaining to meteorological input data
 */
-void SW_WTH_init_ptrs(SW_WEATHER *SW_Weather) {
-    OutPeriod pd;
-
-    // Initialize output structures
-    ForEachOutPeriod(pd) {
-        SW_Weather->p_accu[pd] = NULL;
-        SW_Weather->p_oagg[pd] = NULL;
-    }
-
-    SW_Weather->allHist = NULL;
-}
+void SW_WTH_init_ptrs(SW_WEATHER *SW_Weather) { SW_Weather->allHist = NULL; }
 
 /**
 @brief Constructor for SW_Weather.
@@ -1962,58 +1952,12 @@ void SW_WTH_construct(SW_WEATHER *SW_Weather) {
 }
 
 /**
-@brief Allocate dynamic memory for output pointers in the SW_WEATHER struct
-
-@param[out] SW_Weather Struct of type SW_WEATHER holding all relevant
-    information pretaining to meteorological input data
-@param[out] LogInfo Holds information on warnings and errors
-*/
-void SW_WTH_alloc_outptrs(SW_WEATHER *SW_Weather, LOG_INFO *LogInfo) {
-    OutPeriod pd;
-
-    // Allocate output structures:
-    ForEachOutPeriod(pd) {
-        SW_Weather->p_accu[pd] = (SW_WEATHER_OUTPUTS *) Mem_Calloc(
-            1, sizeof(SW_WEATHER_OUTPUTS), "SW_WTH_alloc_outptrs()", LogInfo
-        );
-
-        if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
-        if (pd > eSW_Day) {
-            SW_Weather->p_oagg[pd] = (SW_WEATHER_OUTPUTS *) Mem_Calloc(
-                1, sizeof(SW_WEATHER_OUTPUTS), "SW_WTH_alloc_outptrs()", LogInfo
-            );
-
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
-        }
-    }
-}
-
-/**
 @brief Deconstructor for SW_Weather and SW_Markov (if used)
 
 @param[out] SW_Weather Struct of type SW_WEATHER holding all relevant
                 information pretaining to meteorological input data
 */
 void SW_WTH_deconstruct(SW_WEATHER *SW_Weather) {
-    OutPeriod pd;
-
-    // De-allocate output structures:
-    ForEachOutPeriod(pd) {
-        if (pd > eSW_Day && !isnull(SW_Weather->p_oagg[pd])) {
-            free(SW_Weather->p_oagg[pd]);
-            SW_Weather->p_oagg[pd] = NULL;
-        }
-
-        if (!isnull(SW_Weather->p_accu[pd])) {
-            free(SW_Weather->p_accu[pd]);
-            SW_Weather->p_accu[pd] = NULL;
-        }
-    }
-
     deallocateAllWeather(&SW_Weather->allHist);
 }
 

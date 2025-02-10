@@ -90,7 +90,7 @@ vegtype variable forb and forb.cov.fCover
 /* =================================================== */
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
-#include "include/SW_VegProd.h"     // for BIO_INDEX, SW_VPD_alloc_outptrs
+#include "include/SW_VegProd.h"     // for BIO_INDEX
 #include "include/filefuncs.h"      // for LogError, CloseFile, GetALine
 #include "include/generic.h"        // for LOGERROR, Bool, LOGWARN, GT
 #include "include/myMemory.h"       // for Mem_Calloc, Mem_Malloc
@@ -581,22 +581,6 @@ void SW_VPD_fix_cover(SW_VEGPROD *SW_VegProd, LOG_INFO *LogInfo) {
 }
 
 /**
-@brief Initialize all possible pointers in SW_VEGPROD to NULL
-
-@param[in,out] SW_VegProd SW_VegProd SW_VegProd Struct of type SW_VEGPROD
-    describing surface cover conditions in the simulation
-*/
-void SW_VPD_init_ptrs(SW_VEGPROD *SW_VegProd) {
-    OutPeriod pd;
-
-    // Initialize output structures:
-    ForEachOutPeriod(pd) {
-        SW_VegProd->p_accu[pd] = NULL;
-        SW_VegProd->p_oagg[pd] = NULL;
-    }
-}
-
-/**
 @brief Constructor for SW_VegProd->
 
 @param[out] SW_VegProd SW_VegProd Struct of type SW_VEGPROD describing surface
@@ -607,37 +591,6 @@ void SW_VPD_construct(SW_VEGPROD *SW_VegProd) {
 
     // Clear the module structure:
     memset(SW_VegProd, 0, sizeof(SW_VEGPROD));
-}
-
-/**
-@brief Allocate dynamic memory for output pointers in the SW_VEGPROD struct
-
-@param[out] SW_VegProd SW_VegProd Struct of type SW_VEGPROD describing
-    surface cover conditions in the simulation
-@param[out] LogInfo Holds information on warnings and errors
-*/
-void SW_VPD_alloc_outptrs(SW_VEGPROD *SW_VegProd, LOG_INFO *LogInfo) {
-    OutPeriod pd;
-
-    // Allocate output structures:
-    ForEachOutPeriod(pd) {
-        SW_VegProd->p_accu[pd] = (SW_VEGPROD_OUTPUTS *) Mem_Calloc(
-            1, sizeof(SW_VEGPROD_OUTPUTS), "SW_VPD_alloc_outptrs()", LogInfo
-        );
-
-        if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
-        if (pd > eSW_Day) {
-            SW_VegProd->p_oagg[pd] = (SW_VEGPROD_OUTPUTS *) Mem_Calloc(
-                1, sizeof(SW_VEGPROD_OUTPUTS), "SW_VPD_alloc_outptrs()", LogInfo
-            );
-
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
-        }
-    }
 }
 
 void SW_VPD_init_run(
@@ -669,29 +622,6 @@ void SW_VPD_init_run(
     }
 
     checkBiomass(SW_VegProd, LogInfo);
-}
-
-/**
-@brief Deconstructor for SW_VegProd->
-
-@param[out] SW_VegProd Struct of type SW_VEGPROD describing surface
-    cover conditions in the simulation
-*/
-void SW_VPD_deconstruct(SW_VEGPROD *SW_VegProd) {
-    OutPeriod pd;
-
-    // De-allocate output structures:
-    ForEachOutPeriod(pd) {
-        if (pd > eSW_Day && !isnull(SW_VegProd->p_oagg[pd])) {
-            free(SW_VegProd->p_oagg[pd]);
-            SW_VegProd->p_oagg[pd] = NULL;
-        }
-
-        if (!isnull(SW_VegProd->p_accu[pd])) {
-            free(SW_VegProd->p_accu[pd]);
-            SW_VegProd->p_accu[pd] = NULL;
-        }
-    }
 }
 
 /**

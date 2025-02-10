@@ -114,11 +114,7 @@ void SW_VPD_new_year(SW_VEGPROD *SW_VegProd, SW_MODEL *SW_Model);
 
 void SW_VPD_fix_cover(SW_VEGPROD *SW_VegProd, LOG_INFO *LogInfo);
 
-void SW_VPD_init_ptrs(SW_VEGPROD *SW_VegProd);
-
 void SW_VPD_construct(SW_VEGPROD *SW_VegProd);
-
-void SW_VPD_alloc_outptrs(SW_VEGPROD *SW_VegProd, LOG_INFO *LogInfo);
 
 void estimateVegetationFromClimate(
     SW_VEGPROD *SW_VegProd,
@@ -165,8 +161,6 @@ void SW_VPD_init_run(
     Bool estVegFromText,
     LOG_INFO *LogInfo
 );
-
-void SW_VPD_deconstruct(SW_VEGPROD *SW_VegProd);
 
 void checkBiomass(SW_VEGPROD *SW_VegProd, LOG_INFO *LogInfo);
 

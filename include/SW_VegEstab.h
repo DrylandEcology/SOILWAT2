@@ -52,8 +52,6 @@ void SW_VES_init_ptrs(SW_VEGESTAB *SW_VegEstab);
 
 void SW_VES_construct(SW_VEGESTAB *SW_VegEstab);
 
-void SW_VES_alloc_outptrs(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo);
-
 void SW_VegEstab_alloc_outptrs(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo);
 
 void SW_VES_deconstruct(SW_VEGESTAB *SW_VegEstab);
