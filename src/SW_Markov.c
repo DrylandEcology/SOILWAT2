@@ -20,7 +20,7 @@
 /* =================================================== */
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
-#include "include/SW_Markov.h"      // for SW_MKV_construct, SW_MKV_deconst...
+#include "include/SW_Markov.h"      // for SW_MKV_construct
 #include "include/filefuncs.h"      // for LogError, CloseFile, GetALine
 #include "include/generic.h"        // for LOGERROR, swFALSE
 #include "include/myMemory.h"       // for Mem_Calloc, Mem_Copy
@@ -32,6 +32,7 @@
 #include <math.h>                   // for isfinite
 #include <stdio.h>                  // for NULL, sscanf, FILE, size_t
 #include <stdlib.h>                 // for free
+#include <string.h>                 // for memset
 
 /* =================================================== */
 /*             Local Function Definitions              */
@@ -215,23 +216,6 @@ void (*test_mvnorm)(double *, double *, double, double, double, double, double, 
 /* --------------------------------------------------- */
 
 /**
-@brief Initialize all possible markov pointers to NULL
-
-@param[in,out] SW_Markov Struct of type SW_MARKOV which holds values
-    related to temperature and weather generator
-*/
-void SW_MKV_init_ptrs(SW_MARKOV *SW_Markov) {
-    SW_Markov->wetprob = NULL;
-    SW_Markov->dryprob = NULL;
-    SW_Markov->avg_ppt = NULL;
-    SW_Markov->std_ppt = NULL;
-    SW_Markov->cfxw = NULL;
-    SW_Markov->cfxd = NULL;
-    SW_Markov->cfnw = NULL;
-    SW_Markov->cfnd = NULL;
-}
-
-/**
 @brief Markov constructor for global variables.
 
 @param[in] rng_seed Initial state for Markov
@@ -239,7 +223,9 @@ void SW_MKV_init_ptrs(SW_MARKOV *SW_Markov) {
         related to temperature and weather generator
 */
 void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV *SW_Markov) {
-/* =================================================== */
+    /* =================================================== */
+
+    memset(SW_Markov, 0, sizeof(*SW_Markov));
 
 /* Set seed of `markov_rng`
   - SOILWAT2: set seed here
@@ -255,118 +241,6 @@ void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV *SW_Markov) {
     SW_Markov->ppt_events = 0;
 }
 
-/**
-@brief Dynamically allocate memory for SW_MARKOV elements
-
-@param[out] SW_Markov Struct of type SW_MARKOV which holds parameters
-    for the weather generator
-@param[out] LogInfo Holds information on warnings and errors
-*/
-void allocateMKV(SW_MARKOV *SW_Markov, LOG_INFO *LogInfo) {
-    size_t s = sizeof(double);
-
-    SW_Markov->wetprob =
-        (double *) Mem_Calloc(MAX_DAYS, s, "allocateMKV", LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-
-    SW_Markov->dryprob =
-        (double *) Mem_Calloc(MAX_DAYS, s, "allocateMKV", LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-
-    SW_Markov->avg_ppt =
-        (double *) Mem_Calloc(MAX_DAYS, s, "allocateMKV", LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-
-    SW_Markov->std_ppt =
-        (double *) Mem_Calloc(MAX_DAYS, s, "allocateMKV", LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-
-    SW_Markov->cfxw =
-        (double *) Mem_Calloc(MAX_DAYS, s, "allocateMKV", LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-
-    SW_Markov->cfxd =
-        (double *) Mem_Calloc(MAX_DAYS, s, "allocateMKV", LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-
-    SW_Markov->cfnw =
-        (double *) Mem_Calloc(MAX_DAYS, s, "allocateMKV", LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-
-    SW_Markov->cfnd =
-        (double *) Mem_Calloc(MAX_DAYS, s, "allocateMKV", LogInfo);
-}
-
-/** Free dynamically allocated memory in SW_MARKOV
- *
- * @param[in,out] SW_Markov Struct of type SW_MARKOV which holds parameters
- *  for the weather generator
- */
-void deallocateMKV(SW_MARKOV *SW_Markov) {
-
-    if (!isnull(SW_Markov->wetprob)) {
-        free(SW_Markov->wetprob);
-        SW_Markov->wetprob = NULL;
-    }
-
-    if (!isnull(SW_Markov->dryprob)) {
-        free(SW_Markov->dryprob);
-        SW_Markov->dryprob = NULL;
-    }
-
-    if (!isnull(SW_Markov->avg_ppt)) {
-        free(SW_Markov->avg_ppt);
-        SW_Markov->avg_ppt = NULL;
-    }
-
-    if (!isnull(SW_Markov->std_ppt)) {
-        free(SW_Markov->std_ppt);
-        SW_Markov->std_ppt = NULL;
-    }
-
-    if (!isnull(SW_Markov->cfxw)) {
-        free(SW_Markov->cfxw);
-        SW_Markov->cfxw = NULL;
-    }
-
-    if (!isnull(SW_Markov->cfxd)) {
-        free(SW_Markov->cfxd);
-        SW_Markov->cfxd = NULL;
-    }
-
-    if (!isnull(SW_Markov->cfnw)) {
-        free(SW_Markov->cfnw);
-        SW_Markov->cfnw = NULL;
-    }
-
-    if (!isnull(SW_Markov->cfnd)) {
-        free(SW_Markov->cfnd);
-        SW_Markov->cfnd = NULL;
-    }
-}
-
-/**
-@brief Markov deconstructor; frees up memory space.
-
-@param[in,out] SW_Markov Struct of type SW_MARKOV which holds values
-        related to temperature and weather generator
-*/
-void SW_MKV_deconstruct(SW_MARKOV *SW_Markov) { deallocateMKV(SW_Markov); }
-
 /** Copy SW_MARKOV memory
 
  @param[out] dest_MKV Struct of type SW_MARKOV which holds parameters
@@ -376,7 +250,7 @@ void SW_MKV_deconstruct(SW_MARKOV *SW_Markov) { deallocateMKV(SW_Markov); }
  for the weather generator
 */
 void copyMKV(SW_MARKOV *dest_MKV, SW_MARKOV *template_MKV) {
-    size_t s = sizeof(double) * MAX_DAYS; /* see `allocateMKV()` */
+    size_t s = sizeof(double) * MAX_DAYS;
 
     Mem_Copy(dest_MKV->wetprob, template_MKV->wetprob, s);
     Mem_Copy(dest_MKV->dryprob, template_MKV->dryprob, s);
@@ -882,7 +756,6 @@ void SW_MKV_setup(
     Bool read_cov;
 
     SW_MKV_construct(Weather_rng_seed, SW_Markov);
-    allocateMKV(SW_Markov, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }

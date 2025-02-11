@@ -199,18 +199,12 @@ void SW_RUN_deepCopy(
         }
     }
 
-    /* Allocate memory and copy weather generator parameters */
-    SW_MKV_init_ptrs(&dest->Markov);
+    /* Copy weather generator parameters */
     if (dest->Weather.generateWeatherMethod == 2) {
-        allocateMKV(&dest->Markov, LogInfo);
-        if (LogInfo->stopRun) {
-            return; // Exit prematurely due to error
-        }
-
         copyMKV(&dest->Markov, &source->Markov);
     }
 
-    /* Allocate memory and copy vegetation establishment parameters */
+    /* Copy vegetation establishment parameters */
     SW_VES_init_ptrs(&dest->VegEstab);
     if (LogInfo->stopRun) {
         return; // Exit prematurely due to error
@@ -413,7 +407,7 @@ program exit
 */
 void SW_CTL_init_ptrs(SW_RUN *sw) {
     SW_WTH_init_ptrs(&sw->Weather);
-    SW_MKV_init_ptrs(&sw->Markov);
+    // SW_MKV_init_ptrs() not needed
     SW_VES_init_ptrs(&sw->VegEstab);
     // SW_VPD_init_ptrs() not needed
     SW_OUT_init_ptrs(&sw->OutRun);
@@ -584,7 +578,7 @@ void SW_CTL_clear_model(Bool full_reset, SW_RUN *sw) {
 
     SW_MDL_deconstruct();
     SW_WTH_deconstruct(&sw->Weather);
-    SW_MKV_deconstruct(&sw->Markov);
+    // SW_MKV_deconstruct() not needed
     // SW_SKY_deconstruct() not needed
     // SW_SIT_deconstruct() not needed
     SW_VES_deconstruct(&sw->VegEstab);

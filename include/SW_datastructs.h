@@ -1192,20 +1192,18 @@ typedef struct {
 /* --------------------------------------------------- */
 
 typedef struct {
-
-    /* pointers to arrays of probabilities for each day saves some space */
-    /* by not being allocated if markov weather not requested by user */
-    /* alas, multi-dimensional arrays aren't so convenient */
-    double *wetprob, /* probability of being wet today given a wet yesterday */
-        *dryprob,    /* probability of being wet today given a dry yesterday */
-        *avg_ppt,    /* mean precip (cm) of wet days */
-        *std_ppt,    /* std dev. for precip of wet days */
-        *cfxw,       /*correction factor for tmax for wet days */
-        *cfxd,       /*correction factor for tmax for dry days */
-        *cfnw,       /*correction factor for tmin for wet days */
-        *cfnd,       /*correction factor for tmin for dry days */
-        u_cov[MAX_WEEKS][2], /* mean weekly maximum and minimum temperature in
-                                degree Celsius */
+    double wetprob[MAX_DAYS], /* probability of being wet today given a wet
+                                 yesterday */
+        dryprob[MAX_DAYS],    /* probability of being wet today given a dry
+                                 yesterday */
+        avg_ppt[MAX_DAYS],    /* mean precip (cm) of wet days */
+        std_ppt[MAX_DAYS],    /* std dev. for precip of wet days */
+        cfxw[MAX_DAYS],       /*correction factor for tmax for wet days */
+        cfxd[MAX_DAYS],       /*correction factor for tmax for dry days */
+        cfnw[MAX_DAYS],       /*correction factor for tmin for wet days */
+        cfnd[MAX_DAYS],       /*correction factor for tmin for dry days */
+        u_cov[MAX_WEEKS][2],  /* mean weekly maximum and minimum temperature in
+                                 degree Celsius */
         v_cov[MAX_WEEKS][2][2]; /* covariance matrix */
     int ppt_events;             /* number of ppt events generated this year */
     sw_random_t markov_rng;     // used by STEPWAT2
