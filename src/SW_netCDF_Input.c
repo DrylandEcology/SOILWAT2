@@ -5167,7 +5167,7 @@ rather than having separate functions, this will specifically read
 temporal/spatial information for a set of simulation runs
 @param[out] SW_Model Struct of type SW_MODEL holding basic time information
 about the simulation
-@param[out] SW_Sky Struct of type SW_SKY which describes sky conditions
+@param[out] SW_SkyIn Struct of type SW_SKY_INPUTS which describes sky conditions
 over the simulated site
 @param[in] inFiles List of all input files throughout all input keys
 @param[in] ncSUID Current simulation unit identifier for which is used
@@ -5179,7 +5179,7 @@ input keys
 static void read_spatial_topo_climate_inputs(
     SW_DOMAIN *SW_Domain,
     SW_MODEL *SW_Model,
-    SW_SKY *SW_Sky,
+    SW_SKY_INPUTS *SW_SkyIn,
     char ***inFiles,
     const size_t ncSUID[],
     sw_converter_t ***convs,
@@ -5227,11 +5227,11 @@ static void read_spatial_topo_climate_inputs(
         /* must match possVarNames[eSW_InTopo] (without spatial index) */
         {&SW_Model->elevation, &SW_Model->slope, &SW_Model->aspect},
         /* must match possVarNames[eSW_InClimate] (without spatial index) */
-        {SW_Sky->cloudcov,
-         SW_Sky->windspeed,
-         SW_Sky->r_humidity,
-         SW_Sky->snow_density,
-         SW_Sky->n_rain_per_day}
+        {SW_SkyIn->cloudcov,
+         SW_SkyIn->windspeed,
+         SW_SkyIn->r_humidity,
+         SW_SkyIn->snow_density,
+         SW_SkyIn->n_rain_per_day}
     };
     double tempVals[MAX_MONTHS];
 
@@ -7697,7 +7697,7 @@ void SW_NCIN_read_inputs(
     /* Read all activated inputs */
     if (readSpatial || readTopo || readClimate) {
         read_spatial_topo_climate_inputs(
-            SW_Domain, &sw->Model, &sw->Sky, ncInFiles, ncSUID, convs, LogInfo
+            SW_Domain, &sw->Model, &sw->SkyIn, ncInFiles, ncSUID, convs, LogInfo
         );
         if (LogInfo->stopRun) {
             return;
@@ -7714,9 +7714,9 @@ void SW_NCIN_read_inputs(
                 SW_WeatherIn->use_windSpeedMonthly,
                 sw->Model.cum_monthdays,
                 sw->Model.days_in_month,
-                sw->Sky.cloudcov,
-                sw->Sky.windspeed,
-                sw->Sky.r_humidity
+                sw->SkyIn.cloudcov,
+                sw->SkyIn.windspeed,
+                sw->SkyIn.r_humidity
             );
         }
     }
@@ -7737,7 +7737,7 @@ void SW_NCIN_read_inputs(
         }
 
         SW_WTH_finalize_all_weather(
-            &sw->Markov,
+            &sw->MarkovIn,
             &sw->WeatherIn,
             sw->Model.cum_monthdays,
             sw->Model.days_in_month,

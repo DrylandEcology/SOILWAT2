@@ -105,7 +105,7 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 
     // SW_SKY_new_year(): Update daily climate variables from monthly values
     SW_SKY_new_year(
-        &sw->Model, sw->Sky.snow_density, sw->Sky.snow_density_daily
+        &sw->Model, sw->SkyIn.snow_density, sw->SkyIn.snow_density_daily
     );
 
     // SW_SIT_new_year() not needed
@@ -202,7 +202,7 @@ void SW_RUN_deepCopy(
 
     /* Copy weather generator parameters */
     if (dest->WeatherIn.generateWeatherMethod == 2) {
-        copyMKV(&dest->Markov, &source->Markov);
+        copyMKV(&dest->MarkovIn, &source->MarkovIn);
     }
 
     /* Copy vegetation establishment parameters */
@@ -411,7 +411,7 @@ void SW_CTL_init_ptrs(SW_RUN *sw) {
     // SW_MKV_init_ptrs() not needed
     SW_VES_init_ptrs(&sw->VegEstab);
     // SW_VPD_init_ptrs() not needed
-    SW_OUT_init_ptrs(&sw->OutRun);
+    SW_OUT_init_ptrs(&sw->OutRun, &sw->SW_PathOutputs);
     SW_SWC_init_ptrs(&sw->SoilWat);
 }
 
@@ -560,7 +560,7 @@ void SW_CTL_setup_model(
         return; // Exit function prematurely due to error
     }
     SW_SWC_construct(&sw->SoilWat);
-    SW_CBN_construct(&sw->Carbon);
+    SW_CBN_construct(&sw->CarbonIn);
 }
 
 /**
@@ -582,7 +582,7 @@ void SW_CTL_clear_model(Bool full_reset, SW_RUN *sw) {
     SW_MDL_deconstruct();
     SW_WTH_deconstruct(&sw->WeatherIn.allHist);
     // SW_MKV_deconstruct() not needed
-    // SW_SKY_deconstruct() not needed
+    // SW_SKY_INPUTS_deconstruct() not needed
     // SW_SIT_deconstruct() not needed
     SW_VES_deconstruct(&sw->VegEstab);
     // SW_VPD_deconstruct() not needed
@@ -609,9 +609,9 @@ void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
     // SW_MDL_init_run() not needed
     SW_WTH_init_run(&sw->WeatherSim);
     // SW_MKV_init_run() not needed
-    SW_PET_init_run(&sw->AtmDemand);
+    SW_PET_init_run(&sw->AtmDemSim);
 
-    SW_SKY_init_run(&sw->Sky, LogInfo);
+    SW_SKY_init_run(&sw->SkyIn, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -641,11 +641,11 @@ void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
     }
 
     SW_FLW_init_run(&sw->SoilWat);
-    SW_ST_init_run(&sw->StRegValues);
+    SW_ST_init_run(&sw->StRegSimVals);
     // SW_OUT_init_run() handled separately so that SW_CTL_init_run() can be
     //   useful for unit tests, rSOILWAT2, and STEPWAT2 applications
     SW_SWC_init_run(&sw->SoilWat, &sw->Site, &sw->WeatherSim.temp_snow);
-    SW_CBN_init_run(sw->VegProd.veg, &sw->Model, &sw->Carbon, LogInfo);
+    SW_CBN_init_run(sw->VegProd.veg, &sw->Model, &sw->CarbonIn, LogInfo);
 }
 
 /**
@@ -949,7 +949,7 @@ void SW_CTL_read_inputs_from_disk(
         sw_printf(" > 'weather setup'");
     }
 #endif
-    SW_SKY_read(SW_PathInputs->txtInFiles, &sw->Sky, LogInfo);
+    SW_SKY_read(SW_PathInputs->txtInFiles, &sw->SkyIn, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -961,7 +961,7 @@ void SW_CTL_read_inputs_from_disk(
 
     if (sw->WeatherIn.generateWeatherMethod == 2) {
         SW_MKV_setup(
-            &sw->Markov,
+            &sw->MarkovIn,
             sw->WeatherIn.rng_seed,
             sw->WeatherIn.generateWeatherMethod,
             SW_PathInputs->txtInFiles,
@@ -977,7 +977,9 @@ void SW_CTL_read_inputs_from_disk(
 #endif
     }
 
-    SW_WTH_read(&sw->WeatherIn, &sw->Sky, &sw->Model, readTextInputs, LogInfo);
+    SW_WTH_read(
+        &sw->WeatherIn, &sw->SkyIn, &sw->Model, readTextInputs, LogInfo
+    );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -1001,7 +1003,7 @@ void SW_CTL_read_inputs_from_disk(
     SW_SIT_read(
         &sw->Site,
         SW_PathInputs->txtInFiles,
-        &sw->Carbon,
+        &sw->CarbonIn,
         hasConsistentSoilLayerDepths,
         LogInfo
     );
@@ -1065,7 +1067,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_CBN_read(&sw->Carbon, &sw->Model, SW_PathInputs->txtInFiles, LogInfo);
+    SW_CBN_read(&sw->CarbonIn, &sw->Model, SW_PathInputs->txtInFiles, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }

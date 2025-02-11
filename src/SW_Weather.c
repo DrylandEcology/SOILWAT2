@@ -1221,7 +1221,7 @@ freeTempWeather:
 /**
 @brief Impute missing values and scale with monthly parameters
 
-@param[in,out] SW_Markov Struct of type SW_MARKOV which holds values
+@param[in,out] SW_MarkovIn Struct of type SW_MARKOV_INPUTS which holds values
     related to temperature and weather generator
 @param[in,out] w Struct of type SW_WEATHER_INPUTS holding all relevant
     information pretaining to meteorological input data
@@ -1234,7 +1234,7 @@ Finalize weather values after they have been read in via
 (the latter also handles (re-)allocation).
 */
 void finalizeAllWeather(
-    SW_MARKOV *SW_Markov,
+    SW_MARKOV_INPUTS *SW_MarkovIn,
     SW_WEATHER_INPUTS *w,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
@@ -1246,7 +1246,7 @@ void finalizeAllWeather(
 
     // Impute missing values
     generateMissingWeather(
-        SW_Markov,
+        SW_MarkovIn,
         w->allHist,
         w->startYear,
         w->n_years,
@@ -1302,7 +1302,7 @@ void finalizeAllWeather(
 }
 
 void SW_WTH_finalize_all_weather(
-    SW_MARKOV *SW_Markov,
+    SW_MARKOV_INPUTS *SW_MarkovIn,
     SW_WEATHER_INPUTS *SW_WeatherIn,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
@@ -1310,7 +1310,7 @@ void SW_WTH_finalize_all_weather(
 ) {
 
     finalizeAllWeather(
-        SW_Markov, SW_WeatherIn, cum_monthdays, days_in_month, LogInfo
+        SW_MarkovIn, SW_WeatherIn, cum_monthdays, days_in_month, LogInfo
     );
 }
 
@@ -1503,7 +1503,7 @@ any historical weather data files from disk
 this requires that appropriate structures are initialized.
 
 @param[in,out] allHist 1D array holding all weather data
-@param[in,out] SW_Markov Struct of type SW_MARKOV which holds values
+@param[in,out] SW_MarkovIn Struct of type SW_MARKOV_INPUTS which holds values
     related to temperature and weather generator
 @param[in] startYear Start year of the simulation
 @param[in] n_years Number of years in simulation
@@ -1514,7 +1514,7 @@ this requires that appropriate structures are initialized.
 @param[out] LogInfo Holds information on warnings and errors
 */
 void generateMissingWeather(
-    SW_MARKOV *SW_Markov,
+    SW_MARKOV_INPUTS *SW_MarkovIn,
     SW_WEATHER_HIST *allHist,
     unsigned int startYear,
     unsigned int n_years,
@@ -1605,7 +1605,7 @@ void generateMissingWeather(
                     // Markov weather generator (Tmax, Tmin, and PPT)
                     allHist[yearIndex].ppt[day] = yesterdayPPT;
                     SW_MKV_today(
-                        SW_Markov,
+                        SW_MarkovIn,
                         day,
                         year,
                         &allHist[yearIndex].temp_max[day],
@@ -2599,7 +2599,7 @@ monthly climate parameters, see `SW_WTH_finalize_all_weather()` instead.
 
 @param[in,out] SW_WeatherIn Struct of type SW_WEATHER_INPUTS holding all
 relevant information pretaining to meteorological input data
-@param[in] SW_Sky Struct of type SW_SKY which describes sky conditions
+@param[in] SW_SkyIn Struct of type SW_SKY_INPUTS which describes sky conditions
     of the simulated site
 @param[in] SW_Model Struct of type SW_MODEL holding basic time information
     about the simulation
@@ -2609,7 +2609,7 @@ be turned off when dealing with nc inputs
 */
 void SW_WTH_read(
     SW_WEATHER_INPUTS *SW_WeatherIn,
-    SW_SKY *SW_Sky,
+    SW_SKY_INPUTS *SW_SkyIn,
     SW_MODEL *SW_Model,
     Bool readTextInputs,
     LOG_INFO *LogInfo
@@ -2646,9 +2646,9 @@ void SW_WTH_read(
             SW_WeatherIn->n_input_forcings,
             SW_WeatherIn->dailyInputIndices,
             SW_WeatherIn->dailyInputFlags,
-            SW_Sky->cloudcov,
-            SW_Sky->windspeed,
-            SW_Sky->r_humidity,
+            SW_SkyIn->cloudcov,
+            SW_SkyIn->windspeed,
+            SW_SkyIn->r_humidity,
             SW_Model->elevation,
             SW_Model->cum_monthdays,
             SW_Model->days_in_month,

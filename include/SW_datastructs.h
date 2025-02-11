@@ -64,7 +64,7 @@ typedef struct {
                               that are being simulated. `ppm[index]` is the CO2
                               value for the calendar year `index + 1` */
 
-} SW_CARBON;
+} SW_CARBON_INPUTS;
 
 /* =================================================== */
 /*                  Flowlib structs                    */
@@ -110,7 +110,7 @@ typedef struct {
                  x2BoundsR[MAX_ST_RGR],
                              x1Bounds[MAX_LAYERS],
                              x2Bounds[MAX_LAYERS];*/
-} ST_RGR_VALUES;
+} SW_ST_SIM;
 
 /* =================================================== */
 /*                FlowlibPET struct                    */
@@ -119,7 +119,7 @@ typedef struct {
     double memoized_G_o[MAX_DAYS][TWO_DAYS], msun_angles[MAX_DAYS][7],
         memoized_int_cos_theta[MAX_DAYS][TWO_DAYS],
         memoized_int_sin_beta[MAX_DAYS][TWO_DAYS];
-} SW_ATMD;
+} SW_ATMD_SIM;
 
 /* =================================================== */
 /*                Spin-up struct                    */
@@ -697,7 +697,7 @@ typedef struct {
     double relHumidity;
     /** Daily downward surface shortwave radiation:
         global horizontal irradiation [MJ / m2] or flux density [W / m2],
-        see #SW_WEATHER.desc_rsds
+        see #SW_WEATHER_INPUTS.desc_rsds
     */
     double shortWaveRad;
     /** Daily mean near-surface actual vapor pressure [kPa] */
@@ -727,7 +727,7 @@ typedef struct {
     double r_humidity_daily[MAX_DAYS];
     /** Daily downward surface shortwave radiation:
         global horizontal irradiation [MJ / m2] or flux density [W / m2],
-        see #SW_WEATHER.desc_rsds
+        see #SW_WEATHER_INPUTS.desc_rsds
     */
     double shortWaveRad[MAX_DAYS];
     /** Daily mean near-surface actual vapor pressure [kPa] */
@@ -1110,7 +1110,7 @@ typedef struct {
     /** Across-year mean daily snow density [kg m-3],
         interpolated from monthly values */
     double snow_density_daily[MAX_DAYS + 1];
-} SW_SKY;
+} SW_SKY_INPUTS;
 
 /* =================================================== */
 /*                  VegEstab structs                   */
@@ -1208,7 +1208,7 @@ typedef struct {
     int ppt_events;             /* number of ppt events generated this year */
     sw_random_t markov_rng;     // used by STEPWAT2
 
-} SW_MARKOV;
+} SW_MARKOV_INPUTS;
 
 /* =================================================== */
 /*                 Output struct/enums                 */
@@ -1652,21 +1652,21 @@ struct SW_RUN {
     SW_MODEL Model;
     SW_SITE Site;
     SW_VEGESTAB VegEstab;
-    SW_SKY Sky;
-    SW_CARBON Carbon;
-    ST_RGR_VALUES StRegValues;
-    SW_PATH_OUTPUTS SW_PathOutputs;
-    SW_MARKOV Markov;
-    SW_ATMD AtmDemand;
 
     /* Input information */
     SW_WEATHER_INPUTS WeatherIn;
+    SW_SKY_INPUTS SkyIn;
+    SW_CARBON_INPUTS CarbonIn;
+    SW_MARKOV_INPUTS MarkovIn;
 
     /* Values used/modified during simulation that's not strictly inputs */
     SW_WEATHER_SIM WeatherSim;
+    SW_ST_SIM StRegSimVals;
+    SW_ATMD_SIM AtmDemSim;
 
     /* Output information */
     SW_OUT_RUN OutRun;
+    SW_PATH_OUTPUTS SW_PathOutputs;
 
     /* This section contains values for computing the output quantities
        for all types of outputs.

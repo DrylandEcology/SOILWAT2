@@ -315,16 +315,16 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
 #endif
 
 
-    if (sw->Site.use_soil_temp && !sw->StRegValues.soil_temp_init) {
+    if (sw->Site.use_soil_temp && !sw->StRegSimVals.soil_temp_init) {
         /* We initialize soil temperature (and un/frozen state of soil layers)
                  before water flow of first day because we use un/frozen
            states), but calculate soil temperature at end of each day
         */
         SW_ST_setup_run(
-            &sw->StRegValues,
+            &sw->StRegSimVals,
             &sw->Site,
             &sw->SoilWat.soiltempError,
-            &sw->StRegValues.soil_temp_init,
+            &sw->StRegSimVals.soil_temp_init,
             sw->WeatherSim.temp_avg,
             sw->SoilWat.swcBulk[Today],
             &sw->WeatherSim.surfaceAvg,
@@ -346,7 +346,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     }
 
     sw->SoilWat.H_gt = solar_radiation(
-        &sw->AtmDemand,
+        &sw->AtmDemSim,
         doy,
         sw->Model.latitude,
         sw->Model.elevation,
@@ -383,7 +383,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
 
     /* snowdepth scaling based on snowpack at start of day (before snowloss) */
     snowdepth0 = SW_SnowDepth(
-        sw->SoilWat.snowpack[Today], sw->Sky.snow_density_daily[doy]
+        sw->SoilWat.snowpack[Today], sw->SkyIn.snow_density_daily[doy]
     );
     /* if snow depth is deeper than vegetation height then
      - rain and snowmelt infiltrates directly to soil (no vegetation or litter
@@ -413,7 +413,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
                 &h2o_for_soil,
                 &sw->SoilWat.int_veg[k],
                 &sw->SoilWat.veg_int_storage[k],
-                sw->Sky.n_rain_per_day[month],
+                sw->SkyIn.n_rain_per_day[month],
                 sw->VegProd.veg[k].veg_kSmax,
                 sw->VegProd.veg[k].bLAI_total_daily[doy],
                 scale_veg[k]
@@ -435,7 +435,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
                     &h2o_for_soil,
                     &sw->SoilWat.litter_int,
                     &sw->SoilWat.litter_int_storage,
-                    sw->Sky.n_rain_per_day[month],
+                    sw->SkyIn.n_rain_per_day[month],
                     sw->VegProd.veg[k].lit_kSmax,
                     sw->VegProd.veg[k].litter_daily[doy],
                     sw->VegProd.veg[k].cov.fCover
@@ -677,7 +677,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
 
     /* Calculate snowdepth for output based on today's final snowpack */
     sw->SoilWat.snowdepth = SW_SnowDepth(
-        sw->SoilWat.snowpack[Today], sw->Sky.snow_density_daily[doy]
+        sw->SoilWat.snowpack[Today], sw->SkyIn.snow_density_daily[doy]
     );
 
     pet2 = fmax(0., sw->SoilWat.pet - sw->WeatherSim.snowloss);
@@ -960,7 +960,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     // done
     if (sw->Site.use_soil_temp) {
         soil_temperature(
-            &sw->StRegValues,
+            &sw->StRegSimVals,
             &sw->WeatherSim.surfaceMin,
             &sw->WeatherSim.surfaceAvg,
             &sw->WeatherSim.surfaceMax,

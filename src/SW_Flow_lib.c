@@ -211,7 +211,7 @@ calls to surface_temperature_under_snow to account for the new parameters
 #include "include/SW_Flow_lib.h"    // for EsT_partitioning, SW_ST_init_run
 #include "include/filefuncs.h"      // for LogError
 #include "include/generic.h"        // for interpolation, GT, LT, fmax, fmin
-#include "include/SW_datastructs.h" // for LOG_INFO, SW_SITE, ST_RGR_VALUES
+#include "include/SW_datastructs.h" // for LOG_INFO, SW_SITE, SW_ST_SIM
 #include "include/SW_Defines.h"     // for MAX_LAYERS, MAX_ST_RGR, TimeInt
 #include "include/SW_SoilWater.h"   // for SW_SWRC_SWCtoSWP
 #include <math.h>                   // for fabs, exp, log10, copysign
@@ -1805,10 +1805,10 @@ double surface_temperature_under_snow(double airTempAvg, double snow) {
     return tSoilAvg;
 }
 
-void SW_ST_init_run(ST_RGR_VALUES *StRegValues) {
-    StRegValues->soil_temp_init = swFALSE;
-    StRegValues->fusion_pool_init = swFALSE;
-    StRegValues->delta_time = SEC_PER_DAY;
+void SW_ST_init_run(SW_ST_SIM *StRegSimVals) {
+    StRegSimVals->soil_temp_init = swFALSE;
+    StRegSimVals->fusion_pool_init = swFALSE;
+    StRegSimVals->delta_time = SEC_PER_DAY;
 }
 
 /**
@@ -1816,13 +1816,13 @@ void SW_ST_init_run(ST_RGR_VALUES *StRegValues) {
 
 Calculate soil temperature layer profile and
 translation matrix between soil layer profile and soil temperature layer
-profile. Then, calculate initial values of members of SW_StRegValues across
+profile. Then, calculate initial values of members of SW_StRegSimVals across
 soil temperature layer profile,
 i.e., interpolate from initial site values across soil layer profile,
 including soil temperature, soil density, field capacity, and wilting point.
 Initialize soil temperature and frozen status across the soil layer profile.
 
-@param[out] SW_StRegValues Struct of type ST_RGR_VALUES which keeps
+@param[out] SW_StRegSimVals Struct of type SW_ST_SIM which keeps
     track of variables used within `soil_temperature()`
 @param[in] SW_Site Struct of type SW_SITE describing the simulated site
 @param[in,out] ptr_stError Boolean indicating whether there was an error.
@@ -1838,7 +1838,7 @@ Initialize soil temperature and frozen status across the soil layer profile.
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_ST_setup_run(
-    ST_RGR_VALUES *SW_StRegValues,
+    SW_ST_SIM *SW_StRegSimVals,
     SW_SITE *SW_Site,
     Bool *ptr_stError,
     Bool *soil_temp_init,
@@ -1865,13 +1865,13 @@ void SW_ST_setup_run(
         /*
         Calculate soil temperature layer profile and
         translation matrix between soil layer profile and soil temperature layer
-        profile. Then, calculate initial values of members of SW_StRegValues
+        profile. Then, calculate initial values of members of SW_StRegSimVals
         across soil temperature layer profile, i.e., interpolate from initial
         site values across soil layer profile, including soil temperature, soil
         density, field capacity, and wilting point.
         */
         soil_temperature_setup(
-            SW_StRegValues,
+            SW_StRegSimVals,
             SW_Site->soilBulk_density,
             SW_Site->soils.width,
             SW_Site->soils.avgLyrTempInit,
@@ -1914,7 +1914,7 @@ void SW_ST_setup_run(
 /**
 @brief Initialize soil structure and properties for soil temperature simulation.
 
-@param[out] SW_StRegValues Struct of type ST_RGR_VALUES which keeps track of
+@param[out] SW_StRegSimVals Struct of type SW_ST_SIM which keeps track of
     variables used within `soil_temperature()`.
 @param[in] bDensity An array of the bulk density of the whole soil per soil
     layer, (g/cm3).
@@ -1939,7 +1939,7 @@ void SW_ST_setup_run(
 @param[out] LogInfo Holds information on warnings and errors
 */
 void soil_temperature_setup(
-    ST_RGR_VALUES *SW_StRegValues,
+    SW_ST_SIM *SW_StRegSimVals,
     double bDensity[],
     double width[],
     double avgLyrTempInit[],
@@ -2012,25 +2012,25 @@ void soil_temperature_setup(
 
     // init st
     for (i = 0; i < nRgr + 1; i++) {
-        SW_StRegValues->fcR[i] = 0.0;
-        SW_StRegValues->wpR[i] = 0.0;
-        SW_StRegValues->bDensityR[i] = 0.0;
-        SW_StRegValues->oldavgLyrTempR[i] = 0.0;
+        SW_StRegSimVals->fcR[i] = 0.0;
+        SW_StRegSimVals->wpR[i] = 0.0;
+        SW_StRegSimVals->bDensityR[i] = 0.0;
+        SW_StRegSimVals->oldavgLyrTempR[i] = 0.0;
         for (j = 0; j < nlyrs + 1; j++) {
             // last column is used for soil temperature layers that are
             // deeper than the deepest soil profile layer
-            SW_StRegValues->tlyrs_by_slyrs[i][j] = 0.0;
+            SW_StRegSimVals->tlyrs_by_slyrs[i][j] = 0.0;
         }
     }
-    SW_StRegValues->oldavgLyrTempR[nRgr + 1] = 0.0;
+    SW_StRegSimVals->oldavgLyrTempR[nRgr + 1] = 0.0;
 
     // calculate evenly spaced depths of soil temperature profile
     for (i = 0; i < nRgr + 1; i++) {
         acc += deltaX;
-        SW_StRegValues->depthsR[i] = acc;
+        SW_StRegSimVals->depthsR[i] = acc;
 #ifdef SWDEBUG
         if (debug) {
-            sw_printf("\n i=%u, depthsR = %f", i, SW_StRegValues->depthsR[i]);
+            sw_printf("\n i=%u, depthsR = %f", i, SW_StRegSimVals->depthsR[i]);
         }
 #endif
     }
@@ -2078,7 +2078,7 @@ void soil_temperature_setup(
             } else {
                 // add from next (x2) soil layer
                 j = x2;
-                if (LT(SW_StRegValues->depthsR[i], depths[x2])) {
+                if (LT(SW_StRegSimVals->depthsR[i], depths[x2])) {
                     // soil temperatur layer ends within x2-th soil layer
                     d2 = fmax(deltaX - acc, 0.0);
                     d1 = width[x2] - d2;
@@ -2089,14 +2089,14 @@ void soil_temperature_setup(
                 }
             }
             acc += d2;
-            SW_StRegValues->tlyrs_by_slyrs[i][j] = d2;
+            SW_StRegSimVals->tlyrs_by_slyrs[i][j] = d2;
         }
         x1 = x2;
 
         if (x2 >= nlyrs) {
             // soil temperature profile is deeper than deepest
             // soil layer; copy data from deepest soil layer
-            SW_StRegValues->tlyrs_by_slyrs[i][x2] = -(deltaX - acc);
+            SW_StRegSimVals->tlyrs_by_slyrs[i][x2] = -(deltaX - acc);
         }
     }
 #ifdef SWDEBUG
@@ -2105,7 +2105,10 @@ void soil_temperature_setup(
             sw_printf("\ntl_by_sl");
             for (j = 0; j < nlyrs + 1; j++) {
                 sw_printf(
-                    "[%i,%i]=%3.2f ", i, j, SW_StRegValues->tlyrs_by_slyrs[i][j]
+                    "[%i,%i]=%3.2f ",
+                    i,
+                    j,
+                    SW_StRegSimVals->tlyrs_by_slyrs[i][j]
                 );
             }
         }
@@ -2116,13 +2119,13 @@ void soil_temperature_setup(
     // bulk density of the whole soil, and
     // initial soil temperature for layers of the soil temperature profile
     lyrSoil_to_lyrTemp(
-        SW_StRegValues->tlyrs_by_slyrs,
+        SW_StRegSimVals->tlyrs_by_slyrs,
         nlyrs,
         width,
         bDensity,
         nRgr,
         deltaX,
-        SW_StRegValues->bDensityR
+        SW_StRegSimVals->bDensityR
     );
     lyrSoil_to_lyrTemp_temperature(
         nlyrs,
@@ -2130,16 +2133,16 @@ void soil_temperature_setup(
         avgLyrTempInit,
         sTconst,
         nRgr,
-        SW_StRegValues->depthsR,
+        SW_StRegSimVals->depthsR,
         theMaxDepth,
-        SW_StRegValues->oldavgLyrTempR
+        SW_StRegSimVals->oldavgLyrTempR
     );
 
     // Initial surface soil temperature `oldavgLyrTempR[0]` is not used;
     // `soil_temperature_today()` utilizes today's (not yesterday's) surface
     // temperatures here, set to missing so that it would produce
     // error/unreasonable values in case it would be used by mistake
-    SW_StRegValues->oldavgLyrTempR[0] = SW_MISSING;
+    SW_StRegSimVals->oldavgLyrTempR[0] = SW_MISSING;
 
     // units of fc and wp are [cm H2O]; units of fcR and wpR are [m3/m3]
     for (i = 0; i < nlyrs; i++) {
@@ -2148,25 +2151,25 @@ void soil_temperature_setup(
     }
 
     lyrSoil_to_lyrTemp(
-        SW_StRegValues->tlyrs_by_slyrs,
+        SW_StRegSimVals->tlyrs_by_slyrs,
         nlyrs,
         width,
         fc_vwc,
         nRgr,
         deltaX,
-        SW_StRegValues->fcR
+        SW_StRegSimVals->fcR
     );
     lyrSoil_to_lyrTemp(
-        SW_StRegValues->tlyrs_by_slyrs,
+        SW_StRegSimVals->tlyrs_by_slyrs,
         nlyrs,
         width,
         wp_vwc,
         nRgr,
         deltaX,
-        SW_StRegValues->wpR
+        SW_StRegSimVals->wpR
     );
 
-// SW_StRegValues->oldavgLyrTempR: index 0 is surface temperature
+// SW_StRegSimVals->oldavgLyrTempR: index 0 is surface temperature
 #ifdef SWDEBUG
     if (debug) {
         for (j = 0; j < nlyrs; j++) {
@@ -2183,7 +2186,7 @@ void soil_temperature_setup(
         }
 
         sw_printf(
-            "\nConv ST oldSurfaceTR=%2.2f", SW_StRegValues->oldavgLyrTempR[0]
+            "\nConv ST oldSurfaceTR=%2.2f", SW_StRegSimVals->oldavgLyrTempR[0]
         );
 
         for (i = 0; i < nRgr + 1; i++) {
@@ -2191,11 +2194,11 @@ void soil_temperature_setup(
                 "\nConv ST depth[%i]=%2.2f, fcR=%2.2f, wpR=%2.2f, "
                 "bDensR=%2.2f, oldTR=%2.2f",
                 i,
-                SW_StRegValues->depthsR[i],
-                SW_StRegValues->fcR[i],
-                SW_StRegValues->wpR[i],
-                SW_StRegValues->bDensityR[i],
-                SW_StRegValues->oldavgLyrTempR[i + 1]
+                SW_StRegSimVals->depthsR[i],
+                SW_StRegSimVals->fcR[i],
+                SW_StRegSimVals->wpR[i],
+                SW_StRegSimVals->bDensityR[i],
+                SW_StRegSimVals->oldavgLyrTempR[i + 1]
             );
         }
     }
@@ -3002,7 +3005,7 @@ avgLyrTemp - soil layer temperatures in celsius
 Equations based on Eitzinger, Parton, and Hartman 2000. @cite Eitzinger2000,
 Parton 1978. @cite Parton1978, Parton 1984. @cite Parton1984
 
-@param[in,out] SW_StRegValues Struct of type SW_StRegValues which keeps
+@param[in,out] SW_StRegSimVals Struct of type SW_StRegSimVals which keeps
      track of variables used within `soil_temperature()`
 @param[out] minTempSurface Minimum surface temperature (&deg;C)
 @param[out] meanTempSurface Average surface temperature (&deg;C)
@@ -3054,7 +3057,7 @@ Parton 1978. @cite Parton1978, Parton 1984. @cite Parton1984
 @param[out] LogInfo Holds information on warnings and errors
 */
 void soil_temperature(
-    ST_RGR_VALUES *SW_StRegValues,
+    SW_ST_SIM *SW_StRegSimVals,
     double *minTempSurface,
     double *meanTempSurface,
     double *maxTempSurface,
@@ -3138,7 +3141,7 @@ void soil_temperature(
     }
 #endif
 
-    if (!SW_StRegValues->soil_temp_init) {
+    if (!SW_StRegSimVals->soil_temp_init) {
         *ptr_stError = swTRUE;
 
         LogError(
@@ -3185,7 +3188,7 @@ void soil_temperature(
     }
 
     lyrSoil_to_lyrTemp(
-        SW_StRegValues->tlyrs_by_slyrs, nlyrs, width, vwc, nRgr, deltaX, vwcR
+        SW_StRegSimVals->tlyrs_by_slyrs, nlyrs, width, vwc, nRgr, deltaX, vwcR
     );
 
 #ifdef SWDEBUG
@@ -3197,12 +3200,12 @@ void soil_temperature(
                 "oldavgLyrTempR %f bDensityR %f",
                 i,
                 deltaX,
-                SW_StRegValues->depthsR[i],
+                SW_StRegSimVals->depthsR[i],
                 vwcR[i],
-                SW_StRegValues->fcR[i],
-                SW_StRegValues->wpR[i],
-                SW_StRegValues->oldavgLyrTempR[i],
-                SW_StRegValues->bDensityR[i]
+                SW_StRegSimVals->fcR[i],
+                SW_StRegSimVals->wpR[i],
+                SW_StRegSimVals->oldavgLyrTempR[i],
+                SW_StRegSimVals->bDensityR[i]
             );
         }
 
@@ -3225,24 +3228,24 @@ void soil_temperature(
     surface_range = *maxTempSurface - *minTempSurface;
 
     soil_temperature_today(
-        &SW_StRegValues->delta_time,
+        &SW_StRegSimVals->delta_time,
         deltaX,
         *meanTempSurface,
         sTconst,
         nRgr,
         avgLyrTempR,
-        SW_StRegValues->oldavgLyrTempR,
+        SW_StRegSimVals->oldavgLyrTempR,
         vwcR,
-        SW_StRegValues->wpR,
-        SW_StRegValues->fcR,
-        SW_StRegValues->bDensityR,
+        SW_StRegSimVals->wpR,
+        SW_StRegSimVals->fcR,
+        SW_StRegSimVals->bDensityR,
         csParam1,
         csParam2,
         shParam,
         ptr_stError,
         surface_range,
         temperatureRangeR,
-        SW_StRegValues->depthsR,
+        SW_StRegSimVals->depthsR,
         year,
         doy
     );
@@ -3255,7 +3258,7 @@ void soil_temperature(
             sw_printf(
                 "\nk %d oldavgLyrTempR %f avgLyrTempR %f depth %f",
                 i,
-                SW_StRegValues->oldavgLyrTempR[i],
+                SW_StRegSimVals->oldavgLyrTempR[i],
                 avgLyrTempR[i],
                 (i * deltaX)
             );
@@ -3268,9 +3271,9 @@ void soil_temperature(
     // convert soil temperature of soil temperature profile 'avgLyrTempR' to
     // soil profile layers 'meanTempSoil'
     lyrTemp_to_lyrSoil_temperature(
-        SW_StRegValues->tlyrs_by_slyrs,
+        SW_StRegSimVals->tlyrs_by_slyrs,
         nRgr,
-        SW_StRegValues->depthsR,
+        SW_StRegSimVals->depthsR,
         avgLyrTempR,
         nlyrs,
         depths,
@@ -3290,8 +3293,8 @@ void soil_temperature(
         nlyrs,
         vwc,
         bDensity,
-        &SW_StRegValues->fusion_pool_init,
-        SW_StRegValues->oldsFusionPool_actual
+        &SW_StRegSimVals->fusion_pool_init,
+        SW_StRegSimVals->oldsFusionPool_actual
     );
 
     // update avgLyrTempR if meanTempSoil were changed due to soil
@@ -3303,7 +3306,7 @@ void soil_temperature(
             meanTempSoil,
             sTconst,
             nRgr,
-            SW_StRegValues->depthsR,
+            SW_StRegSimVals->depthsR,
             theMaxDepth,
             avgLyrTempR
         );
@@ -3347,7 +3350,7 @@ void soil_temperature(
             sw_printf(
                 "\nk %d oldavgLyrTempR %f avgLyrTempR %f depth %f",
                 i,
-                SW_StRegValues->oldavgLyrTempR[i],
+                SW_StRegSimVals->oldavgLyrTempR[i],
                 avgLyrTempR[i],
                 (i * deltaX)
             );
@@ -3375,7 +3378,7 @@ void soil_temperature(
     // updating the values of yesterdays temperature for the next time the
     // function is called...
     for (i = 0; i <= nRgr + 1; i++) {
-        SW_StRegValues->oldavgLyrTempR[i] = avgLyrTempR[i];
+        SW_StRegSimVals->oldavgLyrTempR[i] = avgLyrTempR[i];
     }
 
     // question: should we ever reset delta_time to SEC_PER_DAY?
@@ -3387,7 +3390,7 @@ void soil_temperature(
             "soil temperature was turned off",
             year,
             doy,
-            SW_StRegValues->delta_time
+            SW_StRegSimVals->delta_time
         );
 
         // reset values on error

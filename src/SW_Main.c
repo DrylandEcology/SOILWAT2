@@ -151,7 +151,7 @@ int main(int argc, char **argv) {
     if (!SW_Domain.netCDFInput.readInVars[eSW_InWeather][0] && !prepareFiles) {
 #endif
         SW_WTH_finalize_all_weather(
-            &sw_template.Markov,
+            &sw_template.MarkovIn,
             &sw_template.WeatherIn,
             sw_template.Model.cum_monthdays,
             sw_template.Model.days_in_month,

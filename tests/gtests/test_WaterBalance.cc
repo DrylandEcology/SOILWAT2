@@ -88,7 +88,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
 
     // Read Markov weather generator input files (they are not normally read)
     SW_MKV_setup(
-        &SW_Run.Markov,
+        &SW_Run.MarkovIn,
         SW_Run.WeatherIn.rng_seed,
         SW_Run.WeatherIn.generateWeatherMethod,
         SW_Domain.SW_PathInputs.txtInFiles,
@@ -106,12 +106,12 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
 
     // Prepare weather data
     SW_WTH_read(
-        &SW_Run.WeatherIn, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo
+        &SW_Run.WeatherIn, &SW_Run.SkyIn, &SW_Run.Model, swTRUE, &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_finalize_all_weather(
-        &SW_Run.Markov,
+        &SW_Run.MarkovIn,
         &SW_Run.WeatherIn,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
@@ -150,7 +150,7 @@ TEST_F(
 
     // Read Markov weather generator input files (they are not normally read)
     SW_MKV_setup(
-        &SW_Run.Markov,
+        &SW_Run.MarkovIn,
         SW_Run.WeatherIn.rng_seed,
         SW_Run.WeatherIn.generateWeatherMethod,
         SW_Domain.SW_PathInputs.txtInFiles,
@@ -160,12 +160,12 @@ TEST_F(
 
     // Prepare weather data
     SW_WTH_read(
-        &SW_Run.WeatherIn, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo
+        &SW_Run.WeatherIn, &SW_Run.SkyIn, &SW_Run.Model, swTRUE, &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_finalize_all_weather(
-        &SW_Run.Markov,
+        &SW_Run.MarkovIn,
         &SW_Run.WeatherIn,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
@@ -497,12 +497,12 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
 
     // Prepare weather data
     SW_WTH_read(
-        &SW_Run.WeatherIn, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo
+        &SW_Run.WeatherIn, &SW_Run.SkyIn, &SW_Run.Model, swTRUE, &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_finalize_all_weather(
-        &SW_Run.Markov,
+        &SW_Run.MarkovIn,
         &SW_Run.WeatherIn,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
@@ -578,12 +578,12 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGridMET) {
 
     // Prepare weather data
     SW_WTH_read(
-        &SW_Run.WeatherIn, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo
+        &SW_Run.WeatherIn, &SW_Run.SkyIn, &SW_Run.Model, swTRUE, &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_finalize_all_weather(
-        &SW_Run.Markov,
+        &SW_Run.MarkovIn,
         &SW_Run.WeatherIn,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
@@ -659,12 +659,12 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype1) {
 
     // Prepare weather data
     SW_WTH_read(
-        &SW_Run.WeatherIn, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo
+        &SW_Run.WeatherIn, &SW_Run.SkyIn, &SW_Run.Model, swTRUE, &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_finalize_all_weather(
-        &SW_Run.Markov,
+        &SW_Run.MarkovIn,
         &SW_Run.WeatherIn,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
@@ -740,12 +740,12 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
 
     // Prepare weather data
     SW_WTH_read(
-        &SW_Run.WeatherIn, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo
+        &SW_Run.WeatherIn, &SW_Run.SkyIn, &SW_Run.Model, swTRUE, &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_finalize_all_weather(
-        &SW_Run.Markov,
+        &SW_Run.MarkovIn,
         &SW_Run.WeatherIn,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,

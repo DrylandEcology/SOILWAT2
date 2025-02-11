@@ -1,6 +1,6 @@
 #include "include/generic.h"             // for swFALSE, Bool, GT, fmax
 #include "include/rands.h"               // for RandNorm, RandSeed, RandUni...
-#include "include/SW_datastructs.h"      // for LOG_INFO, ST_RGR_VALUES
+#include "include/SW_datastructs.h"      // for LOG_INFO, SW_ST_SIM
 #include "include/SW_Defines.h"          // for MAX_LAYERS, sw_random_t
 #include "include/SW_Flow_lib.h"         // for surface_temperature_under_snow
 #include "include/SW_Main_lib.h"         // for sw_fail_on_error, sw_init_logs
@@ -219,8 +219,8 @@ TEST(SWFlowTempTest, SWFlowTempSurfaceTemperature) {
 // Test the soil temperature initialization function 'soil_temperature_setup'
 TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
     SW_SITE SW_Site;
-    ST_RGR_VALUES SW_StRegValues;
-    SW_ST_init_run(&SW_StRegValues);
+    SW_ST_SIM SW_StRegSimVals;
+    SW_ST_init_run(&SW_StRegSimVals);
 
     LOG_INFO LogInfo;
     // Initialize logs and silence warn/error reporting
@@ -252,7 +252,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
     SW_Site.soils.width[0] = SW_Site.soils.depths[0] = width[0];
     /// test standard conditions
     soil_temperature_setup(
-        &SW_StRegValues,
+        &SW_StRegSimVals,
         bDensity,
         SW_Site.soils.width,
         sTempInit,
@@ -265,7 +265,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
         nRgr,
         SW_Site.soils.depths,
         &ptr_stError,
-        &SW_StRegValues.soil_temp_init,
+        &SW_StRegSimVals.soil_temp_init,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -273,13 +273,13 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
 
     // Structure Tests
     EXPECT_EQ(
-        sizeof(SW_StRegValues.tlyrs_by_slyrs),
+        sizeof(SW_StRegSimVals.tlyrs_by_slyrs),
         sizeof(double) * MAX_ST_RGR * (MAX_LAYERS + 1)
     );
 
     iStart = (unsigned int) ceil(SW_Site.soils.depths[nlyrs - 1] / deltaX);
     for (i = iStart; i < nRgr + 1; i++) {
-        EXPECT_EQ(SW_StRegValues.tlyrs_by_slyrs[i][nlyrs], -deltaX);
+        EXPECT_EQ(SW_StRegSimVals.tlyrs_by_slyrs[i][nlyrs], -deltaX);
         // Values should be equal to -deltaX when i > the depth of the soil
         // profile/deltaX and j is == nlyrs
     }
@@ -289,7 +289,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
     EXPECT_EQ(SW_Site.soils.depths[nlyrs - 1], 20);
 
     // nRgr = (MaxDepth/deltaX) - 1
-    EXPECT_EQ((SW_StRegValues.depthsR[nRgr] / deltaX) - 1, nRgr);
+    EXPECT_EQ((SW_StRegSimVals.depthsR[nRgr] / deltaX) - 1, nRgr);
 
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     /// generate inputs using a for loop
@@ -316,7 +316,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
     }
 
     soil_temperature_setup(
-        &SW_StRegValues,
+        &SW_StRegSimVals,
         bDensity2,
         SW_Site.soils.width,
         sTempInit2,
@@ -329,7 +329,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
         nRgr,
         SW_Site.soils.depths,
         &ptr_stError,
-        &SW_StRegValues.soil_temp_init,
+        &SW_StRegSimVals.soil_temp_init,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -337,13 +337,13 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
 
     // Structure Tests
     EXPECT_EQ(
-        sizeof(SW_StRegValues.tlyrs_by_slyrs),
+        sizeof(SW_StRegSimVals.tlyrs_by_slyrs),
         sizeof(double) * MAX_ST_RGR * (MAX_LAYERS + 1)
     );
 
     iStart = (unsigned int) ceil(SW_Site.soils.depths[nlyrs - 1] / deltaX);
     for (i = iStart; i < nRgr + 1; i++) {
-        EXPECT_EQ(SW_StRegValues.tlyrs_by_slyrs[i][nlyrs], -deltaX);
+        EXPECT_EQ(SW_StRegSimVals.tlyrs_by_slyrs[i][nlyrs], -deltaX);
         // Values should be equal to -deltaX when i > the depth of the soil
         // profile/deltaX and j is == nlyrs
     }
@@ -353,7 +353,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
     EXPECT_EQ(SW_Site.soils.depths[nlyrs - 1], 295);
 
     // nRgr = (MaxDepth/deltaX) - 1
-    EXPECT_EQ((SW_StRegValues.depthsR[nRgr] / deltaX) - 1, nRgr);
+    EXPECT_EQ((SW_StRegSimVals.depthsR[nRgr] / deltaX) - 1, nRgr);
 
     delete[] bDensity2;
     delete[] fc2;
@@ -363,8 +363,8 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
 // Death tests for soil_temperature_setup function
 TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInitDeathTest) {
     SW_SITE SW_Site;
-    ST_RGR_VALUES SW_StRegValues;
-    SW_ST_init_run(&SW_StRegValues);
+    SW_ST_SIM SW_StRegSimVals;
+    SW_ST_init_run(&SW_StRegSimVals);
 
     LOG_INFO LogInfo;
     // Initialize logs and silence warn/error reporting
@@ -404,7 +404,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInitDeathTest) {
 
     // We expect an error when max depth < last layer
     soil_temperature_setup(
-        &SW_StRegValues,
+        &SW_StRegSimVals,
         bDensity2,
         SW_Site.soils.width,
         sTempInit2,
@@ -417,7 +417,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInitDeathTest) {
         nRgr,
         SW_Site.soils.depths,
         &ptr_stError,
-        &SW_StRegValues.soil_temp_init,
+        &SW_StRegSimVals.soil_temp_init,
         &LogInfo
     );
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
@@ -438,8 +438,8 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInitDeathTest) {
 // soil_temperature_setup function
 TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
     SW_SITE SW_Site;
-    ST_RGR_VALUES SW_StRegValues;
-    SW_ST_init_run(&SW_StRegValues);
+    SW_ST_SIM SW_StRegSimVals;
+    SW_ST_init_run(&SW_StRegSimVals);
 
     LOG_INFO LogInfo;
     // Initialize logs and silence warn/error reporting
@@ -475,7 +475,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
     SW_Site.n_layers = nlyrs;
     SW_Site.soils.width[0] = SW_Site.soils.depths[0] = width[0];
     soil_temperature_setup(
-        &SW_StRegValues,
+        &SW_StRegSimVals,
         bDensity,
         SW_Site.soils.width,
         sTempInit,
@@ -488,7 +488,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
         nRgr,
         SW_Site.soils.depths,
         &ptr_stError,
-        &SW_StRegValues.soil_temp_init,
+        &SW_StRegSimVals.soil_temp_init,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -500,34 +500,36 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
     // we check these values.
     for (i = 0; i < nRgr + 1; i++) {
         // all Values should be greater than 0
-        EXPECT_GT(SW_StRegValues.bDensityR[i], 0);
-        EXPECT_GT(SW_StRegValues.fcR[i], 0);
-        EXPECT_GT(SW_StRegValues.wpR[i], 0);
+        EXPECT_GT(SW_StRegSimVals.bDensityR[i], 0);
+        EXPECT_GT(SW_StRegSimVals.fcR[i], 0);
+        EXPECT_GT(SW_StRegSimVals.wpR[i], 0);
     }
 
     iStart = (unsigned int) ceil(SW_Site.soils.depths[nlyrs - 1] / deltaX);
     for (i = iStart; i < nRgr + 1; i++) {
         // The TempLayer values that are at depths greater than the max
         // SoilLayer depth should be uniform
-        EXPECT_EQ(SW_StRegValues.bDensityR[i], SW_StRegValues.bDensityR[i - 1]);
-        EXPECT_EQ(SW_StRegValues.fcR[i], SW_StRegValues.fcR[i - 1]);
-        EXPECT_EQ(SW_StRegValues.wpR[i], SW_StRegValues.wpR[i - 1]);
+        EXPECT_EQ(
+            SW_StRegSimVals.bDensityR[i], SW_StRegSimVals.bDensityR[i - 1]
+        );
+        EXPECT_EQ(SW_StRegSimVals.fcR[i], SW_StRegSimVals.fcR[i - 1]);
+        EXPECT_EQ(SW_StRegSimVals.wpR[i], SW_StRegSimVals.wpR[i - 1]);
     }
 
     // lyrSoil_to_lyrTemp_temperature tests
     // surface temperature is initialized to missing because not used
-    EXPECT_TRUE(missing(SW_StRegValues.oldavgLyrTempR[0]));
+    EXPECT_TRUE(missing(SW_StRegSimVals.oldavgLyrTempR[0]));
 
     double maxvalR = 0.;
     for (i = 1; i < nRgr + 1; i++) {
         // Values interpolated into sTempInitR should be realistic
-        EXPECT_GT(SW_StRegValues.oldavgLyrTempR[i], -100);
+        EXPECT_GT(SW_StRegSimVals.oldavgLyrTempR[i], -100);
 
         // Values interpolated into sTempInitR should be realistic
-        EXPECT_LT(SW_StRegValues.oldavgLyrTempR[i], 100);
+        EXPECT_LT(SW_StRegSimVals.oldavgLyrTempR[i], 100);
 
-        if (GT(SW_StRegValues.oldavgLyrTempR[i], maxvalR)) {
-            maxvalR = SW_StRegValues.oldavgLyrTempR[i];
+        if (GT(SW_StRegSimVals.oldavgLyrTempR[i], maxvalR)) {
+            maxvalR = SW_StRegSimVals.oldavgLyrTempR[i];
         }
     }
 
@@ -536,7 +538,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
     EXPECT_LE(maxvalR, sTconst);
 
     // Temperature in last interpolated layer should equal sTconst
-    EXPECT_EQ(SW_StRegValues.oldavgLyrTempR[nRgr + 1], sTconst);
+    EXPECT_EQ(SW_StRegSimVals.oldavgLyrTempR[nRgr + 1], sTconst);
 
     // *****  Test when nlyrs = MAX_LAYERS (SW_Defines.h)  ***** //
     /// generate inputs using a for loop
@@ -570,7 +572,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
     }
 
     soil_temperature_setup(
-        &SW_StRegValues,
+        &SW_StRegSimVals,
         bDensity2,
         SW_Site.soils.width,
         sTempInit2,
@@ -583,7 +585,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
         nRgr,
         SW_Site.soils.depths,
         &ptr_stError,
-        &SW_StRegValues.soil_temp_init,
+        &SW_StRegSimVals.soil_temp_init,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -592,33 +594,35 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
     // lyrSoil_to_lyrTemp tests
     for (i = 0; i < nRgr + 1; i++) {
         // all Values should be greater than 0
-        EXPECT_GT(SW_StRegValues.bDensityR[i], 0);
-        EXPECT_GT(SW_StRegValues.fcR[i], 0);
-        EXPECT_GT(SW_StRegValues.wpR[i], 0);
+        EXPECT_GT(SW_StRegSimVals.bDensityR[i], 0);
+        EXPECT_GT(SW_StRegSimVals.fcR[i], 0);
+        EXPECT_GT(SW_StRegSimVals.wpR[i], 0);
     }
 
     iStart = (unsigned int) ceil(SW_Site.soils.depths[nlyrs - 1] / deltaX);
     for (i = iStart; i < nRgr + 1; i++) {
         // The TempLayer values that are at depths greater than the max
         // SoilLayer depth should be uniform
-        EXPECT_EQ(SW_StRegValues.bDensityR[i], SW_StRegValues.bDensityR[i - 1]);
-        EXPECT_EQ(SW_StRegValues.fcR[i], SW_StRegValues.fcR[i - 1]);
-        EXPECT_EQ(SW_StRegValues.wpR[i], SW_StRegValues.wpR[i - 1]);
+        EXPECT_EQ(
+            SW_StRegSimVals.bDensityR[i], SW_StRegSimVals.bDensityR[i - 1]
+        );
+        EXPECT_EQ(SW_StRegSimVals.fcR[i], SW_StRegSimVals.fcR[i - 1]);
+        EXPECT_EQ(SW_StRegSimVals.wpR[i], SW_StRegSimVals.wpR[i - 1]);
     }
 
     // lyrSoil_to_lyrTemp_temperature tests
-    EXPECT_TRUE(missing(SW_StRegValues.oldavgLyrTempR[0])
+    EXPECT_TRUE(missing(SW_StRegSimVals.oldavgLyrTempR[0])
     ); // surface temperature is initialized to missing because not used
     maxvalR = 0.;
     for (i = 1; i <= nRgr + 1; i++) {
         // Values interpolated into sTempInitR should be realistic
-        EXPECT_GT(SW_StRegValues.oldavgLyrTempR[i], -200);
+        EXPECT_GT(SW_StRegSimVals.oldavgLyrTempR[i], -200);
 
         // Values interpolated into sTempInitR should be realistic
-        EXPECT_LT(SW_StRegValues.oldavgLyrTempR[i], 200);
+        EXPECT_LT(SW_StRegSimVals.oldavgLyrTempR[i], 200);
 
-        if (GT(SW_StRegValues.oldavgLyrTempR[i], maxvalR)) {
-            maxvalR = SW_StRegValues.oldavgLyrTempR[i];
+        if (GT(SW_StRegSimVals.oldavgLyrTempR[i], maxvalR)) {
+            maxvalR = SW_StRegSimVals.oldavgLyrTempR[i];
         }
     }
 
@@ -627,7 +631,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
     EXPECT_LE(maxvalR, sTconst);
 
     // Temperature in last interpolated layer should equal sTconst
-    EXPECT_EQ(SW_StRegValues.oldavgLyrTempR[nRgr + 1], sTconst);
+    EXPECT_EQ(SW_StRegSimVals.oldavgLyrTempR[nRgr + 1], sTconst);
 
     delete[] bDensity2;
     delete[] fc2;
@@ -825,8 +829,8 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureTodayFunction) {
 // AND lyrTemp_to_lyrSoil_temperature as this function
 // is only called in the soil_temperature function
 TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
-    ST_RGR_VALUES SW_StRegValues;
-    SW_ST_init_run(&SW_StRegValues);
+    SW_ST_SIM SW_StRegSimVals;
+    SW_ST_init_run(&SW_StRegSimVals);
 
     SW_SITE SW_Site;
 
@@ -891,10 +895,10 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
 
 
     SW_ST_setup_run(
-        &SW_StRegValues,
+        &SW_StRegSimVals,
         &SW_Site,
         &ptr_stError,
-        &SW_StRegValues.soil_temp_init,
+        &SW_StRegSimVals.soil_temp_init,
         meanTempAir,
         swc,
         &meanTempSurface,
@@ -906,7 +910,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
     EXPECT_FALSE(ptr_stError) << LogInfo.warningMsgs[0];
 
     soil_temperature(
-        &SW_StRegValues,
+        &SW_StRegSimVals,
         &minTempSurface,
         &meanTempSurface,
         &maxTempSurface,
@@ -971,7 +975,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
     }
 
     soil_temperature(
-        &SW_StRegValues,
+        &SW_StRegSimVals,
         &minTempSurface,
         &meanTempSurface,
         &maxTempSurface,
@@ -1034,7 +1038,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
     }
 
     soil_temperature(
-        &SW_StRegValues,
+        &SW_StRegSimVals,
         &minTempSurface,
         &meanTempSurface,
         &maxTempSurface,
@@ -1100,8 +1104,8 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
     // Expect that sTempInitR is updated to sTempR for the next day
     for (k = 0; k <= nRgr + 1; k++) {
         // sw_printf("\n k %u, newoldtempR %f", k,
-        // SW_StRegValues.oldavgLyrTempR[k]);
-        EXPECT_NE(SW_StRegValues.oldavgLyrTempR[k], SW_MISSING);
+        // SW_StRegSimVals.oldavgLyrTempR[k]);
+        EXPECT_NE(SW_StRegSimVals.oldavgLyrTempR[k], SW_MISSING);
     }
 
     // ptr_stError should be set to TRUE if soil_temperature_today fails (i.e.
@@ -1110,10 +1114,10 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
     meanTempAir = 1500.;
 
     SW_ST_setup_run(
-        &SW_StRegValues,
+        &SW_StRegSimVals,
         &SW_Site,
         &ptr_stError,
-        &SW_StRegValues.soil_temp_init,
+        &SW_StRegSimVals.soil_temp_init,
         meanTempAir,
         swc,
         &meanTempSurface,
@@ -1125,7 +1129,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
     EXPECT_FALSE(ptr_stError) << LogInfo.warningMsgs[0];
 
     soil_temperature(
-        &SW_StRegValues,
+        &SW_StRegSimVals,
         &minTempSurface,
         &meanTempSurface,
         &maxTempSurface,
@@ -1174,8 +1178,8 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
 // is only called in the soil_temperature function
 TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
     SW_SITE SW_Site;
-    ST_RGR_VALUES SW_StRegValues;
-    SW_ST_init_run(&SW_StRegValues);
+    SW_ST_SIM SW_StRegSimVals;
+    SW_ST_init_run(&SW_StRegSimVals);
 
     LOG_INFO LogInfo;
     // Initialize logs and silence warn/error reporting
@@ -1275,10 +1279,10 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
     SW_Site.Tsoil_constant = 4.15;
 
     SW_ST_setup_run(
-        &SW_StRegValues,
+        &SW_StRegSimVals,
         &SW_Site,
         &ptr_stError,
-        &SW_StRegValues.soil_temp_init,
+        &SW_StRegSimVals.soil_temp_init,
         meanTempAir,
         swc2,
         &meanTempSurface,
@@ -1295,7 +1299,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
     snow = 5;
 
     soil_temperature(
-        &SW_StRegValues,
+        &SW_StRegSimVals,
         &minTempSurface,
         &meanTempSurface,
         &maxTempSurface,
@@ -1360,7 +1364,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
     }
 
     soil_temperature(
-        &SW_StRegValues,
+        &SW_StRegSimVals,
         &minTempSurface,
         &meanTempSurface,
         &maxTempSurface,
@@ -1422,7 +1426,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
     }
 
     soil_temperature(
-        &SW_StRegValues,
+        &SW_StRegSimVals,
         &minTempSurface,
         &meanTempSurface,
         &maxTempSurface,
@@ -1494,8 +1498,8 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
     // Expect that sTempInitR is updated to sTempR for the next day
     for (k = 0; k <= nRgr + 1; k++) {
         // sw_printf("\n k %u, newoldtempR %f", k,
-        // SW_Run.StRegValues.oldavgLyrTempR[k]);
-        EXPECT_NE(SW_StRegValues.oldavgLyrTempR[k], SW_MISSING);
+        // SW_Run.StRegSimVals.oldavgLyrTempR[k]);
+        EXPECT_NE(SW_StRegSimVals.oldavgLyrTempR[k], SW_MISSING);
     }
 
     double *array_list[] = {swc2, swc_sat2, minTempSoil, maxTempSoil};
@@ -1506,8 +1510,8 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
 
 // Test that main soil temperature functions fails when it is supposed to
 TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunctionDeathTest) {
-    ST_RGR_VALUES SW_StRegValues;
-    SW_ST_init_run(&SW_StRegValues);
+    SW_ST_SIM SW_StRegSimVals;
+    SW_ST_init_run(&SW_StRegSimVals);
 
     LOG_INFO LogInfo;
     // Initialize logs and silence warn/error reporting
@@ -1555,7 +1559,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunctionDeathTest) {
 
     // Should fail when soil_temperature was not initialized
     soil_temperature(
-        &SW_StRegValues,
+        &SW_StRegSimVals,
         &minTempSurface,
         &meanTempSurface,
         &maxTempSurface,

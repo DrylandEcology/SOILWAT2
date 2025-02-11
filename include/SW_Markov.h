@@ -13,7 +13,7 @@
 #ifndef SW_MARKOV_H
 #define SW_MARKOV_H
 
-#include "include/SW_datastructs.h" // for SW_MARKOV, LOG_INFO
+#include "include/SW_datastructs.h" // for SW_MARKOV_INPUTS, LOG_INFO
 #include "include/SW_Defines.h"     // for TimeInt
 
 #ifdef __cplusplus
@@ -23,20 +23,20 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV *SW_Markov);
+void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV_INPUTS *SW_MarkovIn);
 
-void copyMKV(SW_MARKOV *dest_MKV, SW_MARKOV *template_MKV);
+void copyMKV(SW_MARKOV_INPUTS *dest_MKV, SW_MARKOV_INPUTS *template_MKV);
 
 Bool SW_MKV_read_prob(
-    char *txtInFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo
+    char *txtInFiles[], SW_MARKOV_INPUTS *SW_MarkovIn, LOG_INFO *LogInfo
 );
 
 Bool SW_MKV_read_cov(
-    char *txtInFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo
+    char *txtInFiles[], SW_MARKOV_INPUTS *SW_MarkovIn, LOG_INFO *LogInfo
 );
 
 void SW_MKV_setup(
-    SW_MARKOV *SW_Markov,
+    SW_MARKOV_INPUTS *SW_MarkovIn,
     unsigned long Weather_rng_seed,
     unsigned int Weather_genWeathMethod,
     char *txtInFiles[],
@@ -44,7 +44,7 @@ void SW_MKV_setup(
 );
 
 void SW_MKV_today(
-    SW_MARKOV *SW_Markov,
+    SW_MARKOV_INPUTS *SW_MarkovIn,
     TimeInt doy0,
     TimeInt year,
     double *tmax,

@@ -25,7 +25,7 @@
 #include "include/generic.h"        // for LOGERROR, swFALSE
 #include "include/myMemory.h"       // for Mem_Calloc, Mem_Copy
 #include "include/rands.h"          // for RandNorm, RandSeed, RandUni
-#include "include/SW_datastructs.h" // for SW_MARKOV, LOG_INFO
+#include "include/SW_datastructs.h" // for SW_MARKOV_INPUTS, LOG_INFO
 #include "include/SW_Defines.h"     // for MAX_DAYS, MAX_FILENAMESIZE, TimeInt
 #include "include/SW_Files.h"       // for eMarkovCov, eMarkovProb
 #include "include/Times.h"          // for doy2week
@@ -218,14 +218,14 @@ void (*test_mvnorm)(double *, double *, double, double, double, double, double, 
 /**
 @brief Markov constructor for global variables.
 
-@param[in] rng_seed Initial state for Markov
-@param[out] SW_Markov Struct of type SW_MARKOV which holds values
+@param[in] rng_seed Initial state for MarkovIn
+@param[out] SW_MarkovIn Struct of type SW_MARKOV_INPUTS which holds values
         related to temperature and weather generator
 */
-void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV *SW_Markov) {
+void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV_INPUTS *SW_MarkovIn) {
     /* =================================================== */
 
-    memset(SW_Markov, 0, sizeof(*SW_Markov));
+    memset(SW_MarkovIn, 0, sizeof(*SW_MarkovIn));
 
 /* Set seed of `markov_rng`
   - SOILWAT2: set seed here
@@ -233,23 +233,23 @@ void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV *SW_Markov) {
   - rSOILWAT2: R API handles RNGs
 */
 #if defined(SOILWAT)
-    RandSeed(rng_seed, 1u, &SW_Markov->markov_rng);
+    RandSeed(rng_seed, 1u, &SW_MarkovIn->markov_rng);
 #else
     (void) rng_seed; // Silence compiler flag `-Wunused-parameter`
 #endif
 
-    SW_Markov->ppt_events = 0;
+    SW_MarkovIn->ppt_events = 0;
 }
 
-/** Copy SW_MARKOV memory
+/** Copy SW_MARKOV_INPUTS memory
 
- @param[out] dest_MKV Struct of type SW_MARKOV which holds parameters
+ @param[out] dest_MKV Struct of type SW_MARKOV_INPUTS which holds parameters
  for the weather generator
 
- @param[in] template_MKV Struct of type SW_MARKOV which holds parameters
+ @param[in] template_MKV Struct of type SW_MARKOV_INPUTS which holds parameters
  for the weather generator
 */
-void copyMKV(SW_MARKOV *dest_MKV, SW_MARKOV *template_MKV) {
+void copyMKV(SW_MARKOV_INPUTS *dest_MKV, SW_MARKOV_INPUTS *template_MKV) {
     size_t s = sizeof(double) * MAX_DAYS;
 
     Mem_Copy(dest_MKV->wetprob, template_MKV->wetprob, s);
@@ -265,7 +265,7 @@ void copyMKV(SW_MARKOV *dest_MKV, SW_MARKOV *template_MKV) {
 /**
 @brief Calculates precipitation and temperature.
 
-@param[in,out] SW_Markov Struct of type SW_MARKOV which holds values
+@param[in,out] SW_MarkovIn Struct of type SW_MARKOV_INPUTS which holds values
         related to temperature and weather generator
 @param[in] doy0 Day of the year (base0).
 @param[in] year Current year in simulation
@@ -279,7 +279,7 @@ void copyMKV(SW_MARKOV *dest_MKV, SW_MARKOV *template_MKV) {
 @sideeffect *rain Updated rainfall (cm).
 */
 void SW_MKV_today(
-    SW_MARKOV *SW_Markov,
+    SW_MARKOV_INPUTS *SW_MarkovIn,
     TimeInt doy0,
     TimeInt year,
     double *tmax,
@@ -317,15 +317,15 @@ void SW_MKV_today(
             prop = probability that it precipitates today depending on whether
        it was wet (precipitated) yesterday `wetprob` or whether it was dry
        yesterday `dryprob` */
-    prob =
-        (GT(*rain, 0.0)) ? SW_Markov->wetprob[doy0] : SW_Markov->dryprob[doy0];
+    prob = (GT(*rain, 0.0)) ? SW_MarkovIn->wetprob[doy0] :
+                              SW_MarkovIn->dryprob[doy0];
 
-    p = RandUni(&SW_Markov->markov_rng);
+    p = RandUni(&SW_MarkovIn->markov_rng);
     if (LE(p, prob)) {
         x = RandNorm(
-            SW_Markov->avg_ppt[doy0],
-            SW_Markov->std_ppt[doy0],
-            &SW_Markov->markov_rng
+            SW_MarkovIn->avg_ppt[doy0],
+            SW_MarkovIn->std_ppt[doy0],
+            &SW_MarkovIn->markov_rng
         );
         *rain = fmax(0., x);
     } else {
@@ -333,7 +333,7 @@ void SW_MKV_today(
     }
 
     if (GT(*rain, 0.)) {
-        SW_Markov->ppt_events++;
+        SW_MarkovIn->ppt_events++;
     }
 
     /* Calculate temperature */
@@ -343,16 +343,16 @@ void SW_MKV_today(
         tmax,
         tmin,
         // mean weekly maximum daily temp
-        SW_Markov->u_cov[week][0],
+        SW_MarkovIn->u_cov[week][0],
         // mean weekly minimum daily temp
-        SW_Markov->u_cov[week][1],
+        SW_MarkovIn->u_cov[week][1],
         // mean weekly variance of maximum daily temp
-        SW_Markov->v_cov[week][0][0],
+        SW_MarkovIn->v_cov[week][0][0],
         // mean weekly variance of minimum daily temp
-        SW_Markov->v_cov[week][1][1],
+        SW_MarkovIn->v_cov[week][1][1],
         // mean weekly covariance of min/max daily temp
-        SW_Markov->v_cov[week][1][0],
-        &SW_Markov->markov_rng,
+        SW_MarkovIn->v_cov[week][1][0],
+        &SW_MarkovIn->markov_rng,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -364,13 +364,13 @@ void SW_MKV_today(
         tmin,
         *rain,
         // correction factor for tmax for wet days
-        SW_Markov->cfxw[week],
+        SW_MarkovIn->cfxw[week],
         // correction factor for tmax for dry days
-        SW_Markov->cfxd[week],
+        SW_MarkovIn->cfxd[week],
         // correction factor for tmin for wet days
-        SW_Markov->cfnw[week],
+        SW_MarkovIn->cfnw[week],
         // correction factor for tmin for dry days
-        SW_Markov->cfnd[week]
+        SW_MarkovIn->cfnd[week]
     );
 
 #ifdef SWDEBUG
@@ -394,17 +394,17 @@ void SW_MKV_today(
 
 /**
 @brief Reads prob file in and checks input variables for errors, then stores
-files in SW_Markov.
+files in SW_MarkovIn.
 
 @param[in] txtInFiles Array of program in/output files
-@param[out] SW_Markov Struct of type SW_MARKOV which holds values
+@param[out] SW_MarkovIn Struct of type SW_MARKOV_INPUTS which holds values
         related to temperature and weather generator
 @param[out] LogInfo Holds information on warnings and errors
 
 @return swTRUE Returns true if prob file is correctly opened and closed.
 */
 Bool SW_MKV_read_prob(
-    char *txtInFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo
+    char *txtInFiles[], SW_MARKOV_INPUTS *SW_MarkovIn, LOG_INFO *LogInfo
 ) {
     /* =================================================== */
     const int nitems = 5;
@@ -529,17 +529,17 @@ Bool SW_MKV_read_prob(
             goto closeFile;
         }
 
-        // Store values in `SW_Markov`
+        // Store values in `SW_MarkovIn`
         day--; // base1 -> base0
 
         // probability of being wet today given a wet yesterday
-        SW_Markov->wetprob[day] = wet;
+        SW_MarkovIn->wetprob[day] = wet;
         // probability of being wet today given a dry yesterday
-        SW_Markov->dryprob[day] = dry;
+        SW_MarkovIn->dryprob[day] = dry;
         // mean precip (cm) of wet days
-        SW_Markov->avg_ppt[day] = avg;
+        SW_MarkovIn->avg_ppt[day] = avg;
         // std dev. for precip of wet days
-        SW_Markov->std_ppt[day] = std;
+        SW_MarkovIn->std_ppt[day] = std;
     }
 
 closeFile: { CloseFile(&f, LogInfo); }
@@ -549,17 +549,17 @@ closeFile: { CloseFile(&f, LogInfo); }
 
 /**
 @brief Reads cov file in and checks input variables for errors, then stores
-files in SW_Markov.
+files in SW_MarkovIn.
 
 @param[in] txtInFiles Array of program in/output files
-@param[out] SW_Markov Struct of type SW_MARKOV which holds values
+@param[out] SW_MarkovIn Struct of type SW_MARKOV_INPUTS which holds values
         related to temperature and weather generator
 @param[out] LogInfo Holds information on warnings and errors
 
 @return Returns true if cov file is correctly opened and closed.
 */
 Bool SW_MKV_read_cov(
-    char *txtInFiles[], SW_MARKOV *SW_Markov, LOG_INFO *LogInfo
+    char *txtInFiles[], SW_MARKOV_INPUTS *SW_MarkovIn, LOG_INFO *LogInfo
 ) {
     /* =================================================== */
     const int nitems = 11;
@@ -714,29 +714,29 @@ Bool SW_MKV_read_cov(
             goto closeFile;
         }
 
-        // Store values in `SW_Markov`
+        // Store values in `SW_MarkovIn`
         week--; // base1 -> base0
 
         // mean weekly maximum daily temp
-        SW_Markov->u_cov[week][0] = t1;
+        SW_MarkovIn->u_cov[week][0] = t1;
         // mean weekly minimum daily temp
-        SW_Markov->u_cov[week][1] = t2;
+        SW_MarkovIn->u_cov[week][1] = t2;
         // mean weekly variance of maximum daily temp
-        SW_Markov->v_cov[week][0][0] = t3;
+        SW_MarkovIn->v_cov[week][0][0] = t3;
         // mean weekly covariance of min/max daily temp
-        SW_Markov->v_cov[week][0][1] = t4;
+        SW_MarkovIn->v_cov[week][0][1] = t4;
         // mean weekly covariance of min/max daily temp
-        SW_Markov->v_cov[week][1][0] = t5;
+        SW_MarkovIn->v_cov[week][1][0] = t5;
         // mean weekly variance of minimum daily temp
-        SW_Markov->v_cov[week][1][1] = t6;
+        SW_MarkovIn->v_cov[week][1][1] = t6;
         // correction factor for tmax for wet days
-        SW_Markov->cfxw[week] = cfxw;
+        SW_MarkovIn->cfxw[week] = cfxw;
         // correction factor for tmax for dry days
-        SW_Markov->cfxd[week] = cfxd;
+        SW_MarkovIn->cfxd[week] = cfxd;
         // correction factor for tmin for wet days
-        SW_Markov->cfnw[week] = cfnw;
+        SW_MarkovIn->cfnw[week] = cfnw;
         // correction factor for tmin for dry days
-        SW_Markov->cfnd[week] = cfnd;
+        SW_MarkovIn->cfnd[week] = cfnd;
     }
 
 closeFile: { CloseFile(&f, LogInfo); }
@@ -745,7 +745,7 @@ closeFile: { CloseFile(&f, LogInfo); }
 }
 
 void SW_MKV_setup(
-    SW_MARKOV *SW_Markov,
+    SW_MARKOV_INPUTS *SW_MarkovIn,
     unsigned long Weather_rng_seed,
     unsigned int Weather_genWeathMethod,
     char *txtInFiles[],
@@ -755,12 +755,12 @@ void SW_MKV_setup(
     Bool read_prob;
     Bool read_cov;
 
-    SW_MKV_construct(Weather_rng_seed, SW_Markov);
+    SW_MKV_construct(Weather_rng_seed, SW_MarkovIn);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    read_prob = SW_MKV_read_prob(txtInFiles, SW_Markov, LogInfo);
+    read_prob = SW_MKV_read_prob(txtInFiles, SW_MarkovIn, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -775,7 +775,7 @@ void SW_MKV_setup(
         return; // Exit function prematurely due to error
     }
 
-    read_cov = SW_MKV_read_cov(txtInFiles, SW_Markov, LogInfo);
+    read_cov = SW_MKV_read_cov(txtInFiles, SW_MarkovIn, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }

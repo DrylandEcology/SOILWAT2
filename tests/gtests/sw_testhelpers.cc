@@ -252,7 +252,7 @@ int setup_testGlobalSoilwatTemplate() {
     sw_init_logs(NULL, &LogInfo);
 
     SW_WTH_finalize_all_weather(
-        &template_SW_Run.Markov,
+        &template_SW_Run.MarkovIn,
         &template_SW_Run.WeatherIn,
         template_SW_Run.Model.cum_monthdays,
         template_SW_Run.Model.days_in_month,

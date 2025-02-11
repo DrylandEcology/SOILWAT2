@@ -307,7 +307,7 @@ void SW_SIT_init_counts(SW_SITE *SW_Site);
 void SW_SIT_read(
     SW_SITE *SW_Site,
     char *txtInFiles[],
-    SW_CARBON *SW_Carbon,
+    SW_CARBON_INPUTS *SW_CarbonIn,
     Bool *hasConsistentSoilLayerDepths,
     LOG_INFO *LogInfo
 );

@@ -56,7 +56,7 @@
 #define SW_WATERSUBS_H
 
 #include "include/generic.h"        // for Bool
-#include "include/SW_datastructs.h" // for LOG_INFO, SW_SITE, ST_RGR_VALUES
+#include "include/SW_datastructs.h" // for LOG_INFO, SW_SITE, SW_ST_SIM
 #include "include/SW_Defines.h"     // for TimeInt, MAX_LAYERS, MAX_ST_RGR
 
 #ifdef __cplusplus
@@ -247,7 +247,7 @@ void surface_temperature(
 );
 
 void soil_temperature(
-    ST_RGR_VALUES *SW_StRegValues,
+    SW_ST_SIM *SW_StRegSimVals,
     double *minTempSurface,
     double *meanTempSurface,
     double *maxTempSurface,
@@ -323,10 +323,10 @@ void lyrSoil_to_lyrTemp(
 
 double surface_temperature_under_snow(double airTempAvg, double snow);
 
-void SW_ST_init_run(ST_RGR_VALUES *StRegValues);
+void SW_ST_init_run(SW_ST_SIM *StRegSimVals);
 
 void SW_ST_setup_run(
-    ST_RGR_VALUES *SW_StRegValues,
+    SW_ST_SIM *SW_StRegSimVals,
     SW_SITE *SW_Site,
     Bool *ptr_stError,
     Bool *soil_temp_init,
@@ -339,7 +339,7 @@ void SW_ST_setup_run(
 );
 
 void soil_temperature_setup(
-    ST_RGR_VALUES *SW_StRegValues,
+    SW_ST_SIM *SW_StRegSimVals,
     double bDensity[],
     double width[],
     double avgLyrTempInit[],

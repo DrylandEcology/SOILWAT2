@@ -38,7 +38,7 @@
 #define SW_WEATHER_H
 
 #include "include/generic.h"        // for Bool
-#include "include/SW_datastructs.h" // for SW_WEATHER, SW_SKY, SW_MODEL, LOG_...
+#include "include/SW_datastructs.h" // for SW_WEATHER, SW_SKY_INPUTS, SW_MODEL, LOG_...
 #include "include/SW_Defines.h" // for TimeInt
 
 #ifdef __cplusplus
@@ -64,7 +64,7 @@ void SW_WTH_setup(
 
 void SW_WTH_read(
     SW_WEATHER_INPUTS *SW_WeatherIn,
-    SW_SKY *SW_Sky,
+    SW_SKY_INPUTS *SW_SkyIn,
     SW_MODEL *SW_Model,
     Bool readTextInputs,
     LOG_INFO *LogInfo
@@ -205,7 +205,7 @@ void readAllWeather(
 );
 
 void finalizeAllWeather(
-    SW_MARKOV *SW_Markov,
+    SW_MARKOV_INPUTS *SW_MarkovIn,
     SW_WEATHER_INPUTS *w,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
@@ -229,7 +229,7 @@ void scaleAllWeather(
 );
 
 void generateMissingWeather(
-    SW_MARKOV *SW_Markov,
+    SW_MARKOV_INPUTS *SW_MarkovIn,
     SW_WEATHER_HIST *allHist,
     unsigned int startYear,
     unsigned int n_years,
@@ -251,7 +251,7 @@ void deallocateAllWeather(SW_WEATHER_HIST **allHist);
 void clear_hist_weather(SW_WEATHER_HIST *yearWeather, double **fullWeathHist);
 
 void SW_WTH_finalize_all_weather(
-    SW_MARKOV *SW_Markov,
+    SW_MARKOV_INPUTS *SW_MarkovIn,
     SW_WEATHER_INPUTS *SW_WeatherIn,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],

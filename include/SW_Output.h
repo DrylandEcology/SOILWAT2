@@ -156,7 +156,7 @@ extern const char *const styp2longstr[];
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 
-void SW_OUT_init_ptrs(SW_OUT_RUN *OutRun);
+void SW_OUT_init_ptrs(SW_OUT_RUN *OutRun, SW_PATH_OUTPUTS *SW_PathOutputs);
 
 void SW_OUTDOM_init_ptrs(SW_OUT_DOM *OutDom);
 

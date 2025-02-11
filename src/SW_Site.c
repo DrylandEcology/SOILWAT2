@@ -1518,7 +1518,7 @@ void SW_SIT_construct(SW_SITE *SW_Site) {
 
 @param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
 @param[in] txtInFiles Array of program in/output files
-@param[out] SW_Carbon Struct of type SW_CARBON holding all CO2-related data
+@param[out] SW_CarbonIn Struct of type SW_CARBON_INPUTS holding all CO2-related data
 @param[out] hasConsistentSoilLayerDepths  Holds the specification if the
 input soil layers have the same depth throughout all inputs (only used
 when dealing with nc inputs)
@@ -1527,7 +1527,7 @@ when dealing with nc inputs)
 void SW_SIT_read(
     SW_SITE *SW_Site,
     char *txtInFiles[],
-    SW_CARBON *SW_Carbon,
+    SW_CARBON_INPUTS *SW_CarbonIn,
     Bool *hasConsistentSoilLayerDepths,
     LOG_INFO *LogInfo
 ) {
@@ -1696,33 +1696,33 @@ void SW_SIT_read(
             break;
 
         case 34:
-            SW_Carbon->use_bio_mult = itob(intRes);
+            SW_CarbonIn->use_bio_mult = itob(intRes);
 #ifdef SWDEBUG
             if (debug) {
                 sw_printf(
                     "'SW_SIT_read': use_bio_mult = %d\n",
-                    SW_Carbon->use_bio_mult
+                    SW_CarbonIn->use_bio_mult
                 );
             }
 #endif
             break;
         case 35:
-            SW_Carbon->use_wue_mult = itob(intRes);
+            SW_CarbonIn->use_wue_mult = itob(intRes);
 #ifdef SWDEBUG
             if (debug) {
                 sw_printf(
                     "'SW_SIT_read': use_wue_mult = %d\n",
-                    SW_Carbon->use_wue_mult
+                    SW_CarbonIn->use_wue_mult
                 );
             }
 #endif
             break;
         case 36:
             resSNP = snprintf(
-                SW_Carbon->scenario, sizeof SW_Carbon->scenario, "%s", inbuf
+                SW_CarbonIn->scenario, sizeof SW_CarbonIn->scenario, "%s", inbuf
             );
             if (resSNP < 0 ||
-                (unsigned) resSNP >= (sizeof SW_Carbon->scenario)) {
+                (unsigned) resSNP >= (sizeof SW_CarbonIn->scenario)) {
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -1734,7 +1734,7 @@ void SW_SIT_read(
 #ifdef SWDEBUG
             if (debug) {
                 sw_printf(
-                    "'SW_SIT_read': scenario = %s\n", SW_Carbon->scenario
+                    "'SW_SIT_read': scenario = %s\n", SW_CarbonIn->scenario
                 );
             }
 #endif

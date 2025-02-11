@@ -233,12 +233,12 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
 
     // Reset "SW_Run.Weather.allHist"
     SW_WTH_read(
-        &SW_Run.WeatherIn, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo
+        &SW_Run.WeatherIn, &SW_Run.SkyIn, &SW_Run.Model, swTRUE, &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     finalizeAllWeather(
-        &SW_Run.Markov,
+        &SW_Run.MarkovIn,
         &SW_Run.WeatherIn,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
@@ -813,12 +813,12 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
 
     // Reset "SW_Run.Weather.allHist"
     SW_WTH_read(
-        &SW_Run.WeatherIn, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo
+        &SW_Run.WeatherIn, &SW_Run.SkyIn, &SW_Run.Model, swTRUE, &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     finalizeAllWeather(
-        &SW_Run.Markov,
+        &SW_Run.MarkovIn,
         &SW_Run.WeatherIn,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
@@ -1398,12 +1398,12 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne1DeathTest) {
 
     // Reset "SW_Run.Weather.allHist"
     SW_WTH_read(
-        &SW_Run.WeatherIn, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo
+        &SW_Run.WeatherIn, &SW_Run.SkyIn, &SW_Run.Model, swTRUE, &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     finalizeAllWeather(
-        &SW_Run.Markov,
+        &SW_Run.MarkovIn,
         &SW_Run.WeatherIn,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
@@ -1514,12 +1514,12 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne2DeathTest) {
 
     // Reset "SW_Run.Weather.allHist"
     SW_WTH_read(
-        &SW_Run.WeatherIn, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo
+        &SW_Run.WeatherIn, &SW_Run.SkyIn, &SW_Run.Model, swTRUE, &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     finalizeAllWeather(
-        &SW_Run.Markov,
+        &SW_Run.MarkovIn,
         &SW_Run.WeatherIn,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
