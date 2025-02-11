@@ -66,7 +66,7 @@ void SW_VES_init_run(
 
 void SW_VES_checkestab(
     SW_VEGESTAB_INFO **parms,
-    SW_WEATHER *SW_Weather,
+    double avgTemp,
     double swcBulk[][MAX_LAYERS],
     TimeInt doy,
     TimeInt firstdoy,

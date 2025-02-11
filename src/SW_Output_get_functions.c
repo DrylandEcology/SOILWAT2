@@ -950,7 +950,7 @@ void get_estab_agg(
 @param[out] LogInfo Holds information on warnings and errors
 */
 void get_temp_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
-    SW_WEATHER_OUTPUTS *vo = &sw->Weather.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo = &sw->weath_p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     OutRun->sw_outstr[0] = '\0';
@@ -994,7 +994,7 @@ void get_temp_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     information that do not change throughout simulation runs
 */
 void get_temp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
-    SW_WEATHER_OUTPUTS *vo = &sw->Weather.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo = &sw->weath_p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -1093,7 +1093,7 @@ void get_temp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 void get_temp_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
-    SW_WEATHER_OUTPUTS *vo = &sw->Weather.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo = &sw->weath_p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -1154,7 +1154,7 @@ void get_temp_SXW(
     TimeInt tOffset;
 
     if (pd == eSW_Month || pd == eSW_Year) {
-        SW_WEATHER_OUTPUTS *vo = &sw->Weather.p_oagg[pd];
+        SW_WEATHER_OUTPUTS *vo = &sw->weath_p_oagg[pd];
         SW_OUT_RUN *OutRun = &sw->OutRun;
         tOffset = OutRun->tOffset;
 
@@ -1186,7 +1186,7 @@ OUTTEXT.
 @param[out] LogInfo Holds information on warnings and errors
 */
 void get_precip_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
-    SW_WEATHER_OUTPUTS *vo = &sw->Weather.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo = &sw->weath_p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     OutRun->sw_outstr[0] = '\0';
@@ -1228,7 +1228,7 @@ RSOILWAT.
     information that do not change throughout simulation runs
 */
 void get_precip_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
-    SW_WEATHER_OUTPUTS *vo = &sw->Weather.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo = &sw->weath_p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -1316,7 +1316,7 @@ STEPWAT.
 void get_precip_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
-    SW_WEATHER_OUTPUTS *vo = &sw->Weather.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo = &sw->weath_p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -1373,7 +1373,7 @@ void get_precip_SXW(
     TimeInt tOffset;
 
     if (pd == eSW_Month || pd == eSW_Year) {
-        SW_WEATHER_OUTPUTS *vo = &sw->Weather.p_oagg[pd];
+        SW_WEATHER_OUTPUTS *vo = &sw->weath_p_oagg[pd];
         SW_OUT_RUN *OutRun = &sw->OutRun;
         tOffset = OutRun->tOffset;
 
@@ -2632,7 +2632,7 @@ OUTTEXT.
 */
 void get_runoffrunon_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     double net;
-    SW_WEATHER_OUTPUTS *vo = &sw->Weather.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo = &sw->weath_p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     net = vo->surfaceRunoff + vo->snowRunoff - vo->surfaceRunon;
@@ -2673,7 +2673,7 @@ RSOILWAT.
     information that do not change throughout simulation runs
 */
 void get_runoffrunon_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
-    SW_WEATHER_OUTPUTS *vo = &sw->Weather.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo = &sw->weath_p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -2750,7 +2750,7 @@ void get_runoffrunon_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
     double net;
-    SW_WEATHER_OUTPUTS *vo = &sw->Weather.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo = &sw->weath_p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -3626,7 +3626,7 @@ void get_soilinf_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     /* 20110219 (drs) added runoff */
     /* 12/13/2012	(clk)	moved runoff, now named snowRunoff, to
      * get_runoffrunon(); */
-    SW_WEATHER_OUTPUTS *vo = &sw->Weather.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo = &sw->weath_p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     OutRun->sw_outstr[0] = '\0';
@@ -3655,7 +3655,7 @@ void get_soilinf_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     information that do not change throughout simulation runs
 */
 void get_soilinf_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
-    SW_WEATHER_OUTPUTS *vo = &sw->Weather.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo = &sw->weath_p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -3694,7 +3694,7 @@ void get_soilinf_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 void get_soilinf_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
-    SW_WEATHER_OUTPUTS *vo = &sw->Weather.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo = &sw->weath_p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -4113,7 +4113,7 @@ void get_hydred_agg(
 */
 void get_aet_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
-    SW_WEATHER_OUTPUTS *vo2 = &sw->Weather.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo2 = &sw->weath_p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     OutRun->sw_outstr[0] = '\0';
@@ -4158,7 +4158,7 @@ void get_aet_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
 */
 void get_aet_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
-    SW_WEATHER_OUTPUTS *vo2 = &sw->Weather.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo2 = &sw->weath_p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -4258,7 +4258,7 @@ void get_aet_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
     SW_SOILWAT_OUTPUTS *vo = &sw->SoilWat.p_oagg[pd];
-    SW_WEATHER_OUTPUTS *vo2 = &sw->Weather.p_oagg[pd];
+    SW_WEATHER_OUTPUTS *vo2 = &sw->weath_p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 

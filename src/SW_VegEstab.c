@@ -72,7 +72,7 @@ static void read_spp(
 static void checkit(
     TimeInt doy,
     unsigned int sppnum,
-    SW_WEATHER_NOW *wn,
+    double avgtemp,
     double swcBulk[][MAX_LAYERS],
     TimeInt firstdoy,
     SW_VEGESTAB_INFO **parms
@@ -350,8 +350,7 @@ void SW_VES_init_run(
 
 @param[in,out] **parms List of structs of type SW_VEGESTAB_INFO holding
     information about every vegetation species
-@param[in] SW_Weather Struct of type SW_WEATHER holding all relevant
-    information pretaining to meteorological input data
+@param[in] avgTemp Average of todays max/min temperatures
 @param[in] swcBulk Soil water content in the layer [cm]
 @param[in] doy Day of the year (base1) [1-366]
 @param[in] firstdoy First day of current year
@@ -360,7 +359,7 @@ void SW_VES_init_run(
 */
 void SW_VES_checkestab(
     SW_VEGESTAB_INFO **parms,
-    SW_WEATHER *SW_Weather,
+    double avgTemp,
     double swcBulk[][MAX_LAYERS],
     TimeInt doy,
     TimeInt firstdoy,
@@ -370,7 +369,7 @@ void SW_VES_checkestab(
     IntU i;
 
     for (i = 0; i < count; i++) {
-        checkit(doy, i, &SW_Weather->now, swcBulk, firstdoy, parms);
+        checkit(doy, i, avgTemp, swcBulk, firstdoy, parms);
     }
 }
 
@@ -381,7 +380,7 @@ void SW_VES_checkestab(
 static void checkit(
     TimeInt doy,
     unsigned int sppnum,
-    SW_WEATHER_NOW *wn,
+    double avgtemp,
     double swcBulk[][MAX_LAYERS],
     TimeInt firstdoy,
     SW_VEGESTAB_INFO **parms
@@ -390,8 +389,7 @@ static void checkit(
     SW_VEGESTAB_INFO *v = parms[sppnum];
 
     IntU i;
-    double avgtemp = wn->temp_avg; /* avg of today's min/max temp */
-    double avgswc;                 /* avg_swc today */
+    double avgswc; /* avg_swc today */
 
     if (doy == firstdoy) {
         zero_state(sppnum, parms);

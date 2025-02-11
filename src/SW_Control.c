@@ -135,7 +135,8 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 static void begin_day(SW_RUN *sw, LOG_INFO *LogInfo) {
     SW_MDL_new_day(&sw->Model);
     SW_WTH_new_day(
-        &sw->Weather,
+        &sw->WeatherIn,
+        &sw->WeatherSim,
         &sw->Site,
         sw->SoilWat.snowpack,
         sw->Model.doy,
@@ -182,25 +183,25 @@ void SW_RUN_deepCopy(
     dest->SoilWat.hist.file_prefix = NULL; /* currently unused */
 
     /* Allocate memory and copy daily weather */
-    dest->Weather.allHist = NULL;
+    dest->WeatherIn.allHist = NULL;
     if (copyWeatherHist) {
         SW_WTH_allocateAllWeather(
-            &dest->Weather.allHist, source->Weather.n_years, LogInfo
+            &dest->WeatherIn.allHist, source->WeatherIn.n_years, LogInfo
         );
         if (LogInfo->stopRun) {
             return; // Exit prematurely due to error
         }
-        for (unsigned int year = 0; year < source->Weather.n_years; year++) {
+        for (unsigned int year = 0; year < source->WeatherIn.n_years; year++) {
             memcpy(
-                &dest->Weather.allHist[year],
-                &source->Weather.allHist[year],
-                sizeof(dest->Weather.allHist[year])
+                &dest->WeatherIn.allHist[year],
+                &source->WeatherIn.allHist[year],
+                sizeof(dest->WeatherIn.allHist[year])
             );
         }
     }
 
     /* Copy weather generator parameters */
-    if (dest->Weather.generateWeatherMethod == 2) {
+    if (dest->WeatherIn.generateWeatherMethod == 2) {
         copyMKV(&dest->Markov, &source->Markov);
     }
 
@@ -406,7 +407,7 @@ program exit
     all information in the simulation
 */
 void SW_CTL_init_ptrs(SW_RUN *sw) {
-    SW_WTH_init_ptrs(&sw->Weather);
+    SW_WTH_init_ptrs(&sw->WeatherIn.allHist);
     // SW_MKV_init_ptrs() not needed
     SW_VES_init_ptrs(&sw->VegEstab);
     // SW_VPD_init_ptrs() not needed
@@ -542,7 +543,9 @@ void SW_CTL_setup_model(
     SW_RUN *sw, SW_OUT_DOM *OutDom, Bool zeroOutInfo, LOG_INFO *LogInfo
 ) {
     SW_MDL_construct(&sw->Model);
-    SW_WTH_construct(&sw->Weather);
+    SW_WTH_construct(
+        &sw->WeatherIn, &sw->WeatherSim, sw->weath_p_accu, sw->weath_p_oagg
+    );
 
     // delay SW_MKV_construct() until we know from inputs whether we need it
     // SW_SKY_construct() not need
@@ -577,7 +580,7 @@ void SW_CTL_clear_model(Bool full_reset, SW_RUN *sw) {
     SW_OUT_deconstruct(full_reset, sw);
 
     SW_MDL_deconstruct();
-    SW_WTH_deconstruct(&sw->Weather);
+    SW_WTH_deconstruct(&sw->WeatherIn.allHist);
     // SW_MKV_deconstruct() not needed
     // SW_SKY_deconstruct() not needed
     // SW_SIT_deconstruct() not needed
@@ -604,7 +607,7 @@ void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
 
     // SW_F_init_run() not needed
     // SW_MDL_init_run() not needed
-    SW_WTH_init_run(&sw->Weather);
+    SW_WTH_init_run(&sw->WeatherSim);
     // SW_MKV_init_run() not needed
     SW_PET_init_run(&sw->AtmDemand);
 
@@ -630,7 +633,9 @@ void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
         return; // Exit function prematurely due to error
     }
 
-    SW_VPD_init_run(&sw->VegProd, &sw->Weather, &sw->Model, estVeg, LogInfo);
+    SW_VPD_init_run(
+        &sw->VegProd, sw->WeatherIn.allHist, &sw->Model, estVeg, LogInfo
+    );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -639,7 +644,7 @@ void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
     SW_ST_init_run(&sw->StRegValues);
     // SW_OUT_init_run() handled separately so that SW_CTL_init_run() can be
     //   useful for unit tests, rSOILWAT2, and STEPWAT2 applications
-    SW_SWC_init_run(&sw->SoilWat, &sw->Site, &sw->Weather.temp_snow);
+    SW_SWC_init_run(&sw->SoilWat, &sw->Site, &sw->WeatherSim.temp_snow);
     SW_CBN_init_run(sw->VegProd.veg, &sw->Model, &sw->Carbon, LogInfo);
 }
 
@@ -707,7 +712,7 @@ void SW_CTL_run_current_year(
         if (sw->VegEstab.use) {
             SW_VES_checkestab(
                 sw->VegEstab.parms,
-                &sw->Weather,
+                sw->WeatherSim.temp_avg,
                 sw->SoilWat.swcBulk,
                 sw->Model.doy,
                 sw->Model.firstdoy,
@@ -930,7 +935,7 @@ void SW_CTL_read_inputs_from_disk(
 #endif
 
     SW_WTH_setup(
-        &sw->Weather,
+        &sw->WeatherIn,
         SW_PathInputs->txtInFiles,
         SW_PathInputs->txtWeatherPrefix,
         LogInfo
@@ -954,11 +959,11 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    if (sw->Weather.generateWeatherMethod == 2) {
+    if (sw->WeatherIn.generateWeatherMethod == 2) {
         SW_MKV_setup(
             &sw->Markov,
-            sw->Weather.rng_seed,
-            sw->Weather.generateWeatherMethod,
+            sw->WeatherIn.rng_seed,
+            sw->WeatherIn.generateWeatherMethod,
             SW_PathInputs->txtInFiles,
             LogInfo
         );
@@ -972,7 +977,7 @@ void SW_CTL_read_inputs_from_disk(
 #endif
     }
 
-    SW_WTH_read(&sw->Weather, &sw->Sky, &sw->Model, readTextInputs, LogInfo);
+    SW_WTH_read(&sw->WeatherIn, &sw->Sky, &sw->Model, readTextInputs, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }

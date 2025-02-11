@@ -595,7 +595,7 @@ void SW_VPD_construct(SW_VEGPROD *SW_VegProd) {
 
 void SW_VPD_init_run(
     SW_VEGPROD *SW_VegProd,
-    SW_WEATHER *SW_Weather,
+    SW_WEATHER_HIST *allHist,
     SW_MODEL *SW_Model,
     Bool estVeg,
     LOG_INFO *LogInfo
@@ -613,9 +613,7 @@ void SW_VPD_init_run(
     }
 
     if (estVeg && SW_VegProd->veg_method > 0) {
-        estimateVegetationFromClimate(
-            SW_VegProd, SW_Weather->allHist, SW_Model, LogInfo
-        );
+        estimateVegetationFromClimate(SW_VegProd, allHist, SW_Model, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }

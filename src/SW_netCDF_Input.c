@@ -4168,25 +4168,27 @@ for each weather input, this uses the "read in variable" flags instead
 of those in the weather `weathsetup.in`
 
 @param[in] SW_netCDFIn Constant netCDF input file information
-@param[out] SW_Weather Struct of type SW_WEATHER holding all relevant
+@param[out] SW_WeatherIn Struct of type SW_WEATHER_INPUTS holding all relevant
 information pretaining to meteorological input data
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static void get_weather_flags(
-    SW_NETCDF_IN *SW_netCDFIn, SW_WEATHER *SW_Weather, LOG_INFO *LogInfo
+    SW_NETCDF_IN *SW_netCDFIn,
+    SW_WEATHER_INPUTS *SW_WeatherIn,
+    LOG_INFO *LogInfo
 ) {
     int varNum;
     Bool *weathVarFlags = SW_netCDFIn->readInVars[eSW_InWeather];
 
     for (varNum = 1; varNum < numVarsInKey[eSW_InWeather]; varNum++) {
-        SW_Weather->dailyInputFlags[varNum - 1] = weathVarFlags[varNum + 1];
+        SW_WeatherIn->dailyInputFlags[varNum - 1] = weathVarFlags[varNum + 1];
     }
 
     check_and_update_dailyInputFlags(
-        SW_Weather->use_cloudCoverMonthly,
-        SW_Weather->use_humidityMonthly,
-        SW_Weather->use_windSpeedMonthly,
-        SW_Weather->dailyInputFlags,
+        SW_WeatherIn->use_cloudCoverMonthly,
+        SW_WeatherIn->use_humidityMonthly,
+        SW_WeatherIn->use_windSpeedMonthly,
+        SW_WeatherIn->dailyInputFlags,
         LogInfo
     );
 }
@@ -7444,7 +7446,7 @@ store them for the next simulation run
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
-@param[out] SW_Weather Struct of type SW_WEATHER holding all relevant
+@param[out] SW_WeatherIn Struct of type SW_WEATHER_INPUTS holding all relevant
 information pretaining to meteorological input data
 @param[in] weathInFiles List of expected input file names the
 program generated based on user input
@@ -7460,7 +7462,7 @@ to convert input data to units the program can understand within the
 */
 static void read_weather_input(
     SW_DOMAIN *SW_Domain,
-    SW_WEATHER *SW_Weather,
+    SW_WEATHER_INPUTS *SW_WeatherIn,
     char ***weathInFiles,
     char *indexFileName,
     const size_t ncSUID[],
@@ -7516,7 +7518,7 @@ static void read_weather_input(
 
     inSiteDom = (Bool) (strcmp(inVarInfo[fIndex][INDOMTYPE], "s") == 0);
 
-    allocate_temp_weather(SW_Weather->n_years, &tempWeatherHist, LogInfo);
+    allocate_temp_weather(SW_WeatherIn->n_years, &tempWeatherHist, LogInfo);
     if (LogInfo->stopRun) {
         goto closeFile;
     }
@@ -7549,7 +7551,7 @@ static void read_weather_input(
         }
 
         weathFileIndex = SW_Domain->SW_PathInputs.weathStartFileIndex;
-        for (yearIndex = 0; yearIndex < SW_Weather->n_years; yearIndex++) {
+        for (yearIndex = 0; yearIndex < SW_WeatherIn->n_years; yearIndex++) {
             year = SW_Domain->startyr + yearIndex;
 
             if (varNum == fIndex) {
@@ -7634,11 +7636,11 @@ static void read_weather_input(
 
     SW_WTH_setWeatherValues(
         SW_Domain->startyr,
-        SW_Weather->n_years,
-        SW_Weather->dailyInputFlags,
+        SW_WeatherIn->n_years,
+        SW_WeatherIn->dailyInputFlags,
         tempWeatherHist,
         elevation,
-        SW_Weather->allHist,
+        SW_WeatherIn->allHist,
         LogInfo
     );
 
@@ -7647,7 +7649,7 @@ closeFile:
         nc_close(ncFileID);
     }
 
-    deallocate_temp_weather(SW_Weather->n_years, &tempWeatherHist);
+    deallocate_temp_weather(SW_WeatherIn->n_years, &tempWeatherHist);
 }
 
 /**
@@ -7665,7 +7667,7 @@ to SW_Run
 void SW_NCIN_read_inputs(
     SW_RUN *sw, SW_DOMAIN *SW_Domain, const size_t ncSUID[], LOG_INFO *LogInfo
 ) {
-    SW_WEATHER *SW_Weather = &sw->Weather;
+    SW_WEATHER_INPUTS *SW_WeatherIn = &sw->WeatherIn;
     char ***ncInFiles = SW_Domain->SW_PathInputs.ncInFiles;
     Bool **readInputs = SW_Domain->netCDFInput.readInVars;
     sw_converter_t ***convs = SW_Domain->netCDFInput.uconv;
@@ -7681,14 +7683,14 @@ void SW_NCIN_read_inputs(
     /* Allocate information before gathering inputs */
     if (readWeather) {
         SW_WTH_allocateAllWeather(
-            &SW_Weather->allHist, SW_Weather->n_years, LogInfo
+            &SW_WeatherIn->allHist, SW_WeatherIn->n_years, LogInfo
         );
         if (LogInfo->stopRun) {
             return;
         }
 
-        for (yearIndex = 0; yearIndex < SW_Weather->n_years; yearIndex++) {
-            clear_hist_weather(&SW_Weather->allHist[yearIndex], NULL);
+        for (yearIndex = 0; yearIndex < SW_WeatherIn->n_years; yearIndex++) {
+            clear_hist_weather(&SW_WeatherIn->allHist[yearIndex], NULL);
         }
     }
 
@@ -7701,15 +7703,15 @@ void SW_NCIN_read_inputs(
             return;
         }
 
-        for (yearIndex = 0; yearIndex < SW_Weather->n_years; yearIndex++) {
-            year = yearIndex + SW_Weather->startYear;
+        for (yearIndex = 0; yearIndex < SW_WeatherIn->n_years; yearIndex++) {
+            year = yearIndex + SW_WeatherIn->startYear;
 
             SW_WTH_setWeathUsingClimate(
-                &SW_Weather->allHist[yearIndex],
+                &SW_WeatherIn->allHist[yearIndex],
                 year,
-                SW_Weather->use_cloudCoverMonthly,
-                SW_Weather->use_humidityMonthly,
-                SW_Weather->use_windSpeedMonthly,
+                SW_WeatherIn->use_cloudCoverMonthly,
+                SW_WeatherIn->use_humidityMonthly,
+                SW_WeatherIn->use_windSpeedMonthly,
                 sw->Model.cum_monthdays,
                 sw->Model.days_in_month,
                 sw->Sky.cloudcov,
@@ -7719,10 +7721,10 @@ void SW_NCIN_read_inputs(
         }
     }
 
-    if (readWeather && !SW_Weather->use_weathergenerator_only) {
+    if (readWeather && !SW_WeatherIn->use_weathergenerator_only) {
         read_weather_input(
             SW_Domain,
-            &sw->Weather,
+            &sw->WeatherIn,
             SW_Domain->SW_PathInputs.ncWeatherInFiles,
             ncInFiles[eSW_InWeather][0],
             ncSUID,
@@ -7736,7 +7738,7 @@ void SW_NCIN_read_inputs(
 
         SW_WTH_finalize_all_weather(
             &sw->Markov,
-            &sw->Weather,
+            &sw->WeatherIn,
             sw->Model.cum_monthdays,
             sw->Model.days_in_month,
             LogInfo
@@ -8977,12 +8979,12 @@ index file, and temporal indices for weather inputs
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
-@param[out] SW_Weather Struct of type SW_WEATHER holding all relevant
+@param[out] SW_WeatherIn Struct of type SW_WEATHER_INPUTS holding all relevant
 information pretaining to meteorological input data
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCIN_precalc_lookups(
-    SW_DOMAIN *SW_Domain, SW_WEATHER *SW_Weather, LOG_INFO *LogInfo
+    SW_DOMAIN *SW_Domain, SW_WEATHER_INPUTS *SW_WeatherIn, LOG_INFO *LogInfo
 ) {
 
     SW_NETCDF_IN *SW_netCDFIn = &SW_Domain->netCDFInput;
@@ -9031,12 +9033,12 @@ void SW_NCIN_precalc_lookups(
             return;
         }
 
-        get_weather_flags(SW_netCDFIn, SW_Weather, LogInfo);
+        get_weather_flags(SW_netCDFIn, SW_WeatherIn, LogInfo);
         if (LogInfo->stopRun) {
             return;
         }
 #else
-        (void) SW_Weather;
+        (void) SW_WeatherIn;
 
         LogError(
             LogInfo,

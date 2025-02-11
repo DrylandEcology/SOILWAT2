@@ -31,7 +31,7 @@ TEST(WeatherGeneratorTest, WeatherGeneratorConstructor) {
     int const rng_seed = 8;
 
     SW_MKV_construct(rng_seed, &SW_Markov);
-    sw_fail_on_error(&LogInfo);        // exit test program if unexpected error
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Check that at least first array elements are initialized to zero
     EXPECT_DOUBLE_EQ(0., SW_Markov.wetprob[0]);

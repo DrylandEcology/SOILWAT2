@@ -56,7 +56,9 @@
     over the simulated site
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_SKY_read(char *txtInFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
+void SW_SKY_read(
+    char *txtInFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo
+) {
     /* =================================================== */
     /* 6-Oct-03 (cwb) - all this time I had lines 1 & 3
      *                  switched!

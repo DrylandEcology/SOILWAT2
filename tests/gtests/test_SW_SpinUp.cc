@@ -395,7 +395,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                 SW_SWC_init_run(
                     &local_sw.SoilWat,
                     &local_sw.Site,
-                    &local_sw.Weather.temp_snow
+                    &local_sw.WeatherSim.temp_snow
                 );
 
 

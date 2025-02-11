@@ -13,8 +13,8 @@ History:
 
 01/12/2010 (drs) removed pressure (used for snow sublimation)
 
-08/22/2011 (drs) added monthly parameter 'snow_density' to struct SW_SKY to
-estimate snow depth
+08/22/2011 (drs) added monthly parameter 'snow_density' to struct SW_SKY
+to estimate snow depth
 
 09/26/2011 (drs) added a daily variable for each monthly input in struct
 SW_SKY: double cloudcov_daily, windspeed_daily, r_humidity_daily,
@@ -36,7 +36,9 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_SKY_read(char *txtInFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo);
+void SW_SKY_read(
+    char *txtInFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo
+);
 void SW_SKY_new_year(
     SW_MODEL *SW_Model,
     double snow_density[MAX_MONTHS],

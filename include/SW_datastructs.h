@@ -676,8 +676,9 @@ typedef struct {
 /*                   Weather structs                   */
 /* --------------------------------------------------- */
 
-/** Weather values of the current simulation day */
 typedef struct {
+    /** Weather values of the current simulation day */
+
     /** Daily near-surface average air temperature [C] */
     double temp_avg;
     /** Daily near-surface maximum air temperature [C] */
@@ -701,7 +702,12 @@ typedef struct {
     double shortWaveRad;
     /** Daily mean near-surface actual vapor pressure [kPa] */
     double actualVaporPressure;
-} SW_WEATHER_NOW;
+
+    /** Weather values used throughout the simulation */
+    double snowRunoff, surfaceRunoff, surfaceRunon, soil_inf, surfaceAvg;
+    double snow, snowmelt, snowloss, surfaceMax, surfaceMin;
+    double temp_snow; // Snow temperature
+} SW_WEATHER_SIM;
 
 /** Daily weather values for one calendar year */
 typedef struct {
@@ -843,7 +849,6 @@ typedef struct {
 } SW_CLIMATE_AVERAGES;
 
 typedef struct {
-
     Bool use_snow, use_weathergenerator_only;
     // swTRUE: use weather generator and ignore weather inputs
 
@@ -853,18 +858,16 @@ typedef struct {
     // 1 : LOCF (temp) + 0 (ppt)
     // 2 : weather generator (previously, `use_weathergenerator`)
 
-    int rng_seed; // initial state for `mark
-
     double pct_snowdrift, pct_snowRunoff;
     double scale_precip[MAX_MONTHS], scale_temp_max[MAX_MONTHS],
         scale_temp_min[MAX_MONTHS], scale_skyCover[MAX_MONTHS],
         scale_wind[MAX_MONTHS], scale_rH[MAX_MONTHS],
         scale_actVapPress[MAX_MONTHS], scale_shortWaveRad[MAX_MONTHS];
+
     char name_prefix[MAX_FILENAMESIZE - 5]; // subtract 4-digit 'year' file type
                                             // extension
-    double snowRunoff, surfaceRunoff, surfaceRunon, soil_inf, surfaceAvg;
-    double snow, snowmelt, snowloss, surfaceMax, surfaceMin;
-    double temp_snow; // Snow temperature
+
+    int rng_seed; // initial state for `mark`
 
     Bool use_cloudCoverMonthly, use_windSpeedMonthly, use_humidityMonthly;
     Bool dailyInputFlags[MAX_INPUT_COLUMNS];
@@ -891,10 +894,7 @@ typedef struct {
                                daily weather */
     unsigned int startYear; /**< Calendar year corresponding to first year of
                                `allHist` */
-
-    SW_WEATHER_NOW now; /**< Weather values of the current simulation day */
-
-} SW_WEATHER;
+} SW_WEATHER_INPUTS;
 
 /* =================================================== */
 /*                   Soilwat structs                   */
@@ -1648,7 +1648,6 @@ typedef struct {
 
 struct SW_RUN {
     SW_VEGPROD VegProd;
-    SW_WEATHER Weather;
     SW_SOILWAT SoilWat;
     SW_MODEL Model;
     SW_SITE Site;
@@ -1658,9 +1657,23 @@ struct SW_RUN {
     ST_RGR_VALUES StRegValues;
     SW_PATH_OUTPUTS SW_PathOutputs;
     SW_MARKOV Markov;
+    SW_ATMD AtmDemand;
+
+    /* Input information */
+    SW_WEATHER_INPUTS WeatherIn;
+
+    /* Values used/modified during simulation that's not strictly inputs */
+    SW_WEATHER_SIM WeatherSim;
+
+    /* Output information */
     SW_OUT_RUN OutRun;
 
-    SW_ATMD AtmDemand;
+    /* This section contains values for computing the output quantities
+       for all types of outputs.
+       *_accu = output accumulator: summed values for each time period
+       *_oagg = output aggregator: mean or sum for each time periods */
+    SW_WEATHER_OUTPUTS weath_p_accu[SW_OUTNPERIODS],
+        weath_p_oagg[SW_OUTNPERIODS];
 };
 
 /* =================================================== */

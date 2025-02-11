@@ -186,7 +186,7 @@ static void collect_sums(
 );
 
 static void sumof_wth(
-    SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k, LOG_INFO *LogInfo
+    SW_WEATHER_SIM *v, SW_WEATHER_OUTPUTS *s, OutKey k, LOG_INFO *LogInfo
 );
 
 static void sumof_swc(
@@ -373,22 +373,22 @@ static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k) {
 }
 
 static void sumof_wth(
-    SW_WEATHER *v, SW_WEATHER_OUTPUTS *s, OutKey k, LOG_INFO *LogInfo
+    SW_WEATHER_SIM *v, SW_WEATHER_OUTPUTS *s, OutKey k, LOG_INFO *LogInfo
 ) {
     switch (k) {
 
     case eSW_Temp:
-        s->temp_max += v->now.temp_max;
-        s->temp_min += v->now.temp_min;
-        s->temp_avg += v->now.temp_avg;
+        s->temp_max += v->temp_max;
+        s->temp_min += v->temp_min;
+        s->temp_avg += v->temp_avg;
         // added surfaceAvg for sum
         s->surfaceAvg += v->surfaceAvg;
         s->surfaceMax += v->surfaceMax;
         s->surfaceMin += v->surfaceMin;
         break;
     case eSW_Precip:
-        s->ppt += v->now.ppt;
-        s->rain += v->now.rain;
+        s->ppt += v->ppt;
+        s->rain += v->rain;
         s->snow += v->snow;
         s->snowmelt += v->snowmelt;
         s->snowloss += v->snowloss;
@@ -657,42 +657,36 @@ static void average_for(
         switch (k) {
 
         case eSW_Temp:
-            sw->Weather.p_oagg[pd].temp_max =
-                sw->Weather.p_accu[pd].temp_max / div;
-            sw->Weather.p_oagg[pd].temp_min =
-                sw->Weather.p_accu[pd].temp_min / div;
-            sw->Weather.p_oagg[pd].temp_avg =
-                sw->Weather.p_accu[pd].temp_avg / div;
-            sw->Weather.p_oagg[pd].surfaceAvg =
-                sw->Weather.p_accu[pd].surfaceAvg / div;
-            sw->Weather.p_oagg[pd].surfaceMax =
-                sw->Weather.p_accu[pd].surfaceMax / div;
-            sw->Weather.p_oagg[pd].surfaceMin =
-                sw->Weather.p_accu[pd].surfaceMin / div;
+            sw->weath_p_oagg[pd].temp_max = sw->weath_p_accu[pd].temp_max / div;
+            sw->weath_p_oagg[pd].temp_min = sw->weath_p_accu[pd].temp_min / div;
+            sw->weath_p_oagg[pd].temp_avg = sw->weath_p_accu[pd].temp_avg / div;
+            sw->weath_p_oagg[pd].surfaceAvg =
+                sw->weath_p_accu[pd].surfaceAvg / div;
+            sw->weath_p_oagg[pd].surfaceMax =
+                sw->weath_p_accu[pd].surfaceMax / div;
+            sw->weath_p_oagg[pd].surfaceMin =
+                sw->weath_p_accu[pd].surfaceMin / div;
             break;
 
         case eSW_Precip:
-            sw->Weather.p_oagg[pd].ppt = sw->Weather.p_accu[pd].ppt / div;
-            sw->Weather.p_oagg[pd].rain = sw->Weather.p_accu[pd].rain / div;
-            sw->Weather.p_oagg[pd].snow = sw->Weather.p_accu[pd].snow / div;
-            sw->Weather.p_oagg[pd].snowmelt =
-                sw->Weather.p_accu[pd].snowmelt / div;
-            sw->Weather.p_oagg[pd].snowloss =
-                sw->Weather.p_accu[pd].snowloss / div;
+            sw->weath_p_oagg[pd].ppt = sw->weath_p_accu[pd].ppt / div;
+            sw->weath_p_oagg[pd].rain = sw->weath_p_accu[pd].rain / div;
+            sw->weath_p_oagg[pd].snow = sw->weath_p_accu[pd].snow / div;
+            sw->weath_p_oagg[pd].snowmelt = sw->weath_p_accu[pd].snowmelt / div;
+            sw->weath_p_oagg[pd].snowloss = sw->weath_p_accu[pd].snowloss / div;
             break;
 
         case eSW_SoilInf:
-            sw->Weather.p_oagg[pd].soil_inf =
-                sw->Weather.p_accu[pd].soil_inf / div;
+            sw->weath_p_oagg[pd].soil_inf = sw->weath_p_accu[pd].soil_inf / div;
             break;
 
         case eSW_Runoff:
-            sw->Weather.p_oagg[pd].snowRunoff =
-                sw->Weather.p_accu[pd].snowRunoff / div;
-            sw->Weather.p_oagg[pd].surfaceRunoff =
-                sw->Weather.p_accu[pd].surfaceRunoff / div;
-            sw->Weather.p_oagg[pd].surfaceRunon =
-                sw->Weather.p_accu[pd].surfaceRunon / div;
+            sw->weath_p_oagg[pd].snowRunoff =
+                sw->weath_p_accu[pd].snowRunoff / div;
+            sw->weath_p_oagg[pd].surfaceRunoff =
+                sw->weath_p_accu[pd].surfaceRunoff / div;
+            sw->weath_p_oagg[pd].surfaceRunon =
+                sw->weath_p_accu[pd].surfaceRunon / div;
             break;
 
         case eSW_SoilTemp:
@@ -1001,8 +995,6 @@ static void collect_sums(
 
         if (use_KeyPeriodCombo && pd >= sw->OutRun.first[k] &&
             pd <= sw->OutRun.last[k]) {
-
-            SW_WEATHER_OUTPUTS *res = &sw->Weather.p_accu[op];
             switch (otyp) {
             case eSWC:
                 sumof_swc(
@@ -1022,13 +1014,15 @@ static void collect_sums(
                 break;
 
             case eWTH:
-                sumof_wth(&sw->Weather, res, (OutKey) k, LogInfo);
+                sumof_wth(
+                    &sw->WeatherSim, &sw->weath_p_accu[op], (OutKey) k, LogInfo
+                );
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }
 
                 if (op == eSW_Day) {
-                    sw->Weather.p_oagg[op] = sw->Weather.p_accu[op];
+                    sw->weath_p_oagg[op] = sw->weath_p_accu[op];
                 }
                 break;
             case eVES:
@@ -3221,7 +3215,7 @@ void SW_OUT_sum_today(
                 memset(&sw->SoilWat.p_accu[pd], 0, sizeof(SW_SOILWAT_OUTPUTS));
                 break;
             case eWTH:
-                memset(&sw->Weather.p_accu[pd], 0, sizeof(SW_WEATHER_OUTPUTS));
+                memset(&sw->weath_p_accu[pd], 0, sizeof(SW_WEATHER_OUTPUTS));
                 break;
             case eVES:
                 break;

@@ -479,27 +479,27 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
     // Get evaporation values
     Elitter = sw->SoilWat.litter_evap;
     Eponded = sw->SoilWat.surfaceWater_evap;
-    Esnow = sw->Weather.snowloss;
+    Esnow = sw->WeatherSim.snowloss;
     Etotalint = Eveg + Elitter;
     Etotalsurf = Etotalint + Eponded;
     Etotal = Etotalsurf + Esoil + Esnow;
 
     // Get other water flux values
-    infiltration = sw->Weather.soil_inf;
+    infiltration = sw->WeatherSim.soil_inf;
     deepDrainage = sw->SoilWat.drain[sw->Site.deep_lyr];
 
     percolationIn[0] = infiltration;
     percolationOut[sw->Site.n_layers] = deepDrainage;
 
-    runoff = sw->Weather.snowRunoff + sw->Weather.surfaceRunoff;
-    runon = sw->Weather.surfaceRunon;
-    snowmelt = sw->Weather.snowmelt;
-    rain = sw->Weather.now.rain;
+    runoff = sw->WeatherSim.snowRunoff + sw->WeatherSim.surfaceRunoff;
+    runon = sw->WeatherSim.surfaceRunon;
+    snowmelt = sw->WeatherSim.snowmelt;
+    rain = sw->WeatherSim.rain;
 
     arriving_water = rain + snowmelt + runon;
 
     // Get snow
-    snowfall = sw->Weather.snow;
+    snowfall = sw->WeatherSim.snow;
     snowpackDepth = sw->SoilWat.snowdepth;
     snowpackWater = sw->SoilWat.snowpack[Today];
     snowpackRecently =

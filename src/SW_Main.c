@@ -130,7 +130,7 @@ int main(int argc, char **argv) {
         goto finishProgram;
     }
 
-    SW_NCIN_precalc_lookups(&SW_Domain, &sw_template.Weather, &LogInfo);
+    SW_NCIN_precalc_lookups(&SW_Domain, &sw_template.WeatherIn, &LogInfo);
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
@@ -152,7 +152,7 @@ int main(int argc, char **argv) {
 #endif
         SW_WTH_finalize_all_weather(
             &sw_template.Markov,
-            &sw_template.Weather,
+            &sw_template.WeatherIn,
             sw_template.Model.cum_monthdays,
             sw_template.Model.days_in_month,
             &LogInfo

@@ -98,7 +98,7 @@ TEST_F(VegProdFixtureTest, VegProdConstructor) {
     SW_VPD_construct(&SW_VegProd);
 
     SW_VPD_init_run(
-        &SW_VegProd, &SW_Run.Weather, &SW_Run.Model, swTRUE, &LogInfo
+        &SW_VegProd, SW_Run.WeatherIn.allHist, &SW_Run.Model, swTRUE, &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -232,12 +232,14 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
     SW_Run.Model.latitude = 90.0;
 
     // Reset "SW_Run.Weather.allHist"
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
+    SW_WTH_read(
+        &SW_Run.WeatherIn, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     finalizeAllWeather(
         &SW_Run.Markov,
-        &SW_Run.Weather,
+        &SW_Run.WeatherIn,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
         &LogInfo
@@ -251,7 +253,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
 
     // Calculate climate of the site and add results to "climateOutput"
     calcSiteClimate(
-        SW_Run.Weather.allHist,
+        SW_Run.WeatherIn.allHist,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
         31,
@@ -556,7 +558,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
 
 
     estimateVegetationFromClimate(
-        &SW_Run.VegProd, SW_Run.Weather.allHist, &SW_Run.Model, &LogInfo
+        &SW_Run.VegProd, SW_Run.WeatherIn.allHist, &SW_Run.Model, &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -592,7 +594,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
     // "climateOutput"
     inNorthHem = swFALSE;
     calcSiteClimate(
-        SW_Run.Weather.allHist,
+        SW_Run.WeatherIn.allHist,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
         31,
@@ -810,12 +812,14 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
 
 
     // Reset "SW_Run.Weather.allHist"
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
+    SW_WTH_read(
+        &SW_Run.WeatherIn, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     finalizeAllWeather(
         &SW_Run.Markov,
-        &SW_Run.Weather,
+        &SW_Run.WeatherIn,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
         &LogInfo
@@ -829,7 +833,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
 
     // Calculate climate of the site and add results to "climateOutput"
     calcSiteClimate(
-        SW_Run.Weather.allHist,
+        SW_Run.WeatherIn.allHist,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
         31,
@@ -1393,12 +1397,14 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne1DeathTest) {
 
 
     // Reset "SW_Run.Weather.allHist"
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
+    SW_WTH_read(
+        &SW_Run.WeatherIn, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     finalizeAllWeather(
         &SW_Run.Markov,
-        &SW_Run.Weather,
+        &SW_Run.WeatherIn,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
         &LogInfo
@@ -1407,7 +1413,7 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne1DeathTest) {
 
     // Calculate climate of the site and add results to "climateOutput"
     calcSiteClimate(
-        SW_Run.Weather.allHist,
+        SW_Run.WeatherIn.allHist,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
         31,
@@ -1507,12 +1513,14 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne2DeathTest) {
         ===============================================================  */
 
     // Reset "SW_Run.Weather.allHist"
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
+    SW_WTH_read(
+        &SW_Run.WeatherIn, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     finalizeAllWeather(
         &SW_Run.Markov,
-        &SW_Run.Weather,
+        &SW_Run.WeatherIn,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
         &LogInfo
@@ -1522,7 +1530,7 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne2DeathTest) {
 
     // Calculate climate of the site and add results to "climateOutput"
     calcSiteClimate(
-        SW_Run.Weather.allHist,
+        SW_Run.WeatherIn.allHist,
         SW_Run.Model.cum_monthdays,
         SW_Run.Model.days_in_month,
         31,
