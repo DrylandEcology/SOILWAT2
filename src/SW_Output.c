@@ -1250,21 +1250,30 @@ void SW_OUT_set_SXWrequests(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 
 @param[out] OutRun Struct of type SW_OUT_RUN that holds output
     information that may change throughout simulation runs
+@param[out] SW_PathOutputs Struct of type SW_PATH_OUTPUTS which
+    holds basic information about output files and values
 */
-void SW_OUT_init_ptrs(SW_OUT_RUN *OutRun) {
+void SW_OUT_init_ptrs(SW_OUT_RUN *OutRun, SW_PATH_OUTPUTS *SW_PathOutputs) {
 
 #if defined(SW_OUTARRAY)
     int key;
     int column;
     ForEachOutKey(key) {
-        for (column = 0; column < SW_OUTNPERIODS; column++) {
+        ForEachOutPeriod(column) {
             OutRun->p_OUT[key][column] = NULL;
-#ifdef STEPWAT
+#if defined(STEPWAT)
             OutRun->p_OUTsd[key][column] = NULL;
+#elif defined(SWNETCDF)
+            SW_PathOutputs->ncOutFiles[key][column] = NULL;
+#endif
+
+#if !defined(SWNETCDF)
+            (void) SW_PathOutputs;
 #endif
         }
     }
 #else
+    (void) SW_PathOutputs;
     (void) OutRun;
 #endif
 }
