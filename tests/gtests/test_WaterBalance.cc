@@ -195,7 +195,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
     }
 
     // Re-calculate soils
-    SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
+    SW_SIT_init_run(&SW_Run.VegProdIn, &SW_Run.Site, &LogInfo);
     SW_SWC_init_run(
         &SW_Run.SoilWat, &SW_Run.Site, &SW_Run.WeatherSim.temp_snow
     );
@@ -217,7 +217,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOneSoilLayer) {
     int i;
 
     // Setup one soil layer
-    create_test_soillayers(1, &SW_Run.VegProd, &SW_Run.Site, &LogInfo);
+    create_test_soillayers(1, &SW_Run.VegProdIn, &SW_Run.Site, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Initialize `swcBulk` based on new soil layers
@@ -241,7 +241,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMaxSoilLayers) {
     int i;
 
     // Setup maximum number of soil layers
-    create_test_soillayers(MAX_LAYERS, &SW_Run.VegProd, &SW_Run.Site, &LogInfo);
+    create_test_soillayers(MAX_LAYERS, &SW_Run.VegProdIn, &SW_Run.Site, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Initialize `swcBulk` based on new soil layers
@@ -265,11 +265,11 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
     int i;
 
     // Select method to estimate vegetation from long-term climate
-    SW_Run.VegProd.veg_method = 1;
+    SW_Run.VegProdIn.veg_method = 1;
 
     // Re-calculate vegetation
     SW_VPD_init_run(
-        &SW_Run.VegProd,
+        &SW_Run.VegProdIn,
         SW_Run.WeatherIn.allHist,
         &SW_Run.Model,
         swTRUE,
@@ -310,7 +310,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
     }
 
     // Update soils
-    SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
+    SW_SIT_init_run(&SW_Run.VegProdIn, &SW_Run.Site, &LogInfo);
     SW_SWC_init_run(
         &SW_Run.SoilWat, &SW_Run.Site, &SW_Run.WeatherSim.temp_snow
     );
@@ -365,7 +365,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Update soils
-    SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
+    SW_SIT_init_run(&SW_Run.VegProdIn, &SW_Run.Site, &LogInfo);
     SW_SWC_init_run(
         &SW_Run.SoilWat, &SW_Run.Site, &SW_Run.WeatherSim.temp_snow
     );
@@ -423,7 +423,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
     }
 
     // Update soils
-    SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
+    SW_SIT_init_run(&SW_Run.VegProdIn, &SW_Run.Site, &LogInfo);
     SW_SWC_init_run(
         &SW_Run.SoilWat, &SW_Run.Site, &SW_Run.WeatherSim.temp_snow
     );

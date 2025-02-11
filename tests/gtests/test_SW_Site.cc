@@ -530,7 +530,7 @@ TEST_F(SiteFixtureTest, SiteSoilEvaporationParametersDeathTest) {
 
     SW_Run.Site.soils.evap_coeff[0] = -0.5;
 
-    SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
+    SW_SIT_init_run(&SW_Run.VegProdIn, &SW_Run.Site, &LogInfo);
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
     // Detect failure by error message
@@ -545,7 +545,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationParametersDeathTest) {
     // Check error for bad transpiration coefficient (should be [0-1])
 
     SW_Run.Site.soils.transp_coeff[SW_GRASS][1] = 1.5;
-    SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
+    SW_SIT_init_run(&SW_Run.VegProdIn, &SW_Run.Site, &LogInfo);
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
     // Detect failure by error message
@@ -775,7 +775,7 @@ TEST_F(SiteFixtureTest, SiteSoilDensityTypes) {
     // Inputs represent matric density
     SW_Run.Site.type_soilDensityInput = SW_MATRIC;
     SW_Run.Site.soils.fractionVolBulk_gravel[0] = fcoarse;
-    SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
+    SW_SIT_init_run(&SW_Run.VegProdIn, &SW_Run.Site, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     EXPECT_GT(
@@ -786,7 +786,7 @@ TEST_F(SiteFixtureTest, SiteSoilDensityTypes) {
     // Inputs represent bulk density
     SW_Run.Site.type_soilDensityInput = SW_BULK;
     SW_Run.Site.soils.fractionVolBulk_gravel[0] = fcoarse;
-    SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
+    SW_SIT_init_run(&SW_Run.VegProdIn, &SW_Run.Site, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     EXPECT_GT(
@@ -813,7 +813,7 @@ TEST_F(SiteFixtureTest, SiteSoilDensityMissingDeathTest) {
 
     SW_Run.Site.type_soilDensityInput = SW_MISSING;
 
-    SW_SIT_init_run(&SW_Run.VegProd, &SW_Run.Site, &LogInfo);
+    SW_SIT_init_run(&SW_Run.VegProdIn, &SW_Run.Site, &LogInfo);
 
     // Detect failure by error message
     EXPECT_THAT(

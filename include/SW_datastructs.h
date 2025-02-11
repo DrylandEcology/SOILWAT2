@@ -634,13 +634,7 @@ typedef struct {
         // decreasingly sorted critical SWP values
         rank_SWPcrits[NVEGTYPES],
         veg_method;
-
-    SW_VEGPROD_OUTPUTS
-    /** output accumulator: summed values for each output time period */
-    p_accu[SW_OUTNPERIODS],
-        /** output aggregator: mean or sum for each output time periods */
-        p_oagg[SW_OUTNPERIODS];
-} SW_VEGPROD;
+} SW_VEGPROD_INPUTS;
 
 /* =================================================== */
 /*                     Time struct                     */
@@ -1647,7 +1641,6 @@ typedef struct {
 } SW_OUT_RUN;
 
 struct SW_RUN {
-    SW_VEGPROD VegProd;
     SW_SOILWAT SoilWat;
     SW_MODEL Model;
     SW_SITE Site;
@@ -1658,6 +1651,7 @@ struct SW_RUN {
     SW_SKY_INPUTS SkyIn;
     SW_CARBON_INPUTS CarbonIn;
     SW_MARKOV_INPUTS MarkovIn;
+    SW_VEGPROD_INPUTS VegProdIn;
 
     /* Values used/modified during simulation that's not strictly inputs */
     SW_WEATHER_SIM WeatherSim;
@@ -1674,6 +1668,7 @@ struct SW_RUN {
        *_oagg = output aggregator: mean or sum for each time periods */
     SW_WEATHER_OUTPUTS weath_p_accu[SW_OUTNPERIODS],
         weath_p_oagg[SW_OUTNPERIODS];
+    SW_VEGPROD_OUTPUTS vp_p_accu[SW_OUTNPERIODS], vp_p_oagg[SW_OUTNPERIODS];
 };
 
 /* =================================================== */

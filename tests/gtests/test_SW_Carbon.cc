@@ -94,7 +94,7 @@ TEST_F(CarbonFixtureTest, CarbonInCO2multipliers) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_CBN_init_run(
-        SW_Run.VegProd.veg, &SW_Run.Model, &SW_Run.CarbonIn, &LogInfo
+        SW_Run.VegProdIn.veg, &SW_Run.Model, &SW_Run.CarbonIn, &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -102,10 +102,10 @@ TEST_F(CarbonFixtureTest, CarbonInCO2multipliers) {
          year++) {
         ForEachVegType(k) {
             EXPECT_GT(
-                SW_Run.VegProd.veg[k].co2_multipliers[BIO_INDEX][year], 0.
+                SW_Run.VegProdIn.veg[k].co2_multipliers[BIO_INDEX][year], 0.
             );
             EXPECT_GT(
-                SW_Run.VegProd.veg[k].co2_multipliers[WUE_INDEX][year], 0.
+                SW_Run.VegProdIn.veg[k].co2_multipliers[WUE_INDEX][year], 0.
             );
         }
     }

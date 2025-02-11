@@ -84,7 +84,7 @@ swcBulk_atSWPcrit[SW_FORBS], and my_transp_rgn[SW_FORBS] to SW_LAYER_INFO
 #define SW_SITE_H
 
 #include "include/generic.h"        // for Bool
-#include "include/SW_datastructs.h" // for SW_SITE, SW_VEGPROD, LOG_INFO
+#include "include/SW_datastructs.h" // for SW_SITE, SW_VEGPROD_INPUTS, LOG_INFO
 #include "include/SW_Defines.h"     // for LyrIndex
 
 #ifdef __cplusplus
@@ -313,7 +313,7 @@ void SW_SIT_read(
 );
 
 void SW_SIT_init_run(
-    SW_VEGPROD *SW_VegProd, SW_SITE *SW_Site, LOG_INFO *LogInfo
+    SW_VEGPROD_INPUTS *SW_VegProdIn, SW_SITE *SW_Site, LOG_INFO *LogInfo
 );
 
 void echo_inputs(SW_SITE *SW_Site, SW_MODEL *SW_Model);
@@ -327,7 +327,7 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *txtInFiles[], LOG_INFO *LogInfo);
 void add_deepdrain_layer(SW_SITE *SW_Site);
 
 void set_soillayers(
-    SW_VEGPROD *SW_VegProd,
+    SW_VEGPROD_INPUTS *SW_VegProdIn,
     SW_SITE *SW_Site,
     LyrIndex nlyrs,
     const double *dmax,

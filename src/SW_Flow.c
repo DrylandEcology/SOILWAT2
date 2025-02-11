@@ -340,9 +340,9 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
 
 
     /* Solar radiation and PET */
-    x = sw->VegProd.bare_cov.albedo * sw->VegProd.bare_cov.fCover;
+    x = sw->VegProdIn.bare_cov.albedo * sw->VegProdIn.bare_cov.fCover;
     ForEachVegType(k) {
-        x += sw->VegProd.veg[k].cov.albedo * sw->VegProd.veg[k].cov.fCover;
+        x += sw->VegProdIn.veg[k].cov.albedo * sw->VegProdIn.veg[k].cov.fCover;
     }
 
     sw->SoilWat.H_gt = solar_radiation(
@@ -393,11 +393,11 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
      - infiltrate water low */
 
     ForEachVegType(k) {
-        scale_veg[k] = sw->VegProd.veg[k].cov.fCover;
+        scale_veg[k] = sw->VegProdIn.veg[k].cov.fCover;
 
-        if (GT(sw->VegProd.veg[k].veg_height_daily[doy], 0.)) {
+        if (GT(sw->VegProdIn.veg[k].veg_height_daily[doy], 0.)) {
             scale_veg[k] *=
-                1. - snowdepth0 / sw->VegProd.veg[k].veg_height_daily[doy];
+                1. - snowdepth0 / sw->VegProdIn.veg[k].veg_height_daily[doy];
         }
     }
 
@@ -414,8 +414,8 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
                 &sw->SoilWat.int_veg[k],
                 &sw->SoilWat.veg_int_storage[k],
                 sw->SkyIn.n_rain_per_day[month],
-                sw->VegProd.veg[k].veg_kSmax,
-                sw->VegProd.veg[k].bLAI_total_daily[doy],
+                sw->VegProdIn.veg[k].veg_kSmax,
+                sw->VegProdIn.veg[k].bLAI_total_daily[doy],
                 scale_veg[k]
             );
 
@@ -430,15 +430,15 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         /* litter interception only when no snow and if rainfall reaches litter
          */
         ForEachVegType(k) {
-            if (GT(sw->VegProd.veg[k].cov.fCover, 0.)) {
+            if (GT(sw->VegProdIn.veg[k].cov.fCover, 0.)) {
                 litter_intercepted_water(
                     &h2o_for_soil,
                     &sw->SoilWat.litter_int,
                     &sw->SoilWat.litter_int_storage,
                     sw->SkyIn.n_rain_per_day[month],
-                    sw->VegProd.veg[k].lit_kSmax,
-                    sw->VegProd.veg[k].litter_daily[doy],
-                    sw->VegProd.veg[k].cov.fCover
+                    sw->VegProdIn.veg[k].lit_kSmax,
+                    sw->VegProdIn.veg[k].litter_daily[doy],
+                    sw->VegProdIn.veg[k].cov.fCover
                 );
             }
         }
@@ -563,7 +563,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
 
 
     /* Potential bare-soil evaporation rates */
-    if (GT(sw->VegProd.bare_cov.fCover, 0.) &&
+    if (GT(sw->VegProdIn.bare_cov.fCover, 0.) &&
         EQ(sw->SoilWat.snowpack[Today], 0.)) {
         /* bare ground present AND no snow on ground */
         pot_soil_evap_bs(
@@ -582,7 +582,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             return; // Exit function prematurely due to error
         }
 
-        soil_evap_rate_bs *= sw->VegProd.bare_cov.fCover;
+        soil_evap_rate_bs *= sw->VegProdIn.bare_cov.fCover;
 
     } else {
         soil_evap_rate_bs = 0;
@@ -596,8 +596,8 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             EsT_partitioning(
                 &soil_evap[k],
                 &transp_veg[k],
-                sw->VegProd.veg[k].lai_live_daily[doy],
-                sw->VegProd.veg[k].EsTpartitioning_param
+                sw->VegProdIn.veg[k].lai_live_daily[doy],
+                sw->VegProdIn.veg[k].EsTpartitioning_param
             );
 
             if (EQ(sw->SoilWat.snowpack[Today], 0.)) {
@@ -605,7 +605,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
                 pot_soil_evap(
                     &sw->Site,
                     sw->Site.n_evap_lyrs,
-                    sw->VegProd.veg[k].total_agb_daily[doy],
+                    sw->VegProdIn.veg[k].total_agb_daily[doy],
                     soil_evap[k],
                     sw->SoilWat.pet,
                     sw->Site.evap.xinflec,
@@ -613,7 +613,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
                     sw->Site.evap.yinflec,
                     sw->Site.evap.range,
                     sw->SoilWat.swcBulk[Today],
-                    sw->VegProd.veg[k].Es_param_limit,
+                    sw->VegProdIn.veg[k].Es_param_limit,
                     &soil_evap_rate[k],
                     LogInfo
                 );
@@ -621,7 +621,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
                     return; // Exit function prematurely due to error
                 }
 
-                soil_evap_rate[k] *= sw->VegProd.veg[k].cov.fCover;
+                soil_evap_rate[k] *= sw->VegProdIn.veg[k].cov.fCover;
 
             } else {
                 soil_evap_rate[k] = 0.;
@@ -644,21 +644,21 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             pot_transp(
                 &transp_rate[k],
                 swpot_avg[k],
-                sw->VegProd.veg[k].biolive_daily[doy],
-                sw->VegProd.veg[k].biodead_daily[doy],
+                sw->VegProdIn.veg[k].biolive_daily[doy],
+                sw->VegProdIn.veg[k].biodead_daily[doy],
                 transp_veg[k],
                 sw->SoilWat.pet,
                 sw->Site.transp.xinflec,
                 sw->Site.transp.slope,
                 sw->Site.transp.yinflec,
                 sw->Site.transp.range,
-                sw->VegProd.veg[k].shade_scale,
-                sw->VegProd.veg[k].shade_deadmax,
-                sw->VegProd.veg[k].tr_shade_effects.xinflec,
-                sw->VegProd.veg[k].tr_shade_effects.slope,
-                sw->VegProd.veg[k].tr_shade_effects.yinflec,
-                sw->VegProd.veg[k].tr_shade_effects.range,
-                sw->VegProd.veg[k].co2_multipliers[WUE_INDEX][sw->Model.simyear]
+                sw->VegProdIn.veg[k].shade_scale,
+                sw->VegProdIn.veg[k].shade_deadmax,
+                sw->VegProdIn.veg[k].tr_shade_effects.xinflec,
+                sw->VegProdIn.veg[k].tr_shade_effects.slope,
+                sw->VegProdIn.veg[k].tr_shade_effects.yinflec,
+                sw->VegProdIn.veg[k].tr_shade_effects.range,
+                sw->VegProdIn.veg[k].co2_multipliers[WUE_INDEX][sw->Model.simyear]
             );
 
             transp_rate[k] *= scale_veg[k];
@@ -752,7 +752,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         sw->SoilWat.evap_baresoil[i] = 0;
     }
 
-    if (GT(sw->VegProd.bare_cov.fCover, 0.) &&
+    if (GT(sw->VegProdIn.bare_cov.fCover, 0.) &&
         EQ(sw->SoilWat.snowpack[Today], 0.)) {
         /* remove bare-soil evap from swv */
         remove_from_soil(
@@ -852,9 +852,9 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
 
     /* Hydraulic redistribution */
     ForEachVegTypeBottomUp(k) {
-        if (sw->VegProd.veg[k].flagHydraulicRedistribution &&
-            GT(sw->VegProd.veg[k].cov.fCover, 0.) &&
-            GT(sw->VegProd.veg[k].biolive_daily[doy], 0.)) {
+        if (sw->VegProdIn.veg[k].flagHydraulicRedistribution &&
+            GT(sw->VegProdIn.veg[k].cov.fCover, 0.) &&
+            GT(sw->VegProdIn.veg[k].biolive_daily[doy], 0.)) {
 
             hydraulic_redistribution(
                 sw->SoilWat.swcBulk[Today],
@@ -863,10 +863,10 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
                 k,
                 n_layers,
                 sw->SoilWat.lyrFrozen,
-                sw->VegProd.veg[k].maxCondroot,
-                sw->VegProd.veg[k].swpMatric50,
-                sw->VegProd.veg[k].shapeCond,
-                sw->VegProd.veg[k].cov.fCover,
+                sw->VegProdIn.veg[k].maxCondroot,
+                sw->VegProdIn.veg[k].swpMatric50,
+                sw->VegProdIn.veg[k].shapeCond,
+                sw->VegProdIn.veg[k].cov.fCover,
                 sw->Model.year,
                 sw->Model.doy,
                 LogInfo
@@ -946,11 +946,11 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         if (k == SW_TREES || k == SW_SHRUB) {
             // changed to exclude tree biomass, bMatric/c it was breaking the
             // soil_temperature function
-            x += sw->VegProd.veg[k].biolive_daily[doy] *
-                 sw->VegProd.veg[k].cov.fCover;
+            x += sw->VegProdIn.veg[k].biolive_daily[doy] *
+                 sw->VegProdIn.veg[k].cov.fCover;
         } else {
-            x += sw->VegProd.veg[k].biomass_daily[doy] *
-                 sw->VegProd.veg[k].cov.fCover;
+            x += sw->VegProdIn.veg[k].biomass_daily[doy] *
+                 sw->VegProdIn.veg[k].cov.fCover;
         }
     }
 

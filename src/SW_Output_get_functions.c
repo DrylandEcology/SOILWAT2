@@ -254,7 +254,7 @@ void get_co2effects_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
             "%c%.*f",
             OUTSEP,
             OUT_DIGITS,
-            sw->VegProd.veg[k].co2_multipliers[BIO_INDEX][simyear]
+            sw->VegProdIn.veg[k].co2_multipliers[BIO_INDEX][simyear]
         );
         fullBuffer = sw_memccpy_inc(
             (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
@@ -270,7 +270,7 @@ void get_co2effects_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
             "%c%.*f",
             OUTSEP,
             OUT_DIGITS,
-            sw->VegProd.veg[k].co2_multipliers[WUE_INDEX][simyear]
+            sw->VegProdIn.veg[k].co2_multipliers[WUE_INDEX][simyear]
         );
         fullBuffer = sw_memccpy_inc(
             (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
@@ -319,7 +319,7 @@ void get_co2effects_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 #endif
 
         p[iOUTIndex] =
-            sw->VegProd.veg[k].co2_multipliers[BIO_INDEX][sw->Model.simyear];
+            sw->VegProdIn.veg[k].co2_multipliers[BIO_INDEX][sw->Model.simyear];
 
 
 #if defined(RSOILWAT)
@@ -342,7 +342,7 @@ void get_co2effects_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 #endif
 
         p[iOUTIndex] =
-            sw->VegProd.veg[k].co2_multipliers[WUE_INDEX][sw->Model.simyear];
+            sw->VegProdIn.veg[k].co2_multipliers[WUE_INDEX][sw->Model.simyear];
     }
 }
 
@@ -366,7 +366,7 @@ void get_co2effects_agg(
             psd,
             iOUTIndex,
             OutRun->currIter,
-            sw->VegProd.veg[k].co2_multipliers[BIO_INDEX][sw->Model.simyear]
+            sw->VegProdIn.veg[k].co2_multipliers[BIO_INDEX][sw->Model.simyear]
         );
 
         iOUTIndex = iOUT(
@@ -380,7 +380,7 @@ void get_co2effects_agg(
             psd,
             iOUTIndex,
             OutRun->currIter,
-            sw->VegProd.veg[k].co2_multipliers[WUE_INDEX][sw->Model.simyear]
+            sw->VegProdIn.veg[k].co2_multipliers[WUE_INDEX][sw->Model.simyear]
         );
     }
 
@@ -404,7 +404,7 @@ void get_co2effects_agg(
 #ifdef SW_OUTTEXT
 void get_biomass_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     int k;
-    SW_VEGPROD_OUTPUTS *vo = &sw->VegProd.p_oagg[pd];
+    SW_VEGPROD_OUTPUTS *vo = &sw->vp_p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
     size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
     char *writePtr = OutRun->sw_outstr;
@@ -421,7 +421,7 @@ void get_biomass_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
         "%c%.*f",
         OUTSEP,
         OUT_DIGITS,
-        sw->VegProd.bare_cov.fCover
+        sw->VegProdIn.bare_cov.fCover
     );
     (void) sw_memccpy_inc(
         (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
@@ -437,7 +437,7 @@ void get_biomass_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
             "%c%.*f",
             OUTSEP,
             OUT_DIGITS,
-            sw->VegProd.veg[k].cov.fCover
+            sw->VegProdIn.veg[k].cov.fCover
         );
         (void) sw_memccpy_inc(
             (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
@@ -525,7 +525,7 @@ reportFullBuffer:
 #if defined(RSOILWAT) || defined(SWNETCDF)
 void get_biomass_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     int k;
-    SW_VEGPROD_OUTPUTS *vo = &sw->VegProd.p_oagg[pd];
+    SW_VEGPROD_OUTPUTS *vo = &sw->vp_p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -548,7 +548,7 @@ void get_biomass_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
                 iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
 #endif
 
-    p[iOUTIndex] = sw->VegProd.bare_cov.fCover;
+    p[iOUTIndex] = sw->VegProdIn.bare_cov.fCover;
 
 
 // fCover for NVEGTYPES
@@ -570,7 +570,7 @@ void get_biomass_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
             );
 #endif
 
-        p[iOUTIndex] = sw->VegProd.veg[k].cov.fCover;
+        p[iOUTIndex] = sw->VegProdIn.veg[k].cov.fCover;
     }
 
 // biomass (g/m2 as component of total) totals
@@ -693,7 +693,7 @@ void get_biomass_agg(
 ) {
     int k;
     int i;
-    SW_VEGPROD_OUTPUTS *vo = &sw->VegProd.p_oagg[pd];
+    SW_VEGPROD_OUTPUTS *vo = &sw->vp_p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -704,7 +704,7 @@ void get_biomass_agg(
     iOUTIndex =
         iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
     do_running_agg(
-        p, psd, iOUTIndex, OutRun->currIter, sw->VegProd.bare_cov.fCover
+        p, psd, iOUTIndex, OutRun->currIter, sw->VegProdIn.bare_cov.fCover
     );
 
     i = 1;
@@ -713,7 +713,7 @@ void get_biomass_agg(
             i + k, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
         );
         do_running_agg(
-            p, psd, iOUTIndex, OutRun->currIter, sw->VegProd.veg[k].cov.fCover
+            p, psd, iOUTIndex, OutRun->currIter, sw->VegProdIn.veg[k].cov.fCover
         );
     }
 

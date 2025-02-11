@@ -388,7 +388,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                 //--- k2: set initial swc values
                 local_sw.Site.SWCInitVal = test_swcInit[k2];
                 SW_SIT_init_run(
-                    &local_sw.VegProd, &local_sw.Site, &local_LogInfo
+                    &local_sw.VegProdIn, &local_sw.Site, &local_LogInfo
                 );
                 // exit test program if unexpected error
                 sw_fail_on_error(&local_LogInfo);

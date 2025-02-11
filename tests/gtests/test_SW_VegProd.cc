@@ -58,33 +58,33 @@ void calcGrassCoverFromL0(double grass[], const double L0[]) {
     }
 }
 
-void assert_decreasing_SWPcrit(SW_VEGPROD *SW_VegProd) {
+void assert_decreasing_SWPcrit(SW_VEGPROD_INPUTS *SW_VegProdIn) {
     int rank;
     int vegtype;
 
     for (rank = 0; rank < NVEGTYPES - 1; rank++) {
-        vegtype = SW_VegProd->rank_SWPcrits[rank];
+        vegtype = SW_VegProdIn->rank_SWPcrits[rank];
 
         /*
         sw_printf("Rank=%d is vegtype=%d with SWPcrit=%f\n",
                 rank, vegtype,
-                SW_VegProd.critSoilWater[vegtype]);
+                VegProdIn.critSoilWater[vegtype]);
         */
 
         // Check that SWPcrit of `vegtype` is larger or equal to
         // SWPcrit of the vegetation type with the next larger rank
         ASSERT_GE(
-            SW_VegProd->critSoilWater[vegtype],
-            SW_VegProd->critSoilWater[SW_VegProd->rank_SWPcrits[rank + 1]]
+            SW_VegProdIn->critSoilWater[vegtype],
+            SW_VegProdIn->critSoilWater[SW_VegProdIn->rank_SWPcrits[rank + 1]]
         );
     }
 }
 
-// Test the SW_VEGPROD constructor 'SW_VPD_construct'
+// Test the SW_VEGPROD_INPUTS constructor 'SW_VPD_construct'
 TEST_F(VegProdFixtureTest, VegProdConstructor) {
-    // This test requires a local copy of SW_VEGPROD to avoid a memory leak
+    // This test requires a local copy of SW_VEGPROD_INPUTS to avoid a memory leak
     // (see issue #205)
-    // -- If using `SW_Run.VegProd` or a global variable
+    // -- If using `SW_Run.VegProdIn` or a global variable
     // (for which `SW_VPD_construct()` has already been called once, e.g.,
     // during the test fixture's `SetUp()`), then this (second) call to
     // `SW_VPD_construct()` would allocate memory a second time
@@ -92,25 +92,25 @@ TEST_F(VegProdFixtureTest, VegProdConstructor) {
     // (the call to `SW_VPD_deconstruct()`during the test fixture's `TearDown()`
     // would see only NULL and thus not de-allocate the required second time
     // to avoid a leak)
-    SW_VEGPROD SW_VegProd;
+    SW_VEGPROD_INPUTS VegProdIn;
     int k;
 
-    SW_VPD_construct(&SW_VegProd);
+    SW_VPD_construct(&VegProdIn);
 
     SW_VPD_init_run(
-        &SW_VegProd, SW_Run.WeatherIn.allHist, &SW_Run.Model, swTRUE, &LogInfo
+        &VegProdIn, SW_Run.WeatherIn.allHist, &SW_Run.Model, swTRUE, &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     ForEachVegType(k) {
-        EXPECT_DOUBLE_EQ(1., SW_VegProd.veg[k].co2_multipliers[BIO_INDEX][0]);
+        EXPECT_DOUBLE_EQ(1., VegProdIn.veg[k].co2_multipliers[BIO_INDEX][0]);
         EXPECT_DOUBLE_EQ(
-            1., SW_VegProd.veg[k].co2_multipliers[BIO_INDEX][MAX_NYEAR - 1]
+            1., VegProdIn.veg[k].co2_multipliers[BIO_INDEX][MAX_NYEAR - 1]
         );
 
-        EXPECT_DOUBLE_EQ(1., SW_VegProd.veg[k].co2_multipliers[WUE_INDEX][0]);
+        EXPECT_DOUBLE_EQ(1., VegProdIn.veg[k].co2_multipliers[WUE_INDEX][0]);
         EXPECT_DOUBLE_EQ(
-            1., SW_VegProd.veg[k].co2_multipliers[WUE_INDEX][MAX_NYEAR - 1]
+            1., VegProdIn.veg[k].co2_multipliers[WUE_INDEX][MAX_NYEAR - 1]
         );
     }
 }
@@ -158,29 +158,29 @@ TEST(VegProdTest, VegProdSumming) {
 TEST_F(VegProdFixtureTest, VegProdrank) {
     int k;
     // Check `get_critical_rank` for normal inputs, e.g., -2.0, -2.0, -3.5, -3.9
-    get_critical_rank(&SW_Run.VegProd);
-    assert_decreasing_SWPcrit(&SW_Run.VegProd);
+    get_critical_rank(&SW_Run.VegProdIn);
+    assert_decreasing_SWPcrit(&SW_Run.VegProdIn);
 
 
     // Check `get_critical_rank` for constant values
-    ForEachVegType(k) { SW_Run.VegProd.critSoilWater[k] = 0.; }
+    ForEachVegType(k) { SW_Run.VegProdIn.critSoilWater[k] = 0.; }
 
-    get_critical_rank(&SW_Run.VegProd);
-    assert_decreasing_SWPcrit(&SW_Run.VegProd);
+    get_critical_rank(&SW_Run.VegProdIn);
+    assert_decreasing_SWPcrit(&SW_Run.VegProdIn);
 
 
     // Check `get_critical_rank` for increasing values
-    ForEachVegType(k) { SW_Run.VegProd.critSoilWater[k] = k; }
+    ForEachVegType(k) { SW_Run.VegProdIn.critSoilWater[k] = k; }
 
-    get_critical_rank(&SW_Run.VegProd);
-    assert_decreasing_SWPcrit(&SW_Run.VegProd);
+    get_critical_rank(&SW_Run.VegProdIn);
+    assert_decreasing_SWPcrit(&SW_Run.VegProdIn);
 
 
     // Check `get_critical_rank` for decreasing values
-    ForEachVegType(k) { SW_Run.VegProd.critSoilWater[k] = NVEGTYPES - k; }
+    ForEachVegType(k) { SW_Run.VegProdIn.critSoilWater[k] = NVEGTYPES - k; }
 
-    get_critical_rank(&SW_Run.VegProd);
-    assert_decreasing_SWPcrit(&SW_Run.VegProd);
+    get_critical_rank(&SW_Run.VegProdIn);
+    assert_decreasing_SWPcrit(&SW_Run.VegProdIn);
 }
 
 TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
@@ -228,7 +228,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
     SW_Run.Model.startyr = 1980;
     SW_Run.Model.endyr = 2010;
 
-    SW_Run.VegProd.veg_method = 1;
+    SW_Run.VegProdIn.veg_method = 1;
     SW_Run.Model.latitude = 90.0;
 
     // Reset "SW_Run.Weather.allHist"
@@ -558,21 +558,21 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
 
 
     estimateVegetationFromClimate(
-        &SW_Run.VegProd, SW_Run.WeatherIn.allHist, &SW_Run.Model, &LogInfo
+        &SW_Run.VegProdIn, SW_Run.WeatherIn.allHist, &SW_Run.Model, &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Loop through RelAbundanceL1 and test results
     for (index = 0; index < 4; index++) {
         EXPECT_NEAR(
-            SW_Run.VegProd.veg[index].cov.fCover,
+            SW_Run.VegProdIn.veg[index].cov.fCover,
             RelAbundanceL1Expected[index],
             tol6
         );
     }
 
     EXPECT_NEAR(
-        SW_Run.VegProd.bare_cov.fCover,
+        SW_Run.VegProdIn.bare_cov.fCover,
         RelAbundanceL1Expected[bareGroundL1],
         tol6
     );

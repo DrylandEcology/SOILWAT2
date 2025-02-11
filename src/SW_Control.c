@@ -113,7 +113,7 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     SW_VES_new_year(sw->VegEstab.count);
 
     // SW_VPD_new_year(): Dynamic CO2 effects on vegetation
-    SW_VPD_new_year(&sw->VegProd, &sw->Model);
+    SW_VPD_new_year(&sw->VegProdIn, &sw->Model);
 
     // SW_FLW_new_year() not needed
 
@@ -551,7 +551,7 @@ void SW_CTL_setup_model(
     // SW_SKY_construct() not need
     SW_SIT_construct(&sw->Site);
     SW_VES_construct(&sw->VegEstab);
-    SW_VPD_construct(&sw->VegProd);
+    SW_VPD_construct(&sw->VegProdIn);
     // SW_FLW_construct() not needed
     SW_OUT_construct(
         zeroOutInfo, &sw->SW_PathOutputs, OutDom, &sw->OutRun, LogInfo
@@ -616,7 +616,7 @@ void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
         return; // Exit function prematurely due to error
     }
 
-    SW_SIT_init_run(&sw->VegProd, &sw->Site, LogInfo);
+    SW_SIT_init_run(&sw->VegProdIn, &sw->Site, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -634,7 +634,7 @@ void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
     }
 
     SW_VPD_init_run(
-        &sw->VegProd, sw->WeatherIn.allHist, &sw->Model, estVeg, LogInfo
+        &sw->VegProdIn, sw->WeatherIn.allHist, &sw->Model, estVeg, LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -645,7 +645,7 @@ void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
     // SW_OUT_init_run() handled separately so that SW_CTL_init_run() can be
     //   useful for unit tests, rSOILWAT2, and STEPWAT2 applications
     SW_SWC_init_run(&sw->SoilWat, &sw->Site, &sw->WeatherSim.temp_snow);
-    SW_CBN_init_run(sw->VegProd.veg, &sw->Model, &sw->CarbonIn, LogInfo);
+    SW_CBN_init_run(sw->VegProdIn.veg, &sw->Model, &sw->CarbonIn, LogInfo);
 }
 
 /**
@@ -700,11 +700,11 @@ void SW_CTL_run_current_year(
         }
 
         // Only run this function if SWA output is asked for
-        if (sw->VegProd.use_SWA) {
+        if (sw->VegProdIn.use_SWA) {
             calculate_repartitioned_soilwater(
                 &sw->SoilWat,
                 sw->Site.swcBulk_atSWPcrit,
-                &sw->VegProd,
+                &sw->VegProdIn,
                 sw->Site.n_layers
             );
         }
@@ -990,7 +990,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_VPD_read(&sw->VegProd, SW_PathInputs->txtInFiles, LogInfo);
+    SW_VPD_read(&sw->VegProdIn, SW_PathInputs->txtInFiles, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }

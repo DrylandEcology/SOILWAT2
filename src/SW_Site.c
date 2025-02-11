@@ -112,7 +112,7 @@
 #include "include/filefuncs.h"      // for LogError, CloseFile, GetALine
 #include "include/generic.h"        // for LOGERROR, swFALSE, LOGWARN, MAX, R...
 #include "include/myMemory.h"       // for Str_Dup
-#include "include/SW_datastructs.h" // for LOG_INFO, SW_SITE, SW_VEGPROD
+#include "include/SW_datastructs.h" // for LOG_INFO, SW_SITE, SW_VEGPROD_INPUTS
 #include "include/SW_Defines.h"     // for LyrIndex, ForEachSoilLayer, ForE...
 #include "include/SW_Files.h"       // for eSite, eLayers, eSWRCp
 #include "include/SW_Main_lib.h"    // for sw_init_logs
@@ -2041,7 +2041,7 @@ closeFile: { CloseFile(&f, LogInfo); }
 @brief Creates soil layers based on function arguments (instead of reading
 them from an input file as _read_layers() does)
 
-@param[in,out] SW_VegProd Struct of type SW_VEGPROD describing surface
+@param[in,out] SW_VegProdIn Struct of type SW_VEGPROD_INPUTS describing surface
     cover conditions in the simulation
 @param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
 @param[in] nlyrs The number of soil layers to create.
@@ -2085,7 +2085,7 @@ them from an input file as _read_layers() does)
   SW_SWC_init_run()
 */
 void set_soillayers(
-    SW_VEGPROD *SW_VegProd,
+    SW_VEGPROD_INPUTS *SW_VegProdIn,
     SW_SITE *SW_Site,
     LyrIndex nlyrs,
     const double *dmax,
@@ -2169,7 +2169,7 @@ void set_soillayers(
     }
 
     // Re-initialize site parameters based on new soil layers
-    SW_SIT_init_run(SW_VegProd, SW_Site, LogInfo);
+    SW_SIT_init_run(SW_VegProdIn, SW_Site, LogInfo);
 }
 
 /**
@@ -2386,7 +2386,7 @@ matric, i.e., the < 2 mm fraction.
 sand + clay + silt must equal one.
 Fraction of silt is calculated: 1 - (sand + clay).
 
-@param[in,out] SW_VegProd Struct of type SW_VEGPROD describing surface
+@param[in,out] SW_VegProdIn Struct of type SW_VEGPROD_INPUTS describing surface
     cover conditions in the simulation
 @param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
 @param[out] LogInfo Holds information on warnings and errors
@@ -2394,7 +2394,7 @@ Fraction of silt is calculated: 1 - (sand + clay).
 @sideeffect Values stored in global variable `SW_Site`.
 */
 void SW_SIT_init_run(
-    SW_VEGPROD *SW_VegProd, SW_SITE *SW_Site, LOG_INFO *LogInfo
+    SW_VEGPROD_INPUTS *SW_VegProdIn, SW_SITE *SW_Site, LOG_INFO *LogInfo
 ) {
     /* =================================================== */
     /* potentially this routine can be called whether the
@@ -2820,7 +2820,7 @@ void SW_SIT_init_run(
             /* calculate soil water content at SWPcrit for each vegetation type
              */
             SW_Site->swcBulk_atSWPcrit[k][s] = SW_SWRC_SWPtoSWC(
-                SW_VegProd->veg[k].SWPcrit, SW_Site, s, LogInfo
+                SW_VegProdIn->veg[k].SWPcrit, SW_Site, s, LogInfo
             );
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
@@ -2831,7 +2831,7 @@ void SW_SIT_init_run(
 
                 // lower SWcrit [-bar] to SWP-equivalent of swBulk_min
                 tmp = fmin(
-                    SW_VegProd->veg[k].SWPcrit,
+                    SW_VegProdIn->veg[k].SWPcrit,
                     SW_SWRC_SWCtoSWP(
                         SW_Site->swcBulk_min[s], SW_Site, s, LogInfo
                     )
@@ -2852,7 +2852,7 @@ void SW_SIT_init_run(
                     s + 1,
                     k + 1,
                     SW_Site->swcBulk_atSWPcrit[k][s],
-                    -0.1 * SW_VegProd->veg[k].SWPcrit,
+                    -0.1 * SW_VegProdIn->veg[k].SWPcrit,
                     SW_Site->swcBulk_min[s],
                     -0.1 * SW_SWRC_SWCtoSWP(
                                SW_Site->swcBulk_min[s], SW_Site, s, LogInfo
@@ -2863,7 +2863,7 @@ void SW_SIT_init_run(
                     return; // Exit function prematurely due to error
                 }
 
-                SW_VegProd->veg[k].SWPcrit = tmp;
+                SW_VegProdIn->veg[k].SWPcrit = tmp;
             }
 
             /* Find which transpiration region the current soil layer
@@ -2922,7 +2922,7 @@ void SW_SIT_init_run(
             ForEachVegType(k) {
                 /* calculate soil water content at adjusted SWPcrit */
                 SW_Site->swcBulk_atSWPcrit[k][s] = SW_SWRC_SWPtoSWC(
-                    SW_VegProd->veg[k].SWPcrit, SW_Site, s, LogInfo
+                    SW_VegProdIn->veg[k].SWPcrit, SW_Site, s, LogInfo
                 );
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
@@ -2941,7 +2941,7 @@ void SW_SIT_init_run(
                         k + 1,
                         SW_Site->swcBulk_atSWPcrit[k][s],
                         SW_Site->swcBulk_min[s],
-                        -0.1 * SW_VegProd->veg[k].SWPcrit
+                        -0.1 * SW_VegProdIn->veg[k].SWPcrit
                     );
                     return; // Exit function prematurely due to error
                 }
@@ -2950,9 +2950,9 @@ void SW_SIT_init_run(
 
         /* Update values for `get_swa()` */
         ForEachVegType(k) {
-            SW_VegProd->critSoilWater[k] = -0.1 * SW_VegProd->veg[k].SWPcrit;
+            SW_VegProdIn->critSoilWater[k] = -0.1 * SW_VegProdIn->veg[k].SWPcrit;
         }
-        get_critical_rank(SW_VegProd);
+        get_critical_rank(SW_VegProdIn);
     }
 
     /* normalize the evap and transp coefficients separately

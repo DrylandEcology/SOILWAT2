@@ -146,7 +146,7 @@ void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo);
 void calculate_repartitioned_soilwater(
     SW_SOILWAT *SW_SoilWat,
     double swcBulk_atSWPcrit[][MAX_LAYERS],
-    SW_VEGPROD *SW_VegProd,
+    SW_VEGPROD_INPUTS *SW_VegProdIn,
     LyrIndex n_layers
 );
 
@@ -180,7 +180,7 @@ void SW_SWC_end_day(SW_SOILWAT *SW_SoilWat, LyrIndex n_layers);
 
 void get_dSWAbulk(
     unsigned int i,
-    SW_VEGPROD *SW_VegProd,
+    SW_VEGPROD_INPUTS *SW_VegProdIn,
     double swa_master[][NVEGTYPES][MAX_LAYERS],
     double dSWA_repart_sum[][MAX_LAYERS]
 );

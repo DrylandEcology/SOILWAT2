@@ -84,7 +84,7 @@
 #define SW_VEGPROD_H
 
 #include "include/generic.h"        // for Bool
-#include "include/SW_datastructs.h" // for SW_VEGPROD, SW_MODEL, SW_WEATHER_HIST
+#include "include/SW_datastructs.h" // for SW_VEGPROD_INPUTS, SW_MODEL, SW_WEATHER_HIST
 #include "include/SW_Defines.h"     // for LyrIndex, NVEGTYPES, MAX_LAYERS,
 
 #ifdef __cplusplus
@@ -108,16 +108,16 @@ extern const char *const key2veg[NVEGTYPES];
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *txtInFiles[], LOG_INFO *LogInfo);
+void SW_VPD_read(SW_VEGPROD_INPUTS *SW_VegProdIn, char *txtInFiles[], LOG_INFO *LogInfo);
 
-void SW_VPD_new_year(SW_VEGPROD *SW_VegProd, SW_MODEL *SW_Model);
+void SW_VPD_new_year(SW_VEGPROD_INPUTS *SW_VegProdIn, SW_MODEL *SW_Model);
 
-void SW_VPD_fix_cover(SW_VEGPROD *SW_VegProd, LOG_INFO *LogInfo);
+void SW_VPD_fix_cover(SW_VEGPROD_INPUTS *SW_VegProdIn, LOG_INFO *LogInfo);
 
-void SW_VPD_construct(SW_VEGPROD *SW_VegProd);
+void SW_VPD_construct(SW_VEGPROD_INPUTS *SW_VegProdIn);
 
 void estimateVegetationFromClimate(
-    SW_VEGPROD *SW_VegProd,
+    SW_VEGPROD_INPUTS *SW_VegProdIn,
     SW_WEATHER_HIST *Weather_hist,
     SW_MODEL *SW_Model,
     LOG_INFO *LogInfo
@@ -155,14 +155,14 @@ void uniqueIndices(
 );
 
 void SW_VPD_init_run(
-    SW_VEGPROD *SW_VegProd,
+    SW_VEGPROD_INPUTS *SW_VegProdIn,
     SW_WEATHER_HIST *allHist,
     SW_MODEL *SW_Model,
     Bool estVeg,
     LOG_INFO *LogInfo
 );
 
-void checkBiomass(SW_VEGPROD *SW_VegProd, LOG_INFO *LogInfo);
+void checkBiomass(SW_VEGPROD_INPUTS *SW_VegProdIn, LOG_INFO *LogInfo);
 
 void apply_biomassCO2effect(
     double *new_biomass, const double *biomass, double multiplier
@@ -172,7 +172,7 @@ double sum_across_vegtypes(double x[][MAX_LAYERS], LyrIndex layerno);
 
 void echo_VegProd(VegType VegProd_veg[], CoverType VegProd_bare_cov);
 
-void get_critical_rank(SW_VEGPROD *SW_VegProd);
+void get_critical_rank(SW_VEGPROD_INPUTS *SW_VegProdIn);
 
 #ifdef __cplusplus
 }

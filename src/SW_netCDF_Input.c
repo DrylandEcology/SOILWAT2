@@ -6173,7 +6173,7 @@ closeFile:
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
-@param[out] SW_VegProd Struct of type SW_VEGPROD describing surface
+@param[out] SW_VegProdIn Struct of type SW_VEGPROD_INPUTS describing surface
 cover conditions in the simulation
 @param[in] vegInFiles List of input files pertaining to the vegetation
 input key
@@ -6186,7 +6186,7 @@ to convert input data to units the program can understand within the
 */
 static void read_veg_inputs(
     SW_DOMAIN *SW_Domain,
-    SW_VEGPROD *SW_VegProd,
+    SW_VEGPROD_INPUTS *SW_VegProdIn,
     char **vegInFiles,
     const size_t ncSUID[],
     sw_converter_t **vegConv,
@@ -6230,31 +6230,31 @@ static void read_veg_inputs(
 
     /* must match possVarNames[eSW_InVeg] (without spatial index) */
     double *values[] = {
-        &SW_VegProd->bare_cov.fCover,
+        &SW_VegProdIn->bare_cov.fCover,
 
-        &SW_VegProd->veg[SW_TREES].cov.fCover,
-        SW_VegProd->veg[SW_TREES].litter,
-        SW_VegProd->veg[SW_TREES].biomass,
-        SW_VegProd->veg[SW_TREES].pct_live,
-        SW_VegProd->veg[SW_TREES].lai_conv,
+        &SW_VegProdIn->veg[SW_TREES].cov.fCover,
+        SW_VegProdIn->veg[SW_TREES].litter,
+        SW_VegProdIn->veg[SW_TREES].biomass,
+        SW_VegProdIn->veg[SW_TREES].pct_live,
+        SW_VegProdIn->veg[SW_TREES].lai_conv,
 
-        &SW_VegProd->veg[SW_SHRUB].cov.fCover,
-        SW_VegProd->veg[SW_SHRUB].litter,
-        SW_VegProd->veg[SW_SHRUB].biomass,
-        SW_VegProd->veg[SW_SHRUB].pct_live,
-        SW_VegProd->veg[SW_SHRUB].lai_conv,
+        &SW_VegProdIn->veg[SW_SHRUB].cov.fCover,
+        SW_VegProdIn->veg[SW_SHRUB].litter,
+        SW_VegProdIn->veg[SW_SHRUB].biomass,
+        SW_VegProdIn->veg[SW_SHRUB].pct_live,
+        SW_VegProdIn->veg[SW_SHRUB].lai_conv,
 
-        &SW_VegProd->veg[SW_FORBS].cov.fCover,
-        SW_VegProd->veg[SW_FORBS].litter,
-        SW_VegProd->veg[SW_FORBS].biomass,
-        SW_VegProd->veg[SW_FORBS].pct_live,
-        SW_VegProd->veg[SW_FORBS].lai_conv,
+        &SW_VegProdIn->veg[SW_FORBS].cov.fCover,
+        SW_VegProdIn->veg[SW_FORBS].litter,
+        SW_VegProdIn->veg[SW_FORBS].biomass,
+        SW_VegProdIn->veg[SW_FORBS].pct_live,
+        SW_VegProdIn->veg[SW_FORBS].lai_conv,
 
-        &SW_VegProd->veg[SW_GRASS].cov.fCover,
-        SW_VegProd->veg[SW_GRASS].litter,
-        SW_VegProd->veg[SW_GRASS].biomass,
-        SW_VegProd->veg[SW_GRASS].pct_live,
-        SW_VegProd->veg[SW_GRASS].lai_conv,
+        &SW_VegProdIn->veg[SW_GRASS].cov.fCover,
+        SW_VegProdIn->veg[SW_GRASS].litter,
+        SW_VegProdIn->veg[SW_GRASS].biomass,
+        SW_VegProdIn->veg[SW_GRASS].pct_live,
+        SW_VegProdIn->veg[SW_GRASS].lai_conv,
     };
 
     double tempVals[MAX_MONTHS] = {0.0};
@@ -7751,7 +7751,7 @@ void SW_NCIN_read_inputs(
     if (readVeg) {
         read_veg_inputs(
             SW_Domain,
-            &sw->VegProd,
+            &sw->VegProdIn,
             ncInFiles[eSW_InVeg],
             ncSUID,
             convs[eSW_InVeg],

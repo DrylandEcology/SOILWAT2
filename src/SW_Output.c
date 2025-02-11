@@ -200,7 +200,8 @@ static void sumof_swc(
 static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k);
 
 static void sumof_vpd(
-    SW_VEGPROD *v, OutKey k, TimeInt doy, OutPeriod pd, LOG_INFO *LogInfo
+    SW_VEGPROD_INPUTS *v, SW_VEGPROD_OUTPUTS *s, OutKey k, TimeInt doy,
+    LOG_INFO *LogInfo
 );
 
 static void average_for(
@@ -319,11 +320,11 @@ Bool has_keyname_soillayers(const char *var) {
 }
 
 static void sumof_vpd(
-    SW_VEGPROD *v, OutKey k, TimeInt doy, OutPeriod pd, LOG_INFO *LogInfo
+    SW_VEGPROD_INPUTS *v, SW_VEGPROD_OUTPUTS *s, OutKey k, TimeInt doy,
+    LOG_INFO *LogInfo
 ) {
     int ik;
     double tmp;
-    SW_VEGPROD_OUTPUTS *s = &v->p_accu[pd];
 
     switch (k) {
     case eSW_CO2Effects:
@@ -903,23 +904,23 @@ static void average_for(
 
         case eSW_Biomass:
             ForEachVegType(i) {
-                sw->VegProd.p_oagg[pd].veg[i].biomass_inveg =
-                    sw->VegProd.p_accu[pd].veg[i].biomass_inveg / div;
+                sw->vp_p_oagg[pd].veg[i].biomass_inveg =
+                    sw->vp_p_accu[pd].veg[i].biomass_inveg / div;
 
-                sw->VegProd.p_oagg[pd].veg[i].litter_inveg =
-                    sw->VegProd.p_accu[pd].veg[i].litter_inveg / div;
+                sw->vp_p_oagg[pd].veg[i].litter_inveg =
+                    sw->vp_p_accu[pd].veg[i].litter_inveg / div;
 
-                sw->VegProd.p_oagg[pd].veg[i].biolive_inveg =
-                    sw->VegProd.p_accu[pd].veg[i].biolive_inveg / div;
+                sw->vp_p_oagg[pd].veg[i].biolive_inveg =
+                    sw->vp_p_accu[pd].veg[i].biolive_inveg / div;
             }
 
-            sw->VegProd.p_oagg[pd].biomass_total =
-                sw->VegProd.p_accu[pd].biomass_total / div;
-            sw->VegProd.p_oagg[pd].litter_total =
-                sw->VegProd.p_accu[pd].litter_total / div;
-            sw->VegProd.p_oagg[pd].biolive_total =
-                sw->VegProd.p_accu[pd].biolive_total / div;
-            sw->VegProd.p_oagg[pd].LAI = sw->VegProd.p_accu[pd].LAI / div;
+            sw->vp_p_oagg[pd].biomass_total =
+                sw->vp_p_accu[pd].biomass_total / div;
+            sw->vp_p_oagg[pd].litter_total =
+                sw->vp_p_accu[pd].litter_total / div;
+            sw->vp_p_oagg[pd].biolive_total =
+                sw->vp_p_accu[pd].biolive_total / div;
+            sw->vp_p_oagg[pd].LAI = sw->vp_p_accu[pd].LAI / div;
             break;
 
         default:
@@ -1036,13 +1037,14 @@ static void collect_sums(
                 break;
 
             case eVPD:
-                sumof_vpd(&sw->VegProd, (OutKey) k, sw->Model.doy, op, LogInfo);
+                sumof_vpd(&sw->VegProdIn, &sw->vp_p_accu[op], (OutKey) k,
+                          sw->Model.doy, LogInfo);
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }
 
                 if (op == eSW_Day) {
-                    sw->VegProd.p_oagg[op] = sw->VegProd.p_accu[op];
+                    sw->vp_p_oagg[op] = sw->vp_p_accu[op];
                 }
                 break;
 
@@ -3011,7 +3013,7 @@ void SW_OUT_read(
                 (Str_CompareI(lastStr, (char *) "END") == 0) ? 366 : last,
                 msg,
                 sizeof msg,
-                &sw->VegProd.use_SWA,
+                &sw->VegProdIn.use_SWA,
                 sw->Site.deepdrain,
                 txtInFiles
             );
@@ -3229,7 +3231,7 @@ void SW_OUT_sum_today(
             case eVES:
                 break;
             case eVPD:
-                memset(&sw->VegProd.p_accu[pd], 0, sizeof(SW_VEGPROD_OUTPUTS));
+                memset(&sw->vp_p_accu[pd], 0, sizeof(SW_VEGPROD_OUTPUTS));
                 break;
             default:
                 LogError(
@@ -3929,7 +3931,7 @@ void echo_all_inputs(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     echo_VegEstab(
         sw->Site.soils.width, sw->VegEstab.parms, sw->VegEstab.count, LogInfo
     );
-    echo_VegProd(sw->VegProd.veg, sw->VegProd.bare_cov);
+    echo_VegProd(sw->VegProdIn.veg, sw->VegProdIn.bare_cov);
     echo_outputs(OutDom, LogInfo);
 }
 

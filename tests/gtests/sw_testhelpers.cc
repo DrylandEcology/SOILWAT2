@@ -31,7 +31,7 @@ simulation after this function has set soil layers, e.g., SW_SWC_init_run()
 */
 void create_test_soillayers(
     unsigned int nlayers,
-    SW_VEGPROD *SW_VegProd,
+    SW_VEGPROD_INPUTS *SW_VegProdIn,
     SW_SITE *SW_Site,
     LOG_INFO *LogInfo
 ) {
@@ -99,7 +99,7 @@ void create_test_soillayers(
     double regionLowerBounds[3] = {20., 50., 100.};
 
     set_soillayers(
-        SW_VegProd,
+        SW_VegProdIn,
         SW_Site,
         nlayers,
         dmax,
