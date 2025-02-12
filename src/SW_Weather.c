@@ -2601,17 +2601,21 @@ monthly climate parameters, see `SW_WTH_finalize_all_weather()` instead.
 relevant information pretaining to meteorological input data
 @param[in] SW_SkyIn Struct of type SW_SKY_INPUTS which describes sky conditions
     of the simulated site
-@param[in] SW_Model Struct of type SW_MODEL holding basic time information
-    about the simulation
+@param[in] SW_ModelIn Struct of type SW_MODEL_INPUTS holding basic input
+    time information about the simulation
 @param[in] readTextInputs Specifies to read text weather inputs, this may
 be turned off when dealing with nc inputs
+@param[in] cum_monthdays Monthly cumulative number of days for "current" year
+@param[in] days_in_month Number of days per month for "current" year
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_WTH_read(
     SW_WEATHER_INPUTS *SW_WeatherIn,
     SW_SKY_INPUTS *SW_SkyIn,
-    SW_MODEL *SW_Model,
+    SW_MODEL_INPUTS *SW_ModelIn,
     Bool readTextInputs,
+    TimeInt cum_monthdays[],
+    TimeInt days_in_month[],
     LOG_INFO *LogInfo
 ) {
 
@@ -2621,8 +2625,8 @@ void SW_WTH_read(
     deallocateAllWeather(&SW_WeatherIn->allHist);
 
     // Update number of years and first calendar year represented
-    SW_WeatherIn->n_years = SW_Model->endyr - SW_Model->startyr + 1;
-    SW_WeatherIn->startYear = SW_Model->startyr;
+    SW_WeatherIn->n_years = SW_ModelIn->endyr - SW_ModelIn->startyr + 1;
+    SW_WeatherIn->startYear = SW_ModelIn->startyr;
 
     if (readTextInputs) {
         // Allocate new `allHist` (based on current `SW_Weather.n_years`)
@@ -2649,9 +2653,9 @@ void SW_WTH_read(
             SW_SkyIn->cloudcov,
             SW_SkyIn->windspeed,
             SW_SkyIn->r_humidity,
-            SW_Model->elevation,
-            SW_Model->cum_monthdays,
-            SW_Model->days_in_month,
+            SW_ModelIn->elevation,
+            cum_monthdays,
+            days_in_month,
             LogInfo
         );
     }

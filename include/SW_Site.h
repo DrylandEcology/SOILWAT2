@@ -316,7 +316,7 @@ void SW_SIT_init_run(
     SW_VEGPROD_INPUTS *SW_VegProdIn, SW_SITE *SW_Site, LOG_INFO *LogInfo
 );
 
-void echo_inputs(SW_SITE *SW_Site, SW_MODEL *SW_Model);
+void echo_inputs(SW_SITE *SW_Site, SW_MODEL_INPUTS *SW_ModelIn);
 
 
 /* these used to be in Layers */

@@ -521,7 +521,7 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
 
     if (debug) {
         (void) snprintf(
-            flag, sizeof flag, "WB (%d-%d)", sw->Model.year, sw->Model.doy
+            flag, sizeof flag, "WB (%d-%d)", sw->ModelSim.year, sw->ModelSim.doy
         );
     }
 
@@ -903,10 +903,10 @@ void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo) {
      */
 
     if (sw->SoilWat.hist_use &&
-        !missing(sw->SoilWat.hist.swc[sw->Model.doy - 1][1])) {
+        !missing(sw->SoilWat.hist.swc[sw->ModelSim.doy - 1][1])) {
 
-        if (!(sw->Model.doy == sw->Model.startstart &&
-              sw->Model.year == sw->Model.startyr)) {
+        if (!(sw->ModelSim.doy == sw->ModelIn.startstart &&
+              sw->ModelSim.year == sw->ModelIn.startyr)) {
 
 #ifdef SWDEBUG
             if (debug) {
@@ -918,7 +918,7 @@ void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             SW_SWC_adjust_swc(
                 sw->SoilWat.swcBulk,
                 sw->Site.swcBulk_min,
-                sw->Model.doy,
+                sw->ModelSim.doy,
                 sw->SoilWat.hist,
                 sw->Site.n_layers,
                 LogInfo
@@ -1090,7 +1090,8 @@ void get_dSWAbulk(
     double vegFractionSum;
     double newFraction;
     double inner_loop_veg_type; // set to inner loop veg type
-    smallestCritVal = SW_VegProdIn->critSoilWater[SW_VegProdIn->rank_SWPcrits[0]];
+    smallestCritVal =
+        SW_VegProdIn->critSoilWater[SW_VegProdIn->rank_SWPcrits[0]];
     double dSWA_bulk[NVEGTYPES * NVEGTYPES][NVEGTYPES * NVEGTYPES][MAX_LAYERS];
     double dSWA_bulk_repartioned[NVEGTYPES * NVEGTYPES][NVEGTYPES * NVEGTYPES]
                                 [MAX_LAYERS];
@@ -1115,7 +1116,8 @@ void get_dSWAbulk(
         veg_type_in_use = SW_VegProdIn->veg[curr_crit_rank_index].cov.fCover;
         for (kv = curr_vegType; kv >= 0; kv--) {
             // get crit value at current index
-            crit_val = SW_VegProdIn->critSoilWater[SW_VegProdIn->rank_SWPcrits[kv]];
+            crit_val =
+                SW_VegProdIn->critSoilWater[SW_VegProdIn->rank_SWPcrits[kv]];
             // get index for veg_type. dont want to access
             // SW_SoilWat->swa_master at rank_SWPcrits index
             kv_veg_type = SW_VegProdIn->rank_SWPcrits[kv];
@@ -1129,7 +1131,8 @@ void get_dSWAbulk(
             } else {
                 // get crit value for index lower
                 prev_crit_val =
-                    SW_VegProdIn->critSoilWater[SW_VegProdIn->rank_SWPcrits[kv]];
+                    SW_VegProdIn
+                        ->critSoilWater[SW_VegProdIn->rank_SWPcrits[kv]];
                 // get veg type that belongs to the corresponding critical value
                 prev_crit_veg_type = SW_VegProdIn->rank_SWPcrits[kv];
             }
@@ -1201,7 +1204,8 @@ void get_dSWAbulk(
                             // fractions of the veg types who have access
 
                             // set veg type fraction here
-                            inner_loop_veg_type = SW_VegProdIn->veg[j].cov.fCover;
+                            inner_loop_veg_type =
+                                SW_VegProdIn->veg[j].cov.fCover;
 
                             if (SW_VegProdIn->critSoilWater[j] <= crit_val) {
                                 vegFractionSum += inner_loop_veg_type;
@@ -1224,7 +1228,8 @@ void get_dSWAbulk(
         // set grass and shrub to 0 for forb
         for (j = curr_vegType + 1; j < NVEGTYPES; j++) {
             greater_veg_type = SW_VegProdIn->rank_SWPcrits[j];
-            if (SW_VegProdIn->critSoilWater[SW_VegProdIn->rank_SWPcrits[j - 1]] >
+            if (SW_VegProdIn
+                    ->critSoilWater[SW_VegProdIn->rank_SWPcrits[j - 1]] >
                 SW_VegProdIn->critSoilWater[SW_VegProdIn->rank_SWPcrits[j]]) {
                 dSWA_bulk[curr_crit_rank_index][greater_veg_type][i] = 0.;
                 dSWA_bulk_repartioned[curr_crit_rank_index][greater_veg_type]

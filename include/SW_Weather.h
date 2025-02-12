@@ -65,8 +65,10 @@ void SW_WTH_setup(
 void SW_WTH_read(
     SW_WEATHER_INPUTS *SW_WeatherIn,
     SW_SKY_INPUTS *SW_SkyIn,
-    SW_MODEL *SW_Model,
+    SW_MODEL_INPUTS *SW_ModelIn,
     Bool readTextInputs,
+    TimeInt cum_monthdays[],
+    TimeInt days_in_month[],
     LOG_INFO *LogInfo
 );
 

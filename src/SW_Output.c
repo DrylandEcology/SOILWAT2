@@ -200,7 +200,10 @@ static void sumof_swc(
 static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k);
 
 static void sumof_vpd(
-    SW_VEGPROD_INPUTS *v, SW_VEGPROD_OUTPUTS *s, OutKey k, TimeInt doy,
+    SW_VEGPROD_INPUTS *v,
+    SW_VEGPROD_OUTPUTS *s,
+    OutKey k,
+    TimeInt doy,
     LOG_INFO *LogInfo
 );
 
@@ -320,7 +323,10 @@ Bool has_keyname_soillayers(const char *var) {
 }
 
 static void sumof_vpd(
-    SW_VEGPROD_INPUTS *v, SW_VEGPROD_OUTPUTS *s, OutKey k, TimeInt doy,
+    SW_VEGPROD_INPUTS *v,
+    SW_VEGPROD_OUTPUTS *s,
+    OutKey k,
+    TimeInt doy,
     LOG_INFO *LogInfo
 ) {
     int ik;
@@ -619,14 +625,14 @@ static void average_for(
 
         switch (pd) {
         case eSW_Week:
-            curr_pd = (sw->Model.week + 1) - tOffset;
-            div = (bFlush_output) ? sw->Model.lastdoy % WKDAYS : WKDAYS;
+            curr_pd = (sw->ModelSim.week + 1) - tOffset;
+            div = (bFlush_output) ? sw->ModelSim.lastdoy % WKDAYS : WKDAYS;
             break;
 
         case eSW_Month:
-            curr_pd = (sw->Model.month + 1) - tOffset;
+            curr_pd = (sw->ModelSim.month + 1) - tOffset;
             div = Time_days_in_month(
-                sw->Model.month - tOffset, sw->Model.days_in_month
+                sw->ModelSim.month - tOffset, sw->ModelSim.days_in_month
             );
             break;
 
@@ -951,16 +957,16 @@ static void collect_sums(
 
     switch (op) {
     case eSW_Day:
-        pd = sw->Model.doy;
+        pd = sw->ModelSim.doy;
         break;
     case eSW_Week:
-        pd = sw->Model.week + 1;
+        pd = sw->ModelSim.week + 1;
         break;
     case eSW_Month:
-        pd = sw->Model.month + 1;
+        pd = sw->ModelSim.month + 1;
         break;
     case eSW_Year:
-        pd = sw->Model.doy;
+        pd = sw->ModelSim.doy;
         break;
     default:
         LogError(
@@ -1037,8 +1043,13 @@ static void collect_sums(
                 break;
 
             case eVPD:
-                sumof_vpd(&sw->VegProdIn, &sw->vp_p_accu[op], (OutKey) k,
-                          sw->Model.doy, LogInfo);
+                sumof_vpd(
+                    &sw->VegProdIn,
+                    &sw->vp_p_accu[op],
+                    (OutKey) k,
+                    sw->ModelSim.doy,
+                    LogInfo
+                );
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }
@@ -1260,20 +1271,19 @@ void SW_OUT_init_ptrs(SW_OUT_RUN *OutRun, SW_PATH_OUTPUTS *SW_PathOutputs) {
 #if defined(SW_OUTARRAY)
     int key;
     int column;
-    ForEachOutKey(key) {
-        ForEachOutPeriod(column) {
-            OutRun->p_OUT[key][column] = NULL;
+    ForEachOutKey(key
+    ){ForEachOutPeriod(column){OutRun->p_OUT[key][column] = NULL;
 #if defined(STEPWAT)
-            OutRun->p_OUTsd[key][column] = NULL;
+    OutRun->p_OUTsd[key][column] = NULL;
 #elif defined(SWNETCDF)
-            SW_PathOutputs->ncOutFiles[key][column] = NULL;
+    SW_PathOutputs->ncOutFiles[key][column] = NULL;
 #endif
 
 #if !defined(SWNETCDF)
-            (void) SW_PathOutputs;
+    (void) SW_PathOutputs;
 #endif
-        }
-    }
+}
+}
 #else
     (void) SW_PathOutputs;
     (void) OutRun;
@@ -3104,7 +3114,7 @@ void SW_OUT_read(
 
 #if defined(STEPWAT) || defined(SWNETCDF)
     // Determine number of used years/months/weeks/days in simulation period
-    SW_OUT_set_nrow(&sw->Model, OutDom->use_OutPeriod, OutDom->nrow_OUT);
+    SW_OUT_set_nrow(&sw->ModelIn, OutDom->use_OutPeriod, OutDom->nrow_OUT);
 #endif
 
     if (DirExists(outDir)) {
@@ -3211,7 +3221,7 @@ void SW_OUT_sum_today(
 
     ForEachOutPeriod(pd) {
         // `newperiod[eSW_Day]` is always TRUE
-        if (bFlush_output || sw->Model.newperiod[pd]) {
+        if (bFlush_output || sw->ModelSim.newperiod[pd]) {
             if (pd > eSW_Day) {
                 average_for(
                     sw, OutDom, otyp, pd, bFlush_output, tOffset, LogInfo
@@ -3380,10 +3390,10 @@ void SW_OUT_write_today(
     if (debug) {
         sw_printf(
             "'SW_OUT_write_today': %dyr-%dmon-%dwk-%ddoy: ",
-            sw->Model.year,
-            sw->Model.month,
-            sw->Model.week,
-            sw->Model.doy
+            sw->ModelSim.year,
+            sw->ModelSim.month,
+            sw->ModelSim.week,
+            sw->ModelSim.doy
         );
     }
 #endif
@@ -3391,7 +3401,7 @@ void SW_OUT_write_today(
 
     // Determine which output periods should get formatted and output (if they
     // are active)
-    t = sw->Model.doy;
+    t = sw->ModelSim.doy;
 
     // `csv`-files assume anyhow that first/last are identical for every output
     // type/key
@@ -3399,11 +3409,12 @@ void SW_OUT_write_today(
         (Bool) (t < sw->OutRun.first[0] || t > sw->OutRun.last[0]);
     writeit[eSW_Week] =
         (Bool) (writeit[eSW_Day] &&
-                (sw->Model.newperiod[eSW_Week] || bFlush_output));
+                (sw->ModelSim.newperiod[eSW_Week] || bFlush_output));
     writeit[eSW_Month] =
         (Bool) (writeit[eSW_Day] &&
-                (sw->Model.newperiod[eSW_Month] || bFlush_output));
-    writeit[eSW_Year] = (Bool) (sw->Model.newperiod[eSW_Year] || bFlush_output);
+                (sw->ModelSim.newperiod[eSW_Month] || bFlush_output));
+    writeit[eSW_Year] =
+        (Bool) (sw->ModelSim.newperiod[eSW_Year] || bFlush_output);
 
     // update daily: don't process daily output if `bFlush_output` is TRUE
     // because `end_day` was already called and produced daily output
@@ -3632,7 +3643,9 @@ void SW_OUT_write_today(
     // write formatted output to csv-files
     ForEachOutPeriod(p) {
         if (OutDom->use_OutPeriod[p] && writeit[p]) {
-            get_outstrleader(p, sizeof str_time, &sw->Model, tOffset, str_time);
+            get_outstrleader(
+                p, sizeof str_time, &sw->ModelSim, tOffset, str_time
+            );
 
             if (sw->SW_PathOutputs.make_regular[p]) {
                 if (OutDom->print_SW_Output) {
@@ -3927,7 +3940,7 @@ void echo_all_inputs(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         printf("Establishment not used.\n");
     }
 
-    echo_inputs(&sw->Site, &sw->Model);
+    echo_inputs(&sw->Site, &sw->ModelIn);
     echo_VegEstab(
         sw->Site.soils.width, sw->VegEstab.parms, sw->VegEstab.count, LogInfo
     );

@@ -5165,8 +5165,8 @@ rather than having separate functions, this will specifically read
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
-@param[out] SW_Model Struct of type SW_MODEL holding basic time information
-about the simulation
+@param[out] SW_ModelIn Struct of type SW_MODEL_INPUTS holding basic input
+    time information about the simulation
 @param[out] SW_SkyIn Struct of type SW_SKY_INPUTS which describes sky conditions
 over the simulated site
 @param[in] inFiles List of all input files throughout all input keys
@@ -5178,7 +5178,7 @@ input keys
 */
 static void read_spatial_topo_climate_inputs(
     SW_DOMAIN *SW_Domain,
-    SW_MODEL *SW_Model,
+    SW_MODEL_INPUTS *SW_ModelIn,
     SW_SKY_INPUTS *SW_SkyIn,
     char ***inFiles,
     const size_t ncSUID[],
@@ -5223,9 +5223,9 @@ static void read_spatial_topo_climate_inputs(
 
     double *values[][5] = {
         /* must match possVarNames[eSW_InSpatial] */
-        {&SW_Model->latitude, &SW_Model->longitude},
+        {&SW_ModelIn->latitude, &SW_ModelIn->longitude},
         /* must match possVarNames[eSW_InTopo] (without spatial index) */
-        {&SW_Model->elevation, &SW_Model->slope, &SW_Model->aspect},
+        {&SW_ModelIn->elevation, &SW_ModelIn->slope, &SW_ModelIn->aspect},
         /* must match possVarNames[eSW_InClimate] (without spatial index) */
         {SW_SkyIn->cloudcov,
          SW_SkyIn->windspeed,
@@ -5373,7 +5373,7 @@ static void read_spatial_topo_climate_inputs(
         }
     }
 
-    SW_Model->isnorth = (Bool) (GT(SW_Model->latitude, 0.0));
+    SW_ModelIn->isnorth = (Bool) (GT(SW_ModelIn->latitude, 0.0));
 
 closeFile:
     if (ncFileID > -1) {
@@ -7697,7 +7697,13 @@ void SW_NCIN_read_inputs(
     /* Read all activated inputs */
     if (readSpatial || readTopo || readClimate) {
         read_spatial_topo_climate_inputs(
-            SW_Domain, &sw->Model, &sw->SkyIn, ncInFiles, ncSUID, convs, LogInfo
+            SW_Domain,
+            &sw->ModelIn,
+            &sw->SkyIn,
+            ncInFiles,
+            ncSUID,
+            convs,
+            LogInfo
         );
         if (LogInfo->stopRun) {
             return;
@@ -7712,8 +7718,8 @@ void SW_NCIN_read_inputs(
                 SW_WeatherIn->use_cloudCoverMonthly,
                 SW_WeatherIn->use_humidityMonthly,
                 SW_WeatherIn->use_windSpeedMonthly,
-                sw->Model.cum_monthdays,
-                sw->Model.days_in_month,
+                sw->ModelSim.cum_monthdays,
+                sw->ModelSim.days_in_month,
                 sw->SkyIn.cloudcov,
                 sw->SkyIn.windspeed,
                 sw->SkyIn.r_humidity
@@ -7729,7 +7735,7 @@ void SW_NCIN_read_inputs(
             ncInFiles[eSW_InWeather][0],
             ncSUID,
             convs[eSW_InWeather],
-            sw->Model.elevation,
+            sw->ModelIn.elevation,
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -7739,8 +7745,8 @@ void SW_NCIN_read_inputs(
         SW_WTH_finalize_all_weather(
             &sw->MarkovIn,
             &sw->WeatherIn,
-            sw->Model.cum_monthdays,
-            sw->Model.days_in_month,
+            sw->ModelSim.cum_monthdays,
+            sw->ModelSim.days_in_month,
             LogInfo
         );
         if (LogInfo->stopRun) {

@@ -1518,7 +1518,8 @@ void SW_SIT_construct(SW_SITE *SW_Site) {
 
 @param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
 @param[in] txtInFiles Array of program in/output files
-@param[out] SW_CarbonIn Struct of type SW_CARBON_INPUTS holding all CO2-related data
+@param[out] SW_CarbonIn Struct of type SW_CARBON_INPUTS holding all CO2-related
+data
 @param[out] hasConsistentSoilLayerDepths  Holds the specification if the
 input soil layers have the same depth throughout all inputs (only used
 when dealing with nc inputs)
@@ -2950,7 +2951,8 @@ void SW_SIT_init_run(
 
         /* Update values for `get_swa()` */
         ForEachVegType(k) {
-            SW_VegProdIn->critSoilWater[k] = -0.1 * SW_VegProdIn->veg[k].SWPcrit;
+            SW_VegProdIn->critSoilWater[k] =
+                -0.1 * SW_VegProdIn->veg[k].SWPcrit;
         }
         get_critical_rank(SW_VegProdIn);
     }
@@ -3114,10 +3116,10 @@ void SW_SIT_init_counts(SW_SITE *SW_Site) {
 @brief Print site-parameters and soil characteristics.
 
 @param[in] SW_Site Struct of type SW_SITE describing the simulated site
-@param[in] SW_Model Struct of type SW_MODEL holding basic time information
-    about the simulation
+@param[in] SW_ModelIn Struct of type SW_MODEL_INPUTS holding basic input
+    time information about the simulation
 */
-void echo_inputs(SW_SITE *SW_Site, SW_MODEL *SW_Model) {
+void echo_inputs(SW_SITE *SW_Site, SW_MODEL_INPUTS *SW_ModelIn) {
     /* =================================================== */
     LyrIndex i;
     LOG_INFO LogInfo;
@@ -3145,11 +3147,11 @@ void echo_inputs(SW_SITE *SW_Site, SW_MODEL *SW_Model) {
         "  Runon: proportion of new surface water gained: %5.4f\n",
         SW_Site->percentRunon
     );
-    printf("  Longitude (degree): %4.2f\n", SW_Model->longitude * rad_to_deg);
-    printf("  Latitude (degree): %4.2f\n", SW_Model->latitude * rad_to_deg);
-    printf("  Altitude (m a.s.l.): %4.2f \n", SW_Model->elevation);
-    printf("  Slope (degree): %4.2f\n", SW_Model->slope * rad_to_deg);
-    printf("  Aspect (degree): %4.2f\n", SW_Model->aspect * rad_to_deg);
+    printf("  Longitude (degree): %4.2f\n", SW_ModelIn->longitude * rad_to_deg);
+    printf("  Latitude (degree): %4.2f\n", SW_ModelIn->latitude * rad_to_deg);
+    printf("  Altitude (m a.s.l.): %4.2f \n", SW_ModelIn->elevation);
+    printf("  Slope (degree): %4.2f\n", SW_ModelIn->slope * rad_to_deg);
+    printf("  Aspect (degree): %4.2f\n", SW_ModelIn->aspect * rad_to_deg);
 
     printf(
         "\nSnow simulation parameters (SWAT2K model):\n----------------------\n"

@@ -159,28 +159,6 @@ typedef struct {
      * doy and year are base1. */
     /* simyear = year + addtl_yr */
 
-    // Create a copy of SW_DOMAIN's time & spinup information
-    // to use instead of passing around SW_DOMAIN
-    TimeInt startyr, /* beginning year for a set of simulation run */
-        endyr,       /* ending year for a set of simulation run */
-        startstart,  /* startday in start year */
-        endend;      /* end day in end year */
-
-    // Data for (optional) spinup (copied from SW_DOMAIN)
-    SW_SPINUP SW_SpinUp;
-
-    // ********** END of copying SW_DOMAIN's data *************
-
-    double longitude, /* longitude of the site (radians) */
-        latitude,     /* latitude of the site (radians) */
-        elevation,    /* elevation a.s.l (m) of the site */
-        slope, /* slope of the site (radians): between 0 (horizontal) and pi / 2
-                  (vertical) */
-        aspect; /* aspect of the site (radians): A value of \ref SW_MISSING
-                   indicates no data, ie., treat it as if slope = 0; South
-                   facing slope: aspect = 0, East = -pi / 2, West = pi / 2,
-                   North = ±pi */
-
     TimeInt days_in_month[MAX_MONTHS], /* number of days per month for "current"
                                           year */
         cum_monthdays[MAX_MONTHS];     /* monthly cumulative number of days for
@@ -194,7 +172,6 @@ typedef struct {
     /* first day of new week/month is checked for
      * printing and summing weekly/monthly values */
     Bool newperiod[SW_OUTNPERIODS];
-    Bool isnorth;
     Bool doOutput; /**< Flag to indicate if output should be produced (TRUE) or
                       not (FALSE); set to FALSE for spinup and tests */
 
@@ -202,10 +179,39 @@ typedef struct {
 
 #ifdef STEPWAT
     /* Variables from GlobalType (STEPWAT2) used in SOILWAT2 */
-    IntUS runModelIterations, runModelYears;
+    IntUS runModelIterations;
 #endif
 
-} SW_MODEL;
+} SW_MODEL_SIM;
+
+typedef struct {
+    // Data for (optional) spinup (copied from SW_DOMAIN)
+    SW_SPINUP SW_SpinUp;
+
+    double longitude, /* longitude of the site (radians) */
+    latitude,     /* latitude of the site (radians) */
+    elevation,    /* elevation a.s.l (m) of the site */
+    slope, /* slope of the site (radians): between 0 (horizontal) and pi / 2
+                  (vertical) */
+        aspect; /* aspect of the site (radians): A value of \ref SW_MISSING
+        indicates no data, ie., treat it as if slope = 0; South
+                   facing slope: aspect = 0, East = -pi / 2, West = pi / 2,
+                   North = ±pi */
+
+                   // Create a copy of SW_DOMAIN's time & spinup information
+    // to use instead of passing around SW_DOMAIN
+    TimeInt startyr, /* beginning year for a set of simulation run */
+    endyr,       /* ending year for a set of simulation run */
+    startstart,  /* startday in start year */
+    endend;      /* end day in end year */
+
+    Bool isnorth;
+
+#ifdef STEPWAT
+    /* Variables from GlobalType (STEPWAT2) used in SOILWAT2 */
+    IntUS runModelYears;
+#endif
+} SW_MODEL_INPUTS;
 
 /* =================================================== */
 /*                 Output text structs                 */
@@ -1642,7 +1648,6 @@ typedef struct {
 
 struct SW_RUN {
     SW_SOILWAT SoilWat;
-    SW_MODEL Model;
     SW_SITE Site;
     SW_VEGESTAB VegEstab;
 
@@ -1652,11 +1657,13 @@ struct SW_RUN {
     SW_CARBON_INPUTS CarbonIn;
     SW_MARKOV_INPUTS MarkovIn;
     SW_VEGPROD_INPUTS VegProdIn;
+    SW_MODEL_INPUTS ModelIn;
 
     /* Values used/modified during simulation that's not strictly inputs */
     SW_WEATHER_SIM WeatherSim;
     SW_ST_SIM StRegSimVals;
     SW_ATMD_SIM AtmDemSim;
+    SW_MODEL_SIM ModelSim;
 
     /* Output information */
     SW_OUT_RUN OutRun;

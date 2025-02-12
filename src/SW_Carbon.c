@@ -51,8 +51,9 @@ void SW_CBN_deconstruct(void) {}
 
 @param[in,out] SW_CarbonIn Struct of type SW_CARBON_INPUTS holding all
 CO2-related data
-@param[in] SW_Model Struct of type SW_MODEL holding basic time information
-    about the simulation
+@param[in] addtl_yr Represents how many years in the future we are simulating
+@param[in] startYr Start year of the simulation
+@param[in] endYr End year of the simulation
 @param[in] txtInFiles Array of program in/output files
 @param[out] LogInfo Holds information on warnings and errors
 
@@ -65,7 +66,9 @@ Additionally, check for the following issues:
 */
 void SW_CBN_read(
     SW_CARBON_INPUTS *SW_CarbonIn,
-    SW_MODEL *SW_Model,
+    int addtl_yr,
+    TimeInt startYr,
+    TimeInt endYr,
     char *txtInFiles[],
     LOG_INFO *LogInfo
 ) {
@@ -93,8 +96,8 @@ void SW_CBN_read(
     char ppmStr[20];
     int year;
     int scanRes;
-    int simstartyr = (int) SW_Model->startyr + SW_Model->addtl_yr;
-    int simendyr = (int) SW_Model->endyr + SW_Model->addtl_yr;
+    int simstartyr = (int) startYr + addtl_yr;
+    int simendyr = (int) endYr + addtl_yr;
 
     // The following variables must be initialized to show if they've been
     // changed or not
@@ -308,16 +311,19 @@ calculated for the years that will be simulated.
 
 @param[in,out] VegProd_veg Array of size NVEGTYPES holding data for each
     vegetation type
-@param[in] SW_Model Struct of type SW_MODEL holding basic time information
-    about the simulation
 @param[in] SW_CarbonIn Struct of type SW_CARBON_INPUTS holding all CO2-related
 data
+@param[in] addtl_yr Represents how many years in the future we are simulating
+@param[in] startYr Start year of the simulation
+@param[in] endYr End year of the simulation
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CBN_init_run(
     VegType VegProd_veg[],
-    SW_MODEL *SW_Model,
     SW_CARBON_INPUTS *SW_CarbonIn,
+    int addtl_yr,
+    TimeInt startYr,
+    TimeInt endYr,
     LOG_INFO *LogInfo
 ) {
 #ifdef SWDEBUG
@@ -326,7 +332,7 @@ void SW_CBN_init_run(
 
     int k;
     TimeInt year;
-    TimeInt simendyr = SW_Model->endyr + SW_Model->addtl_yr;
+    TimeInt simendyr = endYr + addtl_yr;
     double ppm;
 
     if (!SW_CarbonIn->use_bio_mult && !SW_CarbonIn->use_wue_mult) {
@@ -334,8 +340,7 @@ void SW_CBN_init_run(
     }
 
     // Only iterate through the years that we know will be used
-    for (year = SW_Model->startyr + SW_Model->addtl_yr; year <= simendyr;
-         year++) {
+    for (year = startYr + addtl_yr; year <= simendyr; year++) {
         ppm = SW_CarbonIn->ppm[year];
 
         if (LT(ppm, 0.)) // CO2 concentration must not be negative values

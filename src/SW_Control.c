@@ -99,13 +99,16 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     // SW_F_new_year() not needed
 
     // call SW_MDL_new_year() first to set up time-related arrays for this year
-    SW_MDL_new_year(&sw->Model);
+    SW_MDL_new_year(&sw->ModelIn, &sw->ModelSim);
 
     // SW_MKV_new_year() not needed
 
     // SW_SKY_new_year(): Update daily climate variables from monthly values
     SW_SKY_new_year(
-        &sw->Model, sw->SkyIn.snow_density, sw->SkyIn.snow_density_daily
+        &sw->ModelSim,
+        sw->ModelIn.startyr,
+        sw->SkyIn.snow_density,
+        sw->SkyIn.snow_density_daily
     );
 
     // SW_SIT_new_year() not needed
@@ -113,19 +116,19 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     SW_VES_new_year(sw->VegEstab.count);
 
     // SW_VPD_new_year(): Dynamic CO2 effects on vegetation
-    SW_VPD_new_year(&sw->VegProdIn, &sw->Model);
+    SW_VPD_new_year(&sw->VegProdIn, &sw->ModelSim);
 
     // SW_FLW_new_year() not needed
 
-    SW_SWC_new_year(&sw->SoilWat, &sw->Site, sw->Model.year, LogInfo);
+    SW_SWC_new_year(&sw->SoilWat, &sw->Site, sw->ModelSim.year, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
     // SW_CBN_new_year() not needed
     SW_OUT_new_year(
-        sw->Model.firstdoy,
-        sw->Model.lastdoy,
+        sw->ModelSim.firstdoy,
+        sw->ModelSim.lastdoy,
         OutDom,
         sw->OutRun.first,
         sw->OutRun.last
@@ -133,14 +136,14 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 }
 
 static void begin_day(SW_RUN *sw, LOG_INFO *LogInfo) {
-    SW_MDL_new_day(&sw->Model);
+    SW_MDL_new_day(&sw->ModelSim);
     SW_WTH_new_day(
         &sw->WeatherIn,
         &sw->WeatherSim,
         &sw->Site,
         sw->SoilWat.snowpack,
-        sw->Model.doy,
-        sw->Model.year,
+        sw->ModelSim.doy,
+        sw->ModelSim.year,
         LogInfo
     );
 }
@@ -148,7 +151,7 @@ static void begin_day(SW_RUN *sw, LOG_INFO *LogInfo) {
 static void end_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     int localTOffset = 1; // tOffset is one when called from this function
 
-    if (sw->Model.doOutput) {
+    if (sw->ModelSim.doOutput) {
         collect_values(sw, OutDom, swFALSE, localTOffset, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -262,9 +265,10 @@ void SW_CTL_main(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     int debug = 0;
 #endif
 
-    TimeInt *cur_yr = &sw->Model.year;
+    TimeInt *cur_yr = &sw->ModelSim.year;
 
-    for (*cur_yr = sw->Model.startyr; *cur_yr <= sw->Model.endyr; (*cur_yr)++) {
+    for (*cur_yr = sw->ModelIn.startyr; *cur_yr <= sw->ModelIn.endyr;
+         (*cur_yr)++) {
 #ifdef SWDEBUG
         if (debug) {
             sw_printf("\n'SW_CTL_main': simulate year = %d\n", *cur_yr);
@@ -542,7 +546,7 @@ void SW_CTL_setup_domain(
 void SW_CTL_setup_model(
     SW_RUN *sw, SW_OUT_DOM *OutDom, Bool zeroOutInfo, LOG_INFO *LogInfo
 ) {
-    SW_MDL_construct(&sw->Model);
+    SW_MDL_construct(&sw->ModelSim);
     SW_WTH_construct(
         &sw->WeatherIn, &sw->WeatherSim, sw->weath_p_accu, sw->weath_p_oagg
     );
@@ -634,7 +638,12 @@ void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
     }
 
     SW_VPD_init_run(
-        &sw->VegProdIn, sw->WeatherIn.allHist, &sw->Model, estVeg, LogInfo
+        &sw->VegProdIn,
+        sw->WeatherIn.allHist,
+        &sw->ModelIn,
+        &sw->ModelSim,
+        estVeg,
+        LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -645,7 +654,14 @@ void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
     // SW_OUT_init_run() handled separately so that SW_CTL_init_run() can be
     //   useful for unit tests, rSOILWAT2, and STEPWAT2 applications
     SW_SWC_init_run(&sw->SoilWat, &sw->Site, &sw->WeatherSim.temp_snow);
-    SW_CBN_init_run(sw->VegProdIn.veg, &sw->Model, &sw->CarbonIn, LogInfo);
+    SW_CBN_init_run(
+        sw->VegProdIn.veg,
+        &sw->CarbonIn,
+        sw->ModelSim.addtl_yr,
+        sw->ModelIn.startyr,
+        sw->ModelIn.endyr,
+        LogInfo
+    );
 }
 
 /**
@@ -665,7 +681,7 @@ void SW_CTL_run_current_year(
     int debug = 0;
 #endif
 
-    TimeInt *doy = &sw->Model.doy; // base1
+    TimeInt *doy = &sw->ModelSim.doy; // base1
 
 #ifdef SWDEBUG
     if (debug) {
@@ -678,7 +694,7 @@ void SW_CTL_run_current_year(
         return; // Exit function prematurely due to error
     }
 
-    for (*doy = sw->Model.firstdoy; *doy <= sw->Model.lastdoy; (*doy)++) {
+    for (*doy = sw->ModelSim.firstdoy; *doy <= sw->ModelSim.lastdoy; (*doy)++) {
 #ifdef SWDEBUG
         if (debug) {
             sw_printf("\t: begin doy = %d ... ", *doy);
@@ -714,8 +730,8 @@ void SW_CTL_run_current_year(
                 sw->VegEstab.parms,
                 sw->WeatherSim.temp_avg,
                 sw->SoilWat.swcBulk,
-                sw->Model.doy,
-                sw->Model.firstdoy,
+                sw->ModelSim.doy,
+                sw->ModelSim.firstdoy,
                 sw->VegEstab.count
             );
         }
@@ -742,7 +758,7 @@ void SW_CTL_run_current_year(
         sw_printf("'SW_CTL_run_current_year': flush output\n");
     }
 #endif
-    if (sw->Model.doOutput) {
+    if (sw->ModelSim.doOutput) {
         SW_OUT_flush(sw, OutDom, LogInfo);
     }
 
@@ -778,7 +794,7 @@ void SW_CTL_run_current_year(
 */
 void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 
-    if (sw->Model.SW_SpinUp.duration <= 0) {
+    if (sw->ModelIn.SW_SpinUp.duration <= 0) {
         return;
     }
 
@@ -790,13 +806,13 @@ void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     unsigned int k;
     unsigned int quotient = 0;
     unsigned int remainder = 0;
-    int mode = sw->Model.SW_SpinUp.mode;
+    int mode = sw->ModelIn.SW_SpinUp.mode;
     TimeInt yr;
-    TimeInt duration = sw->Model.SW_SpinUp.duration;
-    TimeInt scope = sw->Model.SW_SpinUp.scope;
-    TimeInt finalyr = sw->Model.startyr + scope - 1;
+    TimeInt duration = sw->ModelIn.SW_SpinUp.duration;
+    TimeInt scope = sw->ModelIn.SW_SpinUp.scope;
+    TimeInt finalyr = sw->ModelIn.startyr + scope - 1;
     TimeInt *years;
-    Bool prev_doOut = sw->Model.doOutput;
+    Bool prev_doOut = sw->ModelSim.doOutput;
     years = (TimeInt *) Mem_Malloc(
         sizeof(TimeInt) * duration, "SW_CTL_run_spinup()", LogInfo
     );
@@ -813,7 +829,7 @@ void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
             mode,
             duration,
             scope,
-            sw->Model.startyr,
+            sw->ModelIn.startyr,
             finalyr
         );
     }
@@ -824,7 +840,7 @@ void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         // initialize structured array
         if (duration <= scope) {
             // 1:m
-            yr = sw->Model.startyr;
+            yr = sw->ModelIn.startyr;
             for (i = 0; i < duration; i++) {
                 years[i] = yr + i;
             }
@@ -832,7 +848,7 @@ void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
             // { {1:n}_(m//n), 1:(m%n) }
             quotient = duration / scope;
             remainder = duration % scope;
-            yr = sw->Model.startyr;
+            yr = sw->ModelIn.startyr;
             for (i = 0; i < quotient * scope; i++) {
                 years[i] = yr + (i % scope);
             }
@@ -847,20 +863,20 @@ void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         // initialize random array
         for (i = 0; i < duration; i++) {
             yr = RandUniIntRange(
-                sw->Model.startyr, finalyr, &sw->Model.SW_SpinUp.spinup_rng
+                sw->ModelIn.startyr, finalyr, &sw->ModelIn.SW_SpinUp.spinup_rng
             );
             years[i] = yr;
         }
         break;
     }
 
-    TimeInt *cur_yr = &sw->Model.year;
+    TimeInt *cur_yr = &sw->ModelSim.year;
     TimeInt yrIdx;
-    TimeInt startyr = sw->Model.startyr;
+    TimeInt startyr = sw->ModelIn.startyr;
 
-    sw->Model.startyr = years[0]; // set startyr for spinup
+    sw->ModelIn.startyr = years[0]; // set startyr for spinup
 
-    sw->Model.doOutput = swFALSE; // turn output temporarily off
+    sw->ModelSim.doOutput = swFALSE; // turn output temporarily off
 
     for (yrIdx = 0; yrIdx < duration; yrIdx++) {
         *cur_yr = years[yrIdx];
@@ -882,8 +898,8 @@ void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     }
 
 reSet: {
-    sw->Model.startyr = startyr;     // reset startyr to original value
-    sw->Model.doOutput = prev_doOut; // reset doOutput to original value
+    sw->ModelIn.startyr = startyr;      // reset startyr to original value
+    sw->ModelSim.doOutput = prev_doOut; // reset doOutput to original value
 
     free(years);
 }
@@ -924,7 +940,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_MDL_read(&sw->Model, SW_PathInputs->txtInFiles, LogInfo);
+    SW_MDL_read(&sw->ModelIn, SW_PathInputs->txtInFiles, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -978,7 +994,13 @@ void SW_CTL_read_inputs_from_disk(
     }
 
     SW_WTH_read(
-        &sw->WeatherIn, &sw->SkyIn, &sw->Model, readTextInputs, LogInfo
+        &sw->WeatherIn,
+        &sw->SkyIn,
+        &sw->ModelIn,
+        readTextInputs,
+        sw->ModelSim.cum_monthdays,
+        sw->ModelSim.days_in_month,
+        LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -1067,7 +1089,14 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_CBN_read(&sw->CarbonIn, &sw->Model, SW_PathInputs->txtInFiles, LogInfo);
+    SW_CBN_read(
+        &sw->CarbonIn,
+        sw->ModelSim.addtl_yr,
+        sw->ModelIn.startyr,
+        sw->ModelIn.endyr,
+        SW_PathInputs->txtInFiles,
+        LogInfo
+    );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -1078,7 +1107,7 @@ void SW_CTL_read_inputs_from_disk(
 #endif
 
     SW_SWC_read(
-        &sw->SoilWat, sw->Model.endyr, SW_PathInputs->txtInFiles, LogInfo
+        &sw->SoilWat, sw->ModelIn.endyr, SW_PathInputs->txtInFiles, LogInfo
     );
 #ifdef SWDEBUG
     if (LogInfo->stopRun) {
@@ -1151,8 +1180,8 @@ void SW_CTL_run_sw(
     if (debug) {
         sw_printf(
             " -- inputs at lon/lat = (%f, %f)",
-            local_sw.Model.longitude * rad_to_deg,
-            local_sw.Model.latitude * rad_to_deg
+            local_sw.ModelIn.longitude * rad_to_deg,
+            local_sw.ModelIn.latitude * rad_to_deg
         );
     }
 #endif

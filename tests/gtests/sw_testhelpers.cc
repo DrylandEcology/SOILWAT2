@@ -221,10 +221,11 @@ int setup_testGlobalSoilwatTemplate() {
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
-    template_SW_Run.Model.doOutput = swFALSE; /* turn off output during tests */
+    template_SW_Run.ModelSim.doOutput =
+        swFALSE; /* turn off output during tests */
 
     SW_MDL_get_ModelRun(
-        &template_SW_Run.Model, &template_SW_Domain, NULL, &LogInfo
+        &template_SW_Run.ModelIn, &template_SW_Domain, NULL, &LogInfo
     );
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;
@@ -254,8 +255,8 @@ int setup_testGlobalSoilwatTemplate() {
     SW_WTH_finalize_all_weather(
         &template_SW_Run.MarkovIn,
         &template_SW_Run.WeatherIn,
-        template_SW_Run.Model.cum_monthdays,
-        template_SW_Run.Model.days_in_month,
+        template_SW_Run.ModelSim.cum_monthdays,
+        template_SW_Run.ModelSim.days_in_month,
         &LogInfo
     );
     if (LogInfo.stopRun != 0u) {

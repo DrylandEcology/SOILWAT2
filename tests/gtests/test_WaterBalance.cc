@@ -106,15 +106,21 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
 
     // Prepare weather data
     SW_WTH_read(
-        &SW_Run.WeatherIn, &SW_Run.SkyIn, &SW_Run.Model, swTRUE, &LogInfo
+        &SW_Run.WeatherIn,
+        &SW_Run.SkyIn,
+        &SW_Run.ModelIn,
+        swTRUE,
+        SW_Run.ModelSim.cum_monthdays,
+        SW_Run.ModelSim.days_in_month,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_finalize_all_weather(
         &SW_Run.MarkovIn,
         &SW_Run.WeatherIn,
-        SW_Run.Model.cum_monthdays,
-        SW_Run.Model.days_in_month,
+        SW_Run.ModelSim.cum_monthdays,
+        SW_Run.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -160,15 +166,21 @@ TEST_F(
 
     // Prepare weather data
     SW_WTH_read(
-        &SW_Run.WeatherIn, &SW_Run.SkyIn, &SW_Run.Model, swTRUE, &LogInfo
+        &SW_Run.WeatherIn,
+        &SW_Run.SkyIn,
+        &SW_Run.ModelIn,
+        swTRUE,
+        SW_Run.ModelSim.cum_monthdays,
+        SW_Run.ModelSim.days_in_month,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_finalize_all_weather(
         &SW_Run.MarkovIn,
         &SW_Run.WeatherIn,
-        SW_Run.Model.cum_monthdays,
-        SW_Run.Model.days_in_month,
+        SW_Run.ModelSim.cum_monthdays,
+        SW_Run.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -241,7 +253,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMaxSoilLayers) {
     int i;
 
     // Setup maximum number of soil layers
-    create_test_soillayers(MAX_LAYERS, &SW_Run.VegProdIn, &SW_Run.Site, &LogInfo);
+    create_test_soillayers(
+        MAX_LAYERS, &SW_Run.VegProdIn, &SW_Run.Site, &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Initialize `swcBulk` based on new soil layers
@@ -271,7 +285,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
     SW_VPD_init_run(
         &SW_Run.VegProdIn,
         SW_Run.WeatherIn.allHist,
-        &SW_Run.Model,
+        &SW_Run.ModelIn,
+        &SW_Run.ModelSim,
         swTRUE,
         &LogInfo
     );
@@ -317,8 +332,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Two simulation years are sufficient
-    SW_Run.Model.startyr = 1980;
-    SW_Run.Model.endyr = 1981;
+    SW_Run.ModelIn.startyr = 1980;
+    SW_Run.ModelIn.endyr = 1981;
 
     // Run the simulation
     SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
@@ -453,8 +468,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
     );
 
     // Adjust simulation years: we have 2 years of Daymet inputs
-    SW_Run.Model.startyr = 1980;
-    SW_Run.Model.endyr = 1981;
+    SW_Run.ModelIn.startyr = 1980;
+    SW_Run.ModelIn.endyr = 1981;
 
     // Describe daily Daymet inputs
     SW_Run.WeatherIn.use_cloudCoverMonthly = swFALSE;
@@ -497,15 +512,21 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
 
     // Prepare weather data
     SW_WTH_read(
-        &SW_Run.WeatherIn, &SW_Run.SkyIn, &SW_Run.Model, swTRUE, &LogInfo
+        &SW_Run.WeatherIn,
+        &SW_Run.SkyIn,
+        &SW_Run.ModelIn,
+        swTRUE,
+        SW_Run.ModelSim.cum_monthdays,
+        SW_Run.ModelSim.days_in_month,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_finalize_all_weather(
         &SW_Run.MarkovIn,
         &SW_Run.WeatherIn,
-        SW_Run.Model.cum_monthdays,
-        SW_Run.Model.days_in_month,
+        SW_Run.ModelSim.cum_monthdays,
+        SW_Run.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -534,8 +555,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGridMET) {
     );
 
     // Adjust simulation years: we have 2 years of gridMET inputs
-    SW_Run.Model.startyr = 1980;
-    SW_Run.Model.endyr = 1981;
+    SW_Run.ModelIn.startyr = 1980;
+    SW_Run.ModelIn.endyr = 1981;
 
     // Describe daily gridMET inputs
     SW_Run.WeatherIn.use_cloudCoverMonthly = swFALSE;
@@ -578,15 +599,21 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGridMET) {
 
     // Prepare weather data
     SW_WTH_read(
-        &SW_Run.WeatherIn, &SW_Run.SkyIn, &SW_Run.Model, swTRUE, &LogInfo
+        &SW_Run.WeatherIn,
+        &SW_Run.SkyIn,
+        &SW_Run.ModelIn,
+        swTRUE,
+        SW_Run.ModelSim.cum_monthdays,
+        SW_Run.ModelSim.days_in_month,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_finalize_all_weather(
         &SW_Run.MarkovIn,
         &SW_Run.WeatherIn,
-        SW_Run.Model.cum_monthdays,
-        SW_Run.Model.days_in_month,
+        SW_Run.ModelSim.cum_monthdays,
+        SW_Run.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -616,8 +643,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype1) {
     );
 
     // Adjust simulation years: we have 2 years of MACA inputs
-    SW_Run.Model.startyr = 1980;
-    SW_Run.Model.endyr = 1981;
+    SW_Run.ModelIn.startyr = 1980;
+    SW_Run.ModelIn.endyr = 1981;
 
     // Describe daily MACA inputs
     SW_Run.WeatherIn.use_cloudCoverMonthly = swFALSE;
@@ -659,15 +686,21 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype1) {
 
     // Prepare weather data
     SW_WTH_read(
-        &SW_Run.WeatherIn, &SW_Run.SkyIn, &SW_Run.Model, swTRUE, &LogInfo
+        &SW_Run.WeatherIn,
+        &SW_Run.SkyIn,
+        &SW_Run.ModelIn,
+        swTRUE,
+        SW_Run.ModelSim.cum_monthdays,
+        SW_Run.ModelSim.days_in_month,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_finalize_all_weather(
         &SW_Run.MarkovIn,
         &SW_Run.WeatherIn,
-        SW_Run.Model.cum_monthdays,
-        SW_Run.Model.days_in_month,
+        SW_Run.ModelSim.cum_monthdays,
+        SW_Run.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -697,8 +730,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
     );
 
     // Adjust simulation years: we have 2 years of MACA inputs
-    SW_Run.Model.startyr = 1980;
-    SW_Run.Model.endyr = 1981;
+    SW_Run.ModelIn.startyr = 1980;
+    SW_Run.ModelIn.endyr = 1981;
 
     // Describe daily MACA inputs
     SW_Run.WeatherIn.use_cloudCoverMonthly = swFALSE;
@@ -740,15 +773,21 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
 
     // Prepare weather data
     SW_WTH_read(
-        &SW_Run.WeatherIn, &SW_Run.SkyIn, &SW_Run.Model, swTRUE, &LogInfo
+        &SW_Run.WeatherIn,
+        &SW_Run.SkyIn,
+        &SW_Run.ModelIn,
+        swTRUE,
+        SW_Run.ModelSim.cum_monthdays,
+        SW_Run.ModelSim.days_in_month,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_finalize_all_weather(
         &SW_Run.MarkovIn,
         &SW_Run.WeatherIn,
-        SW_Run.Model.cum_monthdays,
-        SW_Run.Model.days_in_month,
+        SW_Run.ModelSim.cum_monthdays,
+        SW_Run.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -769,11 +808,11 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSpinup) {
     int i;
 
     // Turn on spinup simulation
-    SW_Run.Model.SW_SpinUp.spinup = swTRUE;
+    SW_Run.ModelIn.SW_SpinUp.spinup = swTRUE;
     // Set spinup variables
-    SW_Run.Model.SW_SpinUp.mode = 1;
-    SW_Run.Model.SW_SpinUp.duration = 5;
-    SW_Run.Model.SW_SpinUp.scope = 8;
+    SW_Run.ModelIn.SW_SpinUp.mode = 1;
+    SW_Run.ModelIn.SW_SpinUp.duration = 5;
+    SW_Run.ModelIn.SW_SpinUp.scope = 8;
 
     // Run the spinup & deactivate
     SW_CTL_run_spinup(&SW_Run, &SW_Domain.OutDom, &LogInfo);

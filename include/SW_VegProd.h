@@ -85,7 +85,7 @@
 
 #include "include/generic.h"        // for Bool
 #include "include/SW_datastructs.h" // for SW_VEGPROD_INPUTS, SW_MODEL, SW_WEATHER_HIST
-#include "include/SW_Defines.h"     // for LyrIndex, NVEGTYPES, MAX_LAYERS,
+#include "include/SW_Defines.h" // for LyrIndex, NVEGTYPES, MAX_LAYERS,
 
 #ifdef __cplusplus
 extern "C" {
@@ -108,9 +108,13 @@ extern const char *const key2veg[NVEGTYPES];
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_VPD_read(SW_VEGPROD_INPUTS *SW_VegProdIn, char *txtInFiles[], LOG_INFO *LogInfo);
+void SW_VPD_read(
+    SW_VEGPROD_INPUTS *SW_VegProdIn, char *txtInFiles[], LOG_INFO *LogInfo
+);
 
-void SW_VPD_new_year(SW_VEGPROD_INPUTS *SW_VegProdIn, SW_MODEL *SW_Model);
+void SW_VPD_new_year(
+    SW_VEGPROD_INPUTS *SW_VegProdIn, SW_MODEL_SIM *SW_ModelSim
+);
 
 void SW_VPD_fix_cover(SW_VEGPROD_INPUTS *SW_VegProdIn, LOG_INFO *LogInfo);
 
@@ -119,7 +123,8 @@ void SW_VPD_construct(SW_VEGPROD_INPUTS *SW_VegProdIn);
 void estimateVegetationFromClimate(
     SW_VEGPROD_INPUTS *SW_VegProdIn,
     SW_WEATHER_HIST *Weather_hist,
-    SW_MODEL *SW_Model,
+    SW_MODEL_INPUTS *SW_ModelIn,
+    SW_MODEL_SIM *SW_ModelSim,
     LOG_INFO *LogInfo
 );
 
@@ -157,7 +162,8 @@ void uniqueIndices(
 void SW_VPD_init_run(
     SW_VEGPROD_INPUTS *SW_VegProdIn,
     SW_WEATHER_HIST *allHist,
-    SW_MODEL *SW_Model,
+    SW_MODEL_INPUTS *SW_ModelIn,
+    SW_MODEL_SIM *SW_ModelSim,
     Bool estVeg,
     LOG_INFO *LogInfo
 );

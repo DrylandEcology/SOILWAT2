@@ -90,19 +90,19 @@ vegtype variable forb and forb.cov.fCover
 /* =================================================== */
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
-#include "include/SW_VegProd.h"     // for BIO_INDEX
-#include "include/filefuncs.h"      // for LogError, CloseFile, GetALine
-#include "include/generic.h"        // for LOGERROR, Bool, LOGWARN, GT
-#include "include/myMemory.h"       // for Mem_Calloc, Mem_Malloc
+#include "include/SW_VegProd.h" // for BIO_INDEX
+#include "include/filefuncs.h"  // for LogError, CloseFile, GetALine
+#include "include/generic.h"    // for LOGERROR, Bool, LOGWARN, GT
+#include "include/myMemory.h"   // for Mem_Calloc, Mem_Malloc
 #include "include/SW_datastructs.h" // for SW_VEGPROD_INPUTS, LOG_INFO, SW_VEGPROD_INPUTS...
-#include "include/SW_Defines.h"     // for ForEachVegType, NVEGTYPES, SW_TREES
-#include "include/SW_Files.h"       // for eVegProd
-#include "include/SW_Weather.h"     // for deallocateClimateStructs, alloca...
-#include "include/Times.h"          // for interpolate_monthlyValues, Jan, Dec
-#include <math.h>                   // for log, pow
-#include <stdio.h>                  // for sscanf, printf, NULL, FILE
-#include <stdlib.h>                 // for free
-#include <string.h>                 // for memset
+#include "include/SW_Defines.h" // for ForEachVegType, NVEGTYPES, SW_TREES
+#include "include/SW_Files.h"   // for eVegProd
+#include "include/SW_Weather.h" // for deallocateClimateStructs, alloca...
+#include "include/Times.h"      // for interpolate_monthlyValues, Jan, Dec
+#include <math.h>               // for log, pow
+#include <stdio.h>              // for sscanf, printf, NULL, FILE
+#include <stdlib.h>             // for free
+#include <string.h>             // for memset
 
 
 /* =================================================== */
@@ -531,8 +531,8 @@ closeFile: { CloseFile(&f, LogInfo); }
 /**
 @brief Check that sum of land cover is 1; adjust if not.
 
-@param[in,out] SW_VegProdIn VegProdIn Struct of type SW_VEGPROD_INPUTS describing
-    surface cover conditions in the simulation
+@param[in,out] SW_VegProdIn VegProdIn Struct of type SW_VEGPROD_INPUTS
+describing surface cover conditions in the simulation
 @param[out] LogInfo Holds information on warnings and errors
 
 @sideeffect
@@ -583,8 +583,8 @@ void SW_VPD_fix_cover(SW_VEGPROD_INPUTS *SW_VegProdIn, LOG_INFO *LogInfo) {
 /**
 @brief Constructor for VegProdIn->
 
-@param[out] SW_VegProdIn VegProdIn Struct of type SW_VEGPROD_INPUTS describing surface
-    cover conditions in the simulation
+@param[out] SW_VegProdIn VegProdIn Struct of type SW_VEGPROD_INPUTS describing
+surface cover conditions in the simulation
 */
 void SW_VPD_construct(SW_VEGPROD_INPUTS *SW_VegProdIn) {
     /* =================================================== */
@@ -596,7 +596,8 @@ void SW_VPD_construct(SW_VEGPROD_INPUTS *SW_VegProdIn) {
 void SW_VPD_init_run(
     SW_VEGPROD_INPUTS *SW_VegProdIn,
     SW_WEATHER_HIST *allHist,
-    SW_MODEL *SW_Model,
+    SW_MODEL_INPUTS *SW_ModelIn,
+    SW_MODEL_SIM *SW_ModelSim,
     Bool estVeg,
     LOG_INFO *LogInfo
 ) {
@@ -613,7 +614,9 @@ void SW_VPD_init_run(
     }
 
     if (estVeg && SW_VegProdIn->veg_method > 0) {
-        estimateVegetationFromClimate(SW_VegProdIn, allHist, SW_Model, LogInfo);
+        estimateVegetationFromClimate(
+            SW_VegProdIn, allHist, SW_ModelIn, SW_ModelSim, LogInfo
+        );
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -713,12 +716,14 @@ void apply_biomassCO2effect(
 /**
 @brief Update vegetation parameters for new year
 
-@param[in,out] SW_VegProdIn VegProdIn Struct of type SW_VEGPROD_INPUTS describing
-    surface cover conditions in the simulation
-@param[in] SW_Model Struct of type SW_MODEL holding basic time information
-    about the simulation
+@param[in,out] SW_VegProdIn VegProdIn Struct of type SW_VEGPROD_INPUTS
+describing surface cover conditions in the simulation
+@param[in] SW_ModelSim Struct of type SW_MODEL_SIM holding basic intermediate
+time information about the simulation run
 */
-void SW_VPD_new_year(SW_VEGPROD_INPUTS *SW_VegProdIn, SW_MODEL *SW_Model) {
+void SW_VPD_new_year(
+    SW_VEGPROD_INPUTS *SW_VegProdIn, SW_MODEL_SIM *SW_ModelSim
+) {
     /* ================================================== */
     /*
     * History:
@@ -738,7 +743,7 @@ void SW_VPD_new_year(SW_VEGPROD_INPUTS *SW_VegProdIn, SW_MODEL *SW_Model) {
     */
 
     TimeInt doy; /* base1 */
-    TimeInt simyear = SW_Model->simyear;
+    TimeInt simyear = SW_ModelSim->simyear;
     int k;
 
     // Interpolation is to be in base1 in `interpolate_monthlyValues()`
@@ -764,15 +769,15 @@ void SW_VPD_new_year(SW_VEGPROD_INPUTS *SW_VegProdIn, SW_MODEL *SW_Model) {
                 interpolate_monthlyValues(
                     biomass_after_CO2,
                     interpAsBase1,
-                    SW_Model->cum_monthdays,
-                    SW_Model->days_in_month,
+                    SW_ModelSim->cum_monthdays,
+                    SW_ModelSim->days_in_month,
                     SW_VegProdIn->veg[k].pct_live_daily
                 );
                 interpolate_monthlyValues(
                     SW_VegProdIn->veg[k].biomass,
                     interpAsBase1,
-                    SW_Model->cum_monthdays,
-                    SW_Model->days_in_month,
+                    SW_ModelSim->cum_monthdays,
+                    SW_ModelSim->days_in_month,
                     SW_VegProdIn->veg[k].biomass_daily
                 );
 
@@ -788,15 +793,15 @@ void SW_VPD_new_year(SW_VEGPROD_INPUTS *SW_VegProdIn, SW_MODEL *SW_Model) {
                 interpolate_monthlyValues(
                     biomass_after_CO2,
                     interpAsBase1,
-                    SW_Model->cum_monthdays,
-                    SW_Model->days_in_month,
+                    SW_ModelSim->cum_monthdays,
+                    SW_ModelSim->days_in_month,
                     SW_VegProdIn->veg[k].biomass_daily
                 );
                 interpolate_monthlyValues(
                     SW_VegProdIn->veg[k].pct_live,
                     interpAsBase1,
-                    SW_Model->cum_monthdays,
-                    SW_Model->days_in_month,
+                    SW_ModelSim->cum_monthdays,
+                    SW_ModelSim->days_in_month,
                     SW_VegProdIn->veg[k].pct_live_daily
                 );
             }
@@ -805,15 +810,15 @@ void SW_VPD_new_year(SW_VEGPROD_INPUTS *SW_VegProdIn, SW_MODEL *SW_Model) {
             interpolate_monthlyValues(
                 SW_VegProdIn->veg[k].litter,
                 interpAsBase1,
-                SW_Model->cum_monthdays,
-                SW_Model->days_in_month,
+                SW_ModelSim->cum_monthdays,
+                SW_ModelSim->days_in_month,
                 SW_VegProdIn->veg[k].litter_daily
             );
             interpolate_monthlyValues(
                 SW_VegProdIn->veg[k].lai_conv,
                 interpAsBase1,
-                SW_Model->cum_monthdays,
-                SW_Model->days_in_month,
+                SW_ModelSim->cum_monthdays,
+                SW_ModelSim->days_in_month,
                 SW_VegProdIn->veg[k].lai_conv_daily
             );
         }
@@ -1012,18 +1017,21 @@ calculated and averaged, then values are estimated
 @param[in,out] SW_VegProdIn Structure holding all values for vegetation cover of
     simulation
 @param[in,out] Weather_hist Array containing all historical data of a site
-@param[in] SW_Model Struct of type SW_MODEL holding basic time information
-    about the simulation
+@param[in] SW_ModelIn Struct of type SW_MODEL_INPUTS holding basic input
+    time information about the simulation
+@param[in] SW_ModelSim Struct of type SW_MODEL_SIM holding basic intermediate
+time information about the simulation run
 @param[in] LogInfo Holds information on warnings and errors
 */
 void estimateVegetationFromClimate(
     SW_VEGPROD_INPUTS *SW_VegProdIn,
     SW_WEATHER_HIST *Weather_hist,
-    SW_MODEL *SW_Model,
+    SW_MODEL_INPUTS *SW_ModelIn,
+    SW_MODEL_SIM *SW_ModelSim,
     LOG_INFO *LogInfo
 ) {
 
-    unsigned int numYears = SW_Model->endyr - SW_Model->startyr + 1;
+    unsigned int numYears = SW_ModelIn->endyr - SW_ModelIn->startyr + 1;
     unsigned int k;
     unsigned int bareGroundIndex = 7;
 
@@ -1052,7 +1060,7 @@ void estimateVegetationFromClimate(
 
     Bool fillEmptyWithBareGround = swTRUE;
     Bool warnExtrapolation = swTRUE;
-    Bool inNorthHem = SW_Model->isnorth;
+    Bool inNorthHem = SW_ModelIn->isnorth;
     Bool fixBareGround = swTRUE;
 
     // Allocate climate structs' memory
@@ -1065,10 +1073,10 @@ void estimateVegetationFromClimate(
 
     calcSiteClimate(
         Weather_hist,
-        SW_Model->cum_monthdays,
-        SW_Model->days_in_month,
+        SW_ModelSim->cum_monthdays,
+        SW_ModelSim->days_in_month,
         numYears,
-        SW_Model->startyr,
+        SW_ModelIn->startyr,
         inNorthHem,
         &climateOutput
     );
@@ -1106,7 +1114,9 @@ void estimateVegetationFromClimate(
             return; // Exit function prematurely due to error
         }
 
-        ForEachVegType(k) { SW_VegProdIn->veg[k].cov.fCover = RelAbundanceL1[k]; }
+        ForEachVegType(k) {
+            SW_VegProdIn->veg[k].cov.fCover = RelAbundanceL1[k];
+        }
 
         SW_VegProdIn->bare_cov.fCover = RelAbundanceL0[bareGroundIndex];
     }

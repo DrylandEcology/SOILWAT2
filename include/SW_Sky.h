@@ -40,7 +40,8 @@ void SW_SKY_read(
     char *txtInFiles[], SW_SKY_INPUTS *SW_SkyIn, LOG_INFO *LogInfo
 );
 void SW_SKY_new_year(
-    SW_MODEL *SW_Model,
+    SW_MODEL_SIM *SW_ModelSim,
+    TimeInt startYr,
     double snow_density[MAX_MONTHS],
     double snow_density_daily[MAX_MONTHS]
 );

@@ -103,7 +103,7 @@ int main(int argc, char **argv) {
         goto finishProgram;
     }
 
-    SW_MDL_get_ModelRun(&sw_template.Model, &SW_Domain, NULL, &LogInfo);
+    SW_MDL_get_ModelRun(&sw_template.ModelIn, &SW_Domain, NULL, &LogInfo);
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
@@ -153,8 +153,8 @@ int main(int argc, char **argv) {
         SW_WTH_finalize_all_weather(
             &sw_template.MarkovIn,
             &sw_template.WeatherIn,
-            sw_template.Model.cum_monthdays,
-            sw_template.Model.days_in_month,
+            sw_template.ModelSim.cum_monthdays,
+            sw_template.ModelSim.days_in_month,
             &LogInfo
         );
         if (LogInfo.stopRun) {

@@ -110,7 +110,7 @@ extern const IntUS ncol_TimeOUT[SW_OUTNPERIODS];
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_OUT_set_nrow(
-    SW_MODEL *SW_Model, const Bool use_OutPeriod[], size_t nrow_OUT[]
+    SW_MODEL_INPUTS *SW_ModelIn, const Bool use_OutPeriod[], size_t nrow_OUT[]
 );
 
 void SW_OUT_construct_outarray(
@@ -121,7 +121,7 @@ void SW_OUT_deconstruct_outarray(SW_OUT_RUN *OutRun);
 
 #ifdef RSOILWAT
 void get_outvalleader(
-    SW_MODEL *SW_Model,
+    SW_MODEL_SIM *SW_ModelSim,
     OutPeriod pd,
     const size_t irow_OUT[],
     const size_t nrow_OUT[],

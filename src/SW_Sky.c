@@ -171,8 +171,9 @@ closeFile: { CloseFile(&f, LogInfo); }
 @brief Interpolate monthly input values to daily records
 (depends on "current" year)
 
-@param[in] SW_Model Struct of type SW_MODEL holding basic time information
-    about the simulation
+@param[in] SW_ModelSim Struct of type SW_MODEL_SIM holding basic intermediate
+time information about the simulation run
+@param[in] startYr Start year of the simulation
 @param[in] snow_density[] Snow density (kg/m3)
 @param[out] snow_density_daily[] Interpolated daily snow density (kg/m3)
 
@@ -180,24 +181,25 @@ Note: time must be set with SW_MDL_new_year() or Time_new_year()
 prior to this function.
 */
 void SW_SKY_new_year(
-    SW_MODEL *SW_Model,
+    SW_MODEL_SIM *SW_ModelSim,
+    TimeInt startYr,
     double snow_density[MAX_MONTHS],
     double snow_density_daily[MAX_MONTHS]
 ) {
 
     Bool interpAsBase1 = swTRUE;
-    TimeInt year = SW_Model->year;
+    TimeInt year = SW_ModelSim->year;
 
     /* We only need to re-calculate values if this is first year or
        if previous year was different from current year in leap/noleap status
     */
 
-    if (year == SW_Model->startyr || isleapyear(year) != isleapyear(year - 1)) {
+    if (year == startYr || isleapyear(year) != isleapyear(year - 1)) {
         interpolate_monthlyValues(
             snow_density,
             interpAsBase1,
-            SW_Model->cum_monthdays,
-            SW_Model->days_in_month,
+            SW_ModelSim->cum_monthdays,
+            SW_ModelSim->days_in_month,
             snow_density_daily
         );
     }

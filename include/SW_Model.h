@@ -29,18 +29,20 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_MDL_read(SW_MODEL *SW_Model, char *txtInFiles[], LOG_INFO *LogInfo);
+void SW_MDL_read(
+    SW_MODEL_INPUTS *SW_ModelIn, char *txtInFiles[], LOG_INFO *LogInfo
+);
 
-void SW_MDL_construct(SW_MODEL *SW_Model);
+void SW_MDL_construct(SW_MODEL_SIM *SW_ModelSim);
 
 void SW_MDL_deconstruct(void);
 
-void SW_MDL_new_year(SW_MODEL *SW_Model);
+void SW_MDL_new_year(SW_MODEL_INPUTS *SW_ModelIn, SW_MODEL_SIM *SW_ModelSim);
 
-void SW_MDL_new_day(SW_MODEL *SW_Model);
+void SW_MDL_new_day(SW_MODEL_SIM *SW_ModelSim);
 
 void SW_MDL_get_ModelRun(
-    SW_MODEL *SW_Model,
+    SW_MODEL_INPUTS *SW_ModelIn,
     SW_DOMAIN *SW_Domain,
     char *fileNames[],
     LOG_INFO *LogInfo
