@@ -197,7 +197,7 @@ static void sumof_swc(
     LOG_INFO *LogInfo
 );
 
-static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k);
+static void sumof_ves(SW_VEGESTAB_SIM *v, SW_VEGESTAB_OUTPUTS *s, OutKey k);
 
 static void sumof_vpd(
     SW_VEGPROD_INPUTS *v,
@@ -363,7 +363,7 @@ static void sumof_vpd(
     }
 }
 
-static void sumof_ves(SW_VEGESTAB *v, SW_VEGESTAB_OUTPUTS *s, OutKey k) {
+static void sumof_ves(SW_VEGESTAB_SIM *v, SW_VEGESTAB_OUTPUTS *s, OutKey k) {
     /* --------------------------------------------------- */
     /* k is always eSW_Estab, and this only gets called yearly */
     /* in fact, there's nothing to do here as the get_estab()
@@ -1035,9 +1035,7 @@ static void collect_sums(
             case eVES:
                 if (op == eSW_Year) {
                     sumof_ves(
-                        &sw->VegEstab,
-                        &sw->VegEstab.p_accu[eSW_Year],
-                        (OutKey) k
+                        &sw->VegEstabSim, &sw->ves_p_accu[eSW_Year], (OutKey) k
                     ); /* yearly, y'see */
                 }
                 break;
@@ -2135,8 +2133,8 @@ which a loop over soil layers is nested, e.g.,
 Ck_Lyr1, ..., Ck_LyrN`
 
 @param[in] tLayers Total number of soil layers
-@param[in] **parms List of structs of type SW_VEGESTAB_INFO holding
-    information about every vegetation species
+@param[in] *parmsIn List of structs of type SW_VEGESTAB_INFO_INPUTS holding
+    input information about every vegetation species
 @param[in] ncol_OUT Number of output columns for each output key
 @param[out] colnames_OUT Names of output columns for each output key
 @param[out] LogInfo Holds information on warnings and errors
@@ -2145,7 +2143,7 @@ Ck_Lyr1, ..., Ck_LyrN`
 */
 void SW_OUT_set_colnames(
     unsigned int tLayers,
-    SW_VEGESTAB_INFO **parms,
+    SW_VEGESTAB_INFO_INPUTS *parmsIn,
     const IntUS ncol_OUT[],
     char *colnames_OUT[][5 * NVEGTYPES + MAX_LAYERS],
     LOG_INFO *LogInfo
@@ -2545,7 +2543,7 @@ void SW_OUT_set_colnames(
     }
 #endif
     for (i = 0; i < ncol_OUT[eSW_Estab]; i++) {
-        colnames_OUT[eSW_Estab][i] = Str_Dup(parms[i]->sppname, LogInfo);
+        colnames_OUT[eSW_Estab][i] = Str_Dup(parmsIn[i].sppname, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -2631,7 +2629,9 @@ void SW_OUT_set_colnames(
 
 @param[in] tLayers Number of soil layers
 @param[in] n_evap_lyrs Number of soil layers with evaporation
-@param[in] SW_VegEstab Struct for vegetation establishment
+@param[in] count Number of species to check
+@param[in] parmsIn Struct for inputs of vegetation establishment for each
+    species
 @param[out] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
 @param[out] LogInfo Holds information on warnings and errors
@@ -2639,14 +2639,15 @@ void SW_OUT_set_colnames(
 void SW_OUT_setup_output(
     unsigned int tLayers,
     unsigned int n_evap_lyrs,
-    SW_VEGESTAB *SW_VegEstab,
+    unsigned int count,
+    SW_VEGESTAB_INFO_INPUTS *parmsIn,
     SW_OUT_DOM *OutDom,
     LOG_INFO *LogInfo
 ) {
     SW_OUT_set_ncol(
         tLayers,
         n_evap_lyrs,
-        SW_VegEstab->count,
+        count,
         OutDom->ncol_OUT,
         OutDom->nvar_OUT,
         OutDom->nsl_OUT,
@@ -2661,15 +2662,12 @@ void SW_OUT_setup_output(
         OutDom->npft_OUT,
         OutDom->netCDFOutput.iOUToffset
     );
+    (void) parmsIn;
     (void) LogInfo;
 
 #else
     SW_OUT_set_colnames(
-        tLayers,
-        SW_VegEstab->parms,
-        OutDom->ncol_OUT,
-        OutDom->colnames_OUT,
-        LogInfo
+        tLayers, parmsIn, OutDom->ncol_OUT, OutDom->colnames_OUT, LogInfo
     );
 #endif // !SWNETCDF
 }
@@ -3936,13 +3934,16 @@ printOutput:
 
 void echo_all_inputs(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 
-    if (!sw->VegEstab.use) {
+    if (!sw->VegEstabSim.use) {
         printf("Establishment not used.\n");
     }
 
     echo_inputs(&sw->Site, &sw->ModelIn);
     echo_VegEstab(
-        sw->Site.soils.width, sw->VegEstab.parms, sw->VegEstab.count, LogInfo
+        sw->Site.soils.width,
+        sw->VegEstabIn.parms,
+        sw->VegEstabSim.count,
+        LogInfo
     );
     echo_VegProd(sw->VegProdIn.veg, sw->VegProdIn.bare_cov);
     echo_outputs(OutDom, LogInfo);

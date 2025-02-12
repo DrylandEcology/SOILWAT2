@@ -189,21 +189,21 @@ typedef struct {
     SW_SPINUP SW_SpinUp;
 
     double longitude, /* longitude of the site (radians) */
-    latitude,     /* latitude of the site (radians) */
-    elevation,    /* elevation a.s.l (m) of the site */
-    slope, /* slope of the site (radians): between 0 (horizontal) and pi / 2
-                  (vertical) */
+        latitude,     /* latitude of the site (radians) */
+        elevation,    /* elevation a.s.l (m) of the site */
+        slope, /* slope of the site (radians): between 0 (horizontal) and pi / 2
+                      (vertical) */
         aspect; /* aspect of the site (radians): A value of \ref SW_MISSING
         indicates no data, ie., treat it as if slope = 0; South
                    facing slope: aspect = 0, East = -pi / 2, West = pi / 2,
                    North = ±pi */
 
-                   // Create a copy of SW_DOMAIN's time & spinup information
+    // Create a copy of SW_DOMAIN's time & spinup information
     // to use instead of passing around SW_DOMAIN
     TimeInt startyr, /* beginning year for a set of simulation run */
-    endyr,       /* ending year for a set of simulation run */
-    startstart,  /* startday in start year */
-    endend;      /* end day in end year */
+        endyr,       /* ending year for a set of simulation run */
+        startstart,  /* startday in start year */
+        endend;      /* end day in end year */
 
     Bool isnorth;
 
@@ -1117,7 +1117,6 @@ typedef struct {
 /* --------------------------------------------------- */
 
 typedef struct {
-
     /* see COMMENT-1 below for more information on these vars */
 
     /* THESE VARIABLES CAN CHANGE VALUE IN THE MODEL */
@@ -1128,6 +1127,10 @@ typedef struct {
         wetdays_for_estab;
     Bool germd,   /* has this plant germinated yet?  */
         no_estab; /* if swTRUE, can't attempt estab for remainder of year */
+} SW_VEGESTAB_INFO_SIM;
+
+typedef struct {
+    /* see COMMENT-1 below for more information on these vars */
 
     /* THESE VARIABLES DO NOT CHANGE DURING THE NORMAL MODEL RUN */
     char sppFileName[MAX_FILENAMESIZE]; /* Store the file Name and Path, Mostly
@@ -1165,8 +1168,7 @@ typedef struct {
         max_temp_germ,  /* max temp for germ in degC */
         min_temp_estab, /* min avg daily temp req't for establishment */
         max_temp_estab; /* max temp for estab in degC */
-
-} SW_VEGESTAB_INFO;
+} SW_VEGESTAB_INFO_INPUTS;
 
 typedef struct {
     TimeInt
@@ -1176,16 +1178,16 @@ typedef struct {
 } SW_VEGESTAB_OUTPUTS;
 
 typedef struct {
+    SW_VEGESTAB_INFO_INPUTS
+    *parms; /* dynamic array of input parms for each species */
+} SW_VEGESTAB_INPUTS;
+
+typedef struct {
     Bool use;   /* if swTRUE use establishment parms and chkestab() */
     IntU count; /* number of species to check */
-    SW_VEGESTAB_INFO **parms;   /* dynamic array of parms for each species */
-    SW_VEGESTAB_OUTPUTS         /* only yearly element will be used */
-        p_accu[SW_OUTNPERIODS], // output accumulator: summed values for each
-                                // time period
-        p_oagg[SW_OUTNPERIODS]; // output aggregator: mean or sum for each time
-                                // periods
-
-} SW_VEGESTAB;
+    SW_VEGESTAB_INFO_SIM
+    *parms; /* dynamic array of changing parms for each species */
+} SW_VEGESTAB_SIM;
 
 /* =================================================== */
 /*                   Markov struct                     */
@@ -1649,7 +1651,6 @@ typedef struct {
 struct SW_RUN {
     SW_SOILWAT SoilWat;
     SW_SITE Site;
-    SW_VEGESTAB VegEstab;
 
     /* Input information */
     SW_WEATHER_INPUTS WeatherIn;
@@ -1658,12 +1659,14 @@ struct SW_RUN {
     SW_MARKOV_INPUTS MarkovIn;
     SW_VEGPROD_INPUTS VegProdIn;
     SW_MODEL_INPUTS ModelIn;
+    SW_VEGESTAB_INPUTS VegEstabIn;
 
     /* Values used/modified during simulation that's not strictly inputs */
     SW_WEATHER_SIM WeatherSim;
     SW_ST_SIM StRegSimVals;
     SW_ATMD_SIM AtmDemSim;
     SW_MODEL_SIM ModelSim;
+    SW_VEGESTAB_SIM VegEstabSim;
 
     /* Output information */
     SW_OUT_RUN OutRun;
@@ -1676,6 +1679,9 @@ struct SW_RUN {
     SW_WEATHER_OUTPUTS weath_p_accu[SW_OUTNPERIODS],
         weath_p_oagg[SW_OUTNPERIODS];
     SW_VEGPROD_OUTPUTS vp_p_accu[SW_OUTNPERIODS], vp_p_oagg[SW_OUTNPERIODS];
+
+    /* only yearly element will be used */
+    SW_VEGESTAB_OUTPUTS ves_p_accu[SW_OUTNPERIODS], ves_p_oagg[SW_OUTNPERIODS];
 };
 
 /* =================================================== */

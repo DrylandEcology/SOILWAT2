@@ -185,7 +185,8 @@ int main(int argc, char **argv) {
     SW_OUT_setup_output(
         SW_Domain.nMaxSoilLayers,
         SW_Domain.nMaxEvapLayers,
-        &sw_template.VegEstab,
+        sw_template.VegEstabSim.count,
+        sw_template.VegEstabIn.parms,
         &SW_Domain.OutDom,
         &LogInfo
     );
@@ -197,7 +198,7 @@ int main(int argc, char **argv) {
     SW_NCOUT_read_out_vars(
         &SW_Domain.OutDom,
         SW_Domain.SW_PathInputs.txtInFiles,
-        sw_template.VegEstab.parms,
+        sw_template.VegEstabIn.parms,
         &LogInfo
     );
     if (LogInfo.stopRun) {

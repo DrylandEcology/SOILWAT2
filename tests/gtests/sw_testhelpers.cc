@@ -271,7 +271,8 @@ int setup_testGlobalSoilwatTemplate() {
     SW_OUT_setup_output(
         template_SW_Run.Site.n_layers,
         template_SW_Run.Site.n_evap_lyrs,
-        &template_SW_Run.VegEstab,
+        template_SW_Run.VegEstabSim.count,
+        template_SW_Run.VegEstabIn.parms,
         &template_SW_Domain.OutDom,
         &LogInfo
     );

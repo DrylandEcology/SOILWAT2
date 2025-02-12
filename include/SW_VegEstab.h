@@ -33,14 +33,20 @@ extern "C" {
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_VES_read(
-    SW_VEGESTAB *SW_VegEstab,
+    SW_VEGESTAB_INPUTS *SW_VegEstabIn,
+    SW_VEGESTAB_SIM *SW_VegEstabSim,
+    SW_VEGESTAB_OUTPUTS *ves_p_accu,
+    SW_VEGESTAB_OUTPUTS *ves_p_oagg,
     char *txtInFiles[],
     char *SW_ProjDir,
     LOG_INFO *LogInfo
 );
 
 void SW_VES_read2(
-    SW_VEGESTAB *SW_VegEstab,
+    SW_VEGESTAB_INPUTS *SW_VegEstabIn,
+    SW_VEGESTAB_SIM *SW_VegEstabSim,
+    SW_VEGESTAB_OUTPUTS *ves_p_accu,
+    SW_VEGESTAB_OUTPUTS *ves_p_oagg,
     Bool use_VegEstab,
     Bool consider_InputFlag,
     char *txtInFiles[],
@@ -48,16 +54,33 @@ void SW_VES_read2(
     LOG_INFO *LogInfo
 );
 
-void SW_VES_init_ptrs(SW_VEGESTAB *SW_VegEstab);
+void SW_VES_init_ptrs(
+    SW_VEGESTAB_INPUTS *SW_VegEstabIn,
+    SW_VEGESTAB_SIM *SW_VegEstabSim,
+    SW_VEGESTAB_OUTPUTS *ves_p_accu,
+    SW_VEGESTAB_OUTPUTS *ves_p_oagg
+);
 
-void SW_VES_construct(SW_VEGESTAB *SW_VegEstab);
+void SW_VES_construct(
+    SW_VEGESTAB_INPUTS *SW_VegEstabIn, SW_VEGESTAB_SIM *SW_VegEstabSim
+);
 
-void SW_VegEstab_alloc_outptrs(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo);
+void SW_VegEstab_alloc_outptrs(
+    SW_VEGESTAB_OUTPUTS *ves_p_accu,
+    SW_VEGESTAB_OUTPUTS *ves_p_oagg,
+    IntU count,
+    LOG_INFO *LogInfo
+);
 
-void SW_VES_deconstruct(SW_VEGESTAB *SW_VegEstab);
+void SW_VES_deconstruct(
+    SW_VEGESTAB_INPUTS *SW_VegEstabIn,
+    SW_VEGESTAB_SIM *SW_VegEstabSim,
+    SW_VEGESTAB_OUTPUTS *ves_p_accu,
+    SW_VEGESTAB_OUTPUTS *ves_p_oagg
+);
 
 void SW_VES_init_run(
-    SW_VEGESTAB_INFO **parms,
+    SW_VEGESTAB_INFO_INPUTS *parmsIn,
     SW_SITE *SW_Site,
     LyrIndex n_transp_lyrs[],
     IntU count,
@@ -65,7 +88,8 @@ void SW_VES_init_run(
 );
 
 void SW_VES_checkestab(
-    SW_VEGESTAB_INFO **parms,
+    SW_VEGESTAB_INFO_INPUTS *parmsIn,
+    SW_VEGESTAB_INFO_SIM *parmsSim,
     double avgTemp,
     double swcBulk[][MAX_LAYERS],
     TimeInt doy,
@@ -76,18 +100,22 @@ void SW_VES_checkestab(
 void SW_VES_new_year(IntU count);
 
 void spp_init(
-    SW_VEGESTAB_INFO **parms,
+    SW_VEGESTAB_INFO_INPUTS *parmsIn,
     unsigned int sppnum,
     SW_SITE *SW_Site,
     LyrIndex n_transp_lyrs[],
     LOG_INFO *LogInfo
 );
 
-IntU new_species(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo);
+IntU new_species(
+    SW_VEGESTAB_INPUTS *SW_VegEstabIn,
+    SW_VEGESTAB_SIM *SW_VegEstabSim,
+    LOG_INFO *LogInfo
+);
 
 void echo_VegEstab(
     const double width[],
-    SW_VEGESTAB_INFO **parms,
+    SW_VEGESTAB_INFO_INPUTS *parmsIn,
     IntU count,
     LOG_INFO *LogInfo
 );

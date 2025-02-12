@@ -61,24 +61,28 @@ static void sanity_check(
     unsigned int sppnum,
     double swcBulk_wiltpt[],
     LyrIndex n_transp_lyrs[],
-    SW_VEGESTAB_INFO **parms,
+    SW_VEGESTAB_INFO_INPUTS *parmsIn,
     LOG_INFO *LogInfo
 );
 
 static void read_spp(
-    const char *infile, SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo
+    const char *infile,
+    SW_VEGESTAB_INPUTS *SW_VegEstabIn,
+    SW_VEGESTAB_SIM *SW_VegEstabSim,
+    LOG_INFO *LogInfo
 );
 
 static void checkit(
+    SW_VEGESTAB_INFO_INPUTS *parmsIn,
+    SW_VEGESTAB_INFO_SIM *parmsSim,
     TimeInt doy,
     unsigned int sppnum,
     double avgtemp,
     double swcBulk[][MAX_LAYERS],
-    TimeInt firstdoy,
-    SW_VEGESTAB_INFO **parms
+    TimeInt firstdoy
 );
 
-static void zero_state(unsigned int sppnum, SW_VEGESTAB_INFO **parms);
+static void zero_state(unsigned int sppnum, SW_VEGESTAB_INFO_SIM *parmsSim);
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -87,30 +91,46 @@ static void zero_state(unsigned int sppnum, SW_VEGESTAB_INFO **parms);
 /**
 @brief Initialize all possible pointers in SW_VEGESTAB to NULL
 
-@param[in,out] SW_VegEstab Struct of type SW_VEGESTAB holding all
-    information about vegetation establishment within the simulation
+@param[in,out] SW_VegEstabIn Struct of type SW_VEGESTAB_INPUTS holding all
+    input information about vegetation within the simulation
+@param[in,out] SW_VegEstabSim Struct of type SW_VEGESTAB_SIM holding all
+    simulation information about vegetation within the simulation
+@param[in,out] ves_p_accu A list of output structs of type SW_VEGESTAB_OUTPUTS
+    to accumulate output
+@param[in,out] ves_p_oagg A list of output structs of type SW_VEGESTAB_OUTPUTS
+    to aggregate output
 */
-void SW_VES_init_ptrs(SW_VEGESTAB *SW_VegEstab) {
+void SW_VES_init_ptrs(
+    SW_VEGESTAB_INPUTS *SW_VegEstabIn,
+    SW_VEGESTAB_SIM *SW_VegEstabSim,
+    SW_VEGESTAB_OUTPUTS *ves_p_accu,
+    SW_VEGESTAB_OUTPUTS *ves_p_oagg
+) {
     OutPeriod pd;
 
-    SW_VegEstab->parms = NULL;
-    SW_VegEstab->count = 0;
+    SW_VegEstabIn->parms = NULL;
+    SW_VegEstabSim->parms = NULL;
+    SW_VegEstabSim->count = 0;
 
     // Allocate output structures:
     ForEachOutPeriod(pd) {
         // Intiailize p_accu and p_oagg to NULL to eliminate the chance of
         // deallocating unallocated memory
-        SW_VegEstab->p_accu[pd].days = SW_VegEstab->p_oagg[pd].days = NULL;
+        ves_p_accu[pd].days = ves_p_oagg[pd].days = NULL;
     }
 }
 
 /**
 @brief Constructor for SW_VegEstab.
 
-@param[out] SW_VegEstab Struct of type SW_VEGESTAB holding all
-    information about vegetation within the simulation
+@param[out] SW_VegEstabIn Struct of type SW_VEGESTAB_INPUTS holding all
+    input information about vegetation within the simulation
+@param[out] SW_VegEstabSim Struct of type SW_VEGESTAB_SIM holding all
+    simulation information about vegetation within the simulation
 */
-void SW_VES_construct(SW_VEGESTAB *SW_VegEstab) {
+void SW_VES_construct(
+    SW_VEGESTAB_INPUTS *SW_VegEstabIn, SW_VEGESTAB_SIM *SW_VegEstabSim
+) {
     /* =================================================== */
     /* note that an initializer that is called during
      * execution (better called clean() or something)
@@ -119,42 +139,51 @@ void SW_VES_construct(SW_VEGESTAB *SW_VegEstab) {
      */
 
     // Clear the module structure:
-    memset(SW_VegEstab, 0, sizeof(SW_VEGESTAB));
+    memset(SW_VegEstabIn, 0, sizeof(SW_VEGESTAB_INPUTS));
+    memset(SW_VegEstabSim, 0, sizeof(SW_VEGESTAB_SIM));
 }
 
 /**
 @brief Deconstructor for SW_VegEstab for each period, pd.
 
-@param[in,out] SW_VegEstab Struct of type SW_VEGESTAB holding all
-    information about vegetation within the simulation
+@param[in,out] SW_VegEstabIn Struct of type SW_VEGESTAB_INPUTS holding all
+    input information about vegetation within the simulation
+@param[in,out] SW_VegEstabSim Struct of type SW_VEGESTAB_SIM holding all
+    simulation information about vegetation within the simulation
+@param[in,out] ves_p_accu A list of output structs of type SW_VEGESTAB_OUTPUTS
+    to accumulate output
+@param[in,out] ves_p_oagg A list of output structs of type SW_VEGESTAB_OUTPUTS
+    to aggregate output
 */
-void SW_VES_deconstruct(SW_VEGESTAB *SW_VegEstab) {
+void SW_VES_deconstruct(
+    SW_VEGESTAB_INPUTS *SW_VegEstabIn,
+    SW_VEGESTAB_SIM *SW_VegEstabSim,
+    SW_VEGESTAB_OUTPUTS *ves_p_accu,
+    SW_VEGESTAB_OUTPUTS *ves_p_oagg
+) {
     OutPeriod pd;
-    IntU i;
 
     // De-allocate parameters
-    if (SW_VegEstab->count > 0) {
-        for (i = 0; i < SW_VegEstab->count; i++) {
-            free(SW_VegEstab->parms[i]);
-            SW_VegEstab->parms[i] = NULL;
-        }
+    if (SW_VegEstabSim->count > 0) {
+        free((void *) SW_VegEstabIn->parms);
+        SW_VegEstabIn->parms = NULL;
 
-        free((void *) SW_VegEstab->parms);
-        SW_VegEstab->parms = NULL;
+        free((void *) SW_VegEstabSim->parms);
+        SW_VegEstabSim->parms = NULL;
     }
 
 
     ForEachOutPeriod(pd) {
         // De-allocate days and parameters
-        if (SW_VegEstab->count > 0) {
-            if (pd > eSW_Day && !isnull(SW_VegEstab->p_oagg[pd].days)) {
-                free(SW_VegEstab->p_oagg[eSW_Year].days);
-                SW_VegEstab->p_oagg[eSW_Year].days = NULL;
+        if (SW_VegEstabSim->count > 0) {
+            if (pd > eSW_Day && !isnull(ves_p_oagg[pd].days)) {
+                free(ves_p_oagg[eSW_Year].days);
+                ves_p_oagg[eSW_Year].days = NULL;
             }
 
-            if (!isnull(SW_VegEstab->p_accu[pd].days)) {
-                free(SW_VegEstab->p_accu[eSW_Year].days);
-                SW_VegEstab->p_accu[eSW_Year].days = NULL;
+            if (!isnull(ves_p_accu[pd].days)) {
+                free(ves_p_accu[eSW_Year].days);
+                ves_p_accu[eSW_Year].days = NULL;
             }
         }
     }
@@ -177,27 +206,52 @@ void SW_VES_new_year(IntU count) {
 /**
 @brief Reads in file for SW_VegEstab and species establishment parameters
 
-@param[in,out] SW_VegEstab Struct of type SW_VEGESTAB holding all information
-    about vegetation establishment within the simulation
+@param[in,out] SW_VegEstabIn Struct of type SW_VEGESTAB_INPUTS holding all
+    input information about vegetation within the simulation
+@param[in,out] SW_VegEstabSim Struct of type SW_VEGESTAB_SIM holding all
+    simulation information about vegetation within the simulation
+@param[in,out] ves_p_accu A list of output structs of type SW_VEGESTAB_OUTPUTS
+    to accumulate output
+@param[in,out] ves_p_oagg A list of output structs of type SW_VEGESTAB_OUTPUTS
+    to aggregate output
 @param[in] txtInFiles Array of program in/output files
 @param[in] SW_ProjDir Project directory
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_VES_read(
-    SW_VEGESTAB *SW_VegEstab,
+    SW_VEGESTAB_INPUTS *SW_VegEstabIn,
+    SW_VEGESTAB_SIM *SW_VegEstabSim,
+    SW_VEGESTAB_OUTPUTS *ves_p_accu,
+    SW_VEGESTAB_OUTPUTS *ves_p_oagg,
     char *txtInFiles[],
     char *SW_ProjDir,
     LOG_INFO *LogInfo
 ) {
 
-    SW_VES_read2(SW_VegEstab, swTRUE, swTRUE, txtInFiles, SW_ProjDir, LogInfo);
+    SW_VES_read2(
+        SW_VegEstabIn,
+        SW_VegEstabSim,
+        ves_p_accu,
+        ves_p_oagg,
+        swTRUE,
+        swTRUE,
+        txtInFiles,
+        SW_ProjDir,
+        LogInfo
+    );
 }
 
 /**
 @brief Reads in file for SW_VegEstab and species establishment parameters
 
-@param[in,out] SW_VegEstab Struct of type SW_VEGESTAB holding all information
-    about vegetation establishment within the simulation
+@param[in,out] SW_VegEstabIn Struct of type SW_VEGESTAB_INPUTS holding all
+    input information about vegetation within the simulation
+@param[in,out] SW_VegEstabSim Struct of type SW_VEGESTAB_SIM holding all
+    simulation information about vegetation within the simulation
+@param[in,out] ves_p_accu A list of output structs of type SW_VEGESTAB_OUTPUTS
+    to accumulate output
+@param[in,out] ves_p_oagg A list of output structs of type SW_VEGESTAB_OUTPUTS
+    to aggregate output
 @param[in] use_VegEstab Overall decision if user inputs for vegetation
     establishment should be processed.
 @param[in] consider_InputFlag Should the user input flag read from `"estab.in"`
@@ -217,7 +271,10 @@ void SW_VES_read(
       if `"ESTABL"` is turned on in `"outsetup.in"`
 */
 void SW_VES_read2(
-    SW_VEGESTAB *SW_VegEstab,
+    SW_VEGESTAB_INPUTS *SW_VegEstabIn,
+    SW_VEGESTAB_SIM *SW_VegEstabSim,
+    SW_VEGESTAB_OUTPUTS *ves_p_accu,
+    SW_VEGESTAB_OUTPUTS *ves_p_oagg,
     Bool use_VegEstab,
     Bool consider_InputFlag,
     char *txtInFiles[],
@@ -225,17 +282,17 @@ void SW_VES_read2(
     LOG_INFO *LogInfo
 ) {
 
-    SW_VES_deconstruct(SW_VegEstab);
-    SW_VES_construct(SW_VegEstab);
+    SW_VES_deconstruct(SW_VegEstabIn, SW_VegEstabSim, ves_p_accu, ves_p_oagg);
+    SW_VES_construct(SW_VegEstabIn, SW_VegEstabSim);
 
-    SW_VegEstab->use = use_VegEstab;
+    SW_VegEstabSim->use = use_VegEstab;
 
     int resSNP;
     char buf[FILENAME_MAX];
     char inbuf[MAX_FILENAMESIZE];
     FILE *f;
 
-    if (SW_VegEstab->use) {
+    if (SW_VegEstabSim->use) {
         char *MyFileName = txtInFiles[eVegEstab];
         f = OpenFile(MyFileName, "r", LogInfo);
         if (LogInfo->stopRun) {
@@ -249,7 +306,7 @@ void SW_VES_read2(
                  * if user input flag is set to 0 and we don't ignore that
                  input, i.e.,`consider_InputFlag` is set to `swTRUE`
             */
-            SW_VegEstab->use = swFALSE;
+            SW_VegEstabSim->use = swFALSE;
 
         } else {
             /* read file names with species establishment parameters
@@ -268,13 +325,15 @@ void SW_VES_read2(
                     goto closeFile;
                 }
 
-                read_spp(buf, SW_VegEstab, LogInfo);
+                read_spp(buf, SW_VegEstabIn, SW_VegEstabSim, LogInfo);
                 if (LogInfo->stopRun) {
                     goto closeFile;
                 }
             }
 
-            SW_VegEstab_alloc_outptrs(SW_VegEstab, LogInfo);
+            SW_VegEstab_alloc_outptrs(
+                ves_p_accu, ves_p_oagg, SW_VegEstabSim->count, LogInfo
+            );
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
@@ -287,27 +346,29 @@ void SW_VES_read2(
 /**
 @brief Allocates element `day` for SW_VegEstab output variables
 
-@param[in,out] SW_VegEstab SW_VegEstab SW_VegEstab Struct of type SW_VEGESTAB
-    holding all information about vegetation within the simulation
+@param[in,out] ves_p_accu A list of output structs of type SW_VEGESTAB_OUTPUTS
+    to accumulate output
+@param[in,out] ves_p_oagg A list of output structs of type SW_VEGESTAB_OUTPUTS
+    to aggregate output
+@param[in,out] count Number of specifies
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_VegEstab_alloc_outptrs(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo) {
-    if (SW_VegEstab->count > 0) {
-        SW_VegEstab->p_oagg[eSW_Year].days = (TimeInt *) Mem_Calloc(
-            SW_VegEstab->count,
-            sizeof(TimeInt),
-            "SW_VegEstab_alloc_outptrs()",
-            LogInfo
+void SW_VegEstab_alloc_outptrs(
+    SW_VEGESTAB_OUTPUTS *ves_p_accu,
+    SW_VEGESTAB_OUTPUTS *ves_p_oagg,
+    IntU count,
+    LOG_INFO *LogInfo
+) {
+    if (count > 0) {
+        ves_p_oagg[eSW_Year].days = (TimeInt *) Mem_Calloc(
+            count, sizeof(TimeInt), "SW_VegEstab_alloc_outptrs()", LogInfo
         );
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
-        SW_VegEstab->p_accu[eSW_Year].days = (TimeInt *) Mem_Calloc(
-            SW_VegEstab->count,
-            sizeof(TimeInt),
-            "SW_VegEstab_alloc_outptrs()",
-            LogInfo
+        ves_p_accu[eSW_Year].days = (TimeInt *) Mem_Calloc(
+            count, sizeof(TimeInt), "SW_VegEstab_alloc_outptrs()", LogInfo
         );
     }
 }
@@ -319,8 +380,8 @@ This works correctly only after
     * species establishment parameters are read from file by `SW_VES_read()`
     * soil layers are initialized by `SW_SIT_init_run()`
 
-@param[in,out] **parms List of structs of type SW_VEGESTAB_INFO holding
-    information about every vegetation species
+@param[in,out] *parmsIn List of structs of type SW_VEGESTAB_INFO_INPUTS holding
+    input information about every vegetation species
 @param[in] SW_Site Struct of type SW_SITE describing the simulated site
 @param[in] n_transp_lyrs Index of the deepest transp. region
 @param[in] count Held within type SW_VEGESTAB to determine
@@ -328,7 +389,7 @@ This works correctly only after
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_VES_init_run(
-    SW_VEGESTAB_INFO **parms,
+    SW_VEGESTAB_INFO_INPUTS *parmsIn,
     SW_SITE *SW_Site,
     LyrIndex n_transp_lyrs[],
     IntU count,
@@ -338,7 +399,7 @@ void SW_VES_init_run(
     IntU i;
 
     for (i = 0; i < count; i++) {
-        spp_init(parms, i, SW_Site, n_transp_lyrs, LogInfo);
+        spp_init(parmsIn, i, SW_Site, n_transp_lyrs, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -348,8 +409,10 @@ void SW_VES_init_run(
 /**
 @brief Check that each count coincides with a day of the year.
 
-@param[in,out] **parms List of structs of type SW_VEGESTAB_INFO holding
-    information about every vegetation species
+@param[in,out] *parmsIn List of structs of type SW_VEGESTAB_INFO_INPUTS holding
+    input information about every vegetation species
+@param[in,out] *parmsSim List of structs of type SW_VEGESTAB_INFO_SIM holding
+    simulation information about every vegetation species
 @param[in] avgTemp Average of todays max/min temperatures
 @param[in] swcBulk Soil water content in the layer [cm]
 @param[in] doy Day of the year (base1) [1-366]
@@ -358,7 +421,8 @@ void SW_VES_init_run(
     how many species to check
 */
 void SW_VES_checkestab(
-    SW_VEGESTAB_INFO **parms,
+    SW_VEGESTAB_INFO_INPUTS *parmsIn,
+    SW_VEGESTAB_INFO_SIM *parmsSim,
     double avgTemp,
     double swcBulk[][MAX_LAYERS],
     TimeInt doy,
@@ -369,7 +433,7 @@ void SW_VES_checkestab(
     IntU i;
 
     for (i = 0; i < count; i++) {
-        checkit(doy, i, avgTemp, swcBulk, firstdoy, parms);
+        checkit(parmsIn, parmsSim, doy, i, avgTemp, swcBulk, firstdoy);
     }
 }
 
@@ -378,32 +442,34 @@ void SW_VES_checkestab(
 /* --------------------------------------------------- */
 
 static void checkit(
+    SW_VEGESTAB_INFO_INPUTS *parmsIn,
+    SW_VEGESTAB_INFO_SIM *parmsSim,
     TimeInt doy,
     unsigned int sppnum,
     double avgtemp,
     double swcBulk[][MAX_LAYERS],
-    TimeInt firstdoy,
-    SW_VEGESTAB_INFO **parms
+    TimeInt firstdoy
 ) {
 
-    SW_VEGESTAB_INFO *v = parms[sppnum];
+    SW_VEGESTAB_INFO_INPUTS *v = &parmsIn[sppnum];
+    SW_VEGESTAB_INFO_SIM *s = &parmsSim[sppnum];
 
     IntU i;
     double avgswc; /* avg_swc today */
 
     if (doy == firstdoy) {
-        zero_state(sppnum, parms);
+        zero_state(sppnum, parmsSim);
     }
 
-    if (v->no_estab || v->estab_doy > 0) {
+    if (s->no_estab || s->estab_doy > 0) {
         goto LBL_Normal_Exit;
     }
 
     /* keep up with germinating wetness regardless of current state */
     if (GT(swcBulk[Today][0], v->min_swc_germ)) {
-        v->wetdays_for_germ++;
+        s->wetdays_for_germ++;
     } else {
-        v->wetdays_for_germ = 0;
+        s->wetdays_for_germ = 0;
     }
 
     if (doy < v->min_pregerm_days) {
@@ -411,13 +477,13 @@ static void checkit(
     }
 
     /* ---- check for germination, establishment */
-    if (!v->germd && v->wetdays_for_germ >= v->min_wetdays_for_germ) {
+    if (!s->germd && s->wetdays_for_germ >= v->min_wetdays_for_germ) {
 
         if (doy < v->min_pregerm_days) {
             goto LBL_Normal_Exit;
         }
         if (doy > v->max_pregerm_days) {
-            v->no_estab = swTRUE;
+            s->no_estab = swTRUE;
             goto LBL_Normal_Exit;
         }
         /* temp doesn't affect wetdays */
@@ -425,7 +491,7 @@ static void checkit(
             goto LBL_Normal_Exit;
         }
 
-        v->germd = swTRUE;
+        s->germd = swTRUE;
         goto LBL_Normal_Exit;
 
     } else {
@@ -439,50 +505,50 @@ static void checkit(
         }
         avgswc /= (double) v->estab_lyrs;
         if (LT(avgswc, v->min_swc_estab)) {
-            v->drydays_postgerm++;
-            v->wetdays_for_estab = 0;
+            s->drydays_postgerm++;
+            s->wetdays_for_estab = 0;
         } else {
-            v->drydays_postgerm = 0;
-            v->wetdays_for_estab++;
+            s->drydays_postgerm = 0;
+            s->wetdays_for_estab++;
         }
 
-        if (v->drydays_postgerm > v->max_drydays_postgerm ||
+        if (s->drydays_postgerm > v->max_drydays_postgerm ||
             LT(avgtemp, v->min_temp_estab) || GT(avgtemp, v->max_temp_estab)) {
             /* too bad: discontinuity in environment, plant dies, start over */
             goto LBL_EstabFailed_Exit;
         }
 
-        v->germ_days++;
+        s->germ_days++;
 
-        if (v->wetdays_for_estab < v->min_wetdays_for_estab ||
-            v->germ_days < v->min_days_germ2estab) {
+        if (s->wetdays_for_estab < v->min_wetdays_for_estab ||
+            s->germ_days < v->min_days_germ2estab) {
             goto LBL_Normal_Exit;
             /* no need to zero anything */
         }
 
-        if (v->germ_days > v->max_days_germ2estab) {
+        if (s->germ_days > v->max_days_germ2estab) {
             goto LBL_EstabFailed_Exit;
         }
 
-        v->estab_doy = doy;
+        s->estab_doy = doy;
         goto LBL_Normal_Exit;
     }
 
 LBL_EstabFailed_Exit:
     /* allows us to try again if not too late */
-    v->wetdays_for_estab = 0;
-    v->germ_days = 0;
-    v->germd = swFALSE;
+    s->wetdays_for_estab = 0;
+    s->germ_days = 0;
+    s->germd = swFALSE;
 
 LBL_Normal_Exit:
     return;
 }
 
-static void zero_state(unsigned int sppnum, SW_VEGESTAB_INFO **parms) {
+static void zero_state(unsigned int sppnum, SW_VEGESTAB_INFO_SIM *parmsSim) {
     /* =================================================== */
     /* zero any values that need it for the new growing season */
 
-    SW_VEGESTAB_INFO *parms_sppnum = parms[sppnum];
+    SW_VEGESTAB_INFO_SIM *parms_sppnum = &parmsSim[sppnum];
 
     parms_sppnum->no_estab = parms_sppnum->germd = swFALSE;
     parms_sppnum->estab_doy = parms_sppnum->germ_days =
@@ -491,11 +557,14 @@ static void zero_state(unsigned int sppnum, SW_VEGESTAB_INFO **parms) {
 }
 
 static void read_spp(
-    const char *infile, SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo
+    const char *infile,
+    SW_VEGESTAB_INPUTS *SW_VegEstabIn,
+    SW_VEGESTAB_SIM *SW_VegEstabSim,
+    LOG_INFO *LogInfo
 ) {
     /* =================================================== */
 
-    SW_VEGESTAB_INFO *v;
+    SW_VEGESTAB_INFO_INPUTS *v;
     const int nitems = 16;
     FILE *f;
     int lineno = 0;
@@ -513,11 +582,11 @@ static void read_spp(
     size_t sppWritesize = 0;
     IntU count;
 
-    count = new_species(SW_VegEstab, LogInfo);
+    count = new_species(SW_VegEstabIn, SW_VegEstabSim, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
-    v = SW_VegEstab->parms[count];
+    v = &SW_VegEstabIn->parms[count];
 
     endSppPtr = v->sppname + sizeof v->sppname - 1;
     sppWritesize = sizeof v->sppname;
@@ -669,22 +738,22 @@ closeFile: { CloseFile(&f, LogInfo); }
 @brief Initializations performed after acquiring parameters after read() or some
 other function call.
 
-@param[in,out] **parms List of structs of type SW_VEGESTAB_INFO holding
-    information about every vegetation species
+@param[in,out] *parmsIn List of structs of type SW_VEGESTAB_INFO_INPUTS holding
+    input information about every vegetation species
 @param[in] sppnum Index for which paramater is beign initialized.
 @param[in] SW_Site Struct of type SW_SITE describing the simulated site
 @param[in] n_transp_lyrs Layer index of deepest transp. region.
 @param[out] LogInfo Holds information on warnings and errors
 */
 void spp_init(
-    SW_VEGESTAB_INFO **parms,
+    SW_VEGESTAB_INFO_INPUTS *parmsIn,
     unsigned int sppnum,
     SW_SITE *SW_Site,
     LyrIndex n_transp_lyrs[],
     LOG_INFO *LogInfo
 ) {
 
-    SW_VEGESTAB_INFO *parms_sppnum = parms[sppnum];
+    SW_VEGESTAB_INFO_INPUTS *parms_sppnum = &parmsIn[sppnum];
     IntU i;
 
     /* The thetas and psis etc should be initialized by now */
@@ -711,7 +780,7 @@ void spp_init(
     parms_sppnum->min_swc_estab /= (double) parms_sppnum->estab_lyrs;
 
     sanity_check(
-        sppnum, SW_Site->swcBulk_wiltpt, n_transp_lyrs, parms, LogInfo
+        sppnum, SW_Site->swcBulk_wiltpt, n_transp_lyrs, parmsIn, LogInfo
     );
 }
 
@@ -719,11 +788,11 @@ static void sanity_check(
     unsigned int sppnum,
     double swcBulk_wiltpt[],
     LyrIndex n_transp_lyrs[],
-    SW_VEGESTAB_INFO **parms,
+    SW_VEGESTAB_INFO_INPUTS *parmsIn,
     LOG_INFO *LogInfo
 ) {
     /* =================================================== */
-    SW_VEGESTAB_INFO *parms_sppnum = parms[sppnum];
+    SW_VEGESTAB_INFO_INPUTS *parms_sppnum = &parmsIn[sppnum];
 
     double mean_wiltpt;
     unsigned int i;
@@ -819,50 +888,73 @@ First time called with no species defined so SW_VegEstab.count == 0 and
 SW_VegEstab.parms is not initialized yet, malloc()
 required.  For each species thereafter realloc() is called.
 
-@param[in,out] SW_VegEstab SW_VegEstab Struct of type SW_VEGESTAB holding all
-    information about vegetation within the simulation
+@param[in,out] SW_VegEstabIn Struct of type SW_VEGESTAB_INPUTS holding all
+    input information about vegetation within the simulation
+@param[in,out] SW_VegEstabSim Struct of type SW_VEGESTAB_SIM holding all
+    simulation information about vegetation within the simulation
 @param[out] LogInfo Holds information on warnings and errors
 
 @return (++SW_VegEstab->count) - 1
 */
-IntU new_species(SW_VEGESTAB *SW_VegEstab, LOG_INFO *LogInfo) {
-
+IntU new_species(
+    SW_VEGESTAB_INPUTS *SW_VegEstabIn,
+    SW_VEGESTAB_SIM *SW_VegEstabSim,
+    LOG_INFO *LogInfo
+) {
     const char *me = "SW_VegEstab_newspecies()";
 
-    SW_VegEstab->parms =
-        (!SW_VegEstab->count) ?
-            (SW_VEGESTAB_INFO **) Mem_Calloc(
-                SW_VegEstab->count + 1, sizeof(SW_VEGESTAB_INFO *), me, LogInfo
+    SW_VegEstabIn->parms =
+        (!SW_VegEstabSim->count) ?
+            (SW_VEGESTAB_INFO_INPUTS *) Mem_Calloc(
+                SW_VegEstabSim->count + 1,
+                sizeof(SW_VEGESTAB_INFO_INPUTS),
+                me,
+                LogInfo
             ) :
-            (SW_VEGESTAB_INFO **) Mem_ReAlloc(
-                (void *) SW_VegEstab->parms,
-                sizeof(SW_VEGESTAB_INFO *) * (SW_VegEstab->count + 1),
+            (SW_VEGESTAB_INFO_INPUTS *) Mem_ReAlloc(
+                (void *) SW_VegEstabIn->parms,
+                sizeof(SW_VEGESTAB_INFO_INPUTS) * (SW_VegEstabSim->count + 1),
                 LogInfo
             );
     if (LogInfo->stopRun) {
-        return SW_VegEstab->count; // Return function prematurely due to error
+        return SW_VegEstabSim
+            ->count; // Return function prematurely due to error
     }
 
-    SW_VegEstab->parms[SW_VegEstab->count] = (SW_VEGESTAB_INFO *) Mem_Calloc(
-        1, sizeof(SW_VEGESTAB_INFO), me, LogInfo
-    );
+    SW_VegEstabSim->parms =
+        (!SW_VegEstabSim->count) ?
+            (SW_VEGESTAB_INFO_SIM *) Mem_Calloc(
+                SW_VegEstabSim->count + 1,
+                sizeof(SW_VEGESTAB_INFO_SIM),
+                me,
+                LogInfo
+            ) :
+            (SW_VEGESTAB_INFO_SIM *) Mem_ReAlloc(
+                (void *) SW_VegEstabSim->parms,
+                sizeof(SW_VEGESTAB_INFO_SIM) * (SW_VegEstabSim->count + 1),
+                LogInfo
+            );
+    if (LogInfo->stopRun) {
+        return SW_VegEstabSim
+            ->count; // Return function prematurely due to error
+    }
 
-    return (++SW_VegEstab->count) - 1;
+    return (++SW_VegEstabSim->count) - 1;
 }
 
 /**
 @brief Text output for VegEstab.
 
 @param[in] width Width of the soil layer (cm)
-@param[in] **parms List of structs of type SW_VEGESTAB_INFO holding
-    information about every vegetation species
+@param[in] *parmsIn List of structs of type SW_VEGESTAB_INFO_INPUTS holding
+    input information about every vegetation species
 @param[in] count Held within type SW_VEGESTAB to determine
     how many species to check
 @param[out] LogInfo Holds information on warnings and errors
 */
 void echo_VegEstab(
     const double width[],
-    SW_VEGESTAB_INFO **parms,
+    SW_VEGESTAB_INFO_INPUTS *parmsIn,
     IntU count,
     LOG_INFO *LogInfo
 ) {
@@ -910,17 +1002,17 @@ void echo_VegEstab(
             "\tFirst possible day  : %d\n"
             "\tLast  possible day  : %d\n"
             "\tMinimum consecutive wet days (after first possible day): %d\n",
-            parms[i]->sppname,
-            key2veg[parms[i]->vegType],
-            parms[i]->vegType,
-            parms[i]->bars[SW_GERM_BARS],
-            parms[i]->min_swc_germ / width[0],
-            parms[i]->min_swc_germ,
-            parms[i]->min_temp_germ,
-            parms[i]->max_temp_germ,
-            parms[i]->min_pregerm_days,
-            parms[i]->max_pregerm_days,
-            parms[i]->min_wetdays_for_germ
+            parmsIn[i].sppname,
+            key2veg[parmsIn[i].vegType],
+            parmsIn[i].vegType,
+            parmsIn[i].bars[SW_GERM_BARS],
+            parmsIn[i].min_swc_germ / width[0],
+            parmsIn[i].min_swc_germ,
+            parmsIn[i].min_temp_germ,
+            parmsIn[i].max_temp_germ,
+            parmsIn[i].min_pregerm_days,
+            parmsIn[i].max_pregerm_days,
+            parmsIn[i].min_wetdays_for_germ
         );
 
         fullBuffer = sw_memccpy_inc(
@@ -945,16 +1037,16 @@ void echo_VegEstab(
             "\tMaximum consecutive dry days after germination: %d\n"
             "---------------------------------------------------------------"
             "\n\n",
-            parms[i]->estab_lyrs,
-            parms[i]->bars[SW_ESTAB_BARS],
-            parms[i]->estab_lyrs,
-            parms[i]->min_swc_estab,
-            parms[i]->min_temp_estab,
-            parms[i]->max_temp_estab,
-            parms[i]->min_days_germ2estab,
-            parms[i]->max_days_germ2estab,
-            parms[i]->min_wetdays_for_estab,
-            parms[i]->max_drydays_postgerm
+            parmsIn[i].estab_lyrs,
+            parmsIn[i].bars[SW_ESTAB_BARS],
+            parmsIn[i].estab_lyrs,
+            parmsIn[i].min_swc_estab,
+            parmsIn[i].min_temp_estab,
+            parmsIn[i].max_temp_estab,
+            parmsIn[i].min_days_germ2estab,
+            parmsIn[i].max_days_germ2estab,
+            parmsIn[i].min_wetdays_for_estab,
+            parmsIn[i].max_drydays_postgerm
         );
 
         fullBuffer = sw_memccpy_inc(

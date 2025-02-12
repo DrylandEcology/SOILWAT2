@@ -70,8 +70,7 @@ const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = {2, 2, 2, 1};
 @param[out] nrow_OUT Number of output rows for each output period
 */
 void SW_OUT_set_nrow(
-    SW_MODEL_INPUTS *SW_ModelIn, const Bool use_OutPeriod[],
-    size_t nrow_OUT[]
+    SW_MODEL_INPUTS *SW_ModelIn, const Bool use_OutPeriod[], size_t nrow_OUT[]
 ) {
 #ifdef SWDEBUG
     int debug = 0;
@@ -188,7 +187,8 @@ void get_outvalleader(
 
     switch (pd) {
     case eSW_Day:
-        p[irow_OUT[eSW_Day] + nrow_OUT[eSW_Day] * 1] = SW_ModelSim->doy; // base1
+        p[irow_OUT[eSW_Day] + nrow_OUT[eSW_Day] * 1] =
+            SW_ModelSim->doy; // base1
         break;
 
     case eSW_Week:
