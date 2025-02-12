@@ -120,7 +120,9 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 
     // SW_FLW_new_year() not needed
 
-    SW_SWC_new_year(&sw->SoilWat, &sw->Site, sw->ModelSim.year, LogInfo);
+    SW_SWC_new_year(
+        &sw->SoilWatIn, &sw->SoilWatSim, &sw->Site, sw->ModelSim.year, LogInfo
+    );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -141,7 +143,7 @@ static void begin_day(SW_RUN *sw, LOG_INFO *LogInfo) {
         &sw->WeatherIn,
         &sw->WeatherSim,
         &sw->Site,
-        sw->SoilWat.snowpack,
+        sw->SoilWatSim.snowpack,
         sw->ModelSim.doy,
         sw->ModelSim.year,
         LogInfo
@@ -158,7 +160,7 @@ static void end_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         }
     }
 
-    SW_SWC_end_day(&sw->SoilWat, sw->Site.n_layers);
+    SW_SWC_end_day(&sw->SoilWatSim, sw->Site.n_layers);
 }
 
 /**
@@ -183,7 +185,7 @@ void SW_RUN_deepCopy(
 
     memcpy(dest, source, sizeof(*dest));
 
-    dest->SoilWat.hist.file_prefix = NULL; /* currently unused */
+    dest->SoilWatIn.hist.file_prefix = NULL; /* currently unused */
 
     /* Allocate memory and copy daily weather */
     dest->WeatherIn.allHist = NULL;
@@ -431,7 +433,7 @@ void SW_CTL_init_ptrs(SW_RUN *sw) {
     );
     // SW_VPD_init_ptrs() not needed
     SW_OUT_init_ptrs(&sw->OutRun, &sw->SW_PathOutputs);
-    SW_SWC_init_ptrs(&sw->SoilWat);
+    SW_SWC_init_ptrs(&sw->SoilWatIn, &sw->SoilWatSim);
 }
 
 /**
@@ -578,7 +580,9 @@ void SW_CTL_setup_model(
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
-    SW_SWC_construct(&sw->SoilWat);
+    SW_SWC_construct(
+        &sw->SoilWatIn, &sw->SoilWatSim, sw->sw_p_accu, sw->sw_p_oagg
+    );
     SW_CBN_construct(&sw->CarbonIn);
 }
 
@@ -608,7 +612,7 @@ void SW_CTL_clear_model(Bool full_reset, SW_RUN *sw) {
     );
     // SW_VPD_deconstruct() not needed
     // SW_FLW_deconstruct() not needed
-    SW_SWC_deconstruct(&sw->SoilWat);
+    SW_SWC_deconstruct(&sw->SoilWatIn, &sw->SoilWatSim);
     SW_CBN_deconstruct();
 }
 
@@ -666,11 +670,11 @@ void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
         return; // Exit function prematurely due to error
     }
 
-    SW_FLW_init_run(&sw->SoilWat);
+    SW_FLW_init_run(&sw->SoilWatSim);
     SW_ST_init_run(&sw->StRegSimVals);
     // SW_OUT_init_run() handled separately so that SW_CTL_init_run() can be
     //   useful for unit tests, rSOILWAT2, and STEPWAT2 applications
-    SW_SWC_init_run(&sw->SoilWat, &sw->Site, &sw->WeatherSim.temp_snow);
+    SW_SWC_init_run(&sw->SoilWatSim, &sw->Site, &sw->WeatherSim.temp_snow);
     SW_CBN_init_run(
         sw->VegProdIn.veg,
         &sw->CarbonIn,
@@ -735,7 +739,7 @@ void SW_CTL_run_current_year(
         // Only run this function if SWA output is asked for
         if (sw->VegProdIn.use_SWA) {
             calculate_repartitioned_soilwater(
-                &sw->SoilWat,
+                &sw->SoilWatSim,
                 sw->Site.swcBulk_atSWPcrit,
                 &sw->VegProdIn,
                 sw->Site.n_layers
@@ -747,7 +751,7 @@ void SW_CTL_run_current_year(
                 sw->VegEstabIn.parms,
                 sw->VegEstabSim.parms,
                 sw->WeatherSim.temp_avg,
-                sw->SoilWat.swcBulk,
+                sw->SoilWatSim.swcBulk,
                 sw->ModelSim.doy,
                 sw->ModelSim.firstdoy,
                 sw->VegEstabSim.count
@@ -1128,7 +1132,7 @@ void SW_CTL_read_inputs_from_disk(
 #endif
 
     SW_SWC_read(
-        &sw->SoilWat, sw->ModelIn.endyr, SW_PathInputs->txtInFiles, LogInfo
+        &sw->SoilWatIn, sw->ModelIn.endyr, SW_PathInputs->txtInFiles, LogInfo
     );
 #ifdef SWDEBUG
     if (LogInfo->stopRun) {

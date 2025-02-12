@@ -979,16 +979,12 @@ typedef struct {
     char *wbErrorNames[N_WBCHECKS];
     Bool is_wbError_init;
 #endif
+} SW_SOILWAT_SIM;
 
-    SW_SOILWAT_OUTPUTS
-    p_accu[SW_OUTNPERIODS], // output accumulator: summed values for each time
-                            // period
-        p_oagg[SW_OUTNPERIODS]; // output aggregator: mean or sum for each time
-                                // periods
+typedef struct {
     Bool hist_use;
     SW_SOILWAT_HIST hist;
-
-} SW_SOILWAT;
+} SW_SOILWAT_INPUTS;
 
 typedef struct {
     FILE *logfp;
@@ -1649,7 +1645,6 @@ typedef struct {
 } SW_OUT_RUN;
 
 struct SW_RUN {
-    SW_SOILWAT SoilWat;
     SW_SITE Site;
 
     /* Input information */
@@ -1660,6 +1655,7 @@ struct SW_RUN {
     SW_VEGPROD_INPUTS VegProdIn;
     SW_MODEL_INPUTS ModelIn;
     SW_VEGESTAB_INPUTS VegEstabIn;
+    SW_SOILWAT_INPUTS SoilWatIn;
 
     /* Values used/modified during simulation that's not strictly inputs */
     SW_WEATHER_SIM WeatherSim;
@@ -1667,6 +1663,7 @@ struct SW_RUN {
     SW_ATMD_SIM AtmDemSim;
     SW_MODEL_SIM ModelSim;
     SW_VEGESTAB_SIM VegEstabSim;
+    SW_SOILWAT_SIM SoilWatSim;
 
     /* Output information */
     SW_OUT_RUN OutRun;
@@ -1679,6 +1676,7 @@ struct SW_RUN {
     SW_WEATHER_OUTPUTS weath_p_accu[SW_OUTNPERIODS],
         weath_p_oagg[SW_OUTNPERIODS];
     SW_VEGPROD_OUTPUTS vp_p_accu[SW_OUTNPERIODS], vp_p_oagg[SW_OUTNPERIODS];
+    SW_SOILWAT_OUTPUTS sw_p_accu[SW_OUTNPERIODS], sw_p_oagg[SW_OUTNPERIODS];
 
     /* only yearly element will be used */
     SW_VEGESTAB_OUTPUTS ves_p_accu[SW_OUTNPERIODS], ves_p_oagg[SW_OUTNPERIODS];

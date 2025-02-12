@@ -190,7 +190,7 @@ static void sumof_wth(
 );
 
 static void sumof_swc(
-    SW_SOILWAT *v,
+    SW_SOILWAT_SIM *v,
     SW_SOILWAT_OUTPUTS *s,
     OutKey k,
     SW_SITE *SW_Site,
@@ -417,7 +417,7 @@ static void sumof_wth(
 }
 
 static void sumof_swc(
-    SW_SOILWAT *v,
+    SW_SOILWAT_SIM *v,
     SW_SOILWAT_OUTPUTS *s,
     OutKey k,
     SW_SITE *SW_Site,
@@ -698,207 +698,200 @@ static void average_for(
 
         case eSW_SoilTemp:
             ForEachSoilLayer(i, n_layers) {
-                sw->SoilWat.p_oagg[pd].avgLyrTemp[i] =
+                sw->sw_p_oagg[pd].avgLyrTemp[i] =
                     (OutDom->sumtype[k] == eSW_Fnl) ?
-                        sw->SoilWat.avgLyrTemp[i] :
-                        sw->SoilWat.p_accu[pd].avgLyrTemp[i] / div;
-                sw->SoilWat.p_oagg[pd].maxLyrTemperature[i] =
+                        sw->SoilWatSim.avgLyrTemp[i] :
+                        sw->sw_p_accu[pd].avgLyrTemp[i] / div;
+                sw->sw_p_oagg[pd].maxLyrTemperature[i] =
                     (OutDom->sumtype[k] == eSW_Fnl) ?
-                        sw->SoilWat.maxLyrTemperature[i] :
-                        sw->SoilWat.p_accu[pd].maxLyrTemperature[i] / div;
-                sw->SoilWat.p_oagg[pd].minLyrTemperature[i] =
+                        sw->SoilWatSim.maxLyrTemperature[i] :
+                        sw->sw_p_accu[pd].maxLyrTemperature[i] / div;
+                sw->sw_p_oagg[pd].minLyrTemperature[i] =
                     (OutDom->sumtype[k] == eSW_Fnl) ?
-                        sw->SoilWat.minLyrTemperature[i] :
-                        sw->SoilWat.p_accu[pd].minLyrTemperature[i] / div;
+                        sw->SoilWatSim.minLyrTemperature[i] :
+                        sw->sw_p_accu[pd].minLyrTemperature[i] / div;
             }
             break;
 
         case eSW_Frozen:
             ForEachSoilLayer(i, n_layers) {
-                sw->SoilWat.p_oagg[pd].lyrFrozen[i] =
+                sw->sw_p_oagg[pd].lyrFrozen[i] =
                     (OutDom->sumtype[k] == eSW_Fnl) ?
-                        sw->SoilWat.lyrFrozen[i] :
-                        sw->SoilWat.p_accu[pd].lyrFrozen[i] / div;
+                        sw->SoilWatSim.lyrFrozen[i] :
+                        sw->sw_p_accu[pd].lyrFrozen[i] / div;
             }
             break;
 
         case eSW_VWCBulk:
             /* vwcBulk at this point is identical to swcBulk */
             ForEachSoilLayer(i, n_layers) {
-                sw->SoilWat.p_oagg[pd].vwcBulk[i] =
+                sw->sw_p_oagg[pd].vwcBulk[i] =
                     (OutDom->sumtype[k] == eSW_Fnl) ?
-                        sw->SoilWat.swcBulk[Yesterday][i] :
-                        sw->SoilWat.p_accu[pd].vwcBulk[i] / div;
+                        sw->SoilWatSim.swcBulk[Yesterday][i] :
+                        sw->sw_p_accu[pd].vwcBulk[i] / div;
             }
             break;
 
         case eSW_VWCMatric:
             /* vwcMatric at this point is identical to swcBulk */
             ForEachSoilLayer(i, n_layers) {
-                sw->SoilWat.p_oagg[pd].vwcMatric[i] =
+                sw->sw_p_oagg[pd].vwcMatric[i] =
                     (OutDom->sumtype[k] == eSW_Fnl) ?
-                        sw->SoilWat.swcBulk[Yesterday][i] :
-                        sw->SoilWat.p_accu[pd].vwcMatric[i] / div;
+                        sw->SoilWatSim.swcBulk[Yesterday][i] :
+                        sw->sw_p_accu[pd].vwcMatric[i] / div;
             }
             break;
 
         case eSW_SWCBulk:
             ForEachSoilLayer(i, n_layers) {
-                sw->SoilWat.p_oagg[pd].swcBulk[i] =
+                sw->sw_p_oagg[pd].swcBulk[i] =
                     (OutDom->sumtype[k] == eSW_Fnl) ?
-                        sw->SoilWat.swcBulk[Yesterday][i] :
-                        sw->SoilWat.p_accu[pd].swcBulk[i] / div;
+                        sw->SoilWatSim.swcBulk[Yesterday][i] :
+                        sw->sw_p_accu[pd].swcBulk[i] / div;
             }
             break;
 
         case eSW_SWPMatric:
             /* swpMatric at this point is identical to swcBulk */
             ForEachSoilLayer(i, n_layers) {
-                sw->SoilWat.p_oagg[pd].swpMatric[i] =
+                sw->sw_p_oagg[pd].swpMatric[i] =
                     (OutDom->sumtype[k] == eSW_Fnl) ?
-                        sw->SoilWat.swcBulk[Yesterday][i] :
-                        sw->SoilWat.p_accu[pd].swpMatric[i] / div;
+                        sw->SoilWatSim.swcBulk[Yesterday][i] :
+                        sw->sw_p_accu[pd].swpMatric[i] / div;
             }
             break;
 
         case eSW_SWABulk:
             ForEachSoilLayer(i, n_layers) {
-                sw->SoilWat.p_oagg[pd].swaBulk[i] =
+                sw->sw_p_oagg[pd].swaBulk[i] =
                     (OutDom->sumtype[k] == eSW_Fnl) ?
                         fmax(
-                            sw->SoilWat.swcBulk[Yesterday][i] -
+                            sw->SoilWatSim.swcBulk[Yesterday][i] -
                                 sw->Site.swcBulk_wiltpt[i],
                             0.
                         ) :
-                        sw->SoilWat.p_accu[pd].swaBulk[i] / div;
+                        sw->sw_p_accu[pd].swaBulk[i] / div;
             }
             break;
 
         case eSW_SWAMatric:
             /* swaMatric at this point is identical to swaBulk */
             ForEachSoilLayer(i, n_layers) {
-                sw->SoilWat.p_oagg[pd].swaMatric[i] =
+                sw->sw_p_oagg[pd].swaMatric[i] =
                     (OutDom->sumtype[k] == eSW_Fnl) ?
                         fmax(
-                            sw->SoilWat.swcBulk[Yesterday][i] -
+                            sw->SoilWatSim.swcBulk[Yesterday][i] -
                                 sw->Site.swcBulk_wiltpt[i],
                             0.
                         ) :
-                        sw->SoilWat.p_accu[pd].swaMatric[i] / div;
+                        sw->sw_p_accu[pd].swaMatric[i] / div;
             }
             break;
 
         case eSW_SWA:
             ForEachSoilLayer(i, n_layers) {
                 ForEachVegType(j) {
-                    sw->SoilWat.p_oagg[pd].SWA_VegType[j][i] =
+                    sw->sw_p_oagg[pd].SWA_VegType[j][i] =
                         (OutDom->sumtype[k] == eSW_Fnl) ?
-                            sw->SoilWat.dSWA_repartitioned_sum[j][i] :
-                            sw->SoilWat.p_accu[pd].SWA_VegType[j][i] / div;
+                            sw->SoilWatSim.dSWA_repartitioned_sum[j][i] :
+                            sw->sw_p_accu[pd].SWA_VegType[j][i] / div;
                 }
             }
             break;
 
         case eSW_DeepSWC:
             // deepest percolation == deep drainage
-            sw->SoilWat.p_oagg[pd].deep =
+            sw->sw_p_oagg[pd].deep =
                 (OutDom->sumtype[k] == eSW_Fnl) ?
-                    sw->SoilWat.drain[sw->Site.deep_lyr] :
-                    sw->SoilWat.p_accu[pd].deep / div;
+                    sw->SoilWatSim.drain[sw->Site.deep_lyr] :
+                    sw->sw_p_accu[pd].deep / div;
             break;
 
         case eSW_SurfaceWater:
-            sw->SoilWat.p_oagg[pd].surfaceWater =
-                sw->SoilWat.p_accu[pd].surfaceWater / div;
+            sw->sw_p_oagg[pd].surfaceWater =
+                sw->sw_p_accu[pd].surfaceWater / div;
             break;
 
         case eSW_Transp:
             ForEachSoilLayer(i, n_layers) {
-                sw->SoilWat.p_oagg[pd].transp_total[i] =
-                    sw->SoilWat.p_accu[pd].transp_total[i] / div;
+                sw->sw_p_oagg[pd].transp_total[i] =
+                    sw->sw_p_accu[pd].transp_total[i] / div;
                 ForEachVegType(j) {
-                    sw->SoilWat.p_oagg[pd].transp[j][i] =
-                        sw->SoilWat.p_accu[pd].transp[j][i] / div;
+                    sw->sw_p_oagg[pd].transp[j][i] =
+                        sw->sw_p_accu[pd].transp[j][i] / div;
                 }
             }
             break;
 
         case eSW_EvapSoil:
-            ForEachEvapLayer(i, n_evap_layers) sw->SoilWat.p_oagg[pd]
-                .evap_baresoil[i] =
-                sw->SoilWat.p_accu[pd].evap_baresoil[i] / div;
+            ForEachEvapLayer(i, n_evap_layers) sw->sw_p_oagg[pd]
+                .evap_baresoil[i] = sw->sw_p_accu[pd].evap_baresoil[i] / div;
             break;
 
         case eSW_EvapSurface:
-            sw->SoilWat.p_oagg[pd].total_evap =
-                sw->SoilWat.p_accu[pd].total_evap / div;
+            sw->sw_p_oagg[pd].total_evap = sw->sw_p_accu[pd].total_evap / div;
             ForEachVegType(j) {
-                sw->SoilWat.p_oagg[pd].evap_veg[j] =
-                    sw->SoilWat.p_accu[pd].evap_veg[j] / div;
+                sw->sw_p_oagg[pd].evap_veg[j] =
+                    sw->sw_p_accu[pd].evap_veg[j] / div;
             }
-            sw->SoilWat.p_oagg[pd].litter_evap =
-                sw->SoilWat.p_accu[pd].litter_evap / div;
-            sw->SoilWat.p_oagg[pd].surfaceWater_evap =
-                sw->SoilWat.p_accu[pd].surfaceWater_evap / div;
+            sw->sw_p_oagg[pd].litter_evap = sw->sw_p_accu[pd].litter_evap / div;
+            sw->sw_p_oagg[pd].surfaceWater_evap =
+                sw->sw_p_accu[pd].surfaceWater_evap / div;
             break;
 
         case eSW_Interception:
-            sw->SoilWat.p_oagg[pd].total_int =
-                sw->SoilWat.p_accu[pd].total_int / div;
+            sw->sw_p_oagg[pd].total_int = sw->sw_p_accu[pd].total_int / div;
             ForEachVegType(j) {
-                sw->SoilWat.p_oagg[pd].int_veg[j] =
-                    sw->SoilWat.p_accu[pd].int_veg[j] / div;
+                sw->sw_p_oagg[pd].int_veg[j] =
+                    sw->sw_p_accu[pd].int_veg[j] / div;
             }
-            sw->SoilWat.p_oagg[pd].litter_int =
-                sw->SoilWat.p_accu[pd].litter_int / div;
+            sw->sw_p_oagg[pd].litter_int = sw->sw_p_accu[pd].litter_int / div;
             break;
 
         case eSW_AET:
-            sw->SoilWat.p_oagg[pd].aet = sw->SoilWat.p_accu[pd].aet / div;
-            sw->SoilWat.p_oagg[pd].tran = sw->SoilWat.p_accu[pd].tran / div;
-            sw->SoilWat.p_oagg[pd].esoil = sw->SoilWat.p_accu[pd].esoil / div;
-            sw->SoilWat.p_oagg[pd].ecnw = sw->SoilWat.p_accu[pd].ecnw / div;
-            sw->SoilWat.p_oagg[pd].esurf = sw->SoilWat.p_accu[pd].esurf / div;
-            // sw->SoilWat.p_oagg[pd].esnow = sw->SoilWat.p_accu[pd].esnow
+            sw->sw_p_oagg[pd].aet = sw->sw_p_accu[pd].aet / div;
+            sw->sw_p_oagg[pd].tran = sw->sw_p_accu[pd].tran / div;
+            sw->sw_p_oagg[pd].esoil = sw->sw_p_accu[pd].esoil / div;
+            sw->sw_p_oagg[pd].ecnw = sw->sw_p_accu[pd].ecnw / div;
+            sw->sw_p_oagg[pd].esurf = sw->sw_p_accu[pd].esurf / div;
+            // sw->sw_p_oagg[pd].esnow = sw->sw_p_accu[pd].esnow
             // / div;
             break;
 
         case eSW_LyrDrain:
             for (i = 0; i < n_layers - 1; i++) {
-                sw->SoilWat.p_oagg[pd].lyrdrain[i] =
-                    sw->SoilWat.p_accu[pd].lyrdrain[i] / div;
+                sw->sw_p_oagg[pd].lyrdrain[i] =
+                    sw->sw_p_accu[pd].lyrdrain[i] / div;
             }
             break;
 
         case eSW_HydRed:
             ForEachSoilLayer(i, n_layers) {
-                sw->SoilWat.p_oagg[pd].hydred_total[i] =
-                    sw->SoilWat.p_accu[pd].hydred_total[i] / div;
+                sw->sw_p_oagg[pd].hydred_total[i] =
+                    sw->sw_p_accu[pd].hydred_total[i] / div;
                 ForEachVegType(j) {
-                    sw->SoilWat.p_oagg[pd].hydred[j][i] =
-                        sw->SoilWat.p_accu[pd].hydred[j][i] / div;
+                    sw->sw_p_oagg[pd].hydred[j][i] =
+                        sw->sw_p_accu[pd].hydred[j][i] / div;
                 }
             }
             break;
 
         case eSW_PET:
-            sw->SoilWat.p_oagg[pd].pet = sw->SoilWat.p_accu[pd].pet / div;
-            sw->SoilWat.p_oagg[pd].H_oh = sw->SoilWat.p_accu[pd].H_oh / div;
-            sw->SoilWat.p_oagg[pd].H_ot = sw->SoilWat.p_accu[pd].H_ot / div;
-            sw->SoilWat.p_oagg[pd].H_gh = sw->SoilWat.p_accu[pd].H_gh / div;
-            sw->SoilWat.p_oagg[pd].H_gt = sw->SoilWat.p_accu[pd].H_gt / div;
+            sw->sw_p_oagg[pd].pet = sw->sw_p_accu[pd].pet / div;
+            sw->sw_p_oagg[pd].H_oh = sw->sw_p_accu[pd].H_oh / div;
+            sw->sw_p_oagg[pd].H_ot = sw->sw_p_accu[pd].H_ot / div;
+            sw->sw_p_oagg[pd].H_gh = sw->sw_p_accu[pd].H_gh / div;
+            sw->sw_p_oagg[pd].H_gt = sw->sw_p_accu[pd].H_gt / div;
             break;
 
         case eSW_WetDays:
-            ForEachSoilLayer(i, n_layers) sw->SoilWat.p_oagg[pd].wetdays[i] =
-                sw->SoilWat.p_accu[pd].wetdays[i] / div;
+            ForEachSoilLayer(i, n_layers) sw->sw_p_oagg[pd].wetdays[i] =
+                sw->sw_p_accu[pd].wetdays[i] / div;
             break;
 
         case eSW_SnowPack:
-            sw->SoilWat.p_oagg[pd].snowpack =
-                sw->SoilWat.p_accu[pd].snowpack / div;
-            sw->SoilWat.p_oagg[pd].snowdepth =
-                sw->SoilWat.p_accu[pd].snowdepth / div;
+            sw->sw_p_oagg[pd].snowpack = sw->sw_p_accu[pd].snowpack / div;
+            sw->sw_p_oagg[pd].snowdepth = sw->sw_p_accu[pd].snowdepth / div;
             break;
 
         case eSW_Estab:
@@ -1005,8 +998,8 @@ static void collect_sums(
             switch (otyp) {
             case eSWC:
                 sumof_swc(
-                    &sw->SoilWat,
-                    &sw->SoilWat.p_accu[op],
+                    &sw->SoilWatSim,
+                    &sw->sw_p_accu[op],
                     (OutKey) k,
                     &sw->Site,
                     LogInfo
@@ -1016,7 +1009,7 @@ static void collect_sums(
                 }
 
                 if (op == eSW_Day) {
-                    sw->SoilWat.p_oagg[op] = sw->SoilWat.p_accu[op];
+                    sw->sw_p_oagg[op] = sw->sw_p_accu[op];
                 }
                 break;
 
@@ -3231,7 +3224,7 @@ void SW_OUT_sum_today(
 
             switch (otyp) {
             case eSWC:
-                memset(&sw->SoilWat.p_accu[pd], 0, sizeof(SW_SOILWAT_OUTPUTS));
+                memset(&sw->sw_p_accu[pd], 0, sizeof(SW_SOILWAT_OUTPUTS));
                 break;
             case eWTH:
                 memset(&sw->weath_p_accu[pd], 0, sizeof(SW_WEATHER_OUTPUTS));

@@ -31,7 +31,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeGreaterThanDuration) {
     // Get initial soil temp and soil moisture levels
     for (i = 0; i < n; i++) {
         prevTemp[i] = SW_Run.Site.soils.avgLyrTempInit[i];
-        prevMoist[i] = SW_Run.SoilWat.swcBulk[Today][i];
+        prevMoist[i] = SW_Run.SoilWatSim.swcBulk[Today][i];
     }
     // Turn on spinup flag
     SW_Run.ModelIn.SW_SpinUp.spinup = swTRUE;
@@ -48,14 +48,14 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeGreaterThanDuration) {
 
     for (i = 0; i < n; i++) {
         // Check soil temp after spinup
-        EXPECT_NE(prevTemp[i], SW_Run.SoilWat.avgLyrTemp[i])
+        EXPECT_NE(prevTemp[i], SW_Run.SoilWatSim.avgLyrTemp[i])
             << "Soil temp error in test " << i << ": "
-            << SW_Run.SoilWat.avgLyrTemp[i];
+            << SW_Run.SoilWatSim.avgLyrTemp[i];
 
         // Check soil moisture after spinup
-        EXPECT_NE(prevMoist[i], SW_Run.SoilWat.swcBulk[Today][i])
+        EXPECT_NE(prevMoist[i], SW_Run.SoilWatSim.swcBulk[Today][i])
             << "Soil moisture error in test " << i << ": "
-            << SW_Run.SoilWat.swcBulk[Today][i];
+            << SW_Run.SoilWatSim.swcBulk[Today][i];
     }
 
     // Deallocate arrays
@@ -79,7 +79,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeEqualToDuration) {
     // Get initial soil temp and soil moisture levels
     for (i = 0; i < n; i++) {
         prevTemp[i] = SW_Run.Site.soils.avgLyrTempInit[i];
-        prevMoist[i] = SW_Run.SoilWat.swcBulk[Today][i];
+        prevMoist[i] = SW_Run.SoilWatSim.swcBulk[Today][i];
     }
     // Turn on spinup flag
     SW_Run.ModelIn.SW_SpinUp.spinup = swTRUE;
@@ -96,14 +96,14 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeEqualToDuration) {
 
     for (i = 0; i < n; i++) {
         // Check soil temp after spinup
-        EXPECT_NE(prevTemp[i], SW_Run.SoilWat.avgLyrTemp[i])
+        EXPECT_NE(prevTemp[i], SW_Run.SoilWatSim.avgLyrTemp[i])
             << "Soil temp error in test " << i << ": "
-            << SW_Run.SoilWat.avgLyrTemp[i];
+            << SW_Run.SoilWatSim.avgLyrTemp[i];
 
         // Check soil moisture after spinup
-        EXPECT_NE(prevMoist[i], SW_Run.SoilWat.swcBulk[Today][i])
+        EXPECT_NE(prevMoist[i], SW_Run.SoilWatSim.swcBulk[Today][i])
             << "Soil moisture error in test " << i << ": "
-            << SW_Run.SoilWat.swcBulk[Today][i];
+            << SW_Run.SoilWatSim.swcBulk[Today][i];
     }
 
     // Deallocate arrays
@@ -127,7 +127,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeLessThanDuration) {
     // Get initial soil temp and soil moisture levels
     for (i = 0; i < n; i++) {
         prevTemp[i] = SW_Run.Site.soils.avgLyrTempInit[i];
-        prevMoist[i] = SW_Run.SoilWat.swcBulk[Today][i];
+        prevMoist[i] = SW_Run.SoilWatSim.swcBulk[Today][i];
     }
     // Turn on spinup flag
     SW_Run.ModelIn.SW_SpinUp.spinup = swTRUE;
@@ -144,14 +144,14 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeLessThanDuration) {
 
     for (i = 0; i < n; i++) {
         // Check soil temp after spinup
-        EXPECT_NE(prevTemp[i], SW_Run.SoilWat.avgLyrTemp[i])
+        EXPECT_NE(prevTemp[i], SW_Run.SoilWatSim.avgLyrTemp[i])
             << "Soil temp error in test " << i << ": "
-            << SW_Run.SoilWat.avgLyrTemp[i];
+            << SW_Run.SoilWatSim.avgLyrTemp[i];
 
         // Check soil moisture after spinup
-        EXPECT_NE(prevMoist[i], SW_Run.SoilWat.swcBulk[Today][i])
+        EXPECT_NE(prevMoist[i], SW_Run.SoilWatSim.swcBulk[Today][i])
             << "Soil moisture error in test " << i << ": "
-            << SW_Run.SoilWat.swcBulk[Today][i];
+            << SW_Run.SoilWatSim.swcBulk[Today][i];
     }
 
     // Deallocate arrays
@@ -175,7 +175,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeGreaterThanDuration) {
     // Get initial soil temp and soil moisture levels
     for (i = 0; i < n; i++) {
         prevTemp[i] = SW_Run.Site.soils.avgLyrTempInit[i];
-        prevMoist[i] = SW_Run.SoilWat.swcBulk[Today][i];
+        prevMoist[i] = SW_Run.SoilWatSim.swcBulk[Today][i];
     }
     // Turn on spinup flag
     SW_Run.ModelIn.SW_SpinUp.spinup = swTRUE;
@@ -192,14 +192,14 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeGreaterThanDuration) {
 
     for (i = 0; i < n; i++) {
         // Check soil temp after spinup
-        EXPECT_NE(prevTemp[i], SW_Run.SoilWat.avgLyrTemp[i])
+        EXPECT_NE(prevTemp[i], SW_Run.SoilWatSim.avgLyrTemp[i])
             << "Soil temp error in test " << i << ": "
-            << SW_Run.SoilWat.avgLyrTemp[i];
+            << SW_Run.SoilWatSim.avgLyrTemp[i];
 
         // Check soil moisture after spinup
-        EXPECT_NE(prevMoist[i], SW_Run.SoilWat.swcBulk[Today][i])
+        EXPECT_NE(prevMoist[i], SW_Run.SoilWatSim.swcBulk[Today][i])
             << "Soil moisture error in test " << i << ": "
-            << SW_Run.SoilWat.swcBulk[Today][i];
+            << SW_Run.SoilWatSim.swcBulk[Today][i];
     }
 
     // Deallocate arrays
@@ -223,7 +223,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeEqualToDuration) {
     // Get initial soil temp and soil moisture levels
     for (i = 0; i < n; i++) {
         prevTemp[i] = SW_Run.Site.soils.avgLyrTempInit[i];
-        prevMoist[i] = SW_Run.SoilWat.swcBulk[Today][i];
+        prevMoist[i] = SW_Run.SoilWatSim.swcBulk[Today][i];
     }
     // Turn on spinup flag
     SW_Run.ModelIn.SW_SpinUp.spinup = swTRUE;
@@ -240,14 +240,14 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeEqualToDuration) {
 
     for (i = 0; i < n; i++) {
         // Check soil temp after spinup
-        EXPECT_NE(prevTemp[i], SW_Run.SoilWat.avgLyrTemp[i])
+        EXPECT_NE(prevTemp[i], SW_Run.SoilWatSim.avgLyrTemp[i])
             << "Soil temp error in test " << i << ": "
-            << SW_Run.SoilWat.avgLyrTemp[i];
+            << SW_Run.SoilWatSim.avgLyrTemp[i];
 
         // Check soil moisture after spinup
-        EXPECT_NE(prevMoist[i], SW_Run.SoilWat.swcBulk[Today][i])
+        EXPECT_NE(prevMoist[i], SW_Run.SoilWatSim.swcBulk[Today][i])
             << "Soil moisture error in test " << i << ": "
-            << SW_Run.SoilWat.swcBulk[Today][i];
+            << SW_Run.SoilWatSim.swcBulk[Today][i];
     }
 
     // Deallocate arrays
@@ -271,7 +271,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeLessThanDuration) {
     // Get initial soil temp and soil moisture levels
     for (i = 0; i < n; i++) {
         prevTemp[i] = SW_Run.Site.soils.avgLyrTempInit[i];
-        prevMoist[i] = SW_Run.SoilWat.swcBulk[Today][i];
+        prevMoist[i] = SW_Run.SoilWatSim.swcBulk[Today][i];
     }
     // Turn on spinup flag
     SW_Run.ModelIn.SW_SpinUp.spinup = swTRUE;
@@ -288,14 +288,14 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeLessThanDuration) {
 
     for (i = 0; i < n; i++) {
         // Check soil temp after spinup
-        EXPECT_NE(prevTemp[i], SW_Run.SoilWat.avgLyrTemp[i])
+        EXPECT_NE(prevTemp[i], SW_Run.SoilWatSim.avgLyrTemp[i])
             << "Soil temp error in test " << i << ": "
-            << SW_Run.SoilWat.avgLyrTemp[i];
+            << SW_Run.SoilWatSim.avgLyrTemp[i];
 
         // Check soil moisture after spinup
-        EXPECT_NE(prevMoist[i], SW_Run.SoilWat.swcBulk[Today][i])
+        EXPECT_NE(prevMoist[i], SW_Run.SoilWatSim.swcBulk[Today][i])
             << "Soil moisture error in test " << i << ": "
-            << SW_Run.SoilWat.swcBulk[Today][i];
+            << SW_Run.SoilWatSim.swcBulk[Today][i];
     }
 
     // Deallocate arrays
@@ -393,7 +393,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                 // exit test program if unexpected error
                 sw_fail_on_error(&local_LogInfo);
                 SW_SWC_init_run(
-                    &local_sw.SoilWat,
+                    &local_sw.SoilWatSim,
                     &local_sw.Site,
                     &local_sw.WeatherSim.temp_snow
                 );
@@ -416,7 +416,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                         test_swcInit[k2],
                         k3,
                         i,
-                        local_sw.SoilWat.swcBulk[Today][i],
+                        local_sw.SoilWatSim.swcBulk[Today][i],
                         test_duration[k1],
                         test_swcInit[k2],
                         k3,
@@ -444,12 +444,12 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                             test_swcInit[k2],
                             k3,
                             i,
-                            local_sw.SoilWat.swcBulk[Today][i],
+                            local_sw.SoilWatSim.swcBulk[Today][i],
                             test_duration[k1],
                             test_swcInit[k2],
                             k3,
                             i,
-                            local_sw.SoilWat.avgLyrTemp[i]
+                            local_sw.SoilWatSim.avgLyrTemp[i]
                         );
                     }
                     (void) fflush(fp);
@@ -473,12 +473,12 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                         test_swcInit[k2],
                         k3,
                         i,
-                        local_sw.SoilWat.swcBulk[Today][i],
+                        local_sw.SoilWatSim.swcBulk[Today][i],
                         test_duration[k1],
                         test_swcInit[k2],
                         k3,
                         i,
-                        local_sw.SoilWat.avgLyrTemp[i]
+                        local_sw.SoilWatSim.avgLyrTemp[i]
                     );
                 }
                 (void) fflush(fp);

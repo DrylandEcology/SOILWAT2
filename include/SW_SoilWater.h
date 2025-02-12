@@ -119,22 +119,38 @@ typedef enum { SW_Adjust_Avg = 1, SW_Adjust_StdErr } SW_AdjustMethods;
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_SWC_init_ptrs(SW_SOILWAT *SW_SoilWat);
+void SW_SWC_init_ptrs(
+    SW_SOILWAT_INPUTS *SW_SoilWatIn, SW_SOILWAT_SIM *SW_SoilWatSim
+);
 
-void SW_SWC_construct(SW_SOILWAT *SW_SoilWat);
+void SW_SWC_construct(
+    SW_SOILWAT_INPUTS *SW_SoilWatIn,
+    SW_SOILWAT_SIM *SW_SoilWatSim,
+    SW_SOILWAT_OUTPUTS *sw_p_accu,
+    SW_SOILWAT_OUTPUTS *sw_p_oagg
+);
 
-void SW_SWC_deconstruct(SW_SOILWAT *SW_SoilWat);
+void SW_SWC_deconstruct(
+    SW_SOILWAT_INPUTS *SW_SoilWatIn, SW_SOILWAT_SIM *SW_SoilWatSim
+);
 
 void SW_SWC_new_year(
-    SW_SOILWAT *SW_SoilWat, SW_SITE *SW_Site, TimeInt year, LOG_INFO *LogInfo
+    SW_SOILWAT_INPUTS *SW_SoilWatIn,
+    SW_SOILWAT_SIM *SW_SoilWatSim,
+    SW_SITE *SW_Site,
+    TimeInt year,
+    LOG_INFO *LogInfo
 );
 
 void SW_SWC_read(
-    SW_SOILWAT *SW_SoilWat, TimeInt endyr, char *txtInFiles[], LOG_INFO *LogInfo
+    SW_SOILWAT_INPUTS *SW_SoilWatIn,
+    TimeInt endyr,
+    char *txtInFiles[],
+    LOG_INFO *LogInfo
 );
 
 void SW_SWC_init_run(
-    SW_SOILWAT *SW_SoilWat, SW_SITE *SW_Site, double *temp_snow
+    SW_SOILWAT_SIM *SW_SoilWatSim, SW_SITE *SW_Site, double *temp_snow
 );
 
 void read_swc_hist(
@@ -144,7 +160,7 @@ void read_swc_hist(
 void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo);
 
 void calculate_repartitioned_soilwater(
-    SW_SOILWAT *SW_SoilWat,
+    SW_SOILWAT_SIM *SW_SoilWatSim,
     double swcBulk_atSWPcrit[][MAX_LAYERS],
     SW_VEGPROD_INPUTS *SW_VegProdIn,
     LyrIndex n_layers
@@ -176,7 +192,7 @@ double SW_SWC_snowloss(double pet, double *snowpack);
 
 double SW_SnowDepth(double SWE, double snowdensity);
 
-void SW_SWC_end_day(SW_SOILWAT *SW_SoilWat, LyrIndex n_layers);
+void SW_SWC_end_day(SW_SOILWAT_SIM *SW_SoilWatSim, LyrIndex n_layers);
 
 void get_dSWAbulk(
     unsigned int i,

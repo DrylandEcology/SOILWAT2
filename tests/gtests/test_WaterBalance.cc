@@ -35,9 +35,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceExample1) {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-        EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
+        EXPECT_EQ(0, SW_Run.SoilWatSim.wbError[i])
             << "Water balance error in test " << i << ": "
-            << SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWatSim.wbErrorNames[i];
     }
 }
 
@@ -53,9 +53,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSoilTemperature) {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-        EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
+        EXPECT_EQ(0, SW_Run.SoilWatSim.wbError[i])
             << "Water balance error in test " << i << ": "
-            << SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWatSim.wbErrorNames[i];
     }
 }
 
@@ -73,9 +73,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithPondedWaterRunonRunoff) {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-        EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
+        EXPECT_EQ(0, SW_Run.SoilWatSim.wbError[i])
             << "Water balance error in test " << i << ": "
-            << SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWatSim.wbErrorNames[i];
     }
 }
 
@@ -131,9 +131,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-        EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
+        EXPECT_EQ(0, SW_Run.SoilWatSim.wbError[i])
             << "Water balance error in test " << i << ": "
-            << SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWatSim.wbErrorNames[i];
     }
 }
 
@@ -191,9 +191,9 @@ TEST_F(
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-        EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
+        EXPECT_EQ(0, SW_Run.SoilWatSim.wbError[i])
             << "Water balance error in test " << i << ": "
-            << SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWatSim.wbErrorNames[i];
     }
 }
 
@@ -209,7 +209,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
     // Re-calculate soils
     SW_SIT_init_run(&SW_Run.VegProdIn, &SW_Run.Site, &LogInfo);
     SW_SWC_init_run(
-        &SW_Run.SoilWat, &SW_Run.Site, &SW_Run.WeatherSim.temp_snow
+        &SW_Run.SoilWatSim, &SW_Run.Site, &SW_Run.WeatherSim.temp_snow
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -219,9 +219,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-        EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
+        EXPECT_EQ(0, SW_Run.SoilWatSim.wbError[i])
             << "Water balance error in test " << i << ": "
-            << SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWatSim.wbErrorNames[i];
     }
 }
 
@@ -234,7 +234,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOneSoilLayer) {
 
     // Initialize `swcBulk` based on new soil layers
     SW_SWC_init_run(
-        &SW_Run.SoilWat, &SW_Run.Site, &SW_Run.WeatherSim.temp_snow
+        &SW_Run.SoilWatSim, &SW_Run.Site, &SW_Run.WeatherSim.temp_snow
     );
 
     // Run the simulation
@@ -243,9 +243,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOneSoilLayer) {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-        EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
+        EXPECT_EQ(0, SW_Run.SoilWatSim.wbError[i])
             << "Water balance error in test " << i << ": "
-            << SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWatSim.wbErrorNames[i];
     }
 }
 
@@ -260,7 +260,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMaxSoilLayers) {
 
     // Initialize `swcBulk` based on new soil layers
     SW_SWC_init_run(
-        &SW_Run.SoilWat, &SW_Run.Site, &SW_Run.WeatherSim.temp_snow
+        &SW_Run.SoilWatSim, &SW_Run.Site, &SW_Run.WeatherSim.temp_snow
     );
 
     // Run the simulation
@@ -269,9 +269,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMaxSoilLayers) {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-        EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
+        EXPECT_EQ(0, SW_Run.SoilWatSim.wbError[i])
             << "Water balance error in test " << i << ": "
-            << SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWatSim.wbErrorNames[i];
     }
 }
 
@@ -298,9 +298,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-        EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
+        EXPECT_EQ(0, SW_Run.SoilWatSim.wbError[i])
             << "Water balance error in test " << i << ": "
-            << SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWatSim.wbErrorNames[i];
     }
 }
 
@@ -327,7 +327,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
     // Update soils
     SW_SIT_init_run(&SW_Run.VegProdIn, &SW_Run.Site, &LogInfo);
     SW_SWC_init_run(
-        &SW_Run.SoilWat, &SW_Run.Site, &SW_Run.WeatherSim.temp_snow
+        &SW_Run.SoilWatSim, &SW_Run.Site, &SW_Run.WeatherSim.temp_snow
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -341,9 +341,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-        EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
+        EXPECT_EQ(0, SW_Run.SoilWatSim.wbError[i])
             << "Water balance error in test " << i << ": "
-            << SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWatSim.wbErrorNames[i];
     }
 }
 
@@ -382,7 +382,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
     // Update soils
     SW_SIT_init_run(&SW_Run.VegProdIn, &SW_Run.Site, &LogInfo);
     SW_SWC_init_run(
-        &SW_Run.SoilWat, &SW_Run.Site, &SW_Run.WeatherSim.temp_snow
+        &SW_Run.SoilWatSim, &SW_Run.Site, &SW_Run.WeatherSim.temp_snow
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -392,9 +392,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-        EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
+        EXPECT_EQ(0, SW_Run.SoilWatSim.wbError[i])
             << "Water balance error in test " << i << ": "
-            << SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWatSim.wbErrorNames[i];
     }
 }
 
@@ -440,7 +440,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
     // Update soils
     SW_SIT_init_run(&SW_Run.VegProdIn, &SW_Run.Site, &LogInfo);
     SW_SWC_init_run(
-        &SW_Run.SoilWat, &SW_Run.Site, &SW_Run.WeatherSim.temp_snow
+        &SW_Run.SoilWatSim, &SW_Run.Site, &SW_Run.WeatherSim.temp_snow
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -450,9 +450,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-        EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
+        EXPECT_EQ(0, SW_Run.SoilWatSim.wbError[i])
             << "Water balance error in test " << i << ": "
-            << SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWatSim.wbErrorNames[i];
     }
 }
 
@@ -537,9 +537,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-        EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
+        EXPECT_EQ(0, SW_Run.SoilWatSim.wbError[i])
             << "Water balance error in test " << i << ": "
-            << SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWatSim.wbErrorNames[i];
     }
 }
 
@@ -624,9 +624,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGridMET) {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-        EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
+        EXPECT_EQ(0, SW_Run.SoilWatSim.wbError[i])
             << "Water balance error in test " << i << ": "
-            << SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWatSim.wbErrorNames[i];
     }
 }
 
@@ -711,9 +711,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype1) {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-        EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
+        EXPECT_EQ(0, SW_Run.SoilWatSim.wbError[i])
             << "Water balance error in test " << i << ": "
-            << SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWatSim.wbErrorNames[i];
     }
 }
 
@@ -798,9 +798,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-        EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
+        EXPECT_EQ(0, SW_Run.SoilWatSim.wbError[i])
             << "Water balance error in test " << i << ": "
-            << SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWatSim.wbErrorNames[i];
     }
 }
 
@@ -823,9 +823,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSpinup) {
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
-        EXPECT_EQ(0, SW_Run.SoilWat.wbError[i])
+        EXPECT_EQ(0, SW_Run.SoilWatSim.wbError[i])
             << "Water balance error in test " << i << ": "
-            << SW_Run.SoilWat.wbErrorNames[i];
+            << SW_Run.SoilWatSim.wbErrorNames[i];
     }
 }
 } // namespace
