@@ -11,7 +11,7 @@
 #ifndef SW_PET_H
 #define SW_PET_H
 
-#include "include/SW_datastructs.h" // for SW_ATMD, LOG_INFO
+#include "include/SW_datastructs.h" // for SW_ATMD_SIM, LOG_INFO
 #include "include/SW_Defines.h"     // for TWO_DAYS
 
 #ifdef __cplusplus
@@ -22,7 +22,7 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_PET_init_run(SW_ATMD *SW_AtmDem);
+void SW_PET_init_run(SW_ATMD_SIM *SW_AtmDem);
 
 
 double sun_earth_distance_squaredinverse(unsigned int doy);
@@ -33,7 +33,7 @@ double sunset_hourangle(double lat, double declin);
 
 
 void sun_hourangles(
-    SW_ATMD *SW_AtmDem,
+    SW_ATMD_SIM *SW_AtmDem,
     unsigned int doy,
     double lat,
     double slope,
@@ -64,7 +64,7 @@ double actual_horizontal_transmissivityindex(double tau);
 
 
 double solar_radiation(
-    SW_ATMD *SW_AtmDem,
+    SW_ATMD_SIM *SW_AtmDem,
     unsigned int doy,
     double lat,
     double elev,

@@ -119,24 +119,39 @@ typedef enum { SW_Adjust_Avg = 1, SW_Adjust_StdErr } SW_AdjustMethods;
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_SWC_init_ptrs(SW_SOILWAT *SW_SoilWat);
+void SW_SWC_init_ptrs(
+    SW_SOILWAT_INPUTS *SW_SoilWatIn, SW_SOILWAT_SIM *SW_SoilWatSim
+);
 
-void SW_SWC_construct(SW_SOILWAT *SW_SoilWat);
+void SW_SWC_construct(
+    SW_SOILWAT_INPUTS *SW_SoilWatIn,
+    SW_SOILWAT_SIM *SW_SoilWatSim,
+    SW_SOILWAT_OUTPUTS *sw_p_accu,
+    SW_SOILWAT_OUTPUTS *sw_p_oagg
+);
 
-void SW_SWC_alloc_outptrs(SW_SOILWAT *SW_SoilWat, LOG_INFO *LogInfo);
-
-void SW_SWC_deconstruct(SW_SOILWAT *SW_SoilWat);
+void SW_SWC_deconstruct(
+    SW_SOILWAT_INPUTS *SW_SoilWatIn, SW_SOILWAT_SIM *SW_SoilWatSim
+);
 
 void SW_SWC_new_year(
-    SW_SOILWAT *SW_SoilWat, SW_SITE *SW_Site, TimeInt year, LOG_INFO *LogInfo
+    SW_SOILWAT_INPUTS *SW_SoilWatIn,
+    SW_SOILWAT_SIM *SW_SoilWatSim,
+    SW_SITE_SIM *SW_SiteSim,
+    TimeInt year,
+    Bool reset_yr,
+    LOG_INFO *LogInfo
 );
 
 void SW_SWC_read(
-    SW_SOILWAT *SW_SoilWat, TimeInt endyr, char *txtInFiles[], LOG_INFO *LogInfo
+    SW_SOILWAT_INPUTS *SW_SoilWatIn,
+    TimeInt endyr,
+    char *txtInFiles[],
+    LOG_INFO *LogInfo
 );
 
 void SW_SWC_init_run(
-    SW_SOILWAT *SW_SoilWat, SW_SITE *SW_Site, double *temp_snow
+    SW_SOILWAT_SIM *SW_SoilWatSim, SW_SITE_SIM *SW_SiteSim, double *temp_snow
 );
 
 void read_swc_hist(
@@ -146,9 +161,9 @@ void read_swc_hist(
 void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo);
 
 void calculate_repartitioned_soilwater(
-    SW_SOILWAT *SW_SoilWat,
+    SW_SOILWAT_SIM *SW_SoilWatSim,
     double swcBulk_atSWPcrit[][MAX_LAYERS],
-    SW_VEGPROD *SW_VegProd,
+    SW_VEGPROD_INPUTS *SW_VegProdIn,
     LyrIndex n_layers
 );
 
@@ -164,7 +179,7 @@ void SW_SWC_adjust_swc(
 void SW_SWC_adjust_snow(
     double *temp_snow,
     double snowpack[],
-    SW_SITE *SW_Site,
+    SW_SITE_INPUTS *SW_SiteIn,
     double temp_min,
     double temp_max,
     double ppt,
@@ -178,17 +193,21 @@ double SW_SWC_snowloss(double pet, double *snowpack);
 
 double SW_SnowDepth(double SWE, double snowdensity);
 
-void SW_SWC_end_day(SW_SOILWAT *SW_SoilWat, LyrIndex n_layers);
+void SW_SWC_end_day(SW_SOILWAT_SIM *SW_SoilWatSim, LyrIndex n_layers);
 
 void get_dSWAbulk(
     unsigned int i,
-    SW_VEGPROD *SW_VegProd,
+    SW_VEGPROD_INPUTS *SW_VegProdIn,
     double swa_master[][NVEGTYPES][MAX_LAYERS],
     double dSWA_repart_sum[][MAX_LAYERS]
 );
 
 double SW_SWRC_SWCtoSWP(
-    double swcBulk, SW_SITE *SW_Site, LyrIndex layerno, LOG_INFO *LogInfo
+    double swcBulk,
+    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_SIM *SW_SiteSim,
+    LyrIndex layerno,
+    LOG_INFO *LogInfo
 );
 
 double SWRC_SWCtoSWP(
@@ -228,7 +247,11 @@ double SWRC_SWCtoSWP_FXW(
 );
 
 double SW_SWRC_SWPtoSWC(
-    double swpMatric, SW_SITE *SW_Site, LyrIndex layerno, LOG_INFO *LogInfo
+    double swpMatric,
+    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_SIM *SW_SiteSim,
+    LyrIndex layerno,
+    LOG_INFO *LogInfo
 );
 
 double SWRC_SWPtoSWC(

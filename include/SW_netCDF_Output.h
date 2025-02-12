@@ -39,7 +39,7 @@ void SW_NCOUT_create_output_dimVar(
 void SW_NCOUT_read_out_vars(
     SW_OUT_DOM *OutDom,
     char *txtInFiles[],
-    SW_VEGESTAB_INFO **parms,
+    SW_VEGESTAB_INFO_INPUTS *parmsIn,
     LOG_INFO *LogInfo
 );
 

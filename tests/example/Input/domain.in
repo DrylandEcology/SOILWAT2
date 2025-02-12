@@ -10,7 +10,7 @@
 Domain    s                     # Supported types: "xy" (grid), "s" (sites)
 nDimX     1                     # Number of grid cells along x dimension (used if "xy")
 nDimY     1                     # Number of grid cells along y dimension (used if "xy")
-nDimS     1                     # Number of sites (used if "s")
+nDimS     2                     # Number of sites (used if "s")
 
 StartYear 1980                  # First (Gregorian) calendar year of simulation
 EndYear   2010                  # Last (Gregorian) calendar year of simulation
