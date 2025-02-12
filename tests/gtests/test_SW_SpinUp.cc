@@ -27,10 +27,10 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeGreaterThanDuration) {
     SW_Run.ModelIn.SW_SpinUp.duration = 3;
 
     // Turn on soil temperature simulations
-    SW_Run.Site.use_soil_temp = swTRUE;
+    SW_Run.SiteIn.use_soil_temp = swTRUE;
     // Get initial soil temp and soil moisture levels
     for (i = 0; i < n; i++) {
-        prevTemp[i] = SW_Run.Site.soils.avgLyrTempInit[i];
+        prevTemp[i] = SW_Run.SiteIn.soils.avgLyrTempInit[i];
         prevMoist[i] = SW_Run.SoilWatSim.swcBulk[Today][i];
     }
     // Turn on spinup flag
@@ -75,10 +75,10 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeEqualToDuration) {
     SW_Run.ModelIn.SW_SpinUp.duration = 3;
 
     // Turn on soil temperature simulations
-    SW_Run.Site.use_soil_temp = swTRUE;
+    SW_Run.SiteIn.use_soil_temp = swTRUE;
     // Get initial soil temp and soil moisture levels
     for (i = 0; i < n; i++) {
-        prevTemp[i] = SW_Run.Site.soils.avgLyrTempInit[i];
+        prevTemp[i] = SW_Run.SiteIn.soils.avgLyrTempInit[i];
         prevMoist[i] = SW_Run.SoilWatSim.swcBulk[Today][i];
     }
     // Turn on spinup flag
@@ -123,10 +123,10 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeLessThanDuration) {
     SW_Run.ModelIn.SW_SpinUp.duration = 3;
 
     // Turn on soil temperature simulations
-    SW_Run.Site.use_soil_temp = swTRUE;
+    SW_Run.SiteIn.use_soil_temp = swTRUE;
     // Get initial soil temp and soil moisture levels
     for (i = 0; i < n; i++) {
-        prevTemp[i] = SW_Run.Site.soils.avgLyrTempInit[i];
+        prevTemp[i] = SW_Run.SiteIn.soils.avgLyrTempInit[i];
         prevMoist[i] = SW_Run.SoilWatSim.swcBulk[Today][i];
     }
     // Turn on spinup flag
@@ -171,10 +171,10 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeGreaterThanDuration) {
     SW_Run.ModelIn.SW_SpinUp.duration = 3;
 
     // Turn on soil temperature simulations
-    SW_Run.Site.use_soil_temp = swTRUE;
+    SW_Run.SiteIn.use_soil_temp = swTRUE;
     // Get initial soil temp and soil moisture levels
     for (i = 0; i < n; i++) {
-        prevTemp[i] = SW_Run.Site.soils.avgLyrTempInit[i];
+        prevTemp[i] = SW_Run.SiteIn.soils.avgLyrTempInit[i];
         prevMoist[i] = SW_Run.SoilWatSim.swcBulk[Today][i];
     }
     // Turn on spinup flag
@@ -219,10 +219,10 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeEqualToDuration) {
     SW_Run.ModelIn.SW_SpinUp.duration = 3;
 
     // Turn on soil temperature simulations
-    SW_Run.Site.use_soil_temp = swTRUE;
+    SW_Run.SiteIn.use_soil_temp = swTRUE;
     // Get initial soil temp and soil moisture levels
     for (i = 0; i < n; i++) {
-        prevTemp[i] = SW_Run.Site.soils.avgLyrTempInit[i];
+        prevTemp[i] = SW_Run.SiteIn.soils.avgLyrTempInit[i];
         prevMoist[i] = SW_Run.SoilWatSim.swcBulk[Today][i];
     }
     // Turn on spinup flag
@@ -267,10 +267,10 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeLessThanDuration) {
     SW_Run.ModelIn.SW_SpinUp.duration = 3;
 
     // Turn on soil temperature simulations
-    SW_Run.Site.use_soil_temp = swTRUE;
+    SW_Run.SiteIn.use_soil_temp = swTRUE;
     // Get initial soil temp and soil moisture levels
     for (i = 0; i < n; i++) {
-        prevTemp[i] = SW_Run.Site.soils.avgLyrTempInit[i];
+        prevTemp[i] = SW_Run.SiteIn.soils.avgLyrTempInit[i];
         prevMoist[i] = SW_Run.SoilWatSim.swcBulk[Today][i];
     }
     // Turn on spinup flag
@@ -386,23 +386,27 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
 
 
                 //--- k2: set initial swc values
-                local_sw.Site.SWCInitVal = test_swcInit[k2];
+                local_sw.SiteIn.SWCInitVal = test_swcInit[k2];
                 SW_SIT_init_run(
-                    &local_sw.VegProdIn, &local_sw.Site, &local_LogInfo
+                    &local_sw.VegProdIn,
+                    &local_sw.SiteIn,
+                    &local_sw.SiteSim,
+                    &local_LogInfo
                 );
                 // exit test program if unexpected error
                 sw_fail_on_error(&local_LogInfo);
                 SW_SWC_init_run(
                     &local_sw.SoilWatSim,
-                    &local_sw.Site,
+                    &local_sw.SiteSim,
                     &local_sw.WeatherSim.temp_snow
                 );
 
 
                 //---k3: set initial soil temperature
-                local_sw.Site.use_soil_temp = swTRUE;
+                local_sw.SiteIn.use_soil_temp = swTRUE;
                 for (i = 0; i < n; i++) {
-                    local_sw.Site.soils.avgLyrTempInit[i] = test_tsInit[k3][i];
+                    local_sw.SiteIn.soils.avgLyrTempInit[i] =
+                        test_tsInit[k3][i];
                 }
 
 
@@ -421,7 +425,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                         test_swcInit[k2],
                         k3,
                         i,
-                        local_sw.Site.soils.avgLyrTempInit[i]
+                        local_sw.SiteIn.soils.avgLyrTempInit[i]
                     );
                 }
                 (void) fflush(fp);

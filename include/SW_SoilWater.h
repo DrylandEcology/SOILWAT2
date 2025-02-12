@@ -137,8 +137,9 @@ void SW_SWC_deconstruct(
 void SW_SWC_new_year(
     SW_SOILWAT_INPUTS *SW_SoilWatIn,
     SW_SOILWAT_SIM *SW_SoilWatSim,
-    SW_SITE *SW_Site,
+    SW_SITE_SIM *SW_SiteSim,
     TimeInt year,
+    Bool reset_yr,
     LOG_INFO *LogInfo
 );
 
@@ -150,7 +151,7 @@ void SW_SWC_read(
 );
 
 void SW_SWC_init_run(
-    SW_SOILWAT_SIM *SW_SoilWatSim, SW_SITE *SW_Site, double *temp_snow
+    SW_SOILWAT_SIM *SW_SoilWatSim, SW_SITE_SIM *SW_SiteSim, double *temp_snow
 );
 
 void read_swc_hist(
@@ -178,7 +179,7 @@ void SW_SWC_adjust_swc(
 void SW_SWC_adjust_snow(
     double *temp_snow,
     double snowpack[],
-    SW_SITE *SW_Site,
+    SW_SITE_INPUTS *SW_SiteIn,
     double temp_min,
     double temp_max,
     double ppt,
@@ -202,7 +203,11 @@ void get_dSWAbulk(
 );
 
 double SW_SWRC_SWCtoSWP(
-    double swcBulk, SW_SITE *SW_Site, LyrIndex layerno, LOG_INFO *LogInfo
+    double swcBulk,
+    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_SIM *SW_SiteSim,
+    LyrIndex layerno,
+    LOG_INFO *LogInfo
 );
 
 double SWRC_SWCtoSWP(
@@ -242,7 +247,11 @@ double SWRC_SWCtoSWP_FXW(
 );
 
 double SW_SWRC_SWPtoSWC(
-    double swpMatric, SW_SITE *SW_Site, LyrIndex layerno, LOG_INFO *LogInfo
+    double swpMatric,
+    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_SIM *SW_SiteSim,
+    LyrIndex layerno,
+    LOG_INFO *LogInfo
 );
 
 double SWRC_SWPtoSWC(

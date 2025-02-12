@@ -6390,7 +6390,7 @@ The function also checks for consistency
     - between sand, silt, and clay (if all provided as nc-inputs)
 
 
-@param[out] n_layers
+@param[out] n_layers Number of layers of soil within the simulation run
 @param[in,out] soilValues Array of pointers to soil variable arrays,
     see read_soil_inputs(), organized as #possVarNames[eSW_InSoil]
     (but without spatial index, transpiration coefficients, and SWRCp)
@@ -6599,7 +6599,8 @@ consistency checks.
 */
 static void read_soil_inputs(
     SW_DOMAIN *SW_Domain,
-    SW_SITE *SW_Site,
+    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_SIM *SW_SiteSim,
     char **soilInFiles,
     Bool hasConstSoilDepths,
     const double depthsAllSoilLayers[],
@@ -6607,11 +6608,11 @@ static void read_soil_inputs(
     const size_t ncSUID[],
     LOG_INFO *LogInfo
 ) {
-    SW_SOILS newSoils;
-    SW_SOILS *currSoils = &SW_Site->soils;
+    SW_SOIL_INPUTS newSoils;
+    SW_SOIL_INPUTS *currSoils = &SW_SiteIn->soils;
 
     /* Initialize soils */
-    SW_Site->n_layers = 0;
+    SW_SiteSim->n_layers = 0;
     SW_SOIL_construct(&newSoils);
 
     char ***inVarInfo = SW_Domain->netCDFInput.inVarInfo[eSW_InSoil];
@@ -6801,7 +6802,7 @@ static void read_soil_inputs(
 
     /* Derive missing soil properties and check others */
     derive_missing_soils(
-        &SW_Site->n_layers,
+        &SW_SiteSim->n_layers,
         values1D,
         readInputs,
         hasConstSoilDepths,
@@ -6816,10 +6817,10 @@ static void read_soil_inputs(
 
 
     if (!hasConstSoilDepths) {
-        SW_Site->soils = newSoils;
+        SW_SiteIn->soils = newSoils;
     }
 
-    SW_Site->site_has_swrcpMineralSoil = SW_Site->inputsProvideSWRCp;
+    SW_SiteSim->site_has_swrcpMineralSoil = SW_SiteIn->inputsProvideSWRCp;
 
 closeFile:
     if (ncFileID > -1) {
@@ -7771,7 +7772,8 @@ void SW_NCIN_read_inputs(
     if (readSoil) {
         read_soil_inputs(
             SW_Domain,
-            &sw->Site,
+            &sw->SiteIn,
+            &sw->SiteSim,
             ncInFiles[eSW_InSoil],
             SW_Domain->hasConsistentSoilLayerDepths,
             SW_Domain->depthsAllSoilLayers,

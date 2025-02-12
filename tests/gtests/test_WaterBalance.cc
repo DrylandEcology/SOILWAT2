@@ -45,7 +45,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSoilTemperature) {
     int i;
 
     // Turn on soil temperature simulations
-    SW_Run.Site.use_soil_temp = swTRUE;
+    SW_Run.SiteIn.use_soil_temp = swTRUE;
 
     // Run the simulation
     SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
@@ -63,9 +63,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithPondedWaterRunonRunoff) {
     int i;
 
     // Turn on impermeability of first soil layer, runon, and runoff
-    SW_Run.Site.soils.impermeability[0] = 0.95;
-    SW_Run.Site.percentRunoff = 0.5;
-    SW_Run.Site.percentRunon = 1.25;
+    SW_Run.SiteIn.soils.impermeability[0] = 0.95;
+    SW_Run.SiteIn.percentRunoff = 0.5;
+    SW_Run.SiteIn.percentRunon = 1.25;
 
     // Run the simulation
     SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
@@ -202,14 +202,16 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
     LyrIndex s;
 
     // Set high gravel volume in all soil layers
-    ForEachSoilLayer(s, SW_Run.Site.n_layers) {
-        SW_Run.Site.soils.fractionVolBulk_gravel[s] = 0.99;
+    ForEachSoilLayer(s, SW_Run.SiteSim.n_layers) {
+        SW_Run.SiteIn.soils.fractionVolBulk_gravel[s] = 0.99;
     }
 
     // Re-calculate soils
-    SW_SIT_init_run(&SW_Run.VegProdIn, &SW_Run.Site, &LogInfo);
+    SW_SIT_init_run(
+        &SW_Run.VegProdIn, &SW_Run.SiteIn, &SW_Run.SiteSim, &LogInfo
+    );
     SW_SWC_init_run(
-        &SW_Run.SoilWatSim, &SW_Run.Site, &SW_Run.WeatherSim.temp_snow
+        &SW_Run.SoilWatSim, &SW_Run.SiteSim, &SW_Run.WeatherSim.temp_snow
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -229,12 +231,14 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOneSoilLayer) {
     int i;
 
     // Setup one soil layer
-    create_test_soillayers(1, &SW_Run.VegProdIn, &SW_Run.Site, &LogInfo);
+    create_test_soillayers(
+        1, &SW_Run.VegProdIn, &SW_Run.SiteIn, &SW_Run.SiteSim, &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Initialize `swcBulk` based on new soil layers
     SW_SWC_init_run(
-        &SW_Run.SoilWatSim, &SW_Run.Site, &SW_Run.WeatherSim.temp_snow
+        &SW_Run.SoilWatSim, &SW_Run.SiteSim, &SW_Run.WeatherSim.temp_snow
     );
 
     // Run the simulation
@@ -254,13 +258,13 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMaxSoilLayers) {
 
     // Setup maximum number of soil layers
     create_test_soillayers(
-        MAX_LAYERS, &SW_Run.VegProdIn, &SW_Run.Site, &LogInfo
+        MAX_LAYERS, &SW_Run.VegProdIn, &SW_Run.SiteIn, &SW_Run.SiteSim, &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Initialize `swcBulk` based on new soil layers
     SW_SWC_init_run(
-        &SW_Run.SoilWatSim, &SW_Run.Site, &SW_Run.WeatherSim.temp_snow
+        &SW_Run.SoilWatSim, &SW_Run.SiteSim, &SW_Run.WeatherSim.temp_snow
     );
 
     // Run the simulation
@@ -309,25 +313,27 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
 
     // Set PTF (Cosby1984AndOthers handles OM only up to 8%)
     (void) snprintf(
-        SW_Run.Site.site_ptf_name,
-        sizeof SW_Run.Site.site_ptf_name,
+        SW_Run.SiteIn.site_ptf_name,
+        sizeof SW_Run.SiteIn.site_ptf_name,
         "%s",
         "Cosby1984"
     );
-    SW_Run.Site.site_ptf_type = encode_str2ptf(SW_Run.Site.site_ptf_name);
-    SW_Run.Site.site_has_swrcpMineralSoil = swFALSE;
-    SW_Run.Site.inputsProvideSWRCp = swFALSE;
+    SW_Run.SiteIn.site_ptf_type = encode_str2ptf(SW_Run.SiteIn.site_ptf_name);
+    SW_Run.SiteSim.site_has_swrcpMineralSoil = swFALSE;
+    SW_Run.SiteIn.inputsProvideSWRCp = swFALSE;
 
     // Set organic matter > 0
-    SW_Run.Site.soils.fractionWeight_om[0] = 1.;
-    for (i = 1; i < SW_Run.Site.n_layers; i++) {
-        SW_Run.Site.soils.fractionWeight_om[i] = 0.5;
+    SW_Run.SiteIn.soils.fractionWeight_om[0] = 1.;
+    for (i = 1; i < SW_Run.SiteSim.n_layers; i++) {
+        SW_Run.SiteIn.soils.fractionWeight_om[i] = 0.5;
     }
 
     // Update soils
-    SW_SIT_init_run(&SW_Run.VegProdIn, &SW_Run.Site, &LogInfo);
+    SW_SIT_init_run(
+        &SW_Run.VegProdIn, &SW_Run.SiteIn, &SW_Run.SiteSim, &LogInfo
+    );
     SW_SWC_init_run(
-        &SW_Run.SoilWatSim, &SW_Run.Site, &SW_Run.WeatherSim.temp_snow
+        &SW_Run.SoilWatSim, &SW_Run.SiteSim, &SW_Run.WeatherSim.temp_snow
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -352,23 +358,23 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
 
     // Set SWRC and PTF (and SWRC parameter input filename)
     (void) snprintf(
-        SW_Run.Site.site_swrc_name,
-        sizeof SW_Run.Site.site_swrc_name,
+        SW_Run.SiteIn.site_swrc_name,
+        sizeof SW_Run.SiteIn.site_swrc_name,
         "%s",
         "vanGenuchten1980"
     );
-    SW_Run.Site.site_swrc_type =
-        encode_str2swrc(SW_Run.Site.site_swrc_name, &LogInfo);
+    SW_Run.SiteIn.site_swrc_type =
+        encode_str2swrc(SW_Run.SiteIn.site_swrc_name, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     (void) snprintf(
-        SW_Run.Site.site_ptf_name,
-        sizeof SW_Run.Site.site_ptf_name,
+        SW_Run.SiteIn.site_ptf_name,
+        sizeof SW_Run.SiteIn.site_ptf_name,
         "%s",
         "Rosetta3"
     );
-    SW_Run.Site.site_ptf_type = encode_str2ptf(SW_Run.Site.site_ptf_name);
-    SW_Run.Site.site_has_swrcpMineralSoil = swFALSE;
-    SW_Run.Site.inputsProvideSWRCp = swTRUE;
+    SW_Run.SiteIn.site_ptf_type = encode_str2ptf(SW_Run.SiteIn.site_ptf_name);
+    SW_Run.SiteSim.site_has_swrcpMineralSoil = swFALSE;
+    SW_Run.SiteIn.inputsProvideSWRCp = swTRUE;
 
     free(SW_Domain.SW_PathInputs.txtInFiles[eSWRCp]);
     SW_Domain.SW_PathInputs.txtInFiles[eSWRCp] =
@@ -376,13 +382,21 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Read SWRC parameter input file (which is not read by default)
-    SW_SWRC_read(&SW_Run.Site, SW_Domain.SW_PathInputs.txtInFiles, &LogInfo);
+    SW_SWRC_read(
+        &SW_Run.SiteIn.soils,
+        &SW_Run.SiteSim,
+        SW_Domain.SW_PathInputs.txtInFiles,
+        SW_Run.SiteIn.inputsProvideSWRCp,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Update soils
-    SW_SIT_init_run(&SW_Run.VegProdIn, &SW_Run.Site, &LogInfo);
+    SW_SIT_init_run(
+        &SW_Run.VegProdIn, &SW_Run.SiteIn, &SW_Run.SiteSim, &LogInfo
+    );
     SW_SWC_init_run(
-        &SW_Run.SoilWatSim, &SW_Run.Site, &SW_Run.WeatherSim.temp_snow
+        &SW_Run.SoilWatSim, &SW_Run.SiteSim, &SW_Run.WeatherSim.temp_snow
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -403,23 +417,23 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
 
     // Set SWRC and PTF (and SWRC parameter input filename)
     (void) snprintf(
-        SW_Run.Site.site_swrc_name,
-        sizeof SW_Run.Site.site_swrc_name,
+        SW_Run.SiteIn.site_swrc_name,
+        sizeof SW_Run.SiteIn.site_swrc_name,
         "%s",
         "FXW"
     );
-    SW_Run.Site.site_swrc_type =
-        encode_str2swrc(SW_Run.Site.site_swrc_name, &LogInfo);
+    SW_Run.SiteIn.site_swrc_type =
+        encode_str2swrc(SW_Run.SiteIn.site_swrc_name, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     (void) snprintf(
-        SW_Run.Site.site_ptf_name,
-        sizeof SW_Run.Site.site_ptf_name,
+        SW_Run.SiteIn.site_ptf_name,
+        sizeof SW_Run.SiteIn.site_ptf_name,
         "%s",
         "neuroFX2021"
     );
-    SW_Run.Site.site_ptf_type = encode_str2ptf(SW_Run.Site.site_ptf_name);
-    SW_Run.Site.site_has_swrcpMineralSoil = swFALSE;
-    SW_Run.Site.inputsProvideSWRCp = swTRUE;
+    SW_Run.SiteIn.site_ptf_type = encode_str2ptf(SW_Run.SiteIn.site_ptf_name);
+    SW_Run.SiteSim.site_has_swrcpMineralSoil = swFALSE;
+    SW_Run.SiteIn.inputsProvideSWRCp = swTRUE;
 
     free(SW_Domain.SW_PathInputs.txtInFiles[eSWRCp]);
     SW_Domain.SW_PathInputs.txtInFiles[eSWRCp] =
@@ -427,20 +441,28 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Read SWRC parameter input file (which is not read by default)
-    SW_SWRC_read(&SW_Run.Site, SW_Domain.SW_PathInputs.txtInFiles, &LogInfo);
+    SW_SWRC_read(
+        &SW_Run.SiteIn.soils,
+        &SW_Run.SiteSim,
+        SW_Domain.SW_PathInputs.txtInFiles,
+        SW_Run.SiteIn.inputsProvideSWRCp,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // FXW doesn't yet handle organic matter:
     // not all values for organic SWRC parameters have been determined
     // (see "tests/example/Input/swrc_params_FXW.in")
-    for (i = 0; i < SW_Run.Site.n_layers; i++) {
-        SW_Run.Site.soils.fractionWeight_om[i] = 0.;
+    for (i = 0; i < SW_Run.SiteSim.n_layers; i++) {
+        SW_Run.SiteIn.soils.fractionWeight_om[i] = 0.;
     }
 
     // Update soils
-    SW_SIT_init_run(&SW_Run.VegProdIn, &SW_Run.Site, &LogInfo);
+    SW_SIT_init_run(
+        &SW_Run.VegProdIn, &SW_Run.SiteIn, &SW_Run.SiteSim, &LogInfo
+    );
     SW_SWC_init_run(
-        &SW_Run.SoilWatSim, &SW_Run.Site, &SW_Run.WeatherSim.temp_snow
+        &SW_Run.SoilWatSim, &SW_Run.SiteSim, &SW_Run.WeatherSim.temp_snow
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 

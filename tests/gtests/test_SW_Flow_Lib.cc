@@ -473,8 +473,9 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    SW_SITE SW_Site;
-    setup_SW_Site_for_tests(&SW_Site);
+    SW_SITE_INPUTS SW_SiteIn;
+    SW_SITE_SIM SW_SiteSim;
+    setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
     ForEachVegType(k) { VegProdIn.veg[k].SWPcrit = 20; }
@@ -493,18 +494,23 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
     double const swp_avgExpected1 = 1.5992088;
 
     // Setup soil layers
-    create_test_soillayers(n_layers, &VegProdIn, &SW_Site, &LogInfo);
+    create_test_soillayers(
+        n_layers, &VegProdIn, &SW_SiteIn, &SW_SiteSim, &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     ForEachSoilLayer(i, n_layers) {
         // example: swc as mean of wilting point and field capacity
-        swc[i] = (SW_Site.swcBulk_fieldcap[i] + SW_Site.swcBulk_wiltpt[i]) / 2.;
+        swc[i] =
+            (SW_SiteSim.swcBulk_fieldcap[i] + SW_SiteSim.swcBulk_wiltpt[i]) /
+            2.;
     }
 
     // Begin Test when n_layers is one
     transp_weighted_avg(
         &swp_avg,
-        &SW_Site,
+        &SW_SiteIn,
+        &SW_SiteSim,
         n_tr_rgns,
         n_layers,
         tr_regions,
@@ -529,19 +535,23 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
     double const swp_avgExpectedM = 1.7389131503001496;
 
     // Setup soil layers
-    create_test_soillayers(n_layers, &VegProdIn, &SW_Site, &LogInfo);
+    create_test_soillayers(
+        n_layers, &VegProdIn, &SW_SiteIn, &SW_SiteSim, &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     ForEachSoilLayer(i, n_layers) {
         // example: swc as mean of wilting point and field capacity
         swc2[i] =
-            (SW_Site.swcBulk_fieldcap[i] + SW_Site.swcBulk_wiltpt[i]) / 2.;
+            (SW_SiteSim.swcBulk_fieldcap[i] + SW_SiteSim.swcBulk_wiltpt[i]) /
+            2.;
     }
 
 
     transp_weighted_avg(
         &swp_avg,
-        &SW_Site,
+        &SW_SiteIn,
+        &SW_SiteSim,
         n_tr_rgns,
         n_layers,
         tr_regions2,
@@ -601,8 +611,9 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    SW_SITE SW_Site;
-    setup_SW_Site_for_tests(&SW_Site);
+    SW_SITE_INPUTS SW_SiteIn;
+    SW_SITE_SIM SW_SiteSim;
+    setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
     ForEachVegType(k) { VegProdIn.veg[k].SWPcrit = 20; }
@@ -634,19 +645,23 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
         }
 
         // Setup soil layers
-        create_test_soillayers(nelyrs, &VegProdIn, &SW_Site, &LogInfo);
+        create_test_soillayers(
+            nelyrs, &VegProdIn, &SW_SiteIn, &SW_SiteSim, &LogInfo
+        );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-        ForEachSoilLayer(i, SW_Site.n_layers) {
+        ForEachSoilLayer(i, SW_SiteSim.n_layers) {
             // example: swc as mean of wilting point and field capacity
-            swc[i] =
-                (SW_Site.swcBulk_fieldcap[i] + SW_Site.swcBulk_wiltpt[i]) / 2.;
+            swc[i] = (SW_SiteSim.swcBulk_fieldcap[i] +
+                      SW_SiteSim.swcBulk_wiltpt[i]) /
+                     2.;
         }
 
         // Begin Test if (totagb >= Es_param_limit)
         totagb = Es_param_limit + 1.;
         pot_soil_evap(
-            &SW_Site,
+            &SW_SiteIn,
+            &SW_SiteSim,
             nelyrs,
             totagb,
             fbse,
@@ -673,7 +688,8 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
 
         // Begin Test if (PET = 0)
         pot_soil_evap(
-            &SW_Site,
+            &SW_SiteIn,
+            &SW_SiteSim,
             nelyrs,
             totagb,
             fbse,
@@ -696,7 +712,8 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
 
         // Begin Test if (potential baresoil rate = 0)
         pot_soil_evap(
-            &SW_Site,
+            &SW_SiteIn,
+            &SW_SiteSim,
             nelyrs,
             totagb,
             fbse0,
@@ -719,7 +736,8 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
 
         // Begin Test if (totagb < Es_param_limit)
         pot_soil_evap(
-            &SW_Site,
+            &SW_SiteIn,
+            &SW_SiteSim,
             nelyrs,
             totagb,
             fbse,
@@ -758,8 +776,9 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation2) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    SW_SITE SW_Site;
-    setup_SW_Site_for_tests(&SW_Site);
+    SW_SITE_INPUTS SW_SiteIn;
+    SW_SITE_SIM SW_SiteSim;
+    setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
     ForEachVegType(k) { VegProdIn.veg[k].SWPcrit = 20; }
@@ -785,19 +804,23 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation2) {
         }
 
         // Setup soil layers
-        create_test_soillayers(nelyrs, &VegProdIn, &SW_Site, &LogInfo);
+        create_test_soillayers(
+            nelyrs, &VegProdIn, &SW_SiteIn, &SW_SiteSim, &LogInfo
+        );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-        ForEachSoilLayer(i, SW_Site.n_layers) {
+        ForEachSoilLayer(i, SW_SiteSim.n_layers) {
             // example: swc as mean of wilting point and field capacity
-            swc[i] =
-                (SW_Site.swcBulk_fieldcap[i] + SW_Site.swcBulk_wiltpt[i]) / 2.;
+            swc[i] = (SW_SiteSim.swcBulk_fieldcap[i] +
+                      SW_SiteSim.swcBulk_wiltpt[i]) /
+                     2.;
         }
 
         // Begin Test for bserate when nelyrs = 1
         pot_soil_evap_bs(
             &bserate,
-            &SW_Site,
+            &SW_SiteIn,
+            &SW_SiteSim,
             nelyrs,
             petday,
             shift,
@@ -1047,8 +1070,9 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    SW_SITE SW_Site;
-    setup_SW_Site_for_tests(&SW_Site);
+    SW_SITE_INPUTS SW_SiteIn;
+    SW_SITE_SIM SW_SiteSim;
+    setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
     ForEachVegType(k) { VegProdIn.veg[k].SWPcrit = 20; }
@@ -1081,12 +1105,14 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
         }
 
         // Setup: soil layers
-        create_test_soillayers(nlyrs, &VegProdIn, &SW_Site, &LogInfo);
+        create_test_soillayers(
+            nlyrs, &VegProdIn, &SW_SiteIn, &SW_SiteSim, &LogInfo
+        );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         ForEachSoilLayer(i, nlyrs) {
             // Setup: initial swc to some example value, here SWC at 20% VWC
-            swc_init[i] = 0.2 * SW_Site.soils.width[i];
+            swc_init[i] = 0.2 * SW_SiteIn.soils.width[i];
             // Setup: water extraction coefficient, some example value, here 0.5
             coeff[i] = 0.5;
         }
@@ -1103,7 +1129,8 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
         remove_from_soil(
             swc,
             qty,
-            &SW_Site,
+            &SW_SiteIn,
+            &SW_SiteSim,
             &aet,
             nlyrs,
             coeffZero,
@@ -1145,7 +1172,8 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
         remove_from_soil(
             swc,
             qty,
-            &SW_Site,
+            &SW_SiteIn,
+            &SW_SiteSim,
             &aet,
             nlyrs,
             coeff,
@@ -1187,7 +1215,8 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
         remove_from_soil(
             swc,
             qty,
-            &SW_Site,
+            &SW_SiteIn,
+            &SW_SiteSim,
             &aet,
             nlyrs,
             coeff,
@@ -1253,8 +1282,9 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    SW_SITE SW_Site;
-    setup_SW_Site_for_tests(&SW_Site);
+    SW_SITE_INPUTS SW_SiteIn;
+    SW_SITE_SIM SW_SiteSim;
+    setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
     ForEachVegType(k) { VegProdIn.veg[k].SWPcrit = 20; }
@@ -1283,14 +1313,16 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
         }
 
         // Setup soil layers
-        create_test_soillayers(nlyrs, &VegProdIn, &SW_Site, &LogInfo);
+        create_test_soillayers(
+            nlyrs, &VegProdIn, &SW_SiteIn, &SW_SiteSim, &LogInfo
+        );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // Initialize soil arrays to be independent of soil texture...
         ForEachSoilLayer(i, nlyrs) {
-            SW_Site.swcBulk_fieldcap[i] = 0.25 * SW_Site.soils.width[i];
-            SW_Site.swcBulk_min[i] = 0.05 * SW_Site.soils.width[i];
-            SW_Site.swcBulk_saturated[i] = 0.35 * SW_Site.soils.width[i];
+            SW_SiteSim.swcBulk_fieldcap[i] = 0.25 * SW_SiteIn.soils.width[i];
+            SW_SiteSim.swcBulk_min[i] = 0.05 * SW_SiteIn.soils.width[i];
+            SW_SiteSim.swcBulk_saturated[i] = 0.35 * SW_SiteIn.soils.width[i];
         }
 
 
@@ -1303,8 +1335,8 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
         standingWater = 0;
 
         ForEachSoilLayer(i, nlyrs) {
-            SW_Site.swcBulk_init[i] = 0.5 * SW_Site.swcBulk_min[i];
-            swc[i] = SW_Site.swcBulk_init[i];
+            SW_SiteSim.swcBulk_init[i] = 0.5 * SW_SiteSim.swcBulk_min[i];
+            swc[i] = SW_SiteSim.swcBulk_init[i];
             drain[i] = 0.;
         }
 
@@ -1316,8 +1348,9 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
             &standingWater,
             nlyrs,
             lyrFrozen,
-            &SW_Site,
-            SW_Site.slow_drain_coeff,
+            &SW_SiteIn,
+            &SW_SiteSim,
+            SW_SiteIn.slow_drain_coeff,
             SLOW_DRAIN_DEPTH
         );
 
@@ -1331,7 +1364,7 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
         ForEachSoilLayer(i, nlyrs) {
             EXPECT_NEAR(drain[i], 0., tol6)
                 << "percolate_unsaturated: drain != 0 for layer " << 1 + i;
-            EXPECT_NEAR(swc[i], SW_Site.swcBulk_init[i], tol6)
+            EXPECT_NEAR(swc[i], SW_SiteSim.swcBulk_init[i], tol6)
                 << "percolate_unsaturated: swc != swc_init for layer " << 1 + i;
         }
 
@@ -1345,8 +1378,8 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
         standingWater = 0;
 
         ForEachSoilLayer(i, nlyrs) {
-            SW_Site.swcBulk_init[i] = 0.9 * SW_Site.swcBulk_fieldcap[i];
-            swc[i] = SW_Site.swcBulk_init[i];
+            SW_SiteSim.swcBulk_init[i] = 0.9 * SW_SiteSim.swcBulk_fieldcap[i];
+            swc[i] = SW_SiteSim.swcBulk_init[i];
             drain[i] = 0.;
         }
 
@@ -1358,8 +1391,9 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
             &standingWater,
             nlyrs,
             lyrFrozen,
-            &SW_Site,
-            SW_Site.slow_drain_coeff,
+            &SW_SiteIn,
+            &SW_SiteSim,
+            SW_SiteIn.slow_drain_coeff,
             SLOW_DRAIN_DEPTH
         );
 
@@ -1374,7 +1408,7 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
         ForEachSoilLayer(i, nlyrs) {
             EXPECT_GT(drain[i], 0.)
                 << "percolate_unsaturated: drain !> 0 for layer " << 1 + i;
-            sum_delta_swc += swc[i] - SW_Site.swcBulk_init[i];
+            sum_delta_swc += swc[i] - SW_SiteSim.swcBulk_init[i];
         }
         EXPECT_LT(sum_delta_swc, 0.)
             << "percolate_unsaturated: sum(delta(swc[i])) !< 0 for layer "
@@ -1390,8 +1424,8 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
         standingWater = 0;
 
         ForEachSoilLayer(i, nlyrs) {
-            SW_Site.swcBulk_init[i] = 1.1 * SW_Site.swcBulk_saturated[i];
-            swc[i] = SW_Site.swcBulk_init[i];
+            SW_SiteSim.swcBulk_init[i] = 1.1 * SW_SiteSim.swcBulk_saturated[i];
+            swc[i] = SW_SiteSim.swcBulk_init[i];
             drain[i] = 0.;
         }
 
@@ -1403,8 +1437,9 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
             &standingWater,
             nlyrs,
             lyrFrozen,
-            &SW_Site,
-            SW_Site.slow_drain_coeff,
+            &SW_SiteIn,
+            &SW_SiteSim,
+            SW_SiteIn.slow_drain_coeff,
             SLOW_DRAIN_DEPTH
         );
 
@@ -1422,11 +1457,11 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
                     << "percolate_unsaturated: drain !< 0 for layer " << 1 + i;
             } else {
                 EXPECT_NEAR(
-                    drain[i], SW_Site.slow_drain_coeff, tol6
+                    drain[i], SW_SiteIn.slow_drain_coeff, tol6
                 ) << "percolate_unsaturated: drain != sdrainpar in last layer "
                   << 1 + i;
             }
-            sum_delta_swc += swc[i] - SW_Site.swcBulk_init[i];
+            sum_delta_swc += swc[i] - SW_SiteSim.swcBulk_init[i];
         }
         EXPECT_LT(sum_delta_swc, 0.)
             << "percolate_unsaturated: sum(delta(swc[i])) !< 0 for layer "
@@ -1443,8 +1478,8 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
         standingWater = 0;
 
         ForEachSoilLayer(i, nlyrs) {
-            SW_Site.swcBulk_init[i] = 0.9 * SW_Site.swcBulk_fieldcap[i];
-            swc[i] = SW_Site.swcBulk_init[i];
+            SW_SiteSim.swcBulk_init[i] = 0.9 * SW_SiteSim.swcBulk_fieldcap[i];
+            swc[i] = SW_SiteSim.swcBulk_init[i];
             drain[i] = 0.;
             lyrFrozen[i] = swTRUE;
         }
@@ -1457,8 +1492,9 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
             &standingWater,
             nlyrs,
             lyrFrozen,
-            &SW_Site,
-            SW_Site.slow_drain_coeff,
+            &SW_SiteIn,
+            &SW_SiteSim,
+            SW_SiteIn.slow_drain_coeff,
             SLOW_DRAIN_DEPTH
         );
 
@@ -1476,7 +1512,7 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
                 << "percolate_unsaturated: drain !> 0 for layer " << 1 + i;
             EXPECT_LT(drain[i], small)
                 << "percolate_unsaturated: small !> drain for layer " << 1 + i;
-            EXPECT_NEAR(swc[i], SW_Site.swcBulk_init[i], small)
+            EXPECT_NEAR(swc[i], SW_SiteSim.swcBulk_init[i], small)
                 << "percolate_unsaturated: swc !~ swc_init for layer " << 1 + i;
         }
 
@@ -1493,8 +1529,9 @@ TEST(SWFlowTest, SWFlowHydraulicRedistribution) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    SW_SITE SW_Site;
-    setup_SW_Site_for_tests(&SW_Site);
+    SW_SITE_INPUTS SW_SiteIn;
+    SW_SITE_SIM SW_SiteSim;
+    setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
     ForEachVegType(k) { VegProdIn.veg[k].SWPcrit = 20; }
@@ -1546,13 +1583,16 @@ TEST(SWFlowTest, SWFlowHydraulicRedistribution) {
         }
 
         // Setup soil layers
-        create_test_soillayers(nlyrs, &VegProdIn, &SW_Site, &LogInfo);
+        create_test_soillayers(
+            nlyrs, &VegProdIn, &SW_SiteIn, &SW_SiteSim, &LogInfo
+        );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         ForEachSoilLayer(i, nlyrs) {
             // example data based on soil:
-            swc[i] =
-                (SW_Site.swcBulk_fieldcap[i] + SW_Site.swcBulk_wiltpt[i]) / 2.;
+            swc[i] = (SW_SiteSim.swcBulk_fieldcap[i] +
+                      SW_SiteSim.swcBulk_wiltpt[i]) /
+                     2.;
             lyrFrozen[i] = swFALSE;
         }
 
@@ -1560,7 +1600,8 @@ TEST(SWFlowTest, SWFlowHydraulicRedistribution) {
         hydraulic_redistribution(
             swc,
             hydred,
-            &SW_Site,
+            &SW_SiteIn,
+            &SW_SiteSim,
             SW_SHRUB,
             nlyrs,
             lyrFrozen,

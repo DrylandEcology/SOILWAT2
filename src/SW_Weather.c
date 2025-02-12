@@ -2035,7 +2035,8 @@ void SW_WTH_init_run(SW_WEATHER_SIM *SW_WeatherSim) {
 simulation information pretaining to meteorological data
 @param[in,out] SW_WeatherSim Struct of type SW_WEATHER_SIM holding all
     meteorological simulation data
-@param[in] SW_Site Struct of type SW_SITE describing the simulated site
+@param[in] SW_SiteIn Struct of type SW_SITE describing the simulated site's
+    input values
 @param[in] snowpack[] swe of snowpack, assuming accumulation is turned on
 @param[in] doy Day of the year (base1) [1-366]
 @param[in] year Current year being run in the simulation
@@ -2044,7 +2045,7 @@ simulation information pretaining to meteorological data
 void SW_WTH_new_day(
     SW_WEATHER_INPUTS *SW_WeatherIn,
     SW_WEATHER_SIM *SW_WeatherSim,
-    SW_SITE *SW_Site,
+    SW_SITE_INPUTS *SW_SiteIn,
     double snowpack[],
     TimeInt doy,
     TimeInt year,
@@ -2134,7 +2135,7 @@ void SW_WTH_new_day(
         SW_SWC_adjust_snow(
             &SW_WeatherSim->temp_snow,
             snowpack,
-            SW_Site,
+            SW_SiteIn,
             SW_WeatherSim->temp_min,
             SW_WeatherSim->temp_max,
             SW_WeatherSim->ppt,

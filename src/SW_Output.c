@@ -193,7 +193,7 @@ static void sumof_swc(
     SW_SOILWAT_SIM *v,
     SW_SOILWAT_OUTPUTS *s,
     OutKey k,
-    SW_SITE *SW_Site,
+    SW_SITE_SIM *SW_SiteSim,
     LOG_INFO *LogInfo
 );
 
@@ -420,13 +420,13 @@ static void sumof_swc(
     SW_SOILWAT_SIM *v,
     SW_SOILWAT_OUTPUTS *s,
     OutKey k,
-    SW_SITE *SW_Site,
+    SW_SITE_SIM *SW_SiteSim,
     LOG_INFO *LogInfo
 ) {
     LyrIndex i;
     int j; // for use with ForEachVegType
-    LyrIndex n_layers = SW_Site->n_layers;
-    LyrIndex n_evap_layers = SW_Site->n_evap_lyrs;
+    LyrIndex n_layers = SW_SiteSim->n_layers;
+    LyrIndex n_evap_layers = SW_SiteSim->n_evap_lyrs;
 
     switch (k) {
 
@@ -451,13 +451,13 @@ static void sumof_swc(
 
     case eSW_SWABulk:
         ForEachSoilLayer(i, n_layers) s->swaBulk[i] +=
-            fmax(v->swcBulk[Today][i] - SW_Site->swcBulk_wiltpt[i], 0.);
+            fmax(v->swcBulk[Today][i] - SW_SiteSim->swcBulk_wiltpt[i], 0.);
         break;
 
     case eSW_SWAMatric:
         /* get swaBulk and convert later */
         ForEachSoilLayer(i, n_layers) s->swaMatric[i] +=
-            fmax(v->swcBulk[Today][i] - SW_Site->swcBulk_wiltpt[i], 0.);
+            fmax(v->swcBulk[Today][i] - SW_SiteSim->swcBulk_wiltpt[i], 0.);
         break;
 
     case eSW_SWA:
@@ -552,7 +552,7 @@ static void sumof_swc(
 
     case eSW_DeepSWC:
         // deepest percolation == deep drainage
-        s->deep += v->drain[SW_Site->deep_lyr];
+        s->deep += v->drain[SW_SiteSim->deep_lyr];
         break;
 
     case eSW_SoilTemp:
@@ -609,8 +609,8 @@ static void average_for(
     LyrIndex i;
     int k;
     int j;
-    LyrIndex n_layers = sw->Site.n_layers;
-    LyrIndex n_evap_layers = sw->Site.n_evap_lyrs;
+    LyrIndex n_layers = sw->SiteSim.n_layers;
+    LyrIndex n_evap_layers = sw->SiteSim.n_evap_lyrs;
 
     if (otyp == eVES) {
         return;
@@ -767,7 +767,7 @@ static void average_for(
                     (OutDom->sumtype[k] == eSW_Fnl) ?
                         fmax(
                             sw->SoilWatSim.swcBulk[Yesterday][i] -
-                                sw->Site.swcBulk_wiltpt[i],
+                                sw->SiteSim.swcBulk_wiltpt[i],
                             0.
                         ) :
                         sw->sw_p_accu[pd].swaBulk[i] / div;
@@ -781,7 +781,7 @@ static void average_for(
                     (OutDom->sumtype[k] == eSW_Fnl) ?
                         fmax(
                             sw->SoilWatSim.swcBulk[Yesterday][i] -
-                                sw->Site.swcBulk_wiltpt[i],
+                                sw->SiteSim.swcBulk_wiltpt[i],
                             0.
                         ) :
                         sw->sw_p_accu[pd].swaMatric[i] / div;
@@ -803,7 +803,7 @@ static void average_for(
             // deepest percolation == deep drainage
             sw->sw_p_oagg[pd].deep =
                 (OutDom->sumtype[k] == eSW_Fnl) ?
-                    sw->SoilWatSim.drain[sw->Site.deep_lyr] :
+                    sw->SoilWatSim.drain[sw->SiteSim.deep_lyr] :
                     sw->sw_p_accu[pd].deep / div;
             break;
 
@@ -1001,7 +1001,7 @@ static void collect_sums(
                     &sw->SoilWatSim,
                     &sw->sw_p_accu[op],
                     (OutKey) k,
-                    &sw->Site,
+                    &sw->SiteSim,
                     LogInfo
                 );
                 if (LogInfo->stopRun) {
@@ -3015,7 +3015,7 @@ void SW_OUT_read(
                 msg,
                 sizeof msg,
                 &sw->VegProdIn.use_SWA,
-                sw->Site.deepdrain,
+                sw->SiteIn.deepdrain,
                 txtInFiles
             );
 
@@ -3931,9 +3931,9 @@ void echo_all_inputs(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         printf("Establishment not used.\n");
     }
 
-    echo_inputs(&sw->Site, &sw->ModelIn);
+    echo_inputs(&sw->SiteIn, &sw->SiteSim, &sw->ModelIn);
     echo_VegEstab(
-        sw->Site.soils.width,
+        sw->SiteIn.soils.width,
         sw->VegEstabIn.parms,
         sw->VegEstabSim.count,
         LogInfo

@@ -121,7 +121,12 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     // SW_FLW_new_year() not needed
 
     SW_SWC_new_year(
-        &sw->SoilWatIn, &sw->SoilWatSim, &sw->Site, sw->ModelSim.year, LogInfo
+        &sw->SoilWatIn,
+        &sw->SoilWatSim,
+        &sw->SiteSim,
+        sw->ModelSim.year,
+        sw->SiteIn.reset_yr,
+        LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -142,7 +147,7 @@ static void begin_day(SW_RUN *sw, LOG_INFO *LogInfo) {
     SW_WTH_new_day(
         &sw->WeatherIn,
         &sw->WeatherSim,
-        &sw->Site,
+        &sw->SiteIn,
         sw->SoilWatSim.snowpack,
         sw->ModelSim.doy,
         sw->ModelSim.year,
@@ -160,7 +165,7 @@ static void end_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         }
     }
 
-    SW_SWC_end_day(&sw->SoilWatSim, sw->Site.n_layers);
+    SW_SWC_end_day(&sw->SoilWatSim, sw->SiteSim.n_layers);
 }
 
 /**
@@ -570,7 +575,7 @@ void SW_CTL_setup_model(
 
     // delay SW_MKV_construct() until we know from inputs whether we need it
     // SW_SKY_construct() not need
-    SW_SIT_construct(&sw->Site);
+    SW_SIT_construct(&sw->SiteIn, &sw->SiteSim);
     SW_VES_construct(&sw->VegEstabIn, &sw->VegEstabSim);
     SW_VPD_construct(&sw->VegProdIn);
     // SW_FLW_construct() not needed
@@ -641,7 +646,7 @@ void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
         return; // Exit function prematurely due to error
     }
 
-    SW_SIT_init_run(&sw->VegProdIn, &sw->Site, LogInfo);
+    SW_SIT_init_run(&sw->VegProdIn, &sw->SiteIn, &sw->SiteSim, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -649,8 +654,9 @@ void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
     // SW_VES_init_run() must be called after `SW_SIT_init_run()`
     SW_VES_init_run(
         sw->VegEstabIn.parms,
-        &sw->Site,
-        sw->Site.n_transp_lyrs,
+        &sw->SiteIn,
+        &sw->SiteSim,
+        sw->SiteSim.n_transp_lyrs,
         sw->VegEstabSim.count,
         LogInfo
     );
@@ -674,7 +680,7 @@ void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
     SW_ST_init_run(&sw->StRegSimVals);
     // SW_OUT_init_run() handled separately so that SW_CTL_init_run() can be
     //   useful for unit tests, rSOILWAT2, and STEPWAT2 applications
-    SW_SWC_init_run(&sw->SoilWatSim, &sw->Site, &sw->WeatherSim.temp_snow);
+    SW_SWC_init_run(&sw->SoilWatSim, &sw->SiteSim, &sw->WeatherSim.temp_snow);
     SW_CBN_init_run(
         sw->VegProdIn.veg,
         &sw->CarbonIn,
@@ -740,9 +746,9 @@ void SW_CTL_run_current_year(
         if (sw->VegProdIn.use_SWA) {
             calculate_repartitioned_soilwater(
                 &sw->SoilWatSim,
-                sw->Site.swcBulk_atSWPcrit,
+                sw->SiteSim.swcBulk_atSWPcrit,
                 &sw->VegProdIn,
-                sw->Site.n_layers
+                sw->SiteSim.n_layers
             );
         }
 
@@ -1045,7 +1051,8 @@ void SW_CTL_read_inputs_from_disk(
 #endif
 
     SW_SIT_read(
-        &sw->Site,
+        &sw->SiteIn,
+        &sw->SiteSim,
         SW_PathInputs->txtInFiles,
         &sw->CarbonIn,
         hasConsistentSoilLayerDepths,
@@ -1060,7 +1067,13 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_LYR_read(&sw->Site, SW_PathInputs->txtInFiles, LogInfo);
+    SW_LYR_read(
+        &sw->SiteIn,
+        &sw->SiteSim.n_evap_lyrs,
+        &sw->SiteSim.n_layers,
+        SW_PathInputs->txtInFiles,
+        LogInfo
+    );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -1070,7 +1083,13 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_SWRC_read(&sw->Site, SW_PathInputs->txtInFiles, LogInfo);
+    SW_SWRC_read(
+        &sw->SiteIn.soils,
+        &sw->SiteSim,
+        SW_PathInputs->txtInFiles,
+        sw->SiteIn.inputsProvideSWRCp,
+        LogInfo
+    );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }

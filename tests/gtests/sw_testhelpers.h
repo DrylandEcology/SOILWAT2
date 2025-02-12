@@ -34,11 +34,14 @@ static const double tol0 = 1e-0, tol1 = 1e-1, tol2 = 1e-2, tol3 = 1e-3,
 void create_test_soillayers(
     unsigned int nlayers,
     SW_VEGPROD_INPUTS *SW_VegProdIn,
-    SW_SITE *SW_Site,
+    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_SIM *SW_SiteSim,
     LOG_INFO *LogInfo
 );
 
-void setup_SW_Site_for_tests(SW_SITE *SW_Site);
+void setup_SW_Site_for_tests(
+    SW_SITE_INPUTS *SW_SiteIn, SW_SITE_SIM *SW_SiteSim
+);
 
 int setup_testGlobalSoilwatTemplate();
 void teardown_testGlobalSoilwatTemplate();

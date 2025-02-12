@@ -294,7 +294,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     TimeInt month;
     int k;
     LyrIndex i;
-    LyrIndex n_layers = sw->Site.n_layers;
+    LyrIndex n_layers = sw->SiteSim.n_layers;
 
     double UpNeigh_lyrSWCBulk[MAX_LAYERS];
     double UpNeigh_lyrDrain[MAX_LAYERS];
@@ -316,14 +316,15 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
 #endif
 
 
-    if (sw->Site.use_soil_temp && !sw->StRegSimVals.soil_temp_init) {
+    if (sw->SiteIn.use_soil_temp && !sw->StRegSimVals.soil_temp_init) {
         /* We initialize soil temperature (and un/frozen state of soil layers)
                  before water flow of first day because we use un/frozen
            states), but calculate soil temperature at end of each day
         */
         SW_ST_setup_run(
             &sw->StRegSimVals,
-            &sw->Site,
+            &sw->SiteIn,
+            &sw->SiteSim,
             &sw->SoilWatSim.soiltempError,
             &sw->StRegSimVals.soil_temp_init,
             sw->WeatherSim.temp_avg,
@@ -367,16 +368,16 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         return; // Exit function prematurely due to error
     }
 
-    sw->SoilWatSim.pet = sw->Site.pet_scale * petfunc(
-                                                  sw->SoilWatSim.H_gt,
-                                                  sw->WeatherSim.temp_avg,
-                                                  sw->ModelIn.elevation,
-                                                  x,
-                                                  sw->WeatherSim.relHumidity,
-                                                  sw->WeatherSim.windSpeed,
-                                                  sw->WeatherSim.cloudCover,
-                                                  LogInfo
-                                              );
+    sw->SoilWatSim.pet = sw->SiteIn.pet_scale * petfunc(
+                                                    sw->SoilWatSim.H_gt,
+                                                    sw->WeatherSim.temp_avg,
+                                                    sw->ModelIn.elevation,
+                                                    x,
+                                                    sw->WeatherSim.relHumidity,
+                                                    sw->WeatherSim.windSpeed,
+                                                    sw->WeatherSim.cloudCover,
+                                                    LogInfo
+                                                );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -468,7 +469,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     @param percentRunon Value ranges between 0 and +inf;
         0 = no runon, >0 runon is occurring.
     */
-    if (GT(sw->Site.percentRunon, 0.)) {
+    if (GT(sw->SiteIn.percentRunon, 0.)) {
         // Calculate 'rain + snowmelt - interception - infiltration' for upslope
         // neighbor Copy values to simulate identical upslope neighbor site
         ForEachSoilLayer(i, n_layers) {
@@ -485,10 +486,10 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             &UpNeigh_drainout,
             h2o_for_soil,
             n_layers,
-            sw->Site.swcBulk_fieldcap,
-            sw->Site.swcBulk_saturated,
-            sw->Site.ksat,
-            sw->Site.soils.impermeability,
+            sw->SiteSim.swcBulk_fieldcap,
+            sw->SiteSim.swcBulk_saturated,
+            sw->SiteSim.ksat,
+            sw->SiteIn.soils.impermeability,
             &UpNeigh_standingWater,
             sw->SoilWatSim.lyrFrozen
         );
@@ -498,7 +499,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         sw->WeatherSim.surfaceRunon = fmax(
             0.,
             (UpNeigh_standingWater - sw->SoilWatSim.standingWater[Yesterday]) *
-                sw->Site.percentRunon
+                sw->SiteIn.percentRunon
         );
         sw->SoilWatSim.standingWater[Today] += sw->WeatherSim.surfaceRunon;
 
@@ -517,10 +518,10 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         &drainout,
         h2o_for_soil,
         n_layers,
-        sw->Site.swcBulk_fieldcap,
-        sw->Site.swcBulk_saturated,
-        sw->Site.ksat,
-        sw->Site.soils.impermeability,
+        sw->SiteSim.swcBulk_fieldcap,
+        sw->SiteSim.swcBulk_saturated,
+        sw->SiteSim.ksat,
+        sw->SiteIn.soils.impermeability,
         standingWaterToday,
         sw->SoilWatSim.lyrFrozen
     );
@@ -553,9 +554,9 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     @param percentRunoff Value ranges between 0 and 1;
         0 = no loss of surface water, 1 = all ponded water lost via runoff.
     */
-    if (GT(sw->Site.percentRunoff, 0.)) {
+    if (GT(sw->SiteIn.percentRunoff, 0.)) {
         sw->WeatherSim.surfaceRunoff =
-            *standingWaterToday * sw->Site.percentRunoff;
+            *standingWaterToday * sw->SiteIn.percentRunoff;
         *standingWaterToday =
             fmax(0., (*standingWaterToday - sw->WeatherSim.surfaceRunoff));
 
@@ -572,13 +573,14 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         /* bare ground present AND no snow on ground */
         pot_soil_evap_bs(
             &soil_evap_rate_bs,
-            &sw->Site,
-            sw->Site.n_evap_lyrs,
+            &sw->SiteIn,
+            &sw->SiteSim,
+            sw->SiteSim.n_evap_lyrs,
             sw->SoilWatSim.pet,
-            sw->Site.evap.xinflec,
-            sw->Site.evap.slope,
-            sw->Site.evap.yinflec,
-            sw->Site.evap.range,
+            sw->SiteIn.evap.xinflec,
+            sw->SiteIn.evap.slope,
+            sw->SiteIn.evap.yinflec,
+            sw->SiteIn.evap.range,
             sw->SoilWatSim.swcBulk[Today],
             LogInfo
         );
@@ -607,15 +609,16 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             if (EQ(sw->SoilWatSim.snowpack[Today], 0.)) {
                 /* bare-soil evaporation only when no snow */
                 pot_soil_evap(
-                    &sw->Site,
-                    sw->Site.n_evap_lyrs,
+                    &sw->SiteIn,
+                    &sw->SiteSim,
+                    sw->SiteSim.n_evap_lyrs,
                     sw->VegProdIn.veg[k].total_agb_daily[doy],
                     soil_evap[k],
                     sw->SoilWatSim.pet,
-                    sw->Site.evap.xinflec,
-                    sw->Site.evap.slope,
-                    sw->Site.evap.yinflec,
-                    sw->Site.evap.range,
+                    sw->SiteIn.evap.xinflec,
+                    sw->SiteIn.evap.slope,
+                    sw->SiteIn.evap.yinflec,
+                    sw->SiteIn.evap.range,
                     sw->SoilWatSim.swcBulk[Today],
                     sw->VegProdIn.veg[k].Es_param_limit,
                     &soil_evap_rate[k],
@@ -633,10 +636,11 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
 
             transp_weighted_avg(
                 &swpot_avg[k],
-                &sw->Site,
-                sw->Site.n_transp_rgn,
-                sw->Site.n_transp_lyrs[k],
-                sw->Site.my_transp_rgn[k],
+                &sw->SiteIn,
+                &sw->SiteSim,
+                sw->SiteSim.n_transp_rgn,
+                sw->SiteSim.n_transp_lyrs[k],
+                sw->SiteSim.my_transp_rgn[k],
                 sw->SoilWatSim.swcBulk[Today],
                 k,
                 LogInfo
@@ -652,10 +656,10 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
                 sw->VegProdIn.veg[k].biodead_daily[doy],
                 transp_veg[k],
                 sw->SoilWatSim.pet,
-                sw->Site.transp.xinflec,
-                sw->Site.transp.slope,
-                sw->Site.transp.yinflec,
-                sw->Site.transp.range,
+                sw->SiteIn.transp.xinflec,
+                sw->SiteIn.transp.slope,
+                sw->SiteIn.transp.yinflec,
+                sw->SiteIn.transp.range,
                 sw->VegProdIn.veg[k].shade_scale,
                 sw->VegProdIn.veg[k].shade_deadmax,
                 sw->VegProdIn.veg[k].tr_shade_effects.xinflec,
@@ -753,7 +757,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
 
 
     /* bare-soil evaporation */
-    ForEachEvapLayer(i, sw->Site.n_evap_lyrs) {
+    ForEachEvapLayer(i, sw->SiteSim.n_evap_lyrs) {
         // init to zero for today
         sw->SoilWatSim.evap_baresoil[i] = 0;
     }
@@ -764,12 +768,13 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         remove_from_soil(
             sw->SoilWatSim.swcBulk[Today],
             sw->SoilWatSim.evap_baresoil,
-            &sw->Site,
+            &sw->SiteIn,
+            &sw->SiteSim,
             &sw->SoilWatSim.aet,
-            sw->Site.n_evap_lyrs,
-            sw->Site.soils.evap_coeff,
+            sw->SiteSim.n_evap_lyrs,
+            sw->SiteIn.soils.evap_coeff,
             soil_evap_rate_bs,
-            sw->Site.swcBulk_halfwiltpt,
+            sw->SiteSim.swcBulk_halfwiltpt,
             sw->SoilWatSim.lyrFrozen,
             LogInfo
         );
@@ -806,12 +811,13 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             remove_from_soil(
                 sw->SoilWatSim.swcBulk[Today],
                 sw->SoilWatSim.evap_baresoil,
-                &sw->Site,
+                &sw->SiteIn,
+                &sw->SiteSim,
                 &sw->SoilWatSim.aet,
-                sw->Site.n_evap_lyrs,
-                sw->Site.soils.evap_coeff,
+                sw->SiteSim.n_evap_lyrs,
+                sw->SiteIn.soils.evap_coeff,
                 soil_evap_rate[k],
-                sw->Site.swcBulk_halfwiltpt,
+                sw->SiteSim.swcBulk_halfwiltpt,
                 sw->SoilWatSim.lyrFrozen,
                 LogInfo
             );
@@ -823,12 +829,13 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             remove_from_soil(
                 sw->SoilWatSim.swcBulk[Today],
                 sw->SoilWatSim.transpiration[k],
-                &sw->Site,
+                &sw->SiteIn,
+                &sw->SiteSim,
                 &sw->SoilWatSim.aet,
-                sw->Site.n_transp_lyrs[k],
-                sw->Site.soils.transp_coeff[k],
+                sw->SiteSim.n_transp_lyrs[k],
+                sw->SiteIn.soils.transp_coeff[k],
                 transp_rate[k],
-                sw->Site.swcBulk_atSWPcrit[k],
+                sw->SiteSim.swcBulk_atSWPcrit[k],
                 sw->SoilWatSim.lyrFrozen,
                 LogInfo
             );
@@ -867,7 +874,8 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             hydraulic_redistribution(
                 sw->SoilWatSim.swcBulk[Today],
                 sw->SoilWatSim.hydred[k],
-                &sw->Site,
+                &sw->SiteIn,
+                &sw->SiteSim,
                 k,
                 n_layers,
                 sw->SoilWatSim.lyrFrozen,
@@ -921,8 +929,9 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         standingWaterToday,
         n_layers,
         sw->SoilWatSim.lyrFrozen,
-        &sw->Site,
-        sw->Site.slow_drain_coeff,
+        &sw->SiteIn,
+        &sw->SiteSim,
+        sw->SiteIn.slow_drain_coeff,
         SLOW_DRAIN_DEPTH
     );
 
@@ -970,7 +979,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     // stores it in lyravgLyrTemp doesn't affect SWC at all (yet), but needs it
     // for the calculation, so therefore the temperature is the last calculation
     // done
-    if (sw->Site.use_soil_temp) {
+    if (sw->SiteIn.use_soil_temp) {
         soil_temperature(
             &sw->StRegSimVals,
             &sw->WeatherSim.surfaceMin,
@@ -980,7 +989,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             sw->SoilWatSim.avgLyrTemp,
             sw->SoilWatSim.maxLyrTemperature,
             sw->SoilWatSim.lyrFrozen,
-            sw->Site.methodSurfaceTemperature,
+            sw->SiteIn.methodSurfaceTemperature,
             sw->SoilWatSim.snowpack[Today],
             sw->WeatherSim.temp_min,
             sw->WeatherSim.temp_avg,
@@ -990,22 +999,22 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             sw->SoilWatSim.aet,
             x,
             sw->SoilWatSim.swcBulk[Today],
-            sw->Site.swcBulk_saturated,
-            sw->Site.soilBulk_density,
-            sw->Site.soils.width,
-            sw->Site.soils.depths,
+            sw->SiteSim.swcBulk_saturated,
+            sw->SiteSim.soilBulk_density,
+            sw->SiteIn.soils.width,
+            sw->SiteIn.soils.depths,
             n_layers,
-            sw->Site.bmLimiter,
-            sw->Site.t1Param1,
-            sw->Site.t1Param2,
-            sw->Site.t1Param3,
-            sw->Site.csParam1,
-            sw->Site.csParam2,
-            sw->Site.shParam,
-            sw->Site.Tsoil_constant,
-            sw->Site.stDeltaX,
-            sw->Site.stMaxDepth,
-            sw->Site.stNRGR,
+            sw->SiteIn.bmLimiter,
+            sw->SiteIn.t1Param1,
+            sw->SiteIn.t1Param2,
+            sw->SiteIn.t1Param3,
+            sw->SiteIn.csParam1,
+            sw->SiteIn.csParam2,
+            sw->SiteIn.shParam,
+            sw->SiteIn.Tsoil_constant,
+            sw->SiteIn.stDeltaX,
+            sw->SiteIn.stMaxDepth,
+            sw->SiteSim.stNRGR,
             sw->ModelSim.year,
             sw->ModelSim.doy,
             &sw->SoilWatSim.soiltempError,
@@ -1022,13 +1031,13 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
 /* Finalize "flow" of today */
 #ifdef SWDEBUG
     if (debug) {
-        if (sw->Site.deepdrain) {
-            if (!EQ(sw->SoilWatSim.drain[sw->Site.deep_lyr], drainout)) {
+        if (sw->SiteIn.deepdrain) {
+            if (!EQ(sw->SoilWatSim.drain[sw->SiteSim.deep_lyr], drainout)) {
                 sw_printf(
                     "Percolation (%f) of last layer [%d] is not equal to deep "
                     "drainage (%f).\n",
-                    sw->SoilWatSim.drain[sw->Site.deep_lyr],
-                    sw->Site.deep_lyr + 1,
+                    sw->SoilWatSim.drain[sw->SiteSim.deep_lyr],
+                    sw->SiteSim.deep_lyr + 1,
                     drainout
                 );
             }

@@ -165,14 +165,15 @@ const char *const ptf2str[N_PTFs] = {"Cosby1984AndOthers", "Cosby1984"};
 
 /** Check validity of soil properties
 
-@param[in] SW_Site Struct of type SW_SITE describing the simulated site
+@param[in] SW_Soils Struct of type SW_SOIL_INPUTS describing the simulated
+site's input soil information
 @param[in] layerno Current layer which is being worked with
 @param[out] LogInfo Holds information on warnings and errors
 
 @return A logical value indicating if soil properties passed the checks.
 */
 static Bool SW_check_soil_properties(
-    SW_SITE *SW_Site, LyrIndex layerno, LOG_INFO *LogInfo
+    SW_SOIL_INPUTS *SW_Soils, LyrIndex layerno, LOG_INFO *LogInfo
 ) {
 
     int k;
@@ -181,68 +182,68 @@ static Bool SW_check_soil_properties(
     Bool res = swTRUE;
 
 
-    if (LE(SW_Site->soils.width[layerno], 0.)) {
+    if (LE(SW_Soils->width[layerno], 0.)) {
         res = swFALSE;
-        fval = SW_Site->soils.width[layerno];
+        fval = SW_Soils->width[layerno];
         errtype = Str_Dup("layer width", LogInfo);
 
-    } else if (LT(SW_Site->soils.soilDensityInput[layerno], 0.) ||
-               GT(SW_Site->soils.soilDensityInput[layerno], 2.65)) {
+    } else if (LT(SW_Soils->soilDensityInput[layerno], 0.) ||
+               GT(SW_Soils->soilDensityInput[layerno], 2.65)) {
         res = swFALSE;
-        fval = SW_Site->soils.soilDensityInput[layerno];
+        fval = SW_Soils->soilDensityInput[layerno];
         errtype = Str_Dup("soil density", LogInfo);
 
-    } else if (LT(SW_Site->soils.fractionVolBulk_gravel[layerno], 0.) ||
-               GE(SW_Site->soils.fractionVolBulk_gravel[layerno], 1.)) {
+    } else if (LT(SW_Soils->fractionVolBulk_gravel[layerno], 0.) ||
+               GE(SW_Soils->fractionVolBulk_gravel[layerno], 1.)) {
         res = swFALSE;
-        fval = SW_Site->soils.fractionVolBulk_gravel[layerno];
+        fval = SW_Soils->fractionVolBulk_gravel[layerno];
         errtype = Str_Dup("gravel content", LogInfo);
 
-    } else if (LE(SW_Site->soils.fractionWeightMatric_sand[layerno], 0.) ||
-               GE(SW_Site->soils.fractionWeightMatric_sand[layerno], 1.)) {
+    } else if (LE(SW_Soils->fractionWeightMatric_sand[layerno], 0.) ||
+               GE(SW_Soils->fractionWeightMatric_sand[layerno], 1.)) {
         res = swFALSE;
-        fval = SW_Site->soils.fractionWeightMatric_sand[layerno];
+        fval = SW_Soils->fractionWeightMatric_sand[layerno];
         errtype = Str_Dup("sand proportion", LogInfo);
 
-    } else if (LE(SW_Site->soils.fractionWeightMatric_clay[layerno], 0.) ||
-               GE(SW_Site->soils.fractionWeightMatric_clay[layerno], 1.)) {
+    } else if (LE(SW_Soils->fractionWeightMatric_clay[layerno], 0.) ||
+               GE(SW_Soils->fractionWeightMatric_clay[layerno], 1.)) {
         res = swFALSE;
-        fval = SW_Site->soils.fractionWeightMatric_clay[layerno];
+        fval = SW_Soils->fractionWeightMatric_clay[layerno];
         errtype = Str_Dup("clay proportion", LogInfo);
 
-    } else if (GE(SW_Site->soils.fractionWeightMatric_sand[layerno] +
-                      SW_Site->soils.fractionWeightMatric_clay[layerno],
+    } else if (GE(SW_Soils->fractionWeightMatric_sand[layerno] +
+                      SW_Soils->fractionWeightMatric_clay[layerno],
                   1.)) {
         res = swFALSE;
-        fval = SW_Site->soils.fractionWeightMatric_sand[layerno] +
-               SW_Site->soils.fractionWeightMatric_clay[layerno];
+        fval = SW_Soils->fractionWeightMatric_sand[layerno] +
+               SW_Soils->fractionWeightMatric_clay[layerno];
         errtype = Str_Dup("sand+clay proportion", LogInfo);
 
-    } else if (LT(SW_Site->soils.impermeability[layerno], 0.) ||
-               GT(SW_Site->soils.impermeability[layerno], 1.)) {
+    } else if (LT(SW_Soils->impermeability[layerno], 0.) ||
+               GT(SW_Soils->impermeability[layerno], 1.)) {
         res = swFALSE;
-        fval = SW_Site->soils.impermeability[layerno];
+        fval = SW_Soils->impermeability[layerno];
         errtype = Str_Dup("impermeability", LogInfo);
 
-    } else if (LT(SW_Site->soils.fractionWeight_om[layerno], 0.) ||
-               GT(SW_Site->soils.fractionWeight_om[layerno], 1.)) {
+    } else if (LT(SW_Soils->fractionWeight_om[layerno], 0.) ||
+               GT(SW_Soils->fractionWeight_om[layerno], 1.)) {
         res = swFALSE;
-        fval = SW_Site->soils.fractionWeight_om[layerno];
+        fval = SW_Soils->fractionWeight_om[layerno];
         errtype = Str_Dup("organic matter content", LogInfo);
 
-    } else if (LT(SW_Site->soils.evap_coeff[layerno], 0.) ||
-               GT(SW_Site->soils.evap_coeff[layerno], 1.)) {
+    } else if (LT(SW_Soils->evap_coeff[layerno], 0.) ||
+               GT(SW_Soils->evap_coeff[layerno], 1.)) {
         res = swFALSE;
-        fval = SW_Site->soils.evap_coeff[layerno];
+        fval = SW_Soils->evap_coeff[layerno];
         errtype = Str_Dup("bare-soil evaporation coefficient", LogInfo);
 
     } else {
         ForEachVegType(k) {
-            if (LT(SW_Site->soils.transp_coeff[k][layerno], 0.) ||
-                GT(SW_Site->soils.transp_coeff[k][layerno], 1.)) {
+            if (LT(SW_Soils->transp_coeff[k][layerno], 0.) ||
+                GT(SW_Soils->transp_coeff[k][layerno], 1.)) {
 
                 res = swFALSE;
-                fval = SW_Site->soils.transp_coeff[k][layerno];
+                fval = SW_Soils->transp_coeff[k][layerno];
                 errtype = Str_Dup("transpiration coefficient", LogInfo);
                 break;
             }
@@ -290,7 +291,7 @@ static double lower_limit_of_theta_min(
 @brief User-input based minimum volumetric water content
 
 This function returns minimum soil water content `theta_min` determined
-by user input via #SW_SITE.SWCMinVal as
+by user input via #SW_SITE_INPUTS.SWCMinVal as
     * a fixed VWC value,
     * a fixed SWP value, or
     * a realistic lower limit from `lower_limit_of_theta_min()`,
@@ -644,7 +645,7 @@ are utilized only in legacy mode, i.e., `ptf` equal to
 @param[in] width Soil layer width [cm]
 @param[in] ptf_type Identification number of selected PTF
 @param[in] ui_sm_min User input of requested minimum soil moisture,
-    see #SW_SITE.SWCMinVal
+    see #SW_SITE_INPUTS.SWCMinVal
 @param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
 @param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
 @param[in] fom Proportion by weight of organic matter to bulk soil [g g-1]
@@ -1470,15 +1471,17 @@ void nlayers_vegroots(
 /**
 @brief Set `deep_lyr` to indicate that deep drainage is being simulated
 
-@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
+@param[in,out] SW_SiteSim Struct of type SW_SITE describing the simulated site's
+    simulation values
+@param[in] deepdrain A flag specifying if we allow drainage into deepest layer
 */
-void add_deepdrain_layer(SW_SITE *SW_Site) {
+void add_deepdrain_layer(SW_SITE_SIM *SW_SiteSim, Bool deepdrain) {
 
-    if (SW_Site->deepdrain) {
+    if (deepdrain) {
         /* total percolation from last layer == deep drainage */
-        SW_Site->deep_lyr = SW_Site->n_layers - 1; /* deep_lyr is base0 */
+        SW_SiteSim->deep_lyr = SW_SiteSim->n_layers - 1; /* deep_lyr is base0 */
     } else {
-        SW_Site->deep_lyr = 0;
+        SW_SiteSim->deep_lyr = 0;
     }
 }
 
@@ -1495,28 +1498,32 @@ void add_deepdrain_layer(SW_SITE *SW_Site) {
 /* --------------------------------------------------- */
 
 
-void SW_SOIL_construct(SW_SOILS *SW_Soils) {
-    memset(SW_Soils, 0, sizeof(SW_SOILS));
+void SW_SOIL_construct(SW_SOIL_INPUTS *SW_Soils) {
+    memset(SW_Soils, 0, sizeof(SW_SOIL_INPUTS));
 }
 
 /**
-@brief Initialized memory for SW_Site
+@brief Initialized memory for SW_SiteIn/SW_SiteSim
 
 /note that an initializer that is called during execution (better called clean()
 or something) will need to free all allocated memory first before clearing
 structure.
 */
-void SW_SIT_construct(SW_SITE *SW_Site) {
+void SW_SIT_construct(SW_SITE_INPUTS *SW_SiteIn, SW_SITE_SIM *SW_SiteSim) {
     /* =================================================== */
 
-    memset(SW_Site, 0, sizeof(SW_SITE));
-    SW_SIT_init_counts(SW_Site);
+    memset(SW_SiteIn, 0, sizeof(SW_SITE_INPUTS));
+    memset(SW_SiteSim, 0, sizeof(SW_SITE_SIM));
+    SW_SIT_init_counts(SW_SiteSim);
 }
 
 /**
 @brief Reads in file for input values.
 
-@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
+@param[in,out] SW_SiteIn Struct of type SW_SITE describing the simulated site's
+    input values
+@param[in,out] SW_SiteSim Struct of type SW_SITE describing the simulated site's
+    input values
 @param[in] txtInFiles Array of program in/output files
 @param[out] SW_CarbonIn Struct of type SW_CARBON_INPUTS holding all CO2-related
 data
@@ -1526,7 +1533,8 @@ when dealing with nc inputs)
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_SIT_read(
-    SW_SITE *SW_Site,
+    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_SIM *SW_SiteSim,
     char *txtInFiles[],
     SW_CARBON_INPUTS *SW_CarbonIn,
     Bool *hasConsistentSoilLayerDepths,
@@ -1592,108 +1600,108 @@ void SW_SIT_read(
 
         switch (lineno) {
         case 0:
-            SW_Site->SWCMinVal = doubleRes;
+            SW_SiteIn->SWCMinVal = doubleRes;
             break;
         case 1:
-            SW_Site->SWCInitVal = doubleRes;
+            SW_SiteIn->SWCInitVal = doubleRes;
             break;
         case 2:
-            SW_Site->SWCWetVal = doubleRes;
+            SW_SiteIn->SWCWetVal = doubleRes;
             break;
         case 3:
-            SW_Site->reset_yr = itob(intRes);
+            SW_SiteIn->reset_yr = itob(intRes);
             break;
         case 4:
-            SW_Site->deepdrain = itob(intRes);
+            SW_SiteIn->deepdrain = itob(intRes);
             break;
         case 5:
-            SW_Site->pet_scale = doubleRes;
+            SW_SiteIn->pet_scale = doubleRes;
             break;
         case 6:
-            SW_Site->percentRunoff = doubleRes;
+            SW_SiteIn->percentRunoff = doubleRes;
             break;
         case 7:
-            SW_Site->percentRunon = doubleRes;
+            SW_SiteIn->percentRunon = doubleRes;
             break;
         case 8:
-            SW_Site->TminAccu2 = doubleRes;
+            SW_SiteIn->TminAccu2 = doubleRes;
             break;
         case 9:
-            SW_Site->TmaxCrit = doubleRes;
+            SW_SiteIn->TmaxCrit = doubleRes;
             break;
         case 10:
-            SW_Site->lambdasnow = doubleRes;
+            SW_SiteIn->lambdasnow = doubleRes;
             break;
         case 11:
-            SW_Site->RmeltMin = doubleRes;
+            SW_SiteIn->RmeltMin = doubleRes;
             break;
         case 12:
-            SW_Site->RmeltMax = doubleRes;
+            SW_SiteIn->RmeltMax = doubleRes;
             break;
         case 13:
-            SW_Site->slow_drain_coeff = doubleRes;
+            SW_SiteIn->slow_drain_coeff = doubleRes;
             break;
         case 14:
-            SW_Site->evap.xinflec = doubleRes;
+            SW_SiteIn->evap.xinflec = doubleRes;
             break;
         case 15:
-            SW_Site->evap.slope = doubleRes;
+            SW_SiteIn->evap.slope = doubleRes;
             break;
         case 16:
-            SW_Site->evap.yinflec = doubleRes;
+            SW_SiteIn->evap.yinflec = doubleRes;
             break;
         case 17:
-            SW_Site->evap.range = doubleRes;
+            SW_SiteIn->evap.range = doubleRes;
             break;
         case 18:
-            SW_Site->transp.xinflec = doubleRes;
+            SW_SiteIn->transp.xinflec = doubleRes;
             break;
         case 19:
-            SW_Site->transp.slope = doubleRes;
+            SW_SiteIn->transp.slope = doubleRes;
             break;
         case 20:
-            SW_Site->transp.yinflec = doubleRes;
+            SW_SiteIn->transp.yinflec = doubleRes;
             break;
         case 21:
-            SW_Site->transp.range = doubleRes;
+            SW_SiteIn->transp.range = doubleRes;
             break;
 
         /* Surface and soil temperature */
         case 22:
-            SW_Site->bmLimiter = doubleRes;
+            SW_SiteIn->bmLimiter = doubleRes;
             break;
         case 23:
-            SW_Site->t1Param1 = doubleRes;
+            SW_SiteIn->t1Param1 = doubleRes;
             break;
         case 24:
-            SW_Site->t1Param2 = doubleRes;
+            SW_SiteIn->t1Param2 = doubleRes;
             break;
         case 25:
-            SW_Site->t1Param3 = doubleRes;
+            SW_SiteIn->t1Param3 = doubleRes;
             break;
         case 26:
-            SW_Site->csParam1 = doubleRes;
+            SW_SiteIn->csParam1 = doubleRes;
             break;
         case 27:
-            SW_Site->csParam2 = doubleRes;
+            SW_SiteIn->csParam2 = doubleRes;
             break;
         case 28:
-            SW_Site->shParam = doubleRes;
+            SW_SiteIn->shParam = doubleRes;
             break;
         case 29:
-            SW_Site->Tsoil_constant = doubleRes;
+            SW_SiteIn->Tsoil_constant = doubleRes;
             break;
         case 30:
-            SW_Site->stDeltaX = doubleRes;
+            SW_SiteIn->stDeltaX = doubleRes;
             break;
         case 31:
-            SW_Site->stMaxDepth = doubleRes;
+            SW_SiteIn->stMaxDepth = doubleRes;
             break;
         case 32:
-            SW_Site->use_soil_temp = itob(intRes);
+            SW_SiteIn->use_soil_temp = itob(intRes);
             break;
         case 33:
-            SW_Site->methodSurfaceTemperature = intRes;
+            SW_SiteIn->methodSurfaceTemperature = intRes;
             break;
 
         case 34:
@@ -1745,51 +1753,51 @@ void SW_SIT_read(
             break;
 
         case 38:
-            SW_Site->type_soilDensityInput = intRes;
+            SW_SiteIn->type_soilDensityInput = intRes;
             break;
 
         case 39:
-            SW_Site->depthSapric = doubleRes;
+            SW_SiteIn->depthSapric = doubleRes;
             break;
 
         case 40:
             resSNP = snprintf(
-                SW_Site->site_swrc_name,
-                sizeof SW_Site->site_swrc_name,
+                SW_SiteIn->site_swrc_name,
+                sizeof SW_SiteIn->site_swrc_name,
                 "%s",
                 inbuf
             );
             if (resSNP < 0 ||
-                (unsigned) resSNP >= (sizeof SW_Site->site_swrc_name)) {
+                (unsigned) resSNP >= (sizeof SW_SiteIn->site_swrc_name)) {
                 LogError(
                     LogInfo, LOGERROR, "SWRC name is too long: '%s'.", inbuf
                 );
                 goto closeFile;
             }
-            SW_Site->site_swrc_type =
-                encode_str2swrc(SW_Site->site_swrc_name, LogInfo);
+            SW_SiteIn->site_swrc_type =
+                encode_str2swrc(SW_SiteIn->site_swrc_name, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
             break;
         case 41:
             resSNP = snprintf(
-                SW_Site->site_ptf_name,
-                sizeof SW_Site->site_ptf_name,
+                SW_SiteIn->site_ptf_name,
+                sizeof SW_SiteIn->site_ptf_name,
                 "%s",
                 inbuf
             );
             if (resSNP < 0 ||
-                (unsigned) resSNP >= (sizeof SW_Site->site_ptf_name)) {
+                (unsigned) resSNP >= (sizeof SW_SiteIn->site_ptf_name)) {
                 LogError(
                     LogInfo, LOGERROR, "PTF name is too long: '%s'.", inbuf
                 );
                 goto closeFile;
             }
-            SW_Site->site_ptf_type = encode_str2ptf(SW_Site->site_ptf_name);
+            SW_SiteIn->site_ptf_type = encode_str2ptf(SW_SiteIn->site_ptf_name);
             break;
         case 42:
-            SW_Site->inputsProvideSWRCp = itob(intRes);
+            SW_SiteIn->inputsProvideSWRCp = itob(intRes);
             break;
 
         default:
@@ -1797,7 +1805,7 @@ void SW_SIT_read(
                 break; /* skip extra lines */
             }
 
-            if (MAX_TRANSP_REGIONS < SW_Site->n_transp_rgn) {
+            if (MAX_TRANSP_REGIONS < SW_SiteSim->n_transp_rgn) {
                 too_many_regions = swTRUE;
                 goto Label_End_Read;
             }
@@ -1825,8 +1833,8 @@ void SW_SIT_read(
                 );
                 goto closeFile;
             }
-            SW_Site->TranspRgnDepths[region - 1] = rgnlow;
-            SW_Site->n_transp_rgn++;
+            SW_SiteSim->TranspRgnDepths[region - 1] = rgnlow;
+            SW_SiteSim->n_transp_rgn++;
         }
 
         lineno++;
@@ -1834,38 +1842,38 @@ void SW_SIT_read(
 
 Label_End_Read:
 
-    if (LT(SW_Site->percentRunoff, 0.) || GT(SW_Site->percentRunoff, 1.)) {
+    if (LT(SW_SiteIn->percentRunoff, 0.) || GT(SW_SiteIn->percentRunoff, 1.)) {
         LogError(
             LogInfo,
             LOGERROR,
             "%s : proportion of ponded surface water removed as daily"
             "runoff = %f (value ranges between 0 and 1)\n",
             MyFileName,
-            SW_Site->percentRunoff
+            SW_SiteIn->percentRunoff
         );
         goto closeFile;
     }
 
-    if (LT(SW_Site->percentRunon, 0.)) {
+    if (LT(SW_SiteIn->percentRunon, 0.)) {
         LogError(
             LogInfo,
             LOGERROR,
             "%s : proportion of water that arrives at surface added "
             "as daily runon = %f (value ranges between 0 and +inf)\n",
             MyFileName,
-            SW_Site->percentRunon
+            SW_SiteIn->percentRunon
         );
         goto closeFile;
     }
 
-    if (LT(SW_Site->depthSapric, 0.)) {
+    if (LT(SW_SiteIn->depthSapric, 0.)) {
         LogError(
             LogInfo,
             LOGERROR,
             "%s : depth at which organic matter has characteristics of "
             "sapric peat = %f (value ranges between 0 and +inf)\n",
             MyFileName,
-            SW_Site->depthSapric
+            SW_SiteIn->depthSapric
         );
         goto closeFile;
     }
@@ -1877,15 +1885,16 @@ Label_End_Read:
             "%s : Number of transpiration regions"
             " exceeds maximum allowed (%d > %d)\n",
             MyFileName,
-            SW_Site->n_transp_rgn,
+            SW_SiteSim->n_transp_rgn,
             MAX_TRANSP_REGIONS
         );
         goto closeFile;
     }
 
     /* check for any discontinuities (reversals) in the transpiration regions */
-    for (r = 1; r < SW_Site->n_transp_rgn; r++) {
-        if (SW_Site->TranspRgnDepths[r - 1] >= SW_Site->TranspRgnDepths[r]) {
+    for (r = 1; r < SW_SiteSim->n_transp_rgn; r++) {
+        if (SW_SiteSim->TranspRgnDepths[r - 1] >=
+            SW_SiteSim->TranspRgnDepths[r]) {
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -1901,13 +1910,22 @@ closeFile: { CloseFile(&f, LogInfo); }
 
 /** Reads soil layers and soil properties from input file
 
-@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
+@param[in,out] SW_SiteIn Struct of type SW_SITE describing the simulated site's
+    input values
+@param[in,out] n_evap_lyrs Number of soil layers with evaporation
+@param[in,out] n_layers Number of layers of soil within the simulation run
 @param[in] txtInFiles Array of program in/output files
 @param[out] LogInfo Holds information on warnings and errors
 
 @note Previously, the function was static and named `_read_layers()`.
 */
-void SW_LYR_read(SW_SITE *SW_Site, char *txtInFiles[], LOG_INFO *LogInfo) {
+void SW_LYR_read(
+    SW_SITE_INPUTS *SW_SiteIn,
+    LyrIndex *n_evap_lyrs,
+    LyrIndex *n_layers,
+    char *txtInFiles[],
+    LOG_INFO *LogInfo
+) {
     /* =================================================== */
     /* 5-Feb-2002 (cwb) removed dmin requirement in input file */
 
@@ -1955,7 +1973,7 @@ void SW_LYR_read(SW_SITE *SW_Site, char *txtInFiles[], LOG_INFO *LogInfo) {
     }
 
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
-        lyrno = SW_Site->n_layers++;
+        lyrno = (*n_layers)++;
 
         x = sscanf(
             inbuf,
@@ -1997,25 +2015,25 @@ void SW_LYR_read(SW_SITE *SW_Site, char *txtInFiles[], LOG_INFO *LogInfo) {
             }
         }
 
-        SW_Site->soils.depths[lyrno] = dmax;
-        SW_Site->soils.width[lyrno] = dmax - dmin;
+        SW_SiteIn->soils.depths[lyrno] = dmax;
+        SW_SiteIn->soils.width[lyrno] = dmax - dmin;
 
         /* checks for valid values now carried out by `SW_SIT_init_run()` */
 
         dmin = dmax;
-        SW_Site->soils.fractionVolBulk_gravel[lyrno] = f_gravel;
-        SW_Site->soils.soilDensityInput[lyrno] = soildensity;
-        SW_Site->soils.evap_coeff[lyrno] = evco;
+        SW_SiteIn->soils.fractionVolBulk_gravel[lyrno] = f_gravel;
+        SW_SiteIn->soils.soilDensityInput[lyrno] = soildensity;
+        SW_SiteIn->soils.evap_coeff[lyrno] = evco;
 
         ForEachVegType(k) {
-            SW_Site->soils.transp_coeff[k][lyrno] = trco_veg[k];
+            SW_SiteIn->soils.transp_coeff[k][lyrno] = trco_veg[k];
         }
 
-        SW_Site->soils.fractionWeightMatric_sand[lyrno] = psand;
-        SW_Site->soils.fractionWeightMatric_clay[lyrno] = pclay;
-        SW_Site->soils.impermeability[lyrno] = imperm;
-        SW_Site->soils.avgLyrTempInit[lyrno] = soiltemp;
-        SW_Site->soils.fractionWeight_om[lyrno] = fom;
+        SW_SiteIn->soils.fractionWeightMatric_sand[lyrno] = psand;
+        SW_SiteIn->soils.fractionWeightMatric_clay[lyrno] = pclay;
+        SW_SiteIn->soils.impermeability[lyrno] = imperm;
+        SW_SiteIn->soils.avgLyrTempInit[lyrno] = soiltemp;
+        SW_SiteIn->soils.fractionWeight_om[lyrno] = fom;
 
         if (lyrno >= MAX_LAYERS) {
             LogError(
@@ -2032,8 +2050,7 @@ void SW_LYR_read(SW_SITE *SW_Site, char *txtInFiles[], LOG_INFO *LogInfo) {
     }
 
 
-    SW_Site->n_evap_lyrs =
-        nlayers_bsevap(SW_Site->soils.evap_coeff, SW_Site->n_layers);
+    *n_evap_lyrs = nlayers_bsevap(SW_SiteIn->soils.evap_coeff, *n_layers);
 
 closeFile: { CloseFile(&f, LogInfo); }
 }
@@ -2044,7 +2061,10 @@ them from an input file as _read_layers() does)
 
 @param[in,out] SW_VegProdIn Struct of type SW_VEGPROD_INPUTS describing surface
     cover conditions in the simulation
-@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
+@param[in,out] SW_SiteIn Struct of type SW_SITE describing the simulated site's
+    input values
+@param[in,out] SW_SiteSim Struct of type SW_SITE describing the simulated site's
+    simulation values
 @param[in] nlyrs The number of soil layers to create.
 @param[in] dmax Array of size \p nlyrs for depths [cm] of each soil layer
     measured from the surface
@@ -2087,7 +2107,8 @@ them from an input file as _read_layers() does)
 */
 void set_soillayers(
     SW_VEGPROD_INPUTS *SW_VegProdIn,
-    SW_SITE *SW_Site,
+    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_SIM *SW_SiteSim,
     LyrIndex nlyrs,
     const double *dmax,
     const double *bd,
@@ -2114,55 +2135,55 @@ void set_soillayers(
     unsigned int k;
 
     // De-allocate and delete previous soil layers and reset counters
-    SW_SIT_init_counts(SW_Site);
+    SW_SIT_init_counts(SW_SiteSim);
 
     // Create new soil
     for (i = 0; i < nlyrs; i++) {
         // Increment the number of soil layers
-        lyrno = SW_Site->n_layers++;
+        lyrno = SW_SiteSim->n_layers++;
 
-        SW_Site->soils.width[lyrno] = dmax[i] - dmin;
+        SW_SiteIn->soils.width[lyrno] = dmax[i] - dmin;
         dmin = dmax[i];
-        SW_Site->soils.soilDensityInput[lyrno] = bd[i];
-        SW_Site->type_soilDensityInput = SW_BULK;
-        SW_Site->soils.fractionVolBulk_gravel[lyrno] = f_gravel[i];
-        SW_Site->soils.evap_coeff[lyrno] = evco[i];
+        SW_SiteIn->soils.soilDensityInput[lyrno] = bd[i];
+        SW_SiteIn->type_soilDensityInput = SW_BULK;
+        SW_SiteIn->soils.fractionVolBulk_gravel[lyrno] = f_gravel[i];
+        SW_SiteIn->soils.evap_coeff[lyrno] = evco[i];
 
         ForEachVegType(k) {
             switch (k) {
             case SW_TREES:
-                SW_Site->soils.transp_coeff[k][lyrno] = trco_tree[i];
+                SW_SiteIn->soils.transp_coeff[k][lyrno] = trco_tree[i];
                 break;
             case SW_SHRUB:
-                SW_Site->soils.transp_coeff[k][lyrno] = trco_shrub[i];
+                SW_SiteIn->soils.transp_coeff[k][lyrno] = trco_shrub[i];
                 break;
             case SW_FORBS:
-                SW_Site->soils.transp_coeff[k][lyrno] = trco_forb[i];
+                SW_SiteIn->soils.transp_coeff[k][lyrno] = trco_forb[i];
                 break;
             case SW_GRASS:
-                SW_Site->soils.transp_coeff[k][lyrno] = trco_grass[i];
+                SW_SiteIn->soils.transp_coeff[k][lyrno] = trco_grass[i];
                 break;
             default:
                 break;
             }
         }
 
-        SW_Site->soils.fractionWeightMatric_sand[lyrno] = psand[i];
-        SW_Site->soils.fractionWeightMatric_clay[lyrno] = pclay[i];
-        SW_Site->soils.impermeability[lyrno] = imperm[i];
-        SW_Site->soils.avgLyrTempInit[lyrno] = soiltemp[i];
-        SW_Site->soils.fractionWeight_om[lyrno] = pom[i];
+        SW_SiteIn->soils.fractionWeightMatric_sand[lyrno] = psand[i];
+        SW_SiteIn->soils.fractionWeightMatric_clay[lyrno] = pclay[i];
+        SW_SiteIn->soils.impermeability[lyrno] = imperm[i];
+        SW_SiteIn->soils.avgLyrTempInit[lyrno] = soiltemp[i];
+        SW_SiteIn->soils.fractionWeight_om[lyrno] = pom[i];
     }
 
     /* Identify transpiration regions by soil layers */
     derive_TranspRgnBounds(
-        &SW_Site->n_transp_rgn,
-        SW_Site->TranspRgnBounds,
+        &SW_SiteSim->n_transp_rgn,
+        SW_SiteSim->TranspRgnBounds,
         nRegions,
         regionLowerBounds,
-        SW_Site->n_layers,
-        SW_Site->soils.width,
-        SW_Site->soils.transp_coeff,
+        SW_SiteSim->n_layers,
+        SW_SiteIn->soils.width,
+        SW_SiteIn->soils.transp_coeff,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -2170,7 +2191,7 @@ void set_soillayers(
     }
 
     // Re-initialize site parameters based on new soil layers
-    SW_SIT_init_run(SW_VegProdIn, SW_Site, LogInfo);
+    SW_SIT_init_run(SW_VegProdIn, SW_SiteIn, SW_SiteSim, LogInfo);
 }
 
 /**
@@ -2268,12 +2289,22 @@ The first set (row) of parameters represent fibric peat;
 the second set of parameters represent sapric peat;
 the remaining rows represent parameters of the mineral soil in each soil layer.
 
-@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
+@param[in,out] SW_Soils Struct of type SW_SOIL_INPUTS describing the simulated
+    site's input soil information
+@param[in,out] SW_SiteSim Struct of type SW_SITE describing the simulated site's
+    simulation values
 @param[in] txtInFiles Array of program in/output files
+@param[in] inputsProvideSWRCp Are SWRC parameters obtained from
+    input files (TRUE) or estimated with a PTF (FALSE)
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_SWRC_read(SW_SITE *SW_Site, char *txtInFiles[], LOG_INFO *LogInfo) {
-
+void SW_SWRC_read(
+    SW_SOIL_INPUTS *SW_Soils,
+    SW_SITE_SIM *SW_SiteSim,
+    char *txtInFiles[],
+    Bool inputsProvideSWRCp,
+    LOG_INFO *LogInfo
+) {
     FILE *f;
     LyrIndex lyrno = 0;
     LyrIndex k;
@@ -2295,7 +2326,7 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *txtInFiles[], LOG_INFO *LogInfo) {
 
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
         /* PTF used for mineral swrcp: read only organic parameters from disk */
-        if (isMineral && !SW_Site->inputsProvideSWRCp) {
+        if (isMineral && !inputsProvideSWRCp) {
             goto closeFile;
         }
 
@@ -2334,8 +2365,8 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *txtInFiles[], LOG_INFO *LogInfo) {
             }
         }
 
-        /* Check that we are within `SW_Site.n_layers` */
-        if (isMineral && lyrno >= SW_Site->n_layers) {
+        /* Check that we are within `SW_SiteSim.n_layers` */
+        if (isMineral && lyrno >= SW_SiteSim->n_layers) {
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -2343,7 +2374,7 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *txtInFiles[], LOG_INFO *LogInfo) {
                 "must match number of soil layers (%d)\n",
                 "Site",
                 lyrno + 1,
-                SW_Site->n_layers
+                SW_SiteSim->n_layers
             );
             goto closeFile;
         }
@@ -2351,9 +2382,9 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *txtInFiles[], LOG_INFO *LogInfo) {
         /* Copy values into structure */
         for (k = 0; k < SWRC_PARAM_NMAX; k++) {
             if (isMineral) {
-                SW_Site->soils.swrcpMineralSoil[lyrno][k] = tmp_swrcp[k];
+                SW_Soils->swrcpMineralSoil[lyrno][k] = tmp_swrcp[k];
             } else {
-                SW_Site->swrcpOM[lyrno][k] = tmp_swrcp[k];
+                SW_SiteSim->swrcpOM[lyrno][k] = tmp_swrcp[k];
             }
         }
 
@@ -2367,8 +2398,8 @@ void SW_SWRC_read(SW_SITE *SW_Site, char *txtInFiles[], LOG_INFO *LogInfo) {
         }
     }
 
-    SW_Site->site_has_swrcpMineralSoil =
-        (Bool) (isMineral && SW_Site->inputsProvideSWRCp);
+    SW_SiteSim->site_has_swrcpMineralSoil =
+        (Bool) (isMineral && inputsProvideSWRCp);
 
 closeFile: { CloseFile(&f, LogInfo); }
 }
@@ -2389,13 +2420,19 @@ Fraction of silt is calculated: 1 - (sand + clay).
 
 @param[in,out] SW_VegProdIn Struct of type SW_VEGPROD_INPUTS describing surface
     cover conditions in the simulation
-@param[in,out] SW_Site Struct of type SW_SITE describing the simulated site
+@param[in,out] SW_SiteIn Struct of type SW_SITE describing the simulated site's
+    input values
+@param[in,out] SW_SiteSim Struct of type SW_SITE describing the simulated site's
+    simulation values
 @param[out] LogInfo Holds information on warnings and errors
 
 @sideeffect Values stored in global variable `SW_Site`.
 */
 void SW_SIT_init_run(
-    SW_VEGPROD_INPUTS *SW_VegProdIn, SW_SITE *SW_Site, LOG_INFO *LogInfo
+    SW_VEGPROD_INPUTS *SW_VegProdIn,
+    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_SIM *SW_SiteSim,
+    LOG_INFO *LogInfo
 ) {
     /* =================================================== */
     /* potentially this routine can be called whether the
@@ -2428,21 +2465,23 @@ void SW_SIT_init_run(
 
     /* Determine number of layers with potential for
        bare-soil evaporation and transpiration */
-    SW_Site->n_evap_lyrs =
-        nlayers_bsevap(SW_Site->soils.evap_coeff, SW_Site->n_layers);
+    SW_SiteSim->n_evap_lyrs =
+        nlayers_bsevap(SW_SiteIn->soils.evap_coeff, SW_SiteSim->n_layers);
     nlayers_vegroots(
-        SW_Site->n_layers, SW_Site->n_transp_lyrs, SW_Site->soils.transp_coeff
+        SW_SiteSim->n_layers,
+        SW_SiteSim->n_transp_lyrs,
+        SW_SiteIn->soils.transp_coeff
     );
 
     /* Identify transpiration regions by soil layers */
     derive_TranspRgnBounds(
-        &SW_Site->n_transp_rgn,
-        SW_Site->TranspRgnBounds,
-        SW_Site->n_transp_rgn,
-        SW_Site->TranspRgnDepths,
-        SW_Site->n_layers,
-        SW_Site->soils.width,
-        SW_Site->soils.transp_coeff,
+        &SW_SiteSim->n_transp_rgn,
+        SW_SiteSim->TranspRgnBounds,
+        SW_SiteSim->n_transp_rgn,
+        SW_SiteSim->TranspRgnDepths,
+        SW_SiteSim->n_layers,
+        SW_SiteIn->soils.width,
+        SW_SiteIn->soils.transp_coeff,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -2450,20 +2489,20 @@ void SW_SIT_init_run(
     }
 
     /* Manage deep drainage */
-    add_deepdrain_layer(SW_Site);
+    add_deepdrain_layer(SW_SiteSim, SW_SiteIn->deepdrain);
 
 
     /* Check compatibility between selected SWRC and PTF */
-    if (!SW_Site->site_has_swrcpMineralSoil) {
+    if (!SW_SiteSim->site_has_swrcpMineralSoil) {
         if (!check_SWRC_vs_PTF(
-                SW_Site->site_swrc_name, SW_Site->site_ptf_name
+                SW_SiteIn->site_swrc_name, SW_SiteIn->site_ptf_name
             )) {
             LogError(
                 LogInfo,
                 LOGERROR,
                 "Selected PTF '%s' is incompatible with selected SWRC '%s'\n",
-                SW_Site->site_ptf_name,
-                SW_Site->site_swrc_name
+                SW_SiteIn->site_ptf_name,
+                SW_SiteIn->site_swrc_name
             );
             return; // Exit function prematurely due to error
         }
@@ -2471,46 +2510,46 @@ void SW_SIT_init_run(
 
     /* Check parameters of organic SWRC */
     if (!SWRC_check_parameters(
-            SW_Site->site_swrc_type, SW_Site->swrcpOM[0], LogInfo
+            SW_SiteIn->site_swrc_type, SW_SiteSim->swrcpOM[0], LogInfo
         )) {
         LogError(
             LogInfo,
             LOGERROR,
             "Checks of parameters for SWRC '%s' in fibric peat failed.",
-            swrc2str[SW_Site->site_swrc_type]
+            swrc2str[SW_SiteIn->site_swrc_type]
         );
         return; // Exit function prematurely due to error
     }
 
     if (!SWRC_check_parameters(
-            SW_Site->site_swrc_type, SW_Site->swrcpOM[1], LogInfo
+            SW_SiteIn->site_swrc_type, SW_SiteSim->swrcpOM[1], LogInfo
         )) {
         LogError(
             LogInfo,
             LOGERROR,
             "Checks of parameters for SWRC '%s' in sapric peat failed.",
-            swrc2str[SW_Site->site_swrc_type]
+            swrc2str[SW_SiteIn->site_swrc_type]
         );
         return; // Exit function prematurely due to error
     }
 
 
     /* Loop over soil layers check variables and calculate parameters */
-    ForEachSoilLayer(s, SW_Site->n_layers) {
+    ForEachSoilLayer(s, SW_SiteSim->n_layers) {
         // copy depths of soil layer profile
-        acc += SW_Site->soils.width[s];
-        SW_Site->soils.depths[s] = acc;
+        acc += SW_SiteIn->soils.width[s];
+        SW_SiteIn->soils.depths[s] = acc;
 
         /* Copy site-level SWRC/PTF information to each layer:
            We currently allow specifying one SWRC/PTF for a site for all layers;
            remove in the future if we allow SWRC/PTF to vary by soil layer
         */
-        SW_Site->swrc_type[s] = SW_Site->site_swrc_type;
-        SW_Site->ptf_type[s] = SW_Site->site_ptf_type;
+        SW_SiteSim->swrc_type[s] = SW_SiteIn->site_swrc_type;
+        SW_SiteSim->ptf_type[s] = SW_SiteIn->site_ptf_type;
 
 
         /* Check soil properties for valid values */
-        if (!SW_check_soil_properties(SW_Site, s, LogInfo)) {
+        if (!SW_check_soil_properties(&SW_SiteIn->soils, s, LogInfo)) {
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
@@ -2527,14 +2566,15 @@ void SW_SIT_init_run(
 
 
         /* Update soil density depending on inputs */
-        switch (SW_Site->type_soilDensityInput) {
+        switch (SW_SiteIn->type_soilDensityInput) {
 
         case SW_BULK:
-            SW_Site->soilBulk_density[s] = SW_Site->soils.soilDensityInput[s];
+            SW_SiteSim->soilBulk_density[s] =
+                SW_SiteIn->soils.soilDensityInput[s];
 
-            SW_Site->soilMatric_density[s] = calculate_soilMatricDensity(
-                SW_Site->soilBulk_density[s],
-                SW_Site->soils.fractionVolBulk_gravel[s],
+            SW_SiteSim->soilMatric_density[s] = calculate_soilMatricDensity(
+                SW_SiteSim->soilBulk_density[s],
+                SW_SiteIn->soils.fractionVolBulk_gravel[s],
                 LogInfo
             );
             if (LogInfo->stopRun) {
@@ -2544,11 +2584,12 @@ void SW_SIT_init_run(
             break;
 
         case SW_MATRIC:
-            SW_Site->soilMatric_density[s] = SW_Site->soils.soilDensityInput[s];
+            SW_SiteSim->soilMatric_density[s] =
+                SW_SiteIn->soils.soilDensityInput[s];
 
-            SW_Site->soilBulk_density[s] = calculate_soilBulkDensity(
-                SW_Site->soilMatric_density[s],
-                SW_Site->soils.fractionVolBulk_gravel[s]
+            SW_SiteSim->soilBulk_density[s] = calculate_soilBulkDensity(
+                SW_SiteSim->soilMatric_density[s],
+                SW_SiteIn->soils.fractionVolBulk_gravel[s]
             );
 
             break;
@@ -2558,13 +2599,13 @@ void SW_SIT_init_run(
                 LogInfo,
                 LOGERROR,
                 "Soil density type not recognized",
-                SW_Site->type_soilDensityInput
+                SW_SiteIn->type_soilDensityInput
             );
             return; // Exit function prematurely due to error
         }
 
 
-        if (!SW_Site->site_has_swrcpMineralSoil) {
+        if (!SW_SiteSim->site_has_swrcpMineralSoil) {
             /* Use pedotransfer function PTF
                to estimate parameters of soil water retention curve (SWRC) for
                the mineral component of the layer.
@@ -2572,12 +2613,12 @@ void SW_SIT_init_run(
                been obtained from disk by `SW_SWRC_read()`
             */
             SWRC_PTF_estimate_parameters(
-                SW_Site->ptf_type[s],
-                SW_Site->soils.swrcpMineralSoil[s],
-                SW_Site->soils.fractionWeightMatric_sand[s],
-                SW_Site->soils.fractionWeightMatric_clay[s],
-                SW_Site->soils.fractionVolBulk_gravel[s],
-                SW_Site->soilBulk_density[s],
+                SW_SiteSim->ptf_type[s],
+                SW_SiteIn->soils.swrcpMineralSoil[s],
+                SW_SiteIn->soils.fractionWeightMatric_sand[s],
+                SW_SiteIn->soils.fractionWeightMatric_clay[s],
+                SW_SiteIn->soils.fractionVolBulk_gravel[s],
+                SW_SiteSim->soilBulk_density[s],
                 LogInfo
             );
             if (LogInfo->stopRun) {
@@ -2587,8 +2628,8 @@ void SW_SIT_init_run(
 
         /* Check parameters of mineral soil SWRC */
         if (!SWRC_check_parameters(
-                SW_Site->swrc_type[s],
-                SW_Site->soils.swrcpMineralSoil[s],
+                SW_SiteSim->swrc_type[s],
+                SW_SiteIn->soils.swrcpMineralSoil[s],
                 LogInfo
             )) {
             LogError(
@@ -2596,7 +2637,7 @@ void SW_SIT_init_run(
                 LOGERROR,
                 "Checks of parameters for SWRC '%s' "
                 "in the mineral component of layer %d failed.",
-                swrc2str[SW_Site->swrc_type[s]],
+                swrc2str[SW_SiteSim->swrc_type[s]],
                 s + 1
             );
             return; // Exit function prematurely due to error
@@ -2604,43 +2645,44 @@ void SW_SIT_init_run(
 
         /* Calculate bulk soil SWRCp from organic and mineral soil components */
         SWRC_bulkSoilParameters(
-            SW_Site->swrc_type[s],
-            SW_Site->swrcp[s],
-            SW_Site->soils.swrcpMineralSoil[s],
-            SW_Site->swrcpOM,
-            SW_Site->soils.fractionWeight_om[s],
-            SW_Site->depthSapric,
-            (s > 0) ? SW_Site->soils.depths[s - 1] : 0,
-            SW_Site->soils.depths[s]
+            SW_SiteSim->swrc_type[s],
+            SW_SiteSim->swrcp[s],
+            SW_SiteIn->soils.swrcpMineralSoil[s],
+            SW_SiteSim->swrcpOM,
+            SW_SiteIn->soils.fractionWeight_om[s],
+            SW_SiteIn->depthSapric,
+            (s > 0) ? SW_SiteIn->soils.depths[s - 1] : 0,
+            SW_SiteIn->soils.depths[s]
         );
 
         /* Check parameters of bulk soil SWRC */
         if (!SWRC_check_parameters(
-                SW_Site->swrc_type[s], SW_Site->swrcp[s], LogInfo
+                SW_SiteSim->swrc_type[s], SW_SiteSim->swrcp[s], LogInfo
             )) {
             LogError(
                 LogInfo,
                 LOGERROR,
                 "Checks of parameters for SWRC '%s' "
                 "in the bulk soil layer %d failed.",
-                swrc2str[SW_Site->swrc_type[s]],
+                swrc2str[SW_SiteSim->swrc_type[s]],
                 s + 1
             );
             return; // Exit function prematurely due to error
         }
 
         /* Extract ksat from swrcp */
-        SW_Site->ksat[s] =
-            SWRC_get_ksat(SW_Site->swrc_type[s], SW_Site->swrcp[s]);
+        SW_SiteSim->ksat[s] =
+            SWRC_get_ksat(SW_SiteSim->swrc_type[s], SW_SiteSim->swrcp[s]);
 
         /* Calculate SWC at field capacity and at wilting point */
-        SW_Site->swcBulk_fieldcap[s] =
-            SW_SWRC_SWPtoSWC(0.333, SW_Site, s, LogInfo);
+        SW_SiteSim->swcBulk_fieldcap[s] =
+            SW_SWRC_SWPtoSWC(0.333, SW_SiteIn, SW_SiteSim, s, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
-        SW_Site->swcBulk_wiltpt[s] = SW_SWRC_SWPtoSWC(15., SW_Site, s, LogInfo);
+        SW_SiteSim->swcBulk_wiltpt[s] =
+            SW_SWRC_SWPtoSWC(15., SW_SiteIn, SW_SiteSim, s, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -2657,9 +2699,9 @@ void SW_SIT_init_run(
                   describes "air-dry" soil
                 - Also make sure that `>= swc_min`, see below
         */
-        SW_Site->swcBulk_halfwiltpt[s] = fmax(
-            0.5 * SW_Site->swcBulk_wiltpt[s],
-            SW_SWRC_SWPtoSWC(100., SW_Site, s, LogInfo)
+        SW_SiteSim->swcBulk_halfwiltpt[s] = fmax(
+            0.5 * SW_SiteSim->swcBulk_wiltpt[s],
+            SW_SWRC_SWPtoSWC(100., SW_SiteIn, SW_SiteSim, s, LogInfo)
         );
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -2667,33 +2709,33 @@ void SW_SIT_init_run(
 
 
         /* Extract or estimate additional properties */
-        SW_Site->swcBulk_saturated[s] = SW_swcBulk_saturated(
-            SW_Site->swrc_type[s],
-            SW_Site->swrcp[s],
-            SW_Site->soils.fractionVolBulk_gravel[s],
-            SW_Site->soils.width[s],
-            SW_Site->ptf_type[s],
-            SW_Site->soils.fractionWeightMatric_sand[s],
-            SW_Site->soils.fractionWeightMatric_clay[s],
-            SW_Site->soils.fractionWeight_om[s],
+        SW_SiteSim->swcBulk_saturated[s] = SW_swcBulk_saturated(
+            SW_SiteSim->swrc_type[s],
+            SW_SiteSim->swrcp[s],
+            SW_SiteIn->soils.fractionVolBulk_gravel[s],
+            SW_SiteIn->soils.width[s],
+            SW_SiteSim->ptf_type[s],
+            SW_SiteIn->soils.fractionWeightMatric_sand[s],
+            SW_SiteIn->soils.fractionWeightMatric_clay[s],
+            SW_SiteIn->soils.fractionWeight_om[s],
             LogInfo
         );
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
-        SW_Site->swcBulk_min[s] = SW_swcBulk_minimum(
-            SW_Site->swrc_type[s],
-            SW_Site->swrcp[s],
-            SW_Site->soils.fractionVolBulk_gravel[s],
-            SW_Site->soils.width[s],
-            SW_Site->ptf_type[s],
-            SW_Site->SWCMinVal,
-            SW_Site->soils.fractionWeightMatric_sand[s],
-            SW_Site->soils.fractionWeightMatric_clay[s],
-            SW_Site->soils.fractionWeight_om[s],
-            SW_Site->swcBulk_saturated[s],
-            SW_Site->SWCMinVal,
+        SW_SiteSim->swcBulk_min[s] = SW_swcBulk_minimum(
+            SW_SiteSim->swrc_type[s],
+            SW_SiteSim->swrcp[s],
+            SW_SiteIn->soils.fractionVolBulk_gravel[s],
+            SW_SiteIn->soils.width[s],
+            SW_SiteSim->ptf_type[s],
+            SW_SiteIn->SWCMinVal,
+            SW_SiteIn->soils.fractionWeightMatric_sand[s],
+            SW_SiteIn->soils.fractionWeightMatric_clay[s],
+            SW_SiteIn->soils.fractionWeight_om[s],
+            SW_SiteSim->swcBulk_saturated[s],
+            SW_SiteIn->SWCMinVal,
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -2702,52 +2744,56 @@ void SW_SIT_init_run(
 
 
         /* Calculate wet limit of SWC for what inputs defined as wet */
-        SW_Site->swcBulk_wet[s] =
-            GE(SW_Site->SWCWetVal, 1.0) ?
-                SW_SWRC_SWPtoSWC(SW_Site->SWCWetVal, SW_Site, s, LogInfo) :
-                SW_Site->SWCWetVal * SW_Site->soils.width[s];
+        SW_SiteSim->swcBulk_wet[s] =
+            GE(SW_SiteIn->SWCWetVal, 1.0) ?
+                SW_SWRC_SWPtoSWC(
+                    SW_SiteIn->SWCWetVal, SW_SiteIn, SW_SiteSim, s, LogInfo
+                ) :
+                SW_SiteIn->SWCWetVal * SW_SiteIn->soils.width[s];
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
         /* Calculate initial SWC based on inputs */
-        SW_Site->swcBulk_init[s] =
-            GE(SW_Site->SWCInitVal, 1.0) ?
-                SW_SWRC_SWPtoSWC(SW_Site->SWCInitVal, SW_Site, s, LogInfo) :
-                SW_Site->SWCInitVal * SW_Site->soils.width[s];
+        SW_SiteSim->swcBulk_init[s] =
+            GE(SW_SiteIn->SWCInitVal, 1.0) ?
+                SW_SWRC_SWPtoSWC(
+                    SW_SiteIn->SWCInitVal, SW_SiteIn, SW_SiteSim, s, LogInfo
+                ) :
+                SW_SiteIn->SWCInitVal * SW_SiteIn->soils.width[s];
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
 
         /* test validity of calculated values */
-        if (LT(SW_Site->swcBulk_init[s], SW_Site->swcBulk_min[s])) {
+        if (LT(SW_SiteSim->swcBulk_init[s], SW_SiteSim->swcBulk_min[s])) {
             LogError(
                 LogInfo,
                 LOGERROR,
                 "Soil layer %d: swcBulk_init (%f cm) <= "
                 "swcBulk_min (%f cm) but should be larger",
                 s + 1,
-                SW_Site->swcBulk_init[s],
-                SW_Site->swcBulk_min[s]
+                SW_SiteSim->swcBulk_init[s],
+                SW_SiteSim->swcBulk_min[s]
             );
             return; // Exit function prematurely due to error
         }
 
-        if (LT(SW_Site->swcBulk_wiltpt[s], SW_Site->swcBulk_min[s])) {
+        if (LT(SW_SiteSim->swcBulk_wiltpt[s], SW_SiteSim->swcBulk_min[s])) {
             LogError(
                 LogInfo,
                 LOGERROR,
                 "Soil layer %d: swcBulk_wiltpt (%f cm) <= "
                 "swcBulk_min (%f cm) but should be larger",
                 s + 1,
-                SW_Site->swcBulk_wiltpt[s],
-                SW_Site->swcBulk_min[s]
+                SW_SiteSim->swcBulk_wiltpt[s],
+                SW_SiteSim->swcBulk_min[s]
             );
             return; // Exit function prematurely due to error
         }
 
-        if (LT(SW_Site->swcBulk_halfwiltpt[s], SW_Site->swcBulk_min[s])) {
+        if (LT(SW_SiteSim->swcBulk_halfwiltpt[s], SW_SiteSim->swcBulk_min[s])) {
             LogError(
                 LogInfo,
                 LOGWARN,
@@ -2756,31 +2802,39 @@ void SW_SIT_init_run(
                 "swcBulk_min (%f cm / %f MPa); therefore, "
                 "swcBulk_halfwiltpt was set to the value of swcBulk_min",
                 s + 1,
-                SW_Site->swcBulk_halfwiltpt[s],
+                SW_SiteSim->swcBulk_halfwiltpt[s],
                 -0.1 * SW_SWRC_SWCtoSWP(
-                           SW_Site->swcBulk_halfwiltpt[s], SW_Site, s, LogInfo
+                           SW_SiteSim->swcBulk_halfwiltpt[s],
+                           SW_SiteIn,
+                           SW_SiteSim,
+                           s,
+                           LogInfo
                        ),
-                SW_Site->swcBulk_min[s],
+                SW_SiteSim->swcBulk_min[s],
                 -0.1 * SW_SWRC_SWCtoSWP(
-                           SW_Site->swcBulk_min[s], SW_Site, s, LogInfo
+                           SW_SiteSim->swcBulk_min[s],
+                           SW_SiteIn,
+                           SW_SiteSim,
+                           s,
+                           LogInfo
                        )
             );
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
 
-            SW_Site->swcBulk_halfwiltpt[s] = SW_Site->swcBulk_min[s];
+            SW_SiteSim->swcBulk_halfwiltpt[s] = SW_SiteSim->swcBulk_min[s];
         }
 
-        if (LE(SW_Site->swcBulk_wet[s], SW_Site->swcBulk_min[s])) {
+        if (LE(SW_SiteSim->swcBulk_wet[s], SW_SiteSim->swcBulk_min[s])) {
             LogError(
                 LogInfo,
                 LOGERROR,
                 "Soil layer %d: calculated swcBulk_wet (%f cm) <= "
                 "swcBulk_min (%f cm)",
                 s + 1,
-                SW_Site->swcBulk_wet[s],
-                SW_Site->swcBulk_min[s]
+                SW_SiteSim->swcBulk_wet[s],
+                SW_SiteSim->swcBulk_min[s]
             );
             return; // Exit function prematurely due to error
         }
@@ -2791,8 +2845,14 @@ void SW_SIT_init_run(
             sw_printf(
                 "L[%d] swcmin=%f = swpmin=%f\n",
                 s,
-                SW_Site->swcBulk_min[s],
-                SW_SWRC_SWCtoSWP(SW_Site->swcBulk_min[s], SW_Site, s, LogInfo)
+                SW_SiteSim->swcBulk_min[s],
+                SW_SWRC_SWCtoSWP(
+                    SW_SiteSim->swcBulk_min[s],
+                    SW_SiteIn,
+                    SW_SiteSim,
+                    s,
+                    LogInfo
+                )
             );
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
@@ -2801,9 +2861,13 @@ void SW_SIT_init_run(
             sw_printf(
                 "L[%d] SWC(HalfWiltpt)=%f = swp(hw)=%f\n",
                 s,
-                SW_Site->swcBulk_halfwiltpt[s],
+                SW_SiteSim->swcBulk_halfwiltpt[s],
                 SW_SWRC_SWCtoSWP(
-                    SW_Site->swcBulk_halfwiltpt[s], SW_Site, s, LogInfo
+                    SW_SiteSim->swcBulk_halfwiltpt[s],
+                    SW_SiteIn,
+                    SW_SiteSim,
+                    s,
+                    LogInfo
                 )
             );
             if (LogInfo->stopRun) {
@@ -2814,27 +2878,32 @@ void SW_SIT_init_run(
 
 
         /* sum ev and tr coefficients for later */
-        evsum += SW_Site->soils.evap_coeff[s];
+        evsum += SW_SiteIn->soils.evap_coeff[s];
 
         ForEachVegType(k) {
-            trsum_veg[k] += SW_Site->soils.transp_coeff[k][s];
+            trsum_veg[k] += SW_SiteIn->soils.transp_coeff[k][s];
             /* calculate soil water content at SWPcrit for each vegetation type
              */
-            SW_Site->swcBulk_atSWPcrit[k][s] = SW_SWRC_SWPtoSWC(
-                SW_VegProdIn->veg[k].SWPcrit, SW_Site, s, LogInfo
+            SW_SiteSim->swcBulk_atSWPcrit[k][s] = SW_SWRC_SWPtoSWC(
+                SW_VegProdIn->veg[k].SWPcrit, SW_SiteIn, SW_SiteSim, s, LogInfo
             );
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
 
-            if (LT(SW_Site->swcBulk_atSWPcrit[k][s], SW_Site->swcBulk_min[s])) {
+            if (LT(SW_SiteSim->swcBulk_atSWPcrit[k][s],
+                   SW_SiteSim->swcBulk_min[s])) {
                 flagswpcrit++;
 
                 // lower SWcrit [-bar] to SWP-equivalent of swBulk_min
                 tmp = fmin(
                     SW_VegProdIn->veg[k].SWPcrit,
                     SW_SWRC_SWCtoSWP(
-                        SW_Site->swcBulk_min[s], SW_Site, s, LogInfo
+                        SW_SiteSim->swcBulk_min[s],
+                        SW_SiteIn,
+                        SW_SiteSim,
+                        s,
+                        LogInfo
                     )
                 );
                 if (LogInfo->stopRun) {
@@ -2852,11 +2921,15 @@ void SW_SIT_init_run(
                     "re-calculated)",
                     s + 1,
                     k + 1,
-                    SW_Site->swcBulk_atSWPcrit[k][s],
+                    SW_SiteSim->swcBulk_atSWPcrit[k][s],
                     -0.1 * SW_VegProdIn->veg[k].SWPcrit,
-                    SW_Site->swcBulk_min[s],
+                    SW_SiteSim->swcBulk_min[s],
                     -0.1 * SW_SWRC_SWCtoSWP(
-                               SW_Site->swcBulk_min[s], SW_Site, s, LogInfo
+                               SW_SiteSim->swcBulk_min[s],
+                               SW_SiteIn,
+                               SW_SiteSim,
+                               s,
+                               LogInfo
                            ),
                     -0.1 * tmp
                 );
@@ -2871,9 +2944,9 @@ void SW_SIT_init_run(
              * is in and check validity of result. Region bounds are
              * base1 but s is base0.*/
             curregion = 0;
-            ForEachTranspRegion(r, SW_Site->n_transp_rgn) {
-                if (s < SW_Site->TranspRgnBounds[r]) {
-                    if (ZRO(SW_Site->soils.transp_coeff[k][s])) {
+            ForEachTranspRegion(r, SW_SiteSim->n_transp_rgn) {
+                if (s < SW_SiteSim->TranspRgnBounds[r]) {
+                    if (ZRO(SW_SiteIn->soils.transp_coeff[k][s])) {
                         break; /* end of transpiring layers */
                     }
                     curregion = r + 1;
@@ -2881,9 +2954,10 @@ void SW_SIT_init_run(
                 }
             }
 
-            if (curregion || SW_Site->TranspRgnBounds[curregion] == 0) {
-                SW_Site->my_transp_rgn[k][s] = curregion;
-                SW_Site->n_transp_lyrs[k] = MAX(SW_Site->n_transp_lyrs[k], s);
+            if (curregion || SW_SiteSim->TranspRgnBounds[curregion] == 0) {
+                SW_SiteSim->my_transp_rgn[k][s] = curregion;
+                SW_SiteSim->n_transp_lyrs[k] =
+                    MAX(SW_SiteSim->n_transp_lyrs[k], s);
 
             } else if (s == 0) {
                 LogError(
@@ -2894,7 +2968,7 @@ void SW_SIT_init_run(
                     key2veg[k]
                 );
                 return; // Exit function prematurely due to error
-            } else if (r < SW_Site->n_transp_rgn) {
+            } else if (r < SW_SiteSim->n_transp_rgn) {
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -2907,30 +2981,34 @@ void SW_SIT_init_run(
                 );
                 return; // Exit function prematurely due to error
             } else {
-                SW_Site->my_transp_rgn[k][s] = 0;
+                SW_SiteSim->my_transp_rgn[k][s] = 0;
             }
         }
     } /*end ForEachSoilLayer */
 
-    SW_Site->site_has_swrcpMineralSoil = swTRUE;
+    SW_SiteSim->site_has_swrcpMineralSoil = swTRUE;
 
 
     /* Re-calculate `swcBulk_atSWPcrit` if it was below `swcBulk_min`
        for any vegetation x soil layer combination using adjusted `SWPcrit`
     */
     if (flagswpcrit) {
-        ForEachSoilLayer(s, SW_Site->n_layers) {
+        ForEachSoilLayer(s, SW_SiteSim->n_layers) {
             ForEachVegType(k) {
                 /* calculate soil water content at adjusted SWPcrit */
-                SW_Site->swcBulk_atSWPcrit[k][s] = SW_SWRC_SWPtoSWC(
-                    SW_VegProdIn->veg[k].SWPcrit, SW_Site, s, LogInfo
+                SW_SiteSim->swcBulk_atSWPcrit[k][s] = SW_SWRC_SWPtoSWC(
+                    SW_VegProdIn->veg[k].SWPcrit,
+                    SW_SiteIn,
+                    SW_SiteSim,
+                    s,
+                    LogInfo
                 );
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }
 
-                if (LT(SW_Site->swcBulk_atSWPcrit[k][s],
-                       SW_Site->swcBulk_min[s])) {
+                if (LT(SW_SiteSim->swcBulk_atSWPcrit[k][s],
+                       SW_SiteSim->swcBulk_min[s])) {
                     LogError(
                         LogInfo,
                         LOGERROR,
@@ -2940,8 +3018,8 @@ void SW_SIT_init_run(
                         "despite adjusted SWcrit (%f MPa)",
                         s + 1,
                         k + 1,
-                        SW_Site->swcBulk_atSWPcrit[k][s],
-                        SW_Site->swcBulk_min[s],
+                        SW_SiteSim->swcBulk_atSWPcrit[k][s],
+                        SW_SiteSim->swcBulk_min[s],
                         -0.1 * SW_VegProdIn->veg[k].SWPcrit
                     );
                     return; // Exit function prematurely due to error
@@ -2965,8 +3043,8 @@ void SW_SIT_init_run(
         writePtr = errorMsg;
         writeSize = LARGE_VALUE;
 
-        ForEachEvapLayer(s, SW_Site->n_evap_lyrs) {
-            SW_Site->soils.evap_coeff[s] /= evsum;
+        ForEachEvapLayer(s, SW_SiteSim->n_evap_lyrs) {
+            SW_SiteIn->soils.evap_coeff[s] /= evsum;
 
             if (writeSize > 0) {
                 (void) snprintf(
@@ -2974,7 +3052,7 @@ void SW_SIT_init_run(
                     sizeof tmpStr,
                     " evco[%d] = %.4f",
                     s + 1,
-                    SW_Site->soils.evap_coeff[s]
+                    SW_SiteIn->soils.evap_coeff[s]
                 );
                 tempWritePtr =
                     (char *) sw_memccpy(writePtr, tmpStr, '\0', writeSize);
@@ -3000,9 +3078,9 @@ void SW_SIT_init_run(
             writePtr = errorMsg;
             writeSize = LARGE_VALUE;
 
-            ForEachSoilLayer(s, SW_Site->n_layers) {
-                if (GT(SW_Site->soils.transp_coeff[k][s], 0.)) {
-                    SW_Site->soils.transp_coeff[k][s] /= trsum_veg[k];
+            ForEachSoilLayer(s, SW_SiteSim->n_layers) {
+                if (GT(SW_SiteIn->soils.transp_coeff[k][s], 0.)) {
+                    SW_SiteIn->soils.transp_coeff[k][s] /= trsum_veg[k];
 
                     if (writeSize > 0) {
                         (void) snprintf(
@@ -3010,7 +3088,7 @@ void SW_SIT_init_run(
                             sizeof tmpStr,
                             " trco[%d] = %.4f",
                             s + 1,
-                            SW_Site->soils.transp_coeff[k][s]
+                            SW_SiteIn->soils.transp_coeff[k][s]
                         );
                         tempWritePtr = (char *) sw_memccpy(
                             writePtr, tmpStr, '\0', writeSize
@@ -3035,16 +3113,16 @@ void SW_SIT_init_run(
 
     // getting the number of regressions, for use in the soil_temperature
     // function
-    tmp_stNRGR = (SW_Site->stMaxDepth / SW_Site->stDeltaX);
+    tmp_stNRGR = (SW_SiteIn->stMaxDepth / SW_SiteIn->stDeltaX);
     if (tmp_stNRGR > (double) UINT_MAX) {
-        SW_Site->stNRGR = MAX_ST_RGR + 1;
+        SW_SiteSim->stNRGR = MAX_ST_RGR + 1;
     } else {
-        SW_Site->stNRGR = (unsigned int) tmp_stNRGR - 1;
+        SW_SiteSim->stNRGR = (unsigned int) tmp_stNRGR - 1;
     }
 
-    Bool too_many_RGR = (Bool) (SW_Site->stNRGR + 1 >= MAX_ST_RGR);
+    Bool too_many_RGR = (Bool) (SW_SiteSim->stNRGR + 1 >= MAX_ST_RGR);
 
-    if (!EQ(fmod(SW_Site->stMaxDepth, SW_Site->stDeltaX), 0.0) ||
+    if (!EQ(fmod(SW_SiteIn->stMaxDepth, SW_SiteIn->stDeltaX), 0.0) ||
         too_many_RGR) {
 
         if (too_many_RGR) {
@@ -3059,11 +3137,11 @@ void SW_SIT_init_run(
                 "depth now %f [cm] (from %f); "
                 "width/thickness of layers set to %f [cm] (from %f).",
                 180.0,
-                SW_Site->stMaxDepth,
+                SW_SiteIn->stMaxDepth,
                 11,
-                SW_Site->stNRGR,
+                SW_SiteSim->stNRGR,
                 15.,
-                SW_Site->stDeltaX
+                SW_SiteIn->stDeltaX
             );
         } else {
             // because we don't deal with partial layers
@@ -3078,48 +3156,56 @@ void SW_SIT_init_run(
                 "depth now %f [cm] (from %f); "
                 "width/thickness of layers set to %f [cm] (from %f).",
                 180.0,
-                SW_Site->stMaxDepth,
+                SW_SiteIn->stMaxDepth,
                 11,
-                SW_Site->stNRGR,
+                SW_SiteSim->stNRGR,
                 15.,
-                SW_Site->stDeltaX
+                SW_SiteIn->stDeltaX
             );
         }
 
         // resets it to the default values
-        SW_Site->stMaxDepth = 180.0;
-        SW_Site->stNRGR = 11;
-        SW_Site->stDeltaX = 15.0;
+        SW_SiteIn->stMaxDepth = 180.0;
+        SW_SiteSim->stNRGR = 11;
+        SW_SiteIn->stDeltaX = 15.0;
     }
 }
 
 /**
 @brief Reset counts of `SW_Site` to zero
 
-@param[out] SW_Site Struct of type SW_SITE describing the simulated site
+@param[out] SW_SiteSim Struct of type SW_SITE_SIM describing the simulated
+site's values used during simulation
 */
-void SW_SIT_init_counts(SW_SITE *SW_Site) {
+void SW_SIT_init_counts(SW_SITE_SIM *SW_SiteSim) {
     int k;
 
     // Reset counts
-    SW_Site->n_layers = 0;
-    SW_Site->n_evap_lyrs = 0;
-    SW_Site->deep_lyr = 0;
-    SW_Site->n_transp_rgn = 0;
+    SW_SiteSim->n_layers = 0;
+    SW_SiteSim->n_evap_lyrs = 0;
+    SW_SiteSim->deep_lyr = 0;
+    SW_SiteSim->n_transp_rgn = 0;
 
-    ForEachVegType(k) { SW_Site->n_transp_lyrs[k] = 0; }
+    ForEachVegType(k) { SW_SiteSim->n_transp_lyrs[k] = 0; }
 
-    SW_Site->site_has_swrcpMineralSoil = swFALSE;
+    SW_SiteSim->site_has_swrcpMineralSoil = swFALSE;
 }
 
 /**
 @brief Print site-parameters and soil characteristics.
 
-@param[in] SW_Site Struct of type SW_SITE describing the simulated site
+@param[in] SW_SiteSim Struct of type SW_SITE_INPUTS describing the simulated
+site's input values
+@param[in] SW_SiteIn Struct of type SW_SITE describing the simulated site's
+    input values
 @param[in] SW_ModelIn Struct of type SW_MODEL_INPUTS holding basic input
     time information about the simulation
 */
-void echo_inputs(SW_SITE *SW_Site, SW_MODEL_INPUTS *SW_ModelIn) {
+void echo_inputs(
+    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_SIM *SW_SiteSim,
+    SW_MODEL_INPUTS *SW_ModelIn
+) {
     /* =================================================== */
     LyrIndex i;
     LOG_INFO LogInfo;
@@ -3131,21 +3217,21 @@ void echo_inputs(SW_SITE *SW_Site, SW_MODEL_INPUTS *SW_ModelIn) {
     printf("  Site File: 'siteparam.in'\n");
     printf(
         "  Reset SWC values each year: %s\n",
-        (SW_Site->reset_yr) ? "swTRUE" : "swFALSE"
+        (SW_SiteIn->reset_yr) ? "swTRUE" : "swFALSE"
     );
     printf(
         "  Use deep drainage reservoir: %s\n",
-        (SW_Site->deepdrain) ? "swTRUE" : "swFALSE"
+        (SW_SiteIn->deepdrain) ? "swTRUE" : "swFALSE"
     );
-    printf("  Slow Drain Coefficient: %5.4f\n", SW_Site->slow_drain_coeff);
-    printf("  PET Scale: %5.4f\n", SW_Site->pet_scale);
+    printf("  Slow Drain Coefficient: %5.4f\n", SW_SiteIn->slow_drain_coeff);
+    printf("  PET Scale: %5.4f\n", SW_SiteIn->pet_scale);
     printf(
         "  Runoff: proportion of surface water lost: %5.4f\n",
-        SW_Site->percentRunoff
+        SW_SiteIn->percentRunoff
     );
     printf(
         "  Runon: proportion of new surface water gained: %5.4f\n",
-        SW_Site->percentRunon
+        SW_SiteIn->percentRunon
     );
     printf("  Longitude (degree): %4.2f\n", SW_ModelIn->longitude * rad_to_deg);
     printf("  Latitude (degree): %4.2f\n", SW_ModelIn->latitude * rad_to_deg);
@@ -3158,67 +3244,67 @@ void echo_inputs(SW_SITE *SW_Site, SW_MODEL_INPUTS *SW_ModelIn) {
     );
     printf(
         "  Avg. air temp below which ppt is snow ( C): %5.4f\n",
-        SW_Site->TminAccu2
+        SW_SiteIn->TminAccu2
     );
     printf(
         "  Snow temperature at which snow melt starts ( C): %5.4f\n",
-        SW_Site->TmaxCrit
+        SW_SiteIn->TmaxCrit
     );
     printf(
         "  Relative contribution of avg. air temperature to todays snow "
         "temperture vs. yesterday's snow temperature (0-1): %5.4f\n",
-        SW_Site->lambdasnow
+        SW_SiteIn->lambdasnow
     );
     printf(
         "  Minimum snow melt rate on winter solstice (cm/day/C): %5.4f\n",
-        SW_Site->RmeltMin
+        SW_SiteIn->RmeltMin
     );
     printf(
         "  Maximum snow melt rate on summer solstice (cm/day/C): %5.4f\n",
-        SW_Site->RmeltMax
+        SW_SiteIn->RmeltMax
     );
 
     printf("\nSoil Temperature Constants:\n----------------------\n");
-    printf("  Biomass Limiter constant: %5.4f\n", SW_Site->bmLimiter);
-    printf("  T1Param1: %5.4f\n", SW_Site->t1Param1);
-    printf("  T1Param2: %5.4f\n", SW_Site->t1Param2);
-    printf("  T1Param3: %5.4f\n", SW_Site->t1Param3);
-    printf("  csParam1: %5.4f\n", SW_Site->csParam1);
-    printf("  csParam2: %5.4f\n", SW_Site->csParam2);
-    printf("  shParam: %5.4f\n", SW_Site->shParam);
-    printf("  Tsoil_constant: %5.4f\n", SW_Site->Tsoil_constant);
-    printf("  deltaX: %5.4f\n", SW_Site->stDeltaX);
-    printf("  max depth: %5.4f\n", SW_Site->stMaxDepth);
+    printf("  Biomass Limiter constant: %5.4f\n", SW_SiteIn->bmLimiter);
+    printf("  T1Param1: %5.4f\n", SW_SiteIn->t1Param1);
+    printf("  T1Param2: %5.4f\n", SW_SiteIn->t1Param2);
+    printf("  T1Param3: %5.4f\n", SW_SiteIn->t1Param3);
+    printf("  csParam1: %5.4f\n", SW_SiteIn->csParam1);
+    printf("  csParam2: %5.4f\n", SW_SiteIn->csParam2);
+    printf("  shParam: %5.4f\n", SW_SiteIn->shParam);
+    printf("  Tsoil_constant: %5.4f\n", SW_SiteIn->Tsoil_constant);
+    printf("  deltaX: %5.4f\n", SW_SiteIn->stDeltaX);
+    printf("  max depth: %5.4f\n", SW_SiteIn->stMaxDepth);
     printf(
         "  Make soil temperature calculations: %s\n",
-        (SW_Site->use_soil_temp) ? "swTRUE" : "swFALSE"
+        (SW_SiteIn->use_soil_temp) ? "swTRUE" : "swFALSE"
     );
     printf(
         "  Number of regressions for the soil temperature function: %d\n",
-        SW_Site->stNRGR
+        SW_SiteSim->stNRGR
     );
 
     printf("\nLayer Related Values:\n----------------------\n");
     printf("  Soils File: 'soils.in'\n");
-    printf("  Number of soil layers: %d\n", SW_Site->n_layers);
-    printf("  Number of evaporation layers: %d\n", SW_Site->n_evap_lyrs);
+    printf("  Number of soil layers: %d\n", SW_SiteSim->n_layers);
+    printf("  Number of evaporation layers: %d\n", SW_SiteSim->n_evap_lyrs);
     printf(
         "  Number of forb transpiration layers: %d\n",
-        SW_Site->n_transp_lyrs[SW_FORBS]
+        SW_SiteSim->n_transp_lyrs[SW_FORBS]
     );
     printf(
         "  Number of tree transpiration layers: %d\n",
-        SW_Site->n_transp_lyrs[SW_TREES]
+        SW_SiteSim->n_transp_lyrs[SW_TREES]
     );
     printf(
         "  Number of shrub transpiration layers: %d\n",
-        SW_Site->n_transp_lyrs[SW_SHRUB]
+        SW_SiteSim->n_transp_lyrs[SW_SHRUB]
     );
     printf(
         "  Number of grass transpiration layers: %d\n",
-        SW_Site->n_transp_lyrs[SW_GRASS]
+        SW_SiteSim->n_transp_lyrs[SW_GRASS]
     );
-    printf("  Number of transpiration regions: %d\n", SW_Site->n_transp_rgn);
+    printf("  Number of transpiration regions: %d\n", SW_SiteSim->n_transp_rgn);
 
     printf("\nLayer Specific Values:\n----------------------\n");
     printf("\n  Layer information on a per centimeter depth basis:\n");
@@ -3241,37 +3327,41 @@ void echo_inputs(SW_SITE *SW_Site, SW_MODEL_INPUTS *SW_ModelIn) {
            "   		------          ------    ------      ------      "
            "------   ------       ------   	 -----	        -----       "
            "-----   	 ----     ----     ----    ----         ----\n");
-    ForEachSoilLayer(i, SW_Site->n_layers) {
+    ForEachSoilLayer(i, SW_SiteSim->n_layers) {
         printf(
             "  %3d %5.1f %9.5f %6.2f %8.5f %8.5f %6.2f %6.2f %6.2f %6.2f %6.2f "
             "%6.2f %9.2f %9.2f %9.2f %9.2f %9.2f %10d %10d %15d %15d %15.4f "
             "%9.4f %9.4f %9.4f %9.4f\n",
             i + 1,
-            SW_Site->soils.width[i],
-            SW_Site->soilBulk_density[i],
-            SW_Site->soils.fractionVolBulk_gravel[i],
-            SW_Site->swcBulk_fieldcap[i] / SW_Site->soils.width[i],
-            SW_Site->swcBulk_wiltpt[i] / SW_Site->soils.width[i],
-            SW_Site->soils.fractionWeightMatric_sand[i],
-            SW_Site->soils.fractionWeightMatric_clay[i],
-            SW_Site->swcBulk_atSWPcrit[i][SW_FORBS] / SW_Site->soils.width[i],
-            SW_Site->swcBulk_atSWPcrit[i][SW_TREES] / SW_Site->soils.width[i],
-            SW_Site->swcBulk_atSWPcrit[i][SW_SHRUB] / SW_Site->soils.width[i],
-            SW_Site->swcBulk_atSWPcrit[i][SW_GRASS] / SW_Site->soils.width[i],
-            SW_Site->soils.evap_coeff[i],
-            SW_Site->soils.transp_coeff[SW_FORBS][i],
-            SW_Site->soils.transp_coeff[SW_TREES][i],
-            SW_Site->soils.transp_coeff[SW_SHRUB][i],
-            SW_Site->soils.transp_coeff[i][SW_GRASS],
-            SW_Site->my_transp_rgn[SW_FORBS][i],
-            SW_Site->my_transp_rgn[SW_TREES][i],
-            SW_Site->my_transp_rgn[SW_SHRUB][i],
-            SW_Site->my_transp_rgn[SW_GRASS][i],
-            SW_Site->swcBulk_wet[i] / SW_Site->soils.width[i],
-            SW_Site->swcBulk_min[i] / SW_Site->soils.width[i],
-            SW_Site->swcBulk_init[i] / SW_Site->soils.width[i],
-            SW_Site->swcBulk_saturated[i] / SW_Site->soils.width[i],
-            SW_Site->soils.impermeability[i]
+            SW_SiteIn->soils.width[i],
+            SW_SiteSim->soilBulk_density[i],
+            SW_SiteIn->soils.fractionVolBulk_gravel[i],
+            SW_SiteSim->swcBulk_fieldcap[i] / SW_SiteIn->soils.width[i],
+            SW_SiteSim->swcBulk_wiltpt[i] / SW_SiteIn->soils.width[i],
+            SW_SiteIn->soils.fractionWeightMatric_sand[i],
+            SW_SiteIn->soils.fractionWeightMatric_clay[i],
+            SW_SiteSim->swcBulk_atSWPcrit[i][SW_FORBS] /
+                SW_SiteIn->soils.width[i],
+            SW_SiteSim->swcBulk_atSWPcrit[i][SW_TREES] /
+                SW_SiteIn->soils.width[i],
+            SW_SiteSim->swcBulk_atSWPcrit[i][SW_SHRUB] /
+                SW_SiteIn->soils.width[i],
+            SW_SiteSim->swcBulk_atSWPcrit[i][SW_GRASS] /
+                SW_SiteIn->soils.width[i],
+            SW_SiteIn->soils.evap_coeff[i],
+            SW_SiteIn->soils.transp_coeff[SW_FORBS][i],
+            SW_SiteIn->soils.transp_coeff[SW_TREES][i],
+            SW_SiteIn->soils.transp_coeff[SW_SHRUB][i],
+            SW_SiteIn->soils.transp_coeff[i][SW_GRASS],
+            SW_SiteSim->my_transp_rgn[SW_FORBS][i],
+            SW_SiteSim->my_transp_rgn[SW_TREES][i],
+            SW_SiteSim->my_transp_rgn[SW_SHRUB][i],
+            SW_SiteSim->my_transp_rgn[SW_GRASS][i],
+            SW_SiteSim->swcBulk_wet[i] / SW_SiteIn->soils.width[i],
+            SW_SiteSim->swcBulk_min[i] / SW_SiteIn->soils.width[i],
+            SW_SiteSim->swcBulk_init[i] / SW_SiteIn->soils.width[i],
+            SW_SiteSim->swcBulk_saturated[i] / SW_SiteIn->soils.width[i],
+            SW_SiteIn->soils.impermeability[i]
         );
     }
     printf("\n  Actual per-layer values:\n");
@@ -3286,27 +3376,27 @@ void echo_inputs(SW_SITE *SW_Site, SW_MODEL_INPUTS *SW_ModelIn) {
            "  ------        	------            	------          ----   "
            "		----     ----     ----    ----		----\n");
 
-    ForEachSoilLayer(i, SW_Site->n_layers) {
+    ForEachSoilLayer(i, SW_SiteSim->n_layers) {
         printf(
             "  %3d %5.1f %9.5f %6.2f %8.5f %8.5f %6.2f %6.2f %7.4f %7.4f %7.4f "
             "%7.4f %7.4f %7.4f %8.4f %7.4f %5.4f\n",
             i + 1,
-            SW_Site->soils.width[i],
-            SW_Site->soilBulk_density[i],
-            SW_Site->soils.fractionVolBulk_gravel[i],
-            SW_Site->swcBulk_fieldcap[i],
-            SW_Site->swcBulk_wiltpt[i],
-            SW_Site->soils.fractionWeightMatric_sand[i],
-            SW_Site->soils.fractionWeightMatric_clay[i],
-            SW_Site->swcBulk_atSWPcrit[i][SW_FORBS],
-            SW_Site->swcBulk_atSWPcrit[i][SW_TREES],
-            SW_Site->swcBulk_atSWPcrit[i][SW_SHRUB],
-            SW_Site->swcBulk_atSWPcrit[i][SW_GRASS],
-            SW_Site->swcBulk_wet[i],
-            SW_Site->swcBulk_min[i],
-            SW_Site->swcBulk_init[i],
-            SW_Site->swcBulk_saturated[i],
-            SW_Site->soils.avgLyrTempInit[i]
+            SW_SiteIn->soils.width[i],
+            SW_SiteSim->soilBulk_density[i],
+            SW_SiteIn->soils.fractionVolBulk_gravel[i],
+            SW_SiteSim->swcBulk_fieldcap[i],
+            SW_SiteSim->swcBulk_wiltpt[i],
+            SW_SiteIn->soils.fractionWeightMatric_sand[i],
+            SW_SiteIn->soils.fractionWeightMatric_clay[i],
+            SW_SiteSim->swcBulk_atSWPcrit[i][SW_FORBS],
+            SW_SiteSim->swcBulk_atSWPcrit[i][SW_TREES],
+            SW_SiteSim->swcBulk_atSWPcrit[i][SW_SHRUB],
+            SW_SiteSim->swcBulk_atSWPcrit[i][SW_GRASS],
+            SW_SiteSim->swcBulk_wet[i],
+            SW_SiteSim->swcBulk_min[i],
+            SW_SiteSim->swcBulk_init[i],
+            SW_SiteSim->swcBulk_saturated[i],
+            SW_SiteIn->soils.avgLyrTempInit[i]
         );
     }
 
@@ -3321,57 +3411,93 @@ void echo_inputs(SW_SITE *SW_Site, SW_MODEL_INPUTS *SW_ModelIn) {
            "-----------      -----------      -----------      -----------    "
            "-----------    --------------    --------------\n");
 
-    ForEachSoilLayer(i, SW_Site->n_layers) {
+    ForEachSoilLayer(i, SW_SiteSim->n_layers) {
         printf(
             "  %3d   %15.4f   %15.4f  %15.4f %15.4f  %15.4f  %15.4f  %15.4f   "
             "%15.4f   %15.4f\n",
             i + 1,
             SW_SWRC_SWCtoSWP(
-                SW_Site->swcBulk_fieldcap[i], SW_Site, i, &LogInfo
-            ),
-            SW_SWRC_SWCtoSWP(SW_Site->swcBulk_wiltpt[i], SW_Site, i, &LogInfo),
-            SW_SWRC_SWCtoSWP(
-                SW_Site->swcBulk_atSWPcrit[i][SW_FORBS], SW_Site, i, &LogInfo
-            ),
-            SW_SWRC_SWCtoSWP(
-                SW_Site->swcBulk_atSWPcrit[i][SW_TREES], SW_Site, i, &LogInfo
+                SW_SiteSim->swcBulk_fieldcap[i],
+                SW_SiteIn,
+                SW_SiteSim,
+                i,
+                &LogInfo
             ),
             SW_SWRC_SWCtoSWP(
-                SW_Site->swcBulk_atSWPcrit[i][SW_SHRUB], SW_Site, i, &LogInfo
+                SW_SiteSim->swcBulk_wiltpt[i],
+                SW_SiteIn,
+                SW_SiteSim,
+                i,
+                &LogInfo
             ),
             SW_SWRC_SWCtoSWP(
-                SW_Site->swcBulk_atSWPcrit[i][SW_SHRUB], SW_Site, i, &LogInfo
+                SW_SiteSim->swcBulk_atSWPcrit[i][SW_FORBS],
+                SW_SiteIn,
+                SW_SiteSim,
+                i,
+                &LogInfo
             ),
             SW_SWRC_SWCtoSWP(
-                SW_Site->swcBulk_atSWPcrit[i][SW_GRASS], SW_Site, i, &LogInfo
+                SW_SiteSim->swcBulk_atSWPcrit[i][SW_TREES],
+                SW_SiteIn,
+                SW_SiteSim,
+                i,
+                &LogInfo
             ),
-            SW_SWRC_SWCtoSWP(SW_Site->swcBulk_min[i], SW_Site, i, &LogInfo),
-            SW_SWRC_SWCtoSWP(SW_Site->swcBulk_init[i], SW_Site, i, &LogInfo)
+            SW_SWRC_SWCtoSWP(
+                SW_SiteSim->swcBulk_atSWPcrit[i][SW_SHRUB],
+                SW_SiteIn,
+                SW_SiteSim,
+                i,
+                &LogInfo
+            ),
+            SW_SWRC_SWCtoSWP(
+                SW_SiteSim->swcBulk_atSWPcrit[i][SW_SHRUB],
+                SW_SiteIn,
+                SW_SiteSim,
+                i,
+                &LogInfo
+            ),
+            SW_SWRC_SWCtoSWP(
+                SW_SiteSim->swcBulk_atSWPcrit[i][SW_GRASS],
+                SW_SiteIn,
+                SW_SiteSim,
+                i,
+                &LogInfo
+            ),
+            SW_SWRC_SWCtoSWP(
+                SW_SiteSim->swcBulk_min[i], SW_SiteIn, SW_SiteSim, i, &LogInfo
+            ),
+            SW_SWRC_SWCtoSWP(
+                SW_SiteSim->swcBulk_init[i], SW_SiteIn, SW_SiteSim, i, &LogInfo
+            )
         );
     }
 
     printf("\nSoil Water Retention Curve:\n---------------------------\n");
     printf(
         "  SWRC type: %d (%s)\n",
-        SW_Site->site_swrc_type,
-        SW_Site->site_swrc_name
+        SW_SiteIn->site_swrc_type,
+        SW_SiteIn->site_swrc_name
     );
     printf(
-        "  PTF type: %d (%s)\n", SW_Site->site_ptf_type, SW_Site->site_ptf_name
+        "  PTF type: %d (%s)\n",
+        SW_SiteIn->site_ptf_type,
+        SW_SiteIn->site_ptf_name
     );
 
     printf("  Lyr     Param1     Param2     Param3     Param4     Param5     "
            "Param6\n");
-    ForEachSoilLayer(i, SW_Site->n_layers) {
+    ForEachSoilLayer(i, SW_SiteSim->n_layers) {
         printf(
             "  %3d%11.4f%11.4f%11.4f%11.4f%11.4f%11.4f\n",
             i + 1,
-            SW_Site->swrcp[i][0],
-            SW_Site->swrcp[i][1],
-            SW_Site->swrcp[i][2],
-            SW_Site->swrcp[i][3],
-            SW_Site->swrcp[i][4],
-            SW_Site->swrcp[i][5]
+            SW_SiteSim->swrcp[i][0],
+            SW_SiteSim->swrcp[i][1],
+            SW_SiteSim->swrcp[i][2],
+            SW_SiteSim->swrcp[i][3],
+            SW_SiteSim->swrcp[i][4],
+            SW_SiteSim->swrcp[i][5]
         );
     }
 

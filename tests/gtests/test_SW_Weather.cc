@@ -1027,7 +1027,7 @@ TEST_F(WeatherFixtureTest, WeatherInputGridMET) {
         SW_WTH_new_day(
             &SW_Run.WeatherIn,
             &SW_Run.WeatherSim,
-            &SW_Run.Site,
+            &SW_Run.SiteIn,
             snowpack,
             doy,
             year,
@@ -1369,7 +1369,7 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype1) {
         SW_WTH_new_day(
             &SW_Run.WeatherIn,
             &SW_Run.WeatherSim,
-            &SW_Run.Site,
+            &SW_Run.SiteIn,
             snowpack,
             doy,
             year,
@@ -1563,7 +1563,7 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
         SW_WTH_new_day(
             &SW_Run.WeatherIn,
             &SW_Run.WeatherSim,
-            &SW_Run.Site,
+            &SW_Run.SiteIn,
             snowpack,
             doy,
             year,

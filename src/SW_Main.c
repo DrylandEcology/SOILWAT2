@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
     SW_NCIN_check_input_config(
         &SW_Domain.netCDFInput,
         SW_Domain.hasConsistentSoilLayerDepths,
-        sw_template.Site.inputsProvideSWRCp,
+        sw_template.SiteIn.inputsProvideSWRCp,
         &LogInfo
     );
     if (LogInfo.stopRun) {
@@ -172,9 +172,9 @@ int main(int argc, char **argv) {
         &SW_Domain.nMaxSoilLayers,
         &SW_Domain.nMaxEvapLayers,
         SW_Domain.depthsAllSoilLayers,
-        sw_template.Site.n_layers,
-        sw_template.Site.n_evap_lyrs,
-        sw_template.Site.soils.depths,
+        sw_template.SiteSim.n_layers,
+        sw_template.SiteSim.n_evap_lyrs,
+        sw_template.SiteIn.soils.depths,
         &LogInfo
     );
     if (LogInfo.stopRun) {

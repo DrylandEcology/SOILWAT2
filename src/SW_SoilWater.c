@@ -111,13 +111,13 @@ static void clear_hist(
     }
 }
 
-static void reset_swc(SW_SOILWAT_SIM *SW_SoilWatSim, SW_SITE *SW_Site) {
+static void reset_swc(SW_SOILWAT_SIM *SW_SoilWatSim, SW_SITE_SIM *SW_SiteSim) {
     LyrIndex lyr;
 
     /* reset swc */
-    ForEachSoilLayer(lyr, SW_Site->n_layers) {
-        SW_SoilWatSim->swcBulk[Today][lyr] = SW_Site->swcBulk_init[lyr];
-        SW_SoilWatSim->swcBulk[Yesterday][lyr] = SW_Site->swcBulk_init[lyr];
+    ForEachSoilLayer(lyr, SW_SiteSim->n_layers) {
+        SW_SoilWatSim->swcBulk[Today][lyr] = SW_SiteSim->swcBulk_init[lyr];
+        SW_SoilWatSim->swcBulk[Yesterday][lyr] = SW_SiteSim->swcBulk_init[lyr];
         SW_SoilWatSim->drain[lyr] = 0.; // deepest percolation is deep drainage
     }
 
@@ -440,7 +440,7 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
 
     static double surfaceWater_yesterday;
     static Bool debug = swFALSE;
-    LyrIndex n_layers = sw->Site.n_layers;
+    LyrIndex n_layers = sw->SiteSim.n_layers;
 
 
     // re-init static variable on first day of each simulation run (if no
@@ -467,7 +467,7 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
         }
     }
 
-    ForEachEvapLayer(i, sw->Site.n_evap_lyrs) {
+    ForEachEvapLayer(i, sw->SiteSim.n_evap_lyrs) {
         Esoil += sw->SoilWatSim.evap_baresoil[i];
     }
 
@@ -486,10 +486,10 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
 
     // Get other water flux values
     infiltration = sw->WeatherSim.soil_inf;
-    deepDrainage = sw->SoilWatSim.drain[sw->Site.deep_lyr];
+    deepDrainage = sw->SoilWatSim.drain[sw->SiteSim.deep_lyr];
 
     percolationIn[0] = infiltration;
-    percolationOut[sw->Site.n_layers] = deepDrainage;
+    percolationOut[sw->SiteSim.n_layers] = deepDrainage;
 
     runoff = sw->WeatherSim.snowRunoff + sw->WeatherSim.surfaceRunoff;
     runon = sw->WeatherSim.surfaceRunon;
@@ -754,18 +754,18 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
         }
     }
     ForEachSoilLayer(i, n_layers) {
-        if (LT(sw->SoilWatSim.swcBulk[Today][i], sw->Site.swcBulk_min[i]) ||
+        if (LT(sw->SoilWatSim.swcBulk[Today][i], sw->SiteSim.swcBulk_min[i]) ||
             GT(sw->SoilWatSim.swcBulk[Today][i],
-               sw->Site.swcBulk_saturated[i])) {
+               sw->SiteSim.swcBulk_saturated[i])) {
             sw->SoilWatSim.wbError[8]++;
             if (debugi[8]) {
                 sw_printf(
                     "%s sl=%d: swc_min(%f) <= swc(%f) <= swc_sat(%f)\n",
                     flag,
                     i,
-                    sw->Site.swcBulk_min[i],
+                    sw->SiteSim.swcBulk_min[i],
                     sw->SoilWatSim.swcBulk[Today][i],
-                    sw->Site.swcBulk_saturated[i]
+                    sw->SiteSim.swcBulk_saturated[i]
                 );
             }
         }
@@ -950,10 +950,10 @@ void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo) {
 #endif
             SW_SWC_adjust_swc(
                 sw->SoilWatSim.swcBulk,
-                sw->Site.swcBulk_min,
+                sw->SiteSim.swcBulk_min,
                 sw->ModelSim.doy,
                 sw->SoilWatIn.hist,
-                sw->Site.n_layers,
+                sw->SiteSim.n_layers,
                 LogInfo
             );
 
@@ -995,8 +995,9 @@ void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         sw_printf("\n'SW_SWC_water_flow': determine wet soil layers.\n");
     }
 #endif
-    ForEachSoilLayer(i, sw->Site.n_layers) sw->SoilWatSim.is_wet[i] =
-        (Bool) (GE(sw->SoilWatSim.swcBulk[Today][i], sw->Site.swcBulk_wet[i]));
+    ForEachSoilLayer(i, sw->SiteSim.n_layers) sw->SoilWatSim.is_wet[i] =
+        (Bool) (GE(sw->SoilWatSim.swcBulk[Today][i], sw->SiteSim.swcBulk_wet[i])
+        );
 }
 
 /**
@@ -1316,7 +1317,7 @@ void SW_SWC_end_day(SW_SOILWAT_SIM *SW_SoilWatSim, LyrIndex n_layers) {
 }
 
 void SW_SWC_init_run(
-    SW_SOILWAT_SIM *SW_SoilWatSim, SW_SITE *SW_Site, double *temp_snow
+    SW_SOILWAT_SIM *SW_SoilWatSim, SW_SITE_SIM *SW_SiteSim, double *temp_snow
 ) {
 
     SW_SoilWatSim->soiltempError = swFALSE;
@@ -1327,7 +1328,7 @@ void SW_SWC_init_run(
 
     *temp_snow = 0.; // Snow temperature
 
-    reset_swc(SW_SoilWatSim, SW_Site);
+    reset_swc(SW_SoilWatSim, SW_SiteSim);
 }
 
 /**
@@ -1338,26 +1339,29 @@ of last year, which is also, coincidentally, Yesterday
     soil water input values
 @param[in,out] SW_SoilWatSim Struct of type SW_SOILWAT containing
     soil water simulation values
-@param[in] SW_Site Struct of type SW_SITE describing the simulated site
+@param[in,out] SW_SiteSim Struct of type SW_SITE describing the simulated site's
+    input values
 @param[in] year Current year being run in the simulation
+@param[in] reset_yr Flag, reset values at the beginning of each year
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_SWC_new_year(
     SW_SOILWAT_INPUTS *SW_SoilWatIn,
     SW_SOILWAT_SIM *SW_SoilWatSim,
-    SW_SITE *SW_Site,
+    SW_SITE_SIM *SW_SiteSim,
     TimeInt year,
+    Bool reset_yr,
     LOG_INFO *LogInfo
 ) {
 
     LyrIndex lyr;
 
-    if (SW_Site->reset_yr) {
-        reset_swc(SW_SoilWatSim, SW_Site);
+    if (reset_yr) {
+        reset_swc(SW_SoilWatSim, SW_SiteSim);
 
     } else {
         /* update swc */
-        ForEachSoilLayer(lyr, SW_Site->n_layers) {
+        ForEachSoilLayer(lyr, SW_SiteSim->n_layers) {
             SW_SoilWatSim->swcBulk[Today][lyr] =
                 SW_SoilWatSim->swcBulk[Yesterday][lyr];
         }
@@ -1715,9 +1719,10 @@ snowmelt and snowloss.
 
 Equations based on SWAT2K routines. @cite Neitsch2005
 
-@param[in,out] snowpack[] swe of snowpack, assuming accumulation is turned on
 @param[in,out] *temp_snow Module-level snow temperature (C)
-@param[in] SW_Site Struct of type SW_SITE describing the site in question
+@param[in,out] snowpack[] swe of snowpack, assuming accumulation is turned on
+@param[in] SW_SiteIn Struct of type SW_SITE describing the simulated site's
+    input values
 @param[in] temp_min Daily minimum temperature (C)
 @param[in] temp_max Daily maximum temperature (C)
 @param[in] ppt Daily precipitation (cm)
@@ -1734,7 +1739,7 @@ Equations based on SWAT2K routines. @cite Neitsch2005
 void SW_SWC_adjust_snow(
     double *temp_snow,
     double snowpack[],
-    SW_SITE *SW_Site,
+    SW_SITE_INPUTS *SW_SiteIn,
     double temp_min,
     double temp_max,
     double ppt,
@@ -1768,7 +1773,7 @@ void SW_SWC_adjust_snow(
     temp_ave = (temp_min + temp_max) / 2.;
 
     /* snow accumulation */
-    if (LE(temp_ave, SW_Site->TminAccu2)) {
+    if (LE(temp_ave, SW_SiteIn->TminAccu2)) {
         SnowAccu = ppt;
     } else {
         SnowAccu = 0.;
@@ -1778,17 +1783,17 @@ void SW_SWC_adjust_snow(
     *snowpack_today += SnowAccu;
 
     /* snow melt */
-    Rmelt =
-        (SW_Site->RmeltMax + SW_Site->RmeltMin) / 2. +
-        sin((doy - 81.) / 58.09) * (SW_Site->RmeltMax - SW_Site->RmeltMin) / 2.;
-    *temp_snow =
-        *temp_snow * (1 - SW_Site->lambdasnow) + temp_ave * SW_Site->lambdasnow;
+    Rmelt = (SW_SiteIn->RmeltMax + SW_SiteIn->RmeltMin) / 2. +
+            sin((doy - 81.) / 58.09) *
+                (SW_SiteIn->RmeltMax - SW_SiteIn->RmeltMin) / 2.;
+    *temp_snow = *temp_snow * (1 - SW_SiteIn->lambdasnow) +
+                 temp_ave * SW_SiteIn->lambdasnow;
 
-    if (GT(*temp_snow, SW_Site->TmaxCrit)) {
+    if (GT(*temp_snow, SW_SiteIn->TmaxCrit)) {
         SnowMelt = fmin(
             *snowpack_today,
             Rmelt * snow_cov *
-                ((*temp_snow + temp_max) / 2. - SW_Site->TmaxCrit)
+                ((*temp_snow + temp_max) / 2. - SW_SiteIn->TmaxCrit)
         );
 
     } else {
@@ -1860,21 +1865,28 @@ SOILWAT2 convenience wrapper for `SWRC_SWCtoSWP()`.
 See #swrc2str() for implemented SWRCs.
 
 @param[in] swcBulk Soil water content in the layer [cm]
-@param[in] SW_Site Struct of type SW_SITE describing the simulated site
+@param[in] SW_SiteIn Struct of type SW_SITE describing the simulated site's
+    input values
+@param[in] SW_SiteSim Struct of type SW_SITE describing the simulated site's
+    simulation values
 @param[in] layerno Current layer which is being worked with
 @param[out] LogInfo Holds information on warnings and errors
 
 @return Soil water potential [-bar]
 */
 double SW_SWRC_SWCtoSWP(
-    double swcBulk, SW_SITE *SW_Site, LyrIndex layerno, LOG_INFO *LogInfo
+    double swcBulk,
+    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_SIM *SW_SiteSim,
+    LyrIndex layerno,
+    LOG_INFO *LogInfo
 ) {
     return SWRC_SWCtoSWP(
         swcBulk,
-        SW_Site->swrc_type[layerno],
-        SW_Site->swrcp[layerno],
-        SW_Site->soils.fractionVolBulk_gravel[layerno],
-        SW_Site->soils.width[layerno],
+        SW_SiteSim->swrc_type[layerno],
+        SW_SiteSim->swrcp[layerno],
+        SW_SiteIn->soils.fractionVolBulk_gravel[layerno],
+        SW_SiteIn->soils.width[layerno],
         LOGERROR,
         LogInfo
     );
@@ -2234,21 +2246,28 @@ SOILWAT2 convenience wrapper for `SWRC_SWPtoSWC()`.
 See #swrc2str() for implemented SWRCs.
 
 @param[in] swpMatric Soil water potential [-bar]
-@param[in] SW_Site Struct of type SW_SITE describing the simulated site
+@param[in] SW_SiteIn Struct of type SW_SITE describing the simulated site's
+    input values
+@param[in] SW_SiteSim Struct of type SW_SITE describing the simulated site's
+    simulation values
 @param[in] layerno Current layer which is being worked with
 @param[out] LogInfo Holds information on warnings and errors
 
 @return Soil water content in the layer [cm]
 */
 double SW_SWRC_SWPtoSWC(
-    double swpMatric, SW_SITE *SW_Site, LyrIndex layerno, LOG_INFO *LogInfo
+    double swpMatric,
+    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_SIM *SW_SiteSim,
+    LyrIndex layerno,
+    LOG_INFO *LogInfo
 ) {
     return SWRC_SWPtoSWC(
         swpMatric,
-        SW_Site->swrc_type[layerno],
-        SW_Site->swrcp[layerno],
-        SW_Site->soils.fractionVolBulk_gravel[layerno],
-        SW_Site->soils.width[layerno],
+        SW_SiteSim->swrc_type[layerno],
+        SW_SiteSim->swrcp[layerno],
+        SW_SiteIn->soils.fractionVolBulk_gravel[layerno],
+        SW_SiteIn->soils.width[layerno],
         LOGERROR,
         LogInfo
     );

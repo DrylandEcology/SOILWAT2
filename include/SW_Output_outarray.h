@@ -40,7 +40,7 @@ The position is specified by
 
 The correct dimension of the output array `p_OUT[OutKey][OutPeriod]`
 is inferred from
-    - `nSl` the total number of soil layers (e.g., `Site.n_layers`);
+    - `nSl` the total number of soil layers (e.g., `SiteSim.n_layers`);
       set to 1 if no soil layers
     - `nPTF` the total number of vegetation types (e.g., `NVEGTYPES`);
       set to 1 if no vegetation

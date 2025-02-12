@@ -32,7 +32,8 @@ simulation after this function has set soil layers, e.g., SW_SWC_init_run()
 void create_test_soillayers(
     unsigned int nlayers,
     SW_VEGPROD_INPUTS *SW_VegProdIn,
-    SW_SITE *SW_Site,
+    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_SIM *SW_SiteSim,
     LOG_INFO *LogInfo
 ) {
 
@@ -100,7 +101,8 @@ void create_test_soillayers(
 
     set_soillayers(
         SW_VegProdIn,
-        SW_Site,
+        SW_SiteIn,
+        SW_SiteSim,
         nlayers,
         dmax,
         bulkd,
@@ -121,52 +123,54 @@ void create_test_soillayers(
     );
 }
 
-void setup_SW_Site_for_tests(SW_SITE *SW_Site) {
+void setup_SW_Site_for_tests(
+    SW_SITE_INPUTS *SW_SiteIn, SW_SITE_SIM *SW_SiteSim
+) {
     LOG_INFO LogInfo;
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    SW_Site->deepdrain = swTRUE;
+    SW_SiteIn->deepdrain = swTRUE;
 
-    SW_Site->SWCMinVal = 100;
-    SW_Site->SWCWetVal = 15;
-    SW_Site->SWCInitVal = 15;
+    SW_SiteIn->SWCMinVal = 100;
+    SW_SiteIn->SWCWetVal = 15;
+    SW_SiteIn->SWCInitVal = 15;
 
-    SW_Site->stMaxDepth = 990;
-    SW_Site->stDeltaX = 15;
+    SW_SiteIn->stMaxDepth = 990;
+    SW_SiteIn->stDeltaX = 15;
 
-    SW_Site->slow_drain_coeff = 0.02;
+    SW_SiteIn->slow_drain_coeff = 0.02;
 
-    SW_Site->site_has_swrcpMineralSoil = swFALSE;
-    SW_Site->inputsProvideSWRCp = swFALSE;
+    SW_SiteSim->site_has_swrcpMineralSoil = swFALSE;
+    SW_SiteIn->inputsProvideSWRCp = swFALSE;
 
     (void) snprintf(
-        SW_Site->site_swrc_name,
-        sizeof SW_Site->site_swrc_name,
+        SW_SiteIn->site_swrc_name,
+        sizeof SW_SiteIn->site_swrc_name,
         "%s",
         "Campbell1974"
     );
-    SW_Site->site_swrc_type =
-        encode_str2swrc(SW_Site->site_swrc_name, &LogInfo);
+    SW_SiteIn->site_swrc_type =
+        encode_str2swrc(SW_SiteIn->site_swrc_name, &LogInfo);
     (void) snprintf(
-        SW_Site->site_ptf_name,
-        sizeof SW_Site->site_ptf_name,
+        SW_SiteIn->site_ptf_name,
+        sizeof SW_SiteIn->site_ptf_name,
         "%s",
         "Cosby1984AndOthers"
     );
-    SW_Site->site_ptf_type = encode_str2ptf(SW_Site->site_ptf_name);
+    SW_SiteIn->site_ptf_type = encode_str2ptf(SW_SiteIn->site_ptf_name);
 
-    SW_Site->swrcpOM[0][0] = 1.03;
-    SW_Site->swrcpOM[1][0] = 1.01;
+    SW_SiteSim->swrcpOM[0][0] = 1.03;
+    SW_SiteSim->swrcpOM[1][0] = 1.01;
 
-    SW_Site->swrcpOM[0][1] = 0.93;
-    SW_Site->swrcpOM[1][1] = 0.83;
+    SW_SiteSim->swrcpOM[0][1] = 0.93;
+    SW_SiteSim->swrcpOM[1][1] = 0.83;
 
-    SW_Site->swrcpOM[0][2] = 2.7;
-    SW_Site->swrcpOM[1][2] = 12.0;
+    SW_SiteSim->swrcpOM[0][2] = 2.7;
+    SW_SiteSim->swrcpOM[1][2] = 12.0;
 
-    SW_Site->swrcpOM[0][3] = 2419.2;
-    SW_Site->swrcpOM[1][3] = 0.864;
+    SW_SiteSim->swrcpOM[0][3] = 2419.2;
+    SW_SiteSim->swrcpOM[1][3] = 0.864;
 }
 
 /* Set up global variables for testing and read in values from SOILWAT2 example
@@ -269,8 +273,8 @@ int setup_testGlobalSoilwatTemplate() {
     }
 
     SW_OUT_setup_output(
-        template_SW_Run.Site.n_layers,
-        template_SW_Run.Site.n_evap_lyrs,
+        template_SW_Run.SiteSim.n_layers,
+        template_SW_Run.SiteSim.n_evap_lyrs,
         template_SW_Run.VegEstabSim.count,
         template_SW_Run.VegEstabIn.parms,
         &template_SW_Domain.OutDom,

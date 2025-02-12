@@ -276,7 +276,7 @@ void SW_WTH_deconstruct(SW_WEATHER_HIST **allHist);
 void SW_WTH_new_day(
     SW_WEATHER_INPUTS *SW_WeatherIn,
     SW_WEATHER_SIM *SW_WeatherSim,
-    SW_SITE *SW_Site,
+    SW_SITE_INPUTS *SW_SiteIn,
     double snowpack[],
     TimeInt doy,
     TimeInt year,

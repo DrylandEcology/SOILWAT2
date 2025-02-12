@@ -470,7 +470,10 @@ used for transpiration calculations.
 
 @param[in,out] *swp_avg Weighted average of soilwater potential and
     transpiration coefficients (-bar).
-@param[in] SW_Site Struct of type SW_SITE describing the simulated site
+@param[in] SW_SiteIn Struct of type SW_SITE describing the simulated site's
+    input values
+@param[in] SW_SiteSim Struct of type SW_SITE describing the simulated site's
+    simulation values
 @param[in] n_tr_rgns Array of n_lyrs elements of transpiration regions that each
     soil layer belongs to.
 @param[in] n_layers Number of soil layers.
@@ -487,7 +490,8 @@ coefficients (-bar).
 */
 void transp_weighted_avg(
     double *swp_avg,
-    SW_SITE *SW_Site,
+    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_SIM *SW_SiteSim,
     unsigned int n_tr_rgns,
     LyrIndex n_layers,
     const unsigned int tr_regions[],
@@ -529,14 +533,15 @@ void transp_weighted_avg(
 
         for (i = 0; i < n_layers; i++) {
             if (tr_regions[i] == r) {
-                swp += SW_Site->soils.transp_coeff[VegType][i] *
-                       SW_SWRC_SWCtoSWP(swc[i], SW_Site, i, LogInfo);
+                swp +=
+                    SW_SiteIn->soils.transp_coeff[VegType][i] *
+                    SW_SWRC_SWCtoSWP(swc[i], SW_SiteIn, SW_SiteSim, i, LogInfo);
 
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }
 
-                sumco += SW_Site->soils.transp_coeff[VegType][i];
+                sumco += SW_SiteIn->soils.transp_coeff[VegType][i];
             }
         }
 
@@ -594,7 +599,10 @@ bsepar2, unless it's a fudge-factor to be played with.
 
 Based on equations from Parton 1978. @cite Parton1978
 
-@param[in] SW_Site Struct of type SW_SITE describing the simulated site
+@param[in] SW_SiteIn Struct of type SW_SITE describing the simulated site's
+    input values
+@param[in] SW_SiteSim Struct of type SW_SITE describing the simulated site's
+    simulation values
 @param[in] nelyrs Number of layers to consider in evaporation.
 @param[in] totagb Sum of above ground biomass and litter.
 @param[in] fbse Fraction of water loss from bare soil evaporation.
@@ -614,7 +622,8 @@ Based on equations from Parton 1978. @cite Parton1978
 @sideeffect *bserate Updated bare soil evaporation loss rate (cm/day).
 */
 void pot_soil_evap(
-    SW_SITE *SW_Site,
+    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_SIM *SW_SiteSim,
     unsigned int nelyrs,
     double totagb,
     double fbse,
@@ -659,12 +668,13 @@ void pot_soil_evap(
 
     /* get the weighted average of swp in the evap layers */
     for (i = 0; i < nelyrs; i++) {
-        if (ZRO(SW_Site->soils.evap_coeff[i])) {
+        if (ZRO(SW_SiteIn->soils.evap_coeff[i])) {
             break;
         }
-        x = SW_Site->soils.width[i] * SW_Site->soils.evap_coeff[i];
+        x = SW_SiteIn->soils.width[i] * SW_SiteIn->soils.evap_coeff[i];
         sumwidth += x;
-        avswp += x * SW_SWRC_SWCtoSWP(swc[i], SW_Site, i, LogInfo);
+        avswp +=
+            x * SW_SWRC_SWCtoSWP(swc[i], SW_SiteIn, SW_SiteSim, i, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -694,7 +704,10 @@ void pot_soil_evap(
 Based on equations from Parton 1978. @cite Parton1978
 
 @param[in,out] *bserate Bare soil evaporation loss rate (cm/day).
-@param[in] SW_Site Struct of type SW_SITE describing the simulated site
+@param[in] SW_SiteIn Struct of type SW_SITE describing the simulated site's
+    input values
+@param[in] SW_SiteSim Struct of type SW_SITE describing the simulated site's
+    simulation values
 @param[in] nelyrs Number of layers to consider in evaporation.
 @param[in] petday Potential evapotranspiration rate (cm/day).
 @param[in] shift Displacement of the inflection point in order to shift the
@@ -708,7 +721,8 @@ Based on equations from Parton 1978. @cite Parton1978
 */
 void pot_soil_evap_bs(
     double *bserate,
-    SW_SITE *SW_Site,
+    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_SIM *SW_SiteSim,
     unsigned int nelyrs,
     double petday,
     double shift,
@@ -736,9 +750,10 @@ void pot_soil_evap_bs(
 
     /* get the weighted average of swp in the evap layers */
     for (i = 0; i < nelyrs; i++) {
-        x = SW_Site->soils.width[i] * SW_Site->soils.evap_coeff[i];
+        x = SW_SiteIn->soils.width[i] * SW_SiteIn->soils.evap_coeff[i];
         sumwidth += x;
-        avswp += x * SW_SWRC_SWCtoSWP(swc[i], SW_Site, i, LogInfo);
+        avswp +=
+            x * SW_SWRC_SWCtoSWP(swc[i], SW_SiteIn, SW_SiteSim, i, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -958,7 +973,10 @@ Based on equations from Parton 1978. @cite Parton1978
     (m<SUP>3</SUP> H<SUB>2</SUB>O).
 @param[in,out] qty Updated removal quantity from each layer, evaporation or
     transpiration, added to input value (mm/day).
-@param[in] SW_Site Struct of type SW_SITE describing the simulated site
+@param[in] SW_SiteIn Struct of type SW_SITE describing the simulated site's
+    input values
+@param[in] SW_SiteSim Struct of type SW_SITE describing the simulated site's
+    simulation values
 @param[in,out] *aet Actual evapotranspiration, added to input value (cm/day).
 @param[in] nlyrs Number of layers considered in water removal.
 @param[in] coeff Coefficients of removal for removal layers.
@@ -978,7 +996,8 @@ It will not affect other elements passed in from it.
 void remove_from_soil(
     double swc[],
     double qty[],
-    SW_SITE *SW_Site,
+    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_SIM *SW_SiteSim,
     double *aet,
     unsigned int nlyrs,
     const double coeff[],
@@ -1008,7 +1027,7 @@ HISTORY: 10 Jan 2002 - cwb - replaced two previous functions with
     double d = 0.;
 
     for (i = 0; i < nlyrs; i++) {
-        tmpswp = SW_SWRC_SWCtoSWP(swc[i], SW_Site, i, LogInfo);
+        tmpswp = SW_SWRC_SWCtoSWP(swc[i], SW_SiteIn, SW_SiteSim, i, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -1065,7 +1084,10 @@ This function was previously named `infiltrate_water_low()`.
 @param[in,out] *standingWater Remaining water on the surface [cm].
 @param nlyrs Number of layers in the soil profile [1].
 @param[in] *lyrFrozen Frozen/unfrozen status for each soil layer.
-@param[in] SW_Site Struct of type SW_SITE describing the simulated site
+@param[in] SW_SiteIn Struct of type SW_SITE describing the simulated site's
+    input values
+@param[in] SW_SiteSim Struct of type SW_SITE describing the simulated site's
+    simulation values
 @param slow_drain_coeff Slow drainage parameter [cm / day].
 @param slow_drain_depth Slow drainage depth [cm].
 */
@@ -1076,7 +1098,8 @@ void percolate_unsaturated(
     double *standingWater,
     unsigned int nlyrs,
     double lyrFrozen[],
-    SW_SITE *SW_Site,
+    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_SIM *SW_SiteSim,
     double slow_drain_coeff,
     double slow_drain_depth
 ) {
@@ -1100,7 +1123,7 @@ void percolate_unsaturated(
     */
     for (i = 0; i < nlyrs; i++) {
         /* calculate potential unsaturated percolation */
-        swc_avail = fmax(0., swc[i] - SW_Site->swcBulk_min[i]);
+        swc_avail = fmax(0., swc[i] - SW_SiteSim->swcBulk_min[i]);
 
         if (LE(swc_avail, 0.)) {
             d[i] = 0.;
@@ -1124,7 +1147,7 @@ void percolate_unsaturated(
                14/17: `drainage rate = 0.35 * exp(0.7 * (storage - 15.))`
             */
 
-            if (LT(swc[i], SW_Site->swcBulk_fieldcap[i])) {
+            if (LT(swc[i], SW_SiteSim->swcBulk_fieldcap[i])) {
                 /* Here, we modified eq. 2.9:
                                 (i) use scaled swc, i.e., vary from 0 (at
                    swc_min) to swc_fc (ii) modify `exp(.)` to vary from 0 (at
@@ -1135,13 +1158,13 @@ void percolate_unsaturated(
                     0.,
                     fmin(
                         1.,
-                        swc_avail / (SW_Site->swcBulk_fieldcap[i] -
-                                     SW_Site->swcBulk_min[i])
+                        swc_avail / (SW_SiteSim->swcBulk_fieldcap[i] -
+                                     SW_SiteSim->swcBulk_min[i])
                     )
                 );
 
-                tmp1 = slow_drain_depth * SW_Site->swcBulk_fieldcap[i] /
-                       SW_Site->soils.width[i];
+                tmp1 = slow_drain_depth * SW_SiteSim->swcBulk_fieldcap[i] /
+                       SW_SiteIn->soils.width[i];
                 tmp2 = exp(-tmp1);
 
                 if (LT(tmp2, 1.)) {
@@ -1152,7 +1175,7 @@ void percolate_unsaturated(
                 }
             }
 
-            d[i] = kunsat_rel * (1. - SW_Site->soils.impermeability[i]) *
+            d[i] = kunsat_rel * (1. - SW_SiteIn->soils.impermeability[i]) *
                    fmin(swc_avail, fmax(0., drainpot));
         }
 
@@ -1176,8 +1199,8 @@ void percolate_unsaturated(
 
     /* reverse for-loop with j in [nlyrs - 1, 0] */
     for (j = nlyrs; j-- > 0;) {
-        if (GT(swc[j], SW_Site->swcBulk_saturated[j])) {
-            push = swc[j] - SW_Site->swcBulk_saturated[j];
+        if (GT(swc[j], SW_SiteSim->swcBulk_saturated[j])) {
+            push = swc[j] - SW_SiteSim->swcBulk_saturated[j];
             swc[j] -= push;
             if (j > 0) {
                 percolate[j - 1] -= push;
@@ -1198,7 +1221,10 @@ Based on equations from Ryel 2002. @cite Ryel2002
     (m<SUP>3</SUP>H<SUB>2</SUB>O).
 @param[out] hydred Hydraulic redistribtion for each soil layer
     (cm/day/layer).
-@param[in] SW_Site Struct of type SW_SITE describing the simulated site
+@param[in] SW_SiteIn Struct of type SW_SITE describing the simulated site's
+    input values
+@param[in] SW_SiteSim Struct of type SW_SITE describing the simulated site's
+    simulation values
 @param[in] vegk Index to vegetation type (used to access rooting
     profile) [1].
 @param[in] nlyrs Number of layers in the soil profile [1].
@@ -1222,7 +1248,8 @@ Based on equations from Ryel 2002. @cite Ryel2002
 void hydraulic_redistribution(
     double swc[],
     double hydred[],
-    SW_SITE *SW_Site,
+    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_SIM *SW_SiteSim,
     unsigned int vegk,
     unsigned int nlyrs,
     const double lyrFrozen[],
@@ -1276,12 +1303,12 @@ void hydraulic_redistribution(
         swa[i] = fmax(
             0.,
             swc[i] - fmin(
-                         SW_Site->swcBulk_wiltpt[i],
-                         SW_Site->swcBulk_atSWPcrit[vegk][i]
+                         SW_SiteSim->swcBulk_wiltpt[i],
+                         SW_SiteSim->swcBulk_atSWPcrit[vegk][i]
                      )
         );
 
-        swp[i] = SW_SWRC_SWCtoSWP(swc[i], SW_Site, i, LogInfo);
+        swp[i] = SW_SWRC_SWCtoSWP(swc[i], SW_SiteIn, SW_SiteSim, i, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -1309,8 +1336,8 @@ void hydraulic_redistribution(
                     (more moisture than at wilting point)
                     and both soil layers are not frozen
             */
-            if ((GT(swc[i], SW_Site->swcBulk_wiltpt[i]) ||
-                 GT(swc[j], SW_Site->swcBulk_wiltpt[j])) &&
+            if ((GT(swc[i], SW_SiteSim->swcBulk_wiltpt[i]) ||
+                 GT(swc[j], SW_SiteSim->swcBulk_wiltpt[j])) &&
                 (lyrFrozen[i] == swFALSE) && (lyrFrozen[j] == swFALSE)) {
 
                 /* Identify source layer: from which water is removed */
@@ -1323,13 +1350,13 @@ void hydraulic_redistribution(
                         -> truncate to source layer width
                         (original equation assumed identical layer widths)
                 */
-                mlyrRootCo[0] = SW_Site->soils.transp_coeff[vegk][idso];
-                mlyrRootCo[1] = SW_Site->soils.transp_coeff[vegk][idre];
+                mlyrRootCo[0] = SW_SiteIn->soils.transp_coeff[vegk][idso];
+                mlyrRootCo[1] = SW_SiteIn->soils.transp_coeff[vegk][idre];
 
-                if (LT(SW_Site->soils.width[idso],
-                       SW_Site->soils.width[idre])) {
-                    mlyrRootCo[1] *=
-                        SW_Site->soils.width[idso] / SW_Site->soils.width[idre];
+                if (LT(SW_SiteIn->soils.width[idso],
+                       SW_SiteIn->soils.width[idre])) {
+                    mlyrRootCo[1] *= SW_SiteIn->soils.width[idso] /
+                                     SW_SiteIn->soils.width[idre];
                 }
 
 
@@ -1358,8 +1385,8 @@ void hydraulic_redistribution(
                         idso,
                         idre,
                         tmp,
-                        SW_Site->soils.width[idso],
-                        SW_Site->soils.width[idre],
+                        SW_SiteIn->soils.width[idso],
+                        SW_SiteIn->soils.width[idre],
                         swc[idso],
                         swc[idre],
                         -0.1 * swp[idso],
@@ -1824,7 +1851,10 @@ Initialize soil temperature and frozen status across the soil layer profile.
 
 @param[out] SW_StRegSimVals Struct of type SW_ST_SIM which keeps
     track of variables used within `soil_temperature()`
-@param[in] SW_Site Struct of type SW_SITE describing the simulated site
+@param[in] SW_SiteIn Struct of type SW_SITE describing the simulated site's
+    input values
+@param[in] SW_SiteSim Struct of type SW_SITE describing the simulated site's
+    simulation values
 @param[in,out] ptr_stError Boolean indicating whether there was an error.
 @param[in,out] soil_temp_init Flag specifying if the values for
     `soil_temperature()` have been initialized
@@ -1839,7 +1869,8 @@ Initialize soil temperature and frozen status across the soil layer profile.
 */
 void SW_ST_setup_run(
     SW_ST_SIM *SW_StRegSimVals,
-    SW_SITE *SW_Site,
+    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_SIM *SW_SiteSim,
     Bool *ptr_stError,
     Bool *soil_temp_init,
     double airTemp,
@@ -1872,17 +1903,17 @@ void SW_ST_setup_run(
         */
         soil_temperature_setup(
             SW_StRegSimVals,
-            SW_Site->soilBulk_density,
-            SW_Site->soils.width,
-            SW_Site->soils.avgLyrTempInit,
-            SW_Site->Tsoil_constant,
-            SW_Site->n_layers,
-            SW_Site->swcBulk_fieldcap,
-            SW_Site->swcBulk_wiltpt,
-            SW_Site->stDeltaX,
-            SW_Site->stMaxDepth,
-            SW_Site->stNRGR,
-            SW_Site->soils.depths,
+            SW_SiteSim->soilBulk_density,
+            SW_SiteIn->soils.width,
+            SW_SiteIn->soils.avgLyrTempInit,
+            SW_SiteIn->Tsoil_constant,
+            SW_SiteSim->n_layers,
+            SW_SiteSim->swcBulk_fieldcap,
+            SW_SiteSim->swcBulk_wiltpt,
+            SW_SiteIn->stDeltaX,
+            SW_SiteIn->stMaxDepth,
+            SW_SiteSim->stNRGR,
+            SW_SiteIn->soils.depths,
             ptr_stError,
             soil_temp_init,
             LogInfo
@@ -1893,16 +1924,16 @@ void SW_ST_setup_run(
 
         /* Initialize soil temperature and frozen status across the soil layer
          * profile. */
-        ForEachSoilLayer(i, SW_Site->n_layers) {
-            avgLyrTemp[i] = SW_Site->soils.avgLyrTempInit[i];
+        ForEachSoilLayer(i, SW_SiteSim->n_layers) {
+            avgLyrTemp[i] = SW_SiteIn->soils.avgLyrTempInit[i];
         }
 
         set_frozen_unfrozen(
-            SW_Site->n_layers,
-            SW_Site->soils.avgLyrTempInit,
+            SW_SiteSim->n_layers,
+            SW_SiteIn->soils.avgLyrTempInit,
             swc,
-            SW_Site->swcBulk_saturated,
-            SW_Site->soils.width,
+            SW_SiteSim->swcBulk_saturated,
+            SW_SiteIn->soils.width,
             lyrFrozen
         );
 
@@ -2727,7 +2758,7 @@ fall outside the min-max range (with a warning).
 @param[out] meanTempSurface Average surface temperature (&deg;C)
 @param[out] maxTempSurface Maxmimum surface temperature (&deg;C)
 @param[in] method The requested method for average surface temperature
-    (see @ref SW_SITE.methodSurfaceTemperature):
+    (see @ref SW_SITE_INPUTS.methodSurfaceTemperature):
     - 0, based on Parton 1978 (default prior to v8.1.0);
     - 1, based on Parton 1984 (default since v8.1.0)
 @param[in] snow Snow-water-equivalent of the area (cm).
