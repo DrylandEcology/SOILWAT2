@@ -2419,6 +2419,11 @@ void SW_SIT_init_run(
     double acc = 0.0;
     double tmp_stNRGR;
 
+    double default_stMaxDepth = 990.;
+    double default_stDeltaX = 15.;
+    unsigned int default_stNRGR =
+        (unsigned int) (default_stMaxDepth / default_stDeltaX - 1);
+
     Bool hasOM = swFALSE;
 
     char errorMsg[LARGE_VALUE] = "";
@@ -3061,44 +3066,47 @@ void SW_SIT_init_run(
             LogError(
                 LogInfo,
                 LOGWARN,
-                "Number of layers for soil temperature %d [cm] is larger than "
-                "the implemented MAX_ST_RGR of %d; "
-                "simulation will use default values instead of inputs: "
-                "number of layers set to %d (from %d); "
-                "depth now %f [cm] (from %f); "
-                "width/thickness of layers set to %f [cm] (from %f).",
-                180.0,
-                SW_Site->stMaxDepth,
-                11,
+                "User provided too many soil temperature layers "
+                "(%d > max = %d). ",
+                "Simulation continues with adjusted values: "
+                "profile depth = %.1f [cm] (from %.1f); "
+                "layer width = %.1f [cm] (from %.1f); "
+                "with n = %d layers (from %d).",
                 SW_Site->stNRGR,
-                15.,
-                SW_Site->stDeltaX
+                MAX_ST_RGR,
+                default_stMaxDepth,
+                SW_Site->stMaxDepth,
+                default_stDeltaX,
+                SW_Site->stDeltaX,
+                default_stNRGR,
+                SW_Site->stNRGR
             );
         } else {
             // because we don't deal with partial layers
             LogError(
                 LogInfo,
                 LOGWARN,
-                "The depth %d [cm] for soil temperature is not "
-                "evenly divisible by the width/thickness of layers (%f [cm]); "
-                "the implemented MAX_ST_RGR of %d; "
-                "simulation will use default values instead of inputs: "
-                "number of layers set to %d (from %d); "
-                "depth now %f [cm] (from %f); "
-                "width/thickness of layers set to %f [cm] (from %f).",
-                180.0,
+                "User provided inconsistent soil temperature profile "
+                "(profile depth %.1f was not divisible by layer width %.1f). "
+                "Simulation continues with adjusted values: "
+                "profile depth = %.1f [cm] (from %.1f); "
+                "layer width = %.1f [cm] (from %.1f); "
+                "with n = %d layers (from %d).",
                 SW_Site->stMaxDepth,
-                11,
-                SW_Site->stNRGR,
-                15.,
-                SW_Site->stDeltaX
+                SW_Site->stDeltaX,
+                default_stMaxDepth,
+                SW_Site->stMaxDepth,
+                default_stDeltaX,
+                SW_Site->stDeltaX,
+                default_stNRGR,
+                SW_Site->stNRGR
             );
         }
 
         // resets it to the default values
-        SW_Site->stMaxDepth = 180.0;
-        SW_Site->stNRGR = 11;
-        SW_Site->stDeltaX = 15.0;
+        SW_Site->stMaxDepth = default_stMaxDepth;
+        SW_Site->stDeltaX = default_stDeltaX;
+        SW_Site->stNRGR = default_stNRGR;
     }
 }
 
