@@ -60,6 +60,9 @@ inSoil	swrcpMineralSoil[4]	NA	0	Input_nc/inSoil/swrcp.nc	swrcp4	NA	s	site	crs_ge
 inSoil	swrcpMineralSoil[5]	NA	0	Input_nc/inSoil/swrcp.nc	swrcp5	NA	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	vertical	NA	NA	NA	NA	NA	NA	NA
 inSoil	swrcpMineralSoil[6]	NA	0	Input_nc/inSoil/swrcp.nc	swrcp6	NA	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	vertical	NA	NA	NA	NA	NA	NA	NA
 																						
+inSite	indexSpatial	1	1	Input_nc/inSite/index_site.nc	index	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	NA	NA
+inSite	Tsoil_constant	degC	1	Input_nc/inSite/tas-clim.nc	tas	degC	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	NA	NA
+																						
 inVeg	indexSpatial	1	1	Input_nc/inVeg/index_veg.nc	index	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	NA	NA
 inVeg	bareGround.fCover	m2 m-2	1	Input_nc/inVeg/vegPFT.nc	fcover_bg	m2 m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	NA	NA
 inVeg	<veg>.fCover	m2 m-2	1	Input_nc/inVeg/vegPFT.nc	fcover	m2 m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	pft	NA
