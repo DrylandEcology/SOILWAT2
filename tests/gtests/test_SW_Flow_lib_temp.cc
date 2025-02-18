@@ -219,7 +219,6 @@ TEST(SWFlowTempTest, SWFlowTempSurfaceTemperature) {
 // Test the soil temperature initialization function 'soil_temperature_setup'
 TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
     SW_SITE_INPUTS SW_SiteIn;
-    SW_SITE_SIM SW_SiteSim;
     SW_ST_SIM SW_StRegSimVals;
     SW_ST_init_run(&SW_StRegSimVals);
 
@@ -249,7 +248,6 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
     double wp[1];
     wp[0] = fc[0] - 0.6; // wp will always be less than fc
 
-    SW_SiteSim.n_layers = nlyrs;
     SW_SiteIn.soils.width[0] = SW_SiteIn.soils.depths[0] = width[0];
     /// test standard conditions
     soil_temperature_setup(
@@ -309,7 +307,6 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
         wp2[i] = fc2[i] - 0.6; // wp will always be less than fc
     }
 
-    SW_SiteSim.n_layers = nlyrs;
     for (i = 0; i < nlyrs; i++) {
         SW_SiteIn.soils.width[i] = width2[i];
         acc += width2[i];
@@ -439,7 +436,6 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInitDeathTest) {
 // soil_temperature_setup function
 TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
     SW_SITE_INPUTS SW_SiteIn;
-    SW_SITE_SIM SW_SiteSim;
     SW_ST_SIM SW_StRegSimVals;
     SW_ST_init_run(&SW_StRegSimVals);
 
@@ -474,7 +470,6 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
 
     wp[0] = fmax(fc[0] - 0.6, .1); // wp will always be less than fc
 
-    SW_SiteSim.n_layers = nlyrs;
     SW_SiteIn.soils.width[0] = SW_SiteIn.soils.depths[0] = width[0];
     soil_temperature_setup(
         &SW_StRegSimVals,
@@ -566,7 +561,6 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
     }
 
     acc = 0.0;
-    SW_SiteSim.n_layers = nlyrs;
     for (i = 0; i < nlyrs; i++) {
         SW_SiteIn.soils.width[i] = width2[i];
         acc += width2[i];
