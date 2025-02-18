@@ -4,6 +4,8 @@
 
 * Soil water retention curve parameters that are non-finite now throw an error.
 
+* Warning and error messages are now, by default, written to logs/logfile.log
+
 
 # SOILWAT2 v8.1.0
 * This version produces similar but not identical simulation output
