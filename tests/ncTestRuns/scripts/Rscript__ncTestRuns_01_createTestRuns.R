@@ -858,7 +858,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
   fname_topo <- file.path(dir_topo, "topo.nc")
 
   if (!file.exists(fname_topo)) {
-    nDigsTopo = 2L
+    nDigsTopo <- 2L
     IntrinsicSiteParams <- round(
       swin@site@IntrinsicSiteParams,
       digits = nDigsTopo
@@ -1100,7 +1100,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         x = round(
           Cloud["SnowDensity_kg/m^3", , drop = TRUE], digits = nDigsClim
         ),
-        otherValues = 0,
+        otherValues = 1, # snow_density of 0 throws now an error
         dims = inDimCounts[["clim"]],
         dimPermutation = inDimPerms[["clim"]],
         spDims = inputSpDims,
@@ -1170,7 +1170,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
   fname_soil <- file.path(dir_soil, "soil.nc")
 
   if (!file.exists(fname_soil)) {
-    nDigsSoil = 4L
+    nDigsSoil <- 4L
 
     copyInputTemplateNC(
       fname_soil,
