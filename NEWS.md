@@ -6,6 +6,12 @@
 
 * Warning and error messages are now, by default, written to logs/logfile.log
 
+* nc-based SOILWAT2 can now use a `"netCDF"` file to provide inputs for
+  constant soil temperature at depth `"Tsoil_constant"`
+  (which now can vary across the simulation domain).
+  The new example input is `"inSite/tas-clim.nc"` reproducing the
+  corresponding value from text-based `"siteparam.in"`.
+
 
 # SOILWAT2 v8.1.0
 * This version produces similar but not identical simulation output

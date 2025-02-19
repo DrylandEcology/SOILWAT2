@@ -1717,7 +1717,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
   fname_tasclim <- file.path(dir_site, "tas-clim.nc")
 
   if (!file.exists(fname_tasclim)) {
-    nDigsSite = 2L
+    nDigsSite <- 2L
     tasclim <- round(
       swin@site@SoilTemperatureConstants[["ConstMeanAirTemp"]],
       digits = nDigsSite

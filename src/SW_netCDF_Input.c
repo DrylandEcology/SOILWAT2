@@ -5167,6 +5167,7 @@ rather than having separate functions, this will specifically read
     - Elevation, slope, and aspect                   (inTopo)
     - Cloud cover, wind speed, relative humidity,
       snow density, and number of days with rain     (inClimate)
+    - Tsoil_constant                                 (inSite)
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
@@ -5241,6 +5242,7 @@ static void read_spatial_topo_climate_site_inputs(
          SW_Sky->r_humidity,
          SW_Sky->snow_density,
          SW_Sky->n_rain_per_day},
+        /* must match possVarNames[eSW_InSite] (without spatial index) */
         {&SW_Site->Tsoil_constant}
     };
     double tempVals[MAX_MONTHS];
