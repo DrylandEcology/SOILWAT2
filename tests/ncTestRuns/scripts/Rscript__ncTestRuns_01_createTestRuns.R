@@ -1709,6 +1709,80 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
 
   #------ . ------
+  #--- * inSite ------
+  dir_site <- file.path(dir_testrun_swinnc, "inSite")
+  dir.create(dir_site, recursive = TRUE, showWarnings = FALSE)
+
+  #--- ..** inSite: tas-clim ------
+  fname_tasclim <- file.path(dir_site, "tas-clim.nc")
+
+  if (!file.exists(fname_tasclim)) {
+    nDigsSite <- 2L
+    tasclim <- round(
+      swin@site@SoilTemperatureConstants[["ConstMeanAirTemp"]],
+      digits = nDigsSite
+    )
+
+    copyInputTemplateNC(
+      fname_tasclim,
+      template = fname_inputTemplate,
+      crsType = listTestRuns[k0, "inputCRS"],
+      list_xyvars = sw_xyvars
+    )
+
+    nc <- RNetCDF::open.nc(fname_tasclim, write = TRUE)
+    updateGAttSourceVersion(nc)
+
+    createVarNC(
+      nc,
+      varname = "tas",
+      long_name = "mean temperature",
+      dimensions = inDimNames[["sp"]],
+      units = "degC",
+      vartype = varType
+    )
+    RNetCDF::var.put.nc(
+      nc,
+      variable = "tas",
+      data = createTestRunData(
+        x = tasclim,
+        otherValues = 0,
+        dims = inDimCounts[["sp"]],
+        dimPermutation = inDimPerms[["sp"]],
+        spDims = inputSpDims,
+        idExampleSite = idInputExampleSite
+      ),
+      count = inDimPermCounts[["sp"]]
+    )
+
+    RNetCDF::close.nc(nc)
+  }
+
+
+  #--- ..** inSite: set ncinputs.tsv ------
+  toggleNCInputTSV(filename = fname_ncintsv, inkeys = "inSite", value = 1L)
+
+  setNCInputTSV(
+    filename = fname_ncintsv,
+    testrun = listTestRuns[k0, , drop = TRUE],
+    inkeys = "inSite",
+    sw2vars = NULL,
+    values = valuesInputTSV,
+    list_xyvars = sw_xyvars,
+    list_crs = sw_crs
+  )
+
+  setNCInputTSV(
+    filename = fname_ncintsv,
+    testrun = listTestRuns[k0, , drop = TRUE],
+    inkeys = "inSite",
+    sw2vars = "indexSpatial",
+    list_xyvars = sw_xyvars,
+    list_crs = sw_crs
+  )
+
+
+  #------ . ------
   #--- * inVeg: pft as variables ------
   dir_veg <- file.path(dir_testrun_swinnc, "inVeg")
   dir.create(dir_veg, recursive = TRUE, showWarnings = FALSE)

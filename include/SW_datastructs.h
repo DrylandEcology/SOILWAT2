@@ -1506,6 +1506,7 @@ typedef enum {
     eSW_InSpatial,
     eSW_InTopo,
     eSW_InSoil,
+    eSW_InSite,
     eSW_InVeg,
     eSW_InWeather,
     eSW_InClimate,
