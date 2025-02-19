@@ -96,6 +96,8 @@ static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] = {
     {"1",        "cm", "cm",   "g cm-3", "cm3 cm-3", "g g-1", "g g-1", "g g-1",
      "cm3 cm-3", "1",  "degC", "1",      "1",        "1",     "1",     "1",
      "NA",       "NA", "NA",   "NA",     "NA",       "NA"},
+    /* inSite */
+    {"1", "degC"},
     /*inVeg*/
     {"1",     "m2 m-2", "m2 m-2", "g m-2", "g m-2",  "1",     "g m-2", "m2 m-2",
      "g m-2", "g m-2",  "1",      "g m-2", "m2 m-2", "g m-2", "g m-2", "1",
@@ -156,6 +158,9 @@ static const char *const possVarNames[SW_NINKEYSNC][SW_INNMAXVARS] = {
      "swrcpMineralSoil[4]",
      "swrcpMineralSoil[5]",
      "swrcpMineralSoil[6]"},
+
+    /* inSite */
+    {"indexSpatial", "Tsoil_constant"},
 
     /* inVeg */
     {"indexSpatial",     "bareGround.fCover",
@@ -263,6 +268,7 @@ static const int eiv_shortWaveRad = 1 + SHORT_WR;
 // static const int eiv_monthlyRHumidity = 3;
 // static const int eiv_monthlySnowDensity = 4;
 // static const int eiv_monthlyNRainPerDay = 5;
+// static const int eiv_tsoilConst = 1;
 /** @} */ // end of documentation of eiv
 
 static const char *const generalVegNames[] = {
@@ -281,6 +287,7 @@ static const char *const possInKeys[] = {
     "inSpatial",
     "inTopo",
     "inSoil",
+    "inSite",
     "inVeg",
     "inWeather",
     "inClimate"
@@ -5167,6 +5174,7 @@ temporal/spatial information for a set of simulation runs
 about the simulation
 @param[out] SW_Sky Struct of type SW_SKY which describes sky conditions
 over the simulated site
+@param[out] SW_Site Struct of type SW_SITE describing the simulated site
 @param[in] inFiles List of all input files throughout all input keys
 @param[in] ncSUID Current simulation unit identifier for which is used
 to get data from netCDF
@@ -5174,10 +5182,11 @@ to get data from netCDF
 input keys
 @param[out] LogInfo Holds information on warnings and errors
 */
-static void read_spatial_topo_climate_inputs(
+static void read_spatial_topo_climate_site_inputs(
     SW_DOMAIN *SW_Domain,
     SW_MODEL *SW_Model,
     SW_SKY *SW_Sky,
+    SW_SITE *SW_Site,
     char ***inFiles,
     const size_t ncSUID[],
     sw_converter_t ***convs,
@@ -5202,7 +5211,7 @@ static void read_spatial_topo_climate_inputs(
     char *varName;
     nc_type *varTypes;
     nc_type varType;
-    const int numKeys = 3;
+    const int numKeys = 4;
     int *varIDs;
     double scaleFactor;
     double addOffset;
@@ -5216,7 +5225,9 @@ static void read_spatial_topo_climate_inputs(
     size_t defSetStart[2] = {0};
 
     double **scaleAddFactors;
-    const InKeys keys[] = {eSW_InSpatial, eSW_InTopo, eSW_InClimate};
+    const InKeys keys[] = {
+        eSW_InSpatial, eSW_InTopo, eSW_InClimate, eSW_InSite
+    };
     InKeys currKey;
 
     double *values[][5] = {
@@ -5229,7 +5240,8 @@ static void read_spatial_topo_climate_inputs(
          SW_Sky->windspeed,
          SW_Sky->r_humidity,
          SW_Sky->snow_density,
-         SW_Sky->n_rain_per_day}
+         SW_Sky->n_rain_per_day},
+        {&SW_Site->Tsoil_constant}
     };
     double tempVals[MAX_MONTHS];
 
@@ -7677,6 +7689,7 @@ void SW_NCIN_read_inputs(
     Bool readWeather = readInputs[eSW_InWeather][0];
     Bool readVeg = readInputs[eSW_InVeg][0];
     Bool readSoil = readInputs[eSW_InSoil][0];
+    Bool readSite = readInputs[eSW_InSite][0];
 
     /* Allocate information before gathering inputs */
     if (readWeather) {
@@ -7693,9 +7706,16 @@ void SW_NCIN_read_inputs(
     }
 
     /* Read all activated inputs */
-    if (readSpatial || readTopo || readClimate) {
-        read_spatial_topo_climate_inputs(
-            SW_Domain, &sw->Model, &sw->Sky, ncInFiles, ncSUID, convs, LogInfo
+    if (readSpatial || readTopo || readClimate || readSite) {
+        read_spatial_topo_climate_site_inputs(
+            SW_Domain,
+            &sw->Model,
+            &sw->Sky,
+            &sw->Site,
+            ncInFiles,
+            ncSUID,
+            convs,
+            LogInfo
         );
         if (LogInfo->stopRun) {
             return;
