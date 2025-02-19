@@ -845,6 +845,243 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyInputPrioritization) {
     );
 }
 
+TEST_F(WeatherFixtureTest, WeatherMonthlyScalingParameters) {
+    LOG_INFO LogInfo;
+    sw_init_logs(NULL, &LogInfo);
+
+    SW_WEATHER testWeather;
+    SW_WEATHER_HIST *allHist = NULL;
+
+    unsigned int const nYears = 1;
+    TimeInt const testYear = SW_Run.Weather.startYear;
+    TimeInt days_in_month[MAX_MONTHS];
+    TimeInt cum_monthdays[MAX_MONTHS];
+
+    Time_init_model(days_in_month);
+    Time_new_year(testYear, days_in_month, cum_monthdays);
+
+
+    //--- Check scale_temp_max ------
+    deallocateAllWeather(&allHist);
+    SW_WTH_allocateAllWeather(&allHist, nYears, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    memcpy(&allHist[0], &SW_Run.Weather.allHist[0], sizeof(allHist[0]));
+
+    memcpy(&testWeather, &SW_Run.Weather, sizeof(testWeather));
+    testWeather.scale_temp_max[0] = 2;
+
+    scaleAllWeather(
+        allHist,
+        testYear,
+        nYears,
+        testWeather.scale_temp_max,
+        testWeather.scale_temp_min,
+        testWeather.scale_precip,
+        testWeather.scale_skyCover,
+        testWeather.scale_wind,
+        testWeather.scale_rH,
+        testWeather.scale_actVapPress,
+        testWeather.scale_shortWaveRad,
+        cum_monthdays,
+        days_in_month
+    );
+
+    EXPECT_NE(SW_Run.Weather.allHist[0].temp_max[0], allHist[0].temp_max[0]);
+    EXPECT_DOUBLE_EQ(SW_Run.Weather.allHist[0].ppt[0], allHist[0].ppt[0]);
+
+
+    //--- Check scale_temp_min ------
+    deallocateAllWeather(&allHist);
+    SW_WTH_allocateAllWeather(&allHist, nYears, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    memcpy(&allHist[0], &SW_Run.Weather.allHist[0], sizeof(allHist[0]));
+
+    memcpy(&testWeather, &SW_Run.Weather, sizeof(testWeather));
+    testWeather.scale_temp_min[0] = 2;
+
+    scaleAllWeather(
+        allHist,
+        testYear,
+        nYears,
+        testWeather.scale_temp_max,
+        testWeather.scale_temp_min,
+        testWeather.scale_precip,
+        testWeather.scale_skyCover,
+        testWeather.scale_wind,
+        testWeather.scale_rH,
+        testWeather.scale_actVapPress,
+        testWeather.scale_shortWaveRad,
+        cum_monthdays,
+        days_in_month
+    );
+
+    EXPECT_NE(SW_Run.Weather.allHist[0].temp_min[0], allHist[0].temp_min[0]);
+    EXPECT_DOUBLE_EQ(SW_Run.Weather.allHist[0].ppt[0], allHist[0].ppt[0]);
+
+
+    //--- Check scale_precip ------
+    deallocateAllWeather(&allHist);
+    SW_WTH_allocateAllWeather(&allHist, nYears, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    memcpy(&allHist[0], &SW_Run.Weather.allHist[0], sizeof(allHist[0]));
+
+    memcpy(&testWeather, &SW_Run.Weather, sizeof(testWeather));
+    testWeather.scale_precip[0] = 2;
+
+    scaleAllWeather(
+        allHist,
+        testYear,
+        nYears,
+        testWeather.scale_temp_max,
+        testWeather.scale_temp_min,
+        testWeather.scale_precip,
+        testWeather.scale_skyCover,
+        testWeather.scale_wind,
+        testWeather.scale_rH,
+        testWeather.scale_actVapPress,
+        testWeather.scale_shortWaveRad,
+        cum_monthdays,
+        days_in_month
+    );
+
+    EXPECT_NE(SW_Run.Weather.allHist[0].ppt[0], allHist[0].ppt[0]);
+    EXPECT_DOUBLE_EQ(
+        SW_Run.Weather.allHist[0].temp_max[0], allHist[0].temp_max[0]
+    );
+
+
+    //--- Check scale_skyCover ------
+    deallocateAllWeather(&allHist);
+    SW_WTH_allocateAllWeather(&allHist, nYears, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    memcpy(&allHist[0], &SW_Run.Weather.allHist[0], sizeof(allHist[0]));
+
+    memcpy(&testWeather, &SW_Run.Weather, sizeof(testWeather));
+    testWeather.scale_skyCover[0] = 2;
+
+    scaleAllWeather(
+        allHist,
+        testYear,
+        nYears,
+        testWeather.scale_temp_max,
+        testWeather.scale_temp_min,
+        testWeather.scale_precip,
+        testWeather.scale_skyCover,
+        testWeather.scale_wind,
+        testWeather.scale_rH,
+        testWeather.scale_actVapPress,
+        testWeather.scale_shortWaveRad,
+        cum_monthdays,
+        days_in_month
+    );
+
+    EXPECT_NE(
+        SW_Run.Weather.allHist[0].cloudcov_daily[0],
+        allHist[0].cloudcov_daily[0]
+    );
+    EXPECT_DOUBLE_EQ(SW_Run.Weather.allHist[0].ppt[0], allHist[0].ppt[0]);
+
+
+    //--- Check scale_wind ------
+    deallocateAllWeather(&allHist);
+    SW_WTH_allocateAllWeather(&allHist, nYears, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    memcpy(&allHist[0], &SW_Run.Weather.allHist[0], sizeof(allHist[0]));
+
+    memcpy(&testWeather, &SW_Run.Weather, sizeof(testWeather));
+    testWeather.scale_wind[0] = 2;
+
+    scaleAllWeather(
+        allHist,
+        testYear,
+        nYears,
+        testWeather.scale_temp_max,
+        testWeather.scale_temp_min,
+        testWeather.scale_precip,
+        testWeather.scale_skyCover,
+        testWeather.scale_wind,
+        testWeather.scale_rH,
+        testWeather.scale_actVapPress,
+        testWeather.scale_shortWaveRad,
+        cum_monthdays,
+        days_in_month
+    );
+
+    EXPECT_NE(
+        SW_Run.Weather.allHist[0].windspeed_daily[0],
+        allHist[0].windspeed_daily[0]
+    );
+    EXPECT_DOUBLE_EQ(SW_Run.Weather.allHist[0].ppt[0], allHist[0].ppt[0]);
+
+
+    //--- Check scale_rH ------
+    deallocateAllWeather(&allHist);
+    SW_WTH_allocateAllWeather(&allHist, nYears, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    memcpy(&allHist[0], &SW_Run.Weather.allHist[0], sizeof(allHist[0]));
+
+    memcpy(&testWeather, &SW_Run.Weather, sizeof(testWeather));
+    testWeather.scale_rH[0] = 2;
+
+    scaleAllWeather(
+        allHist,
+        testYear,
+        nYears,
+        testWeather.scale_temp_max,
+        testWeather.scale_temp_min,
+        testWeather.scale_precip,
+        testWeather.scale_skyCover,
+        testWeather.scale_wind,
+        testWeather.scale_rH,
+        testWeather.scale_actVapPress,
+        testWeather.scale_shortWaveRad,
+        cum_monthdays,
+        days_in_month
+    );
+
+    EXPECT_NE(
+        SW_Run.Weather.allHist[0].r_humidity_daily[0],
+        allHist[0].r_humidity_daily[0]
+    );
+    EXPECT_DOUBLE_EQ(SW_Run.Weather.allHist[0].ppt[0], allHist[0].ppt[0]);
+
+
+    //--- Check scale_actVapPress ------
+    deallocateAllWeather(&allHist);
+    SW_WTH_allocateAllWeather(&allHist, nYears, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    memcpy(&allHist[0], &SW_Run.Weather.allHist[0], sizeof(allHist[0]));
+
+    memcpy(&testWeather, &SW_Run.Weather, sizeof(testWeather));
+    testWeather.scale_actVapPress[0] = 2;
+
+    scaleAllWeather(
+        allHist,
+        testYear,
+        nYears,
+        testWeather.scale_temp_max,
+        testWeather.scale_temp_min,
+        testWeather.scale_precip,
+        testWeather.scale_skyCover,
+        testWeather.scale_wind,
+        testWeather.scale_rH,
+        testWeather.scale_actVapPress,
+        testWeather.scale_shortWaveRad,
+        cum_monthdays,
+        days_in_month
+    );
+
+    EXPECT_NE(
+        SW_Run.Weather.allHist[0].actualVaporPressure[0],
+        allHist[0].actualVaporPressure[0]
+    );
+    EXPECT_DOUBLE_EQ(SW_Run.Weather.allHist[0].ppt[0], allHist[0].ppt[0]);
+
+
+    // ------ Deallocate
+    deallocateAllWeather(&allHist);
+}
+
 TEST_F(WeatherFixtureTest, WeatherInputGridMET) {
 
     /*

@@ -4,6 +4,8 @@
 
 * Soil water retention curve parameters that are non-finite now throw an error.
 
+* Fix scaling of daily meteorological variables (#454).
+
 * Warning and error messages are now, by default, written to logs/logfile.log
 
 * nc-based SOILWAT2 can now use a `"netCDF"` file to provide inputs for

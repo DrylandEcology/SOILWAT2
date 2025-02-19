@@ -1373,7 +1373,10 @@ void scaleAllWeather(
     for (month = 0; trivial && month < MAX_MONTHS; month++) {
         trivial =
             (Bool) (ZRO(scale_temp_max[month]) && ZRO(scale_temp_min[month]) &&
-                    EQ(scale_precip[month], 1.));
+                    EQ(scale_precip[month], 1.) && ZRO(scale_skyCover[month]) &&
+                    EQ(scale_wind[month], 1.) && ZRO(scale_rH[month]) &&
+                    EQ(scale_actVapPress[month], 1.) &&
+                    EQ(scale_shortWaveRad[month], 1.));
     }
 
     if (!trivial) {
