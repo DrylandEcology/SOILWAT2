@@ -66,15 +66,16 @@ void SW_F_CleanOutDir(char *outDir, LOG_INFO *LogInfo) {
 
     char inbuf[FILENAME_MAX] = {'\0'};
     Bool clearDir = swTRUE;
+    const int maxDepth = 10;
 
 #if defined(SWNETCDF)
     clearDir = swFALSE;
-    (void) snprintf(inbuf, FILENAME_MAX, "%s.csv", outDir);
+    (void) snprintf(inbuf, FILENAME_MAX, "%s*.csv", outDir);
 #else
     (void) snprintf(inbuf, FILENAME_MAX, "%s", outDir);
 #endif
 
-    if (!RemoveFiles(inbuf, clearDir, LogInfo)) {
+    if (!RemoveFiles(inbuf, clearDir, maxDepth, LogInfo)) {
         LogError(
             LogInfo,
             LOGWARN,
