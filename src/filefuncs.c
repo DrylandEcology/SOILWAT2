@@ -60,7 +60,7 @@ static Bool RemoveFilesHelper(
     struct stat statbuf;
 
     char fname[FILENAME_MAX] = "\0";
-    char temp[MAX_FILENAMESIZE] = "\0";
+    char temp[FILENAME_MAX] = "\0";
     char *endFnamePtr = fname + sizeof fname - 1;
     char *fNamePlusDLen;
     char *p2;
@@ -70,6 +70,7 @@ static Bool RemoveFilesHelper(
     Bool bufferFull = swFALSE;
     Bool passed = swTRUE;
     Bool isDir;
+    int resSNP;
 
     Bool match;
 
@@ -131,7 +132,14 @@ static Bool RemoveFilesHelper(
 
         if (match || isDir) {
             if (isDir && clearDir) {
-                snprintf(temp, sizeof temp, "%s/", fname);
+                resSNP = snprintf(temp, sizeof temp, "%s/", fname);
+                if (resSNP < 0 || (unsigned) resSNP >= (sizeof temp)) {
+                    LogError(
+                        LogInfo, LOGERROR, "Path name is too long: '%s'.", temp
+                    );
+                    goto closeDir;
+                }
+
                 passed = RemoveFilesHelper(
                     temp,
                     len1,
