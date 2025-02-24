@@ -25,6 +25,7 @@ static const int numVarsInKey[] = {
     3,  /* inSpatial */
     4,  /* inTopo */
     22, /* inSoil */
+    2,  /* inSite */
     22, /* inVeg */
     15, /* inWeather */
     6   /* inClimate */

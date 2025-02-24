@@ -237,6 +237,9 @@ TEST(SiteTest, SiteSWRCpChecks) {
 
     // Param1 = psi_sat (> 0)
     tmp = swrcp[0];
+    swrcp[0] = NAN;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     swrcp[0] = -1.;
     EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -275,6 +278,9 @@ TEST(SiteTest, SiteSWRCpChecks) {
 
     // Param1 = theta_res (0-1)
     tmp = swrcp[0];
+    swrcp[0] = NAN;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     swrcp[0] = -1.;
     EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -327,6 +333,9 @@ TEST(SiteTest, SiteSWRCpChecks) {
 
     // Param1 = theta_sat (0-1)
     tmp = swrcp[0];
+    swrcp[0] = NAN;
+    EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     swrcp[0] = -1.;
     EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error

@@ -3117,17 +3117,6 @@ void SW_OUT_read(
         goto closeFile;
     }
 
-#ifdef SOILWAT
-    if (0 == strcmp(txtInFiles[eLog], "stdout")) {
-        LogInfo->logfp = stdout;
-    } else if (0 == strcmp(txtInFiles[eLog], "stderr")) {
-        LogInfo->logfp = stderr;
-    } else {
-        LogInfo->logfp = OpenFile(txtInFiles[eLog], "w", LogInfo);
-    }
-#endif
-
-
 closeFile: { CloseFile(&f, LogInfo); }
 }
 

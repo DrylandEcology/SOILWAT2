@@ -247,8 +247,8 @@ int setup_testGlobalSoilwatTemplate() {
 
     /* Notes on messages during tests
         - `SW_F_read()`, via SW_CTL_read_inputs_from_disk(), opens the file
-        "example/Output/logfile.log" on disk (based on content of "files.in")
-        - we close "Output/logfile.log"
+        "example/logs/logfile.log" on disk (based on content of "files.in")
+        - we close "logs/logfile.log"
         - we set `logfp` to NULL to silence all non-error messages during tests
         - error messages go directly to stderr (which DeathTests use to match
        against)

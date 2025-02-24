@@ -858,7 +858,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
   fname_topo <- file.path(dir_topo, "topo.nc")
 
   if (!file.exists(fname_topo)) {
-    nDigsTopo = 2L
+    nDigsTopo <- 2L
     IntrinsicSiteParams <- round(
       swin@site@IntrinsicSiteParams,
       digits = nDigsTopo
@@ -1100,7 +1100,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         x = round(
           Cloud["SnowDensity_kg/m^3", , drop = TRUE], digits = nDigsClim
         ),
-        otherValues = 0,
+        otherValues = 1, # snow_density of 0 throws now an error
         dims = inDimCounts[["clim"]],
         dimPermutation = inDimPerms[["clim"]],
         spDims = inputSpDims,
@@ -1170,7 +1170,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
   fname_soil <- file.path(dir_soil, "soil.nc")
 
   if (!file.exists(fname_soil)) {
-    nDigsSoil = 4L
+    nDigsSoil <- 4L
 
     copyInputTemplateNC(
       fname_soil,
@@ -1706,6 +1706,80 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       writeLines(fin2, con = fname)
     }
   }
+
+
+  #------ . ------
+  #--- * inSite ------
+  dir_site <- file.path(dir_testrun_swinnc, "inSite")
+  dir.create(dir_site, recursive = TRUE, showWarnings = FALSE)
+
+  #--- ..** inSite: tas-clim ------
+  fname_tasclim <- file.path(dir_site, "tas-clim.nc")
+
+  if (!file.exists(fname_tasclim)) {
+    nDigsSite <- 2L
+    tasclim <- round(
+      swin@site@SoilTemperatureConstants[["ConstMeanAirTemp"]],
+      digits = nDigsSite
+    )
+
+    copyInputTemplateNC(
+      fname_tasclim,
+      template = fname_inputTemplate,
+      crsType = listTestRuns[k0, "inputCRS"],
+      list_xyvars = sw_xyvars
+    )
+
+    nc <- RNetCDF::open.nc(fname_tasclim, write = TRUE)
+    updateGAttSourceVersion(nc)
+
+    createVarNC(
+      nc,
+      varname = "tas",
+      long_name = "mean temperature",
+      dimensions = inDimNames[["sp"]],
+      units = "degC",
+      vartype = varType
+    )
+    RNetCDF::var.put.nc(
+      nc,
+      variable = "tas",
+      data = createTestRunData(
+        x = tasclim,
+        otherValues = 0,
+        dims = inDimCounts[["sp"]],
+        dimPermutation = inDimPerms[["sp"]],
+        spDims = inputSpDims,
+        idExampleSite = idInputExampleSite
+      ),
+      count = inDimPermCounts[["sp"]]
+    )
+
+    RNetCDF::close.nc(nc)
+  }
+
+
+  #--- ..** inSite: set ncinputs.tsv ------
+  toggleNCInputTSV(filename = fname_ncintsv, inkeys = "inSite", value = 1L)
+
+  setNCInputTSV(
+    filename = fname_ncintsv,
+    testrun = listTestRuns[k0, , drop = TRUE],
+    inkeys = "inSite",
+    sw2vars = NULL,
+    values = valuesInputTSV,
+    list_xyvars = sw_xyvars,
+    list_crs = sw_crs
+  )
+
+  setNCInputTSV(
+    filename = fname_ncintsv,
+    testrun = listTestRuns[k0, , drop = TRUE],
+    inkeys = "inSite",
+    sw2vars = "indexSpatial",
+    list_xyvars = sw_xyvars,
+    list_crs = sw_crs
+  )
 
 
   #------ . ------
