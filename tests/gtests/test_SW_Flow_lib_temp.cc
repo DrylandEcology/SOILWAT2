@@ -218,7 +218,6 @@ TEST(SWFlowTempTest, SWFlowTempSurfaceTemperature) {
 
 // Test the soil temperature initialization function 'soil_temperature_setup'
 TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
-    SW_SITE_SIM SW_SiteSim;
     SW_SOIL_RUN_INPUTS SW_SoilRunIn;
     SW_ST_SIM SW_StRegSimVals;
     SW_ST_init_run(&SW_StRegSimVals);
@@ -438,7 +437,6 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInitDeathTest) {
 // soil_temperature_setup function
 TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
     SW_SOIL_RUN_INPUTS SW_SoilRunIn;
-    SW_SITE_SIM SW_SiteSim;
     SW_ST_SIM SW_StRegSimVals;
     SW_ST_init_run(&SW_StRegSimVals);
 
