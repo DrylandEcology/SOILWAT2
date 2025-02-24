@@ -2151,11 +2151,7 @@ void get_swpMatric_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     ForEachSoilLayer(i, sw->SiteSim.n_layers) {
         /* swpMatric at this point is identical to swcBulk */
         val = SW_SWRC_SWCtoSWP(
-            vo->swpMatric[i],
-            &sw->RunIn.SoilRunIn,
-            &sw->SiteSim,
-            i,
-            &local_log
+            vo->swpMatric[i], &sw->RunIn.SoilRunIn, &sw->SiteSim, i, &local_log
         );
 
         (void) snprintf(str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, val);
@@ -2221,11 +2217,7 @@ void get_swpMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
         /* swpMatric at this point is identical to swcBulk */
         p[iOUTIndex] = SW_SWRC_SWCtoSWP(
-            vo->swpMatric[i],
-            &sw->RunIn.SoilRunIn,
-            &sw->SiteSim,
-            i,
-            &local_log
+            vo->swpMatric[i], &sw->RunIn.SoilRunIn, &sw->SiteSim, i, &local_log
         );
     }
 
@@ -2270,11 +2262,7 @@ void get_swpMatric_agg(
     ForEachSoilLayer(i, sw->SiteSim.n_layers) {
         /* swpMatric at this point is identical to swcBulk */
         val = SW_SWRC_SWCtoSWP(
-            vo->swpMatric[i],
-            &sw->RunIn.SoilRunIn,
-            &sw->SiteSim,
-            i,
-            &local_log
+            vo->swpMatric[i], &sw->RunIn.SoilRunIn, &sw->SiteSim, i, &local_log
         );
 
         iOUTIndex = iOUT(

@@ -635,8 +635,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
                     return; // Exit function prematurely due to error
                 }
 
-                soil_evap_rate[k] *=
-                    sw->RunIn.VegProdRunIn.veg[k].cov.fCover;
+                soil_evap_rate[k] *= sw->RunIn.VegProdRunIn.veg[k].cov.fCover;
 
             } else {
                 soil_evap_rate[k] = 0.;

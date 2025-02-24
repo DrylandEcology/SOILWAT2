@@ -1471,8 +1471,8 @@ void nlayers_vegroots(
 /**
 @brief Set `deep_lyr` to indicate that deep drainage is being simulated
 
-@param[in,out] SW_SiteSim Struct of type SW_SITE_SIM describing the simulated site's
-    simulation values
+@param[in,out] SW_SiteSim Struct of type SW_SITE_SIM describing the simulated
+site's simulation values
 @param[in] deepdrain A flag specifying if we allow drainage into deepest layer
 */
 void add_deepdrain_layer(SW_SITE_SIM *SW_SiteSim, Bool deepdrain) {

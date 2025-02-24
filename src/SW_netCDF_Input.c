@@ -5177,8 +5177,8 @@ temporal/spatial information for a set of simulation runs
     time information about the simulation
 @param[out] SW_SkyIn Struct of type SW_SKY_INPUTS which describes sky conditions
 over the simulated site
-@param[out] SW_SiteRunIn Struct of type SW_SITE_RUN_INPUTS describing the simulated site
-    for a specific run
+@param[out] SW_SiteRunIn Struct of type SW_SITE_RUN_INPUTS describing the
+simulated site for a specific run
 @param[in] inFiles List of all input files throughout all input keys
 @param[in] ncSUID Current simulation unit identifier for which is used
 to get data from netCDF
@@ -6598,8 +6598,8 @@ consistency checks.
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
-@param[out]  SW_SiteRunIn Struct of type SW_SITE_RUN_INPUTS describing the simulated site
-    for a specific run
+@param[out]  SW_SiteRunIn Struct of type SW_SITE_RUN_INPUTS describing the
+simulated site for a specific run
 @param[in] soilInFiles List of input files the user provided for the
     input key 'inSoil'
 @param[in] hasConstSoilDepths Specifies of all soil inputs provided

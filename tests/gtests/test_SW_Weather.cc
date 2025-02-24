@@ -49,15 +49,9 @@ TEST_F(WeatherFixtureTest, WeatherDefaultValues) {
 
     // Test first day of first year in `allHist` to make sure correct
     // temperature max/min/avg and precipitation values
-    EXPECT_NEAR(
-        SW_Run.RunIn.weathRunAllHist[0].temp_max[0], -0.520000, tol6
-    );
-    EXPECT_NEAR(
-        SW_Run.RunIn.weathRunAllHist[0].temp_avg[0], -8.095000, tol6
-    );
-    EXPECT_NEAR(
-        SW_Run.RunIn.weathRunAllHist[0].temp_min[0], -15.670000, tol6
-    );
+    EXPECT_NEAR(SW_Run.RunIn.weathRunAllHist[0].temp_max[0], -0.520000, tol6);
+    EXPECT_NEAR(SW_Run.RunIn.weathRunAllHist[0].temp_avg[0], -8.095000, tol6);
+    EXPECT_NEAR(SW_Run.RunIn.weathRunAllHist[0].temp_min[0], -15.670000, tol6);
     EXPECT_NEAR(SW_Run.RunIn.weathRunAllHist[0].ppt[0], .220000, tol6);
     EXPECT_NEAR(
         SW_Run.RunIn.weathRunAllHist[0].cloudcov_daily[0], 66.483871, tol6
@@ -68,8 +62,7 @@ TEST_F(WeatherFixtureTest, WeatherDefaultValues) {
     EXPECT_NEAR(
         SW_Run.RunIn.weathRunAllHist[0].r_humidity_daily[0], 61.000000, tol6
     );
-    EXPECT_TRUE(
-        missing(SW_Run.RunIn.weathRunAllHist[0].actualVaporPressure[0])
+    EXPECT_TRUE(missing(SW_Run.RunIn.weathRunAllHist[0].actualVaporPressure[0])
     );
     EXPECT_TRUE(missing(SW_Run.RunIn.weathRunAllHist[0].shortWaveRad[0]));
 }
@@ -155,19 +148,13 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesDays) {
     EXPECT_FALSE(missing(SW_Run.RunIn.weathRunAllHist[0].ppt[3]));
     EXPECT_FALSE(missing(SW_Run.RunIn.weathRunAllHist[0].cloudcov_daily[0]));
     EXPECT_FALSE(missing(SW_Run.RunIn.weathRunAllHist[0].cloudcov_daily[3]));
-    EXPECT_FALSE(missing(SW_Run.RunIn.weathRunAllHist[0].windspeed_daily[0])
+    EXPECT_FALSE(missing(SW_Run.RunIn.weathRunAllHist[0].windspeed_daily[0]));
+    EXPECT_FALSE(missing(SW_Run.RunIn.weathRunAllHist[0].windspeed_daily[3]));
+    EXPECT_FALSE(missing(SW_Run.RunIn.weathRunAllHist[0].r_humidity_daily[0]));
+    EXPECT_FALSE(missing(SW_Run.RunIn.weathRunAllHist[0].r_humidity_daily[3]));
+    EXPECT_FALSE(missing(SW_Run.RunIn.weathRunAllHist[0].actualVaporPressure[0])
     );
-    EXPECT_FALSE(missing(SW_Run.RunIn.weathRunAllHist[0].windspeed_daily[3])
-    );
-    EXPECT_FALSE(missing(SW_Run.RunIn.weathRunAllHist[0].r_humidity_daily[0])
-    );
-    EXPECT_FALSE(missing(SW_Run.RunIn.weathRunAllHist[0].r_humidity_daily[3])
-    );
-    EXPECT_FALSE(
-        missing(SW_Run.RunIn.weathRunAllHist[0].actualVaporPressure[0])
-    );
-    EXPECT_FALSE(
-        missing(SW_Run.RunIn.weathRunAllHist[0].actualVaporPressure[3])
+    EXPECT_FALSE(missing(SW_Run.RunIn.weathRunAllHist[0].actualVaporPressure[3])
     );
 
     EXPECT_TRUE(missing(SW_Run.RunIn.weathRunAllHist[0].shortWaveRad[0]));
@@ -968,9 +955,7 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyScalingParameters) {
     deallocateAllWeather(&allHist);
     SW_WTH_allocateAllWeather(&allHist, nYears, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
-    memcpy(
-        &allHist[0], &SW_Run.RunIn.weathRunAllHist[0], sizeof(allHist[0])
-    );
+    memcpy(&allHist[0], &SW_Run.RunIn.weathRunAllHist[0], sizeof(allHist[0]));
 
     memcpy(&testWeather, &SW_Run.WeatherIn, sizeof(testWeather));
     testWeather.scale_temp_max[0] = 2;
@@ -994,18 +979,14 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyScalingParameters) {
     EXPECT_NE(
         SW_Run.RunIn.weathRunAllHist[0].temp_max[0], allHist[0].temp_max[0]
     );
-    EXPECT_DOUBLE_EQ(
-        SW_Run.RunIn.weathRunAllHist[0].ppt[0], allHist[0].ppt[0]
-    );
+    EXPECT_DOUBLE_EQ(SW_Run.RunIn.weathRunAllHist[0].ppt[0], allHist[0].ppt[0]);
 
 
     //--- Check scale_temp_min ------
     deallocateAllWeather(&allHist);
     SW_WTH_allocateAllWeather(&allHist, nYears, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
-    memcpy(
-        &allHist[0], &SW_Run.RunIn.weathRunAllHist[0], sizeof(allHist[0])
-    );
+    memcpy(&allHist[0], &SW_Run.RunIn.weathRunAllHist[0], sizeof(allHist[0]));
 
     memcpy(&testWeather, &SW_Run.WeatherIn, sizeof(testWeather));
     testWeather.scale_temp_min[0] = 2;
@@ -1029,18 +1010,14 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyScalingParameters) {
     EXPECT_NE(
         SW_Run.RunIn.weathRunAllHist[0].temp_min[0], allHist[0].temp_min[0]
     );
-    EXPECT_DOUBLE_EQ(
-        SW_Run.RunIn.weathRunAllHist[0].ppt[0], allHist[0].ppt[0]
-    );
+    EXPECT_DOUBLE_EQ(SW_Run.RunIn.weathRunAllHist[0].ppt[0], allHist[0].ppt[0]);
 
 
     //--- Check scale_precip ------
     deallocateAllWeather(&allHist);
     SW_WTH_allocateAllWeather(&allHist, nYears, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
-    memcpy(
-        &allHist[0], &SW_Run.RunIn.weathRunAllHist[0], sizeof(allHist[0])
-    );
+    memcpy(&allHist[0], &SW_Run.RunIn.weathRunAllHist[0], sizeof(allHist[0]));
 
     memcpy(&testWeather, &SW_Run.WeatherIn, sizeof(testWeather));
     testWeather.scale_precip[0] = 2;
@@ -1071,9 +1048,7 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyScalingParameters) {
     deallocateAllWeather(&allHist);
     SW_WTH_allocateAllWeather(&allHist, nYears, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
-    memcpy(
-        &allHist[0], &SW_Run.RunIn.weathRunAllHist[0], sizeof(allHist[0])
-    );
+    memcpy(&allHist[0], &SW_Run.RunIn.weathRunAllHist[0], sizeof(allHist[0]));
 
     memcpy(&testWeather, &SW_Run.WeatherIn, sizeof(testWeather));
     testWeather.scale_skyCover[0] = 2;
@@ -1098,18 +1073,14 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyScalingParameters) {
         SW_Run.RunIn.weathRunAllHist[0].cloudcov_daily[0],
         allHist[0].cloudcov_daily[0]
     );
-    EXPECT_DOUBLE_EQ(
-        SW_Run.RunIn.weathRunAllHist[0].ppt[0], allHist[0].ppt[0]
-    );
+    EXPECT_DOUBLE_EQ(SW_Run.RunIn.weathRunAllHist[0].ppt[0], allHist[0].ppt[0]);
 
 
     //--- Check scale_wind ------
     deallocateAllWeather(&allHist);
     SW_WTH_allocateAllWeather(&allHist, nYears, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
-    memcpy(
-        &allHist[0], &SW_Run.RunIn.weathRunAllHist[0], sizeof(allHist[0])
-    );
+    memcpy(&allHist[0], &SW_Run.RunIn.weathRunAllHist[0], sizeof(allHist[0]));
 
     memcpy(&testWeather, &SW_Run.WeatherIn, sizeof(testWeather));
     testWeather.scale_wind[0] = 2;
@@ -1134,18 +1105,14 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyScalingParameters) {
         SW_Run.RunIn.weathRunAllHist[0].windspeed_daily[0],
         allHist[0].windspeed_daily[0]
     );
-    EXPECT_DOUBLE_EQ(
-        SW_Run.RunIn.weathRunAllHist[0].ppt[0], allHist[0].ppt[0]
-    );
+    EXPECT_DOUBLE_EQ(SW_Run.RunIn.weathRunAllHist[0].ppt[0], allHist[0].ppt[0]);
 
 
     //--- Check scale_rH ------
     deallocateAllWeather(&allHist);
     SW_WTH_allocateAllWeather(&allHist, nYears, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
-    memcpy(
-        &allHist[0], &SW_Run.RunIn.weathRunAllHist[0], sizeof(allHist[0])
-    );
+    memcpy(&allHist[0], &SW_Run.RunIn.weathRunAllHist[0], sizeof(allHist[0]));
 
     memcpy(&testWeather, &SW_Run.WeatherIn, sizeof(testWeather));
     testWeather.scale_rH[0] = 2;
@@ -1170,18 +1137,14 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyScalingParameters) {
         SW_Run.RunIn.weathRunAllHist[0].r_humidity_daily[0],
         allHist[0].r_humidity_daily[0]
     );
-    EXPECT_DOUBLE_EQ(
-        SW_Run.RunIn.weathRunAllHist[0].ppt[0], allHist[0].ppt[0]
-    );
+    EXPECT_DOUBLE_EQ(SW_Run.RunIn.weathRunAllHist[0].ppt[0], allHist[0].ppt[0]);
 
 
     //--- Check scale_actVapPress ------
     deallocateAllWeather(&allHist);
     SW_WTH_allocateAllWeather(&allHist, nYears, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
-    memcpy(
-        &allHist[0], &SW_Run.RunIn.weathRunAllHist[0], sizeof(allHist[0])
-    );
+    memcpy(&allHist[0], &SW_Run.RunIn.weathRunAllHist[0], sizeof(allHist[0]));
 
     memcpy(&testWeather, &SW_Run.WeatherIn, sizeof(testWeather));
     testWeather.scale_actVapPress[0] = 2;
@@ -1206,9 +1169,7 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyScalingParameters) {
         SW_Run.RunIn.weathRunAllHist[0].actualVaporPressure[0],
         allHist[0].actualVaporPressure[0]
     );
-    EXPECT_DOUBLE_EQ(
-        SW_Run.RunIn.weathRunAllHist[0].ppt[0], allHist[0].ppt[0]
-    );
+    EXPECT_DOUBLE_EQ(SW_Run.RunIn.weathRunAllHist[0].ppt[0], allHist[0].ppt[0]);
 
 
     // ------ Deallocate
@@ -1330,9 +1291,7 @@ TEST_F(WeatherFixtureTest, WeatherInputGridMET) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Check that weather contains reasonable values
-    checkAllWeather(
-        &SW_Run.WeatherIn, SW_Run.RunIn.weathRunAllHist, &LogInfo
-    );
+    checkAllWeather(&SW_Run.WeatherIn, SW_Run.RunIn.weathRunAllHist, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
@@ -1391,9 +1350,8 @@ TEST_F(WeatherFixtureTest, WeatherInputGridMET) {
 
 
     // We have observed radiation and missing cloud cover
-    EXPECT_FALSE(
-        missing(SW_Run.RunIn.weathRunAllHist[yearIndex].shortWaveRad[0])
-    );
+    EXPECT_FALSE(missing(SW_Run.RunIn.weathRunAllHist[yearIndex].shortWaveRad[0]
+    ));
     EXPECT_TRUE(
         missing(SW_Run.RunIn.weathRunAllHist[yearIndex].cloudcov_daily[0])
     );
@@ -1516,9 +1474,7 @@ TEST_F(WeatherFixtureTest, WeatherInputDaymet) {
 
 
     // Check that weather contains reasonable values
-    checkAllWeather(
-        &SW_Run.WeatherIn, SW_Run.RunIn.weathRunAllHist, &LogInfo
-    );
+    checkAllWeather(&SW_Run.WeatherIn, SW_Run.RunIn.weathRunAllHist, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
@@ -1561,9 +1517,8 @@ TEST_F(WeatherFixtureTest, WeatherInputDaymet) {
 
 
     // We have observed radiation and missing cloud cover
-    EXPECT_FALSE(
-        missing(SW_Run.RunIn.weathRunAllHist[yearIndex].shortWaveRad[0])
-    );
+    EXPECT_FALSE(missing(SW_Run.RunIn.weathRunAllHist[yearIndex].shortWaveRad[0]
+    ));
     EXPECT_TRUE(
         missing(SW_Run.RunIn.weathRunAllHist[yearIndex].cloudcov_daily[0])
     );
@@ -1685,9 +1640,7 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype1) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Check that weather contains reasonable values
-    checkAllWeather(
-        &SW_Run.WeatherIn, SW_Run.RunIn.weathRunAllHist, &LogInfo
-    );
+    checkAllWeather(&SW_Run.WeatherIn, SW_Run.RunIn.weathRunAllHist, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
@@ -1761,9 +1714,8 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype1) {
 
 
     // We have observed radiation and missing cloud cover
-    EXPECT_FALSE(
-        missing(SW_Run.RunIn.weathRunAllHist[yearIndex].shortWaveRad[0])
-    );
+    EXPECT_FALSE(missing(SW_Run.RunIn.weathRunAllHist[yearIndex].shortWaveRad[0]
+    ));
     EXPECT_TRUE(
         missing(SW_Run.RunIn.weathRunAllHist[yearIndex].cloudcov_daily[0])
     );
@@ -1886,9 +1838,7 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Check that weather contains reasonable values
-    checkAllWeather(
-        &SW_Run.WeatherIn, SW_Run.RunIn.weathRunAllHist, &LogInfo
-    );
+    checkAllWeather(&SW_Run.WeatherIn, SW_Run.RunIn.weathRunAllHist, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
@@ -1962,9 +1912,8 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
 
 
     // We have observed radiation and missing cloud cover
-    EXPECT_FALSE(
-        missing(SW_Run.RunIn.weathRunAllHist[yearIndex].shortWaveRad[0])
-    );
+    EXPECT_FALSE(missing(SW_Run.RunIn.weathRunAllHist[yearIndex].shortWaveRad[0]
+    ));
     EXPECT_TRUE(
         missing(SW_Run.RunIn.weathRunAllHist[yearIndex].cloudcov_daily[0])
     );
@@ -2018,8 +1967,7 @@ TEST_F(WeatherFixtureTest, WeatherDailyLOCFInputValues) {
 
     // Setup values/flags for `generateMissingWeather()` to deal with
     SW_Run.WeatherIn.generateWeatherMethod = 1;
-    SW_Run.RunIn.weathRunAllHist[yearIndex].cloudcov_daily[0] =
-        cloudCovTestVal;
+    SW_Run.RunIn.weathRunAllHist[yearIndex].cloudcov_daily[0] = cloudCovTestVal;
     SW_Run.RunIn.weathRunAllHist[yearIndex].actualVaporPressure[0] =
         actVapPressTestVal;
     SW_Run.RunIn.weathRunAllHist[yearIndex].windspeed_daily[0] =
@@ -2141,9 +2089,7 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputBadTemperatureDeathTest) {
     // Make temperature unreasonable (not within [-100, 100])
     SW_Run.RunIn.weathRunAllHist[0].temp_max[0] = -102.;
 
-    checkAllWeather(
-        &SW_Run.WeatherIn, SW_Run.RunIn.weathRunAllHist, &LogInfo
-    );
+    checkAllWeather(&SW_Run.WeatherIn, SW_Run.RunIn.weathRunAllHist, &LogInfo);
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
     // Detect failure by error message
@@ -2177,9 +2123,7 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputBadPrecipitationDeathTest) {
     // Make precipitation unresonable (< 0)
     SW_Run.RunIn.weathRunAllHist[0].ppt[0] = -1.;
 
-    checkAllWeather(
-        &SW_Run.WeatherIn, SW_Run.RunIn.weathRunAllHist, &LogInfo
-    );
+    checkAllWeather(&SW_Run.WeatherIn, SW_Run.RunIn.weathRunAllHist, &LogInfo);
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
     // Detect failure by error message
@@ -2210,9 +2154,7 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputBadHumidityDeathTest) {
     // Make relative humidity unreasonable (< 0%)
     SW_Run.RunIn.weathRunAllHist[0].r_humidity_daily[0] = -.1252;
 
-    checkAllWeather(
-        &SW_Run.WeatherIn, SW_Run.RunIn.weathRunAllHist, &LogInfo
-    );
+    checkAllWeather(&SW_Run.WeatherIn, SW_Run.RunIn.weathRunAllHist, &LogInfo);
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
     // Detect failure by error message
