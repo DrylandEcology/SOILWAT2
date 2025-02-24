@@ -101,7 +101,7 @@
 extern "C" {
 #endif
 
-#include "include/SW_datastructs.h" // for SW_SOILWAT, SW_SITE, LOG_INFO
+#include "include/SW_datastructs.h" // for SW_SOILWAT, SW_SITE_*, LOG_INFO
 #include "include/SW_Defines.h"     // for TimeInt, LyrIndex, NVEGTYPES, MAX_...
 
 /* =================================================== */
@@ -164,6 +164,7 @@ void calculate_repartitioned_soilwater(
     SW_SOILWAT_SIM *SW_SoilWatSim,
     double swcBulk_atSWPcrit[][MAX_LAYERS],
     SW_VEGPROD_INPUTS *SW_VegProdIn,
+    VegType veg[],
     LyrIndex n_layers
 );
 
@@ -198,13 +199,14 @@ void SW_SWC_end_day(SW_SOILWAT_SIM *SW_SoilWatSim, LyrIndex n_layers);
 void get_dSWAbulk(
     unsigned int i,
     SW_VEGPROD_INPUTS *SW_VegProdIn,
+    VegType veg[],
     double swa_master[][NVEGTYPES][MAX_LAYERS],
     double dSWA_repart_sum[][MAX_LAYERS]
 );
 
 double SW_SWRC_SWCtoSWP(
     double swcBulk,
-    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     SW_SITE_SIM *SW_SiteSim,
     LyrIndex layerno,
     LOG_INFO *LogInfo
@@ -248,7 +250,7 @@ double SWRC_SWCtoSWP_FXW(
 
 double SW_SWRC_SWPtoSWC(
     double swpMatric,
-    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     SW_SITE_SIM *SW_SiteSim,
     LyrIndex layerno,
     LOG_INFO *LogInfo

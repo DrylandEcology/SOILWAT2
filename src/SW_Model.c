@@ -93,13 +93,13 @@ void SW_MDL_deconstruct(void) {}
 /**
 @brief Reads in `modelrun.in` and displays error message if file is incorrect.
 
-@param[in,out] SW_ModelIn Struct of type SW_MODEL_INPUTS holding basic input
-    time information about the simulation
+@param[in,out] ModelRunIn Struct of type SW_MODEL_RUN_INPUTS holding basic
+    input time information about the simulation
 @param[in] txtInFiles Array of program in/output files
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_MDL_read(
-    SW_MODEL_INPUTS *SW_ModelIn, char *txtInFiles[], LOG_INFO *LogInfo
+    SW_MODEL_RUN_INPUTS *ModelRunIn, char *txtInFiles[], LOG_INFO *LogInfo
 ) {
     /* =================================================== */
     /*
@@ -145,26 +145,26 @@ void SW_MDL_read(
             // longitude is currently not used by the code, but may be used in
             // the future it is present in the `siteparam.in` input file to
             // completely document site location
-            SW_ModelIn->longitude = value * deg_to_rad;
+            ModelRunIn->longitude = value * deg_to_rad;
             break;
 
         case 1: // Latitude
-            SW_ModelIn->latitude = value * deg_to_rad;
+            ModelRunIn->latitude = value * deg_to_rad;
             // Calculate hemisphere based on latitude
-            SW_ModelIn->isnorth =
-                (GT(SW_ModelIn->latitude, 0.)) ? swTRUE : swFALSE;
+            ModelRunIn->isnorth =
+                (GT(ModelRunIn->latitude, 0.)) ? swTRUE : swFALSE;
             break;
 
         case 2: // Elevation
-            SW_ModelIn->elevation = value;
+            ModelRunIn->elevation = value;
             break;
 
         case 3: // Slope
-            SW_ModelIn->slope = value * deg_to_rad;
+            ModelRunIn->slope = value * deg_to_rad;
             break;
 
         case 4: // Aspect
-            SW_ModelIn->aspect = missing(value) ? value : value * deg_to_rad;
+            ModelRunIn->aspect = missing(value) ? value : value * deg_to_rad;
             break;
 
         default: // More lines than expected

@@ -382,9 +382,9 @@ This works correctly only after
 
 @param[in,out] *parmsIn List of structs of type SW_VEGESTAB_INFO_INPUTS holding
     input information about every vegetation species
-@param[in] SW_SiteIn Struct of type SW_SITE describing the simulated site's
-    input values
-@param[in] SW_SiteSim Struct of type SW_SITE describing the simulated site's
+@param[in] SW_SoilRunIn Struct of type SW_SOIL_RUN_INPUTS describing
+    the simulated site's input values
+@param[in] SW_SiteSim Struct of type SW_SITE_SIM describing the simulated site's
     simulation values
 @param[in] n_transp_lyrs Index of the deepest transp. region
 @param[in] count Held within type SW_VEGESTAB to determine
@@ -393,7 +393,7 @@ This works correctly only after
 */
 void SW_VES_init_run(
     SW_VEGESTAB_INFO_INPUTS *parmsIn,
-    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     SW_SITE_SIM *SW_SiteSim,
     LyrIndex n_transp_lyrs[],
     IntU count,
@@ -403,7 +403,7 @@ void SW_VES_init_run(
     IntU i;
 
     for (i = 0; i < count; i++) {
-        spp_init(parmsIn, i, SW_SiteIn, SW_SiteSim, n_transp_lyrs, LogInfo);
+        spp_init(parmsIn, i, SW_SoilRunIn, SW_SiteSim, n_transp_lyrs, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -745,9 +745,9 @@ other function call.
 @param[in,out] *parmsIn List of structs of type SW_VEGESTAB_INFO_INPUTS holding
     input information about every vegetation species
 @param[in] sppnum Index for which paramater is beign initialized.
-@param[in] SW_SiteIn Struct of type SW_SITE describing the simulated site's
-    input values
-@param[in] SW_SiteSim Struct of type SW_SITE describing the simulated site's
+@param[in] SW_SoilRunIn Struct of type SW_SOIL_RUN_INPUTS describing
+    the simulated site's input values
+@param[in] SW_SiteSim Struct of type SW_SITE_SIM describing the simulated site's
     simulation values
 @param[in] n_transp_lyrs Layer index of deepest transp. region.
 @param[out] LogInfo Holds information on warnings and errors
@@ -755,7 +755,7 @@ other function call.
 void spp_init(
     SW_VEGESTAB_INFO_INPUTS *parmsIn,
     unsigned int sppnum,
-    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     SW_SITE_SIM *SW_SiteSim,
     LyrIndex n_transp_lyrs[],
     LOG_INFO *LogInfo
@@ -768,7 +768,7 @@ void spp_init(
     /* because init_layers() must be called prior to this routine */
     /* (see watereqn() ) */
     parms_sppnum->min_swc_germ = SW_SWRC_SWPtoSWC(
-        parms_sppnum->bars[SW_GERM_BARS], SW_SiteIn, SW_SiteSim, 0, LogInfo
+        parms_sppnum->bars[SW_GERM_BARS], SW_SoilRunIn, SW_SiteSim, 0, LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -780,7 +780,11 @@ void spp_init(
     parms_sppnum->min_swc_estab = 0.;
     for (i = 0; i < parms_sppnum->estab_lyrs; i++) {
         parms_sppnum->min_swc_estab += SW_SWRC_SWPtoSWC(
-            parms_sppnum->bars[SW_ESTAB_BARS], SW_SiteIn, SW_SiteSim, i, LogInfo
+            parms_sppnum->bars[SW_ESTAB_BARS],
+            SW_SoilRunIn,
+            SW_SiteSim,
+            i,
+            LogInfo
         );
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error

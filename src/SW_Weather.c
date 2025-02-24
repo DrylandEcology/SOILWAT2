@@ -1130,9 +1130,7 @@ series
     values to be interpolated
 @param[in] r_humidity Array of size #MAX_MONTHS holding monthly relative
     humidity values to be interpolated
-@param[in] elevation Site elevation above sea level [m];
-    utilized only if specific humidity is provided as input for
-    calculating relative humidity
+@param[in] elevation Site elevation above sea level [m]
 @param[in] cum_monthdays Monthly cumulative number of days for "current" year
 @param[in] days_in_month Number of days per month for "current" year
 @param[out] LogInfo Holds information on warnings and errors
@@ -1225,6 +1223,7 @@ freeTempWeather:
     related to temperature and weather generator
 @param[in,out] w Struct of type SW_WEATHER_INPUTS holding all relevant
     information pretaining to meteorological input data
+@param[in,out] allHist Array containing all historical data of a site
 @param[in] cum_monthdays Monthly cumulative number of days for "current" year
 @param[in] days_in_month Number of days per month for "current" year
 @param[out] LogInfo Holds information on warnings and errors
@@ -1236,6 +1235,7 @@ Finalize weather values after they have been read in via
 void finalizeAllWeather(
     SW_MARKOV_INPUTS *SW_MarkovIn,
     SW_WEATHER_INPUTS *w,
+    SW_WEATHER_HIST *allHist,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
     LOG_INFO *LogInfo
@@ -1247,7 +1247,7 @@ void finalizeAllWeather(
     // Impute missing values
     generateMissingWeather(
         SW_MarkovIn,
-        w->allHist,
+        allHist,
         w->startYear,
         w->n_years,
         w->generateWeatherMethod,
@@ -1265,13 +1265,13 @@ void finalizeAllWeather(
 
                 // Make sure calculation of actual vapor pressure is not
                 // polluted by values of `SW_MISSING`
-                if (!missing(w->allHist[yearIndex].r_humidity_daily[day]) &&
-                    !missing(w->allHist[yearIndex].temp_avg[day])) {
+                if (!missing(allHist[yearIndex].r_humidity_daily[day]) &&
+                    !missing(allHist[yearIndex].temp_avg[day])) {
 
-                    w->allHist[yearIndex].actualVaporPressure[day] =
+                    allHist[yearIndex].actualVaporPressure[day] =
                         actualVaporPressure1(
-                            w->allHist[yearIndex].r_humidity_daily[day],
-                            w->allHist[yearIndex].temp_avg[day]
+                            allHist[yearIndex].r_humidity_daily[day],
+                            allHist[yearIndex].temp_avg[day]
                         );
                 }
             }
@@ -1281,7 +1281,7 @@ void finalizeAllWeather(
 
     // Scale with monthly additive/multiplicative parameters
     scaleAllWeather(
-        w->allHist,
+        allHist,
         w->startYear,
         w->n_years,
         w->scale_temp_max,
@@ -1298,19 +1298,25 @@ void finalizeAllWeather(
 
     // Make sure all input, scaled, generated, and calculated daily weather
     // values are within reason
-    checkAllWeather(w, LogInfo);
+    checkAllWeather(w, allHist, LogInfo);
 }
 
 void SW_WTH_finalize_all_weather(
     SW_MARKOV_INPUTS *SW_MarkovIn,
     SW_WEATHER_INPUTS *SW_WeatherIn,
+    SW_WEATHER_HIST *allHist,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
     LOG_INFO *LogInfo
 ) {
 
     finalizeAllWeather(
-        SW_MarkovIn, SW_WeatherIn, cum_monthdays, days_in_month, LogInfo
+        SW_MarkovIn,
+        SW_WeatherIn,
+        allHist,
+        cum_monthdays,
+        days_in_month,
+        LogInfo
     );
 }
 
@@ -1719,15 +1725,17 @@ crash.
 
 @param[in] weather Struct of type SW_WEATHER_INPUTS holding all relevant
 information pretaining to weather input data
+@param[in] weathHist Array containing all historical data of a site
 @param[out] LogInfo Holds information on warnings and errors
 */
-void checkAllWeather(SW_WEATHER_INPUTS *weather, LOG_INFO *LogInfo) {
+void checkAllWeather(
+    SW_WEATHER_INPUTS *weather, SW_WEATHER_HIST *weathHist, LOG_INFO *LogInfo
+) {
 
     // Initialize any variables
     TimeInt year;
     TimeInt doy;
     TimeInt numDaysInYear;
-    SW_WEATHER_HIST *weathHist = weather->allHist;
 
     double dailyMinTemp;
     double dailyMaxTemp;
@@ -2038,6 +2046,7 @@ void SW_WTH_init_run(SW_WEATHER_SIM *SW_WeatherSim) {
 simulation information pretaining to meteorological data
 @param[in,out] SW_WeatherSim Struct of type SW_WEATHER_SIM holding all
     meteorological simulation data
+@param[in,out] allHist Array containing all historical data of a site
 @param[in] SW_SiteIn Struct of type SW_SITE describing the simulated site's
     input values
 @param[in] snowpack[] swe of snowpack, assuming accumulation is turned on
@@ -2048,6 +2057,7 @@ simulation information pretaining to meteorological data
 void SW_WTH_new_day(
     SW_WEATHER_INPUTS *SW_WeatherIn,
     SW_WEATHER_SIM *SW_WeatherSim,
+    SW_WEATHER_HIST *allHist,
     SW_SITE_INPUTS *SW_SiteIn,
     double snowpack[],
     TimeInt doy,
@@ -2087,13 +2097,13 @@ void SW_WTH_new_day(
          1. shortwave radiation can be missing if cloud cover is not missing
          2. cloud cover can be missing if shortwave radiation is not missing
     */
-    if (missing(SW_WeatherIn->allHist[yearIndex].temp_avg[doy0]) ||
-        missing(SW_WeatherIn->allHist[yearIndex].ppt[doy0]) ||
-        missing(SW_WeatherIn->allHist[yearIndex].windspeed_daily[doy0]) ||
-        missing(SW_WeatherIn->allHist[yearIndex].r_humidity_daily[doy0]) ||
-        missing(SW_WeatherIn->allHist[yearIndex].actualVaporPressure[doy0]) ||
-        (missing(SW_WeatherIn->allHist[yearIndex].shortWaveRad[doy0]) &&
-         missing(SW_WeatherIn->allHist[yearIndex].cloudcov_daily[doy0]))) {
+    if (missing(allHist[yearIndex].temp_avg[doy0]) ||
+        missing(allHist[yearIndex].ppt[doy0]) ||
+        missing(allHist[yearIndex].windspeed_daily[doy0]) ||
+        missing(allHist[yearIndex].r_humidity_daily[doy0]) ||
+        missing(allHist[yearIndex].actualVaporPressure[doy0]) ||
+        (missing(allHist[yearIndex].shortWaveRad[doy0]) &&
+         missing(allHist[yearIndex].cloudcov_daily[doy0]))) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -2102,32 +2112,28 @@ void SW_WTH_new_day(
             "cloud=%.2f\n",
             year,
             doy,
-            SW_WeatherIn->allHist[yearIndex].temp_avg[doy0],
-            SW_WeatherIn->allHist[yearIndex].ppt[doy0],
-            SW_WeatherIn->allHist[yearIndex].windspeed_daily[doy0],
-            SW_WeatherIn->allHist[yearIndex].r_humidity_daily[doy0],
-            SW_WeatherIn->allHist[yearIndex].actualVaporPressure[doy0],
-            SW_WeatherIn->allHist[yearIndex].shortWaveRad[doy0],
-            SW_WeatherIn->allHist[yearIndex].cloudcov_daily[doy0]
+            allHist[yearIndex].temp_avg[doy0],
+            allHist[yearIndex].ppt[doy0],
+            allHist[yearIndex].windspeed_daily[doy0],
+            allHist[yearIndex].r_humidity_daily[doy0],
+            allHist[yearIndex].actualVaporPressure[doy0],
+            allHist[yearIndex].shortWaveRad[doy0],
+            allHist[yearIndex].cloudcov_daily[doy0]
         );
         return; // Prematurely return the function
     }
 
-    SW_WeatherSim->temp_max = SW_WeatherIn->allHist[yearIndex].temp_max[doy0];
-    SW_WeatherSim->temp_min = SW_WeatherIn->allHist[yearIndex].temp_min[doy0];
-    SW_WeatherSim->ppt = SW_WeatherIn->allHist[yearIndex].ppt[doy0];
-    SW_WeatherSim->cloudCover =
-        SW_WeatherIn->allHist[yearIndex].cloudcov_daily[doy0];
-    SW_WeatherSim->windSpeed =
-        SW_WeatherIn->allHist[yearIndex].windspeed_daily[doy0];
-    SW_WeatherSim->relHumidity =
-        SW_WeatherIn->allHist[yearIndex].r_humidity_daily[doy0];
-    SW_WeatherSim->shortWaveRad =
-        SW_WeatherIn->allHist[yearIndex].shortWaveRad[doy0];
+    SW_WeatherSim->temp_max = allHist[yearIndex].temp_max[doy0];
+    SW_WeatherSim->temp_min = allHist[yearIndex].temp_min[doy0];
+    SW_WeatherSim->ppt = allHist[yearIndex].ppt[doy0];
+    SW_WeatherSim->cloudCover = allHist[yearIndex].cloudcov_daily[doy0];
+    SW_WeatherSim->windSpeed = allHist[yearIndex].windspeed_daily[doy0];
+    SW_WeatherSim->relHumidity = allHist[yearIndex].r_humidity_daily[doy0];
+    SW_WeatherSim->shortWaveRad = allHist[yearIndex].shortWaveRad[doy0];
     SW_WeatherSim->actualVaporPressure =
-        SW_WeatherIn->allHist[yearIndex].actualVaporPressure[doy0];
+        allHist[yearIndex].actualVaporPressure[doy0];
 
-    SW_WeatherSim->temp_avg = SW_WeatherIn->allHist[yearIndex].temp_avg[doy0];
+    SW_WeatherSim->temp_avg = allHist[yearIndex].temp_avg[doy0];
 
     SW_WeatherSim->snow = SW_WeatherSim->snowmelt = SW_WeatherSim->snowloss =
         0.;
@@ -2603,10 +2609,12 @@ monthly climate parameters, see `SW_WTH_finalize_all_weather()` instead.
 
 @param[in,out] SW_WeatherIn Struct of type SW_WEATHER_INPUTS holding all
 relevant information pretaining to meteorological input data
+@param[in,out] allHist Array containing all historical data of a site
 @param[in] SW_SkyIn Struct of type SW_SKY_INPUTS which describes sky conditions
     of the simulated site
 @param[in] SW_ModelIn Struct of type SW_MODEL_INPUTS holding basic input
     time information about the simulation
+@param[in] elevation Site elevation above sea level [m]
 @param[in] readTextInputs Specifies to read text weather inputs, this may
 be turned off when dealing with nc inputs
 @param[in] cum_monthdays Monthly cumulative number of days for "current" year
@@ -2615,8 +2623,10 @@ be turned off when dealing with nc inputs
 */
 void SW_WTH_read(
     SW_WEATHER_INPUTS *SW_WeatherIn,
+    SW_WEATHER_HIST **allHist,
     SW_SKY_INPUTS *SW_SkyIn,
     SW_MODEL_INPUTS *SW_ModelIn,
+    double elevation,
     Bool readTextInputs,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
@@ -2626,7 +2636,7 @@ void SW_WTH_read(
     // Deallocate (previous, if any) `allHist`
     // (using value of `SW_Weather.n_years` previously used to allocate)
     // `SW_WTH_construct()` sets `n_years` to zero
-    deallocateAllWeather(&SW_WeatherIn->allHist);
+    deallocateAllWeather(allHist);
 
     // Update number of years and first calendar year represented
     SW_WeatherIn->n_years = SW_ModelIn->endyr - SW_ModelIn->startyr + 1;
@@ -2634,16 +2644,14 @@ void SW_WTH_read(
 
     if (readTextInputs) {
         // Allocate new `allHist` (based on current `SW_Weather.n_years`)
-        SW_WTH_allocateAllWeather(
-            &SW_WeatherIn->allHist, SW_WeatherIn->n_years, LogInfo
-        );
+        SW_WTH_allocateAllWeather(allHist, SW_WeatherIn->n_years, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
         // Read daily meteorological input from disk (if available)
         readAllWeather(
-            SW_WeatherIn->allHist,
+            *allHist,
             SW_WeatherIn->startYear,
             SW_WeatherIn->n_years,
             SW_WeatherIn->use_weathergenerator_only,
@@ -2657,7 +2665,7 @@ void SW_WTH_read(
             SW_SkyIn->cloudcov,
             SW_SkyIn->windspeed,
             SW_SkyIn->r_humidity,
-            SW_ModelIn->elevation,
+            elevation,
             cum_monthdays,
             days_in_month,
             LogInfo

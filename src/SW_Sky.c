@@ -211,31 +211,31 @@ void SW_SKY_new_year(
 Note: This function does not check r_humidity, cloudcov, and windspeed;
 these variables are checked by checkAllWeather() at a daily time step.
 
-@param[in] SW_SkyIn Struct of type SW_SKY_INPUTS which describes sky conditions
+@param[in] SkyRunIn Struct of type SW_SKY_INPUTS which describes sky conditions
     of the simulated site
 @param[out] LogInfo Holds information on warnings and errors
 */
-void checkSky(SW_SKY_INPUTS *SW_SkyIn, LOG_INFO *LogInfo) {
+void checkSky(SW_SKY_INPUTS *SkyRunIn, LOG_INFO *LogInfo) {
     unsigned int mon;
 
     for (mon = 0; mon < MAX_MONTHS; mon++) {
-        if (SW_SkyIn->snow_density[mon] <= 0) {
+        if (SkyRunIn->snow_density[mon] <= 0) {
             LogError(
                 LogInfo,
                 LOGERROR,
                 "snowdensity (%.4f) is zero or negative in month %d.",
-                SW_SkyIn->snow_density[mon],
+                SkyRunIn->snow_density[mon],
                 mon + 1
             );
             return;
         }
 
-        if (SW_SkyIn->n_rain_per_day[mon] <= 0) {
+        if (SkyRunIn->n_rain_per_day[mon] <= 0) {
             LogError(
                 LogInfo,
                 LOGERROR,
                 "n_rain_per_day (%.4f) is zero or negative in month %d.",
-                SW_SkyIn->n_rain_per_day[mon],
+                SkyRunIn->n_rain_per_day[mon],
                 mon + 1
             );
             return;
@@ -243,6 +243,6 @@ void checkSky(SW_SKY_INPUTS *SW_SkyIn, LOG_INFO *LogInfo) {
     }
 }
 
-void SW_SKY_init_run(SW_SKY_INPUTS *SW_SkyIn, LOG_INFO *LogInfo) {
-    checkSky(SW_SkyIn, LogInfo);
+void SW_SKY_init_run(SW_SKY_INPUTS *SkyRunIn, LOG_INFO *LogInfo) {
+    checkSky(SkyRunIn, LogInfo);
 }

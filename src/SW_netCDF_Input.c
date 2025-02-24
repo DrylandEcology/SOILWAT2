@@ -5173,11 +5173,12 @@ rather than having separate functions, this will specifically read
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
-@param[out] SW_ModelIn Struct of type SW_MODEL_INPUTS holding basic input
+@param[out] ModelRunIn Struct of type SW_MODEL_INPUTS holding basic input
     time information about the simulation
 @param[out] SW_SkyIn Struct of type SW_SKY_INPUTS which describes sky conditions
 over the simulated site
-@param[out] SW_Site Struct of type SW_SITE describing the simulated site
+@param[out] SW_SiteRunIn Struct of type SW_SITE_RUN_INPUTS describing the simulated site
+    for a specific run
 @param[in] inFiles List of all input files throughout all input keys
 @param[in] ncSUID Current simulation unit identifier for which is used
 to get data from netCDF
@@ -5187,9 +5188,9 @@ input keys
 */
 static void read_spatial_topo_climate_site_inputs(
     SW_DOMAIN *SW_Domain,
-    SW_MODEL_INPUTS *SW_ModelIn,
+    SW_MODEL_RUN_INPUTS *ModelRunIn,
     SW_SKY_INPUTS *SW_SkyIn,
-    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_RUN_INPUTS *SW_SiteRunIn,
     char ***inFiles,
     const size_t ncSUID[],
     sw_converter_t ***convs,
@@ -5235,16 +5236,16 @@ static void read_spatial_topo_climate_site_inputs(
 
     double *values[][5] = {
         /* must match possVarNames[eSW_InSpatial] */
-        {&SW_ModelIn->latitude, &SW_ModelIn->longitude},
+        {&ModelRunIn->latitude, &ModelRunIn->longitude},
         /* must match possVarNames[eSW_InTopo] (without spatial index) */
-        {&SW_ModelIn->elevation, &SW_ModelIn->slope, &SW_ModelIn->aspect},
+        {&ModelRunIn->elevation, &ModelRunIn->slope, &ModelRunIn->aspect},
         /* must match possVarNames[eSW_InClimate] (without spatial index) */
         {SW_SkyIn->cloudcov,
          SW_SkyIn->windspeed,
          SW_SkyIn->r_humidity,
          SW_SkyIn->snow_density,
          SW_SkyIn->n_rain_per_day},
-        {&SW_SiteIn->Tsoil_constant}
+        {&SW_SiteRunIn->Tsoil_constant}
     };
     double tempVals[MAX_MONTHS];
 
@@ -5386,7 +5387,7 @@ static void read_spatial_topo_climate_site_inputs(
         }
     }
 
-    SW_ModelIn->isnorth = (Bool) (GT(SW_ModelIn->latitude, 0.0));
+    ModelRunIn->isnorth = (Bool) (GT(ModelRunIn->latitude, 0.0));
 
 closeFile:
     if (ncFileID > -1) {
@@ -6199,7 +6200,7 @@ to convert input data to units the program can understand within the
 */
 static void read_veg_inputs(
     SW_DOMAIN *SW_Domain,
-    SW_VEGPROD_INPUTS *SW_VegProdIn,
+    SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,
     char **vegInFiles,
     const size_t ncSUID[],
     sw_converter_t **vegConv,
@@ -6243,31 +6244,31 @@ static void read_veg_inputs(
 
     /* must match possVarNames[eSW_InVeg] (without spatial index) */
     double *values[] = {
-        &SW_VegProdIn->bare_cov.fCover,
+        &SW_VegProdRunIn->bare_cov.fCover,
 
-        &SW_VegProdIn->veg[SW_TREES].cov.fCover,
-        SW_VegProdIn->veg[SW_TREES].litter,
-        SW_VegProdIn->veg[SW_TREES].biomass,
-        SW_VegProdIn->veg[SW_TREES].pct_live,
-        SW_VegProdIn->veg[SW_TREES].lai_conv,
+        &SW_VegProdRunIn->veg[SW_TREES].cov.fCover,
+        SW_VegProdRunIn->veg[SW_TREES].litter,
+        SW_VegProdRunIn->veg[SW_TREES].biomass,
+        SW_VegProdRunIn->veg[SW_TREES].pct_live,
+        SW_VegProdRunIn->veg[SW_TREES].lai_conv,
 
-        &SW_VegProdIn->veg[SW_SHRUB].cov.fCover,
-        SW_VegProdIn->veg[SW_SHRUB].litter,
-        SW_VegProdIn->veg[SW_SHRUB].biomass,
-        SW_VegProdIn->veg[SW_SHRUB].pct_live,
-        SW_VegProdIn->veg[SW_SHRUB].lai_conv,
+        &SW_VegProdRunIn->veg[SW_SHRUB].cov.fCover,
+        SW_VegProdRunIn->veg[SW_SHRUB].litter,
+        SW_VegProdRunIn->veg[SW_SHRUB].biomass,
+        SW_VegProdRunIn->veg[SW_SHRUB].pct_live,
+        SW_VegProdRunIn->veg[SW_SHRUB].lai_conv,
 
-        &SW_VegProdIn->veg[SW_FORBS].cov.fCover,
-        SW_VegProdIn->veg[SW_FORBS].litter,
-        SW_VegProdIn->veg[SW_FORBS].biomass,
-        SW_VegProdIn->veg[SW_FORBS].pct_live,
-        SW_VegProdIn->veg[SW_FORBS].lai_conv,
+        &SW_VegProdRunIn->veg[SW_FORBS].cov.fCover,
+        SW_VegProdRunIn->veg[SW_FORBS].litter,
+        SW_VegProdRunIn->veg[SW_FORBS].biomass,
+        SW_VegProdRunIn->veg[SW_FORBS].pct_live,
+        SW_VegProdRunIn->veg[SW_FORBS].lai_conv,
 
-        &SW_VegProdIn->veg[SW_GRASS].cov.fCover,
-        SW_VegProdIn->veg[SW_GRASS].litter,
-        SW_VegProdIn->veg[SW_GRASS].biomass,
-        SW_VegProdIn->veg[SW_GRASS].pct_live,
-        SW_VegProdIn->veg[SW_GRASS].lai_conv,
+        &SW_VegProdRunIn->veg[SW_GRASS].cov.fCover,
+        SW_VegProdRunIn->veg[SW_GRASS].litter,
+        SW_VegProdRunIn->veg[SW_GRASS].biomass,
+        SW_VegProdRunIn->veg[SW_GRASS].pct_live,
+        SW_VegProdRunIn->veg[SW_GRASS].lai_conv
     };
 
     double tempVals[MAX_MONTHS] = {0.0};
@@ -6597,7 +6598,8 @@ consistency checks.
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
-@param[out] SW_Site Struct of type SW_SITE describing the simulated site
+@param[out]  SW_SiteRunIn Struct of type SW_SITE_RUN_INPUTS describing the simulated site
+    for a specific run
 @param[in] soilInFiles List of input files the user provided for the
     input key 'inSoil'
 @param[in] hasConstSoilDepths Specifies of all soil inputs provided
@@ -6612,17 +6614,17 @@ consistency checks.
 */
 static void read_soil_inputs(
     SW_DOMAIN *SW_Domain,
-    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SOIL_RUN_INPUTS *currSoils,
     SW_SITE_SIM *SW_SiteSim,
     char **soilInFiles,
     Bool hasConstSoilDepths,
     const double depthsAllSoilLayers[],
     sw_converter_t **soilConv,
     const size_t ncSUID[],
+    Bool inputsProvideSWRCp,
     LOG_INFO *LogInfo
 ) {
-    SW_SOIL_INPUTS newSoils;
-    SW_SOIL_INPUTS *currSoils = &SW_SiteIn->soils;
+    SW_SOIL_RUN_INPUTS newSoils;
 
     /* Initialize soils */
     SW_SiteSim->n_layers = 0;
@@ -6830,10 +6832,10 @@ static void read_soil_inputs(
 
 
     if (!hasConstSoilDepths) {
-        SW_SiteIn->soils = newSoils;
+        *currSoils = newSoils;
     }
 
-    SW_SiteSim->site_has_swrcpMineralSoil = SW_SiteIn->inputsProvideSWRCp;
+    SW_SiteSim->site_has_swrcpMineralSoil = inputsProvideSWRCp;
 
 closeFile:
     if (ncFileID > -1) {
@@ -7471,12 +7473,13 @@ to get data from netCDF
 @param[in] weathConv A list of UDUNITS2 converters that were created
 to convert input data to units the program can understand within the
 "inWeather" input key
-@param[in] elevation Site elevation above sea level [m];
+@param[in] elevation Site elevation above sea level [m]
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void read_weather_input(
     SW_DOMAIN *SW_Domain,
     SW_WEATHER_INPUTS *SW_WeatherIn,
+    SW_WEATHER_HIST *allHist,
     char ***weathInFiles,
     char *indexFileName,
     const size_t ncSUID[],
@@ -7654,7 +7657,7 @@ static void read_weather_input(
         SW_WeatherIn->dailyInputFlags,
         tempWeatherHist,
         elevation,
-        SW_WeatherIn->allHist,
+        allHist,
         LogInfo
     );
 
@@ -7698,14 +7701,14 @@ void SW_NCIN_read_inputs(
     /* Allocate information before gathering inputs */
     if (readWeather) {
         SW_WTH_allocateAllWeather(
-            &SW_WeatherIn->allHist, SW_WeatherIn->n_years, LogInfo
+            &sw->RunIn.weathRunAllHist, SW_WeatherIn->n_years, LogInfo
         );
         if (LogInfo->stopRun) {
             return;
         }
 
         for (yearIndex = 0; yearIndex < SW_WeatherIn->n_years; yearIndex++) {
-            clear_hist_weather(&SW_WeatherIn->allHist[yearIndex], NULL);
+            clear_hist_weather(&sw->RunIn.weathRunAllHist[yearIndex], NULL);
         }
     }
 
@@ -7713,9 +7716,9 @@ void SW_NCIN_read_inputs(
     if (readSpatial || readTopo || readClimate || readSite) {
         read_spatial_topo_climate_site_inputs(
             SW_Domain,
-            &sw->ModelIn,
-            &sw->SkyIn,
-            &sw->SiteIn,
+            &sw->RunIn.ModelRunIn,
+            &sw->RunIn.SkyRunIn,
+            &sw->RunIn.SiteRunIn,
             ncInFiles,
             ncSUID,
             convs,
@@ -7729,16 +7732,16 @@ void SW_NCIN_read_inputs(
             year = yearIndex + SW_WeatherIn->startYear;
 
             SW_WTH_setWeathUsingClimate(
-                &SW_WeatherIn->allHist[yearIndex],
+                &sw->RunIn.weathRunAllHist[yearIndex],
                 year,
                 SW_WeatherIn->use_cloudCoverMonthly,
                 SW_WeatherIn->use_humidityMonthly,
                 SW_WeatherIn->use_windSpeedMonthly,
                 sw->ModelSim.cum_monthdays,
                 sw->ModelSim.days_in_month,
-                sw->SkyIn.cloudcov,
-                sw->SkyIn.windspeed,
-                sw->SkyIn.r_humidity
+                sw->RunIn.SkyRunIn.cloudcov,
+                sw->RunIn.SkyRunIn.windspeed,
+                sw->RunIn.SkyRunIn.r_humidity
             );
         }
     }
@@ -7747,11 +7750,12 @@ void SW_NCIN_read_inputs(
         read_weather_input(
             SW_Domain,
             &sw->WeatherIn,
+            sw->RunIn.weathRunAllHist,
             SW_Domain->SW_PathInputs.ncWeatherInFiles,
             ncInFiles[eSW_InWeather][0],
             ncSUID,
             convs[eSW_InWeather],
-            sw->ModelIn.elevation,
+            sw->RunIn.ModelRunIn.elevation,
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -7761,6 +7765,7 @@ void SW_NCIN_read_inputs(
         SW_WTH_finalize_all_weather(
             &sw->MarkovIn,
             &sw->WeatherIn,
+            sw->RunIn.weathRunAllHist,
             sw->ModelSim.cum_monthdays,
             sw->ModelSim.days_in_month,
             LogInfo
@@ -7773,7 +7778,7 @@ void SW_NCIN_read_inputs(
     if (readVeg) {
         read_veg_inputs(
             SW_Domain,
-            &sw->VegProdIn,
+            &sw->RunIn.VegProdRunIn,
             ncInFiles[eSW_InVeg],
             ncSUID,
             convs[eSW_InVeg],
@@ -7787,13 +7792,14 @@ void SW_NCIN_read_inputs(
     if (readSoil) {
         read_soil_inputs(
             SW_Domain,
-            &sw->SiteIn,
+            &sw->RunIn.SoilRunIn,
             &sw->SiteSim,
             ncInFiles[eSW_InSoil],
             SW_Domain->hasConsistentSoilLayerDepths,
             SW_Domain->depthsAllSoilLayers,
             convs[eSW_InSoil],
             ncSUID,
+            sw->SiteIn.inputsProvideSWRCp,
             LogInfo
         );
         if (LogInfo->stopRun) {

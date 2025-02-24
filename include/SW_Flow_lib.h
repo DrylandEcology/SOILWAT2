@@ -103,7 +103,7 @@ void infiltrate_water_high(
 
 void transp_weighted_avg(
     double *swp_avg,
-    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     SW_SITE_SIM *SW_SiteSim,
     unsigned int n_tr_rgns,
     LyrIndex n_layers,
@@ -118,7 +118,7 @@ void EsT_partitioning(
 );
 
 void pot_soil_evap(
-    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     SW_SITE_SIM *SW_SiteSim,
     unsigned int nelyrs,
     double totagb,
@@ -136,7 +136,7 @@ void pot_soil_evap(
 
 void pot_soil_evap_bs(
     double *bserate,
-    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     SW_SITE_SIM *SW_SiteSim,
     unsigned int nelyrs,
     double petday,
@@ -191,7 +191,7 @@ void evap_fromSurface(double *water_pool, double *evap_rate, double *aet);
 void remove_from_soil(
     double swc[],
     double qty[],
-    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     SW_SITE_SIM *SW_SiteSim,
     double *aet,
     unsigned int nlyrs,
@@ -209,7 +209,7 @@ void percolate_unsaturated(
     double *standingWater,
     unsigned int nlyrs,
     double lyrFrozen[],
-    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     SW_SITE_SIM *SW_SiteSim,
     double slow_drain_coeff,
     double slow_drain_depth
@@ -218,7 +218,7 @@ void percolate_unsaturated(
 void hydraulic_redistribution(
     double swc[],
     double hydred[],
-    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     SW_SITE_SIM *SW_SiteSim,
     unsigned int vegk,
     unsigned int nlyrs,
@@ -333,8 +333,10 @@ void SW_ST_init_run(SW_ST_SIM *StRegSimVals);
 
 void SW_ST_setup_run(
     SW_ST_SIM *SW_StRegSimVals,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     SW_SITE_INPUTS *SW_SiteIn,
     SW_SITE_SIM *SW_SiteSim,
+    double Tsoil_constant,
     Bool *ptr_stError,
     Bool *soil_temp_init,
     double airTemp,

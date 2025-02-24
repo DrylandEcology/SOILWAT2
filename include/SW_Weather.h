@@ -64,8 +64,10 @@ void SW_WTH_setup(
 
 void SW_WTH_read(
     SW_WEATHER_INPUTS *SW_WeatherIn,
+    SW_WEATHER_HIST **allHist,
     SW_SKY_INPUTS *SW_SkyIn,
     SW_MODEL_INPUTS *SW_ModelIn,
+    double elevation,
     Bool readTextInputs,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
@@ -209,6 +211,7 @@ void readAllWeather(
 void finalizeAllWeather(
     SW_MARKOV_INPUTS *SW_MarkovIn,
     SW_WEATHER_INPUTS *w,
+    SW_WEATHER_HIST *allHist,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
     LOG_INFO *LogInfo
@@ -240,7 +243,9 @@ void generateMissingWeather(
     LOG_INFO *LogInfo
 );
 
-void checkAllWeather(SW_WEATHER_INPUTS *weather, LOG_INFO *LogInfo);
+void checkAllWeather(
+    SW_WEATHER_INPUTS *weather, SW_WEATHER_HIST *weathHist, LOG_INFO *LogInfo
+);
 
 void SW_WTH_allocateAllWeather(
     SW_WEATHER_HIST **allHist, unsigned int n_years, LOG_INFO *LogInfo
@@ -255,6 +260,7 @@ void clear_hist_weather(SW_WEATHER_HIST *yearWeather, double **fullWeathHist);
 void SW_WTH_finalize_all_weather(
     SW_MARKOV_INPUTS *SW_MarkovIn,
     SW_WEATHER_INPUTS *SW_WeatherIn,
+    SW_WEATHER_HIST *allHist,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
     LOG_INFO *LogInfo
@@ -276,6 +282,7 @@ void SW_WTH_deconstruct(SW_WEATHER_HIST **allHist);
 void SW_WTH_new_day(
     SW_WEATHER_INPUTS *SW_WeatherIn,
     SW_WEATHER_SIM *SW_WeatherSim,
+    SW_WEATHER_HIST *allHist,
     SW_SITE_INPUTS *SW_SiteIn,
     double snowpack[],
     TimeInt doy,

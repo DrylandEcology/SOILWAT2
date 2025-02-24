@@ -259,7 +259,7 @@ void get_co2effects_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
             "%c%.*f",
             OUTSEP,
             OUT_DIGITS,
-            sw->VegProdIn.veg[k].co2_multipliers[BIO_INDEX][simyear]
+            sw->RunIn.VegProdRunIn.veg[k].co2_multipliers[BIO_INDEX][simyear]
         );
         fullBuffer = sw_memccpy_inc(
             (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
@@ -275,7 +275,7 @@ void get_co2effects_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
             "%c%.*f",
             OUTSEP,
             OUT_DIGITS,
-            sw->VegProdIn.veg[k].co2_multipliers[WUE_INDEX][simyear]
+            sw->RunIn.VegProdRunIn.veg[k].co2_multipliers[WUE_INDEX][simyear]
         );
         fullBuffer = sw_memccpy_inc(
             (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
@@ -328,7 +328,7 @@ void get_co2effects_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
                     );
 #endif
 
-        p[iOUTIndex] = sw->VegProdIn.veg[k]
+        p[iOUTIndex] = sw->RunIn.VegProdRunIn.veg[k]
                            .co2_multipliers[BIO_INDEX][sw->ModelSim.simyear];
 
 
@@ -351,7 +351,7 @@ void get_co2effects_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
                     );
 #endif
 
-        p[iOUTIndex] = sw->VegProdIn.veg[k]
+        p[iOUTIndex] = sw->RunIn.VegProdRunIn.veg[k]
                            .co2_multipliers[WUE_INDEX][sw->ModelSim.simyear];
     }
 }
@@ -376,7 +376,7 @@ void get_co2effects_agg(
             psd,
             iOUTIndex,
             OutRun->currIter,
-            sw->VegProdIn.veg[k]
+            sw->RunIn.VegProdRunIn.veg[k]
                 .co2_multipliers[BIO_INDEX][sw->ModelSim.simyear]
         );
 
@@ -391,7 +391,7 @@ void get_co2effects_agg(
             psd,
             iOUTIndex,
             OutRun->currIter,
-            sw->VegProdIn.veg[k]
+            sw->RunIn.VegProdRunIn.veg[k]
                 .co2_multipliers[WUE_INDEX][sw->ModelSim.simyear]
         );
     }
@@ -433,7 +433,7 @@ void get_biomass_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
         "%c%.*f",
         OUTSEP,
         OUT_DIGITS,
-        sw->VegProdIn.bare_cov.fCover
+        sw->RunIn.VegProdRunIn.bare_cov.fCover
     );
     (void) sw_memccpy_inc(
         (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
@@ -449,7 +449,7 @@ void get_biomass_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
             "%c%.*f",
             OUTSEP,
             OUT_DIGITS,
-            sw->VegProdIn.veg[k].cov.fCover
+            sw->RunIn.VegProdRunIn.veg[k].cov.fCover
         );
         (void) sw_memccpy_inc(
             (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
@@ -565,7 +565,7 @@ void get_biomass_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
                 iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
 #endif
 
-    p[iOUTIndex] = sw->VegProdIn.bare_cov.fCover;
+    p[iOUTIndex] = sw->RunIn.VegProdRunIn.bare_cov.fCover;
 
 
 // fCover for NVEGTYPES
@@ -587,7 +587,7 @@ void get_biomass_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
             );
 #endif
 
-        p[iOUTIndex] = sw->VegProdIn.veg[k].cov.fCover;
+        p[iOUTIndex] = sw->RunIn.VegProdRunIn.veg[k].cov.fCover;
     }
 
 // biomass (g/m2 as component of total) totals
@@ -721,7 +721,11 @@ void get_biomass_agg(
     iOUTIndex =
         iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
     do_running_agg(
-        p, psd, iOUTIndex, OutRun->currIter, sw->VegProdIn.bare_cov.fCover
+        p,
+        psd,
+        iOUTIndex,
+        OutRun->currIter,
+        sw->RunIn.VegProdRunIn.bare_cov.fCover
     );
 
     i = 1;
@@ -730,7 +734,11 @@ void get_biomass_agg(
             i + k, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
         );
         do_running_agg(
-            p, psd, iOUTIndex, OutRun->currIter, sw->VegProdIn.veg[k].cov.fCover
+            p,
+            psd,
+            iOUTIndex,
+            OutRun->currIter,
+            sw->RunIn.VegProdRunIn.veg[k].cov.fCover
         );
     }
 
@@ -1452,7 +1460,7 @@ void get_vwcBulk_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
             "%c%.*f",
             OUTSEP,
             OUT_DIGITS,
-            vo->vwcBulk[i] / sw->SiteIn.soils.width[i]
+            vo->vwcBulk[i] / sw->RunIn.SoilRunIn.width[i]
         );
         fullBuffer = sw_memccpy_inc(
             (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
@@ -1514,7 +1522,7 @@ void get_vwcBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 #endif
 
         /* vwcBulk at this point is identical to swcBulk */
-        p[iOUTIndex] = vo->vwcBulk[i] / sw->SiteIn.soils.width[i];
+        p[iOUTIndex] = vo->vwcBulk[i] / sw->RunIn.SoilRunIn.width[i];
     }
 
 #if defined(SWNETCDF)
@@ -1563,7 +1571,7 @@ void get_vwcBulk_agg(
             psd,
             iOUTIndex,
             OutRun->currIter,
-            vo->vwcBulk[i] / sw->SiteIn.soils.width[i]
+            vo->vwcBulk[i] / sw->RunIn.SoilRunIn.width[i]
         );
     }
 
@@ -1609,8 +1617,8 @@ void get_vwcMatric_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
 
     ForEachSoilLayer(i, sw->SiteSim.n_layers) {
         /* vwcMatric at this point is identical to swcBulk */
-        convert = 1. / (1. - sw->SiteIn.soils.fractionVolBulk_gravel[i]) /
-                  sw->SiteIn.soils.width[i];
+        convert = 1. / (1. - sw->RunIn.SoilRunIn.fractionVolBulk_gravel[i]) /
+                  sw->RunIn.SoilRunIn.width[i];
 
         (void) snprintf(
             str,
@@ -1681,8 +1689,8 @@ void get_vwcMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 #endif
 
         /* vwcMatric at this point is identical to swcBulk */
-        convert = 1. / (1. - sw->SiteIn.soils.fractionVolBulk_gravel[i]) /
-                  sw->SiteIn.soils.width[i];
+        convert = 1. / (1. - sw->RunIn.SoilRunIn.fractionVolBulk_gravel[i]) /
+                  sw->RunIn.SoilRunIn.width[i];
         p[iOUTIndex] = vo->vwcMatric[i] * convert;
     }
 
@@ -1725,8 +1733,8 @@ void get_vwcMatric_agg(
 
     ForEachSoilLayer(i, sw->SiteSim.n_layers) {
         /* vwcMatric at this point is identical to swcBulk */
-        convert = 1. / (1. - sw->SiteIn.soils.fractionVolBulk_gravel[i]) /
-                  sw->SiteIn.soils.width[i];
+        convert = 1. / (1. - sw->RunIn.SoilRunIn.fractionVolBulk_gravel[i]) /
+                  sw->RunIn.SoilRunIn.width[i];
 
         iOUTIndex = iOUT(
             i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
@@ -2143,7 +2151,11 @@ void get_swpMatric_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     ForEachSoilLayer(i, sw->SiteSim.n_layers) {
         /* swpMatric at this point is identical to swcBulk */
         val = SW_SWRC_SWCtoSWP(
-            vo->swpMatric[i], &sw->SiteIn, &sw->SiteSim, i, &local_log
+            vo->swpMatric[i],
+            &sw->RunIn.SoilRunIn,
+            &sw->SiteSim,
+            i,
+            &local_log
         );
 
         (void) snprintf(str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, val);
@@ -2209,7 +2221,11 @@ void get_swpMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
         /* swpMatric at this point is identical to swcBulk */
         p[iOUTIndex] = SW_SWRC_SWCtoSWP(
-            vo->swpMatric[i], &sw->SiteIn, &sw->SiteSim, i, &local_log
+            vo->swpMatric[i],
+            &sw->RunIn.SoilRunIn,
+            &sw->SiteSim,
+            i,
+            &local_log
         );
     }
 
@@ -2254,7 +2270,11 @@ void get_swpMatric_agg(
     ForEachSoilLayer(i, sw->SiteSim.n_layers) {
         /* swpMatric at this point is identical to swcBulk */
         val = SW_SWRC_SWCtoSWP(
-            vo->swpMatric[i], &sw->SiteIn, &sw->SiteSim, i, &local_log
+            vo->swpMatric[i],
+            &sw->RunIn.SoilRunIn,
+            &sw->SiteSim,
+            i,
+            &local_log
         );
 
         iOUTIndex = iOUT(
@@ -2452,7 +2472,7 @@ void get_swaMatric_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
 
     ForEachSoilLayer(i, sw->SiteSim.n_layers) {
         /* swaMatric at this point is identical to swaBulk */
-        convert = 1. / (1. - sw->SiteIn.soils.fractionVolBulk_gravel[i]);
+        convert = 1. / (1. - sw->RunIn.SoilRunIn.fractionVolBulk_gravel[i]);
 
         (void) snprintf(
             str,
@@ -2523,7 +2543,7 @@ void get_swaMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 #endif
 
         /* swaMatric at this point is identical to swaBulk */
-        convert = 1. / (1. - sw->SiteIn.soils.fractionVolBulk_gravel[i]);
+        convert = 1. / (1. - sw->RunIn.SoilRunIn.fractionVolBulk_gravel[i]);
         p[iOUTIndex] = vo->swaMatric[i] * convert;
     }
 
@@ -2566,7 +2586,7 @@ void get_swaMatric_agg(
 
     ForEachSoilLayer(i, sw->SiteSim.n_layers) {
         /* swaMatric at this point is identical to swaBulk */
-        convert = 1. / (1. - sw->SiteIn.soils.fractionVolBulk_gravel[i]);
+        convert = 1. / (1. - sw->RunIn.SoilRunIn.fractionVolBulk_gravel[i]);
 
         iOUTIndex = iOUT(
             i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]

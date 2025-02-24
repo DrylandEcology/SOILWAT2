@@ -34,6 +34,8 @@ void create_test_soillayers(
     SW_VEGPROD_INPUTS *SW_VegProdIn,
     SW_SITE_INPUTS *SW_SiteIn,
     SW_SITE_SIM *SW_SiteSim,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
+    VegType veg[],
     LOG_INFO *LogInfo
 ) {
 
@@ -103,6 +105,8 @@ void create_test_soillayers(
         SW_VegProdIn,
         SW_SiteIn,
         SW_SiteSim,
+        SW_SoilRunIn,
+        veg,
         nlayers,
         dmax,
         bulkd,
@@ -259,6 +263,7 @@ int setup_testGlobalSoilwatTemplate() {
     SW_WTH_finalize_all_weather(
         &template_SW_Run.MarkovIn,
         &template_SW_Run.WeatherIn,
+        template_SW_Run.RunIn.weathRunAllHist,
         template_SW_Run.ModelSim.cum_monthdays,
         template_SW_Run.ModelSim.days_in_month,
         &LogInfo

@@ -200,8 +200,8 @@ static void sumof_swc(
 static void sumof_ves(SW_VEGESTAB_SIM *v, SW_VEGESTAB_OUTPUTS *s, OutKey k);
 
 static void sumof_vpd(
-    SW_VEGPROD_INPUTS *v,
     SW_VEGPROD_OUTPUTS *s,
+    VegType veg[],
     OutKey k,
     TimeInt doy,
     LOG_INFO *LogInfo
@@ -323,8 +323,8 @@ Bool has_keyname_soillayers(const char *var) {
 }
 
 static void sumof_vpd(
-    SW_VEGPROD_INPUTS *v,
     SW_VEGPROD_OUTPUTS *s,
+    VegType veg[],
     OutKey k,
     TimeInt doy,
     LOG_INFO *LogInfo
@@ -339,19 +339,19 @@ static void sumof_vpd(
     // scale biomass by fCover to obtain biomass as observed in total vegetation
     case eSW_Biomass:
         ForEachVegType(ik) {
-            tmp = v->veg[ik].biomass_daily[doy] * v->veg[ik].cov.fCover;
+            tmp = veg[ik].biomass_daily[doy] * veg[ik].cov.fCover;
             s->veg[ik].biomass_inveg += tmp;
             s->biomass_total += tmp;
 
-            tmp = v->veg[ik].litter_daily[doy] * v->veg[ik].cov.fCover;
+            tmp = veg[ik].litter_daily[doy] * veg[ik].cov.fCover;
             s->veg[ik].litter_inveg += tmp;
             s->litter_total += tmp;
 
-            tmp = v->veg[ik].biolive_daily[doy] * v->veg[ik].cov.fCover;
+            tmp = veg[ik].biolive_daily[doy] * veg[ik].cov.fCover;
             s->veg[ik].biolive_inveg += tmp;
             s->biolive_total += tmp;
 
-            s->LAI += v->veg[ik].lai_live_daily[doy] * v->veg[ik].cov.fCover;
+            s->LAI += veg[ik].lai_live_daily[doy] * veg[ik].cov.fCover;
         }
         break;
 
@@ -1035,8 +1035,8 @@ static void collect_sums(
 
             case eVPD:
                 sumof_vpd(
-                    &sw->VegProdIn,
                     &sw->vp_p_accu[op],
+                    sw->RunIn.VegProdRunIn.veg,
                     (OutKey) k,
                     sw->ModelSim.doy,
                     LogInfo
@@ -3920,14 +3920,20 @@ void echo_all_inputs(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         printf("Establishment not used.\n");
     }
 
-    echo_inputs(&sw->SiteIn, &sw->SiteSim, &sw->ModelIn);
+    echo_inputs(
+        &sw->SiteIn,
+        &sw->SiteSim,
+        &sw->RunIn.ModelRunIn,
+        &sw->RunIn.SoilRunIn,
+        sw->RunIn.SiteRunIn.Tsoil_constant
+    );
     echo_VegEstab(
-        sw->SiteIn.soils.width,
+        sw->RunIn.SoilRunIn.width,
         sw->VegEstabIn.parms,
         sw->VegEstabSim.count,
         LogInfo
     );
-    echo_VegProd(sw->VegProdIn.veg, sw->VegProdIn.bare_cov);
+    echo_VegProd(&sw->RunIn.VegProdRunIn);
     echo_outputs(OutDom, LogInfo);
 }
 

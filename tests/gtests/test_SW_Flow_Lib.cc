@@ -474,11 +474,13 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
     sw_init_logs(NULL, &LogInfo);
 
     SW_SITE_INPUTS SW_SiteIn;
+    SW_SOIL_RUN_INPUTS SW_SoilRunIn;
+    SW_VEGPROD_RUN_INPUTS SW_VegProdRunIn;
     SW_SITE_SIM SW_SiteSim;
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { VegProdIn.veg[k].SWPcrit = 20; }
+    ForEachVegType(k) { SW_VegProdRunIn.veg[k].SWPcrit = 20; }
 
 
     //--- Test when n_layers is 1 ------
@@ -495,7 +497,13 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
 
     // Setup soil layers
     create_test_soillayers(
-        n_layers, &VegProdIn, &SW_SiteIn, &SW_SiteSim, &LogInfo
+        n_layers,
+        &VegProdIn,
+        &SW_SiteIn,
+        &SW_SiteSim,
+        &SW_SoilRunIn,
+        SW_VegProdRunIn.veg,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -509,7 +517,7 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
     // Begin Test when n_layers is one
     transp_weighted_avg(
         &swp_avg,
-        &SW_SiteIn,
+        &SW_SoilRunIn,
         &SW_SiteSim,
         n_tr_rgns,
         n_layers,
@@ -536,7 +544,13 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
 
     // Setup soil layers
     create_test_soillayers(
-        n_layers, &VegProdIn, &SW_SiteIn, &SW_SiteSim, &LogInfo
+        n_layers,
+        &VegProdIn,
+        &SW_SiteIn,
+        &SW_SiteSim,
+        &SW_SoilRunIn,
+        SW_VegProdRunIn.veg,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -550,7 +564,7 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
 
     transp_weighted_avg(
         &swp_avg,
-        &SW_SiteIn,
+        &SW_SoilRunIn,
         &SW_SiteSim,
         n_tr_rgns,
         n_layers,
@@ -613,10 +627,12 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
 
     SW_SITE_INPUTS SW_SiteIn;
     SW_SITE_SIM SW_SiteSim;
+    SW_SOIL_RUN_INPUTS SW_SoilRunIn;
+    SW_VEGPROD_RUN_INPUTS SW_VegProdRunIn;
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { VegProdIn.veg[k].SWPcrit = 20; }
+    ForEachVegType(k) { SW_VegProdRunIn.veg[k].SWPcrit = 20; }
 
 
     unsigned int i;
@@ -646,7 +662,13 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
 
         // Setup soil layers
         create_test_soillayers(
-            nelyrs, &VegProdIn, &SW_SiteIn, &SW_SiteSim, &LogInfo
+            nelyrs,
+            &VegProdIn,
+            &SW_SiteIn,
+            &SW_SiteSim,
+            &SW_SoilRunIn,
+            SW_VegProdRunIn.veg,
+            &LogInfo
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -660,7 +682,7 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
         // Begin Test if (totagb >= Es_param_limit)
         totagb = Es_param_limit + 1.;
         pot_soil_evap(
-            &SW_SiteIn,
+            &SW_SoilRunIn,
             &SW_SiteSim,
             nelyrs,
             totagb,
@@ -688,7 +710,7 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
 
         // Begin Test if (PET = 0)
         pot_soil_evap(
-            &SW_SiteIn,
+            &SW_SoilRunIn,
             &SW_SiteSim,
             nelyrs,
             totagb,
@@ -712,7 +734,7 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
 
         // Begin Test if (potential baresoil rate = 0)
         pot_soil_evap(
-            &SW_SiteIn,
+            &SW_SoilRunIn,
             &SW_SiteSim,
             nelyrs,
             totagb,
@@ -736,7 +758,7 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
 
         // Begin Test if (totagb < Es_param_limit)
         pot_soil_evap(
-            &SW_SiteIn,
+            &SW_SoilRunIn,
             &SW_SiteSim,
             nelyrs,
             totagb,
@@ -778,10 +800,12 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation2) {
 
     SW_SITE_INPUTS SW_SiteIn;
     SW_SITE_SIM SW_SiteSim;
+    SW_SOIL_RUN_INPUTS SW_SoilRunIn;
+    SW_VEGPROD_RUN_INPUTS SW_VegProdRunIn;
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { VegProdIn.veg[k].SWPcrit = 20; }
+    ForEachVegType(k) { SW_VegProdRunIn.veg[k].SWPcrit = 20; }
 
     // INPUTS
     unsigned int nelyrs;
@@ -805,7 +829,13 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation2) {
 
         // Setup soil layers
         create_test_soillayers(
-            nelyrs, &VegProdIn, &SW_SiteIn, &SW_SiteSim, &LogInfo
+            nelyrs,
+            &VegProdIn,
+            &SW_SiteIn,
+            &SW_SiteSim,
+            &SW_SoilRunIn,
+            SW_VegProdRunIn.veg,
+            &LogInfo
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -819,7 +849,7 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation2) {
         // Begin Test for bserate when nelyrs = 1
         pot_soil_evap_bs(
             &bserate,
-            &SW_SiteIn,
+            &SW_SoilRunIn,
             &SW_SiteSim,
             nelyrs,
             petday,
@@ -1072,10 +1102,12 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
 
     SW_SITE_INPUTS SW_SiteIn;
     SW_SITE_SIM SW_SiteSim;
+    SW_SOIL_RUN_INPUTS SW_SoilRunIn;
+    SW_VEGPROD_RUN_INPUTS SW_VegProdRunIn;
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { VegProdIn.veg[k].SWPcrit = 20; }
+    ForEachVegType(k) { SW_VegProdRunIn.veg[k].SWPcrit = 20; }
 
 
     // INPUTS
@@ -1106,13 +1138,19 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
 
         // Setup: soil layers
         create_test_soillayers(
-            nlyrs, &VegProdIn, &SW_SiteIn, &SW_SiteSim, &LogInfo
+            nlyrs,
+            &VegProdIn,
+            &SW_SiteIn,
+            &SW_SiteSim,
+            &SW_SoilRunIn,
+            SW_VegProdRunIn.veg,
+            &LogInfo
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         ForEachSoilLayer(i, nlyrs) {
             // Setup: initial swc to some example value, here SWC at 20% VWC
-            swc_init[i] = 0.2 * SW_SiteIn.soils.width[i];
+            swc_init[i] = 0.2 * SW_SoilRunIn.width[i];
             // Setup: water extraction coefficient, some example value, here 0.5
             coeff[i] = 0.5;
         }
@@ -1129,7 +1167,7 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
         remove_from_soil(
             swc,
             qty,
-            &SW_SiteIn,
+            &SW_SoilRunIn,
             &SW_SiteSim,
             &aet,
             nlyrs,
@@ -1172,7 +1210,7 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
         remove_from_soil(
             swc,
             qty,
-            &SW_SiteIn,
+            &SW_SoilRunIn,
             &SW_SiteSim,
             &aet,
             nlyrs,
@@ -1215,7 +1253,7 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
         remove_from_soil(
             swc,
             qty,
-            &SW_SiteIn,
+            &SW_SoilRunIn,
             &SW_SiteSim,
             &aet,
             nlyrs,
@@ -1284,10 +1322,12 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
 
     SW_SITE_INPUTS SW_SiteIn;
     SW_SITE_SIM SW_SiteSim;
+    SW_SOIL_RUN_INPUTS SW_SoilRunIn;
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { VegProdIn.veg[k].SWPcrit = 20; }
+    SW_VEGPROD_RUN_INPUTS VegProdRunIn;
+    ForEachVegType(k) { VegProdRunIn.veg[k].SWPcrit = 20; }
 
 
     // INPUTS
@@ -1314,15 +1354,21 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
 
         // Setup soil layers
         create_test_soillayers(
-            nlyrs, &VegProdIn, &SW_SiteIn, &SW_SiteSim, &LogInfo
+            nlyrs,
+            &VegProdIn,
+            &SW_SiteIn,
+            &SW_SiteSim,
+            &SW_SoilRunIn,
+            VegProdRunIn.veg,
+            &LogInfo
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         // Initialize soil arrays to be independent of soil texture...
         ForEachSoilLayer(i, nlyrs) {
-            SW_SiteSim.swcBulk_fieldcap[i] = 0.25 * SW_SiteIn.soils.width[i];
-            SW_SiteSim.swcBulk_min[i] = 0.05 * SW_SiteIn.soils.width[i];
-            SW_SiteSim.swcBulk_saturated[i] = 0.35 * SW_SiteIn.soils.width[i];
+            SW_SiteSim.swcBulk_fieldcap[i] = 0.25 * SW_SoilRunIn.width[i];
+            SW_SiteSim.swcBulk_min[i] = 0.05 * SW_SoilRunIn.width[i];
+            SW_SiteSim.swcBulk_saturated[i] = 0.35 * SW_SoilRunIn.width[i];
         }
 
 
@@ -1348,7 +1394,7 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
             &standingWater,
             nlyrs,
             lyrFrozen,
-            &SW_SiteIn,
+            &SW_SoilRunIn,
             &SW_SiteSim,
             SW_SiteIn.slow_drain_coeff,
             SLOW_DRAIN_DEPTH
@@ -1391,7 +1437,7 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
             &standingWater,
             nlyrs,
             lyrFrozen,
-            &SW_SiteIn,
+            &SW_SoilRunIn,
             &SW_SiteSim,
             SW_SiteIn.slow_drain_coeff,
             SLOW_DRAIN_DEPTH
@@ -1437,7 +1483,7 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
             &standingWater,
             nlyrs,
             lyrFrozen,
-            &SW_SiteIn,
+            &SW_SoilRunIn,
             &SW_SiteSim,
             SW_SiteIn.slow_drain_coeff,
             SLOW_DRAIN_DEPTH
@@ -1492,7 +1538,7 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
             &standingWater,
             nlyrs,
             lyrFrozen,
-            &SW_SiteIn,
+            &SW_SoilRunIn,
             &SW_SiteSim,
             SW_SiteIn.slow_drain_coeff,
             SLOW_DRAIN_DEPTH
@@ -1531,10 +1577,12 @@ TEST(SWFlowTest, SWFlowHydraulicRedistribution) {
 
     SW_SITE_INPUTS SW_SiteIn;
     SW_SITE_SIM SW_SiteSim;
+    SW_SOIL_RUN_INPUTS SW_SoilRunIn;
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { VegProdIn.veg[k].SWPcrit = 20; }
+    SW_VEGPROD_RUN_INPUTS VegProdRunIn;
+    ForEachVegType(k) { VegProdRunIn.veg[k].SWPcrit = 20; }
 
     // INPUTS
     unsigned int nlyrs;
@@ -1584,7 +1632,13 @@ TEST(SWFlowTest, SWFlowHydraulicRedistribution) {
 
         // Setup soil layers
         create_test_soillayers(
-            nlyrs, &VegProdIn, &SW_SiteIn, &SW_SiteSim, &LogInfo
+            nlyrs,
+            &VegProdIn,
+            &SW_SiteIn,
+            &SW_SiteSim,
+            &SW_SoilRunIn,
+            VegProdRunIn.veg,
+            &LogInfo
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -1600,7 +1654,7 @@ TEST(SWFlowTest, SWFlowHydraulicRedistribution) {
         hydraulic_redistribution(
             swc,
             hydred,
-            &SW_SiteIn,
+            &SW_SoilRunIn,
             &SW_SiteSim,
             SW_SHRUB,
             nlyrs,

@@ -84,7 +84,7 @@ swcBulk_atSWPcrit[SW_FORBS], and my_transp_rgn[SW_FORBS] to SW_LAYER_INFO
 #define SW_SITE_H
 
 #include "include/generic.h"        // for Bool
-#include "include/SW_datastructs.h" // for SW_SITE, SW_VEGPROD_INPUTS, LOG_INFO
+#include "include/SW_datastructs.h" // for SW_SITE_*, SW_VEGPROD_INPUTS, LOG_INFO
 #include "include/SW_Defines.h"     // for LyrIndex
 
 #ifdef __cplusplus
@@ -298,7 +298,7 @@ void nlayers_vegroots(
     double transp_coeff[][MAX_LAYERS]
 );
 
-void SW_SOIL_construct(SW_SOIL_INPUTS *SW_Soils);
+void SW_SOIL_construct(SW_SOIL_RUN_INPUTS *SW_Soils);
 
 void SW_SIT_construct(SW_SITE_INPUTS *SW_SiteIn, SW_SITE_SIM *SW_SiteSim);
 
@@ -310,6 +310,7 @@ void SW_SIT_read(
     char *txtInFiles[],
     SW_CARBON_INPUTS *SW_CarbonIn,
     Bool *hasConsistentSoilLayerDepths,
+    double *Tsoil_constant,
     LOG_INFO *LogInfo
 );
 
@@ -317,19 +318,23 @@ void SW_SIT_init_run(
     SW_VEGPROD_INPUTS *SW_VegProdIn,
     SW_SITE_INPUTS *SW_SiteIn,
     SW_SITE_SIM *SW_SiteSim,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
+    VegType veg[],
     LOG_INFO *LogInfo
 );
 
 void echo_inputs(
     SW_SITE_INPUTS *SW_SiteIn,
     SW_SITE_SIM *SW_SiteSim,
-    SW_MODEL_INPUTS *SW_ModelIn
+    SW_MODEL_RUN_INPUTS *ModelRunIn,
+    SW_SOIL_RUN_INPUTS *SoilRunIn,
+    double Tsoil_constant
 );
 
 
 /* these used to be in Layers */
 void SW_LYR_read(
-    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     LyrIndex *n_evap_lyrs,
     LyrIndex *n_layers,
     char *txtInFiles[],
@@ -337,10 +342,10 @@ void SW_LYR_read(
 );
 
 void SW_SWRC_read(
-    SW_SOIL_INPUTS *SW_Soils,
     SW_SITE_SIM *SW_SiteSim,
     char *txtInFiles[],
     Bool inputsProvideSWRCp,
+    double swrcpMineralSoil[][SWRC_PARAM_NMAX],
     LOG_INFO *LogInfo
 );
 
@@ -350,6 +355,8 @@ void set_soillayers(
     SW_VEGPROD_INPUTS *SW_VegProdIn,
     SW_SITE_INPUTS *SW_SiteIn,
     SW_SITE_SIM *SW_SiteSim,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
+    VegType veg[],
     LyrIndex nlyrs,
     const double *dmax,
     const double *bd,

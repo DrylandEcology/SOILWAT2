@@ -153,6 +153,7 @@ int main(int argc, char **argv) {
         SW_WTH_finalize_all_weather(
             &sw_template.MarkovIn,
             &sw_template.WeatherIn,
+            sw_template.RunIn.weathRunAllHist,
             sw_template.ModelSim.cum_monthdays,
             sw_template.ModelSim.days_in_month,
             &LogInfo
@@ -174,7 +175,7 @@ int main(int argc, char **argv) {
         SW_Domain.depthsAllSoilLayers,
         sw_template.SiteSim.n_layers,
         sw_template.SiteSim.n_evap_lyrs,
-        sw_template.SiteIn.soils.depths,
+        sw_template.RunIn.SoilRunIn.depths,
         &LogInfo
     );
     if (LogInfo.stopRun) {

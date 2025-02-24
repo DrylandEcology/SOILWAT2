@@ -107,8 +107,8 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     SW_SKY_new_year(
         &sw->ModelSim,
         sw->ModelIn.startyr,
-        sw->SkyIn.snow_density,
-        sw->SkyIn.snow_density_daily
+        sw->RunIn.SkyRunIn.snow_density,
+        sw->RunIn.SkyRunIn.snow_density_daily
     );
 
     // SW_SIT_new_year() not needed
@@ -116,7 +116,7 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     SW_VES_new_year(sw->VegEstabSim.count);
 
     // SW_VPD_new_year(): Dynamic CO2 effects on vegetation
-    SW_VPD_new_year(&sw->VegProdIn, &sw->ModelSim);
+    SW_VPD_new_year(&sw->ModelSim, sw->RunIn.VegProdRunIn.veg);
 
     // SW_FLW_new_year() not needed
 
@@ -147,6 +147,7 @@ static void begin_day(SW_RUN *sw, LOG_INFO *LogInfo) {
     SW_WTH_new_day(
         &sw->WeatherIn,
         &sw->WeatherSim,
+        sw->RunIn.weathRunAllHist,
         &sw->SiteIn,
         sw->SoilWatSim.snowpack,
         sw->ModelSim.doy,
@@ -193,19 +194,19 @@ void SW_RUN_deepCopy(
     dest->SoilWatIn.hist.file_prefix = NULL; /* currently unused */
 
     /* Allocate memory and copy daily weather */
-    dest->WeatherIn.allHist = NULL;
+    dest->RunIn.weathRunAllHist = NULL;
     if (copyWeatherHist) {
         SW_WTH_allocateAllWeather(
-            &dest->WeatherIn.allHist, source->WeatherIn.n_years, LogInfo
+            &dest->RunIn.weathRunAllHist, source->WeatherIn.n_years, LogInfo
         );
         if (LogInfo->stopRun) {
             return; // Exit prematurely due to error
         }
         for (unsigned int year = 0; year < source->WeatherIn.n_years; year++) {
             memcpy(
-                &dest->WeatherIn.allHist[year],
-                &source->WeatherIn.allHist[year],
-                sizeof(dest->WeatherIn.allHist[year])
+                &dest->RunIn.weathRunAllHist[year],
+                &source->RunIn.weathRunAllHist[year],
+                sizeof(dest->RunIn.weathRunAllHist[year])
             );
         }
     }
@@ -431,7 +432,7 @@ program exit
     all information in the simulation
 */
 void SW_CTL_init_ptrs(SW_RUN *sw) {
-    SW_WTH_init_ptrs(&sw->WeatherIn.allHist);
+    SW_WTH_init_ptrs(&sw->RunIn.weathRunAllHist);
     // SW_MKV_init_ptrs() not needed
     SW_VES_init_ptrs(
         &sw->VegEstabIn, &sw->VegEstabSim, sw->ves_p_accu, sw->ves_p_oagg
@@ -608,7 +609,7 @@ void SW_CTL_clear_model(Bool full_reset, SW_RUN *sw) {
     SW_OUT_deconstruct(full_reset, sw);
 
     SW_MDL_deconstruct();
-    SW_WTH_deconstruct(&sw->WeatherIn.allHist);
+    SW_WTH_deconstruct(&sw->RunIn.weathRunAllHist);
     // SW_MKV_deconstruct() not needed
     // SW_SKY_INPUTS_deconstruct() not needed
     // SW_SIT_deconstruct() not needed
@@ -641,12 +642,19 @@ void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
     // SW_MKV_init_run() not needed
     SW_PET_init_run(&sw->AtmDemSim);
 
-    SW_SKY_init_run(&sw->SkyIn, LogInfo);
+    SW_SKY_init_run(&sw->RunIn.SkyRunIn, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    SW_SIT_init_run(&sw->VegProdIn, &sw->SiteIn, &sw->SiteSim, LogInfo);
+    SW_SIT_init_run(
+        &sw->VegProdIn,
+        &sw->SiteIn,
+        &sw->SiteSim,
+        &sw->RunIn.SoilRunIn,
+        sw->RunIn.VegProdRunIn.veg,
+        LogInfo
+    );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -654,7 +662,7 @@ void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
     // SW_VES_init_run() must be called after `SW_SIT_init_run()`
     SW_VES_init_run(
         sw->VegEstabIn.parms,
-        &sw->SiteIn,
+        &sw->RunIn.SoilRunIn,
         &sw->SiteSim,
         sw->SiteSim.n_transp_lyrs,
         sw->VegEstabSim.count,
@@ -665,11 +673,13 @@ void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
     }
 
     SW_VPD_init_run(
-        &sw->VegProdIn,
-        sw->WeatherIn.allHist,
+        &sw->RunIn.VegProdRunIn,
+        sw->RunIn.weathRunAllHist,
         &sw->ModelIn,
         &sw->ModelSim,
         estVeg,
+        sw->RunIn.ModelRunIn.isnorth,
+        sw->VegProdIn.veg_method,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -682,7 +692,7 @@ void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
     //   useful for unit tests, rSOILWAT2, and STEPWAT2 applications
     SW_SWC_init_run(&sw->SoilWatSim, &sw->SiteSim, &sw->WeatherSim.temp_snow);
     SW_CBN_init_run(
-        sw->VegProdIn.veg,
+        sw->RunIn.VegProdRunIn.veg,
         &sw->CarbonIn,
         sw->ModelSim.addtl_yr,
         sw->ModelIn.startyr,
@@ -748,6 +758,7 @@ void SW_CTL_run_current_year(
                 &sw->SoilWatSim,
                 sw->SiteSim.swcBulk_atSWPcrit,
                 &sw->VegProdIn,
+                sw->RunIn.VegProdRunIn.veg,
                 sw->SiteSim.n_layers
             );
         }
@@ -968,7 +979,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_MDL_read(&sw->ModelIn, SW_PathInputs->txtInFiles, LogInfo);
+    SW_MDL_read(&sw->RunIn.ModelRunIn, SW_PathInputs->txtInFiles, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -993,7 +1004,7 @@ void SW_CTL_read_inputs_from_disk(
         sw_printf(" > 'weather setup'");
     }
 #endif
-    SW_SKY_read(SW_PathInputs->txtInFiles, &sw->SkyIn, LogInfo);
+    SW_SKY_read(SW_PathInputs->txtInFiles, &sw->RunIn.SkyRunIn, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -1023,8 +1034,10 @@ void SW_CTL_read_inputs_from_disk(
 
     SW_WTH_read(
         &sw->WeatherIn,
-        &sw->SkyIn,
+        &sw->RunIn.weathRunAllHist,
+        &sw->RunIn.SkyRunIn,
         &sw->ModelIn,
+        sw->RunIn.ModelRunIn.elevation,
         readTextInputs,
         sw->ModelSim.cum_monthdays,
         sw->ModelSim.days_in_month,
@@ -1040,7 +1053,12 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_VPD_read(&sw->VegProdIn, SW_PathInputs->txtInFiles, LogInfo);
+    SW_VPD_read(
+        &sw->VegProdIn,
+        &sw->RunIn.VegProdRunIn,
+        SW_PathInputs->txtInFiles,
+        LogInfo
+    );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -1056,6 +1074,7 @@ void SW_CTL_read_inputs_from_disk(
         SW_PathInputs->txtInFiles,
         &sw->CarbonIn,
         hasConsistentSoilLayerDepths,
+        &sw->RunIn.SiteRunIn.Tsoil_constant,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -1068,7 +1087,7 @@ void SW_CTL_read_inputs_from_disk(
 #endif
 
     SW_LYR_read(
-        &sw->SiteIn,
+        &sw->RunIn.SoilRunIn,
         &sw->SiteSim.n_evap_lyrs,
         &sw->SiteSim.n_layers,
         SW_PathInputs->txtInFiles,
@@ -1084,10 +1103,10 @@ void SW_CTL_read_inputs_from_disk(
 #endif
 
     SW_SWRC_read(
-        &sw->SiteIn.soils,
         &sw->SiteSim,
         SW_PathInputs->txtInFiles,
         sw->SiteIn.inputsProvideSWRCp,
+        sw->RunIn.SoilRunIn.swrcpMineralSoil,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -1224,8 +1243,8 @@ void SW_CTL_run_sw(
     if (debug) {
         sw_printf(
             " -- inputs at lon/lat = (%f, %f)",
-            local_sw.ModelIn.longitude * rad_to_deg,
-            local_sw.ModelIn.latitude * rad_to_deg
+            local_sw.RunIn.ModelRunIn.longitude * rad_to_deg,
+            local_sw.RunIn.ModelRunIn.latitude * rad_to_deg
         );
     }
 #endif

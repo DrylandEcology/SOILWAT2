@@ -30,7 +30,7 @@ extern "C" {
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_MDL_read(
-    SW_MODEL_INPUTS *SW_ModelIn, char *txtInFiles[], LOG_INFO *LogInfo
+    SW_MODEL_RUN_INPUTS *ModelRunIn, char *txtInFiles[], LOG_INFO *LogInfo
 );
 
 void SW_MDL_construct(SW_MODEL_SIM *SW_ModelSim);

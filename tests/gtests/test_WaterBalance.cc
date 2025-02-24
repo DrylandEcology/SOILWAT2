@@ -63,7 +63,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithPondedWaterRunonRunoff) {
     int i;
 
     // Turn on impermeability of first soil layer, runon, and runoff
-    SW_Run.SiteIn.soils.impermeability[0] = 0.95;
+    SW_Run.RunIn.SoilRunIn.impermeability[0] = 0.95;
     SW_Run.SiteIn.percentRunoff = 0.5;
     SW_Run.SiteIn.percentRunon = 1.25;
 
@@ -107,8 +107,10 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
     // Prepare weather data
     SW_WTH_read(
         &SW_Run.WeatherIn,
-        &SW_Run.SkyIn,
+        &SW_Run.RunIn.weathRunAllHist,
+        &SW_Run.RunIn.SkyRunIn,
         &SW_Run.ModelIn,
+        SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
         SW_Run.ModelSim.cum_monthdays,
         SW_Run.ModelSim.days_in_month,
@@ -119,6 +121,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
     SW_WTH_finalize_all_weather(
         &SW_Run.MarkovIn,
         &SW_Run.WeatherIn,
+        SW_Run.RunIn.weathRunAllHist,
         SW_Run.ModelSim.cum_monthdays,
         SW_Run.ModelSim.days_in_month,
         &LogInfo
@@ -167,8 +170,10 @@ TEST_F(
     // Prepare weather data
     SW_WTH_read(
         &SW_Run.WeatherIn,
-        &SW_Run.SkyIn,
+        &SW_Run.RunIn.weathRunAllHist,
+        &SW_Run.RunIn.SkyRunIn,
         &SW_Run.ModelIn,
+        SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
         SW_Run.ModelSim.cum_monthdays,
         SW_Run.ModelSim.days_in_month,
@@ -179,6 +184,7 @@ TEST_F(
     SW_WTH_finalize_all_weather(
         &SW_Run.MarkovIn,
         &SW_Run.WeatherIn,
+        SW_Run.RunIn.weathRunAllHist,
         SW_Run.ModelSim.cum_monthdays,
         SW_Run.ModelSim.days_in_month,
         &LogInfo
@@ -203,12 +209,17 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
 
     // Set high gravel volume in all soil layers
     ForEachSoilLayer(s, SW_Run.SiteSim.n_layers) {
-        SW_Run.SiteIn.soils.fractionVolBulk_gravel[s] = 0.99;
+        SW_Run.RunIn.SoilRunIn.fractionVolBulk_gravel[s] = 0.99;
     }
 
     // Re-calculate soils
     SW_SIT_init_run(
-        &SW_Run.VegProdIn, &SW_Run.SiteIn, &SW_Run.SiteSim, &LogInfo
+        &SW_Run.VegProdIn,
+        &SW_Run.SiteIn,
+        &SW_Run.SiteSim,
+        &SW_Run.RunIn.SoilRunIn,
+        SW_Run.RunIn.VegProdRunIn.veg,
+        &LogInfo
     );
     SW_SWC_init_run(
         &SW_Run.SoilWatSim, &SW_Run.SiteSim, &SW_Run.WeatherSim.temp_snow
@@ -232,7 +243,13 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOneSoilLayer) {
 
     // Setup one soil layer
     create_test_soillayers(
-        1, &SW_Run.VegProdIn, &SW_Run.SiteIn, &SW_Run.SiteSim, &LogInfo
+        1,
+        &SW_Run.VegProdIn,
+        &SW_Run.SiteIn,
+        &SW_Run.SiteSim,
+        &SW_Run.RunIn.SoilRunIn,
+        SW_Run.RunIn.VegProdRunIn.veg,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -258,7 +275,13 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMaxSoilLayers) {
 
     // Setup maximum number of soil layers
     create_test_soillayers(
-        MAX_LAYERS, &SW_Run.VegProdIn, &SW_Run.SiteIn, &SW_Run.SiteSim, &LogInfo
+        MAX_LAYERS,
+        &SW_Run.VegProdIn,
+        &SW_Run.SiteIn,
+        &SW_Run.SiteSim,
+        &SW_Run.RunIn.SoilRunIn,
+        SW_Run.RunIn.VegProdRunIn.veg,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -287,11 +310,13 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
 
     // Re-calculate vegetation
     SW_VPD_init_run(
-        &SW_Run.VegProdIn,
-        SW_Run.WeatherIn.allHist,
+        &SW_Run.RunIn.VegProdRunIn,
+        SW_Run.RunIn.weathRunAllHist,
         &SW_Run.ModelIn,
         &SW_Run.ModelSim,
         swTRUE,
+        SW_Run.RunIn.ModelRunIn.isnorth,
+        SW_Run.VegProdIn.veg_method,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo);
@@ -323,14 +348,19 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
     SW_Run.SiteIn.inputsProvideSWRCp = swFALSE;
 
     // Set organic matter > 0
-    SW_Run.SiteIn.soils.fractionWeight_om[0] = 1.;
+    SW_Run.RunIn.SoilRunIn.fractionWeight_om[0] = 1.;
     for (i = 1; i < SW_Run.SiteSim.n_layers; i++) {
-        SW_Run.SiteIn.soils.fractionWeight_om[i] = 0.5;
+        SW_Run.RunIn.SoilRunIn.fractionWeight_om[i] = 0.5;
     }
 
     // Update soils
     SW_SIT_init_run(
-        &SW_Run.VegProdIn, &SW_Run.SiteIn, &SW_Run.SiteSim, &LogInfo
+        &SW_Run.VegProdIn,
+        &SW_Run.SiteIn,
+        &SW_Run.SiteSim,
+        &SW_Run.RunIn.SoilRunIn,
+        SW_Run.RunIn.VegProdRunIn.veg,
+        &LogInfo
     );
     SW_SWC_init_run(
         &SW_Run.SoilWatSim, &SW_Run.SiteSim, &SW_Run.WeatherSim.temp_snow
@@ -383,17 +413,22 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
 
     // Read SWRC parameter input file (which is not read by default)
     SW_SWRC_read(
-        &SW_Run.SiteIn.soils,
         &SW_Run.SiteSim,
         SW_Domain.SW_PathInputs.txtInFiles,
         SW_Run.SiteIn.inputsProvideSWRCp,
+        SW_Run.RunIn.SoilRunIn.swrcpMineralSoil,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Update soils
     SW_SIT_init_run(
-        &SW_Run.VegProdIn, &SW_Run.SiteIn, &SW_Run.SiteSim, &LogInfo
+        &SW_Run.VegProdIn,
+        &SW_Run.SiteIn,
+        &SW_Run.SiteSim,
+        &SW_Run.RunIn.SoilRunIn,
+        SW_Run.RunIn.VegProdRunIn.veg,
+        &LogInfo
     );
     SW_SWC_init_run(
         &SW_Run.SoilWatSim, &SW_Run.SiteSim, &SW_Run.WeatherSim.temp_snow
@@ -442,10 +477,10 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
 
     // Read SWRC parameter input file (which is not read by default)
     SW_SWRC_read(
-        &SW_Run.SiteIn.soils,
         &SW_Run.SiteSim,
         SW_Domain.SW_PathInputs.txtInFiles,
         SW_Run.SiteIn.inputsProvideSWRCp,
+        SW_Run.RunIn.SoilRunIn.swrcpMineralSoil,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -454,12 +489,17 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
     // not all values for organic SWRC parameters have been determined
     // (see "tests/example/Input/swrc_params_FXW.in")
     for (i = 0; i < SW_Run.SiteSim.n_layers; i++) {
-        SW_Run.SiteIn.soils.fractionWeight_om[i] = 0.;
+        SW_Run.RunIn.SoilRunIn.fractionWeight_om[i] = 0.;
     }
 
     // Update soils
     SW_SIT_init_run(
-        &SW_Run.VegProdIn, &SW_Run.SiteIn, &SW_Run.SiteSim, &LogInfo
+        &SW_Run.VegProdIn,
+        &SW_Run.SiteIn,
+        &SW_Run.SiteSim,
+        &SW_Run.RunIn.SoilRunIn,
+        SW_Run.RunIn.VegProdRunIn.veg,
+        &LogInfo
     );
     SW_SWC_init_run(
         &SW_Run.SoilWatSim, &SW_Run.SiteSim, &SW_Run.WeatherSim.temp_snow
@@ -535,8 +575,10 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
     // Prepare weather data
     SW_WTH_read(
         &SW_Run.WeatherIn,
-        &SW_Run.SkyIn,
+        &SW_Run.RunIn.weathRunAllHist,
+        &SW_Run.RunIn.SkyRunIn,
         &SW_Run.ModelIn,
+        SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
         SW_Run.ModelSim.cum_monthdays,
         SW_Run.ModelSim.days_in_month,
@@ -547,6 +589,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
     SW_WTH_finalize_all_weather(
         &SW_Run.MarkovIn,
         &SW_Run.WeatherIn,
+        SW_Run.RunIn.weathRunAllHist,
         SW_Run.ModelSim.cum_monthdays,
         SW_Run.ModelSim.days_in_month,
         &LogInfo
@@ -622,8 +665,10 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGridMET) {
     // Prepare weather data
     SW_WTH_read(
         &SW_Run.WeatherIn,
-        &SW_Run.SkyIn,
+        &SW_Run.RunIn.weathRunAllHist,
+        &SW_Run.RunIn.SkyRunIn,
         &SW_Run.ModelIn,
+        SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
         SW_Run.ModelSim.cum_monthdays,
         SW_Run.ModelSim.days_in_month,
@@ -634,6 +679,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGridMET) {
     SW_WTH_finalize_all_weather(
         &SW_Run.MarkovIn,
         &SW_Run.WeatherIn,
+        SW_Run.RunIn.weathRunAllHist,
         SW_Run.ModelSim.cum_monthdays,
         SW_Run.ModelSim.days_in_month,
         &LogInfo
@@ -709,8 +755,10 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype1) {
     // Prepare weather data
     SW_WTH_read(
         &SW_Run.WeatherIn,
-        &SW_Run.SkyIn,
+        &SW_Run.RunIn.weathRunAllHist,
+        &SW_Run.RunIn.SkyRunIn,
         &SW_Run.ModelIn,
+        SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
         SW_Run.ModelSim.cum_monthdays,
         SW_Run.ModelSim.days_in_month,
@@ -721,6 +769,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype1) {
     SW_WTH_finalize_all_weather(
         &SW_Run.MarkovIn,
         &SW_Run.WeatherIn,
+        SW_Run.RunIn.weathRunAllHist,
         SW_Run.ModelSim.cum_monthdays,
         SW_Run.ModelSim.days_in_month,
         &LogInfo
@@ -796,8 +845,10 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
     // Prepare weather data
     SW_WTH_read(
         &SW_Run.WeatherIn,
-        &SW_Run.SkyIn,
+        &SW_Run.RunIn.weathRunAllHist,
+        &SW_Run.RunIn.SkyRunIn,
         &SW_Run.ModelIn,
+        SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
         SW_Run.ModelSim.cum_monthdays,
         SW_Run.ModelSim.days_in_month,
@@ -808,6 +859,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
     SW_WTH_finalize_all_weather(
         &SW_Run.MarkovIn,
         &SW_Run.WeatherIn,
+        SW_Run.RunIn.weathRunAllHist,
         SW_Run.ModelSim.cum_monthdays,
         SW_Run.ModelSim.days_in_month,
         &LogInfo

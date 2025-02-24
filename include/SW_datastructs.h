@@ -188,6 +188,20 @@ typedef struct {
     // Data for (optional) spinup (copied from SW_DOMAIN)
     SW_SPINUP SW_SpinUp;
 
+    // Create a copy of SW_DOMAIN's time & spinup information
+    // to use instead of passing around SW_DOMAIN
+    TimeInt startyr, /* beginning year for a set of simulation run */
+        endyr,       /* ending year for a set of simulation run */
+        startstart,  /* startday in start year */
+        endend;      /* end day in end year */
+
+#ifdef STEPWAT
+    /* Variables from GlobalType (STEPWAT2) used in SOILWAT2 */
+    IntUS runModelYears;
+#endif
+} SW_MODEL_INPUTS;
+
+typedef struct {
     double longitude, /* longitude of the site (radians) */
         latitude,     /* latitude of the site (radians) */
         elevation,    /* elevation a.s.l (m) of the site */
@@ -198,20 +212,8 @@ typedef struct {
                    facing slope: aspect = 0, East = -pi / 2, West = pi / 2,
                    North = ±pi */
 
-    // Create a copy of SW_DOMAIN's time & spinup information
-    // to use instead of passing around SW_DOMAIN
-    TimeInt startyr, /* beginning year for a set of simulation run */
-        endyr,       /* ending year for a set of simulation run */
-        startstart,  /* startday in start year */
-        endend;      /* end day in end year */
-
     Bool isnorth;
-
-#ifdef STEPWAT
-    /* Variables from GlobalType (STEPWAT2) used in SOILWAT2 */
-    IntUS runModelYears;
-#endif
-} SW_MODEL_INPUTS;
+} SW_MODEL_RUN_INPUTS;
 
 /* =================================================== */
 /*                 Output text structs                 */
@@ -277,7 +279,7 @@ typedef struct {
 
     /** SWRC parameters of the mineral soil component */
     double swrcpMineralSoil[MAX_LAYERS][SWRC_PARAM_NMAX];
-} SW_SOIL_INPUTS;
+} SW_SOIL_RUN_INPUTS;
 
 typedef struct {
     LyrIndex n_layers, /* total number of soil layers */
@@ -398,11 +400,8 @@ typedef struct {
                                conductivity (cs) equation */
         csParam2, shParam,  /* shParam is the parameter for the specific heat
                                capacity equation */
-        bmLimiter, /* bmLimiter is the biomass limiter constant, for use in the
-                      T1 equation */
-        Tsoil_constant, /* soil temperature at a depth where soil temperature is
-                           (mostly) constant in time; for instance, approximated
-                           as the mean air temperature */
+        bmLimiter,  /* bmLimiter is the biomass limiter constant, for use in the
+                       T1 equation */
         stDeltaX,   /* for the soil_temperature function, deltaX is the distance
                        between profile points (default: 15) */
         stMaxDepth; /* for the soil_temperature function, the maxDepth of the
@@ -446,10 +445,13 @@ typedef struct {
     double SWCInitVal, /* initialization value for swc */
         SWCWetVal,     /* value for a "wet" day,       */
         SWCMinVal;     /* lower bound on swc.          */
-
-    /* Soil inputs */
-    SW_SOIL_INPUTS soils;
 } SW_SITE_INPUTS;
+
+typedef struct {
+    double Tsoil_constant; /* Soil temperature at a depth where soil temperature
+                              is (mostly) constant in time; for instance,
+                              approximated as the mean air temperature */
+} SW_SITE_RUN_INPUTS;
 
 /* =================================================== */
 /*                    VegProd structs                  */
@@ -619,12 +621,6 @@ typedef struct {
 
 /** Data type to describe the surface cover of a SOILWAT2 simulation run */
 typedef struct {
-    /** Data for each vegetation type */
-    VegType veg[NVEGTYPES];
-    /** Bare-ground cover of plot that is not occupied by vegetation;
-        user input from file `Input/veg.in` */
-    CoverType bare_cov;
-
     Bool
         /** Flag that determines whether vegetation-type specific soil water
           availability should be calculated;
@@ -642,6 +638,14 @@ typedef struct {
         rank_SWPcrits[NVEGTYPES],
         veg_method;
 } SW_VEGPROD_INPUTS;
+
+typedef struct {
+    /** Data for each vegetation type */
+    VegType veg[NVEGTYPES];
+    /** Bare-ground cover of plot that is not occupied by vegetation;
+        user input from file `Input/veg.in` */
+    CoverType bare_cov;
+} SW_VEGPROD_RUN_INPUTS;
 
 /* =================================================== */
 /*                     Time struct                     */
@@ -885,12 +889,6 @@ typedef struct {
         p_oagg[SW_OUTNPERIODS]; // output aggregator: mean or sum for each time
                                 // periods
 
-
-    /* Daily weather record */
-    SW_WEATHER_HIST
-    *allHist; /**< Daily weather values; array of length `n_years` holding
-                 instances of the struct #SW_WEATHER_HIST where the first
-                 represents values for calendar year `startYear` */
     unsigned int n_years;   /**< Length of `allHist`, i.e., number of years of
                                daily weather */
     unsigned int startYear; /**< Calendar year corresponding to first year of
@@ -1646,11 +1644,33 @@ typedef struct {
 #endif
 } SW_OUT_RUN;
 
+typedef struct {
+    /*
+        This struct holds input values that can be read in/different
+        between simulation runs;
+        Only netCDF inputs have the ability to change throughout
+        the domain, otherwise these values will remain the same;
+        The variables much match those shown in
+        `SW2_netCDF_input_variables.tsv`
+    */
+
+    SW_SKY_INPUTS SkyRunIn;
+    SW_MODEL_RUN_INPUTS ModelRunIn;
+    SW_SOIL_RUN_INPUTS SoilRunIn;
+    SW_VEGPROD_RUN_INPUTS VegProdRunIn;
+    SW_SITE_RUN_INPUTS SiteRunIn;
+
+    /* Daily weather record */
+    SW_WEATHER_HIST
+    *weathRunAllHist; /**< Daily weather values; array of length `n_years`
+                    holding instances of the struct #SW_WEATHER_HIST where the
+                    first represents values for calendar year `startYear` */
+} SW_RUN_INPUTS;
+
 struct SW_RUN {
 
     /* Input information */
     SW_WEATHER_INPUTS WeatherIn;
-    SW_SKY_INPUTS SkyIn;
     SW_CARBON_INPUTS CarbonIn;
     SW_MARKOV_INPUTS MarkovIn;
     SW_VEGPROD_INPUTS VegProdIn;
@@ -1658,6 +1678,7 @@ struct SW_RUN {
     SW_VEGESTAB_INPUTS VegEstabIn;
     SW_SOILWAT_INPUTS SoilWatIn;
     SW_SITE_INPUTS SiteIn;
+    SW_RUN_INPUTS RunIn;
 
     /* Values used/modified during simulation that's not strictly inputs */
     SW_WEATHER_SIM WeatherSim;

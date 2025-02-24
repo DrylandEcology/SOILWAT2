@@ -1006,11 +1006,13 @@ void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo) {
 partitioned among vegetation types and propagate the swa_master structure for
 use in get_dSWAbulk(). Must be call after `SW_SWC_water_flow()` is executed.
 
-@param[in,out] SW_SoilWatSim Struct of type SW_SOILWAT containing
+@param[in,out] SW_SoilWatSim Struct of type SW_SOILWAT_SIM containing
     soil water simulation values
 @param[in] swcBulk_atSWPcrit SWC corresponding to critical SWP for transpiration
 @param[in] SW_VegProdIn Struct of type SW_VEGPROD_INPUTS describing surface
     cover conditions in the simulation
+@param[in] veg Array of size NVEGTYPES of type VegType describing
+    all NVEGTYPES vegetation types through simulation-specific inputs
 @param[in] n_layers Number of layers of soil within the simulation run
 */
 /***********************************************************/
@@ -1018,6 +1020,7 @@ void calculate_repartitioned_soilwater(
     SW_SOILWAT_SIM *SW_SoilWatSim,
     double swcBulk_atSWPcrit[][MAX_LAYERS],
     SW_VEGPROD_INPUTS *SW_VegProdIn,
+    VegType veg[],
     LyrIndex n_layers
 ) {
 
@@ -1032,7 +1035,7 @@ void calculate_repartitioned_soilwater(
     ForEachSoilLayer(i, n_layers) {
         val = SW_SoilWatSim->swcBulk[Today][i];
         ForEachVegType(j) {
-            if (SW_VegProdIn->veg[j].cov.fCover != 0) {
+            if (veg[j].cov.fCover != 0) {
                 SW_SoilWatSim->swa_master[j][j][i] =
                     fmax(0., val - swcBulk_atSWPcrit[j][i]);
             } else {
@@ -1079,6 +1082,7 @@ void calculate_repartitioned_soilwater(
         get_dSWAbulk(
             i,
             SW_VegProdIn,
+            veg,
             SW_SoilWatSim->swa_master,
             SW_SoilWatSim->dSWA_repartitioned_sum
         );
@@ -1097,6 +1101,8 @@ the available soilwater of each veg type above so start at bottom move up.
 @param[in] i Integer value for soil layer
 @param[in] SW_VegProdIn Struct of type SW_VEGPROD_INPUTS describing surface
     cover conditions in the simulation
+@param[in] veg Array of size NVEGTYPES of type VegType describing
+    all NVEGTYPES vegetation types through simulation-specific inputs
 @param[out] swa_master Holds information of veg_type, crit_val, and layer
 @param[out] dSWA_repart_sum Repartioned swa values
 */
@@ -1104,6 +1110,7 @@ the available soilwater of each veg type above so start at bottom move up.
 void get_dSWAbulk(
     unsigned int i,
     SW_VEGPROD_INPUTS *SW_VegProdIn,
+    VegType veg[],
     double swa_master[][NVEGTYPES][MAX_LAYERS],
     double dSWA_repart_sum[][MAX_LAYERS]
 ) {
@@ -1147,7 +1154,7 @@ void get_dSWAbulk(
         curr_crit_rank_index = SW_VegProdIn->rank_SWPcrits[curr_vegType];
         // set veg type fraction here
 
-        veg_type_in_use = SW_VegProdIn->veg[curr_crit_rank_index].cov.fCover;
+        veg_type_in_use = veg[curr_crit_rank_index].cov.fCover;
         for (kv = curr_vegType; kv >= 0; kv--) {
             // get crit value at current index
             crit_val =
@@ -1238,8 +1245,7 @@ void get_dSWAbulk(
                             // fractions of the veg types who have access
 
                             // set veg type fraction here
-                            inner_loop_veg_type =
-                                SW_VegProdIn->veg[j].cov.fCover;
+                            inner_loop_veg_type = veg[j].cov.fCover;
 
                             if (SW_VegProdIn->critSoilWater[j] <= crit_val) {
                                 vegFractionSum += inner_loop_veg_type;
@@ -1274,7 +1280,7 @@ void get_dSWAbulk(
 
     for (curr_vegType = 0; curr_vegType < NVEGTYPES; curr_vegType++) {
         for (kv = 0; kv < NVEGTYPES; kv++) {
-            if (SW_VegProdIn->veg[curr_vegType].cov.fCover == 0.) {
+            if (veg[curr_vegType].cov.fCover == 0.) {
                 dSWA_repart_sum[curr_vegType][i] = 0.;
             } else {
                 dSWA_repart_sum[curr_vegType][i] +=
@@ -1865,9 +1871,9 @@ SOILWAT2 convenience wrapper for `SWRC_SWCtoSWP()`.
 See #swrc2str() for implemented SWRCs.
 
 @param[in] swcBulk Soil water content in the layer [cm]
-@param[in] SW_SiteIn Struct of type SW_SITE describing the simulated site's
-    input values
-@param[in] SW_SiteSim Struct of type SW_SITE describing the simulated site's
+@param[in] SW_SoilRunIn Struct of type SW_SOIL_RUN_INPUTS describing
+    the simulated site's input values
+@param[in] SW_SiteSim Struct of type SW_SITE_SIM describing the simulated site's
     simulation values
 @param[in] layerno Current layer which is being worked with
 @param[out] LogInfo Holds information on warnings and errors
@@ -1876,7 +1882,7 @@ See #swrc2str() for implemented SWRCs.
 */
 double SW_SWRC_SWCtoSWP(
     double swcBulk,
-    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     SW_SITE_SIM *SW_SiteSim,
     LyrIndex layerno,
     LOG_INFO *LogInfo
@@ -1885,8 +1891,8 @@ double SW_SWRC_SWCtoSWP(
         swcBulk,
         SW_SiteSim->swrc_type[layerno],
         SW_SiteSim->swrcp[layerno],
-        SW_SiteIn->soils.fractionVolBulk_gravel[layerno],
-        SW_SiteIn->soils.width[layerno],
+        SW_SoilRunIn->fractionVolBulk_gravel[layerno],
+        SW_SoilRunIn->width[layerno],
         LOGERROR,
         LogInfo
     );
@@ -2246,9 +2252,9 @@ SOILWAT2 convenience wrapper for `SWRC_SWPtoSWC()`.
 See #swrc2str() for implemented SWRCs.
 
 @param[in] swpMatric Soil water potential [-bar]
-@param[in] SW_SiteIn Struct of type SW_SITE describing the simulated site's
-    input values
-@param[in] SW_SiteSim Struct of type SW_SITE describing the simulated site's
+@param[in] SW_SoilRunIn Struct of type SW_SOIL_RUN_INPUTS describing
+    the simulated site's input values
+@param[in] SW_SiteSim Struct of type SW_SITE_SIM describing the simulated site's
     simulation values
 @param[in] layerno Current layer which is being worked with
 @param[out] LogInfo Holds information on warnings and errors
@@ -2257,7 +2263,7 @@ See #swrc2str() for implemented SWRCs.
 */
 double SW_SWRC_SWPtoSWC(
     double swpMatric,
-    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     SW_SITE_SIM *SW_SiteSim,
     LyrIndex layerno,
     LOG_INFO *LogInfo
@@ -2266,8 +2272,8 @@ double SW_SWRC_SWPtoSWC(
         swpMatric,
         SW_SiteSim->swrc_type[layerno],
         SW_SiteSim->swrcp[layerno],
-        SW_SiteIn->soils.fractionVolBulk_gravel[layerno],
-        SW_SiteIn->soils.width[layerno],
+        SW_SoilRunIn->fractionVolBulk_gravel[layerno],
+        SW_SoilRunIn->width[layerno],
         LOGERROR,
         LogInfo
     );

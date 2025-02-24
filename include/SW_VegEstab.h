@@ -81,7 +81,7 @@ void SW_VES_deconstruct(
 
 void SW_VES_init_run(
     SW_VEGESTAB_INFO_INPUTS *parmsIn,
-    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     SW_SITE_SIM *SW_SiteSim,
     LyrIndex n_transp_lyrs[],
     IntU count,
@@ -103,7 +103,7 @@ void SW_VES_new_year(IntU count);
 void spp_init(
     SW_VEGESTAB_INFO_INPUTS *parmsIn,
     unsigned int sppnum,
-    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     SW_SITE_SIM *SW_SiteSim,
     LyrIndex n_transp_lyrs[],
     LOG_INFO *LogInfo
