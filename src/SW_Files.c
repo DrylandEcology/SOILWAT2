@@ -66,15 +66,16 @@ void SW_F_CleanOutDir(char *outDir, LOG_INFO *LogInfo) {
 
     char inbuf[FILENAME_MAX] = {'\0'};
     Bool clearDir = swTRUE;
+    const int maxDepth = 10;
 
 #if defined(SWNETCDF)
     clearDir = swFALSE;
-    (void) snprintf(inbuf, FILENAME_MAX, "%s.csv", outDir);
+    (void) snprintf(inbuf, FILENAME_MAX, "%s*.csv", outDir);
 #else
     (void) snprintf(inbuf, FILENAME_MAX, "%s", outDir);
 #endif
 
-    if (!RemoveFiles(inbuf, clearDir, LogInfo)) {
+    if (!RemoveFiles(inbuf, clearDir, maxDepth, LogInfo)) {
         LogError(
             LogInfo,
             LOGWARN,
@@ -114,6 +115,7 @@ void SW_F_read(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
     int resSNP;
     char buf[FILENAME_MAX];
     char inbuf[MAX_FILENAMESIZE];
+    char logDir[MAX_FILENAMESIZE];
 
     char *MyFileName = SW_PathInputs->txtInFiles[eFirst];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -132,7 +134,7 @@ void SW_F_read(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
 #endif
 
         switch (lineno) {
-        case 9:
+        case 10:
             resSNP = snprintf(
                 SW_PathInputs->txtWeatherPrefix,
                 sizeof SW_PathInputs->txtWeatherPrefix,
@@ -184,6 +186,27 @@ void SW_F_read(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
         );
         goto closeFile;
     }
+
+#ifdef SOILWAT
+    if (0 == strcmp(SW_PathInputs->txtInFiles[eLog], "stdout")) {
+        LogInfo->logfp = stdout;
+    } else if (0 == strcmp(SW_PathInputs->txtInFiles[eLog], "stderr")) {
+        LogInfo->logfp = stderr;
+    } else {
+        DirName(SW_PathInputs->txtInFiles[eLog], logDir);
+
+        if (!DirExists(logDir)) {
+            MkDir(logDir, LogInfo);
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
+        }
+        LogInfo->logfp =
+            OpenFile(SW_PathInputs->txtInFiles[eLog], "w", LogInfo);
+    }
+#else
+    (void) logDir;
+#endif
 
 closeFile: { CloseFile(&f, LogInfo); }
 }

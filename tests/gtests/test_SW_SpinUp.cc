@@ -459,7 +459,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                 // Run (a short) simulation
                 local_sw.Model.startyr = 1980;
                 local_sw.Model.endyr = 1980;
-                SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+                SW_CTL_main(&local_sw, &SW_Domain.OutDom, &LogInfo);
                 // exit test program if unexpected error
                 sw_fail_on_error(&local_LogInfo);
 
