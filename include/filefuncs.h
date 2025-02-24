@@ -39,7 +39,9 @@ Bool ChDir(const char *d);
 
 void MkDir(const char *dname, LOG_INFO *LogInfo);
 
-Bool RemoveFiles(const char *fspec, Bool clearDir, LOG_INFO *LogInfo);
+Bool RemoveFiles(
+    const char *fspec, Bool clearDir, int maxDepth, LOG_INFO *LogInfo
+);
 
 Bool CopyFile(const char *from, const char *to, LOG_INFO *LogInfo);
 
