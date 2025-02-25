@@ -729,7 +729,8 @@ void SW_CTL_run_current_year(
     int debug = 0;
 #endif
 
-    TimeInt *doy = &sw->ModelSim.doy; // base1
+    // TimeInt *doy = &sw->ModelSim.doy; // base1
+    fprintf(stderr, "After 'loop'\n");
 
 #ifdef SWDEBUG
     if (debug) {
@@ -742,7 +743,8 @@ void SW_CTL_run_current_year(
         return; // Exit function prematurely due to error
     }
 
-    for (*doy = sw->ModelSim.firstdoy; *doy <= sw->ModelSim.lastdoy; (*doy)++) {
+    // for (*doy = sw->ModelSim.firstdoy; *doy <= sw->ModelSim.lastdoy; (*doy)++) {
+    fprintf(stderr, "After 'loop'\n");
         #ifdef SWDEBUG
         if (debug) {
             sw_printf("\t: begin doy = %d ... ", *doy);
@@ -810,7 +812,8 @@ void SW_CTL_run_current_year(
             sw_printf("doy = %d completed.\n", *doy);
         }
 #endif
-    }
+    // }
+    fprintf(stderr, "After 'loop'\n");
 
 #ifdef SWDEBUG
     if (debug) {
