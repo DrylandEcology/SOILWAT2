@@ -297,6 +297,7 @@ void SW_CTL_main(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 #endif
 
         SW_CTL_run_current_year(sw, OutDom, LogInfo);
+        fprintf(stderr, "After current year\n");
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -737,17 +738,19 @@ void SW_CTL_run_current_year(
 #endif
 
     begin_year(sw, OutDom, LogInfo);
+    fprintf(stderr, "After begin year\n");
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
     for (*doy = sw->ModelSim.firstdoy; *doy <= sw->ModelSim.lastdoy; (*doy)++) {
-#ifdef SWDEBUG
+        #ifdef SWDEBUG
         if (debug) {
             sw_printf("\t: begin doy = %d ... ", *doy);
         }
-#endif
+        #endif
         begin_day(sw, LogInfo);
+        fprintf(stderr, "After begin day\n");
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -758,12 +761,14 @@ void SW_CTL_run_current_year(
         }
 #endif
         SW_SWC_water_flow(sw, LogInfo);
+        fprintf(stderr, "After water flow\n");
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
         // Only run this function if SWA output is asked for
         if (sw->VegProdIn.use_SWA) {
+            fprintf(stderr, "Before repartitioned soilwater\n");
             calculate_repartitioned_soilwater(
                 &sw->SoilWatSim,
                 sw->SiteSim.swcBulk_atSWPcrit,
@@ -771,9 +776,11 @@ void SW_CTL_run_current_year(
                 sw->RunIn.VegProdRunIn.veg,
                 sw->SiteSim.n_layers
             );
+            fprintf(stderr, "After repartitioned soilwater\n");
         }
 
         if (sw->VegEstabSim.use) {
+            fprintf(stderr, "Before check estab\n");
             SW_VES_checkestab(
                 sw->VegEstabIn.parms,
                 sw->VegEstabSim.parms,
@@ -783,6 +790,7 @@ void SW_CTL_run_current_year(
                 sw->ModelSim.firstdoy,
                 sw->VegEstabSim.count
             );
+            fprintf(stderr, "After check estab\n");
         }
 
 #ifdef SWDEBUG
@@ -791,6 +799,7 @@ void SW_CTL_run_current_year(
         }
 #endif
         end_day(sw, OutDom, LogInfo);
+        fprintf(stderr, "After end day\n");
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -808,7 +817,9 @@ void SW_CTL_run_current_year(
     }
 #endif
     if (sw->ModelSim.doOutput) {
+        fprintf(stderr, "Before flush output\n");
         SW_OUT_flush(sw, OutDom, LogInfo);
+        fprintf(stderr, "After flush output\n");
     }
 
 #ifdef SWDEBUG
@@ -1237,7 +1248,6 @@ void SW_CTL_run_sw(
     SW_RUN_deepCopy(
         sw_template, &local_sw, &SW_Domain->OutDom, copyWeather, LogInfo
     );
-    fprintf(stderr, "After deep copy\n");
     if (LogInfo->stopRun) {
         goto freeMem; // Free memory and skip simulation run
     }
@@ -1265,7 +1275,6 @@ void SW_CTL_run_sw(
     if (LogInfo->stopRun) {
         goto freeMem; // Exit function prematurely due to error
     }
-    fprintf(stderr, "After intiailize run\n");
 
     // Run spinup for suid
     if (SW_Domain->SW_SpinUp.spinup) {
@@ -1278,7 +1287,6 @@ void SW_CTL_run_sw(
         if (LogInfo->stopRun) {
             goto freeMem; // Exit function prematurely due to error
         }
-        fprintf(stderr, "After run spinup\n");
     }
 
     // Run simulation for suid
@@ -1288,7 +1296,6 @@ void SW_CTL_run_sw(
     }
 #endif
     SW_CTL_main(&local_sw, &SW_Domain->OutDom, LogInfo);
-    fprintf(stderr, "After after simulation run\n");
     if (LogInfo->stopRun) {
         goto freeMem; // Free memory and exit function prematurely due to error
     }
@@ -1318,7 +1325,6 @@ freeMem:
     }
 #endif
     SW_CTL_clear_model(swTRUE, &local_sw);
-    fprintf(stderr, "After clear model\n");
 
     (void) SW_Domain;
     (void) ncSuid;
