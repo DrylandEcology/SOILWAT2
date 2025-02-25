@@ -759,7 +759,7 @@ void SW_CTL_run_current_year(
         }
 #endif
         fprintf(stderr, "Before SW_SWC_water_flow call\n");
-        // SW_SWC_water_flow(sw, LogInfo);
+        SW_SWC_water_flow(sw, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -767,6 +767,7 @@ void SW_CTL_run_current_year(
 
         // Only run this function if SWA output is asked for
         if (sw->VegProdIn.use_SWA) {
+            fprintf(stderr, "Before calculate_repartitioned_soilwater\n");
             calculate_repartitioned_soilwater(
                 &sw->SoilWatSim,
                 sw->SiteSim.swcBulk_atSWPcrit,
@@ -774,9 +775,11 @@ void SW_CTL_run_current_year(
                 sw->RunIn.VegProdRunIn.veg,
                 sw->SiteSim.n_layers
             );
+            fprintf(stderr, "After calculate_repartitioned_soilwater\n");
         }
 
         if (sw->VegEstabSim.use) {
+            fprintf(stderr, "Before SW_VES_checkestab\n");
             SW_VES_checkestab(
                 sw->VegEstabIn.parms,
                 sw->VegEstabSim.parms,
@@ -786,14 +789,18 @@ void SW_CTL_run_current_year(
                 sw->ModelSim.firstdoy,
                 sw->VegEstabSim.count
             );
+            fprintf(stderr, "After SW_VES_checkestab\n");
         }
 
-#ifdef SWDEBUG
+        #ifdef SWDEBUG
         if (debug) {
             sw_printf("ending day ... ");
         }
-#endif
+        #endif
+
+        fprintf(stderr, "Before end_day\n");
         end_day(sw, OutDom, LogInfo);
+        fprintf(stderr, "After end_day\n");
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
