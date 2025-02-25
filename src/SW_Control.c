@@ -143,7 +143,9 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 }
 
 static void begin_day(SW_RUN *sw, LOG_INFO *LogInfo) {
+    fprintf(stderr, "Before new model day\n");
     SW_MDL_new_day(&sw->ModelSim);
+    fprintf(stderr, "Before new weather day\n");
     SW_WTH_new_day(
         &sw->WeatherIn,
         &sw->WeatherSim,
@@ -296,8 +298,8 @@ void SW_CTL_main(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         }
 #endif
 
-        // SW_CTL_run_current_year(sw, OutDom, LogInfo);
-        // fprintf(stderr, "After current year\n");
+        SW_CTL_run_current_year(sw, OutDom, LogInfo);
+        fprintf(stderr, "After current year\n");
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -729,8 +731,7 @@ void SW_CTL_run_current_year(
     int debug = 0;
 #endif
 
-    // TimeInt *doy = &sw->ModelSim.doy; // base1
-    fprintf(stderr, "After 'loop'\n");
+    TimeInt *doy = &sw->ModelSim.doy; // base1
 
 #ifdef SWDEBUG
     if (debug) {
@@ -738,19 +739,18 @@ void SW_CTL_run_current_year(
     }
 #endif
 
-    // begin_year(sw, OutDom, LogInfo);
+    begin_year(sw, OutDom, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    // for (*doy = sw->ModelSim.firstdoy; *doy <= sw->ModelSim.lastdoy; (*doy)++) {
-    fprintf(stderr, "After 'loop'\n");
+    for (*doy = sw->ModelSim.firstdoy; *doy <= sw->ModelSim.lastdoy; (*doy)++) {
         #ifdef SWDEBUG
         if (debug) {
             sw_printf("\t: begin doy = %d ... ", *doy);
         }
         #endif
-        // begin_day(sw, LogInfo);
+        begin_day(sw, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -761,7 +761,7 @@ void SW_CTL_run_current_year(
         }
 #endif
         fprintf(stderr, "Before SW_SWC_water_flow call\n");
-        // SW_SWC_water_flow(sw, LogInfo);
+        SW_SWC_water_flow(sw, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -812,7 +812,7 @@ void SW_CTL_run_current_year(
             sw_printf("doy = %d completed.\n", *doy);
         }
 #endif
-    // }
+    }
     fprintf(stderr, "After 'loop'\n");
 
 #ifdef SWDEBUG
