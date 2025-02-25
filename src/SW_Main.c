@@ -59,8 +59,10 @@ int main(int argc, char **argv) {
     unsigned long userSUID;
 
     // Start overall wall time
+    printf("Before wall time start\n");
     SW_WT_StartTime(&SW_WallTime);
 
+    printf("Before log initialization\n");
     // Initialize logs and pointer objects
     sw_init_logs(stdout, &LogInfo);
 
