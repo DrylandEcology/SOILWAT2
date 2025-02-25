@@ -268,7 +268,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     double Tveg;
     double HRveg;
 #endif
-
+    fprintf(stderr, "Start of SW_Water_Flow\n");
     double swpot_avg[NVEGTYPES];
     double transp_veg[NVEGTYPES];
     double transp_rate[NVEGTYPES];
