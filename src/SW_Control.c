@@ -158,7 +158,7 @@ static void begin_day(SW_RUN *sw, LOG_INFO *LogInfo) {
 
 static void end_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     int localTOffset = 1; // tOffset is one when called from this function
-    fprintf(stderr, "Within end day");
+    fprintf(stderr, "Within end day\n");
     if (sw->ModelSim.doOutput) {
         collect_values(sw, OutDom, swFALSE, localTOffset, LogInfo);
         if (LogInfo->stopRun) {

@@ -3475,7 +3475,9 @@ void SW_OUT_write_today(
                 );
             }
 #endif
+            fprintf(stderr, "Before gather\n");
             OutDom->pfunc_text[k](outPeriod, sw, LogInfo);
+            fprintf(stderr, "After gather\n");
 
 #elif defined(RSOILWAT) || defined(SWNETCDF)
 #ifdef SWDEBUG
