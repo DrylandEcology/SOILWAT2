@@ -126,8 +126,8 @@ void SW_SWC_init_ptrs(
 void SW_SWC_construct(
     SW_SOILWAT_INPUTS *SW_SoilWatIn,
     SW_SOILWAT_SIM *SW_SoilWatSim,
-    SW_SOILWAT_OUTPUTS *sw_p_accu,
-    SW_SOILWAT_OUTPUTS *sw_p_oagg
+    SW_SOILWAT_OUTPUTS sw_p_accu[],
+    SW_SOILWAT_OUTPUTS sw_p_oagg[]
 );
 
 void SW_SWC_deconstruct(

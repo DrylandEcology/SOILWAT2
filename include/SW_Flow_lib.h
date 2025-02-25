@@ -56,7 +56,7 @@
 #define SW_WATERSUBS_H
 
 #include "include/generic.h"        // for Bool
-#include "include/SW_datastructs.h" // for LOG_INFO, SW_SITE, SW_ST_SIM
+#include "include/SW_datastructs.h" // for LOG_INFO, SW_SITE_*, SW_ST_SIM
 #include "include/SW_Defines.h"     // for TimeInt, MAX_LAYERS, MAX_ST_RGR
 
 #ifdef __cplusplus

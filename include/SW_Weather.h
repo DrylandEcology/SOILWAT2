@@ -271,8 +271,8 @@ void SW_WTH_init_run(SW_WEATHER_SIM *SW_WeatherSim);
 void SW_WTH_construct(
     SW_WEATHER_INPUTS *SW_WeatherIn,
     SW_WEATHER_SIM *SW_WeatherSim,
-    SW_WEATHER_OUTPUTS *p_accu,
-    SW_WEATHER_OUTPUTS *p_oagg
+    SW_WEATHER_OUTPUTS weath_p_accu[],
+    SW_WEATHER_OUTPUTS weath_p_oagg[]
 );
 
 void SW_WTH_init_ptrs(SW_WEATHER_HIST **allHist);

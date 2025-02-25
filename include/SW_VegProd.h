@@ -121,7 +121,12 @@ void SW_VPD_fix_cover(
     SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn, LOG_INFO *LogInfo
 );
 
-void SW_VPD_construct(SW_VEGPROD_INPUTS *SW_VegProdIn);
+void SW_VPD_construct(
+    SW_VEGPROD_INPUTS *SW_VegProdIn,
+    SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,
+    SW_VEGPROD_OUTPUTS vp_p_oagg[],
+    SW_VEGPROD_OUTPUTS vp_p_accu[]
+);
 
 void estimateVegetationFromClimate(
     SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,

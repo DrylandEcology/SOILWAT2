@@ -577,8 +577,12 @@ void SW_CTL_setup_model(
     // delay SW_MKV_construct() until we know from inputs whether we need it
     // SW_SKY_construct() not need
     SW_SIT_construct(&sw->SiteIn, &sw->SiteSim);
-    SW_VES_construct(&sw->VegEstabIn, &sw->VegEstabSim);
-    SW_VPD_construct(&sw->VegProdIn);
+    SW_VES_construct(
+        &sw->VegEstabIn, &sw->VegEstabSim, sw->ves_p_oagg, sw->ves_p_accu
+    );
+    SW_VPD_construct(
+        &sw->VegProdIn, &sw->RunIn.VegProdRunIn, sw->vp_p_oagg, sw->vp_p_accu
+    );
     // SW_FLW_construct() not needed
     SW_OUT_construct(
         zeroOutInfo, &sw->SW_PathOutputs, OutDom, &sw->OutRun, LogInfo

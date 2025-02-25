@@ -62,7 +62,10 @@ void SW_VES_init_ptrs(
 );
 
 void SW_VES_construct(
-    SW_VEGESTAB_INPUTS *SW_VegEstabIn, SW_VEGESTAB_SIM *SW_VegEstabSim
+    SW_VEGESTAB_INPUTS *SW_VegEstabIn,
+    SW_VEGESTAB_SIM *SW_VegEstabSim,
+    SW_VEGESTAB_OUTPUTS ves_p_oagg[],
+    SW_VEGESTAB_OUTPUTS ves_p_accu[]
 );
 
 void SW_VegEstab_alloc_outptrs(

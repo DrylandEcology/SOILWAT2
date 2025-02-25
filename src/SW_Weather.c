@@ -1951,24 +1951,30 @@ void SW_WTH_init_ptrs(SW_WEATHER_HIST **allHist) { *allHist = NULL; }
 @brief Constructor for SW_Weather.
 
 @param[out] SW_WeatherIn Weather input struct (SW_WEATHER_INPUTS)
-@param[out] p_accu Weather output accumulation array
-@param[out] p_oagg Weather output aggregator array
 @param[out] SW_WeatherSim A struct of type SW_WEATHER_SIM holding
 values that are used during simulations
+@param[out] weath_p_accu A list of output structs of type SW_WEATHER_OUTPUTS
+    to accumulate output
+@param[out] weath_p_oagg A list of output structs of type SW_WEATHER_OUTPUTS
+    to aggregate output
 */
 void SW_WTH_construct(
     SW_WEATHER_INPUTS *SW_WeatherIn,
     SW_WEATHER_SIM *SW_WeatherSim,
-    SW_WEATHER_OUTPUTS *p_accu,
-    SW_WEATHER_OUTPUTS *p_oagg
+    SW_WEATHER_OUTPUTS *weath_p_accu,
+    SW_WEATHER_OUTPUTS *weath_p_oagg
 ) {
     /* =================================================== */
+    OutPeriod pd;
 
     // Clear the module structure:
     memset(SW_WeatherIn, 0, sizeof(SW_WEATHER_INPUTS));
     memset(SW_WeatherSim, 0, sizeof(SW_WEATHER_SIM));
-    memset(p_accu, 0, sizeof(SW_WEATHER_OUTPUTS));
-    memset(p_oagg, 0, sizeof(SW_WEATHER_OUTPUTS));
+
+    ForEachOutPeriod(pd) {
+        memset(weath_p_accu, 0, sizeof(SW_WEATHER_OUTPUTS));
+        memset(weath_p_oagg, 0, sizeof(SW_WEATHER_OUTPUTS));
+    }
 
     SW_WeatherIn->n_years = 0;
 }

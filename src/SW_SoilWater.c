@@ -859,16 +859,16 @@ void SW_SWC_init_ptrs(
     soil water input values
 @param[in,out] SW_SoilWatSim Struct of type SW_SOILWAT_SIM containing
     soil water simulation values
-@param[in,out] sw_p_accu A list of output structs of type SW_VEGESTAB_OUTPUTS
+@param[in,out] sw_p_accu A list of output structs of type SW_SOILWAT_OUTPUTS
     to accumulate output
-@param[in,out] sw_p_oagg A list of output structs of type SW_VEGESTAB_OUTPUTS
+@param[in,out] sw_p_oagg A list of output structs of type SW_SOILWAT_OUTPUTS
     to aggregate output
 */
 void SW_SWC_construct(
     SW_SOILWAT_INPUTS *SW_SoilWatIn,
     SW_SOILWAT_SIM *SW_SoilWatSim,
-    SW_SOILWAT_OUTPUTS *sw_p_accu,
-    SW_SOILWAT_OUTPUTS *sw_p_oagg
+    SW_SOILWAT_OUTPUTS sw_p_accu[],
+    SW_SOILWAT_OUTPUTS sw_p_oagg[]
 ) {
     /* =================================================== */
     OutPeriod pd;

@@ -94,9 +94,11 @@ TEST_F(VegProdFixtureTest, VegProdConstructor) {
     // to avoid a leak)
     SW_VEGPROD_INPUTS VegProdIn;
     SW_VEGPROD_RUN_INPUTS VegProdRunIn;
+    SW_VEGPROD_OUTPUTS vp_p_oagg[NVEGTYPES];
+    SW_VEGPROD_OUTPUTS vp_p_accu[NVEGTYPES];
     int k;
 
-    SW_VPD_construct(&VegProdIn);
+    SW_VPD_construct(&VegProdIn, &VegProdRunIn, vp_p_oagg, vp_p_accu);
 
     SW_VPD_init_run(
         &VegProdRunIn,

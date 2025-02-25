@@ -593,16 +593,34 @@ void SW_VPD_fix_cover(
 }
 
 /**
-@brief Constructor for VegProdIn->
+@brief Constructor for VegProd input and output information
 
 @param[out] SW_VegProdIn VegProdIn Struct of type SW_VEGPROD_INPUTS describing
 surface cover conditions in the simulation
+@param[out] SW_VegProdRunIn Struct of type SW_VEGPROD_RUN_INPUTS that
+    holds run-specific input information about vegetation production
+@param[out] vp_p_oagg A list of output structs of type SW_VEGPROD_OUTPUTS
+    to accumulate output
+@param[out] vp_p_accu A list of output structs of type SW_VEGPROD_OUTPUTS
+    to aggregate output
 */
-void SW_VPD_construct(SW_VEGPROD_INPUTS *SW_VegProdIn) {
+void SW_VPD_construct(
+    SW_VEGPROD_INPUTS *SW_VegProdIn,
+    SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,
+    SW_VEGPROD_OUTPUTS vp_p_oagg[],
+    SW_VEGPROD_OUTPUTS vp_p_accu[]
+) {
     /* =================================================== */
+    OutPeriod pd;
 
     // Clear the module structure:
     memset(SW_VegProdIn, 0, sizeof(SW_VEGPROD_INPUTS));
+    memset(SW_VegProdRunIn, 0, sizeof(SW_VEGPROD_RUN_INPUTS));
+
+    ForEachOutPeriod(pd) {
+        memset(vp_p_oagg, 0, sizeof(SW_VEGPROD_OUTPUTS));
+        memset(vp_p_accu, 0, sizeof(SW_VEGPROD_OUTPUTS));
+    }
 }
 
 void SW_VPD_init_run(

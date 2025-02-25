@@ -127,9 +127,16 @@ void SW_VES_init_ptrs(
     input information about vegetation within the simulation
 @param[out] SW_VegEstabSim Struct of type SW_VEGESTAB_SIM holding all
     simulation information about vegetation within the simulation
+@param[out] ves_p_oagg A list of output structs of type SW_VEGESTAB_OUTPUTS
+    to accumulate output
+@param[out] ves_p_accu A list of output structs of type SW_VEGESTAB_OUTPUTS
+    to aggregate output
 */
 void SW_VES_construct(
-    SW_VEGESTAB_INPUTS *SW_VegEstabIn, SW_VEGESTAB_SIM *SW_VegEstabSim
+    SW_VEGESTAB_INPUTS *SW_VegEstabIn,
+    SW_VEGESTAB_SIM *SW_VegEstabSim,
+    SW_VEGESTAB_OUTPUTS ves_p_oagg[],
+    SW_VEGESTAB_OUTPUTS ves_p_accu[]
 ) {
     /* =================================================== */
     /* note that an initializer that is called during
@@ -137,10 +144,16 @@ void SW_VES_construct(
      * will need to free all allocated memory first
      * before clearing structure.
      */
+    OutPeriod pd;
 
     // Clear the module structure:
     memset(SW_VegEstabIn, 0, sizeof(SW_VEGESTAB_INPUTS));
     memset(SW_VegEstabSim, 0, sizeof(SW_VEGESTAB_SIM));
+
+    ForEachOutPeriod(pd) {
+        memset(ves_p_oagg, 0, sizeof(SW_VEGESTAB_OUTPUTS));
+        memset(ves_p_accu, 0, sizeof(SW_VEGESTAB_OUTPUTS));
+    }
 }
 
 /**
@@ -174,7 +187,7 @@ void SW_VES_deconstruct(
 
 
     ForEachOutPeriod(pd) {
-        // De-allocate days and parameters
+        // De-allocate days
         if (SW_VegEstabSim->count > 0) {
             if (pd > eSW_Day && !isnull(ves_p_oagg[pd].days)) {
                 free(ves_p_oagg[eSW_Year].days);
@@ -283,7 +296,7 @@ void SW_VES_read2(
 ) {
 
     SW_VES_deconstruct(SW_VegEstabIn, SW_VegEstabSim, ves_p_accu, ves_p_oagg);
-    SW_VES_construct(SW_VegEstabIn, SW_VegEstabSim);
+    SW_VES_construct(SW_VegEstabIn, SW_VegEstabSim, ves_p_oagg, ves_p_accu);
 
     SW_VegEstabSim->use = use_VegEstab;
 
