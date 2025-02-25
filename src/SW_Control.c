@@ -296,8 +296,8 @@ void SW_CTL_main(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         }
 #endif
 
-        SW_CTL_run_current_year(sw, OutDom, LogInfo);
-        fprintf(stderr, "After current year\n");
+        // SW_CTL_run_current_year(sw, OutDom, LogInfo);
+        // fprintf(stderr, "After current year\n");
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
