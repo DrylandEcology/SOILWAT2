@@ -800,12 +800,12 @@ void SW_CTL_run_current_year(
 //         }
 //         #endif
 
-//         fprintf(stderr, "Before end_day\n");
-//         end_day(sw, OutDom, LogInfo);
-//         fprintf(stderr, "After end_day\n");
-//         if (LogInfo->stopRun) {
-//             return; // Exit function prematurely due to error
-//         }
+        fprintf(stderr, "Before end_day\n");
+        end_day(sw, OutDom, LogInfo);
+        fprintf(stderr, "After end_day\n");
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 
 #ifdef SWDEBUG
         if (debug) {
