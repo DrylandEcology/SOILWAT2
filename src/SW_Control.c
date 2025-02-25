@@ -738,7 +738,6 @@ void SW_CTL_run_current_year(
 #endif
 
     begin_year(sw, OutDom, LogInfo);
-    fprintf(stderr, "After begin year\n");
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -750,7 +749,6 @@ void SW_CTL_run_current_year(
         }
         #endif
         begin_day(sw, LogInfo);
-        fprintf(stderr, "After begin day\n");
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -761,14 +759,12 @@ void SW_CTL_run_current_year(
         }
 #endif
         SW_SWC_water_flow(sw, LogInfo);
-        fprintf(stderr, "After water flow\n");
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
         // Only run this function if SWA output is asked for
         if (sw->VegProdIn.use_SWA) {
-            fprintf(stderr, "Before repartitioned soilwater\n");
             calculate_repartitioned_soilwater(
                 &sw->SoilWatSim,
                 sw->SiteSim.swcBulk_atSWPcrit,
@@ -776,11 +772,9 @@ void SW_CTL_run_current_year(
                 sw->RunIn.VegProdRunIn.veg,
                 sw->SiteSim.n_layers
             );
-            fprintf(stderr, "After repartitioned soilwater\n");
         }
 
         if (sw->VegEstabSim.use) {
-            fprintf(stderr, "Before check estab\n");
             SW_VES_checkestab(
                 sw->VegEstabIn.parms,
                 sw->VegEstabSim.parms,
@@ -790,7 +784,6 @@ void SW_CTL_run_current_year(
                 sw->ModelSim.firstdoy,
                 sw->VegEstabSim.count
             );
-            fprintf(stderr, "After check estab\n");
         }
 
 #ifdef SWDEBUG
@@ -799,7 +792,6 @@ void SW_CTL_run_current_year(
         }
 #endif
         end_day(sw, OutDom, LogInfo);
-        fprintf(stderr, "After end day\n");
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -817,9 +809,7 @@ void SW_CTL_run_current_year(
     }
 #endif
     if (sw->ModelSim.doOutput) {
-        fprintf(stderr, "Before flush output\n");
         SW_OUT_flush(sw, OutDom, LogInfo);
-        fprintf(stderr, "After flush output\n");
     }
 
 #ifdef SWDEBUG

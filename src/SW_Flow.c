@@ -321,21 +321,23 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
                  before water flow of first day because we use un/frozen
            states), but calculate soil temperature at end of each day
         */
-        SW_ST_setup_run(
-            &sw->StRegSimVals,
-            &sw->RunIn.SoilRunIn,
-            &sw->SiteIn,
-            &sw->SiteSim,
-            sw->RunIn.SiteRunIn.Tsoil_constant,
-            &sw->SoilWatSim.soiltempError,
-            &sw->StRegSimVals.soil_temp_init,
-            sw->WeatherSim.temp_avg,
+       fprintf(stderr, "Before setup run\n");
+       SW_ST_setup_run(
+           &sw->StRegSimVals,
+           &sw->RunIn.SoilRunIn,
+           &sw->SiteIn,
+           &sw->SiteSim,
+           sw->RunIn.SiteRunIn.Tsoil_constant,
+           &sw->SoilWatSim.soiltempError,
+           &sw->StRegSimVals.soil_temp_init,
+           sw->WeatherSim.temp_avg,
             sw->SoilWatSim.swcBulk[Today],
             &sw->WeatherSim.surfaceAvg,
             sw->SoilWatSim.avgLyrTemp,
             sw->SoilWatSim.lyrFrozen,
             LogInfo
         );
+        fprintf(stderr, "After setup run\n");
 
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -351,6 +353,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
              sw->RunIn.VegProdRunIn.veg[k].cov.fCover;
     }
 
+    fprintf(stderr, "Before solar radiation\n");
     sw->SoilWatSim.H_gt = solar_radiation(
         &sw->AtmDemSim,
         doy,
@@ -371,6 +374,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
+    fprintf(stderr, "After solar radiation\n");
 
     sw->SoilWatSim.pet =
         sw->SiteIn.pet_scale * petfunc(
