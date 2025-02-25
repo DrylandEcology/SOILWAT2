@@ -165,6 +165,7 @@ static void end_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
             return; // Exit function prematurely due to error
         }
     }
+    fprintf(stderr, "After collect values\n");
 
     SW_SWC_end_day(&sw->SoilWatSim, sw->SiteSim.n_layers);
 }
