@@ -64,8 +64,11 @@ int main(int argc, char **argv) {
     // Initialize logs and pointer objects
     sw_init_logs(stdout, &LogInfo);
 
+    printf("Before domain pointer initialization\n");
     SW_DOM_init_ptrs(&SW_Domain);
+    printf("Before control pointer initialization\n");
     SW_CTL_init_ptrs(&sw_template);
+    printf("After control pointer initialization\n");
 
     // Obtain user input from the command line
     sw_init_args(
@@ -82,6 +85,7 @@ int main(int argc, char **argv) {
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
+    printf("After argument initialization setup\n");
 
     // SOILWAT2: do print progress to console unless user requests quiet
     LogInfo.printProgressMsg = (Bool) (!LogInfo.QuietMode);
@@ -91,11 +95,13 @@ int main(int argc, char **argv) {
         sw_print_version();
     }
 
+    printf("Before domain setup\n");
     // setup and construct domain
     SW_CTL_setup_domain(userSUID, renameDomainTemplateNC, &SW_Domain, &LogInfo);
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
+    printf("After domain setup\n");
 
     // setup and construct model template (independent of inputs)
     SW_CTL_setup_model(&sw_template, &SW_Domain.OutDom, swTRUE, &LogInfo);
