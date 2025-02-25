@@ -3301,7 +3301,7 @@ void SW_OUT_write_today(
 #ifdef SWDEBUG
     int debug = 0;
 #endif
-
+    fprintf(stderr, "Start of write out\n");
     TimeInt t = 0xffff;
     OutPeriod p;
     Bool writeit[SW_OUTNPERIODS];
