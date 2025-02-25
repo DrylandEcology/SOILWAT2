@@ -3127,26 +3127,31 @@ void collect_values(
     TimeInt tOffset,
     LOG_INFO *LogInfo
 ) {
+    fprintf(stderr, "SWC sum\n");
     SW_OUT_sum_today(sw, OutDom, eSWC, bFlush_output, tOffset, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
+    fprintf(stderr, "WTH sum\n");
     SW_OUT_sum_today(sw, OutDom, eWTH, bFlush_output, tOffset, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
+    fprintf(stderr, "VES sum\n");
     SW_OUT_sum_today(sw, OutDom, eVES, bFlush_output, tOffset, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
+    fprintf(stderr, "VPD sum\n");
     SW_OUT_sum_today(sw, OutDom, eVPD, bFlush_output, tOffset, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
+    fprintf(stderr, "write today\n");
     SW_OUT_write_today(sw, OutDom, bFlush_output, tOffset, LogInfo);
 }
 
