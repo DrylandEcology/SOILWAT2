@@ -363,9 +363,11 @@ void SW_CTL_RunSimSet(
 
         /* Check if suid needs to be simulated */
         SW_DOM_calc_ncSuid(SW_Domain, suid, ncSuid);
+        fprintf(stderr, "After ncSuid calculation\n");
 
         ok_suid =
             SW_DOM_CheckProgress(progFileID, progVarID, ncSuid, &local_LogInfo);
+        fprintf(stderr, "After check progress\n");
 
         if (ok_suid && !local_LogInfo.stopRun && runSims) {
             /* Count simulation run */
@@ -373,8 +375,11 @@ void SW_CTL_RunSimSet(
 
             /* Simulate suid */
             set_walltime(&tsr, &ok_tsr);
+            fprintf(stderr, "After set walltime\n");
             SW_CTL_run_sw(sw_template, SW_Domain, ncSuid, &local_LogInfo);
+            fprintf(stderr, "After run sw\n");
             SW_WT_TimeRun(tsr, ok_tsr, SW_WallTime);
+            fprintf(stderr, "After get wall time\n");
 
             /* Report progress for suid */
             SW_DOM_SetProgress(
@@ -385,6 +390,7 @@ void SW_CTL_RunSimSet(
                 ncSuid,
                 &local_LogInfo
             );
+            fprintf(stderr, "After set progress\n");
         }
 
         /* Report errors and warnings for suid */
@@ -1231,6 +1237,7 @@ void SW_CTL_run_sw(
     SW_RUN_deepCopy(
         sw_template, &local_sw, &SW_Domain->OutDom, copyWeather, LogInfo
     );
+    fprintf(stderr, "After deep copy\n");
     if (LogInfo->stopRun) {
         goto freeMem; // Free memory and skip simulation run
     }
@@ -1258,6 +1265,7 @@ void SW_CTL_run_sw(
     if (LogInfo->stopRun) {
         goto freeMem; // Exit function prematurely due to error
     }
+    fprintf(stderr, "After intiailize run\n");
 
     // Run spinup for suid
     if (SW_Domain->SW_SpinUp.spinup) {
@@ -1270,6 +1278,7 @@ void SW_CTL_run_sw(
         if (LogInfo->stopRun) {
             goto freeMem; // Exit function prematurely due to error
         }
+        fprintf(stderr, "After run spinup\n");
     }
 
     // Run simulation for suid
@@ -1279,6 +1288,7 @@ void SW_CTL_run_sw(
     }
 #endif
     SW_CTL_main(&local_sw, &SW_Domain->OutDom, LogInfo);
+    fprintf(stderr, "After after simulation run\n");
     if (LogInfo->stopRun) {
         goto freeMem; // Free memory and exit function prematurely due to error
     }
@@ -1308,6 +1318,7 @@ freeMem:
     }
 #endif
     SW_CTL_clear_model(swTRUE, &local_sw);
+    fprintf(stderr, "After clear model\n");
 
     (void) SW_Domain;
     (void) ncSuid;
