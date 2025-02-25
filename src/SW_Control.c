@@ -748,7 +748,7 @@ void SW_CTL_run_current_year(
             sw_printf("\t: begin doy = %d ... ", *doy);
         }
         #endif
-        // begin_day(sw, LogInfo);
+        begin_day(sw, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -759,7 +759,7 @@ void SW_CTL_run_current_year(
         }
 #endif
         fprintf(stderr, "Before SW_SWC_water_flow call\n");
-        SW_SWC_water_flow(sw, LogInfo);
+        // SW_SWC_water_flow(sw, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
