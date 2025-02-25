@@ -758,12 +758,10 @@ void SW_CTL_run_current_year(
             sw_printf("simulate water ... ");
         }
 #endif
-        fprintf(stderr, "Before water flow\n");
         SW_SWC_water_flow(sw, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
-        fprintf(stderr, "After water flow\n");
 
         // Only run this function if SWA output is asked for
         if (sw->VegProdIn.use_SWA) {

@@ -948,6 +948,7 @@ void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo) {
                 );
             }
 #endif
+            fprintf(stderr, "Before adjust\n");
             SW_SWC_adjust_swc(
                 sw->SoilWatSim.swcBulk,
                 sw->SiteSim.swcBulk_min,
@@ -956,6 +957,7 @@ void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo) {
                 sw->SiteSim.n_layers,
                 LogInfo
             );
+            fprintf(stderr, "After adjust\n");
 
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
@@ -976,10 +978,12 @@ void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             sw_printf("\n'SW_SWC_water_flow': call 'SW_Water_Flow'.\n");
         }
 #endif
+        fprintf(stderr, "Before Water flow\n");
         SW_Water_Flow(sw, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
+        fprintf(stderr, "Before Water flow\n");
     }
 
 #ifdef SWDEBUG
