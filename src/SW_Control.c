@@ -743,21 +743,23 @@ void SW_CTL_run_current_year(
     }
 
     for (*doy = sw->ModelSim.firstdoy; *doy <= sw->ModelSim.lastdoy; (*doy)++) {
-//         #ifdef SWDEBUG
-//         if (debug) {
-//             sw_printf("\t: begin doy = %d ... ", *doy);
-//         }
-//         #endif
-//         begin_day(sw, LogInfo);
-//         if (LogInfo->stopRun) {
-//             return; // Exit function prematurely due to error
-//         }
+        #ifdef SWDEBUG
+        if (debug) {
+            sw_printf("\t: begin doy = %d ... ", *doy);
+        }
+        #endif
+        fprintf(stderr, "Before begin day\n");
+        begin_day(sw, LogInfo);
+        fprintf(stderr, "After begin day\n");
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 
-// #ifdef SWDEBUG
-//         if (debug) {
-//             sw_printf("simulate water ... ");
-//         }
-// #endif
+#ifdef SWDEBUG
+        if (debug) {
+            sw_printf("simulate water ... ");
+        }
+#endif
         // fprintf(stderr, "Before SW_SWC_water_flow call\n");
         // SW_SWC_water_flow(sw, LogInfo);
         // if (LogInfo->stopRun) {
