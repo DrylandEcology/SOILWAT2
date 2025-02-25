@@ -935,9 +935,11 @@ void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo) {
      first year of simulation"
      */
 
+    fprintf(stderr, "Before conditional\n");
     if (sw->SoilWatIn.hist_use &&
         !missing(sw->SoilWatIn.hist.swc[sw->ModelSim.doy - 1][1])) {
 
+        fprintf(stderr, "In conditional\n");
         if (!(sw->ModelSim.doy == sw->ModelIn.startstart &&
               sw->ModelSim.year == sw->ModelIn.startyr)) {
 
