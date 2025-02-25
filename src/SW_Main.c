@@ -110,11 +110,13 @@ int main(int argc, char **argv) {
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
+    fprintf(stderr, "After model setup\n");
 
     SW_MDL_get_ModelRun(&sw_template.ModelIn, &SW_Domain, NULL, &LogInfo);
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
+    fprintf(stderr, "After get model run\n");
 
     // read user inputs
     SW_CTL_read_inputs_from_disk(
@@ -126,6 +128,7 @@ int main(int argc, char **argv) {
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
+    fprintf(stderr, "After input read\n");
 
 #if defined(SWNETCDF)
     SW_NCIN_check_input_config(
@@ -169,6 +172,7 @@ int main(int argc, char **argv) {
         if (LogInfo.stopRun) {
             goto finishProgram;
         }
+        fprintf(stderr, "After weather finalization\n");
 #if defined(SWNETCDF)
     }
 #endif
@@ -189,6 +193,7 @@ int main(int argc, char **argv) {
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
+    fprintf(stderr, "After domain soil profile\n");
 
     // initialize output
     SW_OUT_setup_output(
@@ -202,6 +207,7 @@ int main(int argc, char **argv) {
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
+    fprintf(stderr, "After output setup\n");
 
 #if defined(SWNETCDF)
     SW_NCOUT_read_out_vars(
@@ -230,6 +236,7 @@ int main(int argc, char **argv) {
 
         goto closeFiles;
     }
+    fprintf(stderr, "After output create files\n");
 
     if (EchoInits) {
         echo_all_inputs(&sw_template, &SW_Domain.OutDom, &LogInfo);
@@ -237,22 +244,29 @@ int main(int argc, char **argv) {
 
     // run simulations: loop over simulation set
     SW_CTL_RunSimSet(&sw_template, &SW_Domain, &SW_WallTime, &LogInfo);
+    fprintf(stderr, "After simulation run\n");
 
 closeFiles: {
     // finish-up output (not used with rSOILWAT2)
     SW_OUT_close_files(
         &sw_template.SW_PathOutputs, &SW_Domain.OutDom, &LogInfo
     );
+    fprintf(stderr, "After output file close\n");
 }
 
 finishProgram: {
     // de-allocate all memory
     SW_DOM_deconstruct(&SW_Domain); // Includes closing netCDF files if needed
+    fprintf(stderr, "After domain deconstruct\n");
     SW_CTL_clear_model(swTRUE, &sw_template);
+    fprintf(stderr, "After model clear\n");
 
     sw_write_warnings("(main) ", &LogInfo);
+    fprintf(stderr, "After report warnings\n");
     SW_WT_ReportTime(SW_WallTime, &LogInfo);
+    fprintf(stderr, "After time reporting\n");
     sw_wrapup_logs(&LogInfo);
+    fprintf(stderr, "After wrap up logs\n");
     sw_fail_on_error(&LogInfo);
     if (LogInfo.printProgressMsg) {
         sw_message("ended.");
