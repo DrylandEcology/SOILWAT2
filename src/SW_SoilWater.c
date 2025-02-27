@@ -955,7 +955,7 @@ void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo) {
                 sw->SoilWatSim.swcBulk,
                 sw->SiteSim.swcBulk_min,
                 sw->ModelSim.doy,
-                sw->SoilWatIn.hist,
+                &sw->SoilWatIn.hist,
                 sw->SiteSim.n_layers,
                 LogInfo
             );
@@ -1675,7 +1675,7 @@ void SW_SWC_adjust_swc(
     double swcBulk[][MAX_LAYERS],
     double swcBulk_min[],
     TimeInt doy,
-    SW_SOILWAT_HIST SoilWat_hist,
+    SW_SOILWAT_HIST *SoilWat_hist,
     LyrIndex n_layers,
     LOG_INFO *LogInfo
 ) {
@@ -1688,20 +1688,20 @@ void SW_SWC_adjust_swc(
     LyrIndex lyrIndex;
     TimeInt dy = doy - 1;
 
-    switch (SoilWat_hist.method) {
+    switch (SoilWat_hist->method) {
     case SW_Adjust_Avg:
         ForEachSoilLayer(lyrIndex, n_layers) {
-            swcBulk[Today][lyrIndex] += SoilWat_hist.swc[dy][lyrIndex];
+            swcBulk[Today][lyrIndex] += SoilWat_hist->swc[dy][lyrIndex];
             swcBulk[Today][lyrIndex] /= 2.;
         }
         break;
 
     case SW_Adjust_StdErr:
         ForEachSoilLayer(lyrIndex, n_layers) {
-            upper = SoilWat_hist.swc[dy][lyrIndex] +
-                    SoilWat_hist.std_err[dy][lyrIndex];
-            lower = SoilWat_hist.swc[dy][lyrIndex] -
-                    SoilWat_hist.std_err[dy][lyrIndex];
+            upper = SoilWat_hist->swc[dy][lyrIndex] +
+                    SoilWat_hist->std_err[dy][lyrIndex];
+            lower = SoilWat_hist->swc[dy][lyrIndex] -
+                    SoilWat_hist->std_err[dy][lyrIndex];
             if (GT(swcBulk[Today][lyrIndex], upper)) {
                 swcBulk[Today][lyrIndex] = upper;
             } else if (LT(swcBulk[Today][lyrIndex], lower)) {
