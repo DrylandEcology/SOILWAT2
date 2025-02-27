@@ -761,45 +761,45 @@ void SW_CTL_run_current_year(
             sw_printf("simulate water ... ");
         }
 #endif
-        // fprintf(stderr, "Before SW_SWC_water_flow call\n");
-        // SW_SWC_water_flow(sw, LogInfo);
-        // if (LogInfo->stopRun) {
-        //     return; // Exit function prematurely due to error
-        // }
-        // fprintf(stderr, "After SW_SWC_water_flow call\n");
+        fprintf(stderr, "Before SW_SWC_water_flow call\n");
+        SW_SWC_water_flow(sw, LogInfo);
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+        fprintf(stderr, "After SW_SWC_water_flow call\n");
 
-//         // Only run this function if SWA output is asked for
-//         if (sw->VegProdIn.use_SWA) {
-//             fprintf(stderr, "Before calculate_repartitioned_soilwater\n");
-//             calculate_repartitioned_soilwater(
-//                 &sw->SoilWatSim,
-//                 sw->SiteSim.swcBulk_atSWPcrit,
-//                 &sw->VegProdIn,
-//                 sw->RunIn.VegProdRunIn.veg,
-//                 sw->SiteSim.n_layers
-//             );
-//             fprintf(stderr, "After calculate_repartitioned_soilwater\n");
-//         }
+        // Only run this function if SWA output is asked for
+        if (sw->VegProdIn.use_SWA) {
+            fprintf(stderr, "Before calculate_repartitioned_soilwater\n");
+            calculate_repartitioned_soilwater(
+                &sw->SoilWatSim,
+                sw->SiteSim.swcBulk_atSWPcrit,
+                &sw->VegProdIn,
+                sw->RunIn.VegProdRunIn.veg,
+                sw->SiteSim.n_layers
+            );
+            fprintf(stderr, "After calculate_repartitioned_soilwater\n");
+        }
 
-//         if (sw->VegEstabSim.use) {
-//             fprintf(stderr, "Before SW_VES_checkestab\n");
-//             SW_VES_checkestab(
-//                 sw->VegEstabIn.parms,
-//                 sw->VegEstabSim.parms,
-//                 sw->WeatherSim.temp_avg,
-//                 sw->SoilWatSim.swcBulk,
-//                 sw->ModelSim.doy,
-//                 sw->ModelSim.firstdoy,
-//                 sw->VegEstabSim.count
-//             );
-//             fprintf(stderr, "After SW_VES_checkestab\n");
-//         }
+        if (sw->VegEstabSim.use) {
+            fprintf(stderr, "Before SW_VES_checkestab\n");
+            SW_VES_checkestab(
+                sw->VegEstabIn.parms,
+                sw->VegEstabSim.parms,
+                sw->WeatherSim.temp_avg,
+                sw->SoilWatSim.swcBulk,
+                sw->ModelSim.doy,
+                sw->ModelSim.firstdoy,
+                sw->VegEstabSim.count
+            );
+            fprintf(stderr, "After SW_VES_checkestab\n");
+        }
 
-//         #ifdef SWDEBUG
-//         if (debug) {
-//             sw_printf("ending day ... ");
-//         }
-//         #endif
+        #ifdef SWDEBUG
+        if (debug) {
+            sw_printf("ending day ... ");
+        }
+        #endif
 
         fprintf(stderr, "Before end_day\n");
         end_day(sw, OutDom, LogInfo);
@@ -822,7 +822,7 @@ void SW_CTL_run_current_year(
     }
 #endif
     if (sw->ModelSim.doOutput) {
-        // SW_OUT_flush(sw, OutDom, LogInfo);
+        SW_OUT_flush(sw, OutDom, LogInfo);
     }
 
 #ifdef SWDEBUG
