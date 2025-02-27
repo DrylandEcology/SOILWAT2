@@ -1085,13 +1085,13 @@ void calculate_repartitioned_soilwater(
         }
 
         // call function to get repartioned swa values
-        get_dSWAbulk(
-            i,
-            SW_VegProdIn,
-            veg,
-            SW_SoilWatSim->swa_master,
-            SW_SoilWatSim->dSWA_repartitioned_sum
-        );
+        // get_dSWAbulk(
+        //     i,
+        //     SW_VegProdIn,
+        //     veg,
+        //     SW_SoilWatSim->swa_master,
+        //     SW_SoilWatSim->dSWA_repartitioned_sum
+        // );
     }
 }
 
