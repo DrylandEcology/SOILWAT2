@@ -31,6 +31,8 @@ void SW_MKV_init_ptrs(SW_MARKOV_INPUTS *SW_MarkovIn);
 
 void allocateMKV(SW_MARKOV_INPUTS *SW_MarkovIn, LOG_INFO *LogInfo);
 
+void deallocateMKV(SW_MARKOV_INPUTS *SW_Markov);
+
 void SW_MKV_deconstruct(SW_MARKOV_INPUTS *SW_MarkovIn);
 
 Bool SW_MKV_read_prob(
