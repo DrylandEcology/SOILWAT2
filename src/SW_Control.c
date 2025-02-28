@@ -433,7 +433,7 @@ program exit
 */
 void SW_CTL_init_ptrs(SW_RUN *sw) {
     SW_WTH_init_ptrs(&sw->RunIn.weathRunAllHist);
-    // SW_MKV_init_ptrs() not needed
+    SW_MKV_init_ptrs(&sw->MarkovIn);
     SW_VES_init_ptrs(
         &sw->VegEstabIn, &sw->VegEstabSim, sw->ves_p_accu, sw->ves_p_oagg
     );
@@ -614,7 +614,7 @@ void SW_CTL_clear_model(Bool full_reset, SW_RUN *sw) {
 
     SW_MDL_deconstruct();
     SW_WTH_deconstruct(&sw->RunIn.weathRunAllHist);
-    // SW_MKV_deconstruct() not needed
+    SW_MKV_deconstruct(&sw->MarkovIn);
     // SW_SKY_INPUTS_deconstruct() not needed
     // SW_SIT_deconstruct() not needed
     SW_VES_deconstruct(

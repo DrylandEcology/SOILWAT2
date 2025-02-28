@@ -27,6 +27,12 @@ void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV_INPUTS *SW_MarkovIn);
 
 void copyMKV(SW_MARKOV_INPUTS *dest_MKV, SW_MARKOV_INPUTS *template_MKV);
 
+void SW_MKV_init_ptrs(SW_MARKOV_INPUTS *SW_MarkovIn);
+
+void allocateMKV(SW_MARKOV_INPUTS *SW_MarkovIn, LOG_INFO *LogInfo);
+
+void SW_MKV_deconstruct(SW_MARKOV_INPUTS *SW_MarkovIn);
+
 Bool SW_MKV_read_prob(
     char *txtInFiles[], SW_MARKOV_INPUTS *SW_MarkovIn, LOG_INFO *LogInfo
 );

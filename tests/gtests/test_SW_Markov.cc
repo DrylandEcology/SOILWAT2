@@ -4,7 +4,7 @@
 #include "include/SW_Defines.h"     // for sw_random_t
 #include "include/SW_Files.h"       // for SW_F_deconstruct, eMarkovCov
 #include "include/SW_Main_lib.h"    // for sw_fail_on_error, sw_init_logs
-#include "include/SW_Markov.h"      // for SW_MKV_init_...
+#include "include/SW_Markov.h"      // for SW_MKV_deconstruct, SW_MKV_init_...
 #include "gmock/gmock.h"            // for HasSubstr, MakePredicateFormatte...
 #include "gtest/gtest.h"            // for Test, Message, TestPartResult, Po...
 #include <stdio.h>                  // for NULL
@@ -31,6 +31,7 @@ TEST(WeatherGeneratorTest, WeatherGeneratorConstructor) {
     int const rng_seed = 8;
 
     SW_MKV_construct(rng_seed, &SW_MarkovIn);
+    allocateMKV(&SW_MarkovIn, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Check that at least first array elements are initialized to zero
@@ -42,6 +43,8 @@ TEST(WeatherGeneratorTest, WeatherGeneratorConstructor) {
     EXPECT_DOUBLE_EQ(0., SW_MarkovIn.cfxd[0]);
     EXPECT_DOUBLE_EQ(0., SW_MarkovIn.cfnw[0]);
     EXPECT_DOUBLE_EQ(0., SW_MarkovIn.cfnd[0]);
+
+    SW_MKV_deconstruct(&SW_MarkovIn);
 }
 
 // Check seeding of RNG for weather generator
@@ -82,6 +85,7 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
 
     // Initialize weather generator and read input files mkv_cover and mkv_prob
     rng_seed = seed;
+    SW_MKV_init_ptrs(&SW_MarkovIn);
     SW_MKV_setup(
         &SW_MarkovIn,
         rng_seed,
@@ -101,10 +105,14 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
         ppt0[k] = ppt;
     }
 
+    // Reset weather generator
+    SW_MKV_deconstruct(&SW_MarkovIn);
+
 
     //--- Expect that generated weather is different with time-varying seed ----
     // Initialize weather generator and read input files mkv_cover and mkv_prob
     rng_seed = 0;
+    SW_MKV_init_ptrs(&SW_MarkovIn);
     SW_MKV_setup(
         &SW_MarkovIn,
         rng_seed,
@@ -128,10 +136,14 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
         }
     }
 
+    // Reset weather generator
+    SW_MKV_deconstruct(&SW_MarkovIn);
+
 
     //--- Expect that generated weather is reproducible with same seed ------
     // Initialize weather generator and read input files mkv_cover and mkv_prob
     rng_seed = seed;
+    SW_MKV_init_ptrs(&SW_MarkovIn);
     SW_MKV_setup(
         &SW_MarkovIn,
         rng_seed,
@@ -151,6 +163,10 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
         EXPECT_DOUBLE_EQ(tmin, tmin0[k]);
         EXPECT_DOUBLE_EQ(ppt, ppt0[k]);
     }
+
+
+    // Reset weather generator
+    SW_MKV_deconstruct(&SW_MarkovIn);
 
 
     // Deallocate arrays
@@ -176,7 +192,9 @@ TEST(WeatherGeneratorTest, WeatherGeneratormvnorm) {
     double tmin = 0.;
     double tval;
 
+    SW_MKV_init_ptrs(&SW_MarkovIn);
     SW_MKV_construct(rng_seed, &SW_MarkovIn); // initialize markov_rng
+    allocateMKV(&SW_MarkovIn, &LogInfo);
 
     for (k = 0; k < n; k++) {
         // Create temperature values: here with n = 3: -10, 0, +10
@@ -245,6 +263,8 @@ TEST(WeatherGeneratorTest, WeatherGeneratormvnorm) {
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
         EXPECT_DOUBLE_EQ(tmin, tmax);
+
+        SW_MKV_deconstruct(&SW_MarkovIn);
     }
 }
 
@@ -259,7 +279,9 @@ TEST(WeatherGeneratorTest, WeatherGeneratormvnormDeathTest) {
     double tmax = 0.;
     double tmin = 0.;
 
+    SW_MKV_init_ptrs(&SW_MarkovIn);
     SW_MKV_construct(rng_seed, &SW_MarkovIn); // initialize markov_rng
+    allocateMKV(&SW_MarkovIn, &LogInfo);      // allocates memory
 
     // Case: (wT_covar ^ 2 / wTmax_var) > wTmin_var --> LOGERROR
     (test_mvnorm)(
@@ -269,6 +291,8 @@ TEST(WeatherGeneratorTest, WeatherGeneratormvnormDeathTest) {
 
     // Detect failure by error message
     EXPECT_THAT(LogInfo.errorMsg, HasSubstr("Bad covariance matrix"));
+
+    SW_MKV_deconstruct(&SW_MarkovIn);
 }
 
 // Test correcting daily temperatures for wet/dry days
@@ -290,7 +314,9 @@ TEST(WeatherGeneratorTest, WeatherGeneratorWetDryTemperatureCorrection) {
     double const cf_pos = 5.;
     double const cf_neg = -5.;
 
+    SW_MKV_init_ptrs(&SW_MarkovIn);
     SW_MKV_construct(rng_seed, &SW_MarkovIn); // initialize markov_rng
+    allocateMKV(&SW_MarkovIn, &LogInfo);      // allocates memory
 
     // Case: tmax = tmin; wet; cf_*_wet = 0 ==> input = output
     tmax = t0;
@@ -327,5 +353,7 @@ TEST(WeatherGeneratorTest, WeatherGeneratorWetDryTemperatureCorrection) {
     EXPECT_DOUBLE_EQ(tmax, t0 + cf_pos);
     EXPECT_DOUBLE_EQ(tmin, fmin(tmax, t10 + cf_pos));
     EXPECT_LE(tmin, tmax);
+
+    SW_MKV_deconstruct(&SW_MarkovIn);
 }
 } // namespace
