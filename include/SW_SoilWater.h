@@ -172,7 +172,7 @@ void SW_SWC_adjust_swc(
     double swcBulk[][MAX_LAYERS],
     double swcBulk_min[],
     TimeInt doy,
-    SW_SOILWAT_HIST SoilWat_hist,
+    SW_SOILWAT_HIST *SoilWat_hist,
     LyrIndex n_layers,
     LOG_INFO *LogInfo
 );
