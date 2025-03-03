@@ -26,14 +26,15 @@ jobs:
       shell: bash
 
     - name: Checkout repository and submodules
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         submodules: recursive
 
     - name: Install cygwin (windows)
-      uses: cygwin/cygwin-install-action@v3
+      uses: cygwin/cygwin-install-action@v5
       with:
-        packages: gcc-core gcc-g++ make
+        allow-test-packages: true
+        packages: gcc-core=14.2.1+20250222-0.1,gcc-g++=14.2.1+20250222-0.1,make
 
     - name: Print compiler versions as seen by make
       run: make compiler_version
