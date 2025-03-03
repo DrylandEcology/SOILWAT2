@@ -216,9 +216,7 @@ void SW_RUN_deepCopy(
         copyMKV(&dest->MarkovIn, &source->MarkovIn);
     }
 
-    /* Copy vegetation establishment parameters */
     SW_VES_init_ptrs(
-        &dest->VegEstabIn,
         &dest->VegEstabSim,
         dest->ves_p_accu,
         dest->ves_p_oagg
@@ -227,25 +225,19 @@ void SW_RUN_deepCopy(
         return; // Exit prematurely due to error
     }
 
-    for (IntU speciesNum = 0; speciesNum < source->VegEstabSim.count;
-         speciesNum++) {
-        new_species(&dest->VegEstabIn, &dest->VegEstabSim, LogInfo);
-        if (LogInfo->stopRun) {
-            return; // Exit prematurely due to error
-        }
+    /* Copy vegetation establishment parameters */
+    dest->VegEstabSim.count = source->VegEstabSim.count;
+    memcpy(
+        &dest->VegEstabIn.parms,
+        &source->VegEstabIn.parms,
+        sizeof(dest->VegEstabIn.parms)
+    );
 
-        memcpy(
-            &dest->VegEstabIn.parms[speciesNum],
-            &source->VegEstabIn.parms[speciesNum],
-            sizeof(dest->VegEstabIn.parms[speciesNum])
-        );
-
-        memcpy(
-            &dest->VegEstabSim.parms[speciesNum],
-            &source->VegEstabSim.parms[speciesNum],
-            sizeof(dest->VegEstabSim.parms[speciesNum])
-        );
-    }
+    memcpy(
+        &dest->VegEstabSim.parms,
+        &source->VegEstabSim.parms,
+        sizeof(dest->VegEstabSim.parms)
+    );
 
     SW_VegEstab_alloc_outptrs(
         dest->ves_p_accu, dest->ves_p_oagg, source->VegEstabSim.count, LogInfo
@@ -435,7 +427,7 @@ void SW_CTL_init_ptrs(SW_RUN *sw) {
     SW_WTH_init_ptrs(&sw->RunIn.weathRunAllHist);
     SW_MKV_init_ptrs(&sw->MarkovIn);
     SW_VES_init_ptrs(
-        &sw->VegEstabIn, &sw->VegEstabSim, sw->ves_p_accu, sw->ves_p_oagg
+        &sw->VegEstabSim, sw->ves_p_accu, sw->ves_p_oagg
     );
     // SW_VPD_init_ptrs() not needed
     SW_OUT_init_ptrs(&sw->OutRun, &sw->SW_PathOutputs);
@@ -618,7 +610,7 @@ void SW_CTL_clear_model(Bool full_reset, SW_RUN *sw) {
     // SW_SKY_INPUTS_deconstruct() not needed
     // SW_SIT_deconstruct() not needed
     SW_VES_deconstruct(
-        &sw->VegEstabIn, &sw->VegEstabSim, sw->ves_p_accu, sw->ves_p_oagg
+        &sw->VegEstabSim, sw->ves_p_accu, sw->ves_p_oagg
     );
     // SW_VPD_deconstruct() not needed
     // SW_FLW_deconstruct() not needed

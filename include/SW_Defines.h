@@ -68,6 +68,7 @@ extern "C" {
 #define MAX_LAYERS 25        /**< Maximum number of soil layers */
 #define MAX_TRANSP_REGIONS 4 /**< Maximum number of transpiration regions */
 #define MAX_ST_RGR 100       /**< Maximum number of soil temperature nodes */
+#define MAX_NSPECIES 20      /**< Maximum number of vegetation species */
 
 /** An integer representing the max calendar year that is supported. The number
  * just needs to be reasonable, it is an artifical limit. */
