@@ -163,22 +163,30 @@ lib_gmock := $(dir_build_test)/lib$(gmock).a
 ifeq (,$(findstring -DSWTXT,$(CPPFLAGS)))
   # not txt-based SOILWAT2
 
-  # check if nc-based SOILWAT2
-  ifneq (,$(findstring -DSWNC,$(CPPFLAGS)))
-    # define makefile variables SWNETCDF and SWUDUNITS if defined via CPPFLAGS
+  ifneq (,$(findstring -DSWNCMPI,$(CPPFLAGS)))
+    # use udunits, netCDFs and MPI
     SWNC = 1
-    override CPPFLAGS += -DSWNETCDF -DSWUDUNITS
+    SWMPI = 1
+    override CPPFLAGS += -DSWNETCDF -DSWUDUNITS -DSWMPI
 
   else
-    # if SWNC is not defined, then check for SWNETCDF and SWUDUNITS individually
-    ifneq (,$(findstring -DSWNETCDF,$(CPPFLAGS)))
-      # define makefile variable SWNETCDF if defined via CPPFLAGS
-      SWNETCDF = 1
-    endif
+    # check if nc-based SOILWAT2
+    ifneq (,$(findstring -DSWNC,$(CPPFLAGS)))
+      # define makefile variables SWNETCDF and SWUDUNITS if defined via CPPFLAGS
+      SWNC = 1
+      override CPPFLAGS += -DSWNETCDF -DSWUDUNITS
 
-    ifneq (,$(findstring -DSWUDUNITS,$(CPPFLAGS)))
-      # define makefile variable SWUDUNITS if defined via CPPFLAGS
-      SWUDUNITS = 1
+    else
+      # if SWNC is not defined, then check for SWNETCDF and SWUDUNITS individually
+      ifneq (,$(findstring -DSWNETCDF,$(CPPFLAGS)))
+        # define makefile variable SWNETCDF if defined via CPPFLAGS
+        SWNETCDF = 1
+      endif
+
+      ifneq (,$(findstring -DSWUDUNITS,$(CPPFLAGS)))
+        # define makefile variable SWUDUNITS if defined via CPPFLAGS
+        SWUDUNITS = 1
+      endif
     endif
   endif
 endif
@@ -383,6 +391,10 @@ sources_core += $(dir_src)/SW_netCDF_General.c
 sources_core += $(dir_src)/SW_netCDF_Input.c
 sources_core += $(dir_src)/SW_netCDF_Output.c
 sources_core += $(dir_src)/SW_datastructs.c
+endif
+
+ifdef SWMPI
+sources_core += $(dir_src)/SW_MPI.c
 endif
 
 sources_lib = $(sources_core)
