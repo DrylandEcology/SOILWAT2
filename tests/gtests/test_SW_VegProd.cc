@@ -58,33 +58,33 @@ void calcGrassCoverFromL0(double grass[], const double L0[]) {
     }
 }
 
-void assert_decreasing_SWPcrit(SW_VEGPROD *SW_VegProd) {
+void assert_decreasing_SWPcrit(SW_VEGPROD_INPUTS *SW_VegProdIn) {
     int rank;
     int vegtype;
 
     for (rank = 0; rank < NVEGTYPES - 1; rank++) {
-        vegtype = SW_VegProd->rank_SWPcrits[rank];
+        vegtype = SW_VegProdIn->rank_SWPcrits[rank];
 
         /*
         sw_printf("Rank=%d is vegtype=%d with SWPcrit=%f\n",
                 rank, vegtype,
-                SW_VegProd.critSoilWater[vegtype]);
+                VegProdIn.critSoilWater[vegtype]);
         */
 
         // Check that SWPcrit of `vegtype` is larger or equal to
         // SWPcrit of the vegetation type with the next larger rank
         ASSERT_GE(
-            SW_VegProd->critSoilWater[vegtype],
-            SW_VegProd->critSoilWater[SW_VegProd->rank_SWPcrits[rank + 1]]
+            SW_VegProdIn->critSoilWater[vegtype],
+            SW_VegProdIn->critSoilWater[SW_VegProdIn->rank_SWPcrits[rank + 1]]
         );
     }
 }
 
-// Test the SW_VEGPROD constructor 'SW_VPD_construct'
+// Test the SW_VEGPROD_INPUTS constructor 'SW_VPD_construct'
 TEST_F(VegProdFixtureTest, VegProdConstructor) {
-    // This test requires a local copy of SW_VEGPROD to avoid a memory leak
-    // (see issue #205)
-    // -- If using `SW_Run.VegProd` or a global variable
+    // This test requires a local copy of SW_VEGPROD_INPUTS to avoid a memory
+    // leak (see issue #205)
+    // -- If using `SW_Run.VegProdIn` or a global variable
     // (for which `SW_VPD_construct()` has already been called once, e.g.,
     // during the test fixture's `SetUp()`), then this (second) call to
     // `SW_VPD_construct()` would allocate memory a second time
@@ -92,32 +92,37 @@ TEST_F(VegProdFixtureTest, VegProdConstructor) {
     // (the call to `SW_VPD_deconstruct()`during the test fixture's `TearDown()`
     // would see only NULL and thus not de-allocate the required second time
     // to avoid a leak)
-    SW_VEGPROD SW_VegProd;
+    SW_VEGPROD_INPUTS VegProdIn;
+    SW_VEGPROD_RUN_INPUTS VegProdRunIn;
+    SW_VEGPROD_OUTPUTS vp_p_oagg[NVEGTYPES];
+    SW_VEGPROD_OUTPUTS vp_p_accu[NVEGTYPES];
     int k;
 
-    SW_VPD_construct(&SW_VegProd);
-    // allocate memory for output pointers
-    SW_VPD_alloc_outptrs(&SW_VegProd, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    SW_VPD_construct(&VegProdIn, &VegProdRunIn, vp_p_oagg, vp_p_accu);
 
     SW_VPD_init_run(
-        &SW_VegProd, &SW_Run.Weather, &SW_Run.Model, swTRUE, &LogInfo
+        &VegProdRunIn,
+        SW_Run.RunIn.weathRunAllHist,
+        &SW_Run.ModelIn,
+        &SW_Run.ModelSim,
+        swTRUE,
+        SW_Run.RunIn.ModelRunIn.isnorth,
+        VegProdIn.veg_method,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     ForEachVegType(k) {
-        EXPECT_DOUBLE_EQ(1., SW_VegProd.veg[k].co2_multipliers[BIO_INDEX][0]);
+        EXPECT_DOUBLE_EQ(1., VegProdRunIn.veg[k].co2_multipliers[BIO_INDEX][0]);
         EXPECT_DOUBLE_EQ(
-            1., SW_VegProd.veg[k].co2_multipliers[BIO_INDEX][MAX_NYEAR - 1]
+            1., VegProdRunIn.veg[k].co2_multipliers[BIO_INDEX][MAX_NYEAR - 1]
         );
 
-        EXPECT_DOUBLE_EQ(1., SW_VegProd.veg[k].co2_multipliers[WUE_INDEX][0]);
+        EXPECT_DOUBLE_EQ(1., VegProdRunIn.veg[k].co2_multipliers[WUE_INDEX][0]);
         EXPECT_DOUBLE_EQ(
-            1., SW_VegProd.veg[k].co2_multipliers[WUE_INDEX][MAX_NYEAR - 1]
+            1., VegProdRunIn.veg[k].co2_multipliers[WUE_INDEX][MAX_NYEAR - 1]
         );
     }
-
-    SW_VPD_deconstruct(&SW_VegProd);
 }
 
 // Test the application of the biomass CO2-effect
@@ -163,29 +168,29 @@ TEST(VegProdTest, VegProdSumming) {
 TEST_F(VegProdFixtureTest, VegProdrank) {
     int k;
     // Check `get_critical_rank` for normal inputs, e.g., -2.0, -2.0, -3.5, -3.9
-    get_critical_rank(&SW_Run.VegProd);
-    assert_decreasing_SWPcrit(&SW_Run.VegProd);
+    get_critical_rank(&SW_Run.VegProdIn);
+    assert_decreasing_SWPcrit(&SW_Run.VegProdIn);
 
 
     // Check `get_critical_rank` for constant values
-    ForEachVegType(k) { SW_Run.VegProd.critSoilWater[k] = 0.; }
+    ForEachVegType(k) { SW_Run.VegProdIn.critSoilWater[k] = 0.; }
 
-    get_critical_rank(&SW_Run.VegProd);
-    assert_decreasing_SWPcrit(&SW_Run.VegProd);
+    get_critical_rank(&SW_Run.VegProdIn);
+    assert_decreasing_SWPcrit(&SW_Run.VegProdIn);
 
 
     // Check `get_critical_rank` for increasing values
-    ForEachVegType(k) { SW_Run.VegProd.critSoilWater[k] = k; }
+    ForEachVegType(k) { SW_Run.VegProdIn.critSoilWater[k] = k; }
 
-    get_critical_rank(&SW_Run.VegProd);
-    assert_decreasing_SWPcrit(&SW_Run.VegProd);
+    get_critical_rank(&SW_Run.VegProdIn);
+    assert_decreasing_SWPcrit(&SW_Run.VegProdIn);
 
 
     // Check `get_critical_rank` for decreasing values
-    ForEachVegType(k) { SW_Run.VegProd.critSoilWater[k] = NVEGTYPES - k; }
+    ForEachVegType(k) { SW_Run.VegProdIn.critSoilWater[k] = NVEGTYPES - k; }
 
-    get_critical_rank(&SW_Run.VegProd);
-    assert_decreasing_SWPcrit(&SW_Run.VegProd);
+    get_critical_rank(&SW_Run.VegProdIn);
+    assert_decreasing_SWPcrit(&SW_Run.VegProdIn);
 }
 
 TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
@@ -230,21 +235,32 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
     double RelAbundanceL1Expected[5];
     double grassOutputExpected[3];
 
-    SW_Run.Model.startyr = 1980;
-    SW_Run.Model.endyr = 2010;
+    SW_Run.ModelIn.startyr = 1980;
+    SW_Run.ModelIn.endyr = 2010;
 
-    SW_Run.VegProd.veg_method = 1;
-    SW_Run.Model.latitude = 90.0;
+    SW_Run.VegProdIn.veg_method = 1;
+    SW_Run.RunIn.ModelRunIn.latitude = 90.0;
 
     // Reset "SW_Run.Weather.allHist"
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
+    SW_WTH_read(
+        &SW_Run.WeatherIn,
+        &SW_Run.RunIn.weathRunAllHist,
+        &SW_Run.RunIn.SkyRunIn,
+        &SW_Run.ModelIn,
+        SW_Run.RunIn.ModelRunIn.elevation,
+        swTRUE,
+        SW_Run.ModelSim.cum_monthdays,
+        SW_Run.ModelSim.days_in_month,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     finalizeAllWeather(
-        &SW_Run.Markov,
-        &SW_Run.Weather,
-        SW_Run.Model.cum_monthdays,
-        SW_Run.Model.days_in_month,
+        &SW_Run.MarkovIn,
+        &SW_Run.WeatherIn,
+        SW_Run.RunIn.weathRunAllHist,
+        SW_Run.ModelSim.cum_monthdays,
+        SW_Run.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -256,9 +272,9 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
 
     // Calculate climate of the site and add results to "climateOutput"
     calcSiteClimate(
-        SW_Run.Weather.allHist,
-        SW_Run.Model.cum_monthdays,
-        SW_Run.Model.days_in_month,
+        SW_Run.RunIn.weathRunAllHist,
+        SW_Run.ModelSim.cum_monthdays,
+        SW_Run.ModelSim.days_in_month,
         31,
         1980,
         inNorthHem,
@@ -561,21 +577,27 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
 
 
     estimateVegetationFromClimate(
-        &SW_Run.VegProd, SW_Run.Weather.allHist, &SW_Run.Model, &LogInfo
+        &SW_Run.RunIn.VegProdRunIn,
+        SW_Run.RunIn.weathRunAllHist,
+        &SW_Run.ModelIn,
+        &SW_Run.ModelSim,
+        SW_Run.RunIn.ModelRunIn.isnorth,
+        SW_Run.VegProdIn.veg_method,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Loop through RelAbundanceL1 and test results
     for (index = 0; index < 4; index++) {
         EXPECT_NEAR(
-            SW_Run.VegProd.veg[index].cov.fCover,
+            SW_Run.RunIn.VegProdRunIn.veg[index].cov.fCover,
             RelAbundanceL1Expected[index],
             tol6
         );
     }
 
     EXPECT_NEAR(
-        SW_Run.VegProd.bare_cov.fCover,
+        SW_Run.RunIn.VegProdRunIn.bare_cov.fCover,
         RelAbundanceL1Expected[bareGroundL1],
         tol6
     );
@@ -597,9 +619,9 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
     // "climateOutput"
     inNorthHem = swFALSE;
     calcSiteClimate(
-        SW_Run.Weather.allHist,
-        SW_Run.Model.cum_monthdays,
-        SW_Run.Model.days_in_month,
+        SW_Run.RunIn.weathRunAllHist,
+        SW_Run.ModelSim.cum_monthdays,
+        SW_Run.ModelSim.days_in_month,
         31,
         1980,
         inNorthHem,
@@ -815,14 +837,25 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
 
 
     // Reset "SW_Run.Weather.allHist"
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
+    SW_WTH_read(
+        &SW_Run.WeatherIn,
+        &SW_Run.RunIn.weathRunAllHist,
+        &SW_Run.RunIn.SkyRunIn,
+        &SW_Run.ModelIn,
+        SW_Run.RunIn.ModelRunIn.elevation,
+        swTRUE,
+        SW_Run.ModelSim.cum_monthdays,
+        SW_Run.ModelSim.days_in_month,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     finalizeAllWeather(
-        &SW_Run.Markov,
-        &SW_Run.Weather,
-        SW_Run.Model.cum_monthdays,
-        SW_Run.Model.days_in_month,
+        &SW_Run.MarkovIn,
+        &SW_Run.WeatherIn,
+        SW_Run.RunIn.weathRunAllHist,
+        SW_Run.ModelSim.cum_monthdays,
+        SW_Run.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -834,9 +867,9 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
 
     // Calculate climate of the site and add results to "climateOutput"
     calcSiteClimate(
-        SW_Run.Weather.allHist,
-        SW_Run.Model.cum_monthdays,
-        SW_Run.Model.days_in_month,
+        SW_Run.RunIn.weathRunAllHist,
+        SW_Run.ModelSim.cum_monthdays,
+        SW_Run.ModelSim.days_in_month,
         31,
         1980,
         inNorthHem,
@@ -1398,23 +1431,34 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne1DeathTest) {
 
 
     // Reset "SW_Run.Weather.allHist"
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
+    SW_WTH_read(
+        &SW_Run.WeatherIn,
+        &SW_Run.RunIn.weathRunAllHist,
+        &SW_Run.RunIn.SkyRunIn,
+        &SW_Run.ModelIn,
+        SW_Run.RunIn.ModelRunIn.elevation,
+        swTRUE,
+        SW_Run.ModelSim.cum_monthdays,
+        SW_Run.ModelSim.days_in_month,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     finalizeAllWeather(
-        &SW_Run.Markov,
-        &SW_Run.Weather,
-        SW_Run.Model.cum_monthdays,
-        SW_Run.Model.days_in_month,
+        &SW_Run.MarkovIn,
+        &SW_Run.WeatherIn,
+        SW_Run.RunIn.weathRunAllHist,
+        SW_Run.ModelSim.cum_monthdays,
+        SW_Run.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Calculate climate of the site and add results to "climateOutput"
     calcSiteClimate(
-        SW_Run.Weather.allHist,
-        SW_Run.Model.cum_monthdays,
-        SW_Run.Model.days_in_month,
+        SW_Run.RunIn.weathRunAllHist,
+        SW_Run.ModelSim.cum_monthdays,
+        SW_Run.ModelSim.days_in_month,
         31,
         1980,
         inNorthHem,
@@ -1512,14 +1556,25 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne2DeathTest) {
         ===============================================================  */
 
     // Reset "SW_Run.Weather.allHist"
-    SW_WTH_read(&SW_Run.Weather, &SW_Run.Sky, &SW_Run.Model, swTRUE, &LogInfo);
+    SW_WTH_read(
+        &SW_Run.WeatherIn,
+        &SW_Run.RunIn.weathRunAllHist,
+        &SW_Run.RunIn.SkyRunIn,
+        &SW_Run.ModelIn,
+        SW_Run.RunIn.ModelRunIn.elevation,
+        swTRUE,
+        SW_Run.ModelSim.cum_monthdays,
+        SW_Run.ModelSim.days_in_month,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     finalizeAllWeather(
-        &SW_Run.Markov,
-        &SW_Run.Weather,
-        SW_Run.Model.cum_monthdays,
-        SW_Run.Model.days_in_month,
+        &SW_Run.MarkovIn,
+        &SW_Run.WeatherIn,
+        SW_Run.RunIn.weathRunAllHist,
+        SW_Run.ModelSim.cum_monthdays,
+        SW_Run.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1527,9 +1582,9 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne2DeathTest) {
 
     // Calculate climate of the site and add results to "climateOutput"
     calcSiteClimate(
-        SW_Run.Weather.allHist,
-        SW_Run.Model.cum_monthdays,
-        SW_Run.Model.days_in_month,
+        SW_Run.RunIn.weathRunAllHist,
+        SW_Run.ModelSim.cum_monthdays,
+        SW_Run.ModelSim.days_in_month,
         31,
         1980,
         inNorthHem,

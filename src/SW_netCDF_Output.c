@@ -1302,14 +1302,14 @@ This function requires previous calls to
 @param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
 @param[in] txtInFiles Array of program in/output files
-@param[in] parms Array of type SW_VEGESTAB_INFO holding information about
-    species
+@param[in] parmsIn Array of type SW_VEGESTAB_INFO_INPUTS holding input
+    information about species
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCOUT_read_out_vars(
     SW_OUT_DOM *OutDom,
     char *txtInFiles[],
-    SW_VEGESTAB_INFO **parms,
+    SW_VEGESTAB_INFO_INPUTS *parmsIn,
     LOG_INFO *LogInfo
 ) {
 
@@ -1570,7 +1570,7 @@ void SW_NCOUT_read_out_vars(
                                 .reqOutputVars[currOutKey][estVar] = swTRUE;
                             OutDom->netCDFOutput
                                 .outputVarInfo[currOutKey][estVar][index] =
-                                Str_Dup(parms[estVar]->sppname, LogInfo);
+                                Str_Dup(parmsIn[estVar].sppname, LogInfo);
                             break;
 
                         case LONGNAME_INDEX:

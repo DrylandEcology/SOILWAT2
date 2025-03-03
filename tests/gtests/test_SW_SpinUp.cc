@@ -22,40 +22,40 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeGreaterThanDuration) {
     double *prevTemp = new double[n];
     double *prevMoist = new double[n];
 
-    SW_Run.Model.SW_SpinUp.mode = 1;
-    SW_Run.Model.SW_SpinUp.scope = 27;
-    SW_Run.Model.SW_SpinUp.duration = 3;
+    SW_Run.ModelIn.SW_SpinUp.mode = 1;
+    SW_Run.ModelIn.SW_SpinUp.scope = 27;
+    SW_Run.ModelIn.SW_SpinUp.duration = 3;
 
     // Turn on soil temperature simulations
-    SW_Run.Site.use_soil_temp = swTRUE;
+    SW_Run.SiteIn.use_soil_temp = swTRUE;
     // Get initial soil temp and soil moisture levels
     for (i = 0; i < n; i++) {
-        prevTemp[i] = SW_Run.Site.soils.avgLyrTempInit[i];
-        prevMoist[i] = SW_Run.SoilWat.swcBulk[Today][i];
+        prevTemp[i] = SW_Run.RunIn.SoilRunIn.avgLyrTempInit[i];
+        prevMoist[i] = SW_Run.SoilWatSim.swcBulk[Today][i];
     }
     // Turn on spinup flag
-    SW_Run.Model.SW_SpinUp.spinup = swTRUE;
+    SW_Run.ModelIn.SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
     SW_CTL_run_spinup(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run (a short) simulation
-    SW_Run.Model.startyr = 1980;
-    SW_Run.Model.endyr = 1981;
+    SW_Run.ModelIn.startyr = 1980;
+    SW_Run.ModelIn.endyr = 1981;
     SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (i = 0; i < n; i++) {
         // Check soil temp after spinup
-        EXPECT_NE(prevTemp[i], SW_Run.SoilWat.avgLyrTemp[i])
+        EXPECT_NE(prevTemp[i], SW_Run.SoilWatSim.avgLyrTemp[i])
             << "Soil temp error in test " << i << ": "
-            << SW_Run.SoilWat.avgLyrTemp[i];
+            << SW_Run.SoilWatSim.avgLyrTemp[i];
 
         // Check soil moisture after spinup
-        EXPECT_NE(prevMoist[i], SW_Run.SoilWat.swcBulk[Today][i])
+        EXPECT_NE(prevMoist[i], SW_Run.SoilWatSim.swcBulk[Today][i])
             << "Soil moisture error in test " << i << ": "
-            << SW_Run.SoilWat.swcBulk[Today][i];
+            << SW_Run.SoilWatSim.swcBulk[Today][i];
     }
 
     // Deallocate arrays
@@ -70,40 +70,40 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeEqualToDuration) {
     double *prevTemp = new double[n];
     double *prevMoist = new double[n];
 
-    SW_Run.Model.SW_SpinUp.mode = 1;
-    SW_Run.Model.SW_SpinUp.scope = 3;
-    SW_Run.Model.SW_SpinUp.duration = 3;
+    SW_Run.ModelIn.SW_SpinUp.mode = 1;
+    SW_Run.ModelIn.SW_SpinUp.scope = 3;
+    SW_Run.ModelIn.SW_SpinUp.duration = 3;
 
     // Turn on soil temperature simulations
-    SW_Run.Site.use_soil_temp = swTRUE;
+    SW_Run.SiteIn.use_soil_temp = swTRUE;
     // Get initial soil temp and soil moisture levels
     for (i = 0; i < n; i++) {
-        prevTemp[i] = SW_Run.Site.soils.avgLyrTempInit[i];
-        prevMoist[i] = SW_Run.SoilWat.swcBulk[Today][i];
+        prevTemp[i] = SW_Run.RunIn.SoilRunIn.avgLyrTempInit[i];
+        prevMoist[i] = SW_Run.SoilWatSim.swcBulk[Today][i];
     }
     // Turn on spinup flag
-    SW_Run.Model.SW_SpinUp.spinup = swTRUE;
+    SW_Run.ModelIn.SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
     SW_CTL_run_spinup(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run (a short) simulation
-    SW_Run.Model.startyr = 1980;
-    SW_Run.Model.endyr = 1981;
+    SW_Run.ModelIn.startyr = 1980;
+    SW_Run.ModelIn.endyr = 1981;
     SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (i = 0; i < n; i++) {
         // Check soil temp after spinup
-        EXPECT_NE(prevTemp[i], SW_Run.SoilWat.avgLyrTemp[i])
+        EXPECT_NE(prevTemp[i], SW_Run.SoilWatSim.avgLyrTemp[i])
             << "Soil temp error in test " << i << ": "
-            << SW_Run.SoilWat.avgLyrTemp[i];
+            << SW_Run.SoilWatSim.avgLyrTemp[i];
 
         // Check soil moisture after spinup
-        EXPECT_NE(prevMoist[i], SW_Run.SoilWat.swcBulk[Today][i])
+        EXPECT_NE(prevMoist[i], SW_Run.SoilWatSim.swcBulk[Today][i])
             << "Soil moisture error in test " << i << ": "
-            << SW_Run.SoilWat.swcBulk[Today][i];
+            << SW_Run.SoilWatSim.swcBulk[Today][i];
     }
 
     // Deallocate arrays
@@ -118,40 +118,40 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeLessThanDuration) {
     double *prevTemp = new double[n];
     double *prevMoist = new double[n];
 
-    SW_Run.Model.SW_SpinUp.mode = 1;
-    SW_Run.Model.SW_SpinUp.scope = 1;
-    SW_Run.Model.SW_SpinUp.duration = 3;
+    SW_Run.ModelIn.SW_SpinUp.mode = 1;
+    SW_Run.ModelIn.SW_SpinUp.scope = 1;
+    SW_Run.ModelIn.SW_SpinUp.duration = 3;
 
     // Turn on soil temperature simulations
-    SW_Run.Site.use_soil_temp = swTRUE;
+    SW_Run.SiteIn.use_soil_temp = swTRUE;
     // Get initial soil temp and soil moisture levels
     for (i = 0; i < n; i++) {
-        prevTemp[i] = SW_Run.Site.soils.avgLyrTempInit[i];
-        prevMoist[i] = SW_Run.SoilWat.swcBulk[Today][i];
+        prevTemp[i] = SW_Run.RunIn.SoilRunIn.avgLyrTempInit[i];
+        prevMoist[i] = SW_Run.SoilWatSim.swcBulk[Today][i];
     }
     // Turn on spinup flag
-    SW_Run.Model.SW_SpinUp.spinup = swTRUE;
+    SW_Run.ModelIn.SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
     SW_CTL_run_spinup(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run (a short) simulation
-    SW_Run.Model.startyr = 1980;
-    SW_Run.Model.endyr = 1981;
+    SW_Run.ModelIn.startyr = 1980;
+    SW_Run.ModelIn.endyr = 1981;
     SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (i = 0; i < n; i++) {
         // Check soil temp after spinup
-        EXPECT_NE(prevTemp[i], SW_Run.SoilWat.avgLyrTemp[i])
+        EXPECT_NE(prevTemp[i], SW_Run.SoilWatSim.avgLyrTemp[i])
             << "Soil temp error in test " << i << ": "
-            << SW_Run.SoilWat.avgLyrTemp[i];
+            << SW_Run.SoilWatSim.avgLyrTemp[i];
 
         // Check soil moisture after spinup
-        EXPECT_NE(prevMoist[i], SW_Run.SoilWat.swcBulk[Today][i])
+        EXPECT_NE(prevMoist[i], SW_Run.SoilWatSim.swcBulk[Today][i])
             << "Soil moisture error in test " << i << ": "
-            << SW_Run.SoilWat.swcBulk[Today][i];
+            << SW_Run.SoilWatSim.swcBulk[Today][i];
     }
 
     // Deallocate arrays
@@ -166,40 +166,40 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeGreaterThanDuration) {
     double *prevTemp = new double[n];
     double *prevMoist = new double[n];
 
-    SW_Run.Model.SW_SpinUp.mode = 2;
-    SW_Run.Model.SW_SpinUp.scope = 27;
-    SW_Run.Model.SW_SpinUp.duration = 3;
+    SW_Run.ModelIn.SW_SpinUp.mode = 2;
+    SW_Run.ModelIn.SW_SpinUp.scope = 27;
+    SW_Run.ModelIn.SW_SpinUp.duration = 3;
 
     // Turn on soil temperature simulations
-    SW_Run.Site.use_soil_temp = swTRUE;
+    SW_Run.SiteIn.use_soil_temp = swTRUE;
     // Get initial soil temp and soil moisture levels
     for (i = 0; i < n; i++) {
-        prevTemp[i] = SW_Run.Site.soils.avgLyrTempInit[i];
-        prevMoist[i] = SW_Run.SoilWat.swcBulk[Today][i];
+        prevTemp[i] = SW_Run.RunIn.SoilRunIn.avgLyrTempInit[i];
+        prevMoist[i] = SW_Run.SoilWatSim.swcBulk[Today][i];
     }
     // Turn on spinup flag
-    SW_Run.Model.SW_SpinUp.spinup = swTRUE;
+    SW_Run.ModelIn.SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
     SW_CTL_run_spinup(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run (a short) simulation
-    SW_Run.Model.startyr = 1980;
-    SW_Run.Model.endyr = 1981;
+    SW_Run.ModelIn.startyr = 1980;
+    SW_Run.ModelIn.endyr = 1981;
     SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (i = 0; i < n; i++) {
         // Check soil temp after spinup
-        EXPECT_NE(prevTemp[i], SW_Run.SoilWat.avgLyrTemp[i])
+        EXPECT_NE(prevTemp[i], SW_Run.SoilWatSim.avgLyrTemp[i])
             << "Soil temp error in test " << i << ": "
-            << SW_Run.SoilWat.avgLyrTemp[i];
+            << SW_Run.SoilWatSim.avgLyrTemp[i];
 
         // Check soil moisture after spinup
-        EXPECT_NE(prevMoist[i], SW_Run.SoilWat.swcBulk[Today][i])
+        EXPECT_NE(prevMoist[i], SW_Run.SoilWatSim.swcBulk[Today][i])
             << "Soil moisture error in test " << i << ": "
-            << SW_Run.SoilWat.swcBulk[Today][i];
+            << SW_Run.SoilWatSim.swcBulk[Today][i];
     }
 
     // Deallocate arrays
@@ -214,40 +214,40 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeEqualToDuration) {
     double *prevTemp = new double[n];
     double *prevMoist = new double[n];
 
-    SW_Run.Model.SW_SpinUp.mode = 2;
-    SW_Run.Model.SW_SpinUp.scope = 3;
-    SW_Run.Model.SW_SpinUp.duration = 3;
+    SW_Run.ModelIn.SW_SpinUp.mode = 2;
+    SW_Run.ModelIn.SW_SpinUp.scope = 3;
+    SW_Run.ModelIn.SW_SpinUp.duration = 3;
 
     // Turn on soil temperature simulations
-    SW_Run.Site.use_soil_temp = swTRUE;
+    SW_Run.SiteIn.use_soil_temp = swTRUE;
     // Get initial soil temp and soil moisture levels
     for (i = 0; i < n; i++) {
-        prevTemp[i] = SW_Run.Site.soils.avgLyrTempInit[i];
-        prevMoist[i] = SW_Run.SoilWat.swcBulk[Today][i];
+        prevTemp[i] = SW_Run.RunIn.SoilRunIn.avgLyrTempInit[i];
+        prevMoist[i] = SW_Run.SoilWatSim.swcBulk[Today][i];
     }
     // Turn on spinup flag
-    SW_Run.Model.SW_SpinUp.spinup = swTRUE;
+    SW_Run.ModelIn.SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
     SW_CTL_run_spinup(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run (a short) simulation
-    SW_Run.Model.startyr = 1980;
-    SW_Run.Model.endyr = 1981;
+    SW_Run.ModelIn.startyr = 1980;
+    SW_Run.ModelIn.endyr = 1981;
     SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (i = 0; i < n; i++) {
         // Check soil temp after spinup
-        EXPECT_NE(prevTemp[i], SW_Run.SoilWat.avgLyrTemp[i])
+        EXPECT_NE(prevTemp[i], SW_Run.SoilWatSim.avgLyrTemp[i])
             << "Soil temp error in test " << i << ": "
-            << SW_Run.SoilWat.avgLyrTemp[i];
+            << SW_Run.SoilWatSim.avgLyrTemp[i];
 
         // Check soil moisture after spinup
-        EXPECT_NE(prevMoist[i], SW_Run.SoilWat.swcBulk[Today][i])
+        EXPECT_NE(prevMoist[i], SW_Run.SoilWatSim.swcBulk[Today][i])
             << "Soil moisture error in test " << i << ": "
-            << SW_Run.SoilWat.swcBulk[Today][i];
+            << SW_Run.SoilWatSim.swcBulk[Today][i];
     }
 
     // Deallocate arrays
@@ -262,40 +262,40 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeLessThanDuration) {
     double *prevTemp = new double[n];
     double *prevMoist = new double[n];
 
-    SW_Run.Model.SW_SpinUp.mode = 2;
-    SW_Run.Model.SW_SpinUp.scope = 1;
-    SW_Run.Model.SW_SpinUp.duration = 3;
+    SW_Run.ModelIn.SW_SpinUp.mode = 2;
+    SW_Run.ModelIn.SW_SpinUp.scope = 1;
+    SW_Run.ModelIn.SW_SpinUp.duration = 3;
 
     // Turn on soil temperature simulations
-    SW_Run.Site.use_soil_temp = swTRUE;
+    SW_Run.SiteIn.use_soil_temp = swTRUE;
     // Get initial soil temp and soil moisture levels
     for (i = 0; i < n; i++) {
-        prevTemp[i] = SW_Run.Site.soils.avgLyrTempInit[i];
-        prevMoist[i] = SW_Run.SoilWat.swcBulk[Today][i];
+        prevTemp[i] = SW_Run.RunIn.SoilRunIn.avgLyrTempInit[i];
+        prevMoist[i] = SW_Run.SoilWatSim.swcBulk[Today][i];
     }
     // Turn on spinup flag
-    SW_Run.Model.SW_SpinUp.spinup = swTRUE;
+    SW_Run.ModelIn.SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
     SW_CTL_run_spinup(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run (a short) simulation
-    SW_Run.Model.startyr = 1980;
-    SW_Run.Model.endyr = 1981;
+    SW_Run.ModelIn.startyr = 1980;
+    SW_Run.ModelIn.endyr = 1981;
     SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (i = 0; i < n; i++) {
         // Check soil temp after spinup
-        EXPECT_NE(prevTemp[i], SW_Run.SoilWat.avgLyrTemp[i])
+        EXPECT_NE(prevTemp[i], SW_Run.SoilWatSim.avgLyrTemp[i])
             << "Soil temp error in test " << i << ": "
-            << SW_Run.SoilWat.avgLyrTemp[i];
+            << SW_Run.SoilWatSim.avgLyrTemp[i];
 
         // Check soil moisture after spinup
-        EXPECT_NE(prevMoist[i], SW_Run.SoilWat.swcBulk[Today][i])
+        EXPECT_NE(prevMoist[i], SW_Run.SoilWatSim.swcBulk[Today][i])
             << "Soil moisture error in test " << i << ": "
-            << SW_Run.SoilWat.swcBulk[Today][i];
+            << SW_Run.SoilWatSim.swcBulk[Today][i];
     }
 
     // Deallocate arrays
@@ -379,30 +379,36 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
 
 
                 //--- k1: set spinup
-                local_sw.Model.SW_SpinUp.spinup = swTRUE;
-                local_sw.Model.SW_SpinUp.duration = test_duration[k1];
-                local_sw.Model.SW_SpinUp.mode = 1;
-                local_sw.Model.SW_SpinUp.scope = 1;
+                local_sw.ModelIn.SW_SpinUp.spinup = swTRUE;
+                local_sw.ModelIn.SW_SpinUp.duration = test_duration[k1];
+                local_sw.ModelIn.SW_SpinUp.mode = 1;
+                local_sw.ModelIn.SW_SpinUp.scope = 1;
 
 
                 //--- k2: set initial swc values
-                local_sw.Site.SWCInitVal = test_swcInit[k2];
+                local_sw.SiteIn.SWCInitVal = test_swcInit[k2];
                 SW_SIT_init_run(
-                    &local_sw.VegProd, &local_sw.Site, &local_LogInfo
+                    &local_sw.VegProdIn,
+                    &local_sw.SiteIn,
+                    &local_sw.SiteSim,
+                    &local_sw.RunIn.SoilRunIn,
+                    local_sw.RunIn.VegProdRunIn.veg,
+                    &local_LogInfo
                 );
                 // exit test program if unexpected error
                 sw_fail_on_error(&local_LogInfo);
                 SW_SWC_init_run(
-                    &local_sw.SoilWat,
-                    &local_sw.Site,
-                    &local_sw.Weather.temp_snow
+                    &local_sw.SoilWatSim,
+                    &local_sw.SiteSim,
+                    &local_sw.WeatherSim.temp_snow
                 );
 
 
                 //---k3: set initial soil temperature
-                local_sw.Site.use_soil_temp = swTRUE;
+                local_sw.SiteIn.use_soil_temp = swTRUE;
                 for (i = 0; i < n; i++) {
-                    local_sw.Site.soils.avgLyrTempInit[i] = test_tsInit[k3][i];
+                    local_sw.RunIn.SoilRunIn.avgLyrTempInit[i] =
+                        test_tsInit[k3][i];
                 }
 
 
@@ -416,12 +422,12 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                         test_swcInit[k2],
                         k3,
                         i,
-                        local_sw.SoilWat.swcBulk[Today][i],
+                        local_sw.SoilWatSim.swcBulk[Today][i],
                         test_duration[k1],
                         test_swcInit[k2],
                         k3,
                         i,
-                        local_sw.Site.soils.avgLyrTempInit[i]
+                        local_sw.RunIn.SoilRunIn.avgLyrTempInit[i]
                     );
                 }
                 (void) fflush(fp);
@@ -444,12 +450,12 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                             test_swcInit[k2],
                             k3,
                             i,
-                            local_sw.SoilWat.swcBulk[Today][i],
+                            local_sw.SoilWatSim.swcBulk[Today][i],
                             test_duration[k1],
                             test_swcInit[k2],
                             k3,
                             i,
-                            local_sw.SoilWat.avgLyrTemp[i]
+                            local_sw.SoilWatSim.avgLyrTemp[i]
                         );
                     }
                     (void) fflush(fp);
@@ -457,9 +463,9 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
 
 
                 // Run (a short) simulation
-                local_sw.Model.startyr = 1980;
-                local_sw.Model.endyr = 1980;
-                SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+                local_sw.ModelIn.startyr = 1980;
+                local_sw.ModelIn.endyr = 1980;
+                SW_CTL_main(&local_sw, &SW_Domain.OutDom, &LogInfo);
                 // exit test program if unexpected error
                 sw_fail_on_error(&local_LogInfo);
 
@@ -473,12 +479,12 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                         test_swcInit[k2],
                         k3,
                         i,
-                        local_sw.SoilWat.swcBulk[Today][i],
+                        local_sw.SoilWatSim.swcBulk[Today][i],
                         test_duration[k1],
                         test_swcInit[k2],
                         k3,
                         i,
-                        local_sw.SoilWat.avgLyrTemp[i]
+                        local_sw.SoilWatSim.avgLyrTemp[i]
                     );
                 }
                 (void) fflush(fp);

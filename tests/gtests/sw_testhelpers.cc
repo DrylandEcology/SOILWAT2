@@ -2,7 +2,7 @@
 #include "tests/gtests/sw_testhelpers.h"
 #include "include/generic.h"    // for swFALSE, swTRUE
 #include "include/myMemory.h"   // for Str_Dup
-#include "include/SW_Control.h" // for SW_CTL_alloc_outptrs, SW_CTL_clear_m...
+#include "include/SW_Control.h" // for SW_CTL_clear_m...
 #include "include/SW_Files.h"   // for eFirst
 #include "include/SW_Model.h"   // for SW_MDL_get_ModelRun
 #include "include/SW_Output.h"  // for SW_OUT_setup_output
@@ -31,8 +31,11 @@ simulation after this function has set soil layers, e.g., SW_SWC_init_run()
 */
 void create_test_soillayers(
     unsigned int nlayers,
-    SW_VEGPROD *SW_VegProd,
-    SW_SITE *SW_Site,
+    SW_VEGPROD_INPUTS *SW_VegProdIn,
+    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_SIM *SW_SiteSim,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
+    VegType veg[],
     LOG_INFO *LogInfo
 ) {
 
@@ -99,8 +102,11 @@ void create_test_soillayers(
     double regionLowerBounds[3] = {20., 50., 100.};
 
     set_soillayers(
-        SW_VegProd,
-        SW_Site,
+        SW_VegProdIn,
+        SW_SiteIn,
+        SW_SiteSim,
+        SW_SoilRunIn,
+        veg,
         nlayers,
         dmax,
         bulkd,
@@ -121,52 +127,54 @@ void create_test_soillayers(
     );
 }
 
-void setup_SW_Site_for_tests(SW_SITE *SW_Site) {
+void setup_SW_Site_for_tests(
+    SW_SITE_INPUTS *SW_SiteIn, SW_SITE_SIM *SW_SiteSim
+) {
     LOG_INFO LogInfo;
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    SW_Site->deepdrain = swTRUE;
+    SW_SiteIn->deepdrain = swTRUE;
 
-    SW_Site->SWCMinVal = 100;
-    SW_Site->SWCWetVal = 15;
-    SW_Site->SWCInitVal = 15;
+    SW_SiteIn->SWCMinVal = 100;
+    SW_SiteIn->SWCWetVal = 15;
+    SW_SiteIn->SWCInitVal = 15;
 
-    SW_Site->stMaxDepth = 990;
-    SW_Site->stDeltaX = 15;
+    SW_SiteIn->stMaxDepth = 990;
+    SW_SiteIn->stDeltaX = 15;
 
-    SW_Site->slow_drain_coeff = 0.02;
+    SW_SiteIn->slow_drain_coeff = 0.02;
 
-    SW_Site->site_has_swrcpMineralSoil = swFALSE;
-    SW_Site->inputsProvideSWRCp = swFALSE;
+    SW_SiteSim->site_has_swrcpMineralSoil = swFALSE;
+    SW_SiteIn->inputsProvideSWRCp = swFALSE;
 
     (void) snprintf(
-        SW_Site->site_swrc_name,
-        sizeof SW_Site->site_swrc_name,
+        SW_SiteIn->site_swrc_name,
+        sizeof SW_SiteIn->site_swrc_name,
         "%s",
         "Campbell1974"
     );
-    SW_Site->site_swrc_type =
-        encode_str2swrc(SW_Site->site_swrc_name, &LogInfo);
+    SW_SiteIn->site_swrc_type =
+        encode_str2swrc(SW_SiteIn->site_swrc_name, &LogInfo);
     (void) snprintf(
-        SW_Site->site_ptf_name,
-        sizeof SW_Site->site_ptf_name,
+        SW_SiteIn->site_ptf_name,
+        sizeof SW_SiteIn->site_ptf_name,
         "%s",
         "Cosby1984AndOthers"
     );
-    SW_Site->site_ptf_type = encode_str2ptf(SW_Site->site_ptf_name);
+    SW_SiteIn->site_ptf_type = encode_str2ptf(SW_SiteIn->site_ptf_name);
 
-    SW_Site->swrcpOM[0][0] = 1.03;
-    SW_Site->swrcpOM[1][0] = 1.01;
+    SW_SiteSim->swrcpOM[0][0] = 1.03;
+    SW_SiteSim->swrcpOM[1][0] = 1.01;
 
-    SW_Site->swrcpOM[0][1] = 0.93;
-    SW_Site->swrcpOM[1][1] = 0.83;
+    SW_SiteSim->swrcpOM[0][1] = 0.93;
+    SW_SiteSim->swrcpOM[1][1] = 0.83;
 
-    SW_Site->swrcpOM[0][2] = 2.7;
-    SW_Site->swrcpOM[1][2] = 12.0;
+    SW_SiteSim->swrcpOM[0][2] = 2.7;
+    SW_SiteSim->swrcpOM[1][2] = 12.0;
 
-    SW_Site->swrcpOM[0][3] = 2419.2;
-    SW_Site->swrcpOM[1][3] = 0.864;
+    SW_SiteSim->swrcpOM[0][3] = 2419.2;
+    SW_SiteSim->swrcpOM[1][3] = 0.864;
 }
 
 /* Set up global variables for testing and read in values from SOILWAT2 example
@@ -221,17 +229,12 @@ int setup_testGlobalSoilwatTemplate() {
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
-    template_SW_Run.Model.doOutput = swFALSE; /* turn off output during tests */
+    template_SW_Run.ModelSim.doOutput =
+        swFALSE; /* turn off output during tests */
 
     SW_MDL_get_ModelRun(
-        &template_SW_Run.Model, &template_SW_Domain, NULL, &LogInfo
+        &template_SW_Run.ModelIn, &template_SW_Domain, NULL, &LogInfo
     );
-    if (LogInfo.stopRun != 0u) {
-        goto finishProgram;
-    }
-
-    /* allocate memory for output pointers */
-    SW_CTL_alloc_outptrs(&template_SW_Run, &LogInfo);
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
@@ -248,8 +251,8 @@ int setup_testGlobalSoilwatTemplate() {
 
     /* Notes on messages during tests
         - `SW_F_read()`, via SW_CTL_read_inputs_from_disk(), opens the file
-        "example/Output/logfile.log" on disk (based on content of "files.in")
-        - we close "Output/logfile.log"
+        "example/logs/logfile.log" on disk (based on content of "files.in")
+        - we close "logs/logfile.log"
         - we set `logfp` to NULL to silence all non-error messages during tests
         - error messages go directly to stderr (which DeathTests use to match
        against)
@@ -258,10 +261,11 @@ int setup_testGlobalSoilwatTemplate() {
     sw_init_logs(NULL, &LogInfo);
 
     SW_WTH_finalize_all_weather(
-        &template_SW_Run.Markov,
-        &template_SW_Run.Weather,
-        template_SW_Run.Model.cum_monthdays,
-        template_SW_Run.Model.days_in_month,
+        &template_SW_Run.MarkovIn,
+        &template_SW_Run.WeatherIn,
+        template_SW_Run.RunIn.weathRunAllHist,
+        template_SW_Run.ModelSim.cum_monthdays,
+        template_SW_Run.ModelSim.days_in_month,
         &LogInfo
     );
     if (LogInfo.stopRun != 0u) {
@@ -274,9 +278,10 @@ int setup_testGlobalSoilwatTemplate() {
     }
 
     SW_OUT_setup_output(
-        template_SW_Run.Site.n_layers,
-        template_SW_Run.Site.n_evap_lyrs,
-        &template_SW_Run.VegEstab,
+        template_SW_Run.SiteSim.n_layers,
+        template_SW_Run.SiteSim.n_evap_lyrs,
+        template_SW_Run.VegEstabSim.count,
+        template_SW_Run.VegEstabIn.parms,
         &template_SW_Domain.OutDom,
         &LogInfo
     );

@@ -30,8 +30,6 @@ extern "C" {
 /* --------------------------------------------------- */
 void SW_CTL_init_ptrs(SW_RUN *sw);
 
-void SW_CTL_alloc_outptrs(SW_RUN *sw, LOG_INFO *LogInfo);
-
 void SW_RUN_deepCopy(
     SW_RUN *source,
     SW_RUN *dest,

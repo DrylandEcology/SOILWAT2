@@ -8,7 +8,7 @@ effects of CO2 on transpiration and biomass.
 #ifndef CARBON
 #define CARBON
 
-#include "include/SW_datastructs.h" // for SW_Carbon, SW_Model, LOG_INFO
+#include "include/SW_datastructs.h" // for SW_CarbonIn, SW_Model, LOG_INFO
 
 
 #ifdef __cplusplus
@@ -19,21 +19,25 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_CBN_construct(SW_CARBON *SW_Carbon);
+void SW_CBN_construct(SW_CARBON_INPUTS *SW_CarbonIn);
 
 void SW_CBN_deconstruct(void);
 
 void SW_CBN_read(
-    SW_CARBON *SW_Carbon,
-    SW_MODEL *SW_Model,
+    SW_CARBON_INPUTS *SW_CarbonIn,
+    int addtl_yr,
+    TimeInt startYr,
+    TimeInt endYr,
     char *txtInFiles[],
     LOG_INFO *LogInfo
 );
 
 void SW_CBN_init_run(
     VegType VegProd_veg[],
-    SW_MODEL *SW_Model,
-    SW_CARBON *SW_Carbon,
+    SW_CARBON_INPUTS *SW_CarbonIn,
+    int addtl_yr,
+    TimeInt startYr,
+    TimeInt endYr,
     LOG_INFO *LogInfo
 );
 

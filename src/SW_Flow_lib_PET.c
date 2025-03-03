@@ -16,7 +16,7 @@
 #include "include/SW_Flow_lib_PET.h" // for SW_PET_init_run, actualVaporPre...
 #include "include/filefuncs.h"       // for LogError
 #include "include/generic.h"         // for squared, fmax, fmin, GT, Bool
-#include "include/SW_datastructs.h"  // for SW_ATMD, LOG_INFO
+#include "include/SW_datastructs.h"  // for SW_ATMD_SIM, LOG_INFO
 #include "include/SW_Defines.h"      // for missing, swPI, SW_MISSING, swPI2
 #include <math.h>                    // for tan, pow, sin, cos, exp, fabs
 
@@ -49,7 +49,7 @@ static const double G_sc = 118.1088;
 
 @param[in,out] SW_AtmDem Memoized variables pertaining to atmospheric demand
 */
-void SW_PET_init_run(SW_ATMD *SW_AtmDem) {
+void SW_PET_init_run(SW_ATMD_SIM *SW_AtmDem) {
     int k1;
     int k2;
 
@@ -196,7 +196,7 @@ if the input surface, defined by `slope` and `aspect`, is horizontal.
     above a horizontal (1st element) and tilted (2nd element) surface [-]
 */
 void sun_hourangles(
-    SW_ATMD *SW_AtmDem,
+    SW_ATMD_SIM *SW_AtmDem,
     unsigned int doy,
     double lat,
     double slope,
@@ -913,7 +913,7 @@ transpose direct and diffuse radiation to a tilted surface.
 @return H_gt Daily global (tilted) irradiation [MJ / m2]
 */
 double solar_radiation(
-    SW_ATMD *SW_AtmDem,
+    SW_ATMD_SIM *SW_AtmDem,
     unsigned int doy,
     double lat,
     double elev,

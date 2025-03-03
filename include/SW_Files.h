@@ -39,6 +39,7 @@ typedef enum {
     eDomain,
     /* Description of a model run */
     eModel,
+    eLog,
     /* Description of simulated site */
     eSite,
     eLayers,
@@ -57,7 +58,6 @@ typedef enum {
     eSoilwat,
     /* Simulation outputs */
     eOutput,
-    eLog,
     eOutputDaily,
     eOutputWeekly,
     eOutputMonthly,
