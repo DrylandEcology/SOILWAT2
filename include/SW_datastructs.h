@@ -1174,14 +1174,14 @@ typedef struct {
 
 typedef struct {
     SW_VEGESTAB_INFO_INPUTS
-    *parms; /* dynamic array of input parms for each species */
+    parms[MAX_NSPECIES]; /* array of input parms for each species */
 } SW_VEGESTAB_INPUTS;
 
 typedef struct {
     Bool use;   /* if swTRUE use establishment parms and chkestab() */
     IntU count; /* number of species to check */
     SW_VEGESTAB_INFO_SIM
-    *parms; /* dynamic array of changing parms for each species */
+    parms[MAX_NSPECIES]; /* array of changing parms for each species */
 } SW_VEGESTAB_SIM;
 
 /* =================================================== */

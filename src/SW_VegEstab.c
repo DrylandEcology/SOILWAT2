@@ -91,8 +91,6 @@ static void zero_state(unsigned int sppnum, SW_VEGESTAB_INFO_SIM *parmsSim);
 /**
 @brief Initialize all possible pointers in SW_VEGESTAB to NULL
 
-@param[in,out] SW_VegEstabIn Struct of type SW_VEGESTAB_INPUTS holding all
-    input information about vegetation within the simulation
 @param[in,out] SW_VegEstabSim Struct of type SW_VEGESTAB_SIM holding all
     simulation information about vegetation within the simulation
 @param[in,out] ves_p_accu A list of output structs of type SW_VEGESTAB_OUTPUTS
@@ -101,15 +99,12 @@ static void zero_state(unsigned int sppnum, SW_VEGESTAB_INFO_SIM *parmsSim);
     to aggregate output
 */
 void SW_VES_init_ptrs(
-    SW_VEGESTAB_INPUTS *SW_VegEstabIn,
     SW_VEGESTAB_SIM *SW_VegEstabSim,
     SW_VEGESTAB_OUTPUTS *ves_p_accu,
     SW_VEGESTAB_OUTPUTS *ves_p_oagg
 ) {
     OutPeriod pd;
 
-    SW_VegEstabIn->parms = NULL;
-    SW_VegEstabSim->parms = NULL;
     SW_VegEstabSim->count = 0;
 
     // Allocate output structures:
@@ -159,8 +154,6 @@ void SW_VES_construct(
 /**
 @brief Deconstructor for SW_VegEstab for each period, pd.
 
-@param[in,out] SW_VegEstabIn Struct of type SW_VEGESTAB_INPUTS holding all
-    input information about vegetation within the simulation
 @param[in,out] SW_VegEstabSim Struct of type SW_VEGESTAB_SIM holding all
     simulation information about vegetation within the simulation
 @param[in,out] ves_p_accu A list of output structs of type SW_VEGESTAB_OUTPUTS
@@ -169,22 +162,11 @@ void SW_VES_construct(
     to aggregate output
 */
 void SW_VES_deconstruct(
-    SW_VEGESTAB_INPUTS *SW_VegEstabIn,
     SW_VEGESTAB_SIM *SW_VegEstabSim,
     SW_VEGESTAB_OUTPUTS *ves_p_accu,
     SW_VEGESTAB_OUTPUTS *ves_p_oagg
 ) {
     OutPeriod pd;
-
-    // De-allocate parameters
-    if (SW_VegEstabSim->count > 0) {
-        free((void *) SW_VegEstabIn->parms);
-        SW_VegEstabIn->parms = NULL;
-
-        free((void *) SW_VegEstabSim->parms);
-        SW_VegEstabSim->parms = NULL;
-    }
-
 
     ForEachOutPeriod(pd) {
         // De-allocate days
@@ -295,7 +277,7 @@ void SW_VES_read2(
     LOG_INFO *LogInfo
 ) {
 
-    SW_VES_deconstruct(SW_VegEstabIn, SW_VegEstabSim, ves_p_accu, ves_p_oagg);
+    SW_VES_deconstruct(SW_VegEstabSim, ves_p_accu, ves_p_oagg);
     SW_VES_construct(SW_VegEstabIn, SW_VegEstabSim, ves_p_oagg, ves_p_accu);
 
     SW_VegEstabSim->use = use_VegEstab;
@@ -597,13 +579,19 @@ static void read_spp(
     Bool sppFull = swFALSE;
 
     size_t sppWritesize = 0;
-    IntU count;
 
-    count = new_species(SW_VegEstabIn, SW_VegEstabSim, LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
+    if (SW_VegEstabSim->count == MAX_NSPECIES) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Too many species attempted to be created (maximum = %d).",
+            MAX_NSPECIES
+        );
+        return;
     }
-    v = &SW_VegEstabIn->parms[count];
+
+    v = &SW_VegEstabIn->parms[SW_VegEstabSim->count];
+    SW_VegEstabSim->count++;
 
     endSppPtr = v->sppname + sizeof v->sppname - 1;
     sppWritesize = sizeof v->sppname;
@@ -905,67 +893,6 @@ static void sanity_check(
             mean_wiltpt
         );
     }
-}
-
-/**
-@brief New species for establishment
-
-First time called with no species defined so SW_VegEstab.count == 0 and
-SW_VegEstab.parms is not initialized yet, malloc()
-required.  For each species thereafter realloc() is called.
-
-@param[in,out] SW_VegEstabIn Struct of type SW_VEGESTAB_INPUTS holding all
-    input information about vegetation within the simulation
-@param[in,out] SW_VegEstabSim Struct of type SW_VEGESTAB_SIM holding all
-    simulation information about vegetation within the simulation
-@param[out] LogInfo Holds information on warnings and errors
-
-@return (++SW_VegEstab->count) - 1
-*/
-IntU new_species(
-    SW_VEGESTAB_INPUTS *SW_VegEstabIn,
-    SW_VEGESTAB_SIM *SW_VegEstabSim,
-    LOG_INFO *LogInfo
-) {
-    const char *me = "SW_VegEstab_newspecies()";
-
-    SW_VegEstabIn->parms =
-        (!SW_VegEstabSim->count) ?
-            (SW_VEGESTAB_INFO_INPUTS *) Mem_Calloc(
-                SW_VegEstabSim->count + 1,
-                sizeof(SW_VEGESTAB_INFO_INPUTS),
-                me,
-                LogInfo
-            ) :
-            (SW_VEGESTAB_INFO_INPUTS *) Mem_ReAlloc(
-                (void *) SW_VegEstabIn->parms,
-                sizeof(SW_VEGESTAB_INFO_INPUTS) * (SW_VegEstabSim->count + 1),
-                LogInfo
-            );
-    if (LogInfo->stopRun) {
-        return SW_VegEstabSim
-            ->count; // Return function prematurely due to error
-    }
-
-    SW_VegEstabSim->parms =
-        (!SW_VegEstabSim->count) ?
-            (SW_VEGESTAB_INFO_SIM *) Mem_Calloc(
-                SW_VegEstabSim->count + 1,
-                sizeof(SW_VEGESTAB_INFO_SIM),
-                me,
-                LogInfo
-            ) :
-            (SW_VEGESTAB_INFO_SIM *) Mem_ReAlloc(
-                (void *) SW_VegEstabSim->parms,
-                sizeof(SW_VEGESTAB_INFO_SIM) * (SW_VegEstabSim->count + 1),
-                LogInfo
-            );
-    if (LogInfo->stopRun) {
-        return SW_VegEstabSim
-            ->count; // Return function prematurely due to error
-    }
-
-    return (++SW_VegEstabSim->count) - 1;
 }
 
 /**
