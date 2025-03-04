@@ -580,6 +580,16 @@ static void read_spp(
 
     size_t sppWritesize = 0;
 
+    if (SW_VegEstabSim->count == MAX_NSPECIES) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Too many species attempted to be created (maximum = %d).",
+            MAX_NSPECIES
+        );
+        return;
+    }
+
     v = &SW_VegEstabIn->parms[SW_VegEstabSim->count];
     SW_VegEstabSim->count++;
 
