@@ -25,6 +25,7 @@ static const int numVarsInKey[] = {
     3,  /* inSpatial */
     4,  /* inTopo */
     22, /* inSoil */
+    2,  /* inSite */
     22, /* inVeg */
     15, /* inWeather */
     6   /* inClimate */
@@ -149,7 +150,7 @@ void SW_NCIN_alloc_weath_input_info(
 );
 
 void SW_NCIN_precalc_lookups(
-    SW_DOMAIN *SW_Domain, SW_WEATHER *SW_Weather, LOG_INFO *LogInfo
+    SW_DOMAIN *SW_Domain, SW_WEATHER_INPUTS *SW_WeatherIn, LOG_INFO *LogInfo
 );
 
 void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);

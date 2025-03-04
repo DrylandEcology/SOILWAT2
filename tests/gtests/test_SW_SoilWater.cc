@@ -29,19 +29,19 @@ TEST(SoilWaterTest, SoilWaterSWCadjustSnow) {
     double temp_snow = 0;
     double snowpack[TWO_DAYS] = {0};
 
-    SW_SITE SW_Site;
+    SW_SITE_INPUTS SW_SiteIn;
 
-    SW_Site.TminAccu2 = 0;
-    SW_Site.RmeltMax = 1;
-    SW_Site.RmeltMin = 0;
-    SW_Site.lambdasnow = .1;
-    SW_Site.TmaxCrit = 1;
+    SW_SiteIn.TminAccu2 = 0;
+    SW_SiteIn.RmeltMax = 1;
+    SW_SiteIn.RmeltMin = 0;
+    SW_SiteIn.lambdasnow = .1;
+    SW_SiteIn.TmaxCrit = 1;
 
 
     SW_SWC_adjust_snow(
         &temp_snow,
         snowpack,
-        &SW_Site,
+        &SW_SiteIn,
         temp_min,
         temp_max,
         ppt,
@@ -60,12 +60,12 @@ TEST(SoilWaterTest, SoilWaterSWCadjustSnow) {
     // when temp_snow <= SW_Run.Site.TmaxCrit, we expect snowmelt == 0
     EXPECT_EQ(snowmelt, 0);
 
-    SW_Site.TminAccu2 = 6;
+    SW_SiteIn.TminAccu2 = 6;
 
     SW_SWC_adjust_snow(
         &temp_snow,
         snowpack,
-        &SW_Site,
+        &SW_SiteIn,
         temp_min,
         temp_max,
         ppt,
@@ -97,19 +97,19 @@ TEST(SoilWaterTest, SoilWaterSWCadjustSnow2) {
     double temp_snow = 0;
     double snowpack[TWO_DAYS] = {0};
 
-    SW_SITE SW_Site;
+    SW_SITE_INPUTS SW_SiteIn;
 
-    SW_Site.TminAccu2 = 0;
-    SW_Site.RmeltMax = 1;
-    SW_Site.RmeltMin = 0;
-    SW_Site.lambdasnow = .1;
-    SW_Site.TmaxCrit = 1;
+    SW_SiteIn.TminAccu2 = 0;
+    SW_SiteIn.RmeltMax = 1;
+    SW_SiteIn.RmeltMin = 0;
+    SW_SiteIn.lambdasnow = .1;
+    SW_SiteIn.TmaxCrit = 1;
 
 
     SW_SWC_adjust_snow(
         &temp_snow,
         snowpack,
-        &SW_Site,
+        &SW_SiteIn,
         temp_min,
         temp_max,
         ppt,

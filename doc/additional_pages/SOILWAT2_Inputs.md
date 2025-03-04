@@ -24,8 +24,9 @@ Note: this document is best viewed as part of the doxygen-built documentation
   * The inputs comprise the main file `files.in` and the content of the
     `Input/` folder and `Input_nc/` if in nc-based mode.
     Inputs are explained in detail \ref explain_inputs "below".
-  * The outputs are written to `Output/` including a logfile that contains
-    warnings and errors. Outputs are explained in detail
+  * Warning and error messages, if any, are written to a
+    logfile `logs/logfile.log`.
+  * The outputs are written to `Output/`. Outputs are explained in detail
     [here](doc/additional_pages/SOILWAT2_Outputs.md).
 
 <br>

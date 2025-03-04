@@ -181,8 +181,11 @@ on your side.
     bin/SOILWAT2 -d ./tests/example -f files.in
 ```
 
-  * The outputs are written to `Output/` including a logfile that contains
-    warnings and errors.
+  * Warning and error messages, if any, are written to a
+    logfile `logs/logfile.log`
+    (the file name and path is controlled by input from `"files.in"`).
+
+  * Simulation outputs are written to `Output/`.
         * In text-mode, the output files are in `.csv` format
         * In nc-mode, the output files are in `.nc` format
   * Outputs are explained in detail

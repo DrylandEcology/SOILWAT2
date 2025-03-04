@@ -103,7 +103,7 @@ int main(int argc, char **argv) {
         goto finishProgram;
     }
 
-    SW_MDL_get_ModelRun(&sw_template.Model, &SW_Domain, NULL, &LogInfo);
+    SW_MDL_get_ModelRun(&sw_template.ModelIn, &SW_Domain, NULL, &LogInfo);
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
@@ -123,14 +123,14 @@ int main(int argc, char **argv) {
     SW_NCIN_check_input_config(
         &SW_Domain.netCDFInput,
         SW_Domain.hasConsistentSoilLayerDepths,
-        sw_template.Site.inputsProvideSWRCp,
+        sw_template.SiteIn.inputsProvideSWRCp,
         &LogInfo
     );
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
 
-    SW_NCIN_precalc_lookups(&SW_Domain, &sw_template.Weather, &LogInfo);
+    SW_NCIN_precalc_lookups(&SW_Domain, &sw_template.WeatherIn, &LogInfo);
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
@@ -151,10 +151,11 @@ int main(int argc, char **argv) {
     if (!SW_Domain.netCDFInput.readInVars[eSW_InWeather][0] && !prepareFiles) {
 #endif
         SW_WTH_finalize_all_weather(
-            &sw_template.Markov,
-            &sw_template.Weather,
-            sw_template.Model.cum_monthdays,
-            sw_template.Model.days_in_month,
+            &sw_template.MarkovIn,
+            &sw_template.WeatherIn,
+            sw_template.RunIn.weathRunAllHist,
+            sw_template.ModelSim.cum_monthdays,
+            sw_template.ModelSim.days_in_month,
             &LogInfo
         );
         if (LogInfo.stopRun) {
@@ -172,9 +173,9 @@ int main(int argc, char **argv) {
         &SW_Domain.nMaxSoilLayers,
         &SW_Domain.nMaxEvapLayers,
         SW_Domain.depthsAllSoilLayers,
-        sw_template.Site.n_layers,
-        sw_template.Site.n_evap_lyrs,
-        sw_template.Site.soils.depths,
+        sw_template.SiteSim.n_layers,
+        sw_template.SiteSim.n_evap_lyrs,
+        sw_template.RunIn.SoilRunIn.depths,
         &LogInfo
     );
     if (LogInfo.stopRun) {
@@ -185,7 +186,8 @@ int main(int argc, char **argv) {
     SW_OUT_setup_output(
         SW_Domain.nMaxSoilLayers,
         SW_Domain.nMaxEvapLayers,
-        &sw_template.VegEstab,
+        sw_template.VegEstabSim.count,
+        sw_template.VegEstabIn.parms,
         &SW_Domain.OutDom,
         &LogInfo
     );
@@ -197,7 +199,7 @@ int main(int argc, char **argv) {
     SW_NCOUT_read_out_vars(
         &SW_Domain.OutDom,
         SW_Domain.SW_PathInputs.txtInFiles,
-        sw_template.VegEstab.parms,
+        sw_template.VegEstabIn.parms,
         &LogInfo
     );
     if (LogInfo.stopRun) {

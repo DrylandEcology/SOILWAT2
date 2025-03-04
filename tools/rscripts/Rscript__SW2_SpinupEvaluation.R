@@ -36,7 +36,7 @@ if (length(file_sw2_test_outputs) == 0L) {
 
 for (k in seq_along(file_sw2_test_outputs)) {
 
-  x <- read.csv(file_sw2_test_outputs[[k]])
+  x <- utils::read.csv(file_sw2_test_outputs[[k]])
 
   ids <-
     !(x[["spinup_duration"]] == 0 & x[["stage"]] == "spinup") &
@@ -54,6 +54,10 @@ for (k in seq_along(file_sw2_test_outputs)) {
     )
   )
 
+  xp[["swc"]][["ts_init"]] <- as.factor(xp[["swc"]][["ts_init"]])
+  xp[["ts"]][["swc_init"]] <- as.factor(xp[["ts"]][["swc_init"]])
+
+
   tmpg <- list()
 
   tmpg[[1L]] <- ggplot2::ggplot(
@@ -61,7 +65,8 @@ for (k in seq_along(file_sw2_test_outputs)) {
     mapping = ggplot2::aes(
       y = SWC,
       x = soil_layer,
-      col = stage
+      col = stage,
+      linetype = ts_init
     )
   ) +
     ggplot2::geom_line() +
@@ -77,7 +82,8 @@ for (k in seq_along(file_sw2_test_outputs)) {
     mapping = ggplot2::aes(
       y = soilTemperature,
       x = soil_layer,
-      col = stage
+      col = stage,
+      linetype = swc_init
     )
   ) +
     ggplot2::geom_line() +

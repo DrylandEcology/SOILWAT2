@@ -39,99 +39,74 @@ however, they are part of the C POSIX library:
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
-
-static void freeGetfilesEarly(char **flist, int nfound, DIR *dir, char *fname) {
-    int index;
-
-    if (!isnull(flist)) {
-        for (index = 0; index < nfound; index++) {
-            if (!isnull(flist[index])) {
-                free(flist[index]);
-            }
-        }
-
-        free((void *) flist);
-        flist = NULL;
-    }
-
-    closedir(dir);
-
-    if (!isnull(fname)) {
-        free(fname);
-        fname = NULL;
-    }
-}
-
-static char **getfiles(
-    const char *fspec, int *nfound, Bool clearDir, LOG_INFO *LogInfo
+// NOLINTBEGIN(misc-no-recursion)
+static Bool RemoveFilesHelper(
+    const char *fspec,
+    size_t len1,
+    size_t len2,
+    Bool clearDir,
+    char *fn1,
+    char *fn2,
+    int depth,
+    int maxDepth,
+    LOG_INFO *LogInfo
 ) {
-    /* return a list of files described by fspec
-     * fspec is as described in RemoveFiles(),
-     * **flist is a dynamic char array containing pointers to the
-     *   file names found that match fspec
-     * nfound is the number of files found, also, num elements in flist
+    /* Recursively iterate through a specified starting directory
+       and remove matching files;
+       Explores subdirectories and deletes contents within before
+       deleting the directory itself
      */
 
-    char **flist = NULL;
-    char *fname;
-    char *fn1;
-    char *fn2;
+    struct stat statbuf;
+
+    char fname[FILENAME_MAX] = "\0";
+    char temp[FILENAME_MAX] = "\0";
+    char *endFnamePtr = fname + sizeof fname - 1;
+    char *fNamePlusDLen;
     char *p2;
     char dname[FILENAME_MAX];
+    size_t dlen;
+    size_t writeSize;
+    Bool bufferFull = swFALSE;
+    Bool passed = swTRUE;
+    Bool isDir;
+    int resSNP;
 
-    size_t startIndex = 0;
-    size_t strLen = 0; // For `sw_strtok()`
-
-    size_t len1;
-    size_t len2;
     Bool match;
-    Bool alloc = swFALSE;
 
     DIR *dir;
     struct dirent *ent;
 
-    assert(fspec != NULL);
-
     DirName(fspec, dname); // Copy `fspec` into `dname`
-    fname = Str_Dup(BaseName(fspec), LogInfo);
-    if (LogInfo->stopRun) {
-        return NULL; // Exit function prematurely due to error
-    }
-
-    if (strchr(fname, '*')) {
-        fn1 = sw_strtok(fname, &startIndex, &strLen, "*");
-        fn2 = sw_strtok(fname, &startIndex, &strLen, "*");
-    } else {
-        fn1 = fname;
-        fn2 = NULL;
-    }
-    len1 = (fn1) ? strlen(fn1) : 0;
-    len2 = (fn2) ? strlen(fn2) : 0;
-
-    (*nfound) = 0;
+    dlen = strlen(dname);
     dir = opendir(dname);
+    if (depth == maxDepth || isnull(dir)) {
+        if (depth == maxDepth) {
+            LogError(
+                LogInfo,
+                LOGWARN,
+                "Max depth reached and could not explore %s.\n",
+                fspec
+            );
+        }
 
-    if (isnull(dir)) {
-        free(fname);
-        return NULL;
+        return swTRUE; // Exit function prematurely due to error
     }
+
+    strncpy(fname, dname, sizeof fname);
 
     while ((ent = readdir(dir)) != NULL) {
         match = swTRUE;
 
         // When clearing the directory, make sure we don't include
         // previous directories ('.' and '..')
-        if (!clearDir || strcmp(ent->d_name, ".") != 0 ||
-            strcmp(ent->d_name, "..") != 0) {
+        if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0) {
+            continue;
+        }
+
+        if (!clearDir) {
             if (fn1) {
-#if defined(STEPWAT)
                 match = (Bool) (0 == strncmp(ent->d_name, fn1, len1));
-#else
-                match = (Bool) (!isnull(strstr(ent->d_name, fname)) &&
-                                strcmp(ent->d_name, ".") != 0 &&
-                                strcmp(ent->d_name, "..") != 0);
-                (void) len1;
-#endif
             }
             if (match && fn2) {
                 p2 = ent->d_name + (strlen(ent->d_name) - len2);
@@ -139,41 +114,68 @@ static char **getfiles(
             }
         }
 
-        if (match) {
-            (*nfound)++;
-            if (alloc) {
-                flist = (char **) Mem_ReAlloc(
-                    (void *) flist, sizeof(char *) * (*nfound), LogInfo
-                );
+        fNamePlusDLen = fname + dlen;
+        writeSize = FILENAME_MAX - dlen;
+        bufferFull = sw_memccpy_inc(
+            (void **) &fNamePlusDLen,
+            endFnamePtr,
+            (void *) ent->d_name,
+            '\0',
+            &writeSize
+        );
+        if (bufferFull) {
+            reportFullBuffer(LOGERROR, LogInfo);
+            break;
+        }
 
-                if (LogInfo->stopRun) {
-                    freeGetfilesEarly(flist, 0, dir, fname);
-                    return NULL; // Exit function prematurely due to error
-                }
-            } else {
-                flist = (char **) Mem_Malloc(
-                    sizeof(char *) * (*nfound), "getfiles", LogInfo
-                );
+        isDir = (Bool) (stat(fname, &statbuf) == 0 && S_ISDIR(statbuf.st_mode));
 
-                if (LogInfo->stopRun) {
-                    freeGetfilesEarly(flist, 0, dir, fname);
-                    return NULL; // Exit function prematurely due to error
+        if (match || isDir) {
+            if (isDir && clearDir) {
+                resSNP = snprintf(temp, sizeof temp, "%s/", fname);
+                if (resSNP < 0 || (unsigned) resSNP >= (sizeof temp)) {
+                    LogError(
+                        LogInfo, LOGERROR, "Path name is too long: '%s'.", temp
+                    );
+                    goto closeDir;
                 }
-                alloc = swTRUE;
+
+                passed = RemoveFilesHelper(
+                    temp,
+                    len1,
+                    len2,
+                    clearDir,
+                    fn1,
+                    fn2,
+                    depth + 1,
+                    maxDepth,
+                    LogInfo
+                );
             }
-            flist[(*nfound) - 1] = Str_Dup(ent->d_name, LogInfo);
-            if (LogInfo->stopRun) {
-                freeGetfilesEarly(flist, *nfound, dir, fname);
-                return NULL; // Exit function prematurely due to error
+
+            /*
+                Remove the file only if
+                    * Clearing the directory entirely and we are a
+                        directory
+                    * We are not clearing the directory and we are not a
+                      directory (.csv when SWNETCDF is enabled
+                      or when STEPWAT2 removes files)
+            */
+            if ((((isDir && clearDir) || !isDir) && remove(fname) != 0) ||
+                !passed) {
+
+                passed = swFALSE;
+                goto closeDir;
             }
         }
     }
 
-    closedir(dir);
-    free(fname);
+closeDir: { closedir(dir); }
 
-    return flist;
+    return passed;
 }
+
+// NOLINTEND(misc-no-recursion)
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -669,7 +671,9 @@ freeMem:
 #undef mkdir
 
 /**************************************************************/
-Bool RemoveFiles(const char *fspec, Bool clearDir, LOG_INFO *LogInfo) {
+Bool RemoveFiles(
+    const char *fspec, Bool clearDir, int maxDepth, LOG_INFO *LogInfo
+) {
     /* delete files matching fspec. ASSUMES terminal element
      *   describes files, ie, is not a directory.
      * fspec may contain leading path (eg, here/and/now/files)
@@ -681,56 +685,46 @@ Bool RemoveFiles(const char *fspec, Bool clearDir, LOG_INFO *LogInfo) {
      * Returns TRUE if all files removed, FALSE otherwise.
      */
 
-    char **flist;
-    char fname[FILENAME_MAX];
-    char *endFnamePtr = fname + sizeof fname - 1;
-    char *fNamePlusDLen;
-    int i;
-    int nfiles;
-    int result = swTRUE;
-    size_t dlen;
-    size_t writeSize;
-    Bool bufferFull = swFALSE;
+    Bool result = swTRUE;
+    char *baseName;
+    char *fn1;
+    char *fn2;
 
-    if (fspec == NULL) {
+    size_t len1;
+    size_t len2;
+    size_t startIndex = 0;
+    size_t strLen = 0; // For `sw_strtok()`
+
+    if (isnull(fspec)) {
         return swTRUE;
     }
 
-    flist = getfiles(fspec, &nfiles, clearDir, LogInfo);
+    baseName = Str_Dup(BaseName(fspec), LogInfo);
 
-    if (!isnull(flist)) {
-        DirName(fspec, fname); // Transfer `fspec` into `fname`
-        dlen = strlen(fname);
-        for (i = 0; i < nfiles; i++) {
-            fNamePlusDLen = fname + dlen;
-            writeSize = FILENAME_MAX - sizeof dlen;
-            bufferFull = sw_memccpy_inc(
-                (void **) &fNamePlusDLen,
-                endFnamePtr,
-                (void *) flist[i],
-                '\0',
-                &writeSize
-            );
-            if (bufferFull) {
-                reportFullBuffer(LOGERROR, LogInfo);
-                break;
-            }
+    if (strchr(baseName, '*')) {
+        fn1 = sw_strtok(baseName, &startIndex, &strLen, "*");
+        fn2 = sw_strtok(baseName, &startIndex, &strLen, "*");
 
-            if (0 != remove(fname)) {
-                result = swFALSE;
-                break;
-            }
+        // Transfer extensions from fn1 to fn2 to catch the second
+        // conditional of `RemoveFilesHelper()`
+        if (fn1 && !fn2) {
+            fn2 = fn1;
+            fn1 = NULL;
         }
-
-        for (i = 0; i < nfiles; i++) {
-            if (!isnull(flist[i])) {
-                free(flist[i]);
-            }
-        }
-        free((void *) flist);
+    } else {
+        fn1 = baseName;
+        fn2 = NULL;
     }
+    len1 = (fn1) ? strlen(fn1) : 0;
+    len2 = (fn2) ? strlen(fn2) : 0;
 
-    return (Bool) (result && !LogInfo->stopRun);
+    result = RemoveFilesHelper(
+        fspec, len1, len2, clearDir, fn1, fn2, 0, maxDepth, LogInfo
+    );
+
+    free(baseName);
+
+    return result;
 }
 
 /**

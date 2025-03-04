@@ -597,6 +597,7 @@ clean_build:
 .PHONY : clean_example
 clean_example:
 		-@$(RM) -r tests/example/Output
+		-@$(RM) -r tests/example/logs
 		-@$(RM) -f tests/example/Input_nc/domain_template.nc
 		-@$(RM) -f tests/example/Input_nc/domain.nc
 		-@$(RM) -f tests/example/Input_nc/progress.nc

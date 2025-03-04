@@ -63,10 +63,10 @@ const TimeInt notime = 0xffff; /* init value for _prev* */
 /**
 @brief MDL constructor for global variables.
 
-@param[in,out] SW_Model Struct of type SW_MODEL holding basic time information
-        about the simulation
+@param[in,out] SW_ModelSim Struct of type SW_MODEL_SIM holding basic
+intermediate time information about the simulation run
 */
-void SW_MDL_construct(SW_MODEL *SW_Model) {
+void SW_MDL_construct(SW_MODEL_SIM *SW_ModelSim) {
     /* =================================================== */
     /* note that an initializer that is called during
      * execution (better called clean() or something)
@@ -76,13 +76,13 @@ void SW_MDL_construct(SW_MODEL *SW_Model) {
     OutPeriod pd;
 
     // values of time are correct only after Time_new_year()
-    Time_init_model(SW_Model->days_in_month);
+    Time_init_model(SW_ModelSim->days_in_month);
 
-    ForEachOutPeriod(pd) { SW_Model->newperiod[pd] = swFALSE; }
-    SW_Model->newperiod[eSW_Day] = swTRUE; // every day is a new day
+    ForEachOutPeriod(pd) { SW_ModelSim->newperiod[pd] = swFALSE; }
+    SW_ModelSim->newperiod[eSW_Day] = swTRUE; // every day is a new day
 
-    SW_Model->addtl_yr = 0;
-    SW_Model->doOutput = swTRUE;
+    SW_ModelSim->addtl_yr = 0;
+    SW_ModelSim->doOutput = swTRUE;
 }
 
 /**
@@ -93,12 +93,14 @@ void SW_MDL_deconstruct(void) {}
 /**
 @brief Reads in `modelrun.in` and displays error message if file is incorrect.
 
-@param[in,out] SW_Model Struct of type SW_MODEL holding basic time information
-        about the simulation
+@param[in,out] ModelRunIn Struct of type SW_MODEL_RUN_INPUTS holding basic
+    input time information about the simulation
 @param[in] txtInFiles Array of program in/output files
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_MDL_read(SW_MODEL *SW_Model, char *txtInFiles[], LOG_INFO *LogInfo) {
+void SW_MDL_read(
+    SW_MODEL_RUN_INPUTS *ModelRunIn, char *txtInFiles[], LOG_INFO *LogInfo
+) {
     /* =================================================== */
     /*
      * 1/24/02 - added code for partial start and end years
@@ -143,25 +145,26 @@ void SW_MDL_read(SW_MODEL *SW_Model, char *txtInFiles[], LOG_INFO *LogInfo) {
             // longitude is currently not used by the code, but may be used in
             // the future it is present in the `siteparam.in` input file to
             // completely document site location
-            SW_Model->longitude = value * deg_to_rad;
+            ModelRunIn->longitude = value * deg_to_rad;
             break;
 
         case 1: // Latitude
-            SW_Model->latitude = value * deg_to_rad;
+            ModelRunIn->latitude = value * deg_to_rad;
             // Calculate hemisphere based on latitude
-            SW_Model->isnorth = (GT(SW_Model->latitude, 0.)) ? swTRUE : swFALSE;
+            ModelRunIn->isnorth =
+                (GT(ModelRunIn->latitude, 0.)) ? swTRUE : swFALSE;
             break;
 
         case 2: // Elevation
-            SW_Model->elevation = value;
+            ModelRunIn->elevation = value;
             break;
 
         case 3: // Slope
-            SW_Model->slope = value * deg_to_rad;
+            ModelRunIn->slope = value * deg_to_rad;
             break;
 
         case 4: // Aspect
-            SW_Model->aspect = missing(value) ? value : value * deg_to_rad;
+            ModelRunIn->aspect = missing(value) ? value : value * deg_to_rad;
             break;
 
         default: // More lines than expected
@@ -184,68 +187,72 @@ closeFile: { CloseFile(&f, LogInfo); }
 /**
 @brief Sets up time structures and calls modules that have yearly init routines.
 
-@param[in,out] SW_Model Struct of type SW_MODEL holding basic time information
-    about the simulation
+@param[in,out] SW_ModelIn Struct of type SW_MODEL_INPUTS holding basic input
+    time information about the simulation
+@param[in,out] SW_ModelSim Struct of type SW_MODEL_SIM holding basic
+intermediate time information about the simulation run
 */
-void SW_MDL_new_year(SW_MODEL *SW_Model) {
+void SW_MDL_new_year(SW_MODEL_INPUTS *SW_ModelIn, SW_MODEL_SIM *SW_ModelSim) {
     /* =================================================== */
     /* 1/24/02 - added code for partial start and end years
      */
-    TimeInt year = SW_Model->year;
+    TimeInt year = SW_ModelSim->year;
 
-    SW_Model->prevweek = SW_Model->prevmonth = SW_Model->prevyear = notime;
+    SW_ModelSim->prevweek = SW_ModelSim->prevmonth = SW_ModelSim->prevyear =
+        notime;
 
-    Time_new_year(year, SW_Model->days_in_month, SW_Model->cum_monthdays);
-    SW_Model->simyear = SW_Model->year + SW_Model->addtl_yr;
+    Time_new_year(year, SW_ModelSim->days_in_month, SW_ModelSim->cum_monthdays);
+    SW_ModelSim->simyear = SW_ModelSim->year + SW_ModelSim->addtl_yr;
 
-    SW_Model->firstdoy =
-        (year == SW_Model->startyr && !SW_Model->SW_SpinUp.spinup) ?
-            SW_Model->startstart :
+    SW_ModelSim->firstdoy =
+        (year == SW_ModelIn->startyr && !SW_ModelIn->SW_SpinUp.spinup) ?
+            SW_ModelIn->startstart :
             1;
 
-    SW_Model->lastdoy =
-        (year == SW_Model->endyr && !SW_Model->SW_SpinUp.spinup) ?
-            SW_Model->endend :
+    SW_ModelSim->lastdoy =
+        (year == SW_ModelIn->endyr && !SW_ModelIn->SW_SpinUp.spinup) ?
+            SW_ModelIn->endend :
             Time_get_lastdoy_y(year);
 }
 
 /**
 @brief Sets the output period elements of SW_Model based on current day.
 
-@param[in,out] SW_Model Struct of type SW_MODEL holding basic time
-    information about the simulation
+@param[in,out] SW_ModelSim Struct of type SW_MODEL_SIM holding basic
+intermediate time information about the simulation run
 */
-void SW_MDL_new_day(SW_MODEL *SW_Model) {
+void SW_MDL_new_day(SW_MODEL_SIM *SW_ModelSim) {
 
     OutPeriod pd;
 
-    SW_Model->month =
-        doy2month(SW_Model->doy, SW_Model->cum_monthdays); /* base0 */
-    SW_Model->week = doy2week(SW_Model->doy); /* base0; more often an index */
+    SW_ModelSim->month =
+        doy2month(SW_ModelSim->doy, SW_ModelSim->cum_monthdays); /* base0 */
+    SW_ModelSim->week =
+        doy2week(SW_ModelSim->doy); /* base0; more often an index */
 
     /* in this case, we've finished the daily loop and are about
      * to flush the output */
-    if (SW_Model->doy > SW_Model->lastdoy) {
-        ForEachOutPeriod(pd) { SW_Model->newperiod[pd] = swTRUE; }
+    if (SW_ModelSim->doy > SW_ModelSim->lastdoy) {
+        ForEachOutPeriod(pd) { SW_ModelSim->newperiod[pd] = swTRUE; }
 
         return;
     }
 
-    if (SW_Model->month != SW_Model->prevmonth) {
-        SW_Model->newperiod[eSW_Month] =
-            (SW_Model->prevmonth != notime) ? swTRUE : swFALSE;
-        SW_Model->prevmonth = SW_Model->month;
+    if (SW_ModelSim->month != SW_ModelSim->prevmonth) {
+        SW_ModelSim->newperiod[eSW_Month] =
+            (SW_ModelSim->prevmonth != notime) ? swTRUE : swFALSE;
+        SW_ModelSim->prevmonth = SW_ModelSim->month;
     } else {
-        SW_Model->newperiod[eSW_Month] = swFALSE;
+        SW_ModelSim->newperiod[eSW_Month] = swFALSE;
     }
 
-    /*  if (SW_Model.week != prevweek || SW_Model.month == NoMonth) { */
-    if (SW_Model->week != SW_Model->prevweek) {
-        SW_Model->newperiod[eSW_Week] =
-            (SW_Model->prevweek != notime) ? swTRUE : swFALSE;
-        SW_Model->prevweek = SW_Model->week;
+    /*  if (SW_ModelSim.week != prevweek || SW_ModelSim.month == NoMonth) { */
+    if (SW_ModelSim->week != SW_ModelSim->prevweek) {
+        SW_ModelSim->newperiod[eSW_Week] =
+            (SW_ModelSim->prevweek != notime) ? swTRUE : swFALSE;
+        SW_ModelSim->prevweek = SW_ModelSim->week;
     } else {
-        SW_Model->newperiod[eSW_Week] = swFALSE;
+        SW_ModelSim->newperiod[eSW_Week] = swFALSE;
     }
 }
 
@@ -253,27 +260,29 @@ void SW_MDL_new_day(SW_MODEL *SW_Model) {
 @brief Obtain information from domain for one model run based on
 user inputted suid
 
-@param[in,out] SW_Model Struct of type SW_MODEL holding basic time
-    information about the simulation
+@param[in,out] SW_ModelIn Struct of type SW_MODEL_INPUTS holding basic input
+    time information about the simulation
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
 @param[in] fileNames Input netCDF files
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_MDL_get_ModelRun(
-    SW_MODEL *SW_Model,
+    SW_MODEL_INPUTS *SW_ModelIn,
     SW_DOMAIN *SW_Domain,
     char *fileNames[],
     LOG_INFO *LogInfo
 ) {
 
-    SW_Model->startyr = SW_Domain->startyr;       // Copy start year
-    SW_Model->endyr = SW_Domain->endyr;           // Copy end year
-    SW_Model->startstart = SW_Domain->startstart; // Copy start doy
-    SW_Model->endend = SW_Domain->endend;         // Copy end doy
+    SW_ModelIn->startyr = SW_Domain->startyr;       // Copy start year
+    SW_ModelIn->endyr = SW_Domain->endyr;           // Copy end year
+    SW_ModelIn->startstart = SW_Domain->startstart; // Copy start doy
+    SW_ModelIn->endend = SW_Domain->endend;         // Copy end doy
 
     memcpy(
-        &SW_Model->SW_SpinUp, &SW_Domain->SW_SpinUp, sizeof(SW_Model->SW_SpinUp)
+        &SW_ModelIn->SW_SpinUp,
+        &SW_Domain->SW_SpinUp,
+        sizeof(SW_ModelIn->SW_SpinUp)
     );
 
     (void) LogInfo;
