@@ -223,7 +223,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
   #--- * Check output ------
   dir_testRunOutput <- file.path(dir_testRun, "Output")
 
-  fname_logfile <- file.path(dir_testRunOutput, "logfile.log")
+  fname_logfile <- file.path(dir_testRun, "logs", "logfile.log")
   has_logfile <- file.exists(fname_logfile)
 
   logfile <- if (has_logfile) readLines(fname_logfile)
@@ -520,11 +520,10 @@ ids_failed <- c(
 
 #--- * Warning details ------
 if (reportWarnings) {
-  tmp <- seq_len(nrow(res))
-  if (length(ids_failed) > 0L) tmp <- tmp[-ids_failed]
-  ids <- which(res[["Expectation"]] == "error")
-  if (length(ids) > 0L) tmp <- tmp[-ids]
-  ids_okWithMsg <- intersect(tmp, which(nchar(res[["MessageRun"]]) > 0L))
+  # Identify successful testRuns with warning messages
+  ids_failedOrError <- c(ids_failed, which(res[["Expectation"]] == "error"))
+  ids_withMsg <- which(nchar(res[["MessageRun"]]) > 0L)
+  ids_okWithMsg <- setdiff(ids_withMsg, ids_failedOrError)
 
   if (length(ids_okWithMsg) > 0L) {
     msg <- "Messages produced by successful tests:"

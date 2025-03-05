@@ -26,9 +26,11 @@ Note: this document is best viewed as part of the doxygen-built documentation
   * The user can turn on/off different types of outputs via the
     input file \ref outsetupin in text-mode and
     \ref SW2_netCDF_output_variables in nc-mode.
-  * The outputs are written to the folder `Output/` including a
-    logfile that contains warnings and errors. Outputs are explained in detail
-    \ref explain_outputs "below".
+  * Warning and error messages, if any, are written to a
+    logfile `logs/logfile.log`
+    (the file name and path is controlled by input from `"files.in"`).
+  * The outputs are written to the folder `Output/`.
+    Outputs are explained in detail \ref explain_outputs "below".
 
 <br>
 

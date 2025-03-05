@@ -27,8 +27,8 @@
 #define SW_OUTTEXT
 #endif
 
-#define SW_NINFILES 18                       // For input `txtInFiles`
-#define SW_NOUTFILES 9                       // For output `txtInFiles`
+#define SW_NINFILES 19                       // For input `txtInFiles`
+#define SW_NOUTFILES 8                       // For output `txtInFiles`
 #define SW_NFILES SW_NINFILES + SW_NOUTFILES // For `txtInFiles`
 #define SW_NVARDOM 2                         // For `InFilesNC`
 
@@ -1506,6 +1506,7 @@ typedef enum {
     eSW_InSpatial,
     eSW_InTopo,
     eSW_InSoil,
+    eSW_InSite,
     eSW_InVeg,
     eSW_InWeather,
     eSW_InClimate,
