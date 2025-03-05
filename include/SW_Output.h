@@ -156,7 +156,7 @@ extern const char *const styp2longstr[];
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 
-void SW_OUT_init_ptrs(SW_OUT_RUN *OutRun);
+void SW_OUT_init_ptrs(SW_OUT_RUN *OutRun, SW_PATH_OUTPUTS *SW_PathOutputs);
 
 void SW_OUTDOM_init_ptrs(SW_OUT_DOM *OutDom);
 
@@ -184,7 +184,7 @@ void SW_OUT_set_ncol(
 
 void SW_OUT_set_colnames(
     unsigned int tLayers,
-    SW_VEGESTAB_INFO **parms,
+    SW_VEGESTAB_INFO_INPUTS *parms,
     const IntUS ncol_OUT[],
     char *colnames_OUT[][5 * NVEGTYPES + MAX_LAYERS],
     LOG_INFO *LogInfo
@@ -193,7 +193,8 @@ void SW_OUT_set_colnames(
 void SW_OUT_setup_output(
     unsigned int tLayers,
     unsigned int n_evap_lyrs,
-    SW_VEGESTAB *SW_VegEstab,
+    unsigned int count,
+    SW_VEGESTAB_INFO_INPUTS *parmsIn,
     SW_OUT_DOM *OutDom,
     LOG_INFO *LogInfo
 );
