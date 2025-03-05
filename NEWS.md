@@ -1,6 +1,12 @@
 # NEWS
 # SOILWAT2 v8.2.0-devel
 
+* If specific humidity is provided as input instead of relative humidity, then
+  relative humidity is now calculated using minimum and maximum temperature
+  (instead of mean temperature as previously).
+  Additionally, the range in which resulting relative humidity values are
+  trimmed to 100% (with a warning) is now 100-200% (previously, 100-150%).
+
 
 # SOILWAT2 v8.1.1
 * Simulation output remains the same as the previous version.

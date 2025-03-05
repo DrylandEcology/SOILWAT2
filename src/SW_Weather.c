@@ -858,18 +858,29 @@ void SW_WTH_setWeatherValues(
 
                         // Relative humidity [0-100 %] calculated from
                         // specific humidity [g kg-1] and temperature [C]
-                        yearlyWeather[yearIndex].r_humidity_daily[doy] =
-                            relativeHumidity2(
-                                tempWeather[yearIndex][SPEC_HUMID][doy],
-                                yearlyWeather[yearIndex].temp_avg[doy],
-                                elevation
-                            );
+                        if (!missing(yearlyWeather[yearIndex].temp_max[doy]) &&
+                            !missing(yearlyWeather[yearIndex].temp_min[doy])) {
+                            yearlyWeather[yearIndex].r_humidity_daily[doy] =
+                                relativeHumidity3(
+                                    tempWeather[yearIndex][SPEC_HUMID][doy],
+                                    yearlyWeather[yearIndex].temp_max[doy],
+                                    yearlyWeather[yearIndex].temp_min[doy],
+                                    elevation
+                                );
+                        } else {
+                            yearlyWeather[yearIndex].r_humidity_daily[doy] =
+                                relativeHumidity2(
+                                    tempWeather[yearIndex][SPEC_HUMID][doy],
+                                    yearlyWeather[yearIndex].temp_avg[doy],
+                                    elevation
+                                );
+                        }
 
-                        // Snap relative humidity in 100-150% to 100%
+                        // Snap relative humidity in 100-200% to 100%
                         if (yearlyWeather[yearIndex].r_humidity_daily[doy] >
                                 100. &&
                             yearlyWeather[yearIndex].r_humidity_daily[doy] <=
-                                150.) {
+                                200.) {
                             LogError(
                                 LogInfo,
                                 LOGWARN,

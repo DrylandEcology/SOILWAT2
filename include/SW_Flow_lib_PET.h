@@ -108,6 +108,10 @@ double relativeHumidity1(double vp, double meanTemp);
 
 double relativeHumidity2(double huss, double meanTemp, double elevation);
 
+double relativeHumidity3(
+    double huss, double maxTemp, double minTemp, double elevation
+);
+
 double actualVaporPressure1(double hurs, double meanTemp);
 
 double actualVaporPressure2(
