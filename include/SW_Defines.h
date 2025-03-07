@@ -345,6 +345,11 @@ typedef cv_converter sw_converter_t; /* udunits unit converter */
 typedef int sw_converter_t;
 #endif
 
+/* =================================================== */
+/*                   Parallel Support                  */
+/* --------------------------------------------------- */
+
+#define SW_MPI_ROOT 0
 
 #ifdef __cplusplus
 }

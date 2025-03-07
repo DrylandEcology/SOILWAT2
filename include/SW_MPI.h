@@ -17,6 +17,11 @@ extern "C" {
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 
+void SW_MPI_initialize(
+    int *argc, char ***argv, int *rank, int *worldSize, char *procName
+);
+
+void SW_MPI_finalize();
 
 #ifdef __cplusplus
 }

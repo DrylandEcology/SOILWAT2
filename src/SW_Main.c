@@ -35,6 +35,10 @@
 #include "include/SW_netCDF_Output.h"
 #endif
 
+#if defined(SWMPI)
+#include "include/SW_MPI.h"
+#endif
+
 
 /* =================================================== */
 /*             Local Function Definitions              */
@@ -56,16 +60,32 @@ int main(int argc, char **argv) {
     Bool renameDomainTemplateNC = swFALSE;
     Bool prepareFiles = swFALSE;
 
+    int rank = 0;
+    int size = 0;
+
+#if defined(SWMPI)
+    char procName[FILENAME_MAX] = "\0";
+#endif
+
     unsigned long userSUID;
 
     // Start overall wall time
     SW_WT_StartTime(&SW_WallTime);
+
+#if defined(SWMPI)
+    SW_MPI_initialize(&argc, &argv, &rank, &size, procName);
+#endif
 
     // Initialize logs and pointer objects
     sw_init_logs(stdout, &LogInfo);
 
     SW_DOM_init_ptrs(&SW_Domain);
     SW_CTL_init_ptrs(&sw_template);
+#if defined(SWMPI)
+    if (rank > SW_MPI_ROOT) {
+        goto finishProgram;
+    }
+#endif
 
     // Obtain user input from the command line
     sw_init_args(
@@ -250,6 +270,10 @@ finishProgram: {
         sw_message("ended.");
     }
 }
+
+#if defined(SWMPI)
+    SW_MPI_finalize();
+#endif
 
     return 0;
 }
