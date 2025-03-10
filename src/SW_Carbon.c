@@ -292,25 +292,37 @@ closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**
-@brief Calculates the multipliers of the CO2-effect for biomass and water-use
-efficiency.
+@brief Calculate CO2-fertilization effects for biomass and water-use efficiency
 
-Multipliers are calculated per year with the equation: Coeff1 * ppm^Coeff2
-Where Coeff1 and Coeff2 are provided by the VegProd input. Coefficients
-assume that monthly biomass reflect values for atmospheric conditions at 360
-ppm CO2. Each PFT has its own set of coefficients. If a multiplier is
-disabled, its value is kept at the default value of 1.0. Multipliers are only
-calculated for the years that will be simulated.
+Multipliers are calculated for each year and plant functional type:
+\f[m(t,k) = f(t,k) / f(v,k)\f]
+\f[f(t,k) = {coeff_1(k)} * {CO_2(t)} ^ {coeff_2(k)}\f]
 
-@param[in,out] VegProd_veg Array of size NVEGTYPES holding data for each
-    vegetation type
+where
+    - \f$coeff_1(k)\f$ and \f$coeff_2(k)\f$ are
+      coefficients for plant functional type \f$k\f$ based on a reference of
+      360 ppm CO2 (which occurred just before 1995),
+    - \f$CO_2(t)\f$ is atmospheric CO2 concentration in units [ppm] for
+      calendar year \f$t\f$, and
+    - \f$1 / f(v,k)\f$ is a correction factor to adjust for a difference between
+      year of vegetation inputs \f$v\f$ and year of reference
+      atmospheric CO2 concentration.
+
+The multipliers become one during the year of vegetation inputs, i.e.,
+\f$m(v,k) = 1\f$.
+
+If a multiplier is disabled, its value is kept at the default value of 1.0.
+Multipliers are only calculated for the years that will be simulated.
+
+@param[in,out] SW_VegProd Struct of type SW_VEGPROD describing surface
+    cover conditions in the simulation
 @param[in] SW_Model Struct of type SW_MODEL holding basic time information
     about the simulation
 @param[in] SW_Carbon Struct of type SW_CARBON holding all CO2-related data
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CBN_init_run(
-    VegType VegProd_veg[],
+    SW_VEGPROD *SW_VegProd,
     SW_MODEL *SW_Model,
     SW_CARBON *SW_Carbon,
     LOG_INFO *LogInfo
@@ -322,24 +334,59 @@ void SW_CBN_init_run(
     int k;
     TimeInt year;
     TimeInt simendyr = SW_Model->endyr + SW_Model->addtl_yr;
+    /* atmospheric CO2 concentration corresponding to vegetation input year */
+    double vegCO2;
+    double biomCorrectionFactor[NVEGTYPES];
+    double wueCorrectionFactor[NVEGTYPES];
     double ppm;
 
     if (!SW_Carbon->use_bio_mult && !SW_Carbon->use_wue_mult) {
         return;
     }
 
-    // Only iterate through the years that we know will be used
+    /* Adjustment for year of vegetation inputs relative to reference */
+    if (SW_VegProd->vegYear < 0 || SW_VegProd->vegYear >= MAX_NYEAR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Year (%d) of vegetation input outside provided CO2 values.",
+            SW_VegProd->vegYear
+        );
+        return; // Exit function prematurely due to error
+    }
+
+    vegCO2 = SW_Carbon->ppm[SW_VegProd->vegYear];
+    if (LT(vegCO2, 0.)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Provided aCO2 is negative in year %d",
+            SW_VegProd->vegYear
+        );
+        return; // Exit function prematurely due to error
+    }
+
+    ForEachVegType(k) {
+        biomCorrectionFactor[k] =
+            1. / (SW_VegProd->veg[k].co2_bio_coeff1 *
+                  pow(vegCO2, SW_VegProd->veg[k].co2_bio_coeff2));
+
+        wueCorrectionFactor[k] =
+            1. / (SW_VegProd->veg[k].co2_wue_coeff1 *
+                  pow(vegCO2, SW_VegProd->veg[k].co2_wue_coeff2));
+    }
+
+
+    /* Calculate CO2 fertilization multipliers for each simulated year */
     for (year = SW_Model->startyr + SW_Model->addtl_yr; year <= simendyr;
          year++) {
         ppm = SW_Carbon->ppm[year];
 
-        if (LT(ppm, 0.)) // CO2 concentration must not be negative values
-        {
+        if (LT(ppm, 0.)) {
             LogError(
                 LogInfo,
                 LOGERROR,
-                "(SW_Carbon) No CO2 ppm data was"
-                " provided for year %d\n",
+                "Invalid CO2 ppm value was provided for year %d",
                 year
             );
             return; // Exit function prematurely due to error
@@ -348,9 +395,10 @@ void SW_CBN_init_run(
         // Calculate multipliers per PFT
         if (SW_Carbon->use_bio_mult) {
             ForEachVegType(k) {
-                VegProd_veg[k].co2_multipliers[BIO_INDEX][year] =
-                    VegProd_veg[k].co2_bio_coeff1 *
-                    pow(ppm, VegProd_veg[k].co2_bio_coeff2);
+                SW_VegProd->veg[k].co2_multipliers[BIO_INDEX][year] =
+                    biomCorrectionFactor[k] *
+                    SW_VegProd->veg[k].co2_bio_coeff1 *
+                    pow(ppm, SW_VegProd->veg[k].co2_bio_coeff2);
             }
         }
 
@@ -358,22 +406,23 @@ void SW_CBN_init_run(
         if (debug) {
             sw_printf(
                 "Shrub: use%d: bio_mult[%d] = %1.3f / coeff1 = %1.3f / coeff2 "
-                "= %1.3f / ppm = %3.2f\n",
+                "= %1.3f / ppm = %3.2f, correctionFactor = %1.3f\n",
                 SW_Carbon->use_bio_mult,
                 year,
-                VegProd_veg[SW_SHRUB].co2_multipliers[BIO_INDEX][year],
-                VegProd_veg[SW_SHRUB].co2_bio_coeff1,
-                VegProd_veg[SW_SHRUB].co2_bio_coeff2,
-                ppm
+                SW_VegProd->veg[SW_SHRUB].co2_multipliers[BIO_INDEX][year],
+                SW_VegProd->veg[SW_SHRUB].co2_bio_coeff1,
+                SW_VegProd->veg[SW_SHRUB].co2_bio_coeff2,
+                ppm,
+                biomCorrectionFactor[k]
             );
         }
 #endif
 
         if (SW_Carbon->use_wue_mult) {
             ForEachVegType(k) {
-                VegProd_veg[k].co2_multipliers[WUE_INDEX][year] =
-                    VegProd_veg[k].co2_wue_coeff1 *
-                    pow(ppm, VegProd_veg[k].co2_wue_coeff2);
+                SW_VegProd->veg[k].co2_multipliers[WUE_INDEX][year] =
+                    wueCorrectionFactor[k] * SW_VegProd->veg[k].co2_wue_coeff1 *
+                    pow(ppm, SW_VegProd->veg[k].co2_wue_coeff2);
             }
         }
     }

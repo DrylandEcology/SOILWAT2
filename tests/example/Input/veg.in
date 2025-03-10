@@ -131,6 +131,11 @@
 # LAI_conv - monthly amount of biomass needed to produce LAI=1.0 (g/m^2).
 # There should be 12 rows, one for each month, starting with January.
 
+# Calendar year corresponding to vegetation inputs
+# Note: year during which atmospheric CO2 fertilization does not modify
+# biomass inputs and/or water use efficiency (default: 1995 at 360 ppm CO2)
+1995
+
 # Grasslands component:
 #Litter  Biomass  %Live LAI_conv
  75.0    150.0    0.00  300.     # January

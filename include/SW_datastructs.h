@@ -618,6 +618,9 @@ typedef struct {
         user input from file `Input/veg.in` */
     CoverType bare_cov;
 
+    /** Calendar year corresponding to vegetation inputs */
+    TimeInt vegYear;
+
     Bool
         /** Flag that determines whether vegetation-type specific soil water
           availability should be calculated;

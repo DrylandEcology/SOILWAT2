@@ -1,5 +1,17 @@
 # NEWS
 # SOILWAT2 v8.2.0-devel
+* This version produces similar but not identical simulation output
+  as previously because of the following changes:
+    * CO2-fertilization effects are now using provided atmospheric CO2 of the
+      reference year 1995; previously, 360 ppm was assumed.
+
+* CO2-fertilization is now adjusted for the year when vegetation inputs
+  were made (#328; @dschlaep).
+
+## Changes to inputs
+* New input via `"veg.in"` to specify the year for which vegetation inputs
+  are valid, i.e., the year when CO2-fertilization has no effect on biomass
+  and water-use efficiency (default is 1995).
 
 * If specific humidity is provided as input instead of relative humidity, then
   relative humidity is now calculated using minimum and maximum temperature

@@ -93,9 +93,7 @@ TEST_F(CarbonFixtureTest, CarbonCO2multipliers) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    SW_CBN_init_run(
-        SW_Run.VegProd.veg, &SW_Run.Model, &SW_Run.Carbon, &LogInfo
-    );
+    SW_CBN_init_run(&SW_Run.VegProd, &SW_Run.Model, &SW_Run.Carbon, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (year = SW_Run.Model.startyr + SW_Run.Model.addtl_yr; year <= simendyr;

@@ -672,7 +672,7 @@ void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
     // SW_OUT_init_run() handled separately so that SW_CTL_init_run() can be
     //   useful for unit tests, rSOILWAT2, and STEPWAT2 applications
     SW_SWC_init_run(&sw->SoilWat, &sw->Site, &sw->Weather.temp_snow);
-    SW_CBN_init_run(sw->VegProd.veg, &sw->Model, &sw->Carbon, LogInfo);
+    SW_CBN_init_run(&sw->VegProd, &sw->Model, &sw->Carbon, LogInfo);
 }
 
 /**

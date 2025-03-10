@@ -159,7 +159,8 @@ void SW_VPD_read(
         "CO2 Biomass Coefficient 1",
         "CO2 Biomass Coefficient 2",
         "CO2 WUE Coefficient 1",
-        "CO2 WUE Coefficient 2"
+        "CO2 WUE Coefficient 2",
+        "year of vegetation inputs"
     };
 
     FILE *f;
@@ -169,7 +170,7 @@ void SW_VPD_read(
     int lineno = 0;
     int index;
     // last case line number before monthly biomass densities
-    const int line_help = 28;
+    const int line_help = 29;
     double help_veg[NVEGTYPES];
     double help_bareGround = 0.;
     double litt;
@@ -182,7 +183,6 @@ void SW_VPD_read(
     char vegStrs[NVEGTYPES][20] = {{'\0'}};
     char bareGroundStr[20] = {'\0'};
     char *startOfErrMsg;
-    char vegMethodStr[20] = {'\0'};
     const int numMonthVals = 4;
     int expectedNumInVals;
 
@@ -195,23 +195,44 @@ void SW_VPD_read(
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
         lineno++;
 
-        if (lineno >= 2 && lineno <= 28) {
-            x = sscanf(
-                inbuf,
-                "%19s %19s %19s %19s %19s",
-                vegStrs[SW_GRASS],
-                vegStrs[SW_SHRUB],
-                vegStrs[SW_TREES],
-                vegStrs[SW_FORBS],
-                bareGroundStr
-            );
+        startOfErrMsg = (lineno >= 25) ? (char *) "Not enough arguments" :
+                                         (char *) "Invalid record in";
 
-            startOfErrMsg = (lineno >= 25) ? (char *) "Not enough arguments" :
-                                             (char *) "Invalid record in";
+        if (lineno <= line_help) {
+            if (lineno == 1 || lineno == 29) {
+                x = sscanf(inbuf, "%19s", vegStrs[0]);
+                expectedNumInVals = 1;
 
-            expectedNumInVals = (lineno >= 4) ? NVEGTYPES : NVEGTYPES + 1;
+            } else {
+                x = sscanf(
+                    inbuf,
+                    "%19s %19s %19s %19s %19s",
+                    vegStrs[SW_GRASS],
+                    vegStrs[SW_SHRUB],
+                    vegStrs[SW_TREES],
+                    vegStrs[SW_FORBS],
+                    bareGroundStr
+                );
 
-            if (x < expectedNumInVals) {
+                expectedNumInVals = (lineno >= 4) ? NVEGTYPES : NVEGTYPES + 1;
+
+                ForEachVegType(k) {
+                    help_veg[k] = sw_strtod(vegStrs[k], MyFileName, LogInfo);
+                    if (LogInfo->stopRun) {
+                        goto closeFile;
+                    }
+                }
+
+                if (x == NVEGTYPES + 1) {
+                    help_bareGround =
+                        sw_strtod(bareGroundStr, MyFileName, LogInfo);
+                    if (LogInfo->stopRun) {
+                        goto closeFile;
+                    }
+                }
+            }
+
+            if (x != expectedNumInVals) {
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -223,38 +244,11 @@ void SW_VPD_read(
                 goto closeFile;
             }
 
-            ForEachVegType(k) {
-                help_veg[k] = sw_strtod(vegStrs[k], MyFileName, LogInfo);
-                if (LogInfo->stopRun) {
-                    goto closeFile;
-                }
-            }
-
-            if (x == NVEGTYPES + 1) {
-                help_bareGround = sw_strtod(bareGroundStr, MyFileName, LogInfo);
-                if (LogInfo->stopRun) {
-                    goto closeFile;
-                }
-            }
-        }
-
-        if (lineno - 1 < line_help) { /* Compare to `line_help` in base0 */
             switch (lineno) {
+            /* method for vegetation parameters */
             case 1:
-                x = sscanf(inbuf, "%19s", vegMethodStr);
-                if (x != 1) {
-                    LogError(
-                        LogInfo,
-                        LOGERROR,
-                        "invalid record in %s in %s\n",
-                        lineErrStrings[0],
-                        MyFileName
-                    );
-                    goto closeFile;
-                }
-
                 SW_VegProd->veg_method =
-                    sw_strtoi(vegMethodStr, MyFileName, LogInfo);
+                    sw_strtoi(vegStrs[0], MyFileName, LogInfo);
                 if (LogInfo->stopRun) {
                     goto closeFile;
                 }
@@ -446,11 +440,22 @@ void SW_VPD_read(
                 }
                 break;
 
+            /* Calendar year corresponding to vegetation inputs */
+            case 29:
+                SW_VegProd->vegYear =
+                    sw_strtoi(vegStrs[0], MyFileName, LogInfo);
+                if (LogInfo->stopRun) {
+                    goto closeFile;
+                }
+                break;
+
             default:
                 break;
             }
 
         } else {
+            /* Mean monthly vegetation inputs */
+
             if (lineno == line_help + 1 || lineno == line_help + 1 + 12 ||
                 lineno == line_help + 1 + 12 * 2 ||
                 lineno == line_help + 1 + 12 * 3) {
