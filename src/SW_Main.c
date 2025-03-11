@@ -65,6 +65,7 @@ int main(int argc, char **argv) {
 
 #if defined(SWMPI)
     char procName[FILENAME_MAX] = "\0";
+    MPI_Datatype datatypes[SW_MPI_NTYPES];
 #endif
 
     unsigned long userSUID;
@@ -81,11 +82,17 @@ int main(int argc, char **argv) {
 
     SW_DOM_init_ptrs(&SW_Domain);
     SW_CTL_init_ptrs(&sw_template);
+
 #if defined(SWMPI)
-    if (rank > SW_MPI_ROOT) {
+    SW_MPI_create_types(datatypes, &LogInfo);
+    if (LogInfo.stopRun) {
         goto finishProgram;
     }
 #endif
+
+    if (rank > 0) {
+        goto finishProgram;
+    }
 
     // Obtain user input from the command line
     sw_init_args(

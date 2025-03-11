@@ -13,6 +13,13 @@ extern "C" {
 /*                  Local Definitions                  */
 /* --------------------------------------------------- */
 
+typedef enum {
+    eSW_MPI_Domain,
+    eSW_MPI_Spinup,
+    eSW_MPI_Inputs,
+    eSW_MPI_WallTime,
+    eSW_MPI_OutDomIO
+} MPIType;
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
@@ -22,6 +29,8 @@ void SW_MPI_initialize(
 );
 
 void SW_MPI_finalize();
+
+void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo);
 
 #ifdef __cplusplus
 }
