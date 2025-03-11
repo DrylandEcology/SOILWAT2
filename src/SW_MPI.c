@@ -1,6 +1,22 @@
 #include "include/SW_MPI.h"
 
 #include "include/filefuncs.h"
+/**
+@brief Wrapper for MPI function to free a type and throw a
+    warning if a free throws an error
+
+@param[in,out] type
+@param[out] LogInfo
+*/
+static void free_type(MPI_Datatype *type, LOG_INFO *LogInfo) {
+    int res = MPI_SUCCESS;
+
+    res = MPI_Type_free(type);
+
+    if (res != MPI_SUCCESS) {
+        LogError(LogInfo, LOGWARN, "Could not free a custom MPI type.");
+    }
+}
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -302,19 +318,14 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
         }
 
         if (typeIndex == eSW_MPI_Inputs) {
-            res = MPI_Type_free(&inTypes[vegprodIndex][0]);
-            if (res != MPI_SUCCESS) {
-                goto reportFail;
-            }
+            free_type(&inTypes[vegprodIndex][0], LogInfo);
+            free_type(&inTypes[vegprodIndex][1], LogInfo);
         }
     }
 
     /* Free run input sub types */
     for (runTypeIndex = 0; runTypeIndex < numRunInTypes; runTypeIndex++) {
-        res = MPI_Type_free(&types[eSW_MPI_Inputs][runTypeIndex]);
-        if (res != MPI_SUCCESS) {
-            goto reportFail;
-        }
+        free_type(&types[eSW_MPI_Inputs][runTypeIndex], LogInfo);
     }
 
     // TODO: Create custom MPI type for designations
