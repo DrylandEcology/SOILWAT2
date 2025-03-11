@@ -16,6 +16,10 @@
 #include "include/SW_Defines.h" // for MAX_NYEAR, MAX_ST_RGR, MAX_LAYERS, M...
 #include <stdio.h>              // for FILENAME_MAX, FILE
 
+#if defined(SWMPI)
+#include <mpi.h>
+#endif
+
 
 // Array-based output:
 #if defined(RSOILWAT) || defined(STEPWAT) || defined(SWNETCDF)
@@ -1511,6 +1515,38 @@ typedef enum {
 } InKeys;
 
 /* =================================================== */
+/*                  MPI Functionality                  */
+/* --------------------------------------------------- */
+
+typedef struct {
+    int procJob;    /**< The assigned job of a process;
+                         possibilities are: job assigner, compute, and I/O */
+    int ioRank;     /**< Rank of the compute node's assigned I/O process;
+                         only used if process is compute */
+    int nCompProcs; /**< Number of compute processes assigned to an I/O process;
+                         only used if process is I/O */
+    int nSuids; /**< Number of suids that will be controlled by I/O processes */
+    Bool useTSuids; /**< Flag specifying if we will be using a list of
+                         translated domain SUIDs */
+
+    int ranks[PROCS_PER_IO]; /**< A list of ranks that the I/O process
+                                  controls */
+    unsigned long *
+        *domSuids; /**< A list of domain SUIDs that will be used by I/O
+                        processes for writing and reading information */
+    unsigned long ***domTSuids; /**< A list of translated domain SUIDs for each
+                                     input key if index files are used */
+
+    MPI_Comm groupComm; /**< New group communicator; can either be for
+                             I/O or compute;
+                             Note: creating this new communicator
+                                   created a new rank labelling system
+                                   e.g., rank 2 in MPI_COMM_WORLD
+                                         could be 0, 1, etc. */
+    MPI_Comm rootCompComm;
+} SW_MPI_DESIGNATE;
+
+/* =================================================== */
 /*                    Domain structs                   */
 /* --------------------------------------------------- */
 
@@ -1587,6 +1623,9 @@ typedef struct {
 
     // Information that is constant through simulation runs
     SW_OUT_DOM OutDom;
+
+    // Information about a process designation (MPI only)
+    SW_MPI_DESIGNATE SW_Designation;
 } SW_DOMAIN;
 
 /* =================================================== */

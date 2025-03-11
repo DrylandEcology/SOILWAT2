@@ -349,8 +349,18 @@ typedef int sw_converter_t;
 /*                   Parallel Support                  */
 /* --------------------------------------------------- */
 
-#define SW_MPI_NTYPES 5
+#define SW_MPI_NTYPES 6
 #define SW_MPI_ROOT 0
+
+#ifndef MAX_NODE_PROCS
+#define MAX_NODE_PROCS 128
+#endif
+
+#define SW_MPI_NIO 2 /* Maximum number of I/O processes in a copute node */
+
+/* The maximum number of compute processes that can be assigned
+   to an I/O process */
+#define PROCS_PER_IO ((MAX_NODE_PROCS / SW_MPI_NIO) + 1)
 
 #ifdef __cplusplus
 }

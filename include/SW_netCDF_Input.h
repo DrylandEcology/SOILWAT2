@@ -4,6 +4,7 @@
 #include "include/generic.h"        // for Bool, IntUS
 #include "include/SW_datastructs.h" // for SW_DOMAIN, SW_NETCDF_OUT, S...
 #include "include/SW_Defines.h"     // for OutPeriod, SW_OUTNPERIODS, SW_OUTN...
+#include <netcdf.h>                 // for NC_NOERR, nc_close, NC_DOUBLE
 #include <stdio.h>                  // for size_t
 
 #ifdef __cplusplus
@@ -49,6 +50,15 @@ static const int numVarsInKey[] = {
 #define INTAXIS 12
 #define INSTPATRN 13
 #define INVAXIS 14
+
+/** Progress status: SUID is ready for simulation */
+#define PRGRSS_READY ((signed char) 0)
+
+/** Progress status: SUID has successfully been simulated */
+#define PRGRSS_DONE ((signed char) 1)
+
+/** Progress status: SUID failed to simulate */
+#define PRGRSS_FAIL ((signed char) -1)
 
 /* =================================================== */
 /*             Global Function Declarations            */

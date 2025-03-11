@@ -91,7 +91,7 @@ int main(int argc, char **argv) {
 #endif
 
     if (rank > 0) {
-        goto finishProgram;
+        goto skip;
     }
 
     // Obtain user input from the command line
@@ -208,6 +208,21 @@ int main(int argc, char **argv) {
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
+
+#if defined(SWMPI)
+skip:
+    if (SW_MPI_check_setup_status(size, rank, &LogInfo)) {
+        goto finishProgram;
+    }
+
+    SW_MPI_process_types(
+        &SW_Domain, datatypes[eSW_MPI_Designate], procName, size, rank, &LogInfo
+    );
+
+    if (rank > 0) {
+        goto finishProgram;
+    }
+#endif
 
     // initialize output
     SW_OUT_setup_output(

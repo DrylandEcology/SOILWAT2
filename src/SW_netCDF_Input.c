@@ -21,7 +21,6 @@
 #include "include/SW_Weather.h"         // for SW_WTH_allocateAllWeather...
 #include "include/Times.h"              // for isleapyear, timeStringISO8601
 #include <math.h>                       // for NAN, ceil, isnan
-#include <netcdf.h>                     // for NC_NOERR, nc_close, NC_DOUBLE
 #include <stdio.h>                      // for size_t, NULL, snprintf, sscanf
 #include <stdlib.h>                     // for free, strtod
 #include <string.h>                     // for strcmp, strlen, strstr, memcpy
@@ -29,15 +28,6 @@
 /* =================================================== */
 /*                   Local Defines                     */
 /* --------------------------------------------------- */
-
-/** Progress status: SUID is ready for simulation */
-#define PRGRSS_READY ((signed char) 0)
-
-/** Progress status: SUID has successfully been simulated */
-#define PRGRSS_DONE ((signed char) 1)
-
-/** Progress status: SUID failed to simulate */
-#define PRGRSS_FAIL ((signed char) -1)
 
 #define NIN_VAR_INPUTS 23
 
