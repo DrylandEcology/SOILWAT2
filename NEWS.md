@@ -8,10 +8,17 @@
 * CO2-fertilization is now adjusted for the year when vegetation inputs
   were made (#328; @dschlaep).
 
+* The user can now specify if vegetation biomass inputs reflect
+  conditions on the ground (at the specified surface cover) or
+  if they represent vegetation as if that plant functional type occurred
+  at 100% surface cover (#328; @dschlaep).
+
 ## Changes to inputs
 * New input via `"veg.in"` to specify the year for which vegetation inputs
   are valid, i.e., the year when CO2-fertilization has no effect on biomass
   and water-use efficiency (default is 1995).
+* New input via `"veg.in"` to identify the spatial reference of biomass inputs
+  `"isBiomAsIf100Cover"` (default `"true"`).
 
 * If specific humidity is provided as input instead of relative humidity, then
   relative humidity is now calculated using minimum and maximum temperature
