@@ -6,6 +6,7 @@
 #include "tests/gtests/sw_testhelpers.h" // for SiteFixtureTest, length
 #include "gmock/gmock.h"                 // for HasSubstr, MakePredicateFor...
 #include "gtest/gtest.h"                 // for Test, EXPECT_FALSE, TestInf...
+#include <math.h>                        // for NAN
 #include <stdio.h>                       // for NULL
 #include <string.h>                      // for memset
 

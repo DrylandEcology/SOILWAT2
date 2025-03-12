@@ -116,7 +116,11 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     SW_VES_new_year(sw->VegEstabSim.count);
 
     // SW_VPD_new_year(): Dynamic CO2 effects on vegetation
-    SW_VPD_new_year(&sw->ModelSim, sw->RunIn.VegProdRunIn.veg);
+    SW_VPD_new_year(
+        &sw->ModelSim,
+        sw->VegProdIn.isBiomAsIf100Cover,
+        sw->RunIn.VegProdRunIn.veg
+    );
 
     // SW_FLW_new_year() not needed
 
@@ -685,6 +689,7 @@ void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
         sw->ModelSim.addtl_yr,
         sw->ModelIn.startyr,
         sw->ModelIn.endyr,
+        sw->VegProdIn.vegYear,
         LogInfo
     );
 }

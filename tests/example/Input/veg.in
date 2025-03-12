@@ -110,9 +110,13 @@
 
 
 #------ Mean monthly biomass values
+# Spatial reference of biomass inputs (isBiomAsIf100Cover)
+1   # 0, values as is (at given cover); 1, values as if cover was 100%
+
+# --- if `isBiomAsIf100Cover` is true (1):
+# Input biomass values are independent of the input composition values.
 # Input biomass per unit area (g / m2) for each vegetation type represent
 # values as if that vegetation type covers 100% of the simulated surface.
-# That way input biomass values are independent of the input composition values.
 # For example,
 #   - inputs for forbs: fCover = 0.4, biomass = 300 g/m2
 #   - inputs for grasses: fCover = 0.6, biomass = 450 g/m2
@@ -125,11 +129,33 @@
 # and
 #     grass biomass = 270 g/m2 (= 0.6 * 450).
 
+# --- if `isBiomAsIf100Cover` is false (0):
+# Input biomass represent values observed in the field.
+# Input biomass per unit area (g / m2) for each vegetation type represent
+# values at the provided vegetation type cover.
+# For example,
+#   - inputs for forbs: fCover = 0.4, biomass = 300 g/m2
+#   - inputs for grasses: fCover = 0.6, biomass = 450 g/m2
+# Then, SOILWAT2 simulates a surface with vegetation of
+#     fCover = 1 (= 0.4 + 0.6)
+# and a
+#     total biomass = 750 g / m2 (= 300 + 450)
+# of which
+#     forb biomass = 300 g / m2
+# and
+#     grass biomass = 450 g/m2.
+
+
 # Litter   - dead leafy material on the ground (g/m^2 ).
 # Biomass  - living and dead/woody aboveground standing biomass (g/m^2).
 # %Live    - proportion of Biomass that is actually living (0-1.0).
 # LAI_conv - monthly amount of biomass needed to produce LAI=1.0 (g/m^2).
 # There should be 12 rows, one for each month, starting with January.
+
+# Calendar year corresponding to vegetation inputs
+# Note: year during which atmospheric CO2 fertilization does not modify
+# biomass inputs and/or water use efficiency (default: 1995 at 360 ppm CO2)
+1995
 
 # Grasslands component:
 #Litter  Biomass  %Live LAI_conv

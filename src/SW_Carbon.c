@@ -19,13 +19,14 @@ in SW_VegProd.c and SW_Flow_lib.c.
 #include "include/SW_Carbon.h"      // for SW_CBN_construct, SW_CBN_deconst...
 #include "include/filefuncs.h"      // for LogError, CloseFile, GetALine
 #include "include/generic.h"        // for LOGERROR, EQ, LT
-#include "include/SW_datastructs.h" // for SW_CARBON_INPUTS, LOG_INFO, SW_MODEL
+#include "include/myMemory.h"       // for sw_memccpy
+#include "include/SW_datastructs.h" // for SW_CARBON, LOG_INFO, SW_MODEL
 #include "include/SW_Defines.h"     // for ForEachVegType, MAX_FILENAMESIZE
 #include "include/SW_Files.h"       // for eCarbon
 #include "include/SW_VegProd.h"     // for BIO_INDEX, WUE_INDEX
 #include <math.h>                   // for pow
 #include <stdio.h>                  // for sscanf, FILE
-#include <string.h>                 // for strcmp, memset
+#include <string.h>                 // for strcmp, memset, strstr
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -72,36 +73,39 @@ void SW_CBN_read(
     char *txtInFiles[],
     LOG_INFO *LogInfo
 ) {
-#ifdef SWDEBUG
-    short debug = 0;
-#endif
-
     // For efficiency, don't read carbon.in if neither multiplier is being used
     // We can do this because SW_VPD_construct already populated the multipliers
     // with default values
     if (!SW_CarbonIn->use_bio_mult && !SW_CarbonIn->use_wue_mult) {
-#ifdef SWDEBUG
-        if (debug) {
-            sw_printf("'SW_CBN_read': CO2-effects are turned off; don't read "
-                      "CO2-concentration data from file.\n");
-        }
-#endif
         return; // Exit function prematurely due to error
     }
 
     /* Reading carbon.in */
     FILE *f;
-    char scenario[64];
+    char helpStr[64];
     char yearStr[5];
-    char ppmStr[20];
+    char scenario[64] = {'\0'};
     int year;
     int scanRes;
     int simstartyr = (int) startYr + addtl_yr;
     int simendyr = (int) endYr + addtl_yr;
 
+    if (simstartyr < 0 || simendyr >= MAX_NYEAR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Simulation years (%d-%d) are "
+            "outside implemented range for annual aCO2 [0-%d].",
+            simstartyr,
+            simendyr,
+            MAX_NYEAR - 1
+        );
+        return; // Exit function prematurely due to error
+    }
+
     // The following variables must be initialized to show if they've been
     // changed or not
-    double ppm = 1.;
+    double ppm = -1.;
     int existing_years[MAX_NYEAR] = {0};
     short fileWasEmpty = 1;
     char *MyFileName;
@@ -113,34 +117,18 @@ void SW_CBN_read(
         return; // Exit function prematurely due to error
     }
 
-#ifdef SWDEBUG
-    if (debug) {
-        sw_printf(
-            "'SW_CBN_read': start reading CO2-concentration data from file.\n"
-        );
-    }
-#endif
-
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
-#ifdef SWDEBUG
-        if (debug) {
-            sw_printf("\ninbuf = %s", inbuf);
-        }
-#endif
-
         fileWasEmpty = 0;
 
-        // Read the year standalone because if it's 0 it marks a change in the
-        // scenario, in which case we'll need to read in a string instead of an
-        // int
-        scanRes = sscanf(inbuf, "%4s", yearStr);
+        /* Implemented input formats: "0 scenarioName" or "Year [aCO2]" */
+        scanRes = sscanf(inbuf, "%4s %63s", yearStr, helpStr);
 
-        if (scanRes < 1) {
+        if (scanRes != 2) {
             LogError(
                 LogInfo,
                 LOGERROR,
-                "Not enough values when reading in the year from %s.",
-                MyFileName
+                "(SW_Carbon) Expected two values but found '%s'.",
+                inbuf
             );
             goto closeFile;
         }
@@ -149,107 +137,44 @@ void SW_CBN_read(
         if (LogInfo->stopRun) {
             goto closeFile;
         }
-
-        // Find scenario
+        /* Identify the scenario(s) */
         if (year == 0) {
-            scanRes = sscanf(inbuf, "%4s %63s", yearStr, scenario);
-
-            if (scanRes < 2) {
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "Not enough values when reading in the year and "
-                    "scenario from %s.",
-                    MyFileName
-                );
-                goto closeFile;
-            }
-
-            year = sw_strtoi(yearStr, MyFileName, LogInfo);
-            if (LogInfo->stopRun) {
-                goto closeFile;
-            }
-
-            /* Silence clang-tidy clang-analyzer-deadcode.DeadStores */
-            (void) year;
-
+            (void) sw_memccpy(scenario, helpStr, '\0', sizeof scenario);
             continue; // Skip to the ppm values
         }
-        if (strcmp(scenario, SW_CarbonIn->scenario) != 0) {
+
+        if ((year < simstartyr) || (year > simendyr)) {
+            continue; // We aren't using this year; prevent out-of-bounds
+        }
+
+        /* Search for scenario in input "scenario1|scenario2" */
+        if (isnull(scenario) ||
+            isnull(strstr(SW_CarbonIn->scenario, scenario))) {
             continue; // Keep searching for the right scenario
         }
-        if ((year < simstartyr) || (year > simendyr)) {
-            continue; // We aren't using this year
-        }
 
-        scanRes = sscanf(inbuf, "%4s %19s", yearStr, ppmStr);
-
-        if (scanRes < 2) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "Not enough values when reading in the year and "
-                "ppm from %s.",
-                MyFileName
-            );
-            goto closeFile;
-        }
-
-        year = sw_strtoi(yearStr, MyFileName, LogInfo);
-        if (LogInfo->stopRun) {
-            goto closeFile;
-        }
-
-        ppm = sw_strtod(ppmStr, MyFileName, LogInfo);
-        if (LogInfo->stopRun) {
-            goto closeFile;
-        }
-
-        if (year < 0) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "(SW_Carbon) Year %d in scenario"
-                " '%.64s' is negative; only positive values"
-                " are allowed.\n",
-                year,
-                SW_CarbonIn->scenario
-            );
-            goto closeFile;
-        }
-
-        SW_CarbonIn->ppm[year] = ppm;
-#ifdef SWDEBUG
-        if (debug) {
-            sw_printf(
-                "  ==> SW_CarbonIn->ppm[%d] = %3.2f",
-                year,
-                SW_CarbonIn->ppm[year]
-            );
-        }
-#endif
-
-        /* Has this year already been calculated?
-           If yes: Do NOT overwrite values, fail the run instead
-
-           Use a simple binary system with the year as the index, which avoids
-           using a loop. We cannot simply check if co2_multipliers[0 or
-           1][year].grass != 1.0, due to floating point precision and the chance
-           that a multiplier of 1.0 was actually calculated */
+        /* Check if year already entered */
         if (existing_years[year] != 0) {
             LogError(
                 LogInfo,
                 LOGERROR,
-                "(SW_Carbon) Year %d in scenario"
-                " '%.64s' is entered more than once; only one"
-                " entry is allowed.\n",
+                "(SW_Carbon) Duplicate year %d for scenario(s) '%.64s'.",
                 year,
                 SW_CarbonIn->scenario
             );
             goto closeFile;
         }
         existing_years[year] = 1;
+
+        /* Read aCO2 [ppm] */
+        ppm = sw_strtod(helpStr, MyFileName, LogInfo);
+        if (LogInfo->stopRun) {
+            goto closeFile;
+        }
+
+        SW_CarbonIn->ppm[year] = ppm;
     }
+
 
     /* Error checking */
 
@@ -257,13 +182,7 @@ void SW_CBN_read(
     // found, otherwise the empty file will be masked as not being able to find
     // the scenario
     if (fileWasEmpty == 1) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "(SW_Carbon) carbon.in was empty; for"
-            " debugging purposes, SOILWAT2 read in file '%s'\n",
-            MyFileName
-        );
+        LogError(LogInfo, LOGERROR, "(SW_Carbon) '%s' was empty.", MyFileName);
         goto closeFile;
     }
 
@@ -272,8 +191,7 @@ void SW_CBN_read(
         LogError(
             LogInfo,
             LOGERROR,
-            "(SW_Carbon) The scenario '%.64s'"
-            " was not found in carbon.in\n",
+            "(SW_Carbon) No scenario(s) '%.64s' and associated CO2 data found.",
             SW_CarbonIn->scenario
         );
         goto closeFile;
@@ -285,9 +203,7 @@ void SW_CBN_read(
             LogError(
                 LogInfo,
                 LOGERROR,
-                "(SW_Carbon) missing CO2 data for"
-                " year %d; ensure that ppm values for this year"
-                " exist in scenario '%.64s'\n",
+                "(SW_Carbon) No CO2 data for year %d and scenario(s) '%.64s'.",
                 year,
                 SW_CarbonIn->scenario
             );
@@ -299,15 +215,27 @@ closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**
-@brief Calculates the multipliers of the CO2-effect for biomass and water-use
-efficiency.
+@brief Calculate CO2-fertilization effects for biomass and water-use efficiency
 
-Multipliers are calculated per year with the equation: Coeff1 * ppm^Coeff2
-Where Coeff1 and Coeff2 are provided by the VegProd input. Coefficients
-assume that monthly biomass reflect values for atmospheric conditions at 360
-ppm CO2. Each PFT has its own set of coefficients. If a multiplier is
-disabled, its value is kept at the default value of 1.0. Multipliers are only
-calculated for the years that will be simulated.
+Multipliers are calculated for each year and plant functional type:
+\f[m(t,k) = f(t,k) / f(v,k)\f]
+\f[f(t,k) = {coeff_1(k)} * {CO_2(t)} ^ {coeff_2(k)}\f]
+
+where
+    - \f$coeff_1(k)\f$ and \f$coeff_2(k)\f$ are
+      coefficients for plant functional type \f$k\f$ based on a reference of
+      360 ppm CO2 (which occurred just before 1995),
+    - \f$CO_2(t)\f$ is atmospheric CO2 concentration in units [ppm] for
+      calendar year \f$t\f$, and
+    - \f$1 / f(v,k)\f$ is a correction factor to adjust for a difference between
+      year of vegetation inputs \f$v\f$ and year of reference
+      atmospheric CO2 concentration.
+
+The multipliers become one during the year of vegetation inputs, i.e.,
+\f$m(v,k) = 1\f$.
+
+If a multiplier is disabled, its value is kept at the default value of 1.0.
+Multipliers are only calculated for the years that will be simulated.
 
 @param[in,out] VegProd_veg Array of size NVEGTYPES holding data for each
     vegetation type
@@ -316,6 +244,7 @@ data
 @param[in] addtl_yr Represents how many years in the future we are simulating
 @param[in] startYr Start year of the simulation
 @param[in] endYr End year of the simulation
+@param[in] vegYear Calendar year corresponding to vegetation inputs
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CBN_init_run(
@@ -324,6 +253,7 @@ void SW_CBN_init_run(
     int addtl_yr,
     TimeInt startYr,
     TimeInt endYr,
+    TimeInt vegYear,
     LOG_INFO *LogInfo
 ) {
 #ifdef SWDEBUG
@@ -333,23 +263,58 @@ void SW_CBN_init_run(
     int k;
     TimeInt year;
     TimeInt simendyr = endYr + addtl_yr;
+    /* atmospheric CO2 concentration corresponding to vegetation input year */
+    double vegCO2;
+    double biomCorrectionFactor[NVEGTYPES];
+    double wueCorrectionFactor[NVEGTYPES];
     double ppm;
 
     if (!SW_CarbonIn->use_bio_mult && !SW_CarbonIn->use_wue_mult) {
         return;
     }
 
-    // Only iterate through the years that we know will be used
+    if (vegYear >= MAX_NYEAR || simendyr >= MAX_NYEAR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "A requested year (%d or %d) is "
+            "outside implemented range for annual aCO2 [0-%d].",
+            simendyr,
+            vegYear,
+            MAX_NYEAR - 1
+        );
+        return; // Exit function prematurely due to error
+    }
+
+    /* Adjustment for year of vegetation inputs relative to reference */
+    vegCO2 = SW_CarbonIn->ppm[vegYear];
+    if (LT(vegCO2, 0.)) {
+        LogError(
+            LogInfo, LOGERROR, "Provided aCO2 is negative in year %d", vegYear
+        );
+        return; // Exit function prematurely due to error
+    }
+
+    ForEachVegType(k) {
+        biomCorrectionFactor[k] =
+            1. / (VegProd_veg[k].co2_bio_coeff1 *
+                  pow(vegCO2, VegProd_veg[k].co2_bio_coeff2));
+
+        wueCorrectionFactor[k] =
+            1. / (VegProd_veg[k].co2_wue_coeff1 *
+                  pow(vegCO2, VegProd_veg[k].co2_wue_coeff2));
+    }
+
+
+    /* Calculate CO2 fertilization multipliers for each simulated year */
     for (year = startYr + addtl_yr; year <= simendyr; year++) {
         ppm = SW_CarbonIn->ppm[year];
 
-        if (LT(ppm, 0.)) // CO2 concentration must not be negative values
-        {
+        if (LT(ppm, 0.)) {
             LogError(
                 LogInfo,
                 LOGERROR,
-                "(SW_CarbonIn) No CO2 ppm data was"
-                " provided for year %d\n",
+                "Invalid CO2 ppm value was provided for year %d",
                 year
             );
             return; // Exit function prematurely due to error
@@ -359,7 +324,7 @@ void SW_CBN_init_run(
         if (SW_CarbonIn->use_bio_mult) {
             ForEachVegType(k) {
                 VegProd_veg[k].co2_multipliers[BIO_INDEX][year] =
-                    VegProd_veg[k].co2_bio_coeff1 *
+                    biomCorrectionFactor[k] * VegProd_veg[k].co2_bio_coeff1 *
                     pow(ppm, VegProd_veg[k].co2_bio_coeff2);
             }
         }
@@ -368,13 +333,14 @@ void SW_CBN_init_run(
         if (debug) {
             sw_printf(
                 "Shrub: use%d: bio_mult[%d] = %1.3f / coeff1 = %1.3f / coeff2 "
-                "= %1.3f / ppm = %3.2f\n",
+                "= %1.3f / ppm = %3.2f, correctionFactor = %1.3f\n",
                 SW_CarbonIn->use_bio_mult,
                 year,
                 VegProd_veg[SW_SHRUB].co2_multipliers[BIO_INDEX][year],
                 VegProd_veg[SW_SHRUB].co2_bio_coeff1,
                 VegProd_veg[SW_SHRUB].co2_bio_coeff2,
-                ppm
+                ppm,
+                biomCorrectionFactor[k]
             );
         }
 #endif
@@ -382,7 +348,7 @@ void SW_CBN_init_run(
         if (SW_CarbonIn->use_wue_mult) {
             ForEachVegType(k) {
                 VegProd_veg[k].co2_multipliers[WUE_INDEX][year] =
-                    VegProd_veg[k].co2_wue_coeff1 *
+                    wueCorrectionFactor[k] * VegProd_veg[k].co2_wue_coeff1 *
                     pow(ppm, VegProd_veg[k].co2_wue_coeff2);
             }
         }

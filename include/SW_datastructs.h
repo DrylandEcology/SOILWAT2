@@ -502,11 +502,10 @@ typedef struct {
         shade_deadmax;
 
     double
-        /** Monthly litter amount [g / m2] as if this vegetation type covers
-          100% of the simulated surface; user input from file `Input/veg.in` */
+        /** Monthly litter amount [g / m2];
+            user input from file `Input/veg.in` */
         litter[MAX_MONTHS],
-        /** Monthly aboveground biomass [g / m2] as if this vegetation type
-          covers 100% of the simulated surface;
+        /** Monthly aboveground biomass [g / m2];
           user input from file `Input/veg.in` */
         biomass[MAX_MONTHS],
         /** Monthly live biomass in percent of aboveground biomass;
@@ -517,9 +516,11 @@ typedef struct {
         lai_conv[MAX_MONTHS];
 
     double
-        /** Daily litter amount [g / m2] */
+        /** Daily litter amount [g / m2]
+            as if this vegetation type covers 100% of the simulated surface */
         litter_daily[MAX_DAYS + 1],
-        /** Daily aboveground biomass [g / m2] */
+        /** Daily aboveground biomass [g / m2]
+            as if this vegetation type covers 100% of the simulated surface */
         biomass_daily[MAX_DAYS + 1],
         /** Daily live biomass in percent of aboveground biomass */
         pct_live_daily[MAX_DAYS + 1],
@@ -527,15 +528,20 @@ typedef struct {
         veg_height_daily[MAX_DAYS + 1],
         /** Daily parameter value to translate biomass to LAI = 1 [g / m2] */
         lai_conv_daily[MAX_DAYS + 1],
-        /** Daily LAI of live biomass [m2 / m2]*/
+        /** Daily LAI of live biomass [m2 / m2]
+            as if this vegetation type covers 100% of the simulated surface */
         lai_live_daily[MAX_DAYS + 1],
-        /** Daily total "compound" leaf area index [m2 / m2]*/
+        /** Daily total "compound" leaf area index [m2 / m2]
+            as if this vegetation type covers 100% of the simulated surface */
         bLAI_total_daily[MAX_DAYS + 1],
-        /** Daily live biomass [g / m2] */
+        /** Daily live biomass [g / m2]
+            as if this vegetation type covers 100% of the simulated surface */
         biolive_daily[MAX_DAYS + 1],
-        /** Daily dead standing biomass [g / m2] */
+        /** Daily dead standing biomass [g / m2]
+            as if this vegetation type covers 100% of the simulated surface */
         biodead_daily[MAX_DAYS + 1],
-        /** Daily sum of aboveground biomass & litter [g / m2] */
+        /** Daily sum of aboveground biomass & litter [g / m2]
+            as if this vegetation type covers 100% of the simulated surface */
         total_agb_daily[MAX_DAYS + 1];
 
     Bool
@@ -625,11 +631,18 @@ typedef struct {
 
 /** Data type to describe the surface cover of a SOILWAT2 simulation run */
 typedef struct {
-    Bool
-        /** Flag that determines whether vegetation-type specific soil water
-          availability should be calculated;
-          user input from file `Input/outsetup.in` */
-        use_SWA;
+    /** Calendar year corresponding to vegetation inputs */
+    TimeInt vegYear;
+
+    /** Spatial reference of biomass inputs (are inputs as if 100% cover)
+        - false (0): values as is (at given cover)
+        - true (1), values as if cover was 100% */
+    Bool isBiomAsIf100Cover;
+
+    /** Flag that determines whether vegetation-type specific soil water
+      availability should be calculated;
+      user input from file `Input/outsetup.in` */
+    Bool use_SWA;
 
     double
         // storing values in same order as defined in STEPWAT2/rgroup.in
@@ -1537,6 +1550,7 @@ typedef struct {
     unsigned long ***domTSuids; /**< A list of translated domain SUIDs for each
                                      input key if index files are used */
 
+#if defined(SWMPI)
     MPI_Comm groupComm; /**< New group communicator; can either be for
                              I/O or compute;
                              Note: creating this new communicator
@@ -1544,6 +1558,7 @@ typedef struct {
                                    e.g., rank 2 in MPI_COMM_WORLD
                                          could be 0, 1, etc. */
     MPI_Comm rootCompComm;
+#endif
 } SW_MPI_DESIGNATE;
 
 /* =================================================== */

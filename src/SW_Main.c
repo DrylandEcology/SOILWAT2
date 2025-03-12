@@ -17,22 +17,21 @@
 /* --------------------------------------------------- */
 #include "include/filefuncs.h"      // for sw_message
 #include "include/generic.h"        // for Bool, swFALSE, swTRUE
-#include "include/SW_Control.h"     // for SW_CTL_RunSimSet, SW_CTL_clear_m...
-#include "include/SW_datastructs.h" // for LOG_INFO, SW_RUN, SW_DOMAIN, SW_...
-#include "include/SW_Domain.h"      // for SW_DOM_deconstruct, SW_DOM_init_...
+#include "include/SW_Control.h"     // for SW_CTL_RunSimSet, SW_CTL_clear...
+#include "include/SW_datastructs.h" // for LOG_INFO, SW_DOMAIN, SW_RUN
+#include "include/SW_Domain.h"      // for SW_DOM_deconstruct, SW_DOM_ini...
 #include "include/SW_Files.h"       // for eFirst
 #include "include/SW_Main_lib.h"    // for sw_fail_on_error, sw_init_args
 #include "include/SW_Model.h"       // for SW_MDL_get_ModelRun
-#include "include/SW_Output.h"      // for SW_OUT_close_files, SW_OUT_creat...
+#include "include/SW_Output.h"      // for SW_OUT_close_files, SW_OUT_cre...
 #include "include/SW_Weather.h"     // for SW_WTH_finalize_all_weather
 #include "include/Times.h"          // for SW_WT_ReportTime, SW_WT_StartTime
 #include <stdio.h>                  // for NULL, stdout
 
 
 #if defined(SWNETCDF)
-#include "include/SW_netCDF_General.h"
-#include "include/SW_netCDF_Input.h"
-#include "include/SW_netCDF_Output.h"
+#include "include/SW_netCDF_Input.h"  // for SW_NCIN_check_input_config
+#include "include/SW_netCDF_Output.h" // for SW_NCOUT_create_units_converters
 #endif
 
 #if defined(SWMPI)
@@ -88,7 +87,6 @@ int main(int argc, char **argv) {
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
-#endif
 
     if (rank > 0) {
         goto skip;

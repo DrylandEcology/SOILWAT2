@@ -12,6 +12,7 @@
 #include "gtest/gtest.h"                 // for Test, Message, TestPartResul...
 #include <cmath>                         // for isnan, sqrt
 #include <stdio.h>                       // for snprintf, NULL
+#include <string.h>                      // for memcpy
 
 
 using ::testing::HasSubstr;
@@ -1892,7 +1893,7 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
     // Calculate relative humidity from huss (1.92), tmax (-.01), tmin (-11.99)
     EXPECT_NEAR(
         SW_Run.RunIn.weathRunAllHist[yearIndex].r_humidity_daily[0],
-        relativeHumidity2(1.92, (-0.01 - 11.99) / 2., elevation),
+        relativeHumidity3(1.92, -0.01, -11.99, elevation),
         tol6
     );
 
@@ -1900,7 +1901,7 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
     // Calculate relative humidity from huss (1.30), tmax (-4.31), tmin (-17.34)
     EXPECT_NEAR(
         SW_Run.RunIn.weathRunAllHist[yearIndex].r_humidity_daily[midJanDay],
-        relativeHumidity2(1.30, (-4.31 - 17.34) / 2., elevation),
+        relativeHumidity3(1.30, -4.31, -17.34, elevation),
         tol6
     );
 

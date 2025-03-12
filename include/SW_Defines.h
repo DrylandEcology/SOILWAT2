@@ -318,15 +318,6 @@ typedef struct timespec WallTimeSpec;
 typedef time_t WallTimeSpec;
 #endif
 
-/* Memory copying via `sw_memccpy()` and SOILWAT2's custom function */
-#if (defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200809L) || \
-    (defined(__STDC__) && defined(__STDC_VERSION__) &&          \
-     __STDC_VERSION__ >= 202311L)
-#define sw_memccpy memccpy
-#else
-#define sw_memccpy sw_memccpy_custom
-#endif
-
 /* =================================================== */
 /*                   RNG structs                    */
 /* --------------------------------------------------- */
