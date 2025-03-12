@@ -21,13 +21,12 @@ History:
 #include "include/SW_Output_outtext.h" // for SW_OUT_close_textfiles, SW_OU...
 #include "include/filefuncs.h"         // for CloseFile, OpenFile, LogError
 #include "include/generic.h"           // for Bool, swFALSE, SOILWAT, IntUS
-#include "include/myMemory.h"          // for Mem_Malloc
+#include "include/myMemory.h"          // for Mem_Malloc, sw_memccpy
 #include "include/SW_datastructs.h"    // for LOG_INFO
 #include "include/SW_Defines.h"        // for OUTSEP, OutPeriod, ForEachOu...
 #include "include/SW_Output.h"         // for pd2longstr, ForEachOutKey
 #include <stdio.h>                     // for snprintf, fflush, fprintf
 #include <stdlib.h>                    // for free
-#include <string.h>                    // for memccpy
 
 #if (defined(SOILWAT) && !defined(SWNETCDF)) || defined(STEPWAT)
 #include "include/SW_Files.h" // for eOutputDaily, eOutputDaily_soil

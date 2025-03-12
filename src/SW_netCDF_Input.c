@@ -2,29 +2,28 @@
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
 #include "include/SW_netCDF_Input.h"   // for SW_NCIN_soilProfile, ...
-#include "include/filefuncs.h"         // for LogError, FileExists, CloseFile
-#include "include/generic.h"           // for Bool, swFALSE, LOGERROR, swTRUE
-#include "include/myMemory.h"          // for Str_Dup, Mem_Malloc
-#include "include/SW_Carbon.h"         // for SW_CBN_init_run
-#include "include/SW_datastructs.h"    // for LOG_INFO, SW_NETCDF_OUT, SW_DOMAIN
-#include "include/SW_Defines.h"        // for MAX_FILENAMESIZE, OutPeriod
+#include "include/filefuncs.h"         // for LogError, FileExists, sw_message
+#include "include/generic.h"           // for Bool, LOGERROR, swFALSE, isnull
+#include "include/myMemory.h"          // for Mem_Malloc, Str_Dup, sw_memcc...
+#include "include/SW_datastructs.h"    // for LOG_INFO, eSW_InWeather, eSW_...
+#include "include/SW_Defines.h"        // for MAX_FILENAMESIZE, NVEGTYPES
 #include "include/SW_Domain.h"         // for SW_DOM_calc_ncSuid
-#include "include/SW_Files.h"          // for eNCInAtt, eNCIn, eNCOutVars
-#include "include/SW_Flow_lib_PET.h"   // for actualVaporPressure3, svp...
-#include "include/SW_netCDF_General.h" // for vNCdom, vNCprog
-#include "include/SW_Output.h"         // for ForEachOutKey, SW_ESTAB, pd2...
-#include "include/SW_Output_outarray.h" // for iOUTnc
-#include "include/SW_Site.h"            // for SW_SIT_init_run
-#include "include/SW_SoilWater.h"       // for SW_SWC_init_run
-#include "include/SW_VegEstab.h"        // for SW_VES_init_run
-#include "include/SW_VegProd.h"         // for key2veg
-#include "include/SW_Weather.h"         // for SW_WTH_allocateAllWeather...
-#include "include/Times.h"              // for isleapyear, timeStringISO8601
-#include <math.h>                       // for NAN, ceil, isnan
-#include <netcdf.h>                     // for NC_NOERR, nc_close, NC_DOUBLE
-#include <stdio.h>                      // for size_t, NULL, snprintf, sscanf
-#include <stdlib.h>                     // for free, strtod
-#include <string.h>                     // for strcmp, strlen, strstr, memcpy
+#include "include/SW_Files.h"          // for eNCIn
+#include "include/SW_netCDF_General.h" // for SW_NC_open, SW_NC_get_var_ide...
+#include "include/SW_Site.h"           // for SW_SOIL_construct
+#include "include/SW_Weather.h"        // for clear_hist_weather, SW_WTH_al...
+#include "include/Times.h"             // for Time_get_lastdoy_y, timeStrin...
+#include <float.h>                     // for DBL_MAX
+#include <math.h>                      // for NAN, ceil, isnan
+#include <netcdf.h>                    // for NC_NOERR, nc_close, NC_DOUBLE
+#include <stdio.h>                     // for size_t, NULL, snprintf, sscanf
+#include <stdlib.h>                    // for free, strtod
+#include <string.h>                    // for strcmp, strlen, strstr, memcpy
+
+#if defined(SWUDUNITS)
+#include <udunits2.h> // for cv_free, cv_convert_double
+#endif
+
 
 /* =================================================== */
 /*                   Local Defines                     */

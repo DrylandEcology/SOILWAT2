@@ -19,7 +19,6 @@ History:
 /* --------------------------------------------------- */
 
 #include "include/generic.h"        // for IntU
-#include "include/myMemory.h"       // for sw_memccpy_custom
 #include "include/SW_datastructs.h" // for SW_RUN, SW_OUTTEXT
 #include "include/SW_Defines.h"     // for OUTSEP, OUT_DIGITS, OUTSTRLEN
 #include "include/SW_Output.h"      // for get_aet_text, get_biomass_text
@@ -40,10 +39,13 @@ History:
 #endif
 
 #if defined(SW_OUTTEXT)
-#include <stdio.h>  // for snprintf, NULL
-#include <string.h> // for memccpy
+#include "include/myMemory.h" // for sw_memccpy
+#include <stdio.h>            // for snprintf, NULL
 #endif
 
+#if defined(STEPWAT)
+#include <string.h> // for strlen
+#endif
 
 /* =================================================== */
 /*             Local Function Definitions              */

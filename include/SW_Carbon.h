@@ -31,7 +31,7 @@ void SW_CBN_read(
 );
 
 void SW_CBN_init_run(
-    VegType VegProd_veg[],
+    SW_VEGPROD *SW_VegProd,
     SW_MODEL *SW_Model,
     SW_CARBON *SW_Carbon,
     LOG_INFO *LogInfo

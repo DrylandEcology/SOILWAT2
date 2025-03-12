@@ -50,7 +50,10 @@ TEST_F(CarbonFixtureTest, CarbonReadInputFile) {
     // file
     SW_CBN_construct(&SW_Run.Carbon);
     (void) snprintf(
-        SW_Run.Carbon.scenario, sizeof SW_Run.Carbon.scenario, "%s", "RCP85"
+        SW_Run.Carbon.scenario,
+        sizeof SW_Run.Carbon.scenario,
+        "%s",
+        "CMIP5_historical|CMIP5_RCP85"
     );
 
     SW_Run.Carbon.use_wue_mult = 1;
@@ -79,7 +82,10 @@ TEST_F(CarbonFixtureTest, CarbonCO2multipliers) {
 
     SW_CBN_construct(&SW_Run.Carbon);
     (void) snprintf(
-        SW_Run.Carbon.scenario, sizeof SW_Run.Carbon.scenario, "%s", "RCP85"
+        SW_Run.Carbon.scenario,
+        sizeof SW_Run.Carbon.scenario,
+        "%s",
+        "CMIP5_historical|CMIP5_RCP85"
     );
     SW_Run.Carbon.use_wue_mult = 1;
     SW_Run.Carbon.use_bio_mult = 1;
@@ -93,9 +99,7 @@ TEST_F(CarbonFixtureTest, CarbonCO2multipliers) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    SW_CBN_init_run(
-        SW_Run.VegProd.veg, &SW_Run.Model, &SW_Run.Carbon, &LogInfo
-    );
+    SW_CBN_init_run(&SW_Run.VegProd, &SW_Run.Model, &SW_Run.Carbon, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (year = SW_Run.Model.startyr + SW_Run.Model.addtl_yr; year <= simendyr;

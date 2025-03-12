@@ -1312,7 +1312,7 @@ double relativeHumidity1(double vp, double meanTemp) {
 }
 
 /**
-@brief Calculate relative humidity from specific humidity and temperature
+@brief Calculate relative humidity from specific humidity and mean temperature
 
 @param huss Daily mean specific humidity [g kg-1]
 @param meanTemp Daily mean air temperature [C]
@@ -1324,6 +1324,26 @@ double relativeHumidity2(double huss, double meanTemp, double elevation) {
     double vpVal = actualVaporPressure4(huss, elevation);
 
     return relativeHumidity1(vpVal, meanTemp);
+}
+
+/**
+@brief Calculate relative humidity from specific humidity and min/max
+temperature
+
+@param huss Daily mean specific humidity [g kg-1]
+@param maxTemp Daily maximum air temperature [C]
+@param minTemp Daily minimum air temperature [C]
+@param elevation Site elevation [m above mean sea level]
+
+@return Calculated relative humidity [0-100 %]
+*/
+double relativeHumidity3(
+    double huss, double maxTemp, double minTemp, double elevation
+) {
+    double vpVal = actualVaporPressure4(huss, elevation);
+    double hursmin = relativeHumidity1(vpVal, maxTemp);
+    double hursmax = relativeHumidity1(vpVal, minTemp);
+    return (hursmin + hursmax) / 2.;
 }
 
 /**

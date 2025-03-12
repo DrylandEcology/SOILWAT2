@@ -13,6 +13,7 @@
 #ifndef SW_MARKOV_H
 #define SW_MARKOV_H
 
+#include "include/generic.h"        // for Bool
 #include "include/SW_datastructs.h" // for SW_MARKOV, LOG_INFO
 #include "include/SW_Defines.h"     // for TimeInt
 
