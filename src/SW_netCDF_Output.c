@@ -1,25 +1,27 @@
 /* =================================================== */
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
-#include "include/SW_netCDF_Output.h" // for SW_NCOUT_read_out_vars, ...
-#include "include/filefuncs.h"        // for LogError, FileExists, CloseFile
-#include "include/generic.h"          // for Bool, swFALSE, LOGERROR, swTRUE
-#include "include/myMemory.h"         // for Str_Dup, Mem_Malloc
-#include "include/SW_datastructs.h"   // for LOG_INFO, SW_NETCDF_OUT, SW_DOMAIN
-#include "include/SW_Defines.h"       // for MAX_FILENAMESIZE, OutPeriod
-#include "include/SW_Domain.h"        // for SW_DOM_calc_ncSuid
-#include "include/SW_Files.h"         // for eNCInAtt, eNCIn, eNCOutVars
-#include "include/SW_netCDF_General.h"
-#include "include/SW_netCDF_Input.h"    // for SW_NCOUT_read_out_vars, ...
+#include "include/SW_netCDF_Output.h"   // for SW_NCOUT_read_out_vars, ...
+#include "include/filefuncs.h"          // for LogError, FileExists, sw_strtod
+#include "include/generic.h"            // for swFALSE, swTRUE, Bool, isnull
+#include "include/myMemory.h"           // for Str_Dup, Mem_Malloc, sw_memc...
+#include "include/SW_datastructs.h"     // for LOG_INFO, eSW_Estab, SW_NETC...
+#include "include/SW_Defines.h"         // for MAX_FILENAMESIZE, OutPeriod
+#include "include/SW_Files.h"           // for eNCInAtt, eNCOutVars
+#include "include/SW_netCDF_General.h"  // for SW_NC_write_vals, SW_NC_crea...
 #include "include/SW_Output.h"          // for ForEachOutKey, SW_ESTAB, pd2...
 #include "include/SW_Output_outarray.h" // for iOUTnc
 #include "include/SW_VegProd.h"         // for key2veg
-#include "include/Times.h"              // for isleapyear, timeStringISO8601
+#include "include/Times.h"              // for isleapyear, Time_get_lastdoy_y
 #include <math.h>                       // for NAN, ceil, isnan
 #include <netcdf.h>                     // for NC_NOERR, nc_close, NC_DOUBLE
 #include <stdio.h>                      // for size_t, NULL, snprintf, sscanf
 #include <stdlib.h>                     // for free, strtod
 #include <string.h>                     // for strcmp, strlen, strstr, memcpy
+
+#if defined(SWUDUNITS)
+#include <udunits2.h> // for cv_free, cv_convert_double
+#endif
 
 
 /* =================================================== */

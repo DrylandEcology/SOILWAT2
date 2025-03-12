@@ -19,7 +19,7 @@ in SW_VegProd.c and SW_Flow_lib.c.
 #include "include/SW_Carbon.h"      // for SW_CBN_construct, SW_CBN_deconst...
 #include "include/filefuncs.h"      // for LogError, CloseFile, GetALine
 #include "include/generic.h"        // for LOGERROR, EQ, LT
-#include "include/myMemory.h"
+#include "include/myMemory.h"       // for sw_memccpy
 #include "include/SW_datastructs.h" // for SW_CARBON, LOG_INFO, SW_MODEL
 #include "include/SW_Defines.h"     // for ForEachVegType, MAX_FILENAMESIZE
 #include "include/SW_Files.h"       // for eCarbon
@@ -175,12 +175,7 @@ void SW_CBN_read(
     // found, otherwise the empty file will be masked as not being able to find
     // the scenario
     if (fileWasEmpty == 1) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "(SW_Carbon) '%s' was empty.",
-            MyFileName
-        );
+        LogError(LogInfo, LOGERROR, "(SW_Carbon) '%s' was empty.", MyFileName);
         goto closeFile;
     }
 

@@ -2,12 +2,14 @@
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
 #include "include/SW_datastructs.h"
-#include "include/filefuncs.h"
-#include "include/myMemory.h"
-#include "include/rands.h"
+#include "include/myMemory.h" // for Mem_Malloc
+#include <float.h>            // for DBL_MAX
+#include <math.h>             // for fabs, pow, cos, fmod
+#include <stdlib.h>           // for free
 
-#include <stdlib.h>
-#include <string.h>
+#if defined(SWNETCDF) && defined(SWUDUNITS)
+#include <udunits2.h> // for cv_convert_double
+#endif
 
 #define WITHIN_GRID 0
 #define TOP 1
