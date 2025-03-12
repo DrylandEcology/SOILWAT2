@@ -1,5 +1,36 @@
 # NEWS
 # SOILWAT2 v8.2.0-devel
+* This version produces similar but not identical simulation output
+  as previously because of the following changes:
+    * CO2-fertilization effects are now using provided atmospheric CO2 of the
+      reference year 1995; previously, 360 ppm was assumed.
+
+* Annual time series of atmospheric CO2 concentrations can now be
+  combined from multiple data sets, e.g., `"CMIP6_historical|CMIP6_SSP585"`
+  (#456; @dschlaep).
+
+* CO2-fertilization is now adjusted for the year when vegetation inputs
+  were made (#328; @dschlaep).
+
+* The user can now specify if vegetation biomass inputs reflect
+  conditions on the ground (at the specified surface cover) or
+  if they represent vegetation as if that plant functional type occurred
+  at 100% surface cover (#328; @dschlaep).
+
+## Changes to inputs
+* New input via `"veg.in"` to specify the year for which vegetation inputs
+  are valid, i.e., the year when CO2-fertilization has no effect on biomass
+  and water-use efficiency (default is 1995).
+* New input via `"veg.in"` to identify the spatial reference of biomass inputs
+  `"isBiomAsIf100Cover"` (default `"true"`).
+* `"carbon.in"` now provides annual time series of atmospheric CO2 concentration
+  for CMIP5 and CMIP6.
+
+* If specific humidity is provided as input instead of relative humidity, then
+  relative humidity is now calculated using minimum and maximum temperature
+  (instead of mean temperature as previously).
+  Additionally, the range in which resulting relative humidity values are
+  trimmed to 100% (with a warning) is now 100-200% (previously, 100-150%).
 
 
 # SOILWAT2 v8.1.1

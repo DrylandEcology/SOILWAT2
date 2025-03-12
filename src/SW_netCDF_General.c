@@ -7,19 +7,13 @@
 #include "include/myMemory.h"          // for Str_Dup, Mem_Malloc
 #include "include/SW_datastructs.h"    // for LOG_INFO, SW_NETCDF_OUT, SW_DOMAIN
 #include "include/SW_Defines.h"        // for MAX_FILENAMESIZE, OutPeriod
-#include "include/SW_Domain.h"         // for SW_DOM_calc_ncSuid
-#include "include/SW_Files.h"          // for eNCInAtt, eNCIn, eNCOutVars
 #include "include/SW_netCDF_Input.h"   // for
 #include "include/SW_netCDF_Output.h"  // for
-#include "include/SW_Output.h"         // for ForEachOutKey, SW_ESTAB, pd2...
-#include "include/SW_Output_outarray.h" // for iOUTnc
-#include "include/SW_VegProd.h"         // for key2veg
-#include "include/Times.h"              // for isleapyear, timeStringISO8601
-#include <math.h>                       // for NAN, ceil, isnan
-#include <netcdf.h>                     // for NC_NOERR, nc_close, NC_DOUBLE
-#include <stdio.h>                      // for size_t, NULL, snprintf, sscanf
-#include <stdlib.h>                     // for free, strtod
-#include <string.h>                     // for strcmp, strlen, strstr, memcpy
+#include "include/Times.h"             // for isleapyear, timeStringISO8601
+#include <netcdf.h>                    // for NC_NOERR, nc_close, NC_DOUBLE
+#include <stdio.h>                     // for size_t, NULL, snprintf, sscanf
+#include <stdlib.h>                    // for free, strtod
+#include <string.h>                    // for strcmp, strlen, strstr, memcpy
 
 /* =================================================== */
 /*                   Local Defines                     */

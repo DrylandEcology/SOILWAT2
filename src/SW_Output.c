@@ -57,10 +57,9 @@ History:
 #endif
 
 #if defined(SWNETCDF)
-#include "include/SW_netCDF_General.h"
-#include "include/SW_netCDF_Input.h" // for eSW_InDomain, vNCdom
-#include "include/SW_netCDF_Output.h"
-#include <stdlib.h> // for free
+#include "include/SW_netCDF_General.h" // for vNCdom
+#include "include/SW_netCDF_Output.h"  // for SW_NCOUT_alloc_files, SW_NCO...
+#include <stdlib.h>                    // for free
 #endif
 
 /* Note: `get_XXX` functions are declared in `SW_Output.h`

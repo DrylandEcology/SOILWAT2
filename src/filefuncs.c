@@ -14,12 +14,10 @@
 #include "include/SW_datastructs.h" // for LOG_INFO
 #include "include/SW_Defines.h"     // for MAX_LOG_SIZE, KEY_NOT_FOUND, MAX...
 #include "include/Times.h"          // for timeStringISO8601
-#include <assert.h>                 // for assert
-#include <ctype.h>                  // for isspace
 #include <dirent.h>                 // for dirent, closedir, DIR, opendir, re...
 #include <errno.h>                  // for errno, ERANGE
-#include <limits.h>                 // for LONG_MIN, LONG_MAX, INT_MIN, INT_MAX
-#include <math.h>                   // for HUGE_VAL, HUGE_VALF
+#include <limits.h>                 // for INT_MIN, LONG_MIN, ULONG_MAX
+#include <math.h>                   // for HUGE_VAL
 #include <stdarg.h>                 // for va_end, va_start
 #include <stdio.h>                  // for NULL, fclose, FILE, fopen, EOF
 #include <stdlib.h>                 // for free, strtod, strtof, strtol

@@ -38,6 +38,7 @@ void SW_CBN_init_run(
     int addtl_yr,
     TimeInt startYr,
     TimeInt endYr,
+    TimeInt vegYear,
     LOG_INFO *LogInfo
 );
 

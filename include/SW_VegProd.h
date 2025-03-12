@@ -115,7 +115,9 @@ void SW_VPD_read(
     LOG_INFO *LogInfo
 );
 
-void SW_VPD_new_year(SW_MODEL_SIM *SW_ModelSim, VegType veg[]);
+void SW_VPD_new_year(
+    SW_MODEL_SIM *SW_ModelSim, Bool isBiomAsIf100Cover, VegType veg[]
+);
 
 void SW_VPD_fix_cover(
     SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn, LOG_INFO *LogInfo
