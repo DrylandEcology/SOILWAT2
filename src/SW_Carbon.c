@@ -26,7 +26,7 @@ in SW_VegProd.c and SW_Flow_lib.c.
 #include "include/SW_VegProd.h"     // for BIO_INDEX, WUE_INDEX
 #include <math.h>                   // for pow
 #include <stdio.h>                  // for sscanf, FILE
-#include <string.h>                 // for strcmp, memset
+#include <string.h>                 // for strcmp, memset, strstr
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -77,9 +77,9 @@ void SW_CBN_read(
 
     /* Reading carbon.in */
     FILE *f;
-    char scenario[64] = {'\0'};
-    char yearStr[5];
     char helpStr[64];
+    char yearStr[5];
+    char scenario[64] = {'\0'};
     int year;
     int scanRes;
     int simstartyr = (int) SW_Model->startyr + SW_Model->addtl_yr;
@@ -132,7 +132,7 @@ void SW_CBN_read(
         if (LogInfo->stopRun) {
             goto closeFile;
         }
-        /* Identify the scenario */
+        /* Identify the scenario(s) */
         if (year == 0) {
             (void) sw_memccpy(scenario, helpStr, '\0', sizeof scenario);
             continue; // Skip to the ppm values
@@ -142,7 +142,8 @@ void SW_CBN_read(
             continue; // We aren't using this year; prevent out-of-bounds
         }
 
-        if (strcmp(scenario, SW_Carbon->scenario) != 0) {
+        /* Search for scenario in input "scenario1|scenario2" */
+        if (isnull(scenario) || isnull(strstr(SW_Carbon->scenario, scenario))) {
             continue; // Keep searching for the right scenario
         }
 
@@ -151,7 +152,7 @@ void SW_CBN_read(
             LogError(
                 LogInfo,
                 LOGERROR,
-                "(SW_Carbon) Duplicate year %d for scenario '%.64s'.",
+                "(SW_Carbon) Duplicate year %d for scenario(s) '%.64s'.",
                 year,
                 SW_Carbon->scenario
             );
@@ -184,7 +185,7 @@ void SW_CBN_read(
         LogError(
             LogInfo,
             LOGERROR,
-            "(SW_Carbon) No scenario '%.64s' and associated CO2 data found.",
+            "(SW_Carbon) No scenario(s) '%.64s' and associated CO2 data found.",
             SW_Carbon->scenario
         );
         goto closeFile;
@@ -196,7 +197,7 @@ void SW_CBN_read(
             LogError(
                 LogInfo,
                 LOGERROR,
-                "(SW_Carbon) No CO2 data for year %d and scenario '%.64s'.",
+                "(SW_Carbon) No CO2 data for year %d and scenario(s) '%.64s'.",
                 year,
                 SW_Carbon->scenario
             );

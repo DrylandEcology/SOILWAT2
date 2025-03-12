@@ -5,6 +5,10 @@
     * CO2-fertilization effects are now using provided atmospheric CO2 of the
       reference year 1995; previously, 360 ppm was assumed.
 
+* Annual time series of atmospheric CO2 concentrations can now be
+  combined from multiple data sets, e.g., `"CMIP6_historical|CMIP6_SSP585"`
+  (#456; @dschlaep).
+
 * CO2-fertilization is now adjusted for the year when vegetation inputs
   were made (#328; @dschlaep).
 
@@ -19,6 +23,8 @@
   and water-use efficiency (default is 1995).
 * New input via `"veg.in"` to identify the spatial reference of biomass inputs
   `"isBiomAsIf100Cover"` (default `"true"`).
+* `"carbon.in"` now provides annual time series of atmospheric CO2 concentration
+  for CMIP5 and CMIP6.
 
 * If specific humidity is provided as input instead of relative humidity, then
   relative humidity is now calculated using minimum and maximum temperature

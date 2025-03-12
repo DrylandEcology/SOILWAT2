@@ -50,7 +50,10 @@ TEST_F(CarbonFixtureTest, CarbonReadInputFile) {
     // file
     SW_CBN_construct(&SW_Run.Carbon);
     (void) snprintf(
-        SW_Run.Carbon.scenario, sizeof SW_Run.Carbon.scenario, "%s", "RCP85"
+        SW_Run.Carbon.scenario,
+        sizeof SW_Run.Carbon.scenario,
+        "%s",
+        "CMIP5_historical|CMIP5_RCP85"
     );
 
     SW_Run.Carbon.use_wue_mult = 1;
@@ -79,7 +82,10 @@ TEST_F(CarbonFixtureTest, CarbonCO2multipliers) {
 
     SW_CBN_construct(&SW_Run.Carbon);
     (void) snprintf(
-        SW_Run.Carbon.scenario, sizeof SW_Run.Carbon.scenario, "%s", "RCP85"
+        SW_Run.Carbon.scenario,
+        sizeof SW_Run.Carbon.scenario,
+        "%s",
+        "CMIP5_historical|CMIP5_RCP85"
     );
     SW_Run.Carbon.use_wue_mult = 1;
     SW_Run.Carbon.use_bio_mult = 1;
