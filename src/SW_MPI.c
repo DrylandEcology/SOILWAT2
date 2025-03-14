@@ -1052,14 +1052,6 @@ static void assignProcs(
             }
 
             if (SW_Designation->useTSuids) {
-                useIndexFile[eSW_InDomain] = swFALSE;
-                useIndexFile[eSW_InSpatial] = swFALSE;
-                useIndexFile[eSW_InSoil] = swTRUE;
-                useIndexFile[eSW_InSite] = swFALSE;
-                useIndexFile[eSW_InVeg] = swTRUE;
-                useIndexFile[eSW_InWeather] = swTRUE;
-                useIndexFile[eSW_InClimate] = swTRUE;
-
                 SW_Designation->domTSuids = (unsigned long ***) Mem_Malloc(
                     sizeof(unsigned long **) * SW_NINKEYSNC,
                     "SW_MPI_process_types()",
