@@ -31,15 +31,6 @@
 
 #define NIN_VAR_INPUTS 23
 
-/* Columns of interest, and excludes:
-    - Input key and input name
-    - "do input" flags in value
-    - Input file name/pattern
-    - St years and stride years start
-    - Calendar override
-    - User comment */
-#define NUM_INPUT_INFO 16
-
 /* Maximum number of variables per input key */
 #define SW_INNMAXVARS 22
 
@@ -4300,6 +4291,8 @@ static void determine_indexfile_use(
             if (LogInfo->stopRun) {
                 return;
             }
+        } else {
+            SW_netCDFIn->useIndexFile[k] = swFALSE;
         }
     }
 }
@@ -5386,192 +5379,6 @@ closeFile:
 }
 
 /**
-@brief Allocate space for information pertaining to input variables
-that will be used throughout simulations rather than gaining the same
-information many times during said simulation runs
-
-@param[in] numVars Number of variables to allocate for
-@param[in] currKey Current input key being allocated for
-@param[out] inVarIDs Identifiers of variables of a specific input
-key within provide nc files
-@param[out] inVarType Types of variables of a specific input
-key within provide nc files
-@param[out] hasScaleAndAddFact Flags specifying if a variable has both
-attributes "scale_factor" and "add_offset"
-@param[out] scaleAndAddFactVals A list that contains values of the attributes
-"scale_factor" and "add_offset" if both are present
-@param[out] missValFlags A list of flags specifying the user-provided
-information to specify a missing value in input files
-@param[out] numSoilVarLyrs A list holding the number of soil layers for
-all soil input key variables
-@param[out] LogInfo Holds information dealing with logfile output
-*/
-static void alloc_sim_var_information(
-    int numVars,
-    int currKey,
-    int **inVarIDs,
-    nc_type **inVarType,
-    Bool **hasScaleAndAddFact,
-    double ***scaleAndAddFactVals,
-    Bool ***missValFlags,
-    int ***dimOrderInVar,
-    size_t **numSoilVarLyrs,
-    LOG_INFO *LogInfo
-) {
-    int varNum;
-    size_t val;
-    const size_t numFactVals = 2;
-    const size_t numFlags = 6;
-    const size_t maxNumIndices = 5;
-
-    *inVarIDs = (int *) Mem_Malloc(
-        sizeof(int) * numVars, "alloc_sim_var_information()", LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return;
-    }
-    *inVarType = (nc_type *) Mem_Malloc(
-        sizeof(nc_type) * numVars, "alloc_sim_var_information()", LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return;
-    }
-
-    *hasScaleAndAddFact = (Bool *) Mem_Malloc(
-        sizeof(Bool) * numVars, "alloc_sim_var_information()", LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return;
-    }
-    for (varNum = 0; varNum < numVars; varNum++) {
-        (*hasScaleAndAddFact)[varNum] = swFALSE;
-    }
-
-    *scaleAndAddFactVals = (double **) Mem_Malloc(
-        sizeof(double *) * numVars, "alloc_sim_var_information()", LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return;
-    }
-
-    for (varNum = 0; varNum < numVars; varNum++) {
-        (*scaleAndAddFactVals)[varNum] = NULL;
-    }
-
-    *missValFlags = (Bool **) Mem_Malloc(
-        sizeof(Bool *) * numVars, "alloc_sim_var_information()", LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return;
-    }
-    for (varNum = 0; varNum < numVars; varNum++) {
-        (*missValFlags)[varNum] = NULL;
-    }
-
-    *dimOrderInVar = (int **) Mem_Malloc(
-        sizeof(int *) * numVars, "alloc_sim_var_information()", LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return;
-    }
-    for (varNum = 0; varNum < numVars; varNum++) {
-        (*dimOrderInVar)[varNum] = NULL;
-    }
-
-    for (varNum = 0; varNum < numVars; varNum++) {
-        (*scaleAndAddFactVals)[varNum] = (double *) Mem_Malloc(
-            sizeof(double) * 2, "alloc_sim_var_information()", LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return;
-        }
-
-        (*missValFlags)[varNum] = (Bool *) Mem_Malloc(
-            sizeof(Bool) * numFlags, "alloc_sim_var_information()", LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return;
-        }
-
-        (*dimOrderInVar)[varNum] = (int *) Mem_Malloc(
-            sizeof(int) * maxNumIndices, "alloc_sim_var_information()", LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return;
-        }
-
-        for (val = 0; val < numFlags; val++) {
-            if (val < numFactVals) {
-                (*scaleAndAddFactVals)[varNum][val] = SW_MISSING;
-            }
-
-            if (val < maxNumIndices) {
-                (*dimOrderInVar)[varNum][val] = -1;
-            }
-
-            (*missValFlags)[varNum][val] = swFALSE;
-        }
-
-        (*inVarIDs)[varNum] = -1;
-        (*inVarType)[varNum] = 0;
-        (*hasScaleAndAddFact)[varNum] = swFALSE;
-    }
-
-    if (currKey == eSW_InSoil) {
-        *numSoilVarLyrs = (size_t *) Mem_Malloc(
-            sizeof(size_t) * numVars, "alloc_sim_var_information()", LogInfo
-        );
-
-        for (varNum = 0; varNum < numVars; varNum++) {
-            (*numSoilVarLyrs)[varNum] = 0;
-        }
-    }
-}
-
-/**
-@brief Allocate space for values specifying how to detect if an input
-through nc files are missing
-
-@param[in] numVars Number of variables to allocate for within an input key
-@param[out] doubleMissVals List to allocate space for to store the
-missing values
-@param[out] LogInfo Holds information dealing with logfile output
-*/
-static void alloc_miss_vals(
-    int numVars, double ***doubleMissVals, LOG_INFO *LogInfo
-) {
-    int varNum;
-    int wkgVarNum;
-    const size_t numVals = 2;
-
-    if (isnull(*doubleMissVals)) {
-        /*
-            Allocate 2 values to store the maximum number of expected
-            missing value specifying values
-        */
-        for (varNum = 0; varNum < numVars + 1; varNum++) {
-            if (varNum > 0) {
-                (*doubleMissVals)[varNum - 1] = (double *) Mem_Malloc(
-                    sizeof(double) * numVals, "alloc_miss_vals()", LogInfo
-                );
-                (*doubleMissVals)[varNum - 1][0] = 0.0;
-                (*doubleMissVals)[varNum - 1][1] = 0.0;
-            } else {
-                *doubleMissVals = (double **) Mem_Malloc(
-                    sizeof(double *) * numVars, "alloc_miss_vals()", LogInfo
-                );
-                for (wkgVarNum = 0; wkgVarNum < numVars; wkgVarNum++) {
-                    (*doubleMissVals)[wkgVarNum] = NULL;
-                }
-            }
-        }
-        if (LogInfo->stopRun) {
-            return;
-        }
-    }
-}
-
-/**
 @brief Read an attribute value(s) to specify a way to detect
 a missing value when reading inputs later programs before running
 simulations
@@ -5744,7 +5551,9 @@ static void gather_missing_information(
                 return;
             }
 
-            alloc_miss_vals(numVarsInKey[inKey], doubleMissVals, LogInfo);
+            SW_NCIN_alloc_miss_vals(
+                numVarsInKey[inKey], doubleMissVals, LogInfo
+            );
             if (LogInfo->stopRun) {
                 return;
             }
@@ -5989,9 +5798,10 @@ static void get_invar_information(
                         inVarInfo[startVar][INGRIDMAPPING], "latitude_longitude"
                     ) != 0);
 
-        alloc_sim_var_information(
+        SW_NCIN_alloc_sim_var_information(
             numVarsInKey[inKey],
             inKey,
+            swTRUE,
             &SW_PathInputs->inVarIDs[inKey],
             &SW_PathInputs->inVarTypes[inKey],
             &SW_PathInputs->hasScaleAndAddFact[inKey],
@@ -6891,6 +6701,235 @@ freeMem:
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
+
+
+/**
+@brief Allocate space for values specifying how to detect if an input
+through nc files are missing
+
+@param[in] numVars Number of variables to allocate for within an input key
+@param[out] doubleMissVals List to allocate space for to store the
+missing values
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+void SW_NCIN_alloc_miss_vals(
+    int numVars, double ***doubleMissVals, LOG_INFO *LogInfo
+) {
+    int varNum;
+    int wkgVarNum;
+    const size_t numVals = 2;
+
+    if (isnull(*doubleMissVals)) {
+        /*
+            Allocate 2 values to store the maximum number of expected
+            missing value specifying values
+        */
+        for (varNum = 0; varNum < numVars + 1; varNum++) {
+            if (varNum > 0) {
+                (*doubleMissVals)[varNum - 1] = (double *) Mem_Malloc(
+                    sizeof(double) * numVals,
+                    "SW_NCIN_alloc_miss_vals()",
+                    LogInfo
+                );
+                (*doubleMissVals)[varNum - 1][0] = 0.0;
+                (*doubleMissVals)[varNum - 1][1] = 0.0;
+            } else {
+                *doubleMissVals = (double **) Mem_Malloc(
+                    sizeof(double *) * numVars,
+                    "SW_NCIN_alloc_miss_vals()",
+                    LogInfo
+                );
+                for (wkgVarNum = 0; wkgVarNum < numVars; wkgVarNum++) {
+                    (*doubleMissVals)[wkgVarNum] = NULL;
+                }
+            }
+        }
+        if (LogInfo->stopRun) {
+            return;
+        }
+    }
+}
+
+/**
+@brief Allocate space for information pertaining to input variables
+that will be used throughout simulations rather than gaining the same
+information many times during said simulation runs
+
+@param[in] numVars Number of variables to allocate for
+@param[in] currKey Current input key being allocated for
+@param[in] allocDimVars A flag specifying if the function should
+    allocate dimension variable indices
+@param[out] inVarIDs Identifiers of variables of a specific input
+key within provide nc files
+@param[out] inVarType Types of variables of a specific input
+key within provide nc files
+@param[out] hasScaleAndAddFact Flags specifying if a variable has both
+attributes "scale_factor" and "add_offset"
+@param[out] scaleAndAddFactVals A list that contains values of the attributes
+"scale_factor" and "add_offset" if both are present
+@param[out] missValFlags A list of flags specifying the user-provided
+information to specify a missing value in input files
+@param[out] dimOrderInVar A list of indices specifying the order
+    of dimensions for each variable
+@param[out] numSoilVarLyrs A list holding the number of soil layers for
+all soil input key variables
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+void SW_NCIN_alloc_sim_var_information(
+    int numVars,
+    int currKey,
+    Bool allocDimVars,
+    int **inVarIDs,
+    nc_type **inVarType,
+    Bool **hasScaleAndAddFact,
+    double ***scaleAndAddFactVals,
+    Bool ***missValFlags,
+    int ***dimOrderInVar,
+    size_t **numSoilVarLyrs,
+    LOG_INFO *LogInfo
+) {
+    int varNum;
+    size_t val;
+    const size_t numFactVals = 2;
+
+    *inVarIDs = (int *) Mem_Malloc(
+        sizeof(int) * numVars, "SW_NCIN_alloc_sim_var_information()", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+    *inVarType = (nc_type *) Mem_Malloc(
+        sizeof(nc_type) * numVars,
+        "SW_NCIN_alloc_sim_var_information()",
+        LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    *hasScaleAndAddFact = (Bool *) Mem_Malloc(
+        sizeof(Bool) * numVars, "SW_NCIN_alloc_sim_var_information()", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+    for (varNum = 0; varNum < numVars; varNum++) {
+        (*hasScaleAndAddFact)[varNum] = swFALSE;
+    }
+
+    *scaleAndAddFactVals = (double **) Mem_Malloc(
+        sizeof(double *) * numVars,
+        "SW_NCIN_alloc_sim_var_information()",
+        LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    for (varNum = 0; varNum < numVars; varNum++) {
+        (*scaleAndAddFactVals)[varNum] = NULL;
+    }
+
+    *missValFlags = (Bool **) Mem_Malloc(
+        sizeof(Bool *) * numVars, "SW_NCIN_alloc_sim_var_information()", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+    for (varNum = 0; varNum < numVars; varNum++) {
+        (*missValFlags)[varNum] = NULL;
+    }
+
+    if (allocDimVars) {
+        SW_NCIN_allocDimVar(numVars, dimOrderInVar, LogInfo);
+    }
+
+    for (varNum = 0; varNum < numVars; varNum++) {
+        (*scaleAndAddFactVals)[varNum] = (double *) Mem_Malloc(
+            sizeof(double) * numFactVals,
+            "SW_NCIN_alloc_sim_var_information()",
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        (*missValFlags)[varNum] = (Bool *) Mem_Malloc(
+            sizeof(Bool) * SIM_INFO_NFLAGS,
+            "SW_NCIN_alloc_sim_var_information()",
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        for (val = 0; val < SIM_INFO_NFLAGS; val++) {
+            if (val < numFactVals) {
+                (*scaleAndAddFactVals)[varNum][val] = SW_MISSING;
+            }
+
+            (*missValFlags)[varNum][val] = swFALSE;
+        }
+
+        (*inVarIDs)[varNum] = -1;
+        (*inVarType)[varNum] = 0;
+        (*hasScaleAndAddFact)[varNum] = swFALSE;
+    }
+
+    if (currKey == eSW_InSoil) {
+        *numSoilVarLyrs = (size_t *) Mem_Malloc(
+            sizeof(size_t) * numVars,
+            "SW_NCIN_alloc_sim_var_information()",
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        for (varNum = 0; varNum < numVars; varNum++) {
+            (*numSoilVarLyrs)[varNum] = 0;
+        }
+    }
+}
+
+/**
+@brief Allocate the dimension variable information for a key
+
+@param[in] numVars Number of variables within key to allocate
+@param[out] dimOrderInVar A list of indices specifying the order
+    of dimensions for each variable
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+void SW_NCIN_allocDimVar(int numVars, int ***dimOrderInVar, LOG_INFO *LogInfo) {
+    int varNum;
+    int val;
+
+    *dimOrderInVar = (int **) Mem_Malloc(
+        sizeof(int *) * numVars, "SW_NCIN_allocDimVar()", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    for (varNum = 0; varNum < numVars; varNum++) {
+        (*dimOrderInVar)[varNum] = NULL;
+    }
+
+    for (varNum = 0; varNum < numVars; varNum++) {
+        (*dimOrderInVar)[varNum] = (int *) Mem_Malloc(
+            sizeof(int) * MAX_NDIMS, "SW_NCIN_allocDimVar()", LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+    }
+
+    for (varNum = 0; varNum < numVars; varNum++) {
+        for (val = 0; val < MAX_NDIMS; val++) {
+            (*dimOrderInVar)[varNum][val] = -1;
+        }
+    }
+}
 
 /**
 @brief Mark a site/gridcell as completed (success/fail) in the progress file
@@ -8960,6 +8999,23 @@ void SW_NCIN_alloc_weath_input_info(
     for (inFileNum = 0; inFileNum < numWeathIn; inFileNum++) {
         (*outWeathFileNames)[weathVar][inFileNum] = NULL;
     }
+
+    SW_NCIN_allocate_startEndYrs(ncWeatherInStartEndYrs, numWeathIn, LogInfo);
+}
+
+/**
+@brief Allocate weather start and end years
+
+@param[out] ncWeatherInStartEndYrs Start/end years of each weather input file
+@param[in] numWeathIn Number of input weather files
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NCIN_allocate_startEndYrs(
+    unsigned int ***ncWeatherInStartEndYrs,
+    unsigned int numWeathIn,
+    LOG_INFO *LogInfo
+) {
+    unsigned int inFileNum;
 
     if (isnull(*ncWeatherInStartEndYrs)) {
         (*ncWeatherInStartEndYrs) = (unsigned int **) Mem_Malloc(

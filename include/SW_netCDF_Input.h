@@ -51,6 +51,18 @@ static const int numVarsInKey[] = {
 #define INSTPATRN 13
 #define INVAXIS 14
 
+/* Columns of interest, and excludes:
+    - Input key and input name
+    - "do input" flags in value
+    - Input file name/pattern
+    - St years and stride years start
+    - Calendar override
+    - User comment */
+#define NUM_INPUT_INFO 16
+
+#define MAX_NDIMS 5
+#define SIM_INFO_NFLAGS 6
+
 /** Progress status: SUID is ready for simulation */
 #define PRGRSS_READY ((signed char) 0)
 
@@ -159,11 +171,37 @@ void SW_NCIN_alloc_weath_input_info(
     LOG_INFO *LogInfo
 );
 
+void SW_NCIN_allocate_startEndYrs(
+    unsigned int ***ncWeatherInStartEndYrs,
+    unsigned int numWeathIn,
+    LOG_INFO *LogInfo
+);
+
 void SW_NCIN_precalc_lookups(
     SW_DOMAIN *SW_Domain, SW_WEATHER_INPUTS *SW_WeatherIn, LOG_INFO *LogInfo
 );
 
 void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
+
+void SW_NCIN_alloc_miss_vals(
+    int numVars, double ***doubleMissVals, LOG_INFO *LogInfo
+);
+
+void SW_NCIN_alloc_sim_var_information(
+    int numVars,
+    int currKey,
+    Bool allocDimVars,
+    int **inVarIDs,
+    nc_type **inVarType,
+    Bool **hasScaleAndAddFact,
+    double ***scaleAndAddFactVals,
+    Bool ***missValFlags,
+    int ***dimOrderInVar,
+    size_t **numSoilVarLyrs,
+    LOG_INFO *LogInfo
+);
+
+void SW_NCIN_allocDimVar(int numVars, int ***dimOrderInVar, LOG_INFO *LogInfo);
 
 #ifdef __cplusplus
 }

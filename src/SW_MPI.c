@@ -1173,6 +1173,147 @@ static void SW_Bcast(
 }
 
 /**
+@brief Wrapper function to send/receive information about a string
+    that will be allocated and sent/stored
+
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] buffer Buffer to send (root) and allocate (all other processes)
+@param[in] send Flag specifying (root) if the string should be sent (not NULL)
+@param[in] comm MPI communicator to broadcast a message to
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void get_dynamic_string(
+    int rank, char **buffer, Bool send, MPI_Comm comm, LOG_INFO *LogInfo
+) {
+    size_t strLen = 0;
+
+    if (rank == SW_MPI_ROOT) {
+        strLen = (send) ? strlen(*buffer) + 1 : 0;
+        SW_Bcast(MPI_UNSIGNED_LONG, &strLen, 1, SW_MPI_ROOT, comm);
+    } else {
+        SW_Bcast(MPI_UNSIGNED_LONG, &strLen, 1, SW_MPI_ROOT, comm);
+
+        if (strLen > 0) {
+            *buffer = (char *) Mem_Malloc(
+                sizeof(char) * strLen, "get_dynamic_string()", LogInfo
+            );
+        }
+    }
+    if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+        return;
+    }
+
+    if (strLen > 0) {
+        SW_Bcast(MPI_CHAR, *buffer, strLen, SW_MPI_ROOT, comm);
+    }
+}
+
+/**
+@brief Broadcast information about SW_NETCDF_IN
+
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] comm MPI communicator to broadcast a message to
+@param[in,out] netCDFIn Struct of type SW_NETCDF_IN that will be distributed
+    (root process) and received (all others)
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void get_NC_info(
+    int rank, MPI_Comm comm, SW_NETCDF_IN *netCDFIn, LOG_INFO *LogInfo
+) {
+    int startVar;
+    int var;
+    int att;
+    char *str;
+    InKeys inKey;
+    Bool useKey = swFALSE;
+
+    if (rank > SW_MPI_ROOT) {
+        SW_NCIN_alloc_input_var_info(netCDFIn, LogInfo);
+    }
+    SW_Bcast(MPI_INT, netCDFIn->ncDomVarIDs, SW_NVARDOM, SW_MPI_ROOT, comm);
+
+    ForEachNCInKey(inKey) {
+        if (rank == SW_MPI_ROOT) {
+            useKey =
+                (Bool) (netCDFIn->readInVars[inKey][0] && inKey > eSW_InDomain);
+        }
+
+        SW_Bcast(MPI_INT, &useKey, 1, SW_MPI_ROOT, comm);
+
+        if (!useKey) {
+            netCDFIn->readInVars[inKey][0] = swFALSE;
+            continue;
+        }
+
+        SW_Bcast(
+            MPI_INT,
+            netCDFIn->readInVars[inKey],
+            numVarsInKey[inKey] + 1,
+            SW_MPI_ROOT,
+            comm
+        );
+
+        startVar = 0;
+        while (startVar < numVarsInKey[inKey] &&
+               !netCDFIn->readInVars[inKey][startVar + 1]) {
+
+            startVar++;
+        }
+
+        if (rank > SW_MPI_ROOT) {
+            SW_NCIN_allocDimVar(
+                numVarsInKey[inKey], &netCDFIn->dimOrderInVar[inKey], LogInfo
+            );
+        }
+        if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+            return;
+        }
+
+        // Go through all enabled variables within the current key
+        // and copy
+        for (var = startVar; var < numVarsInKey[inKey]; var++) {
+            if (!netCDFIn->readInVars[inKey][var + 1]) {
+                continue;
+            }
+
+            for (att = 0; att < NUM_INPUT_INFO; att++) {
+                str = netCDFIn->inVarInfo[inKey][var][att];
+                get_dynamic_string(
+                    rank,
+                    &netCDFIn->inVarInfo[inKey][var][att],
+                    (Bool) (!isnull(str)),
+                    comm,
+                    LogInfo
+                );
+                if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+                    return;
+                }
+            }
+
+            str = netCDFIn->units_sw[inKey][var];
+            get_dynamic_string(
+                rank,
+                &netCDFIn->units_sw[inKey][var],
+                (Bool) (!isnull(str)),
+                comm,
+                LogInfo
+            );
+            if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+                return;
+            }
+
+            SW_Bcast(
+                MPI_INT,
+                netCDFIn->dimOrderInVar[inKey][var],
+                MAX_NDIMS,
+                SW_MPI_ROOT,
+                comm
+            );
+        }
+    }
+}
+
+/**
 @brief Wrapper function to create groups and communications
 between compute and I/O processes
 
@@ -1353,6 +1494,183 @@ static void create_groups(
             (rank > SW_MPI_ROOT) ? buff : ranksInComp,
             (rank > SW_MPI_ROOT) ? groupComm : rootCompComm
         );
+    }
+}
+
+/**
+@brief Send input path information to all I/O processes
+
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] comm MPI communicator to broadcast a message to
+@param[in] nYears Number of years within the simulation
+@param[in] netCDFIn Struct of type SW_NETCDF_IN that will be distributed
+    (root process) and received (all others)
+@param[out] pathInputs Inputs Struct of type SW_PATH_INPUTS which
+    holds basic information about input files and values
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void get_path_info(
+    int rank,
+    MPI_Comm comm,
+    TimeInt nYears,
+    SW_NETCDF_IN *netCDFIn,
+    SW_PATH_INPUTS *pathInputs,
+    LOG_INFO *LogInfo
+) {
+    InKeys inKey;
+    int var;
+    int startVar;
+    unsigned int file;
+
+    // Get number of weather files and days in year for those years
+    SW_Bcast(MPI_INT, &pathInputs->ncNumWeatherInFiles, 1, SW_MPI_ROOT, comm);
+
+    if (rank > SW_MPI_ROOT) {
+        pathInputs->numDaysInYear = (unsigned int *) Mem_Malloc(
+            sizeof(unsigned int) * nYears, "get_path_info()", LogInfo
+        );
+    }
+    if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+        return;
+    }
+
+    SW_Bcast(
+        MPI_UNSIGNED, pathInputs->numDaysInYear, nYears, SW_MPI_ROOT, comm
+    );
+
+    get_dynamic_string(
+        rank, &pathInputs->txtInFiles[eLog], swTRUE, comm, LogInfo
+    );
+
+    if (netCDFIn->readInVars[eSW_InWeather][0] && rank > SW_MPI_ROOT) {
+        SW_NCIN_allocate_startEndYrs(
+            &pathInputs->ncWeatherInStartEndYrs,
+            pathInputs->ncNumWeatherInFiles,
+            LogInfo
+        );
+    }
+    if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+        return;
+    }
+
+    ForEachNCInKey(inKey) {
+        if (!netCDFIn->readInVars[inKey][0]) {
+            continue;
+        }
+
+        startVar = 0;
+
+        while (startVar < numVarsInKey[inKey] &&
+               !netCDFIn->readInVars[inKey][startVar + 1]) {
+            startVar++;
+        }
+
+        // Allocate and send/receive variable information
+        if (rank > SW_MPI_ROOT) {
+            SW_NCIN_alloc_sim_var_information(
+                numVarsInKey[inKey],
+                inKey,
+                swFALSE,
+                &pathInputs->inVarIDs[inKey],
+                &pathInputs->inVarTypes[inKey],
+                &pathInputs->hasScaleAndAddFact[inKey],
+                &pathInputs->scaleAndAddFactVals[inKey],
+                &pathInputs->missValFlags[inKey],
+                NULL,
+                &pathInputs->numSoilVarLyrs,
+                LogInfo
+            );
+        }
+        if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+            return;
+        }
+
+        if (inKey == eSW_InSoil) {
+            SW_Bcast(
+                MPI_UNSIGNED_LONG,
+                pathInputs->numSoilVarLyrs,
+                numVarsInKey[inKey],
+                SW_MPI_ROOT,
+                comm
+            );
+        }
+
+        SW_Bcast(
+            MPI_INT,
+            pathInputs->inVarIDs[inKey],
+            numVarsInKey[inKey],
+            SW_MPI_ROOT,
+            comm
+        );
+        SW_Bcast(
+            MPI_INT,
+            pathInputs->inVarTypes[inKey],
+            numVarsInKey[inKey],
+            SW_MPI_ROOT,
+            comm
+        );
+        SW_Bcast(
+            MPI_INT,
+            pathInputs->hasScaleAndAddFact[inKey],
+            numVarsInKey[inKey],
+            SW_MPI_ROOT,
+            comm
+        );
+
+        // Transfer information that is kept track for variables in a key
+        for (var = startVar; var < numVarsInKey[inKey]; var++) {
+            if (!netCDFIn->readInVars[inKey][var + 1]) {
+                continue;
+            }
+
+            // Get 2D array information for variables
+            SW_Bcast(
+                MPI_DOUBLE,
+                pathInputs->scaleAndAddFactVals[inKey][var],
+                2,
+                SW_MPI_ROOT,
+                comm
+            );
+            SW_Bcast(
+                MPI_INT,
+                pathInputs->missValFlags[inKey][var],
+                SIM_INFO_NFLAGS,
+                SW_MPI_ROOT,
+                comm
+            );
+
+            if (isnull(pathInputs->doubleMissVals[inKey])) {
+                SW_NCIN_alloc_miss_vals(
+                    numVarsInKey[inKey],
+                    &pathInputs->doubleMissVals[inKey],
+                    LogInfo
+                );
+            }
+            if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+                return;
+            }
+
+            SW_Bcast(
+                MPI_DOUBLE,
+                pathInputs->doubleMissVals[inKey][var],
+                2,
+                SW_MPI_ROOT,
+                comm
+            );
+        }
+
+        // Copy weather start/end years
+        if (inKey == eSW_InWeather) {
+            for (file = 0; file < pathInputs->ncNumWeatherInFiles; file++) {
+                SW_Bcast(
+                    MPI_UNSIGNED,
+                    pathInputs->ncWeatherInStartEndYrs[file],
+                    2,
+                    SW_MPI_ROOT,
+                    comm
+                );
+            }
+        }
     }
 }
 
@@ -1923,6 +2241,11 @@ void SW_MPI_setup(
         SW_Domain->datatypes[eSW_MPI_VegEstabIn],
         LogInfo
     );
+    if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
+        return;
+    }
+
+    SW_MPI_domain_info(SW_Domain, rank, LogInfo);
 }
 
 /**
@@ -2205,6 +2528,81 @@ void SW_MPI_template_info(
 
     // SW_RUN_INPUTS
     SW_Bcast(inRunType, &SW_Run->RunIn, 1, SW_MPI_ROOT, MPI_COMM_WORLD);
+}
+
+/**
+@brief Once the setup is complete in the root process, send domain
+information to all other processes; all others receive
+
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_MPI_domain_info(SW_DOMAIN *SW_Domain, int rank, LOG_INFO *LogInfo) {
+    // rootCompComm - not used if not root process
+    MPI_Comm *rootCompComm = &SW_Domain->SW_Designation.rootCompComm;
+    MPI_Comm *groupComm = &SW_Domain->SW_Designation.groupComm;
+    MPI_Datatype *types = SW_Domain->datatypes;
+    int procJob = SW_Domain->SW_Designation.procJob;
+    TimeInt nYears;
+
+    // Send/get soil/temporal information
+    if (procJob == SW_MPI_PROC_IO || rank == SW_MPI_ROOT) {
+        SW_Bcast(types[eSW_MPI_Domain], SW_Domain, 1, SW_MPI_ROOT, *groupComm);
+    }
+
+    // Send/get Spinup information - compute processes + rank only
+    if (procJob == SW_MPI_PROC_COMP || rank == SW_MPI_ROOT) {
+        SW_Bcast(
+            types[eSW_MPI_Spinup],
+            &SW_Domain->SW_SpinUp,
+            1,
+            SW_MPI_ROOT,
+            (rank == SW_MPI_ROOT) ? *rootCompComm : *groupComm
+        );
+    }
+
+    // Send/get netCDF information - I/O processes only
+    if (procJob == SW_MPI_PROC_IO) {
+        get_NC_info(rank, *groupComm, &SW_Domain->netCDFInput, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+    }
+
+    // Send/get path information
+    if (procJob == SW_MPI_PROC_IO || rank == SW_MPI_ROOT) {
+        nYears = SW_Domain->endyr - SW_Domain->startyr + 1;
+        get_path_info(
+            rank,
+            *groupComm,
+            nYears,
+            &SW_Domain->netCDFInput,
+            &SW_Domain->SW_PathInputs,
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+    }
+
+    // Send/get domain information - SW_PATH_OUTPUTS will wait until later
+    SW_Bcast(
+        types[eSW_MPI_OutDomIO],
+        &SW_Domain->OutDom,
+        1,
+        SW_MPI_ROOT,
+        MPI_COMM_WORLD
+    );
+
+    SW_Bcast(
+        MPI_INT,
+        SW_Domain->OutDom.use_OutPeriod,
+        SW_OUTNPERIODS,
+        SW_MPI_ROOT,
+        MPI_COMM_WORLD
+    );
 }
 
 /**
