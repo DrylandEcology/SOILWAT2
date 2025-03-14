@@ -611,6 +611,12 @@ void sw_setup_prog_data(
             return;
         }
 #endif
+
+#if defined(SWMPI)
+        if (rank > SW_MPI_ROOT) {
+            SW_NCIN_create_units_converters(&SW_Domain->netCDFInput, LogInfo);
+        }
+#endif
     }
 #endif // SWNETCDF
 }
