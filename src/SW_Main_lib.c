@@ -22,6 +22,7 @@
 #include "include/myMemory.h"       // for Str_Dup
 #include "include/SW_datastructs.h" // for LOG_INFO
 #include "include/SW_Defines.h"     // for MAX_MSGS, MAX_LOG_SIZE, BUILD_DATE
+#include "include/SW_Output.h"      // for SW_OUT_setup_output
 #include <stdio.h>                  // for fprintf, stderr, fflush, stdout
 #include <stdlib.h>                 // for exit, free, EXIT_FA...
 #include <string.h>                 // for strncmp
@@ -33,6 +34,12 @@
 #if defined(SWMPI)
 #include "include/SW_MPI.h"
 #endif
+
+#if defined(SWNETCDF)
+#include "include/SW_netCDF_Input.h"
+#include "include/SW_netCDF_Output.h"
+#endif
+
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
@@ -544,4 +551,53 @@ void sw_setup_prog_data(
         return;
     }
 #endif
+
+    // initialize output
+    SW_OUT_setup_output(
+        SW_Domain->nMaxSoilLayers,
+        SW_Domain->nMaxEvapLayers,
+        sw_template->VegEstabSim.count,
+        sw_template->VegEstabIn.parms,
+        &SW_Domain->OutDom,
+        LogInfo
+    );
+#if defined(SW_MPI)
+    if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+        return;
+    }
+#else
+    if (LogInfo->stopRun) {
+        return;
+    }
+#endif
+
+#if defined(SWNETCDF)
+#if defined(SWMPI)
+    if (rank == SW_MPI_ROOT) {
+#endif
+        SW_NCOUT_read_out_vars(
+            &SW_Domain->OutDom,
+            SW_Domain->SW_PathInputs.txtInFiles,
+            sw_template->VegEstabIn.parms,
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+#if defined(SWMPI)
+    }
+    if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+        return;
+    }
+#endif
+
+    if (!prepareFiles) {
+        SW_NCOUT_create_units_converters(&SW_Domain->OutDom, LogInfo);
+#if defined(SWMPI)
+        if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+            return;
+        }
+#endif
+    }
+#endif // SWNETCDF
 }

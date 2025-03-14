@@ -211,56 +211,43 @@ setupProgramData:
     sw_setup_prog_data(
         rank, size, procName, prepareFiles, &sw_template, &SW_Domain, &LogInfo
     );
-
-    if (rank > 0) {
+#if defined(SWMPI)
+    if (SW_MPI_check_setup_status(LogInfo.stopRun, MPI_COMM_WORLD)) {
         goto finishProgram;
+    } else if (SW_Domain.SW_Designation.procJob == SW_MPI_PROC_COMP) {
+        goto sim;
     }
-
-    // initialize output
-    SW_OUT_setup_output(
-        SW_Domain.nMaxSoilLayers,
-        SW_Domain.nMaxEvapLayers,
-        sw_template.VegEstabSim.count,
-        sw_template.VegEstabIn.parms,
-        &SW_Domain.OutDom,
-        &LogInfo
-    );
+#else
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
+#endif
 
-#if defined(SWNETCDF)
-    SW_NCOUT_read_out_vars(
-        &SW_Domain.OutDom,
-        SW_Domain.SW_PathInputs.txtInFiles,
-        sw_template.VegEstabIn.parms,
-        &LogInfo
-    );
-    if (LogInfo.stopRun) {
-        goto finishProgram;
-    }
+#if defined(SWMPI)
+    if (rank == 0) {
+#endif
+        SW_OUT_create_files(&sw_template.SW_PathOutputs, &SW_Domain, &LogInfo);
+        if (LogInfo.stopRun || prepareFiles) {
+            if (prepareFiles) {
+                sw_message("completed simulation preparations.");
+            }
 
-    if (!prepareFiles) {
-        SW_NCOUT_create_units_converters(&SW_Domain.OutDom, &LogInfo);
-        if (LogInfo.stopRun) {
-            goto finishProgram;
+            goto closeFiles;
         }
+#if defined(SWMPI)
     }
-#endif // SWNETCDF
-
-    SW_OUT_create_files(&sw_template.SW_PathOutputs, &SW_Domain, &LogInfo);
-    if (LogInfo.stopRun || prepareFiles) {
-        if (prepareFiles) {
-            sw_message("completed simulation preparations.");
-        }
-
+    if (SW_MPI_check_setup_status(
+            LogInfo.stopRun, SW_Domain.SW_Designation.groupComm
+        )) {
         goto closeFiles;
     }
+#endif
 
     if (EchoInits) {
         echo_all_inputs(&sw_template, &SW_Domain.OutDom, &LogInfo);
     }
 
+sim:
     // run simulations: loop over simulation set
     SW_CTL_RunSimSet(&sw_template, &SW_Domain, &SW_WallTime, &LogInfo);
 
