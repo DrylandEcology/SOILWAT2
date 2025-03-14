@@ -19,7 +19,8 @@ typedef enum {
     eSW_MPI_Inputs,
     eSW_MPI_Designate,
     eSW_MPI_WallTime,
-    eSW_MPI_OutDomIO
+    eSW_MPI_OutDomIO,
+    eSW_MPI_VegEstabIn
 } MPIType;
 
 #define SW_MPI_PROC_COMP 0
@@ -65,6 +66,18 @@ void SW_MPI_setup(
     SW_RUN *sw_template,
     LOG_INFO *LogInfo
 );
+
+void SW_MPI_template_info(
+    int rank,
+    SW_MPI_DESIGNATE *des,
+    SW_RUN *SW_Run,
+    MPI_Datatype inRunType,
+    MPI_Datatype spinupType,
+    MPI_Datatype vegEstabType,
+    LOG_INFO *LogInfo
+);
+
+Bool SW_MPI_check_setup_status(Bool stopRun, MPI_Comm comm);
 
 void SW_MPI_root_find_active_sites(
     SW_DOMAIN *SW_Domain,

@@ -1,10 +1,18 @@
 #include "include/SW_MPI.h"
+#include "include/SW_netCDF_Input.h"
 
 #include "include/filefuncs.h"
+#include "include/generic.h"
 #include "include/myMemory.h"
 #include "include/SW_Domain.h"
+#include "include/SW_Files.h"
+#include "include/SW_Markov.h"
 #include "include/SW_netCDF_General.h"
 #include "include/SW_netCDF_Input.h"
+#include "include/SW_netCDF_Output.h"
+#include "include/SW_Output.h" // for ForEachOutKey, SW_ESTAB, pd2...
+#include "include/Times.h"
+#include <netcdf.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -1262,7 +1270,7 @@ static void create_groups(
             sizeof(int) * numCompProcs, "create_groups()", LogInfo
         );
     }
-    SW_MPI_check_setup_status(worldSize, rank, LogInfo);
+    SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD);
     if (LogInfo->stopRun) {
         return;
     }
@@ -1272,7 +1280,7 @@ static void create_groups(
             sizeof(int) * numIOProcsTot, "create_groups()", LogInfo
         );
     }
-    SW_MPI_check_setup_status(worldSize, rank, LogInfo);
+    SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD);
     if (LogInfo->stopRun) {
         return;
     }
@@ -1532,9 +1540,9 @@ on various program-defined structs
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
-    int res = MPI_SUCCESS;
-    int numItems[] = {5, 5, 5, 5, 6, 5};
-    int blockLens[][6] = {
+    int res;
+    int numItems[] = {5, 5, 5, 5, 6, 5, 18};
+    int blockLens[][19] = {
         {1, 1, 1, 1, 1},    /* SW_DOMAIN */
         {1, 1, 1, 1, 1},    /* SW_SPINUP */
         {1, 1, 1, 1, 1},    /* SW_RUN_INPUTS */
@@ -1544,10 +1552,28 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
          SW_OUTNKEYS,
          SW_OUTNPERIODS,
          1,
-         SW_OUTNKEYS * SW_OUTNPERIODS} /* SW_OUT_DOM */
+         SW_OUTNKEYS * SW_OUTNPERIODS}, /* SW_OUT_DOM */
+        {MAX_FILENAMESIZE,
+         MAX_SPECIESNAMELEN + 1,
+         1,
+         1,
+         1,
+         1,
+         1,
+         1,
+         1,
+         1,
+         1,
+         2,
+         1,
+         1,
+         1,
+         1,
+         1,
+         1} /* SW_VEGESTAB_INPUTS */
     };
 
-    MPI_Datatype types[][6] = {
+    MPI_Datatype types[][18] = {
         {MPI_INT, MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED
         }, /* SW_DOMAIN */
         {MPI_UNSIGNED, MPI_UNSIGNED, MPI_INT, MPI_INT, MPI_UNSIGNED
@@ -1561,49 +1587,90 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
          MPI_DOUBLE,
          MPI_UNSIGNED_LONG,
          MPI_UNSIGNED_LONG}, /* SW_MPI_WallTime */
-        {MPI_INT, MPI_INT, MPI_UNSIGNED_LONG, MPI_INT, MPI_INT} /* SW_OUT_DOM */
+        {MPI_INT, MPI_INT, MPI_UNSIGNED_LONG, MPI_INT, MPI_INT
+        }, /* SW_OUT_DOM */
+        {MPI_CHAR,
+         MPI_CHAR,
+         MPI_UNSIGNED,
+         MPI_UNSIGNED,
+         MPI_UNSIGNED,
+         MPI_UNSIGNED,
+         MPI_UNSIGNED,
+         MPI_UNSIGNED,
+         MPI_UNSIGNED,
+         MPI_UNSIGNED,
+         MPI_UNSIGNED,
+         MPI_DOUBLE,
+         MPI_DOUBLE,
+         MPI_DOUBLE,
+         MPI_DOUBLE,
+         MPI_DOUBLE,
+         MPI_DOUBLE,
+         MPI_DOUBLE} /* SW_VEGESTAB_INPUTS */
     };
-    MPI_Aint offsets[][6] = {/* SW_DOMAIN */
-                             {offsetof(SW_DOMAIN, hasConsistentSoilLayerDepths),
-                              offsetof(SW_DOMAIN, nMaxSoilLayers),
-                              offsetof(SW_DOMAIN, nMaxEvapLayers),
-                              offsetof(SW_DOMAIN, startyr),
-                              offsetof(SW_DOMAIN, endyr)},
+    MPI_Aint offsets[][18] = {
+        /* SW_DOMAIN */
+        {offsetof(SW_DOMAIN, hasConsistentSoilLayerDepths),
+         offsetof(SW_DOMAIN, nMaxSoilLayers),
+         offsetof(SW_DOMAIN, nMaxEvapLayers),
+         offsetof(SW_DOMAIN, startyr),
+         offsetof(SW_DOMAIN, endyr)},
 
-                             /* SW_SPINUP */
-                             {offsetof(SW_SPINUP, scope),
-                              offsetof(SW_SPINUP, duration),
-                              offsetof(SW_SPINUP, mode),
-                              offsetof(SW_SPINUP, rng_seed),
-                              offsetof(SW_SPINUP, spinup)},
+        /* SW_SPINUP */
+        {offsetof(SW_SPINUP, scope),
+         offsetof(SW_SPINUP, duration),
+         offsetof(SW_SPINUP, mode),
+         offsetof(SW_SPINUP, rng_seed),
+         offsetof(SW_SPINUP, spinup)},
 
-                             /* SW_RUN_INPUTS */
-                             {offsetof(SW_RUN_INPUTS, SkyRunIn),
-                              offsetof(SW_RUN_INPUTS, ModelRunIn),
-                              offsetof(SW_RUN_INPUTS, SoilRunIn),
-                              offsetof(SW_RUN_INPUTS, VegProdRunIn),
-                              offsetof(SW_RUN_INPUTS, SiteRunIn)},
+        /* SW_RUN_INPUTS */
+        {offsetof(SW_RUN_INPUTS, SkyRunIn),
+         offsetof(SW_RUN_INPUTS, ModelRunIn),
+         offsetof(SW_RUN_INPUTS, SoilRunIn),
+         offsetof(SW_RUN_INPUTS, VegProdRunIn),
+         offsetof(SW_RUN_INPUTS, SiteRunIn)},
 
-                             /* SW_MPI_DESIGNATE */
-                             {offsetof(SW_MPI_DESIGNATE, procJob),
-                              offsetof(SW_MPI_DESIGNATE, ioRank),
-                              offsetof(SW_MPI_DESIGNATE, nCompProcs),
-                              offsetof(SW_MPI_DESIGNATE, nSuids),
-                              offsetof(SW_MPI_DESIGNATE, useTSuids)},
+        /* SW_MPI_DESIGNATE */
+        {offsetof(SW_MPI_DESIGNATE, procJob),
+         offsetof(SW_MPI_DESIGNATE, ioRank),
+         offsetof(SW_MPI_DESIGNATE, nCompProcs),
+         offsetof(SW_MPI_DESIGNATE, nSuids),
+         offsetof(SW_MPI_DESIGNATE, useTSuids)},
 
-                             /* SW_MPI_WallTime */
-                             {offsetof(SW_WALLTIME, timeMean),
-                              offsetof(SW_WALLTIME, timeSD),
-                              offsetof(SW_WALLTIME, timeMin),
-                              offsetof(SW_WALLTIME, timeMax),
-                              offsetof(SW_WALLTIME, nTimedRuns),
-                              offsetof(SW_WALLTIME, nUntimedRuns)},
-                             /* SW_OUT_DOM */
-                             {offsetof(SW_OUT_DOM, sumtype),
-                              offsetof(SW_OUT_DOM, use),
-                              offsetof(SW_OUT_DOM, nrow_OUT),
-                              offsetof(SW_OUT_DOM, used_OUTNPERIODS),
-                              offsetof(SW_OUT_DOM, timeSteps)}
+        /* SW_MPI_WallTime */
+        {offsetof(SW_WALLTIME, timeMean),
+         offsetof(SW_WALLTIME, timeSD),
+         offsetof(SW_WALLTIME, timeMin),
+         offsetof(SW_WALLTIME, timeMax),
+         offsetof(SW_WALLTIME, nTimedRuns),
+         offsetof(SW_WALLTIME, nUntimedRuns)},
+
+        /* SW_OUT_DOM */
+        {offsetof(SW_OUT_DOM, sumtype),
+         offsetof(SW_OUT_DOM, use),
+         offsetof(SW_OUT_DOM, nrow_OUT),
+         offsetof(SW_OUT_DOM, used_OUTNPERIODS),
+         offsetof(SW_OUT_DOM, timeSteps)},
+
+        /* SW_VEGESTAB_INPUTS */
+        {offsetof(SW_VEGESTAB_INFO_INPUTS, sppFileName),
+         offsetof(SW_VEGESTAB_INFO_INPUTS, sppname),
+         offsetof(SW_VEGESTAB_INFO_INPUTS, vegType),
+         offsetof(SW_VEGESTAB_INFO_INPUTS, min_pregerm_days),
+         offsetof(SW_VEGESTAB_INFO_INPUTS, max_pregerm_days),
+         offsetof(SW_VEGESTAB_INFO_INPUTS, min_wetdays_for_germ),
+         offsetof(SW_VEGESTAB_INFO_INPUTS, max_drydays_postgerm),
+         offsetof(SW_VEGESTAB_INFO_INPUTS, min_wetdays_for_estab),
+         offsetof(SW_VEGESTAB_INFO_INPUTS, min_days_germ2estab),
+         offsetof(SW_VEGESTAB_INFO_INPUTS, max_days_germ2estab),
+         offsetof(SW_VEGESTAB_INFO_INPUTS, estab_lyrs),
+         offsetof(SW_VEGESTAB_INFO_INPUTS, bars),
+         offsetof(SW_VEGESTAB_INFO_INPUTS, min_swc_germ),
+         offsetof(SW_VEGESTAB_INFO_INPUTS, min_swc_estab),
+         offsetof(SW_VEGESTAB_INFO_INPUTS, min_temp_germ),
+         offsetof(SW_VEGESTAB_INFO_INPUTS, max_temp_germ),
+         offsetof(SW_VEGESTAB_INFO_INPUTS, min_temp_estab),
+         offsetof(SW_VEGESTAB_INFO_INPUTS, max_temp_estab)}
     };
 
     int numItemsInStructs[] = {6, 6, 12, 2, 1};
@@ -1710,14 +1777,15 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
         eSW_MPI_Inputs,
         eSW_MPI_Designate,
         eSW_MPI_WallTime,
-        eSW_MPI_OutDomIO
+        eSW_MPI_OutDomIO,
+        eSW_MPI_VegEstabIn
     };
 
     int type;
     int typeIndex;
     int runTypeIndex;
     int covIndex;
-    const int numTypes = 6;
+    const int numTypes = 7;
     const int numRunInTypes = 5;
     const int numCovTypes = 2;
     const int vegprodIndex = 3;
@@ -1842,37 +1910,317 @@ void SW_MPI_setup(
     }
 
     SW_MPI_process_types(SW_Domain, procName, worldSize, rank, LogInfo);
+    if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
+        return;
+    }
+
+    SW_MPI_template_info(
+        rank,
+        &SW_Domain->SW_Designation,
+        sw_template,
+        SW_Domain->datatypes[eSW_MPI_Inputs],
+        SW_Domain->datatypes[eSW_MPI_Spinup],
+        SW_Domain->datatypes[eSW_MPI_VegEstabIn],
+        LogInfo
+    );
+}
+
+/**
+@brief Once the setup is complete in the root process, send template
+information to all other processes
+
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] desig Designation instance that holds information about
+    assigning a process to a job
+@param[in,out] SW_Run SW_RUN template what needs to be copied to
+    all compute processes with some information pertaining to I/O
+@param[in] inRunType Custom MPI type for transfering data for SW_RUN_INPUTS
+@param[in] spinupType Custom MPI type for transfering data for SW_SPINUP
+@param[in] vegEstabType Custom MPI type for transfering data for
+    SW_VEGESTAB_INFO_INPUTS
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_MPI_template_info(
+    int rank,
+    SW_MPI_DESIGNATE *desig,
+    SW_RUN *SW_Run,
+    MPI_Datatype inRunType,
+    MPI_Datatype spinupType,
+    MPI_Datatype vegEstabType,
+    LOG_INFO *LogInfo
+) {
+    const int numStructs = 6; /* Do not include veg estab */
+    const int swIndex = 4;
+    const int vegEstabIndex = 6;
+    const int num2DMarkov = 8;
+    const int num1DMarkov = 3;
+
+    IntUS vCount;
+    int structType;
+    int var;
+    int numElem[] = {3, 24, 6, 5, 7, 42, 2};
+    void **markov2DBuffer[] = {
+        (void **) &SW_Run->MarkovIn.wetprob,
+        (void **) &SW_Run->MarkovIn.dryprob,
+        (void **) &SW_Run->MarkovIn.avg_ppt,
+        (void **) &SW_Run->MarkovIn.std_ppt,
+        (void **) &SW_Run->MarkovIn.cfxw,
+        (void **) &SW_Run->MarkovIn.cfxd,
+        (void **) &SW_Run->MarkovIn.cfnw,
+        (void **) &SW_Run->MarkovIn.cfnd,
+    };
+    void *markov1DBuffer[] = {
+        (void *) SW_Run->MarkovIn.u_cov,
+        (void *) SW_Run->MarkovIn.v_cov,
+        (void *) &SW_Run->MarkovIn.ppt_events
+    };
+    void *buffers[][42] = {
+        {(void *) &SW_Run->CarbonIn.use_wue_mult,
+         (void *) &SW_Run->CarbonIn.use_bio_mult,
+         (void *) SW_Run->CarbonIn.ppm},
+        {(void *) &SW_Run->WeatherIn.use_snow,
+         (void *) &SW_Run->WeatherIn.use_weathergenerator_only,
+         (void *) &SW_Run->WeatherIn.generateWeatherMethod,
+         (void *) &SW_Run->WeatherIn.pct_snowdrift,
+         (void *) &SW_Run->WeatherIn.pct_snowRunoff,
+         (void *) SW_Run->WeatherIn.scale_precip,
+         (void *) SW_Run->WeatherIn.scale_temp_max,
+         (void *) SW_Run->WeatherIn.scale_temp_min,
+         (void *) SW_Run->WeatherIn.scale_skyCover,
+         (void *) SW_Run->WeatherIn.scale_wind,
+         (void *) SW_Run->WeatherIn.scale_rH,
+         (void *) SW_Run->WeatherIn.scale_actVapPress,
+         (void *) SW_Run->WeatherIn.scale_shortWaveRad,
+         (void *) SW_Run->WeatherIn.name_prefix,
+         (void *) &SW_Run->WeatherIn.rng_seed,
+         (void *) &SW_Run->WeatherIn.use_cloudCoverMonthly,
+         (void *) &SW_Run->WeatherIn.use_windSpeedMonthly,
+         (void *) &SW_Run->WeatherIn.use_humidityMonthly,
+         (void *) SW_Run->WeatherIn.dailyInputFlags,
+         (void *) SW_Run->WeatherIn.dailyInputIndices,
+         (void *) &SW_Run->WeatherIn.n_input_forcings,
+         (void *) &SW_Run->WeatherIn.desc_rsds,
+         (void *) &SW_Run->WeatherIn.n_years,
+         (void *) &SW_Run->WeatherIn.startYear},
+        {(void *) &SW_Run->VegProdIn.vegYear,
+         (void *) &SW_Run->VegProdIn.isBiomAsIf100Cover,
+         (void *) &SW_Run->VegProdIn.use_SWA,
+         (void *) SW_Run->VegProdIn.critSoilWater,
+         (void *) SW_Run->VegProdIn.rank_SWPcrits,
+         (void *) &SW_Run->VegProdIn.veg_method},
+        {(void *) &SW_Run->ModelIn.SW_SpinUp,
+         (void *) &SW_Run->ModelIn.startyr,
+         (void *) &SW_Run->ModelIn.endyr,
+         (void *) &SW_Run->ModelIn.startstart,
+         (void *) &SW_Run->ModelIn.endend},
+        {(void *) &SW_Run->SoilWatIn.hist_use,
+         (void *) &SW_Run->SoilWatIn.hist.method,
+         (void *) &SW_Run->SoilWatIn.hist.yr.first,
+         (void *) &SW_Run->SoilWatIn.hist.yr.last,
+         (void *) &SW_Run->SoilWatIn.hist.yr.total,
+         (void *) SW_Run->SoilWatIn.hist.swc,
+         (void *) SW_Run->SoilWatIn.hist.std_err},
+        {(void *) SW_Run->SiteIn.site_swrc_name,
+         (void *) SW_Run->SiteIn.site_ptf_name,
+         (void *) &SW_Run->SiteIn.use_soil_temp,
+         (void *) &SW_Run->SiteIn.methodSurfaceTemperature,
+         (void *) &SW_Run->SiteIn.site_swrc_type,
+         (void *) &SW_Run->SiteIn.site_swrc_name,
+         (void *) &SW_Run->SiteIn.t1Param1,
+         (void *) &SW_Run->SiteIn.t1Param2,
+         (void *) &SW_Run->SiteIn.t1Param3,
+         (void *) &SW_Run->SiteIn.csParam1,
+         (void *) &SW_Run->SiteIn.csParam2,
+         (void *) &SW_Run->SiteIn.shParam,
+         (void *) &SW_Run->SiteIn.bmLimiter,
+         (void *) &SW_Run->SiteIn.stDeltaX,
+         (void *) &SW_Run->SiteIn.stMaxDepth,
+         (void *) &SW_Run->SiteIn.depthSapric,
+         (void *) &SW_Run->SiteIn.type_soilDensityInput,
+         (void *) &SW_Run->SiteIn.reset_yr,
+         (void *) &SW_Run->SiteIn.deepdrain,
+         (void *) &SW_Run->SiteIn.inputsProvideSWRCp,
+         (void *) &SW_Run->SiteIn.evap.range,
+         (void *) &SW_Run->SiteIn.evap.slope,
+         (void *) &SW_Run->SiteIn.evap.xinflec,
+         (void *) &SW_Run->SiteIn.evap.yinflec,
+         (void *) &SW_Run->SiteIn.transp.range,
+         (void *) &SW_Run->SiteIn.transp.slope,
+         (void *) &SW_Run->SiteIn.transp.xinflec,
+         (void *) &SW_Run->SiteIn.transp.yinflec,
+         (void *) &SW_Run->SiteIn.slow_drain_coeff,
+         (void *) &SW_Run->SiteIn.pet_scale,
+         (void *) &SW_Run->SiteIn.TminAccu2,
+         (void *) &SW_Run->SiteIn.TmaxCrit,
+         (void *) &SW_Run->SiteIn.lambdasnow,
+         (void *) &SW_Run->SiteIn.RmeltMin,
+         (void *) &SW_Run->SiteIn.RmeltMax,
+         (void *) &SW_Run->SiteIn.percentRunoff,
+         (void *) &SW_Run->SiteIn.percentRunon,
+         (void *) &SW_Run->SiteIn.SWCInitVal,
+         (void *) &SW_Run->SiteIn.SWCWetVal,
+         (void *) &SW_Run->SiteIn.SWCMinVal},
+        {(void *) &SW_Run->VegEstabSim.use, (void *) &SW_Run->VegEstabSim.count}
+    };
+    MPI_Datatype types[][42] = {
+        {MPI_INT, MPI_INT, MPI_DOUBLE}, /* SW_CARBON_INPUTS */
+        {MPI_INT,      MPI_INT,      MPI_UNSIGNED, MPI_DOUBLE,  MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,  MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,   MPI_CHAR,    MPI_INT,
+         MPI_INT,      MPI_INT,      MPI_INT,      MPI_INT,     MPI_UNSIGNED,
+         MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED
+        }, /* SW_WEATHER_INPUTS */
+        {MPI_INT, MPI_DOUBLE, MPI_INT, MPI_INT, MPI_INT, MPI_INT
+        }, /* SW_VEGPROD_INPUTS */
+        {spinupType, MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED
+        }, /* SW_MODEL_INPUTS */
+        {MPI_INT, MPI_INT, MPI_UNSIGNED, MPI_DOUBLE, MPI_DOUBLE
+        }, /* SW_SOILWAT_INPUTS */
+        {MPI_CHAR,     MPI_CHAR,   MPI_INT,    MPI_UNSIGNED, MPI_UNSIGNED,
+         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,
+         MPI_UNSIGNED, MPI_INT,    MPI_INT,    MPI_INT,      MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_DOUBLE}, /* SW_SITE_INPUTS */
+        {MPI_INT, MPI_UNSIGNED}     /* SW_VEGPROD_SIM */
+    };
+    int count[][42] = {
+        {1, 1, MAX_NYEAR}, /* SW_CARBON_INPUTS */
+        {1,
+         1,
+         1,
+         1,
+         1,
+         MAX_MONTHS,
+         MAX_MONTHS,
+         MAX_MONTHS,
+         MAX_MONTHS,
+         MAX_MONTHS,
+         MAX_MONTHS,
+         MAX_MONTHS,
+         MAX_MONTHS,
+         MAX_FILENAMESIZE - 5,
+         1,
+         1,
+         1,
+         1,
+         MAX_INPUT_COLUMNS,
+         1,
+         1,
+         1,
+         1},                                /* SW_WEATHER_INPUTS */
+        {1, NVEGTYPES, NVEGTYPES, 1, 1, 1}, /* SW_VEGPROD_INPUTS */
+        {1, 1, 1, 1, 1},                    /* SW_MODEL_INPUTS */
+        {1, 1, 1, 1, MAX_DAYS * MAX_LAYERS, MAX_DAYS * MAX_LAYERS
+        }, /* SW_SOILWAT_INPUTS */
+        {64, 64, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+         1,  1,  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+        },     /* SW_SITE_INPUTS */
+        {1, 1} /* SW_VEGPROD_SIM */
+    };
+    int markov1DCount[] = {MAX_WEEKS * 2, MAX_WEEKS * 2 * 2, 1};
+
+    MPI_Comm comm =
+        (rank == SW_MPI_ROOT) ? desig->rootCompComm : desig->groupComm;
+
+    // Send input information to all processes
+    if (desig->procJob == SW_MPI_PROC_COMP || rank == SW_MPI_ROOT) {
+        for (structType = 0; structType < numStructs; structType++) {
+            for (var = 0; var < numElem[structType]; var++) {
+                SW_Bcast(
+                    types[structType][var],
+                    buffers[structType][var],
+                    count[structType][var],
+                    SW_MPI_ROOT,
+                    comm
+                );
+
+                if (structType == swIndex && !SW_Run->SoilWatIn.hist_use) {
+                    break;
+                }
+            }
+        }
+    }
+
+    // Markov inputs if enabled
+    if (SW_Run->WeatherIn.generateWeatherMethod == 2) {
+        if (rank > SW_MPI_ROOT) {
+            SW_MKV_construct(SW_Run->WeatherIn.rng_seed, &SW_Run->MarkovIn);
+            allocateMKV(&SW_Run->MarkovIn, LogInfo);
+        }
+        if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+            return;
+        }
+
+        for (var = 0; var < num2DMarkov; var++) {
+            SW_Bcast(
+                MPI_DOUBLE, *markov2DBuffer[var], MAX_DAYS, SW_MPI_ROOT, comm
+            );
+        }
+
+        for (var = 0; var < num1DMarkov; var++) {
+            SW_Bcast(
+                (var == 2) ? MPI_INT : MPI_DOUBLE,
+                markov1DBuffer[var],
+                markov1DCount[var],
+                SW_MPI_ROOT,
+                comm
+            );
+        }
+    }
+
+    /* Vegetation establishment information
+       We must do it outside of the major loop to have
+       all processes take place */
+    SW_Bcast(
+        types[vegEstabIndex][0],
+        buffers[vegEstabIndex][0],
+        count[vegEstabIndex][0],
+        SW_MPI_ROOT,
+        MPI_COMM_WORLD
+    );
+
+    if (SW_Run->VegEstabSim.use) {
+        SW_Bcast(
+            types[vegEstabIndex][1],
+            buffers[vegEstabIndex][1],
+            count[vegEstabIndex][1],
+            SW_MPI_ROOT,
+            MPI_COMM_WORLD
+        );
+
+        for (vCount = 0; vCount < SW_Run->VegEstabSim.count; vCount++) {
+            SW_Bcast(
+                vegEstabType,
+                &SW_Run->VegEstabIn.parms[vCount],
+                1,
+                SW_MPI_ROOT,
+                MPI_COMM_WORLD
+            );
+        }
+    }
+
+    // SW_RUN_INPUTS
+    SW_Bcast(inRunType, &SW_Run->RunIn, 1, SW_MPI_ROOT, MPI_COMM_WORLD);
 }
 
 /**
 @brief Before we proceed to the next important section of the program,
 we must do a check-in with all processes to make sure no errors occurred
 
-@param[in] worldSize Size of the MPI_COMM_WORLD communicator
-@param[in] rank Process number known to MPI for the current process (aka rank)
-@param[in] LogInfo Holds information on warnings and errors
+@param[in] stopRun A flag specifying if an error occurred and stop the run
+@param[in] comm MPI communicator to broadcast a message to
 */
-Bool SW_MPI_check_setup_status(int worldSize, int rank, LOG_INFO *LogInfo) {
-    int destRank;
-    int failedRank = 0;
-    int fail = (LogInfo->stopRun) ? 1 : 0;
+Bool SW_MPI_check_setup_status(Bool stopRun, MPI_Comm comm) {
+    int fail = (stopRun) ? 1 : 0;
     int failProgram = 0;
-    MPI_Request req = MPI_REQUEST_NULL;
 
-    if (rank == SW_MPI_ROOT) {
-        for (destRank = 1; destRank < worldSize; destRank++) {
-            SW_MPI_Recv(MPI_INT, &failedRank, 1, destRank, swTRUE, 0, &req);
-            if (failedRank) {
-                failProgram = 1;
-            }
-        }
-    } else {
-        SW_MPI_Send(MPI_INT, &fail, 1, SW_MPI_ROOT, swTRUE, 0, &req);
-    }
+    MPI_Allreduce(&fail, &failProgram, 1, MPI_INT, MPI_SUM, comm);
 
-    MPI_Bcast(&failProgram, 1, MPI_INT, SW_MPI_ROOT, MPI_COMM_WORLD);
-
-    return (Bool) failProgram;
+    return (Bool) (failProgram > 0);
 }
 
 /**
@@ -2130,6 +2478,17 @@ void SW_MPI_process_types(
     MPI_Comm *rootCompComm =
         (rank == SW_MPI_ROOT) ? &SW_Domain->SW_Designation.rootCompComm : NULL;
     MPI_Datatype desType = SW_Domain->datatypes[eSW_MPI_Designate];
+
+    // Spread the index file creation flags across the world;
+    // necessary if we use translated SUIDs and we have not
+    // received them yet
+    SW_Bcast(
+        MPI_INT,
+        SW_Domain->netCDFInput.useIndexFile,
+        SW_NINKEYSNC,
+        SW_MPI_ROOT,
+        MPI_COMM_WORLD
+    );
 
     // Check if the process is not the root
     if (rank != SW_MPI_ROOT) {
