@@ -387,7 +387,7 @@ static void allocateActiveTSuids(
     compute node encountered
 @param[in,out] numMaxProcsInNode A list holding the maximum
     number of ranks a node in `ranksInNodes` can hold
-@param[out] LogInfo Holds information on warnings and errors
+@parma[out] LogInfo Holds information on warnings and errors
 */
 static void allocProcInfo(
     int oldCount,
@@ -3071,8 +3071,7 @@ try to simulate/assign to compute processes
     temporal/spatial information for a set of simulation runs
 @param[out] activeSuids A list of domain SUIDs that was activated
     by the program and/or user given the progress input file
-@param[out] numActiveSites Number of sites that was found in
-    the progress input file that is enabled
+@param[out] numActiveSites Number of active sites that will be simulated
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_MPI_root_find_active_sites(
