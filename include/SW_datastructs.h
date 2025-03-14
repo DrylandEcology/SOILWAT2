@@ -903,13 +903,6 @@ typedef struct {
         desc_rsds; /**< Description of units and definition of daily inputs of
                       observed shortwave radiation, see `solar_radiation()` */
 
-    /* This section is required for computing the output quantities.  */
-    SW_WEATHER_OUTPUTS
-    p_accu[SW_OUTNPERIODS], // output accumulator: summed values for each time
-                            // period
-        p_oagg[SW_OUTNPERIODS]; // output aggregator: mean or sum for each time
-                                // periods
-
     unsigned int n_years;   /**< Length of `allHist`, i.e., number of years of
                                daily weather */
     unsigned int startYear; /**< Calendar year corresponding to first year of
