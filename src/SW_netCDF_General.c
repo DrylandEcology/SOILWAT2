@@ -1507,3 +1507,18 @@ void SW_NC_open(
         LogError(LogInfo, LOGERROR, "Could not open file '%s'.", ncFileName);
     }
 }
+
+#if defined(SWMPI)
+void SW_NC_open_par(
+    const char *fileName, int mode, MPI_Comm comm, int *id, LOG_INFO *LogInfo
+) {
+    if (nc_open_par(fileName, mode, comm, MPI_INFO_NULL, id)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not open the file '%s' for parallel I/O.",
+            fileName
+        );
+    }
+}
+#endif

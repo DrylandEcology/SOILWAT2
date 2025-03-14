@@ -241,9 +241,24 @@ setupProgramData:
         )) {
         goto closeFiles;
     }
+
+    SW_MPI_open_files(
+        rank,
+        &SW_Domain.SW_Designation,
+        &SW_Domain.SW_PathInputs,
+        &SW_Domain.netCDFInput,
+        &sw_template.SW_PathOutputs,
+        &SW_Domain.OutDom,
+        &LogInfo
+    );
+    if (SW_MPI_check_setup_status(
+            LogInfo.stopRun, SW_Domain.SW_Designation.groupComm
+        )) {
+        goto closeFiles;
+    }
 #endif
 
-    if (EchoInits) {
+    if (EchoInits && rank == 0) {
         echo_all_inputs(&sw_template, &SW_Domain.OutDom, &LogInfo);
     }
 

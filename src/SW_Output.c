@@ -1267,6 +1267,9 @@ void SW_OUT_init_ptrs(SW_OUT_RUN *OutRun, SW_PATH_OUTPUTS *SW_PathOutputs) {
     OutRun->p_OUTsd[key][column] = NULL;
 #elif defined(SWNETCDF)
     SW_PathOutputs->ncOutFiles[key][column] = NULL;
+#if defined(SWMPI)
+    SW_PathOutputs->openOutFileIDs[key][column] = NULL;
+#endif
 #endif
 
 #if !defined(SWNETCDF)
@@ -1944,10 +1947,12 @@ void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw) {
                 sw->SW_PathOutputs.ncOutFiles[k][pd] = NULL;
             }
 
-            if (!isnull(sw->SW_PathOutputs.ncOutFiles[k][pd])) {
-                free((void *) sw->SW_PathOutputs.ncOutFiles[k][pd]);
-                sw->SW_PathOutputs.ncOutFiles[k][pd] = NULL;
+#if defined(SWMPI)
+            if (!isnull(sw->SW_PathOutputs.openOutFileIDs[k][pd])) {
+                free((void *) sw->SW_PathOutputs.openOutFileIDs[k][pd]);
+                sw->SW_PathOutputs.openOutFileIDs[k][pd] = NULL;
             }
+#endif
         }
     }
 #endif
@@ -3965,27 +3970,49 @@ void SW_PATHOUT_deepCopy(
         if (OutDom->nvar_OUT[key] > 0 && OutDom->use[key]) {
             ForEachOutPeriod(pd) {
                 if (OutDom->use_OutPeriod[pd]) {
-                    SW_NCOUT_alloc_files(
-                        &dest_files->ncOutFiles[key][pd], numFiles, LogInfo
-                    );
-                    if (LogInfo->stopRun) {
-                        return; // Exit function prematurely due to error
-                    }
-                    for (fileNum = 0; fileNum < numFiles; fileNum++) {
-                        if (!isnull(source_files->ncOutFiles[key][pd])) {
-                            srcFile =
-                                source_files->ncOutFiles[key][pd][fileNum];
+                    if (!isnull(source_files->ncOutFiles[key][pd])) {
+                        SW_NCOUT_alloc_files(
+                            &dest_files->ncOutFiles[key][pd], numFiles, LogInfo
+                        );
+                        if (LogInfo->stopRun) {
+                            return; // Exit function prematurely due to error
+                        }
+                        for (fileNum = 0; fileNum < numFiles; fileNum++) {
+                            if (!isnull(source_files->ncOutFiles[key][pd])) {
+                                srcFile =
+                                    source_files->ncOutFiles[key][pd][fileNum];
 
-                            destFile =
-                                &dest_files->ncOutFiles[key][pd][fileNum];
-                            *destFile = Str_Dup(srcFile, LogInfo);
+                                destFile =
+                                    &dest_files->ncOutFiles[key][pd][fileNum];
+                                *destFile = Str_Dup(srcFile, LogInfo);
 
-                            if (LogInfo->stopRun) {
-                                return; // Exit function prematurley due to
-                                        // error
+                                if (LogInfo->stopRun) {
+                                    return; // Exit function prematurley due to
+                                            // error
+                                }
                             }
                         }
                     }
+
+#if defined(SWMPI)
+                    // TODO: Remove, this will not be needed in the future
+                    if (!isnull(source_files->openOutFileIDs[key][pd])) {
+                        dest_files->openOutFileIDs[key][pd] =
+                            (int *) Mem_Malloc(
+                                sizeof(int) * numFiles,
+                                "SW_PATHOUT_deepCopy()",
+                                LogInfo
+                            );
+                        if (LogInfo->stopRun) {
+                            return; // Exit function prematurley due to error
+                        }
+
+                        for (fileNum = 0; fileNum < numFiles; fileNum++) {
+                            dest_files->openOutFileIDs[key][pd][fileNum] =
+                                source_files->openOutFileIDs[key][pd][fileNum];
+                        }
+                    }
+#endif
                 }
             }
         }

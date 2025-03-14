@@ -247,6 +247,10 @@ typedef struct {
 #if defined(SWNETCDF)
     char **ncOutFiles[SW_OUTNKEYS][SW_OUTNPERIODS];
     unsigned int numOutFiles;
+
+#if defined(SWMPI)
+    int *openOutFileIDs[SW_OUTNKEYS][SW_OUTNPERIODS];
+#endif
 #endif
 
 } SW_PATH_OUTPUTS;
@@ -1003,6 +1007,10 @@ typedef struct {
 } SW_SOILWAT_INPUTS;
 
 typedef struct {
+#if defined(SWMPI)
+    FILE **logfps; /**< Store file pointers to all I/O process ranks */
+    int numFiles;
+#endif
     FILE *logfp;
     // This is the pointer to the log file.
 
@@ -1098,6 +1106,10 @@ typedef struct {
     /* NC information that will stay constant through program run
        domain information - domain and progress file IDs */
     int ncDomFileIDs[SW_NVARDOM];
+
+#if defined(SWMPI)
+    int **openInFileIDs[SW_NINKEYSNC];
+#endif
 #endif
 } SW_PATH_INPUTS;
 

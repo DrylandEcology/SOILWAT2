@@ -6,6 +6,10 @@
 #include "include/SW_Defines.h"     // for OutPeriod, SW_OUTNPERIODS, SW_OUTN...
 #include <stdio.h>                  // for size_t
 
+#if defined(SWMPI)
+#include <netcdf_par.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -225,6 +229,12 @@ void SW_NC_get_vals(
 void SW_NC_open(
     const char *ncFileName, int openMode, int *fileID, LOG_INFO *LogInfo
 );
+
+#if defined(SWMPI)
+void SW_NC_open_par(
+    const char *fileName, int mode, MPI_Comm comm, int *id, LOG_INFO *LogInfo
+);
+#endif
 
 #ifdef __cplusplus
 }

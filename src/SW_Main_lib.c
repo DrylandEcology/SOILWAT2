@@ -378,6 +378,11 @@ void sw_init_logs(FILE *logInitPtr, LOG_INFO *LogInfo) {
     LogInfo->numWarnings = 0;
     LogInfo->numDomainWarnings = 0;
     LogInfo->numDomainErrors = 0;
+
+#if defined(SWMPI)
+    LogInfo->logfps = NULL;
+    LogInfo->numFiles = 0;
+#endif
 }
 
 /**
@@ -478,11 +483,23 @@ print number of simulation units with warnings and errors (if any).
 */
 void sw_wrapup_logs(LOG_INFO *LogInfo) {
     Bool QuietMode = (Bool) (LogInfo->QuietMode || isnull(LogInfo->logfp));
+    FILE *logfp = LogInfo->logfp;
 
-    // Close logfile (but not if it is stdout or stderr)
-    if (LogInfo->logfp != stdout || LogInfo->logfp != stderr) {
-        CloseFile(&LogInfo->logfp, LogInfo);
+    // If we are running with MPI, we need to close all opened log files
+    // otherwise, when not using MPI, we only need to close one
+#if defined(SWMPI)
+    int file;
+
+    for (file = 0; file < LogInfo->numFiles; file++) {
+        logfp = LogInfo->logfps[file];
+#endif
+        // Close logfile (but not if it is stdout or stderr)
+        if (logfp != stdout || logfp != stderr) {
+            CloseFile(&logfp, LogInfo);
+        }
+#if defined(SWMPI)
     }
+#endif
 
     // Notify the user that there are messages in the logfile (unless QuietMode)
     if ((LogInfo->numDomainErrors > 0 || LogInfo->numDomainWarnings > 0 ||

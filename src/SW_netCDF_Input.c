@@ -8047,11 +8047,33 @@ void SW_NCIN_open_dom_prog_files(
 
 @param[in,out] ncDomFileIDs List of all nc domain file IDs
 */
-void SW_NCIN_close_files(int ncDomFileIDs[]) {
+void SW_NCIN_close_files(SW_PATH_INPUTS *SW_PathInputs) {
     int fileNum;
+#if defined(SWMPI)
+    InKeys inKey;
+    int varNum;
+    int numFiles;
+    int file;
+    int numWeathFiles = SW_PathInputs->ncNumWeatherInFiles;
+
+    ForEachNCInKey(inKey) {
+        if (!isnull(SW_PathInputs->openInFileIDs[inKey])) {
+            for (varNum = 0; varNum < numVarsInKey[inKey]; varNum++) {
+                if (!isnull(SW_PathInputs->openInFileIDs[inKey][varNum])) {
+                    numFiles = (inKey != eSW_InWeather) ? 1 : numWeathFiles;
+                    for (file = 0; file < numFiles; file++) {
+                        nc_close(
+                            SW_PathInputs->openInFileIDs[inKey][varNum][file]
+                        );
+                    }
+                }
+            }
+        }
+    }
+#endif
 
     for (fileNum = 0; fileNum < SW_NVARDOM; fileNum++) {
-        nc_close(ncDomFileIDs[fileNum]);
+        nc_close(SW_PathInputs->ncDomFileIDs[fileNum]);
     }
 }
 

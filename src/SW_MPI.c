@@ -13,6 +13,7 @@
 #include "include/SW_Output.h" // for ForEachOutKey, SW_ESTAB, pd2...
 #include "include/Times.h"
 #include <netcdf.h>
+#include <netcdf_par.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -1675,11 +1676,265 @@ static void get_path_info(
 }
 
 /**
+@brief Helper function to SW_MPI_open_files to open input files
+
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] comm MPI communicator to broadcast a message to
+@param[in] netCDFIn Constant netCDF input file information
+@param[in,out] pathInputs Inputs Struct of type SW_PATH_INPUTS which
+    holds basic information about input files and values
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void open_input_files(
+    int rank,
+    MPI_Comm comm,
+    SW_NETCDF_IN *netCDFIn,
+    SW_PATH_INPUTS *pathInputs,
+    LOG_INFO *LogInfo
+) {
+    InKeys inKey;
+    int var;
+    int domVar;
+    int numFiles;
+    int file;
+    int *id;
+    char *fileName;
+    Bool skipVar;
+    Bool useWeathFileArray;
+
+    ForEachNCInKey(inKey) {
+        if (!netCDFIn->readInVars[inKey][0] || inKey == eSW_InDomain) {
+            if (inKey == eSW_InDomain) {
+                // Reopen domain and progress file
+                for (domVar = 0; domVar < SW_NVARDOM; domVar++) {
+                    if (rank == SW_MPI_ROOT) {
+                        fileName = pathInputs->ncInFiles[eSW_InDomain][domVar];
+                    }
+                    get_dynamic_string(rank, &fileName, swTRUE, comm, LogInfo);
+                    if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+                        return;
+                    }
+
+                    SW_NC_open_par(
+                        fileName,
+                        (domVar == vNCdom) ? NC_NOWRITE : NC_WRITE,
+                        comm,
+                        &pathInputs->ncDomFileIDs[domVar],
+                        LogInfo
+                    );
+                    if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+                        return;
+                    }
+
+                    if (rank > SW_MPI_ROOT) {
+                        free(fileName);
+                    }
+                }
+            }
+            continue;
+        }
+
+        pathInputs->openInFileIDs[inKey] = (int **) Mem_Malloc(
+            sizeof(int *) * numVarsInKey[inKey], "SW_MPI_open_files()", LogInfo
+        );
+        if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+            return;
+        }
+
+        for (var = 0; var < numVarsInKey[inKey]; var++) {
+            skipVar = (Bool) (!netCDFIn->readInVars[inKey][var + 1] ||
+                              ((var == 0 && !netCDFIn->useIndexFile[inKey]) &&
+                               inKey > eSW_InDomain));
+            if (skipVar) {
+                continue;
+            }
+
+            numFiles =
+                (inKey != eSW_InWeather) ? 1 : pathInputs->ncNumWeatherInFiles;
+
+            pathInputs->openInFileIDs[inKey][var] = (int *) Mem_Malloc(
+                sizeof(int) * numFiles, "SW_MPI_open_files()", LogInfo
+            );
+            if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+                return;
+            }
+
+            for (file = 0; file < numFiles; file++) {
+                useWeathFileArray = (Bool) (inKey == eSW_InWeather && var > 0);
+
+                if (rank == SW_MPI_ROOT) {
+                    fileName = (!useWeathFileArray) ?
+                                   pathInputs->ncInFiles[inKey][var] :
+                                   pathInputs->ncWeatherInFiles[var][file];
+                }
+                get_dynamic_string(rank, &fileName, swTRUE, comm, LogInfo);
+                if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+                    if (rank > SW_MPI_ROOT) {
+                        free(fileName);
+                        fileName = NULL;
+                    }
+                    return;
+                }
+
+                id = &pathInputs->openInFileIDs[inKey][var][file];
+                SW_NC_open_par(fileName, NC_NOWRITE, comm, id, LogInfo);
+                if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+                    free(fileName);
+                    return;
+                }
+
+                if (rank > SW_MPI_ROOT) {
+                    free(fileName);
+                    fileName = NULL;
+                }
+            }
+        }
+    }
+}
+
+/**
+@brief Generate log file names and open them to be written to in the future;
+    the generated log files will have the name of the format:
+        <rank>_<job>_<logfile name> where "logfile name" contains the extension
+        e.g., 0_IO_logfile.log or 20_COMP_logfile.log
+
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] logfileName Base logfile name that the user provided in `files.in`
+@param[in] desig Designation instance that holds information about
+    assigning a process to a job
+@param[in] LogInfo Holds information on warnings and errors
+*/
+static void open_logfiles(
+    int rank, char *logfileName, SW_MPI_DESIGNATE *desig, LOG_INFO *LogInfo
+) {
+    int numLogs = desig->nCompProcs + 1; // + 1 for current I/O process
+    int log;
+    int resSNP = 0;
+    char logBuffer[MAX_FILENAMESIZE] = "\0";
+    char dir[MAX_FILENAMESIZE] = "\0";
+    const char *baseName = BaseName(logfileName);
+
+    LogInfo->logfps = (FILE **) Mem_Malloc(
+        sizeof(FILE *) * numLogs, "open_logfiles()", LogInfo
+    );
+    LogInfo->numFiles = numLogs;
+
+    DirName(logfileName, dir);
+
+    for (log = 0; log < numLogs; log++) {
+        snprintf(
+            logBuffer,
+            MAX_FILENAMESIZE,
+            "%s%d_%s_%s",
+            dir,
+            (log > 0) ? desig->ranks[log - 1] : rank,
+            (log > 0) ? "COMP" : "IO",
+            baseName
+        );
+        if (resSNP < 0 || (unsigned int) resSNP > sizeof(logBuffer)) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Could not create log file names in rank %d.",
+                rank
+            );
+            return;
+        }
+
+        LogInfo->logfps[log] = OpenFile(logBuffer, "w", LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+    }
+}
+
+/**
+@brief Helper function to SW_MPI_open_files to open input files;
+    including log files
+
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] logFileName Base logfile name that the user provided in `files.in`
+@param[in] comm MPI communicator to broadcast a message to
+@param[in] desig Designation instance that holds information about
+    assigning a process to a job
+@param[in] pathOutputs Constant netCDF output file information
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void open_output_files(
+    int rank,
+    char *logFileName,
+    MPI_Comm comm,
+    SW_MPI_DESIGNATE *desig,
+    SW_PATH_OUTPUTS *pathOutputs,
+    SW_OUT_DOM *OutDom,
+    LOG_INFO *LogInfo
+) {
+    OutKey outKey;
+    OutPeriod pd;
+    unsigned int file;
+    int *id;
+    char *fileName = NULL;
+
+    SW_Bcast(MPI_UNSIGNED, &pathOutputs->numOutFiles, 1, SW_MPI_ROOT, comm);
+
+    ForEachOutKey(outKey) {
+        if (OutDom->nvar_OUT[outKey] > 0 && OutDom->use[outKey]) {
+            ForEachOutPeriod(pd) {
+                if (OutDom->use_OutPeriod[pd]) {
+                    pathOutputs->openOutFileIDs[outKey][pd] =
+                        (int *) Mem_Malloc(
+                            sizeof(int) * pathOutputs->numOutFiles,
+                            "open_output_files()",
+                            LogInfo
+                        );
+                    if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+                        return;
+                    }
+
+                    for (file = 0; file < pathOutputs->numOutFiles; file++) {
+                        if (rank == SW_MPI_ROOT) {
+                            fileName =
+                                pathOutputs->ncOutFiles[outKey][pd][file];
+                        }
+                        get_dynamic_string(
+                            rank, &fileName, swTRUE, comm, LogInfo
+                        );
+                        if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+                            if (rank > SW_MPI_ROOT) {
+                                free(fileName);
+                            }
+                            return;
+                        }
+
+                        id = &pathOutputs->openOutFileIDs[outKey][pd][file];
+
+                        SW_NC_open_par(fileName, NC_WRITE, comm, id, LogInfo);
+                        if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+                            if (rank > SW_MPI_ROOT) {
+                                free(fileName);
+                            }
+                            return;
+                        }
+                        if (rank > SW_MPI_ROOT) {
+                            free(fileName);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    open_logfiles(rank, logFileName, desig, LogInfo);
+}
+
+/**
 @brief Wrapper for MPI function to free a type and throw a
     warning if a free throws an error
 
-@param[in,out] type
-@param[out] LogInfo
+@param[in,out] type Custom MPI type to attempt to free
+@param[out] LogInfo Holds information on warnings and errors
 */
 static void free_type(MPI_Datatype *type, LOG_INFO *LogInfo) {
     int res = MPI_SUCCESS;
@@ -2687,6 +2942,43 @@ void SW_MPI_domain_info(SW_DOMAIN *SW_Domain, int rank, LOG_INFO *LogInfo) {
 }
 
 /**
+@brief Opens input and output files for I/O processes for parallel
+    read and write; this includes log file pointers
+
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] desig Designation instance that holds information about
+    assigning a process to a job
+@param[in,out] pathInputs Struct of type SW_PATH_INPUTS which
+    holds basic information about input files and values
+@param[in] netCDFIn Constant netCDF input file information
+@param[in,out] pathOutputs Constant netCDF output file information
+@param[in] OutDom Constant netCDF input file information
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_MPI_open_files(
+    int rank,
+    SW_MPI_DESIGNATE *desig,
+    SW_PATH_INPUTS *pathInputs,
+    SW_NETCDF_IN *netCDFIn,
+    SW_PATH_OUTPUTS *pathOutputs,
+    SW_OUT_DOM *OutDom,
+    LOG_INFO *LogInfo
+) {
+    MPI_Comm comm = desig->groupComm;
+    char *logFileName = pathInputs->txtInFiles[eLog];
+
+    if (rank == SW_MPI_ROOT) {
+        nc_close(pathInputs->ncDomFileIDs[vNCdom]);
+        nc_close(pathInputs->ncDomFileIDs[vNCprog]);
+    }
+
+    open_input_files(rank, comm, netCDFIn, pathInputs, LogInfo);
+    open_output_files(
+        rank, logFileName, comm, desig, pathOutputs, OutDom, LogInfo
+    );
+}
+
+/**
 @brief Before we proceed to the next important section of the program,
 we must do a check-in with all processes to make sure no errors occurred
 
@@ -2700,6 +2992,75 @@ Bool SW_MPI_check_setup_status(Bool stopRun, MPI_Comm comm) {
     MPI_Allreduce(&fail, &failProgram, 1, MPI_INT, MPI_SUM, comm);
 
     return (Bool) (failProgram > 0);
+}
+
+/**
+@brief Report any log information that has been created throughout the
+program run either through I/O processes or the root process
+
+@param[in] wtType Custom MPI datatype for SW_WALLTIME
+@param[in] SW_WallTime Struct of type SW_WALLTIME that holds timing
+information for the program run
+@param[in] procDesign Process designation (compute or I/O)
+@param[in] size Number of processors (world size) within the
+    communicator MPI_COMM_WORLD
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] failedSetup Specifies if the setup process failed
+@param[in] LogInfo Holds information on warnings and errors
+*/
+void SW_MPI_report_log(
+    MPI_Datatype wtType,
+    SW_WALLTIME *SW_WallTime,
+    SW_MPI_DESIGNATE *procDesign,
+    int size,
+    int rank,
+    Bool failedSetup,
+    LOG_INFO *LogInfo
+) {
+    SW_WALLTIME avgWallTime;
+    MPI_Request req = MPI_REQUEST_NULL;
+    int numRanks = 0;
+    double prevMean = 0.0;
+    double runSqr = 0.0;
+    int destRank;
+
+    avgWallTime.timeMean = 0.0;
+    avgWallTime.timeSD = 0.0;
+
+    if (rank == SW_MPI_ROOT) {
+        /* Get timing information to average in root processes */
+        for (destRank = 1; destRank < size; destRank++) {
+            SW_WALLTIME rankWT;
+
+            if (procDesign->procJob == SW_MPI_PROC_COMP) {
+                SW_MPI_Recv(wtType, &rankWT, 1, destRank, swTRUE, 0, &req);
+                numRanks++;
+
+                prevMean = avgWallTime.timeMean;
+                avgWallTime.timeMean = get_running_mean(
+                    numRanks, avgWallTime.timeMean, rankWT.timeMean
+                );
+                avgWallTime.timeMax = get_running_mean(
+                    numRanks, avgWallTime.timeMax, rankWT.timeMean
+                );
+                avgWallTime.timeMin = get_running_mean(
+                    numRanks, avgWallTime.timeMin, rankWT.timeMean
+                );
+                runSqr = get_running_sqr(
+                    prevMean, avgWallTime.timeMean, rankWT.timeMean
+                );
+                avgWallTime.nTimedRuns += rankWT.nTimedRuns;
+                avgWallTime.nUntimedRuns += rankWT.nUntimedRuns;
+            }
+        }
+
+        avgWallTime.timeSD = final_running_sd(numRanks, runSqr);
+
+        SW_WT_ReportTime(avgWallTime, LogInfo);
+    } else {
+        /* Send timing information to the root process to average it */
+        SW_MPI_Send(wtType, SW_WallTime, 1, SW_MPI_ROOT, swTRUE, 0, &req);
+    }
 }
 
 /**

@@ -83,6 +83,16 @@ void SW_MPI_ncout_info(
     int rank, MPI_Comm comm, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 );
 
+void SW_MPI_open_files(
+    int rank,
+    SW_MPI_DESIGNATE *desig,
+    SW_PATH_INPUTS *pathInputs,
+    SW_NETCDF_IN *netCDFIn,
+    SW_PATH_OUTPUTS *pathOutputs,
+    SW_OUT_DOM *OutDom,
+    LOG_INFO *LogInfo
+);
+
 Bool SW_MPI_check_setup_status(Bool stopRun, MPI_Comm comm);
 
 void SW_MPI_root_find_active_sites(

@@ -326,6 +326,9 @@ void SW_F_init_ptrs(SW_PATH_INPUTS *SW_PathInputs) {
         SW_PathInputs->scaleAndAddFactVals[k] = NULL;
         SW_PathInputs->missValFlags[k] = NULL;
         SW_PathInputs->doubleMissVals[k] = NULL;
+#if defined(SWMPI)
+        SW_PathInputs->openInFileIDs[k] = NULL;
+#endif
     }
 
     SW_PathInputs->ncWeatherInFiles = NULL;
@@ -432,6 +435,8 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
     int k;
     int varNum;
 
+    SW_NCIN_close_files(SW_PathInputs);
+
     ForEachNCInKey(k) {
         if (!isnull(SW_PathInputs->ncInFiles[k])) {
             for (varNum = 0; varNum < numVarsInKey[k]; varNum++) {
@@ -496,6 +501,20 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
             free((void *) SW_PathInputs->doubleMissVals[k]);
             SW_PathInputs->doubleMissVals[k] = NULL;
         }
+
+#if defined(SWMPI)
+        if (!isnull(SW_PathInputs->openInFileIDs[k])) {
+            for (varNum = 0; varNum < numVarsInKey[k]; varNum++) {
+                if (!isnull(SW_PathInputs->openInFileIDs[k][varNum])) {
+                    free((void *) SW_PathInputs->openInFileIDs[k][varNum]);
+                    SW_PathInputs->openInFileIDs[k][varNum] = NULL;
+                }
+            }
+
+            free((void *) SW_PathInputs->openInFileIDs[k]);
+            SW_PathInputs->openInFileIDs[k] = NULL;
+        }
+#endif
     }
 
     if (!isnull(SW_PathInputs->ncWeatherStartEndIndices)) {
@@ -552,7 +571,5 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
         free((void *) SW_PathInputs->numDaysInYear);
         SW_PathInputs->numDaysInYear = NULL;
     }
-
-    SW_NCIN_close_files(SW_PathInputs->ncDomFileIDs);
 #endif
 }
