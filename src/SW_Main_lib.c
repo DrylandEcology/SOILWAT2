@@ -30,6 +30,9 @@
 #include <R.h> // for error(), and warning() from <R_ext/Error.h>
 #endif
 
+#if defined(SWMPI)
+#include "include/SW_MPI.h"
+#endif
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
@@ -497,4 +500,48 @@ void sw_wrapup_logs(LOG_INFO *LogInfo) {
             );
         }
     }
+}
+
+/**
+@brief Wrapper function to setup outputs and handle MPI
+
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] worldSize Total number of processes that the MPI run has created
+@param[in] procName Name of the processor/node the current processes is
+    running on
+@param[in] prepareFiles Should we only prepare domain/progress, index,
+    and output files? If so, simulations will occur without this
+    flag being turned on
+@param[in,out] sw_template Template SW_RUN for the function to use as a
+    reference for local versions of SW_RUN
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void sw_setup_prog_data(
+    int rank,
+    int worldSize,
+    char *procName,
+    Bool prepareFiles,
+    SW_RUN *sw_template,
+    SW_DOMAIN *SW_Domain,
+    LOG_INFO *LogInfo
+) {
+#if defined(SWMPI)
+    MPI_Comm comm;
+
+    if (!prepareFiles) {
+        SW_MPI_setup(
+            rank, worldSize, procName, SW_Domain, sw_template, LogInfo
+        );
+        if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
+            return;
+        }
+
+        comm = SW_Domain->SW_Designation.groupComm;
+    }
+    if (SW_Domain->SW_Designation.procJob == SW_MPI_PROC_COMP) {
+        return;
+    }
+#endif
 }

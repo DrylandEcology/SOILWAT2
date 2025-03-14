@@ -1815,6 +1815,36 @@ reportFail:
 }
 
 /**
+@brief Setup MPI processes with basic information from domain and
+    template(s)
+
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] worldSize Total number of processes that the MPI run has created
+@param[in] procName Name of the processor the process is being run on
+    (agnostic of if on HPC or local computer)
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+@param[in,out] sw_template Template SW_RUN for the function to use as a
+    reference for local versions of SW_RUN; root process will send necessary
+    information to other processes
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_MPI_setup(
+    int rank,
+    int worldSize,
+    char *procName,
+    SW_DOMAIN *SW_Domain,
+    SW_RUN *sw_template,
+    LOG_INFO *LogInfo
+) {
+    if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
+        return;
+    }
+
+    SW_MPI_process_types(SW_Domain, procName, worldSize, rank, LogInfo);
+}
+
+/**
 @brief Before we proceed to the next important section of the program,
 we must do a check-in with all processes to make sure no errors occurred
 
@@ -2063,7 +2093,6 @@ freeMem:
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
-@param[in] desType Custom MPI datatype to send SW_MPI_DESIGNATE
 @param[in] procName Name of the processor the process is being run on
     (agnostic of if on HPC or local computer)
 @param[in] worldSize Number of processes that was created that make up
@@ -2073,7 +2102,6 @@ freeMem:
 */
 void SW_MPI_process_types(
     SW_DOMAIN *SW_Domain,
-    MPI_Datatype desType,
     char *procName,
     int worldSize,
     int rank,
@@ -2101,6 +2129,7 @@ void SW_MPI_process_types(
     SW_MPI_DESIGNATE **designations = NULL;
     MPI_Comm *rootCompComm =
         (rank == SW_MPI_ROOT) ? &SW_Domain->SW_Designation.rootCompComm : NULL;
+    MPI_Datatype desType = SW_Domain->datatypes[eSW_MPI_Designate];
 
     // Check if the process is not the root
     if (rank != SW_MPI_ROOT) {

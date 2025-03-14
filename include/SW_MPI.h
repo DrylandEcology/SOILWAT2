@@ -57,7 +57,14 @@ void SW_MPI_Recv(
 
 void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo);
 
-Bool SW_MPI_check_setup_status(int worldSize, int rank, LOG_INFO *LogInfo);
+void SW_MPI_setup(
+    int rank,
+    int worldSize,
+    char *procName,
+    SW_DOMAIN *SW_Domain,
+    SW_RUN *sw_template,
+    LOG_INFO *LogInfo
+);
 
 void SW_MPI_root_find_active_sites(
     SW_DOMAIN *SW_Domain,
@@ -76,7 +83,6 @@ void SW_MPI_get_activated_tsuids(
 
 void SW_MPI_process_types(
     SW_DOMAIN *SW_Domain,
-    MPI_Datatype desType,
     char *procName,
     int worldSize,
     int rank,

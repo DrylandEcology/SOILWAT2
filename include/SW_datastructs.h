@@ -1641,6 +1641,11 @@ typedef struct {
 
     // Information about a process designation (MPI only)
     SW_MPI_DESIGNATE SW_Designation;
+
+#if defined(SWMPI)
+    // Custom MPI data types used for sending information
+    MPI_Datatype datatypes[SW_MPI_NTYPES];
+#endif
 } SW_DOMAIN;
 
 /* =================================================== */

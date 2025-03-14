@@ -39,6 +39,7 @@ void SW_RUN_deepCopy(
 );
 
 void SW_CTL_setup_domain(
+    int rank,
     unsigned long userSUID,
     Bool renameDomainTemp,
     SW_DOMAIN *SW_Domain,

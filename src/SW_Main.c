@@ -61,11 +61,7 @@ int main(int argc, char **argv) {
 
     int rank = 0;
     int size = 0;
-
-#if defined(SWMPI)
     char procName[FILENAME_MAX] = "\0";
-    MPI_Datatype datatypes[SW_MPI_NTYPES];
-#endif
 
     unsigned long userSUID;
 
@@ -83,14 +79,11 @@ int main(int argc, char **argv) {
     SW_CTL_init_ptrs(&sw_template);
 
 #if defined(SWMPI)
-    SW_MPI_create_types(datatypes, &LogInfo);
+    SW_MPI_create_types(SW_Domain.datatypes, &LogInfo);
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
-
-    if (rank > 0) {
-        goto skip;
-    }
+#endif
 
     // Obtain user input from the command line
     sw_init_args(
@@ -117,7 +110,9 @@ int main(int argc, char **argv) {
     }
 
     // setup and construct domain
-    SW_CTL_setup_domain(userSUID, renameDomainTemplateNC, &SW_Domain, &LogInfo);
+    SW_CTL_setup_domain(
+        rank, userSUID, renameDomainTemplateNC, &SW_Domain, &LogInfo
+    );
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
@@ -127,6 +122,11 @@ int main(int argc, char **argv) {
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
+#if defined(SWMPI)
+    if (rank > SW_MPI_ROOT) {
+        goto setupProgramData;
+    }
+#endif
 
     SW_MDL_get_ModelRun(&sw_template.ModelIn, &SW_Domain, NULL, &LogInfo);
     if (LogInfo.stopRun) {
@@ -207,20 +207,14 @@ int main(int argc, char **argv) {
         goto finishProgram;
     }
 
-#if defined(SWMPI)
-skip:
-    if (SW_MPI_check_setup_status(size, rank, &LogInfo)) {
-        goto finishProgram;
-    }
-
-    SW_MPI_process_types(
-        &SW_Domain, datatypes[eSW_MPI_Designate], procName, size, rank, &LogInfo
+setupProgramData:
+    sw_setup_prog_data(
+        rank, size, procName, prepareFiles, &sw_template, &SW_Domain, &LogInfo
     );
 
     if (rank > 0) {
         goto finishProgram;
     }
-#endif
 
     // initialize output
     SW_OUT_setup_output(

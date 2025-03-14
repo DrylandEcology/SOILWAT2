@@ -435,6 +435,8 @@ void SW_CTL_init_ptrs(SW_RUN *sw) {
 /**
 @brief Construct, setup, and obtain inputs for SW_DOMAIN
 
+@param[in] rank Process number known to MPI for the current process (aka rank);
+    defaults to 0 (main process) if we are running sequentially
 @param[in] userSUID Simulation Unit Identifier requested by the user (base1);
     0 indicates that all simulations units within domain are requested
 @param[in] renameDomainTemp Specifies if the created domain netCDF file
@@ -444,6 +446,7 @@ will automatically be renamed
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_setup_domain(
+    int rank,
     unsigned long userSUID,
     Bool renameDomainTemp,
     SW_DOMAIN *SW_Domain,
@@ -455,16 +458,24 @@ void SW_CTL_setup_domain(
         return; // Exit function prematurely due to error
     }
 
-    SW_F_read(&SW_Domain->SW_PathInputs, LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
+    if (rank == 0) {
+        SW_F_read(&SW_Domain->SW_PathInputs, LogInfo);
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
     }
 
     SW_DOM_construct(SW_Domain->SW_SpinUp.rng_seed, SW_Domain);
 
-    SW_DOM_read(SW_Domain, LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
+    if (rank == 0) {
+        SW_DOM_read(SW_Domain, LogInfo);
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+    } else {
+        // If running in MPI, allow the root process to do everything
+        // below and other processes will get information later
+        return;
     }
 
     SW_DOM_calc_nSUIDs(SW_Domain);
