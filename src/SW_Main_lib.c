@@ -93,6 +93,9 @@ void sw_print_version(void) {
 #if defined(SWUDUNITS)
     sw_printf(", udunits2");
 #endif
+#if defined(SWMPI)
+    sw_printf(", MPI");
+#endif
 #else
     sw_printf("text");
 #endif
