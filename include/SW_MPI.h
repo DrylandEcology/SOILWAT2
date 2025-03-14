@@ -78,6 +78,11 @@ void SW_MPI_template_info(
 );
 
 void SW_MPI_domain_info(SW_DOMAIN *SW_Domain, int rank, LOG_INFO *LogInfo);
+
+void SW_MPI_ncout_info(
+    int rank, MPI_Comm comm, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
+);
+
 Bool SW_MPI_check_setup_status(Bool stopRun, MPI_Comm comm);
 
 void SW_MPI_root_find_active_sites(

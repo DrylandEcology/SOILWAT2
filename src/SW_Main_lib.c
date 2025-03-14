@@ -591,10 +591,23 @@ void sw_setup_prog_data(
     }
 #endif
 
+#if defined(SWMPI)
+    SW_MPI_ncout_info(
+        rank, SW_Domain->SW_Designation.groupComm, &SW_Domain->OutDom, LogInfo
+    );
+    if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+        return;
+    }
+#endif
+
     if (!prepareFiles) {
         SW_NCOUT_create_units_converters(&SW_Domain->OutDom, LogInfo);
 #if defined(SWMPI)
         if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+            return;
+        }
+#else
+        if (LogInfo->stopRun) {
             return;
         }
 #endif

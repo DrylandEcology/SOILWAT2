@@ -2531,6 +2531,87 @@ void SW_MPI_template_info(
 }
 
 /**
+@brief Send netCDF output information to I/O processes from root
+
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] comm MPI communicator to broadcast a message to
+@param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_MPI_ncout_info(
+    int rank, MPI_Comm comm, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
+) {
+    OutKey outKey;
+    IntUS var;
+    IntUS nVars;
+    const int unitsIndex = 4;
+    const int varNameIndex = 1;
+    char *attStr;
+    Bool sendStr = swTRUE;
+
+    if (rank > SW_MPI_ROOT) {
+        SW_NCOUT_alloc_output_var_info(OutDom, LogInfo);
+    }
+    if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+        return;
+    }
+
+    SW_Bcast(
+        MPI_INT, &OutDom->netCDFOutput.strideOutYears, 1, SW_MPI_ROOT, comm
+    );
+    SW_Bcast(
+        MPI_INT, &OutDom->netCDFOutput.baseCalendarYear, 1, SW_MPI_ROOT, comm
+    );
+
+    ForEachOutKey(outKey) {
+        nVars = OutDom->nvar_OUT[outKey];
+
+        if (nVars == 0 || !OutDom->use[outKey]) {
+            continue;
+        }
+
+        SW_Bcast(
+            MPI_INT,
+            OutDom->netCDFOutput.reqOutputVars[outKey],
+            nVars,
+            SW_MPI_ROOT,
+            comm
+        );
+
+        for (var = 0; var < nVars; var++) {
+            if (!OutDom->netCDFOutput.reqOutputVars[outKey][var]) {
+                continue;
+            }
+
+            attStr =
+                OutDom->netCDFOutput.outputVarInfo[outKey][var][unitsIndex];
+
+            sendStr = (Bool) (!isnull(attStr));
+            get_dynamic_string(rank, &attStr, sendStr, comm, LogInfo);
+            if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+                return;
+            }
+
+            attStr =
+                OutDom->netCDFOutput.outputVarInfo[outKey][var][varNameIndex];
+            sendStr = (Bool) (!isnull(attStr));
+            get_dynamic_string(rank, &attStr, sendStr, comm, LogInfo);
+            if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+                return;
+            }
+
+            attStr = OutDom->netCDFOutput.units_sw[outKey][var];
+            sendStr = (Bool) (!isnull(attStr));
+            get_dynamic_string(rank, &attStr, sendStr, comm, LogInfo);
+            if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+                return;
+            }
+        }
+    }
+}
+
+/**
 @brief Once the setup is complete in the root process, send domain
 information to all other processes; all others receive
 
