@@ -152,6 +152,14 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
         sizeof(&SW_Domain->depthsAllSoilLayers[0]) * MAX_LAYERS
     );
 
+#if defined(SWMPI)
+    SW_Domain->SW_Designation.domSuids = NULL;
+    SW_Domain->SW_Designation.domTSuids = NULL;
+    SW_Domain->SW_Designation.nSuids = 0;
+    SW_Domain->SW_Designation.nCompProcs = 0;
+    SW_Domain->SW_Designation.useTSuids = swFALSE;
+#endif
+
     SW_OUTDOM_construct(&SW_Domain->OutDom);
 }
 
