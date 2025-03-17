@@ -1344,12 +1344,112 @@ reportFail:
 }
 
 /**
+@brief Helper function for `create_groups` to create communicators
+    that contains an I/O process and the I/O process' respectively assigned
+    compute process ranks
+
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] rankJob Assigned job of a specific rank/process (compute or I/O)
+@param[in,out] desig Designation instance that holds information about
+    assigning a process to a job
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void create_iocomp_comms(
+    int rank, int rankJob, SW_MPI_DESIGNATE *desig, LOG_INFO *LogInfo
+) {
+    MPI_Request nullReq = MPI_REQUEST_NULL;
+    int *ranksInIOCompComm = NULL;
+
+    int rankIndex;
+    int sendRank;
+    int *ranksPerIO = desig->ranks;
+
+    // Include IO process itself for this function only - it will be
+    // new rank 0 in the new communicator for I/O to child compute
+    // processes
+    int numRanksForIO = desig->nCompProcs + 1;
+
+    if (rankJob == SW_MPI_PROC_IO) {
+        ranksInIOCompComm = (int *) Mem_Malloc(
+            sizeof(int) * numRanksForIO, "create_groups()", LogInfo
+        );
+        if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
+            goto freeMem;
+        }
+
+        ranksInIOCompComm[0] = rank;
+
+        for (rankIndex = 1; rankIndex < numRanksForIO; rankIndex++) {
+            sendRank = ranksPerIO[rankIndex - 1];
+            SW_MPI_Send(
+                MPI_INT, &numRanksForIO, 1, sendRank, swTRUE, 0, &nullReq
+            );
+
+            // Store this send rank in the list to send
+            ranksInIOCompComm[rankIndex] = sendRank;
+        }
+        if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
+            goto freeMem;
+        }
+
+        for (rankIndex = 1; rankIndex < numRanksForIO; rankIndex++) {
+            sendRank = ranksPerIO[rankIndex - 1];
+
+            SW_MPI_Send(
+                MPI_INT,
+                ranksInIOCompComm,
+                numRanksForIO,
+                sendRank,
+                swTRUE,
+                0,
+                &nullReq
+            );
+        }
+    } else {
+        // Check that the I/O processes have been able to allocate
+        // their group/communicator rank list
+        if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
+            goto freeMem;
+        }
+
+        SW_MPI_Recv(
+            MPI_INT, &numRanksForIO, 1, desig->ioRank, swTRUE, 0, &nullReq
+        );
+
+        ranksInIOCompComm = (int *) Mem_Malloc(
+            sizeof(int) * numRanksForIO, "create_groups()", LogInfo
+        );
+        if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
+            goto freeMem;
+        }
+
+        SW_MPI_Recv(
+            MPI_INT,
+            ranksInIOCompComm,
+            numRanksForIO,
+            desig->ioRank,
+            swTRUE,
+            0,
+            &nullReq
+        );
+    }
+
+    mpi_create_group_comms(
+        numRanksForIO, ranksInIOCompComm, &desig->ioCompComm
+    );
+
+freeMem:
+    if (!isnull(ranksInIOCompComm)) {
+        free(ranksInIOCompComm);
+    }
+}
+
+/**
 @brief Create custom communicators between compute and I/O processes so
     they can act independently of one another if necessary
 
 @param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] worldSize Total number of processes that the MPI run has created
-@param[in] rankJob Assigned job of a specific rank/process (compute or I/O)
 @param[in] numIOProcsTot Total number of I/O processes across the
     communicator MPI_COMM_WORLD
 @param[in] designations A list of designations to fill and distribute
@@ -1360,23 +1460,19 @@ reportFail:
     the program on
 @param[in] numProcsInNode A list of number of processes being run
     in the respective compute node
-@param[out] groupComm New MPI group communicator
-@param[out] rootCompComm New MPI group communicator for the root process
-    so it can specifically send things to all compute processes and
-    I/O
+@param[in,out] desig Designation instance that holds information about
+    assigning a process to a job
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void create_groups(
     int rank,
     int worldSize,
-    int rankJob,
     int numIOProcsTot,
     SW_MPI_DESIGNATE **designations,
     int **ranksInNodes,
     int numNodes,
     int *numProcsInNode,
-    MPI_Comm *groupComm,
-    MPI_Comm *rootCompComm,
+    SW_MPI_DESIGNATE *desig,
     LOG_INFO *LogInfo
 ) {
     MPI_Request nullReq = MPI_REQUEST_NULL;
@@ -1392,6 +1488,11 @@ static void create_groups(
     int procJob;
     int rankIndex;
     int sendRank;
+    int rankJob = desig->procJob;
+
+    MPI_Comm *groupComm = &desig->groupComm;
+    MPI_Comm *rootCompComm =
+        (rank == SW_MPI_ROOT) ? &desig->rootCompComm : NULL;
 
     // Broadcast number of compute and I/O processors in MPI_COMM_WORLD
     SW_Bcast(MPI_INT, &numCompProcs, 1, SW_MPI_ROOT, MPI_COMM_WORLD);
@@ -1404,9 +1505,8 @@ static void create_groups(
             sizeof(int) * numCompProcs, "create_groups()", LogInfo
         );
     }
-    SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD);
-    if (LogInfo->stopRun) {
-        return;
+    if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
+        goto freeMem;
     }
 
     if (rank == SW_MPI_ROOT || rankJob == SW_MPI_PROC_IO) {
@@ -1414,9 +1514,8 @@ static void create_groups(
             sizeof(int) * numIOProcsTot, "create_groups()", LogInfo
         );
     }
-    SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD);
-    if (LogInfo->stopRun) {
-        return;
+    if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
+        goto freeMem;
     }
 
     // Setup/send rank information for each group
@@ -1479,14 +1578,25 @@ static void create_groups(
         mpi_create_group_comms(numElem, buff, groupComm);
     }
 
-    MPI_Barrier(MPI_COMM_WORLD);
-
     if (rankJob == SW_MPI_PROC_COMP || rank == SW_MPI_ROOT) {
         mpi_create_group_comms(
             (rank > SW_MPI_ROOT) ? numElem : numCompProcs,
             (rank > SW_MPI_ROOT) ? buff : ranksInComp,
             (rank > SW_MPI_ROOT) ? groupComm : rootCompComm
         );
+    }
+
+    // Create io-comp communicators
+    create_iocomp_comms(rank, rankJob, desig, LogInfo);
+
+freeMem:
+    // Free allocated memory
+    if (!isnull(ranksInComp)) {
+        free(ranksInComp);
+    }
+
+    if (!isnull(ranksInIO)) {
+        free(ranksInIO);
     }
 }
 
@@ -3306,8 +3416,6 @@ void SW_MPI_process_types(
     Bool useTranslated = swFALSE;
 
     SW_MPI_DESIGNATE **designations = NULL;
-    MPI_Comm *rootCompComm =
-        (rank == SW_MPI_ROOT) ? &SW_Domain->SW_Designation.rootCompComm : NULL;
     MPI_Datatype desType = SW_Domain->datatypes[eSW_MPI_Designate];
 
     // Spread the index file creation flags across the world;
@@ -3527,14 +3635,12 @@ void SW_MPI_process_types(
     create_groups(
         rank,
         worldSize,
-        SW_Domain->SW_Designation.procJob,
         numIOProcsTot,
         designations,
         ranksInNodes,
         numNodes,
         numProcsInNode,
-        &SW_Domain->SW_Designation.groupComm,
-        rootCompComm,
+        &SW_Domain->SW_Designation,
         LogInfo
     );
 

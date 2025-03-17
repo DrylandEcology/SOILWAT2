@@ -1556,13 +1556,18 @@ typedef struct {
                                      input key if index files are used */
 
 #if defined(SWMPI)
-    MPI_Comm groupComm; /**< New group communicator; can either be for
-                             I/O or compute;
-                             Note: creating this new communicator
-                                   created a new rank labelling system
-                                   e.g., rank 2 in MPI_COMM_WORLD
-                                         could be 0, 1, etc. */
-    MPI_Comm rootCompComm;
+    MPI_Comm groupComm;    /**< New group communicator; can either be for
+                                I/O or compute;
+                                Note: creating this new communicator
+                                      created a new rank labelling system
+                                      e.g., rank 2 in MPI_COMM_WORLD
+                                            could be 0, 1, etc. */
+    MPI_Comm rootCompComm; /**< Root process' communicator for the opposite
+                                of its original job to communicate data
+                                to all processes */
+
+    MPI_Comm ioCompComm; /**< New group communicator between I/O processes
+                              and their assigned compute processes */
 #endif
 } SW_MPI_DESIGNATE;
 
