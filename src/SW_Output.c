@@ -193,6 +193,7 @@ static void sumof_swc(
     SW_SOILWAT_OUTPUTS *s,
     OutKey k,
     SW_SITE_SIM *SW_SiteSim,
+    LyrIndex n_layers,
     LOG_INFO *LogInfo
 );
 
@@ -420,11 +421,11 @@ static void sumof_swc(
     SW_SOILWAT_OUTPUTS *s,
     OutKey k,
     SW_SITE_SIM *SW_SiteSim,
+    LyrIndex n_layers,
     LOG_INFO *LogInfo
 ) {
     LyrIndex i;
     int j; // for use with ForEachVegType
-    LyrIndex n_layers = SW_SiteSim->n_layers;
     LyrIndex n_evap_layers = SW_SiteSim->n_evap_lyrs;
 
     switch (k) {
@@ -608,7 +609,7 @@ static void average_for(
     LyrIndex i;
     int k;
     int j;
-    LyrIndex n_layers = sw->SiteSim.n_layers;
+    LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
     LyrIndex n_evap_layers = sw->SiteSim.n_evap_lyrs;
 
     if (otyp == eVES) {
@@ -1001,6 +1002,7 @@ static void collect_sums(
                     &sw->sw_p_accu[op],
                     (OutKey) k,
                     &sw->SiteSim,
+                    sw->RunIn.SiteRunIn.n_layers,
                     LogInfo
                 );
                 if (LogInfo->stopRun) {
@@ -3924,6 +3926,7 @@ void echo_all_inputs(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         &sw->SiteSim,
         &sw->RunIn.ModelRunIn,
         &sw->RunIn.SoilRunIn,
+        sw->RunIn.SiteRunIn.n_layers,
         sw->RunIn.SiteRunIn.Tsoil_constant
     );
     echo_VegEstab(

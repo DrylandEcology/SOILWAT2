@@ -123,6 +123,7 @@ void create_test_soillayers(
         om,
         nRegions,
         regionLowerBounds,
+        &nlayers,
         LogInfo
     );
 }
@@ -278,7 +279,7 @@ int setup_testGlobalSoilwatTemplate() {
     }
 
     SW_OUT_setup_output(
-        template_SW_Run.SiteSim.n_layers,
+        template_SW_Run.RunIn.SiteRunIn.n_layers,
         template_SW_Run.SiteSim.n_evap_lyrs,
         template_SW_Run.VegEstabSim.count,
         template_SW_Run.VegEstabIn.parms,

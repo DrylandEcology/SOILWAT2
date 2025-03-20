@@ -878,7 +878,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
     double minTempSoil[] = {10.0};
     double maxTempSoil[] = {1.0};
 
-    SW_SiteSim.n_layers = nlyrs;
+    SW_SiteRunIn.n_layers = nlyrs;
     SW_SiteSim.stNRGR = nRgr;
 
     SW_SiteSim.soilBulk_density[0] = 1.8;
@@ -903,6 +903,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
         &SW_StRegSimVals.soil_temp_init,
         meanTempAir,
         swc,
+        SW_SiteRunIn.n_layers,
         &meanTempSurface,
         meanTempSoil,
         lyrFrozen,
@@ -1125,6 +1126,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
         &SW_StRegSimVals.soil_temp_init,
         meanTempAir,
         swc,
+        SW_SiteRunIn.n_layers,
         &meanTempSurface,
         meanTempSoil,
         lyrFrozen,
@@ -1249,7 +1251,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
     double *minTempSoil = new double[nlyrs2];
     double *maxTempSoil = new double[nlyrs2];
 
-    SW_SiteSim.n_layers = nlyrs2;
+    SW_SiteRunIn.n_layers = nlyrs2;
     SW_SiteSim.stNRGR = nRgr;
 
     acc = 0.;
@@ -1296,6 +1298,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
         &SW_StRegSimVals.soil_temp_init,
         meanTempAir,
         swc2,
+        SW_SiteRunIn.n_layers,
         &meanTempSurface,
         sTemp3,
         lyrFrozen,

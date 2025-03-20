@@ -282,9 +282,8 @@ typedef struct {
 } SW_SOIL_RUN_INPUTS;
 
 typedef struct {
-    LyrIndex n_layers, /* total number of soil layers */
-        n_transp_rgn,  /* soil layers are grouped into n transp. regions */
-        n_evap_lyrs,   /* number of layers in which evap is possible */
+    LyrIndex n_transp_rgn, /* soil layers are grouped into n transp. regions */
+        n_evap_lyrs,       /* number of layers in which evap is possible */
         n_transp_lyrs[NVEGTYPES], /* layer index of deepest transp. region */
         deep_lyr; /* index of deep drainage layer if deepdrain, 0 otherwise */
 
@@ -451,6 +450,7 @@ typedef struct {
     double Tsoil_constant; /* Soil temperature at a depth where soil temperature
                               is (mostly) constant in time; for instance,
                               approximated as the mean air temperature */
+    LyrIndex n_layers;     /* total number of soil layers */
 } SW_SITE_RUN_INPUTS;
 
 /* =================================================== */

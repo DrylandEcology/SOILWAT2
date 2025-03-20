@@ -121,14 +121,14 @@ static void format_IterationSummary2(
     Bool fullBuffer = swFALSE;
 
     for (k = 0; k < N1; k++) {
-        for (i = 0; i < sw->SiteSim.n_layers; i++) {
+        for (i = 0; i < sw->RunIn.SiteRunIn.n_layers; i++) {
             n = iOUT2(
                 i,
                 k + offset,
                 pd,
                 OutRun->irow_OUT,
                 nrow_OUT,
-                sw->SiteSim.n_layers
+                sw->RunIn.SiteRunIn.n_layers
             );
             sd = final_running_sd(sw->ModelSim.runModelIterations, psd[n]);
 
@@ -1454,7 +1454,7 @@ void get_vwcBulk_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
-    ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+    ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
         /* vwcBulk at this point is identical to swcBulk */
         (void) snprintf(
             str,
@@ -1509,7 +1509,7 @@ void get_vwcBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     );
 #endif
 
-    ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+    ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
 #if defined(RSOILWAT)
         iOUTIndex = iOUT(
             i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
@@ -1529,7 +1529,8 @@ void get_vwcBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #if defined(SWNETCDF)
     /* Set extra soil layers to missing/fill value (up to domain-wide max) */
-    for (i = sw->SiteSim.n_layers; i < OutDom->nsl_OUT[eSW_VWCBulk][0]; i++) {
+    for (i = sw->RunIn.SiteRunIn.n_layers; i < OutDom->nsl_OUT[eSW_VWCBulk][0];
+         i++) {
         iOUTIndex =
             OutDom->netCDFOutput.iOUToffset[eSW_VWCBulk][pd][0] +
             iOUTnc(
@@ -1563,7 +1564,7 @@ void get_vwcBulk_agg(
     double *p = OutRun->p_OUT[eSW_VWCBulk][pd];
     double *psd = OutRun->p_OUTsd[eSW_VWCBulk][pd];
 
-    ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+    ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
         /* vwcBulk at this point is identical to swcBulk */
         iOUTIndex = iOUT(
             i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
@@ -1617,7 +1618,7 @@ void get_vwcMatric_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
-    ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+    ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
         /* vwcMatric at this point is identical to swcBulk */
         convert = 1. / (1. - sw->RunIn.SoilRunIn.fractionVolBulk_gravel[i]) /
                   sw->RunIn.SoilRunIn.width[i];
@@ -1676,7 +1677,7 @@ void get_vwcMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     );
 #endif
 
-    ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+    ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
 #if defined(RSOILWAT)
         iOUTIndex = iOUT(
             i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
@@ -1698,7 +1699,9 @@ void get_vwcMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #if defined(SWNETCDF)
     /* Set extra soil layers to missing/fill value (up to domain-wide max) */
-    for (i = sw->SiteSim.n_layers; i < OutDom->nsl_OUT[eSW_VWCMatric][0]; i++) {
+    for (i = sw->RunIn.SiteRunIn.n_layers;
+         i < OutDom->nsl_OUT[eSW_VWCMatric][0];
+         i++) {
         iOUTIndex =
             OutDom->netCDFOutput.iOUToffset[eSW_VWCMatric][pd][0] +
             iOUTnc(
@@ -1733,7 +1736,7 @@ void get_vwcMatric_agg(
     double *p = OutRun->p_OUT[eSW_VWCMatric][pd];
     double *psd = OutRun->p_OUTsd[eSW_VWCMatric][pd];
 
-    ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+    ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
         /* vwcMatric at this point is identical to swcBulk */
         convert = 1. / (1. - sw->RunIn.SoilRunIn.fractionVolBulk_gravel[i]) /
                   sw->RunIn.SoilRunIn.width[i];
@@ -1788,7 +1791,7 @@ void get_swa_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     OutRun->sw_outstr[0] = '\0';
 
     ForEachVegType(k) {
-        ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+        ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
             (void) snprintf(
                 str,
                 OUTSTRLEN,
@@ -1845,7 +1848,7 @@ void get_swa_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 #endif
 
     ForEachVegType(k) {
-        ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+        ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
 #if defined(RSOILWAT)
             iOUTIndex = iOUT2(
                 i,
@@ -1853,7 +1856,7 @@ void get_swa_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
                 pd,
                 OutRun->irow_OUT,
                 OutDom->nrow_OUT,
-                sw->SiteSim.n_layers
+                sw->RunIn.SiteRunIn.n_layers
             );
 
 #elif defined(SWNETCDF)
@@ -1873,7 +1876,8 @@ void get_swa_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 #if defined(SWNETCDF)
         /* Set extra soil layers to missing/fill value (up to domain-wide max)
          */
-        for (i = sw->SiteSim.n_layers; i < OutDom->nsl_OUT[eSW_SWA][0]; i++) {
+        for (i = sw->RunIn.SiteRunIn.n_layers; i < OutDom->nsl_OUT[eSW_SWA][0];
+             i++) {
             iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_SWA][pd][0] +
                         iOUTnc(
                             OutRun->irow_OUT[pd],
@@ -1913,14 +1917,14 @@ void get_swa_agg(
     double *psd = OutRun->p_OUTsd[eSW_SWA][pd];
 
     ForEachVegType(k) {
-        ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+        ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
             iOUTIndex = iOUT2(
                 i,
                 k,
                 pd,
                 OutRun->irow_OUT,
                 OutDom->nrow_OUT,
-                sw->SiteSim.n_layers
+                sw->RunIn.SiteRunIn.n_layers
             );
             do_running_agg(
                 p, psd, iOUTIndex, OutRun->currIter, vo->SWA_VegType[k][i]
@@ -1961,7 +1965,7 @@ void get_swcBulk_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
-    ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+    ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->swcBulk[i]
         );
@@ -2010,7 +2014,7 @@ void get_swcBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     );
 #endif
 
-    ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+    ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
 #if defined(RSOILWAT)
         iOUTIndex = iOUT(
             i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
@@ -2029,7 +2033,8 @@ void get_swcBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #if defined(SWNETCDF)
     /* Set extra soil layers to missing/fill value (up to domain-wide max) */
-    for (i = sw->SiteSim.n_layers; i < OutDom->nsl_OUT[eSW_SWCBulk][0]; i++) {
+    for (i = sw->RunIn.SiteRunIn.n_layers; i < OutDom->nsl_OUT[eSW_SWCBulk][0];
+         i++) {
         iOUTIndex =
             OutDom->netCDFOutput.iOUToffset[eSW_SWCBulk][pd][0] +
             iOUTnc(
@@ -2063,7 +2068,7 @@ void get_swcBulk_agg(
     double *p = OutRun->p_OUT[eSW_SWCBulk][pd];
     double *psd = OutRun->p_OUTsd[eSW_SWCBulk][pd];
 
-    ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+    ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
         iOUTIndex = iOUT(
             i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
         );
@@ -2107,7 +2112,7 @@ void get_swcBulk_SXW(
         SW_OUT_RUN *OutRun = &sw->OutRun;
         month = sw->ModelSim.month - OutRun->tOffset;
 
-        ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+        ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
             OutRun->swc[i][month] = vo->swcBulk[i];
         }
     }
@@ -2150,7 +2155,7 @@ void get_swpMatric_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
-    ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+    ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
         /* swpMatric at this point is identical to swcBulk */
         val = SW_SWRC_SWCtoSWP(
             vo->swpMatric[i], &sw->RunIn.SoilRunIn, &sw->SiteSim, i, &local_log
@@ -2203,7 +2208,7 @@ void get_swpMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     );
 #endif
 
-    ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+    ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
 #if defined(RSOILWAT)
         iOUTIndex = iOUT(
             i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
@@ -2225,7 +2230,9 @@ void get_swpMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #if defined(SWNETCDF)
     /* Set extra soil layers to missing/fill value (up to domain-wide max) */
-    for (i = sw->SiteSim.n_layers; i < OutDom->nsl_OUT[eSW_SWPMatric][0]; i++) {
+    for (i = sw->RunIn.SiteRunIn.n_layers;
+         i < OutDom->nsl_OUT[eSW_SWPMatric][0];
+         i++) {
         iOUTIndex =
             OutDom->netCDFOutput.iOUToffset[eSW_SWPMatric][pd][0] +
             iOUTnc(
@@ -2261,7 +2268,7 @@ void get_swpMatric_agg(
     double *p = OutRun->p_OUT[eSW_SWPMatric][pd];
     double *psd = OutRun->p_OUTsd[eSW_SWPMatric][pd];
 
-    ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+    ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
         /* swpMatric at this point is identical to swcBulk */
         val = SW_SWRC_SWCtoSWP(
             vo->swpMatric[i], &sw->RunIn.SoilRunIn, &sw->SiteSim, i, &local_log
@@ -2312,7 +2319,7 @@ void get_swaBulk_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
-    ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+    ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->swaBulk[i]
         );
@@ -2361,7 +2368,7 @@ void get_swaBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     );
 #endif
 
-    ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+    ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
 #if defined(RSOILWAT)
         iOUTIndex = iOUT(
             i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
@@ -2380,7 +2387,8 @@ void get_swaBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #if defined(SWNETCDF)
     /* Set extra soil layers to missing/fill value (up to domain-wide max) */
-    for (i = sw->SiteSim.n_layers; i < OutDom->nsl_OUT[eSW_SWABulk][0]; i++) {
+    for (i = sw->RunIn.SiteRunIn.n_layers; i < OutDom->nsl_OUT[eSW_SWABulk][0];
+         i++) {
         iOUTIndex =
             OutDom->netCDFOutput.iOUToffset[eSW_SWABulk][pd][0] +
             iOUTnc(
@@ -2414,7 +2422,7 @@ void get_swaBulk_agg(
     double *p = OutRun->p_OUT[eSW_SWABulk][pd];
     double *psd = OutRun->p_OUTsd[eSW_SWABulk][pd];
 
-    ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+    ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
         iOUTIndex = iOUT(
             i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
         );
@@ -2460,7 +2468,7 @@ void get_swaMatric_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
-    ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+    ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
         /* swaMatric at this point is identical to swaBulk */
         convert = 1. / (1. - sw->RunIn.SoilRunIn.fractionVolBulk_gravel[i]);
 
@@ -2518,7 +2526,7 @@ void get_swaMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     );
 #endif
 
-    ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+    ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
 #if defined(RSOILWAT)
         iOUTIndex = iOUT(
             i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
@@ -2539,7 +2547,9 @@ void get_swaMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #if defined(SWNETCDF)
     /* Set extra soil layers to missing/fill value (up to domain-wide max) */
-    for (i = sw->SiteSim.n_layers; i < OutDom->nsl_OUT[eSW_SWAMatric][0]; i++) {
+    for (i = sw->RunIn.SiteRunIn.n_layers;
+         i < OutDom->nsl_OUT[eSW_SWAMatric][0];
+         i++) {
         iOUTIndex =
             OutDom->netCDFOutput.iOUToffset[eSW_SWAMatric][pd][0] +
             iOUTnc(
@@ -2574,7 +2584,7 @@ void get_swaMatric_agg(
     double *p = OutRun->p_OUT[eSW_SWAMatric][pd];
     double *psd = OutRun->p_OUTsd[eSW_SWAMatric][pd];
 
-    ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+    ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
         /* swaMatric at this point is identical to swaBulk */
         convert = 1. / (1. - sw->RunIn.SoilRunIn.fractionVolBulk_gravel[i]);
 
@@ -2904,7 +2914,7 @@ void get_runoffrunon_agg(
 */
 void get_transp_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     LyrIndex i;
-    LyrIndex n_layers = sw->SiteSim.n_layers;
+    LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
     int k;
     size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
     SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
@@ -2964,7 +2974,7 @@ reportFullBuffer:
 */
 void get_transp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
-    LyrIndex n_layers = sw->SiteSim.n_layers;
+    LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
     int k;
     SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
     size_t iOUTIndex = 0;
@@ -3003,7 +3013,8 @@ void get_transp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #if defined(SWNETCDF)
     /* Set extra soil layers to missing/fill value (up to domain-wide max) */
-    for (i = sw->SiteSim.n_layers; i < OutDom->nsl_OUT[eSW_Transp][0]; i++) {
+    for (i = sw->RunIn.SiteRunIn.n_layers; i < OutDom->nsl_OUT[eSW_Transp][0];
+         i++) {
         iOUTIndex =
             OutDom->netCDFOutput.iOUToffset[eSW_Transp][pd][0] +
             iOUTnc(
@@ -3040,7 +3051,8 @@ void get_transp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 #if defined(SWNETCDF)
         /* Set extra soil layers to missing/fill value (up to domain-wide max)
          */
-        for (i = sw->SiteSim.n_layers; i < OutDom->nsl_OUT[eSW_Transp][1];
+        for (i = sw->RunIn.SiteRunIn.n_layers;
+             i < OutDom->nsl_OUT[eSW_Transp][1];
              i++) {
             iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Transp][pd][1] +
                         iOUTnc(
@@ -3072,7 +3084,7 @@ void get_transp_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
     LyrIndex i;
-    LyrIndex n_layers = sw->SiteSim.n_layers;
+    LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
     int k;
     SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
     size_t iOUTIndex = 0;
@@ -3145,13 +3157,13 @@ void get_transp_SXW(
         month = sw->ModelSim.month - OutRun->tOffset;
 
         /* total transpiration */
-        ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+        ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
             OutRun->transpTotal[i][month] = vo->transp_total[i];
         }
 
         /* transpiration for each vegetation type */
         ForEachVegType(k) {
-            ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+            ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
                 OutRun->transpVeg[k][i][month] = vo->transp[k][i];
             }
         }
@@ -3873,7 +3885,7 @@ void get_lyrdrain_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
-    for (i = 0; i < sw->SiteSim.n_layers - 1; i++) {
+    for (i = 0; i < sw->RunIn.SiteRunIn.n_layers - 1; i++) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->lyrdrain[i]
         );
@@ -3922,7 +3934,7 @@ void get_lyrdrain_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     );
 #endif
 
-    for (i = 0; i < sw->SiteSim.n_layers - 1; i++) {
+    for (i = 0; i < sw->RunIn.SiteRunIn.n_layers - 1; i++) {
 #if defined(RSOILWAT)
         iOUTIndex = iOUT(
             i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
@@ -3942,7 +3954,8 @@ void get_lyrdrain_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 #if defined(SWNETCDF)
     /* Set extra soil layers to missing/fill value (up to domain-wide max)
      */
-    for (i = sw->SiteSim.n_layers - 1; i < OutDom->nsl_OUT[eSW_LyrDrain][0];
+    for (i = sw->RunIn.SiteRunIn.n_layers - 1;
+         i < OutDom->nsl_OUT[eSW_LyrDrain][0];
          i++) {
         iOUTIndex =
             OutDom->netCDFOutput.iOUToffset[eSW_LyrDrain][pd][0] +
@@ -3977,7 +3990,7 @@ void get_lyrdrain_agg(
     double *p = OutRun->p_OUT[eSW_LyrDrain][pd];
     double *psd = OutRun->p_OUTsd[eSW_LyrDrain][pd];
 
-    for (i = 0; i < sw->SiteSim.n_layers - 1; i++) {
+    for (i = 0; i < sw->RunIn.SiteRunIn.n_layers - 1; i++) {
         iOUTIndex = iOUT(
             i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
         );
@@ -4014,7 +4027,7 @@ void get_lyrdrain_agg(
 void get_hydred_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     /* 20101020 (drs) added */
     LyrIndex i;
-    LyrIndex n_layers = sw->SiteSim.n_layers;
+    LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
     int k;
     SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
@@ -4074,7 +4087,7 @@ reportFullBuffer:
 */
 void get_hydred_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
-    LyrIndex n_layers = sw->SiteSim.n_layers;
+    LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
     int k;
     SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
     size_t iOUTIndex = 0;
@@ -4114,7 +4127,8 @@ void get_hydred_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 #if defined(SWNETCDF)
     /* Set extra soil layers to missing/fill value (up to domain-wide max)
      */
-    for (i = sw->SiteSim.n_layers; i < OutDom->nsl_OUT[eSW_HydRed][0]; i++) {
+    for (i = sw->RunIn.SiteRunIn.n_layers; i < OutDom->nsl_OUT[eSW_HydRed][0];
+         i++) {
         iOUTIndex =
             OutDom->netCDFOutput.iOUToffset[eSW_HydRed][pd][0] +
             iOUTnc(
@@ -4136,7 +4150,7 @@ void get_hydred_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
                 pd,
                 OutRun->irow_OUT,
                 OutDom->nrow_OUT,
-                sw->SiteSim.n_layers
+                sw->RunIn.SiteRunIn.n_layers
             );
 
 #elif defined(SWNETCDF)
@@ -4157,7 +4171,8 @@ void get_hydred_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         /* Set extra soil layers to missing/fill value (up to domain-wide
          * max)
          */
-        for (i = sw->SiteSim.n_layers; i < OutDom->nsl_OUT[eSW_HydRed][0];
+        for (i = sw->RunIn.SiteRunIn.n_layers;
+             i < OutDom->nsl_OUT[eSW_HydRed][0];
              i++) {
             iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_HydRed][pd][1] +
                         iOUTnc(
@@ -4189,7 +4204,7 @@ void get_hydred_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
     LyrIndex i;
-    LyrIndex n_layers = sw->SiteSim.n_layers;
+    LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
     int k;
     SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
     size_t iOUTIndex = 0;
@@ -4658,7 +4673,7 @@ void get_pet_agg(
 */
 void get_wetdays_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     LyrIndex i;
-    LyrIndex n_layers = sw->SiteSim.n_layers;
+    LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
     SW_OUT_RUN *OutRun = &sw->OutRun;
     size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
     char *writePtr = OutRun->sw_outstr;
@@ -4737,7 +4752,7 @@ void get_wetdays_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     );
 #endif
 
-    ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+    ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
 #if defined(RSOILWAT)
         iOUTIndex = iOUT(
             i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
@@ -4761,7 +4776,8 @@ void get_wetdays_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 #if defined(SWNETCDF)
     /* Set extra soil layers to missing/fill value (up to domain-wide max)
      */
-    for (i = sw->SiteSim.n_layers; i < OutDom->nsl_OUT[eSW_WetDays][0]; i++) {
+    for (i = sw->RunIn.SiteRunIn.n_layers; i < OutDom->nsl_OUT[eSW_WetDays][0];
+         i++) {
         iOUTIndex =
             OutDom->netCDFOutput.iOUToffset[eSW_WetDays][pd][0] +
             iOUTnc(
@@ -4795,7 +4811,7 @@ void get_wetdays_agg(
     double *psd = OutRun->p_OUTsd[eSW_WetDays][pd];
 
     if (pd == eSW_Day) {
-        ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+        ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
             iOUTIndex = iOUT(
                 i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
             );
@@ -4811,7 +4827,7 @@ void get_wetdays_agg(
     } else {
         SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
 
-        ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+        ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
             iOUTIndex = iOUT(
                 i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
             );
@@ -5101,7 +5117,7 @@ void get_soiltemp_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
-    ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+    ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
         (void) snprintf(
             str,
             OUTSTRLEN,
@@ -5180,7 +5196,7 @@ void get_soiltemp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     );
 #endif
 
-    ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+    ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
 #if defined(RSOILWAT)
         iOUTIndex = iOUT(
             (i * 3),
@@ -5241,7 +5257,8 @@ void get_soiltemp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 #if defined(SWNETCDF)
     /* Set extra soil layers to missing/fill value (up to domain-wide max)
      */
-    for (i = sw->SiteSim.n_layers; i < OutDom->nsl_OUT[eSW_SoilTemp][0]; i++) {
+    for (i = sw->RunIn.SiteRunIn.n_layers; i < OutDom->nsl_OUT[eSW_SoilTemp][0];
+         i++) {
         iOUTIndex =
             OutDom->netCDFOutput.iOUToffset[eSW_SoilTemp][pd][0] +
             iOUTnc(
@@ -5289,7 +5306,7 @@ void get_soiltemp_agg(
     double *p = OutRun->p_OUT[eSW_SoilTemp][pd];
     double *psd = OutRun->p_OUTsd[eSW_SoilTemp][pd];
 
-    ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+    ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
         iOUTIndex = iOUT(
             (i * 3),
             OutRun->irow_OUT[pd],
@@ -5358,7 +5375,7 @@ void get_frozen_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
-    ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+    ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->lyrFrozen[i]
         );
@@ -5407,7 +5424,7 @@ void get_frozen_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     );
 #endif
 
-    ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+    ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
 #if defined(RSOILWAT)
         iOUTIndex = iOUT(
             i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
@@ -5427,7 +5444,8 @@ void get_frozen_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 #if defined(SWNETCDF)
     /* Set extra soil layers to missing/fill value (up to domain-wide max)
      */
-    for (i = sw->SiteSim.n_layers; i < OutDom->nsl_OUT[eSW_Frozen][0]; i++) {
+    for (i = sw->RunIn.SiteRunIn.n_layers; i < OutDom->nsl_OUT[eSW_Frozen][0];
+         i++) {
         iOUTIndex =
             OutDom->netCDFOutput.iOUToffset[eSW_Frozen][pd][0] +
             iOUTnc(
@@ -5461,7 +5479,7 @@ void get_frozen_agg(
     double *p = OutRun->p_OUT[eSW_Frozen][pd];
     double *psd = OutRun->p_OUTsd[eSW_Frozen][pd];
 
-    ForEachSoilLayer(i, sw->SiteSim.n_layers) {
+    ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
         iOUTIndex = iOUT(
             i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
         );

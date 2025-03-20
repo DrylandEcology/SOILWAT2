@@ -546,6 +546,7 @@ TEST_F(SiteFixtureTest, SiteSoilEvaporationParametersDeathTest) {
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
         SW_Run.RunIn.VegProdRunIn.veg,
+        SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
@@ -568,6 +569,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationParametersDeathTest) {
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
         SW_Run.RunIn.VegProdRunIn.veg,
+        SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
@@ -582,7 +584,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationParametersDeathTest) {
 // Test that soil transpiration regions are derived well
 TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     /* Notes:
-        - SW_SiteSim.n_layers is base1
+        - SW_SiteIn.n_layers is base1
         - soil layer information in TranspRgnBounds is base0
     */
 
@@ -594,7 +596,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     double sd = 0;
 
     // Quickly calculate soil depth for current region as output information
-    for (i = 0; i < SW_Run.SiteSim.n_layers; i++) {
+    for (i = 0; i < SW_Run.RunIn.SiteRunIn.n_layers; i++) {
         sd += SW_Run.RunIn.SoilRunIn.width[i];
         soildepth[i] = sd;
     }
@@ -617,7 +619,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
         SW_Run.SiteSim.TranspRgnBounds,
         nRegions,
         regionLowerBounds1,
-        SW_Run.SiteSim.n_layers,
+        SW_Run.RunIn.SiteRunIn.n_layers,
         SW_Run.RunIn.SoilRunIn.width,
         SW_Run.RunIn.SoilRunIn.transp_coeff,
         &LogInfo
@@ -636,7 +638,9 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     // Check that setting one region for all soil layers works
     nRegions = 1;
     expectedNRegions = 1;
-    const LyrIndex expectedTranspRgnBounds2[] = {SW_Run.SiteSim.n_layers - 1};
+    const LyrIndex expectedTranspRgnBounds2[] = {
+        SW_Run.RunIn.SiteRunIn.n_layers - 1
+    };
     double regionLowerBounds2[] = {100.};
 
     derive_TranspRgnBounds(
@@ -644,7 +648,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
         SW_Run.SiteSim.TranspRgnBounds,
         nRegions,
         regionLowerBounds2,
-        SW_Run.SiteSim.n_layers,
+        SW_Run.RunIn.SiteRunIn.n_layers,
         SW_Run.RunIn.SoilRunIn.width,
         SW_Run.RunIn.SoilRunIn.transp_coeff,
         &LogInfo
@@ -671,7 +675,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
         SW_Run.SiteSim.TranspRgnBounds,
         nRegions,
         regionLowerBounds3,
-        SW_Run.SiteSim.n_layers,
+        SW_Run.RunIn.SiteRunIn.n_layers,
         SW_Run.RunIn.SoilRunIn.width,
         SW_Run.RunIn.SoilRunIn.transp_coeff,
         &LogInfo
@@ -703,7 +707,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
         SW_Run.SiteSim.TranspRgnBounds,
         nRegions,
         regionLowerBounds4,
-        SW_Run.SiteSim.n_layers,
+        SW_Run.RunIn.SiteRunIn.n_layers,
         SW_Run.RunIn.SoilRunIn.width,
         SW_Run.RunIn.SoilRunIn.transp_coeff,
         &LogInfo
@@ -729,7 +733,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
         SW_Run.SiteSim.TranspRgnBounds,
         nRegions,
         regionLowerBounds5,
-        SW_Run.SiteSim.n_layers,
+        SW_Run.RunIn.SiteRunIn.n_layers,
         SW_Run.RunIn.SoilRunIn.width,
         SW_Run.RunIn.SoilRunIn.transp_coeff,
         &LogInfo
@@ -808,6 +812,7 @@ TEST_F(SiteFixtureTest, SiteSoilDensityTypes) {
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
         SW_Run.RunIn.VegProdRunIn.veg,
+        SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -826,6 +831,7 @@ TEST_F(SiteFixtureTest, SiteSoilDensityTypes) {
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
         SW_Run.RunIn.VegProdRunIn.veg,
+        SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -860,6 +866,7 @@ TEST_F(SiteFixtureTest, SiteSoilDensityMissingDeathTest) {
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
         SW_Run.RunIn.VegProdRunIn.veg,
+        SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );
 

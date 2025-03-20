@@ -672,7 +672,7 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-        ForEachSoilLayer(i, SW_SiteSim.n_layers) {
+        ForEachSoilLayer(i, nelyrs) {
             // example: swc as mean of wilting point and field capacity
             swc[i] = (SW_SiteSim.swcBulk_fieldcap[i] +
                       SW_SiteSim.swcBulk_wiltpt[i]) /
@@ -839,7 +839,7 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation2) {
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-        ForEachSoilLayer(i, SW_SiteSim.n_layers) {
+        ForEachSoilLayer(i, nelyrs) {
             // example: swc as mean of wilting point and field capacity
             swc[i] = (SW_SiteSim.swcBulk_fieldcap[i] +
                       SW_SiteSim.swcBulk_wiltpt[i]) /

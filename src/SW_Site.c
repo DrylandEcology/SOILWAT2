@@ -1473,13 +1473,16 @@ void nlayers_vegroots(
 
 @param[in,out] SW_SiteSim Struct of type SW_SITE_SIM describing the simulated
 site's simulation values
+@param[in] n_layers Number of layers of soil within the simulation run
 @param[in] deepdrain A flag specifying if we allow drainage into deepest layer
 */
-void add_deepdrain_layer(SW_SITE_SIM *SW_SiteSim, Bool deepdrain) {
+void add_deepdrain_layer(
+    SW_SITE_SIM *SW_SiteSim, LyrIndex n_layers, Bool deepdrain
+) {
 
     if (deepdrain) {
         /* total percolation from last layer == deep drainage */
-        SW_SiteSim->deep_lyr = SW_SiteSim->n_layers - 1; /* deep_lyr is base0 */
+        SW_SiteSim->deep_lyr = n_layers - 1; /* deep_lyr is base0 */
     } else {
         SW_SiteSim->deep_lyr = 0;
     }
@@ -1509,12 +1512,14 @@ void SW_SOIL_construct(SW_SOIL_RUN_INPUTS *SW_Soils) {
 or something) will need to free all allocated memory first before clearing
 structure.
 */
-void SW_SIT_construct(SW_SITE_INPUTS *SW_SiteIn, SW_SITE_SIM *SW_SiteSim) {
+void SW_SIT_construct(
+    SW_SITE_INPUTS *SW_SiteIn, SW_SITE_SIM *SW_SiteSim, LyrIndex *n_layers
+) {
     /* =================================================== */
 
     memset(SW_SiteIn, 0, sizeof(SW_SITE_INPUTS));
     memset(SW_SiteSim, 0, sizeof(SW_SITE_SIM));
-    SW_SIT_init_counts(SW_SiteSim);
+    SW_SIT_init_counts(n_layers, SW_SiteSim);
 }
 
 /**
@@ -2100,6 +2105,7 @@ site's simulation values
     depth [cm] of each region in ascending (in value) order. If you think about
     this from the perspective of soil, it would mean the shallowest bound is at
     `lowerBounds[0]`.
+@param[out] n_layers Number of soil layers that were created
 @param[out] LogInfo Holds information on warnings and errors
 
 @sideeffect After deleting any previous data in the soil layer array
@@ -2134,6 +2140,7 @@ void set_soillayers(
     const double *pom,
     int nRegions,
     double *regionLowerBounds,
+    LyrIndex *n_layers,
     LOG_INFO *LogInfo
 ) {
 
@@ -2144,12 +2151,12 @@ void set_soillayers(
     unsigned int k;
 
     // De-allocate and delete previous soil layers and reset counters
-    SW_SIT_init_counts(SW_SiteSim);
+    SW_SIT_init_counts(n_layers, SW_SiteSim);
 
     // Create new soil
     for (i = 0; i < nlyrs; i++) {
         // Increment the number of soil layers
-        lyrno = SW_SiteSim->n_layers++;
+        lyrno = (*n_layers)++;
 
         SW_SoilRunIn->width[lyrno] = dmax[i] - dmin;
         dmin = dmax[i];
@@ -2190,7 +2197,7 @@ void set_soillayers(
         SW_SiteSim->TranspRgnBounds,
         nRegions,
         regionLowerBounds,
-        SW_SiteSim->n_layers,
+        *n_layers,
         SW_SoilRunIn->width,
         SW_SoilRunIn->transp_coeff,
         LogInfo
@@ -2201,7 +2208,13 @@ void set_soillayers(
 
     // Re-initialize site parameters based on new soil layers
     SW_SIT_init_run(
-        SW_VegProdIn, SW_SiteIn, SW_SiteSim, SW_SoilRunIn, veg, LogInfo
+        SW_VegProdIn,
+        SW_SiteIn,
+        SW_SiteSim,
+        SW_SoilRunIn,
+        veg,
+        *n_layers,
+        LogInfo
     );
 }
 
@@ -2302,6 +2315,7 @@ the remaining rows represent parameters of the mineral soil in each soil layer.
 
 @param[in,out] SW_SiteSim Struct of type SW_SITE_SIM describing the simulated
 site's simulation values
+@param[in] n_layers Number of layers of soil within the simulation run
 @param[in] txtInFiles Array of program in/output files
 @param[in] inputsProvideSWRCp Are SWRC parameters obtained from
     input files (TRUE) or estimated with a PTF (FALSE)
@@ -2310,6 +2324,7 @@ site's simulation values
 */
 void SW_SWRC_read(
     SW_SITE_SIM *SW_SiteSim,
+    LyrIndex n_layers,
     char *txtInFiles[],
     Bool inputsProvideSWRCp,
     double swrcpMineralSoil[][SWRC_PARAM_NMAX],
@@ -2375,8 +2390,8 @@ void SW_SWRC_read(
             }
         }
 
-        /* Check that we are within `SW_SiteSim.n_layers` */
-        if (isMineral && lyrno >= SW_SiteSim->n_layers) {
+        /* Check that we are within `SW_SiteIn.n_layers` */
+        if (isMineral && lyrno >= n_layers) {
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -2384,7 +2399,7 @@ void SW_SWRC_read(
                 "must match number of soil layers (%d)\n",
                 "Site",
                 lyrno + 1,
-                SW_SiteSim->n_layers
+                n_layers
             );
             goto closeFile;
         }
@@ -2438,6 +2453,7 @@ site's simulation values
     the simulated site's input values
 @param[in,out] veg Array of size NVEGTYPES of type VegType describing
     all NVEGTYPES vegetation types through simulation-specific inputs
+@param[in] n_layers Number of layers of soil within the simulation run
 @param[out] LogInfo Holds information on warnings and errors
 
 @sideeffect Values stored in global variable `SW_Site`.
@@ -2448,6 +2464,7 @@ void SW_SIT_init_run(
     SW_SITE_SIM *SW_SiteSim,
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     VegType veg[],
+    LyrIndex n_layers,
     LOG_INFO *LogInfo
 ) {
     /* =================================================== */
@@ -2489,11 +2506,9 @@ void SW_SIT_init_run(
     /* Determine number of layers with potential for
        bare-soil evaporation and transpiration */
     SW_SiteSim->n_evap_lyrs =
-        nlayers_bsevap(SW_SoilRunIn->evap_coeff, SW_SiteSim->n_layers);
+        nlayers_bsevap(SW_SoilRunIn->evap_coeff, n_layers);
     nlayers_vegroots(
-        SW_SiteSim->n_layers,
-        SW_SiteSim->n_transp_lyrs,
-        SW_SoilRunIn->transp_coeff
+        n_layers, SW_SiteSim->n_transp_lyrs, SW_SoilRunIn->transp_coeff
     );
 
     /* Identify transpiration regions by soil layers */
@@ -2502,7 +2517,7 @@ void SW_SIT_init_run(
         SW_SiteSim->TranspRgnBounds,
         SW_SiteSim->n_transp_rgn,
         SW_SiteSim->TranspRgnDepths,
-        SW_SiteSim->n_layers,
+        n_layers,
         SW_SoilRunIn->width,
         SW_SoilRunIn->transp_coeff,
         LogInfo
@@ -2512,7 +2527,7 @@ void SW_SIT_init_run(
     }
 
     /* Manage deep drainage */
-    add_deepdrain_layer(SW_SiteSim, SW_SiteIn->deepdrain);
+    add_deepdrain_layer(SW_SiteSim, n_layers, SW_SiteIn->deepdrain);
 
 
     /* Check compatibility between selected SWRC and PTF */
@@ -2532,7 +2547,7 @@ void SW_SIT_init_run(
     }
 
     /* Check if there is organic matter in soil layers */
-    for (s = 0; s < SW_SiteSim->n_layers && !hasOM; s++) {
+    for (s = 0; s < n_layers && !hasOM; s++) {
         if (GT(SW_SoilRunIn->fractionWeight_om[s], 0.)) {
             hasOM = swTRUE;
         }
@@ -2567,7 +2582,7 @@ void SW_SIT_init_run(
 
 
     /* Loop over soil layers check variables and calculate parameters */
-    ForEachSoilLayer(s, SW_SiteSim->n_layers) {
+    ForEachSoilLayer(s, n_layers) {
         // copy depths of soil layer profile
         acc += SW_SoilRunIn->width[s];
         SW_SoilRunIn->depths[s] = acc;
@@ -3024,7 +3039,7 @@ void SW_SIT_init_run(
        for any vegetation x soil layer combination using adjusted `SWPcrit`
     */
     if (flagswpcrit) {
-        ForEachSoilLayer(s, SW_SiteSim->n_layers) {
+        ForEachSoilLayer(s, n_layers) {
             ForEachVegType(k) {
                 /* calculate soil water content at adjusted SWPcrit */
                 SW_SiteSim->swcBulk_atSWPcrit[k][s] = SW_SWRC_SWPtoSWC(
@@ -3104,7 +3119,7 @@ void SW_SIT_init_run(
             writePtr = errorMsg;
             writeSize = LARGE_VALUE;
 
-            ForEachSoilLayer(s, SW_SiteSim->n_layers) {
+            ForEachSoilLayer(s, n_layers) {
                 if (GT(SW_SoilRunIn->transp_coeff[k][s], 0.)) {
                     SW_SoilRunIn->transp_coeff[k][s] /= trsum_veg[k];
 
@@ -3203,14 +3218,15 @@ void SW_SIT_init_run(
 /**
 @brief Reset counts of `SW_Site` to zero
 
+@param[in] n_layers Number of layers of soil within the simulation run
 @param[out] SW_SiteSim Struct of type SW_SITE_SIM describing the simulated
 site's values used during simulation
 */
-void SW_SIT_init_counts(SW_SITE_SIM *SW_SiteSim) {
+void SW_SIT_init_counts(LyrIndex *n_layers, SW_SITE_SIM *SW_SiteSim) {
     int k;
 
     // Reset counts
-    SW_SiteSim->n_layers = 0;
+    *n_layers = 0;
     SW_SiteSim->n_evap_lyrs = 0;
     SW_SiteSim->deep_lyr = 0;
     SW_SiteSim->n_transp_rgn = 0;
@@ -3231,6 +3247,7 @@ site's input values
     time information about the simulation
 @param[in] SW_SoilRunIn Struct of type SW_SOIL_RUN_INPUTS describing
     the simulated site's input values
+@param[in] n_layers Number of layers of soil within the simulation run
 @param[in] Tsoil_constant Soil temperature at a depth where soil temperature
     is (mostly) constant in time
 */
@@ -3239,6 +3256,7 @@ void echo_inputs(
     SW_SITE_SIM *SW_SiteSim,
     SW_MODEL_RUN_INPUTS *ModelRunIn,
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
+    LyrIndex n_layers,
     double Tsoil_constant
 ) {
     /* =================================================== */
@@ -3321,7 +3339,7 @@ void echo_inputs(
 
     printf("\nLayer Related Values:\n----------------------\n");
     printf("  Soils File: 'soils.in'\n");
-    printf("  Number of soil layers: %d\n", SW_SiteSim->n_layers);
+    printf("  Number of soil layers: %d\n", n_layers);
     printf("  Number of evaporation layers: %d\n", SW_SiteSim->n_evap_lyrs);
     printf(
         "  Number of forb transpiration layers: %d\n",
@@ -3362,7 +3380,7 @@ void echo_inputs(
            "   		------          ------    ------      ------      "
            "------   ------       ------   	 -----	        -----       "
            "-----   	 ----     ----     ----    ----         ----\n");
-    ForEachSoilLayer(i, SW_SiteSim->n_layers) {
+    ForEachSoilLayer(i, n_layers) {
         printf(
             "  %3d %5.1f %9.5f %6.2f %8.5f %8.5f %6.2f %6.2f %6.2f %6.2f %6.2f "
             "%6.2f %9.2f %9.2f %9.2f %9.2f %9.2f %10d %10d %15d %15d %15.4f "
@@ -3407,7 +3425,7 @@ void echo_inputs(
            "  ------        	------            	------          ----   "
            "		----     ----     ----    ----		----\n");
 
-    ForEachSoilLayer(i, SW_SiteSim->n_layers) {
+    ForEachSoilLayer(i, n_layers) {
         printf(
             "  %3d %5.1f %9.5f %6.2f %8.5f %8.5f %6.2f %6.2f %7.4f %7.4f %7.4f "
             "%7.4f %7.4f %7.4f %8.4f %7.4f %5.4f\n",
@@ -3442,7 +3460,7 @@ void echo_inputs(
            "-----------      -----------      -----------      -----------    "
            "-----------    --------------    --------------\n");
 
-    ForEachSoilLayer(i, SW_SiteSim->n_layers) {
+    ForEachSoilLayer(i, n_layers) {
         printf(
             "  %3d   %15.4f   %15.4f  %15.4f %15.4f  %15.4f  %15.4f  %15.4f   "
             "%15.4f   %15.4f\n",
@@ -3527,7 +3545,7 @@ void echo_inputs(
 
     printf("  Lyr     Param1     Param2     Param3     Param4     Param5     "
            "Param6\n");
-    ForEachSoilLayer(i, SW_SiteSim->n_layers) {
+    ForEachSoilLayer(i, n_layers) {
         printf(
             "  %3d%11.4f%11.4f%11.4f%11.4f%11.4f%11.4f\n",
             i + 1,

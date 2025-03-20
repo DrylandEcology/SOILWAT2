@@ -294,7 +294,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     TimeInt month;
     int k;
     LyrIndex i;
-    LyrIndex n_layers = sw->SiteSim.n_layers;
+    LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
 
     double UpNeigh_lyrSWCBulk[MAX_LAYERS];
     double UpNeigh_lyrDrain[MAX_LAYERS];
@@ -331,6 +331,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             &sw->StRegSimVals.soil_temp_init,
             sw->WeatherSim.temp_avg,
             sw->SoilWatSim.swcBulk[Today],
+            sw->RunIn.SiteRunIn.n_layers,
             &sw->WeatherSim.surfaceAvg,
             sw->SoilWatSim.avgLyrTemp,
             sw->SoilWatSim.lyrFrozen,

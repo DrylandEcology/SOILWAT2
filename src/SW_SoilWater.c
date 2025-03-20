@@ -111,11 +111,13 @@ static void clear_hist(
     }
 }
 
-static void reset_swc(SW_SOILWAT_SIM *SW_SoilWatSim, SW_SITE_SIM *SW_SiteSim) {
+static void reset_swc(
+    SW_SOILWAT_SIM *SW_SoilWatSim, SW_SITE_SIM *SW_SiteSim, LyrIndex n_layers
+) {
     LyrIndex lyr;
 
     /* reset swc */
-    ForEachSoilLayer(lyr, SW_SiteSim->n_layers) {
+    ForEachSoilLayer(lyr, n_layers) {
         SW_SoilWatSim->swcBulk[Today][lyr] = SW_SiteSim->swcBulk_init[lyr];
         SW_SoilWatSim->swcBulk[Yesterday][lyr] = SW_SiteSim->swcBulk_init[lyr];
         SW_SoilWatSim->drain[lyr] = 0.; // deepest percolation is deep drainage
@@ -440,7 +442,7 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
 
     static double surfaceWater_yesterday;
     static Bool debug = swFALSE;
-    LyrIndex n_layers = sw->SiteSim.n_layers;
+    LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
 
 
     // re-init static variable on first day of each simulation run (if no
@@ -489,7 +491,7 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
     deepDrainage = sw->SoilWatSim.drain[sw->SiteSim.deep_lyr];
 
     percolationIn[0] = infiltration;
-    percolationOut[sw->SiteSim.n_layers] = deepDrainage;
+    percolationOut[sw->RunIn.SiteRunIn.n_layers] = deepDrainage;
 
     runoff = sw->WeatherSim.snowRunoff + sw->WeatherSim.surfaceRunoff;
     runon = sw->WeatherSim.surfaceRunon;
@@ -953,7 +955,7 @@ void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo) {
                 sw->SiteSim.swcBulk_min,
                 sw->ModelSim.doy,
                 &sw->SoilWatIn.hist,
-                sw->SiteSim.n_layers,
+                sw->RunIn.SiteRunIn.n_layers,
                 LogInfo
             );
 
@@ -995,7 +997,7 @@ void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         sw_printf("\n'SW_SWC_water_flow': determine wet soil layers.\n");
     }
 #endif
-    ForEachSoilLayer(i, sw->SiteSim.n_layers) sw->SoilWatSim.is_wet[i] =
+    ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) sw->SoilWatSim.is_wet[i] =
         (Bool) (GE(sw->SoilWatSim.swcBulk[Today][i], sw->SiteSim.swcBulk_wet[i])
         );
 }
@@ -1323,7 +1325,10 @@ void SW_SWC_end_day(SW_SOILWAT_SIM *SW_SoilWatSim, LyrIndex n_layers) {
 }
 
 void SW_SWC_init_run(
-    SW_SOILWAT_SIM *SW_SoilWatSim, SW_SITE_SIM *SW_SiteSim, double *temp_snow
+    SW_SOILWAT_SIM *SW_SoilWatSim,
+    SW_SITE_SIM *SW_SiteSim,
+    double *temp_snow,
+    LyrIndex n_layers
 ) {
 
     SW_SoilWatSim->soiltempError = swFALSE;
@@ -1334,7 +1339,7 @@ void SW_SWC_init_run(
 
     *temp_snow = 0.; // Snow temperature
 
-    reset_swc(SW_SoilWatSim, SW_SiteSim);
+    reset_swc(SW_SoilWatSim, SW_SiteSim, n_layers);
 }
 
 /**
@@ -1349,6 +1354,7 @@ of last year, which is also, coincidentally, Yesterday
     input values
 @param[in] year Current year being run in the simulation
 @param[in] reset_yr Flag, reset values at the beginning of each year
+@param[in] n_layers Number of layers of soil within the simulation run
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_SWC_new_year(
@@ -1357,17 +1363,18 @@ void SW_SWC_new_year(
     SW_SITE_SIM *SW_SiteSim,
     TimeInt year,
     Bool reset_yr,
+    LyrIndex n_layers,
     LOG_INFO *LogInfo
 ) {
 
     LyrIndex lyr;
 
     if (reset_yr) {
-        reset_swc(SW_SoilWatSim, SW_SiteSim);
+        reset_swc(SW_SoilWatSim, SW_SiteSim, n_layers);
 
     } else {
         /* update swc */
-        ForEachSoilLayer(lyr, SW_SiteSim->n_layers) {
+        ForEachSoilLayer(lyr, n_layers) {
             SW_SoilWatSim->swcBulk[Today][lyr] =
                 SW_SoilWatSim->swcBulk[Yesterday][lyr];
         }

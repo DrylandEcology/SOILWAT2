@@ -130,6 +130,7 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         &sw->SiteSim,
         sw->ModelSim.year,
         sw->SiteIn.reset_yr,
+        sw->RunIn.SiteRunIn.n_layers,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -170,7 +171,7 @@ static void end_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         }
     }
 
-    SW_SWC_end_day(&sw->SoilWatSim, sw->SiteSim.n_layers);
+    SW_SWC_end_day(&sw->SoilWatSim, sw->RunIn.SiteRunIn.n_layers);
 }
 
 /**
@@ -566,7 +567,7 @@ void SW_CTL_setup_model(
 
     // delay SW_MKV_construct() until we know from inputs whether we need it
     // SW_SKY_construct() not need
-    SW_SIT_construct(&sw->SiteIn, &sw->SiteSim);
+    SW_SIT_construct(&sw->SiteIn, &sw->SiteSim, &sw->RunIn.SiteRunIn.n_layers);
     SW_VES_construct(
         &sw->VegEstabIn, &sw->VegEstabSim, sw->ves_p_oagg, sw->ves_p_accu
     );
@@ -645,6 +646,7 @@ void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
         &sw->SiteSim,
         &sw->RunIn.SoilRunIn,
         sw->RunIn.VegProdRunIn.veg,
+        sw->RunIn.SiteRunIn.n_layers,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -682,7 +684,12 @@ void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
     SW_ST_init_run(&sw->StRegSimVals);
     // SW_OUT_init_run() handled separately so that SW_CTL_init_run() can be
     //   useful for unit tests, rSOILWAT2, and STEPWAT2 applications
-    SW_SWC_init_run(&sw->SoilWatSim, &sw->SiteSim, &sw->WeatherSim.temp_snow);
+    SW_SWC_init_run(
+        &sw->SoilWatSim,
+        &sw->SiteSim,
+        &sw->WeatherSim.temp_snow,
+        sw->RunIn.SiteRunIn.n_layers
+    );
     SW_CBN_init_run(
         sw->RunIn.VegProdRunIn.veg,
         &sw->CarbonIn,
@@ -752,7 +759,7 @@ void SW_CTL_run_current_year(
                 sw->SiteSim.swcBulk_atSWPcrit,
                 &sw->VegProdIn,
                 sw->RunIn.VegProdRunIn.veg,
-                sw->SiteSim.n_layers
+                sw->RunIn.SiteRunIn.n_layers
             );
         }
 
@@ -1082,7 +1089,7 @@ void SW_CTL_read_inputs_from_disk(
     SW_LYR_read(
         &sw->RunIn.SoilRunIn,
         &sw->SiteSim.n_evap_lyrs,
-        &sw->SiteSim.n_layers,
+        &sw->RunIn.SiteRunIn.n_layers,
         SW_PathInputs->txtInFiles,
         LogInfo
     );
@@ -1097,6 +1104,7 @@ void SW_CTL_read_inputs_from_disk(
 
     SW_SWRC_read(
         &sw->SiteSim,
+        sw->RunIn.SiteRunIn.n_layers,
         SW_PathInputs->txtInFiles,
         sw->SiteIn.inputsProvideSWRCp,
         sw->RunIn.SoilRunIn.swrcpMineralSoil,

@@ -393,6 +393,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                     &local_sw.SiteSim,
                     &local_sw.RunIn.SoilRunIn,
                     local_sw.RunIn.VegProdRunIn.veg,
+                    SW_Run.RunIn.SiteRunIn.n_layers,
                     &local_LogInfo
                 );
                 // exit test program if unexpected error
@@ -400,7 +401,8 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                 SW_SWC_init_run(
                     &local_sw.SoilWatSim,
                     &local_sw.SiteSim,
-                    &local_sw.WeatherSim.temp_snow
+                    &local_sw.WeatherSim.temp_snow,
+                    SW_Run.RunIn.SiteRunIn.n_layers
                 );
 
 

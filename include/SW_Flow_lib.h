@@ -341,6 +341,7 @@ void SW_ST_setup_run(
     Bool *soil_temp_init,
     double airTemp,
     double swc[],
+    LyrIndex n_layers,
     double *surfaceAvg,
     double avgLyrTemp[],
     double *lyrFrozen,
