@@ -55,7 +55,7 @@ void SW_VES_read2(
 );
 
 void SW_VES_init_ptrs(
-    SW_VEGESTAB_SIM *SW_VegEstabSim,
+    SW_VEGESTAB_INPUTS *SW_VegEstabIn,
     SW_VEGESTAB_OUTPUTS *ves_p_accu,
     SW_VEGESTAB_OUTPUTS *ves_p_oagg
 );
@@ -75,9 +75,7 @@ void SW_VegEstab_alloc_outptrs(
 );
 
 void SW_VES_deconstruct(
-    SW_VEGESTAB_SIM *SW_VegEstabSim,
-    SW_VEGESTAB_OUTPUTS *ves_p_accu,
-    SW_VEGESTAB_OUTPUTS *ves_p_oagg
+    IntU count, SW_VEGESTAB_OUTPUTS *ves_p_accu, SW_VEGESTAB_OUTPUTS *ves_p_oagg
 );
 
 void SW_VES_init_run(

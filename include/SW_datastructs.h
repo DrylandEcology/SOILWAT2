@@ -290,9 +290,8 @@ typedef struct {
 } SW_SOIL_RUN_INPUTS;
 
 typedef struct {
-    LyrIndex n_layers, /* total number of soil layers */
-        n_transp_rgn,  /* soil layers are grouped into n transp. regions */
-        n_evap_lyrs,   /* number of layers in which evap is possible */
+    LyrIndex n_transp_rgn, /* soil layers are grouped into n transp. regions */
+        n_evap_lyrs,       /* number of layers in which evap is possible */
         n_transp_lyrs[NVEGTYPES], /* layer index of deepest transp. region */
         deep_lyr; /* index of deep drainage layer if deepdrain, 0 otherwise */
 
@@ -459,6 +458,7 @@ typedef struct {
     double Tsoil_constant; /* Soil temperature at a depth where soil temperature
                               is (mostly) constant in time; for instance,
                               approximated as the mean air temperature */
+    LyrIndex n_layers;     /* total number of soil layers */
 } SW_SITE_RUN_INPUTS;
 
 /* =================================================== */
@@ -1195,13 +1195,14 @@ typedef struct {
 } SW_VEGESTAB_OUTPUTS;
 
 typedef struct {
+    Bool use;   /* if swTRUE use establishment parms and chkestab() */
+    IntU count; /* number of species to check */
+
     SW_VEGESTAB_INFO_INPUTS
     parms[MAX_NSPECIES]; /* array of input parms for each species */
 } SW_VEGESTAB_INPUTS;
 
 typedef struct {
-    Bool use;   /* if swTRUE use establishment parms and chkestab() */
-    IntU count; /* number of species to check */
     SW_VEGESTAB_INFO_SIM
     parms[MAX_NSPECIES]; /* array of changing parms for each species */
 } SW_VEGESTAB_SIM;

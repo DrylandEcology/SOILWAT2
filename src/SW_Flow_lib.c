@@ -1865,6 +1865,7 @@ site's input values
 @param[in] airTemp Initial (today's) air temperature (&deg;C).
 @param[in] swc Soilwater content in each layer before drainage
     (m<SUP>3</SUP> H<SUB>2</SUB>O).
+@param[in] n_layers Number of layers of soil within the simulation run
 @param[out] surfaceAvg Initialized surface temperature (&deg;C).
 @param[out] avgLyrTemp Initialized soil temperature of the soil layer
     profile (&deg;C).
@@ -1881,6 +1882,7 @@ void SW_ST_setup_run(
     Bool *soil_temp_init,
     double airTemp,
     double swc[],
+    LyrIndex n_layers,
     double *surfaceAvg,
     double avgLyrTemp[],
     double *lyrFrozen,
@@ -1913,7 +1915,7 @@ void SW_ST_setup_run(
             SW_SoilRunIn->width,
             SW_SoilRunIn->avgLyrTempInit,
             Tsoil_constant,
-            SW_SiteSim->n_layers,
+            n_layers,
             SW_SiteSim->swcBulk_fieldcap,
             SW_SiteSim->swcBulk_wiltpt,
             SW_SiteIn->stDeltaX,
@@ -1930,12 +1932,12 @@ void SW_ST_setup_run(
 
         /* Initialize soil temperature and frozen status across the soil layer
          * profile. */
-        ForEachSoilLayer(i, SW_SiteSim->n_layers) {
+        ForEachSoilLayer(i, n_layers) {
             avgLyrTemp[i] = SW_SoilRunIn->avgLyrTempInit[i];
         }
 
         set_frozen_unfrozen(
-            SW_SiteSim->n_layers,
+            n_layers,
             SW_SoilRunIn->avgLyrTempInit,
             swc,
             SW_SiteSim->swcBulk_saturated,

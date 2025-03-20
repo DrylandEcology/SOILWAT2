@@ -300,9 +300,11 @@ void nlayers_vegroots(
 
 void SW_SOIL_construct(SW_SOIL_RUN_INPUTS *SW_Soils);
 
-void SW_SIT_construct(SW_SITE_INPUTS *SW_SiteIn, SW_SITE_SIM *SW_SiteSim);
+void SW_SIT_construct(
+    SW_SITE_INPUTS *SW_SiteIn, SW_SITE_SIM *SW_SiteSim, LyrIndex *n_layers
+);
 
-void SW_SIT_init_counts(SW_SITE_SIM *SW_SiteSim);
+void SW_SIT_init_counts(LyrIndex *n_layers, SW_SITE_SIM *SW_SiteSim);
 
 void SW_SIT_read(
     SW_SITE_INPUTS *SW_SiteIn,
@@ -320,6 +322,7 @@ void SW_SIT_init_run(
     SW_SITE_SIM *SW_SiteSim,
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     VegType veg[],
+    LyrIndex n_layers,
     LOG_INFO *LogInfo
 );
 
@@ -327,7 +330,8 @@ void echo_inputs(
     SW_SITE_INPUTS *SW_SiteIn,
     SW_SITE_SIM *SW_SiteSim,
     SW_MODEL_RUN_INPUTS *ModelRunIn,
-    SW_SOIL_RUN_INPUTS *SoilRunIn,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
+    LyrIndex n_layers,
     double Tsoil_constant
 );
 
@@ -343,13 +347,16 @@ void SW_LYR_read(
 
 void SW_SWRC_read(
     SW_SITE_SIM *SW_SiteSim,
+    LyrIndex n_layers,
     char *txtInFiles[],
     Bool inputsProvideSWRCp,
     double swrcpMineralSoil[][SWRC_PARAM_NMAX],
     LOG_INFO *LogInfo
 );
 
-void add_deepdrain_layer(SW_SITE_SIM *SW_SiteSim, Bool deepdrain);
+void add_deepdrain_layer(
+    SW_SITE_SIM *SW_SiteSim, LyrIndex n_layers, Bool deepdrain
+);
 
 void set_soillayers(
     SW_VEGPROD_INPUTS *SW_VegProdIn,
@@ -373,6 +380,7 @@ void set_soillayers(
     const double *pom,
     int nRegions,
     double *regionLowerBounds,
+    LyrIndex *n_layers,
     LOG_INFO *LogInfo
 );
 

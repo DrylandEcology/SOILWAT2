@@ -2348,7 +2348,7 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
          offsetof(SW_VEGESTAB_INFO_INPUTS, max_temp_estab)}
     };
 
-    int numItemsInStructs[] = {6, 6, 12, 2, 1};
+    int numItemsInStructs[] = {6, 6, 12, 2, 2};
 
     MPI_Datatype inTypes[][12] = {
         {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE
@@ -2372,7 +2372,7 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
          MPI_DOUBLE,
          MPI_DOUBLE},
         {},
-        {MPI_DOUBLE}
+        {MPI_DOUBLE, MPI_UNSIGNED}
     };
 
     int inBlockLens[][12] = {
@@ -2396,7 +2396,7 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
          MAX_LAYERS,
          MAX_LAYERS * SWRC_PARAM_NMAX},
         {NVEGTYPES, 1},
-        {1}
+        {1, 1}
     };
 
     MPI_Aint inOffsets[][12] = {
@@ -2426,7 +2426,8 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
          offsetof(SW_SOIL_RUN_INPUTS, swrcpMineralSoil)},
         {offsetof(SW_VEGPROD_RUN_INPUTS, veg),
          offsetof(SW_VEGPROD_RUN_INPUTS, bare_cov)},
-        {offsetof(SW_SITE_RUN_INPUTS, Tsoil_constant)}
+        {offsetof(SW_SITE_RUN_INPUTS, Tsoil_constant),
+         offsetof(SW_SITE_RUN_INPUTS, n_layers)}
     };
 
     int numItemsInCov[] = {1, 5};
@@ -2740,7 +2741,7 @@ void SW_MPI_template_info(
          (void *) &SW_Run->SiteIn.SWCInitVal,
          (void *) &SW_Run->SiteIn.SWCWetVal,
          (void *) &SW_Run->SiteIn.SWCMinVal},
-        {(void *) &SW_Run->VegEstabSim.use, (void *) &SW_Run->VegEstabSim.count}
+        {(void *) &SW_Run->VegEstabIn.use, (void *) &SW_Run->VegEstabIn.count}
     };
     MPI_Datatype types[][42] = {
         {MPI_INT, MPI_INT, MPI_DOUBLE}, /* SW_CARBON_INPUTS */
@@ -2863,7 +2864,7 @@ void SW_MPI_template_info(
         MPI_COMM_WORLD
     );
 
-    if (SW_Run->VegEstabSim.use) {
+    if (SW_Run->VegEstabIn.use) {
         SW_Bcast(
             types[vegEstabIndex][1],
             buffers[vegEstabIndex][1],
@@ -2872,7 +2873,7 @@ void SW_MPI_template_info(
             MPI_COMM_WORLD
         );
 
-        for (vCount = 0; vCount < SW_Run->VegEstabSim.count; vCount++) {
+        for (vCount = 0; vCount < SW_Run->VegEstabIn.count; vCount++) {
             SW_Bcast(
                 vegEstabType,
                 &SW_Run->VegEstabIn.parms[vCount],

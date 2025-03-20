@@ -66,10 +66,7 @@ static void sanity_check(
 );
 
 static void read_spp(
-    const char *infile,
-    SW_VEGESTAB_INPUTS *SW_VegEstabIn,
-    SW_VEGESTAB_SIM *SW_VegEstabSim,
-    LOG_INFO *LogInfo
+    const char *infile, SW_VEGESTAB_INPUTS *SW_VegEstabIn, LOG_INFO *LogInfo
 );
 
 static void checkit(
@@ -91,21 +88,21 @@ static void zero_state(unsigned int sppnum, SW_VEGESTAB_INFO_SIM *parmsSim);
 /**
 @brief Initialize all possible pointers in SW_VEGESTAB to NULL
 
-@param[in,out] SW_VegEstabSim Struct of type SW_VEGESTAB_SIM holding all
-    simulation information about vegetation within the simulation
+@param[in,out] SW_VegEstabIn Struct of type SW_VEGESTAB_INPUTS holding all
+    input information about vegetation within the simulation
 @param[in,out] ves_p_accu A list of output structs of type SW_VEGESTAB_OUTPUTS
     to accumulate output
 @param[in,out] ves_p_oagg A list of output structs of type SW_VEGESTAB_OUTPUTS
     to aggregate output
 */
 void SW_VES_init_ptrs(
-    SW_VEGESTAB_SIM *SW_VegEstabSim,
+    SW_VEGESTAB_INPUTS *SW_VegEstabIn,
     SW_VEGESTAB_OUTPUTS *ves_p_accu,
     SW_VEGESTAB_OUTPUTS *ves_p_oagg
 ) {
     OutPeriod pd;
 
-    SW_VegEstabSim->count = 0;
+    SW_VegEstabIn->count = 0;
 
     // Allocate output structures:
     ForEachOutPeriod(pd) {
@@ -154,23 +151,21 @@ void SW_VES_construct(
 /**
 @brief Deconstructor for SW_VegEstab for each period, pd.
 
-@param[in,out] SW_VegEstabSim Struct of type SW_VEGESTAB_SIM holding all
-    simulation information about vegetation within the simulation
+@param[in] count Held within type SW_VEGESTAB_INPUTS to determine
+    how many species to check
 @param[in,out] ves_p_accu A list of output structs of type SW_VEGESTAB_OUTPUTS
     to accumulate output
 @param[in,out] ves_p_oagg A list of output structs of type SW_VEGESTAB_OUTPUTS
     to aggregate output
 */
 void SW_VES_deconstruct(
-    SW_VEGESTAB_SIM *SW_VegEstabSim,
-    SW_VEGESTAB_OUTPUTS *ves_p_accu,
-    SW_VEGESTAB_OUTPUTS *ves_p_oagg
+    IntU count, SW_VEGESTAB_OUTPUTS *ves_p_accu, SW_VEGESTAB_OUTPUTS *ves_p_oagg
 ) {
     OutPeriod pd;
 
     ForEachOutPeriod(pd) {
         // De-allocate days
-        if (SW_VegEstabSim->count > 0) {
+        if (count > 0) {
             if (pd > eSW_Day && !isnull(ves_p_oagg[pd].days)) {
                 free(ves_p_oagg[eSW_Year].days);
                 ves_p_oagg[eSW_Year].days = NULL;
@@ -188,7 +183,7 @@ void SW_VES_deconstruct(
 @brief We can use the debug memset because we allocated days, that is, it
 wasn't allocated by the compiler.
 
-@param[in] count Held within type SW_VEGESTAB to determine
+@param[in] count Held within type SW_VEGESTAB_INPUTS to determine
     how many species to check
 */
 void SW_VES_new_year(IntU count) {
@@ -277,17 +272,17 @@ void SW_VES_read2(
     LOG_INFO *LogInfo
 ) {
 
-    SW_VES_deconstruct(SW_VegEstabSim, ves_p_accu, ves_p_oagg);
+    SW_VES_deconstruct(SW_VegEstabIn->count, ves_p_accu, ves_p_oagg);
     SW_VES_construct(SW_VegEstabIn, SW_VegEstabSim, ves_p_oagg, ves_p_accu);
 
-    SW_VegEstabSim->use = use_VegEstab;
+    SW_VegEstabIn->use = use_VegEstab;
 
     int resSNP;
     char buf[FILENAME_MAX];
     char inbuf[MAX_FILENAMESIZE];
     FILE *f;
 
-    if (SW_VegEstabSim->use) {
+    if (SW_VegEstabIn->use) {
         char *MyFileName = txtInFiles[eVegEstab];
         f = OpenFile(MyFileName, "r", LogInfo);
         if (LogInfo->stopRun) {
@@ -301,7 +296,7 @@ void SW_VES_read2(
                  * if user input flag is set to 0 and we don't ignore that
                  input, i.e.,`consider_InputFlag` is set to `swTRUE`
             */
-            SW_VegEstabSim->use = swFALSE;
+            SW_VegEstabIn->use = swFALSE;
 
         } else {
             /* read file names with species establishment parameters
@@ -320,14 +315,14 @@ void SW_VES_read2(
                     goto closeFile;
                 }
 
-                read_spp(buf, SW_VegEstabIn, SW_VegEstabSim, LogInfo);
+                read_spp(buf, SW_VegEstabIn, LogInfo);
                 if (LogInfo->stopRun) {
                     goto closeFile;
                 }
             }
 
             SW_VegEstab_alloc_outptrs(
-                ves_p_accu, ves_p_oagg, SW_VegEstabSim->count, LogInfo
+                ves_p_accu, ves_p_oagg, SW_VegEstabIn->count, LogInfo
             );
             if (LogInfo->stopRun) {
                 goto closeFile;
@@ -345,7 +340,8 @@ void SW_VES_read2(
     to accumulate output
 @param[in,out] ves_p_oagg A list of output structs of type SW_VEGESTAB_OUTPUTS
     to aggregate output
-@param[in,out] count Number of specifies
+@param[in] count Held within type SW_VEGESTAB_INPUTS to determine
+    how many species to check
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_VegEstab_alloc_outptrs(
@@ -382,7 +378,7 @@ This works correctly only after
 @param[in] SW_SiteSim Struct of type SW_SITE_SIM describing the simulated site's
     simulation values
 @param[in] n_transp_lyrs Index of the deepest transp. region
-@param[in] count Held within type SW_VEGESTAB to determine
+@param[in] count Held within type SW_VEGESTAB_INPUTS to determine
     how many species to check
 @param[out] LogInfo Holds information on warnings and errors
 */
@@ -416,7 +412,7 @@ void SW_VES_init_run(
 @param[in] swcBulk Soil water content in the layer [cm]
 @param[in] doy Day of the year (base1) [1-366]
 @param[in] firstdoy First day of current year
-@param[in] count Held within type SW_VEGESTAB to determine
+@param[in] count Held within type SW_VEGESTAB_INPUTS to determine
     how many species to check
 */
 void SW_VES_checkestab(
@@ -556,10 +552,7 @@ static void zero_state(unsigned int sppnum, SW_VEGESTAB_INFO_SIM *parmsSim) {
 }
 
 static void read_spp(
-    const char *infile,
-    SW_VEGESTAB_INPUTS *SW_VegEstabIn,
-    SW_VEGESTAB_SIM *SW_VegEstabSim,
-    LOG_INFO *LogInfo
+    const char *infile, SW_VEGESTAB_INPUTS *SW_VegEstabIn, LOG_INFO *LogInfo
 ) {
     /* =================================================== */
 
@@ -580,7 +573,7 @@ static void read_spp(
 
     size_t sppWritesize = 0;
 
-    if (SW_VegEstabSim->count == MAX_NSPECIES) {
+    if (SW_VegEstabIn->count == MAX_NSPECIES) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -590,8 +583,8 @@ static void read_spp(
         return;
     }
 
-    v = &SW_VegEstabIn->parms[SW_VegEstabSim->count];
-    SW_VegEstabSim->count++;
+    v = &SW_VegEstabIn->parms[SW_VegEstabIn->count];
+    SW_VegEstabIn->count++;
 
     endSppPtr = v->sppname + sizeof v->sppname - 1;
     sppWritesize = sizeof v->sppname;
@@ -901,7 +894,7 @@ static void sanity_check(
 @param[in] width Width of the soil layer (cm)
 @param[in] *parmsIn List of structs of type SW_VEGESTAB_INFO_INPUTS holding
     input information about every vegetation species
-@param[in] count Held within type SW_VEGESTAB to determine
+@param[in] count Held within type SW_VEGESTAB_INPUTS to determine
     how many species to check
 @param[out] LogInfo Holds information on warnings and errors
 */

@@ -140,6 +140,7 @@ void SW_SWC_new_year(
     SW_SITE_SIM *SW_SiteSim,
     TimeInt year,
     Bool reset_yr,
+    LyrIndex n_layers,
     LOG_INFO *LogInfo
 );
 
@@ -151,7 +152,10 @@ void SW_SWC_read(
 );
 
 void SW_SWC_init_run(
-    SW_SOILWAT_SIM *SW_SoilWatSim, SW_SITE_SIM *SW_SiteSim, double *temp_snow
+    SW_SOILWAT_SIM *SW_SoilWatSim,
+    SW_SITE_SIM *SW_SiteSim,
+    double *temp_snow,
+    LyrIndex n_layers
 );
 
 void read_swc_hist(

@@ -6398,8 +6398,12 @@ consistency checks.
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
-@param[out]  SW_SiteRunIn Struct of type SW_SITE_RUN_INPUTS describing the
-simulated site for a specific run
+@param[out] currSoils Struct of type SW_SOIL_RUN_INPUTS describing the
+    simulated soil for a specific run
+@param[out] SW_SiteSim Struct of type SW_SITE_SIM describing the
+    simulated site during a simulation run
+@param[out] SW_SiteRunIn Struct of type SW_SITE_RUN_INPUTS describing the
+    simulated site for a specific run
 @param[in] soilInFiles List of input files the user provided for the
     input key 'inSoil'
 @param[in] hasConstSoilDepths Specifies of all soil inputs provided
@@ -6416,6 +6420,7 @@ static void read_soil_inputs(
     SW_DOMAIN *SW_Domain,
     SW_SOIL_RUN_INPUTS *currSoils,
     SW_SITE_SIM *SW_SiteSim,
+    SW_SITE_RUN_INPUTS *SW_SiteRunIn,
     char **soilInFiles,
     Bool hasConstSoilDepths,
     const double depthsAllSoilLayers[],
@@ -6427,7 +6432,7 @@ static void read_soil_inputs(
     SW_SOIL_RUN_INPUTS newSoils;
 
     /* Initialize soils */
-    SW_SiteSim->n_layers = 0;
+    SW_SiteRunIn->n_layers = 0;
     SW_SOIL_construct(&newSoils);
 
     char ***inVarInfo = SW_Domain->netCDFInput.inVarInfo[eSW_InSoil];
@@ -6617,7 +6622,7 @@ static void read_soil_inputs(
 
     /* Derive missing soil properties and check others */
     derive_missing_soils(
-        &SW_SiteSim->n_layers,
+        &SW_SiteRunIn->n_layers,
         values1D,
         readInputs,
         hasConstSoilDepths,
@@ -7823,6 +7828,7 @@ void SW_NCIN_read_inputs(
             SW_Domain,
             &sw->RunIn.SoilRunIn,
             &sw->SiteSim,
+            &sw->RunIn.SiteRunIn,
             ncInFiles[eSW_InSoil],
             SW_Domain->hasConsistentSoilLayerDepths,
             SW_Domain->depthsAllSoilLayers,
