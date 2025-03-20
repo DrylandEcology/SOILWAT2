@@ -3917,7 +3917,7 @@ printOutput:
 
 void echo_all_inputs(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 
-    if (!sw->VegEstabSim.use) {
+    if (!sw->VegEstabIn.use) {
         printf("Establishment not used.\n");
     }
 
@@ -3932,7 +3932,7 @@ void echo_all_inputs(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     echo_VegEstab(
         sw->RunIn.SoilRunIn.width,
         sw->VegEstabIn.parms,
-        sw->VegEstabSim.count,
+        sw->VegEstabIn.count,
         LogInfo
     );
     echo_VegProd(&sw->RunIn.VegProdRunIn);

@@ -846,7 +846,7 @@ void get_estab_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
 
     (void) pd; // silence `-Wunused-parameter`
 
-    for (i = 0; i < sw->VegEstabSim.count; i++) {
+    for (i = 0; i < sw->VegEstabIn.count; i++) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%d", OUTSEP, sw->VegEstabSim.parms[i].estab_doy
         );
@@ -899,7 +899,7 @@ void get_estab_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     );
 #endif
 
-    for (i = 0; i < sw->VegEstabSim.count; i++) {
+    for (i = 0; i < sw->VegEstabIn.count; i++) {
 #if defined(RSOILWAT)
         iOUTIndex = iOUT(
             i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
@@ -941,7 +941,7 @@ void get_estab_agg(
     double *p = OutRun->p_OUT[eSW_Estab][pd];
     double *psd = OutRun->p_OUTsd[eSW_Estab][pd];
 
-    for (i = 0; i < sw->VegEstabSim.count; i++) {
+    for (i = 0; i < sw->VegEstabIn.count; i++) {
         iOUTIndex = iOUT(
             i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
         );

@@ -22,8 +22,8 @@ TEST_F(VegEstabFixtureTest, SimulateWithVegEstab) {
     );
 
     // Expect that vegetation establishment is turn on and contains species
-    EXPECT_TRUE(SW_Run.VegEstabSim.use);
-    EXPECT_GT(SW_Run.VegEstabSim.count, 0);
+    EXPECT_TRUE(SW_Run.VegEstabIn.use);
+    EXPECT_GT(SW_Run.VegEstabIn.count, 0);
 
     // Run the simulation
     SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
@@ -33,7 +33,7 @@ TEST_F(VegEstabFixtureTest, SimulateWithVegEstab) {
     // Expect valid 'day of year' 1-366 output for each species from the
     // vegetation establishment calculations
     // note: estab_doy == 0 means no establishment
-    for (unsigned int i = 0; i < SW_Run.VegEstabSim.count; i++) {
+    for (unsigned int i = 0; i < SW_Run.VegEstabIn.count; i++) {
         EXPECT_GE(SW_Run.VegEstabSim.parms[i].estab_doy, 0);
         EXPECT_LE(SW_Run.VegEstabSim.parms[i].estab_doy, 366);
     }
