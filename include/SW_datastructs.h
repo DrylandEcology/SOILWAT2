@@ -1034,7 +1034,7 @@ typedef struct {
 #if defined(SWNETCDF)
     char **ncInFiles[SW_NINKEYSNC]; /**< Names of all the input netCDF files;
                                            dynamically allocated 2-d array
-                                           `[varNum][fileNum]` */
+                                           `[inKey][var]` */
 
     char ***ncWeatherInFiles; /**< Generated weather file names to read input
                                from; dynamically allocated for every weather

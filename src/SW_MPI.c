@@ -413,7 +413,7 @@ static void allocateActiveTSuids(
     compute node encountered
 @param[in,out] numMaxProcsInNode A list holding the maximum
     number of ranks a node in `ranksInNodes` can hold
-@parma[out] LogInfo Holds information on warnings and errors
+@param[out] LogInfo Holds information on warnings and errors
 */
 static void allocProcInfo(
     int oldCount,
