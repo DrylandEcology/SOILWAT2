@@ -27,6 +27,9 @@
 #define FAIL_ALLOC_SUIDS 3
 #define FAIL_ALLOC_TSUIDS 4
 
+#define REQ_OUT_LOG 0
+#define REQ_OUT_NC 1
+#define REQ_OUT_BOTH 2
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
@@ -2216,7 +2219,7 @@ on various program-defined structs
 */
 void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
     int res;
-    int numItems[] = {5, 5, 5, 5, 6, 5, 18};
+    int numItems[] = {5, 5, 5, 5, 6, 5, 18, 3, 5, 9};
     int blockLens[][19] = {
         {1, 1, 1, 1, 1},    /* SW_DOMAIN */
         {1, 1, 1, 1, 1},    /* SW_SPINUP */
@@ -2245,7 +2248,18 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
          1,
          1,
          1,
-         1} /* SW_VEGESTAB_INPUTS */
+         1},                   /* SW_VEGESTAB_INPUTS */
+        {1, N_SUID_ASSIGN, 1}, /* SW_MPI_REQUEST */
+        {MAX_LOG_SIZE, MAX_MSGS * MAX_LOG_SIZE, 1, 1, 1}, /* LOG_INFO */
+        {MAX_DAYS,
+         MAX_DAYS,
+         MAX_DAYS,
+         MAX_DAYS,
+         MAX_DAYS,
+         MAX_DAYS,
+         MAX_DAYS,
+         MAX_DAYS,
+         MAX_DAYS} /* SW_WEATHER_HIST */
     };
 
     MPI_Datatype types[][18] = {
@@ -2281,7 +2295,18 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
          MPI_DOUBLE,
          MPI_DOUBLE,
          MPI_DOUBLE,
-         MPI_DOUBLE} /* SW_VEGESTAB_INPUTS */
+         MPI_DOUBLE},                /* SW_VEGESTAB_INPUTS */
+        {MPI_INT, MPI_INT, MPI_INT}, /* SW_MPI_REQUEST */
+        {MPI_CHAR, MPI_CHAR, MPI_INT, MPI_INT, MPI_INT}, /* LOG_INFO */
+        {MPI_DOUBLE,
+         MPI_DOUBLE,
+         MPI_DOUBLE,
+         MPI_DOUBLE,
+         MPI_DOUBLE,
+         MPI_DOUBLE,
+         MPI_DOUBLE,
+         MPI_DOUBLE,
+         MPI_DOUBLE} /* SW_WEATHER_HIST */
     };
     MPI_Aint offsets[][18] = {
         /* SW_DOMAIN */
@@ -2345,7 +2370,30 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
          offsetof(SW_VEGESTAB_INFO_INPUTS, min_temp_germ),
          offsetof(SW_VEGESTAB_INFO_INPUTS, max_temp_germ),
          offsetof(SW_VEGESTAB_INFO_INPUTS, min_temp_estab),
-         offsetof(SW_VEGESTAB_INFO_INPUTS, max_temp_estab)}
+         offsetof(SW_VEGESTAB_INFO_INPUTS, max_temp_estab)},
+
+        /* SW_MPI_REQUEST */
+        {offsetof(SW_MPI_REQUEST, sourceRank),
+         offsetof(SW_MPI_REQUEST, runStatus),
+         offsetof(SW_MPI_REQUEST, requestType)},
+
+        /* LOG_INFO */
+        {offsetof(LOG_INFO, errorMsg),
+         offsetof(LOG_INFO, warningMsgs),
+         offsetof(LOG_INFO, numWarnings),
+         offsetof(LOG_INFO, stopRun),
+         offsetof(LOG_INFO, QuietMode)},
+
+        /* SW_WEATHER_HIST */
+        {offsetof(SW_WEATHER_HIST, temp_max),
+         offsetof(SW_WEATHER_HIST, temp_min),
+         offsetof(SW_WEATHER_HIST, temp_avg),
+         offsetof(SW_WEATHER_HIST, ppt),
+         offsetof(SW_WEATHER_HIST, cloudcov_daily),
+         offsetof(SW_WEATHER_HIST, windspeed_daily),
+         offsetof(SW_WEATHER_HIST, r_humidity_daily),
+         offsetof(SW_WEATHER_HIST, shortWaveRad),
+         offsetof(SW_WEATHER_HIST, actualVaporPressure)}
     };
 
     int numItemsInStructs[] = {6, 6, 12, 2, 2};
@@ -2447,29 +2495,15 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
          offsetof(VegType, lai_conv)}
     };
 
-    int typeIndices[] = {
-        eSW_MPI_Domain,
-        eSW_MPI_Spinup,
-        eSW_MPI_Inputs,
-        eSW_MPI_Designate,
-        eSW_MPI_WallTime,
-        eSW_MPI_OutDomIO,
-        eSW_MPI_VegEstabIn
-    };
-
     int type;
-    int typeIndex;
     int runTypeIndex;
     int covIndex;
-    const int numTypes = 7;
     const int numRunInTypes = 5;
     const int numCovTypes = 2;
     const int vegprodIndex = 3;
 
-    for (type = 0; type < numTypes; type++) {
-        typeIndex = typeIndices[type];
-
-        if (typeIndex == eSW_MPI_Inputs) {
+    for (type = 0; type < SW_MPI_NTYPES; type++) {
+        if (type == eSW_MPI_Inputs) {
             /* Create custom MPI subtypes for bigger SW_RUN_INPUTS */
             for (runTypeIndex = 0; runTypeIndex < numRunInTypes;
                  runTypeIndex++) {
@@ -2527,17 +2561,17 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
             blockLens[type],
             offsets[type],
             types[type],
-            &datatypes[typeIndex]
+            &datatypes[type]
         );
         if (res != MPI_SUCCESS) {
             goto reportFail;
         }
-        res = MPI_Type_commit(&datatypes[typeIndex]);
+        res = MPI_Type_commit(&datatypes[type]);
         if (res != MPI_SUCCESS) {
             goto reportFail;
         }
 
-        if (typeIndex == eSW_MPI_Inputs) {
+        if (type == eSW_MPI_Inputs) {
             free_type(&inTypes[vegprodIndex][0], LogInfo);
             free_type(&inTypes[vegprodIndex][1], LogInfo);
         }

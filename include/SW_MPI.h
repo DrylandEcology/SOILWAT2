@@ -20,7 +20,10 @@ typedef enum {
     eSW_MPI_Designate,
     eSW_MPI_WallTime,
     eSW_MPI_OutDomIO,
-    eSW_MPI_VegEstabIn
+    eSW_MPI_VegEstabIn,
+    eSW_MPI_Req,
+    eSW_MPI_Log,
+    eSW_MPI_WeathHist
 } MPIType;
 
 #define SW_MPI_PROC_COMP 0

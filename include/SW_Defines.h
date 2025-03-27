@@ -340,7 +340,7 @@ typedef int sw_converter_t;
 /*                   Parallel Support                  */
 /* --------------------------------------------------- */
 
-#define SW_MPI_NTYPES 7
+#define SW_MPI_NTYPES 10
 #define SW_MPI_ROOT 0
 
 #ifndef MAX_NODE_PROCS

@@ -1538,6 +1538,14 @@ typedef enum {
 /* --------------------------------------------------- */
 
 typedef struct {
+    int sourceRank; /**< Rank of the process that sent the request */
+    Bool runStatus[N_SUID_ASSIGN]; /**< A list of size N_SUID_ASSIGN
+                         specifying the success of simulation runs */
+    int requestType;               /**< Type of request a compute process is
+                                        giving to an I/O process */
+} SW_MPI_REQUEST;
+
+typedef struct {
     int procJob;    /**< The assigned job of a process;
                          possibilities are: job assigner, compute, and I/O */
     int ioRank;     /**< Rank of the compute node's assigned I/O process;
