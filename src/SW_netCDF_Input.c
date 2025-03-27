@@ -24,6 +24,10 @@
 #include <udunits2.h> // for cv_free, cv_convert_double
 #endif
 
+#if defined(SWMPI)
+#include "include/SW_MPI.h"
+#endif
+
 
 /* =================================================== */
 /*                   Local Defines                     */
@@ -4918,6 +4922,7 @@ static void check_input_file_against_index(
     }
 }
 
+#if !defined(SWMPI)
 /*
 @brief Helper function to set the first one or two dimensional
 start indices to read inputs from, this mainly comes into play
@@ -4983,6 +4988,7 @@ closeFile:
         nc_close(indexFileID);
     }
 }
+#endif
 
 /**
 @brief Once we read-in values from input, we need to check if any values
@@ -8415,31 +8421,26 @@ void SW_NCIN_open_dom_prog_files(
 /**
 @brief Close all netCDF files that have been opened while the program ran
 
-@param[in,out] ncDomFileIDs List of all nc domain file IDs
+@param[in,out] SW_PathInputs Struct of type SW_PATH_INPUTS which
+    holds basic information about input files and values
+@param[in] readInVars Specifies which variables are to be read-in as input
+@param[in] useIndexFile Specifies to create/use an index file
 */
-void SW_NCIN_close_files(SW_PATH_INPUTS *SW_PathInputs) {
+void SW_NCIN_close_files(
+    SW_PATH_INPUTS *SW_PathInputs, Bool **readInVars, Bool useIndexFile[]
+) {
     int fileNum;
-#if defined(SWMPI)
-    InKeys inKey;
-    int varNum;
-    int numFiles;
-    int file;
-    int numWeathFiles = SW_PathInputs->ncNumWeatherInFiles;
 
-    ForEachNCInKey(inKey) {
-        if (!isnull(SW_PathInputs->openInFileIDs[inKey])) {
-            for (varNum = 0; varNum < numVarsInKey[inKey]; varNum++) {
-                if (!isnull(SW_PathInputs->openInFileIDs[inKey][varNum])) {
-                    numFiles = (inKey != eSW_InWeather) ? 1 : numWeathFiles;
-                    for (file = 0; file < numFiles; file++) {
-                        nc_close(
-                            SW_PathInputs->openInFileIDs[inKey][varNum][file]
-                        );
-                    }
-                }
-            }
-        }
-    }
+#if defined(SWMPI)
+    SW_MPI_close_in_files(
+        SW_PathInputs->openInFileIDs,
+        readInVars,
+        useIndexFile,
+        SW_PathInputs->ncNumWeatherInFiles
+    );
+#else
+    (void) readInVars;
+    (void) useIndexFile;
 #endif
 
     for (fileNum = 0; fileNum < SW_NVARDOM; fileNum++) {

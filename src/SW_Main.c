@@ -267,10 +267,16 @@ sim:
     SW_CTL_RunSims(rank, &sw_template, &SW_Domain, &SW_WallTime, &LogInfo);
 
 closeFiles: {
-    // finish-up output (not used with rSOILWAT2)
-    SW_OUT_close_files(
-        &sw_template.SW_PathOutputs, &SW_Domain.OutDom, &LogInfo
-    );
+#if defined(SWMPI)
+    if (SW_Domain.SW_Designation.procJob == SW_MPI_PROC_IO) {
+#endif
+        // finish-up output (not used with rSOILWAT2)
+        SW_OUT_close_files(
+            &sw_template.SW_PathOutputs, &SW_Domain.OutDom, &LogInfo
+        );
+#if defined(SWMPI)
+    }
+#endif
 }
 
 finishProgram: {

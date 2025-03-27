@@ -629,7 +629,18 @@ void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
     int k;
     int i;
 
-    SW_F_deconstruct(&SW_Domain->SW_PathInputs);
+#if defined(SWMPI)
+    if (SW_Domain->SW_Designation.procJob == SW_MPI_PROC_IO) {
+#endif
+        SW_F_deconstruct(
+            &SW_Domain->SW_PathInputs,
+            SW_Domain->netCDFInput.readInVars,
+            SW_Domain->netCDFInput.useIndexFile,
+            SW_Domain->SW_Designation.procJob
+        );
+#if defined(SWMPI)
+    }
+#endif
 
 #if defined(SWNETCDF)
 

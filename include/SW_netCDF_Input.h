@@ -138,7 +138,9 @@ void SW_NCIN_open_dom_prog_files(
     SW_NETCDF_IN *SW_netCDFIn, SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo
 );
 
-void SW_NCIN_close_files(SW_PATH_INPUTS *SW_PathInputs);
+void SW_NCIN_close_files(
+    SW_PATH_INPUTS *SW_PathInputs, Bool **readInVars, Bool useIndexFile[]
+);
 
 void SW_NCIN_init_ptrs(SW_NETCDF_IN *SW_netCDFIn);
 

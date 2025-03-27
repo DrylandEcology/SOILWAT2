@@ -51,6 +51,10 @@ History:
 #include "include/SW_Output_outarray.h"
 #endif
 
+#if defined(SWNETCDF) && defined(SWMPI)
+#include "include/SW_MPI.h"
+#endif
+
 // Text-based output declarations:
 #if defined(SW_OUTTEXT)
 #include "include/SW_Output_outtext.h" // for SW_OUT_close_textfiles, SW_OU...
@@ -3823,6 +3827,11 @@ void SW_OUT_close_files(
 
 #if defined(SW_OUTTEXT)
     SW_OUT_close_textfiles(SW_PathOutputs, OutDom, LogInfo);
+#elif defined(SWMPI)
+    SW_MPI_close_out_files(
+        SW_PathOutputs->openOutFileIDs, OutDom, SW_PathOutputs->numOutFiles
+    );
+    (void) LogInfo;
 #else
     (void) SW_PathOutputs;
     (void) OutDom;

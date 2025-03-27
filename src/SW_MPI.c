@@ -4221,6 +4221,75 @@ void SW_MPI_open_files(
 }
 
 /**
+@brief Close all opened netCDF files
+
+@param[in] openOutFileIDs A list of open output netCDF file IDs
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
+@param[in] numOutFiles Number of output files for each
+    output key/period
+*/
+void SW_MPI_close_out_files(
+    int *openOutFileIDs[][SW_OUTNPERIODS], SW_OUT_DOM *OutDom, int numOutFiles
+) {
+    OutKey outKey;
+    OutPeriod pd;
+    int file;
+
+    ForEachOutKey(outKey) {
+        if (OutDom->nvar_OUT[outKey] > 0 && OutDom->use[outKey]) {
+            ForEachOutPeriod(pd) {
+                if (OutDom->use_OutPeriod[pd]) {
+                    for (file = 0; file < numOutFiles; file++) {
+                        nc_close(openOutFileIDs[outKey][pd][file]);
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+@brief Close all opened netCDF files
+
+@param[in] openInFileIDs A list of open input netCDF file IDs
+@param[in] readInVars Specifies which variables are to be read-in as input
+@param[in] useIndexFile Specifies to create/use an index file
+@param[in] numWeathFiles Number of weather files that were created
+*/
+void SW_MPI_close_in_files(
+    int **openInFileIDs[],
+    Bool **readInVars,
+    Bool useIndexFile[],
+    int numWeathFiles
+) {
+    InKeys inKey;
+    Bool skipVar;
+    int numFiles;
+    int varNum;
+    int file;
+
+    ForEachNCInKey(inKey) {
+        if (!readInVars[inKey][0] || inKey == eSW_InDomain) {
+            continue;
+        }
+
+        numFiles = (inKey == eSW_InWeather) ? numWeathFiles : 1;
+
+        for (varNum = 0; varNum < numVarsInKey[inKey]; varNum++) {
+            skipVar = (Bool) (!readInVars[inKey][varNum + 1] ||
+                              ((varNum == 0 && !useIndexFile[inKey])));
+
+            if (!skipVar) {
+                for (file = 0; file < numFiles; file++) {
+                    nc_close(openInFileIDs[inKey][varNum][file]);
+                }
+            }
+        }
+    }
+}
+
+/**
 @brief Before we proceed to the next important section of the program,
 we must do a check-in with all processes to make sure no errors occurred
 

@@ -100,6 +100,17 @@ void SW_MPI_open_files(
     LOG_INFO *LogInfo
 );
 
+void SW_MPI_close_in_files(
+    int **openInFileIDs[],
+    Bool **readInVars,
+    Bool useIndexFile[],
+    int numWeathFiles
+);
+
+void SW_MPI_close_out_files(
+    int *openOutFileIDs[][SW_OUTNPERIODS], SW_OUT_DOM *OutDom, int numOutFiles
+);
+
 Bool SW_MPI_check_setup_status(Bool stopRun, MPI_Comm comm);
 
 void SW_MPI_root_find_active_sites(
