@@ -36,6 +36,9 @@ static volatile sig_atomic_t runSims = 1;
 #define REQ_OUT_LOG 0
 #define REQ_OUT_NC 1
 #define REQ_OUT_BOTH 2
+
+#define COMP_COMPLETE 0
+
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
@@ -2552,6 +2555,115 @@ static void get_contiguous_counts(
 }
 
 /**
+@brief Spread read inputs across compute processes
+
+The list of inputs contains N_SUID_ASSIGN for each process and will
+be distributed in order to the compute processes; so, compute process
+1 will get the [0, N_SUID_ASSIGN), then 2 will get [N_SUID_ASSIGN, N_SUID_ASSIGN
+* 2), so on and so forth
+
+This function should be called after the main loop of the I/O process so that
+any final compute processes can be sent a signal to finish
+
+@param[in] desig Designation instance that holds information about
+    assigning a process to a job
+@param[in] inputType Custom MPI data type for sending SW_RUN_INPUTS
+@param[in] weathHistType Custom MPI type for transfering data for
+    SW_WEATHER_HIST
+@param[in] inputs A list of input structs that will be distributed across
+    compute processes
+@param[in] numInputs Total number of inputs that will be spread to
+    compute processes
+@param[in] estVeg A flag specifying if we vegetation is to be estimated
+@param[in,out] sendEstVeg A flag specifying if we have already sent
+    the flag to compute processes; return an updated flag value of swFALSE
+@param[in] readWeather A flag specifying if weather will be read in;
+    if so, send weather
+@param[in] sendInputs A list of values specifying how many inputs each compute
+    process will receive
+@param[in] n_years Number of years in simulation
+@param[in] finalize A flag specifying if this will be the last call
+*/
+static void spread_inputs(
+    SW_MPI_DESIGNATE *desig,
+    MPI_Datatype inputType,
+    MPI_Datatype weathHistType,
+    SW_RUN_INPUTS *inputs,
+    int numInputs,
+    Bool estVeg,
+    Bool *sendEstVeg,
+    Bool readWeather,
+    int sendInputs[],
+    int n_years,
+    Bool finalize
+) {
+    MPI_Request nullReq = MPI_REQUEST_NULL;
+
+    int comp;
+    int numSendIn;
+    int destRank;
+    int suid = 0;
+    int send = 0;
+
+    if (*sendEstVeg) {
+        SW_Bcast(MPI_INT, &estVeg, 1, SW_GROUP_ROOT, desig->ioCompComm);
+        *sendEstVeg = swFALSE;
+    }
+
+    // Scatter amount information so compute processors now how
+    // many inputs to accept
+    for (comp = 0; comp < desig->nCompProcs; comp++) {
+        if (!finalize || sendInputs[comp + 1] > COMP_COMPLETE) {
+            numSendIn = COMP_COMPLETE;
+            destRank = desig->ranks[comp];
+
+            if (numInputs > 0) {
+                numSendIn =
+                    (numInputs > N_SUID_ASSIGN) ? N_SUID_ASSIGN : numInputs;
+            }
+
+            sendInputs[comp + 1] = (finalize) ? 0 : numSendIn;
+
+            SW_MPI_Send(
+                MPI_INT, &sendInputs[comp + 1], 1, destRank, swTRUE, 0, &nullReq
+            );
+
+            if (!finalize || sendInputs[comp + 1] > COMP_COMPLETE) {
+                for (send = 0; send < sendInputs[comp + 1]; send++) {
+                    SW_MPI_Send(
+                        inputType,
+                        &inputs[suid + send],
+                        1,
+                        destRank,
+                        swTRUE,
+                        0,
+                        &nullReq
+                    );
+                }
+
+                if (readWeather) {
+                    for (send = 0; send < sendInputs[comp + 1]; send++) {
+                        SW_MPI_Send(
+                            weathHistType,
+                            inputs[suid].weathRunAllHist,
+                            n_years,
+                            destRank,
+                            swTRUE,
+                            0,
+                            &nullReq
+                        );
+                    }
+                }
+
+                suid += sendInputs[comp + 1];
+            }
+
+            numInputs -= numSendIn;
+        }
+    }
+}
+
+/**
 @brief Calculate contiguous read/write indices for every input netCDF key
     including a key specifically for program's domain
 
@@ -4373,6 +4485,8 @@ void SW_MPI_handle_IO(
     // Variable(s) for storing SUID array index/tracker
     // Extra input storage
     SW_MPI_DESIGNATE *desig = &SW_Domain->SW_Designation;
+    MPI_Datatype weathHistType = SW_Domain->datatypes[eSW_MPI_WeathHist];
+    MPI_Datatype inputType = SW_Domain->datatypes[eSW_MPI_Inputs];
     int input = 0;
     int numSuidsTot = desig->nCompProcs * N_SUID_ASSIGN;
     int numIterSuids;
@@ -4381,11 +4495,14 @@ void SW_MPI_handle_IO(
     Bool constSoilDepths = SW_Domain->hasConsistentSoilLayerDepths;
     int dim;
     int dimSum = 0;
+    Bool sendEstVeg = swTRUE;
+    Bool estVeg = SW_Domain->netCDFInput.readInVars[eSW_InVeg][0];
     Bool readWeather = SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
     Bool readSoils = SW_Domain->netCDFInput.readInVars[eSW_InSoil][0];
     Bool spatialVars1D = swFALSE;
     int nSuids = desig->nSuids;
     const int oneDimSum = -4;
+    int inputsLeft = nSuids;
     int n_years = sw->WeatherIn.n_years;
     Bool allocSoils = (Bool) (!constSoilDepths && readSoils);
     int numIterations = 0;
@@ -4515,7 +4632,43 @@ checkStatus:
             LogInfo
         );
 
+        // Distribute N_SUID_ASSIGN amount of run inputs to compute processes
+        spread_inputs(
+            desig,
+            inputType,
+            weathHistType,
+            inputs,
+            inputsLeft,
+            estVeg,
+            &sendEstVeg,
+            readWeather,
+            sendInputs,
+            n_years,
+            swFALSE
+        );
+        if (LogInfo->stopRun) {
+            goto freeMem;
+        }
+
         input += numSuidsTot;
+        inputsLeft -= numSuidsTot;
+    }
+
+    if (runSims) {
+        // Make sure no compute process gets stuck waiting for input
+        spread_inputs(
+            desig,
+            inputType,
+            weathHistType,
+            inputs,
+            inputsLeft,
+            estVeg,
+            &sendEstVeg,
+            readWeather,
+            sendInputs,
+            n_years,
+            swTRUE
+        );
     }
 
 freeMem:
