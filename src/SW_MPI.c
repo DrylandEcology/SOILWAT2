@@ -2764,6 +2764,205 @@ static void calculate_contiguous_allkeys(
 }
 
 /**
+@brief Write log messages to respective log files for compute processes
+
+@param[in] numRecv Number of log files received
+@param[in] logfp A list of pointers to open logfiles respective to
+    the I/O process and all compute processes it controls
+@param[in] logs A list of LOG_INFO instances that will be used for
+    getting log information from compute processes
+*/
+static void write_logs(int numRecv, FILE *logfp, LOG_INFO *logs) {
+    int log = 0;
+
+    for (log = 0; log < numRecv; log++) {
+        logs[log].logfp = logfp;
+
+        sw_write_warnings("\n", &logs[log]);
+    }
+}
+
+/**
+@brief Order received output from compute processes
+
+@param[in] recvRank Rank to receive outputs from
+@param[in] procIndex Index of the processes we are reading output from
+@param[in] writeLens Number of inputs that were distributed to the process
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
+@param[out] main_p_OUT Array of accumulated output values throughout
+    simulation runs
+*/
+static void arrange_output(
+    int recvRank,
+    int procIndex,
+    int writeLens[],
+    SW_OUT_DOM *OutDom,
+    size_t offsetMult[],
+    double *main_p_OUT[][SW_OUTNPERIODS]
+) {
+    MPI_Request nullReq = MPI_REQUEST_NULL;
+
+    int pdIndex;
+    OutKey key;
+    OutPeriod pd;
+
+    size_t writeIndex;
+    size_t oneSiteSize;
+
+    // Loop through output keys
+    ForEachOutKey(key) {
+        // Loop through output periods
+        for (pdIndex = 0; pdIndex < OutDom->used_OUTNPERIODS; pdIndex++) {
+            pd = OutDom->timeSteps[key][pdIndex];
+
+            // Check if output period is required
+            if (OutDom->use[key] && pd != eSW_NoTime) {
+                // Calculate start index within given inputs
+                // i.e., main = <input index> * <size of 1 site output> *
+                // procIndex
+                oneSiteSize = OutDom->nrow_OUT[pd] *
+                              (OutDom->ncol_OUT[key] + ncol_TimeOUT[pd]);
+                writeIndex = oneSiteSize * offsetMult[procIndex + 1];
+
+                // Receive information
+                SW_MPI_Recv(
+                    MPI_DOUBLE,
+                    &main_p_OUT[key][pd][writeIndex],
+                    oneSiteSize * writeLens[procIndex + 1],
+                    recvRank,
+                    swTRUE,
+                    0,
+                    &nullReq
+                );
+            }
+        }
+    }
+}
+
+/**
+@brief Get a request and subsequent information from a compute process
+
+This function will receive three pieces of information
+    1) Simulation run statuses
+        - Flag results collected throughout the simulation runs
+        - Specifies if a specific run failed for succeeded
+        - Used to write output and update the progress file properly
+            * If a simulation run failed, do not output it and report it
+    2) Request type
+        - Three different types of requests
+            * REQ_OUT_NC - Only receive output information to be written to file
+            * REQ_OUT_LOG - Only receive log information to be written to log
+                            files; only occurs when all simulations fail
+            * REQ_OUT_BOTH - Both take action above
+    3) Source rank
+        - Rank of the process that sent information to I/O process
+            * I/O process is not aware of the sender by default due to
+                MPI_ANY_SOURCE
+
+Handle the different request types accordingly
+    1) Log request - Accept log information from the sender compute process
+        and report logs to the respective log file
+
+    2) Output request - Accept output infromation from the sender compute
+        process and store it in a larger `p_OUT` to flush at a later time
+
+@param[in] numCompProcs Number of compute processes that have been assigned to
+    an I/O process
+@param[in] recvLens A list of lengths that will be used to specify how many
+    inputs to receive from a specific process
+@param[in] reqType Custom MPI type that mimics SW_MPI_REQUEST
+@param[in] logType Custom MPI type that mimics LOG_INFO
+@param[in] desig Designation instance that holds information about
+    assigning a process to a job
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
+@param[in] logs A list of LOG_INFO instances that will be used for
+    getting log information from compute processes
+@param[in] logfps A list of pointers to open logfiles respective to
+    the I/O process and all compute processes it controls
+@param[out] succFlags Accumulator array of flags specifying how respective
+    simulation runs went
+@param[out] main_p_OUT Array of accumulated output values throughout
+    simulation all runs
+*/
+static void get_comp_results(
+    int numCompProcs,
+    int recvLens[],
+    MPI_Datatype reqType,
+    MPI_Datatype logType,
+    SW_MPI_DESIGNATE *desig,
+    SW_OUT_DOM *OutDom,
+    LOG_INFO *logs,
+    FILE *logfps[],
+    Bool *succFlags,
+    double *main_p_OUT[][SW_OUTNPERIODS]
+) {
+    MPI_Request nullReq = MPI_REQUEST_NULL;
+
+    Bool logReq;
+    Bool outReq;
+    size_t offsetMult[PROCS_PER_IO] = {recvLens[0]};
+
+    int destRank;
+    int rankIndex;
+    int rank;
+    int comp;
+    int log;
+    int numProcResponse = 0;
+    int targetRepsonses = numCompProcs;
+
+    for (comp = 1; comp < numCompProcs; comp++) {
+        offsetMult[comp] = offsetMult[comp - 1] + recvLens[comp];
+        targetRepsonses += (recvLens[comp] > 0) ? 1 : 0;
+    }
+
+    while (numProcResponse < targetRepsonses) {
+        SW_MPI_REQUEST req;
+        SW_MPI_Recv(reqType, &req, 1, MPI_ANY_SOURCE, swTRUE, 0, &nullReq);
+
+        destRank = req.sourceRank;
+        logReq = (Bool) (req.requestType == REQ_OUT_LOG ||
+                         req.requestType == REQ_OUT_BOTH);
+        outReq = (Bool) (req.requestType == REQ_OUT_NC ||
+                         req.requestType == REQ_OUT_BOTH);
+
+        rankIndex = 0;
+        rank = desig->ranks[rankIndex];
+        while (rank != destRank) {
+            rankIndex++;
+            rank = desig->ranks[rankIndex];
+        }
+
+        if (logReq) {
+            SW_MPI_Recv(
+                logType,
+                logs,
+                recvLens[rankIndex + 1],
+                destRank,
+                swTRUE,
+                0,
+                &nullReq
+            );
+
+            write_logs(recvLens[rankIndex + 1], logfps[rankIndex + 1], logs);
+
+            for (log = 0; log < recvLens[rankIndex + 1]; log++) {
+                succFlags[log] = (Bool) !logs[log].stopRun;
+            }
+        }
+
+        if (outReq) {
+            arrange_output(
+                destRank, rankIndex, recvLens, OutDom, offsetMult, main_p_OUT
+            );
+        }
+
+        numProcResponse++;
+    }
+}
+
+/**
 @brief Get the next batch of SUIDs for input distribution
 
 @param[in] desig Designation instance that holds information about
@@ -4485,6 +4684,8 @@ void SW_MPI_handle_IO(
     // Variable(s) for storing SUID array index/tracker
     // Extra input storage
     SW_MPI_DESIGNATE *desig = &SW_Domain->SW_Designation;
+    MPI_Datatype reqType = SW_Domain->datatypes[eSW_MPI_Req];
+    MPI_Datatype logType = SW_Domain->datatypes[eSW_MPI_Log];
     MPI_Datatype weathHistType = SW_Domain->datatypes[eSW_MPI_WeathHist];
     MPI_Datatype inputType = SW_Domain->datatypes[eSW_MPI_Inputs];
     int input = 0;
@@ -4649,6 +4850,23 @@ checkStatus:
         if (LogInfo->stopRun) {
             goto freeMem;
         }
+
+        // Loop through all requests sent by the compute process
+        // or we haven't received input from all processes
+        // Get dynamically allocated output memory from
+        // each compute process if simulations were successful
+        get_comp_results(
+            desig->nCompProcs,
+            sendInputs,
+            reqType,
+            logType,
+            desig,
+            &SW_Domain->OutDom,
+            logs,
+            LogInfo->logfps,
+            &succFlags[succFlagWrite],
+            sw->OutRun.p_OUT
+        );
 
         input += numSuidsTot;
         inputsLeft -= numSuidsTot;
