@@ -1257,11 +1257,11 @@ TEST_F(WeatherFixtureTest, WeatherInputGridMET) {
         1; // gridMET rsds is flux density over 24 hours
 
     // Allocate temporary location for weather
-    allocate_temp_weather(1, &tempWeatherHist, &LogInfo);
+    allocate_temp_weather(1, 1, &tempWeatherHist, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Reset daily weather values
-    clear_hist_weather(&SW_Run.RunIn.weathRunAllHist[0], tempWeatherHist[0]);
+    clear_hist_weather(1, &SW_Run.RunIn.weathRunAllHist[0], tempWeatherHist[0]);
 
     // Using the new inputs folder, read in year = 1980
     read_weather_hist(
@@ -1285,6 +1285,7 @@ TEST_F(WeatherFixtureTest, WeatherInputGridMET) {
         SW_Run.WeatherIn.dailyInputFlags,
         tempWeatherHist,
         SW_Run.RunIn.ModelRunIn.elevation,
+        0,
         &SW_Run.RunIn.weathRunAllHist[0],
         &LogInfo
     );
@@ -1439,11 +1440,11 @@ TEST_F(WeatherFixtureTest, WeatherInputDaymet) {
     SW_Run.WeatherIn.desc_rsds = 2;
 
     // Allocate temporary location for weather
-    allocate_temp_weather(1, &tempWeatherHist, &LogInfo);
+    allocate_temp_weather(1, 1, &tempWeatherHist, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Reset daily weather values
-    clear_hist_weather(&SW_Run.RunIn.weathRunAllHist[0], tempWeatherHist[0]);
+    clear_hist_weather(1, &SW_Run.RunIn.weathRunAllHist[0], tempWeatherHist[0]);
 
     // Using the new inputs folder, read in year = 1980
     read_weather_hist(
@@ -1467,6 +1468,7 @@ TEST_F(WeatherFixtureTest, WeatherInputDaymet) {
         SW_Run.WeatherIn.dailyInputFlags,
         tempWeatherHist,
         SW_Run.RunIn.ModelRunIn.elevation,
+        0,
         &SW_Run.RunIn.weathRunAllHist[0],
         &LogInfo
     );
@@ -1606,11 +1608,11 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype1) {
     SW_Run.WeatherIn.desc_rsds = 1; // MACA rsds is flux density over 24 hours
 
     // Allocate temporary location for weather
-    allocate_temp_weather(1, &tempWeatherHist, &LogInfo);
+    allocate_temp_weather(1, 1, &tempWeatherHist, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Reset daily weather values
-    clear_hist_weather(&SW_Run.RunIn.weathRunAllHist[0], tempWeatherHist[0]);
+    clear_hist_weather(1, &SW_Run.RunIn.weathRunAllHist[0], tempWeatherHist[0]);
 
     // Using the new inputs folder, read in year = 1980
     read_weather_hist(
@@ -1634,6 +1636,7 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype1) {
         SW_Run.WeatherIn.dailyInputFlags,
         tempWeatherHist,
         SW_Run.RunIn.ModelRunIn.elevation,
+        0,
         &SW_Run.RunIn.weathRunAllHist[0],
         &LogInfo
     );
@@ -1804,11 +1807,11 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
     SW_Run.WeatherIn.desc_rsds = 1; // MACA rsds is flux density over 24 hours
 
     // Allocate temporary location for weather
-    allocate_temp_weather(1, &tempWeatherHist, &LogInfo);
+    allocate_temp_weather(1, 1, &tempWeatherHist, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Reset daily weather values
-    clear_hist_weather(&SW_Run.RunIn.weathRunAllHist[0], tempWeatherHist[0]);
+    clear_hist_weather(1, &SW_Run.RunIn.weathRunAllHist[0], tempWeatherHist[0]);
 
     // Using the new inputs folder, read in year = 1980
     read_weather_hist(
@@ -1832,6 +1835,7 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
         SW_Run.WeatherIn.dailyInputFlags,
         tempWeatherHist,
         SW_Run.RunIn.ModelRunIn.elevation,
+        0,
         &SW_Run.RunIn.weathRunAllHist[0],
         &LogInfo
     );
@@ -2025,11 +2029,11 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputWrongColumnNumberDeathTest) {
     // Run weather functions and expect an failure (error)
 
     // Allocate temporary location for weather
-    allocate_temp_weather(1, &tempWeatherHist, &LogInfo);
+    allocate_temp_weather(1, 1, &tempWeatherHist, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Reset daily weather values
-    clear_hist_weather(&SW_Run.RunIn.weathRunAllHist[0], tempWeatherHist[0]);
+    clear_hist_weather(1, &SW_Run.RunIn.weathRunAllHist[0], tempWeatherHist[0]);
 
     SW_WTH_read(
         &SW_Run.WeatherIn,

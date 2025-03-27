@@ -56,6 +56,11 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
     sw_init_logs(NULL, &LogInfo);
 
     SW_PATH_INPUTS SW_PathInput;
+
+    // Dummy value for SW_F_deconstruct
+    Bool readInVars[SW_NINKEYSNC][1] = {{swFALSE}};
+    Bool useIndexFiles[SW_NINFILES] = {swFALSE};
+
     SW_F_init_ptrs(&SW_PathInput);
 
     SW_PathInput.txtInFiles[eMarkovCov] =
@@ -174,7 +179,7 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
     delete[] tmin0;
     delete[] ppt0;
 
-    SW_F_deconstruct(&SW_PathInput);
+    SW_F_deconstruct(&SW_PathInput, (Bool **) readInVars, useIndexFiles, 0);
 }
 
 // Test drawing multivariate normal variates for daily maximum/minimum temp

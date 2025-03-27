@@ -211,7 +211,7 @@ int setup_testGlobalSoilwatTemplate() {
     userSUID = 0;
 
     SW_CTL_setup_domain(
-        userSUID, renameDomainTemplateNC, &template_SW_Domain, &LogInfo
+        0, userSUID, renameDomainTemplateNC, &template_SW_Domain, &LogInfo
     );
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;
