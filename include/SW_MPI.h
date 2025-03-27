@@ -123,6 +123,38 @@ void SW_MPI_process_types(
     LOG_INFO *LogInfo
 );
 
+void SW_MPI_store_outputs(
+    int runNum,
+    SW_OUT_DOM *OutDom,
+    double *src_p_OUT[][SW_OUTNPERIODS],
+    double *dest_p_OUT[][SW_OUTNPERIODS]
+);
+
+void SW_MPI_send_results(
+    SW_OUT_DOM *OutDom,
+    int rank,
+    int numInputs,
+    int ioRank,
+    MPI_Datatype reqTypeMPI,
+    MPI_Datatype logType,
+    Bool runStatuses[],
+    Bool reportLog,
+    LOG_INFO logs[],
+    double *p_OUT[][SW_OUTNPERIODS]
+);
+
+void SW_MPI_get_inputs(
+    Bool getWeather,
+    int n_years,
+    SW_MPI_DESIGNATE *desig,
+    MPI_Datatype inputType,
+    MPI_Datatype weathHistType,
+    SW_RUN_INPUTS inputs[],
+    int *numInputs,
+    Bool *estVeg,
+    Bool *getEstVeg
+);
+
 void SW_MPI_handle_IO(
     int rank, SW_RUN *sw, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
 );

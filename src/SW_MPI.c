@@ -4745,6 +4745,240 @@ freeMem:
 }
 
 /**
+@brief Organize output data when completing a simulation run into
+    a bigger output buffer to later send to an I/O process
+
+Process designation: Compute
+
+@param[in] runNum Current run number the compute process is on,
+    should be between [0, N_SUID_ASSIGN - 1]
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
+@param[in] src_p_OUT Source of accumulated output values throughout
+    simulation runs
+@param[out] dest_p_OUT Destination of accumulated output values throughout
+    simulation runs
+*/
+void SW_MPI_store_outputs(
+    int runNum,
+    SW_OUT_DOM *OutDom,
+    double *src_p_OUT[][SW_OUTNPERIODS],
+    double *dest_p_OUT[][SW_OUTNPERIODS]
+) {
+    size_t startIndex;
+    size_t oneSiteSize;
+    OutKey outKey;
+    OutPeriod timeStep;
+    int ipd;
+
+    ForEachOutKey(outKey) {
+        for (ipd = 0; ipd < OutDom->used_OUTNPERIODS; ipd++) {
+            timeStep = OutDom->timeSteps[outKey][ipd];
+
+            if (OutDom->use[outKey] && timeStep != eSW_NoTime) {
+                oneSiteSize =
+                    OutDom->nrow_OUT[timeStep] *
+                    (OutDom->ncol_OUT[outKey] + ncol_TimeOUT[timeStep]);
+                startIndex = oneSiteSize * runNum;
+
+                memcpy(
+                    &dest_p_OUT[outKey][timeStep][startIndex],
+                    src_p_OUT[outKey][timeStep],
+                    sizeof(double) * oneSiteSize
+                );
+            }
+        }
+    }
+}
+
+/**
+@brief Send information to I/O processes when a compute
+    process is some with their assigned workload
+
+This function will send three pieces of information
+    1) Simulation run statuses
+        - Flag results collected throughout the simulation runs
+        - Specifies if a specific run failed for succeeded
+        - Used to write output and update the progress file properly
+            * If a simulation run failed, do not output it and report it
+    2) Request type
+        - Three different types of requests
+            * REQ_OUT_NC - Only send output information to be written to file
+            * REQ_OUT_LOG - Only send log information to be written to log
+                            files; only occurs when all simulations fail
+            * REQ_OUT_BOTH - Both take action above
+    3) Source rank
+        - Rank of the process that sent information to I/O process
+            * I/O process is not aware of the sender by default due to
+                MPI_ANY_SOURCE
+
+Further improvement upon this functionality could be sending outputs
+for the current batch of outputs while doing other operations
+(asynchronous)
+
+Process designation: Compute
+
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] numInputs Number of inputs that were sent to an I/O process
+@param[in] ioRank Destination rank of the I/O process to send to
+@param[in] reqTypeMPI Custom MPI type that mimics SW_MPI_REQUEST
+@param[in] logType Custom MPI type that mimics LOG_INFO
+@param[in] runStatuses A list of run statuses for each simulation
+    (success or fail)
+@param[in] reportLog A flag specifying that something was reported within
+    the simulations and must be sent
+@param[in] logs A list of LOG_INFO instances to send to the I/O process
+    if the `reportLog` flag is turned on
+@param[in] p_OUT Array of accumulated output values throughout
+    simulation runs
+*/
+void SW_MPI_send_results(
+    SW_OUT_DOM *OutDom,
+    int rank,
+    int numInputs,
+    int ioRank,
+    MPI_Datatype reqTypeMPI,
+    MPI_Datatype logType,
+    Bool runStatuses[],
+    Bool reportLog,
+    LOG_INFO logs[],
+    double *p_OUT[][SW_OUTNPERIODS]
+) {
+    MPI_Request nullReq = MPI_REQUEST_NULL;
+    int reqType = REQ_OUT_NC;
+    int succRun = swFALSE;
+    int run;
+    SW_MPI_REQUEST req;
+    OutKey outKey;
+    int timeStep;
+    int ipd;
+    size_t sendSize = 0;
+
+    for (run = 0; run < N_SUID_ASSIGN; run++) {
+        req.runStatus[run] = runStatuses[run];
+        succRun = (succRun || runStatuses[run]);
+    }
+
+    if (succRun && reportLog) {
+        reqType = REQ_OUT_BOTH;
+    } else if (reportLog) {
+        reqType = REQ_OUT_LOG;
+    }
+
+    req.sourceRank = rank;
+    req.requestType = reqType;
+
+    SW_MPI_Send(reqTypeMPI, &req, 1, ioRank, swTRUE, 0, &nullReq);
+
+    if (reportLog) {
+        SW_MPI_Send(logType, logs, numInputs, ioRank, swTRUE, 0, &nullReq);
+    }
+
+    if (succRun) {
+        ForEachOutKey(outKey) {
+            for (ipd = 0; ipd < OutDom->used_OUTNPERIODS; ipd++) {
+                timeStep = OutDom->timeSteps[outKey][ipd];
+
+                if (OutDom->use[outKey] && timeStep != eSW_NoTime) {
+                    sendSize =
+                        OutDom->nrow_OUT[timeStep] *
+                        (OutDom->ncol_OUT[outKey] + ncol_TimeOUT[timeStep]);
+                    sendSize *= numInputs;
+
+                    SW_MPI_Send(
+                        MPI_DOUBLE,
+                        p_OUT[outKey][timeStep],
+                        sendSize,
+                        ioRank,
+                        swTRUE,
+                        0,
+                        &nullReq
+                    );
+
+                    memset(
+                        p_OUT[outKey][timeStep], 0, sizeof(double) * sendSize
+                    );
+                }
+            }
+        }
+    }
+}
+
+/**
+@brief Handle the receiving of inputs from an I/O process
+
+This function will receive up to N_SUID_ASSIGN inputs from the
+assigned I/O process
+
+Further improvement upon this functionality could be getting inputs
+for the next batch of inputs during simulation runs (asynchronous)
+
+Process designation: Compute
+
+@param[in] getWeather Specifies if we get weather from I/O process;
+    if not, we copy it from the SW_RUN template
+@param[in] n_years Number of years of weather to receive if we do
+    get weather from the I/O process
+@param[in] desig Designation instance that holds information about
+    assigning a process to a job
+@param[in] inputType Custom MPI data type for sending SW_RUN_INPUTS
+@param[in] weathHistType Custom MPI type for transfering data for
+    SW_WEATHER_HIST
+@param[out] inputs A list of SW_RUN_INPUTS that will be filled by an
+    I/O process
+@param[out] numInputs Number of inputs that were sent to this process
+@param[out] estVeg A flag specifying if the process needs to estiamte
+    vegetation
+@param[in,out] getEstVeg Specifies if the function needs to get the `estVeg`
+    flag from it's I/O process
+*/
+void SW_MPI_get_inputs(
+    Bool getWeather,
+    int n_years,
+    SW_MPI_DESIGNATE *desig,
+    MPI_Datatype inputType,
+    MPI_Datatype weathHistType,
+    SW_RUN_INPUTS inputs[],
+    int *numInputs,
+    Bool *estVeg,
+    Bool *getEstVeg
+) {
+    MPI_Request nullReq = MPI_REQUEST_NULL;
+    int input;
+
+    if (*getEstVeg) {
+        SW_Bcast(MPI_INT, estVeg, 1, SW_GROUP_ROOT, desig->ioCompComm);
+        *getEstVeg = swFALSE;
+    }
+
+    SW_MPI_Recv(MPI_INT, numInputs, 1, desig->ioRank, swTRUE, 0, &nullReq);
+
+    if (*numInputs > 0) {
+        for (input = 0; input < *numInputs; input++) {
+            SW_MPI_Recv(
+                inputType, &inputs[input], 1, desig->ioRank, swTRUE, 0, &nullReq
+            );
+        }
+
+        if (getWeather) {
+            for (input = 0; input < *numInputs; input++) {
+                SW_MPI_Recv(
+                    weathHistType,
+                    inputs[input].weathRunAllHist,
+                    n_years,
+                    desig->ioRank,
+                    swTRUE,
+                    0,
+                    &nullReq
+                );
+            }
+        }
+    }
+}
+
+/**
 @brief Handle I/O requests from assigned compute processes
 
 This function will execute the following operations as main functionality
