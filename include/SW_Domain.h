@@ -30,10 +30,10 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
 
 void SW_DOM_SetProgress(
     Bool isFailure,
-    const char *domType,
     int progFileID,
     int progVarID,
-    unsigned long ncSuid[],
+    size_t start[],
+    size_t count[],
     LOG_INFO *LogInfo
 );
 

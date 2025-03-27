@@ -497,34 +497,34 @@ closeFile: { CloseFile(&f, LogInfo); }
 @brief Mark completion status of simulation run
 
 @param[in] isFailure Did simulation run fail or succeed?
-@param[in] domType Type of domain in which simulations are running
-    (gridcell/sites)
 @param[in] progFileID Identifier of the progress netCDF file
 @param[in] progVarID Identifier of the progress variable
-@param[in] ncSuid Unique indentifier of the first suid to run
-    in relation to netCDFs
+@param[in] start A list of calculated start values for when dealing
+    with the netCDF library; simply ncSUID if SWMPI is not enabled
+@param[in] count A list of count parts used for accessing/writing to
+    netCDF files; simply {1, 0} or {1, 1} if SWMPI is not enabled
 @param[in,out] LogInfo Holds information on warnings and errors
 */
 void SW_DOM_SetProgress(
     Bool isFailure,
-    const char *domType,
     int progFileID,
     int progVarID,
-    unsigned long ncSuid[], // NOLINT(readability-non-const-parameter)
+    size_t start[], // NOLINT(readability-non-const-parameter)
+    size_t count[], // NOLINT(readability-non-const-parameter)
     LOG_INFO *LogInfo
 ) {
 
 #if defined(SWNETCDF)
     SW_NCIN_set_progress(
-        isFailure, domType, progFileID, progVarID, ncSuid, LogInfo
+        isFailure, progFileID, progVarID, start, count, LogInfo
     );
 #else
     (void) isFailure;
     (void) progFileID;
     (void) progVarID;
-    (void) ncSuid;
+    (void) start;
+    (void) count;
     (void) LogInfo;
-    (void) domType;
 #endif
 }
 
