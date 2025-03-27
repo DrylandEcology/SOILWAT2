@@ -554,8 +554,14 @@ void sw_setup_prog_data(
     SW_DOMAIN *SW_Domain,
     LOG_INFO *LogInfo
 ) {
+#if defined(SWNETCDF)
+    Bool doOutStuff = swTRUE;
+#else
+    (void) prepareFiles;
+#endif
 #if defined(SWMPI)
-    MPI_Comm comm;
+    int procJob = SW_Domain->SW_Designation.procJob;
+    doOutStuff = (Bool) (procJob == SW_MPI_PROC_IO);
 
     if (!prepareFiles) {
         SW_MPI_setup(
@@ -564,12 +570,11 @@ void sw_setup_prog_data(
         if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
             return;
         }
-
-        comm = SW_Domain->SW_Designation.groupComm;
     }
-    if (SW_Domain->SW_Designation.procJob == SW_MPI_PROC_COMP) {
-        return;
-    }
+#else
+    (void) rank;
+    (void) worldSize;
+    (void) procName;
 #endif
 
     // initialize output
@@ -581,8 +586,8 @@ void sw_setup_prog_data(
         &SW_Domain->OutDom,
         LogInfo
     );
-#if defined(SW_MPI)
-    if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+#if defined(SWMPI)
+    if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
         return;
     }
 #else
@@ -606,24 +611,31 @@ void sw_setup_prog_data(
         }
 #if defined(SWMPI)
     }
-    if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+    if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
         return;
     }
 #endif
 
 #if defined(SWMPI)
-    SW_MPI_ncout_info(
-        rank, SW_Domain->SW_Designation.groupComm, &SW_Domain->OutDom, LogInfo
-    );
-    if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+    if (doOutStuff) {
+        SW_MPI_ncout_info(
+            rank,
+            SW_Domain->SW_Designation.groupComm,
+            &SW_Domain->OutDom,
+            LogInfo
+        );
+    }
+    if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
         return;
     }
 #endif
 
     if (!prepareFiles) {
-        SW_NCOUT_create_units_converters(&SW_Domain->OutDom, LogInfo);
+        if (doOutStuff) {
+            SW_NCOUT_create_units_converters(&SW_Domain->OutDom, LogInfo);
+        }
 #if defined(SWMPI)
-        if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+        if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
             return;
         }
 #else
@@ -633,7 +645,7 @@ void sw_setup_prog_data(
 #endif
 
 #if defined(SWMPI)
-        if (rank > SW_MPI_ROOT) {
+        if (rank > SW_MPI_ROOT && doOutStuff) {
             SW_NCIN_create_units_converters(&SW_Domain->netCDFInput, LogInfo);
         }
 #endif
