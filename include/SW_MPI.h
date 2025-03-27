@@ -74,11 +74,13 @@ void SW_MPI_setup(
 
 void SW_MPI_template_info(
     int rank,
-    SW_MPI_DESIGNATE *des,
+    SW_MPI_DESIGNATE *desig,
     SW_RUN *SW_Run,
     MPI_Datatype inRunType,
     MPI_Datatype spinupType,
     MPI_Datatype vegEstabType,
+    MPI_Datatype weathHistType,
+    Bool getWeather,
     LOG_INFO *LogInfo
 );
 

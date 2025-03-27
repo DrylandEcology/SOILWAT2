@@ -3667,8 +3667,14 @@ void SW_MPI_setup(
     SW_RUN *sw_template,
     LOG_INFO *LogInfo
 ) {
+    Bool getWeather = swFALSE;
+
     if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
         return;
+    }
+
+    if (rank == SW_MPI_ROOT) {
+        getWeather = !SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
     }
 
     SW_MPI_process_types(SW_Domain, procName, worldSize, rank, LogInfo);
@@ -3683,6 +3689,8 @@ void SW_MPI_setup(
         SW_Domain->datatypes[eSW_MPI_Inputs],
         SW_Domain->datatypes[eSW_MPI_Spinup],
         SW_Domain->datatypes[eSW_MPI_VegEstabIn],
+        SW_Domain->datatypes[eSW_MPI_WeathHist],
+        getWeather,
         LogInfo
     );
     if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
@@ -3705,6 +3713,10 @@ information to all other processes
 @param[in] spinupType Custom MPI type for transfering data for SW_SPINUP
 @param[in] vegEstabType Custom MPI type for transfering data for
     SW_VEGESTAB_INFO_INPUTS
+@param[in] weathHistType Custom MPI type for transfering data for
+    SW_WEATHER_HIST
+@param[in] getWeather Specifies if the root program should spread default
+    weather inputs to processes
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_MPI_template_info(
@@ -3714,6 +3726,8 @@ void SW_MPI_template_info(
     MPI_Datatype inRunType,
     MPI_Datatype spinupType,
     MPI_Datatype vegEstabType,
+    MPI_Datatype weathHistType,
+    Bool getWeather,
     LOG_INFO *LogInfo
 ) {
     const int numStructs = 6; /* Do not include veg estab */
@@ -3725,7 +3739,7 @@ void SW_MPI_template_info(
     IntUS vCount;
     int structType;
     int var;
-    int numElem[] = {3, 24, 6, 5, 7, 42, 2};
+    int numElem[] = {3, 24, 6, 5, 7, 43, 2};
     void **markov2DBuffer[] = {
         (void **) &SW_Run->MarkovIn.wetprob,
         (void **) &SW_Run->MarkovIn.dryprob,
@@ -3741,7 +3755,7 @@ void SW_MPI_template_info(
         (void *) SW_Run->MarkovIn.v_cov,
         (void *) &SW_Run->MarkovIn.ppt_events
     };
-    void *buffers[][42] = {
+    void *buffers[][43] = {
         {(void *) &SW_Run->CarbonIn.use_wue_mult,
          (void *) &SW_Run->CarbonIn.use_bio_mult,
          (void *) SW_Run->CarbonIn.ppm},
@@ -3826,10 +3840,11 @@ void SW_MPI_template_info(
          (void *) &SW_Run->SiteIn.percentRunon,
          (void *) &SW_Run->SiteIn.SWCInitVal,
          (void *) &SW_Run->SiteIn.SWCWetVal,
-         (void *) &SW_Run->SiteIn.SWCMinVal},
+         (void *) &SW_Run->SiteIn.SWCMinVal,
+         (void *) &SW_Run->SiteSim.n_transp_rgn},
         {(void *) &SW_Run->VegEstabIn.use, (void *) &SW_Run->VegEstabIn.count}
     };
-    MPI_Datatype types[][42] = {
+    MPI_Datatype types[][43] = {
         {MPI_INT, MPI_INT, MPI_DOUBLE}, /* SW_CARBON_INPUTS */
         {MPI_INT,      MPI_INT,      MPI_UNSIGNED, MPI_DOUBLE,  MPI_DOUBLE,
          MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,  MPI_DOUBLE,
@@ -3843,19 +3858,22 @@ void SW_MPI_template_info(
         }, /* SW_MODEL_INPUTS */
         {MPI_INT, MPI_INT, MPI_UNSIGNED, MPI_DOUBLE, MPI_DOUBLE
         }, /* SW_SOILWAT_INPUTS */
-        {MPI_CHAR,     MPI_CHAR,   MPI_INT,    MPI_UNSIGNED, MPI_UNSIGNED,
-         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_UNSIGNED, MPI_INT,    MPI_INT,    MPI_INT,      MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_DOUBLE}, /* SW_SITE_INPUTS */
-        {MPI_INT, MPI_UNSIGNED}     /* SW_VEGPROD_SIM */
+        {MPI_CHAR,     MPI_CHAR,   MPI_INT,     MPI_UNSIGNED, MPI_UNSIGNED,
+         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,  MPI_DOUBLE,   MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,  MPI_DOUBLE,   MPI_DOUBLE,
+         MPI_UNSIGNED, MPI_INT,    MPI_INT,     MPI_INT,      MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,  MPI_DOUBLE,   MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,  MPI_DOUBLE,   MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,  MPI_DOUBLE,   MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,  MPI_DOUBLE,   MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_DOUBLE, MPI_UNSIGNED}, /* SW_SITE_INPUTS */
+        {MPI_INT, MPI_UNSIGNED}                   /* SW_VEGPROD_SIM */
     };
-    int count[][42] = {
-        {1, 1, MAX_NYEAR}, /* SW_CARBON_INPUTS */
+    int count[][43] = {
+        /* SW_CARBON_INPUTS */
+        {1, 1, MAX_NYEAR},
+
+        /* SW_WEATHER_INPUTS */
         {1,
          1,
          1,
@@ -3878,15 +3896,24 @@ void SW_MPI_template_info(
          1,
          1,
          1,
-         1},                                /* SW_WEATHER_INPUTS */
-        {1, NVEGTYPES, NVEGTYPES, 1, 1, 1}, /* SW_VEGPROD_INPUTS */
-        {1, 1, 1, 1, 1},                    /* SW_MODEL_INPUTS */
-        {1, 1, 1, 1, MAX_DAYS * MAX_LAYERS, MAX_DAYS * MAX_LAYERS
-        }, /* SW_SOILWAT_INPUTS */
+         1,
+         1},
+
+        /* SW_VEGPROD_INPUTS */
+        {1, NVEGTYPES, NVEGTYPES, 1, 1, 1},
+
+        /* SW_MODEL_INPUTS */
+        {1, 1, 1, 1, 1},
+
+        /* SW_SOILWAT_INPUTS */
+        {1, 1, 1, 1, MAX_DAYS * MAX_LAYERS, MAX_DAYS * MAX_LAYERS},
+
+        /* SW_SITE_INPUTS */
         {64, 64, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-         1,  1,  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
-        },     /* SW_SITE_INPUTS */
-        {1, 1} /* SW_VEGPROD_SIM */
+         1,  1,  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+
+        /* SW_VEGPROD_SIM */
+        {1, 1}
     };
     int markov1DCount[] = {MAX_WEEKS * 2, MAX_WEEKS * 2 * 2, 1};
 
@@ -3913,7 +3940,9 @@ void SW_MPI_template_info(
     }
 
     // Markov inputs if enabled
-    if (SW_Run->WeatherIn.generateWeatherMethod == 2) {
+    if ((desig->procJob == SW_MPI_PROC_COMP || rank == SW_MPI_ROOT) &&
+        SW_Run->WeatherIn.generateWeatherMethod == 2) {
+
         if (rank > SW_MPI_ROOT) {
             SW_MKV_construct(SW_Run->WeatherIn.rng_seed, &SW_Run->MarkovIn);
             allocateMKV(&SW_Run->MarkovIn, LogInfo);
@@ -3972,6 +4001,31 @@ void SW_MPI_template_info(
 
     // SW_RUN_INPUTS
     SW_Bcast(inRunType, &SW_Run->RunIn, 1, SW_MPI_ROOT, MPI_COMM_WORLD);
+
+    if (desig->procJob == SW_MPI_PROC_COMP || rank == SW_MPI_ROOT) {
+        SW_Bcast(MPI_INT, &getWeather, 1, SW_MPI_ROOT, comm);
+
+        if (getWeather) {
+            if (rank > SW_MPI_ROOT) {
+                SW_WTH_allocateAllWeather(
+                    &SW_Run->RunIn.weathRunAllHist,
+                    SW_Run->WeatherIn.n_years,
+                    LogInfo
+                );
+            }
+            if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+                return;
+            }
+
+            SW_Bcast(
+                weathHistType,
+                SW_Run->RunIn.weathRunAllHist,
+                SW_Run->WeatherIn.n_years,
+                SW_MPI_ROOT,
+                comm
+            );
+        }
+    }
 }
 
 /**
@@ -4073,9 +4127,7 @@ void SW_MPI_domain_info(SW_DOMAIN *SW_Domain, int rank, LOG_INFO *LogInfo) {
     TimeInt nYears;
 
     // Send/get soil/temporal information
-    if (procJob == SW_MPI_PROC_IO || rank == SW_MPI_ROOT) {
-        SW_Bcast(types[eSW_MPI_Domain], SW_Domain, 1, SW_MPI_ROOT, *groupComm);
-    }
+    SW_Bcast(types[eSW_MPI_Domain], SW_Domain, 1, SW_MPI_ROOT, MPI_COMM_WORLD);
 
     // Send/get Spinup information - compute processes + rank only
     if (procJob == SW_MPI_PROC_COMP || rank == SW_MPI_ROOT) {
