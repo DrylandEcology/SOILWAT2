@@ -2438,6 +2438,263 @@ static void dealloc_IO_info(
     SW_OUT_deconstruct_outarray(OutRun);
 }
 
+/**
+@brief Helper to calculate the contiguous reading/writings available
+    based on the domain SUIDs
+
+This function must result in a number of writes between
+[1, num compute processes]
+
+@param[in] suids A list of domain SUIDs whose data will be distributed
+    as the next batch of input; can be domain or translated (index)
+    SUIDs
+@param[in] numDomSuids Number of domain SUIDs that were given
+@param[in] sDom Specifies the program's domain is site-oriented
+@param[in] spatialVars1D Specifies if the input key "eSW_InSpatial" inputs
+    are 1- or 2-dimensional; this will impact the order of "start" and "count"
+    values
+@param[in] useSuccFlags A flag specifying if the function should take the
+    success flags of simulation runs into account to make contiguous writes
+    of the same value (pass or fail)
+@param[in] succFlags A list of flags specifying if runs for SUIDs are to be
+    used (NULL if not used)
+@param[out] numWrites The number of writes that must be performed
+    by the calling function to output all simulated information
+    for the sites
+@param[out] starts A list of calculated start values for when dealing
+    with the netCDF library
+@param[out] counts A list of calculated count values for when dealing
+    with the netCDF library
+*/
+static void get_contiguous_counts(
+    size_t **suids,
+    int numDomSuids,
+    Bool sDom,
+    int nSuidsLeft,
+    Bool spatialVars1D,
+    Bool useSuccFlags,
+    Bool *succFlags,
+    int *numWrites,
+    size_t **starts,
+    size_t **counts
+) {
+    // Intial state
+    // prevX = x[0]
+    // prevY = y[0]
+    // start = [prevX, 0] or [prevY, prevX]
+    // count = [1, 1]
+    // number of values
+    // Note: currYX and prevYX below are used for either Y (gridded)
+    // or X (sites)
+    size_t prevYX = suids[0][0];
+    size_t prevX = (sDom) ? 0 : suids[0][1];
+    int writeIndex = 0;
+    int suidIndex;
+    int numContVals = 1;
+    size_t *suid;
+    int xIndex = (sDom || spatialVars1D) ? 0 : 1;
+    Bool prevFlag = swTRUE;
+    Bool currFlag = swTRUE;
+
+    starts[0][0] = prevYX;
+    starts[0][1] = prevX;
+
+    counts[0][0] = (spatialVars1D) ? numDomSuids : 1;
+    counts[0][1] = (sDom || spatialVars1D) ? 0 : N_SUID_ASSIGN;
+
+    if (useSuccFlags) {
+        prevFlag = succFlags[0];
+    }
+
+    // Loop through selected domain SUIDs
+    for (suidIndex = 1; suidIndex < numDomSuids && nSuidsLeft > 0;
+         suidIndex++) {
+        suid = suids[suidIndex];
+
+        if (useSuccFlags) {
+            currFlag = succFlags[suidIndex];
+        }
+
+        // Check if x is not prevX + 1 or y is not prevYX + 1;
+        // This means we found a place that is not contiguous
+        // in the domain SUIDs
+        if (((sDom && suid[0] != prevYX + 1) ||
+             (!sDom && (suid[0] != prevYX || suid[1] != prevX + 1))) ||
+            (useSuccFlags && prevFlag != currFlag)) {
+
+            // Set the count for X to number of SUIDs
+            counts[writeIndex][xIndex] = numContVals;
+
+            writeIndex++;
+
+            // Prepare next start by using this SUID's values
+            // so we can start the contiguous site/gridcell finding
+            // from this point
+            numContVals = 0;
+
+            prevYX = suids[suidIndex][0];
+            prevX = (sDom) ? 0 : suids[suidIndex][1];
+
+            starts[writeIndex][0] = prevYX;
+            starts[writeIndex][1] = prevX;
+            counts[suidIndex][0] = (spatialVars1D) ? numDomSuids : 1;
+            prevFlag = currFlag;
+
+            nSuidsLeft--;
+        }
+
+        numContVals++;
+    }
+
+    counts[writeIndex][xIndex] = numContVals;
+
+    *numWrites = writeIndex + 1;
+}
+
+/**
+@brief Calculate contiguous read/write indices for every input netCDF key
+    including a key specifically for program's domain
+
+@note The idea behind doing this is the experimentally determined fact that
+    each read/write of data is more worth the time when the action gathers more
+    data at once; this means if we do < N reads/writes sequentially, where N is
+the number of sites/gridcells, this should save time when reading/writing
+    comparatively
+
+@param[in] nSuids Number of SUIDs that will be assigned
+@param[in] nSuidsLeft Number of SUIDs that are to be assigned; this
+    is only used when an I/O process is on the last assignments of
+    SUIDs (i.e., we attempt to assign more SUIDs than we have left)
+@param[in] domWrite Base index to read from in `distSUIDs` since
+    `distSUIDs` will hold N_ITER_BEFORE_OUT worth of SUIDs
+@param[in] useIndexFile Specifies to create/use an index file
+@param[in] readInVars Specifies which variables are to be read-in as input
+@param[in] distSUIDs A list of domain SUIDs whose data will be distributed
+    as the next batch of input
+@param[in] distTSUIDs A list of domain translated SUIDs whose data will be
+    distributed as the next batch of input
+@param[in] sDoms A list of flags that specify the domain type of every
+    netCDF input key (if used); specifies all other keys in `start` and
+    `count` including the program's domain
+@param[in] spatialVars1D Specifies if the input key "eSW_InSpatial" inputs
+    are 1- or 2-dimensional; this will impact the order of "start" and "count"
+    values
+@param[out] numWrites A list of values that specify how many reads/writes a
+    specific start-count group would need to cover all SUIDs; this should be
+    between [1, nSuids]; the best case being 1 and worst being nSuids
+@param[out] starts A list of size SW_NINKEYSNC specifying the start
+    indices used when reading/writing using the netCDF library;
+    default size is `nSuids` but as mentioned in `numWrites`, it would
+    be best to not fill this array
+@param[out] counts A list of size SW_NINKEYSNC specifying the count
+    indices used when reading/writing using the netCDF library;
+    default size is `nSuids` but as mentioned in `numWrites`, it would
+    be best to not fill this array; counts match placements with `start`
+    indices for each key
+*/
+static void calculate_contiguous_allkeys(
+    int nSuids,
+    int nSuidsLeft,
+    int domWrite,
+    Bool useIndexFile[],
+    Bool *readInVars[],
+    size_t **distSUIDs,
+    size_t **distTSUIDs[],
+    Bool sDoms[],
+    Bool spatialVars1D,
+    int numWrites[],
+    size_t **starts[],
+    size_t **counts[]
+) {
+    InKeys inKey;
+    Bool useIndex;
+    Bool useTranslated;
+    int suid;
+    Bool oneDSpatial;
+
+    for (inKey = 0; inKey < SW_NINKEYSNC; inKey++) {
+        useIndex = (inKey != eSW_InDomain) ? useIndexFile[inKey] : swFALSE;
+        oneDSpatial = (Bool) (inKey == eSW_InSpatial && spatialVars1D);
+
+        if (inKey == eSW_InDomain || readInVars[inKey][0]) {
+            if (inKey == eSW_InDomain || useIndex) {
+                useTranslated = (Bool) (inKey != eSW_InDomain && useIndex);
+
+                get_contiguous_counts(
+                    (useTranslated) ? distTSUIDs[inKey] : &distSUIDs[domWrite],
+                    nSuids,
+                    sDoms[inKey],
+                    nSuidsLeft,
+                    oneDSpatial,
+                    swFALSE,
+                    NULL,
+                    &numWrites[inKey],
+                    starts[inKey],
+                    counts[inKey]
+                );
+            } else {
+                numWrites[inKey] = numWrites[eSW_InDomain];
+
+                for (suid = 0; suid < numWrites[inKey]; suid++) {
+                    starts[inKey][suid][0] =
+                        starts[eSW_InDomain][domWrite + suid][0];
+                    starts[inKey][suid][1] =
+                        starts[eSW_InDomain][domWrite + suid][1];
+
+                    counts[inKey][suid][0] =
+                        counts[eSW_InDomain][domWrite + suid][0];
+                    counts[inKey][suid][1] =
+                        counts[eSW_InDomain][domWrite + suid][1];
+                }
+            }
+        }
+    }
+}
+
+/**
+@brief Get the next batch of SUIDs for input distribution
+
+@param[in] desig Designation instance that holds information about
+    assigning a process to a job
+@param[in] numIterSuids The number of SUIDs that will be assigned
+    this iteration of input distribution
+@param[in] input Base input index ranging from [0, # total suids)
+@param[in] useIndexFile Specifies to create/use an index file
+@param[in] readInVars Specifies which variables are to be read-in as input
+@param[out] distSUIDs A list of SUIDs that's a subset of an I/O processor's
+    assigned SUIDs
+@param[out] distTSUIDs A list of domain translated SUIDs whose data will be
+    distributed as the next batch of input
+*/
+static void get_next_suids(
+    SW_MPI_DESIGNATE *desig,
+    int numIterSuids,
+    int input,
+    Bool useIndexFile[],
+    Bool *readInVars[],
+    size_t *distSUIDs[],
+    size_t **distTSUIDs[]
+) {
+    InKeys inKey;
+    int suid;
+
+    for (suid = 0; suid < numIterSuids; suid++) {
+        distSUIDs[suid][0] = desig->domSuids[input + suid][0];
+        distSUIDs[suid][1] = desig->domSuids[input + suid][1];
+
+        ForEachNCInKey(inKey) {
+            if (inKey > eSW_InDomain && useIndexFile[inKey] &&
+                readInVars[inKey][0]) {
+
+                distTSUIDs[inKey][suid][0] =
+                    desig->domTSuids[inKey][input + suid][0];
+                distTSUIDs[inKey][suid][1] =
+                    desig->domTSuids[inKey][input + suid][1];
+            }
+        }
+    }
+}
+
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
@@ -4112,18 +4369,33 @@ void SW_MPI_handle_IO(
     int rank, SW_RUN *sw, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
 ) {
     // Initialize variables
+    // Store number `nCompProcs` in variable (SW_MPI_DESIGNATE)
+    // Variable(s) for storing SUID array index/tracker
+    // Extra input storage
     SW_MPI_DESIGNATE *desig = &SW_Domain->SW_Designation;
+    int input = 0;
     int numSuidsTot = desig->nCompProcs * N_SUID_ASSIGN;
+    int numIterSuids;
     Bool *useIndexFile = SW_Domain->netCDFInput.useIndexFile;
     Bool **readInVars = SW_Domain->netCDFInput.readInVars;
     Bool constSoilDepths = SW_Domain->hasConsistentSoilLayerDepths;
+    int dim;
+    int dimSum = 0;
     Bool readWeather = SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
     Bool readSoils = SW_Domain->netCDFInput.readInVars[eSW_InSoil][0];
+    Bool spatialVars1D = swFALSE;
+    int nSuids = desig->nSuids;
+    const int oneDimSum = -4;
     int n_years = sw->WeatherIn.n_years;
     Bool allocSoils = (Bool) (!constSoilDepths && readSoils);
+    int numIterations = 0;
+    int succFlagWrite;
+    int distSUIDWrite;
+    int iterNumSuids = 0;
 
     SW_RUN_INPUTS *inputs = NULL;
     int *sendInputs = NULL;
+    int numWrites[SW_NINKEYSNC] = {0};
     size_t **starts[SW_NINKEYSNC] = {NULL};
     size_t **counts[SW_NINKEYSNC] = {NULL};
     size_t **distSUIDs = NULL; // Subset of all assigned suids (domain)
@@ -4135,6 +4407,13 @@ void SW_MPI_handle_IO(
     SW_SOIL_RUN_INPUTS *tempSoils = NULL;
     Bool *succFlags = NULL;
     LOG_INFO *logs = NULL;
+
+    // Determine if spatial variables are one- or two-dimensional
+    // This impacts the order of "start" and "count" values for spatial key
+    for (dim = 0; dim < MAX_NDIMS; dim++) {
+        dimSum += SW_Domain->netCDFInput.dimOrderInVar[eSW_InSpatial][1][dim];
+    }
+    spatialVars1D = (Bool) (dimSum == oneDimSum);
 
     alloc_IO_info(
         numSuidsTot,
@@ -4181,6 +4460,45 @@ checkStatus:
     (void) signal(SIGINT, handle_interrupt);
     (void) signal(SIGTERM, handle_interrupt);
 
+    // Loop until all SUIDs have been assigned or an interrupt occurs
+    for (input = 0; input < nSuids && runSims;) {
+        numIterSuids =
+            (input + numSuidsTot > nSuids) ? nSuids - input : numSuidsTot;
+        iterNumSuids += numIterSuids;
+        succFlagWrite = numIterations * desig->nCompProcs * N_SUID_ASSIGN;
+        distSUIDWrite = succFlagWrite;
+
+        get_next_suids(
+            desig,
+            numIterSuids,
+            input,
+            useIndexFile,
+            readInVars,
+            &distSUIDs[distSUIDWrite],
+            distTSUIDs
+        );
+
+        // Calculate contiguous start/end/num writes for each input
+        // key including plain domain SUIDs (index 0);
+        // If the input domain is the same as the program's, copy the
+        // starts, counts, and num writes to the input key
+        calculate_contiguous_allkeys(
+            numIterSuids,
+            desig->nSuids,
+            distSUIDWrite,
+            useIndexFile,
+            readInVars,
+            distSUIDs,
+            distTSUIDs,
+            SW_Domain->netCDFInput.siteDoms,
+            spatialVars1D,
+            numWrites,
+            starts,
+            counts
+        );
+
+        input += numSuidsTot;
+    }
 
 freeMem:
 #if defined(SOILWAT)
