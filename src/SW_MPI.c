@@ -3319,7 +3319,7 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
         }, /* SW_DOMAIN */
         {MPI_UNSIGNED, MPI_UNSIGNED, MPI_INT, MPI_INT, MPI_UNSIGNED
         },  /* SW_SPINUP */
-        {}, /* SW_MPI_INPUTS */
+        {}, /* SW_RUN_INPUTS */
         {MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_UNSIGNED
         }, /* SW_MPI_DESIGNATE */
         {MPI_DOUBLE,
@@ -3471,7 +3471,7 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
          MPI_DOUBLE,
          MPI_DOUBLE,
          MPI_DOUBLE},
-        {},
+        {MPI_DATATYPE_NULL, MPI_DATATYPE_NULL},
         {MPI_DOUBLE, MPI_UNSIGNED}
     };
 
@@ -3586,7 +3586,7 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
                         /* Copy CoverType to second type placement
                            for bare cover */
                         if (covIndex == 1) {
-                            inTypes[vegprodIndex][1] = inTypes[vegprodIndex][0];
+                            inTypes[vegprodIndex][1] = covTypes[1][0];
                         }
                     }
                 }
