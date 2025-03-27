@@ -1907,7 +1907,7 @@ void SW_OUT_construct(
 #endif
 
 #if defined(SWNETCDF)
-    SW_OUT_construct_outarray(OutDom, OutRun, LogInfo);
+    SW_OUT_construct_outarray(1, OutDom, OutRun, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }

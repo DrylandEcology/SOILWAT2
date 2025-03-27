@@ -233,6 +233,9 @@ void do_running_agg(double *p, double *psd, size_t k, IntU n, double x) {
 
 /** Allocate p_OUT and p_OUTsd
 
+@param[in] sizeMult A scalar value to multiply the normal single-site
+    size for each piece of active input; should be set to 1 if no
+    extra space is needed
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
 @param[out] OutRun Struct of type SW_OUT_RUN that holds output
@@ -246,7 +249,7 @@ Note: Compare with function `setGlobalrSOILWAT2_OutputVariables` in
     allocated arrays for each output period and output key.
 */
 void SW_OUT_construct_outarray(
-    SW_OUT_DOM *OutDom, SW_OUT_RUN *OutRun, LOG_INFO *LogInfo
+    size_t sizeMult, SW_OUT_DOM *OutDom, SW_OUT_RUN *OutRun, LOG_INFO *LogInfo
 ) {
     int i;
     int k;
@@ -263,6 +266,7 @@ void SW_OUT_construct_outarray(
 #if defined(SW_OUTARRAY)
                 size = OutDom->nrow_OUT[timeStepOutPeriod] *
                        (OutDom->ncol_OUT[k] + ncol_TimeOUT[timeStepOutPeriod]);
+                size *= sizeMult;
 
                 OutRun->p_OUT[k][timeStepOutPeriod] = (double *) Mem_Calloc(
                     size, s, "SW_OUT_construct_outarray()", LogInfo
@@ -270,6 +274,8 @@ void SW_OUT_construct_outarray(
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }
+#else
+                (void) sizeMult;
 #endif
 
 #if defined(STEPWAT)

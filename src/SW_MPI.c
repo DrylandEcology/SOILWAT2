@@ -10,12 +10,18 @@
 #include "include/SW_netCDF_General.h"
 #include "include/SW_netCDF_Input.h"
 #include "include/SW_netCDF_Output.h"
-#include "include/SW_Output.h" // for ForEachOutKey, SW_ESTAB, pd2...
+#include "include/SW_Output.h"          // for ForEachOutKey, SW_ESTAB, pd2...
+#include "include/SW_Output_outarray.h" // for SW_OUT_construct_outarray
+#include "include/SW_Weather.h"         // for SW_WTH_allocateAllWeather
 #include "include/Times.h"
 #include <netcdf.h>
 #include <netcdf_par.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>                  // for signal
+
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+static volatile sig_atomic_t runSims = 1;
 
 /* =================================================== */
 /*                  Local Definitions                  */
@@ -33,6 +39,19 @@
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
+
+/**
+@brief Handle an interrupt provided by the OS to stop the program;
+the current supported interrupts are terminations (SIGTERM) and
+interrupts (SIGINT, commonly CTRL+C on the keyboard)
+
+@param[in] signal Numerical value of the signal that was recieved
+(currently not used)
+*/
+static void handle_interrupt(int signal) {
+    (void) signal; /* Silence compiler */
+    runSims = 0;
+}
 
 /**
 @brief Handle OpenMPI error if one occurs
@@ -2051,6 +2070,404 @@ static void free_type(MPI_Datatype *type, LOG_INFO *LogInfo) {
     }
 }
 
+/**
+@brief Allocate enough input structs to distribute across compute processes
+
+@param[in] defInputs Default inputs that will be use if input flags
+    are not turned on
+@param[in] numInputs Number of inputs to allocate for
+@param[in] readWeather A flag specifying if weather will be read in;
+    if so, we will allocate weather
+@param[in] n_years Number of years in simulation
+@param[in] allocSoils A flag specifying if temporary soil storage should be
+    allocated
+@param[out] elevations A list of elevations to hold more than one
+    site's worth of values
+@param[out] tempMonthlyVals A list of monthly values to hold more than one
+    site's worth of values
+@param[out] tempSilt A list of temporary silt values, holding more than one
+    site's worth of values
+@param[out] tempSWRCPVals A list of temporary SWRCP values, holding more than
+    one site's worth of values
+@param[out] tempSoils A list of soil values, holding more than one site's worth
+    of values
+@param[out] inputs A list of SW_RUN_INPUTS that will be distributed sent
+    to compute processes
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void alloc_inputs(
+    SW_RUN_INPUTS *defInputs,
+    int numInputs,
+    Bool readWeather,
+    int n_years,
+    Bool allocSoils,
+    double **elevations,
+    double **tempMonthlyVals,
+    double **tempSilt,
+    double **tempSWRCPVals,
+    SW_SOIL_RUN_INPUTS **tempSoils,
+    SW_RUN_INPUTS **inputs,
+    LOG_INFO *LogInfo
+) {
+    int input;
+
+    *inputs = (SW_RUN_INPUTS *) Mem_Malloc(
+        sizeof(SW_RUN_INPUTS) * numInputs, "alloc_inputs()", LogInfo
+    );
+
+    memset(*inputs, 0, sizeof(SW_RUN_INPUTS) * numInputs);
+
+    for (input = 0; input < numInputs; input++) {
+        memcpy(&((*inputs)[input]), defInputs, sizeof(SW_RUN_INPUTS));
+    }
+
+    for (input = 0; input < numInputs; input++) {
+        (*inputs)[input].weathRunAllHist = NULL;
+
+        if (readWeather) {
+            SW_WTH_allocateAllWeather(
+                &(*inputs)[input].weathRunAllHist, n_years, LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
+            }
+        }
+    }
+
+    *elevations = (double *) Mem_Malloc(
+        sizeof(double) * numInputs, "alloc_inputs()", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    *tempMonthlyVals = (double *) Mem_Malloc(
+        sizeof(double) * numInputs * MAX_MONTHS, "alloc_inputs()", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    *tempSilt = (double *) Mem_Malloc(
+        sizeof(double) * numInputs * MAX_LAYERS, "alloc_inputs()", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    *tempSWRCPVals = (double *) Mem_Malloc(
+        sizeof(double) * numInputs * MAX_LAYERS, "alloc_inputs()", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    if (allocSoils) {
+        *tempSoils = (SW_SOIL_RUN_INPUTS *) Mem_Malloc(
+            sizeof(SW_SOIL_RUN_INPUTS) * numInputs,
+            "SW_NCIN_read_MPI()",
+            LogInfo
+        );
+    }
+}
+
+/**
+@brief Allocate space for start and count indices to determine the
+    continuous writing/reading
+
+@param[in] numSuids Number of SUIDs that will be assigned, this should be
+    the product of the <number of compute processors for the I/O process>
+    and N_SUID_ASSIGN
+@param[in] nCompProcs Number of compute processes that are assigned to
+    the I/O process
+@param[in] useIndexFile Specifies to create/use an index file
+@param[in] readInVars Specifies which variables are to be read-in as input
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
+@param[out] OutRun Struct of type SW_OUT_RUN that holds output
+    information that may change throughout simulation runs
+@param[out] starts A list of start pairs used for accessing/writing to
+    netCDF files
+@param[out] counts A list of count parts used for accessing/writing to
+    netCDF files
+@param[out] distSUIDs A list of SUIDs that's a subset of an I/O processor's
+    assigned SUIDs
+@param[out] distTSuids A list of translated (index file) SUIDs that's a subset
+    of an I/O processor's assigned SUIDs
+@param[out] sendInputs A list of lengths that will be used to specify
+    how many inputs to send to a specific process
+@param[out] succFlags A list of success flags that are accumulated
+    through N_ITER_BEFORE_OUT iterations of output gathering specifying
+    if the simulation for a suid was successfully run
+@param[out] logs A list of LOG_INFO instances that will be used for
+    getting log information from compute processes
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void alloc_IO_info(
+    int numSuids,
+    int nCompProcs,
+    Bool useIndexFile[],
+    Bool **readInVars,
+    SW_OUT_DOM *OutDom,
+    SW_OUT_RUN *OutRun,
+    size_t **starts[],
+    size_t **counts[],
+    size_t ***distSUIDs,
+    size_t **distTSuids[],
+    int **sendInputs,
+    Bool **succFlags,
+    LOG_INFO **logs,
+    LOG_INFO *LogInfo
+) {
+    int suid;
+    int allocIndex;
+    const int num1DArr = 1;
+    InKeys inKey;
+    int numVals;
+
+    int **alloc1DArr[] = {sendInputs};
+
+    ForEachNCInKey(inKey) {
+        numVals =
+            (inKey == eSW_InDomain) ? numSuids * N_ITER_BEFORE_OUT : numSuids;
+
+        starts[inKey] = (size_t **) Mem_Malloc(
+            sizeof(size_t *) * numVals, "alloc_IO_info()", LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+        for (allocIndex = 0; allocIndex < numVals; allocIndex++) {
+            starts[inKey][allocIndex] = NULL;
+        }
+
+        counts[inKey] = (size_t **) Mem_Malloc(
+            sizeof(size_t *) * numVals, "alloc_IO_info()", LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+        for (allocIndex = 0; allocIndex < numVals; allocIndex++) {
+            starts[inKey][allocIndex] = NULL;
+        }
+
+        for (allocIndex = 0; allocIndex < numVals; allocIndex++) {
+            starts[inKey][allocIndex] = (size_t *) Mem_Malloc(
+                sizeof(size_t) * 2, "alloc_IO_info()", LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
+            }
+
+            counts[inKey][allocIndex] = (size_t *) Mem_Malloc(
+                sizeof(size_t) * 2, "alloc_IO_info()", LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
+            }
+
+            starts[inKey][allocIndex][0] = starts[inKey][allocIndex][1] = 0;
+            counts[inKey][allocIndex][0] = counts[inKey][allocIndex][1] = 0;
+        }
+    }
+
+    for (allocIndex = 0; allocIndex < num1DArr; allocIndex++) {
+        (*alloc1DArr[allocIndex]) =
+            Mem_Malloc(sizeof(int) * nCompProcs, "alloc_IO_info()", LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+    }
+
+    *distSUIDs = (size_t **) Mem_Malloc(
+        sizeof(size_t *) * numSuids * N_ITER_BEFORE_OUT,
+        "alloc_IO_info()",
+        LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    for (suid = 0; suid < numSuids * N_ITER_BEFORE_OUT; suid++) {
+        (*distSUIDs)[suid] = NULL;
+    }
+
+    for (suid = 0; suid < numSuids * N_ITER_BEFORE_OUT; suid++) {
+        (*distSUIDs)[suid] = (size_t *) Mem_Malloc(
+            sizeof(size_t) * 2, "alloc_IO_info()", LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        (*distSUIDs)[suid][0] = (*distSUIDs)[suid][1] = 0;
+    }
+
+    *succFlags = (Bool *) Mem_Malloc(
+        sizeof(Bool) * numSuids * N_ITER_BEFORE_OUT, "alloc_IO_info()", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    ForEachNCInKey(inKey) {
+        if (inKey > eSW_InDomain && useIndexFile[inKey] &&
+            readInVars[inKey][0]) {
+
+            distTSuids[inKey] = (size_t **) Mem_Malloc(
+                sizeof(size_t *) * numSuids, "alloc_IO_info()", LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
+            }
+
+            for (suid = 0; suid < numSuids; suid++) {
+                distTSuids[inKey][suid] = NULL;
+            }
+
+            for (suid = 0; suid < numSuids; suid++) {
+                distTSuids[inKey][suid] = (size_t *) Mem_Malloc(
+                    sizeof(size_t) * 2, "alloc_IO_info()", LogInfo
+                );
+                if (LogInfo->stopRun) {
+                    return;
+                }
+
+                distTSuids[inKey][suid][0] = 0;
+                distTSuids[inKey][suid][1] = 1;
+            }
+        }
+    }
+
+    *logs = (LOG_INFO *) Mem_Malloc(
+        sizeof(LOG_INFO) * numSuids, "alloc_IO_info()", LogInfo
+    );
+
+    SW_OUT_construct_outarray(
+        N_SUID_ASSIGN * nCompProcs * N_ITER_BEFORE_OUT, OutDom, OutRun, LogInfo
+    );
+}
+
+/**
+@brief Deallocate information that was allocated for I/O operations
+
+@param[in] numSuids Number of SUIDs that will be assigned, this should be
+    the product of the <number of compute processors for the I/O process>
+    and N_SUID_ASSIGN
+@param[out] OutRun Struct of type SW_OUT_RUN that holds output
+    information that may change throughout simulation runs
+@param[out] starts A list of start pairs used for accessing/writing to
+    netCDF files
+@param[out] counts A list of count parts used for accessing/writing to
+    netCDF files
+@param[out] distSUIDs A list of SUIDs that's a subset of an I/O processor's
+    assigned SUIDs
+@param[out] sendLens A list of lengths that will be used to specify
+    how many inputs to send to a specific process
+@param[out] sendInputs A list of values specifying how many inputs each compute
+    process will receive
+@param[out] elevations A list of lengths that will be used to specify
+    how many inputs to send to a specific process
+@param[out] tempMonthlyVals A list of lengths that will be used to specify
+    how many inputs to send to a specific process
+@param[out] tempSilt A list of lengths that will be used to specify
+    how many inputs to send to a specific process
+@param[out] tempSWRCPVals A list of lengths that will be used to specify
+    how many inputs to send to a specific process
+@param[out] tempSoils A list of lengths that will be used to specify
+    how many inputs to send to a specific process
+@param[out] succFlags A list of success flags that are accumulated
+    through N_ITER_BEFORE_OUT iterations of output gathering specifying
+    if the simulation for a suid was successfully run
+@param[out] logs A list of LOG_INFO instances that will be used for
+    getting log information from compute processes
+*/
+static void dealloc_IO_info(
+    int numSuids,
+    SW_OUT_RUN *OutRun,
+    size_t **starts[],
+    size_t **counts[],
+    size_t ***distSUIDs,
+    size_t **distTSuids[],
+    int **sendInputs,
+    double **elevations,
+    double **tempMonthlyVals,
+    double **tempSilt,
+    double **tempSWRCPVals,
+    SW_SOIL_RUN_INPUTS **tempSoils,
+    Bool **succFlags,
+    LOG_INFO **logs
+) {
+    InKeys inKey;
+    size_t ***deallocStartCount[2] = {NULL};
+    const int numDeallocStartCount = 2;
+    int dealloc;
+    int suid;
+    void **dealloc1D[] = {
+        (void **) sendInputs,
+        (void **) logs,
+        (void **) elevations,
+        (void **) tempMonthlyVals,
+        (void **) tempSilt,
+        (void **) tempSWRCPVals,
+        (void **) tempSoils,
+        (void **) succFlags
+    };
+    const int numDealloc1D = 8;
+
+    ForEachNCInKey(inKey) {
+        deallocStartCount[0] = &starts[inKey];
+        deallocStartCount[1] = &counts[inKey];
+
+        for (dealloc = 0; dealloc < numDeallocStartCount; dealloc++) {
+            if (!isnull(*deallocStartCount[dealloc])) {
+                for (suid = 0; suid < numSuids; suid++) {
+                    if (!isnull((*deallocStartCount[dealloc])[suid])) {
+                        free((void *) (*deallocStartCount[dealloc])[suid]);
+                        (*deallocStartCount[dealloc])[suid] = NULL;
+                    }
+                }
+
+                free((void *) *deallocStartCount[dealloc]);
+                (*deallocStartCount[dealloc]) = NULL;
+            }
+
+            if (!isnull(distTSuids[inKey])) {
+                for (suid = 0; suid < numSuids; suid++) {
+                    if (!isnull(distTSuids[inKey][suid])) {
+                        free((void *) distTSuids[inKey][suid]);
+                        distTSuids[inKey][suid] = NULL;
+                    }
+                }
+
+                free((void *) distTSuids[inKey]);
+                distTSuids[inKey] = NULL;
+            }
+        }
+    }
+
+    if (!isnull(*distSUIDs)) {
+        for (suid = 0; suid < numSuids; suid++) {
+            if (!isnull((*distSUIDs)[suid])) {
+                free((void *) (*distSUIDs)[suid]);
+                (*distSUIDs)[suid] = NULL;
+            }
+
+            free((void *) *distSUIDs);
+            *distSUIDs = NULL;
+        }
+    }
+
+    for (dealloc = 0; dealloc < numDealloc1D; dealloc++) {
+        if (!isnull(*(dealloc1D[dealloc]))) {
+            free((void *) *(dealloc1D[dealloc]));
+            *(dealloc1D[dealloc]) = NULL;
+        }
+    }
+
+    SW_OUT_deconstruct_outarray(OutRun);
+}
+
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
@@ -3689,5 +4106,133 @@ freeMem:
         &numProcsInNode,
         &numMaxProcsInNode,
         &ranksInNodes
+    );
+}
+
+/**
+@brief Handle I/O requests from assigned compute processes
+
+This function will execute the following operations as main functionality
+    - Assign SUIDs to compute processes
+    - Read inputs for said SUIDs
+    - Distribute inputs to assigned compute processes
+    - Write output if large buffer to hold all results is full of previous
+        SUID outputs
+    - Get current simulation outputs
+    - Repeat until there are no outputs left
+    - Output any residual outputs that weren't enough to qualify as "full"
+
+Further improvement upon this functionality could be sending/receiving
+inputs/outputs for the next batch of inputs/outputs while doing other operations
+(asynchronous)
+
+This function also pre-calculates starts and counts for reading/writing
+from the netCDF library to have as many contiguous reads/writes as possible
+
+@note Process designations: I/O
+
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] sw Comprehensive struct of type SW_RUN containing all
+    information in the simulation
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_MPI_handle_IO(
+    int rank, SW_RUN *sw, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
+) {
+    // Initialize variables
+    SW_MPI_DESIGNATE *desig = &SW_Domain->SW_Designation;
+    int numSuidsTot = desig->nCompProcs * N_SUID_ASSIGN;
+    Bool *useIndexFile = SW_Domain->netCDFInput.useIndexFile;
+    Bool **readInVars = SW_Domain->netCDFInput.readInVars;
+    Bool constSoilDepths = SW_Domain->hasConsistentSoilLayerDepths;
+    Bool readWeather = SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
+    Bool readSoils = SW_Domain->netCDFInput.readInVars[eSW_InSoil][0];
+    int n_years = sw->WeatherIn.n_years;
+    Bool allocSoils = (Bool) (!constSoilDepths && readSoils);
+
+    SW_RUN_INPUTS *inputs = NULL;
+    int *sendInputs = NULL;
+    size_t **starts[SW_NINKEYSNC] = {NULL};
+    size_t **counts[SW_NINKEYSNC] = {NULL};
+    size_t **distSUIDs = NULL; // Subset of all assigned suids (domain)
+    size_t **distTSUIDs[SW_NINKEYSNC] = {NULL};
+    double *elevations = NULL;
+    double *tempMonthlyVals = NULL;
+    double *tempSilt = NULL;
+    double *tempSWRCPVals = NULL;
+    SW_SOIL_RUN_INPUTS *tempSoils = NULL;
+    Bool *succFlags = NULL;
+    LOG_INFO *logs = NULL;
+
+    alloc_IO_info(
+        numSuidsTot,
+        desig->nCompProcs,
+        useIndexFile,
+        readInVars,
+        &SW_Domain->OutDom,
+        &sw->OutRun,
+        starts,
+        counts,
+        &distSUIDs,
+        distTSUIDs,
+        &sendInputs,
+        &succFlags,
+        &logs,
+        LogInfo
+    );
+    if (LogInfo->stopRun) {
+        goto checkStatus;
+    }
+
+    alloc_inputs(
+        &sw->RunIn,
+        numSuidsTot,
+        readWeather,
+        n_years,
+        allocSoils,
+        &elevations,
+        &tempMonthlyVals,
+        &tempSilt,
+        &tempSWRCPVals,
+        &tempSoils,
+        &inputs,
+        LogInfo
+    );
+
+checkStatus:
+    if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
+        goto freeMem;
+    }
+
+    /* Set up interrupt handlers so if the program is interrupted
+    during simulation, we can exit smoothly and not abruptly */
+    (void) signal(SIGINT, handle_interrupt);
+    (void) signal(SIGTERM, handle_interrupt);
+
+
+freeMem:
+#if defined(SOILWAT)
+    if (runSims == 0 && rank == SW_MPI_ROOT) {
+        sw_message("Program was killed early. Shutting down...");
+    }
+#endif
+
+    dealloc_IO_info(
+        numSuidsTot,
+        &sw->OutRun,
+        starts,
+        counts,
+        &distSUIDs,
+        distTSUIDs,
+        &sendInputs,
+        &elevations,
+        &tempMonthlyVals,
+        &tempSilt,
+        &tempSWRCPVals,
+        &tempSoils,
+        &succFlags,
+        &logs
     );
 }

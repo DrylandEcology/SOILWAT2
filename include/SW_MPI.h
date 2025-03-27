@@ -121,6 +121,10 @@ void SW_MPI_process_types(
     LOG_INFO *LogInfo
 );
 
+void SW_MPI_handle_IO(
+    int rank, SW_RUN *sw, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
+);
+
 #ifdef __cplusplus
 }
 #endif

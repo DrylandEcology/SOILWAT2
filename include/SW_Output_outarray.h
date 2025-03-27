@@ -114,7 +114,7 @@ void SW_OUT_set_nrow(
 );
 
 void SW_OUT_construct_outarray(
-    SW_OUT_DOM *OutDom, SW_OUT_RUN *OutRun, LOG_INFO *LogInfo
+    size_t sizeMult, SW_OUT_DOM *OutDom, SW_OUT_RUN *OutRun, LOG_INFO *LogInfo
 );
 
 void SW_OUT_deconstruct_outarray(SW_OUT_RUN *OutRun);
