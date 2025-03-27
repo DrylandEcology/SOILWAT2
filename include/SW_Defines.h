@@ -342,6 +342,7 @@ typedef int sw_converter_t;
 
 #define SW_MPI_NTYPES 10
 #define SW_MPI_ROOT 0
+#define SW_GROUP_ROOT SW_MPI_ROOT
 
 #ifndef MAX_NODE_PROCS
 #define MAX_NODE_PROCS 128
