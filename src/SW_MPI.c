@@ -616,17 +616,6 @@ static void fillDesignationIO(
         }
     }
 
-    if (!isnull(activeTSuids)) {
-        desig->domTSuids = (unsigned long ***) Mem_Malloc(
-            sizeof(unsigned long **) * numPosKeys,
-            "SW_MPI_get_activated_tsuids()",
-            LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return;
-        }
-    }
-
     // Add SUIDs/ranks to list of I/O
     ForEachNCInKey(inKey) {
         if (!isnull(activeTSuids[inKey])) {
@@ -1074,25 +1063,6 @@ static void assignProcs(
             }
 
             if (SW_Designation->useTSuids) {
-                SW_Designation->domTSuids = (unsigned long ***) Mem_Malloc(
-                    sizeof(unsigned long **) * SW_NINKEYSNC,
-                    "SW_MPI_process_types()",
-                    LogInfo
-                );
-                if (LogInfo->stopRun) {
-                    exitDesFunc(
-                        desType,
-                        0,
-                        rank,
-                        worldSize,
-                        FAIL_ALLOC_TSUIDS,
-                        SW_Designation->nSuids,
-                        useIndexFile,
-                        SW_Designation->useTSuids
-                    );
-                    return;
-                }
-
                 ForEachNCInKey(inKey) {
                     if (inKey == eSW_InDomain || inKey == eSW_InSite ||
                         !useIndexFile[inKey]) {

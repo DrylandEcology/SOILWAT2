@@ -1561,8 +1561,10 @@ typedef struct {
     unsigned long *
         *domSuids; /**< A list of domain SUIDs that will be used by I/O
                         processes for writing and reading information */
-    unsigned long ***domTSuids; /**< A list of translated domain SUIDs for each
-                                     input key if index files are used */
+    unsigned long *
+        *domTSuids[SW_NINKEYSNC]; /**< A list of translated domain SUIDs for
+                          each input key if index files are used */
+
 
 #if defined(SWMPI)
     MPI_Comm groupComm;    /**< New group communicator; can either be for

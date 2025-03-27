@@ -153,8 +153,11 @@ void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
     );
 
 #if defined(SWMPI)
+    InKeys key;
+
+    ForEachNCInKey(key) { SW_Domain->SW_Designation.domTSuids[key] = NULL; }
+
     SW_Domain->SW_Designation.domSuids = NULL;
-    SW_Domain->SW_Designation.domTSuids = NULL;
     SW_Domain->SW_Designation.nSuids = 0;
     SW_Domain->SW_Designation.nCompProcs = 0;
     SW_Domain->SW_Designation.useTSuids = swFALSE;
