@@ -19,6 +19,10 @@
 #include "include/SW_netCDF_General.h"
 #include "include/SW_netCDF_Input.h"
 #include "include/SW_netCDF_Output.h"
+
+#if defined(SWMPI)
+#include "include/SW_MPI.h"
+#endif
 #endif
 
 #if defined(SOILWAT)
@@ -651,6 +655,10 @@ void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
     }
 
     SW_NCIN_deconstruct(&SW_Domain->netCDFInput);
+
+#if defined(SWMPI)
+    SW_MPI_deconstruct(SW_Domain);
+#endif
 #endif
     ForEachOutKey(k) {
         for (i = 0; i < 5 * NVEGTYPES + MAX_LAYERS; i++) {

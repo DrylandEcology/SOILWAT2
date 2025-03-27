@@ -3143,6 +3143,46 @@ been initialized/created through MPI within the program run
 void SW_MPI_finalize() { MPI_Finalize(); }
 
 /**
+@brief Deconstruct MPI-related information in domain
+
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+*/
+void SW_MPI_deconstruct(SW_DOMAIN *SW_Domain) {
+    SW_MPI_DESIGNATE *desig = &SW_Domain->SW_Designation;
+    int procJob = desig->procJob;
+    int suid;
+    InKeys inKey;
+
+    if (procJob == SW_MPI_PROC_IO) {
+        if (!isnull(desig->domSuids)) {
+            for (suid = 0; suid < desig->nSuids; suid++) {
+                if (!isnull(desig->domSuids[suid])) {
+                    free((void *) desig->domSuids);
+                    desig->domSuids = NULL;
+                }
+            }
+        }
+
+        if (!isnull(desig->domTSuids)) {
+            ForEachNCInKey(inKey) {
+                if (!isnull(desig->domTSuids[inKey])) {
+                    for (suid = 0; suid < desig->nSuids; suid++) {
+                        if (!isnull(desig->domTSuids[inKey][suid])) {
+                            free((void *) desig->domTSuids[inKey][suid]);
+                            desig->domTSuids[inKey][suid] = NULL;
+                        }
+                    }
+
+                    free((void *) desig->domTSuids[inKey]);
+                    desig->domTSuids[inKey] = NULL;
+                }
+            }
+        }
+    }
+}
+
+/**
 @brief Wrapper for MPI-provided function `MPI_Send()` and reduces
 the ambiguity of how the information gets sent (no longer buffer or
 synchronous)

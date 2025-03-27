@@ -41,6 +41,8 @@ void SW_MPI_initialize(
 
 void SW_MPI_finalize();
 
+void SW_MPI_deconstruct(SW_DOMAIN *SW_Domain);
+
 void SW_MPI_Send(
     MPI_Datatype datatype,
     void *buffer,
