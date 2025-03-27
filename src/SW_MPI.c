@@ -522,9 +522,9 @@ static void reallocRanks(
 /**
 @brief Fill information of a designation instance
 
-@param[in] numCompProcs Number of global compute processes
 @param[in] numCompProcsNode Number of compute processes in a node
 @param[in] ioProcsInNode Number of I/O processes within a compute node
+@param[in] numIOProcsTot Total number of I/O processes in the MPI world
 @param[in] numActiveSites Number of sites that was turned on
     by the program and/or user
 @param[in] activeSiteSuids A list of program domain SUIDs that are
@@ -555,9 +555,9 @@ static void reallocRanks(
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void fillDesignationIO(
-    int numCompProcs,
     int numCompProcsNode,
     int ioProcsInNode,
+    int numIOProcsTot,
     int numActiveSites,
     unsigned long **activeSuids,
     int *ranks,
@@ -573,7 +573,6 @@ static void fillDesignationIO(
     int suid;
     int tSuid; /* For translated assignment */
     InKeys inKey;
-    size_t numPosKeys = eSW_InClimate;
     int rank;
 
     desig->nCompProcs = numCompProcsNode / ioProcsInNode;
@@ -584,10 +583,10 @@ static void fillDesignationIO(
     }
 
     // Allocate and assign floor(# active sites / num
-    // compute procs) + (one left over SUID, if necessary)
+    // I/O procs) + (one left over SUID, if necessary)
     // to the node or the rest of the SUIDs if this assignment
     // will complete the I/O assignments
-    desig->nSuids = numActiveSites / numCompProcs;
+    desig->nSuids = numActiveSites / numIOProcsTot;
 
     if (desig->nSuids > *leftSuids) {
         desig->nSuids = *leftSuids;
@@ -666,6 +665,7 @@ static void fillDesignationIO(
     the program on
 @param[in] numCompProcWorld Total number of compute processes to assign
     throughout the world of processes
+@param[in] numIOProcsTot Total number of I/O processes in the MPI world
 @param[in] numActiveSites Number of active sites that will be
     simulated
 @param[in] activeSuids A list of domain SUIDs that was activated
@@ -686,6 +686,7 @@ static void designateProcesses(
     int numProcsInNode[],
     int numNodes,
     int numCompProcWorld,
+    int numIOProcsTot,
     int numActiveSites,
     unsigned long **activeSuids,
     unsigned long ***activeTSuids,
@@ -762,9 +763,9 @@ static void designateProcesses(
 
             if (desig->procJob == SW_MPI_PROC_IO) {
                 fillDesignationIO(
-                    numCompProcWorld,
                     numNodeProcs - ioProcsInNode,
                     ioProcsInNode,
+                    numIOProcsTot,
                     numActiveSites,
                     activeSuids,
                     ranksInNodes[node],
@@ -4732,6 +4733,7 @@ void SW_MPI_process_types(
             numProcsInNode,
             numNodes,
             worldSize - numIOProcsTot,
+            numIOProcsTot,
             numActiveSites,
             activeSuids,
             activeTSuids,
