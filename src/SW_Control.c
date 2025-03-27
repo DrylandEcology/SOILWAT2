@@ -359,7 +359,9 @@ void SW_CTL_RunSims(
         if (rank == 0) {
             sw_message("is running simulations across the domain...");
         }
-        SW_CTL_RunSimSet(rank, sw_template, SW_Domain, SW_WallTime, main_LogInfo);
+        SW_CTL_RunSimSet(
+            rank, sw_template, SW_Domain, SW_WallTime, main_LogInfo
+        );
 #if defined(SWMPI)
     } else {
         SW_MPI_handle_IO(rank, sw_template, SW_Domain, main_LogInfo);
@@ -604,9 +606,9 @@ checkStatus:
             if (log->stopRun) {
                 // Counter of simulation units with error
                 main_LogInfo->numDomainErrors++;
-                #if defined(SWMPI)
+#if defined(SWMPI)
                 reportLog = swTRUE;
-                #endif
+#endif
 #if defined(SWMPI)
             } else {
                 runSucc[suid] = swTRUE;
@@ -616,9 +618,9 @@ checkStatus:
             if (log->numWarnings > 0) {
                 // Counter of simulation units with warnings
                 main_LogInfo->numDomainWarnings++;
-                #if defined(SWMPI)
+#if defined(SWMPI)
                 reportLog = swTRUE;
-                #endif
+#endif
             }
 
 #if !defined(SWMPI)
@@ -630,7 +632,7 @@ checkStatus:
             (void) tag_suid;
 #endif
 
-        /* Produce global error if all suids failed */
+            /* Produce global error if all suids failed */
             if (nSims > 0 && nSims == main_LogInfo->numDomainErrors) {
                 LogError(
                     main_LogInfo,
@@ -641,7 +643,7 @@ checkStatus:
             }
         }
 
-        #if defined(SWMPI)
+#if defined(SWMPI)
         if (numInputs > 0) {
             SW_MPI_send_results(
                 &SW_Domain->OutDom,
@@ -656,9 +658,9 @@ checkStatus:
                 sw_template->OutRun.p_OUT
             );
         }
-        #else
+#else
         numInputs = 0;
-        #endif
+#endif
     }
 
 wrapUp:

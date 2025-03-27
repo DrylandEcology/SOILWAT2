@@ -17,9 +17,9 @@
 #include "include/Times.h"
 #include <netcdf.h>
 #include <netcdf_par.h>
+#include <signal.h> // for signal
 #include <stdlib.h>
 #include <string.h>
-#include <signal.h>                  // for signal
 
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static volatile sig_atomic_t runSims = 1;
