@@ -264,7 +264,7 @@ setupProgramData:
 
 sim:
     // run simulations: loop over simulation set
-    SW_CTL_RunSimSet(&sw_template, &SW_Domain, &SW_WallTime, &LogInfo);
+    SW_CTL_RunSims(rank, &sw_template, &SW_Domain, &SW_WallTime, &LogInfo);
 
 closeFiles: {
     // finish-up output (not used with rSOILWAT2)

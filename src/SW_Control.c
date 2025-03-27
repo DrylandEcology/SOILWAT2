@@ -62,6 +62,9 @@
 #include "include/SW_netCDF_Input.h"
 #include "include/SW_netCDF_Output.h"
 #include "include/SW_Output_outarray.h"
+#if defined(SWMPI)
+#include "include/SW_MPI.h"
+#endif
 #endif
 
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
@@ -181,6 +184,8 @@ static void end_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 @param[out] dest Destination struct of type SW_RUN to be copied into
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
+@param[in] runInput Instance of SW_RUN_INPUTS to copy into the destination;
+    not used if SWMPI is not in use
 @param[in] copyWeatherHist Specifies if the weather data should be copied;
 this only has the chance to be false when the program is dealing with
 nc inputs
@@ -190,29 +195,50 @@ void SW_RUN_deepCopy(
     SW_RUN *source,
     SW_RUN *dest,
     SW_OUT_DOM *OutDom,
+    SW_RUN_INPUTS *runInput,
     Bool copyWeatherHist,
     LOG_INFO *LogInfo
 ) {
-
     memcpy(dest, source, sizeof(*dest));
+
+#if defined(SWMPI)
+    memcpy(&dest->RunIn, runInput, sizeof(dest->RunIn));
+#else
+    (void) runInput;
+#endif
 
     dest->SoilWatIn.hist.file_prefix = NULL; /* currently unused */
 
     /* Allocate memory and copy daily weather */
     dest->RunIn.weathRunAllHist = NULL;
+#if !defined(SWMPI)
     if (copyWeatherHist) {
+#endif
         SW_WTH_allocateAllWeather(
             &dest->RunIn.weathRunAllHist, source->WeatherIn.n_years, LogInfo
         );
         if (LogInfo->stopRun) {
             return; // Exit prematurely due to error
         }
-        for (unsigned int year = 0; year < source->WeatherIn.n_years; year++) {
+#if !defined(SWMPI)
+    }
+#endif
+
+    for (unsigned int year = 0; year < source->WeatherIn.n_years; year++) {
+        if (copyWeatherHist) {
             memcpy(
                 &dest->RunIn.weathRunAllHist[year],
                 &source->RunIn.weathRunAllHist[year],
                 sizeof(dest->RunIn.weathRunAllHist[year])
             );
+#if defined(SWMPI)
+        } else {
+            memcpy(
+                &dest->RunIn.weathRunAllHist[year],
+                &runInput->weathRunAllHist[year],
+                sizeof(runInput->weathRunAllHist[year])
+            );
+#endif
         }
     }
 
@@ -247,14 +273,17 @@ void SW_RUN_deepCopy(
         return; // Exit function prematurely due to error
     }
 
-#ifdef SWNETCDF
+#if defined(SWNETCDF)
+#if !defined(SWMPI)
     SW_PATHOUT_deepCopy(
         &dest->SW_PathOutputs, &source->SW_PathOutputs, OutDom, LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit prematurely due to error
     }
-    SW_OUT_construct_outarray(OutDom, &dest->OutRun, LogInfo);
+#endif
+
+    SW_OUT_construct_outarray(1, OutDom, &dest->OutRun, LogInfo);
 #else
     (void) OutDom;
 #endif
@@ -296,7 +325,89 @@ void SW_CTL_main(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     }
 } /******* End Main Loop *********/
 
+/**
+@brief Wrapper function to run simulations
+
+This function will handle two modes: SWMPI en/disabled
+    - SWMPI enabled
+        - I/O processes will handle I/O operations
+        - Compute processes will solely hanle simulations
+
+    - SWMPI disabled
+        - Process handles all I/O and simulation operations
+
+@param[in] rank Process number known to MPI for the current process (aka rank);
+    defaults to 0 (main process) if we are running sequentially
+@param[in] sw_template Template SW_RUN for the function to use as a
+    reference for local versions of SW_RUN
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+@param[out] SW_WallTime Struct of type SW_WALLTIME that holds timing
+    information for the program run
+@param[out] main_LogInfo Holds information on warnings and errors
+*/
+void SW_CTL_RunSims(
+    int rank,
+    SW_RUN *sw_template,
+    SW_DOMAIN *SW_Domain,
+    SW_WALLTIME *SW_WallTime,
+    LOG_INFO *main_LogInfo
+) {
+#if defined(SWMPI)
+    if (SW_Domain->SW_Designation.procJob == SW_MPI_PROC_COMP) {
+#endif
+        if (rank == 0) {
+            sw_message("is running simulations across the domain...");
+        }
+        SW_CTL_RunSimSet(rank, sw_template, SW_Domain, SW_WallTime, main_LogInfo);
+#if defined(SWMPI)
+    } else {
+        SW_MPI_handle_IO(rank, sw_template, SW_Domain, main_LogInfo);
+    }
+#endif
+}
+
+/**
+@brief Run through an entire simulation set
+
+This function can handle two modes: SWMPI en/disabled; this has the following
+differences
+    - SWMPI Enabled
+        - Get inputs pertaining to the next batch of assigned SUIDs
+        - Go through these assigned inputs and simulate
+            - Upon a successful run, concatentate output to a larger output
+                structure that can hold N_SUID_ASSIGN amount of sites
+            - Upon failure, do not store output and report that it was
+                a failed run
+        - Once done with the simulations
+            - Send report information to designated I/O process
+        - Repeat until the I/O process reports no inputs
+        * Note: The assigned workload has already been predetermined to
+            contain sites that are turned on my the program/user
+
+    - SWMPI disabled
+        - Go through calculated simulation set
+        - Read inputs, simulate, and write outputs
+        - Update progress file
+
+Further improvement upon this function with SWMPI enabled is parallel
+requests, i.e., request inputs and write outputs asynchronously; this
+must update respective functions
+
+@note SWMPI enabled process designation: compute
+
+@param[in] rank Process number known to MPI for the current process (aka rank);
+    defaults to 0 (main process) if we are running sequentially
+@param[in] sw_template Template SW_RUN for the function to use as a
+    reference for local versions of SW_RUN
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+@param[out] SW_WallTime Struct of type SW_WALLTIME that holds timing
+    information for the program run
+@param[out] main_LogInfo Holds information on warnings and errors
+*/
 void SW_CTL_RunSimSet(
+    int rank,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
     SW_WALLTIME *SW_WallTime,
@@ -315,24 +426,45 @@ void SW_CTL_RunSimSet(
     WallTimeSpec tsr;
     Bool ok_tss = swFALSE;
     Bool ok_tsr = swFALSE;
-    Bool ok_suid;
+    Bool ok_suid = swTRUE;
     unsigned long startSim = SW_Domain->startSimSet;
     unsigned long endSim = SW_Domain->endSimSet;
+    Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
+    int runNum = 0;
+    int numInputs = 1;
+    Bool copyWeather = swTRUE;
+    Bool estVeg = swTRUE;
+    LOG_INFO *log = NULL;
+    size_t count[2] = {1, 1};
+    count[1] = (sDom) ? 0 : 1;
+
+#if defined(SWNETCDF)
+#if defined(SWMPI)
+    int n_years = sw_template->WeatherIn.n_years;
+    Bool getEstVeg = swTRUE;
+    SW_RUN_INPUTS inputs[N_SUID_ASSIGN];
+    SW_MPI_DESIGNATE *desig = &SW_Domain->SW_Designation;
+    MPI_Datatype inputType = SW_Domain->datatypes[eSW_MPI_Inputs];
+    MPI_Datatype weathHistType = SW_Domain->datatypes[eSW_MPI_WeathHist];
+    MPI_Datatype reqType = SW_Domain->datatypes[eSW_MPI_Req];
+    MPI_Datatype logType = SW_Domain->datatypes[eSW_MPI_Log];
+
+    copyWeather = (Bool) !isnull(sw_template->RunIn.weathRunAllHist);
+#else
+    copyWeather = (Bool) (!SW_Domain->netCDFInput.readInVars[eSW_InWeather][0]);
+    estVeg = (Bool) (!SW_Domain->netCDFInput.readInVars[eSW_InWeather][0]);
+#endif
+#endif
 
     int progFileID = 0; // Value does not matter if SWNETCDF is not defined
     int progVarID = 0;  // Value does not matter if SWNETCDF is not defined
 
-#if defined(SWNETCDF)
+#if defined(SWNETCDF) && !defined(SWMPI)
     progFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprog];
     progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprog];
-#endif
-
-    set_walltime(&tss, &ok_tss);
-
-#if defined(SOILWAT)
-    if (main_LogInfo->printProgressMsg) {
-        sw_message("is running simulations across the domain ...");
-    }
+#elif defined(SWMPI)
+    (void) progFileID;
+    (void) progVarID;
 #endif
 
     /* Set up interrupt handlers so if the program is interrupted
@@ -340,71 +472,193 @@ void SW_CTL_RunSimSet(
     (void) signal(SIGINT, handle_interrupt);
     (void) signal(SIGTERM, handle_interrupt);
 
-    /* Loop over suids in simulation set of domain */
-    for (suid = startSim; suid < endSim && runSims; suid++) {
-        /* Check wall time against limit */
-        if (SW_WallTime->has_walltime &&
-            GT(diff_walltime(SW_WallTime->timeStart, swTRUE),
-               SW_WallTime->wallTimeLimit - SW_WRAPUPTIME)) {
-            goto wrapUp; // wall time (nearly) exhausted, return early
-        }
+    set_walltime(&tss, &ok_tss);
 
-        LOG_INFO local_LogInfo;
-        sw_init_logs(main_LogInfo->logfp, &local_LogInfo);
-        local_LogInfo.printProgressMsg = main_LogInfo->printProgressMsg;
-
-
-        /* Check if suid needs to be simulated */
-        SW_DOM_calc_ncSuid(SW_Domain, suid, ncSuid);
-
-        ok_suid =
-            SW_DOM_CheckProgress(progFileID, progVarID, ncSuid, &local_LogInfo);
-
-        if (ok_suid && !local_LogInfo.stopRun && runSims) {
-            /* Count simulation run */
-            nSims++;
-
-            /* Simulate suid */
-            set_walltime(&tsr, &ok_tsr);
-            SW_CTL_run_sw(sw_template, SW_Domain, ncSuid, &local_LogInfo);
-            SW_WT_TimeRun(tsr, ok_tsr, SW_WallTime);
-
-            /* Report progress for suid */
-            SW_DOM_SetProgress(
-                local_LogInfo.stopRun,
-                SW_Domain->DomainType,
-                progFileID,
-                progVarID,
-                ncSuid,
-                &local_LogInfo
+#if defined(SWMPI)
+    for (suid = 0; suid < N_SUID_ASSIGN; suid++) {
+        if (!copyWeather) {
+            SW_WTH_allocateAllWeather(
+                &inputs[suid].weathRunAllHist, n_years, main_LogInfo
             );
-        }
-
-        /* Report errors and warnings for suid */
-        if (local_LogInfo.stopRun) {
-            // Counter of simulation units with error
-            main_LogInfo->numDomainErrors++;
-        }
-
-        if (local_LogInfo.numWarnings > 0) {
-            // Counter of simulation units with warnings
-            main_LogInfo->numDomainWarnings++;
-        }
-
-        if (local_LogInfo.stopRun || local_LogInfo.numWarnings > 0) {
-            (void) snprintf(tag_suid, 32, "(suid = %lu) ", suid + 1);
-            sw_write_warnings(tag_suid, &local_LogInfo);
+            if (main_LogInfo->stopRun) {
+                goto checkStatus;
+            }
+        } else {
+            inputs[suid].weathRunAllHist = NULL;
         }
     }
 
-    /* Produce global error if all suids failed */
-    if (nSims > 0 && nSims == main_LogInfo->numDomainErrors) {
-        LogError(
-            main_LogInfo,
-            LOGERROR,
-            "All simulated units (n = %zu) produced errors.",
-            nSims
+    SW_OUT_deconstruct_outarray(&sw_template->OutRun);
+
+    SW_OUT_construct_outarray(
+        N_SUID_ASSIGN, &SW_Domain->OutDom, &sw_template->OutRun, main_LogInfo
+    );
+#endif
+
+#if defined(SWMPI)
+checkStatus:
+    if (SW_MPI_check_setup_status(main_LogInfo->stopRun, MPI_COMM_WORLD)) {
+        goto wrapUp;
+    }
+#endif
+
+    while (numInputs > 0) {
+#if defined(SWMPI)
+        LOG_INFO local_LogInfo[N_SUID_ASSIGN];
+        Bool runSucc[N_SUID_ASSIGN] = {swFALSE};
+        Bool reportLog = swFALSE;
+
+        SW_MPI_get_inputs(
+            (Bool) !copyWeather,
+            n_years,
+            desig,
+            inputType,
+            weathHistType,
+            inputs,
+            &numInputs,
+            &estVeg,
+            &getEstVeg
         );
+
+        startSim = 0;
+        endSim = (unsigned long) numInputs;
+#endif
+
+        /* Loop over suids in simulation set of domain */
+        for (suid = startSim; suid < endSim && runSims; suid++) {
+            /* Check wall time against limit */
+            if (SW_WallTime->has_walltime &&
+                GT(diff_walltime(SW_WallTime->timeStart, swTRUE),
+                   SW_WallTime->wallTimeLimit - SW_WRAPUPTIME)) {
+                goto wrapUp; // wall time (nearly) exhausted, return early
+            }
+
+#if defined(SWMPI)
+            sw_init_logs(main_LogInfo->logfp, &local_LogInfo[suid]);
+            local_LogInfo[suid].printProgressMsg =
+                main_LogInfo->printProgressMsg;
+            log = &local_LogInfo[suid];
+#else
+            LOG_INFO local_LogInfo;
+            log = &local_LogInfo;
+            sw_init_logs(main_LogInfo->logfp, &local_LogInfo);
+            local_LogInfo.printProgressMsg = main_LogInfo->printProgressMsg;
+
+            /* Check if suid needs to be simulated */
+            SW_DOM_calc_ncSuid(SW_Domain, suid, ncSuid);
+
+            ok_suid = SW_DOM_CheckProgress(
+                progFileID, progVarID, ncSuid, &local_LogInfo
+            );
+#endif
+
+            if (ok_suid && !log->stopRun && runSims) {
+                /* Count simulation run */
+                nSims++;
+
+                /* Simulate suid */
+                set_walltime(&tsr, &ok_tsr);
+#if defined(SWMPI)
+                SW_CTL_run_sw(
+                    runNum,
+                    &inputs[suid],
+                    sw_template,
+                    SW_Domain,
+                    NULL,
+                    estVeg,
+                    copyWeather,
+                    NULL,
+                    log
+                );
+                (void) ncSuid;
+                (void) count;
+#else
+                SW_CTL_run_sw(
+                    runNum,
+                    &sw_template->RunIn,
+                    sw_template,
+                    SW_Domain,
+                    ncSuid,
+                    estVeg,
+                    copyWeather,
+                    count,
+                    log
+                );
+#endif
+                SW_WT_TimeRun(tsr, ok_tsr, SW_WallTime);
+
+#if !defined(SWMPI)
+                /* Report progress for suid */
+                SW_DOM_SetProgress(
+                    local_LogInfo.stopRun,
+                    progFileID,
+                    progVarID,
+                    ncSuid,
+                    count,
+                    log
+                );
+#endif
+            }
+
+            /* Report errors and warnings for suid */
+            if (log->stopRun) {
+                // Counter of simulation units with error
+                main_LogInfo->numDomainErrors++;
+                #if defined(SWMPI)
+                reportLog = swTRUE;
+                #endif
+#if defined(SWMPI)
+            } else {
+                runSucc[suid] = swTRUE;
+#endif
+            }
+
+            if (log->numWarnings > 0) {
+                // Counter of simulation units with warnings
+                main_LogInfo->numDomainWarnings++;
+                #if defined(SWMPI)
+                reportLog = swTRUE;
+                #endif
+            }
+
+#if !defined(SWMPI)
+            if (log->stopRun || log->numWarnings > 0) {
+                (void) snprintf(tag_suid, 32, "(suid = %lu) ", suid + 1);
+                sw_write_warnings(tag_suid, log);
+            }
+#else
+            (void) tag_suid;
+#endif
+
+        /* Produce global error if all suids failed */
+            if (nSims > 0 && nSims == main_LogInfo->numDomainErrors) {
+                LogError(
+                    main_LogInfo,
+                    LOGERROR,
+                    "All simulated units (n = %zu) produced errors.",
+                    nSims
+                );
+            }
+        }
+
+        #if defined(SWMPI)
+        if (numInputs > 0) {
+            SW_MPI_send_results(
+                &SW_Domain->OutDom,
+                rank,
+                numInputs,
+                desig->ioRank,
+                reqType,
+                logType,
+                runSucc,
+                reportLog,
+                local_LogInfo,
+                sw_template->OutRun.p_OUT
+            );
+        }
+        #else
+        numInputs = 0;
+        #endif
     }
 
 wrapUp:
@@ -415,6 +669,16 @@ wrapUp:
 #endif
 
     SW_WallTime->timeSimSet = diff_walltime(tss, ok_tss);
+
+#if defined(SWMPI)
+    for (suid = 0; suid < N_SUID_ASSIGN; suid++) {
+        if (!isnull(inputs[suid].weathRunAllHist)) {
+            SW_WTH_deconstruct(&inputs[suid].weathRunAllHist);
+        }
+    }
+#else
+    (void) rank;
+#endif
 }
 
 /**
@@ -736,7 +1000,6 @@ void SW_CTL_run_current_year(
         sw_printf("\n'SW_CTL_run_current_year': begin new year\n");
     }
 #endif
-
     begin_year(sw, OutDom, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -752,7 +1015,6 @@ void SW_CTL_run_current_year(
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
-
 #ifdef SWDEBUG
         if (debug) {
             sw_printf("simulate water ... ");
@@ -1201,18 +1463,40 @@ void SW_CTL_read_inputs_from_disk(
 @brief Do an (independent) model simulation run; Don’t fail/crash
 on error but end early and report to caller
 
+The following operations are conditional on if SWMPI is enabled
+    - Read inputs (no SWMPI)
+    - Copy suid-dependent information from an external structure
+        (not sw_template, SWMPI)
+    - Store output values into a bigger `p_OUT` structure (SWMPI)
+        or
+    - Write outputs directly to output files (no SWMPI)
+
+@param[in] runNum Numerical placement of which run is currently being
+    simulated within a group of simulations (base 0)
+@param[in] runInputs An instance of SW_RUN_INPUTS to copy into
+    the new instance that will be created (only with MPI enabled)
 @param[in] sw_template Template SW_RUN for the function to use as a
     reference for local versions of SW_RUN
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
 @param[in] ncSuid Unique indentifier of the first suid to run
     in relation to netCDF gridcells/sites
+@param[in] estVeg Flag specifying if the vegetation should be
+    estimated
+@param[in] copyWeather Specifies if weather should be copied from
+    template information; if SWMPI, swFALSE will copy it from `runInputs`
+@param[in] count Default count values for the netCDF library
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_run_sw(
+    int runNum,
+    SW_RUN_INPUTS *runInputs,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
     unsigned long ncSuid[], // NOLINT(readability-non-const-parameter)
+    Bool estVeg,
+    Bool copyWeather,
+    size_t count[],
     LOG_INFO *LogInfo
 ) {
 
@@ -1221,12 +1505,17 @@ void SW_CTL_run_sw(
 #endif
 
     SW_RUN local_sw;
-    Bool copyWeather = swTRUE;
-    Bool estVeg = swTRUE;
 
-#if defined(SWNETCDF)
-    copyWeather = (Bool) !SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
-    estVeg = (Bool) (!SW_Domain->netCDFInput.readInVars[eSW_InWeather][0]);
+#if defined(SWNETCDF) && !defined(SWMPI)
+    SW_SOIL_RUN_INPUTS newSoil;
+    int numReads[SW_NINKEYSNC] = {1, 1, 1, 1, 1, 1, 1, 1};
+    double tempMonthlyVals[MAX_MONTHS] = {0.0};
+    double tempSiltVals[MAX_MONTHS] = {0.0};
+    double tempSWRCPVals[MAX_MONTHS] = {0.0};
+    double tempElevation = 0;
+#else
+    (void) count;
+    (void) runNum;
 #endif
 
 #ifdef SWDEBUG
@@ -1237,15 +1526,36 @@ void SW_CTL_run_sw(
 
     // Copy template SW_RUN to local instance
     SW_RUN_deepCopy(
-        sw_template, &local_sw, &SW_Domain->OutDom, copyWeather, LogInfo
+        sw_template,
+        &local_sw,
+        &SW_Domain->OutDom,
+        runInputs,
+        copyWeather,
+        LogInfo
     );
     if (LogInfo->stopRun) {
         goto freeMem; // Free memory and skip simulation run
     }
 
-#if defined(SWNETCDF)
+#if defined(SWNETCDF) && !defined(SWMPI)
     // Obtain suid-specific inputs
-    SW_NCIN_read_inputs(&local_sw, SW_Domain, ncSuid, LogInfo);
+    SW_NCIN_read_inputs(
+        &local_sw,
+        SW_Domain,
+        ncSuid,
+        NULL,
+        NULL,
+        NULL,
+        numReads,
+        1,
+        tempMonthlyVals,
+        &tempElevation,
+        tempSiltVals,
+        tempSWRCPVals,
+        &newSoil,
+        &local_sw.RunIn,
+        LogInfo
+    );
     if (LogInfo->stopRun) {
         goto freeMem;
     }
@@ -1297,15 +1607,30 @@ void SW_CTL_run_sw(
         sw_printf(" -- nc-output");
     }
 #endif
+
+#if defined(SWMPI)
+    SW_MPI_store_outputs(
+        runNum,
+        &SW_Domain->OutDom,
+        local_sw.OutRun.p_OUT,
+        sw_template->OutRun.p_OUT
+    );
+#else
     SW_NCOUT_write_output(
         &SW_Domain->OutDom,
         local_sw.OutRun.p_OUT,
         local_sw.SW_PathOutputs.numOutFiles,
         local_sw.SW_PathOutputs.ncOutFiles,
         ncSuid,
-        SW_Domain->DomainType,
+        numReads[0],
+        NULL,
+        (size_t **) &count,
+        NULL,
+        SW_Domain->netCDFInput.siteDoms[eSW_InDomain],
         LogInfo
     );
+    (void) runNum;
+#endif
 #endif
 
 // Clear local instance of SW_RUN

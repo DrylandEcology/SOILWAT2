@@ -34,6 +34,7 @@ void SW_RUN_deepCopy(
     SW_RUN *source,
     SW_RUN *dest,
     SW_OUT_DOM *OutDom,
+    SW_RUN_INPUTS *runInput,
     Bool copyWeatherHist,
     LOG_INFO *LogInfo
 );
@@ -63,7 +64,16 @@ void SW_CTL_read_inputs_from_disk(
 
 void SW_CTL_main(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
+void SW_CTL_RunSims(
+    int rank,
+    SW_RUN *sw_template,
+    SW_DOMAIN *SW_Domain,
+    SW_WALLTIME *SW_WallTime,
+    LOG_INFO *main_LogInfo
+);
+
 void SW_CTL_RunSimSet(
+    int rank,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
     SW_WALLTIME *SW_WallTime,
@@ -75,9 +85,14 @@ void SW_CTL_run_current_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
 void SW_CTL_run_sw(
+    int runNum,
+    SW_RUN_INPUTS *runInputs,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
     unsigned long ncSuid[],
+    Bool estVeg,
+    Bool copyWeather,
+    size_t count[],
     LOG_INFO *LogInfo
 );
 
