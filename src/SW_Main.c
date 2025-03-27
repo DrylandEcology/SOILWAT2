@@ -207,7 +207,9 @@ int main(int argc, char **argv) {
         goto finishProgram;
     }
 
+#if defined(SWMPI)
 setupProgramData:
+#endif
     sw_setup_prog_data(
         rank, size, procName, prepareFiles, &sw_template, &SW_Domain, &LogInfo
     );
@@ -262,7 +264,9 @@ setupProgramData:
         echo_all_inputs(&sw_template, &SW_Domain.OutDom, &LogInfo);
     }
 
+#if defined(SWMPI)
 sim:
+#endif
     // run simulations: loop over simulation set
     SW_CTL_RunSims(rank, &sw_template, &SW_Domain, &SW_WallTime, &LogInfo);
 
