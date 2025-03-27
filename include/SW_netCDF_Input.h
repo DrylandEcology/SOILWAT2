@@ -96,10 +96,10 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
 
 void SW_NCIN_set_progress(
     Bool isFailure,
-    const char *domType,
     int progFileID,
     int progVarID,
-    size_t ncSUID[],
+    size_t start[],
+    size_t count[],
     LOG_INFO *LogInfo
 );
 

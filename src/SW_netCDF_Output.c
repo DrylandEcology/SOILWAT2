@@ -723,8 +723,7 @@ static int gather_var_attributes(
 /**
 @brief Collect the write dimensions/sizes for the current output slice
 
-@param[in] domType Type of domain in which simulations are running
-    (gridcell/sites)
+@param[in] sDom Specifies the program's domain is site-oriented
 @param[in] timeSize Number of time steps in current output slice
 @param[in] nsl Number of soil layers
 @param[in] npft Number of plant functional types
@@ -732,21 +731,22 @@ static int gather_var_attributes(
 @param[out] countTotal Total size (count) of output values
  */
 static void get_vardim_write_counts(
-    const char *domType,
+    Bool sDom,
     size_t timeSize,
     IntUS nsl,
     IntUS npft,
     size_t count[],
+    size_t baseCount[],
     size_t *countTotal
 ) {
     int dimIndex;
     int ndimsp;
-    int nSpaceDims = (strcmp(domType, "s") == 0) ? 1 : 2;
+    int nSpaceDims = (sDom) ? 1 : 2;
 
     /* Fill 1s into space dimensions (we write one site/xy-gridcell per run) */
     /* We assume here that the first dimension(s) are space */
     for (dimIndex = 0; dimIndex < nSpaceDims; dimIndex++) {
-        count[dimIndex] = 1;
+        count[dimIndex] = baseCount[dimIndex];
     }
 
     *countTotal = 1;
@@ -2167,8 +2167,21 @@ output netCDF files
     have (same amount for each key)
 @param[in] ncOutFileNames A list of the generated output netCDF file names
 @param[in] ncSuid Unique indentifier of the current suid being simulated
-@param[in] domType Type of domain in which simulations are running
-    (gridcell/sites)
+@param[in] numWrites The number of writes that must be performed
+    by the calling function to output all simulated information
+    for the sites
+@param[in] starts A list of size SW_NINKEYSNC specifying the start
+    indices used when reading/writing using the netCDF library;
+    default size is `nSuids` but as mentioned in `numWrites`, it would
+    be best to not fill this array
+@param[in] counts A list of size SW_NINKEYSNC specifying the count
+    indices used when reading/writing using the netCDF library;
+    default size is `nSuids` but as mentioned in `numWrites`, it would
+    be best to not fill this array; counts match placements with `start`
+    indices for each key; NULL if SWMPI is not defined
+@param[in] openOutFileIDs Lists of file IDs of open output netCDF files;
+    only used if SWMPI is enabled, otherwise is NULL
+@param[in] siteDom Specifies if the domain is site-oriented
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCOUT_write_output(
@@ -2177,7 +2190,11 @@ void SW_NCOUT_write_output(
     unsigned int numFilesPerKey,
     char **ncOutFileNames[][SW_OUTNPERIODS],
     const size_t ncSuid[],
-    const char *domType,
+    int numWrites,
+    size_t **starts,
+    size_t **counts,
+    int *openOutFileIDs[][SW_OUTNPERIODS],
+    Bool siteDom,
     LOG_INFO *LogInfo
 ) {
 
@@ -2189,7 +2206,6 @@ void SW_NCOUT_write_output(
     int varNum;
     int varID = -1;
 
-    char *fileName;
     char *varName;
     size_t count[MAX_NUM_DIMS] = {0};
     size_t start[MAX_NUM_DIMS] = {0};
@@ -2199,153 +2215,200 @@ void SW_NCOUT_write_output(
     size_t countTotal = 0;
     int vertSize;
     int pftSize;
+    int write;
+    OutPeriod timeStep;
+    size_t oneSiteOffset;
+    size_t ptrOffset;
+    int numSiteSum = 0;
 
-    start[0] = ncSuid[0];
-    start[1] = ncSuid[1];
+#if !defined(SWMPI)
+    char *fileName;
+#endif
 
+    for (write = 0; write < numWrites; write++) {
+#if defined(SWMPI)
+        start[0] = starts[write][0];
+        start[1] = starts[write][1];
+#else
+        start[0] = ncSuid[0];
+        start[1] = ncSuid[1];
+#endif
 
-    ForEachOutPeriod(pd) {
-        if (!OutDom->use_OutPeriod[pd]) {
-            continue; // Skip period iteration
-        }
-
-        ForEachOutKey(key) {
-            if (OutDom->nvar_OUT[key] == 0 || !OutDom->use[key]) {
-                continue; // Skip key iteration
+        ForEachOutPeriod(pd) {
+            if (!OutDom->use_OutPeriod[pd]) {
+                continue; // Skip period iteration
             }
 
-            // Loop over output time-slices
-
-            // keep track of time across time-sliced files per outkey
-            startTime = 0;
-
-            for (fileNum = 0; fileNum < numFilesPerKey; fileNum++) {
-                fileName = ncOutFileNames[key][pd][fileNum];
-
-                if (isnull(fileName)) {
-                    // this outperiod x outkey combination was not requested
-                    continue;
+            ForEachOutKey(key) {
+                if (OutDom->nvar_OUT[key] == 0 || !OutDom->use[key]) {
+                    continue; // Skip key iteration
                 }
 
-                SW_NC_open(fileName, NC_WRITE, &currFileID, LogInfo);
-                if (LogInfo->stopRun) {
-                    return;
-                }
+                timeStep = OutDom->timeSteps[key][pd];
 
-                // Get size of the "time" dimension
-                SW_NC_get_dimlen_from_dimname(
-                    currFileID, "time", &timeSize, LogInfo
-                );
-                if (LogInfo->stopRun) {
-                    goto closeFile; // Exit function prematurely due to error
-                }
+                oneSiteOffset =
+                    OutDom->nrow_OUT[timeStep] *
+                    (OutDom->ncol_OUT[key] + ncol_TimeOUT[timeStep]);
+                ptrOffset = oneSiteOffset * numSiteSum;
 
+                // Loop over output time-slices
 
-                for (varNum = 0; varNum < OutDom->nvar_OUT[key]; varNum++) {
-                    if (!OutDom->netCDFOutput.reqOutputVars[key][varNum]) {
-                        continue; // Skip variable iteration
-                    }
+                // keep track of time across time-sliced files per outkey
+                startTime = 0;
 
-                    varName = OutDom->netCDFOutput
-                                  .outputVarInfo[key][varNum][VARNAME_INDEX];
+                for (fileNum = 0; fileNum < numFilesPerKey; fileNum++) {
+#if !defined(SWMPI)
+                    fileName = ncOutFileNames[key][pd][fileNum];
 
-                    // Locate correct slice in netCDF to write to
-                    SW_NC_get_var_identifier(
-                        currFileID, varName, &varID, LogInfo
-                    );
-                    if (LogInfo->stopRun) {
-                        /* Exit function prematurely due to error */
-                        goto closeFile;
-                    }
-
-                    get_vardim_write_counts(
-                        domType,
-                        timeSize,
-                        OutDom->nsl_OUT[key][varNum],
-                        OutDom->npft_OUT[key][varNum],
-                        count,
-                        &countTotal
-                    );
-
-#if defined(SWDEBUG)
-                    check_counts_against_vardim(
-                        fileName,
-                        varName,
-                        currFileID,
-                        varID,
-                        count,
-                        OutDom->netCDFOutput.siteName,
-                        LogInfo
-                    );
-                    if (LogInfo->stopRun) {
-                        /* Exit function prematurely due to error*/
-                        goto closeFile;
-                    }
-#endif // SWDEBUG
-
-
-                    /* Point to contiguous memory where values change fastest
-                       for vegtypes, then soil layers, then time, then variables
-                    */
-                    pOUTIndex =
-                        OutDom->netCDFOutput.iOUToffset[key][pd][varNum];
-                    if (startTime > 0) {
-                        // 1 if no soil layers
-                        vertSize = (OutDom->nsl_OUT[key][varNum] > 0) ?
-                                       OutDom->nsl_OUT[key][varNum] :
-                                       1;
-                        // 1 if no vegtypes
-                        pftSize = (OutDom->npft_OUT[key][varNum] > 0) ?
-                                      OutDom->npft_OUT[key][varNum] :
-                                      1;
-
-                        pOUTIndex += iOUTnc(startTime, 0, 0, vertSize, pftSize);
-                    }
-
-                    p_OUTValPtr = &p_OUT[key][pd][pOUTIndex];
-
-
-/* Convert units if udunits2 and if converter available */
-#if defined(SWUDUNITS)
-                    if (!isnull(OutDom->netCDFOutput.uconv[key][varNum])) {
-                        cv_convert_doubles(
-                            OutDom->netCDFOutput.uconv[key][varNum],
-                            p_OUTValPtr,
-                            countTotal,
-                            p_OUTValPtr
-                        );
+                    if (isnull(fileName)) {
+                        // this outperiod x outkey combination was not requested
+                        continue;
                     }
 #endif
 
-                    /* For current variable x output period,
-                       write out all values across vegtypes and soil layers (if
-                       any) for current time-chunk
-                    */
-                    SW_NC_write_vals(
-                        &varID,
-                        currFileID,
-                        NULL,
-                        p_OUTValPtr,
-                        start,
-                        count,
-                        "double",
-                        LogInfo
+#if defined(SWMPI)
+                    currFileID = openOutFileIDs[key][pd][fileNum];
+#else
+                    SW_NC_open(fileName, NC_WRITE, &currFileID, LogInfo);
+                    if (LogInfo->stopRun) {
+                        return;
+                    }
+#endif
+
+                    // Get size of the "time" dimension
+                    SW_NC_get_dimlen_from_dimname(
+                        currFileID, "time", &timeSize, LogInfo
                     );
                     if (LogInfo->stopRun) {
                         goto closeFile; // Exit function prematurely due to
                                         // error
                     }
+
+
+                    for (varNum = 0; varNum < OutDom->nvar_OUT[key]; varNum++) {
+                        if (!OutDom->netCDFOutput.reqOutputVars[key][varNum]) {
+                            continue; // Skip variable iteration
+                        }
+
+                        varName =
+                            OutDom->netCDFOutput
+                                .outputVarInfo[key][varNum][VARNAME_INDEX];
+
+                        // Locate correct slice in netCDF to write to
+                        SW_NC_get_var_identifier(
+                            currFileID, varName, &varID, LogInfo
+                        );
+                        if (LogInfo->stopRun) {
+                            /* Exit function prematurely due to error */
+                            goto closeFile;
+                        }
+
+                        get_vardim_write_counts(
+                            siteDom,
+                            timeSize,
+                            OutDom->nsl_OUT[key][varNum],
+                            OutDom->npft_OUT[key][varNum],
+                            count,
+                            counts[write],
+                            &countTotal
+                        );
+
+#if defined(SWDEBUG)
+                        check_counts_against_vardim(
+                            fileName,
+                            varName,
+                            currFileID,
+                            varID,
+                            count,
+                            OutDom->netCDFOutput.siteName,
+                            LogInfo
+                        );
+                        if (LogInfo->stopRun) {
+                            /* Exit function prematurely due to error*/
+                            goto closeFile;
+                        }
+#endif // SWDEBUG
+
+                        /* Point to contiguous memory where values change
+                           fastest for vegtypes, then soil layers, then time,
+                           then variables
+                        */
+                        pOUTIndex =
+                            OutDom->netCDFOutput.iOUToffset[key][pd][varNum];
+                        if (startTime > 0) {
+                            // 1 if no soil layers
+                            vertSize = (OutDom->nsl_OUT[key][varNum] > 0) ?
+                                           OutDom->nsl_OUT[key][varNum] :
+                                           1;
+                            // 1 if no vegtypes
+                            pftSize = (OutDom->npft_OUT[key][varNum] > 0) ?
+                                          OutDom->npft_OUT[key][varNum] :
+                                          1;
+
+                            pOUTIndex +=
+                                iOUTnc(startTime, 0, 0, vertSize, pftSize);
+                        }
+
+                        p_OUTValPtr = &p_OUT[key][pd][ptrOffset + pOUTIndex];
+
+
+/* Convert units if udunits2 and if converter available */
+#if defined(SWUDUNITS)
+                        if (!isnull(OutDom->netCDFOutput.uconv[key][varNum])) {
+                            cv_convert_doubles(
+                                OutDom->netCDFOutput.uconv[key][varNum],
+                                p_OUTValPtr,
+                                countTotal,
+                                p_OUTValPtr
+                            );
+                        }
+#endif
+                        // key, pd, start[0], start[1], start[2], start[3],
+                        // count[0], count[1], count[2], count[3]);
+                        /* For current variable x output period,
+                           write out all values across vegtypes and soil layers
+                           (if any) for current time-chunk
+                        */
+                        SW_NC_write_vals(
+                            &varID,
+                            currFileID,
+                            NULL,
+                            p_OUTValPtr,
+                            start,
+                            count,
+                            "double",
+                            LogInfo
+                        );
+                        if (LogInfo->stopRun) {
+                            goto closeFile; // Exit function prematurely due to
+                                            // error
+                        }
+                    }
+
+                    // Update startTime
+                    startTime += timeSize;
+
+#if !defined(SWMPI)
+                    nc_close(currFileID);
+#endif
                 }
-
-                // Update startTime
-                startTime += timeSize;
-
-                nc_close(currFileID);
             }
         }
+
+        numSiteSum += (siteDom) ? counts[write][0] : counts[write][1];
     }
 
-closeFile: { nc_close(currFileID); }
+closeFile:
+#if defined(SWMPI)
+    (void) ncSuid;
+    (void) ncOutFileNames;
+#else
+    nc_close(currFileID);
+
+    (void) starts;
+    (void) counts;
+    (void) openOutFileIDs;
+#endif
 }
 
 /**

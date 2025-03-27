@@ -29,6 +29,8 @@ typedef enum {
 #define SW_MPI_PROC_COMP 0
 #define SW_MPI_PROC_IO 1
 
+#define N_ITER_BEFORE_OUT 1
+
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */

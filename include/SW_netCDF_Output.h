@@ -86,7 +86,11 @@ void SW_NCOUT_write_output(
     unsigned int numFilesPerKey,
     char **ncOutFileNames[][SW_OUTNPERIODS],
     const size_t ncSuid[],
-    const char *domType,
+    int numWrites,
+    size_t **starts,
+    size_t **counts,
+    int *openOutFileIDs[][SW_OUTNPERIODS],
+    Bool siteDom,
     LOG_INFO *LogInfo
 );
 

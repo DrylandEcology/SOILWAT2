@@ -6,6 +6,7 @@
 #include "include/myMemory.h"
 #include "include/SW_Domain.h"
 #include "include/SW_Files.h"
+#include "include/SW_Main_lib.h"
 #include "include/SW_Markov.h"
 #include "include/SW_netCDF_General.h"
 #include "include/SW_netCDF_Input.h"
@@ -3006,6 +3007,102 @@ static void get_next_suids(
     }
 }
 
+/**
+@brief Wrapper function to calculate output starts/counts and
+    output all values
+
+@param[in] progFileID Identifier of the progress netCDF file
+@param[in] progVarID Identifier of the progress variable
+@param[in] distSUIDs A list of domain SUIDs whose data will be distributed
+    as the next batch of input
+@param[in] numSuids Number of SUIDs that will be assigned, this should be
+    the product of the <number of compute processors for the I/O process>
+    and N_SUID_ASSIGN
+@param[in] siteDom Specifies that the programs domain has sites, otherwise
+    it is gridded
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
+@param[in] succFlags Accumulator array of flags specifying how respective
+    simulation runs went
+@param[in] SW_PathOutputs Struct of type SW_PATH_OUTPUTS which
+    holds basic information about output files and values
+@param[out] starts A list of size SW_NINKEYSNC specifying the start
+    indices used when reading/writing using the netCDF library;
+    default size is `nSuids` but as mentioned in `numWrites`, it would
+    be best to not fill this array
+@param[out] counts A list of size SW_NINKEYSNC specifying the count
+    indices used when reading/writing using the netCDF library;
+    default size is `nSuids` but as mentioned in `numWrites`, it would
+    be best to not fill this array; counts match placements with `start`
+    indices for each key
+@param[out] main_p_OUT Array of accumulated output values throughout
+    simulation all runs
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void write_outputs(
+    int progFileID,
+    int progVarID,
+    size_t **distSUIDs,
+    int numSuids,
+    Bool siteDom,
+    SW_OUT_DOM *OutDom,
+    Bool succFlags[],
+    SW_PATH_OUTPUTS *SW_PathOutputs,
+    size_t **starts,
+    size_t **counts,
+    double *main_p_OUT[][SW_OUTNPERIODS],
+    LOG_INFO *LogInfo
+) {
+    int numWrites = 0;
+    int write;
+    int numSites = 0;
+
+    get_contiguous_counts(
+        distSUIDs,
+        numSuids,
+        siteDom,
+        numSuids,
+        swFALSE,
+        swTRUE,
+        succFlags,
+        &numWrites,
+        starts,
+        counts
+    );
+
+    // Output accumulated output
+    SW_NCOUT_write_output(
+        OutDom,
+        main_p_OUT,
+        SW_PathOutputs->numOutFiles,
+        NULL,
+        NULL,
+        numWrites,
+        starts,
+        counts,
+        SW_PathOutputs->openOutFileIDs,
+        siteDom,
+        LogInfo
+    );
+
+    // Update progress file statuses
+    for (write = 0; write < numWrites; write++) {
+        SW_NCIN_set_progress(
+            succFlags[numSites],
+            progFileID,
+            progVarID,
+            starts[write],
+            counts[write],
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        numSites += (siteDom) ? counts[write][0] : counts[write][1];
+    }
+}
+
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
@@ -4688,6 +4785,8 @@ void SW_MPI_handle_IO(
     MPI_Datatype logType = SW_Domain->datatypes[eSW_MPI_Log];
     MPI_Datatype weathHistType = SW_Domain->datatypes[eSW_MPI_WeathHist];
     MPI_Datatype inputType = SW_Domain->datatypes[eSW_MPI_Inputs];
+    int progFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprog];
+    int progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprog];
     int input = 0;
     int numSuidsTot = desig->nCompProcs * N_SUID_ASSIGN;
     int numIterSuids;
@@ -4786,6 +4885,8 @@ checkStatus:
         succFlagWrite = numIterations * desig->nCompProcs * N_SUID_ASSIGN;
         distSUIDWrite = succFlagWrite;
 
+        numIterations = (numIterations + 1) % N_ITER_BEFORE_OUT;
+
         get_next_suids(
             desig,
             numIterSuids,
@@ -4851,6 +4952,30 @@ checkStatus:
             goto freeMem;
         }
 
+        // Check if we need to read the next batch of inputs &
+        // Check if outputs are full
+        if (numIterations == 0 && input > 0) {
+            // Get multi-iteration start/count values for writing output
+            // in as little contiguous writes as possible
+            write_outputs(
+                progFileID,
+                progVarID,
+                distSUIDs,
+                iterNumSuids,
+                SW_Domain->netCDFInput.siteDoms[eSW_InDomain],
+                &SW_Domain->OutDom,
+                succFlags,
+                &sw->SW_PathOutputs,
+                starts[eSW_InDomain],
+                counts[eSW_InDomain],
+                sw->OutRun.p_OUT,
+                LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
+            }
+        }
+
         // Loop through all requests sent by the compute process
         // or we haven't received input from all processes
         // Get dynamically allocated output memory from
@@ -4887,6 +5012,25 @@ checkStatus:
             n_years,
             swTRUE
         );
+
+        if ((numIterations == 0 && input == numSuidsTot) ||
+            numIterations < N_ITER_BEFORE_OUT) {
+
+            write_outputs(
+                progFileID,
+                progVarID,
+                distSUIDs,
+                iterNumSuids,
+                SW_Domain->netCDFInput.siteDoms[eSW_InDomain],
+                &SW_Domain->OutDom,
+                succFlags,
+                &sw->SW_PathOutputs,
+                starts[eSW_InDomain],
+                counts[eSW_InDomain],
+                sw->OutRun.p_OUT,
+                LogInfo
+            );
+        }
     }
 
 freeMem:
