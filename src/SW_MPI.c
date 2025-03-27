@@ -1841,9 +1841,12 @@ static void open_input_files(
         }
 
         for (var = 0; var < numVarsInKey[inKey]; var++) {
+            pathInputs->openInFileIDs[inKey][var] = NULL;
+        }
+
+        for (var = 0; var < numVarsInKey[inKey]; var++) {
             skipVar = (Bool) (!netCDFIn->readInVars[inKey][var + 1] ||
-                              ((var == 0 && !netCDFIn->useIndexFile[inKey]) &&
-                               inKey > eSW_InDomain));
+                              ((var == 0 && !netCDFIn->useIndexFile[inKey])));
             if (skipVar) {
                 continue;
             }
