@@ -66,14 +66,12 @@ static void handle_interrupt(int signal) {
 @sideeffect Exit all instances of the MPI program
 */
 void errorMPI(int mpiError) {
-    char errorStr[FILENAME_MAX] = {'\0'};
+    char errorStr[MAX_FILENAMESIZE] = {'\0'};
     int errorLen = 0;
 
     MPI_Error_string(mpiError, errorStr, &errorLen);
 
-    fprintf(stderr, "OpenMPI resulted in the error: %s\n", errorStr);
-
-    MPI_Abort(MPI_COMM_WORLD, mpiError);
+    SW_MPI_Fail(SW_MPI_FAIL_MPI, mpiError, errorStr);
 }
 
 /**
@@ -3146,6 +3144,57 @@ been initialized/created through MPI within the program run
 void SW_MPI_finalize() { MPI_Finalize(); }
 
 /**
+@brief Trigger an abort error when a fatal error occurs
+
+Options for failing the program
+    - NetCDF read/write error
+    - Too many simulation errors
+    - OpenMPI error
+
+Moving forward, an option for further development of this part of the
+program is to allow for a hardcoded number of netCDF read errors
+
+@param[in] failType Reason why the program failed
+@param[in] errorCode MPI error code if MPI caused the error (not used
+    otherwise)
+@param[in] mpiErrStr String representation of MPI error (not used
+    if MPI did not cause the error)
+*/
+void SW_MPI_Fail(int failType, int errorCode, char *mpiErrStr) {
+    const char *ncFail = "SOILWAT failed due to a netCDF error.";
+    const char *compFail = "SOILWAT failed due to too many errors during simulations.";
+    const char *mpiFailAdd = "SOILWAT failed due to an OpenMPI problem:";
+    char mpiFail[FILENAME_MAX] = "\0";
+
+    char *failStr;
+    int failCode = failType;
+
+    switch (failType) {
+        case SW_MPI_FAIL_NETCDF:
+            failStr = (char *) ncFail;
+            break;
+        case SW_MPI_FAIL_COMP_ERR:
+            failStr = (char *) compFail;
+            break;
+        default: // SW_MPI_FAIL_MPI
+            snprintf(
+                mpiFail,
+                sizeof(mpiFail),
+                "%s \"%s\".",
+                (char *) mpiFailAdd,
+                mpiErrStr
+            );
+            failStr = mpiFail;
+            failCode = errorCode;
+            break;
+    }
+
+    fprintf(stderr, "An error occured: %s\n", failStr);
+
+    MPI_Abort(MPI_COMM_WORLD, failCode);
+}
+
+/**
 @brief Deconstruct MPI-related information in domain
 
 @param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
@@ -5224,6 +5273,7 @@ void SW_MPI_handle_IO(
     SW_SOIL_RUN_INPUTS *tempSoils = NULL;
     Bool *succFlags = NULL;
     LOG_INFO *logs = NULL;
+    Bool errorCaused = swFALSE;
 
     // Determine if spatial variables are one- or two-dimensional
     // This impacts the order of "start" and "count" values for spatial key
@@ -5333,6 +5383,10 @@ checkStatus:
             inputs,
             LogInfo
         );
+        if (LogInfo->stopRun) {
+            errorCaused = swTRUE;
+            goto freeMem;
+        }
 
         // Distribute N_SUID_ASSIGN amount of run inputs to compute processes
         spread_inputs(
@@ -5349,6 +5403,7 @@ checkStatus:
             swFALSE
         );
         if (LogInfo->stopRun) {
+            errorCaused = swTRUE;
             goto freeMem;
         }
 
@@ -5372,7 +5427,8 @@ checkStatus:
                 LogInfo
             );
             if (LogInfo->stopRun) {
-                return;
+                errorCaused = swTRUE;
+                goto freeMem;
             }
         }
 
@@ -5456,4 +5512,8 @@ freeMem:
         &succFlags,
         &logs
     );
+
+    if (errorCaused) {
+        SW_MPI_Fail(SW_MPI_FAIL_NETCDF, 0, NULL);
+    }
 }

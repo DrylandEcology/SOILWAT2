@@ -34,7 +34,7 @@
 /*                   Local Defines                     */
 /* --------------------------------------------------- */
 
-#define NUM_DOM_IN_KEYS 18 // Number of possible keys within `domain.in`
+#define NUM_DOM_IN_KEYS 19 // Number of possible keys within `domain.in`
 
 /* =================================================== */
 /*             Private Function Declarations           */
@@ -197,7 +197,8 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         "SpinupScope",
         "SpinupDuration",
         "SpinupSeed",
-        "SpatialTolerance"
+        "SpatialTolerance",
+        "MaxSimErrors"
     };
     static const Bool requiredKeys[NUM_DOM_IN_KEYS] = {
         swTRUE,
@@ -217,7 +218,12 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         swTRUE,
         swTRUE,
         swTRUE,
+        swTRUE,
+#if defined(SWMPI)
         swTRUE
+#else
+        swFALSE
+#endif
     };
     Bool hasKeys[NUM_DOM_IN_KEYS] = {swFALSE};
 
@@ -259,7 +265,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
         /* Make sure we are not trying to convert a string with no numerical
          * value */
-        if (keyID > 0 && keyID <= 17 && keyID != 8) {
+        if (keyID > 0 && keyID <= 18 && keyID != 8) {
 
             /* Check to see if the line number contains a double or integer
              * value */
@@ -417,6 +423,13 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
             if (LT(SW_Domain->spatialTol, 0.0)) {
                 LogError(LogInfo, LOGERROR, "Spatial tolerance must be >= 0.");
+            }
+            break;
+        case 18:
+            SW_Domain->maxSimErrors = intRes;
+
+            if (SW_Domain->maxSimErrors <= 0) {
+                LogError(LogInfo, LOGERROR, "Max simulation errors must be > 0.");
             }
             break;
 

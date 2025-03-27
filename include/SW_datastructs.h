@@ -1651,6 +1651,10 @@ typedef struct {
     double spatialTol; /**< Tolerence when comparing domain coordinates
                              between nc input files and the nc domain file */
 
+    int maxSimErrors; /**< Maximum number of simulation errors before
+                           the program throws a fatal error (active withMPI
+                           only) */
+
     // Information on input files
     SW_PATH_INPUTS SW_PathInputs;
 

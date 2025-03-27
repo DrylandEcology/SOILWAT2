@@ -450,6 +450,8 @@ void SW_CTL_RunSimSet(
     MPI_Datatype weathHistType = SW_Domain->datatypes[eSW_MPI_WeathHist];
     MPI_Datatype reqType = SW_Domain->datatypes[eSW_MPI_Req];
     MPI_Datatype logType = SW_Domain->datatypes[eSW_MPI_Log];
+    Bool errorCaused = swFALSE;
+    int numErrors = 0;
 
     copyWeather = (Bool) !isnull(sw_template->RunIn.weathRunAllHist);
 #else
@@ -608,6 +610,11 @@ checkStatus:
                 main_LogInfo->numDomainErrors++;
 #if defined(SWMPI)
                 reportLog = swTRUE;
+                numErrors++;
+                if (numErrors == SW_Domain->maxSimErrors) {
+                    errorCaused = swTRUE;
+                    goto wrapUp;
+                }
 #endif
 #if defined(SWMPI)
             } else {
@@ -664,7 +671,7 @@ checkStatus:
     }
 
 wrapUp:
-#if defined(SOILWAT)
+#if defined(SOILWAT) && !defined(SWMPI)
     if (runSims == 0) {
         sw_message("Program was killed early. Shutting down...");
     }
@@ -677,6 +684,10 @@ wrapUp:
         if (!isnull(inputs[suid].weathRunAllHist)) {
             SW_WTH_deconstruct(&inputs[suid].weathRunAllHist);
         }
+    }
+
+    if (errorCaused) {
+        SW_MPI_Fail(SW_MPI_FAIL_COMP_ERR, 0, NULL);
     }
 #else
     (void) rank;

@@ -31,6 +31,11 @@ typedef enum {
 
 #define N_ITER_BEFORE_OUT 1
 
+// Reasons to fail the MPI program
+#define SW_MPI_FAIL_NETCDF 1
+#define SW_MPI_FAIL_COMP_ERR 2
+#define SW_MPI_FAIL_MPI 3
+
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
@@ -40,6 +45,8 @@ void SW_MPI_initialize(
 );
 
 void SW_MPI_finalize();
+
+void SW_MPI_Fail(int failType, int errorCode, char *mpiErrStr);
 
 void SW_MPI_deconstruct(SW_DOMAIN *SW_Domain);
 
