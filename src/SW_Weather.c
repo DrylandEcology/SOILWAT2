@@ -735,6 +735,9 @@ transfer/calculate to SW_WEATHER_HIST for the simulation
 @param elevation Site elevation above sea level [m];
     utilized only if specific humidity is provided as input
     for calculating relative humidity
+@param[in] doyOffset A value to offset yearly days if the input array
+    holds more that one site's worth of values; should be set to 0 if
+    SWMPI is not enabled
 @param[out] yearlyWeather Destination for temporary/calculated values
 for all years within the simulation
 @param[out] LogInfo Holds information on warnings and errors
@@ -745,12 +748,14 @@ void SW_WTH_setWeatherValues(
     const Bool *inputFlags,
     double ***tempWeather,
     double elevation,
+    TimeInt doyOffset,
     SW_WEATHER_HIST *yearlyWeather,
     LOG_INFO *LogInfo
 ) {
     TimeInt year;
     TimeInt yearIndex;
     TimeInt doy;
+    TimeInt tempDoy;
 
     Bool hasMaxMinTemp = (Bool) (inputFlags[TEMP_MAX] && inputFlags[TEMP_MIN]);
     Bool hasMaxMinRelHumid =
@@ -779,15 +784,17 @@ void SW_WTH_setWeatherValues(
         year = yearIndex + startYear;
 
         for (doy = 0; doy < MAX_DAYS; doy++) {
+            tempDoy = doy + doyOffset;
+
             // Temperature [C]
             yearlyWeather[yearIndex].temp_max[doy] =
-                tempWeather[yearIndex][TEMP_MAX][doy];
+                tempWeather[yearIndex][TEMP_MAX][tempDoy];
             yearlyWeather[yearIndex].temp_min[doy] =
-                tempWeather[yearIndex][TEMP_MIN][doy];
+                tempWeather[yearIndex][TEMP_MIN][tempDoy];
 
             // Precipitation [cm]
             yearlyWeather[yearIndex].ppt[doy] =
-                tempWeather[yearIndex][PPT][doy];
+                tempWeather[yearIndex][PPT][tempDoy];
 
             // Calculate average air temperature [C] if min/max not missing
             if (!missing(yearlyWeather[yearIndex].temp_max[doy]) &&
@@ -802,25 +809,25 @@ void SW_WTH_setWeatherValues(
             if (inputFlags[CLOUD_COV]) {
                 // Cloud cover [0-100 %]
                 yearlyWeather[yearIndex].cloudcov_daily[doy] =
-                    tempWeather[yearIndex][CLOUD_COV][doy];
+                    tempWeather[yearIndex][CLOUD_COV][tempDoy];
             }
 
             if (inputFlags[WIND_SPEED]) {
                 // Wind speed [m s-1]
                 yearlyWeather[yearIndex].windspeed_daily[doy] =
-                    tempWeather[yearIndex][WIND_SPEED][doy];
+                    tempWeather[yearIndex][WIND_SPEED][tempDoy];
 
             } else if (hasEastNorthWind) {
 
                 // Make sure wind is not averaged calculated with any instances
                 // of SW_MISSING
-                if (!missing(tempWeather[yearIndex][WIND_EAST][doy]) &&
-                    !missing(tempWeather[yearIndex][WIND_NORTH][doy])) {
+                if (!missing(tempWeather[yearIndex][WIND_EAST][tempDoy]) &&
+                    !missing(tempWeather[yearIndex][WIND_NORTH][tempDoy])) {
 
                     // Wind speed [m s-1]
                     yearlyWeather[yearIndex].windspeed_daily[doy] = sqrt(
-                        squared(tempWeather[yearIndex][WIND_EAST][doy]) +
-                        squared(tempWeather[yearIndex][WIND_NORTH][doy])
+                        squared(tempWeather[yearIndex][WIND_EAST][tempDoy]) +
+                        squared(tempWeather[yearIndex][WIND_NORTH][tempDoy])
                     );
                 } else {
                     yearlyWeather[yearIndex].windspeed_daily[doy] = SW_MISSING;
@@ -833,20 +840,22 @@ void SW_WTH_setWeatherValues(
 
                     // Make sure relative humidity is not averaged from any
                     // instances of SW_MISSING
-                    if (!missing(tempWeather[yearIndex][REL_HUMID_MAX][doy]) &&
-                        !missing(tempWeather[yearIndex][REL_HUMID_MIN][doy])) {
+                    if (!missing(tempWeather[yearIndex][REL_HUMID_MAX][tempDoy]
+                        ) &&
+                        !missing(tempWeather[yearIndex][REL_HUMID_MIN][tempDoy]
+                        )) {
 
                         // Relative humidity [0-100 %]
                         yearlyWeather[yearIndex].r_humidity_daily[doy] =
-                            (tempWeather[yearIndex][REL_HUMID_MAX][doy] +
-                             tempWeather[yearIndex][REL_HUMID_MIN][doy]) /
+                            (tempWeather[yearIndex][REL_HUMID_MAX][tempDoy] +
+                             tempWeather[yearIndex][REL_HUMID_MIN][tempDoy]) /
                             2;
                     }
 
                 } else if (inputFlags[REL_HUMID]) {
                     // Relative humidity [0-100 %]
                     yearlyWeather[yearIndex].r_humidity_daily[doy] =
-                        tempWeather[yearIndex][REL_HUMID][doy];
+                        tempWeather[yearIndex][REL_HUMID][tempDoy];
 
                 } else if (inputFlags[SPEC_HUMID]) {
 
@@ -854,7 +863,7 @@ void SW_WTH_setWeatherValues(
                     // be executed while average temperature and/or specific
                     // humidity are holding the value "SW_MISSING"
                     if (!missing(yearlyWeather[yearIndex].temp_avg[doy]) &&
-                        !missing(tempWeather[yearIndex][SPEC_HUMID][doy])) {
+                        !missing(tempWeather[yearIndex][SPEC_HUMID][tempDoy])) {
 
                         // Relative humidity [0-100 %] calculated from
                         // specific humidity [g kg-1] and temperature [C]
@@ -862,7 +871,7 @@ void SW_WTH_setWeatherValues(
                             !missing(yearlyWeather[yearIndex].temp_min[doy])) {
                             yearlyWeather[yearIndex].r_humidity_daily[doy] =
                                 relativeHumidity3(
-                                    tempWeather[yearIndex][SPEC_HUMID][doy],
+                                    tempWeather[yearIndex][SPEC_HUMID][tempDoy],
                                     yearlyWeather[yearIndex].temp_max[doy],
                                     yearlyWeather[yearIndex].temp_min[doy],
                                     elevation
@@ -870,7 +879,7 @@ void SW_WTH_setWeatherValues(
                         } else {
                             yearlyWeather[yearIndex].r_humidity_daily[doy] =
                                 relativeHumidity2(
-                                    tempWeather[yearIndex][SPEC_HUMID][doy],
+                                    tempWeather[yearIndex][SPEC_HUMID][tempDoy],
                                     yearlyWeather[yearIndex].temp_avg[doy],
                                     elevation
                                 );
@@ -894,7 +903,7 @@ void SW_WTH_setWeatherValues(
                                 "100%%.",
                                 year,
                                 doy,
-                                tempWeather[yearIndex][SPEC_HUMID][doy],
+                                tempWeather[yearIndex][SPEC_HUMID][tempDoy],
                                 yearlyWeather[yearIndex].temp_avg[doy],
                                 elevation,
                                 yearlyWeather[yearIndex].r_humidity_daily[doy]
@@ -916,7 +925,7 @@ void SW_WTH_setWeatherValues(
 
                     // Actual vapor pressure [kPa]
                     yearlyWeather[yearIndex].actualVaporPressure[doy] =
-                        tempWeather[yearIndex][ACTUAL_VP][doy];
+                        tempWeather[yearIndex][ACTUAL_VP][tempDoy];
 
                 } else if (inputFlags[TEMP_DEWPOINT] &&
                            !missing(tempWeather[yearIndex][TEMP_DEWPOINT][doy]
@@ -925,7 +934,7 @@ void SW_WTH_setWeatherValues(
                     // Actual vapor pressure [kPa] from dewpoint temperature [C]
                     yearlyWeather[yearIndex].actualVaporPressure[doy] =
                         actualVaporPressure3(
-                            tempWeather[yearIndex][TEMP_DEWPOINT][doy]
+                            tempWeather[yearIndex][TEMP_DEWPOINT][tempDoy]
                         );
 
                 } else if (hasMaxMinTemp && hasMaxMinRelHumid) {
@@ -935,14 +944,16 @@ void SW_WTH_setWeatherValues(
                     // relative humidity are holding the value "SW_MISSING"
                     if (!missing(yearlyWeather[yearIndex].temp_max[doy]) &&
                         !missing(yearlyWeather[yearIndex].temp_min[doy]) &&
-                        !missing(tempWeather[yearIndex][REL_HUMID_MAX][doy]) &&
-                        !missing(tempWeather[yearIndex][REL_HUMID_MIN][doy])) {
+                        !missing(tempWeather[yearIndex][REL_HUMID_MAX][tempDoy]
+                        ) &&
+                        !missing(tempWeather[yearIndex][REL_HUMID_MIN][tempDoy]
+                        )) {
 
                         // Actual vapor pressure [kPa]
                         yearlyWeather[yearIndex].actualVaporPressure[doy] =
                             actualVaporPressure2(
-                                tempWeather[yearIndex][REL_HUMID_MAX][doy],
-                                tempWeather[yearIndex][REL_HUMID_MIN][doy],
+                                tempWeather[yearIndex][REL_HUMID_MAX][tempDoy],
+                                tempWeather[yearIndex][REL_HUMID_MIN][tempDoy],
                                 yearlyWeather[yearIndex].temp_max[doy],
                                 yearlyWeather[yearIndex].temp_min[doy]
                             );
@@ -1024,7 +1035,7 @@ void SW_WTH_setWeatherValues(
 
             if (inputFlags[SHORT_WR]) {
                 yearlyWeather[yearIndex].shortWaveRad[doy] =
-                    tempWeather[yearIndex][SHORT_WR][doy];
+                    tempWeather[yearIndex][SHORT_WR][tempDoy];
             }
         }
     }
@@ -1035,12 +1046,17 @@ void SW_WTH_setWeatherValues(
 simulations weather history
 
 @param[in] nYears Number of years within the simulation
+@param[in] extraStorMult A scalar multiplier specifying how many
+    extra MAX_DAYS per variable
 @param[out] fullWeathHist A list of values to temporarily store
 the weather history for every possible input variable
 @param[out] LogInfo Holds information on warnings and errors
 */
 void allocate_temp_weather(
-    TimeInt nYears, double ****fullWeathHist, LOG_INFO *LogInfo
+    TimeInt nYears,
+    int extraStorMult,
+    double ****fullWeathHist,
+    LOG_INFO *LogInfo
 ) {
     TimeInt year;
     int tempVar;
@@ -1074,7 +1090,9 @@ void allocate_temp_weather(
     for (year = 0; year < nYears; year++) {
         for (tempVar = 0; tempVar < MAX_INPUT_COLUMNS; tempVar++) {
             (*fullWeathHist)[year][tempVar] = (double *) Mem_Malloc(
-                sizeof(double) * MAX_DAYS, "allocate_temp_weather()", LogInfo
+                sizeof(double) * MAX_DAYS * extraStorMult,
+                "allocate_temp_weather()",
+                LogInfo
             );
         }
     }
@@ -1170,7 +1188,7 @@ void readAllWeather(
     unsigned int year;
     double ***tempWeatherHist = NULL;
 
-    allocate_temp_weather(n_years, &tempWeatherHist, LogInfo);
+    allocate_temp_weather(n_years, 1, &tempWeatherHist, LogInfo);
     if (LogInfo->stopRun) {
         return;
     }
@@ -1179,7 +1197,7 @@ void readAllWeather(
         year = yearIndex + startYear;
 
         // Set all daily weather values to missing
-        clear_hist_weather(&allHist[yearIndex], tempWeatherHist[yearIndex]);
+        clear_hist_weather(1, &allHist[yearIndex], tempWeatherHist[yearIndex]);
 
         SW_WTH_setWeathUsingClimate(
             &allHist[yearIndex],
@@ -1218,6 +1236,7 @@ void readAllWeather(
             dailyInputFlags,
             tempWeatherHist,
             elevation,
+            0,
             allHist,
             LogInfo
         );
@@ -1919,12 +1938,14 @@ void checkAllWeather(
 @brief Clears weather history.
 @note Used by rSOILWAT2
 */
-void clear_hist_weather(SW_WEATHER_HIST *yearWeather, double **fullWeathHist) {
+void clear_hist_weather(
+    int extraStorMult, SW_WEATHER_HIST *yearWeather, double **fullWeathHist
+) {
     /* --------------------------------------------------- */
     TimeInt d;
     int weathVar;
 
-    for (d = 0; d < MAX_DAYS; d++) {
+    for (d = 0; d < (TimeInt) (MAX_DAYS * extraStorMult); d++) {
         if (!isnull(yearWeather)) {
             yearWeather->ppt[d] = SW_MISSING;
             yearWeather->temp_max[d] = SW_MISSING;

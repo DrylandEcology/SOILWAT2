@@ -177,12 +177,16 @@ void SW_WTH_setWeatherValues(
     const Bool *inputFlags,
     double ***tempWeather,
     double elevation,
+    TimeInt doyOffset,
     SW_WEATHER_HIST *yearlyWeather,
     LOG_INFO *LogInfo
 );
 
 void allocate_temp_weather(
-    TimeInt nYears, double ****fullWeathHist, LOG_INFO *LogInfo
+    TimeInt nYears,
+    int extraStorMult,
+    double ****fullWeathHist,
+    LOG_INFO *LogInfo
 );
 
 void deallocate_temp_weather(TimeInt nYears, double ****fullWeathHist);
@@ -255,7 +259,9 @@ void initializeAllWeatherPtrs(SW_WEATHER_HIST **allHist, unsigned int n_years);
 
 void deallocateAllWeather(SW_WEATHER_HIST **allHist);
 
-void clear_hist_weather(SW_WEATHER_HIST *yearWeather, double **fullWeathHist);
+void clear_hist_weather(
+    int extraStorMult, SW_WEATHER_HIST *yearWeather, double **fullWeathHist
+);
 
 void SW_WTH_finalize_all_weather(
     SW_MARKOV_INPUTS *SW_MarkovIn,

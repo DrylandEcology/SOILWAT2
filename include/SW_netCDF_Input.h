@@ -108,7 +108,21 @@ Bool SW_NCIN_check_progress(
 );
 
 void SW_NCIN_read_inputs(
-    SW_RUN *sw, SW_DOMAIN *SW_Domain, const size_t ncSUID[], LOG_INFO *LogInfo
+    SW_RUN *sw,
+    SW_DOMAIN *SW_Domain,
+    const size_t ncSUID[],
+    size_t ***starts,
+    size_t ***counts,
+    int **openNCFileIDs[],
+    int numReads[],
+    int numInputs,
+    double *tempMonthlyVals,
+    double *elevations,
+    double *tempSiltVals,
+    double *tempSWRCPVals,
+    SW_SOIL_RUN_INPUTS *newSoils,
+    SW_RUN_INPUTS *inputs,
+    LOG_INFO *LogInfo
 );
 
 void SW_NCIN_check_input_config(

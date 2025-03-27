@@ -4497,6 +4497,24 @@ checkStatus:
             counts
         );
 
+        SW_NCIN_read_inputs(
+            sw,
+            SW_Domain,
+            NULL,
+            starts,
+            counts,
+            SW_Domain->SW_PathInputs.openInFileIDs,
+            numWrites,
+            numIterSuids,
+            tempMonthlyVals,
+            elevations,
+            tempSilt,
+            tempSWRCPVals,
+            tempSoils,
+            inputs,
+            LogInfo
+        );
+
         input += numSuidsTot;
     }
 

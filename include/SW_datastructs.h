@@ -1354,6 +1354,9 @@ typedef struct {
        domain information - domain and progress variables */
     int ncDomVarIDs[SW_NVARDOM];
 
+    /* Flags specifying each domain's type */
+    Bool siteDoms[SW_NINKEYSNC];
+
     /** Indicates which variables are provided by netCDF inputs
 
     This is an array over the `inkey` #SW_NINKEYSNC, and each element is

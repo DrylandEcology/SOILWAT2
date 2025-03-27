@@ -353,6 +353,9 @@ typedef int sw_converter_t;
    to an I/O process */
 #define PROCS_PER_IO ((MAX_NODE_PROCS / SW_MPI_NIO) + 1)
 
+/* The number of SUIDs that are assigned to a compute process at once */
+#define N_SUID_ASSIGN 1
+
 #ifdef __cplusplus
 }
 #endif
