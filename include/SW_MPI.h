@@ -120,7 +120,7 @@ void SW_MPI_close_out_files(
     int *openOutFileIDs[][SW_OUTNPERIODS], SW_OUT_DOM *OutDom, int numOutFiles
 );
 
-Bool SW_MPI_check_setup_status(Bool stopRun, MPI_Comm comm);
+Bool SW_MPI_setup_fail(Bool stopRun, MPI_Comm comm);
 
 void SW_MPI_report_log(
     int rank,

@@ -1187,7 +1187,7 @@ static void get_dynamic_string(
             );
         }
     }
-    if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+    if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
         return;
     }
 
@@ -1253,7 +1253,7 @@ static void get_NC_info(
                 numVarsInKey[inKey], &netCDFIn->dimOrderInVar[inKey], LogInfo
             );
         }
-        if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+        if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
             return;
         }
 
@@ -1273,7 +1273,7 @@ static void get_NC_info(
                     comm,
                     LogInfo
                 );
-                if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+                if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
                     return;
                 }
             }
@@ -1286,7 +1286,7 @@ static void get_NC_info(
                 comm,
                 LogInfo
             );
-            if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+            if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
                 return;
             }
 
@@ -1368,7 +1368,7 @@ static void create_iocomp_comms(
         ranksInIOCompComm = (int *) Mem_Malloc(
             sizeof(int) * numRanksForIO, "create_groups()", LogInfo
         );
-        if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
+        if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
             goto freeMem;
         }
 
@@ -1383,7 +1383,7 @@ static void create_iocomp_comms(
             // Store this send rank in the list to send
             ranksInIOCompComm[rankIndex] = sendRank;
         }
-        if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
+        if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
             goto freeMem;
         }
 
@@ -1403,7 +1403,7 @@ static void create_iocomp_comms(
     } else {
         // Check that the I/O processes have been able to allocate
         // their group/communicator rank list
-        if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
+        if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
             goto freeMem;
         }
 
@@ -1414,7 +1414,7 @@ static void create_iocomp_comms(
         ranksInIOCompComm = (int *) Mem_Malloc(
             sizeof(int) * numRanksForIO, "create_groups()", LogInfo
         );
-        if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
+        if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
             goto freeMem;
         }
 
@@ -1500,7 +1500,7 @@ static void create_groups(
             sizeof(int) * numCompProcs, "create_groups()", LogInfo
         );
     }
-    if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
+    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
         goto freeMem;
     }
 
@@ -1509,7 +1509,7 @@ static void create_groups(
             sizeof(int) * numIOProcsTot, "create_groups()", LogInfo
         );
     }
-    if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
+    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
         goto freeMem;
     }
 
@@ -1628,7 +1628,7 @@ static void get_path_info(
             sizeof(unsigned int) * nYears, "get_path_info()", LogInfo
         );
     }
-    if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+    if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
         return;
     }
 
@@ -1647,7 +1647,7 @@ static void get_path_info(
             LogInfo
         );
     }
-    if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+    if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
         return;
     }
 
@@ -1679,7 +1679,7 @@ static void get_path_info(
                 LogInfo
             );
         }
-        if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+        if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
             return;
         }
 
@@ -1744,7 +1744,7 @@ static void get_path_info(
                     LogInfo
                 );
             }
-            if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+            if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
                 return;
             }
 
@@ -1808,7 +1808,7 @@ static void open_input_files(
                         fileName = pathInputs->ncInFiles[eSW_InDomain][domVar];
                     }
                     get_dynamic_string(rank, &fileName, swTRUE, comm, LogInfo);
-                    if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+                    if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
                         return;
                     }
 
@@ -1819,7 +1819,7 @@ static void open_input_files(
                         &pathInputs->ncDomFileIDs[domVar],
                         LogInfo
                     );
-                    if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+                    if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
                         return;
                     }
 
@@ -1834,7 +1834,7 @@ static void open_input_files(
         pathInputs->openInFileIDs[inKey] = (int **) Mem_Malloc(
             sizeof(int *) * numVarsInKey[inKey], "SW_MPI_open_files()", LogInfo
         );
-        if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+        if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
             return;
         }
 
@@ -1855,7 +1855,7 @@ static void open_input_files(
             pathInputs->openInFileIDs[inKey][var] = (int *) Mem_Malloc(
                 sizeof(int) * numFiles, "SW_MPI_open_files()", LogInfo
             );
-            if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+            if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
                 return;
             }
 
@@ -1868,7 +1868,7 @@ static void open_input_files(
                                    pathInputs->ncWeatherInFiles[var][file];
                 }
                 get_dynamic_string(rank, &fileName, swTRUE, comm, LogInfo);
-                if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+                if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
                     if (rank > SW_MPI_ROOT) {
                         free(fileName);
                         fileName = NULL;
@@ -1878,7 +1878,7 @@ static void open_input_files(
 
                 id = &pathInputs->openInFileIDs[inKey][var][file];
                 SW_NC_open_par(fileName, NC_NOWRITE, comm, id, LogInfo);
-                if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+                if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
                     free(fileName);
                     return;
                 }
@@ -1989,7 +1989,7 @@ static void open_output_files(
                             "open_output_files()",
                             LogInfo
                         );
-                    if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+                    if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
                         return;
                     }
 
@@ -2001,7 +2001,7 @@ static void open_output_files(
                         get_dynamic_string(
                             rank, &fileName, swTRUE, comm, LogInfo
                         );
-                        if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+                        if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
                             if (rank > SW_MPI_ROOT) {
                                 free(fileName);
                             }
@@ -2011,7 +2011,7 @@ static void open_output_files(
                         id = &pathOutputs->openOutFileIDs[outKey][pd][file];
 
                         SW_NC_open_par(fileName, NC_WRITE, comm, id, LogInfo);
-                        if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+                        if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
                             if (rank > SW_MPI_ROOT) {
                                 free(fileName);
                             }
@@ -3771,7 +3771,7 @@ void SW_MPI_setup(
 ) {
     Bool getWeather = swFALSE;
 
-    if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
+    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
         return;
     }
 
@@ -3780,7 +3780,7 @@ void SW_MPI_setup(
     }
 
     SW_MPI_process_types(SW_Domain, procName, worldSize, rank, LogInfo);
-    if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
+    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
         return;
     }
 
@@ -3795,7 +3795,7 @@ void SW_MPI_setup(
         getWeather,
         LogInfo
     );
-    if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
+    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
         return;
     }
 
@@ -4049,7 +4049,7 @@ void SW_MPI_template_info(
             SW_MKV_construct(SW_Run->WeatherIn.rng_seed, &SW_Run->MarkovIn);
             allocateMKV(&SW_Run->MarkovIn, LogInfo);
         }
-        if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+        if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
             return;
         }
 
@@ -4115,7 +4115,7 @@ void SW_MPI_template_info(
                     LogInfo
                 );
             }
-            if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+            if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
                 return;
             }
 
@@ -4153,7 +4153,7 @@ void SW_MPI_ncout_info(
     if (rank > SW_MPI_ROOT) {
         SW_NCOUT_alloc_output_var_info(OutDom, LogInfo);
     }
-    if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+    if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
         return;
     }
 
@@ -4189,7 +4189,7 @@ void SW_MPI_ncout_info(
 
             sendStr = (Bool) (!isnull(attStr));
             get_dynamic_string(rank, &attStr, sendStr, comm, LogInfo);
-            if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+            if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
                 return;
             }
 
@@ -4197,14 +4197,14 @@ void SW_MPI_ncout_info(
                 OutDom->netCDFOutput.outputVarInfo[outKey][var][varNameIndex];
             sendStr = (Bool) (!isnull(attStr));
             get_dynamic_string(rank, &attStr, sendStr, comm, LogInfo);
-            if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+            if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
                 return;
             }
 
             attStr = OutDom->netCDFOutput.units_sw[outKey][var];
             sendStr = (Bool) (!isnull(attStr));
             get_dynamic_string(rank, &attStr, sendStr, comm, LogInfo);
-            if (SW_MPI_check_setup_status(LogInfo->stopRun, comm)) {
+            if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
                 return;
             }
         }
@@ -4397,7 +4397,7 @@ we must do a check-in with all processes to make sure no errors occurred
 @param[in] stopRun A flag specifying if an error occurred and stop the run
 @param[in] comm MPI communicator to broadcast a message to
 */
-Bool SW_MPI_check_setup_status(Bool stopRun, MPI_Comm comm) {
+Bool SW_MPI_setup_fail(Bool stopRun, MPI_Comm comm) {
     int fail = (stopRun) ? 1 : 0;
     int failProgram = 0;
 
@@ -5387,7 +5387,7 @@ void SW_MPI_handle_IO(
     );
 
 checkStatus:
-    if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
+    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
         goto freeMem;
     }
     *setupFail = swFALSE;

@@ -511,7 +511,7 @@ void SW_CTL_RunSimSet(
 
 #if defined(SWMPI)
 checkStatus:
-    if (SW_MPI_check_setup_status(main_LogInfo->stopRun, MPI_COMM_WORLD)) {
+    if (SW_MPI_setup_fail(main_LogInfo->stopRun, MPI_COMM_WORLD)) {
         goto wrapUp;
     }
     *setupFail = swFALSE;

@@ -216,7 +216,7 @@ setupProgramData:
         rank, size, procName, prepareFiles, &sw_template, &SW_Domain, &LogInfo
     );
 #if defined(SWMPI)
-    if (SW_MPI_check_setup_status(LogInfo.stopRun, MPI_COMM_WORLD)) {
+    if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD)) {
         goto finishProgram;
     } else if (SW_Domain.SW_Designation.procJob == SW_MPI_PROC_COMP) {
         goto sim;
@@ -240,7 +240,7 @@ setupProgramData:
         }
 #if defined(SWMPI)
     }
-    if (SW_MPI_check_setup_status(
+    if (SW_MPI_setup_fail(
             LogInfo.stopRun, SW_Domain.SW_Designation.groupComm
         )) {
         goto closeFiles;
@@ -255,7 +255,7 @@ setupProgramData:
         &SW_Domain.OutDom,
         &LogInfo
     );
-    if (SW_MPI_check_setup_status(
+    if (SW_MPI_setup_fail(
             LogInfo.stopRun, SW_Domain.SW_Designation.groupComm
         )) {
         goto closeFiles;

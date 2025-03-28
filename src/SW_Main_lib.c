@@ -568,7 +568,7 @@ void sw_setup_prog_data(
         SW_MPI_setup(
             rank, worldSize, procName, SW_Domain, sw_template, LogInfo
         );
-        if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
+        if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
             return;
         }
     }
@@ -588,7 +588,7 @@ void sw_setup_prog_data(
         LogInfo
     );
 #if defined(SWMPI)
-    if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
+    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
         return;
     }
 #else
@@ -612,7 +612,7 @@ void sw_setup_prog_data(
         }
 #if defined(SWMPI)
     }
-    if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
+    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
         return;
     }
 #endif
@@ -626,7 +626,7 @@ void sw_setup_prog_data(
             LogInfo
         );
     }
-    if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
+    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
         return;
     }
 #endif
@@ -636,7 +636,7 @@ void sw_setup_prog_data(
             SW_NCOUT_create_units_converters(&SW_Domain->OutDom, LogInfo);
         }
 #if defined(SWMPI)
-        if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
+        if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
             return;
         }
 #else
