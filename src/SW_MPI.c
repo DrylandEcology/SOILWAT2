@@ -3162,7 +3162,8 @@ program is to allow for a hardcoded number of netCDF read errors
 */
 void SW_MPI_Fail(int failType, int errorCode, char *mpiErrStr) {
     const char *ncFail = "SOILWAT failed due to a netCDF error.";
-    const char *compFail = "SOILWAT failed due to too many errors during simulations.";
+    const char *compFail =
+        "SOILWAT failed due to too many errors during simulations.";
     const char *mpiFailAdd = "SOILWAT failed due to an OpenMPI problem:";
     char mpiFail[FILENAME_MAX] = "\0";
 
@@ -3170,23 +3171,23 @@ void SW_MPI_Fail(int failType, int errorCode, char *mpiErrStr) {
     int failCode = failType;
 
     switch (failType) {
-        case SW_MPI_FAIL_NETCDF:
-            failStr = (char *) ncFail;
-            break;
-        case SW_MPI_FAIL_COMP_ERR:
-            failStr = (char *) compFail;
-            break;
-        default: // SW_MPI_FAIL_MPI
-            snprintf(
-                mpiFail,
-                sizeof(mpiFail),
-                "%s \"%s\".",
-                (char *) mpiFailAdd,
-                mpiErrStr
-            );
-            failStr = mpiFail;
-            failCode = errorCode;
-            break;
+    case SW_MPI_FAIL_NETCDF:
+        failStr = (char *) ncFail;
+        break;
+    case SW_MPI_FAIL_COMP_ERR:
+        failStr = (char *) compFail;
+        break;
+    default: // SW_MPI_FAIL_MPI
+        snprintf(
+            mpiFail,
+            sizeof(mpiFail),
+            "%s \"%s\".",
+            (char *) mpiFailAdd,
+            mpiErrStr
+        );
+        failStr = mpiFail;
+        failCode = errorCode;
+        break;
     }
 
     fprintf(stderr, "An error occured: %s\n", failStr);
