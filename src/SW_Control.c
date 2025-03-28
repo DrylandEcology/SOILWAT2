@@ -623,6 +623,11 @@ checkStatus:
                 reportLog = swTRUE;
                 numErrors++;
                 if (numErrors == SW_Domain->maxSimErrors) {
+                    LogError(
+                        main_LogInfo,
+                        LOGERROR,
+                        "Maximum number of allowed simulation errors reached."
+                    );
                     errorCaused = swTRUE;
                     goto wrapUp;
                 }
