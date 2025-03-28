@@ -429,7 +429,9 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             SW_Domain->maxSimErrors = intRes;
 
             if (SW_Domain->maxSimErrors <= 0) {
-                LogError(LogInfo, LOGERROR, "Max simulation errors must be > 0.");
+                LogError(
+                    LogInfo, LOGERROR, "Max simulation errors must be > 0."
+                );
             }
             break;
 
