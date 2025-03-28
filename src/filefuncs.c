@@ -274,6 +274,7 @@ void sw_message(const char *msg) {
     timeStringISO8601(timeString, sizeof timeString);
 
     sw_printf("SOILWAT2 (%s) %s\n", timeString, msg);
+    fflush(stdout);
 }
 
 /**
