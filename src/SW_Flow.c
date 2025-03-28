@@ -357,6 +357,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         sw->Weather.now.actualVaporPressure,
         sw->Weather.now.shortWaveRad,
         sw->Weather.desc_rsds,
+        sw->Weather.fixWeatherData[fixMAXRSDS],
         &sw->SoilWat.H_oh,
         &sw->SoilWat.H_ot,
         &sw->SoilWat.H_gh,

@@ -75,6 +75,7 @@ double solar_radiation(
     double e_a,
     double rsds,
     unsigned int desc_rsds,
+    Bool fixMAXRSDS,
     double *H_oh,
     double *H_ot,
     double *H_gh,

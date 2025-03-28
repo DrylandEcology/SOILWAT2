@@ -879,7 +879,11 @@ typedef struct {
     double snow, snowmelt, snowloss, surfaceMax, surfaceMin;
     double temp_snow; // Snow temperature
 
+    /** Array of options to fix daily weather inputs, see #FixWeatherType */
+    Bool fixWeatherData[NFIXWEATHER];
+
     Bool use_cloudCoverMonthly, use_windSpeedMonthly, use_humidityMonthly;
+
     Bool dailyInputFlags[MAX_INPUT_COLUMNS];
 
     unsigned int dailyInputIndices[MAX_INPUT_COLUMNS],

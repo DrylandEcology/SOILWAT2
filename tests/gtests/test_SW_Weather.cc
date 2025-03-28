@@ -36,6 +36,7 @@ TEST_F(WeatherFixtureTest, WeatherDefaultValues) {
         SW_Run.Weather.n_input_forcings,
         SW_Run.Weather.dailyInputIndices,
         SW_Run.Weather.dailyInputFlags,
+        SW_Run.Weather.fixWeatherData,
         SW_Run.Sky.cloudcov,
         SW_Run.Sky.windspeed,
         SW_Run.Sky.r_humidity,
@@ -1188,6 +1189,7 @@ TEST_F(WeatherFixtureTest, WeatherInputGridMET) {
         SW_Run.Model.startyr,
         1,
         SW_Run.Weather.dailyInputFlags,
+        SW_Run.Weather.fixWeatherData,
         tempWeatherHist,
         SW_Run.Model.elevation,
         &SW_Run.Weather.allHist[0],
@@ -1360,6 +1362,7 @@ TEST_F(WeatherFixtureTest, WeatherInputDaymet) {
         SW_Run.Model.startyr,
         1,
         SW_Run.Weather.dailyInputFlags,
+        SW_Run.Weather.fixWeatherData,
         tempWeatherHist,
         SW_Run.Model.elevation,
         &SW_Run.Weather.allHist[0],
@@ -1524,6 +1527,7 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype1) {
         year,
         1,
         SW_Run.Weather.dailyInputFlags,
+        SW_Run.Weather.fixWeatherData,
         tempWeatherHist,
         SW_Run.Model.elevation,
         &SW_Run.Weather.allHist[0],
@@ -1685,6 +1689,9 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
     SW_Run.Weather.n_input_forcings = 7;
     SW_Run.Weather.desc_rsds = 1; // MACA rsds is flux density over 24 hours
 
+    // Request weather input fixes
+    SW_Run.Weather.fixWeatherData[fixPERCENT] = swTRUE;
+
     // Allocate temporary location for weather
     allocate_temp_weather(1, &tempWeatherHist, &LogInfo);
     sw_fail_on_error(&LogInfo);
@@ -1712,6 +1719,7 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
         SW_Run.Model.startyr,
         1,
         SW_Run.Weather.dailyInputFlags,
+        SW_Run.Weather.fixWeatherData,
         tempWeatherHist,
         SW_Run.Model.elevation,
         &SW_Run.Weather.allHist[0],

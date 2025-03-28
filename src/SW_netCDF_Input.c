@@ -7649,6 +7649,7 @@ static void read_weather_input(
         SW_Domain->startyr,
         SW_Weather->n_years,
         SW_Weather->dailyInputFlags,
+        SW_Weather->fixWeatherData,
         tempWeatherHist,
         elevation,
         SW_Weather->allHist,
