@@ -342,6 +342,10 @@ This function will handle two modes: SWMPI en/disabled
     reference for local versions of SW_RUN
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
+@param[out] setupFail Specifies if the process failed in the setup phase
+    (SWMPI only)
+@param[out] runFailed Specifies if the process failed in the run phase
+    (SWMPI only)
 @param[out] SW_WallTime Struct of type SW_WALLTIME that holds timing
     information for the program run
 @param[out] main_LogInfo Holds information on warnings and errors
@@ -350,6 +354,8 @@ void SW_CTL_RunSims(
     int rank,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
+    Bool *setupFail,
+    Bool *runErrored,
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *main_LogInfo
 ) {
@@ -360,13 +366,14 @@ void SW_CTL_RunSims(
             sw_message("is running simulations across the domain...");
         }
         SW_CTL_RunSimSet(
-            rank, sw_template, SW_Domain, SW_WallTime, main_LogInfo
+            rank, sw_template, SW_Domain, setupFail, SW_WallTime, main_LogInfo
         );
 #if defined(SWMPI)
     } else {
-        SW_MPI_handle_IO(rank, sw_template, SW_Domain, main_LogInfo);
+        SW_MPI_handle_IO(rank, sw_template, SW_Domain, setupFail, main_LogInfo);
     }
 #endif
+    *runErrored = (Bool) (runSims == 0);
 }
 
 /**
@@ -404,6 +411,8 @@ must update respective functions
     reference for local versions of SW_RUN
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
+@param[out] setupFail Specifies if the process failed in the setup phase
+    (SWMPI only)
 @param[out] SW_WallTime Struct of type SW_WALLTIME that holds timing
     information for the program run
 @param[out] main_LogInfo Holds information on warnings and errors
@@ -412,6 +421,7 @@ void SW_CTL_RunSimSet(
     int rank,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
+    Bool *setupFail,
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *main_LogInfo
 ) {
@@ -504,6 +514,7 @@ checkStatus:
     if (SW_MPI_check_setup_status(main_LogInfo->stopRun, MPI_COMM_WORLD)) {
         goto wrapUp;
     }
+    *setupFail = swFALSE;
 #endif
 
     while (numInputs > 0) {

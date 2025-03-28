@@ -3364,7 +3364,7 @@ on various program-defined structs
 */
 void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
     int res;
-    int numItems[] = {5, 5, 5, 5, 6, 5, 18, 3, 5, 9};
+    int numItems[] = {5, 5, 5, 5, 6, 5, 18, 3, 7, 9};
     int blockLens[][19] = {
         {1, 1, 1, 1, 1},    /* SW_DOMAIN */
         {1, 1, 1, 1, 1},    /* SW_SPINUP */
@@ -3395,7 +3395,7 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
          1,
          1},                   /* SW_VEGESTAB_INPUTS */
         {1, N_SUID_ASSIGN, 1}, /* SW_MPI_REQUEST */
-        {MAX_LOG_SIZE, MAX_MSGS * MAX_LOG_SIZE, 1, 1, 1}, /* LOG_INFO */
+        {MAX_LOG_SIZE, MAX_MSGS * MAX_LOG_SIZE, 1, 1, 1, 1, 1}, /* LOG_INFO */
         {MAX_DAYS,
          MAX_DAYS,
          MAX_DAYS,
@@ -3442,7 +3442,13 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
          MPI_DOUBLE,
          MPI_DOUBLE},                /* SW_VEGESTAB_INPUTS */
         {MPI_INT, MPI_INT, MPI_INT}, /* SW_MPI_REQUEST */
-        {MPI_CHAR, MPI_CHAR, MPI_INT, MPI_INT, MPI_INT}, /* LOG_INFO */
+        {MPI_CHAR,
+         MPI_CHAR,
+         MPI_INT,
+         MPI_UNSIGNED_LONG,
+         MPI_UNSIGNED_LONG,
+         MPI_INT,
+         MPI_INT}, /* LOG_INFO */
         {MPI_DOUBLE,
          MPI_DOUBLE,
          MPI_DOUBLE,
@@ -3526,6 +3532,8 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
         {offsetof(LOG_INFO, errorMsg),
          offsetof(LOG_INFO, warningMsgs),
          offsetof(LOG_INFO, numWarnings),
+         offsetof(LOG_INFO, numDomainWarnings),
+         offsetof(LOG_INFO, numDomainErrors),
          offsetof(LOG_INFO, stopRun),
          offsetof(LOG_INFO, QuietMode)},
 
@@ -4401,68 +4409,122 @@ Bool SW_MPI_check_setup_status(Bool stopRun, MPI_Comm comm) {
 @brief Report any log information that has been created throughout the
 program run either through I/O processes or the root process
 
-@param[in] wtType Custom MPI datatype for SW_WALLTIME
-@param[in] SW_WallTime Struct of type SW_WALLTIME that holds timing
-information for the program run
-@param[in] procDesign Process designation (compute or I/O)
+@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] size Number of processors (world size) within the
     communicator MPI_COMM_WORLD
-@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] wtType Custom MPI datatype for SW_WALLTIME
+@param[in] SW_WallTime Struct of type SW_WALLTIME that holds timing
+    information for the program run
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
 @param[in] failedSetup Specifies if the setup process failed
 @param[in] LogInfo Holds information on warnings and errors
 */
 void SW_MPI_report_log(
+    int rank,
+    int size,
     MPI_Datatype wtType,
     SW_WALLTIME *SW_WallTime,
-    SW_MPI_DESIGNATE *procDesign,
-    int size,
-    int rank,
+    SW_DOMAIN *SW_Domain,
     Bool failedSetup,
     LOG_INFO *LogInfo
 ) {
+    SW_MPI_DESIGNATE *desig = &SW_Domain->SW_Designation;
     SW_WALLTIME avgWallTime;
+    MPI_Datatype logType = SW_Domain->datatypes[eSW_MPI_Log];
     MPI_Request req = MPI_REQUEST_NULL;
     int numRanks = 0;
     double prevMean = 0.0;
     double runSqr = 0.0;
+    int destProcJob = SW_MPI_PROC_COMP;
     int destRank;
+    Bool reportLog = (Bool) (LogInfo->stopRun || LogInfo->numWarnings > 0);
+    Bool destReport = swFALSE;
+    char warnHeader[MAX_FILENAMESIZE] = "\0";
+    FILE *tempFilePtr = NULL;
 
-    avgWallTime.timeMean = 0.0;
-    avgWallTime.timeSD = 0.0;
+    SW_WT_StartTime(&avgWallTime);
 
     if (rank == SW_MPI_ROOT) {
+        if (reportLog) {
+            tempFilePtr = LogInfo->logfp;
+            LogInfo->logfp = LogInfo->logfps[0];
+
+            sw_write_warnings("\n", LogInfo);
+            LogInfo->logfp = tempFilePtr;
+        }
+
         /* Get timing information to average in root processes */
         for (destRank = 1; destRank < size; destRank++) {
             SW_WALLTIME rankWT;
+            LOG_INFO procLog;
 
-            if (procDesign->procJob == SW_MPI_PROC_COMP) {
+            SW_MPI_Recv(MPI_INT, &destProcJob, 1, destRank, swTRUE, 0, &req);
+
+            if (destProcJob == SW_MPI_PROC_COMP && !failedSetup) {
                 SW_MPI_Recv(wtType, &rankWT, 1, destRank, swTRUE, 0, &req);
                 numRanks++;
 
-                prevMean = avgWallTime.timeMean;
-                avgWallTime.timeMean = get_running_mean(
-                    numRanks, avgWallTime.timeMean, rankWT.timeMean
+                prevMean = SW_WallTime->timeMean;
+                SW_WallTime->timeMean = get_running_mean(
+                    numRanks, SW_WallTime->timeMean, rankWT.timeMean
                 );
-                avgWallTime.timeMax = get_running_mean(
-                    numRanks, avgWallTime.timeMax, rankWT.timeMean
+                SW_WallTime->timeMax = get_running_mean(
+                    numRanks, SW_WallTime->timeMax, rankWT.timeMean
                 );
-                avgWallTime.timeMin = get_running_mean(
-                    numRanks, avgWallTime.timeMin, rankWT.timeMean
+                SW_WallTime->timeMin = get_running_mean(
+                    numRanks, SW_WallTime->timeMin, rankWT.timeMean
                 );
                 runSqr = get_running_sqr(
-                    prevMean, avgWallTime.timeMean, rankWT.timeMean
+                    prevMean, SW_WallTime->timeMean, rankWT.timeMean
                 );
-                avgWallTime.nTimedRuns += rankWT.nTimedRuns;
-                avgWallTime.nUntimedRuns += rankWT.nUntimedRuns;
+                SW_WallTime->nTimedRuns += rankWT.nTimedRuns;
+                SW_WallTime->nUntimedRuns += rankWT.nUntimedRuns;
+            } else if (failedSetup) {
+                SW_MPI_Recv(MPI_INT, &destReport, 1, destRank, swTRUE, 0, &req);
+
+                if (destReport) {
+                    // Get logs that need to be reported to general
+                    // log file
+                    sw_init_logs(LogInfo->logfp, &procLog);
+
+                    SW_MPI_Recv(
+                        logType, &procLog, 1, destRank, swTRUE, 0, &req
+                    );
+
+                    snprintf(
+                        warnHeader, MAX_FILENAMESIZE, "\n(Rank %d) ", destRank
+                    );
+
+                    sw_write_warnings(warnHeader, &procLog);
+
+                    LogInfo->numDomainErrors += procLog.numDomainErrors;
+                    LogInfo->numDomainWarnings += procLog.numDomainWarnings;
+                }
             }
         }
 
-        avgWallTime.timeSD = final_running_sd(numRanks, runSqr);
+        if (!failedSetup) {
+            SW_WallTime->timeSD = final_running_sd(numRanks, runSqr);
 
-        SW_WT_ReportTime(avgWallTime, LogInfo);
+            SW_WT_ReportTime(*SW_WallTime, LogInfo);
+        }
     } else {
-        /* Send timing information to the root process to average it */
-        SW_MPI_Send(wtType, SW_WallTime, 1, SW_MPI_ROOT, swTRUE, 0, &req);
+        /* Send process job to root process */
+        SW_MPI_Send(MPI_INT, &desig->procJob, 1, SW_MPI_ROOT, swTRUE, 0, &req);
+
+        if (desig->procJob == SW_MPI_PROC_COMP && !failedSetup) {
+            /* Send timing information to the root process to average it */
+            SW_MPI_Send(wtType, SW_WallTime, 1, SW_MPI_ROOT, swTRUE, 0, &req);
+
+        } else if (failedSetup) {
+            // Send information to the root process
+            SW_MPI_Send(MPI_INT, &reportLog, 1, SW_MPI_ROOT, swTRUE, 0, &req);
+
+            if (reportLog) {
+                SW_MPI_Send(logType, LogInfo, 1, SW_MPI_ROOT, swTRUE, 0, &req);
+            }
+        }
     }
 }
 
@@ -5220,10 +5282,16 @@ from the netCDF library to have as many contiguous reads/writes as possible
     information in the simulation
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
+@param[in] setupFail Specifies if the process failed in the setup phase
+    (SWMPI only)
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_MPI_handle_IO(
-    int rank, SW_RUN *sw, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
+    int rank,
+    SW_RUN *sw,
+    SW_DOMAIN *SW_Domain,
+    Bool *setupFail,
+    LOG_INFO *LogInfo
 ) {
     // Initialize variables
     // Store number `nCompProcs` in variable (SW_MPI_DESIGNATE)
@@ -5321,6 +5389,7 @@ checkStatus:
     if (SW_MPI_check_setup_status(LogInfo->stopRun, MPI_COMM_WORLD)) {
         goto freeMem;
     }
+    *setupFail = swFALSE;
 
     /* Set up interrupt handlers so if the program is interrupted
     during simulation, we can exit smoothly and not abruptly */
@@ -5513,7 +5582,15 @@ freeMem:
         &logs
     );
 
-    if (errorCaused) {
-        SW_MPI_Fail(SW_MPI_FAIL_NETCDF, 0, NULL);
+    if (errorCaused || !runSims) {
+        // Report error
+        if (LogInfo->stopRun) {
+            LogInfo->logfp = LogInfo->logfps[0];
+            sw_write_warnings("\n", LogInfo);
+        }
+
+        if (errorCaused) {
+            SW_MPI_Fail(SW_MPI_FAIL_NETCDF, 0, NULL);
+        }
     }
 }

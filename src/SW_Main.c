@@ -58,6 +58,8 @@ int main(int argc, char **argv) {
     Bool EchoInits = swFALSE;
     Bool renameDomainTemplateNC = swFALSE;
     Bool prepareFiles = swFALSE;
+    Bool setupFailed = swTRUE;
+    Bool runFailed = swFALSE;
 
     int rank = 0;
     int size = 0;
@@ -268,7 +270,15 @@ setupProgramData:
 sim:
 #endif
     // run simulations: loop over simulation set
-    SW_CTL_RunSims(rank, &sw_template, &SW_Domain, &SW_WallTime, &LogInfo);
+    SW_CTL_RunSims(
+        rank,
+        &sw_template,
+        &SW_Domain,
+        &setupFailed,
+        &runFailed,
+        &SW_WallTime,
+        &LogInfo
+    );
 
 closeFiles: {
 #if defined(SWMPI)
@@ -288,18 +298,13 @@ finishProgram: {
     SW_DOM_deconstruct(&SW_Domain); // Includes closing netCDF files if needed
     SW_CTL_clear_model(swTRUE, &sw_template);
 
-    sw_write_warnings("(main) ", &LogInfo);
-    SW_WT_ReportTime(SW_WallTime, &LogInfo);
-    sw_wrapup_logs(&LogInfo);
-    sw_fail_on_error(&LogInfo);
-    if (LogInfo.printProgressMsg) {
+    sw_finalize_program(
+        rank, size, &SW_Domain, &SW_WallTime, setupFailed, runFailed, &LogInfo
+    );
+    if (LogInfo.printProgressMsg && rank == 0) {
         sw_message("ended.");
     }
 }
-
-#if defined(SWMPI)
-    SW_MPI_finalize();
-#endif
 
     return 0;
 }

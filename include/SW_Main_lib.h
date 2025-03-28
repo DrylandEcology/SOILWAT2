@@ -50,6 +50,15 @@ void sw_setup_prog_data(
     LOG_INFO *LogInfo
 );
 
+void sw_finalize_program(
+    int rank,
+    int size,
+    SW_DOMAIN *SW_Domain,
+    SW_WALLTIME *SW_WallTime,
+    Bool setupFailed,
+    Bool runFailed,
+    LOG_INFO *LogInfo
+);
 
 #ifdef __cplusplus
 }

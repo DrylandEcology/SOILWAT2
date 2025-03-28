@@ -122,6 +122,16 @@ void SW_MPI_close_out_files(
 
 Bool SW_MPI_check_setup_status(Bool stopRun, MPI_Comm comm);
 
+void SW_MPI_report_log(
+    int rank,
+    int size,
+    MPI_Datatype wtType,
+    SW_WALLTIME *SW_WallTime,
+    SW_DOMAIN *SW_Domain,
+    Bool failedSetup,
+    LOG_INFO *LogInfo
+);
+
 void SW_MPI_root_find_active_sites(
     SW_DOMAIN *SW_Domain,
     unsigned long ***activeSuids,
@@ -178,7 +188,11 @@ void SW_MPI_get_inputs(
 );
 
 void SW_MPI_handle_IO(
-    int rank, SW_RUN *sw, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
+    int rank,
+    SW_RUN *sw,
+    SW_DOMAIN *SW_Domain,
+    Bool *setupFail,
+    LOG_INFO *LogInfo
 );
 
 #ifdef __cplusplus

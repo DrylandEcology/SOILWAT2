@@ -23,6 +23,7 @@
 #include "include/SW_datastructs.h" // for LOG_INFO
 #include "include/SW_Defines.h"     // for MAX_MSGS, MAX_LOG_SIZE, BUILD_DATE
 #include "include/SW_Output.h"      // for SW_OUT_setup_output
+#include "include/Times.h"          // for SW_WT_ReportTime
 #include <stdio.h>                  // for fprintf, stderr, fflush, stdout
 #include <stdlib.h>                 // for exit, free, EXIT_FA...
 #include <string.h>                 // for strncmp
@@ -651,4 +652,82 @@ void sw_setup_prog_data(
 #endif
     }
 #endif // SWNETCDF
+}
+
+/**
+@brief Wrapper function to finalize the program depending on if SWMPI
+is enabled
+
+TODO: We currently only report log information when all runs pass or
+    the setup failed, implement the scenario of when the setup passes
+    but a run fails
+
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] size Number of processors (world size) within the
+    communicator MPI_COMM_WORLD
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+@param[in] SW_WallTime Struct of type SW_WALLTIME that holds timing
+    information for the program run
+@param[in] setupFailed A flag specifying if the program was exited
+    before setup was completed
+@param[out] runFailed Specifies if the process failed in the run phase
+    (SWMPI only)
+@param[in] LogInfo Holds information on warnings and errors
+*/
+void sw_finalize_program(
+    int rank,
+    int size,
+    SW_DOMAIN *SW_Domain,
+    SW_WALLTIME *SW_WallTime,
+    Bool setupFailed,
+    Bool runFailed,
+    LOG_INFO *LogInfo
+) {
+#if defined(SWMPI)
+    int type;
+
+    if ((!setupFailed && !runFailed) || setupFailed) {
+        SW_MPI_report_log(
+            rank,
+            size,
+            SW_Domain->datatypes[eSW_MPI_WallTime],
+            SW_WallTime,
+            SW_Domain,
+            setupFailed,
+            LogInfo
+        );
+    }
+
+    // Free types and communicators
+    for (type = 0; type < SW_MPI_NTYPES; type++) {
+        MPI_Type_free(&SW_Domain->datatypes[type]);
+    }
+
+    MPI_Comm_free(&SW_Domain->SW_Designation.groupComm);
+    MPI_Comm_free(&SW_Domain->SW_Designation.ioCompComm);
+
+    if (rank == SW_MPI_ROOT) {
+        MPI_Comm_free(&SW_Domain->SW_Designation.rootCompComm);
+    }
+#else
+    sw_write_warnings("(main) ", LogInfo);
+    SW_WT_ReportTime(*SW_WallTime, LogInfo);
+    sw_fail_on_error(LogInfo);
+
+    (void) rank;
+    (void) size;
+    (void) setupFailed;
+    (void) runFailed;
+    (void) SW_WallTime;
+    (void) SW_Domain;
+#endif
+
+    if (rank == 0) {
+        sw_wrapup_logs(LogInfo);
+    }
+
+#if defined(SWMPI)
+    SW_MPI_finalize();
+#endif
 }

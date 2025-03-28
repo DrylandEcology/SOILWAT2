@@ -68,6 +68,8 @@ void SW_CTL_RunSims(
     int rank,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
+    Bool *setupFail,
+    Bool *runErrored,
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *main_LogInfo
 );
@@ -76,6 +78,7 @@ void SW_CTL_RunSimSet(
     int rank,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
+    Bool *setupFail,
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *main_LogInfo
 );
