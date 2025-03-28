@@ -706,6 +706,7 @@ wrapUp:
         SW_MPI_Fail(SW_MPI_FAIL_COMP_ERR, 0, NULL);
     }
 #else
+    (void) *setupFail;
     (void) rank;
 #endif
 }

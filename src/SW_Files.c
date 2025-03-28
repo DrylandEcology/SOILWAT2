@@ -592,6 +592,9 @@ void SW_F_deconstruct(
 #else
     (void) readInVars;
     (void) useIndexFile;
+#endif
+
+#if !defined(SWMPI)
     (void) procJob;
 #endif
 }
