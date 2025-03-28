@@ -697,6 +697,8 @@ void sw_finalize_program(
             setupFailed,
             LogInfo
         );
+    } else if (rank == SW_MPI_ROOT) {
+        SW_WT_ReportTime(*SW_WallTime, LogInfo);
     }
 
     // Free types and communicators

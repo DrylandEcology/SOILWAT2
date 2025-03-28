@@ -4410,6 +4410,10 @@ Bool SW_MPI_setup_fail(Bool stopRun, MPI_Comm comm) {
 @brief Report any log information that has been created throughout the
 program run either through I/O processes or the root process
 
+Assuming setup did not fail, average domain simulation information from
+compute processes; if setup did fail, report any log information to the
+general log file the root process holds
+
 @param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] size Number of processors (world size) within the
     communicator MPI_COMM_WORLD
