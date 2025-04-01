@@ -490,6 +490,8 @@ void SW_CTL_RunSimSet(
 
 #if defined(SWMPI)
     for (suid = 0; suid < N_SUID_ASSIGN; suid++) {
+        memcpy(&inputs[suid], &sw_template->RunIn, sizeof(SW_RUN_INPUTS));
+
         if (!copyWeather) {
             SW_WTH_allocateAllWeather(
                 &inputs[suid].weathRunAllHist, n_years, main_LogInfo
@@ -1541,7 +1543,7 @@ void SW_CTL_run_sw(
     int numReads[SW_NINKEYSNC] = {1, 1, 1, 1, 1, 1, 1, 1};
     double tempMonthlyVals[MAX_MONTHS] = {0.0};
     double tempSiltVals[MAX_MONTHS] = {0.0};
-    double tempSWRCPVals[MAX_MONTHS] = {0.0};
+    double tempSoilVals[MAX_LAYERS * SWRC_PARAM_NMAX] = {0.0};
     double tempElevation = 0;
 #else
     (void) count;
@@ -1581,7 +1583,7 @@ void SW_CTL_run_sw(
         tempMonthlyVals,
         &tempElevation,
         tempSiltVals,
-        tempSWRCPVals,
+        tempSoilVals,
         &newSoil,
         &local_sw.RunIn,
         LogInfo

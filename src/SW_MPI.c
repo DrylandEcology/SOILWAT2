@@ -2063,7 +2063,7 @@ static void free_type(MPI_Datatype *type, LOG_INFO *LogInfo) {
     site's worth of values
 @param[out] tempSilt A list of temporary silt values, holding more than one
     site's worth of values
-@param[out] tempSWRCPVals A list of temporary SWRCP values, holding more than
+@param[out] tempSoilVals A list of temporary soil values, holding more than
     one site's worth of values
 @param[out] tempSoils A list of soil values, holding more than one site's worth
     of values
@@ -2080,7 +2080,7 @@ static void alloc_inputs(
     double **elevations,
     double **tempMonthlyVals,
     double **tempSilt,
-    double **tempSWRCPVals,
+    double **tempSoilVals,
     SW_SOIL_RUN_INPUTS **tempSoils,
     SW_RUN_INPUTS **inputs,
     LOG_INFO *LogInfo
@@ -2131,8 +2131,10 @@ static void alloc_inputs(
         return;
     }
 
-    *tempSWRCPVals = (double *) Mem_Malloc(
-        sizeof(double) * numInputs * MAX_LAYERS, "alloc_inputs()", LogInfo
+    *tempSoilVals = (double *) Mem_Malloc(
+        sizeof(double) * numInputs * MAX_LAYERS * SWRC_PARAM_NMAX,
+        "alloc_inputs()",
+        LogInfo
     );
     if (LogInfo->stopRun) {
         return;
@@ -2140,9 +2142,7 @@ static void alloc_inputs(
 
     if (allocSoils) {
         *tempSoils = (SW_SOIL_RUN_INPUTS *) Mem_Malloc(
-            sizeof(SW_SOIL_RUN_INPUTS) * numInputs,
-            "SW_NCIN_read_MPI()",
-            LogInfo
+            sizeof(SW_SOIL_RUN_INPUTS) * numInputs, "alloc_inputs()", LogInfo
         );
     }
 }
@@ -2613,8 +2613,8 @@ static void spread_inputs(
         *sendEstVeg = swFALSE;
     }
 
-    // Scatter amount information so compute processors now how
-    // many inputs to accept
+    // Send amount information so compute processes know how
+    // many inputs to accept then send inputs of that amount to processes
     for (comp = 0; comp < desig->nCompProcs; comp++) {
         if (!finalize || sendInputs[comp + 1] > COMP_COMPLETE) {
             numSendIn = COMP_COMPLETE;
@@ -3412,8 +3412,12 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
         {MPI_INT, MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED
         }, /* SW_DOMAIN */
         {MPI_UNSIGNED, MPI_UNSIGNED, MPI_INT, MPI_INT, MPI_UNSIGNED
-        },  /* SW_SPINUP */
-        {}, /* SW_RUN_INPUTS */
+        }, /* SW_SPINUP */
+        {MPI_DATATYPE_NULL,
+         MPI_DATATYPE_NULL,
+         MPI_DATATYPE_NULL,
+         MPI_DATATYPE_NULL,
+         MPI_DATATYPE_NULL}, /* SW_RUN_INPUTS */
         {MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_UNSIGNED
         }, /* SW_MPI_DESIGNATE */
         {MPI_DOUBLE,
@@ -3550,17 +3554,13 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
          offsetof(SW_WEATHER_HIST, actualVaporPressure)}
     };
 
-    int numItemsInStructs[] = {6, 6, 12, 2, 2};
+    // Input type information
+    int numItemsInStructs[] = {6, 6, 12, 5, 2};
 
     MPI_Datatype inTypes[][12] = {
         {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE
         },
-        {MPI_DOUBLE,
-         MPI_DOUBLE,
-         MPI_DOUBLE,
-         MPI_DOUBLE,
-         MPI_DOUBLE,
-         MPI_UNSIGNED},
+        {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INT},
         {MPI_DOUBLE,
          MPI_DOUBLE,
          MPI_DOUBLE,
@@ -3573,17 +3573,21 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
          MPI_DOUBLE,
          MPI_DOUBLE,
          MPI_DOUBLE},
-        {MPI_DATATYPE_NULL, MPI_DATATYPE_NULL},
+        {MPI_DATATYPE_NULL,
+         MPI_DATATYPE_NULL,
+         MPI_DATATYPE_NULL,
+         MPI_DATATYPE_NULL,
+         MPI_DATATYPE_NULL},
         {MPI_DOUBLE, MPI_UNSIGNED}
     };
 
     int inBlockLens[][12] = {
-        {MAX_LAYERS,
-         MAX_LAYERS,
-         MAX_LAYERS,
-         MAX_LAYERS,
-         MAX_LAYERS,
-         MAX_LAYERS + 1},
+        {MAX_MONTHS,
+         MAX_MONTHS,
+         MAX_MONTHS,
+         MAX_MONTHS,
+         MAX_MONTHS,
+         MAX_DAYS + 1},
         {1, 1, 1, 1, 1, 1},
         {MAX_LAYERS,
          MAX_LAYERS,
@@ -3597,7 +3601,7 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
          MAX_LAYERS,
          MAX_LAYERS,
          MAX_LAYERS * SWRC_PARAM_NMAX},
-        {NVEGTYPES, 1},
+        {1, 1, 1, 1, 1},
         {1, 1}
     };
 
@@ -3626,7 +3630,10 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
          offsetof(SW_SOIL_RUN_INPUTS, impermeability),
          offsetof(SW_SOIL_RUN_INPUTS, avgLyrTempInit),
          offsetof(SW_SOIL_RUN_INPUTS, swrcpMineralSoil)},
-        {offsetof(SW_VEGPROD_RUN_INPUTS, veg),
+        {offsetof(SW_VEGPROD_RUN_INPUTS, veg[0]),
+         offsetof(SW_VEGPROD_RUN_INPUTS, veg[1]),
+         offsetof(SW_VEGPROD_RUN_INPUTS, veg[2]),
+         offsetof(SW_VEGPROD_RUN_INPUTS, veg[3]),
          offsetof(SW_VEGPROD_RUN_INPUTS, bare_cov)},
         {offsetof(SW_SITE_RUN_INPUTS, Tsoil_constant),
          offsetof(SW_SITE_RUN_INPUTS, n_layers)}
@@ -3650,8 +3657,9 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
     };
 
     int type;
-    int runTypeIndex;
+    int runType;
     int covIndex;
+    int veg;
     const int numRunInTypes = 5;
     const int numCovTypes = 2;
     const int vegprodIndex = 3;
@@ -3659,10 +3667,8 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
     for (type = 0; type < SW_MPI_NTYPES; type++) {
         if (type == eSW_MPI_Inputs) {
             /* Create custom MPI subtypes for bigger SW_RUN_INPUTS */
-            for (runTypeIndex = 0; runTypeIndex < numRunInTypes;
-                 runTypeIndex++) {
-
-                if (runTypeIndex == vegprodIndex) {
+            for (runType = 0; runType < numRunInTypes; runType++) {
+                if (runType == vegprodIndex) {
                     /* Create custom MPI subtypes for VegType and CovType */
                     for (covIndex = 0; covIndex < numCovTypes; covIndex++) {
                         res = MPI_Type_create_struct(
@@ -3686,24 +3692,34 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
                         }
 
                         /* Copy CoverType to second type placement
-                           for bare cover */
+                           for bare cover and make multiple instances of
+                           "veg" to send NVEGTYPE instances */
                         if (covIndex == 1) {
-                            inTypes[vegprodIndex][1] = covTypes[1][0];
+                            for (veg = 1; veg < NVEGTYPES; veg++) {
+                                MPI_Type_dup(
+                                    inTypes[vegprodIndex][0],
+                                    &inTypes[vegprodIndex][veg]
+                                );
+                            }
+                            MPI_Type_dup(
+                                covTypes[1][0], &inTypes[vegprodIndex][4]
+                            );
+                            free_type(&covTypes[1][0], LogInfo);
                         }
                     }
                 }
 
                 res = MPI_Type_create_struct(
-                    numItemsInStructs[runTypeIndex],
-                    inBlockLens[runTypeIndex],
-                    inOffsets[runTypeIndex],
-                    inTypes[runTypeIndex],
-                    &types[type][runTypeIndex]
+                    numItemsInStructs[runType],
+                    inBlockLens[runType],
+                    inOffsets[runType],
+                    inTypes[runType],
+                    &types[type][runType]
                 );
                 if (res != MPI_SUCCESS) {
                     goto reportFail;
                 }
-                res = MPI_Type_commit(&types[type][runTypeIndex]);
+                res = MPI_Type_commit(&types[type][runType]);
                 if (res != MPI_SUCCESS) {
                     goto reportFail;
                 }
@@ -3726,14 +3742,15 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
         }
 
         if (type == eSW_MPI_Inputs) {
-            free_type(&inTypes[vegprodIndex][0], LogInfo);
-            free_type(&inTypes[vegprodIndex][1], LogInfo);
+            for (veg = 0; veg < NVEGTYPES + 1; veg++) {
+                free_type(&inTypes[vegprodIndex][veg], LogInfo);
+            }
         }
     }
 
     /* Free run input sub types */
-    for (runTypeIndex = 0; runTypeIndex < numRunInTypes; runTypeIndex++) {
-        free_type(&types[eSW_MPI_Inputs][runTypeIndex], LogInfo);
+    for (runType = 0; runType < numRunInTypes; runType++) {
+        free_type(&types[eSW_MPI_Inputs][runType], LogInfo);
     }
 
 reportFail:
@@ -3841,7 +3858,7 @@ void SW_MPI_template_info(
     IntUS vCount;
     int structType;
     int var;
-    int numElem[] = {3, 24, 6, 5, 7, 43, 2};
+    int numElem[] = {3, 24, 5, 5, 7, 44, 2};
     void **markov2DBuffer[] = {
         (void **) &SW_Run->MarkovIn.wetprob,
         (void **) &SW_Run->MarkovIn.dryprob,
@@ -3857,7 +3874,7 @@ void SW_MPI_template_info(
         (void *) SW_Run->MarkovIn.v_cov,
         (void *) &SW_Run->MarkovIn.ppt_events
     };
-    void *buffers[][43] = {
+    void *buffers[][44] = {
         {(void *) &SW_Run->CarbonIn.use_wue_mult,
          (void *) &SW_Run->CarbonIn.use_bio_mult,
          (void *) SW_Run->CarbonIn.ppm},
@@ -3888,9 +3905,8 @@ void SW_MPI_template_info(
         {(void *) &SW_Run->VegProdIn.vegYear,
          (void *) &SW_Run->VegProdIn.isBiomAsIf100Cover,
          (void *) &SW_Run->VegProdIn.use_SWA,
-         (void *) SW_Run->VegProdIn.critSoilWater,
-         (void *) SW_Run->VegProdIn.rank_SWPcrits,
-         (void *) &SW_Run->VegProdIn.veg_method},
+         (void *) &SW_Run->VegProdIn.veg_method,
+         (void *) &SW_Run->RunIn.VegProdRunIn.bare_cov.albedo},
         {(void *) &SW_Run->ModelIn.SW_SpinUp,
          (void *) &SW_Run->ModelIn.startyr,
          (void *) &SW_Run->ModelIn.endyr,
@@ -3943,10 +3959,11 @@ void SW_MPI_template_info(
          (void *) &SW_Run->SiteIn.SWCInitVal,
          (void *) &SW_Run->SiteIn.SWCWetVal,
          (void *) &SW_Run->SiteIn.SWCMinVal,
-         (void *) &SW_Run->SiteSim.n_transp_rgn},
+         (void *) &SW_Run->SiteSim.n_transp_rgn,
+         (void *) SW_Run->SiteSim.TranspRgnDepths},
         {(void *) &SW_Run->VegEstabIn.use, (void *) &SW_Run->VegEstabIn.count}
     };
-    MPI_Datatype types[][43] = {
+    MPI_Datatype types[][44] = {
         {MPI_INT, MPI_INT, MPI_DOUBLE}, /* SW_CARBON_INPUTS */
         {MPI_INT,      MPI_INT,      MPI_UNSIGNED, MPI_DOUBLE,  MPI_DOUBLE,
          MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,  MPI_DOUBLE,
@@ -3954,24 +3971,25 @@ void SW_MPI_template_info(
          MPI_INT,      MPI_INT,      MPI_INT,      MPI_INT,     MPI_UNSIGNED,
          MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED
         }, /* SW_WEATHER_INPUTS */
-        {MPI_INT, MPI_DOUBLE, MPI_INT, MPI_INT, MPI_INT, MPI_INT
+        {MPI_INT, MPI_DOUBLE, MPI_INT, MPI_INT, MPI_DOUBLE
         }, /* SW_VEGPROD_INPUTS */
         {spinupType, MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED
         }, /* SW_MODEL_INPUTS */
         {MPI_INT, MPI_INT, MPI_UNSIGNED, MPI_DOUBLE, MPI_DOUBLE
         }, /* SW_SOILWAT_INPUTS */
-        {MPI_CHAR,     MPI_CHAR,   MPI_INT,     MPI_UNSIGNED, MPI_UNSIGNED,
-         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,  MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,  MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_UNSIGNED, MPI_INT,    MPI_INT,     MPI_INT,      MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,  MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,  MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,  MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,  MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_DOUBLE, MPI_UNSIGNED}, /* SW_SITE_INPUTS */
-        {MPI_INT, MPI_UNSIGNED}                   /* SW_VEGPROD_SIM */
+        {MPI_CHAR,     MPI_CHAR,   MPI_INT,      MPI_UNSIGNED, MPI_UNSIGNED,
+         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,
+         MPI_UNSIGNED, MPI_INT,    MPI_INT,      MPI_INT,      MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_DOUBLE, MPI_UNSIGNED, MPI_DOUBLE
+        },                      /* SW_SITE_INPUTS */
+        {MPI_INT, MPI_UNSIGNED} /* SW_VEGPROD_SIM */
     };
-    int count[][43] = {
+    int count[][44] = {
         /* SW_CARBON_INPUTS */
         {1, 1, MAX_NYEAR},
 
@@ -4002,7 +4020,7 @@ void SW_MPI_template_info(
          1},
 
         /* SW_VEGPROD_INPUTS */
-        {1, NVEGTYPES, NVEGTYPES, 1, 1, 1},
+        {1, NVEGTYPES, 1, 1, 1},
 
         /* SW_MODEL_INPUTS */
         {1, 1, 1, 1, 1},
@@ -4011,32 +4029,86 @@ void SW_MPI_template_info(
         {1, 1, 1, 1, MAX_DAYS * MAX_LAYERS, MAX_DAYS * MAX_LAYERS},
 
         /* SW_SITE_INPUTS */
-        {64, 64, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-         1,  1,  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+        {64, 64, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+         1,  1,  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+         1,  1,  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, MAX_TRANSP_REGIONS},
 
         /* SW_VEGPROD_SIM */
         {1, 1}
     };
     int markov1DCount[] = {MAX_WEEKS * 2, MAX_WEEKS * 2 * 2, 1};
+    int veg;
+    int vegIn;
+    const int numNumTemplateVeg = 28;
 
     MPI_Comm comm =
         (rank == SW_MPI_ROOT) ? desig->rootCompComm : desig->groupComm;
 
     // Send input information to all processes
-    if (desig->procJob == SW_MPI_PROC_COMP || rank == SW_MPI_ROOT) {
-        for (structType = 0; structType < numStructs; structType++) {
-            for (var = 0; var < numElem[structType]; var++) {
-                SW_Bcast(
-                    types[structType][var],
-                    buffers[structType][var],
-                    count[structType][var],
-                    SW_MPI_ROOT,
-                    comm
-                );
+    for (structType = 0; structType < numStructs; structType++) {
+        for (var = 0; var < numElem[structType]; var++) {
+            SW_Bcast(
+                types[structType][var],
+                buffers[structType][var],
+                count[structType][var],
+                SW_MPI_ROOT,
+                comm
+            );
 
-                if (structType == swIndex && !SW_Run->SoilWatIn.hist_use) {
-                    break;
-                }
+            if (structType == swIndex && !SW_Run->SoilWatIn.hist_use) {
+                break;
+            }
+        }
+    }
+
+    if (desig->procJob == SW_MPI_PROC_COMP || rank == SW_MPI_ROOT) {
+        ForEachVegType(veg) {
+            void *sendBuff[] = {
+                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].cnpy.xinflec,
+                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].cnpy.yinflec,
+                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].cnpy.range,
+                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].cnpy.slope,
+                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg]
+                    .canopy_height_constant,
+                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].veg_kSmax,
+                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].veg_kdead,
+                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].lit_kSmax,
+                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg]
+                    .EsTpartitioning_param,
+                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].Es_param_limit,
+                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].shade_scale,
+                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].shade_deadmax,
+                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg]
+                    .tr_shade_effects.xinflec,
+                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg]
+                    .tr_shade_effects.yinflec,
+                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg]
+                    .tr_shade_effects.range,
+                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg]
+                    .tr_shade_effects.slope,
+                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].maxCondroot,
+                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].swpMatric50,
+                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].shapeCond,
+                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].SWPcrit,
+                (void *) &SW_Run->VegProdIn.critSoilWater[veg],
+                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].co2_bio_coeff1,
+                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].co2_bio_coeff2,
+                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].co2_wue_coeff1,
+                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].co2_wue_coeff2,
+                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].cov.albedo,
+                (void *) &SW_Run->VegProdIn.rank_SWPcrits[veg],
+                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg]
+                    .flagHydraulicRedistribution
+            };
+
+            for (vegIn = 0; vegIn < numNumTemplateVeg; vegIn++) {
+                SW_Bcast(
+                    (vegIn < numNumTemplateVeg - 2) ? MPI_DOUBLE : MPI_INT,
+                    sendBuff[vegIn],
+                    1,
+                    SW_MPI_ROOT,
+                    MPI_COMM_WORLD
+                );
             }
         }
     }
@@ -5342,7 +5414,7 @@ void SW_MPI_handle_IO(
     double *elevations = NULL;
     double *tempMonthlyVals = NULL;
     double *tempSilt = NULL;
-    double *tempSWRCPVals = NULL;
+    double *tempSoilVals = NULL;
     SW_SOIL_RUN_INPUTS *tempSoils = NULL;
     Bool *succFlags = NULL;
     LOG_INFO *logs = NULL;
@@ -5384,7 +5456,7 @@ void SW_MPI_handle_IO(
         &elevations,
         &tempMonthlyVals,
         &tempSilt,
-        &tempSWRCPVals,
+        &tempSoilVals,
         &tempSoils,
         &inputs,
         LogInfo
@@ -5452,7 +5524,7 @@ checkStatus:
             tempMonthlyVals,
             elevations,
             tempSilt,
-            tempSWRCPVals,
+            tempSoilVals,
             tempSoils,
             inputs,
             LogInfo
@@ -5581,7 +5653,7 @@ freeMem:
         &elevations,
         &tempMonthlyVals,
         &tempSilt,
-        &tempSWRCPVals,
+        &tempSoilVals,
         &tempSoils,
         &succFlags,
         &logs

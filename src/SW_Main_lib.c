@@ -561,8 +561,7 @@ void sw_setup_prog_data(
     (void) prepareFiles;
 #endif
 #if defined(SWMPI)
-    int procJob = SW_Domain->SW_Designation.procJob;
-    doOutStuff = (Bool) (procJob == SW_MPI_PROC_IO);
+    int procJob;
 
     if (!prepareFiles) {
         SW_MPI_setup(
@@ -571,6 +570,8 @@ void sw_setup_prog_data(
         if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
             return;
         }
+        procJob = SW_Domain->SW_Designation.procJob;
+        doOutStuff = (Bool) (procJob == SW_MPI_PROC_IO);
     }
 #else
     (void) rank;

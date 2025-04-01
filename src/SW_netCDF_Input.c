@@ -6597,7 +6597,7 @@ static void read_soil_inputs(
     size_t **counts,
     int **openSoilFileIDs,
     double *tempSilt,
-    double *tempswrcp,
+    double *tempVals,
     SW_SOIL_RUN_INPUTS *newSoilBuff,
     SW_RUN_INPUTS *inputs,
     LOG_INFO *LogInfo
@@ -6614,7 +6614,7 @@ static void read_soil_inputs(
     Bool **missValFlags = SW_Domain->SW_PathInputs.missValFlags[eSW_InSoil];
     double **doubleMissVals =
         SW_Domain->SW_PathInputs.doubleMissVals[eSW_InSoil];
-    double *doublePtr;
+    double *storePtr;
     int numVals;
 
     int ncFileID = -1;
@@ -6643,6 +6643,7 @@ static void read_soil_inputs(
     int inputOrigin = 0;
     size_t writeIndex;
     int input = 0;
+    double *readPtr;
 
     Bool varHasAddScaleAtts;
     double scaleFactor;
@@ -6729,11 +6730,6 @@ static void read_soil_inputs(
 
             numVals = (int) numLyrs;
 
-            if (hasPFT) {
-                count[pftWriteIndex] = 1;
-                start[pftWriteIndex] = vegIndex;
-            }
-
 #if defined(SWMPI)
             ncFileID = openSoilFileIDs[varNum][0];
 #else
@@ -6776,29 +6772,29 @@ static void read_soil_inputs(
 
                 writeIndex = ((!isSwrcpVar) ? numVals : 1) * site;
 
+                readPtr = tempVals;
                 if (varNum >= eiv_transpCoeff[0] &&
                     varNum <= eiv_transpCoeff[NVEGTYPES - 1]) {
                     /* Set trans_coeff */
                     vegIndex = varNum - eiv_transpCoeff[0];
-                    doublePtr = (double *) trans_coeff[vegIndex];
+                    storePtr = (double *) trans_coeff[vegIndex];
 
                 } else if (varNum >= eiv_swrcpMS[0] &&
                            varNum <= eiv_swrcpMS[SWRC_PARAM_NMAX - 1]) {
                     /* Set swrcp */
-                    doublePtr = (double *) tempswrcp;
+                    storePtr = NULL; // Deal with separtely in iter loop
                 } else {
-                    doublePtr = values1D[varNum - 1];
+                    storePtr = values1D[varNum - 1];
+                }
+
+                if (hasPFT) {
+                    count[pftWriteIndex] = 1;
+                    start[pftWriteIndex] = vegIndex;
                 }
 
                 if (site == 0) {
                     get_values_multiple(
-                        ncFileID,
-                        varID,
-                        start,
-                        count,
-                        varName,
-                        doublePtr,
-                        LogInfo
+                        ncFileID, varID, start, count, varName, readPtr, LogInfo
                     );
                     if (LogInfo->stopRun) {
                         goto closeFile;
@@ -6811,7 +6807,7 @@ static void read_soil_inputs(
                     set_read_vals(
                         missValFlags[varNum],
                         doubleMissVals,
-                        &doublePtr[writeIndex],
+                        &readPtr[writeIndex],
                         (!isSwrcpVar) ? numVals : 1,
                         varNum - 1,
                         varTypes[varNum],
@@ -6821,7 +6817,7 @@ static void read_soil_inputs(
                         isSwrcpVar,
                         (!isSwrcpVar) ? 0 : (varNum - eiv_swrcpMS[0]),
                         loopIter,
-                        (!isSwrcpVar) ? doublePtr : swrcpMS[loopIter]
+                        (!isSwrcpVar) ? storePtr : swrcpMS[loopIter]
                     );
                 }
 
@@ -8037,7 +8033,7 @@ void SW_NCIN_read_inputs(
     double *tempMonthlyVals,
     double *elevations,
     double *tempSiltVals,
-    double *tempSWRCPVals,
+    double *tempVals,
     SW_SOIL_RUN_INPUTS *newSoils,
     SW_RUN_INPUTS *inputs,
     LOG_INFO *LogInfo
@@ -8202,7 +8198,7 @@ void SW_NCIN_read_inputs(
             counts[eSW_InSoil],
             soilFileIDs,
             tempSiltVals,
-            tempSWRCPVals,
+            tempVals,
             newSoils,
             inputs,
             LogInfo
