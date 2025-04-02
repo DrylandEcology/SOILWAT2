@@ -8104,7 +8104,7 @@ void SW_NCIN_read_inputs(
         }
 
 #if defined(SWMPI)
-        for (inIndex = 0; inIndex < 1; inIndex++) {
+        for (inIndex = 0; inIndex < numInputs; inIndex++) {
 #endif
             for (yearIn = 0; yearIn < SW_WeatherIn->n_years; yearIn++) {
                 year = yearIn + SW_WeatherIn->startYear;
