@@ -21,6 +21,7 @@ extern "C" {
 void sw_init_args(
     int argc,
     char **argv,
+    int rank,
     Bool *EchoInits,
     char **firstfile,
     unsigned long *userSUID,

@@ -3113,7 +3113,7 @@ static void write_outputs(
 @brief Intiialize the MPI program by getting basic information about
 the rank, world size, and processor/node name, while setting the
 MPI handler method to return from a function call rather than
-crashing the program
+crashing the program and finally initializing MPI information in SW_DOMAIN
 
 @param[in] argc Number of command-line provided inputs
 @param[in] argv List of command-line provided inputs
@@ -3121,11 +3121,23 @@ crashing the program
 @param[out] worldSize Total number of processes that the MPI run has created
 @param[out] procName Name of the processor/node the current processes is
 running on
+@param[out] desig Designation instance that holds information about
+    assigning a process to a job
+@param[out] datatypes A list of custom MPI datatypes that will be created based
+on various program-defined structs
 */
 void SW_MPI_initialize(
-    int *argc, char ***argv, int *rank, int *worldSize, char *procName
+    int *argc,
+    char ***argv,
+    int *rank,
+    int *worldSize,
+    char *procName,
+    SW_MPI_DESIGNATE *desig,
+    MPI_Datatype datatypes[]
 ) {
     int procNameSize = 0;
+    int type;
+    InKeys key;
 
     MPI_Init(argc, argv);
 
@@ -3135,6 +3147,21 @@ void SW_MPI_initialize(
     MPI_Get_processor_name(procName, &procNameSize);
 
     MPI_Comm_set_errhandler(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
+
+    for (type = 0; type < SW_MPI_NTYPES; type++) {
+        datatypes[type] = MPI_DATATYPE_NULL;
+    }
+
+    ForEachNCInKey(key) { desig->domTSuids[key] = NULL; }
+
+    desig->domSuids = NULL;
+    desig->nSuids = 0;
+    desig->nCompProcs = 0;
+    desig->useTSuids = swFALSE;
+    desig->procJob = SW_MPI_PROC_COMP;
+    desig->groupComm = MPI_COMM_NULL;
+    desig->ioCompComm = MPI_COMM_NULL;
+    desig->rootCompComm = MPI_COMM_NULL;
 }
 
 /**
@@ -3142,6 +3169,41 @@ void SW_MPI_initialize(
 been initialized/created through MPI within the program run
 */
 void SW_MPI_finalize() { MPI_Finalize(); }
+
+/**
+@brief Free communicators and types when finishing the program
+
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in,out] desig Designation instance that holds information about
+    assigning a process to a job
+@param[in,out] types A list of custom MPI datatypes used throughout the program
+@param[out] LogInfo Holds information on warnings and errors; this function
+    will use this but no errors will be reported
+*/
+void SW_MPI_free_comms_types(
+    int rank, SW_MPI_DESIGNATE *desig, MPI_Datatype types[], LOG_INFO *LogInfo
+) {
+    const int numComms = 3;
+    int comm;
+    int type;
+    MPI_Comm comms[] = {
+        desig->rootCompComm, desig->groupComm, desig->ioCompComm
+    };
+
+    for (type = 0; type < SW_MPI_NTYPES; type++) {
+        if (types[type] != MPI_DATATYPE_NULL) {
+            free_type(&types[type], LogInfo);
+        }
+    }
+
+    for (comm = 0; comm < numComms; comm++) {
+        if (((comm == 0 && rank == SW_MPI_ROOT) || comm > 0) &&
+            comms[comm] != MPI_COMM_NULL) {
+
+            MPI_Comm_free(&comms[comm]);
+        }
+    }
+}
 
 /**
 @brief Trigger an abort error when a fatal error occurs
@@ -4507,7 +4569,6 @@ void SW_MPI_report_log(
     LOG_INFO *LogInfo
 ) {
     SW_MPI_DESIGNATE *desig = &SW_Domain->SW_Designation;
-    SW_WALLTIME avgWallTime;
     MPI_Datatype logType = SW_Domain->datatypes[eSW_MPI_Log];
     MPI_Request req = MPI_REQUEST_NULL;
     int numRanks = 0;
@@ -4518,14 +4579,14 @@ void SW_MPI_report_log(
     Bool reportLog = (Bool) (LogInfo->stopRun || LogInfo->numWarnings > 0);
     Bool destReport = swFALSE;
     char warnHeader[MAX_FILENAMESIZE] = "\0";
-    FILE *tempFilePtr = NULL;
-
-    SW_WT_StartTime(&avgWallTime);
+    FILE *tempFilePtr = LogInfo->logfp;
 
     if (rank == SW_MPI_ROOT) {
         if (reportLog) {
-            tempFilePtr = LogInfo->logfp;
-            LogInfo->logfp = LogInfo->logfps[0];
+            if (!isnull(LogInfo->logfps)) {
+                tempFilePtr = LogInfo->logfp;
+                LogInfo->logfp = LogInfo->logfps[0];
+            }
 
             sw_write_warnings("\n", LogInfo);
             LogInfo->logfp = tempFilePtr;

@@ -41,10 +41,20 @@ typedef enum {
 /* --------------------------------------------------- */
 
 void SW_MPI_initialize(
-    int *argc, char ***argv, int *rank, int *worldSize, char *procName
+    int *argc,
+    char ***argv,
+    int *rank,
+    int *worldSize,
+    char *procName,
+    SW_MPI_DESIGNATE *desig,
+    MPI_Datatype datatypes[]
 );
 
 void SW_MPI_finalize();
+
+void SW_MPI_free_comms_types(
+    int rank, SW_MPI_DESIGNATE *desig, MPI_Datatype types[], LOG_INFO *LogInfo
+);
 
 void SW_MPI_Fail(int failType, int errorCode, char *mpiErrStr);
 

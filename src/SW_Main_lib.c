@@ -137,6 +137,7 @@ void sw_print_version(void) {
 void sw_init_args(
     int argc,
     char **argv,
+    int rank,
     Bool *EchoInits,
     char **firstfile,
     unsigned long *userSUID,
@@ -260,18 +261,22 @@ void sw_init_args(
             break;
 
         case 4: /* -v */
-            sw_print_version();
-            LogError(LogInfo, LOGERROR, "");
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+            if (rank == 0) {
+                sw_print_version();
+                LogError(LogInfo, LOGERROR, "");
+                if (LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
             }
             break;
 
         case 5: /* -h */
-            sw_print_usage();
-            LogError(LogInfo, LOGERROR, "");
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+            if (rank == 0) {
+                sw_print_usage();
+                LogError(LogInfo, LOGERROR, "");
+                if (LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
             }
             break;
 
@@ -686,8 +691,6 @@ void sw_finalize_program(
     LOG_INFO *LogInfo
 ) {
 #if defined(SWMPI)
-    int type;
-
     if ((!setupFailed && !runFailed) || setupFailed) {
         SW_MPI_report_log(
             rank,
@@ -703,16 +706,9 @@ void sw_finalize_program(
     }
 
     // Free types and communicators
-    for (type = 0; type < SW_MPI_NTYPES; type++) {
-        MPI_Type_free(&SW_Domain->datatypes[type]);
-    }
-
-    MPI_Comm_free(&SW_Domain->SW_Designation.groupComm);
-    MPI_Comm_free(&SW_Domain->SW_Designation.ioCompComm);
-
-    if (rank == SW_MPI_ROOT) {
-        MPI_Comm_free(&SW_Domain->SW_Designation.rootCompComm);
-    }
+    SW_MPI_free_comms_types(
+        rank, &SW_Domain->SW_Designation, SW_Domain->datatypes, LogInfo
+    );
 #else
     sw_write_warnings("(main) ", LogInfo);
     SW_WT_ReportTime(*SW_WallTime, LogInfo);

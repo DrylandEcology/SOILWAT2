@@ -71,7 +71,15 @@ int main(int argc, char **argv) {
     SW_WT_StartTime(&SW_WallTime);
 
 #if defined(SWMPI)
-    SW_MPI_initialize(&argc, &argv, &rank, &size, procName);
+    SW_MPI_initialize(
+        &argc,
+        &argv,
+        &rank,
+        &size,
+        procName,
+        &SW_Domain.SW_Designation,
+        SW_Domain.datatypes
+    );
 #endif
 
     // Initialize logs and pointer objects
@@ -82,7 +90,7 @@ int main(int argc, char **argv) {
 
 #if defined(SWMPI)
     SW_MPI_create_types(SW_Domain.datatypes, &LogInfo);
-    if (LogInfo.stopRun) {
+    if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD)) {
         goto finishProgram;
     }
 #endif
@@ -91,6 +99,7 @@ int main(int argc, char **argv) {
     sw_init_args(
         argc,
         argv,
+        rank,
         &EchoInits,
         &SW_Domain.SW_PathInputs.txtInFiles[eFirst],
         &userSUID,
@@ -99,9 +108,15 @@ int main(int argc, char **argv) {
         &prepareFiles,
         &LogInfo
     );
+#if defined(SWMPI)
+    if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD)) {
+        goto finishProgram;
+    }
+#else
     if (LogInfo.stopRun) {
         goto finishProgram;
     }
+#endif
 
     // SOILWAT2: do print progress to console unless user requests quiet
     LogInfo.printProgressMsg = (Bool) (!LogInfo.QuietMode);
