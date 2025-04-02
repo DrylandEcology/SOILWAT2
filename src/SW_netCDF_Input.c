@@ -7785,7 +7785,7 @@ static void read_weather_input(
     double addOffset;
     unsigned int beforeFileIndex;
     size_t defSetStart[2] = {0};
-    size_t defSetCount[2] = {0};
+    size_t defSetCount[2] = {1, 1};
     int latIndex;
     int lonIndex;
     int timeIndex;
