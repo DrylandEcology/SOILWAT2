@@ -5274,8 +5274,8 @@ static void read_spatial_topo_climate_site_inputs(
         start[0] = start[1] = start[2] = 0;
         count[0] = count[1] = count[2] = 0;
 
+        sDom = sDoms[currKey];
 #if !defined(SWMPI)
-        sDom = (Bool) (strcmp(inVarInfo[fIndex][INDOMTYPE], "s") == 0);
         useIndexFile = SW_Domain->netCDFInput.useIndexFile[currKey];
 
         /* Get the start indices based on if we need to use the respective
@@ -5303,7 +5303,7 @@ static void read_spatial_topo_climate_site_inputs(
             defSetCount[1] = counts[currKey][read][1];
 #endif
 
-            numSites = (sDoms[currKey]) ? defSetCount[1] : defSetCount[0];
+            numSites = (sDom) ? defSetCount[1] : defSetCount[0];
 
             for (varNum = fIndex; varNum < numVarsInKey[currKey]; varNum++) {
                 adjVarNum = varNum + 1;
@@ -9650,8 +9650,7 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     return; /* Exit function prematurely due to error */
                 }
 
-                inHasSite =
-                    (Bool) (strcmp(varInfo[fIndex][INDOMTYPE], "s") == 0);
+                inHasSite = SW_Domain->netCDFInput.siteDoms[k];
 
                 get_index_vars_info(
                     ncFileID,

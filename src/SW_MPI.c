@@ -4695,7 +4695,7 @@ void SW_MPI_root_find_active_sites(
 ) {
     signed char *prog = NULL;
     int progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprog];
-    Bool sDom = (Bool) (strcmp(SW_Domain->DomainType, "s") == 0);
+    Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
     size_t numSites =
         (sDom) ? SW_Domain->nDimS : SW_Domain->nDimY * SW_Domain->nDimX;
     unsigned long progIndex;
@@ -4765,6 +4765,7 @@ void SW_MPI_get_activated_tsuids(
     LOG_INFO *LogInfo
 ) {
     Bool inSDom;
+    Bool sProgDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
     size_t nSites;
     unsigned int *sxIndexVals = NULL;
     unsigned int *yIndexVals = NULL;
