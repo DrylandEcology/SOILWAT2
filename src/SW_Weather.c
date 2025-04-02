@@ -108,6 +108,33 @@ static const unsigned int wgLOCF = 1;
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
+
+static void helperPercentValue(
+    double *val,
+    Bool fixPERCENT,
+    const char *name,
+    TimeInt year,
+    TimeInt doy,
+    LOG_INFO *LogInfo
+) {
+    if (!missing(*val) && *val > 100.) {
+        LogError(
+            LogInfo,
+            fixPERCENT ? LOGWARN : LOGERROR,
+            fixPERCENT ? "%d-%03d: Reset %s (%f) to 100%%." :
+                         "%d-%03d: %s (%f) > 100%%.",
+            year,
+            doy,
+            name,
+            *val
+        );
+
+        if (fixPERCENT) {
+            *val = 100.;
+        }
+    }
+}
+
 /**
 @brief Takes averages through the number of years of the calculated values from
 calc_SiteClimate
@@ -829,20 +856,15 @@ void SW_WTH_setWeatherValues(
                 yearlyWeather[yearIndex].cloudcov_daily[doy] =
                     tempWeather[yearIndex][CLOUD_COV][doy];
 
-                // Reset cloud cover to 100% if >100%
-                if (fixWeatherData[fixPERCENT] &&
-                    yearlyWeather[yearIndex].cloudcov_daily[doy] > 100.) {
-                    LogError(
-                        LogInfo,
-                        LOGWARN,
-                        "%d-%03d: Reset cloud cover %f to 100%%.",
-                        startYear + yearIndex,
-                        doy,
-                        yearlyWeather[yearIndex].cloudcov_daily[doy]
-                    );
-
-                    yearlyWeather[yearIndex].cloudcov_daily[doy] = 100.;
-                }
+                // Error or reset cloud cover to 100% if >100%
+                helperPercentValue(
+                    &yearlyWeather[yearIndex].cloudcov_daily[doy],
+                    fixWeatherData[fixPERCENT],
+                    "cloud cover",
+                    startYear + yearIndex,
+                    doy,
+                    LogInfo
+                );
             }
 
             if (inputFlags[WIND_SPEED]) {
@@ -897,6 +919,25 @@ void SW_WTH_setWeatherValues(
                             tempWeather[yearIndex][REL_HUMID_MAX][doy] = tmp;
                         }
 
+                        // Error or reset min/max relative humidity to 100%
+                        // if >100%
+                        helperPercentValue(
+                            &tempWeather[yearIndex][REL_HUMID_MAX][doy],
+                            fixWeatherData[fixPERCENT],
+                            "max relative humidity",
+                            startYear + yearIndex,
+                            doy,
+                            LogInfo
+                        );
+                        helperPercentValue(
+                            &tempWeather[yearIndex][REL_HUMID_MIN][doy],
+                            fixWeatherData[fixPERCENT],
+                            "min relative humidity",
+                            startYear + yearIndex,
+                            doy,
+                            LogInfo
+                        );
+
                         // Calculate average relative humidity [0-100 %]
                         yearlyWeather[yearIndex].r_humidity_daily[doy] =
                             (tempWeather[yearIndex][REL_HUMID_MAX][doy] +
@@ -936,29 +977,22 @@ void SW_WTH_setWeatherValues(
                                 );
                         }
 
-                        // Reset relative humidity to 100% if >100%
-                        if (fixWeatherData[fixPERCENT] &&
-                            yearlyWeather[yearIndex].r_humidity_daily[doy] >
-                                100.) {
-                            LogError(
-                                LogInfo,
-                                LOGWARN,
-                                "%d-%03d: Reset relative humidity %f to 100%%.",
-                                startYear + yearIndex,
-                                doy,
-                                yearlyWeather[yearIndex].r_humidity_daily[doy]
-                            );
-
-                            yearlyWeather[yearIndex].r_humidity_daily[doy] =
-                                100.;
-                        }
-
                     } else {
                         // Set relative humidity to "SW_MISSING"
                         yearlyWeather[yearIndex].r_humidity_daily[doy] =
                             SW_MISSING;
                     }
                 }
+
+                // Error or reset relative humidity to 100% if >100%
+                helperPercentValue(
+                    &yearlyWeather[yearIndex].r_humidity_daily[doy],
+                    fixWeatherData[fixPERCENT],
+                    "relative humidity",
+                    startYear + yearIndex,
+                    doy,
+                    LogInfo
+                );
 
                 // Deal with actual vapor pressure
                 if (inputFlags[ACTUAL_VP]) {
@@ -994,6 +1028,7 @@ void SW_WTH_setWeatherValues(
                                 yearlyWeather[yearIndex].temp_max[doy],
                                 yearlyWeather[yearIndex].temp_min[doy]
                             );
+
                     } else {
                         // Set actual vapor pressure to "SW_MISSING"
                         yearlyWeather[yearIndex].actualVaporPressure[doy] =
@@ -1013,6 +1048,7 @@ void SW_WTH_setWeatherValues(
                                 yearlyWeather[yearIndex].r_humidity_daily[doy],
                                 yearlyWeather[yearIndex].temp_avg[doy]
                             );
+
                     } else {
                         yearlyWeather[yearIndex].actualVaporPressure[doy] =
                             SW_MISSING;
@@ -1040,22 +1076,15 @@ void SW_WTH_setWeatherValues(
                             yearlyWeather[yearIndex].temp_avg[doy]
                         );
 
-                        // Reset relative humidity to 100% if >100%
-                        if (fixWeatherData[fixPERCENT] &&
-                            yearlyWeather[yearIndex].r_humidity_daily[doy] >
-                                100.) {
-                            LogError(
-                                LogInfo,
-                                LOGWARN,
-                                "%d-%03d: Reset relative humidity %f to 100%%.",
-                                startYear + yearIndex,
-                                doy,
-                                yearlyWeather[yearIndex].r_humidity_daily[doy]
-                            );
-
-                            yearlyWeather[yearIndex].r_humidity_daily[doy] =
-                                100.;
-                        }
+                        // Error or reset relative humidity to 100% if >100%
+                        helperPercentValue(
+                            &yearlyWeather[yearIndex].r_humidity_daily[doy],
+                            fixWeatherData[fixPERCENT],
+                            "relative humidity",
+                            startYear + yearIndex,
+                            doy,
+                            LogInfo
+                        );
                     }
                 }
             }
