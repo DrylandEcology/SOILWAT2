@@ -79,6 +79,8 @@ void errorMPI(int mpiError) {
     `SW_MPI_process_types()`
 
 @param[in] numActiveSites Number of active sites that will be simulated
+@param[in] maxNodes Maximum number of nodes that were allocated
+@param[in] numDes Number of designations that were allocated
 @param[in,out] designations A list of designations to fill and distribute
     amoung processes
 @param[in,out] activeSuids A list of domain SUIDs that was activated
@@ -96,6 +98,8 @@ void errorMPI(int mpiError) {
 */
 static void deallocProcHelpers(
     int numActiveSites,
+    int maxNodes,
+    int numDes,
     SW_MPI_DESIGNATE ***designations,
     unsigned long ***activeSuids,
     unsigned long ****activeTSuids,
@@ -108,6 +112,7 @@ static void deallocProcHelpers(
     const int num1D = 2;
     int var;
     int pair;
+    int numVals;
 
     void **oneDimFree[] = {
         (void **) numProcsInNode, (void **) numMaxProcsInNode
@@ -121,23 +126,24 @@ static void deallocProcHelpers(
     };
 
     for (var = 0; var < num1D; var++) {
-        if (!isnull((*oneDimFree[var]))) {
+        if (!isnull((void *) (*oneDimFree[var]))) {
             free((*oneDimFree[var]));
             (*oneDimFree[var]) = NULL;
         }
     }
 
     for (var = 0; var < num2D; var++) {
-        if (!isnull((*twoDimFree[var]))) {
-            for (pair = 0; pair < numActiveSites; pair++) {
-                if (!isnull(((*twoDimFree[var]))[pair])) {
-                    free(((*twoDimFree[var]))[pair]);
-                    ((*twoDimFree[var]))[pair] = NULL;
+        numVals = (var >= 1 && var <= 2) ? maxNodes : numActiveSites;
+        numVals = (var == 3) ? numDes : numVals;
+        if (!isnull(*twoDimFree[var])) {
+            for (pair = 0; pair < numVals; pair++) {
+                if (!isnull((*twoDimFree[var])[pair])) {
+                    free((void *) (*twoDimFree[var])[pair]);
+                    (*twoDimFree[var])[pair] = NULL;
                 }
             }
-
-            free(((*twoDimFree[var])));
-            ((*twoDimFree[var])) = NULL;
+            free((void *) (*twoDimFree[var]));
+            (*twoDimFree[var]) = NULL;
         }
     }
 
@@ -794,6 +800,7 @@ static void designateProcesses(
 @param[in] worldSize Total number of processes that the MPI run has created
 @param[in] rootProcName Root process' processor/compute node name
 @param[out] numNodes The number of unique nodes the program is running on
+@param[out] maxNumNodes Maximum number of nodes that were in use
 @param[out] nodeNames A list of unique node names
 @param[out] numProcsInNode A list specifying the number of processes
     within each node
@@ -808,6 +815,7 @@ static void getProcInfo(
     int worldSize,
     char rootProcName[],
     int *numNodes,
+    int *maxNumNodes,
     char ***nodeNames,
     int **numProcsInNode,
     int **numMaxProcsInNode,
@@ -885,6 +893,8 @@ static void getProcInfo(
                     );
                     return;
                 }
+
+                *maxNumNodes = newSize;
             }
 
             (*nodeNames)[node] = Str_Dup(rankProc, LogInfo);
@@ -1366,7 +1376,7 @@ static void create_iocomp_comms(
 
     if (rankJob == SW_MPI_PROC_IO) {
         ranksInIOCompComm = (int *) Mem_Malloc(
-            sizeof(int) * numRanksForIO, "create_groups()", LogInfo
+            sizeof(int) * numRanksForIO, "create_iocomp_comms()", LogInfo
         );
         if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
             goto freeMem;
@@ -1412,7 +1422,7 @@ static void create_iocomp_comms(
         );
 
         ranksInIOCompComm = (int *) Mem_Malloc(
-            sizeof(int) * numRanksForIO, "create_groups()", LogInfo
+            sizeof(int) * numRanksForIO, "create_iocomp_comms()", LogInfo
         );
         if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
             goto freeMem;
@@ -2506,7 +2516,7 @@ static void get_contiguous_counts(
     starts[0][1] = prevX;
 
     counts[0][0] = (spatialVars1D) ? numDomSuids : 1;
-    counts[0][1] = (sDom || spatialVars1D) ? 0 : N_SUID_ASSIGN;
+    counts[0][1] = (sDom || spatialVars1D) ? 1 : N_SUID_ASSIGN;
 
     if (useSuccFlags) {
         prevFlag = succFlags[0];
@@ -4758,7 +4768,6 @@ void SW_MPI_get_activated_tsuids(
     size_t nSites;
     unsigned int *sxIndexVals = NULL;
     unsigned int *yIndexVals = NULL;
-    char ****varInfo = SW_Domain->netCDFInput.inVarInfo;
     Bool **readInVars = SW_Domain->netCDFInput.readInVars;
     Bool *useIndexFile = SW_Domain->netCDFInput.useIndexFile;
     char ***ncInFiles = SW_Domain->SW_PathInputs.ncInFiles;
@@ -4766,8 +4775,7 @@ void SW_MPI_get_activated_tsuids(
     int index;
     int site;
     InKeys inKey;
-    int varNum;
-    int fileID;
+    int fileID = -1;
     char *ncFileName;
     int varID;
     unsigned long *indexCell;
@@ -4792,10 +4800,7 @@ void SW_MPI_get_activated_tsuids(
             continue;
         }
 
-        varNum = 0;
-        while (!readInVars[varNum + 1]) {
-            varNum++;
-        }
+        fileID = -1;
 
         ncFileName = ncInFiles[inKey][0];
         SW_NC_open(ncFileName, NC_NOWRITE, &fileID, LogInfo);
@@ -4803,9 +4808,9 @@ void SW_MPI_get_activated_tsuids(
             return;
         }
 
-        inSDom = (Bool) (strcmp(varInfo[inKey][varNum][INDOMTYPE], "s") == 0);
+        inSDom = SW_Domain->netCDFInput.siteDoms[inKey];
         nSites =
-            (inSDom) ? SW_Domain->nDimS : SW_Domain->nDimX * SW_Domain->nDimY;
+            (sProgDom) ? SW_Domain->nDimS : SW_Domain->nDimX * SW_Domain->nDimY;
         sxIndexVals = (unsigned int *) Mem_Malloc(
             sizeof(unsigned int) * nSites,
             "SW_MPI_get_activated_tsuids()",
@@ -4866,6 +4871,8 @@ void SW_MPI_get_activated_tsuids(
                 indexCell[1] = sxIndexVals[domSuid[1]];
             }
         }
+
+        nc_close(fileID);
     }
 
 freeMem:
@@ -4875,6 +4882,10 @@ freeMem:
 
     if (!isnull(yIndexVals)) {
         free(yIndexVals);
+    }
+
+    if (fileID > -1) {
+        nc_close(fileID);
     }
 }
 
@@ -4905,6 +4916,7 @@ void SW_MPI_process_types(
     int startOldSize = 0;
     int startNewSize = 3;
     int numNodes = 0;
+    int maxNodes = startNewSize;
     int node;
     char **nodeNames = NULL;
     int *numProcsInNode = NULL;
@@ -5026,6 +5038,7 @@ void SW_MPI_process_types(
             worldSize,
             procName,
             &numNodes,
+            &maxNodes,
             &nodeNames,
             &numProcsInNode,
             &numMaxProcsInNode,
@@ -5149,6 +5162,8 @@ void SW_MPI_process_types(
 freeMem:
     deallocProcHelpers(
         SW_Domain->SW_Designation.nSuids,
+        maxNodes,
+        worldSize,
         &designations,
         &activeSuids,
         &activeTSuids,
@@ -5623,7 +5638,7 @@ checkStatus:
                 progFileID,
                 progVarID,
                 distSUIDs,
-                iterNumSuids,
+                iterNumSuids - numIterSuids,
                 SW_Domain->netCDFInput.siteDoms[eSW_InDomain],
                 &SW_Domain->OutDom,
                 succFlags,
@@ -5637,6 +5652,8 @@ checkStatus:
                 errorCaused = swTRUE;
                 goto freeMem;
             }
+
+            iterNumSuids = numIterSuids;
         }
 
         // Loop through all requests sent by the compute process
@@ -5683,7 +5700,7 @@ checkStatus:
                 progFileID,
                 progVarID,
                 distSUIDs,
-                iterNumSuids,
+                iterNumSuids - numIterSuids,
                 SW_Domain->netCDFInput.siteDoms[eSW_InDomain],
                 &SW_Domain->OutDom,
                 succFlags,
