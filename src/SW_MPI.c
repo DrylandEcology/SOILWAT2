@@ -2321,6 +2321,9 @@ static void alloc_IO_info(
     if (LogInfo->stopRun) {
         return;
     }
+    for (suid = 0; suid < numSuids * N_ITER_BEFORE_OUT; suid++) {
+        *succFlags[suid] = swFALSE;
+    }
 
     ForEachNCInKey(inKey) {
         if (inKey > eSW_InDomain && useIndexFile[inKey] &&
@@ -2947,7 +2950,7 @@ static void get_comp_results(
     int rankIndex;
     int rank;
     int comp;
-    int log;
+    int succ;
     int numProcResponse = 0;
     int targetRepsonses = numCompProcs;
 
@@ -2973,6 +2976,10 @@ static void get_comp_results(
             rank = desig->ranks[rankIndex];
         }
 
+        for (succ = 0; succ < recvLens[rankIndex]; succ++) {
+            succFlags[succ + offsetMult[rankIndex + 1]] = req.runStatus[succ];
+        }
+
         if (logReq) {
             SW_MPI_Recv(
                 logType,
@@ -2985,10 +2992,6 @@ static void get_comp_results(
             );
 
             write_logs(recvLens[rankIndex + 1], logfps[rankIndex + 1], logs);
-
-            for (log = 0; log < recvLens[rankIndex + 1]; log++) {
-                succFlags[log] = (Bool) !logs[log].stopRun;
-            }
         }
 
         if (outReq) {
@@ -3126,7 +3129,7 @@ static void write_outputs(
     // Update progress file statuses
     for (write = 0; write < numWrites; write++) {
         SW_NCIN_set_progress(
-            succFlags[numSites],
+            (Bool) !succFlags[numSites],
             progFileID,
             progVarID,
             starts[write],
@@ -3138,6 +3141,10 @@ static void write_outputs(
         }
 
         numSites += (siteDom) ? counts[write][0] : counts[write][1];
+    }
+
+    for (write = 0; write < numSuids; write++) {
+        succFlags[numSites] = swTRUE;
     }
 }
 
@@ -5314,7 +5321,7 @@ void SW_MPI_send_results(
 ) {
     MPI_Request nullReq = MPI_REQUEST_NULL;
     int reqType = REQ_OUT_NC;
-    int succRun = swFALSE;
+    Bool succRun = swFALSE;
     int run;
     SW_MPI_REQUEST req;
     OutKey outKey;
@@ -5324,7 +5331,7 @@ void SW_MPI_send_results(
 
     for (run = 0; run < N_SUID_ASSIGN; run++) {
         req.runStatus[run] = runStatuses[run];
-        succRun = (succRun || runStatuses[run]);
+        succRun = (Bool) (succRun || runStatuses[run]);
     }
 
     if (succRun && reportLog) {
