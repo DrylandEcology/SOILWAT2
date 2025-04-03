@@ -4735,6 +4735,7 @@ void SW_MPI_root_find_active_sites(
     int *numActiveSites,
     LOG_INFO *LogInfo
 ) {
+    int suid = 0;
     signed char *prog = NULL;
     int progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprog];
     Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
@@ -4779,7 +4780,8 @@ void SW_MPI_root_find_active_sites(
        the active domain SUIDs */
     for (progIndex = 0; progIndex < numSites; progIndex++) {
         if (prog[progIndex] == PRGRSS_READY) {
-            SW_DOM_calc_ncSuid(SW_Domain, progIndex, (*activeSuids)[progIndex]);
+            SW_DOM_calc_ncSuid(SW_Domain, progIndex, (*activeSuids)[suid]);
+            suid++;
         }
     }
 
@@ -4911,7 +4913,12 @@ void SW_MPI_get_activated_tsuids(
                 indexCell[0] = sxIndexVals[domSuid[0]];
             } else {
                 indexCell[0] = yIndexVals[domSuid[0]];
-                indexCell[1] = sxIndexVals[domSuid[1]];
+
+                if (sProgDom) {
+                    indexCell[1] = sxIndexVals[domSuid[0]];
+                } else {
+                    indexCell[1] = sxIndexVals[domSuid[1]];
+                }
             }
         }
 
