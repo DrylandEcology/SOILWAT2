@@ -6417,8 +6417,8 @@ static void derive_missing_soils(
 
         noWidth =
             (hasConstSoilDepths || readInVarsSoils[eiv_soilLayerWidth + 1]) ?
-                (Bool) (missing(soilIn->depths[slNum]) ||
-                        ZRO(soilIn->depths[slNum])) :
+                (Bool) (missing(soilIn->width[slNum]) ||
+                        ZRO(soilIn->width[slNum])) :
                 swFALSE;
 
         if (noDepth || noWidth) {
@@ -6471,7 +6471,7 @@ static void derive_missing_soils(
 
                 soilIn->fractionWeightMatric_sand[slNum] =
                     1 -
-                    (tempSilt[slNum] + soilIn->fractionVolBulk_gravel[slNum]);
+                    (tempSilt[slNum] + soilIn->fractionWeightMatric_clay[slNum]);
             }
 
             // Calculate clay if sand and silt provided but not clay
@@ -6760,7 +6760,7 @@ static void read_soil_inputs(
                     soils->fractionVolBulk_gravel,
                     soils->fractionWeightMatric_sand,
                     soils->fractionWeightMatric_clay,
-                    tempSilt,
+                    &tempSilt[MAX_LAYERS * (site + input)],
                     soils->fractionWeight_om,
                     soils->impermeability,
                     soils->avgLyrTempInit,
@@ -6836,10 +6836,13 @@ static void read_soil_inputs(
     }
 
     for (input = 0; input < numInputs; input++) {
+        soils = (hasConstSoilDepths) ? &inputs[input].SoilRunIn :
+                                       &newSoilBuff[input];
+
         /* Derive missing soil properties and check others */
         derive_missing_soils(
             &inputs[input].SiteRunIn.n_layers,
-            &inputs[input].SoilRunIn,
+            soils,
             readInputs,
             hasConstSoilDepths,
             depthsAllSoilLayers,
@@ -7747,6 +7750,7 @@ static void read_weather_input(
     size_t **counts,
     int **weathFileIDs,
     double *elevation,
+    double *tempVals,
     SW_RUN_INPUTS *inputs,
     LOG_INFO *LogInfo
 ) {
@@ -7780,7 +7784,6 @@ static void read_weather_input(
     int **dimOrderInVar = SW_Domain->netCDFInput.dimOrderInVar[eSW_InWeather];
     unsigned int **weatherIndices =
         SW_Domain->SW_PathInputs.ncWeatherStartEndIndices;
-    double tempVals[MAX_DAYS] = {0.0};
     double scaleFactor;
     double addOffset;
     unsigned int beforeFileIndex;
@@ -7905,7 +7908,7 @@ static void read_weather_input(
                     }
                 }
 #endif
-                numSites = (inSiteDom) ? count[0] : count[1];
+                numSites = (inSiteDom) ? count[latIndex] : count[lonIndex];
 
                 /* Read in an entire year's worth of weather data */
                 get_values_multiple(
@@ -7947,8 +7950,10 @@ static void read_weather_input(
         }
 
 #if !defined(SWMPI)
-        nc_close(ncFileID);
-        ncFileID = -1;
+        if (ncFileID > -1) {
+            nc_close(ncFileID);
+            ncFileID = -1;
+        }
 #endif
     }
 
@@ -8009,12 +8014,10 @@ to SW_Run
 @param[in] numInputs Total number of site inputs that will be read-in
 @param[in] tempMonthlyVals A list of lengths that will be used to specify
     how many inputs to send to a specific process
-@param[in] elevations A list of lengths that will be used to specify
-    how many inputs to send to a specific process
-@param[in] tempSiltVals A list of lengths that will be used to specify
-    how many inputs to send to a specific process
-@param[in] tempSWRCPVals A list of lengths that will be used to specify
-    how many inputs to send to a specific process
+@param[in] elevations A list of elevations for each site we will read
+@param[in] tempSiltVals A temporary buffer to store silt values
+@param[in] tempVals A temporary buffer to store any soil variable in
+@param[in] tempWeath A temporary buffer to store read weather input in
 @param[in] newSoils A single (no SWMPI) or a list (SWMPI) of instances of
     SW_SOIL_RUN_INPUTS used as temporary storage when reading inputs
 @param[in] inputs A single instance (no SWMPI) or a list (SWMPI) of
@@ -8034,6 +8037,7 @@ void SW_NCIN_read_inputs(
     double *elevations,
     double *tempSiltVals,
     double *tempVals,
+    double *tempWeath,
     SW_SOIL_RUN_INPUTS *newSoils,
     SW_RUN_INPUTS *inputs,
     LOG_INFO *LogInfo
@@ -8141,6 +8145,7 @@ void SW_NCIN_read_inputs(
             counts[eSW_InWeather],
             weathFileIDs,
             elevations,
+            tempWeath,
             inputs,
             LogInfo
         );

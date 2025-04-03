@@ -120,6 +120,7 @@ void SW_NCIN_read_inputs(
     double *elevations,
     double *tempSiltVals,
     double *tempVals,
+    double *tempWeath,
     SW_SOIL_RUN_INPUTS *newSoils,
     SW_RUN_INPUTS *inputs,
     LOG_INFO *LogInfo

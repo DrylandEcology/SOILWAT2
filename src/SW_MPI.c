@@ -601,7 +601,7 @@ static void fillDesignationIO(
     *leftSuids -= desig->nSuids;
     desig->domSuids = (unsigned long **) Mem_Malloc(
         sizeof(unsigned long *) * desig->nSuids,
-        "SW_MPI_process_types()",
+        "fillDesignationIO()",
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -2075,6 +2075,8 @@ static void free_type(MPI_Datatype *type, LOG_INFO *LogInfo) {
     site's worth of values
 @param[out] tempSoilVals A list of temporary soil values, holding more than
     one site's worth of values
+@param[out] tempWeather A list of temporary weather values, holding more than
+    one site's worth of values
 @param[out] tempSoils A list of soil values, holding more than one site's worth
     of values
 @param[out] inputs A list of SW_RUN_INPUTS that will be distributed sent
@@ -2091,6 +2093,7 @@ static void alloc_inputs(
     double **tempMonthlyVals,
     double **tempSilt,
     double **tempSoilVals,
+    double **tempWeather,
     SW_SOIL_RUN_INPUTS **tempSoils,
     SW_RUN_INPUTS **inputs,
     LOG_INFO *LogInfo
@@ -2143,6 +2146,15 @@ static void alloc_inputs(
 
     *tempSoilVals = (double *) Mem_Malloc(
         sizeof(double) * numInputs * MAX_LAYERS * SWRC_PARAM_NMAX,
+        "alloc_inputs()",
+        LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    *tempWeather = (double *) Mem_Malloc(
+        sizeof(double) * numInputs * MAX_DAYS,
         "alloc_inputs()",
         LogInfo
     );
@@ -3283,10 +3295,13 @@ void SW_MPI_deconstruct(SW_DOMAIN *SW_Domain) {
         if (!isnull(desig->domSuids)) {
             for (suid = 0; suid < desig->nSuids; suid++) {
                 if (!isnull(desig->domSuids[suid])) {
-                    free((void *) desig->domSuids);
-                    desig->domSuids = NULL;
+                    free((void *) desig->domSuids[suid]);
+                    desig->domSuids[suid] = NULL;
                 }
             }
+
+            free((void *) desig->domSuids);
+            desig->domSuids = NULL;
         }
 
         if (!isnull(desig->domTSuids)) {
@@ -5492,6 +5507,7 @@ void SW_MPI_handle_IO(
     double *tempMonthlyVals = NULL;
     double *tempSilt = NULL;
     double *tempSoilVals = NULL;
+    double *tempWeather = NULL;
     SW_SOIL_RUN_INPUTS *tempSoils = NULL;
     Bool *succFlags = NULL;
     LOG_INFO *logs = NULL;
@@ -5534,6 +5550,7 @@ void SW_MPI_handle_IO(
         &tempMonthlyVals,
         &tempSilt,
         &tempSoilVals,
+        &tempWeather,
         &tempSoils,
         &inputs,
         LogInfo
@@ -5602,6 +5619,7 @@ checkStatus:
             elevations,
             tempSilt,
             tempSoilVals,
+            tempWeather,
             tempSoils,
             inputs,
             LogInfo

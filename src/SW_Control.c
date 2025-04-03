@@ -1545,6 +1545,7 @@ void SW_CTL_run_sw(
     double tempSiltVals[MAX_MONTHS] = {0.0};
     double tempSoilVals[MAX_LAYERS * SWRC_PARAM_NMAX] = {0.0};
     double tempElevation = 0;
+    double tempWeath[MAX_DAYS] = {0.0};
 #else
     (void) count;
     (void) runNum;
@@ -1584,6 +1585,7 @@ void SW_CTL_run_sw(
         &tempElevation,
         tempSiltVals,
         tempSoilVals,
+        tempWeath,
         &newSoil,
         &local_sw.RunIn,
         LogInfo
