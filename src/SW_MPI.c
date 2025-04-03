@@ -1631,7 +1631,12 @@ static void get_path_info(
     unsigned int file;
 
     // Get number of weather files and days in year for those years
-    SW_Bcast(MPI_INT, &pathInputs->ncNumWeatherInFiles, 1, SW_MPI_ROOT, comm);
+    SW_Bcast(
+        MPI_UNSIGNED, &pathInputs->ncNumWeatherInFiles, 1, SW_MPI_ROOT, comm
+    );
+    SW_Bcast(
+        MPI_UNSIGNED, &pathInputs->weathStartFileIndex, 1, SW_MPI_ROOT, comm
+    );
 
     if (rank > SW_MPI_ROOT) {
         pathInputs->numDaysInYear = (unsigned int *) Mem_Malloc(
@@ -1783,7 +1788,8 @@ static void get_path_info(
 }
 
 /**
-@brief Helper function to SW_MPI_open_files to open input files
+@brief Helper function to SW_MPI_open_files to open input files in for
+    parallel I/O
 
 @param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] comm MPI communicator to broadcast a message to
@@ -1802,11 +1808,12 @@ static void open_input_files(
     InKeys inKey;
     int var;
     int domVar;
-    int numFiles;
-    int file;
+    unsigned int numFiles;
+    unsigned int file;
     int *id;
     char *fileName;
     Bool skipVar;
+    Bool stop = swFALSE;
     Bool useWeathFileArray;
 
     ForEachNCInKey(inKey) {
@@ -1870,6 +1877,12 @@ static void open_input_files(
             }
 
             for (file = 0; file < numFiles; file++) {
+                if (inKey == eSW_InWeather &&
+                    file < pathInputs->weathStartFileIndex) {
+
+                    // Do not open prior year weather file(s)
+                    continue;
+                }
                 useWeathFileArray = (Bool) (inKey == eSW_InWeather && var > 0);
 
                 if (rank == SW_MPI_ROOT) {
@@ -1879,23 +1892,24 @@ static void open_input_files(
                 }
                 get_dynamic_string(rank, &fileName, swTRUE, comm, LogInfo);
                 if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
-                    if (rank > SW_MPI_ROOT) {
-                        free(fileName);
-                        fileName = NULL;
-                    }
-                    return;
+                    stop = swTRUE;
+                    goto freeFile;
                 }
 
                 id = &pathInputs->openInFileIDs[inKey][var][file];
                 SW_NC_open_par(fileName, NC_NOWRITE, comm, id, LogInfo);
                 if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
-                    free(fileName);
-                    return;
+                    stop = swTRUE;
+                    goto freeFile;
                 }
 
+            freeFile:
                 if (rank > SW_MPI_ROOT) {
                     free(fileName);
                     fileName = NULL;
+                }
+                if (stop) {
+                    return;
                 }
             }
         }
@@ -4497,11 +4511,15 @@ void SW_MPI_close_out_files(
     int file;
 
     ForEachOutKey(outKey) {
-        if (OutDom->nvar_OUT[outKey] > 0 && OutDom->use[outKey]) {
-            ForEachOutPeriod(pd) {
-                if (OutDom->use_OutPeriod[pd]) {
-                    for (file = 0; file < numOutFiles; file++) {
-                        nc_close(openOutFileIDs[outKey][pd][file]);
+        if (!isnull(openOutFileIDs[outKey])) {
+            if (OutDom->nvar_OUT[outKey] > 0 && OutDom->use[outKey]) {
+                ForEachOutPeriod(pd) {
+                    if (!isnull(openOutFileIDs[outKey][pd])) {
+                        if (OutDom->use_OutPeriod[pd]) {
+                            for (file = 0; file < numOutFiles; file++) {
+                                nc_close(openOutFileIDs[outKey][pd][file]);
+                            }
+                        }
                     }
                 }
             }
@@ -4530,7 +4548,8 @@ void SW_MPI_close_in_files(
     int file;
 
     ForEachNCInKey(inKey) {
-        if (!readInVars[inKey][0] || inKey == eSW_InDomain) {
+        if (!readInVars[inKey][0] || inKey == eSW_InDomain ||
+            isnull(openInFileIDs[inKey])) {
             continue;
         }
 
@@ -4538,7 +4557,8 @@ void SW_MPI_close_in_files(
 
         for (varNum = 0; varNum < numVarsInKey[inKey]; varNum++) {
             skipVar = (Bool) (!readInVars[inKey][varNum + 1] ||
-                              ((varNum == 0 && !useIndexFile[inKey])));
+                              (varNum == 0 && !useIndexFile[inKey]) ||
+                              isnull(openInFileIDs[inKey][varNum]));
 
             if (!skipVar) {
                 for (file = 0; file < numFiles; file++) {

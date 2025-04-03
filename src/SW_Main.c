@@ -233,8 +233,6 @@ setupProgramData:
 #if defined(SWMPI)
     if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD)) {
         goto finishProgram;
-    } else if (SW_Domain.SW_Designation.procJob == SW_MPI_PROC_COMP) {
-        goto sim;
     }
 #else
     if (LogInfo.stopRun) {
@@ -246,33 +244,39 @@ setupProgramData:
     if (rank == 0) {
 #endif
         SW_OUT_create_files(&sw_template.SW_PathOutputs, &SW_Domain, &LogInfo);
-        if (LogInfo.stopRun || prepareFiles) {
+#if defined(SWMPI)
+        if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD) ||
+            prepareFiles) {
             if (prepareFiles) {
                 sw_message("completed simulation preparations.");
             }
 
             goto closeFiles;
         }
-#if defined(SWMPI)
-    }
-    if (SW_MPI_setup_fail(
-            LogInfo.stopRun, SW_Domain.SW_Designation.groupComm
-        )) {
+#else
+    if (LogInfo.stopRun || prepareFiles) {
+        if (prepareFiles) {
+            sw_message("completed simulation preparations.");
+        }
+
         goto closeFiles;
     }
+#endif
+#if defined(SWMPI)
+    }
 
-    SW_MPI_open_files(
-        rank,
-        &SW_Domain.SW_Designation,
-        &SW_Domain.SW_PathInputs,
-        &SW_Domain.netCDFInput,
-        &sw_template.SW_PathOutputs,
-        &SW_Domain.OutDom,
-        &LogInfo
-    );
-    if (SW_MPI_setup_fail(
-            LogInfo.stopRun, SW_Domain.SW_Designation.groupComm
-        )) {
+    if (SW_Domain.SW_Designation.procJob == SW_MPI_PROC_IO) {
+        SW_MPI_open_files(
+            rank,
+            &SW_Domain.SW_Designation,
+            &SW_Domain.SW_PathInputs,
+            &SW_Domain.netCDFInput,
+            &sw_template.SW_PathOutputs,
+            &SW_Domain.OutDom,
+            &LogInfo
+        );
+    }
+    if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD)) {
         goto closeFiles;
     }
 #endif
@@ -281,9 +285,6 @@ setupProgramData:
         echo_all_inputs(&sw_template, &SW_Domain.OutDom, &LogInfo);
     }
 
-#if defined(SWMPI)
-sim:
-#endif
     // run simulations: loop over simulation set
     SW_CTL_RunSims(
         rank,
