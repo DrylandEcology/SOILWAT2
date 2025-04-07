@@ -3304,10 +3304,10 @@ program is to allow for a hardcoded number of netCDF read errors
     if MPI did not cause the error)
 */
 void SW_MPI_Fail(int failType, int errorCode, char *mpiErrStr) {
-    const char *ncFail = "SOILWAT failed due to a netCDF error.";
+    const char *ncFail = "SOILWAT2 failed due to a netCDF error.";
     const char *compFail =
-        "SOILWAT failed due to too many errors during simulations.";
-    const char *mpiFailAdd = "SOILWAT failed due to an OpenMPI problem:";
+        "SOILWAT2 failed due to too many errors during simulations.";
+    const char *mpiFailAdd = "SOILWAT2 failed due to an OpenMPI problem:";
     char mpiFail[FILENAME_MAX] = "\0";
 
     char *failStr;
