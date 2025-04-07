@@ -289,15 +289,7 @@ setupProgramData:
 
 #if defined(SWMPI)
     if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD) || prepareFiles) {
-        if (prepareFiles) {
-            sw_message("completed simulation preparations.");
-        }
-
-        goto closeFiles;
-    }
-#else
-    if (LogInfo.stopRun || prepareFiles) {
-        if (prepareFiles) {
+        if (prepareFiles && rank == 0) {
             sw_message("completed simulation preparations.");
         }
 
@@ -317,6 +309,14 @@ setupProgramData:
         );
     }
     if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD)) {
+        goto closeFiles;
+    }
+#else
+    if (LogInfo.stopRun || prepareFiles) {
+        if (prepareFiles) {
+            sw_message("completed simulation preparations.");
+        }
+
         goto closeFiles;
     }
 #endif
