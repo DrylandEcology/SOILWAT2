@@ -154,113 +154,6 @@ static void deallocProcHelpers(
 }
 
 /**
-@brief Send filler information if an error occurs somewhere when
-    attempting to designate processes to a job so we can exit the function
-
-@param[in] desType Custom MPI datatype to send SW_MPI_DESIGNATE
-@param[in] startRank Start rank to send to other process ranks if root process
-@param[in] rank Process number known to MPI for the current process (aka rank)
-@param[in] worldSize Total number of processes that the MPI run has created
-@param[in] placement A value specifying which spot within the designation
-    function an error occurred
-@param[in] numCompProcs Number of compute processes in a node
-@param[in] numActiveSites Number of active sites that will be simulated
-@param[in] useIndexFile Specifies to create/use an index file
-@param[in] useTSuid Specifies if we use translated SUIDs
-*/
-static void exitDesFunc(
-    MPI_Datatype desType,
-    int startRank,
-    int rank,
-    int worldSize,
-    int placement,
-    int numActiveSites,
-    Bool *useIndexFile,
-    Bool useTSuid
-) {
-    int destRank;
-    int pair;
-    char tempName[MAX_FILENAMESIZE];
-    unsigned long pairBuff[2];
-    int tempRankBuff[PROCS_PER_IO];
-
-    SW_MPI_DESIGNATE temp;
-    InKeys inKey;
-    MPI_Request nullReq = MPI_REQUEST_NULL;
-
-    // Check if rank is root
-    if (rank == SW_MPI_ROOT) {
-        if (placement == FAIL_ROOT_SETUP) {
-            temp.procJob = SW_MPI_PROC_COMP;
-            temp.nSuids = 0;
-            temp.useTSuids = swFALSE;
-            temp.nCompProcs = 0;
-        }
-
-        if (placement < FAIL_ROOT_SEND) {
-            for (destRank = startRank; destRank < worldSize; destRank++) {
-                SW_MPI_Recv(
-                    desType,
-                    tempName,
-                    MAX_FILENAMESIZE,
-                    destRank,
-                    swTRUE,
-                    0,
-                    &nullReq
-                );
-            }
-        }
-
-        for (destRank = startRank; destRank < worldSize; destRank++) {
-            SW_MPI_Send(desType, &temp, 1, destRank, swTRUE, 0, &nullReq);
-        }
-    } else {
-        // Otherwise, we are a worker process - can only be I/O process
-        // Check if we failed when allocating domain suids
-        // or translated SUIDs
-
-        // Read domain SUIDs into useless buffer
-        for (pair = 0; pair < numActiveSites; pair++) {
-            SW_MPI_Recv(
-                MPI_UNSIGNED_LONG, pairBuff, 2, SW_MPI_ROOT, swTRUE, 0, &nullReq
-            );
-        }
-
-        if (useTSuid) {
-            ForEachNCInKey(inKey) {
-                if (inKey > eSW_InSpatial && inKey != eSW_InSite &&
-                    useIndexFile[inKey]) {
-
-                    for (pair = 0; pair < numActiveSites; pair++) {
-                        SW_MPI_Recv(
-                            MPI_UNSIGNED_LONG,
-                            pairBuff,
-                            2,
-                            SW_MPI_ROOT,
-                            swTRUE,
-                            0,
-                            &nullReq
-                        );
-                    }
-                }
-            }
-        }
-
-        // Otherwise, we failed when allocating ranks
-        // Read translated domain SUIDs into useless buffer
-        SW_MPI_Recv(
-            MPI_INT,
-            tempRankBuff,
-            PROCS_PER_IO,
-            SW_MPI_ROOT,
-            swTRUE,
-            0,
-            &nullReq
-        );
-    }
-}
-
-/**
 @brief Calculate the number of I/O processes in a node
 
 @param[in] numProcsInNode A list of number of processes being run
@@ -794,7 +687,6 @@ static void designateProcesses(
 @brief Get and store the world of processors information to get
     a sense of where processors are located
 
-@param[in] desType Custom MPI datatype to send SW_MPI_DESIGNATE
 @param[in] worldSize Total number of processes that the MPI run has created
 @param[in] rootProcName Root process' processor/compute node name
 @param[out] numNodes The number of unique nodes the program is running on
@@ -809,7 +701,6 @@ static void designateProcesses(
 @param[iout] LogInfo Holds information on warnings and errors
 */
 static void getProcInfo(
-    MPI_Datatype desType,
     int worldSize,
     char rootProcName[],
     int *numNodes,
@@ -879,16 +770,6 @@ static void getProcInfo(
                     LogInfo
                 );
                 if (LogInfo->stopRun) {
-                    exitDesFunc(
-                        desType,
-                        destRank,
-                        SW_MPI_ROOT,
-                        worldSize,
-                        FAIL_ALLOC_DESIG,
-                        0,
-                        NULL,
-                        swFALSE
-                    );
                     return;
                 }
 
@@ -915,16 +796,6 @@ static void getProcInfo(
                 LogInfo
             );
             if (LogInfo->stopRun) {
-                exitDesFunc(
-                    desType,
-                    destRank + 1,
-                    SW_MPI_ROOT,
-                    worldSize,
-                    FAIL_ALLOC_DESIG,
-                    0,
-                    NULL,
-                    swFALSE
-                );
                 return;
             }
         }
@@ -940,7 +811,6 @@ static void getProcInfo(
 @param[in] designations A list of designations to fill and distribute
     amoung processes
 @param[in] rank Process number known to MPI for the current process (aka rank)
-@param[in] worldSize Total number of processes that the MPI run has created
 @param[in] numNodes The number of compute nodes we are running instances of
     the program on
 @param[in] useIndexFile Specifies to create/use an index file
@@ -958,7 +828,6 @@ static void assignProcs(
     MPI_Datatype desType,
     SW_MPI_DESIGNATE **designations,
     int rank,
-    int worldSize,
     int numNodes,
     Bool useIndexFile[],
     int numProcsInNode[],
@@ -975,6 +844,42 @@ static void assignProcs(
 
     MPI_Request nullReq = MPI_REQUEST_NULL;
     SW_MPI_DESIGNATE *currDes = NULL;
+
+    // Transfer and allocate information to I/O processes before
+    // starting the loop to simplify error handling across processes
+    // when allocating memory
+    if (SW_Designation->procJob == SW_MPI_PROC_IO) {
+        allocateActiveSuids(
+            SW_Designation->nSuids, &SW_Designation->domSuids, LogInfo
+        );
+        if (LogInfo->stopRun) {
+            goto reportError;
+        }
+
+        if (SW_Designation->useTSuids && rank > SW_MPI_ROOT) {
+            ForEachNCInKey(inKey) {
+                if (inKey == eSW_InDomain || inKey == eSW_InSite ||
+                    !useIndexFile[inKey]) {
+
+                    continue;
+                }
+
+                allocateActiveTSuids(
+                    SW_Designation->nSuids,
+                    &SW_Designation->domTSuids[inKey],
+                    LogInfo
+                );
+                if (LogInfo->stopRun) {
+                    goto reportError;
+                }
+            }
+        }
+    }
+
+reportError:
+    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
+        return;
+    }
 
     if (rank == SW_MPI_ROOT) {
         for (node = 0; node < numNodes; node++) {
@@ -1056,52 +961,6 @@ static void assignProcs(
         );
 
         if (SW_Designation->procJob == SW_MPI_PROC_IO) {
-            allocateActiveSuids(
-                SW_Designation->nSuids, &SW_Designation->domSuids, LogInfo
-            );
-            if (LogInfo->stopRun) {
-                exitDesFunc(
-                    desType,
-                    0,
-                    rank,
-                    worldSize,
-                    FAIL_ALLOC_SUIDS,
-                    SW_Designation->nSuids,
-                    useIndexFile,
-                    SW_Designation->useTSuids
-                );
-                return;
-            }
-
-            if (SW_Designation->useTSuids) {
-                ForEachNCInKey(inKey) {
-                    if (inKey == eSW_InDomain || inKey == eSW_InSite ||
-                        !useIndexFile[inKey]) {
-
-                        continue;
-                    }
-
-                    allocateActiveTSuids(
-                        SW_Designation->nSuids,
-                        &SW_Designation->domTSuids[inKey],
-                        LogInfo
-                    );
-                    if (LogInfo->stopRun) {
-                        exitDesFunc(
-                            desType,
-                            0,
-                            rank,
-                            worldSize,
-                            FAIL_ALLOC_TSUIDS,
-                            SW_Designation->nSuids,
-                            NULL,
-                            SW_Designation->useTSuids
-                        );
-                        return;
-                    }
-                }
-            }
-
             for (pair = 0; pair < SW_Designation->nSuids; pair++) {
                 SW_MPI_Recv(
                     MPI_UNSIGNED_LONG,
@@ -1117,7 +976,6 @@ static void assignProcs(
             if (SW_Designation->useTSuids) {
                 ForEachNCInKey(inKey) {
                     if (SW_Designation->useTSuids && useIndexFile[inKey]) {
-
                         for (pair = 0; pair < SW_Designation->nSuids; pair++) {
                             SW_MPI_Recv(
                                 MPI_UNSIGNED_LONG,
@@ -5036,6 +4894,12 @@ void SW_MPI_process_types(
 
     // Check if the process is not the root
     if (rank != SW_MPI_ROOT) {
+        // Check that the root process information allocation occured
+        // with no problems
+        if (SW_MPI_setup_fail(swFALSE, MPI_COMM_WORLD)) {
+            return;
+        }
+
         // Send processor name to the root
         SW_MPI_Send(
             MPI_CHAR,
@@ -5052,7 +4916,6 @@ void SW_MPI_process_types(
             desType,
             NULL,
             rank,
-            worldSize,
             0,
             SW_Domain->netCDFInput.useIndexFile,
             NULL,
@@ -5072,34 +4935,14 @@ void SW_MPI_process_types(
             SW_Domain, &activeSuids, &numActiveSites, LogInfo
         );
         if (LogInfo->stopRun) {
-            exitDesFunc(
-                desType,
-                1,
-                SW_MPI_ROOT,
-                worldSize,
-                FAIL_ROOT_SETUP,
-                0,
-                NULL,
-                swFALSE
-            );
-            goto freeMem;
+            goto reportError;
         }
 
         SW_MPI_get_activated_tsuids(
             SW_Domain, activeSuids, &activeTSuids, numActiveSites, LogInfo
         );
         if (LogInfo->stopRun) {
-            exitDesFunc(
-                desType,
-                1,
-                SW_MPI_ROOT,
-                worldSize,
-                FAIL_ROOT_SETUP,
-                0,
-                NULL,
-                swFALSE
-            );
-            goto freeMem;
+            goto reportError;
         }
 
         allocProcInfo(
@@ -5112,21 +4955,15 @@ void SW_MPI_process_types(
             LogInfo
         );
         if (LogInfo->stopRun) {
-            exitDesFunc(
-                desType,
-                1,
-                SW_MPI_ROOT,
-                worldSize,
-                FAIL_ROOT_SETUP,
-                0,
-                NULL,
-                swFALSE
-            );
-            goto freeMem;
+            goto reportError;
+        }
+
+    reportError:
+        if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
+            return;
         }
 
         getProcInfo(
-            desType,
             worldSize,
             procName,
             &numNodes,
@@ -5138,7 +4975,7 @@ void SW_MPI_process_types(
             LogInfo
         );
         if (LogInfo->stopRun) {
-            goto freeMem;
+            goto checkForError;
         }
 
         // Check if any nodes have a count of 1
@@ -5152,17 +4989,7 @@ void SW_MPI_process_types(
                     " (%s has 1).",
                     nodeNames[node]
                 );
-                exitDesFunc(
-                    desType,
-                    1,
-                    SW_MPI_ROOT,
-                    worldSize,
-                    FAIL_ROOT_SETUP,
-                    0,
-                    NULL,
-                    swFALSE
-                );
-                goto freeMem;
+                goto checkForError;
             }
 
             numIOProcsTot += calcNumIOProcs(numProcsInNode[node]);
@@ -5179,17 +5006,7 @@ void SW_MPI_process_types(
                 SW_MPI_NIO,
                 numIOProcsTot
             );
-            exitDesFunc(
-                desType,
-                1,
-                SW_MPI_ROOT,
-                worldSize,
-                FAIL_ROOT_SETUP,
-                0,
-                NULL,
-                swFALSE
-            );
-            goto freeMem;
+            goto checkForError;
         }
 
         leftSuids = numActiveSites;
@@ -5209,17 +5026,7 @@ void SW_MPI_process_types(
             LogInfo
         );
         if (LogInfo->stopRun) {
-            exitDesFunc(
-                desType,
-                1,
-                SW_MPI_ROOT,
-                worldSize,
-                FAIL_ROOT_SEND,
-                0,
-                NULL,
-                swFALSE
-            );
-            goto freeMem;
+            goto checkForError;
         }
 
         // Send designation to processes
@@ -5228,7 +5035,6 @@ void SW_MPI_process_types(
             desType,
             designations,
             rank,
-            worldSize,
             numNodes,
             SW_Domain->netCDFInput.useIndexFile,
             numProcsInNode,
@@ -5237,6 +5043,11 @@ void SW_MPI_process_types(
             &SW_Domain->SW_Designation,
             LogInfo
         );
+    }
+
+checkForError:
+    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
+        goto freeMem;
     }
 
     create_groups(
