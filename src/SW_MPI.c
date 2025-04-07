@@ -600,9 +600,7 @@ static void fillDesignationIO(
     }
     *leftSuids -= desig->nSuids;
     desig->domSuids = (unsigned long **) Mem_Malloc(
-        sizeof(unsigned long *) * desig->nSuids,
-        "fillDesignationIO()",
-        LogInfo
+        sizeof(unsigned long *) * desig->nSuids, "fillDesignationIO()", LogInfo
     );
     if (LogInfo->stopRun) {
         return;
@@ -2168,9 +2166,7 @@ static void alloc_inputs(
     }
 
     *tempWeather = (double *) Mem_Malloc(
-        sizeof(double) * numInputs * MAX_DAYS,
-        "alloc_inputs()",
-        LogInfo
+        sizeof(double) * numInputs * MAX_DAYS, "alloc_inputs()", LogInfo
     );
     if (LogInfo->stopRun) {
         return;

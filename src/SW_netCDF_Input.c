@@ -6470,8 +6470,8 @@ static void derive_missing_soils(
                 readInVarsSoils[eiv_clay + 1]) {
 
                 soilIn->fractionWeightMatric_sand[slNum] =
-                    1 -
-                    (tempSilt[slNum] + soilIn->fractionWeightMatric_clay[slNum]);
+                    1 - (tempSilt[slNum] +
+                         soilIn->fractionWeightMatric_clay[slNum]);
             }
 
             // Calculate clay if sand and silt provided but not clay
