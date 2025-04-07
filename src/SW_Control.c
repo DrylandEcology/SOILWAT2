@@ -88,6 +88,45 @@ static void handle_interrupt(int signal) {
 }
 
 /**
+@brief Wrapper function to report that the program is running simulations
+across the domain; this is handled differently when SWMPI is enabled
+
+@note The message reported with SWMPI enabled resembles the format:
+    "is running simulations across x compute process(es) and y I/O process(es)"
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+@param[in] rank Process number known to MPI for the current process (aka rank);
+    defaults to 0 (main process) if we are running sequentially
+*/
+static void report_sim_start(SW_DOMAIN *SW_Domain, int rank) {
+#if !defined(SWMPI)
+    if (rank == 0) {
+        sw_message("is running simulations across the domain...");
+    }
+#else
+    char reportStr[MAX_FILENAMESIZE] = "\0";
+    int nCompProcs = SW_Domain->SW_Designation.nTotCompProcs;
+    int nIOProcs = SW_Domain->SW_Designation.nTotIOProcs;
+
+    if (rank == 0) {
+        snprintf(
+            reportStr,
+            MAX_FILENAMESIZE,
+            "is running simulations across %d compute %s and "
+            "%d I/O %s...",
+            nCompProcs,
+            (nCompProcs > 1) ? "processes" : "process",
+            nIOProcs,
+            (nIOProcs > 1) ? "processes" : "process"
+        );
+
+        sw_message(reportStr);
+    }
+#endif
+}
+
+/**
 @brief Initiate/update variables for a new simulation year.
       In addition to the timekeeper (Model), usually only modules
       that read input yearly or produce output need to have this call.
@@ -359,12 +398,11 @@ void SW_CTL_RunSims(
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *main_LogInfo
 ) {
+    report_sim_start(SW_Domain, rank);
+
 #if defined(SWMPI)
     if (SW_Domain->SW_Designation.procJob == SW_MPI_PROC_COMP) {
 #endif
-        if (rank == 0) {
-            sw_message("is running simulations across the domain...");
-        }
         SW_CTL_RunSimSet(
             rank, sw_template, SW_Domain, setupFail, SW_WallTime, main_LogInfo
         );

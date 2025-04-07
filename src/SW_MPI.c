@@ -3101,6 +3101,10 @@ void SW_MPI_initialize(
     desig->groupComm = MPI_COMM_NULL;
     desig->ioCompComm = MPI_COMM_NULL;
     desig->rootCompComm = MPI_COMM_NULL;
+
+    desig->nTotCompProcs = 0;
+    desig->nTotIOProcs = 0;
+    desig->ioRank = 0;
 }
 
 /**
@@ -4879,6 +4883,7 @@ void SW_MPI_process_types(
     Bool useTranslated = swFALSE;
 
     SW_MPI_DESIGNATE **designations = NULL;
+    SW_MPI_DESIGNATE *desig = &SW_Domain->SW_Designation;
     MPI_Datatype desType = SW_Domain->datatypes[eSW_MPI_Designate];
 
     // Spread the index file creation flags across the world;
@@ -4994,6 +4999,8 @@ void SW_MPI_process_types(
 
             numIOProcsTot += calcNumIOProcs(numProcsInNode[node]);
         }
+        desig->nTotIOProcs = numIOProcsTot;
+        desig->nTotCompProcs = worldSize - numIOProcsTot;
 
         if (numActiveSites < worldSize - numIOProcsTot) {
             LogError(
@@ -5012,10 +5019,10 @@ void SW_MPI_process_types(
         leftSuids = numActiveSites;
         designateProcesses(
             &designations,
-            &SW_Domain->SW_Designation,
+            desig,
             numProcsInNode,
             numNodes,
-            worldSize - numIOProcsTot,
+            desig->nTotCompProcs,
             numIOProcsTot,
             numActiveSites,
             activeSuids,
@@ -5030,7 +5037,7 @@ void SW_MPI_process_types(
         }
 
         // Send designation to processes
-        SW_Domain->SW_Designation.useTSuids = useTranslated;
+        desig->useTSuids = useTranslated;
         assignProcs(
             desType,
             designations,
@@ -5040,7 +5047,7 @@ void SW_MPI_process_types(
             numProcsInNode,
             ranksInNodes,
             useTranslated,
-            &SW_Domain->SW_Designation,
+            desig,
             LogInfo
         );
     }
@@ -5058,13 +5065,13 @@ checkForError:
         ranksInNodes,
         numNodes,
         numProcsInNode,
-        &SW_Domain->SW_Designation,
+        desig,
         LogInfo
     );
 
 freeMem:
     deallocProcHelpers(
-        SW_Domain->SW_Designation.nSuids,
+        desig->nSuids,
         maxNodes,
         worldSize,
         &designations,

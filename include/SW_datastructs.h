@@ -1568,6 +1568,10 @@ typedef struct {
         *domTSuids[SW_NINKEYSNC]; /**< A list of translated domain SUIDs for
                           each input key if index files are used */
 
+    int nTotCompProcs; /**< Number of compute processes in action;
+                              root only */
+    int nTotIOProcs;   /**< Number of I/O processes in action;
+                            root only */
 
 #if defined(SWMPI)
     MPI_Comm groupComm;    /**< New group communicator; can either be for
