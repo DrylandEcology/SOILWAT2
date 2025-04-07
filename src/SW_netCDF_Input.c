@@ -7188,7 +7188,7 @@ void SW_NCIN_set_progress(
     size_t count[],
     LOG_INFO *LogInfo
 ) {
-    const signed char mark = (isFailure) ? PRGRSS_FAIL : PRGRSS_DONE;
+    const signed char mark = (!isFailure) ? PRGRSS_DONE : PRGRSS_FAIL;
 
     SW_NC_write_vals(
         &progVarID,
