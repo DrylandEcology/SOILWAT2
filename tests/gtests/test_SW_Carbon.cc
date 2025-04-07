@@ -35,6 +35,7 @@ TEST_F(CarbonFixtureTest, CarbonReadInputFile) {
     SW_CBN_read(
         &SW_Run.Carbon,
         &SW_Run.Model,
+        SW_Run.VegProd.vegYear,
         SW_Domain.SW_PathInputs.txtInFiles,
         &LogInfo
     );
@@ -63,6 +64,7 @@ TEST_F(CarbonFixtureTest, CarbonReadInputFile) {
     SW_CBN_read(
         &SW_Run.Carbon,
         &SW_Run.Model,
+        SW_Run.VegProd.vegYear,
         SW_Domain.SW_PathInputs.txtInFiles,
         &LogInfo
     );
@@ -94,6 +96,7 @@ TEST_F(CarbonFixtureTest, CarbonCO2multipliers) {
     SW_CBN_read(
         &SW_Run.Carbon,
         &SW_Run.Model,
+        SW_Run.VegProd.vegYear,
         SW_Domain.SW_PathInputs.txtInFiles,
         &LogInfo
     );

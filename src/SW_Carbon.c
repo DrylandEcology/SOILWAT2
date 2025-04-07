@@ -52,6 +52,7 @@ void SW_CBN_deconstruct(void) {}
 @param[in,out] SW_Carbon Struct of type SW_CARBON holding all CO2-related data
 @param[in] SW_Model Struct of type SW_MODEL holding basic time information
     about the simulation
+@param[in] vegYear Calendar year corresponding to vegetation inputs
 @param[in] txtInFiles Array of program in/output files
 @param[out] LogInfo Holds information on warnings and errors
 
@@ -65,6 +66,7 @@ Additionally, check for the following issues:
 void SW_CBN_read(
     SW_CARBON *SW_Carbon,
     SW_MODEL *SW_Model,
+    TimeInt vegYear,
     char *txtInFiles[],
     LOG_INFO *LogInfo
 ) {
@@ -80,19 +82,21 @@ void SW_CBN_read(
     char helpStr[64];
     char yearStr[5];
     char scenario[64] = {'\0'};
-    int year;
+    TimeInt year;
     int scanRes;
-    int simstartyr = (int) SW_Model->startyr + SW_Model->addtl_yr;
-    int simendyr = (int) SW_Model->endyr + SW_Model->addtl_yr;
+    TimeInt yr1 =
+        MIN((TimeInt) (SW_Model->startyr + SW_Model->addtl_yr), vegYear);
+    TimeInt yr2 =
+        MAX((TimeInt) (SW_Model->endyr + SW_Model->addtl_yr), vegYear);
 
-    if (simstartyr < 0 || simendyr >= MAX_NYEAR) {
+    if (yr1 >= MAX_NYEAR || yr2 >= MAX_NYEAR) {
         LogError(
             LogInfo,
             LOGERROR,
-            "Simulation years (%d-%d) are "
-            "outside implemented range for annual aCO2 [0-%d].",
-            simstartyr,
-            simendyr,
+            "Simulation years (%u-%u) are "
+            "outside implemented range 0-%u for annual aCO2.",
+            yr1,
+            yr2,
             MAX_NYEAR - 1
         );
         return; // Exit function prematurely due to error
@@ -138,7 +142,7 @@ void SW_CBN_read(
             continue; // Skip to the ppm values
         }
 
-        if ((year < simstartyr) || (year > simendyr)) {
+        if ((year < yr1) || (year > yr2)) {
             continue; // We aren't using this year; prevent out-of-bounds
         }
 
@@ -192,7 +196,7 @@ void SW_CBN_read(
     }
 
     // Ensure that the desired years were calculated
-    for (year = simstartyr; year <= simendyr; year++) {
+    for (year = yr1; year <= yr2; year++) {
         if (existing_years[year] == 0) {
             LogError(
                 LogInfo,
@@ -276,11 +280,12 @@ void SW_CBN_init_run(
 
     /* Adjustment for year of vegetation inputs relative to reference */
     vegCO2 = SW_Carbon->ppm[SW_VegProd->vegYear];
-    if (LT(vegCO2, 0.)) {
+    if (missing(vegCO2) || LE(vegCO2, 0.)) {
         LogError(
             LogInfo,
             LOGERROR,
-            "Provided aCO2 is negative in year %d",
+            "Provided aCO2 (%f) is missing or not positive in year %d",
+            vegCO2,
             SW_VegProd->vegYear
         );
         return; // Exit function prematurely due to error

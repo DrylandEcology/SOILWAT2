@@ -26,6 +26,7 @@ void SW_CBN_deconstruct(void);
 void SW_CBN_read(
     SW_CARBON *SW_Carbon,
     SW_MODEL *SW_Model,
+    TimeInt vegYear,
     char *txtInFiles[],
     LOG_INFO *LogInfo
 );

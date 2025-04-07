@@ -1092,7 +1092,13 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_CBN_read(&sw->Carbon, &sw->Model, SW_PathInputs->txtInFiles, LogInfo);
+    SW_CBN_read(
+        &sw->Carbon,
+        &sw->Model,
+        sw->VegProd.vegYear,
+        SW_PathInputs->txtInFiles,
+        LogInfo
+    );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
