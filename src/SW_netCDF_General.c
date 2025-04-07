@@ -1512,7 +1512,7 @@ void SW_NC_open(
 void SW_NC_open_par(
     const char *fileName, int mode, MPI_Comm comm, int *id, LOG_INFO *LogInfo
 ) {
-    if (nc_open_par(fileName, mode, comm, MPI_INFO_NULL, id)) {
+    if (nc_open_par(fileName, mode, comm, MPI_INFO_NULL, id) != NC_NOERR) {
         LogError(
             LogInfo,
             LOGERROR,
