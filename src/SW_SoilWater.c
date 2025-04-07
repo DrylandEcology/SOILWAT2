@@ -97,19 +97,19 @@
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
-static void clear_hist(
-    double SoilWat_hist_swc[][MAX_LAYERS],
-    double SoilWat_hist_std_err[][MAX_LAYERS]
-) {
-    TimeInt d;
-    LyrIndex z;
-    for (d = 0; d < MAX_DAYS; d++) {
-        for (z = 0; z < MAX_LAYERS; z++) {
-            SoilWat_hist_swc[d][z] = SW_MISSING;
-            SoilWat_hist_std_err[d][z] = SW_MISSING;
-        }
-    }
-}
+// static void clear_hist(
+//     double SoilWat_hist_swc[][MAX_LAYERS],
+//     double SoilWat_hist_std_err[][MAX_LAYERS]
+// ) {
+//     TimeInt d;
+//     LyrIndex z;
+//     for (d = 0; d < MAX_DAYS; d++) {
+//         for (z = 0; z < MAX_LAYERS; z++) {
+//             SoilWat_hist_swc[d][z] = SW_MISSING;
+//             SoilWat_hist_std_err[d][z] = SW_MISSING;
+//         }
+//     }
+// }
 
 static void reset_swc(
     SW_SOILWAT_SIM *SW_SoilWatSim, SW_SITE_SIM *SW_SiteSim, LyrIndex n_layers
@@ -1547,118 +1547,126 @@ void read_swc_hist(
      * an error in the input, but missing layers could
      * cause problems in the flow model.
      */
-    FILE *f;
-    int x;
-    int lyr = 0;
-    int recno = 0;
-    int doy = 0;
-    int index;
-    int resSNP;
-    double swc = 0.;
-    double st_err = 0.;
-    char fname[MAX_FILENAMESIZE];
-    char inbuf[MAX_FILENAMESIZE];
-    char varStrs[4][20] = {{'\0'}};
-    int *inBufIntVals[] = {&doy, &lyr};
-    double *inBufDoubleVals[] = {&swc, &st_err};
-    const int numInValsPerType = 2;
+    // FILE *f;
+    // int x;
+    // int lyr = 0;
+    // int recno = 0;
+    // int doy = 0;
+    // int index;
+    // int resSNP;
+    // double swc = 0.;
+    // double st_err = 0.;
+    // char fname[MAX_FILENAMESIZE];
+    // char inbuf[MAX_FILENAMESIZE];
+    // char varStrs[4][20] = {{'\0'}};
+    // int *inBufIntVals[] = {&doy, &lyr};
+    // double *inBufDoubleVals[] = {&swc, &st_err};
+    // const int numInValsPerType = 2;
 
-    resSNP = snprintf(
-        fname, sizeof fname, "%s.%4d", SoilWat_hist->file_prefix, year
+    // This function is currently not supported/used;
+    // Other code will need to be updated to properly use it again
+    LogError(
+        LogInfo,
+        LOGERROR,
+        "The use of reading Soil Water Content history is not in use/"
+        "supported."
     );
 
-    if (resSNP < 0 || (unsigned) resSNP >= (sizeof fname)) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "SWC-hist file name is too long for year = %d",
-            year
-        );
-        return; // Exit function prematurely due to error
-    }
+    (void) SoilWat_hist;
+    (void) year;
 
-    f = OpenFile(fname, "r", LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
+    //     resSNP = snprintf(
+    //         fname, sizeof fname, "%s.%4d", SoilWat_hist->file_prefix, year
+    //     );
 
-    clear_hist(SoilWat_hist->swc, SoilWat_hist->std_err);
+    //     if (resSNP < 0 || (unsigned) resSNP >= (sizeof fname)) {
+    //         LogError(
+    //             LogInfo,
+    //             LOGERROR,
+    //             "SWC-hist file name is too long for year = %d",
+    //             year
+    //         );
+    //         return; // Exit function prematurely due to error
+    //     }
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
-        recno++;
-        x = sscanf(
-            inbuf,
-            "%19s %19s %19s %19s",
-            varStrs[0],
-            varStrs[1],
-            varStrs[2],
-            varStrs[3]
-        );
+    //     f = OpenFile(fname, "r", LogInfo);
+    //     if (LogInfo->stopRun) {
+    //         return; // Exit function prematurely due to error
+    //     }
 
-        if (x < 4) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "%s : Incomplete layer data at record %d\n   Should be DOY LYR "
-                "SWC STDERR.",
-                fname,
-                recno
-            );
-            goto closeFile;
-        }
-        if (x > 4) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "%s : Too many input fields at record %d\n   Should be DOY LYR "
-                "SWC STDERR.",
-                fname,
-                recno
-            );
-            goto closeFile;
-        }
+    //     clear_hist(SoilWat_hist->swc, SoilWat_hist->std_err);
 
-        for (index = 0; index < numInValsPerType; index++) {
-            *(inBufIntVals[index]) = sw_strtoi(varStrs[index], fname, LogInfo);
-            if (LogInfo->stopRun) {
-                goto closeFile;
-            }
+    //     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    //         recno++;
+    //         x = sscanf(
+    //             inbuf,
+    //             "%19s %19s %19s %19s",
+    //             varStrs[0],
+    //             varStrs[1],
+    //             varStrs[2],
+    //             varStrs[3]
+    //         );
 
-            *(inBufDoubleVals[index]) =
-                sw_strtod(varStrs[index + 2], fname, LogInfo);
-            if (LogInfo->stopRun) {
-                goto closeFile;
-            }
-        }
+    //         if (x < 4) {
+    //             LogError(
+    //                 LogInfo,
+    //                 LOGERROR,
+    //                 "%s : Incomplete layer data at record %d\n   Should be
+    //                 DOY LYR " "SWC STDERR.", fname, recno
+    //             );
+    //             goto closeFile;
+    //         }
+    //         if (x > 4) {
+    //             LogError(
+    //                 LogInfo,
+    //                 LOGERROR,
+    //                 "%s : Too many input fields at record %d\n   Should be
+    //                 DOY LYR " "SWC STDERR.", fname, recno
+    //             );
+    //             goto closeFile;
+    //         }
 
-        if (doy < 1 || doy > MAX_DAYS) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "%s : Day of year out of range at record %d",
-                fname,
-                recno
-            );
-            goto closeFile;
-        }
-        if (lyr < 1 || lyr > MAX_LAYERS) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "%s : Layer number out of range (%d > %d), record %d\n",
-                fname,
-                lyr,
-                MAX_LAYERS,
-                recno
-            );
-            goto closeFile;
-        }
+    //         for (index = 0; index < numInValsPerType; index++) {
+    //             *(inBufIntVals[index]) = sw_strtoi(varStrs[index], fname,
+    //             LogInfo); if (LogInfo->stopRun) {
+    //                 goto closeFile;
+    //             }
 
-        SoilWat_hist->swc[doy - 1][lyr - 1] = swc;
-        SoilWat_hist->std_err[doy - 1][lyr - 1] = st_err;
-    }
+    //             *(inBufDoubleVals[index]) =
+    //                 sw_strtod(varStrs[index + 2], fname, LogInfo);
+    //             if (LogInfo->stopRun) {
+    //                 goto closeFile;
+    //             }
+    //         }
 
-closeFile: { CloseFile(&f, LogInfo); }
+    //         if (doy < 1 || doy > MAX_DAYS) {
+    //             LogError(
+    //                 LogInfo,
+    //                 LOGERROR,
+    //                 "%s : Day of year out of range at record %d",
+    //                 fname,
+    //                 recno
+    //             );
+    //             goto closeFile;
+    //         }
+    //         if (lyr < 1 || lyr > MAX_LAYERS) {
+    //             LogError(
+    //                 LogInfo,
+    //                 LOGERROR,
+    //                 "%s : Layer number out of range (%d > %d), record %d\n",
+    //                 fname,
+    //                 lyr,
+    //                 MAX_LAYERS,
+    //                 recno
+    //             );
+    //             goto closeFile;
+    //         }
+
+    //         SoilWat_hist->swc[doy - 1][lyr - 1] = swc;
+    //         SoilWat_hist->std_err[doy - 1][lyr - 1] = st_err;
+    //     }
+
+    // closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**
