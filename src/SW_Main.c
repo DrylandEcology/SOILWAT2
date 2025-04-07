@@ -131,13 +131,21 @@ int main(int argc, char **argv) {
         rank, userSUID, renameDomainTemplateNC, &SW_Domain, &LogInfo
     );
     if (LogInfo.stopRun) {
+#if defined(SWMPI)
+        goto setupProgramData;
+#else
         goto finishProgram;
+#endif
     }
 
     // setup and construct model template (independent of inputs)
     SW_CTL_setup_model(&sw_template, &SW_Domain.OutDom, swTRUE, &LogInfo);
     if (LogInfo.stopRun) {
+#if defined(SWMPI)
+        goto setupProgramData;
+#else
         goto finishProgram;
+#endif
     }
 #if defined(SWMPI)
     if (rank > SW_MPI_ROOT) {
@@ -147,7 +155,11 @@ int main(int argc, char **argv) {
 
     SW_MDL_get_ModelRun(&sw_template.ModelIn, &SW_Domain, NULL, &LogInfo);
     if (LogInfo.stopRun) {
+#if defined(SWMPI)
+        goto setupProgramData;
+#else
         goto finishProgram;
+#endif
     }
 
     // read user inputs
@@ -158,7 +170,11 @@ int main(int argc, char **argv) {
         &LogInfo
     );
     if (LogInfo.stopRun) {
+#if defined(SWMPI)
+        goto setupProgramData;
+#else
         goto finishProgram;
+#endif
     }
 
 #if defined(SWNETCDF)
@@ -169,22 +185,38 @@ int main(int argc, char **argv) {
         &LogInfo
     );
     if (LogInfo.stopRun) {
+#if defined(SWMPI)
+        goto setupProgramData;
+#else
         goto finishProgram;
+#endif
     }
 
     SW_NCIN_precalc_lookups(&SW_Domain, &sw_template.WeatherIn, &LogInfo);
     if (LogInfo.stopRun) {
+#if defined(SWMPI)
+        goto setupProgramData;
+#else
         goto finishProgram;
+#endif
     }
 
     SW_NCIN_create_indices(&SW_Domain, &LogInfo);
     if (LogInfo.stopRun) {
+#if defined(SWMPI)
+        goto setupProgramData;
+#else
         goto finishProgram;
+#endif
     };
 
     SW_NCIN_check_input_files(&SW_Domain, &LogInfo);
     if (LogInfo.stopRun) {
+#if defined(SWMPI)
+        goto setupProgramData;
+#else
         goto finishProgram;
+#endif
     }
 #endif
 
@@ -201,7 +233,11 @@ int main(int argc, char **argv) {
             &LogInfo
         );
         if (LogInfo.stopRun) {
-            goto finishProgram;
+#if defined(SWMPI)
+            goto setupProgramData;
+#else
+        goto finishProgram;
+#endif
         }
 #if defined(SWNETCDF)
     }
@@ -221,7 +257,11 @@ int main(int argc, char **argv) {
         &LogInfo
     );
     if (LogInfo.stopRun) {
+#if defined(SWMPI)
+        goto setupProgramData;
+#else
         goto finishProgram;
+#endif
     }
 
 #if defined(SWMPI)
@@ -245,14 +285,16 @@ setupProgramData:
 #endif
         SW_OUT_create_files(&sw_template.SW_PathOutputs, &SW_Domain, &LogInfo);
 #if defined(SWMPI)
-        if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD) ||
-            prepareFiles) {
-            if (prepareFiles) {
-                sw_message("completed simulation preparations.");
-            }
+    }
 
-            goto closeFiles;
+#if defined(SWMPI)
+    if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD) || prepareFiles) {
+        if (prepareFiles) {
+            sw_message("completed simulation preparations.");
         }
+
+        goto closeFiles;
+    }
 #else
     if (LogInfo.stopRun || prepareFiles) {
         if (prepareFiles) {
@@ -262,8 +304,6 @@ setupProgramData:
         goto closeFiles;
     }
 #endif
-#if defined(SWMPI)
-    }
 
     if (SW_Domain.SW_Designation.procJob == SW_MPI_PROC_IO) {
         SW_MPI_open_files(
