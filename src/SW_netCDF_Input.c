@@ -3997,6 +3997,7 @@ static void calc_temporal_weather_indices(
                 (unsigned int) tempStart;
             fileIndex++;
             currCalType[0] = currCalUnit[0] = newCalUnit[0] = '\0';
+            nc_close(ncFileID);
 
             ncFileID = -1;
             tempStart = -1;
