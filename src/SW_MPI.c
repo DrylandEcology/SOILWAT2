@@ -4534,6 +4534,10 @@ void SW_MPI_open_files(
     }
 
     open_input_files(rank, comm, netCDFIn, pathInputs, LogInfo);
+    if (LogInfo->stopRun) {
+        return;
+    }
+
     open_output_files(
         rank, logFileName, comm, desig, pathOutputs, OutDom, LogInfo
     );
