@@ -2206,6 +2206,8 @@ static void alloc_inputs(
     assigned SUIDs
 @param[out] distTSuids A list of translated (index file) SUIDs that's a subset
     of an I/O processor's assigned SUIDs
+@param[out] tempDistSuids A list of copied SUIDs that's a subset of an I/O
+    processor's assigned SUIDs
 @param[out] sendInputs A list of lengths that will be used to specify
     how many inputs to send to a specific process
 @param[out] succFlags A list of success flags that are accumulated
@@ -2226,6 +2228,7 @@ static void alloc_IO_info(
     size_t **counts[],
     size_t ***distSUIDs,
     size_t **distTSuids[],
+    size_t ***tempDistSuids,
     int **sendInputs,
     Bool **succFlags,
     LOG_INFO **logs,
@@ -2315,6 +2318,30 @@ static void alloc_IO_info(
         (*distSUIDs)[suid][0] = (*distSUIDs)[suid][1] = 0;
     }
 
+    *tempDistSuids = (size_t **) Mem_Malloc(
+        sizeof(size_t *) * numSuids,
+        "alloc_IO_info()",
+        LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    for (suid = 0; suid < numSuids; suid++) {
+        (*tempDistSuids)[suid] = NULL;
+    }
+
+    for (suid = 0; suid < numSuids; suid++) {
+        (*tempDistSuids)[suid] = (size_t *) Mem_Malloc(
+            sizeof(size_t) * 2, "alloc_IO_info()", LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        (*tempDistSuids)[suid][0] = (*tempDistSuids)[suid][1] = 0;
+    }
+
     *succFlags = (Bool *) Mem_Malloc(
         sizeof(Bool) * numSuids * N_ITER_BEFORE_OUT, "alloc_IO_info()", LogInfo
     );
@@ -2379,6 +2406,8 @@ static void alloc_IO_info(
     assigned SUIDs
 @param[out] sendLens A list of lengths that will be used to specify
     how many inputs to send to a specific process
+@param[out] tempDistSuids A list of copied SUIDs that's a subset of an I/O
+    processor's assigned SUIDs
 @param[out] sendInputs A list of values specifying how many inputs each compute
     process will receive
 @param[out] elevations A list of lengths that will be used to specify
@@ -2404,6 +2433,7 @@ static void dealloc_IO_info(
     size_t **counts[],
     size_t ***distSUIDs,
     size_t **distTSuids[],
+    size_t ***tempDistSuids,
     int **sendInputs,
     double **elevations,
     double **tempMonthlyVals,
@@ -2470,6 +2500,18 @@ static void dealloc_IO_info(
 
             free((void *) *distSUIDs);
             *distSUIDs = NULL;
+        }
+    }
+
+    if (!isnull(*tempDistSuids)) {
+        for (suid = 0; suid < numSuids; suid++) {
+            if (!isnull((*tempDistSuids)[suid])) {
+                free((void *) (*tempDistSuids)[suid]);
+                (*tempDistSuids)[suid] = NULL;
+            }
+
+            free((void *) *tempDistSuids);
+            *tempDistSuids = NULL;
         }
     }
 
@@ -5529,13 +5571,15 @@ void SW_MPI_handle_IO(
     int succFlagWrite;
     int distSUIDWrite;
     int iterNumSuids = 0;
+    int suid;
 
     SW_RUN_INPUTS *inputs = NULL;
     int *sendInputs = NULL;
     int numWrites[SW_NINKEYSNC] = {0};
     size_t **starts[SW_NINKEYSNC] = {NULL};
     size_t **counts[SW_NINKEYSNC] = {NULL};
-    size_t **distSUIDs = NULL; // Subset of all assigned suids (domain)
+    size_t **distSUIDs = NULL;     // Subset of all assigned suids (domain)
+    size_t **tempDistSuids = NULL;
     size_t **distTSUIDs[SW_NINKEYSNC] = {NULL};
     double *elevations = NULL;
     double *tempMonthlyVals = NULL;
@@ -5546,6 +5590,7 @@ void SW_MPI_handle_IO(
     Bool *succFlags = NULL;
     LOG_INFO *logs = NULL;
     Bool errorCaused = swFALSE;
+    size_t temp;
 
     // Determine if spatial variables are one- or two-dimensional
     // This impacts the order of "start" and "count" values for spatial key
@@ -5565,6 +5610,7 @@ void SW_MPI_handle_IO(
         counts,
         &distSUIDs,
         distTSUIDs,
+        &tempDistSuids,
         &sendInputs,
         &succFlags,
         &logs,
@@ -5610,6 +5656,13 @@ checkStatus:
         distSUIDWrite = succFlagWrite;
 
         numIterations = (numIterations + 1) % N_ITER_BEFORE_OUT;
+
+        if (numIterations == 0) {
+            for (suid = 0; suid < numIterSuids; suid++) {
+                tempDistSuids[suid][0] = distSUIDs[suid][0];
+                tempDistSuids[suid][1] = distSUIDs[suid][1];
+            }
+        }
 
         get_next_suids(
             desig,
@@ -5687,6 +5740,24 @@ checkStatus:
         if (numIterations == 0 && input > 0) {
             // Get multi-iteration start/count values for writing output
             // in as little contiguous writes as possible
+
+            // The way this function is written currently makes it so that
+            // by the time we write output, the first
+            // N_SUID_ASSIGN SUIDs will be over written, so we need
+            // to temporarily swap the newly written N_SUID_ASSIGN SUIDs
+            // with the previous SUIDs
+            if (numIterations == 0) {
+                for (suid = 0; suid < numIterSuids; suid++) {
+                    temp = tempDistSuids[suid][0];
+                    tempDistSuids[suid][0] = distSUIDs[suid][0];
+                    distSUIDs[suid][0] = temp;
+
+                    temp = tempDistSuids[suid][1];
+                    tempDistSuids[suid][1] = distSUIDs[suid][1];
+                    distSUIDs[suid][1] = temp;
+                }
+            }
+
             write_outputs(
                 progFileID,
                 progVarID,
@@ -5704,6 +5775,13 @@ checkStatus:
             if (LogInfo->stopRun) {
                 errorCaused = swTRUE;
                 goto freeMem;
+            }
+
+            if (numIterations == 0) {
+                for (suid = 0; suid < numIterSuids; suid++) {
+                    distSUIDs[suid][0] = tempDistSuids[suid][0];
+                    distSUIDs[suid][1] = tempDistSuids[suid][1];
+                }
             }
 
             iterNumSuids = numIterSuids;
@@ -5780,6 +5858,7 @@ freeMem:
         counts,
         &distSUIDs,
         distTSUIDs,
+        &tempDistSuids,
         &sendInputs,
         &elevations,
         &tempMonthlyVals,
