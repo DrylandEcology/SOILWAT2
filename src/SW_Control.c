@@ -104,6 +104,8 @@ static void report_sim_start(SW_DOMAIN *SW_Domain, int rank) {
     if (rank == 0) {
         sw_message("is running simulations across the domain...");
     }
+
+    (void) SW_Domain;
 #else
     char reportStr[MAX_FILENAMESIZE] = "\0";
     int nCompProcs = SW_Domain->SW_Designation.nTotCompProcs;
