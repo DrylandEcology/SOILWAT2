@@ -205,7 +205,8 @@ static void sumof_ves(SW_VEGESTAB_SIM *v, SW_VEGESTAB_OUTPUTS *s, OutKey k);
 
 static void sumof_vpd(
     SW_VEGPROD_OUTPUTS *s,
-    VegType veg[],
+    VegTypeRunIn vegRunIn[],
+    VegTypeSim vegSim[],
     OutKey k,
     TimeInt doy,
     LOG_INFO *LogInfo
@@ -328,7 +329,8 @@ Bool has_keyname_soillayers(const char *var) {
 
 static void sumof_vpd(
     SW_VEGPROD_OUTPUTS *s,
-    VegType veg[],
+    VegTypeRunIn vegRunIn[],
+    VegTypeSim vegSim[],
     OutKey k,
     TimeInt doy,
     LOG_INFO *LogInfo
@@ -343,19 +345,19 @@ static void sumof_vpd(
     // scale biomass by fCover to obtain biomass as observed in total vegetation
     case eSW_Biomass:
         ForEachVegType(ik) {
-            tmp = veg[ik].biomass_daily[doy] * veg[ik].cov.fCover;
+            tmp = vegSim[ik].biomass_daily[doy] * vegRunIn[ik].cov.fCover;
             s->veg[ik].biomass_inveg += tmp;
             s->biomass_total += tmp;
 
-            tmp = veg[ik].litter_daily[doy] * veg[ik].cov.fCover;
+            tmp = vegSim[ik].litter_daily[doy] * vegRunIn[ik].cov.fCover;
             s->veg[ik].litter_inveg += tmp;
             s->litter_total += tmp;
 
-            tmp = veg[ik].biolive_daily[doy] * veg[ik].cov.fCover;
+            tmp = vegSim[ik].biolive_daily[doy] * vegRunIn[ik].cov.fCover;
             s->veg[ik].biolive_inveg += tmp;
             s->biolive_total += tmp;
 
-            s->LAI += veg[ik].lai_live_daily[doy] * veg[ik].cov.fCover;
+            s->LAI += vegSim[ik].lai_live_daily[doy] * vegRunIn[ik].cov.fCover;
         }
         break;
 
@@ -1042,6 +1044,7 @@ static void collect_sums(
                 sumof_vpd(
                     &sw->vp_p_accu[op],
                     sw->RunIn.VegProdRunIn.veg,
+                    sw->VegProdSim.veg,
                     (OutKey) k,
                     sw->ModelSim.doy,
                     LogInfo
@@ -3949,7 +3952,7 @@ void echo_all_inputs(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         sw->VegEstabIn.count,
         LogInfo
     );
-    echo_VegProd(&sw->RunIn.VegProdRunIn);
+    echo_VegProd(&sw->RunIn.VegProdRunIn, &sw->VegProdIn);
     echo_outputs(OutDom, LogInfo);
 }
 

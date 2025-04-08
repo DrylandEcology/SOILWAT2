@@ -465,45 +465,32 @@ typedef struct {
 /*                    VegProd structs                  */
 /* --------------------------------------------------- */
 
-/** Data type that describes cover attributes of a surface type */
+/** Data type that describes cover attributes of a surface type
+    that is static through all simulation runs */
+typedef struct {
+    double
+        /** The surface albedo [0-1];
+          user input from file `Input/veg.in` */
+        albedo;
+} CoverTypeIn;
+
+/** Data type that describes cover attributes of a surface type
+    that can be changed before every simulation run */
 typedef struct {
     double
         /** The cover contribution to the total plot [0-1];
           user input from file `Input/veg.in` */
-        fCover,
-        /** The surface albedo [0-1];
-          user input from file `Input/veg.in` */
-        albedo;
-} CoverType;
+        fCover;
+} CoverTypeRunIn;
 
-/** Data type that describes a vegetation type: currently, one of
+/** Data type that can change before every simulation run describing
+    a vegetation type: currently, one of
   \ref NVEGTYPES available types:
   \ref SW_TREES, \ref SW_SHRUB, \ref SW_FORBS, and \ref SW_GRASS */
 typedef struct {
-    /** Surface cover attributes of the vegetation type */
-    CoverType cov;
-
-    tanfunc_t
-        /** Parameters to calculate canopy height based on biomass;
-          user input from file `Input/veg.in` */
-        cnpy;
-    /** Constant canopy height: if > 0 then constant canopy height [cm] and
-      overriding cnpy-tangens = f(biomass);
-      user input from file `Input/veg.in` */
-    double canopy_height_constant;
-
-    tanfunc_t
-        /** Shading effect on transpiration based on live and dead biomass;
-          user input from file `Input/veg.in` */
-        tr_shade_effects;
-
-    double
-        /** Parameter of live and dead biomass shading effects;
-          user input from file `Input/veg.in` */
-        shade_scale,
-        /** Maximal dead biomass for shading effects;
-          user input from file `Input/veg.in` */
-        shade_deadmax;
+    /** Data type that describes cover attributes of a surface type
+        that can be changed before every simulation run */
+    CoverTypeRunIn cov;
 
     double
         /** Monthly litter amount [g / m2];
@@ -518,7 +505,13 @@ typedef struct {
         /** Parameter to translate biomass to LAI = 1 [g / m2];
           user input from file `Input/veg.in` */
         lai_conv[MAX_MONTHS];
+} VegTypeRunIn;
 
+/** Data type that stores values set and used purely for simulation purposes
+    describing a vegetation type: currently, one of
+  \ref NVEGTYPES available types:
+  \ref SW_TREES, \ref SW_SHRUB, \ref SW_FORBS, and \ref SW_GRASS */
+typedef struct {
     double
         /** Daily litter amount [g / m2]
             as if this vegetation type covers 100% of the simulated surface */
@@ -547,6 +540,45 @@ typedef struct {
         /** Daily sum of aboveground biomass & litter [g / m2]
             as if this vegetation type covers 100% of the simulated surface */
         total_agb_daily[MAX_DAYS + 1];
+
+    double
+        /** Calculated multipliers for CO2-effects:
+          - column \ref BIO_INDEX holds biomass multipliers
+          - column \ref WUE_INDEX holds water-use-efficiency multipliers
+          - rows represent years */
+        co2_multipliers[2][MAX_NYEAR];
+} VegTypeSim;
+
+/** Data type that is static through every simulation run describing
+    a vegetation type: currently, one of
+  \ref NVEGTYPES available types:
+  \ref SW_TREES, \ref SW_SHRUB, \ref SW_FORBS, and \ref SW_GRASS */
+typedef struct {
+    /** Data type that describes cover attributes of a surface type
+        that is static through all simulation runs */
+    CoverTypeIn cov;
+
+    tanfunc_t
+        /** Parameters to calculate canopy height based on biomass;
+          user input from file `Input/veg.in` */
+        cnpy;
+    /** Constant canopy height: if > 0 then constant canopy height [cm] and
+      overriding cnpy-tangens = f(biomass);
+      user input from file `Input/veg.in` */
+    double canopy_height_constant;
+
+    tanfunc_t
+        /** Shading effect on transpiration based on live and dead biomass;
+          user input from file `Input/veg.in` */
+        tr_shade_effects;
+
+    double
+        /** Parameter of live and dead biomass shading effects;
+             user input from file `Input/veg.in` */
+        shade_scale,
+        /** Maximal dead biomass for shading effects;
+             user input from file `Input/veg.in` */
+        shade_deadmax;
 
     Bool
         /** Flag for hydraulic redistribution/lift:
@@ -609,15 +641,7 @@ typedef struct {
         /** Parameter for CO2-effects on water-use-efficiency;
           user input from file `Input/veg.in` */
         co2_wue_coeff2;
-
-    double
-        /** Calculated multipliers for CO2-effects:
-          - column \ref BIO_INDEX holds biomass multipliers
-          - column \ref WUE_INDEX holds water-use-efficiency multipliers
-          - rows represent years */
-        co2_multipliers[2][MAX_NYEAR];
-
-} VegType;
+} VegTypeIn;
 
 typedef struct {
     // biomass [g/m2] per vegetation type as observed in total vegetation
@@ -633,8 +657,15 @@ typedef struct {
     double biomass_total, biolive_total, litter_total, LAI;
 } SW_VEGPROD_OUTPUTS;
 
+typedef struct {
+    VegTypeSim veg[NVEGTYPES];
+} SW_VEGPROD_SIM;
+
 /** Data type to describe the surface cover of a SOILWAT2 simulation run */
 typedef struct {
+    VegTypeIn veg[NVEGTYPES];
+    CoverTypeIn bare_cov;
+
     /** Calendar year corresponding to vegetation inputs */
     TimeInt vegYear;
 
@@ -662,10 +693,11 @@ typedef struct {
 
 typedef struct {
     /** Data for each vegetation type */
-    VegType veg[NVEGTYPES];
+    VegTypeRunIn veg[NVEGTYPES];
+
     /** Bare-ground cover of plot that is not occupied by vegetation;
         user input from file `Input/veg.in` */
-    CoverType bare_cov;
+    CoverTypeRunIn bare_cov;
 } SW_VEGPROD_RUN_INPUTS;
 
 /* =================================================== */
@@ -1779,6 +1811,7 @@ struct SW_RUN {
     SW_ATMD_SIM AtmDemSim;
     SW_MODEL_SIM ModelSim;
     SW_VEGESTAB_SIM VegEstabSim;
+    SW_VEGPROD_SIM VegProdSim;
     SW_SOILWAT_SIM SoilWatSim;
     SW_SITE_SIM SiteSim;
 

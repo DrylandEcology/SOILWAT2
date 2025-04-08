@@ -37,7 +37,7 @@ void create_test_soillayers(
     SW_SITE_INPUTS *SW_SiteIn,
     SW_SITE_SIM *SW_SiteSim,
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
-    VegType veg[],
+    VegTypeIn veg[],
     LOG_INFO *LogInfo
 );
 

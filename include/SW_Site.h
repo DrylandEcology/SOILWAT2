@@ -321,7 +321,7 @@ void SW_SIT_init_run(
     SW_SITE_INPUTS *SW_SiteIn,
     SW_SITE_SIM *SW_SiteSim,
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
-    VegType veg[],
+    VegTypeIn veg[],
     LyrIndex n_layers,
     LOG_INFO *LogInfo
 );
@@ -363,7 +363,7 @@ void set_soillayers(
     SW_SITE_INPUTS *SW_SiteIn,
     SW_SITE_SIM *SW_SiteSim,
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
-    VegType veg[],
+    VegTypeIn veg[],
     LyrIndex nlyrs,
     const double *dmax,
     const double *bd,

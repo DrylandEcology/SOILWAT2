@@ -13,7 +13,7 @@
 namespace {
 // Test the veg interception function 'veg_intercepted_water'
 TEST(SWFlowTest, SWFlowVegInterceptedWater) {
-    VegType veg[NVEGTYPES];
+    VegTypeIn veg[NVEGTYPES];
     short k;
 
     ForEachVegType(k) { veg[k].veg_kSmax = 2.; }
@@ -84,7 +84,7 @@ TEST(SWFlowTest, SWFlowVegInterceptedWater) {
 
 // Test the litter interception function 'litter_intercepted_water'
 TEST(SWFlowTest, SWFlowLitterInterceptedWater) {
-    VegType veg[NVEGTYPES];
+    VegTypeIn veg[NVEGTYPES];
     short k;
 
     ForEachVegType(k) { veg[k].lit_kSmax = 2.; }
@@ -475,12 +475,12 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
 
     SW_SITE_INPUTS SW_SiteIn;
     SW_SOIL_RUN_INPUTS SW_SoilRunIn;
-    SW_VEGPROD_RUN_INPUTS SW_VegProdRunIn;
+    SW_VEGPROD_INPUTS SW_VegProdIn;
     SW_SITE_SIM SW_SiteSim;
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { SW_VegProdRunIn.veg[k].SWPcrit = 20; }
+    ForEachVegType(k) { SW_VegProdIn.veg[k].SWPcrit = 20; }
 
 
     //--- Test when n_layers is 1 ------
@@ -502,7 +502,7 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
         &SW_SiteIn,
         &SW_SiteSim,
         &SW_SoilRunIn,
-        SW_VegProdRunIn.veg,
+        SW_VegProdIn.veg,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -549,7 +549,7 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
         &SW_SiteIn,
         &SW_SiteSim,
         &SW_SoilRunIn,
-        SW_VegProdRunIn.veg,
+        SW_VegProdIn.veg,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -628,11 +628,11 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
     SW_SITE_INPUTS SW_SiteIn;
     SW_SITE_SIM SW_SiteSim;
     SW_SOIL_RUN_INPUTS SW_SoilRunIn;
-    SW_VEGPROD_RUN_INPUTS SW_VegProdRunIn;
+    SW_VEGPROD_INPUTS SW_VegProdIn;
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { SW_VegProdRunIn.veg[k].SWPcrit = 20; }
+    ForEachVegType(k) { SW_VegProdIn.veg[k].SWPcrit = 20; }
 
 
     unsigned int i;
@@ -667,7 +667,7 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
             &SW_SiteIn,
             &SW_SiteSim,
             &SW_SoilRunIn,
-            SW_VegProdRunIn.veg,
+            SW_VegProdIn.veg,
             &LogInfo
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -801,11 +801,11 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation2) {
     SW_SITE_INPUTS SW_SiteIn;
     SW_SITE_SIM SW_SiteSim;
     SW_SOIL_RUN_INPUTS SW_SoilRunIn;
-    SW_VEGPROD_RUN_INPUTS SW_VegProdRunIn;
+    SW_VEGPROD_INPUTS SW_VegProdIn;
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { SW_VegProdRunIn.veg[k].SWPcrit = 20; }
+    ForEachVegType(k) { SW_VegProdIn.veg[k].SWPcrit = 20; }
 
     // INPUTS
     unsigned int nelyrs;
@@ -834,7 +834,7 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation2) {
             &SW_SiteIn,
             &SW_SiteSim,
             &SW_SoilRunIn,
-            SW_VegProdRunIn.veg,
+            SW_VegProdIn.veg,
             &LogInfo
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1103,11 +1103,11 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
     SW_SITE_INPUTS SW_SiteIn;
     SW_SITE_SIM SW_SiteSim;
     SW_SOIL_RUN_INPUTS SW_SoilRunIn;
-    SW_VEGPROD_RUN_INPUTS SW_VegProdRunIn;
+    SW_VEGPROD_INPUTS SW_VegProdIn;
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { SW_VegProdRunIn.veg[k].SWPcrit = 20; }
+    ForEachVegType(k) { SW_VegProdIn.veg[k].SWPcrit = 20; }
 
 
     // INPUTS
@@ -1143,7 +1143,7 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
             &SW_SiteIn,
             &SW_SiteSim,
             &SW_SoilRunIn,
-            SW_VegProdRunIn.veg,
+            SW_VegProdIn.veg,
             &LogInfo
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1326,8 +1326,7 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    SW_VEGPROD_RUN_INPUTS VegProdRunIn;
-    ForEachVegType(k) { VegProdRunIn.veg[k].SWPcrit = 20; }
+    ForEachVegType(k) { VegProdIn.veg[k].SWPcrit = 20; }
 
 
     // INPUTS
@@ -1359,7 +1358,7 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
             &SW_SiteIn,
             &SW_SiteSim,
             &SW_SoilRunIn,
-            VegProdRunIn.veg,
+            VegProdIn.veg,
             &LogInfo
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1581,8 +1580,7 @@ TEST(SWFlowTest, SWFlowHydraulicRedistribution) {
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    SW_VEGPROD_RUN_INPUTS VegProdRunIn;
-    ForEachVegType(k) { VegProdRunIn.veg[k].SWPcrit = 20; }
+    ForEachVegType(k) { VegProdIn.veg[k].SWPcrit = 20; }
 
     // INPUTS
     unsigned int nlyrs;
@@ -1637,7 +1635,7 @@ TEST(SWFlowTest, SWFlowHydraulicRedistribution) {
             &SW_SiteIn,
             &SW_SiteSim,
             &SW_SoilRunIn,
-            VegProdRunIn.veg,
+            VegProdIn.veg,
             &LogInfo
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error

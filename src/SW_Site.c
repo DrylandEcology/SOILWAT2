@@ -2123,7 +2123,7 @@ void set_soillayers(
     SW_SITE_INPUTS *SW_SiteIn,
     SW_SITE_SIM *SW_SiteSim,
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
-    VegType veg[],
+    VegTypeIn veg[],
     LyrIndex nlyrs,
     const double *dmax,
     const double *bd,
@@ -2451,8 +2451,9 @@ site's input values
 site's simulation values
 @param[in,out] SW_SoilRunIn Struct of type SW_SOIL_RUN_INPUTS describing
     the simulated site's input values
-@param[in,out] veg Array of size NVEGTYPES of type VegType describing
-    all NVEGTYPES vegetation types through simulation-specific inputs
+@param[in,out] veg Array of size NVEGTYPES of type VegTypeIn describing
+    all NVEGTYPES vegetation types through static input values (can not
+    change between simulations)
 @param[in] n_layers Number of layers of soil within the simulation run
 @param[out] LogInfo Holds information on warnings and errors
 
@@ -2463,7 +2464,7 @@ void SW_SIT_init_run(
     SW_SITE_INPUTS *SW_SiteIn,
     SW_SITE_SIM *SW_SiteSim,
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
-    VegType veg[],
+    VegTypeIn veg[],
     LyrIndex n_layers,
     LOG_INFO *LogInfo
 ) {
