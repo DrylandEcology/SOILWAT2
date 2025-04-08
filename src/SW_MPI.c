@@ -3656,12 +3656,12 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
         {1}, {1, MAX_MONTHS, MAX_MONTHS, MAX_MONTHS, MAX_MONTHS}
     };
     MPI_Aint covOffsets[][5] = {
-        {offsetof(CoverType, fCover)},
-        {offsetof(VegType, cov),
-         offsetof(VegType, litter),
-         offsetof(VegType, biomass),
-         offsetof(VegType, pct_live),
-         offsetof(VegType, lai_conv)}
+        {offsetof(CoverTypeRunIn, fCover)},
+        {offsetof(VegTypeRunIn, cov),
+         offsetof(VegTypeRunIn, litter),
+         offsetof(VegTypeRunIn, biomass),
+         offsetof(VegTypeRunIn, pct_live),
+         offsetof(VegTypeRunIn, lai_conv)}
     };
 
     int type;
@@ -3914,7 +3914,7 @@ void SW_MPI_template_info(
          (void *) &SW_Run->VegProdIn.isBiomAsIf100Cover,
          (void *) &SW_Run->VegProdIn.use_SWA,
          (void *) &SW_Run->VegProdIn.veg_method,
-         (void *) &SW_Run->RunIn.VegProdRunIn.bare_cov.albedo},
+         (void *) &SW_Run->VegProdIn.bare_cov.albedo},
         {(void *) &SW_Run->ModelIn.SW_SpinUp,
          (void *) &SW_Run->ModelIn.startyr,
          (void *) &SW_Run->ModelIn.endyr,
@@ -4072,41 +4072,34 @@ void SW_MPI_template_info(
     if (desig->procJob == SW_MPI_PROC_COMP || rank == SW_MPI_ROOT) {
         ForEachVegType(veg) {
             void *sendBuff[] = {
-                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].cnpy.xinflec,
-                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].cnpy.yinflec,
-                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].cnpy.range,
-                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].cnpy.slope,
-                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg]
-                    .canopy_height_constant,
-                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].veg_kSmax,
-                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].veg_kdead,
-                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].lit_kSmax,
-                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg]
-                    .EsTpartitioning_param,
-                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].Es_param_limit,
-                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].shade_scale,
-                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].shade_deadmax,
-                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg]
-                    .tr_shade_effects.xinflec,
-                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg]
-                    .tr_shade_effects.yinflec,
-                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg]
-                    .tr_shade_effects.range,
-                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg]
-                    .tr_shade_effects.slope,
-                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].maxCondroot,
-                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].swpMatric50,
-                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].shapeCond,
-                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].SWPcrit,
+                (void *) &SW_Run->VegProdIn.veg[veg].cnpy.xinflec,
+                (void *) &SW_Run->VegProdIn.veg[veg].cnpy.yinflec,
+                (void *) &SW_Run->VegProdIn.veg[veg].cnpy.range,
+                (void *) &SW_Run->VegProdIn.veg[veg].cnpy.slope,
+                (void *) &SW_Run->VegProdIn.veg[veg].canopy_height_constant,
+                (void *) &SW_Run->VegProdIn.veg[veg].veg_kSmax,
+                (void *) &SW_Run->VegProdIn.veg[veg].veg_kdead,
+                (void *) &SW_Run->VegProdIn.veg[veg].lit_kSmax,
+                (void *) &SW_Run->VegProdIn.veg[veg].EsTpartitioning_param,
+                (void *) &SW_Run->VegProdIn.veg[veg].Es_param_limit,
+                (void *) &SW_Run->VegProdIn.veg[veg].shade_scale,
+                (void *) &SW_Run->VegProdIn.veg[veg].shade_deadmax,
+                (void *) &SW_Run->VegProdIn.veg[veg].tr_shade_effects.xinflec,
+                (void *) &SW_Run->VegProdIn.veg[veg].tr_shade_effects.yinflec,
+                (void *) &SW_Run->VegProdIn.veg[veg].tr_shade_effects.range,
+                (void *) &SW_Run->VegProdIn.veg[veg].tr_shade_effects.slope,
+                (void *) &SW_Run->VegProdIn.veg[veg].maxCondroot,
+                (void *) &SW_Run->VegProdIn.veg[veg].swpMatric50,
+                (void *) &SW_Run->VegProdIn.veg[veg].shapeCond,
+                (void *) &SW_Run->VegProdIn.veg[veg].SWPcrit,
                 (void *) &SW_Run->VegProdIn.critSoilWater[veg],
-                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].co2_bio_coeff1,
-                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].co2_bio_coeff2,
-                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].co2_wue_coeff1,
-                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].co2_wue_coeff2,
-                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg].cov.albedo,
+                (void *) &SW_Run->VegProdIn.veg[veg].co2_bio_coeff1,
+                (void *) &SW_Run->VegProdIn.veg[veg].co2_bio_coeff2,
+                (void *) &SW_Run->VegProdIn.veg[veg].co2_wue_coeff1,
+                (void *) &SW_Run->VegProdIn.veg[veg].co2_wue_coeff2,
+                (void *) &SW_Run->VegProdIn.veg[veg].cov.albedo,
                 (void *) &SW_Run->VegProdIn.rank_SWPcrits[veg],
-                (void *) &SW_Run->RunIn.VegProdRunIn.veg[veg]
-                    .flagHydraulicRedistribution
+                (void *) &SW_Run->VegProdIn.veg[veg].flagHydraulicRedistribution
             };
 
             for (vegIn = 0; vegIn < numNumTemplateVeg; vegIn++) {
