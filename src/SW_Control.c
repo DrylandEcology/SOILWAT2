@@ -119,7 +119,9 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     SW_VPD_new_year(
         &sw->ModelSim,
         sw->VegProdIn.isBiomAsIf100Cover,
-        sw->RunIn.VegProdRunIn.veg
+        sw->RunIn.VegProdRunIn.veg,
+        sw->VegProdSim.veg,
+        sw->VegProdIn.veg
     );
 
     // SW_FLW_new_year() not needed
@@ -645,7 +647,7 @@ void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
         &sw->SiteIn,
         &sw->SiteSim,
         &sw->RunIn.SoilRunIn,
-        sw->RunIn.VegProdRunIn.veg,
+        sw->VegProdIn.veg,
         sw->RunIn.SiteRunIn.n_layers,
         LogInfo
     );
@@ -671,6 +673,7 @@ void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
         sw->RunIn.weathRunAllHist,
         &sw->ModelIn,
         &sw->ModelSim,
+        sw->VegProdSim.veg,
         estVeg,
         sw->RunIn.ModelRunIn.isnorth,
         sw->VegProdIn.veg_method,
@@ -691,7 +694,8 @@ void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
         sw->RunIn.SiteRunIn.n_layers
     );
     SW_CBN_init_run(
-        sw->RunIn.VegProdRunIn.veg,
+        sw->VegProdIn.veg,
+        sw->VegProdSim.veg,
         &sw->CarbonIn,
         sw->ModelSim.addtl_yr,
         sw->ModelIn.startyr,

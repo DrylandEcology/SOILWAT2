@@ -1013,7 +1013,7 @@ use in get_dSWAbulk(). Must be call after `SW_SWC_water_flow()` is executed.
 @param[in] swcBulk_atSWPcrit SWC corresponding to critical SWP for transpiration
 @param[in] SW_VegProdIn Struct of type SW_VEGPROD_INPUTS describing surface
     cover conditions in the simulation
-@param[in] veg Array of size NVEGTYPES of type VegType describing
+@param[in] veg Array of size NVEGTYPES of type VegTypeRunIn describing
     all NVEGTYPES vegetation types through simulation-specific inputs
 @param[in] n_layers Number of layers of soil within the simulation run
 */
@@ -1022,7 +1022,7 @@ void calculate_repartitioned_soilwater(
     SW_SOILWAT_SIM *SW_SoilWatSim,
     double swcBulk_atSWPcrit[][MAX_LAYERS],
     SW_VEGPROD_INPUTS *SW_VegProdIn,
-    VegType veg[],
+    VegTypeRunIn veg[],
     LyrIndex n_layers
 ) {
 
@@ -1104,7 +1104,7 @@ the available soilwater of each veg type above so start at bottom move up.
 @param[in] SW_VegProdIn Struct of type SW_VEGPROD_INPUTS describing surface
     cover conditions in the simulation
 @param[in] veg Array of size NVEGTYPES of type VegType describing
-    all NVEGTYPES vegetation types through simulation-specific inputs
+    all VegTypeRunIn vegetation types through simulation-specific inputs
 @param[out] swa_master Holds information of veg_type, crit_val, and layer
 @param[out] dSWA_repart_sum Repartioned swa values
 */
@@ -1112,7 +1112,7 @@ the available soilwater of each veg type above so start at bottom move up.
 void get_dSWAbulk(
     unsigned int i,
     SW_VEGPROD_INPUTS *SW_VegProdIn,
-    VegType veg[],
+    VegTypeRunIn veg[],
     double swa_master[][NVEGTYPES][MAX_LAYERS],
     double dSWA_repart_sum[][MAX_LAYERS]
 ) {

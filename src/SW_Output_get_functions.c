@@ -261,7 +261,7 @@ void get_co2effects_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
             "%c%.*f",
             OUTSEP,
             OUT_DIGITS,
-            sw->RunIn.VegProdRunIn.veg[k].co2_multipliers[BIO_INDEX][simyear]
+            sw->VegProdSim.veg[k].co2_multipliers[BIO_INDEX][simyear]
         );
         fullBuffer = sw_memccpy_inc(
             (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
@@ -277,7 +277,7 @@ void get_co2effects_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
             "%c%.*f",
             OUTSEP,
             OUT_DIGITS,
-            sw->RunIn.VegProdRunIn.veg[k].co2_multipliers[WUE_INDEX][simyear]
+            sw->VegProdSim.veg[k].co2_multipliers[WUE_INDEX][simyear]
         );
         fullBuffer = sw_memccpy_inc(
             (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
@@ -330,7 +330,7 @@ void get_co2effects_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
                     );
 #endif
 
-        p[iOUTIndex] = sw->RunIn.VegProdRunIn.veg[k]
+        p[iOUTIndex] = sw->VegProdSim.veg[k]
                            .co2_multipliers[BIO_INDEX][sw->ModelSim.simyear];
 
 
@@ -353,7 +353,7 @@ void get_co2effects_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
                     );
 #endif
 
-        p[iOUTIndex] = sw->RunIn.VegProdRunIn.veg[k]
+        p[iOUTIndex] = sw->VegProdSim.veg[k]
                            .co2_multipliers[WUE_INDEX][sw->ModelSim.simyear];
     }
 }
@@ -378,7 +378,7 @@ void get_co2effects_agg(
             psd,
             iOUTIndex,
             OutRun->currIter,
-            sw->RunIn.VegProdRunIn.veg[k]
+            sw->VegProdSim.veg[k]
                 .co2_multipliers[BIO_INDEX][sw->ModelSim.simyear]
         );
 
@@ -393,7 +393,7 @@ void get_co2effects_agg(
             psd,
             iOUTIndex,
             OutRun->currIter,
-            sw->RunIn.VegProdRunIn.veg[k]
+            sw->VegProdSim.veg[k]
                 .co2_multipliers[WUE_INDEX][sw->ModelSim.simyear]
         );
     }

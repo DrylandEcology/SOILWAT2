@@ -116,7 +116,11 @@ void SW_VPD_read(
 );
 
 void SW_VPD_new_year(
-    SW_MODEL_SIM *SW_ModelSim, Bool isBiomAsIf100Cover, VegType veg[]
+    SW_MODEL_SIM *SW_ModelSim,
+    Bool isBiomAsIf100Cover,
+    VegTypeRunIn vegRunIn[],
+    VegTypeSim vegSim[],
+    VegTypeIn vegIn[]
 );
 
 void SW_VPD_fix_cover(
@@ -176,13 +180,14 @@ void SW_VPD_init_run(
     SW_WEATHER_HIST *allHist,
     SW_MODEL_INPUTS *SW_ModelIn,
     SW_MODEL_SIM *SW_ModelSim,
+    VegTypeSim vegSim[],
     Bool estVeg,
     Bool inNorthHem,
     int veg_method,
     LOG_INFO *LogInfo
 );
 
-void checkBiomass(VegType veg[], LOG_INFO *LogInfo);
+void checkBiomass(VegTypeRunIn veg[], LOG_INFO *LogInfo);
 
 void apply_biomassCO2effect(
     double *new_biomass, const double *biomass, double multiplier
@@ -190,7 +195,9 @@ void apply_biomassCO2effect(
 
 double sum_across_vegtypes(double x[][MAX_LAYERS], LyrIndex layerno);
 
-void echo_VegProd(SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn);
+void echo_VegProd(
+    SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn, SW_VEGPROD_INPUTS *SW_VegProdIn
+);
 
 void get_critical_rank(SW_VEGPROD_INPUTS *SW_VegProdIn);
 

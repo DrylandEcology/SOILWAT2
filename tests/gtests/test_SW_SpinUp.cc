@@ -392,7 +392,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                     &local_sw.SiteIn,
                     &local_sw.SiteSim,
                     &local_sw.RunIn.SoilRunIn,
-                    local_sw.RunIn.VegProdRunIn.veg,
+                    SW_Run.VegProdIn.veg,
                     SW_Run.RunIn.SiteRunIn.n_layers,
                     &local_LogInfo
                 );

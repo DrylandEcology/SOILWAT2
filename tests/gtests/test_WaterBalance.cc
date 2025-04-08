@@ -218,7 +218,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
         &SW_Run.SiteIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        SW_Run.RunIn.VegProdRunIn.veg,
+        SW_Run.VegProdIn.veg,
         SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );
@@ -254,7 +254,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOneSoilLayer) {
         &SW_Run.SiteIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        SW_Run.RunIn.VegProdRunIn.veg,
+        SW_Run.VegProdIn.veg,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -288,7 +288,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMaxSoilLayers) {
         &SW_Run.SiteIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        SW_Run.RunIn.VegProdRunIn.veg,
+        SW_Run.VegProdIn.veg,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -325,6 +325,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
         SW_Run.RunIn.weathRunAllHist,
         &SW_Run.ModelIn,
         &SW_Run.ModelSim,
+        SW_Run.VegProdSim.veg,
         swTRUE,
         SW_Run.RunIn.ModelRunIn.isnorth,
         SW_Run.VegProdIn.veg_method,
@@ -370,7 +371,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
         &SW_Run.SiteIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        SW_Run.RunIn.VegProdRunIn.veg,
+        SW_Run.VegProdIn.veg,
         SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );
@@ -443,7 +444,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
         &SW_Run.SiteIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        SW_Run.RunIn.VegProdRunIn.veg,
+        SW_Run.VegProdIn.veg,
         SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );
@@ -519,7 +520,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
         &SW_Run.SiteIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        SW_Run.RunIn.VegProdRunIn.veg,
+        SW_Run.VegProdIn.veg,
         SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );
