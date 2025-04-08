@@ -849,11 +849,13 @@ static void assignProcs(
     // starting the loop to simplify error handling across processes
     // when allocating memory
     if (SW_Designation->procJob == SW_MPI_PROC_IO) {
-        allocateActiveSuids(
-            SW_Designation->nSuids, &SW_Designation->domSuids, LogInfo
-        );
-        if (LogInfo->stopRun) {
-            goto reportError;
+        if (rank > SW_MPI_ROOT) {
+            allocateActiveSuids(
+                SW_Designation->nSuids, &SW_Designation->domSuids, LogInfo
+            );
+            if (LogInfo->stopRun) {
+                goto reportError;
+            }
         }
 
         if (SW_Designation->useTSuids && rank > SW_MPI_ROOT) {
@@ -5557,16 +5559,14 @@ checkStatus:
             // N_SUID_ASSIGN SUIDs will be over written, so we need
             // to temporarily swap the newly written N_SUID_ASSIGN SUIDs
             // with the previous SUIDs
-            if (numIterations == 0) {
-                for (suid = 0; suid < numIterSuids; suid++) {
-                    temp = tempDistSuids[suid][0];
-                    tempDistSuids[suid][0] = distSUIDs[suid][0];
-                    distSUIDs[suid][0] = temp;
+            for (suid = 0; suid < numIterSuids; suid++) {
+                temp = tempDistSuids[suid][0];
+                tempDistSuids[suid][0] = distSUIDs[suid][0];
+                distSUIDs[suid][0] = temp;
 
-                    temp = tempDistSuids[suid][1];
-                    tempDistSuids[suid][1] = distSUIDs[suid][1];
-                    distSUIDs[suid][1] = temp;
-                }
+                temp = tempDistSuids[suid][1];
+                tempDistSuids[suid][1] = distSUIDs[suid][1];
+                distSUIDs[suid][1] = temp;
             }
 
             write_outputs(
@@ -5588,11 +5588,9 @@ checkStatus:
                 goto freeMem;
             }
 
-            if (numIterations == 0) {
-                for (suid = 0; suid < numIterSuids; suid++) {
-                    distSUIDs[suid][0] = tempDistSuids[suid][0];
-                    distSUIDs[suid][1] = tempDistSuids[suid][1];
-                }
+            for (suid = 0; suid < numIterSuids; suid++) {
+                distSUIDs[suid][0] = tempDistSuids[suid][0];
+                distSUIDs[suid][1] = tempDistSuids[suid][1];
             }
 
             iterNumSuids = numIterSuids;
