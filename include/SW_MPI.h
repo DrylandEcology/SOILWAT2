@@ -194,7 +194,8 @@ void SW_MPI_get_inputs(
     SW_RUN_INPUTS inputs[],
     int *numInputs,
     Bool *estVeg,
-    Bool *getEstVeg
+    Bool *getEstVeg,
+    Bool *extraFailCheck
 );
 
 void SW_MPI_handle_IO(

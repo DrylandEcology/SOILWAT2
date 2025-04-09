@@ -691,6 +691,10 @@ void sw_finalize_program(
     LOG_INFO *LogInfo
 ) {
 #if defined(SWMPI)
+    // Only report logs if the entire program run was successful
+    // or we failed before starting the runs;
+    // The scenario where we fail during simulation runs is covered
+    // by compute and I/O processes
     if ((!setupFailed && !runFailed) || setupFailed) {
         SW_MPI_report_log(
             rank,

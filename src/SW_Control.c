@@ -398,7 +398,7 @@ void SW_CTL_RunSims(
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
     Bool *setupFail,
-    Bool *runErrored,
+    Bool *runFailed,
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *main_LogInfo
 ) {
@@ -415,7 +415,7 @@ void SW_CTL_RunSims(
         SW_MPI_handle_IO(rank, sw_template, SW_Domain, setupFail, main_LogInfo);
     }
 #endif
-    *runErrored = (Bool) (runSims == 0);
+    *runFailed = (Bool) (runSims == 0);
 }
 
 /**
@@ -503,6 +503,7 @@ void SW_CTL_RunSimSet(
     MPI_Datatype reqType = SW_Domain->datatypes[eSW_MPI_Req];
     MPI_Datatype logType = SW_Domain->datatypes[eSW_MPI_Log];
     Bool errorCaused = swFALSE;
+    Bool extraFailCheck = swFALSE;
     int numErrors = 0;
 
     copyWeather = (Bool) !isnull(sw_template->RunIn.weathRunAllHist);
@@ -567,6 +568,12 @@ checkStatus:
         Bool runSucc[N_SUID_ASSIGN] = {swFALSE};
         Bool reportLog = swFALSE;
 
+        // Make sure all processes did not throw a fatal error
+        // before continuing
+        if (SW_MPI_setup_fail(main_LogInfo->stopRun, desig->ioCompComm)) {
+            goto wrapUp;
+        }
+
         SW_MPI_get_inputs(
             (Bool) !copyWeather,
             n_years,
@@ -576,7 +583,8 @@ checkStatus:
             inputs,
             &numInputs,
             &estVeg,
-            &getEstVeg
+            &getEstVeg,
+            &extraFailCheck
         );
 
         startSim = 0;
@@ -670,10 +678,10 @@ checkStatus:
                     LogError(
                         main_LogInfo,
                         LOGERROR,
-                        "Maximum number of allowed simulation errors reached."
+                        "Maximum number of allowed simulation errors reached "
+                        "(n = %d).",
+                        SW_Domain->maxSimErrors
                     );
-                    errorCaused = swTRUE;
-                    goto wrapUp;
                 }
 #endif
 #if defined(SWMPI)
@@ -711,7 +719,7 @@ checkStatus:
         }
 
 #if defined(SWMPI)
-        if (numInputs > 0) {
+        if ((numInputs > 0 || main_LogInfo->stopRun) && runSims) {
             SW_MPI_send_results(
                 &SW_Domain->OutDom,
                 rank,
@@ -732,7 +740,7 @@ checkStatus:
 
 wrapUp:
 #if defined(SOILWAT) && !defined(SWMPI)
-    if (runSims == 0) {
+    if (runSims) {
         sw_message("Program was killed early. Shutting down...");
     }
 #endif
@@ -740,6 +748,12 @@ wrapUp:
     SW_WallTime->timeSimSet = diff_walltime(tss, ok_tss);
 
 #if defined(SWMPI)
+    // Set dummy value for an extra participation in `SW_MPI_setup_fail()`
+    // to make sure other compute processes don't hang waiting before
+    // getting their last batch of inputs
+    extraFailCheck = (Bool) (extraFailCheck && !errorCaused &&
+                             SW_MPI_setup_fail(swFALSE, desig->ioCompComm));
+
     for (suid = 0; suid < N_SUID_ASSIGN; suid++) {
         if (!isnull(inputs[suid].weathRunAllHist)) {
             SW_WTH_deconstruct(&inputs[suid].weathRunAllHist);

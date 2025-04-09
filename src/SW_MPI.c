@@ -2539,15 +2539,21 @@ static void spread_inputs(
 ) {
     MPI_Request nullReq = MPI_REQUEST_NULL;
 
+    Bool extraSetupCheck;
     int comp;
     int numSendIn;
     int destRank;
     int suid = 0;
     int send = 0;
+    int sendSum = 0;
 
     if (*sendEstVeg) {
         SW_Bcast(MPI_INT, &estVeg, 1, SW_GROUP_ROOT, desig->ioCompComm);
         *sendEstVeg = swFALSE;
+    }
+
+    for (comp = 0; comp < desig->nCompProcs && sendSum == 0; comp++) {
+        sendSum += sendInputs[comp + 1];
     }
 
     // Send amount information so compute processes know how
@@ -2573,6 +2579,24 @@ static void spread_inputs(
                     SW_MPI_Send(
                         inputType,
                         &inputs[suid + send],
+                        1,
+                        destRank,
+                        swTRUE,
+                        0,
+                        &nullReq
+                    );
+                }
+
+                // When a compute process is done with their workload(s) but
+                // other compute processes may have more work, so the completed
+                // process will have to participate in the setup fail
+                extraSetupCheck = (Bool) (sendSum > 0 && sendInputs[comp + 1] ==
+                                                             COMP_COMPLETE);
+
+                if (sendInputs[comp + 1] == COMP_COMPLETE) {
+                    SW_MPI_Send(
+                        MPI_INT,
+                        &extraSetupCheck,
                         1,
                         destRank,
                         swTRUE,
@@ -5268,6 +5292,9 @@ Process designation: Compute
     vegetation
 @param[in,out] getEstVeg Specifies if the function needs to get the `estVeg`
     flag from it's I/O process
+@param[out] extraFailCheck Specifies if, when a compute process is done with
+    all workloads, the compute process should take part in an extra call to
+    `SW_MPI_setup_fail()`
 */
 void SW_MPI_get_inputs(
     Bool getWeather,
@@ -5278,7 +5305,8 @@ void SW_MPI_get_inputs(
     SW_RUN_INPUTS inputs[],
     int *numInputs,
     Bool *estVeg,
-    Bool *getEstVeg
+    Bool *getEstVeg,
+    Bool *extraFailCheck
 ) {
     MPI_Request nullReq = MPI_REQUEST_NULL;
     int input;
@@ -5289,6 +5317,12 @@ void SW_MPI_get_inputs(
     }
 
     SW_MPI_Recv(MPI_INT, numInputs, 1, desig->ioRank, swTRUE, 0, &nullReq);
+
+    if (numInputs == 0) {
+        SW_MPI_Recv(
+            MPI_INT, extraFailCheck, 1, desig->ioRank, swTRUE, 0, &nullReq
+        );
+    }
 
     if (*numInputs > 0) {
         for (input = 0; input < *numInputs; input++) {
@@ -5506,26 +5540,35 @@ checkStatus:
             counts
         );
 
-        SW_NCIN_read_inputs(
-            sw,
-            SW_Domain,
-            NULL,
-            starts,
-            counts,
-            SW_Domain->SW_PathInputs.openInFileIDs,
-            numWrites,
-            numIterSuids,
-            tempMonthlyVals,
-            elevations,
-            tempSilt,
-            tempSoilVals,
-            tempWeather,
-            tempSoils,
-            inputs,
-            LogInfo
-        );
-        if (LogInfo->stopRun) {
-            errorCaused = swTRUE;
+        // Do not attempt to read inputs because I/O process needs
+        // to let it's other processes know that there was an error
+        if (!LogInfo->stopRun) {
+            SW_NCIN_read_inputs(
+                sw,
+                SW_Domain,
+                NULL,
+                starts,
+                counts,
+                SW_Domain->SW_PathInputs.openInFileIDs,
+                numWrites,
+                numIterSuids,
+                tempMonthlyVals,
+                elevations,
+                tempSilt,
+                tempSoilVals,
+                tempWeather,
+                tempSoils,
+                inputs,
+                LogInfo
+            );
+            if (LogInfo->stopRun) {
+                errorCaused = swTRUE;
+            }
+        }
+
+        // Make sure all processes did not throw a fatal error
+        // before continuing
+        if (SW_MPI_setup_fail(LogInfo->stopRun, desig->ioCompComm)) {
             goto freeMem;
         }
 
@@ -5543,10 +5586,6 @@ checkStatus:
             n_years,
             swFALSE
         );
-        if (LogInfo->stopRun) {
-            errorCaused = swTRUE;
-            goto freeMem;
-        }
 
         // Check if we need to read the next batch of inputs &
         // Check if outputs are full
@@ -5585,7 +5624,6 @@ checkStatus:
             );
             if (LogInfo->stopRun) {
                 errorCaused = swTRUE;
-                goto freeMem;
             }
 
             for (suid = 0; suid < numIterSuids; suid++) {
@@ -5618,6 +5656,10 @@ checkStatus:
     }
 
     if (runSims) {
+        if (SW_MPI_setup_fail(LogInfo->stopRun, desig->ioCompComm)) {
+            goto freeMem;
+        }
+
         // Make sure no compute process gets stuck waiting for input
         spread_inputs(
             desig,
@@ -5683,9 +5725,7 @@ freeMem:
         if (LogInfo->stopRun) {
             LogInfo->logfp = LogInfo->logfps[0];
             sw_write_warnings("\n", LogInfo);
-        }
 
-        if (errorCaused) {
             SW_MPI_Fail(SW_MPI_FAIL_NETCDF, 0, NULL);
         }
     }
