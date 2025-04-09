@@ -362,7 +362,7 @@ void sw_fail_on_error(LOG_INFO *LogInfo) {
             (void) fprintf(stderr, "%s", LogInfo->errorMsg);
         }
         if (LogInfo->printProgressMsg) {
-            sw_message("ended.");
+            SW_MSG_ROOT("ended.", 0);
         }
         exit(EXIT_FAILURE);
     }
@@ -473,8 +473,8 @@ void sw_write_warnings(const char *header, LOG_INFO *LogInfo) {
 
     writeErrMsg: {
         if (writeRes < 0) {
-            sw_message(
-                "Failed to write all warning/error messages to logfile.\n"
+            SW_MSG_ROOT(
+                "Failed to write all warning/error messages to logfile.\n", 0
             );
         }
     }

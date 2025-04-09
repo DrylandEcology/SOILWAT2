@@ -2175,9 +2175,7 @@ static void alloc_IO_info(
     }
 
     *tempDistSuids = (size_t **) Mem_Malloc(
-        sizeof(size_t *) * numSuids,
-        "alloc_IO_info()",
-        LogInfo
+        sizeof(size_t *) * numSuids, "alloc_IO_info()", LogInfo
     );
     if (LogInfo->stopRun) {
         return;
@@ -5425,7 +5423,7 @@ void SW_MPI_handle_IO(
     int numWrites[SW_NINKEYSNC] = {0};
     size_t **starts[SW_NINKEYSNC] = {NULL};
     size_t **counts[SW_NINKEYSNC] = {NULL};
-    size_t **distSUIDs = NULL;     // Subset of all assigned suids (domain)
+    size_t **distSUIDs = NULL; // Subset of all assigned suids (domain)
     size_t **tempDistSuids = NULL;
     size_t **distTSUIDs[SW_NINKEYSNC] = {NULL};
     double *elevations = NULL;
@@ -5697,8 +5695,8 @@ checkStatus:
 
 freeMem:
 #if defined(SOILWAT)
-    if (runSims == 0 && rank == SW_MPI_ROOT) {
-        sw_message("Program was killed early. Shutting down...");
+    if (runSims == 0) {
+        SW_MSG_ROOT("Program was killed early. Shutting down...", rank);
     }
 #endif
 

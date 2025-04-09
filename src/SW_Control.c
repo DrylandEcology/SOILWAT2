@@ -101,9 +101,7 @@ across the domain; this is handled differently when SWMPI is enabled
 */
 static void report_sim_start(SW_DOMAIN *SW_Domain, int rank) {
 #if !defined(SWMPI)
-    if (rank == 0) {
-        sw_message("is running simulations across the domain...");
-    }
+    SW_MSG_ROOT("is running simulations across the domain...", rank);
 
     (void) SW_Domain;
 #else
@@ -123,7 +121,7 @@ static void report_sim_start(SW_DOMAIN *SW_Domain, int rank) {
             (nIOProcs > 1) ? "processes" : "process"
         );
 
-        sw_message(reportStr);
+        SW_MSG_ROOT(reportStr, rank);
     }
 #endif
 }
@@ -739,9 +737,9 @@ checkStatus:
     }
 
 wrapUp:
-#if defined(SOILWAT) && !defined(SWMPI)
-    if (runSims) {
-        sw_message("Program was killed early. Shutting down...");
+#if defined(SOILWAT)
+    if (runSims == 0) {
+        SW_MSG_ROOT("Program was killed early. Shutting down...", rank);
     }
 #endif
 

@@ -122,7 +122,7 @@ int main(int argc, char **argv) {
     LogInfo.printProgressMsg = (Bool) (!LogInfo.QuietMode);
 
     if (LogInfo.printProgressMsg) {
-        sw_message("started.");
+        SW_MSG_ROOT("started.", rank);
         sw_print_version();
     }
 
@@ -289,8 +289,8 @@ setupProgramData:
 
 #if defined(SWMPI)
     if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD) || prepareFiles) {
-        if (prepareFiles && rank == 0) {
-            sw_message("completed simulation preparations.");
+        if (prepareFiles) {
+            SW_MSG_ROOT("completed simulation preparations.", rank);
         }
 
         goto closeFiles;
@@ -314,7 +314,7 @@ setupProgramData:
 #else
     if (LogInfo.stopRun || prepareFiles) {
         if (prepareFiles) {
-            sw_message("completed simulation preparations.");
+            SW_MSG_ROOT("completed simulation preparations.", rank);
         }
 
         goto closeFiles;
@@ -357,8 +357,8 @@ finishProgram: {
     sw_finalize_program(
         rank, size, &SW_Domain, &SW_WallTime, setupFailed, runFailed, &LogInfo
     );
-    if (LogInfo.printProgressMsg && rank == 0) {
-        sw_message("ended.");
+    if (LogInfo.printProgressMsg) {
+        SW_MSG_ROOT("ended.", rank);
     }
 }
 

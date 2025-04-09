@@ -7316,7 +7316,7 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
 #if defined(SOILWAT)
         if (LogInfo->printProgressMsg) {
-            sw_message("is creating a progress tracker ...");
+            SW_MSG_ROOT("is creating a progress tracker ...", 0);
         }
 #endif
 
@@ -7584,7 +7584,7 @@ void SW_NCIN_create_domain_template(
 
 #if defined(SOILWAT)
     if (LogInfo->printProgressMsg) {
-        sw_message("is creating a domain template ...");
+        SW_MSG_ROOT("is creating a domain template ...", 0);
     }
 #endif
 
@@ -9585,7 +9585,7 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
 #if defined(SOILWAT)
     if (LogInfo->printProgressMsg) {
-        sw_message("is creating any necessary index files ...");
+        SW_MSG_ROOT("is creating any necessary index files ...", 0);
     }
 #endif
 

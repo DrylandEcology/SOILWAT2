@@ -3771,7 +3771,7 @@ void SW_OUT_create_files(
 
 #if defined(SOILWAT)
     if (LogInfo->printProgressMsg) {
-        sw_message("is creating output files ...");
+        SW_MSG_ROOT("is creating output files ...", 0);
     }
 #endif
 

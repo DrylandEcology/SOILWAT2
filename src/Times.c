@@ -454,7 +454,7 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
 
 wrapUpErrMsg: {
     if (fprintRes < 0) {
-        sw_message("Failed to write whole time report.");
+        SW_MSG_ROOT("Failed to write whole time report.", 0);
     }
 }
 }
