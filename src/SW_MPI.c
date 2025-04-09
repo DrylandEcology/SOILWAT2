@@ -4933,6 +4933,10 @@ void SW_MPI_process_types(
             &nullReq
         );
 
+        if (SW_MPI_setup_fail(swFALSE, MPI_COMM_WORLD)) {
+            return;
+        }
+
         // Get processor assignment
         assignProcs(
             desType,
@@ -5019,7 +5023,13 @@ void SW_MPI_process_types(
         desig->nTotIOProcs = numIOProcsTot;
         desig->nTotCompProcs = worldSize - numIOProcsTot;
 
-        if (numActiveSites < worldSize - numIOProcsTot) {
+        if (numActiveSites == 0) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "No active sites to simulate."
+            );
+        } else if (numActiveSites < worldSize - numIOProcsTot) {
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -5030,6 +5040,8 @@ void SW_MPI_process_types(
                 SW_MPI_NIO,
                 numIOProcsTot
             );
+        }
+        if (LogInfo->stopRun) {
             goto checkForError;
         }
 
