@@ -2896,7 +2896,7 @@ static void get_comp_results(
             rank = desig->ranks[rankIndex];
         }
 
-        for (succ = 0; succ < recvLens[rankIndex]; succ++) {
+        for (succ = 0; succ < recvLens[rankIndex + 1]; succ++) {
             succFlags[succ + offsetMult[rankIndex + 1]] = req.runStatus[succ];
         }
 
