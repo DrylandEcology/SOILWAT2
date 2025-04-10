@@ -29,6 +29,14 @@ typedef enum {
 #define SW_MPI_PROC_COMP 0
 #define SW_MPI_PROC_IO 1
 
+// Number of iterations of output gathered before outputing all values
+// Note: An iteration is defined as the product of number of compute processes
+// and N_SUID_ASSIGN number of outputs gathered
+// E.g., N_ITER_BEFORE_OUT = 3, N_SUID_ASSIGN = 4, n comp procs = 2
+// Iter 1: SUIDs 0-7
+// Iter 2: SUIDs 8-15
+// Iter 3: SUIDs 16-23
+// Write outputs values gathered in iter 1-3 (SUIDs 0-23)
 #define N_ITER_BEFORE_OUT 1
 
 // Reasons to fail the MPI program
