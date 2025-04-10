@@ -123,7 +123,9 @@ int main(int argc, char **argv) {
 
     if (LogInfo.printProgressMsg) {
         SW_MSG_ROOT("started.", rank);
-        sw_print_version();
+        if (rank == 0) {
+            sw_print_version();
+        }
     }
 
     // setup and construct domain
