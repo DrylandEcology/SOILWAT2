@@ -4746,6 +4746,7 @@ void SW_MPI_get_activated_tsuids(
     int varID;
     unsigned long *indexCell;
     unsigned long *domSuid;
+    size_t offset;
 
     (*activeTSuids) = (unsigned long ***) Mem_Malloc(
         sizeof(unsigned long **) * numPosKeys,
@@ -4833,13 +4834,13 @@ void SW_MPI_get_activated_tsuids(
             if (inSDom) {
                 indexCell[0] = sxIndexVals[domSuid[0]];
             } else {
-                indexCell[0] = yIndexVals[domSuid[0]];
+                offset = (sProgDom) ?
+                             domSuid[0] :
+                             ((site / SW_Domain->nDimX) * SW_Domain->nDimX) +
+                                 domSuid[1];
 
-                if (sProgDom) {
-                    indexCell[1] = sxIndexVals[domSuid[0]];
-                } else {
-                    indexCell[1] = sxIndexVals[domSuid[1]];
-                }
+                indexCell[0] = yIndexVals[offset];
+                indexCell[1] = sxIndexVals[offset];
             }
         }
 
@@ -5041,7 +5042,8 @@ void SW_MPI_process_types(
                 numIOProcsTot
             );
         }
-        if (LogInfo->stopRun) {
+        if (LogInfo->stopRun ||
+            SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
             goto checkForError;
         }
 
