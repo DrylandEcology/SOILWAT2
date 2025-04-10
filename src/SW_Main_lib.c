@@ -120,6 +120,8 @@ void sw_print_version(void) {
 
 @param[in] argc Number (count) of command line arguments.
 @param[in] argv Values of command line arguments.
+@param[in] rank Process number known to MPI for the current process (aka rank);
+    defaults to 0 (main process) if we are running sequentially
 @param[out] EchoInits Flag to control if inputs are to be output to the user
 @param[out] firstfile First file name to be filled in the program run
 @param[out] userSUID Simulation Unit Identifier requested by the user (base1);
