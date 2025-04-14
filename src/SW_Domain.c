@@ -523,9 +523,9 @@ void SW_DOM_SetProgress(
 ) {
 
 #if defined(SWNETCDF)
-    SW_NCIN_set_progress(
-        isFailure, progFileID, progVarID, start, count, LogInfo
-    );
+    const signed char mark = (isFailure) ? PRGRSS_FAIL : PRGRSS_DONE;
+
+    SW_NCIN_set_progress(progFileID, progVarID, start, count, &mark, LogInfo);
 #else
     (void) isFailure;
     (void) progFileID;

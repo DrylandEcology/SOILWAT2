@@ -95,16 +95,24 @@ void SW_NCIN_create_domain_template(
 void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
 
 void SW_NCIN_set_progress(
-    Bool isFailure,
     int progFileID,
     int progVarID,
     size_t start[],
     size_t count[],
+    const signed char *mark,
     LOG_INFO *LogInfo
 );
 
 Bool SW_NCIN_check_progress(
     int progFileID, int progVarID, size_t ncSUID[], LOG_INFO *LogInfo
+);
+
+void SW_NCIN_alloc_weather_indices_years(
+    unsigned int ***ncWeatherStartEndIndices,
+    unsigned int numStartEndIndices,
+    unsigned int **numDaysInYear,
+    unsigned int numYears,
+    LOG_INFO *LogInfo
 );
 
 void SW_NCIN_read_inputs(

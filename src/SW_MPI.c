@@ -65,7 +65,7 @@ static void handle_interrupt(int signal) {
 
 @sideeffect Exit all instances of the MPI program
 */
-void errorMPI(int mpiError) {
+static void errorMPI(int mpiError) {
     char errorStr[MAX_FILENAMESIZE] = {'\0'};
     int errorLen = 0;
 
@@ -75,12 +75,34 @@ void errorMPI(int mpiError) {
 }
 
 /**
+@brief Broadcast a message/type to all processes
+
+@param[in] datatype Custom MPI datatype that will be sent
+@param[in] buffer Location of memory that will be written to
+@param[in] count Number of items to recv from the buffer
+@param[in] srcRank Source rank that information will be sent from
+with any message tag values
+@param[in] comm MPI communicator to broadcast a message to
+*/
+static void SW_Bcast(
+    MPI_Datatype datatype, void *buffer, int count, int srcRank, MPI_Comm comm
+) {
+    int mpiRes = MPI_SUCCESS;
+
+    mpiRes = MPI_Bcast(buffer, count, datatype, srcRank, comm);
+
+    if (mpiRes != MPI_SUCCESS) {
+        errorMPI(mpiRes);
+    }
+}
+
+/**
 @brief Deallocate helper memory that was allocated during the call to
     `SW_MPI_process_types()`
 
 @param[in] numActiveSites Number of active sites that will be simulated
 @param[in] maxNodes Maximum number of nodes that were allocated
-@param[in] numDes Number of designations that were allocated
+@param[in] numNodes Number of compute nodes designations were allocated for
 @param[in,out] designations A list of designations to fill and distribute
     amoung processes
 @param[in,out] activeSuids A list of domain SUIDs that was activated
@@ -99,7 +121,7 @@ void errorMPI(int mpiError) {
 static void deallocProcHelpers(
     int numActiveSites,
     int maxNodes,
-    int numDes,
+    int numNodes,
     SW_MPI_DESIGNATE ***designations,
     unsigned long ***activeSuids,
     unsigned long ****activeTSuids,
@@ -112,7 +134,8 @@ static void deallocProcHelpers(
     const int num1D = 2;
     int var;
     int pair;
-    int numVals;
+
+    int numValsIn2D[] = {numActiveSites, maxNodes, maxNodes, numNodes};
 
     void **oneDimFree[] = {
         (void **) numProcsInNode, (void **) numMaxProcsInNode
@@ -133,10 +156,8 @@ static void deallocProcHelpers(
     }
 
     for (var = 0; var < num2D; var++) {
-        numVals = (var >= 1 && var <= 2) ? maxNodes : numActiveSites;
-        numVals = (var == 3) ? numDes : numVals;
         if (!isnull(*twoDimFree[var])) {
-            for (pair = 0; pair < numVals; pair++) {
+            for (pair = 0; pair < numValsIn2D[var]; pair++) {
                 if (!isnull((*twoDimFree[var])[pair])) {
                     free((void *) (*twoDimFree[var])[pair]);
                     (*twoDimFree[var])[pair] = NULL;
@@ -845,10 +866,46 @@ static void assignProcs(
     MPI_Request nullReq = MPI_REQUEST_NULL;
     SW_MPI_DESIGNATE *currDes = NULL;
 
+    if (rank == SW_MPI_ROOT) {
+        for (node = 0; node < numNodes; node++) {
+            for (proc = 0; proc < numProcsInNode[node]; proc++) {
+                sendRank = ranksInNodes[node][proc];
+
+                if (sendRank > SW_MPI_ROOT) {
+                    currDes = &designations[node][proc];
+
+                    if (currDes->procJob == SW_MPI_PROC_COMP) {
+                        findIOAssignment(
+                            designations,
+                            SW_Designation,
+                            node,
+                            proc,
+                            sendRank,
+                            ranksInNodes
+                        );
+                    } else {
+                        currDes->useTSuids = useTranslated;
+                    }
+
+                    // Send their designation
+                    SW_MPI_Send(
+                        desType, currDes, 1, sendRank, swTRUE, 0, &nullReq
+                    );
+                }
+            }
+        }
+    } else {
+        SW_MPI_Recv(
+            desType, SW_Designation, 1, SW_MPI_ROOT, swTRUE, 0, &nullReq
+        );
+    }
+
     // Transfer and allocate information to I/O processes before
     // starting the loop to simplify error handling across processes
     // when allocating memory
-    if (SW_Designation->procJob == SW_MPI_PROC_IO) {
+    if (SW_Designation->procJob == SW_MPI_PROC_IO || rank == SW_MPI_ROOT) {
+        // Send nSuid information so the I/O processes know how many SUIDs
+        // to allocate for
         if (rank > SW_MPI_ROOT) {
             allocateActiveSuids(
                 SW_Designation->nSuids, &SW_Designation->domSuids, LogInfo
@@ -883,6 +940,11 @@ reportError:
         return;
     }
 
+    // Communicate with I/O processes to send them their domain and translated
+    // SUIDs once all has been allocated
+    // Creating two separate blocks of communication seems to be the simplest
+    // way to easily check that allocation caused an error with the
+    // necessary information used to allocate space for the SUIDs
     if (rank == SW_MPI_ROOT) {
         for (node = 0; node < numNodes; node++) {
             for (proc = 0; proc < numProcsInNode[node]; proc++) {
@@ -890,24 +952,6 @@ reportError:
 
                 if (sendRank > SW_MPI_ROOT) {
                     currDes = &designations[node][proc];
-
-                    if (currDes->procJob == SW_MPI_PROC_COMP) {
-                        findIOAssignment(
-                            designations,
-                            SW_Designation,
-                            node,
-                            proc,
-                            sendRank,
-                            ranksInNodes
-                        );
-                    } else {
-                        currDes->useTSuids = useTranslated;
-                    }
-
-                    // Send their designation
-                    SW_MPI_Send(
-                        desType, currDes, 1, sendRank, swTRUE, 0, &nullReq
-                    );
 
                     if (currDes->procJob == SW_MPI_PROC_IO) {
                         for (pair = 0; pair < currDes->nSuids; pair++) {
@@ -957,74 +1001,46 @@ reportError:
                 }
             }
         }
-    } else {
-        SW_MPI_Recv(
-            desType, SW_Designation, 1, SW_MPI_ROOT, swTRUE, 0, &nullReq
-        );
-
-        if (SW_Designation->procJob == SW_MPI_PROC_IO) {
-            for (pair = 0; pair < SW_Designation->nSuids; pair++) {
-                SW_MPI_Recv(
-                    MPI_UNSIGNED_LONG,
-                    SW_Designation->domSuids[pair],
-                    2,
-                    SW_MPI_ROOT,
-                    swTRUE,
-                    0,
-                    &nullReq
-                );
-            }
-
-            if (SW_Designation->useTSuids) {
-                ForEachNCInKey(inKey) {
-                    if (SW_Designation->useTSuids && useIndexFile[inKey]) {
-                        for (pair = 0; pair < SW_Designation->nSuids; pair++) {
-                            SW_MPI_Recv(
-                                MPI_UNSIGNED_LONG,
-                                SW_Designation->domTSuids[inKey][pair],
-                                2,
-                                SW_MPI_ROOT,
-                                swTRUE,
-                                0,
-                                &nullReq
-                            );
-                        }
-                    }
-                }
-            }
-
+    } else if (SW_Designation->procJob == SW_MPI_PROC_IO) {
+        for (pair = 0; pair < SW_Designation->nSuids; pair++) {
             SW_MPI_Recv(
-                MPI_INT,
-                SW_Designation->ranks,
-                PROCS_PER_IO,
+                MPI_UNSIGNED_LONG,
+                SW_Designation->domSuids[pair],
+                2,
                 SW_MPI_ROOT,
                 swTRUE,
                 0,
                 &nullReq
             );
         }
-    }
-}
 
-/**
-@brief Broadcast a message/type to all processes
+        if (SW_Designation->useTSuids) {
+            ForEachNCInKey(inKey) {
+                if (SW_Designation->useTSuids && useIndexFile[inKey]) {
+                    for (pair = 0; pair < SW_Designation->nSuids; pair++) {
+                        SW_MPI_Recv(
+                            MPI_UNSIGNED_LONG,
+                            SW_Designation->domTSuids[inKey][pair],
+                            2,
+                            SW_MPI_ROOT,
+                            swTRUE,
+                            0,
+                            &nullReq
+                        );
+                    }
+                }
+            }
+        }
 
-@param[in] datatype Custom MPI datatype that will be sent
-@param[in] buffer Location of memory that will be written to
-@param[in] count Number of items to recv from the buffer
-@param[in] srcRank Source rank that information will be sent from
-with any message tag values
-@param[in] comm MPI communicator to broadcast a message to
-*/
-static void SW_Bcast(
-    MPI_Datatype datatype, void *buffer, int count, int srcRank, MPI_Comm comm
-) {
-    int mpiRes = MPI_SUCCESS;
-
-    mpiRes = MPI_Bcast(buffer, count, datatype, srcRank, comm);
-
-    if (mpiRes != MPI_SUCCESS) {
-        errorMPI(mpiRes);
+        SW_MPI_Recv(
+            MPI_INT,
+            SW_Designation->ranks,
+            PROCS_PER_IO,
+            SW_MPI_ROOT,
+            swTRUE,
+            0,
+            &nullReq
+        );
     }
 }
 
@@ -1496,19 +1512,6 @@ static void get_path_info(
         MPI_UNSIGNED, &pathInputs->weathStartFileIndex, 1, SW_MPI_ROOT, comm
     );
 
-    if (rank > SW_MPI_ROOT) {
-        pathInputs->numDaysInYear = (unsigned int *) Mem_Malloc(
-            sizeof(unsigned int) * nYears, "get_path_info()", LogInfo
-        );
-    }
-    if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
-        return;
-    }
-
-    SW_Bcast(
-        MPI_UNSIGNED, pathInputs->numDaysInYear, nYears, SW_MPI_ROOT, comm
-    );
-
     get_dynamic_string(
         rank, &pathInputs->txtInFiles[eLog], swTRUE, comm, LogInfo
     );
@@ -1632,10 +1635,39 @@ static void get_path_info(
 
         // Copy weather start/end years
         if (inKey == eSW_InWeather) {
+            if (rank > SW_MPI_ROOT) {
+                SW_NCIN_alloc_weather_indices_years(
+                    &pathInputs->ncWeatherStartEndIndices,
+                    pathInputs->ncNumWeatherInFiles,
+                    &pathInputs->numDaysInYear,
+                    nYears,
+                    LogInfo
+                );
+            }
+            if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
+                return;
+            }
+
+            SW_Bcast(
+                MPI_UNSIGNED,
+                pathInputs->numDaysInYear,
+                nYears,
+                SW_MPI_ROOT,
+                comm
+            );
+
             for (file = 0; file < pathInputs->ncNumWeatherInFiles; file++) {
                 SW_Bcast(
                     MPI_UNSIGNED,
                     pathInputs->ncWeatherInStartEndYrs[file],
+                    2,
+                    SW_MPI_ROOT,
+                    comm
+                );
+
+                SW_Bcast(
+                    MPI_UNSIGNED,
+                    pathInputs->ncWeatherStartEndIndices[file],
                     2,
                     SW_MPI_ROOT,
                     comm
@@ -1673,6 +1705,7 @@ static void open_input_files(
     Bool skipVar;
     Bool stop = swFALSE;
     Bool useWeathFileArray;
+    int progVarID = netCDFIn->ncDomVarIDs[vNCprog];
 
     ForEachNCInKey(inKey) {
         if (!netCDFIn->readInVars[inKey][0] || inKey == eSW_InDomain) {
@@ -1696,6 +1729,14 @@ static void open_input_files(
                     );
                     if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
                         return;
+                    }
+
+                    if (domVar == vNCprog) {
+                        nc_var_par_access(
+                            pathInputs->ncDomFileIDs[domVar],
+                            progVarID,
+                            NC_COLLECTIVE
+                        );
                     }
 
                     if (rank > SW_MPI_ROOT) {
@@ -1724,8 +1765,10 @@ static void open_input_files(
                 continue;
             }
 
-            numFiles =
-                (inKey != eSW_InWeather) ? 1 : pathInputs->ncNumWeatherInFiles;
+            numFiles = (inKey != eSW_InWeather ||
+                        (inKey == eSW_InWeather && var == 0)) ?
+                           1 :
+                           pathInputs->ncNumWeatherInFiles;
 
             pathInputs->openInFileIDs[inKey][var] = (int *) Mem_Malloc(
                 sizeof(int) * numFiles, "SW_MPI_open_files()", LogInfo
@@ -1735,7 +1778,7 @@ static void open_input_files(
             }
 
             for (file = 0; file < numFiles; file++) {
-                if (inKey == eSW_InWeather &&
+                if (inKey == eSW_InWeather && var > 0 &&
                     file < pathInputs->weathStartFileIndex) {
 
                     // Do not open prior year weather file(s)
@@ -2069,6 +2112,8 @@ static void alloc_inputs(
 @param[out] succFlags A list of success flags that are accumulated
     through N_ITER_BEFORE_OUT iterations of output gathering specifying
     if the simulation for a suid was successfully run
+@param[out] succMark Buffer to hold write values to progress file that
+    correspond to the values within `succFlags`
 @param[out] logs A list of LOG_INFO instances that will be used for
     getting log information from compute processes
 @param[out] LogInfo Holds information on warnings and errors
@@ -2087,6 +2132,7 @@ static void alloc_IO_info(
     size_t ***tempDistSuids,
     int **sendInputs,
     Bool **succFlags,
+    signed char **succMark,
     LOG_INFO **logs,
     LOG_INFO *LogInfo
 ) {
@@ -2203,7 +2249,19 @@ static void alloc_IO_info(
         return;
     }
     for (suid = 0; suid < numSuids * N_ITER_BEFORE_OUT; suid++) {
-        *succFlags[suid] = swFALSE;
+        (*succFlags)[suid] = swFALSE;
+    }
+
+    *succMark = (signed char *) Mem_Malloc(
+        sizeof(signed char) * numSuids * N_ITER_BEFORE_OUT,
+        "alloc_IO_info()",
+        LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+    for (suid = 0; suid < numSuids * N_ITER_BEFORE_OUT; suid++) {
+        (*succMark)[suid] = swFALSE;
     }
 
     ForEachNCInKey(inKey) {
@@ -2277,6 +2335,8 @@ static void alloc_IO_info(
 @param[out] succFlags A list of success flags that are accumulated
     through N_ITER_BEFORE_OUT iterations of output gathering specifying
     if the simulation for a suid was successfully run
+@param[out] succMark Buffer to hold write values to progress file that
+    correspond to the values within `succFlags`
 @param[out] logs A list of LOG_INFO instances that will be used for
     getting log information from compute processes
 */
@@ -2295,6 +2355,7 @@ static void dealloc_IO_info(
     double **tempSWRCPVals,
     SW_SOIL_RUN_INPUTS **tempSoils,
     Bool **succFlags,
+    signed char **succMark,
     LOG_INFO **logs
 ) {
     InKeys inKey;
@@ -2310,9 +2371,10 @@ static void dealloc_IO_info(
         (void **) tempSilt,
         (void **) tempSWRCPVals,
         (void **) tempSoils,
-        (void **) succFlags
+        (void **) succFlags,
+        (void **) succMark
     };
-    const int numDealloc1D = 8;
+    const int numDealloc1D = 9;
 
     ForEachNCInKey(inKey) {
         deallocStartCount[0] = &starts[inKey];
@@ -2351,10 +2413,10 @@ static void dealloc_IO_info(
                 free((void *) (*distSUIDs)[suid]);
                 (*distSUIDs)[suid] = NULL;
             }
-
-            free((void *) *distSUIDs);
-            *distSUIDs = NULL;
         }
+
+        free((void *) *distSUIDs);
+        *distSUIDs = NULL;
     }
 
     if (!isnull(*tempDistSuids)) {
@@ -2363,10 +2425,10 @@ static void dealloc_IO_info(
                 free((void *) (*tempDistSuids)[suid]);
                 (*tempDistSuids)[suid] = NULL;
             }
-
-            free((void *) *tempDistSuids);
-            *tempDistSuids = NULL;
         }
+
+        free((void *) *tempDistSuids);
+        *tempDistSuids = NULL;
     }
 
     for (dealloc = 0; dealloc < numDealloc1D; dealloc++) {
@@ -2785,7 +2847,7 @@ static void arrange_output(
                 // procIndex
                 oneSiteSize = OutDom->nrow_OUT[pd] *
                               (OutDom->ncol_OUT[key] + ncol_TimeOUT[pd]);
-                writeIndex = oneSiteSize * offsetMult[procIndex + 1];
+                writeIndex = oneSiteSize * offsetMult[procIndex];
 
                 // Receive information
                 SW_MPI_Recv(
@@ -2874,9 +2936,9 @@ static void get_comp_results(
     int numProcResponse = 0;
     int targetRepsonses = numCompProcs;
 
-    for (comp = 1; comp < numCompProcs; comp++) {
-        offsetMult[comp] = offsetMult[comp - 1] + recvLens[comp];
-        targetRepsonses += (recvLens[comp] > 0) ? 1 : 0;
+    for (comp = 0; comp < numCompProcs; comp++) {
+        offsetMult[comp + 1] = offsetMult[comp] + recvLens[comp + 1];
+        targetRepsonses -= (recvLens[comp + 1] == 0) ? 1 : 0;
     }
 
     while (numProcResponse < targetRepsonses) {
@@ -2897,7 +2959,7 @@ static void get_comp_results(
         }
 
         for (succ = 0; succ < recvLens[rankIndex + 1]; succ++) {
-            succFlags[succ + offsetMult[rankIndex + 1]] = req.runStatus[succ];
+            succFlags[succ + offsetMult[rankIndex]] = req.runStatus[succ];
         }
 
         if (logReq) {
@@ -2987,6 +3049,8 @@ static void get_next_suids(
     simulation runs went
 @param[in] SW_PathOutputs Struct of type SW_PATH_OUTPUTS which
     holds basic information about output files and values
+@param[out] succMark Buffer to hold write values to progress file that
+    correspond to the values within `succFlags`
 @param[out] starts A list of size SW_NINKEYSNC specifying the start
     indices used when reading/writing using the netCDF library;
     default size is `nSuids` but as mentioned in `numWrites`, it would
@@ -3009,6 +3073,7 @@ static void write_outputs(
     SW_OUT_DOM *OutDom,
     Bool succFlags[],
     SW_PATH_OUTPUTS *SW_PathOutputs,
+    signed char succMark[],
     size_t **starts,
     size_t **counts,
     double *main_p_OUT[][SW_OUTNPERIODS],
@@ -3016,7 +3081,9 @@ static void write_outputs(
 ) {
     int numWrites = 0;
     int write;
-    int numSites = 0;
+    int numSites;
+    int mark;
+    int totalSites = 0;
 
     get_contiguous_counts(
         distSUIDs,
@@ -3045,26 +3112,32 @@ static void write_outputs(
         siteDom,
         LogInfo
     );
+    if (LogInfo->stopRun) {
+        return;
+    }
 
     // Update progress file statuses
     for (write = 0; write < numWrites; write++) {
+        numSites = (siteDom) ? counts[write][0] : counts[write][1];
+
+        for (mark = 0; mark < numSites; mark++) {
+            succMark[mark] =
+                succFlags[totalSites + mark] ? PRGRSS_DONE : PRGRSS_FAIL;
+        }
+
         SW_NCIN_set_progress(
-            (Bool) !succFlags[numSites],
             progFileID,
             progVarID,
             starts[write],
             counts[write],
+            succMark,
             LogInfo
         );
         if (LogInfo->stopRun) {
             return;
         }
 
-        numSites += (siteDom) ? counts[write][0] : counts[write][1];
-    }
-
-    for (write = 0; write < numSuids; write++) {
-        succFlags[numSites] = swTRUE;
+        totalSites += numSites;
     }
 }
 
@@ -3397,13 +3470,13 @@ on various program-defined structs
 */
 void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
     int res;
-    int numItems[] = {5, 5, 5, 5, 6, 5, 18, 3, 7, 9};
+    int numItems[] = {6, 5, 5, 5, 6, 5, 18, 3, 7, 9};
     int blockLens[][19] = {
-        {1, 1, 1, 1, 1},    /* SW_DOMAIN */
-        {1, 1, 1, 1, 1},    /* SW_SPINUP */
-        {1, 1, 1, 1, 1},    /* SW_RUN_INPUTS */
-        {1, 1, 1, 1, 1},    /* SW_MPI_DESIGNATE */
-        {1, 1, 1, 1, 1, 1}, /* SW_MPI_WallTime */
+        {1, 1, 1, 1, 1, MAX_LAYERS}, /* SW_DOMAIN */
+        {1, 1, 1, 1, 1},             /* SW_SPINUP */
+        {1, 1, 1, 1, 1},             /* SW_RUN_INPUTS */
+        {1, 1, 1, 1, 1},             /* SW_MPI_DESIGNATE */
+        {1, 1, 1, 1, 1, 1},          /* SW_MPI_WallTime */
         {SW_OUTNKEYS,
          SW_OUTNKEYS,
          SW_OUTNPERIODS,
@@ -3441,8 +3514,12 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
     };
 
     MPI_Datatype types[][18] = {
-        {MPI_INT, MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED
-        }, /* SW_DOMAIN */
+        {MPI_INT,
+         MPI_UNSIGNED,
+         MPI_UNSIGNED,
+         MPI_UNSIGNED,
+         MPI_UNSIGNED,
+         MPI_DOUBLE}, /* SW_DOMAIN */
         {MPI_UNSIGNED, MPI_UNSIGNED, MPI_INT, MPI_INT, MPI_UNSIGNED
         }, /* SW_SPINUP */
         {MPI_DATATYPE_NULL,
@@ -3502,7 +3579,8 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
          offsetof(SW_DOMAIN, nMaxSoilLayers),
          offsetof(SW_DOMAIN, nMaxEvapLayers),
          offsetof(SW_DOMAIN, startyr),
-         offsetof(SW_DOMAIN, endyr)},
+         offsetof(SW_DOMAIN, endyr),
+         offsetof(SW_DOMAIN, depthsAllSoilLayers)},
 
         /* SW_SPINUP */
         {offsetof(SW_SPINUP, scope),
@@ -4084,7 +4162,7 @@ void SW_MPI_template_info(
                 buffers[structType][var],
                 count[structType][var],
                 SW_MPI_ROOT,
-                comm
+                MPI_COMM_WORLD
             );
 
             if (structType == swIndex && !SW_Run->SoilWatIn.hist_use) {
@@ -4132,7 +4210,7 @@ void SW_MPI_template_info(
                     sendBuff[vegIn],
                     1,
                     SW_MPI_ROOT,
-                    MPI_COMM_WORLD
+                    comm
                 );
             }
         }
@@ -4244,7 +4322,7 @@ void SW_MPI_ncout_info(
     IntUS nVars;
     const int unitsIndex = 4;
     const int varNameIndex = 1;
-    char *attStr;
+    char **attStr;
     Bool sendStr = swTRUE;
 
     if (rank > SW_MPI_ROOT) {
@@ -4282,25 +4360,25 @@ void SW_MPI_ncout_info(
             }
 
             attStr =
-                OutDom->netCDFOutput.outputVarInfo[outKey][var][unitsIndex];
+                &OutDom->netCDFOutput.outputVarInfo[outKey][var][unitsIndex];
 
             sendStr = (Bool) (!isnull(attStr));
-            get_dynamic_string(rank, &attStr, sendStr, comm, LogInfo);
+            get_dynamic_string(rank, attStr, sendStr, comm, LogInfo);
             if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
                 return;
             }
 
             attStr =
-                OutDom->netCDFOutput.outputVarInfo[outKey][var][varNameIndex];
+                &OutDom->netCDFOutput.outputVarInfo[outKey][var][varNameIndex];
             sendStr = (Bool) (!isnull(attStr));
-            get_dynamic_string(rank, &attStr, sendStr, comm, LogInfo);
+            get_dynamic_string(rank, attStr, sendStr, comm, LogInfo);
             if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
                 return;
             }
 
-            attStr = OutDom->netCDFOutput.units_sw[outKey][var];
+            attStr = &OutDom->netCDFOutput.units_sw[outKey][var];
             sendStr = (Bool) (!isnull(attStr));
-            get_dynamic_string(rank, &attStr, sendStr, comm, LogInfo);
+            get_dynamic_string(rank, attStr, sendStr, comm, LogInfo);
             if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
                 return;
             }
@@ -5025,11 +5103,7 @@ void SW_MPI_process_types(
         desig->nTotCompProcs = worldSize - numIOProcsTot;
 
         if (numActiveSites == 0) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "No active sites to simulate."
-            );
+            LogError(LogInfo, LOGERROR, "No active sites to simulate.");
         } else if (numActiveSites < worldSize - numIOProcsTot) {
             LogError(
                 LogInfo,
@@ -5104,7 +5178,7 @@ freeMem:
     deallocProcHelpers(
         desig->nSuids,
         maxNodes,
-        worldSize,
+        numNodes,
         &designations,
         &activeSuids,
         &activeTSuids,
@@ -5410,7 +5484,7 @@ void SW_MPI_handle_IO(
     int progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprog];
     int input = 0;
     int numSuidsTot = desig->nCompProcs * N_SUID_ASSIGN;
-    int numIterSuids;
+    int numIterSuids = 0;
     Bool *useIndexFile = SW_Domain->netCDFInput.useIndexFile;
     Bool **readInVars = SW_Domain->netCDFInput.readInVars;
     Bool constSoilDepths = SW_Domain->hasConsistentSoilLayerDepths;
@@ -5447,6 +5521,7 @@ void SW_MPI_handle_IO(
     double *tempWeather = NULL;
     SW_SOIL_RUN_INPUTS *tempSoils = NULL;
     Bool *succFlags = NULL;
+    signed char *succMark = NULL;
     LOG_INFO *logs = NULL;
     Bool errorCaused = swFALSE;
     size_t temp;
@@ -5472,6 +5547,7 @@ void SW_MPI_handle_IO(
         &tempDistSuids,
         &sendInputs,
         &succFlags,
+        &succMark,
         &logs,
         LogInfo
     );
@@ -5629,6 +5705,7 @@ checkStatus:
                 &SW_Domain->OutDom,
                 succFlags,
                 &sw->SW_PathOutputs,
+                succMark,
                 starts[eSW_InDomain],
                 counts[eSW_InDomain],
                 sw->OutRun.p_OUT,
@@ -5699,6 +5776,7 @@ checkStatus:
                 &SW_Domain->OutDom,
                 succFlags,
                 &sw->SW_PathOutputs,
+                succMark,
                 starts[eSW_InDomain],
                 counts[eSW_InDomain],
                 sw->OutRun.p_OUT,
@@ -5729,6 +5807,7 @@ freeMem:
         &tempSoilVals,
         &tempSoils,
         &succFlags,
+        &succMark,
         &logs
     );
 

@@ -3708,59 +3708,6 @@ static void determine_valid_cal(
     }
 }
 
-/**
-@brief Helper function to allocate weather input file indices
-
-@param[out] ncWeatherStartEndIndices Start/end indices for the current
-weather input file
-@param[in] numStartEndIndices Number of start/end index pairs
-@param[in] numDaysInYear A list of values specifying the number
-of days within every year of the simulation
-@param[in] numYears Number of years within the simulation
-@param[out] LogInfo Holds information dealing with logfile output
-*/
-static void alloc_weather_indices_years(
-    unsigned int ***ncWeatherStartEndIndices,
-    unsigned int numStartEndIndices,
-    unsigned int **numDaysInYear,
-    unsigned int numYears,
-    LOG_INFO *LogInfo
-) {
-    unsigned int index;
-
-    (*ncWeatherStartEndIndices) = (unsigned int **) Mem_Malloc(
-        sizeof(unsigned int *) * numStartEndIndices,
-        "alloc_weather_indices_years()",
-        LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return; /* Exit function prematurely due to error */
-    }
-
-    for (index = 0; index < numStartEndIndices; index++) {
-        (*ncWeatherStartEndIndices)[index] = NULL;
-    }
-
-    for (index = 0; index < numStartEndIndices; index++) {
-        (*ncWeatherStartEndIndices)[index] = (unsigned int *) Mem_Malloc(
-            sizeof(unsigned int) * 2, "alloc_weather_indices_years()", LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return; /* Exit function prematurely due to error */
-        }
-    }
-
-    (*numDaysInYear) = (unsigned int *) Mem_Malloc(
-        sizeof(unsigned int) * numYears,
-        "alloc_weather_indices_years()",
-        LogInfo
-    );
-
-    for (index = 0; index < numYears; index++) {
-        (*numDaysInYear)[index] = 0;
-    }
-}
-
 #if defined(SWUDUNITS)
 /**
 @brief Convert a given number of days from one start date to another
@@ -3976,7 +3923,7 @@ static void calc_temporal_weather_indices(
     weatherCal = SW_netCDFIn->weathCalOverride[varIndex];
     hasCalOverride = (Bool) (strcmp(weatherCal, "NA") != 0);
 
-    alloc_weather_indices_years(
+    SW_NCIN_alloc_weather_indices_years(
         &SW_PathInputs->ncWeatherStartEndIndices,
         numWeathFiles,
         &SW_PathInputs->numDaysInYear,
@@ -6761,7 +6708,7 @@ static void read_soil_inputs(
                     soils->fractionVolBulk_gravel,
                     soils->fractionWeightMatric_sand,
                     soils->fractionWeightMatric_clay,
-                    &tempSilt[MAX_LAYERS * (site + input)],
+                    &tempSilt[MAX_LAYERS * site],
                     soils->fractionWeight_om,
                     soils->impermeability,
                     soils->avgLyrTempInit,
@@ -7171,7 +7118,6 @@ void SW_NCIN_allocDimVar(int numVars, int ***dimOrderInVar, LOG_INFO *LogInfo) {
 /**
 @brief Mark a site/gridcell as completed (success/fail) in the progress file
 
-@param[in] isFailure Did simulation run fail or succeed?
 @param[in] progFileID Identifier of the progress netCDF file
 @param[in] progVarID Identifier of the progress variable within the progress
     netCDF
@@ -7179,23 +7125,22 @@ void SW_NCIN_allocDimVar(int numVars, int ***dimOrderInVar, LOG_INFO *LogInfo) {
     with the netCDF library; simply ncSUID if SWMPI is not enabled
 @param[in] count A list of count parts used for accessing/writing to
     netCDF files; simply {1, 0} or {1, 1} if SWMPI is not enabled
+@param[in] mark A single (no SWMPI) or a list of success flags (SWMPI)
 @param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_NCIN_set_progress(
-    Bool isFailure,
     int progFileID,
     int progVarID,
     size_t start[],
     size_t count[],
+    const signed char *mark,
     LOG_INFO *LogInfo
 ) {
-    const signed char mark = (!isFailure) ? PRGRSS_DONE : PRGRSS_FAIL;
-
     SW_NC_write_vals(
         &progVarID,
         progFileID,
         NULL,
-        (void *) &mark,
+        (void *) mark,
         start,
         count,
         "byte",
@@ -7796,7 +7741,7 @@ static void read_weather_input(
     int read;
     int numSites = 1;
     int site;
-    int input;
+    int input = 0;
     double ***tempWeatherHist = NULL;
     size_t writeIndex = 0;
 
@@ -7920,12 +7865,12 @@ static void read_weather_input(
                 }
 
                 for (site = 0; site < numSites; site++) {
-                    writeIndex = site * MAX_DAYS;
+                    writeIndex = input * MAX_DAYS;
 
                     set_read_vals(
                         missValFlags[varNum],
                         doubleMissVals,
-                        &tempVals[writeIndex],
+                        &tempVals[site * MAX_DAYS],
                         MAX_DAYS,
                         varNum,
                         varTypes[varNum],
@@ -7940,10 +7885,13 @@ static void read_weather_input(
                     if (LogInfo->stopRun) {
                         goto closeFile;
                     }
+
+                    input++;
                 }
             }
 
             start[timeIndex] += count[timeIndex];
+            input = 0;
 #if !defined(SWMPI)
             nc_close(ncFileID);
             ncFileID = -1;
@@ -7986,6 +7934,61 @@ closeFile:
 #endif
 
     deallocate_temp_weather(SW_WeatherIn->n_years, &tempWeatherHist);
+}
+
+/**
+@brief Helper function to allocate weather input file indices
+
+@param[out] ncWeatherStartEndIndices Start/end indices for the current
+weather input file
+@param[in] numStartEndIndices Number of start/end index pairs
+@param[in] numDaysInYear A list of values specifying the number
+of days within every year of the simulation
+@param[in] numYears Number of years within the simulation
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+void SW_NCIN_alloc_weather_indices_years(
+    unsigned int ***ncWeatherStartEndIndices,
+    unsigned int numStartEndIndices,
+    unsigned int **numDaysInYear,
+    unsigned int numYears,
+    LOG_INFO *LogInfo
+) {
+    unsigned int index;
+
+    (*ncWeatherStartEndIndices) = (unsigned int **) Mem_Malloc(
+        sizeof(unsigned int *) * numStartEndIndices,
+        "SW_NCIN_alloc_weather_indices_years()",
+        LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return; /* Exit function prematurely due to error */
+    }
+
+    for (index = 0; index < numStartEndIndices; index++) {
+        (*ncWeatherStartEndIndices)[index] = NULL;
+    }
+
+    for (index = 0; index < numStartEndIndices; index++) {
+        (*ncWeatherStartEndIndices)[index] = (unsigned int *) Mem_Malloc(
+            sizeof(unsigned int) * 2,
+            "SW_NCIN_alloc_weather_indices_years()",
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; /* Exit function prematurely due to error */
+        }
+    }
+
+    (*numDaysInYear) = (unsigned int *) Mem_Malloc(
+        sizeof(unsigned int) * numYears,
+        "SW_NCIN_alloc_weather_indices_years()",
+        LogInfo
+    );
+
+    for (index = 0; index < numYears; index++) {
+        (*numDaysInYear)[index] = 0;
+    }
 }
 
 /**
@@ -8082,7 +8085,7 @@ void SW_NCIN_read_inputs(
         for (input = 0; input < numInputs; input++) {
             for (yearIn = 0; yearIn < SW_WeatherIn->n_years; yearIn++) {
                 clear_hist_weather(
-                    numInputs, &inputs[input].weathRunAllHist[yearIn], NULL
+                    1, &inputs[input].weathRunAllHist[yearIn], NULL
                 );
             }
         }
