@@ -5771,7 +5771,7 @@ checkStatus:
                 progFileID,
                 progVarID,
                 distSUIDs,
-                iterNumSuids - numIterSuids,
+                iterNumSuids,
                 SW_Domain->netCDFInput.siteDoms[eSW_InDomain],
                 &SW_Domain->OutDom,
                 succFlags,

@@ -5017,6 +5017,29 @@ static void set_missing_val(
 }
 
 /**
+@brief Calculates offset with mixed dimensions when reading more than
+one site's/gridcell's worth of data to index to the next day, layer, etc.
+within read data
+
+@param[in] latOrder Index placement within `counts` in which the latitude
+    count resides
+@param[in] lonOrder Index placement within `counts` in which the longitude
+    count resides
+@param[in] count List of numbers specifying the number of
+    values per dimension of the variable to read in
+*/
+static int calc_read_offset(int order, const int numCount, size_t count[]) {
+    int val = 1;
+    int cIndex;
+
+    for (cIndex = order + 1; cIndex < numCount; cIndex++) {
+        val *= (count[cIndex] > 0) ? count[cIndex] : 1;
+    }
+
+    return val;
+}
+
+/**
 @brief When reading in values from an nc file, we cannot expect them
 to be the same type of NC_DOUBLE, so this function makes use of
 a provided void pointer and converts the read value(s) from
@@ -5051,6 +5074,8 @@ variable's value setting needs to be handled in a different manner
 with, [1, SWRC_PARAM_NMAX] or [0, SWRC_PARAM_NMAX - 1] for this index
 @param[in] swrcpLyr A value specifying the layer we are setting the values
 of within swrcp
+@param[in] stride A stride value to properly index the read values to match
+mixed variable dimensions
 @param[in,out] resVals Resulting values which the actual destination
 within a struct used within a simulation run, and values are scaled/set to
 missing as needed
@@ -5068,18 +5093,21 @@ static void set_read_vals(
     Bool swrcpInput,
     int swrcpIndex,
     LyrIndex swrcpLyr,
+    int stride,
     double *resVals
 ) {
     int valIndex;
     double *dest;
     Bool missingBefore;
     double readVal;
+    int strideIndex;
 
     for (valIndex = 0; valIndex < numVals; valIndex++) {
+        strideIndex = ((!swrcpInput) ? valIndex : swrcpLyr) * stride;
         dest = (!swrcpInput) ? &resVals[valIndex] : &resVals[swrcpIndex];
 
-        missingBefore = (Bool) (missing(readVals[valIndex]));
-        readVal = (!swrcpInput) ? readVals[valIndex] : readVals[swrcpLyr];
+        missingBefore = (Bool) (missing(readVals[strideIndex]));
+        readVal = (!swrcpInput) ? readVals[strideIndex] : readVals[strideIndex];
         set_missing_val(varType, valHasMissing, missingVals, varNum, &readVal);
 
         if (missingBefore || !missing(readVal)) {
@@ -5196,6 +5224,7 @@ static void read_spatial_topo_climate_site_inputs(
     int tempRead;
     int input;
     int inputOrigin;
+    int stride = 1;
 
     for (keyNum = 0; keyNum < numKeys; keyNum++) {
         currKey = keys[keyNum];
@@ -5342,6 +5371,10 @@ static void read_spatial_topo_climate_site_inputs(
                     addOffset = 0.0;
                 }
 
+                stride = calc_read_offset(
+                    (currKey == eSW_InClimate) ? timeIndex : latIndex, 3, count
+                );
+
                 for (site = 0; site < numSites; site++) {
                     double *values[][5] = {
                         /* must match possVarNames[eSW_InSpatial] */
@@ -5362,7 +5395,30 @@ static void read_spatial_topo_climate_site_inputs(
                         {&inputs[input].SiteRunIn.Tsoil_constant}
                     };
 
-                    tempRead = site * numVals;
+                    if (currKey != eSW_InClimate) {
+                        if (lonIndex >= 0) {
+                            tempRead = (lonIndex > latIndex) ? count[lonIndex] :
+                                                               count[latIndex];
+                            tempRead *= site;
+                        } else {
+                            tempRead = site;
+                        }
+                    } else {
+                        if (lonIndex >= 0) {
+                            if (timeIndex > latIndex && timeIndex > lonIndex) {
+                                tempRead = site;
+                            } else if (timeIndex > latIndex ||
+                                       timeIndex > lonIndex) {
+                                tempRead = site * count[timeIndex];
+                            } else {
+                                tempRead = site;
+                            }
+                        } else { // Site domain
+                            tempRead = (timeIndex > latIndex) ?
+                                           count[timeIndex] * site :
+                                           site;
+                        }
+                    }
 
                     set_read_vals(
                         missValFlags[varNum],
@@ -5377,6 +5433,7 @@ static void read_spatial_topo_climate_site_inputs(
                         swFALSE,
                         0,
                         0,
+                        stride,
                         values[keyNum][varNum - 1]
                     );
 
@@ -6115,6 +6172,7 @@ static void read_veg_inputs(
     int writeIndex;
     int input = 0;
     int inputOrigin = 0;
+    int stride = 1;
     Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InVeg];
 
 #if !defined(SWMPI)
@@ -6224,6 +6282,8 @@ static void read_veg_inputs(
                 goto closeFile; // Exit function prematurely due to error
             }
 
+            stride = calc_read_offset(timeIndex, 4, count);
+
             for (site = 0; site < numSites; site++) {
                 /* must match possVarNames[eSW_InVeg] (without spatial index) */
                 double *values[] = {
@@ -6254,7 +6314,18 @@ static void read_veg_inputs(
                     inputs[input].VegProdRunIn.veg[SW_GRASS].lai_conv
                 };
 
-                writeIndex = site * numSetVals;
+                if (lonIndex >= 0) {
+                    if (timeIndex > latIndex && timeIndex > lonIndex) {
+                        writeIndex = site;
+                    } else if (timeIndex > latIndex || timeIndex > lonIndex) {
+                        writeIndex = site * count[timeIndex];
+                    } else {
+                        writeIndex = site;
+                    }
+                } else { // Site domain
+                    writeIndex =
+                        (timeIndex > latIndex) ? count[timeIndex] * site : site;
+                }
 
                 set_read_vals(
                     missValFlags[varNum],
@@ -6269,6 +6340,7 @@ static void read_veg_inputs(
                     swFALSE,
                     0,
                     0,
+                    stride,
                     values[varNum - 1]
                 );
 
@@ -6592,6 +6664,7 @@ static void read_soil_inputs(
     size_t writeIndex;
     int input = 0;
     double *readPtr;
+    int stride = 1;
 
     Bool varHasAddScaleAtts;
     double scaleFactor;
@@ -6708,7 +6781,7 @@ static void read_soil_inputs(
                     soils->fractionVolBulk_gravel,
                     soils->fractionWeightMatric_sand,
                     soils->fractionWeightMatric_clay,
-                    &tempSilt[MAX_LAYERS * site],
+                    &tempSilt[MAX_LAYERS * input],
                     soils->fractionWeight_om,
                     soils->impermeability,
                     soils->avgLyrTempInit,
@@ -6717,8 +6790,6 @@ static void read_soil_inputs(
 
                 double(*trans_coeff)[MAX_LAYERS] = soils->transp_coeff;
                 double(*swrcpMS)[SWRC_PARAM_NMAX] = soils->swrcpMineralSoil;
-
-                writeIndex = ((!isSwrcpVar) ? numVals : 1) * site;
 
                 readPtr = tempVals;
                 if (varNum >= eiv_transpCoeff[0] &&
@@ -6747,6 +6818,14 @@ static void read_soil_inputs(
                     if (LogInfo->stopRun) {
                         goto closeFile;
                     }
+
+                    stride = calc_read_offset(vertIndex, 4, count);
+                }
+
+                if (vertIndex > lonIndex && vertIndex > latIndex) {
+                    writeIndex = ((!isSwrcpVar) ? numVals : 1) * site;
+                } else {
+                    writeIndex = site;
                 }
 
                 setIter = (isSwrcpVar) ? (int) numLyrs : 1;
@@ -6765,6 +6844,7 @@ static void read_soil_inputs(
                         isSwrcpVar,
                         (!isSwrcpVar) ? 0 : (varNum - eiv_swrcpMS[0]),
                         loopIter,
+                        stride,
                         (!isSwrcpVar) ? storePtr : swrcpMS[loopIter]
                     );
                 }
@@ -7706,8 +7786,8 @@ static void read_weather_input(
     Bool *readInput = SW_Domain->netCDFInput.readInVars[eSW_InWeather];
     unsigned int numWeathFiles = SW_Domain->SW_PathInputs.ncNumWeatherInFiles;
     int varNum = 1;
-    size_t start[4] = {0}; /* Up to four dimensions per variable */
-    size_t count[4] = {0}; /* Up to four dimensions per variable */
+    size_t start[3] = {0}; /* Up to three dimensions per variable */
+    size_t count[3] = {0}; /* Up to three dimensions per variable */
     TimeInt numDays;
     TimeInt yearIndex;
     TimeInt year;
@@ -7742,6 +7822,8 @@ static void read_weather_input(
     int numSites = 1;
     int site;
     int input = 0;
+    int stride = 1;
+    int tempStart;
     double ***tempWeatherHist = NULL;
     size_t writeIndex = 0;
 
@@ -7864,13 +7946,30 @@ static void read_weather_input(
                     goto closeFile;
                 }
 
+                stride = calc_read_offset(timeIndex, 3, count);
+
                 for (site = 0; site < numSites; site++) {
                     writeIndex = input * MAX_DAYS;
+
+                    if (lonIndex >= 0) {
+                        if (timeIndex > latIndex && timeIndex > lonIndex) {
+                            tempStart = site;
+                        } else if (timeIndex > latIndex ||
+                                   timeIndex > lonIndex) {
+                            tempStart = site * count[timeIndex];
+                        } else {
+                            tempStart = site;
+                        }
+                    } else { // Site domain
+                        tempStart = (timeIndex > latIndex) ?
+                                        count[timeIndex] * site :
+                                        site;
+                    }
 
                     set_read_vals(
                         missValFlags[varNum],
                         doubleMissVals,
-                        &tempVals[site * MAX_DAYS],
+                        &tempVals[tempStart],
                         MAX_DAYS,
                         varNum,
                         varTypes[varNum],
@@ -7880,6 +7979,7 @@ static void read_weather_input(
                         swFALSE,
                         0,
                         0,
+                        stride,
                         &tempWeatherHist[yearIndex][varNum - 1][writeIndex]
                     );
                     if (LogInfo->stopRun) {
@@ -7917,6 +8017,9 @@ static void read_weather_input(
             inputs[input].weathRunAllHist,
             LogInfo
         );
+        if (LogInfo->stopRun) {
+            return;
+        }
     }
 
 closeFile:
