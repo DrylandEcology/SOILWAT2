@@ -1276,6 +1276,7 @@ void SW_OUT_init_ptrs(SW_OUT_RUN *OutRun, SW_PATH_OUTPUTS *SW_PathOutputs) {
     OutRun->p_OUTsd[key][column] = NULL;
 #elif defined(SWNETCDF)
     SW_PathOutputs->ncOutFiles[key][column] = NULL;
+    SW_PathOutputs->ncOutVarIDs[key] = NULL;
 #if defined(SWMPI)
     SW_PathOutputs->openOutFileIDs[key][column] = NULL;
 #endif
@@ -1962,6 +1963,11 @@ void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw) {
                 sw->SW_PathOutputs.openOutFileIDs[k][pd] = NULL;
             }
 #endif
+        }
+
+        if (!isnull(sw->SW_PathOutputs.ncOutVarIDs[k])) {
+            free((void *) sw->SW_PathOutputs.ncOutVarIDs[k]);
+            sw->SW_PathOutputs.ncOutVarIDs[k] = NULL;
         }
     }
 #endif
@@ -3803,6 +3809,7 @@ void SW_OUT_create_files(
         SW_Domain->OutDom.netCDFOutput.baseCalendarYear,
         &SW_PathOutputs->numOutFiles,
         SW_PathOutputs->ncOutFiles,
+        SW_PathOutputs->ncOutVarIDs,
         LogInfo
     );
 
@@ -3976,6 +3983,8 @@ void SW_PATHOUT_deepCopy(
 
     int key;
     OutPeriod pd;
+    int numVars;
+    int var;
     unsigned int fileNum;
     unsigned int numFiles = source_files->numOutFiles;
     char **destFile = NULL;
@@ -3983,6 +3992,15 @@ void SW_PATHOUT_deepCopy(
 
     ForEachOutKey(key) {
         if (OutDom->nvar_OUT[key] > 0 && OutDom->use[key]) {
+            numVars = OutDom->nvar_OUT[key];
+
+            SW_NCOUT_alloc_varids(
+                &dest_files->ncOutVarIDs[key], numVars, LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
+            }
+
             ForEachOutPeriod(pd) {
                 if (OutDom->use_OutPeriod[pd]) {
                     if (!isnull(source_files->ncOutFiles[key][pd])) {
@@ -4008,27 +4026,12 @@ void SW_PATHOUT_deepCopy(
                             }
                         }
                     }
-
-#if defined(SWMPI)
-                    // TODO: Remove, this will not be needed in the future
-                    if (!isnull(source_files->openOutFileIDs[key][pd])) {
-                        dest_files->openOutFileIDs[key][pd] =
-                            (int *) Mem_Malloc(
-                                sizeof(int) * numFiles,
-                                "SW_PATHOUT_deepCopy()",
-                                LogInfo
-                            );
-                        if (LogInfo->stopRun) {
-                            return; // Exit function prematurley due to error
-                        }
-
-                        for (fileNum = 0; fileNum < numFiles; fileNum++) {
-                            dest_files->openOutFileIDs[key][pd][fileNum] =
-                                source_files->openOutFileIDs[key][pd][fileNum];
-                        }
-                    }
-#endif
                 }
+            }
+
+            for (var = 0; var < numVars; var++) {
+                dest_files->ncOutVarIDs[key][var] =
+                    source_files->ncOutVarIDs[key][var];
             }
         }
     }

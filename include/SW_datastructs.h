@@ -246,6 +246,7 @@ typedef struct {
 
 #if defined(SWNETCDF)
     char **ncOutFiles[SW_OUTNKEYS][SW_OUTNPERIODS];
+    int *ncOutVarIDs[SW_OUTNKEYS];
     unsigned int numOutFiles;
 
 #if defined(SWMPI)

@@ -560,7 +560,7 @@ checkStatus:
     *setupFail = swFALSE;
 #endif
 
-    while (numInputs > 0) {
+    while (numInputs > 0 && runSims) {
 #if defined(SWMPI)
         LOG_INFO local_LogInfo[N_SUID_ASSIGN];
         Bool runSucc[N_SUID_ASSIGN] = {swFALSE};
@@ -1716,6 +1716,7 @@ void SW_CTL_run_sw(
         NULL,
         (size_t **) &count,
         NULL,
+        local_sw.SW_PathOutputs.ncOutVarIDs,
         SW_Domain->netCDFInput.siteDoms[eSW_InDomain],
         LogInfo
     );

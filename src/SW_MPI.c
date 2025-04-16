@@ -75,6 +75,90 @@ static void errorMPI(int mpiError) {
 }
 
 /**
+@brief Wrapper function to `MPI_Allreduce()`
+
+@param[in] datatype Custom MPI datatype that will be sent
+@param[in] src Location of memory that will be read from to give
+    `MPI_Allreduce()` this process' information
+@param[out] dest Location of memory that will be written from to by
+    `MPI_Allreduce()`
+@param[in] count Number of items to recv from the buffer
+@param[in] srcRank Source rank that information will be sent from
+with any message tag values
+@param[in] op MPI operation to be performed
+@param[in] comm MPI communicator to broadcast a message to
+*/
+static void SW_Allreduce(
+    MPI_Datatype datatype,
+    void *src,
+    void *dest,
+    int count,
+    MPI_Op op,
+    MPI_Comm comm
+) {
+    int mpiRes = MPI_SUCCESS;
+
+    mpiRes = MPI_Allreduce(src, dest, count, datatype, op, comm);
+
+    if (mpiRes != MPI_SUCCESS) {
+        errorMPI(mpiRes);
+    }
+}
+
+/**
+@brief The program currently uses collective writes to the progress
+    and output files, so I/O processes that may run out of work before
+    others, they need to participate in the writes, hence using
+    dummy writes
+*/
+static void dummy_prog_out_writes(
+    MPI_Comm comm,
+    SW_OUT_DOM *OutDom,
+    SW_PATH_OUTPUTS *SW_PathOutputs,
+    size_t *starts[],
+    size_t *counts[],
+    double *main_p_OUT[][SW_OUTNPERIODS],
+    int progFileID,
+    int progVarID,
+    LOG_INFO *LogInfo
+) {
+    int write;
+    int numWrites = 0;
+    signed char succFlag[1] = {swFALSE};
+
+    SW_Allreduce(MPI_INT, &numWrites, &numWrites, 1, MPI_MAX, comm);
+
+    for (write = 0; write < numWrites; write++) {
+        starts[write][0] = starts[write][1] = 0;
+        counts[write][0] = counts[write][1] = 0;
+    }
+
+    // Fill the following function calls with junk values since they
+    // should not be used
+    SW_NCOUT_write_output(
+        OutDom,
+        main_p_OUT,
+        SW_PathOutputs->numOutFiles,
+        NULL,
+        NULL,
+        numWrites,
+        starts,
+        counts,
+        SW_PathOutputs->openOutFileIDs,
+        SW_PathOutputs->ncOutVarIDs,
+        swFALSE,
+        LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    SW_NCIN_set_progress(
+        progFileID, progVarID, starts[write], counts[write], succFlag, LogInfo
+    );
+}
+
+/**
 @brief Broadcast a message/type to all processes
 
 @param[in] datatype Custom MPI datatype that will be sent
@@ -917,9 +1001,7 @@ static void assignProcs(
 
         if (SW_Designation->useTSuids && rank > SW_MPI_ROOT) {
             ForEachNCInKey(inKey) {
-                if (inKey == eSW_InDomain || inKey == eSW_InSite ||
-                    !useIndexFile[inKey]) {
-
+                if (inKey == eSW_InDomain || !useIndexFile[inKey]) {
                     continue;
                 }
 
@@ -969,8 +1051,8 @@ reportError:
                         if (useTranslated) {
                             ForEachNCInKey(inKey) {
                                 if (inKey <= eSW_InSpatial ||
-                                    !useIndexFile[inKey] ||
-                                    inKey == eSW_InSite) {
+                                    !useIndexFile[inKey]) {
+
                                     continue;
                                 }
 
@@ -1016,7 +1098,7 @@ reportError:
 
         if (SW_Designation->useTSuids) {
             ForEachNCInKey(inKey) {
-                if (SW_Designation->useTSuids && useIndexFile[inKey]) {
+                if (inKey > eSW_InSpatial && useIndexFile[inKey]) {
                     for (pair = 0; pair < SW_Designation->nSuids; pair++) {
                         SW_MPI_Recv(
                             MPI_UNSIGNED_LONG,
@@ -1104,13 +1186,15 @@ static void get_NC_info(
     }
     SW_Bcast(MPI_INT, netCDFIn->ncDomVarIDs, SW_NVARDOM, SW_MPI_ROOT, comm);
 
+    SW_Bcast(MPI_INT, netCDFIn->siteDoms, SW_NINKEYSNC, SW_GROUP_ROOT, comm);
+
     ForEachNCInKey(inKey) {
-        if (rank == SW_MPI_ROOT) {
+        if (rank == SW_GROUP_ROOT) {
             useKey =
                 (Bool) (netCDFIn->readInVars[inKey][0] && inKey > eSW_InDomain);
         }
 
-        SW_Bcast(MPI_INT, &useKey, 1, SW_MPI_ROOT, comm);
+        SW_Bcast(MPI_INT, &useKey, 1, SW_GROUP_ROOT, comm);
 
         if (!useKey) {
             netCDFIn->readInVars[inKey][0] = swFALSE;
@@ -1121,7 +1205,7 @@ static void get_NC_info(
             MPI_INT,
             netCDFIn->readInVars[inKey],
             numVarsInKey[inKey] + 1,
-            SW_MPI_ROOT,
+            SW_GROUP_ROOT,
             comm
         );
 
@@ -1178,7 +1262,7 @@ static void get_NC_info(
                 MPI_INT,
                 netCDFIn->dimOrderInVar[inKey][var],
                 MAX_NDIMS,
-                SW_MPI_ROOT,
+                SW_GROUP_ROOT,
                 comm
             );
         }
@@ -1901,11 +1985,32 @@ static void open_output_files(
     unsigned int file;
     int *id;
     char *fileName = NULL;
+    int var;
+    int varID;
 
     SW_Bcast(MPI_UNSIGNED, &pathOutputs->numOutFiles, 1, SW_MPI_ROOT, comm);
 
     ForEachOutKey(outKey) {
         if (OutDom->nvar_OUT[outKey] > 0 && OutDom->use[outKey]) {
+            if (rank > SW_MPI_ROOT) {
+                SW_NCOUT_alloc_varids(
+                    &pathOutputs->ncOutVarIDs[outKey],
+                    OutDom->nvar_OUT[outKey],
+                    LogInfo
+                );
+            }
+            if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
+                return;
+            }
+
+            SW_Bcast(
+                MPI_INT,
+                pathOutputs->ncOutVarIDs[outKey],
+                OutDom->nvar_OUT[outKey],
+                SW_MPI_ROOT,
+                comm
+            );
+
             ForEachOutPeriod(pd) {
                 if (OutDom->use_OutPeriod[pd]) {
                     pathOutputs->openOutFileIDs[outKey][pd] =
@@ -1942,6 +2047,21 @@ static void open_output_files(
                             }
                             return;
                         }
+
+                        for (var = 0; var < OutDom->nvar_OUT[outKey]; var++) {
+                            varID = pathOutputs->ncOutVarIDs[outKey][var];
+                            if (nc_var_par_access(*id, varID, NC_COLLECTIVE) !=
+                                NC_NOERR) {
+                                LogError(
+                                    LogInfo,
+                                    LOGERROR,
+                                    "Could not set parallel access pattern of "
+                                    "%s to be collective.",
+                                    fileName
+                                );
+                            }
+                        }
+
                         if (rank > SW_MPI_ROOT) {
                             free(fileName);
                         }
@@ -3034,6 +3154,7 @@ static void get_next_suids(
 @brief Wrapper function to calculate output starts/counts and
     output all values
 
+@param[in] comm MPI communicator to reduce a message with
 @param[in] progFileID Identifier of the progress netCDF file
 @param[in] progVarID Identifier of the progress variable
 @param[in] distSUIDs A list of domain SUIDs whose data will be distributed
@@ -3065,6 +3186,7 @@ static void get_next_suids(
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void write_outputs(
+    MPI_Comm comm,
     int progFileID,
     int progVarID,
     size_t **distSUIDs,
@@ -3084,6 +3206,7 @@ static void write_outputs(
     int numSites;
     int mark;
     int totalSites = 0;
+    int maxNumWrites = 0;
 
     get_contiguous_counts(
         distSUIDs,
@@ -3109,11 +3232,19 @@ static void write_outputs(
         starts,
         counts,
         SW_PathOutputs->openOutFileIDs,
+        SW_PathOutputs->ncOutVarIDs,
         siteDom,
         LogInfo
     );
     if (LogInfo->stopRun) {
         return;
+    }
+
+    SW_Allreduce(MPI_INT, &numWrites, &maxNumWrites, 1, MPI_MAX, comm);
+
+    for (write = numWrites; write < maxNumWrites; write++) {
+        starts[write][0] = starts[write][1] = 0;
+        counts[write][0] = counts[write][1] = 0;
     }
 
     // Update progress file statuses
@@ -4586,7 +4717,7 @@ Bool SW_MPI_setup_fail(Bool stopRun, MPI_Comm comm) {
     int fail = (stopRun) ? 1 : 0;
     int failProgram = 0;
 
-    MPI_Allreduce(&fail, &failProgram, 1, MPI_INT, MPI_SUM, comm);
+    SW_Allreduce(MPI_INT, &fail, &failProgram, 1, MPI_SUM, comm);
 
     return (Bool) (failProgram > 0);
 }
@@ -5108,12 +5239,13 @@ void SW_MPI_process_types(
             LogError(
                 LogInfo,
                 LOGERROR,
-                "Less active sites to simulate than compute processes. "
-                "Attempted to create %d compute processes with a maximum "
-                "of %d I/O processes per node, %d in total.",
+                "Less active sites (%d) to simulate than compute processes. "
+                "Attempted to create %d total compute processes with a maximum "
+                "of %d I/O processes per node. At least one active site per "
+                "compute process is needed.",
+                numActiveSites,
                 worldSize - numIOProcsTot,
-                SW_MPI_NIO,
-                numIOProcsTot
+                SW_MPI_NIO
             );
         }
         if (LogInfo->stopRun ||
@@ -5525,6 +5657,9 @@ void SW_MPI_handle_IO(
     LOG_INFO *logs = NULL;
     Bool errorCaused = swFALSE;
     size_t temp;
+    Bool dummyWrites;
+    int maxWritesGroup = 0;
+    int maxWriteInst = (int) ceil(((double) desig->nSuids) / numSuidsTot);
 
     // Determine if spatial variables are one- or two-dimensional
     // This impacts the order of "start" and "count" values for spatial key
@@ -5570,6 +5705,14 @@ void SW_MPI_handle_IO(
         &inputs,
         LogInfo
     );
+    if (LogInfo->stopRun) {
+        goto checkStatus;
+    }
+
+    SW_Allreduce(
+        MPI_INT, &maxWriteInst, &maxWritesGroup, 1, MPI_MAX, desig->groupComm
+    );
+    dummyWrites = (Bool) (maxWriteInst < maxWritesGroup);
 
 checkStatus:
     if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
@@ -5674,6 +5817,11 @@ checkStatus:
             n_years,
             swFALSE
         );
+        // This should match the checking of runSims = 0 on the compute process
+        // side within the for-loop that runs through inputs
+        if (runSims == 0) {
+            break;
+        }
 
         // Check if we need to read the next batch of inputs &
         // Check if outputs are full
@@ -5697,6 +5845,7 @@ checkStatus:
             }
 
             write_outputs(
+                desig->groupComm,
                 progFileID,
                 progVarID,
                 distSUIDs,
@@ -5768,6 +5917,7 @@ checkStatus:
             numIterations < N_ITER_BEFORE_OUT) {
 
             write_outputs(
+                desig->groupComm,
                 progFileID,
                 progVarID,
                 distSUIDs,
@@ -5780,6 +5930,20 @@ checkStatus:
                 starts[eSW_InDomain],
                 counts[eSW_InDomain],
                 sw->OutRun.p_OUT,
+                LogInfo
+            );
+        }
+
+        if (dummyWrites) {
+            dummy_prog_out_writes(
+                desig->groupComm,
+                &SW_Domain->OutDom,
+                &sw->SW_PathOutputs,
+                starts[eSW_InDomain],
+                counts[eSW_InDomain],
+                sw->OutRun.p_OUT,
+                progFileID,
+                progVarID,
                 LogInfo
             );
         }
@@ -5811,13 +5975,11 @@ freeMem:
         &logs
     );
 
-    if (errorCaused || !runSims) {
+    if (errorCaused) {
         // Report error
-        if (LogInfo->stopRun) {
-            LogInfo->logfp = LogInfo->logfps[0];
-            sw_write_warnings("\n", LogInfo);
+        LogInfo->logfp = LogInfo->logfps[0];
+        sw_write_warnings("\n", LogInfo);
 
-            SW_MPI_Fail(SW_MPI_FAIL_NETCDF, 0, NULL);
-        }
+        SW_MPI_Fail(SW_MPI_FAIL_NETCDF, 0, NULL);
     }
 }

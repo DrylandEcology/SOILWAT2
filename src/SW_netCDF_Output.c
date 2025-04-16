@@ -903,6 +903,49 @@ static void check_counts_against_vardim(
 #endif // SWDEBUG
 
 /**
+@brief Get the identifiers of variables within output files
+
+@param[in] outputVarInfo A list of a key's output variable information that
+    will be used to get the variable name
+@param[in] numVars Number of variables created within an output key
+@param[in] ncFileName Name of the output file that will be queried to get
+    variable identifiers
+@param[out] ncOutVarIDs A list of size SW_OUTNKEYS holding lists of output
+    variable IDs
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void get_outvar_ids(
+    char ***outputVarInfo,
+    IntUS numVars,
+    char *ncFileName,
+    int *ncOutVarIDs,
+    LOG_INFO *LogInfo
+) {
+    char *varName;
+    int var;
+    int fileID = -1;
+
+    SW_NC_open(ncFileName, NC_NOWRITE, &fileID, LogInfo);
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    for (var = 0; var < numVars; var++) {
+        varName = outputVarInfo[var][VARNAME_INDEX];
+
+        SW_NC_get_var_identifier(fileID, varName, &ncOutVarIDs[var], LogInfo);
+        if (LogInfo->stopRun) {
+            goto closeFile;
+        }
+    }
+
+closeFile:
+    if (fileID > -1) {
+        nc_close(fileID);
+    }
+}
+
+/**
 @brief Create and fill a new output netCDF file
 
 \p hasConsistentSoilLayerDepths determines if vertical dimension (soil depth)
@@ -1824,6 +1867,7 @@ void SW_NCOUT_dealloc_outputkey_var_info(SW_OUT_DOM *OutDom, IntUS k) {
 functions to write to/create
 
 @param[out] ncOutFiles Output file names storage array
+@param[out] ncVarIDs Output variable IDs
 @param[in] numFiles Number of file names to store/allocate memory for
 @param[out] LogInfo Holds information on warnings and errors
 */
@@ -1834,7 +1878,7 @@ void SW_NCOUT_alloc_files(
     unsigned int varNum;
 
     *ncOutFiles = (char **) Mem_Malloc(
-        numFiles * sizeof(char *), "SW_NC_create_output_files()", LogInfo
+        numFiles * sizeof(char *), "SW_NCOUT_alloc_files()", LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -1842,6 +1886,29 @@ void SW_NCOUT_alloc_files(
 
     for (varNum = 0; varNum < numFiles; varNum++) {
         (*ncOutFiles)[varNum] = NULL;
+    }
+}
+
+/**
+@brief Allocate memory to store output variable identifiers
+
+@param[out] ncVarIDs Output variable identifiers contained within every
+    output file that is created for a key
+@param[in] numVars Number of variables within an output key
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NCOUT_alloc_varids(int **ncVarIDs, IntUS numVars, LOG_INFO *LogInfo) {
+    IntUS varNum;
+
+    *ncVarIDs = (int *) Mem_Malloc(
+        numVars * sizeof(int), "SW_NCOUT_alloc_varids()", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    for (varNum = 0; varNum < numVars; varNum++) {
+        (*ncVarIDs)[varNum] = -1;
     }
 }
 
@@ -1879,6 +1946,8 @@ SW_OUTNPERIODS).
 @param[out] numFilesPerKey Number of output netCDFs each output key will
     have (same amount for each key)
 @param[out] ncOutFileNames A list of the generated output netCDF file names
+@param[out] ncVarIDs Output variable identifiers contained within every
+    output file that is created for a key
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCOUT_create_output_files(
@@ -1899,6 +1968,7 @@ void SW_NCOUT_create_output_files(
     int baseCalendarYear,
     unsigned int *numFilesPerKey,
     char **ncOutFileNames[][SW_OUTNPERIODS],
+    int *ncOutVarIDs[],
     LOG_INFO *LogInfo
 ) {
     Bool primCRSIsGeo =
@@ -1927,6 +1997,7 @@ void SW_NCOUT_create_output_files(
     unsigned int timeSize = 0;
     unsigned int baseTime = 0;
     double startTime[SW_OUTNPERIODS];
+    char *firstFileInKey = NULL;
 
     char periodSuffix[10];
     char *yearFormat;
@@ -1943,6 +2014,10 @@ void SW_NCOUT_create_output_files(
 
     ForEachOutKey(key) {
         if (nvar_OUT[key] > 0 && SW_Domain->OutDom.use[key]) {
+            SW_NCOUT_alloc_varids(&ncOutVarIDs[key], nvar_OUT[key], LogInfo);
+            if (LogInfo->stopRun) {
+                return;
+            }
 
             // Loop over requested output periods (which may vary for each
             // outkey)
@@ -2001,6 +2076,9 @@ void SW_NCOUT_create_output_files(
                         if (LogInfo->stopRun) {
                             return; // Exit function prematurely due to error
                         }
+                        if (isnull(firstFileInKey)) {
+                            firstFileInKey = ncOutFileNames[key][pd][fileNum];
+                        }
 
                         if (FileExists(fileNameBuf)) {
                             SW_NC_check(SW_Domain, -1, fileNameBuf, LogInfo);
@@ -2045,6 +2123,19 @@ void SW_NCOUT_create_output_files(
                     }
                 }
             }
+
+            get_outvar_ids(
+                SW_Domain->OutDom.netCDFOutput.outputVarInfo[key],
+                nvar_OUT[key],
+                firstFileInKey,
+                ncOutVarIDs[key],
+                LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
+            }
+
+            firstFileInKey = NULL;
         }
     }
 }
@@ -2181,6 +2272,8 @@ output netCDF files
     indices for each key; NULL if SWMPI is not defined
 @param[in] openOutFileIDs Lists of file IDs of open output netCDF files;
     only used if SWMPI is enabled, otherwise is NULL
+@param[in] outVarIDs A list of size SW_OUTNKEYS holding lists of
+    output variable IDs
 @param[in] siteDom Specifies if the domain is site-oriented
 @param[out] LogInfo Holds information on warnings and errors
 */
@@ -2194,6 +2287,7 @@ void SW_NCOUT_write_output(
     size_t **starts,
     size_t **counts,
     int *openOutFileIDs[][SW_OUTNPERIODS],
+    int *outVarIDs[],
     Bool siteDom,
     LOG_INFO *LogInfo
 ) {
@@ -2206,7 +2300,6 @@ void SW_NCOUT_write_output(
     int varNum;
     int varID = -1;
 
-    char *varName;
     size_t count[MAX_NUM_DIMS] = {0};
     size_t start[MAX_NUM_DIMS] = {0};
     size_t pOUTIndex;
@@ -2290,18 +2383,8 @@ void SW_NCOUT_write_output(
                             continue; // Skip variable iteration
                         }
 
-                        varName =
-                            OutDom->netCDFOutput
-                                .outputVarInfo[key][varNum][VARNAME_INDEX];
-
                         // Locate correct slice in netCDF to write to
-                        SW_NC_get_var_identifier(
-                            currFileID, varName, &varID, LogInfo
-                        );
-                        if (LogInfo->stopRun) {
-                            /* Exit function prematurely due to error */
-                            goto closeFile;
-                        }
+                        varID = outVarIDs[key][varNum];
 
                         get_vardim_write_counts(
                             siteDom,
@@ -2363,8 +2446,6 @@ void SW_NCOUT_write_output(
                             );
                         }
 #endif
-                        // key, pd, start[0], start[1], start[2], start[3],
-                        // count[0], count[1], count[2], count[3]);
                         /* For current variable x output period,
                            write out all values across vegtypes and soil layers
                            (if any) for current time-chunk
