@@ -147,6 +147,7 @@ static void dummy_prog_out_writes(
         SW_PathOutputs->openOutFileIDs,
         SW_PathOutputs->ncOutVarIDs,
         swFALSE,
+        SW_PathOutputs->outTimeSizes,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -272,6 +273,135 @@ static int calcNumIOProcs(int numProcsInNode) {
 
     return (numCompProcInNode / SW_MPI_NIO < 1.0) ? numProcsInNode / 2 :
                                                     SW_MPI_NIO;
+}
+
+/**
+@brief Helper function to `reorder_output()` to calculate how many elements
+    are to be rearranged based on time size, layer, and pft sizes
+*/
+static size_t calc_num_out_vals(size_t timeSize, IntUS nsl, IntUS npft) {
+    size_t numElem = 1;
+
+    /* Fill in time dimension */
+    if (timeSize > 0) {
+        numElem *= timeSize;
+    }
+
+    /* Fill in vertical (if present) */
+    if (nsl > 0) {
+        numElem *= nsl;
+    }
+
+    /* Fill in pft (if present) */
+    if (npft > 0) {
+        numElem *= npft;
+    }
+
+    return numElem;
+}
+
+/**
+@brief When receiving input from a compute process, it is not in the
+    order we need it to be to be output properly by the output function
+    due to the possibility of writing more than one site/grid cell;
+    reorder output so it can properly be output by the netCDF
+    output function
+*/
+static void reorder_output(
+    SW_OUT_DOM *OutDom,
+    size_t timeSizes[][2],
+    int numOutFiles,
+    int numInputs,
+    double *src_p_OUT[][SW_OUTNPERIODS],
+    double *dest_p_OUT[][SW_OUTNPERIODS]
+) {
+    OutKey outKey;
+    OutPeriod pd;
+    int pdIndex;
+    size_t numElem;
+    size_t elemIndex;
+    size_t destIndices[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
+    size_t destOffIndex;
+    size_t timeSize;
+    size_t totalTimeSize;
+    size_t pOUTIndex;
+    size_t vertSize;
+    size_t pftSize;
+    size_t elem;
+    size_t oneSiteSize;
+    int file;
+    int varNum;
+    int input;
+
+    ForEachOutKey(outKey) {
+        for (pdIndex = 0; pdIndex < OutDom->used_OUTNPERIODS; pdIndex++) {
+            pd = OutDom->timeSteps[outKey][pdIndex];
+
+            if (pd != eSW_NoTime) {
+                destOffIndex = 0;
+                timeSize = 0;
+                totalTimeSize = 0;
+
+                for (file = 0; file < numOutFiles; file++) {
+                    if (file < numOutFiles - 1) {
+                        timeSize = timeSizes[pd][0];
+                    } else {
+                        timeSize = timeSizes[pd][1];
+                    }
+
+                    oneSiteSize = OutDom->nrow_OUT[pd] *
+                                  (OutDom->ncol_OUT[outKey] + ncol_TimeOUT[pd]);
+
+                    for (varNum = 0; varNum < OutDom->nvar_OUT[outKey];
+                         varNum++) {
+                        numElem = calc_num_out_vals(
+                            timeSize,
+                            OutDom->nsl_OUT[outKey][varNum],
+                            OutDom->npft_OUT[outKey][varNum]
+                        );
+
+                        if (!OutDom->netCDFOutput
+                                 .reqOutputVars[outKey][varNum]) {
+                            continue; // Skip variable iteration
+                        }
+
+                        pOUTIndex =
+                            OutDom->netCDFOutput.iOUToffset[outKey][pd][varNum];
+
+                        if (totalTimeSize > 0) {
+                            // 1 if no soil layers
+                            vertSize = (OutDom->nsl_OUT[outKey][varNum] > 0) ?
+                                           OutDom->nsl_OUT[outKey][varNum] :
+                                           1;
+
+                            // 1 if no vegtypes
+                            pftSize = (OutDom->npft_OUT[outKey][varNum] > 0) ?
+                                          OutDom->npft_OUT[outKey][varNum] :
+                                          1;
+                            pOUTIndex +=
+                                iOUTnc(totalTimeSize, 0, 0, vertSize, pftSize);
+                        }
+
+                        for (input = 0; input < numInputs; input++) {
+                            elemIndex = (input * oneSiteSize) + pOUTIndex;
+
+                            for (elem = 0; elem < numElem; elem++) {
+                                destOffIndex = destIndices[outKey][pd];
+
+                                dest_p_OUT[outKey][pd][destOffIndex] =
+                                    src_p_OUT[outKey][pd][elemIndex];
+
+                                destIndices[outKey][pd]++;
+                                elemIndex++;
+                            }
+                        }
+                    }
+
+                    totalTimeSize += timeSize;
+                }
+            }
+        }
+    }
 }
 
 /**
@@ -663,8 +793,6 @@ static void fillDesignationIO(
     in the respective compute node node/local computer
 @param[in] numNodes The number of compute nodes we are running instances of
     the program on
-@param[in] numCompProcWorld Total number of compute processes to assign
-    throughout the world of processes
 @param[in] numIOProcsTot Total number of I/O processes in the MPI world
 @param[in] numActiveSites Number of active sites that will be
     simulated
@@ -685,7 +813,6 @@ static void designateProcesses(
     SW_MPI_DESIGNATE *rootDes,
     int numProcsInNode[],
     int numNodes,
-    int numCompProcWorld,
     int numIOProcsTot,
     int numActiveSites,
     unsigned long **activeSuids,
@@ -719,17 +846,11 @@ static void designateProcesses(
     }
 
     /* Calculate the number of overflow sites that will not be assigned
-       unless we specifically make sure to assign them;
-       Calculation:
-        numSuidsPerComp = floor((# active sites) / nCompProcs)
-        totAssignSuids = numSuidsPerComp * numCompProcWorld
-        numOverflow = (# active sites) - totAssignSuids
+       unless we specifically make sure to assign them
 
         Note: This will result in a value within [0, # active sites - 1]
     */
-    leftOverSuids = numActiveSites / numCompProcWorld;
-    leftOverSuids *= numCompProcWorld;
-    leftOverSuids = numActiveSites - leftOverSuids;
+    leftOverSuids = numActiveSites % numIOProcsTot;
 
     for (node = 0; node < numNodes; node++) {
         (*designations)[node] = (SW_MPI_DESIGNATE *) Mem_Malloc(
@@ -750,9 +871,7 @@ static void designateProcesses(
 
         // Calculate how many overflow compute processes we need
         // to assign to I/O processes
-        leftOverComp = (numNodeProcs - ioProcsInNode) / ioProcsInNode;
-        leftOverComp = ioProcsInNode * leftOverComp;
-        leftOverComp = (numNodeProcs - ioProcsInNode) - leftOverComp;
+        leftOverComp = (numNodeProcs - ioProcsInNode) % ioProcsInNode;
         compNodesAssign = ioProcsInNode; /* Skip past I/O assignments in node */
         for (proc = 0; proc < numNodeProcs; proc++) {
             desig = (node == 0 && proc == 0) ? rootDes :
@@ -1989,6 +2108,15 @@ static void open_output_files(
     int varID;
 
     SW_Bcast(MPI_UNSIGNED, &pathOutputs->numOutFiles, 1, SW_MPI_ROOT, comm);
+    ForEachOutPeriod(pd) {
+        SW_Bcast(
+            MPI_UNSIGNED_LONG,
+            pathOutputs->outTimeSizes[pd],
+            2,
+            SW_MPI_ROOT,
+            comm
+        );
+    }
 
     ForEachOutKey(outKey) {
         if (OutDom->nvar_OUT[outKey] > 0 && OutDom->use[outKey]) {
@@ -2244,6 +2372,7 @@ static void alloc_IO_info(
     Bool useIndexFile[],
     Bool **readInVars,
     SW_OUT_DOM *OutDom,
+    SW_OUT_RUN *tempRun,
     SW_OUT_RUN *OutRun,
     size_t **starts[],
     size_t **counts[],
@@ -2420,6 +2549,10 @@ static void alloc_IO_info(
     SW_OUT_construct_outarray(
         N_SUID_ASSIGN * nCompProcs * N_ITER_BEFORE_OUT, OutDom, OutRun, LogInfo
     );
+
+    SW_OUT_construct_outarray(
+        N_SUID_ASSIGN * nCompProcs * N_ITER_BEFORE_OUT, OutDom, tempRun, LogInfo
+    );
 }
 
 /**
@@ -2462,6 +2595,7 @@ static void alloc_IO_info(
 */
 static void dealloc_IO_info(
     int numSuids,
+    SW_OUT_RUN *tempRun,
     SW_OUT_RUN *OutRun,
     size_t **starts[],
     size_t **counts[],
@@ -2559,6 +2693,7 @@ static void dealloc_IO_info(
     }
 
     SW_OUT_deconstruct_outarray(OutRun);
+    SW_OUT_deconstruct_outarray(tempRun);
 }
 
 /**
@@ -2725,15 +2860,16 @@ static void spread_inputs(
     int destRank;
     int suid = 0;
     int send = 0;
-    int sendSum = 0;
+    int prevSendSum = 0;
+    int sendSize;
 
     if (*sendEstVeg) {
         SW_Bcast(MPI_INT, &estVeg, 1, SW_GROUP_ROOT, desig->ioCompComm);
         *sendEstVeg = swFALSE;
     }
 
-    for (comp = 0; comp < desig->nCompProcs && sendSum == 0; comp++) {
-        sendSum += sendInputs[comp + 1];
+    for (comp = 0; comp < desig->nCompProcs; comp++) {
+        prevSendSum += sendInputs[comp + 1];
     }
 
     // Send amount information so compute processes know how
@@ -2749,13 +2885,13 @@ static void spread_inputs(
             }
 
             sendInputs[comp + 1] = (finalize) ? 0 : numSendIn;
+            sendSize = sendInputs[comp + 1];
 
-            SW_MPI_Send(
-                MPI_INT, &sendInputs[comp + 1], 1, destRank, swTRUE, 0, &nullReq
-            );
+            SW_MPI_Send(MPI_INT, &sendSize, 1, destRank, swTRUE, 0, &nullReq);
+            extraSetupCheck = (Bool) (prevSendSum > 0 && !finalize);
 
-            if (!finalize || sendInputs[comp + 1] > COMP_COMPLETE) {
-                for (send = 0; send < sendInputs[comp + 1]; send++) {
+            if (!finalize || sendSize > COMP_COMPLETE) {
+                for (send = 0; send < sendSize; send++) {
                     SW_MPI_Send(
                         inputType,
                         &inputs[suid + send],
@@ -2770,10 +2906,7 @@ static void spread_inputs(
                 // When a compute process is done with their workload(s) but
                 // other compute processes may have more work, so the completed
                 // process will have to participate in the setup fail
-                extraSetupCheck = (Bool) (sendSum > 0 && sendInputs[comp + 1] ==
-                                                             COMP_COMPLETE);
-
-                if (sendInputs[comp + 1] == COMP_COMPLETE) {
+                if (sendSize == COMP_COMPLETE) {
                     SW_MPI_Send(
                         MPI_INT,
                         &extraSetupCheck,
@@ -2786,7 +2919,7 @@ static void spread_inputs(
                 }
 
                 if (readWeather) {
-                    for (send = 0; send < sendInputs[comp + 1]; send++) {
+                    for (send = 0; send < sendSize; send++) {
                         SW_MPI_Send(
                             weathHistType,
                             inputs[suid].weathRunAllHist,
@@ -2800,6 +2933,10 @@ static void spread_inputs(
                 }
 
                 suid += sendInputs[comp + 1];
+            } else if (finalize) {
+                SW_MPI_Send(
+                    MPI_INT, &extraSetupCheck, 1, destRank, swTRUE, 0, &nullReq
+                );
             }
 
             numInputs -= numSendIn;
@@ -2943,11 +3080,14 @@ static void arrange_output(
     int writeLens[],
     SW_OUT_DOM *OutDom,
     size_t offsetMult[],
-    double *main_p_OUT[][SW_OUTNPERIODS]
+    Bool useTempStorage,
+    double *main_p_OUT[][SW_OUTNPERIODS],
+    double *temp_p_OUT[][SW_OUTNPERIODS]
 ) {
     MPI_Request nullReq = MPI_REQUEST_NULL;
 
     int pdIndex;
+    int writeLen = writeLens[procIndex + 1];
     OutKey key;
     OutPeriod pd;
 
@@ -2972,8 +3112,9 @@ static void arrange_output(
                 // Receive information
                 SW_MPI_Recv(
                     MPI_DOUBLE,
-                    &main_p_OUT[key][pd][writeIndex],
-                    oneSiteSize * writeLens[procIndex + 1],
+                    (useTempStorage) ? &temp_p_OUT[key][pd][writeIndex] :
+                                       &main_p_OUT[key][pd][writeIndex],
+                    oneSiteSize * writeLen,
                     recvRank,
                     swTRUE,
                     0,
@@ -3033,6 +3174,8 @@ Handle the different request types accordingly
 static void get_comp_results(
     int numCompProcs,
     int recvLens[],
+    size_t timeSizes[][2],
+    int numOutFiles,
     MPI_Datatype reqType,
     MPI_Datatype logType,
     SW_MPI_DESIGNATE *desig,
@@ -3040,7 +3183,8 @@ static void get_comp_results(
     LOG_INFO *logs,
     FILE *logfps[],
     Bool *succFlags,
-    double *main_p_OUT[][SW_OUTNPERIODS]
+    double *main_p_OUT[][SW_OUTNPERIODS],
+    double *temp_p_OUT[][SW_OUTNPERIODS]
 ) {
     MPI_Request nullReq = MPI_REQUEST_NULL;
 
@@ -3054,12 +3198,18 @@ static void get_comp_results(
     int comp;
     int succ;
     int numProcResponse = 0;
+    int numSiteRecv = 0;
     int targetRepsonses = numCompProcs;
+
+    Bool useTempStorage;
 
     for (comp = 0; comp < numCompProcs; comp++) {
         offsetMult[comp + 1] = offsetMult[comp] + recvLens[comp + 1];
         targetRepsonses -= (recvLens[comp + 1] == 0) ? 1 : 0;
+        numSiteRecv += recvLens[comp + 1];
     }
+
+    useTempStorage = (Bool) (numSiteRecv > 1);
 
     while (numProcResponse < targetRepsonses) {
         SW_MPI_REQUEST req;
@@ -3098,11 +3248,24 @@ static void get_comp_results(
 
         if (outReq) {
             arrange_output(
-                destRank, rankIndex, recvLens, OutDom, offsetMult, main_p_OUT
+                destRank,
+                rankIndex,
+                recvLens,
+                OutDom,
+                offsetMult,
+                useTempStorage,
+                main_p_OUT,
+                temp_p_OUT
             );
         }
 
         numProcResponse++;
+    }
+
+    if (useTempStorage) {
+        reorder_output(
+            OutDom, timeSizes, numOutFiles, numSiteRecv, temp_p_OUT, main_p_OUT
+        );
     }
 }
 
@@ -3221,6 +3384,13 @@ static void write_outputs(
         counts
     );
 
+    SW_Allreduce(MPI_INT, &numWrites, &maxNumWrites, 1, MPI_MAX, comm);
+
+    for (write = numWrites; write < maxNumWrites; write++) {
+        starts[write][0] = starts[write][1] = 0;
+        counts[write][0] = counts[write][1] = 0;
+    }
+
     // Output accumulated output
     SW_NCOUT_write_output(
         OutDom,
@@ -3234,21 +3404,18 @@ static void write_outputs(
         SW_PathOutputs->openOutFileIDs,
         SW_PathOutputs->ncOutVarIDs,
         siteDom,
+        SW_PathOutputs->outTimeSizes,
         LogInfo
     );
     if (LogInfo->stopRun) {
         return;
     }
 
-    SW_Allreduce(MPI_INT, &numWrites, &maxNumWrites, 1, MPI_MAX, comm);
-
-    for (write = numWrites; write < maxNumWrites; write++) {
-        starts[write][0] = starts[write][1] = 0;
-        counts[write][0] = counts[write][1] = 0;
-    }
-
     // Update progress file statuses
-    for (write = 0; write < numWrites; write++) {
+    for (write = 0; write < maxNumWrites; write++) {
+        if (write >= numWrites) {
+            write = numWrites - 1;
+        }
         numSites = (siteDom) ? counts[write][0] : counts[write][1];
 
         for (mark = 0; mark < numSites; mark++) {
@@ -5259,7 +5426,6 @@ void SW_MPI_process_types(
             desig,
             numProcsInNode,
             numNodes,
-            desig->nTotCompProcs,
             numIOProcsTot,
             numActiveSites,
             activeSuids,
@@ -5536,7 +5702,7 @@ void SW_MPI_get_inputs(
 
     SW_MPI_Recv(MPI_INT, numInputs, 1, desig->ioRank, swTRUE, 0, &nullReq);
 
-    if (numInputs == 0) {
+    if (*numInputs == COMP_COMPLETE) {
         SW_MPI_Recv(
             MPI_INT, extraFailCheck, 1, desig->ioRank, swTRUE, 0, &nullReq
         );
@@ -5639,6 +5805,7 @@ void SW_MPI_handle_IO(
     int suid;
 
     SW_RUN_INPUTS *inputs = NULL;
+    SW_RUN temp_sw;
     int *sendInputs = NULL;
     int numWrites[SW_NINKEYSNC] = {0};
     size_t **starts[SW_NINKEYSNC] = {NULL};
@@ -5657,9 +5824,10 @@ void SW_MPI_handle_IO(
     LOG_INFO *logs = NULL;
     Bool errorCaused = swFALSE;
     size_t temp;
-    Bool dummyWrites;
+    Bool dummyWrites = swFALSE;
     int maxWritesGroup = 0;
-    int maxWriteInst = (int) ceil(((double) desig->nSuids) / numSuidsTot);
+    int maxWriteInst = (int
+    ) ceil(((double) desig->nSuids) / (numSuidsTot * N_ITER_BEFORE_OUT));
 
     // Determine if spatial variables are one- or two-dimensional
     // This impacts the order of "start" and "count" values for spatial key
@@ -5674,6 +5842,7 @@ void SW_MPI_handle_IO(
         useIndexFile,
         readInVars,
         &SW_Domain->OutDom,
+        &temp_sw.OutRun,
         &sw->OutRun,
         starts,
         counts,
@@ -5879,6 +6048,8 @@ checkStatus:
         get_comp_results(
             desig->nCompProcs,
             sendInputs,
+            sw->SW_PathOutputs.outTimeSizes,
+            sw->SW_PathOutputs.numOutFiles,
             reqType,
             logType,
             desig,
@@ -5886,7 +6057,8 @@ checkStatus:
             logs,
             LogInfo->logfps,
             &succFlags[succFlagWrite],
-            sw->OutRun.p_OUT
+            sw->OutRun.p_OUT,
+            temp_sw.OutRun.p_OUT
         );
 
         input += numSuidsTot;
@@ -5958,6 +6130,7 @@ freeMem:
 
     dealloc_IO_info(
         numSuidsTot,
+        &temp_sw.OutRun,
         &sw->OutRun,
         starts,
         counts,

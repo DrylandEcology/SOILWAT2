@@ -5221,10 +5221,11 @@ static void read_spatial_topo_climate_site_inputs(
     int read;
     int site;
     int numSites = 1;
-    int tempRead;
+    int tempRead = 0;
     int input;
     int inputOrigin;
     int stride = 1;
+    Bool twoDLat;
 
     for (keyNum = 0; keyNum < numKeys; keyNum++) {
         currKey = keys[keyNum];
@@ -5280,8 +5281,7 @@ static void read_spatial_topo_climate_site_inputs(
             defSetCount[1] = counts[currKey][read][1];
 #endif
 
-            numSites = (sDom) ? defSetCount[1] : defSetCount[0];
-
+            twoDLat = swFALSE;
             for (varNum = fIndex; varNum < numVarsInKey[currKey]; varNum++) {
                 adjVarNum = varNum + 1;
                 if (!readInput[adjVarNum]) {
@@ -5312,14 +5312,18 @@ static void read_spatial_topo_climate_site_inputs(
 
                     start[latIndex] = defSetStart[0];
                     count[latIndex] = defSetCount[0];
+                    numSites = defSetCount[0];
 
                     if (lonIndex > -1) {
                         start[lonIndex] = defSetStart[1];
                         count[lonIndex] = defSetCount[1];
+                        numSites = defSetCount[1];
+                        twoDLat = (Bool) (twoDLat || varNum == eiv_latitude);
                     }
                 } else {
                     start[lonIndex] = defSetStart[1];
                     count[lonIndex] = defSetCount[1];
+                    numSites = defSetCount[1];
                 }
 
                 /* Determine how many values we will be reading from the
@@ -5396,26 +5400,24 @@ static void read_spatial_topo_climate_site_inputs(
                     };
 
                     if (currKey != eSW_InClimate) {
-                        if (lonIndex >= 0) {
-                            tempRead = (lonIndex > latIndex) ? count[lonIndex] :
-                                                               count[latIndex];
-                            tempRead *= site;
-                        } else {
-                            tempRead = site;
-                        }
+                        tempRead = site;
                     } else {
-                        if (lonIndex >= 0) {
+                        if (lonIndex > -1) {
                             if (timeIndex > latIndex && timeIndex > lonIndex) {
-                                tempRead = site;
-                            } else if (timeIndex > latIndex ||
-                                       timeIndex > lonIndex) {
                                 tempRead = site * count[timeIndex];
-                            } else {
+                            } else if (timeIndex < latIndex &&
+                                       timeIndex < lonIndex) {
                                 tempRead = site;
+                            } else {
+                                if (latIndex > lonIndex) {
+                                    tempRead = site * count[timeIndex];
+                                } else {
+                                    tempRead = site;
+                                }
                             }
                         } else { // Site domain
                             tempRead = (timeIndex > latIndex) ?
-                                           count[timeIndex] * site :
+                                           (int) (count[timeIndex] * site) :
                                            site;
                         }
                     }
@@ -5436,6 +5438,11 @@ static void read_spatial_topo_climate_site_inputs(
                         stride,
                         values[keyNum][varNum - 1]
                     );
+
+                    if (varNum == eiv_longitude && !twoDLat && !sDom) {
+                        *(values[0][eiv_latitude - 1]) =
+                            inputs[inputOrigin].ModelRunIn.latitude;
+                    }
 
                     input++;
                 }
@@ -6205,8 +6212,6 @@ static void read_veg_inputs(
 
         defSetCount[0] = counts[read][0];
         defSetCount[1] = counts[read][1];
-
-        numSites = (sDom) ? defSetCount[0] : defSetCount[1];
 #endif
 
         for (varNum = fIndex; varNum < numVarsInKey[eSW_InVeg]; varNum++) {
@@ -6254,6 +6259,7 @@ static void read_veg_inputs(
                 start[pftIndex] = ((varNum - 2) / (NVEGTYPES + 1));
                 count[pftIndex] = 1;
             }
+            numSites = (sDom) ? count[latIndex] : count[lonIndex];
 
 #if defined(SWMPI)
             ncFileID = vegFileIDs[varNum][0];
@@ -6314,17 +6320,22 @@ static void read_veg_inputs(
                     inputs[input].VegProdRunIn.veg[SW_GRASS].lai_conv
                 };
 
-                if (lonIndex >= 0) {
+                if (lonIndex > -1) {
                     if (timeIndex > latIndex && timeIndex > lonIndex) {
-                        writeIndex = site;
-                    } else if (timeIndex > latIndex || timeIndex > lonIndex) {
                         writeIndex = site * count[timeIndex];
-                    } else {
+                    } else if (timeIndex < latIndex && timeIndex < lonIndex) {
                         writeIndex = site;
+                    } else {
+                        if (latIndex > lonIndex) {
+                            writeIndex = site * count[timeIndex];
+                        } else {
+                            writeIndex = site;
+                        }
                     }
                 } else { // Site domain
-                    writeIndex =
-                        (timeIndex > latIndex) ? count[timeIndex] * site : site;
+                    writeIndex = (timeIndex > latIndex) ?
+                                     (int) (count[timeIndex] * site) :
+                                     site;
                 }
 
                 set_read_vals(
@@ -6822,13 +6833,24 @@ static void read_soil_inputs(
                     stride = calc_read_offset(vertIndex, 4, count);
                 }
 
-                if (vertIndex > lonIndex && vertIndex > latIndex) {
-                    writeIndex = ((!isSwrcpVar) ? numVals : 1) * site;
-                } else {
-                    writeIndex = site;
-                }
-
                 setIter = (isSwrcpVar) ? (int) numLyrs : 1;
+
+                if (lonIndex > -1) {
+                    if (vertIndex > lonIndex && vertIndex > latIndex) {
+                        writeIndex = site * ((!isSwrcpVar) ? numVals : 1);
+                    } else if (vertIndex < lonIndex && vertIndex < latIndex) {
+                        writeIndex = site;
+                    } else {
+                        if (latIndex > lonIndex) {
+                            writeIndex = site * count[vertIndex];
+                        } else {
+                            writeIndex = site;
+                        }
+                    }
+                } else {
+                    writeIndex =
+                        (latIndex > vertIndex) ? site : site * count[vertIndex];
+                }
 
                 for (loopIter = 0; loopIter < setIter; loopIter++) {
                     set_read_vals(
@@ -7823,7 +7845,7 @@ static void read_weather_input(
     int site;
     int input = 0;
     int stride = 1;
-    int tempStart;
+    int tempStart = 0;
     double ***tempWeatherHist = NULL;
     size_t writeIndex = 0;
 
@@ -7951,14 +7973,18 @@ static void read_weather_input(
                 for (site = 0; site < numSites; site++) {
                     writeIndex = input * MAX_DAYS;
 
-                    if (lonIndex >= 0) {
+                    if (lonIndex > -1) {
                         if (timeIndex > latIndex && timeIndex > lonIndex) {
-                            tempStart = site;
-                        } else if (timeIndex > latIndex ||
-                                   timeIndex > lonIndex) {
                             tempStart = site * count[timeIndex];
-                        } else {
+                        } else if (timeIndex < latIndex &&
+                                   timeIndex < lonIndex) {
                             tempStart = site;
+                        } else {
+                            if (latIndex > lonIndex) {
+                                writeIndex = site * count[timeIndex];
+                            } else {
+                                writeIndex = site;
+                            }
                         }
                     } else { // Site domain
                         tempStart = (timeIndex > latIndex) ?

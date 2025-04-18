@@ -482,7 +482,6 @@ void SW_CTL_RunSimSet(
     unsigned long startSim = SW_Domain->startSimSet;
     unsigned long endSim = SW_Domain->endSimSet;
     Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
-    int runNum = 0;
     int numInputs = 1;
     Bool copyWeather = swTRUE;
     Bool estVeg = swTRUE;
@@ -625,7 +624,7 @@ checkStatus:
                 set_walltime(&tsr, &ok_tsr);
 #if defined(SWMPI)
                 SW_CTL_run_sw(
-                    runNum,
+                    suid,
                     &inputs[suid],
                     sw_template,
                     SW_Domain,
@@ -639,7 +638,7 @@ checkStatus:
                 (void) count;
 #else
                 SW_CTL_run_sw(
-                    runNum,
+                    suid,
                     &sw_template->RunIn,
                     sw_template,
                     SW_Domain,
@@ -1718,6 +1717,7 @@ void SW_CTL_run_sw(
         NULL,
         local_sw.SW_PathOutputs.ncOutVarIDs,
         SW_Domain->netCDFInput.siteDoms[eSW_InDomain],
+        local_sw.SW_PathOutputs.outTimeSizes,
         LogInfo
     );
     (void) runNum;

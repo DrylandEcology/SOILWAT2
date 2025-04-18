@@ -3807,6 +3807,7 @@ void SW_OUT_create_files(
         SW_Domain->startyr,
         SW_Domain->endyr,
         SW_Domain->OutDom.netCDFOutput.baseCalendarYear,
+        SW_PathOutputs->outTimeSizes,
         &SW_PathOutputs->numOutFiles,
         SW_PathOutputs->ncOutFiles,
         SW_PathOutputs->ncOutVarIDs,

@@ -75,6 +75,7 @@ void SW_NCOUT_create_output_files(
     unsigned int startYr,
     unsigned int endYr,
     int baseCalendarYear,
+    size_t outFileTimeSizes[][2],
     unsigned int *numFilesPerKey,
     char **ncOutFileNames[][SW_OUTNPERIODS],
     int *ncOutVarIDs[],
@@ -95,6 +96,7 @@ void SW_NCOUT_write_output(
     int *openOutFileIDs[][SW_OUTNPERIODS],
     int *outVarIDs[],
     Bool siteDom,
+    size_t timeSizes[][2],
     LOG_INFO *LogInfo
 );
 
