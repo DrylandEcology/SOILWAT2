@@ -164,10 +164,19 @@ if [ "${doCleanReference}" = "true" ]; then
     rm -rf "${dir_ncTestRuns}"/results/referenceRun > /dev/null 2>&1
 fi
 
+
+#------ DOWNLOAD EXTERNAL DATA -------------------------------------------------
+if [ "${doExternalDownload}" = "true" ]; then
+    echo $'\n'"Download data from external datasets ..."
+
+    Rscript \
+        "${dir_ncTestRuns}"/scripts/Rscript__ncTestRuns_00_downloadExternalWeatherData.R \
+        --path-to-inWeather="${dir_ncTestRuns}"/data-raw/inWeather
+fi
+
 if [ ! "${doCreate}" = "true" ] && [ ! "${doCheck}" = "true" ]; then
     exit 0
 fi
-
 
 
 #------ FUNCTIONALITY ----------------------------------------------------------
@@ -234,15 +243,6 @@ if [ -d "${dirOutRef}" ]; then
 else
     echo $'\n'"Failed to locate reference output ..."
     exit 1
-fi
-
-
-if [ "${doExternalDownload}" = "true" ]; then
-    echo $'\n'"Download data from external datasets ..."
-
-    Rscript \
-        "${dir_ncTestRuns}"/scripts/Rscript__ncTestRuns_00_downloadExternalWeatherData.R \
-        --path-to-inWeather="${dir_ncTestRuns}"/data-raw/inWeather
 fi
 
 

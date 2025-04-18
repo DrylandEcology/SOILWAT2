@@ -2965,6 +2965,8 @@ void SW_NCOUT_read_atts(
                     );
                     goto closeFile;
                 }
+            } else {
+                SW_netCDFOut->strideOutYears = -1;
             }
             break;
         case 28:

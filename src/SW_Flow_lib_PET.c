@@ -904,6 +904,7 @@ transpose direct and diffuse radiation to a tilted surface.
       (hypothetical) flat horizon averaged over an entire day (24 hour period)
     - 2: `rsds` represents flux density [W / m2] for a
       (hypothetical) flat horizon averaged over the daylight period of the day
+@param[in] fixMAXRSDS Request to reset \p rsds if larger than \p H_oh.
 
 @param[out] H_oh Daily extraterrestrial horizontal irradiation [MJ / m2]
 @param[out] H_ot Daily extraterrestrial tilted irradiation [MJ / m2]
@@ -924,6 +925,7 @@ double solar_radiation(
     double e_a,
     double rsds,
     unsigned int desc_rsds,
+    Bool fixMAXRSDS,
     double *H_oh,
     double *H_ot,
     double *H_gh,
@@ -1062,17 +1064,29 @@ double solar_radiation(
 
 
         if (!(*H_gh >= 0. && *H_gh <= *H_oh)) {
-            LogError(
-                LogInfo,
-                LOGWARN,
-                "\nInput global horizontal irradiation (%f) reset to be equal "
-                "to theoretical extraterrestrial radiation (%.0f MJ m-2) "
-                "because it was larger.\n",
-                *H_gh,
-                *H_oh
-            );
+            if (fixMAXRSDS) {
+                LogError(
+                    LogInfo,
+                    LOGWARN,
+                    "yyyy-%03d: Reset observed rsds (%f) to Hoh (%f [MJ m-2]).",
+                    doy,
+                    *H_gh,
+                    *H_oh
+                );
 
-            *H_gh = *H_oh;
+                *H_gh = *H_oh;
+
+            } else {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "yyyy-%03d: Observed rsds (%f) outside range "
+                    "[0, Hoh = %f [MJ m-2]].",
+                    doy,
+                    *H_gh,
+                    *H_oh
+                );
+            }
         }
 
 
@@ -1180,7 +1194,7 @@ double solar_radiation(
         LogError(
             LogInfo,
             LOGERROR,
-            "\nSolar radiation (%f) out of valid range (0-50 MJ m-2)\n",
+            "Solar radiation (%f) out of valid range (0-50 MJ m-2).",
             H_g
         );
     }

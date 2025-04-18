@@ -29,6 +29,7 @@ void SW_CBN_read(
     TimeInt startYr,
     TimeInt endYr,
     char *txtInFiles[],
+    TimeInt vegYear,
     LOG_INFO *LogInfo
 );
 

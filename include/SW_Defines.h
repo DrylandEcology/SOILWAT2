@@ -198,6 +198,16 @@ extern "C" {
 #define SHORT_WR 13
 
 
+/** Count of options that fix daily weather inputs, see #FixWeatherType */
+#define NFIXWEATHER 3
+
+/** Options to fix daily weather inputs */
+typedef enum {
+    fixMINMAX,  /**< Index of fix if min > max */
+    fixPERCENT, /**< Index of fix if percentage > 100% */
+    fixMAXRSDS  /**< Index of fix if observed radiation > extraterrestrial */
+} FixWeatherType;
+
 /* output period specifiers */
 #define SW_DAY "DY"
 #define SW_WEEK "WK"
