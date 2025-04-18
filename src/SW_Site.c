@@ -199,19 +199,19 @@ static Bool SW_check_soil_properties(
         fval = SW_SoilsRunIn->fractionVolBulk_gravel[layerno];
         errtype = Str_Dup("gravel content", LogInfo);
 
-    } else if (LE(SW_SoilsRunIn->fractionWeightMatric_sand[layerno], 0.) ||
-               GE(SW_SoilsRunIn->fractionWeightMatric_sand[layerno], 1.)) {
+    } else if (LT(SW_SoilsRunIn->fractionWeightMatric_sand[layerno], 0.) ||
+               GT(SW_SoilsRunIn->fractionWeightMatric_sand[layerno], 1.)) {
         res = swFALSE;
         fval = SW_SoilsRunIn->fractionWeightMatric_sand[layerno];
         errtype = Str_Dup("sand proportion", LogInfo);
 
-    } else if (LE(SW_SoilsRunIn->fractionWeightMatric_clay[layerno], 0.) ||
-               GE(SW_SoilsRunIn->fractionWeightMatric_clay[layerno], 1.)) {
+    } else if (LT(SW_SoilsRunIn->fractionWeightMatric_clay[layerno], 0.) ||
+               GT(SW_SoilsRunIn->fractionWeightMatric_clay[layerno], 1.)) {
         res = swFALSE;
         fval = SW_SoilsRunIn->fractionWeightMatric_clay[layerno];
         errtype = Str_Dup("clay proportion", LogInfo);
 
-    } else if (GE(SW_SoilsRunIn->fractionWeightMatric_sand[layerno] +
+    } else if (GT(SW_SoilsRunIn->fractionWeightMatric_sand[layerno] +
                       SW_SoilsRunIn->fractionWeightMatric_clay[layerno],
                   1.)) {
         res = swFALSE;
@@ -254,7 +254,7 @@ static Bool SW_check_soil_properties(
         LogError(
             LogInfo,
             LOGERROR,
-            "'%s' has an invalid value (%5.4f) in layer %d.\n",
+            "'%s' has an invalid value (%f) in layer %d.",
             errtype,
             fval,
             layerno + 1

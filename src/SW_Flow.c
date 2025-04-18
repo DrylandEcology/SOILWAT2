@@ -363,6 +363,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         sw->WeatherSim.actualVaporPressure,
         sw->WeatherSim.shortWaveRad,
         sw->WeatherIn.desc_rsds,
+        sw->WeatherIn.fixWeatherData[fixMAXRSDS],
         &sw->SoilWatSim.H_oh,
         &sw->SoilWatSim.H_ot,
         &sw->SoilWatSim.H_gh,

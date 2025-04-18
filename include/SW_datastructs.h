@@ -919,7 +919,11 @@ typedef struct {
 
     int rng_seed; // initial state for `mark`
 
+    /** Array of options to fix daily weather inputs, see #FixWeatherType */
+    Bool fixWeatherData[NFIXWEATHER];
+
     Bool use_cloudCoverMonthly, use_windSpeedMonthly, use_humidityMonthly;
+
     Bool dailyInputFlags[MAX_INPUT_COLUMNS];
 
     unsigned int dailyInputIndices[MAX_INPUT_COLUMNS],

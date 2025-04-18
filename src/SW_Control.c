@@ -1163,6 +1163,7 @@ void SW_CTL_read_inputs_from_disk(
         sw->ModelIn.startyr,
         sw->ModelIn.endyr,
         SW_PathInputs->txtInFiles,
+        sw->VegProdIn.vegYear,
         LogInfo
     );
     if (LogInfo->stopRun) {

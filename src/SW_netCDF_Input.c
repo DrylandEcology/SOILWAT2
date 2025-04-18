@@ -501,13 +501,16 @@ static void invalid_conv(char *ncVarUnit, char *ncUnit, LOG_INFO *LogInfo) {
                 conv = ut_get_converter(unitFrom, unitTo);
                 res = cv_convert_double(conv, testVal);
 
-                if (res != testVal) {
+                if (!EQ(res, testVal)) {
                     LogError(
                         LogInfo,
                         LOGERROR,
-                        "The units '%s' are not equivalent to '%s'.",
+                        "The units '%s' are not equivalent to '%s': "
+                        "the value %f is changed to %f.",
                         ncVarUnit,
-                        ncUnit
+                        ncUnit,
+                        testVal,
+                        res
                     );
                 }
             } else {
@@ -7659,6 +7662,7 @@ static void read_weather_input(
         SW_Domain->startyr,
         SW_WeatherIn->n_years,
         SW_WeatherIn->dailyInputFlags,
+        SW_WeatherIn->fixWeatherData,
         tempWeatherHist,
         elevation,
         allHist,

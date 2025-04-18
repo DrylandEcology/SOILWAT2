@@ -2284,6 +2284,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
   vars_climate_deactivate <- NULL
   desc_rsds <- NULL
   impute_weather <- NULL
+  fix_weather <- NULL
 
   stopifnot(
     !useWeatherDatasets || length(vars_weather) > 0L,
@@ -2451,6 +2452,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     #--- ..** inWeather gridMET ------
     desc_rsds <- 1L # shortWaveRad is flux density over 24 hours
     vars_climate_deactivate <- c("cloudcov", "windspeed", "r_humidity")
+    fix_weather <- "fixPERCENT"
   }
 
 
@@ -2458,6 +2460,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     #--- ..** inWeather MACAv2METDATA ------
     desc_rsds <- 1L # shortWaveRad is flux density over 24 hours
     vars_climate_deactivate <- c("cloudcov", "windspeed", "r_humidity")
+    fix_weather <- "fixPERCENT"
   }
 
 
@@ -2466,6 +2469,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     desc_rsds <- 2L # shortWaveRad is flux density over daylight period
     vars_climate_deactivate <- c("cloudcov", "r_humidity")
     impute_weather <- 3L # use LOCF to handle fixed 365-day calendar of Daymet
+    fix_weather <- c("fixPERCENT", "fixMAXRSDS")
   }
 
 
@@ -2481,6 +2485,23 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       value = impute_weather,
       classic = TRUE
     )
+  }
+
+  if (!is.null(fix_weather)) {
+    # Turn on corrections to daily weather input
+    for (k in seq_along(fix_weather)) {
+      setTxtInput(
+        filename = fname,
+        tag = switch(
+          EXPR = fix_weather[[k]],
+          fixMINMAX = "Swap min/max if min > max",
+          fixPERCENT = "Reset percentages to 100% if > 100%",
+          fixMAXRSDS = "Reset observed to extraterrestrial solar radiation"
+        ),
+        value = 1,
+        classic = TRUE
+      )
+    }
   }
 
   if (!is.null(desc_rsds)) {
@@ -2510,7 +2531,6 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       )
     }
   }
-
 
   if (!is.null(vars_weather)) {
     # Turn on daily weather inputs

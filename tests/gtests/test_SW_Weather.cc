@@ -38,6 +38,7 @@ TEST_F(WeatherFixtureTest, WeatherDefaultValues) {
         SW_Run.WeatherIn.n_input_forcings,
         SW_Run.WeatherIn.dailyInputIndices,
         SW_Run.WeatherIn.dailyInputFlags,
+        SW_Run.WeatherIn.fixWeatherData,
         SW_Run.RunIn.SkyRunIn.cloudcov,
         SW_Run.RunIn.SkyRunIn.windspeed,
         SW_Run.RunIn.SkyRunIn.r_humidity,
@@ -1283,6 +1284,7 @@ TEST_F(WeatherFixtureTest, WeatherInputGridMET) {
         SW_Run.ModelIn.startyr,
         1,
         SW_Run.WeatherIn.dailyInputFlags,
+        SW_Run.WeatherIn.fixWeatherData,
         tempWeatherHist,
         SW_Run.RunIn.ModelRunIn.elevation,
         &SW_Run.RunIn.weathRunAllHist[0],
@@ -1465,6 +1467,7 @@ TEST_F(WeatherFixtureTest, WeatherInputDaymet) {
         SW_Run.ModelIn.startyr,
         1,
         SW_Run.WeatherIn.dailyInputFlags,
+        SW_Run.WeatherIn.fixWeatherData,
         tempWeatherHist,
         SW_Run.RunIn.ModelRunIn.elevation,
         &SW_Run.RunIn.weathRunAllHist[0],
@@ -1632,6 +1635,7 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype1) {
         year,
         1,
         SW_Run.WeatherIn.dailyInputFlags,
+        SW_Run.WeatherIn.fixWeatherData,
         tempWeatherHist,
         SW_Run.RunIn.ModelRunIn.elevation,
         &SW_Run.RunIn.weathRunAllHist[0],
@@ -1803,6 +1807,9 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
     SW_Run.WeatherIn.n_input_forcings = 7;
     SW_Run.WeatherIn.desc_rsds = 1; // MACA rsds is flux density over 24 hours
 
+    // Request weather input fixes
+    SW_Run.WeatherIn.fixWeatherData[fixPERCENT] = swTRUE;
+
     // Allocate temporary location for weather
     allocate_temp_weather(1, &tempWeatherHist, &LogInfo);
     sw_fail_on_error(&LogInfo);
@@ -1830,6 +1837,7 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
         SW_Run.ModelIn.startyr,
         1,
         SW_Run.WeatherIn.dailyInputFlags,
+        SW_Run.WeatherIn.fixWeatherData,
         tempWeatherHist,
         SW_Run.RunIn.ModelRunIn.elevation,
         &SW_Run.RunIn.weathRunAllHist[0],

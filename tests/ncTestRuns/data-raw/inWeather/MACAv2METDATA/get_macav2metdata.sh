@@ -52,7 +52,13 @@ for ((kv = 0; kv < nvars; kv++)); do
         url_file="${url_server}"/"${gcm}"/"${fname}""?""${subset_query}"
 
         if [ ! -f "${dir_out}"/"${fname}" ]; then
-            wget -nc -c -nv -nd -O "${dir_out}"/"${fname}" "${url_file}"
+            wget -nc -c -nv -nd -O "${dir_out}"/tmp__"${fname}" "${url_file}"
+            # accept=netcdf4 is not available (2025-April)
+            # convert from nc3 to nc4 with nccopy
+            nccopy -k "nc4" -w "${dir_out}"/tmp__"${fname}" "${dir_out}"/"${fname}"
+            if [ -f "${dir_out}"/"${fname}" ]; then
+                rm "${dir_out}"/tmp__"${fname}"
+            fi
             sleep 1
         fi
     done
