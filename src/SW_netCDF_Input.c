@@ -6432,6 +6432,9 @@ static void derive_missing_soils(
     double cumWidth = 0.;
     double sumTexture;
 
+    static const double toleranceSoilTexture = 1e-6;
+
+
     for (int slNum = 0; slNum < MAX_LAYERS; slNum++) {
         // Note: SW_SIT_init_run() will determine:
         //       n_evap_lyrs, n_transp_lyrs, deep_lyr
@@ -6555,15 +6558,16 @@ static void derive_missing_soils(
                          soilValues[eiv_silt - 1][slNum] +
                          soilValues[eiv_clay - 1][slNum];
 
-            if (GT(sumTexture, 1.)) {
+            if (!EQ_w_tol(sumTexture, 1., toleranceSoilTexture)) {
                 LogError(
                     LogInfo,
                     LOGERROR,
-                    "Sum of sand (%f), silt (%f) and clay (%f) is larger "
-                    "than 1 in soil layer %d.",
+                    "Sum of sand (%f), silt (%f) and clay (%f) is %f != 1 "
+                    "in soil layer %d.",
                     soilValues[eiv_sand - 1][slNum],
                     soilValues[eiv_silt - 1][slNum],
                     soilValues[eiv_clay - 1][slNum],
+                    sumTexture,
                     slNum + 1
                 );
                 return; // Exit function prematurely due to error
