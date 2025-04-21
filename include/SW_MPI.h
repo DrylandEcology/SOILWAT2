@@ -37,7 +37,9 @@ typedef enum {
 // Iter 2: SUIDs 8-15
 // Iter 3: SUIDs 16-23
 // Write outputs values gathered in iter 1-3 (SUIDs 0-23)
+#ifndef N_ITER_BEFORE_OUT
 #define N_ITER_BEFORE_OUT 1
+#endif
 
 // Reasons to fail the MPI program
 #define SW_MPI_FAIL_NETCDF 1
