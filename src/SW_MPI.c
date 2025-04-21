@@ -4266,7 +4266,7 @@ void SW_MPI_template_info(
     IntUS vCount;
     int structType;
     int var;
-    int numElem[] = {3, 24, 5, 5, 7, 44, 2};
+    int numElem[] = {3, 25, 5, 5, 7, 44, 2};
     void **markov2DBuffer[] = {
         (void **) &SW_Run->MarkovIn.wetprob,
         (void **) &SW_Run->MarkovIn.dryprob,
@@ -4309,7 +4309,8 @@ void SW_MPI_template_info(
          (void *) &SW_Run->WeatherIn.n_input_forcings,
          (void *) &SW_Run->WeatherIn.desc_rsds,
          (void *) &SW_Run->WeatherIn.n_years,
-         (void *) &SW_Run->WeatherIn.startYear},
+         (void *) &SW_Run->WeatherIn.startYear,
+         (void *) &SW_Run->WeatherIn.fixWeatherData},
         {(void *) &SW_Run->VegProdIn.vegYear,
          (void *) &SW_Run->VegProdIn.isBiomAsIf100Cover,
          (void *) &SW_Run->VegProdIn.use_SWA,
@@ -4373,12 +4374,13 @@ void SW_MPI_template_info(
     };
     MPI_Datatype types[][44] = {
         {MPI_INT, MPI_INT, MPI_DOUBLE}, /* SW_CARBON_INPUTS */
-        {MPI_INT,      MPI_INT,      MPI_UNSIGNED, MPI_DOUBLE,  MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,  MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,   MPI_CHAR,    MPI_INT,
-         MPI_INT,      MPI_INT,      MPI_INT,      MPI_INT,     MPI_UNSIGNED,
-         MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED
-        }, /* SW_WEATHER_INPUTS */
+        {MPI_INT,      MPI_INT,      MPI_UNSIGNED, MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_CHAR,     MPI_INT,      MPI_INT,
+         MPI_INT,      MPI_INT,      MPI_INT,      MPI_UNSIGNED,
+         MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED,
+         MPI_INT}, /* SW_WEATHER_INPUTS */
         {MPI_INT, MPI_DOUBLE, MPI_INT, MPI_INT, MPI_DOUBLE
         }, /* SW_VEGPROD_INPUTS */
         {spinupType, MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED
@@ -4425,7 +4427,8 @@ void SW_MPI_template_info(
          1,
          1,
          1,
-         1},
+         1,
+         NFIXWEATHER},
 
         /* SW_VEGPROD_INPUTS */
         {1, NVEGTYPES, 1, 1, 1},
