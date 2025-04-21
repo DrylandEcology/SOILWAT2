@@ -681,9 +681,7 @@ void SW_DATA_queryTree(
     SW_KD_NODE **bestNode,
     double *bestDist
 ) {
-    Bool wentLeft = swFALSE;
     int inspectIndex = level % KD_NDIMS;
-    double oppDist = DBL_MAX;
     double *oppCoords = NULL;
     double currDist;
 
@@ -695,7 +693,6 @@ void SW_DATA_queryTree(
         (Bool) LT(queryCoords[inspectIndex], currNode->coords[inspectIndex]);
 
     if (goLeft) {
-        wentLeft = swTRUE;
         SW_DATA_queryTree(
             currNode->left,
             queryCoords,
@@ -725,31 +722,29 @@ void SW_DATA_queryTree(
 
     /* Check to see if the other child branch holds a value that's closer
        than the current best option */
-    oppCoords = (wentLeft) ? currNode->right->coords : currNode->left->coords;
+    oppCoords = (goLeft) ? currNode->right->coords : currNode->left->coords;
 
     if (!isnull(oppCoords)) {
-        oppDist = calcDistance(oppCoords, queryCoords, primCRSIsGeo);
-
-        if (LT(oppDist, *bestDist)) {
-            if (wentLeft) {
-                SW_DATA_queryTree(
-                    currNode->right,
-                    queryCoords,
-                    level + 1,
-                    primCRSIsGeo,
-                    bestNode,
-                    bestDist
-                );
-            } else {
-                SW_DATA_queryTree(
-                    currNode->left,
-                    queryCoords,
-                    level + 1,
-                    primCRSIsGeo,
-                    bestNode,
-                    bestDist
-                );
-            }
+        if (goLeft && GE(queryCoords[inspectIndex] + *bestDist,
+                           currNode->coords[inspectIndex])) {
+            SW_DATA_queryTree(
+                currNode->right,
+                queryCoords,
+                level + 1,
+                primCRSIsGeo,
+                bestNode,
+                bestDist
+            );
+        } else if (!goLeft && LE(queryCoords[inspectIndex] - *bestDist,
+                                   currNode->coords[inspectIndex])) {
+            SW_DATA_queryTree(
+                currNode->left,
+                queryCoords,
+                level + 1,
+                primCRSIsGeo,
+                bestNode,
+                bestDist
+            );
         }
     }
 }
