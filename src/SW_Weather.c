@@ -827,8 +827,8 @@ void SW_WTH_setWeatherValues(
                 tempWeather[yearIndex][PPT][tempDoy];
 
             hasMaxMinTempValues =
-            (Bool) (!missing(yearlyWeather[yearIndex].temp_max[doy]) &&
-                    !missing(yearlyWeather[yearIndex].temp_min[doy]));
+                (Bool) (!missing(yearlyWeather[yearIndex].temp_max[doy]) &&
+                        !missing(yearlyWeather[yearIndex].temp_min[doy]));
 
             if (hasMaxMinTempValues) {
                 // Swap min/max if min > max daily air temperature
@@ -910,7 +910,8 @@ void SW_WTH_setWeatherValues(
                         // Swap min/max if min > max daily relative humidity
                         if (fixWeatherData[fixMINMAX] &&
                             tempWeather[yearIndex][REL_HUMID_MIN][tempDoy] >
-                                tempWeather[yearIndex][REL_HUMID_MAX][tempDoy]) {
+                                tempWeather[yearIndex][REL_HUMID_MAX]
+                                           [tempDoy]) {
                             LogError(
                                 LogInfo,
                                 LOGWARN,
@@ -922,10 +923,12 @@ void SW_WTH_setWeatherValues(
                                 tempWeather[yearIndex][REL_HUMID_MAX][tempDoy]
                             );
 
-                            tmp = tempWeather[yearIndex][REL_HUMID_MIN][tempDoy];
+                            tmp =
+                                tempWeather[yearIndex][REL_HUMID_MIN][tempDoy];
                             tempWeather[yearIndex][REL_HUMID_MIN][tempDoy] =
                                 tempWeather[yearIndex][REL_HUMID_MAX][tempDoy];
-                            tempWeather[yearIndex][REL_HUMID_MAX][tempDoy] = tmp;
+                            tempWeather[yearIndex][REL_HUMID_MAX][tempDoy] =
+                                tmp;
                         }
 
                         // Error or reset min/max relative humidity to 100%
@@ -1026,8 +1029,10 @@ void SW_WTH_setWeatherValues(
                     // not be executed while max and/or min temperature and/or
                     // relative humidity are holding the value "SW_MISSING"
                     if (hasMaxMinTempValues &&
-                        !missing(tempWeather[yearIndex][REL_HUMID_MAX][tempDoy]) &&
-                        !missing(tempWeather[yearIndex][REL_HUMID_MIN][tempDoy])) {
+                        !missing(tempWeather[yearIndex][REL_HUMID_MAX][tempDoy]
+                        ) &&
+                        !missing(tempWeather[yearIndex][REL_HUMID_MIN][tempDoy]
+                        )) {
 
                         // Actual vapor pressure [kPa]
                         yearlyWeather[yearIndex].actualVaporPressure[doy] =
