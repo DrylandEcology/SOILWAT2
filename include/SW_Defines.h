@@ -354,16 +354,39 @@ typedef int sw_converter_t;
 #define SW_MPI_ROOT 0
 #define SW_GROUP_ROOT SW_MPI_ROOT
 
+/**
+ * @brief Maximum number of processes that can be spawned per compute node or
+ *        on a local CPU; in other words, specifies the number of available
+ *        CPU cores on a compute node (HPC), or processor on a local/personal
+ *        computer
+ *
+ * @note This constant defaults to 128 but can be overwritten by the user
+ *       when compiling the program, i.e., ... -DMAX_NODE_PROCS=[n procs] ...
+ */
 #ifndef MAX_NODE_PROCS
 #define MAX_NODE_PROCS 128
 #endif
 
+/**
+ * @brief Maximum number of I/O processes that will be assigned per compute node
+ *
+ * @note - If the ratio of compute-to-I/O processes is less than 1, the program
+ *       will auto-adjust so that at *most* half of the spawned processes in a
+ *       compute node are I/O \n
+ *           * E.g., n processes = 10, SW_MPI_NIO = 7, program assigns 5
+ *             compute and 5 I/O processes
+ * @note - This constant defaults to 2 but can be overwritten by the user
+ *       when compiling the program, i.e., ... -DSW_MPI_NIO=[n I/O processes]
+ *       ...
+ */
 #ifndef SW_MPI_NIO
-#define SW_MPI_NIO 2 /* Maximum number of I/O processes in a copute node */
+#define SW_MPI_NIO 2
 #endif
 
-/* The maximum number of compute processes that can be assigned
-   to an I/O process */
+/**
+ * @brief The maximum number of compute processes that can be assigned
+ *        to an I/O process
+ */
 #define PROCS_PER_IO                                                         \
     (MAX_NODE_PROCS / SW_MPI_NIO >= 1 && SW_MPI_NIO <= MAX_NODE_PROCS / 2) ? \
         (((MAX_NODE_PROCS - (MAX_NODE_PROCS - SW_MPI_NIO)) / SW_MPI_NIO) + 1 \
