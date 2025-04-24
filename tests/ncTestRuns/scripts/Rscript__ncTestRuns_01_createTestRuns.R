@@ -501,7 +501,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     dimPermutation = inDimPerms[["soil"]],
     idExampleSite = idInputExampleSite,
     nSoilLayersExampleSite = nSoilLayersDefault,
-    type = listTestRuns[k0, "inputSoilProfile"]
+    type = listTestRuns[k0, "inputSoilProfile"],
+    mixNonExampleSiteValues = FALSE
   )
 
 
@@ -1237,7 +1238,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         dimPermutation = inDimPerms[["soil"]],
         idExampleSite = idInputExampleSite,
         nSoilLayersExampleSite = nSoilLayersDefault,
-        type = listTestRuns[k0, "inputSoilProfile"]
+        type = listTestRuns[k0, "inputSoilProfile"],
+        mixNonExampleSiteValues = TRUE
       ),
       count = inDimPermCounts[["soil"]]
     )
@@ -1261,7 +1263,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         dimPermutation = inDimPerms[["soil"]],
         idExampleSite = idInputExampleSite,
         nSoilLayersExampleSite = nSoilLayersDefault,
-        type = listTestRuns[k0, "inputSoilProfile"]
+        type = listTestRuns[k0, "inputSoilProfile"],
+        mixNonExampleSiteValues = TRUE
       ),
       count = inDimPermCounts[["soil"]]
     )
@@ -1285,7 +1288,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         dimPermutation = inDimPerms[["soil"]],
         idExampleSite = idInputExampleSite,
         nSoilLayersExampleSite = nSoilLayersDefault,
-        type = listTestRuns[k0, "inputSoilProfile"]
+        type = listTestRuns[k0, "inputSoilProfile"],
+        mixNonExampleSiteValues = TRUE
       ),
       count = inDimPermCounts[["soil"]]
     )
@@ -1309,7 +1313,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         dimPermutation = inDimPerms[["soil"]],
         idExampleSite = idInputExampleSite,
         nSoilLayersExampleSite = nSoilLayersDefault,
-        type = listTestRuns[k0, "inputSoilProfile"]
+        type = listTestRuns[k0, "inputSoilProfile"],
+        mixNonExampleSiteValues = TRUE
       ),
       count = inDimPermCounts[["soil"]]
     )
@@ -1338,7 +1343,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         dimPermutation = inDimPerms[["soil"]],
         idExampleSite = idInputExampleSite,
         nSoilLayersExampleSite = nSoilLayersDefault,
-        type = listTestRuns[k0, "inputSoilProfile"]
+        type = listTestRuns[k0, "inputSoilProfile"],
+        mixNonExampleSiteValues = TRUE
       ),
       count = inDimPermCounts[["soil"]]
     )
@@ -1361,7 +1367,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         dimPermutation = inDimPerms[["soil"]],
         idExampleSite = idInputExampleSite,
         nSoilLayersExampleSite = nSoilLayersDefault,
-        type = listTestRuns[k0, "inputSoilProfile"]
+        type = listTestRuns[k0, "inputSoilProfile"],
+        mixNonExampleSiteValues = TRUE
       ),
       count = inDimPermCounts[["soil"]]
     )
@@ -1385,7 +1392,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         dimPermutation = inDimPerms[["soil"]],
         idExampleSite = idInputExampleSite,
         nSoilLayersExampleSite = nSoilLayersDefault,
-        type = listTestRuns[k0, "inputSoilProfile"]
+        type = listTestRuns[k0, "inputSoilProfile"],
+        mixNonExampleSiteValues = TRUE
       ),
       count = inDimPermCounts[["soil"]]
     )
@@ -1408,7 +1416,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         dimPermutation = inDimPerms[["soil"]],
         idExampleSite = idInputExampleSite,
         nSoilLayersExampleSite = nSoilLayersDefault,
-        type = listTestRuns[k0, "inputSoilProfile"]
+        type = listTestRuns[k0, "inputSoilProfile"],
+        mixNonExampleSiteValues = TRUE
       ),
       count = inDimPermCounts[["soil"]]
     )
@@ -1432,7 +1441,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         dimPermutation = inDimPerms[["soil"]],
         idExampleSite = idInputExampleSite,
         nSoilLayersExampleSite = nSoilLayersDefault,
-        type = listTestRuns[k0, "inputSoilProfile"]
+        type = listTestRuns[k0, "inputSoilProfile"],
+        mixNonExampleSiteValues = TRUE
       ),
       count = inDimPermCounts[["soil"]]
     )
@@ -1492,7 +1502,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
           dimPermutation = inDimPerms[["soil"]],
           idExampleSite = idInputExampleSite,
           nSoilLayersExampleSite = nSoilLayersDefault,
-          type = listTestRuns[k0, "inputSoilProfile"]
+          type = listTestRuns[k0, "inputSoilProfile"],
+          mixNonExampleSiteValues = TRUE
         ),
         count = inDimPermCounts[["soil"]]
       )
@@ -1568,7 +1579,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
           dimPermutation = inDimPerms[["soil"]],
           idExampleSite = idInputExampleSite,
           nSoilLayersExampleSite = nSoilLayersDefault,
-          type = listTestRuns[k0, "inputSoilProfile"]
+          type = listTestRuns[k0, "inputSoilProfile"],
+          mixNonExampleSiteValues = TRUE
         ),
         count = inDimPermCounts[["soil"]]
       )
