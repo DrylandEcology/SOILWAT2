@@ -2438,10 +2438,15 @@ static void alloc_IO_info(
     }
 
     for (allocIndex = 0; allocIndex < num1DArr; allocIndex++) {
-        (*alloc1DArr[allocIndex]) =
-            Mem_Malloc(sizeof(int) * nCompProcs, "alloc_IO_info()", LogInfo);
+        (*alloc1DArr[allocIndex]) = Mem_Malloc(
+            sizeof(int) * (nCompProcs + 1), "alloc_IO_info()", LogInfo
+        );
         if (LogInfo->stopRun) {
             return;
+        }
+
+        for (suid = 0; suid < (nCompProcs + 1); suid++) {
+            (*alloc1DArr[allocIndex])[suid] = 0;
         }
     }
 
@@ -2708,9 +2713,6 @@ This function must result in a number of writes between
     SUIDs
 @param[in] numDomSuids Number of domain SUIDs that were given
 @param[in] sDom Specifies the program's domain is site-oriented
-@param[in] spatialVars1D Specifies if the input key "eSW_InSpatial" inputs
-    are 1- or 2-dimensional; this will impact the order of "start" and "count"
-    values
 @param[in] useSuccFlags A flag specifying if the function should take the
     success flags of simulation runs into account to make contiguous writes
     of the same value (pass or fail)
@@ -2729,7 +2731,6 @@ static void get_contiguous_counts(
     int numDomSuids,
     Bool sDom,
     int nSuidsLeft,
-    Bool spatialVars1D,
     Bool useSuccFlags,
     Bool *succFlags,
     int *numWrites,
@@ -2745,23 +2746,23 @@ static void get_contiguous_counts(
     // Note: currYX and prevYX below are used for either Y (gridded)
     // or X (sites)
     size_t prevYX = suids[0][0];
-    size_t prevX = (sDom) ? 0 : suids[0][1];
+    size_t prevX = suids[0][1];
     int writeIndex = 0;
     int suidIndex;
     int numContVals = 1;
     size_t *suid;
-    int xIndex = (sDom || spatialVars1D) ? 0 : 1;
+    int xIndex = (sDom) ? 0 : 1;
     Bool prevFlag = swTRUE;
     Bool currFlag = swTRUE;
 
     starts[0][0] = prevYX;
     starts[0][1] = prevX;
 
-    counts[0][0] = (spatialVars1D) ? numDomSuids : 1;
-    counts[0][1] = (sDom || spatialVars1D) ? 1 : N_SUID_ASSIGN;
+    counts[0][0] = (sDom) ? numDomSuids : 1;
+    counts[0][1] = (sDom) ? 1 : N_SUID_ASSIGN;
 
     if (useSuccFlags) {
-        prevFlag = succFlags[0];
+        currFlag = succFlags[0];
     }
 
     // Loop through selected domain SUIDs
@@ -2770,6 +2771,7 @@ static void get_contiguous_counts(
         suid = suids[suidIndex];
 
         if (useSuccFlags) {
+            prevFlag = currFlag;
             currFlag = succFlags[suidIndex];
         }
 
@@ -2795,11 +2797,13 @@ static void get_contiguous_counts(
 
             starts[writeIndex][0] = prevYX;
             starts[writeIndex][1] = prevX;
-            counts[suidIndex][0] = (spatialVars1D) ? numDomSuids : 1;
+            counts[writeIndex][0] = (sDom) ? numDomSuids : 1;
             prevFlag = currFlag;
 
             nSuidsLeft--;
         }
+        prevYX = suid[0];
+        prevX = (sDom) ? 0 : suid[1];
 
         numContVals++;
     }
@@ -2850,6 +2854,7 @@ static void spread_inputs(
     Bool readWeather,
     int sendInputs[],
     int n_years,
+    int nCompProcs,
     Bool finalize
 ) {
     MPI_Request nullReq = MPI_REQUEST_NULL;
@@ -2862,6 +2867,9 @@ static void spread_inputs(
     int send = 0;
     int prevSendSum = 0;
     int sendSize;
+    int leftOverSuids = 0;
+    int numInputOrigin = numInputs;
+    int divInputAcrossComp = numInputOrigin / nCompProcs;
 
     if (*sendEstVeg) {
         SW_Bcast(MPI_INT, &estVeg, 1, SW_GROUP_ROOT, desig->ioCompComm);
@@ -2872,6 +2880,10 @@ static void spread_inputs(
         prevSendSum += sendInputs[comp + 1];
     }
 
+    if (numInputs > 0 && numInputs < nCompProcs * N_SUID_ASSIGN) {
+        leftOverSuids = numInputs % nCompProcs;
+    }
+
     // Send amount information so compute processes know how
     // many inputs to accept then send inputs of that amount to processes
     for (comp = 0; comp < desig->nCompProcs; comp++) {
@@ -2880,8 +2892,13 @@ static void spread_inputs(
             destRank = desig->ranks[comp];
 
             if (numInputs > 0) {
-                numSendIn =
-                    (numInputs > N_SUID_ASSIGN) ? N_SUID_ASSIGN : numInputs;
+                numSendIn = N_SUID_ASSIGN;
+
+                if (numInputOrigin <= nCompProcs * N_SUID_ASSIGN) {
+                    numSendIn = divInputAcrossComp;
+                    numSendIn += (leftOverSuids > 0) ? 1 : 0;
+                    leftOverSuids -= (leftOverSuids > 0) ? 1 : 0;
+                }
             }
 
             sendInputs[comp + 1] = (finalize) ? 0 : numSendIn;
@@ -2922,7 +2939,7 @@ static void spread_inputs(
                     for (send = 0; send < sendSize; send++) {
                         SW_MPI_Send(
                             weathHistType,
-                            inputs[suid].weathRunAllHist,
+                            inputs[suid + send].weathRunAllHist,
                             n_years,
                             destRank,
                             swTRUE,
@@ -2932,7 +2949,7 @@ static void spread_inputs(
                     }
                 }
 
-                suid += sendInputs[comp + 1];
+                suid += sendSize;
             } else if (finalize) {
                 SW_MPI_Send(
                     MPI_INT, &extraSetupCheck, 1, destRank, swTRUE, 0, &nullReq
@@ -2994,7 +3011,6 @@ static void calculate_contiguous_allkeys(
     size_t **distSUIDs,
     size_t **distTSUIDs[],
     Bool sDoms[],
-    Bool spatialVars1D,
     int numWrites[],
     size_t **starts[],
     size_t **counts[]
@@ -3003,11 +3019,9 @@ static void calculate_contiguous_allkeys(
     Bool useIndex;
     Bool useTranslated;
     int suid;
-    Bool oneDSpatial;
 
     for (inKey = 0; inKey < SW_NINKEYSNC; inKey++) {
         useIndex = (inKey != eSW_InDomain) ? useIndexFile[inKey] : swFALSE;
-        oneDSpatial = (Bool) (inKey == eSW_InSpatial && spatialVars1D);
 
         if (inKey == eSW_InDomain || readInVars[inKey][0]) {
             if (inKey == eSW_InDomain || useIndex) {
@@ -3018,7 +3032,6 @@ static void calculate_contiguous_allkeys(
                     nSuids,
                     sDoms[inKey],
                     nSuidsLeft,
-                    oneDSpatial,
                     swFALSE,
                     NULL,
                     &numWrites[inKey],
@@ -3205,7 +3218,7 @@ static void get_comp_results(
 
     for (comp = 0; comp < numCompProcs; comp++) {
         offsetMult[comp + 1] = offsetMult[comp] + recvLens[comp + 1];
-        targetRepsonses -= (recvLens[comp + 1] == 0) ? 1 : 0;
+        targetRepsonses -= (recvLens[comp + 1] == COMP_COMPLETE) ? 1 : 0;
         numSiteRecv += recvLens[comp + 1];
     }
 
@@ -3376,7 +3389,6 @@ static void write_outputs(
         numSuids,
         siteDom,
         numSuids,
-        swFALSE,
         swTRUE,
         succFlags,
         &numWrites,
@@ -5705,31 +5717,29 @@ void SW_MPI_get_inputs(
 
     SW_MPI_Recv(MPI_INT, numInputs, 1, desig->ioRank, swTRUE, 0, &nullReq);
 
+    for (input = 0; input < *numInputs; input++) {
+        SW_MPI_Recv(
+            inputType, &inputs[input], 1, desig->ioRank, swTRUE, 0, &nullReq
+        );
+    }
+
     if (*numInputs == COMP_COMPLETE) {
         SW_MPI_Recv(
             MPI_INT, extraFailCheck, 1, desig->ioRank, swTRUE, 0, &nullReq
         );
     }
 
-    if (*numInputs > 0) {
+    if (getWeather) {
         for (input = 0; input < *numInputs; input++) {
             SW_MPI_Recv(
-                inputType, &inputs[input], 1, desig->ioRank, swTRUE, 0, &nullReq
+                weathHistType,
+                inputs[input].weathRunAllHist,
+                n_years,
+                desig->ioRank,
+                swTRUE,
+                0,
+                &nullReq
             );
-        }
-
-        if (getWeather) {
-            for (input = 0; input < *numInputs; input++) {
-                SW_MPI_Recv(
-                    weathHistType,
-                    inputs[input].weathRunAllHist,
-                    n_years,
-                    desig->ioRank,
-                    swTRUE,
-                    0,
-                    &nullReq
-                );
-            }
         }
     }
 }
@@ -5789,15 +5799,11 @@ void SW_MPI_handle_IO(
     Bool *useIndexFile = SW_Domain->netCDFInput.useIndexFile;
     Bool **readInVars = SW_Domain->netCDFInput.readInVars;
     Bool constSoilDepths = SW_Domain->hasConsistentSoilLayerDepths;
-    int dim;
-    int dimSum = 0;
     Bool sendEstVeg = swTRUE;
     Bool estVeg = SW_Domain->netCDFInput.readInVars[eSW_InVeg][0];
     Bool readWeather = SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
     Bool readSoils = SW_Domain->netCDFInput.readInVars[eSW_InSoil][0];
-    Bool spatialVars1D = swFALSE;
     int nSuids = desig->nSuids;
-    const int oneDimSum = -4;
     int inputsLeft = nSuids;
     int n_years = sw->WeatherIn.n_years;
     Bool allocSoils = (Bool) (!constSoilDepths && readSoils);
@@ -5831,13 +5837,6 @@ void SW_MPI_handle_IO(
     int maxWritesGroup = 0;
     int maxWriteInst = (int
     ) ceil(((double) desig->nSuids) / (numSuidsTot * N_ITER_BEFORE_OUT));
-
-    // Determine if spatial variables are one- or two-dimensional
-    // This impacts the order of "start" and "count" values for spatial key
-    for (dim = 0; dim < MAX_NDIMS; dim++) {
-        dimSum += SW_Domain->netCDFInput.dimOrderInVar[eSW_InSpatial][1][dim];
-    }
-    spatialVars1D = (Bool) (dimSum == oneDimSum);
 
     alloc_IO_info(
         numSuidsTot,
@@ -5897,6 +5896,16 @@ checkStatus:
     (void) signal(SIGINT, handle_interrupt);
     (void) signal(SIGTERM, handle_interrupt);
 
+    get_next_suids(
+        desig,
+        (desig->nSuids < numSuidsTot) ? desig->nSuids : numSuidsTot,
+        input,
+        useIndexFile,
+        readInVars,
+        &distSUIDs[0],
+        distTSUIDs
+    );
+
     // Loop until all SUIDs have been assigned or an interrupt occurs
     for (input = 0; input < nSuids && runSims;) {
         numIterSuids =
@@ -5908,21 +5917,23 @@ checkStatus:
         numIterations = (numIterations + 1) % N_ITER_BEFORE_OUT;
 
         if (numIterations == 0) {
-            for (suid = 0; suid < numIterSuids; suid++) {
+            for (suid = 0; suid < numSuidsTot; suid++) {
                 tempDistSuids[suid][0] = distSUIDs[suid][0];
                 tempDistSuids[suid][1] = distSUIDs[suid][1];
             }
         }
 
-        get_next_suids(
-            desig,
-            numIterSuids,
-            input,
-            useIndexFile,
-            readInVars,
-            &distSUIDs[distSUIDWrite],
-            distTSUIDs
-        );
+        if (input > 0) {
+            get_next_suids(
+                desig,
+                numIterSuids,
+                input,
+                useIndexFile,
+                readInVars,
+                &distSUIDs[distSUIDWrite],
+                distTSUIDs
+            );
+        }
 
         // Calculate contiguous start/end/num writes for each input
         // key including plain domain SUIDs (index 0);
@@ -5937,7 +5948,6 @@ checkStatus:
             distSUIDs,
             distTSUIDs,
             SW_Domain->netCDFInput.siteDoms,
-            spatialVars1D,
             numWrites,
             starts,
             counts
@@ -5987,6 +5997,7 @@ checkStatus:
             readWeather,
             sendInputs,
             n_years,
+            desig->nCompProcs,
             swFALSE
         );
         // This should match the checking of runSims = 0 on the compute process
@@ -6006,7 +6017,7 @@ checkStatus:
             // N_SUID_ASSIGN SUIDs will be over written, so we need
             // to temporarily swap the newly written N_SUID_ASSIGN SUIDs
             // with the previous SUIDs
-            for (suid = 0; suid < numIterSuids; suid++) {
+            for (suid = 0; suid < numSuidsTot; suid++) {
                 temp = tempDistSuids[suid][0];
                 tempDistSuids[suid][0] = distSUIDs[suid][0];
                 distSUIDs[suid][0] = temp;
@@ -6036,7 +6047,7 @@ checkStatus:
                 errorCaused = swTRUE;
             }
 
-            for (suid = 0; suid < numIterSuids; suid++) {
+            for (suid = 0; suid < numSuidsTot; suid++) {
                 distSUIDs[suid][0] = tempDistSuids[suid][0];
                 distSUIDs[suid][1] = tempDistSuids[suid][1];
             }
@@ -6064,8 +6075,8 @@ checkStatus:
             temp_sw.OutRun.p_OUT
         );
 
-        input += numSuidsTot;
-        inputsLeft -= numSuidsTot;
+        input += numIterSuids;
+        inputsLeft -= numIterSuids;
     }
 
     if (runSims) {
@@ -6085,6 +6096,7 @@ checkStatus:
             readWeather,
             sendInputs,
             n_years,
+            desig->nCompProcs,
             swTRUE
         );
 
@@ -6092,7 +6104,7 @@ checkStatus:
             numIterations < N_ITER_BEFORE_OUT) {
 
             write_outputs(
-                desig->groupComm,
+                desig,
                 progFileID,
                 progVarID,
                 distSUIDs,
@@ -6111,7 +6123,7 @@ checkStatus:
 
         if (dummyWrites) {
             dummy_prog_out_writes(
-                desig->groupComm,
+                desig,
                 &SW_Domain->OutDom,
                 &sw->SW_PathOutputs,
                 starts[eSW_InDomain],

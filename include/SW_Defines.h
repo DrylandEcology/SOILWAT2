@@ -389,8 +389,7 @@ typedef int sw_converter_t;
  */
 #define PROCS_PER_IO                                                         \
     (MAX_NODE_PROCS / SW_MPI_NIO >= 1 && SW_MPI_NIO <= MAX_NODE_PROCS / 2) ? \
-        (((MAX_NODE_PROCS - (MAX_NODE_PROCS - SW_MPI_NIO)) / SW_MPI_NIO) + 1 \
-        ) :                                                                  \
+        (((MAX_NODE_PROCS - SW_MPI_NIO) / SW_MPI_NIO) + 1) :                 \
         (MAX_NODE_PROCS / 2) + 1
 
 /* The number of SUIDs that are assigned to a compute process at once */
