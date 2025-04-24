@@ -2263,6 +2263,7 @@ static void alloc_inputs(
     LOG_INFO *LogInfo
 ) {
     int input;
+    int year;
 
     *inputs = (SW_RUN_INPUTS *) Mem_Malloc(
         sizeof(SW_RUN_INPUTS) * numInputs, "alloc_inputs()", LogInfo
@@ -2277,12 +2278,20 @@ static void alloc_inputs(
     for (input = 0; input < numInputs; input++) {
         (*inputs)[input].weathRunAllHist = NULL;
 
-        if (readWeather) {
-            SW_WTH_allocateAllWeather(
-                &(*inputs)[input].weathRunAllHist, n_years, LogInfo
-            );
-            if (LogInfo->stopRun) {
-                return;
+        SW_WTH_allocateAllWeather(
+            &(*inputs)[input].weathRunAllHist, n_years, LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        if (!readWeather) {
+            for (year = 0; year < n_years; year++) {
+                memcpy(
+                    (*inputs)[input].weathRunAllHist,
+                    defInputs->weathRunAllHist,
+                    sizeof(SW_WEATHER_HIST) * n_years
+                );
             }
         }
     }
@@ -2839,6 +2848,7 @@ any final compute processes can be sent a signal to finish
     the flag to compute processes; return an updated flag value of swFALSE
 @param[in] readWeather A flag specifying if weather will be read in;
     if so, send weather
+@param[in] readClimate A flag specifying if climate will be read in
 @param[in] sendInputs A list of values specifying how many inputs each compute
     process will receive
 @param[in] n_years Number of years in simulation
@@ -2853,6 +2863,7 @@ static void spread_inputs(
     Bool estVeg,
     Bool *sendEstVeg,
     Bool readWeather,
+    Bool readClimate,
     int sendInputs[],
     int n_years,
     int nCompProcs,
@@ -2936,7 +2947,7 @@ static void spread_inputs(
                     );
                 }
 
-                if (readWeather) {
+                if (readWeather || readClimate) {
                     for (send = 0; send < sendSize; send++) {
                         SW_MPI_Send(
                             weathHistType,
@@ -4218,7 +4229,9 @@ void SW_MPI_setup(
     }
 
     if (rank == SW_MPI_ROOT) {
-        getWeather = !SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
+        getWeather =
+            (Bool) (!SW_Domain->netCDFInput.readInVars[eSW_InWeather][0] &&
+                    !SW_Domain->netCDFInput.readInVars[eSW_InClimate][0]);
     }
 
     SW_MPI_process_types(SW_Domain, procName, worldSize, rank, LogInfo);
@@ -4597,29 +4610,27 @@ void SW_MPI_template_info(
     // SW_RUN_INPUTS
     SW_Bcast(inRunType, &SW_Run->RunIn, 1, SW_MPI_ROOT, MPI_COMM_WORLD);
 
-    if (desig->procJob == SW_MPI_PROC_COMP || rank == SW_MPI_ROOT) {
-        SW_Bcast(MPI_INT, &getWeather, 1, SW_MPI_ROOT, comm);
+    SW_Bcast(MPI_INT, &getWeather, 1, SW_MPI_ROOT, comm);
 
-        if (getWeather) {
-            if (rank > SW_MPI_ROOT) {
-                SW_WTH_allocateAllWeather(
-                    &SW_Run->RunIn.weathRunAllHist,
-                    SW_Run->WeatherIn.n_years,
-                    LogInfo
-                );
-            }
-            if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
-                return;
-            }
-
-            SW_Bcast(
-                weathHistType,
-                SW_Run->RunIn.weathRunAllHist,
+    if (getWeather) {
+        if (rank > SW_MPI_ROOT) {
+            SW_WTH_allocateAllWeather(
+                &SW_Run->RunIn.weathRunAllHist,
                 SW_Run->WeatherIn.n_years,
-                SW_MPI_ROOT,
-                comm
+                LogInfo
             );
         }
+        if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
+            return;
+        }
+
+        SW_Bcast(
+            weathHistType,
+            SW_Run->RunIn.weathRunAllHist,
+            SW_Run->WeatherIn.n_years,
+            SW_MPI_ROOT,
+            comm
+        );
     }
 }
 
@@ -5808,6 +5819,7 @@ void SW_MPI_handle_IO(
     Bool estVeg = SW_Domain->netCDFInput.readInVars[eSW_InVeg][0];
     Bool readWeather = SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
     Bool readSoils = SW_Domain->netCDFInput.readInVars[eSW_InSoil][0];
+    Bool readClimate = SW_Domain->netCDFInput.readInVars[eSW_InClimate][0];
     int nSuids = desig->nSuids;
     int inputsLeft = nSuids;
     int n_years = sw->WeatherIn.n_years;
@@ -6000,6 +6012,7 @@ checkStatus:
             estVeg,
             &sendEstVeg,
             readWeather,
+            readClimate,
             sendInputs,
             n_years,
             desig->nCompProcs,
@@ -6099,6 +6112,7 @@ checkStatus:
             estVeg,
             &sendEstVeg,
             readWeather,
+            readClimate,
             sendInputs,
             n_years,
             desig->nCompProcs,
