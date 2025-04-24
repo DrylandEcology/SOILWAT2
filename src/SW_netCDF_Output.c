@@ -1346,6 +1346,9 @@ void SW_NCOUT_create_output_dimVar(
             deflateLevel,
             LogInfo
         );
+        if (LogInfo->stopRun) {
+            return;
+        }
 
         if (dimNum == timeIndex) {
             (void) snprintf(
