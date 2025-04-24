@@ -4610,7 +4610,7 @@ void SW_MPI_template_info(
     // SW_RUN_INPUTS
     SW_Bcast(inRunType, &SW_Run->RunIn, 1, SW_MPI_ROOT, MPI_COMM_WORLD);
 
-    SW_Bcast(MPI_INT, &getWeather, 1, SW_MPI_ROOT, comm);
+    SW_Bcast(MPI_INT, &getWeather, 1, SW_MPI_ROOT, MPI_COMM_WORLD);
 
     if (getWeather) {
         if (rank > SW_MPI_ROOT) {
@@ -4620,7 +4620,7 @@ void SW_MPI_template_info(
                 LogInfo
             );
         }
-        if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
+        if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
             return;
         }
 
@@ -4629,7 +4629,7 @@ void SW_MPI_template_info(
             SW_Run->RunIn.weathRunAllHist,
             SW_Run->WeatherIn.n_years,
             SW_MPI_ROOT,
-            comm
+            MPI_COMM_WORLD
         );
     }
 }
