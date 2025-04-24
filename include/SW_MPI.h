@@ -39,6 +39,10 @@ typedef enum {
  *  - Iter 2: SUIDs 8-15
  *  - Iter 3: SUIDs 16-23 \n
  * Write output values gathered in iter 1-3 (SUIDs 0-23)
+ *
+ * @note This constant defaults to 1 but can be overwritten by the user
+ *       when compiling the program, i.e., ... -DN_ITER_BEFORE_OUT=[n
+ *       iterations] ...
  */
 #ifndef N_ITER_BEFORE_OUT
 #define N_ITER_BEFORE_OUT 1
