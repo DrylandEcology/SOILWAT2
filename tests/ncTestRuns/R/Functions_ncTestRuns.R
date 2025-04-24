@@ -633,10 +633,13 @@ createTestRunSoils <- function(
   idExampleSite,
   nSoilLayersExampleSite,
   nMinSoilLayers = 3L,
-  type = c("standard", "variableSoilLayerNumber", "variableSoilLayerThickness")
+  type = c("standard", "variableSoilLayerNumber", "variableSoilLayerThickness"),
+  mixNonExampleSiteValues = FALSE,
+  seed = 127
 ) {
 
   type <- match.arg(type)
+  mixNonExampleSiteValues <- isTRUE(mixNonExampleSiteValues[[1L]])
 
   nSpElements <- prod(dims[-1L])
   stopifnot(
@@ -646,6 +649,8 @@ createTestRunSoils <- function(
     nSpElements >= idExampleSite,
     identical(names(dims)[[1L]], "vertical")
   )
+
+  xIDs <- array(data = seq_len(nSpElements), dim = dims[-1L])
 
   # Determine number of soil layers for each site/gridcell
   # Initialize array to nMinSoilLayers
@@ -664,16 +669,22 @@ createTestRunSoils <- function(
   # Create data structure and fill with values depending on number of layers
   x <- array(data = NA_real_, dim = dims)
 
-  for (k in seq_len(max(xNSoilLayers))) {
-    if (any(xNSoilLayers == k)) {
-      ks <- seq_len(k)
-      mids <- data.frame(which(xNSoilLayers == k, arr.ind = TRUE))
-      mids[["ids"]] <- apply(mids, 1L, paste, collapse = "-")
-      kids <- merge(
-        expand.grid(c(list(vertical = ks), mids["ids"])),
-        mids
-      )[, -1L]
-      x[data.matrix(kids)] <- soilData[ks]
+  if (mixNonExampleSiteValues) {
+    set.seed(seed)
+  }
+
+  for (k in seq_len(prod(dims[-1L]))) {
+    ks <- seq_len(xNSoilLayers[k])
+    mids <- data.frame(which(xIDs == k, arr.ind = TRUE))
+    mids[["ids"]] <- apply(mids, 1L, paste, collapse = "-")
+    kids <- merge(
+      expand.grid(c(list(vertical = ks), mids["ids"])),
+      mids
+    )[, -1L]
+    x[data.matrix(kids)] <- if (mixNonExampleSiteValues && k != idExampleSite) {
+      soilData[ks[sample.int(length(ks))]]
+    } else {
+      soilData[ks]
     }
   }
 
