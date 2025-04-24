@@ -2443,7 +2443,7 @@ void SW_NCOUT_write_output(
 #endif
 
                 // Get size of the "time" dimension
-                if (fileNum == numFilesPerKey - 1) {
+                if (fileNum == numFilesPerKey - 1 && numFilesPerKey > 1) {
                     timeSize = timeSizes[pd][1];
                 } else {
                     timeSize = timeSizes[pd][0];
