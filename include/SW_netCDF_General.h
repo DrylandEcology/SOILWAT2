@@ -83,10 +83,6 @@ void SW_NC_write_string_att(
     LOG_INFO *LogInfo
 );
 
-void SW_NC_write_string_vals(
-    int ncFileID, int varID, const char *const varVals[], LOG_INFO *LogInfo
-);
-
 Bool SW_NC_dimExists(const char *targetDim, int ncFileID);
 
 Bool SW_NC_varExists(int ncFileID, const char *varName);

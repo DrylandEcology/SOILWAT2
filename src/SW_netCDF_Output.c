@@ -260,6 +260,26 @@ static unsigned int calc_timeSize(
 }
 
 /**
+@brief Write values to the pft variable
+
+@param[in] ncFileID Identifier of the open netCDF file to write the attribute
+@param[in] varID Variable identifier within the given netCDF
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void write_pft_vals(int ncFileID, int varID, LOG_INFO *LogInfo) {
+    unsigned char vals[NVEGTYPES] = {
+        (unsigned char) (SW_TREES + 1),
+        (unsigned char) (SW_SHRUB + 1),
+        (unsigned char) (SW_FORBS + 1),
+        (unsigned char) (SW_GRASS + 1)
+    };
+
+    if (nc_put_var_ubyte(ncFileID, varID, &vals[0]) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "Could not write string values.");
+    }
+}
+
+/**
 @brief Helper function to `fill_dimVar()`; fully creates/fills
 the variable "time_bnds" and fills the variable "time"
 
@@ -547,7 +567,7 @@ static void fill_dimVar(
     const int numBnds = 2;
 
     if (dimNum == pftInd) {
-        SW_NC_write_string_vals(ncFileID, varID, key2veg, LogInfo);
+        write_pft_vals(ncFileID, varID, LogInfo);
     } else {
         if (!SW_NC_dimExists("bnds", ncFileID)) {
             SW_NC_create_netCDF_dim(
@@ -1229,10 +1249,14 @@ void SW_NCOUT_create_output_dimVar(
 ) {
 
     char *dimNames[3] = {(char *) "vertical", (char *) "time", (char *) "pft"};
+    const signed char pftFlagVals[] = {
+        SW_TREES + 1, SW_SHRUB + 1, SW_FORBS + 1, SW_GRASS + 1
+    };
     const int vertIndex = 0;
     const int timeIndex = 1;
     const int pftIndex = 2;
     const int timeUnitIndex = 2;
+    const int numPFTFlagVals = 4;
     int dimNum;
     int varID;
     int index;
@@ -1245,13 +1269,13 @@ void SW_NCOUT_create_output_dimVar(
     const char *outAttNames[][6] = {
         {"long_name", "standard_name", "units", "positive", "axis", "bounds"},
         {"long_name", "standard_name", "units", "axis", "calendar", "bounds"},
-        {"standard_name"}
+        {"standard_name", "flag_meanings"}
     };
 
     char outAttVals[][6][MAX_FILENAMESIZE] = {
         {"soil depth", "depth", "centimeter", "down", "Z", "vertical_bnds"},
         {"time", "time", "", "T", "standard", "time_bnds"},
-        {"biological_taxon_name"}
+        {"biological_taxon_name", "Trees Shrubs Forbs Grasses"}
     };
     char *soilWritePtr = outAttVals[vertIndex][0];
     char *centiWritePtr = outAttVals[vertIndex][2];
@@ -1263,7 +1287,7 @@ void SW_NCOUT_create_output_dimVar(
     size_t centiSize = MAX_FILENAMESIZE - strlen(outAttVals[vertIndex][2]);
     Bool fullBuffer = swFALSE;
 
-    const int numVarAtts[] = {6, 6, 1};
+    const int numVarAtts[] = {6, 6, 2};
 
     for (dimNum = 0; dimNum < 3; dimNum++) {
         if (Str_CompareI(dimNames[dimNum], name) == 0) {
@@ -1281,7 +1305,7 @@ void SW_NCOUT_create_output_dimVar(
         return; // Exit function prematurely due to error
     }
 
-    varType = (dimNum == pftIndex) ? NC_STRING : NC_DOUBLE;
+    varType = (dimNum == pftIndex) ? NC_BYTE : NC_DOUBLE;
 
     startFillTime = (dimNum == timeIndex) ? startTime : &tempVal;
 
@@ -1355,6 +1379,19 @@ void SW_NCOUT_create_output_dimVar(
             );
             if (fullBuffer) {
                 goto reportFullBuffer;
+            }
+        } else if (dimNum == pftIndex) {
+            SW_NC_write_att(
+                "flag_values",
+                (void *) pftFlagVals,
+                varID,
+                ncFileID,
+                numPFTFlagVals,
+                NC_BYTE,
+                LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
             }
         }
 

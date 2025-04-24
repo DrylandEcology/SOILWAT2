@@ -663,24 +663,6 @@ void SW_NC_write_string_att(
 }
 
 /**
-@brief Write values to a variable of type string
-
-@param[in] ncFileID Identifier of the open netCDF file to write the attribute
-@param[in] varID Variable identifier within the given netCDF
-@param[in] varVals Attribute value(s) to write out
-@param[out] LogInfo Holds information on warnings and errors
-*/
-void SW_NC_write_string_vals(
-    int ncFileID, int varID, const char *const varVals[], LOG_INFO *LogInfo
-) {
-
-    if (nc_put_var_string(ncFileID, varID, (const char **) &varVals[0]) !=
-        NC_NOERR) {
-        LogError(LogInfo, LOGERROR, "Could not write string values.");
-    }
-}
-
-/**
 @brief Checks to see if a given netCDF has a specific dimension
 
 @param[in] targetDim Dimension name to test for
