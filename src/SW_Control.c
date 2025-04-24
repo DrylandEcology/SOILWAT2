@@ -1707,6 +1707,7 @@ void SW_CTL_run_sw(
     );
 #else
     SW_NCOUT_write_output(
+        NULL,
         &SW_Domain->OutDom,
         local_sw.OutRun.p_OUT,
         local_sw.SW_PathOutputs.numOutFiles,

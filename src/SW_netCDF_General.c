@@ -1520,5 +1520,7 @@ void SW_NC_open_par(
             fileName
         );
     }
+
+    MPI_Barrier(comm);
 }
 #endif

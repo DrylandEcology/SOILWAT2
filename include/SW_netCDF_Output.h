@@ -85,6 +85,7 @@ void SW_NCOUT_create_output_files(
 void SW_NCOUT_create_units_converters(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
 void SW_NCOUT_write_output(
+    SW_MPI_DESIGNATE *desig,
     SW_OUT_DOM *OutDom,
     double *p_OUT[][SW_OUTNPERIODS],
     unsigned int numFilesPerKey,

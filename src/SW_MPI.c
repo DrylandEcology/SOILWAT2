@@ -112,7 +112,7 @@ static void SW_Allreduce(
     dummy writes
 */
 static void dummy_prog_out_writes(
-    MPI_Comm comm,
+    SW_MPI_DESIGNATE *desig,
     SW_OUT_DOM *OutDom,
     SW_PATH_OUTPUTS *SW_PathOutputs,
     size_t *starts[],
@@ -126,7 +126,7 @@ static void dummy_prog_out_writes(
     int numWrites = 0;
     signed char succFlag[1] = {swFALSE};
 
-    SW_Allreduce(MPI_INT, &numWrites, &numWrites, 1, MPI_MAX, comm);
+    SW_Allreduce(MPI_INT, &numWrites, &numWrites, 1, MPI_MAX, desig->groupComm);
 
     for (write = 0; write < numWrites; write++) {
         starts[write][0] = starts[write][1] = 0;
@@ -136,6 +136,7 @@ static void dummy_prog_out_writes(
     // Fill the following function calls with junk values since they
     // should not be used
     SW_NCOUT_write_output(
+        desig,
         OutDom,
         main_p_OUT,
         SW_PathOutputs->numOutFiles,
@@ -3330,7 +3331,8 @@ static void get_next_suids(
 @brief Wrapper function to calculate output starts/counts and
     output all values
 
-@param[in] comm MPI communicator to reduce a message with
+@param[in] desig Designation instance that holds information about
+    assigning a process to a job
 @param[in] progFileID Identifier of the progress netCDF file
 @param[in] progVarID Identifier of the progress variable
 @param[in] distSUIDs A list of domain SUIDs whose data will be distributed
@@ -3362,7 +3364,7 @@ static void get_next_suids(
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void write_outputs(
-    MPI_Comm comm,
+    SW_MPI_DESIGNATE *desig,
     int progFileID,
     int progVarID,
     size_t **distSUIDs,
@@ -3396,7 +3398,9 @@ static void write_outputs(
         counts
     );
 
-    SW_Allreduce(MPI_INT, &numWrites, &maxNumWrites, 1, MPI_MAX, comm);
+    SW_Allreduce(
+        MPI_INT, &numWrites, &maxNumWrites, 1, MPI_MAX, desig->groupComm
+    );
 
     for (write = numWrites; write < maxNumWrites; write++) {
         starts[write][0] = starts[write][1] = 0;
@@ -3405,6 +3409,7 @@ static void write_outputs(
 
     // Output accumulated output
     SW_NCOUT_write_output(
+        desig,
         OutDom,
         main_p_OUT,
         SW_PathOutputs->numOutFiles,
@@ -6028,7 +6033,7 @@ checkStatus:
             }
 
             write_outputs(
-                desig->groupComm,
+                desig,
                 progFileID,
                 progVarID,
                 distSUIDs,

@@ -2324,6 +2324,8 @@ void SW_NCOUT_create_units_converters(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 @brief Write values to output variables in previously-created
 output netCDF files
 
+@param[in] desig Designation instance that holds information about
+    assigning a process to a job (ONLY used when SWMPI is enabled)
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
 @param[in] p_OUT Array of accumulated output values throughout
@@ -2355,6 +2357,7 @@ output netCDF files
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCOUT_write_output(
+    SW_MPI_DESIGNATE *desig,
     SW_OUT_DOM *OutDom,
     double *p_OUT[][SW_OUTNPERIODS],
     unsigned int numFilesPerKey,
@@ -2554,6 +2557,11 @@ void SW_NCOUT_write_output(
                             "double",
                             LogInfo
                         );
+#if defined(SWMPI)
+                        MPI_Barrier(desig->groupComm);
+#else
+                        (void) desig;
+#endif
                         if (LogInfo->stopRun) {
                             goto closeFile; // Exit function prematurely due to
                                             // error
