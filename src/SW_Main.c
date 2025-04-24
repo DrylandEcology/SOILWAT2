@@ -282,11 +282,8 @@ setupProgramData:
     }
 #endif
 
-#if defined(SWMPI)
     if (rank == 0) {
-#endif
         SW_OUT_create_files(&sw_template.SW_PathOutputs, &SW_Domain, &LogInfo);
-#if defined(SWMPI)
     }
 
 #if defined(SWMPI)
@@ -297,7 +294,6 @@ setupProgramData:
 
         goto closeFiles;
     }
-#endif
 
     if (SW_Domain.SW_Designation.procJob == SW_MPI_PROC_IO) {
         SW_MPI_open_files(
