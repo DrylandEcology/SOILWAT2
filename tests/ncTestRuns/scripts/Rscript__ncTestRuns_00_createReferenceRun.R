@@ -24,10 +24,10 @@
 #------ Grab command line arguments (if any)
 args <- commandArgs(trailingOnly = TRUE)
 
-
-swMode <- if (any(ids <- grepl("--swMode", args))) {
-  sub("--swMode", "", args[ids]) |>
-    sub("=", "", x = _) |>
+ids <- grepl("--swMode", args, fixed = TRUE)
+swMode <- if (any(ids)) {
+  sub("--swMode", "", args[ids], fixed = TRUE) |>
+    sub("=", "", x = _, fixed = TRUE) |>
     trimws() |>
     tolower()
 } else {
@@ -36,26 +36,29 @@ swMode <- if (any(ids <- grepl("--swMode", args))) {
 
 stopifnot(swMode %in% c("nc", "mpi"))
 
-nTasks <- if (any(ids <- grepl("--ntasks", args))) {
-  sub("--ntasks", "", args[ids]) |>
-    sub("=", "", x = _) |>
+ids <- grepl("--ntasks", args, fixed = TRUE)
+nTasks <- if (any(ids)) {
+  sub("--ntasks", "", args[ids], fixed = TRUE) |>
+    sub("=", "", x = _, fixed = TRUE) |>
     trimws() |>
     tolower()
 }
 
 
 #------ Paths (possibly as command-line arguments) ------
-dir_prj <- if (any(ids <- grepl("--path-to-ncTestRuns", args))) {
-  sub("--path-to-ncTestRuns", "", args[ids]) |>
-    sub("=", "", x = _) |>
+ids <- grepl("--path-to-ncTestRuns", args, fixed = TRUE)
+dir_prj <- if (any(ids)) {
+  sub("--path-to-ncTestRuns", "", args[ids], fixed = TRUE) |>
+    sub("=", "", x = _, fixed = TRUE) |>
     trimws()
 } else {
   ".."
 }
 
-fname_sw2 <- if (any(ids <- grepl("--path-to-sw2", args))) {
-  sub("--path-to-sw2", "", args[ids]) |>
-    sub("=", "", x = _) |>
+ids <- grepl("--path-to-sw2", args, fixed = TRUE)
+fname_sw2 <- if (any(ids)) {
+  sub("--path-to-sw2", "", args[ids], fixed = TRUE) |>
+    sub("=", "", x = _, fixed = TRUE) |>
     trimws()
 } else {
   file.path(dir_prj, "..", "..", "bin", "SOILWAT2")
@@ -63,9 +66,10 @@ fname_sw2 <- if (any(ids <- grepl("--path-to-sw2", args))) {
 
 stopifnot(file.exists(fname_sw2))
 
-frefOutput <- if (any(ids <- grepl("--path-to-referenceOutput", args))) {
-  sub("--path-to-referenceOutput", "", args[ids]) |>
-    sub("=", "", x = _) |>
+ids <- grepl("--path-to-referenceOutput", args, fixed = TRUE)
+frefOutput <- if (any(ids)) {
+  sub("--path-to-referenceOutput", "", args[ids], fixed = TRUE) |>
+    sub("=", "", x = _, fixed = TRUE) |>
     trimws()
 } else {
   file.path("tests", "ncTestRuns", "results", "referenceRun", "Output")
@@ -140,7 +144,7 @@ fname_logfile <- file.path(dir_refRun, "logs", "logfile.log")
 has_logfile <- file.exists(fname_logfile)
 
 logfile <- if (has_logfile) readLines(fname_logfile)
-has_logContent <- nchar(paste(logfile, collapse = " ")) > 0L
+has_logContent <- nzchar(paste(logfile, collapse = " "))
 
 
 if (!is.null(res[["msg"]]) || has_logContent) {
