@@ -2349,6 +2349,8 @@ static void alloc_inputs(
     and N_SUID_ASSIGN
 @param[in] nCompProcs Number of compute processes that are assigned to
     the I/O process
+@param[in] maxNumIOSuids Maximum number of possible writes an I/O process
+    may need to make
 @param[in] useIndexFile Specifies to create/use an index file
 @param[in] readInVars Specifies which variables are to be read-in as input
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
@@ -2379,6 +2381,7 @@ static void alloc_inputs(
 static void alloc_IO_info(
     int numSuids,
     int nCompProcs,
+    int maxSuidsInWrite,
     Bool useIndexFile[],
     Bool **readInVars,
     SW_OUT_DOM *OutDom,
@@ -2404,8 +2407,9 @@ static void alloc_IO_info(
     int **alloc1DArr[] = {sendInputs};
 
     ForEachNCInKey(inKey) {
-        numVals =
-            (inKey == eSW_InDomain) ? numSuids * N_ITER_BEFORE_OUT : numSuids;
+        numVals = (inKey == eSW_InDomain) ?
+                      maxSuidsInWrite * N_ITER_BEFORE_OUT :
+                      maxSuidsInWrite;
 
         starts[inKey] = (size_t **) Mem_Malloc(
             sizeof(size_t *) * numVals, "alloc_IO_info()", LogInfo
@@ -2507,24 +2511,26 @@ static void alloc_IO_info(
     }
 
     *succFlags = (Bool *) Mem_Malloc(
-        sizeof(Bool) * numSuids * N_ITER_BEFORE_OUT, "alloc_IO_info()", LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return;
-    }
-    for (suid = 0; suid < numSuids * N_ITER_BEFORE_OUT; suid++) {
-        (*succFlags)[suid] = swFALSE;
-    }
-
-    *succMark = (signed char *) Mem_Malloc(
-        sizeof(signed char) * numSuids * N_ITER_BEFORE_OUT,
+        sizeof(Bool) * maxSuidsInWrite * N_ITER_BEFORE_OUT,
         "alloc_IO_info()",
         LogInfo
     );
     if (LogInfo->stopRun) {
         return;
     }
-    for (suid = 0; suid < numSuids * N_ITER_BEFORE_OUT; suid++) {
+    for (suid = 0; suid < maxSuidsInWrite * N_ITER_BEFORE_OUT; suid++) {
+        (*succFlags)[suid] = swFALSE;
+    }
+
+    *succMark = (signed char *) Mem_Malloc(
+        sizeof(signed char) * maxSuidsInWrite * N_ITER_BEFORE_OUT,
+        "alloc_IO_info()",
+        LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+    for (suid = 0; suid < maxSuidsInWrite * N_ITER_BEFORE_OUT; suid++) {
         (*succMark)[suid] = swFALSE;
     }
 
@@ -2576,6 +2582,8 @@ static void alloc_IO_info(
 @param[in] numSuids Number of SUIDs that will be assigned, this should be
     the product of the <number of compute processors for the I/O process>
     and N_SUID_ASSIGN
+@param[in] maxNumIOSuids Maximum number of possible writes an I/O process
+    may need to make
 @param[out] OutRun Struct of type SW_OUT_RUN that holds output
     information that may change throughout simulation runs
 @param[out] starts A list of start pairs used for accessing/writing to
@@ -2610,6 +2618,7 @@ static void alloc_IO_info(
 */
 static void dealloc_IO_info(
     int numSuids,
+    int maxNumIOSuids,
     SW_OUT_RUN *tempRun,
     SW_OUT_RUN *OutRun,
     size_t **starts[],
@@ -2651,7 +2660,7 @@ static void dealloc_IO_info(
 
         for (dealloc = 0; dealloc < numDeallocStartCount; dealloc++) {
             if (!isnull(*deallocStartCount[dealloc])) {
-                for (suid = 0; suid < numSuids; suid++) {
+                for (suid = 0; suid < maxNumIOSuids; suid++) {
                     if (!isnull((*deallocStartCount[dealloc])[suid])) {
                         free((void *) (*deallocStartCount[dealloc])[suid]);
                         (*deallocStartCount[dealloc])[suid] = NULL;
@@ -3414,6 +3423,15 @@ static void write_outputs(
     );
 
     for (write = numWrites; write < maxNumWrites; write++) {
+        // Do not repeatedly set the starts/counts values to 0 if
+        // they are already zero - useful at larger sizes N_SUID_ASSIGN
+        // and compute process sizes
+        if (starts[write][0] == 0 && starts[write][1] == 0 &&
+            counts[write][0] == 0 && counts[write][1] == 0) {
+
+            break;
+        }
+
         starts[write][0] = starts[write][1] = 0;
         counts[write][0] = counts[write][1] = 0;
     }
@@ -5852,12 +5870,18 @@ void SW_MPI_handle_IO(
     size_t temp;
     Bool dummyWrites = swFALSE;
     int maxWritesGroup = 0;
+    int maxSuidsInOutput = 0;
     int maxWriteInst = (int
     ) ceil(((double) desig->nSuids) / (numSuidsTot * N_ITER_BEFORE_OUT));
+
+    SW_Allreduce(
+        MPI_INT, &numSuidsTot, &maxSuidsInOutput, 1, MPI_MAX, desig->groupComm
+    );
 
     alloc_IO_info(
         numSuidsTot,
         desig->nCompProcs,
+        maxSuidsInOutput,
         useIndexFile,
         readInVars,
         &SW_Domain->OutDom,
@@ -6164,6 +6188,7 @@ freeMem:
 
     dealloc_IO_info(
         numSuidsTot,
+        maxSuidsInOutput,
         &temp_sw.OutRun,
         &sw->OutRun,
         starts,
