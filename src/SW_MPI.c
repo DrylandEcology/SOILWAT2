@@ -697,13 +697,13 @@ static void fillDesignationIO(
     int *rankAssign,
     unsigned long ***activeTSuids,
     int *leftOverCompProcs,
-    int *leftOverSuids,
-    int *leftSuids,
+    size_t *leftOverSuids,
+    size_t *leftSuids,
     int *suidAssign,
     SW_MPI_DESIGNATE *desig,
     LOG_INFO *LogInfo
 ) {
-    int suid;
+    unsigned int suid;
     int tSuid; /* For translated assignment */
     InKeys inKey;
     int rank;
@@ -814,12 +814,12 @@ static void designateProcesses(
     SW_MPI_DESIGNATE *rootDes,
     int numProcsInNode[],
     int numNodes,
-    int numIOProcsTot,
-    int numActiveSites,
+    unsigned int numIOProcsTot,
+    size_t numActiveSites,
     unsigned long **activeSuids,
     unsigned long ***activeTSuids,
     int **ranksInNodes,
-    int *leftSuids,
+    size_t *leftSuids,
     int *suidAssign,
     LOG_INFO *LogInfo
 ) {
@@ -829,7 +829,7 @@ static void designateProcesses(
     int ioProcsLeft;
     int ioProcsInNode;
     int leftOverComp;
-    int leftOverSuids;
+    size_t leftOverSuids;
     int compNodesAssign;
 
     SW_MPI_DESIGNATE *desig = NULL;
@@ -1061,7 +1061,7 @@ static void assignProcs(
     SW_MPI_DESIGNATE *SW_Designation,
     LOG_INFO *LogInfo
 ) {
-    int pair;
+    size_t pair;
     int node;
     int proc;
     int sendRank;
@@ -2379,7 +2379,7 @@ static void alloc_inputs(
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void alloc_IO_info(
-    int numSuids,
+    size_t numSuids,
     int nCompProcs,
     int maxSuidsInWrite,
     Bool useIndexFile[],
@@ -2398,18 +2398,17 @@ static void alloc_IO_info(
     LOG_INFO **logs,
     LOG_INFO *LogInfo
 ) {
-    int suid;
+    size_t suid;
     int allocIndex;
     const int num1DArr = 1;
     InKeys inKey;
     int numVals;
+    size_t nDomInfoElem = ((size_t) maxSuidsInWrite) * N_ITER_BEFORE_OUT;
 
     int **alloc1DArr[] = {sendInputs};
 
     ForEachNCInKey(inKey) {
-        numVals = (inKey == eSW_InDomain) ?
-                      maxSuidsInWrite * N_ITER_BEFORE_OUT :
-                      maxSuidsInWrite;
+        numVals = (inKey == eSW_InDomain) ? nDomInfoElem : maxSuidsInWrite;
 
         starts[inKey] = (size_t **) Mem_Malloc(
             sizeof(size_t *) * numVals, "alloc_IO_info()", LogInfo
@@ -2459,7 +2458,7 @@ static void alloc_IO_info(
             return;
         }
 
-        for (suid = 0; suid < (nCompProcs + 1); suid++) {
+        for (suid = 0; suid < (size_t) (nCompProcs + 1); suid++) {
             (*alloc1DArr[allocIndex])[suid] = 0;
         }
     }
@@ -2473,11 +2472,11 @@ static void alloc_IO_info(
         return;
     }
 
-    for (suid = 0; suid < numSuids * N_ITER_BEFORE_OUT; suid++) {
+    for (suid = 0; suid < (size_t) (numSuids * N_ITER_BEFORE_OUT); suid++) {
         (*distSUIDs)[suid] = NULL;
     }
 
-    for (suid = 0; suid < numSuids * N_ITER_BEFORE_OUT; suid++) {
+    for (suid = 0; suid < (size_t) (numSuids * N_ITER_BEFORE_OUT); suid++) {
         (*distSUIDs)[suid] = (size_t *) Mem_Malloc(
             sizeof(size_t) * 2, "alloc_IO_info()", LogInfo
         );
@@ -2511,26 +2510,22 @@ static void alloc_IO_info(
     }
 
     *succFlags = (Bool *) Mem_Malloc(
-        sizeof(Bool) * maxSuidsInWrite * N_ITER_BEFORE_OUT,
-        "alloc_IO_info()",
-        LogInfo
+        sizeof(Bool) * nDomInfoElem, "alloc_IO_info()", LogInfo
     );
     if (LogInfo->stopRun) {
         return;
     }
-    for (suid = 0; suid < maxSuidsInWrite * N_ITER_BEFORE_OUT; suid++) {
+    for (suid = 0; suid < nDomInfoElem; suid++) {
         (*succFlags)[suid] = swFALSE;
     }
 
     *succMark = (signed char *) Mem_Malloc(
-        sizeof(signed char) * maxSuidsInWrite * N_ITER_BEFORE_OUT,
-        "alloc_IO_info()",
-        LogInfo
+        sizeof(signed char) * nDomInfoElem, "alloc_IO_info()", LogInfo
     );
     if (LogInfo->stopRun) {
         return;
     }
-    for (suid = 0; suid < maxSuidsInWrite * N_ITER_BEFORE_OUT; suid++) {
+    for (suid = 0; suid < nDomInfoElem; suid++) {
         (*succMark)[suid] = swFALSE;
     }
 
@@ -3084,16 +3079,24 @@ static void calculate_contiguous_allkeys(
 @param[in] numRecv Number of log files received
 @param[in] logfp A list of pointers to open logfiles respective to
     the I/O process and all compute processes it controls
+@param[in] baseSuid Start suid to create the SUID tag when writing
+    log information
 @param[in] logs A list of LOG_INFO instances that will be used for
     getting log information from compute processes
 */
-static void write_logs(int numRecv, FILE *logfp, LOG_INFO *logs) {
+static void write_logs(
+    int numRecv, FILE *logfp, size_t baseSuid, LOG_INFO *logs
+) {
     int log = 0;
+    /* tag_suid is 32:
+      11 character for "(suid = ) " + 20 character for ULONG_MAX + '\0' */
+    char tag_suid[32];
 
     for (log = 0; log < numRecv; log++) {
         logs[log].logfp = logfp;
 
-        sw_write_warnings("\n", &logs[log]);
+        (void) snprintf(tag_suid, 32, "(suid = %lu) ", baseSuid + log + 1);
+        sw_write_warnings(tag_suid, &logs[log]);
     }
 }
 
@@ -3188,6 +3191,8 @@ Handle the different request types accordingly
 
 @param[in] numCompProcs Number of compute processes that have been assigned to
     an I/O process
+@param[in] startSuid Start suid to create the SUID tag when writing
+    log information
 @param[in] recvLens A list of lengths that will be used to specify how many
     inputs to receive from a specific process
 @param[in] reqType Custom MPI type that mimics SW_MPI_REQUEST
@@ -3207,6 +3212,7 @@ Handle the different request types accordingly
 */
 static void get_comp_results(
     int numCompProcs,
+    size_t startSuid,
     int recvLens[],
     size_t timeSizes[][2],
     int numOutFiles,
@@ -3234,6 +3240,7 @@ static void get_comp_results(
     int numProcResponse = 0;
     int numSiteRecv = 0;
     int targetRepsonses = numCompProcs;
+    size_t writeSuid;
 
     Bool useTempStorage;
 
@@ -3277,7 +3284,10 @@ static void get_comp_results(
                 &nullReq
             );
 
-            write_logs(recvLens[rankIndex + 1], logfps[rankIndex + 1], logs);
+            writeSuid = startSuid + offsetMult[rankIndex];
+            write_logs(
+                recvLens[rankIndex + 1], logfps[rankIndex + 1], writeSuid, logs
+            );
         }
 
         if (outReq) {
@@ -3650,7 +3660,7 @@ void SW_MPI_Fail(int failType, int errorCode, char *mpiErrStr) {
 void SW_MPI_deconstruct(SW_DOMAIN *SW_Domain) {
     SW_MPI_DESIGNATE *desig = &SW_Domain->SW_Designation;
     int procJob = desig->procJob;
-    int suid;
+    unsigned int suid;
     InKeys inKey;
 
     if (procJob == SW_MPI_PROC_IO) {
@@ -5078,7 +5088,7 @@ try to simulate/assign to compute processes
 void SW_MPI_root_find_active_sites(
     SW_DOMAIN *SW_Domain,
     unsigned long ***activeSuids,
-    int *numActiveSites,
+    size_t *numActiveSites,
     LOG_INFO *LogInfo
 ) {
     int suid = 0;
@@ -5307,7 +5317,7 @@ void SW_MPI_process_types(
 ) {
     unsigned long ***activeTSuids = NULL;
     unsigned long **activeSuids = NULL;
-    int numActiveSites = 0;
+    size_t numActiveSites = 0;
     MPI_Request nullReq = MPI_REQUEST_NULL;
 
     int startOldSize = 0;
@@ -5321,7 +5331,7 @@ void SW_MPI_process_types(
     int **ranksInNodes = NULL;
     int numIOProcsTot = 0;
     int suidAssign = 0;
-    int leftSuids = 0;
+    size_t leftSuids = 0;
     int pair;
     Bool useTranslated = swFALSE;
 
@@ -5451,7 +5461,7 @@ void SW_MPI_process_types(
 
         if (numActiveSites == 0) {
             LogError(LogInfo, LOGERROR, "No active sites to simulate.");
-        } else if (numActiveSites < worldSize - numIOProcsTot) {
+        } else if (numActiveSites < (size_t) (worldSize - numIOProcsTot)) {
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -5827,8 +5837,8 @@ void SW_MPI_handle_IO(
     MPI_Datatype inputType = SW_Domain->datatypes[eSW_MPI_Inputs];
     int progFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprog];
     int progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprog];
-    int input = 0;
-    int numSuidsTot = desig->nCompProcs * N_SUID_ASSIGN;
+    size_t input = 0;
+    size_t numSuidsTot = desig->nCompProcs * N_SUID_ASSIGN;
     int numIterSuids = 0;
     Bool *useIndexFile = SW_Domain->netCDFInput.useIndexFile;
     Bool **readInVars = SW_Domain->netCDFInput.readInVars;
@@ -5838,7 +5848,7 @@ void SW_MPI_handle_IO(
     Bool readWeather = SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
     Bool readSoils = SW_Domain->netCDFInput.readInVars[eSW_InSoil][0];
     Bool readClimate = SW_Domain->netCDFInput.readInVars[eSW_InClimate][0];
-    int nSuids = desig->nSuids;
+    size_t nSuids = desig->nSuids;
     int inputsLeft = nSuids;
     int n_years = sw->WeatherIn.n_years;
     Bool allocSoils = (Bool) (!constSoilDepths && readSoils);
@@ -5846,7 +5856,8 @@ void SW_MPI_handle_IO(
     int succFlagWrite;
     int distSUIDWrite;
     int iterNumSuids = 0;
-    int suid;
+    size_t suid;
+    size_t startSuid;
 
     SW_RUN_INPUTS *inputs = NULL;
     SW_RUN temp_sw;
@@ -5949,6 +5960,7 @@ checkStatus:
 
     // Loop until all SUIDs have been assigned or an interrupt occurs
     for (input = 0; input < nSuids && runSims;) {
+        startSuid = input;
         numIterSuids =
             (input + numSuidsTot > nSuids) ? nSuids - input : numSuidsTot;
         iterNumSuids += numIterSuids;
@@ -6103,6 +6115,7 @@ checkStatus:
         // each compute process if simulations were successful
         get_comp_results(
             desig->nCompProcs,
+            startSuid,
             sendInputs,
             sw->SW_PathOutputs.outTimeSizes,
             sw->SW_PathOutputs.numOutFiles,

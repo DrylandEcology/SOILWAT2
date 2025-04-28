@@ -1595,7 +1595,8 @@ typedef struct {
                          only used if process is compute */
     int nCompProcs; /**< Number of compute processes assigned to an I/O process;
                          only used if process is I/O */
-    int nSuids; /**< Number of suids that will be controlled by I/O processes */
+    size_t
+        nSuids; /**< Number of suids that will be controlled by I/O processes */
     Bool useTSuids; /**< Flag specifying if we will be using a list of
                          translated domain SUIDs */
 

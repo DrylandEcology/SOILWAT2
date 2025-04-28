@@ -162,7 +162,7 @@ void SW_MPI_report_log(
 void SW_MPI_root_find_active_sites(
     SW_DOMAIN *SW_Domain,
     unsigned long ***activeSuids,
-    int *numActiveSites,
+    size_t *numActiveSites,
     LOG_INFO *LogInfo
 );
 
