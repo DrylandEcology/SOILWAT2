@@ -73,7 +73,7 @@ void SW_MPI_free_comms_types(
     int rank, SW_MPI_DESIGNATE *desig, MPI_Datatype types[], LOG_INFO *LogInfo
 );
 
-void SW_MPI_Fail(int failType, int errorCode, char *mpiErrStr);
+void SW_MPI_Fail(int rank, int failType, char *mpiErrStr);
 
 void SW_MPI_deconstruct(SW_DOMAIN *SW_Domain);
 
@@ -157,6 +157,10 @@ void SW_MPI_report_log(
     SW_DOMAIN *SW_Domain,
     Bool failedSetup,
     LOG_INFO *LogInfo
+);
+
+void SW_MPI_write_main_logs(
+    SW_MPI_DESIGNATE *desig, MPI_Datatype logType, LOG_INFO *LogInfo
 );
 
 void SW_MPI_root_find_active_sites(

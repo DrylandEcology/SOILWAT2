@@ -97,6 +97,7 @@ void SW_NCOUT_write_output(
     int *openOutFileIDs[][SW_OUTNPERIODS],
     int *outVarIDs[],
     Bool siteDom,
+    Bool succFlags[],
     size_t timeSizes[][2],
     LOG_INFO *LogInfo
 );

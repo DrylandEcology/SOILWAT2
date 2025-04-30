@@ -490,9 +490,11 @@ void sw_write_warnings(const char *header, LOG_INFO *LogInfo) {
 Close logfile and notify user that logfile has content (unless QuietMode);
 print number of simulation units with warnings and errors (if any).
 
+@param[in] rank Process number known to MPI for the current process (aka rank);
+    can only be different when SWMPI is enabled
 @param[in] LogInfo Holds information on warnings and errors
 */
-void sw_wrapup_logs(LOG_INFO *LogInfo) {
+void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
     Bool QuietMode = (Bool) (LogInfo->QuietMode || isnull(LogInfo->logfp));
     FILE *logfp = LogInfo->logfp;
 
@@ -512,27 +514,32 @@ void sw_wrapup_logs(LOG_INFO *LogInfo) {
     }
 #endif
 
-    // Notify the user that there are messages in the logfile (unless QuietMode)
-    if ((LogInfo->numDomainErrors > 0 || LogInfo->numDomainWarnings > 0 ||
-         LogInfo->stopRun || LogInfo->numWarnings > 0) &&
-        !QuietMode && LogInfo->logfp != stdout && LogInfo->logfp != stderr) {
-        (void
-        ) fprintf(stderr, "\nCheck logfile for warnings and error messages.\n");
-
-        if (LogInfo->numDomainWarnings > 0) {
+    if (rank == 0) {
+        // Notify the user that there are messages in the logfile (unless
+        // QuietMode)
+        if ((LogInfo->numDomainErrors > 0 || LogInfo->numDomainWarnings > 0 ||
+             LogInfo->stopRun || LogInfo->numWarnings > 0) &&
+            !QuietMode && LogInfo->logfp != stdout &&
+            LogInfo->logfp != stderr) {
             (void) fprintf(
-                stderr,
-                "Simulation units with warnings: n = %lu\n",
-                LogInfo->numDomainWarnings
+                stderr, "\nCheck logfile for warnings and error messages.\n"
             );
-        }
 
-        if (LogInfo->numDomainErrors > 0) {
-            (void) fprintf(
-                stderr,
-                "Simulation units with an error: n = %lu\n",
-                LogInfo->numDomainErrors
-            );
+            if (LogInfo->numDomainWarnings > 0) {
+                (void) fprintf(
+                    stderr,
+                    "Simulation units with warnings: n = %lu\n",
+                    LogInfo->numDomainWarnings
+                );
+            }
+
+            if (LogInfo->numDomainErrors > 0) {
+                (void) fprintf(
+                    stderr,
+                    "Simulation units with an error: n = %lu\n",
+                    LogInfo->numDomainErrors
+                );
+            }
         }
     }
 }
@@ -679,8 +686,6 @@ TODO: We currently only report log information when all runs pass or
     information for the program run
 @param[in] setupFailed A flag specifying if the program was exited
     before setup was completed
-@param[out] runFailed Specifies if the process failed in the run phase
-    (SWMPI only)
 @param[in] LogInfo Holds information on warnings and errors
 */
 void sw_finalize_program(
@@ -689,27 +694,25 @@ void sw_finalize_program(
     SW_DOMAIN *SW_Domain,
     SW_WALLTIME *SW_WallTime,
     Bool setupFailed,
-    Bool runFailed,
     LOG_INFO *LogInfo
 ) {
 #if defined(SWMPI)
-    // Only report logs if the entire program run was successful
-    // or we failed before starting the runs;
-    // The scenario where we fail during simulation runs is covered
-    // by compute and I/O processes
-    if ((!setupFailed && !runFailed) || setupFailed) {
-        SW_MPI_report_log(
-            rank,
-            size,
-            SW_Domain->datatypes[eSW_MPI_WallTime],
-            SW_WallTime,
-            SW_Domain,
-            setupFailed,
-            LogInfo
-        );
-    } else if (rank == SW_MPI_ROOT) {
-        SW_WT_ReportTime(*SW_WallTime, LogInfo);
-    }
+    /* Report information for the following scenarios
+        1) Failed during setup - error(s)/warning(s)
+        2) Failed during simulation runs - simulations statistics *
+        3) Successful program run - simulation statistics *
+
+        * = All warnings/errors are reported through I/O processes
+    */
+    SW_MPI_report_log(
+        rank,
+        size,
+        SW_Domain->datatypes[eSW_MPI_WallTime],
+        SW_WallTime,
+        SW_Domain,
+        setupFailed,
+        LogInfo
+    );
 
     // Free types and communicators
     SW_MPI_free_comms_types(
@@ -720,17 +723,13 @@ void sw_finalize_program(
     SW_WT_ReportTime(*SW_WallTime, LogInfo);
     sw_fail_on_error(LogInfo);
 
-    (void) rank;
     (void) size;
     (void) setupFailed;
-    (void) runFailed;
     (void) SW_WallTime;
     (void) SW_Domain;
 #endif
 
-    if (rank == 0) {
-        sw_wrapup_logs(LogInfo);
-    }
+    sw_wrapup_logs(rank, LogInfo);
 
 #if defined(SWMPI)
     SW_MPI_finalize();

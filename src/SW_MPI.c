@@ -60,18 +60,19 @@ static void handle_interrupt(int signal) {
 /**
 @brief Handle OpenMPI error if one occurs
 
+@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] mpiError Result value from an MPI function call that
     returned an error
 
 @sideeffect Exit all instances of the MPI program
 */
-static void errorMPI(int mpiError) {
+static void errorMPI(int rank, int mpiError) {
     char errorStr[MAX_FILENAMESIZE] = {'\0'};
     int errorLen = 0;
 
     MPI_Error_string(mpiError, errorStr, &errorLen);
 
-    SW_MPI_Fail(SW_MPI_FAIL_MPI, mpiError, errorStr);
+    SW_MPI_Fail(rank, SW_MPI_FAIL_MPI, errorStr);
 }
 
 /**
@@ -101,7 +102,7 @@ static void SW_Allreduce(
     mpiRes = MPI_Allreduce(src, dest, count, datatype, op, comm);
 
     if (mpiRes != MPI_SUCCESS) {
-        errorMPI(mpiRes);
+        errorMPI(-1, mpiRes);
     }
 }
 
@@ -124,7 +125,8 @@ static void dummy_prog_out_writes(
 ) {
     int write;
     int numWrites = 0;
-    signed char succFlag[1] = {swFALSE};
+    Bool succFlagBool[1] = {swTRUE};
+    signed char succFlagChar[1] = {swTRUE};
 
     SW_Allreduce(MPI_INT, &numWrites, &numWrites, 1, MPI_MAX, desig->groupComm);
 
@@ -148,6 +150,7 @@ static void dummy_prog_out_writes(
         SW_PathOutputs->openOutFileIDs,
         SW_PathOutputs->ncOutVarIDs,
         swFALSE,
+        succFlagBool,
         SW_PathOutputs->outTimeSizes,
         LogInfo
     );
@@ -156,7 +159,12 @@ static void dummy_prog_out_writes(
     }
 
     SW_NCIN_set_progress(
-        progFileID, progVarID, starts[write], counts[write], succFlag, LogInfo
+        progFileID,
+        progVarID,
+        starts[write],
+        counts[write],
+        succFlagChar,
+        LogInfo
     );
 }
 
@@ -178,7 +186,7 @@ static void SW_Bcast(
     mpiRes = MPI_Bcast(buffer, count, datatype, srcRank, comm);
 
     if (mpiRes != MPI_SUCCESS) {
-        errorMPI(mpiRes);
+        errorMPI(-1, mpiRes);
     }
 }
 
@@ -1422,7 +1430,7 @@ static void mpi_create_group_comms(
 
 reportFail:
     if (res != MPI_SUCCESS) {
-        errorMPI(res);
+        errorMPI(-1, res);
     }
 }
 
@@ -2853,6 +2861,9 @@ any final compute processes can be sent a signal to finish
 @param[in] readWeather A flag specifying if weather will be read in;
     if so, send weather
 @param[in] readClimate A flag specifying if climate will be read in
+@param[in] extraLoopCheck A flag specifying if the compute processes
+    should run another "check" within the MPI_COMM_WORLD communicator
+    when finalizing all information
 @param[in] sendInputs A list of values specifying how many inputs each compute
     process will receive
 @param[in] n_years Number of years in simulation
@@ -2868,6 +2879,7 @@ static void spread_inputs(
     Bool *sendEstVeg,
     Bool readWeather,
     Bool readClimate,
+    Bool extraLoopCheck,
     int sendInputs[],
     int n_years,
     int nCompProcs,
@@ -2968,7 +2980,7 @@ static void spread_inputs(
                 suid += sendSize;
             } else if (finalize) {
                 SW_MPI_Send(
-                    MPI_INT, &extraSetupCheck, 1, destRank, swTRUE, 0, &nullReq
+                    MPI_INT, &extraLoopCheck, 1, destRank, swTRUE, 0, &nullReq
                 );
             }
 
@@ -3460,6 +3472,7 @@ static void write_outputs(
         SW_PathOutputs->openOutFileIDs,
         SW_PathOutputs->ncOutVarIDs,
         siteDom,
+        succFlags,
         SW_PathOutputs->outTimeSizes,
         LogInfo
     );
@@ -3610,13 +3623,12 @@ Options for failing the program
 Moving forward, an option for further development of this part of the
 program is to allow for a hardcoded number of netCDF read errors
 
+@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] failType Reason why the program failed
-@param[in] errorCode MPI error code if MPI caused the error (not used
-    otherwise)
 @param[in] mpiErrStr String representation of MPI error (not used
     if MPI did not cause the error)
 */
-void SW_MPI_Fail(int failType, int errorCode, char *mpiErrStr) {
+void SW_MPI_Fail(int rank, int failType, char *mpiErrStr) {
     const char *ncFail = "SOILWAT2 failed due to a netCDF error.";
     const char *compFail =
         "SOILWAT2 failed due to too many errors during simulations.";
@@ -3624,7 +3636,6 @@ void SW_MPI_Fail(int failType, int errorCode, char *mpiErrStr) {
     char mpiFail[FILENAME_MAX] = "\0";
 
     char *failStr;
-    int failCode = failType;
 
     switch (failType) {
     case SW_MPI_FAIL_NETCDF:
@@ -3642,13 +3653,14 @@ void SW_MPI_Fail(int failType, int errorCode, char *mpiErrStr) {
             mpiErrStr
         );
         failStr = mpiFail;
-        failCode = errorCode;
         break;
     }
 
-    fprintf(stderr, "An error occured: %s\n", failStr);
-
-    MPI_Abort(MPI_COMM_WORLD, failCode);
+    if (failType != SW_MPI_FAIL_MPI) {
+        fprintf(stderr, "An error occured: %s (rank %d)\n", failStr, rank);
+    } else {
+        fprintf(stderr, "An error occured: %s\n", failStr);
+    }
 }
 
 /**
@@ -3745,7 +3757,7 @@ void SW_MPI_Send(
 
 error: {
     if (result != MPI_SUCCESS) {
-        errorMPI(result);
+        errorMPI(-1, result);
     }
 }
 }
@@ -3807,7 +3819,7 @@ void SW_MPI_Recv(
 
 error: {
     if (result != MPI_SUCCESS) {
-        errorMPI(result);
+        errorMPI(-1, result);
     }
 }
 }
@@ -3824,13 +3836,13 @@ on various program-defined structs
 */
 void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
     int res;
-    int numItems[] = {6, 5, 5, 5, 6, 5, 18, 3, 7, 9};
+    int numItems[] = {7, 5, 5, 5, 6, 5, 18, 3, 7, 9};
     int blockLens[][19] = {
-        {1, 1, 1, 1, 1, MAX_LAYERS}, /* SW_DOMAIN */
-        {1, 1, 1, 1, 1},             /* SW_SPINUP */
-        {1, 1, 1, 1, 1},             /* SW_RUN_INPUTS */
-        {1, 1, 1, 1, 1},             /* SW_MPI_DESIGNATE */
-        {1, 1, 1, 1, 1, 1},          /* SW_MPI_WallTime */
+        {1, 1, 1, 1, 1, MAX_LAYERS, 1}, /* SW_DOMAIN */
+        {1, 1, 1, 1, 1},                /* SW_SPINUP */
+        {1, 1, 1, 1, 1},                /* SW_RUN_INPUTS */
+        {1, 1, 1, 1, 1},                /* SW_MPI_DESIGNATE */
+        {1, 1, 1, 1, 1, 1},             /* SW_MPI_WallTime */
         {SW_OUTNKEYS,
          SW_OUTNKEYS,
          SW_OUTNPERIODS,
@@ -3873,7 +3885,8 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
          MPI_UNSIGNED,
          MPI_UNSIGNED,
          MPI_UNSIGNED,
-         MPI_DOUBLE}, /* SW_DOMAIN */
+         MPI_DOUBLE,
+         MPI_INT}, /* SW_DOMAIN */
         {MPI_UNSIGNED, MPI_UNSIGNED, MPI_INT, MPI_INT, MPI_UNSIGNED
         }, /* SW_SPINUP */
         {MPI_DATATYPE_NULL,
@@ -3934,7 +3947,8 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
          offsetof(SW_DOMAIN, nMaxEvapLayers),
          offsetof(SW_DOMAIN, startyr),
          offsetof(SW_DOMAIN, endyr),
-         offsetof(SW_DOMAIN, depthsAllSoilLayers)},
+         offsetof(SW_DOMAIN, depthsAllSoilLayers),
+         offsetof(SW_DOMAIN, maxSimErrors)},
 
         /* SW_SPINUP */
         {offsetof(SW_SPINUP, scope),
@@ -4984,7 +4998,9 @@ void SW_MPI_report_log(
     double runSqr = 0.0;
     int destProcJob = SW_MPI_PROC_COMP;
     int destRank;
-    Bool reportLog = (Bool) (LogInfo->stopRun || LogInfo->numWarnings > 0);
+    Bool reportLog =
+        (Bool) (LogInfo->stopRun || LogInfo->numWarnings > 0 ||
+                LogInfo->numDomainWarnings > 0 || LogInfo->numDomainErrors > 0);
     Bool destReport = swFALSE;
     char warnHeader[MAX_FILENAMESIZE] = "\0";
     FILE *tempFilePtr = LogInfo->logfp;
@@ -4996,7 +5012,7 @@ void SW_MPI_report_log(
                 LogInfo->logfp = LogInfo->logfps[0];
             }
 
-            sw_write_warnings("\n", LogInfo);
+            sw_write_warnings("(Rank 0)", LogInfo);
             LogInfo->logfp = tempFilePtr;
         }
 
@@ -5026,27 +5042,23 @@ void SW_MPI_report_log(
                 );
                 SW_WallTime->nTimedRuns += rankWT.nTimedRuns;
                 SW_WallTime->nUntimedRuns += rankWT.nUntimedRuns;
-            } else if (failedSetup) {
-                SW_MPI_Recv(MPI_INT, &destReport, 1, destRank, swTRUE, 0, &req);
+            }
 
-                if (destReport) {
-                    // Get logs that need to be reported to general
-                    // log file
-                    sw_init_logs(LogInfo->logfp, &procLog);
+            SW_MPI_Recv(MPI_INT, &destReport, 1, destRank, swTRUE, 0, &req);
 
-                    SW_MPI_Recv(
-                        logType, &procLog, 1, destRank, swTRUE, 0, &req
-                    );
+            if (destReport) {
+                // Get logs that need to be reported to general
+                // log file
+                sw_init_logs(LogInfo->logfp, &procLog);
 
-                    snprintf(
-                        warnHeader, MAX_FILENAMESIZE, "\n(Rank %d) ", destRank
-                    );
+                SW_MPI_Recv(logType, &procLog, 1, destRank, swTRUE, 0, &req);
 
-                    sw_write_warnings(warnHeader, &procLog);
+                snprintf(warnHeader, MAX_FILENAMESIZE, "(Rank %d) ", destRank);
 
-                    LogInfo->numDomainErrors += procLog.numDomainErrors;
-                    LogInfo->numDomainWarnings += procLog.numDomainWarnings;
-                }
+                sw_write_warnings(warnHeader, &procLog);
+
+                LogInfo->numDomainErrors += procLog.numDomainErrors;
+                LogInfo->numDomainWarnings += procLog.numDomainWarnings;
             }
         }
 
@@ -5062,15 +5074,55 @@ void SW_MPI_report_log(
         if (desig->procJob == SW_MPI_PROC_COMP && !failedSetup) {
             /* Send timing information to the root process to average it */
             SW_MPI_Send(wtType, SW_WallTime, 1, SW_MPI_ROOT, swTRUE, 0, &req);
+        }
 
-        } else if (failedSetup) {
-            // Send information to the root process
-            SW_MPI_Send(MPI_INT, &reportLog, 1, SW_MPI_ROOT, swTRUE, 0, &req);
+        // Send information to the root process
+        SW_MPI_Send(MPI_INT, &reportLog, 1, SW_MPI_ROOT, swTRUE, 0, &req);
 
-            if (reportLog) {
-                SW_MPI_Send(logType, LogInfo, 1, SW_MPI_ROOT, swTRUE, 0, &req);
+        if (reportLog) {
+            SW_MPI_Send(logType, LogInfo, 1, SW_MPI_ROOT, swTRUE, 0, &req);
+        }
+    }
+}
+
+/*
+@brief Get/send the main log information from compute processes to their
+    assigned I/O process once the simulations are finished; mainly useful
+    if anything causes a fatal error
+
+@param[in] desig Designation instance that holds information about
+    assigning a process to a job
+@param[in] logType Custom MPI type that mimics LOG_INFO
+@param[in] LogInfo Holds information on warnings and errors
+*/
+void SW_MPI_write_main_logs(
+    SW_MPI_DESIGNATE *desig, MPI_Datatype logType, LOG_INFO *LogInfo
+) {
+    MPI_Request nullReq = MPI_REQUEST_NULL;
+
+    int rank;
+    int destRank;
+
+    if (desig->procJob == SW_MPI_PROC_IO) {
+        if (LogInfo->stopRun) {
+            LogInfo->logfp = LogInfo->logfps[0];
+            sw_write_warnings("", LogInfo);
+        }
+
+        for (rank = 0; rank < desig->nCompProcs; rank++) {
+            LOG_INFO main_log;
+            destRank = desig->ranks[rank];
+
+            sw_init_logs(LogInfo->logfp, &main_log);
+            SW_MPI_Recv(logType, &main_log, 1, destRank, swTRUE, 0, &nullReq);
+
+            if (main_log.stopRun || main_log.numWarnings > 0) {
+                main_log.logfp = LogInfo->logfps[rank + 1];
+                sw_write_warnings("", &main_log);
             }
         }
+    } else {
+        SW_MPI_Send(logType, LogInfo, 1, desig->ioRank, swTRUE, 0, &nullReq);
     }
 }
 
@@ -6034,7 +6086,7 @@ checkStatus:
 
         // Make sure all processes did not throw a fatal error
         // before continuing
-        if (SW_MPI_setup_fail(LogInfo->stopRun, desig->ioCompComm)) {
+        if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
             goto freeMem;
         }
 
@@ -6049,6 +6101,7 @@ checkStatus:
             &sendEstVeg,
             readWeather,
             readClimate,
+            dummyWrites,
             sendInputs,
             n_years,
             desig->nCompProcs,
@@ -6135,7 +6188,7 @@ checkStatus:
     }
 
     if (runSims) {
-        if (SW_MPI_setup_fail(LogInfo->stopRun, desig->ioCompComm)) {
+        if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
             goto freeMem;
         }
 
@@ -6150,6 +6203,7 @@ checkStatus:
             &sendEstVeg,
             readWeather,
             readClimate,
+            dummyWrites,
             sendInputs,
             n_years,
             desig->nCompProcs,
@@ -6220,11 +6274,10 @@ freeMem:
         &logs
     );
 
+    SW_MPI_write_main_logs(desig, logType, LogInfo);
+
     if (errorCaused) {
         // Report error
-        LogInfo->logfp = LogInfo->logfps[0];
-        sw_write_warnings("\n", LogInfo);
-
-        SW_MPI_Fail(SW_MPI_FAIL_NETCDF, 0, NULL);
+        SW_MPI_Fail(rank, SW_MPI_FAIL_NETCDF, NULL);
     }
 }

@@ -39,7 +39,7 @@ void sw_init_logs(FILE *logInitPtr, LOG_INFO *LogInfo);
 
 void sw_write_warnings(const char *header, LOG_INFO *LogInfo);
 
-void sw_wrapup_logs(LOG_INFO *LogInfo);
+void sw_wrapup_logs(int rank, LOG_INFO *LogInfo);
 
 void sw_setup_prog_data(
     int rank,
@@ -57,7 +57,6 @@ void sw_finalize_program(
     SW_DOMAIN *SW_Domain,
     SW_WALLTIME *SW_WallTime,
     Bool setupFailed,
-    Bool runFailed,
     LOG_INFO *LogInfo
 );
 

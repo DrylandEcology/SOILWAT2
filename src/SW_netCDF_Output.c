@@ -2391,6 +2391,9 @@ output netCDF files
 @param[in] outVarIDs A list of size SW_OUTNKEYS holding lists of
     output variable IDs
 @param[in] siteDom Specifies if the domain is site-oriented
+@param[in] succFlags A list of success flags for a single or multiple
+    site's (swTRUE = success, swFALSE = failure); only used with
+    SWMPI enabled
 @param[in] timeSizes An array of size two to hold the repetative
     (index 0) time size for [0, num out files - 1] files and the
     last netCDF file's time size (index 1)
@@ -2409,6 +2412,7 @@ void SW_NCOUT_write_output(
     int *openOutFileIDs[][SW_OUTNPERIODS],
     int *outVarIDs[],
     Bool siteDom,
+    Bool succFlags[],
     size_t timeSizes[][2],
     LOG_INFO *LogInfo
 ) {
@@ -2440,6 +2444,7 @@ void SW_NCOUT_write_output(
     size_t pOUTStart[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
 #else
     char *fileName;
+    (void) succFlags;
 #endif
 
     ForEachOutPeriod(pd) {
@@ -2542,6 +2547,11 @@ void SW_NCOUT_write_output(
                            then variables
                         */
 #if defined(SWMPI)
+                        if (!succFlags[write]) {
+                            pOUTStart[key][pd] += countTotal * numSites;
+                            continue;
+                        }
+
                         if (numWrites == 1 && numSites == 1) {
 #endif
                             pOUTIndex = OutDom->netCDFOutput
@@ -2613,7 +2623,9 @@ void SW_NCOUT_write_output(
 
                 // Update startTime
                 startTime += timeSize;
-#if !defined(SWMPI)
+#if defined(SWMPI)
+                nc_sync(currFileID);
+#else
                 nc_close(currFileID);
 #endif
             }

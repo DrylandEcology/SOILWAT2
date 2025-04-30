@@ -385,8 +385,6 @@ This function will handle two modes: SWMPI en/disabled
     temporal/spatial information for a set of simulation runs
 @param[out] setupFail Specifies if the process failed in the setup phase
     (SWMPI only)
-@param[out] runFailed Specifies if the process failed in the run phase
-    (SWMPI only)
 @param[out] SW_WallTime Struct of type SW_WALLTIME that holds timing
     information for the program run
 @param[out] main_LogInfo Holds information on warnings and errors
@@ -396,7 +394,6 @@ void SW_CTL_RunSims(
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
     Bool *setupFail,
-    Bool *runFailed,
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *main_LogInfo
 ) {
@@ -413,7 +410,6 @@ void SW_CTL_RunSims(
         SW_MPI_handle_IO(rank, sw_template, SW_Domain, setupFail, main_LogInfo);
     }
 #endif
-    *runFailed = (Bool) (runSims == 0);
 }
 
 /**
@@ -567,7 +563,7 @@ checkStatus:
 
         // Make sure all processes did not throw a fatal error
         // before continuing
-        if (SW_MPI_setup_fail(main_LogInfo->stopRun, desig->ioCompComm)) {
+        if (SW_MPI_setup_fail(main_LogInfo->stopRun, MPI_COMM_WORLD)) {
             goto wrapUp;
         }
 
@@ -679,6 +675,7 @@ checkStatus:
                         "(n = %d).",
                         SW_Domain->maxSimErrors
                     );
+                    break;
                 }
 #endif
 #if defined(SWMPI)
@@ -749,7 +746,7 @@ wrapUp:
     // to make sure other compute processes don't hang waiting before
     // getting their last batch of inputs
     extraFailCheck = (Bool) (extraFailCheck && !errorCaused &&
-                             SW_MPI_setup_fail(swFALSE, desig->ioCompComm));
+                             SW_MPI_setup_fail(swFALSE, MPI_COMM_WORLD));
 
     for (suid = 0; suid < N_SUID_ASSIGN; suid++) {
         if (!isnull(inputs[suid].weathRunAllHist)) {
@@ -757,8 +754,10 @@ wrapUp:
         }
     }
 
+    SW_MPI_write_main_logs(&SW_Domain->SW_Designation, logType, main_LogInfo);
+
     if (errorCaused) {
-        SW_MPI_Fail(SW_MPI_FAIL_COMP_ERR, 0, NULL);
+        SW_MPI_Fail(rank, SW_MPI_FAIL_COMP_ERR, NULL);
     }
 #else
     (void) *setupFail;
@@ -1719,6 +1718,7 @@ void SW_CTL_run_sw(
         NULL,
         local_sw.SW_PathOutputs.ncOutVarIDs,
         SW_Domain->netCDFInput.siteDoms[eSW_InDomain],
+        NULL,
         local_sw.SW_PathOutputs.outTimeSizes,
         LogInfo
     );
