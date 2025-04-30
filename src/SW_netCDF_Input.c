@@ -5002,10 +5002,7 @@ closeFile:
 }
 
 /**
-@brief Once we read-in values from input, we need to check if any values
-are missing and set them to SW_MISSING, that's what this function does,
-this function is called on one value at a time; this function also
-does converting from user-provided units to SW2 units
+@brief Set values identified by the netCDF as missing to NAN
 
 @param[in] varType Type of the value that is being tested
 @param[in] valHasMissing A list of flags that specify the methods
@@ -5075,12 +5072,21 @@ static void set_missing_val(
         setMissing = (Bool) EQ(*value, ncMissVal);
     }
     if (setMissing) {
-        *value = SW_MISSING;
+        /* We use NAN instead of SW_MISSING. NAN allows to distinguish between
+        values equal to SOILWAT2's SW_MISSING but which are not
+        truly missing as identified by the netCDF */
+        *value = NAN;
     }
 }
 
 /**
-@brief When reading in values from an nc file, we cannot expect them
+@brief Identify values as missing, unpack values, and apply unit conversion
+
+Values are recognized as missing
+(i) if they meet one of the conditions specified by the netCDF as missing, or
+(ii) if they are NAN.
+
+When reading in values from an nc file, we cannot expect them
 to be the same type of NC_DOUBLE, so this function makes use of
 a provided void pointer and converts the read value(s) from
 the provided type to double (helper) and if we are to "unpack" the values,
@@ -5135,17 +5141,17 @@ static void set_read_vals(
 ) {
     int valIndex;
     double *dest;
-    Bool missingBefore;
+    Bool notMissingBefore;
     double readVal;
 
     for (valIndex = 0; valIndex < numVals; valIndex++) {
         dest = (!swrcpInput) ? &resVals[valIndex] : &resVals[swrcpIndex];
 
-        missingBefore = (Bool) (missing(readVals[valIndex]));
         readVal = (!swrcpInput) ? readVals[valIndex] : readVals[swrcpLyr];
+        notMissingBefore = (Bool) (isfinite(readVal));
         set_missing_val(varType, valHasMissing, missingVals, varNum, &readVal);
 
-        if (missingBefore || !missing(readVal)) {
+        if (notMissingBefore && isfinite(readVal)) {
             *dest = readVal;
             *dest *= scale_factor;
             *dest += add_offset;
@@ -6271,7 +6277,7 @@ static void read_veg_inputs(
         SW_VegProd->veg[SW_GRASS].lai_conv,
     };
 
-    double tempVals[MAX_MONTHS] = {0.0};
+    double tempVals[MAX_MONTHS];
     int numSetVals;
 
     while (!readInput[fIndex + 1]) {
@@ -7520,7 +7526,7 @@ static void read_weather_input(
     int **dimOrderInVar = SW_Domain->netCDFInput.dimOrderInVar[eSW_InWeather];
     unsigned int **weatherIndices =
         SW_Domain->SW_PathInputs.ncWeatherStartEndIndices;
-    double tempVals[MAX_DAYS] = {0.0};
+    double tempVals[MAX_DAYS];
     double scaleFactor;
     double addOffset;
     unsigned int beforeFileIndex;
@@ -7587,7 +7593,8 @@ static void read_weather_input(
 
             numDays = numDaysInYears[yearIndex];
             count[timeIndex] = numDays;
-            tempVals[MAX_DAYS - 1] = SW_MISSING;
+            /* set_read_vals() recognizes NAN and nc-missingness as missing */
+            tempVals[MAX_DAYS - 1] = NAN;
 
             /* Check to see if a different file has to be opened,
                if so, we need to make sure the correct start index
