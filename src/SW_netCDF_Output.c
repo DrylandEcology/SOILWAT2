@@ -2446,6 +2446,9 @@ void SW_NCOUT_write_output(
     char *fileName;
     (void) succFlags;
 #endif
+#if defined(SWDEBUG)
+    char *varName;
+#endif
 
     ForEachOutPeriod(pd) {
         if (!OutDom->use_OutPeriod[pd]) {
