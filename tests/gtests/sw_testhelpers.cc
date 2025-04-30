@@ -258,7 +258,7 @@ int setup_testGlobalSoilwatTemplate() {
         - error messages go directly to stderr (which DeathTests use to match
        against)
     */
-    sw_wrapup_logs(&LogInfo);
+    sw_wrapup_logs(0, &LogInfo);
     sw_init_logs(NULL, &LogInfo);
 
     SW_WTH_finalize_all_weather(
