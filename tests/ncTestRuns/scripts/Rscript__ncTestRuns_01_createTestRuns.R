@@ -111,6 +111,8 @@ getCRSParam <- NULL
 readTSV <- NULL
 runSW2 <- NULL
 setNCInputTSV <- NULL
+modifyNCUnitsTSV <- NULL
+getModifiedNCUnits <- NULL
 setTxtInput <- NULL
 updateGAttSourceVersion <- NULL
 updateGAttFeatureType <- NULL
@@ -693,6 +695,10 @@ for (k0 in seq_len(nrow(listTestRuns))) {
   )
 
 
+  #--- ......**** Modify nc-units in tsv ------
+  usedUnits <- modifyNCUnitsTSV(fname_ncintsv)
+
+
   #--- ..** Create domain and templates ------
   fname_template <- file.path(dir_testrun_swinnc, "domain_template.nc")
   fname_domain <- file.path(dir_testrun_swinnc, "domain.nc")
@@ -876,11 +882,12 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     updateGAttSourceVersion(nc)
 
     #--- ..** inTopo: elevation ------
+    u <- getModifiedNCUnits(usedUnits, "inTopo", "elevation")
     createVarNC(
       nc,
       varname = "elevation",
       dimensions = inDimNames[["sp"]],
-      units = "m",
+      units = u[["ncVarUnitsModified"]],
       vartype = varType
     )
     RNetCDF::var.put.nc(
@@ -889,6 +896,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       data = createTestRunData(
         x = IntrinsicSiteParams[["Altitude"]],
         otherValues = 0,
+        usedUnits = u,
         dims = inDimCounts[["sp"]],
         dimPermutation = inDimPerms[["sp"]],
         spDims = inputSpDims,
@@ -898,11 +906,12 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
 
     #--- ..** inTopo: slope ------
+    u <- getModifiedNCUnits(usedUnits, "inTopo", "slope")
     createVarNC(
       nc,
       varname = "slope",
       dimensions = inDimNames[["sp"]],
-      units = "degree",
+      units = u[["ncVarUnitsModified"]],
       vartype = varType
     )
     RNetCDF::att.put.nc(
@@ -916,6 +925,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       data = createTestRunData(
         x = IntrinsicSiteParams[["Slope"]],
         otherValues = 0,
+        usedUnits = u,
         dims = inDimCounts[["sp"]],
         dimPermutation = inDimPerms[["sp"]],
         spDims = inputSpDims,
@@ -925,11 +935,12 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
 
     #--- ..** inTopo: aspect ------
+    u <- getModifiedNCUnits(usedUnits, "inTopo", "aspect")
     createVarNC(
       nc,
       varname = "aspect",
       dimensions = inDimNames[["sp"]],
-      units = "degree",
+      units = u[["ncVarUnitsModified"]],
       vartype = varType
     )
     RNetCDF::att.put.nc(
@@ -951,6 +962,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
           val_aspect
         },
         otherValues = 0,
+        usedUnits = u,
         dims = inDimCounts[["sp"]],
         dimPermutation = inDimPerms[["sp"]],
         spDims = inputSpDims,
@@ -1017,12 +1029,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
 
     #--- ..** inClimate: cloudcov ------
+    u <- getModifiedNCUnits(usedUnits, "inClimate", "cloudcov")
     createVarNC(
       nc,
       varname = "cloudcov",
       long_name = "mean monthly cloud cover",
       dimensions = inDimNames[["clim"]],
-      units = "%",
+      units = u[["ncVarUnitsModified"]],
       vartype = varType
     )
     RNetCDF::var.put.nc(
@@ -1031,6 +1044,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       data = createTestRunData(
         x = round(Cloud["SkyCoverPCT", , drop = TRUE], digits = nDigsClim),
         otherValues = 0,
+        usedUnits = u,
         dims = inDimCounts[["clim"]],
         dimPermutation = inDimPerms[["clim"]],
         spDims = inputSpDims,
@@ -1040,12 +1054,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
 
     #--- ..** inClimate: windspeed ------
+    u <- getModifiedNCUnits(usedUnits, "inClimate", "windspeed")
     createVarNC(
       nc,
       varname = "windspeed",
       long_name = "mean monthly wind speed",
       dimensions = inDimNames[["clim"]],
-      units = "m s-1",
+      units = u[["ncVarUnitsModified"]],
       vartype = varType
     )
     RNetCDF::var.put.nc(
@@ -1054,6 +1069,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       data = createTestRunData(
         x = round(Cloud["WindSpeed_m/s", , drop = TRUE], digits = nDigsClim),
         otherValues = 0,
+        usedUnits = u,
         dims = inDimCounts[["clim"]],
         dimPermutation = inDimPerms[["clim"]],
         spDims = inputSpDims,
@@ -1063,12 +1079,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
 
     #--- ..** inClimate: r_humidity ------
+    u <- getModifiedNCUnits(usedUnits, "inClimate", "r_humidity")
     createVarNC(
       nc,
       varname = "r_humidity",
       long_name = "mean monthly relative humidity",
       dimensions = inDimNames[["clim"]],
-      units = "%",
+      units = u[["ncVarUnitsModified"]],
       vartype = varType
     )
     RNetCDF::var.put.nc(
@@ -1077,6 +1094,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       data = createTestRunData(
         x = round(Cloud["HumidityPCT", , drop = TRUE], digits = nDigsClim),
         otherValues = 10,
+        usedUnits = u,
         dims = inDimCounts[["clim"]],
         dimPermutation = inDimPerms[["clim"]],
         spDims = inputSpDims,
@@ -1086,12 +1104,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
 
     #--- ..** inClimate: snow_density ------
+    u <- getModifiedNCUnits(usedUnits, "inClimate", "snow_density")
     createVarNC(
       nc,
       varname = "snow_density",
       long_name = "mean monthly density of snowpack",
       dimensions = inDimNames[["clim"]],
-      units = "kg m-3",
+      units = u[["ncVarUnitsModified"]],
       vartype = varType
     )
     RNetCDF::var.put.nc(
@@ -1102,6 +1121,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
           Cloud["SnowDensity_kg/m^3", , drop = TRUE], digits = nDigsClim
         ),
         otherValues = 1, # snow_density of 0 throws now an error
+        usedUnits = u,
         dims = inDimCounts[["clim"]],
         dimPermutation = inDimPerms[["clim"]],
         spDims = inputSpDims,
@@ -1111,12 +1131,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
 
     #--- ..** inClimate: n_rain_per_day ------
+    u <- getModifiedNCUnits(usedUnits, "inClimate", "n_rain_per_day")
     createVarNC(
       nc,
       varname = "n_rain_per_day",
       long_name = "mean monthly number of rain events per day",
       dimensions = inDimNames[["clim"]],
-      units = "1",
+      units = u[["ncVarUnitsModified"]],
       vartype = varType
     )
     RNetCDF::var.put.nc(
@@ -1127,6 +1148,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
           Cloud["RainEvents_per_day", , drop = TRUE], digits = nDigsClim
         ),
         otherValues = NULL,
+        usedUnits = u,
         dims = inDimCounts[["clim"]],
         dimPermutation = inDimPerms[["clim"]],
         spDims = inputSpDims,
@@ -1220,12 +1242,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
 
     #--- ..** inSoil: dbovendry ------
+    u <- getModifiedNCUnits(usedUnits, "inSoil", "dbovendry")
     createVarNC(
       nc,
       varname = "dbovendry",
       long_name = "density of the bulk soil",
       dimensions = inDimNames[["soil"]],
-      units = "g cm-3",
+      units = u[["ncVarUnitsModified"]],
       vartype = varType
     )
     RNetCDF::var.put.nc(
@@ -1234,6 +1257,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       data = createTestRunSoils(
         soilData =
           round(soilsTestRun[, "bulkDensity_g/cm^3", drop = TRUE], nDigsSoil),
+        usedUnits = u,
         dims = inDimCounts[["soil"]],
         dimPermutation = inDimPerms[["soil"]],
         idExampleSite = idInputExampleSite,
@@ -1245,12 +1269,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
 
     #--- ..** inSoil: fragvol ------
+    u <- getModifiedNCUnits(usedUnits, "inSoil", "fragvol")
     createVarNC(
       nc,
       varname = "fragvol",
       long_name = "coarse fragments in bulk soil",
       dimensions = inDimNames[["soil"]],
-      units = "cm3 cm-3",
+      units = u[["ncVarUnitsModified"]],
       vartype = varType
     )
     RNetCDF::var.put.nc(
@@ -1259,6 +1284,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       data = createTestRunSoils(
         soilData =
           round(soilsTestRun[, "gravel_content", drop = TRUE], nDigsSoil),
+        usedUnits = u,
         dims = inDimCounts[["soil"]],
         dimPermutation = inDimPerms[["soil"]],
         idExampleSite = idInputExampleSite,
@@ -1270,12 +1296,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
 
     #--- ..** inSoil: sandtotal ------
+    u <- getModifiedNCUnits(usedUnits, "inSoil", "sandtotal")
     createVarNC(
       nc,
       varname = "sandtotal",
       long_name = "sand content in the less than 2 mm soil fraction",
       dimensions = inDimNames[["soil"]],
-      units = "g g-1",
+      units = u[["ncVarUnitsModified"]],
       vartype = varType
     )
     RNetCDF::var.put.nc(
@@ -1284,6 +1311,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       data = createTestRunSoils(
         soilData =
           round(soilsTestRun[, "sand_frac", drop = TRUE], nDigsSoil),
+        usedUnits = u,
         dims = inDimCounts[["soil"]],
         dimPermutation = inDimPerms[["soil"]],
         idExampleSite = idInputExampleSite,
@@ -1295,12 +1323,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
 
     #--- ..** inSoil: claytotal ------
+    u <- getModifiedNCUnits(usedUnits, "inSoil", "claytotal")
     createVarNC(
       nc,
       varname = "claytotal",
       long_name = "clay content in the less than 2 mm soil fraction",
       dimensions = inDimNames[["soil"]],
-      units = "g g-1",
+      units = u[["ncVarUnitsModified"]],
       vartype = varType
     )
     RNetCDF::var.put.nc(
@@ -1309,6 +1338,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       data = createTestRunSoils(
         soilData =
           round(soilsTestRun[, "clay_frac", drop = TRUE], nDigsSoil),
+        usedUnits = u,
         dims = inDimCounts[["soil"]],
         dimPermutation = inDimPerms[["soil"]],
         idExampleSite = idInputExampleSite,
@@ -1320,12 +1350,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
 
     #--- ..** inSoil: silttotal ------
+    u <- getModifiedNCUnits(usedUnits, "inSoil", "silttotal")
     createVarNC(
       nc,
       varname = "silttotal",
       long_name = "silt content in the less than 2 mm soil fraction",
       dimensions = inDimNames[["soil"]],
-      units = "g g-1",
+      units = u[["ncVarUnitsModified"]],
       vartype = varType
     )
     RNetCDF::var.put.nc(
@@ -1339,6 +1370,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
           ),
           digits = nDigsSoil
         ),
+        usedUnits = u,
         dims = inDimCounts[["soil"]],
         dimPermutation = inDimPerms[["soil"]],
         idExampleSite = idInputExampleSite,
@@ -1350,11 +1382,12 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
 
     #--- ..** inSoil: impermeability ------
+    u <- getModifiedNCUnits(usedUnits, "inSoil", "impermeability")
     createVarNC(
       nc,
       varname = "impermeability",
       dimensions = inDimNames[["soil"]],
-      units = "1",
+      units = u[["ncVarUnitsModified"]],
       vartype = varType
     )
     RNetCDF::var.put.nc(
@@ -1363,6 +1396,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       data = createTestRunSoils(
         soilData =
           round(soilsTestRun[, "impermeability_frac", drop = TRUE], nDigsSoil),
+        usedUnits = u,
         dims = inDimCounts[["soil"]],
         dimPermutation = inDimPerms[["soil"]],
         idExampleSite = idInputExampleSite,
@@ -1374,12 +1408,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
 
     #--- ..** inSoil: tsl ------
+    u <- getModifiedNCUnits(usedUnits, "inSoil", "tsl")
     createVarNC(
       nc,
       varname = "tsl",
       long_name = "soil temperature",
       dimensions = inDimNames[["soil"]],
-      units = "degC",
+      units = u[["ncVarUnitsModified"]],
       vartype = varType
     )
     RNetCDF::var.put.nc(
@@ -1388,6 +1423,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       data = createTestRunSoils(
         soilData =
           round(soilsTestRun[, "soilTemp_c", drop = TRUE], nDigsSoil),
+        usedUnits = u,
         dims = inDimCounts[["soil"]],
         dimPermutation = inDimPerms[["soil"]],
         idExampleSite = idInputExampleSite,
@@ -1399,12 +1435,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
 
     #--- ..** inSoil: som ------
+    u <- getModifiedNCUnits(usedUnits, "inSoil", "som")
     createVarNC(
       nc,
       varname = "som",
       long_name = "soil organic matter",
       dimensions = inDimNames[["soil"]],
-      units = "cm3 cm-3",
+      units = u[["ncVarUnitsModified"]],
       vartype = varType
     )
     RNetCDF::var.put.nc(
@@ -1412,6 +1449,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       variable = "som",
       data = createTestRunSoils(
         soilData = rep(0, nMaxSoilLayersTestRun),
+        usedUnits = u,
         dims = inDimCounts[["soil"]],
         dimPermutation = inDimPerms[["soil"]],
         idExampleSite = idInputExampleSite,
@@ -1423,12 +1461,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
 
     #--- ..** inSoil: evc ------
+    u <- getModifiedNCUnits(usedUnits, "inSoil", "evc")
     createVarNC(
       nc,
       varname = "evc",
       long_name = "potential evaporation coefficient",
       dimensions = inDimNames[["soil"]],
-      units = "1",
+      units = u[["ncVarUnitsModified"]],
       vartype = varType
     )
     RNetCDF::var.put.nc(
@@ -1437,6 +1476,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       data = createTestRunSoils(
         soilData =
           round(soilsTestRun[, "EvapBareSoil_frac", drop = TRUE], nDigsSoil),
+        usedUnits = u,
         dims = inDimCounts[["soil"]],
         dimPermutation = inDimPerms[["soil"]],
         idExampleSite = idInputExampleSite,
@@ -1480,6 +1520,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       )
 
       var <- paste0("trc_", tolower(pfts[[kpft]]))
+      u <- getModifiedNCUnits(usedUnits, "inSoil", var)
       createVarNC(
         nc,
         varname = var,
@@ -1498,6 +1539,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         variable = var,
         data = createTestRunSoils(
           soilData = trc,
+          usedUnits = NULL,
           dims = inDimCounts[["soil"]],
           dimPermutation = inDimPerms[["soil"]],
           idExampleSite = idInputExampleSite,
@@ -1575,6 +1617,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         data = createTestRunSoils(
           # No rounding of SWRCp inputs because reference uses internal PTF
           soilData = pSWRCTestRun[, k, drop = TRUE],
+          usedUnits = NULL,
           dims = inDimCounts[["soil"]],
           dimPermutation = inDimPerms[["soil"]],
           idExampleSite = idInputExampleSite,
@@ -1745,12 +1788,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     nc <- RNetCDF::open.nc(fname_tasclim, write = TRUE)
     updateGAttSourceVersion(nc)
 
+    u <- getModifiedNCUnits(usedUnits, "inSite", "tas")
     createVarNC(
       nc,
       varname = "tas",
       long_name = "mean temperature",
       dimensions = inDimNames[["sp"]],
-      units = "degC",
+      units = u[["ncVarUnitsModified"]],
       vartype = varType
     )
     RNetCDF::var.put.nc(
@@ -1759,6 +1803,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       data = createTestRunData(
         x = tasclim,
         otherValues = 0,
+        usedUnits = u,
         dims = inDimCounts[["sp"]],
         dimPermutation = inDimPerms[["sp"]],
         spDims = inputSpDims,
@@ -1827,12 +1872,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     #--- ..** inVeg: fcover_bg ------
     Composition <- swin@prod@Composition # doesn't reproduce if round
 
+    u <- getModifiedNCUnits(usedUnits, "inVeg", "fcover_bg")
     createVarNC(
       nc,
       varname = "fcover_bg",
       long_name = "fractional cover of bare ground",
       dimensions = inDimNames[["sp"]],
-      units = "m2 m-2",
+      units = u[["ncVarUnitsModified"]],
       vartype = varType
     )
 
@@ -1842,6 +1888,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       data = createTestRunData(
         x = Composition[["Bare Ground"]],
         otherValues = 0,
+        usedUnits = u,
         dims = inDimCounts[["sp"]],
         dimPermutation = inDimPerms[["sp"]],
         spDims = inputSpDims,
@@ -1854,12 +1901,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     #--- ..** inVeg: fcover_[veg] ------
     for (k in seq_along(pfts)) {
       var <- paste0("fcover_", tolower(pfts[[k]]))
+      u <- getModifiedNCUnits(usedUnits, "inVeg", var)
       createVarNC(
         nc,
         varname = var,
         long_name = paste("fractional cover of", tolower(pfts[[k]])),
         dimensions = inDimNames[["sp"]],
-        units = "m2 m-2",
+        units = u[["ncVarUnitsModified"]],
         vartype = varType
       )
 
@@ -1869,6 +1917,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         data = createTestRunData(
           x = Composition[[pfts[[k]]]],
           otherValues = if (k == 1L) 1 else 0,
+          usedUnits = u,
           dims = inDimCounts[["sp"]],
           dimPermutation = inDimPerms[["sp"]],
           spDims = inputSpDims,
@@ -1883,12 +1932,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     #--- ..** inVeg: litter_[veg] ------
     for (k in seq_along(pfts)) {
       var <- paste0("litter_", tolower(pfts[[k]]))
+      u <- getModifiedNCUnits(usedUnits, "inVeg", var)
       createVarNC(
         nc,
         varname = var,
         long_name = "litter",
         dimensions = inDimNames[["clim"]],
-        units = "g m-2",
+        units = u[["ncVarUnitsModified"]],
         vartype = varType
       )
 
@@ -1898,6 +1948,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         data = createTestRunData(
           x = round(monVeg[[pfts[[k]]]][, "Litter"], nDigsVeg),
           otherValues = round(mean(monVeg[[pfts[[k]]]][, "Litter"]), nDigsVeg),
+          usedUnits = u,
           dims = inDimCounts[["clim"]],
           dimPermutation = inDimPerms[["clim"]],
           spDims = inputSpDims,
@@ -1911,12 +1962,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     #--- ..** inVeg: biomass_[veg] ------
     for (k in seq_along(pfts)) {
       var <- paste0("biomass_", tolower(pfts[[k]]))
+      u <- getModifiedNCUnits(usedUnits, "inVeg", var)
       createVarNC(
         nc,
         varname = var,
         long_name = "total biomass",
         dimensions = inDimNames[["clim"]],
-        units = "g m-2",
+        units = u[["ncVarUnitsModified"]],
         vartype = varType
       )
       RNetCDF::var.put.nc(
@@ -1925,6 +1977,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         data = createTestRunData(
           x = round(monVeg[[pfts[[k]]]][, "Biomass"], nDigsVeg),
           otherValues = round(mean(monVeg[[pfts[[k]]]][, "Biomass"]), nDigsVeg),
+          usedUnits = u,
           dims = inDimCounts[["clim"]],
           dimPermutation = inDimPerms[["clim"]],
           spDims = inputSpDims,
@@ -1937,12 +1990,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     #--- ..** inVeg: live_[veg] ------
     for (k in seq_along(pfts)) {
       var <- paste0("live_", tolower(pfts[[k]]))
+      u <- getModifiedNCUnits(usedUnits, "inVeg", var)
       createVarNC(
         nc,
         varname = var,
         long_name = "fraction of biomass that is living",
         dimensions = inDimNames[["clim"]],
-        units = "1",
+        units = u[["ncVarUnitsModified"]],
         vartype = varType
       )
       RNetCDF::var.put.nc(
@@ -1952,6 +2006,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         data = createTestRunData(
           x = monVeg[[pfts[[k]]]][, "Live_pct"],
           otherValues = mean(monVeg[[pfts[[k]]]][, "Live_pct"]),
+          usedUnits = u,
           dims = inDimCounts[["clim"]],
           dimPermutation = inDimPerms[["clim"]],
           spDims = inputSpDims,
@@ -1964,12 +2019,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     #--- ..** inVeg: convLAI_[veg] ------
     for (k in seq_along(pfts)) {
       var <- paste0("convLAI_", tolower(pfts[[k]]))
+      u <- getModifiedNCUnits(usedUnits, "inVeg", var)
       createVarNC(
         nc,
         varname = var,
         long_name = "biomass needed to produce LAI = 1",
         dimensions = inDimNames[["clim"]],
-        units = "g m-2",
+        units = u[["ncVarUnitsModified"]],
         vartype = varType
       )
       RNetCDF::var.put.nc(
@@ -1978,6 +2034,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         data = createTestRunData(
           x = round(monVeg[[pfts[[k]]]][, "LAI_conv"], nDigsVeg),
           otherValues = 250,
+          usedUnits = u,
           dims = inDimCounts[["clim"]],
           dimPermutation = inDimPerms[["clim"]],
           spDims = inputSpDims,
@@ -2025,12 +2082,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     #--- ..** inVeg: fcover_bg ------
     Composition <- swin@prod@Composition # doesn't reproduce if round
 
+    u <- getModifiedNCUnits(usedUnits, "inVeg", "fcover_bg")
     createVarNC(
       nc,
       varname = "fcover_bg",
       long_name = "fractional cover of bare ground",
       dimensions = inDimNames[["sp"]],
-      units = "m2 m-2",
+      units = u[["ncVarUnitsModified"]],
       vartype = varType
     )
     RNetCDF::var.put.nc(
@@ -2039,6 +2097,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       data = createTestRunData(
         x = Composition[["Bare Ground"]],
         otherValues = 0,
+        usedUnits = u,
         dims = inDimCounts[["sp"]],
         dimPermutation = inDimPerms[["sp"]],
         spDims = inputSpDims,
@@ -2048,12 +2107,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
 
     #--- ..** inVeg: fcover ------
+    u <- getModifiedNCUnits(usedUnits, "inVeg", "fcover")
     createVarNC(
       nc,
       varname = "fcover",
       long_name = "fractional vegetation cover",
       dimensions = inDimNames[["vegPFT"]],
-      units = "m2 m-2",
+      units = u[["ncVarUnitsModified"]],
       vartype = varType
     )
 
@@ -2063,6 +2123,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       data = createTestRunData(
         x = Composition[pfts],
         otherValues = c(1, rep(0, npfts - 1L)),
+        usedUnits = u,
         dims = inDimCounts[["vegPFT"]],
         dimPermutation = inDimPerms[["vegPFT"]],
         spDims = inputSpDims,
@@ -2073,11 +2134,12 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
 
     #--- ..** inVeg: litter ------
+    u <- getModifiedNCUnits(usedUnits, "inVeg", "litter")
     createVarNC(
       nc,
       varname = "litter",
       dimensions = inDimNames[["climPFT"]],
-      units = "g m-2",
+      units = u[["ncVarUnitsModified"]],
       vartype = varType
     )
 
@@ -2097,6 +2159,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
           },
           FUN.VALUE = rep(NA_real_, nmonths)
         ) |> t(),
+        usedUnits = u,
         dims = inDimCounts[["climPFT"]],
         dimPermutation = inDimPerms[["climPFT"]],
         spDims = inputSpDims,
@@ -2107,12 +2170,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
 
     #--- ..** inVeg: biomass ------
+    u <- getModifiedNCUnits(usedUnits, "inVeg", "biomass")
     createVarNC(
       nc,
       varname = "biomass",
       long_name = "total biomass",
       dimensions = inDimNames[["climPFT"]],
-      units = "g m-2",
+      units = u[["ncVarUnitsModified"]],
       vartype = varType
     )
     RNetCDF::var.put.nc(
@@ -2131,6 +2195,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
           },
           FUN.VALUE = rep(NA_real_, nmonths)
         ) |> t(),
+        usedUnits = u,
         dims = inDimCounts[["climPFT"]],
         dimPermutation = inDimPerms[["climPFT"]],
         spDims = inputSpDims,
@@ -2141,12 +2206,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
 
     #--- ..** inVeg: live fraction ------
+    u <- getModifiedNCUnits(usedUnits, "inVeg", "live")
     createVarNC(
       nc,
       varname = "live",
       long_name = "fraction of biomass that is living",
       dimensions = inDimNames[["climPFT"]],
-      units = "1",
+      units = u[["ncVarUnitsModified"]],
       vartype = varType
     )
     RNetCDF::var.put.nc(
@@ -2166,6 +2232,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
           },
           FUN.VALUE = rep(NA_real_, nmonths)
         ) |> t(),
+        usedUnits = u,
         dims = inDimCounts[["climPFT"]],
         dimPermutation = inDimPerms[["climPFT"]],
         spDims = inputSpDims,
@@ -2176,12 +2243,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
 
     #--- ..** inVeg: convLAI ------
+    u <- getModifiedNCUnits(usedUnits, "inVeg", "convLAI")
     createVarNC(
       nc,
       varname = "convLAI",
       long_name = "biomass needed to produce LAI = 1",
       dimensions = inDimNames[["climPFT"]],
-      units = "g m-2",
+      units = u[["ncVarUnitsModified"]],
       vartype = varType
     )
     RNetCDF::var.put.nc(
@@ -2194,6 +2262,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
           FUN.VALUE = rep(NA_real_, nmonths)
         ) |> t(),
         otherValues = 250,
+        usedUnits = u,
         dims = inDimCounts[["climPFT"]],
         dimPermutation = inDimPerms[["climPFT"]],
         spDims = inputSpDims,
@@ -2345,12 +2414,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
 
       #--- ....*** inWeather sw2: tasmax ------
+      u <- getModifiedNCUnits(usedUnits, "inWeather", "tasmax")
       createVarNC(
         nc,
         varname = "tasmax",
         long_name = "maximum air temperature",
         dimensions = inDimNames[["meteo"]],
-        units = "degC",
+        units = u[["ncVarUnitsModified"]],
         vartype = varType
       )
       RNetCDF::att.put.nc(
@@ -2372,6 +2442,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
             digits = nDigsMeteo
           ),
           otherValues = 20,
+          usedUnits = u,
           dims = inDimCounts[["meteo"]],
           dimPermutation = inDimPerms[["meteo"]],
           spDims = inputSpDims,
@@ -2381,12 +2452,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       )
 
       #--- ....*** inWeather sw2: tasmin ------
+      u <- getModifiedNCUnits(usedUnits, "inWeather", "tasmin")
       createVarNC(
         nc,
         varname = "tasmin",
         long_name = "minimum air temperature",
         dimensions = inDimNames[["meteo"]],
-        units = "degC",
+        units = u[["ncVarUnitsModified"]],
         vartype = varType
       )
       RNetCDF::att.put.nc(
@@ -2412,6 +2484,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
             digits = nDigsMeteo
           ),
           otherValues = 5,
+          usedUnits = u,
           dims = inDimCounts[["meteo"]],
           dimPermutation = inDimPerms[["meteo"]],
           spDims = inputSpDims,
@@ -2422,12 +2495,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
 
       #--- ....*** inWeather sw2: pr ------
+      u <- getModifiedNCUnits(usedUnits, "inWeather", "pr")
       createVarNC(
         nc,
         varname = "pr",
         long_name = "precipitation amount",
         dimensions = inDimNames[["meteo"]],
-        units = "mm",
+        units = u[["ncVarUnitsModified"]],
         vartype = varType
       )
       RNetCDF::att.put.nc(
@@ -2446,6 +2520,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
             digits = nDigsMeteo
           ),
           otherValues = 0,
+          usedUnits = u,
           dims = inDimCounts[["meteo"]],
           dimPermutation = inDimPerms[["meteo"]],
           spDims = inputSpDims,
