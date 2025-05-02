@@ -4942,10 +4942,7 @@ closeFile:
 #endif
 
 /**
-@brief Once we read-in values from input, we need to check if any values
-are missing and set them to SW_MISSING, that's what this function does,
-this function is called on one value at a time; this function also
-does converting from user-provided units to SW2 units
+@brief Set values identified by the netCDF as missing to NAN
 
 @param[in] varType Type of the value that is being tested
 @param[in] valHasMissing A list of flags that specify the methods
@@ -4953,15 +4950,13 @@ of determining a missing value that was provided by the user
 @param[in] missingVals If there are any methods `valHasMissing` provided
 by the user, this is a list of missing value(s) to compare the value
 to and see if it is missing
-@param[in] varNum Variable number within an input key that is in question
 @param[in,out] value Updated value after either setting it to missing
 or converted value
 */
 static void set_missing_val(
     nc_type varType,
     const Bool *valHasMissing,
-    double **missingVals,
-    int varNum,
+    double *missingVals,
     double *value
 ) {
     const int missVal = 1;
@@ -4970,20 +4965,18 @@ static void set_missing_val(
     const int validMin = 4;
     const int validRange = 5;
     double ncMissVal;
-    double *ncMissValArr;
     Bool setMissing = swFALSE;
 
     if (valHasMissing[0] && !isnull(missingVals)) {
-        ncMissValArr = missingVals[varNum];
 
         setMissing =
             (Bool) (((valHasMissing[missVal] || valHasMissing[fillVal]) &&
-                     EQ(*value, ncMissValArr[0])) ||
+                     EQ(*value, missingVals[0])) ||
 
                     (((valHasMissing[validMax] && valHasMissing[validMin]) ||
                       valHasMissing[validRange]) &&
-                     (LT(*value, ncMissValArr[0]) || GT(*value, ncMissValArr[1])
-                     )));
+                     (LT(*value, missingVals[0]) || GT(*value, missingVals[1])))
+            );
     } else {
         switch (varType) {
         case NC_BYTE:
@@ -5015,11 +5008,14 @@ static void set_missing_val(
         setMissing = (Bool) EQ(*value, ncMissVal);
     }
     if (setMissing) {
-        *value = SW_MISSING;
+        /* We use NAN instead of SW_MISSING. NAN allows to distinguish between
+        values equal to SOILWAT2's SW_MISSING but which are not
+        truly missing as identified by the netCDF */
+        *value = NAN;
     }
 }
 
-/**
+/*
 @brief Calculates offset with mixed dimensions when reading more than
 one site's/gridcell's worth of data to index to the next day, layer, etc.
 within read data
@@ -5043,7 +5039,13 @@ static int calc_read_offset(int order, const int numCount, size_t count[]) {
 }
 
 /**
-@brief When reading in values from an nc file, we cannot expect them
+@brief Identify values as missing, unpack values, and apply unit conversion
+
+Values are recognized as missing
+(i) if they meet one of the conditions specified by the netCDF as missing, or
+(ii) if they are NAN.
+
+When reading in values from an nc file, we cannot expect them
 to be the same type of NC_DOUBLE, so this function makes use of
 a provided void pointer and converts the read value(s) from
 the provided type to double (helper) and if we are to "unpack" the values,
@@ -5059,8 +5061,6 @@ if a read-in value is missing (can be a single value or a range)
 transfer to `resVals`
 @param[in] numVals Number of values that were read in to transfer from
 one array to another
-@param[in] varNum Specifies the variable number within an input key
-to access the missing value information if allocated
 @param[in] varType Type of the variable that was read-in and will
 be set with those value(s)
 @param[in] scale_factor User-provided factor to multiply the read-in
@@ -5071,49 +5071,43 @@ the read-in value(s) and scale_factor to "unpack" the value(s)
 (may be 0 if the variable is not to be unpacked)
 @param[in] unitConv Unit converter for the current variable that
 we read in
-@param[in] swrcpInput A flag specifying if the read values are swrcp; this
-variable's value setting needs to be handled in a different manner
-@param[in] swrcpIndex A value specifying the number of swrcp we are dealing
-with, [1, SWRC_PARAM_NMAX] or [0, SWRC_PARAM_NMAX - 1] for this index
-@param[in] swrcpLyr A value specifying the layer we are setting the values
-of within swrcp
 @param[in] stride A stride value to properly index the read values to match
 mixed variable dimensions
+@param[in] sameIndexPlace Specifies if read values should be put into the
+same index location as they were read from (swrcp), otherwise, start the value
+setting at index 0 (anything but swrcp)
 @param[in,out] resVals Resulting values which the actual destination
 within a struct used within a simulation run, and values are scaled/set to
 missing as needed
 */
 static void set_read_vals(
     const Bool *valHasMissing,
-    double **missingVals,
+    double *missingVals,
     const double *readVals,
     int numVals,
-    int varNum,
     nc_type varType,
     double scale_factor,
     double add_offset,
     sw_converter_t *unitConv,
-    Bool swrcpInput,
-    int swrcpIndex,
-    LyrIndex swrcpLyr,
     int stride,
+    Bool sameIndexPlace,
     double *resVals
 ) {
     int valIndex;
     double *dest;
-    Bool missingBefore;
+    Bool notMissingBefore;
     double readVal;
     int strideIndex;
 
     for (valIndex = 0; valIndex < numVals; valIndex++) {
-        strideIndex = ((!swrcpInput) ? valIndex : swrcpLyr) * stride;
-        dest = (!swrcpInput) ? &resVals[valIndex] : &resVals[swrcpIndex];
+        strideIndex = valIndex * stride;
+        dest = (sameIndexPlace) ? &resVals[strideIndex] : &resVals[valIndex];
 
-        missingBefore = (Bool) (missing(readVals[strideIndex]));
-        readVal = (!swrcpInput) ? readVals[strideIndex] : readVals[strideIndex];
-        set_missing_val(varType, valHasMissing, missingVals, varNum, &readVal);
+        readVal = readVals[strideIndex];
+        notMissingBefore = (Bool) (isfinite(readVal));
+        set_missing_val(varType, valHasMissing, missingVals, &readVal);
 
-        if (missingBefore || !missing(readVal)) {
+        if (notMissingBefore && isfinite(readVal)) {
             *dest = readVal;
             *dest *= scale_factor;
             *dest += add_offset;
@@ -5430,18 +5424,15 @@ static void read_spatial_topo_climate_site_inputs(
 
                     set_read_vals(
                         missValFlags[varNum],
-                        doubleMissVals,
+                        isnull(doubleMissVals) ? NULL : doubleMissVals[varNum],
                         &tempVals[tempRead],
                         numVals,
-                        varNum,
                         varType,
                         scaleFactor,
                         addOffset,
                         convs[currKey][varNum],
-                        swFALSE,
-                        0,
-                        0,
                         stride,
+                        swFALSE,
                         values[keyNum][varNum - 1]
                     );
 
@@ -6349,18 +6340,15 @@ static void read_veg_inputs(
 
                 set_read_vals(
                     missValFlags[varNum],
-                    doubleMissVals,
+                    isnull(doubleMissVals) ? NULL : doubleMissVals[varNum],
                     &tempVals[writeIndex],
                     numSetVals,
-                    varNum - 1,
                     varType,
                     scaleFactor,
                     addOffset,
                     vegConv[varNum - 1],
-                    swFALSE,
-                    0,
-                    0,
                     stride,
+                    swFALSE,
                     values[varNum - 1]
                 );
 
@@ -6672,11 +6660,10 @@ static void read_soil_inputs(
     int numVarsInSoilKey = numVarsInKey[eSW_InSoil];
     char *varName;
     int vegIndex = 0;
-    int setIter;
-    int loopIter;
     size_t defSetStart[2] = {0};
     size_t defSetCount[2] = {1, 1};
     LyrIndex numLyrs;
+    LyrIndex slIter;
     int latIndex;
     int lonIndex;
     int vertIndex;
@@ -6756,7 +6743,8 @@ static void read_soil_inputs(
             varID = varIDs[varNum];
             varName = inVarInfo[varNum][INNCVARNAME];
             varHasAddScaleAtts = keyAttFlags[varNum];
-            isSwrcpVar = (Bool) (varNum >= eiv_swrcpMS[0]);
+            isSwrcpVar = (Bool) (varNum >= eiv_swrcpMS[0] &&
+                                 varNum <= eiv_swrcpMS[SWRC_PARAM_NMAX - 1]);
             latIndex = dimOrderInVar[varNum][0];
             lonIndex = dimOrderInVar[varNum][1];
             vertIndex = dimOrderInVar[varNum][2];
@@ -6822,8 +6810,7 @@ static void read_soil_inputs(
                     vegIndex = varNum - eiv_transpCoeff[0];
                     storePtr = (double *) trans_coeff[vegIndex];
 
-                } else if (varNum >= eiv_swrcpMS[0] &&
-                           varNum <= eiv_swrcpMS[SWRC_PARAM_NMAX - 1]) {
+                } else if (isSwrcpVar) {
                     /* Set swrcp */
                     storePtr = NULL; // Deal with separtely in iter loop
                 } else {
@@ -6849,8 +6836,6 @@ static void read_soil_inputs(
                     stride = calc_read_offset(vertIndex, 4, count);
                 }
 
-                setIter = (isSwrcpVar) ? (int) numLyrs : 1;
-
                 if (lonIndex > -1) {
                     if (vertIndex > lonIndex && vertIndex > latIndex) {
                         writeIndex = site * ((!isSwrcpVar) ? numVals : 1);
@@ -6868,23 +6853,28 @@ static void read_soil_inputs(
                         (latIndex > vertIndex) ? site : site * count[vertIndex];
                 }
 
-                for (loopIter = 0; loopIter < setIter; loopIter++) {
-                    set_read_vals(
-                        missValFlags[varNum],
-                        doubleMissVals,
-                        &readPtr[writeIndex],
-                        (!isSwrcpVar) ? numVals : 1,
-                        varNum - 1,
-                        varTypes[varNum],
-                        scaleFactor,
-                        addOffset,
-                        soilConv[varNum - 1],
-                        isSwrcpVar,
-                        (!isSwrcpVar) ? 0 : (varNum - eiv_swrcpMS[0]),
-                        loopIter,
-                        stride,
-                        (!isSwrcpVar) ? storePtr : swrcpMS[loopIter]
-                    );
+                set_read_vals(
+                    missValFlags[varNum],
+                    isnull(doubleMissVals) ? NULL : doubleMissVals[varNum],
+                    &readPtr[writeIndex],
+                    (int) numLyrs,
+                    varTypes[varNum],
+                    scaleFactor,
+                    addOffset,
+                    soilConv[varNum],
+                    stride,
+                    isSwrcpVar,
+                    (isSwrcpVar) ? &readPtr[writeIndex] : storePtr
+                );
+
+                /* Copy values of one SWRCp `k` from a temporary
+                   `array[soilLayers]` to the final `array[soilLayers][SWRCp_k]`
+                 */
+                if (isSwrcpVar) {
+                    for (slIter = 0; slIter < numLyrs; slIter++) {
+                        swrcpMS[slIter][varNum - eiv_swrcpMS[0]] =
+                            readPtr[writeIndex + (stride * slIter)];
+                    }
                 }
 
                 input++;
@@ -7861,7 +7851,7 @@ static void read_weather_input(
     int site;
     int input = 0;
     int stride = 1;
-    int tempStart = 0;
+    int tempStart;
     double ***tempWeatherHist = NULL;
     size_t writeIndex = 0;
 
@@ -7918,7 +7908,8 @@ static void read_weather_input(
 
             numDays = numDaysInYears[yearIndex];
             count[timeIndex] = numDays;
-            tempVals[MAX_DAYS - 1] = SW_MISSING;
+            /* set_read_vals() recognizes NAN and nc-missingness as missing */
+            tempVals[MAX_DAYS - 1] = NAN;
 
 #if !defined(SWMPI)
             fileName = weathInFiles[varNum][weathFileIndex];
@@ -8013,18 +8004,15 @@ static void read_weather_input(
 
                     set_read_vals(
                         missValFlags[varNum],
-                        doubleMissVals,
+                        isnull(doubleMissVals) ? NULL : doubleMissVals[varNum],
                         &tempVals[tempStart],
                         MAX_DAYS,
-                        varNum,
                         varTypes[varNum],
                         scaleFactor,
                         addOffset,
                         weathConv[varNum],
-                        swFALSE,
-                        0,
-                        0,
                         stride,
+                        swFALSE,
                         &tempWeatherHist[yearIndex][varNum - 1][writeIndex]
                     );
                     if (LogInfo->stopRun) {
