@@ -284,11 +284,20 @@ typedef struct {
                                   matric density (type = SW_MATRIC = 0) or bulk
                                   density (type = SW_BULK = 1) */
 
-    LyrIndex n_layers, /* total number of soil layers */
-        n_transp_rgn,  /* soil layers are grouped into n transp. regions */
-        n_evap_lyrs,   /* number of layers in which evap is possible */
-        n_transp_lyrs[NVEGTYPES], /* layer index of deepest transp. region */
-        deep_lyr; /* index of deep drainage layer if deepdrain, 0 otherwise */
+    /** Number of soil layers (max = \ref MAX_LAYERS)*/
+    LyrIndex n_layers;
+
+    /** Number of transpiration regions (max = \ref MAX_TRANSP_REGIONS) */
+    LyrIndex n_transp_rgn;
+
+    /** Number of soil layers from which bare-soil evaporation is possible */
+    LyrIndex n_evap_lyrs;
+
+    /** Number of soil layers with roots per plant functional type */
+    LyrIndex n_transp_lyrs[NVEGTYPES];
+
+    /* Soil layer index of deep drainage layer if deepdrain, 0 otherwise */
+    LyrIndex deep_lyr;
 
     double slow_drain_coeff, /* low soil water drainage coefficient   */
         pet_scale,           /* changes relative effect of PET calculation */
@@ -354,15 +363,29 @@ typedef struct {
     /** Lower bounds of transpiration regions [layers]
 
     Possible levels are: shallow, moderately shallow, deep and very deep.
-    Calculated as the number of the deepest soil layer that still is within
-    the corresponding soil depth #TranspRgnDepths.
+    Calculated as the number of the deepest soil layer (base1)
+    that still is within the corresponding soil depth #TranspRgnDepths.
+
+    For instance, #TranspRgnDepths of 20, 40, and 100 cm define
+    three transpiration regions; then,
+    region 1 contains soil layers 5, 10 and 20 cm (bound = 3),
+    region 2 contains soil layers 30 and 40 cm (bound = 5), and
+    region 3 contains soil layers 60, 80 and 100 cm (bound = 8).
     */
     LyrIndex TranspRgnBounds[MAX_TRANSP_REGIONS];
 
     /** Lower bounds of transpiration regions [cm]
 
-    Possible levels are: shallow, moderately shallow, deep and very deep.
-    User provided values in [cm].
+    There are up to four transpiration regions:
+        shallow, moderately shallow, deep and very deep.
+    They are defined by soil depths [cm] that are equal to or deeper than
+    the lower bounds of those soil layers that they contain.
+
+    For instance, #TranspRgnDepths of 20, 40, and 100 cm define
+    three transpiration regions; then,
+    region 1 contains soil layers 5, 10 and 20 cm,
+    region 2 contains soil layers 30 and 40 cm, and
+    region 3 contains soil layers 60, 80 and 100 cm.
     */
     double TranspRgnDepths[MAX_TRANSP_REGIONS];
 
@@ -437,8 +460,9 @@ typedef struct {
         for (1) fibric and (2) sapric peat. */
     double swrcpOM[2][SWRC_PARAM_NMAX];
 
-    LyrIndex my_transp_rgn[NVEGTYPES][MAX_LAYERS]; /* which transp zones from
-                                                      Site am I in? */
+    /** Array for plant functional types and soil layers with assigned
+        transpiration region ID */
+    LyrIndex my_transp_rgn[NVEGTYPES][MAX_LAYERS];
 
     /* Inputs */
     SW_SOILS soils;

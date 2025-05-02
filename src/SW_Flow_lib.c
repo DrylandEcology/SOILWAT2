@@ -471,12 +471,11 @@ used for transpiration calculations.
 @param[in,out] *swp_avg Weighted average of soilwater potential and
     transpiration coefficients (-bar).
 @param[in] SW_Site Struct of type SW_SITE describing the simulated site
-@param[in] n_tr_rgns Array of n_lyrs elements of transpiration regions that each
-    soil layer belongs to.
-@param[in] n_layers Number of soil layers.
-@param[in] tr_regions Number of layer regions used in weighted average,
-    typically 3;<BR> to represent shallow, mid, & deep depths to compute
-    transpiration rate.
+@param[in] n_tr_rgns Number of transpiration regions.
+@param[in] n_layers Number of soil layers with roots
+    (for a specific plant functional type)
+@param[in] tr_regions Array with the transpiration region assigned to each
+    soil layer (for a specific plant functional type)
 @param[in] swc Soilwater content in each layer before drainage
     (m<SUP>3</SUP>H<SUB>2</SUB>O).
 @param[in] VegType Current vegetation
@@ -540,7 +539,7 @@ void transp_weighted_avg(
             }
         }
 
-        swp /= GT(sumco, 0.) ? sumco : 1.;
+        swp /= GT(sumco, 0.) ? sumco : 1.; // swp is 0 if sumco is 0
 
         /* use smallest weighted average of regions */
         (*swp_avg) = (r == 1) ? swp : fmin(swp, (*swp_avg));

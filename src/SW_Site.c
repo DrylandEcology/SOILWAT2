@@ -1444,7 +1444,8 @@ The count stops at first layer with 0 per vegetation type.
 
 @param[in] n_layers Number of layers of soil within the simulation run
 @param[in] transp_coeff Prop. of total transp from this layer
-@param[out] n_transp_lyrs Index of the deepest transp. region
+@param[out] n_transp_lyrs Number of soil layers with roots
+    per plant functional type
 */
 void nlayers_vegroots(
     LyrIndex n_layers,
@@ -2179,7 +2180,7 @@ void set_soillayers(
     between 1 and \ref MAX_TRANSP_REGIONS
     (currently, shallow, moderate, deep, very deep).
 @param[out] TranspRgnBounds Array of size \ref MAX_TRANSP_REGIONS
-    that identifies the deepest soil layer (by number) that belongs to
+    that identifies the deepest soil layer (base1) that belongs to
     each of the transpiration regions.
 @param[in] nRegions The size of array \p TranspRgnDepths. Must be
     between 1 and \ref MAX_TRANSP_REGIONS.
@@ -2882,16 +2883,19 @@ void SW_SIT_init_run(
                 SW_VegProd->veg[k].SWPcrit = tmp;
             }
 
-            /* Find which transpiration region the current soil layer
-             * is in and check validity of result. Region bounds are
-             * base1 but s is base0.*/
+            /* Identify the transpiration region that contains
+               the current soil layer s.
+               Note: TranspRgnBounds, curregion, and my_transp_rgn are base1;
+               s is base0.
+            */
             curregion = 0;
             ForEachTranspRegion(r, SW_Site->n_transp_rgn) {
                 if (s < SW_Site->TranspRgnBounds[r]) {
                     if (ZRO(SW_Site->soils.transp_coeff[k][s])) {
                         break; /* end of transpiring layers */
                     }
-                    curregion = r + 1;
+
+                    curregion = r + 1; // convert to base1
                     break;
                 }
             }
@@ -2905,7 +2909,7 @@ void SW_SIT_init_run(
                     LogInfo,
                     LOGERROR,
                     "Top soil layer must be included "
-                    "in %s tranpiration region",
+                    "in %s transpiration region",
                     key2veg[k]
                 );
                 return; // Exit function prematurely due to error
@@ -2922,7 +2926,7 @@ void SW_SIT_init_run(
                 );
                 return; // Exit function prematurely due to error
             } else {
-                SW_Site->my_transp_rgn[k][s] = 0;
+                SW_Site->my_transp_rgn[k][s] = 0; // no transpiration region
             }
         }
     } /*end ForEachSoilLayer */

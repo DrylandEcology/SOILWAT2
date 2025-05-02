@@ -400,7 +400,8 @@ This works correctly only after
 @param[in,out] **parms List of structs of type SW_VEGESTAB_INFO holding
     information about every vegetation species
 @param[in] SW_Site Struct of type SW_SITE describing the simulated site
-@param[in] n_transp_lyrs Index of the deepest transp. region
+@param[in] n_transp_lyrs  Number of soil layers with roots
+    per plant functional type
 @param[in] count Held within type SW_VEGESTAB to determine
     how many species to check
 @param[out] LogInfo Holds information on warnings and errors
@@ -753,7 +754,8 @@ other function call.
     information about every vegetation species
 @param[in] sppnum Index for which paramater is beign initialized.
 @param[in] SW_Site Struct of type SW_SITE describing the simulated site
-@param[in] n_transp_lyrs Layer index of deepest transp. region.
+@param[in] n_transp_lyrs  Number of soil layers with roots
+    per plant functional type
 @param[out] LogInfo Holds information on warnings and errors
 */
 void spp_init(
