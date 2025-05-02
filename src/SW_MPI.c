@@ -3836,13 +3836,13 @@ on various program-defined structs
 */
 void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
     int res;
-    int numItems[] = {7, 5, 5, 5, 6, 5, 18, 3, 7, 9};
+    int numItems[] = {7, 5, 5, 5, 4, 5, 18, 3, 7, 9};
     int blockLens[][19] = {
         {1, 1, 1, 1, 1, MAX_LAYERS, 1}, /* SW_DOMAIN */
         {1, 1, 1, 1, 1},                /* SW_SPINUP */
         {1, 1, 1, 1, 1},                /* SW_RUN_INPUTS */
         {1, 1, 1, 1, 1},                /* SW_MPI_DESIGNATE */
-        {1, 1, 1, 1, 1, 1},             /* SW_MPI_WallTime */
+        {1, 1, 1, 1},                   /* SW_MPI_WallTime */
         {SW_OUTNKEYS,
          SW_OUTNKEYS,
          SW_OUTNPERIODS,
@@ -3894,14 +3894,9 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
          MPI_DATATYPE_NULL,
          MPI_DATATYPE_NULL,
          MPI_DATATYPE_NULL}, /* SW_RUN_INPUTS */
-        {MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_UNSIGNED
-        }, /* SW_MPI_DESIGNATE */
-        {MPI_DOUBLE,
-         MPI_DOUBLE,
-         MPI_DOUBLE,
-         MPI_DOUBLE,
-         MPI_UNSIGNED_LONG,
-         MPI_UNSIGNED_LONG}, /* SW_MPI_WallTime */
+        {MPI_INT, MPI_INT, MPI_INT, MPI_UNSIGNED_LONG, MPI_UNSIGNED
+        },                                                /* SW_MPI_DESIGNATE */
+        {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE}, /* SW_MPI_WallTime */
         {MPI_INT, MPI_INT, MPI_UNSIGNED_LONG, MPI_INT, MPI_INT
         }, /* SW_OUT_DOM */
         {MPI_CHAR,
@@ -3975,9 +3970,7 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
         {offsetof(SW_WALLTIME, timeMean),
          offsetof(SW_WALLTIME, timeSD),
          offsetof(SW_WALLTIME, timeMin),
-         offsetof(SW_WALLTIME, timeMax),
-         offsetof(SW_WALLTIME, nTimedRuns),
-         offsetof(SW_WALLTIME, nUntimedRuns)},
+         offsetof(SW_WALLTIME, timeMax)},
 
         /* SW_OUT_DOM */
         {offsetof(SW_OUT_DOM, sumtype),
@@ -5025,6 +5018,25 @@ void SW_MPI_report_log(
 
             if (destProcJob == SW_MPI_PROC_COMP && !failedSetup) {
                 SW_MPI_Recv(wtType, &rankWT, 1, destRank, swTRUE, 0, &req);
+                SW_MPI_Recv(
+                    MPI_UNSIGNED_LONG,
+                    &rankWT.nTimedRuns,
+                    1,
+                    destRank,
+                    swTRUE,
+                    0,
+                    &req
+                );
+                SW_MPI_Recv(
+                    MPI_UNSIGNED_LONG,
+                    &rankWT.nUntimedRuns,
+                    1,
+                    destRank,
+                    swTRUE,
+                    0,
+                    &req
+                );
+
                 numRanks++;
 
                 prevMean = SW_WallTime->timeMean;
@@ -5032,10 +5044,10 @@ void SW_MPI_report_log(
                     numRanks, SW_WallTime->timeMean, rankWT.timeMean
                 );
                 SW_WallTime->timeMax = get_running_mean(
-                    numRanks, SW_WallTime->timeMax, rankWT.timeMean
+                    numRanks, SW_WallTime->timeMax, rankWT.timeMax
                 );
                 SW_WallTime->timeMin = get_running_mean(
-                    numRanks, SW_WallTime->timeMin, rankWT.timeMean
+                    numRanks, SW_WallTime->timeMin, rankWT.timeMin
                 );
                 runSqr = get_running_sqr(
                     prevMean, SW_WallTime->timeMean, rankWT.timeMean
@@ -5073,7 +5085,28 @@ void SW_MPI_report_log(
 
         if (desig->procJob == SW_MPI_PROC_COMP && !failedSetup) {
             /* Send timing information to the root process to average it */
+            /* TODO: Find the reason why sending SW_WALLTIME with
+               n(Un)TimedRuns across nodes in an HPC environment results in
+               a floating-point exception */
             SW_MPI_Send(wtType, SW_WallTime, 1, SW_MPI_ROOT, swTRUE, 0, &req);
+            SW_MPI_Send(
+                MPI_UNSIGNED_LONG,
+                &SW_WallTime->nTimedRuns,
+                1,
+                SW_MPI_ROOT,
+                swTRUE,
+                0,
+                &req
+            );
+            SW_MPI_Send(
+                MPI_UNSIGNED_LONG,
+                &SW_WallTime->nUntimedRuns,
+                1,
+                SW_MPI_ROOT,
+                swTRUE,
+                0,
+                &req
+            );
         }
 
         // Send information to the root process
