@@ -673,10 +673,6 @@ void sw_setup_prog_data(
 @brief Wrapper function to finalize the program depending on if SWMPI
 is enabled
 
-TODO: We currently only report log information when all runs pass or
-    the setup failed, implement the scenario of when the setup passes
-    but a run fails
-
 @param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] size Number of processors (world size) within the
     communicator MPI_COMM_WORLD
