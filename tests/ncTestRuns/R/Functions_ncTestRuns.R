@@ -94,6 +94,34 @@ copyDir <- function(from, to) {
   dir.exists(to)
 }
 
+# Prepended numbers are interpreted as prefixed units if there is no space
+#' @examples
+#' makePrefixedUnit("g g-1")
+#' makePrefixedUnit("100 g g-1")
+#'
+makePrefixedUnit <- function(unit) {
+  if (
+    grepl(" ", unit, fixed = TRUE) &&
+      !anyNA(suppressWarnings(as.integer(substr(unit, 1L, 1L))))
+  ) {
+    sub(" ", "", unit) # remove first space (between number and unit)
+  } else {
+    unit
+  }
+}
+
+convertUnits <- function(x, hasUnits = "1", newUnits = "1") {
+  if (!identical(hasUnits, newUnits)) {
+    stopifnot(requireNamespace("units"))
+
+    units(x) <- units::as_units(makePrefixedUnit(hasUnits)) # set current units
+    units(x) <- units::as_units(makePrefixedUnit(newUnits)) # transform
+    x <- units::drop_units(x)
+  }
+
+  x
+}
+
 
 #--- * SOILWAT2-related functions ------
 
@@ -284,6 +312,69 @@ setNCInputTSV <- function(
 
   writeTSV(x, filename)
 }
+
+modifyNCUnitsTSV <- function(
+  filename,
+  adjustUnits = list(
+    c(inkey = "inTopo", sw2var = "elevation", newUnit = "km"),
+    c(inkey = "inWeather", sw2var = "temp_max", newUnit = "K"),
+    c(inkey = "inClimate", sw2var = "r_humidity", newUnit = "1"),
+    c(
+      inkey = "inSoil",
+      sw2var = "fractionVolBulk_gravel",
+      newUnit = "0.01 cm3 cm-3"
+    ),
+    c(inkey = "inVeg", sw2var = "<veg>.litter", newUnit = "kg m-2"),
+    c(inkey = "inVeg", sw2var = "Shrubs.biomass", newUnit = "kg m-2"),
+    c(inkey = "inSite", sw2var = "Tsoil_constant", newUnit = "degF")
+  )
+) {
+  x <- readTSV(filename)
+
+  vars <- c(
+    "SW2 input group", "SW2 variable", "SW2 units", "ncVarName", "ncVarUnits"
+  )
+  res <- x[, vars, drop = FALSE]
+  res[["ncVarUnitsModified"]] <- res[["ncVarUnits"]]
+
+  for (k in seq_along(adjustUnits)) {
+    idrow <- which(
+      x[["SW2 input group"]] %in% adjustUnits[[k]][["inkey"]] &
+        x[["SW2 variable"]] %in% adjustUnits[[k]][["sw2var"]]
+    )
+
+    if (length(idrow) != 1L) {
+      stop(
+        "Could not identify row in nc-inputs.tsv: ",
+        "k = ", k, ", inkey = ", adjustUnits[[k]][["inkey"]],
+        ", sw2var = ", adjustUnits[[k]][["sw2var"]]
+      )
+    }
+
+    x[idrow, "ncVarUnits"] <- adjustUnits[[k]][["newUnit"]]
+    res[idrow, "ncVarUnitsModified"] <- adjustUnits[[k]][["newUnit"]]
+  }
+
+  writeTSV(x, filename)
+
+  res
+}
+
+getModifiedNCUnits <- function(x, inkey, ncvar) {
+  idrow <- which(
+    x[["SW2 input group"]] %in% inkey & x[["ncVarName"]] %in% ncvar
+  )
+
+  if (length(idrow) != 1L) {
+    stop(
+      "Could not identify row in nc-inputs.tsv: ",
+      "inkey = ", inkey, ", ncvar = ", ncvar
+    )
+  }
+
+  as.list(x[idrow, c("ncVarUnits", "ncVarUnitsModified")])
+}
+
 
 runSW2 <- function(sw2, path_inputs, renameDomainTemplate = FALSE) {
   msg <- NULL
@@ -534,11 +625,12 @@ createVarNC <- function(
 #' examples
 #' createTestRunData(
 #'   x = 1,
-#'   otherValues = 0,
+#'   otherValues = -273.15,
 #'   dims = c(lon = 3L, lat = 2L),
 #'   dimPermutation = c(2L, 1L),
 #'   spDims = c(lon = 3L, lat = 2L),
-#'   idExampleSite = 5L
+#'   idExampleSite = 5L,
+#'   usedUnits = list("degC", "K")
 #' )
 #'
 #' createTestRunData(
@@ -559,7 +651,13 @@ createVarNC <- function(
 #'   idExampleSite = 5L
 #' )
 createTestRunData <- function(
-    x, dims, dimPermutation, spDims, idExampleSite, otherValues = NULL
+  x,
+  dims,
+  dimPermutation,
+  spDims,
+  idExampleSite,
+  otherValues = NULL,
+  usedUnits = list(originalUnits = "1", newUnits = "1")
 ) {
   nonSpDims <- dims[setdiff(names(dims), names(spDims))]
   nNonSpDims <- length(nonSpDims)
@@ -620,8 +718,18 @@ createTestRunData <- function(
 
 
   # Permutate order of dimensions
-  aperm(res, perm = dimPermutation)
+  res <- aperm(res, perm = dimPermutation)
+
+  # Adjust units
+  if (!is.null(usedUnits)) {
+    res <- convertUnits(
+      res, hasUnits = usedUnits[[1L]], newUnits = usedUnits[[2L]]
+    )
+  }
+
+  res
 }
+
 
 #' @param nMinSoilLayers An integer value. Minimum number of soil layers at a
 #' site (grid cell). Note: this should be at least 3 if the vegetation
@@ -635,6 +743,7 @@ createTestRunSoils <- function(
   nMinSoilLayers = 3L,
   type = c("standard", "variableSoilLayerNumber", "variableSoilLayerThickness"),
   mixNonExampleSiteValues = FALSE,
+  usedUnits = list(originalUnits = "1", newUnits = "1"),
   seed = 127
 ) {
 
@@ -689,7 +798,16 @@ createTestRunSoils <- function(
   }
 
   # Permutate order of dimensions
-  aperm(x, perm = dimPermutation)
+  x <- aperm(x, perm = dimPermutation)
+
+  # Adjust units
+  if (!is.null(usedUnits)) {
+    x <- convertUnits(
+      x, hasUnits = usedUnits[[1L]], newUnits = usedUnits[[2L]]
+    )
+  }
+
+  x
 }
 
 

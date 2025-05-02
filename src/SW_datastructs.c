@@ -726,7 +726,7 @@ void SW_DATA_queryTree(
 
     if (!isnull(oppCoords)) {
         if (goLeft && GE(queryCoords[inspectIndex] + *bestDist,
-                           currNode->coords[inspectIndex])) {
+                         currNode->coords[inspectIndex])) {
             SW_DATA_queryTree(
                 currNode->right,
                 queryCoords,
@@ -736,7 +736,7 @@ void SW_DATA_queryTree(
                 bestDist
             );
         } else if (!goLeft && LE(queryCoords[inspectIndex] - *bestDist,
-                                   currNode->coords[inspectIndex])) {
+                                 currNode->coords[inspectIndex])) {
             SW_DATA_queryTree(
                 currNode->left,
                 queryCoords,

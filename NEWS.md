@@ -29,8 +29,11 @@
     * Reset observed solar radiation to extraterrestrial radiation if
       the observed value is larger than expected.
 
+## Bugfixes
 * The KD-tree algorithm is now correctly calculating index positions for
   lookup netCDFs also when the domain is a subset of the inputs (@N1ckP3rsl3y).
+* Inputs from netCDFs are now correctly handling missing values and unit
+  conversions for soil and vegetation inputs (@dschlaep).
 
 ## Changes to inputs
 * New input via `"veg.in"` to specify the year for which vegetation inputs
