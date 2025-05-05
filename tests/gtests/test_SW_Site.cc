@@ -569,13 +569,13 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationParametersDeathTest) {
 TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     /* Notes:
         - SW_Site.n_layers is base1
-        - soil layer information in TranspRgnBounds is base0
+        - TranspRgnBounds is base1
     */
 
     LyrIndex i;
     LyrIndex nRegions;
     LyrIndex expectedNRegions;
-    const LyrIndex expectedTranspRgnBounds[MAX_TRANSP_REGIONS] = {2, 4, 7, 999};
+    const LyrIndex expectedTranspRgnBounds[MAX_TRANSP_REGIONS] = {3, 5, 8, 999};
     double soildepth[MAX_LAYERS] = {0};
     double sd = 0;
 
@@ -622,7 +622,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     // Check that setting one region for all soil layers works
     nRegions = 1;
     expectedNRegions = 1;
-    const LyrIndex expectedTranspRgnBounds2[] = {SW_Run.Site.n_layers - 1};
+    const LyrIndex expectedTranspRgnBounds2[] = {SW_Run.Site.n_layers};
     double regionLowerBounds2[] = {100.};
 
     derive_TranspRgnBounds(
@@ -648,7 +648,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     // Check that setting one region for one soil layer works
     nRegions = 1;
     expectedNRegions = 1;
-    const LyrIndex expectedTranspRgnBounds3[] = {0};
+    const LyrIndex expectedTranspRgnBounds3[] = {1};
     double regionLowerBounds3[] = {SW_Run.Site.soils.width[0]};
 
     derive_TranspRgnBounds(
@@ -696,7 +696,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     for (i = 0; i < SW_Run.Site.n_transp_rgn; ++i) {
-        EXPECT_EQ(i, SW_Run.Site.TranspRgnBounds[i])
+        EXPECT_EQ(i + 1, SW_Run.Site.TranspRgnBounds[i])
             << "for transpiration region for the " << i + 1 << "-th soil layer";
     }
 
@@ -706,7 +706,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     // Check region assignment of deeper soil layers
     nRegions = 4;
     expectedNRegions = 3;
-    const LyrIndex expectedTranspRgnBounds5[] = {2, 4, 7};
+    const LyrIndex expectedTranspRgnBounds5[] = {3, 5, 8};
     double regionLowerBounds5[] = {25., 45., 150., 200.};
 
     derive_TranspRgnBounds(

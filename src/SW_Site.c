@@ -2102,8 +2102,8 @@ void set_soillayers(
     const double *imperm,
     const double *soiltemp,
     const double *pom,
-    int nRegions,
-    double *regionLowerBounds,
+    LyrIndex nRegions,
+    const double *regionLowerBounds,
     LOG_INFO *LogInfo
 ) {
 
@@ -2154,19 +2154,11 @@ void set_soillayers(
         SW_Site->soils.fractionWeight_om[lyrno] = pom[i];
     }
 
-    /* Identify transpiration regions by soil layers */
-    derive_TranspRgnBounds(
-        &SW_Site->n_transp_rgn,
-        SW_Site->TranspRgnBounds,
-        nRegions,
-        regionLowerBounds,
-        SW_Site->n_layers,
-        SW_Site->soils.width,
-        SW_Site->soils.transp_coeff,
-        LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
+    // Set transpiration region input information
+    SW_Site->n_transp_rgn = nRegions;
+
+    for (i = 0; i < nRegions; i++) {
+        SW_Site->TranspRgnDepths[i] = regionLowerBounds[i];
     }
 
     // Re-initialize site parameters based on new soil layers
@@ -2230,15 +2222,14 @@ void derive_TranspRgnBounds(
     layer = 0; // SW_Site.lyr is base0-indexed
     totalDepth = 0;
     for (i = 0; i < nRegions && layer < n_layers; ++i) {
-        TranspRgnBounds[i] = layer;
         // Find the last soil layer that is completely contained within a region
         // It becomes the bound.
         while (layer < n_layers && LE(totalDepth, TranspRgnDepths[i]) &&
                LE((totalDepth + width[layer]), TranspRgnDepths[i]) &&
                sum_across_vegtypes(transp_coeff, layer)) {
             totalDepth += width[layer];
-            TranspRgnBounds[i] = layer;
             layer++;
+            TranspRgnBounds[i] = layer; // TranspRgnBounds is base1
         }
     }
 
@@ -2890,7 +2881,9 @@ void SW_SIT_init_run(
             */
             curregion = 0;
             ForEachTranspRegion(r, SW_Site->n_transp_rgn) {
-                if (s < SW_Site->TranspRgnBounds[r]) {
+                if (s < SW_Site->TranspRgnBounds[r] &&
+                    SW_Site->TranspRgnBounds[r] <= MAX_LAYERS) {
+
                     if (ZRO(SW_Site->soils.transp_coeff[k][s])) {
                         break; /* end of transpiring layers */
                     }
@@ -2900,9 +2893,8 @@ void SW_SIT_init_run(
                 }
             }
 
-            if (curregion || SW_Site->TranspRgnBounds[curregion] == 0) {
+            if (curregion > 0) {
                 SW_Site->my_transp_rgn[k][s] = curregion;
-                SW_Site->n_transp_lyrs[k] = MAX(SW_Site->n_transp_lyrs[k], s);
 
             } else if (s == 0) {
                 LogError(
