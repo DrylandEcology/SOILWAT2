@@ -2905,20 +2905,10 @@ void SW_SIT_init_run(
                     key2veg[k]
                 );
                 return; // Exit function prematurely due to error
-            } else if (r < SW_Site->n_transp_rgn) {
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "Transpiration region %d "
-                    "is deeper than the deepest layer with a "
-                    "%s transpiration coefficient > 0 (%d)",
-                    r + 1,
-                    key2veg[k],
-                    s
-                );
-                return; // Exit function prematurely due to error
+
             } else {
-                SW_Site->my_transp_rgn[k][s] = 0; // no transpiration region
+                // no transpiration region or not roots
+                SW_Site->my_transp_rgn[k][s] = 0;
             }
         }
     } /*end ForEachSoilLayer */

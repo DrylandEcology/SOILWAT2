@@ -482,7 +482,7 @@ used for transpiration calculations.
 @param[out] LogInfo Holds information on warnings and errors
 
 @sideeffect *swp_avg Weighted average of soilwater potential and transpiration
-coefficients (-bar).
+coefficients (-bar). NAN if all transpiration coefficients are 0.
 */
 void transp_weighted_avg(
     double *swp_avg,
@@ -522,7 +522,8 @@ void transp_weighted_avg(
     double swp;
     double sumco;
 
-    *swp_avg = 0;
+    *swp_avg = NAN;
+
     for (r = 1; r <= n_tr_rgns; r++) {
         swp = sumco = 0.0;
 
@@ -539,10 +540,15 @@ void transp_weighted_avg(
             }
         }
 
-        swp /= GT(sumco, 0.) ? sumco : 1.; // swp is 0 if sumco is 0
-
-        /* use smallest weighted average of regions */
-        (*swp_avg) = (r == 1) ? swp : fmin(swp, (*swp_avg));
+        /* Ignore swp of current regions if sumco is 0
+           (i.e., all transp_coeff in current region are zero)
+           --> swp_avg could potentially remain NAN
+        */
+        if (GT(sumco, 0.)) {
+            swp /= sumco;
+            /* use smallest (i.e., wettest) weighted average across regions */
+            (*swp_avg) = (r == 1) ? swp : fmin(swp, (*swp_avg));
+        }
     }
 }
 
@@ -754,7 +760,7 @@ void pot_soil_evap_bs(
 
 Based on equations from Parton 1978. @cite Parton1978
 
-@param *bstrate This is the bare soil evaporation loss rate (cm/day).
+@param *bstrate This is the potential transpiration loss rate (cm/day).
 @param swpavg Weighted average of soil water potential (-bar).
 @param biolive Living biomass (%).
 @param biodead Dead biomass (%).
@@ -777,7 +783,8 @@ Based on equations from Parton 1978. @cite Parton1978
 @param co2_wue_multiplier Water-usage efficiency multiplier (CO<SUB>2</SUB>
 ppm).
 
-@sideeffect *bstrate Updated bare soil evaporation loss rate (cm/day).
+@sideeffect *bstrate Updated potential transpiration loss rate (cm/day)
+    which is 0 if \p biolive is 0 or if \p swpavg is missing.
 */
 void pot_transp(
     double *bstrate,
@@ -827,7 +834,7 @@ void pot_transp(
     double par2;
     double shadeaf;
 
-    if (LE(biolive, 0.)) {
+    if (LE(biolive, 0.) || missing(swpavg)) {
         *bstrate = 0.;
 
     } else {

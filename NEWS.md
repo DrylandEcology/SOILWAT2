@@ -30,6 +30,9 @@
     * Reset observed solar radiation to extraterrestrial radiation if
       the observed value is larger than expected.
 
+* Transpiration regions no longer require roots of every plant functional type
+  (@dschlaep).
+
 ## Bugfixes
 * The KD-tree algorithm is now correctly calculating index positions for
   lookup netCDFs also when the domain is a subset of the inputs (@N1ckP3rsl3y).
