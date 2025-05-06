@@ -378,8 +378,8 @@ void set_soillayers(
     const double *imperm,
     const double *soiltemp,
     const double *pom,
-    int nRegions,
-    double *regionLowerBounds,
+    LyrIndex nRegions,
+    const double *regionLowerBounds,
     LyrIndex *n_layers,
     LOG_INFO *LogInfo
 );

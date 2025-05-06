@@ -371,14 +371,13 @@ This works correctly only after
     * species establishment parameters are read from file by `SW_VES_read()`
     * soil layers are initialized by `SW_SIT_init_run()`
 
-@param[in,out] *parmsIn List of structs of type SW_VEGESTAB_INFO_INPUTS holding
-    input information about every vegetation species
+@param[in,out] **parms List of structs of type SW_VEGESTAB_INFO holding
+    information about every vegetation species
 @param[in] SW_SoilRunIn Struct of type SW_SOIL_RUN_INPUTS describing
     the simulated site's input values
 @param[in] SW_SiteSim Struct of type SW_SITE_SIM describing the simulated site's
     simulation values
-@param[in] n_transp_lyrs Index of the deepest transp. region
-@param[in] count Held within type SW_VEGESTAB_INPUTS to determine
+@param[in] count Held within type SW_VEGESTAB to determine
     how many species to check
 @param[out] LogInfo Holds information on warnings and errors
 */
@@ -743,7 +742,8 @@ other function call.
     the simulated site's input values
 @param[in] SW_SiteSim Struct of type SW_SITE_SIM describing the simulated site's
     simulation values
-@param[in] n_transp_lyrs Layer index of deepest transp. region.
+@param[in] n_transp_lyrs Number of soil layers with roots
+    per plant functional type
 @param[out] LogInfo Holds information on warnings and errors
 */
 void spp_init(

@@ -579,6 +579,28 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
     EXPECT_GE(swp_avg, 0);
 
     EXPECT_NEAR(swp_avg, swp_avgExpectedM, tol6);
+
+
+    //--- Test absence of plant roots ------
+    ForEachSoilLayer(i, n_layers) {
+        SW_SoilRunIn.transp_coeff[SW_SHRUB][i] = 0.;
+    }
+
+    transp_weighted_avg(
+        &swp_avg,
+        &SW_SoilRunIn,
+        &SW_SiteSim,
+        n_tr_rgns,
+        n_layers,
+        tr_regions2,
+        swc2,
+        SW_SHRUB,
+        &LogInfo
+    );
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    // No plant roots -> missing swp_avg
+    EXPECT_TRUE(missing(swp_avg));
 }
 
 // Test EsT_partitioning by manipulating fbse and fbst variables.

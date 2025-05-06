@@ -272,6 +272,11 @@ hasWeather <- vapply(
 )
 
 
+#--- * Units of SOILWAT2 example inputs ------
+unitsOfSOILWAT2ExampleInputs <- readTSV(
+  filename = file.path(dir_dataraw, "unitsOfSOILWAT2ExampleInputs.tsv")
+)
+
 
 #--- * SOILWAT2 ------
 swin <- rSOILWAT2::sw_exampleData
@@ -696,7 +701,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
 
   #--- ......**** Modify nc-units in tsv ------
-  usedUnits <- modifyNCUnitsTSV(fname_ncintsv)
+  usedUnits <- modifyNCUnitsTSV(fname_ncintsv, unitsOfSOILWAT2ExampleInputs)
 
 
   #--- ..** Create domain and templates ------
