@@ -1445,7 +1445,8 @@ The count stops at first layer with 0 per vegetation type.
 
 @param[in] n_layers Number of layers of soil within the simulation run
 @param[in] transp_coeff Prop. of total transp from this layer
-@param[out] n_transp_lyrs Index of the deepest transp. region
+@param[out] n_transp_lyrs Number of soil layers with roots
+    per plant functional type
 */
 void nlayers_vegroots(
     LyrIndex n_layers,
@@ -2138,8 +2139,8 @@ void set_soillayers(
     const double *imperm,
     const double *soiltemp,
     const double *pom,
-    int nRegions,
-    double *regionLowerBounds,
+    LyrIndex nRegions,
+    const double *regionLowerBounds,
     LyrIndex *n_layers,
     LOG_INFO *LogInfo
 ) {
@@ -2191,19 +2192,11 @@ void set_soillayers(
         SW_SoilRunIn->fractionWeight_om[lyrno] = pom[i];
     }
 
-    /* Identify transpiration regions by soil layers */
-    derive_TranspRgnBounds(
-        &SW_SiteSim->n_transp_rgn,
-        SW_SiteSim->TranspRgnBounds,
-        nRegions,
-        regionLowerBounds,
-        *n_layers,
-        SW_SoilRunIn->width,
-        SW_SoilRunIn->transp_coeff,
-        LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
+    // Set transpiration region input information
+    SW_SiteSim->n_transp_rgn = nRegions;
+
+    for (i = 0; i < nRegions; i++) {
+        SW_SiteSim->TranspRgnDepths[i] = regionLowerBounds[i];
     }
 
     // Re-initialize site parameters based on new soil layers
@@ -2225,7 +2218,7 @@ void set_soillayers(
     between 1 and \ref MAX_TRANSP_REGIONS
     (currently, shallow, moderate, deep, very deep).
 @param[out] TranspRgnBounds Array of size \ref MAX_TRANSP_REGIONS
-    that identifies the deepest soil layer (by number) that belongs to
+    that identifies the deepest soil layer (base1) that belongs to
     each of the transpiration regions.
 @param[in] nRegions The size of array \p TranspRgnDepths. Must be
     between 1 and \ref MAX_TRANSP_REGIONS.
@@ -2275,15 +2268,14 @@ void derive_TranspRgnBounds(
     layer = 0; // SW_Site.lyr is base0-indexed
     totalDepth = 0;
     for (i = 0; i < nRegions && layer < n_layers; ++i) {
-        TranspRgnBounds[i] = layer;
         // Find the last soil layer that is completely contained within a region
         // It becomes the bound.
         while (layer < n_layers && LE(totalDepth, TranspRgnDepths[i]) &&
                LE((totalDepth + width[layer]), TranspRgnDepths[i]) &&
                sum_across_vegtypes(transp_coeff, layer)) {
             totalDepth += width[layer];
-            TranspRgnBounds[i] = layer;
             layer++;
+            TranspRgnBounds[i] = layer; // TranspRgnBounds is base1
         }
     }
 
@@ -2987,47 +2979,40 @@ void SW_SIT_init_run(
                 veg[k].SWPcrit = tmp;
             }
 
-            /* Find which transpiration region the current soil layer
-             * is in and check validity of result. Region bounds are
-             * base1 but s is base0.*/
+            /* Identify the transpiration region that contains
+               the current soil layer s.
+               Note: TranspRgnBounds, curregion, and my_transp_rgn are base1;
+               s is base0.
+            */
             curregion = 0;
             ForEachTranspRegion(r, SW_SiteSim->n_transp_rgn) {
-                if (s < SW_SiteSim->TranspRgnBounds[r]) {
+                if (s < SW_SiteSim->TranspRgnBounds[r] &&
+                    SW_SiteSim->TranspRgnBounds[r] <= MAX_LAYERS) {
+
                     if (ZRO(SW_SoilRunIn->transp_coeff[k][s])) {
                         break; /* end of transpiring layers */
                     }
-                    curregion = r + 1;
+
+                    curregion = r + 1; // convert to base1
                     break;
                 }
             }
 
-            if (curregion || SW_SiteSim->TranspRgnBounds[curregion] == 0) {
+            if (curregion > 0) {
                 SW_SiteSim->my_transp_rgn[k][s] = curregion;
-                SW_SiteSim->n_transp_lyrs[k] =
-                    MAX(SW_SiteSim->n_transp_lyrs[k], s);
 
             } else if (s == 0) {
                 LogError(
                     LogInfo,
                     LOGERROR,
                     "Top soil layer must be included "
-                    "in %s tranpiration region",
+                    "in %s transpiration region",
                     key2veg[k]
                 );
                 return; // Exit function prematurely due to error
-            } else if (r < SW_SiteSim->n_transp_rgn) {
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "Transpiration region %d "
-                    "is deeper than the deepest layer with a "
-                    "%s transpiration coefficient > 0 (%d)",
-                    r + 1,
-                    key2veg[k],
-                    s
-                );
-                return; // Exit function prematurely due to error
+
             } else {
+                // no transpiration region or not roots
                 SW_SiteSim->my_transp_rgn[k][s] = 0;
             }
         }

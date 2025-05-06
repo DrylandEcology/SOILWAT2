@@ -4,6 +4,7 @@
   as previously because of the following changes:
     * CO2-fertilization effects are now using provided atmospheric CO2 of the
       reference year 1995; previously, 360 ppm was assumed.
+    * Transpiration regions are no longer one soil layer too shallow.
 
 * Annual time series of atmospheric CO2 concentrations can now be
   combined from multiple data sets, e.g., `"CMIP6_historical|CMIP6_SSP585"`
@@ -29,11 +30,16 @@
     * Reset observed solar radiation to extraterrestrial radiation if
       the observed value is larger than expected.
 
+* Transpiration regions no longer require roots of every plant functional type
+  (@dschlaep).
+
 ## Bugfixes
 * The KD-tree algorithm is now correctly calculating index positions for
   lookup netCDFs also when the domain is a subset of the inputs (@N1ckP3rsl3y).
 * Inputs from netCDFs are now correctly handling missing values and unit
   conversions for soil and vegetation inputs (@dschlaep).
+* Transpiration regions are now correctly assigned to soil layers
+  (#460; @dschlaep).
 
 ## Changes to inputs
 * New input via `"veg.in"` to specify the year for which vegetation inputs

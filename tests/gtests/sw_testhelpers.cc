@@ -98,7 +98,7 @@ void create_test_soillayers(
     double om[MAX_LAYERS] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-    int const nRegions = 3;
+    LyrIndex const nRegions = 3;
     double regionLowerBounds[3] = {20., 50., 100.};
 
     set_soillayers(

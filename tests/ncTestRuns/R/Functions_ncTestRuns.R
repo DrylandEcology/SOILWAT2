@@ -315,6 +315,7 @@ setNCInputTSV <- function(
 
 modifyNCUnitsTSV <- function(
   filename,
+  unitsOfSOILWAT2ExampleInputs,
   adjustUnits = list(
     c(inkey = "inTopo", sw2var = "elevation", newUnit = "km"),
     c(inkey = "inWeather", sw2var = "temp_max", newUnit = "K"),
@@ -334,6 +335,25 @@ modifyNCUnitsTSV <- function(
   vars <- c(
     "SW2 input group", "SW2 variable", "SW2 units", "ncVarName", "ncVarUnits"
   )
+
+  #--- Set units used SOILWA2 example inputs
+  ids1 <- apply(x[, vars[1L:2L], drop = FALSE], 1L, paste, collapse = "-")
+  has2 <- which(
+    apply(unitsOfSOILWAT2ExampleInputs, 1L, function(x) any(nzchar(x)))
+  )
+  ids2 <- apply(
+    unitsOfSOILWAT2ExampleInputs[has2, vars[1L:2L], drop = FALSE],
+    MARGIN = 1L,
+    FUN = paste,
+    collapse = "-"
+  )
+
+  ids <- match(ids1, ids2, nomatch = 0L)
+  x[ids > 0L, "ncVarUnits"] <-
+    unitsOfSOILWAT2ExampleInputs[has2[ids], "inputUnits"]
+
+
+  #--- Adjust units as requested for ncTestRuns
   res <- x[, vars, drop = FALSE]
   res[["ncVarUnitsModified"]] <- res[["ncVarUnits"]]
 
