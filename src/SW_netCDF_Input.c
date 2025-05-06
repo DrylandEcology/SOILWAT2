@@ -6346,7 +6346,7 @@ static void read_veg_inputs(
                     varType,
                     scaleFactor,
                     addOffset,
-                    vegConv[varNum - 1],
+                    vegConv[varNum],
                     stride,
                     swFALSE,
                     values[varNum - 1]
