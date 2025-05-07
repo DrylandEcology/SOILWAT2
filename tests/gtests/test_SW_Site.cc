@@ -638,7 +638,8 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     // Check that setting one region for all soil layers works
     nRegions = 1;
     expectedNRegions = 1;
-    const LyrIndex expectedTranspRgnBounds2[] = {SW_Run.RunIn.SiteRunIn.n_layers};
+    const LyrIndex expectedTranspRgnBounds2[] = {SW_Run.RunIn.SiteRunIn.n_layers
+    };
     double regionLowerBounds2[] = {100.};
 
     derive_TranspRgnBounds(
