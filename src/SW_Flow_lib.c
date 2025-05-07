@@ -2042,7 +2042,7 @@ void soil_temperature_setup(
     }
 
     // if soil temperature max depth is less than soil layer depth then quit
-    if (LT(theMaxDepth, depths[nlyrs - 1])) {
+    if (nlyrs == 0 || LT(theMaxDepth, depths[nlyrs - 1])) {
         if (!(*ptr_stError)) {
             (*ptr_stError) = swTRUE;
 

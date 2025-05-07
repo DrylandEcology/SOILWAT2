@@ -2424,6 +2424,23 @@ void SW_SIT_init_run(
     char *tempWritePtr;
     int writeSize;
 
+
+    /* Check that we have a suitable number of soil layers */
+    if (SW_Site->n_layers == 0) {
+        LogError(LogInfo, LOGERROR, "The soil profile has 0 layers.");
+    }
+
+    if (SW_Site->n_layers > MAX_LAYERS) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "The soil profile has too many layers (n = %d > max = %d).",
+            SW_Site->n_layers,
+            MAX_LAYERS
+        );
+    }
+
+
     /* Determine number of layers with potential for
        bare-soil evaporation and transpiration */
     SW_Site->n_evap_lyrs =
