@@ -6669,8 +6669,8 @@ static void read_soil_inputs(
     int vertIndex;
     int pftWriteIndex;
     int read;
-    int site;
-    int numSites = 1;
+    size_t site;
+    size_t numSites = 1;
     int inputOrigin = 0;
     size_t writeIndex;
     int input = 0;
@@ -7847,11 +7847,11 @@ static void read_weather_input(
     int lonIndex;
     int timeIndex;
     int read;
-    int numSites = 1;
-    int site;
+    size_t numSites = 1;
+    size_t site;
     int input = 0;
     int stride = 1;
-    int tempStart;
+    int tempStart = 0;
     double ***tempWeatherHist = NULL;
     size_t writeIndex = 0;
 

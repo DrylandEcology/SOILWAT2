@@ -2398,7 +2398,7 @@ static void alloc_inputs(
 static void alloc_IO_info(
     size_t numSuids,
     int nCompProcs,
-    int maxSuidsInWrite,
+    size_t maxSuidsInWrite,
     Bool useIndexFile[],
     Bool **readInVars,
     SW_OUT_DOM *OutDom,
@@ -2629,8 +2629,8 @@ static void alloc_IO_info(
     getting log information from compute processes
 */
 static void dealloc_IO_info(
-    int numSuids,
-    int maxNumIOSuids,
+    size_t numSuids,
+    size_t maxNumIOSuids,
     SW_OUT_RUN *tempRun,
     SW_OUT_RUN *OutRun,
     size_t **starts[],
@@ -2652,7 +2652,7 @@ static void dealloc_IO_info(
     size_t ***deallocStartCount[2] = {NULL};
     const int numDeallocStartCount = 2;
     int dealloc;
-    int suid;
+    size_t suid;
     void **dealloc1D[] = {
         (void **) sendInputs,
         (void **) logs,
@@ -5974,13 +5974,18 @@ void SW_MPI_handle_IO(
     Bool errorCaused = swFALSE;
     size_t temp;
     Bool dummyWrites = swFALSE;
-    int maxWritesGroup = 0;
-    int maxSuidsInOutput = 0;
-    int maxWriteInst = (int
+    size_t maxWritesGroup = 0;
+    size_t maxSuidsInOutput = 0;
+    size_t maxWriteInst = (size_t
     ) ceil(((double) desig->nSuids) / (numSuidsTot * N_ITER_BEFORE_OUT));
 
     SW_Allreduce(
-        MPI_INT, &numSuidsTot, &maxSuidsInOutput, 1, MPI_MAX, desig->groupComm
+        MPI_UNSIGNED_LONG,
+        &numSuidsTot,
+        &maxSuidsInOutput,
+        1,
+        MPI_MAX,
+        desig->groupComm
     );
 
     alloc_IO_info(
@@ -6027,7 +6032,12 @@ void SW_MPI_handle_IO(
     }
 
     SW_Allreduce(
-        MPI_INT, &maxWriteInst, &maxWritesGroup, 1, MPI_MAX, desig->groupComm
+        MPI_UNSIGNED_LONG,
+        &maxWriteInst,
+        &maxWritesGroup,
+        1,
+        MPI_MAX,
+        desig->groupComm
     );
     dummyWrites = (Bool) (maxWriteInst < maxWritesGroup);
 
