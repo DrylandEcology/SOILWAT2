@@ -1929,7 +1929,8 @@ static void open_input_files(
                     }
                     get_dynamic_string(rank, &fileName, swTRUE, comm, LogInfo);
                     if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
-                        return;
+                        stop = swTRUE;
+                        goto freeFileDom;
                     }
 
                     SW_NC_open_par(
@@ -1940,7 +1941,8 @@ static void open_input_files(
                         LogInfo
                     );
                     if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
-                        return;
+                        stop = swTRUE;
+                        goto freeFileDom;
                     }
 
                     if (domVar == vNCprog) {
@@ -1951,8 +1953,13 @@ static void open_input_files(
                         );
                     }
 
+                freeFileDom:
                     if (rank > SW_MPI_ROOT) {
                         free(fileName);
+                        fileName = NULL;
+                    }
+                    if (stop) {
+                        return;
                     }
                 }
             }
@@ -2013,7 +2020,6 @@ static void open_input_files(
                 SW_NC_open_par(fileName, NC_NOWRITE, comm, id, LogInfo);
                 if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
                     stop = swTRUE;
-                    goto freeFile;
                 }
 
             freeFile:
@@ -2110,6 +2116,7 @@ static void open_output_files(
 ) {
     OutKey outKey;
     OutPeriod pd;
+    Bool stop = swFALSE;
     unsigned int file;
     int *id;
     char *fileName = NULL;
@@ -2169,20 +2176,16 @@ static void open_output_files(
                             rank, &fileName, swTRUE, comm, LogInfo
                         );
                         if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
-                            if (rank > SW_MPI_ROOT) {
-                                free(fileName);
-                            }
-                            return;
+                            stop = swTRUE;
+                            goto freeFile;
                         }
 
                         id = &pathOutputs->openOutFileIDs[outKey][pd][file];
 
                         SW_NC_open_par(fileName, NC_WRITE, comm, id, LogInfo);
                         if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
-                            if (rank > SW_MPI_ROOT) {
-                                free(fileName);
-                            }
-                            return;
+                            stop = swTRUE;
+                            goto freeFile;
                         }
 
                         for (var = 0; var < OutDom->nvar_OUT[outKey]; var++) {
@@ -2196,11 +2199,17 @@ static void open_output_files(
                                     "%s to be collective.",
                                     fileName
                                 );
+                                stop = swTRUE;
                             }
                         }
 
+                    freeFile:
                         if (rank > SW_MPI_ROOT) {
                             free(fileName);
+                            fileName = NULL;
+                        }
+                        if (stop) {
+                            return;
                         }
                     }
                 }
