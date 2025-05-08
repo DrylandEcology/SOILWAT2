@@ -697,9 +697,6 @@ checkStatus:
                 (void) snprintf(tag_suid, 32, "(suid = %lu) ", suid + 1);
                 sw_write_warnings(tag_suid, log);
             }
-#else
-            (void) tag_suid;
-#endif
 
             /* Produce global error if all suids failed */
             if (nSims > 0 && nSims == main_LogInfo->numDomainErrors) {
@@ -710,6 +707,9 @@ checkStatus:
                     nSims
                 );
             }
+#else
+            (void) tag_suid;
+#endif
         }
 
 #if defined(SWMPI)
@@ -733,6 +733,18 @@ checkStatus:
     }
 
 wrapUp:
+#if defined(SWMPI)
+    /* Produce global error if all suids failed */
+    if (nSims > 0 && nSims == main_LogInfo->numDomainErrors) {
+        LogError(
+            main_LogInfo,
+            LOGERROR,
+            "All simulated units (n = %zu) produced errors.",
+            nSims
+        );
+    }
+#endif
+
 #if defined(SOILWAT)
     if (runSims == 0) {
         SW_MSG_ROOT("Program was killed early. Shutting down...", rank);
@@ -1706,7 +1718,6 @@ void SW_CTL_run_sw(
     );
 #else
     SW_NCOUT_write_output(
-        NULL,
         &SW_Domain->OutDom,
         local_sw.OutRun.p_OUT,
         local_sw.SW_PathOutputs.numOutFiles,

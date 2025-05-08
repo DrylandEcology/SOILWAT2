@@ -138,7 +138,6 @@ static void dummy_prog_out_writes(
     // Fill the following function calls with junk values since they
     // should not be used
     SW_NCOUT_write_output(
-        desig,
         OutDom,
         main_p_OUT,
         SW_PathOutputs->numOutFiles,
@@ -2189,6 +2188,11 @@ static void open_output_files(
                         }
 
                         for (var = 0; var < OutDom->nvar_OUT[outKey]; var++) {
+                            if (!OutDom->netCDFOutput
+                                     .reqOutputVars[outKey][var]) {
+                                continue;
+                            }
+
                             varID = pathOutputs->ncOutVarIDs[outKey][var];
                             if (nc_var_par_access(*id, varID, NC_COLLECTIVE) !=
                                 NC_NOERR) {
@@ -3469,13 +3473,12 @@ static void write_outputs(
 
     // Output accumulated output
     SW_NCOUT_write_output(
-        desig,
         OutDom,
         main_p_OUT,
         SW_PathOutputs->numOutFiles,
         NULL,
         NULL,
-        numWrites,
+        maxNumWrites,
         starts,
         counts,
         SW_PathOutputs->openOutFileIDs,
@@ -3491,9 +3494,6 @@ static void write_outputs(
 
     // Update progress file statuses
     for (write = 0; write < maxNumWrites; write++) {
-        if (write >= numWrites) {
-            write = numWrites - 1;
-        }
         numSites = (siteDom) ? counts[write][0] : counts[write][1];
 
         for (mark = 0; mark < numSites; mark++) {
@@ -4714,6 +4714,8 @@ void SW_MPI_ncout_info(
 
     ForEachOutKey(outKey) {
         nVars = OutDom->nvar_OUT[outKey];
+
+        SW_Bcast(MPI_INT, &OutDom->use[outKey], 1, SW_MPI_ROOT, comm);
 
         if (nVars == 0 || !OutDom->use[outKey]) {
             continue;

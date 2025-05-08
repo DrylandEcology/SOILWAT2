@@ -5360,9 +5360,7 @@ static void read_spatial_topo_climate_site_inputs(
                 get_values_multiple(
                     ncFileID, varID, start, count, varName, tempVals, LogInfo
                 );
-#if defined(SWMPI)
-                MPI_Barrier(SW_Domain->SW_Designation.groupComm);
-#endif
+
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }
@@ -6281,9 +6279,7 @@ static void read_veg_inputs(
             get_values_multiple(
                 ncFileID, varID, start, count, varName, tempVals, LogInfo
             );
-#if defined(SWMPI)
-            MPI_Barrier(SW_Domain->SW_Designation.groupComm);
-#endif
+
             if (LogInfo->stopRun) {
                 goto closeFile; // Exit function prematurely due to error
             }
@@ -6826,9 +6822,7 @@ static void read_soil_inputs(
                     get_values_multiple(
                         ncFileID, varID, start, count, varName, readPtr, LogInfo
                     );
-#if defined(SWMPI)
-                    MPI_Barrier(SW_Domain->SW_Designation.groupComm);
-#endif
+
                     if (LogInfo->stopRun) {
                         goto closeFile;
                     }
@@ -7971,9 +7965,7 @@ static void read_weather_input(
                 get_values_multiple(
                     ncFileID, varID, start, count, varName, tempVals, LogInfo
                 );
-#if defined(SWMPI)
-                MPI_Barrier(SW_Domain->SW_Designation.groupComm);
-#endif
+
                 if (LogInfo->stopRun) {
                     goto closeFile;
                 }
