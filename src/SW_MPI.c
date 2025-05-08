@@ -73,6 +73,8 @@ static void errorMPI(int rank, int mpiError) {
     MPI_Error_string(mpiError, errorStr, &errorLen);
 
     SW_MPI_Fail(rank, SW_MPI_FAIL_MPI, errorStr);
+
+    MPI_Abort(MPI_COMM_WORLD, mpiError);
 }
 
 /**
