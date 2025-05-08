@@ -170,28 +170,6 @@ static void dummy_prog_out_writes(
 }
 
 /**
-@brief Broadcast a message/type to all processes
-
-@param[in] datatype Custom MPI datatype that will be sent
-@param[in] buffer Location of memory that will be written to
-@param[in] count Number of items to recv from the buffer
-@param[in] srcRank Source rank that information will be sent from
-with any message tag values
-@param[in] comm MPI communicator to broadcast a message to
-*/
-static void SW_Bcast(
-    MPI_Datatype datatype, void *buffer, int count, int srcRank, MPI_Comm comm
-) {
-    int mpiRes = MPI_SUCCESS;
-
-    mpiRes = MPI_Bcast(buffer, count, datatype, srcRank, comm);
-
-    if (mpiRes != MPI_SUCCESS) {
-        errorMPI(-1, mpiRes);
-    }
-}
-
-/**
 @brief Deallocate helper memory that was allocated during the call to
     `SW_MPI_process_types()`
 
@@ -1272,9 +1250,9 @@ static void get_dynamic_string(
 
     if (rank == SW_MPI_ROOT) {
         strLen = (send) ? strlen(*buffer) + 1 : 0;
-        SW_Bcast(MPI_UNSIGNED_LONG, &strLen, 1, SW_MPI_ROOT, comm);
+        SW_MPI_Bcast(MPI_UNSIGNED_LONG, &strLen, 1, SW_MPI_ROOT, comm);
     } else {
-        SW_Bcast(MPI_UNSIGNED_LONG, &strLen, 1, SW_MPI_ROOT, comm);
+        SW_MPI_Bcast(MPI_UNSIGNED_LONG, &strLen, 1, SW_MPI_ROOT, comm);
 
         if (strLen > 0) {
             *buffer = (char *) Mem_Malloc(
@@ -1287,7 +1265,7 @@ static void get_dynamic_string(
     }
 
     if (strLen > 0) {
-        SW_Bcast(MPI_CHAR, *buffer, strLen, SW_MPI_ROOT, comm);
+        SW_MPI_Bcast(MPI_CHAR, *buffer, strLen, SW_MPI_ROOT, comm);
     }
 }
 
@@ -1313,9 +1291,11 @@ static void get_NC_info(
     if (rank > SW_MPI_ROOT) {
         SW_NCIN_alloc_input_var_info(netCDFIn, LogInfo);
     }
-    SW_Bcast(MPI_INT, netCDFIn->ncDomVarIDs, SW_NVARDOM, SW_MPI_ROOT, comm);
+    SW_MPI_Bcast(MPI_INT, netCDFIn->ncDomVarIDs, SW_NVARDOM, SW_MPI_ROOT, comm);
 
-    SW_Bcast(MPI_INT, netCDFIn->siteDoms, SW_NINKEYSNC, SW_GROUP_ROOT, comm);
+    SW_MPI_Bcast(
+        MPI_INT, netCDFIn->siteDoms, SW_NINKEYSNC, SW_GROUP_ROOT, comm
+    );
 
     ForEachNCInKey(inKey) {
         if (rank == SW_GROUP_ROOT) {
@@ -1323,14 +1303,14 @@ static void get_NC_info(
                 (Bool) (netCDFIn->readInVars[inKey][0] && inKey > eSW_InDomain);
         }
 
-        SW_Bcast(MPI_INT, &useKey, 1, SW_GROUP_ROOT, comm);
+        SW_MPI_Bcast(MPI_INT, &useKey, 1, SW_GROUP_ROOT, comm);
 
         if (!useKey) {
             netCDFIn->readInVars[inKey][0] = swFALSE;
             continue;
         }
 
-        SW_Bcast(
+        SW_MPI_Bcast(
             MPI_INT,
             netCDFIn->readInVars[inKey],
             numVarsInKey[inKey] + 1,
@@ -1387,7 +1367,7 @@ static void get_NC_info(
                 return;
             }
 
-            SW_Bcast(
+            SW_MPI_Bcast(
                 MPI_INT,
                 netCDFIn->dimOrderInVar[inKey][var],
                 MAX_NDIMS,
@@ -1587,8 +1567,8 @@ static void create_groups(
         (rank == SW_MPI_ROOT) ? &desig->rootCompComm : NULL;
 
     // Broadcast number of compute and I/O processors in MPI_COMM_WORLD
-    SW_Bcast(MPI_INT, &numCompProcs, 1, SW_MPI_ROOT, MPI_COMM_WORLD);
-    SW_Bcast(MPI_INT, &numIOProcsTot, 1, SW_MPI_ROOT, MPI_COMM_WORLD);
+    SW_MPI_Bcast(MPI_INT, &numCompProcs, 1, SW_MPI_ROOT, MPI_COMM_WORLD);
+    SW_MPI_Bcast(MPI_INT, &numIOProcsTot, 1, SW_MPI_ROOT, MPI_COMM_WORLD);
 
     // Allocate rank information to use it when letting MPI
     // know which ranks are in a group
@@ -1718,10 +1698,10 @@ static void get_path_info(
     unsigned int file;
 
     // Get number of weather files and days in year for those years
-    SW_Bcast(
+    SW_MPI_Bcast(
         MPI_UNSIGNED, &pathInputs->ncNumWeatherInFiles, 1, SW_MPI_ROOT, comm
     );
-    SW_Bcast(
+    SW_MPI_Bcast(
         MPI_UNSIGNED, &pathInputs->weathStartFileIndex, 1, SW_MPI_ROOT, comm
     );
 
@@ -1773,7 +1753,7 @@ static void get_path_info(
         }
 
         if (inKey == eSW_InSoil) {
-            SW_Bcast(
+            SW_MPI_Bcast(
                 MPI_UNSIGNED_LONG,
                 pathInputs->numSoilVarLyrs,
                 numVarsInKey[inKey],
@@ -1782,21 +1762,21 @@ static void get_path_info(
             );
         }
 
-        SW_Bcast(
+        SW_MPI_Bcast(
             MPI_INT,
             pathInputs->inVarIDs[inKey],
             numVarsInKey[inKey],
             SW_MPI_ROOT,
             comm
         );
-        SW_Bcast(
+        SW_MPI_Bcast(
             MPI_INT,
             pathInputs->inVarTypes[inKey],
             numVarsInKey[inKey],
             SW_MPI_ROOT,
             comm
         );
-        SW_Bcast(
+        SW_MPI_Bcast(
             MPI_INT,
             pathInputs->hasScaleAndAddFact[inKey],
             numVarsInKey[inKey],
@@ -1811,14 +1791,14 @@ static void get_path_info(
             }
 
             // Get 2D array information for variables
-            SW_Bcast(
+            SW_MPI_Bcast(
                 MPI_DOUBLE,
                 pathInputs->scaleAndAddFactVals[inKey][var],
                 2,
                 SW_MPI_ROOT,
                 comm
             );
-            SW_Bcast(
+            SW_MPI_Bcast(
                 MPI_INT,
                 pathInputs->missValFlags[inKey][var],
                 SIM_INFO_NFLAGS,
@@ -1837,7 +1817,7 @@ static void get_path_info(
                 return;
             }
 
-            SW_Bcast(
+            SW_MPI_Bcast(
                 MPI_DOUBLE,
                 pathInputs->doubleMissVals[inKey][var],
                 2,
@@ -1861,7 +1841,7 @@ static void get_path_info(
                 return;
             }
 
-            SW_Bcast(
+            SW_MPI_Bcast(
                 MPI_UNSIGNED,
                 pathInputs->numDaysInYear,
                 nYears,
@@ -1870,7 +1850,7 @@ static void get_path_info(
             );
 
             for (file = 0; file < pathInputs->ncNumWeatherInFiles; file++) {
-                SW_Bcast(
+                SW_MPI_Bcast(
                     MPI_UNSIGNED,
                     pathInputs->ncWeatherInStartEndYrs[file],
                     2,
@@ -1878,7 +1858,7 @@ static void get_path_info(
                     comm
                 );
 
-                SW_Bcast(
+                SW_MPI_Bcast(
                     MPI_UNSIGNED,
                     pathInputs->ncWeatherStartEndIndices[file],
                     2,
@@ -2124,9 +2104,9 @@ static void open_output_files(
     int var;
     int varID;
 
-    SW_Bcast(MPI_UNSIGNED, &pathOutputs->numOutFiles, 1, SW_MPI_ROOT, comm);
+    SW_MPI_Bcast(MPI_UNSIGNED, &pathOutputs->numOutFiles, 1, SW_MPI_ROOT, comm);
     ForEachOutPeriod(pd) {
-        SW_Bcast(
+        SW_MPI_Bcast(
             MPI_UNSIGNED_LONG,
             pathOutputs->outTimeSizes[pd],
             2,
@@ -2148,7 +2128,7 @@ static void open_output_files(
                 return;
             }
 
-            SW_Bcast(
+            SW_MPI_Bcast(
                 MPI_INT,
                 pathOutputs->ncOutVarIDs[outKey],
                 OutDom->nvar_OUT[outKey],
@@ -2915,7 +2895,7 @@ static void spread_inputs(
     int divInputAcrossComp = numInputOrigin / nCompProcs;
 
     if (*sendEstVeg) {
-        SW_Bcast(MPI_INT, &estVeg, 1, SW_GROUP_ROOT, desig->ioCompComm);
+        SW_MPI_Bcast(MPI_INT, &estVeg, 1, SW_GROUP_ROOT, desig->ioCompComm);
         *sendEstVeg = swFALSE;
     }
 
@@ -3718,6 +3698,28 @@ void SW_MPI_deconstruct(SW_DOMAIN *SW_Domain) {
 }
 
 /**
+@brief Broadcast a message/type to all processes
+
+@param[in] datatype Custom MPI datatype that will be sent
+@param[in] buffer Location of memory that will be written to
+@param[in] count Number of items to recv from the buffer
+@param[in] srcRank Source rank that information will be sent from
+with any message tag values
+@param[in] comm MPI communicator to broadcast a message to
+*/
+void SW_MPI_Bcast(
+    MPI_Datatype datatype, void *buffer, int count, int srcRank, MPI_Comm comm
+) {
+    int mpiRes = MPI_SUCCESS;
+
+    mpiRes = MPI_Bcast(buffer, count, datatype, srcRank, comm);
+
+    if (mpiRes != MPI_SUCCESS) {
+        errorMPI(-1, mpiRes);
+    }
+}
+
+/**
 @brief Wrapper for MPI-provided function `MPI_Send()` and reduces
 the ambiguity of how the information gets sent (no longer buffer or
 synchronous)
@@ -4342,7 +4344,7 @@ void SW_MPI_template_info(
     IntUS vCount;
     int structType;
     int var;
-    int numElem[] = {3, 25, 5, 5, 7, 44, 2};
+    int numElem[] = {3, 25, 5, 5, 7, 43, 2};
     void **markov2DBuffer[] = {
         (void **) &SW_Run->MarkovIn.wetprob,
         (void **) &SW_Run->MarkovIn.dryprob,
@@ -4358,7 +4360,7 @@ void SW_MPI_template_info(
         (void *) SW_Run->MarkovIn.v_cov,
         (void *) &SW_Run->MarkovIn.ppt_events
     };
-    void *buffers[][44] = {
+    void *buffers[][43] = {
         {(void *) &SW_Run->CarbonIn.use_wue_mult,
          (void *) &SW_Run->CarbonIn.use_bio_mult,
          (void *) SW_Run->CarbonIn.ppm},
@@ -4445,10 +4447,11 @@ void SW_MPI_template_info(
          (void *) &SW_Run->SiteIn.SWCWetVal,
          (void *) &SW_Run->SiteIn.SWCMinVal,
          (void *) &SW_Run->SiteSim.n_transp_rgn,
-         (void *) SW_Run->SiteSim.TranspRgnDepths},
+         (void *) SW_Run->SiteSim.TranspRgnDepths,
+         (void *) SW_Run->SiteSim.swrcpOM},
         {(void *) &SW_Run->VegEstabIn.use, (void *) &SW_Run->VegEstabIn.count}
     };
-    MPI_Datatype types[][44] = {
+    MPI_Datatype types[][43] = {
         {MPI_INT, MPI_INT, MPI_DOUBLE}, /* SW_CARBON_INPUTS */
         {MPI_INT,      MPI_INT,      MPI_UNSIGNED, MPI_DOUBLE,
          MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,
@@ -4463,19 +4466,18 @@ void SW_MPI_template_info(
         }, /* SW_MODEL_INPUTS */
         {MPI_INT, MPI_INT, MPI_UNSIGNED, MPI_DOUBLE, MPI_DOUBLE
         }, /* SW_SOILWAT_INPUTS */
-        {MPI_CHAR,     MPI_CHAR,   MPI_INT,      MPI_UNSIGNED, MPI_UNSIGNED,
-         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_UNSIGNED, MPI_INT,    MPI_INT,      MPI_INT,      MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_DOUBLE, MPI_UNSIGNED, MPI_DOUBLE
-        },                      /* SW_SITE_INPUTS */
-        {MPI_INT, MPI_UNSIGNED} /* SW_VEGPROD_SIM */
+        {MPI_CHAR,     MPI_CHAR,     MPI_INT,    MPI_UNSIGNED, MPI_UNSIGNED,
+         MPI_UNSIGNED, MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_UNSIGNED, MPI_INT,    MPI_INT,      MPI_INT,
+         MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,
+         MPI_UNSIGNED, MPI_DOUBLE,   MPI_DOUBLE}, /* SW_SITE_INPUTS */
+        {MPI_INT, MPI_UNSIGNED}                   /* SW_VEGPROD_SIM */
     };
-    int count[][44] = {
+    int count[][43] = {
         /* SW_CARBON_INPUTS */
         {1, 1, MAX_NYEAR},
 
@@ -4518,7 +4520,8 @@ void SW_MPI_template_info(
         /* SW_SITE_INPUTS */
         {64, 64, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
          1,  1,  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-         1,  1,  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, MAX_TRANSP_REGIONS},
+         1,  1,  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, MAX_TRANSP_REGIONS,
+         12},
 
         /* SW_VEGPROD_SIM */
         {1, 1}
@@ -4534,7 +4537,7 @@ void SW_MPI_template_info(
     // Send input information to all processes
     for (structType = 0; structType < numStructs; structType++) {
         for (var = 0; var < numElem[structType]; var++) {
-            SW_Bcast(
+            SW_MPI_Bcast(
                 types[structType][var],
                 buffers[structType][var],
                 count[structType][var],
@@ -4582,7 +4585,7 @@ void SW_MPI_template_info(
             };
 
             for (vegIn = 0; vegIn < numNumTemplateVeg; vegIn++) {
-                SW_Bcast(
+                SW_MPI_Bcast(
                     (vegIn < numNumTemplateVeg - 2) ? MPI_DOUBLE : MPI_INT,
                     sendBuff[vegIn],
                     1,
@@ -4606,13 +4609,13 @@ void SW_MPI_template_info(
         }
 
         for (var = 0; var < num2DMarkov; var++) {
-            SW_Bcast(
+            SW_MPI_Bcast(
                 MPI_DOUBLE, *markov2DBuffer[var], MAX_DAYS, SW_MPI_ROOT, comm
             );
         }
 
         for (var = 0; var < num1DMarkov; var++) {
-            SW_Bcast(
+            SW_MPI_Bcast(
                 (var == 2) ? MPI_INT : MPI_DOUBLE,
                 markov1DBuffer[var],
                 markov1DCount[var],
@@ -4625,7 +4628,7 @@ void SW_MPI_template_info(
     /* Vegetation establishment information
        We must do it outside of the major loop to have
        all processes take place */
-    SW_Bcast(
+    SW_MPI_Bcast(
         types[vegEstabIndex][0],
         buffers[vegEstabIndex][0],
         count[vegEstabIndex][0],
@@ -4634,7 +4637,7 @@ void SW_MPI_template_info(
     );
 
     if (SW_Run->VegEstabIn.use) {
-        SW_Bcast(
+        SW_MPI_Bcast(
             types[vegEstabIndex][1],
             buffers[vegEstabIndex][1],
             count[vegEstabIndex][1],
@@ -4643,7 +4646,7 @@ void SW_MPI_template_info(
         );
 
         for (vCount = 0; vCount < SW_Run->VegEstabIn.count; vCount++) {
-            SW_Bcast(
+            SW_MPI_Bcast(
                 vegEstabType,
                 &SW_Run->VegEstabIn.parms[vCount],
                 1,
@@ -4654,9 +4657,9 @@ void SW_MPI_template_info(
     }
 
     // SW_RUN_INPUTS
-    SW_Bcast(inRunType, &SW_Run->RunIn, 1, SW_MPI_ROOT, MPI_COMM_WORLD);
+    SW_MPI_Bcast(inRunType, &SW_Run->RunIn, 1, SW_MPI_ROOT, MPI_COMM_WORLD);
 
-    SW_Bcast(MPI_INT, &getWeather, 1, SW_MPI_ROOT, MPI_COMM_WORLD);
+    SW_MPI_Bcast(MPI_INT, &getWeather, 1, SW_MPI_ROOT, MPI_COMM_WORLD);
 
     if (getWeather) {
         if (rank > SW_MPI_ROOT) {
@@ -4670,7 +4673,7 @@ void SW_MPI_template_info(
             return;
         }
 
-        SW_Bcast(
+        SW_MPI_Bcast(
             weathHistType,
             SW_Run->RunIn.weathRunAllHist,
             SW_Run->WeatherIn.n_years,
@@ -4707,23 +4710,23 @@ void SW_MPI_ncout_info(
         return;
     }
 
-    SW_Bcast(
+    SW_MPI_Bcast(
         MPI_INT, &OutDom->netCDFOutput.strideOutYears, 1, SW_MPI_ROOT, comm
     );
-    SW_Bcast(
+    SW_MPI_Bcast(
         MPI_INT, &OutDom->netCDFOutput.baseCalendarYear, 1, SW_MPI_ROOT, comm
     );
 
     ForEachOutKey(outKey) {
         nVars = OutDom->nvar_OUT[outKey];
 
-        SW_Bcast(MPI_INT, &OutDom->use[outKey], 1, SW_MPI_ROOT, comm);
+        SW_MPI_Bcast(MPI_INT, &OutDom->use[outKey], 1, SW_MPI_ROOT, comm);
 
         if (nVars == 0 || !OutDom->use[outKey]) {
             continue;
         }
 
-        SW_Bcast(
+        SW_MPI_Bcast(
             MPI_INT,
             OutDom->netCDFOutput.reqOutputVars[outKey],
             nVars,
@@ -4781,11 +4784,13 @@ void SW_MPI_domain_info(SW_DOMAIN *SW_Domain, int rank, LOG_INFO *LogInfo) {
     TimeInt nYears;
 
     // Send/get soil/temporal information
-    SW_Bcast(types[eSW_MPI_Domain], SW_Domain, 1, SW_MPI_ROOT, MPI_COMM_WORLD);
+    SW_MPI_Bcast(
+        types[eSW_MPI_Domain], SW_Domain, 1, SW_MPI_ROOT, MPI_COMM_WORLD
+    );
 
     // Send/get Spinup information - compute processes + rank only
     if (procJob == SW_MPI_PROC_COMP || rank == SW_MPI_ROOT) {
-        SW_Bcast(
+        SW_MPI_Bcast(
             types[eSW_MPI_Spinup],
             &SW_Domain->SW_SpinUp,
             1,
@@ -4819,7 +4824,7 @@ void SW_MPI_domain_info(SW_DOMAIN *SW_Domain, int rank, LOG_INFO *LogInfo) {
     }
 
     // Send/get domain information - SW_PATH_OUTPUTS will wait until later
-    SW_Bcast(
+    SW_MPI_Bcast(
         types[eSW_MPI_OutDomIO],
         &SW_Domain->OutDom,
         1,
@@ -4827,7 +4832,7 @@ void SW_MPI_domain_info(SW_DOMAIN *SW_Domain, int rank, LOG_INFO *LogInfo) {
         MPI_COMM_WORLD
     );
 
-    SW_Bcast(
+    SW_MPI_Bcast(
         MPI_INT,
         SW_Domain->OutDom.use_OutPeriod,
         SW_OUTNPERIODS,
@@ -5440,7 +5445,7 @@ void SW_MPI_process_types(
     // Spread the index file creation flags across the world;
     // necessary if we use translated SUIDs and we have not
     // received them yet
-    SW_Bcast(
+    SW_MPI_Bcast(
         MPI_INT,
         SW_Domain->netCDFInput.useIndexFile,
         SW_NINKEYSNC,
@@ -5853,7 +5858,7 @@ void SW_MPI_get_inputs(
     int input;
 
     if (*getEstVeg) {
-        SW_Bcast(MPI_INT, estVeg, 1, SW_GROUP_ROOT, desig->ioCompComm);
+        SW_MPI_Bcast(MPI_INT, estVeg, 1, SW_GROUP_ROOT, desig->ioCompComm);
         *getEstVeg = swFALSE;
     }
 
@@ -6044,6 +6049,10 @@ void SW_MPI_handle_IO(
         desig->groupComm
     );
     dummyWrites = (Bool) (maxWriteInst < maxWritesGroup);
+
+    SW_MPI_Bcast(
+        MPI_INT, SW_Domain->OutDom.use, SW_OUTNKEYS, SW_MPI_ROOT, MPI_COMM_WORLD
+    );
 
 checkStatus:
     if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {

@@ -525,6 +525,10 @@ void SW_CTL_RunSimSet(
     set_walltime(&tss, &ok_tss);
 
 #if defined(SWMPI)
+    SW_MPI_Bcast(
+        MPI_INT, SW_Domain->OutDom.use, SW_OUTNKEYS, SW_MPI_ROOT, MPI_COMM_WORLD
+    );
+
     for (suid = 0; suid < N_SUID_ASSIGN; suid++) {
         memcpy(&inputs[suid], &sw_template->RunIn, sizeof(SW_RUN_INPUTS));
 
