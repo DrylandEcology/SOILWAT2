@@ -2549,6 +2549,23 @@ void SW_NCOUT_write_output(
 #if defined(SWMPI)
                         if (!succFlags[write]) {
                             pOUTStart[key][pd] += countTotal * numSites;
+
+                            count[0] = count[1] = 0;
+
+                            // Create a dummy write so this can still take
+                            // part in the collective writes,
+                            // counts should be 0 for latitude/longitude
+                            // to specifically write nothing
+                            SW_NC_write_vals(
+                                &varID,
+                                currFileID,
+                                NULL,
+                                p_OUTValPtr,
+                                start,
+                                count,
+                                "double",
+                                LogInfo
+                            );
                             continue;
                         }
 
