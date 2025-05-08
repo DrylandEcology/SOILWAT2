@@ -4409,7 +4409,7 @@ void SW_MPI_template_info(
          (void *) &SW_Run->SiteIn.use_soil_temp,
          (void *) &SW_Run->SiteIn.methodSurfaceTemperature,
          (void *) &SW_Run->SiteIn.site_swrc_type,
-         (void *) &SW_Run->SiteIn.site_swrc_name,
+         (void *) &SW_Run->SiteIn.site_ptf_type,
          (void *) &SW_Run->SiteIn.t1Param1,
          (void *) &SW_Run->SiteIn.t1Param2,
          (void *) &SW_Run->SiteIn.t1Param3,
