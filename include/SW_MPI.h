@@ -77,6 +77,10 @@ void SW_MPI_Fail(int rank, int failType, char *mpiErrStr);
 
 void SW_MPI_deconstruct(SW_DOMAIN *SW_Domain);
 
+void SW_MPI_Bcast(
+    MPI_Datatype datatype, void *buffer, int count, int srcRank, MPI_Comm comm
+);
+
 void SW_MPI_Send(
     MPI_Datatype datatype,
     void *buffer,
