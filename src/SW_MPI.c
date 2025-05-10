@@ -331,10 +331,10 @@ static void reorder_output(
                 totalTimeSize = 0;
 
                 for (file = 0; file < numOutFiles; file++) {
-                    if (file < numOutFiles - 1) {
-                        timeSize = timeSizes[pd][0];
-                    } else {
+                    if (file == numOutFiles - 1 && numOutFiles > 1) {
                         timeSize = timeSizes[pd][1];
+                    } else {
+                        timeSize = timeSizes[pd][0];
                     }
 
                     oneSiteSize = OutDom->nrow_OUT[pd] *
