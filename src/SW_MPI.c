@@ -5374,8 +5374,7 @@ void SW_MPI_get_activated_tsuids(
             } else {
                 offset = (sProgDom) ?
                              domSuid[0] :
-                             ((site / SW_Domain->nDimX) * SW_Domain->nDimX) +
-                                 domSuid[1];
+                             (domSuid[0] * SW_Domain->nDimX) + domSuid[1];
 
                 indexCell[0] = yIndexVals[offset];
                 indexCell[1] = sxIndexVals[offset];
