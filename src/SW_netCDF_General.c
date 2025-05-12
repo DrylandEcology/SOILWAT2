@@ -1301,7 +1301,7 @@ void SW_NC_read(
     LOG_INFO *LogInfo
 ) {
     // Read CRS and attributes for netCDFs
-    SW_NCOUT_read_atts(SW_netCDFOut, SW_PathInputs, LogInfo);
+    SW_NCOUT_read_atts(startYr, SW_netCDFOut, SW_PathInputs, LogInfo);
     if (LogInfo->stopRun) {
         return; /* Exit function prematurely due to error */
     }

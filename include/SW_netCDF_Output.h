@@ -108,6 +108,7 @@ void SW_NCOUT_deepCopy(
 );
 
 void SW_NCOUT_read_atts(
+    TimeInt startYr,
     SW_NETCDF_OUT *SW_netCDFOut,
     SW_PATH_INPUTS *SW_PathInputs,
     LOG_INFO *LogInfo
