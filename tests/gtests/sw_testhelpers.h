@@ -76,7 +76,7 @@ class AllTestFixture : public ::testing::Test {
             &template_SW_Run,
             &SW_Run,
             &template_SW_Domain.OutDom,
-            &SW_Run.RunIn,
+            &template_SW_Run.RunIn,
             swTRUE,
             &LogInfo
         );

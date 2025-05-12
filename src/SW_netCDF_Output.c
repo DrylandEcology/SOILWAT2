@@ -2492,9 +2492,11 @@ void SW_NCOUT_write_output(
 #if defined(SWMPI)
     size_t pOUTStart[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
 #else
-    char *fileName;
     (void) succFlags;
     (void) numWritesProc;
+#endif
+#if !defined(SWMPI) || defined(SWDEBUG)
+    char *fileName;
 #endif
 #if defined(SWDEBUG)
     char *varName;
@@ -2522,7 +2524,7 @@ void SW_NCOUT_write_output(
             startTime = 0;
 
             for (fileNum = 0; fileNum < numFilesPerKey; fileNum++) {
-#if !defined(SWMPI)
+#if !defined(SWMPI) || defined(SWDEBUG)
                 fileName = ncOutFileNames[key][pd][fileNum];
 
                 if (isnull(fileName)) {

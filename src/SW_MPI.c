@@ -335,7 +335,7 @@ static void reorder_output(
     double *src_p_OUT[][SW_OUTNPERIODS],
     double *dest_p_OUT[][SW_OUTNPERIODS]
 ) {
-    OutKey outKey;
+    int outKey;
     OutPeriod pd;
     int pdIndex;
     size_t numElem;
@@ -724,7 +724,7 @@ static void fillDesignationIO(
 ) {
     unsigned int suid;
     int tSuid; /* For translated assignment */
-    InKeys inKey;
+    int inKey;
     int rank;
 
     desig->nCompProcs = numCompProcsNode / ioProcsInNode;
@@ -1084,7 +1084,7 @@ static void assignProcs(
     int node;
     int proc;
     int sendRank;
-    InKeys inKey;
+    int inKey;
 
     MPI_Request nullReq = MPI_REQUEST_NULL;
     SW_MPI_DESIGNATE *currDes = NULL;
@@ -1317,7 +1317,7 @@ static void get_NC_info(
     int var;
     int att;
     char *str;
-    InKeys inKey;
+    int inKey;
     Bool useKey = swFALSE;
 
     if (rank > SW_MPI_ROOT) {
@@ -1724,7 +1724,7 @@ static void get_path_info(
     SW_PATH_INPUTS *pathInputs,
     LOG_INFO *LogInfo
 ) {
-    InKeys inKey;
+    int inKey;
     int var;
     int startVar;
     unsigned int file;
@@ -1920,7 +1920,7 @@ static void open_input_files(
     SW_PATH_INPUTS *pathInputs,
     LOG_INFO *LogInfo
 ) {
-    InKeys inKey;
+    int inKey;
     int var;
     int domVar;
     unsigned int numFiles;
@@ -2127,7 +2127,7 @@ static void open_output_files(
     SW_OUT_DOM *OutDom,
     LOG_INFO *LogInfo
 ) {
-    OutKey outKey;
+    int outKey;
     OutPeriod pd;
     Bool stop = swFALSE;
     unsigned int file;
@@ -2427,7 +2427,7 @@ static void alloc_IO_info(
     size_t ***distSUIDs,
     size_t **distTSuids[],
     size_t ***tempDistSuids,
-    int **sendInputs,
+    size_t **sendInputs,
     Bool **succFlags,
     signed char **succMark,
     LOG_INFO **logs,
@@ -2436,11 +2436,11 @@ static void alloc_IO_info(
     size_t suid;
     int allocIndex;
     const int num1DArr = 1;
-    InKeys inKey;
+    int inKey;
     int numVals;
     size_t nDomInfoElem = ((size_t) maxSuidsInWrite) * N_ITER_BEFORE_OUT;
 
-    int **alloc1DArr[] = {sendInputs};
+    size_t **alloc1DArr[] = {sendInputs};
 
     ForEachNCInKey(inKey) {
         numVals = (inKey == eSW_InDomain) ? nDomInfoElem : maxSuidsInWrite;
@@ -2486,8 +2486,8 @@ static void alloc_IO_info(
     }
 
     for (allocIndex = 0; allocIndex < num1DArr; allocIndex++) {
-        (*alloc1DArr[allocIndex]) = Mem_Malloc(
-            sizeof(int) * (nCompProcs + 1), "alloc_IO_info()", LogInfo
+        (*alloc1DArr[allocIndex]) = (size_t *) Mem_Malloc(
+            sizeof(size_t) * (nCompProcs + 1), "alloc_IO_info()", LogInfo
         );
         if (LogInfo->stopRun) {
             return;
@@ -2656,7 +2656,7 @@ static void dealloc_IO_info(
     size_t ***distSUIDs,
     size_t **distTSuids[],
     size_t ***tempDistSuids,
-    int **sendInputs,
+    size_t **sendInputs,
     double **elevations,
     double **tempMonthlyVals,
     double **tempSilt,
@@ -2666,7 +2666,7 @@ static void dealloc_IO_info(
     signed char **succMark,
     LOG_INFO **logs
 ) {
-    InKeys inKey;
+    int inKey;
     size_t ***deallocStartCount[2] = {NULL};
     const int numDeallocStartCount = 2;
     int dealloc;
@@ -2907,7 +2907,7 @@ static void spread_inputs(
     Bool readWeather,
     Bool readClimate,
     Bool extraLoopCheck,
-    int sendInputs[],
+    size_t sendInputs[],
     int n_years,
     int nCompProcs,
     Bool finalize
@@ -3070,7 +3070,7 @@ static void calculate_contiguous_allkeys(
     size_t **starts[],
     size_t **counts[]
 ) {
-    InKeys inKey;
+    int inKey;
     Bool useIndex;
     Bool useTranslated;
     int suid;
@@ -3153,7 +3153,7 @@ static void write_logs(
 static void arrange_output(
     int recvRank,
     int procIndex,
-    int writeLens[],
+    size_t writeLens[],
     SW_OUT_DOM *OutDom,
     size_t offsetMult[],
     Bool useTempStorage,
@@ -3164,32 +3164,32 @@ static void arrange_output(
 
     int pdIndex;
     int writeLen = writeLens[procIndex + 1];
-    OutKey key;
+    int outKey;
     OutPeriod pd;
 
     size_t writeIndex;
     size_t oneSiteSize;
 
     // Loop through output keys
-    ForEachOutKey(key) {
+    ForEachOutKey(outKey) {
         // Loop through output periods
         for (pdIndex = 0; pdIndex < OutDom->used_OUTNPERIODS; pdIndex++) {
-            pd = OutDom->timeSteps[key][pdIndex];
+            pd = OutDom->timeSteps[outKey][pdIndex];
 
             // Check if output period is required
-            if (OutDom->use[key] && pd != eSW_NoTime) {
+            if (OutDom->use[outKey] && pd != eSW_NoTime) {
                 // Calculate start index within given inputs
                 // i.e., main = <input index> * <size of 1 site output> *
                 // procIndex
                 oneSiteSize = OutDom->nrow_OUT[pd] *
-                              (OutDom->ncol_OUT[key] + ncol_TimeOUT[pd]);
+                              (OutDom->ncol_OUT[outKey] + ncol_TimeOUT[pd]);
                 writeIndex = oneSiteSize * offsetMult[procIndex];
 
                 // Receive information
                 SW_MPI_Recv(
                     MPI_DOUBLE,
-                    (useTempStorage) ? &temp_p_OUT[key][pd][writeIndex] :
-                                       &main_p_OUT[key][pd][writeIndex],
+                    (useTempStorage) ? &temp_p_OUT[outKey][pd][writeIndex] :
+                                       &main_p_OUT[outKey][pd][writeIndex],
                     oneSiteSize * writeLen,
                     recvRank,
                     swTRUE,
@@ -3252,7 +3252,7 @@ Handle the different request types accordingly
 static void get_comp_results(
     int numCompProcs,
     size_t startSuid,
-    int recvLens[],
+    size_t recvLens[],
     size_t timeSizes[][2],
     int numOutFiles,
     MPI_Datatype reqType,
@@ -3275,7 +3275,7 @@ static void get_comp_results(
     int rankIndex;
     int rank;
     int comp;
-    int succ;
+    size_t succ;
     int numProcResponse = 0;
     int numSiteRecv = 0;
     int targetRepsonses = numCompProcs;
@@ -3376,7 +3376,7 @@ static void get_next_suids(
     size_t *distSUIDs[],
     size_t **distTSUIDs[]
 ) {
-    InKeys inKey;
+    int inKey;
     int suid;
 
     for (suid = 0; suid < numIterSuids; suid++) {
@@ -3574,7 +3574,7 @@ void SW_MPI_initialize(
 ) {
     int procNameSize = 0;
     int type;
-    InKeys key;
+    int inKey;
 
     MPI_Init(argc, argv);
 
@@ -3589,7 +3589,7 @@ void SW_MPI_initialize(
         datatypes[type] = MPI_DATATYPE_NULL;
     }
 
-    ForEachNCInKey(key) { desig->domTSuids[key] = NULL; }
+    ForEachNCInKey(inKey) { desig->domTSuids[inKey] = NULL; }
 
     desig->domSuids = NULL;
     desig->nSuids = 0;
@@ -3707,7 +3707,7 @@ void SW_MPI_deconstruct(SW_DOMAIN *SW_Domain) {
     SW_MPI_DESIGNATE *desig = &SW_Domain->SW_Designation;
     int procJob = desig->procJob;
     unsigned int suid;
-    InKeys inKey;
+    int inKey;
 
     if (procJob == SW_MPI_PROC_IO) {
         if (!isnull(desig->domSuids)) {
@@ -4738,7 +4738,7 @@ void SW_MPI_template_info(
 void SW_MPI_ncout_info(
     int rank, MPI_Comm comm, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
-    OutKey outKey;
+    int outKey;
     IntUS var;
     IntUS nVars;
     const int unitsIndex = 4;
@@ -4937,7 +4937,7 @@ void SW_MPI_open_files(
 void SW_MPI_close_out_files(
     int *openOutFileIDs[][SW_OUTNPERIODS], SW_OUT_DOM *OutDom, int numOutFiles
 ) {
-    OutKey outKey;
+    int outKey;
     OutPeriod pd;
     int file;
 
@@ -4972,7 +4972,7 @@ void SW_MPI_close_in_files(
     Bool useIndexFile[],
     int numWeathFiles
 ) {
-    InKeys inKey;
+    int inKey;
     Bool skipVar;
     int numFiles;
     int varNum;
@@ -5321,7 +5321,7 @@ void SW_MPI_get_activated_tsuids(
     size_t numPosKeys = eSW_LastInKey;
     int index;
     int site;
-    InKeys inKey;
+    int inKey;
     int fileID = -1;
     char *ncFileName;
     int varID;
@@ -5714,7 +5714,7 @@ void SW_MPI_store_outputs(
 ) {
     size_t startIndex;
     size_t oneSiteSize;
-    OutKey outKey;
+    int outKey;
     OutPeriod timeStep;
     int ipd;
 
@@ -5798,7 +5798,7 @@ void SW_MPI_send_results(
     Bool succRun = swFALSE;
     int run;
     SW_MPI_REQUEST req;
-    OutKey outKey;
+    int outKey;
     int timeStep;
     int ipd;
     size_t sendSize = 0;
@@ -6006,7 +6006,7 @@ void SW_MPI_handle_IO(
 
     SW_RUN_INPUTS *inputs = NULL;
     SW_RUN temp_sw;
-    int *sendInputs = NULL;
+    size_t *sendInputs = NULL;
     int numWrites[SW_NINKEYSNC] = {0};
     size_t **starts[SW_NINKEYSNC] = {NULL};
     size_t **counts[SW_NINKEYSNC] = {NULL};
