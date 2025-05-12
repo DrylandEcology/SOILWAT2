@@ -260,6 +260,82 @@ static unsigned int calc_timeSize(
 }
 
 /**
+@brief Calculate the number of days within a given time size
+
+@param[in] timeSize Number of time steps in current output slice
+@param[in] pd Current output netCDF period
+@param[in] startYr Start year of the simulation
+@param[out] bndsVals Start/end bounds for "time" variable; can be NULL
+    if we are calculating the number of days from the base calendar year
+@param[out] dimVarVals Values of the "time" dimension; can be NULL
+    if we are calculating the number of days from the base calendar year
+@param[in,out] startTime Start number of days when dealing with
+    years between netCDF files
+*/
+static void calc_num_timedays(
+    size_t timeSize,
+    OutPeriod pd,
+    unsigned int startYr,
+    double *bndsVals,
+    double *dimVarVals,
+    double *startTime
+) {
+    unsigned int month = 0;
+    unsigned int week = 0;
+    unsigned int numDays = 0;
+    unsigned int currYear = startYr;
+
+    for (size_t index = 0; index < timeSize; index++) {
+        switch (pd) {
+        case eSW_Day:
+            numDays = 1;
+            break;
+
+        case eSW_Week:
+            if (week == MAX_WEEKS - 1) {
+                // last "week" (7-day period) is either 1 or 2 days long
+                numDays = isleapyear(currYear) ? 2 : 1;
+            } else {
+                numDays = WKDAYS;
+            }
+
+            currYear += (index % MAX_WEEKS == 0) ? 1 : 0;
+            week = (week + 1) % MAX_WEEKS;
+            break;
+
+        case eSW_Month:
+            if (month == Feb) {
+                numDays = isleapyear(currYear) ? 29 : 28;
+            } else {
+                numDays = monthdays[month];
+            }
+
+            currYear += (index % MAX_MONTHS == 0) ? 1 : 0;
+            month = (month + 1) % MAX_MONTHS;
+            break;
+
+        default: // eSW_Year
+            numDays = Time_get_lastdoy_y(currYear);
+            currYear++;
+            break;
+        }
+
+        if (!isnull(bndsVals)) {
+            bndsVals[index * 2] = *startTime;
+            bndsVals[index * 2 + 1] = *startTime + numDays;
+        }
+
+        if (!isnull(dimVarVals)) {
+            // time value = mid-time of bounds
+            dimVarVals[index] =
+                (bndsVals[index * 2] + bndsVals[index * 2 + 1]) / 2.0;
+        }
+
+        *startTime += (double) numDays;
+    }
+}
+
+/**
 @brief Helper function to `fill_dimVar()`; fully creates/fills
 the variable "time_bnds" and fills the variable "time"
 
@@ -293,10 +369,6 @@ static void create_time_vars(
     const int numBnds = 2;
     size_t start[] = {0, 0};
     size_t count[] = {(size_t) size, 0};
-    unsigned int currYear = startYr;
-    unsigned int month = 0;
-    unsigned int week = 0;
-    unsigned int numDays = 0;
     int bndsID = 0;
 
 
@@ -330,54 +402,9 @@ static void create_time_vars(
         return; // Exit function prematurely due to error
     }
 
-    for (size_t index = 0; index < (size_t) size; index++) {
-
-        switch (pd) {
-        case eSW_Day:
-            numDays = 1;
-            break;
-
-        case eSW_Week:
-            if (week == MAX_WEEKS - 1) {
-                // last "week" (7-day period) is either 1 or 2 days long
-                numDays = isleapyear(currYear) ? 2 : 1;
-            } else {
-                numDays = WKDAYS;
-            }
-
-            currYear += (index % MAX_WEEKS == 0) ? 1 : 0;
-            week = (week + 1) % MAX_WEEKS;
-            break;
-
-        case eSW_Month:
-            if (month == Feb) {
-                numDays = isleapyear(currYear) ? 29 : 28;
-            } else {
-                numDays = monthdays[month];
-            }
-
-            currYear += (index % MAX_MONTHS == 0) ? 1 : 0;
-            month = (month + 1) % MAX_MONTHS;
-            break;
-
-        case eSW_Year:
-            numDays = Time_get_lastdoy_y(currYear);
-            currYear++;
-            break;
-
-        default:
-            break;
-        }
-
-        bndsVals[index * 2] = *startTime;
-        bndsVals[index * 2 + 1] = *startTime + numDays;
-
-        // time value = mid-time of bounds
-        dimVarVals[index] =
-            (bndsVals[index * 2] + bndsVals[index * 2 + 1]) / 2.0;
-
-        *startTime += numDays;
-    }
+    calc_num_timedays(
+        (size_t) size, pd, startYr, bndsVals, dimVarVals, startTime
+    );
 
     SW_NC_write_vals(
         &dimVarID, ncFileID, NULL, dimVarVals, start, count, "double", LogInfo
@@ -1927,6 +1954,7 @@ void SW_NCOUT_create_output_files(
     unsigned int timeSize = 0;
     unsigned int baseTime = 0;
     double startTime[SW_OUTNPERIODS];
+    double baseStartTime[SW_OUTNPERIODS] = {0};
 
     char periodSuffix[10];
     char *yearFormat;
@@ -1941,6 +1969,26 @@ void SW_NCOUT_create_output_files(
 
     yearFormat = (strideOutYears == 1) ? (char *) "%d" : (char *) "%d-%d";
 
+    // Calculate base offset (in days) from the base calendar year to
+    // the start year to set the start time values from base calendar year
+    // instead of start year (0)
+    if ((IntU) baseCalendarYear < startYr) {
+        ForEachOutPeriod(pd) {
+            timeSize = calc_timeSize(
+                (IntU) baseCalendarYear, (IntU) startYr, times[pd], pd
+            );
+
+            calc_num_timedays(
+                timeSize,
+                pd,
+                (IntU) baseCalendarYear,
+                NULL,
+                NULL,
+                &baseStartTime[pd]
+            );
+        }
+    }
+
     ForEachOutKey(key) {
         if (nvar_OUT[key] > 0 && SW_Domain->OutDom.use[key]) {
 
@@ -1950,7 +1998,7 @@ void SW_NCOUT_create_output_files(
                 pd = timeSteps[key][ip];
 
                 if (pd != eSW_NoTime) {
-                    startTime[pd] = 0;
+                    startTime[pd] = baseStartTime[pd];
                     baseTime = times[pd];
                     rangeStart = startYr;
 
@@ -2432,12 +2480,14 @@ void SW_NCOUT_deepCopy(
 /**
 @brief Read invariant netCDF information (attributes/CRS) from input file
 
+@param[in] startYr Start year of the simulation
 @param[in,out] SW_netCDFOut Constant netCDF output file information
 @param[in,out] SW_PathInputs Struct holding all information about the programs
     path/files
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCOUT_read_atts(
+    TimeInt startYr,
     SW_NETCDF_OUT *SW_netCDFOut,
     SW_PATH_INPUTS *SW_PathInputs,
     LOG_INFO *LogInfo
@@ -2804,6 +2854,15 @@ void SW_NCOUT_read_atts(
             "type 'geographic' CRS or a primary CRS of "
             "'projected' with a geographic CRS.",
             SW_PathInputs->txtInFiles[eNCInAtt]
+        );
+        goto closeFile;
+    }
+
+    if ((TimeInt) SW_netCDFOut->baseCalendarYear > startYr) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Option 'baseCalendarYear' cannot be greater than start year."
         );
         goto closeFile;
     }
