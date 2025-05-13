@@ -48,20 +48,28 @@ getRunIDs <- function(nRuns, kcrs, es, grids) {
 copyInputTemplateNC <- function(filename, template, crsType, list_xyvars) {
   if (identical(crsType, "projected")) {
     # Remove geographic variables and crs if projected
-    res <- system2(
-      command = "ncks",
-      # -C = do not add associated variables (e.g., lat) to the extraction list
-      # -h = do not write to the history global attribute
-      # -x = invert selection made by -v
-      # -v = list of variables to operate on
-      args = paste(
-        "-C -h -x",
-        "-v",
-        paste(c(list_xyvars[["geographic"]], "crs_geogsc"), collapse = ","),
-        template,
-        filename
-      )
+    res <- try(
+      system2(
+        command = "ncks",
+        # -C = do not add associated variables (e.g., lat) to the extraction
+        # -h = do not write to the history global attribute
+        # -x = invert selection made by -v
+        # -v = list of variables to operate on
+        args = paste(
+          "-C -h -x",
+          "-v",
+          paste(c(list_xyvars[["geographic"]], "crs_geogsc"), collapse = ","),
+          template,
+          filename
+        )
+      ),
+      silent = TRUE
     )
+
+    if (inherits(res, "try-error")) {
+      stop(res)
+    }
+
     res == 0L && is.null(attributes(res))
 
   } else {
@@ -395,14 +403,56 @@ getModifiedNCUnits <- function(x, inkey, ncvar) {
   as.list(x[idrow, c("ncVarUnits", "ncVarUnitsModified")])
 }
 
+detectMPIExecutor <- function() {
+  executor <- NULL
 
-runSW2 <- function(sw2, path_inputs, renameDomainTemplate = FALSE) {
+  hasSrun <- try(
+    system2(command = "command", args = "-v srun > /dev/null 2>&1"),
+    silent = TRUE
+  )
+
+  if (isTRUE(all.equal(hasSrun, 0L))) {
+    executor <- "srun"
+
+  } else {
+    hasMpirun <- try(
+      system2(command = "command", args = "-v mpirun > /dev/null 2>&1"),
+      silent = TRUE
+    )
+    if (isTRUE(all.equal(hasMpirun, 0L))) {
+      executor <- "mpirun"
+    }
+  }
+
+  executor
+}
+
+runSW2 <- function(
+  sw2,
+  path_inputs,
+  mode = c("nc", "mpi"),
+  mpiExecutor = NULL,
+  renameDomainTemplate = FALSE
+) {
+  mode <- match.arg(mode)
+  isMPI <- identical(mode, "mpi")
+  if (isMPI) {
+    if (is.null(mpiExecutor)) {
+      mpiExecutor <- detectMPIExecutor()
+    }
+    if (!mpiExecutor %in% c("mpirun", "srun")) {
+      stop("mpiExecutor ", shQuote(mpiExecutor), " is not implemented.")
+    }
+  }
+
   msg <- NULL
   res <- withCallingHandlers(
     tryCatch(
       system2(
-        command = sw2,
+        command = if (isMPI) mpiExecutor else sw2,
         args = paste(
+          if (isMPI) "-n 2",
+          if (isMPI) paste0("./", sw2),
           "-d", path_inputs,
           "-f files.in",
           if (isTRUE(renameDomainTemplate)) "-r"

@@ -12,6 +12,7 @@
 #       Rscript__ncTestRuns_00_createReferenceRun.R \
 #       --path-to-ncTestRuns=<...> \
 #       --path-to-sw2=<...> \
+#       --swMode=<...> \
 #       --path-to-referenceOutput=<...>
 # ```
 #------------------------------------------------------------------------------#
@@ -21,6 +22,18 @@
 #------ . ------
 #------ Grab command line arguments (if any)
 args <- commandArgs(trailingOnly = TRUE)
+
+
+swMode <- if (any(ids <- grepl("--swMode", args))) {
+  sub("--swMode", "", args[ids]) |>
+    sub("=", "", x = _) |>
+    trimws() |>
+    tolower()
+} else {
+  "nc"
+}
+
+stopifnot(swMode %in% c("nc", "mpi"))
 
 #------ Paths (possibly as command-line arguments) ------
 dir_prj <- if (any(ids <- grepl("--path-to-ncTestRuns", args))) {
@@ -107,7 +120,10 @@ toggleNCInputTSV(
 
 #--- * Execute refRun ------
 res <- runSW2(
-  sw2 = fname_sw2, path_inputs = dir_refRun, renameDomainTemplate = TRUE
+  sw2 = fname_sw2,
+  path_inputs = dir_refRun,
+  mode = swMode,
+  renameDomainTemplate = TRUE
 )
 
 fname_logfile <- file.path(dir_refRun, "logs", "logfile.log")

@@ -27,6 +27,7 @@
 #       Rscript__ncTestRuns_02_checkTestRuns.R \
 #       --path-to-ncTestRuns=<...> \
 #       --path-to-sw2=<...> \
+#       --swMode=<...> \
 #       --path-to-referenceOutput=<...> \
 #       --testRuns=<...>
 # ```
@@ -60,6 +61,17 @@ reqTestRuns <- if (any(ids <- grepl("--testRuns", args))) {
 } else {
   -1L
 }
+
+swMode <- if (any(ids <- grepl("--swMode", args))) {
+  sub("--swMode", "", args[ids]) |>
+    sub("=", "", x = _) |>
+    trimws() |>
+    tolower()
+} else {
+  "nc"
+}
+
+stopifnot(swMode %in% c("nc", "mpi"))
 
 
 #------ Paths (possibly as command-line arguments) ------
@@ -114,6 +126,7 @@ dir.create(dir_testRuns, recursive = TRUE, showWarnings = FALSE)
 #------ Load functions ------
 copyDir <- NULL
 runSW2 <- NULL
+detectMPIExecutor <- NULL
 getSitesFromNC <- NULL
 locateExampleSite <- NULL
 appendToMessage <- NULL
@@ -129,6 +142,8 @@ res <- lapply(
   list.files(path = dir_R, pattern = ".R$", full.names = TRUE),
   source
 )
+
+mpiExecutor <- if (identical(swMode, "mpi")) detectMPIExecutor()
 
 
 #------ . ------
@@ -215,7 +230,12 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
 
   #--- * Execute testRun ------
-  res <- runSW2(sw2 = fname_sw2, path_inputs = dir_testRun)
+  res <- runSW2(
+    sw2 = fname_sw2,
+    path_inputs = dir_testRun,
+    mode = swMode,
+    mpiExecutor = mpiExecutor
+  )
 
   hasSW2Error <- !is.null(res[["msg"]])
 

@@ -57,6 +57,16 @@ process_clangtidy_results $status "$res"
 
 echo $'\n'\
 --------------------------------------------------$'\n'\
+"Tidy mpi-based SOILWAT2"$'\n'\
+--------------------------------------------------
+
+res=$(make CPPFLAGS='-DSWMPI -DSWDEBUG' tidy-bin 2>/dev/null)
+status=$?
+process_clangtidy_results $status "$res"
+
+
+echo $'\n'\
+--------------------------------------------------$'\n'\
 "Tidy SOILWAT2 library for rSOILWAT2"$'\n'\
 --------------------------------------------------
 

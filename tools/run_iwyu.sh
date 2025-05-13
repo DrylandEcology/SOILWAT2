@@ -87,6 +87,29 @@ make -k CXX=include-what-you-use CPPFLAGS="-DSWNC" CXXFLAGS="-Xiwyu --error_alwa
 #-------------------------------------------------------------------------------
 echo $'\n'\
 ==================================================$'\n'\
+"Check mpi-based SOILWAT2 ..."$'\n'\
+==================================================
+make clean
+make -k CC=include-what-you-use CPPFLAGS="-DSWMPI" CFLAGS="-Xiwyu --error_always"
+
+echo $'\n'\
+==================================================$'\n'\
+"Check mpi-based SOILWAT2 (debug) ..."$'\n'\
+==================================================
+make clean
+make -k CC=include-what-you-use CPPFLAGS="-DSWMPI -DSWDEBUG" CFLAGS="-Xiwyu --error_always"
+
+echo $'\n'\
+==================================================$'\n'\
+"Check mpi-based SOILWAT2 tests ..."$'\n'\
+==================================================
+make clean
+make -k CXX=include-what-you-use CPPFLAGS="-DSWMPI" CXXFLAGS="-Xiwyu --error_always" test
+
+
+#-------------------------------------------------------------------------------
+echo $'\n'\
+==================================================$'\n'\
 "Check SOILWAT2 library for rSOILWAT2 ..."$'\n'\
 ==================================================
 make clean

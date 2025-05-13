@@ -5,6 +5,7 @@
 #-------------------------------------------------------------------------------
 # text-based SOILWAT2: CPPFLAGS=-DSWTXT
 # netCDF-based SOILWAT2: CPPFLAGS=-DSWNC
+# MPI-based SOILWAT2: CPPFLAGS=-DSWMPI
 #
 #-------------------------------------------------------------------------------
 # commands         explanations
@@ -163,7 +164,7 @@ lib_gmock := $(dir_build_test)/lib$(gmock).a
 ifeq (,$(findstring -DSWTXT,$(CPPFLAGS)))
   # not txt-based SOILWAT2
 
-  ifneq (,$(findstring -DSWNCMPI,$(CPPFLAGS)))
+  ifneq (,$(findstring -DSWMPI,$(CPPFLAGS)))
     # use udunits, netCDFs and MPI
     SWNC = 1
     SWMPI = 1
@@ -525,11 +526,11 @@ $(dir_bin) $(dir_build_sw2) $(dir_build_test):
 #--- Convenience targets for testing
 .PHONY : bin_run
 bin_run : all
-		$(bin_sw2) -d ./tests/example -f files.in -r
+		./tools/run_bin.sh
 
 .PHONY : test_run
 test_run : test
-		$(bin_test)
+		./tools/run_test.sh
 
 .PHONY : test_severe
 test_severe :
@@ -545,11 +546,11 @@ test_leaks : test
 
 .PHONY : test_reprnd
 test_reprnd : test
-		$(bin_test) --gtest_shuffle --gtest_repeat=-1
+		./tools/run_test.sh --gtest_shuffle --gtest_repeat=-1
 
 .PHONY : test_rep3rnd
 test_rep3rnd : test
-		$(bin_test) --gtest_shuffle --gtest_repeat=3
+		./tools/run_test.sh --gtest_shuffle --gtest_repeat=3
 
 .PHONY : bin_debug
 bin_debug :

@@ -1,5 +1,5 @@
 #------ . ------
-# Compare SOILWAT2 output among text-based, nc-based, and rSOILWAT2 runs
+# Compare SOILWAT2 output among text-based, nc-based, mpi-based and rSOILWAT2 runs
 #
 # ```
 #   # Run text-based SOILWAT2 on example simulation
@@ -38,10 +38,11 @@ qprobs <- c(0, 0.05, 0.25, 0.5, 0.75, 0.95, 1)
 dir_example <- file.path("tests", "example")
 dir_nc <- file.path(dir_example, "Output_comps-nc")
 dir_txt <- file.path(dir_example, "Output_comps-txt")
+dir_mpi <- file.path(dir_example, "Output_comps-mpi")
 
 
 #--- SOILWAT2 metadata ------
-outModes <- c("txt", "nc", "r")
+outModes <- c("txt", "nc", "mpi", "r")
 
 pds2 <- rSOILWAT2:::rSW2_glovars[["kSOILWAT2"]][["OutPeriods"]]
 pds1 <- tolower(pds2)
@@ -74,7 +75,7 @@ swr <- rSOILWAT2::sw_exec(dir = dir_example)
 
 #--- . ------
 #--- Function to read all output data ------
-read_swdata <- function(outkey, pd, swr, dir_txt, dir_nc) {
+read_swdata <- function(outkey, pd, swr, dir_txt, dir_nc, dir_mpi) {
 
   #--- Load txt-based output ------
   ftxts <- list.files(dir_txt, pattern = ".csv") |>
@@ -148,144 +149,149 @@ read_swdata <- function(outkey, pd, swr, dir_txt, dir_nc) {
   }
 
 
-  #--- Load nc-based output ------
-  tmp <- list.files(
-    dir_nc,
-    pattern = paste0(keyTag, "[[:print:]]*_", pds1[[pd]], ".nc")
-  )
-  fnc <- file.path(dir_nc, tmp) # sorted in alphabetical order
+  #--- Load nc-based and mpi-based output ------
+  for (mt in c("nc", "mpi")) {
+    dir_mt <- switch(mt, nc = dir_nc, mpi = dir_mpi)
 
-  keydesc <- outvars[outvars[[1L]] == outkey, , drop = FALSE]
+    tmp <- list.files(
+      dir_mt,
+      pattern = paste0(keyTag, "[[:print:]]*_", pds1[[pd]], ".nc")
+    )
+    fnc <- file.path(dir_mt, tmp) # sorted in alphabetical order
 
-  if (identical(outkey, "ESTABL")) {
-    keydesc <- keydesc[rep(1L, times = dx[[2L]]), , drop = FALSE]
-    keydesc[["SW2.txt.output"]] <- keydesc[["netCDF.variable.name"]] <-
-      gsub(keyTag, "", cnsx)
-  }
+    keydesc <- outvars[outvars[[1L]] == outkey, , drop = FALSE]
 
-  matchers <- cnsx |>
-    gsub(keyTag, "", x = _) |>
-    gsub("Lyr_[[:digit:]]+", "Lyr_<slyr>", x = _) |>
-    gsub(vegsTag, "<veg>", x = _) |>
-    unique()
+    if (identical(outkey, "ESTABL")) {
+      keydesc <- keydesc[rep(1L, times = dx[[2L]]), , drop = FALSE]
+      keydesc[["SW2.txt.output"]] <- keydesc[["netCDF.variable.name"]] <-
+        gsub(keyTag, "", cnsx)
+    }
 
-  ivars <- match(matchers, keydesc[["SW2.txt.output"]], nomatch = 0L)
+    matchers <- cnsx |>
+      gsub(keyTag, "", x = _) |>
+      gsub("Lyr_[[:digit:]]+", "Lyr_<slyr>", x = _) |>
+      gsub(vegsTag, "<veg>", x = _) |>
+      unique()
 
-  stopifnot(nvars == length(ivars))
+    ivars <- match(matchers, keydesc[["SW2.txt.output"]], nomatch = 0L)
+
+    stopifnot(nvars == length(ivars))
 
 
-  if (any(dx == 0L, length(fnc) == 0L, ivars == 0L)) {
-    x[["nc"]] <- array(dim = c(0L, 0L))
+    if (any(dx == 0L, length(fnc) == 0L, ivars == 0L)) {
+      x[[mt]] <- array(dim = c(0L, 0L))
 
-  } else {
-    ncc <- lapply(fnc, RNetCDF::open.nc)
+    } else {
+      ncc <- lapply(fnc, RNetCDF::open.nc)
 
-    x[["nc"]] <- lapply(
-      ivars,
-      function(kv) {
-        tmp <- lapply(
-          ncc,
-          function(nc) {
-            tmp <- RNetCDF::var.get.nc(
-              nc,
-              variable = keydesc[kv, "netCDF.variable.name"]
-            )
-            nd <- length(dim(tmp))
-            thisHas_slyrs <- grepl("Z", keydesc[kv, "XY.Dim"], fixed = TRUE)
-            thisHas_veg <- grepl("V", keydesc[kv, "XY.Dim"], fixed = TRUE)
-            thisHas_totalVeg <- all(
-              has_totalVeg,
-              grepl("_total", keydesc[kv, "SW2.txt.output"]),
-              !grepl("V", keydesc[kv, "XY.Dim"])
-            )
-            res <- if (thisHas_slyrs && thisHas_veg && !thisHas_totalVeg) {
-              tmp2 <- if (nd == 5L) {
-                tmp[, , , 1L, 1L, drop = TRUE] # grab first gridcell
-              } else if (nd == 4L) {
-                tmp[, , , 1L, drop = TRUE] # grab first site
-              } else {
-                tmp # just one site/gridcell
-              }
-              ndt <- dim(tmp2)
-              array(
-                data = aperm(tmp2, perm = c(3L, 2L, 1L)),
+      x[[mt]] <- lapply(
+        ivars,
+        function(kv) {
+          tmp <- lapply(
+            ncc,
+            function(nc) {
+              tmp <- RNetCDF::var.get.nc(
+                nc,
+                variable = keydesc[kv, "netCDF.variable.name"]
+              )
+              nd <- length(dim(tmp))
+              thisHas_slyrs <- grepl("Z", keydesc[kv, "XY.Dim"], fixed = TRUE)
+              thisHas_veg <- grepl("V", keydesc[kv, "XY.Dim"], fixed = TRUE)
+              thisHas_totalVeg <- all(
+                has_totalVeg,
+                grepl("_total", keydesc[kv, "SW2.txt.output"]),
+                !grepl("V", keydesc[kv, "XY.Dim"])
+              )
+              res <- if (thisHas_slyrs && thisHas_veg && !thisHas_totalVeg) {
+                tmp2 <- if (nd == 5L) {
+                  tmp[, , , 1L, 1L, drop = TRUE] # grab first gridcell
+                } else if (nd == 4L) {
+                  tmp[, , , 1L, drop = TRUE] # grab first site
+                } else {
+                  tmp # just one site/gridcell
+                }
+                ndt <- dim(tmp2)
+                array(
+                  data = aperm(tmp2, perm = c(3L, 2L, 1L)),
                   dim = c(ndt[[3L]], prod(ndt[1:2]))
+                )
+
+              } else if (xor(thisHas_slyrs, thisHas_veg)) {
+                if (nd == 4L) {
+                  tmp[, , 1L, 1L, drop = TRUE] # grab first gridcell
+                } else if (nd == 3L) {
+                  tmp[, , 1L, drop = TRUE] # grab first site
+                } else {
+                  tmp # just one site/gridcell
+                } |>
+                  t()
+
+              } else {
+                if (nd == 3L) {
+                  tmp[, 1L, 1L, drop = TRUE] # grab first gridcell
+                } else if (nd == 2L) {
+                  tmp[, 1L, drop = TRUE] # grab first site
+                } else {
+                  tmp # just one site/gridcell
+                }
+              }
+
+              # Read units from nc
+              units_has <- RNetCDF::att.get.nc(
+                nc,
+                variable = keydesc[kv, "netCDF.variable.name"],
+                attribute = "units"
               )
 
-            } else if (xor(thisHas_slyrs, thisHas_veg)) {
-              if (nd == 4L) {
-                tmp[, , 1L, 1L, drop = TRUE] # grab first gridcell
-              } else if (nd == 3L) {
-                tmp[, , 1L, drop = TRUE] # grab first site
-              } else {
-                tmp # just one site/gridcell
-              } |>
-                t()
+              if (!identical(units_has, keydesc[kv, "netCDF.units"])) {
+                stop(
+                  "Found unit ", shQuote(units_has),
+                  " but expected ", shQuote(keydesc[kv, "netCDF.units"]),
+                  " for variable ", shQuote(keydesc[kv, "netCDF.variable.name"]),
+                  " in nc-output."
+                )
+              }
 
-            } else {
-              if (nd == 3L) {
-                tmp[, 1L, 1L, drop = TRUE] # grab first gridcell
-              } else if (nd == 2L) {
-                tmp[, 1L, drop = TRUE] # grab first site
+              # Convert units to SOILWAT2 units
+              if (identical(units_has, keydesc[kv, "SW2.units"])) {
+                res
               } else {
-                tmp # just one site/gridcell
+                units::set_units(res, units_has, mode = "standard") |>
+                  units::set_units(keydesc[kv, "SW2.units"], mode = "standard") |>
+                  units::drop_units()
               }
             }
-
-            # Read units from nc
-            units_has <- RNetCDF::att.get.nc(
-              nc,
-              variable = keydesc[kv, "netCDF.variable.name"],
-              attribute = "units"
-            )
-
-            if (!identical(units_has, keydesc[kv, "netCDF.units"])) {
-              stop(
-                "Found unit ", shQuote(units_has),
-                " but expected ", shQuote(keydesc[kv, "netCDF.units"]),
-                " for variable ", shQuote(keydesc[kv, "netCDF.variable.name"]),
-                " in nc-output."
-              )
-            }
-
-            # Convert units to SOILWAT2 units
-            if (identical(units_has, keydesc[kv, "SW2.units"])) {
-              res
-            } else {
-              units::set_units(res, units_has, mode = "standard") |>
-                units::set_units(keydesc[kv, "SW2.units"], mode = "standard") |>
-                units::drop_units()
-            }
+          )
+          # concatenate time-series if split across multiple netCDFs
+          tmp <- do.call(
+            what = if (isTRUE(length(dim(tmp[[1L]])) > 0L)) rbind else c,
+            args = tmp
+          )
+          # subset columns if soil evaporation
+          if (identical(keydesc[kv, "X"], "EVAPSOIL")) {
+            tmp[, seq_len(nslyrs), drop = FALSE]
+          } else {
+            tmp
           }
-        )
-        # concatenate time-series if split across multiple netCDFs
-        tmp <- do.call(
-          what = if (isTRUE(length(dim(tmp[[1L]])) > 0L)) rbind else c,
-          args = tmp
-        )
-        # subset columns if soil evaporation
-        if (identical(keydesc[kv, "X"], "EVAPSOIL")) {
-          tmp[, seq_len(nslyrs), drop = FALSE]
-        } else {
-          tmp
         }
+      ) |>
+        do.call(cbind, args = _)
+
+      ndnc <- dim(x[[mt]])
+
+      if (isTRUE(length(ndnc) >= 3L && ndnc[[3L]] == 1L)) {
+        # Drop a 1-length 3rd dimension if it was created
+        x[[mt]] <- array(
+          x[[mt]][, , 1L, drop = TRUE],
+          dim = ndnc[1:2]
+        )
       }
-    ) |>
-      do.call(cbind, args = _)
-
-    ndnc <- dim(x[["nc"]])
-
-    if (isTRUE(length(ndnc) >= 3L && ndnc[[3L]] == 1L)) {
-      # Drop a 1-length 3rd dimension if it was created
-      x[["nc"]] <- array(
-        x[["nc"]][, , 1L, drop = TRUE],
-        dim = ndnc[1:2]
-      )
     }
   }
 
+
+  # columns are interleaved in txt-sw and r-sw but not nc-sw
   if (identical(outkey, "SOILTEMP")) {
-    # columns are interleaved in txt-sw and r-sw but not nc-sw
     tmp <- nmam * (seq_len(nslyrs) - 1)
     ids <- c(1L + tmp, 2L + tmp, 3L + tmp)
     x[["txt"]] <- x[["txt"]][, ids, drop = FALSE]
@@ -319,7 +325,7 @@ for (pd in seq_along(pds1)) {
 
     #--- Load output ------
     x <- try(
-      read_swdata(outkey = outkeys[[key]], pd, swr, dir_txt, dir_nc),
+      read_swdata(outkey = outkeys[[key]], pd, swr, dir_txt, dir_nc, dir_mpi),
       silent = TRUE
     )
 
