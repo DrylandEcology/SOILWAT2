@@ -113,22 +113,43 @@ static void SW_Allreduce(
     and output files, so I/O processes that may run out of work before
     others, they need to participate in the writes, hence using
     dummy writes
+
+@param[in] desig Designation instance that holds information about
+    assigning a process to a job
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
+@param[in] SW_PathOutputs Struct of type SW_PATH_OUTPUTS which
+    holds basic information about output files and values
+@param[in] main_p_OUT Array of accumulated output values throughout
+    simulation runs
+@param[in] progFileID Identifier of the progress netCDF file
+@param[in] progVarID Identifier of the progress variable
+@param[out] starts A list of start pairs used for accessing/writing to
+    netCDF files
+@param[out] counts A list of count parts used for accessing/writing to
+    netCDF files
+@param[in] LogInfo Holds information on warnings and errors
+
+@return Flag specifying if the I/O process should exit early due to
+    an error by itself or fellow I/O process
 */
-static void dummy_prog_out_writes(
+static Bool dummy_prog_out_writes(
     SW_MPI_DESIGNATE *desig,
     SW_OUT_DOM *OutDom,
     SW_PATH_OUTPUTS *SW_PathOutputs,
-    size_t *starts[],
-    size_t *counts[],
     double *main_p_OUT[][SW_OUTNPERIODS],
     int progFileID,
     int progVarID,
+    size_t *starts[],
+    size_t *counts[],
     LOG_INFO *LogInfo
 ) {
     int write;
     int numWrites = 0;
     Bool succFlagBool[1] = {swTRUE};
     signed char succFlagChar[1] = {swTRUE};
+
+    Bool exitEarly = swFALSE;
 
     SW_Allreduce(MPI_INT, &numWrites, &numWrites, 1, MPI_MAX, desig->groupComm);
 
@@ -155,18 +176,28 @@ static void dummy_prog_out_writes(
         SW_PathOutputs->outTimeSizes,
         LogInfo
     );
-    if (LogInfo->stopRun) {
-        return;
+    if (SW_MPI_setup_fail(LogInfo->stopRun, desig->groupComm)) {
+        exitEarly = swTRUE;
+        goto report;
     }
 
-    SW_NCIN_set_progress(
-        progFileID,
-        progVarID,
-        starts[write],
-        counts[write],
-        succFlagChar,
-        LogInfo
-    );
+    for (write = 0; write < numWrites; write++) {
+        SW_NCIN_set_progress(
+            progFileID,
+            progVarID,
+            starts[write],
+            counts[write],
+            succFlagChar,
+            LogInfo
+        );
+        if (SW_MPI_setup_fail(LogInfo->stopRun, desig->groupComm)) {
+            exitEarly = swTRUE;
+            goto report;
+        }
+    }
+
+report:
+    return exitEarly;
 }
 
 /**
@@ -3399,8 +3430,11 @@ static void get_next_suids(
 @param[out] main_p_OUT Array of accumulated output values throughout
     simulation all runs
 @param[out] LogInfo Holds information on warnings and errors
+
+@return Flag specifying if the I/O process should exit early due to
+    an error by itself or fellow I/O process
 */
-static void write_outputs(
+static Bool write_outputs(
     SW_MPI_DESIGNATE *desig,
     int progFileID,
     int progVarID,
@@ -3422,6 +3456,8 @@ static void write_outputs(
     int mark;
     int totalSites = 0;
     int maxNumWrites = 0;
+
+    Bool failEarly = swFALSE;
 
     get_contiguous_counts(
         distSUIDs,
@@ -3470,8 +3506,9 @@ static void write_outputs(
         SW_PathOutputs->outTimeSizes,
         LogInfo
     );
-    if (LogInfo->stopRun) {
-        return;
+    if (SW_MPI_setup_fail(LogInfo->stopRun, desig->groupComm)) {
+        failEarly = swTRUE;
+        goto report;
     }
 
     // Update progress file statuses
@@ -3491,12 +3528,16 @@ static void write_outputs(
             succMark,
             LogInfo
         );
-        if (LogInfo->stopRun) {
-            return;
+        if (SW_MPI_setup_fail(LogInfo->stopRun, desig->groupComm)) {
+            failEarly = swTRUE;
+            goto report;
         }
 
         totalSites += numSites;
     }
+
+report:
+    return failEarly;
 }
 
 /* =================================================== */
@@ -5982,6 +6023,7 @@ void SW_MPI_handle_IO(
     Bool errorCaused = swFALSE;
     size_t temp;
     Bool dummyWrites = swFALSE;
+    Bool failEarly = swFALSE;
     size_t maxWritesGroup = 0;
     size_t maxSuidsInOutput = 0;
     size_t maxWriteInst = (size_t
@@ -6198,7 +6240,7 @@ checkStatus:
                 distSUIDs[suid][1] = temp;
             }
 
-            write_outputs(
+            failEarly = write_outputs(
                 desig,
                 progFileID,
                 progVarID,
@@ -6214,7 +6256,7 @@ checkStatus:
                 sw->OutRun.p_OUT,
                 LogInfo
             );
-            if (LogInfo->stopRun) {
+            if (failEarly) {
                 errorCaused = swTRUE;
             }
 
@@ -6277,7 +6319,7 @@ checkStatus:
         if ((numIterations == 0 && input == numSuidsTot) ||
             numIterations < N_ITER_BEFORE_OUT) {
 
-            write_outputs(
+            failEarly = write_outputs(
                 desig,
                 progFileID,
                 progVarID,
@@ -6293,20 +6335,30 @@ checkStatus:
                 sw->OutRun.p_OUT,
                 LogInfo
             );
+            if (failEarly) {
+                goto freeMem;
+            }
         }
 
         if (dummyWrites) {
-            dummy_prog_out_writes(
+            // Participate in a dummy check so this matches with
+            // other checks by processes that do not need to do dummy writes
+            SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD);
+
+            failEarly = dummy_prog_out_writes(
                 desig,
                 &SW_Domain->OutDom,
                 &sw->SW_PathOutputs,
-                starts[eSW_InDomain],
-                counts[eSW_InDomain],
                 sw->OutRun.p_OUT,
                 progFileID,
                 progVarID,
+                starts[eSW_InDomain],
+                counts[eSW_InDomain],
                 LogInfo
             );
+            if (failEarly) {
+                goto freeMem;
+            }
         }
     }
 
