@@ -57,9 +57,18 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
 
     SW_PATH_INPUTS SW_PathInput;
 
+    short k;
+
     // Dummy value for SW_F_deconstruct
-    Bool readInVars[SW_NINKEYSNC][1] = {{swFALSE}};
     Bool useIndexFiles[SW_NINFILES] = {swFALSE};
+    Bool *readInVars[SW_NINKEYSNC];
+    for (k = 0; k < SW_NINKEYSNC; k++) {
+        readInVars[k] = (Bool *) Mem_Malloc(
+            sizeof(Bool), "WeatherGeneratorRNGSeeding", &LogInfo
+        );
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        *readInVars[k] = swFALSE;
+    }
 
     SW_F_init_ptrs(&SW_PathInput);
 
@@ -74,7 +83,6 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
     // Turn on Markov weather generator
     unsigned int const generateWeatherMethod = 2;
 
-    short k;
     short const n = 18;
     short const seed = 42;
     short const year = 1980;
@@ -180,6 +188,10 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
     delete[] ppt0;
 
     SW_F_deconstruct(&SW_PathInput, (Bool **) readInVars, useIndexFiles, 0);
+
+    for (k = 0; k < SW_NINKEYSNC; k++) {
+        free(readInVars[k]);
+    }
 }
 
 // Test drawing multivariate normal variates for daily maximum/minimum temp

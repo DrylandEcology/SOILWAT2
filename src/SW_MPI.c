@@ -3609,7 +3609,7 @@ void SW_MPI_initialize(
 @brief Conclude the program run by finalizing/freeing anything that's
 been initialized/created through MPI within the program run
 */
-void SW_MPI_finalize() { MPI_Finalize(); }
+void SW_MPI_finalize(void) { MPI_Finalize(); }
 
 /**
 @brief Free communicators and types when finishing the program

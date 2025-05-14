@@ -266,7 +266,7 @@ static unsigned int calc_timeSize(
 @param[in] varID Variable identifier within the given netCDF
 @param[out] LogInfo Holds information on warnings and errors
 */
-void write_pft_vals(int ncFileID, int varID, LOG_INFO *LogInfo) {
+static void write_pft_vals(int ncFileID, int varID, LOG_INFO *LogInfo) {
     unsigned char vals[NVEGTYPES] = {
         (unsigned char) (SW_TREES + 1),
         (unsigned char) (SW_SHRUB + 1),
@@ -2499,7 +2499,7 @@ void SW_NCOUT_write_output(
     char *fileName;
 #endif
 #if defined(SWDEBUG)
-    char *varName;
+    char *varName = NULL;
 #endif
 
     ForEachOutPeriod(pd) {
@@ -2582,6 +2582,10 @@ void SW_NCOUT_write_output(
                         );
 
 #if defined(SWDEBUG)
+                        varName =
+                            OutDom->netCDFOutput
+                                .outputVarInfo[key][varNum][VARNAME_INDEX];
+
                         check_counts_against_vardim(
                             fileName,
                             varName,
