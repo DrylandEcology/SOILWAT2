@@ -2420,9 +2420,12 @@ output netCDF files
     have (same amount for each key)
 @param[in] ncOutFileNames A list of the generated output netCDF file names
 @param[in] ncSuid Unique indentifier of the current suid being simulated
-@param[in] numWrites The number of writes that must be performed
-    by the calling function to output all simulated information
-    for the sites
+@param[in] numWritesGroup The number of writes within an I/O group
+    that must be performed by the calling function to output all simulated
+    information for the sites (MPI only)
+@param[in] numWritesProc The number of writes an I/O process must perform
+    to output all of it's values, this may be a different (smaller) value
+    from `numWritesGroup` (MPI only)
 @param[in] starts A list of size SW_NINKEYSNC specifying the start
     indices used when reading/writing using the netCDF library;
     default size is `nSuids` but as mentioned in `numWrites`, it would
@@ -2451,7 +2454,8 @@ void SW_NCOUT_write_output(
     unsigned int numFilesPerKey,
     char **ncOutFileNames[][SW_OUTNPERIODS],
     const size_t ncSuid[],
-    int numWrites,
+    int numWritesGroup,
+    int numWritesProc,
     size_t **starts,
     size_t **counts,
     int *openOutFileIDs[][SW_OUTNPERIODS],
@@ -2490,6 +2494,7 @@ void SW_NCOUT_write_output(
 #else
     char *fileName;
     (void) succFlags;
+    (void) numWritesProc;
 #endif
 #if defined(SWDEBUG)
     char *varName;
@@ -2548,7 +2553,7 @@ void SW_NCOUT_write_output(
                     }
 
                     numSiteSum = 0;
-                    for (write = 0; write < numWrites; write++) {
+                    for (write = 0; write < numWritesGroup; write++) {
 #if defined(SWMPI)
                         start[0] = starts[write][0];
                         start[1] = starts[write][1];
@@ -2617,7 +2622,7 @@ void SW_NCOUT_write_output(
                             continue;
                         }
 
-                        if (numWrites == 1 && numSites == 1) {
+                        if (numWritesProc == 1 && numSites == 1) {
 #endif
                             pOUTIndex = OutDom->netCDFOutput
                                             .iOUToffset[key][pd][varNum];
@@ -2642,7 +2647,7 @@ void SW_NCOUT_write_output(
 #endif
                         p_OUTValPtr = &p_OUT[key][pd][pOUTIndex];
 #if defined(SWMPI)
-                        if (numWrites > 1 || numSites > 1) {
+                        if (numWritesProc > 1 || numSites > 1) {
                             pOUTStart[key][pd] += countTotal * numSites;
                         }
 #endif

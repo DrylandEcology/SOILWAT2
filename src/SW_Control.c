@@ -495,6 +495,7 @@ void SW_CTL_RunSimSet(
     MPI_Datatype weathHistType = SW_Domain->datatypes[eSW_MPI_WeathHist];
     MPI_Datatype reqType = SW_Domain->datatypes[eSW_MPI_Req];
     MPI_Datatype logType = SW_Domain->datatypes[eSW_MPI_Log];
+    Bool earlyExit = swFALSE;
     Bool errorCaused = swFALSE;
     Bool extraFailCheck = swFALSE;
     int numErrors = 0;
@@ -568,6 +569,7 @@ checkStatus:
         // Make sure all processes did not throw a fatal error
         // before continuing
         if (SW_MPI_setup_fail(main_LogInfo->stopRun, MPI_COMM_WORLD)) {
+            earlyExit = swTRUE;
             goto wrapUp;
         }
 
@@ -669,6 +671,7 @@ checkStatus:
                 // Counter of simulation units with error
                 main_LogInfo->numDomainErrors++;
 #if defined(SWMPI)
+                errorCaused = swTRUE;
                 reportLog = swTRUE;
                 numErrors++;
                 if (numErrors == SW_Domain->maxSimErrors) {
@@ -761,7 +764,7 @@ wrapUp:
     // Set dummy value for an extra participation in `SW_MPI_setup_fail()`
     // to make sure other compute processes don't hang waiting before
     // getting their last batch of inputs
-    extraFailCheck = (Bool) (extraFailCheck && !errorCaused &&
+    extraFailCheck = (Bool) (extraFailCheck && !earlyExit &&
                              SW_MPI_setup_fail(swFALSE, MPI_COMM_WORLD));
 
     for (suid = 0; suid < N_SUID_ASSIGN; suid++) {
@@ -1727,6 +1730,7 @@ void SW_CTL_run_sw(
         local_sw.SW_PathOutputs.numOutFiles,
         local_sw.SW_PathOutputs.ncOutFiles,
         ncSuid,
+        numReads[0],
         numReads[0],
         NULL,
         (size_t **) &count,

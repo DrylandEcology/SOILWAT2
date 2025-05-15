@@ -167,6 +167,7 @@ static Bool dummy_prog_out_writes(
         NULL,
         NULL,
         numWrites,
+        numWrites,
         starts,
         counts,
         SW_PathOutputs->openOutFileIDs,
@@ -675,9 +676,9 @@ static void reallocRanks(
 
 @param[in] numCompProcsNode Number of compute processes in a node
 @param[in] ioProcsInNode Number of I/O processes within a compute node
-@param[in] numIOProcsTot Total number of I/O processes in the MPI world
 @param[in] numActiveSites Number of sites that was turned on
     by the program and/or user
+@param[in] totCompProcs Total number of compute processes in the MPI world
 @param[in] activeSiteSuids A list of program domain SUIDs that are
     to be simulated
 @param[in] activeSiteTSuids A list of translated SUIDs
@@ -708,8 +709,8 @@ static void reallocRanks(
 static void fillDesignationIO(
     int numCompProcsNode,
     int ioProcsInNode,
-    int numIOProcsTot,
     int numActiveSites,
+    int totCompProcs,
     unsigned long **activeSuids,
     int *ranks,
     int *rankAssign,
@@ -737,7 +738,7 @@ static void fillDesignationIO(
     // I/O procs) + (one left over SUID, if necessary)
     // to the node or the rest of the SUIDs if this assignment
     // will complete the I/O assignments
-    desig->nSuids = numActiveSites / numIOProcsTot;
+    desig->nSuids = (numActiveSites / totCompProcs) * desig->nCompProcs;
 
     if (desig->nSuids > *leftSuids) {
         desig->nSuids = *leftSuids;
@@ -812,7 +813,7 @@ static void fillDesignationIO(
     in the respective compute node node/local computer
 @param[in] numNodes The number of compute nodes we are running instances of
     the program on
-@param[in] numIOProcsTot Total number of I/O processes in the MPI world
+@param[in] totCompProcs Total number of compute processes in the MPI world
 @param[in] numActiveSites Number of active sites that will be
     simulated
 @param[in] activeSuids A list of domain SUIDs that was activated
@@ -832,7 +833,7 @@ static void designateProcesses(
     SW_MPI_DESIGNATE *rootDes,
     int numProcsInNode[],
     int numNodes,
-    unsigned int numIOProcsTot,
+    int totCompProcs,
     size_t numActiveSites,
     unsigned long **activeSuids,
     unsigned long ***activeTSuids,
@@ -869,7 +870,7 @@ static void designateProcesses(
 
         Note: This will result in a value within [0, # active sites - 1]
     */
-    leftOverSuids = numActiveSites % numIOProcsTot;
+    leftOverSuids = numActiveSites % totCompProcs;
 
     for (node = 0; node < numNodes; node++) {
         (*designations)[node] = (SW_MPI_DESIGNATE *) Mem_Malloc(
@@ -903,8 +904,8 @@ static void designateProcesses(
                 fillDesignationIO(
                     numNodeProcs - ioProcsInNode,
                     ioProcsInNode,
-                    numIOProcsTot,
                     numActiveSites,
+                    totCompProcs,
                     activeSuids,
                     ranksInNodes[node],
                     &compNodesAssign,
@@ -3497,6 +3498,7 @@ static Bool write_outputs(
         NULL,
         NULL,
         maxNumWrites,
+        numWrites,
         starts,
         counts,
         SW_PathOutputs->openOutFileIDs,
@@ -5628,7 +5630,7 @@ void SW_MPI_process_types(
             desig,
             numProcsInNode,
             numNodes,
-            numIOProcsTot,
+            worldSize - numIOProcsTot,
             numActiveSites,
             activeSuids,
             activeTSuids,
@@ -6193,6 +6195,7 @@ checkStatus:
         // Make sure all processes did not throw a fatal error
         // before continuing
         if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
+            failEarly = swTRUE;
             goto freeMem;
         }
 
@@ -6293,7 +6296,7 @@ checkStatus:
         inputsLeft -= numIterSuids;
     }
 
-    if (runSims) {
+    if (runSims && !failEarly) {
         if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
             goto freeMem;
         }
