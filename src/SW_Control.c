@@ -1614,6 +1614,8 @@ void SW_CTL_run_sw(
 
 #if defined(SWNETCDF) && !defined(SWMPI)
     SW_SOIL_RUN_INPUTS newSoil;
+    size_t **starts[SW_NINKEYSNC] = {NULL};
+    size_t **counts[SW_NINKEYSNC] = {NULL};
     int numReads[SW_NINKEYSNC] = {1, 1, 1, 1, 1, 1, 1, 1};
     double tempMonthlyVals[MAX_MONTHS] = {0.0};
     double tempSiltVals[MAX_MONTHS] = {0.0};
@@ -1650,8 +1652,8 @@ void SW_CTL_run_sw(
         &local_sw,
         SW_Domain,
         ncSuid,
-        NULL,
-        NULL,
+        starts,
+        counts,
         NULL,
         numReads,
         1,
