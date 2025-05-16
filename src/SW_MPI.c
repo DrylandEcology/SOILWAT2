@@ -2064,7 +2064,7 @@ static void open_logfiles(
     int numLogs = desig->nCompProcs + 1; // + 1 for current I/O process
     int log;
     int resSNP = 0;
-    char logBuffer[MAX_FILENAMESIZE] = "\0";
+    char logBuffer[LARGE_VALUE] = "\0";
     char dir[MAX_FILENAMESIZE] = "\0";
     const char *baseName = BaseName(logfileName);
 
@@ -2078,7 +2078,7 @@ static void open_logfiles(
     for (log = 0; log < numLogs; log++) {
         snprintf(
             logBuffer,
-            MAX_FILENAMESIZE,
+            sizeof logBuffer,
             "%s%d_%s_%s",
             dir,
             (log > 0) ? desig->ranks[log - 1] : rank,
