@@ -760,9 +760,7 @@ static void fillDesignationIO(
 
     for (suid = 0; suid < desig->nSuids; suid++) {
         desig->domSuids[suid] = (unsigned long *) Mem_Malloc(
-            sizeof(unsigned long) * desig->nSuids,
-            "fillDesignationIO()",
-            LogInfo
+            sizeof(unsigned long) * 2, "fillDesignationIO()", LogInfo
         );
         if (LogInfo->stopRun) {
             return;
