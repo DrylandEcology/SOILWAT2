@@ -143,23 +143,41 @@ lib_gmock := $(dir_build_test)/lib$(gmock).a
 
 
 #------ txt-based SOILWAT2
-# `CPPFLAGS=-DSWTXT make all`
+# `make CPPFLAGS=-DSWTXT all`
 # is equivalent to
 # `make all`
 
 #------ netCDF-based SOILWAT2
-# `CPPFLAGS=-DSWNC make all`
+# `make CPPFLAGS=-DSWNC all`
 # is equivalent to
-# `CPPFLAGS='-DSWNETCDF -DSWUDUNITS' make all`
+# `make CPPFLAGS='-DSWNETCDF -DSWUDUNITS' all`
 
 # netCDF support but not udunits2, e.g.,
-# `CPPFLAGS=-DSWNETCDF make all`
+# `make CPPFLAGS=-DSWNETCDF all`
 
 # User-specified paths to netCDF header and library:
-#   `CPPFLAGS=-DSWNETCDF NC_CFLAGS="-I/path/to/include" NC_LIBS="-L/path/to/lib" make all`
+#   `make CPPFLAGS=-DSWNETCDF NC_CFLAGS="-I/path/to/include" NC_LIBS="-L/path/to/lib" all`
 
 # User-specified paths to headers and libraries of netCDF, udunits2 and expat:
-#   `CPPFLAGS='-DSWNETCDF -DSWUDUNITS' NC_CFLAGS="-I/path/to/include" UD_CFLAGS="-I/path/to/include" EX_CFLAGS="-I/path/to/include" NC_LIBS="-L/path/to/lib" UD_LIBS="-L/path/to/lib" EX_LIBS="-L/path/to/lib" make all`
+#   `make CPPFLAGS='-DSWNETCDF -DSWUDUNITS' NC_CFLAGS="-I/path/to/include" UD_CFLAGS="-I/path/to/include" EX_CFLAGS="-I/path/to/include" NC_LIBS="-L/path/to/lib" UD_LIBS="-L/path/to/lib" EX_LIBS="-L/path/to/lib" all`
+
+#------ mpi-based SOILWAT2
+# `make CPPFLAGS=-DSWMPI all`
+# `make CC=mpicc CPPFLAGS=-DSWMPI all`
+#
+# User-specified mpi library (usually not needed if using mpicc/mpicxx, see `mpicc --show`)
+#   `make CPPFLAGS=-DSWMPI MPI_LIBS=-lmpi all`
+# or
+# ```
+#   export NC_CFLAGS="-I/path/to/include"
+#   export UD_CFLAGS="-I/path/to/include"
+#   export EX_CFLAGS="-I/path/to/include"
+#   export NC_LIBS="-L/path/to/lib"
+#   export UD_LIBS="-L/path/to/lib"
+#   export EX_LIBS="-L/path/to/lib"
+#   export MPI_LIBS="-lmpi"
+#   make CPPFLAGS=-DSWMPI all
+# ```
 
 ifeq (,$(findstring -DSWTXT,$(CPPFLAGS)))
   # not txt-based SOILWAT2
@@ -272,6 +290,12 @@ else
   sw_EX_LIBS :=
 endif
 
+# mpi-based SOILWAT2
+ifneq (,$(and $(SWMPI),$(MPI_LIBS)))
+  sw_MPI_LIBS := $(MPI_LIBS)
+else
+  sw_MPI_LIBS :=
+endif
 
 
 
@@ -350,7 +374,7 @@ gtest_flags := -D_POSIX_C_SOURCE=200809L # googletest requires POSIX API
 # order of libraries is important for GNU gcc (libSOILWAT2 depends on libm)
 sw_LDFLAGS_bin := $(LDFLAGS) -L$(dir_bin)
 sw_LDFLAGS_test := $(LDFLAGS) -L$(dir_bin) -L$(dir_build_test)
-sw_LDLIBS := $(LDLIBS) $(sw_NC_LIBS) $(sw_UD_LIBS) $(sw_EX_LIBS) -lm
+sw_LDLIBS := $(LDLIBS) $(sw_NC_LIBS) $(sw_UD_LIBS) $(sw_EX_LIBS) $(sw_MPI_LIBS) -lm
 
 target_LDLIBS := -l$(target) $(sw_LDLIBS)
 test_LDLIBS := -l$(target_test) $(sw_LDLIBS)
