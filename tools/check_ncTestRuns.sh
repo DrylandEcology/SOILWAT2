@@ -28,15 +28,23 @@ Actions:
 
 Options:
     -ref, --reference <path/to/reference/output>
+    --reference=<path/to/reference/output>
                         Path to reference run output. If the default is
                         selected as reference and output is missing, then
                         SOILWAT2 will be run to create reference output.
                         Default is 'tests/ncTestRuns/results/referenceRun/Output'
+
     -t, --testRun <test number>
+    --testRun=<test number>
                         Perform action(s) on selected test run(s);
                         default is '-1', i.e., all test runs.
-    -m, --mode <mpi|nc> Compile and execute <mpi>-mode or <nc>-mode SOILWAT2
-                        (default is <nc>-mode).
+
+    -m, --mode <nc|mpi> Compile and execute <mpi>-mode or <nc>-mode SOILWAT2
+    --mode=<nc|mpi>     (default is <nc>-mode).
+
+    -n,-np <number>     Number of parallel processes in mpi-mode SOILWAT2.
+    --ntasks=<number>
+
     -h, --help          Display this help page.
 
 Examples:
@@ -77,6 +85,7 @@ dirOutRefDefault="${dir_ncTestRuns}""/results/referenceRun/Output"
 dirOutRef="${dirOutRefDefault}"
 testRun=-1
 withMode="nc"
+nTasks=""
 
 
 while [ $# -gt 0 ]; do
@@ -95,15 +104,21 @@ while [ $# -gt 0 ]; do
 
         downloadExternalWeatherData) doExternalDownload=true ;;
 
+        --reference=*) dirOutRef="${1#*=}" ;;
         -ref|--reference) dirOutRef="$2"; shift ;;
 
+        --testRun=*) testRun="${1#*=}" ;;
         -t|--testRun) testRun="$2"; shift ;;
 
+        --mode=*) withMode="${1#*=}" ;;
         -m|--mode) withMode="$2"; shift ;;
+
+        --ntasks=*) nTasks="${1#*=}" ;;
+        -n|-np) nTasks="$2"; shift ;;
 
         -h|--help) echo "$usage"; exit 0 ;;
 
-        *) echo "Option ""$1"" is not implemented."; exit 1 ;;
+        *) echo "Option \"$1\" is not implemented."; exit 1 ;;
     esac
     shift
 done
@@ -283,6 +298,7 @@ if [ ! -d "${dirOutRef}" ] && [ "${dirOutRef}" = "${dirOutRefDefault}" ]; then
         --path-to-ncTestRuns="${dir_ncTestRuns}" \
         --path-to-sw2="${sw2}" \
         --swMode="${withMode}" \
+        --ntasks=2 \
         --path-to-referenceOutput="${dirOutRef}"
     status=$?
 
@@ -315,6 +331,7 @@ if [ "${doCreate}" = "true" ]; then
         --path-to-ncTestRuns="${dir_ncTestRuns}" \
         --path-to-sw2="${sw2}" \
         --swMode="${withMode}" \
+        --ntasks="${nTasks}" \
         --testRuns="${testRun}"
 fi
 
@@ -326,6 +343,7 @@ if [ "${doCheck}" = "true" ]; then
         --path-to-ncTestRuns="${dir_ncTestRuns}" \
         --path-to-sw2="${sw2}" \
         --swMode="${withMode}" \
+        --ntasks="${nTasks}" \
         --path-to-referenceOutput="${dirOutRef}" \
         --testRuns="${testRun}"
 fi

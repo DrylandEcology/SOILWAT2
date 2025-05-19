@@ -298,6 +298,18 @@ else
 endif
 
 
+#------ Number of tasks for mpi-based SOILWAT2
+# use SW_NTASKS if defined; otherwise, use SLURM_NTASKS if defined
+ifdef SWMPI
+  ifndef SW_NTASKS
+    ifdef SLURM_NTASKS
+      SW_NTASKS := $(SLURM_NTASKS)
+    endif
+  endif
+else
+  SW_NTASKS :=
+endif
+
 
 #------ STANDARDS
 # googletest requires c++17 and POSIX API
@@ -550,7 +562,7 @@ $(dir_bin) $(dir_build_sw2) $(dir_build_test):
 #--- Convenience targets for testing
 .PHONY : bin_run
 bin_run : all
-		./tools/run_bin.sh
+		./tools/run_bin.sh --ntasks=$(SW_NTASKS)
 
 .PHONY : test_run
 test_run : test
@@ -578,19 +590,19 @@ test_rep3rnd : test
 
 .PHONY : bin_debug
 bin_debug :
-		./tools/run_debug.sh
+		./tools/run_debug.sh --ntasks=$(SW_NTASKS)
 
 .PHONY : bin_debug_severe
 bin_debug_severe :
-		./tools/run_debug_severe.sh
+		./tools/run_debug_severe.sh --ntasks=$(SW_NTASKS)
 
 .PHONY : bin_sanitizer
 bin_sanitizer :
-		./tools/run_bin_sanitizer.sh
+		./tools/run_bin_sanitizer.sh --ntasks=$(SW_NTASKS)
 
 .PHONY : bin_leaks
 bin_leaks : all
-		./tools/run_bin_leaks.sh
+		./tools/run_bin_leaks.sh --ntasks=$(SW_NTASKS)
 
 
 #--- Convenience targets for code coverage

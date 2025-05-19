@@ -18,6 +18,7 @@
 #       --path-to-ncTestRuns=<...> \
 #       --path-to-sw2=<...> \
 #       --swMode=<...> \
+#       --ntasks=<...> \
 #       --testRuns=<...>
 # ```
 #------------------------------------------------------------------------------#
@@ -54,6 +55,13 @@ swMode <- if (any(ids <- grepl("--swMode", args))) {
 }
 
 stopifnot(swMode %in% c("nc", "mpi"))
+
+nTasks <- if (any(ids <- grepl("--ntasks", args))) {
+  sub("--ntasks", "", args[ids]) |>
+    sub("=", "", x = _) |>
+    trimws() |>
+    tolower()
+}
 
 
 #------ Paths (possibly as command-line arguments) ------
@@ -752,6 +760,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       sw2 = fname_sw2,
       path_inputs = dir_testRun,
       mode = swMode,
+      nTasks = nTasks,
       mpiExecutor = mpiExecutor
     )
 

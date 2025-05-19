@@ -13,6 +13,7 @@
 #       --path-to-ncTestRuns=<...> \
 #       --path-to-sw2=<...> \
 #       --swMode=<...> \
+#       --ntasks=<...> \
 #       --path-to-referenceOutput=<...>
 # ```
 #------------------------------------------------------------------------------#
@@ -34,6 +35,14 @@ swMode <- if (any(ids <- grepl("--swMode", args))) {
 }
 
 stopifnot(swMode %in% c("nc", "mpi"))
+
+nTasks <- if (any(ids <- grepl("--ntasks", args))) {
+  sub("--ntasks", "", args[ids]) |>
+    sub("=", "", x = _) |>
+    trimws() |>
+    tolower()
+}
+
 
 #------ Paths (possibly as command-line arguments) ------
 dir_prj <- if (any(ids <- grepl("--path-to-ncTestRuns", args))) {
@@ -123,6 +132,7 @@ res <- runSW2(
   sw2 = fname_sw2,
   path_inputs = dir_refRun,
   mode = swMode,
+  nTasks = nTasks,
   renameDomainTemplate = TRUE
 )
 

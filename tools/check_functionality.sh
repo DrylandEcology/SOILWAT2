@@ -231,14 +231,16 @@ report_if_leak() {
 # $1 CC compiler, e.g., CC=clang
 # $2 CXX compiler, e.g., CXX=clang++
 # $3 SOILWAT2 output mode, i.e., "txt", "nc", or "mpi"
-# $4 Path to the reference output
-# $5 Should error messages be verbose, i.e., "true" or "false"
+# $4 Number of parallel processes in mpi-mode SOILWAT2.
+# $5 Path to the reference output
+# $6 Should error messages be verbose, i.e., "true" or "false"
 check_SOILWAT2() {
   local ccomp="$1"
   local cxxcomp="$2"
   local mode="$3"
-  local dirOutRefBase="$4"
-  local verbosity="$5"
+  local nTasks="$4"
+  local dirOutRefBase="$5"
+  local verbosity="$6"
 
   local res="" status="" has_sanitizers=""
   local -a aflags=()
@@ -248,10 +250,13 @@ check_SOILWAT2() {
   if [ "${mode}" = "txt" ]; then
     dirOutRef="${dirOutRefBase}-${mode}"
   else
-    # nc-based and mpi-based SOILWAT2 both produced netCDF output
+    # nc-based and mpi-based SOILWAT2 both produce netCDF output
     dirOutRef="${dirOutRefBase}-nc"
   fi
 
+  if [ "${mode}" = "mpi" ]; then
+    aflags[0]="SW_NTASKS=${nTasks}"
+  fi
 
   echo $'\n'\
 --------------------------------------------------$'\n'\

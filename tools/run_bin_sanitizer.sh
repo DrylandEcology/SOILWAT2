@@ -4,10 +4,28 @@
 # note: consider cleaning previous build artifacts, e.g., `make clean_build`
 
 # or via makefile
-# run as `CC=clang make clean bin_sanitizer`
+# run as `CC=clang make clean bin_sanitizer` [OPTIONS]
+# supported options
+#   -n,-np,--ntasks=<number>
+
 # if runtime error "Library not loaded", then
 # try to run, for example, with `DYLD_INSERT_LIBRARIES="path/to/libclang_rt.asan_osx_dynamic.dylib" bin/SOILWAT2 -d ./tests/example -f files.in`
 
+#--- Command line arguments
+nTasks=""
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --ntasks=*) nTasks="${1#*=}" ;;
+        -n|-np) nTasks="$2"; shift ;;
+
+        *) echo "Argument ""$1"" is not implemented."; exit 1 ;;
+    esac
+    shift
+done
+
+
+#--- flags
 debug_flags="-g -O0 -DSWDEBUG"
 
 warning_flags_severe_cc="\
@@ -35,4 +53,4 @@ instr_flags_severe="\
 
 
 # Note: # Apple clang does not support "AddressSanitizer: detect_leaks" (at least as of clang-1200.0.32.29)
-ASAN_OPTIONS=detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1 LSAN_OPTIONS=suppressions=../.LSAN_suppr.txt SW2_FLAGS=""$debug_flags" "$warning_flags_severe_cc" "$instr_flags_severe"" make bin_run
+ASAN_OPTIONS=detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1 LSAN_OPTIONS=suppressions=../.LSAN_suppr.txt SW2_FLAGS=""$debug_flags" "$warning_flags_severe_cc" "$instr_flags_severe"" SW_NTASKS="${nTasks}" make bin_run

@@ -431,6 +431,7 @@ runSW2 <- function(
   sw2,
   path_inputs,
   mode = c("nc", "mpi"),
+  nTasks = NULL,
   mpiExecutor = NULL,
   renameDomainTemplate = FALSE
 ) {
@@ -451,7 +452,7 @@ runSW2 <- function(
       system2(
         command = if (isMPI) mpiExecutor else sw2,
         args = paste(
-          if (isMPI) "-n 2",
+          if (isMPI && !is.null(nTasks)) paste("-n", nTasks),
           if (isMPI) paste0("./", sw2),
           "-d", path_inputs,
           "-f files.in",
