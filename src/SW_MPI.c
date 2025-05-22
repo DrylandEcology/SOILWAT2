@@ -722,6 +722,7 @@ static void fillDesignationIO(
     SW_MPI_DESIGNATE *desig,
     LOG_INFO *LogInfo
 ) {
+    size_t nSuids;
     unsigned int suid;
     int tSuid; /* For translated assignment */
     int inKey;
@@ -735,16 +736,20 @@ static void fillDesignationIO(
     }
 
     // Allocate and assign floor(# active sites / num
-    // I/O procs) + (one left over SUID, if necessary)
-    // to the node or the rest of the SUIDs if this assignment
+    // comp procs) + (<n comp procs> left over SUIDs, if necessary)
+    // to the process or the rest of the SUIDs if this assignment
     // will complete the I/O assignments
     desig->nSuids = (numActiveSites / totCompProcs) * desig->nCompProcs;
 
     if (desig->nSuids > *leftSuids) {
         desig->nSuids = *leftSuids;
     } else if (*leftOverSuids > 0) {
-        desig->nSuids++;
-        (*leftOverSuids)--;
+        nSuids = (*leftOverSuids >= (IntU) desig->nCompProcs) ?
+                     desig->nCompProcs :
+                     *leftOverSuids;
+
+        desig->nSuids += nSuids;
+        (*leftOverSuids) -= nSuids;
     }
     *leftSuids -= desig->nSuids;
     desig->domSuids = (unsigned long **) Mem_Malloc(
