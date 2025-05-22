@@ -2606,10 +2606,13 @@ void SW_NCOUT_write_output(
                            then variables
                         */
 #if defined(SWMPI)
-                        if (!succFlags[write]) {
-                            pOUTStart[key][pd] += countTotal * numSites;
+                        if (!succFlags[numSiteSum] || numWritesProc <= write) {
+                            if (!succFlags[numSiteSum] &&
+                                (numWritesProc > 1 || numSites > 1)) {
 
-                            count[0] = count[1] = 0;
+                                pOUTStart[key][pd] += countTotal * numSites;
+                                numSiteSum += numSites;
+                            }
 
                             // Create a dummy write so this can still take
                             // part in the collective writes,
