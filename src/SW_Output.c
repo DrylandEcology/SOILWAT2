@@ -4030,9 +4030,11 @@ void SW_PATHOUT_deepCopy(
                 }
             }
 
-            for (var = 0; var < numVars; var++) {
-                dest_files->ncOutVarIDs[key][var] =
-                    source_files->ncOutVarIDs[key][var];
+            if (!isnull(source_files->ncOutVarIDs[key])) {
+                for (var = 0; var < numVars; var++) {
+                    dest_files->ncOutVarIDs[key][var] =
+                        source_files->ncOutVarIDs[key][var];
+                }
             }
         }
     }
