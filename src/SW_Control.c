@@ -679,10 +679,11 @@ checkStatus:
                 // Counter of simulation units with error
                 main_LogInfo->numDomainErrors++;
 #if defined(SWMPI)
-                errorCaused = swTRUE;
                 reportLog = swTRUE;
                 numErrors++;
                 if (numErrors == SW_Domain->maxSimErrors) {
+                    errorCaused = swTRUE;
+
                     LogError(
                         main_LogInfo,
                         LOGERROR,
