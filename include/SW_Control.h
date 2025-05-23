@@ -87,14 +87,14 @@ void SW_CTL_run_current_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
 void SW_CTL_run_sw(
-    int runNum,
+    unsigned long runNum,
     SW_RUN_INPUTS *runInputs,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
     unsigned long ncSuid[],
     Bool estVeg,
     Bool copyWeather,
-    size_t count[],
+    const size_t count[],
     LOG_INFO *LogInfo
 );
 

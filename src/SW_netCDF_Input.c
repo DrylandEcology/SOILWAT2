@@ -4891,7 +4891,7 @@ to get data from netCDF
 */
 static void get_read_start(
     Bool useIndexFile,
-    char *indexFileName,
+    const char *indexFileName,
     Bool inSiteDom,
     const size_t ncSUID[],
     size_t start[],
@@ -5027,8 +5027,10 @@ within read data
 @param[in] count List of numbers specifying the number of
     values per dimension of the variable to read in
 */
-static int calc_read_offset(int order, const int numCount, size_t count[]) {
-    int val = 1;
+static size_t calc_read_offset(
+    int order, const int numCount, const size_t count[]
+) {
+    size_t val = 1;
     int cIndex;
 
     for (cIndex = order + 1; cIndex < numCount; cIndex++) {
@@ -5089,7 +5091,7 @@ static void set_read_vals(
     double scale_factor,
     double add_offset,
     sw_converter_t *unitConv,
-    int stride,
+    size_t stride,
     Bool sameIndexPlace,
     double *resVals
 ) {
@@ -5097,7 +5099,7 @@ static void set_read_vals(
     double *dest;
     Bool notMissingBefore;
     double readVal;
-    int strideIndex;
+    size_t strideIndex;
 
     for (valIndex = 0; valIndex < numVals; valIndex++) {
         strideIndex = valIndex * stride;
@@ -5162,8 +5164,8 @@ input keys
 */
 static void read_spatial_topo_climate_site_inputs(
     SW_DOMAIN *SW_Domain,
-    int numInputs,
-    int numReads[],
+    size_t numInputs,
+    const size_t numReads[],
     char ***inFiles,
     const size_t ncSUID[],
     size_t **starts[],
@@ -5215,13 +5217,13 @@ static void read_spatial_topo_climate_site_inputs(
         eSW_InSpatial, eSW_InTopo, eSW_InClimate, eSW_InSite
     };
     InKeys currKey;
-    int read;
-    int site;
-    int numSites = 1;
-    int tempRead = 0;
-    int input;
-    int inputOrigin;
-    int stride = 1;
+    size_t read;
+    size_t site;
+    size_t numSites = 1;
+    size_t tempRead = 0;
+    size_t input;
+    size_t inputOrigin;
+    size_t stride = 1;
     Bool twoDLat;
 
     for (keyNum = 0; keyNum < numKeys; keyNum++) {
@@ -5415,7 +5417,7 @@ static void read_spatial_topo_climate_site_inputs(
                             }
                         } else { // Site domain
                             tempRead = (timeIndex > latIndex) ?
-                                           (int) (count[timeIndex] * site) :
+                                           (count[timeIndex] * site) :
                                            site;
                         }
                     }
@@ -6128,7 +6130,7 @@ static void read_veg_inputs(
     size_t **starts,
     size_t **counts,
     char **vegInFiles,
-    int numReads,
+    size_t numReads,
     const size_t ncSUID[],
     sw_converter_t **vegConv,
     int **vegFileIDs,
@@ -6168,13 +6170,13 @@ static void read_veg_inputs(
     int k;
     size_t defSetStart[2] = {0};
     size_t defSetCount[2] = {1, 1};
-    int read;
-    int numSites = 1;
-    int site;
-    int writeIndex;
-    int input = 0;
-    int inputOrigin = 0;
-    int stride = 1;
+    size_t read;
+    size_t numSites = 1;
+    size_t site;
+    size_t writeIndex;
+    size_t input = 0;
+    size_t inputOrigin = 0;
+    size_t stride = 1;
     Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InVeg];
 
 #if !defined(SWMPI)
@@ -6330,7 +6332,7 @@ static void read_veg_inputs(
                     }
                 } else { // Site domain
                     writeIndex = (timeIndex > latIndex) ?
-                                     (int) (count[timeIndex] * site) :
+                                     (count[timeIndex] * site) :
                                      site;
                 }
 
@@ -6619,8 +6621,8 @@ static void read_soil_inputs(
     sw_converter_t **soilConv,
     const size_t ncSUID[],
     Bool inputsProvideSWRCp,
-    int numInputs,
-    int numReads,
+    size_t numInputs,
+    size_t numReads,
     size_t **starts,
     size_t **counts,
     int **openSoilFileIDs,
@@ -6664,14 +6666,14 @@ static void read_soil_inputs(
     int lonIndex;
     int vertIndex;
     int pftWriteIndex;
-    int read;
+    size_t read;
     size_t site;
     size_t numSites = 1;
-    int inputOrigin = 0;
+    size_t inputOrigin = 0;
     size_t writeIndex;
-    int input = 0;
+    size_t input = 0;
     double *readPtr;
-    int stride = 1;
+    size_t stride = 1;
 
     Bool varHasAddScaleAtts;
     double scaleFactor;
@@ -7789,11 +7791,11 @@ static void read_weather_input(
     SW_DOMAIN *SW_Domain,
     SW_WEATHER_INPUTS *SW_WeatherIn,
     char ***weathInFiles,
-    char *indexFileName,
+    const char *indexFileName,
     const size_t ncSUID[],
     sw_converter_t **weathConv,
-    int numInputs,
-    int numReads,
+    size_t numInputs,
+    size_t numReads,
     size_t **starts,
     size_t **counts,
     int **weathFileIDs,
@@ -7840,12 +7842,12 @@ static void read_weather_input(
     int latIndex;
     int lonIndex;
     int timeIndex;
-    int read;
+    size_t read;
     size_t numSites = 1;
     size_t site;
-    int input = 0;
-    int stride = 1;
-    int tempStart = 0;
+    size_t input = 0;
+    size_t stride = 1;
+    size_t tempStart = 0;
     double ***tempWeatherHist = NULL;
     size_t writeIndex = 0;
 
@@ -8164,8 +8166,8 @@ void SW_NCIN_read_inputs(
     size_t ***starts,
     size_t ***counts,
     int **openNCFileIDs[],
-    int numReads[],
-    int numInputs,
+    size_t numReads[],
+    size_t numInputs,
     double *tempMonthlyVals,
     double *elevations,
     double *tempSiltVals,
@@ -8181,7 +8183,7 @@ void SW_NCIN_read_inputs(
     sw_converter_t ***convs = SW_Domain->netCDFInput.uconv;
     unsigned int yearIn;
     unsigned int year;
-    int input;
+    size_t input;
     Bool readSpatial = readInputs[eSW_InSpatial][0];
     Bool readClimate = readInputs[eSW_InClimate][0];
     Bool readTopo = readInputs[eSW_InTopo][0];
@@ -8192,7 +8194,7 @@ void SW_NCIN_read_inputs(
     int **weathFileIDs = NULL;
     int **vegFileIDs = NULL;
     int **soilFileIDs = NULL;
-    int inIndex = 0;
+    size_t inIndex = 0;
 
 #if defined(SWMPI)
     weathFileIDs = openNCFileIDs[eSW_InWeather];
@@ -8561,7 +8563,7 @@ void SW_NCIN_open_dom_prog_files(
 @param[in] useIndexFile Specifies to create/use an index file
 */
 void SW_NCIN_close_files(
-    SW_PATH_INPUTS *SW_PathInputs, Bool **readInVars, Bool useIndexFile[]
+    SW_PATH_INPUTS *SW_PathInputs, Bool **readInVars, const Bool useIndexFile[]
 ) {
     int fileNum;
 

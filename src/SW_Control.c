@@ -457,7 +457,7 @@ void SW_CTL_RunSimSet(
     int rank,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
-    Bool *setupFail,
+    Bool *setupFail, // NOLINT(readability-non-const-parameter)
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *main_LogInfo
 ) {
@@ -476,10 +476,10 @@ void SW_CTL_RunSimSet(
     Bool ok_tss = swFALSE;
     Bool ok_tsr = swFALSE;
     Bool ok_suid = swTRUE;
-    unsigned long startSim = SW_Domain->startSimSet;
-    unsigned long endSim = SW_Domain->endSimSet;
+    unsigned long startSim;
+    unsigned long endSim;
     Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
-    int numInputs = 1;
+    size_t numInputs = 1;
     Bool copyWeather = swTRUE;
     Bool estVeg = swTRUE;
     LOG_INFO *log = NULL;
@@ -488,7 +488,7 @@ void SW_CTL_RunSimSet(
 
 #if defined(SWNETCDF)
 #if defined(SWMPI)
-    int n_years = sw_template->WeatherIn.n_years;
+    unsigned int n_years = sw_template->WeatherIn.n_years;
     Bool getEstVeg = swTRUE;
     SW_RUN_INPUTS inputs[N_SUID_ASSIGN];
     SW_MPI_DESIGNATE *desig = &SW_Domain->SW_Designation;
@@ -505,8 +505,15 @@ void SW_CTL_RunSimSet(
 #else
     copyWeather = (Bool) (!SW_Domain->netCDFInput.readInVars[eSW_InWeather][0]);
     estVeg = (Bool) (!SW_Domain->netCDFInput.readInVars[eSW_InWeather][0]);
-#endif
-#endif
+
+    startSim = SW_Domain->startSimSet;
+    endSim = SW_Domain->endSimSet;
+#endif // SWMPI
+
+#else
+    startSim = 0;
+    endSim = 0;
+#endif // SWNETCDF
 
     int progFileID = 0; // Value does not matter if SWNETCDF is not defined
     int progVarID = 0;  // Value does not matter if SWNETCDF is not defined
@@ -588,7 +595,7 @@ checkStatus:
         );
 
         startSim = 0;
-        endSim = (unsigned long) numInputs;
+        endSim = numInputs;
 #endif
 
         /* Loop over suids in simulation set of domain */
@@ -1611,14 +1618,14 @@ The following operations are conditional on if SWMPI is enabled
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_run_sw(
-    int runNum,
+    unsigned long runNum,
     SW_RUN_INPUTS *runInputs,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
     unsigned long ncSuid[], // NOLINT(readability-non-const-parameter)
     Bool estVeg,
     Bool copyWeather,
-    size_t count[],
+    const size_t count[],
     LOG_INFO *LogInfo
 ) {
 
@@ -1632,7 +1639,7 @@ void SW_CTL_run_sw(
     SW_SOIL_RUN_INPUTS newSoil;
     size_t **starts[SW_NINKEYSNC] = {NULL};
     size_t **counts[SW_NINKEYSNC] = {NULL};
-    int numReads[SW_NINKEYSNC] = {1, 1, 1, 1, 1, 1, 1, 1};
+    size_t numReads[SW_NINKEYSNC] = {1, 1, 1, 1, 1, 1, 1, 1};
     double tempMonthlyVals[MAX_MONTHS] = {0.0};
     double tempSiltVals[MAX_MONTHS] = {0.0};
     double tempSoilVals[MAX_LAYERS * SWRC_PARAM_NMAX] = {0.0};

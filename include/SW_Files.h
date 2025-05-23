@@ -85,7 +85,7 @@ void SW_F_construct(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo);
 void SW_F_deconstruct(
     SW_PATH_INPUTS *SW_PathInputs,
     Bool **readInVars,
-    Bool useIndexFile[],
+    const Bool useIndexFile[],
     int procJob
 );
 

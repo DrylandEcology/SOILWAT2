@@ -90,14 +90,14 @@ void SW_NCOUT_write_output(
     unsigned int numFilesPerKey,
     char **ncOutFileNames[][SW_OUTNPERIODS],
     const size_t ncSuid[],
-    int numWritesGroup,
-    int numWritesProc,
+    size_t numWritesGroup,
+    size_t numWritesProc,
     size_t **starts,
     size_t **counts,
     int *openOutFileIDs[][SW_OUTNPERIODS],
     int *outVarIDs[],
     Bool siteDom,
-    Bool succFlags[],
+    const Bool succFlags[],
     size_t timeSizes[][2],
     LOG_INFO *LogInfo
 );

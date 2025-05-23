@@ -106,7 +106,7 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo);
 void SW_MPI_setup(
     int rank,
     int worldSize,
-    char *procName,
+    const char *procName,
     SW_DOMAIN *SW_Domain,
     SW_RUN *sw_template,
     LOG_INFO *LogInfo
@@ -143,8 +143,8 @@ void SW_MPI_open_files(
 void SW_MPI_close_in_files(
     int **openInFileIDs[],
     Bool **readInVars,
-    Bool useIndexFile[],
-    int numWeathFiles
+    const Bool useIndexFile[],
+    unsigned int numWeathFiles
 );
 
 void SW_MPI_close_out_files(
@@ -191,7 +191,7 @@ void SW_MPI_process_types(
 );
 
 void SW_MPI_store_outputs(
-    int runNum,
+    unsigned long runNum,
     SW_OUT_DOM *OutDom,
     double *src_p_OUT[][SW_OUTNPERIODS],
     double *dest_p_OUT[][SW_OUTNPERIODS]
@@ -204,7 +204,7 @@ void SW_MPI_send_results(
     int ioRank,
     MPI_Datatype reqTypeMPI,
     MPI_Datatype logType,
-    Bool runStatuses[],
+    const Bool runStatuses[],
     Bool reportLog,
     LOG_INFO logs[],
     double *p_OUT[][SW_OUTNPERIODS]
@@ -212,12 +212,12 @@ void SW_MPI_send_results(
 
 void SW_MPI_get_inputs(
     Bool getWeather,
-    int n_years,
+    unsigned int n_years,
     SW_MPI_DESIGNATE *desig,
     MPI_Datatype inputType,
     MPI_Datatype weathHistType,
     SW_RUN_INPUTS inputs[],
-    int *numInputs,
+    size_t *numInputs,
     Bool *estVeg,
     Bool *getEstVeg,
     Bool *extraFailCheck

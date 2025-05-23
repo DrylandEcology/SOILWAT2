@@ -785,7 +785,7 @@ void SW_WTH_setWeatherValues(
     TimeInt yearIndex;
     TimeInt doy;
     TimeInt tempDoy;
-    int tmp;
+    double tmp;
 
     Bool useMaxMinTemp = (Bool) (inputFlags[TEMP_MAX] && inputFlags[TEMP_MIN]);
     Bool hasMaxMinTempValues = swFALSE;
@@ -1125,7 +1125,7 @@ the weather history for every possible input variable
 */
 void allocate_temp_weather(
     TimeInt nYears,
-    int extraStorMult,
+    size_t extraStorMult,
     double ****fullWeathHist,
     LOG_INFO *LogInfo
 ) {
@@ -2013,7 +2013,7 @@ void checkAllWeather(
 @note Used by rSOILWAT2
 */
 void clear_hist_weather(
-    int extraStorMult, SW_WEATHER_HIST *yearWeather, double **fullWeathHist
+    size_t extraStorMult, SW_WEATHER_HIST *yearWeather, double **fullWeathHist
 ) {
     /* --------------------------------------------------- */
     TimeInt d;
