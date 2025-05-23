@@ -465,9 +465,10 @@ void SW_CTL_RunSimSet(
     unsigned long suid;
     unsigned long nSims = 0;
     unsigned long ncSuid[2]; // 2 -> [y, x] or [s, 0]
-    /* tag_suid is 32:
-      11 character for "(suid = ) " + 20 character for ULONG_MAX + '\0' */
-    char tag_suid[32];
+    /* tag_suid is 62:
+      21 character for "(Suid indices = [, ])" + 40 character for 2 *
+      ULONG_MAX + '\0' */
+    char tag_suid[62];
 
     tag_suid[0] = '\0';
     WallTimeSpec tss;
@@ -701,7 +702,22 @@ checkStatus:
 
 #if !defined(SWMPI)
             if (log->stopRun || log->numWarnings > 0) {
-                (void) snprintf(tag_suid, 32, "(suid = %lu) ", suid + 1);
+                // Write the error with the suid indices to have a universal
+                // identifier; Put in the order of [x, y] or s
+                if (sDom) {
+                    (void) snprintf(
+                        tag_suid, 62, "(Suid index = %lu) ", ncSuid[0] + 1
+                    );
+                } else {
+                    (void) snprintf(
+                        tag_suid,
+                        62,
+                        "(Suid indices = [%lu, %lu])",
+                        ncSuid[1] + 1,
+                        ncSuid[0] + 1
+                    );
+                }
+
                 sw_write_warnings(tag_suid, log);
             }
 

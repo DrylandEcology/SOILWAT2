@@ -3123,21 +3123,38 @@ static void calculate_contiguous_allkeys(
     the I/O process and all compute processes it controls
 @param[in] baseSuid Start suid to create the SUID tag when writing
     log information
+@param[in] sDom Specifies the program's domain is site-oriented
 @param[in] logs A list of LOG_INFO instances that will be used for
     getting log information from compute processes
 */
 static void write_logs(
-    int numRecv, FILE *logfp, size_t baseSuid, LOG_INFO *logs
+    int numRecv, FILE *logfp, size_t **baseSuid, Bool sDom, LOG_INFO *logs
 ) {
     int log = 0;
-    /* tag_suid is 32:
-      11 character for "(suid = ) " + 20 character for ULONG_MAX + '\0' */
-    char tag_suid[32];
+    /* tag_suid is 62:
+      21 character for "(Suid indices = [, ])" + 40 character for 2 *
+      ULONG_MAX + '\0' */
+    char tag_suid[62];
+    size_t *ncSuid;
 
     for (log = 0; log < numRecv; log++) {
         logs[log].logfp = logfp;
 
-        (void) snprintf(tag_suid, 32, "(suid = %lu) ", baseSuid + log + 1);
+        ncSuid = baseSuid[log];
+        // Write the error with the suid indices to have a universal
+        // identifier; Put in the order of [x, y] or s
+        if (sDom) {
+            (void) snprintf(tag_suid, 62, "(Suid index = %lu) ", ncSuid[0] + 1);
+        } else {
+            (void) snprintf(
+                tag_suid,
+                62,
+                "(Suid indices = [%lu, %lu])",
+                ncSuid[1] + 1,
+                ncSuid[0] + 1
+            );
+        }
+
         sw_write_warnings(tag_suid, &logs[log]);
     }
 }
@@ -3233,8 +3250,9 @@ Handle the different request types accordingly
 
 @param[in] numCompProcs Number of compute processes that have been assigned to
     an I/O process
-@param[in] startSuid Start suid to create the SUID tag when writing
-    log information
+@param[in] suids List of suids that have been sent out and the
+    values will be received for
+@param[in] sDom Specifies the program's domain is site-oriented
 @param[in] recvLens A list of lengths that will be used to specify how many
     inputs to receive from a specific process
 @param[in] reqType Custom MPI type that mimics SW_MPI_REQUEST
@@ -3254,7 +3272,8 @@ Handle the different request types accordingly
 */
 static void get_comp_results(
     int numCompProcs,
-    size_t startSuid,
+    size_t **suids,
+    Bool sDom,
     size_t recvLens[],
     size_t timeSizes[][2],
     int numOutFiles,
@@ -3282,7 +3301,7 @@ static void get_comp_results(
     int numProcResponse = 0;
     int numSiteRecv = 0;
     int targetRepsonses = numCompProcs;
-    size_t writeSuid;
+    size_t **startSuid;
 
     Bool useTempStorage;
 
@@ -3326,9 +3345,13 @@ static void get_comp_results(
                 &nullReq
             );
 
-            writeSuid = startSuid + offsetMult[rankIndex];
+            startSuid = &suids[offsetMult[rankIndex]];
             write_logs(
-                recvLens[rankIndex + 1], logfps[rankIndex + 1], writeSuid, logs
+                recvLens[rankIndex + 1],
+                logfps[rankIndex + 1],
+                startSuid,
+                sDom,
+                logs
             );
         }
 
@@ -6005,7 +6028,6 @@ void SW_MPI_handle_IO(
     int distSUIDWrite;
     int iterNumSuids = 0;
     size_t suid;
-    size_t startSuid;
 
     SW_RUN_INPUTS *inputs = NULL;
     SW_RUN temp_sw;
@@ -6123,7 +6145,6 @@ checkStatus:
 
     // Loop until all SUIDs have been assigned or an interrupt occurs
     for (input = 0; input < nSuids && runSims;) {
-        startSuid = input;
         numIterSuids =
             (input + numSuidsTot > nSuids) ? nSuids - input : numSuidsTot;
         iterNumSuids += numIterSuids;
@@ -6280,7 +6301,8 @@ checkStatus:
         // each compute process if simulations were successful
         get_comp_results(
             desig->nCompProcs,
-            startSuid,
+            &distSUIDs[distSUIDWrite],
+            SW_Domain->netCDFInput.siteDoms[eSW_InDomain],
             sendInputs,
             sw->SW_PathOutputs.outTimeSizes,
             sw->SW_PathOutputs.numOutFiles,
