@@ -958,9 +958,8 @@ of this name, it's value should be -1)
 @param[in] siteName User-provided site dimension/variable "site" name
 @param[in] useDefaultChunking A flag specifying if, when creating the
 variable, to use the default chunk sizes or program-provided sizes
-@param[in] defFillVal A fill value that can be sent in to give to the
-variable before the chance of filling the variable with a default
-value
+@param[in] addFillValueAttribute Create a `"_FillValue"` attribute of
+type and default value based on \p newVarType.
 @param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_NC_create_full_var(
@@ -986,7 +985,7 @@ void SW_NC_create_full_var(
     const char *siteName,
     const int coordAttIndex,
     Bool useDefaultChunking,
-    void *defFillVal,
+    Bool addFillValueAttribute,
     LOG_INFO *LogInfo
 ) {
 
@@ -1010,6 +1009,9 @@ void SW_NC_create_full_var(
     size_t writeSize = MAX_FILENAMESIZE;
     char finalCoordVal[MAX_FILENAMESIZE];
     Bool fullBuffer = swFALSE;
+    void *fillValue = NULL;
+    char byteFillVal = NC_FILL_BYTE;
+    double doubleFillVal = NC_FILL_DOUBLE;
 
     for (index = 0; index < numConstDims; index++) {
         SW_NC_get_dim_identifier(
@@ -1122,9 +1124,25 @@ void SW_NC_create_full_var(
         }
     }
 
-    if (!isnull(defFillVal)) {
+    if (addFillValueAttribute) {
+        switch (newVarType) {
+        case NC_BYTE:
+            fillValue = (void *) &byteFillVal;
+            break;
+        case NC_DOUBLE:
+            fillValue = (void *) &doubleFillVal;
+            break;
+        default:
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Selected type of _FillValue '%d' is not implemented.",
+                newVarType
+            );
+            break;
+        }
         SW_NC_write_att(
-            "_FillValue", defFillVal, varID, *ncFileID, 1, NC_BYTE, LogInfo
+            "_FillValue", fillValue, varID, *ncFileID, 1, newVarType, LogInfo
         );
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
