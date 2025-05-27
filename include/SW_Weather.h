@@ -185,7 +185,7 @@ void SW_WTH_setWeatherValues(
 
 void allocate_temp_weather(
     TimeInt nYears,
-    int extraStorMult,
+    size_t extraStorMult,
     double ****fullWeathHist,
     LOG_INFO *LogInfo
 );
@@ -262,7 +262,7 @@ void initializeAllWeatherPtrs(SW_WEATHER_HIST **allHist, unsigned int n_years);
 void deallocateAllWeather(SW_WEATHER_HIST **allHist);
 
 void clear_hist_weather(
-    int extraStorMult, SW_WEATHER_HIST *yearWeather, double **fullWeathHist
+    size_t extraStorMult, SW_WEATHER_HIST *yearWeather, double **fullWeathHist
 );
 
 void SW_WTH_finalize_all_weather(

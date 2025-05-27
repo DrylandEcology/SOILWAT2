@@ -148,7 +148,7 @@ void SW_MPI_close_in_files(
 );
 
 void SW_MPI_close_out_files(
-    int *openOutFileIDs[][SW_OUTNPERIODS], SW_OUT_DOM *OutDom, int numOutFiles
+    int *openOutFileIDs[][SW_OUTNPERIODS], SW_OUT_DOM *OutDom, IntU numOutFiles
 );
 
 Bool SW_MPI_setup_fail(Bool stopRun, MPI_Comm comm);
@@ -200,7 +200,7 @@ void SW_MPI_store_outputs(
 void SW_MPI_send_results(
     SW_OUT_DOM *OutDom,
     int rank,
-    int numInputs,
+    size_t numInputs,
     int ioRank,
     MPI_Datatype reqTypeMPI,
     MPI_Datatype logType,

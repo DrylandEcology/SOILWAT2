@@ -123,7 +123,7 @@ void SW_NCIN_read_inputs(
     size_t ***counts,
     int **openNCFileIDs[],
     size_t numReads[],
-    int numInputs,
+    size_t numInputs,
     double *tempMonthlyVals,
     double *elevations,
     double *tempSiltVals,
