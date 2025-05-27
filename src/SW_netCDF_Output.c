@@ -875,7 +875,7 @@ static void get_vardim_write_counts(
     }
 }
 
-#if defined(SWDEBUG)
+#if defined(SWDEBUG) && !defined(SWMPI)
 /**
 @brief Check that count matches with existing variable in netCDF
 
@@ -2495,10 +2495,10 @@ void SW_NCOUT_write_output(
     (void) succFlags;
     (void) numWritesProc;
 #endif
-#if !defined(SWMPI) || defined(SWDEBUG)
+#if !defined(SWMPI) || (defined(SWDEBUG) && !defined(SWMPI))
     char *fileName;
 #endif
-#if defined(SWDEBUG)
+#if defined(SWDEBUG) && !defined(SWMPI)
     char *varName = NULL;
 #endif
 
@@ -2522,7 +2522,7 @@ void SW_NCOUT_write_output(
             startTime = 0;
 
             for (fileNum = 0; fileNum < numFilesPerKey; fileNum++) {
-#if !defined(SWMPI) || defined(SWDEBUG)
+#if !defined(SWMPI) || (defined(SWDEBUG) && !defined(SWMPI))
                 fileName = ncOutFileNames[key][pd][fileNum];
 
                 if (isnull(fileName)) {
@@ -2579,7 +2579,7 @@ void SW_NCOUT_write_output(
                             &countTotal
                         );
 
-#if defined(SWDEBUG)
+#if defined(SWDEBUG) && !defined(SWMPI)
                         varName =
                             OutDom->netCDFOutput
                                 .outputVarInfo[key][varNum][VARNAME_INDEX];
