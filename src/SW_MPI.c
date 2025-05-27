@@ -748,7 +748,7 @@ static void fillDesignationIO(
         desig->nSuids = *leftSuids;
     } else if (*leftOverSuids > 0) {
         nSuids = (*leftOverSuids >= (IntU) desig->nCompProcs) ?
-                     desig->nCompProcs :
+                     (size_t) desig->nCompProcs :
                      *leftOverSuids;
 
         desig->nSuids += nSuids;
@@ -2442,7 +2442,7 @@ static void alloc_IO_info(
 ) {
     size_t suid;
     size_t allocIndex;
-    const int num1DArr = 1;
+    const size_t num1DArr = 1;
     int inKey;
     size_t numVals;
     size_t nDomInfoElem = maxSuidsInWrite * N_ITER_BEFORE_OUT;
