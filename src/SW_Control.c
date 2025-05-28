@@ -505,15 +505,13 @@ void SW_CTL_RunSimSet(
 #else
     copyWeather = (Bool) (!SW_Domain->netCDFInput.readInVars[eSW_InWeather][0]);
     estVeg = (Bool) (!SW_Domain->netCDFInput.readInVars[eSW_InWeather][0]);
+#endif // SWMPI
+#endif // SWNETCDF
 
+#if !defined(SWMPI)
     startSim = SW_Domain->startSimSet;
     endSim = SW_Domain->endSimSet;
-#endif // SWMPI
-
-#else
-    startSim = 0;
-    endSim = 0;
-#endif // SWNETCDF
+#endif
 
     int progFileID = 0; // Value does not matter if SWNETCDF is not defined
     int progVarID = 0;  // Value does not matter if SWNETCDF is not defined
