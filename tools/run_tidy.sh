@@ -60,7 +60,7 @@ echo $'\n'\
 "Tidy mpi-based SOILWAT2"$'\n'\
 --------------------------------------------------
 
-res=$(make CPPFLAGS='-DSWMPI -DSWDEBUG' tidy-bin 2>/dev/null)
+res=$(make CPPFLAGS='-DSWMPI -DSWDEBUG' CFLAGS=$(mpicc --showme:compile) tidy-mpi 2>/dev/null)
 status=$?
 process_clangtidy_results $status "$res"
 
