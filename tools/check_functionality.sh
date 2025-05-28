@@ -73,26 +73,33 @@ compare_output_with_R () {
   if exists Rscript ; then
     local mode="$1"
     local dirOutRef="$2"
+    local dirOut="tests/example/Output"
 
     if [ "${mode}" = "txt" ]; then
       Rscript \
         -e 'dor <- as.character(commandArgs(TRUE)[[1L]])' \
+        -e 'dout <- as.character(commandArgs(TRUE)[[2L]])' \
         -e 'fnames <- list.files(path = dor, pattern = ".csv$")' \
-        -e 'res <- vapply(fnames, function(fn) isTRUE(all.equal(utils::read.csv(file.path(dor, fn)), utils::read.csv(file.path("tests/example/Output", fn)))), FUN.VALUE = NA)' \
+        -e 'res <- vapply(fnames, function(fn) {' \
+        -e '    f1 <- file.path(dor, fn)' \
+        -e '    f2 <- file.path(dout, fn)' \
+        -e '    isTRUE(try(all.equal(utils::read.csv(f1), utils::read.csv(f2)), silent = TRUE))' \
+        -e '  }, FUN.VALUE = NA)' \
         -e 'if (!all(res)) for (k in which(!res)) cat(shQuote(fnames[[k]]), "and reference differ beyond tolerance.\n")' \
-        "${dirOutRef}"
+        "${dirOutRef}" "${dirOut}"
 
     else
       Rscript \
         -e 'dor <- as.character(commandArgs(TRUE)[[1L]])' \
+        -e 'dout <- as.character(commandArgs(TRUE)[[2L]])' \
         -e 'fnames <- list.files(path = dor, pattern = ".nc$")' \
         -e 'res <- vapply(fnames, function(fn) {'\
         -e '    nc1 <- RNetCDF::open.nc(file.path(dor, fn)); on.exit(RNetCDF::close.nc(nc1), add = TRUE)' \
-        -e '    nc2 <- RNetCDF::open.nc(file.path("tests/example/Output", fn)); on.exit(RNetCDF::close.nc(nc2), add = TRUE)' \
-        -e '    isTRUE(all.equal(RNetCDF::read.nc(nc1), RNetCDF::read.nc(nc2)))' \
+        -e '    nc2 <- RNetCDF::open.nc(file.path(dout, fn)); on.exit(RNetCDF::close.nc(nc2), add = TRUE)' \
+        -e '    isTRUE(try(all.equal(RNetCDF::read.nc(nc1), RNetCDF::read.nc(nc2)), silent = TRUE))' \
         -e '  }, FUN.VALUE = NA)' \
         -e 'if (!all(res)) for (k in which(!res)) cat(shQuote(fnames[[k]]), "and reference differ beyond tolerance.\n")' \
-        "${dirOutRef}"
+        "${dirOutRef}" "${dirOut}"
     fi
 
   else
@@ -124,11 +131,11 @@ compare_output_against_reference () {
   fi
 }
 
-#--- Function to check of sanitizers are supported
+#--- Function to check if sanitizers are supported
 # $1 Text string
 check_has_sanitizer() {
-  if [[ "$1" == *"detect_leaks is not supported"* ]]; then
-    echo "Sanitizers (detect_leaks) are not supported."
+  if [[ "$1" == *"detect_leaks is not supported"* ]] || [[ "$1" == *"library 'asan' not found"* ]]; then
+    echo "Sanitizers are not supported."
     return 1
   else
     return 0
@@ -152,7 +159,8 @@ check_error() {
 #--- Function to report on errors and return whether any were found
 # $1 Text string to check for errors
 # $2 Verbosity (true, false)
-# Returns 0 if no errors found; returns 1 if any errors were found
+# Returns 0 if no errors found; returns 1 if any errors were found;
+# returns -1 if sanitizers are not available
 report_if_error() {
   local x="$1"
   local verbosity="$2"
@@ -177,7 +185,7 @@ report_if_error() {
     fi
 
   else
-    return 0 # return zero if sanitizer is not available
+    return -1 # return -1 if sanitizer is not available
   fi
 }
 
@@ -194,7 +202,8 @@ check_leaks() {
 #--- Function to report on leaks and return whether any were found
 # $1 Text string to check for leaks
 # $2 Verbosity (true, false)
-# Returns 0 if no leak found; returns 1 if leaks were found
+# Returns 0 if no leak found; returns 1 if leaks were found;
+# returns -1 if sanitizers are not available
 report_if_leak() {
   local x="$1"
   local verbosity="$2"
@@ -220,7 +229,7 @@ report_if_leak() {
     fi
 
   else
-    return 0 # return zero if sanitizer is not available
+    return -1 # return -1 if sanitizer is not available
   fi
 }
 
@@ -281,7 +290,7 @@ check_SOILWAT2() {
 
   if [ $status -eq 0 ]; then
     if [ ! -d "${dirOutRef}" ]; then
-      echo $'\n'"Save output from example simulation as reference for future comparisons"
+      echo $'\n'"Save output from example simulation as reference for future comparisons at '${dirOutRef}'"
       cp -r tests/example/Output "${dirOutRef}"
     fi
 
@@ -304,8 +313,8 @@ check_SOILWAT2() {
   has_sanitizers=$?
 
 
+  echo $'\n'"Target: 'bin_leaks' ..."
   if exists leaks ; then
-    echo $'\n'"Target: 'bin_leaks' ..."
     res=$(run_fresh_sw2 "${ccomp}" aflags[@] "${mode}" all)
 
     report_if_error "${res}" "${verbosity}"
@@ -337,20 +346,15 @@ check_SOILWAT2() {
   report_if_error "${res}" "${verbosity}"
 
 
-  if [ $has_sanitizers -eq 0 ]; then
-    echo $'\n'"Target 'test_severe' ..."
-    res=$(run_fresh_sw2 "${cxxcomp}" aflags[@] "${mode}" test_severe)
-    report_if_error "${res}" "${verbosity}"
-    has_sanitizers=$?
-  else
-    echo "Target: skipped: 'test_severe' not operational for current compiler."
-  fi
+  echo $'\n'"Target 'test_severe' ..."
+  res=$(run_fresh_sw2 "${cxxcomp}" aflags[@] "${mode}" test_severe)
+  report_if_error "${res}" "${verbosity}"
 
 
+  echo $'\n'"Target 'test_sanitizer' ..."
   if [ $has_sanitizers -eq 0 ]; then
     # CXX=clang++ ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
     # https://github.com/google/sanitizers/wiki/AddressSanitizer
-    echo $'\n'"Target 'test_sanitizer' ..."
     res=$(run_fresh_sw2 "${cxxcomp}" aflags[@] "${mode}" test_sanitizer)
     report_if_error "${res}" "${verbosity}"
   else
@@ -358,9 +362,8 @@ check_SOILWAT2() {
   fi
 
 
+  echo $'\n'"Target: 'test_leaks' ..."
   if exists leaks ; then
-
-    echo $'\n'"Target: 'test_leaks' ..."
     res=$(run_fresh_sw2 "${cxxcomp}" aflags[@] "${mode}" test)
 
     report_if_error "${res}" "${verbosity}"
