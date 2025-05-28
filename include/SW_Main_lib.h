@@ -24,7 +24,7 @@ void sw_init_args(
     int rank,
     Bool *EchoInits,
     char **firstfile,
-    unsigned long *userSUID,
+    size_t *userSUID,
     double *wallTimeLimit,
     Bool *renameDomainTemplateNC,
     Bool *prepareFiles,

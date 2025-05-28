@@ -763,9 +763,8 @@ typedef struct {
         timeMin, /**< Minimum time [seconds] of a simulation run */
         timeMax; /**< Maximum time [seconds] of a simulation run */
 
-    unsigned long
-        nTimedRuns,   /**< Number of simulation runs with timing information */
-        nUntimedRuns; /**< Number of simulation runs for which timing failed */
+    size_t nTimedRuns, /**< Number of simulation runs with timing information */
+        nUntimedRuns;  /**< Number of simulation runs for which timing failed */
 } SW_WALLTIME;
 
 /* =================================================== */
@@ -1085,10 +1084,9 @@ typedef struct {
         warningMsgs[MAX_MSGS][MAX_LOG_SIZE]; // Holds up to MAX_MSGS warning
                                              // messages to report
 
-    int numWarnings; // Number of total warnings thrown
-    unsigned long
-        numDomainWarnings, /**< Number of suids with at least one warning */
-        numDomainErrors;   /**< Number of suids with an error */
+    int numWarnings;          // Number of total warnings thrown
+    size_t numDomainWarnings, /**< Number of suids with at least one warning */
+        numDomainErrors;      /**< Number of suids with an error */
 
     Bool stopRun; // Specifies if an error has occurred and
                   // the program needs to stop early (backtrack)
@@ -1636,12 +1634,10 @@ typedef struct {
 
     int ranks[PROCS_PER_IO]; /**< A list of ranks that the I/O process
                                   controls */
-    unsigned long *
-        *domSuids; /**< A list of domain SUIDs that will be used by I/O
-                        processes for writing and reading information */
-    unsigned long *
-        *domTSuids[SW_NINKEYSNC]; /**< A list of translated domain SUIDs for
-                          each input key if index files are used */
+    size_t **domSuids; /**< A list of domain SUIDs that will be used by I/O
+                            processes for writing and reading information */
+    size_t **domTSuids[SW_NINKEYSNC]; /**< A list of translated domain SUIDs for
+                              each input key if index files are used */
 
     int nTotCompProcs; /**< Number of compute processes in action;
                               root only */
@@ -1675,7 +1671,7 @@ typedef struct {
     /** Type of domain: 'xy' (grid), 's' (sites) (3 = 2 characters + '\0') */
     char DomainType[3];
 
-    unsigned long // to clarify, "long" = "long int", not double
+    size_t      // to clarify, "long" = "long int", not double
         nDimX,  /**< Number of grid cells along x dimension (used if domainType
                    is 'xy') */
         nDimY,  /**< Number of grid cells along y dimension (used if domainType

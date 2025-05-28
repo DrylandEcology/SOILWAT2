@@ -289,7 +289,7 @@ void sw_init_args(
             }
 
             /* Check that user input can be represented by userSUID
-             * (currently, unsigned long) */
+             * (currently, size_t) */
             /* Expect that conversion of string to double results in the
              * same value as conversion of userSUID to double */
             doubleUserSUID = sw_strtod(str, errMsg, LogInfo);

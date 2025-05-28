@@ -24,7 +24,7 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV_INPUTS *SW_MarkovIn);
+void SW_MKV_construct(size_t rng_seed, SW_MARKOV_INPUTS *SW_MarkovIn);
 
 void copyMKV(SW_MARKOV_INPUTS *dest_MKV, SW_MARKOV_INPUTS *template_MKV);
 
@@ -46,7 +46,7 @@ Bool SW_MKV_read_cov(
 
 void SW_MKV_setup(
     SW_MARKOV_INPUTS *SW_MarkovIn,
-    unsigned long Weather_rng_seed,
+    size_t Weather_rng_seed,
     unsigned int Weather_genWeathMethod,
     char *txtInFiles[],
     LOG_INFO *LogInfo

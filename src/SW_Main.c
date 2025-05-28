@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
     int size = 0;
     char procName[FILENAME_MAX] = "\0";
 
-    unsigned long userSUID;
+    size_t userSUID;
 
     // Start overall wall time
     SW_WT_StartTime(&SW_WallTime);

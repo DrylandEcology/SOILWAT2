@@ -227,8 +227,8 @@ static void deallocProcHelpers(
     int maxNodes,
     int numNodes,
     SW_MPI_DESIGNATE ***designations,
-    unsigned long ***activeSuids,
-    unsigned long ****activeTSuids,
+    size_t ***activeSuids,
+    size_t ****activeTSuids,
     char ***nodeNames,
     int **numProcsInNode,
     int **numMaxProcsInNode,
@@ -481,33 +481,27 @@ static void findIOAssignment(
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void allocateActiveSuids(
-    unsigned long numActiveSites,
-    unsigned long ***activeSuids,
-    LOG_INFO *LogInfo
+    size_t numActiveSites, size_t ***activeSuids, LOG_INFO *LogInfo
 ) {
     const int nElemPerSuid = 2;
     size_t domIndex;
 
-    *activeSuids = (unsigned long **) Mem_Malloc(
-        sizeof(unsigned long *) * numActiveSites,
-        "allocateActiveSuids()",
-        LogInfo
+    *activeSuids = (size_t **) Mem_Malloc(
+        sizeof(size_t *) * numActiveSites, "allocateActiveSuids()", LogInfo
     );
     if (LogInfo->stopRun) {
         return;
     }
 
     for (domIndex = 0; domIndex < numActiveSites; domIndex++) {
-        (*activeSuids)[domIndex] = (unsigned long *) Mem_Malloc(
-            sizeof(unsigned long) * nElemPerSuid,
-            "allocateActiveSuids()",
-            LogInfo
+        (*activeSuids)[domIndex] = (size_t *) Mem_Malloc(
+            sizeof(size_t) * nElemPerSuid, "allocateActiveSuids()", LogInfo
         );
         if (LogInfo->stopRun) {
             return;
         }
 
-        memset((*activeSuids)[domIndex], 0, sizeof(unsigned long) * 2);
+        memset((*activeSuids)[domIndex], 0, sizeof(size_t) * 2);
     }
 }
 
@@ -521,28 +515,22 @@ static void allocateActiveSuids(
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void allocateActiveTSuids(
-    unsigned long numActiveSites,
-    unsigned long ***activeTSuids,
-    LOG_INFO *LogInfo
+    size_t numActiveSites, size_t ***activeTSuids, LOG_INFO *LogInfo
 ) {
-    const unsigned long nIndexVals = 2;
-    unsigned long site;
-    unsigned long col;
+    const size_t nIndexVals = 2;
+    size_t site;
+    size_t col;
 
-    *activeTSuids = (unsigned long **) Mem_Malloc(
-        sizeof(unsigned long *) * numActiveSites,
-        "allocateActiveTSuids()",
-        LogInfo
+    *activeTSuids = (size_t **) Mem_Malloc(
+        sizeof(size_t *) * numActiveSites, "allocateActiveTSuids()", LogInfo
     );
     for (site = 0; site < numActiveSites; site++) {
         (*activeTSuids)[site] = NULL;
     }
 
     for (site = 0; site < numActiveSites; site++) {
-        (*activeTSuids)[site] = (unsigned long *) Mem_Malloc(
-            sizeof(unsigned long) * nIndexVals,
-            "allocateActiveTSuids()",
-            LogInfo
+        (*activeTSuids)[site] = (size_t *) Mem_Malloc(
+            sizeof(size_t) * nIndexVals, "allocateActiveTSuids()", LogInfo
         );
         if (LogInfo->stopRun) {
             return;
@@ -713,10 +701,10 @@ static void fillDesignationIO(
     int ioProcsInNode,
     size_t numActiveSites,
     int totCompProcs,
-    unsigned long **activeSuids,
+    size_t **activeSuids,
     const int *ranks,
     int *rankAssign,
-    unsigned long ***activeTSuids,
+    size_t ***activeTSuids,
     int *leftOverCompProcs,
     size_t *leftOverSuids,
     size_t *leftSuids,
@@ -755,8 +743,8 @@ static void fillDesignationIO(
         (*leftOverSuids) -= nSuids;
     }
     *leftSuids -= desig->nSuids;
-    desig->domSuids = (unsigned long **) Mem_Malloc(
-        sizeof(unsigned long *) * desig->nSuids, "fillDesignationIO()", LogInfo
+    desig->domSuids = (size_t **) Mem_Malloc(
+        sizeof(size_t *) * desig->nSuids, "fillDesignationIO()", LogInfo
     );
     if (LogInfo->stopRun) {
         return;
@@ -767,8 +755,8 @@ static void fillDesignationIO(
     }
 
     for (suid = 0; suid < desig->nSuids; suid++) {
-        desig->domSuids[suid] = (unsigned long *) Mem_Malloc(
-            sizeof(unsigned long) * 2, "fillDesignationIO()", LogInfo
+        desig->domSuids[suid] = (size_t *) Mem_Malloc(
+            sizeof(size_t) * 2, "fillDesignationIO()", LogInfo
         );
         if (LogInfo->stopRun) {
             return;
@@ -841,8 +829,8 @@ static void designateProcesses(
     int numNodes,
     int totCompProcs,
     size_t numActiveSites,
-    unsigned long **activeSuids,
-    unsigned long ***activeTSuids,
+    size_t **activeSuids,
+    size_t ***activeTSuids,
     int **ranksInNodes,
     size_t *leftSuids,
     int *suidAssign,
@@ -5318,7 +5306,7 @@ try to simulate/assign to compute processes
 */
 void SW_MPI_root_find_active_sites(
     SW_DOMAIN *SW_Domain,
-    unsigned long ***activeSuids,
+    size_t ***activeSuids,
     size_t *numActiveSites,
     LOG_INFO *LogInfo
 ) {
@@ -5328,7 +5316,7 @@ void SW_MPI_root_find_active_sites(
     Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
     size_t numSites =
         (sDom) ? SW_Domain->nDimS : SW_Domain->nDimY * SW_Domain->nDimX;
-    unsigned long progIndex;
+    size_t progIndex;
     int progFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprog];
 
     *numActiveSites = 0;
@@ -5390,9 +5378,9 @@ freeMem:
 */
 void SW_MPI_get_activated_tsuids(
     SW_DOMAIN *SW_Domain,
-    unsigned long **activeSuids,
-    unsigned long ****activeTSuids,
-    unsigned long numActiveSites,
+    size_t **activeSuids,
+    size_t ****activeTSuids,
+    size_t numActiveSites,
     LOG_INFO *LogInfo
 ) {
     Bool inSDom;
@@ -5410,14 +5398,12 @@ void SW_MPI_get_activated_tsuids(
     int fileID = -1;
     char *ncFileName;
     int varID;
-    unsigned long *indexCell;
-    unsigned long *domSuid;
+    size_t *indexCell;
+    size_t *domSuid;
     size_t offset;
 
-    (*activeTSuids) = (unsigned long ***) Mem_Malloc(
-        sizeof(unsigned long **) * numPosKeys,
-        "SW_MPI_get_activated_tsuids()",
-        LogInfo
+    (*activeTSuids) = (size_t ***) Mem_Malloc(
+        sizeof(size_t **) * numPosKeys, "SW_MPI_get_activated_tsuids()", LogInfo
     );
     if (LogInfo->stopRun) {
         return;
@@ -5545,8 +5531,8 @@ void SW_MPI_process_types(
     int rank,
     LOG_INFO *LogInfo
 ) {
-    unsigned long ***activeTSuids = NULL;
-    unsigned long **activeSuids = NULL;
+    size_t ***activeTSuids = NULL;
+    size_t **activeSuids = NULL;
     size_t numActiveSites = 0;
     MPI_Request nullReq = MPI_REQUEST_NULL;
 
@@ -5792,7 +5778,7 @@ Process designation: Compute
     simulation runs
 */
 void SW_MPI_store_outputs(
-    unsigned long runNum,
+    size_t runNum,
     SW_OUT_DOM *OutDom,
     double *src_p_OUT[][SW_OUTNPERIODS],
     double *dest_p_OUT[][SW_OUTNPERIODS]

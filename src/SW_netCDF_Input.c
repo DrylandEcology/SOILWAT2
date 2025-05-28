@@ -1252,7 +1252,7 @@ memory for writing out values
 */
 static void alloc_netCDF_domain_vars(
     Bool domTypeIsSite,
-    unsigned long nSUIDs,
+    size_t nSUIDs,
     unsigned int numY,
     unsigned int numX,
     double **valsY,
@@ -1972,7 +1972,7 @@ static void fill_domain_netCDF_gridded(
     const char *XDimName = (primCRSIsGeo) ? readinGeoXName : readinProjXName;
 
     const char *dimNames[] = {YDimName, XDimName, "bnds"};
-    const unsigned long dimVals[] = {SW_Domain->nDimY, SW_Domain->nDimX, 2};
+    const size_t dimVals[] = {SW_Domain->nDimY, SW_Domain->nDimX, 2};
     int *createDimIDs[] = {YDimID, XDimID, &bndsID};
     int dimIDs[] = {0, 0, 0};
     int dimIDIndex;
@@ -2507,11 +2507,11 @@ static void fill_prog_netCDF_vals(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     int domVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCdom];
     int progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprog];
-    unsigned long suid;
-    unsigned long ncSuid[2];
-    unsigned long nSUIDs = SW_Domain->nSUIDs;
-    unsigned long nDimY = SW_Domain->nDimY;
-    unsigned long nDimX = SW_Domain->nDimX;
+    size_t suid;
+    size_t ncSuid[2];
+    size_t nSUIDs = SW_Domain->nSUIDs;
+    size_t nDimY = SW_Domain->nDimY;
+    size_t nDimX = SW_Domain->nDimX;
     int progFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprog];
     int domFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom];
     size_t start1D[] = {0};
@@ -7755,7 +7755,7 @@ void SW_NCIN_create_domain_template(
 @param[in,out] LogInfo Holds information dealing with logfile output
 */
 Bool SW_NCIN_check_progress(
-    int progFileID, int progVarID, unsigned long ncSUID[], LOG_INFO *LogInfo
+    int progFileID, int progVarID, size_t ncSUID[], LOG_INFO *LogInfo
 ) {
 
     signed char progVal = 0;

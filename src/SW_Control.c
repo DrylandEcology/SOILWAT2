@@ -462,9 +462,9 @@ void SW_CTL_RunSimSet(
     LOG_INFO *main_LogInfo
 ) {
 
-    unsigned long suid;
-    unsigned long nSims = 0;
-    unsigned long ncSuid[2]; // 2 -> [y, x] or [s, 0]
+    size_t suid;
+    size_t nSims = 0;
+    size_t ncSuid[2]; // 2 -> [y, x] or [s, 0]
     /* tag_suid is 62:
       21 character for "(Suid indices = [, ])" + 40 character for 2 *
       ULONG_MAX + '\0' */
@@ -476,8 +476,8 @@ void SW_CTL_RunSimSet(
     Bool ok_tss = swFALSE;
     Bool ok_tsr = swFALSE;
     Bool ok_suid = swTRUE;
-    unsigned long startSim;
-    unsigned long endSim;
+    size_t startSim;
+    size_t endSim;
     Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
     size_t numInputs = 1;
     Bool copyWeather = swTRUE;
@@ -839,7 +839,7 @@ will automatically be renamed
 */
 void SW_CTL_setup_domain(
     int rank,
-    unsigned long userSUID,
+    size_t userSUID,
     Bool renameDomainTemp,
     SW_DOMAIN *SW_Domain,
     LOG_INFO *LogInfo
@@ -1619,11 +1619,11 @@ The following operations are conditional on if SWMPI is enabled
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_run_sw(
-    unsigned long runNum,
+    size_t runNum,
     SW_RUN_INPUTS *runInputs,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
-    unsigned long ncSuid[], // NOLINT(readability-non-const-parameter)
+    size_t ncSuid[], // NOLINT(readability-non-const-parameter)
     Bool estVeg,
     Bool copyWeather,
     const size_t count[],

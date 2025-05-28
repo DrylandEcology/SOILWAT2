@@ -169,16 +169,16 @@ void SW_MPI_write_main_logs(
 
 void SW_MPI_root_find_active_sites(
     SW_DOMAIN *SW_Domain,
-    unsigned long ***activeSuids,
+    size_t ***activeSuids,
     size_t *numActiveSites,
     LOG_INFO *LogInfo
 );
 
 void SW_MPI_get_activated_tsuids(
     SW_DOMAIN *SW_Domain,
-    unsigned long **activeSuids,
-    unsigned long ****activeTSuids,
-    unsigned long numActiveSites,
+    size_t **activeSuids,
+    size_t ****activeTSuids,
+    size_t numActiveSites,
     LOG_INFO *LogInfo
 );
 
@@ -191,7 +191,7 @@ void SW_MPI_process_types(
 );
 
 void SW_MPI_store_outputs(
-    unsigned long runNum,
+    size_t runNum,
     SW_OUT_DOM *OutDom,
     double *src_p_OUT[][SW_OUTNPERIODS],
     double *dest_p_OUT[][SW_OUTNPERIODS]

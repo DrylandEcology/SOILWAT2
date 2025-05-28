@@ -41,7 +41,7 @@ void SW_RUN_deepCopy(
 
 void SW_CTL_setup_domain(
     int rank,
-    unsigned long userSUID,
+    size_t userSUID,
     Bool renameDomainTemp,
     SW_DOMAIN *SW_Domain,
     LOG_INFO *LogInfo
@@ -87,11 +87,11 @@ void SW_CTL_run_current_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
 void SW_CTL_run_sw(
-    unsigned long runNum,
+    size_t runNum,
     SW_RUN_INPUTS *runInputs,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
-    unsigned long ncSuid[],
+    size_t ncSuid[],
     Bool estVeg,
     Bool copyWeather,
     const size_t count[],

@@ -375,7 +375,7 @@ Time is not reported at all if quiet mode and `logfile` is `NULL`.
 */
 void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
     double total_time = 0;
-    unsigned long nSims = wt.nTimedRuns + wt.nUntimedRuns;
+    size_t nSims = wt.nTimedRuns + wt.nUntimedRuns;
     int fprintRes = 0;
 
     FILE *logfp = LogInfo->QuietMode ? LogInfo->logfp : stdout;

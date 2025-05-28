@@ -190,7 +190,7 @@ void setup_SW_Site_for_tests(
 */
 int setup_testGlobalSoilwatTemplate() {
     int success = 0;
-    unsigned long userSUID;
+    size_t userSUID;
     LOG_INFO LogInfo;
     const Bool renameDomainTemplateNC = swTRUE;
     const Bool estVeg = swTRUE;

@@ -848,7 +848,7 @@ void SW_NC_get_str_att_val(
 */
 void SW_NC_create_netCDF_dim(
     const char *dimName,
-    unsigned long size,
+    size_t size,
     const int *ncFileID,
     int *dimID,
     LOG_INFO *LogInfo

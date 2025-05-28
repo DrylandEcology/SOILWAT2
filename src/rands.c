@@ -59,8 +59,8 @@ even if they occurred during the same system time.
 @param[in,out] pcg_rng The random number generator to set.
 */
 void RandSeed(
-    unsigned long initstate,
-    unsigned long initseq,
+    size_t initstate,
+    size_t initseq,
     sw_random_t *pcg_rng // NOLINT(readability-non-const-parameter)
 ) {
 // R uses its own random number generators

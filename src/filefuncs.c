@@ -278,7 +278,14 @@ void sw_message(const char *msg) {
 }
 
 /**
-@brief Convert string to unsigned long integer with error handling
+@brief Convert string to largest value possible using the "size_t" integer
+    with error handling
+
+@note This function currently assumes the underlying type of "size_t" is
+    "unsigned long" on Mac/Linux; if this program is to be run on Window's
+    or an OS with less bits e.g., 32-bit, at some point, more/less bytes
+    may be used for size_t, so the function `strtoul()` may not work properly
+    (if the program handles extremely large numbers relative to the max)
 
 This function implements cert-err34-c
 "Detect errors when converting a string to a number".
@@ -287,10 +294,8 @@ This function implements cert-err34-c
 @param[in] errMsg Pointer to string included in error message.
 @param[out] LogInfo Holds information on warnings and errors
 */
-unsigned long int sw_strtoul(
-    const char *str, const char *errMsg, LOG_INFO *LogInfo
-) {
-    unsigned long int resul = ULONG_MAX;
+size_t sw_strtoul(const char *str, const char *errMsg, LOG_INFO *LogInfo) {
+    size_t resul = ULONG_MAX;
     char *endStr;
 
     errno = 0;
@@ -301,7 +306,7 @@ unsigned long int sw_strtoul(
         LogError(
             LogInfo,
             LOGERROR,
-            "%s: converting '%s' to unsigned long integer failed.",
+            "%s: converting '%s' to unsigned long long integer failed.",
             errMsg,
             str
         );
@@ -310,7 +315,7 @@ unsigned long int sw_strtoul(
         LogError(
             LogInfo,
             LOGERROR,
-            "%s: '%s' out of range of type unsigned long integer.",
+            "%s: '%s' out of range of type unsigned long long integer.",
             errMsg,
             str
         );

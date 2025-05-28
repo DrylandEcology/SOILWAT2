@@ -49,9 +49,7 @@ void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...);
 
 void sw_message(const char *msg);
 
-unsigned long int sw_strtoul(
-    const char *str, const char *errMsg, LOG_INFO *LogInfo
-);
+size_t sw_strtoul(const char *str, const char *errMsg, LOG_INFO *LogInfo);
 
 long int sw_strtol(const char *str, const char *errMsg, LOG_INFO *LogInfo);
 

@@ -238,7 +238,7 @@ void SW_MKV_init_ptrs(SW_MARKOV_INPUTS *SW_MarkovIn) {
 @param[out] SW_MarkovIn Struct of type SW_MARKOV_INPUTS which holds values
     related to temperature and weather generator
 */
-void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV_INPUTS *SW_MarkovIn) {
+void SW_MKV_construct(size_t rng_seed, SW_MARKOV_INPUTS *SW_MarkovIn) {
 /* =================================================== */
 
 /* Set seed of `markov_rng`
@@ -875,7 +875,7 @@ closeFile: { CloseFile(&f, LogInfo); }
 
 void SW_MKV_setup(
     SW_MARKOV_INPUTS *SW_MarkovIn,
-    unsigned long Weather_rng_seed,
+    size_t Weather_rng_seed,
     unsigned int Weather_genWeathMethod,
     char *txtInFiles[],
     LOG_INFO *LogInfo
