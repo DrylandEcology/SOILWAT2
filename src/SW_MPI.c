@@ -2649,6 +2649,8 @@ static void alloc_IO_info(
     how many inputs to send to a specific process
 @param[out] tempSWRCPVals A list of lengths that will be used to specify
     how many inputs to send to a specific process
+@param[out] tempWeather A list of temporary weather values, holding more than
+    one site's worth of values
 @param[out] tempSoils A list of lengths that will be used to specify
     how many inputs to send to a specific process
 @param[out] succFlags A list of success flags that are accumulated
@@ -2662,6 +2664,7 @@ static void alloc_IO_info(
 static void dealloc_IO_info(
     size_t numSuids,
     size_t maxNumIOSuids,
+    SW_RUN_INPUTS **runInputs,
     SW_OUT_RUN *tempRun,
     SW_OUT_RUN *OutRun,
     size_t **starts[],
@@ -2674,6 +2677,7 @@ static void dealloc_IO_info(
     double **tempMonthlyVals,
     double **tempSilt,
     double **tempSWRCPVals,
+    double **tempWeather,
     SW_SOIL_RUN_INPUTS **tempSoils,
     Bool **succFlags,
     signed char **succMark,
@@ -2681,8 +2685,8 @@ static void dealloc_IO_info(
 ) {
     int inKey;
     size_t ***deallocStartCount[2] = {NULL};
-    const int numDeallocStartCount = 2;
-    int dealloc;
+    const size_t numDeallocStartCount = 2;
+    size_t dealloc;
     size_t suid;
     void **dealloc1D[] = {
         (void **) sendInputs,
@@ -2691,11 +2695,12 @@ static void dealloc_IO_info(
         (void **) tempMonthlyVals,
         (void **) tempSilt,
         (void **) tempSWRCPVals,
+        (void **) tempWeather,
         (void **) tempSoils,
         (void **) succFlags,
         (void **) succMark
     };
-    const int numDealloc1D = 9;
+    const size_t numDealloc1D = 10;
 
     ForEachNCInKey(inKey) {
         deallocStartCount[0] = &starts[inKey];
@@ -2757,6 +2762,17 @@ static void dealloc_IO_info(
             free(*(dealloc1D[dealloc]));
             *(dealloc1D[dealloc]) = NULL;
         }
+    }
+
+    if (!isnull(*runInputs)) {
+        for (dealloc = 0; dealloc < numSuids; dealloc++) {
+            if (!isnull((*runInputs[dealloc]).weathRunAllHist)) {
+                SW_WTH_deconstruct(&(*runInputs[dealloc]).weathRunAllHist);
+                (*runInputs[dealloc]).weathRunAllHist = NULL;
+            }
+        }
+
+        free((void *) *runInputs);
     }
 
     SW_OUT_deconstruct_outarray(OutRun);
@@ -3586,6 +3602,19 @@ report:
     return failEarly;
 }
 
+/**
+@brief Free allocated log memory in I/O processes
+
+@param[in,out] logs A list of LOG_INFO instances that will be used for
+    getting log information from compute processes
+*/
+static void free_logs(FILE ***logfps) {
+    if (!isnull(*logfps)) {
+        free((void *) *logfps);
+        *logfps = NULL;
+    }
+}
+
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
@@ -3652,8 +3681,17 @@ void SW_MPI_initialize(
 /**
 @brief Conclude the program run by finalizing/freeing anything that's
 been initialized/created through MPI within the program run
+
+@param[in] procJob Process job designation used when using MPI
+@param[in,out] LogInfo Holds information on warnings and errors
 */
-void SW_MPI_finalize(void) { MPI_Finalize(); }
+void SW_MPI_finalize(int procJob, LOG_INFO *LogInfo) {
+    if (procJob == SW_MPI_PROC_IO) {
+        free_logs(&LogInfo->logfps);
+    }
+
+    MPI_Finalize();
+}
 
 /**
 @brief Free communicators and types when finishing the program
@@ -6425,6 +6463,7 @@ freeMem:
     dealloc_IO_info(
         numSuidsTot,
         maxSuidsInOutput,
+        &inputs,
         &temp_sw.OutRun,
         &sw->OutRun,
         starts,
@@ -6437,6 +6476,7 @@ freeMem:
         &tempMonthlyVals,
         &tempSilt,
         &tempSoilVals,
+        &tempWeather,
         &tempSoils,
         &succFlags,
         &succMark,

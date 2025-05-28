@@ -67,7 +67,7 @@ void SW_MPI_initialize(
     MPI_Datatype datatypes[]
 );
 
-void SW_MPI_finalize(void);
+void SW_MPI_finalize(int procJob, LOG_INFO *LogInfo);
 
 void SW_MPI_free_comms_types(
     int rank, SW_MPI_DESIGNATE *desig, MPI_Datatype types[], LOG_INFO *LogInfo

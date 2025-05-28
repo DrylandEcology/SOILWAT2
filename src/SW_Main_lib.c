@@ -142,7 +142,7 @@ void sw_init_args(
     int rank,
     Bool *EchoInits,
     char **firstfile,
-    unsigned long *userSUID,
+    size_t *userSUID,
     double *wallTimeLimit,
     Bool *renameDomainTemplateNC,
     Bool *prepareFiles,
@@ -693,6 +693,8 @@ void sw_finalize_program(
     LOG_INFO *LogInfo
 ) {
 #if defined(SWMPI)
+    int procJob = SW_Domain->SW_Designation.procJob;
+
     /* Report information for the following scenarios
         1) Failed during setup - error(s)/warning(s)
         2) Failed during simulation runs - simulations statistics *
@@ -728,6 +730,6 @@ void sw_finalize_program(
     sw_wrapup_logs(rank, LogInfo);
 
 #if defined(SWMPI)
-    SW_MPI_finalize();
+    SW_MPI_finalize(procJob, LogInfo);
 #endif
 }
