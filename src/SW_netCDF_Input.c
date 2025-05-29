@@ -7292,7 +7292,6 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     const char *attVals[] = {"simulation progress", "1", grid_map, coord};
     const int numAtts = 4;
     int numValsToWrite;
-    const signed char fillVal[] = {NC_FILL_BYTE};
     const signed char flagVals[] = {PRGRSS_FAIL, PRGRSS_READY, PRGRSS_DONE};
     const char *flagMeanings =
         "simulation_error ready_to_simulate simulation_complete";
@@ -7411,7 +7410,7 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             SW_Domain->OutDom.netCDFOutput.siteName,
             -1,
             useDefaultChunking,
-            (void *) fillVal,
+            swTRUE,
             LogInfo
         );
         if (LogInfo->stopRun) {

@@ -1195,7 +1195,7 @@ static void create_output_file(
                 OutDom->netCDFOutput.siteName,
                 coordAttInd,
                 swFALSE,
-                NULL,
+                swTRUE,
                 LogInfo
             );
 

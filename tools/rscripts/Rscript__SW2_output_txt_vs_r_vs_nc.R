@@ -97,14 +97,14 @@ read_swdata <- function(outkey, pd, swr, dir_txt, dir_nc, dir_mpi) {
   )
 
   x[["r"]] = {
-      tmp <- slot(slot(swr, outkey), pds2[[pd]])[, -idh, drop = FALSE]
-      if (identical(dim(x[["txt"]]), dim(tmp))) {
-        colnames(tmp) <- paste0(outkey, "_", colnames(tmp))
-        tmp
-      } else {
-        array(dim = dim(x[["txt"]]), dimnames = dimnames(x[["txt"]]))
-      }
+    tmp <- slot(slot(swr, outkey), pds2[[pd]])[, -idh, drop = FALSE]
+    if (identical(dim(x[["txt"]]), dim(tmp))) {
+      colnames(tmp) <- paste0(outkey, "_", colnames(tmp))
+      tmp
+    } else {
+      array(dim = dim(x[["txt"]]), dimnames = dimnames(x[["txt"]]))
     }
+  }
 
   dx <- dim(x[["txt"]])
   cnsx <- colnames(x[["txt"]])
@@ -173,7 +173,14 @@ read_swdata <- function(outkey, pd, swr, dir_txt, dir_nc, dir_mpi) {
       gsub(vegsTag, "<veg>", x = _) |>
       unique()
 
-    ivars <- match(matchers, keydesc[["SW2.txt.output"]], nomatch = 0L)
+    ivars <- match(
+      matchers,
+      # change "-" into "." because `matchers` have passed through `make.names()`
+      # e.g., "H_oh_MJm-2" -> "H_oh_MJm.2"
+      # but retain "<veg>" and "<slyrs>"
+      table = gsub("-", ".", keydesc[["SW2.txt.output"]]),
+      nomatch = 0L
+    )
 
     stopifnot(nvars == length(ivars))
 
@@ -268,7 +275,7 @@ read_swdata <- function(outkey, pd, swr, dir_txt, dir_nc, dir_mpi) {
             args = tmp
           )
           # subset columns if soil evaporation
-          if (identical(keydesc[kv, "X"], "EVAPSOIL")) {
+          if (identical(keydesc[kv, "SW2.output.group"], "EVAPSOIL")) {
             tmp[, seq_len(nslyrs), drop = FALSE]
           } else {
             tmp
