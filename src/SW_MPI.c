@@ -2754,13 +2754,14 @@ static void dealloc_IO_info(
 
     if (!isnull(*runInputs)) {
         for (dealloc = 0; dealloc < numSuids; dealloc++) {
-            if (!isnull((*runInputs[dealloc]).weathRunAllHist)) {
-                SW_WTH_deconstruct(&(*runInputs[dealloc]).weathRunAllHist);
-                (*runInputs[dealloc]).weathRunAllHist = NULL;
+            if (!isnull((*runInputs)[dealloc].weathRunAllHist)) {
+                SW_WTH_deconstruct(&(*runInputs)[dealloc].weathRunAllHist);
+                (*runInputs)[dealloc].weathRunAllHist = NULL;
             }
         }
 
         free((void *) *runInputs);
+        *runInputs = NULL;
     }
 
     SW_OUT_deconstruct_outarray(OutRun);
