@@ -283,7 +283,7 @@ void sw_init_args(
             break;
 
         case 6: /* -s */
-            *userSUID = sw_strtoul(str, errMsg, LogInfo);
+            *userSUID = sw_strtosizet(str, errMsg, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }

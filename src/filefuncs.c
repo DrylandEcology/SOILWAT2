@@ -281,11 +281,10 @@ void sw_message(const char *msg) {
 @brief Convert string to largest value possible using the "size_t" integer
     with error handling
 
-@note This function currently assumes the underlying type of "size_t" is
-    "unsigned long" on Mac/Linux; if this program is to be run on Window's
-    or an OS with less bits e.g., 32-bit, at some point, more/less bytes
-    may be used for size_t, so the function `strtoul()` may not work properly
-    (if the program handles extremely large numbers relative to the max)
+@note This function uses unsigned long long to make the maximum value
+    consistant across the major platforms (i.e., Linux, Mac, and Windows);
+    Assuming 64-bit systems, Windows uses LLP64 where Mac/Linux primarily use
+    the LP64 data model
 
 This function implements cert-err34-c
 "Detect errors when converting a string to a number".
@@ -294,13 +293,13 @@ This function implements cert-err34-c
 @param[in] errMsg Pointer to string included in error message.
 @param[out] LogInfo Holds information on warnings and errors
 */
-size_t sw_strtoul(const char *str, const char *errMsg, LOG_INFO *LogInfo) {
-    size_t resul = ULONG_MAX;
+size_t sw_strtosizet(const char *str, const char *errMsg, LOG_INFO *LogInfo) {
+    unsigned long long resul = ULLONG_MAX;
     char *endStr;
 
     errno = 0;
 
-    resul = strtoul(str, &endStr, 10);
+    resul = strtoull(str, &endStr, 10);
 
     if (endStr == str || '\0' != *endStr) {
         LogError(
@@ -311,7 +310,7 @@ size_t sw_strtoul(const char *str, const char *errMsg, LOG_INFO *LogInfo) {
             str
         );
 
-    } else if (ULONG_MAX == resul && ERANGE == errno) {
+    } else if (ULLONG_MAX == resul && ERANGE == errno) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -319,9 +318,17 @@ size_t sw_strtoul(const char *str, const char *errMsg, LOG_INFO *LogInfo) {
             errMsg,
             str
         );
+    } else if (SIZE_MAX < resul) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Value larger than maximum size of an object (%zu < %zu).",
+            SIZE_MAX,
+            resul
+        );
     }
 
-    return resul;
+    return (size_t) resul;
 }
 
 /**
