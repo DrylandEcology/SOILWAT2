@@ -2612,6 +2612,8 @@ void SW_NCOUT_write_output(
                                 numSiteSum += numSites;
                             }
 
+                            count[0] = count[1] = 0;
+
                             // Create a dummy write so this can still take
                             // part in the collective writes,
                             // counts should be 0 for latitude/longitude
@@ -2620,7 +2622,7 @@ void SW_NCOUT_write_output(
                                 &varID,
                                 currFileID,
                                 NULL,
-                                p_OUTValPtr,
+                                &p_OUTValPtr[0],
                                 start,
                                 count,
                                 "double",
