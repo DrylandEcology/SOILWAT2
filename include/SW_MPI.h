@@ -3,6 +3,7 @@
 
 #include "include/SW_datastructs.h"
 
+#include <limits.h>
 #include <mpi.h>
 
 #ifdef __cplusplus
@@ -12,6 +13,18 @@ extern "C" {
 /* =================================================== */
 /*                  Local Definitions                  */
 /* --------------------------------------------------- */
+
+#if SIZE_MAX == UCHAR_MAX
+#define SW_MPI_SIZE_T MPI_UNSIGNED_CHAR
+#elif SIZE_MAX == USHRT_MAX
+#define SW_MPI_SIZE_T MPI_UNSIGNED_SHORT
+#elif SIZE_MAX == UINT_MAX
+#define SW_MPI_SIZE_T MPI_UNSIGNED
+#elif SIZE_MAX == ULONG_MAX
+#define SW_MPI_SIZE_T MPI_UNSIGNED_LONG
+#else // SIZE_MAX == ULLONG_MAX
+#define SW_MPI_SIZE_T MPI_UNSIGNED_LONG_LONG
+#endif
 
 typedef enum {
     eSW_MPI_Domain,

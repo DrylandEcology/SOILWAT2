@@ -143,16 +143,19 @@ static Bool dummy_prog_out_writes(
     size_t *counts[],
     LOG_INFO *LogInfo
 ) {
-    int write;
-    int numWrites = 0;
+    size_t write;
+    size_t numWrites = 0;
+    size_t maxNumWrites = 0;
     Bool succFlagBool[1] = {swTRUE};
     signed char succFlagChar[1] = {swTRUE};
 
     Bool exitEarly = swFALSE;
 
-    SW_Allreduce(MPI_INT, &numWrites, &numWrites, 1, MPI_MAX, desig->groupComm);
+    SW_Allreduce(
+        SW_MPI_SIZE_T, &numWrites, &maxNumWrites, 1, MPI_MAX, desig->groupComm
+    );
 
-    for (write = 0; write < numWrites; write++) {
+    for (write = 0; write < maxNumWrites; write++) {
         starts[write][0] = starts[write][1] = 0;
         counts[write][0] = counts[write][1] = 0;
     }
@@ -165,7 +168,7 @@ static Bool dummy_prog_out_writes(
         SW_PathOutputs->numOutFiles,
         NULL,
         NULL,
-        numWrites,
+        maxNumWrites,
         numWrites,
         starts,
         counts,
@@ -181,7 +184,7 @@ static Bool dummy_prog_out_writes(
         goto report;
     }
 
-    for (write = 0; write < numWrites; write++) {
+    for (write = 0; write < maxNumWrites; write++) {
         SW_NCIN_set_progress(
             progFileID,
             progVarID,
@@ -1172,7 +1175,7 @@ reportError:
                     if (currDes->procJob == SW_MPI_PROC_IO) {
                         for (pair = 0; pair < currDes->nSuids; pair++) {
                             SW_MPI_Send(
-                                MPI_UNSIGNED_LONG,
+                                SW_MPI_SIZE_T,
                                 currDes->domSuids[pair],
                                 2,
                                 sendRank,
@@ -1192,7 +1195,7 @@ reportError:
 
                                 for (pair = 0; pair < currDes->nSuids; pair++) {
                                     SW_MPI_Send(
-                                        MPI_UNSIGNED_LONG,
+                                        SW_MPI_SIZE_T,
                                         currDes->domTSuids[inKey][pair],
                                         2,
                                         sendRank,
@@ -1220,7 +1223,7 @@ reportError:
     } else if (SW_Designation->procJob == SW_MPI_PROC_IO) {
         for (pair = 0; pair < SW_Designation->nSuids; pair++) {
             SW_MPI_Recv(
-                MPI_UNSIGNED_LONG,
+                SW_MPI_SIZE_T,
                 SW_Designation->domSuids[pair],
                 2,
                 SW_MPI_ROOT,
@@ -1235,7 +1238,7 @@ reportError:
                 if (inKey > eSW_InSpatial && useIndexFile[inKey]) {
                     for (pair = 0; pair < SW_Designation->nSuids; pair++) {
                         SW_MPI_Recv(
-                            MPI_UNSIGNED_LONG,
+                            SW_MPI_SIZE_T,
                             SW_Designation->domTSuids[inKey][pair],
                             2,
                             SW_MPI_ROOT,
@@ -1277,9 +1280,9 @@ static void get_dynamic_string(
 
     if (rank == SW_MPI_ROOT) {
         strLen = (send) ? strlen(*buffer) + 1 : 0;
-        SW_MPI_Bcast(MPI_UNSIGNED_LONG, &strLen, 1, SW_MPI_ROOT, comm);
+        SW_MPI_Bcast(SW_MPI_SIZE_T, &strLen, 1, SW_MPI_ROOT, comm);
     } else {
-        SW_MPI_Bcast(MPI_UNSIGNED_LONG, &strLen, 1, SW_MPI_ROOT, comm);
+        SW_MPI_Bcast(SW_MPI_SIZE_T, &strLen, 1, SW_MPI_ROOT, comm);
 
         if (strLen > 0) {
             *buffer = (char *) Mem_Malloc(
@@ -1781,7 +1784,7 @@ static void get_path_info(
 
         if (inKey == eSW_InSoil) {
             SW_MPI_Bcast(
-                MPI_UNSIGNED_LONG,
+                SW_MPI_SIZE_T,
                 pathInputs->numSoilVarLyrs,
                 numVarsInKey[inKey],
                 SW_MPI_ROOT,
@@ -2134,11 +2137,7 @@ static void open_output_files(
     SW_MPI_Bcast(MPI_UNSIGNED, &pathOutputs->numOutFiles, 1, SW_MPI_ROOT, comm);
     ForEachOutPeriod(pd) {
         SW_MPI_Bcast(
-            MPI_UNSIGNED_LONG,
-            pathOutputs->outTimeSizes[pd],
-            2,
-            SW_MPI_ROOT,
-            comm
+            SW_MPI_SIZE_T, pathOutputs->outTimeSizes[pd], 2, SW_MPI_ROOT, comm
         );
     }
 
@@ -2814,7 +2813,7 @@ static void get_contiguous_counts(
     // or X (sites)
     size_t prevYX = suids[0][0]; // NOLINT(clang-analyzer-core.NullDereference)
     size_t prevX = suids[0][1];  // NOLINT(clang-analyzer-core.NullDereference)
-    int writeIndex = 0;
+    size_t writeIndex = 0;
     size_t suidIndex;
     int numContVals = 1;
     size_t *suid;
@@ -2978,7 +2977,7 @@ static void spread_inputs(
             sendSize = sendInputs[comp + 1];
 
             SW_MPI_Send(
-                MPI_UNSIGNED_LONG, &sendSize, 1, destRank, swTRUE, 0, &nullReq
+                SW_MPI_SIZE_T, &sendSize, 1, destRank, swTRUE, 0, &nullReq
             );
             extraSetupCheck = (Bool) (prevSendSum > 0 && !finalize);
 
@@ -3517,12 +3516,7 @@ static Bool write_outputs(
     );
 
     SW_Allreduce(
-        MPI_UNSIGNED_LONG,
-        &numWrites,
-        &maxNumWrites,
-        1,
-        MPI_MAX,
-        desig->groupComm
+        SW_MPI_SIZE_T, &numWrites, &maxNumWrites, 1, MPI_MAX, desig->groupComm
     );
 
     for (write = numWrites; write < maxNumWrites; write++) {
@@ -4022,11 +4016,10 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
          MPI_DATATYPE_NULL,
          MPI_DATATYPE_NULL,
          MPI_DATATYPE_NULL}, /* SW_RUN_INPUTS */
-        {MPI_INT, MPI_INT, MPI_INT, MPI_UNSIGNED_LONG, MPI_UNSIGNED
+        {MPI_INT, MPI_INT, MPI_INT, SW_MPI_SIZE_T, MPI_UNSIGNED
         },                                                /* SW_MPI_DESIGNATE */
         {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE}, /* SW_MPI_WallTime */
-        {MPI_INT, MPI_INT, MPI_UNSIGNED_LONG, MPI_INT, MPI_INT
-        }, /* SW_OUT_DOM */
+        {MPI_INT, MPI_INT, SW_MPI_SIZE_T, MPI_INT, MPI_INT}, /* SW_OUT_DOM */
         {MPI_CHAR,
          MPI_CHAR,
          MPI_UNSIGNED,
@@ -4049,8 +4042,8 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
         {MPI_CHAR,
          MPI_CHAR,
          MPI_INT,
-         MPI_UNSIGNED_LONG,
-         MPI_UNSIGNED_LONG,
+         SW_MPI_SIZE_T,
+         SW_MPI_SIZE_T,
          MPI_INT,
          MPI_INT}, /* LOG_INFO */
         {MPI_DOUBLE,
@@ -5154,7 +5147,7 @@ void SW_MPI_report_log(
             if (destProcJob == SW_MPI_PROC_COMP && !failedSetup) {
                 SW_MPI_Recv(wtType, &rankWT, 1, destRank, swTRUE, 0, &req);
                 SW_MPI_Recv(
-                    MPI_UNSIGNED_LONG,
+                    SW_MPI_SIZE_T,
                     &rankWT.nTimedRuns,
                     1,
                     destRank,
@@ -5163,7 +5156,7 @@ void SW_MPI_report_log(
                     &req
                 );
                 SW_MPI_Recv(
-                    MPI_UNSIGNED_LONG,
+                    SW_MPI_SIZE_T,
                     &rankWT.nUntimedRuns,
                     1,
                     destRank,
@@ -5225,7 +5218,7 @@ void SW_MPI_report_log(
                a floating-point exception */
             SW_MPI_Send(wtType, SW_WallTime, 1, SW_MPI_ROOT, swTRUE, 0, &req);
             SW_MPI_Send(
-                MPI_UNSIGNED_LONG,
+                SW_MPI_SIZE_T,
                 &SW_WallTime->nTimedRuns,
                 1,
                 SW_MPI_ROOT,
@@ -5234,7 +5227,7 @@ void SW_MPI_report_log(
                 &req
             );
             SW_MPI_Send(
-                MPI_UNSIGNED_LONG,
+                SW_MPI_SIZE_T,
                 &SW_WallTime->nUntimedRuns,
                 1,
                 SW_MPI_ROOT,
@@ -5979,7 +5972,7 @@ void SW_MPI_get_inputs(
     }
 
     SW_MPI_Recv(
-        MPI_UNSIGNED_LONG, numInputs, 1, desig->ioRank, swTRUE, 0, &nullReq
+        SW_MPI_SIZE_T, numInputs, 1, desig->ioRank, swTRUE, 0, &nullReq
     );
 
     for (input = 0; input < *numInputs; input++) {
@@ -6108,7 +6101,7 @@ void SW_MPI_handle_IO(
     );
 
     SW_Allreduce(
-        MPI_UNSIGNED_LONG,
+        SW_MPI_SIZE_T,
         &numSuidsTot,
         &maxSuidsInOutput,
         1,
@@ -6160,7 +6153,7 @@ void SW_MPI_handle_IO(
     }
 
     SW_Allreduce(
-        MPI_UNSIGNED_LONG,
+        SW_MPI_SIZE_T,
         &maxWriteInst,
         &maxWritesGroup,
         1,
