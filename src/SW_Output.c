@@ -43,7 +43,7 @@ History:
 #include "include/SW_VegEstab.h"    // for echo_VegEstab
 #include "include/SW_VegProd.h"     // for echo_VegProd
 #include "include/Times.h"          // for Time_days_in_month, WKDAYS
-#include <stdio.h>                  // for snprintf, fprintf, printf
+#include <stdio.h>                  // for snprintf, fprintf
 #include <string.h>                 // for strcmp, memccpy, memset
 
 // Array-based output declarations:
@@ -3932,13 +3932,13 @@ printOutput:
         reportFullBuffer(LOGWARN, LogInfo);
     }
 
-    printf("%s\n", errstr);
+    sw_printf("%s\n", errstr);
 }
 
 void echo_all_inputs(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 
     if (!sw->VegEstab.use) {
-        printf("Establishment not used.\n");
+        sw_printf("Establishment not used.\n");
     }
 
     echo_inputs(&sw->Site, &sw->Model);

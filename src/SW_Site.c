@@ -120,7 +120,7 @@
 #include "include/SW_VegProd.h"     // for key2veg, get_critical_rank, sum_...
 #include <limits.h>                 // for UINT_MAX
 #include <math.h>                   // for fmod
-#include <stdio.h>                  // for printf, sscanf, FILE, NULL, stdout
+#include <stdio.h>                  // for sw_printf, sscanf, FILE, NULL, stdout
 #include <stdlib.h>                 // for free, strod, strtol
 #include <string.h>                 // for memset
 
@@ -3143,126 +3143,136 @@ void echo_inputs(SW_SITE *SW_Site, SW_MODEL *SW_Model) {
     /* =================================================== */
     LyrIndex i;
     LOG_INFO LogInfo;
-    sw_init_logs(stdout, &LogInfo);
+    FILE *logInitPtr = NULL;
 
-    printf("\n\n=====================================================\n"
-           "Site Related Parameters:\n"
-           "---------------------\n");
-    printf("  Site File: 'siteparam.in'\n");
-    printf(
+#if !defined(RSOILWAT)
+    logInitPtr = stdout;
+#endif
+
+    sw_init_logs(logInitPtr, &LogInfo);
+
+    sw_printf("\n\n=====================================================\n"
+              "Site Related Parameters:\n"
+              "---------------------\n");
+    sw_printf("  Site File: 'siteparam.in'\n");
+    sw_printf(
         "  Reset SWC values each year: %s\n",
         (SW_Site->reset_yr) ? "swTRUE" : "swFALSE"
     );
-    printf(
+    sw_printf(
         "  Use deep drainage reservoir: %s\n",
         (SW_Site->deepdrain) ? "swTRUE" : "swFALSE"
     );
-    printf("  Slow Drain Coefficient: %5.4f\n", SW_Site->slow_drain_coeff);
-    printf("  PET Scale: %5.4f\n", SW_Site->pet_scale);
-    printf(
+    sw_printf("  Slow Drain Coefficient: %5.4f\n", SW_Site->slow_drain_coeff);
+    sw_printf("  PET Scale: %5.4f\n", SW_Site->pet_scale);
+    sw_printf(
         "  Runoff: proportion of surface water lost: %5.4f\n",
         SW_Site->percentRunoff
     );
-    printf(
+    sw_printf(
         "  Runon: proportion of new surface water gained: %5.4f\n",
         SW_Site->percentRunon
     );
-    printf("  Longitude (degree): %4.2f\n", SW_Model->longitude * rad_to_deg);
-    printf("  Latitude (degree): %4.2f\n", SW_Model->latitude * rad_to_deg);
-    printf("  Altitude (m a.s.l.): %4.2f \n", SW_Model->elevation);
-    printf("  Slope (degree): %4.2f\n", SW_Model->slope * rad_to_deg);
-    printf("  Aspect (degree): %4.2f\n", SW_Model->aspect * rad_to_deg);
+    sw_printf(
+        "  Longitude (degree): %4.2f\n", SW_Model->longitude * rad_to_deg
+    );
+    sw_printf("  Latitude (degree): %4.2f\n", SW_Model->latitude * rad_to_deg);
+    sw_printf("  Altitude (m a.s.l.): %4.2f \n", SW_Model->elevation);
+    sw_printf("  Slope (degree): %4.2f\n", SW_Model->slope * rad_to_deg);
+    sw_printf("  Aspect (degree): %4.2f\n", SW_Model->aspect * rad_to_deg);
 
-    printf(
+    sw_printf(
         "\nSnow simulation parameters (SWAT2K model):\n----------------------\n"
     );
-    printf(
+    sw_printf(
         "  Avg. air temp below which ppt is snow ( C): %5.4f\n",
         SW_Site->TminAccu2
     );
-    printf(
+    sw_printf(
         "  Snow temperature at which snow melt starts ( C): %5.4f\n",
         SW_Site->TmaxCrit
     );
-    printf(
+    sw_printf(
         "  Relative contribution of avg. air temperature to todays snow "
         "temperture vs. yesterday's snow temperature (0-1): %5.4f\n",
         SW_Site->lambdasnow
     );
-    printf(
+    sw_printf(
         "  Minimum snow melt rate on winter solstice (cm/day/C): %5.4f\n",
         SW_Site->RmeltMin
     );
-    printf(
+    sw_printf(
         "  Maximum snow melt rate on summer solstice (cm/day/C): %5.4f\n",
         SW_Site->RmeltMax
     );
 
-    printf("\nSoil Temperature Constants:\n----------------------\n");
-    printf("  Biomass Limiter constant: %5.4f\n", SW_Site->bmLimiter);
-    printf("  T1Param1: %5.4f\n", SW_Site->t1Param1);
-    printf("  T1Param2: %5.4f\n", SW_Site->t1Param2);
-    printf("  T1Param3: %5.4f\n", SW_Site->t1Param3);
-    printf("  csParam1: %5.4f\n", SW_Site->csParam1);
-    printf("  csParam2: %5.4f\n", SW_Site->csParam2);
-    printf("  shParam: %5.4f\n", SW_Site->shParam);
-    printf("  Tsoil_constant: %5.4f\n", SW_Site->Tsoil_constant);
-    printf("  deltaX: %5.4f\n", SW_Site->stDeltaX);
-    printf("  max depth: %5.4f\n", SW_Site->stMaxDepth);
-    printf(
+    sw_printf("\nSoil Temperature Constants:\n----------------------\n");
+    sw_printf("  Biomass Limiter constant: %5.4f\n", SW_Site->bmLimiter);
+    sw_printf("  T1Param1: %5.4f\n", SW_Site->t1Param1);
+    sw_printf("  T1Param2: %5.4f\n", SW_Site->t1Param2);
+    sw_printf("  T1Param3: %5.4f\n", SW_Site->t1Param3);
+    sw_printf("  csParam1: %5.4f\n", SW_Site->csParam1);
+    sw_printf("  csParam2: %5.4f\n", SW_Site->csParam2);
+    sw_printf("  shParam: %5.4f\n", SW_Site->shParam);
+    sw_printf("  Tsoil_constant: %5.4f\n", SW_Site->Tsoil_constant);
+    sw_printf("  deltaX: %5.4f\n", SW_Site->stDeltaX);
+    sw_printf("  max depth: %5.4f\n", SW_Site->stMaxDepth);
+    sw_printf(
         "  Make soil temperature calculations: %s\n",
         (SW_Site->use_soil_temp) ? "swTRUE" : "swFALSE"
     );
-    printf(
+    sw_printf(
         "  Number of regressions for the soil temperature function: %d\n",
         SW_Site->stNRGR
     );
 
-    printf("\nLayer Related Values:\n----------------------\n");
-    printf("  Soils File: 'soils.in'\n");
-    printf("  Number of soil layers: %d\n", SW_Site->n_layers);
-    printf("  Number of evaporation layers: %d\n", SW_Site->n_evap_lyrs);
-    printf(
+    sw_printf("\nLayer Related Values:\n----------------------\n");
+    sw_printf("  Soils File: 'soils.in'\n");
+    sw_printf("  Number of soil layers: %d\n", SW_Site->n_layers);
+    sw_printf("  Number of evaporation layers: %d\n", SW_Site->n_evap_lyrs);
+    sw_printf(
         "  Number of forb transpiration layers: %d\n",
         SW_Site->n_transp_lyrs[SW_FORBS]
     );
-    printf(
+    sw_printf(
         "  Number of tree transpiration layers: %d\n",
         SW_Site->n_transp_lyrs[SW_TREES]
     );
-    printf(
+    sw_printf(
         "  Number of shrub transpiration layers: %d\n",
         SW_Site->n_transp_lyrs[SW_SHRUB]
     );
-    printf(
+    sw_printf(
         "  Number of grass transpiration layers: %d\n",
         SW_Site->n_transp_lyrs[SW_GRASS]
     );
-    printf("  Number of transpiration regions: %d\n", SW_Site->n_transp_rgn);
+    sw_printf("  Number of transpiration regions: %d\n", SW_Site->n_transp_rgn);
 
-    printf("\nLayer Specific Values:\n----------------------\n");
-    printf("\n  Layer information on a per centimeter depth basis:\n");
-    printf(
+    sw_printf("\nLayer Specific Values:\n----------------------\n");
+    sw_printf("\n  Layer information on a per centimeter depth basis:\n");
+    sw_printf(
         "  Lyr Width   BulkD 	%%Gravel    FieldC   WiltPt   %%Sand  %%Clay "
         "VWC at Forb-critSWP 	VWC at Tree-critSWP	VWC at "
         "Shrub-critSWP	VWC at Grass-critSWP	EvCo   	TrCo_Forb   TrCo_Tree  "
         "TrCo_Shrub  TrCo_Grass   TrRgn_Forb    TrRgn_Tree   TrRgn_Shrub   "
         "TrRgn_Grass   Wet     Min      Init     Saturated    Impermeability\n"
     );
-    printf(
+    sw_printf(
         "       (cm)   (g/cm^3)  (prop)    (cm/cm)  (cm/cm)   (prop) (prop)  "
         "(cm/cm)			(cm/cm)                (cm/cm)         "
         "   		(cm/cm)         (prop)    (prop)      (prop)     "
         "(prop)    (prop)        (int)           (int) 	      	(int) 	    "
         "(int) 	    (cm/cm)  (cm/cm)  (cm/cm)  (cm/cm)      (frac)\n"
     );
-    printf("  --- -----   ------    ------     ------   ------   -----  ------ "
-           "  ------                	-------			------         "
-           "   		------          ------    ------      ------      "
-           "------   ------       ------   	 -----	        -----       "
-           "-----   	 ----     ----     ----    ----         ----\n");
+    sw_printf(
+        "  --- -----   ------    ------     ------   ------   -----  ------ "
+        "  ------                	-------			------         "
+        "   		------          ------    ------      ------      "
+        "------   ------       ------   	 -----	        -----       "
+        "-----   	 ----     ----     ----    ----         ----\n"
+    );
     ForEachSoilLayer(i, SW_Site->n_layers) {
-        printf(
+        sw_printf(
             "  %3d %5.1f %9.5f %6.2f %8.5f %8.5f %6.2f %6.2f %6.2f %6.2f %6.2f "
             "%6.2f %9.2f %9.2f %9.2f %9.2f %9.2f %10d %10d %15d %15d %15.4f "
             "%9.4f %9.4f %9.4f %9.4f\n",
@@ -3294,20 +3304,22 @@ void echo_inputs(SW_SITE *SW_Site, SW_MODEL *SW_Model) {
             SW_Site->soils.impermeability[i]
         );
     }
-    printf("\n  Actual per-layer values:\n");
-    printf("  Lyr Width  BulkD	 %%Gravel   FieldC   WiltPt %%Sand  "
-           "%%Clay	SWC at Forb-critSWP     SWC at Tree-critSWP	SWC at "
-           "Shrub-critSWP	SWC at Grass-critSWP	 Wet    Min      Init  "
-           "Saturated	SoilTemp\n");
-    printf("       (cm)  (g/cm^3)	(prop)    (cm)     (cm)  (prop) (prop) "
-           "  (cm)    	(cm)        		(cm)            (cm)           "
-           " (cm)   (cm)      (cm)     (cm)		(celcius)\n");
-    printf("  --- -----  -------	------   ------   ------ ------ ------ "
-           "  ------        	------            	------          ----   "
-           "		----     ----     ----    ----		----\n");
+    sw_printf("\n  Actual per-layer values:\n");
+    sw_printf("  Lyr Width  BulkD	 %%Gravel   FieldC   WiltPt %%Sand  "
+              "%%Clay	SWC at Forb-critSWP     SWC at Tree-critSWP	SWC at "
+              "Shrub-critSWP	SWC at Grass-critSWP	 Wet    Min      Init  "
+              "Saturated	SoilTemp\n");
+    sw_printf(
+        "       (cm)  (g/cm^3)	(prop)    (cm)     (cm)  (prop) (prop) "
+        "  (cm)    	(cm)        		(cm)            (cm)           "
+        " (cm)   (cm)      (cm)     (cm)		(celcius)\n"
+    );
+    sw_printf("  --- -----  -------	------   ------   ------ ------ ------ "
+              "  ------        	------            	------          ----   "
+              "		----     ----     ----    ----		----\n");
 
     ForEachSoilLayer(i, SW_Site->n_layers) {
-        printf(
+        sw_printf(
             "  %3d %5.1f %9.5f %6.2f %8.5f %8.5f %6.2f %6.2f %7.4f %7.4f %7.4f "
             "%7.4f %7.4f %7.4f %8.4f %7.4f %5.4f\n",
             i + 1,
@@ -3330,19 +3342,25 @@ void echo_inputs(SW_SITE *SW_Site, SW_MODEL *SW_Model) {
         );
     }
 
-    printf("\n  Water Potential values:\n");
-    printf("  Lyr       FieldCap         WiltPt            Forb-critSWP     "
-           "Tree-critSWP     Shrub-critSWP    Grass-critSWP    Wet            "
-           "Min            Init\n");
-    printf("            (bars)           (bars)            (bars)           "
-           "(bars)           (bars)           (bars)           (bars)         "
-           "(bars)         (bars)\n");
-    printf("  ---       -----------      ------------      -----------      "
-           "-----------      -----------      -----------      -----------    "
-           "-----------    --------------    --------------\n");
+    sw_printf("\n  Water Potential values:\n");
+    sw_printf(
+        "  Lyr       FieldCap         WiltPt            Forb-critSWP     "
+        "Tree-critSWP     Shrub-critSWP    Grass-critSWP    Wet            "
+        "Min            Init\n"
+    );
+    sw_printf(
+        "            (bars)           (bars)            (bars)           "
+        "(bars)           (bars)           (bars)           (bars)         "
+        "(bars)         (bars)\n"
+    );
+    sw_printf(
+        "  ---       -----------      ------------      -----------      "
+        "-----------      -----------      -----------      -----------    "
+        "-----------    --------------    --------------\n"
+    );
 
     ForEachSoilLayer(i, SW_Site->n_layers) {
-        printf(
+        sw_printf(
             "  %3d   %15.4f   %15.4f  %15.4f %15.4f  %15.4f  %15.4f  %15.4f   "
             "%15.4f   %15.4f\n",
             i + 1,
@@ -3370,20 +3388,22 @@ void echo_inputs(SW_SITE *SW_Site, SW_MODEL *SW_Model) {
         );
     }
 
-    printf("\nSoil Water Retention Curve:\n---------------------------\n");
-    printf(
+    sw_printf("\nSoil Water Retention Curve:\n---------------------------\n");
+    sw_printf(
         "  SWRC type: %d (%s)\n",
         SW_Site->site_swrc_type,
         SW_Site->site_swrc_name
     );
-    printf(
+    sw_printf(
         "  PTF type: %d (%s)\n", SW_Site->site_ptf_type, SW_Site->site_ptf_name
     );
 
-    printf("  Lyr     Param1     Param2     Param3     Param4     Param5     "
-           "Param6\n");
+    sw_printf(
+        "  Lyr     Param1     Param2     Param3     Param4     Param5     "
+        "Param6\n"
+    );
     ForEachSoilLayer(i, SW_Site->n_layers) {
-        printf(
+        sw_printf(
             "  %3d%11.4f%11.4f%11.4f%11.4f%11.4f%11.4f\n",
             i + 1,
             SW_Site->swrcp[i][0],
@@ -3396,5 +3416,5 @@ void echo_inputs(SW_SITE *SW_Site, SW_MODEL *SW_Model) {
     }
 
 
-    printf("\n------------ End of Site Parameters ------------------\n");
+    sw_printf("\n------------ End of Site Parameters ------------------\n");
 }
