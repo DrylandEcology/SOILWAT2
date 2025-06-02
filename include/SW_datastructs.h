@@ -1073,12 +1073,17 @@ typedef struct {
 } SW_SOILWAT_INPUTS;
 
 typedef struct {
+    /** File to which warnings and error messages are written.
+
+    rSOILWAT2 writes warnings and error messages to the console; thus
+    RSOILWAT does not use \ref logfp other than checking
+    if it's NULL or not NULL (where NULL represents silent mode). */
+    FILE *logfp;
+
 #if defined(SWMPI)
     FILE **logfps; /**< Store file pointers to all I/O process ranks */
     int numFiles;
 #endif
-    FILE *logfp;
-    // This is the pointer to the log file.
 
     char errorMsg[MAX_LOG_SIZE], // Holds the message for a fatal error
         warningMsgs[MAX_MSGS][MAX_LOG_SIZE]; // Holds up to MAX_MSGS warning

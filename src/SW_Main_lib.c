@@ -29,7 +29,7 @@
 #include <string.h>                 // for strncmp
 
 #ifdef RSOILWAT
-#include <R.h> // for error(), and warning() from <R_ext/Error.h>
+#include <R.h> // for Rf_error(), and Rf_warning() from <R_ext/Error.h>
 #endif
 
 #if defined(SWMPI)
@@ -355,7 +355,7 @@ for rSOILWAT2, then issue an error with the error message.
 void sw_fail_on_error(LOG_INFO *LogInfo) {
 #ifdef RSOILWAT
     if (LogInfo->stopRun) {
-        error("%s", LogInfo->errorMsg);
+        Rf_error("%s", LogInfo->errorMsg);
     }
 
 #else
@@ -431,11 +431,11 @@ void sw_write_warnings(const char *header, LOG_INFO *LogInfo) {
 
     if (!QuietMode) {
         for (warnMsgNum = 0; warnMsgNum < warningUpperBound; warnMsgNum++) {
-            warning("%s%s", header, LogInfo->warningMsgs[warnMsgNum]);
+            Rf_warning("%s%s", header, LogInfo->warningMsgs[warnMsgNum]);
         }
 
         if (tooManyWarns) {
-            warning("%s%s", header, tooManyWarnsStr);
+            Rf_warning("%s%s", header, tooManyWarnsStr);
         }
     }
 #else
@@ -484,6 +484,7 @@ void sw_write_warnings(const char *header, LOG_INFO *LogInfo) {
 #endif
 }
 
+#if !defined(RSOILWAT)
 /**
 @brief Close logfile and notify user
 
@@ -733,3 +734,4 @@ void sw_finalize_program(
     SW_MPI_finalize(procJob, LogInfo);
 #endif
 }
+#endif // !defined(RSOILWAT)

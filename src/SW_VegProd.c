@@ -100,7 +100,7 @@ vegtype variable forb and forb.cov.fCover
 #include "include/SW_Weather.h" // for deallocateClimateStructs, alloca...
 #include "include/Times.h"      // for interpolate_monthlyValues, Jan, Dec
 #include <math.h>               // for log, pow
-#include <stdio.h>              // for sscanf, printf, NULL, FILE
+#include <stdio.h>              // for sscanf, NULL, FILE
 #include <stdlib.h>             // for free
 #include <string.h>             // for memset
 
@@ -1001,11 +1001,11 @@ void echo_VegProd(
 
     int k;
 
-    printf("\n==============================================\n"
-           "Vegetation Production Parameters\n");
+    sw_printf("\n==============================================\n"
+              "Vegetation Production Parameters\n");
 
     ForEachVegType(k) {
-        printf(
+        sw_printf(
             "%s component\t= %1.2f\n"
             "\tAlbedo\t= %1.2f\n"
             "\tHydraulic redistribution flag\t= %d",
@@ -1016,7 +1016,7 @@ void echo_VegProd(
         );
     }
 
-    printf(
+    sw_printf(
         "Bare Ground component\t= %1.2f\n"
         "\tAlbedo\t= %1.2f\n",
         SW_VegProdRunIn->bare_cov.fCover,
