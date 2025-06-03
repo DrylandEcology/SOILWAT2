@@ -147,7 +147,6 @@ static Bool dummy_prog_out_writes(
     size_t numWrites = 0;
     size_t maxNumWrites = 0;
     Bool succFlagBool[1] = {swTRUE};
-    signed char succFlagChar[1] = {swTRUE};
 
     Bool exitEarly = swFALSE;
 
@@ -190,7 +189,7 @@ static Bool dummy_prog_out_writes(
             progVarID,
             starts[write],
             counts[write],
-            succFlagChar,
+            NULL,
             LogInfo
         );
         if (SW_MPI_setup_fail(LogInfo->stopRun, desig->groupComm)) {
@@ -3540,15 +3539,6 @@ static Bool write_outputs(
     );
 
     for (write = numWrites; write < maxNumWrites; write++) {
-        // Do not repeatedly set the starts/counts values to 0 if
-        // they are already zero - useful at larger sizes N_SUID_ASSIGN
-        // and compute process sizes
-        if (starts[write][0] == 0 && starts[write][1] == 0 &&
-            counts[write][0] == 0 && counts[write][1] == 0) {
-
-            break;
-        }
-
         starts[write][0] = starts[write][1] = 0;
         counts[write][0] = counts[write][1] = 0;
     }
@@ -3590,7 +3580,7 @@ static Bool write_outputs(
             progVarID,
             starts[write],
             counts[write],
-            succMark,
+            (write < numWrites) ? succMark : NULL,
             LogInfo
         );
         if (SW_MPI_setup_fail(LogInfo->stopRun, desig->groupComm)) {

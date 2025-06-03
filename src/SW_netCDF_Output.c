@@ -2604,7 +2604,7 @@ void SW_NCOUT_write_output(
                            then variables
                         */
 #if defined(SWMPI)
-                        if (!succFlags[numSiteSum] || numWritesProc <= write) {
+                        if (numWritesProc <= write || !succFlags[numSiteSum]) {
                             if (!succFlags[numSiteSum] &&
                                 (numWritesProc > 1 || numSites > 1)) {
 
@@ -2622,7 +2622,7 @@ void SW_NCOUT_write_output(
                                 &varID,
                                 currFileID,
                                 NULL,
-                                &p_OUTValPtr[0],
+                                NULL,
                                 start,
                                 count,
                                 "double",
