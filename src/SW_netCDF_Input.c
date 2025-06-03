@@ -5614,7 +5614,7 @@ static void read_miss_vals(
     void *valPtr = valPtrs[typeIndex];
     double tempMaxMissVal = SW_MISSING;
 
-    if (attType < NC_BYTE || attType == NC_CHAR || attType > NC_DOUBLE) {
+    if (attType < NC_BYTE || attType == NC_CHAR || attType > NC_UINT) {
         LogError(
             LogInfo,
             LOGERROR,
