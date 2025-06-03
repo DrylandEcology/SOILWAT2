@@ -190,7 +190,7 @@ void SW_MPI_root_find_active_sites(
 void SW_MPI_get_activated_tsuids(
     SW_DOMAIN *SW_Domain,
     size_t **activeSuids,
-    size_t ****activeTSuids,
+    size_t ***activeTSuids,
     size_t numActiveSites,
     LOG_INFO *LogInfo
 );

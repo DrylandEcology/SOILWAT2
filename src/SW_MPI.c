@@ -225,7 +225,7 @@ static void deallocProcHelpers(
     int numNodes,
     SW_MPI_DESIGNATE ***designations,
     size_t ***activeSuids,
-    size_t ****activeTSuids,
+    size_t ***activeTSuids,
     char ***nodeNames,
     int **numProcsInNode,
     int **numMaxProcsInNode,
@@ -273,16 +273,16 @@ static void deallocProcHelpers(
     }
 
     ForEachNCInKey(inKey) {
-        if (!isnull((*activeTSuids)[inKey])) {
+        if (!isnull(activeTSuids[inKey])) {
             for (pair = 0; pair < numActiveSites; pair++) {
-                if (!isnull((*activeTSuids)[inKey][pair])) {
-                    free((void *) (*activeTSuids)[inKey][pair]);
-                    (*activeTSuids)[inKey][pair] = NULL;
+                if (!isnull(activeTSuids[inKey][pair])) {
+                    free((void *) activeTSuids[inKey][pair]);
+                    activeTSuids[inKey][pair] = NULL;
                 }
             }
 
-            free((void *) (*activeTSuids)[inKey]);
-            (*activeTSuids)[inKey] = NULL;
+            free((void *) activeTSuids[inKey]);
+            activeTSuids[inKey] = NULL;
         }
     }
 }
@@ -5388,7 +5388,7 @@ freeMem:
 void SW_MPI_get_activated_tsuids(
     SW_DOMAIN *SW_Domain,
     size_t **activeSuids,
-    size_t ****activeTSuids,
+    size_t ***activeTSuids,
     size_t numActiveSites,
     LOG_INFO *LogInfo
 ) {
@@ -5411,15 +5411,8 @@ void SW_MPI_get_activated_tsuids(
     size_t *domSuid;
     size_t offset;
 
-    (*activeTSuids) = (size_t ***) Mem_Malloc(
-        sizeof(size_t **) * numPosKeys, "SW_MPI_get_activated_tsuids()", LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return;
-    }
-
     for (index = 0; index < (int) numPosKeys; index++) {
-        (*activeTSuids)[index] = NULL;
+        activeTSuids[index] = NULL;
     }
 
     ForEachNCInKey(inKey) {
@@ -5478,14 +5471,14 @@ void SW_MPI_get_activated_tsuids(
             }
         }
 
-        allocateActiveTSuids(numActiveSites, &(*activeTSuids)[inKey], LogInfo);
+        allocateActiveTSuids(numActiveSites, &activeTSuids[inKey], LogInfo);
         if (LogInfo->stopRun) {
             goto freeMem;
         }
 
         for (site = 0; site < (int) numActiveSites; site++) {
             domSuid = activeSuids[site];
-            indexCell = (*activeTSuids)[inKey][site];
+            indexCell = activeTSuids[inKey][site];
 
             /*
                 Translate a domain suid for a site into a translated suid
@@ -5540,7 +5533,7 @@ void SW_MPI_process_types(
     int rank,
     LOG_INFO *LogInfo
 ) {
-    size_t ***activeTSuids = NULL;
+    size_t **activeTSuids[SW_NINKEYSNC] = {NULL};
     size_t **activeSuids = NULL;
     size_t numActiveSites = 0;
     MPI_Request nullReq = MPI_REQUEST_NULL;
@@ -5626,7 +5619,7 @@ void SW_MPI_process_types(
         }
 
         SW_MPI_get_activated_tsuids(
-            SW_Domain, activeSuids, &activeTSuids, numActiveSites, LogInfo
+            SW_Domain, activeSuids, activeTSuids, numActiveSites, LogInfo
         );
         if (LogInfo->stopRun) {
             goto reportError;
@@ -5763,7 +5756,7 @@ freeMem:
         numNodes,
         &designations,
         &activeSuids,
-        &activeTSuids,
+        activeTSuids,
         &nodeNames,
         &numProcsInNode,
         &numMaxProcsInNode,
