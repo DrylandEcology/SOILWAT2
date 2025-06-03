@@ -235,6 +235,7 @@ static void deallocProcHelpers(
     const int num1D = 2;
     int var;
     size_t pair;
+    int inKey;
 
     size_t numValsIn2D[] = {
         numActiveSites, (size_t) maxNodes, (size_t) maxNodes, (size_t) numNodes
@@ -271,9 +272,18 @@ static void deallocProcHelpers(
         }
     }
 
-    if (!isnull(*activeTSuids)) {
-        free((void *) *activeTSuids);
-        *activeTSuids = NULL;
+    ForEachNCInKey(inKey) {
+        if (!isnull((*activeTSuids)[inKey])) {
+            for (pair = 0; pair < numActiveSites; pair++) {
+                if (!isnull((*activeTSuids)[inKey][pair])) {
+                    free((void *) (*activeTSuids)[inKey][pair]);
+                    (*activeTSuids)[inKey][pair] = NULL;
+                }
+            }
+
+            free((void *) (*activeTSuids)[inKey]);
+            (*activeTSuids)[inKey] = NULL;
+        }
     }
 }
 
@@ -5748,7 +5758,7 @@ checkForError:
 
 freeMem:
     deallocProcHelpers(
-        desig->nSuids,
+        numActiveSites,
         maxNodes,
         numNodes,
         &designations,
