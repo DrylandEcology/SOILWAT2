@@ -185,12 +185,7 @@ static Bool dummy_prog_out_writes(
 
     for (write = 0; write < maxNumWrites; write++) {
         SW_NCIN_set_progress(
-            progFileID,
-            progVarID,
-            starts[write],
-            counts[write],
-            NULL,
-            LogInfo
+            progFileID, progVarID, starts[write], counts[write], NULL, LogInfo
         );
         if (SW_MPI_setup_fail(LogInfo->stopRun, desig->groupComm)) {
             exitEarly = swTRUE;
