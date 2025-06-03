@@ -113,7 +113,7 @@ static void report_sim_start(SW_DOMAIN *SW_Domain, int rank) {
         snprintf(
             reportStr,
             MAX_FILENAMESIZE,
-            "is running simulations across %d compute %s and "
+            "is running simulations across the domain using %d compute %s and "
             "%d I/O %s...",
             nCompProcs,
             (nCompProcs > 1) ? "processes" : "process",
@@ -465,10 +465,10 @@ void SW_CTL_RunSimSet(
     size_t suid;
     size_t nSims = 0;
     size_t ncSuid[2]; // 2 -> [y, x] or [s, 0]
-    /* tag_suid is 62:
-      21 character for "(Suid indices = [, ])" + 40 character for 2 *
+    /* tag_suid is 55:
+      14 character for "(suid = [, ]) " + 40 character for 2 *
       ULONG_MAX + '\0' */
-    char tag_suid[62];
+    char tag_suid[55];
 
     tag_suid[0] = '\0';
     WallTimeSpec tss;
@@ -711,14 +711,13 @@ checkStatus:
                 // Write the error with the suid indices to have a universal
                 // identifier; Put in the order of [x, y] or s
                 if (sDom) {
-                    (void) snprintf(
-                        tag_suid, 62, "(Suid index = %lu) ", ncSuid[0] + 1
-                    );
+                    (void
+                    ) snprintf(tag_suid, 55, "(suid = %lu) ", ncSuid[0] + 1);
                 } else {
                     (void) snprintf(
                         tag_suid,
-                        62,
-                        "(Suid indices = [%lu, %lu])",
+                        55,
+                        "(suid = [%lu, %lu]) ",
                         ncSuid[1] + 1,
                         ncSuid[0] + 1
                     );
