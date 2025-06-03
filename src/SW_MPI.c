@@ -2403,8 +2403,6 @@ static void alloc_inputs(
     if the simulation for a suid was successfully run
 @param[out] succMark Buffer to hold write values to progress file that
     correspond to the values within `succFlags`
-@param[out] logs A list of LOG_INFO instances that will be used for
-    getting log information from compute processes
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void alloc_IO_info(
@@ -2424,7 +2422,6 @@ static void alloc_IO_info(
     size_t **sendInputs,
     Bool **succFlags,
     signed char **succMark,
-    LOG_INFO **logs,
     LOG_INFO *LogInfo
 ) {
     size_t suid;
@@ -2587,10 +2584,6 @@ static void alloc_IO_info(
         }
     }
 
-    *logs = (LOG_INFO *) Mem_Malloc(
-        sizeof(LOG_INFO) * numSuids, "alloc_IO_info()", LogInfo
-    );
-
     SW_OUT_construct_outarray(
         (size_t) (N_SUID_ASSIGN * nCompProcs * N_ITER_BEFORE_OUT),
         OutDom,
@@ -2645,8 +2638,6 @@ static void alloc_IO_info(
     if the simulation for a suid was successfully run
 @param[out] succMark Buffer to hold write values to progress file that
     correspond to the values within `succFlags`
-@param[out] logs A list of LOG_INFO instances that will be used for
-    getting log information from compute processes
 */
 static void dealloc_IO_info(
     size_t numSuids,
@@ -2667,8 +2658,7 @@ static void dealloc_IO_info(
     double **tempWeather,
     SW_SOIL_RUN_INPUTS **tempSoils,
     Bool **succFlags,
-    signed char **succMark,
-    LOG_INFO **logs
+    signed char **succMark
 ) {
     int inKey;
     size_t ***deallocStartCount[2] = {NULL};
@@ -2677,7 +2667,6 @@ static void dealloc_IO_info(
     size_t suid;
     void **dealloc1D[] = {
         (void **) sendInputs,
-        (void **) logs,
         (void **) elevations,
         (void **) tempMonthlyVals,
         (void **) tempSilt,
@@ -2687,7 +2676,7 @@ static void dealloc_IO_info(
         (void **) succFlags,
         (void **) succMark
     };
-    const size_t numDealloc1D = 10;
+    const size_t numDealloc1D = 9;
 
     ForEachNCInKey(inKey) {
         deallocStartCount[0] = &starts[inKey];
@@ -3277,8 +3266,6 @@ Handle the different request types accordingly
     assigning a process to a job
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
-@param[in] logs A list of LOG_INFO instances that will be used for
-    getting log information from compute processes
 @param[in] logfps A list of pointers to open logfiles respective to
     the I/O process and all compute processes it controls
 @param[out] succFlags Accumulator array of flags specifying how respective
@@ -3297,7 +3284,6 @@ static void get_comp_results(
     MPI_Datatype logType,
     SW_MPI_DESIGNATE *desig,
     SW_OUT_DOM *OutDom,
-    LOG_INFO *logs,
     FILE *logfps[],
     Bool *succFlags,
     double *main_p_OUT[][SW_OUTNPERIODS],
@@ -3330,7 +3316,9 @@ static void get_comp_results(
     useTempStorage = (Bool) (numSiteRecv > 1);
 
     while (numProcResponse < targetRepsonses) {
+        LOG_INFO logs[N_SUID_ASSIGN];
         SW_MPI_REQUEST req;
+
         SW_MPI_Recv(reqType, &req, 1, MPI_ANY_SOURCE, swTRUE, 0, &nullReq);
 
         destRank = req.sourceRank;
@@ -3351,6 +3339,10 @@ static void get_comp_results(
         }
 
         if (logReq) {
+            for (suid = 0; suid < recvLens[rankIndex + 1]; suid++) {
+                sw_init_logs(stdout, &logs[suid]); // stdout will not be used
+            }
+
             SW_MPI_Recv(
                 logType,
                 logs,
@@ -6089,7 +6081,6 @@ void SW_MPI_handle_IO(
     SW_SOIL_RUN_INPUTS *tempSoils = NULL;
     Bool *succFlags = NULL;
     signed char *succMark = NULL;
-    LOG_INFO *logs = NULL;
     Bool errorCaused = swFALSE;
     size_t temp;
     Bool dummyWrites = swFALSE;
@@ -6126,7 +6117,6 @@ void SW_MPI_handle_IO(
         &sendInputs,
         &succFlags,
         &succMark,
-        &logs,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -6353,7 +6343,6 @@ checkStatus:
             logType,
             desig,
             &SW_Domain->OutDom,
-            logs,
             LogInfo->logfps,
             &succFlags[succFlagWrite],
             sw->OutRun.p_OUT,
@@ -6459,8 +6448,7 @@ freeMem:
         &tempWeather,
         &tempSoils,
         &succFlags,
-        &succMark,
-        &logs
+        &succMark
     );
 
     SW_MPI_write_main_logs(desig, logType, LogInfo);

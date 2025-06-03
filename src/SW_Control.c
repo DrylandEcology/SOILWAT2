@@ -572,6 +572,12 @@ checkStatus:
         Bool runSucc[N_SUID_ASSIGN] = {swFALSE};
         Bool reportLog = swFALSE;
 
+        for (suid = 0; suid < N_SUID_ASSIGN; suid++) {
+            sw_init_logs(main_LogInfo->logfp, &local_LogInfo[suid]);
+            local_LogInfo[suid].printProgressMsg =
+                main_LogInfo->printProgressMsg;
+        }
+
         // Make sure all processes did not throw a fatal error
         // before continuing
         if (SW_MPI_setup_fail(main_LogInfo->stopRun, MPI_COMM_WORLD)) {
@@ -606,9 +612,6 @@ checkStatus:
             }
 
 #if defined(SWMPI)
-            sw_init_logs(main_LogInfo->logfp, &local_LogInfo[suid]);
-            local_LogInfo[suid].printProgressMsg =
-                main_LogInfo->printProgressMsg;
             log = &local_LogInfo[suid];
 #else
             LOG_INFO local_LogInfo;
@@ -672,6 +675,14 @@ checkStatus:
 #endif
             }
 
+            if (log->numWarnings > 0) {
+                // Counter of simulation units with warnings
+                main_LogInfo->numDomainWarnings++;
+#if defined(SWMPI)
+                reportLog = swTRUE;
+#endif
+            }
+
             /* Report errors and warnings for suid */
             if (log->stopRun) {
                 // Counter of simulation units with error
@@ -695,14 +706,6 @@ checkStatus:
 #if defined(SWMPI)
             } else {
                 runSucc[suid] = swTRUE;
-#endif
-            }
-
-            if (log->numWarnings > 0) {
-                // Counter of simulation units with warnings
-                main_LogInfo->numDomainWarnings++;
-#if defined(SWMPI)
-                reportLog = swTRUE;
 #endif
             }
 
