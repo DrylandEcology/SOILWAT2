@@ -3253,6 +3253,8 @@ Handle the different request types accordingly
     2) Output request - Accept output infromation from the sender compute
         process and store it in a larger `p_OUT` to flush at a later time
 
+@param[in] QuietMode Don't print version, error message, or notify user
+    about logfile
 @param[in] numCompProcs Number of compute processes that have been assigned to
     an I/O process
 @param[in] suids List of suids that have been sent out and the
@@ -3274,6 +3276,7 @@ Handle the different request types accordingly
     simulation all runs
 */
 static void get_comp_results(
+    Bool QuietMode,
     int numCompProcs,
     size_t **suids,
     Bool sDom,
@@ -3300,6 +3303,7 @@ static void get_comp_results(
     int rank;
     int comp;
     size_t succ;
+    size_t suid;
     int numProcResponse = 0;
     size_t numSiteRecv = 0;
     int targetRepsonses = numCompProcs;
@@ -3352,6 +3356,30 @@ static void get_comp_results(
                 0,
                 &nullReq
             );
+
+            /*
+                Loop through all received instances of LOG_INFO and make sure
+                their flag, "stopRun" is set if an error message exists;
+                This is currently a hack to attempt to mask a problem that is
+                happening when receiving all LOG_INFO instances from a compute
+                process, i.e., when they are received, at least the last
+                instance of LOG_INFO does not have the "stopRun" flag set
+                properly. So if an error message exists, the flag does not
+                seem to be set.
+
+                TODO EVENTUALLY: Look more into why this communication is
+                not occurring properly and fix it so this loop does not need
+                to exist (including the setting of "QuietMode").
+            */
+            for (suid = 0; suid < recvLens[rankIndex + 1]; suid++) {
+                if (logs[suid].errorMsg[0] != '\0' && !logs[suid].stopRun) {
+                    logs[suid].stopRun = swTRUE;
+                }
+
+                if (logs[suid].QuietMode != QuietMode) {
+                    logs[suid].QuietMode = QuietMode;
+                }
+            }
 
             startSuid = &suids[offsetMult[rankIndex]];
             write_logs(
@@ -6333,6 +6361,7 @@ checkStatus:
         // Get dynamically allocated output memory from
         // each compute process if simulations were successful
         get_comp_results(
+            LogInfo->QuietMode,
             desig->nCompProcs,
             &distSUIDs[distSUIDWrite],
             SW_Domain->netCDFInput.siteDoms[eSW_InDomain],
