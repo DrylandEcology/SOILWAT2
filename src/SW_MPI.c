@@ -3136,10 +3136,10 @@ static void write_logs(
     size_t numRecv, FILE *logfp, size_t **baseSuid, Bool sDom, LOG_INFO *logs
 ) {
     size_t log = 0;
-    /* tag_suid is 55:
-      14 character for "(suid = [, ]) " + 40 character for 2 *
+    /* tag_suid is 63:
+      22 character for "(Suid indices = [, ]) " + 40 character for 2 *
       ULONG_MAX + '\0' */
-    char tag_suid[55];
+    char tag_suid[63] = "\0";
     size_t *ncSuid;
 
     for (log = 0; log < numRecv; log++) {
@@ -3149,12 +3149,12 @@ static void write_logs(
         // Write the error with the suid indices to have a universal
         // identifier; Put in the order of [x, y] or s
         if (sDom) {
-            (void) snprintf(tag_suid, 55, "(suid = %lu) ", ncSuid[0] + 1);
+            (void) snprintf(tag_suid, 63, "(Suid index = %lu) ", ncSuid[0] + 1);
         } else {
             (void) snprintf(
                 tag_suid,
-                55,
-                "(suid = [%lu, %lu]) ",
+                63,
+                "(Suid indices = [%lu, %lu]) ",
                 ncSuid[1] + 1,
                 ncSuid[0] + 1
             );
