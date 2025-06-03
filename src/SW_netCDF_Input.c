@@ -7984,9 +7984,9 @@ static void read_weather_input(
                             tempStart = site;
                         } else {
                             if (latIndex > lonIndex) {
-                                writeIndex = site * count[timeIndex];
+                                tempStart = site * count[timeIndex];
                             } else {
-                                writeIndex = site;
+                                tempStart = site;
                             }
                         }
                     } else { // Site domain

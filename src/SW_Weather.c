@@ -845,9 +845,9 @@ void SW_WTH_setWeatherValues(
                         yearlyWeather[yearIndex].temp_max[doy]
                     );
 
-                    tmp = yearlyWeather[yearIndex].temp_min[tempDoy];
+                    tmp = yearlyWeather[yearIndex].temp_min[doy];
                     yearlyWeather[yearIndex].temp_min[doy] =
-                        yearlyWeather[yearIndex].temp_max[tempDoy];
+                        yearlyWeather[yearIndex].temp_max[doy];
                     yearlyWeather[yearIndex].temp_max[doy] = tmp;
                 }
 
@@ -1014,7 +1014,8 @@ void SW_WTH_setWeatherValues(
                         tempWeather[yearIndex][ACTUAL_VP][tempDoy];
 
                 } else if (inputFlags[TEMP_DEWPOINT] &&
-                           !missing(tempWeather[yearIndex][TEMP_DEWPOINT][doy]
+                           !missing(
+                               tempWeather[yearIndex][TEMP_DEWPOINT][tempDoy]
                            )) {
 
                     // Actual vapor pressure [kPa] from dewpoint temperature [C]
