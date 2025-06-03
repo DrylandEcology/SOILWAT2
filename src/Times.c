@@ -452,9 +452,16 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
             "wall time]\n",
             100. * wt.timeSimSet / total_time
         );
+        if (fprintRes < 0) {
+            goto wrapUpErrMsg;
+        }
     }
 
 wrapUpErrMsg: {
+    if (fprintRes >= 0) {
+        fprintRes = fflush(logfp);
+    }
+
     if (fprintRes < 0) {
         SW_MSG_ROOT("Failed to write whole time report.", 0);
     }
