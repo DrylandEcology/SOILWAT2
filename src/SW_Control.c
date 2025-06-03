@@ -430,7 +430,7 @@ differences
         * Note: The assigned workload has already been predetermined to
             contain sites that are turned on my the program/user
 
-    - SWMPI disabled d
+    - SWMPI disabled
         - Go through calculated simulation set
         - Read inputs, simulate, and write outputs
         - Update progress file
@@ -465,10 +465,10 @@ void SW_CTL_RunSimSet(
     size_t suid;
     size_t nSims = 0;
     size_t ncSuid[2]; // 2 -> [y, x] or [s, 0]
-    /* tag_suid is 63:
-      22 character for "(Suid indices = [, ]) " + 40 character for 2 *
+    /* tag_suid is 55:
+      14 character for "(suid = [, ]) " + 40 character for 2 *
       ULONG_MAX + '\0' */
-    char tag_suid[63] = "\0";
+    char tag_suid[55] = "\0";
 
     WallTimeSpec tss;
     WallTimeSpec tsr;
@@ -713,14 +713,13 @@ checkStatus:
                 // Write the error with the suid indices to have a universal
                 // identifier; Put in the order of [x, y] or s
                 if (sDom) {
-                    (void) snprintf(
-                        tag_suid, 63, "(Suid index = %lu) ", ncSuid[0] + 1
-                    );
+                    (void
+                    ) snprintf(tag_suid, 55, "(suid = %lu) ", ncSuid[0] + 1);
                 } else {
                     (void) snprintf(
                         tag_suid,
-                        63,
-                        "(Suid indices = [%lu, %lu]) ",
+                        55,
+                        "(suid = [%lu, %lu]) ",
                         ncSuid[1] + 1,
                         ncSuid[0] + 1
                     );
