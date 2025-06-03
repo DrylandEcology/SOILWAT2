@@ -90,21 +90,21 @@ echo $'\n'\
 "Check mpi-based SOILWAT2 ..."$'\n'\
 ==================================================
 make clean
-make -k CC=include-what-you-use CPPFLAGS="-DSWMPI" CFLAGS="-Xiwyu --error_always"
+make -k CC=include-what-you-use CPPFLAGS="-DSWMPI" CFLAGS="-Xiwyu --error_always $(mpicc --showme:compile)"
 
 echo $'\n'\
 ==================================================$'\n'\
 "Check mpi-based SOILWAT2 (debug) ..."$'\n'\
 ==================================================
 make clean
-make -k CC=include-what-you-use CPPFLAGS="-DSWMPI -DSWDEBUG" CFLAGS="-Xiwyu --error_always"
+make -k CC=include-what-you-use CPPFLAGS="-DSWMPI -DSWDEBUG" CFLAGS="-Xiwyu --error_always $(mpicc --showme:compile)"
 
 echo $'\n'\
 ==================================================$'\n'\
 "Check mpi-based SOILWAT2 tests ..."$'\n'\
 ==================================================
 make clean
-make -k CXX=include-what-you-use CPPFLAGS="-DSWMPI" CXXFLAGS="-Xiwyu --error_always" test
+make -k CXX=include-what-you-use CPPFLAGS="-DSWMPI" CXXFLAGS="-Xiwyu --error_always $(mpicc --showme:compile)" test
 
 
 #-------------------------------------------------------------------------------
