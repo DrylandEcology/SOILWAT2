@@ -5127,9 +5127,10 @@ void SW_MPI_report_log(
     double runSqr = 0.0;
     int destProcJob = SW_MPI_PROC_COMP;
     int destRank;
-    Bool reportLog =
-        (Bool) (LogInfo->stopRun || LogInfo->numWarnings > 0 ||
-                LogInfo->numDomainWarnings > 0 || LogInfo->numDomainErrors > 0);
+    Bool reportLog = (Bool) ((LogInfo->stopRun || LogInfo->numWarnings > 0 ||
+                              LogInfo->numDomainWarnings > 0 ||
+                              LogInfo->numDomainErrors > 0) &&
+                             failedSetup);
     Bool destReport = swFALSE;
     char warnHeader[MAX_FILENAMESIZE] = "\0";
     FILE *tempFilePtr = LogInfo->logfp;
@@ -5273,10 +5274,8 @@ void SW_MPI_write_main_logs(
     int destRank;
 
     if (desig->procJob == SW_MPI_PROC_IO) {
-        if (LogInfo->stopRun) {
-            LogInfo->logfp = LogInfo->logfps[0];
-            sw_write_warnings("", LogInfo);
-        }
+        LogInfo->logfp = LogInfo->logfps[0];
+        sw_write_warnings("", LogInfo);
 
         for (rank = 0; rank < desig->nCompProcs; rank++) {
             LOG_INFO main_log;
