@@ -4860,8 +4860,7 @@ void SW_MPI_ncout_info(
 
             attStr =
                 &OutDom->netCDFOutput.outputVarInfo[outKey][var][unitsIndex];
-
-            sendStr = (Bool) (!isnull(attStr));
+            sendStr = (Bool) (!isnull(*attStr));
             get_dynamic_string(rank, attStr, sendStr, comm, LogInfo);
             if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
                 return;
@@ -4869,14 +4868,14 @@ void SW_MPI_ncout_info(
 
             attStr =
                 &OutDom->netCDFOutput.outputVarInfo[outKey][var][varNameIndex];
-            sendStr = (Bool) (!isnull(attStr));
+            sendStr = (Bool) (!isnull(*attStr));
             get_dynamic_string(rank, attStr, sendStr, comm, LogInfo);
             if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
                 return;
             }
 
             attStr = &OutDom->netCDFOutput.units_sw[outKey][var];
-            sendStr = (Bool) (!isnull(attStr));
+            sendStr = (Bool) (!isnull(*attStr));
             get_dynamic_string(rank, attStr, sendStr, comm, LogInfo);
             if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
                 return;
@@ -5089,7 +5088,7 @@ Bool SW_MPI_setup_fail(Bool stopRun, MPI_Comm comm) {
 
     SW_Allreduce(MPI_INT, &fail, &failProgram, 1, MPI_SUM, comm);
 
-    return (Bool) (failProgram > 0);
+    return (Bool) (failProgram != 0);
 }
 
 /**
