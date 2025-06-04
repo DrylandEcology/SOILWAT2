@@ -298,6 +298,19 @@ void sw_init_args(
             break;
 
         case 6: /* -s */
+#if defined(SWMPI)
+            if (rank == 0) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "The option '-s' is currently disabled in SWMPI mode. It "
+                    "is suggested to use SWNC mode to run a specific site."
+                );
+            }
+
+            return;
+#endif
+
             *userSUID = sw_strtosizet(str, errMsg, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
@@ -649,7 +662,7 @@ void sw_setup_prog_data(
 #endif
 
 #if defined(SWMPI)
-    if (doOutStuff) {
+    if (doOutStuff && !prepareFiles) {
         SW_MPI_ncout_info(
             rank,
             SW_Domain->SW_Designation.groupComm,

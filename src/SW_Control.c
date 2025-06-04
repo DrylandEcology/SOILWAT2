@@ -409,7 +409,9 @@ void SW_CTL_RunSims(
         );
 #if defined(SWMPI)
     } else {
-        SW_MPI_handle_IO(rank, sw_template, SW_Domain, setupFail, main_LogInfo);
+        SW_MPI_handle_IO(
+            rank, sw_template, SW_Domain, setupFail, SW_WallTime, main_LogInfo
+        );
     }
 #endif
 }

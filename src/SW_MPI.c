@@ -3973,7 +3973,7 @@ on various program-defined structs
 */
 void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
     int res;
-    int numItems[] = {7, 5, 5, 5, 4, 5, 18, 3, 7, 9};
+    int numItems[] = {7, 5, 5, 5, 4, 5, 18, 3, 6, 9};
     int blockLens[][19] = {
         {1, 1, 1, 1, 1, MAX_LAYERS, 1}, /* SW_DOMAIN */
         {1, 1, 1, 1, 1},                /* SW_SPINUP */
@@ -4004,7 +4004,7 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
          1,
          1},                   /* SW_VEGESTAB_INPUTS */
         {1, N_SUID_ASSIGN, 1}, /* SW_MPI_REQUEST */
-        {MAX_LOG_SIZE, MAX_MSGS * MAX_LOG_SIZE, 1, 1, 1, 1, 1}, /* LOG_INFO */
+        {MAX_LOG_SIZE, MAX_MSGS * MAX_LOG_SIZE, 1, 1, 1, 1}, /* LOG_INFO */
         {MAX_DAYS,
          MAX_DAYS,
          MAX_DAYS,
@@ -4054,13 +4054,8 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
          MPI_DOUBLE,
          MPI_DOUBLE},                /* SW_VEGESTAB_INPUTS */
         {MPI_INT, MPI_INT, MPI_INT}, /* SW_MPI_REQUEST */
-        {MPI_CHAR,
-         MPI_CHAR,
-         MPI_INT,
-         SW_MPI_SIZE_T,
-         SW_MPI_SIZE_T,
-         MPI_INT,
-         MPI_INT}, /* LOG_INFO */
+        {MPI_CHAR, MPI_CHAR, MPI_INT, SW_MPI_SIZE_T, SW_MPI_SIZE_T, MPI_INT
+        }, /* LOG_INFO */
         {MPI_DOUBLE,
          MPI_DOUBLE,
          MPI_DOUBLE,
@@ -4146,8 +4141,7 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
          offsetof(LOG_INFO, numWarnings),
          offsetof(LOG_INFO, numDomainWarnings),
          offsetof(LOG_INFO, numDomainErrors),
-         offsetof(LOG_INFO, stopRun),
-         offsetof(LOG_INFO, QuietMode)},
+         offsetof(LOG_INFO, stopRun)},
 
         /* SW_WEATHER_HIST */
         {offsetof(SW_WEATHER_HIST, temp_max),
@@ -6039,6 +6033,8 @@ from the netCDF library to have as many contiguous reads/writes as possible
     temporal/spatial information for a set of simulation runs
 @param[in] setupFail Specifies if the process failed in the setup phase
     (SWMPI only)
+@param[in,out] SW_WallTime Struct of type SW_WALLTIME that holds timing
+    information for the program run
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_MPI_handle_IO(
@@ -6046,6 +6042,7 @@ void SW_MPI_handle_IO(
     SW_RUN *sw,
     SW_DOMAIN *SW_Domain,
     Bool *setupFail,
+    SW_WALLTIME *SW_WallTime,
     LOG_INFO *LogInfo
 ) {
     // Initialize variables
@@ -6293,6 +6290,13 @@ checkStatus:
         // side within the for-loop that runs through inputs
         if (runSims == 0) {
             break;
+        }
+
+        /* Check wall time against limit */
+        if (SW_WallTime->has_walltime &&
+            GT(diff_walltime(SW_WallTime->timeStart, swTRUE),
+               SW_WallTime->wallTimeLimit - SW_WRAPUPTIME)) {
+            goto freeMem; // wall time (nearly) exhausted, return early
         }
 
         // Check if we need to read the next batch of inputs &

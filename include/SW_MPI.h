@@ -241,6 +241,7 @@ void SW_MPI_handle_IO(
     SW_RUN *sw,
     SW_DOMAIN *SW_Domain,
     Bool *setupFail,
+    SW_WALLTIME *SW_WallTime,
     LOG_INFO *LogInfo
 );
 
