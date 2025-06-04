@@ -90,21 +90,34 @@ echo $'\n'\
 "Check mpi-based SOILWAT2 ..."$'\n'\
 ==================================================
 make clean
-make -k CC=include-what-you-use CPPFLAGS="-DSWMPI" CFLAGS="-Xiwyu --error_always $(mpicc --showme:compile)"
+if command -v mpicc > /dev/null 2>&1 ; then
+    make -k CC=include-what-you-use CPPFLAGS="-DSWMPI" CFLAGS="-Xiwyu --error_always $(mpicc --showme:compile)"
+else
+    echo "Skip iwyu with mpicc."
+fi
+
 
 echo $'\n'\
 ==================================================$'\n'\
 "Check mpi-based SOILWAT2 (debug) ..."$'\n'\
 ==================================================
 make clean
-make -k CC=include-what-you-use CPPFLAGS="-DSWMPI -DSWDEBUG" CFLAGS="-Xiwyu --error_always $(mpicc --showme:compile)"
+if command -v mpicc > /dev/null 2>&1 ; then
+    make -k CC=include-what-you-use CPPFLAGS="-DSWMPI -DSWDEBUG" CFLAGS="-Xiwyu --error_always $(mpicc --showme:compile)"
+else
+    echo "Skip iwyu with mpicc."
+fi
 
 echo $'\n'\
 ==================================================$'\n'\
 "Check mpi-based SOILWAT2 tests ..."$'\n'\
 ==================================================
 make clean
-make -k CXX=include-what-you-use CPPFLAGS="-DSWMPI" CXXFLAGS="-Xiwyu --error_always $(mpicc --showme:compile)" test
+if command -v mpicc > /dev/null 2>&1 ; then
+    make -k CXX=include-what-you-use CPPFLAGS="-DSWMPI" CXXFLAGS="-Xiwyu --error_always $(mpicc --showme:compile)" test
+else
+    echo "Skip iwyu with mpicc."
+fi
 
 
 #-------------------------------------------------------------------------------
