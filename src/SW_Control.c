@@ -397,7 +397,9 @@ void SW_CTL_RunSims(
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *main_LogInfo
 ) {
-    report_sim_start(SW_Domain, rank);
+    if (main_LogInfo->printProgressMsg) {
+        report_sim_start(SW_Domain, rank);
+    }
 
 #if defined(SWMPI)
     if (SW_Domain->SW_Designation.procJob == SW_MPI_PROC_COMP) {
@@ -1652,7 +1654,15 @@ void SW_CTL_run_sw(
 
 #ifdef SWDEBUG
     if (debug) {
-        sw_printf("SW_CTL_run_sw(): suid = %zu/%zu", ncSuid[0], ncSuid[1]);
+        if (SW_Domain->netCDFInput.siteDoms[eSW_InDomain]) {
+            sw_printf("SW_CTL_run_sw(): suid = %zu", ncSuid[0] + 1);
+        } else {
+            sw_printf(
+                "SW_CTL_run_sw(): suid = [%zu, %zu]",
+                ncSuid[1] + 1,
+                ncSuid[0] + 1
+            );
+        }
     }
 #endif
 

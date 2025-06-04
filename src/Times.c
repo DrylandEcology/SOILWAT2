@@ -407,7 +407,7 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
 
     if (nSims > 1) {
         fprintRes =
-            fprintf(logfp, "    * Number of simulation runs: %lu", nSims);
+            fprintf(logfp, "    * Number of simulation runs: %zu", nSims);
         if (fprintRes < 0) {
             goto wrapUpErrMsg;
         }
@@ -415,7 +415,7 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
         if (wt.nUntimedRuns > 0) {
             fprintRes = fprintf(
                 logfp,
-                " total (%lu timed | %lu untimed)",
+                " total (%zu timed | %zu untimed)",
                 wt.nTimedRuns,
                 wt.nUntimedRuns
             );

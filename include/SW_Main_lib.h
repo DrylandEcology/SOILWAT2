@@ -28,6 +28,7 @@ void sw_init_args(
     double *wallTimeLimit,
     Bool *renameDomainTemplateNC,
     Bool *prepareFiles,
+    Bool *endQuietly,
     LOG_INFO *LogInfo
 );
 
@@ -57,6 +58,7 @@ void sw_finalize_program(
     SW_DOMAIN *SW_Domain,
     SW_WALLTIME *SW_WallTime,
     Bool setupFailed,
+    Bool endQuietly,
     LOG_INFO *LogInfo
 );
 

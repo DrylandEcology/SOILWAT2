@@ -59,6 +59,7 @@ int main(int argc, char **argv) {
     Bool renameDomainTemplateNC = swFALSE;
     Bool prepareFiles = swFALSE;
     Bool setupFailed = swTRUE;
+    Bool endQuietly = swFALSE;
 
     int rank = 0;
     int size = 0;
@@ -105,14 +106,15 @@ int main(int argc, char **argv) {
         &SW_WallTime.wallTimeLimit,
         &renameDomainTemplateNC,
         &prepareFiles,
+        &endQuietly,
         &LogInfo
     );
 #if defined(SWMPI)
-    if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD)) {
+    if (endQuietly || SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD)) {
         goto finishProgram;
     }
 #else
-    if (LogInfo.stopRun) {
+    if (endQuietly || LogInfo.stopRun) {
         goto finishProgram;
     }
 #endif
@@ -287,7 +289,7 @@ setupProgramData:
 
 #if defined(SWMPI)
     if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD) || prepareFiles) {
-        if (prepareFiles) {
+        if (prepareFiles && LogInfo.printProgressMsg) {
             SW_MSG_ROOT("completed simulation preparations.", rank);
         }
 
@@ -310,7 +312,7 @@ setupProgramData:
     }
 #else
     if (LogInfo.stopRun || prepareFiles) {
-        if (prepareFiles) {
+        if (prepareFiles && LogInfo.printProgressMsg) {
             SW_MSG_ROOT("completed simulation preparations.", rank);
         }
 
@@ -346,9 +348,9 @@ finishProgram: {
     SW_CTL_clear_model(swTRUE, &sw_template);
 
     sw_finalize_program(
-        rank, size, &SW_Domain, &SW_WallTime, setupFailed, &LogInfo
+        rank, size, &SW_Domain, &SW_WallTime, setupFailed, endQuietly, &LogInfo
     );
-    if (LogInfo.printProgressMsg) {
+    if (!endQuietly && LogInfo.printProgressMsg) {
         SW_MSG_ROOT("ended.", rank);
     }
 }

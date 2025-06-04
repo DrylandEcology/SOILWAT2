@@ -50,24 +50,28 @@
 */
 static void sw_print_usage(void) {
     sw_printf(
-        "Ecosystem water simulation model SOILWAT2\n"
-        "More details at https://github.com/Burke-Lauenroth-Lab/SOILWAT2\n"
-        "Usage: ./SOILWAT2 [-d startdir] [-f files.in] [-e] [-q] [-v] [-h] "
-        "[-s 1] [-t 10] [-r]\n"
-        "  -d : operate (chdir) in startdir (default=.)\n"
-        "  -f : name of main input file (default=files.in)\n"
-        "       a preceeding path applies to all input files\n"
-        "  -e : echo initial values from site and estab to logfile\n"
-        "  -q : quiet mode (print version, print error, message to check "
-        "logfile)\n"
-        "  -v : print version information\n"
-        "  -h : print this help information\n"
-        "  -s : simulate all (0) or one (> 0) simulation unit from the domain\n"
-        "       (default = 0)\n"
-        "  -t : wall time limit in seconds\n"
-        "  -r : rename netCDF domain template file "
-        "[name provided in 'Input_nc/files_nc.in']\n"
-        "  -p : solely prepare domain/progress, index, and output files\n"
+        "SOILWAT2: an ecosystem water simulation model.\n"
+        "More details at https://github.com/DrylandEcology/SOILWAT2\n"
+        "Usage: SOILWAT2 [-d <directory>] [-f <mainFile>] [-e] [-q] [-v] [-h] "
+        "[-s <number>] [-t <number>] [-r] [-p]\n"
+        "Options:\n"
+        "  -d : Operate (chdir) in <directory> (default = '.').\n"
+        "  -f : Main input file relative to <directory>"
+        "(default = 'files.in').\n"
+        "  -e : Echo inputs from text-based input files.\n"
+        "  -q : Quiet mode (do not write messages to the console).\n"
+        "  -v : Print version information and exit.\n"
+        "  -h : Print this help information and exit.\n"
+        "  -s : Simulate all simulation units (if <number> = 0, default) or \n"
+        "       a specific simulation unit that is identified by its suid \n"
+        "       (suid = <number> if <number> > 0) \n"
+        "       Note: xy-domain `<number> = (y - 1) * nDimX + x`.\n"
+        "       This option is not functional in mpi-based SOILWAT2.\n"
+        "  -t : Set a wall time limit where <number> is in units of seconds.\n"
+        "  -r : A netCDF domain template file is automatically renamed\n"
+        "       to the domain file name provided in 'Input_nc/files_nc.in'.\n"
+        "  -p : Prepare domain, progress, index, and output netCDF files\n"
+        "       but do not run simulations.\n"
     );
 }
 
@@ -145,6 +149,8 @@ void sw_print_version(void) {
 @param[out] prepareFiles Should we only prepare domain/progress, index,
             and output files? If so, simulations will occur without this
             flag being turned on
+@param[out] endQuietly A flag specifying if no messages should be produced,
+    e.g., if SOILWAT2 was called to print help or version only.
 @param[out] LogInfo Holds information on warnings and errors
 */
 void sw_init_args(
@@ -157,6 +163,7 @@ void sw_init_args(
     double *wallTimeLimit,
     Bool *renameDomainTemplateNC,
     Bool *prepareFiles,
+    Bool *endQuietly,
     LOG_INFO *LogInfo
 ) {
 
@@ -199,6 +206,7 @@ void sw_init_args(
     *EchoInits = swFALSE;
     *renameDomainTemplateNC = swFALSE;
     *userSUID = 0; // Default (if no input) is 0 (i.e., all suids)
+    *endQuietly = swFALSE;
 
     a = 1;
     for (i = 1; i <= nopts; i++) {
@@ -276,20 +284,16 @@ void sw_init_args(
         case 4: /* -v */
             if (rank == 0) {
                 sw_print_version();
-                LogError(LogInfo, LOGERROR, "");
-                if (LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
-                }
+                *endQuietly = swTRUE;
+                return;
             }
             break;
 
         case 5: /* -h */
             if (rank == 0) {
                 sw_print_usage();
-                LogError(LogInfo, LOGERROR, "");
-                if (LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
-                }
+                *endQuietly = swTRUE;
+                return;
             }
             break;
 
@@ -313,7 +317,7 @@ void sw_init_args(
                     LogInfo,
                     LOGERROR,
                     "User input not recognized as a simulation unit "
-                    "('-s %s' vs. %lu).",
+                    "('-s %s' vs. %zu).",
                     str,
                     *userSUID
                 );
@@ -540,7 +544,7 @@ void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
             if (LogInfo->numDomainWarnings > 0) {
                 (void) fprintf(
                     stderr,
-                    "Simulation units with warnings: n = %lu\n",
+                    "Simulation units with warnings: n = %zu\n",
                     LogInfo->numDomainWarnings
                 );
             }
@@ -548,7 +552,7 @@ void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
             if (LogInfo->numDomainErrors > 0) {
                 (void) fprintf(
                     stderr,
-                    "Simulation units with an error: n = %lu\n",
+                    "Simulation units with an error: n = %zu\n",
                     LogInfo->numDomainErrors
                 );
             }
@@ -694,6 +698,8 @@ is enabled
     information for the program run
 @param[in] setupFailed A flag specifying if the program was exited
     before setup was completed
+@param[in] endQuietly A flag specifying if no messages should be produced,
+    e.g., if SOILWAT2 was called to print help or version only.
 @param[in] LogInfo Holds information on warnings and errors
 */
 void sw_finalize_program(
@@ -702,6 +708,7 @@ void sw_finalize_program(
     SW_DOMAIN *SW_Domain,
     SW_WALLTIME *SW_WallTime,
     Bool setupFailed,
+    Bool endQuietly,
     LOG_INFO *LogInfo
 ) {
 #if defined(SWMPI)
@@ -714,24 +721,28 @@ void sw_finalize_program(
 
         * = All warnings/errors are reported through I/O processes
     */
-    SW_MPI_report_log(
-        rank,
-        size,
-        SW_Domain->datatypes[eSW_MPI_WallTime],
-        SW_WallTime,
-        SW_Domain,
-        setupFailed,
-        LogInfo
-    );
+    if (!endQuietly) {
+        SW_MPI_report_log(
+            rank,
+            size,
+            SW_Domain->datatypes[eSW_MPI_WallTime],
+            SW_WallTime,
+            SW_Domain,
+            setupFailed,
+            LogInfo
+        );
+    }
 
     // Free types and communicators
     SW_MPI_free_comms_types(
         rank, &SW_Domain->SW_Designation, SW_Domain->datatypes, LogInfo
     );
 #else
-    sw_write_warnings("(main) ", LogInfo);
-    SW_WT_ReportTime(*SW_WallTime, LogInfo);
-    sw_fail_on_error(LogInfo);
+    if (!endQuietly) {
+        sw_write_warnings("(main) ", LogInfo);
+        SW_WT_ReportTime(*SW_WallTime, LogInfo);
+        sw_fail_on_error(LogInfo);
+    }
 
     (void) size;
     (void) setupFailed;
@@ -739,7 +750,9 @@ void sw_finalize_program(
     (void) SW_Domain;
 #endif
 
-    sw_wrapup_logs(rank, LogInfo);
+    if (!endQuietly) {
+        sw_wrapup_logs(rank, LogInfo);
+    }
 
 #if defined(SWMPI)
     SW_MPI_finalize(procJob, LogInfo);

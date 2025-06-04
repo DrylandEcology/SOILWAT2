@@ -562,8 +562,8 @@ void SW_DOM_SimSet(SW_DOMAIN *SW_Domain, size_t userSUID, LOG_INFO *LogInfo) {
             LogError(
                 LogInfo,
                 LOGERROR,
-                "User requested simulation unit (suid = %lu) "
-                "does not exist in simulation domain (n = %lu).",
+                "User requested simulation unit (suid = %zu) "
+                "does not exist in simulation domain (n = %zu).",
                 userSUID,
                 SW_Domain->nSUIDs
             );

@@ -2600,7 +2600,7 @@ static void fill_prog_netCDF_vals(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             LogError(
                 LogInfo,
                 LOGERROR,
-                "Could not read domain status for SUIDs #%lu - #%lu.",
+                "Could not read domain status for SUIDs #%zu - #%zu.",
                 suid,
                 suid + (chunkSizes[0] * chunkSizes[1])
             );
