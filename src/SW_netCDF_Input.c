@@ -6423,6 +6423,8 @@ static void derive_missing_soils(
     const double depthsAllSoilLayers[],
     LyrIndex nMaxSoilLayers,
     double tempSilt[],
+    size_t ncSuid[],
+    Bool sDom,
     LOG_INFO *LogInfo
 ) {
     Bool noDepth;
@@ -6459,9 +6461,11 @@ static void derive_missing_soils(
         if (hasConstSoilDepths) {
             // Check that depth is consistent with depthsAllSoilLayers
             if (!EQ(soilIn->depths[slNum], depthsAllSoilLayers[slNum])) {
-                LogError(
+                LogErrorSuid(
                     LogInfo,
                     LOGERROR,
+                    ncSuid,
+                    sDom,
                     "Depth (%f cm) of soil layer %d disagrees with "
                     "expected depth (%f cm).",
                     soilIn->depths[slNum],
@@ -6530,11 +6534,14 @@ static void derive_missing_soils(
             cumWidth += soilIn->width[slNum];
 
             if (!EQ(soilIn->depths[slNum], cumWidth)) {
-                LogError(
+                LogErrorSuid(
                     LogInfo,
                     LOGERROR,
+                    ncSuid,
+                    sDom,
                     "Soil layer depth (%f cm) and "
-                    "width (%f cm, cumulative = %f) are provided as inputs, "
+                    "width (%f cm, cumulative = %f) are provided as "
+                    "inputs, "
                     "but they disagree in soil layer %d.",
                     soilIn->depths[slNum],
                     soilIn->width[slNum],
@@ -6553,10 +6560,13 @@ static void derive_missing_soils(
                          soilIn->fractionWeightMatric_clay[slNum];
 
             if (!EQ_w_tol(sumTexture, 1., toleranceSoilTexture)) {
-                LogError(
+                LogErrorSuid(
                     LogInfo,
                     LOGERROR,
-                    "Sum of sand (%f), silt (%f) and clay (%f) is %f != 1 "
+                    ncSuid,
+                    sDom,
+                    "Sum of sand (%f), silt (%f) and clay "
+                    "(%f) is %f != 1 "
                     "in soil layer %d.",
                     soilIn->fractionWeightMatric_sand[slNum],
                     tempSilt[slNum],
@@ -6571,9 +6581,11 @@ static void derive_missing_soils(
 
 
     if (*n_layers > nMaxSoilLayers) {
-        LogError(
+        LogErrorSuid(
             LogInfo,
             LOGERROR,
+            ncSuid,
+            sDom,
             "Number of soil layers (%d) is larger than "
             "domain-wide expected maximum number of soil layers (%d).",
             *n_layers,
@@ -6630,6 +6642,7 @@ static void read_soil_inputs(
     double *tempVals,
     SW_SOIL_RUN_INPUTS *newSoilBuff,
     SW_RUN_INPUTS *inputs,
+    size_t **domSuids,
     LOG_INFO *LogInfo
 ) {
     char ***inVarInfo = SW_Domain->netCDFInput.inVarInfo[eSW_InSoil];
@@ -6654,6 +6667,7 @@ static void read_soil_inputs(
     const int pftIndex = 4;
     Bool hasPFT;
     Bool inSiteDom = SW_Domain->netCDFInput.siteDoms[eSW_InSoil];
+    Bool progSiteDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
     Bool isSwrcpVar;
     int numVarsInSoilKey = numVarsInKey[eSW_InSoil];
     char *varName;
@@ -6900,6 +6914,8 @@ static void read_soil_inputs(
             depthsAllSoilLayers,
             SW_Domain->nMaxSoilLayers,
             &tempSilt[input * MAX_LAYERS],
+            domSuids[input],
+            progSiteDom,
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -7783,6 +7799,8 @@ to get data from netCDF
 @param[in] weathConv A list of UDUNITS2 converters that were created
 to convert input data to units the program can understand within the
 "inWeather" input key
+@param[in] domSuids A list of program-domain suids of sites that will
+    have the inputs read for (MPI only)
 @param[in] elevation Site elevation above sea level [m]
 @param[out] LogInfo Holds information on warnings and errors
 */
@@ -7800,6 +7818,7 @@ static void read_weather_input(
     int **weathFileIDs,
     double *elevation,
     double *tempVals,
+    size_t **domSuids,
     SW_RUN_INPUTS *inputs,
     LOG_INFO *LogInfo
 ) {
@@ -7815,6 +7834,7 @@ static void read_weather_input(
     TimeInt yearIndex;
     TimeInt year;
     Bool inSiteDom = SW_Domain->netCDFInput.siteDoms[eSW_InWeather];
+    Bool progSiteDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
     int fIndex = 1;
     int varID = -1;
     int ncFileID = -1;
@@ -8041,6 +8061,8 @@ static void read_weather_input(
             tempWeatherHist,
             elevation[input],
             MAX_DAYS * input,
+            domSuids[input],
+            progSiteDom,
             inputs[input].weathRunAllHist,
             LogInfo
         );
@@ -8152,6 +8174,8 @@ to SW_Run
 @param[in] tempSiltVals A temporary buffer to store silt values
 @param[in] tempVals A temporary buffer to store any soil variable in
 @param[in] tempWeath A temporary buffer to store read weather input in
+@param[in] domSuids A list of program-domain suids of sites that will
+    have the inputs read for (MPI only)
 @param[in] newSoils A single (no SWMPI) or a list (SWMPI) of instances of
     SW_SOIL_RUN_INPUTS used as temporary storage when reading inputs
 @param[in] inputs A single instance (no SWMPI) or a list (SWMPI) of
@@ -8172,6 +8196,7 @@ void SW_NCIN_read_inputs(
     double *tempSiltVals,
     double *tempVals,
     double *tempWeath,
+    size_t **domSuids,
     SW_SOIL_RUN_INPUTS *newSoils,
     SW_RUN_INPUTS *inputs,
     LOG_INFO *LogInfo
@@ -8280,6 +8305,7 @@ void SW_NCIN_read_inputs(
             weathFileIDs,
             elevations,
             tempWeath,
+            domSuids,
             inputs,
             LogInfo
         );
@@ -8294,6 +8320,8 @@ void SW_NCIN_read_inputs(
                 inputs[input].weathRunAllHist,
                 sw->ModelSim.cum_monthdays,
                 sw->ModelSim.days_in_month,
+                domSuids[input],
+                SW_Domain->netCDFInput.siteDoms[eSW_InDomain],
                 LogInfo
             );
             if (LogInfo->stopRun) {
@@ -8340,6 +8368,7 @@ void SW_NCIN_read_inputs(
             tempVals,
             newSoils,
             inputs,
+            domSuids,
             LogInfo
         );
         if (LogInfo->stopRun) {

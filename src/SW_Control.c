@@ -1649,6 +1649,7 @@ void SW_CTL_run_sw(
     double tempSoilVals[MAX_LAYERS * SWRC_PARAM_NMAX] = {0.0};
     double tempElevation = 0;
     double tempWeath[MAX_DAYS] = {0.0};
+    size_t *suid[SW_NINKEYSNC] = {NULL};
 #else
     (void) count;
     (void) runNum;
@@ -1697,6 +1698,7 @@ void SW_CTL_run_sw(
         tempSiltVals,
         tempSoilVals,
         tempWeath,
+        suid,
         &newSoil,
         &local_sw.RunIn,
         LogInfo

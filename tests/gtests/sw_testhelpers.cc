@@ -267,6 +267,8 @@ int setup_testGlobalSoilwatTemplate() {
         template_SW_Run.RunIn.weathRunAllHist,
         template_SW_Run.ModelSim.cum_monthdays,
         template_SW_Run.ModelSim.days_in_month,
+        NULL,
+        swFALSE, // Does not matter
         &LogInfo
     );
     if (LogInfo.stopRun != 0u) {

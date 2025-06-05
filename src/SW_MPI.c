@@ -6252,6 +6252,7 @@ checkStatus:
                 tempSilt,
                 tempSoilVals,
                 tempWeather,
+                &distSUIDs[distSUIDWrite],
                 tempSoils,
                 inputs,
                 LogInfo

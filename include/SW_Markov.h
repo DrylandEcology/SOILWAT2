@@ -56,6 +56,8 @@ void SW_MKV_today(
     SW_MARKOV_INPUTS *SW_MarkovIn,
     TimeInt doy0,
     TimeInt year,
+    size_t ncSuid[],
+    Bool sDom,
     double *tmax,
     double *tmin,
     double *rain,

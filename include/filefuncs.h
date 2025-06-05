@@ -47,6 +47,15 @@ Bool CopyFile(const char *from, const char *to, LOG_INFO *LogInfo);
 
 void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...);
 
+void LogErrorSuid(
+    LOG_INFO *LogInfo,
+    const int mode,
+    size_t ncSuid[],
+    Bool sDom,
+    const char *fmt,
+    ...
+);
+
 void sw_message(const char *msg);
 
 size_t sw_strtosizet(const char *str, const char *errMsg, LOG_INFO *LogInfo);

@@ -233,6 +233,8 @@ int main(int argc, char **argv) {
             sw_template.RunIn.weathRunAllHist,
             sw_template.ModelSim.cum_monthdays,
             sw_template.ModelSim.days_in_month,
+            NULL,
+            swFALSE, // Does not matter
             &LogInfo
         );
         if (LogInfo.stopRun) {
