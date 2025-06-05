@@ -6373,28 +6373,31 @@ checkStatus:
         inputsLeft -= numIterSuids;
     }
 
-    if (runSims && !failEarly) {
-        if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
+    if (!failEarly) {
+        if (runSims == 1 &&
+            SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
             goto freeMem;
         }
 
         // Make sure no compute process gets stuck waiting for input
-        spread_inputs(
-            desig,
-            inputType,
-            weathHistType,
-            inputs,
-            inputsLeft,
-            estVeg,
-            &sendEstVeg,
-            readWeather,
-            readClimate,
-            dummyWrites,
-            sendInputs,
-            n_years,
-            desig->nCompProcs,
-            swTRUE
-        );
+        if (runSims == 1) {
+            spread_inputs(
+                desig,
+                inputType,
+                weathHistType,
+                inputs,
+                inputsLeft,
+                estVeg,
+                &sendEstVeg,
+                readWeather,
+                readClimate,
+                dummyWrites,
+                sendInputs,
+                n_years,
+                desig->nCompProcs,
+                swTRUE
+            );
+        }
 
         if ((numIterations == 0 && input == numSuidsTot) ||
             numIterations < N_ITER_BEFORE_OUT) {
@@ -6420,7 +6423,7 @@ checkStatus:
             }
         }
 
-        if (dummyWrites) {
+        if (dummyWrites && runSims == 1) {
             // Participate in a dummy check so this matches with
             // other checks by processes that do not need to do dummy writes
             SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD);

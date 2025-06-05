@@ -791,7 +791,7 @@ wrapUp:
     // Set dummy value for an extra participation in `SW_MPI_setup_fail()`
     // to make sure other compute processes don't hang waiting before
     // getting their last batch of inputs
-    extraFailCheck = (Bool) (extraFailCheck && !earlyExit &&
+    extraFailCheck = (Bool) (extraFailCheck && !earlyExit && runSims == 1 &&
                              SW_MPI_setup_fail(swFALSE, MPI_COMM_WORLD));
 
     for (suid = 0; suid < N_SUID_ASSIGN; suid++) {
