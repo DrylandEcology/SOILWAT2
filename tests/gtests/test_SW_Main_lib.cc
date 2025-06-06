@@ -37,6 +37,17 @@ TEST(MessagesDeath, FailOnErrorDeath) {
     EXPECT_EQ(LogInfo.numWarnings, 0);
     EXPECT_TRUE(LogInfo.stopRun);
 
-    EXPECT_DEATH_IF_SUPPORTED(sw_fail_on_error(&LogInfo), "This is an error.");
+    EXPECT_DEATH_IF_SUPPORTED(sw_fail_on_error(&LogInfo), "This is an error.")
+#if defined(SWNC)
+        << "One reason this death test can fail is if the main test thread\n"
+           "opens a netCDF file with file locking. A file lock may cause the\n"
+           "death test thread to error during setup, i.e., before executing\n"
+           "the test itself, and thus the death test fails.\n"
+           "If the file lock is due to HDF5, then quickly checking that with\n"
+           "'export HDF5_USE_FILE_LOCKING=FALSE' before running the tests\n"
+           "may provide information.";
+#else
+        ;
+#endif
 }
 } // namespace

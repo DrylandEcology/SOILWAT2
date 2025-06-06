@@ -12,6 +12,11 @@
 #include <stdlib.h>             // for exit
 #include <string.h>             // for strcpy
 
+#if defined(SWNETCDF)
+#include "include/SW_netCDF_General.h"
+#include <netcdf.h>
+#endif
+
 
 // NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
 SW_RUN template_SW_Run;
@@ -218,6 +223,12 @@ int setup_testGlobalSoilwatTemplate() {
     }
 
 #if defined(SWNETCDF)
+    /* Close domain and progress files */
+    /* This avoids a locked file issue arising from death test (threads) */
+    /* Our tests are currently not set up to handle netCDF input/output */
+    nc_close(template_SW_Domain.SW_PathInputs.ncDomFileIDs[vNCdom]);
+    nc_close(template_SW_Domain.SW_PathInputs.ncDomFileIDs[vNCprog]);
+
     /* Turn off weather inputs if SWNETCDF and nc-weather is enabled */
     if (template_SW_Domain.netCDFInput.readInVars[eSW_InWeather][0]) {
         template_SW_Domain.netCDFInput.readInVars[eSW_InWeather][0] = swFALSE;
@@ -230,8 +241,9 @@ int setup_testGlobalSoilwatTemplate() {
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
-    template_SW_Run.ModelSim.doOutput =
-        swFALSE; /* turn off output during tests */
+
+    /* turn off output during tests */
+    template_SW_Run.ModelSim.doOutput = swFALSE;
 
     SW_MDL_get_ModelRun(
         &template_SW_Run.ModelIn, &template_SW_Domain, NULL, &LogInfo
@@ -294,6 +306,7 @@ int setup_testGlobalSoilwatTemplate() {
 
 finishProgram: {
     if (LogInfo.stopRun != 0u) {
+        sw_printf("Setup of SOILWAT2 tests failed.\n");
         success = 1; // failure
     }
 }
