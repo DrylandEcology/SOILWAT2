@@ -772,42 +772,42 @@ static int gather_var_attributes(
     get the last time size; files [0, num out files - 1] have repeating
     time sizes
 
-@param[in] firstFile Name of the first netCDF file within the output
-    period being filled
-@param[in] lastFile Name of the last netCDF file within the output
-    period being filled (can be NULL if only one file per period)
-@param[out] outKeyTimes An array of size two to hold the repetative
-    (index 0) time size for [0, num out files - 1] files and the
-    last netCDF file's time size (index 1)
+@param[in] keyFiles A list of files from the first key with active output
+    requests
+@param[in] numFiles Number of output files being created per output key
+@param[out] outKeyTimes An array of size two to hold the time sizes for every
+    output file for a specific output period
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void store_time_sizes(
-    char *firstFile, char *lastFile, size_t outKeyTimes[], LOG_INFO *LogInfo
+    char **keyFiles,
+    size_t **outKeyTimes,
+    unsigned int numFiles,
+    LOG_INFO *LogInfo
 ) {
     int fileID = -1;
+    unsigned int file;
 
-    SW_NC_open(firstFile, NC_NOWRITE, &fileID, LogInfo);
+    SW_NCOUT_alloc_timeSizes(numFiles, outKeyTimes, LogInfo);
     if (LogInfo->stopRun) {
         return;
     }
 
-    SW_NC_get_dimlen_from_dimname(fileID, "time", &outKeyTimes[0], LogInfo);
-    if (LogInfo->stopRun) {
-        goto closeFile;
-    }
-
-    if (!isnull(lastFile)) {
-        nc_close(fileID);
-        fileID = -1;
-        SW_NC_open(lastFile, NC_NOWRITE, &fileID, LogInfo);
+    for (file = 0; file < numFiles; file++) {
+        SW_NC_open(keyFiles[file], NC_NOWRITE, &fileID, LogInfo);
         if (LogInfo->stopRun) {
             return;
         }
 
-        SW_NC_get_dimlen_from_dimname(fileID, "time", &outKeyTimes[1], LogInfo);
+        SW_NC_get_dimlen_from_dimname(
+            fileID, "time", &((*outKeyTimes)[file]), LogInfo
+        );
         if (LogInfo->stopRun) {
             goto closeFile;
         }
+
+        nc_close(fileID);
+        fileID = -1;
     }
 
 closeFile:
@@ -2028,6 +2028,23 @@ void SW_NCOUT_alloc_varids(int **ncVarIDs, IntUS numVars, LOG_INFO *LogInfo) {
 }
 
 /**
+@brief Allocate memory to store the time sizes of each output file
+
+@param[in] numFiles Number of values to allocate for (one for every output file
+    in an output period)
+@param[out] timeSizes An array of size two to hold the time sizes for every
+    output file for a specific output period
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NCOUT_alloc_timeSizes(
+    unsigned int numFiles, size_t **timeSizes, LOG_INFO *LogInfo
+) {
+    *timeSizes = (size_t *) Mem_Malloc(
+        sizeof(size_t) * numFiles, "SW_NCOUT_alloc_timeSizes()", LogInfo
+    );
+}
+
+/**
 @brief Generate all requested netCDF output files that will be written to
 instead of CSVs
 
@@ -2058,12 +2075,8 @@ SW_OUTNPERIODS).
 @param[in] startYr Start year of the simulation
 @param[in] endYr End year of the simulation
 @param[in] baseCalendarYear First year of the entire simulation
-@param[in] outFileTimeSizes A list of size SW_OUTNPERIODS by 2 specifying
-    how much time is in an output file period;
-    Index 0: Represents files [0, num out files - 1] repetative timing
-             information
-    Index 1: Represents the last output file's time size (present if > 1
-             output file)
+@param[out] outFileTimeSizes A list of size SW_OUTNPERIODS by x number of
+    the time sizes in output files created from strides
 @param[out] numFilesPerKey Number of output netCDFs each output key will
     have (same amount for each key)
 @param[out] ncOutFileNames A list of the generated output netCDF file names
@@ -2087,7 +2100,7 @@ void SW_NCOUT_create_output_files(
     unsigned int startYr,
     unsigned int endYr,
     int baseCalendarYear,
-    size_t outFileTimeSizes[][2],
+    size_t *outFileTimeSizes[],
     unsigned int *numFilesPerKey,
     char **ncOutFileNames[][SW_OUTNPERIODS],
     int *ncOutVarIDs[],
@@ -2121,8 +2134,6 @@ void SW_NCOUT_create_output_files(
     double startTime[SW_OUTNPERIODS];
     double baseStartTime[SW_OUTNPERIODS] = {0};
     char *firstFileInKey = NULL;
-    char *firstFile = NULL;
-    char *lastFile = NULL;
 
     char periodSuffix[10];
     char *yearFormat;
@@ -2265,24 +2276,19 @@ void SW_NCOUT_create_output_files(
                         }
 
                         rangeStart = rangeEnd;
-
-                        if (fileNum == 0) {
-                            firstFile = ncOutFileNames[key][pd][fileNum];
-                        } else if (fileNum == *numFilesPerKey - 1) {
-                            lastFile = ncOutFileNames[key][pd][fileNum];
-                        }
                     }
 
-                    if (outFileTimeSizes[pd][0] == 0) {
+                    if (isnull(outFileTimeSizes[pd])) {
                         store_time_sizes(
-                            firstFile, lastFile, outFileTimeSizes[pd], LogInfo
+                            ncOutFileNames[key][pd],
+                            &outFileTimeSizes[pd],
+                            *numFilesPerKey,
+                            LogInfo
                         );
                         if (LogInfo->stopRun) {
                             return;
                         }
                     }
-
-                    firstFile = lastFile = NULL;
                 }
             }
 
@@ -2443,9 +2449,8 @@ output netCDF files
 @param[in] succFlags A list of success flags for a single or multiple
     site's (swTRUE = success, swFALSE = failure); only used with
     SWMPI enabled
-@param[in] timeSizes An array of size two to hold the repetative
-    (index 0) time size for [0, num out files - 1] files and the
-    last netCDF file's time size (index 1)
+@param[in] timeSizes An array of size two to hold the time sizes for every
+    output file for a specific output period
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCOUT_write_output(
@@ -2462,7 +2467,7 @@ void SW_NCOUT_write_output(
     int *outVarIDs[],
     Bool siteDom,
     const Bool succFlags[],
-    size_t timeSizes[][2],
+    size_t *timeSizes[],
     LOG_INFO *LogInfo
 ) {
 
@@ -2541,11 +2546,7 @@ void SW_NCOUT_write_output(
 #endif
 
                 // Get size of the "time" dimension
-                if (fileNum == numFilesPerKey - 1 && numFilesPerKey > 1) {
-                    timeSize = timeSizes[pd][1];
-                } else {
-                    timeSize = timeSizes[pd][0];
-                }
+                timeSize = timeSizes[pd][fileNum];
 
                 for (varNum = 0; varNum < OutDom->nvar_OUT[key]; varNum++) {
                     if (!OutDom->netCDFOutput.reqOutputVars[key][varNum]) {

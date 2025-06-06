@@ -247,9 +247,8 @@ typedef struct {
 #if defined(SWNETCDF)
     char **ncOutFiles[SW_OUTNKEYS][SW_OUTNPERIODS];
     int *ncOutVarIDs[SW_OUTNKEYS];
-    size_t outTimeSizes[SW_OUTNPERIODS]
-                       [2]; /**< Represents the first and last file time
-                              size ([0, num files - 1] is repetative) */
+    size_t *outTimeSizes[SW_OUTNPERIODS]; /**< Holds x output file time sizes
+                                               for each output period */
     unsigned int numOutFiles;
 
 #if defined(SWMPI)

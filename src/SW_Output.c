@@ -1277,6 +1277,7 @@ void SW_OUT_init_ptrs(SW_OUT_RUN *OutRun, SW_PATH_OUTPUTS *SW_PathOutputs) {
 #elif defined(SWNETCDF)
     SW_PathOutputs->ncOutFiles[key][column] = NULL;
     SW_PathOutputs->ncOutVarIDs[key] = NULL;
+    SW_PathOutputs->outTimeSizes[column] = NULL;
 #if defined(SWMPI)
     SW_PathOutputs->openOutFileIDs[key][column] = NULL;
 #endif
@@ -1963,6 +1964,10 @@ void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw) {
                 sw->SW_PathOutputs.openOutFileIDs[k][pd] = NULL;
             }
 #endif
+            if (!isnull(sw->SW_PathOutputs.outTimeSizes[pd])) {
+                free((void *) sw->SW_PathOutputs.outTimeSizes[pd]);
+                sw->SW_PathOutputs.outTimeSizes[pd] = NULL;
+            }
         }
 
         if (!isnull(sw->SW_PathOutputs.ncOutVarIDs[k])) {
@@ -4035,6 +4040,22 @@ void SW_PATHOUT_deepCopy(
                     dest_files->ncOutVarIDs[key][var] =
                         source_files->ncOutVarIDs[key][var];
                 }
+            }
+        }
+    }
+
+    ForEachOutPeriod(pd) {
+        if (!isnull(source_files->outTimeSizes[pd])) {
+            SW_NCOUT_alloc_timeSizes(
+                numFiles, &dest_files->outTimeSizes[pd], LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
+            }
+
+            for (fileNum = 0; fileNum < numFiles; fileNum++) {
+                dest_files->outTimeSizes[pd][fileNum] =
+                    source_files->outTimeSizes[pd][fileNum];
             }
         }
     }

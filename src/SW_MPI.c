@@ -335,10 +335,22 @@ static size_t calc_num_out_vals(size_t timeSize, IntUS nsl, IntUS npft) {
     due to the possibility of writing more than one site/grid cell;
     reorder output so it can properly be output by the netCDF
     output function
+
+@param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
+@param[in] timeSizes An array of size two to hold the time sizes for every
+    output file for a specific output period
+@param[in] numOutFiles Number of output files for each
+    output key/period
+@param[in] numInputs Number of inputs expected/received
+@param[out] src_p_OUT Source of accumulated output values throughout
+    simulation runs
+@param[out] dest_p_OUT Destination of accumulated output values throughout
+    simulation runs
 */
 static void reorder_output(
     SW_OUT_DOM *OutDom,
-    size_t timeSizes[][2],
+    size_t *timeSizes[],
     unsigned int numOutFiles,
     size_t numInputs,
     double *src_p_OUT[][SW_OUTNPERIODS],
@@ -370,11 +382,7 @@ static void reorder_output(
                 totalTimeSize = 0;
 
                 for (file = 0; file < numOutFiles; file++) {
-                    if (file == numOutFiles - 1 && numOutFiles > 1) {
-                        timeSize = timeSizes[pd][1];
-                    } else {
-                        timeSize = timeSizes[pd][0];
-                    }
+                    timeSize = timeSizes[pd][file];
 
                     oneSiteSize = OutDom->nrow_OUT[pd] *
                                   (OutDom->ncol_OUT[outKey] + ncol_TimeOUT[pd]);
@@ -2141,7 +2149,11 @@ static void open_output_files(
     SW_MPI_Bcast(MPI_UNSIGNED, &pathOutputs->numOutFiles, 1, SW_MPI_ROOT, comm);
     ForEachOutPeriod(pd) {
         SW_MPI_Bcast(
-            SW_MPI_SIZE_T, pathOutputs->outTimeSizes[pd], 2, SW_MPI_ROOT, comm
+            SW_MPI_SIZE_T,
+            pathOutputs->outTimeSizes[pd],
+            (int) pathOutputs->numOutFiles,
+            SW_MPI_ROOT,
+            comm
         );
     }
 
@@ -3266,6 +3278,8 @@ Handle the different request types accordingly
 @param[in] sDom Specifies the program's domain is site-oriented
 @param[in] recvLens A list of lengths that will be used to specify how many
     inputs to receive from a specific process
+@param[in] timeSizes An array of size two to hold the time sizes for every
+    output file for a specific output period
 @param[in] reqType Custom MPI type that mimics SW_MPI_REQUEST
 @param[in] logType Custom MPI type that mimics LOG_INFO
 @param[in] desig Designation instance that holds information about
@@ -3285,7 +3299,7 @@ static void get_comp_results(
     size_t **suids,
     Bool sDom,
     size_t recvLens[],
-    size_t timeSizes[][2],
+    size_t *timeSizes[],
     unsigned int numOutFiles,
     MPI_Datatype reqType,
     MPI_Datatype logType,
