@@ -50,9 +50,9 @@ while [ $# -gt 0 ]; do
 done
 
 
-# Check if SOILWAT2 capabilities include MPI
+# Check if SOILWAT2 test program capabilities include MPI
 # (Using grep instead of [[ ... =~ ... ]] because of newlines in output)
-if bin/SOILWAT2 -v 2>&1 | grep -qE 'Capabilities:.*MPI' ; then
+if bin/sw_test -v 2>&1 | grep -qE 'Capabilities:.*MPI' ; then
     if $verbose ; then
         echo "mpi-based SOILWAT2"
     fi

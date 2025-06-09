@@ -1,16 +1,17 @@
 
 #include "tests/gtests/sw_testhelpers.h"
-#include "include/generic.h"    // for swFALSE, swTRUE
-#include "include/myMemory.h"   // for Str_Dup
-#include "include/SW_Control.h" // for SW_CTL_clear_m...
-#include "include/SW_Files.h"   // for eFirst
-#include "include/SW_Model.h"   // for SW_MDL_get_ModelRun
-#include "include/SW_Output.h"  // for SW_OUT_setup_output
-#include "include/SW_Site.h"    // for encode_str2ptf, encode_str2swrc, set...
-#include "include/SW_Weather.h" // for SW_WTH_finalize_all_weather
-#include <stdio.h>              // for NULL, fprintf, stderr
-#include <stdlib.h>             // for exit
-#include <string.h>             // for strcpy
+#include "include/generic.h"     // for swFALSE, swTRUE
+#include "include/myMemory.h"    // for Str_Dup
+#include "include/SW_Control.h"  // for SW_CTL_clear_m...
+#include "include/SW_Files.h"    // for eFirst
+#include "include/SW_Main_lib.h" // for sw_print_version
+#include "include/SW_Model.h"    // for SW_MDL_get_ModelRun
+#include "include/SW_Output.h"   // for SW_OUT_setup_output
+#include "include/SW_Site.h"     // for encode_str2ptf, encode_str2swrc, set...
+#include "include/SW_Weather.h"  // for SW_WTH_finalize_all_weather
+#include <stdio.h>               // for NULL, fprintf, stderr
+#include <stdlib.h>              // for exit
+#include <string.h>              // for strcpy
 
 #if defined(SWNETCDF)
 #include "include/SW_netCDF_General.h"
@@ -181,6 +182,27 @@ void setup_SW_Site_for_tests(
 
     SW_SiteSim->swrcpOM[0][3] = 2419.2;
     SW_SiteSim->swrcpOM[1][3] = 0.864;
+}
+
+/** Check command line arguments of sw_test
+
+Command line arguments are not altered; they will be passed on to GoogleTest.
+
+Currently implemented options:
+    - `-v`, print version and capabilities.
+
+@param[in] argc Number (count) of command line arguments.
+@param[in] argv Values of command line arguments.
+@param[out] printVersionOnly A flag specifying if the SOILWAT2 test program
+    should print version information and end without executing the tests.
+*/
+void swtest_init_args(int argc, char **argv, int *printVersionOnly) {
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-v") == 0) {
+            *printVersionOnly = 1;
+            sw_print_version();
+        }
+    }
 }
 
 /* Set up global variables for testing and read in values from SOILWAT2 example
