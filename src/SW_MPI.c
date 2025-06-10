@@ -2145,16 +2145,34 @@ static void open_output_files(
     char *fileName = NULL;
     int var;
     int varID;
+    Bool getOutTimeSize;
 
     SW_MPI_Bcast(MPI_UNSIGNED, &pathOutputs->numOutFiles, 1, SW_MPI_ROOT, comm);
     ForEachOutPeriod(pd) {
-        SW_MPI_Bcast(
-            SW_MPI_SIZE_T,
-            pathOutputs->outTimeSizes[pd],
-            (int) pathOutputs->numOutFiles,
-            SW_MPI_ROOT,
-            comm
-        );
+        getOutTimeSize = (Bool) (!isnull(pathOutputs->outTimeSizes[pd]));
+
+        SW_MPI_Bcast(MPI_INT, &getOutTimeSize, 1, SW_MPI_ROOT, comm);
+
+        if (getOutTimeSize) {
+            if (rank > SW_MPI_ROOT) {
+                SW_NCOUT_alloc_timeSizes(
+                    pathOutputs->numOutFiles,
+                    &pathOutputs->outTimeSizes[pd],
+                    LogInfo
+                );
+            }
+            if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
+                return;
+            }
+
+            SW_MPI_Bcast(
+                SW_MPI_SIZE_T,
+                pathOutputs->outTimeSizes[pd],
+                (int) pathOutputs->numOutFiles,
+                SW_MPI_ROOT,
+                comm
+            );
+        }
     }
 
     ForEachOutKey(outKey) {
