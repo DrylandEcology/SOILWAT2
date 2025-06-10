@@ -2972,6 +2972,7 @@ static void spread_inputs(
     }
 
     for (comp = 0; comp < desig->nCompProcs; comp++) {
+        // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
         prevSendSum += sendInputs[comp + 1];
     }
 
@@ -3577,6 +3578,8 @@ static Bool write_outputs(
 
     for (write = numWrites; write < maxNumWrites; write++) {
         starts[write][0] = starts[write][1] = 0;
+
+        // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
         counts[write][0] = counts[write][1] = 0;
     }
 
@@ -3605,6 +3608,7 @@ static Bool write_outputs(
 
     // Update progress file statuses
     for (write = 0; write < maxNumWrites; write++) {
+        // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
         numSites = (siteDom) ? counts[write][0] : counts[write][1];
 
         for (mark = 0; mark < numSites; mark++) {
