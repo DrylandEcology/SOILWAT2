@@ -143,16 +143,14 @@ echo $'\n'\
 "Check SOILWAT2 with extra flags ..."$'\n'\
 ==================================================
 make clean
-make -k CXX=include-what-you-use CPPFLAGS="-DSW2_SpinupEvaluation" CXXFLAGS="-Xiwyu --error_always" test
-
-make clean
-make -k CXX=include-what-you-use CPPFLAGS="-DSW2_PET_Test__petfunc_by_temps" CXXFLAGS="-Xiwyu --error_always" test
-
-make clean
-make -k CXX=include-what-you-use CPPFLAGS="-DSW2_SolarPosition_Test__hourangles_by_lat_and_doy" CXXFLAGS="-Xiwyu --error_always" test
-
-make clean
-make -k CXX=include-what-you-use CPPFLAGS="-DSW2_SolarPosition_Test__hourangles_by_lats" CXXFLAGS="-Xiwyu --error_always" test
+make -k CXX=include-what-you-use \
+    CPPFLAGS="\
+    -DSW2_SpinupEvaluation \
+    -DSW2_PET_Test__petfunc_by_temps \
+    -DSW2_SolarPosition_Test__hourangles_by_lat_and_doy \
+    -DSW2_SolarPosition_Test__hourangles_by_lats \
+    " \
+    CXXFLAGS="-Xiwyu --error_always" test
 
 #-------------------------------------------------------------------------------
 echo $'\n'\
