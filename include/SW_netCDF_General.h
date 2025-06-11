@@ -7,7 +7,7 @@
 #include <stdio.h>                  // for size_t
 
 #if defined(SWMPI)
-#include <netcdf_par.h>
+#include <mpi.h> // for MPI_Comm
 #endif
 
 #ifdef __cplusplus

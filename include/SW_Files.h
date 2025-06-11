@@ -16,6 +16,7 @@
 #ifndef SW_FILES_H
 #define SW_FILES_H
 
+#include "include/generic.h"        // for Bool
 #include "include/SW_datastructs.h" // for SW_PATH_INPUTS, LOG_INFO
 
 #ifdef __cplusplus

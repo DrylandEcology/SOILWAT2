@@ -22,24 +22,30 @@
 #include "include/myMemory.h"       // for Str_Dup
 #include "include/SW_datastructs.h" // for LOG_INFO
 #include "include/SW_Defines.h"     // for MAX_MSGS, MAX_LOG_SIZE, BUILD_DATE
-#include "include/SW_Output.h"      // for SW_OUT_setup_output
-#include "include/Times.h"          // for SW_WT_ReportTime
-#include <stdio.h>                  // for fprintf, stderr, fflush, stdout
-#include <stdlib.h>                 // for exit, free, EXIT_FA...
-#include <string.h>                 // for strncmp
 
-#ifdef RSOILWAT
+#if defined(RSOILWAT)
 #include <R.h> // for Rf_error(), and Rf_warning() from <R_ext/Error.h>
+#else
+
+#include "include/SW_Output.h" // for SW_OUT_setup_output
+
+#if defined(SWNETCDF)
+#include "include/SW_netCDF_Output.h" // for SW_NCOUT_create_units_converters
 #endif
 
 #if defined(SWMPI)
 #include "include/SW_MPI.h"
+#include "include/SW_netCDF_Input.h" // for SW_NCOUT_create_units_converters
+#include <mpi.h>                     // for MPI_COMM_WORLD
+#else
+#include "include/Times.h" // for SW_WT_ReportTime
 #endif
 
-#if defined(SWNETCDF)
-#include "include/SW_netCDF_Input.h"
-#include "include/SW_netCDF_Output.h"
 #endif
+
+#include <stdio.h>  // for fprintf, stderr, fflush, stdout
+#include <stdlib.h> // for exit, free, EXIT_FA...
+#include <string.h> // for strncmp
 
 /* =================================================== */
 /*             Local Function Definitions              */

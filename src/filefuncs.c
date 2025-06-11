@@ -19,6 +19,7 @@
 #include <limits.h>                 // for INT_MIN, LONG_MIN, ULONG_MAX
 #include <math.h>                   // for HUGE_VAL
 #include <stdarg.h>                 // for va_end, va_start
+#include <stdint.h>                 // for SIZE_MAX
 #include <stdio.h>                  // for NULL, fclose, FILE, fopen, EOF
 #include <stdlib.h>                 // for free, strtod, strtof, strtol
 #include <string.h>                 // for strlen, strrchr, memccpy, strchr

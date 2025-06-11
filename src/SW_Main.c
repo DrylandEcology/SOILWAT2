@@ -15,7 +15,7 @@
 /* =================================================== */
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
-#include "include/filefuncs.h"      // for sw_message
+#include "include/filefuncs.h"      // for sw_message via SW_MSG_ROOT
 #include "include/generic.h"        // for Bool, swFALSE, swTRUE
 #include "include/SW_Control.h"     // for SW_CTL_RunSimSet, SW_CTL_clear...
 #include "include/SW_datastructs.h" // for LOG_INFO, SW_DOMAIN, SW_RUN
@@ -26,16 +26,17 @@
 #include "include/SW_Output.h"      // for SW_OUT_close_files, SW_OUT_cre...
 #include "include/SW_Weather.h"     // for SW_WTH_finalize_all_weather
 #include "include/Times.h"          // for SW_WT_ReportTime, SW_WT_StartTime
-#include <stdio.h>                  // for NULL, stdout
+#include <stdio.h>                  // for NULL, FILENAME_MAX, size_t, stdout
 
 
 #if defined(SWNETCDF)
-#include "include/SW_netCDF_Input.h"  // for SW_NCIN_check_input_config
-#include "include/SW_netCDF_Output.h" // for SW_NCOUT_create_units_converters
+#include "include/SW_netCDF_Input.h" // for SW_NCIN_check_input_config
 #endif
 
 #if defined(SWMPI)
-#include "include/SW_MPI.h"
+#include "include/SW_Defines.h" // for SW_MPI_ROOT
+#include "include/SW_MPI.h"     // for SW_MPI_setup_fail, SW_MPI_PROC_IO
+#include <mpi.h>                // for MPI_COMM_WORLD
 #endif
 
 

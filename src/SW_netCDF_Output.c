@@ -11,7 +11,6 @@
 #include "include/SW_netCDF_General.h"  // for SW_NC_write_vals, SW_NC_crea...
 #include "include/SW_Output.h"          // for ForEachOutKey, SW_ESTAB, pd2...
 #include "include/SW_Output_outarray.h" // for iOUTnc
-#include "include/SW_VegProd.h"         // for key2veg
 #include "include/Times.h"              // for isleapyear, Time_get_lastdoy_y
 #include <math.h>                       // for NAN, ceil, isnan
 #include <netcdf.h>                     // for NC_NOERR, nc_close, NC_DOUBLE

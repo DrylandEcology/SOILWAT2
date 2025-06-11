@@ -12,6 +12,7 @@
 
 #include "include/SW_datastructs.h" // for LOG_INFO
 #include "include/SW_Defines.h"     // for sw_random_t
+#include <stddef.h>                 // for size_t
 
 #ifdef __cplusplus
 extern "C" {

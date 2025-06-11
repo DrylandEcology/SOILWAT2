@@ -7,7 +7,8 @@
 #include "include/SW_Markov.h"      // for SW_MKV_deconstruct, SW_MKV_init_...
 #include "gmock/gmock.h"            // for HasSubstr, MakePredicateFormatte...
 #include "gtest/gtest.h"            // for Test, Message, TestPartResult, Po...
-#include <stdio.h>                  // for NULL
+#include <stdio.h>                  // for NULL, size_t
+#include <stdlib.h>                 // for free
 
 using ::testing::HasSubstr;
 

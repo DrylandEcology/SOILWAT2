@@ -2,8 +2,9 @@
 #define SWDOMAIN_H
 
 #include "include/generic.h"        // for Bool
-#include "include/SW_datastructs.h" // for SW_DOMAIN, SW_DOMAIN
+#include "include/SW_datastructs.h" // for SW_DOMAIN, LOG_INFO, SW_NETCDF_IN
 #include "include/SW_Defines.h"     // for LyrIndex
+#include <stddef.h>                 // for size_t
 
 #ifdef __cplusplus
 extern "C" {

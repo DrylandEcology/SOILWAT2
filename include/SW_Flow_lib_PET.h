@@ -11,6 +11,7 @@
 #ifndef SW_PET_H
 #define SW_PET_H
 
+#include "include/generic.h"        // for Bool
 #include "include/SW_datastructs.h" // for SW_ATMD_SIM, LOG_INFO
 #include "include/SW_Defines.h"     // for TWO_DAYS
 

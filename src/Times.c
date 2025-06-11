@@ -32,13 +32,17 @@
 /* --------------------------------------------------- */
 
 #include "include/Times.h"          // for Jan, Dec, Feb, NoMonth, NoDay
-#include "include/filefuncs.h"      // for sw_message
+#include "include/filefuncs.h"      // for sw_message via SW_MSG_ROOT
 #include "include/generic.h"        // for Bool, GE, final_running_sd, get_...
 #include "include/SW_datastructs.h" // for SW_WALLTIME, LOG_INFO
 #include "include/SW_Defines.h"     // for TimeInt, WallTimeSpec, MAX_DAYS
-#include <stdio.h>                  // for fprintf, FILE, NULL, stdout
-#include <string.h>                 // for NULL, memcpy
-#include <time.h>                   // for time, difftime, gmtime, strftime
+
+#if !defined(RSOILWAT)
+#include <stdio.h> // for fprintf, FILE, NULL, stdout
+#endif
+
+#include <string.h> // for NULL, memcpy
+#include <time.h>   // for time, difftime, gmtime, strftime
 
 
 /* =================================================== */

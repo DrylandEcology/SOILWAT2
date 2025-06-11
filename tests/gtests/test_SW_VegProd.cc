@@ -7,6 +7,7 @@
 #include "tests/gtests/sw_testhelpers.h" // for VegProdFixtureTest, tol6, tol3
 #include "gmock/gmock.h"                 // for HasSubstr, MakePredicateFor...
 #include "gtest/gtest.h"                 // for Test, Message, TestPartResul...
+#include <stddef.h>                      // for NULL
 
 using ::testing::HasSubstr;
 

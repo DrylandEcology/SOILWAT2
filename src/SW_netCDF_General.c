@@ -15,6 +15,11 @@
 #include <stdlib.h>                    // for free, strtod
 #include <string.h>                    // for strcmp, strlen, strstr, memcpy
 
+#if defined(SWMPI)
+#include <mpi.h>        // for MPI_Barrier, MPI_Comm, MPI_INF...
+#include <netcdf_par.h> // for nc_open_par
+#endif
+
 /* =================================================== */
 /*                   Local Defines                     */
 /* --------------------------------------------------- */

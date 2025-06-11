@@ -38,8 +38,9 @@
 #define SW_WEATHER_H
 
 #include "include/generic.h"        // for Bool
-#include "include/SW_datastructs.h" // for SW_WEATHER, SW_SKY_INPUTS, SW_MODEL, LOG_...
-#include "include/SW_Defines.h" // for TimeInt
+#include "include/SW_datastructs.h" // for SW_WEATHER_HIST, LOG_INFO, SW_CL...
+#include "include/SW_Defines.h"     // for TimeInt, MAX_INPUT_COLUMNS
+#include <stddef.h>                 // for size_t
 
 #ifdef __cplusplus
 extern "C" {

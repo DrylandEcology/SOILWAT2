@@ -28,7 +28,7 @@
 /* --------------------------------------------------- */
 
 #include "include/SW_Control.h"      // for SW_RUN_deepCopy, SW_CTL_RunSimSet
-#include "include/filefuncs.h"       // for LogError, sw_message
+#include "include/filefuncs.h"       // for LogError, sw_message via SW_MSG_ROOT
 #include "include/generic.h"         // for swTRUE, Bool, swFALSE, GT, IntU
 #include "include/myMemory.h"        // for Mem_Malloc
 #include "include/rands.h"           // for RandUniIntRange
@@ -60,10 +60,12 @@
 #if defined(SWNETCDF)
 #include "include/SW_netCDF_General.h"
 #include "include/SW_netCDF_Input.h"
-#include "include/SW_netCDF_Output.h"
 #include "include/SW_Output_outarray.h"
 #if defined(SWMPI)
-#include "include/SW_MPI.h"
+#include "include/SW_MPI.h" // for SW_MPI_setup_fail, SW_MPI_Bcast
+#include <mpi.h>            // for MPI_COMM_WORLD, MPI_Datatype
+#else
+#include "include/SW_netCDF_Output.h"
 #endif
 #endif
 

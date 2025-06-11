@@ -1,10 +1,13 @@
 #ifndef SWMPI_H
 #define SWMPI_H
 
-#include "include/SW_datastructs.h"
-
-#include <limits.h>
-#include <mpi.h>
+#include "include/generic.h"        // for Bool, IntU
+#include "include/SW_datastructs.h" // for LOG_INFO, SW_DOMAIN, SW_MPI_DESI...
+#include "include/SW_Defines.h"     // for SW_OUTNPERIODS
+#include <limits.h>                 // for UCHAR_MAX, UINT_MAX, ULONG_MAX
+#include <mpi.h>                    // for MPI_UNSIGNED_LONG, MPI_Datatype
+#include <stddef.h>                 // for size_t
+#include <stdint.h>                 // for SIZE_MAX
 
 #ifdef __cplusplus
 extern "C" {

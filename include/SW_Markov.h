@@ -16,6 +16,7 @@
 #include "include/generic.h"        // for Bool
 #include "include/SW_datastructs.h" // for SW_MARKOV, LOG_INFO
 #include "include/SW_Defines.h"     // for TimeInt
+#include <stddef.h>                 // for size_t
 
 #ifdef __cplusplus
 extern "C" {

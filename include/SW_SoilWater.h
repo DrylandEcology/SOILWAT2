@@ -101,6 +101,7 @@
 extern "C" {
 #endif
 
+#include "include/generic.h"        // for Bool
 #include "include/SW_datastructs.h" // for SW_SOILWAT, SW_SITE_*, LOG_INFO
 #include "include/SW_Defines.h"     // for TimeInt, LyrIndex, NVEGTYPES, MAX_...
 

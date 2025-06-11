@@ -1,24 +1,28 @@
 #include "include/SW_MPI.h"
-
-#include "include/filefuncs.h"
-#include "include/generic.h"
-#include "include/myMemory.h"
-#include "include/SW_Domain.h"
-#include "include/SW_Files.h"
-#include "include/SW_Main_lib.h"
-#include "include/SW_Markov.h"
-#include "include/SW_netCDF_General.h"
-#include "include/SW_netCDF_Input.h"
-#include "include/SW_netCDF_Output.h"
-#include "include/SW_Output.h"          // for ForEachOutKey, SW_ESTAB, pd2...
+#include "include/filefuncs.h"          // for LogError, BaseName, DirName
+#include "include/generic.h"            // for Bool, swTRUE, isnull, swFALSE
+#include "include/myMemory.h"           // for Mem_Malloc, Mem_ReAlloc, Str...
+#include "include/SW_Domain.h"          // for SW_DOM_calc_ncSuid
+#include "include/SW_Files.h"           // for eLog
+#include "include/SW_Main_lib.h"        // for sw_write_warnings, sw_init_logs
+#include "include/SW_Markov.h"          // for SW_MKV_construct, allocateMKV
+#include "include/SW_netCDF_General.h"  // for vNCprog, SW_NC_open_par, SW_...
+#include "include/SW_netCDF_Input.h"    // for ForEachNCInKey, numVarsInKey
+#include "include/SW_netCDF_Output.h"   // for SW_NCOUT_write_output, SW_NC...
+#include "include/SW_Output.h"          // for ForEachOutKey
 #include "include/SW_Output_outarray.h" // for SW_OUT_construct_outarray
 #include "include/SW_Weather.h"         // for SW_WTH_allocateAllWeather
-#include "include/Times.h"
-#include <netcdf.h>
-#include <netcdf_par.h>
-#include <signal.h> // for signal
-#include <stdlib.h>
-#include <string.h>
+#include "include/Times.h"              // for diff_walltime, SW_WT_ReportTime
+
+#include <math.h>       // for ceil
+#include <mpi.h>        // for MPI_DOUBLE, MPI_INT, MPI_COM...
+#include <netcdf.h>     // for nc_close, NC_NOWRITE, NC_NOERR
+#include <netcdf_par.h> // for nc_var_par_access, NC_COLLEC...
+#include <signal.h>     // for signal, SIGINT, SIGTERM, sig...
+#include <stdio.h>      // for FILE, snprintf, fprintf, FIL...
+#include <stdlib.h>     // for size_t, NULL, free
+#include <string.h>     // for memcpy, memset, strcmp, strlen
+
 
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static volatile sig_atomic_t runSims = 1;
