@@ -70,7 +70,7 @@ cat(
 # Run rSOILWAT2 with inputs from SOILWAT2/tests/example
 # (instead of rSOILWAT2::sw_exampleData) because
 # rSOILWAT2 turns off "ESTABL" by default (SOILWAT2 default: on)
-swr <- rSOILWAT2::sw_exec(dir = dir_example)
+swr <- try(rSOILWAT2::sw_exec(dir = dir_example))
 
 
 #--- . ------
@@ -96,7 +96,9 @@ read_swdata <- function(outkey, pd, swr, dir_txt, dir_nc, dir_mpi) {
       data.matrix()
   )
 
-  x[["r"]] = {
+  has_rSW2 <- !inherits(swr, "try-error")
+
+  x[["r"]] = if (has_rSW2) {
     tmp <- slot(slot(swr, outkey), pds2[[pd]])[, -idh, drop = FALSE]
     if (identical(dim(x[["txt"]]), dim(tmp))) {
       colnames(tmp) <- paste0(outkey, "_", colnames(tmp))
@@ -104,6 +106,8 @@ read_swdata <- function(outkey, pd, swr, dir_txt, dir_nc, dir_mpi) {
     } else {
       array(dim = dim(x[["txt"]]), dimnames = dimnames(x[["txt"]]))
     }
+  } else {
+    array(dim = c(0L, 0L))
   }
 
   dx <- dim(x[["txt"]])
@@ -302,7 +306,9 @@ read_swdata <- function(outkey, pd, swr, dir_txt, dir_nc, dir_mpi) {
     tmp <- nmam * (seq_len(nslyrs) - 1)
     ids <- c(1L + tmp, 2L + tmp, 3L + tmp)
     x[["txt"]] <- x[["txt"]][, ids, drop = FALSE]
-    x[["r"]] <- x[["r"]][, ids, drop = FALSE]
+    if (has_rSW2) {
+      x[["r"]] <- x[["r"]][, ids, drop = FALSE]
+    }
   }
 
   x
