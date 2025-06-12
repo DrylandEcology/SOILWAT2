@@ -43,7 +43,10 @@ jobs:
           if: ${{ env.SW2MODE == 'SWNC' && runner.os == 'macOS' }}
           run: |
               echo "UD_CFLAGS=-I/opt/homebrew/include" >> "$GITHUB_ENV"
-              echo "UD_LIBS=-I/opt/homebrew/lib" >> "$GITHUB_ENV"
+              echo "UD_LIBS=-L/opt/homebrew/lib" >> "$GITHUB_ENV"
+              echo "Debug udunits2 paths on macOS"
+              ls -l /opt/homebrew/include
+              ls -l /opt/homebrew/Cellar/udunits/2.2.28
           
         - name: Prepare environment (windows)
           if: ${{ runner.os == 'Windows' }}
