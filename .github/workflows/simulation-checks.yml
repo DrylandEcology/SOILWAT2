@@ -39,6 +39,10 @@ jobs:
                 shell: bash
 
         steps:
+        - name: Prepare environment (macOS)
+          if: ${{ env.SW2MODE == 'SWNC' && runner.os == 'macOS' }}
+          run: echo "UD_CFLAGS=-I/opt/homebrew/Cellar/udunits2" >> "$GITHUB_ENV"
+          
         - name: Prepare environment (windows)
           if: ${{ runner.os == 'Windows' }}
           # deal with line endings and end of file characters
@@ -80,10 +84,11 @@ jobs:
         - name: Mode of SOILWAT2
           run: echo "Checks for $SW2MODE-mode SOILWAT2"
 
-        - name: Run binary on example
-          run: |
-              make CPPFLAGS=-D"$SW2MODE" clean bin_run
-              make CPPFLAGS=-D"$SW2MODE" clean bin_debug_severe
+        - name: Simulate example
+          run: make CPPFLAGS=-D"$SW2MODE" clean bin_run
+        
+        - name: Simulate example with stricter code checks
+          run: make CPPFLAGS=-D"$SW2MODE" clean bin_debug_severe
 
         - name: Run binary with sanitizers (ubuntu)
           if: ${{ runner.os == 'Linux' }}
