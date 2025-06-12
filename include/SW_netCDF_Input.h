@@ -122,13 +122,14 @@ void SW_NCIN_read_inputs(
     size_t ***starts,
     size_t ***counts,
     int **openNCFileIDs[],
-    int numReads[],
-    int numInputs,
+    size_t numReads[],
+    size_t numInputs,
     double *tempMonthlyVals,
     double *elevations,
     double *tempSiltVals,
     double *tempVals,
     double *tempWeath,
+    size_t **domSuids,
     SW_SOIL_RUN_INPUTS *newSoils,
     SW_RUN_INPUTS *inputs,
     LOG_INFO *LogInfo
@@ -148,7 +149,7 @@ void SW_NCIN_open_dom_prog_files(
 );
 
 void SW_NCIN_close_files(
-    SW_PATH_INPUTS *SW_PathInputs, Bool **readInVars, Bool useIndexFile[]
+    SW_PATH_INPUTS *SW_PathInputs, Bool **readInVars, const Bool useIndexFile[]
 );
 
 void SW_NCIN_init_ptrs(SW_NETCDF_IN *SW_netCDFIn);

@@ -428,7 +428,7 @@ holds basic information about output files and values
 void SW_F_deconstruct(
     SW_PATH_INPUTS *SW_PathInputs,
     Bool **readInVars,
-    Bool useIndexFile[],
+    const Bool useIndexFile[],
     int procJob
 ) {
     IntUS i;

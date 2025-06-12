@@ -124,6 +124,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
         SW_Run.RunIn.weathRunAllHist,
         SW_Run.ModelSim.cum_monthdays,
         SW_Run.ModelSim.days_in_month,
+        NULL,
+        swFALSE, // Does not matter
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -187,6 +189,8 @@ TEST_F(
         SW_Run.RunIn.weathRunAllHist,
         SW_Run.ModelSim.cum_monthdays,
         SW_Run.ModelSim.days_in_month,
+        NULL,
+        swFALSE, // Does not matter
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -621,6 +625,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
         SW_Run.RunIn.weathRunAllHist,
         SW_Run.ModelSim.cum_monthdays,
         SW_Run.ModelSim.days_in_month,
+        NULL,
+        swFALSE, // Does not matter
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -711,6 +717,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGridMET) {
         SW_Run.RunIn.weathRunAllHist,
         SW_Run.ModelSim.cum_monthdays,
         SW_Run.ModelSim.days_in_month,
+        NULL,
+        swFALSE, // Does not matter
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -801,6 +809,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype1) {
         SW_Run.RunIn.weathRunAllHist,
         SW_Run.ModelSim.cum_monthdays,
         SW_Run.ModelSim.days_in_month,
+        NULL,
+        swFALSE, // Does not matter
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -894,6 +904,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
         SW_Run.RunIn.weathRunAllHist,
         SW_Run.ModelSim.cum_monthdays,
         SW_Run.ModelSim.days_in_month,
+        NULL,
+        swFALSE, // Does not matter
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error

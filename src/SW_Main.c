@@ -15,7 +15,7 @@
 /* =================================================== */
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
-#include "include/filefuncs.h"      // for sw_message
+#include "include/filefuncs.h"      // for sw_message via SW_MSG_ROOT
 #include "include/generic.h"        // for Bool, swFALSE, swTRUE
 #include "include/SW_Control.h"     // for SW_CTL_RunSimSet, SW_CTL_clear...
 #include "include/SW_datastructs.h" // for LOG_INFO, SW_DOMAIN, SW_RUN
@@ -26,16 +26,17 @@
 #include "include/SW_Output.h"      // for SW_OUT_close_files, SW_OUT_cre...
 #include "include/SW_Weather.h"     // for SW_WTH_finalize_all_weather
 #include "include/Times.h"          // for SW_WT_ReportTime, SW_WT_StartTime
-#include <stdio.h>                  // for NULL, stdout
+#include <stdio.h>                  // for NULL, FILENAME_MAX, size_t, stdout
 
 
 #if defined(SWNETCDF)
-#include "include/SW_netCDF_Input.h"  // for SW_NCIN_check_input_config
-#include "include/SW_netCDF_Output.h" // for SW_NCOUT_create_units_converters
+#include "include/SW_netCDF_Input.h" // for SW_NCIN_check_input_config
 #endif
 
 #if defined(SWMPI)
-#include "include/SW_MPI.h"
+#include "include/SW_Defines.h" // for SW_MPI_ROOT
+#include "include/SW_MPI.h"     // for SW_MPI_setup_fail, SW_MPI_PROC_IO
+#include <mpi.h>                // for MPI_COMM_WORLD
 #endif
 
 
@@ -59,12 +60,13 @@ int main(int argc, char **argv) {
     Bool renameDomainTemplateNC = swFALSE;
     Bool prepareFiles = swFALSE;
     Bool setupFailed = swTRUE;
+    Bool endQuietly = swFALSE;
 
     int rank = 0;
     int size = 0;
     char procName[FILENAME_MAX] = "\0";
 
-    unsigned long userSUID;
+    size_t userSUID;
 
     // Start overall wall time
     SW_WT_StartTime(&SW_WallTime);
@@ -105,14 +107,15 @@ int main(int argc, char **argv) {
         &SW_WallTime.wallTimeLimit,
         &renameDomainTemplateNC,
         &prepareFiles,
+        &endQuietly,
         &LogInfo
     );
 #if defined(SWMPI)
-    if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD)) {
+    if (endQuietly || SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD)) {
         goto finishProgram;
     }
 #else
-    if (LogInfo.stopRun) {
+    if (endQuietly || LogInfo.stopRun) {
         goto finishProgram;
     }
 #endif
@@ -231,6 +234,8 @@ int main(int argc, char **argv) {
             sw_template.RunIn.weathRunAllHist,
             sw_template.ModelSim.cum_monthdays,
             sw_template.ModelSim.days_in_month,
+            NULL,
+            swFALSE, // Does not matter
             &LogInfo
         );
         if (LogInfo.stopRun) {
@@ -287,7 +292,7 @@ setupProgramData:
 
 #if defined(SWMPI)
     if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD) || prepareFiles) {
-        if (prepareFiles) {
+        if (prepareFiles && LogInfo.printProgressMsg) {
             SW_MSG_ROOT("completed simulation preparations.", rank);
         }
 
@@ -310,7 +315,7 @@ setupProgramData:
     }
 #else
     if (LogInfo.stopRun || prepareFiles) {
-        if (prepareFiles) {
+        if (prepareFiles && LogInfo.printProgressMsg) {
             SW_MSG_ROOT("completed simulation preparations.", rank);
         }
 
@@ -346,9 +351,9 @@ finishProgram: {
     SW_CTL_clear_model(swTRUE, &sw_template);
 
     sw_finalize_program(
-        rank, size, &SW_Domain, &SW_WallTime, setupFailed, &LogInfo
+        rank, size, &SW_Domain, &SW_WallTime, setupFailed, endQuietly, &LogInfo
     );
-    if (LogInfo.printProgressMsg) {
+    if (!endQuietly && LogInfo.printProgressMsg) {
         SW_MSG_ROOT("ended.", rank);
     }
 }

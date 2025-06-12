@@ -22,24 +22,30 @@
 #include "include/myMemory.h"       // for Str_Dup
 #include "include/SW_datastructs.h" // for LOG_INFO
 #include "include/SW_Defines.h"     // for MAX_MSGS, MAX_LOG_SIZE, BUILD_DATE
-#include "include/SW_Output.h"      // for SW_OUT_setup_output
-#include "include/Times.h"          // for SW_WT_ReportTime
-#include <stdio.h>                  // for fprintf, stderr, fflush, stdout
-#include <stdlib.h>                 // for exit, free, EXIT_FA...
-#include <string.h>                 // for strncmp
 
-#ifdef RSOILWAT
-#include <R.h> // for error(), and warning() from <R_ext/Error.h>
+#if defined(RSOILWAT)
+#include <R.h> // for Rf_error(), and Rf_warning() from <R_ext/Error.h>
+#else
+
+#include "include/SW_Output.h" // for SW_OUT_setup_output
+
+#if defined(SWNETCDF)
+#include "include/SW_netCDF_Output.h" // for SW_NCOUT_create_units_converters
 #endif
 
 #if defined(SWMPI)
 #include "include/SW_MPI.h"
+#include "include/SW_netCDF_Input.h" // for SW_NCOUT_create_units_converters
+#include <mpi.h>                     // for MPI_COMM_WORLD
+#else
+#include "include/Times.h" // for SW_WT_ReportTime
 #endif
 
-#if defined(SWNETCDF)
-#include "include/SW_netCDF_Input.h"
-#include "include/SW_netCDF_Output.h"
 #endif
+
+#include <stdio.h>  // for fprintf, stderr, fflush, stdout
+#include <stdlib.h> // for exit, free, EXIT_FA...
+#include <string.h> // for strncmp
 
 /* =================================================== */
 /*             Local Function Definitions              */
@@ -50,24 +56,28 @@
 */
 static void sw_print_usage(void) {
     sw_printf(
-        "Ecosystem water simulation model SOILWAT2\n"
-        "More details at https://github.com/Burke-Lauenroth-Lab/SOILWAT2\n"
-        "Usage: ./SOILWAT2 [-d startdir] [-f files.in] [-e] [-q] [-v] [-h] "
-        "[-s 1] [-t 10] [-r]\n"
-        "  -d : operate (chdir) in startdir (default=.)\n"
-        "  -f : name of main input file (default=files.in)\n"
-        "       a preceeding path applies to all input files\n"
-        "  -e : echo initial values from site and estab to logfile\n"
-        "  -q : quiet mode (print version, print error, message to check "
-        "logfile)\n"
-        "  -v : print version information\n"
-        "  -h : print this help information\n"
-        "  -s : simulate all (0) or one (> 0) simulation unit from the domain\n"
-        "       (default = 0)\n"
-        "  -t : wall time limit in seconds\n"
-        "  -r : rename netCDF domain template file "
-        "[name provided in 'Input_nc/files_nc.in']\n"
-        "  -p : solely prepare domain/progress, index, and output files\n"
+        "SOILWAT2: an ecosystem water simulation model.\n"
+        "More details at https://github.com/DrylandEcology/SOILWAT2\n"
+        "Usage: SOILWAT2 [-d <directory>] [-f <mainFile>] [-e] [-q] [-v] [-h] "
+        "[-s <number>] [-t <number>] [-r] [-p]\n"
+        "Options:\n"
+        "  -d : Operate (chdir) in <directory> (default = '.').\n"
+        "  -f : Main input file relative to <directory>"
+        "(default = 'files.in').\n"
+        "  -e : Echo inputs from text-based input files.\n"
+        "  -q : Quiet mode (do not write messages to the console).\n"
+        "  -v : Print version information and exit.\n"
+        "  -h : Print this help information and exit.\n"
+        "  -s : Simulate all simulation units (if <number> = 0, default) or \n"
+        "       a specific simulation unit that is identified by its suid \n"
+        "       (suid = <number> if <number> > 0) \n"
+        "       Note: xy-domain `<number> = (y - 1) * nDimX + x`.\n"
+        "       This option is not functional in mpi-based SOILWAT2.\n"
+        "  -t : Set a wall time limit where <number> is in units of seconds.\n"
+        "  -r : A netCDF domain template file is automatically renamed\n"
+        "       to the domain file name provided in 'Input_nc/files_nc.in'.\n"
+        "  -p : Prepare domain, progress, index, and output netCDF files\n"
+        "       but do not run simulations.\n"
     );
 }
 
@@ -104,6 +114,17 @@ void sw_print_version(void) {
 
     sw_printf("\n");
 
+#if defined(SWMPI)
+    sw_printf(
+        "SWMPI           : SW_MPI_NIO = %d, N_SUID_ASSIGN = %d, "
+        "MAX_NODE_PROCS = %d, N_ITER_BEFORE_OUT = %d\n",
+        SW_MPI_NIO,
+        N_SUID_ASSIGN,
+        MAX_NODE_PROCS,
+        N_ITER_BEFORE_OUT
+    );
+#endif
+
 #ifndef RSOILWAT
     sw_printf(
         "Compiled        : by %s, on %s, on %s %s\n",
@@ -134,6 +155,8 @@ void sw_print_version(void) {
 @param[out] prepareFiles Should we only prepare domain/progress, index,
             and output files? If so, simulations will occur without this
             flag being turned on
+@param[out] endQuietly A flag specifying if no messages should be produced,
+    e.g., if SOILWAT2 was called to print help or version only.
 @param[out] LogInfo Holds information on warnings and errors
 */
 void sw_init_args(
@@ -142,10 +165,11 @@ void sw_init_args(
     int rank,
     Bool *EchoInits,
     char **firstfile,
-    unsigned long *userSUID,
+    size_t *userSUID,
     double *wallTimeLimit,
     Bool *renameDomainTemplateNC,
     Bool *prepareFiles,
+    Bool *endQuietly,
     LOG_INFO *LogInfo
 ) {
 
@@ -188,6 +212,7 @@ void sw_init_args(
     *EchoInits = swFALSE;
     *renameDomainTemplateNC = swFALSE;
     *userSUID = 0; // Default (if no input) is 0 (i.e., all suids)
+    *endQuietly = swFALSE;
 
     a = 1;
     for (i = 1; i <= nopts; i++) {
@@ -265,31 +290,40 @@ void sw_init_args(
         case 4: /* -v */
             if (rank == 0) {
                 sw_print_version();
-                LogError(LogInfo, LOGERROR, "");
-                if (LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
-                }
+                *endQuietly = swTRUE;
+                return;
             }
             break;
 
         case 5: /* -h */
             if (rank == 0) {
                 sw_print_usage();
-                LogError(LogInfo, LOGERROR, "");
-                if (LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
-                }
+                *endQuietly = swTRUE;
+                return;
             }
             break;
 
         case 6: /* -s */
-            *userSUID = sw_strtoul(str, errMsg, LogInfo);
+#if defined(SWMPI)
+            if (rank == 0) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "The option '-s' is currently disabled in SWMPI mode. It "
+                    "is suggested to use SWNC mode to run a specific site."
+                );
+            }
+
+            return;
+#endif
+
+            *userSUID = sw_strtosizet(str, errMsg, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
 
             /* Check that user input can be represented by userSUID
-             * (currently, unsigned long) */
+             * (currently, size_t) */
             /* Expect that conversion of string to double results in the
              * same value as conversion of userSUID to double */
             doubleUserSUID = sw_strtod(str, errMsg, LogInfo);
@@ -302,7 +336,7 @@ void sw_init_args(
                     LogInfo,
                     LOGERROR,
                     "User input not recognized as a simulation unit "
-                    "('-s %s' vs. %lu).",
+                    "('-s %s' vs. %zu).",
                     str,
                     *userSUID
                 );
@@ -355,7 +389,7 @@ for rSOILWAT2, then issue an error with the error message.
 void sw_fail_on_error(LOG_INFO *LogInfo) {
 #ifdef RSOILWAT
     if (LogInfo->stopRun) {
-        error("%s", LogInfo->errorMsg);
+        Rf_error("%s", LogInfo->errorMsg);
     }
 
 #else
@@ -431,11 +465,11 @@ void sw_write_warnings(const char *header, LOG_INFO *LogInfo) {
 
     if (!QuietMode) {
         for (warnMsgNum = 0; warnMsgNum < warningUpperBound; warnMsgNum++) {
-            warning("%s%s", header, LogInfo->warningMsgs[warnMsgNum]);
+            Rf_warning("%s%s", header, LogInfo->warningMsgs[warnMsgNum]);
         }
 
         if (tooManyWarns) {
-            warning("%s%s", header, tooManyWarnsStr);
+            Rf_warning("%s%s", header, tooManyWarnsStr);
         }
     }
 #else
@@ -484,6 +518,7 @@ void sw_write_warnings(const char *header, LOG_INFO *LogInfo) {
 #endif
 }
 
+#if !defined(RSOILWAT)
 /**
 @brief Close logfile and notify user
 
@@ -528,7 +563,7 @@ void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
             if (LogInfo->numDomainWarnings > 0) {
                 (void) fprintf(
                     stderr,
-                    "Simulation units with warnings: n = %lu\n",
+                    "Simulation units with warnings: n = %zu\n",
                     LogInfo->numDomainWarnings
                 );
             }
@@ -536,7 +571,7 @@ void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
             if (LogInfo->numDomainErrors > 0) {
                 (void) fprintf(
                     stderr,
-                    "Simulation units with an error: n = %lu\n",
+                    "Simulation units with an error: n = %zu\n",
                     LogInfo->numDomainErrors
                 );
             }
@@ -563,7 +598,7 @@ void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
 void sw_setup_prog_data(
     int rank,
     int worldSize,
-    char *procName,
+    const char *procName,
     Bool prepareFiles,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
@@ -633,7 +668,7 @@ void sw_setup_prog_data(
 #endif
 
 #if defined(SWMPI)
-    if (doOutStuff) {
+    if (doOutStuff && !prepareFiles) {
         SW_MPI_ncout_info(
             rank,
             SW_Domain->SW_Designation.groupComm,
@@ -682,6 +717,8 @@ is enabled
     information for the program run
 @param[in] setupFailed A flag specifying if the program was exited
     before setup was completed
+@param[in] endQuietly A flag specifying if no messages should be produced,
+    e.g., if SOILWAT2 was called to print help or version only.
 @param[in] LogInfo Holds information on warnings and errors
 */
 void sw_finalize_program(
@@ -690,9 +727,12 @@ void sw_finalize_program(
     SW_DOMAIN *SW_Domain,
     SW_WALLTIME *SW_WallTime,
     Bool setupFailed,
+    Bool endQuietly,
     LOG_INFO *LogInfo
 ) {
 #if defined(SWMPI)
+    int procJob = SW_Domain->SW_Designation.procJob;
+
     /* Report information for the following scenarios
         1) Failed during setup - error(s)/warning(s)
         2) Failed during simulation runs - simulations statistics *
@@ -700,24 +740,28 @@ void sw_finalize_program(
 
         * = All warnings/errors are reported through I/O processes
     */
-    SW_MPI_report_log(
-        rank,
-        size,
-        SW_Domain->datatypes[eSW_MPI_WallTime],
-        SW_WallTime,
-        SW_Domain,
-        setupFailed,
-        LogInfo
-    );
+    if (!endQuietly) {
+        SW_MPI_report_log(
+            rank,
+            size,
+            SW_Domain->datatypes[eSW_MPI_WallTime],
+            SW_WallTime,
+            SW_Domain,
+            setupFailed,
+            LogInfo
+        );
+    }
 
     // Free types and communicators
     SW_MPI_free_comms_types(
         rank, &SW_Domain->SW_Designation, SW_Domain->datatypes, LogInfo
     );
 #else
-    sw_write_warnings("(main) ", LogInfo);
-    SW_WT_ReportTime(*SW_WallTime, LogInfo);
-    sw_fail_on_error(LogInfo);
+    if (!endQuietly) {
+        sw_write_warnings("(main) ", LogInfo);
+        SW_WT_ReportTime(*SW_WallTime, LogInfo);
+        sw_fail_on_error(LogInfo);
+    }
 
     (void) size;
     (void) setupFailed;
@@ -725,9 +769,12 @@ void sw_finalize_program(
     (void) SW_Domain;
 #endif
 
-    sw_wrapup_logs(rank, LogInfo);
+    if (!endQuietly) {
+        sw_wrapup_logs(rank, LogInfo);
+    }
 
 #if defined(SWMPI)
-    SW_MPI_finalize();
+    SW_MPI_finalize(procJob, LogInfo);
 #endif
 }
+#endif // !defined(RSOILWAT)

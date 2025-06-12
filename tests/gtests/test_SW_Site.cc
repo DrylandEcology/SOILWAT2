@@ -137,7 +137,7 @@ TEST(SiteTest, SitePTFsDeathTest) {
 
 // Test PTF-SWRC pairings
 TEST(SiteTest, SitePTF2SWRC) {
-    unsigned int k; // `sw_length()` returns "unsigned long"
+    unsigned int k; // `sw_length()` returns "size_t"
     Bool res = swFALSE;
 
     for (k = 1; k < sw_length(ns_ptfca2C1974); k++) {

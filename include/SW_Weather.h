@@ -38,8 +38,9 @@
 #define SW_WEATHER_H
 
 #include "include/generic.h"        // for Bool
-#include "include/SW_datastructs.h" // for SW_WEATHER, SW_SKY_INPUTS, SW_MODEL, LOG_...
-#include "include/SW_Defines.h" // for TimeInt
+#include "include/SW_datastructs.h" // for SW_WEATHER_HIST, LOG_INFO, SW_CL...
+#include "include/SW_Defines.h"     // for TimeInt, MAX_INPUT_COLUMNS
+#include <stddef.h>                 // for size_t
 
 #ifdef __cplusplus
 extern "C" {
@@ -179,13 +180,15 @@ void SW_WTH_setWeatherValues(
     double ***tempWeather,
     double elevation,
     TimeInt doyOffset,
+    size_t *domSuid,
+    Bool sDom,
     SW_WEATHER_HIST *yearlyWeather,
     LOG_INFO *LogInfo
 );
 
 void allocate_temp_weather(
     TimeInt nYears,
-    int extraStorMult,
+    size_t extraStorMult,
     double ****fullWeathHist,
     LOG_INFO *LogInfo
 );
@@ -220,6 +223,8 @@ void finalizeAllWeather(
     SW_WEATHER_HIST *allHist,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
+    size_t ncSuid[],
+    Bool sDom,
     LOG_INFO *LogInfo
 );
 
@@ -246,11 +251,17 @@ void generateMissingWeather(
     unsigned int n_years,
     unsigned int method,
     unsigned int optLOCF_nMax,
+    size_t ncSuid[],
+    Bool sDom,
     LOG_INFO *LogInfo
 );
 
 void checkAllWeather(
-    SW_WEATHER_INPUTS *weather, SW_WEATHER_HIST *weathHist, LOG_INFO *LogInfo
+    SW_WEATHER_INPUTS *weather,
+    SW_WEATHER_HIST *weathHist,
+    size_t ncSuid[],
+    Bool sDom,
+    LOG_INFO *LogInfo
 );
 
 void SW_WTH_allocateAllWeather(
@@ -262,7 +273,7 @@ void initializeAllWeatherPtrs(SW_WEATHER_HIST **allHist, unsigned int n_years);
 void deallocateAllWeather(SW_WEATHER_HIST **allHist);
 
 void clear_hist_weather(
-    int extraStorMult, SW_WEATHER_HIST *yearWeather, double **fullWeathHist
+    size_t extraStorMult, SW_WEATHER_HIST *yearWeather, double **fullWeathHist
 );
 
 void SW_WTH_finalize_all_weather(
@@ -271,6 +282,8 @@ void SW_WTH_finalize_all_weather(
     SW_WEATHER_HIST *allHist,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
+    size_t ncSuid[],
+    Bool sDom,
     LOG_INFO *LogInfo
 );
 

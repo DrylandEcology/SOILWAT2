@@ -3,7 +3,6 @@
 /* --------------------------------------------------- */
 #include "include/SW_datastructs.h"
 #include "include/myMemory.h" // for Mem_Malloc
-#include <float.h>            // for DBL_MAX
 #include <math.h>             // for fabs, pow, cos, fmod
 #include <stdlib.h>           // for free
 

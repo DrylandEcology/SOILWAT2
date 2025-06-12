@@ -63,7 +63,7 @@
 
 #include <float.h>  // for DBL_EPSILON, FLT_EPSILON
 #include <math.h>   // for fabs, sqrt, sqrtf
-#include <stddef.h> // for NULL
+#include <stddef.h> // for NULL, size_t
 
 #ifdef RSOILWAT
 #include <R.h> // for Rprintf() from <R_ext/Print.h>
@@ -283,18 +283,6 @@ typedef double RealD;
 
 #define squared(x) ((x) * (x)) // added for convenience
 
-// Macros to simplify the checking for a root process
-// when SWMPI is enabled, otherwise there is no need for checking
-// for a root process
-#if defined(SWMPI)
-#define SW_MSG_ROOT(str, rank) \
-    if ((rank) == 0)           \
-    sw_message((str))
-#else
-#define SW_MSG_ROOT(str, rank) \
-    sw_message((str));         \
-    (void) (rank)
-#endif
 
 /* =================================================== */
 /*             Global Function Declarations            */

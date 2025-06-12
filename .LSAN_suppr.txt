@@ -12,3 +12,13 @@ leak:_fetchInitializingClassList
 leak:libobjc.A.dylib
 leak:libsystem_c.dylib
 leak:libsystem_info.dylib
+
+# known issue with libcurl and SystemConfiguration on macOS
+# https://developer.apple.com/forums/thread/745636
+leak:__SCGetThreadSpecificData
+
+# known leak in some OpenSSL versions, where memory allocated during
+# OPENSSL_init_ssl is never explicitly freed —
+# sometimes by design (e.g., reused for the entire process lifetime).
+# https://mta.openssl.org/pipermail/openssl-users/2022-June/015263.html
+leak:OPENSSL_init_ssl

@@ -1252,7 +1252,7 @@ memory for writing out values
 */
 static void alloc_netCDF_domain_vars(
     Bool domTypeIsSite,
-    unsigned long nSUIDs,
+    size_t nSUIDs,
     unsigned int numY,
     unsigned int numX,
     double **valsY,
@@ -1972,7 +1972,7 @@ static void fill_domain_netCDF_gridded(
     const char *XDimName = (primCRSIsGeo) ? readinGeoXName : readinProjXName;
 
     const char *dimNames[] = {YDimName, XDimName, "bnds"};
-    const unsigned long dimVals[] = {SW_Domain->nDimY, SW_Domain->nDimX, 2};
+    const size_t dimVals[] = {SW_Domain->nDimY, SW_Domain->nDimX, 2};
     int *createDimIDs[] = {YDimID, XDimID, &bndsID};
     int dimIDs[] = {0, 0, 0};
     int dimIDIndex;
@@ -2507,11 +2507,11 @@ static void fill_prog_netCDF_vals(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     int domVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCdom];
     int progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprog];
-    unsigned long suid;
-    unsigned long ncSuid[2];
-    unsigned long nSUIDs = SW_Domain->nSUIDs;
-    unsigned long nDimY = SW_Domain->nDimY;
-    unsigned long nDimX = SW_Domain->nDimX;
+    size_t suid;
+    size_t ncSuid[2];
+    size_t nSUIDs = SW_Domain->nSUIDs;
+    size_t nDimY = SW_Domain->nDimY;
+    size_t nDimX = SW_Domain->nDimX;
     int progFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprog];
     int domFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom];
     size_t start1D[] = {0};
@@ -2600,7 +2600,7 @@ static void fill_prog_netCDF_vals(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             LogError(
                 LogInfo,
                 LOGERROR,
-                "Could not read domain status for SUIDs #%lu - #%lu.",
+                "Could not read domain status for SUIDs #%zu - #%zu.",
                 suid,
                 suid + (chunkSizes[0] * chunkSizes[1])
             );
@@ -4891,7 +4891,7 @@ to get data from netCDF
 */
 static void get_read_start(
     Bool useIndexFile,
-    char *indexFileName,
+    const char *indexFileName,
     Bool inSiteDom,
     const size_t ncSUID[],
     size_t start[],
@@ -5027,8 +5027,10 @@ within read data
 @param[in] count List of numbers specifying the number of
     values per dimension of the variable to read in
 */
-static int calc_read_offset(int order, const int numCount, size_t count[]) {
-    int val = 1;
+static size_t calc_read_offset(
+    int order, const int numCount, const size_t count[]
+) {
+    size_t val = 1;
     int cIndex;
 
     for (cIndex = order + 1; cIndex < numCount; cIndex++) {
@@ -5089,7 +5091,7 @@ static void set_read_vals(
     double scale_factor,
     double add_offset,
     sw_converter_t *unitConv,
-    int stride,
+    size_t stride,
     Bool sameIndexPlace,
     double *resVals
 ) {
@@ -5097,7 +5099,7 @@ static void set_read_vals(
     double *dest;
     Bool notMissingBefore;
     double readVal;
-    int strideIndex;
+    size_t strideIndex;
 
     for (valIndex = 0; valIndex < numVals; valIndex++) {
         strideIndex = valIndex * stride;
@@ -5162,8 +5164,8 @@ input keys
 */
 static void read_spatial_topo_climate_site_inputs(
     SW_DOMAIN *SW_Domain,
-    int numInputs,
-    int numReads[],
+    size_t numInputs,
+    const size_t numReads[],
     char ***inFiles,
     const size_t ncSUID[],
     size_t **starts[],
@@ -5215,13 +5217,13 @@ static void read_spatial_topo_climate_site_inputs(
         eSW_InSpatial, eSW_InTopo, eSW_InClimate, eSW_InSite
     };
     InKeys currKey;
-    int read;
-    int site;
-    int numSites = 1;
-    int tempRead = 0;
-    int input;
-    int inputOrigin;
-    int stride = 1;
+    size_t read;
+    size_t site;
+    size_t numSites = 1;
+    size_t tempRead = 0;
+    size_t input;
+    size_t inputOrigin;
+    size_t stride = 1;
     Bool twoDLat;
 
     for (keyNum = 0; keyNum < numKeys; keyNum++) {
@@ -5415,7 +5417,7 @@ static void read_spatial_topo_climate_site_inputs(
                             }
                         } else { // Site domain
                             tempRead = (timeIndex > latIndex) ?
-                                           (int) (count[timeIndex] * site) :
+                                           (count[timeIndex] * site) :
                                            site;
                         }
                     }
@@ -5523,7 +5525,7 @@ static void read_miss_vals(
     void *valPtr = valPtrs[typeIndex];
     double tempMaxMissVal = SW_MISSING;
 
-    if (attType < NC_BYTE || attType == NC_CHAR || attType > NC_DOUBLE) {
+    if (attType < NC_BYTE || attType == NC_CHAR || attType > NC_UINT) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -6128,7 +6130,7 @@ static void read_veg_inputs(
     size_t **starts,
     size_t **counts,
     char **vegInFiles,
-    int numReads,
+    size_t numReads,
     const size_t ncSUID[],
     sw_converter_t **vegConv,
     int **vegFileIDs,
@@ -6168,13 +6170,13 @@ static void read_veg_inputs(
     int k;
     size_t defSetStart[2] = {0};
     size_t defSetCount[2] = {1, 1};
-    int read;
-    int numSites = 1;
-    int site;
-    int writeIndex;
-    int input = 0;
-    int inputOrigin = 0;
-    int stride = 1;
+    size_t read;
+    size_t numSites = 1;
+    size_t site;
+    size_t writeIndex;
+    size_t input = 0;
+    size_t inputOrigin = 0;
+    size_t stride = 1;
     Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InVeg];
 
 #if !defined(SWMPI)
@@ -6330,7 +6332,7 @@ static void read_veg_inputs(
                     }
                 } else { // Site domain
                     writeIndex = (timeIndex > latIndex) ?
-                                     (int) (count[timeIndex] * site) :
+                                     (count[timeIndex] * site) :
                                      site;
                 }
 
@@ -6421,6 +6423,8 @@ static void derive_missing_soils(
     const double depthsAllSoilLayers[],
     LyrIndex nMaxSoilLayers,
     double tempSilt[],
+    size_t ncSuid[],
+    Bool sDom,
     LOG_INFO *LogInfo
 ) {
     Bool noDepth;
@@ -6457,9 +6461,11 @@ static void derive_missing_soils(
         if (hasConstSoilDepths) {
             // Check that depth is consistent with depthsAllSoilLayers
             if (!EQ(soilIn->depths[slNum], depthsAllSoilLayers[slNum])) {
-                LogError(
+                LogErrorSuid(
                     LogInfo,
                     LOGERROR,
+                    ncSuid,
+                    sDom,
                     "Depth (%f cm) of soil layer %d disagrees with "
                     "expected depth (%f cm).",
                     soilIn->depths[slNum],
@@ -6528,11 +6534,14 @@ static void derive_missing_soils(
             cumWidth += soilIn->width[slNum];
 
             if (!EQ(soilIn->depths[slNum], cumWidth)) {
-                LogError(
+                LogErrorSuid(
                     LogInfo,
                     LOGERROR,
+                    ncSuid,
+                    sDom,
                     "Soil layer depth (%f cm) and "
-                    "width (%f cm, cumulative = %f) are provided as inputs, "
+                    "width (%f cm, cumulative = %f) are provided as "
+                    "inputs, "
                     "but they disagree in soil layer %d.",
                     soilIn->depths[slNum],
                     soilIn->width[slNum],
@@ -6551,10 +6560,13 @@ static void derive_missing_soils(
                          soilIn->fractionWeightMatric_clay[slNum];
 
             if (!EQ_w_tol(sumTexture, 1., toleranceSoilTexture)) {
-                LogError(
+                LogErrorSuid(
                     LogInfo,
                     LOGERROR,
-                    "Sum of sand (%f), silt (%f) and clay (%f) is %f != 1 "
+                    ncSuid,
+                    sDom,
+                    "Sum of sand (%f), silt (%f) and clay "
+                    "(%f) is %f != 1 "
                     "in soil layer %d.",
                     soilIn->fractionWeightMatric_sand[slNum],
                     tempSilt[slNum],
@@ -6569,9 +6581,11 @@ static void derive_missing_soils(
 
 
     if (*n_layers > nMaxSoilLayers) {
-        LogError(
+        LogErrorSuid(
             LogInfo,
             LOGERROR,
+            ncSuid,
+            sDom,
             "Number of soil layers (%d) is larger than "
             "domain-wide expected maximum number of soil layers (%d).",
             *n_layers,
@@ -6619,8 +6633,8 @@ static void read_soil_inputs(
     sw_converter_t **soilConv,
     const size_t ncSUID[],
     Bool inputsProvideSWRCp,
-    int numInputs,
-    int numReads,
+    size_t numInputs,
+    size_t numReads,
     size_t **starts,
     size_t **counts,
     int **openSoilFileIDs,
@@ -6628,6 +6642,7 @@ static void read_soil_inputs(
     double *tempVals,
     SW_SOIL_RUN_INPUTS *newSoilBuff,
     SW_RUN_INPUTS *inputs,
+    size_t **domSuids,
     LOG_INFO *LogInfo
 ) {
     char ***inVarInfo = SW_Domain->netCDFInput.inVarInfo[eSW_InSoil];
@@ -6652,6 +6667,7 @@ static void read_soil_inputs(
     const int pftIndex = 4;
     Bool hasPFT;
     Bool inSiteDom = SW_Domain->netCDFInput.siteDoms[eSW_InSoil];
+    Bool progSiteDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
     Bool isSwrcpVar;
     int numVarsInSoilKey = numVarsInKey[eSW_InSoil];
     char *varName;
@@ -6664,14 +6680,14 @@ static void read_soil_inputs(
     int lonIndex;
     int vertIndex;
     int pftWriteIndex;
-    int read;
+    size_t read;
     size_t site;
     size_t numSites = 1;
-    int inputOrigin = 0;
+    size_t inputOrigin = 0;
     size_t writeIndex;
-    int input = 0;
+    size_t input = 0;
     double *readPtr;
-    int stride = 1;
+    size_t stride = 1;
 
     Bool varHasAddScaleAtts;
     double scaleFactor;
@@ -6898,6 +6914,8 @@ static void read_soil_inputs(
             depthsAllSoilLayers,
             SW_Domain->nMaxSoilLayers,
             &tempSilt[input * MAX_LAYERS],
+            domSuids[input],
+            progSiteDom,
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -7290,7 +7308,6 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     const char *attVals[] = {"simulation progress", "1", grid_map, coord};
     const int numAtts = 4;
     int numValsToWrite;
-    const signed char fillVal[] = {NC_FILL_BYTE};
     const signed char flagVals[] = {PRGRSS_FAIL, PRGRSS_READY, PRGRSS_DONE};
     const char *flagMeanings =
         "simulation_error ready_to_simulate simulation_complete";
@@ -7409,7 +7426,7 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             SW_Domain->OutDom.netCDFOutput.siteName,
             -1,
             useDefaultChunking,
-            (void *) fillVal,
+            swTRUE,
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -7753,7 +7770,7 @@ void SW_NCIN_create_domain_template(
 @param[in,out] LogInfo Holds information dealing with logfile output
 */
 Bool SW_NCIN_check_progress(
-    int progFileID, int progVarID, unsigned long ncSUID[], LOG_INFO *LogInfo
+    int progFileID, int progVarID, size_t ncSUID[], LOG_INFO *LogInfo
 ) {
 
     signed char progVal = 0;
@@ -7782,6 +7799,8 @@ to get data from netCDF
 @param[in] weathConv A list of UDUNITS2 converters that were created
 to convert input data to units the program can understand within the
 "inWeather" input key
+@param[in] domSuids A list of program-domain suids of sites that will
+    have the inputs read for (MPI only)
 @param[in] elevation Site elevation above sea level [m]
 @param[out] LogInfo Holds information on warnings and errors
 */
@@ -7789,16 +7808,17 @@ static void read_weather_input(
     SW_DOMAIN *SW_Domain,
     SW_WEATHER_INPUTS *SW_WeatherIn,
     char ***weathInFiles,
-    char *indexFileName,
+    const char *indexFileName,
     const size_t ncSUID[],
     sw_converter_t **weathConv,
-    int numInputs,
-    int numReads,
+    size_t numInputs,
+    size_t numReads,
     size_t **starts,
     size_t **counts,
     int **weathFileIDs,
     double *elevation,
     double *tempVals,
+    size_t **domSuids,
     SW_RUN_INPUTS *inputs,
     LOG_INFO *LogInfo
 ) {
@@ -7814,6 +7834,7 @@ static void read_weather_input(
     TimeInt yearIndex;
     TimeInt year;
     Bool inSiteDom = SW_Domain->netCDFInput.siteDoms[eSW_InWeather];
+    Bool progSiteDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
     int fIndex = 1;
     int varID = -1;
     int ncFileID = -1;
@@ -7840,12 +7861,12 @@ static void read_weather_input(
     int latIndex;
     int lonIndex;
     int timeIndex;
-    int read;
+    size_t read;
     size_t numSites = 1;
     size_t site;
-    int input = 0;
-    int stride = 1;
-    int tempStart = 0;
+    size_t input = 0;
+    size_t stride = 1;
+    size_t tempStart = 0;
     double ***tempWeatherHist = NULL;
     size_t writeIndex = 0;
 
@@ -7983,9 +8004,9 @@ static void read_weather_input(
                             tempStart = site;
                         } else {
                             if (latIndex > lonIndex) {
-                                writeIndex = site * count[timeIndex];
+                                tempStart = site * count[timeIndex];
                             } else {
-                                writeIndex = site;
+                                tempStart = site;
                             }
                         }
                     } else { // Site domain
@@ -8040,6 +8061,8 @@ static void read_weather_input(
             tempWeatherHist,
             elevation[input],
             MAX_DAYS * input,
+            domSuids[input],
+            progSiteDom,
             inputs[input].weathRunAllHist,
             LogInfo
         );
@@ -8151,6 +8174,8 @@ to SW_Run
 @param[in] tempSiltVals A temporary buffer to store silt values
 @param[in] tempVals A temporary buffer to store any soil variable in
 @param[in] tempWeath A temporary buffer to store read weather input in
+@param[in] domSuids A list of program-domain suids of sites that will
+    have the inputs read for (MPI only)
 @param[in] newSoils A single (no SWMPI) or a list (SWMPI) of instances of
     SW_SOIL_RUN_INPUTS used as temporary storage when reading inputs
 @param[in] inputs A single instance (no SWMPI) or a list (SWMPI) of
@@ -8164,13 +8189,14 @@ void SW_NCIN_read_inputs(
     size_t ***starts,
     size_t ***counts,
     int **openNCFileIDs[],
-    int numReads[],
-    int numInputs,
+    size_t numReads[],
+    size_t numInputs,
     double *tempMonthlyVals,
     double *elevations,
     double *tempSiltVals,
     double *tempVals,
     double *tempWeath,
+    size_t **domSuids,
     SW_SOIL_RUN_INPUTS *newSoils,
     SW_RUN_INPUTS *inputs,
     LOG_INFO *LogInfo
@@ -8181,7 +8207,7 @@ void SW_NCIN_read_inputs(
     sw_converter_t ***convs = SW_Domain->netCDFInput.uconv;
     unsigned int yearIn;
     unsigned int year;
-    int input;
+    size_t input;
     Bool readSpatial = readInputs[eSW_InSpatial][0];
     Bool readClimate = readInputs[eSW_InClimate][0];
     Bool readTopo = readInputs[eSW_InTopo][0];
@@ -8192,7 +8218,7 @@ void SW_NCIN_read_inputs(
     int **weathFileIDs = NULL;
     int **vegFileIDs = NULL;
     int **soilFileIDs = NULL;
-    int inIndex = 0;
+    size_t inIndex = 0;
 
 #if defined(SWMPI)
     weathFileIDs = openNCFileIDs[eSW_InWeather];
@@ -8279,6 +8305,7 @@ void SW_NCIN_read_inputs(
             weathFileIDs,
             elevations,
             tempWeath,
+            domSuids,
             inputs,
             LogInfo
         );
@@ -8293,6 +8320,8 @@ void SW_NCIN_read_inputs(
                 inputs[input].weathRunAllHist,
                 sw->ModelSim.cum_monthdays,
                 sw->ModelSim.days_in_month,
+                domSuids[input],
+                SW_Domain->netCDFInput.siteDoms[eSW_InDomain],
                 LogInfo
             );
             if (LogInfo->stopRun) {
@@ -8339,6 +8368,7 @@ void SW_NCIN_read_inputs(
             tempVals,
             newSoils,
             inputs,
+            domSuids,
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -8561,7 +8591,7 @@ void SW_NCIN_open_dom_prog_files(
 @param[in] useIndexFile Specifies to create/use an index file
 */
 void SW_NCIN_close_files(
-    SW_PATH_INPUTS *SW_PathInputs, Bool **readInVars, Bool useIndexFile[]
+    SW_PATH_INPUTS *SW_PathInputs, Bool **readInVars, const Bool useIndexFile[]
 ) {
     int fileNum;
 

@@ -45,6 +45,7 @@ void setup_SW_Site_for_tests(
     SW_SITE_INPUTS *SW_SiteIn, SW_SITE_SIM *SW_SiteSim
 );
 
+void swtest_init_args(int argc, char **argv, int *printVersionOnly);
 int setup_testGlobalSoilwatTemplate();
 void teardown_testGlobalSoilwatTemplate();
 
@@ -76,7 +77,7 @@ class AllTestFixture : public ::testing::Test {
             &template_SW_Run,
             &SW_Run,
             &template_SW_Domain.OutDom,
-            &SW_Run.RunIn,
+            &template_SW_Run.RunIn,
             swTRUE,
             &LogInfo
         );

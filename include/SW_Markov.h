@@ -16,6 +16,7 @@
 #include "include/generic.h"        // for Bool
 #include "include/SW_datastructs.h" // for SW_MARKOV, LOG_INFO
 #include "include/SW_Defines.h"     // for TimeInt
+#include <stddef.h>                 // for size_t
 
 #ifdef __cplusplus
 extern "C" {
@@ -24,7 +25,7 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_MKV_construct(unsigned long rng_seed, SW_MARKOV_INPUTS *SW_MarkovIn);
+void SW_MKV_construct(size_t rng_seed, SW_MARKOV_INPUTS *SW_MarkovIn);
 
 void copyMKV(SW_MARKOV_INPUTS *dest_MKV, SW_MARKOV_INPUTS *template_MKV);
 
@@ -46,7 +47,7 @@ Bool SW_MKV_read_cov(
 
 void SW_MKV_setup(
     SW_MARKOV_INPUTS *SW_MarkovIn,
-    unsigned long Weather_rng_seed,
+    size_t Weather_rng_seed,
     unsigned int Weather_genWeathMethod,
     char *txtInFiles[],
     LOG_INFO *LogInfo
@@ -56,6 +57,8 @@ void SW_MKV_today(
     SW_MARKOV_INPUTS *SW_MarkovIn,
     TimeInt doy0,
     TimeInt year,
+    size_t ncSuid[],
+    Bool sDom,
     double *tmax,
     double *tmin,
     double *rain,

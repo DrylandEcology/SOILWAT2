@@ -16,6 +16,7 @@
 #ifndef SW_FILES_H
 #define SW_FILES_H
 
+#include "include/generic.h"        // for Bool
 #include "include/SW_datastructs.h" // for SW_PATH_INPUTS, LOG_INFO
 
 #ifdef __cplusplus
@@ -85,7 +86,7 @@ void SW_F_construct(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo);
 void SW_F_deconstruct(
     SW_PATH_INPUTS *SW_PathInputs,
     Bool **readInVars,
-    Bool useIndexFile[],
+    const Bool useIndexFile[],
     int procJob
 );
 

@@ -7,7 +7,7 @@
 #include <stdio.h>                  // for size_t
 
 #if defined(SWMPI)
-#include <netcdf_par.h>
+#include <mpi.h> // for MPI_Comm
 #endif
 
 #ifdef __cplusplus
@@ -108,7 +108,7 @@ void SW_NC_get_str_att_val(
 
 void SW_NC_create_netCDF_dim(
     const char *dimName,
-    unsigned long size,
+    size_t size,
     const int *ncFileID,
     int *dimID,
     LOG_INFO *LogInfo
@@ -145,7 +145,7 @@ void SW_NC_create_full_var(
     const char *siteName,
     const int coordAttIndex,
     Bool useDefaultChunking,
-    void *defFillVal,
+    Bool addFillValueAttribute,
     LOG_INFO *LogInfo
 );
 

@@ -28,13 +28,23 @@ Actions:
 
 Options:
     -ref, --reference <path/to/reference/output>
+    --reference=<path/to/reference/output>
                         Path to reference run output. If the default is
                         selected as reference and output is missing, then
                         SOILWAT2 will be run to create reference output.
                         Default is 'tests/ncTestRuns/results/referenceRun/Output'
+
     -t, --testRun <test number>
+    --testRun=<test number>
                         Perform action(s) on selected test run(s);
                         default is '-1', i.e., all test runs.
+
+    -m, --mode <nc|mpi> Compile and execute <mpi>-mode or <nc>-mode SOILWAT2
+    --mode=<nc|mpi>     (default is <nc>-mode).
+
+    -n,-np <number>     Number of parallel processes in mpi-mode SOILWAT2.
+    --ntasks=<number>
+
     -h, --help          Display this help page.
 
 Examples:
@@ -74,6 +84,8 @@ doExternalDownload=false
 dirOutRefDefault="${dir_ncTestRuns}""/results/referenceRun/Output"
 dirOutRef="${dirOutRefDefault}"
 testRun=-1
+withMode="nc"
+nTasks=""
 
 
 while [ $# -gt 0 ]; do
@@ -92,13 +104,21 @@ while [ $# -gt 0 ]; do
 
         downloadExternalWeatherData) doExternalDownload=true ;;
 
+        --reference=*) dirOutRef="${1#*=}" ;;
         -ref|--reference) dirOutRef="$2"; shift ;;
 
+        --testRun=*) testRun="${1#*=}" ;;
         -t|--testRun) testRun="$2"; shift ;;
+
+        --mode=*) withMode="${1#*=}" ;;
+        -m|--mode) withMode="$2"; shift ;;
+
+        --ntasks=*) nTasks="${1#*=}" ;;
+        -n|-np) nTasks="$2"; shift ;;
 
         -h|--help) echo "$usage"; exit 0 ;;
 
-        *) echo "Option ""$1"" is not implemented"; exit 1 ;;
+        *) echo "Option \"$1\" is not implemented."; exit 1 ;;
     esac
     shift
 done
@@ -187,18 +207,35 @@ if ! command -v Rscript > /dev/null 2>&1 ; then
 fi
 
 
-#--- Check that existing SOILWAT2 is nc-based
+#--- Check that existing SOILWAT2 has the required capabilities
 # $1 SOILWAT2 (including path)
-hasNotSW2nc() {
+# $2 mode (nc|mpi)
+#
+# Return 0 if SOILWAT2 exists and if it has requested capabilities for the mode
+# Return 1 otherwise
+hasSW2() {
     local res=""
     local sw2="$1"
+    local mode="$2"
     local status=1
 
     if [ -f "${sw2}" ]; then
         res=$(eval '"$sw2" -v' 2>&1)
-        if [[ "$res" != *"Capabilities: netCDF-c, udunits2"* ]]; then
-            status=0
-        fi
+
+        case "${mode}" in
+            nc)
+                if echo "$res" | grep -qE 'Capabilities:.*netCDF-c' && ! echo "$res" | grep -qE 'Capabilities:.*MPI' ; then
+                    status=0
+                fi
+                ;;
+
+            mpi)
+                if echo "$res" | grep -qE 'Capabilities:.*MPI' ; then
+                    status=0
+                fi
+                ;;
+
+        esac
     fi
 
     return $status
@@ -211,15 +248,46 @@ echo $'\n'\
 "ncTestRuns"$'\n'\
 ==================================================
 
-if [ ! -f "${sw2}" ] || hasNotSW2nc "${sw2}" ; then
-    echo $'\n'"Compile nc-based SOILWAT2 ..."
-    res=$(make clean CPPFLAGS=-DSWNC all)
+pCC="default"
+
+if [ "${withMode}" = "mpi" ]; then
+    myDir=$(dirname ${BASH_SOURCE[0]}) # directory of this script
+    source "${myDir}/hasMPICC.sh"
+
+    if has_mpicc ; then
+        pCC="mpicc"
+    fi
 fi
 
-if hasNotSW2nc "${sw2}" ; then
-    echo "Error: SOILWAT2 lacks netCDF capabilities."
+if ! hasSW2 "${sw2}" "${withMode}"; then
+    case "${withMode}" in
+        nc)
+            echo $'\n'"Compile nc-based SOILWAT2 ..."
+            res=$(make CPPFLAGS=-DSWNC clean all)
+            ;;
+
+        mpi)
+            echo $'\n'"Compile mpi-based SOILWAT2 ..."
+            if [ "${pCC}" = "mpicc" ] ; then
+                res=$(make CC=mpicc CPPFLAGS=-DSWMPI clean all)
+            else
+                res=$(make CPPFLAGS=-DSWMPI clean all)
+            fi
+            ;;
+
+        *)
+            echo "Error: SOILWAT2 with mode '""${withMode}""' is not implemented."
+            exit 1
+            ;;
+
+    esac
+fi
+
+if ! hasSW2 "${sw2}" "${withMode}"; then
+    echo "Error: SOILWAT2 lacks required capabilities."
     exit 1
 fi
+
 
 if [ ! -d "${dirOutRef}" ] && [ "${dirOutRef}" = "${dirOutRefDefault}" ]; then
     echo $'\n'"Run SOILWAT2 to create default reference output ..."
@@ -229,6 +297,8 @@ if [ ! -d "${dirOutRef}" ] && [ "${dirOutRef}" = "${dirOutRefDefault}" ]; then
         "${dir_ncTestRuns}"/scripts/Rscript__ncTestRuns_00_createReferenceRun.R \
         --path-to-ncTestRuns="${dir_ncTestRuns}" \
         --path-to-sw2="${sw2}" \
+        --swMode="${withMode}" \
+        --ntasks=2 \
         --path-to-referenceOutput="${dirOutRef}"
     status=$?
 
@@ -251,10 +321,17 @@ if [ "${doCreate}" = "true" ]; then
 
     make clean_example
 
+    if ! command -v ncks > /dev/null 2>&1 ; then
+        echo "Error: cannot locate required tool ncks (NCO)."
+        exit 1
+    fi
+
     Rscript \
         "${dir_ncTestRuns}"/scripts/Rscript__ncTestRuns_01_createTestRuns.R \
         --path-to-ncTestRuns="${dir_ncTestRuns}" \
         --path-to-sw2="${sw2}" \
+        --swMode="${withMode}" \
+        --ntasks="${nTasks}" \
         --testRuns="${testRun}"
 fi
 
@@ -265,6 +342,8 @@ if [ "${doCheck}" = "true" ]; then
         "${dir_ncTestRuns}"/scripts/Rscript__ncTestRuns_02_checkTestRuns.R \
         --path-to-ncTestRuns="${dir_ncTestRuns}" \
         --path-to-sw2="${sw2}" \
+        --swMode="${withMode}" \
+        --ntasks="${nTasks}" \
         --path-to-referenceOutput="${dirOutRef}" \
         --testRuns="${testRun}"
 fi

@@ -371,6 +371,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                     &SW_Run,
                     &local_sw,
                     &SW_Domain.OutDom,
+                    &SW_Run.RunIn,
                     swTRUE,
                     &local_LogInfo
                 );

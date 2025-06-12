@@ -7,6 +7,7 @@
 #include "tests/gtests/sw_testhelpers.h" // for VegProdFixtureTest, tol6, tol3
 #include "gmock/gmock.h"                 // for HasSubstr, MakePredicateFor...
 #include "gtest/gtest.h"                 // for Test, Message, TestPartResul...
+#include <stddef.h>                      // for NULL
 
 using ::testing::HasSubstr;
 
@@ -263,6 +264,8 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
         SW_Run.RunIn.weathRunAllHist,
         SW_Run.ModelSim.cum_monthdays,
         SW_Run.ModelSim.days_in_month,
+        NULL,
+        swFALSE,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -858,6 +861,8 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
         SW_Run.RunIn.weathRunAllHist,
         SW_Run.ModelSim.cum_monthdays,
         SW_Run.ModelSim.days_in_month,
+        NULL,
+        swFALSE,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1452,6 +1457,8 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne1DeathTest) {
         SW_Run.RunIn.weathRunAllHist,
         SW_Run.ModelSim.cum_monthdays,
         SW_Run.ModelSim.days_in_month,
+        NULL,
+        swFALSE,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1577,6 +1584,8 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne2DeathTest) {
         SW_Run.RunIn.weathRunAllHist,
         SW_Run.ModelSim.cum_monthdays,
         SW_Run.ModelSim.days_in_month,
+        NULL,
+        swFALSE,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error

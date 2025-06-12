@@ -53,9 +53,7 @@
 @param[out] ncSuid Unique indentifier of the first suid to run
     in relation to netCDFs
 */
-void SW_DOM_calc_ncSuid(
-    SW_DOMAIN *SW_Domain, unsigned long suid, unsigned long ncSuid[]
-) {
+void SW_DOM_calc_ncSuid(SW_DOMAIN *SW_Domain, size_t suid, size_t ncSuid[]) {
 
     if (strcmp(SW_Domain->DomainType, "s") == 0) {
         ncSuid[0] = suid;
@@ -94,7 +92,7 @@ FALSE if simulation for \p ncSuid has been completed (i.e., skip).
 Bool SW_DOM_CheckProgress(
     int progFileID,
     int progVarID,
-    unsigned long ncSuid[], // NOLINT(readability-non-const-parameter)
+    size_t ncSuid[], // NOLINT(readability-non-const-parameter)
     LOG_INFO *LogInfo
 ) {
 #if defined(SWNETCDF)
@@ -134,7 +132,7 @@ void SW_DOM_CreateProgress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 @param[out] SW_Domain Struct of type SW_DOMAIN which
     holds constant temporal/spatial information for a set of simulation runs
 */
-void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain) {
+void SW_DOM_construct(size_t rng_seed, SW_DOMAIN *SW_Domain) {
 
 /* Set seed of `spinup_rng`
   - SOILWAT2: set seed here
@@ -545,16 +543,14 @@ void SW_DOM_SetProgress(
     0 indicates that all simulations units within domain are requested
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_DOM_SimSet(
-    SW_DOMAIN *SW_Domain, unsigned long userSUID, LOG_INFO *LogInfo
-) {
+void SW_DOM_SimSet(SW_DOMAIN *SW_Domain, size_t userSUID, LOG_INFO *LogInfo) {
 
     Bool progFound;
-    unsigned long *startSimSet = &SW_Domain->startSimSet;
-    unsigned long *endSimSet = &SW_Domain->endSimSet;
-    unsigned long startSuid[2]; // 2 -> [y, x] or [0, s]
-    int progFileID = 0; // Value does not matter if SWNETCDF is not defined
-    int progVarID = 0;  // Value does not matter if SWNETCDF is not defined
+    size_t *startSimSet = &SW_Domain->startSimSet;
+    size_t *endSimSet = &SW_Domain->endSimSet;
+    size_t startSuid[2]; // 2 -> [y, x] or [0, s]
+    int progFileID = 0;  // Value does not matter if SWNETCDF is not defined
+    int progVarID = 0;   // Value does not matter if SWNETCDF is not defined
 
 #if defined(SWNETCDF)
     progFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprog];
@@ -566,8 +562,8 @@ void SW_DOM_SimSet(
             LogError(
                 LogInfo,
                 LOGERROR,
-                "User requested simulation unit (suid = %lu) "
-                "does not exist in simulation domain (n = %lu).",
+                "User requested simulation unit (suid = %zu) "
+                "does not exist in simulation domain (n = %zu).",
                 userSUID,
                 SW_Domain->nSUIDs
             );
@@ -637,18 +633,12 @@ void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
     int k;
     int i;
 
-#if defined(SWMPI)
-    if (SW_Domain->SW_Designation.procJob == SW_MPI_PROC_IO) {
-#endif
-        SW_F_deconstruct(
-            &SW_Domain->SW_PathInputs,
-            SW_Domain->netCDFInput.readInVars,
-            SW_Domain->netCDFInput.useIndexFile,
-            SW_Domain->SW_Designation.procJob
-        );
-#if defined(SWMPI)
-    }
-#endif
+    SW_F_deconstruct(
+        &SW_Domain->SW_PathInputs,
+        SW_Domain->netCDFInput.readInVars,
+        SW_Domain->netCDFInput.useIndexFile,
+        SW_Domain->SW_Designation.procJob
+    );
 
 #if defined(SWNETCDF)
 
