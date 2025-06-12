@@ -2182,8 +2182,8 @@ void SW_WTH_construct(
     memset(SW_WeatherSim, 0, sizeof(SW_WEATHER_SIM));
 
     ForEachOutPeriod(pd) {
-        memset(weath_p_accu, 0, sizeof(SW_WEATHER_OUTPUTS));
-        memset(weath_p_oagg, 0, sizeof(SW_WEATHER_OUTPUTS));
+        memset(&weath_p_accu[pd], 0, sizeof(SW_WEATHER_OUTPUTS));
+        memset(&weath_p_oagg[pd], 0, sizeof(SW_WEATHER_OUTPUTS));
     }
 
     SW_WeatherIn->n_years = 0;

@@ -143,8 +143,8 @@ void SW_VES_construct(
     memset(SW_VegEstabSim, 0, sizeof(SW_VEGESTAB_SIM));
 
     ForEachOutPeriod(pd) {
-        memset(ves_p_oagg, 0, sizeof(SW_VEGESTAB_OUTPUTS));
-        memset(ves_p_accu, 0, sizeof(SW_VEGESTAB_OUTPUTS));
+        memset(&ves_p_oagg[pd], 0, sizeof(SW_VEGESTAB_OUTPUTS));
+        memset(&ves_p_accu[pd], 0, sizeof(SW_VEGESTAB_OUTPUTS));
     }
 }
 

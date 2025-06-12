@@ -629,8 +629,8 @@ void SW_VPD_construct(
     memset(SW_VegProdRunIn, 0, sizeof(SW_VEGPROD_RUN_INPUTS));
 
     ForEachOutPeriod(pd) {
-        memset(vp_p_oagg, 0, sizeof(SW_VEGPROD_OUTPUTS));
-        memset(vp_p_accu, 0, sizeof(SW_VEGPROD_OUTPUTS));
+        memset(&vp_p_oagg[pd], 0, sizeof(SW_VEGPROD_OUTPUTS));
+        memset(&vp_p_accu[pd], 0, sizeof(SW_VEGPROD_OUTPUTS));
     }
 }
 
