@@ -1,0 +1,121 @@
+name: simulation-checks
+
+# Checks: compilation, example run, and unit tests
+# Platforms: ubuntu, macOS, and Windows
+# Compilers: defaults
+
+# Exclusions:
+#     - Windows checks only txt-mode SOILWAT2
+#     - mpi-mode SOILWAT2 is currently excluded
+#     - ncTestRuns are currently excluded
+
+on:
+    push:
+        branches: [master, main, release/**]
+    pull_request:
+        branches: [master, main, release/**]
+
+
+jobs:
+    simulation_checks:
+
+        runs-on: ${{ matrix.os }}
+
+        strategy:
+            fail-fast: false
+            matrix:
+                os: [ubuntu-latest, macos-latest, windows-latest]
+                sw2mode: [SWTXT, SWNC]
+                exclude:
+                - os: windows-latest
+                    sw2mode: SWNC
+            max-parallel: 3
+
+        env:
+            SW2MODE: ${{ matrix.sw2mode }}
+
+        defaults:
+            run:
+                shell: bash
+
+        steps:
+        - name: Prepare environment (windows)
+            if: ${{ runner.os == 'Windows' }}
+            # deal with line endings and end of file characters
+            # CYGWIN_NOWINPATH: only have cygwin's executables on PATH
+            # CHERE_INVOKING: prevent profile script to change directory
+            run: |
+                git config --global core.autocrlf input
+                git config --global core.eol lf
+                echo "CYGWIN_NOWINPATH=1" >> "$GITHUB_ENV"
+                echo "CHERE_INVOKING=1" >> "$GITHUB_ENV"
+
+        - name: Install cygwin (windows)
+            if: ${{ runner.os == 'Windows' }}
+            # see https://github.com/cygwin/cygwin-install-action
+            uses: cygwin/cygwin-install-action@v3
+            with:
+                packages: gcc-core gcc-g++ make
+
+        - name: Install netCDF-C and udunits2 (ubuntu)
+            if: ${{ env.SW2MODE == 'SWNC' && runner.os == 'Linux' }}
+            run: |
+                sudo apt-get update
+                sudo apt-get install libnetcdf-dev libudunits2-dev
+
+        - name: Install netCDF-C and udunits2 (macOS)
+            if: ${{ env.SW2MODE == 'SWNC' && runner.os == 'macOS' }}
+            run: |
+                brew update
+                brew install netcdf udunits
+
+        - name: Checkout SOILWAT2 repository and submodules
+            uses: actions/checkout@v4
+            with:
+                submodules: recursive
+
+        - name: Compiler versions as seen by make
+            run: make compiler_version
+
+        - name: Mode of SOILWAT2
+            run: echo "Checks for $SW2MODE-mode SOILWAT2"
+
+        - name: Run binary on example
+            run: |
+                make CPPFLAGS=-D"$SW2MODE" clean bin_run
+                make CPPFLAGS=-D"$SW2MODE" clean bin_debug_severe
+
+        - name: Run binary with sanitizers (ubuntu)
+            if: ${{ runner.os == 'Linux' }}
+            # Apple clang does not support "AddressSanitizer: detect_leaks"
+            # AddressSanitizer and LeakSanitizer not available on cygwin
+            run: make CPPFLAGS=-D"$SW2MODE" clean bin_sanitizer
+
+        - name: Run binary via 'leaks' (ubuntu)
+            if: ${{ runner.os == 'macOS' }}
+            run: make CPPFLAGS=-D"$SW2MODE" clean bin_leaks
+
+        - name: Unit tests with shuffle and 3x repeats
+            run: make CPPFLAGS=-D"$SW2MODE" clean test_rep3rnd
+
+        - name: Severe unit tests with sanitizers (ubuntu)
+            if: ${{ runner.os == 'Linux' }}
+            # Apple clang does not support "AddressSanitizer: detect_leaks"
+            # AddressSanitizer and LeakSanitizer not available on cygwin
+            run: make CPPFLAGS=-D"$SW2MODE" clean test_sanitizer
+
+        - name: Severe unit tests without sanitizers (macOS)
+            if: ${{ runner.os == 'macOS' }}
+            run: make CPPFLAGS=-D"$SW2MODE" clean test_severe
+
+        - name: Compile as library for STEPWAT2
+            if: ${{ env.SW2MODE == 'SWTXT' }}
+            run: make CPPFLAGS='-DSTEPWAT' clean lib
+
+        - name: Compile as library for rSOILWAT2
+            if: ${{ env.SW2MODE == 'SWTXT' }}
+            # Rmock/ provides bare-bones headers of R C-API functions required by SOILWAT2
+            run: make CPPFLAGS='-DRSOILWAT' CFLAGS='-Iexternal/Rmock' clean libr
+
+        - name: Clean up example output
+            run: make clean clean_example
