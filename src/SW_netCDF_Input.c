@@ -5,6 +5,7 @@
 #include "include/filefuncs.h"         // for LogError, FileExists, sw_message
 #include "include/generic.h"           // for Bool, LOGERROR, swFALSE, isnull
 #include "include/myMemory.h"          // for Mem_Malloc, Str_Dup, sw_memcc...
+#include "include/SW_Control.h"        // for runSims
 #include "include/SW_datastructs.h"    // for LOG_INFO, eSW_InWeather, eSW_...
 #include "include/SW_Defines.h"        // for MAX_FILENAMESIZE, NVEGTYPES
 #include "include/SW_Domain.h"         // for SW_DOM_calc_ncSuid
@@ -5380,6 +5381,10 @@ static void read_spatial_topo_climate_site_inputs(
                 );
 
                 for (site = 0; site < numSites; site++) {
+                    if (!runSims) {
+                        return;
+                    }
+
                     double *values[][5] = {
                         /* must match possVarNames[eSW_InSpatial] */
                         {&inputs[input].ModelRunIn.latitude,
@@ -6289,6 +6294,10 @@ static void read_veg_inputs(
             stride = calc_read_offset(timeIndex, 4, count);
 
             for (site = 0; site < numSites; site++) {
+                if (!runSims) {
+                    return;
+                }
+
                 /* must match possVarNames[eSW_InVeg] (without spatial index) */
                 double *values[] = {
                     &inputs[input].VegProdRunIn.bare_cov.fCover,
@@ -6793,6 +6802,10 @@ static void read_soil_inputs(
             }
 
             for (site = 0; site < numSites; site++) {
+                if (!runSims) {
+                    return;
+                }
+
                 soils = (hasConstSoilDepths) ? &inputs[input].SoilRunIn :
                                                &newSoilBuff[input];
 
@@ -7994,6 +8007,10 @@ static void read_weather_input(
                 stride = calc_read_offset(timeIndex, 3, count);
 
                 for (site = 0; site < numSites; site++) {
+                    if (!runSims) {
+                        return;
+                    }
+
                     writeIndex = input * MAX_DAYS;
 
                     if (lonIndex > -1) {
@@ -8262,7 +8279,7 @@ void SW_NCIN_read_inputs(
             inputs,
             LogInfo
         );
-        if (LogInfo->stopRun) {
+        if (LogInfo->stopRun || !runSims) {
             return;
         }
 
@@ -8309,7 +8326,7 @@ void SW_NCIN_read_inputs(
             inputs,
             LogInfo
         );
-        if (LogInfo->stopRun) {
+        if (LogInfo->stopRun || !runSims) {
             return;
         }
 
@@ -8344,7 +8361,7 @@ void SW_NCIN_read_inputs(
             inputs,
             LogInfo
         );
-        if (LogInfo->stopRun) {
+        if (LogInfo->stopRun || !runSims) {
             return;
         }
     }
@@ -8371,7 +8388,7 @@ void SW_NCIN_read_inputs(
             domSuids,
             LogInfo
         );
-        if (LogInfo->stopRun) {
+        if (LogInfo->stopRun || !runSims) {
             return;
         }
     }

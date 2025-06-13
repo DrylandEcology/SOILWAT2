@@ -2,6 +2,7 @@
 #include "include/filefuncs.h"          // for LogError, BaseName, DirName
 #include "include/generic.h"            // for Bool, swTRUE, isnull, swFALSE
 #include "include/myMemory.h"           // for Mem_Malloc, Mem_ReAlloc, Str...
+#include "include/SW_Control.h"         // for runSims
 #include "include/SW_Domain.h"          // for SW_DOM_calc_ncSuid
 #include "include/SW_Files.h"           // for eLog
 #include "include/SW_Main_lib.h"        // for sw_write_warnings, sw_init_logs
@@ -23,10 +24,6 @@
 #include <stdlib.h>     // for size_t, NULL, free
 #include <string.h>     // for memcpy, memset, strcmp, strlen
 
-
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static volatile sig_atomic_t runSims = 1;
-
 /* =================================================== */
 /*                  Local Definitions                  */
 /* --------------------------------------------------- */
@@ -46,19 +43,6 @@ static volatile sig_atomic_t runSims = 1;
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
-
-/**
-@brief Handle an interrupt provided by the OS to stop the program;
-the current supported interrupts are terminations (SIGTERM) and
-interrupts (SIGINT, commonly CTRL+C on the keyboard)
-
-@param[in] signal Numerical value of the signal that was recieved
-(currently not used)
-*/
-static void handle_interrupt(int signal) {
-    (void) signal; /* Silence compiler */
-    runSims = 0;
-}
 
 /**
 @brief Handle OpenMPI error if one occurs
@@ -6213,11 +6197,6 @@ checkStatus:
     }
     *setupFail = swFALSE;
 
-    /* Set up interrupt handlers so if the program is interrupted
-    during simulation, we can exit smoothly and not abruptly */
-    (void) signal(SIGINT, handle_interrupt);
-    (void) signal(SIGTERM, handle_interrupt);
-
     get_next_suids(
         desig,
         (desig->nSuids < numSuidsTot) ? desig->nSuids : numSuidsTot,
@@ -6309,25 +6288,26 @@ checkStatus:
         }
 
         // Distribute N_SUID_ASSIGN amount of run inputs to compute processes
-        spread_inputs(
-            desig,
-            inputType,
-            weathHistType,
-            inputs,
-            inputsLeft,
-            estVeg,
-            &sendEstVeg,
-            readWeather,
-            readClimate,
-            dummyWrites,
-            sendInputs,
-            n_years,
-            desig->nCompProcs,
-            swFALSE
-        );
-        // This should match the checking of runSims = 0 on the compute process
-        // side within the for-loop that runs through inputs
-        if (runSims == 0) {
+        if (runSims) {
+            spread_inputs(
+                desig,
+                inputType,
+                weathHistType,
+                inputs,
+                inputsLeft,
+                estVeg,
+                &sendEstVeg,
+                readWeather,
+                readClimate,
+                dummyWrites,
+                sendInputs,
+                n_years,
+                desig->nCompProcs,
+                swFALSE
+            );
+        } else {
+            // This should match the checking of runSims = 0 on the compute
+            // process side within the for-loop that runs through inputs
             break;
         }
 
@@ -6414,13 +6394,12 @@ checkStatus:
     }
 
     if (!failEarly) {
-        if (runSims == 1 &&
-            SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
+        if (runSims && SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
             goto freeMem;
         }
 
         // Make sure no compute process gets stuck waiting for input
-        if (runSims == 1) {
+        if (runSims) {
             spread_inputs(
                 desig,
                 inputType,
@@ -6463,7 +6442,7 @@ checkStatus:
             }
         }
 
-        if (dummyWrites && runSims == 1) {
+        if (dummyWrites && runSims) {
             // Participate in a dummy check so this matches with
             // other checks by processes that do not need to do dummy writes
             SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD);
@@ -6487,7 +6466,7 @@ checkStatus:
 
 freeMem:
 #if defined(SOILWAT)
-    if (runSims == 0) {
+    if (!runSims) {
         SW_MSG_ROOT("Program was killed early. Shutting down...", rank);
     }
 #endif

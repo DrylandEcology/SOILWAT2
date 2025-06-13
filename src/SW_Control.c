@@ -51,7 +51,6 @@
 #include "include/SW_VegProd.h"      // for SW_VPD_co...
 #include "include/SW_Weather.h"      // for SW_WTH_co...
 #include "include/Times.h"           // for diff_walltime, set_walltime
-#include <signal.h>                  // for signal
 #include <stdio.h>                   // for NULL, snprintf
 #include <stdlib.h>                  // for free
 #include <string.h>                  // for memcpy, NULL
@@ -70,7 +69,7 @@
 #endif
 
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static volatile sig_atomic_t runSims = 1;
+volatile sig_atomic_t runSims = 1;
 
 /* =================================================== */
 /*             Local Function Definitions              */
@@ -749,7 +748,7 @@ checkStatus:
         }
 
 #if defined(SWMPI)
-        if ((numInputs > 0 || main_LogInfo->stopRun) && runSims) {
+        if (numInputs > 0 || main_LogInfo->stopRun) {
             SW_MPI_send_results(
                 &SW_Domain->OutDom,
                 rank,
@@ -782,7 +781,7 @@ wrapUp:
 #endif
 
 #if defined(SOILWAT)
-    if (runSims == 0) {
+    if (!runSims) {
         SW_MSG_ROOT("Program was killed early. Shutting down...", rank);
     }
 #endif
@@ -793,7 +792,7 @@ wrapUp:
     // Set dummy value for an extra participation in `SW_MPI_setup_fail()`
     // to make sure other compute processes don't hang waiting before
     // getting their last batch of inputs
-    extraFailCheck = (Bool) (extraFailCheck && !earlyExit && runSims == 1 &&
+    extraFailCheck = (Bool) (extraFailCheck && !earlyExit && runSims &&
                              SW_MPI_setup_fail(swFALSE, MPI_COMM_WORLD));
 
     for (suid = 0; suid < N_SUID_ASSIGN; suid++) {
