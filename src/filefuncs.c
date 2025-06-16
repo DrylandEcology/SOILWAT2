@@ -14,18 +14,20 @@
 #include "include/SW_datastructs.h" // for LOG_INFO
 #include "include/SW_Defines.h"     // for MAX_LOG_SIZE, KEY_NOT_FOUND, MAX...
 #include "include/Times.h"          // for timeStringISO8601
-#include <assert.h>                 // for assert
-#include <ctype.h>                  // for isspace
 #include <dirent.h>                 // for dirent, closedir, DIR, opendir, re...
 #include <errno.h>                  // for errno, ERANGE
-#include <limits.h>                 // for LONG_MIN, LONG_MAX, INT_MIN, INT_MAX
-#include <math.h>                   // for HUGE_VAL, HUGE_VALF
+#include <limits.h>                 // for INT_MIN, LONG_MIN, ULONG_MAX
+#include <math.h>                   // for HUGE_VAL
 #include <stdarg.h>                 // for va_end, va_start
 #include <stdio.h>                  // for NULL, fclose, FILE, fopen, EOF
 #include <stdlib.h>                 // for free, strtod, strtof, strtol
 #include <string.h>                 // for strlen, strrchr, memccpy, strchr
 #include <sys/stat.h>               // for stat, mkdir, S_ISDIR, S_ISREG
 #include <unistd.h>                 // for chdir
+
+#ifdef RSOILWAT
+#include <R.h> // for Rf_error() from <R_ext/Error.h>
+#endif
 
 /* Note
 Some of these headers are not part of the C Standard Library header files;
@@ -218,8 +220,11 @@ void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...) {
     if (expectedWriteSize > MAX_LOG_SIZE) {
         // Silence gcc (>= 7.1) compiler flag `-Wformat-truncation=`, i.e.,
         // handle output truncation
-        (void
-        ) fprintf(stderr, "Programmer: message exceeds the maximum size.\n");
+#if defined(RSOILWAT)
+        Rf_error("Programmer: message exceeds the maximum size.");
+#else
+        (void) fprintf(stderr, "Programmer: message exceeds the maximum size.");
+#endif
 #ifdef SWDEBUG
         exit(EXIT_FAILURE);
 #endif
@@ -229,11 +234,16 @@ void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...) {
     expectedWriteSize = vsnprintf(buf, MAX_LOG_SIZE, outfmt, args);
 #ifdef SWDEBUG
     if (expectedWriteSize > MAX_LOG_SIZE) {
+#if defined(RSOILWAT)
+        Rf_error("Programmer: Injecting arguments to final message buffer "
+                 "makes it exceed the maximum size.");
+#else
         (void) fprintf(
             stderr,
             "Programmer: Injecting arguments to final message buffer "
-            "makes it exceed the maximum size.\n"
+            "makes it exceed the maximum size."
         );
+#endif
         exit(EXIT_FAILURE);
     }
 #else

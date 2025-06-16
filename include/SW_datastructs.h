@@ -284,11 +284,20 @@ typedef struct {
                                   matric density (type = SW_MATRIC = 0) or bulk
                                   density (type = SW_BULK = 1) */
 
-    LyrIndex n_layers, /* total number of soil layers */
-        n_transp_rgn,  /* soil layers are grouped into n transp. regions */
-        n_evap_lyrs,   /* number of layers in which evap is possible */
-        n_transp_lyrs[NVEGTYPES], /* layer index of deepest transp. region */
-        deep_lyr; /* index of deep drainage layer if deepdrain, 0 otherwise */
+    /** Number of soil layers (max = \ref MAX_LAYERS)*/
+    LyrIndex n_layers;
+
+    /** Number of transpiration regions (max = \ref MAX_TRANSP_REGIONS) */
+    LyrIndex n_transp_rgn;
+
+    /** Number of soil layers from which bare-soil evaporation is possible */
+    LyrIndex n_evap_lyrs;
+
+    /** Number of soil layers with roots per plant functional type */
+    LyrIndex n_transp_lyrs[NVEGTYPES];
+
+    /* Soil layer index of deep drainage layer if deepdrain, 0 otherwise */
+    LyrIndex deep_lyr;
 
     double slow_drain_coeff, /* low soil water drainage coefficient   */
         pet_scale,           /* changes relative effect of PET calculation */
@@ -354,15 +363,29 @@ typedef struct {
     /** Lower bounds of transpiration regions [layers]
 
     Possible levels are: shallow, moderately shallow, deep and very deep.
-    Calculated as the number of the deepest soil layer that still is within
-    the corresponding soil depth #TranspRgnDepths.
+    Calculated as the number of the deepest soil layer (base1)
+    that still is within the corresponding soil depth #TranspRgnDepths.
+
+    For instance, #TranspRgnDepths of 20, 40, and 100 cm define
+    three transpiration regions; then,
+    region 1 contains soil layers 5, 10 and 20 cm (bound = 3),
+    region 2 contains soil layers 30 and 40 cm (bound = 5), and
+    region 3 contains soil layers 60, 80 and 100 cm (bound = 8).
     */
     LyrIndex TranspRgnBounds[MAX_TRANSP_REGIONS];
 
     /** Lower bounds of transpiration regions [cm]
 
-    Possible levels are: shallow, moderately shallow, deep and very deep.
-    User provided values in [cm].
+    There are up to four transpiration regions:
+        shallow, moderately shallow, deep and very deep.
+    They are defined by soil depths [cm] that are equal to or deeper than
+    the lower bounds of those soil layers that they contain.
+
+    For instance, #TranspRgnDepths of 20, 40, and 100 cm define
+    three transpiration regions; then,
+    region 1 contains soil layers 5, 10 and 20 cm,
+    region 2 contains soil layers 30 and 40 cm, and
+    region 3 contains soil layers 60, 80 and 100 cm.
     */
     double TranspRgnDepths[MAX_TRANSP_REGIONS];
 
@@ -437,8 +460,9 @@ typedef struct {
         for (1) fibric and (2) sapric peat. */
     double swrcpOM[2][SWRC_PARAM_NMAX];
 
-    LyrIndex my_transp_rgn[NVEGTYPES][MAX_LAYERS]; /* which transp zones from
-                                                      Site am I in? */
+    /** Array for plant functional types and soil layers with assigned
+        transpiration region ID */
+    LyrIndex my_transp_rgn[NVEGTYPES][MAX_LAYERS];
 
     /* Inputs */
     SW_SOILS soils;
@@ -489,11 +513,10 @@ typedef struct {
         shade_deadmax;
 
     double
-        /** Monthly litter amount [g / m2] as if this vegetation type covers
-          100% of the simulated surface; user input from file `Input/veg.in` */
+        /** Monthly litter amount [g / m2];
+            user input from file `Input/veg.in` */
         litter[MAX_MONTHS],
-        /** Monthly aboveground biomass [g / m2] as if this vegetation type
-          covers 100% of the simulated surface;
+        /** Monthly aboveground biomass [g / m2];
           user input from file `Input/veg.in` */
         biomass[MAX_MONTHS],
         /** Monthly live biomass in percent of aboveground biomass;
@@ -504,9 +527,11 @@ typedef struct {
         lai_conv[MAX_MONTHS];
 
     double
-        /** Daily litter amount [g / m2] */
+        /** Daily litter amount [g / m2]
+            as if this vegetation type covers 100% of the simulated surface */
         litter_daily[MAX_DAYS + 1],
-        /** Daily aboveground biomass [g / m2] */
+        /** Daily aboveground biomass [g / m2]
+            as if this vegetation type covers 100% of the simulated surface */
         biomass_daily[MAX_DAYS + 1],
         /** Daily live biomass in percent of aboveground biomass */
         pct_live_daily[MAX_DAYS + 1],
@@ -514,15 +539,20 @@ typedef struct {
         veg_height_daily[MAX_DAYS + 1],
         /** Daily parameter value to translate biomass to LAI = 1 [g / m2] */
         lai_conv_daily[MAX_DAYS + 1],
-        /** Daily LAI of live biomass [m2 / m2]*/
+        /** Daily LAI of live biomass [m2 / m2]
+            as if this vegetation type covers 100% of the simulated surface */
         lai_live_daily[MAX_DAYS + 1],
-        /** Daily total "compound" leaf area index [m2 / m2]*/
+        /** Daily total "compound" leaf area index [m2 / m2]
+            as if this vegetation type covers 100% of the simulated surface */
         bLAI_total_daily[MAX_DAYS + 1],
-        /** Daily live biomass [g / m2] */
+        /** Daily live biomass [g / m2]
+            as if this vegetation type covers 100% of the simulated surface */
         biolive_daily[MAX_DAYS + 1],
-        /** Daily dead standing biomass [g / m2] */
+        /** Daily dead standing biomass [g / m2]
+            as if this vegetation type covers 100% of the simulated surface */
         biodead_daily[MAX_DAYS + 1],
-        /** Daily sum of aboveground biomass & litter [g / m2] */
+        /** Daily sum of aboveground biomass & litter [g / m2]
+            as if this vegetation type covers 100% of the simulated surface */
         total_agb_daily[MAX_DAYS + 1];
 
     Bool
@@ -618,11 +648,18 @@ typedef struct {
         user input from file `Input/veg.in` */
     CoverType bare_cov;
 
-    Bool
-        /** Flag that determines whether vegetation-type specific soil water
-          availability should be calculated;
-          user input from file `Input/outsetup.in` */
-        use_SWA;
+    /** Calendar year corresponding to vegetation inputs */
+    TimeInt vegYear;
+
+    /** Spatial reference of biomass inputs (are inputs as if 100% cover)
+        - false (0): values as is (at given cover)
+        - true (1), values as if cover was 100% */
+    Bool isBiomAsIf100Cover;
+
+    /** Flag that determines whether vegetation-type specific soil water
+      availability should be calculated;
+      user input from file `Input/outsetup.in` */
+    Bool use_SWA;
 
     double
         // storing values in same order as defined in STEPWAT2/rgroup.in
@@ -866,7 +903,11 @@ typedef struct {
     double snow, snowmelt, snowloss, surfaceMax, surfaceMin;
     double temp_snow; // Snow temperature
 
+    /** Array of options to fix daily weather inputs, see #FixWeatherType */
+    Bool fixWeatherData[NFIXWEATHER];
+
     Bool use_cloudCoverMonthly, use_windSpeedMonthly, use_humidityMonthly;
+
     Bool dailyInputFlags[MAX_INPUT_COLUMNS];
 
     unsigned int dailyInputIndices[MAX_INPUT_COLUMNS],
@@ -991,8 +1032,12 @@ typedef struct {
 } SW_SOILWAT;
 
 typedef struct {
+    /** File to which warnings and error messages are written.
+
+    rSOILWAT2 writes warnings and error messages to the console; thus
+    RSOILWAT does not use \ref logfp other than checking
+    if it's NULL or not NULL (where NULL represents silent mode). */
     FILE *logfp;
-    // This is the pointer to the log file.
 
     char errorMsg[MAX_LOG_SIZE], // Holds the message for a fatal error
         warningMsgs[MAX_MSGS][MAX_LOG_SIZE]; // Holds up to MAX_MSGS warning

@@ -100,7 +100,7 @@ vegtype variable forb and forb.cov.fCover
 #include "include/SW_Weather.h"     // for deallocateClimateStructs, alloca...
 #include "include/Times.h"          // for interpolate_monthlyValues, Jan, Dec
 #include <math.h>                   // for log, pow
-#include <stdio.h>                  // for sscanf, printf, NULL, FILE
+#include <stdio.h>                  // for sscanf, NULL, FILE
 #include <stdlib.h>                 // for free
 #include <string.h>                 // for memset
 
@@ -159,7 +159,9 @@ void SW_VPD_read(
         "CO2 Biomass Coefficient 1",
         "CO2 Biomass Coefficient 2",
         "CO2 WUE Coefficient 1",
-        "CO2 WUE Coefficient 2"
+        "CO2 WUE Coefficient 2",
+        "Spatial reference of biomass inputs (are inputs as if 100% cover)",
+        "year of vegetation inputs"
     };
 
     FILE *f;
@@ -169,7 +171,7 @@ void SW_VPD_read(
     int lineno = 0;
     int index;
     // last case line number before monthly biomass densities
-    const int line_help = 28;
+    const int line_help = 30;
     double help_veg[NVEGTYPES];
     double help_bareGround = 0.;
     double litt;
@@ -182,7 +184,6 @@ void SW_VPD_read(
     char vegStrs[NVEGTYPES][20] = {{'\0'}};
     char bareGroundStr[20] = {'\0'};
     char *startOfErrMsg;
-    char vegMethodStr[20] = {'\0'};
     const int numMonthVals = 4;
     int expectedNumInVals;
 
@@ -195,23 +196,44 @@ void SW_VPD_read(
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
         lineno++;
 
-        if (lineno >= 2 && lineno <= 28) {
-            x = sscanf(
-                inbuf,
-                "%19s %19s %19s %19s %19s",
-                vegStrs[SW_GRASS],
-                vegStrs[SW_SHRUB],
-                vegStrs[SW_TREES],
-                vegStrs[SW_FORBS],
-                bareGroundStr
-            );
+        startOfErrMsg = (lineno >= 25) ? (char *) "Not enough arguments" :
+                                         (char *) "Invalid record in";
 
-            startOfErrMsg = (lineno >= 25) ? (char *) "Not enough arguments" :
-                                             (char *) "Invalid record in";
+        if (lineno <= line_help) {
+            if (lineno == 1 || lineno == 29 || lineno == 30) {
+                x = sscanf(inbuf, "%19s", vegStrs[0]);
+                expectedNumInVals = 1;
 
-            expectedNumInVals = (lineno >= 4) ? NVEGTYPES : NVEGTYPES + 1;
+            } else {
+                x = sscanf(
+                    inbuf,
+                    "%19s %19s %19s %19s %19s",
+                    vegStrs[SW_GRASS],
+                    vegStrs[SW_SHRUB],
+                    vegStrs[SW_TREES],
+                    vegStrs[SW_FORBS],
+                    bareGroundStr
+                );
 
-            if (x < expectedNumInVals) {
+                expectedNumInVals = (lineno >= 4) ? NVEGTYPES : NVEGTYPES + 1;
+
+                ForEachVegType(k) {
+                    help_veg[k] = sw_strtod(vegStrs[k], MyFileName, LogInfo);
+                    if (LogInfo->stopRun) {
+                        goto closeFile;
+                    }
+                }
+
+                if (x == NVEGTYPES + 1) {
+                    help_bareGround =
+                        sw_strtod(bareGroundStr, MyFileName, LogInfo);
+                    if (LogInfo->stopRun) {
+                        goto closeFile;
+                    }
+                }
+            }
+
+            if (x != expectedNumInVals) {
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -223,38 +245,11 @@ void SW_VPD_read(
                 goto closeFile;
             }
 
-            ForEachVegType(k) {
-                help_veg[k] = sw_strtod(vegStrs[k], MyFileName, LogInfo);
-                if (LogInfo->stopRun) {
-                    goto closeFile;
-                }
-            }
-
-            if (x == NVEGTYPES + 1) {
-                help_bareGround = sw_strtod(bareGroundStr, MyFileName, LogInfo);
-                if (LogInfo->stopRun) {
-                    goto closeFile;
-                }
-            }
-        }
-
-        if (lineno - 1 < line_help) { /* Compare to `line_help` in base0 */
             switch (lineno) {
+            /* method for vegetation parameters */
             case 1:
-                x = sscanf(inbuf, "%19s", vegMethodStr);
-                if (x != 1) {
-                    LogError(
-                        LogInfo,
-                        LOGERROR,
-                        "invalid record in %s in %s\n",
-                        lineErrStrings[0],
-                        MyFileName
-                    );
-                    goto closeFile;
-                }
-
                 SW_VegProd->veg_method =
-                    sw_strtoi(vegMethodStr, MyFileName, LogInfo);
+                    sw_strtoi(vegStrs[0], MyFileName, LogInfo);
                 if (LogInfo->stopRun) {
                     goto closeFile;
                 }
@@ -446,11 +441,32 @@ void SW_VPD_read(
                 }
                 break;
 
+            /* Spatial reference of biomass inputs */
+            case 29:
+                SW_VegProd->isBiomAsIf100Cover =
+                    sw_strtoi(vegStrs[0], MyFileName, LogInfo) ? swTRUE :
+                                                                 swFALSE;
+                if (LogInfo->stopRun) {
+                    goto closeFile;
+                }
+                break;
+
+            /* Calendar year corresponding to vegetation inputs */
+            case 30:
+                SW_VegProd->vegYear =
+                    sw_strtoi(vegStrs[0], MyFileName, LogInfo);
+                if (LogInfo->stopRun) {
+                    goto closeFile;
+                }
+                break;
+
             default:
                 break;
             }
 
         } else {
+            /* Mean monthly vegetation inputs */
+
             if (lineno == line_help + 1 || lineno == line_help + 1 + 12 ||
                 lineno == line_help + 1 + 12 * 2 ||
                 lineno == line_help + 1 + 12 * 3) {
@@ -812,6 +828,7 @@ void SW_VPD_new_year(SW_VEGPROD *SW_VegProd, SW_MODEL *SW_Model) {
     TimeInt doy; /* base1 */
     TimeInt simyear = SW_Model->simyear;
     int k;
+    int mon;
 
     // Interpolation is to be in base1 in `interpolate_monthlyValues()`
     Bool interpAsBase1 = swTRUE;
@@ -819,10 +836,29 @@ void SW_VPD_new_year(SW_VEGPROD *SW_VegProd, SW_MODEL *SW_Model) {
     /* Monthly biomass after CO2 effects */
     double biomass_after_CO2[MAX_MONTHS];
 
+    /* Monthly biomass at 100% cover */
+    double biomassAsIf100Cover[MAX_MONTHS];
+    double litterAsIf100Cover[MAX_MONTHS];
+
 
     // Grab the real year so we can access CO2 data
     ForEachVegType(k) {
         if (GT(SW_VegProd->veg[k].cov.fCover, 0.)) {
+
+            /* Scale biomass to as if 100% cover unless provided as inputs */
+            for (mon = 0; mon < MAX_MONTHS; mon++) {
+                biomassAsIf100Cover[mon] =
+                    SW_VegProd->isBiomAsIf100Cover ?
+                        SW_VegProd->veg[k].biomass[mon] :
+                        (SW_VegProd->veg[k].biomass[mon] /
+                         SW_VegProd->veg[k].cov.fCover);
+
+                litterAsIf100Cover[mon] = SW_VegProd->isBiomAsIf100Cover ?
+                                              SW_VegProd->veg[k].litter[mon] :
+                                              (SW_VegProd->veg[k].litter[mon] /
+                                               SW_VegProd->veg[k].cov.fCover);
+            }
+
             if (k == SW_TREES) {
                 // CO2 effects on tree biomass restricted to percent live
                 // biomass, i.e., total tree biomass is constant while live
@@ -841,7 +877,7 @@ void SW_VPD_new_year(SW_VEGPROD *SW_VegProd, SW_MODEL *SW_Model) {
                     SW_VegProd->veg[k].pct_live_daily
                 );
                 interpolate_monthlyValues(
-                    SW_VegProd->veg[k].biomass,
+                    biomassAsIf100Cover,
                     interpAsBase1,
                     SW_Model->cum_monthdays,
                     SW_Model->days_in_month,
@@ -853,7 +889,7 @@ void SW_VPD_new_year(SW_VEGPROD *SW_VegProd, SW_MODEL *SW_Model) {
                 // total and live biomass are increasing
                 apply_biomassCO2effect(
                     biomass_after_CO2,
-                    SW_VegProd->veg[k].biomass,
+                    biomassAsIf100Cover,
                     SW_VegProd->veg[k].co2_multipliers[BIO_INDEX][simyear]
                 );
 
@@ -875,7 +911,7 @@ void SW_VPD_new_year(SW_VEGPROD *SW_VegProd, SW_MODEL *SW_Model) {
 
             // Interpolation of remaining variables from monthly to daily values
             interpolate_monthlyValues(
-                SW_VegProd->veg[k].litter,
+                litterAsIf100Cover,
                 interpAsBase1,
                 SW_Model->cum_monthdays,
                 SW_Model->days_in_month,
@@ -989,11 +1025,11 @@ void echo_VegProd(VegType VegProd_veg[], CoverType VegProd_bare_cov) {
 
     int k;
 
-    printf("\n==============================================\n"
-           "Vegetation Production Parameters\n");
+    sw_printf("\n==============================================\n"
+              "Vegetation Production Parameters\n");
 
     ForEachVegType(k) {
-        printf(
+        sw_printf(
             "%s component\t= %1.2f\n"
             "\tAlbedo\t= %1.2f\n"
             "\tHydraulic redistribution flag\t= %d",
@@ -1004,7 +1040,7 @@ void echo_VegProd(VegType VegProd_veg[], CoverType VegProd_bare_cov) {
         );
     }
 
-    printf(
+    sw_printf(
         "Bare Ground component\t= %1.2f\n"
         "\tAlbedo\t= %1.2f\n",
         VegProd_bare_cov.fCover,

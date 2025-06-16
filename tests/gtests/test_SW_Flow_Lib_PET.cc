@@ -808,6 +808,7 @@ TEST(AtmDemandTest, SolarRadiationGlobal) {
     };
     // `rsds` represents daily irradiation [MJ / m2]
     unsigned int const desc_rsds = 0;
+    Bool const noFixMAXRSDS = swFALSE;
 
     double H_gt;
     double H_ot;
@@ -889,6 +890,7 @@ TEST(AtmDemandTest, SolarRadiationGlobal) {
             actual_vap_pressure,
             rsds,
             desc_rsds,
+            noFixMAXRSDS,
             &H_oh,
             &H_ot,
             &H_gh,
@@ -926,6 +928,7 @@ TEST(AtmDemandTest, SolarRadiationGlobal) {
             actual_vap_pressure,
             rsds,
             desc_rsds,
+            noFixMAXRSDS,
             &H_oh,
             &H_ot,
             &H_gh,
@@ -958,6 +961,7 @@ TEST(AtmDemandTest, SolarRadiationGlobal) {
             actual_vap_pressure,
             rsds,
             desc_rsds,
+            noFixMAXRSDS,
             &H_oh,
             &H_ot,
             &H_gh,
@@ -1040,6 +1044,7 @@ TEST(AtmDemandTest, PETpetfunc) {
     int i;
     unsigned int const doy = 2;
     unsigned int const desc_rsds = 0;
+    Bool const noFixMAXRSDS = swFALSE;
     double check_pet;
     double const rsds = SW_MISSING;
     double H_gt;
@@ -1093,6 +1098,7 @@ TEST(AtmDemandTest, PETpetfunc) {
             actual_vap_pressure,
             rsds,
             desc_rsds,
+            noFixMAXRSDS,
             &H_oh,
             &H_ot,
             &H_gh,
@@ -1134,6 +1140,7 @@ TEST(AtmDemandTest, PETpetfunc) {
             e_a,
             rsds,
             desc_rsds,
+            noFixMAXRSDS,
             &H_oh,
             &H_ot,
             &H_gh,
@@ -1173,6 +1180,7 @@ TEST(AtmDemandTest, PETpetfunc) {
             e_a,
             rsds,
             desc_rsds,
+            noFixMAXRSDS,
             &H_oh,
             &H_ot,
             &H_gh,
@@ -1212,6 +1220,7 @@ TEST(AtmDemandTest, PETpetfunc) {
             e_a,
             rsds,
             desc_rsds,
+            noFixMAXRSDS,
             &H_oh,
             &H_ot,
             &H_gh,
@@ -1251,6 +1260,7 @@ TEST(AtmDemandTest, PETpetfunc) {
             e_a,
             rsds,
             desc_rsds,
+            noFixMAXRSDS,
             &H_oh,
             &H_ot,
             &H_gh,
@@ -1289,6 +1299,7 @@ TEST(AtmDemandTest, PETpetfunc) {
             e_a,
             rsds,
             desc_rsds,
+            noFixMAXRSDS,
             &H_oh,
             &H_ot,
             &H_gh,
@@ -1328,6 +1339,7 @@ TEST(AtmDemandTest, PETpetfunc) {
             actual_vap_pressure,
             rsds,
             desc_rsds,
+            noFixMAXRSDS,
             &H_oh,
             &H_ot,
             &H_gh,
@@ -1366,6 +1378,7 @@ TEST(AtmDemandTest, PETpetfunc) {
         e_a,
         rsds,
         desc_rsds,
+        noFixMAXRSDS,
         &H_oh,
         &H_ot,
         &H_gh,
@@ -1407,6 +1420,7 @@ TEST(AtmDemandTest, PETpetfunc) {
             e_a,
             rsds,
             desc_rsds,
+            noFixMAXRSDS,
             &H_oh,
             &H_ot,
             &H_gh,
@@ -1452,6 +1466,7 @@ TEST(AtmDemandTest, PETPetfuncByTemps) {
     int k5;
 
     const unsigned int desc_rsds = 0;
+    Bool const noFixMAXRSDS = swFALSE;
 
     double pet;
     double temp;
@@ -1521,6 +1536,7 @@ TEST(AtmDemandTest, PETPetfuncByTemps) {
                                                RH,
                                                rsds,
                                                desc_rsds,
+                                               noFixMAXRSDS,
                                                &H_oh,
                                                &H_ot,
                                                &H_gh,

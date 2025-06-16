@@ -1,0 +1,97 @@
+SW2 input group	SW2 variable	inputUnits
+inDomain	domain	1
+inDomain	progress	1
+		
+inSpatial	indexSpatial	1
+inSpatial	latitude	degree_north
+inSpatial	longitude	degree_east
+		
+inTopo	indexSpatial	1
+inTopo	elevation	m
+inTopo	slope	degree
+inTopo	aspect	degree
+		
+inWeather	indexSpatial	1
+inWeather	temp_max	degC
+inWeather	temp_min	degC
+inWeather	ppt	mm
+inWeather	cloudcov	NA
+inWeather	windspeed	NA
+inWeather	windspeed_east	NA
+inWeather	windspeed_north	NA
+inWeather	r_humidity	NA
+inWeather	rmax_humidity	NA
+inWeather	rmin_humidity	NA
+inWeather	spec_humidity	NA
+inWeather	temp_dewpoint	NA
+inWeather	actualVaporPressure	NA
+inWeather	shortWaveRad	NA
+		
+inClimate	indexSpatial	1
+inClimate	cloudcov	%
+inClimate	windspeed	m s-1
+inClimate	r_humidity	%
+inClimate	snow_density	kg m-3
+inClimate	n_rain_per_day	1
+		
+inSoil	indexSpatial	1
+inSoil	layerDepth	cm
+inSoil	layerWidth	cm
+inSoil	soilDensityInput	g cm-3
+inSoil	fractionVolBulk_gravel	cm3 cm-3
+inSoil	fractionWeightMatric_sand	g g-1
+inSoil	fractionWeightMatric_clay	g g-1
+inSoil	fractionWeightMatric_silt	g g-1
+inSoil	fractionWeight_om	cm3 cm-3
+inSoil	impermeability	1
+inSoil	avgLyrTempInit	degC
+inSoil	evap_coeff	1
+inSoil	<veg>.transp_coeff	1
+		
+inSoil	Trees.transp_coeff	1
+inSoil	Shrubs.transp_coeff	1
+inSoil	Forbs.transp_coeff	1
+inSoil	Grasses.transp_coeff	1
+		
+inSoil	swrcpMineralSoil[1]	NA
+inSoil	swrcpMineralSoil[2]	NA
+inSoil	swrcpMineralSoil[3]	NA
+inSoil	swrcpMineralSoil[4]	NA
+inSoil	swrcpMineralSoil[5]	NA
+inSoil	swrcpMineralSoil[6]	NA
+		
+inSite	indexSpatial	1
+inSite	Tsoil_constant	degC
+		
+inVeg	indexSpatial	1
+inVeg	bareGround.fCover	m2 m-2
+inVeg	<veg>.fCover	m2 m-2
+inVeg	<veg>.litter	g m-2
+inVeg	<veg>.biomass	g m-2
+inVeg	<veg>.pct_live	1
+inVeg	<veg>.lai_conv	g m-2
+		
+inVeg	Trees.fCover	m2 m-2
+inVeg	Shrubs.fCover	m2 m-2
+inVeg	Forbs.fCover	m2 m-2
+inVeg	Grasses.fCover	m2 m-2
+		
+inVeg	Trees.litter	g m-2
+inVeg	Trees.biomass	g m-2
+inVeg	Trees.pct_live	1
+inVeg	Trees.lai_conv	g m-2
+		
+inVeg	Shrubs.litter	g m-2
+inVeg	Shrubs.biomass	g m-2
+inVeg	Shrubs.pct_live	1
+inVeg	Shrubs.lai_conv	g m-2
+		
+inVeg	Forbs.litter	g m-2
+inVeg	Forbs.biomass	g m-2
+inVeg	Forbs.pct_live	1
+inVeg	Forbs.lai_conv	g m-2
+		
+inVeg	Grasses.litter	g m-2
+inVeg	Grasses.biomass	g m-2
+inVeg	Grasses.pct_live	1
+inVeg	Grasses.lai_conv	g m-2

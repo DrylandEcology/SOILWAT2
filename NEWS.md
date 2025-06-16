@@ -1,4 +1,57 @@
 # NEWS
+# SOILWAT2 v8.2.0-devel
+* This version produces similar but not identical simulation output
+  as previously because of the following changes:
+    * CO2-fertilization effects are now using provided atmospheric CO2 of the
+      reference year 1995; previously, 360 ppm was assumed.
+    * Transpiration regions are no longer one soil layer too shallow.
+
+* Annual time series of atmospheric CO2 concentrations can now be
+  combined from multiple data sets, e.g., `"CMIP6_historical|CMIP6_SSP585"`
+  (#456; @dschlaep).
+
+* CO2-fertilization is now adjusted for the year when vegetation inputs
+  were made (#328; @dschlaep).
+
+* The user can now specify if vegetation biomass inputs reflect
+  conditions on the ground (at the specified surface cover) or
+  if they represent vegetation as if that plant functional type occurred
+  at 100% surface cover (#328; @dschlaep).
+
+* If specific humidity is provided as input instead of relative humidity, then
+  relative humidity is now calculated using minimum and maximum temperature
+  (instead of mean temperature as previously).
+
+* User-requested corrections are now applied to problematic weather inputs
+  (#457; @dschlaep),
+    * Swap min/max values if min > max (air temperature, relative humidity).
+    * Reset percentages to 100% if they are larger than 100%
+      (relative humidity, cloud cover).
+    * Reset observed solar radiation to extraterrestrial radiation if
+      the observed value is larger than expected.
+
+* Transpiration regions no longer require roots of every plant functional type
+  (@dschlaep).
+
+## Bugfixes
+* The KD-tree algorithm is now correctly calculating index positions for
+  lookup netCDFs also when the domain is a subset of the inputs (@N1ckP3rsl3y).
+* Inputs from netCDFs are now correctly handling missing values and unit
+  conversions for soil and vegetation inputs (@dschlaep).
+* Transpiration regions are now correctly assigned to soil layers
+  (#460; @dschlaep).
+
+## Changes to inputs
+* New input via `"veg.in"` to specify the year for which vegetation inputs
+  are valid, i.e., the year when CO2-fertilization has no effect on biomass
+  and water-use efficiency (default is 1995).
+* New input via `"veg.in"` to identify the spatial reference of biomass inputs
+  `"isBiomAsIf100Cover"` (default `"true"`).
+* `"carbon.in"` now provides annual time series of atmospheric CO2 concentration
+  for CMIP5 and CMIP6.
+* New inputs via `"weathsetup.in"` to request corrections for problematic
+  weather inputs (turned off by default).
+
 
 # SOILWAT2 v8.1.1
 * Simulation output remains the same as the previous version.

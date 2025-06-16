@@ -75,6 +75,7 @@ double solar_radiation(
     double e_a,
     double rsds,
     unsigned int desc_rsds,
+    Bool fixMAXRSDS,
     double *H_oh,
     double *H_ot,
     double *H_gh,
@@ -107,6 +108,10 @@ double svp2(double temp);
 double relativeHumidity1(double vp, double meanTemp);
 
 double relativeHumidity2(double huss, double meanTemp, double elevation);
+
+double relativeHumidity3(
+    double huss, double maxTemp, double minTemp, double elevation
+);
 
 double actualVaporPressure1(double hurs, double meanTemp);
 

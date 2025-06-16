@@ -356,6 +356,8 @@ void SW_WT_TimeRun(WallTimeSpec ts, Bool ok_ts, SW_WALLTIME *wt) {
     }
 }
 
+#if !defined(RSOILWAT)
+
 /** Write time report
 
 Reports on total wall time, number of simulations timed in the simulation set,
@@ -458,6 +460,7 @@ wrapUpErrMsg: {
     }
 }
 }
+#endif // !defined(RSOILWAT)
 
 /**
 @brief Current date and time in UTC formatted according to ISO 8601

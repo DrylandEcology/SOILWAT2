@@ -27,7 +27,7 @@
 #include <string.h>                 // for strncmp
 
 #ifdef RSOILWAT
-#include <R.h> // for error(), and warning() from <R_ext/Error.h>
+#include <R.h> // for Rf_error(), and Rf_warning() from <R_ext/Error.h>
 #endif
 
 /* =================================================== */
@@ -334,7 +334,7 @@ for rSOILWAT2, then issue an error with the error message.
 void sw_fail_on_error(LOG_INFO *LogInfo) {
 #ifdef RSOILWAT
     if (LogInfo->stopRun) {
-        error("%s", LogInfo->errorMsg);
+        Rf_error("%s", LogInfo->errorMsg);
     }
 
 #else
@@ -405,11 +405,11 @@ void sw_write_warnings(const char *header, LOG_INFO *LogInfo) {
 
     if (!QuietMode) {
         for (warnMsgNum = 0; warnMsgNum < warningUpperBound; warnMsgNum++) {
-            warning("%s%s", header, LogInfo->warningMsgs[warnMsgNum]);
+            Rf_warning("%s%s", header, LogInfo->warningMsgs[warnMsgNum]);
         }
 
         if (tooManyWarns) {
-            warning("%s%s", header, tooManyWarnsStr);
+            Rf_warning("%s%s", header, tooManyWarnsStr);
         }
     }
 #else
@@ -458,6 +458,7 @@ void sw_write_warnings(const char *header, LOG_INFO *LogInfo) {
 #endif
 }
 
+#if !defined(RSOILWAT)
 /**
 @brief Close logfile and notify user
 
@@ -468,16 +469,18 @@ print number of simulation units with warnings and errors (if any).
 */
 void sw_wrapup_logs(LOG_INFO *LogInfo) {
     Bool QuietMode = (Bool) (LogInfo->QuietMode || isnull(LogInfo->logfp));
+    Bool isLogFileSTD =
+        (Bool) (LogInfo->logfp == stdout || LogInfo->logfp == stderr);
 
     // Close logfile (but not if it is stdout or stderr)
-    if (LogInfo->logfp != stdout || LogInfo->logfp != stderr) {
+    if (!isLogFileSTD) {
         CloseFile(&LogInfo->logfp, LogInfo);
     }
 
     // Notify the user that there are messages in the logfile (unless QuietMode)
     if ((LogInfo->numDomainErrors > 0 || LogInfo->numDomainWarnings > 0 ||
          LogInfo->stopRun || LogInfo->numWarnings > 0) &&
-        !QuietMode && LogInfo->logfp != stdout && LogInfo->logfp != stderr) {
+        !QuietMode && !isLogFileSTD) {
         (void
         ) fprintf(stderr, "\nCheck logfile for warnings and error messages.\n");
 
@@ -498,3 +501,4 @@ void sw_wrapup_logs(LOG_INFO *LogInfo) {
         }
     }
 }
+#endif // !defined(RSOILWAT)
