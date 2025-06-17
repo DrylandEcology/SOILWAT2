@@ -2604,7 +2604,9 @@ void SW_NCOUT_write_output(
                            then variables
                         */
 #if defined(SWMPI)
-                        if (numWritesProc <= write || !succFlags[numSiteSum]) {
+                        if (numWritesProc <= write || !succFlags[numSiteSum] ||
+                            LogInfo->stopRun) {
+
                             if (!succFlags[numSiteSum] &&
                                 (numWritesProc > 1 || numSites > 1)) {
 
@@ -2687,10 +2689,12 @@ void SW_NCOUT_write_output(
                             LogInfo
                         );
 
+#if !defined(SWMPI)
                         if (LogInfo->stopRun) {
                             goto closeFile; // Exit function prematurely due to
                                             // error
                         }
+#endif
 
                         numSiteSum += numSites;
                     }
@@ -2707,11 +2711,11 @@ void SW_NCOUT_write_output(
         }
     }
 
-closeFile:
 #if defined(SWMPI)
     (void) ncSuid;
     (void) ncOutFileNames;
 #else
+closeFile:
     nc_close(currFileID);
 
     (void) starts;
