@@ -84,8 +84,8 @@
 #define SW_VEGPROD_H
 
 #include "include/generic.h"        // for Bool
-#include "include/SW_datastructs.h" // for SW_VEGPROD, SW_MODEL, SW_WEATHER_HIST
-#include "include/SW_Defines.h"     // for LyrIndex, NVEGTYPES, MAX_LAYERS,
+#include "include/SW_datastructs.h" // for SW_VEGPROD_INPUTS, SW_MODEL, SW_WEATHER_HIST
+#include "include/SW_Defines.h" // for LyrIndex, NVEGTYPES, MAX_LAYERS,
 
 #ifdef __cplusplus
 extern "C" {
@@ -108,22 +108,39 @@ extern const char *const key2veg[NVEGTYPES];
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_VPD_read(SW_VEGPROD *SW_VegProd, char *txtInFiles[], LOG_INFO *LogInfo);
+void SW_VPD_read(
+    SW_VEGPROD_INPUTS *SW_VegProdIn,
+    SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,
+    char *txtInFiles[],
+    LOG_INFO *LogInfo
+);
 
-void SW_VPD_new_year(SW_VEGPROD *SW_VegProd, SW_MODEL *SW_Model);
+void SW_VPD_new_year(
+    SW_MODEL_SIM *SW_ModelSim,
+    Bool isBiomAsIf100Cover,
+    VegTypeRunIn vegRunIn[],
+    VegTypeSim vegSim[],
+    VegTypeIn vegIn[]
+);
 
-void SW_VPD_fix_cover(SW_VEGPROD *SW_VegProd, LOG_INFO *LogInfo);
+void SW_VPD_fix_cover(
+    SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn, LOG_INFO *LogInfo
+);
 
-void SW_VPD_init_ptrs(SW_VEGPROD *SW_VegProd);
-
-void SW_VPD_construct(SW_VEGPROD *SW_VegProd);
-
-void SW_VPD_alloc_outptrs(SW_VEGPROD *SW_VegProd, LOG_INFO *LogInfo);
+void SW_VPD_construct(
+    SW_VEGPROD_INPUTS *SW_VegProdIn,
+    SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,
+    SW_VEGPROD_OUTPUTS vp_p_oagg[],
+    SW_VEGPROD_OUTPUTS vp_p_accu[]
+);
 
 void estimateVegetationFromClimate(
-    SW_VEGPROD *SW_VegProd,
+    SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,
     SW_WEATHER_HIST *Weather_hist,
-    SW_MODEL *SW_Model,
+    SW_MODEL_INPUTS *SW_ModelIn,
+    SW_MODEL_SIM *SW_ModelSim,
+    Bool inNorthHem,
+    int veg_method,
     LOG_INFO *LogInfo
 );
 
@@ -159,16 +176,18 @@ void uniqueIndices(
 );
 
 void SW_VPD_init_run(
-    SW_VEGPROD *SW_VegProd,
-    SW_WEATHER *SW_Weather,
-    SW_MODEL *SW_Model,
-    Bool estVegFromText,
+    SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,
+    SW_WEATHER_HIST *allHist,
+    SW_MODEL_INPUTS *SW_ModelIn,
+    SW_MODEL_SIM *SW_ModelSim,
+    VegTypeSim vegSim[],
+    Bool estVeg,
+    Bool inNorthHem,
+    int veg_method,
     LOG_INFO *LogInfo
 );
 
-void SW_VPD_deconstruct(SW_VEGPROD *SW_VegProd);
-
-void checkBiomass(SW_VEGPROD *SW_VegProd, LOG_INFO *LogInfo);
+void checkBiomass(VegTypeRunIn veg[], LOG_INFO *LogInfo);
 
 void apply_biomassCO2effect(
     double *new_biomass, const double *biomass, double multiplier
@@ -176,9 +195,11 @@ void apply_biomassCO2effect(
 
 double sum_across_vegtypes(double x[][MAX_LAYERS], LyrIndex layerno);
 
-void echo_VegProd(VegType VegProd_veg[], CoverType VegProd_bare_cov);
+void echo_VegProd(
+    SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn, SW_VEGPROD_INPUTS *SW_VegProdIn
+);
 
-void get_critical_rank(SW_VEGPROD *SW_VegProd);
+void get_critical_rank(SW_VEGPROD_INPUTS *SW_VegProdIn);
 
 #ifdef __cplusplus
 }

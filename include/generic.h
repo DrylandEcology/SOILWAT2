@@ -63,7 +63,7 @@
 
 #include <float.h>  // for DBL_EPSILON, FLT_EPSILON
 #include <math.h>   // for fabs, sqrt, sqrtf
-#include <stddef.h> // for NULL
+#include <stddef.h> // for NULL, size_t
 
 #ifdef RSOILWAT
 #include <R.h> // for Rprintf() from <R_ext/Print.h>

@@ -32,13 +32,17 @@
 /* --------------------------------------------------- */
 
 #include "include/Times.h"          // for Jan, Dec, Feb, NoMonth, NoDay
-#include "include/filefuncs.h"      // for sw_message
+#include "include/filefuncs.h"      // for sw_message via SW_MSG_ROOT
 #include "include/generic.h"        // for Bool, GE, final_running_sd, get_...
 #include "include/SW_datastructs.h" // for SW_WALLTIME, LOG_INFO
 #include "include/SW_Defines.h"     // for TimeInt, WallTimeSpec, MAX_DAYS
-#include <stdio.h>                  // for fprintf, FILE, NULL, stdout
-#include <string.h>                 // for NULL, memcpy
-#include <time.h>                   // for time, difftime, gmtime, strftime
+
+#if !defined(RSOILWAT)
+#include <stdio.h> // for fprintf, FILE, NULL, stdout
+#endif
+
+#include <string.h> // for NULL, memcpy
+#include <time.h>   // for time, difftime, gmtime, strftime
 
 
 /* =================================================== */
@@ -377,7 +381,7 @@ Time is not reported at all if quiet mode and `logfile` is `NULL`.
 */
 void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
     double total_time = 0;
-    unsigned long nSims = wt.nTimedRuns + wt.nUntimedRuns;
+    size_t nSims = wt.nTimedRuns + wt.nUntimedRuns;
     int fprintRes = 0;
 
     FILE *logfp = LogInfo->QuietMode ? LogInfo->logfp : stdout;
@@ -407,7 +411,7 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
 
     if (nSims > 1) {
         fprintRes =
-            fprintf(logfp, "    * Number of simulation runs: %lu", nSims);
+            fprintf(logfp, "    * Number of simulation runs: %zu", nSims);
         if (fprintRes < 0) {
             goto wrapUpErrMsg;
         }
@@ -415,7 +419,7 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
         if (wt.nUntimedRuns > 0) {
             fprintRes = fprintf(
                 logfp,
-                " total (%lu timed | %lu untimed)",
+                " total (%zu timed | %zu untimed)",
                 wt.nTimedRuns,
                 wt.nUntimedRuns
             );
@@ -452,11 +456,18 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
             "wall time]\n",
             100. * wt.timeSimSet / total_time
         );
+        if (fprintRes < 0) {
+            goto wrapUpErrMsg;
+        }
     }
 
 wrapUpErrMsg: {
+    if (fprintRes >= 0) {
+        fprintRes = fflush(logfp);
+    }
+
     if (fprintRes < 0) {
-        sw_message("Failed to write whole time report.");
+        SW_MSG_ROOT("Failed to write whole time report.", 0);
     }
 }
 }

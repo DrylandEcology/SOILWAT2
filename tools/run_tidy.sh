@@ -57,6 +57,20 @@ process_clangtidy_results $status "$res"
 
 echo $'\n'\
 --------------------------------------------------$'\n'\
+"Tidy mpi-based SOILWAT2"$'\n'\
+--------------------------------------------------
+
+if command -v mpicc > /dev/null 2>&1 ; then
+    res=$(make CPPFLAGS='-DSWMPI -DSWDEBUG' CFLAGS=$(mpicc --showme:compile) tidy-mpi 2>/dev/null)
+    status=$?
+    process_clangtidy_results $status "$res"
+else
+    echo "Skip clang-tidy with mpicc."
+fi
+
+
+echo $'\n'\
+--------------------------------------------------$'\n'\
 "Tidy SOILWAT2 library for rSOILWAT2"$'\n'\
 --------------------------------------------------
 

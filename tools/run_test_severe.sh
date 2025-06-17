@@ -1,10 +1,12 @@
 #!/bin/bash
 
 # run as `./tools/run_test_severe.sh`
+
 # note: consider cleaning previous build artifacts, e.g., `make clean_test`
 # note: regular unit tests are run with `make test_run`
 
 
+#--- flags
 debug_flags="-g -O0 -DSWDEBUG"
 
 warning_flags_severe_cxx="\

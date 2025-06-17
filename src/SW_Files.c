@@ -44,6 +44,10 @@
 #if defined(SWNETCDF)
 #include "include/SW_netCDF_General.h"
 #include "include/SW_netCDF_Input.h"
+
+#if defined(SWMPI)
+#include "include/SW_MPI.h"
+#endif
 #endif
 
 /* =================================================== */
@@ -326,6 +330,9 @@ void SW_F_init_ptrs(SW_PATH_INPUTS *SW_PathInputs) {
         SW_PathInputs->scaleAndAddFactVals[k] = NULL;
         SW_PathInputs->missValFlags[k] = NULL;
         SW_PathInputs->doubleMissVals[k] = NULL;
+#if defined(SWMPI)
+        SW_PathInputs->openInFileIDs[k] = NULL;
+#endif
     }
 
     SW_PathInputs->ncWeatherInFiles = NULL;
@@ -414,8 +421,16 @@ void SW_F_construct(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
 
 @param[in,out] SW_PathInputs Struct of type SW_PATH_INPUTS which
 holds basic information about output files and values
+@param[in] readInVars Specifies which variables are to be read-in as input
+@param[in] useIndexFile Specifies to create/use an index file
+@param[in] procJob Process job designation used when using MPI
 */
-void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
+void SW_F_deconstruct(
+    SW_PATH_INPUTS *SW_PathInputs,
+    Bool **readInVars,
+    const Bool useIndexFile[],
+    int procJob
+) {
     IntUS i;
 
     for (i = 0; i < SW_NFILES; i++) {
@@ -431,6 +446,14 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
     unsigned int file;
     int k;
     int varNum;
+
+#if defined(SWMPI)
+    if (procJob == SW_MPI_PROC_IO) {
+#endif
+        SW_NCIN_close_files(SW_PathInputs, readInVars, useIndexFile);
+#if defined(SWMPI)
+    }
+#endif
 
     ForEachNCInKey(k) {
         if (!isnull(SW_PathInputs->ncInFiles[k])) {
@@ -496,6 +519,20 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
             free((void *) SW_PathInputs->doubleMissVals[k]);
             SW_PathInputs->doubleMissVals[k] = NULL;
         }
+
+#if defined(SWMPI)
+        if (!isnull(SW_PathInputs->openInFileIDs[k])) {
+            for (varNum = 0; varNum < numVarsInKey[k]; varNum++) {
+                if (!isnull(SW_PathInputs->openInFileIDs[k][varNum])) {
+                    free((void *) SW_PathInputs->openInFileIDs[k][varNum]);
+                    SW_PathInputs->openInFileIDs[k][varNum] = NULL;
+                }
+            }
+
+            free((void *) SW_PathInputs->openInFileIDs[k]);
+            SW_PathInputs->openInFileIDs[k] = NULL;
+        }
+#endif
     }
 
     if (!isnull(SW_PathInputs->ncWeatherStartEndIndices)) {
@@ -552,7 +589,12 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
         free((void *) SW_PathInputs->numDaysInYear);
         SW_PathInputs->numDaysInYear = NULL;
     }
+#else
+    (void) readInVars;
+    (void) useIndexFile;
+#endif
 
-    SW_NCIN_close_files(SW_PathInputs->ncDomFileIDs);
+#if !defined(SWMPI)
+    (void) procJob;
 #endif
 }
