@@ -43,7 +43,7 @@
 #define UNITS_INDEX 4
 #define CELLMETHOD_INDEX 5
 
-const int times[] = {MAX_DAYS - 1, MAX_WEEKS, MAX_MONTHS, 1};
+const unsigned int outTimes[] = {MAX_DAYS - 1, MAX_WEEKS, MAX_MONTHS, 1};
 
 static const char *const expectedColNames[] = {
     "SW2 output group",
@@ -2153,7 +2153,7 @@ void SW_NCOUT_create_output_files(
     if ((IntU) baseCalendarYear < startYr) {
         ForEachOutPeriod(pd) {
             timeSize = calc_timeSize(
-                (IntU) baseCalendarYear, (IntU) startYr, times[pd], pd
+                (IntU) baseCalendarYear, (IntU) startYr, outTimes[pd], pd
             );
 
             calc_num_timedays(
@@ -2181,7 +2181,7 @@ void SW_NCOUT_create_output_files(
 
                 if (pd != eSW_NoTime) {
                     startTime[pd] = baseStartTime[pd];
-                    baseTime = times[pd];
+                    baseTime = outTimes[pd];
                     rangeStart = startYr;
 
                     (void) sw_memccpy(
