@@ -2493,6 +2493,10 @@ void SW_NCOUT_write_output(
     size_t oneSiteOffset;
     OutPeriod timeStep;
 
+#if defined(SWMPI) || defined(SWUDUNITS)
+    size_t numElem;
+#endif
+
 #if defined(SWMPI)
     size_t pOUTStart[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
 #else
@@ -2658,20 +2662,28 @@ void SW_NCOUT_write_output(
 #endif
                         p_OUTValPtr = &p_OUT[key][pd][pOUTIndex];
 #if defined(SWMPI)
+                        numElem = countTotal * numSites;
                         if (numWritesProc > 1 || numSites > 1) {
-                            pOUTStart[key][pd] += countTotal * numSites;
+                            pOUTStart[key][pd] += numElem;
                         }
 #endif
 
 /* Convert units if udunits2 and if converter available */
 #if defined(SWUDUNITS)
+                        size_t valNum;
+
                         if (!isnull(OutDom->netCDFOutput.uconv[key][varNum])) {
-                            cv_convert_doubles(
-                                OutDom->netCDFOutput.uconv[key][varNum],
-                                p_OUTValPtr,
-                                countTotal * numSites,
-                                p_OUTValPtr
-                            );
+#if !defined(SWMPI)
+                            numElem = countTotal * numSites;
+#endif
+                            for (valNum = 0; valNum < numElem; valNum++) {
+                                if (p_OUTValPtr[valNum] != FILL_DOUBLE) {
+                                    p_OUTValPtr[valNum] = cv_convert_double(
+                                        OutDom->netCDFOutput.uconv[key][varNum],
+                                        p_OUTValPtr[valNum]
+                                    );
+                                }
+                            }
                         }
 #endif
                         /* For current variable x output period,
