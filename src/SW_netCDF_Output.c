@@ -2608,7 +2608,7 @@ void SW_NCOUT_write_output(
                             LogInfo->stopRun) {
 
                             if (!succFlags[numSiteSum] &&
-                                (numWritesProc > 1 || numSites > 1)) {
+                                write < numWritesProc) {
 
                                 pOUTStart[key][pd] += countTotal * numSites;
                                 numSiteSum += numSites;
