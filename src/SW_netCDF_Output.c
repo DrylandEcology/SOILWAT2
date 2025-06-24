@@ -2698,13 +2698,30 @@ void SW_NCOUT_write_output(
 
                         numSiteSum += numSites;
                     }
+
+#if defined(SWMPI)
+                    /*
+                        The location of this `nc_sync()` is the result of if
+                        called too infrequently, may result in a segmentation
+                        fault, at least in netCDF-C v4.9.0.
+                        It has been observed that the most likely cause is the
+                        number of elements written before `nc_sync()` and
+                        the number of I/O processes.
+                        One occurrence observed was with 2 I/O processes
+                        and writing ~226 million elements (~1.7GB) before the
+                        call to `nc_sync()`.
+                        If this reoccurs when using more extreme configurations
+                        (i.e., # I/O and N_SUID_ASSIGN), the most immediate call
+                        to `SW_NC_write_vals()` will segfault even written
+                        from the start of an output buffer.
+                    */
+                    nc_sync(currFileID);
+#endif
                 }
 
                 // Update startTime
                 startTime += timeSize;
-#if defined(SWMPI)
-                nc_sync(currFileID);
-#else
+#if !defined(SWMPI)
                 nc_close(currFileID);
 #endif
             }
