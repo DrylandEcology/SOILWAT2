@@ -99,6 +99,7 @@ void SW_CTL_run_sw(
     Bool estVeg,
     Bool copyWeather,
     const size_t count[],
+    SW_WALLTIME *SW_WallTime,
     LOG_INFO *LogInfo
 );
 

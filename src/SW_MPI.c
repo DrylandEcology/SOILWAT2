@@ -3997,13 +3997,13 @@ on various program-defined structs
 */
 void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
     int res;
-    int numItems[] = {7, 5, 5, 5, 4, 5, 18, 3, 6, 9};
+    int numItems[] = {7, 5, 5, 5, 6, 5, 18, 3, 6, 9};
     int blockLens[][19] = {
         {1, 1, 1, 1, 1, MAX_LAYERS, 1}, /* SW_DOMAIN */
         {1, 1, 1, 1, 1},                /* SW_SPINUP */
         {1, 1, 1, 1, 1},                /* SW_RUN_INPUTS */
         {1, 1, 1, 1, 1},                /* SW_MPI_DESIGNATE */
-        {1, 1, 1, 1},                   /* SW_MPI_WallTime */
+        {1, 1, 1, 1, 1, 1},             /* SW_MPI_WallTime */
         {SW_OUTNKEYS,
          SW_OUTNKEYS,
          SW_OUTNPERIODS,
@@ -4056,8 +4056,9 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
          MPI_DATATYPE_NULL,
          MPI_DATATYPE_NULL}, /* SW_RUN_INPUTS */
         {MPI_INT, MPI_INT, MPI_INT, SW_MPI_SIZE_T, MPI_UNSIGNED
-        },                                                /* SW_MPI_DESIGNATE */
-        {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE}, /* SW_MPI_WallTime */
+        }, /* SW_MPI_DESIGNATE */
+        {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE
+        }, /* SW_MPI_WallTime */
         {MPI_INT, MPI_INT, SW_MPI_SIZE_T, MPI_INT, MPI_INT}, /* SW_OUT_DOM */
         {MPI_CHAR,
          MPI_CHAR,
@@ -4125,7 +4126,9 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
         {offsetof(SW_WALLTIME, timeMean),
          offsetof(SW_WALLTIME, timeSD),
          offsetof(SW_WALLTIME, timeMin),
-         offsetof(SW_WALLTIME, timeMax)},
+         offsetof(SW_WALLTIME, timeMax),
+         offsetof(SW_WALLTIME, totIOTime),
+         offsetof(SW_WALLTIME, totCompTime)},
 
         /* SW_OUT_DOM */
         {offsetof(SW_OUT_DOM, sumtype),
@@ -5148,7 +5151,6 @@ void SW_MPI_report_log(
     MPI_Request req = MPI_REQUEST_NULL;
     int numRanks = 0;
     double prevMean = 0.0;
-    double runSqr = 0.0;
     int destProcJob = SW_MPI_PROC_COMP;
     int destRank;
     Bool reportLog = (Bool) ((LogInfo->stopRun || LogInfo->numWarnings > 0 ||
@@ -5170,51 +5172,64 @@ void SW_MPI_report_log(
             LogInfo->logfp = tempFilePtr;
         }
 
+        SW_WallTime->nTimedRuns = 0;
+        SW_WallTime->nUntimedRuns = 0;
+
         /* Get timing information to average in root processes */
         for (destRank = 1; destRank < size; destRank++) {
             SW_WALLTIME rankWT;
             LOG_INFO procLog;
 
             SW_MPI_Recv(MPI_INT, &destProcJob, 1, destRank, swTRUE, 0, &req);
+            SW_MPI_Recv(wtType, &rankWT, 1, destRank, swTRUE, 0, &req);
 
-            if (destProcJob == SW_MPI_PROC_COMP && !failedSetup) {
-                SW_MPI_Recv(wtType, &rankWT, 1, destRank, swTRUE, 0, &req);
-                SW_MPI_Recv(
-                    SW_MPI_SIZE_T,
-                    &rankWT.nTimedRuns,
-                    1,
-                    destRank,
-                    swTRUE,
-                    0,
-                    &req
-                );
-                SW_MPI_Recv(
-                    SW_MPI_SIZE_T,
-                    &rankWT.nUntimedRuns,
-                    1,
-                    destRank,
-                    swTRUE,
-                    0,
-                    &req
-                );
+            SW_WallTime->totIOCompTime += rankWT.totIOCompTime;
 
-                numRanks++;
+            if (!failedSetup) {
+                if (destProcJob == SW_MPI_PROC_COMP) {
+                    SW_MPI_Recv(
+                        SW_MPI_SIZE_T,
+                        &rankWT.nTimedRuns,
+                        1,
+                        destRank,
+                        swTRUE,
+                        0,
+                        &req
+                    );
+                    SW_MPI_Recv(
+                        SW_MPI_SIZE_T,
+                        &rankWT.nUntimedRuns,
+                        1,
+                        destRank,
+                        swTRUE,
+                        0,
+                        &req
+                    );
 
-                prevMean = SW_WallTime->timeMean;
-                SW_WallTime->timeMean = get_running_mean(
-                    numRanks, SW_WallTime->timeMean, rankWT.timeMean
-                );
-                SW_WallTime->timeMax = get_running_mean(
-                    numRanks, SW_WallTime->timeMax, rankWT.timeMax
-                );
-                SW_WallTime->timeMin = get_running_mean(
-                    numRanks, SW_WallTime->timeMin, rankWT.timeMin
-                );
-                runSqr = get_running_sqr(
-                    prevMean, SW_WallTime->timeMean, rankWT.timeMean
-                );
-                SW_WallTime->nTimedRuns += rankWT.nTimedRuns;
-                SW_WallTime->nUntimedRuns += rankWT.nUntimedRuns;
+                    numRanks++;
+
+                    prevMean = SW_WallTime->timeMean;
+                    SW_WallTime->timeMean = get_running_mean(
+                        numRanks, SW_WallTime->timeMean, rankWT.timeMean
+                    );
+                    SW_WallTime->timeMax = get_running_mean(
+                        numRanks, SW_WallTime->timeMax, rankWT.timeMax
+                    );
+                    SW_WallTime->timeMin = get_running_mean(
+                        numRanks, SW_WallTime->timeMin, rankWT.timeMin
+                    );
+                    SW_WallTime->timeSS = get_running_sqr(
+                        prevMean, SW_WallTime->timeMean, rankWT.timeMean
+                    );
+
+                    SW_WallTime->nTimedRuns += rankWT.nTimedRuns;
+                    SW_WallTime->nUntimedRuns += rankWT.nUntimedRuns;
+                    SW_WallTime->totCompTime += rankWT.totCompTime;
+                    SW_WallTime->totIOCompTime += rankWT.totCompTime;
+                } else {
+                    SW_WallTime->totIOTime += rankWT.totIOTime;
+                    SW_WallTime->totIOCompTime += rankWT.totIOTime;
+                }
             }
 
             SW_MPI_Recv(MPI_INT, &destReport, 1, destRank, swTRUE, 0, &req);
@@ -5236,20 +5251,18 @@ void SW_MPI_report_log(
         }
 
         if (!failedSetup) {
-            SW_WallTime->timeSD = final_running_sd(numRanks, runSqr);
-
             SW_WT_ReportTime(*SW_WallTime, LogInfo);
         }
     } else {
         /* Send process job to root process */
         SW_MPI_Send(MPI_INT, &desig->procJob, 1, SW_MPI_ROOT, swTRUE, 0, &req);
+        SW_MPI_Send(wtType, SW_WallTime, 1, SW_MPI_ROOT, swTRUE, 0, &req);
 
         if (desig->procJob == SW_MPI_PROC_COMP && !failedSetup) {
             /* Send timing information to the root process to average it */
             /* TODO: Find the reason why sending SW_WALLTIME with
                n(Un)TimedRuns across nodes in an HPC environment results in
                a floating-point exception */
-            SW_MPI_Send(wtType, SW_WallTime, 1, SW_MPI_ROOT, swTRUE, 0, &req);
             SW_MPI_Send(
                 SW_MPI_SIZE_T,
                 &SW_WallTime->nTimedRuns,
@@ -6126,6 +6139,9 @@ void SW_MPI_handle_IO(
         ((double) desig->nSuids) / ((double) (numSuidsTot * N_ITER_BEFORE_OUT))
     );
 
+    WallTimeSpec tsr;
+    Bool ok_tsr = swFALSE;
+
     SW_Allreduce(
         SW_MPI_SIZE_T,
         &numSuidsTot,
@@ -6257,6 +6273,7 @@ checkStatus:
         // Do not attempt to read inputs because I/O process needs
         // to let it's other processes know that there was an error
         if (!LogInfo->stopRun) {
+            set_walltime(&tsr, &ok_tsr);
             SW_NCIN_read_inputs(
                 sw,
                 SW_Domain,
@@ -6276,6 +6293,8 @@ checkStatus:
                 inputs,
                 LogInfo
             );
+            SW_WT_TimeRun(tsr, ok_tsr, TIME_IO, SW_WallTime);
+
             if (LogInfo->stopRun) {
                 errorCaused = swTRUE;
             }
@@ -6339,6 +6358,7 @@ checkStatus:
                 distSUIDs[suid][1] = temp;
             }
 
+            set_walltime(&tsr, &ok_tsr);
             failEarly = write_outputs(
                 desig,
                 progFileID,
@@ -6355,6 +6375,8 @@ checkStatus:
                 sw->OutRun.p_OUT,
                 LogInfo
             );
+            SW_WT_TimeRun(tsr, ok_tsr, TIME_IO, SW_WallTime);
+
             if (failEarly) {
                 errorCaused = swTRUE;
             }

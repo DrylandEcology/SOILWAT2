@@ -475,10 +475,6 @@ void SW_CTL_RunSimSet(
       ULONG_MAX + '\0' */
     char tag_suid[55] = "\0";
 
-    WallTimeSpec tss;
-    WallTimeSpec tsr;
-    Bool ok_tss = swFALSE;
-    Bool ok_tsr = swFALSE;
     Bool ok_suid = swTRUE;
     size_t startSim;
     size_t endSim;
@@ -489,6 +485,20 @@ void SW_CTL_RunSimSet(
     LOG_INFO *log = NULL;
     size_t count[2] = {1, 1};
     count[1] = (sDom) ? 0 : 1;
+
+    WallTimeSpec tss;
+    Bool ok_tss = swFALSE;
+
+#if defined(SWTXT)
+    WallTimeSpec tsr;
+#endif
+
+#if defined(SWTXT)
+    Bool ok_tsr = swFALSE;
+#endif
+
+#if !defined(SWMPI)
+#endif
 
 #if defined(SWNETCDF)
 #if defined(SWMPI)
@@ -636,7 +646,10 @@ checkStatus:
                 nSims++;
 
                 /* Simulate suid */
+#if defined(SWTXT)
                 set_walltime(&tsr, &ok_tsr);
+#endif
+
 #if defined(SWMPI)
                 SW_CTL_run_sw(
                     suid,
@@ -647,6 +660,7 @@ checkStatus:
                     estVeg,
                     copyWeather,
                     NULL,
+                    SW_WallTime,
                     log
                 );
                 (void) ncSuid;
@@ -661,10 +675,14 @@ checkStatus:
                     estVeg,
                     copyWeather,
                     count,
+                    SW_WallTime,
                     log
                 );
 #endif
-                SW_WT_TimeRun(tsr, ok_tsr, SW_WallTime);
+
+#if defined(SWTXT)
+                SW_WT_TimeRun(tsr, ok_tsr, TIME_COMPUTE, SW_WallTime);
+#endif
 
 #if !defined(SWMPI)
                 /* Report progress for suid */
@@ -1620,6 +1638,9 @@ The following operations are conditional on if SWMPI is enabled
 @param[in] copyWeather Specifies if weather should be copied from
     template information; if SWMPI, swFALSE will copy it from `runInputs`
 @param[in] count Default count values for the netCDF library
+@param[out] SW_WallTime Struct of type SW_WALLTIME that holds timing
+    information for the program run including partitioning into
+    I/O (SWNETCDF) and compute (SWNETCDF, SWMPI) times
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_run_sw(
@@ -1631,6 +1652,7 @@ void SW_CTL_run_sw(
     Bool estVeg,
     Bool copyWeather,
     const size_t count[],
+    SW_WALLTIME *SW_WallTime,
     LOG_INFO *LogInfo
 ) {
 
@@ -1654,6 +1676,13 @@ void SW_CTL_run_sw(
 #else
     (void) count;
     (void) runNum;
+#endif
+
+#if defined(SWTXT)
+    (void) SW_WallTime;
+#else
+    WallTimeSpec tsr;
+    Bool ok_tsr = swFALSE;
 #endif
 
 #ifdef SWDEBUG
@@ -1684,6 +1713,7 @@ void SW_CTL_run_sw(
     }
 
 #if defined(SWNETCDF) && !defined(SWMPI)
+    set_walltime(&tsr, &ok_tsr);
     // Obtain suid-specific inputs
     SW_NCIN_read_inputs(
         &local_sw,
@@ -1704,6 +1734,7 @@ void SW_CTL_run_sw(
         &local_sw.RunIn,
         LogInfo
     );
+    SW_WT_TimeRun(tsr, ok_tsr, TIME_IO, SW_WallTime);
     if (LogInfo->stopRun) {
         goto freeMem;
     }
@@ -1744,10 +1775,17 @@ void SW_CTL_run_sw(
         sw_printf(" -- run");
     }
 #endif
+
+#if !defined(SWTXT)
+    set_walltime(&tsr, &ok_tsr);
+#endif
     SW_CTL_main(&local_sw, &SW_Domain->OutDom, LogInfo);
     if (LogInfo->stopRun) {
         goto freeMem; // Free memory and exit function prematurely due to error
     }
+#if !defined(SWTXT)
+    SW_WT_TimeRun(tsr, ok_tsr, TIME_COMPUTE, SW_WallTime);
+#endif
 
 #if defined(SWNETCDF)
 #ifdef SWDEBUG
@@ -1764,6 +1802,7 @@ void SW_CTL_run_sw(
         sw_template->OutRun.p_OUT
     );
 #else
+    set_walltime(&tsr, &ok_tsr);
     SW_NCOUT_write_output(
         &SW_Domain->OutDom,
         local_sw.OutRun.p_OUT,
@@ -1781,6 +1820,7 @@ void SW_CTL_run_sw(
         local_sw.SW_PathOutputs.outTimeSizes,
         LogInfo
     );
+    SW_WT_TimeRun(tsr, ok_tsr, TIME_IO, SW_WallTime);
     (void) runNum;
 #endif
 #endif
