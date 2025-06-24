@@ -491,9 +491,6 @@ void SW_CTL_RunSimSet(
 
 #if defined(SWTXT)
     WallTimeSpec tsr;
-#endif
-
-#if defined(SWTXT)
     Bool ok_tsr = swFALSE;
 #endif
 
