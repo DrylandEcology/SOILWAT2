@@ -5481,7 +5481,7 @@ void SW_MPI_get_activated_tsuids(
         SW_NC_get_vals(
             fileID,
             &varID,
-            (inSDom) ? "s_index" : "x_index",
+            (inSDom) ? "site_index" : "x_index",
             sxIndexVals,
             LogInfo
         );
