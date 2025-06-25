@@ -37,14 +37,15 @@ History:
 #include "include/myMemory.h"       // for Str_Dup
 #include "include/SW_datastructs.h" // for SW_RUN, SW_OUTTEXT, LOG_INFO
 #include "include/SW_Defines.h"     // for eSWC, OutPeriod, NVEGTYPES
-#include "include/SW_Files.h"       // for eOutput, eSite
-#include "include/SW_Site.h"        // for echo_inputs
-#include "include/SW_Times.h"       // for Today, Yesterday
-#include "include/SW_VegEstab.h"    // for echo_VegEstab
-#include "include/SW_VegProd.h"     // for echo_VegProd
-#include "include/Times.h"          // for Time_days_in_month, WKDAYS
-#include <stdio.h>                  // for snprintf, fprintf
-#include <string.h>                 // for strcmp, memccpy, memset
+#include "include/SW_DerivedMetrics.h" // for metric_cwd, metric_swa39bar000...
+#include "include/SW_Files.h"          // for eOutput, eSite
+#include "include/SW_Site.h"           // for echo_inputs
+#include "include/SW_Times.h"          // for Today, Yesterday
+#include "include/SW_VegEstab.h"       // for echo_VegEstab
+#include "include/SW_VegProd.h"        // for echo_VegProd
+#include "include/Times.h"             // for Time_days_in_month, WKDAYS
+#include <stdio.h>                     // for snprintf, fprintf
+#include <string.h>                    // for strcmp, memccpy, memset
 
 // Array-based output declarations:
 #if defined(SW_OUTARRAY) || defined(SWNETCDF)
@@ -73,7 +74,7 @@ History:
 /* converts an enum output key (OutKey type) to a module  */
 /* or object type. see SW_Output.h for OutKey order.         */
 /* MUST be SW_OUTNKEYS of these */
-const ObjType key2obj[] = {
+const ObjType key2obj[SW_OUTNKEYS] = {
     // weather/atmospheric quantities:
     eWTH,
     eWTH,
@@ -109,7 +110,10 @@ const ObjType key2obj[] = {
     eVES,
     // vegetation other:
     eVPD,
-    eVPD
+    eVPD,
+    // derived metrics:
+    eSWC,
+    eSWC
 };
 
 
@@ -156,7 +160,10 @@ const char *const key2str[] = {
     SW_ESTAB,
     // vegetation other:
     SW_CO2EFFECTS,
-    SW_BIOMASS
+    SW_BIOMASS,
+    // derived metrics:
+    SW_DERIVEDSUM,
+    SW_DERIVEDAVG
 };
 
 const char *const pd2str[] = {SW_DAY, SW_WEEK, SW_MONTH, SW_YEAR};
@@ -197,6 +204,7 @@ static void sumof_swc(
     SW_SOILWAT_OUTPUTS *s,
     OutKey k,
     SW_SITE_SIM *SW_SiteSim,
+    SW_WEATHER_SIM *SW_WeatherSim,
     LyrIndex n_layers,
     LOG_INFO *LogInfo
 );
@@ -427,6 +435,7 @@ static void sumof_swc(
     SW_SOILWAT_OUTPUTS *s,
     OutKey k,
     SW_SITE_SIM *SW_SiteSim,
+    SW_WEATHER_SIM *SW_WeatherSim,
     LyrIndex n_layers,
     LOG_INFO *LogInfo
 ) {
@@ -571,6 +580,45 @@ static void sumof_swc(
 
     case eSW_Frozen:
         ForEachSoilLayer(i, n_layers) s->lyrFrozen[i] += v->lyrFrozen[i];
+        break;
+
+    case eSW_DerivedSum:
+        s->cwd += metric_CWD(v->pet, v->aet);
+        s->ddd5C30bar000to100cm += metric_DDD(
+            SW_WeatherSim->temp_avg,
+            5.,
+            v->snowpack[Today],
+            0.,
+            v->swcBulk[Today],
+            SW_SiteSim->baseSWC30bar,
+            SW_SiteSim->slWeight100,
+            n_layers
+        );
+        s->wdd5C15bar000to100cm += metric_WDD(
+            SW_WeatherSim->temp_avg,
+            5.,
+            v->snowpack[Today],
+            0.,
+            v->swcBulk[Today],
+            SW_SiteSim->swcBulk_wiltpt,
+            SW_SiteSim->slWeight100,
+            n_layers
+        );
+        break;
+
+    case eSW_DerivedAvg:
+        s->swa30bar000to100cm += metric_totalSWA(
+            v->swcBulk[Today],
+            SW_SiteSim->baseSWC30bar,
+            SW_SiteSim->slWeight100,
+            n_layers
+        );
+        s->swa39bar000to100cm += metric_totalSWA(
+            v->swcBulk[Today],
+            SW_SiteSim->baseSWC39bar,
+            SW_SiteSim->slWeight100,
+            n_layers
+        );
         break;
 
     default:
@@ -928,6 +976,21 @@ static void average_for(
             sw->vp_p_oagg[pd].LAI = sw->vp_p_accu[pd].LAI / div;
             break;
 
+        case eSW_DerivedSum:
+            sw->sw_p_oagg[pd].cwd = sw->sw_p_accu[pd].cwd / div;
+            sw->sw_p_oagg[pd].ddd5C30bar000to100cm =
+                sw->sw_p_accu[pd].ddd5C30bar000to100cm / div;
+            sw->sw_p_oagg[pd].wdd5C15bar000to100cm =
+                sw->sw_p_accu[pd].wdd5C15bar000to100cm / div;
+            break;
+
+        case eSW_DerivedAvg:
+            sw->sw_p_oagg[pd].swa30bar000to100cm =
+                sw->sw_p_accu[pd].swa30bar000to100cm / div;
+            sw->sw_p_oagg[pd].swa39bar000to100cm =
+                sw->sw_p_accu[pd].swa39bar000to100cm / div;
+            break;
+
         default:
             LogError(
                 LogInfo,
@@ -1008,6 +1071,7 @@ static void collect_sums(
                     &sw->sw_p_accu[op],
                     (OutKey) k,
                     &sw->SiteSim,
+                    &sw->WeatherSim,
                     sw->RunIn.SiteRunIn.n_layers,
                     LogInfo
                 );
@@ -1864,6 +1928,42 @@ void SW_OUTDOM_construct(SW_OUT_DOM *OutDom) {
 #endif
             break;
 
+        case eSW_DerivedSum:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_derivedsum_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
+            ) get_derivedsum_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_derivedsum_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
+#endif
+            break;
+
+        case eSW_DerivedAvg:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_derivedavg_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] = (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)
+            ) get_derivedavg_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_derivedavg_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
+#endif
+            break;
+
         default:
 #if defined(SW_OUTTEXT)
             OutDom->pfunc_text[k] =
@@ -2050,6 +2150,8 @@ void SW_OUT_set_ncol(
     //    biolive for NVEGTYPES plus totals
     //    LAI
     nvar_OUT[eSW_Biomass] = 8;
+    nvar_OUT[eSW_DerivedSum] = 3;
+    nvar_OUT[eSW_DerivedAvg] = 2;
 
 
     //--- Set number of soil layer and/or pft (vegtype) for each variable ------
@@ -2203,6 +2305,12 @@ void SW_OUT_set_colnames(
     };
     const char *cnames_eSW_DeepSWC[] = {"lowLayerDrain_cm"};
     const char *cnames_eSW_CO2Effects[] = {"BioMult", "WUEMult"};
+    const char *cnames_eSW_DroughtSum[] = {
+        "cwd", "ddd5C30bar000to100cm", "wdd5C15bar000to100cm"
+    };
+    const char *cnames_eSW_DroughtAvg[] = {
+        "swa30bar000to100cm", "swa39bar000to100cm"
+    };
 
 #ifdef SWDEBUG
     if (debug) {
@@ -2554,6 +2662,7 @@ void SW_OUT_set_colnames(
             return; // Exit function prematurely due to error
         }
     }
+
 #ifdef SWDEBUG
     if (debug) {
         sw_printf(" 'eSW_Estab' ...");
@@ -2630,12 +2739,37 @@ void SW_OUT_set_colnames(
     i += j;
     (void) snprintf(ctemp, sizeof ctemp, "%s", "LAI_total");
     colnames_OUT[eSW_Biomass][i] = Str_Dup(ctemp, LogInfo);
-
-#ifdef SWDEBUG
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
+#ifdef SWDEBUG
+    if (debug) {
+        sw_printf(" 'eSW_DerivedSum' ...");
+    }
+#endif
+    for (i = 0; i < ncol_OUT[eSW_DerivedSum]; i++) {
+        colnames_OUT[eSW_DerivedSum][i] =
+            Str_Dup(cnames_eSW_DroughtSum[i], LogInfo);
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+    }
+
+#ifdef SWDEBUG
+    if (debug) {
+        sw_printf(" 'eSW_DerivedAvg' ...");
+    }
+#endif
+    for (i = 0; i < ncol_OUT[eSW_DerivedAvg]; i++) {
+        colnames_OUT[eSW_DerivedAvg][i] =
+            Str_Dup(cnames_eSW_DroughtAvg[i], LogInfo);
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+    }
+
+#ifdef SWDEBUG
     if (debug) {
         sw_printf(" completed.\n");
     }
@@ -2897,8 +3031,8 @@ void SW_OUT_read(
     char upsum[4];
     char inbuf[MAX_FILENAMESIZE];
     int first;
-    int last = -1; /* first doy for output */
-    const int numReadInKeys = 28;
+    int last = -1;                             /* first doy for output */
+    const int numReadInKeys = SW_OUTNKEYS - 4; /* 4 outkeys without output */
     const int outDirLineNo = numReadInKeys + 2;
     char relOutFileName[MAX_FILENAMESIZE] = {'\0'};
     int resSNP;

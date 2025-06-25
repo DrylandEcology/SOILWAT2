@@ -33,6 +33,10 @@
 * Transpiration regions no longer require roots of every plant functional type
   (@dschlaep).
 
+* Derived metrics including climatic water deficit, dry degree-days,
+  wet degree-days, and total profile available soil moisture can now be
+  requested as output (#466; @dschlaep).
+
 ## Bugfixes
 * The KD-tree algorithm is now correctly calculating index positions for
   lookup netCDFs also when the domain is a subset of the inputs (@N1ckP3rsl3y).
@@ -51,6 +55,11 @@
   for CMIP5 and CMIP6.
 * New inputs via `"weathsetup.in"` to request corrections for problematic
   weather inputs (turned off by default).
+* New inputs via `"outsetup.in"` and, for nc-based SOILWAT2, via
+  `"SW2_netCDF_input_variables.tsv"` to request derived metrics as output.
+
+## Changes to outputs
+* Several derived metrics in output groups `"DERIVEDSUM"` and `"DERIVEDSAVG"`.
 
 
 # SOILWAT2 v8.1.1

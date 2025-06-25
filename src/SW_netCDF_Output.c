@@ -94,7 +94,13 @@ static const char *const SWVarUnits[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
     {"1", "1"},                                       /* CO2EFFECTS */
 
     /* BIOMASS */
-    {"1", "1", "g m-2", "g m-2", "g m-2", "g m-2", "g m-2", "m m-2"}
+    {"1", "1", "g m-2", "g m-2", "g m-2", "g m-2", "g m-2", "m m-2"},
+
+    /* DERIVEDSUM */
+    {"cm", "degC day", "degC day"},
+
+    /* DERIVEDAVG */
+    {"cm", "cm"}
 };
 
 static const char *const possKeys[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
@@ -185,7 +191,13 @@ static const char *const possKeys[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
      "BIOMASS__litter_total",
      "BIOMASS__biolive_total",
      "BIOMASS__veg.biolive_inveg",
-     "BIOMASS__LAI"}
+     "BIOMASS__LAI"},
+
+    {"DERIVEDSUM__cwd",
+     "DERIVEDSUM__ddd5C30bar000to100cm",
+     "DERIVEDSUM__wdd5C15bar000to100cm"},
+
+    {"DERIVEDAVG__swa30bar000to100cm", "DERIVEDAVG__swa39bar000to100cm"}
 };
 
 /* =================================================== */

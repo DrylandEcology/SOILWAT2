@@ -420,6 +420,18 @@ typedef struct {
     /** Array for plant functional types and soil layers with assigned
         transpiration region ID */
     LyrIndex my_transp_rgn[NVEGTYPES][MAX_LAYERS];
+
+    /** Soil layer weights for accumulation from 0 to 100 cm depth */
+    /* Used only by metric_xxx() */
+    double slWeight100[MAX_LAYERS];
+
+    /** Soil water content per layer held at a tension of -3.0 MPa */
+    /* Used only by metric_xxx() */
+    double baseSWC30bar[MAX_LAYERS];
+
+    /** Soil water content per layer held at a tension of -3.9 MPa */
+    /* Used only by metric_xxx() */
+    double baseSWC39bar[MAX_LAYERS];
 } SW_SITE_SIM;
 
 typedef struct {
@@ -1025,6 +1037,13 @@ typedef struct {
                                        // estimation of each layer
         maxLyrTemperature[MAX_LAYERS]; // Holds the maximum temperature
                                        // estimation of each layer
+
+    /* Derived output metrics */
+    double cwd;
+    double ddd5C30bar000to100cm;
+    double wdd5C15bar000to100cm;
+    double swa30bar000to100cm;
+    double swa39bar000to100cm;
 } SW_SOILWAT_OUTPUTS;
 
 #ifdef SWDEBUG
@@ -1358,9 +1377,12 @@ typedef enum {
     /* vegetation quantities */
     eSW_AllVeg,
     eSW_Estab,
-    // vegetation other */
+    /* vegetation other */
     eSW_CO2Effects,
     eSW_Biomass,
+    /* Derived output metrics */
+    eSW_DerivedSum,
+    eSW_DerivedAvg,
     eSW_LastKey /* make sure this is the last one */
 } OutKey;
 

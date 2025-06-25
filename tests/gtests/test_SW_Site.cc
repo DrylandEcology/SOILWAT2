@@ -12,6 +12,14 @@
 
 using ::testing::HasSubstr;
 
+// NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
+extern double (*test_soilLayerWeight)(
+    double, LyrIndex, double const *, LyrIndex
+);
+
+// NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
+
+
 namespace {
 // List SWRC Campbell1974: all PTFs
 const char *const ns_ptfca2C1974[] = {
@@ -873,5 +881,51 @@ TEST_F(SiteFixtureTest, SiteSoilDensityMissingDeathTest) {
     EXPECT_THAT(
         LogInfo.errorMsg, HasSubstr("Soil density type not recognized")
     );
+}
+
+// Test soil layer weights
+TEST(SiteTest, SoilLayerWeights) {
+    double depthLimit;
+    double depths[MAX_LAYERS] = {5., 10., 20.};
+    LyrIndex i;
+    LyrIndex n_layers = 3;
+
+    // Expect w == 0 if index >= n_layers
+    i = n_layers + 1;
+    depthLimit = depths[1];
+
+    EXPECT_DOUBLE_EQ(test_soilLayerWeight(depthLimit, i, depths, n_layers), 0.);
+
+    // Expect w == 1 if depth[i] <= depthLimit
+    i = 0;
+    depthLimit = depths[i] * 1.5;
+
+    EXPECT_DOUBLE_EQ(test_soilLayerWeight(depthLimit, i, depths, n_layers), 1.);
+
+    // Expect w == 0 if depth[i - 1] > depthLimit && i > 0
+    i = 1;
+    depthLimit = depths[i - 1] * 0.5;
+
+    EXPECT_DOUBLE_EQ(test_soilLayerWeight(depthLimit, i, depths, n_layers), 0.);
+
+    // Expect 0 <= w <= 1 if depth[i] > depthLimit && i == 0
+    i = 0;
+    depthLimit = depths[i] * 0.5;
+
+    EXPECT_GE(test_soilLayerWeight(depthLimit, i, depths, n_layers), 0.);
+    EXPECT_DOUBLE_EQ(
+        test_soilLayerWeight(depthLimit, i, depths, n_layers), 0.5
+    );
+    EXPECT_LE(test_soilLayerWeight(depthLimit, i, depths, n_layers), 1.);
+
+    // Expect 0 <= w <= 1 if depth[i] > depthLimit && i > 0
+    i = 1;
+    depthLimit = depths[i - 1] + 0.75 * (depths[i] - depths[i - 1]);
+
+    EXPECT_GE(test_soilLayerWeight(depthLimit, i, depths, n_layers), 0.);
+    EXPECT_DOUBLE_EQ(
+        test_soilLayerWeight(depthLimit, i, depths, n_layers), 0.75
+    );
+    EXPECT_LE(test_soilLayerWeight(depthLimit, i, depths, n_layers), 1.);
 }
 } // namespace
