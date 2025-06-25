@@ -1421,25 +1421,33 @@ static void mpi_create_group_comms(
     int numRanks, int *ranks, MPI_Comm *groupComm
 ) {
     int res = MPI_SUCCESS;
-    MPI_Group worldGroup;
-    MPI_Group newGroup;
+    MPI_Group worldGroup = MPI_GROUP_NULL;
+    MPI_Group newGroup = MPI_GROUP_NULL;
 
     res = MPI_Comm_group(MPI_COMM_WORLD, &worldGroup);
     if (res != MPI_SUCCESS) {
-        goto reportFail;
+        goto freeMem;
     }
 
     res = MPI_Group_incl(worldGroup, numRanks, ranks, &newGroup);
     if (res != MPI_SUCCESS) {
-        goto reportFail;
+        goto freeMem;
     }
 
     res = MPI_Comm_create_group(MPI_COMM_WORLD, newGroup, 0, groupComm);
     if (res != MPI_SUCCESS) {
-        goto reportFail;
+        goto freeMem;
     }
 
-reportFail:
+freeMem:
+    if (newGroup != MPI_GROUP_NULL) {
+        MPI_Group_free(&newGroup);
+    }
+
+    if (worldGroup != MPI_GROUP_NULL) {
+        MPI_Group_free(&worldGroup);
+    }
+
     if (res != MPI_SUCCESS) {
         errorMPI(-1, res);
     }
