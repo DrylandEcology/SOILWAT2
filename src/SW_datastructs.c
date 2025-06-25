@@ -681,7 +681,6 @@ void SW_DATA_queryTree(
     double *bestDist
 ) {
     int inspectIndex = level % KD_NDIMS;
-    double *oppCoords = NULL;
     double currDist;
 
     if (isnull(currNode)) {
@@ -721,30 +720,26 @@ void SW_DATA_queryTree(
 
     /* Check to see if the other child branch holds a value that's closer
        than the current best option */
-    oppCoords = (goLeft) ? currNode->right->coords : currNode->left->coords;
-
-    if (!isnull(oppCoords)) {
-        if (goLeft && GE(queryCoords[inspectIndex] + *bestDist,
-                         currNode->coords[inspectIndex])) {
-            SW_DATA_queryTree(
-                currNode->right,
-                queryCoords,
-                level + 1,
-                primCRSIsGeo,
-                bestNode,
-                bestDist
-            );
-        } else if (!goLeft && LE(queryCoords[inspectIndex] - *bestDist,
-                                 currNode->coords[inspectIndex])) {
-            SW_DATA_queryTree(
-                currNode->left,
-                queryCoords,
-                level + 1,
-                primCRSIsGeo,
-                bestNode,
-                bestDist
-            );
-        }
+    if (goLeft && GE(queryCoords[inspectIndex] + *bestDist,
+                     currNode->coords[inspectIndex])) {
+        SW_DATA_queryTree(
+            currNode->right,
+            queryCoords,
+            level + 1,
+            primCRSIsGeo,
+            bestNode,
+            bestDist
+        );
+    } else if (!goLeft && LE(queryCoords[inspectIndex] - *bestDist,
+                             currNode->coords[inspectIndex])) {
+        SW_DATA_queryTree(
+            currNode->left,
+            queryCoords,
+            level + 1,
+            primCRSIsGeo,
+            bestNode,
+            bestDist
+        );
     }
 }
 
