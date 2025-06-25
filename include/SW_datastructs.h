@@ -767,8 +767,6 @@ typedef struct {
 
 #if defined(SWNETCDF)
     double totIOCompTime, /**< Sum of I/O and computation runtimes */
-        totCompTime,      /**< Sum of only the runtime of doing computation
-                             operations */
         totIOTime; /**< Sum of only the runtime of doing I/O operations */
 #endif
 } SW_WALLTIME;

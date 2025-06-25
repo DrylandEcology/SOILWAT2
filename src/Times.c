@@ -338,7 +338,6 @@ void SW_WT_StartTime(SW_WALLTIME *wt) {
 
 #if defined(SWNETCDF)
     wt->totIOCompTime = 0;
-    wt->totCompTime = 0;
     wt->totIOTime = 0;
 #endif
 }
@@ -363,9 +362,7 @@ void SW_WT_TimeRun(WallTimeSpec ts, Bool ok_ts, int timeSec, SW_WALLTIME *wt) {
         }
 
 #if defined(SWNETCDF)
-        if (timeSec == TIME_COMPUTE) {
-            wt->totCompTime += ut;
-        } else { // TIME_IO
+        if (timeSec == TIME_IO) {
             wt->totIOTime += ut;
         }
 
@@ -481,7 +478,7 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
                 "%.3f (I/O, %.2f%%) [seconds]\n",
                 wt.totIOCompTime,
                 wt.timeMean, // Average compute time
-                (wt.totCompTime / wt.totIOCompTime) * 100,
+                (wt.timeMean / wt.totIOCompTime) * 100,
                 wt.totIOTime,
                 (wt.totIOTime / wt.totIOCompTime) * 100
             );

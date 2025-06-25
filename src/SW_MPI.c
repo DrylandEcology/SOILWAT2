@@ -4128,7 +4128,7 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
          offsetof(SW_WALLTIME, timeMin),
          offsetof(SW_WALLTIME, timeMax),
          offsetof(SW_WALLTIME, totIOTime),
-         offsetof(SW_WALLTIME, totCompTime)},
+         offsetof(SW_WALLTIME, totIOCompTime)},
 
         /* SW_OUT_DOM */
         {offsetof(SW_OUT_DOM, sumtype),
@@ -5224,11 +5224,8 @@ void SW_MPI_report_log(
 
                     SW_WallTime->nTimedRuns += rankWT.nTimedRuns;
                     SW_WallTime->nUntimedRuns += rankWT.nUntimedRuns;
-                    SW_WallTime->totCompTime += rankWT.totCompTime;
-                    SW_WallTime->totIOCompTime += rankWT.totCompTime;
                 } else {
                     SW_WallTime->totIOTime += rankWT.totIOTime;
-                    SW_WallTime->totIOCompTime += rankWT.totIOTime;
                 }
             }
 
@@ -6443,6 +6440,7 @@ checkStatus:
         if ((numIterations == 0 && input == numSuidsTot) ||
             numIterations < N_ITER_BEFORE_OUT) {
 
+            set_walltime(&tsr, &ok_tsr);
             failEarly = write_outputs(
                 desig,
                 progFileID,
@@ -6459,6 +6457,7 @@ checkStatus:
                 sw->OutRun.p_OUT,
                 LogInfo
             );
+            SW_WT_TimeRun(tsr, ok_tsr, TIME_IO, SW_WallTime);
             if (failEarly) {
                 goto freeMem;
             }
