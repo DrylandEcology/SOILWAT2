@@ -205,8 +205,7 @@ void SW_VPD_read(
                                          (char *) "Invalid record in";
 
         if (lineno <= line_help) {
-            if ((lineno >= 1 && lineno <= 3) || lineno == 31 ||
-                 lineno == 32) {
+            if ((lineno >= 1 && lineno <= 3) || lineno == 31 || lineno == 32) {
 
                 x = sscanf(inbuf, "%19s", vegStrs[0]);
                 expectedNumInVals = 1;
@@ -264,9 +263,7 @@ void SW_VPD_read(
                     SW_VegProdIn->veg_method > 2) {
 
                     LogError(
-                        LogInfo,
-                        LOGERROR,
-                        "'veg_method' must be 0, 1 or 2."
+                        LogInfo, LOGERROR, "'veg_method' must be 0, 1 or 2."
                     );
                 }
 
@@ -282,9 +279,7 @@ void SW_VPD_read(
 
                 if (SW_VegProdIn->nYearsDynamicLong <= 0) {
                     LogError(
-                        LogInfo,
-                        LOGERROR,
-                        "'nYearsDynamicLong' must be > 0."
+                        LogInfo, LOGERROR, "'nYearsDynamicLong' must be > 0."
                     );
                     goto closeFile;
                 }
@@ -300,9 +295,7 @@ void SW_VPD_read(
 
                 if (SW_VegProdIn->nYearsDynamicShort <= 0) {
                     LogError(
-                        LogInfo,
-                        LOGERROR,
-                        "'nYearsDynamicShort' must be > 0."
+                        LogInfo, LOGERROR, "'nYearsDynamicShort' must be > 0."
                     );
                 } else if (SW_VegProdIn->nYearsDynamicShort >=
                            SW_VegProdIn->nYearsDynamicLong) {
