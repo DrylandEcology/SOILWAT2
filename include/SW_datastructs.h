@@ -737,7 +737,9 @@ typedef struct {
         // `rank_SWPcrits[k]` hold the vegetation type at rank `k` of
         // decreasingly sorted critical SWP values
         rank_SWPcrits[NVEGTYPES],
-        veg_method;
+        veg_method,
+        nYearsDynamicShort,
+        nYearsDynamicLong;
 } SW_VEGPROD_INPUTS;
 
 typedef struct {

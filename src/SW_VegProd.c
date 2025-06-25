@@ -176,7 +176,7 @@ void SW_VPD_read(
     int lineno = 0;
     int index;
     // last case line number before monthly biomass densities
-    const int line_help = 30;
+    const int line_help = 32;
     double help_veg[NVEGTYPES];
     double help_bareGround = 0.;
     double litt;
@@ -201,14 +201,15 @@ void SW_VPD_read(
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
         lineno++;
 
-        startOfErrMsg = (lineno >= 25) ? (char *) "Not enough arguments" :
+        startOfErrMsg = (lineno >= 27) ? (char *) "Not enough arguments" :
                                          (char *) "Invalid record in";
 
         if (lineno <= line_help) {
-            if (lineno == 1 || lineno == 29 || lineno == 30) {
+            if ((lineno >= 1 && lineno <= 3) || lineno == 31 ||
+                 lineno == 32) {
+
                 x = sscanf(inbuf, "%19s", vegStrs[0]);
                 expectedNumInVals = 1;
-
             } else {
                 x = sscanf(
                     inbuf,
@@ -220,7 +221,7 @@ void SW_VPD_read(
                     bareGroundStr
                 );
 
-                expectedNumInVals = (lineno >= 4) ? NVEGTYPES : NVEGTYPES + 1;
+                expectedNumInVals = (lineno >= 6) ? NVEGTYPES : NVEGTYPES + 1;
 
                 ForEachVegType(k) {
                     help_veg[k] = sw_strtod(vegStrs[k], MyFileName, LogInfo);
@@ -258,10 +259,66 @@ void SW_VPD_read(
                 if (LogInfo->stopRun) {
                     goto closeFile;
                 }
+
+                if (SW_VegProdIn->veg_method < 0 ||
+                    SW_VegProdIn->veg_method > 2) {
+
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "'veg_method' must be 0, 1 or 2."
+                    );
+                }
+
+                break;
+
+            /* Number of years for long-term dynamic vegetation */
+            case 2:
+                SW_VegProdIn->nYearsDynamicLong =
+                    sw_strtoi(vegStrs[0], MyFileName, LogInfo);
+                if (LogInfo->stopRun) {
+                    goto closeFile;
+                }
+
+                if (SW_VegProdIn->nYearsDynamicLong <= 0) {
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "'nYearsDynamicLong' must be > 0."
+                    );
+                    goto closeFile;
+                }
+                break;
+
+            /* Number of years for short-term dynamic vegetation */
+            case 3:
+                SW_VegProdIn->nYearsDynamicShort =
+                    sw_strtoi(vegStrs[0], MyFileName, LogInfo);
+                if (LogInfo->stopRun) {
+                    goto closeFile;
+                }
+
+                if (SW_VegProdIn->nYearsDynamicShort <= 0) {
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "'nYearsDynamicShort' must be > 0."
+                    );
+                } else if (SW_VegProdIn->nYearsDynamicShort >=
+                           SW_VegProdIn->nYearsDynamicLong) {
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "'nYearsDynamicShort' must be < 'nYearsDynamicLong'."
+                    );
+                }
+                if (LogInfo->stopRun) {
+                    goto closeFile;
+                }
                 break;
 
             /* fractions of vegetation types */
-            case 2:
+            case 4:
                 ForEachVegType(k) {
                     SW_VegProdRunIn->veg[k].cov.fCover = help_veg[k];
                 }
@@ -269,7 +326,7 @@ void SW_VPD_read(
                 break;
 
             /* albedo */
-            case 3:
+            case 5:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].cov.albedo = help_veg[k];
                 }
@@ -277,51 +334,51 @@ void SW_VPD_read(
                 break;
 
             /* canopy height */
-            case 4:
+            case 6:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].cnpy.xinflec = help_veg[k];
                 }
                 break;
 
-            case 5:
+            case 7:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].cnpy.yinflec = help_veg[k];
                 }
                 break;
 
-            case 6:
+            case 8:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].cnpy.range = help_veg[k];
                 }
                 break;
 
-            case 7:
+            case 9:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].cnpy.slope = help_veg[k];
                 }
                 break;
 
-            case 8:
+            case 10:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].canopy_height_constant = help_veg[k];
                 }
                 break;
 
             /* vegetation interception parameters */
-            case 9:
+            case 11:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].veg_kSmax = help_veg[k];
                 }
                 break;
 
-            case 10:
+            case 12:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].veg_kdead = help_veg[k];
                 }
                 break;
 
             /* litter interception parameters */
-            case 11:
+            case 13:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].lit_kSmax = help_veg[k];
                 }
@@ -329,84 +386,84 @@ void SW_VPD_read(
 
             /* parameter for partitioning of bare-soil evaporation and
              * transpiration */
-            case 12:
+            case 14:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].EsTpartitioning_param = help_veg[k];
                 }
                 break;
 
             /* Parameter for scaling and limiting bare soil evaporation rate */
-            case 13:
+            case 15:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].Es_param_limit = help_veg[k];
                 }
                 break;
 
             /* shade effects */
-            case 14:
+            case 16:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].shade_scale = help_veg[k];
                 }
                 break;
 
-            case 15:
+            case 17:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].shade_deadmax = help_veg[k];
                 }
                 break;
 
-            case 16:
+            case 18:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].tr_shade_effects.xinflec = help_veg[k];
                 }
                 break;
 
-            case 17:
+            case 19:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].tr_shade_effects.yinflec = help_veg[k];
                 }
                 break;
 
-            case 18:
+            case 20:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].tr_shade_effects.range = help_veg[k];
                 }
                 break;
 
-            case 19:
+            case 21:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].tr_shade_effects.slope = help_veg[k];
                 }
                 break;
 
             /* Hydraulic redistribution */
-            case 20:
+            case 22:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].flagHydraulicRedistribution =
                         (Bool) EQ(help_veg[k], 1.);
                 }
                 break;
 
-            case 21:
+            case 23:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].maxCondroot = help_veg[k];
                 }
                 break;
 
-            case 22:
+            case 24:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].swpMatric50 = help_veg[k];
                 }
                 break;
 
-            case 23:
+            case 25:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].shapeCond = help_veg[k];
                 }
                 break;
 
             /* Critical soil water potential */
-            case 24:
+            case 26:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].SWPcrit = -10. * help_veg[k];
                     SW_VegProdIn->critSoilWater[k] =
@@ -418,14 +475,14 @@ void SW_VPD_read(
 
             /* CO2 Biomass Power Equation */
             // Coefficient 1
-            case 25:
+            case 27:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].co2_bio_coeff1 = help_veg[k];
                 }
                 break;
 
             // Coefficient 2
-            case 26:
+            case 28:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].co2_bio_coeff2 = help_veg[k];
                 }
@@ -433,21 +490,21 @@ void SW_VPD_read(
 
             /* CO2 WUE Power Equation */
             // Coefficient 1
-            case 27:
+            case 29:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].co2_wue_coeff1 = help_veg[k];
                 }
                 break;
 
             // Coefficient 2
-            case 28:
+            case 30:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].co2_wue_coeff2 = help_veg[k];
                 }
                 break;
 
             /* Spatial reference of biomass inputs */
-            case 29:
+            case 31:
                 SW_VegProdIn->isBiomAsIf100Cover =
                     sw_strtoi(vegStrs[0], MyFileName, LogInfo) ? swTRUE :
                                                                  swFALSE;
@@ -457,7 +514,7 @@ void SW_VPD_read(
                 break;
 
             /* Calendar year corresponding to vegetation inputs */
-            case 30:
+            case 32:
                 SW_VegProdIn->vegYear =
                     sw_strtoi(vegStrs[0], MyFileName, LogInfo);
                 if (LogInfo->stopRun) {

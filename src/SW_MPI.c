@@ -4500,7 +4500,7 @@ void SW_MPI_template_info(
     IntU vCount;
     int structType;
     int var;
-    int numElem[] = {3, 25, 5, 5, 7, 43, 2};
+    int numElem[] = {3, 25, 7, 5, 7, 43, 2};
     void **markov2DBuffer[] = {
         (void **) &SW_Run->MarkovIn.wetprob,
         (void **) &SW_Run->MarkovIn.dryprob,
@@ -4549,6 +4549,8 @@ void SW_MPI_template_info(
          (void *) &SW_Run->VegProdIn.isBiomAsIf100Cover,
          (void *) &SW_Run->VegProdIn.use_SWA,
          (void *) &SW_Run->VegProdIn.veg_method,
+         (void *) &SW_Run->VegProdIn.nYearsDynamicLong,
+         (void *) &SW_Run->VegProdIn.nYearsDynamicShort,
          (void *) &SW_Run->VegProdIn.bare_cov.albedo},
         {(void *) &SW_Run->ModelIn.SW_SpinUp,
          (void *) &SW_Run->ModelIn.startyr,
@@ -4616,7 +4618,7 @@ void SW_MPI_template_info(
          MPI_INT,      MPI_INT,      MPI_INT,      MPI_UNSIGNED,
          MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED,
          MPI_INT}, /* SW_WEATHER_INPUTS */
-        {MPI_INT, MPI_DOUBLE, MPI_INT, MPI_INT, MPI_DOUBLE
+        {MPI_INT, MPI_DOUBLE, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_DOUBLE
         }, /* SW_VEGPROD_INPUTS */
         {spinupType, MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED
         }, /* SW_MODEL_INPUTS */
@@ -4665,7 +4667,7 @@ void SW_MPI_template_info(
          NFIXWEATHER},
 
         /* SW_VEGPROD_INPUTS */
-        {1, NVEGTYPES, 1, 1, 1},
+        {1, NVEGTYPES, 1, 1, 1, 1, 1},
 
         /* SW_MODEL_INPUTS */
         {1, 1, 1, 1, 1},
