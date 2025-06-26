@@ -5460,7 +5460,7 @@ void SW_MPI_get_activated_tsuids(
         ncFileName = ncInFiles[inKey][0];
         SW_NC_open(ncFileName, NC_NOWRITE, &fileID, LogInfo);
         if (LogInfo->stopRun) {
-            return;
+            goto freeMem;
         }
 
         inSDom = SW_Domain->netCDFInput.siteDoms[inKey];
@@ -5472,7 +5472,7 @@ void SW_MPI_get_activated_tsuids(
             LogInfo
         );
         if (LogInfo->stopRun) {
-            return;
+            goto freeMem;
         }
         if (!inSDom) {
             yIndexVals = (unsigned int *) Mem_Malloc(
@@ -5529,6 +5529,16 @@ void SW_MPI_get_activated_tsuids(
                 indexCell[0] = yIndexVals[offset];
                 indexCell[1] = sxIndexVals[offset];
             }
+        }
+
+        if (!isnull(sxIndexVals)) {
+            free(sxIndexVals);
+            sxIndexVals = NULL;
+        }
+
+        if (!isnull(yIndexVals)) {
+            free(yIndexVals);
+            yIndexVals = NULL;
         }
 
         nc_close(fileID);
