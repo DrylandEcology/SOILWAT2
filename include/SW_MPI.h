@@ -86,7 +86,7 @@ void SW_MPI_initialize(
 void SW_MPI_finalize(int procJob, LOG_INFO *LogInfo);
 
 void SW_MPI_free_comms_types(
-    int rank, SW_MPI_DESIGNATE *desig, MPI_Datatype types[], LOG_INFO *LogInfo
+    SW_MPI_DESIGNATE *desig, MPI_Datatype types[], LOG_INFO *LogInfo
 );
 
 void SW_MPI_Fail(int rank, int failType, char *mpiErrStr);

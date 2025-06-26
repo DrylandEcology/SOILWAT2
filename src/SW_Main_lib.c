@@ -754,7 +754,7 @@ void sw_finalize_program(
 
     // Free types and communicators
     SW_MPI_free_comms_types(
-        rank, &SW_Domain->SW_Designation, SW_Domain->datatypes, LogInfo
+        &SW_Domain->SW_Designation, SW_Domain->datatypes, LogInfo
     );
 #else
     if (!endQuietly) {

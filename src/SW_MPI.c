@@ -1600,10 +1600,6 @@ static void create_groups(
     int sendRank;
     int rankJob = desig->procJob;
 
-    MPI_Comm *groupComm = &desig->groupComm;
-    MPI_Comm *rootCompComm =
-        (rank == SW_MPI_ROOT) ? &desig->rootCompComm : NULL;
-
     // Broadcast number of compute and I/O processors in MPI_COMM_WORLD
     SW_MPI_Bcast(MPI_INT, &numCompProcs, 1, SW_MPI_ROOT, MPI_COMM_WORLD);
     SW_MPI_Bcast(MPI_INT, &numIOProcsTot, 1, SW_MPI_ROOT, MPI_COMM_WORLD);
@@ -1672,6 +1668,7 @@ static void create_groups(
             }
         }
     }
+
     buff = (rankJob == SW_MPI_PROC_COMP) ? ranksInComp : ranksInIO;
     numElem = (rankJob == SW_MPI_PROC_COMP) ? numCompProcs : numIOProcsTot;
 
@@ -1679,22 +1676,18 @@ static void create_groups(
         SW_MPI_Recv(MPI_INT, buff, numElem, SW_MPI_ROOT, swTRUE, 0, &nullReq);
     }
 
+    /* create communicator for root */
+    if (rank == SW_MPI_ROOT) {
+        mpi_create_group_comms(numCompProcs, ranksInComp, &desig->rootCompComm);
+    }
+
     /* Create I/O and compute communicators;
        put the root process into both so it can
        properly spread information that is only for compute and I/O
        processes
     */
-    if (rankJob == SW_MPI_PROC_IO) {
-        mpi_create_group_comms(numElem, buff, groupComm);
-    }
+    mpi_create_group_comms(numElem, buff, &desig->groupComm);
 
-    if (rankJob == SW_MPI_PROC_COMP || rank == SW_MPI_ROOT) {
-        mpi_create_group_comms(
-            (rank > SW_MPI_ROOT) ? numElem : numCompProcs,
-            (rank > SW_MPI_ROOT) ? buff : ranksInComp,
-            (rank > SW_MPI_ROOT) ? groupComm : rootCompComm
-        );
-    }
 
     // Create io-comp communicators
     create_iocomp_comms(rank, rankJob, desig, LogInfo);
@@ -3726,7 +3719,6 @@ void SW_MPI_finalize(int procJob, LOG_INFO *LogInfo) {
 /**
 @brief Free communicators and types when finishing the program
 
-@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in,out] desig Designation instance that holds information about
     assigning a process to a job
 @param[in,out] types A list of custom MPI datatypes used throughout the program
@@ -3734,13 +3726,13 @@ void SW_MPI_finalize(int procJob, LOG_INFO *LogInfo) {
     will use this but no errors will be reported
 */
 void SW_MPI_free_comms_types(
-    int rank, SW_MPI_DESIGNATE *desig, MPI_Datatype types[], LOG_INFO *LogInfo
+    SW_MPI_DESIGNATE *desig, MPI_Datatype types[], LOG_INFO *LogInfo
 ) {
     const int numComms = 3;
     int comm;
     int type;
-    MPI_Comm comms[] = {
-        desig->rootCompComm, desig->groupComm, desig->ioCompComm
+    MPI_Comm *comms[] = {
+        &desig->rootCompComm, &desig->groupComm, &desig->ioCompComm
     };
 
     for (type = 0; type < SW_MPI_NTYPES; type++) {
@@ -3750,10 +3742,9 @@ void SW_MPI_free_comms_types(
     }
 
     for (comm = 0; comm < numComms; comm++) {
-        if (((comm == 0 && rank == SW_MPI_ROOT) || comm > 0) &&
-            comms[comm] != MPI_COMM_NULL) {
+        if (*comms[comm] != MPI_COMM_NULL) {
 
-            MPI_Comm_free(&comms[comm]);
+            MPI_Comm_free(comms[comm]);
         }
     }
 }
