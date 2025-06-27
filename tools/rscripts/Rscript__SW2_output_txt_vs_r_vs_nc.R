@@ -44,19 +44,22 @@ dir_mpi <- file.path(dir_example, "Output_comps-mpi")
 #--- SOILWAT2 metadata ------
 outModes <- c("txt", "nc", "mpi", "r")
 
-pds2 <- rSOILWAT2:::rSW2_glovars[["kSOILWAT2"]][["OutPeriods"]]
+pds2 <- c("Day", "Week", "Month", "Year")
 pds1 <- tolower(pds2)
 pds3 <- c("daily", "weekly", "monthly", "yearly")
 
 vegtypes <- c("tree", "shrub", "forbs", "grass")
 
-outkeys <- rSOILWAT2:::rSW2_glovars[["kSOILWAT2"]][["OutKeys"]]
-
-outvars <- read.delim(
+outvars <- utils::read.delim(
   file.path(dir_example, "Input_nc", "SW2_netCDF_output_variables.tsv"),
   sep = "\t"
 )
 
+outkeys <- c(
+  outvars[["SW2.output.group"]],
+  rSOILWAT2:::rSW2_glovars[["kSOILWAT2"]][["OutKeys"]]
+) |>
+  unique()
 
 
 #--- . ------
@@ -96,7 +99,7 @@ read_swdata <- function(outkey, pd, swr, dir_txt, dir_nc, dir_mpi) {
       data.matrix()
   )
 
-  has_rSW2 <- !inherits(swr, "try-error")
+  has_rSW2 <- !inherits(swr, "try-error") && outkey %in% slotNames(swr)
 
   x[["r"]] = if (has_rSW2) {
     tmp <- slot(slot(swr, outkey), pds2[[pd]])[, -idh, drop = FALSE]
@@ -393,55 +396,76 @@ for (pd in seq_along(pds1)) {
 
 
 #--- Identify available output modes ------
-has_modes <- apply(hasModes, MARGIN = 3L, sum) > 0L
+tmp <- apply(hasModes, MARGIN = 3L, sum, na.rm = TRUE)
+maxModes <- max(tmp)
+hasAllModes <- tmp == maxModes
+hasSomeModes <- tmp < maxModes & tmp > 0
+hasNoModes <- tmp == 0
+nAvailModes <- sum(hasSomeModes)  + sum(hasAllModes)
 
-cat("* Modes with output:", toString(names(has_modes)[has_modes]), "\n")
-cat("* Modes without output:", toString(names(has_modes)[!has_modes]), "\n")
-
-
-#--- Identify outkeys without output ------
-# Expect to contain no output: "WTHR", "ALLH2O", "ET", "ALLVEG"
-has_out <- apply(
-  diffs,
-  MARGIN = 1L,
-  function(x) all(!vapply(x, is.null, FUN.VALUE = NA))
+cat(
+  "* Modes with complete output:", toString(names(hasAllModes)[hasAllModes]),
+  fill = TRUE
+)
+cat(
+  "* Modes with partial output:", toString(names(hasSomeModes)[hasSomeModes]),
+  fill = TRUE
+)
+cat(
+  "* Modes without output:", toString(names(hasNoModes)[hasNoModes]),
+  fill = TRUE
 )
 
-has_out2 <- apply(
+
+#--- Identify available outkeys ------
+# Expect to contain no output: "WTHR", "ALLH2O", "ET", "ALLVEG"
+hasNoOut <- apply(
+  diffs,
+  MARGIN = 1L,
+  function(x) all(vapply(x, is.null, FUN.VALUE = NA))
+)
+
+# all output given available modes
+
+tmp <- apply(
   diffs,
   MARGIN = 1L:2L,
   function(xt) {
+    res <- 0
     if (length(dim(xt[[1L]])) == 2L) {
-      ids <- apply(xt[[1L]], 1L, anyNA)
+      ids <- !apply(xt[[1L]], 1L, anyNA)
       if (any(ids)) {
-        unique(xt[[1L]][ids, c("diff", "key")])
+        res <- length(unique(xt[[1L]][ids, "diff"]))
       }
     }
+    res
   }
 )
 
-has_out3 <- if (!is.null(has_out2)) {
-  tmp <- unique(do.call(rbind, args = has_out2))
-  tapply(
-    tmp[["diff"]], INDEX = tmp[["key"]], FUN = function(x) toString(x)
-  )
-}
+tmp2 <- apply(tmp, 2L, function(x) x == nAvailModes) |> rowSums()
+hasAllOut <- tmp2 == length(pds2)
+tmp2 <- apply(tmp, 2L, function(x) x < nAvailModes & x > 0L) |> rowSums()
+hasSomeOut <- tmp2 == length(pds2)
+tmp2 <- apply(tmp, 2L, function(x) x == 0L) |> rowSums()
+hasNoOut <- tmp2 == length(pds2)
 
 
-cat("* Output keys with output:", toString(names(has_out)[has_out]), "\n")
-cat("* Output keys without output:", toString(names(has_out)[!has_out]), "\n")
-if (!is.null(has_out3)) {
-  cat(
-    "* Output keys without output for certain comparisons:",
-    paste(paste(names(has_out3), has_out3, sep = ": "), collapse = "; "),
-    "\n"
-  )
-}
-
+cat(
+  "* Output keys with complete output:", toString(names(hasAllOut)[hasAllOut]),
+  fill = TRUE
+)
+cat(
+  "* Output keys with partial output:", toString(names(hasSomeOut)[hasSomeOut]),
+  fill = TRUE
+)
+cat(
+  "* Output keys without output:", toString(names(hasNoOut)[hasNoOut]),
+  fill = TRUE
+)
 
 
 #--- Identify meaningful differences in output ------
-if (any(has_out)) {
+if (any(hasAllOut | hasSomeOut)) {
   ndiffs <- 0L
 
   for (pd in seq_along(pds1)) {
