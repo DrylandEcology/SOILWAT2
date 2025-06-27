@@ -1901,13 +1901,13 @@ void uniqueIndices(
     int *tempArraySeen;
 
     tempArray =
-        (int *) Mem_Malloc(sizeof(int) * tempSize, "uniqueIndices()", LogInfo);
+        (int *) Mem_Malloc(sizeof(int) * tempSize, "uniqueIndices", LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
     tempArraySeen =
-        (int *) Mem_Malloc(sizeof(int) * nTypes, "uniqueIndices()", LogInfo);
+        (int *) Mem_Malloc(sizeof(int) * nTypes, "uniqueIndices", LogInfo);
     if (LogInfo->stopRun) {
         free(tempArray);
         return; // Exit function prematurely due to error

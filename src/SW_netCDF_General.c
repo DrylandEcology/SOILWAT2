@@ -1349,7 +1349,7 @@ void SW_NC_alloc_unitssw(char ***units_sw, int nVar, LOG_INFO *LogInfo) {
 
         // Initialize the variable within SW_OUT_DOM
         *units_sw = (char **) Mem_Malloc(
-            sizeof(char *) * nVar, "SW_NC_alloc_unitssw()", LogInfo
+            sizeof(char *) * nVar, "SW_NC_alloc_unitssw", LogInfo
         );
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -1375,7 +1375,7 @@ void SW_NC_alloc_uconv(sw_converter_t ***uconv, int nVar, LOG_INFO *LogInfo) {
     if (nVar > 0) {
 
         *uconv = (sw_converter_t **) Mem_Malloc(
-            sizeof(sw_converter_t *) * nVar, "SW_NC_alloc_uconv()", LogInfo
+            sizeof(sw_converter_t *) * nVar, "SW_NC_alloc_uconv", LogInfo
         );
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -1405,7 +1405,7 @@ void SW_NC_alloc_req(Bool **reqOutVar, int nVar, LOG_INFO *LogInfo) {
         // Initialize the variable within SW_OUT_DOM which specifies if a
         // variable is to be written out or not
         *reqOutVar = (Bool *) Mem_Malloc(
-            sizeof(Bool) * nVar, "SW_NC_alloc_outReq()", LogInfo
+            sizeof(Bool) * nVar, "SW_NC_alloc_outReq", LogInfo
         );
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -1441,7 +1441,7 @@ void SW_NC_alloc_vars(
         // Allocate all memory for the variable information in the current
         // output key
         *keyVars = (char ***) Mem_Malloc(
-            sizeof(char **) * nVar, "SW_NC_alloc_vars()", LogInfo
+            sizeof(char **) * nVar, "SW_NC_alloc_vars", LogInfo
         );
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -1453,7 +1453,7 @@ void SW_NC_alloc_vars(
 
         for (index = 0; index < nVar; index++) {
             (*keyVars)[index] = (char **) Mem_Malloc(
-                sizeof(char *) * numAtts, "SW_NC_alloc_vars()", LogInfo
+                sizeof(char *) * numAtts, "SW_NC_alloc_vars", LogInfo
             );
             if (LogInfo->stopRun) {
                 for (varNum = 0; varNum < index; varNum++) {

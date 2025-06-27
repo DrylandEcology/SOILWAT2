@@ -1274,7 +1274,7 @@ void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     TimeInt *years;
     Bool prev_doOut = sw->ModelSim.doOutput;
     years = (TimeInt *) Mem_Malloc(
-        sizeof(TimeInt) * duration, "SW_CTL_run_spinup()", LogInfo
+        sizeof(TimeInt) * duration, "SW_CTL_run_spinup", LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error

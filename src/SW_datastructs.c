@@ -233,7 +233,7 @@ static SW_KD_NODE *createNode(
     SW_KD_NODE *newNode = NULL;
 
     newNode =
-        (SW_KD_NODE *) Mem_Malloc(sizeof(SW_KD_NODE), "createNode()", LogInfo);
+        (SW_KD_NODE *) Mem_Malloc(sizeof(SW_KD_NODE), "createNode", LogInfo);
 
     if (!LogInfo->stopRun) {
         copyData(
@@ -579,14 +579,14 @@ static void alloc_coords_indices(
     size_t pair;
 
     *coords = (double **) Mem_Malloc(
-        sizeof(double *) * numPoints, "alloc_coords_indices()", LogInfo
+        sizeof(double *) * numPoints, "alloc_coords_indices", LogInfo
     );
     if (LogInfo->stopRun) {
         return; /* Exit function prematurely due to error */
     }
 
     *indices = (unsigned int **) Mem_Malloc(
-        sizeof(unsigned int *) * numPoints, "alloc_coords_indices()", LogInfo
+        sizeof(unsigned int *) * numPoints, "alloc_coords_indices", LogInfo
     );
     if (LogInfo->stopRun) {
         return; /* Exit function prematurely due to error */
@@ -599,7 +599,7 @@ static void alloc_coords_indices(
 
     for (pair = 0; pair < numPoints; pair++) {
         (*coords)[pair] = (double *) Mem_Malloc(
-            sizeof(double) * 2, "alloc_coords_indices()", LogInfo
+            sizeof(double) * 2, "alloc_coords_indices", LogInfo
         );
         if (LogInfo->stopRun) {
             return; /* Exit function prematurely due to error */
@@ -609,7 +609,7 @@ static void alloc_coords_indices(
         (*coords)[pair][1] = 0.0;
 
         (*indices)[pair] = (unsigned int *) Mem_Malloc(
-            sizeof(unsigned int) * 2, "alloc_coords_indices()", LogInfo
+            sizeof(unsigned int) * 2, "alloc_coords_indices", LogInfo
         );
         if (LogInfo->stopRun) {
             return; /* Exit function prematurely due to error */

@@ -490,7 +490,7 @@ static void allocateActiveSuids(
     size_t domIndex;
 
     *activeSuids = (size_t **) Mem_Malloc(
-        sizeof(size_t *) * numActiveSites, "allocateActiveSuids()", LogInfo
+        sizeof(size_t *) * numActiveSites, "allocateActiveSuids", LogInfo
     );
     if (LogInfo->stopRun) {
         return;
@@ -498,7 +498,7 @@ static void allocateActiveSuids(
 
     for (domIndex = 0; domIndex < numActiveSites; domIndex++) {
         (*activeSuids)[domIndex] = (size_t *) Mem_Malloc(
-            sizeof(size_t) * nElemPerSuid, "allocateActiveSuids()", LogInfo
+            sizeof(size_t) * nElemPerSuid, "allocateActiveSuids", LogInfo
         );
         if (LogInfo->stopRun) {
             return;
@@ -525,7 +525,7 @@ static void allocateActiveTSuids(
     size_t col;
 
     *activeTSuids = (size_t **) Mem_Malloc(
-        sizeof(size_t *) * numActiveSites, "allocateActiveTSuids()", LogInfo
+        sizeof(size_t *) * numActiveSites, "allocateActiveTSuids", LogInfo
     );
     for (site = 0; site < numActiveSites; site++) {
         (*activeTSuids)[site] = NULL;
@@ -533,7 +533,7 @@ static void allocateActiveTSuids(
 
     for (site = 0; site < numActiveSites; site++) {
         (*activeTSuids)[site] = (size_t *) Mem_Malloc(
-            sizeof(size_t) * nIndexVals, "allocateActiveTSuids()", LogInfo
+            sizeof(size_t) * nIndexVals, "allocateActiveTSuids", LogInfo
         );
         if (LogInfo->stopRun) {
             return;
@@ -573,28 +573,28 @@ static void allocProcInfo(
 
     if (isnull(*nodeNames)) {
         *nodeNames = (char **) Mem_Malloc(
-            sizeof(char *) * newCount, "allocProcInfo()", LogInfo
+            sizeof(char *) * newCount, "allocProcInfo", LogInfo
         );
         if (LogInfo->stopRun) {
             return;
         }
 
         *numProcsInNode = (int *) Mem_Malloc(
-            sizeof(int) * newCount, "allocProcInfo()", LogInfo
+            sizeof(int) * newCount, "allocProcInfo", LogInfo
         );
         if (LogInfo->stopRun) {
             return;
         }
 
         *ranksInNodes = (int **) Mem_Malloc(
-            sizeof(int *) * newCount, "allocProcInfo()", LogInfo
+            sizeof(int *) * newCount, "allocProcInfo", LogInfo
         );
         if (LogInfo->stopRun) {
             return;
         }
 
         *numMaxProcsInNode = (int *) Mem_Malloc(
-            sizeof(int) * newCount, "allocProcInfo()", LogInfo
+            sizeof(int) * newCount, "allocProcInfo", LogInfo
         );
     } else {
         *nodeNames = (char **) Mem_ReAlloc(
@@ -648,9 +648,8 @@ static void reallocRanks(
     int rank;
 
     if (isnull(*ranksInNode)) {
-        *ranksInNode = (int *) Mem_Malloc(
-            sizeof(int) * newCount, "reallocRanks()", LogInfo
-        );
+        *ranksInNode =
+            (int *) Mem_Malloc(sizeof(int) * newCount, "reallocRanks", LogInfo);
     } else {
         *ranksInNode =
             (int *) Mem_ReAlloc(*ranksInNode, sizeof(int) * newCount, LogInfo);
@@ -747,7 +746,7 @@ static void fillDesignationIO(
     }
     *leftSuids -= desig->nSuids;
     desig->domSuids = (size_t **) Mem_Malloc(
-        sizeof(size_t *) * desig->nSuids, "fillDesignationIO()", LogInfo
+        sizeof(size_t *) * desig->nSuids, "fillDesignationIO", LogInfo
     );
     if (LogInfo->stopRun) {
         return;
@@ -759,7 +758,7 @@ static void fillDesignationIO(
 
     for (suid = 0; suid < desig->nSuids; suid++) {
         desig->domSuids[suid] = (size_t *) Mem_Malloc(
-            sizeof(size_t) * 2, "fillDesignationIO()", LogInfo
+            sizeof(size_t) * 2, "fillDesignationIO", LogInfo
         );
         if (LogInfo->stopRun) {
             return;
@@ -853,7 +852,7 @@ static void designateProcesses(
     // Allocate designation information for each compute node
     // # compute nodes by number of processes in compute node
     *designations = (SW_MPI_DESIGNATE **) Mem_Malloc(
-        sizeof(SW_MPI_DESIGNATE *) * numNodes, "designateProcesses()", LogInfo
+        sizeof(SW_MPI_DESIGNATE *) * numNodes, "designateProcesses", LogInfo
     );
     if (LogInfo->stopRun) {
         return;
@@ -872,7 +871,7 @@ static void designateProcesses(
     for (node = 0; node < numNodes; node++) {
         (*designations)[node] = (SW_MPI_DESIGNATE *) Mem_Malloc(
             sizeof(SW_MPI_DESIGNATE) * numProcsInNode[node],
-            "designateProcesses()",
+            "designateProcesses",
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -1286,7 +1285,7 @@ static void get_dynamic_string(
 
         if (strLen > 0) {
             *buffer = (char *) Mem_Malloc(
-                sizeof(char) * strLen, "get_dynamic_string()", LogInfo
+                sizeof(char) * strLen, "get_dynamic_string", LogInfo
             );
         }
     }
@@ -1481,7 +1480,7 @@ static void create_iocomp_comms(
 
     if (rankJob == SW_MPI_PROC_IO) {
         ranksInIOCompComm = (int *) Mem_Malloc(
-            sizeof(int) * numRanksForIO, "create_iocomp_comms()", LogInfo
+            sizeof(int) * numRanksForIO, "create_iocomp_comms", LogInfo
         );
         if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
             goto freeMem;
@@ -1527,7 +1526,7 @@ static void create_iocomp_comms(
         );
 
         ranksInIOCompComm = (int *) Mem_Malloc(
-            sizeof(int) * numRanksForIO, "create_iocomp_comms()", LogInfo
+            sizeof(int) * numRanksForIO, "create_iocomp_comms", LogInfo
         );
         if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
             goto freeMem;
@@ -1608,7 +1607,7 @@ static void create_groups(
     // know which ranks are in a group
     if (rank == SW_MPI_ROOT || rankJob == SW_MPI_PROC_COMP) {
         ranksInComp = (int *) Mem_Malloc(
-            sizeof(int) * numCompProcs, "create_groups()", LogInfo
+            sizeof(int) * numCompProcs, "create_groups", LogInfo
         );
     }
     if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
@@ -1617,7 +1616,7 @@ static void create_groups(
 
     if (rank == SW_MPI_ROOT || rankJob == SW_MPI_PROC_IO) {
         ranksInIO = (int *) Mem_Malloc(
-            sizeof(int) * numIOProcsTot, "create_groups()", LogInfo
+            sizeof(int) * numIOProcsTot, "create_groups", LogInfo
         );
     }
     if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
@@ -1979,7 +1978,7 @@ static void open_input_files(
         }
 
         pathInputs->openInFileIDs[inKey] = (int **) Mem_Malloc(
-            sizeof(int *) * numVarsInKey[inKey], "SW_MPI_open_files()", LogInfo
+            sizeof(int *) * numVarsInKey[inKey], "SW_MPI_open_files", LogInfo
         );
         if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
             return;
@@ -2002,7 +2001,7 @@ static void open_input_files(
                            pathInputs->ncNumWeatherInFiles;
 
             pathInputs->openInFileIDs[inKey][var] = (int *) Mem_Malloc(
-                sizeof(int) * numFiles, "SW_MPI_open_files()", LogInfo
+                sizeof(int) * numFiles, "SW_MPI_open_files", LogInfo
             );
             if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
                 return;
@@ -2070,7 +2069,7 @@ static void open_logfiles(
     const char *baseName = BaseName(logfileName);
 
     LogInfo->logfps = (FILE **) Mem_Malloc(
-        sizeof(FILE *) * numLogs, "open_logfiles()", LogInfo
+        sizeof(FILE *) * numLogs, "open_logfiles", LogInfo
     );
     LogInfo->numFiles = numLogs;
 
@@ -2190,7 +2189,7 @@ static void open_output_files(
                     pathOutputs->openOutFileIDs[outKey][pd] =
                         (int *) Mem_Malloc(
                             sizeof(int) * pathOutputs->numOutFiles,
-                            "open_output_files()",
+                            "open_output_files",
                             LogInfo
                         );
                     if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
@@ -2318,7 +2317,7 @@ static void alloc_inputs(
     unsigned int year;
 
     *inputs = (SW_RUN_INPUTS *) Mem_Malloc(
-        sizeof(SW_RUN_INPUTS) * numInputs, "alloc_inputs()", LogInfo
+        sizeof(SW_RUN_INPUTS) * numInputs, "alloc_inputs", LogInfo
     );
 
     memset(*inputs, 0, sizeof(SW_RUN_INPUTS) * numInputs);
@@ -2349,21 +2348,21 @@ static void alloc_inputs(
     }
 
     *elevations = (double *) Mem_Malloc(
-        sizeof(double) * numInputs, "alloc_inputs()", LogInfo
+        sizeof(double) * numInputs, "alloc_inputs", LogInfo
     );
     if (LogInfo->stopRun) {
         return;
     }
 
     *tempMonthlyVals = (double *) Mem_Malloc(
-        sizeof(double) * numInputs * MAX_MONTHS, "alloc_inputs()", LogInfo
+        sizeof(double) * numInputs * MAX_MONTHS, "alloc_inputs", LogInfo
     );
     if (LogInfo->stopRun) {
         return;
     }
 
     *tempSilt = (double *) Mem_Malloc(
-        sizeof(double) * numInputs * MAX_LAYERS, "alloc_inputs()", LogInfo
+        sizeof(double) * numInputs * MAX_LAYERS, "alloc_inputs", LogInfo
     );
     if (LogInfo->stopRun) {
         return;
@@ -2379,7 +2378,7 @@ static void alloc_inputs(
     }
 
     *tempWeather = (double *) Mem_Malloc(
-        sizeof(double) * numInputs * MAX_DAYS, "alloc_inputs()", LogInfo
+        sizeof(double) * numInputs * MAX_DAYS, "alloc_inputs", LogInfo
     );
     if (LogInfo->stopRun) {
         return;
@@ -2387,7 +2386,7 @@ static void alloc_inputs(
 
     if (allocSoils) {
         *tempSoils = (SW_SOIL_RUN_INPUTS *) Mem_Malloc(
-            sizeof(SW_SOIL_RUN_INPUTS) * numInputs, "alloc_inputs()", LogInfo
+            sizeof(SW_SOIL_RUN_INPUTS) * numInputs, "alloc_inputs", LogInfo
         );
     }
 }
@@ -2460,7 +2459,7 @@ static void alloc_IO_info(
         numVals = (inKey == eSW_InDomain) ? nDomInfoElem : maxSuidsInWrite;
 
         starts[inKey] = (size_t **) Mem_Malloc(
-            sizeof(size_t *) * numVals, "alloc_IO_info()", LogInfo
+            sizeof(size_t *) * numVals, "alloc_IO_info", LogInfo
         );
         if (LogInfo->stopRun) {
             return;
@@ -2470,7 +2469,7 @@ static void alloc_IO_info(
         }
 
         counts[inKey] = (size_t **) Mem_Malloc(
-            sizeof(size_t *) * numVals, "alloc_IO_info()", LogInfo
+            sizeof(size_t *) * numVals, "alloc_IO_info", LogInfo
         );
         if (LogInfo->stopRun) {
             return;
@@ -2481,14 +2480,14 @@ static void alloc_IO_info(
 
         for (allocIndex = 0; allocIndex < numVals; allocIndex++) {
             starts[inKey][allocIndex] = (size_t *) Mem_Malloc(
-                sizeof(size_t) * 2, "alloc_IO_info()", LogInfo
+                sizeof(size_t) * 2, "alloc_IO_info", LogInfo
             );
             if (LogInfo->stopRun) {
                 return;
             }
 
             counts[inKey][allocIndex] = (size_t *) Mem_Malloc(
-                sizeof(size_t) * 2, "alloc_IO_info()", LogInfo
+                sizeof(size_t) * 2, "alloc_IO_info", LogInfo
             );
             if (LogInfo->stopRun) {
                 return;
@@ -2501,7 +2500,7 @@ static void alloc_IO_info(
 
     for (allocIndex = 0; allocIndex < num1DArr; allocIndex++) {
         (*alloc1DArr[allocIndex]) = (size_t *) Mem_Malloc(
-            sizeof(size_t) * (nCompProcs + 1), "alloc_IO_info()", LogInfo
+            sizeof(size_t) * (nCompProcs + 1), "alloc_IO_info", LogInfo
         );
         if (LogInfo->stopRun) {
             return;
@@ -2526,9 +2525,8 @@ static void alloc_IO_info(
     }
 
     for (suid = 0; suid < (size_t) (numSuids * N_ITER_BEFORE_OUT); suid++) {
-        (*distSUIDs)[suid] = (size_t *) Mem_Malloc(
-            sizeof(size_t) * 2, "alloc_IO_info()", LogInfo
-        );
+        (*distSUIDs)[suid] =
+            (size_t *) Mem_Malloc(sizeof(size_t) * 2, "alloc_IO_info", LogInfo);
         if (LogInfo->stopRun) {
             return;
         }
@@ -2537,7 +2535,7 @@ static void alloc_IO_info(
     }
 
     *tempDistSuids = (size_t **) Mem_Malloc(
-        sizeof(size_t *) * numSuids, "alloc_IO_info()", LogInfo
+        sizeof(size_t *) * numSuids, "alloc_IO_info", LogInfo
     );
     if (LogInfo->stopRun) {
         return;
@@ -2548,9 +2546,8 @@ static void alloc_IO_info(
     }
 
     for (suid = 0; suid < numSuids; suid++) {
-        (*tempDistSuids)[suid] = (size_t *) Mem_Malloc(
-            sizeof(size_t) * 2, "alloc_IO_info()", LogInfo
-        );
+        (*tempDistSuids)[suid] =
+            (size_t *) Mem_Malloc(sizeof(size_t) * 2, "alloc_IO_info", LogInfo);
         if (LogInfo->stopRun) {
             return;
         }
@@ -2559,7 +2556,7 @@ static void alloc_IO_info(
     }
 
     *succFlags = (Bool *) Mem_Malloc(
-        sizeof(Bool) * nDomInfoElem, "alloc_IO_info()", LogInfo
+        sizeof(Bool) * nDomInfoElem, "alloc_IO_info", LogInfo
     );
     if (LogInfo->stopRun) {
         return;
@@ -2569,7 +2566,7 @@ static void alloc_IO_info(
     }
 
     *succMark = (signed char *) Mem_Malloc(
-        sizeof(signed char) * nDomInfoElem, "alloc_IO_info()", LogInfo
+        sizeof(signed char) * nDomInfoElem, "alloc_IO_info", LogInfo
     );
     if (LogInfo->stopRun) {
         return;
@@ -2583,7 +2580,7 @@ static void alloc_IO_info(
             readInVars[inKey][0]) {
 
             distTSuids[inKey] = (size_t **) Mem_Malloc(
-                sizeof(size_t *) * numSuids, "alloc_IO_info()", LogInfo
+                sizeof(size_t *) * numSuids, "alloc_IO_info", LogInfo
             );
             if (LogInfo->stopRun) {
                 return;
@@ -2595,7 +2592,7 @@ static void alloc_IO_info(
 
             for (suid = 0; suid < numSuids; suid++) {
                 distTSuids[inKey][suid] = (size_t *) Mem_Malloc(
-                    sizeof(size_t) * 2, "alloc_IO_info()", LogInfo
+                    sizeof(size_t) * 2, "alloc_IO_info", LogInfo
                 );
                 if (LogInfo->stopRun) {
                     return;
@@ -5356,9 +5353,7 @@ void SW_MPI_root_find_active_sites(
     *numActiveSites = 0;
 
     prog = (signed char *) Mem_Malloc(
-        sizeof(signed char) * numSites,
-        "SW_MPI_root_find_active_sites()",
-        LogInfo
+        sizeof(signed char) * numSites, "SW_MPI_root_find_active_sites", LogInfo
     );
     if (LogInfo->stopRun) {
         return;
@@ -5459,7 +5454,7 @@ void SW_MPI_get_activated_tsuids(
             (sProgDom) ? SW_Domain->nDimS : SW_Domain->nDimX * SW_Domain->nDimY;
         sxIndexVals = (unsigned int *) Mem_Malloc(
             sizeof(unsigned int) * nSites,
-            "SW_MPI_get_activated_tsuids()",
+            "SW_MPI_get_activated_tsuids",
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -5468,7 +5463,7 @@ void SW_MPI_get_activated_tsuids(
         if (!inSDom) {
             yIndexVals = (unsigned int *) Mem_Malloc(
                 sizeof(unsigned int) * nSites,
-                "SW_MPI_get_activated_tsuids()",
+                "SW_MPI_get_activated_tsuids",
                 LogInfo
             );
             if (LogInfo->stopRun) {

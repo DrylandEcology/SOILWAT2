@@ -1275,7 +1275,7 @@ static void alloc_netCDF_domain_vars(
     for (varNum = 0; varNum < numVars; varNum++) {
         numVals = (varNum % 2 == 0) ? numY : numX;
         *(vars[varNum]) = (double *) Mem_Malloc(
-            numVals * sizeof(double), "alloc_netCDF_domain_vars()", LogInfo
+            numVals * sizeof(double), "alloc_netCDF_domain_vars", LogInfo
         );
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -1288,7 +1288,7 @@ static void alloc_netCDF_domain_vars(
 
             *(bndsVars[bndVarNum]) = (double *) Mem_Malloc(
                 (size_t) (numVals * numBnds) * sizeof(double),
-                "alloc_netCDF_domain_vars()",
+                "alloc_netCDF_domain_vars",
                 LogInfo
             );
 
@@ -1299,7 +1299,7 @@ static void alloc_netCDF_domain_vars(
     }
 
     *domVals = (unsigned int *) Mem_Malloc(
-        nSUIDs * sizeof(unsigned int), "alloc_netCDF_domain_vars()", LogInfo
+        nSUIDs * sizeof(unsigned int), "alloc_netCDF_domain_vars", LogInfo
     );
 }
 
@@ -2535,7 +2535,7 @@ static void fill_prog_netCDF_vals(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     long *readDomVals = NULL;
     signed char *vals = (signed char *) Mem_Malloc(
-        nSUIDs * sizeof(signed char), "fill_prog_netCDF_vals()", LogInfo
+        nSUIDs * sizeof(signed char), "fill_prog_netCDF_vals", LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -2569,7 +2569,7 @@ static void fill_prog_netCDF_vals(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     readDomVals = (long *) Mem_Malloc(
         sizeof(long) * chunkSizes[0] * chunkSizes[1],
-        "fill_prog_netCDF_vals()",
+        "fill_prog_netCDF_vals",
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -2649,7 +2649,7 @@ static void alloc_overrideCalendars(
     int varNum;
 
     (*overrideCalendars) = (char **) Mem_Malloc(
-        sizeof(char *) * numInVars, "alloc_overrideCalendars()", LogInfo
+        sizeof(char *) * numInVars, "alloc_overrideCalendars", LogInfo
     );
     if (LogInfo->stopRun) {
         return; /* Exit function prematurely due to error */
@@ -2676,7 +2676,7 @@ static void alloc_weath_input_files(
 
     /* Allocate/initialize weather input files */
     (*ncWeatherInFiles) = (char ***) Mem_Malloc(
-        sizeof(char **) * numInVars, "alloc_input_files()", LogInfo
+        sizeof(char **) * numInVars, "alloc_input_files", LogInfo
     );
     if (LogInfo->stopRun) {
         return; /* Exit functionality prematurely due to error */
@@ -3027,7 +3027,7 @@ static void alloc_dom_coord_info(
             }
 
             *domCoordArrs[coordArr] = (double *) Mem_Malloc(
-                sizeof(double) * allocSize, "alloc_dom_coord_info()", LogInfo
+                sizeof(double) * allocSize, "alloc_dom_coord_info", LogInfo
             );
 
             for (coordIndex = 0; coordIndex < allocSize; coordIndex++) {
@@ -3334,7 +3334,7 @@ static void get_1D_input_coordinates(
 
         *(yxVals[varNum]) = (double *) Mem_Malloc(
             sizeof(double) * *dimSizes[varNum],
-            "get_1D_input_coordinates()",
+            "get_1D_input_coordinates",
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -3474,7 +3474,7 @@ static void get_2D_input_coordinates(
 
     for (varNum = 0; varNum < numReadInDims; varNum++) {
         (*xyVals[varNum]) = (double *) Mem_Malloc(
-            sizeof(double) * numPoints, "get_2D_input_coordinates()", LogInfo
+            sizeof(double) * numPoints, "get_2D_input_coordinates", LogInfo
         );
         if (LogInfo->stopRun) {
             return; /* Exit function prematurely due to error */
@@ -3778,7 +3778,7 @@ static void get_temporal_vals(
     }
 
     *timeVals = (double *) Mem_Malloc(
-        sizeof(double) * *timeSize, "get_temporal_vals()", LogInfo
+        sizeof(double) * *timeSize, "get_temporal_vals", LogInfo
     );
     if (LogInfo->stopRun) {
         return; /* Exit function prematurely due to error */
@@ -7044,16 +7044,14 @@ void SW_NCIN_alloc_miss_vals(
         for (varNum = 0; varNum < numVars + 1; varNum++) {
             if (varNum > 0) {
                 (*doubleMissVals)[varNum - 1] = (double *) Mem_Malloc(
-                    sizeof(double) * numVals,
-                    "SW_NCIN_alloc_miss_vals()",
-                    LogInfo
+                    sizeof(double) * numVals, "SW_NCIN_alloc_miss_vals", LogInfo
                 );
                 (*doubleMissVals)[varNum - 1][0] = 0.0;
                 (*doubleMissVals)[varNum - 1][1] = 0.0;
             } else {
                 *doubleMissVals = (double **) Mem_Malloc(
                     sizeof(double *) * numVars,
-                    "SW_NCIN_alloc_miss_vals()",
+                    "SW_NCIN_alloc_miss_vals",
                     LogInfo
                 );
                 for (wkgVarNum = 0; wkgVarNum < numVars; wkgVarNum++) {
@@ -7110,22 +7108,20 @@ void SW_NCIN_alloc_sim_var_information(
     const size_t numFactVals = 2;
 
     *inVarIDs = (int *) Mem_Malloc(
-        sizeof(int) * numVars, "SW_NCIN_alloc_sim_var_information()", LogInfo
+        sizeof(int) * numVars, "SW_NCIN_alloc_sim_var_information", LogInfo
     );
     if (LogInfo->stopRun) {
         return;
     }
     *inVarType = (nc_type *) Mem_Malloc(
-        sizeof(nc_type) * numVars,
-        "SW_NCIN_alloc_sim_var_information()",
-        LogInfo
+        sizeof(nc_type) * numVars, "SW_NCIN_alloc_sim_var_information", LogInfo
     );
     if (LogInfo->stopRun) {
         return;
     }
 
     *hasScaleAndAddFact = (Bool *) Mem_Malloc(
-        sizeof(Bool) * numVars, "SW_NCIN_alloc_sim_var_information()", LogInfo
+        sizeof(Bool) * numVars, "SW_NCIN_alloc_sim_var_information", LogInfo
     );
     if (LogInfo->stopRun) {
         return;
@@ -7135,9 +7131,7 @@ void SW_NCIN_alloc_sim_var_information(
     }
 
     *scaleAndAddFactVals = (double **) Mem_Malloc(
-        sizeof(double *) * numVars,
-        "SW_NCIN_alloc_sim_var_information()",
-        LogInfo
+        sizeof(double *) * numVars, "SW_NCIN_alloc_sim_var_information", LogInfo
     );
     if (LogInfo->stopRun) {
         return;
@@ -7148,7 +7142,7 @@ void SW_NCIN_alloc_sim_var_information(
     }
 
     *missValFlags = (Bool **) Mem_Malloc(
-        sizeof(Bool *) * numVars, "SW_NCIN_alloc_sim_var_information()", LogInfo
+        sizeof(Bool *) * numVars, "SW_NCIN_alloc_sim_var_information", LogInfo
     );
     if (LogInfo->stopRun) {
         return;
@@ -7164,7 +7158,7 @@ void SW_NCIN_alloc_sim_var_information(
     for (varNum = 0; varNum < numVars; varNum++) {
         (*scaleAndAddFactVals)[varNum] = (double *) Mem_Malloc(
             sizeof(double) * numFactVals,
-            "SW_NCIN_alloc_sim_var_information()",
+            "SW_NCIN_alloc_sim_var_information",
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -7173,7 +7167,7 @@ void SW_NCIN_alloc_sim_var_information(
 
         (*missValFlags)[varNum] = (Bool *) Mem_Malloc(
             sizeof(Bool) * SIM_INFO_NFLAGS,
-            "SW_NCIN_alloc_sim_var_information()",
+            "SW_NCIN_alloc_sim_var_information",
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -7196,7 +7190,7 @@ void SW_NCIN_alloc_sim_var_information(
     if (currKey == eSW_InSoil) {
         *numSoilVarLyrs = (size_t *) Mem_Malloc(
             sizeof(size_t) * numVars,
-            "SW_NCIN_alloc_sim_var_information()",
+            "SW_NCIN_alloc_sim_var_information",
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -7222,7 +7216,7 @@ void SW_NCIN_allocDimVar(int numVars, int ***dimOrderInVar, LOG_INFO *LogInfo) {
     int val;
 
     *dimOrderInVar = (int **) Mem_Malloc(
-        sizeof(int *) * numVars, "SW_NCIN_allocDimVar()", LogInfo
+        sizeof(int *) * numVars, "SW_NCIN_allocDimVar", LogInfo
     );
     if (LogInfo->stopRun) {
         return;
@@ -7234,7 +7228,7 @@ void SW_NCIN_allocDimVar(int numVars, int ***dimOrderInVar, LOG_INFO *LogInfo) {
 
     for (varNum = 0; varNum < numVars; varNum++) {
         (*dimOrderInVar)[varNum] = (int *) Mem_Malloc(
-            sizeof(int) * MAX_NDIMS, "SW_NCIN_allocDimVar()", LogInfo
+            sizeof(int) * MAX_NDIMS, "SW_NCIN_allocDimVar", LogInfo
         );
         if (LogInfo->stopRun) {
             return;
@@ -8127,7 +8121,7 @@ void SW_NCIN_alloc_weather_indices_years(
 
     (*ncWeatherStartEndIndices) = (unsigned int **) Mem_Malloc(
         sizeof(unsigned int *) * numStartEndIndices,
-        "SW_NCIN_alloc_weather_indices_years()",
+        "SW_NCIN_alloc_weather_indices_years",
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -8141,7 +8135,7 @@ void SW_NCIN_alloc_weather_indices_years(
     for (index = 0; index < numStartEndIndices; index++) {
         (*ncWeatherStartEndIndices)[index] = (unsigned int *) Mem_Malloc(
             sizeof(unsigned int) * 2,
-            "SW_NCIN_alloc_weather_indices_years()",
+            "SW_NCIN_alloc_weather_indices_years",
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -8151,7 +8145,7 @@ void SW_NCIN_alloc_weather_indices_years(
 
     (*numDaysInYear) = (unsigned int *) Mem_Malloc(
         sizeof(unsigned int) * numYears,
-        "SW_NCIN_alloc_weather_indices_years()",
+        "SW_NCIN_alloc_weather_indices_years",
         LogInfo
     );
 
@@ -9415,7 +9409,7 @@ void SW_NCIN_alloc_file_information(
 
     /* Allocate/intiialize input and initialize index files */
     *inputFiles = (char **) Mem_Malloc(
-        sizeof(char *) * numInVars, "alloc_input_files()", LogInfo
+        sizeof(char *) * numInVars, "alloc_input_files", LogInfo
     );
     if (LogInfo->stopRun) {
         return; /* Exit function prematurely due to error */
@@ -9566,7 +9560,7 @@ void SW_NCIN_alloc_weath_input_info(
     unsigned int inFileNum;
 
     (*outWeathFileNames)[weathVar] = (char **) Mem_Malloc(
-        sizeof(char *) * numWeathIn, "SW_NCIN_alloc_weath_input_info()", LogInfo
+        sizeof(char *) * numWeathIn, "SW_NCIN_alloc_weath_input_info", LogInfo
     );
     if (LogInfo->stopRun) {
         return; /* Exit function prematurely due to error */
@@ -9596,7 +9590,7 @@ void SW_NCIN_allocate_startEndYrs(
     if (isnull(*ncWeatherInStartEndYrs)) {
         (*ncWeatherInStartEndYrs) = (unsigned int **) Mem_Malloc(
             sizeof(unsigned int *) * numWeathIn,
-            "SW_NCIN_alloc_weath_input_info()",
+            "SW_NCIN_alloc_weath_input_info",
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -9610,7 +9604,7 @@ void SW_NCIN_allocate_startEndYrs(
         for (inFileNum = 0; inFileNum < numWeathIn; inFileNum++) {
             (*ncWeatherInStartEndYrs)[inFileNum] = (unsigned int *) Mem_Malloc(
                 sizeof(unsigned int) * 2,
-                "SW_NCIN_alloc_weath_input_info()",
+                "SW_NCIN_alloc_weath_input_info",
                 LogInfo
             );
         }

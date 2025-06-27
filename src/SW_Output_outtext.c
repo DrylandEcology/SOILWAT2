@@ -99,14 +99,14 @@ static void create_csv_headers(
     Bool fullBuffer = swFALSE;
 
     str_help1 = (char *) Mem_Malloc(
-        sizeof(char) * size_help, "create_csv_headers()", LogInfo
+        sizeof(char) * size_help, "create_csv_headers", LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
     str_help2 = (char *) Mem_Malloc(
-        sizeof(char) * size_help, "create_csv_headers()", LogInfo
+        sizeof(char) * size_help, "create_csv_headers", LogInfo
     );
     if (LogInfo->stopRun) {
         free(str_help1);
@@ -715,7 +715,7 @@ void write_headers_to_csv(
     int fprintRes = 0;
 
     header_soil = (char *) Mem_Malloc(
-        sizeof(char) * size_hs, "write_headers_to_csv()", LogInfo
+        sizeof(char) * size_hs, "write_headers_to_csv", LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error

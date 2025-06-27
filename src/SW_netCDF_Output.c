@@ -1992,7 +1992,7 @@ void SW_NCOUT_alloc_files(
     unsigned int varNum;
 
     *ncOutFiles = (char **) Mem_Malloc(
-        numFiles * sizeof(char *), "SW_NCOUT_alloc_files()", LogInfo
+        numFiles * sizeof(char *), "SW_NCOUT_alloc_files", LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -2015,7 +2015,7 @@ void SW_NCOUT_alloc_varids(int **ncVarIDs, IntUS numVars, LOG_INFO *LogInfo) {
     IntUS varNum;
 
     *ncVarIDs = (int *) Mem_Malloc(
-        numVars * sizeof(int), "SW_NCOUT_alloc_varids()", LogInfo
+        numVars * sizeof(int), "SW_NCOUT_alloc_varids", LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -2039,7 +2039,7 @@ void SW_NCOUT_alloc_timeSizes(
     unsigned int numFiles, size_t **timeSizes, LOG_INFO *LogInfo
 ) {
     *timeSizes = (size_t *) Mem_Malloc(
-        sizeof(size_t) * numFiles, "SW_NCOUT_alloc_timeSizes()", LogInfo
+        sizeof(size_t) * numFiles, "SW_NCOUT_alloc_timeSizes", LogInfo
     );
 }
 
