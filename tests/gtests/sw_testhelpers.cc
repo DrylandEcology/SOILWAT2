@@ -1,16 +1,22 @@
 
 #include "tests/gtests/sw_testhelpers.h"
-#include "include/generic.h"    // for swFALSE, swTRUE
-#include "include/myMemory.h"   // for Str_Dup
-#include "include/SW_Control.h" // for SW_CTL_alloc_outptrs, SW_CTL_clear_m...
-#include "include/SW_Files.h"   // for eFirst
-#include "include/SW_Model.h"   // for SW_MDL_get_ModelRun
-#include "include/SW_Output.h"  // for SW_OUT_setup_output
-#include "include/SW_Site.h"    // for encode_str2ptf, encode_str2swrc, set...
-#include "include/SW_Weather.h" // for SW_WTH_finalize_all_weather
-#include <stdio.h>              // for NULL, fprintf, stderr
-#include <stdlib.h>             // for exit
-#include <string.h>             // for strcpy
+#include "include/generic.h"     // for swFALSE, swTRUE
+#include "include/myMemory.h"    // for Str_Dup
+#include "include/SW_Control.h"  // for SW_CTL_clear_m...
+#include "include/SW_Files.h"    // for eFirst
+#include "include/SW_Main_lib.h" // for sw_print_version
+#include "include/SW_Model.h"    // for SW_MDL_get_ModelRun
+#include "include/SW_Output.h"   // for SW_OUT_setup_output
+#include "include/SW_Site.h"     // for encode_str2ptf, encode_str2swrc, set...
+#include "include/SW_Weather.h"  // for SW_WTH_finalize_all_weather
+#include <stdio.h>               // for NULL, fprintf, stderr
+#include <stdlib.h>              // for exit
+#include <string.h>              // for strcpy
+
+#if defined(SWNETCDF)
+#include "include/SW_netCDF_General.h"
+#include <netcdf.h>
+#endif
 
 
 // NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
@@ -31,8 +37,11 @@ simulation after this function has set soil layers, e.g., SW_SWC_init_run()
 */
 void create_test_soillayers(
     unsigned int nlayers,
-    SW_VEGPROD *SW_VegProd,
-    SW_SITE *SW_Site,
+    SW_VEGPROD_INPUTS *SW_VegProdIn,
+    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_SIM *SW_SiteSim,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
+    VegTypeIn veg[],
     LOG_INFO *LogInfo
 ) {
 
@@ -95,12 +104,15 @@ void create_test_soillayers(
     double om[MAX_LAYERS] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-    int const nRegions = 3;
+    LyrIndex const nRegions = 3;
     double regionLowerBounds[3] = {20., 50., 100.};
 
     set_soillayers(
-        SW_VegProd,
-        SW_Site,
+        SW_VegProdIn,
+        SW_SiteIn,
+        SW_SiteSim,
+        SW_SoilRunIn,
+        veg,
         nlayers,
         dmax,
         bulkd,
@@ -117,56 +129,80 @@ void create_test_soillayers(
         om,
         nRegions,
         regionLowerBounds,
+        &nlayers,
         LogInfo
     );
 }
 
-void setup_SW_Site_for_tests(SW_SITE *SW_Site) {
+void setup_SW_Site_for_tests(
+    SW_SITE_INPUTS *SW_SiteIn, SW_SITE_SIM *SW_SiteSim
+) {
     LOG_INFO LogInfo;
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    SW_Site->deepdrain = swTRUE;
+    SW_SiteIn->deepdrain = swTRUE;
 
-    SW_Site->SWCMinVal = 100;
-    SW_Site->SWCWetVal = 15;
-    SW_Site->SWCInitVal = 15;
+    SW_SiteIn->SWCMinVal = 100;
+    SW_SiteIn->SWCWetVal = 15;
+    SW_SiteIn->SWCInitVal = 15;
 
-    SW_Site->stMaxDepth = 990;
-    SW_Site->stDeltaX = 15;
+    SW_SiteIn->stMaxDepth = 990;
+    SW_SiteIn->stDeltaX = 15;
 
-    SW_Site->slow_drain_coeff = 0.02;
+    SW_SiteIn->slow_drain_coeff = 0.02;
 
-    SW_Site->site_has_swrcpMineralSoil = swFALSE;
-    SW_Site->inputsProvideSWRCp = swFALSE;
+    SW_SiteSim->site_has_swrcpMineralSoil = swFALSE;
+    SW_SiteIn->inputsProvideSWRCp = swFALSE;
 
     (void) snprintf(
-        SW_Site->site_swrc_name,
-        sizeof SW_Site->site_swrc_name,
+        SW_SiteIn->site_swrc_name,
+        sizeof SW_SiteIn->site_swrc_name,
         "%s",
         "Campbell1974"
     );
-    SW_Site->site_swrc_type =
-        encode_str2swrc(SW_Site->site_swrc_name, &LogInfo);
+    SW_SiteIn->site_swrc_type =
+        encode_str2swrc(SW_SiteIn->site_swrc_name, &LogInfo);
     (void) snprintf(
-        SW_Site->site_ptf_name,
-        sizeof SW_Site->site_ptf_name,
+        SW_SiteIn->site_ptf_name,
+        sizeof SW_SiteIn->site_ptf_name,
         "%s",
         "Cosby1984AndOthers"
     );
-    SW_Site->site_ptf_type = encode_str2ptf(SW_Site->site_ptf_name);
+    SW_SiteIn->site_ptf_type = encode_str2ptf(SW_SiteIn->site_ptf_name);
 
-    SW_Site->swrcpOM[0][0] = 1.03;
-    SW_Site->swrcpOM[1][0] = 1.01;
+    SW_SiteSim->swrcpOM[0][0] = 1.03;
+    SW_SiteSim->swrcpOM[1][0] = 1.01;
 
-    SW_Site->swrcpOM[0][1] = 0.93;
-    SW_Site->swrcpOM[1][1] = 0.83;
+    SW_SiteSim->swrcpOM[0][1] = 0.93;
+    SW_SiteSim->swrcpOM[1][1] = 0.83;
 
-    SW_Site->swrcpOM[0][2] = 2.7;
-    SW_Site->swrcpOM[1][2] = 12.0;
+    SW_SiteSim->swrcpOM[0][2] = 2.7;
+    SW_SiteSim->swrcpOM[1][2] = 12.0;
 
-    SW_Site->swrcpOM[0][3] = 2419.2;
-    SW_Site->swrcpOM[1][3] = 0.864;
+    SW_SiteSim->swrcpOM[0][3] = 2419.2;
+    SW_SiteSim->swrcpOM[1][3] = 0.864;
+}
+
+/** Check command line arguments of sw_test
+
+Command line arguments are not altered; they will be passed on to GoogleTest.
+
+Currently implemented options:
+    - `-v`, print version and capabilities.
+
+@param[in] argc Number (count) of command line arguments.
+@param[in] argv Values of command line arguments.
+@param[out] printVersionOnly A flag specifying if the SOILWAT2 test program
+    should print version information and end without executing the tests.
+*/
+void swtest_init_args(int argc, char **argv, int *printVersionOnly) {
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-v") == 0) {
+            *printVersionOnly = 1;
+            sw_print_version();
+        }
+    }
 }
 
 /* Set up global variables for testing and read in values from SOILWAT2 example
@@ -181,7 +217,7 @@ void setup_SW_Site_for_tests(SW_SITE *SW_Site) {
 */
 int setup_testGlobalSoilwatTemplate() {
     int success = 0;
-    unsigned long userSUID;
+    size_t userSUID;
     LOG_INFO LogInfo;
     const Bool renameDomainTemplateNC = swTRUE;
     const Bool estVeg = swTRUE;
@@ -202,13 +238,19 @@ int setup_testGlobalSoilwatTemplate() {
     userSUID = 0;
 
     SW_CTL_setup_domain(
-        userSUID, renameDomainTemplateNC, &template_SW_Domain, &LogInfo
+        0, userSUID, renameDomainTemplateNC, &template_SW_Domain, &LogInfo
     );
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
 
 #if defined(SWNETCDF)
+    /* Close domain and progress files */
+    /* This avoids a locked file issue arising from death test (threads) */
+    /* Our tests are currently not set up to handle netCDF input/output */
+    nc_close(template_SW_Domain.SW_PathInputs.ncDomFileIDs[vNCdom]);
+    nc_close(template_SW_Domain.SW_PathInputs.ncDomFileIDs[vNCprog]);
+
     /* Turn off weather inputs if SWNETCDF and nc-weather is enabled */
     if (template_SW_Domain.netCDFInput.readInVars[eSW_InWeather][0]) {
         template_SW_Domain.netCDFInput.readInVars[eSW_InWeather][0] = swFALSE;
@@ -221,17 +263,13 @@ int setup_testGlobalSoilwatTemplate() {
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
-    template_SW_Run.Model.doOutput = swFALSE; /* turn off output during tests */
+
+    /* turn off output during tests */
+    template_SW_Run.ModelSim.doOutput = swFALSE;
 
     SW_MDL_get_ModelRun(
-        &template_SW_Run.Model, &template_SW_Domain, NULL, &LogInfo
+        &template_SW_Run.ModelIn, &template_SW_Domain, NULL, &LogInfo
     );
-    if (LogInfo.stopRun != 0u) {
-        goto finishProgram;
-    }
-
-    /* allocate memory for output pointers */
-    SW_CTL_alloc_outptrs(&template_SW_Run, &LogInfo);
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
@@ -254,14 +292,17 @@ int setup_testGlobalSoilwatTemplate() {
         - error messages go directly to stderr (which DeathTests use to match
        against)
     */
-    sw_wrapup_logs(&LogInfo);
+    sw_wrapup_logs(0, &LogInfo);
     sw_init_logs(NULL, &LogInfo);
 
     SW_WTH_finalize_all_weather(
-        &template_SW_Run.Markov,
-        &template_SW_Run.Weather,
-        template_SW_Run.Model.cum_monthdays,
-        template_SW_Run.Model.days_in_month,
+        &template_SW_Run.MarkovIn,
+        &template_SW_Run.WeatherIn,
+        template_SW_Run.RunIn.weathRunAllHist,
+        template_SW_Run.ModelSim.cum_monthdays,
+        template_SW_Run.ModelSim.days_in_month,
+        NULL,
+        swFALSE, // Does not matter
         &LogInfo
     );
     if (LogInfo.stopRun != 0u) {
@@ -274,9 +315,10 @@ int setup_testGlobalSoilwatTemplate() {
     }
 
     SW_OUT_setup_output(
-        template_SW_Run.Site.n_layers,
-        template_SW_Run.Site.n_evap_lyrs,
-        &template_SW_Run.VegEstab,
+        template_SW_Run.RunIn.SiteRunIn.n_layers,
+        template_SW_Run.SiteSim.n_evap_lyrs,
+        template_SW_Run.VegEstabIn.count,
+        template_SW_Run.VegEstabIn.parms,
         &template_SW_Domain.OutDom,
         &LogInfo
     );
@@ -286,6 +328,7 @@ int setup_testGlobalSoilwatTemplate() {
 
 finishProgram: {
     if (LogInfo.stopRun != 0u) {
+        sw_printf("Setup of SOILWAT2 tests failed.\n");
         success = 1; // failure
     }
 }

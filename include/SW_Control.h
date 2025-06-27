@@ -20,28 +20,32 @@
 
 #include "include/generic.h"        // for Bool
 #include "include/SW_datastructs.h" // for SW_RUN, LOG_INFO, SW_DOMAIN, SW_OU...
+#include <signal.h>                 // for signal,, sig_atomic_t
+#include <stddef.h>                 // for size_t
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+extern volatile sig_atomic_t runSims;
 
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_CTL_init_ptrs(SW_RUN *sw);
 
-void SW_CTL_alloc_outptrs(SW_RUN *sw, LOG_INFO *LogInfo);
-
 void SW_RUN_deepCopy(
     SW_RUN *source,
     SW_RUN *dest,
     SW_OUT_DOM *OutDom,
+    SW_RUN_INPUTS *runInput,
     Bool copyWeatherHist,
     LOG_INFO *LogInfo
 );
 
 void SW_CTL_setup_domain(
-    unsigned long userSUID,
+    int rank,
+    size_t userSUID,
     Bool renameDomainTemp,
     SW_DOMAIN *SW_Domain,
     LOG_INFO *LogInfo
@@ -64,9 +68,20 @@ void SW_CTL_read_inputs_from_disk(
 
 void SW_CTL_main(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
-void SW_CTL_RunSimSet(
+void SW_CTL_RunSims(
+    int rank,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
+    Bool *setupFail,
+    SW_WALLTIME *SW_WallTime,
+    LOG_INFO *main_LogInfo
+);
+
+void SW_CTL_RunSimSet(
+    int rank,
+    SW_RUN *sw_template,
+    SW_DOMAIN *SW_Domain,
+    Bool *setupFail,
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *main_LogInfo
 );
@@ -76,9 +91,15 @@ void SW_CTL_run_current_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
 void SW_CTL_run_sw(
+    size_t runNum,
+    SW_RUN_INPUTS *runInputs,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
-    unsigned long ncSuid[],
+    size_t ncSuid[],
+    Bool estVeg,
+    Bool copyWeather,
+    const size_t count[],
+    SW_WALLTIME *SW_WallTime,
     LOG_INFO *LogInfo
 );
 

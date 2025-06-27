@@ -2,8 +2,9 @@
 #define SWDOMAIN_H
 
 #include "include/generic.h"        // for Bool
-#include "include/SW_datastructs.h" // for SW_DOMAIN, SW_DOMAIN
+#include "include/SW_datastructs.h" // for SW_DOMAIN, LOG_INFO, SW_NETCDF_IN
 #include "include/SW_Defines.h"     // for LyrIndex
+#include <stddef.h>                 // for size_t
 
 #ifdef __cplusplus
 extern "C" {
@@ -12,34 +13,30 @@ extern "C" {
 /* =================================================== */
 /*                  Local Definitions                  */
 /* --------------------------------------------------- */
-void SW_DOM_calc_ncSuid(
-    SW_DOMAIN *SW_Domain, unsigned long suid, unsigned long ncSuid[]
-);
+void SW_DOM_calc_ncSuid(SW_DOMAIN *SW_Domain, size_t suid, size_t ncSuid[]);
 
 void SW_DOM_calc_nSUIDs(SW_DOMAIN *SW_Domain);
 
 Bool SW_DOM_CheckProgress(
-    int progFileID, int progVarID, unsigned long ncSuid[], LOG_INFO *LogInfo
+    int progFileID, int progVarID, size_t ncSuid[], LOG_INFO *LogInfo
 );
 
 void SW_DOM_CreateProgress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
 
-void SW_DOM_construct(unsigned long rng_seed, SW_DOMAIN *SW_Domain);
+void SW_DOM_construct(size_t rng_seed, SW_DOMAIN *SW_Domain);
 
 void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
 
 void SW_DOM_SetProgress(
     Bool isFailure,
-    const char *domType,
     int progFileID,
     int progVarID,
-    unsigned long ncSuid[],
+    size_t start[],
+    size_t count[],
     LOG_INFO *LogInfo
 );
 
-void SW_DOM_SimSet(
-    SW_DOMAIN *SW_Domain, unsigned long userSUID, LOG_INFO *LogInfo
-);
+void SW_DOM_SimSet(SW_DOMAIN *SW_Domain, size_t userSUID, LOG_INFO *LogInfo);
 
 void SW_DOM_deepCopy(SW_DOMAIN *source, SW_DOMAIN *dest, LOG_INFO *LogInfo);
 

@@ -10,7 +10,7 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_FLW_init_run(SW_SOILWAT *SW_SoilWat);
+void SW_FLW_init_run(SW_SOILWAT_SIM *SW_SoilWatSim);
 
 void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo);
 

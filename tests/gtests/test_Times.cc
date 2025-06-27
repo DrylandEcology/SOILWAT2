@@ -252,7 +252,7 @@ TEST(TimesTest, TimeTracking) {
     for (k = 0; k < n_runs; k++) {
         set_walltime(&start, &ok);
         // ... do some work
-        SW_WT_TimeRun(start, ok, &wt);
+        SW_WT_TimeRun(start, ok, TIME_COMPUTE, &wt);
     }
 
     // Time reporting

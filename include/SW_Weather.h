@@ -13,13 +13,13 @@
 
  20091015 (drs) ppt is divided into rain and snow, added snowmelt
 
- 01/04/2011	(drs) added variable 'snowloss' to SW_WEATHER_NOW and to
+ 01/04/2011	(drs) added variable 'snowloss' to SW_WEATHER_SIM and to
  SW_WEATHER_OUTPUTS
 
  02/16/2011	(drs) added variable 'pct_runoff' to SW_WEATHER as input to
  weathsetup.in
 
- 02/19/2011	(drs) added variable 'runoff' to SW_WEATHER_NOW and to
+ 02/19/2011	(drs) added variable 'runoff' to SW_WEATHER_SIM and to
  SW_WEATHER_OUTPUTS moved soil_inf from SW_Soilwat to SW_Weather (added to
  SW_WEATHER and to SW_WEATHER_OUTPUTS)
 
@@ -38,8 +38,9 @@
 #define SW_WEATHER_H
 
 #include "include/generic.h"        // for Bool
-#include "include/SW_datastructs.h" // for SW_WEATHER, SW_SKY, SW_MODEL, LOG_...
-#include "include/SW_Defines.h"     // for TimeInt
+#include "include/SW_datastructs.h" // for SW_WEATHER_HIST, LOG_INFO, SW_CL...
+#include "include/SW_Defines.h"     // for TimeInt, MAX_INPUT_COLUMNS
+#include <stddef.h>                 // for size_t
 
 #ifdef __cplusplus
 extern "C" {
@@ -56,17 +57,21 @@ extern "C" {
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_WTH_setup(
-    SW_WEATHER *SW_Weather,
+    SW_WEATHER_INPUTS *SW_WeatherIn,
     char *txtInFiles[],
     char *txtWeatherPrefix,
     LOG_INFO *LogInfo
 );
 
 void SW_WTH_read(
-    SW_WEATHER *SW_Weather,
-    SW_SKY *SW_Sky,
-    SW_MODEL *SW_Model,
+    SW_WEATHER_INPUTS *SW_WeatherIn,
+    SW_WEATHER_HIST **allHist,
+    SW_SKY_INPUTS *SW_SkyIn,
+    SW_MODEL_INPUTS *SW_ModelIn,
+    double elevation,
     Bool readTextInputs,
+    TimeInt cum_monthdays[],
+    TimeInt days_in_month[],
     LOG_INFO *LogInfo
 );
 
@@ -174,12 +179,18 @@ void SW_WTH_setWeatherValues(
     const Bool *fixWeatherData,
     double ***tempWeather,
     double elevation,
+    TimeInt doyOffset,
+    size_t *domSuid,
+    Bool sDom,
     SW_WEATHER_HIST *yearlyWeather,
     LOG_INFO *LogInfo
 );
 
 void allocate_temp_weather(
-    TimeInt nYears, double ****fullWeathHist, LOG_INFO *LogInfo
+    TimeInt nYears,
+    size_t extraStorMult,
+    double ****fullWeathHist,
+    LOG_INFO *LogInfo
 );
 
 void deallocate_temp_weather(TimeInt nYears, double ****fullWeathHist);
@@ -207,10 +218,13 @@ void readAllWeather(
 );
 
 void finalizeAllWeather(
-    SW_MARKOV *SW_Markov,
-    SW_WEATHER *w,
+    SW_MARKOV_INPUTS *SW_MarkovIn,
+    SW_WEATHER_INPUTS *w,
+    SW_WEATHER_HIST *allHist,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
+    size_t ncSuid[],
+    Bool sDom,
     LOG_INFO *LogInfo
 );
 
@@ -231,16 +245,24 @@ void scaleAllWeather(
 );
 
 void generateMissingWeather(
-    SW_MARKOV *SW_Markov,
+    SW_MARKOV_INPUTS *SW_MarkovIn,
     SW_WEATHER_HIST *allHist,
     unsigned int startYear,
     unsigned int n_years,
     unsigned int method,
     unsigned int optLOCF_nMax,
+    size_t ncSuid[],
+    Bool sDom,
     LOG_INFO *LogInfo
 );
 
-void checkAllWeather(SW_WEATHER *weather, LOG_INFO *LogInfo);
+void checkAllWeather(
+    SW_WEATHER_INPUTS *weather,
+    SW_WEATHER_HIST *weathHist,
+    size_t ncSuid[],
+    Bool sDom,
+    LOG_INFO *LogInfo
+);
 
 void SW_WTH_allocateAllWeather(
     SW_WEATHER_HIST **allHist, unsigned int n_years, LOG_INFO *LogInfo
@@ -250,29 +272,39 @@ void initializeAllWeatherPtrs(SW_WEATHER_HIST **allHist, unsigned int n_years);
 
 void deallocateAllWeather(SW_WEATHER_HIST **allHist);
 
-void clear_hist_weather(SW_WEATHER_HIST *yearWeather, double **fullWeathHist);
+void clear_hist_weather(
+    size_t extraStorMult, SW_WEATHER_HIST *yearWeather, double **fullWeathHist
+);
 
 void SW_WTH_finalize_all_weather(
-    SW_MARKOV *SW_Markov,
-    SW_WEATHER *SW_Weather,
+    SW_MARKOV_INPUTS *SW_MarkovIn,
+    SW_WEATHER_INPUTS *SW_WeatherIn,
+    SW_WEATHER_HIST *allHist,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
+    size_t ncSuid[],
+    Bool sDom,
     LOG_INFO *LogInfo
 );
 
-void SW_WTH_init_run(SW_WEATHER *SW_Weather);
+void SW_WTH_init_run(SW_WEATHER_SIM *SW_WeatherSim);
 
-void SW_WTH_construct(SW_WEATHER *SW_Weather);
+void SW_WTH_construct(
+    SW_WEATHER_INPUTS *SW_WeatherIn,
+    SW_WEATHER_SIM *SW_WeatherSim,
+    SW_WEATHER_OUTPUTS weath_p_accu[],
+    SW_WEATHER_OUTPUTS weath_p_oagg[]
+);
 
-void SW_WTH_alloc_outptrs(SW_WEATHER *SW_Weather, LOG_INFO *LogInfo);
+void SW_WTH_init_ptrs(SW_WEATHER_HIST **allHist);
 
-void SW_WTH_init_ptrs(SW_WEATHER *SW_Weather);
-
-void SW_WTH_deconstruct(SW_WEATHER *SW_Weather);
+void SW_WTH_deconstruct(SW_WEATHER_HIST **allHist);
 
 void SW_WTH_new_day(
-    SW_WEATHER *SW_Weather,
-    SW_SITE *SW_Site,
+    SW_WEATHER_INPUTS *SW_WeatherIn,
+    SW_WEATHER_SIM *SW_WeatherSim,
+    SW_WEATHER_HIST *allHist,
+    SW_SITE_INPUTS *SW_SiteIn,
     double snowpack[],
     TimeInt doy,
     TimeInt year,

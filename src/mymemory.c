@@ -55,7 +55,7 @@ char *Str_Dup(const char *s, LOG_INFO *LogInfo) {
 
     char *p;
 
-    p = (char *) Mem_Malloc(strlen(s) + 1, "Str_Dup()", LogInfo);
+    p = (char *) Mem_Malloc(strlen(s) + 1, "Str_Dup", LogInfo);
     if (LogInfo->stopRun) {
         return NULL; // Exit function prematurely due to error
     }

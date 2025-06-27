@@ -17,6 +17,8 @@
 #       Rscript__ncTestRuns_01_createTestRuns.R \
 #       --path-to-ncTestRuns=<...> \
 #       --path-to-sw2=<...> \
+#       --swMode=<...> \
+#       --ntasks=<...> \
 #       --testRuns=<...>
 # ```
 #------------------------------------------------------------------------------#
@@ -42,6 +44,25 @@ reqTestRuns <- if (any(ids <- grepl("--testRuns", args))) {
 } else {
   -1L
 }
+
+swMode <- if (any(ids <- grepl("--swMode", args))) {
+  sub("--swMode", "", args[ids]) |>
+    sub("=", "", x = _) |>
+    trimws() |>
+    tolower()
+} else {
+  "nc"
+}
+
+stopifnot(swMode %in% c("nc", "mpi"))
+
+nTasks <- if (any(ids <- grepl("--ntasks", args))) {
+  sub("--ntasks", "", args[ids]) |>
+    sub("=", "", x = _) |>
+    trimws() |>
+    tolower()
+}
+
 
 #------ Paths (possibly as command-line arguments) ------
 dir_prj <- if (any(ids <- grepl("--path-to-ncTestRuns", args))) {
@@ -110,6 +131,7 @@ calcDepthArrayFromThickness <- NULL
 getCRSParam <- NULL
 readTSV <- NULL
 runSW2 <- NULL
+detectMPIExecutor <- NULL
 setNCInputTSV <- NULL
 modifyNCUnitsTSV <- NULL
 getModifiedNCUnits <- NULL
@@ -123,6 +145,8 @@ res <- lapply(
   list.files(path = dir_R, pattern = ".R$", full.names = TRUE),
   source
 )
+
+mpiExecutor <- if (identical(swMode, "mpi")) detectMPIExecutor()
 
 
 #------ . ------
@@ -732,7 +756,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
   #--- Use SOILWAT2 to create domain.nc
   if (!file.exists(fname_domain)) {
-    res <- runSW2(sw2 = fname_sw2, path_inputs = dir_testRun)
+    res <- runSW2(
+      sw2 = fname_sw2,
+      path_inputs = dir_testRun,
+      mode = swMode,
+      nTasks = nTasks,
+      mpiExecutor = mpiExecutor
+    )
 
     if (file.exists(fname_template)) {
       nc <- RNetCDF::open.nc(fname_template, write = TRUE)

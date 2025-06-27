@@ -56,7 +56,7 @@
 #define SW_WATERSUBS_H
 
 #include "include/generic.h"        // for Bool
-#include "include/SW_datastructs.h" // for LOG_INFO, SW_SITE, ST_RGR_VALUES
+#include "include/SW_datastructs.h" // for LOG_INFO, SW_SITE_*, SW_ST_SIM
 #include "include/SW_Defines.h"     // for TimeInt, MAX_LAYERS, MAX_ST_RGR
 
 #ifdef __cplusplus
@@ -103,7 +103,8 @@ void infiltrate_water_high(
 
 void transp_weighted_avg(
     double *swp_avg,
-    SW_SITE *SW_Site,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
+    SW_SITE_SIM *SW_SiteSim,
     unsigned int n_tr_rgns,
     LyrIndex n_layers,
     const unsigned int tr_regions[],
@@ -117,7 +118,8 @@ void EsT_partitioning(
 );
 
 void pot_soil_evap(
-    SW_SITE *SW_Site,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
+    SW_SITE_SIM *SW_SiteSim,
     unsigned int nelyrs,
     double totagb,
     double fbse,
@@ -134,7 +136,8 @@ void pot_soil_evap(
 
 void pot_soil_evap_bs(
     double *bserate,
-    SW_SITE *SW_Site,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
+    SW_SITE_SIM *SW_SiteSim,
     unsigned int nelyrs,
     double petday,
     double shift,
@@ -188,7 +191,8 @@ void evap_fromSurface(double *water_pool, double *evap_rate, double *aet);
 void remove_from_soil(
     double swc[],
     double qty[],
-    SW_SITE *SW_Site,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
+    SW_SITE_SIM *SW_SiteSim,
     double *aet,
     unsigned int nlyrs,
     const double coeff[],
@@ -205,7 +209,8 @@ void percolate_unsaturated(
     double *standingWater,
     unsigned int nlyrs,
     double lyrFrozen[],
-    SW_SITE *SW_Site,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
+    SW_SITE_SIM *SW_SiteSim,
     double slow_drain_coeff,
     double slow_drain_depth
 );
@@ -213,7 +218,8 @@ void percolate_unsaturated(
 void hydraulic_redistribution(
     double swc[],
     double hydred[],
-    SW_SITE *SW_Site,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
+    SW_SITE_SIM *SW_SiteSim,
     unsigned int vegk,
     unsigned int nlyrs,
     const double lyrFrozen[],
@@ -247,7 +253,7 @@ void surface_temperature(
 );
 
 void soil_temperature(
-    ST_RGR_VALUES *SW_StRegValues,
+    SW_ST_SIM *SW_StRegSimVals,
     double *minTempSurface,
     double *meanTempSurface,
     double *maxTempSurface,
@@ -323,15 +329,19 @@ void lyrSoil_to_lyrTemp(
 
 double surface_temperature_under_snow(double airTempAvg, double snow);
 
-void SW_ST_init_run(ST_RGR_VALUES *StRegValues);
+void SW_ST_init_run(SW_ST_SIM *StRegSimVals);
 
 void SW_ST_setup_run(
-    ST_RGR_VALUES *SW_StRegValues,
-    SW_SITE *SW_Site,
+    SW_ST_SIM *SW_StRegSimVals,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
+    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_SIM *SW_SiteSim,
+    double Tsoil_constant,
     Bool *ptr_stError,
     Bool *soil_temp_init,
     double airTemp,
     double swc[],
+    LyrIndex n_layers,
     double *surfaceAvg,
     double avgLyrTemp[],
     double *lyrFrozen,
@@ -339,7 +349,7 @@ void SW_ST_setup_run(
 );
 
 void soil_temperature_setup(
-    ST_RGR_VALUES *SW_StRegValues,
+    SW_ST_SIM *SW_StRegSimVals,
     double bDensity[],
     double width[],
     double avgLyrTempInit[],

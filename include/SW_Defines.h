@@ -68,6 +68,7 @@ extern "C" {
 #define MAX_LAYERS 25        /**< Maximum number of soil layers */
 #define MAX_TRANSP_REGIONS 4 /**< Maximum number of transpiration regions */
 #define MAX_ST_RGR 100       /**< Maximum number of soil temperature nodes */
+#define MAX_NSPECIES 20      /**< Maximum number of vegetation species */
 
 /** An integer representing the max calendar year that is supported. The number
  * just needs to be reasonable, it is an artifical limit. */
@@ -345,6 +346,56 @@ typedef cv_converter sw_converter_t; /* udunits unit converter */
 typedef int sw_converter_t;
 #endif
 
+/* =================================================== */
+/*                   Parallel Support                  */
+/* --------------------------------------------------- */
+
+#define SW_MPI_NTYPES 10
+#define SW_MPI_ROOT 0
+#define SW_GROUP_ROOT SW_MPI_ROOT
+
+/**
+ * @brief Maximum number of processes that can be spawned per compute node or
+ *        on a local CPU; in other words, specifies the number of available
+ *        CPU cores on a compute node (HPC), or processor on a local/personal
+ *        computer
+ *
+ * @note This constant defaults to 128 but can be overwritten by the user
+ *       when compiling the program, i.e., ... -DMAX_NODE_PROCS=[n procs] ...
+ */
+#ifndef MAX_NODE_PROCS
+#define MAX_NODE_PROCS 128
+#endif
+
+/**
+ * @brief Maximum number of I/O processes that will be assigned per compute node
+ *
+ * @note - If the ratio of compute-to-I/O processes is less than 1, the program
+ *       will auto-adjust so that at *most* half of the spawned processes in a
+ *       compute node are I/O \n
+ *           * E.g., n processes = 10, SW_MPI_NIO = 7, program assigns 5
+ *             compute and 5 I/O processes
+ * @note - This constant defaults to 2 but can be overwritten by the user
+ *       when compiling the program, i.e., ... -DSW_MPI_NIO=[n I/O processes]
+ *       ...
+ */
+#ifndef SW_MPI_NIO
+#define SW_MPI_NIO 2
+#endif
+
+/**
+ * @brief The maximum number of compute processes that can be assigned
+ *        to an I/O process
+ */
+#define PROCS_PER_IO                                                         \
+    (MAX_NODE_PROCS / SW_MPI_NIO >= 1 && SW_MPI_NIO <= MAX_NODE_PROCS / 2) ? \
+        (((MAX_NODE_PROCS - SW_MPI_NIO) / SW_MPI_NIO) + 1) :                 \
+        (MAX_NODE_PROCS / 2) + 1
+
+/* The number of SUIDs that are assigned to a compute process at once */
+#ifndef N_SUID_ASSIGN
+#define N_SUID_ASSIGN 1
+#endif
 
 #ifdef __cplusplus
 }

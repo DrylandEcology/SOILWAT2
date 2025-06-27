@@ -1,0 +1,27 @@
+name: code coverage
+
+on:
+    push:
+        branches: [master, main, release/**]
+    pull_request:
+        branches: [master, main, release/**]
+
+jobs:
+    code-coverage:
+        name: Code coverage
+        runs-on: ubuntu-latest
+
+        steps:
+        - name: Checkout repository and submodules
+          uses: actions/checkout@v4
+          with:
+              submodules: recursive
+
+        - name: Generate coverage report
+          run: CXX=g++ GCOV=gcov make clean clean_cov cov
+
+        - name: Upload coverage to Codecov
+          uses: codecov/codecov-action@v5
+          with:
+              fail_ci_if_error: false # just report, don't fail checks
+              token: ${{ secrets.CODECOV_TOKEN }}

@@ -99,14 +99,14 @@ static void create_csv_headers(
     Bool fullBuffer = swFALSE;
 
     str_help1 = (char *) Mem_Malloc(
-        sizeof(char) * size_help, "create_csv_headers()", LogInfo
+        sizeof(char) * size_help, "create_csv_headers", LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
     str_help2 = (char *) Mem_Malloc(
-        sizeof(char) * size_help, "create_csv_headers()", LogInfo
+        sizeof(char) * size_help, "create_csv_headers", LogInfo
     );
     if (LogInfo->stopRun) {
         free(str_help1);
@@ -612,22 +612,27 @@ void SW_OUT_create_iteration_files(
 
 @param[in] pd Time period in simulation output (day/week/month/year)
 @param[in] sizeof_str Size of parameter "str"
-@param[in] SW_Model Struct of type SW_MODEL holding basic time
-    information about the simulation
+@param[in] SW_ModelSim Struct of type SW_MODEL_SIM holding basic intermediate
+time information about the simulation run
 @param[in] tOffset Offset describing with the previous or current period
 @param[out] str String header buffer for every output row
 */
 void get_outstrleader(
     OutPeriod pd,
     size_t sizeof_str,
-    SW_MODEL *SW_Model,
+    SW_MODEL_SIM *SW_ModelSim,
     TimeInt tOffset,
     char *str
 ) {
     switch (pd) {
     case eSW_Day:
         (void) snprintf(
-            str, sizeof_str, "%d%c%d", SW_Model->simyear, OUTSEP, SW_Model->doy
+            str,
+            sizeof_str,
+            "%d%c%d",
+            SW_ModelSim->simyear,
+            OUTSEP,
+            SW_ModelSim->doy
         );
         break;
 
@@ -636,9 +641,9 @@ void get_outstrleader(
             str,
             sizeof_str,
             "%d%c%d",
-            SW_Model->simyear,
+            SW_ModelSim->simyear,
             OUTSEP,
-            (SW_Model->week + 1) - tOffset
+            (SW_ModelSim->week + 1) - tOffset
         );
         break;
 
@@ -647,14 +652,14 @@ void get_outstrleader(
             str,
             sizeof_str,
             "%d%c%d",
-            SW_Model->simyear,
+            SW_ModelSim->simyear,
             OUTSEP,
-            (SW_Model->month + 1) - tOffset
+            (SW_ModelSim->month + 1) - tOffset
         );
         break;
 
     case eSW_Year:
-        (void) snprintf(str, sizeof_str, "%d", SW_Model->simyear);
+        (void) snprintf(str, sizeof_str, "%d", SW_ModelSim->simyear);
         break;
 
     default:
@@ -710,7 +715,7 @@ void write_headers_to_csv(
     int fprintRes = 0;
 
     header_soil = (char *) Mem_Malloc(
-        sizeof(char) * size_hs, "write_headers_to_csv()", LogInfo
+        sizeof(char) * size_hs, "write_headers_to_csv", LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
