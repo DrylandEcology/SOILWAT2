@@ -1957,11 +1957,22 @@ static void open_input_files(
                     }
 
                     if (domVar == vNCprog) {
-                        nc_var_par_access(
-                            pathInputs->ncDomFileIDs[domVar],
-                            progVarID,
-                            NC_COLLECTIVE
-                        );
+                        if (nc_var_par_access(
+                                pathInputs->ncDomFileIDs[domVar],
+                                progVarID,
+                                NC_COLLECTIVE
+                            ) != NC_NOERR) {
+                            LogError(
+                                LogInfo,
+                                LOGERROR,
+                                "Could not set parallel access pattern of "
+                                "progress variable to be collective.",
+                                fileName
+                            );
+                        }
+                    }
+                    if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
+                        stop = swTRUE;
                     }
 
                 freeFileDom:
@@ -2233,7 +2244,10 @@ static void open_output_files(
                                     "%s to be collective.",
                                     fileName
                                 );
+                            }
+                            if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
                                 stop = swTRUE;
+                                goto freeFile;
                             }
                         }
 
