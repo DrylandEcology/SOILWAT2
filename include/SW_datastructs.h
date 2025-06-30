@@ -293,6 +293,26 @@ typedef struct {
 } SW_SOIL_RUN_INPUTS;
 
 typedef struct {
+    /* Constant values pertaining to a site's soil profile used
+       in estimating vegetation when veg_method = 2 */
+    double soilDepth,   /**< Depth of soil in the grid cell in cm */
+        percSand,       /**< Average % of sand across the soil
+                            profile, weighted by the width of
+                            each soil layer */
+        percCoarseFrag, /**< Average % of coarse fragments across
+                            the soil profile, weighted by the
+                            width of each soil layer */
+        totAWHC,        /**< Total amount of available water holding
+                             capacity */
+        percClay,       /**< % of clay in the 0-3 cm of the soil
+                            profile (or first layer if deeper
+                            than 3 cm) */
+        percOM;         /**< % of organic matter in the 0-3 cm of
+                            the soil profile (or first layer if
+                            deeper than 3 cm) */
+} SW_SOIL_SIM;
+
+typedef struct {
 
     Bool reset_yr,     /* 1: reset values at start of each year */
         deepdrain,     /* 1: allow drainage into deepest layer  */
@@ -1889,6 +1909,7 @@ struct SW_RUN {
     SW_VEGPROD_SIM VegProdSim;
     SW_SOILWAT_SIM SoilWatSim;
     SW_SITE_SIM SiteSim;
+    SW_SOIL_SIM SoilSim;
 
     /* Output information */
     SW_OUT_RUN OutRun;

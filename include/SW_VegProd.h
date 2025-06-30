@@ -175,17 +175,7 @@ void uniqueIndices(
     LOG_INFO *LogInfo
 );
 
-void SW_VPD_init_run(
-    SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,
-    SW_WEATHER_HIST *allHist,
-    SW_MODEL_INPUTS *SW_ModelIn,
-    SW_MODEL_SIM *SW_ModelSim,
-    VegTypeSim vegSim[],
-    Bool estVeg,
-    Bool inNorthHem,
-    int veg_method,
-    LOG_INFO *LogInfo
-);
+void SW_VPD_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo);
 
 void checkBiomass(VegTypeRunIn veg[], LOG_INFO *LogInfo);
 

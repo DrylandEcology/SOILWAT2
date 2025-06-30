@@ -113,6 +113,150 @@ vegtype variable forb and forb.cov.fCover
 // in SW_Defines.h
 const char *const key2veg[NVEGTYPES] = {"Trees", "Shrubs", "Forbs", "Grasses"};
 
+/**
+@brief Given an unknown variable with max size of MAX_LAYERS, either calculate
+a weighted % of contents in the first 3cm (or first layer, whichever is
+deepest), or a weighted % across the whole soil profile (i.e., through
+all layers)
+
+@param[in] vals A list of size MAX_LAYERS containing values to calculate
+the weighted % through the first 3cm (or first layer), or throughout the
+soil profile (up to # of layers created)
+@param[in] depths Depths of soil layers (cm)
+@param[in] widths The width of the layers (cm).
+@param[in] n_layers Number of layers of soil within the simulation run
+@param[in] first3cm A flag specifying if the function should calculate
+the first 3cm (or first layer) of values or the entire soil layer
+
+@return Resulting weighted % or first layer value
+*/
+static double calc_perc_var_in_soil_profile(
+    const double vals[],
+    double depths[],
+    const double widths[],
+    LyrIndex n_layers,
+    Bool first3cm
+) {
+    LyrIndex soilLyr;
+    double widthWeight;
+    double totDepth = (first3cm) ? 3.0 : depths[n_layers - 1];
+    double result = 0.;
+
+    if (first3cm && GE(depths[0], 3.0)) {
+        // Set result to be the first layer value
+        result = vals[0];
+    } else {
+        ForEachSoilLayer(soilLyr, n_layers) {
+            widthWeight = widths[soilLyr];
+
+            if (first3cm) {
+                // weight = layer thickness / 3cm
+                // layer thickness = if (bottom of layer <= 3 cm) then
+                // (bottom - top depth of layer) else (3 cm - top depth of
+                // layer)
+                if (LE(depths[soilLyr], 3.0)) {
+                    widthWeight = widths[soilLyr];
+                } else {
+                    widthWeight =
+                        3.0 - ((soilLyr > 0) ? depths[soilLyr - 1] : 0);
+                }
+            }
+            widthWeight /= totDepth;
+
+            result += vals[soilLyr] * widthWeight;
+
+            if (first3cm && GE(depths[soilLyr], 3.0)) {
+                break;
+            }
+        }
+    }
+
+    return result;
+}
+
+/**
+@brief Calculate total soil available water holding capacity (awhc)
+
+@param[in] swcBulk_fieldcap Soil water content (SWC) corresponding
+    to field capacity (SWP = -0.033 MPa) [cm]
+@param[in] swcBulk_wiltpt SWC corresponding to wilting point
+    (SWP = -1.5 MPa) [cm]
+@param[in] n_layers Number of layers of soil within the simulation run
+
+@return Resulting value of total soil available water holding capacity
+*/
+static double calc_awhc(
+    double swcBulk_fieldcap[], double swcBulk_wiltpt[], LyrIndex n_layers
+) {
+    double awhc = 0.;
+    LyrIndex lyr;
+
+    ForEachSoilLayer(lyr, n_layers) {
+        awhc += fmax(0., swcBulk_fieldcap[lyr] - swcBulk_wiltpt[lyr]);
+    }
+
+    return awhc;
+}
+
+/**
+@brief Wrapper function to calculate constant that will be used for
+dynamic vegetation calculations for the simulation, these calculations
+include
+
+    - % values for either the first 3cm (or first layer) (for clay and organic
+      matter) or the whole soil profile (for sand and gravel)
+    - Total soil available water holding capacity
+    - Explicitly determine the maximum depth of soils for the current site
+
+@param[in,out] SW_SoilSim Struct of type SW_SOIL_SIM holding constant
+information that will be used during simulations
+@param[in] SW_SoilRunIn Struct of type SW_SOIL_RUN_INPUTS describing
+    the simulated site's input values
+@param[in] SW_SiteSim Struct of type SW_SITE_SIM describing the simulated site's
+    simulation values
+@param[in] n_layers Number of layers of soil within the simulation run
+*/
+static void calc_const_dynamic_veg_info(
+    SW_SOIL_SIM *SW_SoilSim,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
+    SW_SITE_SIM *SW_SiteSim,
+    LyrIndex n_layers
+) {
+    int index;
+    const int numValArrays = 4;
+    double *vals[] = {
+        SW_SoilRunIn->fractionWeightMatric_sand,
+        SW_SoilRunIn->fractionVolBulk_gravel,
+        SW_SoilRunIn->fractionWeightMatric_clay,
+        SW_SoilRunIn->fractionWeight_om
+    };
+
+    double *resDest[] = {
+        &SW_SoilSim->percSand,
+        &SW_SoilSim->percCoarseFrag,
+        &SW_SoilSim->percClay,
+        &SW_SoilSim->percOM
+    };
+
+    Bool first3cmFlags[] = {swFALSE, swFALSE, swTRUE, swTRUE};
+
+    for (index = 0; index < numValArrays; index++) {
+        *(resDest[index]) = calc_perc_var_in_soil_profile(
+            vals[index],
+            SW_SoilRunIn->depths,
+            SW_SoilRunIn->width,
+            n_layers,
+            first3cmFlags[index]
+        );
+    }
+
+    SW_SoilSim->totAWHC = calc_awhc(
+        SW_SiteSim->swcBulk_fieldcap, SW_SiteSim->swcBulk_wiltpt, n_layers
+    );
+
+    SW_SoilSim->soilDepth = SW_SoilRunIn->depths[n_layers - 1];
+}
+
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
@@ -684,45 +828,44 @@ void SW_VPD_construct(
     }
 }
 
-void SW_VPD_init_run(
-    SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,
-    SW_WEATHER_HIST *allHist,
-    SW_MODEL_INPUTS *SW_ModelIn,
-    SW_MODEL_SIM *SW_ModelSim,
-    VegTypeSim vegSim[],
-    Bool estVeg,
-    Bool inNorthHem,
-    int veg_method,
-    LOG_INFO *LogInfo
-) {
 
+void SW_VPD_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
     TimeInt year;
     int k;
+    LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
+    Bool inNorthHem = sw->RunIn.ModelRunIn.isnorth;
+    int veg_method = sw->VegProdIn.veg_method;
 
     /* Set co2-multipliers to default */
     for (year = 0; year < MAX_NYEAR; year++) {
         ForEachVegType(k) {
-            vegSim[k].co2_multipliers[BIO_INDEX][year] = 1.;
-            vegSim[k].co2_multipliers[WUE_INDEX][year] = 1.;
+            sw->VegProdSim.veg[k].co2_multipliers[BIO_INDEX][year] = 1.;
+            sw->VegProdSim.veg[k].co2_multipliers[WUE_INDEX][year] = 1.;
         }
     }
 
-    if (estVeg && veg_method > 0) {
-        estimateVegetationFromClimate(
-            SW_VegProdRunIn,
-            allHist,
-            SW_ModelIn,
-            SW_ModelSim,
-            inNorthHem,
-            veg_method,
-            LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
+    if (estVeg) {
+        if (veg_method == 1) {
+            estimateVegetationFromClimate(
+                &sw->RunIn.VegProdRunIn,
+                sw->RunIn.weathRunAllHist,
+                &sw->ModelIn,
+                &sw->ModelSim,
+                inNorthHem,
+                veg_method,
+                LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+        } else if (veg_method == 2) {
+            calc_const_dynamic_veg_info(
+                &sw->SoilSim, &sw->RunIn.SoilRunIn, &sw->SiteSim, n_layers
+            );
         }
     }
 
-    checkBiomass(SW_VegProdRunIn->veg, LogInfo);
+    checkBiomass(sw->RunIn.VegProdRunIn.veg, LogInfo);
 }
 
 /**

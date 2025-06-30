@@ -324,17 +324,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
     SW_Run.VegProdIn.veg_method = 1;
 
     // Re-calculate vegetation
-    SW_VPD_init_run(
-        &SW_Run.RunIn.VegProdRunIn,
-        SW_Run.RunIn.weathRunAllHist,
-        &SW_Run.ModelIn,
-        &SW_Run.ModelSim,
-        SW_Run.VegProdSim.veg,
-        swTRUE,
-        SW_Run.RunIn.ModelRunIn.isnorth,
-        SW_Run.VegProdIn.veg_method,
-        &LogInfo
-    );
+    SW_VPD_init_run(&SW_Run, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run the simulation

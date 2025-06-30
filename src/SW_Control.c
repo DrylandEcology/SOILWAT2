@@ -1087,17 +1087,7 @@ void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
         return; // Exit function prematurely due to error
     }
 
-    SW_VPD_init_run(
-        &sw->RunIn.VegProdRunIn,
-        sw->RunIn.weathRunAllHist,
-        &sw->ModelIn,
-        &sw->ModelSim,
-        sw->VegProdSim.veg,
-        estVeg,
-        sw->RunIn.ModelRunIn.isnorth,
-        sw->VegProdIn.veg_method,
-        LogInfo
-    );
+    SW_VPD_init_run(sw, estVeg, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }

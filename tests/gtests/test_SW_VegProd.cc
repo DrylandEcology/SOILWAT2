@@ -93,37 +93,29 @@ TEST_F(VegProdFixtureTest, VegProdConstructor) {
     // (the call to `SW_VPD_deconstruct()`during the test fixture's `TearDown()`
     // would see only NULL and thus not de-allocate the required second time
     // to avoid a leak)
-    SW_VEGPROD_INPUTS VegProdIn;
-    SW_VEGPROD_RUN_INPUTS VegProdRunIn;
-    SW_VEGPROD_SIM VegProdSim;
-    SW_VEGPROD_OUTPUTS vp_p_oagg[NVEGTYPES];
-    SW_VEGPROD_OUTPUTS vp_p_accu[NVEGTYPES];
+    SW_RUN sw;
     int k;
 
-    SW_VPD_construct(&VegProdIn, &VegProdRunIn, vp_p_oagg, vp_p_accu);
-
-    SW_VPD_init_run(
-        &VegProdRunIn,
-        SW_Run.RunIn.weathRunAllHist,
-        &SW_Run.ModelIn,
-        &SW_Run.ModelSim,
-        VegProdSim.veg,
-        swTRUE,
-        SW_Run.RunIn.ModelRunIn.isnorth,
-        VegProdIn.veg_method,
-        &LogInfo
+    SW_VPD_construct(
+        &sw.VegProdIn, &sw.RunIn.VegProdRunIn, sw.vp_p_oagg, sw.vp_p_accu
     );
+
+    SW_VPD_init_run(&sw, swTRUE, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     ForEachVegType(k) {
-        EXPECT_DOUBLE_EQ(1., VegProdSim.veg[k].co2_multipliers[BIO_INDEX][0]);
         EXPECT_DOUBLE_EQ(
-            1., VegProdSim.veg[k].co2_multipliers[BIO_INDEX][MAX_NYEAR - 1]
+            1., sw.VegProdSim.veg[k].co2_multipliers[BIO_INDEX][0]
+        );
+        EXPECT_DOUBLE_EQ(
+            1., sw.VegProdSim.veg[k].co2_multipliers[BIO_INDEX][MAX_NYEAR - 1]
         );
 
-        EXPECT_DOUBLE_EQ(1., VegProdSim.veg[k].co2_multipliers[WUE_INDEX][0]);
         EXPECT_DOUBLE_EQ(
-            1., VegProdSim.veg[k].co2_multipliers[WUE_INDEX][MAX_NYEAR - 1]
+            1., sw.VegProdSim.veg[k].co2_multipliers[WUE_INDEX][0]
+        );
+        EXPECT_DOUBLE_EQ(
+            1., sw.VegProdSim.veg[k].co2_multipliers[WUE_INDEX][MAX_NYEAR - 1]
         );
     }
 }
