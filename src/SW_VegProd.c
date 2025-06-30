@@ -951,7 +951,7 @@ void SW_VPD_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
     }
 
     if (estVeg) {
-        if (veg_method == 1) {
+        if (veg_method == VEG_METHOD_LONG_EST) {
             estimateVegetationFromClimate(
                 &sw->RunIn.VegProdRunIn,
                 sw->RunIn.weathRunAllHist,
@@ -961,7 +961,7 @@ void SW_VPD_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
                 veg_method,
                 LogInfo
             );
-        } else if (veg_method == 2) {
+        } else if (veg_method == VEG_METHOD_DYN_EST) {
             calc_const_dynamic_veg_info(
                 &sw->SoilSim, &sw->RunIn.SoilRunIn, &sw->SiteSim, n_layers
             );
@@ -1470,7 +1470,7 @@ void estimateVegetationFromClimate(
 
     averageClimateAcrossYears(&climateOutput, numYears, &climateAverages);
 
-    if (veg_method == 1) {
+    if (veg_method == VEG_METHOD_LONG_EST) {
 
         C4Variables[0] = climateAverages.minTemp7thMon_C;
         C4Variables[1] = climateAverages.ddAbove65F_degday;

@@ -104,6 +104,14 @@ extern "C" {
 /* --------------------------------------------------- */
 extern const char *const key2veg[NVEGTYPES];
 
+/* Constants for veg_method rather than having 0, 1 or 2 */
+// #define VEG_METHOD_FILE 0 // Use values from file (unused constant right now)
+
+/* Estimate vegetation composition from long-term climate conditions */
+#define VEG_METHOD_LONG_EST 1
+
+/* Dynamic vegetation using short- and long-term climate conditions */
+#define VEG_METHOD_DYN_EST 2
 
 /* =================================================== */
 /*             Global Function Declarations            */
