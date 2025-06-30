@@ -289,10 +289,8 @@ void SW_RUN_deepCopy(
         copyMKV(&dest->MarkovIn, &source->MarkovIn);
     }
 
+    SW_VPD_init_ptrs(&dest->VegProdSim);
     SW_VES_init_ptrs(&dest->VegEstabIn, dest->ves_p_accu, dest->ves_p_oagg);
-    if (LogInfo->stopRun) {
-        return; // Exit prematurely due to error
-    }
 
     /* Copy vegetation establishment parameters */
     dest->VegEstabIn.count = source->VegEstabIn.count;
@@ -837,6 +835,7 @@ program exit
 void SW_CTL_init_ptrs(SW_RUN *sw) {
     SW_WTH_init_ptrs(&sw->RunIn.weathRunAllHist);
     SW_MKV_init_ptrs(&sw->MarkovIn);
+    SW_VPD_init_ptrs(&sw->VegProdSim);
     SW_VES_init_ptrs(&sw->VegEstabIn, sw->ves_p_accu, sw->ves_p_oagg);
     // SW_VPD_init_ptrs() not needed
     SW_OUT_init_ptrs(&sw->OutRun, &sw->SW_PathOutputs);
@@ -1030,7 +1029,7 @@ void SW_CTL_clear_model(Bool full_reset, SW_RUN *sw) {
     // SW_SKY_INPUTS_deconstruct() not needed
     // SW_SIT_deconstruct() not needed
     SW_VES_deconstruct(sw->VegEstabIn.count, sw->ves_p_accu, sw->ves_p_oagg);
-    // SW_VPD_deconstruct() not needed
+    SW_VPD_deconstruct(&sw->VegProdSim);
     // SW_FLW_deconstruct() not needed
     SW_SWC_deconstruct(&sw->SoilWatIn, &sw->SoilWatSim);
     SW_CBN_deconstruct();

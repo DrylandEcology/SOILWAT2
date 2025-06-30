@@ -134,6 +134,8 @@ void SW_VPD_construct(
     SW_VEGPROD_OUTPUTS vp_p_accu[]
 );
 
+void SW_VPD_deconstruct(SW_VEGPROD_SIM *SW_VegProdSim);
+
 void estimateVegetationFromClimate(
     SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,
     SW_WEATHER_HIST *Weather_hist,
@@ -174,6 +176,8 @@ void uniqueIndices(
     int *finalIndexArraySize,
     LOG_INFO *LogInfo
 );
+
+void SW_VPD_init_ptrs(SW_VEGPROD_SIM *SW_VegProdSim);
 
 void SW_VPD_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo);
 

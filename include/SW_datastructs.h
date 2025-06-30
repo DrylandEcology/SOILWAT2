@@ -728,6 +728,59 @@ typedef struct {
 
 typedef struct {
     VegTypeSim veg[NVEGTYPES];
+
+    double *annTemp,         /**< Dynamic array of size <n years> holding the
+                                  mean annual monthly temperature for each year */
+        *annTempPrecipCorr,  /**< Dynamic array of size <n years> holding the
+                                  correlation between each months' avg temp
+                                  and each month's precipitation for each year */
+        *annIsotherm,        /**< Dynamic array of size <n years> holding
+                                  isothermality for each year */
+        *annWaterDef,        /**< Dynamic array of size <n years> holding annual
+                                  water deficit for each year */
+        *annPrecip,          /**< Dynamic array of size <n years> holding annual
+                                  total precipitation (mm) for each year */
+        *annSeasonPrecip,    /**< Dynamic array of size <n years> holding the
+                                  coefficient of variation of monthly total
+                                  precipitation in a year for every year */
+        *annPrecipDriestMon, /**< Dynamic array of size <n years> holding the
+                                  total precipitation of the driest month of the
+                                  year for every year */
+        *annWetDegDays,      /**< Dynamic array of size <n years> holding total
+                                  number of wet degree days in the year for every
+                                  year */
+        *annTempWarmestMon,  /**< Dynamic array of size <n years> holding the
+                                  maximum temperature of the warmest month of
+                                  the year for every year */
+        *annTempColdestMon,  /**< Dynamic array of size <n years> holding the
+                                  minimum temperature of the warmest month of
+                                  the year for every year */
+        *annPrecipWettestMon; /**< Dynamic array of size <n years> holding the
+                                   total precipitation of the wettest month
+                                   of the year for every year */
+
+    /* Long-term averages of any of the above variables that will be used
+       in calculating dynamic vegetation */
+    double annTempLongAvg, annTempPrecipLongAvg, annIsothermLongAvg,
+        annWaterDefLongAvg, annSeasonPrecipLongAvg, annPrecipDriestMonLongAvg,
+        annWetDegDaysLongAvg, annTempWarmestMonLongAvg,
+        annTempColdestMonLongAvg, annPrecipWettestMonLongAvg;
+
+    /* Short-term average of any of the above variables that will be used
+       in calculating dynamic vegetation */
+    double annIsothermShortAvg, annTempPrecipShortAvg, annSeasonPrecipShortAvg,
+        annPrecipShortAvg, annWetDegDaysShortAvg, annWaterDefShortAvg,
+        annPreciptDriestMonShortAvg;
+
+    /* Variables to hold the anomaly ("anom...") or anomaly % ("anomPct...")
+       for any of the variables near the top of this struct */
+    double anomIsotherm, anomTempPrecipCorr;
+
+    double anomPctSeasonPrecip, anomPctPrecip, anomPctWetDegDays,
+        anomPctWaterDef, anomPctPrecipDriestMon;
+
+    /* Indices to keep track of the first/last values when taking averages */
+    IntU shortIndex, longIndex;
 } SW_VEGPROD_SIM;
 
 /** Data type to describe the surface cover of a SOILWAT2 simulation run */

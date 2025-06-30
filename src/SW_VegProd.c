@@ -113,6 +113,51 @@ vegtype variable forb and forb.cov.fCover
 // in SW_Defines.h
 const char *const key2veg[NVEGTYPES] = {"Trees", "Shrubs", "Forbs", "Grasses"};
 
+/* =================================================== */
+/*             Local Function Definitions              */
+/* --------------------------------------------------- */
+
+/**
+@brief Allocate dynamic arrays to hold up to <n years> worth of yearly history
+of values
+
+@param[in] n_years Number of years in simulation
+@param[out] SW_VegProdSim Struct of type SW_VEGPROD_SIM that holds information
+used and/or modified mainly during simulation runs; dynamic arrays will be
+updated within this struct
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void alloc_nyear_arrays(
+    TimeInt n_years, SW_VEGPROD_SIM *SW_VegProdSim, LOG_INFO *LogInfo
+) {
+    int index;
+    const int numArrays = 11;
+    double **allocArray[] = {
+        &SW_VegProdSim->annTemp,
+        &SW_VegProdSim->annTempPrecipCorr,
+        &SW_VegProdSim->annIsotherm,
+        &SW_VegProdSim->annPrecip,
+        &SW_VegProdSim->annWaterDef,
+        &SW_VegProdSim->annSeasonPrecip,
+        &SW_VegProdSim->annPrecipDriestMon,
+        &SW_VegProdSim->annWetDegDays,
+        &SW_VegProdSim->annTempWarmestMon,
+        &SW_VegProdSim->annTempColdestMon,
+        &SW_VegProdSim->annPrecipWettestMon
+    };
+
+    for (index = 0; index < numArrays; index++) {
+        *(allocArray[index]) = (double *) Mem_Malloc(
+            sizeof(double) * n_years, "alloc_nyear_arrays()", LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        memset(*(allocArray[index]), 0, n_years * sizeof(double));
+    }
+}
+
 /**
 @brief Given an unknown variable with max size of MAX_LAYERS, either calculate
 a weighted % of contents in the first 3cm (or first layer, whichever is
@@ -828,9 +873,70 @@ void SW_VPD_construct(
     }
 }
 
+/**
+@brief Deconstructor for the SW_VegProd suite of structs if needed
+
+@param[in,out] SW_VegProdSim Struct of type SW_VEGPROD_SIM that holds
+information used and/or modified mainly during simulation runs; return with
+deallocated and NULL pointers
+*/
+void SW_VPD_deconstruct(SW_VEGPROD_SIM *SW_VegProdSim) {
+    int index;
+    const int numArrays = 11;
+    double **allocArray[] = {
+        &SW_VegProdSim->annTemp,
+        &SW_VegProdSim->annTempPrecipCorr,
+        &SW_VegProdSim->annIsotherm,
+        &SW_VegProdSim->annPrecip,
+        &SW_VegProdSim->annWaterDef,
+        &SW_VegProdSim->annSeasonPrecip,
+        &SW_VegProdSim->annPrecipDriestMon,
+        &SW_VegProdSim->annWetDegDays,
+        &SW_VegProdSim->annTempWarmestMon,
+        &SW_VegProdSim->annTempColdestMon,
+        &SW_VegProdSim->annPrecipWettestMon
+    };
+
+    for (index = 0; index < numArrays; index++) {
+        if (!isnull(*(allocArray[index]))) {
+            free((void *) *(allocArray[index]));
+            *(allocArray[index]) = NULL;
+        }
+    }
+}
+
+/**
+@brief Initialize all possible pointers in SW_VEGPROD_SIM to NULL
+
+@param[out] SW_VegProdSim Struct of type SW_VEGPROD_SIM that holds information
+used and/or modified mainly during simulation runs; dynamic arrays will be
+initialized to NULl
+*/
+void SW_VPD_init_ptrs(SW_VEGPROD_SIM *SW_VegProdSim) {
+    int index;
+    const int numArrays = 11;
+    double **allocArray[] = {
+        &SW_VegProdSim->annTemp,
+        &SW_VegProdSim->annTempPrecipCorr,
+        &SW_VegProdSim->annIsotherm,
+        &SW_VegProdSim->annPrecip,
+        &SW_VegProdSim->annWaterDef,
+        &SW_VegProdSim->annSeasonPrecip,
+        &SW_VegProdSim->annPrecipDriestMon,
+        &SW_VegProdSim->annWetDegDays,
+        &SW_VegProdSim->annTempWarmestMon,
+        &SW_VegProdSim->annTempColdestMon,
+        &SW_VegProdSim->annPrecipWettestMon
+    };
+
+    for (index = 0; index < numArrays; index++) {
+        *(allocArray[index]) = NULL;
+    }
+}
 
 void SW_VPD_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
     TimeInt year;
+    TimeInt n_years = sw->ModelIn.endyr - sw->ModelIn.startyr + 1;
     int k;
     LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
     Bool inNorthHem = sw->RunIn.ModelRunIn.isnorth;
@@ -855,13 +961,15 @@ void SW_VPD_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
                 veg_method,
                 LogInfo
             );
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
         } else if (veg_method == 2) {
             calc_const_dynamic_veg_info(
                 &sw->SoilSim, &sw->RunIn.SoilRunIn, &sw->SiteSim, n_layers
             );
+
+            alloc_nyear_arrays(n_years, &sw->VegProdSim, LogInfo);
+        }
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
         }
     }
 
