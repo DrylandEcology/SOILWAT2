@@ -888,7 +888,7 @@ TEST(SiteTest, SoilLayerWeights) {
     double depthLimit;
     double depths[MAX_LAYERS] = {5., 10., 20.};
     LyrIndex i;
-    LyrIndex n_layers = 3;
+    LyrIndex const n_layers = 3;
 
     // Expect w == 0 if index >= n_layers
     i = n_layers + 1;
