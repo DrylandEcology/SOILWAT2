@@ -25,7 +25,7 @@ exists() {
 #--- Function to run example SOILWAT2 simulation with fresh inputs
 # $1 Compiler, e.g., CC=clang, CXX=g++, or (if not specify a compiler) CC=
 # $2 Array of compiler flags, e.g., CPPFLAGS='-DDEBUG'
-# $3 SOILWAT2 mode: txt or nc
+# $3 SOILWAT2 mode: txt, nc, or mpi
 # $4 Make target to run
 run_fresh_sw2() {
   local res="" status=""
@@ -46,6 +46,8 @@ run_fresh_sw2() {
 
   if [ "${mode}" = "nc" ]; then
     mflags+=("CPPFLAGS=-DSWNC")
+  elif [ "${mode}" = "mpi" ]; then
+    mflags+=("CPPFLAGS=-DSWMPI")
   fi
 
   res=$(make clean_example)
@@ -237,21 +239,33 @@ report_if_leak() {
 #--- Function that compile, run, and check several SOILWAT2 targets
 # $1 CC compiler, e.g., CC=clang
 # $2 CXX compiler, e.g., CXX=clang++
-# $3 SOILWAT2 output mode, i.e., "txt" or "nc"
-# $4 Path to the reference output
-# $5 Should error messages be verbose, i.e., "true" or "false"
+# $3 SOILWAT2 output mode, i.e., "txt", "nc", or "mpi"
+# $4 Number of parallel processes in mpi-mode SOILWAT2.
+# $5 Path to the reference output
+# $6 Should error messages be verbose, i.e., "true" or "false"
 check_SOILWAT2() {
   local ccomp="$1"
   local cxxcomp="$2"
   local mode="$3"
-  local dirOutRefBase="$4"
-  local verbosity="$5"
+  local nTasks="$4"
+  local dirOutRefBase="$5"
+  local verbosity="$6"
 
   local res="" status="" has_sanitizers=""
   local -a aflags=()
 
-  local dirOutRef="${dirOutRefBase}-${mode}"
+  local dirOutRef=""
 
+  if [ "${mode}" = "txt" ]; then
+    dirOutRef="${dirOutRefBase}-${mode}"
+  else
+    # nc-based and mpi-based SOILWAT2 both produce netCDF output
+    dirOutRef="${dirOutRefBase}-nc"
+  fi
+
+  if [ "${mode}" = "mpi" ]; then
+    aflags[0]="SW_NTASKS=${nTasks}"
+  fi
 
   echo $'\n'\
 --------------------------------------------------$'\n'\

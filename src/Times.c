@@ -32,13 +32,17 @@
 /* --------------------------------------------------- */
 
 #include "include/Times.h"          // for Jan, Dec, Feb, NoMonth, NoDay
-#include "include/filefuncs.h"      // for sw_message
+#include "include/filefuncs.h"      // for sw_message via SW_MSG_ROOT
 #include "include/generic.h"        // for Bool, GE, final_running_sd, get_...
 #include "include/SW_datastructs.h" // for SW_WALLTIME, LOG_INFO
 #include "include/SW_Defines.h"     // for TimeInt, WallTimeSpec, MAX_DAYS
-#include <stdio.h>                  // for fprintf, FILE, NULL, stdout
-#include <string.h>                 // for NULL, memcpy
-#include <time.h>                   // for time, difftime, gmtime, strftime
+
+#if !defined(RSOILWAT)
+#include <stdio.h> // for fprintf, FILE, NULL, stdout
+#endif
+
+#include <string.h> // for NULL, memcpy
+#include <time.h>   // for time, difftime, gmtime, strftime
 
 
 /* =================================================== */
@@ -331,28 +335,45 @@ void SW_WT_StartTime(SW_WALLTIME *wt) {
 
     wt->nTimedRuns = 0;
     wt->nUntimedRuns = 0;
+
+#if defined(SWNETCDF)
+    wt->totIOCompTime = 0;
+    wt->totIOTime = 0;
+#endif
 }
 
 /* Assumes that all values have been initialized */
-void SW_WT_TimeRun(WallTimeSpec ts, Bool ok_ts, SW_WALLTIME *wt) {
+void SW_WT_TimeRun(WallTimeSpec ts, Bool ok_ts, int timeSec, SW_WALLTIME *wt) {
     double ut = diff_walltime(ts, ok_ts); // negative if time failed
     double new_mean = 0;
 
     if (GE(ut, 0.)) {
-        wt->nTimedRuns++;
+        if (timeSec == TIME_COMPUTE) {
+            wt->nTimedRuns++;
 
-        new_mean = get_running_mean(wt->nTimedRuns, wt->timeMean, ut);
+            new_mean = get_running_mean(wt->nTimedRuns, wt->timeMean, ut);
 
-        wt->timeSS += get_running_sqr(wt->timeMean, new_mean, ut);
+            wt->timeSS += get_running_sqr(wt->timeMean, new_mean, ut);
 
-        wt->timeMean = new_mean;
+            wt->timeMean = new_mean;
 
-        wt->timeMin = fmin(ut, wt->timeMin);
-        wt->timeMax = fmax(ut, wt->timeMax);
+            wt->timeMin = fmin(ut, wt->timeMin);
+            wt->timeMax = fmax(ut, wt->timeMax);
+        }
 
+#if defined(SWNETCDF)
+        if (timeSec == TIME_IO) {
+            wt->totIOTime += ut;
+        }
 
+        wt->totIOCompTime += ut;
+#else
+        (void) timeSec;
+#endif
     } else {
-        wt->nUntimedRuns++;
+        if (timeSec == TIME_COMPUTE) {
+            wt->nUntimedRuns++;
+        }
     }
 }
 
@@ -377,7 +398,7 @@ Time is not reported at all if quiet mode and `logfile` is `NULL`.
 */
 void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
     double total_time = 0;
-    unsigned long nSims = wt.nTimedRuns + wt.nUntimedRuns;
+    size_t nSims = wt.nTimedRuns + wt.nUntimedRuns;
     int fprintRes = 0;
 
     FILE *logfp = LogInfo->QuietMode ? LogInfo->logfp : stdout;
@@ -407,7 +428,7 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
 
     if (nSims > 1) {
         fprintRes =
-            fprintf(logfp, "    * Number of simulation runs: %lu", nSims);
+            fprintf(logfp, "    * Number of simulation runs: %zu", nSims);
         if (fprintRes < 0) {
             goto wrapUpErrMsg;
         }
@@ -415,7 +436,7 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
         if (wt.nUntimedRuns > 0) {
             fprintRes = fprintf(
                 logfp,
-                " total (%lu timed | %lu untimed)",
+                " total (%zu timed | %zu untimed)",
                 wt.nTimedRuns,
                 wt.nUntimedRuns
             );
@@ -442,6 +463,29 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
             if (fprintRes < 0) {
                 goto wrapUpErrMsg;
             }
+
+#if defined(SWNETCDF)
+            /*
+                Adjust the compute and I/O times to be the average time
+                per site rather than the sum of all sites
+            */
+            wt.totIOCompTime /= (double) wt.nTimedRuns;
+            wt.totIOTime /= (double) wt.nTimedRuns;
+
+            fprintRes = fprintf(
+                logfp,
+                "    * Workload Partitioning: %.3f = %.3f (compute, %.2f%%) + "
+                "%.3f (I/O, %.2f%%) [seconds]\n",
+                wt.totIOCompTime,
+                wt.timeMean, // Average compute time
+                (wt.timeMean / wt.totIOCompTime) * 100,
+                wt.totIOTime,
+                (wt.totIOTime / wt.totIOCompTime) * 100
+            );
+            if (fprintRes < 0) {
+                goto wrapUpErrMsg;
+            }
+#endif
         }
     }
 
@@ -452,11 +496,18 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
             "wall time]\n",
             100. * wt.timeSimSet / total_time
         );
+        if (fprintRes < 0) {
+            goto wrapUpErrMsg;
+        }
     }
 
 wrapUpErrMsg: {
+    if (fprintRes >= 0) {
+        fprintRes = fflush(logfp);
+    }
+
     if (fprintRes < 0) {
-        sw_message("Failed to write whole time report.");
+        SW_MSG_ROOT("Failed to write whole time report.", 0);
     }
 }
 }

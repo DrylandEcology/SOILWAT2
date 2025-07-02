@@ -40,7 +40,7 @@ The position is specified by
 
 The correct dimension of the output array `p_OUT[OutKey][OutPeriod]`
 is inferred from
-    - `nSl` the total number of soil layers (e.g., `Site.n_layers`);
+    - `nSl` the total number of soil layers (e.g., `SiteSim.n_layers`);
       set to 1 if no soil layers
     - `nPTF` the total number of vegetation types (e.g., `NVEGTYPES`);
       set to 1 if no vegetation
@@ -110,18 +110,18 @@ extern const IntUS ncol_TimeOUT[SW_OUTNPERIODS];
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_OUT_set_nrow(
-    SW_MODEL *SW_Model, const Bool use_OutPeriod[], size_t nrow_OUT[]
+    SW_MODEL_INPUTS *SW_ModelIn, const Bool use_OutPeriod[], size_t nrow_OUT[]
 );
 
 void SW_OUT_construct_outarray(
-    SW_OUT_DOM *OutDom, SW_OUT_RUN *OutRun, LOG_INFO *LogInfo
+    size_t sizeMult, SW_OUT_DOM *OutDom, SW_OUT_RUN *OutRun, LOG_INFO *LogInfo
 );
 
 void SW_OUT_deconstruct_outarray(SW_OUT_RUN *OutRun);
 
 #ifdef RSOILWAT
 void get_outvalleader(
-    SW_MODEL *SW_Model,
+    SW_MODEL_SIM *SW_ModelSim,
     OutPeriod pd,
     const size_t irow_OUT[],
     const size_t nrow_OUT[],

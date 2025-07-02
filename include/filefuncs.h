@@ -18,6 +18,20 @@ extern "C" {
 #endif
 
 
+// Macros to simplify the checking for a root process
+// when SWMPI is enabled, otherwise there is no need for checking
+// for a root process
+#if defined(SWMPI)
+#define SW_MSG_ROOT(str, rank) \
+    if ((rank) == 0)           \
+    sw_message((str))
+#else
+#define SW_MSG_ROOT(str, rank) \
+    sw_message((str));         \
+    (void) (rank)
+#endif
+
+
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
@@ -47,11 +61,18 @@ Bool CopyFile(const char *from, const char *to, LOG_INFO *LogInfo);
 
 void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...);
 
+void LogErrorSuid(
+    LOG_INFO *LogInfo,
+    const int mode,
+    size_t ncSuid[],
+    Bool sDom,
+    const char *fmt,
+    ...
+);
+
 void sw_message(const char *msg);
 
-unsigned long int sw_strtoul(
-    const char *str, const char *errMsg, LOG_INFO *LogInfo
-);
+size_t sw_strtosizet(const char *str, const char *errMsg, LOG_INFO *LogInfo);
 
 long int sw_strtol(const char *str, const char *errMsg, LOG_INFO *LogInfo);
 

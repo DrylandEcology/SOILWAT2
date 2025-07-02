@@ -16,6 +16,10 @@
 #include "include/SW_Defines.h" // for MAX_NYEAR, MAX_ST_RGR, MAX_LAYERS, M...
 #include <stdio.h>              // for FILENAME_MAX, FILE
 
+#if defined(SWMPI)
+#include <mpi.h>
+#endif
+
 
 // Array-based output:
 #if defined(RSOILWAT) || defined(STEPWAT) || defined(SWNETCDF)
@@ -64,7 +68,7 @@ typedef struct {
                               that are being simulated. `ppm[index]` is the CO2
                               value for the calendar year `index + 1` */
 
-} SW_CARBON;
+} SW_CARBON_INPUTS;
 
 /* =================================================== */
 /*                  Flowlib structs                    */
@@ -110,7 +114,7 @@ typedef struct {
                  x2BoundsR[MAX_ST_RGR],
                              x1Bounds[MAX_LAYERS],
                              x2Bounds[MAX_LAYERS];*/
-} ST_RGR_VALUES;
+} SW_ST_SIM;
 
 /* =================================================== */
 /*                FlowlibPET struct                    */
@@ -119,7 +123,7 @@ typedef struct {
     double memoized_G_o[MAX_DAYS][TWO_DAYS], msun_angles[MAX_DAYS][7],
         memoized_int_cos_theta[MAX_DAYS][TWO_DAYS],
         memoized_int_sin_beta[MAX_DAYS][TWO_DAYS];
-} SW_ATMD;
+} SW_ATMD_SIM;
 
 /* =================================================== */
 /*                Spin-up struct                    */
@@ -159,28 +163,6 @@ typedef struct {
      * doy and year are base1. */
     /* simyear = year + addtl_yr */
 
-    // Create a copy of SW_DOMAIN's time & spinup information
-    // to use instead of passing around SW_DOMAIN
-    TimeInt startyr, /* beginning year for a set of simulation run */
-        endyr,       /* ending year for a set of simulation run */
-        startstart,  /* startday in start year */
-        endend;      /* end day in end year */
-
-    // Data for (optional) spinup (copied from SW_DOMAIN)
-    SW_SPINUP SW_SpinUp;
-
-    // ********** END of copying SW_DOMAIN's data *************
-
-    double longitude, /* longitude of the site (radians) */
-        latitude,     /* latitude of the site (radians) */
-        elevation,    /* elevation a.s.l (m) of the site */
-        slope, /* slope of the site (radians): between 0 (horizontal) and pi / 2
-                  (vertical) */
-        aspect; /* aspect of the site (radians): A value of \ref SW_MISSING
-                   indicates no data, ie., treat it as if slope = 0; South
-                   facing slope: aspect = 0, East = -pi / 2, West = pi / 2,
-                   North = ±pi */
-
     TimeInt days_in_month[MAX_MONTHS], /* number of days per month for "current"
                                           year */
         cum_monthdays[MAX_MONTHS];     /* monthly cumulative number of days for
@@ -194,7 +176,6 @@ typedef struct {
     /* first day of new week/month is checked for
      * printing and summing weekly/monthly values */
     Bool newperiod[SW_OUTNPERIODS];
-    Bool isnorth;
     Bool doOutput; /**< Flag to indicate if output should be produced (TRUE) or
                       not (FALSE); set to FALSE for spinup and tests */
 
@@ -202,10 +183,41 @@ typedef struct {
 
 #ifdef STEPWAT
     /* Variables from GlobalType (STEPWAT2) used in SOILWAT2 */
-    IntUS runModelIterations, runModelYears;
+    IntUS runModelIterations;
 #endif
 
-} SW_MODEL;
+} SW_MODEL_SIM;
+
+typedef struct {
+    // Data for (optional) spinup (copied from SW_DOMAIN)
+    SW_SPINUP SW_SpinUp;
+
+    // Create a copy of SW_DOMAIN's time & spinup information
+    // to use instead of passing around SW_DOMAIN
+    TimeInt startyr, /* beginning year for a set of simulation run */
+        endyr,       /* ending year for a set of simulation run */
+        startstart,  /* startday in start year */
+        endend;      /* end day in end year */
+
+#ifdef STEPWAT
+    /* Variables from GlobalType (STEPWAT2) used in SOILWAT2 */
+    IntUS runModelYears;
+#endif
+} SW_MODEL_INPUTS;
+
+typedef struct {
+    double longitude, /* longitude of the site (radians) */
+        latitude,     /* latitude of the site (radians) */
+        elevation,    /* elevation a.s.l (m) of the site */
+        slope, /* slope of the site (radians): between 0 (horizontal) and pi / 2
+                      (vertical) */
+        aspect; /* aspect of the site (radians): A value of \ref SW_MISSING
+        indicates no data, ie., treat it as if slope = 0; South
+                   facing slope: aspect = 0, East = -pi / 2, West = pi / 2,
+                   North = ±pi */
+
+    Bool isnorth;
+} SW_MODEL_RUN_INPUTS;
 
 /* =================================================== */
 /*                 Output text structs                 */
@@ -234,7 +246,14 @@ typedef struct {
 
 #if defined(SWNETCDF)
     char **ncOutFiles[SW_OUTNKEYS][SW_OUTNPERIODS];
+    int *ncOutVarIDs[SW_OUTNKEYS];
+    size_t *outTimeSizes[SW_OUTNPERIODS]; /**< Holds x output file time sizes
+                                               for each output period */
     unsigned int numOutFiles;
+
+#if defined(SWMPI)
+    int *openOutFileIDs[SW_OUTNKEYS][SW_OUTNPERIODS];
+#endif
 #endif
 
 } SW_PATH_OUTPUTS;
@@ -271,7 +290,7 @@ typedef struct {
 
     /** SWRC parameters of the mineral soil component */
     double swrcpMineralSoil[MAX_LAYERS][SWRC_PARAM_NMAX];
-} SW_SOILS;
+} SW_SOIL_RUN_INPUTS;
 
 typedef struct {
 
@@ -283,9 +302,6 @@ typedef struct {
         type_soilDensityInput; /* Encodes whether `soilDensityInput` represent
                                   matric density (type = SW_MATRIC = 0) or bulk
                                   density (type = SW_BULK = 1) */
-
-    /** Number of soil layers (max = \ref MAX_LAYERS)*/
-    LyrIndex n_layers;
 
     /** Number of transpiration regions (max = \ref MAX_TRANSP_REGIONS) */
     LyrIndex n_transp_rgn;
@@ -299,66 +315,14 @@ typedef struct {
     /* Soil layer index of deep drainage layer if deepdrain, 0 otherwise */
     LyrIndex deep_lyr;
 
-    double slow_drain_coeff, /* low soil water drainage coefficient   */
-        pet_scale,           /* changes relative effect of PET calculation */
-        /* SWAT2K model parameters : Neitsch S, Arnold J, Kiniry J, Williams J.
-           2005. Soil and water assessment tool (SWAT) theoretical
-           documentation. version 2005. Blackland Research Center, Texas
-           Agricultural Experiment Station: Temple, TX. */
-        TminAccu2,  /* Avg. air temp below which ppt is snow ( C) */
-        TmaxCrit,   /* Snow temperature at which snow melt starts ( C) */
-        lambdasnow, /* Relative contribution of avg. air temperature to todays
-                       snow temperture vs. yesterday's snow temperature (0-1) */
-        RmeltMin,   /* Minimum snow melt rate on winter solstice (cm/day/C) */
-        RmeltMax;   /* Maximum snow melt rate on summer solstice (cm/day/C) */
-
-
     /* Constants for surface and soil temperature */
-
-    /** Method for average surface temperature:
-        0 (Parton 1978); 1 (Parton 1984) */
-    unsigned int methodSurfaceTemperature;
 
     /** number of layers used by soil temperatur */
     unsigned int stNRGR;
 
-    double t1Param1,
-        t1Param2, /* t1Params are the parameters for the avg daily temperature
-                     at the top of the soil (T1) equation */
-        t1Param3, csParam1, /* csParams are the parameters for the soil thermal
-                               conductivity (cs) equation */
-        csParam2, shParam,  /* shParam is the parameter for the specific heat
-                               capacity equation */
-        bmLimiter, /* bmLimiter is the biomass limiter constant, for use in the
-                      T1 equation */
-        Tsoil_constant, /* soil temperature at a depth where soil temperature is
-                           (mostly) constant in time; for instance, approximated
-                           as the mean air temperature */
-        stDeltaX,   /* for the soil_temperature function, deltaX is the distance
-                       between profile points (default: 15) */
-        stMaxDepth; /* for the soil_temperature function, the maxDepth of the
-                       interpolation function */
-
-    double percentRunoff; /* the percentage of surface water lost daily */
-    double percentRunon;  /* the percentage of water that is added to surface
-                          gained  daily */
-
-    /* params for tanfunc rate calculations for evap and transp. */
-    /* tanfunc() creates a logistic-type graph if shift is positive,
-     * the graph has a negative slope, if shift is 0, slope is positive.
-     */
-    tanfunc_t evap, transp;
-
-    /* Soil water retention curve (SWRC), see `SW_LAYER_INFO` */
-    unsigned int site_swrc_type, site_ptf_type;
-
-    char site_swrc_name[64], site_ptf_name[64];
-
     /** Are `swrcp` of the mineral soil already (TRUE) or not yet estimated
         (FALSE)? */
     Bool site_has_swrcpMineralSoil;
-    /** Are `swrcp` provided as inputs (TRUE) or estimated via a PTF? (FALSE) */
-    Bool inputsProvideSWRCp;
 
     /** Lower bounds of transpiration regions [layers]
 
@@ -388,10 +352,6 @@ typedef struct {
     region 3 contains soil layers 60, 80 and 100 cm.
     */
     double TranspRgnDepths[MAX_TRANSP_REGIONS];
-
-    double SWCInitVal, /* initialization value for swc */
-        SWCWetVal,     /* value for a "wet" day,       */
-        SWCMinVal;     /* lower bound on swc.          */
 
     /* Soil components
             * bulk = relating to the whole soil
@@ -436,9 +396,6 @@ typedef struct {
     // Saxton2006_fK_gravel, /* gravel-correction factor for conductivity [1] */
     // Saxton2006_lambda; /* Slope of logarithmic tension-moisture curve */
 
-    /** Depth [cm] at which soil properties reach values of sapric peat */
-    double depthSapric;
-
     /* Soil water retention curve (SWRC) */
     unsigned int swrc_type[MAX_LAYERS], /**< Type of SWRC (see #swrc2str) */
         ptf_type[MAX_LAYERS];           /**< Type of PTF (see #ptf2str) */
@@ -464,53 +421,125 @@ typedef struct {
         transpiration region ID */
     LyrIndex my_transp_rgn[NVEGTYPES][MAX_LAYERS];
 
-    /* Inputs */
-    SW_SOILS soils;
-} SW_SITE;
+    /** Soil layer weights for accumulation from 0 to 100 cm depth */
+    /* Used only by metric_xxx() */
+    double slWeight100[MAX_LAYERS];
+
+    /** Soil water content per layer held at a tension of -3.0 MPa */
+    /* Used only by metric_xxx() */
+    double baseSWC30bar[MAX_LAYERS];
+
+    /** Soil water content per layer held at a tension of -3.9 MPa */
+    /* Used only by metric_xxx() */
+    double baseSWC39bar[MAX_LAYERS];
+} SW_SITE_SIM;
+
+typedef struct {
+    char site_swrc_name[64], site_ptf_name[64];
+
+    /* whether or not to do soil_temperature calculations */
+    Bool use_soil_temp;
+
+    /** Method for average surface temperature:
+        0 (Parton 1978); 1 (Parton 1984) */
+    unsigned int methodSurfaceTemperature;
+
+    /* Soil water retention curve (SWRC), see `SW_LAYER_INFO` */
+    unsigned int site_swrc_type, site_ptf_type;
+
+    double t1Param1,
+        t1Param2, /* t1Params are the parameters for the avg daily temperature
+                     at the top of the soil (T1) equation */
+        t1Param3, csParam1, /* csParams are the parameters for the soil thermal
+                               conductivity (cs) equation */
+        csParam2, shParam,  /* shParam is the parameter for the specific heat
+                               capacity equation */
+        bmLimiter,  /* bmLimiter is the biomass limiter constant, for use in the
+                       T1 equation */
+        stDeltaX,   /* for the soil_temperature function, deltaX is the distance
+                       between profile points (default: 15) */
+        stMaxDepth; /* for the soil_temperature function, the maxDepth of the
+                       interpolation function */
+
+    /** Depth [cm] at which soil properties reach values of sapric peat */
+    double depthSapric;
+    unsigned int
+        type_soilDensityInput; /* Encodes whether `soilDensityInput` represent
+                                  matric density (type = SW_MATRIC = 0) or bulk
+                                  density (type = SW_BULK = 1) */
+
+    Bool reset_yr,          /* 1: reset values at start of each year */
+        deepdrain,          /* 1: allow drainage into deepest layer  */
+        inputsProvideSWRCp; /** Are `swrcp` provided as inputs (TRUE) or
+                               estimated via a PTF? (FALSE) */
+
+    /* params for tanfunc rate calculations for evap and transp. */
+    /* tanfunc() creates a logistic-type graph if shift is positive,
+     * the graph has a negative slope, if shift is 0, slope is positive.
+     */
+    tanfunc_t evap, transp;
+
+    double slow_drain_coeff, /* low soil water drainage coefficient   */
+        pet_scale,           /* changes relative effect of PET calculation */
+        /* SWAT2K model parameters : Neitsch S, Arnold J, Kiniry J, Williams J.
+           2005. Soil and water assessment tool (SWAT) theoretical
+           documentation. version 2005. Blackland Research Center, Texas
+           Agricultural Experiment Station: Temple, TX. */
+        TminAccu2,  /* Avg. air temp below which ppt is snow ( C) */
+        TmaxCrit,   /* Snow temperature at which snow melt starts ( C) */
+        lambdasnow, /* Relative contribution of avg. air temperature to todays
+                       snow temperture vs. yesterday's snow temperature (0-1) */
+        RmeltMin,   /* Minimum snow melt rate on winter solstice (cm/day/C) */
+        RmeltMax;   /* Maximum snow melt rate on summer solstice (cm/day/C) */
+
+    double percentRunoff; /* the percentage of surface water lost daily */
+    double percentRunon;  /* the percentage of water that is added to surface
+                          gained  daily */
+
+    double SWCInitVal, /* initialization value for swc */
+        SWCWetVal,     /* value for a "wet" day,       */
+        SWCMinVal;     /* lower bound on swc.          */
+} SW_SITE_INPUTS;
+
+typedef struct {
+    double Tsoil_constant; /* Soil temperature at a depth where soil temperature
+                              is (mostly) constant in time; for instance,
+                              approximated as the mean air temperature */
+
+    /** Number of soil layers (max = \ref MAX_LAYERS)*/
+    LyrIndex n_layers;
+} SW_SITE_RUN_INPUTS;
 
 /* =================================================== */
 /*                    VegProd structs                  */
 /* --------------------------------------------------- */
 
-/** Data type that describes cover attributes of a surface type */
+/** Data type that describes cover attributes of a surface type
+    that is static through all simulation runs */
+typedef struct {
+    double
+        /** The surface albedo [0-1];
+          user input from file `Input/veg.in` */
+        albedo;
+} CoverTypeIn;
+
+/** Data type that describes cover attributes of a surface type
+    that can be changed before every simulation run */
 typedef struct {
     double
         /** The cover contribution to the total plot [0-1];
           user input from file `Input/veg.in` */
-        fCover,
-        /** The surface albedo [0-1];
-          user input from file `Input/veg.in` */
-        albedo;
-} CoverType;
+        fCover;
+} CoverTypeRunIn;
 
-/** Data type that describes a vegetation type: currently, one of
+/** Data type that can change before every simulation run describing
+    a vegetation type: currently, one of
   \ref NVEGTYPES available types:
   \ref SW_TREES, \ref SW_SHRUB, \ref SW_FORBS, and \ref SW_GRASS */
 typedef struct {
-    /** Surface cover attributes of the vegetation type */
-    CoverType cov;
-
-    tanfunc_t
-        /** Parameters to calculate canopy height based on biomass;
-          user input from file `Input/veg.in` */
-        cnpy;
-    /** Constant canopy height: if > 0 then constant canopy height [cm] and
-      overriding cnpy-tangens = f(biomass);
-      user input from file `Input/veg.in` */
-    double canopy_height_constant;
-
-    tanfunc_t
-        /** Shading effect on transpiration based on live and dead biomass;
-          user input from file `Input/veg.in` */
-        tr_shade_effects;
-
-    double
-        /** Parameter of live and dead biomass shading effects;
-          user input from file `Input/veg.in` */
-        shade_scale,
-        /** Maximal dead biomass for shading effects;
-          user input from file `Input/veg.in` */
-        shade_deadmax;
+    /** Data type that describes cover attributes of a surface type
+        that can be changed before every simulation run */
+    CoverTypeRunIn cov;
 
     double
         /** Monthly litter amount [g / m2];
@@ -525,7 +554,13 @@ typedef struct {
         /** Parameter to translate biomass to LAI = 1 [g / m2];
           user input from file `Input/veg.in` */
         lai_conv[MAX_MONTHS];
+} VegTypeRunIn;
 
+/** Data type that stores values set and used purely for simulation purposes
+    describing a vegetation type: currently, one of
+  \ref NVEGTYPES available types:
+  \ref SW_TREES, \ref SW_SHRUB, \ref SW_FORBS, and \ref SW_GRASS */
+typedef struct {
     double
         /** Daily litter amount [g / m2]
             as if this vegetation type covers 100% of the simulated surface */
@@ -554,6 +589,45 @@ typedef struct {
         /** Daily sum of aboveground biomass & litter [g / m2]
             as if this vegetation type covers 100% of the simulated surface */
         total_agb_daily[MAX_DAYS + 1];
+
+    double
+        /** Calculated multipliers for CO2-effects:
+          - column \ref BIO_INDEX holds biomass multipliers
+          - column \ref WUE_INDEX holds water-use-efficiency multipliers
+          - rows represent years */
+        co2_multipliers[2][MAX_NYEAR];
+} VegTypeSim;
+
+/** Data type that is static through every simulation run describing
+    a vegetation type: currently, one of
+  \ref NVEGTYPES available types:
+  \ref SW_TREES, \ref SW_SHRUB, \ref SW_FORBS, and \ref SW_GRASS */
+typedef struct {
+    /** Data type that describes cover attributes of a surface type
+        that is static through all simulation runs */
+    CoverTypeIn cov;
+
+    tanfunc_t
+        /** Parameters to calculate canopy height based on biomass;
+          user input from file `Input/veg.in` */
+        cnpy;
+    /** Constant canopy height: if > 0 then constant canopy height [cm] and
+      overriding cnpy-tangens = f(biomass);
+      user input from file `Input/veg.in` */
+    double canopy_height_constant;
+
+    tanfunc_t
+        /** Shading effect on transpiration based on live and dead biomass;
+          user input from file `Input/veg.in` */
+        tr_shade_effects;
+
+    double
+        /** Parameter of live and dead biomass shading effects;
+             user input from file `Input/veg.in` */
+        shade_scale,
+        /** Maximal dead biomass for shading effects;
+             user input from file `Input/veg.in` */
+        shade_deadmax;
 
     Bool
         /** Flag for hydraulic redistribution/lift:
@@ -616,15 +690,7 @@ typedef struct {
         /** Parameter for CO2-effects on water-use-efficiency;
           user input from file `Input/veg.in` */
         co2_wue_coeff2;
-
-    double
-        /** Calculated multipliers for CO2-effects:
-          - column \ref BIO_INDEX holds biomass multipliers
-          - column \ref WUE_INDEX holds water-use-efficiency multipliers
-          - rows represent years */
-        co2_multipliers[2][MAX_NYEAR];
-
-} VegType;
+} VegTypeIn;
 
 typedef struct {
     // biomass [g/m2] per vegetation type as observed in total vegetation
@@ -640,13 +706,14 @@ typedef struct {
     double biomass_total, biolive_total, litter_total, LAI;
 } SW_VEGPROD_OUTPUTS;
 
+typedef struct {
+    VegTypeSim veg[NVEGTYPES];
+} SW_VEGPROD_SIM;
+
 /** Data type to describe the surface cover of a SOILWAT2 simulation run */
 typedef struct {
-    /** Data for each vegetation type */
-    VegType veg[NVEGTYPES];
-    /** Bare-ground cover of plot that is not occupied by vegetation;
-        user input from file `Input/veg.in` */
-    CoverType bare_cov;
+    VegTypeIn veg[NVEGTYPES];
+    CoverTypeIn bare_cov;
 
     /** Calendar year corresponding to vegetation inputs */
     TimeInt vegYear;
@@ -671,13 +738,16 @@ typedef struct {
         // decreasingly sorted critical SWP values
         rank_SWPcrits[NVEGTYPES],
         veg_method;
+} SW_VEGPROD_INPUTS;
 
-    SW_VEGPROD_OUTPUTS
-    /** output accumulator: summed values for each output time period */
-    *p_accu[SW_OUTNPERIODS],
-        /** output aggregator: mean or sum for each output time periods */
-        *p_oagg[SW_OUTNPERIODS];
-} SW_VEGPROD;
+typedef struct {
+    /** Data for each vegetation type */
+    VegTypeRunIn veg[NVEGTYPES];
+
+    /** Bare-ground cover of plot that is not occupied by vegetation;
+        user input from file `Input/veg.in` */
+    CoverTypeRunIn bare_cov;
+} SW_VEGPROD_RUN_INPUTS;
 
 /* =================================================== */
 /*                     Time struct                     */
@@ -704,17 +774,22 @@ typedef struct {
         timeMin, /**< Minimum time [seconds] of a simulation run */
         timeMax; /**< Maximum time [seconds] of a simulation run */
 
-    unsigned long
-        nTimedRuns,   /**< Number of simulation runs with timing information */
-        nUntimedRuns; /**< Number of simulation runs for which timing failed */
+    size_t nTimedRuns, /**< Number of simulation runs with timing information */
+        nUntimedRuns;  /**< Number of simulation runs for which timing failed */
+
+#if defined(SWNETCDF)
+    double totIOCompTime, /**< Sum of I/O and computation runtimes */
+        totIOTime; /**< Sum of only the runtime of doing I/O operations */
+#endif
 } SW_WALLTIME;
 
 /* =================================================== */
 /*                   Weather structs                   */
 /* --------------------------------------------------- */
 
-/** Weather values of the current simulation day */
 typedef struct {
+    /** Weather values of the current simulation day */
+
     /** Daily near-surface average air temperature [C] */
     double temp_avg;
     /** Daily near-surface maximum air temperature [C] */
@@ -733,12 +808,17 @@ typedef struct {
     double relHumidity;
     /** Daily downward surface shortwave radiation:
         global horizontal irradiation [MJ / m2] or flux density [W / m2],
-        see #SW_WEATHER.desc_rsds
+        see #SW_WEATHER_INPUTS.desc_rsds
     */
     double shortWaveRad;
     /** Daily mean near-surface actual vapor pressure [kPa] */
     double actualVaporPressure;
-} SW_WEATHER_NOW;
+
+    /** Weather values used throughout the simulation */
+    double snowRunoff, surfaceRunoff, surfaceRunon, soil_inf, surfaceAvg;
+    double snow, snowmelt, snowloss, surfaceMax, surfaceMin;
+    double temp_snow; // Snow temperature
+} SW_WEATHER_SIM;
 
 /** Daily weather values for one calendar year */
 typedef struct {
@@ -758,7 +838,7 @@ typedef struct {
     double r_humidity_daily[MAX_DAYS];
     /** Daily downward surface shortwave radiation:
         global horizontal irradiation [MJ / m2] or flux density [W / m2],
-        see #SW_WEATHER.desc_rsds
+        see #SW_WEATHER_INPUTS.desc_rsds
     */
     double shortWaveRad[MAX_DAYS];
     /** Daily mean near-surface actual vapor pressure [kPa] */
@@ -880,7 +960,6 @@ typedef struct {
 } SW_CLIMATE_AVERAGES;
 
 typedef struct {
-
     Bool use_snow, use_weathergenerator_only;
     // swTRUE: use weather generator and ignore weather inputs
 
@@ -890,18 +969,16 @@ typedef struct {
     // 1 : LOCF (temp) + 0 (ppt)
     // 2 : weather generator (previously, `use_weathergenerator`)
 
-    int rng_seed; // initial state for `mark
-
     double pct_snowdrift, pct_snowRunoff;
     double scale_precip[MAX_MONTHS], scale_temp_max[MAX_MONTHS],
         scale_temp_min[MAX_MONTHS], scale_skyCover[MAX_MONTHS],
         scale_wind[MAX_MONTHS], scale_rH[MAX_MONTHS],
         scale_actVapPress[MAX_MONTHS], scale_shortWaveRad[MAX_MONTHS];
+
     char name_prefix[MAX_FILENAMESIZE - 5]; // subtract 4-digit 'year' file type
                                             // extension
-    double snowRunoff, surfaceRunoff, surfaceRunon, soil_inf, surfaceAvg;
-    double snow, snowmelt, snowloss, surfaceMax, surfaceMin;
-    double temp_snow; // Snow temperature
+
+    int rng_seed; // initial state for `mark`
 
     /** Array of options to fix daily weather inputs, see #FixWeatherType */
     Bool fixWeatherData[NFIXWEATHER];
@@ -915,27 +992,11 @@ typedef struct {
         desc_rsds; /**< Description of units and definition of daily inputs of
                       observed shortwave radiation, see `solar_radiation()` */
 
-    /* This section is required for computing the output quantities.  */
-    SW_WEATHER_OUTPUTS
-    *p_accu[SW_OUTNPERIODS], // output accumulator: summed values for each time
-                             // period
-        *p_oagg[SW_OUTNPERIODS]; // output aggregator: mean or sum for each time
-                                 // periods
-
-
-    /* Daily weather record */
-    SW_WEATHER_HIST
-    *allHist; /**< Daily weather values; array of length `n_years` holding
-                 instances of the struct #SW_WEATHER_HIST where the first
-                 represents values for calendar year `startYear` */
     unsigned int n_years;   /**< Length of `allHist`, i.e., number of years of
                                daily weather */
     unsigned int startYear; /**< Calendar year corresponding to first year of
                                `allHist` */
-
-    SW_WEATHER_NOW now; /**< Weather values of the current simulation day */
-
-} SW_WEATHER;
+} SW_WEATHER_INPUTS;
 
 /* =================================================== */
 /*                   Soilwat structs                   */
@@ -976,6 +1037,13 @@ typedef struct {
                                        // estimation of each layer
         maxLyrTemperature[MAX_LAYERS]; // Holds the maximum temperature
                                        // estimation of each layer
+
+    /* Derived output metrics */
+    double cwd;
+    double ddd5C30bar000to100cm;
+    double wdd5C15bar000to100cm;
+    double swa30bar000to100cm;
+    double swa39bar000to100cm;
 } SW_SOILWAT_OUTPUTS;
 
 #ifdef SWDEBUG
@@ -1020,16 +1088,12 @@ typedef struct {
     char *wbErrorNames[N_WBCHECKS];
     Bool is_wbError_init;
 #endif
+} SW_SOILWAT_SIM;
 
-    SW_SOILWAT_OUTPUTS
-    *p_accu[SW_OUTNPERIODS], // output accumulator: summed values for each time
-                             // period
-        *p_oagg[SW_OUTNPERIODS]; // output aggregator: mean or sum for each time
-                                 // periods
+typedef struct {
     Bool hist_use;
     SW_SOILWAT_HIST hist;
-
-} SW_SOILWAT;
+} SW_SOILWAT_INPUTS;
 
 typedef struct {
     /** File to which warnings and error messages are written.
@@ -1039,14 +1103,18 @@ typedef struct {
     if it's NULL or not NULL (where NULL represents silent mode). */
     FILE *logfp;
 
+#if defined(SWMPI)
+    FILE **logfps; /**< Store file pointers to all I/O process ranks */
+    int numFiles;
+#endif
+
     char errorMsg[MAX_LOG_SIZE], // Holds the message for a fatal error
         warningMsgs[MAX_MSGS][MAX_LOG_SIZE]; // Holds up to MAX_MSGS warning
                                              // messages to report
 
-    int numWarnings; // Number of total warnings thrown
-    unsigned long
-        numDomainWarnings, /**< Number of suids with at least one warning */
-        numDomainErrors;   /**< Number of suids with an error */
+    int numWarnings;          // Number of total warnings thrown
+    size_t numDomainWarnings, /**< Number of suids with at least one warning */
+        numDomainErrors;      /**< Number of suids with an error */
 
     Bool stopRun; // Specifies if an error has occurred and
                   // the program needs to stop early (backtrack)
@@ -1066,7 +1134,7 @@ typedef struct {
 #if defined(SWNETCDF)
     char **ncInFiles[SW_NINKEYSNC]; /**< Names of all the input netCDF files;
                                            dynamically allocated 2-d array
-                                           `[varNum][fileNum]` */
+                                           `[inKey][var]` */
 
     char ***ncWeatherInFiles; /**< Generated weather file names to read input
                                from; dynamically allocated for every weather
@@ -1131,6 +1199,10 @@ typedef struct {
     /* NC information that will stay constant through program run
        domain information - domain and progress file IDs */
     int ncDomFileIDs[SW_NVARDOM];
+
+#if defined(SWMPI)
+    int **openInFileIDs[SW_NINKEYSNC];
+#endif
 #endif
 } SW_PATH_INPUTS;
 
@@ -1155,14 +1227,13 @@ typedef struct {
     /** Across-year mean daily snow density [kg m-3],
         interpolated from monthly values */
     double snow_density_daily[MAX_DAYS + 1];
-} SW_SKY;
+} SW_SKY_INPUTS;
 
 /* =================================================== */
 /*                  VegEstab structs                   */
 /* --------------------------------------------------- */
 
 typedef struct {
-
     /* see COMMENT-1 below for more information on these vars */
 
     /* THESE VARIABLES CAN CHANGE VALUE IN THE MODEL */
@@ -1173,6 +1244,10 @@ typedef struct {
         wetdays_for_estab;
     Bool germd,   /* has this plant germinated yet?  */
         no_estab; /* if swTRUE, can't attempt estab for remainder of year */
+} SW_VEGESTAB_INFO_SIM;
+
+typedef struct {
+    /* see COMMENT-1 below for more information on these vars */
 
     /* THESE VARIABLES DO NOT CHANGE DURING THE NORMAL MODEL RUN */
     char sppFileName[MAX_FILENAMESIZE]; /* Store the file Name and Path, Mostly
@@ -1210,8 +1285,7 @@ typedef struct {
         max_temp_germ,  /* max temp for germ in degC */
         min_temp_estab, /* min avg daily temp req't for establishment */
         max_temp_estab; /* max temp for estab in degC */
-
-} SW_VEGESTAB_INFO;
+} SW_VEGESTAB_INFO_INPUTS;
 
 typedef struct {
     TimeInt
@@ -1223,14 +1297,15 @@ typedef struct {
 typedef struct {
     Bool use;   /* if swTRUE use establishment parms and chkestab() */
     IntU count; /* number of species to check */
-    SW_VEGESTAB_INFO **parms;    /* dynamic array of parms for each species */
-    SW_VEGESTAB_OUTPUTS          /* only yearly element will be used */
-        *p_accu[SW_OUTNPERIODS], // output accumulator: summed values for each
-                                 // time period
-        *p_oagg[SW_OUTNPERIODS]; // output aggregator: mean or sum for each time
-                                 // periods
 
-} SW_VEGESTAB;
+    SW_VEGESTAB_INFO_INPUTS
+    parms[MAX_NSPECIES]; /* array of input parms for each species */
+} SW_VEGESTAB_INPUTS;
+
+typedef struct {
+    SW_VEGESTAB_INFO_SIM
+    parms[MAX_NSPECIES]; /* array of changing parms for each species */
+} SW_VEGESTAB_SIM;
 
 /* =================================================== */
 /*                   Markov struct                     */
@@ -1255,7 +1330,7 @@ typedef struct {
     int ppt_events;             /* number of ppt events generated this year */
     sw_random_t markov_rng;     // used by STEPWAT2
 
-} SW_MARKOV;
+} SW_MARKOV_INPUTS;
 
 /* =================================================== */
 /*                 Output struct/enums                 */
@@ -1302,9 +1377,12 @@ typedef enum {
     /* vegetation quantities */
     eSW_AllVeg,
     eSW_Estab,
-    // vegetation other */
+    /* vegetation other */
     eSW_CO2Effects,
     eSW_Biomass,
+    /* Derived output metrics */
+    eSW_DerivedSum,
+    eSW_DerivedAvg,
     eSW_LastKey /* make sure this is the last one */
 } OutKey;
 
@@ -1378,6 +1456,9 @@ typedef struct {
     /* NC information that will stay constant through program run
        domain information - domain and progress variables */
     int ncDomVarIDs[SW_NVARDOM];
+
+    /* Flags specifying each domain's type */
+    Bool siteDoms[SW_NINKEYSNC];
 
     /** Indicates which variables are provided by netCDF inputs
 
@@ -1559,6 +1640,58 @@ typedef enum {
 } InKeys;
 
 /* =================================================== */
+/*                  MPI Functionality                  */
+/* --------------------------------------------------- */
+
+typedef struct {
+    int sourceRank; /**< Rank of the process that sent the request */
+    Bool runStatus[N_SUID_ASSIGN]; /**< A list of size N_SUID_ASSIGN
+                         specifying the success of simulation runs */
+    int requestType;               /**< Type of request a compute process is
+                                        giving to an I/O process */
+} SW_MPI_REQUEST;
+
+typedef struct {
+    int procJob;    /**< The assigned job of a process;
+                         possibilities are: job assigner, compute, and I/O */
+    int ioRank;     /**< Rank of the compute node's assigned I/O process;
+                         only used if process is compute */
+    int nCompProcs; /**< Number of compute processes assigned to an I/O process;
+                         only used if process is I/O */
+    size_t
+        nSuids; /**< Number of suids that will be controlled by I/O processes */
+    Bool useTSuids; /**< Flag specifying if we will be using a list of
+                         translated domain SUIDs */
+
+    int ranks[PROCS_PER_IO]; /**< A list of ranks that the I/O process
+                                  controls */
+    size_t **domSuids; /**< A list of domain SUIDs that will be used by I/O
+                            processes for writing and reading information */
+    size_t **domTSuids[SW_NINKEYSNC]; /**< A list of translated domain SUIDs for
+                              each input key if index files are used */
+
+    int nTotCompProcs; /**< Number of compute processes in action;
+                              root only */
+    int nTotIOProcs;   /**< Number of I/O processes in action;
+                            root only */
+
+#if defined(SWMPI)
+    MPI_Comm groupComm;    /**< New group communicator; can either be for
+                                I/O or compute;
+                                Note: creating this new communicator
+                                      created a new rank labelling system
+                                      e.g., rank 2 in MPI_COMM_WORLD
+                                            could be 0, 1, etc. */
+    MPI_Comm rootCompComm; /**< Root process' communicator for the opposite
+                                of its original job to communicate data
+                                to all processes */
+
+    MPI_Comm ioCompComm; /**< New group communicator between I/O processes
+                              and their assigned compute processes */
+#endif
+} SW_MPI_DESIGNATE;
+
+/* =================================================== */
 /*                    Domain structs                   */
 /* --------------------------------------------------- */
 
@@ -1569,7 +1702,7 @@ typedef struct {
     /** Type of domain: 'xy' (grid), 's' (sites) (3 = 2 characters + '\0') */
     char DomainType[3];
 
-    unsigned long // to clarify, "long" = "long int", not double
+    size_t      // to clarify, "long" = "long int", not double
         nDimX,  /**< Number of grid cells along x dimension (used if domainType
                    is 'xy') */
         nDimY,  /**< Number of grid cells along y dimension (used if domainType
@@ -1624,6 +1757,10 @@ typedef struct {
     double spatialTol; /**< Tolerence when comparing domain coordinates
                              between nc input files and the nc domain file */
 
+    int maxSimErrors; /**< Maximum number of simulation errors before
+                           the program throws a fatal error (active withMPI
+                           only) */
+
     // Information on input files
     SW_PATH_INPUTS SW_PathInputs;
 
@@ -1635,6 +1772,14 @@ typedef struct {
 
     // Information that is constant through simulation runs
     SW_OUT_DOM OutDom;
+
+    // Information about a process designation (MPI only)
+    SW_MPI_DESIGNATE SW_Designation;
+
+#if defined(SWMPI)
+    // Custom MPI data types used for sending information
+    MPI_Datatype datatypes[SW_MPI_NTYPES];
+#endif
 } SW_DOMAIN;
 
 /* =================================================== */
@@ -1694,21 +1839,67 @@ typedef struct {
 #endif
 } SW_OUT_RUN;
 
-struct SW_RUN {
-    SW_VEGPROD VegProd;
-    SW_WEATHER Weather;
-    SW_SOILWAT SoilWat;
-    SW_MODEL Model;
-    SW_SITE Site;
-    SW_VEGESTAB VegEstab;
-    SW_SKY Sky;
-    SW_CARBON Carbon;
-    ST_RGR_VALUES StRegValues;
-    SW_PATH_OUTPUTS SW_PathOutputs;
-    SW_MARKOV Markov;
-    SW_OUT_RUN OutRun;
+typedef struct {
+    /*
+        This struct holds input values that can be read in/different
+        between simulation runs;
+        Only netCDF inputs have the ability to change throughout
+        the domain, otherwise these values will remain the same;
+        The variables much match those shown in
+        `SW2_netCDF_input_variables.tsv`
+    */
 
-    SW_ATMD AtmDemand;
+    SW_SKY_INPUTS SkyRunIn;
+    SW_MODEL_RUN_INPUTS ModelRunIn;
+    SW_SOIL_RUN_INPUTS SoilRunIn;
+    SW_VEGPROD_RUN_INPUTS VegProdRunIn;
+    SW_SITE_RUN_INPUTS SiteRunIn;
+
+    /* Daily weather record */
+    SW_WEATHER_HIST
+    *weathRunAllHist; /**< Daily weather values; array of length `n_years`
+                    holding instances of the struct #SW_WEATHER_HIST where the
+                    first represents values for calendar year `startYear` */
+} SW_RUN_INPUTS;
+
+struct SW_RUN {
+
+    /* Input information */
+    SW_WEATHER_INPUTS WeatherIn;
+    SW_CARBON_INPUTS CarbonIn;
+    SW_MARKOV_INPUTS MarkovIn;
+    SW_VEGPROD_INPUTS VegProdIn;
+    SW_MODEL_INPUTS ModelIn;
+    SW_VEGESTAB_INPUTS VegEstabIn;
+    SW_SOILWAT_INPUTS SoilWatIn;
+    SW_SITE_INPUTS SiteIn;
+    SW_RUN_INPUTS RunIn;
+
+    /* Values used/modified during simulation that's not strictly inputs */
+    SW_WEATHER_SIM WeatherSim;
+    SW_ST_SIM StRegSimVals;
+    SW_ATMD_SIM AtmDemSim;
+    SW_MODEL_SIM ModelSim;
+    SW_VEGESTAB_SIM VegEstabSim;
+    SW_VEGPROD_SIM VegProdSim;
+    SW_SOILWAT_SIM SoilWatSim;
+    SW_SITE_SIM SiteSim;
+
+    /* Output information */
+    SW_OUT_RUN OutRun;
+    SW_PATH_OUTPUTS SW_PathOutputs;
+
+    /* This section contains values for computing the output quantities
+       for all types of outputs.
+       *_accu = output accumulator: summed values for each time period
+       *_oagg = output aggregator: mean or sum for each time periods */
+    SW_WEATHER_OUTPUTS weath_p_accu[SW_OUTNPERIODS],
+        weath_p_oagg[SW_OUTNPERIODS];
+    SW_VEGPROD_OUTPUTS vp_p_accu[SW_OUTNPERIODS], vp_p_oagg[SW_OUTNPERIODS];
+    SW_SOILWAT_OUTPUTS sw_p_accu[SW_OUTNPERIODS], sw_p_oagg[SW_OUTNPERIODS];
+
+    /* only yearly element will be used */
+    SW_VEGESTAB_OUTPUTS ves_p_accu[SW_OUTNPERIODS], ves_p_oagg[SW_OUTNPERIODS];
 };
 
 /* =================================================== */

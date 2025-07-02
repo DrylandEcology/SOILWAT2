@@ -38,7 +38,7 @@
 #include "include/SW_Sky.h"         // for SW_SKY_new_year, SW_SKY_read
 #include "include/filefuncs.h"      // for CloseFile, GetALine, LogError
 #include "include/generic.h"        // for Bool, LOGERROR, swTRUE
-#include "include/SW_datastructs.h" // for LOG_INFO, SW_MODEL, SW_SKY
+#include "include/SW_datastructs.h" // for LOG_INFO, SW_MODEL, SW_SKY_INPUTS
 #include "include/SW_Defines.h"     // for MAX_FILENAMESIZE, MAX_MONTHS
 #include "include/SW_Files.h"       // for eSky
 #include "include/Times.h"          // for isleapyear, interpolate_monthlyV...
@@ -52,11 +52,13 @@
 @brief Reads in file for sky.
 
 @param[in] txtInFiles Array of program in/output files
-@param[out] SW_Sky Struct of type SW_SKY which describes sky conditions
+@param[out] SW_SkyIn Struct of type SW_SKY_INPUTS which describes sky conditions
     over the simulated site
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_SKY_read(char *txtInFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
+void SW_SKY_read(
+    char *txtInFiles[], SW_SKY_INPUTS *SW_SkyIn, LOG_INFO *LogInfo
+) {
     /* =================================================== */
     /* 6-Oct-03 (cwb) - all this time I had lines 1 & 3
      *                  switched!
@@ -122,27 +124,27 @@ void SW_SKY_read(char *txtInFiles[], SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
         switch (lineno) {
         case 0:
             for (k = 0; k < MAX_MONTHS; k++) {
-                SW_Sky->cloudcov[k] = tmp[k];
+                SW_SkyIn->cloudcov[k] = tmp[k];
             }
             break;
         case 1:
             for (k = 0; k < MAX_MONTHS; k++) {
-                SW_Sky->windspeed[k] = tmp[k];
+                SW_SkyIn->windspeed[k] = tmp[k];
             }
             break;
         case 2:
             for (k = 0; k < MAX_MONTHS; k++) {
-                SW_Sky->r_humidity[k] = tmp[k];
+                SW_SkyIn->r_humidity[k] = tmp[k];
             }
             break;
         case 3:
             for (k = 0; k < MAX_MONTHS; k++) {
-                SW_Sky->snow_density[k] = tmp[k];
+                SW_SkyIn->snow_density[k] = tmp[k];
             }
             break;
         case 4:
             for (k = 0; k < MAX_MONTHS; k++) {
-                SW_Sky->n_rain_per_day[k] = tmp[k];
+                SW_SkyIn->n_rain_per_day[k] = tmp[k];
             }
             break;
 
@@ -169,8 +171,9 @@ closeFile: { CloseFile(&f, LogInfo); }
 @brief Interpolate monthly input values to daily records
 (depends on "current" year)
 
-@param[in] SW_Model Struct of type SW_MODEL holding basic time information
-    about the simulation
+@param[in] SW_ModelSim Struct of type SW_MODEL_SIM holding basic intermediate
+time information about the simulation run
+@param[in] startYr Start year of the simulation
 @param[in] snow_density[] Snow density (kg/m3)
 @param[out] snow_density_daily[] Interpolated daily snow density (kg/m3)
 
@@ -178,24 +181,25 @@ Note: time must be set with SW_MDL_new_year() or Time_new_year()
 prior to this function.
 */
 void SW_SKY_new_year(
-    SW_MODEL *SW_Model,
+    SW_MODEL_SIM *SW_ModelSim,
+    TimeInt startYr,
     double snow_density[MAX_MONTHS],
     double snow_density_daily[MAX_MONTHS]
 ) {
 
     Bool interpAsBase1 = swTRUE;
-    TimeInt year = SW_Model->year;
+    TimeInt year = SW_ModelSim->year;
 
     /* We only need to re-calculate values if this is first year or
        if previous year was different from current year in leap/noleap status
     */
 
-    if (year == SW_Model->startyr || isleapyear(year) != isleapyear(year - 1)) {
+    if (year == startYr || isleapyear(year) != isleapyear(year - 1)) {
         interpolate_monthlyValues(
             snow_density,
             interpAsBase1,
-            SW_Model->cum_monthdays,
-            SW_Model->days_in_month,
+            SW_ModelSim->cum_monthdays,
+            SW_ModelSim->days_in_month,
             snow_density_daily
         );
     }
@@ -207,31 +211,31 @@ void SW_SKY_new_year(
 Note: This function does not check r_humidity, cloudcov, and windspeed;
 these variables are checked by checkAllWeather() at a daily time step.
 
-@param[in] SW_Sky Struct of type SW_SKY which describes sky conditions
+@param[in] SkyRunIn Struct of type SW_SKY_INPUTS which describes sky conditions
     of the simulated site
 @param[out] LogInfo Holds information on warnings and errors
 */
-void checkSky(SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
+void checkSky(SW_SKY_INPUTS *SkyRunIn, LOG_INFO *LogInfo) {
     unsigned int mon;
 
     for (mon = 0; mon < MAX_MONTHS; mon++) {
-        if (SW_Sky->snow_density[mon] <= 0) {
+        if (SkyRunIn->snow_density[mon] <= 0) {
             LogError(
                 LogInfo,
                 LOGERROR,
                 "snowdensity (%.4f) is zero or negative in month %d.",
-                SW_Sky->snow_density[mon],
+                SkyRunIn->snow_density[mon],
                 mon + 1
             );
             return;
         }
 
-        if (SW_Sky->n_rain_per_day[mon] <= 0) {
+        if (SkyRunIn->n_rain_per_day[mon] <= 0) {
             LogError(
                 LogInfo,
                 LOGERROR,
                 "n_rain_per_day (%.4f) is zero or negative in month %d.",
-                SW_Sky->n_rain_per_day[mon],
+                SkyRunIn->n_rain_per_day[mon],
                 mon + 1
             );
             return;
@@ -239,6 +243,6 @@ void checkSky(SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
     }
 }
 
-void SW_SKY_init_run(SW_SKY *SW_Sky, LOG_INFO *LogInfo) {
-    checkSky(SW_Sky, LogInfo);
+void SW_SKY_init_run(SW_SKY_INPUTS *SkyRunIn, LOG_INFO *LogInfo) {
+    checkSky(SkyRunIn, LogInfo);
 }

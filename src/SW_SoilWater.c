@@ -97,32 +97,34 @@
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
-static void clear_hist(
-    double SoilWat_hist_swc[][MAX_LAYERS],
-    double SoilWat_hist_std_err[][MAX_LAYERS]
-) {
-    TimeInt d;
-    LyrIndex z;
-    for (d = 0; d < MAX_DAYS; d++) {
-        for (z = 0; z < MAX_LAYERS; z++) {
-            SoilWat_hist_swc[d][z] = SW_MISSING;
-            SoilWat_hist_std_err[d][z] = SW_MISSING;
-        }
-    }
-}
+// static void clear_hist(
+//     double SoilWat_hist_swc[][MAX_LAYERS],
+//     double SoilWat_hist_std_err[][MAX_LAYERS]
+// ) {
+//     TimeInt d;
+//     LyrIndex z;
+//     for (d = 0; d < MAX_DAYS; d++) {
+//         for (z = 0; z < MAX_LAYERS; z++) {
+//             SoilWat_hist_swc[d][z] = SW_MISSING;
+//             SoilWat_hist_std_err[d][z] = SW_MISSING;
+//         }
+//     }
+// }
 
-static void reset_swc(SW_SOILWAT *SW_SoilWat, SW_SITE *SW_Site) {
+static void reset_swc(
+    SW_SOILWAT_SIM *SW_SoilWatSim, SW_SITE_SIM *SW_SiteSim, LyrIndex n_layers
+) {
     LyrIndex lyr;
 
     /* reset swc */
-    ForEachSoilLayer(lyr, SW_Site->n_layers) {
-        SW_SoilWat->swcBulk[Today][lyr] = SW_Site->swcBulk_init[lyr];
-        SW_SoilWat->swcBulk[Yesterday][lyr] = SW_Site->swcBulk_init[lyr];
-        SW_SoilWat->drain[lyr] = 0.; // deepest percolation is deep drainage
+    ForEachSoilLayer(lyr, n_layers) {
+        SW_SoilWatSim->swcBulk[Today][lyr] = SW_SiteSim->swcBulk_init[lyr];
+        SW_SoilWatSim->swcBulk[Yesterday][lyr] = SW_SiteSim->swcBulk_init[lyr];
+        SW_SoilWatSim->drain[lyr] = 0.; // deepest percolation is deep drainage
     }
 
     /* reset the snowpack */
-    SW_SoilWat->snowpack[Today] = SW_SoilWat->snowpack[Yesterday] = 0.;
+    SW_SoilWatSim->snowpack[Today] = SW_SoilWatSim->snowpack[Yesterday] = 0.;
 }
 
 /**
@@ -440,80 +442,80 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
 
     static double surfaceWater_yesterday;
     static Bool debug = swFALSE;
-    LyrIndex n_layers = sw->Site.n_layers;
+    LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
 
 
     // re-init static variable on first day of each simulation run (if no
     // spinup) or on first day of spinup
-    if (!sw->SoilWat.is_wbError_init) {
+    if (!sw->SoilWatSim.is_wbError_init) {
         surfaceWater_yesterday = 0.;
     }
 
     // Sum up variables
     ForEachSoilLayer(i, n_layers) {
-        percolationIn[i + 1] = sw->SoilWat.drain[i];
-        percolationOut[i] = sw->SoilWat.drain[i];
+        percolationIn[i + 1] = sw->SoilWatSim.drain[i];
+        percolationOut[i] = sw->SoilWatSim.drain[i];
 
-        delta_swcj[i] =
-            sw->SoilWat.swcBulk[Today][i] - sw->SoilWat.swcBulk[Yesterday][i];
+        delta_swcj[i] = sw->SoilWatSim.swcBulk[Today][i] -
+                        sw->SoilWatSim.swcBulk[Yesterday][i];
         delta_swc_total += delta_swcj[i];
 
         Ttotalj[i] = hydraulicRedistribution[i] = 0.; // init
 
         ForEachVegType(k) {
-            Ttotal += sw->SoilWat.transpiration[k][i];
-            Ttotalj[i] += sw->SoilWat.transpiration[k][i];
-            hydraulicRedistribution[i] += sw->SoilWat.hydred[k][i];
+            Ttotal += sw->SoilWatSim.transpiration[k][i];
+            Ttotalj[i] += sw->SoilWatSim.transpiration[k][i];
+            hydraulicRedistribution[i] += sw->SoilWatSim.hydred[k][i];
         }
     }
 
-    ForEachEvapLayer(i, sw->Site.n_evap_lyrs) {
-        Esoil += sw->SoilWat.evap_baresoil[i];
+    ForEachEvapLayer(i, sw->SiteSim.n_evap_lyrs) {
+        Esoil += sw->SoilWatSim.evap_baresoil[i];
     }
 
     ForEachVegType(k) {
-        Eveg += sw->SoilWat.evap_veg[k];
-        int_veg_total += sw->SoilWat.int_veg[k];
+        Eveg += sw->SoilWatSim.evap_veg[k];
+        int_veg_total += sw->SoilWatSim.int_veg[k];
     }
 
     // Get evaporation values
-    Elitter = sw->SoilWat.litter_evap;
-    Eponded = sw->SoilWat.surfaceWater_evap;
-    Esnow = sw->Weather.snowloss;
+    Elitter = sw->SoilWatSim.litter_evap;
+    Eponded = sw->SoilWatSim.surfaceWater_evap;
+    Esnow = sw->WeatherSim.snowloss;
     Etotalint = Eveg + Elitter;
     Etotalsurf = Etotalint + Eponded;
     Etotal = Etotalsurf + Esoil + Esnow;
 
     // Get other water flux values
-    infiltration = sw->Weather.soil_inf;
-    deepDrainage = sw->SoilWat.drain[sw->Site.deep_lyr];
+    infiltration = sw->WeatherSim.soil_inf;
+    deepDrainage = sw->SoilWatSim.drain[sw->SiteSim.deep_lyr];
 
     percolationIn[0] = infiltration;
-    percolationOut[sw->Site.n_layers] = deepDrainage;
+    percolationOut[sw->RunIn.SiteRunIn.n_layers] = deepDrainage;
 
-    runoff = sw->Weather.snowRunoff + sw->Weather.surfaceRunoff;
-    runon = sw->Weather.surfaceRunon;
-    snowmelt = sw->Weather.snowmelt;
-    rain = sw->Weather.now.rain;
+    runoff = sw->WeatherSim.snowRunoff + sw->WeatherSim.surfaceRunoff;
+    runon = sw->WeatherSim.surfaceRunon;
+    snowmelt = sw->WeatherSim.snowmelt;
+    rain = sw->WeatherSim.rain;
 
     arriving_water = rain + snowmelt + runon;
 
     // Get snow
-    snowfall = sw->Weather.snow;
-    snowpackDepth = sw->SoilWat.snowdepth;
-    snowpackWater = sw->SoilWat.snowpack[Today];
+    snowfall = sw->WeatherSim.snow;
+    snowpackDepth = sw->SoilWatSim.snowdepth;
+    snowpackWater = sw->SoilWatSim.snowpack[Today];
     snowpackRecently =
-        sw->SoilWat.snowpack[Today] + sw->SoilWat.snowpack[Yesterday];
+        sw->SoilWatSim.snowpack[Today] + sw->SoilWatSim.snowpack[Yesterday];
 
     // Get state change values
-    intercepted = sw->SoilWat.litter_int + int_veg_total;
+    intercepted = sw->SoilWatSim.litter_int + int_veg_total;
 
-    delta_surfaceWater = sw->SoilWat.surfaceWater - surfaceWater_yesterday;
-    surfaceWater_yesterday = sw->SoilWat.surfaceWater;
+    delta_surfaceWater = sw->SoilWatSim.surfaceWater - surfaceWater_yesterday;
+    surfaceWater_yesterday = sw->SoilWatSim.surfaceWater;
 
 
     //--- Water balance checks (there are # checks n = N_WBCHECKS)
-    if (!sw->SoilWat.is_wbError_init) {
+    if (!sw->SoilWatSim.is_wbError_init) {
         for (i = 0; i < N_WBCHECKS; i++) {
             debug = (debug || debugi[i]) ? swTRUE : swFALSE;
         }
@@ -521,31 +523,34 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
 
     if (debug) {
         (void) snprintf(
-            flag, sizeof flag, "WB (%d-%d)", sw->Model.year, sw->Model.doy
+            flag, sizeof flag, "WB (%d-%d)", sw->ModelSim.year, sw->ModelSim.doy
         );
     }
 
 
     // AET <= PET
-    if (!sw->SoilWat.is_wbError_init) {
-        sw->SoilWat.wbErrorNames[0] = Str_Dup("AET <= PET", LogInfo);
+    if (!sw->SoilWatSim.is_wbError_init) {
+        sw->SoilWatSim.wbErrorNames[0] = Str_Dup("AET <= PET", LogInfo);
 
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
     }
-    if (!LE(sw->SoilWat.aet, sw->SoilWat.pet)) {
-        sw->SoilWat.wbError[0]++;
+    if (!LE(sw->SoilWatSim.aet, sw->SoilWatSim.pet)) {
+        sw->SoilWatSim.wbError[0]++;
         if (debugi[0]) {
             sw_printf(
-                "%s: aet=%f, pet=%f\n", flag, sw->SoilWat.aet, sw->SoilWat.pet
+                "%s: aet=%f, pet=%f\n",
+                flag,
+                sw->SoilWatSim.aet,
+                sw->SoilWatSim.pet
             );
         }
     }
 
     // AET == E(total) + T(total)
-    if (!sw->SoilWat.is_wbError_init) {
-        sw->SoilWat.wbErrorNames[1] =
+    if (!sw->SoilWatSim.is_wbError_init) {
+        sw->SoilWatSim.wbErrorNames[1] =
             Str_Dup("AET == Etotal + Ttotal", LogInfo);
 
         if (LogInfo->stopRun) {
@@ -553,13 +558,13 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
         }
     }
     rhs = Etotal + Ttotal;
-    if (!EQ_w_tol(sw->SoilWat.aet, rhs, wbtol)) {
-        sw->SoilWat.wbError[1]++;
+    if (!EQ_w_tol(sw->SoilWatSim.aet, rhs, wbtol)) {
+        sw->SoilWatSim.wbError[1]++;
         if (debugi[1]) {
             sw_printf(
                 "%s: AET(%f) == %f == Etotal(%f) + Ttotal(%f)\n",
                 flag,
-                sw->SoilWat.aet,
+                sw->SoilWatSim.aet,
                 rhs,
                 Etotal,
                 Ttotal
@@ -569,8 +574,8 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
 
     // T(total) = sum of T(veg-type i from soil layer j)
     // doesn't make sense here because Ttotal is the sum of Tvegij
-    if (!sw->SoilWat.is_wbError_init) {
-        sw->SoilWat.wbErrorNames[2] = Str_Dup(
+    if (!sw->SoilWatSim.is_wbError_init) {
+        sw->SoilWatSim.wbErrorNames[2] = Str_Dup(
             "T(total) = sum of T(veg-type i from soil layer j)", LogInfo
         );
 
@@ -578,13 +583,13 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
             return; // Exit function prematurely due to error
         }
     }
-    sw->SoilWat.wbError[2] += 0;
+    sw->SoilWatSim.wbError[2] += 0;
 
     // E(total) = E(total bare-soil) + E(ponded water) + E(total
     // litter-intercepted) +
     //            + E(total veg-intercepted) + E(snow sublimation)
-    if (!sw->SoilWat.is_wbError_init) {
-        sw->SoilWat.wbErrorNames[3] = Str_Dup(
+    if (!sw->SoilWatSim.is_wbError_init) {
+        sw->SoilWatSim.wbErrorNames[3] = Str_Dup(
             "Etotal == Esoil + Eponded + Eveg + Elitter + Esnow", LogInfo
         );
         if (LogInfo->stopRun) {
@@ -593,7 +598,7 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
     }
     rhs = Esoil + Eponded + Eveg + Elitter + Esnow;
     if (!EQ_w_tol(Etotal, rhs, wbtol)) {
-        sw->SoilWat.wbError[3]++;
+        sw->SoilWatSim.wbError[3]++;
         if (debugi[3]) {
             sw_printf(
                 "%s: Etotal(%f) == %f == Esoil(%f) + Eponded(%f) + Eveg(%f) + "
@@ -612,8 +617,8 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
 
     // E(total surface) = E(ponded water) + E(total litter-intercepted) +
     //                    + E(total veg-intercepted)
-    if (!sw->SoilWat.is_wbError_init) {
-        sw->SoilWat.wbErrorNames[4] =
+    if (!sw->SoilWatSim.is_wbError_init) {
+        sw->SoilWatSim.wbErrorNames[4] =
             Str_Dup("Esurf == Eponded + Eveg + Elitter", LogInfo);
 
         if (LogInfo->stopRun) {
@@ -622,7 +627,7 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
     }
     rhs = Eponded + Eveg + Elitter;
     if (!EQ_w_tol(Etotalsurf, rhs, wbtol)) {
-        sw->SoilWat.wbError[4]++;
+        sw->SoilWatSim.wbError[4]++;
         if (debugi[4]) {
             sw_printf(
                 "%s: Esurf(%f) == %f == Eponded(%f) + Eveg(%f) + Elitter(%f)\n",
@@ -640,8 +645,8 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
     //--- Water cycling checks
     // infiltration = [rain + snowmelt + runon] - (runoff + intercepted +
     // delta_surfaceWater + Eponded)
-    if (!sw->SoilWat.is_wbError_init) {
-        sw->SoilWat.wbErrorNames[5] = Str_Dup(
+    if (!sw->SoilWatSim.is_wbError_init) {
+        sw->SoilWatSim.wbErrorNames[5] = Str_Dup(
             "inf == rain + snowmelt + runon - (runoff + intercepted + "
             "delta_surfaceWater + Eponded)",
             LogInfo
@@ -653,7 +658,7 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
     rhs =
         arriving_water - (runoff + intercepted + delta_surfaceWater + Eponded);
     if (!EQ_w_tol(infiltration, rhs, wbtol)) {
-        sw->SoilWat.wbError[5]++;
+        sw->SoilWatSim.wbError[5]++;
         if (debugi[5]) {
             sw_printf(
                 "%s: inf(%f) == %f == rain(%f) + snowmelt(%f) + runon(%f) - "
@@ -674,8 +679,8 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
     }
 
     // E(soil) + Ttotal = infiltration - (deepDrainage + delta(swc))
-    if (!sw->SoilWat.is_wbError_init) {
-        sw->SoilWat.wbErrorNames[6] = Str_Dup(
+    if (!sw->SoilWatSim.is_wbError_init) {
+        sw->SoilWatSim.wbErrorNames[6] = Str_Dup(
             "Ttotal + Esoil = inf - (deepDrainage + delta_swc)", LogInfo
         );
 
@@ -686,7 +691,7 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
     lhs = Ttotal + Esoil;
     rhs = infiltration - (deepDrainage + delta_swc_total);
     if (!EQ_w_tol(lhs, rhs, wbtol)) {
-        sw->SoilWat.wbError[6]++;
+        sw->SoilWatSim.wbError[6]++;
         if (debugi[6]) {
             sw_printf(
                 "%s: Ttotal(%f) + Esoil(%f) == %f == %f == inf(%f) - "
@@ -706,8 +711,8 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
     // for every soil layer j: delta(swc) =
     //   = infiltration/percolationIn + hydraulicRedistribution -
     //     (percolationOut/deepDrainage + transpiration + baresoil_evaporation)
-    if (!sw->SoilWat.is_wbError_init) {
-        sw->SoilWat.wbErrorNames[7] = Str_Dup(
+    if (!sw->SoilWatSim.is_wbError_init) {
+        sw->SoilWatSim.wbErrorNames[7] = Str_Dup(
             "delta_swc[i] == perc_in[i] + hydred[i] - (perc_out[i] + Ttot[i] + "
             "Esoil[i]))",
             LogInfo
@@ -718,10 +723,11 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
         }
     }
     ForEachSoilLayer(i, n_layers) {
-        rhs = percolationIn[i] + hydraulicRedistribution[i] -
-              (percolationOut[i] + Ttotalj[i] + sw->SoilWat.evap_baresoil[i]);
+        rhs =
+            percolationIn[i] + hydraulicRedistribution[i] -
+            (percolationOut[i] + Ttotalj[i] + sw->SoilWatSim.evap_baresoil[i]);
         if (!EQ_w_tol(delta_swcj[i], rhs, wbtol)) {
-            sw->SoilWat.wbError[7]++;
+            sw->SoilWatSim.wbError[7]++;
             if (debugi[7]) {
                 sw_printf(
                     "%s sl=%d: delta_swc(%f) == %f == perc_in(%f) + hydred(%f) "
@@ -734,15 +740,15 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
                     hydraulicRedistribution[i],
                     percolationOut[i],
                     Ttotalj[i],
-                    sw->SoilWat.evap_baresoil[i]
+                    sw->SoilWatSim.evap_baresoil[i]
                 );
             }
         }
     }
 
     // for every soil layer j: swc_min <= swc <= swc_sat
-    if (!sw->SoilWat.is_wbError_init) {
-        sw->SoilWat.wbErrorNames[8] =
+    if (!sw->SoilWatSim.is_wbError_init) {
+        sw->SoilWatSim.wbErrorNames[8] =
             Str_Dup("swc[i] => swc_min[i] && swc[i] <= swc_sat[i]", LogInfo);
 
         if (LogInfo->stopRun) {
@@ -750,25 +756,26 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
         }
     }
     ForEachSoilLayer(i, n_layers) {
-        if (LT(sw->SoilWat.swcBulk[Today][i], sw->Site.swcBulk_min[i]) ||
-            GT(sw->SoilWat.swcBulk[Today][i], sw->Site.swcBulk_saturated[i])) {
-            sw->SoilWat.wbError[8]++;
+        if (LT(sw->SoilWatSim.swcBulk[Today][i], sw->SiteSim.swcBulk_min[i]) ||
+            GT(sw->SoilWatSim.swcBulk[Today][i],
+               sw->SiteSim.swcBulk_saturated[i])) {
+            sw->SoilWatSim.wbError[8]++;
             if (debugi[8]) {
                 sw_printf(
                     "%s sl=%d: swc_min(%f) <= swc(%f) <= swc_sat(%f)\n",
                     flag,
                     i,
-                    sw->Site.swcBulk_min[i],
-                    sw->SoilWat.swcBulk[Today][i],
-                    sw->Site.swcBulk_saturated[i]
+                    sw->SiteSim.swcBulk_min[i],
+                    sw->SoilWatSim.swcBulk[Today][i],
+                    sw->SiteSim.swcBulk_saturated[i]
                 );
             }
         }
     }
 
     // Consistency between snowpack, snowdepth, snowmelt, snowloss
-    if (!sw->SoilWat.is_wbError_init) {
-        sw->SoilWat.wbErrorNames[9] = Str_Dup("Snow consistency", LogInfo);
+    if (!sw->SoilWatSim.is_wbError_init) {
+        sw->SoilWatSim.wbErrorNames[9] = Str_Dup("Snow consistency", LogInfo);
 
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -783,7 +790,7 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
         ZRO(Esnow) || (Esnow > 0 && (snowpackRecently > 0 || snowfall > 0));
 
     if (!snowChecks[0] || !snowChecks[1] || !snowChecks[2]) {
-        sw->SoilWat.wbError[9]++;
+        sw->SoilWatSim.wbError[9]++;
         if (debugi[9]) {
             if (!snowChecks[0]) {
                 sw_printf(
@@ -817,8 +824,8 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
     }
 
     // Setup only once
-    if (!sw->SoilWat.is_wbError_init) {
-        sw->SoilWat.is_wbError_init = swTRUE;
+    if (!sw->SoilWatSim.is_wbError_init) {
+        sw->SoilWatSim.is_wbError_init = swTRUE;
     }
 }
 #endif
@@ -826,107 +833,81 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
 /**
 @brief Initialize all possible pointers in SW_SOILWAT to NULL
 
-@param[in,out] SW_SoilWat Struct of type SW_SOILWAT containing
-    soil water related values
+@param[in,out] SW_SoilWatIn Struct of type SW_SOILWAT containing
+    soil water input values
+@param[in,out] SW_SoilWatSim Struct of type SW_SOILWAT containing
+    soil water simulation values
 */
-void SW_SWC_init_ptrs(SW_SOILWAT *SW_SoilWat) {
-    OutPeriod pd;
-
-    // Initialize output structures:
-    ForEachOutPeriod(pd) {
-        SW_SoilWat->p_accu[pd] = NULL;
-        SW_SoilWat->p_oagg[pd] = NULL;
-    }
-
-    SW_SoilWat->hist.file_prefix = NULL;
+void SW_SWC_init_ptrs(
+    SW_SOILWAT_INPUTS *SW_SoilWatIn, SW_SOILWAT_SIM *SW_SoilWatSim
+) {
+    SW_SoilWatIn->hist.file_prefix = NULL;
 
 #ifdef SWDEBUG
     IntU i;
 
     for (i = 0; i < N_WBCHECKS; i++) {
-        SW_SoilWat->wbErrorNames[i] = NULL;
+        SW_SoilWatSim->wbErrorNames[i] = NULL;
     }
+#else
+    (void) SW_SoilWatSim;
 #endif
 }
 
 /**
 @brief Constructor for soilWater Content.
 
-@param[in,out] SW_SoilWat Struct of type SW_SOILWAT containing
-    soil water related values
+@param[in,out] SW_SoilWatIn Struct of type SW_SOILWAT_INPUTS containing
+    soil water input values
+@param[in,out] SW_SoilWatSim Struct of type SW_SOILWAT_SIM containing
+    soil water simulation values
+@param[in,out] sw_p_accu A list of output structs of type SW_SOILWAT_OUTPUTS
+    to accumulate output
+@param[in,out] sw_p_oagg A list of output structs of type SW_SOILWAT_OUTPUTS
+    to aggregate output
 */
-void SW_SWC_construct(SW_SOILWAT *SW_SoilWat) {
+void SW_SWC_construct(
+    SW_SOILWAT_INPUTS *SW_SoilWatIn,
+    SW_SOILWAT_SIM *SW_SoilWatSim,
+    SW_SOILWAT_OUTPUTS sw_p_accu[],
+    SW_SOILWAT_OUTPUTS sw_p_oagg[]
+) {
     /* =================================================== */
+    OutPeriod pd;
 
     /* initialize pointer */
-    SW_SoilWat->hist.file_prefix = NULL;
+    SW_SoilWatIn->hist.file_prefix = NULL;
 
 
     // Clear the module structure:
-    memset(SW_SoilWat, 0, sizeof(SW_SOILWAT));
-}
+    memset(SW_SoilWatIn, 0, sizeof(SW_SOILWAT_INPUTS));
+    memset(SW_SoilWatSim, 0, sizeof(SW_SOILWAT_SIM));
 
-/**
-@brief Allocate dynamic memory for output pointers in SW_SOILWAT struct
-
-@param[out] SW_SoilWat SW_SoilWat Struct of type SW_SOILWAT containing
-    soil water related values
-@param[out] LogInfo Holds information on warnings and errors
-*/
-void SW_SWC_alloc_outptrs(SW_SOILWAT *SW_SoilWat, LOG_INFO *LogInfo) {
-    OutPeriod pd;
-
-    // Allocate output structures:
     ForEachOutPeriod(pd) {
-        SW_SoilWat->p_accu[pd] = (SW_SOILWAT_OUTPUTS *) Mem_Calloc(
-            1, sizeof(SW_SOILWAT_OUTPUTS), "SW_SWC_alloc_outptrs()", LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
-
-        if (pd > eSW_Day) {
-            SW_SoilWat->p_oagg[pd] = (SW_SOILWAT_OUTPUTS *) Mem_Calloc(
-                1, sizeof(SW_SOILWAT_OUTPUTS), "SW_SWC_alloc_outptrs()", LogInfo
-            );
-
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
-        }
+        memset(&sw_p_accu[pd], 0, sizeof(SW_SOILWAT_OUTPUTS));
+        memset(&sw_p_oagg[pd], 0, sizeof(SW_SOILWAT_OUTPUTS));
     }
 }
 
-void SW_SWC_deconstruct(SW_SOILWAT *SW_SoilWat) {
-    OutPeriod pd;
-
-    // De-allocate output structures:
-    ForEachOutPeriod(pd) {
-        if (pd > eSW_Day && !isnull(SW_SoilWat->p_oagg[pd])) {
-            free(SW_SoilWat->p_oagg[pd]);
-            SW_SoilWat->p_oagg[pd] = NULL;
-        }
-
-        if (!isnull(SW_SoilWat->p_accu[pd])) {
-            free(SW_SoilWat->p_accu[pd]);
-            SW_SoilWat->p_accu[pd] = NULL;
-        }
-    }
-
-    if (!isnull(SW_SoilWat->hist.file_prefix)) {
-        free(SW_SoilWat->hist.file_prefix);
-        SW_SoilWat->hist.file_prefix = NULL;
+void SW_SWC_deconstruct(
+    SW_SOILWAT_INPUTS *SW_SoilWatIn, SW_SOILWAT_SIM *SW_SoilWatSim
+) {
+    if (!isnull(SW_SoilWatIn->hist.file_prefix)) {
+        free(SW_SoilWatIn->hist.file_prefix);
+        SW_SoilWatIn->hist.file_prefix = NULL;
     }
 
 #ifdef SWDEBUG
     IntU i;
 
     for (i = 0; i < N_WBCHECKS; i++) {
-        if (!isnull(SW_SoilWat->wbErrorNames[i])) {
-            free(SW_SoilWat->wbErrorNames[i]);
-            SW_SoilWat->wbErrorNames[i] = NULL;
+        if (!isnull(SW_SoilWatSim->wbErrorNames[i])) {
+            free(SW_SoilWatSim->wbErrorNames[i]);
+            SW_SoilWatSim->wbErrorNames[i] = NULL;
         }
     }
+#else
+    (void) SW_SoilWatSim;
 #endif
 }
 
@@ -956,11 +937,11 @@ void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo) {
      first year of simulation"
      */
 
-    if (sw->SoilWat.hist_use &&
-        !missing(sw->SoilWat.hist.swc[sw->Model.doy - 1][1])) {
+    if (sw->SoilWatIn.hist_use &&
+        !missing(sw->SoilWatIn.hist.swc[sw->ModelSim.doy - 1][1])) {
 
-        if (!(sw->Model.doy == sw->Model.startstart &&
-              sw->Model.year == sw->Model.startyr)) {
+        if (!(sw->ModelSim.doy == sw->ModelIn.startstart &&
+              sw->ModelSim.year == sw->ModelIn.startyr)) {
 
 #ifdef SWDEBUG
             if (debug) {
@@ -970,11 +951,11 @@ void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             }
 #endif
             SW_SWC_adjust_swc(
-                sw->SoilWat.swcBulk,
-                sw->Site.swcBulk_min,
-                sw->Model.doy,
-                sw->SoilWat.hist,
-                sw->Site.n_layers,
+                sw->SoilWatSim.swcBulk,
+                sw->SiteSim.swcBulk_min,
+                sw->ModelSim.doy,
+                &sw->SoilWatIn.hist,
+                sw->RunIn.SiteRunIn.n_layers,
                 LogInfo
             );
 
@@ -1016,8 +997,9 @@ void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         sw_printf("\n'SW_SWC_water_flow': determine wet soil layers.\n");
     }
 #endif
-    ForEachSoilLayer(i, sw->Site.n_layers) sw->SoilWat.is_wet[i] =
-        (Bool) (GE(sw->SoilWat.swcBulk[Today][i], sw->Site.swcBulk_wet[i]));
+    ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) sw->SoilWatSim.is_wet[i] =
+        (Bool) (GE(sw->SoilWatSim.swcBulk[Today][i], sw->SiteSim.swcBulk_wet[i])
+        );
 }
 
 /**
@@ -1026,18 +1008,21 @@ void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo) {
 partitioned among vegetation types and propagate the swa_master structure for
 use in get_dSWAbulk(). Must be call after `SW_SWC_water_flow()` is executed.
 
-@param[in,out] SW_SoilWat Struct of type SW_SOILWAT containing
-    soil water related values
+@param[in,out] SW_SoilWatSim Struct of type SW_SOILWAT_SIM containing
+    soil water simulation values
 @param[in] swcBulk_atSWPcrit SWC corresponding to critical SWP for transpiration
-@param[in] SW_VegProd Struct of type SW_VEGPROD describing surface
+@param[in] SW_VegProdIn Struct of type SW_VEGPROD_INPUTS describing surface
     cover conditions in the simulation
+@param[in] veg Array of size NVEGTYPES of type VegTypeRunIn describing
+    all NVEGTYPES vegetation types through simulation-specific inputs
 @param[in] n_layers Number of layers of soil within the simulation run
 */
 /***********************************************************/
 void calculate_repartitioned_soilwater(
-    SW_SOILWAT *SW_SoilWat,
+    SW_SOILWAT_SIM *SW_SoilWatSim,
     double swcBulk_atSWPcrit[][MAX_LAYERS],
-    SW_VEGPROD *SW_VegProd,
+    SW_VEGPROD_INPUTS *SW_VegProdIn,
+    VegTypeRunIn veg[],
     LyrIndex n_layers
 ) {
 
@@ -1050,15 +1035,15 @@ void calculate_repartitioned_soilwater(
     double new_crit_val;
 
     ForEachSoilLayer(i, n_layers) {
-        val = SW_SoilWat->swcBulk[Today][i];
+        val = SW_SoilWatSim->swcBulk[Today][i];
         ForEachVegType(j) {
-            if (SW_VegProd->veg[j].cov.fCover != 0) {
-                SW_SoilWat->swa_master[j][j][i] =
+            if (veg[j].cov.fCover != 0) {
+                SW_SoilWatSim->swa_master[j][j][i] =
                     fmax(0., val - swcBulk_atSWPcrit[j][i]);
             } else {
-                SW_SoilWat->swa_master[j][j][i] = 0.;
+                SW_SoilWatSim->swa_master[j][j][i] = 0.;
             }
-            SW_SoilWat->dSWA_repartitioned_sum[j][i] =
+            SW_SoilWatSim->dSWA_repartitioned_sum[j][i] =
                 0.; // need to reset to 0 each time
         }
 
@@ -1068,25 +1053,25 @@ void calculate_repartitioned_soilwater(
         // go through each veg type
         for (j = 0; j < NVEGTYPES; j++) {
             // get critical value for current veg type
-            curr_crit_val = SW_VegProd->critSoilWater[j];
+            curr_crit_val = SW_VegProdIn->critSoilWater[j];
             // go through each critical value to see which ones need to be set
             // for each veg_type
             for (k = 0; k < NVEGTYPES; k++) {
                 if (k == j) {
                     // dont need to check for its own critical value
                 } else {
-                    new_crit_val = SW_VegProd->critSoilWater[k];
+                    new_crit_val = SW_VegProdIn->critSoilWater[k];
                     if (curr_crit_val < new_crit_val) {
                         // need to store this value since it has access to it
                         // itclp(veg_type, new_crit_value, layer, timeperiod)
-                        SW_SoilWat->swa_master[j][k][i] =
-                            SW_SoilWat->swa_master[k][k][i];
+                        SW_SoilWatSim->swa_master[j][k][i] =
+                            SW_SoilWatSim->swa_master[k][k][i];
                     }
                     if (curr_crit_val > new_crit_val) {
                         // need to set this value to 0 since it does not have
                         // access to it itclp(veg_type, new_criti_value, layer,
                         // timeperiod)
-                        SW_SoilWat->swa_master[j][k][i] = 0.;
+                        SW_SoilWatSim->swa_master[j][k][i] = 0.;
                     }
                     if (curr_crit_val == new_crit_val) {
                         // do nothing, dont want to swap values
@@ -1098,9 +1083,10 @@ void calculate_repartitioned_soilwater(
         // call function to get repartioned swa values
         get_dSWAbulk(
             i,
-            SW_VegProd,
-            SW_SoilWat->swa_master,
-            SW_SoilWat->dSWA_repartitioned_sum
+            SW_VegProdIn,
+            veg,
+            SW_SoilWatSim->swa_master,
+            SW_SoilWatSim->dSWA_repartitioned_sum
         );
     }
 }
@@ -1115,15 +1101,18 @@ values, starting at the deepest and moving up The deepest veg type has access to
 the available soilwater of each veg type above so start at bottom move up.
 
 @param[in] i Integer value for soil layer
-@param[in] SW_VegProd Struct of type SW_VEGPROD describing surface
+@param[in] SW_VegProdIn Struct of type SW_VEGPROD_INPUTS describing surface
     cover conditions in the simulation
+@param[in] veg Array of size NVEGTYPES of type VegType describing
+    all VegTypeRunIn vegetation types through simulation-specific inputs
 @param[out] swa_master Holds information of veg_type, crit_val, and layer
 @param[out] dSWA_repart_sum Repartioned swa values
 */
 /***********************************************************/
 void get_dSWAbulk(
     unsigned int i,
-    SW_VEGPROD *SW_VegProd,
+    SW_VEGPROD_INPUTS *SW_VegProdIn,
+    VegTypeRunIn veg[],
     double swa_master[][NVEGTYPES][MAX_LAYERS],
     double dSWA_repart_sum[][MAX_LAYERS]
 ) {
@@ -1144,7 +1133,8 @@ void get_dSWAbulk(
     double vegFractionSum;
     double newFraction;
     double inner_loop_veg_type; // set to inner loop veg type
-    smallestCritVal = SW_VegProd->critSoilWater[SW_VegProd->rank_SWPcrits[0]];
+    smallestCritVal =
+        SW_VegProdIn->critSoilWater[SW_VegProdIn->rank_SWPcrits[0]];
     double dSWA_bulk[NVEGTYPES * NVEGTYPES][NVEGTYPES * NVEGTYPES][MAX_LAYERS];
     double dSWA_bulk_repartioned[NVEGTYPES * NVEGTYPES][NVEGTYPES * NVEGTYPES]
                                 [MAX_LAYERS];
@@ -1163,29 +1153,31 @@ void get_dSWAbulk(
         // smallest
         dSWA_repart_sum[curr_vegType][i] = 0.;
         // get rank index for start of next loop
-        curr_crit_rank_index = SW_VegProd->rank_SWPcrits[curr_vegType];
+        curr_crit_rank_index = SW_VegProdIn->rank_SWPcrits[curr_vegType];
         // set veg type fraction here
 
-        veg_type_in_use = SW_VegProd->veg[curr_crit_rank_index].cov.fCover;
+        veg_type_in_use = veg[curr_crit_rank_index].cov.fCover;
         for (kv = curr_vegType; kv >= 0; kv--) {
             // get crit value at current index
-            crit_val = SW_VegProd->critSoilWater[SW_VegProd->rank_SWPcrits[kv]];
+            crit_val =
+                SW_VegProdIn->critSoilWater[SW_VegProdIn->rank_SWPcrits[kv]];
             // get index for veg_type. dont want to access
             // SW_SoilWat->swa_master at rank_SWPcrits index
-            kv_veg_type = SW_VegProd->rank_SWPcrits[kv];
+            kv_veg_type = SW_VegProdIn->rank_SWPcrits[kv];
             if (kv != 0) {
                 // get crit value for index lower
                 prev_crit_val =
-                    SW_VegProd
-                        ->critSoilWater[SW_VegProd->rank_SWPcrits[kv - 1]];
+                    SW_VegProdIn
+                        ->critSoilWater[SW_VegProdIn->rank_SWPcrits[kv - 1]];
                 // get veg type that belongs to the corresponding critical value
-                prev_crit_veg_type = SW_VegProd->rank_SWPcrits[kv - 1];
+                prev_crit_veg_type = SW_VegProdIn->rank_SWPcrits[kv - 1];
             } else {
                 // get crit value for index lower
                 prev_crit_val =
-                    SW_VegProd->critSoilWater[SW_VegProd->rank_SWPcrits[kv]];
+                    SW_VegProdIn
+                        ->critSoilWater[SW_VegProdIn->rank_SWPcrits[kv]];
                 // get veg type that belongs to the corresponding critical value
-                prev_crit_veg_type = SW_VegProd->rank_SWPcrits[kv];
+                prev_crit_veg_type = SW_VegProdIn->rank_SWPcrits[kv];
             }
             if (veg_type_in_use == 0) {
                 // [0=tree(-2.0,off), 1=shrub(-3.9,on),
@@ -1255,9 +1247,9 @@ void get_dSWAbulk(
                             // fractions of the veg types who have access
 
                             // set veg type fraction here
-                            inner_loop_veg_type = SW_VegProd->veg[j].cov.fCover;
+                            inner_loop_veg_type = veg[j].cov.fCover;
 
-                            if (SW_VegProd->critSoilWater[j] <= crit_val) {
+                            if (SW_VegProdIn->critSoilWater[j] <= crit_val) {
                                 vegFractionSum += inner_loop_veg_type;
                             }
                         }
@@ -1277,9 +1269,10 @@ void get_dSWAbulk(
         // access to those ex: if forb=-2.0 grass=-3.5 & shrub=-3.9 then need to
         // set grass and shrub to 0 for forb
         for (j = curr_vegType + 1; j < NVEGTYPES; j++) {
-            greater_veg_type = SW_VegProd->rank_SWPcrits[j];
-            if (SW_VegProd->critSoilWater[SW_VegProd->rank_SWPcrits[j - 1]] >
-                SW_VegProd->critSoilWater[SW_VegProd->rank_SWPcrits[j]]) {
+            greater_veg_type = SW_VegProdIn->rank_SWPcrits[j];
+            if (SW_VegProdIn
+                    ->critSoilWater[SW_VegProdIn->rank_SWPcrits[j - 1]] >
+                SW_VegProdIn->critSoilWater[SW_VegProdIn->rank_SWPcrits[j]]) {
                 dSWA_bulk[curr_crit_rank_index][greater_veg_type][i] = 0.;
                 dSWA_bulk_repartioned[curr_crit_rank_index][greater_veg_type]
                                      [i] = 0.;
@@ -1289,7 +1282,7 @@ void get_dSWAbulk(
 
     for (curr_vegType = 0; curr_vegType < NVEGTYPES; curr_vegType++) {
         for (kv = 0; kv < NVEGTYPES; kv++) {
-            if (SW_VegProd->veg[curr_vegType].cov.fCover == 0.) {
+            if (veg[curr_vegType].cov.fCover == 0.) {
                 dSWA_repart_sum[curr_vegType][i] = 0.;
             } else {
                 dSWA_repart_sum[curr_vegType][i] +=
@@ -1316,70 +1309,84 @@ void get_dSWAbulk(
 @brief Copies today's values so that the values for swcBulk and snowpack become
 yesterday's values.
 
-@param[in,out] SW_SoilWat Struct of type SW_SOILWAT containing soil water
-    related values
+@param[in,out] SW_SoilWatSim Struct of type SW_SOILWAT containing
+    soil water simulation values
 @param[in] n_layers Number of layers of soil within the simulation run
 */
-void SW_SWC_end_day(SW_SOILWAT *SW_SoilWat, LyrIndex n_layers) {
+void SW_SWC_end_day(SW_SOILWAT_SIM *SW_SoilWatSim, LyrIndex n_layers) {
     /* =================================================== */
     LyrIndex i;
 
     ForEachSoilLayer(i, n_layers) {
-        SW_SoilWat->swcBulk[Yesterday][i] = SW_SoilWat->swcBulk[Today][i];
+        SW_SoilWatSim->swcBulk[Yesterday][i] = SW_SoilWatSim->swcBulk[Today][i];
     }
 
-    SW_SoilWat->snowpack[Yesterday] = SW_SoilWat->snowpack[Today];
+    SW_SoilWatSim->snowpack[Yesterday] = SW_SoilWatSim->snowpack[Today];
 }
 
 void SW_SWC_init_run(
-    SW_SOILWAT *SW_SoilWat, SW_SITE *SW_Site, double *temp_snow
+    SW_SOILWAT_SIM *SW_SoilWatSim,
+    SW_SITE_SIM *SW_SiteSim,
+    double *temp_snow,
+    LyrIndex n_layers
 ) {
 
-    SW_SoilWat->soiltempError = swFALSE;
+    SW_SoilWatSim->soiltempError = swFALSE;
 
 #ifdef SWDEBUG
-    SW_SoilWat->is_wbError_init = swFALSE;
+    SW_SoilWatSim->is_wbError_init = swFALSE;
 #endif
 
     *temp_snow = 0.; // Snow temperature
 
-    reset_swc(SW_SoilWat, SW_Site);
+    reset_swc(SW_SoilWatSim, SW_SiteSim, n_layers);
 }
 
 /**
 @brief init first doy swc, either by the computed init value or by the last day
 of last year, which is also, coincidentally, Yesterday
 
-@param[in,out] SW_SoilWat Struct of type SW_SOILWAT containing
-    soil water related values
-@param[in] SW_Site Struct of type SW_SITE describing the simulated site
+@param[in,out] SW_SoilWatIn Struct of type SW_SOILWAT containing
+    soil water input values
+@param[in,out] SW_SoilWatSim Struct of type SW_SOILWAT containing
+    soil water simulation values
+@param[in,out] SW_SiteSim Struct of type SW_SITE describing the simulated site's
+    input values
 @param[in] year Current year being run in the simulation
+@param[in] reset_yr Flag, reset values at the beginning of each year
+@param[in] n_layers Number of layers of soil within the simulation run
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_SWC_new_year(
-    SW_SOILWAT *SW_SoilWat, SW_SITE *SW_Site, TimeInt year, LOG_INFO *LogInfo
+    SW_SOILWAT_INPUTS *SW_SoilWatIn,
+    SW_SOILWAT_SIM *SW_SoilWatSim,
+    SW_SITE_SIM *SW_SiteSim,
+    TimeInt year,
+    Bool reset_yr,
+    LyrIndex n_layers,
+    LOG_INFO *LogInfo
 ) {
 
     LyrIndex lyr;
 
-    if (SW_Site->reset_yr) {
-        reset_swc(SW_SoilWat, SW_Site);
+    if (reset_yr) {
+        reset_swc(SW_SoilWatSim, SW_SiteSim, n_layers);
 
     } else {
         /* update swc */
-        ForEachSoilLayer(lyr, SW_Site->n_layers) {
-            SW_SoilWat->swcBulk[Today][lyr] =
-                SW_SoilWat->swcBulk[Yesterday][lyr];
+        ForEachSoilLayer(lyr, n_layers) {
+            SW_SoilWatSim->swcBulk[Today][lyr] =
+                SW_SoilWatSim->swcBulk[Yesterday][lyr];
         }
 
         /* update snowpack */
-        SW_SoilWat->snowpack[Today] = SW_SoilWat->snowpack[Yesterday];
+        SW_SoilWatSim->snowpack[Today] = SW_SoilWatSim->snowpack[Yesterday];
     }
 
     /* update historical (measured) values, if needed */
-    if (SW_SoilWat->hist_use && year >= SW_SoilWat->hist.yr.first) {
+    if (SW_SoilWatIn->hist_use && year >= SW_SoilWatIn->hist.yr.first) {
 #ifndef RSOILWAT
-        read_swc_hist(&SW_SoilWat->hist, year, LogInfo);
+        read_swc_hist(&SW_SoilWatIn->hist, year, LogInfo);
 #else
         LogError(
             LogInfo,
@@ -1389,7 +1396,7 @@ void SW_SWC_new_year(
 
         if (swFALSE) {
             // read from disk:
-            read_swc_hist(&SW_SoilWat->hist, year, LogInfo);
+            read_swc_hist(&SW_SoilWatIn->hist, year, LogInfo);
         } else {
             // copy from R memory
             // onSet_SW_SWC_hist(LogInfo);
@@ -1403,14 +1410,17 @@ void SW_SWC_new_year(
 
 See read_swc_hist() for reading historical files.
 
-@param[in,out] SW_SoilWat Struct of type SW_SOILWAT containing
-    soil water related values
+@param[in,out] SW_SoilWatIn Struct of type SW_SOILWAT_INPUTS containing
+    soil water input values
 @param[in] endyr Ending year for model run
 @param[in] txtInFiles Array of program in/output files
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_SWC_read(
-    SW_SOILWAT *SW_SoilWat, TimeInt endyr, char *txtInFiles[], LOG_INFO *LogInfo
+    SW_SOILWAT_INPUTS *SW_SoilWatIn,
+    TimeInt endyr,
+    char *txtInFiles[],
+    LOG_INFO *LogInfo
 ) {
     /* =================================================== */
     /* HISTORY
@@ -1443,19 +1453,19 @@ void SW_SWC_read(
 
         switch (lineno) {
         case 0:
-            SW_SoilWat->hist_use = (inBufintRes) ? swTRUE : swFALSE;
+            SW_SoilWatIn->hist_use = (inBufintRes) ? swTRUE : swFALSE;
             break;
         case 1:
-            SW_SoilWat->hist.file_prefix = Str_Dup(inbuf, LogInfo);
+            SW_SoilWatIn->hist.file_prefix = Str_Dup(inbuf, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
             break;
         case 2:
-            SW_SoilWat->hist.yr.first = yearto4digit((TimeInt) inBufintRes);
+            SW_SoilWatIn->hist.yr.first = yearto4digit((TimeInt) inBufintRes);
             break;
         case 3:
-            SW_SoilWat->hist.method = inBufintRes;
+            SW_SoilWatIn->hist.method = inBufintRes;
             break;
         default:
             LogError(
@@ -1470,7 +1480,7 @@ void SW_SWC_read(
         lineno++;
     }
 
-    if (!SW_SoilWat->hist_use) {
+    if (!SW_SoilWatIn->hist_use) {
         goto closeFile;
     }
     if (lineno < nitems) {
@@ -1482,15 +1492,15 @@ void SW_SWC_read(
         );
         goto closeFile;
     }
-    if (SW_SoilWat->hist.method < 1 || SW_SoilWat->hist.method > 2) {
+    if (SW_SoilWatIn->hist.method < 1 || SW_SoilWatIn->hist.method > 2) {
         LogError(
             LogInfo, LOGERROR, "%s : Invalid swc adjustment method.", MyFileName
         );
         goto closeFile;
     }
-    SW_SoilWat->hist.yr.last = endyr;
-    SW_SoilWat->hist.yr.total =
-        SW_SoilWat->hist.yr.last - SW_SoilWat->hist.yr.first + 1;
+    SW_SoilWatIn->hist.yr.last = endyr;
+    SW_SoilWatIn->hist.yr.total =
+        SW_SoilWatIn->hist.yr.last - SW_SoilWatIn->hist.yr.first + 1;
 
 closeFile: { CloseFile(&f, LogInfo); }
 }
@@ -1537,118 +1547,126 @@ void read_swc_hist(
      * an error in the input, but missing layers could
      * cause problems in the flow model.
      */
-    FILE *f;
-    int x;
-    int lyr = 0;
-    int recno = 0;
-    int doy = 0;
-    int index;
-    int resSNP;
-    double swc = 0.;
-    double st_err = 0.;
-    char fname[MAX_FILENAMESIZE];
-    char inbuf[MAX_FILENAMESIZE];
-    char varStrs[4][20] = {{'\0'}};
-    int *inBufIntVals[] = {&doy, &lyr};
-    double *inBufDoubleVals[] = {&swc, &st_err};
-    const int numInValsPerType = 2;
+    // FILE *f;
+    // int x;
+    // int lyr = 0;
+    // int recno = 0;
+    // int doy = 0;
+    // int index;
+    // int resSNP;
+    // double swc = 0.;
+    // double st_err = 0.;
+    // char fname[MAX_FILENAMESIZE];
+    // char inbuf[MAX_FILENAMESIZE];
+    // char varStrs[4][20] = {{'\0'}};
+    // int *inBufIntVals[] = {&doy, &lyr};
+    // double *inBufDoubleVals[] = {&swc, &st_err};
+    // const int numInValsPerType = 2;
 
-    resSNP = snprintf(
-        fname, sizeof fname, "%s.%4d", SoilWat_hist->file_prefix, year
+    // This function is currently not supported/used;
+    // Other code will need to be updated to properly use it again
+    LogError(
+        LogInfo,
+        LOGERROR,
+        "The use of reading Soil Water Content history is not in use/"
+        "supported."
     );
 
-    if (resSNP < 0 || (unsigned) resSNP >= (sizeof fname)) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "SWC-hist file name is too long for year = %d",
-            year
-        );
-        return; // Exit function prematurely due to error
-    }
+    (void) SoilWat_hist;
+    (void) year;
 
-    f = OpenFile(fname, "r", LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
+    //     resSNP = snprintf(
+    //         fname, sizeof fname, "%s.%4d", SoilWat_hist->file_prefix, year
+    //     );
 
-    clear_hist(SoilWat_hist->swc, SoilWat_hist->std_err);
+    //     if (resSNP < 0 || (unsigned) resSNP >= (sizeof fname)) {
+    //         LogError(
+    //             LogInfo,
+    //             LOGERROR,
+    //             "SWC-hist file name is too long for year = %d",
+    //             year
+    //         );
+    //         return; // Exit function prematurely due to error
+    //     }
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
-        recno++;
-        x = sscanf(
-            inbuf,
-            "%19s %19s %19s %19s",
-            varStrs[0],
-            varStrs[1],
-            varStrs[2],
-            varStrs[3]
-        );
+    //     f = OpenFile(fname, "r", LogInfo);
+    //     if (LogInfo->stopRun) {
+    //         return; // Exit function prematurely due to error
+    //     }
 
-        if (x < 4) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "%s : Incomplete layer data at record %d\n   Should be DOY LYR "
-                "SWC STDERR.",
-                fname,
-                recno
-            );
-            goto closeFile;
-        }
-        if (x > 4) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "%s : Too many input fields at record %d\n   Should be DOY LYR "
-                "SWC STDERR.",
-                fname,
-                recno
-            );
-            goto closeFile;
-        }
+    //     clear_hist(SoilWat_hist->swc, SoilWat_hist->std_err);
 
-        for (index = 0; index < numInValsPerType; index++) {
-            *(inBufIntVals[index]) = sw_strtoi(varStrs[index], fname, LogInfo);
-            if (LogInfo->stopRun) {
-                goto closeFile;
-            }
+    //     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    //         recno++;
+    //         x = sscanf(
+    //             inbuf,
+    //             "%19s %19s %19s %19s",
+    //             varStrs[0],
+    //             varStrs[1],
+    //             varStrs[2],
+    //             varStrs[3]
+    //         );
 
-            *(inBufDoubleVals[index]) =
-                sw_strtod(varStrs[index + 2], fname, LogInfo);
-            if (LogInfo->stopRun) {
-                goto closeFile;
-            }
-        }
+    //         if (x < 4) {
+    //             LogError(
+    //                 LogInfo,
+    //                 LOGERROR,
+    //                 "%s : Incomplete layer data at record %d\n   Should be
+    //                 DOY LYR " "SWC STDERR.", fname, recno
+    //             );
+    //             goto closeFile;
+    //         }
+    //         if (x > 4) {
+    //             LogError(
+    //                 LogInfo,
+    //                 LOGERROR,
+    //                 "%s : Too many input fields at record %d\n   Should be
+    //                 DOY LYR " "SWC STDERR.", fname, recno
+    //             );
+    //             goto closeFile;
+    //         }
 
-        if (doy < 1 || doy > MAX_DAYS) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "%s : Day of year out of range at record %d",
-                fname,
-                recno
-            );
-            goto closeFile;
-        }
-        if (lyr < 1 || lyr > MAX_LAYERS) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "%s : Layer number out of range (%d > %d), record %d\n",
-                fname,
-                lyr,
-                MAX_LAYERS,
-                recno
-            );
-            goto closeFile;
-        }
+    //         for (index = 0; index < numInValsPerType; index++) {
+    //             *(inBufIntVals[index]) = sw_strtoi(varStrs[index], fname,
+    //             LogInfo); if (LogInfo->stopRun) {
+    //                 goto closeFile;
+    //             }
 
-        SoilWat_hist->swc[doy - 1][lyr - 1] = swc;
-        SoilWat_hist->std_err[doy - 1][lyr - 1] = st_err;
-    }
+    //             *(inBufDoubleVals[index]) =
+    //                 sw_strtod(varStrs[index + 2], fname, LogInfo);
+    //             if (LogInfo->stopRun) {
+    //                 goto closeFile;
+    //             }
+    //         }
 
-closeFile: { CloseFile(&f, LogInfo); }
+    //         if (doy < 1 || doy > MAX_DAYS) {
+    //             LogError(
+    //                 LogInfo,
+    //                 LOGERROR,
+    //                 "%s : Day of year out of range at record %d",
+    //                 fname,
+    //                 recno
+    //             );
+    //             goto closeFile;
+    //         }
+    //         if (lyr < 1 || lyr > MAX_LAYERS) {
+    //             LogError(
+    //                 LogInfo,
+    //                 LOGERROR,
+    //                 "%s : Layer number out of range (%d > %d), record %d\n",
+    //                 fname,
+    //                 lyr,
+    //                 MAX_LAYERS,
+    //                 recno
+    //             );
+    //             goto closeFile;
+    //         }
+
+    //         SoilWat_hist->swc[doy - 1][lyr - 1] = swc;
+    //         SoilWat_hist->std_err[doy - 1][lyr - 1] = st_err;
+    //     }
+
+    // closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**
@@ -1666,7 +1684,7 @@ void SW_SWC_adjust_swc(
     double swcBulk[][MAX_LAYERS],
     double swcBulk_min[],
     TimeInt doy,
-    SW_SOILWAT_HIST SoilWat_hist,
+    SW_SOILWAT_HIST *SoilWat_hist,
     LyrIndex n_layers,
     LOG_INFO *LogInfo
 ) {
@@ -1679,20 +1697,20 @@ void SW_SWC_adjust_swc(
     LyrIndex lyrIndex;
     TimeInt dy = doy - 1;
 
-    switch (SoilWat_hist.method) {
+    switch (SoilWat_hist->method) {
     case SW_Adjust_Avg:
         ForEachSoilLayer(lyrIndex, n_layers) {
-            swcBulk[Today][lyrIndex] += SoilWat_hist.swc[dy][lyrIndex];
+            swcBulk[Today][lyrIndex] += SoilWat_hist->swc[dy][lyrIndex];
             swcBulk[Today][lyrIndex] /= 2.;
         }
         break;
 
     case SW_Adjust_StdErr:
         ForEachSoilLayer(lyrIndex, n_layers) {
-            upper = SoilWat_hist.swc[dy][lyrIndex] +
-                    SoilWat_hist.std_err[dy][lyrIndex];
-            lower = SoilWat_hist.swc[dy][lyrIndex] -
-                    SoilWat_hist.std_err[dy][lyrIndex];
+            upper = SoilWat_hist->swc[dy][lyrIndex] +
+                    SoilWat_hist->std_err[dy][lyrIndex];
+            lower = SoilWat_hist->swc[dy][lyrIndex] -
+                    SoilWat_hist->std_err[dy][lyrIndex];
             if (GT(swcBulk[Today][lyrIndex], upper)) {
                 swcBulk[Today][lyrIndex] = upper;
             } else if (LT(swcBulk[Today][lyrIndex], lower)) {
@@ -1722,9 +1740,10 @@ snowmelt and snowloss.
 
 Equations based on SWAT2K routines. @cite Neitsch2005
 
-@param[in,out] snowpack[] swe of snowpack, assuming accumulation is turned on
 @param[in,out] *temp_snow Module-level snow temperature (C)
-@param[in] SW_Site Struct of type SW_SITE describing the site in question
+@param[in,out] snowpack[] swe of snowpack, assuming accumulation is turned on
+@param[in] SW_SiteIn Struct of type SW_SITE describing the simulated site's
+    input values
 @param[in] temp_min Daily minimum temperature (C)
 @param[in] temp_max Daily maximum temperature (C)
 @param[in] ppt Daily precipitation (cm)
@@ -1741,7 +1760,7 @@ Equations based on SWAT2K routines. @cite Neitsch2005
 void SW_SWC_adjust_snow(
     double *temp_snow,
     double snowpack[],
-    SW_SITE *SW_Site,
+    SW_SITE_INPUTS *SW_SiteIn,
     double temp_min,
     double temp_max,
     double ppt,
@@ -1775,7 +1794,7 @@ void SW_SWC_adjust_snow(
     temp_ave = (temp_min + temp_max) / 2.;
 
     /* snow accumulation */
-    if (LE(temp_ave, SW_Site->TminAccu2)) {
+    if (LE(temp_ave, SW_SiteIn->TminAccu2)) {
         SnowAccu = ppt;
     } else {
         SnowAccu = 0.;
@@ -1785,17 +1804,17 @@ void SW_SWC_adjust_snow(
     *snowpack_today += SnowAccu;
 
     /* snow melt */
-    Rmelt =
-        (SW_Site->RmeltMax + SW_Site->RmeltMin) / 2. +
-        sin((doy - 81.) / 58.09) * (SW_Site->RmeltMax - SW_Site->RmeltMin) / 2.;
-    *temp_snow =
-        *temp_snow * (1 - SW_Site->lambdasnow) + temp_ave * SW_Site->lambdasnow;
+    Rmelt = (SW_SiteIn->RmeltMax + SW_SiteIn->RmeltMin) / 2. +
+            sin((doy - 81.) / 58.09) *
+                (SW_SiteIn->RmeltMax - SW_SiteIn->RmeltMin) / 2.;
+    *temp_snow = *temp_snow * (1 - SW_SiteIn->lambdasnow) +
+                 temp_ave * SW_SiteIn->lambdasnow;
 
-    if (GT(*temp_snow, SW_Site->TmaxCrit)) {
+    if (GT(*temp_snow, SW_SiteIn->TmaxCrit)) {
         SnowMelt = fmin(
             *snowpack_today,
             Rmelt * snow_cov *
-                ((*temp_snow + temp_max) / 2. - SW_Site->TmaxCrit)
+                ((*temp_snow + temp_max) / 2. - SW_SiteIn->TmaxCrit)
         );
 
     } else {
@@ -1867,21 +1886,28 @@ SOILWAT2 convenience wrapper for `SWRC_SWCtoSWP()`.
 See #swrc2str() for implemented SWRCs.
 
 @param[in] swcBulk Soil water content in the layer [cm]
-@param[in] SW_Site Struct of type SW_SITE describing the simulated site
+@param[in] SW_SoilRunIn Struct of type SW_SOIL_RUN_INPUTS describing
+    the simulated site's input values
+@param[in] SW_SiteSim Struct of type SW_SITE_SIM describing the simulated site's
+    simulation values
 @param[in] layerno Current layer which is being worked with
 @param[out] LogInfo Holds information on warnings and errors
 
 @return Soil water potential [-bar]
 */
 double SW_SWRC_SWCtoSWP(
-    double swcBulk, SW_SITE *SW_Site, LyrIndex layerno, LOG_INFO *LogInfo
+    double swcBulk,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
+    SW_SITE_SIM *SW_SiteSim,
+    LyrIndex layerno,
+    LOG_INFO *LogInfo
 ) {
     return SWRC_SWCtoSWP(
         swcBulk,
-        SW_Site->swrc_type[layerno],
-        SW_Site->swrcp[layerno],
-        SW_Site->soils.fractionVolBulk_gravel[layerno],
-        SW_Site->soils.width[layerno],
+        SW_SiteSim->swrc_type[layerno],
+        SW_SiteSim->swrcp[layerno],
+        SW_SoilRunIn->fractionVolBulk_gravel[layerno],
+        SW_SoilRunIn->width[layerno],
         LOGERROR,
         LogInfo
     );
@@ -2241,21 +2267,28 @@ SOILWAT2 convenience wrapper for `SWRC_SWPtoSWC()`.
 See #swrc2str() for implemented SWRCs.
 
 @param[in] swpMatric Soil water potential [-bar]
-@param[in] SW_Site Struct of type SW_SITE describing the simulated site
+@param[in] SW_SoilRunIn Struct of type SW_SOIL_RUN_INPUTS describing
+    the simulated site's input values
+@param[in] SW_SiteSim Struct of type SW_SITE_SIM describing the simulated site's
+    simulation values
 @param[in] layerno Current layer which is being worked with
 @param[out] LogInfo Holds information on warnings and errors
 
 @return Soil water content in the layer [cm]
 */
 double SW_SWRC_SWPtoSWC(
-    double swpMatric, SW_SITE *SW_Site, LyrIndex layerno, LOG_INFO *LogInfo
+    double swpMatric,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
+    SW_SITE_SIM *SW_SiteSim,
+    LyrIndex layerno,
+    LOG_INFO *LogInfo
 ) {
     return SWRC_SWPtoSWC(
         swpMatric,
-        SW_Site->swrc_type[layerno],
-        SW_Site->swrcp[layerno],
-        SW_Site->soils.fractionVolBulk_gravel[layerno],
-        SW_Site->soils.width[layerno],
+        SW_SiteSim->swrc_type[layerno],
+        SW_SiteSim->swrcp[layerno],
+        SW_SoilRunIn->fractionVolBulk_gravel[layerno],
+        SW_SoilRunIn->width[layerno],
         LOGERROR,
         LogInfo
     );

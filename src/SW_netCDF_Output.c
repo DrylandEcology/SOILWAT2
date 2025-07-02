@@ -11,7 +11,6 @@
 #include "include/SW_netCDF_General.h"  // for SW_NC_write_vals, SW_NC_crea...
 #include "include/SW_Output.h"          // for ForEachOutKey, SW_ESTAB, pd2...
 #include "include/SW_Output_outarray.h" // for iOUTnc
-#include "include/SW_VegProd.h"         // for key2veg
 #include "include/Times.h"              // for isleapyear, Time_get_lastdoy_y
 #include <math.h>                       // for NAN, ceil, isnan
 #include <netcdf.h>                     // for NC_NOERR, nc_close, NC_DOUBLE
@@ -44,7 +43,7 @@
 #define UNITS_INDEX 4
 #define CELLMETHOD_INDEX 5
 
-const int times[] = {MAX_DAYS - 1, MAX_WEEKS, MAX_MONTHS, 1};
+const unsigned int outTimes[] = {MAX_DAYS - 1, MAX_WEEKS, MAX_MONTHS, 1};
 
 static const char *const expectedColNames[] = {
     "SW2 output group",
@@ -95,7 +94,13 @@ static const char *const SWVarUnits[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
     {"1", "1"},                                       /* CO2EFFECTS */
 
     /* BIOMASS */
-    {"1", "1", "g m-2", "g m-2", "g m-2", "g m-2", "g m-2", "m m-2"}
+    {"1", "1", "g m-2", "g m-2", "g m-2", "g m-2", "g m-2", "m m-2"},
+
+    /* DERIVEDSUM */
+    {"cm", "degC day", "degC day"},
+
+    /* DERIVEDAVG */
+    {"cm", "cm"}
 };
 
 static const char *const possKeys[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
@@ -186,7 +191,13 @@ static const char *const possKeys[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
      "BIOMASS__litter_total",
      "BIOMASS__biolive_total",
      "BIOMASS__veg.biolive_inveg",
-     "BIOMASS__LAI"}
+     "BIOMASS__LAI"},
+
+    {"DERIVEDSUM__cwd",
+     "DERIVEDSUM__ddd5C30bar000to100cm",
+     "DERIVEDSUM__wdd5C15bar000to100cm"},
+
+    {"DERIVEDAVG__swa30bar000to100cm", "DERIVEDAVG__swa39bar000to100cm"}
 };
 
 /* =================================================== */
@@ -257,6 +268,26 @@ static unsigned int calc_timeSize(
     }
 
     return baseTime * (rangeEnd - rangeStart) + numLeapYears;
+}
+
+/**
+@brief Write values to the pft variable
+
+@param[in] ncFileID Identifier of the open netCDF file to write the attribute
+@param[in] varID Variable identifier within the given netCDF
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void write_pft_vals(int ncFileID, int varID, LOG_INFO *LogInfo) {
+    unsigned char vals[NVEGTYPES] = {
+        (unsigned char) (SW_TREES + 1),
+        (unsigned char) (SW_SHRUB + 1),
+        (unsigned char) (SW_FORBS + 1),
+        (unsigned char) (SW_GRASS + 1)
+    };
+
+    if (nc_put_var_ubyte(ncFileID, varID, &vals[0]) != NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "Could not write string values.");
+    }
 }
 
 /**
@@ -574,7 +605,7 @@ static void fill_dimVar(
     const int numBnds = 2;
 
     if (dimNum == pftInd) {
-        SW_NC_write_string_vals(ncFileID, varID, key2veg, LogInfo);
+        write_pft_vals(ncFileID, varID, LogInfo);
     } else {
         if (!SW_NC_dimExists("bnds", ncFileID)) {
             SW_NC_create_netCDF_dim(
@@ -748,10 +779,58 @@ static int gather_var_attributes(
 }
 
 /**
+@brief Get the time size for every output file but the last, then
+    get the last time size; files [0, num out files - 1] have repeating
+    time sizes
+
+@param[in] keyFiles A list of files from the first key with active output
+    requests
+@param[in] numFiles Number of output files being created per output key
+@param[out] outKeyTimes An array of size two to hold the time sizes for every
+    output file for a specific output period
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void store_time_sizes(
+    char **keyFiles,
+    size_t **outKeyTimes,
+    unsigned int numFiles,
+    LOG_INFO *LogInfo
+) {
+    int fileID = -1;
+    unsigned int file;
+
+    SW_NCOUT_alloc_timeSizes(numFiles, outKeyTimes, LogInfo);
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    for (file = 0; file < numFiles; file++) {
+        SW_NC_open(keyFiles[file], NC_NOWRITE, &fileID, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        SW_NC_get_dimlen_from_dimname(
+            fileID, "time", &((*outKeyTimes)[file]), LogInfo
+        );
+        if (LogInfo->stopRun) {
+            goto closeFile;
+        }
+
+        nc_close(fileID);
+        fileID = -1;
+    }
+
+closeFile:
+    if (fileID > -1) {
+        nc_close(fileID);
+    }
+}
+
+/**
 @brief Collect the write dimensions/sizes for the current output slice
 
-@param[in] domType Type of domain in which simulations are running
-    (gridcell/sites)
+@param[in] sDom Specifies the program's domain is site-oriented
 @param[in] timeSize Number of time steps in current output slice
 @param[in] nsl Number of soil layers
 @param[in] npft Number of plant functional types
@@ -759,21 +838,22 @@ static int gather_var_attributes(
 @param[out] countTotal Total size (count) of output values
  */
 static void get_vardim_write_counts(
-    const char *domType,
+    Bool sDom,
     size_t timeSize,
     IntUS nsl,
     IntUS npft,
     size_t count[],
+    const size_t baseCount[],
     size_t *countTotal
 ) {
     int dimIndex;
     int ndimsp;
-    int nSpaceDims = (strcmp(domType, "s") == 0) ? 1 : 2;
+    int nSpaceDims = (sDom) ? 1 : 2;
 
     /* Fill 1s into space dimensions (we write one site/xy-gridcell per run) */
     /* We assume here that the first dimension(s) are space */
     for (dimIndex = 0; dimIndex < nSpaceDims; dimIndex++) {
-        count[dimIndex] = 1;
+        count[dimIndex] = baseCount[dimIndex];
     }
 
     *countTotal = 1;
@@ -806,7 +886,7 @@ static void get_vardim_write_counts(
     }
 }
 
-#if defined(SWDEBUG)
+#if defined(SWDEBUG) && !defined(SWMPI)
 /**
 @brief Check that count matches with existing variable in netCDF
 
@@ -928,6 +1008,49 @@ static void check_counts_against_vardim(
     }
 }
 #endif // SWDEBUG
+
+/**
+@brief Get the identifiers of variables within output files
+
+@param[in] outputVarInfo A list of a key's output variable information that
+    will be used to get the variable name
+@param[in] numVars Number of variables created within an output key
+@param[in] ncFileName Name of the output file that will be queried to get
+    variable identifiers
+@param[out] ncOutVarIDs A list of size SW_OUTNKEYS holding lists of output
+    variable IDs
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void get_outvar_ids(
+    char ***outputVarInfo,
+    IntUS numVars,
+    char *ncFileName,
+    int *ncOutVarIDs,
+    LOG_INFO *LogInfo
+) {
+    char *varName;
+    int var;
+    int fileID = -1;
+
+    SW_NC_open(ncFileName, NC_NOWRITE, &fileID, LogInfo);
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    for (var = 0; var < numVars; var++) {
+        varName = outputVarInfo[var][VARNAME_INDEX];
+
+        SW_NC_get_var_identifier(fileID, varName, &ncOutVarIDs[var], LogInfo);
+        if (LogInfo->stopRun) {
+            goto closeFile;
+        }
+    }
+
+closeFile:
+    if (fileID > -1) {
+        nc_close(fileID);
+    }
+}
 
 /**
 @brief Create and fill a new output netCDF file
@@ -1164,10 +1287,14 @@ void SW_NCOUT_create_output_dimVar(
 ) {
 
     char *dimNames[3] = {(char *) "vertical", (char *) "time", (char *) "pft"};
+    const signed char pftFlagVals[] = {
+        SW_TREES + 1, SW_SHRUB + 1, SW_FORBS + 1, SW_GRASS + 1
+    };
     const int vertIndex = 0;
     const int timeIndex = 1;
     const int pftIndex = 2;
     const int timeUnitIndex = 2;
+    const int numPFTFlagVals = 4;
     int dimNum;
     int varID;
     int index;
@@ -1180,13 +1307,13 @@ void SW_NCOUT_create_output_dimVar(
     const char *outAttNames[][6] = {
         {"long_name", "standard_name", "units", "positive", "axis", "bounds"},
         {"long_name", "standard_name", "units", "axis", "calendar", "bounds"},
-        {"standard_name"}
+        {"standard_name", "flag_meanings"}
     };
 
     char outAttVals[][6][MAX_FILENAMESIZE] = {
         {"soil depth", "depth", "centimeter", "down", "Z", "vertical_bnds"},
         {"time", "time", "", "T", "standard", "time_bnds"},
-        {"biological_taxon_name"}
+        {"biological_taxon_name", "Trees Shrubs Forbs Grasses"}
     };
     char *soilWritePtr = outAttVals[vertIndex][0];
     char *centiWritePtr = outAttVals[vertIndex][2];
@@ -1198,7 +1325,7 @@ void SW_NCOUT_create_output_dimVar(
     size_t centiSize = MAX_FILENAMESIZE - strlen(outAttVals[vertIndex][2]);
     Bool fullBuffer = swFALSE;
 
-    const int numVarAtts[] = {6, 6, 1};
+    const int numVarAtts[] = {6, 6, 2};
 
     for (dimNum = 0; dimNum < 3; dimNum++) {
         if (Str_CompareI(dimNames[dimNum], name) == 0) {
@@ -1216,7 +1343,7 @@ void SW_NCOUT_create_output_dimVar(
         return; // Exit function prematurely due to error
     }
 
-    varType = (dimNum == pftIndex) ? NC_STRING : NC_DOUBLE;
+    varType = (dimNum == pftIndex) ? NC_BYTE : NC_DOUBLE;
 
     startFillTime = (dimNum == timeIndex) ? startTime : &tempVal;
 
@@ -1257,6 +1384,9 @@ void SW_NCOUT_create_output_dimVar(
             deflateLevel,
             LogInfo
         );
+        if (LogInfo->stopRun) {
+            return;
+        }
 
         if (dimNum == timeIndex) {
             (void) snprintf(
@@ -1290,6 +1420,19 @@ void SW_NCOUT_create_output_dimVar(
             );
             if (fullBuffer) {
                 goto reportFullBuffer;
+            }
+        } else if (dimNum == pftIndex) {
+            SW_NC_write_att(
+                "flag_values",
+                (void *) pftFlagVals,
+                varID,
+                ncFileID,
+                numPFTFlagVals,
+                NC_BYTE,
+                LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
             }
         }
 
@@ -1331,14 +1474,14 @@ This function requires previous calls to
 @param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
 @param[in] txtInFiles Array of program in/output files
-@param[in] parms Array of type SW_VEGESTAB_INFO holding information about
-    species
+@param[in] parmsIn Array of type SW_VEGESTAB_INFO_INPUTS holding input
+    information about species
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCOUT_read_out_vars(
     SW_OUT_DOM *OutDom,
     char *txtInFiles[],
-    SW_VEGESTAB_INFO **parms,
+    SW_VEGESTAB_INFO_INPUTS *parmsIn,
     LOG_INFO *LogInfo
 ) {
 
@@ -1599,7 +1742,7 @@ void SW_NCOUT_read_out_vars(
                                 .reqOutputVars[currOutKey][estVar] = swTRUE;
                             OutDom->netCDFOutput
                                 .outputVarInfo[currOutKey][estVar][index] =
-                                Str_Dup(parms[estVar]->sppname, LogInfo);
+                                Str_Dup(parmsIn[estVar].sppname, LogInfo);
                             break;
 
                         case LONGNAME_INDEX:
@@ -1861,7 +2004,7 @@ void SW_NCOUT_alloc_files(
     unsigned int varNum;
 
     *ncOutFiles = (char **) Mem_Malloc(
-        numFiles * sizeof(char *), "SW_NC_create_output_files()", LogInfo
+        numFiles * sizeof(char *), "SW_NCOUT_alloc_files", LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -1870,6 +2013,46 @@ void SW_NCOUT_alloc_files(
     for (varNum = 0; varNum < numFiles; varNum++) {
         (*ncOutFiles)[varNum] = NULL;
     }
+}
+
+/**
+@brief Allocate memory to store output variable identifiers
+
+@param[out] ncVarIDs Output variable identifiers contained within every
+    output file that is created for a key
+@param[in] numVars Number of variables within an output key
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NCOUT_alloc_varids(int **ncVarIDs, IntUS numVars, LOG_INFO *LogInfo) {
+    IntUS varNum;
+
+    *ncVarIDs = (int *) Mem_Malloc(
+        numVars * sizeof(int), "SW_NCOUT_alloc_varids", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    for (varNum = 0; varNum < numVars; varNum++) {
+        (*ncVarIDs)[varNum] = -1;
+    }
+}
+
+/**
+@brief Allocate memory to store the time sizes of each output file
+
+@param[in] numFiles Number of values to allocate for (one for every output file
+    in an output period)
+@param[out] timeSizes An array of size two to hold the time sizes for every
+    output file for a specific output period
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NCOUT_alloc_timeSizes(
+    unsigned int numFiles, size_t **timeSizes, LOG_INFO *LogInfo
+) {
+    *timeSizes = (size_t *) Mem_Malloc(
+        sizeof(size_t) * numFiles, "SW_NCOUT_alloc_timeSizes", LogInfo
+    );
 }
 
 /**
@@ -1903,9 +2086,13 @@ SW_OUTNPERIODS).
 @param[in] startYr Start year of the simulation
 @param[in] endYr End year of the simulation
 @param[in] baseCalendarYear First year of the entire simulation
+@param[out] outFileTimeSizes A list of size SW_OUTNPERIODS by x number of
+    the time sizes in output files created from strides
 @param[out] numFilesPerKey Number of output netCDFs each output key will
     have (same amount for each key)
 @param[out] ncOutFileNames A list of the generated output netCDF file names
+@param[out] ncOutVarIDs Output variable identifiers contained within every
+    output file that is created for a key
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCOUT_create_output_files(
@@ -1924,8 +2111,10 @@ void SW_NCOUT_create_output_files(
     unsigned int startYr,
     unsigned int endYr,
     int baseCalendarYear,
+    size_t *outFileTimeSizes[],
     unsigned int *numFilesPerKey,
     char **ncOutFileNames[][SW_OUTNPERIODS],
+    int *ncOutVarIDs[],
     LOG_INFO *LogInfo
 ) {
     Bool primCRSIsGeo =
@@ -1955,6 +2144,7 @@ void SW_NCOUT_create_output_files(
     unsigned int baseTime = 0;
     double startTime[SW_OUTNPERIODS];
     double baseStartTime[SW_OUTNPERIODS] = {0};
+    char *firstFileInKey = NULL;
 
     char periodSuffix[10];
     char *yearFormat;
@@ -1975,7 +2165,7 @@ void SW_NCOUT_create_output_files(
     if ((IntU) baseCalendarYear < startYr) {
         ForEachOutPeriod(pd) {
             timeSize = calc_timeSize(
-                (IntU) baseCalendarYear, (IntU) startYr, times[pd], pd
+                (IntU) baseCalendarYear, (IntU) startYr, outTimes[pd], pd
             );
 
             calc_num_timedays(
@@ -1991,6 +2181,10 @@ void SW_NCOUT_create_output_files(
 
     ForEachOutKey(key) {
         if (nvar_OUT[key] > 0 && SW_Domain->OutDom.use[key]) {
+            SW_NCOUT_alloc_varids(&ncOutVarIDs[key], nvar_OUT[key], LogInfo);
+            if (LogInfo->stopRun) {
+                return;
+            }
 
             // Loop over requested output periods (which may vary for each
             // outkey)
@@ -1999,7 +2193,7 @@ void SW_NCOUT_create_output_files(
 
                 if (pd != eSW_NoTime) {
                     startTime[pd] = baseStartTime[pd];
-                    baseTime = times[pd];
+                    baseTime = outTimes[pd];
                     rangeStart = startYr;
 
                     (void) sw_memccpy(
@@ -2049,6 +2243,9 @@ void SW_NCOUT_create_output_files(
                         if (LogInfo->stopRun) {
                             return; // Exit function prematurely due to error
                         }
+                        if (isnull(firstFileInKey)) {
+                            firstFileInKey = ncOutFileNames[key][pd][fileNum];
+                        }
 
                         if (FileExists(fileNameBuf)) {
                             SW_NC_check(SW_Domain, -1, fileNameBuf, LogInfo);
@@ -2091,8 +2288,33 @@ void SW_NCOUT_create_output_files(
 
                         rangeStart = rangeEnd;
                     }
+
+                    if (isnull(outFileTimeSizes[pd])) {
+                        store_time_sizes(
+                            ncOutFileNames[key][pd],
+                            &outFileTimeSizes[pd],
+                            *numFilesPerKey,
+                            LogInfo
+                        );
+                        if (LogInfo->stopRun) {
+                            return;
+                        }
+                    }
                 }
             }
+
+            get_outvar_ids(
+                SW_Domain->OutDom.netCDFOutput.outputVarInfo[key],
+                nvar_OUT[key],
+                firstFileInKey,
+                ncOutVarIDs[key],
+                LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
+            }
+
+            firstFileInKey = NULL;
         }
     }
 }
@@ -2215,8 +2437,31 @@ output netCDF files
     have (same amount for each key)
 @param[in] ncOutFileNames A list of the generated output netCDF file names
 @param[in] ncSuid Unique indentifier of the current suid being simulated
-@param[in] domType Type of domain in which simulations are running
-    (gridcell/sites)
+@param[in] numWritesGroup The number of writes within an I/O group
+    that must be performed by the calling function to output all simulated
+    information for the sites (MPI only)
+@param[in] numWritesProc The number of writes an I/O process must perform
+    to output all of it's values, this may be a different (smaller) value
+    from `numWritesGroup` (MPI only)
+@param[in] starts A list of size SW_NINKEYSNC specifying the start
+    indices used when reading/writing using the netCDF library;
+    default size is `nSuids` but as mentioned in `numWrites`, it would
+    be best to not fill this array
+@param[in] counts A list of size SW_NINKEYSNC specifying the count
+    indices used when reading/writing using the netCDF library;
+    default size is `nSuids` but as mentioned in `numWrites`, it would
+    be best to not fill this array; counts match placements with `start`
+    indices for each key; NULL if SWMPI is not defined
+@param[in] openOutFileIDs Lists of file IDs of open output netCDF files;
+    only used if SWMPI is enabled, otherwise is NULL
+@param[in] outVarIDs A list of size SW_OUTNKEYS holding lists of
+    output variable IDs
+@param[in] siteDom Specifies if the domain is site-oriented
+@param[in] succFlags A list of success flags for a single or multiple
+    site's (swTRUE = success, swFALSE = failure); only used with
+    SWMPI enabled
+@param[in] timeSizes An array of size two to hold the time sizes for every
+    output file for a specific output period
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCOUT_write_output(
@@ -2225,7 +2470,15 @@ void SW_NCOUT_write_output(
     unsigned int numFilesPerKey,
     char **ncOutFileNames[][SW_OUTNPERIODS],
     const size_t ncSuid[],
-    const char *domType,
+    size_t numWritesGroup,
+    size_t numWritesProc,
+    size_t **starts,
+    size_t **counts,
+    int *openOutFileIDs[][SW_OUTNPERIODS],
+    int *outVarIDs[],
+    Bool siteDom,
+    const Bool succFlags[],
+    size_t *timeSizes[],
     LOG_INFO *LogInfo
 ) {
 
@@ -2237,20 +2490,37 @@ void SW_NCOUT_write_output(
     int varNum;
     int varID = -1;
 
-    char *fileName;
-    char *varName;
     size_t count[MAX_NUM_DIMS] = {0};
     size_t start[MAX_NUM_DIMS] = {0};
     size_t pOUTIndex;
-    size_t startTime;
     size_t timeSize = 0;
     size_t countTotal = 0;
+    size_t write;
+    size_t numSites;
+    size_t ptrOffset;
     int vertSize;
     int pftSize;
+    size_t startTime;
+    size_t numSiteSum;
+    size_t oneSiteOffset;
+    OutPeriod timeStep;
 
-    start[0] = ncSuid[0];
-    start[1] = ncSuid[1];
+#if defined(SWMPI) || defined(SWUDUNITS)
+    size_t numElem;
+#endif
 
+#if defined(SWMPI)
+    size_t pOUTStart[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
+#else
+    (void) succFlags;
+    (void) numWritesProc;
+#endif
+#if !defined(SWMPI) || (defined(SWDEBUG) && !defined(SWMPI))
+    char *fileName;
+#endif
+#if defined(SWDEBUG) && !defined(SWMPI)
+    char *varName = NULL;
+#endif
 
     ForEachOutPeriod(pd) {
         if (!OutDom->use_OutPeriod[pd]) {
@@ -2262,138 +2532,237 @@ void SW_NCOUT_write_output(
                 continue; // Skip key iteration
             }
 
+            timeStep = OutDom->timeSteps[key][pd];
+            oneSiteOffset = OutDom->nrow_OUT[timeStep] *
+                            (OutDom->ncol_OUT[key] + ncol_TimeOUT[timeStep]);
+
             // Loop over output time-slices
 
             // keep track of time across time-sliced files per outkey
             startTime = 0;
 
             for (fileNum = 0; fileNum < numFilesPerKey; fileNum++) {
+#if !defined(SWMPI) || (defined(SWDEBUG) && !defined(SWMPI))
                 fileName = ncOutFileNames[key][pd][fileNum];
 
                 if (isnull(fileName)) {
                     // this outperiod x outkey combination was not requested
                     continue;
                 }
+#endif
 
+#if defined(SWMPI)
+                currFileID = openOutFileIDs[key][pd][fileNum];
+#else
                 SW_NC_open(fileName, NC_WRITE, &currFileID, LogInfo);
                 if (LogInfo->stopRun) {
                     return;
                 }
+#endif
 
                 // Get size of the "time" dimension
-                SW_NC_get_dimlen_from_dimname(
-                    currFileID, "time", &timeSize, LogInfo
-                );
-                if (LogInfo->stopRun) {
-                    goto closeFile; // Exit function prematurely due to error
-                }
-
+                timeSize = timeSizes[pd][fileNum];
 
                 for (varNum = 0; varNum < OutDom->nvar_OUT[key]; varNum++) {
                     if (!OutDom->netCDFOutput.reqOutputVars[key][varNum]) {
                         continue; // Skip variable iteration
                     }
 
-                    varName = OutDom->netCDFOutput
-                                  .outputVarInfo[key][varNum][VARNAME_INDEX];
+                    numSiteSum = 0;
+                    for (write = 0; write < numWritesGroup; write++) {
+#if defined(SWMPI)
+                        start[0] = starts[write][0];
+                        start[1] = starts[write][1];
+#else
+                        start[0] = ncSuid[0];
+                        start[1] = ncSuid[1];
+#endif
 
-                    // Locate correct slice in netCDF to write to
-                    SW_NC_get_var_identifier(
-                        currFileID, varName, &varID, LogInfo
-                    );
-                    if (LogInfo->stopRun) {
-                        /* Exit function prematurely due to error */
-                        goto closeFile;
-                    }
+                        numSites =
+                            (siteDom) ? counts[write][0] : counts[write][1];
+                        ptrOffset = oneSiteOffset * numSiteSum;
 
-                    get_vardim_write_counts(
-                        domType,
-                        timeSize,
-                        OutDom->nsl_OUT[key][varNum],
-                        OutDom->npft_OUT[key][varNum],
-                        count,
-                        &countTotal
-                    );
+                        // Locate correct slice in netCDF to write to
+                        varID = outVarIDs[key][varNum];
 
-#if defined(SWDEBUG)
-                    check_counts_against_vardim(
-                        fileName,
-                        varName,
-                        currFileID,
-                        varID,
-                        count,
-                        OutDom->netCDFOutput.siteName,
-                        LogInfo
-                    );
-                    if (LogInfo->stopRun) {
-                        /* Exit function prematurely due to error*/
-                        goto closeFile;
-                    }
+                        get_vardim_write_counts(
+                            siteDom,
+                            timeSize,
+                            OutDom->nsl_OUT[key][varNum],
+                            OutDom->npft_OUT[key][varNum],
+                            count,
+                            counts[write],
+                            &countTotal
+                        );
+
+#if defined(SWDEBUG) && !defined(SWMPI)
+                        varName =
+                            OutDom->netCDFOutput
+                                .outputVarInfo[key][varNum][VARNAME_INDEX];
+
+                        check_counts_against_vardim(
+                            fileName,
+                            varName,
+                            currFileID,
+                            varID,
+                            count,
+                            OutDom->netCDFOutput.siteName,
+                            LogInfo
+                        );
+                        if (LogInfo->stopRun) {
+                            /* Exit function prematurely due to error*/
+                            goto closeFile;
+                        }
 #endif // SWDEBUG
 
+                        /* Point to contiguous memory where values change
+                           fastest for vegtypes, then soil layers, then time,
+                           then variables
+                        */
+#if defined(SWMPI)
+                        if (numWritesProc <= write || !succFlags[numSiteSum] ||
+                            LogInfo->stopRun) {
 
-                    /* Point to contiguous memory where values change fastest
-                       for vegtypes, then soil layers, then time, then variables
-                    */
-                    pOUTIndex =
-                        OutDom->netCDFOutput.iOUToffset[key][pd][varNum];
-                    if (startTime > 0) {
-                        // 1 if no soil layers
-                        vertSize = (OutDom->nsl_OUT[key][varNum] > 0) ?
-                                       OutDom->nsl_OUT[key][varNum] :
-                                       1;
-                        // 1 if no vegtypes
-                        pftSize = (OutDom->npft_OUT[key][varNum] > 0) ?
-                                      OutDom->npft_OUT[key][varNum] :
-                                      1;
+                            if (!succFlags[numSiteSum] &&
+                                write < numWritesProc) {
 
-                        pOUTIndex += iOUTnc(startTime, 0, 0, vertSize, pftSize);
-                    }
+                                pOUTStart[key][pd] += countTotal * numSites;
+                                numSiteSum += numSites;
+                            }
 
-                    p_OUTValPtr = &p_OUT[key][pd][pOUTIndex];
+                            count[0] = count[1] = 0;
 
+                            // Create a dummy write so this can still take
+                            // part in the collective writes,
+                            // counts should be 0 for latitude/longitude
+                            // to specifically write nothing
+                            SW_NC_write_vals(
+                                &varID,
+                                currFileID,
+                                NULL,
+                                NULL,
+                                start,
+                                count,
+                                "double",
+                                LogInfo
+                            );
+                            continue;
+                        }
+
+                        if (numWritesProc == 1 && numSites == 1) {
+#endif
+                            pOUTIndex = OutDom->netCDFOutput
+                                            .iOUToffset[key][pd][varNum];
+                            if (startTime > 0) {
+                                // 1 if no soil layers
+                                vertSize = (OutDom->nsl_OUT[key][varNum] > 0) ?
+                                               OutDom->nsl_OUT[key][varNum] :
+                                               1;
+                                // 1 if no vegtypes
+                                pftSize = (OutDom->npft_OUT[key][varNum] > 0) ?
+                                              OutDom->npft_OUT[key][varNum] :
+                                              1;
+
+                                pOUTIndex +=
+                                    iOUTnc(startTime, 0, 0, vertSize, pftSize);
+                            }
+                            pOUTIndex += ptrOffset;
+#if defined(SWMPI)
+                        } else {
+                            pOUTIndex = pOUTStart[key][pd];
+                        }
+#endif
+                        p_OUTValPtr = &p_OUT[key][pd][pOUTIndex];
+#if defined(SWMPI)
+                        numElem = countTotal * numSites;
+                        if (numWritesProc > 1 || numSites > 1) {
+                            pOUTStart[key][pd] += numElem;
+                        }
+#endif
 
 /* Convert units if udunits2 and if converter available */
 #if defined(SWUDUNITS)
-                    if (!isnull(OutDom->netCDFOutput.uconv[key][varNum])) {
-                        cv_convert_doubles(
-                            OutDom->netCDFOutput.uconv[key][varNum],
+                        size_t valNum;
+
+                        if (!isnull(OutDom->netCDFOutput.uconv[key][varNum])) {
+#if !defined(SWMPI)
+                            numElem = countTotal * numSites;
+#endif
+                            for (valNum = 0; valNum < numElem; valNum++) {
+                                if (p_OUTValPtr[valNum] != FILL_DOUBLE) {
+                                    p_OUTValPtr[valNum] = cv_convert_double(
+                                        OutDom->netCDFOutput.uconv[key][varNum],
+                                        p_OUTValPtr[valNum]
+                                    );
+                                }
+                            }
+                        }
+#endif
+                        /* For current variable x output period,
+                           write out all values across vegtypes and soil layers
+                           (if any) for current time-chunk
+                        */
+                        SW_NC_write_vals(
+                            &varID,
+                            currFileID,
+                            NULL,
                             p_OUTValPtr,
-                            countTotal,
-                            p_OUTValPtr
+                            start,
+                            count,
+                            "double",
+                            LogInfo
                         );
-                    }
+
+#if !defined(SWMPI)
+                        if (LogInfo->stopRun) {
+                            goto closeFile; // Exit function prematurely due to
+                                            // error
+                        }
 #endif
 
-                    /* For current variable x output period,
-                       write out all values across vegtypes and soil layers (if
-                       any) for current time-chunk
-                    */
-                    SW_NC_write_vals(
-                        &varID,
-                        currFileID,
-                        NULL,
-                        p_OUTValPtr,
-                        start,
-                        count,
-                        "double",
-                        LogInfo
-                    );
-                    if (LogInfo->stopRun) {
-                        goto closeFile; // Exit function prematurely due to
-                                        // error
+                        numSiteSum += numSites;
                     }
+
+#if defined(SWMPI)
+                    /*
+                        The location of this `nc_sync()` is the result of if
+                        called too infrequently, may result in a segmentation
+                        fault, at least in netCDF-C v4.9.0.
+                        It has been observed that the most likely cause is the
+                        number of elements written before `nc_sync()` and
+                        the number of I/O processes.
+                        One occurrence observed was with 2 I/O processes
+                        and writing ~226 million elements (~1.7GB) before the
+                        call to `nc_sync()`.
+                        If this reoccurs when using more extreme configurations
+                        (i.e., # I/O and N_SUID_ASSIGN), the most immediate call
+                        to `SW_NC_write_vals()` will segfault even written
+                        from the start of an output buffer.
+                    */
+                    nc_sync(currFileID);
+#endif
                 }
 
                 // Update startTime
                 startTime += timeSize;
-
+#if !defined(SWMPI)
                 nc_close(currFileID);
+#endif
             }
         }
     }
 
-closeFile: { nc_close(currFileID); }
+#if defined(SWMPI)
+    (void) ncSuid;
+    (void) ncOutFileNames;
+#else
+closeFile:
+    nc_close(currFileID);
+
+    (void) starts;
+    (void) counts;
+    (void) openOutFileIDs;
+#endif
 }
 
 /**

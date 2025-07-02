@@ -64,13 +64,13 @@ const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = {2, 2, 2, 1};
 /**
 @brief Determine number of years/months/weeks/days used in simulation period
 
-@param[in] SW_Model Struct of type SW_MODEL holding basic time
-    about the simulation
+@param[in] SW_ModelIn Struct of type SW_MODEL_INPUTS holding basic input
+    time information about the simulation
 @param[in] use_OutPeriod Describes which time period is currently active
 @param[out] nrow_OUT Number of output rows for each output period
 */
 void SW_OUT_set_nrow(
-    SW_MODEL *SW_Model, const Bool use_OutPeriod[], size_t nrow_OUT[]
+    SW_MODEL_INPUTS *SW_ModelIn, const Bool use_OutPeriod[], size_t nrow_OUT[]
 ) {
 #ifdef SWDEBUG
     int debug = 0;
@@ -78,17 +78,17 @@ void SW_OUT_set_nrow(
 
     TimeInt i;
     size_t n_yrs;
-    IntU startyear = SW_Model->startyr;
+    IntU startyear = SW_ModelIn->startyr;
     IntU endyear;
 
 
 #ifdef STEPWAT
-    n_yrs = SW_Model->runModelYears;
+    n_yrs = SW_ModelIn->runModelYears;
     endyear = startyear + n_yrs + 1;
 
 #else
-    n_yrs = SW_Model->endyr - SW_Model->startyr + 1;
-    endyear = SW_Model->endyr;
+    n_yrs = SW_ModelIn->endyr - SW_ModelIn->startyr + 1;
+    endyear = SW_ModelIn->endyr;
 #endif
 
     nrow_OUT[eSW_Year] = n_yrs * use_OutPeriod[eSW_Year];
@@ -99,14 +99,14 @@ void SW_OUT_set_nrow(
 
     if (use_OutPeriod[eSW_Day]) {
         if (n_yrs == 1) {
-            nrow_OUT[eSW_Day] = SW_Model->endend - SW_Model->startstart + 1;
+            nrow_OUT[eSW_Day] = SW_ModelIn->endend - SW_ModelIn->startstart + 1;
 
         } else {
             // Calculate the start day of first year
             nrow_OUT[eSW_Day] =
-                Time_get_lastdoy_y(startyear) - SW_Model->startstart + 1;
+                Time_get_lastdoy_y(startyear) - SW_ModelIn->startstart + 1;
             // and last day of last year.
-            nrow_OUT[eSW_Day] += SW_Model->endend;
+            nrow_OUT[eSW_Day] += SW_ModelIn->endend;
 
             // Cumulate days of years between first and last year
             for (i = startyear + 1; i < endyear; i++) {
@@ -166,8 +166,8 @@ void SW_OUT_deconstruct_outarray(SW_OUT_RUN *OutRun) {
 /**
 @brief Corresponds to function `get_outstrleader` of `SOILWAT2-standalone
 
-@param[in] SW_Model Struct of type SW_MODEL holding basic time information
-    about the simulation
+@param[in] SW_ModelSim Struct of type SW_MODEL_SIM holding basic
+    intermediate time information about the simulation run
 @param[in] pd Time period in simulation output (day/week/month/year)
 @param[in] irow_OUT Current time step
 @param[in] nrow_OUT Number of output rows for each output period
@@ -175,7 +175,7 @@ void SW_OUT_deconstruct_outarray(SW_OUT_RUN *OutRun) {
 @param[out] p Allocated array to hold output periods for every output key
 */
 void get_outvalleader(
-    SW_MODEL *SW_Model,
+    SW_MODEL_SIM *SW_ModelSim,
     OutPeriod pd,
     const size_t irow_OUT[],
     const size_t nrow_OUT[],
@@ -183,21 +183,22 @@ void get_outvalleader(
     double *p
 ) {
 
-    p[irow_OUT[pd] + nrow_OUT[pd] * 0] = SW_Model->simyear;
+    p[irow_OUT[pd] + nrow_OUT[pd] * 0] = SW_ModelSim->simyear;
 
     switch (pd) {
     case eSW_Day:
-        p[irow_OUT[eSW_Day] + nrow_OUT[eSW_Day] * 1] = SW_Model->doy; // base1
+        p[irow_OUT[eSW_Day] + nrow_OUT[eSW_Day] * 1] =
+            SW_ModelSim->doy; // base1
         break;
 
     case eSW_Week:
         p[irow_OUT[eSW_Week] + nrow_OUT[eSW_Week] * 1] =
-            SW_Model->week + 1 - tOffset; // base0
+            SW_ModelSim->week + 1 - tOffset; // base0
         break;
 
     case eSW_Month:
         p[irow_OUT[eSW_Month] + nrow_OUT[eSW_Month] * 1] =
-            SW_Model->month + 1 - tOffset; // base0
+            SW_ModelSim->month + 1 - tOffset; // base0
         break;
 
     case eSW_Year:
@@ -232,6 +233,9 @@ void do_running_agg(double *p, double *psd, size_t k, IntU n, double x) {
 
 /** Allocate p_OUT and p_OUTsd
 
+@param[in] sizeMult A scalar value to multiply the normal single-site
+    size for each piece of active input; should be set to 1 if no
+    extra space is needed
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
 @param[out] OutRun Struct of type SW_OUT_RUN that holds output
@@ -245,7 +249,7 @@ Note: Compare with function `setGlobalrSOILWAT2_OutputVariables` in
     allocated arrays for each output period and output key.
 */
 void SW_OUT_construct_outarray(
-    SW_OUT_DOM *OutDom, SW_OUT_RUN *OutRun, LOG_INFO *LogInfo
+    size_t sizeMult, SW_OUT_DOM *OutDom, SW_OUT_RUN *OutRun, LOG_INFO *LogInfo
 ) {
     int i;
     int k;
@@ -262,6 +266,7 @@ void SW_OUT_construct_outarray(
 #if defined(SW_OUTARRAY)
                 size = OutDom->nrow_OUT[timeStepOutPeriod] *
                        (OutDom->ncol_OUT[k] + ncol_TimeOUT[timeStepOutPeriod]);
+                size *= sizeMult;
 
                 OutRun->p_OUT[k][timeStepOutPeriod] = (double *) Mem_Calloc(
                     size, s, "SW_OUT_construct_outarray()", LogInfo
@@ -269,6 +274,8 @@ void SW_OUT_construct_outarray(
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }
+#else
+                (void) sizeMult;
 #endif
 
 #if defined(STEPWAT)

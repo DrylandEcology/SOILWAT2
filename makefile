@@ -5,6 +5,7 @@
 #-------------------------------------------------------------------------------
 # text-based SOILWAT2: CPPFLAGS=-DSWTXT
 # netCDF-based SOILWAT2: CPPFLAGS=-DSWNC
+# MPI-based SOILWAT2: CPPFLAGS=-DSWMPI
 #
 #-------------------------------------------------------------------------------
 # commands         explanations
@@ -142,43 +143,69 @@ lib_gmock := $(dir_build_test)/lib$(gmock).a
 
 
 #------ txt-based SOILWAT2
-# `CPPFLAGS=-DSWTXT make all`
+# `make CPPFLAGS=-DSWTXT all`
 # is equivalent to
 # `make all`
 
 #------ netCDF-based SOILWAT2
-# `CPPFLAGS=-DSWNC make all`
+# `make CPPFLAGS=-DSWNC all`
 # is equivalent to
-# `CPPFLAGS='-DSWNETCDF -DSWUDUNITS' make all`
+# `make CPPFLAGS='-DSWNETCDF -DSWUDUNITS' all`
 
 # netCDF support but not udunits2, e.g.,
-# `CPPFLAGS=-DSWNETCDF make all`
+# `make CPPFLAGS=-DSWNETCDF all`
 
 # User-specified paths to netCDF header and library:
-#   `CPPFLAGS=-DSWNETCDF NC_CFLAGS="-I/path/to/include" NC_LIBS="-L/path/to/lib" make all`
+#   `make CPPFLAGS=-DSWNETCDF NC_CFLAGS="-I/path/to/include" NC_LIBS="-L/path/to/lib" all`
 
 # User-specified paths to headers and libraries of netCDF, udunits2 and expat:
-#   `CPPFLAGS='-DSWNETCDF -DSWUDUNITS' NC_CFLAGS="-I/path/to/include" UD_CFLAGS="-I/path/to/include" EX_CFLAGS="-I/path/to/include" NC_LIBS="-L/path/to/lib" UD_LIBS="-L/path/to/lib" EX_LIBS="-L/path/to/lib" make all`
+#   `make CPPFLAGS='-DSWNETCDF -DSWUDUNITS' NC_CFLAGS="-I/path/to/include" UD_CFLAGS="-I/path/to/include" EX_CFLAGS="-I/path/to/include" NC_LIBS="-L/path/to/lib" UD_LIBS="-L/path/to/lib" EX_LIBS="-L/path/to/lib" all`
+
+#------ mpi-based SOILWAT2
+# `make CPPFLAGS=-DSWMPI all`
+# `make CC=mpicc CPPFLAGS=-DSWMPI all`
+#
+# User-specified mpi library (usually not needed if using mpicc/mpicxx, see `mpicc --show`)
+#   `make CPPFLAGS=-DSWMPI MPI_LIBS=-lmpi all`
+# or
+# ```
+#   export NC_CFLAGS="-I/path/to/include"
+#   export UD_CFLAGS="-I/path/to/include"
+#   export EX_CFLAGS="-I/path/to/include"
+#   export NC_LIBS="-L/path/to/lib"
+#   export UD_LIBS="-L/path/to/lib"
+#   export EX_LIBS="-L/path/to/lib"
+#   export MPI_LIBS="-lmpi"
+#   make CPPFLAGS=-DSWMPI all
+# ```
 
 ifeq (,$(findstring -DSWTXT,$(CPPFLAGS)))
   # not txt-based SOILWAT2
 
-  # check if nc-based SOILWAT2
-  ifneq (,$(findstring -DSWNC,$(CPPFLAGS)))
-    # define makefile variables SWNETCDF and SWUDUNITS if defined via CPPFLAGS
+  ifneq (,$(findstring -DSWMPI,$(CPPFLAGS)))
+    # use udunits, netCDFs and MPI
     SWNC = 1
-    override CPPFLAGS += -DSWNETCDF -DSWUDUNITS
+    SWMPI = 1
+    override CPPFLAGS += -DSWNETCDF -DSWUDUNITS -DSWMPI
 
   else
-    # if SWNC is not defined, then check for SWNETCDF and SWUDUNITS individually
-    ifneq (,$(findstring -DSWNETCDF,$(CPPFLAGS)))
-      # define makefile variable SWNETCDF if defined via CPPFLAGS
-      SWNETCDF = 1
-    endif
+    # check if nc-based SOILWAT2
+    ifneq (,$(findstring -DSWNC,$(CPPFLAGS)))
+      # define makefile variables SWNETCDF and SWUDUNITS if defined via CPPFLAGS
+      SWNC = 1
+      override CPPFLAGS += -DSWNETCDF -DSWUDUNITS
 
-    ifneq (,$(findstring -DSWUDUNITS,$(CPPFLAGS)))
-      # define makefile variable SWUDUNITS if defined via CPPFLAGS
-      SWUDUNITS = 1
+    else
+      # if SWNC is not defined, then check for SWNETCDF and SWUDUNITS individually
+      ifneq (,$(findstring -DSWNETCDF,$(CPPFLAGS)))
+        # define makefile variable SWNETCDF if defined via CPPFLAGS
+        SWNETCDF = 1
+      endif
+
+      ifneq (,$(findstring -DSWUDUNITS,$(CPPFLAGS)))
+        # define makefile variable SWUDUNITS if defined via CPPFLAGS
+        SWUDUNITS = 1
+      endif
     endif
   endif
 endif
@@ -263,7 +290,25 @@ else
   sw_EX_LIBS :=
 endif
 
+# mpi-based SOILWAT2
+ifneq (,$(and $(SWMPI),$(MPI_LIBS)))
+  sw_MPI_LIBS := $(MPI_LIBS)
+else
+  sw_MPI_LIBS :=
+endif
 
+
+#------ Number of tasks for mpi-based SOILWAT2
+# use SW_NTASKS if defined; otherwise, use SLURM_NTASKS if defined
+ifdef SWMPI
+  ifndef SW_NTASKS
+    ifdef SLURM_NTASKS
+      SW_NTASKS := $(SLURM_NTASKS)
+    endif
+  endif
+else
+  SW_NTASKS :=
+endif
 
 
 #------ STANDARDS
@@ -341,7 +386,7 @@ gtest_flags := -D_POSIX_C_SOURCE=200809L # googletest requires POSIX API
 # order of libraries is important for GNU gcc (libSOILWAT2 depends on libm)
 sw_LDFLAGS_bin := $(LDFLAGS) -L$(dir_bin)
 sw_LDFLAGS_test := $(LDFLAGS) -L$(dir_bin) -L$(dir_build_test)
-sw_LDLIBS := $(LDLIBS) $(sw_NC_LIBS) $(sw_UD_LIBS) $(sw_EX_LIBS) -lm
+sw_LDLIBS := $(LDLIBS) $(sw_NC_LIBS) $(sw_UD_LIBS) $(sw_EX_LIBS) $(sw_MPI_LIBS) -lm
 
 target_LDLIBS := -l$(target) $(sw_LDLIBS)
 test_LDLIBS := -l$(target_test) $(sw_LDLIBS)
@@ -373,6 +418,7 @@ sources_core := \
 	$(dir_src)/SW_Flow.c \
 	$(dir_src)/SW_Carbon.c \
 	$(dir_src)/SW_Domain.c \
+	$(dir_src)/SW_DerivedMetrics.c \
 	$(dir_src)/SW_Output.c \
 	$(dir_src)/SW_Output_get_functions.c \
 	$(dir_src)/SW_Output_outarray.c \
@@ -383,6 +429,10 @@ sources_core += $(dir_src)/SW_netCDF_General.c
 sources_core += $(dir_src)/SW_netCDF_Input.c
 sources_core += $(dir_src)/SW_netCDF_Output.c
 sources_core += $(dir_src)/SW_datastructs.c
+endif
+
+ifdef SWMPI
+sources_core += $(dir_src)/SW_MPI.c
 endif
 
 sources_lib = $(sources_core)
@@ -513,11 +563,11 @@ $(dir_bin) $(dir_build_sw2) $(dir_build_test):
 #--- Convenience targets for testing
 .PHONY : bin_run
 bin_run : all
-		$(bin_sw2) -d ./tests/example -f files.in -r
+		./tools/run_bin.sh --ntasks=$(SW_NTASKS)
 
 .PHONY : test_run
 test_run : test
-		$(bin_test)
+		./tools/run_test.sh
 
 .PHONY : test_severe
 test_severe :
@@ -533,27 +583,27 @@ test_leaks : test
 
 .PHONY : test_reprnd
 test_reprnd : test
-		$(bin_test) --gtest_shuffle --gtest_repeat=-1
+		./tools/run_test.sh --gtest_shuffle --gtest_repeat=-1
 
 .PHONY : test_rep3rnd
 test_rep3rnd : test
-		$(bin_test) --gtest_shuffle --gtest_repeat=3
+		./tools/run_test.sh --gtest_shuffle --gtest_repeat=3
 
 .PHONY : bin_debug
 bin_debug :
-		./tools/run_debug.sh
+		./tools/run_debug.sh --ntasks=$(SW_NTASKS)
 
 .PHONY : bin_debug_severe
 bin_debug_severe :
-		./tools/run_debug_severe.sh
+		./tools/run_debug_severe.sh --ntasks=$(SW_NTASKS)
 
 .PHONY : bin_sanitizer
 bin_sanitizer :
-		./tools/run_bin_sanitizer.sh
+		./tools/run_bin_sanitizer.sh --ntasks=$(SW_NTASKS)
 
 .PHONY : bin_leaks
 bin_leaks : all
-		./tools/run_bin_leaks.sh
+		./tools/run_bin_leaks.sh --ntasks=$(SW_NTASKS)
 
 
 #--- Convenience targets for code coverage
@@ -565,6 +615,9 @@ cov :
 #--- Targets for clang-tidy
 tidy-bin: $(sources_lib) $(sources_bin)
 	clang-tidy --config-file=.clang-tidy $(sources_lib) $(sources_bin) -- $(sw_CPPFLAGS_bin) $(sw_CFLAGS) $(bin_flags) $(warning_flags) $(set_std)
+
+tidy-mpi: $(sources_lib) $(sources_bin)
+	clang-tidy --config-file=.clang-tidy_mpi $(sources_lib) $(sources_bin) -- $(sw_CPPFLAGS_bin) $(sw_CFLAGS) $(bin_flags) $(warning_flags) $(set_std)
 
 tidy-test: $(sources_test)
 	clang-tidy --config-file=.clang-tidy_swtest $(sources_test) -- $(sw_CPPFLAGS_test) $(sw_CXXFLAGS) $(gtest_flags) $(debug_flags) $(warning_flags) $(instr_flags) $(set_std++_tests) -isystem ${dir_gmock}/include -isystem ${dir_gtest}/include
