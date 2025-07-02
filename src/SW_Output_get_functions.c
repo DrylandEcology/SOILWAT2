@@ -5500,3 +5500,287 @@ void get_frozen_agg(
     }
 }
 #endif
+
+
+//------ eSW_DerivedSum
+#ifdef SW_OUTTEXT
+
+/**
+@brief Gets cumulative derived metrics when dealing with OUTTEXT.
+
+@param[in] pd Time period in simulation output (day/week/month/year)
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void get_derivedsum_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
+    SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
+
+    OutRun->sw_outstr[0] = '\0';
+    (void) snprintf(
+        OutRun->sw_outstr,
+        sizeof OutRun->sw_outstr,
+        "%c%.*f%c%.*f%c%.*f",
+        OUTSEP,
+        OUT_DIGITS,
+        vo->cwd,
+        OUTSEP,
+        OUT_DIGITS,
+        vo->ddd5C30bar000to100cm,
+        OUTSEP,
+        OUT_DIGITS,
+        vo->wdd5C15bar000to100cm
+    );
+
+    (void) LogInfo;
+}
+#endif
+
+#if defined(RSOILWAT) || defined(SWNETCDF)
+
+/**
+@brief Gets cumulative derived metrics when dealing with RSOILWAT.
+
+@param[in] pd Time period in simulation output (day/week/month/year)
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
+*/
+void get_derivedsum_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
+
+    double *p = OutRun->p_OUT[eSW_DerivedSum][pd];
+
+#if defined(RSOILWAT)
+    get_outvalleader(
+        &sw->ModelSim,
+        pd,
+        OutRun->irow_OUT,
+        OutDom->nrow_OUT,
+        OutRun->tOffset,
+        p
+    );
+#endif
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_DerivedSum][pd][0] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->cwd;
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(1, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_DerivedSum][pd][1] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->ddd5C30bar000to100cm;
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(2, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_DerivedSum][pd][2] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->wdd5C15bar000to100cm;
+}
+
+#elif defined(STEPWAT)
+
+/**
+@brief Gets cumulative derived metrics when dealing with STEPWAT.
+
+@param[in] pd Time period in simulation output (day/week/month/year)
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void get_derivedsum_agg(
+    OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
+) {
+    SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
+
+    double *p = OutRun->p_OUT[eSW_DerivedSum][pd];
+    double *psd = OutRun->p_OUTsd[eSW_DerivedSum][pd];
+
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->cwd);
+
+    iOUTIndex =
+        iOUT(1, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(
+        p, psd, iOUTIndex, OutRun->currIter, vo->ddd5C30bar000to100cm
+    );
+
+    iOUTIndex =
+        iOUT(2, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(
+        p, psd, iOUTIndex, OutRun->currIter, vo->wdd5C15bar000to100cm
+    );
+
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p,
+            psd,
+            pd,
+            OutDom->ncol_OUT[eSW_DerivedSum],
+            sw,
+            OutDom->nrow_OUT,
+            LogInfo
+        );
+    }
+}
+
+#endif
+
+
+//------ eSW_DerivedAvg
+#ifdef SW_OUTTEXT
+
+/**
+@brief Gets average derived metrics when dealing with OUTTEXT.
+
+@param[in] pd Time period in simulation output (day/week/month/year)
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void get_derivedavg_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
+    SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
+
+    OutRun->sw_outstr[0] = '\0';
+    (void) snprintf(
+        OutRun->sw_outstr,
+        sizeof OutRun->sw_outstr,
+        "%c%.*f%c%.*f",
+        OUTSEP,
+        OUT_DIGITS,
+        vo->swa30bar000to100cm,
+        OUTSEP,
+        OUT_DIGITS,
+        vo->swa39bar000to100cm
+    );
+
+    (void) LogInfo;
+}
+#endif
+
+#if defined(RSOILWAT) || defined(SWNETCDF)
+
+/**
+@brief Gets average derived metrics when dealing with RSOILWAT.
+
+@param[in] pd Time period in simulation output (day/week/month/year)
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
+*/
+void get_derivedavg_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
+
+    double *p = OutRun->p_OUT[eSW_DerivedAvg][pd];
+
+#if defined(RSOILWAT)
+    get_outvalleader(
+        &sw->ModelSim,
+        pd,
+        OutRun->irow_OUT,
+        OutDom->nrow_OUT,
+        OutRun->tOffset,
+        p
+    );
+#endif
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_DerivedAvg][pd][0] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->swa30bar000to100cm;
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(1, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_DerivedAvg][pd][1] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->swa39bar000to100cm;
+}
+
+#elif defined(STEPWAT)
+
+/**
+@brief Gets derived metrics when dealing with STEPWAT.
+
+@param[in] pd Time period in simulation output (day/week/month/year)
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void get_derivedavg_agg(
+    OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
+) {
+    SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
+
+    double *p = OutRun->p_OUT[eSW_DerivedAvg][pd];
+    double *psd = OutRun->p_OUTsd[eSW_DerivedAvg][pd];
+
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->swa30bar000to100cm);
+
+    iOUTIndex =
+        iOUT(1, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->swa39bar000to100cm);
+
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p,
+            psd,
+            pd,
+            OutDom->ncol_OUT[eSW_DerivedAvg],
+            sw,
+            OutDom->nrow_OUT,
+            LogInfo
+        );
+    }
+}
+
+#endif

@@ -126,6 +126,8 @@ extern "C" {
 #define SW_ESTAB "ESTABL"          // 29	5		0
 #define SW_CO2EFFECTS "CO2EFFECTS" // 30	?		?
 #define SW_BIOMASS "BIOMASS"       // 31	?		?
+#define SW_DERIVEDSUM "DERIVEDSUM"
+#define SW_DERIVEDAVG "DERIVEDAVG"
 
 /* summary methods */
 #define SW_SUM_OFF "OFF"       /* don't output */
@@ -356,6 +358,8 @@ void get_soiltemp_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo);
 void get_frozen_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo);
 void get_co2effects_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo);
 void get_biomass_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo);
+void get_derivedsum_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo);
+void get_derivedavg_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo);
 #endif
 
 #if defined(RSOILWAT) || defined(SWNETCDF)
@@ -387,6 +391,8 @@ void get_soiltemp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom);
 void get_frozen_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom);
 void get_co2effects_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom);
 void get_biomass_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom);
+void get_derivedsum_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom);
+void get_derivedavg_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom);
 
 #elif defined(STEPWAT)
 void get_temp_agg(
@@ -471,6 +477,12 @@ void get_co2effects_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 );
 void get_biomass_agg(
+    OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
+);
+void get_derivedsum_agg(
+    OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
+);
+void get_derivedavg_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 );
 

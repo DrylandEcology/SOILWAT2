@@ -392,6 +392,44 @@ static double SWRC_get_ksat(unsigned int swrc_type, double *swrcp) {
     return swrcp[swrcp2ksat[swrc_type]];
 }
 
+/** Proportional contribution of the thickness of a soil layer to a depth limit
+
+@param[in] depthLimit Limit of soil depth to be represented by weights
+@param[in] i Soil layer index
+@param[in] depths Array of soil layer (bottom) depths
+@param[in] n_layers Number of soil layers
+*/
+static double soilLayerWeight(
+    double depthLimit, LyrIndex i, double const depths[], LyrIndex n_layers
+) {
+    double w = 0.;
+
+    if (i >= n_layers) {
+        return w;
+    }
+
+    if (depths[i] <= depthLimit) {
+        w = 1.;
+    } else if (i == 0) {
+        w = depthLimit / depths[i];
+    } else if (depths[i] > depthLimit && depths[i - 1] < depthLimit) {
+        w = (depthLimit - depths[i - 1]) / (depths[i] - depths[i - 1]);
+    }
+
+    return w;
+}
+
+
+#ifdef SWDEBUG
+// since `soilLayerWeight` is static we cannot do unit tests unless we set
+// it up as an externed function pointer
+// NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
+double (*test_soilLayerWeight)(double, LyrIndex, double const *, LyrIndex) =
+    &soilLayerWeight;
+// NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
+#endif
+
+
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
@@ -2743,6 +2781,7 @@ void SW_SIT_init_run(
             return; // Exit function prematurely due to error
         }
 
+
         /* Calculate lower SWC limit of bare-soil evaporation
             as `max(0.5 * wiltpt, SWC@hygroscopic)`
 
@@ -2820,7 +2859,6 @@ void SW_SIT_init_run(
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
-
 
         /* test validity of calculated values */
         if (LT(SW_SiteSim->swcBulk_init[s], SW_SiteSim->swcBulk_min[s])) {
@@ -2932,6 +2970,20 @@ void SW_SIT_init_run(
         }
 #endif
 
+
+        /* Calculate helper values for metric_*() functionality */
+        SW_SiteSim->baseSWC30bar[s] =
+            SW_SWRC_SWPtoSWC(30., SW_SoilRunIn, SW_SiteSim, s, LogInfo);
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+        SW_SiteSim->baseSWC39bar[s] =
+            SW_SWRC_SWPtoSWC(39., SW_SoilRunIn, SW_SiteSim, s, LogInfo);
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+        SW_SiteSim->slWeight100[s] =
+            soilLayerWeight(100., s, SW_SoilRunIn->depths, n_layers);
 
         /* sum ev and tr coefficients for later */
         evsum += SW_SoilRunIn->evap_coeff[s];

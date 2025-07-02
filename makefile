@@ -418,6 +418,7 @@ sources_core := \
 	$(dir_src)/SW_Flow.c \
 	$(dir_src)/SW_Carbon.c \
 	$(dir_src)/SW_Domain.c \
+	$(dir_src)/SW_DerivedMetrics.c \
 	$(dir_src)/SW_Output.c \
 	$(dir_src)/SW_Output_get_functions.c \
 	$(dir_src)/SW_Output_outarray.c \

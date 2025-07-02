@@ -229,12 +229,23 @@ typedef enum {
 // macro `ForEachOutPeriod` --> instead, define as type unsigned int
 typedef unsigned short OutPeriod;
 
-/*
-  * Number of output keys
+/** Number of output keys
 
-  * Must match number of items in output enum (minus eSW_NoKey and eSW_LastKey)
+    Update the following if \ref SW_OUTNKEYS is changed
+        - tests/example/Input/outsetup.in
+        - tests/example/Input_nc/SW2_netCDF_output_variables.tsv
+        - SWVarUnits
+        - possKeys
+        - key2obj
+        - key2str
+        - SW_OUT_set_ncol()
+        - SW_OUT_set_colnames()
+        - average_for()
+        - sumof_XXX()
+
+    See also the (outdated) \ref out_algo "output algorithm documentation"
 */
-#define SW_OUTNKEYS 32
+#define SW_OUTNKEYS 34
 
 #define SW_OUTNMAXVARS 8 // maximum number of output variables per OutKey
 
