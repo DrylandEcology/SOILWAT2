@@ -3612,6 +3612,7 @@ static Bool write_outputs(
         numSites = (siteDom) ? counts[write][0] : counts[write][1];
 
         for (mark = 0; mark < numSites; mark++) {
+            // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
             succMark[mark] =
                 succFlags[totalSites + mark] ? PRGRSS_DONE : PRGRSS_FAIL;
         }

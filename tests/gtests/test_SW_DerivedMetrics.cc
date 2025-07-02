@@ -1,12 +1,11 @@
-#include "include/SW_Defines.h"         // for MAX_LAYERS, LyrIndex
-#include "include/SW_DerivedMetrics.h"  // for metric_DDD, metric_WDD, metri...
-#include "gtest/gtest.h"                // for Message, Test, CmpHelperFloat...
-
+#include "include/SW_Defines.h"        // for MAX_LAYERS, LyrIndex
+#include "include/SW_DerivedMetrics.h" // for metric_DDD, metric_WDD, metri...
+#include "gtest/gtest.h"               // for Message, Test, CmpHelperFloat...
 
 namespace {
 TEST(SWDerivedMetrics, CWD) {
-    double x1 = 1.5;
-    double x2 = 0.33;
+    double const x1 = 1.5;
+    double const x2 = 0.33;
 
     // Expect that CWD calculates the difference
     EXPECT_DOUBLE_EQ(metric_CWD(x1, x2), x1 - x2);
@@ -16,7 +15,7 @@ TEST(SWDerivedMetrics, TotalSWA) {
     double swcBulk[MAX_LAYERS] = {1.};
     double baseSWC[MAX_LAYERS];
     double layerWeights[MAX_LAYERS];
-    LyrIndex n_layers = 1;
+    LyrIndex const n_layers = 1;
     double totalSWC;
 
     // Expect that 0 <= TotalSWA <= sum(swcBulk)
@@ -46,14 +45,14 @@ TEST(SWDerivedMetrics, TotalSWA) {
 }
 
 TEST(SWDerivedMetrics, DDD) {
-    double tmean = 25.;
+    double const tmean = 25.;
     double baseTmean;
     double swe;
-    double baseSWE = 0.;
+    double const baseSWE = 0.;
     double swcBulk[MAX_LAYERS];
     double baseSWC[MAX_LAYERS] = {0.25};
     double layerWeights[MAX_LAYERS]{1.};
-    LyrIndex n_layers = 1;
+    LyrIndex const n_layers = 1;
     double gdd;
 
     // Expect that 0 <= ddd <= (total/growing) degree-days
@@ -145,14 +144,14 @@ TEST(SWDerivedMetrics, DDD) {
 }
 
 TEST(SWDerivedMetrics, WDD) {
-    double tmean = 25.;
+    double const tmean = 25.;
     double baseTmean;
     double swe;
-    double baseSWE = 0.;
+    double const baseSWE = 0.;
     double swcBulk[MAX_LAYERS];
     double baseSWC[MAX_LAYERS] = {0.25};
     double layerWeights[MAX_LAYERS]{1.};
-    LyrIndex n_layers = 1;
+    LyrIndex const n_layers = 1;
     double gdd;
 
     // Expect that 0 <= wdd <= (total/growing) degree-days

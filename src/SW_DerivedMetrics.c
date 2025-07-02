@@ -3,14 +3,15 @@
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
 #include "include/SW_DerivedMetrics.h"
-#include "include/SW_Defines.h"  // for LyrIndex, ForEachSoilLayer
-#include "include/generic.h"     // for fmax, GT, ZRO
+#include "include/generic.h"    // for fmax, GT, ZRO
+#include "include/SW_Defines.h" // for LyrIndex, ForEachSoilLayer
 
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
-/** Climatic water deficit
+/**
+@brief Climatic water deficit
 
 @param[in] pet Potential evapotranspiration
 @param[in] aet Actual evapotranspiration
@@ -19,7 +20,8 @@
 */
 double metric_CWD(double pet, double aet) { return pet - aet; }
 
-/** Available soil water
+/**
+@brief Available soil water
 
 @param[in] swcBulk Bulk soil water content
 @param[in] baseSWC Base bulk soil water content that is held at a fixed tension
@@ -46,7 +48,8 @@ double metric_totalSWA(
     return swa;
 }
 
-/** Dry degree-days
+/**
+@brief Dry degree-days
 
 @param[in] tmean Daily mean air temperature
 @param[in] baseTmean Base temperature above which degree-days accumulate
@@ -85,7 +88,8 @@ double metric_DDD(
     return ddd;
 }
 
-/** Wet degree-days
+/**
+@brief Wet degree-days
 
 @param[in] tmean Daily mean air temperature
 @param[in] baseTmean Base temperature above which degree-days accumulate
