@@ -3,8 +3,8 @@
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
 #include "include/SW_DerivedMetrics.h"
-#include "include/SW_Defines.h"  // for LyrIndex, ForEachSoilLayer
-#include "include/generic.h"     // for fmax, GT, ZRO
+#include "include/generic.h"    // for fmax, GT, ZRO
+#include "include/SW_Defines.h" // for LyrIndex, ForEachSoilLayer
 
 /* =================================================== */
 /*             Global Function Definitions             */
