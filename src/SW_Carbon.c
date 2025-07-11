@@ -347,7 +347,7 @@ void SW_CBN_init_run(
                 vegIn[SW_SHRUB].co2_bio_coeff1,
                 vegIn[SW_SHRUB].co2_bio_coeff2,
                 ppm,
-                biomCorrectionFactor[k]
+                biomCorrectionFactor[SW_SHRUB]
             );
         }
 #endif
