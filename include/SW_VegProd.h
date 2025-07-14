@@ -124,9 +124,10 @@ void SW_VPD_read(
 );
 
 void SW_VPD_new_year(
-    SW_WEATHER_HIST *SW_WeathHist,
+    SW_WEATHER_HIST *SW_YearWeathHist,
     SW_MODEL_SIM *SW_ModelSim,
     SW_VEGPROD_SIM *SW_VegProdSim,
+    SW_SOIL_SIM *SW_SoilSim,
     Bool isBiomAsIf100Cover,
     int veg_method,
     TimeInt startYr,

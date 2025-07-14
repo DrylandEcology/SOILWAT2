@@ -163,6 +163,7 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         sw->RunIn.weathRunAllHist,
         &sw->ModelSim,
         &sw->VegProdSim,
+        &sw->SoilSim,
         sw->VegProdIn.isBiomAsIf100Cover,
         sw->VegProdIn.veg_method,
         sw->ModelIn.startyr,

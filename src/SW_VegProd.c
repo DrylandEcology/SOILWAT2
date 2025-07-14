@@ -253,8 +253,8 @@ include
     - Total soil available water holding capacity
     - Explicitly determine the maximum depth of soils for the current site
 
-@param[in,out] SW_SoilSim Struct of type SW_SOIL_SIM holding constant
-information that will be used during simulations
+@param[in,out] SW_SoilSim Struct of type SW_SOIL_SIM holding constant soil
+content information that will be used during simulations
 @param[in] SW_SoilRunIn Struct of type SW_SOIL_RUN_INPUTS describing
     the simulated site's input values
 @param[in] SW_SiteSim Struct of type SW_SITE_SIM describing the simulated site's
@@ -630,6 +630,402 @@ static void calc_veg_predictor_vals(
         SW_VegProdSim->longIndex++;
     }
 }
+
+/**
+@brief Calculate updated vegetation cover values
+
+@param[in] ss Struct of type SW_SOIL_SIM (soil sim -> ss) that holds constant
+predictor values for calculating updated vegetation values
+@param[in] yearIndex Index value specifying which place the year is in the
+simulation process (i.e., [0, <n years>) )
+@param[out] vps Struct of type SW_VEGPROD_SIM (VegProd sim -> vps) that holds
+information used and/or modified mainly during simulation runs; update
+vegetation values for current year of simulation runs
+*/
+static void calc_CONUS_vegcov_2025(
+    SW_SOIL_SIM *ss, TimeInt yearIndex, SW_VEGPROD_SIM *vps
+) {
+    double ecoregionForest;
+    double totalHerbaceousCoverNonForest;
+    double totalHerbaceousCoverForest;
+    double totalTreeCoverNonForest;
+    double totalTreeCoverForest;
+    double shrubCover;
+    double bareGroundCover;
+    double GrassC3CoverProportion;
+    double GrassC4CoverProportion;
+    double forbCoverProportion;
+    double broadLeavedTreeCoverForestProportion;
+    double needleLeavedTreeCoverForestProportion;
+    double broadLeavedTreeCoverNonForestProportion;
+    double needleLeavedTreeCoverNonForestProportion;
+    double sumTreesForest;
+    double scaledBroadLeavedTreeCoverForestProportion;
+    double scaledNeedleLeavedTreeCoverForestProportion;
+    double sumTreesNonForest;
+    double scaledBroadLeavedTreeCoverNonForestProportion;
+    double scaledNeedleLeavedTreeCoverNonForestProportion;
+    double totalHerbaceousCover;
+    double totalTreeCoverCover;
+    double scaledBroadLeavedTreeCoverProportion;
+    double scaledNeedleLeavedTreeCoverProportion;
+    double sumTotal;
+    double finalTotalHerbaceousCover;
+    double finalTotalTreeCoverCover;
+    double finalShrubCover;
+    double finalBareGroundCover;
+    double finalGrassC3Cover;
+    double finalGrassC4Cover;
+    double finalForbCover;
+    double finalBroadLeavedTreeCover;
+    double finalNeedleLeavedTreeCover;
+    double sumHerbaceous;
+    double scaledGrassC3CoverProportion;
+    double scaledGrassC4CoverProportion;
+    double scaledForbCoverProportion;
+
+    double tempVal;
+
+    double annTemp = vps->annTempLongAvg;
+    double annSeasonPrecip = vps->annSeasonPrecipLongAvg;
+    double annIsotherm = vps->annIsothermLongAvg;
+    double annWatDef = vps->annWaterDefLongAvg;
+    double weighMeanSand = ss->percSand;
+    double weighMeanCoarseFrag = ss->percCoarseFrag;
+    double awhc = ss->totAWHC;
+    double anomCorTempPrecip = vps->anomTempPrecipCorr;
+    double anomIsotherm = vps->anomIsotherm;
+    double anomWatDef = vps->anomWaterDef;
+    double annPrecip = vps->annPrecipLongAvg;
+    double anomRateSeasonPrecip = vps->anomPctSeasonPrecip;
+    double annPrecipDriestMon = vps->annPrecipDriestMonLongAvg;
+    double percClay = ss->surfaceClay;
+    double anomRatePrecip = vps->anomPctPrecip;
+    double annWDD = vps->annWetDegDaysLongAvg;
+    double anomRateWDD = vps->anomPctWetDegDays;
+    double percSOC = ss->surfaceOM * .58;
+
+    double zltTempMean = (annTemp - 10.275203571) / 4.912309147;
+    double zltPrecipSeasonality = (annSeasonPrecip - 0.923249309) / 0.245954382;
+    double zltIsothermality = (annIsotherm - 38.120111845) / 5.019479015;
+    double zltWaterDeficit = (annWatDef - 99.631248729) / 85.941823498;
+    double zMeanSand = (weighMeanSand - 47.706485501) / 16.730875594;
+    double zMeanCoarseFragments =
+        (weighMeanCoarseFrag - 12.799273363) / 11.332548324;
+    double zAWHC = (awhc - 13.671423701) / 5.155757156;
+    double zstaCorPrTas = (anomCorTempPrecip - 0.012171065) / 0.139613922;
+    double zstaIsothermality = (anomIsotherm - 0.538807833) / 1.422356333;
+    double zstaWaterDeficit = (anomWatDef + 0.119596687) / 0.424434636;
+    double zltPrecip = (annPrecip - 613.900118155) / 502.187690606;
+    double zltCorPrTas = (anomCorTempPrecip + 0.120988193) / 0.410662268;
+    double zstraPrecipSeasonality =
+        (anomRateSeasonPrecip + 0.025697534) / 0.132964252;
+    double zSurfaceSOC = (percSOC - 3.681945502) / 6.405262851;
+    double zltPrecipDriestMonth =
+        (annPrecipDriestMon - 5.000260635) / 8.205443958;
+    double zSurfaceClay = (percClay - 18.489433548) / 9.078669938;
+    double zstraPrecip = (anomRatePrecip - 0.030312573) / 0.168767355;
+    double zltWDD = (annWDD - 1762.977520092) / 1160.20756048;
+    double zstraWDD = (anomRateWDD - 0.02989113) / 0.243425185;
+
+    double zltPrecipSqd = zltPrecip * zltPrecip;
+    double zltCorPrTasSqd = zltCorPrTas * zltCorPrTas;
+    double zltIsothermalitySqd = zltIsothermality * zltIsothermality;
+    double zstaIsothermalitySqd = zstaIsothermality * zstaIsothermality;
+    double zstraPrecipSeasonalitySqd =
+        zstraPrecipSeasonality * zstraPrecipSeasonality;
+    double zstaCorPrTasSqd = zstaCorPrTas * zstaCorPrTas;
+    double zMeanSandSqd = zMeanSand * zMeanSand;
+    double zMeanCoarseFragmentsSqd =
+        zMeanCoarseFragments * zMeanCoarseFragments;
+    double zSurfaceSOCSqd = zSurfaceSOC * zSurfaceSOC;
+    double zAWHCSqd = zAWHC * zAWHC;
+    double zstaWaterDeficitSqd = zstaWaterDeficit * zstaWaterDeficit;
+    double zSurfaceClaySqd = zSurfaceClay * zSurfaceClay;
+    double zltPrecipSeasonalitySqd =
+        zltPrecipSeasonality * zltPrecipSeasonality;
+
+    /* 2.1 Ecoregion classification model */
+    /* Predictor variables of the ecoregion model are on the original scale */
+    tempVal = 9.872597456 + -0.299906791 * vps->annTempWarmestMon[yearIndex] +
+              0.245551132 * vps->annTempColdestMon[yearIndex] +
+              0.010607279 * vps->annPrecipWettestMon[yearIndex] +
+              -0.062058523 * vps->annWaterDef[yearIndex] +
+              -2.786336969 * vps->annTempPrecipCorr[yearIndex] +
+              0.054028905 * vps->annIsotherm[yearIndex] +
+              -0.007599899 * ss->soilDepth + 0.033478424 * ss->percSand +
+              0.031037682 * ss->percCoarseFrag + 0.272601351 * percSOC;
+    ecoregionForest = 1 / (1 + exp(-tempVal));
+
+    /* Predictor variables of cover models are centered & scaled 'z*' */
+    /* 2.2 Level 1 functional group cover models */
+    /* 2.2.1 Total Herbaceous Cover – non-forest */
+    tempVal =
+        3.276248186 + 0.333755104 * zltTempMean +
+        0.000988410 * zltPrecipSeasonality + -0.093566592 * zltIsothermality +
+        -0.401713218 * zltWaterDeficit + -0.101054822 * zMeanSand +
+        -0.059075423 * zMeanCoarseFragments + 0.097488751 * zAWHC +
+        0.013584831 * zstaCorPrTas + -0.011392877 * zstaIsothermality +
+        0.035960786 * zstaWaterDeficit + -0.217970279 * zltPrecipSqd +
+        0.367790702 * zltCorPrTasSqd + -0.031527015 * zltIsothermalitySqd +
+        -0.001997141 * zstraPrecipSeasonalitySqd +
+        -0.022758623 * zstaCorPrTasSqd + 0.014352225 * zMeanSandSqd +
+        0.025503657 * zMeanCoarseFragmentsSqd + 0.062557753 * zSurfaceSOCSqd +
+        -0.048139022 * zAWHCSqd + 0.002192693 * zltWaterDeficit * zstaCorPrTas +
+        0.014972237 * zltIsothermality * zstaWaterDeficit +
+        -0.051575876 * zstaWaterDeficit * zltPrecip +
+        0.038675358 * zltPrecipSeasonality * zstaWaterDeficit +
+        -0.009761302 * zstaCorPrTas * zstaWaterDeficit +
+        0.289340507 * zltIsothermality * zltPrecip +
+        0.078632789 * zltPrecipSeasonality * zltIsothermality +
+        0.132202861 * zltIsothermality * zltCorPrTas +
+        -0.009488915 * zltIsothermality * zstaCorPrTas +
+        0.063991677 * zltTempMean * zltIsothermality +
+        0.020965402 * zltPrecipSeasonality * zstaIsothermality +
+        0.237331817 * zltPrecip * zltCorPrTas +
+        0.009654127 * zltCorPrTas * zstraPrecipSeasonality +
+        0.011241877 * zstaCorPrTas * zstraPrecipSeasonality +
+        -0.185452900 * zltTempMean * zltCorPrTas +
+        0.042165264 * zMeanSand * zAWHC +
+        -0.014331054 * zMeanSand * zMeanCoarseFragments;
+    totalHerbaceousCoverNonForest = exp(tempVal) - 2;
+
+    /* 2.2.2 Total Herbaceous Cover – forest */
+    tempVal = 3.191837402 + -0.122792350 * zltPrecip +
+              0.116138373 * zltPrecipDriestMonth + 0.073364801 * zltCorPrTas +
+              -0.223502453 * zltIsothermality + 0.059416398 * zSurfaceClay +
+              -0.143976298 * zMeanSand + 0.093798717 * zAWHC +
+              -0.082685833 * zstaIsothermality +
+              -0.026084114 * zstaWaterDeficit + 0.067376300 * zltCorPrTasSqd +
+              0.025575815 * zltIsothermalitySqd +
+              0.010298554 * zstaIsothermalitySqd +
+              -0.001326385 * zstaWaterDeficitSqd + 0.075308377 * zMeanSandSqd +
+              0.073306773 * zAWHCSqd +
+              0.019965778 * zstaIsothermality * zstaWaterDeficit +
+              -0.016757681 * zltCorPrTas * zstaWaterDeficit +
+              -0.010148936 * zstaWaterDeficit * zltTempMean +
+              0.092170440 * zltPrecip * zltIsothermality +
+              0.016099673 * zltPrecip * zstaIsothermality +
+              0.019360302 * zstaIsothermality * zstraPrecip +
+              -0.007884072 * zltPrecipDriestMonth * zstaIsothermality +
+              -0.006048882 * zstaIsothermality * zstaCorPrTas +
+              -0.070468595 * zstaIsothermality * zltTempMean +
+              -0.013811905 * zltPrecip * zstaCorPrTas +
+              0.030103657 * zltPrecipDriestMonth * zstraPrecip +
+              -0.001131342 * zstraPrecip * zstaCorPrTas +
+              0.029138569 * zltTempMean * zstraPrecip +
+              -0.081971171 * zltPrecipDriestMonth * zltCorPrTas +
+              -0.015253376 * zltPrecipDriestMonth * zltTempMean +
+              -0.039321175 * zltCorPrTas * zstaCorPrTas +
+              0.042655226 * zltCorPrTas * zltTempMean +
+              0.013823818 * zltTempMean * zstaCorPrTas +
+              -0.020024507 * zAWHC * zSurfaceSOC +
+              0.078265961 * zSurfaceClay * zAWHC +
+              0.081708191 * zAWHC * zMeanCoarseFragments +
+              0.185762180 * zMeanSand * zAWHC +
+              -0.025554099 * zSurfaceSOC * zMeanCoarseFragments +
+              -0.038284034 * zMeanSand * zSurfaceSOC;
+    totalHerbaceousCoverForest = exp(tempVal) - 2;
+
+    /* 2.2.3 Total Tree Cover – non-forest */
+    tempVal = 2.58245786 + 1.14190425 * zltPrecip +
+              -0.15075425 * zltPrecipSeasonality +
+              0.03572512 * zltWaterDeficit + -0.07413619 * zMeanSand +
+              -0.31894087 * zAWHC;
+    totalTreeCoverNonForest = exp(tempVal) - 2;
+
+    /* 2.2.4 Total Tree Cover – forest */
+    tempVal = 3.28887888 + 0.10058372 * zltTempMean + 0.07165316 * zltPrecip +
+              0.12712928 * zltPrecipDriestMonth + 0.03173495 * zSurfaceSOC +
+              0.06648011 * zAWHC + -0.17846554 * zstraPrecip +
+              -0.02914362 * zstaIsothermalitySqd +
+              -0.04902481 * zSurfaceClaySqd +
+              0.11841332 * zltPrecip * zstaIsothermality +
+              0.11243677 * zltPrecipDriestMonth * zltCorPrTas +
+              0.02314517 * zltTempMean * zltPrecipDriestMonth +
+              -0.16107089 * zltTempMean * zltCorPrTas +
+              -0.03108354 * zSurfaceSOC * zSurfaceClay +
+              0.04845871 * zSurfaceSOC * zMeanCoarseFragments;
+    totalTreeCoverForest = exp(tempVal) - 2;
+
+    /* 2.2.5 shrub cover – CONUS-wide */
+    tempVal = 2.939339967 + 0.145466528 * zltPrecip +
+              -0.106416302 * zltPrecipSeasonality + -0.216540564 * zltCorPrTas +
+              0.091558229 * zMeanSand + 0.007762789 * zMeanCoarseFragments +
+              -0.083296458 * zltCorPrTasSqd + -0.056281606 * zMeanSandSqd +
+              -0.006510544 * zAWHCSqd +
+              0.048231968 * zltWDD * zstaIsothermality +
+              -0.030802083 * zstaIsothermality * zltIsothermality +
+              0.117940292 * zltIsothermality * zltTempMean +
+              0.037905068 * zltPrecip * zstraPrecipSeasonality +
+              0.045575111 * zltCorPrTas * zltTempMean;
+    shrubCover = exp(tempVal) - 2;
+
+    /* 2.2.6 bare ground cover – CONUS-wide */
+    tempVal = 2.939339967 + 0.145466528 * zltPrecip +
+              -0.106416302 * zltPrecipSeasonality + -0.216540564 * zltCorPrTas +
+              0.091558229 * zMeanSand + 0.007762789 * zMeanCoarseFragments +
+              -0.083296458 * zltCorPrTasSqd + -0.056281606 * zMeanSandSqd +
+              -0.006510544 * zAWHCSqd +
+              0.048231968 * zltWDD * zstaIsothermality +
+              -0.030802083 * zstaIsothermality * zltIsothermality +
+              0.117940292 * zltIsothermality * zltTempMean +
+              0.037905068 * zltPrecip * zstraPrecipSeasonality +
+              0.045575111 * zltCorPrTas * zltTempMean;
+    bareGroundCover = exp(tempVal) - 2;
+
+    /* 2.3 Level 2 functional group cover models */
+    /* 2.3.1 The proportion of total herbaceous that is C3 grass – CONUS-wide */
+    tempVal =
+        3.904167492 + -0.284822539 * zltTempMean + -0.387430439 * zltCorPrTas +
+        -0.264775838 * zltIsothermality + -0.168662971 * zltIsothermalitySqd +
+        -0.294089719 * zltCorPrTas * zltIsothermality + -0.009509765 * zltWDD;
+    GrassC3CoverProportion = exp(tempVal) - 2;
+
+    /* 2.3.2 The proportion of total herbaceous that is C4 grass – CONUS-wide */
+    tempVal = 2.41145985 + 0.48381716 * zltTempMean + 1.02026843 * zltCorPrTas +
+              0.54331054 * zltIsothermality + 0.05180567 * zstaCorPrTasSqd;
+    GrassC4CoverProportion = exp(tempVal) - 2;
+
+    /* 2.3.3 The proportion of total herbaceous that is forbs – CONUS-wide */
+    tempVal = 3.514178452 + 0.248393795 * zltPrecip +
+              -0.052267180 * zltPrecipSeasonality + -0.050423003 * zltCorPrTas +
+              -0.020802257 * zltIsothermality + 0.041673226 * zMeanSand +
+              0.059813143 * zMeanCoarseFragments +
+              -0.035820999 * zstraPrecipSeasonality +
+              0.051567741 * zltPrecipSeasonalitySqd +
+              0.014241935 * zstraPrecipSeasonalitySqd +
+              0.005274193 * zstaCorPrTasSqd +
+              -0.037700614 * zltTempMean * zltWDD +
+              -0.041194253 * zltCorPrTas * zltIsothermality +
+              0.060107858 * zltIsothermality * zltTempMean +
+              -0.092114033 * zMeanSand * zAWHC +
+              -0.053246622 * zMeanSand * zMeanCoarseFragments +
+              0.022969730 * zltPrecipSeasonality * zltTempMean +
+              0.004823926 * zstaIsothermalitySqd +
+              0.011303772 * zstaCorPrTas * zstraWDD;
+    forbCoverProportion = exp(tempVal) - 2;
+
+    /* 2.3.4 The proportion of total tree that is broad-leaved – forest */
+    tempVal = 3.400837432 + 0.119928190 * zltTempMean +
+              0.254698982 * zltPrecipDriestMonth + 0.415003665 * zSurfaceClay +
+              0.005289910 * zMeanSand + -0.118297218 * zSurfaceSOC +
+              0.216869470 * zAWHC + 0.127567513 * zstraPrecip +
+              -0.030975228 * zstaCorPrTas + -0.136571036 * zltCorPrTasSqd +
+              0.026270176 * zltIsothermality * zstaIsothermality +
+              -0.218615897 * zltIsothermality * zltCorPrTas +
+              -0.013504372 * zstaIsothermality * zltPrecip +
+              -0.079997868 * zltTempMean * zstraPrecip +
+              -0.001941377 * zltPrecipDriestMonth * zltCorPrTas +
+              -0.108094550 * zltTempMean * zltCorPrTas +
+              0.056873963 * zltTempMean * zstaCorPrTas +
+              -0.084394634 * zSurfaceSOC * zAWHC +
+              -0.011095426 * zSurfaceSOC * zMeanCoarseFragments +
+              0.126127030 * zSurfaceClay * zMeanCoarseFragments +
+              -0.249606357 * zMeanSand * zMeanCoarseFragments;
+    broadLeavedTreeCoverForestProportion = exp(tempVal) - 2;
+
+    /* 2.3.5 The proportion of total tree that is needle-leaved – forest */
+    tempVal = 3.400837432 + 0.119928190 * zltTempMean +
+              0.254698982 * zltPrecipDriestMonth + 0.415003665 * zSurfaceClay +
+              0.005289910 * zMeanSand + -0.118297218 * zSurfaceSOC +
+              0.216869470 * zAWHC + 0.127567513 * zstraPrecip +
+              -0.030975228 * zstaCorPrTas + -0.136571036 * zltCorPrTasSqd +
+              0.026270176 * zltIsothermality * zstaIsothermality +
+              -0.218615897 * zltIsothermality * zltCorPrTas +
+              -0.013504372 * zstaIsothermality * zltPrecip +
+              -0.079997868 * zltTempMean * zstraPrecip +
+              -0.001941377 * zltPrecipDriestMonth * zltCorPrTas +
+              -0.108094550 * zltTempMean * zltCorPrTas +
+              0.056873963 * zltTempMean * zstaCorPrTas +
+              -0.084394634 * zSurfaceSOC * zAWHC +
+              -0.011095426 * zSurfaceSOC * zMeanCoarseFragments +
+              0.126127030 * zSurfaceClay * zMeanCoarseFragments +
+              -0.249606357 * zMeanSand * zMeanCoarseFragments;
+    needleLeavedTreeCoverForestProportion = exp(tempVal) - 2;
+
+    /* 2.3.6 The proportion of total tree that is broad-leaved – non-forest */
+    tempVal = 3.10338252 + 0.28241315 * zltTempMean + 0.80500002 * zltPrecip +
+              0.05186862 * zAWHC + -0.03647871 * zltCorPrTasSqd +
+              -0.06790977 * zstaCorPrTasSqd + 0.18569895 * zMeanSandSqd +
+              0.52842267 * zltTempMean * zltIsothermality +
+              -0.30139958 * zAWHC * zMeanCoarseFragments;
+    broadLeavedTreeCoverNonForestProportion = exp(tempVal) - 2;
+
+    /* 2.3.7 The proportion of total tree that is needle-leaved – non-forest */
+    tempVal = 4.52324174 + -0.18954119 * zltTempMean + -0.13086877 * zAWHC +
+              -0.03177446 * zltIsothermalitySqd +
+              -0.25163832 * zltTempMean * zltWaterDeficit +
+              -0.24377773 * zltTempMean * zltIsothermality +
+              -0.32422844 * zltTempMean * zltCorPrTas;
+    needleLeavedTreeCoverNonForestProportion = exp(tempVal) - 2;
+
+    /* 3 Scale level 2 cover variables by group */
+    /* 3.1 For components of total herbaceous cover */
+    sumHerbaceous =
+        GrassC3CoverProportion + GrassC4CoverProportion + forbCoverProportion;
+    scaledGrassC3CoverProportion = GrassC3CoverProportion / sumHerbaceous;
+    scaledGrassC4CoverProportion = GrassC4CoverProportion / sumHerbaceous;
+    scaledForbCoverProportion = forbCoverProportion / sumHerbaceous;
+
+    /* 3.2 For components of total tree cover – forest */
+    sumTreesForest = broadLeavedTreeCoverForestProportion +
+                     needleLeavedTreeCoverForestProportion;
+
+    scaledBroadLeavedTreeCoverForestProportion =
+        broadLeavedTreeCoverForestProportion / sumTreesForest;
+
+    scaledNeedleLeavedTreeCoverForestProportion =
+        needleLeavedTreeCoverForestProportion / sumTreesForest;
+
+    /* 3.3 For components of total tree cover – non-forest */
+    sumTreesNonForest = broadLeavedTreeCoverNonForestProportion +
+                        needleLeavedTreeCoverNonForestProportion;
+
+    scaledBroadLeavedTreeCoverNonForestProportion =
+        broadLeavedTreeCoverNonForestProportion / sumTreesNonForest;
+
+    scaledNeedleLeavedTreeCoverNonForestProportion =
+        needleLeavedTreeCoverNonForestProportion / sumTreesNonForest;
+
+    /* 4 Combine across ecoregions */
+    totalHerbaceousCover =
+        ecoregionForest * totalHerbaceousCoverForest +
+        (1 - ecoregionForest) * totalHerbaceousCoverNonForest;
+
+    totalTreeCoverCover = ecoregionForest * totalTreeCoverForest +
+                          (1 - ecoregionForest) * totalTreeCoverNonForest;
+
+    scaledBroadLeavedTreeCoverProportion =
+        ecoregionForest * scaledBroadLeavedTreeCoverForestProportion +
+        (1 - ecoregionForest) * scaledBroadLeavedTreeCoverNonForestProportion;
+
+    scaledNeedleLeavedTreeCoverProportion =
+        ecoregionForest * scaledNeedleLeavedTreeCoverForestProportion +
+        (1 - ecoregionForest) * scaledNeedleLeavedTreeCoverNonForestProportion;
+
+    /* 5 Final predictions */
+    sumTotal = totalHerbaceousCover + totalTreeCoverCover + shrubCover +
+               bareGroundCover;
+
+    finalTotalHerbaceousCover = totalHerbaceousCover / sumTotal;
+    finalTotalTreeCoverCover = totalTreeCoverCover / sumTotal;
+    finalShrubCover = shrubCover / sumTotal;
+    finalBareGroundCover = bareGroundCover / sumTotal;
+
+    finalGrassC3Cover =
+        scaledGrassC3CoverProportion / 100 * finalTotalHerbaceousCover;
+    finalGrassC4Cover =
+        scaledGrassC4CoverProportion / 100 * finalTotalHerbaceousCover;
+    finalForbCover =
+        scaledForbCoverProportion / 100 * finalTotalHerbaceousCover;
+
+    finalBroadLeavedTreeCover =
+        scaledBroadLeavedTreeCoverProportion / 100 * finalTotalTreeCoverCover;
+    finalNeedleLeavedTreeCover =
+        scaledNeedleLeavedTreeCoverProportion / 100 * finalTotalTreeCoverCover;
+}
+
 /**
 @brief Wrapper function to update vegetation for the current year
 
@@ -637,6 +1033,8 @@ static void calc_veg_predictor_vals(
 data of a site
 @param[in] SW_ModelSim Struct of type SW_MODEL_SIM holding basic
 intermediate time information about the simulation run
+@param[in] SW_SoilSim Struct of type SW_SOIL_SIM holding constant soil content
+information that will be used during simulations
 @param[in] yearIndex Index value specifying which place the year is in the
 simulation process (i.e., [0, <n years>) )
 @param[in] nYearsDynamicShort Number of years over which short-term vegetation
@@ -650,6 +1048,7 @@ new value for this year
 static void update_veg_yearly(
     SW_WEATHER_HIST *SW_YearWeathHist,
     SW_MODEL_SIM *SW_ModelSim,
+    SW_SOIL_SIM *SW_SoilSim,
     TimeInt yearIndex,
     int nYearsDynamicShort,
     int nYearsDynamicLong,
@@ -664,6 +1063,9 @@ static void update_veg_yearly(
     calc_veg_predictor_vals(
         yearIndex, nYearsDynamicShort, nYearsDynamicLong, SW_VegProdSim
     );
+
+    // Update vegetation values
+    calc_CONUS_vegcov_2025(SW_SoilSim, yearIndex, SW_VegProdSim);
 }
 
 /* =================================================== */
@@ -1435,6 +1837,8 @@ void apply_biomassCO2effect(
     time information about the simulation run
 @param[in] SW_VegProdSim Struct of type SW_VEGPROD_SIM that holds
 information used and/or modified mainly during simulation runs
+@param[in] SW_SoilSim Struct of type SW_SOIL_SIM holding constant soil content
+information that will be used during simulations
 @param[in] isBiomAsIf100Cover Spatial reference of biomass inputs
     (are inputs as if 100% cover)
         - false (0): values as is (at given cover)
@@ -1461,6 +1865,7 @@ void SW_VPD_new_year(
     SW_WEATHER_HIST *SW_YearWeathHist,
     SW_MODEL_SIM *SW_ModelSim,
     SW_VEGPROD_SIM *SW_VegProdSim,
+    SW_SOIL_SIM *SW_SoilSim,
     Bool isBiomAsIf100Cover,
     int veg_method,
     TimeInt startYr,
@@ -1509,6 +1914,7 @@ void SW_VPD_new_year(
         update_veg_yearly(
             &SW_YearWeathHist[yearIndex],
             SW_ModelSim,
+            SW_SoilSim,
             yearIndex,
             nYearsDynamicShort,
             nYearsDynamicLong,
