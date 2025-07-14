@@ -429,6 +429,207 @@ static void calc_yearly_hist_vals(
     SW_VegProdSim->annTempPrecipCorr[yearIndex] =
         correlation_coefficient(meanTemp, totPrecip, MAX_MONTHS);
 }
+
+/**
+@brief Using values calculated from `calc_yearly_hist_vals()`,
+calculate the predictor values for dynamic vegetation calculations
+
+@param[in] yearIndex Index value specifying which place the year is in the
+simulation process (i.e., [0, <n years>) )
+@param[in] nYearsDynamicShort Number of years over which short-term vegetation
+predictors are summarized (as anomaly to long-term predictors)
+@param[in] nYearsDynamicLong Number of years over which long-term vegetation
+predictors are summarized
+@param[out] SW_VegProdSim Struct of type SW_VEGPROD_SIM that holds information
+used and/or modified mainly during simulation runs; averages and anomalies
+will have updated values for this year
+*/
+static void calc_veg_predictor_vals(
+    TimeInt yearIndex,
+    int nYearsDynamicShort,
+    int nYearsDynamicLong,
+    SW_VEGPROD_SIM *SW_VegProdSim
+) {
+    // Initialize variables
+    TimeInt termLength;
+    int var;
+    IntU termIndex;
+    int valIndex;
+    size_t longTermIndex;
+    size_t shortTermIndex;
+
+    double longTermVal;
+    double shortTermVal;
+
+    const int numAvgs = 18;
+    const int numAnom = 3;
+    const int numAnomPct = 5;
+    const int shortAvgIndex = 11;
+
+    double *termAvgs[] = {
+        &SW_VegProdSim->annTempLongAvg,
+        &SW_VegProdSim->annTempPrecipLongAvg,
+        &SW_VegProdSim->annIsothermLongAvg,
+        &SW_VegProdSim->annWaterDefLongAvg,
+        &SW_VegProdSim->annSeasonPrecipLongAvg,
+        &SW_VegProdSim->annPrecipDriestMonLongAvg,
+        &SW_VegProdSim->annWetDegDaysLongAvg,
+        &SW_VegProdSim->annTempWarmestMonLongAvg,
+        &SW_VegProdSim->annTempColdestMonLongAvg,
+        &SW_VegProdSim->annPrecipWettestMonLongAvg,
+        &SW_VegProdSim->annPrecipLongAvg,
+
+        &SW_VegProdSim->annIsothermShortAvg,
+        &SW_VegProdSim->annTempPrecipShortAvg,
+        &SW_VegProdSim->annSeasonPrecipShortAvg,
+        &SW_VegProdSim->annPrecipShortAvg,
+        &SW_VegProdSim->annWetDegDaysShortAvg,
+        &SW_VegProdSim->annWaterDefShortAvg,
+        &SW_VegProdSim->annPrecipDriestMonShortAvg
+    };
+
+    double *termHist[] = {
+        SW_VegProdSim->annTemp,
+        SW_VegProdSim->annTempPrecipCorr,
+        SW_VegProdSim->annIsotherm,
+        SW_VegProdSim->annWaterDef,
+        SW_VegProdSim->annSeasonPrecip,
+        SW_VegProdSim->annPrecipDriestMon,
+        SW_VegProdSim->annWetDegDays,
+        SW_VegProdSim->annTempWarmestMon,
+        SW_VegProdSim->annTempColdestMon,
+        SW_VegProdSim->annPrecipWettestMon,
+        SW_VegProdSim->annPrecip
+    };
+
+    // Index the value arrays short-term averages should use
+    // to simplify this function to use one array to house all averages
+    int shortValIndex[] = {2, 1, 4, 10, 6, 3, 5};
+
+    double *anomVals[] = {
+        &SW_VegProdSim->anomIsotherm,
+        &SW_VegProdSim->anomTempPrecipCorr,
+        &SW_VegProdSim->anomWaterDef
+    };
+
+    double *anomPctVals[] = {
+        &SW_VegProdSim->anomPctSeasonPrecip,
+        &SW_VegProdSim->anomPctPrecip,
+        &SW_VegProdSim->anomPctWetDegDays,
+        &SW_VegProdSim->anomPctWaterDef,
+        &SW_VegProdSim->anomPctPrecipDriestMon
+    };
+
+    double *anomCalcVals[] = {// Precip-temp anomaly vals
+                              &SW_VegProdSim->annTempPrecipLongAvg,
+                              &SW_VegProdSim->annTempPrecipShortAvg,
+
+                              // Isothermality anomaly vals
+                              &SW_VegProdSim->annIsothermLongAvg,
+                              &SW_VegProdSim->annIsothermShortAvg,
+
+                              // Water deficit anomaly vals
+                              &SW_VegProdSim->annWaterDefLongAvg,
+                              &SW_VegProdSim->annWaterDefShortAvg
+    };
+
+    double *anomPctCalcVals[] = {// Seasonality precip anomaly % vals
+                                 &SW_VegProdSim->annPrecipDriestMonLongAvg,
+                                 &SW_VegProdSim->annPrecipDriestMonShortAvg,
+
+                                 // Precip anomaly % vals
+                                 &SW_VegProdSim->annPrecipLongAvg,
+                                 &SW_VegProdSim->annPrecipShortAvg,
+
+                                 // Wet-degree days anomaly %
+                                 &SW_VegProdSim->annWetDegDaysLongAvg,
+                                 &SW_VegProdSim->annWetDegDaysShortAvg,
+
+                                 // Water deficit anomaly %
+                                 &SW_VegProdSim->annWaterDefLongAvg,
+                                 &SW_VegProdSim->annWaterDefShortAvg,
+
+                                 // Precip of the driest month anomaly %
+                                 &SW_VegProdSim->annPrecipDriestMonLongAvg,
+                                 &SW_VegProdSim->annPrecipDriestMonShortAvg
+    };
+
+    if (yearIndex == 0) {
+        for (var = 0; var < numAvgs; var++) {
+            *termAvgs[var] = 0.;
+        }
+    }
+
+    for (var = 0; var < numAvgs; var++) {
+        if (var < shortAvgIndex) {
+            termLength = nYearsDynamicLong;
+            termIndex = SW_VegProdSim->longIndex;
+            valIndex = var;
+        } else {
+            termLength = nYearsDynamicShort;
+            termIndex = SW_VegProdSim->shortIndex;
+            valIndex = shortValIndex[var - shortAvgIndex];
+        }
+
+        /* Check if we have enough values to make a full average for the
+           term in which we are taking the average of */
+        if (yearIndex + 1 > termLength) {
+            /*
+                Calculate the new average by converting the average into a sum,
+                removing the oldest value, adding the newest value, and
+                converting the sum into an average
+                This method simplies how we calculate the moving window
+                average to be more constant in computation time
+            */
+            *termAvgs[var] *= termLength;
+            *termAvgs[var] -= termHist[valIndex][termIndex];
+            *termAvgs[var] += termHist[valIndex][yearIndex];
+            *termAvgs[var] /= termLength;
+        } else {
+            /*
+                Since we do not have enough years to compute the whole average,
+                we keep a running average until we have enough years
+                Do this by converting the running average into a sum
+                (number of years currently within the sum), add the new
+                value, and retake the average with the new number
+                of years in the sum (yearIndex + 1)
+            */
+            *termAvgs[var] *= (yearIndex);
+            *termAvgs[var] += termHist[valIndex][yearIndex];
+            *termAvgs[var] /= (yearIndex + 1);
+        }
+    }
+
+    // Calculate anomaly values
+    for (var = 0; var < numAnom; var++) {
+        longTermIndex = (size_t) (var) * 2;
+        shortTermIndex = (size_t) (var) * 2 + 1;
+
+        longTermVal = *(anomCalcVals[longTermIndex]);
+        shortTermVal = *(anomCalcVals[shortTermIndex]);
+
+        *anomVals[var] = longTermVal - shortTermVal;
+    }
+
+    // Calculate anomaly % values
+    for (var = 0; var < numAnomPct; var++) {
+        longTermIndex = (size_t) (var) * 2;
+        shortTermIndex = (size_t) (var) * 2 + 1;
+
+        longTermVal = *anomPctCalcVals[longTermIndex];
+        shortTermVal = *anomPctCalcVals[shortTermIndex];
+
+        *anomPctVals[var] = 0.;
+        if (!ZRO(longTermVal)) {
+            *anomPctVals[var] = (longTermVal - shortTermVal) / longTermVal;
+        }
+    }
+
+    if (yearIndex + 1 > termLength) {
+        SW_VegProdSim->shortIndex++;
+        SW_VegProdSim->longIndex++;
+    }
+}
 /**
 @brief Wrapper function to update vegetation for the current year
 
@@ -438,6 +639,10 @@ data of a site
 intermediate time information about the simulation run
 @param[in] yearIndex Index value specifying which place the year is in the
 simulation process (i.e., [0, <n years>) )
+@param[in] nYearsDynamicShort Number of years over which short-term vegetation
+predictors are summarized (as anomaly to long-term predictors)
+@param[in] nYearsDynamicLong Number of years over which long-term vegetation
+predictors are summarized
 @param[out] SW_VegProdSim Struct of type SW_VEGPROD_SIM that holds information
 used and/or modified mainly during simulation runs; dynamic arrays will have a
 new value for this year
@@ -446,11 +651,18 @@ static void update_veg_yearly(
     SW_WEATHER_HIST *SW_YearWeathHist,
     SW_MODEL_SIM *SW_ModelSim,
     TimeInt yearIndex,
+    int nYearsDynamicShort,
+    int nYearsDynamicLong,
     SW_VEGPROD_SIM *SW_VegProdSim
 ) {
     // Update the yearly arrays to hold current year information
     calc_yearly_hist_vals(
         SW_YearWeathHist, SW_ModelSim, yearIndex, SW_VegProdSim
+    );
+
+    // Calculate vegetation predictor variables
+    calc_veg_predictor_vals(
+        yearIndex, nYearsDynamicShort, nYearsDynamicLong, SW_VegProdSim
     );
 }
 
@@ -1233,6 +1445,10 @@ information used and/or modified mainly during simulation runs
     - 1, based on Parton 1984 (default since v8.1.0)
     - 2, uses dynamic short- and long-term climate conditions
 @param[in] startYr Start year of the simulation
+@param[in] nYearsDynamicShort Number of years over which short-term vegetation
+predictors are summarized (as anomaly to long-term predictors)
+@param[in] nYearsDynamicLong Number of years over which long-term vegetation
+predictors are summarized
 @param[out] vegRunIn Array of size NVEGTYPES of type VegTypeRunIn describing
     all NVEGTYPES vegetation types through simulation-specific inputs
 @param[out] vegSim Array of size NVEGTYPES of type VegTypeSim describing
@@ -1248,6 +1464,8 @@ void SW_VPD_new_year(
     Bool isBiomAsIf100Cover,
     int veg_method,
     TimeInt startYr,
+    int nYearsDynamicShort,
+    int nYearsDynamicLong,
     VegTypeRunIn vegRunIn[],
     VegTypeSim vegSim[],
     VegTypeIn vegIn[]
@@ -1289,7 +1507,12 @@ void SW_VPD_new_year(
 
     if (estVeg && veg_method == VEG_METHOD_DYN_EST) {
         update_veg_yearly(
-            &SW_YearWeathHist[yearIndex], SW_ModelSim, yearIndex, SW_VegProdSim
+            &SW_YearWeathHist[yearIndex],
+            SW_ModelSim,
+            yearIndex,
+            nYearsDynamicShort,
+            nYearsDynamicLong,
+            SW_VegProdSim
         );
     }
 

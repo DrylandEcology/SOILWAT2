@@ -764,17 +764,17 @@ typedef struct {
     double annTempLongAvg, annTempPrecipLongAvg, annIsothermLongAvg,
         annWaterDefLongAvg, annSeasonPrecipLongAvg, annPrecipDriestMonLongAvg,
         annWetDegDaysLongAvg, annTempWarmestMonLongAvg,
-        annTempColdestMonLongAvg, annPrecipWettestMonLongAvg;
+        annTempColdestMonLongAvg, annPrecipWettestMonLongAvg, annPrecipLongAvg;
 
     /* Short-term average of any of the above variables that will be used
        in calculating dynamic vegetation */
     double annIsothermShortAvg, annTempPrecipShortAvg, annSeasonPrecipShortAvg,
         annPrecipShortAvg, annWetDegDaysShortAvg, annWaterDefShortAvg,
-        annPreciptDriestMonShortAvg;
+        annPrecipDriestMonShortAvg;
 
     /* Variables to hold the anomaly ("anom...") or anomaly % ("anomPct...")
        for any of the variables near the top of this struct */
-    double anomIsotherm, anomTempPrecipCorr;
+    double anomIsotherm, anomTempPrecipCorr, anomWaterDef;
 
     double anomPctSeasonPrecip, anomPctPrecip, anomPctWetDegDays,
         anomPctWaterDef, anomPctPrecipDriestMon;

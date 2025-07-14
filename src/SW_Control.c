@@ -166,6 +166,8 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         sw->VegProdIn.isBiomAsIf100Cover,
         sw->VegProdIn.veg_method,
         sw->ModelIn.startyr,
+        sw->VegProdIn.nYearsDynamicShort,
+        sw->VegProdIn.nYearsDynamicLong,
         sw->RunIn.VegProdRunIn.veg,
         sw->VegProdSim.veg,
         sw->VegProdIn.veg

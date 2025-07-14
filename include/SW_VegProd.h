@@ -130,6 +130,8 @@ void SW_VPD_new_year(
     Bool isBiomAsIf100Cover,
     int veg_method,
     TimeInt startYr,
+    int nYearsDynamicShort,
+    int nYearsDynamicLong,
     VegTypeRunIn vegRunIn[],
     VegTypeSim vegSim[],
     VegTypeIn vegIn[]
