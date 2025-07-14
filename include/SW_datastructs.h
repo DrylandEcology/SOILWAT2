@@ -772,12 +772,12 @@ typedef struct {
         annPrecipShortAvg, annWetDegDaysShortAvg, annWaterDefShortAvg,
         annPrecipDriestMonShortAvg;
 
-    /* Variables to hold the anomaly ("anom...") or anomaly % ("anomPct...")
-       for any of the variables near the top of this struct */
+    /* Variables to hold the anomaly ("anom...") or rate of anomaly
+       ("rateAnom...") for any of the variables near the top of this struct */
     double anomIsotherm, anomTempPrecipCorr, anomWaterDef;
 
-    double anomPctSeasonPrecip, anomPctPrecip, anomPctWetDegDays,
-        anomPctWaterDef, anomPctPrecipDriestMon;
+    double rateAnomSeasonPrecip, rateAnomPrecip, rateAnomWetDegDays,
+        rateAnomWaterDef, rateAnomPrecipDriestMon;
 
     /* Indices to keep track of the first/last values when taking averages */
     IntU shortIndex, longIndex;

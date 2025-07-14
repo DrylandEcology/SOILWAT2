@@ -463,7 +463,7 @@ static void calc_veg_predictor_vals(
 
     const int numAvgs = 18;
     const int numAnom = 3;
-    const int numAnomPct = 5;
+    const int numRateAnom = 5;
     const int shortAvgIndex = 11;
 
     double *termAvgs[] = {
@@ -512,12 +512,12 @@ static void calc_veg_predictor_vals(
         &SW_VegProdSim->anomWaterDef
     };
 
-    double *anomPctVals[] = {
-        &SW_VegProdSim->anomPctSeasonPrecip,
-        &SW_VegProdSim->anomPctPrecip,
-        &SW_VegProdSim->anomPctWetDegDays,
-        &SW_VegProdSim->anomPctWaterDef,
-        &SW_VegProdSim->anomPctPrecipDriestMon
+    double *rateAnomVals[] = {
+        &SW_VegProdSim->rateAnomSeasonPrecip,
+        &SW_VegProdSim->rateAnomPrecip,
+        &SW_VegProdSim->rateAnomWetDegDays,
+        &SW_VegProdSim->rateAnomWaterDef,
+        &SW_VegProdSim->rateAnomPrecipDriestMon
     };
 
     double *anomCalcVals[] = {// Precip-temp anomaly vals
@@ -533,25 +533,26 @@ static void calc_veg_predictor_vals(
                               &SW_VegProdSim->annWaterDefShortAvg
     };
 
-    double *anomPctCalcVals[] = {// Seasonality precip anomaly % vals
-                                 &SW_VegProdSim->annPrecipDriestMonLongAvg,
-                                 &SW_VegProdSim->annPrecipDriestMonShortAvg,
+    double *rateAnomCalcVals[] = {
+        // Seasonality precip rate of anomaly vals
+        &SW_VegProdSim->annPrecipDriestMonLongAvg,
+        &SW_VegProdSim->annPrecipDriestMonShortAvg,
 
-                                 // Precip anomaly % vals
-                                 &SW_VegProdSim->annPrecipLongAvg,
-                                 &SW_VegProdSim->annPrecipShortAvg,
+        // Precip rate of anomaly vals
+        &SW_VegProdSim->annPrecipLongAvg,
+        &SW_VegProdSim->annPrecipShortAvg,
 
-                                 // Wet-degree days anomaly %
-                                 &SW_VegProdSim->annWetDegDaysLongAvg,
-                                 &SW_VegProdSim->annWetDegDaysShortAvg,
+        // Wet-degree days rate of anomaly vals
+        &SW_VegProdSim->annWetDegDaysLongAvg,
+        &SW_VegProdSim->annWetDegDaysShortAvg,
 
-                                 // Water deficit anomaly %
-                                 &SW_VegProdSim->annWaterDefLongAvg,
-                                 &SW_VegProdSim->annWaterDefShortAvg,
+        // Water deficit rate of anomaly vals
+        &SW_VegProdSim->annWaterDefLongAvg,
+        &SW_VegProdSim->annWaterDefShortAvg,
 
-                                 // Precip of the driest month anomaly %
-                                 &SW_VegProdSim->annPrecipDriestMonLongAvg,
-                                 &SW_VegProdSim->annPrecipDriestMonShortAvg
+        // Precip of the driest month rate of anomaly vals
+        &SW_VegProdSim->annPrecipDriestMonLongAvg,
+        &SW_VegProdSim->annPrecipDriestMonShortAvg
     };
 
     if (yearIndex == 0) {
@@ -611,17 +612,17 @@ static void calc_veg_predictor_vals(
         *anomVals[var] = longTermVal - shortTermVal;
     }
 
-    // Calculate anomaly % values
-    for (var = 0; var < numAnomPct; var++) {
+    // Calculate rate of anomaly values
+    for (var = 0; var < numRateAnom; var++) {
         longTermIndex = (size_t) (var) * 2;
         shortTermIndex = (size_t) (var) * 2 + 1;
 
-        longTermVal = *anomPctCalcVals[longTermIndex];
-        shortTermVal = *anomPctCalcVals[shortTermIndex];
+        longTermVal = *rateAnomCalcVals[longTermIndex];
+        shortTermVal = *rateAnomCalcVals[shortTermIndex];
 
-        *anomPctVals[var] = 0.;
+        *rateAnomVals[var] = 0.;
         if (!ZRO(longTermVal)) {
-            *anomPctVals[var] = (longTermVal - shortTermVal) / longTermVal;
+            *rateAnomVals[var] = (longTermVal - shortTermVal) / longTermVal;
         }
     }
 
@@ -697,12 +698,12 @@ static void calc_CONUS_vegcov_2025(
     double anomIsotherm = vps->anomIsotherm;
     double anomWatDef = vps->anomWaterDef;
     double annPrecip = vps->annPrecipLongAvg;
-    double anomRateSeasonPrecip = vps->anomPctSeasonPrecip;
+    double anomRateSeasonPrecip = vps->rateAnomSeasonPrecip;
     double annPrecipDriestMon = vps->annPrecipDriestMonLongAvg;
     double percClay = ss->surfaceClay;
-    double anomRatePrecip = vps->anomPctPrecip;
+    double anomRatePrecip = vps->rateAnomPrecip;
     double annWDD = vps->annWetDegDaysLongAvg;
-    double anomRateWDD = vps->anomPctWetDegDays;
+    double anomRateWDD = vps->rateAnomWetDegDays;
     double percSOC = ss->surfaceOM * .58;
 
     double zltTempMean = (annTemp - 10.275203571) / 4.912309147;
