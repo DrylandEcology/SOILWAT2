@@ -304,12 +304,12 @@ typedef struct {
                             width of each soil layer */
         totAWHC,        /**< Total amount of available water holding
                              capacity */
-        percClay,       /**< % of clay in the 0-3 cm of the soil
-                            profile (or first layer if deeper
-                            than 3 cm) */
-        percOM;         /**< % of organic matter in the 0-3 cm of
-                            the soil profile (or first layer if
-                            deeper than 3 cm) */
+        surfaceClay,    /**< % of clay in the 0-3 cm of the soil
+                             profile (or first layer if deeper
+                             than 3 cm) */
+        surfaceOM;      /**< % of organic matter in the 0-3 cm of
+                             the soil profile (or first layer if
+                             deeper than 3 cm) */
 } SW_SOIL_SIM;
 
 typedef struct {

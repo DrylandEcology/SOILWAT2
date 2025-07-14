@@ -279,8 +279,8 @@ static void calc_const_dynamic_veg_info(
     double *resDest[] = {
         &SW_SoilSim->percSand,
         &SW_SoilSim->percCoarseFrag,
-        &SW_SoilSim->percClay,
-        &SW_SoilSim->percOM
+        &SW_SoilSim->surfaceClay,
+        &SW_SoilSim->surfaceOM
     };
 
     Bool first3cmFlags[] = {swFALSE, swFALSE, swTRUE, swTRUE};
