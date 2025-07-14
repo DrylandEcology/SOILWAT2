@@ -1788,42 +1788,32 @@ void SW_SWC_adjust_snow(
     double *snowpack_today = &snowpack[Today];
     double temp_ave;
     double Rmelt;
-    double SnowAccu = 0.;
-    double SnowMelt = 0.;
 
     temp_ave = (temp_min + temp_max) / 2.;
 
     /* snow accumulation */
     if (LE(temp_ave, SW_SiteIn->TminAccu2)) {
-        SnowAccu = ppt;
+        *rain = 0.;
+        *snow = ppt;
+        *snowpack_today += ppt;
     } else {
-        SnowAccu = 0.;
+        *rain = ppt;
+        *snow = 0.;
     }
-    *rain = fmax(0., ppt - SnowAccu);
-    *snow = fmax(0., SnowAccu);
-    *snowpack_today += SnowAccu;
 
     /* snow melt */
-    Rmelt = (SW_SiteIn->RmeltMax + SW_SiteIn->RmeltMin) / 2. +
-            sin((doy - 81.) / 58.09) *
-                (SW_SiteIn->RmeltMax - SW_SiteIn->RmeltMin) / 2.;
     *temp_snow = *temp_snow * (1 - SW_SiteIn->lambdasnow) +
                  temp_ave * SW_SiteIn->lambdasnow;
 
-    if (GT(*temp_snow, SW_SiteIn->TmaxCrit)) {
-        SnowMelt = fmin(
-            *snowpack_today,
-            Rmelt * snow_cov *
-                ((*temp_snow + temp_max) / 2. - SW_SiteIn->TmaxCrit)
-        );
-
-    } else {
-        SnowMelt = 0.;
-    }
-
-    if (GT(*snowpack_today, 0.)) {
-        *snowmelt = fmax(0., SnowMelt);
+    if (GT(*snowpack_today, 0.) && GT(*temp_snow, SW_SiteIn->TmaxCrit)) {
+        Rmelt = (SW_SiteIn->RmeltMax + SW_SiteIn->RmeltMin) / 2. +
+                sin((doy - 81.) / 58.09) *
+                    (SW_SiteIn->RmeltMax - SW_SiteIn->RmeltMin) / 2.;
+        *snowmelt = Rmelt * snow_cov *
+                    ((*temp_snow + temp_max) / 2. - SW_SiteIn->TmaxCrit);
+        *snowmelt = fmax(0., fmin(*snowpack_today, *snowmelt));
         *snowpack_today = fmax(0., *snowpack_today - *snowmelt);
+
     } else {
         *snowmelt = 0.;
     }
