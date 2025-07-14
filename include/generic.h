@@ -337,6 +337,9 @@ double mean(const double values[], unsigned int length);
 
 double standardDeviation(double inputArray[], unsigned int length);
 
+double correlation_coefficient(
+    double xArray[], double yArray[], unsigned int length
+);
 
 #ifdef __cplusplus
 }

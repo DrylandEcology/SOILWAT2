@@ -781,6 +781,9 @@ typedef struct {
 
     /* Indices to keep track of the first/last values when taking averages */
     IntU shortIndex, longIndex;
+
+    Bool estVeg; /**< Flag specifying if to estimate vegetation determined
+                      differently based on compile mode */
 } SW_VEGPROD_SIM;
 
 /** Data type to describe the surface cover of a SOILWAT2 simulation run */

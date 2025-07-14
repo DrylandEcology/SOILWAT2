@@ -160,8 +160,12 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 
     // SW_VPD_new_year(): Dynamic CO2 effects on vegetation
     SW_VPD_new_year(
+        sw->RunIn.weathRunAllHist,
         &sw->ModelSim,
+        &sw->VegProdSim,
         sw->VegProdIn.isBiomAsIf100Cover,
+        sw->VegProdIn.veg_method,
+        sw->ModelIn.startyr,
         sw->RunIn.VegProdRunIn.veg,
         sw->VegProdSim.veg,
         sw->VegProdIn.veg
@@ -479,7 +483,6 @@ void SW_CTL_RunSimSet(
     Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
     size_t numInputs = 1;
     Bool copyWeather = swTRUE;
-    Bool estVeg = swTRUE;
     LOG_INFO *log = NULL;
     size_t count[2] = {1, 1};
     count[1] = (sDom) ? 0 : 1;
@@ -490,6 +493,7 @@ void SW_CTL_RunSimSet(
 #if defined(SWTXT)
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
+    sw_template->VegProdSim.estVeg = swTRUE;
 #endif
 
 #if !defined(SWMPI)
@@ -513,7 +517,8 @@ void SW_CTL_RunSimSet(
     copyWeather = (Bool) !isnull(sw_template->RunIn.weathRunAllHist);
 #else
     copyWeather = (Bool) (!SW_Domain->netCDFInput.readInVars[eSW_InWeather][0]);
-    estVeg = (Bool) (!SW_Domain->netCDFInput.readInVars[eSW_InWeather][0]);
+    sw_template->VegProdSim.estVeg =
+        (Bool) (!SW_Domain->netCDFInput.readInVars[eSW_InWeather][0]);
 #endif // SWMPI
 #endif // SWNETCDF
 
@@ -602,7 +607,7 @@ checkStatus:
             weathHistType,
             inputs,
             &numInputs,
-            &estVeg,
+            &sw_template->VegProdSim.estVeg,
             &getEstVeg,
             &extraFailCheck
         );
@@ -652,7 +657,7 @@ checkStatus:
                     sw_template,
                     SW_Domain,
                     NULL,
-                    estVeg,
+                    sw_template->VegProdSim.estVeg,
                     copyWeather,
                     NULL,
                     SW_WallTime,
@@ -667,7 +672,7 @@ checkStatus:
                     sw_template,
                     SW_Domain,
                     ncSuid,
-                    estVeg,
+                    sw_template->VegProdSim.estVeg,
                     copyWeather,
                     count,
                     SW_WallTime,

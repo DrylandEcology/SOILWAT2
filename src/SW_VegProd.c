@@ -302,6 +302,158 @@ static void calc_const_dynamic_veg_info(
     SW_SoilSim->soilDepth = SW_SoilRunIn->depths[n_layers - 1];
 }
 
+/**
+@brief Calculate and store yearly values within SW_VEGPROD_SIM's dynamic
+arrays that hold a yearly history of annual climate information
+
+@param[in] SW_WeathHist Array containing all historical data of a site
+@param[in] SW_ModelSim Struct of type SW_MODEL_SIM holding basic
+intermediate time information about the simulation run
+@param[in] yearIndex Index value specifying which place the year is in the
+simulation process (i.e., [0, <n years>) )
+@param[out] SW_VegProdSim Struct of type SW_VEGPROD_SIM that holds information
+used and/or modified mainly during simulation runs; dynamic arrays will have a
+new value for this year
+*/
+static void calc_yearly_hist_vals(
+    SW_WEATHER_HIST *SW_WeathHist,
+    SW_MODEL_SIM *SW_ModelSim,
+    TimeInt yearIndex,
+    SW_VEGPROD_SIM *SW_VegProdSim
+) {
+    double meanTemp[MAX_MONTHS] = {0.};
+    double maxMonTemp[MAX_MONTHS] = {0.};
+    double minMonTemp[MAX_MONTHS] = {0.};
+    double totPrecip[MAX_MONTHS] = {0.};
+    double isoThermSum[MAX_MONTHS] = {0.};
+
+    double warmMonTemp = 0.;
+    double dryMonPrecip = 0.;
+    double wetMonPrecip = 0.;
+    double watDef = 0.;
+    double wetDD = 0.;
+    double isothermCalc = 0.;
+    double precipSD = 0.;
+    double coldestMonTemp = 0.;
+
+    double monPrecipAvg = 0.;
+
+    TimeInt doy;
+    TimeInt mon = 0;
+
+    for (doy = 0; doy < SW_ModelSim->lastdoy; doy++) {
+        // Check if this day is a new month
+        if (doy == SW_ModelSim->cum_monthdays[mon]) {
+            // Increment monthly index to move to the next month
+            mon++;
+        }
+
+        // Add to the sum of mean temperature and precipitation of
+        // current month, convert precip from cm -> mm
+        meanTemp[mon] += SW_WeathHist->temp_avg[doy];
+        totPrecip[mon] += SW_WeathHist->ppt[doy] * 10;
+
+        // Add to annual sum of precipitation
+        SW_VegProdSim->annPrecip[yearIndex] += SW_WeathHist->ppt[doy] * 10;
+
+        // Sum maximum and minimum temperature of each month
+        // to find the hottest and coldest monthly temperature later
+        maxMonTemp[mon] += SW_WeathHist->temp_max[doy];
+        minMonTemp[mon] += SW_WeathHist->temp_min[doy];
+    }
+
+    // Average total monthly precipitation
+    monPrecipAvg = mean(totPrecip, MAX_MONTHS);
+
+    // Loop through all months
+    for (mon = 0; mon < MAX_MONTHS; mon++) {
+        maxMonTemp[mon] /= SW_ModelSim->days_in_month[mon];
+        minMonTemp[mon] /= SW_ModelSim->days_in_month[mon];
+        meanTemp[mon] /= SW_ModelSim->days_in_month[mon];
+
+        // Find/store the maximum temperature month
+        if (GT(maxMonTemp[mon], warmMonTemp) || mon == 0) {
+            SW_VegProdSim->annTempWarmestMon[yearIndex] = maxMonTemp[mon];
+            warmMonTemp = maxMonTemp[mon];
+        }
+
+        // Find/store the minimum temperature month
+        if (LT(minMonTemp[mon], coldestMonTemp) || mon == 0) {
+            SW_VegProdSim->annTempColdestMon[yearIndex] = minMonTemp[mon];
+            coldestMonTemp = minMonTemp[mon];
+        }
+
+        // Find/store driest (lowest precip) month
+        if (LT(totPrecip[mon], dryMonPrecip) || mon == 0) {
+            SW_VegProdSim->annPrecipDriestMon[yearIndex] = totPrecip[mon];
+            dryMonPrecip = totPrecip[mon];
+        }
+
+        // Find/store precip of the wettest (highest precip) month
+        if (GT(totPrecip[mon], wetMonPrecip) || mon == 0) {
+            SW_VegProdSim->annPrecipWettestMon[yearIndex] = totPrecip[mon];
+            wetMonPrecip = totPrecip[mon];
+        }
+
+        // Sum to get annual water deficit and monthly wet-degree days
+        watDef = (2 * meanTemp[mon]) - totPrecip[mon];
+        wetDD = (30 * meanTemp[mon]) - totPrecip[mon];
+        SW_VegProdSim->annWaterDef[yearIndex] +=
+            GT(meanTemp[mon] * 2, totPrecip[mon]) ? watDef : 0.;
+        SW_VegProdSim->annWetDegDays[yearIndex] +=
+            LT(meanTemp[mon] * 2, totPrecip[mon]) ? wetDD : 0.;
+
+        // Set annual mean temperature
+        SW_VegProdSim->annTemp[yearIndex] += meanTemp[mon];
+
+        // Set monthly isothermality calculation
+        isoThermSum[mon] = maxMonTemp[mon] - minMonTemp[mon];
+    }
+
+    SW_VegProdSim->annTemp[yearIndex] /= MAX_MONTHS;
+
+    // Set isothermality
+    // mean for every month[((max temp - min temp) values)] /
+    // (max temp of hottest month - min temp of coldest month)
+    isothermCalc = mean(isoThermSum, MAX_MONTHS);
+    isothermCalc /=
+        (SW_VegProdSim->annTempWarmestMon[yearIndex] -
+         SW_VegProdSim->annTempColdestMon[yearIndex]);
+    SW_VegProdSim->annIsotherm[yearIndex] = isothermCalc * 100;
+
+    // Set precip seasonality - coefficient of variation
+    precipSD = standardDeviation(totPrecip, MAX_MONTHS);
+    SW_VegProdSim->annSeasonPrecip[yearIndex] = precipSD / monPrecipAvg;
+
+    // Set the temperature-precipitation correlation
+    SW_VegProdSim->annTempPrecipCorr[yearIndex] =
+        correlation_coefficient(meanTemp, totPrecip, MAX_MONTHS);
+}
+/**
+@brief Wrapper function to update vegetation for the current year
+
+@param[in] SW_YearWeathHist Current year's array containing all historical
+data of a site
+@param[in] SW_ModelSim Struct of type SW_MODEL_SIM holding basic
+intermediate time information about the simulation run
+@param[in] yearIndex Index value specifying which place the year is in the
+simulation process (i.e., [0, <n years>) )
+@param[out] SW_VegProdSim Struct of type SW_VEGPROD_SIM that holds information
+used and/or modified mainly during simulation runs; dynamic arrays will have a
+new value for this year
+*/
+static void update_veg_yearly(
+    SW_WEATHER_HIST *SW_YearWeathHist,
+    SW_MODEL_SIM *SW_ModelSim,
+    TimeInt yearIndex,
+    SW_VEGPROD_SIM *SW_VegProdSim
+) {
+    // Update the yearly arrays to hold current year information
+    calc_yearly_hist_vals(
+        SW_YearWeathHist, SW_ModelSim, yearIndex, SW_VegProdSim
+    );
+}
+
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
@@ -1066,12 +1218,21 @@ void apply_biomassCO2effect(
 /**
 @brief Update vegetation parameters for new year
 
+@param[in] SW_YearWeathHist Array containing all historical data of a site
 @param[in] SW_ModelSim Struct of type SW_MODEL_SIM holding basic intermediate
     time information about the simulation run
+@param[in] SW_VegProdSim Struct of type SW_VEGPROD_SIM that holds
+information used and/or modified mainly during simulation runs
 @param[in] isBiomAsIf100Cover Spatial reference of biomass inputs
     (are inputs as if 100% cover)
         - false (0): values as is (at given cover)
         - true (1), values as if cover was 100%
+@param[in] veg_method The requested method for average surface temperature
+    (see @ref SW_SITE_INPUTS.methodSurfaceTemperature):
+    - 0, based on Parton 1978 (default prior to v8.1.0);
+    - 1, based on Parton 1984 (default since v8.1.0)
+    - 2, uses dynamic short- and long-term climate conditions
+@param[in] startYr Start year of the simulation
 @param[out] vegRunIn Array of size NVEGTYPES of type VegTypeRunIn describing
     all NVEGTYPES vegetation types through simulation-specific inputs
 @param[out] vegSim Array of size NVEGTYPES of type VegTypeSim describing
@@ -1081,8 +1242,12 @@ void apply_biomassCO2effect(
     change between simulation runs)
 */
 void SW_VPD_new_year(
+    SW_WEATHER_HIST *SW_YearWeathHist,
     SW_MODEL_SIM *SW_ModelSim,
+    SW_VEGPROD_SIM *SW_VegProdSim,
     Bool isBiomAsIf100Cover,
+    int veg_method,
+    TimeInt startYr,
     VegTypeRunIn vegRunIn[],
     VegTypeSim vegSim[],
     VegTypeIn vegIn[]
@@ -1107,6 +1272,8 @@ void SW_VPD_new_year(
 
     TimeInt doy; /* base1 */
     TimeInt simyear = SW_ModelSim->simyear;
+    TimeInt yearIndex = simyear - startYr;
+    Bool estVeg = SW_VegProdSim->estVeg;
     int k;
     int mon;
 
@@ -1120,6 +1287,11 @@ void SW_VPD_new_year(
     double biomassAsIf100Cover[MAX_MONTHS];
     double litterAsIf100Cover[MAX_MONTHS];
 
+    if (estVeg && veg_method == VEG_METHOD_DYN_EST) {
+        update_veg_yearly(
+            &SW_YearWeathHist[yearIndex], SW_ModelSim, yearIndex, SW_VegProdSim
+        );
+    }
 
     // Grab the real year so we can access CO2 data
     ForEachVegType(k) {

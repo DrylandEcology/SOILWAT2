@@ -585,3 +585,32 @@ double standardDeviation(double inputArray[], unsigned int length) {
 
     return sqrt(total / (finalLength - 1));
 }
+
+/**
+@brief Given two input arrays, calculate the correlation coefficient between
+them
+
+@param[in] xArray First input array to get the correlation of
+@param[in] yArray Second input array to get the correlation of
+@param[in] length Length of the two input arrays
+*/
+double correlation_coefficient(
+    double xArray[], double yArray[], unsigned int length
+) {
+    unsigned int index;
+
+    double xMean = mean(xArray, length);
+    double yMean = mean(yArray, length);
+
+    double prodSum = 0.;
+    double xSquSum = 0.;
+    double ySquSum = 0.;
+
+    for (index = 0; index < length; index++) {
+        prodSum += ((xArray[index] - xMean) * (yArray[index] - yMean));
+        xSquSum += ((xArray[index] - xMean) * (xArray[index] - xMean));
+        ySquSum += ((yArray[index] - yMean) * (yArray[index] - yMean));
+    }
+
+    return prodSum / (xSquSum * ySquSum);
+}
