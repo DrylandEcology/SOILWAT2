@@ -814,11 +814,11 @@ typedef struct {
         // decreasingly sorted critical SWP values
         rank_SWPcrits[NVEGTYPES],
         veg_method,
-        nYearsDynamicShort, /**< Number of years over which long-term
-                                 vegetation predictors are summarized */
-        nYearsDynamicLong;  /**< Number of years over which short-term
+        nYearsDynamicShort, /**< Number of years over which short-term
                                  vegetation predictors are summarized
                                  (as anomaly to long-term predictors) */
+        nYearsDynamicLong;  /**< Number of years over which long-term
+                                 vegetation predictors are summarized */
 } SW_VEGPROD_INPUTS;
 
 typedef struct {
