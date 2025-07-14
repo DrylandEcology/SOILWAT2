@@ -729,33 +729,33 @@ typedef struct {
 typedef struct {
     VegTypeSim veg[NVEGTYPES];
 
-    double *annTemp,         /**< Dynamic array of size <n years> holding the
-                                  mean annual monthly temperature for each year */
-        *annTempPrecipCorr,  /**< Dynamic array of size <n years> holding the
-                                  correlation between each months' avg temp
-                                  and each month's precipitation for each year */
-        *annIsotherm,        /**< Dynamic array of size <n years> holding
-                                  isothermality for each year */
-        *annWaterDef,        /**< Dynamic array of size <n years> holding annual
-                                  water deficit for each year */
-        *annPrecip,          /**< Dynamic array of size <n years> holding annual
-                                  total precipitation (mm) for each year */
-        *annSeasonPrecip,    /**< Dynamic array of size <n years> holding the
-                                  coefficient of variation of monthly total
-                                  precipitation in a year for every year */
-        *annPrecipDriestMon, /**< Dynamic array of size <n years> holding the
-                                  total precipitation of the driest month of the
-                                  year for every year */
-        *annWetDegDays,      /**< Dynamic array of size <n years> holding total
-                                  number of wet degree days in the year for every
-                                  year */
-        *annTempWarmestMon,  /**< Dynamic array of size <n years> holding the
-                                  maximum temperature of the warmest month of
-                                  the year for every year */
-        *annTempColdestMon,  /**< Dynamic array of size <n years> holding the
-                                  minimum temperature of the warmest month of
-                                  the year for every year */
-        *annPrecipWettestMon; /**< Dynamic array of size <n years> holding the
+    double *annTemp,          /**< Dynamic array of size n years holding the
+                                   mean annual monthly temperature for each year */
+        *annTempPrecipCorr,   /**< Dynamic array of size n years holding the
+                                   correlation between each months' avg temp
+                                   and each month's precipitation for each year */
+        *annIsotherm,         /**< Dynamic array of size n years holding
+                                   isothermality for each year */
+        *annWaterDef,         /**< Dynamic array of size n years holding annual
+                                   water deficit for each year */
+        *annPrecip,           /**< Dynamic array of size n years holding annual
+                                   total precipitation (mm) for each year */
+        *annSeasonPrecip,     /**< Dynamic array of size n years holding the
+                                   coefficient of variation of monthly total
+                                   precipitation in a year for every year */
+        *annPrecipDriestMon,  /**< Dynamic array of size n years holding the
+                                   total precipitation of the driest month of the
+                                   year for every year */
+        *annWetDegDays,       /**< Dynamic array of size n years holding total
+                                   number of wet degree days in the year for every
+                                   year */
+        *annTempWarmestMon,   /**< Dynamic array of size n years holding the
+                                   maximum temperature of the warmest month of
+                                   the year for every year */
+        *annTempColdestMon,   /**< Dynamic array of size n years holding the
+                                   minimum temperature of the warmest month of
+                                   the year for every year */
+        *annPrecipWettestMon; /**< Dynamic array of size n years holding the
                                    total precipitation of the wettest month
                                    of the year for every year */
 
