@@ -402,6 +402,11 @@ void SW_CTL_RunSims(
         report_sim_start(SW_Domain, rank);
     }
 
+    /* Set up interrupt handlers so if the program is interrupted
+       during simulation, we can exit smoothly and not abruptly */
+    (void) signal(SIGINT, handle_interrupt);
+    (void) signal(SIGTERM, handle_interrupt);
+
 #if defined(SWMPI)
     if (SW_Domain->SW_Designation.procJob == SW_MPI_PROC_COMP) {
 #endif
@@ -535,11 +540,6 @@ void SW_CTL_RunSimSet(
     (void) progVarID;
 #endif
 
-    /* Set up interrupt handlers so if the program is interrupted
-       during simulation, we can exit smoothly and not abruptly */
-    (void) signal(SIGINT, handle_interrupt);
-    (void) signal(SIGTERM, handle_interrupt);
-
     set_walltime(&tss, &ok_tss);
 
 #if defined(SWMPI)
@@ -596,18 +596,20 @@ checkStatus:
             goto wrapUp;
         }
 
-        SW_MPI_get_inputs(
-            (Bool) !copyWeather,
-            n_years,
-            desig,
-            inputType,
-            weathHistType,
-            inputs,
-            &numInputs,
-            &estVeg,
-            &getEstVeg,
-            &extraFailCheck
-        );
+        if (runSims) {
+            SW_MPI_get_inputs(
+                (Bool) !copyWeather,
+                n_years,
+                desig,
+                inputType,
+                weathHistType,
+                inputs,
+                &numInputs,
+                &estVeg,
+                &getEstVeg,
+                &extraFailCheck
+            );
+        }
 
         startSim = 0;
         endSim = numInputs;

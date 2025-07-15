@@ -6146,6 +6146,7 @@ void SW_MPI_handle_IO(
     Bool *succFlags = NULL;
     signed char *succMark = NULL;
     Bool errorCaused = swFALSE;
+    Bool spreadInFail = swFALSE;
     size_t temp;
     Bool dummyWrites = swFALSE;
     Bool failEarly = swFALSE;
@@ -6288,7 +6289,7 @@ checkStatus:
 
         // Do not attempt to read inputs because I/O process needs
         // to let it's other processes know that there was an error
-        if (!LogInfo->stopRun) {
+        if (!LogInfo->stopRun && runSims) {
             set_walltime(&tsr, &ok_tsr);
             SW_NCIN_read_inputs(
                 sw,
@@ -6341,6 +6342,8 @@ checkStatus:
                 swFALSE
             );
         } else {
+            spreadInFail = swTRUE;
+
             // This should match the checking of runSims = 0 on the compute
             // process side within the for-loop that runs through inputs
             break;
@@ -6456,8 +6459,9 @@ checkStatus:
             );
         }
 
-        if ((numIterations == 0 && input == numSuidsTot) ||
-            numIterations < N_ITER_BEFORE_OUT) {
+        if (((numIterations == 0 && input == numSuidsTot) ||
+             numIterations < N_ITER_BEFORE_OUT) &&
+            !spreadInFail) {
 
             set_walltime(&tsr, &ok_tsr);
             failEarly = write_outputs(
