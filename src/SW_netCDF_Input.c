@@ -40,7 +40,7 @@
 #define NIN_VAR_INPUTS 23
 
 /* Maximum number of variables per input key */
-#define SW_INNMAXVARS 22
+#define SW_INNMAXVARS 32
 
 /* Indices within `inWeathStrideInfo` for stride year and stride start */
 #define SW_INSTRIDEYR 0
@@ -102,6 +102,8 @@ static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] = {
      "1",
      "1",
      "1",
+     "1",
+     "1",
      /* SWRC_PARAM_NMAX x parameter: */
      "NA",
      "NA",
@@ -115,7 +117,9 @@ static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] = {
 
     /*inVeg*/
     {"1",
+     "m2 m-2",
      /* NVEGTYPES x fcover: */
+     "m2 m-2",
      "m2 m-2",
      "m2 m-2",
      "m2 m-2",
@@ -126,7 +130,11 @@ static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] = {
      "g m-2",
      "g m-2",
      "g m-2",
+     "g m-2",
+     "g m-2",
      /* NVEGTYPES x biomass: */
+     "g m-2",
+     "g m-2",
      "g m-2",
      "g m-2",
      "g m-2",
@@ -136,7 +144,11 @@ static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] = {
      "1",
      "1",
      "1",
+     "1",
+     "1",
      /* NVEGTYPES x LAI_conv: */
+     "g m-2",
+     "g m-2",
      "g m-2",
      "g m-2",
      "g m-2",
@@ -195,6 +207,8 @@ static const char *const possVarNames[SW_NINKEYSNC][SW_INNMAXVARS] = {
      ".transp_coeff",
      ".transp_coeff",
      ".transp_coeff",
+     ".transp_coeff",
+     ".transp_coeff",
 
      "swrcpMineralSoil[1]",
      "swrcpMineralSoil[2]",
@@ -215,6 +229,10 @@ static const char *const possVarNames[SW_NINKEYSNC][SW_INNMAXVARS] = {
      ".fCover",
      ".fCover",
      ".fCover",
+     ".fCover",
+     ".fCover",
+     ".litter",
+     ".litter",
      ".litter",
      ".litter",
      ".litter",
@@ -223,10 +241,16 @@ static const char *const possVarNames[SW_NINKEYSNC][SW_INNMAXVARS] = {
      ".biomass",
      ".biomass",
      ".biomass",
+     ".biomass",
+     ".biomass",
      ".pct_live",
      ".pct_live",
      ".pct_live",
      ".pct_live",
+     ".pct_live",
+     ".pct_live",
+     ".lai_conv",
+     ".lai_conv",
      ".lai_conv",
      ".lai_conv",
      ".lai_conv",
@@ -293,15 +317,15 @@ static const int eiv_som = 8;
 static const int eiv_impermeability = 9;
 static const int eiv_avgLyrTempInit = 10;
 static const int eiv_evapCoeff = 11;
-static const int eiv_transpCoeff[NVEGTYPES] = {12, 13, 14, 15};
-static const int eiv_swrcpMS[SWRC_PARAM_NMAX] = {16, 17, 18, 19, 20, 21};
+static const int eiv_transpCoeff[NVEGTYPES] = {12, 13, 14, 15, 16, 17};
+static const int eiv_swrcpMS[SWRC_PARAM_NMAX] = {18, 19, 20, 21, 22, 23};
 /* inVeg */
 static const int eiv_bareGroundfCover = 1;
-static const int eiv_vegfCover[NVEGTYPES] = {2, 3, 4, 5};
-static const int eiv_vegLitter[NVEGTYPES] = {6, 7, 8, 9};
-static const int eiv_vegBiomass[NVEGTYPES] = {10, 11, 12, 13};
-static const int eiv_vegPctlive[NVEGTYPES] = {14, 15, 16, 17};
-static const int eiv_vegLAIconv[NVEGTYPES] = {18, 19, 20, 21};
+static const int eiv_vegfCover[NVEGTYPES] = {2, 3, 4, 5, 6, 7};
+static const int eiv_vegLitter[NVEGTYPES] = {8, 9, 10, 11, 12, 13};
+static const int eiv_vegBiomass[NVEGTYPES] = {14, 15, 16, 17, 18, 19};
+static const int eiv_vegPctlive[NVEGTYPES] = {20, 21, 22, 23, 24, 25};
+static const int eiv_vegLAIconv[NVEGTYPES] = {26, 27, 28, 29, 30, 31};
 /* inWeather */
 // static const int eiv_temp_max = 1 + TEMP_MAX;
 // static const int eiv_temp_min = 1 + TEMP_MIN;
@@ -6465,8 +6489,9 @@ static void read_veg_inputs(
             numSites = (sDom) ? count[latIndex] : count[lonIndex];
 
             /* vegetation variables have time axis except cover */
-            varHasNotTime = (Bool) (varNum == eiv_bareGroundfCover ||
-                                    varNum == eiv_vegfCover[kVeg]);
+            varHasNotTime =
+                (Bool) (varNum == eiv_bareGroundfCover ||
+                        (kVeg >= 0 && varNum == eiv_vegfCover[kVeg]));
             numSetVals = (varHasNotTime) ? 1 : MAX_MONTHS;
             if (!varHasNotTime && timeIndex > -1) {
                 count[timeIndex] = MAX_MONTHS;
@@ -7184,7 +7209,7 @@ static void compare_pft_strings(
 ) {
     int varID;
     int pftStr;
-    char *names[] = {NULL, NULL, NULL, NULL};
+    char *names[NVEGTYPES] = {NULL, NULL, NULL, NULL, NULL, NULL};
 
     SW_NC_get_var_identifier(ncFileID, pftName, &varID, LogInfo);
     if (LogInfo->stopRun) {

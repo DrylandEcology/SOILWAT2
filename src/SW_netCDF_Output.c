@@ -284,15 +284,13 @@ static unsigned int calc_timeSize(
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void write_pft_vals(int ncFileID, int varID, LOG_INFO *LogInfo) {
-    unsigned char vals[NVEGTYPES] = {
-        (unsigned char) (SW_TREES + 1),
-        (unsigned char) (SW_SHRUB + 1),
-        (unsigned char) (SW_FORBS + 1),
-        (unsigned char) (SW_GRASS + 1)
-    };
+    unsigned char vals[NVEGTYPES] = {0};
+    for (int k = 0; k < NVEGTYPES; k++) {
+        vals[k] = (unsigned char) (k + 1);
+    }
 
     if (nc_put_var_ubyte(ncFileID, varID, &vals[0]) != NC_NOERR) {
-        LogError(LogInfo, LOGERROR, "Could not write string values.");
+        LogError(LogInfo, LOGERROR, "Could not write pft values.");
     }
 }
 
@@ -1280,14 +1278,11 @@ void SW_NCOUT_create_output_dimVar(
 ) {
 
     char *dimNames[3] = {(char *) "vertical", (char *) "time", (char *) "pft"};
-    const signed char pftFlagVals[] = {
-        SW_TREES + 1, SW_SHRUB + 1, SW_FORBS + 1, SW_GRASS + 1
-    };
+    signed char pftFlagVals[NVEGTYPES] = {0};
     const int vertIndex = 0;
     const int timeIndex = 1;
     const int pftIndex = 2;
     const int timeUnitIndex = 2;
-    const int numPFTFlagVals = 4;
     int dimNum;
     int varID;
     int index;
@@ -1420,12 +1415,16 @@ void SW_NCOUT_create_output_dimVar(
                 goto reportFullBuffer;
             }
         } else if (dimNum == pftIndex) {
+            for (index = 0; index < NVEGTYPES; index++) {
+                pftFlagVals[index] = (signed char) (index + 1);
+            }
+
             SW_NC_write_att(
                 "flag_values",
                 (void *) pftFlagVals,
                 varID,
                 ncFileID,
-                numPFTFlagVals,
+                NVEGTYPES,
                 NC_BYTE,
                 LogInfo
             );

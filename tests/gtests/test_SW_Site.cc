@@ -570,7 +570,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationParametersDeathTest) {
 
     // Check error for bad transpiration coefficient (should be [0-1])
 
-    SW_Run.RunIn.SoilRunIn.transp_coeff[SW_GRASS][1] = 1.5;
+    SW_Run.RunIn.SoilRunIn.transp_coeff[SW_GRASS3][1] = 1.5;
     SW_SIT_init_run(
         &SW_Run.VegProdIn,
         &SW_Run.SiteIn,

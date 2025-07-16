@@ -95,7 +95,7 @@ vegtype variable forb and forb.cov.fCover
 #include "include/generic.h"    // for LOGERROR, Bool, LOGWARN, GT
 #include "include/myMemory.h"   // for Mem_Calloc, Mem_Malloc
 #include "include/SW_datastructs.h" // for SW_VEGPROD_INPUTS, LOG_INFO, SW_VEGPROD_INPUTS...
-#include "include/SW_Defines.h" // for ForEachVegType, NVEGTYPES, SW_TREES
+#include "include/SW_Defines.h" // for ForEachVegType, NVEGTYPES, SW_SHRUB
 #include "include/SW_Files.h"   // for eVegProd
 #include "include/SW_Weather.h" // for deallocateClimateStructs, alloca...
 #include "include/Times.h"      // for interpolate_monthlyValues, Jan, Dec
@@ -111,7 +111,9 @@ vegtype variable forb and forb.cov.fCover
 
 // key2veg must be in the same order as the indices to vegetation types defined
 // in SW_Defines.h
-const char *const key2veg[NVEGTYPES] = {"tree", "shrub", "forbs", "grass"};
+const char *const key2veg[NVEGTYPES] = {
+    "treeNL", "treeBL", "shrub", "forbs", "grassC3", "grassC4"
+};
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -1201,16 +1203,12 @@ void update_veg_yearly(
         // Update vegetation values
         calc_CONUS_vegcov_2025(SW_SoilSim, SW_VegProdSim, RelAbundanceL0);
 
-        // trees = needle-leaved + broad-leaved trees
-        SW_VegProdRunIn->veg[SW_TREES].cov.fCover =
-            RelAbundanceL0[0] + RelAbundanceL0[1];
-
+        SW_VegProdRunIn->veg[SW_TREENL].cov.fCover = RelAbundanceL0[0];
+        SW_VegProdRunIn->veg[SW_TREEBL].cov.fCover = RelAbundanceL0[1];
         SW_VegProdRunIn->veg[SW_SHRUB].cov.fCover = RelAbundanceL0[2];
         SW_VegProdRunIn->veg[SW_FORBS].cov.fCover = RelAbundanceL0[3];
-
-        // grass = C3-grasses + C4-grasses
-        SW_VegProdRunIn->veg[SW_GRASS].cov.fCover =
-            RelAbundanceL0[4] + RelAbundanceL0[5];
+        SW_VegProdRunIn->veg[SW_GRASS3].cov.fCover = RelAbundanceL0[4];
+        SW_VegProdRunIn->veg[SW_GRASS4].cov.fCover = RelAbundanceL0[5];
 
         SW_VegProdRunIn->bare_cov.fCover = RelAbundanceL0[6];
     }
@@ -1309,13 +1307,16 @@ void SW_VPD_read(
                 x = sscanf(inbuf, "%19s", vegStrs[0]);
                 expectedNumInVals = 1;
             } else {
+                // Inputs must match order of veg types 0..NVEGTYPES
                 x = sscanf(
                     inbuf,
-                    "%19s %19s %19s %19s %19s",
-                    vegStrs[SW_GRASS],
+                    "%19s %19s %19s %19s %19s %19s %19s",
+                    vegStrs[SW_TREENL],
+                    vegStrs[SW_TREEBL],
                     vegStrs[SW_SHRUB],
-                    vegStrs[SW_TREES],
                     vegStrs[SW_FORBS],
+                    vegStrs[SW_GRASS3],
+                    vegStrs[SW_GRASS4],
                     bareGroundStr
                 );
 
@@ -1558,9 +1559,8 @@ void SW_VPD_read(
             case 26:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].SWPcrit = -10. * help_veg[k];
-                    SW_VegProdIn->critSoilWater[k] =
-                        help_veg[k]; // for use with get_swa for properly
-                                     // partitioning available soilwater
+                    // for use with get_swa for properly partitioning swa
+                    SW_VegProdIn->critSoilWater[k] = help_veg[k];
                 }
                 get_critical_rank(SW_VegProdIn);
                 break;
@@ -1623,7 +1623,9 @@ void SW_VPD_read(
 
             if (lineno == line_help + 1 || lineno == line_help + 1 + 12 ||
                 lineno == line_help + 1 + 12 * 2 ||
-                lineno == line_help + 1 + 12 * 3) {
+                lineno == line_help + 1 + 12 * 3 ||
+                lineno == line_help + 1 + 12 * 4 ||
+                lineno == line_help + 1 + 12 * 5) {
                 mon = Jan;
             }
 
@@ -1636,7 +1638,7 @@ void SW_VPD_read(
                 vegStrs[3]
             );
 
-            if (x < numMonthVals) {
+            if (x != numMonthVals || lineno > line_help + 12 * NVEGTYPES) {
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -1655,29 +1657,18 @@ void SW_VPD_read(
                 }
             }
 
-            if (lineno > line_help + 12 * 3 && lineno <= line_help + 12 * 4) {
-                SW_VegProdRunIn->veg[SW_FORBS].litter[mon] = litt;
-                SW_VegProdRunIn->veg[SW_FORBS].biomass[mon] = biom;
-                SW_VegProdRunIn->veg[SW_FORBS].pct_live[mon] = pctl;
-                SW_VegProdRunIn->veg[SW_FORBS].lai_conv[mon] = laic;
-            } else if (lineno > line_help + 12 * 2 &&
-                       lineno <= line_help + 12 * 3) {
-                SW_VegProdRunIn->veg[SW_TREES].litter[mon] = litt;
-                SW_VegProdRunIn->veg[SW_TREES].biomass[mon] = biom;
-                SW_VegProdRunIn->veg[SW_TREES].pct_live[mon] = pctl;
-                SW_VegProdRunIn->veg[SW_TREES].lai_conv[mon] = laic;
-            } else if (lineno > line_help + 12 &&
-                       lineno <= line_help + 12 * 2) {
-                SW_VegProdRunIn->veg[SW_SHRUB].litter[mon] = litt;
-                SW_VegProdRunIn->veg[SW_SHRUB].biomass[mon] = biom;
-                SW_VegProdRunIn->veg[SW_SHRUB].pct_live[mon] = pctl;
-                SW_VegProdRunIn->veg[SW_SHRUB].lai_conv[mon] = laic;
-            } else if (lineno > line_help && lineno <= line_help + 12) {
-                SW_VegProdRunIn->veg[SW_GRASS].litter[mon] = litt;
-                SW_VegProdRunIn->veg[SW_GRASS].biomass[mon] = biom;
-                SW_VegProdRunIn->veg[SW_GRASS].pct_live[mon] = pctl;
-                SW_VegProdRunIn->veg[SW_GRASS].lai_conv[mon] = laic;
+            // Inputs must match order of veg types 0..NVEGTYPES
+            ForEachVegType(k) {
+                if (lineno > line_help + 12 * k &&
+                    lineno <= line_help + 12 * (k + 1)) {
+                    break;
+                }
             }
+
+            SW_VegProdRunIn->veg[k].litter[mon] = litt;
+            SW_VegProdRunIn->veg[k].biomass[mon] = biom;
+            SW_VegProdRunIn->veg[k].pct_live[mon] = pctl;
+            SW_VegProdRunIn->veg[k].lai_conv[mon] = laic;
 
             mon++;
         }
@@ -2118,7 +2109,7 @@ void SW_VPD_new_year(
                         (vegRunIn[k].litter[mon] / vegRunIn[k].cov.fCover);
             }
 
-            if (k == SW_TREES) {
+            if (k == SW_TREENL || k == SW_TREEBL) {
                 // CO2 effects on tree biomass restricted to percent live
                 // biomass, i.e., total tree biomass is constant while live
                 // biomass is increasing
@@ -2232,7 +2223,7 @@ void SW_VPD_new_year(
 
                 /* total above-ground biomass = 'total_agb_daily' is used for
                  * bare-soil evaporation */
-                if (k == SW_TREES) {
+                if (k == SW_TREENL || k == SW_TREEBL) {
                     vegSim[k].total_agb_daily[doy] =
                         vegSim[k].litter_daily[doy] +
                         vegSim[k].biolive_daily[doy];
@@ -2243,6 +2234,12 @@ void SW_VPD_new_year(
                 }
 
             } else {
+                /* No cover -> set all daily vegetation variables to 0 */
+                vegSim[k].litter_daily[doy] = 0.;
+                vegSim[k].biomass_daily[doy] = 0.;
+                vegSim[k].pct_live_daily[doy] = 0.;
+                vegSim[k].veg_height_daily[doy] = 0.;
+                vegSim[k].lai_conv_daily[doy] = 0.;
                 vegSim[k].lai_live_daily[doy] = 0.;
                 vegSim[k].bLAI_total_daily[doy] = 0.;
                 vegSim[k].biolive_daily[doy] = 0.;
@@ -2287,11 +2284,11 @@ void echo_VegProd(
     sw_printf("\n==============================================\n"
               "Vegetation Production Parameters\n");
 
+    sw_printf("Component   Cover   Albedo   HydRed\n");
+
     ForEachVegType(k) {
         sw_printf(
-            "%s component\t= %1.2f\n"
-            "\tAlbedo\t= %1.2f\n"
-            "\tHydraulic redistribution flag\t= %d",
+            "%s   %1.2f   %1.2f   %d\n",
             key2veg[k],
             SW_VegProdRunIn->veg[k].cov.fCover,
             SW_VegProdIn->veg[k].cov.albedo,
@@ -2300,8 +2297,7 @@ void echo_VegProd(
     }
 
     sw_printf(
-        "Bare Ground component\t= %1.2f\n"
-        "\tAlbedo\t= %1.2f\n",
+        "BareGround   %1.2f   %1.2f   NA\n",
         SW_VegProdRunIn->bare_cov.fCover,
         SW_VegProdIn->bare_cov.albedo
     );
@@ -2430,7 +2426,8 @@ void estimateVegetationFromClimate(
         double C4Variables[3];
         double grassOutput[3];
         double RelAbundanceL0[8];
-        double RelAbundanceL1[5];
+        double RelAbundanceL1[5]; // NVEGTYPES (v1): 4 + 1
+        double RelAbundanceL2[7]; // NVEGTYPES (v2): 6 + 1
 
         Bool fillEmptyWithBareGround = swTRUE;
         Bool warnExtrapolation = swTRUE;
@@ -2480,6 +2477,7 @@ void estimateVegetationFromClimate(
                 grassOutput,
                 RelAbundanceL0,
                 RelAbundanceL1,
+                RelAbundanceL2,
                 LogInfo
             );
 
@@ -2490,7 +2488,7 @@ void estimateVegetationFromClimate(
             }
 
             ForEachVegType(k) {
-                SW_VegProdRunIn->veg[k].cov.fCover = RelAbundanceL1[k];
+                SW_VegProdRunIn->veg[k].cov.fCover = RelAbundanceL2[k];
             }
 
             SW_VegProdRunIn->bare_cov.fCover = RelAbundanceL0[bareGroundIndex];
@@ -2600,12 +2598,21 @@ climate variables required as inputs.`
         -# Shrubs,
         -# Trees,
         -# Bare ground
-@param[out] RelAbundanceL1 Array of size five holding all estimated values
-    aside from grasses (not including sum of grasses). The elements are:
+@param[out] RelAbundanceL1 Array of size five representing the types and order
+    used by SOILWAT2 previous to v8.3.0 (vegetation type "v1"):
         -# trees,
         -# shrubs
-        -# sum of forbs and succulents
-        -# overall sum of grasses
+        -# forbs (here, sum of forbs and succulents)
+        -# grasses (here, sum of annual grasses, C3 grasses, C4 grasses)
+        -# bare ground
+@param[out] RelAbundanceL2 Array of size seven representing the types and order
+    used by SOILWAT2 since v8.3.0 (vegetation type "v2"):
+        -# treeNL (here, treated as if equivalent to "trees"),
+        -# treeBL (here, set to 0),
+        -# shrub
+        -# forbs (here, sum of forbs and succulents)
+        -# grassC3 (here, sum of annual grasses and C3 grasses)
+        -# grassC4
         -# bare ground
 @param[out] LogInfo Holds information on warnings and errors
 
@@ -2629,6 +2636,7 @@ void estimatePotNatVegComposition(
     double *grassOutput,
     double *RelAbundanceL0,
     double *RelAbundanceL1,
+    double *RelAbundanceL2,
     LOG_INFO *LogInfo
 ) {
 
@@ -3121,12 +3129,9 @@ void estimatePotNatVegComposition(
         RelAbundanceL0[index] = estimCover[index];
     }
 
-    grassOutput[0] = (missing(inputValues[C3Index])) ? estimCover[C3Index] :
-                                                       inputValues[C3Index];
-    grassOutput[1] = (missing(inputValues[C4Index])) ? estimCover[C4Index] :
-                                                       inputValues[C4Index];
-    grassOutput[2] = (missing(inputValues[grassAnn])) ? estimCover[grassAnn] :
-                                                        inputValues[grassAnn];
+    grassOutput[0] = RelAbundanceL0[C3Index];
+    grassOutput[1] = RelAbundanceL0[C4Index];
+    grassOutput[2] = RelAbundanceL0[grassAnn];
 
     tempSumGrasses += grassOutput[0];
     tempSumGrasses += grassOutput[1];
@@ -3140,17 +3145,31 @@ void estimatePotNatVegComposition(
         }
     }
 
-    RelAbundanceL1[0] = estimCover[treeIndex];
-    RelAbundanceL1[1] = estimCover[shrubIndex];
-    RelAbundanceL1[2] = estimCover[forbIndex] + estimCover[succIndex];
+    /* RelAbundanceL1 Array of size five representing the types and order
+       used by SOILWAT2 previous to v8.3.0 (vegetation type "v1") */
+    RelAbundanceL1[0] = RelAbundanceL0[treeIndex];
+    RelAbundanceL1[1] = RelAbundanceL0[shrubIndex];
+    RelAbundanceL1[2] = RelAbundanceL0[forbIndex] + RelAbundanceL0[succIndex];
+    RelAbundanceL1[3] = RelAbundanceL0[C3Index] + RelAbundanceL0[C4Index] +
+                        RelAbundanceL0[grassAnn];
+    RelAbundanceL1[4] = RelAbundanceL0[bareGround];
 
-    if (fixSumGrasses && grassEstimSize > 0) {
-        RelAbundanceL1[3] = SumGrassesFraction;
-    } else {
-        RelAbundanceL1[3] = tempSumGrasses;
-    }
-
-    RelAbundanceL1[4] = inputValues[bareGround];
+    /* RelAbundanceL2 Array of size seven representing the types and order
+    used by SOILWAT2 since v8.3.0 (vegetation type "v2") */
+    /* treeNL */
+    RelAbundanceL2[0] = RelAbundanceL0[treeIndex];
+    /* treeBL */
+    RelAbundanceL2[1] = 0.;
+    /* shrub */
+    RelAbundanceL2[2] = RelAbundanceL0[shrubIndex];
+    /* forbs (here, sum of forbs and succulents) */
+    RelAbundanceL2[3] = RelAbundanceL0[forbIndex] + RelAbundanceL0[succIndex];
+    /* grassC3 (here, sum of annual grasses and C3 grasses) */
+    RelAbundanceL2[4] = RelAbundanceL0[C3Index] + RelAbundanceL0[grassAnn];
+    /* grassC4 */
+    RelAbundanceL2[5] = RelAbundanceL0[C4Index];
+    /* bare ground */
+    RelAbundanceL2[6] = RelAbundanceL0[bareGround];
 }
 
 /**

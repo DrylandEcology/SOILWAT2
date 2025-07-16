@@ -235,6 +235,7 @@ void estimatePotNatVegComposition(
     double *grassOutput,
     double *RelAbundanceL0,
     double *RelAbundanceL1,
+    double *RelAbundanceL2,
     LOG_INFO *LogInfo
 );
 

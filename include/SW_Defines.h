@@ -153,11 +153,13 @@ extern "C" {
 #define SW_MAX 1
 
 /* indices to vegetation types */
-#define NVEGTYPES 4 /**< Number of vegetation types implemented */
-#define SW_TREES 0
-#define SW_SHRUB 1
-#define SW_FORBS 2
-#define SW_GRASS 3
+#define NVEGTYPES 6 /**< Number of vegetation types implemented */
+#define SW_TREENL 0 /**< Index for needle-leaved tree type */
+#define SW_TREEBL 1 /**< Index for broad-leaved tree type */
+#define SW_SHRUB 2  /**< Index for shrub type */
+#define SW_FORBS 3  /**< Index for forb type */
+#define SW_GRASS3 4 /**< Index for C3-grass type */
+#define SW_GRASS4 5 /**< Index for C4-grass type */
 
 /* Constants for number of months, weeks, and days in a year */
 /* number of days in each week. unlikely to change, but

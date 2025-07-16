@@ -193,7 +193,7 @@ TEST(VegProdTest, VegProdSumming) {
     EXPECT_DOUBLE_EQ(sum_across_vegtypes(transp_coeff, 0), 0.);
 
     for (vegIndex = 0; vegIndex < NVEGTYPES; vegIndex++) {
-        transp_coeff[vegIndex][0] = 0.25;
+        transp_coeff[vegIndex][0] = 1. / NVEGTYPES;
     }
 
     EXPECT_DOUBLE_EQ(sum_across_vegtypes(transp_coeff, 0), 1.);
@@ -251,8 +251,11 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
     // Array holding all values from the estimation
     double RelAbundanceL0[8]; // 8 = Number of types
 
-    // Array holding all values from estimation minus grasses
-    double RelAbundanceL1[5]; // 5 = Number of types minus grasses
+    // Array for resulting cover of vegetation types v1
+    double RelAbundanceL1[5]; // 5 = 4 vegtypes + bare ground
+
+    // Array for resulting cover of vegetation types v2
+    double RelAbundanceL2[7]; // 7 = 6 vegtypes + bare ground
 
     double const SumGrassesFraction = SW_MISSING;
     double C4Variables[3];
@@ -268,6 +271,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
 
     double RelAbundanceL0Expected[8];
     double RelAbundanceL1Expected[5];
+    double RelAbundanceL2Expected[7];
     double grassOutputExpected[3];
 
     SW_Run.ModelIn.startyr = 1980;
@@ -390,6 +394,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
         grassOutput,
         RelAbundanceL0,
         RelAbundanceL1,
+        RelAbundanceL2,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -473,6 +478,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
         grassOutput,
         RelAbundanceL0,
         RelAbundanceL1,
+        RelAbundanceL2,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -560,6 +566,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
         grassOutput,
         RelAbundanceL0,
         RelAbundanceL1,
+        RelAbundanceL2,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -605,12 +612,13 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
      ```
      */
 
-    RelAbundanceL1Expected[treeIndexL1] = 0.;
-    RelAbundanceL1Expected[shrubIndexL1] = .3084547;
-    // forbIndexL1: Constains forbs + succulents (L0)
-    RelAbundanceL1Expected[forbIndexL1] = .2608391;
-    RelAbundanceL1Expected[grassesIndexL1] = .4307061;
-    RelAbundanceL1Expected[bareGroundL1] = 0.;
+    RelAbundanceL2Expected[0] = 0.;       /* treeNL */
+    RelAbundanceL2Expected[1] = 0.;       /* treeBL */
+    RelAbundanceL2Expected[2] = .3084547; /* shrub */
+    RelAbundanceL2Expected[3] = .2608391; /* forbs */
+    RelAbundanceL2Expected[4] = .4307061; /* grassC3 */
+    RelAbundanceL2Expected[5] = 0.;       /* grassC4 */
+    RelAbundanceL2Expected[6] = 0.;       /* bare ground */
 
 
     estimateVegetationFromClimate(
@@ -624,18 +632,18 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    // Loop through RelAbundanceL1 and test results
-    for (index = 0; index < 4; index++) {
+    // Loop through RelAbundanceL2 and test results
+    for (index = 0; index < NVEGTYPES; index++) {
         EXPECT_NEAR(
             SW_Run.RunIn.VegProdRunIn.veg[index].cov.fCover,
-            RelAbundanceL1Expected[index],
+            RelAbundanceL2Expected[index],
             tol6
         );
     }
 
     EXPECT_NEAR(
         SW_Run.RunIn.VegProdRunIn.bare_cov.fCover,
-        RelAbundanceL1Expected[bareGroundL1],
+        RelAbundanceL2Expected[NVEGTYPES],
         tol6
     );
 
@@ -720,6 +728,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
         grassOutput,
         RelAbundanceL0,
         RelAbundanceL1,
+        RelAbundanceL2,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -808,6 +817,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
         grassOutput,
         RelAbundanceL0,
         RelAbundanceL1,
+        RelAbundanceL2,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -858,8 +868,11 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
     // Array holding all values from the estimation
     double RelAbundanceL0[8]; // 8 = Number of types
 
-    // Array holding all values from estimation minus grasses
-    double RelAbundanceL1[5]; // 5 = Number of types minus grasses
+    // Array for resulting cover of vegetation types v1
+    double RelAbundanceL1[5]; // 5 = 4 vegtypes + bare ground
+
+    // Array for resulting cover of vegetation types v2
+    double RelAbundanceL2[7]; // 7 = 6 vegtypes + bare ground
 
     double SumGrassesFraction = SW_MISSING;
     double C4Variables[3];
@@ -962,6 +975,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
         grassOutput,
         RelAbundanceL0,
         RelAbundanceL1,
+        RelAbundanceL2,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1045,6 +1059,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
         grassOutput,
         RelAbundanceL0,
         RelAbundanceL1,
+        RelAbundanceL2,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1132,6 +1147,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
         grassOutput,
         RelAbundanceL0,
         RelAbundanceL1,
+        RelAbundanceL2,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1218,6 +1234,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
         grassOutput,
         RelAbundanceL0,
         RelAbundanceL1,
+        RelAbundanceL2,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1308,6 +1325,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
         grassOutput,
         RelAbundanceL0,
         RelAbundanceL1,
+        RelAbundanceL2,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1398,6 +1416,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
         grassOutput,
         RelAbundanceL0,
         RelAbundanceL1,
+        RelAbundanceL2,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1455,8 +1474,11 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne1DeathTest) {
     // Array holding all values from the estimation
     double RelAbundanceL0[8]; // 8 = Number of types
 
-    // Array holding all values from estimation minus grasses
-    double RelAbundanceL1[5]; // 5 = Number of types minus grasses
+    // Array for resulting cover of vegetation types v1
+    double RelAbundanceL1[5]; // 5 = 4 vegtypes + bare ground
+
+    // Array for resulting cover of vegetation types v2
+    double RelAbundanceL2[7]; // 7 = 6 vegtypes + bare ground
 
     // Allocate arrays needed for `calcSiteClimate()` and
     // `averageClimateAcrossYears()`
@@ -1525,6 +1547,7 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne1DeathTest) {
         grassOutput,
         RelAbundanceL0,
         RelAbundanceL1,
+        RelAbundanceL2,
         &LogInfo
     );
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
@@ -1567,8 +1590,11 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne2DeathTest) {
     // Array holding all values from the estimation
     double RelAbundanceL0[8]; // 8 = Number of types
 
-    // Array holding all values from estimation minus grasses
-    double RelAbundanceL1[5]; // 5 = Number of types minus grasses
+    // Array for resulting cover of vegetation types v1
+    double RelAbundanceL1[5]; // 5 = 4 vegtypes + bare ground
+
+    // Array for resulting cover of vegetation types v2
+    double RelAbundanceL2[7]; // 7 = 6 vegtypes + bare ground
 
     // Allocate arrays needed for `calcSiteClimate()` and
     // `averageClimateAcrossYears()`
@@ -1653,6 +1679,7 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne2DeathTest) {
         grassOutput,
         RelAbundanceL0,
         RelAbundanceL1,
+        RelAbundanceL2,
         &LogInfo
     );
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
@@ -2022,7 +2049,7 @@ TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
 
     Bool const copyWeather = swTRUE;
 
-    int const vt1 = SW_GRASS;
+    int const vt1 = SW_GRASS3;
     int const vt2 = SW_FORBS;
 
     SW_RUN run_vt1;

@@ -319,9 +319,9 @@ vSW2 <- if (
 
 swin <- rSOILWAT2::sw_exampleData
 
-
-pfts <- c("tree", "shrub", "forbs", "grass")
+pfts <- c("treeNL", "treeBL", "shrub", "forbs", "grassC3", "grassC4")
 npfts <- length(pfts)
+oldPfts0 <- c("tree", "shrub", "forbs", "grass")
 oldPfts1 <- c("Tree", "Shrub", "Forb", "Grass")
 oldPfts2 <- c("Trees", "Shrubs", "Forbs", "Grasses")
 
@@ -332,7 +332,7 @@ if ("transpTree_frac" %in% colnames(soilsDefault)) {
   # Update pft-related names with SOILWAT2 v8.3.0
   colnames(soilsDefault) <- replaceOldNames(
     colnames(soilsDefault),
-    newNames = paste0("trco", pfts, "_frac"),
+    newNames = paste0("trco", oldPfts0, "_frac"),
     oldNames = paste0("transp", oldPfts1, "_frac")
   )
 }
@@ -1562,6 +1562,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
     for (kpft in seq_len(npfts)) {
       cn <- paste0("trco", pfts[[kpft]], "_frac")
+      cn <- paste0("TrCo_", pfts[[kpft]])
       trc <- round(soilsTestRun[, cn, drop = TRUE], nDigsSoil)
       kstart <- c(
         kpft,
@@ -1929,11 +1930,11 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
 
     #--- ..** inVeg: fcover_bg ------
-    Composition <- swin@prod@Composition # doesn't reproduce if rounded
+    Composition <- swin@prod2@Composition # doesn't reproduce if rounded
     if ("Grasses" %in% names(Composition)) {
       # Update pft-related names with SOILWAT2 v8.3.0
       names(Composition) <- replaceOldNames(
-        names(Composition), newNames = pfts, oldNames = oldPfts2)
+        names(Composition), newNames = oldPfts0, oldNames = oldPfts2)
     }
     u <- getModifiedNCUnits(usedUnits, "inVeg", "fcover_bg")
 
@@ -1986,11 +1987,11 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       )
     }
 
-    monVeg <- swin@prod@MonthlyVeg
+    monVeg <- swin@prod2@MonthlyVeg
     if ("Grasses" %in% names(monVeg)) {
       # Update pft-related names with SOILWAT2 v8.3.0
       names(monVeg) <- replaceOldNames(
-        names(monVeg), newNames = pfts, oldNames = oldPfts2)
+        names(monVeg), newNames = oldPfts0, oldNames = oldPfts2)
     }
 
     #--- ..** inVeg: litter_[veg] ------
@@ -2146,11 +2147,11 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
 
     #--- ..** inVeg: fcover_bg ------
-    Composition <- swin@prod@Composition # doesn't reproduce if round
+    Composition <- swin@prod2@Composition # doesn't reproduce if round
     if ("Grasses" %in% names(Composition)) {
       # Update pft-related names with SOILWAT2 v8.3.0
       names(Composition) <- replaceOldNames(
-        names(Composition), newNames = pfts, oldNames = oldPfts2)
+        names(Composition), newNames = oldPfts0, oldNames = oldPfts2)
     }
     u <- getModifiedNCUnits(usedUnits, "inVeg", "fcover_bg")
 
@@ -2201,11 +2202,11 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
 
     #--- ..** inVeg: litter ------
-    monVeg <- swin@prod@MonthlyVeg
+    monVeg <- swin@prod2@MonthlyVeg
     if ("Grasses" %in% names(monVeg)) {
       # Update pft-related names with SOILWAT2 v8.3.0
       names(monVeg) <- replaceOldNames(
-        names(monVeg), newNames = pfts, oldNames = oldPfts2)
+        names(monVeg), newNames = oldPfts0, oldNames = oldPfts2)
     }
     u <- getModifiedNCUnits(usedUnits, "inVeg", "litter")
 
