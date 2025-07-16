@@ -35,7 +35,7 @@
 #define SW_NOUTFILES 8                       // For output `txtInFiles`
 #define SW_NFILES SW_NINFILES + SW_NOUTFILES // For `txtInFiles`
 #define SW_NVARDOM 2                         // For `InFilesNC`
-/** Max number of variables/columns per output group */
+/** Maximum number of variables (columns) per output group */
 #define SW_NOUTCOLS (1 + NVEGTYPES) * MAX_LAYERS
 
 /* KD-tree related defines */
