@@ -181,14 +181,15 @@ void SW_OUT_set_ncol(
     IntUS ncol_OUT[],
     IntUS nvar_OUT[],
     IntUS nsl_OUT[][SW_OUTNMAXVARS],
-    IntUS npft_OUT[][SW_OUTNMAXVARS]
+    IntUS npft_OUT[][SW_OUTNMAXVARS],
+    LOG_INFO *LogInfo
 );
 
 void SW_OUT_set_colnames(
     unsigned int tLayers,
     SW_VEGESTAB_INFO_INPUTS *parms,
     const IntUS ncol_OUT[],
-    char *colnames_OUT[][5 * NVEGTYPES + MAX_LAYERS],
+    char *colnames_OUT[][SW_NOUTCOLS],
     LOG_INFO *LogInfo
 );
 

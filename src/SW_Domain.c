@@ -655,7 +655,7 @@ void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
 #endif
 #endif
     ForEachOutKey(k) {
-        for (i = 0; i < 5 * NVEGTYPES + MAX_LAYERS; i++) {
+        for (i = 0; i < SW_NOUTCOLS; i++) {
             if (!isnull(SW_Domain->OutDom.colnames_OUT[k][i])) {
                 free(SW_Domain->OutDom.colnames_OUT[k][i]);
                 SW_Domain->OutDom.colnames_OUT[k][i] = NULL;
