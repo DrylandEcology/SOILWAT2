@@ -4501,7 +4501,7 @@ void SW_MPI_template_info(
     IntU vCount;
     int structType;
     int var;
-    int numElem[] = {3, 25, 7, 5, 7, 43, 2};
+    int numElem[] = {3, 25, 7, 5, 7, 44, 2};
     void **markov2DBuffer[] = {
         (void **) &SW_Run->MarkovIn.wetprob,
         (void **) &SW_Run->MarkovIn.dryprob,
@@ -4517,7 +4517,7 @@ void SW_MPI_template_info(
         (void *) SW_Run->MarkovIn.v_cov,
         (void *) &SW_Run->MarkovIn.ppt_events
     };
-    void *buffers[][43] = {
+    void *buffers[][44] = {
         {(void *) &SW_Run->CarbonIn.use_wue_mult,
          (void *) &SW_Run->CarbonIn.use_bio_mult,
          (void *) SW_Run->CarbonIn.ppm},
@@ -4607,10 +4607,11 @@ void SW_MPI_template_info(
          (void *) &SW_Run->SiteIn.SWCMinVal,
          (void *) &SW_Run->SiteSim.n_transp_rgn,
          (void *) SW_Run->SiteSim.TranspRgnDepths,
-         (void *) SW_Run->SiteSim.swrcpOM},
+         (void *) SW_Run->SiteSim.swrcpOM,
+         (void *) &SW_Run->SiteIn.methodMaxDepthSoilTemperature},
         {(void *) &SW_Run->VegEstabIn.use, (void *) &SW_Run->VegEstabIn.count}
     };
-    MPI_Datatype types[][43] = {
+    MPI_Datatype types[][44] = {
         {MPI_INT, MPI_INT, MPI_DOUBLE}, /* SW_CARBON_INPUTS */
         {MPI_INT,      MPI_INT,      MPI_UNSIGNED, MPI_DOUBLE,
          MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,
@@ -4633,10 +4634,11 @@ void SW_MPI_template_info(
          MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,
          MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,
          MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_UNSIGNED, MPI_DOUBLE,   MPI_DOUBLE}, /* SW_SITE_INPUTS */
-        {MPI_INT, MPI_UNSIGNED}                   /* SW_VEGPROD_SIM */
+         MPI_UNSIGNED, MPI_DOUBLE,   MPI_DOUBLE, MPI_UNSIGNED
+        },                      /* SW_SITE_INPUTS */
+        {MPI_INT, MPI_UNSIGNED} /* SW_VEGPROD_SIM */
     };
-    int count[][43] = {
+    int count[][44] = {
         /* SW_CARBON_INPUTS */
         {1, 1, MAX_NYEAR},
 
@@ -4680,7 +4682,7 @@ void SW_MPI_template_info(
         {64, 64, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
          1,  1,  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
          1,  1,  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, MAX_TRANSP_REGIONS,
-         12},
+         12, 1},
 
         /* SW_VEGPROD_SIM */
         {1, 1}

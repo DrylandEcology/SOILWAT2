@@ -1624,7 +1624,7 @@ void SW_SIT_read(
         doubleRes = SW_MISSING;
         intRes = SW_MISSING;
 
-        strLine = (Bool) (lineno == 36 || lineno == 40 || lineno == 41);
+        strLine = (Bool) (lineno == 37 || lineno == 41 || lineno == 42);
 
         if (!strLine && lineno <= nLinesWithoutTR) {
             /* Check to see if the line number contains a double or integer
@@ -1632,7 +1632,7 @@ void SW_SIT_read(
                lineno with integers: 3, 4, 32, 33, 34, 35, 37, 38, 42 */
             doDoubleConv =
                 (Bool) ((lineno >= 0 && lineno <= 2) ||
-                        (lineno >= 5 && lineno <= 31) || lineno == 39);
+                        (lineno >= 5 && lineno <= 31) || lineno == 40);
 
             if (doDoubleConv) {
                 doubleRes = sw_strtod(inbuf, MyFileName, LogInfo);
@@ -1752,6 +1752,10 @@ void SW_SIT_read(
             break;
 
         case 34:
+            SW_SiteIn->methodMaxDepthSoilTemperature = intRes;
+            break;
+
+        case 35:
             SW_CarbonIn->use_bio_mult = itob(intRes);
 #ifdef SWDEBUG
             if (debug) {
@@ -1762,7 +1766,7 @@ void SW_SIT_read(
             }
 #endif
             break;
-        case 35:
+        case 36:
             SW_CarbonIn->use_wue_mult = itob(intRes);
 #ifdef SWDEBUG
             if (debug) {
@@ -1773,7 +1777,7 @@ void SW_SIT_read(
             }
 #endif
             break;
-        case 36:
+        case 37:
             resSNP = snprintf(
                 SW_CarbonIn->scenario, sizeof SW_CarbonIn->scenario, "%s", inbuf
             );
@@ -1795,19 +1799,19 @@ void SW_SIT_read(
             }
 #endif
             break;
-        case 37:
+        case 38:
             *hasConsistentSoilLayerDepths = itob(intRes);
             break;
 
-        case 38:
+        case 39:
             SW_SiteIn->type_soilDensityInput = intRes;
             break;
 
-        case 39:
+        case 40:
             SW_SiteIn->depthSapric = doubleRes;
             break;
 
-        case 40:
+        case 41:
             resSNP = snprintf(
                 SW_SiteIn->site_swrc_name,
                 sizeof SW_SiteIn->site_swrc_name,
@@ -1827,7 +1831,7 @@ void SW_SIT_read(
                 goto closeFile;
             }
             break;
-        case 41:
+        case 42:
             resSNP = snprintf(
                 SW_SiteIn->site_ptf_name,
                 sizeof SW_SiteIn->site_ptf_name,
@@ -1843,7 +1847,7 @@ void SW_SIT_read(
             }
             SW_SiteIn->site_ptf_type = encode_str2ptf(SW_SiteIn->site_ptf_name);
             break;
-        case 42:
+        case 43:
             SW_SiteIn->inputsProvideSWRCp = itob(intRes);
             break;
 

@@ -519,6 +519,12 @@ typedef struct {
     double SWCInitVal, /* initialization value for swc */
         SWCWetVal,     /* value for a "wet" day,       */
         SWCMinVal;     /* lower bound on swc.          */
+
+    /** Method for soil temperature at maximum depth:
+        0 (user provided value);
+        1 (dynamically calculated from a moving long-term mean annual air
+           temperature, see `nYearsDynamicLong` from veg.in) */
+    unsigned int methodMaxDepthSoilTemperature;
 } SW_SITE_INPUTS;
 
 typedef struct {
