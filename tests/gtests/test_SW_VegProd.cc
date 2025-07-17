@@ -2,8 +2,10 @@
 #include "include/SW_datastructs.h"      // for SW_CLIMATE_CLIM, SW_CLIMATE...
 #include "include/SW_Defines.h"          // for SW_MISSING, NVEGTYPES, ForE...
 #include "include/SW_Main_lib.h"         // for sw_fail_on_error
+#include "include/SW_Model.h"            // for SW_MDL_new_year
 #include "include/SW_VegProd.h"          // for estimatePotNatVegComposition
 #include "include/SW_Weather.h"          // for calcSiteClimate, SW_WTH_read
+#include "include/Times.h"               // for Aug
 #include "tests/gtests/sw_testhelpers.h" // for VegProdFixtureTest, tol6, tol3
 #include "gmock/gmock.h"                 // for HasSubstr, MakePredicateFor...
 #include "gtest/gtest.h"                 // for Test, Message, TestPartResul...
@@ -79,6 +81,28 @@ void assert_decreasing_SWPcrit(SW_VEGPROD_INPUTS *SW_VegProdIn) {
             SW_VegProdIn->critSoilWater[SW_VegProdIn->rank_SWPcrits[rank + 1]]
         );
     }
+}
+
+double calc_veg_average(
+    TimeInt yearIndex, double currAvg, double *vals, IntU nTermYrs, int rmIndex
+) {
+    /*
+        Check if the average to be taken is a running average (yearIndex + 1 <=
+       # years for term) or a moving window average (yearIndex + 1 > # years for
+       term)
+    */
+    if (yearIndex + 1 > nTermYrs) {
+        currAvg *= nTermYrs;
+        currAvg -= vals[rmIndex];
+        currAvg += vals[yearIndex];
+        currAvg /= nTermYrs;
+    } else {
+        currAvg *= yearIndex;
+        currAvg += vals[yearIndex];
+        currAvg /= (yearIndex + 1);
+    }
+
+    return currAvg;
 }
 
 // Test the SW_VEGPROD_INPUTS constructor 'SW_VPD_construct'
@@ -1626,5 +1650,348 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne2DeathTest) {
 
     // Free allocated data
     deallocateClimateStructs(&climateOutput, &climateAverages);
+}
+
+TEST_F(VegProdFixtureTest, CalcAnnClimConditions) {
+    /*  ================================================================
+            Tests the vegetation function `calc_yearly_hist_vals()`
+            with one year's worth of data
+        ================================================================  */
+
+    TimeInt day;
+    const double monInc = 2.5;
+    const double precipInc = .1; // cm
+    const double maxMinInc = .75;
+
+    const double maxMonTemp = 18.25;
+    const double minMonTemp = -1 * maxMinInc;
+
+    SW_VEGPROD_SIM SW_VegProdSim;
+    SW_MODEL_INPUTS SW_ModelIn;
+    SW_MODEL_SIM SW_ModelSim;
+    double monMaxTemp[MAX_MONTHS] = {0.};
+    double monTemp[MAX_MONTHS] = {0.};
+    double monMinTemp[MAX_MONTHS] = {0.};
+    double monPrecip[MAX_MONTHS] = {0.};
+    double monMean = 0.;
+    double dailyPrecip = .1;
+    int mon = 0;
+    double waterDef = 0.;
+    double wetDegDays = 0.;
+    double isoTherm[MAX_MONTHS] = {0.};
+    double isoThermVal;
+    double corrVar;
+    double totPrecip = 0.;
+    double wetMonPrecip = 0.;
+    double dryMonPrecip = 0.;
+    double expAnnTemp = 0.;
+    double expSeasonPrecip = 0.;
+
+    SW_WTH_deconstruct(&SW_Run.RunIn.weathRunAllHist);
+    SW_WTH_allocateAllWeather(&SW_Run.RunIn.weathRunAllHist, 1, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    clear_hist_weather(1, SW_Run.RunIn.weathRunAllHist, NULL);
+
+    alloc_nyear_arrays(1, &SW_VegProdSim, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    SW_MDL_construct(&SW_ModelSim);
+    SW_ModelSim.year = 1980;
+    SW_MDL_new_year(&SW_ModelIn, &SW_ModelSim);
+
+    /*
+        Set daily values for max/avg/min temperature and precipitation
+        for the function `calc_yearly_hist_vals()` to grab/organize
+    */
+    for (day = 0; day < MAX_DAYS; day++) {
+        if (day == SW_ModelSim.cum_monthdays[mon]) {
+            // Update the mean temperature to rise until August
+            // or fall after August to try to replicate the yearly
+            // rise and fall in temperatures throughout the months
+            // Do similar for precipitation
+            monMean += (mon < Aug) ? monInc : -1 * monInc;
+            dailyPrecip += (mon < Aug) ? precipInc : -1 * precipInc;
+            mon++;
+        }
+
+        SW_Run.RunIn.weathRunAllHist->temp_max[day] = monMean + maxMinInc;
+        SW_Run.RunIn.weathRunAllHist->temp_avg[day] = monMean;
+        SW_Run.RunIn.weathRunAllHist->temp_min[day] = monMean - maxMinInc;
+        SW_Run.RunIn.weathRunAllHist->ppt[day] = dailyPrecip;
+
+        monMaxTemp[mon] += SW_Run.RunIn.weathRunAllHist->temp_max[day];
+        monTemp[mon] += SW_Run.RunIn.weathRunAllHist->temp_avg[day];
+        monMinTemp[mon] += SW_Run.RunIn.weathRunAllHist->temp_min[day];
+
+        monPrecip[mon] +=
+            SW_Run.RunIn.weathRunAllHist->ppt[day] * 10;          // cm -> mm
+        totPrecip += SW_Run.RunIn.weathRunAllHist->ppt[day] * 10; // cm -> mm
+    }
+
+    /*
+        Go month by month to determine various variable values that will
+        be compared against the values produced in `calc_yearly_hist_vals()`
+    */
+    for (mon = 0; mon < MAX_MONTHS; mon++) {
+        monMaxTemp[mon] /= SW_ModelSim.days_in_month[mon];
+        monTemp[mon] /= SW_ModelSim.days_in_month[mon];
+        monMinTemp[mon] /= SW_ModelSim.days_in_month[mon];
+
+        if (GT(monTemp[mon] * 2, monPrecip[mon])) {
+            waterDef += (2 * monTemp[mon]) - monPrecip[mon];
+        } else if (LT(monTemp[mon] * 2, monPrecip[mon])) {
+            wetDegDays += (30 * monTemp[mon]) - monPrecip[mon];
+        }
+
+        if (GT(monPrecip[mon], wetMonPrecip) || mon == 0) {
+            wetMonPrecip = monPrecip[mon];
+        }
+
+        if (LT(monPrecip[mon], dryMonPrecip) || mon == 0) {
+            dryMonPrecip = monPrecip[mon];
+        }
+
+        isoTherm[mon] = monMaxTemp[mon] - monMinTemp[mon];
+    }
+    isoThermVal = mean(isoTherm, MAX_MONTHS);
+    isoThermVal /= (maxMonTemp - minMonTemp);
+
+    corrVar = correlation_coefficient(monTemp, monPrecip, MAX_MONTHS);
+    expAnnTemp = mean(monTemp, MAX_MONTHS);
+    expSeasonPrecip =
+        standardDeviation(monPrecip, MAX_MONTHS) / mean(monPrecip, MAX_MONTHS);
+
+    calc_yearly_hist_vals(
+        SW_Run.RunIn.weathRunAllHist, &SW_ModelSim, 0, &SW_VegProdSim
+    );
+
+    /*
+        Test all values produced and written to SW_VegProdSim (precipitation
+        is calculated and tested in mm)
+    */
+    EXPECT_NEAR(SW_VegProdSim.annTemp[0], expAnnTemp, tol6);
+    EXPECT_NEAR(SW_VegProdSim.annTempColdestMon[0], minMonTemp, tol6);
+    EXPECT_NEAR(SW_VegProdSim.annTempWarmestMon[0], maxMonTemp, tol6);
+    EXPECT_NEAR(SW_VegProdSim.annIsotherm[0], isoThermVal * 100, tol6);
+    EXPECT_NEAR(SW_VegProdSim.annTempPrecipCorr[0], corrVar, tol6);
+
+    EXPECT_NEAR(SW_VegProdSim.annPrecip[0], totPrecip, tol6);
+    EXPECT_NEAR(SW_VegProdSim.annPrecipWettestMon[0], wetMonPrecip, tol6);
+    EXPECT_NEAR(SW_VegProdSim.annPrecipDriestMon[0], dryMonPrecip, tol6);
+    EXPECT_NEAR(SW_VegProdSim.annWaterDef[0], waterDef, tol6);
+    EXPECT_NEAR(SW_VegProdSim.annWetDegDays[0], wetDegDays, tol6);
+    EXPECT_NEAR(SW_VegProdSim.annSeasonPrecip[0], expSeasonPrecip, tol6);
+
+    SW_VPD_deconstruct(&SW_VegProdSim);
+    SW_WTH_deconstruct(&SW_Run.RunIn.weathRunAllHist);
+}
+
+TEST_F(VegProdFixtureTest, CalcVegPredictorVals) {
+    /*  ================================================================
+            Tests the vegetation function `calc_veg_predictor_vals()`
+            with one to thirty-one year's worth of data using a running mean
+            (year # < long-term average length) then a moving window mean
+            (year # >= long-term average length)
+        ================================================================  */
+
+    SW_VEGPROD_SIM SW_VegProdSim;
+    SW_MODEL_INPUTS SW_ModelIn;
+    SW_MODEL_SIM SW_ModelSim;
+
+    TimeInt year;
+    const TimeInt numYears = 31;
+    const int nYearsShort = 3;
+    const int nYearsLong = 30;
+
+    double expLongAvg = 0.;
+    double expShortAvg = 0.;
+    double expAnom = 0.;
+    double expRateAnom = 0.;
+
+    alloc_nyear_arrays(numYears, &SW_VegProdSim, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    SW_MDL_construct(&SW_ModelSim);
+    SW_ModelSim.year = 1980;
+    SW_MDL_new_year(&SW_ModelIn, &SW_ModelSim);
+
+    for (year = 0; year < numYears; year++) {
+        SW_VegProdSim.annTemp[year] = (double) (year + 1);
+        SW_VegProdSim.annPrecip[year] = (double) (year + 1);
+        SW_VegProdSim.annPrecipDriestMon[year] = (double) (year + 1);
+        SW_VegProdSim.annPrecipWettestMon[year] = (double) (year + 1);
+        SW_VegProdSim.annSeasonPrecip[year] = (double) (year + 1);
+        SW_VegProdSim.annWaterDef[year] = (double) (year + 1);
+        SW_VegProdSim.annTempColdestMon[year] = (double) (year + 1);
+        SW_VegProdSim.annTempWarmestMon[year] = (double) (year + 1);
+        SW_VegProdSim.annTempPrecipCorr[year] = (double) (year + 1);
+        SW_VegProdSim.annWetDegDays[year] = (double) (year + 1);
+        SW_VegProdSim.annIsotherm[year] = (double) (year + 1);
+    }
+
+    SW_VegProdSim.shortIndex = SW_VegProdSim.longIndex = 0;
+
+    for (year = 0; year < numYears; year++) {
+        calc_veg_predictor_vals(year, nYearsShort, nYearsLong, &SW_VegProdSim);
+
+        expLongAvg = calc_veg_average(
+            year,
+            expLongAvg,
+            SW_VegProdSim.annTemp,
+            nYearsLong,
+            SW_VegProdSim.longIndex - 1
+        );
+        expShortAvg = calc_veg_average(
+            year,
+            expShortAvg,
+            SW_VegProdSim.annTemp,
+            nYearsShort,
+            SW_VegProdSim.shortIndex - 1
+        );
+
+        expAnom = SW_VegProdSim.annIsothermLongAvg -
+                  SW_VegProdSim.annIsothermShortAvg;
+
+        expRateAnom = SW_VegProdSim.annPrecipLongAvg;
+        expRateAnom -= SW_VegProdSim.annPrecipShortAvg;
+        expRateAnom /= SW_VegProdSim.annPrecipLongAvg;
+
+        EXPECT_NEAR(SW_VegProdSim.annTempLongAvg, expLongAvg, tol6);
+        EXPECT_NEAR(SW_VegProdSim.annTempPrecipLongAvg, expLongAvg, tol6);
+        EXPECT_NEAR(SW_VegProdSim.annIsothermLongAvg, expLongAvg, tol6);
+        EXPECT_NEAR(SW_VegProdSim.annWaterDefLongAvg, expLongAvg, tol6);
+        EXPECT_NEAR(SW_VegProdSim.annSeasonPrecipLongAvg, expLongAvg, tol6);
+        EXPECT_NEAR(SW_VegProdSim.annPrecipDriestMonLongAvg, expLongAvg, tol6);
+        EXPECT_NEAR(SW_VegProdSim.annWetDegDaysLongAvg, expLongAvg, tol6);
+        EXPECT_NEAR(SW_VegProdSim.annTempWarmestMonLongAvg, expLongAvg, tol6);
+        EXPECT_NEAR(SW_VegProdSim.annTempColdestMonLongAvg, expLongAvg, tol6);
+        EXPECT_NEAR(SW_VegProdSim.annPrecipWettestMonLongAvg, expLongAvg, tol6);
+        EXPECT_NEAR(SW_VegProdSim.annPrecipLongAvg, expLongAvg, tol6);
+
+        EXPECT_NEAR(SW_VegProdSim.annIsothermShortAvg, expShortAvg, tol6);
+        EXPECT_NEAR(SW_VegProdSim.annTempPrecipShortAvg, expShortAvg, tol6);
+        EXPECT_NEAR(SW_VegProdSim.annSeasonPrecipShortAvg, expShortAvg, tol6);
+        EXPECT_NEAR(SW_VegProdSim.annPrecipShortAvg, expShortAvg, tol6);
+        EXPECT_NEAR(SW_VegProdSim.annWetDegDaysShortAvg, expShortAvg, tol6);
+        EXPECT_NEAR(SW_VegProdSim.annWaterDefShortAvg, expShortAvg, tol6);
+        EXPECT_NEAR(
+            SW_VegProdSim.annPrecipDriestMonShortAvg, expShortAvg, tol6
+        );
+
+        EXPECT_NEAR(SW_VegProdSim.anomIsotherm, expAnom, tol6);
+        EXPECT_NEAR(SW_VegProdSim.anomTempPrecipCorr, expAnom, tol6);
+        EXPECT_NEAR(SW_VegProdSim.anomWaterDef, expAnom, tol6);
+
+        EXPECT_NEAR(SW_VegProdSim.rateAnomSeasonPrecip, expRateAnom, tol6);
+        EXPECT_NEAR(SW_VegProdSim.rateAnomPrecip, expRateAnom, tol6);
+        EXPECT_NEAR(SW_VegProdSim.rateAnomWetDegDays, expRateAnom, tol6);
+        EXPECT_NEAR(SW_VegProdSim.rateAnomWaterDef, expRateAnom, tol6);
+        EXPECT_NEAR(SW_VegProdSim.rateAnomPrecipDriestMon, expRateAnom, tol6);
+    }
+
+    SW_VPD_deconstruct(&SW_VegProdSim);
+}
+
+TEST_F(VegProdFixtureTest, CalcConstCONUS2025SiteInfo) {
+    /*  ================================================================
+        Tests the functions `calc_const_dynamic_veg_info()` and
+        `calc_awhc()` which are used in the wrapper
+        `calc_perc_var_in_soil_profile()` to calculate predictor variables for
+        CONUS 2025 calculations that are constant and are not updated
+        every year
+    ================================================================  */
+
+    /*
+        Tests the function `calc_awhc()` which is used to calculate the
+        available water holding capacity for a site
+    */
+
+    SW_SOIL_RUN_INPUTS SW_SoilRunIn;
+    SW_SOIL_SIM SW_SoilSim;
+    SW_SITE_SIM SW_SiteSim;
+    LyrIndex n_layers = 1;
+    LyrIndex lyr;
+    double swcBulk_fieldcap[MAX_LAYERS];
+    double swcBulk_wiltpt[MAX_LAYERS];
+    double awhcRes;
+    double expVal;
+
+    // AWHC 1 layer with swcBulk_fieldcap[0] - swcBulk_wiltpt[0] < 0
+    swcBulk_fieldcap[0] = .123;
+    swcBulk_wiltpt[0] = .246;
+
+    awhcRes = calc_awhc(swcBulk_fieldcap, swcBulk_wiltpt, n_layers);
+    expVal = 0.;
+
+    EXPECT_EQ(awhcRes, 0.);
+
+    // AWHC 1 layer with swcBulk_fieldcap[0] - swcBulk_wiltpt[0] > 0
+    swcBulk_fieldcap[0] = .5;
+
+    awhcRes = calc_awhc(swcBulk_fieldcap, swcBulk_wiltpt, n_layers);
+    expVal = .254;
+
+    EXPECT_EQ(awhcRes, expVal);
+
+    // AWHC 25 layers with sum(swcBulk_fieldcap - swcBulk_wiltpt) < 0
+    n_layers = MAX_LAYERS;
+    for (lyr = 0; lyr < n_layers; lyr++) {
+        swcBulk_fieldcap[lyr] = .123;
+        swcBulk_wiltpt[lyr] = .246;
+    }
+
+    awhcRes = calc_awhc(swcBulk_fieldcap, swcBulk_wiltpt, n_layers);
+    expVal = 0.;
+
+    EXPECT_EQ(awhcRes, expVal);
+
+    // AWHC 25 layers with sum(swcBulk_fieldcap - swcBulk_wiltpt) > 0
+    for (lyr = 0; lyr < n_layers; lyr++) {
+        swcBulk_fieldcap[lyr] = .5;
+    }
+
+    awhcRes = calc_awhc(swcBulk_fieldcap, swcBulk_wiltpt, n_layers);
+    expVal = 6.35;
+
+    EXPECT_NEAR(awhcRes, expVal, tol6);
+
+    /*
+        Test the function `calc_const_dynamic_veg_info()` for both
+        % of material in 3cm (or first layer) and weighted average of
+        material through the whole soil profile
+    */
+
+    // One soil layer - depth > 3cm
+    SW_SoilRunIn.fractionWeightMatric_sand[0] = .05;
+    SW_SoilRunIn.fractionVolBulk_gravel[0] = .1;
+    SW_SoilRunIn.fractionWeight_om[0] = .4;
+    SW_SoilRunIn.fractionWeightMatric_clay[0] = .3;
+
+    SW_SoilRunIn.depths[0] = SW_SoilRunIn.width[0] = 4.;
+
+    calc_const_dynamic_veg_info(&SW_SoilSim, &SW_SoilRunIn, &SW_SiteSim, 1);
+
+    EXPECT_DOUBLE_EQ(SW_SoilSim.percSand, .05);
+    EXPECT_DOUBLE_EQ(SW_SoilSim.percCoarseFrag, .1);
+    EXPECT_DOUBLE_EQ(SW_SoilSim.surfaceOM, .4);
+    EXPECT_DOUBLE_EQ(SW_SoilSim.surfaceClay, .3);
+
+    // Two soil layers - first layer depth < 3cm
+    SW_SoilRunIn.fractionWeightMatric_sand[1] = .5;
+    SW_SoilRunIn.fractionVolBulk_gravel[1] = .16;
+    SW_SoilRunIn.fractionWeight_om[1] = .41;
+    SW_SoilRunIn.fractionWeightMatric_clay[1] = .33;
+
+    SW_SoilRunIn.depths[0] = SW_SoilRunIn.width[0] = 1.5;
+    SW_SoilRunIn.depths[1] = 4.5;
+    SW_SoilRunIn.width[1] = 3.0;
+
+    calc_const_dynamic_veg_info(&SW_SoilSim, &SW_SoilRunIn, &SW_SiteSim, 2);
+
+    EXPECT_DOUBLE_EQ(SW_SoilSim.percSand, .35);
+    EXPECT_DOUBLE_EQ(SW_SoilSim.percCoarseFrag, .14);
+    EXPECT_DOUBLE_EQ(SW_SoilSim.surfaceOM, .405);
+    EXPECT_DOUBLE_EQ(SW_SoilSim.surfaceClay, .315);
 }
 } // namespace

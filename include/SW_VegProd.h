@@ -116,6 +116,59 @@ extern const char *const key2veg[NVEGTYPES];
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
+
+void alloc_nyear_arrays(
+    TimeInt n_years, SW_VEGPROD_SIM *SW_VegProdSim, LOG_INFO *LogInfo
+);
+
+double calc_perc_var_in_soil_profile(
+    const double vals[],
+    double depths[],
+    const double widths[],
+    LyrIndex n_layers,
+    Bool first3cm
+);
+
+double calc_awhc(
+    double swcBulk_fieldcap[], double swcBulk_wiltpt[], LyrIndex n_layers
+);
+
+void calc_const_dynamic_veg_info(
+    SW_SOIL_SIM *SW_SoilSim,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
+    SW_SITE_SIM *SW_SiteSim,
+    LyrIndex n_layers
+);
+
+void calc_yearly_hist_vals(
+    SW_WEATHER_HIST *SW_WeathHist,
+    SW_MODEL_SIM *SW_ModelSim,
+    TimeInt yearIndex,
+    SW_VEGPROD_SIM *SW_VegProdSim
+);
+
+void calc_veg_predictor_vals(
+    TimeInt yearIndex,
+    int nYearsDynamicShort,
+    int nYearsDynamicLong,
+    SW_VEGPROD_SIM *SW_VegProdSim
+);
+
+void calc_CONUS_vegcov_2025(
+    SW_SOIL_SIM *ss, TimeInt yearIndex, SW_VEGPROD_SIM *vps
+);
+
+void update_veg_yearly(
+    SW_WEATHER_HIST *SW_YearWeathHist,
+    SW_MODEL_SIM *SW_ModelSim,
+    SW_SOIL_SIM *SW_SoilSim,
+    TimeInt yearIndex,
+    int nYearsDynamicShort,
+    int nYearsDynamicLong,
+    SW_VEGPROD_SIM *SW_VegProdSim
+);
+
+
 void SW_VPD_read(
     SW_VEGPROD_INPUTS *SW_VegProdIn,
     SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,

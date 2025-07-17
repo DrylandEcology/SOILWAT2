@@ -114,7 +114,7 @@ vegtype variable forb and forb.cov.fCover
 const char *const key2veg[NVEGTYPES] = {"Trees", "Shrubs", "Forbs", "Grasses"};
 
 /* =================================================== */
-/*             Local Function Definitions              */
+/*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
 /**
@@ -127,7 +127,7 @@ used and/or modified mainly during simulation runs; dynamic arrays will be
 updated within this struct
 @param[out] LogInfo Holds information on warnings and errors
 */
-static void alloc_nyear_arrays(
+void alloc_nyear_arrays(
     TimeInt n_years, SW_VEGPROD_SIM *SW_VegProdSim, LOG_INFO *LogInfo
 ) {
     int index;
@@ -175,7 +175,7 @@ the first 3cm (or first layer) of values or the entire soil layer
 
 @return Resulting weighted % or first layer value
 */
-static double calc_perc_var_in_soil_profile(
+double calc_perc_var_in_soil_profile(
     const double vals[],
     double depths[],
     const double widths[],
@@ -230,7 +230,7 @@ static double calc_perc_var_in_soil_profile(
 
 @return Resulting value of total soil available water holding capacity
 */
-static double calc_awhc(
+double calc_awhc(
     double swcBulk_fieldcap[], double swcBulk_wiltpt[], LyrIndex n_layers
 ) {
     double awhc = 0.;
@@ -261,7 +261,7 @@ content information that will be used during simulations
     simulation values
 @param[in] n_layers Number of layers of soil within the simulation run
 */
-static void calc_const_dynamic_veg_info(
+void calc_const_dynamic_veg_info(
     SW_SOIL_SIM *SW_SoilSim,
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     SW_SITE_SIM *SW_SiteSim,
@@ -315,7 +315,7 @@ simulation process (i.e., [0, <n years>) )
 used and/or modified mainly during simulation runs; dynamic arrays will have a
 new value for this year
 */
-static void calc_yearly_hist_vals(
+void calc_yearly_hist_vals(
     SW_WEATHER_HIST *SW_WeathHist,
     SW_MODEL_SIM *SW_ModelSim,
     TimeInt yearIndex,
@@ -444,7 +444,7 @@ predictors are summarized
 used and/or modified mainly during simulation runs; averages and anomalies
 will have updated values for this year
 */
-static void calc_veg_predictor_vals(
+void calc_veg_predictor_vals(
     TimeInt yearIndex,
     int nYearsDynamicShort,
     int nYearsDynamicLong,
@@ -643,7 +643,7 @@ simulation process (i.e., [0, <n years>) )
 information used and/or modified mainly during simulation runs; update
 vegetation values for current year of simulation runs
 */
-static void calc_CONUS_vegcov_2025(
+void calc_CONUS_vegcov_2025(
     SW_SOIL_SIM *ss, TimeInt yearIndex, SW_VEGPROD_SIM *vps
 ) {
     double ecoregionForest;
@@ -1046,7 +1046,7 @@ predictors are summarized
 used and/or modified mainly during simulation runs; dynamic arrays will have a
 new value for this year
 */
-static void update_veg_yearly(
+void update_veg_yearly(
     SW_WEATHER_HIST *SW_YearWeathHist,
     SW_MODEL_SIM *SW_ModelSim,
     SW_SOIL_SIM *SW_SoilSim,
@@ -1068,10 +1068,6 @@ static void update_veg_yearly(
     // Update vegetation values
     calc_CONUS_vegcov_2025(SW_SoilSim, yearIndex, SW_VegProdSim);
 }
-
-/* =================================================== */
-/*             Global Function Definitions             */
-/* --------------------------------------------------- */
 
 /**
 @brief Reads file for SW_VegProdIn
