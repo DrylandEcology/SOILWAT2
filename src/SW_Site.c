@@ -2555,12 +2555,6 @@ void SW_SIT_init_run(
 
     Bool hasOM = swFALSE;
 
-    char errorMsg[LARGE_VALUE] = "";
-    char tmpStr[100] = "";
-    char *writePtr = NULL;
-    char *tempWritePtr;
-    int writeSize;
-
 
     /* Check that we have a suitable number of soil layers */
     if (n_layers == 0) {
@@ -3162,74 +3156,37 @@ void SW_SIT_init_run(
      * to avoid obfuscation in the above loop
      * inputs are not more precise than at most 3-4 digits */
     if (!EQ_w_tol(evsum, 1.0, 1e-4)) {
-        errorMsg[0] = '\0';
-        writePtr = errorMsg;
-        writeSize = LARGE_VALUE;
 
         ForEachEvapLayer(s, SW_SiteSim->n_evap_lyrs) {
             SW_SoilRunIn->evap_coeff[s] /= evsum;
-
-            if (writeSize > 0) {
-                (void) snprintf(
-                    tmpStr,
-                    sizeof tmpStr,
-                    " evco[%d] = %.4f",
-                    s + 1,
-                    SW_SoilRunIn->evap_coeff[s]
-                );
-                tempWritePtr =
-                    (char *) sw_memccpy(writePtr, tmpStr, '\0', writeSize);
-                writeSize -= (int) (tempWritePtr - errorMsg - 1);
-                writePtr = tempWritePtr - 1;
-            }
         }
 
         LogError(
             LogInfo,
             LOGWARN,
-            "Evaporation coefficients summed to %.4f "
-            "across soil layers (expected sum = 1); new coefficients: %s",
-            evsum,
-            errorMsg
+            "Normalization was applied to evaporation coefficients (evco): "
+            "sum across soil profile was %.4f (now is 1.0).",
+            evsum
         );
     }
 
     ForEachVegType(k) {
         // inputs are not more precise than at most 3-4 digits
         if (!EQ_w_tol(trsum_veg[k], 1.0, 1e-4)) {
-            errorMsg[0] = '\0';
-            writePtr = errorMsg;
-            writeSize = LARGE_VALUE;
 
             ForEachSoilLayer(s, n_layers) {
                 if (GT(SW_SoilRunIn->transp_coeff[k][s], 0.)) {
                     SW_SoilRunIn->transp_coeff[k][s] /= trsum_veg[k];
-
-                    if (writeSize > 0) {
-                        (void) snprintf(
-                            tmpStr,
-                            sizeof tmpStr,
-                            " trco[%d] = %.4f",
-                            s + 1,
-                            SW_SoilRunIn->transp_coeff[k][s]
-                        );
-                        tempWritePtr = (char *) sw_memccpy(
-                            writePtr, tmpStr, '\0', writeSize
-                        );
-                        writeSize -= (int) (tempWritePtr - errorMsg - 1);
-                        writePtr = tempWritePtr - 1;
-                    }
                 }
             }
 
             LogError(
                 LogInfo,
                 LOGWARN,
-                "Transpiration coefficients for '%s' summed to %.4f "
-                "across soil layers (expected sum = 1); new coefficients: %s",
+                "Normalization was applied to rooting profile (trco) for '%s': "
+                "sum across soil profile was %.4f (now is 1.0).",
                 key2veg[k],
-                trsum_veg[k],
-                errorMsg
+                trsum_veg[k]
             );
         }
     }

@@ -35,6 +35,8 @@
 #define SW_NOUTFILES 8                       // For output `txtInFiles`
 #define SW_NFILES SW_NINFILES + SW_NOUTFILES // For `txtInFiles`
 #define SW_NVARDOM 2                         // For `InFilesNC`
+/** Maximum number of variables (columns) per output group */
+#define SW_NOUTCOLS (1 + NVEGTYPES) * MAX_LAYERS
 
 /* KD-tree related defines */
 #define KD_NDIMS 2    /* Number of dimensions the nodes will contain */
@@ -1634,7 +1636,7 @@ struct SW_OUT_DOM {
     // Variables describing size and names of output
     /** names of output columns for each output key; number is an expensive
      * guess */
-    char *colnames_OUT[SW_OUTNKEYS][5 * NVEGTYPES + MAX_LAYERS];
+    char *colnames_OUT[SW_OUTNKEYS][SW_NOUTCOLS];
 
     /* number of outputs */
     IntUS ncol_OUT[SW_OUTNKEYS]; /**< number of output combinations across

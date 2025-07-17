@@ -1363,7 +1363,7 @@ void SW_OUTDOM_init_ptrs(SW_OUT_DOM *OutDom) {
     int column;
 
     ForEachOutKey(key) {
-        for (column = 0; column < 5 * NVEGTYPES + MAX_LAYERS; column++) {
+        for (column = 0; column < SW_NOUTCOLS; column++) {
             OutDom->colnames_OUT[key][column] = NULL;
         }
     }
@@ -2094,6 +2094,7 @@ Note to programmer: this function must match what `get_*()` implement.
     as array of size SW_OUTNKEYS by SW_OUTNMAXVARS.
 @param[out] npft_OUT Specified number of output vegtypes per variable
     as array of size SW_OUTNKEYS by SW_OUTNMAXVARS.
+@param[out] LogInfo Holds information on warnings and errors
 */
 void SW_OUT_set_ncol(
     unsigned int tLayers,
@@ -2102,7 +2103,8 @@ void SW_OUT_set_ncol(
     IntUS ncol_OUT[],
     IntUS nvar_OUT[],
     IntUS nsl_OUT[][SW_OUTNMAXVARS],
-    IntUS npft_OUT[][SW_OUTNMAXVARS]
+    IntUS npft_OUT[][SW_OUTNMAXVARS],
+    LOG_INFO *LogInfo
 ) {
 
     unsigned int key;
@@ -2236,6 +2238,20 @@ void SW_OUT_set_ncol(
 
             ncol_OUT[key] += tmp;
         }
+
+        if (ncol_OUT[key] > SW_NOUTCOLS) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Programmer: Output group %s (key = %d) has "
+                "more columns (n = %d) than the maximum (%d).",
+                key2str[key],
+                key,
+                ncol_OUT[key],
+                SW_NOUTCOLS
+            );
+            return; /* Exit prematurely due to error */
+        }
     }
 }
 
@@ -2264,7 +2280,7 @@ void SW_OUT_set_colnames(
     unsigned int tLayers,
     SW_VEGESTAB_INFO_INPUTS *parmsIn,
     const IntUS ncol_OUT[],
-    char *colnames_OUT[][5 * NVEGTYPES + MAX_LAYERS],
+    char *colnames_OUT[][SW_NOUTCOLS],
     LOG_INFO *LogInfo
 ) {
 #ifdef SWDEBUG
@@ -2802,8 +2818,12 @@ void SW_OUT_setup_output(
         OutDom->ncol_OUT,
         OutDom->nvar_OUT,
         OutDom->nsl_OUT,
-        OutDom->npft_OUT
+        OutDom->npft_OUT,
+        LogInfo
     );
+    if (LogInfo->stopRun) {
+        return;
+    }
 
 #if defined(SWNETCDF)
     SW_OUT_calc_iOUToffset(
@@ -2814,7 +2834,6 @@ void SW_OUT_setup_output(
         OutDom->netCDFOutput.iOUToffset
     );
     (void) parmsIn;
-    (void) LogInfo;
 
 #else
     SW_OUT_set_colnames(
@@ -4214,7 +4233,7 @@ void SW_OUTDOM_deepCopy(
     memcpy(dest, source, sizeof(*dest));
 
     ForEachOutKey(k) {
-        for (i = 0; i < 5 * NVEGTYPES + MAX_LAYERS; i++) {
+        for (i = 0; i < SW_NOUTCOLS; i++) {
             if (!isnull(source->colnames_OUT[k][i])) {
 
                 dest->colnames_OUT[k][i] =

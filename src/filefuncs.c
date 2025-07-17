@@ -235,7 +235,7 @@ static void LogErrorHelper(
         (void) fprintf(
             stderr,
             "Programmer: Injecting arguments to final message buffer "
-            "makes it exceed the maximum size."
+            "makes it exceed the maximum size.\n"
         );
 #endif
         exit(EXIT_FAILURE);
