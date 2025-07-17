@@ -2464,6 +2464,29 @@ closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**
+@brief Update necessary values for site-related values
+
+@param[in] methodMaxDepthSoilTemperature Method for soil temperature
+at maximum depth:
+        0 (user provided value);
+        1 (dynamically calculated from a moving long-term mean annual air
+           temperature, see `nYearsDynamicLong` from veg.in)
+@param[in] newTsoil_constant New soil temperature at maximum depth
+@param[out] Tsoil_constant Soil temperature at a depth where soil temperature
+is (mostly) constant in time; for instance, approximated as the mean air
+temperature
+*/
+void SW_SIT_new_year(
+    int methodMaxDepthSoilTemperature,
+    double newTsoil_constant,
+    double *Tsoil_constant
+) {
+    if (methodMaxDepthSoilTemperature == 1) {
+        *Tsoil_constant = newTsoil_constant;
+    }
+}
+
+/**
 @brief Derive and check soil properties from inputs
 
 Bulk refers to the whole soil,

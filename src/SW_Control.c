@@ -154,8 +154,6 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         sw->RunIn.SkyRunIn.snow_density_daily
     );
 
-    // SW_SIT_new_year() not needed
-
     SW_VES_new_year(sw->VegEstabIn.count);
 
     // SW_VPD_new_year(): Dynamic CO2 effects on vegetation
@@ -169,9 +167,16 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         sw->ModelIn.startyr,
         sw->VegProdIn.nYearsDynamicShort,
         sw->VegProdIn.nYearsDynamicLong,
+        sw->SiteIn.methodMaxDepthSoilTemperature,
         sw->RunIn.VegProdRunIn.veg,
         sw->VegProdSim.veg,
         sw->VegProdIn.veg
+    );
+
+    SW_SIT_new_year(
+        sw->SiteIn.methodMaxDepthSoilTemperature,
+        sw->VegProdSim.annTempLongAvg,
+        &sw->RunIn.SiteRunIn.Tsoil_constant
     );
 
     // SW_FLW_new_year() not needed

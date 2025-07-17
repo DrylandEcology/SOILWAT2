@@ -118,7 +118,10 @@ extern const char *const key2veg[NVEGTYPES];
 /* --------------------------------------------------- */
 
 void alloc_nyear_arrays(
-    TimeInt n_years, SW_VEGPROD_SIM *SW_VegProdSim, LOG_INFO *LogInfo
+    TimeInt n_years,
+    Bool annTempOnly,
+    SW_VEGPROD_SIM *SW_VegProdSim,
+    LOG_INFO *LogInfo
 );
 
 double calc_perc_var_in_soil_profile(
@@ -144,6 +147,7 @@ void calc_yearly_hist_vals(
     SW_WEATHER_HIST *SW_WeathHist,
     SW_MODEL_SIM *SW_ModelSim,
     TimeInt yearIndex,
+    Bool annTempOnly,
     SW_VEGPROD_SIM *SW_VegProdSim
 );
 
@@ -165,6 +169,7 @@ void update_veg_yearly(
     TimeInt yearIndex,
     int nYearsDynamicShort,
     int nYearsDynamicLong,
+    Bool annTempOnly,
     SW_VEGPROD_SIM *SW_VegProdSim
 );
 
@@ -186,6 +191,7 @@ void SW_VPD_new_year(
     TimeInt startYr,
     int nYearsDynamicShort,
     int nYearsDynamicLong,
+    int methodMaxDepthSoilTemperature,
     VegTypeRunIn vegRunIn[],
     VegTypeSim vegSim[],
     VegTypeIn vegIn[]

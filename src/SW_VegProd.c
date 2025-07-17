@@ -118,20 +118,25 @@ const char *const key2veg[NVEGTYPES] = {"Trees", "Shrubs", "Forbs", "Grasses"};
 /* --------------------------------------------------- */
 
 /**
-@brief Allocate dynamic arrays to hold up to <n years> worth of yearly history
+@brief Allocate dynamic arrays to hold up to n years worth of yearly history
 of values
 
 @param[in] n_years Number of years in simulation
+@param[in] annTempOnly Specifies if this function is to only allocate
+annual temperature arrays
 @param[out] SW_VegProdSim Struct of type SW_VEGPROD_SIM that holds information
 used and/or modified mainly during simulation runs; dynamic arrays will be
 updated within this struct
 @param[out] LogInfo Holds information on warnings and errors
 */
 void alloc_nyear_arrays(
-    TimeInt n_years, SW_VEGPROD_SIM *SW_VegProdSim, LOG_INFO *LogInfo
+    TimeInt n_years,
+    Bool annTempOnly,
+    SW_VEGPROD_SIM *SW_VegProdSim,
+    LOG_INFO *LogInfo
 ) {
     int index;
-    const int numArrays = 11;
+    const int numArrays = (annTempOnly) ? 1 : 11;
     double **allocArray[] = {
         &SW_VegProdSim->annTemp,
         &SW_VegProdSim->annTempPrecipCorr,
@@ -310,7 +315,9 @@ arrays that hold a yearly history of annual climate information
 @param[in] SW_ModelSim Struct of type SW_MODEL_SIM holding basic
 intermediate time information about the simulation run
 @param[in] yearIndex Index value specifying which place the year is in the
-simulation process (i.e., [0, <n years>) )
+simulation process (i.e., [0, n years) )
+@param[in] annTempOnly Specifies if this function is to only allocate
+annual temperature arrays
 @param[out] SW_VegProdSim Struct of type SW_VEGPROD_SIM that holds information
 used and/or modified mainly during simulation runs; dynamic arrays will have a
 new value for this year
@@ -319,6 +326,7 @@ void calc_yearly_hist_vals(
     SW_WEATHER_HIST *SW_WeathHist,
     SW_MODEL_SIM *SW_ModelSim,
     TimeInt yearIndex,
+    Bool annTempOnly,
     SW_VEGPROD_SIM *SW_VegProdSim
 ) {
     double meanTemp[MAX_MONTHS] = {0.};
@@ -351,15 +359,30 @@ void calc_yearly_hist_vals(
         // Add to the sum of mean temperature and precipitation of
         // current month, convert precip from cm -> mm
         meanTemp[mon] += SW_WeathHist->temp_avg[doy];
-        totPrecip[mon] += SW_WeathHist->ppt[doy] * 10;
 
-        // Add to annual sum of precipitation
-        SW_VegProdSim->annPrecip[yearIndex] += SW_WeathHist->ppt[doy] * 10;
+        if (!annTempOnly) {
+            totPrecip[mon] += SW_WeathHist->ppt[doy] * 10;
 
-        // Sum maximum and minimum temperature of each month
-        // to find the hottest and coldest monthly temperature later
-        maxMonTemp[mon] += SW_WeathHist->temp_max[doy];
-        minMonTemp[mon] += SW_WeathHist->temp_min[doy];
+            // Add to annual sum of precipitation
+            SW_VegProdSim->annPrecip[yearIndex] += SW_WeathHist->ppt[doy] * 10;
+
+            // Sum maximum and minimum temperature of each month
+            // to find the hottest and coldest monthly temperature later
+            maxMonTemp[mon] += SW_WeathHist->temp_max[doy];
+            minMonTemp[mon] += SW_WeathHist->temp_min[doy];
+        }
+    }
+
+    // If we only want to calculate annual mean daily temperature,
+    // so do here and return from the function
+    if (annTempOnly) {
+        for (mon = 0; mon < MAX_MONTHS; mon++) {
+            meanTemp[mon] /= SW_ModelSim->days_in_month[mon];
+        }
+
+        SW_VegProdSim->annTemp[yearIndex] = mean(meanTemp, MAX_MONTHS);
+
+        return;
     }
 
     // Average total monthly precipitation
@@ -403,14 +426,12 @@ void calc_yearly_hist_vals(
         SW_VegProdSim->annWetDegDays[yearIndex] +=
             LT(meanTemp[mon] * 2, totPrecip[mon]) ? wetDD : 0.;
 
-        // Set annual mean temperature
-        SW_VegProdSim->annTemp[yearIndex] += meanTemp[mon];
-
         // Set monthly isothermality calculation
         isoThermSum[mon] = maxMonTemp[mon] - minMonTemp[mon];
     }
 
-    SW_VegProdSim->annTemp[yearIndex] /= MAX_MONTHS;
+    // Set annual mean temperature
+    SW_VegProdSim->annTemp[yearIndex] = mean(meanTemp, MAX_MONTHS);
 
     // Set isothermality
     // mean for every month[((max temp - min temp) values)] /
@@ -435,7 +456,7 @@ void calc_yearly_hist_vals(
 calculate the predictor values for dynamic vegetation calculations
 
 @param[in] yearIndex Index value specifying which place the year is in the
-simulation process (i.e., [0, <n years>) )
+simulation process (i.e., [0, n years) )
 @param[in] nYearsDynamicShort Number of years over which short-term vegetation
 predictors are summarized (as anomaly to long-term predictors)
 @param[in] nYearsDynamicLong Number of years over which long-term vegetation
@@ -638,7 +659,7 @@ void calc_veg_predictor_vals(
 @param[in] ss Struct of type SW_SOIL_SIM (soil sim -> ss) that holds constant
 predictor values for calculating updated vegetation values
 @param[in] yearIndex Index value specifying which place the year is in the
-simulation process (i.e., [0, <n years>) )
+simulation process (i.e., [0, n years) )
 @param[out] vps Struct of type SW_VEGPROD_SIM (VegProd sim -> vps) that holds
 information used and/or modified mainly during simulation runs; update
 vegetation values for current year of simulation runs
@@ -1037,11 +1058,13 @@ intermediate time information about the simulation run
 @param[in] SW_SoilSim Struct of type SW_SOIL_SIM holding constant soil content
 information that will be used during simulations
 @param[in] yearIndex Index value specifying which place the year is in the
-simulation process (i.e., [0, <n years>) )
+simulation process (i.e., [0, n years) )
 @param[in] nYearsDynamicShort Number of years over which short-term vegetation
 predictors are summarized (as anomaly to long-term predictors)
 @param[in] nYearsDynamicLong Number of years over which long-term vegetation
 predictors are summarized
+@param[in] annTempOnly Specifies if this function is to only allocate
+annual temperature arrays
 @param[out] SW_VegProdSim Struct of type SW_VEGPROD_SIM that holds information
 used and/or modified mainly during simulation runs; dynamic arrays will have a
 new value for this year
@@ -1053,20 +1076,23 @@ void update_veg_yearly(
     TimeInt yearIndex,
     int nYearsDynamicShort,
     int nYearsDynamicLong,
+    Bool annTempOnly,
     SW_VEGPROD_SIM *SW_VegProdSim
 ) {
     // Update the yearly arrays to hold current year information
     calc_yearly_hist_vals(
-        SW_YearWeathHist, SW_ModelSim, yearIndex, SW_VegProdSim
+        SW_YearWeathHist, SW_ModelSim, yearIndex, annTempOnly, SW_VegProdSim
     );
 
-    // Calculate vegetation predictor variables
-    calc_veg_predictor_vals(
-        yearIndex, nYearsDynamicShort, nYearsDynamicLong, SW_VegProdSim
-    );
+    if (!annTempOnly) {
+        // Calculate vegetation predictor variables
+        calc_veg_predictor_vals(
+            yearIndex, nYearsDynamicShort, nYearsDynamicLong, SW_VegProdSim
+        );
 
-    // Update vegetation values
-    calc_CONUS_vegcov_2025(SW_SoilSim, yearIndex, SW_VegProdSim);
+        // Update vegetation values
+        calc_CONUS_vegcov_2025(SW_SoilSim, yearIndex, SW_VegProdSim);
+    }
 }
 
 /**
@@ -1704,6 +1730,8 @@ void SW_VPD_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
     LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
     Bool inNorthHem = sw->RunIn.ModelRunIn.isnorth;
     int veg_method = sw->VegProdIn.veg_method;
+    Bool allocAnnTemp = (Bool) (sw->SiteIn.methodMaxDepthSoilTemperature == 1);
+    Bool annTempOnly = (Bool) (!estVeg && allocAnnTemp);
 
     /* Set co2-multipliers to default */
     for (year = 0; year < MAX_NYEAR; year++) {
@@ -1713,7 +1741,7 @@ void SW_VPD_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
         }
     }
 
-    if (estVeg) {
+    if (estVeg || allocAnnTemp) {
         if (veg_method == VEG_METHOD_LONG_EST) {
             estimateVegetationFromClimate(
                 &sw->RunIn.VegProdRunIn,
@@ -1724,12 +1752,14 @@ void SW_VPD_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
                 veg_method,
                 LogInfo
             );
-        } else if (veg_method == VEG_METHOD_DYN_EST) {
-            calc_const_dynamic_veg_info(
-                &sw->SoilSim, &sw->RunIn.SoilRunIn, &sw->SiteSim, n_layers
-            );
+        } else if (veg_method == VEG_METHOD_DYN_EST || allocAnnTemp) {
+            if (estVeg) {
+                calc_const_dynamic_veg_info(
+                    &sw->SoilSim, &sw->RunIn.SoilRunIn, &sw->SiteSim, n_layers
+                );
+            }
 
-            alloc_nyear_arrays(n_years, &sw->VegProdSim, LogInfo);
+            alloc_nyear_arrays(n_years, annTempOnly, &sw->VegProdSim, LogInfo);
         }
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -1850,6 +1880,11 @@ information that will be used during simulations
 predictors are summarized (as anomaly to long-term predictors)
 @param[in] nYearsDynamicLong Number of years over which long-term vegetation
 predictors are summarized
+@param[in] methodMaxDepthSoilTemperature Method for soil temperature at
+maximum depth:
+        0 (user provided value);
+        1 (dynamically calculated from a moving long-term mean annual air
+           temperature, see `nYearsDynamicLong` from veg.in)
 @param[out] vegRunIn Array of size NVEGTYPES of type VegTypeRunIn describing
     all NVEGTYPES vegetation types through simulation-specific inputs
 @param[out] vegSim Array of size NVEGTYPES of type VegTypeSim describing
@@ -1868,6 +1903,7 @@ void SW_VPD_new_year(
     TimeInt startYr,
     int nYearsDynamicShort,
     int nYearsDynamicLong,
+    int methodMaxDepthSoilTemperature,
     VegTypeRunIn vegRunIn[],
     VegTypeSim vegSim[],
     VegTypeIn vegIn[]
@@ -1896,6 +1932,8 @@ void SW_VPD_new_year(
     Bool estVeg = SW_VegProdSim->estVeg;
     int k;
     int mon;
+    Bool allocAnnTemp = (Bool) (methodMaxDepthSoilTemperature == 1);
+    Bool annTempOnly = (Bool) (!estVeg && allocAnnTemp);
 
     // Interpolation is to be in base1 in `interpolate_monthlyValues()`
     Bool interpAsBase1 = swTRUE;
@@ -1915,6 +1953,7 @@ void SW_VPD_new_year(
             yearIndex,
             nYearsDynamicShort,
             nYearsDynamicLong,
+            annTempOnly,
             SW_VegProdSim
         );
     }

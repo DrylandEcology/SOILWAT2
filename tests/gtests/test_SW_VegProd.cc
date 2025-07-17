@@ -1693,7 +1693,7 @@ TEST_F(VegProdFixtureTest, CalcAnnClimConditions) {
 
     clear_hist_weather(1, SW_Run.RunIn.weathRunAllHist, NULL);
 
-    alloc_nyear_arrays(1, &SW_VegProdSim, &LogInfo);
+    alloc_nyear_arrays(1, swFALSE, &SW_VegProdSim, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_MDL_construct(&SW_ModelSim);
@@ -1763,7 +1763,7 @@ TEST_F(VegProdFixtureTest, CalcAnnClimConditions) {
         standardDeviation(monPrecip, MAX_MONTHS) / mean(monPrecip, MAX_MONTHS);
 
     calc_yearly_hist_vals(
-        SW_Run.RunIn.weathRunAllHist, &SW_ModelSim, 0, &SW_VegProdSim
+        SW_Run.RunIn.weathRunAllHist, &SW_ModelSim, 0, swFALSE, &SW_VegProdSim
     );
 
     /*
@@ -1809,7 +1809,7 @@ TEST_F(VegProdFixtureTest, CalcVegPredictorVals) {
     double expAnom = 0.;
     double expRateAnom = 0.;
 
-    alloc_nyear_arrays(numYears, &SW_VegProdSim, &LogInfo);
+    alloc_nyear_arrays(numYears, swFALSE, &SW_VegProdSim, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_MDL_construct(&SW_ModelSim);
