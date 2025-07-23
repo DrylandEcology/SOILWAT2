@@ -321,10 +321,10 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
     int i;
 
     // Select method to estimate vegetation from long-term climate
-    SW_Run.VegProdIn.veg_method = 1;
+    SW_Run.VegProdIn.veg_method = VEG_METHOD_LONG_EST;
 
     // Re-calculate vegetation
-    SW_VPD_init_run(&SW_Run, swTRUE, &LogInfo);
+    SW_VPD_init_run(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run the simulation

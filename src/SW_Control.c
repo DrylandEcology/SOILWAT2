@@ -506,7 +506,6 @@ void SW_CTL_RunSimSet(
 #if defined(SWTXT)
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
-    sw_template->VegProdSim.estVeg = swTRUE;
 #endif
 
 #if !defined(SWMPI)
@@ -515,7 +514,6 @@ void SW_CTL_RunSimSet(
 #if defined(SWNETCDF)
 #if defined(SWMPI)
     unsigned int n_years = sw_template->WeatherIn.n_years;
-    Bool getEstVeg = swTRUE;
     SW_RUN_INPUTS inputs[N_SUID_ASSIGN];
     SW_MPI_DESIGNATE *desig = &SW_Domain->SW_Designation;
     MPI_Datatype inputType = SW_Domain->datatypes[eSW_MPI_Inputs];
@@ -530,8 +528,6 @@ void SW_CTL_RunSimSet(
     copyWeather = (Bool) !isnull(sw_template->RunIn.weathRunAllHist);
 #else
     copyWeather = (Bool) (!SW_Domain->netCDFInput.readInVars[eSW_InWeather][0]);
-    sw_template->VegProdSim.estVeg =
-        (Bool) (!SW_Domain->netCDFInput.readInVars[eSW_InWeather][0]);
 #endif // SWMPI
 #endif // SWNETCDF
 
@@ -616,8 +612,6 @@ checkStatus:
                 weathHistType,
                 inputs,
                 &numInputs,
-                &sw_template->VegProdSim.estVeg,
-                &getEstVeg,
                 &extraFailCheck
             );
         }
@@ -667,7 +661,6 @@ checkStatus:
                     sw_template,
                     SW_Domain,
                     NULL,
-                    sw_template->VegProdSim.estVeg,
                     copyWeather,
                     NULL,
                     SW_WallTime,
@@ -682,7 +675,6 @@ checkStatus:
                     sw_template,
                     SW_Domain,
                     ncSuid,
-                    sw_template->VegProdSim.estVeg,
                     copyWeather,
                     count,
                     SW_WallTime,
@@ -1058,11 +1050,9 @@ i.e., after calling begin_year()
 
 @param[in,out] sw Comprehensive structure holding all information
     dealt with in SOILWAT2
-@param[in] estVeg Flag specifying if the vegetation should be
-estimated
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
+void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
 
     // SW_F_init_run() not needed
     // SW_MDL_init_run() not needed
@@ -1101,7 +1091,7 @@ void SW_CTL_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
         return; // Exit function prematurely due to error
     }
 
-    SW_VPD_init_run(sw, estVeg, LogInfo);
+    SW_VPD_init_run(sw, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -1634,8 +1624,6 @@ The following operations are conditional on if SWMPI is enabled
     temporal/spatial information for a set of simulation runs
 @param[in] ncSuid Unique indentifier of the first suid to run
     in relation to netCDF gridcells/sites
-@param[in] estVeg Flag specifying if the vegetation should be
-    estimated
 @param[in] copyWeather Specifies if weather should be copied from
     template information; if SWMPI, swFALSE will copy it from `runInputs`
 @param[in] count Default count values for the netCDF library
@@ -1650,7 +1638,6 @@ void SW_CTL_run_sw(
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
     size_t ncSuid[], // NOLINT(readability-non-const-parameter)
-    Bool estVeg,
     Bool copyWeather,
     const size_t count[],
     SW_WALLTIME *SW_WallTime,
@@ -1752,7 +1739,7 @@ void SW_CTL_run_sw(
 #endif
 
     // Initialize run-time variables
-    SW_CTL_init_run(&local_sw, estVeg, LogInfo);
+    SW_CTL_init_run(&local_sw, LogInfo);
     if (LogInfo->stopRun) {
         goto freeMem; // Exit function prematurely due to error
     }

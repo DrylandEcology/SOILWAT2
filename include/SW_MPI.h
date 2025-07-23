@@ -234,8 +234,6 @@ void SW_MPI_get_inputs(
     MPI_Datatype weathHistType,
     SW_RUN_INPUTS inputs[],
     size_t *numInputs,
-    Bool *estVeg,
-    Bool *getEstVeg,
     Bool *extraFailCheck
 );
 

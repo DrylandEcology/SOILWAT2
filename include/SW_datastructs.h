@@ -296,7 +296,7 @@ typedef struct {
 
 typedef struct {
     /* Constant values pertaining to a site's soil profile used
-       in estimating vegetation when veg_method = 2 */
+       in estimating vegetation when veg_method = VEG_METHOD_DYN_EST */
     double soilDepth,   /**< Depth of soil in the grid cell in cm */
         percSand,       /**< Average % of sand across the soil
                             profile, weighted by the width of
@@ -789,9 +789,6 @@ typedef struct {
 
     /* Indices to keep track of the first/last values when taking averages */
     IntU shortIndex, longIndex;
-
-    Bool estVeg; /**< Flag specifying if to estimate vegetation determined
-                      differently based on compile mode */
 } SW_VEGPROD_SIM;
 
 /** Data type to describe the surface cover of a SOILWAT2 simulation run */
@@ -817,16 +814,35 @@ typedef struct {
         // (0=tree, 1=shrub, 2=grass, 3=forb)
         critSoilWater[NVEGTYPES];
 
-    int
-        // `rank_SWPcrits[k]` hold the vegetation type at rank `k` of
-        // decreasingly sorted critical SWP values
-        rank_SWPcrits[NVEGTYPES],
-        veg_method,
-        nYearsDynamicShort, /**< Number of years over which short-term
-                                 vegetation predictors are summarized
-                                 (as anomaly to long-term predictors) */
-        nYearsDynamicLong;  /**< Number of years over which long-term
-                                 vegetation predictors are summarized */
+    // `rank_SWPcrits[k]` hold the vegetation type at rank `k` of
+    // decreasingly sorted critical SWP values
+    int rank_SWPcrits[NVEGTYPES];
+
+    /** Method to derive a representation of vegetation
+
+        Vegetation is represented by a set of parameters and by
+        fractional cover, biomass, and mean monthly phenology of each
+        plant functional type.
+
+        - 0, user inputs are used as fixed values to represent vegetation
+        - 1, climatic conditions that are summarized across the simulation years
+          are used to estimate fixed fractional cover of vegetation types;
+          biomass and mean monthly phenology are obtained from user inputs
+          as in option 0
+        - 2, climatic conditions that are summarized across a short-term and
+          long-term moving windows (which are updated every year) together with
+          soil conditions are used to estimate vegetation
+    */
+    int veg_method;
+
+
+    /**< Number of years over which short-term vegetation predictors are
+       summarized (as anomaly to long-term predictors) */
+    int nYearsDynamicShort;
+
+    /**< Number of years over which long-term vegetation predictors are
+     * summarized */
+    int nYearsDynamicLong;
 } SW_VEGPROD_INPUTS;
 
 typedef struct {

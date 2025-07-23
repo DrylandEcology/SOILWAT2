@@ -124,7 +124,7 @@ TEST_F(VegProdFixtureTest, VegProdConstructor) {
         &sw.VegProdIn, &sw.RunIn.VegProdRunIn, sw.vp_p_oagg, sw.vp_p_accu
     );
 
-    SW_VPD_init_run(&sw, swTRUE, &LogInfo);
+    SW_VPD_init_run(&sw, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     ForEachVegType(k) {
@@ -257,7 +257,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
     SW_Run.ModelIn.startyr = 1980;
     SW_Run.ModelIn.endyr = 2010;
 
-    SW_Run.VegProdIn.veg_method = 1;
+    SW_Run.VegProdIn.veg_method = VEG_METHOD_LONG_EST;
     SW_Run.RunIn.ModelRunIn.latitude = 90.0;
 
     // Reset "SW_Run.Weather.allHist"

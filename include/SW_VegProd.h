@@ -105,7 +105,7 @@ extern "C" {
 extern const char *const key2veg[NVEGTYPES];
 
 /* Constants for veg_method rather than having 0, 1 or 2 */
-// #define VEG_METHOD_FILE 0 // Use values from file (unused constant right now)
+#define VEG_METHOD_FILE 0 // Use values from file (unused constant right now)
 
 /* Estimate vegetation composition from long-term climate conditions */
 #define VEG_METHOD_LONG_EST 1
@@ -253,7 +253,7 @@ void uniqueIndices(
 
 void SW_VPD_init_ptrs(SW_VEGPROD_SIM *SW_VegProdSim);
 
-void SW_VPD_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo);
+void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *LogInfo);
 
 void checkBiomass(VegTypeRunIn veg[], LOG_INFO *LogInfo);
 

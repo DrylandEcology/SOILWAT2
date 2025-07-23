@@ -1723,7 +1723,7 @@ void SW_VPD_init_ptrs(SW_VEGPROD_SIM *SW_VegProdSim) {
     }
 }
 
-void SW_VPD_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
+void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
     TimeInt year;
     TimeInt n_years = sw->ModelIn.endyr - sw->ModelIn.startyr + 1;
     int k;
@@ -1731,7 +1731,7 @@ void SW_VPD_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
     Bool inNorthHem = sw->RunIn.ModelRunIn.isnorth;
     int veg_method = sw->VegProdIn.veg_method;
     Bool allocAnnTemp = (Bool) (sw->SiteIn.methodMaxDepthSoilTemperature == 1);
-    Bool annTempOnly = (Bool) (!estVeg && allocAnnTemp);
+    Bool annTempOnly = (Bool) (veg_method <= VEG_METHOD_FILE && allocAnnTemp);
 
     /* Set co2-multipliers to default */
     for (year = 0; year < MAX_NYEAR; year++) {
@@ -1741,7 +1741,7 @@ void SW_VPD_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
         }
     }
 
-    if (estVeg || allocAnnTemp) {
+    if (veg_method > VEG_METHOD_FILE || allocAnnTemp) {
         if (veg_method == VEG_METHOD_LONG_EST) {
             estimateVegetationFromClimate(
                 &sw->RunIn.VegProdRunIn,
@@ -1753,7 +1753,7 @@ void SW_VPD_init_run(SW_RUN *sw, Bool estVeg, LOG_INFO *LogInfo) {
                 LogInfo
             );
         } else if (veg_method == VEG_METHOD_DYN_EST || allocAnnTemp) {
-            if (estVeg) {
+            if (veg_method == VEG_METHOD_DYN_EST) {
                 calc_const_dynamic_veg_info(
                     &sw->SoilSim, &sw->RunIn.SoilRunIn, &sw->SiteSim, n_layers
                 );
@@ -1870,11 +1870,8 @@ information that will be used during simulations
     (are inputs as if 100% cover)
         - false (0): values as is (at given cover)
         - true (1), values as if cover was 100%
-@param[in] veg_method The requested method for average surface temperature
-    (see @ref SW_SITE_INPUTS.methodSurfaceTemperature):
-    - 0, based on Parton 1978 (default prior to v8.1.0);
-    - 1, based on Parton 1984 (default since v8.1.0)
-    - 2, uses dynamic short- and long-term climate conditions
+@param[in] veg_method The requested method to estimate vegetation values,
+    see SW_VEGPROD_INPUTS.veg_method
 @param[in] startYr Start year of the simulation
 @param[in] nYearsDynamicShort Number of years over which short-term vegetation
 predictors are summarized (as anomaly to long-term predictors)
@@ -1929,11 +1926,10 @@ void SW_VPD_new_year(
     TimeInt doy; /* base1 */
     TimeInt simyear = SW_ModelSim->simyear;
     TimeInt yearIndex = simyear - startYr;
-    Bool estVeg = SW_VegProdSim->estVeg;
     int k;
     int mon;
     Bool allocAnnTemp = (Bool) (methodMaxDepthSoilTemperature == 1);
-    Bool annTempOnly = (Bool) (!estVeg && allocAnnTemp);
+    Bool annTempOnly = (Bool) (veg_method <= VEG_METHOD_FILE && allocAnnTemp);
 
     // Interpolation is to be in base1 in `interpolate_monthlyValues()`
     Bool interpAsBase1 = swTRUE;
@@ -1945,7 +1941,7 @@ void SW_VPD_new_year(
     double biomassAsIf100Cover[MAX_MONTHS];
     double litterAsIf100Cover[MAX_MONTHS];
 
-    if (estVeg && veg_method == VEG_METHOD_DYN_EST) {
+    if (veg_method == VEG_METHOD_DYN_EST) {
         update_veg_yearly(
             &SW_YearWeathHist[yearIndex],
             SW_ModelSim,
@@ -2240,10 +2236,8 @@ calculated and averaged, then values are estimated
     time information about the simulation run
 @param[in] inNorthHem Bool value specifying if the current site is in the
     northern hemisphere
-@param[in] veg_method The requested method for average surface temperature
-    (see @ref SW_SITE_INPUTS.methodSurfaceTemperature):
-    - 0, based on Parton 1978 (default prior to v8.1.0);
-    - 1, based on Parton 1984 (default since v8.1.0)
+@param[in] veg_method The requested method to estimate vegetation values,
+    see SW_VEGPROD_INPUTS.veg_method
 @param[in] LogInfo Holds information on warnings and errors
 */
 void estimateVegetationFromClimate(
@@ -2256,97 +2250,114 @@ void estimateVegetationFromClimate(
     LOG_INFO *LogInfo
 ) {
 
-    unsigned int numYears = SW_ModelIn->endyr - SW_ModelIn->startyr + 1;
-    unsigned int k;
-    unsigned int bareGroundIndex = 7;
-
-    SW_CLIMATE_YEARLY climateOutput;
-    SW_CLIMATE_CLIM climateAverages;
-
-    // NOTE: 8 = number of types, 5 = (number of types) - grasses
-
-    double coverValues[8] = {
-        SW_MISSING,
-        SW_MISSING,
-        SW_MISSING,
-        SW_MISSING,
-        0.0,
-        SW_MISSING,
-        0.0,
-        0.0
-    };
-    double shrubLimit = .2;
-
-    double SumGrassesFraction = SW_MISSING;
-    double C4Variables[3];
-    double grassOutput[3];
-    double RelAbundanceL0[8];
-    double RelAbundanceL1[5];
-
-    Bool fillEmptyWithBareGround = swTRUE;
-    Bool warnExtrapolation = swTRUE;
-    Bool fixBareGround = swTRUE;
-
-    // Allocate climate structs' memory
-    allocateClimateStructs(numYears, &climateOutput, &climateAverages, LogInfo);
-    if (LogInfo->stopRun) {
-        // Deallocate climate structs' memory before error
-        deallocateClimateStructs(&climateOutput, &climateAverages);
-        return; // Exit function prematurely due to error
+    if (veg_method <= VEG_METHOD_FILE) {
+        return;
     }
-
-    calcSiteClimate(
-        Weather_hist,
-        SW_ModelSim->cum_monthdays,
-        SW_ModelSim->days_in_month,
-        numYears,
-        SW_ModelIn->startyr,
-        inNorthHem,
-        &climateOutput
-    );
-
-    averageClimateAcrossYears(&climateOutput, numYears, &climateAverages);
 
     if (veg_method == VEG_METHOD_LONG_EST) {
 
-        C4Variables[0] = climateAverages.minTemp7thMon_C;
-        C4Variables[1] = climateAverages.ddAbove65F_degday;
-        C4Variables[2] = climateAverages.frostFree_days;
+        unsigned int numYears = SW_ModelIn->endyr - SW_ModelIn->startyr + 1;
+        unsigned int k;
+        unsigned int bareGroundIndex = 7;
 
-        estimatePotNatVegComposition(
-            climateAverages.meanTemp_C,
-            climateAverages.PPT_cm,
-            climateAverages.meanTempMon_C,
-            climateAverages.PPTMon_cm,
-            coverValues,
-            shrubLimit,
-            SumGrassesFraction,
-            C4Variables,
-            fillEmptyWithBareGround,
-            inNorthHem,
-            warnExtrapolation,
-            fixBareGround,
-            grassOutput,
-            RelAbundanceL0,
-            RelAbundanceL1,
-            LogInfo
+        SW_CLIMATE_YEARLY climateOutput;
+        SW_CLIMATE_CLIM climateAverages;
+
+        // NOTE: 8 = number of types, 5 = (number of types) - grasses
+
+        double coverValues[8] = {
+            SW_MISSING,
+            SW_MISSING,
+            SW_MISSING,
+            SW_MISSING,
+            0.0,
+            SW_MISSING,
+            0.0,
+            0.0
+        };
+        double shrubLimit = .2;
+
+        double SumGrassesFraction = SW_MISSING;
+        double C4Variables[3];
+        double grassOutput[3];
+        double RelAbundanceL0[8];
+        double RelAbundanceL1[5];
+
+        Bool fillEmptyWithBareGround = swTRUE;
+        Bool warnExtrapolation = swTRUE;
+        Bool fixBareGround = swTRUE;
+
+        // Allocate climate structs' memory
+        allocateClimateStructs(
+            numYears, &climateOutput, &climateAverages, LogInfo
         );
-
         if (LogInfo->stopRun) {
             // Deallocate climate structs' memory before error
             deallocateClimateStructs(&climateOutput, &climateAverages);
             return; // Exit function prematurely due to error
         }
 
-        ForEachVegType(k) {
-            SW_VegProdRunIn->veg[k].cov.fCover = RelAbundanceL1[k];
+        calcSiteClimate(
+            Weather_hist,
+            SW_ModelSim->cum_monthdays,
+            SW_ModelSim->days_in_month,
+            numYears,
+            SW_ModelIn->startyr,
+            inNorthHem,
+            &climateOutput
+        );
+
+        averageClimateAcrossYears(&climateOutput, numYears, &climateAverages);
+
+        if (veg_method == VEG_METHOD_LONG_EST) {
+
+            C4Variables[0] = climateAverages.minTemp7thMon_C;
+            C4Variables[1] = climateAverages.ddAbove65F_degday;
+            C4Variables[2] = climateAverages.frostFree_days;
+
+            estimatePotNatVegComposition(
+                climateAverages.meanTemp_C,
+                climateAverages.PPT_cm,
+                climateAverages.meanTempMon_C,
+                climateAverages.PPTMon_cm,
+                coverValues,
+                shrubLimit,
+                SumGrassesFraction,
+                C4Variables,
+                fillEmptyWithBareGround,
+                inNorthHem,
+                warnExtrapolation,
+                fixBareGround,
+                grassOutput,
+                RelAbundanceL0,
+                RelAbundanceL1,
+                LogInfo
+            );
+
+            if (LogInfo->stopRun) {
+                // Deallocate climate structs' memory before error
+                deallocateClimateStructs(&climateOutput, &climateAverages);
+                return; // Exit function prematurely due to error
+            }
+
+            ForEachVegType(k) {
+                SW_VegProdRunIn->veg[k].cov.fCover = RelAbundanceL1[k];
+            }
+
+            SW_VegProdRunIn->bare_cov.fCover = RelAbundanceL0[bareGroundIndex];
+
+            // Deallocate climate structs' memory
+            deallocateClimateStructs(&climateOutput, &climateAverages);
+
+        } else {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Requested 'veg_method = %d' is not implemented.",
+                veg_method
+            );
         }
-
-        SW_VegProdRunIn->bare_cov.fCover = RelAbundanceL0[bareGroundIndex];
     }
-
-    // Deallocate climate structs' memory
-    deallocateClimateStructs(&climateOutput, &climateAverages);
 }
 
 /**
