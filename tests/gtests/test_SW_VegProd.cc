@@ -108,7 +108,6 @@ TEST_F(VegProdFixtureTest, VegProdConstructor) {
         &SW_Run.ModelIn,
         &SW_Run.ModelSim,
         VegProdSim.veg,
-        swTRUE,
         SW_Run.RunIn.ModelRunIn.isnorth,
         VegProdIn.veg_method,
         &LogInfo

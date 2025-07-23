@@ -57,7 +57,7 @@ void SW_CTL_setup_model(
 
 void SW_CTL_clear_model(Bool full_reset, SW_RUN *sw);
 
-void SW_CTL_init_run(SW_RUN *sw, Bool estVegFromText, LOG_INFO *LogInfo);
+void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *LogInfo);
 
 void SW_CTL_read_inputs_from_disk(
     SW_RUN *sw,
@@ -96,7 +96,6 @@ void SW_CTL_run_sw(
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
     size_t ncSuid[],
-    Bool estVeg,
     Bool copyWeather,
     const size_t count[],
     SW_WALLTIME *SW_WallTime,

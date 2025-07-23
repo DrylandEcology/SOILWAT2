@@ -330,7 +330,6 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
         &SW_Run.ModelIn,
         &SW_Run.ModelSim,
         SW_Run.VegProdSim.veg,
-        swTRUE,
         SW_Run.RunIn.ModelRunIn.isnorth,
         SW_Run.VegProdIn.veg_method,
         &LogInfo

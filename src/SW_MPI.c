@@ -2922,9 +2922,6 @@ any final compute processes can be sent a signal to finish
     compute processes
 @param[in] numInputs Total number of inputs that will be spread to
     compute processes
-@param[in] estVeg A flag specifying if we vegetation is to be estimated
-@param[in,out] sendEstVeg A flag specifying if we have already sent
-    the flag to compute processes; return an updated flag value of swFALSE
 @param[in] readWeather A flag specifying if weather will be read in;
     if so, send weather
 @param[in] readClimate A flag specifying if climate will be read in
@@ -2942,8 +2939,6 @@ static void spread_inputs(
     MPI_Datatype weathHistType,
     SW_RUN_INPUTS *inputs,
     size_t numInputs,
-    Bool estVeg,
-    Bool *sendEstVeg,
     Bool readWeather,
     Bool readClimate,
     Bool extraLoopCheck,
@@ -2965,11 +2960,6 @@ static void spread_inputs(
     size_t leftOverSuids = 0;
     size_t numInputOrigin = numInputs;
     size_t divInputAcrossComp = numInputOrigin / nCompProcs;
-
-    if (*sendEstVeg) {
-        SW_MPI_Bcast(MPI_INT, &estVeg, 1, SW_GROUP_ROOT, desig->ioCompComm);
-        *sendEstVeg = swFALSE;
-    }
 
     for (comp = 0; comp < desig->nCompProcs; comp++) {
         // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
@@ -5997,10 +5987,6 @@ Process designation: Compute
 @param[out] inputs A list of SW_RUN_INPUTS that will be filled by an
     I/O process
 @param[out] numInputs Number of inputs that were sent to this process
-@param[out] estVeg A flag specifying if the process needs to estiamte
-    vegetation
-@param[in,out] getEstVeg Specifies if the function needs to get the `estVeg`
-    flag from it's I/O process
 @param[out] extraFailCheck Specifies if, when a compute process is done with
     all workloads, the compute process should take part in an extra call to
     `SW_MPI_setup_fail()`
@@ -6013,17 +5999,10 @@ void SW_MPI_get_inputs(
     MPI_Datatype weathHistType,
     SW_RUN_INPUTS inputs[],
     size_t *numInputs,
-    Bool *estVeg,
-    Bool *getEstVeg,
     Bool *extraFailCheck
 ) {
     MPI_Request nullReq = MPI_REQUEST_NULL;
     size_t input;
-
-    if (*getEstVeg) {
-        SW_MPI_Bcast(MPI_INT, estVeg, 1, SW_GROUP_ROOT, desig->ioCompComm);
-        *getEstVeg = swFALSE;
-    }
 
     SW_MPI_Recv(
         SW_MPI_SIZE_T, numInputs, 1, desig->ioRank, swTRUE, 0, &nullReq
@@ -6114,8 +6093,6 @@ void SW_MPI_handle_IO(
     Bool *useIndexFile = SW_Domain->netCDFInput.useIndexFile;
     Bool **readInVars = SW_Domain->netCDFInput.readInVars;
     Bool constSoilDepths = SW_Domain->hasConsistentSoilLayerDepths;
-    Bool sendEstVeg = swTRUE;
-    Bool estVeg = SW_Domain->netCDFInput.readInVars[eSW_InVeg][0];
     Bool readWeather = SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
     Bool readSoils = SW_Domain->netCDFInput.readInVars[eSW_InSoil][0];
     Bool readClimate = SW_Domain->netCDFInput.readInVars[eSW_InClimate][0];
@@ -6332,8 +6309,6 @@ checkStatus:
                 weathHistType,
                 inputs,
                 inputsLeft,
-                estVeg,
-                &sendEstVeg,
                 readWeather,
                 readClimate,
                 dummyWrites,
@@ -6448,8 +6423,6 @@ checkStatus:
                 weathHistType,
                 inputs,
                 inputsLeft,
-                estVeg,
-                &sendEstVeg,
                 readWeather,
                 readClimate,
                 dummyWrites,

@@ -220,7 +220,6 @@ int setup_testGlobalSoilwatTemplate() {
     size_t userSUID;
     LOG_INFO LogInfo;
     const Bool renameDomainTemplateNC = swTRUE;
-    const Bool estVeg = swTRUE;
 
     // Initialize SOILWAT2 variables and read values from example input file
     sw_init_logs(NULL, &LogInfo);
@@ -309,7 +308,7 @@ int setup_testGlobalSoilwatTemplate() {
         goto finishProgram;
     }
 
-    SW_CTL_init_run(&template_SW_Run, estVeg, &LogInfo);
+    SW_CTL_init_run(&template_SW_Run, &LogInfo);
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }

@@ -735,11 +735,23 @@ typedef struct {
         // (0=tree, 1=shrub, 2=grass, 3=forb)
         critSoilWater[NVEGTYPES];
 
-    int
-        // `rank_SWPcrits[k]` hold the vegetation type at rank `k` of
-        // decreasingly sorted critical SWP values
-        rank_SWPcrits[NVEGTYPES],
-        veg_method;
+    // `rank_SWPcrits[k]` hold the vegetation type at rank `k` of
+    // decreasingly sorted critical SWP values
+    int rank_SWPcrits[NVEGTYPES];
+
+    /** Method to derive a representation of vegetation
+
+        Vegetation is represented by a set of parameters and by
+        fractional cover, biomass, and mean monthly phenology of each
+        plant functional type.
+
+        - 0, user inputs are used as fixed values to represent vegetation
+        - 1, climatic conditions that are summarized across the simulation years
+          are used to estimate fixed fractional cover of vegetation types;
+          biomass and mean monthly phenology are obtained from user inputs
+          as in option 0
+    */
+    int veg_method;
 } SW_VEGPROD_INPUTS;
 
 typedef struct {
