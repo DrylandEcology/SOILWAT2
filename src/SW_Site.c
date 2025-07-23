@@ -1596,7 +1596,7 @@ void SW_SIT_read(
 #endif
 
     FILE *f;
-    const int nLinesWithoutTR = 42;
+    const int nLinesWithoutTR = 43; /* Number of inputs without tr regions */
     int lineno = 0;
     int x;
     double rgnlow = 0; /* lower depth of region */
@@ -1629,7 +1629,7 @@ void SW_SIT_read(
         if (!strLine && lineno <= nLinesWithoutTR) {
             /* Check to see if the line number contains a double or integer
              * value
-               lineno with integers: 3, 4, 32, 33, 34, 35, 37, 38, 42 */
+               lineno with integers: 3, 4, 32, 33, 34, 35, 36, 38, 39, 43 */
             doDoubleConv =
                 (Bool) ((lineno >= 0 && lineno <= 2) ||
                         (lineno >= 5 && lineno <= 31) || lineno == 40);
@@ -1848,18 +1848,19 @@ void SW_SIT_read(
             SW_SiteIn->site_ptf_type = encode_str2ptf(SW_SiteIn->site_ptf_name);
             break;
         case 43:
+            if (lineno != nLinesWithoutTR) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Programmer: code and '%s' appear misaligned.",
+                    MyFileName
+                );
+                goto closeFile;
+            }
             SW_SiteIn->inputsProvideSWRCp = itob(intRes);
             break;
 
         default:
-            if (lineno > nLinesWithoutTR + MAX_TRANSP_REGIONS) {
-                break; /* skip extra lines */
-            }
-
-            if (MAX_TRANSP_REGIONS < SW_SiteSim->n_transp_rgn) {
-                too_many_regions = swTRUE;
-                goto Label_End_Read;
-            }
             x = sscanf(inbuf, "%9s %9s", rgnStr[0], rgnStr[1]);
 
             if (x == 2) {
@@ -1878,12 +1879,19 @@ void SW_SIT_read(
                 LogError(
                     LogInfo,
                     LOGERROR,
-                    "%s : Bad record %d.\n",
+                    "%s: Bad input for transpiration regions on line %d.",
                     MyFileName,
                     lineno
                 );
                 goto closeFile;
             }
+
+            if (region > MAX_TRANSP_REGIONS ||
+                SW_SiteSim->n_transp_rgn >= MAX_TRANSP_REGIONS) {
+                too_many_regions = swTRUE;
+                goto Label_End_Read;
+            }
+
             SW_SiteSim->TranspRgnDepths[region - 1] = rgnlow;
             SW_SiteSim->n_transp_rgn++;
         }
@@ -1933,10 +1941,8 @@ Label_End_Read:
         LogError(
             LogInfo,
             LOGERROR,
-            "%s : Number of transpiration regions"
-            " exceeds maximum allowed (%d > %d)\n",
+            "%s : Maximum number of transpiration regions exceeded (max = %d)",
             MyFileName,
-            SW_SiteSim->n_transp_rgn,
             MAX_TRANSP_REGIONS
         );
         goto closeFile;
