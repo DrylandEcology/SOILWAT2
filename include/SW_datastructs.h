@@ -836,13 +836,13 @@ typedef struct {
     int veg_method;
 
 
-    /**< Number of years over which short-term vegetation predictors are
+    /** Number of years over which short-term vegetation predictors are
        summarized (as anomaly to long-term predictors) */
-    int nYearsDynamicShort;
+    TimeInt nYearsDynamicShort;
 
-    /**< Number of years over which long-term vegetation predictors are
+    /** Number of years over which long-term vegetation predictors are
      * summarized */
-    int nYearsDynamicLong;
+    TimeInt nYearsDynamicLong;
 } SW_VEGPROD_INPUTS;
 
 typedef struct {

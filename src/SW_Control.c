@@ -844,7 +844,6 @@ void SW_CTL_init_ptrs(SW_RUN *sw) {
     SW_MKV_init_ptrs(&sw->MarkovIn);
     SW_VPD_init_ptrs(&sw->VegProdSim);
     SW_VES_init_ptrs(&sw->VegEstabIn, sw->ves_p_accu, sw->ves_p_oagg);
-    // SW_VPD_init_ptrs() not needed
     SW_OUT_init_ptrs(&sw->OutRun, &sw->SW_PathOutputs);
     SW_SWC_init_ptrs(&sw->SoilWatIn, &sw->SoilWatSim);
 }

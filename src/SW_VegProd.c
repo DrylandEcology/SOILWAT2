@@ -452,6 +452,65 @@ void calc_yearly_hist_vals(
 }
 
 /**
+@brief Moving window of long-term mean temperature
+
+See also calc_veg_predictor_vals().
+
+@param[in] yearIndex Index value specifying which place the year is in the
+    simulation process (i.e., [0, n years) )
+@param[in] nYearsDynamicLong Number of years over which long-term
+    predictors are summarized
+@param[in] SW_VegProdSim Struct of type SW_VEGPROD_SIM that holds information
+    used and/or modified mainly during simulation runs
+@param[out] annTempLongAvg Calculated long-term mean temperature across the
+    moving window defined by \p nYearsDynamicLong
+*/
+static void calc_annTempLongAvg(
+    TimeInt yearIndex,
+    TimeInt nYearsDynamicLong,
+    SW_VEGPROD_SIM *SW_VegProdSim,
+    double *annTempLongAvg
+) {
+    IntU termIndex = SW_VegProdSim->longIndex;
+
+    if (yearIndex == 0) {
+        *annTempLongAvg = 0.;
+    }
+
+    /* Check if we have enough values to make a full average for the
+       term in which we are taking the average of */
+    if (yearIndex + 1 > nYearsDynamicLong) {
+        /*
+            Calculate the new average by converting the average into a sum,
+            removing the oldest value, adding the newest value, and
+            converting the sum into an average
+            This method simplies how we calculate the moving window
+            average to be more constant in computation time
+        */
+        *annTempLongAvg *= nYearsDynamicLong;
+        *annTempLongAvg -= SW_VegProdSim->annTemp[termIndex];
+        *annTempLongAvg += SW_VegProdSim->annTemp[yearIndex];
+        *annTempLongAvg /= nYearsDynamicLong;
+    } else {
+        /*
+            Since we do not have enough years to compute the whole average,
+            we keep a running average until we have enough years
+            Do this by converting the running average into a sum
+            (number of years currently within the sum), add the new
+            value, and retake the average with the new number
+            of years in the sum (yearIndex + 1)
+        */
+        *annTempLongAvg *= (yearIndex);
+        *annTempLongAvg += SW_VegProdSim->annTemp[yearIndex];
+        *annTempLongAvg /= (yearIndex + 1);
+    }
+
+    if (yearIndex + 1 > nYearsDynamicLong) {
+        SW_VegProdSim->longIndex++;
+    }
+}
+
+/**
 @brief Using values calculated from `calc_yearly_hist_vals()`,
 calculate the predictor values for dynamic vegetation calculations
 
@@ -467,8 +526,8 @@ will have updated values for this year
 */
 void calc_veg_predictor_vals(
     TimeInt yearIndex,
-    int nYearsDynamicShort,
-    int nYearsDynamicLong,
+    TimeInt nYearsDynamicShort,
+    TimeInt nYearsDynamicLong,
     SW_VEGPROD_SIM *SW_VegProdSim
 ) {
     // Initialize variables
@@ -647,8 +706,11 @@ void calc_veg_predictor_vals(
         }
     }
 
-    if (yearIndex + 1 > termLength) {
+    if (yearIndex + 1 > nYearsDynamicShort) {
         SW_VegProdSim->shortIndex++;
+    }
+
+    if (yearIndex + 1 > nYearsDynamicLong) {
         SW_VegProdSim->longIndex++;
     }
 }
@@ -1074,8 +1136,8 @@ void update_veg_yearly(
     SW_MODEL_SIM *SW_ModelSim,
     SW_SOIL_SIM *SW_SoilSim,
     TimeInt yearIndex,
-    int nYearsDynamicShort,
-    int nYearsDynamicLong,
+    TimeInt nYearsDynamicShort,
+    TimeInt nYearsDynamicLong,
     Bool annTempOnly,
     SW_VEGPROD_SIM *SW_VegProdSim
 ) {
@@ -1084,7 +1146,16 @@ void update_veg_yearly(
         SW_YearWeathHist, SW_ModelSim, yearIndex, annTempOnly, SW_VegProdSim
     );
 
-    if (!annTempOnly) {
+    if (annTempOnly) {
+        // Calculate long-term mean temperature
+        calc_annTempLongAvg(
+            yearIndex,
+            nYearsDynamicLong,
+            SW_VegProdSim,
+            &SW_VegProdSim->annTempLongAvg
+        );
+
+    } else {
         // Calculate vegetation predictor variables
         calc_veg_predictor_vals(
             yearIndex, nYearsDynamicShort, nYearsDynamicLong, SW_VegProdSim
@@ -1255,7 +1326,7 @@ void SW_VPD_read(
                     goto closeFile;
                 }
 
-                if (SW_VegProdIn->nYearsDynamicLong <= 0) {
+                if (SW_VegProdIn->nYearsDynamicLong == 0) {
                     LogError(
                         LogInfo, LOGERROR, "'nYearsDynamicLong' must be > 0."
                     );
@@ -1271,7 +1342,7 @@ void SW_VPD_read(
                     goto closeFile;
                 }
 
-                if (SW_VegProdIn->nYearsDynamicShort <= 0) {
+                if (SW_VegProdIn->nYearsDynamicShort == 0) {
                     LogError(
                         LogInfo, LOGERROR, "'nYearsDynamicShort' must be > 0."
                     );
@@ -1731,7 +1802,8 @@ void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
     Bool inNorthHem = sw->RunIn.ModelRunIn.isnorth;
     int veg_method = sw->VegProdIn.veg_method;
     Bool allocAnnTemp = (Bool) (sw->SiteIn.methodMaxDepthSoilTemperature == 1);
-    Bool annTempOnly = (Bool) (veg_method <= VEG_METHOD_FILE && allocAnnTemp);
+    Bool annTempOnly =
+        (Bool) (allocAnnTemp && veg_method != VEG_METHOD_DYN_EST);
 
     /* Set co2-multipliers to default */
     for (year = 0; year < MAX_NYEAR; year++) {
@@ -1741,26 +1813,31 @@ void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
         }
     }
 
-    if (veg_method > VEG_METHOD_FILE || allocAnnTemp) {
-        if (veg_method == VEG_METHOD_LONG_EST) {
-            estimateVegetationFromClimate(
-                &sw->RunIn.VegProdRunIn,
-                sw->RunIn.weathRunAllHist,
-                &sw->ModelIn,
-                &sw->ModelSim,
-                inNorthHem,
-                veg_method,
-                LogInfo
-            );
-        } else if (veg_method == VEG_METHOD_DYN_EST || allocAnnTemp) {
-            if (veg_method == VEG_METHOD_DYN_EST) {
-                calc_const_dynamic_veg_info(
-                    &sw->SoilSim, &sw->RunIn.SoilRunIn, &sw->SiteSim, n_layers
-                );
-            }
-
-            alloc_nyear_arrays(n_years, annTempOnly, &sw->VegProdSim, LogInfo);
+    if (veg_method == VEG_METHOD_LONG_EST) {
+        /* static veg: estimated from simulation-wide climate */
+        estimateVegetationFromClimate(
+            &sw->RunIn.VegProdRunIn,
+            sw->RunIn.weathRunAllHist,
+            &sw->ModelIn,
+            &sw->ModelSim,
+            inNorthHem,
+            veg_method,
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
         }
+    }
+
+    if (veg_method == VEG_METHOD_DYN_EST) {
+        /* dynamic veg: init arrays here; calculated by SW_VPD_new_year() */
+        calc_const_dynamic_veg_info(
+            &sw->SoilSim, &sw->RunIn.SoilRunIn, &sw->SiteSim, n_layers
+        );
+    }
+
+    if (veg_method == VEG_METHOD_DYN_EST || allocAnnTemp) {
+        alloc_nyear_arrays(n_years, annTempOnly, &sw->VegProdSim, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -1898,9 +1975,9 @@ void SW_VPD_new_year(
     Bool isBiomAsIf100Cover,
     int veg_method,
     TimeInt startYr,
-    int nYearsDynamicShort,
-    int nYearsDynamicLong,
-    int methodMaxDepthSoilTemperature,
+    TimeInt nYearsDynamicShort,
+    TimeInt nYearsDynamicLong,
+    unsigned int methodMaxDepthSoilTemperature,
     VegTypeRunIn vegRunIn[],
     VegTypeSim vegSim[],
     VegTypeIn vegIn[]
@@ -1929,7 +2006,8 @@ void SW_VPD_new_year(
     int k;
     int mon;
     Bool allocAnnTemp = (Bool) (methodMaxDepthSoilTemperature == 1);
-    Bool annTempOnly = (Bool) (veg_method <= VEG_METHOD_FILE && allocAnnTemp);
+    Bool annTempOnly =
+        (Bool) (allocAnnTemp && veg_method != VEG_METHOD_DYN_EST);
 
     // Interpolation is to be in base1 in `interpolate_monthlyValues()`
     Bool interpAsBase1 = swTRUE;
@@ -1941,7 +2019,7 @@ void SW_VPD_new_year(
     double biomassAsIf100Cover[MAX_MONTHS];
     double litterAsIf100Cover[MAX_MONTHS];
 
-    if (veg_method == VEG_METHOD_DYN_EST) {
+    if (allocAnnTemp || veg_method == VEG_METHOD_DYN_EST) {
         update_veg_yearly(
             &SW_YearWeathHist[yearIndex],
             SW_ModelSim,

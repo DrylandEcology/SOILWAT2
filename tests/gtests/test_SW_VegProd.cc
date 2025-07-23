@@ -84,7 +84,11 @@ void assert_decreasing_SWPcrit(SW_VEGPROD_INPUTS *SW_VegProdIn) {
 }
 
 double calc_veg_average(
-    TimeInt yearIndex, double currAvg, double *vals, IntU nTermYrs, int rmIndex
+    TimeInt yearIndex,
+    double currAvg,
+    const double *vals,
+    IntU nTermYrs,
+    IntU rmIndex
 ) {
     /*
         Check if the average to be taken is a running average (yearIndex + 1 <=
@@ -1924,7 +1928,7 @@ TEST_F(VegProdFixtureTest, CalcConstCONUS2025SiteInfo) {
     awhcRes = calc_awhc(swcBulk_fieldcap, swcBulk_wiltpt, n_layers);
     expVal = 0.;
 
-    EXPECT_EQ(awhcRes, 0.);
+    EXPECT_EQ(awhcRes, expVal);
 
     // AWHC 1 layer with swcBulk_fieldcap[0] - swcBulk_wiltpt[0] > 0
     swcBulk_fieldcap[0] = .5;

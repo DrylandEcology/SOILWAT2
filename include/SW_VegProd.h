@@ -153,8 +153,8 @@ void calc_yearly_hist_vals(
 
 void calc_veg_predictor_vals(
     TimeInt yearIndex,
-    int nYearsDynamicShort,
-    int nYearsDynamicLong,
+    TimeInt nYearsDynamicShort,
+    TimeInt nYearsDynamicLong,
     SW_VEGPROD_SIM *SW_VegProdSim
 );
 
@@ -167,8 +167,8 @@ void update_veg_yearly(
     SW_MODEL_SIM *SW_ModelSim,
     SW_SOIL_SIM *SW_SoilSim,
     TimeInt yearIndex,
-    int nYearsDynamicShort,
-    int nYearsDynamicLong,
+    TimeInt nYearsDynamicShort,
+    TimeInt nYearsDynamicLong,
     Bool annTempOnly,
     SW_VEGPROD_SIM *SW_VegProdSim
 );
@@ -189,9 +189,9 @@ void SW_VPD_new_year(
     Bool isBiomAsIf100Cover,
     int veg_method,
     TimeInt startYr,
-    int nYearsDynamicShort,
-    int nYearsDynamicLong,
-    int methodMaxDepthSoilTemperature,
+    TimeInt nYearsDynamicShort,
+    TimeInt nYearsDynamicLong,
+    unsigned int methodMaxDepthSoilTemperature,
     VegTypeRunIn vegRunIn[],
     VegTypeSim vegSim[],
     VegTypeIn vegIn[]

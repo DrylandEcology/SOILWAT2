@@ -2483,7 +2483,7 @@ is (mostly) constant in time; for instance, approximated as the mean air
 temperature
 */
 void SW_SIT_new_year(
-    int methodMaxDepthSoilTemperature,
+    unsigned int methodMaxDepthSoilTemperature,
     double newTsoil_constant,
     double *Tsoil_constant
 ) {

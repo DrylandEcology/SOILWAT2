@@ -317,7 +317,7 @@ void SW_SIT_read(
 );
 
 void SW_SIT_new_year(
-    int methodMaxDepthSoilTemperature,
+    unsigned int methodMaxDepthSoilTemperature,
     double newTsoil_constant,
     double *Tsoil_constant
 );
