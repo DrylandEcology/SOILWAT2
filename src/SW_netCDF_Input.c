@@ -12,6 +12,7 @@
 #include "include/SW_Files.h"          // for eNCIn
 #include "include/SW_netCDF_General.h" // for SW_NC_open, SW_NC_get_var_ide...
 #include "include/SW_Site.h"           // for SW_SOIL_construct
+#include "include/SW_VegProd.h"        // for key2veg
 #include "include/SW_Weather.h"        // for clear_hist_weather, SW_WTH_al...
 #include "include/Times.h"             // for Time_get_lastdoy_y, timeStrin...
 #include <float.h>                     // for DBL_MAX
@@ -74,20 +75,71 @@ static const char *const expectedColNames[] = {
 static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] = {
     /* inDomain */
     {"1", "1"},
+
     /* inSpatial */
     {"1", "radian", "radian"},
+
     /* inTopo */
     {"1", "m", "radian", "radian"},
+
     /* inSoil */
-    {"1",        "cm", "cm",   "g cm-3", "cm3 cm-3", "g g-1", "g g-1", "g g-1",
-     "cm3 cm-3", "1",  "degC", "1",      "1",        "1",     "1",     "1",
-     "NA",       "NA", "NA",   "NA",     "NA",       "NA"},
+    {"1",
+     "cm",
+     "cm",
+     "g cm-3",
+     "cm3 cm-3",
+     "g g-1",
+     "g g-1",
+     "g g-1",
+     "cm3 cm-3",
+     "1",
+     "degC",
+     "1",
+     /* NVEGTYPES x trco: */
+     "1",
+     "1",
+     "1",
+     "1",
+     /* SWRC_PARAM_NMAX x parameter: */
+     "NA",
+     "NA",
+     "NA",
+     "NA",
+     "NA",
+     "NA"},
+
     /* inSite */
     {"1", "degC"},
+
     /*inVeg*/
-    {"1",     "m2 m-2", "m2 m-2", "g m-2", "g m-2",  "1",     "g m-2", "m2 m-2",
-     "g m-2", "g m-2",  "1",      "g m-2", "m2 m-2", "g m-2", "g m-2", "1",
-     "g m-2", "m2 m-2", "g m-2",  "g m-2", "1",      "g m-2"},
+    {"1",
+     /* NVEGTYPES x fcover: */
+     "m2 m-2",
+     "m2 m-2",
+     "m2 m-2",
+     "m2 m-2",
+     "m2 m-2",
+     /* NVEGTYPES x litter: */
+     "g m-2",
+     "g m-2",
+     "g m-2",
+     "g m-2",
+     /* NVEGTYPES x biomass: */
+     "g m-2",
+     "g m-2",
+     "g m-2",
+     "g m-2",
+     /* NVEGTYPES x pct_live: */
+     "1",
+     "1",
+     "1",
+     "1",
+     /* NVEGTYPES x LAI_conv: */
+     "g m-2",
+     "g m-2",
+     "g m-2",
+     "g m-2"},
+
     /* inWeather */
     {"1",
      "degC",
@@ -104,11 +156,14 @@ static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] = {
      "degC",
      "kPa",
      "NA"},
+
     /* inClimate */
     {"1", "%", "m s-1", "%", "kg m-3", "1"}
 };
 
-/** Values of the column "SW2 variable" of the tsv nc-input file */
+/** Values of the column "SW2 variable" of the tsv nc-input file.
+    A pattern of '<vegType>.*' (which must be repeated for each NVEGTYPES) is
+    replaced with of the values of key2veg[] when used. */
 static const char *const possVarNames[SW_NINKEYSNC][SW_INNMAXVARS] = {
     /* inDomain */
     {"domain", "progress"},
@@ -133,10 +188,11 @@ static const char *const possVarNames[SW_NINKEYSNC][SW_INNMAXVARS] = {
      "avgLyrTempInit",
      "evap_coeff",
 
-     "Trees.transp_coeff",
-     "Shrubs.transp_coeff",
-     "Forbs.transp_coeff",
-     "Grasses.transp_coeff",
+     /* full name will be formed as "key2veg[NVEGTYPES].variable" */
+     ".transp_coeff",
+     ".transp_coeff",
+     ".transp_coeff",
+     ".transp_coeff",
 
      "swrcpMineralSoil[1]",
      "swrcpMineralSoil[2]",
@@ -149,19 +205,30 @@ static const char *const possVarNames[SW_NINKEYSNC][SW_INNMAXVARS] = {
     {"indexSpatial", "Tsoil_constant"},
 
     /* inVeg */
-    {"indexSpatial",     "bareGround.fCover",
+    {"indexSpatial",
+     "bareGround.fCover",
 
-     "Trees.fCover",     "Trees.litter",      "Trees.biomass",
-     "Trees.pct_live",   "Trees.lai_conv",
-
-     "Shrubs.fCover",    "Shrubs.litter",     "Shrubs.biomass",
-     "Shrubs.pct_live",  "Shrubs.lai_conv",
-
-     "Forbs.fCover",     "Forbs.litter",      "Forbs.biomass",
-     "Forbs.pct_live",   "Forbs.lai_conv",
-
-     "Grasses.fCover",   "Grasses.litter",    "Grasses.biomass",
-     "Grasses.pct_live", "Grasses.lai_conv"},
+     /* full name will be formed as "key2veg[NVEGTYPES].variable" */
+     ".fCover",
+     ".fCover",
+     ".fCover",
+     ".fCover",
+     ".litter",
+     ".litter",
+     ".litter",
+     ".litter",
+     ".biomass",
+     ".biomass",
+     ".biomass",
+     ".biomass",
+     ".pct_live",
+     ".pct_live",
+     ".pct_live",
+     ".pct_live",
+     ".lai_conv",
+     ".lai_conv",
+     ".lai_conv",
+     ".lai_conv"},
 
     /* inWeather */
     {"indexSpatial",
@@ -228,11 +295,11 @@ static const int eiv_transpCoeff[NVEGTYPES] = {12, 13, 14, 15};
 static const int eiv_swrcpMS[SWRC_PARAM_NMAX] = {16, 17, 18, 19, 20, 21};
 /* inVeg */
 static const int eiv_bareGroundfCover = 1;
-static const int eiv_vegfCover[NVEGTYPES] = {2, 7, 12, 17};
-static const int eiv_vegLitter[NVEGTYPES] = {3, 8, 13, 18};
-static const int eiv_vegBiomass[NVEGTYPES] = {4, 9, 14, 19};
-static const int eiv_vegPctlive[NVEGTYPES] = {5, 10, 15, 20};
-static const int eiv_vegLAIconv[NVEGTYPES] = {6, 11, 16, 21};
+static const int eiv_vegfCover[NVEGTYPES] = {2, 3, 4, 5};
+static const int eiv_vegLitter[NVEGTYPES] = {6, 7, 8, 9};
+static const int eiv_vegBiomass[NVEGTYPES] = {10, 11, 12, 13};
+static const int eiv_vegPctlive[NVEGTYPES] = {14, 15, 16, 17};
+static const int eiv_vegLAIconv[NVEGTYPES] = {18, 19, 20, 21};
 /* inWeather */
 // static const int eiv_temp_max = 1 + TEMP_MAX;
 // static const int eiv_temp_min = 1 + TEMP_MIN;
@@ -257,7 +324,8 @@ static const int eiv_shortWaveRad = 1 + SHORT_WR;
 // static const int eiv_tsoilConst = 1;
 /** @} */ // end of documentation of eiv
 
-static const char *const generalVegNames[] = {
+static const int numPossVarNamesVegWithPFTAxis = 5;
+static const char *const possVarNamesVegWithPFTAxis[5] = {
     "<veg>.fCover",
     "<veg>.litter",
     "<veg>.biomass",
@@ -265,7 +333,7 @@ static const char *const generalVegNames[] = {
     "<veg>.lai_conv"
 };
 
-static const char *const generalSoilNames[] = {"<veg>.transp_coeff"};
+static const char *const possVarNamesSoilWithPFTAxis[] = {"<veg>.transp_coeff"};
 
 /** Possible values of the column "SW2 input group" of the tsv nc-input file */
 static const char *const possInKeys[] = {
@@ -532,9 +600,9 @@ static void invalid_conv(char *ncVarUnit, char *ncUnit, LOG_INFO *LogInfo) {
 @param[out] inKey Translated key from read-in values to local arrays
 @param[out] inVarNum Translated key from read-in values to local arrays
 @param[out] isIndex Specifies that the read-in values were related to an index
-file
-@param[out] isAllVegVar Specifies that the read-in values were a generalization
-of veg or soil variables
+    file
+@param[out] isAllVegVar Specifies that values for every vegetation type are
+    organized along a pft-axis (instead of separate variables)
 */
 static void get_2d_input_key(
     char *varKey,
@@ -544,10 +612,20 @@ static void get_2d_input_key(
     Bool *isIndex,
     Bool *isAllVegVar
 ) {
+    const int eiv_vegVarsWithPFTsStartIndices[5] = {
+        eiv_vegfCover[0],
+        eiv_vegLitter[0],
+        eiv_vegBiomass[0],
+        eiv_vegPctlive[0],
+        eiv_vegLAIconv[0]
+    };
 
     int keyNum;
     int varNum;
-    const int numGeneralVegNames = 5;
+    int indexPFT = -1;
+
+    char *possVarName;
+    char possVarNameStr[MAX_FILENAMESIZE];
 
     *inKey = eSW_NoInKey;
     *inVarNum = KEY_NOT_FOUND;
@@ -563,7 +641,39 @@ static void get_2d_input_key(
 
     if (*inKey != eSW_NoInKey) {
         for (varNum = 0; varNum < numVarsInKey[*inKey]; varNum++) {
-            if (strcmp(possVarNames[*inKey][varNum], varName) == 0) {
+
+            if ((*inKey == eSW_InSoil && varNum == eiv_transpCoeff[0]) ||
+                (*inKey == eSW_InVeg &&
+                 (varNum == eiv_vegfCover[0] || varNum == eiv_vegLitter[0] ||
+                  varNum == eiv_vegBiomass[0] || varNum == eiv_vegPctlive[0] ||
+                  varNum == eiv_vegLAIconv[0]))) {
+                /* Start of variable with separate entry for each vegtype */
+                indexPFT = 0;
+            } else if (indexPFT >= NVEGTYPES - 1) {
+                /* Reset to condition without vegtype */
+                indexPFT = -1;
+            } else if (indexPFT >= 0) {
+                /* Go to next vegtype.
+                   Assumption: contiguous arrangement of such variables
+                   across NVEGTYPES in possVarNames */
+                indexPFT += 1;
+            }
+
+            if (indexPFT >= 0 && indexPFT < NVEGTYPES) {
+                /* construct full name as "key2veg[NVEGTYPES].name" */
+                (void) snprintf(
+                    possVarNameStr,
+                    sizeof possVarNameStr,
+                    "%s%s",
+                    key2veg[indexPFT],
+                    possVarNames[*inKey][varNum]
+                );
+                possVarName = possVarNameStr;
+            } else {
+                possVarName = (char *) possVarNames[*inKey][varNum];
+            }
+
+            if (strcmp(possVarName, varName) == 0) {
                 if (varNum == eiv_indexSpatial && keyNum != eSW_InDomain) {
                     *isIndex = swTRUE;
                 }
@@ -573,18 +683,21 @@ static void get_2d_input_key(
             }
         }
 
+        /* If varName has not yet been found among possVarNames, then check
+           if varName is of the pattern '<veg>.*', i.e., input has
+           all vegTypes along pft-axis (instead of in different variables) */
         if (*inKey == eSW_InVeg) {
-            for (varNum = 0; varNum < numGeneralVegNames; varNum++) {
-                if (strcmp(generalVegNames[varNum], varName) == 0) {
+            for (varNum = 0; varNum < numPossVarNamesVegWithPFTAxis; varNum++) {
+                if (strcmp(possVarNamesVegWithPFTAxis[varNum], varName) == 0) {
                     *isAllVegVar = swTRUE;
-                    *inVarNum = varNum;
+                    *inVarNum = eiv_vegVarsWithPFTsStartIndices[varNum];
                     return;
                 }
             }
         } else if (*inKey == eSW_InSoil) {
-            if (strcmp(generalSoilNames[0], varName) == 0) {
+            if (strcmp(possVarNamesSoilWithPFTAxis[0], varName) == 0) {
                 *isAllVegVar = swTRUE;
-                *inVarNum = 0;
+                *inVarNum = eiv_transpCoeff[0];
             }
         }
     }
@@ -798,13 +911,7 @@ static void check_variable_for_required(
     int testInd;
     int k;
 
-    /* Indices are based on the global array `possVarNames` under `inVeg` */
-    Bool isLitter = swFALSE;
-    Bool isBio = swFALSE;
-    Bool isPctLive = swFALSE;
-    Bool isLAI = swFALSE;
-
-    Bool testVeg = swFALSE;
+    Bool testVegForTAxis = swFALSE;
     Bool canBeNA;
 
     Bool isIndex = (Bool) (key > eSW_InDomain && varNum == eiv_indexSpatial);
@@ -813,13 +920,6 @@ static void check_variable_for_required(
 
     char *varName = inputInfo[varNum][INNCVARNAME];
 
-
-    ForEachVegType(k) {
-        isLitter = (Bool) (isLitter || varNum == eiv_vegLitter[k]);
-        isBio = (Bool) (isBio || varNum == eiv_vegBiomass[k]);
-        isPctLive = (Bool) (isPctLive || varNum == eiv_vegPctlive[k]);
-        isLAI = (Bool) (isLAI || varNum == eiv_vegLAIconv[k]);
-    }
 
     /* Make sure that the universally required attributes are filled in
        skip the testing of the nc var units (can be NA) */
@@ -843,8 +943,16 @@ static void check_variable_for_required(
     }
 
     if (!isIndex) {
-        testVeg = (Bool) (key == eSW_InVeg &&
-                          (isLitter || isBio || isPctLive || isLAI));
+        testVegForTAxis = swFALSE;
+        if (key == eSW_InVeg) {
+            for (k = 0; k < NVEGTYPES && !testVegForTAxis; k++) {
+                testVegForTAxis =
+                    (Bool) (testVegForTAxis || varNum == eiv_vegLitter[k] ||
+                            varNum == eiv_vegBiomass[k] ||
+                            varNum == eiv_vegPctlive[k] ||
+                            varNum == eiv_vegLAIconv[k]);
+            }
+        }
 
         if (key == eSW_InSoil) {
             if (strcmp(inputInfo[varNum][INZAXIS], "NA") == 0) {
@@ -859,7 +967,8 @@ static void check_variable_for_required(
                 );
                 return; /* Exit function prematurely due to error */
             }
-        } else if (key == eSW_InWeather || key == eSW_InClimate || testVeg) {
+        } else if (key == eSW_InWeather || key == eSW_InClimate ||
+                   testVegForTAxis) {
             if (strcmp(inputInfo[varNum][INTAXIS], "NA") == 0) {
                 LogError(
                     LogInfo,
@@ -6147,6 +6256,8 @@ static void read_veg_inputs(
     Bool *readInput = SW_Domain->netCDFInput.readInVars[eSW_InVeg];
 
     int varNum;
+    int countVarsInVeg = numVarsInKey[eSW_InVeg];
+    double *values = NULL;
     int fIndex = 1;
     int varID = -1;
     int ncFileID = -1;
@@ -6172,7 +6283,9 @@ static void read_veg_inputs(
     int lonIndex;
     int timeIndex;
     int pftIndex;
-    int k;
+    int kVeg;
+    int numSetVals;
+    int vegVarGroupCase;
     size_t defSetStart[2] = {0};
     size_t defSetCount[2] = {1, 1};
     size_t read;
@@ -6184,13 +6297,13 @@ static void read_veg_inputs(
     size_t stride = 1;
     Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InVeg];
 
+
 #if !defined(SWMPI)
     char *fileName;
     char **inFiles = SW_Domain->SW_PathInputs.ncInFiles[eSW_InVeg];
     Bool useIndexFile = SW_Domain->netCDFInput.useIndexFile[eSW_InVeg];
 #endif
 
-    int numSetVals;
 
     while (!readInput[fIndex + 1]) {
         fIndex++;
@@ -6203,9 +6316,10 @@ static void read_veg_inputs(
         useIndexFile, inFiles[0], sDom, ncSUID, defSetStart, LogInfo
     );
     if (LogInfo->stopRun) {
-        goto closeFile;
+        goto wrapUp;
     }
 #endif
+
 
     for (read = 0; read < numReads; read++) {
 #if defined(SWMPI)
@@ -6216,33 +6330,53 @@ static void read_veg_inputs(
         defSetCount[1] = counts[read][1];
 #endif
 
-        for (varNum = fIndex; varNum < numVarsInKey[eSW_InVeg]; varNum++) {
+        for (varNum = fIndex; varNum < countVarsInVeg; varNum++) {
             if (!readInput[varNum + 1]) {
                 continue;
             }
 
-            /* Bare ground and vegetation cover do not have time,
-               otherwise, the current variable has a time dimension */
-            varHasNotTime = (Bool) (varNum == eiv_bareGroundfCover);
+            /* Identify vegetation variable group and vegetation index */
+            if (varNum == eiv_bareGroundfCover) {
+                vegVarGroupCase = 0;
+                kVeg = -1;
 
-            ForEachVegType(k) {
-                varHasNotTime =
-                    (Bool) (varHasNotTime || varNum == eiv_vegfCover[k]);
+            } else if (varNum >= eiv_vegfCover[0] &&
+                       varNum <= eiv_vegfCover[NVEGTYPES - 1]) {
+                vegVarGroupCase = 1;
+                kVeg = varNum - eiv_vegfCover[0];
+
+            } else if (varNum >= eiv_vegLitter[0] &&
+                       varNum <= eiv_vegLitter[NVEGTYPES - 1]) {
+                vegVarGroupCase = 2;
+                kVeg = varNum - eiv_vegLitter[0];
+
+            } else if (varNum >= eiv_vegBiomass[0] &&
+                       varNum <= eiv_vegBiomass[NVEGTYPES - 1]) {
+                vegVarGroupCase = 3;
+                kVeg = varNum - eiv_vegBiomass[0];
+
+            } else if (varNum >= eiv_vegPctlive[0] &&
+                       varNum <= eiv_vegPctlive[NVEGTYPES - 1]) {
+                vegVarGroupCase = 4;
+                kVeg = varNum - eiv_vegPctlive[0];
+
+            } else if (varNum >= eiv_vegLAIconv[0] &&
+                       varNum <= eiv_vegLAIconv[NVEGTYPES - 1]) {
+                vegVarGroupCase = 5;
+                kVeg = varNum - eiv_vegLAIconv[0];
+
+            } else {
+                vegVarGroupCase = -1;
+                kVeg = -1;
             }
 
             varID = varIDs[varNum];
             varType = varTypes[varNum];
             varName = inVarInfo[varNum][INNCVARNAME];
-            hasPFT = (Bool) (strcmp(inVarInfo[varNum][INVAXIS], "NA") != 0);
-            numSetVals = (varHasNotTime) ? 1 : MAX_MONTHS;
             latIndex = dimOrderInVar[varNum][0];
             lonIndex = dimOrderInVar[varNum][1];
             timeIndex = dimOrderInVar[varNum][3];
             pftIndex = dimOrderInVar[varNum][4];
-
-#if !defined(SWMPI)
-            fileName = vegInFiles[varNum];
-#endif
 
             start[0] = start[1] = start[2] = start[3] = 0;
             count[0] = count[1] = count[2] = count[3] = 0;
@@ -6254,23 +6388,21 @@ static void read_veg_inputs(
                 count[lonIndex] = defSetCount[1];
             }
 
+            numSites = (sDom) ? count[latIndex] : count[lonIndex];
+
+            /* vegetation variables have time axis except cover */
+            varHasNotTime = (Bool) (varNum == eiv_bareGroundfCover ||
+                                    varNum == eiv_vegfCover[kVeg]);
+            numSetVals = (varHasNotTime) ? 1 : MAX_MONTHS;
             if (!varHasNotTime && timeIndex > -1) {
                 count[timeIndex] = MAX_MONTHS;
             }
+
+            hasPFT = (Bool) (strcmp(inVarInfo[varNum][INVAXIS], "NA") != 0);
             if (hasPFT && pftIndex > -1) {
-                start[pftIndex] = ((varNum - 2) / (NVEGTYPES + 1));
+                start[pftIndex] = kVeg;
                 count[pftIndex] = 1;
             }
-            numSites = (sDom) ? count[latIndex] : count[lonIndex];
-
-#if defined(SWMPI)
-            ncFileID = vegFileIDs[varNum][0];
-#else
-            SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
-            if (LogInfo->stopRun) {
-                return;
-            }
-#endif
 
             varHasAddScaleAtts = keyAttFlags[varNum];
 
@@ -6283,50 +6415,71 @@ static void read_veg_inputs(
             }
 
             /* Read current vegetation input */
+#if defined(SWMPI)
+            ncFileID = vegFileIDs[varNum][0];
+#else
+            fileName = vegInFiles[varNum];
+            SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
+            if (LogInfo->stopRun) {
+                goto wrapUp;
+            }
+#endif
+
             get_values_multiple(
                 ncFileID, varID, start, count, varName, tempVals, LogInfo
             );
 
             if (LogInfo->stopRun) {
-                goto closeFile; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
 
             stride = calc_read_offset(timeIndex, 4, count);
 
             for (site = 0; site < numSites; site++) {
                 if (!runSims) {
-                    return;
+                    goto wrapUp; // Exit function prematurely due to error
                 }
 
-                /* must match possVarNames[eSW_InVeg] (without spatial index) */
-                double *values[] = {
-                    &inputs[input].VegProdRunIn.bare_cov.fCover,
+                /* Set values pointer to correct inputs.
+                   must match possVarNames[eSW_InVeg] (without spatial index) */
+                switch (vegVarGroupCase) {
+                case 0:
+                    values = &inputs[input].VegProdRunIn.bare_cov.fCover;
+                    break;
 
-                    &inputs[input].VegProdRunIn.veg[SW_TREES].cov.fCover,
-                    inputs[input].VegProdRunIn.veg[SW_TREES].litter,
-                    inputs[input].VegProdRunIn.veg[SW_TREES].biomass,
-                    inputs[input].VegProdRunIn.veg[SW_TREES].pct_live,
-                    inputs[input].VegProdRunIn.veg[SW_TREES].lai_conv,
+                case 1:
+                    values = &inputs[input].VegProdRunIn.veg[kVeg].cov.fCover;
+                    break;
 
-                    &inputs[input].VegProdRunIn.veg[SW_SHRUB].cov.fCover,
-                    inputs[input].VegProdRunIn.veg[SW_SHRUB].litter,
-                    inputs[input].VegProdRunIn.veg[SW_SHRUB].biomass,
-                    inputs[input].VegProdRunIn.veg[SW_SHRUB].pct_live,
-                    inputs[input].VegProdRunIn.veg[SW_SHRUB].lai_conv,
+                case 2:
+                    values = inputs[input].VegProdRunIn.veg[kVeg].litter;
+                    break;
 
-                    &inputs[input].VegProdRunIn.veg[SW_FORBS].cov.fCover,
-                    inputs[input].VegProdRunIn.veg[SW_FORBS].litter,
-                    inputs[input].VegProdRunIn.veg[SW_FORBS].biomass,
-                    inputs[input].VegProdRunIn.veg[SW_FORBS].pct_live,
-                    inputs[input].VegProdRunIn.veg[SW_FORBS].lai_conv,
+                case 3:
+                    values = inputs[input].VegProdRunIn.veg[kVeg].biomass;
+                    break;
 
-                    &inputs[input].VegProdRunIn.veg[SW_GRASS].cov.fCover,
-                    inputs[input].VegProdRunIn.veg[SW_GRASS].litter,
-                    inputs[input].VegProdRunIn.veg[SW_GRASS].biomass,
-                    inputs[input].VegProdRunIn.veg[SW_GRASS].pct_live,
-                    inputs[input].VegProdRunIn.veg[SW_GRASS].lai_conv
-                };
+                case 4:
+                    values = inputs[input].VegProdRunIn.veg[kVeg].pct_live;
+                    break;
 
+                case 5:
+                    values = inputs[input].VegProdRunIn.veg[kVeg].lai_conv;
+                    break;
+
+                default:
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "Unknown case (%d) for vegetation varNum = %d",
+                        vegVarGroupCase,
+                        varNum
+                    );
+                    goto wrapUp; // Exit function prematurely due to error
+                    break;
+                }
+
+                /* Determine index for translating values */
                 if (lonIndex > -1) {
                     if (timeIndex > latIndex && timeIndex > lonIndex) {
                         writeIndex = site * count[timeIndex];
@@ -6356,7 +6509,7 @@ static void read_veg_inputs(
                     vegConv[varNum],
                     stride,
                     swFALSE,
-                    values[varNum - 1]
+                    values
                 );
 
                 input++;
@@ -6373,7 +6526,7 @@ static void read_veg_inputs(
         inputOrigin = input;
     }
 
-closeFile:
+wrapUp:
 #if defined(SWMPI)
     (void) vegInFiles;
     (void) ncSUID;
@@ -6673,7 +6826,6 @@ static void read_soil_inputs(
     int varID;
     size_t start[4] = {0}; /* Maximum of four dimensions */
     size_t count[4] = {0}; /* Maximum of four dimensions */
-    const int pftIndex = 4;
     Bool hasPFT;
     Bool inSiteDom = SW_Domain->netCDFInput.siteDoms[eSW_InSoil];
     Bool progSiteDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
@@ -6752,24 +6904,21 @@ static void read_soil_inputs(
                 continue;
             }
 
-#if !defined(SWMPI)
-            fileName = soilInFiles[varNum];
-#endif
-
-            /* Don't read more than the max simulated number of soil layers */
-            numLyrs =
-                MIN(SW_Domain->SW_PathInputs.numSoilVarLyrs[varNum],
-                    SW_Domain->nMaxSoilLayers);
-            hasPFT = (Bool) (dimOrderInVar[varNum][pftIndex] > -1);
+            latIndex = dimOrderInVar[varNum][0];
+            lonIndex = dimOrderInVar[varNum][1];
+            vertIndex = dimOrderInVar[varNum][2];
+            pftWriteIndex = dimOrderInVar[varNum][4];
+            hasPFT = (Bool) (pftWriteIndex > -1);
             varID = varIDs[varNum];
             varName = inVarInfo[varNum][INNCVARNAME];
             varHasAddScaleAtts = keyAttFlags[varNum];
             isSwrcpVar = (Bool) (varNum >= eiv_swrcpMS[0] &&
                                  varNum <= eiv_swrcpMS[SWRC_PARAM_NMAX - 1]);
-            latIndex = dimOrderInVar[varNum][0];
-            lonIndex = dimOrderInVar[varNum][1];
-            vertIndex = dimOrderInVar[varNum][2];
-            pftWriteIndex = dimOrderInVar[varNum][4];
+
+            /* Don't read more than the max simulated number of soil layers */
+            numLyrs =
+                MIN(SW_Domain->SW_PathInputs.numSoilVarLyrs[varNum],
+                    SW_Domain->nMaxSoilLayers);
 
             start[0] = start[1] = start[2] = start[3] = 0;
             count[0] = count[1] = count[2] = count[3] = 0;
@@ -6787,6 +6936,7 @@ static void read_soil_inputs(
 #if defined(SWMPI)
             ncFileID = openSoilFileIDs[varNum][0];
 #else
+            fileName = soilInFiles[varNum];
             SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
             if (LogInfo->stopRun) {
                 return;
@@ -6963,7 +7113,6 @@ closeFile:
 /**
 @brief Compare the strings provided by the user contained in a PFT
 variable against the expected values/order the program expects
-(i.e., "Trees", "Shrubs", "Forbs", "Grasses")
 
 @param[in] ncFileID File identifier of the nc file being read
 @param[in] pftName Name of the PFT variable to test the values of
@@ -6974,7 +7123,6 @@ static void compare_pft_strings(
 ) {
     int varID;
     int pftStr;
-    const char *const expPFTStrings[] = {"Trees", "Shrubs", "Forbs", "Grasses"};
     char *names[] = {NULL, NULL, NULL, NULL};
 
     SW_NC_get_var_identifier(ncFileID, pftName, &varID, LogInfo);
@@ -6993,14 +7141,16 @@ static void compare_pft_strings(
     }
 
     for (pftStr = 0; pftStr < NVEGTYPES; pftStr++) {
-        if (strcmp(names[pftStr], expPFTStrings[pftStr]) != 0) {
+        if (Str_CompareI(names[pftStr], (char *) key2veg[pftStr]) != 0) {
             LogError(
                 LogInfo,
                 LOGERROR,
-                "The variable '%s' does not match the ordering the "
-                "program expects to have for a PFT variable. These values "
-                "should match 'Trees', 'Shrubs', 'Forbs', 'Grasses'.",
-                pftName
+                "The values of the PFT-variable '%s' have an unexpected order: "
+                "position %d has '%s' but expected '%s'.",
+                pftName,
+                pftStr,
+                names[pftStr],
+                key2veg[pftStr]
             );
             goto freeMem;
         }
@@ -8925,7 +9075,6 @@ void SW_NCIN_read_input_vars(
     int doInput = 0;
     int maxVarIter = 1;
     int varIter;
-    const int allVegInc = 5;
 
     Bool copyInfo = swFALSE;
     Bool isIndexFile = swFALSE;
@@ -9049,30 +9198,20 @@ void SW_NCIN_read_input_vars(
                 goto closeFile;
             }
 
-            if (isAllVegVar) {
-                maxVarIter = NVEGTYPES;
-
-                if (inKey == eSW_InVeg) {
-                    inVarNum = (inVarNum == 0) ? 2 : inVarNum + 2;
-                } else {
-                    /* Start variable at `Trees.trans_coeff` */
-                    inVarNum = eiv_transpCoeff[0];
-                }
-            } else {
-                maxVarIter = 1;
-            }
-
             /* Copy various information including the weather/input
-               variable information;
-               If the current variable is a general one
-               (see `generalVegNames`), loop through NVEGTYPES to copy
-               the same information for the same variables across
-               all vegetation types;
-               if a variable is already seen, it's skipped */
+               variable information.
+               If the current variable has PFT-axis, loop through NVEGTYPES
+               to copy the same information for the same variables across
+               all vegetation types.
+                   Assumption: contiguous arrangement of such variables
+                   across NVEGTYPES.
+               Error if a variable is repeated */
+            maxVarIter = isAllVegVar ? NVEGTYPES : 1;
+
             for (varIter = 0; varIter < maxVarIter; varIter++) {
                 copyInfoIndex = 0;
 
-                /* Ignore this entry if this input has been seen already */
+                /* Error if this input has been seen already */
                 if (SW_netCDFIn->readInVars[inKey][inVarNum + 1]) {
                     LogError(
                         LogInfo,
@@ -9241,16 +9380,10 @@ void SW_NCIN_read_input_vars(
                     }
                 }
 
-                /* Increment variable number based on:
-                   1) If the current key is eSW_InSoil and/or the variable
-                        is meant for all four vegetation types: 1
-                   2) If the current key (i.e., eSW_InVeg) and use used for the
-                        four vegetation types: 4
-                   3) Otherwise, the increment does not matter since we do not
-                        deal with all four variable types (which covers
-                        multiple variables in the code) */
-                inVarNum +=
-                    (inKey == eSW_InSoil || !isAllVegVar) ? 1 : allVegInc;
+                /* Increment variable number.
+                   Assumption: contiguous arrangement of such variables
+                   across NVEGTYPES. */
+                inVarNum += 1;
             }
 
             if (isAllVegVar) {

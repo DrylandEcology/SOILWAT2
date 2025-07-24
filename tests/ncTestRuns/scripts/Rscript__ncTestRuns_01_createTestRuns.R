@@ -119,6 +119,7 @@ dir.create(dir_testRunsTemplates, recursive = TRUE, showWarnings = FALSE)
 
 #------ . ------
 #------ Load functions ------
+replaceOldNames <- NULL
 toggleNCInputTSV <- NULL
 countDims <- NULL
 countRuns <- NULL
@@ -319,13 +320,23 @@ vSW2 <- if (
 swin <- rSOILWAT2::sw_exampleData
 
 
-pfts_short <- c("Tree", "Shrub", "Forb", "Grass")
-pfts <- c("Trees", "Shrubs", "Forbs", "Grasses")
+pfts <- c("tree", "shrub", "forbs", "grass")
 npfts <- length(pfts)
+oldPfts1 <- c("Tree", "Shrub", "Forb", "Grass")
+oldPfts2 <- c("Trees", "Shrubs", "Forbs", "Grasses")
 
 veg_params <- c("fCover", "litter", "biomass", "pct_live", "lai_conv")
 
 soilsDefault <- swin@soils@Layers
+if ("transpTree_frac" %in% colnames(soilsDefault)) {
+  # Update pft-related names with SOILWAT2 v8.3.0
+  colnames(soilsDefault) <- replaceOldNames(
+    colnames(soilsDefault),
+    newNames = paste0("trco", pfts, "_frac"),
+    oldNames = paste0("transp", oldPfts1, "_frac")
+  )
+}
+
 # Calculate SWRCp for "Campbell1974" with PTF "Cosby1984AndOthers"
 pSWRCDefault <- rSOILWAT2::ptf_estimate(
   sand = soilsDefault[, "sand_frac"],
@@ -400,6 +411,10 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
 
   #--- * Create testRun ------
+  isSW2ExampleRun <- identical(
+    listTestRuns[k0, "tag"], "dom-s-1-geog_in-s-geog-1"
+  )
+
   tagk <- paste0(
     "testRun-", formatC(listTestRuns[k0, "testrun"], width = 2L, flag = 0L),
     "__",
@@ -747,7 +762,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
 
   #--- ......**** Modify nc-units in tsv ------
-  usedUnits <- modifyNCUnitsTSV(fname_ncintsv, unitsOfSOILWAT2ExampleInputs)
+  usedUnits <- if (isSW2ExampleRun) {
+    modifyNCUnitsTSV(
+      fname_ncintsv, unitsOfSOILWAT2ExampleInputs, adjustUnits = NULL
+    )
+  } else {
+    modifyNCUnitsTSV(fname_ncintsv, unitsOfSOILWAT2ExampleInputs)
+  }
 
 
   #--- ..** Create domain and templates ------
@@ -1540,7 +1561,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
 
     for (kpft in seq_len(npfts)) {
-      cn <- paste0("transp", pfts_short[[kpft]], "_frac")
+      cn <- paste0("trco", pfts[[kpft]], "_frac")
       trc <- round(soilsTestRun[, cn, drop = TRUE], nDigsSoil)
       kstart <- c(
         kpft,
@@ -1557,13 +1578,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         count = inDimPermCounts[["soilPFT1"]]
       )
 
-      var <- paste0("trc_", tolower(pfts[[kpft]]))
+      var <- paste0("trc_", pfts[[kpft]])
       rSW2st::setVariableNCSW(
         nc,
         varName = var,
         long_name = paste0(
           "potential ",
-          tolower(pfts_short[[kpft]]),
+          pfts[[kpft]],
           "-transpiration coefficient"
         ),
         dimensions = inDimNames[["soil"]],
@@ -1908,7 +1929,12 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
 
     #--- ..** inVeg: fcover_bg ------
-    Composition <- swin@prod@Composition # doesn't reproduce if round
+    Composition <- swin@prod@Composition # doesn't reproduce if rounded
+    if ("Grasses" %in% names(Composition)) {
+      # Update pft-related names with SOILWAT2 v8.3.0
+      names(Composition) <- replaceOldNames(
+        names(Composition), newNames = pfts, oldNames = oldPfts2)
+    }
     u <- getModifiedNCUnits(usedUnits, "inVeg", "fcover_bg")
 
     rSW2st::setVariableNCSW(
@@ -1935,13 +1961,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
     #--- ..** inVeg: fcover_[veg] ------
     for (k in seq_along(pfts)) {
-      var <- paste0("fcover_", tolower(pfts[[k]]))
+      var <- paste0("fcover_", pfts[[k]])
       u <- getModifiedNCUnits(usedUnits, "inVeg", var)
 
       rSW2st::setVariableNCSW(
         nc,
         varName = var,
-        long_name = paste("fractional cover of", tolower(pfts[[k]])),
+        long_name = paste("fractional cover of", pfts[[k]]),
         dimensions = inDimNames[["sp"]],
         units = u[["ncVarUnitsModified"]],
         coordinates = varAttrSp[["coordinates"]],
@@ -1961,16 +1987,21 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     }
 
     monVeg <- swin@prod@MonthlyVeg
+    if ("Grasses" %in% names(monVeg)) {
+      # Update pft-related names with SOILWAT2 v8.3.0
+      names(monVeg) <- replaceOldNames(
+        names(monVeg), newNames = pfts, oldNames = oldPfts2)
+    }
 
     #--- ..** inVeg: litter_[veg] ------
     for (k in seq_along(pfts)) {
-      var <- paste0("litter_", tolower(pfts[[k]]))
+      var <- paste0("litter_", pfts[[k]])
       u <- getModifiedNCUnits(usedUnits, "inVeg", var)
 
       rSW2st::setVariableNCSW(
         nc,
         varName = var,
-        long_name = paste("litter of", tolower(pfts[[k]])),
+        long_name = paste("litter of", pfts[[k]]),
         dimensions = inDimNames[["clim"]],
         units = u[["ncVarUnitsModified"]],
         coordinates = varAttrSp[["coordinates"]],
@@ -1992,13 +2023,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
     #--- ..** inVeg: biomass_[veg] ------
     for (k in seq_along(pfts)) {
-      var <- paste0("biomass_", tolower(pfts[[k]]))
+      var <- paste0("biomass_", pfts[[k]])
       u <- getModifiedNCUnits(usedUnits, "inVeg", var)
 
       rSW2st::setVariableNCSW(
         nc,
         varName = var,
-        long_name = paste("total biomass of", tolower(pfts[[k]])),
+        long_name = paste("total biomass of", pfts[[k]]),
         dimensions = inDimNames[["clim"]],
         units = u[["ncVarUnitsModified"]],
         coordinates = varAttrSp[["coordinates"]],
@@ -2019,7 +2050,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
     #--- ..** inVeg: live_[veg] ------
     for (k in seq_along(pfts)) {
-      var <- paste0("live_", tolower(pfts[[k]]))
+      var <- paste0("live_", pfts[[k]])
       u <- getModifiedNCUnits(usedUnits, "inVeg", var)
 
       # doesn't reproduce if rounded
@@ -2027,7 +2058,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         nc,
         varName = var,
         long_name = paste(
-          "fraction of biomass of", tolower(pfts[[k]]), "that is living"
+          "fraction of biomass of", pfts[[k]], "that is living"
         ),
         dimensions = inDimNames[["clim"]],
         units = u[["ncVarUnitsModified"]],
@@ -2049,14 +2080,14 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
     #--- ..** inVeg: convLAI_[veg] ------
     for (k in seq_along(pfts)) {
-      var <- paste0("convLAI_", tolower(pfts[[k]]))
+      var <- paste0("convLAI_", pfts[[k]])
       u <- getModifiedNCUnits(usedUnits, "inVeg", var)
 
       rSW2st::setVariableNCSW(
         nc,
         varName = var,
         long_name = paste(
-          "biomass needed to produce LAI = 1 of", tolower(pfts[[k]])
+          "biomass needed to produce LAI = 1 of", pfts[[k]]
         ),
         dimensions = inDimNames[["clim"]],
         units = u[["ncVarUnitsModified"]],
@@ -2116,6 +2147,11 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
     #--- ..** inVeg: fcover_bg ------
     Composition <- swin@prod@Composition # doesn't reproduce if round
+    if ("Grasses" %in% names(Composition)) {
+      # Update pft-related names with SOILWAT2 v8.3.0
+      names(Composition) <- replaceOldNames(
+        names(Composition), newNames = pfts, oldNames = oldPfts2)
+    }
     u <- getModifiedNCUnits(usedUnits, "inVeg", "fcover_bg")
 
     rSW2st::setVariableNCSW(
@@ -2165,6 +2201,12 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
 
     #--- ..** inVeg: litter ------
+    monVeg <- swin@prod@MonthlyVeg
+    if ("Grasses" %in% names(monVeg)) {
+      # Update pft-related names with SOILWAT2 v8.3.0
+      names(monVeg) <- replaceOldNames(
+        names(monVeg), newNames = pfts, oldNames = oldPfts2)
+    }
     u <- getModifiedNCUnits(usedUnits, "inVeg", "litter")
 
     rSW2st::setVariableNCSW(
@@ -2177,12 +2219,12 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       dataType = dataType,
       values = createTestRunData(
         x = vapply(
-          swin@prod@MonthlyVeg[pfts],
+          monVeg[pfts],
           function(x) round(x[, "Litter", drop = TRUE], nDigsVeg),
           FUN.VALUE = rep(NA_real_, nmonths)
         ) |> t(),
         otherValues = vapply(
-          swin@prod@MonthlyVeg[pfts],
+          monVeg[pfts],
           function(x) {
             rep(round(mean(x[, "Litter", drop = TRUE]), nDigsVeg), nmonths)
           },
@@ -2212,12 +2254,12 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       dataType = dataType,
       values = createTestRunData(
         x = vapply(
-          swin@prod@MonthlyVeg[pfts],
+          monVeg[pfts],
           function(x) round(x[, "Biomass", drop = TRUE], nDigsVeg),
           FUN.VALUE = rep(NA_real_, nmonths)
         ) |> t(),
         otherValues = vapply(
-          swin@prod@MonthlyVeg[pfts],
+          monVeg[pfts],
           function(x) {
             rep(round(mean(x[, "Biomass", drop = TRUE]), nDigsVeg), nmonths)
           },
@@ -2248,12 +2290,12 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       values = createTestRunData(
         # doesn't reproduce if round
         x = vapply(
-          swin@prod@MonthlyVeg[pfts],
+          monVeg[pfts],
           function(x) x[, "Live_pct", drop = TRUE],
           FUN.VALUE = rep(NA_real_, nmonths)
         ) |> t(),
         otherValues = vapply(
-          swin@prod@MonthlyVeg[pfts],
+          monVeg[pfts],
           function(x) {
             rep(mean(x[, "Live_pct", drop = TRUE]), nmonths)
           },
@@ -2283,7 +2325,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       dataType = dataType,
       values = createTestRunData(
         x = vapply(
-          swin@prod@MonthlyVeg[pfts],
+          monVeg[pfts],
           function(x) round(x[, "LAI_conv", drop = TRUE], nDigsVeg),
           FUN.VALUE = rep(NA_real_, nmonths)
         ) |> t(),

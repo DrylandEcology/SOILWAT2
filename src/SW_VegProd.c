@@ -111,7 +111,7 @@ vegtype variable forb and forb.cov.fCover
 
 // key2veg must be in the same order as the indices to vegetation types defined
 // in SW_Defines.h
-const char *const key2veg[NVEGTYPES] = {"Trees", "Shrubs", "Forbs", "Grasses"};
+const char *const key2veg[NVEGTYPES] = {"tree", "shrub", "forbs", "grass"};
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -1586,13 +1586,13 @@ void SW_VPD_read(
                 vegStrs[3]
             );
 
-            if (x < NVEGTYPES) {
+            if (x < numMonthVals) {
                 LogError(
                     LogInfo,
                     LOGERROR,
-                    "ERROR: invalid record %d in %s\n",
-                    mon + 1,
-                    MyFileName
+                    "ERROR: vegetation inputs contain invalid row %d: '%s'\n",
+                    lineno,
+                    inbuf
                 );
                 goto closeFile;
             }
@@ -1635,11 +1635,7 @@ void SW_VPD_read(
 
     if (mon < Dec) {
         LogError(
-            LogInfo,
-            LOGWARN,
-            "No Veg Production"
-            " values after month %d\n",
-            mon + 1
+            LogInfo, LOGWARN, "Veg values missing after month %d\n", mon + 1
         );
     }
 

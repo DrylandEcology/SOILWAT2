@@ -135,6 +135,13 @@ convertUnits <- function(x, hasUnits = "1", newUnits = "1") {
 }
 
 
+replaceOldNames <- function(x, newNames, oldNames) {
+  ids <- match(x, oldNames, nomatch = 0L)
+  x[ids > 0L] <- newNames[ids]
+  x
+}
+
+
 #--- * SOILWAT2-related functions ------
 
 copySW2Example <- function(from, to) {
@@ -338,7 +345,7 @@ modifyNCUnitsTSV <- function(
       newUnit = "0.01 cm3 cm-3"
     ),
     c(inkey = "inVeg", sw2var = "<veg>.litter", newUnit = "kg m-2"),
-    c(inkey = "inVeg", sw2var = "Shrubs.biomass", newUnit = "kg m-2"),
+    c(inkey = "inVeg", sw2var = "shrub.biomass", newUnit = "kg m-2"),
     c(inkey = "inSite", sw2var = "Tsoil_constant", newUnit = "degF")
   )
 ) {
