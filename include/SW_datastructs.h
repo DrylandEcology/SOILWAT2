@@ -535,9 +535,7 @@ typedef struct {
 } CoverTypeRunIn;
 
 /** Data type that can change before every simulation run describing
-    a vegetation type: currently, one of
-  \ref NVEGTYPES available types:
-  \ref SW_TREES, \ref SW_SHRUB, \ref SW_FORBS, and \ref SW_GRASS */
+    describing a vegetation type: one of \ref NVEGTYPES available types */
 typedef struct {
     /** Data type that describes cover attributes of a surface type
         that can be changed before every simulation run */
@@ -559,9 +557,7 @@ typedef struct {
 } VegTypeRunIn;
 
 /** Data type that stores values set and used purely for simulation purposes
-    describing a vegetation type: currently, one of
-  \ref NVEGTYPES available types:
-  \ref SW_TREES, \ref SW_SHRUB, \ref SW_FORBS, and \ref SW_GRASS */
+    describing a vegetation type: one of \ref NVEGTYPES available types */
 typedef struct {
     double
         /** Daily litter amount [g / m2]
@@ -601,9 +597,7 @@ typedef struct {
 } VegTypeSim;
 
 /** Data type that is static through every simulation run describing
-    a vegetation type: currently, one of
-  \ref NVEGTYPES available types:
-  \ref SW_TREES, \ref SW_SHRUB, \ref SW_FORBS, and \ref SW_GRASS */
+    describing a vegetation type: one of \ref NVEGTYPES available types */
 typedef struct {
     /** Data type that describes cover attributes of a surface type
         that is static through all simulation runs */

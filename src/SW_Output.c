@@ -2296,9 +2296,6 @@ void SW_OUT_set_colnames(
         "Lyr_15", "Lyr_16", "Lyr_17", "Lyr_18", "Lyr_19", "Lyr_20", "Lyr_21",
         "Lyr_22", "Lyr_23", "Lyr_24", "Lyr_25"
     };
-    const char *cnames_VegTypes[NVEGTYPES + 2] = {
-        "total", "tree", "shrub", "forbs", "grass", "litter"
-    };
 
     const char *cnames_eSW_Temp[] = {"max_C", "min_C", "avg_C", "surfaceTemp"};
     const char *cnames_eSW_Precip[] = {
@@ -2327,6 +2324,14 @@ void SW_OUT_set_colnames(
     const char *cnames_eSW_DroughtAvg[] = {
         "swa30bar000to100cm", "swa39bar000to100cm"
     };
+
+    /* use key2veg[] as values for cnames_VegTypes[] */
+    const char *cnames_VegTypes[NVEGTYPES + 2];
+    cnames_VegTypes[0] = "total";
+    for (i = 0; i < NVEGTYPES; i++) {
+        cnames_VegTypes[1 + i] = key2veg[i];
+    }
+    cnames_VegTypes[1 + NVEGTYPES] = "litter";
 
 #ifdef SWDEBUG
     if (debug) {

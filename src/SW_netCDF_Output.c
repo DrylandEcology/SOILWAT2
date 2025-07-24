@@ -11,6 +11,7 @@
 #include "include/SW_netCDF_General.h"  // for SW_NC_write_vals, SW_NC_crea...
 #include "include/SW_Output.h"          // for ForEachOutKey, SW_ESTAB, pd2...
 #include "include/SW_Output_outarray.h" // for iOUTnc
+#include "include/SW_VegProd.h"         // for key2veg
 #include "include/Times.h"              // for isleapyear, Time_get_lastdoy_y
 #include <math.h>                       // for NAN, ceil, isnan
 #include <netcdf.h>                     // for NC_NOERR, nc_close, NC_DOUBLE
@@ -1313,16 +1314,21 @@ void SW_NCOUT_create_output_dimVar(
     char outAttVals[][6][MAX_FILENAMESIZE] = {
         {"soil depth", "depth", "centimeter", "down", "Z", "vertical_bnds"},
         {"time", "time", "", "T", "standard", "time_bnds"},
-        {"biological_taxon_name", "Trees Shrubs Forbs Grasses"}
+        {"biological_taxon_name"}
     };
+    outAttVals[pftIndex][1][0] = '\0';
     char *soilWritePtr = outAttVals[vertIndex][0];
     char *centiWritePtr = outAttVals[vertIndex][2];
+    char *pftWritePtr = outAttVals[pftIndex][1];
     char *endSoilDepthPtr =
         outAttVals[vertIndex][0] + sizeof outAttVals[vertIndex][0] - 1;
     char *endCentiPtr =
         outAttVals[vertIndex][2] + sizeof outAttVals[vertIndex][2] - 1;
+    char *pftEndPtr =
+        outAttVals[pftIndex][1] + sizeof outAttVals[pftIndex][1] - 1;
     size_t soilDepthSize = MAX_FILENAMESIZE - strlen(outAttVals[vertIndex][0]);
     size_t centiSize = MAX_FILENAMESIZE - strlen(outAttVals[vertIndex][2]);
+    size_t pftWriteSize = MAX_FILENAMESIZE - strlen(outAttVals[pftIndex][1]);
     Bool fullBuffer = swFALSE;
 
     const int numVarAtts[] = {6, 6, 2};
@@ -1433,6 +1439,32 @@ void SW_NCOUT_create_output_dimVar(
             );
             if (LogInfo->stopRun) {
                 return;
+            }
+
+            // Create string for flag_meanings of PFTs
+            for (index = 0; index < NVEGTYPES; index++) {
+                fullBuffer = sw_memccpy_inc(
+                    (void **) &pftWritePtr,
+                    pftEndPtr,
+                    (void *) key2veg[index],
+                    '\0',
+                    &pftWriteSize
+                );
+                if (fullBuffer) {
+                    goto reportFullBuffer;
+                }
+                if (index < NVEGTYPES - 1) {
+                    fullBuffer = sw_memccpy_inc(
+                        (void **) &pftWritePtr,
+                        pftEndPtr,
+                        (void *) " ",
+                        '\0',
+                        &pftWriteSize
+                    );
+                    if (fullBuffer) {
+                        goto reportFullBuffer;
+                    }
+                }
             }
         }
 

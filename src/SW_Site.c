@@ -2046,9 +2046,9 @@ void SW_LYR_read(
             inDoubleStrs[12]
         );
 
-        /* Check that we have 13 values per layer */
+        /* Check that we have correct number of values per layer */
         /* Adjust number if new variables are added */
-        if (x != 13) {
+        if (x != numDoubleInStrings) {
             LogError(
                 LogInfo,
                 LOGERROR,

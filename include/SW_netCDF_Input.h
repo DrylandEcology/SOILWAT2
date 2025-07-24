@@ -17,19 +17,21 @@ extern "C" {
 
 #define DOMAIN_TEMP "Input_nc/domain_template.nc"
 
-/** Specifies the number of input variables per key a user
-can provide; This number includes a variable for an index
-file after and including the input key `inSpatial`.
-These numbers must match up with `possVarNames` */
-static const int numVarsInKey[] = {
-    2,  /* inDomain */
-    3,  /* inSpatial */
-    4,  /* inTopo */
-    22, /* inSoil */
-    2,  /* inSite */
-    22, /* inVeg */
-    15, /* inWeather */
-    6   /* inClimate */
+/** Number of input variables per input key a user can provide.
+
+Except for 'inDomain', a value of 1 is added to numVarsInKey[] to account
+for the the spatial index file (indexSpatial) that each input key contains.
+
+Note: `numVarsInKey` and `possVarNames` must be consistent with each other. */
+static const int numVarsInKey[SW_NINKEYSNC] = {
+    2,                                /* inDomain */
+    3,                                /* inSpatial */
+    4,                                /* inTopo */
+    12 + SWRC_PARAM_NMAX + NVEGTYPES, /* inSoil */
+    2,                                /* inSite */
+    2 + 5 * NVEGTYPES,                /* inVeg */
+    15,                               /* inWeather */
+    6                                 /* inClimate */
 };
 
 #define ForEachNCInKey(k) for ((k) = 0; (k) < eSW_LastInKey; (k)++)
