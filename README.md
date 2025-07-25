@@ -31,6 +31,7 @@
 [doxygen]: https://github.com/doxygen/doxygen
 [netCDF]: https://downloads.unidata.ucar.edu/netcdf/
 [udunits2]: https://downloads.unidata.ucar.edu/udunits/
+[MPI]: https://www.open-mpi.org/
 
 <br>
 
@@ -94,6 +95,8 @@ A full code documentation may be built, see [here](#get_documentation).
     - On Windows OS: an installation of `cygwin`
     - the `netCDF-C` library (if compiled with [netCDF][] support)
     - the `udunits2` library (if compiled with [udunits2][] support)
+    - a `MPI` library (tested with OpenMPI) and a parallel `netCDF-C` library
+      (if compiled with [MPI] support)
 
   * Clone the repository
     (details can be found in the
@@ -105,8 +108,10 @@ A full code documentation may be built, see [here](#get_documentation).
   * Build with `make` (see `make help` to print information about all
     available targets). For instance,
 ```{.sh}
-        make CPPFLAGS=-DSWTXT   # text-based mode (equivalent to `make`)
-        make CPPFLAGS=-DSWNC    # netCDF-based mode with units
+        make CPPFLAGS=-DSWTXT            # text-based mode
+        make CPPFLAGS=-DSWNC             # netCDF-based mode with units
+        make CPPFLAGS=-DSWMPI CC=mpicc   # mpi-based mode with netCDFs and units
+                                         # (here using the `mpicc` compiler)
 ```
 <br>
 
