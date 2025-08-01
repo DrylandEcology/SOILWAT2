@@ -593,6 +593,7 @@ checkStatus:
             goto wrapUp;
         }
 
+        numInputs = 0;
         if (runSims) {
             SW_MPI_get_inputs(
                 (Bool) !copyWeather,
