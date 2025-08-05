@@ -295,16 +295,6 @@ typedef struct {
 } SW_SOIL_RUN_INPUTS;
 
 typedef struct {
-
-    Bool reset_yr,     /* 1: reset values at start of each year */
-        deepdrain,     /* 1: allow drainage into deepest layer  */
-        use_soil_temp; /* whether or not to do soil_temperature calculations */
-
-    unsigned int
-        type_soilDensityInput; /* Encodes whether `soilDensityInput` represent
-                                  matric density (type = SW_MATRIC = 0) or bulk
-                                  density (type = SW_BULK = 1) */
-
     /** Number of transpiration regions (max = \ref MAX_TRANSP_REGIONS) */
     LyrIndex n_transp_rgn;
 
