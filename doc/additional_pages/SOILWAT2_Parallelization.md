@@ -145,16 +145,20 @@ Plain netCDF (SWNC/SWNETCDF mode) inputs remain the same to read one site at a t
     per timestep), no rearranging is required.
 
 ## Current Known Limitations/Problems
-### Will Not/Cannot Fix
-- N_ITER_BEFORE_OUT > 1
-    - Adding this functionality will add more complexity and development time. It does not have necessary benefit at the moment, so this will consistently stay at 1.
-- Attempting to write too many values in netCDF output function
-    - It has been observed that writing, or storing too many values in cache before syncing the values to file, will result in a segmentation fault
-    - This has a direct correlation to N_SUID_ASSIGN as we will attempt to write more values the bigger N_SUID_ASSIGN gets before syncing values to file
-    - There is no evidence that the bound before a segmentation fault increases with more I/O processes
-    - Though, for example, # I/O = 1, # comp = 127, N_SUID_ASSIGN = 100 may act fine, but the same setup with # I/O = 2 may throw a segmentation fault
-    - Though this is not desirable, it is believed that this is purely an underlying problem with the libraries on Hovenweep
-    - See current recommendations for the recommendations based on this
+
+A few situations can lead to unexpected segmentation faults
+    - Insufficient file descriptors: [issue #465](https://github.com/DrylandEcology/SOILWAT2/issues/465)
+        - A temporary solution is to increase the number of file descriptors on the system
+    - N_SUID_ASSIGN is too large: [issue #469](https://github.com/DrylandEcology/SOILWAT2/issues/469)
+        - Depending on exact project setup and compile configurations values of 150-200 for N_SUID_ASSIGN have often caused segfaults
+        - This may be related to an issue with caching values by an external library
+        - A temporary solution is to decrease N_SUID_ASSIGN
+
+Additional limitations
+    - Multiple nodes are not supported: [issue #470](https://github.com/DrylandEcology/SOILWAT2/issues/470)
+        - Throughput drops or the program stalls if run on multiple nodes
+    - N_ITER_BEFORE_OUT > 1 is not supported
+
 
 ## Performance Results
 
