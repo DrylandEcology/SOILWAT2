@@ -1658,6 +1658,11 @@ TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
     EXPECT_DOUBLE_EQ(ecnw[0], ecnw[1]);
     EXPECT_DOUBLE_EQ(transpiration[0], transpiration[1]);
     EXPECT_DOUBLE_EQ(swc[0], swc[1]);
+
+
+    // Cleanup
+    SW_CTL_clear_model(swTRUE, &run_vt1);
+    SW_CTL_clear_model(swTRUE, &run_vt2);
 }
 
 } // namespace
