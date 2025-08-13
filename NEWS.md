@@ -2,6 +2,10 @@
 
 # SOILWAT2 v8.1.2-devel
 
+* Bugfix such that zero cover of one plant functional no longer directly affects
+  evaporation of intercepted water by other plant functional types or
+  evaporation from open surface water (#471; @dschlaep).
+
 
 # SOILWAT2 v8.1.1
 * Simulation output remains the same as the previous version.
