@@ -53,6 +53,17 @@
   weather inputs (turned off by default).
 
 
+# SOILWAT2 v8.1.2
+* Simulation output of the example remains the same as the previous version;
+  however, simulations set cover of at least one plant functional type to zero
+  may produce different output, particularly for cooler and wetter sites with
+  slightly reduced evaporation and slightly increased soil moisture.
+
+* Bugfix such that zero cover of one plant functional no longer directly affects
+  evaporation of intercepted water by other plant functional types or
+  evaporation from open surface water (#471; @dschlaep).
+
+
 # SOILWAT2 v8.1.1
 * Simulation output remains the same as the previous version.
 

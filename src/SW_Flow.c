@@ -686,9 +686,14 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     /* Potential evaporation rates of intercepted and surface water */
     peti = pet2;
     ForEachVegType(k) {
-        surface_evap_veg_rate[k] =
-            fmax(0., fmin(peti * scale_veg[k], sw->SoilWat.veg_int_storage[k]));
-        peti -= surface_evap_veg_rate[k] / scale_veg[k];
+        if (GT(scale_veg[k], 0.)) {
+            surface_evap_veg_rate[k] = fmax(
+                0., fmin(peti * scale_veg[k], sw->SoilWat.veg_int_storage[k])
+            );
+            peti -= surface_evap_veg_rate[k] / scale_veg[k];
+        } else {
+            surface_evap_veg_rate[k] = 0.;
+        }
     }
 
     surface_evap_litter_rate =
