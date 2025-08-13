@@ -129,8 +129,9 @@ CMIP5_historical|CMIP5_RCP85
 
 Campbell1974        # Specify soil water retention curve
 Cosby1984AndOthers  # Specify pedotransfer function
-                    #   * if not implemented, then provide SWRC parameters
-                    #     as inputs via "swrc_params.in" and/or "swrcp.nc")
+                    #   * Provide SWRC parameters as inputs
+                    #     (via "swrc_params.in" and/or "swrcp.nc") if no
+                    #     PTF for the selected SWRC is implemented
 
 0                   # Are SWRC parameters for the mineral soil component
                     # provided as inputs (see `has_swrcp`)?

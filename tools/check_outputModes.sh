@@ -18,12 +18,13 @@ source "${myDir}/check_functionality.sh"
 doParallelSOILWAT2=false
 pCC=""
 
-if [ $(nc-config --has-parallel4) = "yes" ]; then
+source "${myDir}/hasMPICC.sh"
+useMPICC=$(has_mpicc && echo "yes" || echo "no")
+
+if [ $(nc-config --has-parallel4) = "yes" ] | [ "${useMPICC}" = "yes" ]; then
     doParallelSOILWAT2=true
 
-    source "${myDir}/hasMPICC.sh"
-
-    if has_mpicc ; then
+    if [ "${useMPICC}" = "yes" ] ; then
         pCC="mpicc"
     fi
 fi

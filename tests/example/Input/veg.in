@@ -119,7 +119,7 @@
 # Spatial reference of biomass inputs (isBiomAsIf100Cover)
 1   # 0, values as is (at given cover); 1, values as if cover was 100%
 
-# --- if `isBiomAsIf100Cover` is true (1):
+# --- Interpretation of biomass if isBiomAsIf100Cover is true (1)
 # Input biomass values are independent of the input composition values.
 # Input biomass per unit area (g / m2) for each vegetation type represent
 # values as if that vegetation type covers 100% of the simulated surface.
@@ -135,7 +135,7 @@
 # and
 #     grass biomass = 270 g/m2 (= 0.6 * 450).
 
-# --- if `isBiomAsIf100Cover` is false (0):
+# --- Interpretation of biomass if `isBiomAsIf100Cover` is false (0)
 # Input biomass represent values observed in the field.
 # Input biomass per unit area (g / m2) for each vegetation type represent
 # values at the provided vegetation type cover.

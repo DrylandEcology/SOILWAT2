@@ -1998,4 +1998,113 @@ TEST_F(VegProdFixtureTest, CalcConstCONUS2025SiteInfo) {
     EXPECT_DOUBLE_EQ(SW_SoilSim.surfaceOM, .405);
     EXPECT_DOUBLE_EQ(SW_SoilSim.surfaceClay, .315);
 }
+
+TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
+    int k;
+    LyrIndex i;
+    double tc;
+    double transpiration[2] = {0., 0.};
+    double ecnw[2] = {0., 0.};
+    double swc[2] = {0., 0.};
+
+    Bool const copyWeather = swTRUE;
+
+    int const vt1 = SW_GRASS;
+    int const vt2 = SW_FORBS;
+
+    SW_RUN run_vt1;
+    SW_RUN run_vt2;
+
+    // Store default cover of vt1 and vt2 combined
+    tc = SW_Run.RunIn.VegProdRunIn.veg[vt1].cov.fCover +
+         SW_Run.RunIn.VegProdRunIn.veg[vt2].cov.fCover;
+
+    // Set cover of vt1 and vt2 to 0
+    SW_Run.RunIn.VegProdRunIn.veg[vt1].cov.fCover = 0.;
+    SW_Run.RunIn.VegProdRunIn.veg[vt2].cov.fCover = 0.;
+
+    // Set parameters of vt2 equal to parameters of vt1 (if not already)
+    SW_Run.VegProdIn.veg[vt2].SWPcrit = SW_Run.VegProdIn.veg[vt1].SWPcrit;
+    SW_Run.VegProdIn.veg[vt2].veg_kdead = SW_Run.VegProdIn.veg[vt1].veg_kdead;
+
+    ForEachSoilLayer(i, SW_Run.RunIn.SiteRunIn.n_layers) {
+        SW_Run.RunIn.SoilRunIn.transp_coeff[vt2][i] =
+            SW_Run.RunIn.SoilRunIn.transp_coeff[vt1][i];
+    }
+
+
+    // Run with vt1
+    SW_RUN_deepCopy(
+        &SW_Run,
+        &run_vt1,
+        &SW_Domain.OutDom,
+        &SW_Run.RunIn,
+        copyWeather,
+        &LogInfo
+    );
+    sw_fail_on_error(&LogInfo);
+
+    run_vt1.RunIn.VegProdRunIn.veg[vt1].cov.fCover = tc;
+
+    SW_CTL_init_run(&run_vt1, &LogInfo);
+    sw_fail_on_error(&LogInfo);
+
+    SW_CTL_main(&run_vt1, &SW_Domain.OutDom, &LogInfo);
+    sw_fail_on_error(&LogInfo);
+
+
+    // Run with vt2
+    SW_RUN_deepCopy(
+        &SW_Run,
+        &run_vt2,
+        &SW_Domain.OutDom,
+        &SW_Run.RunIn,
+        copyWeather,
+        &LogInfo
+    );
+    sw_fail_on_error(&LogInfo);
+
+    run_vt2.RunIn.VegProdRunIn.veg[vt2].cov.fCover = tc;
+
+    SW_CTL_init_run(&run_vt2, &LogInfo);
+    sw_fail_on_error(&LogInfo);
+
+    SW_CTL_main(&run_vt2, &SW_Domain.OutDom, &LogInfo);
+    sw_fail_on_error(&LogInfo);
+
+
+    // Expect that relevant simulation values of vt1 and vt2 are identical
+    // Note: we do not produce output (p_accu) during tests; thus, we can
+    // only check for the simulated values of the last time step
+    ForEachVegType(k) {
+        ecnw[0] += run_vt1.SoilWatSim.evap_veg[k];
+        ecnw[1] += run_vt1.SoilWatSim.evap_veg[k];
+
+        ForEachSoilLayer(i, SW_Run.RunIn.SiteRunIn.n_layers) {
+            transpiration[0] += run_vt1.SoilWatSim.transpiration[k][i];
+            transpiration[1] += run_vt2.SoilWatSim.transpiration[k][i];
+
+            swc[0] += run_vt1.SoilWatSim.swcBulk[0][i];
+            swc[1] += run_vt2.SoilWatSim.swcBulk[0][i];
+        }
+    }
+
+    EXPECT_DOUBLE_EQ(run_vt1.SoilWatSim.aet, run_vt2.SoilWatSim.aet);
+    EXPECT_DOUBLE_EQ(
+        run_vt1.SoilWatSim.surfaceWater_evap,
+        run_vt2.SoilWatSim.surfaceWater_evap
+    );
+    EXPECT_DOUBLE_EQ(
+        run_vt1.SoilWatSim.litter_evap, run_vt2.SoilWatSim.litter_evap
+    );
+    EXPECT_DOUBLE_EQ(ecnw[0], ecnw[1]);
+    EXPECT_DOUBLE_EQ(transpiration[0], transpiration[1]);
+    EXPECT_DOUBLE_EQ(swc[0], swc[1]);
+
+
+    // Cleanup
+    SW_CTL_clear_model(swTRUE, &run_vt1);
+    SW_CTL_clear_model(swTRUE, &run_vt2);
+}
+
 } // namespace

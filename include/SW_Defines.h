@@ -365,6 +365,12 @@ typedef int sw_converter_t;
 #define SW_MPI_ROOT 0
 #define SW_GROUP_ROOT SW_MPI_ROOT
 
+#if defined(SWMPI)
+#define SW_MAX_PROCESSOR_NAME MPI_MAX_PROCESSOR_NAME
+#else
+#define SW_MAX_PROCESSOR_NAME 1
+#endif
+
 /**
  * @brief Maximum number of processes that can be spawned per compute node or
  *        on a local CPU; in other words, specifies the number of available

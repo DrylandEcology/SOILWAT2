@@ -76,17 +76,34 @@ cat(
 swr <- try(rSOILWAT2::sw_exec(dir = dir_example))
 
 
+#--- Check availability of output ------
+availModes <- c(
+  txt = length(list.files(dir_txt)) > 0L,
+  nc = length(list.files(dir_nc)) > 0L,
+  mpi = length(list.files(dir_mpi)) > 0L,
+  r = !inherits(swr, "try-error")
+)
+if (sum(availModes) < 2L || !availModes[["txt"]]) {
+  stop(
+    "Available output modes (",
+    toString(names(availModes)[availModes]),
+    ") insufficient for comparisons.",
+    if (!availModes[["txt"]]) " txt-based SOILWAT2 is required."
+  )
+}
+
+
 #--- . ------
 #--- Function to read all output data ------
 read_swdata <- function(outkey, pd, swr, dir_txt, dir_nc, dir_mpi) {
 
-  #--- Load txt-based output ------
+  #--- Load txt-based output (txt-based is required) ------
   ftxts <- list.files(dir_txt, pattern = ".csv") |>
     grep(pattern = pds3[[pd]], x = _, value = TRUE)
 
   stopifnot(length(ftxts) == 2L)
 
-  swtxt <- lapply(file.path(dir_txt, ftxts), read.csv) |>
+  swtxt <- lapply(file.path(dir_txt, ftxts), utils::read.csv) |>
     do.call(cbind, args = _)
 
 
@@ -291,13 +308,43 @@ read_swdata <- function(outkey, pd, swr, dir_txt, dir_nc, dir_mpi) {
       ) |>
         do.call(cbind, args = _)
 
+      tmpv <- paste0(
+        keydesc[ivars, "SW2.output.group"], "_",
+        {
+          tmp <- keydesc[ivars, "SW2.txt.output"]
+          # replace "<veg>" with vegtypes
+          idsVeg <- grepl("<veg>", tmp, fixed = TRUE)
+          tmp <- strsplit(tmp, "<veg>", fixed = TRUE)
+          tmp[idsVeg] <- lapply(
+            tmp[idsVeg],
+            function(p) paste0(p[[1L]], vegtypes, if (length(p) > 1L) p[-1L])
+          )
+          tmp <- unlist(tmp)
+          # replace "<slyr>" with soil layer numbers
+          idsSlyr <- grepl("<slyr>", tmp, fixed = TRUE)
+          tmp <- strsplit(tmp, "<slyr>", fixed = TRUE)
+          tmp[idsSlyr] <- lapply(
+            tmp[idsSlyr],
+            function(p) {
+              paste0(p[[1L]], seq_len(nslyrs), if (length(p) > 1L) p[-1L])
+            }
+          )
+          unlist(tmp)
+         }
+      )
+
       ndnc <- dim(x[[mt]])
+
+      if (ndnc[[2L]] == length(tmpv)) {
+        colnames(x[[mt]]) <- tmpv
+      }
 
       if (isTRUE(length(ndnc) >= 3L && ndnc[[3L]] == 1L)) {
         # Drop a 1-length 3rd dimension if it was created
         x[[mt]] <- array(
           x[[mt]][, , 1L, drop = TRUE],
-          dim = ndnc[1:2]
+          dim = ndnc[1:2],
+          dimnames = list(NULL, colnames(x[[mt]]))
         )
       }
     }
@@ -382,7 +429,12 @@ for (pd in seq_along(pds1)) {
           data.frame(
             diff = paste(e, collapse = "-"),
             key = outkeys[[key]],
-            var = gsub(paste0("^", outkeys[[key]], "_"), "", colnames(tmp)),
+            var = if (length(colnames(tmp)) == ncol(tmp)) {
+              gsub(paste0("^", outkeys[[key]], "_"), "", colnames(tmp))
+            } else {
+              warning("No column names found!")
+              paste0("X", seq_len(ncol(tmp)))
+            },
             t(tmp),
             row.names = NULL
           )
@@ -397,11 +449,14 @@ for (pd in seq_along(pds1)) {
 
 #--- Identify available output modes ------
 tmp <- apply(hasModes, MARGIN = 3L, sum, na.rm = TRUE)
+tmp_gt0 <- tmp > 0L
 maxModes <- max(tmp)
 hasAllModes <- tmp == maxModes
-hasSomeModes <- tmp < maxModes & tmp > 0
-hasNoModes <- tmp == 0
-nAvailModes <- sum(hasSomeModes)  + sum(hasAllModes)
+hasSomeModes <- tmp < maxModes & tmp_gt0
+hasNoModes <- tmp == 0L
+nAvailComparisons <- if (sum(tmp_gt0) >= 2L) {
+  ncol(combn(names(tmp)[tmp_gt0], m = 2L))
+}
 
 cat(
   "* Modes with complete output:", toString(names(hasAllModes)[hasAllModes]),
@@ -416,6 +471,9 @@ cat(
   fill = TRUE
 )
 
+if (is.null(nAvailComparisons)) {
+  stop("Insufficient output modes for comparisons.")
+}
 
 #--- Identify available outkeys ------
 # Expect to contain no output: "WTHR", "ALLH2O", "ET", "ALLVEG"
@@ -426,7 +484,6 @@ hasNoOut <- apply(
 )
 
 # all output given available modes
-
 tmp <- apply(
   diffs,
   MARGIN = 1L:2L,
@@ -442,9 +499,9 @@ tmp <- apply(
   }
 )
 
-tmp2 <- apply(tmp, 2L, function(x) x == nAvailModes) |> rowSums()
+tmp2 <- apply(tmp, 2L, function(x) x == nAvailComparisons) |> rowSums()
 hasAllOut <- tmp2 == length(pds2)
-tmp2 <- apply(tmp, 2L, function(x) x < nAvailModes & x > 0L) |> rowSums()
+tmp2 <- apply(tmp, 2L, function(x) x < nAvailComparisons & x > 0L) |> rowSums()
 hasSomeOut <- tmp2 == length(pds2)
 tmp2 <- apply(tmp, 2L, function(x) x == 0L) |> rowSums()
 hasNoOut <- tmp2 == length(pds2)
@@ -517,3 +574,4 @@ if (any(hasAllOut | hasSomeOut)) {
 } else {
   cat("* No output to compare.\n")
 }
+

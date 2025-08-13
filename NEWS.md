@@ -6,6 +6,22 @@
       reference year 1995; previously, 360 ppm was assumed.
     * Transpiration regions are no longer one soil layer too shallow.
 
+* SOILWAT2 gained a third mode `SWMPI` which is parallelized across sites or
+  grid cells with a time-before-space scheme using `MPI` (#399; @N1ckP3rsl3y)
+  and extends the nc-mode. See the extended documentation for details.
+  The mpi-based SOILWAT2 is compiled with
+    * `make CPPFLAGS=-DSWMPI`
+  The two previous modes continue to be available
+    * `make CPPFLAGS=-DSWTXT` (or as previously `make all`) for txt-based
+    * `make CPPFLAGS=-DSWNC` for nc-based SOILWAT2.
+
+* Several improvements to the code base including a new organization of
+  variables between inputs, simulated values, and outputs.
+
+* Several improvements to the testing infrastructure including automatic
+  identification of (common) parallel setups such as availability of `mpicc` for
+  compilation and `mpirun` vs. `srun` for execution of mpi-based SOILWAT2.
+
 * Annual time series of atmospheric CO2 concentrations can now be
   combined from multiple data sets, e.g., `"CMIP6_historical|CMIP6_SSP585"`
   (#456; @dschlaep).
@@ -46,6 +62,8 @@
   (#460; @dschlaep).
 
 ## Changes to inputs
+* New input via `"domain.in"` that specifies the maximum number of failed
+  sites/grid cells after which a mpi-based SOILWAT2 run terminates early.
 * New input via `"veg.in"` to specify the year for which vegetation inputs
   are valid, i.e., the year when CO2-fertilization has no effect on biomass
   and water-use efficiency (default is 1995).
@@ -60,6 +78,19 @@
 
 ## Changes to outputs
 * Several derived metrics in output groups `"DERIVEDSUM"` and `"DERIVEDSAVG"`.
+* Vegetation types now use consistent names (previously, vegetation type names
+  different between txt-mode and nc/mpi-mode outputs; @dschlaep).
+
+
+# SOILWAT2 v8.1.2
+* Simulation output of the example remains the same as the previous version;
+  however, simulations set cover of at least one plant functional type to zero
+  may produce different output, particularly for cooler and wetter sites with
+  slightly reduced evaporation and slightly increased soil moisture.
+
+* Bugfix such that zero cover of one plant functional no longer directly affects
+  evaporation of intercepted water by other plant functional types or
+  evaporation from open surface water (#471; @dschlaep).
 
 
 # SOILWAT2 v8.1.1
