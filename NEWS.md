@@ -11,6 +11,9 @@
   long-term and short-term moving windows of climate conditions that are
   updated yearly (#396; @N1ckP3rsl3y, @dschlaep).
 
+* The rooting profiles no longer must start at the surface and may now have
+  gaps (@dschlaep).
+
 ## Changes to inputs
 * New input via `"siteparam.in"` that specifies the method for soil temperature
   at the lower boundary.

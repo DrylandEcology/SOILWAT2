@@ -1479,7 +1479,10 @@ LyrIndex nlayers_bsevap(double *evap_coeff, LyrIndex n_layers) {
 @brief Count soil layers with roots potentially extracting water for
     transpiration
 
-The count stops at first layer with 0 per vegetation type.
+Since v8.3.0, layers with no roots are not counted towards n_transp_lyrs, e.g.,
+the absence of roots in the shallowest soil layer no longer forces
+n_transp_lyrs to be zero.
+Previously, the count stopped at the first layer without roots.
 
 @param[in] n_layers Number of layers of soil within the simulation run
 @param[in] transp_coeff Prop. of total transp from this layer
@@ -1501,7 +1504,7 @@ void nlayers_vegroots(
             if (GT(transp_coeff[k][s], 0.0)) {
                 n_transp_lyrs[k]++;
             } else {
-                break;
+                continue;
             }
         }
     }
@@ -3087,7 +3090,7 @@ void SW_SIT_init_run(
                     SW_SiteSim->TranspRgnBounds[r] <= MAX_LAYERS) {
 
                     if (ZRO(SW_SoilRunIn->transp_coeff[k][s])) {
-                        break; /* end of transpiring layers */
+                        continue; /* skip this layer */
                     }
 
                     curregion = r + 1; // convert to base1
@@ -3095,23 +3098,8 @@ void SW_SIT_init_run(
                 }
             }
 
-            if (curregion > 0) {
-                SW_SiteSim->my_transp_rgn[k][s] = curregion;
-
-            } else if (s == 0) {
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "Top soil layer must be included "
-                    "in %s transpiration region",
-                    key2veg[k]
-                );
-                return; // Exit function prematurely due to error
-
-            } else {
-                // no transpiration region or not roots
-                SW_SiteSim->my_transp_rgn[k][s] = 0;
-            }
+            // if curregion == 0, then no transpiration region or no roots
+            SW_SiteSim->my_transp_rgn[k][s] = curregion;
         }
     } /*end ForEachSoilLayer */
 
