@@ -5083,17 +5083,14 @@ void SW_MPI_close_in_files(
     IntU file;
 
     ForEachNCInKey(inKey) {
-        if (!readInVars[inKey][0] || inKey == eSW_InDomain ||
-            isnull(openInFileIDs[inKey])) {
+        if (isnull(openInFileIDs[inKey])) {
             continue;
         }
 
         numFiles = (inKey == eSW_InWeather) ? numWeathFiles : 1;
 
         for (varNum = 0; varNum < numVarsInKey[inKey]; varNum++) {
-            skipVar = (Bool) (!readInVars[inKey][varNum + 1] ||
-                              (varNum == 0 && !useIndexFile[inKey]) ||
-                              isnull(openInFileIDs[inKey][varNum]));
+            skipVar = (Bool) (isnull(openInFileIDs[inKey][varNum]));
 
             if (!skipVar) {
                 for (file = 0; file < numFiles; file++) {
