@@ -151,11 +151,6 @@ int main(int argc, char **argv) {
         goto finishProgram;
 #endif
     }
-#if defined(SWMPI)
-    if (rank > SW_MPI_ROOT) {
-        goto setupProgramData;
-    }
-#endif
 
     SW_MDL_get_ModelRun(&sw_template.ModelIn, &SW_Domain, NULL, &LogInfo);
     if (LogInfo.stopRun) {
@@ -196,23 +191,25 @@ int main(int argc, char **argv) {
 #endif
     }
 
-    SW_NCIN_precalc_lookups(&SW_Domain, &sw_template.WeatherIn, &LogInfo);
-    if (LogInfo.stopRun) {
+    if (rank == 0) {
+        SW_NCIN_precalc_lookups(&SW_Domain, &sw_template.WeatherIn, &LogInfo);
+        if (LogInfo.stopRun) {
 #if defined(SWMPI)
-        goto setupProgramData;
+            goto setupProgramData;
 #else
-        goto finishProgram;
+            goto finishProgram;
 #endif
-    }
+        }
 
-    SW_NCIN_create_indices(&SW_Domain, &LogInfo);
-    if (LogInfo.stopRun) {
+        SW_NCIN_create_indices(&SW_Domain, &LogInfo);
+        if (LogInfo.stopRun) {
 #if defined(SWMPI)
-        goto setupProgramData;
+            goto setupProgramData;
 #else
-        goto finishProgram;
+            goto finishProgram;
 #endif
-    };
+        };
+    }
 
     SW_NCIN_check_input_files(&SW_Domain, &LogInfo);
     if (LogInfo.stopRun) {
@@ -299,17 +296,15 @@ setupProgramData:
         goto closeFiles;
     }
 
-    if (SW_Domain.SW_Designation.procJob == SW_MPI_PROC_IO) {
-        SW_MPI_open_files(
-            rank,
-            &SW_Domain.SW_Designation,
-            &SW_Domain.SW_PathInputs,
-            &SW_Domain.netCDFInput,
-            &sw_template.SW_PathOutputs,
-            &SW_Domain.OutDom,
-            &LogInfo
-        );
-    }
+    SW_MPI_open_files(
+        rank,
+        &SW_Domain.SW_Designation,
+        &SW_Domain.SW_PathInputs,
+        &SW_Domain.netCDFInput,
+        &sw_template.SW_PathOutputs,
+        &SW_Domain.OutDom,
+        &LogInfo
+    );
     if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD)) {
         goto closeFiles;
     }
@@ -333,16 +328,10 @@ setupProgramData:
     );
 
 closeFiles: {
-#if defined(SWMPI)
-    if (SW_Domain.SW_Designation.procJob == SW_MPI_PROC_IO) {
-#endif
-        // finish-up output (not used with rSOILWAT2)
-        SW_OUT_close_files(
-            &sw_template.SW_PathOutputs, &SW_Domain.OutDom, &LogInfo
-        );
-#if defined(SWMPI)
-    }
-#endif
+    // finish-up output (not used with rSOILWAT2)
+    SW_OUT_close_files(
+        &sw_template.SW_PathOutputs, &SW_Domain.OutDom, &LogInfo
+    );
 }
 
 finishProgram: {
