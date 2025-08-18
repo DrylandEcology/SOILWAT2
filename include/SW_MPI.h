@@ -117,7 +117,6 @@ void SW_MPI_Recv(
     MPI_Request *request
 );
 
-void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo);
 
 void SW_MPI_setup(
     int rank,

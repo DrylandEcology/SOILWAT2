@@ -89,13 +89,6 @@ int main(int argc, char **argv) {
     SW_DOM_init_ptrs(&SW_Domain);
     SW_CTL_init_ptrs(&sw_template);
 
-#if defined(SWMPI)
-    SW_MPI_create_types(SW_Domain.datatypes, &LogInfo);
-    if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD)) {
-        goto finishProgram;
-    }
-#endif
-
     // Obtain user input from the command line
     sw_init_args(
         argc,
