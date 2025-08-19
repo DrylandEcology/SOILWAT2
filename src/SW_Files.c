@@ -421,16 +421,9 @@ void SW_F_construct(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
 
 @param[in,out] SW_PathInputs Struct of type SW_PATH_INPUTS which
 holds basic information about output files and values
-@param[in] readInVars Specifies which variables are to be read-in as input
-@param[in] useIndexFile Specifies to create/use an index file
 @param[in] procJob Process job designation used when using MPI
 */
-void SW_F_deconstruct(
-    SW_PATH_INPUTS *SW_PathInputs,
-    Bool **readInVars,
-    const Bool useIndexFile[],
-    int procJob
-) {
+void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs, int procJob) {
     IntUS i;
 
     for (i = 0; i < SW_NFILES; i++) {
@@ -450,7 +443,7 @@ void SW_F_deconstruct(
 #if defined(SWMPI)
     if (procJob == SW_MPI_PROC_IO) {
 #endif
-        SW_NCIN_close_files(SW_PathInputs, readInVars, useIndexFile);
+        SW_NCIN_close_files(SW_PathInputs);
 #if defined(SWMPI)
     }
 #endif
@@ -589,9 +582,6 @@ void SW_F_deconstruct(
         free((void *) SW_PathInputs->numDaysInYear);
         SW_PathInputs->numDaysInYear = NULL;
     }
-#else
-    (void) readInVars;
-    (void) useIndexFile;
 #endif
 
 #if !defined(SWMPI)

@@ -8748,24 +8748,14 @@ void SW_NCIN_open_dom_prog_files(
 
 @param[in,out] SW_PathInputs Struct of type SW_PATH_INPUTS which
     holds basic information about input files and values
-@param[in] readInVars Specifies which variables are to be read-in as input
-@param[in] useIndexFile Specifies to create/use an index file
 */
-void SW_NCIN_close_files(
-    SW_PATH_INPUTS *SW_PathInputs, Bool **readInVars, const Bool useIndexFile[]
-) {
+void SW_NCIN_close_files(SW_PATH_INPUTS *SW_PathInputs) {
     int fileNum;
 
 #if defined(SWMPI)
     SW_MPI_close_in_files(
-        SW_PathInputs->openInFileIDs,
-        readInVars,
-        useIndexFile,
-        SW_PathInputs->ncNumWeatherInFiles
+        SW_PathInputs->openInFileIDs, SW_PathInputs->ncNumWeatherInFiles
     );
-#else
-    (void) readInVars;
-    (void) useIndexFile;
 #endif
 
     for (fileNum = 0; fileNum < SW_NVARDOM; fileNum++) {
