@@ -127,13 +127,15 @@ int main(int argc, char **argv) {
     SW_CTL_setup_domain(
         rank, userSUID, renameDomainTemplateNC, &SW_Domain, &LogInfo
     );
-    if (LogInfo.stopRun) {
 #if defined(SWMPI)
-        goto setupProgramData;
-#else
+    if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD)) {
         goto finishProgram;
-#endif
     }
+#else
+    if (LogInfo.stopRun) {
+        goto finishProgram;
+    }
+#endif
 
     // setup and construct model template (independent of inputs)
     SW_CTL_setup_model(&sw_template, &SW_Domain.OutDom, swTRUE, &LogInfo);
@@ -156,18 +158,21 @@ int main(int argc, char **argv) {
 
     // read user inputs
     SW_CTL_read_inputs_from_disk(
+        rank,
         &sw_template,
         &SW_Domain,
         &SW_Domain.hasConsistentSoilLayerDepths,
         &LogInfo
     );
-    if (LogInfo.stopRun) {
 #if defined(SWMPI)
+    if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD)) {
         goto setupProgramData;
-#else
-        goto finishProgram;
-#endif
     }
+#else
+    if (LogInfo.stopRun) {
+        goto finishProgram;
+    }
+#endif
 
 #if defined(SWNETCDF)
     SW_NCIN_check_input_config(
@@ -184,16 +189,16 @@ int main(int argc, char **argv) {
 #endif
     }
 
-    if (rank == 0) {
-        SW_NCIN_precalc_lookups(&SW_Domain, &sw_template.WeatherIn, &LogInfo);
-        if (LogInfo.stopRun) {
+    SW_NCIN_precalc_lookups(rank, &SW_Domain, &sw_template.WeatherIn, &LogInfo);
+    if (LogInfo.stopRun) {
 #if defined(SWMPI)
-            goto setupProgramData;
+        goto setupProgramData;
 #else
-            goto finishProgram;
+        goto finishProgram;
 #endif
-        }
+    }
 
+    if (rank == 0) {
         SW_NCIN_create_indices(&SW_Domain, &LogInfo);
         if (LogInfo.stopRun) {
 #if defined(SWMPI)
@@ -202,17 +207,17 @@ int main(int argc, char **argv) {
             goto finishProgram;
 #endif
         };
-    }
 
-    SW_NCIN_check_input_files(&SW_Domain, &LogInfo);
-    if (LogInfo.stopRun) {
+        SW_NCIN_check_input_files(&SW_Domain, &LogInfo);
+        if (LogInfo.stopRun) {
 #if defined(SWMPI)
-        goto setupProgramData;
+            goto setupProgramData;
 #else
-        goto finishProgram;
+            goto finishProgram;
+#endif
+        }
 #endif
     }
-#endif
 
     // finalize daily weather
 #if defined(SWNETCDF)
@@ -232,7 +237,7 @@ int main(int argc, char **argv) {
 #if defined(SWMPI)
             goto setupProgramData;
 #else
-        goto finishProgram;
+    goto finishProgram;
 #endif
         }
 #if defined(SWNETCDF)
@@ -256,7 +261,7 @@ int main(int argc, char **argv) {
 #if defined(SWMPI)
         goto setupProgramData;
 #else
-        goto finishProgram;
+    goto finishProgram;
 #endif
     }
 
@@ -271,14 +276,12 @@ setupProgramData:
         goto finishProgram;
     }
 #else
-    if (LogInfo.stopRun) {
-        goto finishProgram;
-    }
+if (LogInfo.stopRun) {
+    goto finishProgram;
+}
 #endif
 
-    if (rank == 0) {
-        SW_OUT_create_files(&sw_template.SW_PathOutputs, &SW_Domain, &LogInfo);
-    }
+    SW_OUT_create_files(&sw_template.SW_PathOutputs, &SW_Domain, &LogInfo);
 
 #if defined(SWMPI)
     if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD) || prepareFiles) {
@@ -288,27 +291,14 @@ setupProgramData:
 
         goto closeFiles;
     }
-
-    SW_MPI_open_files(
-        rank,
-        &SW_Domain.SW_Designation,
-        &SW_Domain.SW_PathInputs,
-        &SW_Domain.netCDFInput,
-        &sw_template.SW_PathOutputs,
-        &SW_Domain.OutDom,
-        &LogInfo
-    );
-    if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD)) {
-        goto closeFiles;
-    }
 #else
-    if (LogInfo.stopRun || prepareFiles) {
-        if (prepareFiles && LogInfo.printProgressMsg) {
-            SW_MSG_ROOT("completed simulation preparations.", rank);
-        }
-
-        goto closeFiles;
+if (LogInfo.stopRun || prepareFiles) {
+    if (prepareFiles && LogInfo.printProgressMsg) {
+        SW_MSG_ROOT("completed simulation preparations.", rank);
     }
+
+    goto closeFiles;
+}
 #endif
 
     if (EchoInits && rank == 0) {

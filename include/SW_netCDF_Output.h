@@ -53,6 +53,10 @@ void SW_NCOUT_alloc_timeSizes(
     unsigned int numFiles, size_t **timeSizes, LOG_INFO *LogInfo
 );
 
+void SW_NCOUT_alloc_outfile_ids(
+    unsigned int numFiles, int **fileIDs, LOG_INFO *LogInfo
+);
+
 void SW_NCOUT_init_ptrs(SW_NETCDF_OUT *SW_netCDFOut);
 
 void SW_NCOUT_alloc_output_var_info(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
@@ -62,6 +66,10 @@ void SW_NCOUT_alloc_outputkey_var_info(
 );
 
 void SW_NCOUT_dealloc_outputkey_var_info(SW_OUT_DOM *OutDom, IntUS k);
+
+void SW_NCOUT_close_out_files(
+    int *openOutFileIDs[][SW_OUTNPERIODS], IntU numOutFiles
+);
 
 void SW_NCOUT_create_output_files(
     const char *domFile,
@@ -79,10 +87,7 @@ void SW_NCOUT_create_output_files(
     unsigned int startYr,
     unsigned int endYr,
     int baseCalendarYear,
-    size_t *outFileTimeSizes[],
-    unsigned int *numFilesPerKey,
-    char **ncOutFileNames[][SW_OUTNPERIODS],
-    int *ncOutVarIDs[],
+    SW_PATH_OUTPUTS *SW_PathOutputs,
     LOG_INFO *LogInfo
 );
 

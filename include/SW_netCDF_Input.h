@@ -150,6 +150,8 @@ void SW_NCIN_open_dom_prog_files(
     SW_NETCDF_IN *SW_netCDFIn, SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo
 );
 
+void SW_NCIN_close_in_files(int **openInFileIDs[], unsigned int numWeathFiles);
+
 void SW_NCIN_close_files(SW_PATH_INPUTS *SW_PathInputs);
 
 void SW_NCIN_init_ptrs(SW_NETCDF_IN *SW_netCDFIn);
@@ -204,7 +206,10 @@ void SW_NCIN_allocate_startEndYrs(
 );
 
 void SW_NCIN_precalc_lookups(
-    SW_DOMAIN *SW_Domain, SW_WEATHER_INPUTS *SW_WeatherIn, LOG_INFO *LogInfo
+    int rank,
+    SW_DOMAIN *SW_Domain,
+    SW_WEATHER_INPUTS *SW_WeatherIn,
+    LOG_INFO *LogInfo
 );
 
 void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);

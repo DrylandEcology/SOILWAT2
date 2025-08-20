@@ -1342,9 +1342,7 @@ void SW_OUT_init_ptrs(SW_OUT_RUN *OutRun, SW_PATH_OUTPUTS *SW_PathOutputs) {
     SW_PathOutputs->ncOutFiles[key][column] = NULL;
     SW_PathOutputs->ncOutVarIDs[key] = NULL;
     SW_PathOutputs->outTimeSizes[column] = NULL;
-#if defined(SWMPI)
     SW_PathOutputs->openOutFileIDs[key][column] = NULL;
-#endif
 #endif
 
 #if !defined(SWNETCDF)
@@ -2058,12 +2056,10 @@ void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw) {
                 sw->SW_PathOutputs.ncOutFiles[k][pd] = NULL;
             }
 
-#if defined(SWMPI)
             if (!isnull(sw->SW_PathOutputs.openOutFileIDs[k][pd])) {
                 free((void *) sw->SW_PathOutputs.openOutFileIDs[k][pd]);
                 sw->SW_PathOutputs.openOutFileIDs[k][pd] = NULL;
             }
-#endif
             if (!isnull(sw->SW_PathOutputs.outTimeSizes[pd])) {
                 free((void *) sw->SW_PathOutputs.outTimeSizes[pd]);
                 sw->SW_PathOutputs.outTimeSizes[pd] = NULL;
@@ -2997,6 +2993,8 @@ We have two options to specify time steps:
       column `PERIOD` for each output variable. Note: only one time step per
       output variable can be specified.
 
+@param[in] rank Process number known to MPI for the current process (aka rank);
+rank here will be used to determine who creates the output directory
 @param[in,out] sw Comprehensive structure holding all information
     dealt with in SOILWAT2
 @param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
@@ -3007,6 +3005,7 @@ return an updated name to this directory after reading output input file
 @param[out] LogInfo Holds information on warnings and errors
  */
 void SW_OUT_read(
+    int rank,
     SW_RUN *sw,
     SW_OUT_DOM *OutDom,
     char *txtInFiles[],
@@ -3290,13 +3289,15 @@ void SW_OUT_read(
     SW_OUT_set_nrow(&sw->ModelIn, OutDom->use_OutPeriod, OutDom->nrow_OUT);
 #endif
 
-    if (DirExists(outDir)) {
-        SW_F_CleanOutDir(outDir, LogInfo);
-    } else {
-        MkDir(outDir, LogInfo);
-    }
-    if (LogInfo->stopRun) {
-        goto closeFile;
+    if (rank == 0) {
+        if (DirExists(outDir)) {
+            SW_F_CleanOutDir(outDir, LogInfo);
+        } else {
+            MkDir(outDir, LogInfo);
+        }
+        if (LogInfo->stopRun) {
+            goto closeFile;
+        }
     }
 
 closeFile: { CloseFile(&f, LogInfo); }
@@ -3970,10 +3971,7 @@ void SW_OUT_create_files(
         SW_Domain->startyr,
         SW_Domain->endyr,
         SW_Domain->OutDom.netCDFOutput.baseCalendarYear,
-        SW_PathOutputs->outTimeSizes,
-        &SW_PathOutputs->numOutFiles,
-        SW_PathOutputs->ncOutFiles,
-        SW_PathOutputs->ncOutVarIDs,
+        SW_PathOutputs,
         LogInfo
     );
 
@@ -4001,15 +3999,12 @@ void SW_OUT_close_files(
 
 #if defined(SW_OUTTEXT)
     SW_OUT_close_textfiles(SW_PathOutputs, OutDom, LogInfo);
-#elif defined(SWMPI)
-    SW_MPI_close_out_files(
-        SW_PathOutputs->openOutFileIDs, OutDom, SW_PathOutputs->numOutFiles
+#elif defined(SWNETCDF)
+    SW_NCOUT_close_out_files(
+        SW_PathOutputs->openOutFileIDs, SW_PathOutputs->numOutFiles
     );
     (void) LogInfo;
-#else
-    (void) SW_PathOutputs;
     (void) OutDom;
-    (void) LogInfo;
 #endif
 }
 
@@ -4188,6 +4183,22 @@ void SW_PATHOUT_deepCopy(
                                             // error
                                 }
                             }
+                        }
+                    }
+
+                    if (!isnull(source_files->openOutFileIDs[key][pd])) {
+                        SW_NCOUT_alloc_outfile_ids(
+                            numFiles,
+                            &dest_files->openOutFileIDs[key][pd],
+                            LogInfo
+                        );
+                        if (LogInfo->stopRun) {
+                            return;
+                        }
+
+                        for (fileNum = 0; fileNum < numFiles; fileNum++) {
+                            dest_files->openOutFileIDs[key][pd][fileNum] =
+                                source_files->openOutFileIDs[key][pd][fileNum];
                         }
                     }
                 }

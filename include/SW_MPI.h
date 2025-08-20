@@ -93,6 +93,8 @@ void SW_MPI_Fail(int rank, int failType, char *mpiErrStr);
 
 void SW_MPI_deconstruct(SW_DOMAIN *SW_Domain);
 
+void SW_MPI_Barrier(MPI_Comm comm);
+
 void SW_MPI_Bcast(
     MPI_Datatype datatype, void *buffer, int count, int srcRank, MPI_Comm comm
 );
@@ -143,22 +145,6 @@ void SW_MPI_domain_info(SW_DOMAIN *SW_Domain, int rank, LOG_INFO *LogInfo);
 
 void SW_MPI_ncout_info(
     int rank, MPI_Comm comm, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
-);
-
-void SW_MPI_open_files(
-    int rank,
-    SW_MPI_DESIGNATE *desig,
-    SW_PATH_INPUTS *pathInputs,
-    SW_NETCDF_IN *netCDFIn,
-    SW_PATH_OUTPUTS *pathOutputs,
-    SW_OUT_DOM *OutDom,
-    LOG_INFO *LogInfo
-);
-
-void SW_MPI_close_in_files(int **openInFileIDs[], unsigned int numWeathFiles);
-
-void SW_MPI_close_out_files(
-    int *openOutFileIDs[][SW_OUTNPERIODS], SW_OUT_DOM *OutDom, IntU numOutFiles
 );
 
 Bool SW_MPI_setup_fail(Bool stopRun, MPI_Comm comm);

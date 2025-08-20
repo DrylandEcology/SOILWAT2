@@ -45,7 +45,6 @@ void sw_wrapup_logs(int rank, LOG_INFO *LogInfo);
 void sw_setup_prog_data(
     int rank,
     int worldSize,
-    const char *procName,
     Bool prepareFiles,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,

@@ -51,6 +51,40 @@
 #endif
 
 /* =================================================== */
+/*             Local Function Definitions              */
+/* --------------------------------------------------- */
+
+/**
+@brief Helper function to create a logfile name and create said file
+
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] fileName Provided name of the logfile to be created
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static FILE *create_logfile(int rank, const char *fileName, LOG_INFO *LogInfo) {
+
+#if defined(SWMPI)
+    char *fileNamePtr = NULL;
+
+    char logBuffer[LARGE_VALUE] = "\0";
+    char dir[MAX_FILENAMESIZE] = "\0";
+    const char *baseName = BaseName(fileName);
+
+    DirName(fileName, dir);
+
+    snprintf(logBuffer, sizeof logBuffer, "%srank_%d_%s", dir, rank, baseName);
+
+    fileNamePtr = logBuffer;
+#else
+    const char *fileNamePtr = fileName;
+    (void) rank;
+    (void) fileName;
+#endif
+
+    return OpenFile(fileNamePtr, "w", LogInfo);
+}
+
+/* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
@@ -93,6 +127,7 @@ void SW_F_CleanOutDir(char *outDir, LOG_INFO *LogInfo) {
 @brief Read `first` input file `eFirst` that contains names of the remaining
 input files.
 
+@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in,out] SW_PathInputs Struct of type SW_PATH_INPUTS which
 holds basic information about input files and values
 @param[out] LogInfo Holds information on warnings and errors
@@ -108,7 +143,7 @@ Update values of variables within SW_PATH_INPUTS:
     - `txtInFiles`
     - `logfp` for SOILWAT2-standalone
 */
-void SW_F_read(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
+void SW_F_read(int rank, SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
 #ifdef SWDEBUG
     int debug = 0;
 #endif
@@ -199,14 +234,21 @@ void SW_F_read(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
     } else {
         DirName(SW_PathInputs->txtInFiles[eLog], logDir);
 
-        if (!DirExists(logDir)) {
+        if (!DirExists(logDir) && rank == 0) {
             MkDir(logDir, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
         }
+
+#if defined(SWMPI)
+        // Make sure the directory is created before we attempt
+        // to write to it
+        SW_MPI_Barrier(MPI_COMM_WORLD);
+#endif
+
         LogInfo->logfp =
-            OpenFile(SW_PathInputs->txtInFiles[eLog], "w", LogInfo);
+            create_logfile(rank, SW_PathInputs->txtInFiles[eLog], LogInfo);
     }
 #else
     (void) logDir;
@@ -330,9 +372,7 @@ void SW_F_init_ptrs(SW_PATH_INPUTS *SW_PathInputs) {
         SW_PathInputs->scaleAndAddFactVals[k] = NULL;
         SW_PathInputs->missValFlags[k] = NULL;
         SW_PathInputs->doubleMissVals[k] = NULL;
-#if defined(SWMPI)
         SW_PathInputs->openInFileIDs[k] = NULL;
-#endif
     }
 
     SW_PathInputs->ncWeatherInFiles = NULL;
@@ -421,9 +461,8 @@ void SW_F_construct(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
 
 @param[in,out] SW_PathInputs Struct of type SW_PATH_INPUTS which
 holds basic information about output files and values
-@param[in] procJob Process job designation used when using MPI
 */
-void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs, int procJob) {
+void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
     IntUS i;
 
     for (i = 0; i < SW_NFILES; i++) {
@@ -440,13 +479,7 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs, int procJob) {
     int k;
     int varNum;
 
-#if defined(SWMPI)
-    if (procJob == SW_MPI_PROC_IO) {
-#endif
-        SW_NCIN_close_files(SW_PathInputs);
-#if defined(SWMPI)
-    }
-#endif
+    SW_NCIN_close_files(SW_PathInputs);
 
     ForEachNCInKey(k) {
         if (!isnull(SW_PathInputs->ncInFiles[k])) {
@@ -513,7 +546,6 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs, int procJob) {
             SW_PathInputs->doubleMissVals[k] = NULL;
         }
 
-#if defined(SWMPI)
         if (!isnull(SW_PathInputs->openInFileIDs[k])) {
             for (varNum = 0; varNum < numVarsInKey[k]; varNum++) {
                 if (!isnull(SW_PathInputs->openInFileIDs[k][varNum])) {
@@ -525,7 +557,6 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs, int procJob) {
             free((void *) SW_PathInputs->openInFileIDs[k]);
             SW_PathInputs->openInFileIDs[k] = NULL;
         }
-#endif
     }
 
     if (!isnull(SW_PathInputs->ncWeatherStartEndIndices)) {
@@ -582,9 +613,5 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs, int procJob) {
         free((void *) SW_PathInputs->numDaysInYear);
         SW_PathInputs->numDaysInYear = NULL;
     }
-#endif
-
-#if !defined(SWMPI)
-    (void) procJob;
 #endif
 }

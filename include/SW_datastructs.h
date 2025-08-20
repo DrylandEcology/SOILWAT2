@@ -252,10 +252,7 @@ typedef struct {
     size_t *outTimeSizes[SW_OUTNPERIODS]; /**< Holds x output file time sizes
                                                for each output period */
     unsigned int numOutFiles;
-
-#if defined(SWMPI)
     int *openOutFileIDs[SW_OUTNKEYS][SW_OUTNPERIODS];
-#endif
 #endif
 
 } SW_PATH_OUTPUTS;
@@ -1197,10 +1194,7 @@ typedef struct {
     /* NC information that will stay constant through program run
        domain information - domain and progress file IDs */
     int ncDomFileIDs[SW_NVARDOM];
-
-#if defined(SWMPI)
     int **openInFileIDs[SW_NINKEYSNC];
-#endif
 #endif
 } SW_PATH_INPUTS;
 

@@ -842,8 +842,7 @@ void SW_CTL_init_ptrs(SW_RUN *sw) {
 /**
 @brief Construct, setup, and obtain inputs for SW_DOMAIN
 
-@param[in] rank Process number known to MPI for the current process (aka rank);
-    defaults to 0 (main process) if we are running sequentially
+@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] userSUID Simulation Unit Identifier requested by the user (base1);
     0 indicates that all simulations units within domain are requested
 @param[in] renameDomainTemp Specifies if the created domain netCDF file
@@ -859,30 +858,23 @@ void SW_CTL_setup_domain(
     SW_DOMAIN *SW_Domain,
     LOG_INFO *LogInfo
 ) {
+    const Bool openInPar = swFALSE;
 
     SW_F_construct(&SW_Domain->SW_PathInputs, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    if (rank == 0) {
-        SW_F_read(&SW_Domain->SW_PathInputs, LogInfo);
-        if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
+    SW_F_read(rank, &SW_Domain->SW_PathInputs, LogInfo);
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
     }
 
     SW_DOM_construct(SW_Domain->SW_SpinUp.rng_seed, SW_Domain);
 
-    if (rank == 0) {
-        SW_DOM_read(SW_Domain, LogInfo);
-        if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
-    } else {
-        // If running in MPI, allow the root process to do everything
-        // below and other processes will get information later
-        return;
+    SW_DOM_read(SW_Domain, LogInfo);
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
     }
 
     SW_DOM_calc_nSUIDs(SW_Domain);
@@ -901,7 +893,7 @@ void SW_CTL_setup_domain(
     }
 
     SW_NCIN_create_units_converters(&SW_Domain->netCDFInput, LogInfo);
-    if (LogInfo->stopRun) {
+    if (LogInfo->stopRun || rank > 0) {
         return; // Exit function prematurely due to error
     }
 
@@ -935,7 +927,8 @@ void SW_CTL_setup_domain(
         }
     }
 
-    // Open necessary netCDF input files and check for consistency with domain
+    // Open necessary netCDF input files and check for consistency with
+    // domain
     SW_NCIN_open_dom_prog_files(
         &SW_Domain->netCDFInput, &SW_Domain->SW_PathInputs, LogInfo
     );
@@ -945,14 +938,16 @@ void SW_CTL_setup_domain(
 
     SW_NC_check(
         SW_Domain,
-        SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom],
+        &SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom],
         SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom],
+        openInPar,
         LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 #else
+    (void) openInPar;
     (void) renameDomainTemp;
 #endif
 
@@ -1362,6 +1357,7 @@ reSet: {
 @brief Reads inputs from disk and makes a print statement if there is an error
         in doing so.
 
+@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in,out] sw Comprehensive struct of type SW_RUN containing
 all information in the simulation
 @param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
@@ -1372,6 +1368,7 @@ when dealing with nc inputs)
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_read_inputs_from_disk(
+    int rank,
     SW_RUN *sw,
     SW_DOMAIN *SW_Domain,
     Bool *hasConsistentSoilLayerDepths,
@@ -1552,6 +1549,7 @@ void SW_CTL_read_inputs_from_disk(
 #endif
 
     SW_OUT_read(
+        rank,
         sw,
         &SW_Domain->OutDom,
         SW_PathInputs->txtInFiles,
@@ -1708,7 +1706,7 @@ void SW_CTL_run_sw(
         ncSuid,
         starts,
         counts,
-        NULL,
+        SW_Domain->SW_PathInputs.openInFileIDs,
         numReads,
         1,
         tempMonthlyVals,
@@ -1800,7 +1798,7 @@ void SW_CTL_run_sw(
         numReads[0],
         NULL,
         (size_t **) &count,
-        NULL,
+        local_sw.SW_PathOutputs.openOutFileIDs,
         local_sw.SW_PathOutputs.ncOutVarIDs,
         SW_Domain->netCDFInput.siteDoms[eSW_InDomain],
         NULL,

@@ -53,7 +53,11 @@ void SW_NC_get_dim_identifier(
 );
 
 void SW_NC_check(
-    SW_DOMAIN *SW_Domain, int ncFileID, const char *fileName, LOG_INFO *LogInfo
+    SW_DOMAIN *SW_Domain,
+    int *ncFileID,
+    const char *fileName,
+    Bool openInPar,
+    LOG_INFO *LogInfo
 );
 
 void SW_NC_get_single_val(
@@ -170,6 +174,7 @@ void SW_NC_create_template(
     int *newFileID,
     Bool isInput,
     const char *freq,
+    Bool parOpen,
     LOG_INFO *LogInfo
 );
 

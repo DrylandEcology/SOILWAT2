@@ -16,8 +16,8 @@
 #include <string.h>                    // for strcmp, strlen, strstr, memcpy
 
 #if defined(SWMPI)
-#include <mpi.h>        // for MPI_Barrier, MPI_Comm, MPI_INF...
-#include <netcdf_par.h> // for nc_open_par
+#include "include/SW_MPI.h" // for MPI_Barrier, MPI_Comm, MPI_INF...
+#include <netcdf_par.h>     // for nc_open_par
 #endif
 
 /* =================================================== */
@@ -245,15 +245,21 @@ opened for read-access.
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
-@param[in] ncFileID Identifier of the open netCDF file to check
+@param[in,out] ncFileID Identifier of the open netCDF file to check
 @param[in] fileName Name of netCDF file to test (used for error messages)
+@param[in] openInPar Specifyies if the file opened is to be opened for parallel
+access
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_check(
-    SW_DOMAIN *SW_Domain, int ncFileID, const char *fileName, LOG_INFO *LogInfo
+    SW_DOMAIN *SW_Domain,
+    int *ncFileID,
+    const char *fileName,
+    Bool openInPar,
+    LOG_INFO *LogInfo
 ) {
 
-    Bool fileWasClosed = (ncFileID < 0) ? swTRUE : swFALSE;
+    Bool fileWasClosed = (Bool) (*ncFileID < 0);
     Bool geoIsPrimCRS =
         SW_Domain->OutDom.netCDFOutput.primary_crs_is_geographic;
 
@@ -267,9 +273,18 @@ void SW_NC_check(
                             SW_Domain->OutDom.netCDFOutput.proj_XAxisName;
 
     if (fileWasClosed) {
-        // "Once a netCDF dataset is opened, it is referred to by a netCDF ID,
-        // which is a small non-negative integer"
-        SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
+#if defined(SWMPI)
+        if (openInPar) {
+            SW_NC_open_par(
+                fileName, NC_NOWRITE, MPI_COMM_WORLD, ncFileID, LogInfo
+            );
+        } else {
+#endif
+            SW_NC_open(fileName, NC_NOWRITE, ncFileID, LogInfo);
+            (void) openInPar;
+#if defined(SWMPI)
+        }
+#endif
         if (LogInfo->stopRun) {
             return; /* Exit function prematurely due to error */
         }
@@ -282,10 +297,10 @@ void SW_NC_check(
     double doubleAttVal;
     const char *geoCRS = crs_geogsc->crs_name;
     const char *projCRS = crs_projsc->crs_name;
-    Bool geoCRSExists = SW_NC_varExists(ncFileID, geoCRS);
-    Bool projCRSExists = SW_NC_varExists(ncFileID, projCRS);
+    Bool geoCRSExists = SW_NC_varExists(*ncFileID, geoCRS);
+    Bool projCRSExists = SW_NC_varExists(*ncFileID, projCRS);
     const char *impliedDomType =
-        (SW_NC_dimExists(siteName, ncFileID)) ? "s" : "xy";
+        (SW_NC_dimExists(siteName, *ncFileID)) ? "s" : "xy";
     Bool dimMismatch = swFALSE;
     size_t latDimVal = 0;
     size_t lonDimVal = 0;
@@ -365,7 +380,7 @@ void SW_NC_check(
             impliedDomType,
             SW_Domain->DomainType
         );
-        goto wrapUp; // Exit function prematurely due to error
+        return; // Exit function prematurely due to error
     }
 
     /*
@@ -373,24 +388,24 @@ void SW_NC_check(
        domain input file
     */
     if (strcmp(impliedDomType, "s") == 0) {
-        SW_NC_get_dimlen_from_dimname(ncFileID, siteName, &SDimVal, LogInfo);
+        SW_NC_get_dimlen_from_dimname(*ncFileID, siteName, &SDimVal, LogInfo);
         if (LogInfo->stopRun) {
-            goto wrapUp; // Exit function prematurely due to error
+            return; // Exit function prematurely due to error
         }
 
         dimMismatch = (Bool) (SDimVal != SW_Domain->nDimS);
     } else if (strcmp(impliedDomType, "xy") == 0) {
         SW_NC_get_dimlen_from_dimname(
-            ncFileID, readinYName, &latDimVal, LogInfo
+            *ncFileID, readinYName, &latDimVal, LogInfo
         );
         if (LogInfo->stopRun) {
-            goto wrapUp; // Exit function prematurely due to error
+            return; // Exit function prematurely due to error
         }
         SW_NC_get_dimlen_from_dimname(
-            ncFileID, readinXName, &lonDimVal, LogInfo
+            *ncFileID, readinXName, &lonDimVal, LogInfo
         );
         if (LogInfo->stopRun) {
-            goto wrapUp; // Exit function prematurely due to error
+            return; // Exit function prematurely due to error
         }
 
         dimMismatch = (Bool) (latDimVal != SW_Domain->nDimY ||
@@ -406,7 +421,7 @@ void SW_NC_check(
             "these match.",
             fileName
         );
-        goto wrapUp; // Exit function prematurely due to error
+        return; // Exit function prematurely due to error
     }
 
     /*
@@ -416,10 +431,10 @@ void SW_NC_check(
     if (geoCRSExists) {
         for (attNum = 0; attNum < numNormAtts; attNum++) {
             SW_NC_get_str_att_val(
-                ncFileID, geoCRS, strAttsToComp[attNum], strAttVal, LogInfo
+                *ncFileID, geoCRS, strAttsToComp[attNum], strAttVal, LogInfo
             );
             if (LogInfo->stopRun) {
-                goto wrapUp; // Exit function prematurely due to error
+                return; // Exit function prematurely due to error
             }
 
             if (strcmp(geoStrAttVals[attNum], strAttVal) != 0) {
@@ -431,20 +446,20 @@ void SW_NC_check(
                     geoCRS,
                     fileName
                 );
-                goto wrapUp; // Exit function prematurely due to error
+                return; // Exit function prematurely due to error
             }
         }
 
         for (attNum = 0; attNum < numNormAtts; attNum++) {
             get_double_att_val(
-                ncFileID,
+                *ncFileID,
                 geoCRS,
                 doubleAttsToComp[attNum],
                 &doubleAttVal,
                 LogInfo
             );
             if (LogInfo->stopRun) {
-                goto wrapUp; // Exit function prematurely due to error
+                return; // Exit function prematurely due to error
             }
 
             if (doubleAttVal != geoDoubleAttVals[attNum]) {
@@ -456,7 +471,7 @@ void SW_NC_check(
                     geoCRS,
                     fileName
                 );
-                goto wrapUp; // Exit function prematurely due to error
+                return; // Exit function prematurely due to error
             }
         }
     } else {
@@ -467,7 +482,7 @@ void SW_NC_check(
             "Please make sure one is provided.",
             fileName
         );
-        goto wrapUp; // Exit function prematurely due to error
+        return; // Exit function prematurely due to error
     }
 
     /*
@@ -478,10 +493,10 @@ void SW_NC_check(
         // Normal attributes (same tested for in crs_geogsc)
         for (attNum = 0; attNum < numNormAtts; attNum++) {
             SW_NC_get_str_att_val(
-                ncFileID, projCRS, strAttsToComp[attNum], strAttVal, LogInfo
+                *ncFileID, projCRS, strAttsToComp[attNum], strAttVal, LogInfo
             );
             if (LogInfo->stopRun) {
-                goto wrapUp; // Exit function prematurely due to error
+                return; // Exit function prematurely due to error
             }
 
             if (strcmp(projStrAttVals[attNum], strAttVal) != 0) {
@@ -493,20 +508,20 @@ void SW_NC_check(
                     projCRS,
                     fileName
                 );
-                goto wrapUp; // Exit function prematurely due to error
+                return; // Exit function prematurely due to error
             }
         }
 
         for (attNum = 0; attNum < numNormAtts; attNum++) {
             get_double_att_val(
-                ncFileID,
+                *ncFileID,
                 projCRS,
                 doubleAttsToComp[attNum],
                 &doubleAttVal,
                 LogInfo
             );
             if (LogInfo->stopRun) {
-                goto wrapUp; // Exit function prematurely due to error
+                return; // Exit function prematurely due to error
             }
 
             if (doubleAttVal != projDoubleAttVals[attNum]) {
@@ -518,17 +533,21 @@ void SW_NC_check(
                     projCRS,
                     fileName
                 );
-                goto wrapUp; // Exit function prematurely due to error
+                return; // Exit function prematurely due to error
             }
         }
 
         // Projected CRS-only attributes
         for (attNum = 0; attNum < numProjStrAtts; attNum++) {
             SW_NC_get_str_att_val(
-                ncFileID, projCRS, strProjAttsToComp[attNum], strAttVal, LogInfo
+                *ncFileID,
+                projCRS,
+                strProjAttsToComp[attNum],
+                strAttVal,
+                LogInfo
             );
             if (LogInfo->stopRun) {
-                goto wrapUp; // Exit function prematurely due to error
+                return; // Exit function prematurely due to error
             }
 
             if (strcmp(strAttVal, strProjAttVals[attNum]) != 0) {
@@ -540,20 +559,20 @@ void SW_NC_check(
                     projCRS,
                     fileName
                 );
-                goto wrapUp; // Exit function prematurely due to error
+                return; // Exit function prematurely due to error
             }
         }
 
         for (attNum = 0; attNum < numProjDoubleAtts; attNum++) {
             get_double_att_val(
-                ncFileID,
+                *ncFileID,
                 projCRS,
                 doubleProjAttsToComp[attNum],
                 &doubleAttVal,
                 LogInfo
             );
             if (LogInfo->stopRun) {
-                goto wrapUp; // Exit function prematurely due to error
+                return; // Exit function prematurely due to error
             }
 
             if (doubleAttVal != doubleProjAttVals[attNum]) {
@@ -565,16 +584,16 @@ void SW_NC_check(
                     projCRS,
                     fileName
                 );
-                goto wrapUp; // Exit function prematurely due to error
+                return; // Exit function prematurely due to error
             }
         }
 
         // Test for standard_parallel
         get_double_att_val(
-            ncFileID, projCRS, stdParallel, projStdParallel, LogInfo
+            *ncFileID, projCRS, stdParallel, projStdParallel, LogInfo
         );
         if (LogInfo->stopRun) {
-            goto wrapUp; // Exit function prematurely due to error
+            return; // Exit function prematurely due to error
         }
 
         if (projStdParallel[0] != stdParVals[0] ||
@@ -583,14 +602,8 @@ void SW_NC_check(
             LogError(
                 LogInfo, LOGERROR, attFailMsg, stdParallel, projCRS, fileName
             );
-            goto wrapUp; // Exit function prematurely due to error
+            return; // Exit function prematurely due to error
         }
-    }
-
-
-wrapUp:
-    if (fileWasClosed) {
-        nc_close(ncFileID);
     }
 }
 
@@ -1159,6 +1172,8 @@ reportFullBuffer:
 @param[in] newFileID Identifier of the netCDF file to create
 @param[in] isInput Specifies if the created file will be input or output
 @param[in] freq Value of the global attribute "frequency"
+@param[in] parOpen Specifies if the file is to be opened for parallel
+access or not, if SWMPI is not enabled, this argument is not used
 @param[out] LogInfo  Holds information dealing with logfile output
 */
 void SW_NC_create_template(
@@ -1168,6 +1183,7 @@ void SW_NC_create_template(
     int *newFileID,
     Bool isInput,
     const char *freq,
+    Bool parOpen,
     LOG_INFO *LogInfo
 ) {
 
@@ -1177,7 +1193,19 @@ void SW_NC_create_template(
         return; // Exit function prematurely due to error
     }
 
-    SW_NC_open(fileName, NC_WRITE, newFileID, LogInfo);
+#if defined(SWMPI)
+    if (parOpen) {
+        SW_NC_open_par(fileName, NC_WRITE, MPI_COMM_WORLD, newFileID, LogInfo);
+    } else {
+#endif
+
+        SW_NC_open(fileName, NC_WRITE, newFileID, LogInfo);
+
+        (void) parOpen;
+#if defined(SWMPI)
+    }
+#endif
+
     if (LogInfo->stopRun) {
         return; /* Exit function prematurely due to error */
     }
@@ -1526,6 +1554,6 @@ void SW_NC_open_par(
         );
     }
 
-    MPI_Barrier(comm);
+    SW_MPI_Barrier(comm);
 }
 #endif

@@ -224,6 +224,7 @@ int SW_OUT_read_onekey(
 );
 
 void SW_OUT_read(
+    int rank,
     SW_RUN *sw,
     SW_OUT_DOM *OutDom,
     char *txtInFiles[],
