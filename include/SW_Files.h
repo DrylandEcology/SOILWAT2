@@ -83,12 +83,7 @@ void SW_F_init_ptrs(SW_PATH_INPUTS *SW_PathInputs);
 
 void SW_F_construct(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo);
 
-void SW_F_deconstruct(
-    SW_PATH_INPUTS *SW_PathInputs,
-    Bool **readInVars,
-    const Bool useIndexFile[],
-    int procJob
-);
+void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs, int procJob);
 
 void SW_F_CleanOutDir(char *outDir, LOG_INFO *LogInfo);
 

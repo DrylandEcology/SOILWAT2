@@ -200,7 +200,7 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
     delete[] tmin0;
     delete[] ppt0;
 
-    SW_F_deconstruct(&SW_PathInput, (Bool **) readInVars, useIndexFiles, 0);
+    SW_F_deconstruct(&SW_PathInput, 0);
 
     for (k = 0; k < SW_NINKEYSNC; k++) {
         free(readInVars[k]);

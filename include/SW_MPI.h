@@ -155,12 +155,7 @@ void SW_MPI_open_files(
     LOG_INFO *LogInfo
 );
 
-void SW_MPI_close_in_files(
-    int **openInFileIDs[],
-    Bool **readInVars,
-    const Bool useIndexFile[],
-    unsigned int numWeathFiles
-);
+void SW_MPI_close_in_files(int **openInFileIDs[], unsigned int numWeathFiles);
 
 void SW_MPI_close_out_files(
     int *openOutFileIDs[][SW_OUTNPERIODS], SW_OUT_DOM *OutDom, IntU numOutFiles

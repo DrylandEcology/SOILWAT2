@@ -4661,19 +4661,14 @@ void SW_MPI_close_out_files(
 @brief Close all opened netCDF files
 
 @param[in] openInFileIDs A list of open input netCDF file IDs
-@param[in] readInVars Specifies which variables are to be read-in as input
-@param[in] useIndexFile Specifies to create/use an index file
 @param[in] numWeathFiles Number of weather files that were created
 */
-void SW_MPI_close_in_files(
-    int **openInFileIDs[],
-    Bool **readInVars,
-    const Bool useIndexFile[],
-    unsigned int numWeathFiles
-) {
+void SW_MPI_close_in_files(int **openInFileIDs[], unsigned int numWeathFiles) {
+    const int indexFile = 0;
     int inKey;
     Bool skipVar;
     IntU numFiles;
+    IntU baseNumFiles;
     int varNum;
     IntU file;
 
@@ -4682,12 +4677,16 @@ void SW_MPI_close_in_files(
             continue;
         }
 
-        numFiles = (inKey == eSW_InWeather) ? numWeathFiles : 1;
+        baseNumFiles = (inKey == eSW_InWeather) ? numWeathFiles : 1;
 
         for (varNum = 0; varNum < numVarsInKey[inKey]; varNum++) {
             skipVar = (Bool) (isnull(openInFileIDs[inKey][varNum]));
 
             if (!skipVar) {
+                numFiles = (inKey == eSW_InWeather && varNum == indexFile) ?
+                               1 :
+                               baseNumFiles;
+
                 for (file = 0; file < numFiles; file++) {
                     nc_close(openInFileIDs[inKey][varNum][file]);
                 }

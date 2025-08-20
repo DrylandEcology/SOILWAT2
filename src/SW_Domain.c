@@ -634,10 +634,7 @@ void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
     int i;
 
     SW_F_deconstruct(
-        &SW_Domain->SW_PathInputs,
-        SW_Domain->netCDFInput.readInVars,
-        SW_Domain->netCDFInput.useIndexFile,
-        SW_Domain->SW_Designation.procJob
+        &SW_Domain->SW_PathInputs, SW_Domain->SW_Designation.procJob
     );
 
 #if defined(SWNETCDF)
