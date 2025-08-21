@@ -5955,7 +5955,7 @@ static void open_input_files(
     char *fileName = NULL;
     Bool skipVar;
     Bool useWeathFileArray;
-    char *indexFileName = NULL;
+    Bool useIndexFile;
 
 #if defined(SWMPI)
     int progVarID = SW_netCDFIn->ncDomVarIDs[vNCprog];
@@ -6035,9 +6035,8 @@ static void open_input_files(
             SW_PathInputs->openInFileIDs[inKey][var] = NULL;
         }
 
-        indexFileName = SW_PathInputs->ncInFiles[inKey][indexFile];
-        startVar = (rank == 0 && FileExists(indexFileName)) ? indexFile :
-                                                              afterIndexFile;
+        useIndexFile = SW_netCDFIn->useIndexFile[inKey];
+        startVar = (useIndexFile || rank > 0) ? indexFile : afterIndexFile;
 
         for (var = startVar; var < numVarsInKey[inKey]; var++) {
             skipVar =
@@ -6080,14 +6079,14 @@ static void open_input_files(
 
                 id = &SW_PathInputs->openInFileIDs[inKey][var][file];
 #if defined(SWMPI)
-                if (rank == 0 && var > indexFile) {
+                if (var > indexFile) {
                     SW_NC_open_par(
                         fileName, NC_NOWRITE, MPI_COMM_WORLD, id, LogInfo
                     );
                     if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
                         return;
                     }
-                } else {
+                } else if ((rank > 0 && var > indexFile) || rank == 0) {
 #endif
                     SW_NC_open(fileName, NC_NOWRITE, id, LogInfo);
                     if (LogInfo->stopRun) {
