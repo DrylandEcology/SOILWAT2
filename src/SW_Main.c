@@ -269,7 +269,7 @@ int main(int argc, char **argv) {
 setupProgramData:
 #endif
     sw_setup_prog_data(
-        rank, size, procName, prepareFiles, &sw_template, &SW_Domain, &LogInfo
+        rank, size, prepareFiles, &sw_template, &SW_Domain, &LogInfo
     );
 #if defined(SWMPI)
     if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD)) {

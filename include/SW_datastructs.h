@@ -1771,6 +1771,12 @@ typedef struct {
 #if defined(SWMPI)
     // Custom MPI data types used for sending information
     MPI_Datatype datatypes[SW_MPI_NTYPES];
+
+    size_t
+        nSuids; /**< Number of suids that will be controlled by I/O processes */
+    size_t **domSuids[SW_NINKEYSNC]; /**< A list of suids to describe the
+                                        domain; this includes translated suids
+                                        for input keys if necessary */
 #endif
 } SW_DOMAIN;
 

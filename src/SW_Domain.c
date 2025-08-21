@@ -626,6 +626,15 @@ void SW_DOM_init_ptrs(SW_DOMAIN *SW_Domain) {
 
 #if defined(SWNETCDF)
     SW_NCIN_init_ptrs(&SW_Domain->netCDFInput);
+
+#if defined(SWMPI)
+    InKeys inKey;
+
+    ForEachNCInKey(inKey) {
+        SW_Domain->domSuids[inKey] = NULL;
+        SW_Domain->nSUIDs = 0;
+    }
+#endif
 #endif
 }
 

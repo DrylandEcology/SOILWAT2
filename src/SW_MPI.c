@@ -187,37 +187,23 @@ report:
 
 /**
 @brief Deallocate helper memory that was allocated during the call to
-    `SW_MPI_process_types()`
+    `SW_MPI_proc_workload()`
 
 @param[in] numActiveSites Number of active sites that will be simulated
-@param[in] maxNodes Maximum number of nodes that were allocated
-@param[in] numNodes Number of compute nodes designations were allocated for
-@param[in,out] designations A list of designations to fill and distribute
-    amoung processes
 @param[in,out] activeSuids A list of domain SUIDs that was activated
-    by the program and/or user given the progress input file
+    by the program and/or user given the progress input file; return
+    the deallocation of this
 @param[in,out] activeTSuids A list of translated domain SUIDs that was activated
-    by the program and/or user given the progress input file
-@param[in,out] nodeNames A list of node names that contain processors
-    when running on a computer (HPC or local)
-@param[in,out] numProcsInNode A list of number of processes being run
-    in the respective compute node
-@param[in,out] numMaxProcsInNode A list holding the maximum
-    number of ranks a node in `ranksInNodes` can hold
-@param[in,out] ranksInNodes A list of ranks within a node for each
-    compute node encountered
+    by the program and/or user given the progress input file; return the
+    deallocation of this
+@param[in,out] nSuidsAssign An array of size [n_ranks] holding the number of
+suids to assign to each process; return the deallocation of this
 */
 static void deallocProcHelpers(
     size_t numActiveSites,
-    int maxNodes,
-    int numNodes,
-    SW_MPI_DESIGNATE ***designations,
     size_t ***activeSuids,
     size_t ***activeTSuids,
-    char ***nodeNames,
-    int **numProcsInNode,
-    int **numMaxProcsInNode,
-    int ***ranksInNodes
+    size_t **nSuidsAssign
 ) {
     const int num2D = 4;
     const int num1D = 2;
@@ -225,20 +211,9 @@ static void deallocProcHelpers(
     size_t pair;
     int inKey;
 
-    size_t numValsIn2D[] = {
-        numActiveSites, (size_t) maxNodes, (size_t) maxNodes, (size_t) numNodes
-    };
+    void **oneDimFree[] = {(void **) nSuidsAssign};
 
-    void **oneDimFree[] = {
-        (void **) numProcsInNode, (void **) numMaxProcsInNode
-    };
-
-    void ***twoDimFree[] = {
-        (void ***) activeSuids,
-        (void ***) nodeNames,
-        (void ***) ranksInNodes,
-        (void ***) designations
-    };
+    void ***twoDimFree[] = {(void ***) activeSuids};
 
     for (var = 0; var < num1D; var++) {
         if (!isnull((void *) (*oneDimFree[var]))) {
@@ -249,7 +224,7 @@ static void deallocProcHelpers(
 
     for (var = 0; var < num2D; var++) {
         if (!isnull(*twoDimFree[var])) {
-            for (pair = 0; pair < numValsIn2D[var]; pair++) {
+            for (pair = 0; pair < numActiveSites; pair++) {
                 if (!isnull((*twoDimFree[var])[pair])) {
                     free((*twoDimFree[var])[pair]);
                     (*twoDimFree[var])[pair] = NULL;
@@ -273,23 +248,6 @@ static void deallocProcHelpers(
             activeTSuids[inKey] = NULL;
         }
     }
-}
-
-/**
-@brief Calculate the number of I/O processes in a node
-
-@param[in] numProcsInNode A list of number of processes being run
-    in the respective compute node
-
-@return The number of I/O processes that can reasonably be
-    run within a compute node (i.e., one-to-one compute-to-IO ratio or greater)
-*/
-static int calcNumIOProcs(int numProcsInNode) {
-    int numCompProcInNode = numProcsInNode - SW_MPI_NIO;
-
-    return (((double) numCompProcInNode) / SW_MPI_NIO < 1.0) ?
-               numProcsInNode / 2 :
-               SW_MPI_NIO;
 }
 
 /**
@@ -428,53 +386,6 @@ static void reorder_output(
 }
 
 /**
-@brief Find which I/O process a compute process was assigned to
-
-@param[in,out] desigs A list of designations to fill and distribute
-    amoung processes
-@param[in] rootDes Root process instance of a designation to fill rather
-    than the first instance in `designations`
-@param[in] node Current compute node we are searching for I/O assignment
-@param[in] proc Current process we are searching for I/O match
-@param[in] targetRank Rank to look for within an I/O process' list of
-    assigned ranks
-@param[in] ranksInNodes A list of ranks within a node for each
-    compute node encountered
-*/
-static void findIOAssignment(
-    SW_MPI_DESIGNATE **desigs,
-    SW_MPI_DESIGNATE *rootDes,
-    int node,
-    int proc,
-    int targetRank,
-    int **ranksInNodes
-) {
-    int tempProc = 0;
-
-    SW_MPI_DESIGNATE *tempDes;
-    SW_MPI_DESIGNATE *targetDesig = &desigs[node][proc];
-
-    targetDesig->ioRank = -1;
-
-    while (targetDesig->ioRank == -1) {
-        tempDes =
-            (node == 0 && tempProc == 0) ? rootDes : &desigs[node][tempProc];
-        if (tempDes->procJob == SW_MPI_PROC_COMP) {
-            break;
-        }
-
-        for (int temp = 0; temp < tempDes->nCompProcs; temp++) {
-            if (tempDes->ranks[temp] == targetRank) {
-                targetDesig->ioRank = ranksInNodes[node][tempProc];
-                break;
-            }
-        }
-
-        tempProc++;
-    }
-}
-
-/**
 @brief Allocate room to store a list of domain SUIDs
 
 @param[in] numActiveSites Number of active sites that will be
@@ -546,609 +457,108 @@ static void allocateActiveTSuids(
 }
 
 /**
-@brief Re/allocate compute node/process information
+@brief Calculate the number of suids that will be distributed to
+all processes; this will happen by attempting to divide the number
+of active sites evently across all process/ranks. If the division results
+in a remainder, then an extra site will be assigned to reach rank until
+there are no more remainder sites left
 
-@param[in] oldCount Last size of the arrays
-@param[in] newCount Updated size to reallocate to
-@param[in,out] nodeNames A list of node names that contain processors
-    when running on a computer (HPC or local)
-@param[in,out] numProcsInNode A list of number of processes being run
-    in the respective compute node node/local computer
-@param[in,out] ranksInNodes A list of ranks within a node for each
-    compute node encountered
-@param[in,out] numMaxProcsInNode A list holding the maximum
-    number of ranks a node in `ranksInNodes` can hold
-@param[out] LogInfo Holds information on warnings and errors
-*/
-static void allocProcInfo(
-    int oldCount,
-    int newCount,
-    char ***nodeNames,
-    int **numProcsInNode,
-    int ***ranksInNodes,
-    int **numMaxProcsInNode,
-    LOG_INFO *LogInfo
-) {
-    int fillIndex;
-
-    if (isnull(*nodeNames)) {
-        *nodeNames = (char **) Mem_Malloc(
-            sizeof(char *) * newCount, "allocProcInfo", LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return;
-        }
-
-        *numProcsInNode = (int *) Mem_Malloc(
-            sizeof(int) * newCount, "allocProcInfo", LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return;
-        }
-
-        *ranksInNodes = (int **) Mem_Malloc(
-            sizeof(int *) * newCount, "allocProcInfo", LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return;
-        }
-
-        *numMaxProcsInNode = (int *) Mem_Malloc(
-            sizeof(int) * newCount, "allocProcInfo", LogInfo
-        );
-    } else {
-        *nodeNames = (char **) Mem_ReAlloc(
-            (void *) *nodeNames, sizeof(char *) * newCount, LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return;
-        }
-
-        *numProcsInNode = (int *) Mem_ReAlloc(
-            *numProcsInNode, sizeof(int) * newCount, LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return;
-        }
-
-        *ranksInNodes = (int **) Mem_ReAlloc(
-            (void *) *ranksInNodes, sizeof(int *) * newCount, LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return;
-        }
-
-        *numMaxProcsInNode = (int *) Mem_ReAlloc(
-            *numMaxProcsInNode, sizeof(int) * newCount, LogInfo
-        );
-    }
-    if (LogInfo->stopRun) {
-        return;
-    }
-
-    for (fillIndex = oldCount; fillIndex < newCount; fillIndex++) {
-        (*nodeNames)[fillIndex] = NULL;
-        (*ranksInNodes)[fillIndex] = NULL;
-        (*numProcsInNode)[fillIndex] = 0;
-        (*numMaxProcsInNode)[fillIndex] = 0;
-    }
-}
-
-/**
-@brief Reallocate the list of ranks contained within a compute node
-
-@param[in] oldCount Last size of the array
-@param[in] newCount Updated size to reallocate to
-@param[in,out] ranksInNode A list of rank numbers to be reallocated
-@param[out] LogInfo Holds information on warnings and errors
-*/
-static void reallocRanks(
-    int oldCount, int newCount, int **ranksInNode, LOG_INFO *LogInfo
-) {
-    int rank;
-
-    if (isnull(*ranksInNode)) {
-        *ranksInNode =
-            (int *) Mem_Malloc(sizeof(int) * newCount, "reallocRanks", LogInfo);
-    } else {
-        *ranksInNode =
-            (int *) Mem_ReAlloc(*ranksInNode, sizeof(int) * newCount, LogInfo);
-    }
-    if (LogInfo->stopRun) {
-        return;
-    }
-
-    for (rank = oldCount; rank < newCount; rank++) {
-        (*ranksInNode)[rank] = 0;
-    }
-}
-
-/**
-@brief Fill information of a designation instance
-
-@param[in] numCompProcsNode Number of compute processes in a node
-@param[in] ioProcsInNode Number of I/O processes within a compute node
-@param[in] numActiveSites Number of sites that was turned on
-    by the program and/or user
-@param[in] totCompProcs Total number of compute processes in the MPI world
-@param[in] activeSiteSuids A list of program domain SUIDs that are
-    to be simulated
-@param[in] activeSiteTSuids A list of translated SUIDs
-    (program domain to input domain) to be stored if used for
-    each input key except domain and spatial
-@param[in] activeSuids A list of domain SUIDs that was activated
-    by the program and/or user given the progress input file
-@param[in] ranks A list of ranks within a node that we can specify that
-    the I/O process handles
-@param[in,out] rankAssign An index specifying where to start the assigning
-    within `ranks` to the I/O process
-@param[in,out] activeTSuids A list of translated domain SUIDs that was activated
-    by the program and/or user given the progress input file
-@param[in,out] leftOverCompProcs Specifies how many overflow compute
-    processes we have if the number of compute to I/O does not
-    divide evenly
-@param[in,out] leftOverSuids Specifies how many overflow SUIDs we have
-    if we were to assign if the number of compute processes and active sites
-    does not divide evenly; return an updated number of left over SUIDs
-@param[in,out] leftSuids Number of SUIDs that are left to be assigned
-@param[in,out] suidAssign Placement within active SUID array we need
-    to assign to the current I/O process; return the updated
-    placement for the next assignment
-@param[out] desig Designation instance that holds information about
-    assigning a process to a job
-@param[out] LogInfo Holds information on warnings and errors
-*/
-static void fillDesignationIO(
-    int numCompProcsNode,
-    int ioProcsInNode,
-    size_t numActiveSites,
-    int totCompProcs,
-    size_t **activeSuids,
-    const int *ranks,
-    int *rankAssign,
-    size_t ***activeTSuids,
-    int *leftOverCompProcs,
-    size_t *leftOverSuids,
-    size_t *leftSuids,
-    int *suidAssign,
-    SW_MPI_DESIGNATE *desig,
-    LOG_INFO *LogInfo
-) {
-    size_t nSuids;
-    unsigned int suid;
-    int tSuid; /* For translated assignment */
-    int inKey;
-    int rank;
-
-    desig->nCompProcs = numCompProcsNode / ioProcsInNode;
-
-    if (*leftOverCompProcs > 0) {
-        desig->nCompProcs++;
-        (*leftOverCompProcs)--;
-    }
-
-    // Allocate and assign floor(# active sites / num
-    // comp procs) + (<n comp procs> left over SUIDs, if necessary)
-    // to the process or the rest of the SUIDs if this assignment
-    // will complete the I/O assignments
-    desig->nSuids =
-        (size_t) ((numActiveSites / totCompProcs) * desig->nCompProcs);
-
-    if (desig->nSuids > *leftSuids) {
-        desig->nSuids = *leftSuids;
-    } else if (*leftOverSuids > 0) {
-        nSuids = (*leftOverSuids >= (IntU) desig->nCompProcs) ?
-                     (size_t) desig->nCompProcs :
-                     *leftOverSuids;
-
-        desig->nSuids += nSuids;
-        (*leftOverSuids) -= nSuids;
-    }
-    *leftSuids -= desig->nSuids;
-    desig->domSuids = (size_t **) Mem_Malloc(
-        sizeof(size_t *) * desig->nSuids, "fillDesignationIO", LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return;
-    }
-
-    for (suid = 0; suid < desig->nSuids; suid++) {
-        desig->domSuids[suid] = NULL;
-    }
-
-    for (suid = 0; suid < desig->nSuids; suid++) {
-        desig->domSuids[suid] = (size_t *) Mem_Malloc(
-            sizeof(size_t) * 2, "fillDesignationIO", LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return;
-        }
-    }
-
-    // Add SUIDs/ranks to list of I/O
-    ForEachNCInKey(inKey) {
-        if (!isnull(activeTSuids[inKey])) {
-            allocateActiveTSuids(
-                desig->nSuids, &desig->domTSuids[inKey], LogInfo
-            );
-            if (LogInfo->stopRun) {
-                return;
-            }
-
-            tSuid = *suidAssign;
-            for (suid = 0; suid < desig->nSuids; suid++) {
-                desig->domTSuids[inKey][suid][0] =
-                    activeTSuids[inKey][tSuid][0];
-                desig->domTSuids[inKey][suid][1] =
-                    activeTSuids[inKey][tSuid][1];
-                tSuid++;
-            }
-        }
-    }
-
-    for (suid = 0; suid < desig->nSuids; suid++) {
-        desig->domSuids[suid][0] = activeSuids[*suidAssign][0];
-        desig->domSuids[suid][1] = activeSuids[*suidAssign][1];
-        (*suidAssign)++;
-    }
-
-    for (rank = 0; rank < desig->nCompProcs; rank++) {
-        desig->ranks[rank] = ranks[*rankAssign];
-        (*rankAssign)++;
-    }
-}
-
-/**
-@brief Designate all processes to a job (compute or I/O)
-
-@param[in,out] designations A list of designations to fill and distribute
-    amoung processes
-@param[in,out] rootDes Root process instance of a designation to fill rather
-    than the first instance in `designations`
-@param[in] numProcsInNode A list of number of processes being run
-    in the respective compute node node/local computer
-@param[in] numNodes The number of compute nodes we are running instances of
-    the program on
-@param[in] totCompProcs Total number of compute processes in the MPI world
-@param[in] numActiveSites Number of active sites that will be
-    simulated
-@param[in] activeSuids A list of domain SUIDs that was activated
-    by the program and/or user given the progress input file
-@param[in] activeTSuids A list of translated domain SUIDs that was activated
-    by the program and/or user given the progress input file
-@param[in] ranksInNodes A list of ranks within a node for each
-    compute node encountered
-@param[in,out] leftSuids Number of SUIDs that are left to be assigned
-@param[in,out] suidAssign Placement within active SUID array we need
-    to assign to the current I/O process; return the updated
-    placement for the next assignment
-@param[out] LogInfo Holds information on warnings and errors
-*/
-static void designateProcesses(
-    SW_MPI_DESIGNATE ***designations,
-    SW_MPI_DESIGNATE *rootDes,
-    const int numProcsInNode[],
-    int numNodes,
-    int totCompProcs,
-    size_t numActiveSites,
-    size_t **activeSuids,
-    size_t ***activeTSuids,
-    int **ranksInNodes,
-    size_t *leftSuids,
-    int *suidAssign,
-    LOG_INFO *LogInfo
-) {
-    int node;
-    int proc;
-    int numNodeProcs;
-    int ioProcsLeft;
-    int ioProcsInNode;
-    int leftOverComp;
-    size_t leftOverSuids;
-    int compNodesAssign;
-
-    SW_MPI_DESIGNATE *desig = NULL;
-
-    // Allocate designation information for each compute node
-    // # compute nodes by number of processes in compute node
-    *designations = (SW_MPI_DESIGNATE **) Mem_Malloc(
-        sizeof(SW_MPI_DESIGNATE *) * numNodes, "designateProcesses", LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return;
-    }
-    for (node = 0; node < numNodes; node++) {
-        (*designations)[node] = NULL;
-    }
-
-    /* Calculate the number of overflow sites that will not be assigned
-       unless we specifically make sure to assign them
-
-        Note: This will result in a value within [0, # active sites - 1]
-    */
-    leftOverSuids = numActiveSites % totCompProcs;
-
-    for (node = 0; node < numNodes; node++) {
-        (*designations)[node] = (SW_MPI_DESIGNATE *) Mem_Malloc(
-            sizeof(SW_MPI_DESIGNATE) * numProcsInNode[node],
-            "designateProcesses",
-            LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return;
-        }
-
-        numNodeProcs = numProcsInNode[node];
-
-        // Go through the node's processes
-        // Calculate the number of I/O processes within the node
-        // DO NOT go over a ratio of one-to-one in compute-to-IO
-        ioProcsLeft = ioProcsInNode = calcNumIOProcs(numNodeProcs);
-
-        // Calculate how many overflow compute processes we need
-        // to assign to I/O processes
-        leftOverComp = (numNodeProcs - ioProcsInNode) % ioProcsInNode;
-        compNodesAssign = ioProcsInNode; /* Skip past I/O assignments in node */
-        for (proc = 0; proc < numNodeProcs; proc++) {
-            desig = (node == 0 && proc == 0) ? rootDes :
-                                               &(*designations)[node][proc];
-
-            desig->procJob =
-                (ioProcsLeft == 0) ? SW_MPI_PROC_COMP : SW_MPI_PROC_IO;
-
-            if (desig->procJob == SW_MPI_PROC_IO) {
-                fillDesignationIO(
-                    numNodeProcs - ioProcsInNode,
-                    ioProcsInNode,
-                    numActiveSites,
-                    totCompProcs,
-                    activeSuids,
-                    ranksInNodes[node],
-                    &compNodesAssign,
-                    activeTSuids,
-                    &leftOverComp,
-                    &leftOverSuids,
-                    leftSuids,
-                    suidAssign,
-                    desig,
-                    LogInfo
-                );
-                if (LogInfo->stopRun) {
-                    return;
-                }
-
-                ioProcsLeft--;
-            }
-        }
-    }
-}
-
-/**
-@brief Get and store the world of processors information to get
-    a sense of where processors are located
-
+@param[in] numActiveSites Number of active sites that will be simulated
 @param[in] worldSize Total number of processes that the MPI run has created
-@param[in] rootProcName Root process' processor/compute node name
-@param[out] numNodes The number of unique nodes the program is running on
-@param[out] maxNumNodes Maximum number of nodes that were in use
-@param[out] nodeNames A list of unique node names
-@param[out] numProcsInNode A list specifying the number of processes
-    within each node
-@param[out] numMaxProcsInNode A list specifying the size of each
-    compute node's maxmimum determined amount of processes
-@param[out] ranksInNodes A list specifying the rank values that are in
-    a compute node
-@param[iout] LogInfo Holds information on warnings and errors
+@param[out] nSuids An array that holds the total number of suids each respective
+rank/process will receive/handle
+@param[out] LogInfo Holds information on warnings and errors
 */
-static void getProcInfo(
-    int worldSize,
-    char rootProcName[],
-    int *numNodes,
-    int *maxNumNodes,
-    char ***nodeNames,
-    int **numProcsInNode,
-    int **numMaxProcsInNode,
-    int ***ranksInNodes,
-    LOG_INFO *LogInfo
+static void calcNumSites(
+    size_t numActiveSites, size_t worldSize, size_t **nSuids, LOG_INFO *LogInfo
 ) {
-    const int allocInc = 3; /* Can be anything > 0 but >= 5 may be too much */
+    size_t siteIndex;
+    size_t numProcSites = numActiveSites / worldSize;
+    size_t overflowSites = numActiveSites % worldSize;
 
-    int destRank;
-    int node;
-    int oldSize = allocInc;
-    int newSize = oldSize + allocInc;
-    int oldSizeRanks = 0;
-    Bool duplicate;
-    char rankProc[FILENAME_MAX];
+    *nSuids = (size_t *) Mem_Malloc(
+        sizeof(size_t) * worldSize, "calcNumSites()", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
 
-    MPI_Request nullReq = MPI_REQUEST_NULL;
+    for (siteIndex = 0; siteIndex < worldSize; siteIndex++) {
+        (*nSuids)[siteIndex] = 0;
+    }
 
-    // Go through each rank and get their processor name
-    for (destRank = 0; destRank < worldSize; destRank++) {
-        duplicate = swFALSE;
+    for (siteIndex = 0; siteIndex < worldSize; siteIndex++) {
+        (*nSuids)[siteIndex] = numProcSites;
 
-        // Get node name
-        if (destRank > SW_MPI_ROOT) {
-            SW_MPI_Recv(
-                MPI_CHAR,
-                rankProc,
-                MAX_FILENAMESIZE,
-                destRank,
-                swTRUE,
-                0,
-                &nullReq
-            );
-        } else {
-            memcpy(rankProc, rootProcName, FILENAME_MAX);
+        if (overflowSites > 0) {
+            (*nSuids)[siteIndex]++;
+            overflowSites--;
         }
-
-        // Add to a list of unique node names (if not already present)
-        for (node = 0; node < *numNodes; node++) {
-            duplicate = (Bool) (strcmp(rankProc, (*nodeNames)[node]) == 0);
-            if (duplicate) {
-                break;
-            }
-        }
-
-        node = (duplicate) ? node : *numNodes;
-
-        // If it was not unique
-        if (!duplicate) {
-            // Store the name to compare later
-
-            // Resize storage arrays if needed
-            if (*numNodes == newSize) {
-                oldSize = newSize;
-                newSize += allocInc;
-                allocProcInfo(
-                    oldSize,
-                    newSize,
-                    nodeNames,
-                    numProcsInNode,
-                    ranksInNodes,
-                    numMaxProcsInNode,
-                    LogInfo
-                );
-                if (LogInfo->stopRun) {
-                    return;
-                }
-
-                *maxNumNodes = newSize;
-            }
-
-            // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
-            (*nodeNames)[node] = Str_Dup(rankProc, LogInfo);
-            if (LogInfo->stopRun) {
-                return;
-            }
-
-            (*numNodes)++;
-        }
-        (*numProcsInNode)[node]++;
-
-        // Keep track of which ranks are in which nodes
-        if ((*numProcsInNode)[node] >= (*numMaxProcsInNode)[node]) {
-            oldSizeRanks = (*numMaxProcsInNode)[node];
-            (*numMaxProcsInNode)[node] += allocInc;
-            reallocRanks(
-                oldSizeRanks,
-                (*numMaxProcsInNode)[node],
-                &(*ranksInNodes)[node],
-                LogInfo
-            );
-            if (LogInfo->stopRun) {
-                return;
-            }
-        }
-        (*ranksInNodes)[node][(*numProcsInNode)[node] - 1] = destRank;
     }
 }
 
 /**
-@brief Get or send a processor designation to get ready for
+@brief Get or send a process domain designation to get ready for
     simulation
 
-@param[in] desType Custom MPI datatype to send SW_MPI_DESIGNATE
-@param[in] designations A list of designations to fill and distribute
-    amoung processes
 @param[in] rank Process number known to MPI for the current process (aka rank)
-@param[in] numNodes The number of compute nodes we are running instances of
-    the program on
+@param[in] nSuidsAssign An array of size [n_ranks] holding the number of
+suids to assign to each process
+@param[in] activeSuids A list of domain SUIDs that was activated
+by the program and/or user given the progress input file
+@param[in] activeTSuids A list of translated domain SUIDs that was activated
+by the program and/or user given the progress input file
+@param[in] worldSize Total number of processes that the MPI run has created
 @param[in] useIndexFile Specifies to create/use an index file
-@param[in] numProcsInNode A list of number of processes being run
-    in the respective compute node node/local computer
-@param[in] ranksInNodes A list of ranks for every compute node
-@param[in,out] SW_Designation Has two different purposes
-    Root process: Used in the search process for I/O rank assignment
-        for compute processes; does not change
-    Other processes: Designation to be filled/recieved from the
-        root process; returns the filled designation instance
+@param[out] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs; this function
+    call will update it with allocations to hold domain suids and
+    the number of suids to simulate
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void assignProcs(
-    MPI_Datatype desType,
-    SW_MPI_DESIGNATE **designations,
     int rank,
-    int numNodes,
+    size_t nSuidsAssign[],
+    size_t **activeSuids,
+    size_t ***activeTSuids,
+    int worldSize,
     const Bool useIndexFile[],
-    const int numProcsInNode[],
-    int **ranksInNodes,
-    Bool useTranslated,
-    SW_MPI_DESIGNATE *SW_Designation,
+    SW_DOMAIN *SW_Domain,
     LOG_INFO *LogInfo
 ) {
+    const int recvSuidCount = 1;
+    const int coordPairSize = 2;
     size_t pair;
-    int node;
-    int proc;
-    int sendRank;
+    size_t activePairIndex;
+    int destRank;
     int inKey;
 
     MPI_Request nullReq = MPI_REQUEST_NULL;
-    SW_MPI_DESIGNATE *currDes = NULL;
 
-    if (rank == SW_MPI_ROOT) {
-        for (node = 0; node < numNodes; node++) {
-            for (proc = 0; proc < numProcsInNode[node]; proc++) {
-                sendRank = ranksInNodes[node][proc];
-
-                if (sendRank > SW_MPI_ROOT) {
-                    currDes = &designations[node][proc];
-
-                    if (currDes->procJob == SW_MPI_PROC_COMP) {
-                        findIOAssignment(
-                            designations,
-                            SW_Designation,
-                            node,
-                            proc,
-                            sendRank,
-                            ranksInNodes
-                        );
-                    } else {
-                        currDes->useTSuids = useTranslated;
-                    }
-
-                    // Send their designation
-                    SW_MPI_Send(
-                        desType, currDes, 1, sendRank, swTRUE, 0, &nullReq
-                    );
-                }
-            }
-        }
-    } else {
-        SW_MPI_Recv(
-            desType, SW_Designation, 1, SW_MPI_ROOT, swTRUE, 0, &nullReq
-        );
+    // Send nSuid information so processes know how many suids
+    // to allocate for
+    SW_MPI_Scatter(
+        MPI_COMM_WORLD,
+        nSuidsAssign,
+        SW_MPI_ROOT,
+        worldSize,
+        recvSuidCount,
+        &SW_Domain->nSuids
+    );
+    allocateActiveSuids(
+        SW_Domain->nSuids, &SW_Domain->domSuids[eSW_InDomain], LogInfo
+    );
+    if (LogInfo->stopRun) {
+        goto reportError;
     }
 
-    // Transfer and allocate information to I/O processes before
-    // starting the loop to simplify error handling across processes
-    // when allocating memory
-    if (SW_Designation->procJob == SW_MPI_PROC_IO || rank == SW_MPI_ROOT) {
-        // Send nSuid information so the I/O processes know how many SUIDs
-        // to allocate for
-        if (rank > SW_MPI_ROOT) {
-            allocateActiveSuids(
-                SW_Designation->nSuids, &SW_Designation->domSuids, LogInfo
+    ForEachNCInKey(inKey) {
+        if (inKey > eSW_InDomain && useIndexFile[inKey]) {
+            allocateActiveTSuids(
+                SW_Domain->nSuids, &SW_Domain->domSuids[inKey], LogInfo
             );
             if (LogInfo->stopRun) {
                 goto reportError;
-            }
-        }
-
-        if (SW_Designation->useTSuids && rank > SW_MPI_ROOT) {
-            ForEachNCInKey(inKey) {
-                if (inKey == eSW_InDomain || !useIndexFile[inKey]) {
-                    continue;
-                }
-
-                allocateActiveTSuids(
-                    SW_Designation->nSuids,
-                    &SW_Designation->domTSuids[inKey],
-                    LogInfo
-                );
-                if (LogInfo->stopRun) {
-                    goto reportError;
-                }
             }
         }
     }
@@ -1158,743 +568,67 @@ reportError:
         return;
     }
 
-    // Communicate with I/O processes to send them their domain and translated
-    // SUIDs once all has been allocated
-    // Creating two separate blocks of communication seems to be the simplest
-    // way to easily check that allocation caused an error with the
-    // necessary information used to allocate space for the SUIDs
+    // Copy root process' information
     if (rank == SW_MPI_ROOT) {
-        for (node = 0; node < numNodes; node++) {
-            for (proc = 0; proc < numProcsInNode[node]; proc++) {
-                sendRank = ranksInNodes[node][proc];
-
-                if (sendRank > SW_MPI_ROOT) {
-                    currDes = &designations[node][proc];
-
-                    if (currDes->procJob == SW_MPI_PROC_IO) {
-                        for (pair = 0; pair < currDes->nSuids; pair++) {
-                            SW_MPI_Send(
-                                SW_MPI_SIZE_T,
-                                currDes->domSuids[pair],
-                                2,
-                                sendRank,
-                                swTRUE,
-                                0,
-                                &nullReq
-                            );
-                        }
-
-                        if (useTranslated) {
-                            ForEachNCInKey(inKey) {
-                                if (inKey <= eSW_InSpatial ||
-                                    !useIndexFile[inKey]) {
-
-                                    continue;
-                                }
-
-                                for (pair = 0; pair < currDes->nSuids; pair++) {
-                                    SW_MPI_Send(
-                                        SW_MPI_SIZE_T,
-                                        currDes->domTSuids[inKey][pair],
-                                        2,
-                                        sendRank,
-                                        swTRUE,
-                                        0,
-                                        &nullReq
-                                    );
-                                }
-                            }
-                        }
-
-                        SW_MPI_Send(
-                            MPI_INT,
-                            currDes->ranks,
-                            PROCS_PER_IO,
-                            sendRank,
-                            swTRUE,
-                            0,
-                            &nullReq
-                        );
+        for (pair = 0; pair < nSuidsAssign[SW_MPI_ROOT]; pair++) {
+            ForEachNCInKey(inKey) {
+                if (!isnull(SW_Domain->domSuids[inKey])) {
+                    if (inKey > eSW_InDomain) {
+                        SW_Domain->domSuids[inKey][pair][0] =
+                            (useIndexFile[inKey]) ?
+                                activeTSuids[inKey][pair][0] :
+                                activeSuids[pair][0];
+                        SW_Domain->domSuids[inKey][pair][1] =
+                            (useIndexFile[inKey]) ?
+                                activeTSuids[inKey][pair][1] :
+                                activeSuids[pair][1];
+                    } else {
+                        SW_Domain->domSuids[eSW_InDomain][pair][0] =
+                            activeSuids[pair][0];
+                        SW_Domain->domSuids[eSW_InDomain][pair][1] =
+                            activeSuids[pair][1];
                     }
                 }
             }
         }
-    } else if (SW_Designation->procJob == SW_MPI_PROC_IO) {
-        for (pair = 0; pair < SW_Designation->nSuids; pair++) {
-            SW_MPI_Recv(
-                SW_MPI_SIZE_T,
-                SW_Designation->domSuids[pair],
-                2,
-                SW_MPI_ROOT,
-                swTRUE,
-                0,
-                &nullReq
-            );
-        }
+    }
 
-        if (SW_Designation->useTSuids) {
-            ForEachNCInKey(inKey) {
-                if (inKey > eSW_InSpatial && useIndexFile[inKey]) {
-                    for (pair = 0; pair < SW_Designation->nSuids; pair++) {
+    // Communicate suids to all ranks
+    activePairIndex = nSuidsAssign[SW_MPI_ROOT];
+    for (destRank = 1; destRank < worldSize; destRank++) {
+        if (rank == SW_MPI_ROOT || destRank == rank) {
+            for (pair = 0; pair < nSuidsAssign[destRank]; pair++) {
+                ForEachNCInKey(inKey) {
+                    if (!useIndexFile[inKey]) {
+                        continue;
+                    }
+
+                    if (rank == SW_MPI_ROOT) {
+                        SW_MPI_Send(
+                            SW_MPI_SIZE_T,
+                            (useIndexFile[inKey] && inKey > eSW_InDomain) ?
+                                activeTSuids[inKey][activePairIndex] :
+                                activeSuids[activePairIndex],
+                            coordPairSize,
+                            destRank,
+                            swFALSE,
+                            0,
+                            &nullReq
+                        );
+                    } else {
                         SW_MPI_Recv(
                             SW_MPI_SIZE_T,
-                            SW_Designation->domTSuids[inKey][pair],
-                            2,
+                            SW_Domain->domSuids[pair],
+                            coordPairSize,
                             SW_MPI_ROOT,
-                            swTRUE,
+                            swFALSE,
                             0,
                             &nullReq
                         );
                     }
                 }
-            }
-        }
 
-        SW_MPI_Recv(
-            MPI_INT,
-            SW_Designation->ranks,
-            PROCS_PER_IO,
-            SW_MPI_ROOT,
-            swTRUE,
-            0,
-            &nullReq
-        );
-    }
-}
-
-/**
-@brief Wrapper function to send/receive information about a string
-    that will be allocated and sent/stored
-
-@param[in] rank Process number known to MPI for the current process (aka rank)
-@param[in] buffer Buffer to send (root) and allocate (all other processes)
-@param[in] send Flag specifying (root) if the string should be sent (not NULL)
-@param[in] comm MPI communicator to broadcast a message to
-@param[out] LogInfo Holds information on warnings and errors
-*/
-static void get_dynamic_string(
-    int rank, char **buffer, Bool send, MPI_Comm comm, LOG_INFO *LogInfo
-) {
-    size_t strLen = 0;
-
-    if (rank == SW_MPI_ROOT) {
-        strLen = (send) ? strlen(*buffer) + 1 : 0;
-        SW_MPI_Bcast(SW_MPI_SIZE_T, &strLen, 1, SW_MPI_ROOT, comm);
-    } else {
-        SW_MPI_Bcast(SW_MPI_SIZE_T, &strLen, 1, SW_MPI_ROOT, comm);
-
-        if (strLen > 0) {
-            *buffer = (char *) Mem_Malloc(
-                sizeof(char) * strLen, "get_dynamic_string", LogInfo
-            );
-        }
-    }
-    if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
-        return;
-    }
-
-    if (strLen > 0) {
-        SW_MPI_Bcast(MPI_CHAR, *buffer, (int) strLen, SW_MPI_ROOT, comm);
-    }
-}
-
-/**
-@brief Broadcast information about SW_NETCDF_IN
-
-@param[in] rank Process number known to MPI for the current process (aka rank)
-@param[in] comm MPI communicator to broadcast a message to
-@param[in,out] netCDFIn Struct of type SW_NETCDF_IN that will be distributed
-    (root process) and received (all others)
-@param[out] LogInfo Holds information on warnings and errors
-*/
-static void get_NC_info(
-    int rank, MPI_Comm comm, SW_NETCDF_IN *netCDFIn, LOG_INFO *LogInfo
-) {
-    int startVar;
-    int var;
-    int att;
-    char *str;
-    int inKey;
-    Bool useKey = swFALSE;
-
-    if (rank > SW_MPI_ROOT) {
-        SW_NCIN_alloc_input_var_info(netCDFIn, LogInfo);
-    }
-    SW_MPI_Bcast(MPI_INT, netCDFIn->ncDomVarIDs, SW_NVARDOM, SW_MPI_ROOT, comm);
-
-    SW_MPI_Bcast(
-        MPI_INT, netCDFIn->siteDoms, SW_NINKEYSNC, SW_GROUP_ROOT, comm
-    );
-
-    ForEachNCInKey(inKey) {
-        if (rank == SW_GROUP_ROOT) {
-            useKey =
-                (Bool) (netCDFIn->readInVars[inKey][0] && inKey > eSW_InDomain);
-        }
-
-        SW_MPI_Bcast(MPI_INT, &useKey, 1, SW_GROUP_ROOT, comm);
-
-        if (!useKey) {
-            netCDFIn->readInVars[inKey][0] = swFALSE;
-            continue;
-        }
-
-        SW_MPI_Bcast(
-            MPI_INT,
-            netCDFIn->readInVars[inKey],
-            numVarsInKey[inKey] + 1,
-            SW_GROUP_ROOT,
-            comm
-        );
-
-        startVar = 0;
-        while (startVar < numVarsInKey[inKey] &&
-               !netCDFIn->readInVars[inKey][startVar + 1]) {
-
-            startVar++;
-        }
-
-        if (rank > SW_MPI_ROOT) {
-            SW_NCIN_allocDimVar(
-                numVarsInKey[inKey], &netCDFIn->dimOrderInVar[inKey], LogInfo
-            );
-        }
-        if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
-            return;
-        }
-
-        // Go through all enabled variables within the current key
-        // and copy
-        for (var = startVar; var < numVarsInKey[inKey]; var++) {
-            if (!netCDFIn->readInVars[inKey][var + 1]) {
-                continue;
-            }
-
-            for (att = 0; att < NUM_INPUT_INFO; att++) {
-                str = netCDFIn->inVarInfo[inKey][var][att];
-                get_dynamic_string(
-                    rank,
-                    &netCDFIn->inVarInfo[inKey][var][att],
-                    (Bool) (!isnull(str)),
-                    comm,
-                    LogInfo
-                );
-                if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
-                    return;
-                }
-            }
-
-            str = netCDFIn->units_sw[inKey][var];
-            get_dynamic_string(
-                rank,
-                &netCDFIn->units_sw[inKey][var],
-                (Bool) (!isnull(str)),
-                comm,
-                LogInfo
-            );
-            if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
-                return;
-            }
-
-            SW_MPI_Bcast(
-                MPI_INT,
-                netCDFIn->dimOrderInVar[inKey][var],
-                MAX_NDIMS,
-                SW_GROUP_ROOT,
-                comm
-            );
-        }
-    }
-}
-
-/**
-@brief Wrapper function to create groups and communications
-between compute and I/O processes
-
-@param[in] numRanks Number of ranks within the new communicator
-@param[in] ranks A list of ranks that will be within the
-    new communicator
-@param[out] groupComm New MPI group communicator
-*/
-static void mpi_create_group_comms(
-    int numRanks, int *ranks, MPI_Comm *groupComm
-) {
-    int res = MPI_SUCCESS;
-    MPI_Group worldGroup = MPI_GROUP_NULL;
-    MPI_Group newGroup = MPI_GROUP_NULL;
-
-    res = MPI_Comm_group(MPI_COMM_WORLD, &worldGroup);
-    if (res != MPI_SUCCESS) {
-        goto freeMem;
-    }
-
-    res = MPI_Group_incl(worldGroup, numRanks, ranks, &newGroup);
-    if (res != MPI_SUCCESS) {
-        goto freeMem;
-    }
-
-    res = MPI_Comm_create_group(MPI_COMM_WORLD, newGroup, 0, groupComm);
-    if (res != MPI_SUCCESS) {
-        goto freeMem;
-    }
-
-freeMem:
-    if (newGroup != MPI_GROUP_NULL) {
-        MPI_Group_free(&newGroup);
-    }
-
-    if (worldGroup != MPI_GROUP_NULL) {
-        MPI_Group_free(&worldGroup);
-    }
-
-    if (res != MPI_SUCCESS) {
-        errorMPI(-1, res);
-    }
-}
-
-/**
-@brief Helper function for `create_groups` to create communicators
-    that contains an I/O process and the I/O process' respectively assigned
-    compute process ranks
-
-@param[in] rank Process number known to MPI for the current process (aka rank)
-@param[in] rankJob Assigned job of a specific rank/process (compute or I/O)
-@param[in,out] desig Designation instance that holds information about
-    assigning a process to a job
-@param[out] LogInfo Holds information on warnings and errors
-*/
-static void create_iocomp_comms(
-    int rank, int rankJob, SW_MPI_DESIGNATE *desig, LOG_INFO *LogInfo
-) {
-    MPI_Request nullReq = MPI_REQUEST_NULL;
-    int *ranksInIOCompComm = NULL;
-
-    int rankIndex;
-    int sendRank;
-    int *ranksPerIO = desig->ranks;
-
-    // Include IO process itself for this function only - it will be
-    // new rank 0 in the new communicator for I/O to child compute
-    // processes
-    int numRanksForIO = desig->nCompProcs + 1;
-
-    if (rankJob == SW_MPI_PROC_IO) {
-        ranksInIOCompComm = (int *) Mem_Malloc(
-            sizeof(int) * numRanksForIO, "create_iocomp_comms", LogInfo
-        );
-        if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-            goto freeMem;
-        }
-
-        ranksInIOCompComm[0] = rank;
-
-        for (rankIndex = 1; rankIndex < numRanksForIO; rankIndex++) {
-            sendRank = ranksPerIO[rankIndex - 1];
-            SW_MPI_Send(
-                MPI_INT, &numRanksForIO, 1, sendRank, swTRUE, 0, &nullReq
-            );
-
-            // Store this send rank in the list to send
-            ranksInIOCompComm[rankIndex] = sendRank;
-        }
-        if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-            goto freeMem;
-        }
-
-        for (rankIndex = 1; rankIndex < numRanksForIO; rankIndex++) {
-            sendRank = ranksPerIO[rankIndex - 1];
-
-            SW_MPI_Send(
-                MPI_INT,
-                ranksInIOCompComm,
-                numRanksForIO,
-                sendRank,
-                swTRUE,
-                0,
-                &nullReq
-            );
-        }
-    } else {
-        // Check that the I/O processes have been able to allocate
-        // their group/communicator rank list
-        if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-            goto freeMem;
-        }
-
-        SW_MPI_Recv(
-            MPI_INT, &numRanksForIO, 1, desig->ioRank, swTRUE, 0, &nullReq
-        );
-
-        ranksInIOCompComm = (int *) Mem_Malloc(
-            sizeof(int) * numRanksForIO, "create_iocomp_comms", LogInfo
-        );
-        if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-            goto freeMem;
-        }
-
-        SW_MPI_Recv(
-            MPI_INT,
-            ranksInIOCompComm,
-            numRanksForIO,
-            desig->ioRank,
-            swTRUE,
-            0,
-            &nullReq
-        );
-    }
-
-    mpi_create_group_comms(
-        numRanksForIO, ranksInIOCompComm, &desig->ioCompComm
-    );
-
-freeMem:
-    if (!isnull(ranksInIOCompComm)) {
-        free(ranksInIOCompComm);
-    }
-}
-
-/**
-@brief Create custom communicators between compute and I/O processes so
-    they can act independently of one another if necessary
-
-@param[in] rank Process number known to MPI for the current process (aka rank)
-@param[in] worldSize Total number of processes that the MPI run has created
-@param[in] numIOProcsTot Total number of I/O processes across the
-    communicator MPI_COMM_WORLD
-@param[in] designations A list of designations to fill and distribute
-    amoung processes
-@param[in] ranksInNodes A list of ranks within a node for each
-    compute node encountered
-@param[in] numNodes The number of compute nodes we are running instances of
-    the program on
-@param[in] numProcsInNode A list of number of processes being run
-    in the respective compute node
-@param[in,out] desig Designation instance that holds information about
-    assigning a process to a job
-@param[out] LogInfo Holds information on warnings and errors
-*/
-static void create_groups(
-    int rank,
-    int worldSize,
-    int numIOProcsTot,
-    SW_MPI_DESIGNATE **designations,
-    int **ranksInNodes,
-    int numNodes,
-    const int *numProcsInNode,
-    SW_MPI_DESIGNATE *desig,
-    LOG_INFO *LogInfo
-) {
-    MPI_Request nullReq = MPI_REQUEST_NULL;
-
-    int numCompProcs = worldSize - numIOProcsTot + 1;
-    int *ranksInComp = NULL;
-    int *ranksInIO = NULL;
-    int compIndex = 0;
-    int ioIndex = 0;
-    int node;
-    int *buff;
-    int numElem;
-    int procJob;
-    int rankIndex;
-    int sendRank;
-    int rankJob = desig->procJob;
-
-    // Broadcast number of compute and I/O processors in MPI_COMM_WORLD
-    SW_MPI_Bcast(MPI_INT, &numCompProcs, 1, SW_MPI_ROOT, MPI_COMM_WORLD);
-    SW_MPI_Bcast(MPI_INT, &numIOProcsTot, 1, SW_MPI_ROOT, MPI_COMM_WORLD);
-
-    // Allocate rank information to use it when letting MPI
-    // know which ranks are in a group
-    if (rank == SW_MPI_ROOT || rankJob == SW_MPI_PROC_COMP) {
-        ranksInComp = (int *) Mem_Malloc(
-            sizeof(int) * numCompProcs, "create_groups", LogInfo
-        );
-    }
-    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-        goto freeMem;
-    }
-
-    if (rank == SW_MPI_ROOT || rankJob == SW_MPI_PROC_IO) {
-        ranksInIO = (int *) Mem_Malloc(
-            sizeof(int) * numIOProcsTot, "create_groups", LogInfo
-        );
-    }
-    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-        goto freeMem;
-    }
-
-    // Setup/send rank information for each group
-    if (rank == SW_MPI_ROOT) {
-        // Make a list of ranks within compute and I/O processes
-        for (node = 0; node < numNodes; node++) {
-            for (rankIndex = 0; rankIndex < numProcsInNode[node]; rankIndex++) {
-                sendRank = ranksInNodes[node][rankIndex];
-                procJob = (sendRank == SW_MPI_ROOT) ?
-                              rankJob :
-                              designations[node][rankIndex].procJob;
-
-                if (procJob == SW_MPI_PROC_COMP) {
-                    ranksInComp[compIndex] = sendRank;
-                    compIndex++;
-                } else {
-                    if (sendRank == SW_MPI_ROOT) {
-                        ranksInComp[compIndex] = sendRank;
-                        compIndex++;
-                    }
-                    ranksInIO[ioIndex] = sendRank;
-                    ioIndex++;
-                }
-            }
-        }
-
-        // Send rank list(s) to respective processes so they
-        // can be apart of the group creation
-        for (node = 0; node < numNodes; node++) {
-            for (rankIndex = 0; rankIndex < numProcsInNode[node]; rankIndex++) {
-                sendRank = ranksInNodes[node][rankIndex];
-                procJob = (sendRank == SW_MPI_ROOT) ?
-                              rankJob :
-                              designations[node][rankIndex].procJob;
-                buff = (procJob == SW_MPI_PROC_COMP) ? ranksInComp : ranksInIO;
-                numElem = (procJob == SW_MPI_PROC_COMP) ? numCompProcs :
-                                                          numIOProcsTot;
-
-                if (sendRank > SW_MPI_ROOT) {
-                    SW_MPI_Send(
-                        MPI_INT, buff, numElem, sendRank, swTRUE, 0, &nullReq
-                    );
-                }
-            }
-        }
-    }
-
-    buff = (rankJob == SW_MPI_PROC_COMP) ? ranksInComp : ranksInIO;
-    numElem = (rankJob == SW_MPI_PROC_COMP) ? numCompProcs : numIOProcsTot;
-
-    if (rank > SW_MPI_ROOT) {
-        SW_MPI_Recv(MPI_INT, buff, numElem, SW_MPI_ROOT, swTRUE, 0, &nullReq);
-    }
-
-    /* create communicator for root */
-    if (rank == SW_MPI_ROOT) {
-        mpi_create_group_comms(numCompProcs, ranksInComp, &desig->rootCompComm);
-    }
-
-    /* Create I/O and compute communicators;
-       put the root process into both so it can
-       properly spread information that is only for compute and I/O
-       processes
-    */
-    mpi_create_group_comms(numElem, buff, &desig->groupComm);
-
-
-    // Create io-comp communicators
-    create_iocomp_comms(rank, rankJob, desig, LogInfo);
-
-freeMem:
-    // Free allocated memory
-    if (!isnull(ranksInComp)) {
-        free(ranksInComp);
-    }
-
-    if (!isnull(ranksInIO)) {
-        free(ranksInIO);
-    }
-}
-
-/**
-@brief Send input path information to all I/O processes
-
-@param[in] rank Process number known to MPI for the current process (aka rank)
-@param[in] comm MPI communicator to broadcast a message to
-@param[in] nYears Number of years within the simulation
-@param[in] netCDFIn Struct of type SW_NETCDF_IN that will be distributed
-    (root process) and received (all others)
-@param[out] pathInputs Inputs Struct of type SW_PATH_INPUTS which
-    holds basic information about input files and values
-@param[out] LogInfo Holds information on warnings and errors
-*/
-static void get_path_info(
-    int rank,
-    MPI_Comm comm,
-    TimeInt nYears,
-    SW_NETCDF_IN *netCDFIn,
-    SW_PATH_INPUTS *pathInputs,
-    LOG_INFO *LogInfo
-) {
-    int inKey;
-    int var;
-    int startVar;
-    unsigned int file;
-
-    // Get number of weather files and days in year for those years
-    SW_MPI_Bcast(
-        MPI_UNSIGNED, &pathInputs->ncNumWeatherInFiles, 1, SW_MPI_ROOT, comm
-    );
-    SW_MPI_Bcast(
-        MPI_UNSIGNED, &pathInputs->weathStartFileIndex, 1, SW_MPI_ROOT, comm
-    );
-
-    get_dynamic_string(
-        rank, &pathInputs->txtInFiles[eLog], swTRUE, comm, LogInfo
-    );
-
-    if (netCDFIn->readInVars[eSW_InWeather][0] && rank > SW_MPI_ROOT) {
-        SW_NCIN_allocate_startEndYrs(
-            &pathInputs->ncWeatherInStartEndYrs,
-            pathInputs->ncNumWeatherInFiles,
-            LogInfo
-        );
-    }
-    if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
-        return;
-    }
-
-    ForEachNCInKey(inKey) {
-        if (!netCDFIn->readInVars[inKey][0]) {
-            continue;
-        }
-
-        startVar = 0;
-
-        while (startVar < numVarsInKey[inKey] &&
-               !netCDFIn->readInVars[inKey][startVar + 1]) {
-            startVar++;
-        }
-
-        // Allocate and send/receive variable information
-        if (rank > SW_MPI_ROOT) {
-            SW_NCIN_alloc_sim_var_information(
-                numVarsInKey[inKey],
-                inKey,
-                swFALSE,
-                &pathInputs->inVarIDs[inKey],
-                &pathInputs->inVarTypes[inKey],
-                &pathInputs->hasScaleAndAddFact[inKey],
-                &pathInputs->scaleAndAddFactVals[inKey],
-                &pathInputs->missValFlags[inKey],
-                NULL,
-                &pathInputs->numSoilVarLyrs,
-                LogInfo
-            );
-        }
-        if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
-            return;
-        }
-
-        if (inKey == eSW_InSoil) {
-            SW_MPI_Bcast(
-                SW_MPI_SIZE_T,
-                pathInputs->numSoilVarLyrs,
-                numVarsInKey[inKey],
-                SW_MPI_ROOT,
-                comm
-            );
-        }
-
-        SW_MPI_Bcast(
-            MPI_INT,
-            pathInputs->inVarIDs[inKey],
-            numVarsInKey[inKey],
-            SW_MPI_ROOT,
-            comm
-        );
-        SW_MPI_Bcast(
-            MPI_INT,
-            pathInputs->inVarTypes[inKey],
-            numVarsInKey[inKey],
-            SW_MPI_ROOT,
-            comm
-        );
-        SW_MPI_Bcast(
-            MPI_INT,
-            pathInputs->hasScaleAndAddFact[inKey],
-            numVarsInKey[inKey],
-            SW_MPI_ROOT,
-            comm
-        );
-
-        // Transfer information that is kept track for variables in a key
-        for (var = startVar; var < numVarsInKey[inKey]; var++) {
-            if (!netCDFIn->readInVars[inKey][var + 1]) {
-                continue;
-            }
-
-            // Get 2D array information for variables
-            SW_MPI_Bcast(
-                MPI_DOUBLE,
-                pathInputs->scaleAndAddFactVals[inKey][var],
-                2,
-                SW_MPI_ROOT,
-                comm
-            );
-            SW_MPI_Bcast(
-                MPI_INT,
-                pathInputs->missValFlags[inKey][var],
-                SIM_INFO_NFLAGS,
-                SW_MPI_ROOT,
-                comm
-            );
-
-            if (isnull(pathInputs->doubleMissVals[inKey])) {
-                SW_NCIN_alloc_miss_vals(
-                    numVarsInKey[inKey],
-                    &pathInputs->doubleMissVals[inKey],
-                    LogInfo
-                );
-            }
-            if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
-                return;
-            }
-
-            SW_MPI_Bcast(
-                MPI_DOUBLE,
-                pathInputs->doubleMissVals[inKey][var],
-                2,
-                SW_MPI_ROOT,
-                comm
-            );
-        }
-
-        // Copy weather start/end years
-        if (inKey == eSW_InWeather) {
-            if (rank > SW_MPI_ROOT) {
-                SW_NCIN_alloc_weather_indices_years(
-                    &pathInputs->ncWeatherStartEndIndices,
-                    pathInputs->ncNumWeatherInFiles,
-                    &pathInputs->numDaysInYear,
-                    nYears,
-                    LogInfo
-                );
-            }
-            if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
-                return;
-            }
-
-            SW_MPI_Bcast(
-                MPI_UNSIGNED,
-                pathInputs->numDaysInYear,
-                (int) nYears,
-                SW_MPI_ROOT,
-                comm
-            );
-
-            for (file = 0; file < pathInputs->ncNumWeatherInFiles; file++) {
-                SW_MPI_Bcast(
-                    MPI_UNSIGNED,
-                    pathInputs->ncWeatherInStartEndYrs[file],
-                    2,
-                    SW_MPI_ROOT,
-                    comm
-                );
-
-                SW_MPI_Bcast(
-                    MPI_UNSIGNED,
-                    pathInputs->ncWeatherStartEndIndices[file],
-                    2,
-                    SW_MPI_ROOT,
-                    comm
-                );
+                activePairIndex++;
             }
         }
     }
@@ -3261,6 +1995,237 @@ report:
 }
 
 /**
+@brief Find the active sites within the provided domain so we do not
+try to simulate/assign to compute processes
+
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+@param[out] activeSuids A list of domain SUIDs that was activated
+    by the program and/or user given the progress input file
+@param[out] numActiveSites Number of active sites that will be simulated
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void find_active_sites(
+    int rank,
+    SW_DOMAIN *SW_Domain,
+    size_t ***activeSuids,
+    size_t *numActiveSites,
+    LOG_INFO *LogInfo
+) {
+    int suid = 0;
+    signed char *prog = NULL;
+    int progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprog];
+    Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
+    size_t numSites =
+        (sDom) ? SW_Domain->nDimS : SW_Domain->nDimY * SW_Domain->nDimX;
+    size_t progIndex;
+    int progFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprog];
+    size_t count[] = {0, 0};
+    size_t start[] = {0, 0};
+
+    *numActiveSites = 0;
+
+    if (rank == SW_MPI_ROOT) {
+        prog = (signed char *) Mem_Malloc(
+            sizeof(signed char) * numSites, "find_active_sites", LogInfo
+        );
+
+        count[0] = (sDom) ? SW_Domain->nDimS : SW_Domain->nDimY;
+        count[1] = (sDom) ? 0 : SW_Domain->nDimX;
+    }
+
+    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
+        return;
+    }
+
+    /* Read all progress values - set the parallel access to
+       independent so all processes but the root can read 0 values */
+    nc_var_par_access(progFileID, progVarID, NC_INDEPENDENT);
+    if (nc_get_vara_schar(progFileID, progVarID, start, count, prog) !=
+            NC_NOERR ||
+        rank > SW_MPI_ROOT) {
+
+        if (rank == SW_MPI_ROOT) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Could not read all of the progress variable values."
+            );
+        }
+
+        goto freeMem;
+    }
+
+    /* Go through the entirety of the progress values and keep track of
+       how many are ready to be run */
+    for (progIndex = 0; progIndex < numSites; progIndex++) {
+        *numActiveSites += (prog[progIndex] == PRGRSS_READY) ? 1 : 0;
+    }
+
+    allocateActiveSuids(*numActiveSites, activeSuids, LogInfo);
+    if (LogInfo->stopRun) {
+        goto freeMem;
+    }
+
+    /* Go through the progress values again and calculate/store
+       the active domain SUIDs */
+    for (progIndex = 0; progIndex < numSites; progIndex++) {
+        if (prog[progIndex] == PRGRSS_READY) {
+            SW_DOM_calc_ncSuid(SW_Domain, progIndex, (*activeSuids)[suid]);
+            suid++;
+        }
+    }
+
+freeMem:
+    if (!isnull(prog)) {
+        free((void *) prog);
+    }
+}
+
+/**
+@brief Get translated SUIDs and store them for workload distribution
+
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+@param[in] activeSuids A list of domain SUIDs that was activated
+    by the program and/or user given the progress input file
+@param[in] activeTSuids A list of translated domain SUIDs that was activated
+    by the program and/or user given the progress input file
+@param[in] numActiveSites Number of active sites that will be simulated
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void get_activated_tsuids(
+    SW_DOMAIN *SW_Domain,
+    size_t **activeSuids,
+    size_t ***activeTSuids,
+    size_t numActiveSites,
+    LOG_INFO *LogInfo
+) {
+    Bool inSDom;
+    Bool sProgDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
+    size_t nSites;
+    unsigned int *sxIndexVals = NULL;
+    unsigned int *yIndexVals = NULL;
+    Bool **readInVars = SW_Domain->netCDFInput.readInVars;
+    Bool *useIndexFile = SW_Domain->netCDFInput.useIndexFile;
+    size_t numPosKeys = eSW_LastInKey;
+    int index;
+    int site;
+    int inKey;
+    int fileID = -1;
+    int varID;
+    size_t *indexCell;
+    size_t *domSuid;
+    size_t offset;
+    const int indexFile = 0;
+
+    for (index = 0; index < (int) numPosKeys; index++) {
+        activeTSuids[index] = NULL;
+    }
+
+    ForEachNCInKey(inKey) {
+        if (inKey == eSW_InDomain || !readInVars[inKey][0] ||
+            !useIndexFile[inKey]) {
+            continue;
+        }
+
+        fileID = SW_Domain->SW_PathInputs.openInFileIDs[inKey][indexFile][0];
+
+        inSDom = SW_Domain->netCDFInput.siteDoms[inKey];
+        nSites =
+            (sProgDom) ? SW_Domain->nDimS : SW_Domain->nDimX * SW_Domain->nDimY;
+
+        sxIndexVals = (unsigned int *) Mem_Malloc(
+            sizeof(unsigned int) * nSites, "get_activated_tsuids", LogInfo
+        );
+        if (LogInfo->stopRun) {
+            goto freeMem;
+        }
+
+        if (!inSDom) {
+            yIndexVals = (unsigned int *) Mem_Malloc(
+                sizeof(unsigned int) * nSites, "get_activated_tsuids", LogInfo
+            );
+            if (LogInfo->stopRun) {
+                goto freeMem;
+            }
+        }
+
+        varID = -1;
+        SW_NC_get_vals(
+            fileID,
+            &varID,
+            (inSDom) ? "site_index" : "x_index",
+            sxIndexVals,
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            goto freeMem;
+        }
+
+        if (!inSDom) {
+            varID = -1;
+            SW_NC_get_vals(fileID, &varID, "y_index", yIndexVals, LogInfo);
+            if (LogInfo->stopRun) {
+                goto freeMem;
+            }
+        }
+
+        allocateActiveTSuids(numActiveSites, &activeTSuids[inKey], LogInfo);
+        if (LogInfo->stopRun) {
+            goto freeMem;
+        }
+
+        for (site = 0; site < (int) numActiveSites; site++) {
+            domSuid = activeSuids[site];
+            indexCell = activeTSuids[inKey][site];
+
+            /*
+                Translate a domain suid for a site into a translated suid
+                since we are using an index file
+                e.g., [0, 3] -> [1, 0]
+             */
+            if (inSDom) {
+                indexCell[0] = sxIndexVals[domSuid[0]];
+            } else {
+                offset = (sProgDom) ?
+                             domSuid[0] :
+                             (domSuid[0] * SW_Domain->nDimX) + domSuid[1];
+
+                indexCell[0] = yIndexVals[offset];
+                indexCell[1] = sxIndexVals[offset];
+            }
+        }
+
+        if (!isnull(sxIndexVals)) {
+            free(sxIndexVals);
+            sxIndexVals = NULL;
+        }
+
+        if (!isnull(yIndexVals)) {
+            free(yIndexVals);
+            yIndexVals = NULL;
+        }
+
+        nc_close(fileID);
+    }
+
+freeMem:
+    if (!isnull(sxIndexVals)) {
+        free(sxIndexVals);
+    }
+
+    if (!isnull(yIndexVals)) {
+        free(yIndexVals);
+    }
+
+    if (fileID > -1) {
+        nc_close(fileID);
+    }
+}
+
+/**
 @brief Free allocated log memory in I/O processes
 
 @param[in,out] logs A list of LOG_INFO instances that will be used for
@@ -3443,39 +2408,60 @@ void SW_MPI_Fail(int rank, int failType, char *mpiErrStr) {
     temporal/spatial information for a set of simulation runs
 */
 void SW_MPI_deconstruct(SW_DOMAIN *SW_Domain) {
-    SW_MPI_DESIGNATE *desig = &SW_Domain->SW_Designation;
-    int procJob = desig->procJob;
-    unsigned int suid;
+    size_t suid;
     int inKey;
 
-    if (procJob == SW_MPI_PROC_IO) {
-        if (!isnull(desig->domSuids)) {
-            for (suid = 0; suid < desig->nSuids; suid++) {
-                if (!isnull(desig->domSuids[suid])) {
-                    free((void *) desig->domSuids[suid]);
-                    desig->domSuids[suid] = NULL;
+    ForEachNCInKey(inKey) {
+        if (!isnull(SW_Domain->domSuids[inKey])) {
+            for (suid = 0; suid < SW_Domain->nSUIDs; suid++) {
+                if (!isnull(SW_Domain->domSuids[inKey][suid])) {
+                    free((void *) SW_Domain->domSuids[inKey][suid]);
+                    SW_Domain->domSuids[inKey][suid] = NULL;
                 }
             }
 
-            free((void *) desig->domSuids);
-            desig->domSuids = NULL;
+            free((void *) SW_Domain->domSuids[inKey]);
+            SW_Domain->domSuids[inKey] = NULL;
         }
+    }
+}
 
-        if (!isnull(desig->domTSuids)) {
-            ForEachNCInKey(inKey) {
-                if (!isnull(desig->domTSuids[inKey])) {
-                    for (suid = 0; suid < desig->nSuids; suid++) {
-                        if (!isnull(desig->domTSuids[inKey][suid])) {
-                            free((void *) desig->domTSuids[inKey][suid]);
-                            desig->domTSuids[inKey][suid] = NULL;
-                        }
-                    }
+/**
+@brief Wrapper function to the Open MPI function MPI_Scatter
 
-                    free((void *) desig->domTSuids[inKey]);
-                    desig->domTSuids[inKey] = NULL;
-                }
-            }
-        }
+@param[in] comm MPI communicator to scatter information across
+@param[in] buffer Source buffer than information will be scattered from
+@param[in] src Source rank that will do the scattering
+@param[in] sendCount The number of elements that will be scattered from
+"buffer"
+@param[in] recvCount The number of elements that each process will receive
+@param[out] dest Destination buffer that will be filled with received
+information
+*/
+void SW_MPI_Scatter(
+    MPI_Comm comm,
+    void *buffer,
+    int src,
+    int sendCount,
+    int recvCount,
+    void *dest
+) {
+    int mpiRes = MPI_Scatter(
+        buffer,
+        sendCount,
+        SW_MPI_SIZE_T,
+        dest,
+        recvCount,
+        SW_MPI_SIZE_T,
+        src,
+        comm
+    );
+
+    if (mpiRes != MPI_SUCCESS) {
+        errorMPI(-1, mpiRes);
+    }
+}
+
 /**
 @brief Wrapper function to the Open MPI function MPI_Barrier
 
@@ -3629,601 +2615,6 @@ error: {
 }
 }
 
-
-/**
-@brief Setup MPI processes with basic information from domain and
-    template(s)
-
-@param[in] rank Process number known to MPI for the current process (aka rank)
-@param[in] worldSize Total number of processes that the MPI run has created
-@param[in] procName Name of the processor the process is being run on
-    (agnostic of if on HPC or local computer)
-@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
-    temporal/spatial information for a set of simulation runs
-@param[in,out] sw_template Template SW_RUN for the function to use as a
-    reference for local versions of SW_RUN; root process will send necessary
-    information to other processes
-@param[out] LogInfo Holds information on warnings and errors
-*/
-void SW_MPI_setup(
-    int rank,
-    int worldSize,
-    const char *procName,
-    SW_DOMAIN *SW_Domain,
-    SW_RUN *sw_template,
-    LOG_INFO *LogInfo
-) {
-    Bool getWeather = swFALSE;
-
-    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-        return;
-    }
-
-    if (rank == SW_MPI_ROOT) {
-        getWeather =
-            (Bool) (!SW_Domain->netCDFInput.readInVars[eSW_InWeather][0] &&
-                    !SW_Domain->netCDFInput.readInVars[eSW_InClimate][0]);
-    }
-
-    SW_MPI_process_types(
-        SW_Domain, (char *) procName, worldSize, rank, LogInfo
-    );
-    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-        return;
-    }
-
-    SW_MPI_template_info(
-        rank,
-        &SW_Domain->SW_Designation,
-        sw_template,
-        SW_Domain->datatypes[eSW_MPI_Inputs],
-        SW_Domain->datatypes[eSW_MPI_Spinup],
-        SW_Domain->datatypes[eSW_MPI_VegEstabIn],
-        SW_Domain->datatypes[eSW_MPI_WeathHist],
-        getWeather,
-        LogInfo
-    );
-    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-        return;
-    }
-
-    SW_MPI_domain_info(SW_Domain, rank, LogInfo);
-}
-
-/**
-@brief Once the setup is complete in the root process, send template
-information to all other processes
-
-@param[in] rank Process number known to MPI for the current process (aka rank)
-@param[in] desig Designation instance that holds information about
-    assigning a process to a job
-@param[in,out] SW_Run SW_RUN template what needs to be copied to
-    all compute processes with some information pertaining to I/O
-@param[in] inRunType Custom MPI type for transfering data for SW_RUN_INPUTS
-@param[in] spinupType Custom MPI type for transfering data for SW_SPINUP
-@param[in] vegEstabType Custom MPI type for transfering data for
-    SW_VEGESTAB_INFO_INPUTS
-@param[in] weathHistType Custom MPI type for transfering data for
-    SW_WEATHER_HIST
-@param[in] getWeather Specifies if the root program should spread default
-    weather inputs to processes
-@param[out] LogInfo Holds information on warnings and errors
-*/
-void SW_MPI_template_info(
-    int rank,
-    SW_MPI_DESIGNATE *desig,
-    SW_RUN *SW_Run,
-    MPI_Datatype inRunType,
-    MPI_Datatype spinupType,
-    MPI_Datatype vegEstabType,
-    MPI_Datatype weathHistType,
-    Bool getWeather,
-    LOG_INFO *LogInfo
-) {
-    const int numStructs = 6; /* Do not include veg estab */
-    const int swIndex = 4;
-    const int vegEstabIndex = 6;
-    const int num2DMarkov = 8;
-    const int num1DMarkov = 3;
-
-    IntU vCount;
-    int structType;
-    int var;
-    int numElem[] = {3, 25, 5, 5, 7, 43, 2};
-    void **markov2DBuffer[] = {
-        (void **) &SW_Run->MarkovIn.wetprob,
-        (void **) &SW_Run->MarkovIn.dryprob,
-        (void **) &SW_Run->MarkovIn.avg_ppt,
-        (void **) &SW_Run->MarkovIn.std_ppt,
-        (void **) &SW_Run->MarkovIn.cfxw,
-        (void **) &SW_Run->MarkovIn.cfxd,
-        (void **) &SW_Run->MarkovIn.cfnw,
-        (void **) &SW_Run->MarkovIn.cfnd,
-    };
-    void *markov1DBuffer[] = {
-        (void *) SW_Run->MarkovIn.u_cov,
-        (void *) SW_Run->MarkovIn.v_cov,
-        (void *) &SW_Run->MarkovIn.ppt_events
-    };
-    void *buffers[][43] = {
-        {(void *) &SW_Run->CarbonIn.use_wue_mult,
-         (void *) &SW_Run->CarbonIn.use_bio_mult,
-         (void *) SW_Run->CarbonIn.ppm},
-        {(void *) &SW_Run->WeatherIn.use_snow,
-         (void *) &SW_Run->WeatherIn.use_weathergenerator_only,
-         (void *) &SW_Run->WeatherIn.generateWeatherMethod,
-         (void *) &SW_Run->WeatherIn.pct_snowdrift,
-         (void *) &SW_Run->WeatherIn.pct_snowRunoff,
-         (void *) SW_Run->WeatherIn.scale_precip,
-         (void *) SW_Run->WeatherIn.scale_temp_max,
-         (void *) SW_Run->WeatherIn.scale_temp_min,
-         (void *) SW_Run->WeatherIn.scale_skyCover,
-         (void *) SW_Run->WeatherIn.scale_wind,
-         (void *) SW_Run->WeatherIn.scale_rH,
-         (void *) SW_Run->WeatherIn.scale_actVapPress,
-         (void *) SW_Run->WeatherIn.scale_shortWaveRad,
-         (void *) SW_Run->WeatherIn.name_prefix,
-         (void *) &SW_Run->WeatherIn.rng_seed,
-         (void *) &SW_Run->WeatherIn.use_cloudCoverMonthly,
-         (void *) &SW_Run->WeatherIn.use_windSpeedMonthly,
-         (void *) &SW_Run->WeatherIn.use_humidityMonthly,
-         (void *) SW_Run->WeatherIn.dailyInputFlags,
-         (void *) SW_Run->WeatherIn.dailyInputIndices,
-         (void *) &SW_Run->WeatherIn.n_input_forcings,
-         (void *) &SW_Run->WeatherIn.desc_rsds,
-         (void *) &SW_Run->WeatherIn.n_years,
-         (void *) &SW_Run->WeatherIn.startYear,
-         (void *) &SW_Run->WeatherIn.fixWeatherData},
-        {(void *) &SW_Run->VegProdIn.vegYear,
-         (void *) &SW_Run->VegProdIn.isBiomAsIf100Cover,
-         (void *) &SW_Run->VegProdIn.use_SWA,
-         (void *) &SW_Run->VegProdIn.veg_method,
-         (void *) &SW_Run->VegProdIn.bare_cov.albedo},
-        {(void *) &SW_Run->ModelIn.SW_SpinUp,
-         (void *) &SW_Run->ModelIn.startyr,
-         (void *) &SW_Run->ModelIn.endyr,
-         (void *) &SW_Run->ModelIn.startstart,
-         (void *) &SW_Run->ModelIn.endend},
-        {(void *) &SW_Run->SoilWatIn.hist_use,
-         (void *) &SW_Run->SoilWatIn.hist.method,
-         (void *) &SW_Run->SoilWatIn.hist.yr.first,
-         (void *) &SW_Run->SoilWatIn.hist.yr.last,
-         (void *) &SW_Run->SoilWatIn.hist.yr.total,
-         (void *) SW_Run->SoilWatIn.hist.swc,
-         (void *) SW_Run->SoilWatIn.hist.std_err},
-        {(void *) SW_Run->SiteIn.site_swrc_name,
-         (void *) SW_Run->SiteIn.site_ptf_name,
-         (void *) &SW_Run->SiteIn.use_soil_temp,
-         (void *) &SW_Run->SiteIn.methodSurfaceTemperature,
-         (void *) &SW_Run->SiteIn.site_swrc_type,
-         (void *) &SW_Run->SiteIn.site_ptf_type,
-         (void *) &SW_Run->SiteIn.t1Param1,
-         (void *) &SW_Run->SiteIn.t1Param2,
-         (void *) &SW_Run->SiteIn.t1Param3,
-         (void *) &SW_Run->SiteIn.csParam1,
-         (void *) &SW_Run->SiteIn.csParam2,
-         (void *) &SW_Run->SiteIn.shParam,
-         (void *) &SW_Run->SiteIn.bmLimiter,
-         (void *) &SW_Run->SiteIn.stDeltaX,
-         (void *) &SW_Run->SiteIn.stMaxDepth,
-         (void *) &SW_Run->SiteIn.depthSapric,
-         (void *) &SW_Run->SiteIn.type_soilDensityInput,
-         (void *) &SW_Run->SiteIn.reset_yr,
-         (void *) &SW_Run->SiteIn.deepdrain,
-         (void *) &SW_Run->SiteIn.inputsProvideSWRCp,
-         (void *) &SW_Run->SiteIn.evap.range,
-         (void *) &SW_Run->SiteIn.evap.slope,
-         (void *) &SW_Run->SiteIn.evap.xinflec,
-         (void *) &SW_Run->SiteIn.evap.yinflec,
-         (void *) &SW_Run->SiteIn.transp.range,
-         (void *) &SW_Run->SiteIn.transp.slope,
-         (void *) &SW_Run->SiteIn.transp.xinflec,
-         (void *) &SW_Run->SiteIn.transp.yinflec,
-         (void *) &SW_Run->SiteIn.slow_drain_coeff,
-         (void *) &SW_Run->SiteIn.pet_scale,
-         (void *) &SW_Run->SiteIn.TminAccu2,
-         (void *) &SW_Run->SiteIn.TmaxCrit,
-         (void *) &SW_Run->SiteIn.lambdasnow,
-         (void *) &SW_Run->SiteIn.RmeltMin,
-         (void *) &SW_Run->SiteIn.RmeltMax,
-         (void *) &SW_Run->SiteIn.percentRunoff,
-         (void *) &SW_Run->SiteIn.percentRunon,
-         (void *) &SW_Run->SiteIn.SWCInitVal,
-         (void *) &SW_Run->SiteIn.SWCWetVal,
-         (void *) &SW_Run->SiteIn.SWCMinVal,
-         (void *) &SW_Run->SiteSim.n_transp_rgn,
-         (void *) SW_Run->SiteSim.TranspRgnDepths,
-         (void *) SW_Run->SiteSim.swrcpOM},
-        {(void *) &SW_Run->VegEstabIn.use, (void *) &SW_Run->VegEstabIn.count}
-    };
-    MPI_Datatype types[][43] = {
-        {MPI_INT, MPI_INT, MPI_DOUBLE}, /* SW_CARBON_INPUTS */
-        {MPI_INT,      MPI_INT,      MPI_UNSIGNED, MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_CHAR,     MPI_INT,      MPI_INT,
-         MPI_INT,      MPI_INT,      MPI_INT,      MPI_UNSIGNED,
-         MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED,
-         MPI_INT}, /* SW_WEATHER_INPUTS */
-        {MPI_INT, MPI_DOUBLE, MPI_INT, MPI_INT, MPI_DOUBLE
-        }, /* SW_VEGPROD_INPUTS */
-        {spinupType, MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED
-        }, /* SW_MODEL_INPUTS */
-        {MPI_INT, MPI_INT, MPI_UNSIGNED, MPI_DOUBLE, MPI_DOUBLE
-        }, /* SW_SOILWAT_INPUTS */
-        {MPI_CHAR,     MPI_CHAR,     MPI_INT,    MPI_UNSIGNED, MPI_UNSIGNED,
-         MPI_UNSIGNED, MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_UNSIGNED, MPI_INT,    MPI_INT,      MPI_INT,
-         MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE, MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_UNSIGNED, MPI_DOUBLE,   MPI_DOUBLE}, /* SW_SITE_INPUTS */
-        {MPI_INT, MPI_UNSIGNED}                   /* SW_VEGPROD_SIM */
-    };
-    int count[][43] = {
-        /* SW_CARBON_INPUTS */
-        {1, 1, MAX_NYEAR},
-
-        /* SW_WEATHER_INPUTS */
-        {1,
-         1,
-         1,
-         1,
-         1,
-         MAX_MONTHS,
-         MAX_MONTHS,
-         MAX_MONTHS,
-         MAX_MONTHS,
-         MAX_MONTHS,
-         MAX_MONTHS,
-         MAX_MONTHS,
-         MAX_MONTHS,
-         MAX_FILENAMESIZE - 5,
-         1,
-         1,
-         1,
-         1,
-         MAX_INPUT_COLUMNS,
-         1,
-         1,
-         1,
-         1,
-         1,
-         NFIXWEATHER},
-
-        /* SW_VEGPROD_INPUTS */
-        {1, NVEGTYPES, 1, 1, 1},
-
-        /* SW_MODEL_INPUTS */
-        {1, 1, 1, 1, 1},
-
-        /* SW_SOILWAT_INPUTS */
-        {1, 1, 1, 1, MAX_DAYS * MAX_LAYERS, MAX_DAYS * MAX_LAYERS},
-
-        /* SW_SITE_INPUTS */
-        {64, 64, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-         1,  1,  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-         1,  1,  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, MAX_TRANSP_REGIONS,
-         12},
-
-        /* SW_VEGPROD_SIM */
-        {1, 1}
-    };
-    int markov1DCount[] = {MAX_WEEKS * 2, MAX_WEEKS * 2 * 2, 1};
-    int veg;
-    int vegIn;
-    const int numNumTemplateVeg = 28;
-
-    MPI_Comm comm =
-        (rank == SW_MPI_ROOT) ? desig->rootCompComm : desig->groupComm;
-
-    // Send input information to all processes
-    for (structType = 0; structType < numStructs; structType++) {
-        for (var = 0; var < numElem[structType]; var++) {
-            SW_MPI_Bcast(
-                types[structType][var],
-                buffers[structType][var],
-                count[structType][var],
-                SW_MPI_ROOT,
-                MPI_COMM_WORLD
-            );
-
-            if (structType == swIndex && !SW_Run->SoilWatIn.hist_use) {
-                break;
-            }
-        }
-    }
-
-    if (desig->procJob == SW_MPI_PROC_COMP || rank == SW_MPI_ROOT) {
-        ForEachVegType(veg) {
-            void *sendBuff[] = {
-                (void *) &SW_Run->VegProdIn.veg[veg].cnpy.xinflec,
-                (void *) &SW_Run->VegProdIn.veg[veg].cnpy.yinflec,
-                (void *) &SW_Run->VegProdIn.veg[veg].cnpy.range,
-                (void *) &SW_Run->VegProdIn.veg[veg].cnpy.slope,
-                (void *) &SW_Run->VegProdIn.veg[veg].canopy_height_constant,
-                (void *) &SW_Run->VegProdIn.veg[veg].veg_kSmax,
-                (void *) &SW_Run->VegProdIn.veg[veg].veg_kdead,
-                (void *) &SW_Run->VegProdIn.veg[veg].lit_kSmax,
-                (void *) &SW_Run->VegProdIn.veg[veg].EsTpartitioning_param,
-                (void *) &SW_Run->VegProdIn.veg[veg].Es_param_limit,
-                (void *) &SW_Run->VegProdIn.veg[veg].shade_scale,
-                (void *) &SW_Run->VegProdIn.veg[veg].shade_deadmax,
-                (void *) &SW_Run->VegProdIn.veg[veg].tr_shade_effects.xinflec,
-                (void *) &SW_Run->VegProdIn.veg[veg].tr_shade_effects.yinflec,
-                (void *) &SW_Run->VegProdIn.veg[veg].tr_shade_effects.range,
-                (void *) &SW_Run->VegProdIn.veg[veg].tr_shade_effects.slope,
-                (void *) &SW_Run->VegProdIn.veg[veg].maxCondroot,
-                (void *) &SW_Run->VegProdIn.veg[veg].swpMatric50,
-                (void *) &SW_Run->VegProdIn.veg[veg].shapeCond,
-                (void *) &SW_Run->VegProdIn.veg[veg].SWPcrit,
-                (void *) &SW_Run->VegProdIn.critSoilWater[veg],
-                (void *) &SW_Run->VegProdIn.veg[veg].co2_bio_coeff1,
-                (void *) &SW_Run->VegProdIn.veg[veg].co2_bio_coeff2,
-                (void *) &SW_Run->VegProdIn.veg[veg].co2_wue_coeff1,
-                (void *) &SW_Run->VegProdIn.veg[veg].co2_wue_coeff2,
-                (void *) &SW_Run->VegProdIn.veg[veg].cov.albedo,
-                (void *) &SW_Run->VegProdIn.rank_SWPcrits[veg],
-                (void *) &SW_Run->VegProdIn.veg[veg].flagHydraulicRedistribution
-            };
-
-            for (vegIn = 0; vegIn < numNumTemplateVeg; vegIn++) {
-                SW_MPI_Bcast(
-                    (vegIn < numNumTemplateVeg - 2) ? MPI_DOUBLE : MPI_INT,
-                    sendBuff[vegIn],
-                    1,
-                    SW_MPI_ROOT,
-                    comm
-                );
-            }
-        }
-    }
-
-    // Markov inputs if enabled
-    if ((desig->procJob == SW_MPI_PROC_COMP || rank == SW_MPI_ROOT) &&
-        SW_Run->WeatherIn.generateWeatherMethod == 2) {
-
-        if (rank > SW_MPI_ROOT) {
-            SW_MKV_construct(SW_Run->WeatherIn.rng_seed, &SW_Run->MarkovIn);
-            allocateMKV(&SW_Run->MarkovIn, LogInfo);
-        }
-        if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
-            return;
-        }
-
-        for (var = 0; var < num2DMarkov; var++) {
-            SW_MPI_Bcast(
-                MPI_DOUBLE, *markov2DBuffer[var], MAX_DAYS, SW_MPI_ROOT, comm
-            );
-        }
-
-        for (var = 0; var < num1DMarkov; var++) {
-            SW_MPI_Bcast(
-                (var == 2) ? MPI_INT : MPI_DOUBLE,
-                markov1DBuffer[var],
-                markov1DCount[var],
-                SW_MPI_ROOT,
-                comm
-            );
-        }
-    }
-
-    /* Vegetation establishment information
-       We must do it outside of the major loop to have
-       all processes take place */
-    SW_MPI_Bcast(
-        types[vegEstabIndex][0],
-        buffers[vegEstabIndex][0],
-        count[vegEstabIndex][0],
-        SW_MPI_ROOT,
-        MPI_COMM_WORLD
-    );
-
-    if (SW_Run->VegEstabIn.use) {
-        SW_MPI_Bcast(
-            types[vegEstabIndex][1],
-            buffers[vegEstabIndex][1],
-            count[vegEstabIndex][1],
-            SW_MPI_ROOT,
-            MPI_COMM_WORLD
-        );
-
-        for (vCount = 0; vCount < SW_Run->VegEstabIn.count; vCount++) {
-            SW_MPI_Bcast(
-                vegEstabType,
-                &SW_Run->VegEstabIn.parms[vCount],
-                1,
-                SW_MPI_ROOT,
-                MPI_COMM_WORLD
-            );
-        }
-    }
-
-    // SW_RUN_INPUTS
-    SW_MPI_Bcast(inRunType, &SW_Run->RunIn, 1, SW_MPI_ROOT, MPI_COMM_WORLD);
-
-    SW_MPI_Bcast(MPI_INT, &getWeather, 1, SW_MPI_ROOT, MPI_COMM_WORLD);
-
-    if (getWeather) {
-        if (rank > SW_MPI_ROOT) {
-            SW_WTH_allocateAllWeather(
-                &SW_Run->RunIn.weathRunAllHist,
-                (int) SW_Run->WeatherIn.n_years,
-                LogInfo
-            );
-        }
-        if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-            return;
-        }
-
-        SW_MPI_Bcast(
-            weathHistType,
-            SW_Run->RunIn.weathRunAllHist,
-            (int) SW_Run->WeatherIn.n_years,
-            SW_MPI_ROOT,
-            MPI_COMM_WORLD
-        );
-    }
-}
-
-/**
-@brief Send netCDF output information to I/O processes from root
-
-@param[in] rank Process number known to MPI for the current process (aka rank)
-@param[in] comm MPI communicator to broadcast a message to
-@param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
-    information that do not change throughout simulation runs
-@param[out] LogInfo Holds information on warnings and errors
-*/
-void SW_MPI_ncout_info(
-    int rank, MPI_Comm comm, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
-) {
-    int outKey;
-    IntUS var;
-    IntUS nVars;
-    const int unitsIndex = 4;
-    const int varNameIndex = 1;
-    char **attStr;
-    Bool sendStr = swTRUE;
-
-    if (rank > SW_MPI_ROOT) {
-        SW_NCOUT_alloc_output_var_info(OutDom, LogInfo);
-    }
-    if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
-        return;
-    }
-
-    SW_MPI_Bcast(
-        MPI_INT, &OutDom->netCDFOutput.strideOutYears, 1, SW_MPI_ROOT, comm
-    );
-    SW_MPI_Bcast(
-        MPI_INT, &OutDom->netCDFOutput.baseCalendarYear, 1, SW_MPI_ROOT, comm
-    );
-
-    ForEachOutKey(outKey) {
-        nVars = OutDom->nvar_OUT[outKey];
-
-        SW_MPI_Bcast(MPI_INT, &OutDom->use[outKey], 1, SW_MPI_ROOT, comm);
-
-        if (nVars == 0 || !OutDom->use[outKey]) {
-            continue;
-        }
-
-        SW_MPI_Bcast(
-            MPI_INT,
-            OutDom->netCDFOutput.reqOutputVars[outKey],
-            nVars,
-            SW_MPI_ROOT,
-            comm
-        );
-
-        for (var = 0; var < nVars; var++) {
-            if (!OutDom->netCDFOutput.reqOutputVars[outKey][var]) {
-                continue;
-            }
-
-            attStr =
-                &OutDom->netCDFOutput.outputVarInfo[outKey][var][unitsIndex];
-            sendStr = (Bool) (!isnull(*attStr));
-            get_dynamic_string(rank, attStr, sendStr, comm, LogInfo);
-            if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
-                return;
-            }
-
-            attStr =
-                &OutDom->netCDFOutput.outputVarInfo[outKey][var][varNameIndex];
-            sendStr = (Bool) (!isnull(*attStr));
-            get_dynamic_string(rank, attStr, sendStr, comm, LogInfo);
-            if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
-                return;
-            }
-
-            attStr = &OutDom->netCDFOutput.units_sw[outKey][var];
-            sendStr = (Bool) (!isnull(*attStr));
-            get_dynamic_string(rank, attStr, sendStr, comm, LogInfo);
-            if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
-                return;
-            }
-        }
-    }
-}
-
-/**
-@brief Once the setup is complete in the root process, send domain
-information to all other processes; all others receive
-
-@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
-    temporal/spatial information for a set of simulation runs
-@param[in] rank Process number known to MPI for the current process (aka rank)
-@param[out] LogInfo Holds information on warnings and errors
-*/
-void SW_MPI_domain_info(SW_DOMAIN *SW_Domain, int rank, LOG_INFO *LogInfo) {
-    // rootCompComm - not used if not root process
-    MPI_Comm *rootCompComm = &SW_Domain->SW_Designation.rootCompComm;
-    MPI_Comm *groupComm = &SW_Domain->SW_Designation.groupComm;
-    MPI_Datatype *types = SW_Domain->datatypes;
-    int procJob = SW_Domain->SW_Designation.procJob;
-    TimeInt nYears;
-
-    // Send/get soil/temporal information
-    SW_MPI_Bcast(
-        types[eSW_MPI_Domain], SW_Domain, 1, SW_MPI_ROOT, MPI_COMM_WORLD
-    );
-
-    // Send/get Spinup information - compute processes + rank only
-    if (procJob == SW_MPI_PROC_COMP || rank == SW_MPI_ROOT) {
-        SW_MPI_Bcast(
-            types[eSW_MPI_Spinup],
-            &SW_Domain->SW_SpinUp,
-            1,
-            SW_MPI_ROOT,
-            (rank == SW_MPI_ROOT) ? *rootCompComm : *groupComm
-        );
-    }
-
-    // Send/get netCDF information - I/O processes only
-    if (procJob == SW_MPI_PROC_IO) {
-        get_NC_info(rank, *groupComm, &SW_Domain->netCDFInput, LogInfo);
-        if (LogInfo->stopRun) {
-            return;
-        }
-    }
-
-    // Send/get path information
-    if (procJob == SW_MPI_PROC_IO || rank == SW_MPI_ROOT) {
-        nYears = SW_Domain->endyr - SW_Domain->startyr + 1;
-        get_path_info(
-            rank,
-            *groupComm,
-            nYears,
-            &SW_Domain->netCDFInput,
-            &SW_Domain->SW_PathInputs,
-            LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return;
-        }
-    }
-
-    // Send/get domain information - SW_PATH_OUTPUTS will wait until later
-    SW_MPI_Bcast(
-        types[eSW_MPI_OutDomIO],
-        &SW_Domain->OutDom,
-        1,
-        SW_MPI_ROOT,
-        MPI_COMM_WORLD
-    );
-
-    SW_MPI_Bcast(
-        MPI_INT,
-        SW_Domain->OutDom.use_OutPeriod,
-        SW_OUTNPERIODS,
-        SW_MPI_ROOT,
-        MPI_COMM_WORLD
-    );
-}
 /**
 @brief Before we proceed to the next important section of the program,
 we must do a check-in with all processes to make sure no errors occurred
@@ -4451,271 +2842,27 @@ void SW_MPI_write_main_logs(
 }
 
 /**
-@brief Find the active sites within the provided domain so we do not
-try to simulate/assign to compute processes
-
-@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
-    temporal/spatial information for a set of simulation runs
-@param[out] activeSuids A list of domain SUIDs that was activated
-    by the program and/or user given the progress input file
-@param[out] numActiveSites Number of active sites that will be simulated
-@param[out] LogInfo Holds information on warnings and errors
-*/
-void SW_MPI_root_find_active_sites(
-    SW_DOMAIN *SW_Domain,
-    size_t ***activeSuids,
-    size_t *numActiveSites,
-    LOG_INFO *LogInfo
-) {
-    int suid = 0;
-    signed char *prog = NULL;
-    int progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprog];
-    Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
-    size_t numSites =
-        (sDom) ? SW_Domain->nDimS : SW_Domain->nDimY * SW_Domain->nDimX;
-    size_t progIndex;
-    int progFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprog];
-
-    *numActiveSites = 0;
-
-    prog = (signed char *) Mem_Malloc(
-        sizeof(signed char) * numSites, "SW_MPI_root_find_active_sites", LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return;
-    }
-
-    /* Read all progress values */
-    if (nc_get_var_schar(progFileID, progVarID, prog) != NC_NOERR) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Could not read all of the progress variable values."
-        );
-        goto freeMem;
-    }
-
-    /* Go through the entirety of the progress values and keep track of
-       how many are ready to be run */
-    for (progIndex = 0; progIndex < numSites; progIndex++) {
-        *numActiveSites += (prog[progIndex] == PRGRSS_READY) ? 1 : 0;
-    }
-
-    allocateActiveSuids(*numActiveSites, activeSuids, LogInfo);
-    if (LogInfo->stopRun) {
-        goto freeMem;
-    }
-
-    /* Go through the progress values again and calculate/store
-       the active domain SUIDs */
-    for (progIndex = 0; progIndex < numSites; progIndex++) {
-        if (prog[progIndex] == PRGRSS_READY) {
-            SW_DOM_calc_ncSuid(SW_Domain, progIndex, (*activeSuids)[suid]);
-            suid++;
-        }
-    }
-
-freeMem:
-    free((void *) prog);
-}
-
-/**
-@brief Get translated SUIDs and store them for workload distribution
-
-@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
-    temporal/spatial information for a set of simulation runs
-@param[in] activeSuids A list of domain SUIDs that was activated
-    by the program and/or user given the progress input file
-@param[in] activeTSuids A list of translated domain SUIDs that was activated
-    by the program and/or user given the progress input file
-@param[in] numActiveSites Number of active sites that will be simulated
-@param[out] LogInfo Holds information on warnings and errors
-*/
-void SW_MPI_get_activated_tsuids(
-    SW_DOMAIN *SW_Domain,
-    size_t **activeSuids,
-    size_t ***activeTSuids,
-    size_t numActiveSites,
-    LOG_INFO *LogInfo
-) {
-    Bool inSDom;
-    Bool sProgDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
-    size_t nSites;
-    unsigned int *sxIndexVals = NULL;
-    unsigned int *yIndexVals = NULL;
-    Bool **readInVars = SW_Domain->netCDFInput.readInVars;
-    Bool *useIndexFile = SW_Domain->netCDFInput.useIndexFile;
-    char ***ncInFiles = SW_Domain->SW_PathInputs.ncInFiles;
-    size_t numPosKeys = eSW_LastInKey;
-    int index;
-    int site;
-    int inKey;
-    int fileID = -1;
-    char *ncFileName;
-    int varID;
-    size_t *indexCell;
-    size_t *domSuid;
-    size_t offset;
-
-    for (index = 0; index < (int) numPosKeys; index++) {
-        activeTSuids[index] = NULL;
-    }
-
-    ForEachNCInKey(inKey) {
-        if (inKey == eSW_InDomain || !readInVars[inKey][0] ||
-            !useIndexFile[inKey]) {
-            continue;
-        }
-
-        fileID = -1;
-
-        ncFileName = ncInFiles[inKey][0];
-        SW_NC_open(ncFileName, NC_NOWRITE, &fileID, LogInfo);
-        if (LogInfo->stopRun) {
-            goto freeMem;
-        }
-
-        inSDom = SW_Domain->netCDFInput.siteDoms[inKey];
-        nSites =
-            (sProgDom) ? SW_Domain->nDimS : SW_Domain->nDimX * SW_Domain->nDimY;
-        sxIndexVals = (unsigned int *) Mem_Malloc(
-            sizeof(unsigned int) * nSites,
-            "SW_MPI_get_activated_tsuids",
-            LogInfo
-        );
-        if (LogInfo->stopRun) {
-            goto freeMem;
-        }
-        if (!inSDom) {
-            yIndexVals = (unsigned int *) Mem_Malloc(
-                sizeof(unsigned int) * nSites,
-                "SW_MPI_get_activated_tsuids",
-                LogInfo
-            );
-            if (LogInfo->stopRun) {
-                goto freeMem;
-            }
-        }
-
-        varID = -1;
-        SW_NC_get_vals(
-            fileID,
-            &varID,
-            (inSDom) ? "site_index" : "x_index",
-            sxIndexVals,
-            LogInfo
-        );
-        if (LogInfo->stopRun) {
-            goto freeMem;
-        }
-
-        if (!inSDom) {
-            varID = -1;
-            SW_NC_get_vals(fileID, &varID, "y_index", yIndexVals, LogInfo);
-            if (LogInfo->stopRun) {
-                goto freeMem;
-            }
-        }
-
-        allocateActiveTSuids(numActiveSites, &activeTSuids[inKey], LogInfo);
-        if (LogInfo->stopRun) {
-            goto freeMem;
-        }
-
-        for (site = 0; site < (int) numActiveSites; site++) {
-            domSuid = activeSuids[site];
-            indexCell = activeTSuids[inKey][site];
-
-            /*
-                Translate a domain suid for a site into a translated suid
-                since we are using an index file
-                e.g., [0, 3] -> [1, 0]
-             */
-            if (inSDom) {
-                indexCell[0] = sxIndexVals[domSuid[0]];
-            } else {
-                offset = (sProgDom) ?
-                             domSuid[0] :
-                             (domSuid[0] * SW_Domain->nDimX) + domSuid[1];
-
-                indexCell[0] = yIndexVals[offset];
-                indexCell[1] = sxIndexVals[offset];
-            }
-        }
-
-        if (!isnull(sxIndexVals)) {
-            free(sxIndexVals);
-            sxIndexVals = NULL;
-        }
-
-        if (!isnull(yIndexVals)) {
-            free(yIndexVals);
-            yIndexVals = NULL;
-        }
-
-        nc_close(fileID);
-    }
-
-freeMem:
-    if (!isnull(sxIndexVals)) {
-        free(sxIndexVals);
-    }
-
-    if (!isnull(yIndexVals)) {
-        free(yIndexVals);
-    }
-
-    if (fileID > -1) {
-        nc_close(fileID);
-    }
-}
-
-/**
 @brief Assign processes to compute or I/O jobs
 
-@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
-    temporal/spatial information for a set of simulation runs
-@param[in] procName Name of the processor the process is being run on
-    (agnostic of if on HPC or local computer)
+@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] worldSize Number of processes that was created that make up
     the world
-@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_MPI_process_types(
-    SW_DOMAIN *SW_Domain,
-    char *procName,
-    int worldSize,
-    int rank,
-    LOG_INFO *LogInfo
+void SW_MPI_proc_workload(
+    int rank, int worldSize, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
 ) {
+    const int twoDomVarIDs = 2;
     size_t **activeTSuids[SW_NINKEYSNC] = {NULL};
     size_t **activeSuids = NULL;
+    size_t *nSuidsAssign = NULL;
     size_t numActiveSites = 0;
-    MPI_Request nullReq = MPI_REQUEST_NULL;
-
-    int startOldSize = 0;
-    int startNewSize = 3;
-    int numNodes = 0;
-    int maxNodes = startNewSize;
-    int node;
-    char **nodeNames = NULL;
-    int *numProcsInNode = NULL;
-    int *numMaxProcsInNode = NULL;
-    int **ranksInNodes = NULL;
-    int numIOProcsTot = 0;
-    int suidAssign = 0;
-    size_t leftSuids = 0;
-    int pair;
-    Bool useTranslated = swFALSE;
-
-    SW_MPI_DESIGNATE **designations = NULL;
-    SW_MPI_DESIGNATE *desig = &SW_Domain->SW_Designation;
-    MPI_Datatype desType = SW_Domain->datatypes[eSW_MPI_Designate];
 
     // Spread the index file creation flags across the world;
     // necessary if we use translated SUIDs and we have not
-    // received them yet
+    // all processes have received them yet
     SW_MPI_Bcast(
         MPI_INT,
         SW_Domain->netCDFInput.useIndexFile,
@@ -4724,168 +2871,44 @@ void SW_MPI_process_types(
         MPI_COMM_WORLD
     );
 
-    // Check if the process is not the root
-    if (rank != SW_MPI_ROOT) {
-        // Check that the root process information allocation occured
-        // with no problems
-        if (SW_MPI_setup_fail(swFALSE, MPI_COMM_WORLD)) {
-            return;
-        }
+    SW_MPI_Bcast(
+        MPI_INT,
+        SW_Domain->netCDFInput.ncDomVarIDs,
+        twoDomVarIDs,
+        SW_MPI_ROOT,
+        MPI_COMM_WORLD
+    );
 
-        // Send processor name to the root
-        SW_MPI_Send(
-            MPI_CHAR,
-            procName,
-            MAX_FILENAMESIZE,
-            SW_MPI_ROOT,
-            swTRUE,
-            0,
-            &nullReq
-        );
-
-        if (SW_MPI_setup_fail(swFALSE, MPI_COMM_WORLD)) {
-            return;
-        }
-
-        // Get processor assignment
-        assignProcs(
-            desType,
-            NULL,
-            rank,
-            0,
-            SW_Domain->netCDFInput.useIndexFile,
-            NULL,
-            NULL,
-            swTRUE,
-            &SW_Domain->SW_Designation,
-            LogInfo
-        );
+    find_active_sites(rank, SW_Domain, &activeSuids, &numActiveSites, LogInfo);
+    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
+        goto freeMem;
     }
-    // Otherwise, we are root
-    else {
-        for (pair = 0; pair < SW_NINKEYSNC && !useTranslated; pair++) {
-            useTranslated = SW_Domain->netCDFInput.useIndexFile[pair];
-        }
 
-        SW_MPI_root_find_active_sites(
-            SW_Domain, &activeSuids, &numActiveSites, LogInfo
-        );
-        if (LogInfo->stopRun) {
-            goto reportError;
-        }
-
-        SW_MPI_get_activated_tsuids(
-            SW_Domain, activeSuids, activeTSuids, numActiveSites, LogInfo
-        );
-        if (LogInfo->stopRun) {
-            goto reportError;
-        }
-
-        allocProcInfo(
-            startOldSize,
-            startNewSize,
-            &nodeNames,
-            &numProcsInNode,
-            &ranksInNodes,
-            &numMaxProcsInNode,
-            LogInfo
-        );
-        if (LogInfo->stopRun) {
-            goto reportError;
-        }
-
-    reportError:
-        if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-            return;
-        }
-
-        getProcInfo(
-            worldSize,
-            procName,
-            &numNodes,
-            &maxNodes,
-            &nodeNames,
-            &numProcsInNode,
-            &numMaxProcsInNode,
-            &ranksInNodes,
-            LogInfo
-        );
-        if (LogInfo->stopRun) {
-            goto checkForError;
-        }
-
-        // Check if any nodes have a count of 1
-        for (node = 0; node < numNodes; node++) {
-            if (numProcsInNode[node] == 1) {
-                // Fail as we need more than one process in a node
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "Must have at least 2 processes within a node "
-                    " (%s has 1).",
-                    nodeNames[node]
-                );
-                goto checkForError;
-            }
-
-            numIOProcsTot += calcNumIOProcs(numProcsInNode[node]);
-        }
-        desig->nTotIOProcs = numIOProcsTot;
-        desig->nTotCompProcs = worldSize - numIOProcsTot;
-
+    if (rank == SW_MPI_ROOT) {
         if (numActiveSites == 0) {
             LogError(LogInfo, LOGERROR, "No active sites to simulate.");
-        } else if (numActiveSites < (size_t) (worldSize - numIOProcsTot)) {
+        } else if (numActiveSites < (size_t) worldSize) {
             LogError(
                 LogInfo,
                 LOGERROR,
-                "Less active sites (%d) to simulate than compute processes. "
-                "Attempted to create %d total compute processes with a maximum "
-                "of %d I/O processes per node. At least one active site per "
-                "compute process is needed.",
+                "Fewer active sites (%d) were found than spawned processes "
+                "(%d).",
                 numActiveSites,
-                worldSize - numIOProcsTot,
-                SW_MPI_NIO
+                worldSize
             );
         }
-        if (LogInfo->stopRun ||
-            SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
+        if (LogInfo->stopRun) {
             goto checkForError;
         }
 
-        leftSuids = numActiveSites;
-        designateProcesses(
-            &designations,
-            desig,
-            numProcsInNode,
-            numNodes,
-            worldSize - numIOProcsTot,
-            numActiveSites,
-            activeSuids,
-            activeTSuids,
-            ranksInNodes,
-            &leftSuids,
-            &suidAssign,
-            LogInfo
+        get_activated_tsuids(
+            SW_Domain, activeSuids, activeTSuids, numActiveSites, LogInfo
         );
         if (LogInfo->stopRun) {
             goto checkForError;
         }
 
-        // Send designation to processes
-        desig->useTSuids = useTranslated;
-        assignProcs(
-            desType,
-            designations,
-            rank,
-            numNodes,
-            SW_Domain->netCDFInput.useIndexFile,
-            numProcsInNode,
-            ranksInNodes,
-            useTranslated,
-            desig,
-            LogInfo
-        );
+        calcNumSites(numActiveSites, worldSize, &nSuidsAssign, LogInfo);
     }
 
 checkForError:
@@ -4893,30 +2916,20 @@ checkForError:
         goto freeMem;
     }
 
-    create_groups(
+    assignProcs(
         rank,
+        nSuidsAssign,
+        activeSuids,
+        activeTSuids,
         worldSize,
-        numIOProcsTot,
-        designations,
-        ranksInNodes,
-        numNodes,
-        numProcsInNode,
-        desig,
+        SW_Domain->netCDFInput.useIndexFile,
+        SW_Domain,
         LogInfo
     );
 
 freeMem:
     deallocProcHelpers(
-        numActiveSites,
-        maxNodes,
-        numNodes,
-        &designations,
-        &activeSuids,
-        activeTSuids,
-        &nodeNames,
-        &numProcsInNode,
-        &numMaxProcsInNode,
-        &ranksInNodes
+        numActiveSites, &activeSuids, activeTSuids, &nSuidsAssign
     );
 }
 

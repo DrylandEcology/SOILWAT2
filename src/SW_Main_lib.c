@@ -584,8 +584,6 @@ void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
 
 @param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] worldSize Total number of processes that the MPI run has created
-@param[in] procName Name of the processor/node the current processes is
-    running on
 @param[in] prepareFiles Should we only prepare domain/progress, index,
     and output files? If so, simulations will occur without this
     flag being turned on
@@ -598,34 +596,26 @@ void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
 void sw_setup_prog_data(
     int rank,
     int worldSize,
-    const char *procName,
     Bool prepareFiles,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
     LOG_INFO *LogInfo
 ) {
-#if defined(SWNETCDF)
-    Bool doOutStuff = swTRUE;
-#else
-    (void) prepareFiles;
-#endif
 #if defined(SWMPI)
-    int procJob;
+    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
+        return;
+    }
 
     if (!prepareFiles) {
-        SW_MPI_setup(
-            rank, worldSize, procName, SW_Domain, sw_template, LogInfo
-        );
+        SW_MPI_proc_workload(rank, worldSize, SW_Domain, LogInfo);
+
         if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
             return;
         }
-        procJob = SW_Domain->SW_Designation.procJob;
-        doOutStuff = (Bool) (procJob == SW_MPI_PROC_IO);
     }
 #else
     (void) rank;
     (void) worldSize;
-    (void) procName;
 #endif
 
     // initialize output
@@ -648,43 +638,23 @@ void sw_setup_prog_data(
 #endif
 
 #if defined(SWNETCDF)
-#if defined(SWMPI)
-    if (rank == SW_MPI_ROOT) {
-#endif
-        SW_NCOUT_read_out_vars(
-            &SW_Domain->OutDom,
-            SW_Domain->SW_PathInputs.txtInFiles,
-            sw_template->VegEstabIn.parms,
-            LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return;
-        }
-#if defined(SWMPI)
-    }
-    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
+    SW_NCOUT_read_out_vars(
+        &SW_Domain->OutDom,
+        SW_Domain->SW_PathInputs.txtInFiles,
+        sw_template->VegEstabIn.parms,
+        LogInfo
+    );
+    if (LogInfo->stopRun) {
         return;
     }
-#endif
-
 #if defined(SWMPI)
-    if (doOutStuff && !prepareFiles) {
-        SW_MPI_ncout_info(
-            rank,
-            SW_Domain->SW_Designation.groupComm,
-            &SW_Domain->OutDom,
-            LogInfo
-        );
-    }
     if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
         return;
     }
 #endif
 
     if (!prepareFiles) {
-        if (doOutStuff) {
-            SW_NCOUT_create_units_converters(&SW_Domain->OutDom, LogInfo);
-        }
+        SW_NCOUT_create_units_converters(&SW_Domain->OutDom, LogInfo);
 #if defined(SWMPI)
         if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
             return;
@@ -692,12 +662,6 @@ void sw_setup_prog_data(
 #else
         if (LogInfo->stopRun) {
             return;
-        }
-#endif
-
-#if defined(SWMPI)
-        if (rank > SW_MPI_ROOT && doOutStuff) {
-            SW_NCIN_create_units_converters(&SW_Domain->netCDFInput, LogInfo);
         }
 #endif
     }

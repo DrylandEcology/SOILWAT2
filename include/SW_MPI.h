@@ -93,6 +93,15 @@ void SW_MPI_Fail(int rank, int failType, char *mpiErrStr);
 
 void SW_MPI_deconstruct(SW_DOMAIN *SW_Domain);
 
+void SW_MPI_Scatter(
+    MPI_Comm comm,
+    void *buffer,
+    int src,
+    int sendCount,
+    int recvCount,
+    void *dest
+);
+
 void SW_MPI_Barrier(MPI_Comm comm);
 
 void SW_MPI_Bcast(
@@ -119,16 +128,6 @@ void SW_MPI_Recv(
     MPI_Request *request
 );
 
-
-void SW_MPI_setup(
-    int rank,
-    int worldSize,
-    const char *procName,
-    SW_DOMAIN *SW_Domain,
-    SW_RUN *sw_template,
-    LOG_INFO *LogInfo
-);
-
 void SW_MPI_template_info(
     int rank,
     SW_MPI_DESIGNATE *desig,
@@ -142,10 +141,6 @@ void SW_MPI_template_info(
 );
 
 void SW_MPI_domain_info(SW_DOMAIN *SW_Domain, int rank, LOG_INFO *LogInfo);
-
-void SW_MPI_ncout_info(
-    int rank, MPI_Comm comm, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
-);
 
 Bool SW_MPI_setup_fail(Bool stopRun, MPI_Comm comm);
 
@@ -163,27 +158,8 @@ void SW_MPI_write_main_logs(
     SW_MPI_DESIGNATE *desig, MPI_Datatype logType, LOG_INFO *LogInfo
 );
 
-void SW_MPI_root_find_active_sites(
-    SW_DOMAIN *SW_Domain,
-    size_t ***activeSuids,
-    size_t *numActiveSites,
-    LOG_INFO *LogInfo
-);
-
-void SW_MPI_get_activated_tsuids(
-    SW_DOMAIN *SW_Domain,
-    size_t **activeSuids,
-    size_t ***activeTSuids,
-    size_t numActiveSites,
-    LOG_INFO *LogInfo
-);
-
-void SW_MPI_process_types(
-    SW_DOMAIN *SW_Domain,
-    char *procName,
-    int worldSize,
-    int rank,
-    LOG_INFO *LogInfo
+void SW_MPI_proc_workload(
+    int rank, int worldSize, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
 );
 
 void SW_MPI_store_outputs(
