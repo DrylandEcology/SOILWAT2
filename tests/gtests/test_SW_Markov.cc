@@ -61,7 +61,6 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
     short k;
 
     // Dummy value for SW_F_deconstruct
-    Bool useIndexFiles[SW_NINFILES] = {swFALSE};
     Bool *readInVars[SW_NINKEYSNC];
     for (k = 0; k < SW_NINKEYSNC; k++) {
         readInVars[k] = (Bool *) Mem_Malloc(
