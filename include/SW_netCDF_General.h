@@ -4,6 +4,7 @@
 #include "include/generic.h"        // for Bool, IntUS
 #include "include/SW_datastructs.h" // for SW_DOMAIN, SW_NETCDF_OUT, S...
 #include "include/SW_Defines.h"     // for OutPeriod, SW_OUTNPERIODS, SW_OUTN...
+#include <netcdf.h>                 // for nc_type
 #include <stdio.h>                  // for size_t
 
 #if defined(SWMPI)
@@ -34,6 +35,14 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
+
+void SW_NC_get_att_type(
+    int ncFileID,
+    int varID,
+    const char *attName,
+    nc_type *attType,
+    LOG_INFO *LogInfo
+);
 
 void SW_NC_get_dimlen_from_dimid(
     int ncFileID, int dimID, size_t *dimVal, LOG_INFO *LogInfo
@@ -102,7 +111,7 @@ void SW_NC_get_str_att_val(
     int ncFileID,
     const char *varName,
     const char *attName,
-    char *strVal,
+    char **strVal,
     LOG_INFO *LogInfo
 );
 
