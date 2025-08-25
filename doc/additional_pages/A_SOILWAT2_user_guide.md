@@ -162,12 +162,15 @@ on your side.
 
   * Additional documentation for the mpi-based SOILWAT2
     * \subpage doc/additional_pages/SOILWAT2_Parallelization.md "SOILWAT2 Parallelization"
+
+  * Brief outline of the main steps for setting up a simulation project
+    * \subpage templateProject/README-PROJECT.md "SOILWAT2 Template Project"
 <br>
 
 
 
-### Example
-  * The source code contains a complete example simulation project in
+### Example simulation
+  * The source code contains a complete example simulation simulation in
     `tests/example/`
 
   * The inputs comprise the configuration file `files.in` and

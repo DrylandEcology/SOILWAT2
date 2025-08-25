@@ -390,32 +390,6 @@ static void get_values_multiple(
 }
 
 /**
-@brief Gets the type of an attribute
-
-@param[in] ncFileID File identifier of the file to get information from
-@param[in] varID Variable identifier to get the attribute value from
-@param[in] attName Attribute name to get the type of
-@param[out] attType Resulting attribute type gathered
-@param[out] LogInfo Holds information on warnings and errors
-*/
-static void get_att_type(
-    int ncFileID,
-    int varID,
-    const char *attName,
-    nc_type *attType,
-    LOG_INFO *LogInfo
-) {
-    if (nc_inq_atttype(ncFileID, varID, attName, attType) != NC_NOERR) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Could not get the type of attribute '%s'.",
-            attName
-        );
-    }
-}
-
-/**
 @brief Helper function to test if a variable has an attribute by the
 given name
 
@@ -2542,7 +2516,9 @@ static long get_dom_fill_value(int domFileID, int domVarID, LOG_INFO *LogInfo) {
     long result = 0;
     int callResult = NC_NOERR;
 
-    get_att_type(domFileID, domVarID, "_FillValue", &fillValType, LogInfo);
+    SW_NC_get_att_type(
+        domFileID, domVarID, "_FillValue", &fillValType, LogInfo
+    );
     if (LogInfo->stopRun) {
         return (long) (NC_FILL_UINT);
     }
@@ -3990,7 +3966,6 @@ static void calc_temporal_weather_indices(
     int varIndex = 1;
     unsigned int weatherEnd;
     Bool hasCalOverride = swFALSE;
-    Bool checkedCal = swFALSE;
     char *weatherCal = NULL;
     char *fileName;
     double valDoy1 = 0.0;
@@ -4002,11 +3977,11 @@ static void calc_temporal_weather_indices(
     int ncFileID = -1;
 
     char newCalUnit[MAX_FILENAMESIZE] = "\0";
-    char currCalType[MAX_FILENAMESIZE] = "\0";
-    char currCalUnit[MAX_FILENAMESIZE] = "\0";
+    char *calTypeUnit = NULL;
     char *timeName = NULL;
     Bool calIsNoLeap = swFALSE;
     Bool calIsAllLeap = swFALSE;
+    Bool checkCal = swTRUE;
     double *timeVals = NULL;
     size_t timeSize = 0;
     int tempStart = -1;
@@ -4058,7 +4033,6 @@ static void calc_temporal_weather_indices(
             SW_PathInputs->ncWeatherStartEndIndices[fileIndex][0] =
                 (unsigned int) tempStart;
             fileIndex++;
-            currCalType[0] = currCalUnit[0] = newCalUnit[0] = '\0';
             nc_close(ncFileID);
 
             ncFileID = -1;
@@ -4081,39 +4055,42 @@ static void calc_temporal_weather_indices(
         }
 
         /* Get information from new file if it's newly opened */
-        if (currCalUnit[0] == '\0') {
-            if (!checkedCal) {
-                if (!hasCalOverride) {
-                    SW_NC_get_str_att_val(
-                        ncFileID, timeName, "calendar", currCalType, LogInfo
-                    );
-                    if (LogInfo->stopRun) {
-                        goto freeMem;
-                    }
-                    weatherCal = currCalType;
-                }
-            }
-            SW_NC_get_str_att_val(
-                ncFileID, timeName, "units", currCalUnit, LogInfo
-            );
-            if (LogInfo->stopRun) {
-                goto freeMem;
-            }
-
-            if (!checkedCal) {
-                determine_valid_cal(
-                    weatherCal,
-                    currCalUnit,
-                    &calIsNoLeap,
-                    &calIsAllLeap,
-                    fileName,
-                    LogInfo
+        if (checkCal) {
+            if (!hasCalOverride) {
+                SW_NC_get_str_att_val(
+                    ncFileID, timeName, "calendar", &calTypeUnit, LogInfo
                 );
                 if (LogInfo->stopRun) {
                     goto freeMem;
                 }
 
-                checkedCal = swTRUE;
+                weatherCal = Str_Dup(calTypeUnit, LogInfo);
+                if (LogInfo->stopRun) {
+                    goto freeMem;
+                }
+            }
+        }
+        SW_NC_get_str_att_val(
+            ncFileID, timeName, "units", &calTypeUnit, LogInfo
+        );
+        if (LogInfo->stopRun) {
+            goto freeMem;
+        }
+
+        if (checkCal) {
+            checkCal = swFALSE;
+
+            // NOLINTNEXTLINE(readability-suspicious-call-argument)
+            determine_valid_cal(
+                weatherCal,
+                calTypeUnit,
+                &calIsNoLeap,
+                &calIsAllLeap,
+                fileName,
+                LogInfo
+            );
+            if (LogInfo->stopRun) {
+                goto freeMem;
             }
         }
 
@@ -4143,7 +4120,7 @@ static void calc_temporal_weather_indices(
            rather than x.5, so check to see if you do the + 0.5
            at the end of the calculation */
         valDoy1Add = (fmod(timeVals[timeSize - 1], 1.0) == 0.0) ? 0.0 : 0.5;
-        valDoy1 = conv_times(system, currCalUnit, newCalUnit) + valDoy1Add;
+        valDoy1 = conv_times(system, calTypeUnit, newCalUnit) + valDoy1Add;
 #endif
         SW_PathInputs->numDaysInYear[year - startYr] =
             num_nc_days_in_year(year, calIsAllLeap, calIsNoLeap);
@@ -4181,6 +4158,16 @@ freeMem: {
     if (!isnull(timeVals)) {
         free(timeVals);
         timeVals = NULL;
+    }
+
+    if (!isnull(calTypeUnit)) {
+        free((void *) calTypeUnit);
+        calTypeUnit = NULL;
+    }
+
+    if (!isnull(weatherCal)) {
+        free((void *) weatherCal);
+        weatherCal = NULL;
     }
 
     if (ncFileID > -1) {
@@ -4843,9 +4830,9 @@ static void check_input_file_against_index(
     int indexVarID = -1;
     int testVarID = -1;
     int *varIDs[] = {&indexVarID, &testVarID};
-    char indexCRSAtt[MAX_FILENAMESIZE];
-    char testCRSAtt[MAX_FILENAMESIZE];
-    char unitsAtt[MAX_FILENAMESIZE];
+    char *indexCRSAtt = NULL;
+    char *testCRSAtt = NULL;
+    char *unitsAtt = NULL;
     char *crsAttVals[] = {indexCRSAtt, testCRSAtt};
     const int numCrsAtts = 9;
     const char *crsAttNames[] = {
@@ -4899,17 +4886,10 @@ static void check_input_file_against_index(
             }
 
             if (indexAttExists && testAttExists) {
-                if (nc_inq_atttype(
-                        testFileID, testVarID, crsAttNames[att], &attType
-                    ) != NC_NOERR) {
-                    LogError(
-                        LogInfo,
-                        LOGERROR,
-                        "Could not get type of attribute '%s' under the "
-                        "variable '%s'.",
-                        crsAttNames[att],
-                        testCRSName
-                    );
+                SW_NC_get_att_type(
+                    testFileID, testVarID, crsAttNames[att], &attType, LogInfo
+                );
+                if (LogInfo->stopRun) {
                     return;
                 }
 
@@ -4919,7 +4899,7 @@ static void check_input_file_against_index(
                             fileIDs[index],
                             CRSNames[index],
                             crsAttNames[att],
-                            crsAttVals[index],
+                            &crsAttVals[index],
                             LogInfo
                         );
                         if (LogInfo->stopRun) {
@@ -4927,6 +4907,7 @@ static void check_input_file_against_index(
                         }
                     }
 
+                    // NOLINTNEXTLINE(clang-analyzer-unix.cstring.NullArg)
                     if (strcmp(indexCRSAtt, testCRSAtt) != 0) {
                         LogError(
                             LogInfo,
@@ -4937,7 +4918,7 @@ static void check_input_file_against_index(
                             indexCRSName,
                             testCRSName
                         );
-                        return;
+                        goto freeMem;
                     }
                 } else if (attType == NC_DOUBLE) {
                     /* Compare the values of attributes that are of type
@@ -4952,7 +4933,7 @@ static void check_input_file_against_index(
                             LogInfo
                         );
                         if (LogInfo->stopRun) {
-                            return;
+                            goto freeMem;
                         }
                     }
 
@@ -4970,7 +4951,7 @@ static void check_input_file_against_index(
                                 indexCRSName,
                                 testCRSName
                             );
-                            return;
+                            goto freeMem;
                         }
                     }
                 }
@@ -4980,7 +4961,7 @@ static void check_input_file_against_index(
 
     /* Check input variable units */
     SW_NC_get_str_att_val(
-        testFileID, inVarInfo[INNCVARNAME], "units", unitsAtt, LogInfo
+        testFileID, inVarInfo[INNCVARNAME], "units", &unitsAtt, LogInfo
     );
     if (LogInfo->stopRun) {
         return;
@@ -4988,6 +4969,19 @@ static void check_input_file_against_index(
 
     if (strcmp(inVarInfo[INVARUNITS], "NA") != 0) {
         invalid_conv(inVarInfo[INVARUNITS], unitsAtt, LogInfo);
+    }
+
+freeMem:
+    for (att = 0; att < numDimsAndVars; att++) {
+        if (!isnull(crsAttVals[att])) {
+            free((void *) crsAttVals[att]);
+            crsAttVals[att] = NULL;
+        }
+    }
+
+    if (!isnull(unitsAtt)) {
+        free((void *) unitsAtt);
+        unitsAtt = NULL;
     }
 }
 
@@ -5734,7 +5728,7 @@ static void gather_missing_information(
         if (*hasMissFlag) {
             missValFlags[varNum][0] = swTRUE;
 
-            get_att_type(
+            SW_NC_get_att_type(
                 ncFileID,
                 varID,
                 (char *) missAttNames[attNum],
@@ -5871,7 +5865,7 @@ static void get_proj_nc_units(
     int varNum;
     const int numVars = 2;
     char *varNames[] = {yVarName, xVarName};
-    char varUnit[FILENAME_MAX] = {'\0'};
+    char *varUnit = NULL;
     const char *attName = "units";
 
     ut_system *system = NULL;
@@ -5892,7 +5886,7 @@ static void get_proj_nc_units(
     for (varNum = 0; varNum < numVars; varNum++) {
         if (SW_NC_varExists(ncFileID, varNames[varNum])) {
             SW_NC_get_str_att_val(
-                ncFileID, varNames[varNum], attName, varUnit, LogInfo
+                ncFileID, varNames[varNum], attName, &varUnit, LogInfo
             );
             if (LogInfo->stopRun) {
                 return;
@@ -5918,6 +5912,11 @@ static void get_proj_nc_units(
 
             ut_free(unitFrom);
         }
+    }
+
+    if (!isnull(varUnit)) {
+        free((void *) varUnit);
+        varUnit = NULL;
     }
 
     ut_free(unitTo);
@@ -6265,7 +6264,7 @@ static void get_invar_information(
                     attVal = &SW_PathInputs
                                   ->scaleAndAddFactVals[inKey][varNum][attNum];
 
-                    get_att_type(
+                    SW_NC_get_att_type(
                         ncFileID,
                         *varID,
                         unpackAttNames[attNum],

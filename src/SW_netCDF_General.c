@@ -138,6 +138,32 @@ static void update_netCDF_global_atts(
 /* --------------------------------------------------- */
 
 /**
+@brief Gets the type of an attribute
+
+@param[in] ncFileID File identifier of the file to get information from
+@param[in] varID Variable identifier to get the attribute value from
+@param[in] attName Attribute name to get the type of
+@param[out] attType Resulting attribute type gathered
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NC_get_att_type(
+    int ncFileID,
+    int varID,
+    const char *attName,
+    nc_type *attType,
+    LOG_INFO *LogInfo
+) {
+    if (nc_inq_atttype(ncFileID, varID, attName, attType) != NC_NOERR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not get the type of attribute '%s'.",
+            attName
+        );
+    }
+}
+
+/**
 @brief Get a dimension value from a given netCDF file
 
 @param[in] ncFileID Identifier of the open netCDF file to access
@@ -293,7 +319,7 @@ void SW_NC_check(
     SW_CRS *crs_geogsc = &SW_Domain->OutDom.netCDFOutput.crs_geogsc;
     SW_CRS *crs_projsc = &SW_Domain->OutDom.netCDFOutput.crs_projsc;
     char *siteName = SW_Domain->OutDom.netCDFOutput.siteName;
-    char strAttVal[LARGE_VALUE];
+    char *strAttVal = NULL;
     double doubleAttVal;
     const char *geoCRS = crs_geogsc->crs_name;
     const char *projCRS = crs_projsc->crs_name;
@@ -431,7 +457,7 @@ void SW_NC_check(
     if (geoCRSExists) {
         for (attNum = 0; attNum < numNormAtts; attNum++) {
             SW_NC_get_str_att_val(
-                *ncFileID, geoCRS, strAttsToComp[attNum], strAttVal, LogInfo
+                ncFileID, geoCRS, strAttsToComp[attNum], &strAttVal, LogInfo
             );
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
@@ -493,7 +519,7 @@ void SW_NC_check(
         // Normal attributes (same tested for in crs_geogsc)
         for (attNum = 0; attNum < numNormAtts; attNum++) {
             SW_NC_get_str_att_val(
-                *ncFileID, projCRS, strAttsToComp[attNum], strAttVal, LogInfo
+                ncFileID, projCRS, strAttsToComp[attNum], &strAttVal, LogInfo
             );
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
@@ -540,10 +566,10 @@ void SW_NC_check(
         // Projected CRS-only attributes
         for (attNum = 0; attNum < numProjStrAtts; attNum++) {
             SW_NC_get_str_att_val(
-                *ncFileID,
+                ncFileID,
                 projCRS,
                 strProjAttsToComp[attNum],
-                strAttVal,
+                &strAttVal,
                 LogInfo
             );
             if (LogInfo->stopRun) {
@@ -604,6 +630,16 @@ void SW_NC_check(
             );
             return; // Exit function prematurely due to error
         }
+    }
+
+
+wrapUp:
+    if (fileWasClosed) {
+        nc_close(ncFileID);
+    }
+
+    if (!isnull(strAttVal)) {
+        free((void *) strAttVal);
     }
 }
 
@@ -799,18 +835,28 @@ void SW_NC_get_str_att_val(
     int ncFileID,
     const char *varName,
     const char *attName,
-    char *strVal,
+    char **strVal,
     LOG_INFO *LogInfo
 ) {
-
+    const int firstStr = 0;
     int varID = 0;
+    nc_type attType = NC_CHAR;
     int attCallRes;
     int attLenCallRes;
     size_t attLen = 0;
+    size_t strLen;
+
+    size_t strIndex;
+    char **strAtts = NULL;
 
     SW_NC_get_var_identifier(ncFileID, varName, &varID, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
+    }
+
+    SW_NC_get_att_type(ncFileID, varID, attName, &attType, LogInfo);
+    if (LogInfo->stopRun) {
+        return;
     }
 
     attLenCallRes = nc_inq_attlen(ncFileID, varID, attName, &attLen);
@@ -833,13 +879,41 @@ void SW_NC_get_str_att_val(
             attName
         );
     }
-
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
+    if (!isnull(*strVal)) {
+        free((void *) *strVal);
+    }
 
-    attCallRes = nc_get_att_text(ncFileID, varID, attName, strVal);
+    if (attType == NC_CHAR) {
+        *strVal = (char *) Mem_Malloc(
+            sizeof(char) * attLen + 1, "SW_NC_get_str_att_val", LogInfo
+        );
+    } else if (attType == NC_STRING) {
+        strAtts = (char **) Mem_Malloc(
+            sizeof(char *) * attLen, "SW_NC_get_str_att_val", LogInfo
+        );
+    } else if (attType != NC_CHAR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Type of attribute '%s' must be characters or a string.",
+            attName
+        );
+    }
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    if (attType == NC_CHAR) {
+        attCallRes = nc_get_att_text(ncFileID, varID, attName, *strVal);
+
+        (*strVal)[attLen] = '\0';
+    } else {
+        attCallRes = nc_get_att_string(ncFileID, varID, attName, strAtts);
+    }
     if (attCallRes != NC_NOERR) {
         LogError(
             LogInfo,
@@ -849,10 +923,23 @@ void SW_NC_get_str_att_val(
             attName,
             varName
         );
-        return; // Exit function prematurely due to error
     }
 
-    strVal[attLen] = '\0';
+    if (!isnull(strAtts)) {
+        strLen = strlen(strAtts[firstStr]) + 1;
+
+        *strVal = (char *) Mem_Malloc(
+            sizeof(char) * strLen, "SW_NC_get_str_att_val", LogInfo
+        );
+
+        for (strIndex = 0; strIndex < strLen; strIndex++) {
+            (*strVal)[strIndex] = strAtts[firstStr][strIndex];
+        }
+
+        nc_free_string(attLen, strAtts);
+
+        free((void *) strAtts);
+    }
 }
 
 /**
