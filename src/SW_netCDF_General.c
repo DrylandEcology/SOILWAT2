@@ -448,6 +448,7 @@ void SW_NC_check(
                 goto wrapUp; // Exit function prematurely due to error
             }
 
+            // NOLINTNEXTLINE(clang-analyzer-core.NonNullParamChecker)
             if (strcmp(geoStrAttVals[attNum], strAttVal) != 0) {
                 LogError(
                     LogInfo,

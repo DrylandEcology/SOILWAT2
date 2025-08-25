@@ -4899,7 +4899,7 @@ static void check_input_file_against_index(
                         }
                     }
 
-                    // NOLINTNEXTLINE(clang-analyzer-unix.cstring.NullArg)
+                    // NOLINTNEXTLINE(clang-analyzer-unix.cstring.NullArg,clang-analyzer-core.NonNullParamChecker)
                     if (strcmp(indexCRSAtt, testCRSAtt) != 0) {
                         LogError(
                             LogInfo,
