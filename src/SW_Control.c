@@ -1722,7 +1722,7 @@ void SW_CTL_run_sw(
         LogInfo
     );
     SW_WT_TimeRun(tsr, ok_tsr, TIME_IO, SW_WallTime);
-    if (LogInfo->stopRun) {
+    if (LogInfo->stopRun || !runSims) {
         goto freeMem;
     }
 #endif
