@@ -4907,8 +4907,10 @@ static void check_input_file_against_index(
                         }
                     }
 
-                    // NOLINTNEXTLINE(clang-analyzer-unix.cstring.NullArg)
-                    if (strcmp(indexCRSAtt, testCRSAtt) != 0) {
+                    // `isnull()` should not be necessary here, it is only to
+                    // silence Clang Tidy
+                    if (isnull(testCRSAtt) ||
+                        strcmp(indexCRSAtt, testCRSAtt) != 0) {
                         LogError(
                             LogInfo,
                             LOGERROR,

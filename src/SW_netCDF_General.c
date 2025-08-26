@@ -463,7 +463,10 @@ void SW_NC_check(
                 return; // Exit function prematurely due to error
             }
 
-            if (strcmp(geoStrAttVals[attNum], strAttVal) != 0) {
+            // `isnull()` should not be necessary here, it is only to
+            // silence Clang Tidy
+            if (isnull(strAttVal) ||
+                strcmp(geoStrAttVals[attNum], strAttVal) != 0) {
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -885,6 +888,7 @@ void SW_NC_get_str_att_val(
 
     if (!isnull(*strVal)) {
         free((void *) *strVal);
+        *strVal = NULL;
     }
 
     if (attType == NC_CHAR) {
