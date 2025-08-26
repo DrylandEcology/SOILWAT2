@@ -448,8 +448,10 @@ void SW_NC_check(
                 goto wrapUp; // Exit function prematurely due to error
             }
 
-            // NOLINTNEXTLINE(clang-analyzer-core.NonNullParamChecker)
-            if (strcmp(geoStrAttVals[attNum], strAttVal) != 0) {
+            // `isnull()` should not be necessary here, it is only to
+            // silence Clang Tidy
+            if (isnull(strAttVal) ||
+                strcmp(geoStrAttVals[attNum], strAttVal) != 0) {
                 LogError(
                     LogInfo,
                     LOGERROR,
