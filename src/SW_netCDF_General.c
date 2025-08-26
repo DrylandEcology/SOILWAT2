@@ -457,10 +457,10 @@ void SW_NC_check(
     if (geoCRSExists) {
         for (attNum = 0; attNum < numNormAtts; attNum++) {
             SW_NC_get_str_att_val(
-                ncFileID, geoCRS, strAttsToComp[attNum], &strAttVal, LogInfo
+                *ncFileID, geoCRS, strAttsToComp[attNum], &strAttVal, LogInfo
             );
             if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
 
             // `isnull()` should not be necessary here, it is only to
@@ -475,7 +475,7 @@ void SW_NC_check(
                     geoCRS,
                     fileName
                 );
-                return; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
         }
 
@@ -488,7 +488,7 @@ void SW_NC_check(
                 LogInfo
             );
             if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
 
             if (doubleAttVal != geoDoubleAttVals[attNum]) {
@@ -500,7 +500,7 @@ void SW_NC_check(
                     geoCRS,
                     fileName
                 );
-                return; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
         }
     } else {
@@ -511,7 +511,7 @@ void SW_NC_check(
             "Please make sure one is provided.",
             fileName
         );
-        return; // Exit function prematurely due to error
+        goto wrapUp; // Exit function prematurely due to error
     }
 
     /*
@@ -522,10 +522,10 @@ void SW_NC_check(
         // Normal attributes (same tested for in crs_geogsc)
         for (attNum = 0; attNum < numNormAtts; attNum++) {
             SW_NC_get_str_att_val(
-                ncFileID, projCRS, strAttsToComp[attNum], &strAttVal, LogInfo
+                *ncFileID, projCRS, strAttsToComp[attNum], &strAttVal, LogInfo
             );
             if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
 
             if (strcmp(projStrAttVals[attNum], strAttVal) != 0) {
@@ -537,7 +537,7 @@ void SW_NC_check(
                     projCRS,
                     fileName
                 );
-                return; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
         }
 
@@ -550,7 +550,7 @@ void SW_NC_check(
                 LogInfo
             );
             if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
 
             if (doubleAttVal != projDoubleAttVals[attNum]) {
@@ -562,21 +562,21 @@ void SW_NC_check(
                     projCRS,
                     fileName
                 );
-                return; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
         }
 
         // Projected CRS-only attributes
         for (attNum = 0; attNum < numProjStrAtts; attNum++) {
             SW_NC_get_str_att_val(
-                ncFileID,
+                *ncFileID,
                 projCRS,
                 strProjAttsToComp[attNum],
                 &strAttVal,
                 LogInfo
             );
             if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
 
             if (strcmp(strAttVal, strProjAttVals[attNum]) != 0) {
@@ -588,7 +588,7 @@ void SW_NC_check(
                     projCRS,
                     fileName
                 );
-                return; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
         }
 
@@ -601,7 +601,7 @@ void SW_NC_check(
                 LogInfo
             );
             if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
 
             if (doubleAttVal != doubleProjAttVals[attNum]) {
@@ -613,7 +613,7 @@ void SW_NC_check(
                     projCRS,
                     fileName
                 );
-                return; // Exit function prematurely due to error
+                goto wrapUp; // Exit function prematurely due to error
             }
         }
 
@@ -622,7 +622,7 @@ void SW_NC_check(
             *ncFileID, projCRS, stdParallel, projStdParallel, LogInfo
         );
         if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
+            goto wrapUp; // Exit function prematurely due to error
         }
 
         if (projStdParallel[0] != stdParVals[0] ||
@@ -631,14 +631,13 @@ void SW_NC_check(
             LogError(
                 LogInfo, LOGERROR, attFailMsg, stdParallel, projCRS, fileName
             );
-            return; // Exit function prematurely due to error
         }
     }
 
 
 wrapUp:
     if (fileWasClosed) {
-        nc_close(ncFileID);
+        nc_close(*ncFileID);
     }
 
     if (!isnull(strAttVal)) {
