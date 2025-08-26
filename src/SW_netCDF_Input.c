@@ -4825,7 +4825,7 @@ static void check_input_file_against_index(
     char *indexCRSAtt = NULL;
     char *testCRSAtt = NULL;
     char *unitsAtt = NULL;
-    char *crsAttVals[] = {indexCRSAtt, testCRSAtt};
+    char **crsAttVals[] = {&indexCRSAtt, &testCRSAtt};
     const int numCrsAtts = 9;
     const char *crsAttNames[] = {
         "grid_mapping_name",
@@ -4891,7 +4891,7 @@ static void check_input_file_against_index(
                             fileIDs[index],
                             CRSNames[index],
                             crsAttNames[att],
-                            &crsAttVals[index],
+                            crsAttVals[index],
                             LogInfo
                         );
                         if (LogInfo->stopRun) {
@@ -4967,9 +4967,9 @@ static void check_input_file_against_index(
 
 freeMem:
     for (att = 0; att < numDimsAndVars; att++) {
-        if (!isnull(crsAttVals[att])) {
-            free((void *) crsAttVals[att]);
-            crsAttVals[att] = NULL;
+        if (!isnull(*(crsAttVals[att]))) {
+            free((void *) *(crsAttVals[att]));
+            *(crsAttVals[att]) = NULL;
         }
     }
 
