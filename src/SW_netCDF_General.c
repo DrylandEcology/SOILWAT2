@@ -873,6 +873,7 @@ void SW_NC_get_str_att_val(
 
     if (!isnull(*strVal)) {
         free((void *) *strVal);
+        *strVal = NULL;
     }
 
     if (attType == NC_CHAR) {
