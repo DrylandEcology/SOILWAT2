@@ -639,10 +639,6 @@ void SW_NC_check(
 
 
 wrapUp:
-    if (fileWasClosed) {
-        nc_close(*ncFileID);
-    }
-
     if (!isnull(strAttVal)) {
         free((void *) strAttVal);
     }
