@@ -7624,6 +7624,7 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     const char *domFileName = inDomFileNames[vNCdom];
     const char *progFileName = inDomFileNames[vNCprog];
     int *progVarID = &SW_netCDFIn->ncDomVarIDs[vNCprog];
+    const int openMode = NC_NOWRITE;
 
     // SW_NC_create_full_var/SW_NC_create_template
     // No time variable/dimension
@@ -7684,7 +7685,9 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
       variable is present
     */
     if (!createOrModFile) {
-        SW_NC_check(SW_Domain, progFileID, progFileName, openInPar, LogInfo);
+        SW_NC_check(
+            SW_Domain, progFileID, progFileName, openInPar, openMode, LogInfo
+        );
     } else {
 
 #if defined(SOILWAT)
@@ -8697,6 +8700,7 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     char *crsName;
     unsigned int weathFileIndex = SW_Domain->SW_PathInputs.weathStartFileIndex;
     const Bool openInPar = swFALSE;
+    const int openMode = NC_NOWRITE;
 
     /* Check actual input files provided by the user */
     ForEachNCInKey(inKey) {
@@ -8736,6 +8740,7 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                             fileID,
                             fileNames[file],
                             openInPar,
+                            openMode,
                             LogInfo
                         );
                     } else if (readInVars[inKey][1] && useIndexFile[inKey]) {

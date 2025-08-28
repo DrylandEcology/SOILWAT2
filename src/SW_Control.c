@@ -859,6 +859,7 @@ void SW_CTL_setup_domain(
     LOG_INFO *LogInfo
 ) {
     const Bool openInPar = swFALSE;
+    const int openMode = NC_NOWRITE;
 
     SW_F_construct(&SW_Domain->SW_PathInputs, LogInfo);
     if (LogInfo->stopRun) {
@@ -941,12 +942,14 @@ void SW_CTL_setup_domain(
         &SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom],
         SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom],
         openInPar,
+        openMode,
         LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 #else
+    (void) openMode;
     (void) openInPar;
     (void) renameDomainTemp;
 #endif

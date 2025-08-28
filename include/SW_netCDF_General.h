@@ -66,6 +66,7 @@ void SW_NC_check(
     int *ncFileID,
     const char *fileName,
     Bool openInPar,
+    int openMode,
     LOG_INFO *LogInfo
 );
 

@@ -2199,6 +2199,7 @@ void SW_NCOUT_create_output_files(
     int firstFileInKeyID = -1;
     unsigned int *numOutFiles = &SW_PathOutputs->numOutFiles;
     const Bool openInPar = swTRUE;
+    const int openMode = NC_WRITE;
 
     char periodSuffix[10];
     char *yearFormat;
@@ -2317,6 +2318,7 @@ void SW_NCOUT_create_output_files(
                                      ->openOutFileIDs[key][pd][fileNum],
                                 fileNameBuf,
                                 openInPar,
+                                openMode,
                                 LogInfo
                             );
                         } else {

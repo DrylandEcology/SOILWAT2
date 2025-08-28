@@ -275,6 +275,8 @@ opened for read-access.
 @param[in] fileName Name of netCDF file to test (used for error messages)
 @param[in] openInPar Specifyies if the file opened is to be opened for parallel
 access
+@param[in] openMode Specifies the mode we open a netCDF file perminantly for the
+program run
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_check(
@@ -282,6 +284,7 @@ void SW_NC_check(
     int *ncFileID,
     const char *fileName,
     Bool openInPar,
+    int openMode,
     LOG_INFO *LogInfo
 ) {
 
@@ -302,11 +305,11 @@ void SW_NC_check(
 #if defined(SWMPI)
         if (openInPar) {
             SW_NC_open_par(
-                fileName, NC_NOWRITE, MPI_COMM_WORLD, ncFileID, LogInfo
+                fileName, openMode, MPI_COMM_WORLD, ncFileID, LogInfo
             );
         } else {
 #endif
-            SW_NC_open(fileName, NC_NOWRITE, ncFileID, LogInfo);
+            SW_NC_open(fileName, openMode, ncFileID, LogInfo);
             (void) openInPar;
 #if defined(SWMPI)
         }
