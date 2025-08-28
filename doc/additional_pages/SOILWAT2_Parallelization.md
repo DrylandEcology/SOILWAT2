@@ -26,9 +26,11 @@ Processes that do purely I/O control a chunk of the compute processes by providi
 ## Recommendations
 - Do not change the value of `N_ITER_BEFORE_OUT`
 - Make sure the product of [n compute procs] * N_SUID_ASSIGN < [n active sites]
-- The higher the # I/O processes used, the less N_SUID_ASSIGN should be or vice versa, where as N_SUID_ASSIGN grows, shrink the # of I/O processes
 - Scale the number of I/O processes with the amount of input will be read. For example, if weather is not to be read, use less I/O processes, whereas if weather is read, use more I/O processes
 - If used on an HPC, use at most one node, or 128 cores
+- If using a site-oriented domain with gridded input files, try to make coordinates as consistent as possible. Chances are, using an index from site to gridded domains will increase the number of reads necessary to read all data. The worst-case scenario is having latitudes/longitudes that are random, making indices within an index file sporatic, practically eliminating the chance of reducing of the number of reads
+    - In general, when using random coordinates or indexing from site to gridded domains, try running a small sample of the program with two different values of N_SUID_ASSIGN, as a smaller value of this constant could provide better performance
+    - With that said, it stands that if you do not need to use an index file no matter the consistency of latitude/longitude values, you have the best chance at reducing the time reading inputs due to less but bigger contiguous site reads
 
 ## Additional HPC Usage
 ### Exiting Early
