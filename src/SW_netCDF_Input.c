@@ -4185,7 +4185,7 @@ and close open files
 
 @param[out] tempCoords A list holding all of the temporary coordinate
 lists to (possibly) be freed
-@param[out] fileIDs A list holding all nc file identifiers to (possibly)
+@param[in,out] fileID A list holding all nc file identifiers to (possibly)
 close
 @param[in] numCoordVars Number of coordinate variables to free
 @param[in] numFiles Number of nc files to close
@@ -4193,7 +4193,9 @@ close
 static void free_tempcoords_close_files(
     double ***tempCoords, int *fileIDs[], int numCoordVars, int numFiles
 ) {
+    const int closeSecondFileNumFiles = 1;
     int index;
+    int startFileClose = (numFiles == closeSecondFileNumFiles) ? 1 : 0;
 
     for (index = 0; index < numCoordVars; index++) {
         if (!isnull(*(tempCoords[index]))) {
@@ -4202,7 +4204,7 @@ static void free_tempcoords_close_files(
         }
     }
 
-    for (index = 0; index < numFiles; index++) {
+    for (index = startFileClose; index < numFiles; index++) {
         if (*(fileIDs[index]) > -1) {
             nc_close(*(fileIDs[index]));
             *(fileIDs[index]) = -1;
@@ -10041,7 +10043,9 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     double **freeArr[] = {&inputYVals, &inputXVals};
     int *fileIDs[] = {&templateID, &ncFileID};
-    const int numFree = 2;
+    const int numFree = 1;
+    const int numCoordVars = 2;
+    const int indexFile = 0;
 
     char ***varInfo = NULL;
 
@@ -10124,6 +10128,8 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     return; /* Exit function prematurely due to error */
                 }
 
+                SW_Domain->SW_PathInputs.openInFileIDs[k][indexFile][0] =
+                    templateID;
                 inHasSite = SW_Domain->netCDFInput.siteDoms[k];
 
                 get_index_vars_info(
@@ -10216,14 +10222,13 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     goto freeMem;
                 }
 
-                nc_close(templateID);
-                templateID = -1;
-
-                free_tempcoords_close_files(freeArr, fileIDs, numFree, numFree);
+                free_tempcoords_close_files(
+                    freeArr, fileIDs, numCoordVars, numFree
+                );
             }
         }
     }
 
 freeMem:
-    free_tempcoords_close_files(freeArr, fileIDs, numFree, numFree);
+    free_tempcoords_close_files(freeArr, fileIDs, numCoordVars, numFree);
 }
