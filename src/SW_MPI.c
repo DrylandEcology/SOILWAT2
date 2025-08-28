@@ -406,6 +406,9 @@ static void allocateActiveSuids(
     if (LogInfo->stopRun) {
         return;
     }
+    for (domIndex = 0; domIndex < numActiveSites; domIndex++) {
+        (*activeSuids)[domIndex] = NULL;
+    }
 
     for (domIndex = 0; domIndex < numActiveSites; domIndex++) {
         (*activeSuids)[domIndex] = (size_t *) Mem_Malloc(
@@ -415,7 +418,7 @@ static void allocateActiveSuids(
             return;
         }
 
-        memset((*activeSuids)[domIndex], 0, sizeof(size_t) * 2);
+        (*activeSuids)[domIndex][0] = (*activeSuids)[domIndex][1] = 0;
     }
 }
 
@@ -532,6 +535,7 @@ static void assignProcs(
     size_t activePairIndex;
     int destRank;
     int inKey;
+    size_t numPairs;
 
     MPI_Request nullReq = MPI_REQUEST_NULL;
 
@@ -541,12 +545,12 @@ static void assignProcs(
         MPI_COMM_WORLD,
         nSuidsAssign,
         SW_MPI_ROOT,
-        worldSize,
+        1,
         recvSuidCount,
-        &SW_Domain->nSuids
+        &SW_Domain->nProcSuids
     );
     allocateActiveSuids(
-        SW_Domain->nSuids, &SW_Domain->domSuids[eSW_InDomain], LogInfo
+        SW_Domain->nProcSuids, &SW_Domain->domSuids[eSW_InDomain], LogInfo
     );
     if (LogInfo->stopRun) {
         goto reportError;
@@ -555,7 +559,7 @@ static void assignProcs(
     ForEachNCInKey(inKey) {
         if (inKey > eSW_InDomain && useIndexFile[inKey]) {
             allocateActiveTSuids(
-                SW_Domain->nSuids, &SW_Domain->domSuids[inKey], LogInfo
+                SW_Domain->nProcSuids, &SW_Domain->domSuids[inKey], LogInfo
             );
             if (LogInfo->stopRun) {
                 goto reportError;
@@ -594,34 +598,39 @@ reportError:
     }
 
     // Communicate suids to all ranks
-    activePairIndex = nSuidsAssign[SW_MPI_ROOT];
+    activePairIndex = (rank == 0) ? nSuidsAssign[SW_MPI_ROOT] : 0;
     for (destRank = 1; destRank < worldSize; destRank++) {
         if (rank == SW_MPI_ROOT || destRank == rank) {
-            for (pair = 0; pair < nSuidsAssign[destRank]; pair++) {
+            numPairs =
+                (rank == 0) ? nSuidsAssign[destRank] : SW_Domain->nProcSuids;
+
+            for (pair = 0; pair < numPairs; pair++) {
                 ForEachNCInKey(inKey) {
-                    if (!useIndexFile[inKey]) {
+                    if ((inKey > eSW_InDomain && !useIndexFile[inKey]) ||
+                        isnull(SW_Domain->domSuids[inKey])) {
+
                         continue;
                     }
 
                     if (rank == SW_MPI_ROOT) {
                         SW_MPI_Send(
                             SW_MPI_SIZE_T,
-                            (useIndexFile[inKey] && inKey > eSW_InDomain) ?
+                            (!isnull(activeTSuids[inKey])) ?
                                 activeTSuids[inKey][activePairIndex] :
                                 activeSuids[activePairIndex],
                             coordPairSize,
                             destRank,
-                            swFALSE,
+                            swTRUE,
                             0,
                             &nullReq
                         );
                     } else {
                         SW_MPI_Recv(
                             SW_MPI_SIZE_T,
-                            SW_Domain->domSuids[pair],
+                            SW_Domain->domSuids[inKey][pair],
                             coordPairSize,
                             SW_MPI_ROOT,
-                            swFALSE,
+                            swTRUE,
                             0,
                             &nullReq
                         );

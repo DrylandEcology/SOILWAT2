@@ -1773,7 +1773,7 @@ typedef struct {
     MPI_Datatype datatypes[SW_MPI_NTYPES];
 
     size_t
-        nSuids; /**< Number of suids that will be controlled by I/O processes */
+        nProcSuids; /**< Number of suids that will be controlled by a process */
     size_t **domSuids[SW_NINKEYSNC]; /**< A list of suids to describe the
                                         domain; this includes translated suids
                                         for input keys if necessary */
