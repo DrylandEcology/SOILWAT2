@@ -93,6 +93,15 @@ void SW_MPI_Fail(int rank, int failType, char *mpiErrStr);
 
 void SW_MPI_deconstruct(SW_DOMAIN *SW_Domain);
 
+void SW_MPI_Allreduce(
+    MPI_Datatype datatype,
+    void *src,
+    void *dest,
+    int count,
+    MPI_Op op,
+    MPI_Comm comm
+);
+
 void SW_MPI_Scatter(
     MPI_Comm comm,
     void *buffer,
@@ -191,6 +200,58 @@ void SW_MPI_get_inputs(
     SW_RUN_INPUTS inputs[],
     size_t *numInputs,
     Bool *extraFailCheck
+);
+
+void SW_MPI_get_sim_suids(
+    size_t **domSuids[],
+    Bool useIndexFile[],
+    size_t *readIndex,
+    size_t *nSuidsLeft,
+    size_t simSuids[SW_NINKEYSNC][N_SUID_ASSIGN][2],
+    size_t *nSuids
+);
+
+void SW_MPI_read_inputs(
+    SW_RUN *sw,
+    SW_DOMAIN *SW_Domain,
+    double *tempVals,
+    size_t *readIndex,
+    size_t simSuids[SW_NINKEYSNC][N_SUID_ASSIGN][2],
+    size_t *nSuids,
+    size_t starts[SW_NINKEYSNC][N_SUID_ASSIGN][2],
+    size_t counts[SW_NINKEYSNC][N_SUID_ASSIGN][2],
+    size_t numReads[],
+    SW_SOIL_RUN_INPUTS *tempSoils,
+    SW_RUN_INPUTS *runInputs,
+    LOG_INFO *LogInfo
+);
+
+void SW_MPI_write_outputs(
+    SW_PATH_OUTPUTS *SW_PathOutputs,
+    int progFileID,
+    int progVarID,
+    size_t distSUIDs[][2],
+    size_t numSuids,
+    Bool siteDom,
+    SW_OUT_DOM *OutDom,
+    Bool succFlags[],
+    size_t starts[][2],
+    size_t counts[][2],
+    double *main_p_OUT[][SW_OUTNPERIODS],
+    double *temp_p_OUT[][SW_OUTNPERIODS],
+    LOG_INFO *LogInfo
+);
+
+void SW_MPI_setup_inputs(
+    SW_RUN *sw_template,
+    SW_RUN_INPUTS *runInputs,
+    SW_OUT_DOM *OutDom,
+    int numCyclesProc,
+    Bool copyWeather,
+    IntU n_years,
+    SW_OUT_RUN *tempOut,
+    Bool *extraFailCheck,
+    LOG_INFO *LogInfo
 );
 
 void SW_MPI_handle_IO(

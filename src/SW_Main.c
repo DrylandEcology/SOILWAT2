@@ -308,8 +308,14 @@ setupProgramData:
     }
 
     // run simulations: loop over simulation set
-    SW_CTL_RunSims(
-        rank, &sw_template, &SW_Domain, &setupFailed, &SW_WallTime, &LogInfo
+    SW_CTL_RunSimSet(
+        rank,
+        size,
+        &sw_template,
+        &SW_Domain,
+        &setupFailed,
+        &SW_WallTime,
+        &LogInfo
     );
 
 closeFiles: {

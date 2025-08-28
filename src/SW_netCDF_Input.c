@@ -5271,8 +5271,8 @@ static void read_spatial_topo_climate_site_inputs(
     size_t numInputs,
     const size_t numReads[],
     const size_t ncSUID[],
-    size_t **starts[],
-    size_t **counts[],
+    size_t starts[SW_NINKEYSNC][N_SUID_ASSIGN][2],
+    size_t counts[SW_NINKEYSNC][N_SUID_ASSIGN][2],
     sw_converter_t ***convs,
     double tempVals[],
     int **openNCFileIDs[],
@@ -6411,8 +6411,8 @@ to convert input data to units the program can understand within the
 */
 static void read_veg_inputs(
     SW_DOMAIN *SW_Domain,
-    size_t **starts,
-    size_t **counts,
+    size_t starts[][2],
+    size_t counts[][2],
     size_t numReads,
     const size_t ncSUID[],
     sw_converter_t **vegConv,
@@ -6954,14 +6954,13 @@ static void read_soil_inputs(
     Bool inputsProvideSWRCp,
     size_t numInputs,
     size_t numReads,
-    size_t **starts,
-    size_t **counts,
+    size_t starts[][2],
+    size_t counts[][2],
     int **openSoilFileIDs,
-    double *tempSilt,
     double *tempVals,
     SW_SOIL_RUN_INPUTS *newSoilBuff,
     SW_RUN_INPUTS *inputs,
-    size_t **domSuids,
+    size_t domSuids[][2],
     LOG_INFO *LogInfo
 ) {
     char ***inVarInfo = SW_Domain->netCDFInput.inVarInfo[eSW_InSoil];
@@ -6978,6 +6977,7 @@ static void read_soil_inputs(
         SW_Domain->SW_PathInputs.doubleMissVals[eSW_InSoil];
     double *storePtr;
     int numVals;
+    double tempSilt[N_SUID_ASSIGN * MAX_LAYERS] = {0.};
 
     int ncFileID = -1;
     int varID;
@@ -7319,6 +7319,84 @@ freeMem:
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
+/*
+@brief Allocate temporary storage for reading inputs so all netCDF input
+functions only need to use one buffer for all
+
+    - Note: The number of elements that are allocated for are the
+            maximum of any input key, which is currently weather,
+            so the maximum storage will be <num sites> * MAX_DAYS;
+            if this fact changes, this function will also need to be
+            changed
+
+@param[in] allocSoil Flag specifying if an array of SW_SOIL_RUN_INPUTS
+instances should be allocated
+@param[out] tempVals A list that holds the maximum amount of elements
+of all input keys
+@param[out] tempSoils A list that holds temporary storage for soils of
+type SW_SOIL_RUN_INPUTS of size [num sites] (1 if not SWMPI)
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+void SW_NCIN_alloc_temp_instorage(
+    Bool allocSoil,
+    double **tempVals,
+    SW_SOIL_RUN_INPUTS **tempSoils,
+    LOG_INFO *LogInfo
+) {
+    size_t index;
+    const size_t weathSize = MAX_DAYS;
+    size_t maxTempVals = weathSize;
+
+#if defined(SWMPI)
+    maxTempVals *= N_SUID_ASSIGN;
+#endif
+
+    *tempVals = (double *) Mem_Malloc(
+        sizeof(double) * maxTempVals, "SW_NCIN_alloc_temp_instorage", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    if (allocSoil) {
+        *tempSoils = (SW_SOIL_RUN_INPUTS *) Mem_Malloc(
+            sizeof(SW_SOIL_RUN_INPUTS) * maxTempVals,
+            "SW_NCIN_alloc_temp_instorage",
+            LogInfo
+        );
+    }
+
+    for (index = 0; index < maxTempVals; index++) {
+        (*tempVals)[index] = 0.0;
+
+        if (allocSoil) {
+            memset(&(*tempSoils)[index], 0, sizeof(SW_SOIL_RUN_INPUTS));
+        }
+    }
+}
+
+/**
+@brief Deallocate all temporary memory that was allocated before
+simulations started
+
+@param[out] tempVals A list that holds the maximum amount of elements
+of all input keys
+@param[out] tempSoils A list that holds temporary storage for soils of
+type SW_SOIL_RUN_INPUTS of size [num sites] (1 if not SWMPI)
+*/
+void SW_NCIN_dealloc_temp_instorage(
+    double **tempVals, SW_SOIL_RUN_INPUTS **tempSoils
+) {
+    if (!isnull(*tempVals)) {
+        free((void *) *tempVals);
+        *tempVals = NULL;
+    }
+
+    if (!isnull(*tempSoils)) {
+        free((void *) *tempSoils);
+        *tempSoils = NULL;
+    }
+}
 
 /**
 @brief Allocate space for values specifying how to detect if an input
@@ -8113,7 +8191,6 @@ to convert input data to units the program can understand within the
 "inWeather" input key
 @param[in] domSuids A list of program-domain suids of sites that will
     have the inputs read for (MPI only)
-@param[in] elevation Site elevation above sea level [m]
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void read_weather_input(
@@ -8123,12 +8200,11 @@ static void read_weather_input(
     sw_converter_t **weathConv,
     size_t numInputs,
     size_t numReads,
-    size_t **starts,
-    size_t **counts,
+    size_t starts[][2],
+    size_t counts[][2],
     int **weathFileIDs,
-    double *elevation,
     double *tempVals,
-    size_t **domSuids,
+    size_t domSuids[][2],
     SW_RUN_INPUTS *inputs,
     LOG_INFO *LogInfo
 ) {
@@ -8349,7 +8425,7 @@ static void read_weather_input(
             SW_WeatherIn->dailyInputFlags,
             SW_WeatherIn->fixWeatherData,
             tempWeatherHist,
-            elevation[input],
+            inputs[input].ModelRunIn.elevation,
             MAX_DAYS * input,
             domSuids[input],
             progSiteDom,
@@ -8452,12 +8528,7 @@ to SW_Run
     contiguous reads it will take to read all the input for the specified
     input SUIDs
 @param[in] numInputs Total number of site inputs that will be read-in
-@param[in] tempMonthlyVals A list of lengths that will be used to specify
-    how many inputs to send to a specific process
-@param[in] elevations A list of elevations for each site we will read
-@param[in] tempSiltVals A temporary buffer to store silt values
-@param[in] tempVals A temporary buffer to store any soil variable in
-@param[in] tempWeath A temporary buffer to store read weather input in
+@param[in] tempVals A temporary buffer to store any variable in
 @param[in] domSuids A list of program-domain suids of sites that will
     have the inputs read for (MPI only)
 @param[in] newSoils A single (no SWMPI) or a list (SWMPI) of instances of
@@ -8470,17 +8541,13 @@ void SW_NCIN_read_inputs(
     SW_RUN *sw,
     SW_DOMAIN *SW_Domain,
     const size_t ncSUID[],
-    size_t ***starts,
-    size_t ***counts,
+    size_t starts[][N_SUID_ASSIGN][2],
+    size_t counts[][N_SUID_ASSIGN][2],
     int **openNCFileIDs[],
     size_t numReads[],
     size_t numInputs,
-    double *tempMonthlyVals,
-    double *elevations,
-    double *tempSiltVals,
     double *tempVals,
-    double *tempWeath,
-    size_t **domSuids,
+    size_t domSuids[][2],
     SW_SOIL_RUN_INPUTS *newSoils,
     SW_RUN_INPUTS *inputs,
     LOG_INFO *LogInfo
@@ -8533,7 +8600,7 @@ void SW_NCIN_read_inputs(
             starts,
             counts,
             convs,
-            tempMonthlyVals,
+            tempVals,
             openNCFileIDs,
             inputs,
             LogInfo
@@ -8577,8 +8644,7 @@ void SW_NCIN_read_inputs(
             starts[eSW_InWeather],
             counts[eSW_InWeather],
             weathFileIDs,
-            elevations,
-            tempWeath,
+            tempVals,
             domSuids,
             inputs,
             LogInfo
@@ -8613,7 +8679,7 @@ void SW_NCIN_read_inputs(
             ncSUID,
             convs[eSW_InVeg],
             vegFileIDs,
-            tempMonthlyVals,
+            tempVals,
             inputs,
             LogInfo
         );
@@ -8636,7 +8702,6 @@ void SW_NCIN_read_inputs(
             starts[eSW_InSoil],
             counts[eSW_InSoil],
             soilFileIDs,
-            tempSiltVals,
             tempVals,
             newSoils,
             inputs,

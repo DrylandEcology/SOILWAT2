@@ -78,6 +78,17 @@ static const int numVarsInKey[SW_NINKEYSNC] = {
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 
+void SW_NCIN_alloc_temp_instorage(
+    Bool allocSoil,
+    double **tempVals,
+    SW_SOIL_RUN_INPUTS **tempSoils,
+    LOG_INFO *LogInfo
+);
+
+void SW_NCIN_dealloc_temp_instorage(
+    double **tempVals, SW_SOIL_RUN_INPUTS **tempSoils
+);
+
 void SW_NCIN_soilProfile(
     SW_NETCDF_IN *SW_netCDFIn,
     Bool hasConsistentSoilLayerDepths,
@@ -121,17 +132,13 @@ void SW_NCIN_read_inputs(
     SW_RUN *sw,
     SW_DOMAIN *SW_Domain,
     const size_t ncSUID[],
-    size_t ***starts,
-    size_t ***counts,
+    size_t starts[][N_SUID_ASSIGN][2],
+    size_t counts[][N_SUID_ASSIGN][2],
     int **openNCFileIDs[],
     size_t numReads[],
     size_t numInputs,
-    double *tempMonthlyVals,
-    double *elevations,
-    double *tempSiltVals,
     double *tempVals,
-    double *tempWeath,
-    size_t **domSuids,
+    size_t domSuids[][2],
     SW_SOIL_RUN_INPUTS *newSoils,
     SW_RUN_INPUTS *inputs,
     LOG_INFO *LogInfo

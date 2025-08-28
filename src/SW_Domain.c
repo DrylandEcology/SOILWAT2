@@ -154,6 +154,11 @@ void SW_DOM_construct(size_t rng_seed, SW_DOMAIN *SW_Domain) {
         sizeof(&SW_Domain->depthsAllSoilLayers[0]) * MAX_LAYERS
     );
 
+#if defined(SWMPI)
+    SW_Domain->nProcSuids = 0;
+    SW_Domain->nActiveSuids = 0;
+#endif
+
     SW_OUTDOM_construct(&SW_Domain->OutDom);
 }
 
@@ -630,10 +635,7 @@ void SW_DOM_init_ptrs(SW_DOMAIN *SW_Domain) {
 #if defined(SWMPI)
     InKeys inKey;
 
-    ForEachNCInKey(inKey) {
-        SW_Domain->domSuids[inKey] = NULL;
-        SW_Domain->nSUIDs = 0;
-    }
+    ForEachNCInKey(inKey) { SW_Domain->domSuids[inKey] = NULL; }
 #endif
 #endif
 }
