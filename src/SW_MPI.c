@@ -2041,7 +2041,6 @@ void find_active_sites(
 
     /* Read all progress values - set the parallel access to
        independent so all processes but the root can read 0 values */
-    nc_var_par_access(progFileID, progVarID, NC_INDEPENDENT);
     if (nc_get_vara_schar(progFileID, progVarID, start, count, prog) !=
             NC_NOERR ||
         rank > SW_MPI_ROOT) {
