@@ -216,8 +216,8 @@ int main(int argc, char **argv) {
             goto finishProgram;
 #endif
         }
-#endif
     }
+#endif
 
     // finalize daily weather
 #if defined(SWNETCDF)
@@ -237,7 +237,7 @@ int main(int argc, char **argv) {
 #if defined(SWMPI)
             goto setupProgramData;
 #else
-    goto finishProgram;
+        goto finishProgram;
 #endif
         }
 #if defined(SWNETCDF)
@@ -261,7 +261,7 @@ int main(int argc, char **argv) {
 #if defined(SWMPI)
         goto setupProgramData;
 #else
-    goto finishProgram;
+        goto finishProgram;
 #endif
     }
 
@@ -276,9 +276,9 @@ setupProgramData:
         goto finishProgram;
     }
 #else
-if (LogInfo.stopRun) {
-    goto finishProgram;
-}
+    if (LogInfo.stopRun) {
+        goto finishProgram;
+    }
 #endif
 
     SW_OUT_create_files(&sw_template.SW_PathOutputs, &SW_Domain, &LogInfo);
@@ -292,13 +292,13 @@ if (LogInfo.stopRun) {
         goto closeFiles;
     }
 #else
-if (LogInfo.stopRun || prepareFiles) {
-    if (prepareFiles && LogInfo.printProgressMsg) {
-        SW_MSG_ROOT("completed simulation preparations.", rank);
-    }
+    if (LogInfo.stopRun || prepareFiles) {
+        if (prepareFiles && LogInfo.printProgressMsg) {
+            SW_MSG_ROOT("completed simulation preparations.", rank);
+        }
 
-    goto closeFiles;
-}
+        goto closeFiles;
+    }
 #endif
 
     if (EchoInits && rank == 0) {
