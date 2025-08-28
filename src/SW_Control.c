@@ -631,6 +631,7 @@ checkStatus:
             numReads,
             tempSoils,
             inputs,
+            SW_WallTime,
             main_LogInfo
         );
         if (SW_MPI_setup_fail(main_LogInfo->stopRun, MPI_COMM_WORLD)) {
@@ -750,6 +751,8 @@ checkStatus:
             &sw_template->SW_PathOutputs,
             progFileID,
             progVarID,
+            sw_template->OutRun.p_OUT,
+            tempOut.p_OUT,
             simSuids[eSW_InDomain],
             numSiteSimed,
             sDom,
@@ -757,8 +760,7 @@ checkStatus:
             succFlags,
             starts[eSW_InDomain],
             counts[eSW_InDomain],
-            sw_template->OutRun.p_OUT,
-            tempOut.p_OUT,
+            SW_WallTime,
             main_LogInfo
         );
         if (SW_MPI_setup_fail(main_LogInfo->stopRun, MPI_COMM_WORLD)) {

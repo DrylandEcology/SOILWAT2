@@ -223,6 +223,7 @@ void SW_MPI_read_inputs(
     size_t numReads[],
     SW_SOIL_RUN_INPUTS *tempSoils,
     SW_RUN_INPUTS *runInputs,
+    SW_WALLTIME *SW_WallTime,
     LOG_INFO *LogInfo
 );
 
@@ -230,6 +231,8 @@ void SW_MPI_write_outputs(
     SW_PATH_OUTPUTS *SW_PathOutputs,
     int progFileID,
     int progVarID,
+    double *main_p_OUT[][SW_OUTNPERIODS],
+    double *temp_p_OUT[][SW_OUTNPERIODS],
     size_t distSUIDs[][2],
     size_t numSuids,
     Bool siteDom,
@@ -237,8 +240,7 @@ void SW_MPI_write_outputs(
     Bool succFlags[],
     size_t starts[][2],
     size_t counts[][2],
-    double *main_p_OUT[][SW_OUTNPERIODS],
-    double *temp_p_OUT[][SW_OUTNPERIODS],
+    SW_WALLTIME *SW_WallTime,
     LOG_INFO *LogInfo
 );
 

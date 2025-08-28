@@ -2018,6 +2018,9 @@ for a specific input key is necessary
 type SW_SOIL_RUN_INPUTS of size [num sites] (1 if not SWMPI)
 @param[out] runInputs A list of SW_RUN_INPUTS structs that will be filled
 with input data from netCDFs
+@param[out] SW_WallTime Struct of type SW_WALLTIME that holds timing
+    information for the program run including partitioning into
+    I/O (SWNETCDF) and compute (SWNETCDF, SWMPI) times
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_MPI_read_inputs(
@@ -2032,11 +2035,14 @@ void SW_MPI_read_inputs(
     size_t numReads[],
     SW_SOIL_RUN_INPUTS *tempSoils,
     SW_RUN_INPUTS *runInputs,
+    SW_WALLTIME *SW_WallTime,
     LOG_INFO *LogInfo
 ) {
     int inKey;
     size_t suid;
     size_t origNSuids = SW_Domain->nProcSuids;
+    WallTimeSpec tsr;
+    Bool ok_tsr = swFALSE;
 
     SW_MPI_get_sim_suids(
         SW_Domain->domSuids,
@@ -2067,6 +2073,7 @@ void SW_MPI_read_inputs(
         }
     }
 
+    set_walltime(&tsr, &ok_tsr);
     SW_NCIN_read_inputs(
         sw,
         SW_Domain,
@@ -2082,6 +2089,7 @@ void SW_MPI_read_inputs(
         runInputs,
         LogInfo
     );
+    SW_WT_TimeRun(tsr, ok_tsr, TIME_IO, SW_WallTime);
 }
 
 /**
@@ -2092,6 +2100,10 @@ void SW_MPI_read_inputs(
     holds basic information about output files and values
 @param[in] progFileID Identifier of the progress netCDF file
 @param[in] progVarID Identifier of the progress variable
+@param[in] main_p_OUT Array of accumulated output values throughout
+    simulation all runs
+@param[in] temp_p_OUT Array of accumulated output values throughout
+    simulation all runs; only used if N_SUID_ASSIGN > 1
 @param[in] distSUIDs A list of domain SUIDs whose data will be distributed
     as the next batch of input
 @param[in] numSuids Number of SUIDs that will be assigned, this should be
@@ -2112,16 +2124,17 @@ void SW_MPI_read_inputs(
     default size is `nSuids` but as mentioned in `numWrites`, it would
     be best to not fill this array; counts match placements with `start`
     indices for each key
-@param[out] main_p_OUT Array of accumulated output values throughout
-    simulation all runs
-@param[out] temp_p_OUT Array of accumulated output values throughout
-    simulation all runs; only used if N_SUID_ASSIGN > 1
+@param[out] SW_WallTime Struct of type SW_WALLTIME that holds timing
+    information for the program run including partitioning into
+    I/O (SWNETCDF) and compute (SWNETCDF, SWMPI) times
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_MPI_write_outputs(
     SW_PATH_OUTPUTS *SW_PathOutputs,
     int progFileID,
     int progVarID,
+    double *main_p_OUT[][SW_OUTNPERIODS],
+    double *temp_p_OUT[][SW_OUTNPERIODS],
     size_t distSUIDs[][2],
     size_t numSuids,
     Bool siteDom,
@@ -2129,8 +2142,7 @@ void SW_MPI_write_outputs(
     Bool succFlags[],
     size_t starts[][2],
     size_t counts[][2],
-    double *main_p_OUT[][SW_OUTNPERIODS],
-    double *temp_p_OUT[][SW_OUTNPERIODS],
+    SW_WALLTIME *SW_WallTime,
     LOG_INFO *LogInfo
 ) {
     size_t numWrites = 0;
@@ -2141,6 +2153,8 @@ void SW_MPI_write_outputs(
     signed char succMark[N_SUID_ASSIGN] = {PRGRSS_READY};
     Bool considerSuccFlags = swTRUE;
     Bool useTempOut;
+    WallTimeSpec tsr;
+    Bool ok_tsr = swFALSE;
 
     if (numSuids > 0) {
         get_contiguous_counts(
@@ -2180,6 +2194,7 @@ void SW_MPI_write_outputs(
     }
 
     // Output accumulated output
+    set_walltime(&tsr, &ok_tsr);
     SW_NCOUT_write_output(
         OutDom,
         useTempOut ? temp_p_OUT : main_p_OUT,
@@ -2197,6 +2212,7 @@ void SW_MPI_write_outputs(
         SW_PathOutputs->outTimeSizes,
         LogInfo
     );
+    SW_WT_TimeRun(tsr, ok_tsr, TIME_IO, SW_WallTime);
     if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
         return;
     }
