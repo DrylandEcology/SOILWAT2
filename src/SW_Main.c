@@ -281,7 +281,9 @@ setupProgramData:
     }
 #endif
 
-    SW_OUT_create_files(&sw_template.SW_PathOutputs, &SW_Domain, &LogInfo);
+    SW_OUT_create_files(
+        rank, &sw_template.SW_PathOutputs, &SW_Domain, &LogInfo
+    );
 
 #if defined(SWMPI)
     if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD) || prepareFiles) {

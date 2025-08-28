@@ -1011,7 +1011,9 @@ static void check_counts_against_vardim(
 @param[in] outputVarInfo A list of a key's output variable information that
     will be used to get the variable name
 @param[in] numVars Number of variables created within an output key
-@param[in] outFileID Identifier of the open output netCDF file
+@param[in] outFileIDs List of all netCDF file identifiers for a current output
+key
+@param[in] numOutFiles Number of output files
 @param[out] ncOutVarIDs A list of size SW_OUTNKEYS holding lists of output
     variable IDs
 @param[out] LogInfo Holds information on warnings and errors
@@ -1019,22 +1021,51 @@ static void check_counts_against_vardim(
 static void get_outvar_ids(
     char ***outputVarInfo,
     IntUS numVars,
-    int outFileID,
+    int outFileIDs[],
+    int numOutFiles,
     int *ncOutVarIDs,
     LOG_INFO *LogInfo
 ) {
+    const int firstOutFile = 0;
     char *varName;
     int var;
+
+#if defined(SWMPI)
+    int file;
+    int varID;
+    int fileID;
+#endif
 
     for (var = 0; var < numVars; var++) {
         varName = outputVarInfo[var][VARNAME_INDEX];
 
         SW_NC_get_var_identifier(
-            outFileID, varName, &ncOutVarIDs[var], LogInfo
+            outFileIDs[firstOutFile], varName, &ncOutVarIDs[var], LogInfo
         );
         if (LogInfo->stopRun) {
             return;
         }
+
+#if defined(SWMPI)
+        for (file = 0; file < numOutFiles; file++) {
+            varID = ncOutVarIDs[var];
+            fileID = outFileIDs[file];
+
+            if (varID > -1 &&
+                nc_var_par_access(fileID, varID, NC_COLLECTIVE) != NC_NOERR) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Could not set the parallel access of the variable "
+                    "'%s' to collective.",
+                    varName
+                );
+                return;
+            }
+        }
+#else
+        (void) numOutFiles;
+#endif
     }
 }
 
@@ -2196,7 +2227,6 @@ void SW_NCOUT_create_output_files(
     unsigned int baseTime = 0;
     double startTime[SW_OUTNPERIODS];
     double baseStartTime[SW_OUTNPERIODS] = {0};
-    int firstFileInKeyID = -1;
     unsigned int *numOutFiles = &SW_PathOutputs->numOutFiles;
     const Bool openInPar = swTRUE;
     const int openMode = NC_WRITE;
@@ -2353,11 +2383,6 @@ void SW_NCOUT_create_output_files(
                         if (LogInfo->stopRun) {
                             return; // Exit function prematurely due to error
                         }
-                        if (firstFileInKeyID == -1) {
-                            firstFileInKeyID =
-                                SW_PathOutputs
-                                    ->openOutFileIDs[key][pd][fileNum];
-                        }
 
                         rangeStart = rangeEnd;
                     }
@@ -2388,15 +2413,14 @@ void SW_NCOUT_create_output_files(
             get_outvar_ids(
                 SW_Domain->OutDom.netCDFOutput.outputVarInfo[key],
                 nvar_OUT[key],
-                firstFileInKeyID,
+                SW_PathOutputs->openOutFileIDs[key][pd],
+                *numOutFiles,
                 SW_PathOutputs->ncOutVarIDs[key],
                 LogInfo
             );
             if (LogInfo->stopRun) {
                 return;
             }
-
-            firstFileInKeyID = -1;
         }
     }
 }
@@ -2554,8 +2578,8 @@ void SW_NCOUT_write_output(
     const size_t ncSuid[],
     size_t numWritesGroup,
     size_t numWritesProc,
-    size_t **starts,
-    size_t **counts,
+    size_t starts[][2],
+    const size_t counts[][2],
     int *openOutFileIDs[][SW_OUTNPERIODS],
     int *outVarIDs[],
     Bool siteDom,
@@ -2591,17 +2615,16 @@ void SW_NCOUT_write_output(
     size_t numElem;
 #endif
 
-#if defined(SWMPI)
-    size_t pOUTStart[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
-#else
-    (void) succFlags;
-    (void) numWritesProc;
-#endif
 #if !defined(SWMPI) || (defined(SWDEBUG) && !defined(SWMPI))
     char *fileName;
-#endif
-#if defined(SWDEBUG) && !defined(SWMPI)
+#if defined(SWDEBUG)
     char *varName = NULL;
+#endif
+
+    (void) succFlags;
+    (void) numWritesProc;
+#else // No SWMPI
+    size_t pOUTStart[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
 #endif
 
     ForEachOutPeriod(pd) {

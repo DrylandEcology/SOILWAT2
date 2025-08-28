@@ -3926,6 +3926,7 @@ void SW_OUT_write_today(
 /**
 @brief create all of the user-specified output files.
 
+@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in,out] SW_PathOutputs Struct of type SW_PATH_OUTPUTS which
 holds basic information about output files and values
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
@@ -3936,12 +3937,15 @@ holds basic information about output files and values
 after SW_OUT_read() which sets the global variable use_OutPeriod.
 */
 void SW_OUT_create_files(
-    SW_PATH_OUTPUTS *SW_PathOutputs, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
+    int rank,
+    SW_PATH_OUTPUTS *SW_PathOutputs,
+    SW_DOMAIN *SW_Domain,
+    LOG_INFO *LogInfo
 ) {
 
 #if defined(SOILWAT)
     if (LogInfo->printProgressMsg) {
-        SW_MSG_ROOT("is creating output files ...", 0);
+        SW_MSG_ROOT("is creating output files ...", rank);
     }
 #endif
 
