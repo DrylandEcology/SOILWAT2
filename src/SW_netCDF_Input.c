@@ -5945,18 +5945,15 @@ static void open_input_files(
     LOG_INFO *LogInfo
 ) {
     const int indexFile = 0;
-    const int afterIndexFile = 1;
     int inKey;
     int var;
     int domVar;
     unsigned int numFiles;
     unsigned int file;
     int *id;
-    int startVar;
     char *fileName = NULL;
     Bool skipVar;
     Bool useWeathFileArray;
-    Bool useIndexFile;
 
 #if defined(SWMPI)
     int progVarID = SW_netCDFIn->ncDomVarIDs[vNCprog];
@@ -5965,6 +5962,22 @@ static void open_input_files(
         nc_close(SW_PathInputs->ncDomFileIDs[vNCdom]);
         nc_close(SW_PathInputs->ncDomFileIDs[vNCprog]);
     }
+
+    SW_MPI_Bcast(
+        MPI_INT,
+        SW_netCDFIn->useIndexFile,
+        SW_NINKEYSNC,
+        SW_MPI_ROOT,
+        MPI_COMM_WORLD
+    );
+
+    SW_MPI_Bcast(
+        MPI_INT,
+        SW_netCDFIn->ncDomVarIDs,
+        SW_NVARDOM,
+        SW_MPI_ROOT,
+        MPI_COMM_WORLD
+    );
 #else
     (void) rank;
 #endif
@@ -6036,10 +6049,7 @@ static void open_input_files(
             SW_PathInputs->openInFileIDs[inKey][var] = NULL;
         }
 
-        useIndexFile = SW_netCDFIn->useIndexFile[inKey];
-        startVar = (useIndexFile || rank > 0) ? indexFile : afterIndexFile;
-
-        for (var = startVar; var < numVarsInKey[inKey]; var++) {
+        for (var = indexFile; var < numVarsInKey[inKey]; var++) {
             skipVar =
                 (Bool) (!SW_netCDFIn->readInVars[inKey][var + 1] ||
                         ((var == 0 && !SW_netCDFIn->useIndexFile[inKey])));
@@ -6087,7 +6097,7 @@ static void open_input_files(
                     if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
                         return;
                     }
-                } else if ((rank > 0 && var > indexFile) || rank == 0) {
+                } else if (rank == 0 && FileExists(fileName)) {
 #endif
                     SW_NC_open(fileName, NC_NOWRITE, id, LogInfo);
                     if (LogInfo->stopRun) {
