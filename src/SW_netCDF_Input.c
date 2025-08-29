@@ -4157,7 +4157,7 @@ freeMem: {
         calTypeUnit = NULL;
     }
 
-    if (!isnull(weatherCal)) {
+    if (!hasCalOverride && !isnull(weatherCal)) {
         free((void *) weatherCal);
         weatherCal = NULL;
     }
