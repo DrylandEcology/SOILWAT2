@@ -496,8 +496,6 @@ must update respective functions
     reference for local versions of SW_RUN
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
-@param[out] setupFail Specifies if the process failed in the setup phase
-    (SWMPI only)
 @param[out] SW_WallTime Struct of type SW_WALLTIME that holds timing
     information for the program run
 @param[out] main_LogInfo Holds information on warnings and errors
@@ -507,7 +505,6 @@ void SW_CTL_RunSimSet(
     int worldSize,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
-    Bool *setupFail, // NOLINT(readability-non-const-parameter)
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *main_LogInfo
 ) {
@@ -601,7 +598,6 @@ checkStatus:
     if (SW_MPI_setup_fail(main_LogInfo->stopRun, MPI_COMM_WORLD)) {
         goto wrapUp;
     }
-    *setupFail = swFALSE;
 #endif
 
     if (main_LogInfo->printProgressMsg) {
@@ -789,7 +785,6 @@ wrapUp:
         SW_MPI_Fail(rank, SW_MPI_FAIL_COMP_ERR, NULL);
     }
 #endif
-    (void) *setupFail;
 #else
     (void) tempSoils;
     (void) *setupFail;

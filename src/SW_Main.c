@@ -59,7 +59,6 @@ int main(int argc, char **argv) {
     Bool EchoInits = swFALSE;
     Bool renameDomainTemplateNC = swFALSE;
     Bool prepareFiles = swFALSE;
-    Bool setupFailed = swTRUE;
     Bool endQuietly = swFALSE;
 
     int rank = 0;
@@ -309,13 +308,7 @@ setupProgramData:
 
     // run simulations: loop over simulation set
     SW_CTL_RunSimSet(
-        rank,
-        size,
-        &sw_template,
-        &SW_Domain,
-        &setupFailed,
-        &SW_WallTime,
-        &LogInfo
+        rank, size, &sw_template, &SW_Domain, &SW_WallTime, &LogInfo
     );
 
 closeFiles: {
@@ -330,9 +323,7 @@ finishProgram: {
     SW_DOM_deconstruct(&SW_Domain); // Includes closing netCDF files if needed
     SW_CTL_clear_model(swTRUE, &sw_template);
 
-    sw_finalize_program(
-        rank, size, &SW_Domain, &SW_WallTime, setupFailed, endQuietly, &LogInfo
-    );
+    sw_finalize_program(rank, size, &SW_WallTime, endQuietly, &LogInfo);
     if (!endQuietly && LogInfo.printProgressMsg) {
         SW_MSG_ROOT("ended.", rank);
     }

@@ -22,6 +22,7 @@
 #include "include/myMemory.h"       // for Str_Dup
 #include "include/SW_datastructs.h" // for LOG_INFO
 #include "include/SW_Defines.h"     // for MAX_MSGS, MAX_LOG_SIZE, BUILD_DATE
+#include "include/Times.h"          // for SW_WT_ReportTime
 
 #if defined(RSOILWAT)
 #include <R.h> // for Rf_error(), and Rf_warning() from <R_ext/Error.h>
@@ -37,8 +38,6 @@
 #include "include/SW_MPI.h"
 #include "include/SW_netCDF_Input.h" // for SW_NCOUT_create_units_converters
 #include <mpi.h>                     // for MPI_COMM_WORLD
-#else
-#include "include/Times.h" // for SW_WT_ReportTime
 #endif
 
 #endif
@@ -535,27 +534,20 @@ void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
 
     // If we are running with MPI, we need to close all opened log files
     // otherwise, when not using MPI, we only need to close one
-#if defined(SWMPI)
-    int file;
 
-    for (file = 0; file < LogInfo->numFiles; file++) {
-        logfp = LogInfo->logfps[file];
-#endif
-        // Close logfile (but not if it is stdout or stderr)
-        if (logfp != stdout || logfp != stderr) {
-            CloseFile(&logfp, LogInfo);
-        }
-#if defined(SWMPI)
+    logfp = LogInfo->logfp;
+
+    // Close logfile (but not if it is stdout or stderr)
+    if (logfp != stdout || logfp != stderr) {
+        CloseFile(&logfp, LogInfo);
     }
-#endif
 
     if (rank == 0) {
         // Notify the user that there are messages in the logfile (unless
         // QuietMode)
         if ((LogInfo->numDomainErrors > 0 || LogInfo->numDomainWarnings > 0 ||
              LogInfo->stopRun || LogInfo->numWarnings > 0) &&
-            !QuietMode && LogInfo->logfp != stdout &&
-            LogInfo->logfp != stderr) {
+            !QuietMode && logfp != stdout && logfp != stderr) {
             (void) fprintf(
                 stderr, "\nCheck logfile for warnings and error messages.\n"
             );
@@ -675,12 +667,8 @@ is enabled
 @param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] size Number of processors (world size) within the
     communicator MPI_COMM_WORLD
-@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
-    temporal/spatial information for a set of simulation runs
 @param[in] SW_WallTime Struct of type SW_WALLTIME that holds timing
     information for the program run
-@param[in] setupFailed A flag specifying if the program was exited
-    before setup was completed
 @param[in] endQuietly A flag specifying if no messages should be produced,
     e.g., if SOILWAT2 was called to print help or version only.
 @param[in] LogInfo Holds information on warnings and errors
@@ -688,57 +676,31 @@ is enabled
 void sw_finalize_program(
     int rank,
     int size,
-    SW_DOMAIN *SW_Domain,
     SW_WALLTIME *SW_WallTime,
-    Bool setupFailed,
     Bool endQuietly,
     LOG_INFO *LogInfo
 ) {
-#if defined(SWMPI)
-    int procJob = SW_Domain->SW_Designation.procJob;
-
-    /* Report information for the following scenarios
-        1) Failed during setup - error(s)/warning(s)
-        2) Failed during simulation runs - simulations statistics *
-        3) Successful program run - simulation statistics *
-
-        * = All warnings/errors are reported through I/O processes
-    */
-    if (!endQuietly) {
-        SW_MPI_report_log(
-            rank,
-            size,
-            SW_Domain->datatypes[eSW_MPI_WallTime],
-            SW_WallTime,
-            SW_Domain,
-            setupFailed,
-            LogInfo
-        );
-    }
-
-    // Free types and communicators
-    SW_MPI_free_comms_types(
-        &SW_Domain->SW_Designation, SW_Domain->datatypes, LogInfo
-    );
-#else
     if (!endQuietly) {
         sw_write_warnings("(main) ", LogInfo);
-        SW_WT_ReportTime(*SW_WallTime, LogInfo);
-        sw_fail_on_error(LogInfo);
-    }
 
-    (void) size;
-    (void) setupFailed;
-    (void) SW_WallTime;
-    (void) SW_Domain;
+#if defined(SWMPI)
+        SW_MPI_get_end_info(rank, size, SW_WallTime, LogInfo);
 #endif
 
-    if (!endQuietly) {
+        if (rank == 0) {
+            SW_WT_ReportTime(*SW_WallTime, LogInfo);
+        }
+
         sw_wrapup_logs(rank, LogInfo);
     }
 
 #if defined(SWMPI)
-    SW_MPI_finalize(procJob, LogInfo);
+    SW_MPI_finalize();
+#else
+    sw_fail_on_error(LogInfo);
+
+    (void) size;
+    (void) SW_WallTime;
 #endif
 }
 #endif // !defined(RSOILWAT)

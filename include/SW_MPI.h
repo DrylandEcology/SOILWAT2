@@ -83,7 +83,7 @@ void SW_MPI_initialize(
     MPI_Datatype datatypes[]
 );
 
-void SW_MPI_finalize(int procJob, LOG_INFO *LogInfo);
+void SW_MPI_finalize();
 
 void SW_MPI_free_comms_types(
     SW_MPI_DESIGNATE *desig, MPI_Datatype types[], LOG_INFO *LogInfo
@@ -93,11 +93,21 @@ void SW_MPI_Fail(int rank, int failType, char *mpiErrStr);
 
 void SW_MPI_deconstruct(SW_DOMAIN *SW_Domain);
 
-void SW_MPI_Allreduce(
-    MPI_Datatype datatype,
+void SW_MPI_Reduce(
     void *src,
     void *dest,
     int count,
+    MPI_Datatype datatype,
+    MPI_Op op,
+    int root,
+    MPI_Comm comm
+);
+
+void SW_MPI_Allreduce(
+    void *src,
+    void *dest,
+    int count,
+    MPI_Datatype datatype,
     MPI_Op op,
     MPI_Comm comm
 );
@@ -153,14 +163,8 @@ void SW_MPI_domain_info(SW_DOMAIN *SW_Domain, int rank, LOG_INFO *LogInfo);
 
 Bool SW_MPI_setup_fail(Bool stopRun, MPI_Comm comm);
 
-void SW_MPI_report_log(
-    int rank,
-    int size,
-    MPI_Datatype wtType,
-    SW_WALLTIME *SW_WallTime,
-    SW_DOMAIN *SW_Domain,
-    Bool failedSetup,
-    LOG_INFO *LogInfo
+void SW_MPI_get_end_info(
+    int rank, int size, SW_WALLTIME *SW_WallTime, LOG_INFO *LogInfo
 );
 
 void SW_MPI_write_main_logs(

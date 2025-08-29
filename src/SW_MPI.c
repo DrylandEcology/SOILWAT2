@@ -972,19 +972,6 @@ freeMem:
     }
 }
 
-/**
-@brief Free allocated log memory in I/O processes
-
-@param[in,out] logs A list of LOG_INFO instances that will be used for
-    getting log information from compute processes
-*/
-static void free_logs(FILE ***logfps) {
-    if (!isnull(*logfps)) {
-        free((void *) *logfps);
-        *logfps = NULL;
-    }
-}
-
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
@@ -1051,17 +1038,8 @@ void SW_MPI_initialize(
 /**
 @brief Conclude the program run by finalizing/freeing anything that's
 been initialized/created through MPI within the program run
-
-@param[in] procJob Process job designation used when using MPI
-@param[in,out] LogInfo Holds information on warnings and errors
 */
-void SW_MPI_finalize(int procJob, LOG_INFO *LogInfo) {
-    if (procJob == SW_MPI_PROC_IO) {
-        free_logs(&LogInfo->logfps);
-    }
-
-    MPI_Finalize();
-}
+void SW_MPI_finalize() { MPI_Finalize(); }
 
 /**
 @brief Free communicators and types when finishing the program
@@ -1174,22 +1152,53 @@ void SW_MPI_deconstruct(SW_DOMAIN *SW_Domain) {
 }
 
 /**
-@brief Wrapper function to `MPI_Allreduce()`
+@brief Wrapper function to `MPI_Reduce()`
 
-@param[in] datatype Custom MPI datatype that will be sent
 @param[in] src Location of memory that will be read from to give
     `MPI_Allreduce()` this process' information
 @param[out] dest Location of memory that will be written from to by
     `MPI_Allreduce()`
 @param[in] count Number of items to recv from the buffer
+@param[in] datatype Custom MPI datatype that will be sent
+@param[in] op MPI operation to be performed
+@param[in] root Rank that is going to receive the reduction
+@param[in] comm MPI communicator to broadcast a message to
+*/
+void SW_MPI_Reduce(
+    void *src,
+    void *dest,
+    int count,
+    MPI_Datatype datatype,
+    MPI_Op op,
+    int root,
+    MPI_Comm comm
+) {
+    int mpiRes = MPI_SUCCESS;
+
+    mpiRes = MPI_Reduce(src, dest, count, datatype, op, root, comm);
+
+    if (mpiRes != MPI_SUCCESS) {
+        errorMPI(-1, mpiRes);
+    }
+}
+
+/**
+@brief Wrapper function to `MPI_Allreduce()`
+
+@param[in] src Location of memory that will be read from to give
+    `MPI_Allreduce()` this process' information
+@param[out] dest Location of memory that will be written from to by
+    `MPI_Allreduce()`
+@param[in] count Number of items to recv from the buffer
+@param[in] datatype Custom MPI datatype that will be sent
 @param[in] op MPI operation to be performed
 @param[in] comm MPI communicator to broadcast a message to
 */
 void SW_MPI_Allreduce(
-    MPI_Datatype datatype,
     void *src,
     void *dest,
     int count,
+    MPI_Datatype datatype,
     MPI_Op op,
     MPI_Comm comm
 ) {
@@ -1402,179 +1411,100 @@ Bool SW_MPI_setup_fail(Bool stopRun, MPI_Comm comm) {
     int fail = (stopRun) ? 1 : 0;
     int failProgram = 0;
 
-    SW_MPI_Allreduce(MPI_INT, &fail, &failProgram, 1, MPI_SUM, comm);
+    SW_MPI_Allreduce(&fail, &failProgram, 1, MPI_INT, MPI_SUM, comm);
 
     return (Bool) (failProgram != 0);
 }
 
 /**
-@brief Report any log information that has been created throughout the
-program run either through I/O processes or the root process
-
-Assuming setup did not fail, average domain simulation information from
-compute processes; if setup did fail, report any log information to the
-general log file the root process holds
+@brief Gather timing and # warning/error information from all processes,
+average what is necessary and wall time for use outside of the function
 
 @param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] size Number of processors (world size) within the
     communicator MPI_COMM_WORLD
-@param[in] wtType Custom MPI datatype for SW_WALLTIME
-@param[in] SW_WallTime Struct of type SW_WALLTIME that holds timing
-    information for the program run
-@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
-    temporal/spatial information for a set of simulation runs
-@param[in] failedSetup Specifies if the setup process failed
+@param[in,out] SW_WallTime Struct of type SW_WALLTIME that holds timing
+    information for the program run; on the root process, return
+    an updated version containing overall (possibly averaged) timing
+    information
 @param[in] LogInfo Holds information on warnings and errors
 */
-void SW_MPI_report_log(
-    int rank,
-    int size,
-    MPI_Datatype wtType,
-    SW_WALLTIME *SW_WallTime,
-    SW_DOMAIN *SW_Domain,
-    Bool failedSetup,
-    LOG_INFO *LogInfo
+void SW_MPI_get_end_info(
+    int rank, int size, SW_WALLTIME *SW_WallTime, LOG_INFO *LogInfo
 ) {
-    SW_MPI_DESIGNATE *desig = &SW_Domain->SW_Designation;
-    MPI_Datatype logType = SW_Domain->datatypes[eSW_MPI_Log];
-    MPI_Request req = MPI_REQUEST_NULL;
-    int numRanks = 0;
-    double prevMean = 0.0;
-    int destProcJob = SW_MPI_PROC_COMP;
-    int destRank;
-    Bool reportLog = (Bool) ((LogInfo->stopRun || LogInfo->numWarnings > 0 ||
-                              LogInfo->numDomainWarnings > 0 ||
-                              LogInfo->numDomainErrors > 0) &&
-                             failedSetup);
-    Bool destReport = swFALSE;
-    char warnHeader[MAX_FILENAMESIZE] = "\0";
-    FILE *tempFilePtr = LogInfo->logfp;
+    SW_WALLTIME overallTiming;
+    const size_t numReduceVals = 7;
+    const size_t maxTimeIndex = 2;
+    const size_t numWarnErr = 2;
+    const size_t maxDoubleIndex = 4;
+    size_t redVal;
+    size_t warnErr;
+
+    size_t totWarnErr = 0;
+
+    size_t *warnErrSrc[] = {
+        &LogInfo->numDomainErrors, &LogInfo->numDomainWarnings
+    };
+
+    void *reduceVals[] = {
+        (void *) &SW_WallTime->timeMax,
+        (void *) &SW_WallTime->timeMin,
+        (void *) &SW_WallTime->timeMean,
+        (void *) &SW_WallTime->totIOCompTime,
+        (void *) &SW_WallTime->totIOTime,
+        (void *) &SW_WallTime->nTimedRuns,
+        (void *) &SW_WallTime->nUntimedRuns
+    };
+
+    void *destVals[] = {
+        (void *) &overallTiming.timeMax,
+        (void *) &overallTiming.timeMin,
+        (void *) &overallTiming.timeMean,
+        (void *) &overallTiming.totIOCompTime,
+        (void *) &overallTiming.totIOTime,
+        (void *) &overallTiming.nTimedRuns,
+        (void *) &overallTiming.nUntimedRuns
+    };
 
     if (rank == SW_MPI_ROOT) {
-        if (reportLog) {
-            if (!isnull(LogInfo->logfps)) {
-                tempFilePtr = LogInfo->logfp;
-                LogInfo->logfp = LogInfo->logfps[0];
-            }
+        Mem_Copy(&overallTiming, SW_WallTime, sizeof(SW_WALLTIME));
+    }
 
-            sw_write_warnings("(Rank 0) ", LogInfo);
-            LogInfo->logfp = tempFilePtr;
+    /* Gather wall time information */
+    for (redVal = 0; redVal < numReduceVals; redVal++) {
+        SW_MPI_Reduce(
+            reduceVals[redVal],
+            destVals[redVal],
+            1,
+            (redVal <= maxDoubleIndex) ? MPI_DOUBLE : SW_MPI_SIZE_T,
+            MPI_SUM,
+            SW_MPI_ROOT,
+            MPI_COMM_WORLD
+        );
+
+        if (redVal <= maxTimeIndex) {
+            *((double *) destVals[redVal]) /= size;
         }
+    }
 
-        SW_WallTime->nTimedRuns = 0;
-        SW_WallTime->nUntimedRuns = 0;
-
-        /* Get timing information to average in root processes */
-        for (destRank = 1; destRank < size; destRank++) {
-            SW_WALLTIME rankWT;
-            LOG_INFO procLog;
-
-            SW_MPI_Recv(MPI_INT, &destProcJob, 1, destRank, swTRUE, 0, &req);
-            SW_MPI_Recv(wtType, &rankWT, 1, destRank, swTRUE, 0, &req);
-
-            SW_WallTime->totIOCompTime += rankWT.totIOCompTime;
-
-            if (!failedSetup) {
-                if (destProcJob == SW_MPI_PROC_COMP) {
-                    SW_MPI_Recv(
-                        SW_MPI_SIZE_T,
-                        &rankWT.nTimedRuns,
-                        1,
-                        destRank,
-                        swTRUE,
-                        0,
-                        &req
-                    );
-                    SW_MPI_Recv(
-                        SW_MPI_SIZE_T,
-                        &rankWT.nUntimedRuns,
-                        1,
-                        destRank,
-                        swTRUE,
-                        0,
-                        &req
-                    );
-
-                    numRanks++;
-
-                    prevMean = SW_WallTime->timeMean;
-                    SW_WallTime->timeMean = get_running_mean(
-                        numRanks, SW_WallTime->timeMean, rankWT.timeMean
-                    );
-                    SW_WallTime->timeMax = get_running_mean(
-                        numRanks, SW_WallTime->timeMax, rankWT.timeMax
-                    );
-                    SW_WallTime->timeMin = get_running_mean(
-                        numRanks, SW_WallTime->timeMin, rankWT.timeMin
-                    );
-                    SW_WallTime->timeSS = get_running_sqr(
-                        prevMean, SW_WallTime->timeMean, rankWT.timeMean
-                    );
-
-                    SW_WallTime->nTimedRuns += rankWT.nTimedRuns;
-                    SW_WallTime->nUntimedRuns += rankWT.nUntimedRuns;
-                } else {
-                    SW_WallTime->totIOTime += rankWT.totIOTime;
-                }
-            }
-
-            SW_MPI_Recv(MPI_INT, &destReport, 1, destRank, swTRUE, 0, &req);
-
-            if (destReport) {
-                // Get logs that need to be reported to general
-                // log file
-                sw_init_logs(LogInfo->logfp, &procLog);
-
-                SW_MPI_Recv(logType, &procLog, 1, destRank, swTRUE, 0, &req);
-
-                snprintf(warnHeader, MAX_FILENAMESIZE, "(Rank %d) ", destRank);
-
-                sw_write_warnings(warnHeader, &procLog);
-
-                LogInfo->numDomainErrors += procLog.numDomainErrors;
-                LogInfo->numDomainWarnings += procLog.numDomainWarnings;
-            }
+    /* Gather all counts of warnings/errors */
+    for (warnErr = 0; warnErr < numWarnErr; warnErr++) {
+        SW_MPI_Reduce(
+            warnErrSrc[warnErr],
+            &totWarnErr,
+            1,
+            SW_MPI_SIZE_T,
+            MPI_SUM,
+            SW_MPI_ROOT,
+            MPI_COMM_WORLD
+        );
+        if (rank == SW_MPI_ROOT) {
+            *(warnErrSrc[warnErr]) = totWarnErr;
         }
+    }
 
-        if (!failedSetup) {
-            SW_WT_ReportTime(*SW_WallTime, LogInfo);
-        }
-    } else {
-        /* Send process job to root process */
-        SW_MPI_Send(MPI_INT, &desig->procJob, 1, SW_MPI_ROOT, swTRUE, 0, &req);
-        SW_MPI_Send(wtType, SW_WallTime, 1, SW_MPI_ROOT, swTRUE, 0, &req);
-
-        if (desig->procJob == SW_MPI_PROC_COMP && !failedSetup) {
-            /* Send timing information to the root process to average it */
-            /* TODO: Find the reason why sending SW_WALLTIME with
-               n(Un)TimedRuns across nodes in an HPC environment results in
-               a floating-point exception */
-            SW_MPI_Send(
-                SW_MPI_SIZE_T,
-                &SW_WallTime->nTimedRuns,
-                1,
-                SW_MPI_ROOT,
-                swTRUE,
-                0,
-                &req
-            );
-            SW_MPI_Send(
-                SW_MPI_SIZE_T,
-                &SW_WallTime->nUntimedRuns,
-                1,
-                SW_MPI_ROOT,
-                swTRUE,
-                0,
-                &req
-            );
-        }
-
-        // Send information to the root process
-        SW_MPI_Send(MPI_INT, &reportLog, 1, SW_MPI_ROOT, swTRUE, 0, &req);
-
-        if (reportLog) {
-            SW_MPI_Send(logType, LogInfo, 1, SW_MPI_ROOT, swTRUE, 0, &req);
-        }
+    if (rank == SW_MPI_ROOT) {
+        Mem_Copy(SW_WallTime, &overallTiming, sizeof(SW_WALLTIME));
     }
 }
 
@@ -2172,7 +2102,7 @@ void SW_MPI_write_outputs(
         );
     }
     SW_MPI_Allreduce(
-        SW_MPI_SIZE_T, &numWrites, &maxNumWrites, 1, MPI_MAX, MPI_COMM_WORLD
+        &numWrites, &maxNumWrites, 1, SW_MPI_SIZE_T, MPI_MAX, MPI_COMM_WORLD
     );
 
     useTempOut = (Bool) (N_SUID_ASSIGN > 1 && numSuids > 1);
@@ -2287,7 +2217,7 @@ void SW_MPI_setup_inputs(
     int maxNumCyclesWorld = numCyclesProc;
 
     SW_MPI_Allreduce(
-        MPI_INT, &numCyclesProc, &maxNumCyclesWorld, 1, MPI_MAX, MPI_COMM_WORLD
+        &numCyclesProc, &maxNumCyclesWorld, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD
     );
     *extraFailCheck = (Bool) (numCyclesProc < maxNumCyclesWorld);
 

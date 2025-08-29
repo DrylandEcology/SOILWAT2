@@ -54,9 +54,7 @@ void sw_setup_prog_data(
 void sw_finalize_program(
     int rank,
     int size,
-    SW_DOMAIN *SW_Domain,
     SW_WALLTIME *SW_WallTime,
-    Bool setupFailed,
     Bool endQuietly,
     LOG_INFO *LogInfo
 );
