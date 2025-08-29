@@ -2230,6 +2230,7 @@ void SW_MPI_write_outputs(
             // NOLINTEND(clang-analyzer-core.NullDereference)
         }
 
+        set_walltime(&tsr, &ok_tsr);
         SW_NCIN_set_progress(
             progFileID,
             progVarID,
@@ -2238,6 +2239,7 @@ void SW_MPI_write_outputs(
             (write < numWrites) ? succMark : NULL,
             LogInfo
         );
+        SW_WT_TimeRun(tsr, ok_tsr, TIME_IO, SW_WallTime);
         if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
             return;
         }
