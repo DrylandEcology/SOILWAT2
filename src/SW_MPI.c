@@ -523,23 +523,6 @@ reportError:
 }
 
 /**
-@brief Wrapper for MPI function to free a type and throw a
-    warning if a free throws an error
-
-@param[in,out] type Custom MPI type to attempt to free
-@param[out] LogInfo Holds information on warnings and errors
-*/
-static void free_type(MPI_Datatype *type, LOG_INFO *LogInfo) {
-    int res = MPI_SUCCESS;
-
-    res = MPI_Type_free(type);
-
-    if (res != MPI_SUCCESS) {
-        LogError(LogInfo, LOGWARN, "Could not free a custom MPI type.");
-    }
-}
-
-/**
 @brief Helper to calculate the contiguous reading/writings available
     based on the domain SUIDs
 
@@ -986,53 +969,14 @@ crashing the program and finally initializing MPI information in SW_DOMAIN
 @param[in] argv List of command-line provided inputs
 @param[out] rank Process number known to MPI for the current process (aka rank)
 @param[out] worldSize Total number of processes that the MPI run has created
-@param[out] procName Name of the processor/node the current processes is
-running on
-@param[out] desig Designation instance that holds information about
-    assigning a process to a job
-@param[out] datatypes A list of custom MPI datatypes that will be created based
-on various program-defined structs
 */
-void SW_MPI_initialize(
-    int *argc,
-    char ***argv,
-    int *rank,
-    int *worldSize,
-    char *procName,
-    SW_MPI_DESIGNATE *desig,
-    MPI_Datatype datatypes[]
-) {
-    int procNameSize = 0;
-    int type;
-    int inKey;
-
+void SW_MPI_initialize(int *argc, char ***argv, int *rank, int *worldSize) {
     MPI_Init(argc, argv);
 
     MPI_Comm_rank(MPI_COMM_WORLD, rank);
     MPI_Comm_size(MPI_COMM_WORLD, worldSize);
 
-    MPI_Get_processor_name(procName, &procNameSize);
-
     MPI_Comm_set_errhandler(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
-
-    for (type = 0; type < SW_MPI_NTYPES; type++) {
-        datatypes[type] = MPI_DATATYPE_NULL;
-    }
-
-    ForEachNCInKey(inKey) { desig->domTSuids[inKey] = NULL; }
-
-    desig->domSuids = NULL;
-    desig->nSuids = 0;
-    desig->nCompProcs = 0;
-    desig->useTSuids = swFALSE;
-    desig->procJob = SW_MPI_PROC_COMP;
-    desig->groupComm = MPI_COMM_NULL;
-    desig->ioCompComm = MPI_COMM_NULL;
-    desig->rootCompComm = MPI_COMM_NULL;
-
-    desig->nTotCompProcs = 0;
-    desig->nTotIOProcs = 0;
-    desig->ioRank = 0;
 }
 
 /**
@@ -1040,39 +984,6 @@ void SW_MPI_initialize(
 been initialized/created through MPI within the program run
 */
 void SW_MPI_finalize() { MPI_Finalize(); }
-
-/**
-@brief Free communicators and types when finishing the program
-
-@param[in,out] desig Designation instance that holds information about
-    assigning a process to a job
-@param[in,out] types A list of custom MPI datatypes used throughout the program
-@param[out] LogInfo Holds information on warnings and errors; this function
-    will use this but no errors will be reported
-*/
-void SW_MPI_free_comms_types(
-    SW_MPI_DESIGNATE *desig, MPI_Datatype types[], LOG_INFO *LogInfo
-) {
-    const int numComms = 3;
-    int comm;
-    int type;
-    MPI_Comm *comms[] = {
-        &desig->rootCompComm, &desig->groupComm, &desig->ioCompComm
-    };
-
-    for (type = 0; type < SW_MPI_NTYPES; type++) {
-        if (types[type] != MPI_DATATYPE_NULL) {
-            free_type(&types[type], LogInfo);
-        }
-    }
-
-    for (comm = 0; comm < numComms; comm++) {
-        if (*comms[comm] != MPI_COMM_NULL) {
-
-            MPI_Comm_free(comms[comm]);
-        }
-    }
-}
 
 /**
 @brief Trigger an abort error when a fatal error occurs
@@ -1508,45 +1419,6 @@ void SW_MPI_get_end_info(
     }
 }
 
-/*
-@brief Get/send the main log information from compute processes to their
-    assigned I/O process once the simulations are finished; mainly useful
-    if anything causes a fatal error
-
-@param[in] desig Designation instance that holds information about
-    assigning a process to a job
-@param[in] logType Custom MPI type that mimics LOG_INFO
-@param[in] LogInfo Holds information on warnings and errors
-*/
-void SW_MPI_write_main_logs(
-    SW_MPI_DESIGNATE *desig, MPI_Datatype logType, LOG_INFO *LogInfo
-) {
-    MPI_Request nullReq = MPI_REQUEST_NULL;
-
-    int rank;
-    int destRank;
-
-    if (desig->procJob == SW_MPI_PROC_IO) {
-        LogInfo->logfp = LogInfo->logfps[0];
-        sw_write_warnings("", LogInfo);
-
-        for (rank = 0; rank < desig->nCompProcs; rank++) {
-            LOG_INFO main_log;
-            destRank = desig->ranks[rank];
-
-            sw_init_logs(LogInfo->logfp, &main_log);
-            SW_MPI_Recv(logType, &main_log, 1, destRank, swTRUE, 0, &nullReq);
-
-            if (main_log.stopRun || main_log.numWarnings > 0) {
-                main_log.logfp = LogInfo->logfps[rank + 1];
-                sw_write_warnings("", &main_log);
-            }
-        }
-    } else {
-        SW_MPI_Send(logType, LogInfo, 1, desig->ioRank, swTRUE, 0, &nullReq);
-    }
-}
-
 /**
 @brief Assign processes to compute or I/O jobs
 
@@ -1633,9 +1505,7 @@ freeMem:
 
 /**
 @brief Organize output data when completing a simulation run into
-    a bigger output buffer to later send to an I/O process
-
-Process designation: Compute
+    a bigger output buffer to later reorganize and output
 
 @param[in] runNum Current run number the compute process is on,
     should be between [0, N_SUID_ASSIGN - 1]
@@ -1674,194 +1544,6 @@ void SW_MPI_store_outputs(
                     sizeof(double) * oneSiteSize
                 );
             }
-        }
-    }
-}
-
-/**
-@brief Send information to I/O processes when a compute
-    process is some with their assigned workload
-
-This function will send three pieces of information
-    1) Simulation run statuses
-        - Flag results collected throughout the simulation runs
-        - Specifies if a specific run failed for succeeded
-        - Used to write output and update the progress file properly
-            * If a simulation run failed, do not output it and report it
-    2) Request type
-        - Three different types of requests
-            * REQ_OUT_NC - Only send output information to be written to file
-            * REQ_OUT_LOG - Only send log information to be written to log
-                            files; only occurs when all simulations fail
-            * REQ_OUT_BOTH - Both take action above
-    3) Source rank
-        - Rank of the process that sent information to I/O process
-            * I/O process is not aware of the sender by default due to
-                MPI_ANY_SOURCE
-
-Further improvement upon this functionality could be sending outputs
-for the current batch of outputs while doing other operations
-(asynchronous)
-
-Process designation: Compute
-
-@param[in] OutDom Struct of type SW_OUT_DOM that holds output
-    information that do not change throughout simulation runs
-@param[in] rank Process number known to MPI for the current process (aka rank)
-@param[in] numInputs Number of inputs that were sent to an I/O process
-@param[in] ioRank Destination rank of the I/O process to send to
-@param[in] reqTypeMPI Custom MPI type that mimics SW_MPI_REQUEST
-@param[in] logType Custom MPI type that mimics LOG_INFO
-@param[in] runStatuses A list of run statuses for each simulation
-    (success or fail)
-@param[in] reportLog A flag specifying that something was reported within
-    the simulations and must be sent
-@param[in] logs A list of LOG_INFO instances to send to the I/O process
-    if the `reportLog` flag is turned on
-@param[in] p_OUT Array of accumulated output values throughout
-    simulation runs
-*/
-void SW_MPI_send_results(
-    SW_OUT_DOM *OutDom,
-    int rank,
-    size_t numInputs,
-    int ioRank,
-    MPI_Datatype reqTypeMPI,
-    MPI_Datatype logType,
-    const Bool runStatuses[],
-    Bool reportLog,
-    LOG_INFO logs[],
-    double *p_OUT[][SW_OUTNPERIODS]
-) {
-    MPI_Request nullReq = MPI_REQUEST_NULL;
-    int reqType = REQ_OUT_NC;
-    Bool succRun = swFALSE;
-    int run;
-    SW_MPI_REQUEST req;
-    int outKey;
-    int timeStep;
-    int ipd;
-    size_t sendSize = 0;
-
-    for (run = 0; run < N_SUID_ASSIGN; run++) {
-        req.runStatus[run] = runStatuses[run];
-        succRun = (Bool) (succRun || runStatuses[run]);
-    }
-
-    if (succRun && reportLog) {
-        reqType = REQ_OUT_BOTH;
-    } else if (reportLog) {
-        reqType = REQ_OUT_LOG;
-    }
-
-    req.sourceRank = rank;
-    req.requestType = reqType;
-
-    SW_MPI_Send(reqTypeMPI, &req, 1, ioRank, swTRUE, 0, &nullReq);
-
-    if (reportLog) {
-        SW_MPI_Send(
-            logType, logs, (int) numInputs, ioRank, swTRUE, 0, &nullReq
-        );
-    }
-
-    if (succRun) {
-        ForEachOutKey(outKey) {
-            for (ipd = 0; ipd < OutDom->used_OUTNPERIODS; ipd++) {
-                timeStep = OutDom->timeSteps[outKey][ipd];
-
-                if (OutDom->use[outKey] && timeStep != eSW_NoTime) {
-                    sendSize =
-                        OutDom->nrow_OUT[timeStep] *
-                        (OutDom->ncol_OUT[outKey] + ncol_TimeOUT[timeStep]);
-                    sendSize *= numInputs;
-
-                    SW_MPI_Send(
-                        MPI_DOUBLE,
-                        p_OUT[outKey][timeStep],
-                        (int) sendSize,
-                        ioRank,
-                        swTRUE,
-                        0,
-                        &nullReq
-                    );
-
-                    memset(
-                        p_OUT[outKey][timeStep], 0, sizeof(double) * sendSize
-                    );
-                }
-            }
-        }
-    }
-}
-
-/**
-@brief Handle the receiving of inputs from an I/O process
-
-This function will receive up to N_SUID_ASSIGN inputs from the
-assigned I/O process
-
-Further improvement upon this functionality could be getting inputs
-for the next batch of inputs during simulation runs (asynchronous)
-
-Process designation: Compute
-
-@param[in] getWeather Specifies if we get weather from I/O process;
-    if not, we copy it from the SW_RUN template
-@param[in] n_years Number of years of weather to receive if we do
-    get weather from the I/O process
-@param[in] desig Designation instance that holds information about
-    assigning a process to a job
-@param[in] inputType Custom MPI data type for sending SW_RUN_INPUTS
-@param[in] weathHistType Custom MPI type for transfering data for
-    SW_WEATHER_HIST
-@param[out] inputs A list of SW_RUN_INPUTS that will be filled by an
-    I/O process
-@param[out] numInputs Number of inputs that were sent to this process
-@param[out] extraFailCheck Specifies if, when a compute process is done with
-    all workloads, the compute process should take part in an extra call to
-    `SW_MPI_setup_fail()`
-*/
-void SW_MPI_get_inputs(
-    Bool getWeather,
-    unsigned int n_years,
-    SW_MPI_DESIGNATE *desig,
-    MPI_Datatype inputType,
-    MPI_Datatype weathHistType,
-    SW_RUN_INPUTS inputs[],
-    size_t *numInputs,
-    Bool *extraFailCheck
-) {
-    MPI_Request nullReq = MPI_REQUEST_NULL;
-    size_t input;
-
-    SW_MPI_Recv(
-        SW_MPI_SIZE_T, numInputs, 1, desig->ioRank, swTRUE, 0, &nullReq
-    );
-
-    for (input = 0; input < *numInputs; input++) {
-        SW_MPI_Recv(
-            inputType, &inputs[input], 1, desig->ioRank, swTRUE, 0, &nullReq
-        );
-    }
-
-    if (*numInputs == COMP_COMPLETE) {
-        SW_MPI_Recv(
-            MPI_INT, extraFailCheck, 1, desig->ioRank, swTRUE, 0, &nullReq
-        );
-    }
-
-    if (getWeather) {
-        for (input = 0; input < *numInputs; input++) {
-            SW_MPI_Recv(
-                weathHistType,
-                inputs[input].weathRunAllHist,
-                (int) n_years,
-                desig->ioRank,
-                swTRUE,
-                0,
-                &nullReq
-            );
         }
     }
 }

@@ -73,21 +73,9 @@ typedef enum {
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 
-void SW_MPI_initialize(
-    int *argc,
-    char ***argv,
-    int *rank,
-    int *worldSize,
-    char *procName,
-    SW_MPI_DESIGNATE *desig,
-    MPI_Datatype datatypes[]
-);
+void SW_MPI_initialize(int *argc, char ***argv, int *rank, int *worldSize);
 
 void SW_MPI_finalize();
-
-void SW_MPI_free_comms_types(
-    SW_MPI_DESIGNATE *desig, MPI_Datatype types[], LOG_INFO *LogInfo
-);
 
 void SW_MPI_Fail(int rank, int failType, char *mpiErrStr);
 
@@ -147,28 +135,12 @@ void SW_MPI_Recv(
     MPI_Request *request
 );
 
-void SW_MPI_template_info(
-    int rank,
-    SW_MPI_DESIGNATE *desig,
-    SW_RUN *SW_Run,
-    MPI_Datatype inRunType,
-    MPI_Datatype spinupType,
-    MPI_Datatype vegEstabType,
-    MPI_Datatype weathHistType,
-    Bool getWeather,
-    LOG_INFO *LogInfo
-);
-
 void SW_MPI_domain_info(SW_DOMAIN *SW_Domain, int rank, LOG_INFO *LogInfo);
 
 Bool SW_MPI_setup_fail(Bool stopRun, MPI_Comm comm);
 
 void SW_MPI_get_end_info(
     int rank, int size, SW_WALLTIME *SW_WallTime, LOG_INFO *LogInfo
-);
-
-void SW_MPI_write_main_logs(
-    SW_MPI_DESIGNATE *desig, MPI_Datatype logType, LOG_INFO *LogInfo
 );
 
 void SW_MPI_proc_workload(
@@ -180,30 +152,6 @@ void SW_MPI_store_outputs(
     SW_OUT_DOM *OutDom,
     double *src_p_OUT[][SW_OUTNPERIODS],
     double *dest_p_OUT[][SW_OUTNPERIODS]
-);
-
-void SW_MPI_send_results(
-    SW_OUT_DOM *OutDom,
-    int rank,
-    size_t numInputs,
-    int ioRank,
-    MPI_Datatype reqTypeMPI,
-    MPI_Datatype logType,
-    const Bool runStatuses[],
-    Bool reportLog,
-    LOG_INFO logs[],
-    double *p_OUT[][SW_OUTNPERIODS]
-);
-
-void SW_MPI_get_inputs(
-    Bool getWeather,
-    unsigned int n_years,
-    SW_MPI_DESIGNATE *desig,
-    MPI_Datatype inputType,
-    MPI_Datatype weathHistType,
-    SW_RUN_INPUTS inputs[],
-    size_t *numInputs,
-    Bool *extraFailCheck
 );
 
 void SW_MPI_get_sim_suids(

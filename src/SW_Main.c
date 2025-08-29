@@ -63,7 +63,6 @@ int main(int argc, char **argv) {
 
     int rank = 0;
     int size = 0;
-    char procName[SW_MAX_PROCESSOR_NAME] = "\0";
 
     size_t userSUID;
 
@@ -71,15 +70,7 @@ int main(int argc, char **argv) {
     SW_WT_StartTime(&SW_WallTime);
 
 #if defined(SWMPI)
-    SW_MPI_initialize(
-        &argc,
-        &argv,
-        &rank,
-        &size,
-        procName,
-        &SW_Domain.SW_Designation,
-        SW_Domain.datatypes
-    );
+    SW_MPI_initialize(&argc, &argv, &rank, &size);
 #endif
 
     // Initialize logs and pointer objects

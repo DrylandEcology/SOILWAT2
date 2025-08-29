@@ -1632,58 +1632,6 @@ typedef enum {
 } InKeys;
 
 /* =================================================== */
-/*                  MPI Functionality                  */
-/* --------------------------------------------------- */
-
-typedef struct {
-    int sourceRank; /**< Rank of the process that sent the request */
-    Bool runStatus[N_SUID_ASSIGN]; /**< A list of size N_SUID_ASSIGN
-                         specifying the success of simulation runs */
-    int requestType;               /**< Type of request a compute process is
-                                        giving to an I/O process */
-} SW_MPI_REQUEST;
-
-typedef struct {
-    int procJob;    /**< The assigned job of a process;
-                         possibilities are: job assigner, compute, and I/O */
-    int ioRank;     /**< Rank of the compute node's assigned I/O process;
-                         only used if process is compute */
-    int nCompProcs; /**< Number of compute processes assigned to an I/O process;
-                         only used if process is I/O */
-    size_t
-        nSuids; /**< Number of suids that will be controlled by I/O processes */
-    Bool useTSuids; /**< Flag specifying if we will be using a list of
-                         translated domain SUIDs */
-
-    int ranks[PROCS_PER_IO]; /**< A list of ranks that the I/O process
-                                  controls */
-    size_t **domSuids; /**< A list of domain SUIDs that will be used by I/O
-                            processes for writing and reading information */
-    size_t **domTSuids[SW_NINKEYSNC]; /**< A list of translated domain SUIDs for
-                              each input key if index files are used */
-
-    int nTotCompProcs; /**< Number of compute processes in action;
-                              root only */
-    int nTotIOProcs;   /**< Number of I/O processes in action;
-                            root only */
-
-#if defined(SWMPI)
-    MPI_Comm groupComm;    /**< New group communicator; can either be for
-                                I/O or compute;
-                                Note: creating this new communicator
-                                      created a new rank labelling system
-                                      e.g., rank 2 in MPI_COMM_WORLD
-                                            could be 0, 1, etc. */
-    MPI_Comm rootCompComm; /**< Root process' communicator for the opposite
-                                of its original job to communicate data
-                                to all processes */
-
-    MPI_Comm ioCompComm; /**< New group communicator between I/O processes
-                              and their assigned compute processes */
-#endif
-} SW_MPI_DESIGNATE;
-
-/* =================================================== */
 /*                    Domain structs                   */
 /* --------------------------------------------------- */
 
@@ -1764,9 +1712,6 @@ typedef struct {
 
     // Information that is constant through simulation runs
     SW_OUT_DOM OutDom;
-
-    // Information about a process designation (MPI only)
-    SW_MPI_DESIGNATE SW_Designation;
 
 #if defined(SWMPI)
     // Custom MPI data types used for sending information
