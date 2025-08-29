@@ -1051,16 +1051,12 @@ static void get_outvar_ids(
             varID = ncOutVarIDs[var];
             fileID = outFileIDs[file];
 
-            if (varID > -1 &&
-                nc_var_par_access(fileID, varID, NC_COLLECTIVE) != NC_NOERR) {
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "Could not set the parallel access of the variable "
-                    "'%s' to collective.",
-                    varName
-                );
-                return;
+            if (varID > -1) {
+                SW_NC_toggle_par_access(fileID, varID, NC_COLLECTIVE, LogInfo);
+
+                if (LogInfo->stopRun) {
+                    return;
+                }
             }
         }
 #else

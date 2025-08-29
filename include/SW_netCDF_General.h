@@ -36,6 +36,12 @@ extern "C" {
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 
+#if defined(SWMPI)
+void SW_NC_toggle_par_access(
+    int ncFileID, int ncVarID, int newAccess, LOG_INFO *LogInfo
+);
+#endif
+
 void SW_NC_get_att_type(
     int ncFileID,
     int varID,

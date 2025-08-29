@@ -788,17 +788,19 @@ void find_active_sites(
     /* Read all progress values - set the parallel access to
        independent so all processes but the root can read 0 values */
     if (nc_get_vara_schar(progFileID, progVarID, start, count, prog) !=
-            NC_NOERR ||
-        rank > SW_MPI_ROOT) {
+        NC_NOERR) {
 
-        if (rank == SW_MPI_ROOT) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "Could not read all of the progress variable values."
-            );
-        }
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not read all of the progress variable values."
+        );
 
+        goto freeMem;
+    }
+
+    SW_NC_toggle_par_access(progFileID, progVarID, NC_COLLECTIVE, LogInfo);
+    if (LogInfo->stopRun || rank > SW_MPI_ROOT) {
         goto freeMem;
     }
 

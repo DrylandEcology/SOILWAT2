@@ -5958,8 +5958,6 @@ static void open_input_files(
     Bool useWeathFileArray;
 
 #if defined(SWMPI)
-    int progVarID = SW_netCDFIn->ncDomVarIDs[vNCprog];
-
     if (rank == SW_MPI_ROOT) {
         nc_close(SW_PathInputs->ncDomFileIDs[vNCdom]);
         nc_close(SW_PathInputs->ncDomFileIDs[vNCprog]);
@@ -5999,25 +5997,6 @@ static void open_input_files(
                         &SW_PathInputs->ncDomFileIDs[domVar],
                         LogInfo
                     );
-                    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-                        return;
-                    }
-
-                    if (domVar == vNCprog) {
-                        if (nc_var_par_access(
-                                SW_PathInputs->ncDomFileIDs[domVar],
-                                progVarID,
-                                NC_COLLECTIVE
-                            ) != NC_NOERR) {
-                            LogError(
-                                LogInfo,
-                                LOGERROR,
-                                "Could not set parallel access pattern of "
-                                "progress variable to be collective.",
-                                fileName
-                            );
-                        }
-                    }
                     if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
                         return;
                     }

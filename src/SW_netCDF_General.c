@@ -137,6 +137,33 @@ static void update_netCDF_global_atts(
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
+#if defined(SWMPI)
+/**
+@brief Toggle the parallel access pattern for a variable
+
+@param[in] ncFileID Identifier of the open netCDF file where the variable is
+located
+@param[in] ncVarID Identifier of the netCDF variable that will have it's
+parallel access pattern updated
+@param[in] newAccess Updated parallel access pattern to update the variable
+to (either NC_INDEPENDENT or NC_COLLECTIVE)
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NC_toggle_par_access(
+    int ncFileID, int ncVarID, int newAccess, LOG_INFO *LogInfo
+) {
+    if (nc_var_par_access(ncFileID, ncVarID, newAccess) != NC_NOERR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not toggle a variable's parallel access pattern to "
+            "%s.",
+            (newAccess == NC_COLLECTIVE) ? "collective" : "independent"
+        );
+    }
+}
+#endif
+
 /**
 @brief Gets the type of an attribute
 
