@@ -5314,6 +5314,7 @@ static void read_spatial_topo_climate_site_inputs(
 #if !defined(SWMPI)
     const int indexFile = 0;
     const int firstFile = 0;
+    int indexID;
 #endif
 
     double **scaleAddFactors;
@@ -5358,16 +5359,13 @@ static void read_spatial_topo_climate_site_inputs(
         sDom = sDoms[currKey];
 #if !defined(SWMPI)
         useIndexFile = SW_Domain->netCDFInput.useIndexFile[currKey];
+        indexID =
+            (useIndexFile) ? openNCFileIDs[currKey][indexFile][firstFile] : -1;
 
         /* Get the start indices based on if we need to use the respective
            index file */
         get_read_start(
-            useIndexFile,
-            openNCFileIDs[keyNum][indexFile][firstFile],
-            sDom,
-            ncSUID,
-            defSetStart,
-            LogInfo
+            useIndexFile, indexID, sDom, ncSUID, defSetStart, LogInfo
         );
         if (LogInfo->stopRun) {
             goto closeFile;
@@ -5541,11 +5539,6 @@ static void read_spatial_topo_climate_site_inputs(
                     input++;
                 }
                 input = inputOrigin;
-
-#if !defined(SWMPI)
-                nc_close(ncFileID);
-                ncFileID = -1;
-#endif
             }
 
             input += numSites;
@@ -6000,13 +5993,6 @@ static void open_input_files(
                     if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
                         return;
                     }
-#else
-                    SW_NC_open(
-                        fileName,
-                        (domVar == vNCdom) ? NC_NOWRITE : NC_WRITE,
-                        &SW_PathInputs->ncDomFileIDs[domVar],
-                        LogInfo
-                    );
 #endif
                 }
             }
@@ -6078,11 +6064,13 @@ static void open_input_files(
                     if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
                         return;
                     }
-                } else if (rank == 0 && FileExists(fileName)) {
+                } else if (rank == 0) {
 #endif
-                    SW_NC_open(fileName, NC_NOWRITE, id, LogInfo);
-                    if (LogInfo->stopRun) {
-                        return;
+                    if (FileExists(fileName) || var > indexFile) {
+                        SW_NC_open(fileName, NC_NOWRITE, id, LogInfo);
+                        if (LogInfo->stopRun) {
+                            return;
+                        }
                     }
 #if defined(SWMPI)
                 }
@@ -6449,6 +6437,7 @@ static void read_veg_inputs(
 #if !defined(SWMPI)
     const int indexFile = 0;
     Bool useIndexFile = SW_Domain->netCDFInput.useIndexFile[eSW_InVeg];
+    int indexID = (useIndexFile) ? vegFileIDs[indexFile][firstFile] : -1;
 #endif
 
 
@@ -6459,14 +6448,7 @@ static void read_veg_inputs(
 #if !defined(SWMPI)
     /* Get the start indices based on if we need to use the respective
         index file */
-    get_read_start(
-        useIndexFile,
-        vegFileIDs[indexFile][firstFile],
-        sDom,
-        ncSUID,
-        defSetStart,
-        LogInfo
-    );
+    get_read_start(useIndexFile, indexID, sDom, ncSUID, defSetStart, LogInfo);
     if (LogInfo->stopRun) {
         goto wrapUp;
     }
@@ -6659,11 +6641,6 @@ static void read_veg_inputs(
                 input++;
             }
             input = inputOrigin;
-
-#if !defined(SWMPI)
-            nc_close(ncFileID);
-            ncFileID = -1;
-#endif
         }
 
         input += numSites;
@@ -6999,6 +6976,7 @@ static void read_soil_inputs(
 #if !defined(SWMPI)
     const int indexFile = 0;
     Bool useIndexFile = SW_Domain->netCDFInput.useIndexFile[eSW_InSoil];
+    int indexID = (useIndexFile) ? openSoilFileIDs[indexFile][firstFile] : -1;
 #endif
 
     while (!readInputs[fIndex + 1]) {
@@ -7007,12 +6985,7 @@ static void read_soil_inputs(
 
 #if !defined(SWMPI)
     get_read_start(
-        useIndexFile,
-        openSoilFileIDs[indexFile][firstFile],
-        inSiteDom,
-        ncSUID,
-        defSetStart,
-        LogInfo
+        useIndexFile, indexID, inSiteDom, ncSUID, defSetStart, LogInfo
     );
     if (LogInfo->stopRun) {
         return;
@@ -7187,11 +7160,6 @@ static void read_soil_inputs(
                 input++;
             }
             input = inputOrigin;
-
-#if !defined(SWMPI)
-            nc_close(ncFileID);
-            ncFileID = -1;
-#endif
         }
 
         input += numSites;
@@ -8239,6 +8207,7 @@ static void read_weather_input(
     const int indexFile = 0;
     const int firstFile = 0;
     Bool useIndexFile = SW_Domain->netCDFInput.useIndexFile[eSW_InWeather];
+    int indexID = (useIndexFile) ? weathFileIDs[indexFile][firstFile] : -1;
 #endif
 
     while (!readInput[fIndex + 1]) {
@@ -8254,12 +8223,7 @@ static void read_weather_input(
 
 #if !defined(SWMPI)
     get_read_start(
-        useIndexFile,
-        weathFileIDs[indexFile][firstFile],
-        inSiteDom,
-        ncSUID,
-        defSetStart,
-        LogInfo
+        useIndexFile, indexID, inSiteDom, ncSUID, defSetStart, LogInfo
     );
     if (LogInfo->stopRun) {
         return;

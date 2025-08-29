@@ -2839,9 +2839,6 @@ void SW_NCOUT_write_output(
 
                 // Update startTime
                 startTime += timeSize;
-#if !defined(SWMPI)
-                nc_close(currFileID);
-#endif
             }
         }
     }
@@ -2851,8 +2848,6 @@ void SW_NCOUT_write_output(
     (void) ncOutFileNames;
 #else
 closeFile:
-    nc_close(currFileID);
-
     (void) starts;
     (void) counts;
     (void) openOutFileIDs;
