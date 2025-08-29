@@ -664,7 +664,6 @@ into one location to write out
     variable information
 @param[out] resAtts Resulting attributes to write out
 @param[in] sumType Sum type of the output key
-@param[in] siteDom Specifies if the domain is site-oriented
 @param[in] readinYName User-provided geographical y-axis name
 @param[in] readinXName User-provided geographical x-axis name
 @param[out] LogInfo Holds information on warnings and errors
@@ -676,7 +675,6 @@ static int gather_var_attributes(
     int varNum,
     char *resAtts[],
     OutSum sumType,
-    Bool siteDom,
     const char *readinYName,
     const char *readinXName,
     LOG_INFO *LogInfo
@@ -750,11 +748,7 @@ static int gather_var_attributes(
 
     /* Fill coordinates attribute */
     resSNP = snprintf(
-        coordsAtt,
-        MAX_FILENAMESIZE,
-        (siteDom) ? "%s %s site" : "%s %s",
-        readinYName,
-        readinXName
+        coordsAtt, MAX_FILENAMESIZE, "%s %s", readinYName, readinXName
     );
     if (resSNP < 0 || (unsigned) resSNP >= (sizeof coordsAtt)) {
         LogError(
@@ -1128,7 +1122,6 @@ static void create_output_file(
     };
     char *attVals[MAX_NATTS] = {NULL};
     OutSum sumType = OutDom->sumtype[key];
-    Bool siteDom = (Bool) (strcmp(domType, "s") == 0);
 
     int numAtts = 0;
     const int nameAtt = 0;
@@ -1169,16 +1162,7 @@ static void create_output_file(
                 OutDom->netCDFOutput.outputVarInfo[key][index][VARNAME_INDEX];
 
             numAtts = gather_var_attributes(
-                varInfo,
-                key,
-                pd,
-                index,
-                attVals,
-                sumType,
-                siteDom,
-                yName,
-                xName,
-                LogInfo
+                varInfo, key, pd, index, attVals, sumType, yName, xName, LogInfo
             );
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error

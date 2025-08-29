@@ -1665,12 +1665,9 @@ freeMem:
 @param[in] readinGeoXName User-provided geographical x-axis name
 @param[in] readinProjYName User-provided projected y-axis name
 @param[in] readinProjXName User-provided projected x-axis name
-@param[in] siteName User-provided site dimension/variable "site" name
 @param[in] domFileID Domain netCDF file identifier
 @param[in] nDomainDims Number of dimensions the domain variable will have
 @param[in] primCRSIsGeo Specifies if the current CRS type is geographic
-@param[in] domType Type of domain in which simulations are running
-    (gridcell/sites)
 @param[in] deflateLevel Level of deflation that will be used for the created
 variable
 @param[out] LogInfo Holds information on warnings and errors
@@ -1683,11 +1680,9 @@ static void fill_domain_netCDF_domain(
     const char *readinGeoXName,
     const char *readinProjYName,
     const char *readinProjXName,
-    const char *siteName,
     int domFileID,
     int nDomainDims,
     Bool primCRSIsGeo,
-    const char *domType,
     int deflateLevel,
     LOG_INFO *LogInfo
 ) {
@@ -1696,8 +1691,7 @@ static void fill_domain_netCDF_domain(
                            (char *) "crs_geogsc" :
                            (char *) "crs_projsc: %s %s crs_geogsc: %s %s";
 
-    char *coordVal =
-        (strcmp(domType, "s") == 0) ? (char *) "%s %s %s" : (char *) "%s %s";
+    char *coordVal = (char *) "%s %s";
 
     const char *strAttNames[] = {
         "long_name", "units", "grid_mapping", "coordinates"
@@ -1712,20 +1706,9 @@ static void fill_domain_netCDF_domain(
     const int numAtts = 4;
 
     /* Fill dynamic coordinate names and replace them in `strAttNames` */
-    if (strcmp(domType, "s") == 0) {
-        (void) snprintf(
-            coordStr,
-            MAX_FILENAMESIZE,
-            coordVal,
-            readinGeoYName,
-            readinGeoXName,
-            siteName
-        );
-    } else {
-        (void) snprintf(
-            coordStr, MAX_FILENAMESIZE, coordVal, readinGeoYName, readinGeoXName
-        );
-    }
+    (void) snprintf(
+        coordStr, MAX_FILENAMESIZE, coordVal, readinGeoYName, readinGeoXName
+    );
     strAttVals[numAtts - 1] = coordStr;
 
     if (!primCRSIsGeo) {
@@ -4363,8 +4346,6 @@ created
 @param[in] deflateLevel Level of deflation that will be used for the created
 variable
 @param[in] inDomIsSite Specifies if the input file has sites or is gridded
-@param[in] siteDom Specifies that the programs domain has sites, otherwise
-it is gridded
 @param[in] numAtts Number of attributes to give to each index variable(s)
 @param[in] key Current input key these variables/file is meant for
 @param[in] indexFileName Name of the newly created index file
@@ -4372,8 +4353,6 @@ it is gridded
 latitude/y (user-provided)
 @param[in] geoXCoordName Name of the geographical coordinate variable/dimension
 longitude/x (user-provided)
-@param[in] domSiteName User-provided site variable/dimension name (if domain is
-not gridded)
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static void create_index_vars(
@@ -4385,13 +4364,11 @@ static void create_index_vars(
     int nDims,
     int deflateLevel,
     Bool inDomIsSite,
-    Bool siteDom,
     int numAtts,
     int key,
     char *indexFileName,
     char *geoYCoordName,
     char *geoXCoordName,
-    char *domSiteName,
     LOG_INFO *LogInfo
 ) {
     int varNum;
@@ -4404,7 +4381,7 @@ static void create_index_vars(
         (char *) "units",
         (char *) "coordinates"
     };
-    char *coordString = (siteDom) ? (char *) "%s %s %s" : (char *) "%s %s";
+    char *coordString = (char *) "%s %s";
 
     /* Size 3 - "long_name", "comment", "units" */
     /* Size 2 - maximum possible values to write out for variable(s) */
@@ -4452,24 +4429,13 @@ static void create_index_vars(
             indexVarAttVals[0][1] = (char *) "x-position of %s";
         }
 
-        if (siteDom) {
-            (void) snprintf(
-                tempCoord,
-                MAX_FILENAMESIZE,
-                coordString,
-                geoYCoordName,
-                geoXCoordName,
-                domSiteName
-            );
-        } else {
-            (void) snprintf(
-                tempCoord,
-                MAX_FILENAMESIZE,
-                coordString,
-                geoYCoordName,
-                geoXCoordName
-            );
-        }
+        (void) snprintf(
+            tempCoord,
+            MAX_FILENAMESIZE,
+            coordString,
+            geoYCoordName,
+            geoXCoordName
+        );
         indexVarAttVals[3][0] = (char *) tempCoord;
 
         for (attNum = 0; attNum < numAtts; attNum++) {
@@ -7449,14 +7415,10 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     char *readinGeoXName = (primCRSIsGeo) ?
                                SW_Domain->OutDom.netCDFOutput.geo_XAxisName :
                                SW_Domain->OutDom.netCDFOutput.proj_XAxisName;
-    char *siteName = SW_Domain->OutDom.netCDFOutput.siteName;
 
-    Bool domTypeIsS = (Bool) (strcmp(SW_Domain->DomainType, "s") == 0);
     const char *projGridMap = "%s: %s %s %s: %s %s";
     const char *geoGridMap = SW_Domain->OutDom.netCDFOutput.crs_geogsc.crs_name;
-    const char *sCoord = "%s %s %s";
-    const char *xyCoord = "%s %s";
-    const char *coord = domTypeIsS ? sCoord : xyCoord;
+    const char *coord = (char *) "%s %s";
     const char *grid_map = primCRSIsGeo ? geoGridMap : projGridMap;
     char coordStr[MAX_FILENAMESIZE] = "\0";
     char gridMapStr[MAX_FILENAMESIZE] = "\0";
@@ -7491,20 +7453,9 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     Bool useDefaultChunking = swTRUE;
 
     /* Fill dynamic coordinate names */
-    if (domTypeIsS) {
-        (void) snprintf(
-            coordStr,
-            MAX_FILENAMESIZE,
-            coord,
-            readinGeoYName,
-            readinGeoXName,
-            siteName
-        );
-    } else {
-        (void) snprintf(
-            coordStr, MAX_FILENAMESIZE, coord, readinGeoYName, readinGeoXName
-        );
-    }
+    (void) snprintf(
+        coordStr, MAX_FILENAMESIZE, coord, readinGeoYName, readinGeoXName
+    );
     attVals[numAtts - 1] = coordStr;
 
     if (!primCRSIsGeo) {
@@ -7876,11 +7827,9 @@ void SW_NCIN_create_domain_template(
         readinGeoXName,
         SW_Domain->OutDom.netCDFOutput.proj_YAxisName,
         SW_Domain->OutDom.netCDFOutput.proj_XAxisName,
-        SW_Domain->OutDom.netCDFOutput.siteName,
         *domFileID,
         nDomainDims,
         SW_Domain->OutDom.netCDFOutput.primary_crs_is_geographic,
-        SW_Domain->DomainType,
         SW_Domain->OutDom.netCDFOutput.deflateLevel,
         LogInfo
     );
@@ -9839,7 +9788,6 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     int dimIDs[2][2] = {{0}}; /* Up to two dims for two variables */
     Bool inHasSite = swFALSE;
     Bool siteDom = (Bool) (strcmp(SW_Domain->DomainType, "s") == 0);
-    char *siteName = SW_Domain->OutDom.netCDFOutput.siteName;
     char *domYName = SW_Domain->OutDom.netCDFOutput.geo_YAxisName;
     char *domXName = SW_Domain->OutDom.netCDFOutput.geo_XAxisName;
     char *indexVarNames[2] = {NULL, NULL};
@@ -9982,13 +9930,11 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     indexVarNDims,
                     SW_Domain->OutDom.netCDFOutput.deflateLevel,
                     inHasSite,
-                    siteDom,
                     numAtts,
                     k,
                     indexName,
                     domYName,
                     domXName,
-                    siteName,
                     LogInfo
                 );
                 if (LogInfo->stopRun) {
