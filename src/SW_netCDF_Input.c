@@ -5942,7 +5942,6 @@ static void open_input_files(
     const int indexFile = 0;
     int inKey;
     int var;
-    int domVar;
     unsigned int numFiles;
     unsigned int file;
     int *id;
@@ -5951,6 +5950,8 @@ static void open_input_files(
     Bool useWeathFileArray;
 
 #if defined(SWMPI)
+    int domVar;
+
     if (rank == SW_MPI_ROOT) {
         nc_close(SW_PathInputs->ncDomFileIDs[vNCdom]);
         nc_close(SW_PathInputs->ncDomFileIDs[vNCprog]);
@@ -5977,12 +5978,12 @@ static void open_input_files(
 
     ForEachNCInKey(inKey) {
         if (!SW_netCDFIn->readInVars[inKey][0] || inKey == eSW_InDomain) {
+#if defined(SWMPI)
             if (inKey == eSW_InDomain) {
                 // Reopen domain and progress file
                 for (domVar = 0; domVar < SW_NVARDOM; domVar++) {
                     fileName = SW_PathInputs->ncInFiles[eSW_InDomain][domVar];
 
-#if defined(SWMPI)
                     SW_NC_open_par(
                         fileName,
                         (domVar == vNCdom) ? NC_NOWRITE : NC_WRITE,
@@ -5993,9 +5994,9 @@ static void open_input_files(
                     if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
                         return;
                     }
-#endif
                 }
             }
+#endif
             continue;
         }
 

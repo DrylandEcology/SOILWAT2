@@ -149,7 +149,7 @@ static void handle_logs(
     Bool sDom,
     size_t ncSuid[],
     size_t nSims,
-    Bool *runSucc,
+    Bool *runSucc, // NOLINT(readability-non-const-parameter)
     LOG_INFO *mainLog
 ) {
     /* tag_suid is 55:
@@ -787,7 +787,6 @@ wrapUp:
 #endif
 #else
     (void) tempSoils;
-    (void) *setupFail;
     (void) rank;
 #endif
 }
@@ -827,8 +826,10 @@ void SW_CTL_setup_domain(
     SW_DOMAIN *SW_Domain,
     LOG_INFO *LogInfo
 ) {
+#if defined(SWNETCDF)
     const Bool openInPar = swFALSE;
     const int openMode = NC_NOWRITE;
+#endif
 
     SW_F_construct(&SW_Domain->SW_PathInputs, LogInfo);
     if (LogInfo->stopRun) {
@@ -918,8 +919,6 @@ void SW_CTL_setup_domain(
         return; // Exit function prematurely due to error
     }
 #else
-    (void) openMode;
-    (void) openInPar;
     (void) renameDomainTemp;
 #endif
 
@@ -1611,7 +1610,7 @@ void SW_CTL_run_sw(
     size_t ncSuid[], // NOLINT(readability-non-const-parameter)
     Bool copyWeather,
     const size_t count[][2],
-    double *tempVals,
+    double *tempVals, // NOLINT(readability-non-const-parameter)
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *LogInfo
 ) {

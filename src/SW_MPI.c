@@ -1568,7 +1568,7 @@ suids for each input key
 */
 void SW_MPI_get_sim_suids(
     size_t **domSuids[],
-    Bool useIndexFile[],
+    const Bool useIndexFile[],
     size_t *readIndex,
     size_t *nSuidsLeft,
     size_t simSuids[SW_NINKEYSNC][N_SUID_ASSIGN][2],

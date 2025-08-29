@@ -606,6 +606,7 @@ void sw_setup_prog_data(
         }
     }
 #else
+    (void) prepareFiles;
     (void) rank;
     (void) worldSize;
 #endif

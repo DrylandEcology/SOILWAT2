@@ -797,7 +797,7 @@ static int gather_var_attributes(
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void store_time_sizes(
-    int openOutFileIDs[],
+    const int openOutFileIDs[],
     size_t **outKeyTimes,
     unsigned int numFiles,
     LOG_INFO *LogInfo
@@ -1022,7 +1022,7 @@ static void get_outvar_ids(
     char ***outputVarInfo,
     IntUS numVars,
     int outFileIDs[],
-    int numOutFiles,
+    unsigned int numOutFiles,
     int *ncOutVarIDs,
     LOG_INFO *LogInfo
 ) {
@@ -1031,7 +1031,7 @@ static void get_outvar_ids(
     int var;
 
 #if defined(SWMPI)
-    int file;
+    unsigned int file;
     int varID;
     int fileID;
 #endif
@@ -2404,18 +2404,18 @@ void SW_NCOUT_create_output_files(
                         }
                     }
                 }
-            }
 
-            get_outvar_ids(
-                SW_Domain->OutDom.netCDFOutput.outputVarInfo[key],
-                nvar_OUT[key],
-                SW_PathOutputs->openOutFileIDs[key][pd],
-                *numOutFiles,
-                SW_PathOutputs->ncOutVarIDs[key],
-                LogInfo
-            );
-            if (LogInfo->stopRun) {
-                return;
+                get_outvar_ids(
+                    SW_Domain->OutDom.netCDFOutput.outputVarInfo[key],
+                    nvar_OUT[key],
+                    SW_PathOutputs->openOutFileIDs[key][pd],
+                    *numOutFiles,
+                    SW_PathOutputs->ncOutVarIDs[key],
+                    LogInfo
+                );
+                if (LogInfo->stopRun) {
+                    return;
+                }
             }
         }
     }

@@ -3947,6 +3947,8 @@ void SW_OUT_create_files(
     if (LogInfo->printProgressMsg) {
         SW_MSG_ROOT("is creating output files ...", rank);
     }
+#else
+    (void) rank;
 #endif
 
 #if defined(SOILWAT) && defined(SW_OUTTEXT)
@@ -4009,6 +4011,10 @@ void SW_OUT_close_files(
     );
     (void) LogInfo;
     (void) OutDom;
+#else
+    (void) SW_PathOutputs;
+    (void) OutDom;
+    (void) LogInfo;
 #endif
 }
 

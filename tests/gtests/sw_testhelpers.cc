@@ -274,6 +274,7 @@ int setup_testGlobalSoilwatTemplate() {
     }
 
     SW_CTL_read_inputs_from_disk(
+        0,
         &template_SW_Run,
         &template_SW_Domain,
         &template_SW_Domain.hasConsistentSoilLayerDepths,

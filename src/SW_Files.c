@@ -54,6 +54,7 @@
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
+#if defined(SOILWAT)
 /**
 @brief Helper function to create a logfile name and create said file
 
@@ -83,6 +84,7 @@ static FILE *create_logfile(int rank, const char *fileName, LOG_INFO *LogInfo) {
 
     return OpenFile(fileNamePtr, "w", LogInfo);
 }
+#endif
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -251,6 +253,7 @@ void SW_F_read(int rank, SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
             create_logfile(rank, SW_PathInputs->txtInFiles[eLog], LogInfo);
     }
 #else
+    (void) rank;
     (void) logDir;
 #endif
 
