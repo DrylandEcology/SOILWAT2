@@ -1655,7 +1655,7 @@ void SW_CTL_run_sw(
     size_t **counts[SW_NINKEYSNC] = {NULL};
     size_t numReads[SW_NINKEYSNC] = {1, 1, 1, 1, 1, 1, 1, 1};
     double tempMonthlyVals[MAX_MONTHS] = {0.0};
-    double tempSiltVals[MAX_MONTHS] = {0.0};
+    double tempSiltVals[MAX_LAYERS] = {0.0};
     double tempSoilVals[MAX_LAYERS * SWRC_PARAM_NMAX] = {0.0};
     double tempElevation = 0;
     double tempWeath[MAX_DAYS] = {0.0};
