@@ -8643,7 +8643,7 @@ void SW_NCIN_open_dom_prog_files(
     int *ncDomFileIDs = SW_PathInputs->ncDomFileIDs;
 
     int fileNum;
-    int openType = NC_WRITE;
+    int openType;
     int *fileID;
     char ***inDomVarInfo = SW_netCDFIn->inVarInfo[eSW_InDomain];
     char *fileName;
@@ -8659,6 +8659,7 @@ void SW_NCIN_open_dom_prog_files(
         varName = inDomVarInfo[fileNum][INNCVARNAME];
 
         if (FileExists(fileName)) {
+            openType = (fileNum == vNCdom) ? NC_NOWRITE : NC_WRITE;
             SW_NC_open(fileName, openType, fileID, LogInfo);
             if (LogInfo->stopRun) {
                 return;
