@@ -1907,6 +1907,7 @@ static void get_path_info(
 @param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] comm MPI communicator to broadcast a message to
 @param[in] netCDFIn Constant netCDF input file information
+@param[in] domProgSame Specifies if the domain and progress are the same file
 @param[in,out] pathInputs Inputs Struct of type SW_PATH_INPUTS which
     holds basic information about input files and values
 @param[out] LogInfo Holds information on warnings and errors
@@ -1915,6 +1916,7 @@ static void open_input_files(
     int rank,
     MPI_Comm comm,
     SW_NETCDF_IN *netCDFIn,
+    Bool domProgSame,
     SW_PATH_INPUTS *pathInputs,
     LOG_INFO *LogInfo
 ) {
@@ -1944,13 +1946,18 @@ static void open_input_files(
                         goto freeFileDom;
                     }
 
-                    SW_NC_open_par(
-                        fileName,
-                        (domVar == vNCdom) ? NC_NOWRITE : NC_WRITE,
-                        comm,
-                        &pathInputs->ncDomFileIDs[domVar],
-                        LogInfo
-                    );
+                    if (domProgSame && domVar == vNCdom) {
+                        pathInputs->ncDomFileIDs[vNCprog] =
+                            pathInputs->ncDomFileIDs[vNCdom];
+                    } else {
+                        SW_NC_open_par(
+                            fileName,
+                            (domVar == vNCdom) ? NC_NOWRITE : NC_WRITE,
+                            comm,
+                            &pathInputs->ncDomFileIDs[domVar],
+                            LogInfo
+                        );
+                    }
                     if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
                         stop = swTRUE;
                         goto freeFileDom;
@@ -5013,13 +5020,20 @@ void SW_MPI_open_files(
 ) {
     MPI_Comm comm = desig->groupComm;
     char *logFileName = pathInputs->txtInFiles[eLog];
+    char **inDomFileNames = pathInputs->ncInFiles[eSW_InDomain];
+    char *domFile = inDomFileNames[vNCdom];
+    char *progFile = inDomFileNames[vNCprog];
+    Bool progFileDomain = (Bool) (strcmp(domFile, progFile) == 0);
 
     if (rank == SW_MPI_ROOT) {
         nc_close(pathInputs->ncDomFileIDs[vNCdom]);
-        nc_close(pathInputs->ncDomFileIDs[vNCprog]);
+
+        if (!progFileDomain) {
+            nc_close(pathInputs->ncDomFileIDs[vNCprog]);
+        }
     }
 
-    open_input_files(rank, comm, netCDFIn, pathInputs, LogInfo);
+    open_input_files(rank, comm, netCDFIn, progFileDomain, pathInputs, LogInfo);
     if (LogInfo->stopRun) {
         return;
     }

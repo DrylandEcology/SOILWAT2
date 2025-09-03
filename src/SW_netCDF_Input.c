@@ -8702,6 +8702,10 @@ void SW_NCIN_open_dom_prog_files(
 */
 void SW_NCIN_close_files(SW_PATH_INPUTS *SW_PathInputs) {
     int fileNum;
+    int domID = SW_PathInputs->ncDomFileIDs[vNCdom];
+    int progID = SW_PathInputs->ncDomFileIDs[vNCprog];
+    Bool domProgSame = (Bool) (progID == domID);
+    const int numDomFiles = (domProgSame) ? 1 : SW_NVARDOM;
 
 #if defined(SWMPI)
     SW_MPI_close_in_files(
@@ -8709,7 +8713,7 @@ void SW_NCIN_close_files(SW_PATH_INPUTS *SW_PathInputs) {
     );
 #endif
 
-    for (fileNum = 0; fileNum < SW_NVARDOM; fileNum++) {
+    for (fileNum = 0; fileNum < numDomFiles; fileNum++) {
         nc_close(SW_PathInputs->ncDomFileIDs[fileNum]);
     }
 }
