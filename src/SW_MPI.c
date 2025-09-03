@@ -2317,6 +2317,8 @@ static void free_type(MPI_Datatype *type, LOG_INFO *LogInfo) {
     of values
 @param[out] inputs A list of SW_RUN_INPUTS that will be distributed sent
     to compute processes
+@param[out] siteLogs A list of LOG_INFO of size N_SUID_ASSIGN that will
+be allocated space
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void alloc_inputs(
@@ -2332,6 +2334,7 @@ static void alloc_inputs(
     double **tempWeather,
     SW_SOIL_RUN_INPUTS **tempSoils,
     SW_RUN_INPUTS **inputs,
+    LOG_INFO **siteLogs,
     LOG_INFO *LogInfo
 ) {
     size_t input;
@@ -2400,6 +2403,13 @@ static void alloc_inputs(
 
     *tempWeather = (double *) Mem_Malloc(
         sizeof(double) * numInputs * MAX_DAYS, "alloc_inputs", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    *siteLogs = (LOG_INFO *) Mem_Malloc(
+        sizeof(LOG_INFO) * numInputs, "alloc_inputs", LogInfo
     );
     if (LogInfo->stopRun) {
         return;
@@ -2679,6 +2689,8 @@ static void alloc_IO_info(
     if the simulation for a suid was successfully run
 @param[out] succMark Buffer to hold write values to progress file that
     correspond to the values within `succFlags`
+@param[out] siteLogs A list of LOG_INFO of size N_SUID_ASSIGN that will
+be freed of the allocated space
 */
 static void dealloc_IO_info(
     size_t numSuids,
@@ -2699,7 +2711,8 @@ static void dealloc_IO_info(
     double **tempWeather,
     SW_SOIL_RUN_INPUTS **tempSoils,
     Bool **succFlags,
-    signed char **succMark
+    signed char **succMark,
+    LOG_INFO **siteLogs
 ) {
     int inKey;
     size_t ***deallocStartCount[2] = {NULL};
@@ -2715,7 +2728,8 @@ static void dealloc_IO_info(
         (void **) tempWeather,
         (void **) tempSoils,
         (void **) succFlags,
-        (void **) succMark
+        (void **) succMark,
+        (void **) siteLogs,
     };
     const size_t numDealloc1D = 9;
 
@@ -2925,6 +2939,9 @@ any final compute processes can be sent a signal to finish
 @param[in] inputType Custom MPI data type for sending SW_RUN_INPUTS
 @param[in] weathHistType Custom MPI type for transfering data for
     SW_WEATHER_HIST
+@param[in] logType Custom MPI data type for sending LOG_INFO
+@param[in] siteLogs A list of LOG_INFO of size N_SUID_ASSIGN that will
+be sent to compute processes so they know which sites to skip
 @param[in] inputs A list of input structs that will be distributed across
     compute processes
 @param[in] numInputs Total number of inputs that will be spread to
@@ -2944,6 +2961,8 @@ static void spread_inputs(
     SW_MPI_DESIGNATE *desig,
     MPI_Datatype inputType,
     MPI_Datatype weathHistType,
+    MPI_Datatype logType,
+    LOG_INFO *siteLogs,
     SW_RUN_INPUTS *inputs,
     size_t numInputs,
     Bool readWeather,
@@ -3014,6 +3033,16 @@ static void spread_inputs(
                         &nullReq
                     );
                 }
+
+                SW_MPI_Send(
+                    logType,
+                    &siteLogs[suid],
+                    (int) sendSize,
+                    destRank,
+                    swTRUE,
+                    0,
+                    &nullReq
+                );
 
                 // When a compute process is done with their workload(s) but
                 // other compute processes may have more work, so the completed
@@ -6000,6 +6029,8 @@ Process designation: Compute
 @param[out] extraFailCheck Specifies if, when a compute process is done with
     all workloads, the compute process should take part in an extra call to
     `SW_MPI_setup_fail()`
+@param[out] siteLogs A list of LOG_INFO of size N_SUID_ASSIGN that will contain
+any errors/warnings that the I/O process found when reading/processing inputs
 */
 void SW_MPI_get_inputs(
     Bool getWeather,
@@ -6007,9 +6038,11 @@ void SW_MPI_get_inputs(
     SW_MPI_DESIGNATE *desig,
     MPI_Datatype inputType,
     MPI_Datatype weathHistType,
+    MPI_Datatype logType,
     SW_RUN_INPUTS inputs[],
     size_t *numInputs,
-    Bool *extraFailCheck
+    Bool *extraFailCheck,
+    LOG_INFO *siteLogs
 ) {
     MPI_Request nullReq = MPI_REQUEST_NULL;
     size_t input;
@@ -6023,6 +6056,10 @@ void SW_MPI_get_inputs(
             inputType, &inputs[input], 1, desig->ioRank, swTRUE, 0, &nullReq
         );
     }
+
+    SW_MPI_Recv(
+        logType, siteLogs, (int) *numInputs, desig->ioRank, swTRUE, 0, &nullReq
+    );
 
     if (*numInputs == COMP_COMPLETE) {
         SW_MPI_Recv(
@@ -6143,6 +6180,8 @@ void SW_MPI_handle_IO(
     size_t maxWriteInst = (size_t) ceil(
         ((double) desig->nSuids) / ((double) (numSuidsTot * N_ITER_BEFORE_OUT))
     );
+    size_t logIndex;
+    LOG_INFO *siteLogs = NULL;
 
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
@@ -6192,6 +6231,7 @@ void SW_MPI_handle_IO(
         &tempWeather,
         &tempSoils,
         &inputs,
+        &siteLogs,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -6278,6 +6318,10 @@ checkStatus:
         // Do not attempt to read inputs because I/O process needs
         // to let it's other processes know that there was an error
         if (!LogInfo->stopRun && runSims) {
+            for (logIndex = 0; logIndex < numIterSuids; logIndex++) {
+                sw_init_logs(LogInfo->logfp, &siteLogs[logIndex]);
+            }
+
             set_walltime(&tsr, &ok_tsr);
             SW_NCIN_read_inputs(
                 sw,
@@ -6296,6 +6340,7 @@ checkStatus:
                 &distSUIDs[distSUIDWrite],
                 tempSoils,
                 inputs,
+                siteLogs,
                 LogInfo
             );
             SW_WT_TimeRun(tsr, ok_tsr, TIME_IO, SW_WallTime);
@@ -6317,6 +6362,8 @@ checkStatus:
                 desig,
                 inputType,
                 weathHistType,
+                logType,
+                siteLogs,
                 inputs,
                 inputsLeft,
                 readWeather,
@@ -6431,6 +6478,8 @@ checkStatus:
                 desig,
                 inputType,
                 weathHistType,
+                logType,
+                siteLogs,
                 inputs,
                 inputsLeft,
                 readWeather,
@@ -6518,7 +6567,8 @@ freeMem:
         &tempWeather,
         &tempSoils,
         &succFlags,
-        &succMark
+        &succMark,
+        &siteLogs
     );
 
     SW_MPI_write_main_logs(desig, logType, LogInfo);

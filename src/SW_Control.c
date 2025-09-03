@@ -601,9 +601,11 @@ checkStatus:
                 desig,
                 inputType,
                 weathHistType,
+                logType,
                 inputs,
                 &numInputs,
-                &extraFailCheck
+                &extraFailCheck,
+                local_LogInfo
             );
         }
 
@@ -1719,6 +1721,7 @@ void SW_CTL_run_sw(
         suid,
         &newSoil,
         &local_sw.RunIn,
+        LogInfo,
         LogInfo
     );
     SW_WT_TimeRun(tsr, ok_tsr, TIME_IO, SW_WallTime);

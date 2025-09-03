@@ -6751,6 +6751,8 @@ consistency checks.
     units to units that SW2 understands
 @param[in] ncSUID Current simulation unit identifier for which is used
     to get data from netCDF
+@param[in] siteLogs A list of LOG_INFO of size N_SUID_ASSIGN that will
+be returned with any site-specific errors/warnings
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void read_soil_inputs(
@@ -6772,7 +6774,8 @@ static void read_soil_inputs(
     SW_SOIL_RUN_INPUTS *newSoilBuff,
     SW_RUN_INPUTS *inputs,
     size_t **domSuids,
-    LOG_INFO *LogInfo
+    LOG_INFO *siteLogs,
+    LOG_INFO *mainLogInfo
 ) {
     char ***inVarInfo = SW_Domain->netCDFInput.inVarInfo[eSW_InSoil];
     Bool *readInputs = SW_Domain->netCDFInput.readInVars[eSW_InSoil];
@@ -6837,9 +6840,14 @@ static void read_soil_inputs(
 
 #if !defined(SWMPI)
     get_read_start(
-        useIndexFile, soilInFiles[0], inSiteDom, ncSUID, defSetStart, LogInfo
+        useIndexFile,
+        soilInFiles[0],
+        inSiteDom,
+        ncSUID,
+        defSetStart,
+        mainLogInfo
     );
-    if (LogInfo->stopRun) {
+    if (mainLogInfo->stopRun) {
         return;
     }
 #endif
@@ -6904,8 +6912,8 @@ static void read_soil_inputs(
             ncFileID = openSoilFileIDs[varNum][0];
 #else
             fileName = soilInFiles[varNum];
-            SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
-            if (LogInfo->stopRun) {
+            SW_NC_open(fileName, NC_NOWRITE, &ncFileID, mainLogInfo);
+            if (mainLogInfo->stopRun) {
                 return;
             }
 #endif
@@ -6966,10 +6974,15 @@ static void read_soil_inputs(
 
                 if (site == 0) {
                     get_values_multiple(
-                        ncFileID, varID, start, count, varName, readPtr, LogInfo
+                        ncFileID,
+                        varID,
+                        start,
+                        count,
+                        varName,
+                        readPtr,
+                        mainLogInfo
                     );
-
-                    if (LogInfo->stopRun) {
+                    if (mainLogInfo->stopRun) {
                         goto closeFile;
                     }
 
@@ -7046,11 +7059,8 @@ static void read_soil_inputs(
             &tempSilt[input * MAX_LAYERS],
             domSuids[input],
             progSiteDom,
-            LogInfo
+            &siteLogs[input]
         );
-        if (LogInfo->stopRun) {
-            goto closeFile;
-        }
 
         if (!hasConstSoilDepths) {
             memcpy(
@@ -7909,7 +7919,9 @@ to convert input data to units the program can understand within the
 @param[in] domSuids A list of program-domain suids of sites that will
     have the inputs read for (MPI only)
 @param[in] elevation Site elevation above sea level [m]
-@param[out] LogInfo Holds information on warnings and errors
+@param[in] siteLogs A list of LOG_INFO of size N_SUID_ASSIGN that will
+be returned with any site-specific errors/warnings
+@param[out] mainLogInfo Holds information on warnings and errors
 */
 static void read_weather_input(
     SW_DOMAIN *SW_Domain,
@@ -7927,7 +7939,8 @@ static void read_weather_input(
     double *tempVals,
     size_t **domSuids,
     SW_RUN_INPUTS *inputs,
-    LOG_INFO *LogInfo
+    LOG_INFO *siteLogs,
+    LOG_INFO *mainLogInfo
 ) {
     unsigned int **weathStartEndYrs =
         SW_Domain->SW_PathInputs.ncWeatherInStartEndYrs;
@@ -7987,17 +8000,17 @@ static void read_weather_input(
     }
 
     allocate_temp_weather(
-        SW_WeatherIn->n_years, numInputs, &tempWeatherHist, LogInfo
+        SW_WeatherIn->n_years, numInputs, &tempWeatherHist, mainLogInfo
     );
-    if (LogInfo->stopRun) {
+    if (mainLogInfo->stopRun) {
         goto closeFile;
     }
 
 #if !defined(SWMPI)
     get_read_start(
-        useIndexFile, indexFileName, inSiteDom, ncSUID, defSetStart, LogInfo
+        useIndexFile, indexFileName, inSiteDom, ncSUID, defSetStart, mainLogInfo
     );
-    if (LogInfo->stopRun) {
+    if (mainLogInfo->stopRun) {
         return;
     }
 #endif
@@ -8081,8 +8094,8 @@ static void read_weather_input(
                 ncFileID = weathFileIDs[varNum][weathFileIndex];
 #else
                 if (ncFileID == -1) {
-                    SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
-                    if (LogInfo->stopRun) {
+                    SW_NC_open(fileName, NC_NOWRITE, &ncFileID, mainLogInfo);
+                    if (mainLogInfo->stopRun) {
                         return;
                     }
                 }
@@ -8091,10 +8104,15 @@ static void read_weather_input(
 
                 /* Read in an entire year's worth of weather data */
                 get_values_multiple(
-                    ncFileID, varID, start, count, varName, tempVals, LogInfo
+                    ncFileID,
+                    varID,
+                    start,
+                    count,
+                    varName,
+                    tempVals,
+                    mainLogInfo
                 );
-
-                if (LogInfo->stopRun) {
+                if (mainLogInfo->stopRun) {
                     goto closeFile;
                 }
 
@@ -8139,7 +8157,7 @@ static void read_weather_input(
                         swFALSE,
                         &tempWeatherHist[yearIndex][varNum - 1][writeIndex]
                     );
-                    if (LogInfo->stopRun) {
+                    if (mainLogInfo->stopRun) {
                         goto closeFile;
                     }
 
@@ -8175,11 +8193,8 @@ static void read_weather_input(
             domSuids[input],
             progSiteDom,
             inputs[input].weathRunAllHist,
-            LogInfo
+            &siteLogs[input]
         );
-        if (LogInfo->stopRun) {
-            return;
-        }
     }
 
 closeFile:
@@ -8291,7 +8306,9 @@ to SW_Run
     SW_SOIL_RUN_INPUTS used as temporary storage when reading inputs
 @param[in] inputs A single instance (no SWMPI) or a list (SWMPI) of
     SW_RUN_INPUTS that will be filled by a normal or I/O process
-@param[out] LogInfo Holds information on warnings and errors
+@param[out] siteLogs A list of LOG_INFO of size N_SUID_ASSIGN that will
+be returned with any site-specific errors/warnings
+@param[out] mainLogInfo Holds information on warnings and errors
 */
 void SW_NCIN_read_inputs(
     SW_RUN *sw,
@@ -8310,7 +8327,8 @@ void SW_NCIN_read_inputs(
     size_t **domSuids,
     SW_SOIL_RUN_INPUTS *newSoils,
     SW_RUN_INPUTS *inputs,
-    LOG_INFO *LogInfo
+    LOG_INFO *siteLogs,
+    LOG_INFO *mainLogInfo
 ) {
     SW_WEATHER_INPUTS *SW_WeatherIn = &sw->WeatherIn;
     char ***ncInFiles = SW_Domain->SW_PathInputs.ncInFiles;
@@ -8341,9 +8359,9 @@ void SW_NCIN_read_inputs(
     if (readWeather) {
 #if !defined(SWMPI)
         SW_WTH_allocateAllWeather(
-            &sw->RunIn.weathRunAllHist, SW_WeatherIn->n_years, LogInfo
+            &sw->RunIn.weathRunAllHist, SW_WeatherIn->n_years, mainLogInfo
         );
-        if (LogInfo->stopRun) {
+        if (mainLogInfo->stopRun) {
             return;
         }
 #endif
@@ -8371,9 +8389,9 @@ void SW_NCIN_read_inputs(
             tempMonthlyVals,
             openNCFileIDs,
             inputs,
-            LogInfo
+            mainLogInfo
         );
-        if (LogInfo->stopRun || !runSims) {
+        if (mainLogInfo->stopRun || !runSims) {
             return;
         }
 
@@ -8418,9 +8436,10 @@ void SW_NCIN_read_inputs(
             tempWeath,
             domSuids,
             inputs,
-            LogInfo
+            siteLogs,
+            mainLogInfo
         );
-        if (LogInfo->stopRun || !runSims) {
+        if (mainLogInfo->stopRun || !runSims) {
             return;
         }
 
@@ -8433,9 +8452,9 @@ void SW_NCIN_read_inputs(
                 sw->ModelSim.days_in_month,
                 domSuids[input],
                 SW_Domain->netCDFInput.siteDoms[eSW_InDomain],
-                LogInfo
+                mainLogInfo
             );
-            if (LogInfo->stopRun) {
+            if (mainLogInfo->stopRun) {
                 return;
             }
         }
@@ -8453,9 +8472,9 @@ void SW_NCIN_read_inputs(
             vegFileIDs,
             tempMonthlyVals,
             inputs,
-            LogInfo
+            mainLogInfo
         );
-        if (LogInfo->stopRun || !runSims) {
+        if (mainLogInfo->stopRun || !runSims) {
             return;
         }
     }
@@ -8480,11 +8499,9 @@ void SW_NCIN_read_inputs(
             newSoils,
             inputs,
             domSuids,
-            LogInfo
+            siteLogs,
+            mainLogInfo
         );
-        if (LogInfo->stopRun || !runSims) {
-            return;
-        }
     }
 }
 

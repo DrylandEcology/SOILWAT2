@@ -227,9 +227,11 @@ void SW_MPI_get_inputs(
     SW_MPI_DESIGNATE *desig,
     MPI_Datatype inputType,
     MPI_Datatype weathHistType,
+    MPI_Datatype logType,
     SW_RUN_INPUTS inputs[],
     size_t *numInputs,
-    Bool *extraFailCheck
+    Bool *extraFailCheck,
+    LOG_INFO *siteLogs
 );
 
 void SW_MPI_handle_IO(
