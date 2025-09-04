@@ -3035,16 +3035,6 @@ static void spread_inputs(
                     );
                 }
 
-                SW_MPI_Send(
-                    logType,
-                    &siteLogs[suid],
-                    (int) sendSize,
-                    destRank,
-                    swTRUE,
-                    0,
-                    &nullReq
-                );
-
                 // When a compute process is done with their workload(s) but
                 // other compute processes may have more work, so the completed
                 // process will have to participate in the setup fail
@@ -3053,6 +3043,16 @@ static void spread_inputs(
                         MPI_INT,
                         &extraSetupCheck,
                         1,
+                        destRank,
+                        swTRUE,
+                        0,
+                        &nullReq
+                    );
+                } else {
+                    SW_MPI_Send(
+                        logType,
+                        &siteLogs[suid],
+                        (int) sendSize,
                         destRank,
                         swTRUE,
                         0,
@@ -6058,13 +6058,19 @@ void SW_MPI_get_inputs(
         );
     }
 
-    SW_MPI_Recv(
-        logType, siteLogs, (int) *numInputs, desig->ioRank, swTRUE, 0, &nullReq
-    );
-
     if (*numInputs == COMP_COMPLETE) {
         SW_MPI_Recv(
             MPI_INT, extraFailCheck, 1, desig->ioRank, swTRUE, 0, &nullReq
+        );
+    } else {
+        SW_MPI_Recv(
+            logType,
+            siteLogs,
+            (int) *numInputs,
+            desig->ioRank,
+            swTRUE,
+            0,
+            &nullReq
         );
     }
 
