@@ -8676,7 +8676,8 @@ void SW_NCIN_open_dom_prog_files(
         varName = inDomVarInfo[fileNum][INNCVARNAME];
 
         if (FileExists(fileName)) {
-            openType = (fileNum == vNCdom) ? NC_NOWRITE : NC_WRITE;
+            openType =
+                (fileNum == vNCdom && !progFileDomain) ? NC_NOWRITE : NC_WRITE;
             SW_NC_open(fileName, openType, fileID, LogInfo);
             if (LogInfo->stopRun) {
                 return;

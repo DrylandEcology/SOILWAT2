@@ -1952,7 +1952,8 @@ static void open_input_files(
                     } else {
                         SW_NC_open_par(
                             fileName,
-                            (domVar == vNCdom) ? NC_NOWRITE : NC_WRITE,
+                            (domVar == vNCdom && !domProgSame) ? NC_NOWRITE :
+                                                                 NC_WRITE,
                             comm,
                             &pathInputs->ncDomFileIDs[domVar],
                             LogInfo
