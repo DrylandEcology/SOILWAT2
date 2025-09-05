@@ -959,7 +959,7 @@ static void getProcInfo(
     int newSize = oldSize + allocInc;
     int oldSizeRanks = 0;
     Bool duplicate;
-    char rankProc[FILENAME_MAX];
+    char rankProc[SW_MAX_PROCESSOR_NAME];
 
     MPI_Request nullReq = MPI_REQUEST_NULL;
 
@@ -972,14 +972,14 @@ static void getProcInfo(
             SW_MPI_Recv(
                 MPI_CHAR,
                 rankProc,
-                MAX_FILENAMESIZE,
+                SW_MAX_PROCESSOR_NAME,
                 destRank,
                 swTRUE,
                 0,
                 &nullReq
             );
         } else {
-            memcpy(rankProc, rootProcName, FILENAME_MAX);
+            memcpy(rankProc, rootProcName, SW_MAX_PROCESSOR_NAME);
         }
 
         // Add to a list of unique node names (if not already present)
@@ -5656,7 +5656,7 @@ void SW_MPI_process_types(
         SW_MPI_Send(
             MPI_CHAR,
             procName,
-            MAX_FILENAMESIZE,
+            SW_MAX_PROCESSOR_NAME,
             SW_MPI_ROOT,
             swTRUE,
             0,
