@@ -6024,6 +6024,7 @@ Process designation: Compute
 @param[in] inputType Custom MPI data type for sending SW_RUN_INPUTS
 @param[in] weathHistType Custom MPI type for transfering data for
     SW_WEATHER_HIST
+@param[in] logType Custom MPI data type for sending LOG_INFO
 @param[out] inputs A list of SW_RUN_INPUTS that will be filled by an
     I/O process
 @param[out] numInputs Number of inputs that were sent to this process
