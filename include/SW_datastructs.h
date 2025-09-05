@@ -1129,8 +1129,8 @@ typedef struct {
     /** Relative directory path from current execution to the input files
 
         - SOILWAT2: SW_ProjDir is equivalent to ".".
-            The `firstfile` "files.in" contains the file names of input files that
-            are relative to the execution path, i.e., the directory provided via
+            The `firstfile` "files.in" contains the file names of input files
+       that are relative to the execution path, i.e., the directory provided via
             the `-d` option. For example,
                 a simulation project contains `Project/Input/siteparam.in`;
                 then, the user would run SOILWAT2 with `-d Project` and
