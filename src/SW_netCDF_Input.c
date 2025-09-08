@@ -7135,7 +7135,7 @@ static void compare_pft_strings(
 
 freeMem:
     for (pftStr = 0; pftStr < NVEGTYPES; pftStr++) {
-        if (!isnull(names)) {
+        if (!isnull(names[pftStr])) {
             free(names[pftStr]);
             names[pftStr] = NULL;
         }
