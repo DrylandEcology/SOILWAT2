@@ -1667,12 +1667,9 @@ freeMem:
 @param[in] readinGeoXName User-provided geographical x-axis name
 @param[in] readinProjYName User-provided projected y-axis name
 @param[in] readinProjXName User-provided projected x-axis name
-@param[in] siteName User-provided site dimension/variable "site" name
 @param[in] domFileID Domain netCDF file identifier
 @param[in] nDomainDims Number of dimensions the domain variable will have
 @param[in] primCRSIsGeo Specifies if the current CRS type is geographic
-@param[in] domType Type of domain in which simulations are running
-    (gridcell/sites)
 @param[in] deflateLevel Level of deflation that will be used for the created
 variable
 @param[out] LogInfo Holds information on warnings and errors
@@ -1685,11 +1682,9 @@ static void fill_domain_netCDF_domain(
     const char *readinGeoXName,
     const char *readinProjYName,
     const char *readinProjXName,
-    const char *siteName,
     int domFileID,
     int nDomainDims,
     Bool primCRSIsGeo,
-    const char *domType,
     int deflateLevel,
     LOG_INFO *LogInfo
 ) {
@@ -1698,8 +1693,7 @@ static void fill_domain_netCDF_domain(
                            (char *) "crs_geogsc" :
                            (char *) "crs_projsc: %s %s crs_geogsc: %s %s";
 
-    char *coordVal =
-        (strcmp(domType, "s") == 0) ? (char *) "%s %s %s" : (char *) "%s %s";
+    char *coordVal = (char *) "%s %s";
 
     const char *strAttNames[] = {
         "long_name", "units", "grid_mapping", "coordinates"
@@ -1714,20 +1708,9 @@ static void fill_domain_netCDF_domain(
     const int numAtts = 4;
 
     /* Fill dynamic coordinate names and replace them in `strAttNames` */
-    if (strcmp(domType, "s") == 0) {
-        (void) snprintf(
-            coordStr,
-            MAX_FILENAMESIZE,
-            coordVal,
-            readinGeoYName,
-            readinGeoXName,
-            siteName
-        );
-    } else {
-        (void) snprintf(
-            coordStr, MAX_FILENAMESIZE, coordVal, readinGeoYName, readinGeoXName
-        );
-    }
+    (void) snprintf(
+        coordStr, MAX_FILENAMESIZE, coordVal, readinGeoYName, readinGeoXName
+    );
     strAttVals[numAtts - 1] = coordStr;
 
     if (!primCRSIsGeo) {
@@ -4373,8 +4356,6 @@ created
 @param[in] deflateLevel Level of deflation that will be used for the created
 variable
 @param[in] inDomIsSite Specifies if the input file has sites or is gridded
-@param[in] siteDom Specifies that the programs domain has sites, otherwise
-it is gridded
 @param[in] numAtts Number of attributes to give to each index variable(s)
 @param[in] key Current input key these variables/file is meant for
 @param[in] indexFileName Name of the newly created index file
@@ -4382,8 +4363,6 @@ it is gridded
 latitude/y (user-provided)
 @param[in] geoXCoordName Name of the geographical coordinate variable/dimension
 longitude/x (user-provided)
-@param[in] domSiteName User-provided site variable/dimension name (if domain is
-not gridded)
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static void create_index_vars(
@@ -4395,13 +4374,11 @@ static void create_index_vars(
     int nDims,
     int deflateLevel,
     Bool inDomIsSite,
-    Bool siteDom,
     int numAtts,
     int key,
     char *indexFileName,
     char *geoYCoordName,
     char *geoXCoordName,
-    char *domSiteName,
     LOG_INFO *LogInfo
 ) {
     int varNum;
@@ -4414,7 +4391,7 @@ static void create_index_vars(
         (char *) "units",
         (char *) "coordinates"
     };
-    char *coordString = (siteDom) ? (char *) "%s %s %s" : (char *) "%s %s";
+    char *coordString = (char *) "%s %s";
 
     /* Size 3 - "long_name", "comment", "units" */
     /* Size 2 - maximum possible values to write out for variable(s) */
@@ -4462,24 +4439,13 @@ static void create_index_vars(
             indexVarAttVals[0][1] = (char *) "x-position of %s";
         }
 
-        if (siteDom) {
-            (void) snprintf(
-                tempCoord,
-                MAX_FILENAMESIZE,
-                coordString,
-                geoYCoordName,
-                geoXCoordName,
-                domSiteName
-            );
-        } else {
-            (void) snprintf(
-                tempCoord,
-                MAX_FILENAMESIZE,
-                coordString,
-                geoYCoordName,
-                geoXCoordName
-            );
-        }
+        (void) snprintf(
+            tempCoord,
+            MAX_FILENAMESIZE,
+            coordString,
+            geoYCoordName,
+            geoXCoordName
+        );
         indexVarAttVals[3][0] = (char *) tempCoord;
 
         for (attNum = 0; attNum < numAtts; attNum++) {
@@ -6899,6 +6865,8 @@ consistency checks.
     units to units that SW2 understands
 @param[in] ncSUID Current simulation unit identifier for which is used
     to get data from netCDF
+@param[in] siteLogs A list of LOG_INFO of size N_SUID_ASSIGN that will
+be returned with any site-specific errors/warnings
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void read_soil_inputs(
@@ -6918,7 +6886,8 @@ static void read_soil_inputs(
     SW_SOIL_RUN_INPUTS *newSoilBuff,
     SW_RUN_INPUTS *inputs,
     size_t domSuids[][2],
-    LOG_INFO *LogInfo
+    LOG_INFO *siteLogs,
+    LOG_INFO *mainLogInfo
 ) {
     char ***inVarInfo = SW_Domain->netCDFInput.inVarInfo[eSW_InSoil];
     Bool *readInputs = SW_Domain->netCDFInput.readInVars[eSW_InSoil];
@@ -6986,9 +6955,9 @@ static void read_soil_inputs(
 
 #if !defined(SWMPI)
     get_read_start(
-        useIndexFile, indexID, inSiteDom, ncSUID, defSetStart, LogInfo
+        useIndexFile, indexID, inSiteDom, ncSUID, defSetStart, mainLogInfo
     );
-    if (LogInfo->stopRun) {
+    if (mainLogInfo->stopRun) {
         return;
     }
 #endif
@@ -7107,10 +7076,15 @@ static void read_soil_inputs(
 
                 if (site == 0) {
                     get_values_multiple(
-                        ncFileID, varID, start, count, varName, readPtr, LogInfo
+                        ncFileID,
+                        varID,
+                        start,
+                        count,
+                        varName,
+                        readPtr,
+                        mainLogInfo
                     );
-
-                    if (LogInfo->stopRun) {
+                    if (mainLogInfo->stopRun) {
                         goto closeFile;
                     }
 
@@ -7182,11 +7156,8 @@ static void read_soil_inputs(
             &tempSilt[input * MAX_LAYERS],
             domSuids[input],
             progSiteDom,
-            LogInfo
+            &siteLogs[input]
         );
-        if (LogInfo->stopRun) {
-            goto closeFile;
-        }
 
         if (!hasConstSoilDepths) {
             memcpy(
@@ -7256,7 +7227,7 @@ static void compare_pft_strings(
 
 freeMem:
     for (pftStr = 0; pftStr < NVEGTYPES; pftStr++) {
-        if (!isnull(names)) {
+        if (!isnull(names[pftStr])) {
             free(names[pftStr]);
             names[pftStr] = NULL;
         }
@@ -7624,14 +7595,10 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     char *readinGeoXName = (primCRSIsGeo) ?
                                SW_Domain->OutDom.netCDFOutput.geo_XAxisName :
                                SW_Domain->OutDom.netCDFOutput.proj_XAxisName;
-    char *siteName = SW_Domain->OutDom.netCDFOutput.siteName;
 
-    Bool domTypeIsS = (Bool) (strcmp(SW_Domain->DomainType, "s") == 0);
     const char *projGridMap = "%s: %s %s %s: %s %s";
     const char *geoGridMap = SW_Domain->OutDom.netCDFOutput.crs_geogsc.crs_name;
-    const char *sCoord = "%s %s %s";
-    const char *xyCoord = "%s %s";
-    const char *coord = domTypeIsS ? sCoord : xyCoord;
+    const char *coord = (char *) "%s %s";
     const char *grid_map = primCRSIsGeo ? geoGridMap : projGridMap;
     char coordStr[MAX_FILENAMESIZE] = "\0";
     char gridMapStr[MAX_FILENAMESIZE] = "\0";
@@ -7671,20 +7638,9 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     const Bool openInPar = swFALSE;
 
     /* Fill dynamic coordinate names */
-    if (domTypeIsS) {
-        (void) snprintf(
-            coordStr,
-            MAX_FILENAMESIZE,
-            coord,
-            readinGeoYName,
-            readinGeoXName,
-            siteName
-        );
-    } else {
-        (void) snprintf(
-            coordStr, MAX_FILENAMESIZE, coord, readinGeoYName, readinGeoXName
-        );
-    }
+    (void) snprintf(
+        coordStr, MAX_FILENAMESIZE, coord, readinGeoYName, readinGeoXName
+    );
     attVals[numAtts - 1] = coordStr;
 
     if (!primCRSIsGeo) {
@@ -8059,11 +8015,9 @@ void SW_NCIN_create_domain_template(
         readinGeoXName,
         SW_Domain->OutDom.netCDFOutput.proj_YAxisName,
         SW_Domain->OutDom.netCDFOutput.proj_XAxisName,
-        SW_Domain->OutDom.netCDFOutput.siteName,
         *domFileID,
         nDomainDims,
         SW_Domain->OutDom.netCDFOutput.primary_crs_is_geographic,
-        SW_Domain->DomainType,
         SW_Domain->OutDom.netCDFOutput.deflateLevel,
         LogInfo
     );
@@ -8139,7 +8093,10 @@ to convert input data to units the program can understand within the
 "inWeather" input key
 @param[in] domSuids A list of program-domain suids of sites that will
     have the inputs read for (MPI only)
-@param[out] LogInfo Holds information on warnings and errors
+@param[in] elevation Site elevation above sea level [m]
+@param[in] siteLogs A list of LOG_INFO of size N_SUID_ASSIGN that will
+be returned with any site-specific errors/warnings
+@param[out] mainLogInfo Holds information on warnings and errors
 */
 static void read_weather_input(
     SW_DOMAIN *SW_Domain,
@@ -8154,7 +8111,8 @@ static void read_weather_input(
     double *tempVals,
     size_t domSuids[][2],
     SW_RUN_INPUTS *inputs,
-    LOG_INFO *LogInfo
+    LOG_INFO *siteLogs,
+    LOG_INFO *mainLogInfo
 ) {
     unsigned int **weathStartEndYrs =
         SW_Domain->SW_PathInputs.ncWeatherInStartEndYrs;
@@ -8216,17 +8174,17 @@ static void read_weather_input(
     }
 
     allocate_temp_weather(
-        SW_WeatherIn->n_years, numInputs, &tempWeatherHist, LogInfo
+        SW_WeatherIn->n_years, numInputs, &tempWeatherHist, mainLogInfo
     );
-    if (LogInfo->stopRun) {
+    if (mainLogInfo->stopRun) {
         goto closeFile;
     }
 
 #if !defined(SWMPI)
     get_read_start(
-        useIndexFile, indexID, inSiteDom, ncSUID, defSetStart, LogInfo
+        useIndexFile, indexID, inSiteDom, ncSUID, defSetStart, mainLogInfo
     );
-    if (LogInfo->stopRun) {
+    if (mainLogInfo->stopRun) {
         return;
     }
 #endif
@@ -8301,10 +8259,15 @@ static void read_weather_input(
 
                 /* Read in an entire year's worth of weather data */
                 get_values_multiple(
-                    ncFileID, varID, start, count, varName, tempVals, LogInfo
+                    ncFileID,
+                    varID,
+                    start,
+                    count,
+                    varName,
+                    tempVals,
+                    mainLogInfo
                 );
-
-                if (LogInfo->stopRun) {
+                if (mainLogInfo->stopRun) {
                     goto closeFile;
                 }
 
@@ -8349,7 +8312,7 @@ static void read_weather_input(
                         swFALSE,
                         &tempWeatherHist[yearIndex][varNum - 1][writeIndex]
                     );
-                    if (LogInfo->stopRun) {
+                    if (mainLogInfo->stopRun) {
                         goto closeFile;
                     }
 
@@ -8374,11 +8337,8 @@ static void read_weather_input(
             domSuids[input],
             progSiteDom,
             inputs[input].weathRunAllHist,
-            LogInfo
+            &siteLogs[input]
         );
-        if (LogInfo->stopRun) {
-            return;
-        }
     }
 
 closeFile:
@@ -8479,7 +8439,9 @@ to SW_Run
     SW_SOIL_RUN_INPUTS used as temporary storage when reading inputs
 @param[in] inputs A single instance (no SWMPI) or a list (SWMPI) of
     SW_RUN_INPUTS that will be filled by a normal or I/O process
-@param[out] LogInfo Holds information on warnings and errors
+@param[out] siteLogs A list of LOG_INFO of size N_SUID_ASSIGN that will
+be returned with any site-specific errors/warnings
+@param[out] mainLogInfo Holds information on warnings and errors
 */
 void SW_NCIN_read_inputs(
     SW_RUN *sw,
@@ -8494,7 +8456,8 @@ void SW_NCIN_read_inputs(
     size_t domSuids[][2],
     SW_SOIL_RUN_INPUTS *newSoils,
     SW_RUN_INPUTS *inputs,
-    LOG_INFO *LogInfo
+    LOG_INFO *siteLogs,
+    LOG_INFO *mainLogInfo
 ) {
     SW_WEATHER_INPUTS *SW_WeatherIn = &sw->WeatherIn;
     Bool **readInputs = SW_Domain->netCDFInput.readInVars;
@@ -8518,9 +8481,9 @@ void SW_NCIN_read_inputs(
     if (readWeather) {
 #if !defined(SWMPI)
         SW_WTH_allocateAllWeather(
-            &sw->RunIn.weathRunAllHist, SW_WeatherIn->n_years, LogInfo
+            &sw->RunIn.weathRunAllHist, SW_WeatherIn->n_years, mainLogInfo
         );
-        if (LogInfo->stopRun) {
+        if (mainLogInfo->stopRun) {
             return;
         }
 #endif
@@ -8547,9 +8510,9 @@ void SW_NCIN_read_inputs(
             tempVals,
             openNCFileIDs,
             inputs,
-            LogInfo
+            mainLogInfo
         );
-        if (LogInfo->stopRun || !runSims) {
+        if (mainLogInfo->stopRun || !runSims) {
             return;
         }
 
@@ -8591,9 +8554,10 @@ void SW_NCIN_read_inputs(
             tempVals,
             domSuids,
             inputs,
-            LogInfo
+            siteLogs,
+            mainLogInfo
         );
-        if (LogInfo->stopRun || !runSims) {
+        if (mainLogInfo->stopRun || !runSims) {
             return;
         }
 
@@ -8606,9 +8570,9 @@ void SW_NCIN_read_inputs(
                 sw->ModelSim.days_in_month,
                 domSuids[input],
                 SW_Domain->netCDFInput.siteDoms[eSW_InDomain],
-                LogInfo
+                mainLogInfo
             );
-            if (LogInfo->stopRun) {
+            if (mainLogInfo->stopRun) {
                 return;
             }
         }
@@ -8625,9 +8589,9 @@ void SW_NCIN_read_inputs(
             vegFileIDs,
             tempVals,
             inputs,
-            LogInfo
+            mainLogInfo
         );
-        if (LogInfo->stopRun || !runSims) {
+        if (mainLogInfo->stopRun || !runSims) {
             return;
         }
     }
@@ -8650,11 +8614,9 @@ void SW_NCIN_read_inputs(
             newSoils,
             inputs,
             domSuids,
-            LogInfo
+            siteLogs,
+            mainLogInfo
         );
-        if (LogInfo->stopRun || !runSims) {
-            return;
-        }
     }
 }
 
@@ -8820,7 +8782,7 @@ void SW_NCIN_open_dom_prog_files(
     int *ncDomFileIDs = SW_PathInputs->ncDomFileIDs;
 
     int fileNum;
-    int openType = NC_WRITE;
+    int openType;
     int *fileID;
     char ***inDomVarInfo = SW_netCDFIn->inVarInfo[eSW_InDomain];
     char *fileName;
@@ -8836,6 +8798,8 @@ void SW_NCIN_open_dom_prog_files(
         varName = inDomVarInfo[fileNum][INNCVARNAME];
 
         if (FileExists(fileName)) {
+            openType =
+                (fileNum == vNCdom && !progFileDomain) ? NC_NOWRITE : NC_WRITE;
             SW_NC_open(fileName, openType, fileID, LogInfo);
             if (LogInfo->stopRun) {
                 return;
@@ -8916,12 +8880,16 @@ void SW_NCIN_close_in_files(int **openInFileIDs[], unsigned int numWeathFiles) {
 */
 void SW_NCIN_close_files(SW_PATH_INPUTS *SW_PathInputs) {
     int fileNum;
+    int domID = SW_PathInputs->ncDomFileIDs[vNCdom];
+    int progID = SW_PathInputs->ncDomFileIDs[vNCprog];
+    Bool domProgSame = (Bool) (progID == domID);
+    const int numDomFiles = (domProgSame) ? 1 : SW_NVARDOM;
 
     SW_NCIN_close_in_files(
         SW_PathInputs->openInFileIDs, SW_PathInputs->ncNumWeatherInFiles
     );
 
-    for (fileNum = 0; fileNum < SW_NVARDOM; fileNum++) {
+    for (fileNum = 0; fileNum < numDomFiles; fileNum++) {
         nc_close(SW_PathInputs->ncDomFileIDs[fileNum]);
     }
 }
@@ -10015,7 +9983,6 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     int dimIDs[2][2] = {{0}}; /* Up to two dims for two variables */
     Bool inHasSite = swFALSE;
     Bool siteDom = (Bool) (strcmp(SW_Domain->DomainType, "s") == 0);
-    char *siteName = SW_Domain->OutDom.netCDFOutput.siteName;
     char *domYName = SW_Domain->OutDom.netCDFOutput.geo_YAxisName;
     char *domXName = SW_Domain->OutDom.netCDFOutput.geo_XAxisName;
     char *indexVarNames[2] = {NULL, NULL};
@@ -10168,13 +10135,11 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     indexVarNDims,
                     SW_Domain->OutDom.netCDFOutput.deflateLevel,
                     inHasSite,
-                    siteDom,
                     numAtts,
                     k,
                     indexName,
                     domYName,
                     domXName,
-                    siteName,
                     LogInfo
                 );
                 if (LogInfo->stopRun) {

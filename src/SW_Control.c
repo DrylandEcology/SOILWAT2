@@ -535,6 +535,7 @@ void SW_CTL_RunSimSet(
 #if defined(SWNETCDF)
 #if defined(SWMPI)
     SW_RUN_INPUTS inputs[N_SUID_ASSIGN];
+    LOG_INFO siteLogs[N_SUID_ASSIGN];
     SW_OUT_RUN tempOut;
     size_t simSuids[SW_NINKEYSNC][N_SUID_ASSIGN][2] = {{{0}}};
     size_t starts[SW_NINKEYSNC][N_SUID_ASSIGN][2] = {{{0}}};
@@ -549,10 +550,12 @@ void SW_CTL_RunSimSet(
     size_t numSiteSimed;
     size_t numInputs = 1;
     size_t domReadIndex = 0;
+    int logIndex;
 #endif // SWMPI
     Bool allocSoils = SW_Domain->netCDFInput.readInVars[eSW_InSoil][0];
 
     copyWeather = (Bool) (!SW_Domain->netCDFInput.readInVars[eSW_InWeather][0]);
+    LOG_INFO *siteLog = &local_LogInfo;
 #endif // SWNETCDF
 
 #if !defined(SWMPI)
@@ -614,6 +617,10 @@ checkStatus:
            runSims) {
         Bool succFlags[N_SUID_ASSIGN] = {swFALSE};
 
+        for (logIndex = 0; logIndex < N_SUID_ASSIGN; logIndex++) {
+            sw_init_logs(main_LogInfo->logfp, &siteLogs[logIndex]);
+        }
+
         numInputs = 0;
         SW_MPI_read_inputs(
             sw_template,
@@ -628,6 +635,7 @@ checkStatus:
             tempSoils,
             inputs,
             SW_WallTime,
+            siteLogs,
             main_LogInfo
         );
         if (SW_MPI_setup_fail(main_LogInfo->stopRun, MPI_COMM_WORLD)) {
@@ -641,8 +649,6 @@ checkStatus:
 
         /* Loop over suids in simulation set of domain */
         for (suid = startSim; suid < endSim && runSims; suid++) {
-            sw_init_logs(main_LogInfo->logfp, &local_LogInfo);
-
             /* Check wall time against limit */
             if (SW_WallTime->has_walltime &&
                 GT(diff_walltime(SW_WallTime->timeStart, swTRUE),
@@ -650,7 +656,11 @@ checkStatus:
                 goto wrapUp; // wall time (nearly) exhausted, return early
             }
 
-#if !defined(SWMPI)
+#if defined(SWMPI)
+            siteLog = &siteLogs[suid];
+#else
+            sw_init_logs(main_LogInfo->logfp, &local_LogInfo);
+
             /* Check if suid needs to be simulated */
             SW_DOM_calc_ncSuid(SW_Domain, suid, ncSuid);
 
@@ -659,7 +669,7 @@ checkStatus:
             );
 #endif
 
-            if (ok_suid && !local_LogInfo.stopRun && runSims &&
+            if (ok_suid && !siteLog->stopRun && runSims &&
                 !main_LogInfo->stopRun) {
 
                 /* Count simulation run */
@@ -681,7 +691,7 @@ checkStatus:
                     NULL,
                     tempVals,
                     SW_WallTime,
-                    &local_LogInfo
+                    siteLog
                 );
                 (void) count;
 #else
@@ -695,7 +705,7 @@ checkStatus:
                 count,
                 tempVals,
                 SW_WallTime,
-                &local_LogInfo
+                siteLog
             );
 #endif
 
@@ -706,12 +716,12 @@ checkStatus:
 #if !defined(SWMPI)
                 /* Report progress for suid */
                 SW_DOM_SetProgress(
-                    local_LogInfo.stopRun,
+                    siteLog->stopRun,
                     progFileID,
                     progVarID,
                     ncSuid,
                     count[0],
-                    &local_LogInfo
+                    siteLog
                 );
 #endif
             }
@@ -723,7 +733,7 @@ checkStatus:
 #endif
 
             handle_logs(
-                &local_LogInfo,
+                siteLog,
                 SW_Domain,
                 sDom,
                 ncSuid,
@@ -831,10 +841,7 @@ void SW_CTL_setup_domain(
     const int openMode = NC_NOWRITE;
 #endif
 
-    SW_F_construct(&SW_Domain->SW_PathInputs, LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
+    SW_F_construct(&SW_Domain->SW_PathInputs);
 
     SW_F_read(rank, &SW_Domain->SW_PathInputs, LogInfo);
     if (LogInfo->stopRun) {
@@ -1683,6 +1690,7 @@ void SW_CTL_run_sw(
         suid,
         &newSoil,
         &local_sw.RunIn,
+        LogInfo,
         LogInfo
     );
     SW_WT_TimeRun(tsr, ok_tsr, TIME_IO, SW_WallTime);

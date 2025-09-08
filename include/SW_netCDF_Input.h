@@ -141,7 +141,8 @@ void SW_NCIN_read_inputs(
     size_t domSuids[][2],
     SW_SOIL_RUN_INPUTS *newSoils,
     SW_RUN_INPUTS *inputs,
-    LOG_INFO *LogInfo
+    LOG_INFO *siteLogs,
+    LOG_INFO *mainLogInfo
 );
 
 void SW_NCIN_check_input_config(

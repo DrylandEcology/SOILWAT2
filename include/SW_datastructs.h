@@ -1122,7 +1122,34 @@ typedef struct {
 
 typedef struct {
     char *txtInFiles[SW_NFILES];
-    char SW_ProjDir[FILENAME_MAX]; // SW_ProjDir
+
+    /** Relative directory path from current execution to the input files
+
+        - SOILWAT2: SW_ProjDir is equivalent to ".".
+            The `firstfile` "files.in" contains the file names of input files
+       that are relative to the execution path, i.e., the directory provided via
+            the `-d` option. For example,
+                a simulation project contains `Project/Input/siteparam.in`;
+                then, the user would run SOILWAT2 with `-d Project` and
+                `firstfile` contains "Input/siteparam.in".
+                The location of the `firstfile` does not matter.
+        - rSOILWAT2: unused.
+        - STEPWAT2: SW_ProjDir describes the relative path between STEPWAT2's
+            execution path and the folder with its copy of SOILWAT2 inputs.
+            STEPWAT2 sets SW_ProjDir to the directory part of its
+            SOILWAT2's `firstfile` copy. This `firstfile` contains the
+            file names of SOILWAT2 input files that are relative to the STEPWAT2
+            copy of the folder with SOILWAT2 inputs. For example,
+                a simulation project contains
+                `Project/Input/sxw/files_SOILWAT2.in` and
+                `Project/Input/sxw/Input/siteparam.in`;
+                then, the user would run STEPWAT2 with `-d Project`,
+                the `sxw.in` file contains "Input/sxw/files_SOILWAT2.in" and
+                the SOILWAT2 `firstfile` contains "Input/siteparam.in".
+                The location of the `firstfile` is important.
+    */
+    char SW_ProjDir[FILENAME_MAX];
+
     char txtWeatherPrefix[FILENAME_MAX];
     char outputPrefix[FILENAME_MAX];
 

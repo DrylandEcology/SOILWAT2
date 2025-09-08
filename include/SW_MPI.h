@@ -176,6 +176,7 @@ void SW_MPI_read_inputs(
     SW_SOIL_RUN_INPUTS *tempSoils,
     SW_RUN_INPUTS *runInputs,
     SW_WALLTIME *SW_WallTime,
+    LOG_INFO *siteLogs,
     LOG_INFO *LogInfo
 );
 

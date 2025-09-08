@@ -81,7 +81,7 @@ void SW_F_deepCopy(
 
 void SW_F_init_ptrs(SW_PATH_INPUTS *SW_PathInputs);
 
-void SW_F_construct(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo);
+void SW_F_construct(SW_PATH_INPUTS *SW_PathInputs);
 
 void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs);
 

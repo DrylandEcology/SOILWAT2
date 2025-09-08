@@ -1635,6 +1635,8 @@ with input data from netCDFs
 @param[out] SW_WallTime Struct of type SW_WALLTIME that holds timing
     information for the program run including partitioning into
     I/O (SWNETCDF) and compute (SWNETCDF, SWMPI) times
+@param[out] siteLogs A list of LOG_INFO of size N_SUID_ASSIGN that will
+be returned with any site-specific errors/warnings
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_MPI_read_inputs(
@@ -1650,6 +1652,7 @@ void SW_MPI_read_inputs(
     SW_SOIL_RUN_INPUTS *tempSoils,
     SW_RUN_INPUTS *runInputs,
     SW_WALLTIME *SW_WallTime,
+    LOG_INFO *siteLogs,
     LOG_INFO *LogInfo
 ) {
     int inKey;
@@ -1701,6 +1704,7 @@ void SW_MPI_read_inputs(
         simSuids[eSW_InDomain],
         tempSoils,
         runInputs,
+        siteLogs,
         LogInfo
     );
     SW_WT_TimeRun(tsr, ok_tsr, TIME_IO, SW_WallTime);
