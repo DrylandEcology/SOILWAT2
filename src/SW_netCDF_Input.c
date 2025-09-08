@@ -3993,8 +3993,8 @@ static void calc_temporal_weather_indices(
     weathInFiles = SW_PathInputs->ncWeatherInFiles[varIndex];
     timeName = SW_netCDFIn->inVarInfo[eSW_InWeather][varIndex][INTAXIS];
 
-    weatherCal = SW_netCDFIn->weathCalOverride[varIndex];
-    hasCalOverride = (Bool) (strcmp(weatherCal, "NA") != 0);
+    hasCalOverride =
+        (Bool) (strcmp(SW_netCDFIn->weathCalOverride[varIndex], "NA") != 0);
 
     SW_NCIN_alloc_weather_indices_years(
         &SW_PathInputs->ncWeatherStartEndIndices,
