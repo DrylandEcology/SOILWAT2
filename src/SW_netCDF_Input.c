@@ -4164,33 +4164,20 @@ freeMem: {
 
 /**
 @brief Free provided temporary locations for coordinate values
-and close open files
 
 @param[out] tempCoords A list holding all of the temporary coordinate
 lists to (possibly) be freed
-@param[in,out] fileID A list holding all nc file identifiers to (possibly)
-close
 @param[in] numCoordVars Number of coordinate variables to free
-@param[in] numFiles Number of nc files to close
 */
 static void free_tempcoords_close_files(
-    double ***tempCoords, int *fileIDs[], int numCoordVars, int numFiles
+    double ***tempCoords, int numCoordVars
 ) {
-    const int closeSecondFileNumFiles = 1;
     int index;
-    int startFileClose = (numFiles == closeSecondFileNumFiles) ? 1 : 0;
 
     for (index = 0; index < numCoordVars; index++) {
         if (!isnull(*(tempCoords[index]))) {
             free((void *) *(tempCoords[index]));
             *(tempCoords[index]) = NULL;
-        }
-    }
-
-    for (index = startFileClose; index < numFiles; index++) {
-        if (*(fileIDs[index]) > -1) {
-            nc_close(*(fileIDs[index]));
-            *(fileIDs[index]) = -1;
         }
     }
 }
@@ -4247,7 +4234,7 @@ static void determine_indexfile_use(
     int ncFileID;
     int fIndex;
 
-    char *fileName;
+    char *fileName = NULL;
     char *axisNames[2] = {NULL, NULL}; /* Set later */
     char *yDimName;
     char *gridMap;
@@ -4262,7 +4249,6 @@ static void determine_indexfile_use(
     double *tempX = NULL;
     double **freeArr[] = {&tempY, &tempX};
     const int numFreeArr = 2;
-    const int numFileClose = 0;
     unsigned int weathFileIndex = SW_PathInputs->weathStartFileIndex;
 
     ForEachNCInKey(k) {
@@ -4330,9 +4316,7 @@ static void determine_indexfile_use(
         freeMem:
             nc_close(ncFileID);
 
-            free_tempcoords_close_files(
-                freeArr, NULL, numFreeArr, numFileClose
-            );
+            free_tempcoords_close_files(freeArr, numFreeArr);
             if (LogInfo->stopRun) {
                 return;
             }
@@ -8655,14 +8639,14 @@ void SW_NCIN_check_input_config(
 */
 void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     int inKey;
-    int file;
+    int var;
     int indexFileID = -1;
     int inFileID = -1;
+    int file;
     int *fileID;
-    int *fileIDs[] = {&indexFileID, &inFileID};
-    const int numFiles = 2;
+    const int firstFile = 0;
+    const int indexVar = 0;
 
-    char *fileName;
     char **fileNames;
     char **varInfo;
     char **indexVarInfo;
@@ -8681,26 +8665,24 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             indexVarInfo = SW_Domain->netCDFInput.inVarInfo[inKey][0];
             fileNames = SW_Domain->SW_PathInputs.ncInFiles[inKey];
 
-            for (file = 0; file < numVarsInKey[inKey]; file++) {
-                if (readInVars[inKey][file + 1] &&
-                    (file > 0 || (file == 0 && useIndexFile[inKey]))) {
+            for (var = 0; var < numVarsInKey[inKey]; var++) {
+                if (readInVars[inKey][var + 1] &&
+                    (var > indexVar || (var == indexVar && useIndexFile[inKey])
+                    )) {
 
-                    fileIsIndex = (Bool) (file == 0);
+                    fileIsIndex = (Bool) (var == indexVar);
                     fileID = (fileIsIndex) ? &indexFileID : &inFileID;
-                    varInfo = SW_Domain->netCDFInput.inVarInfo[inKey][file];
-                    fileName = (inKey == eSW_InWeather && file > 0) ?
-                                   SW_Domain->SW_PathInputs
-                                       .ncWeatherInFiles[file][weathFileIndex] :
-                                   fileNames[file];
+                    file = (inKey == eSW_InWeather && var > indexVar) ?
+                               weathFileIndex :
+                               firstFile;
+                    varInfo = SW_Domain->netCDFInput.inVarInfo[inKey][var];
                     primCRSIsGeo =
                         (Bool) (strcmp(
                                     varInfo[INGRIDMAPPING], "latitude_longitude"
                                 ) == 0);
 
-                    SW_NC_open(fileName, NC_NOWRITE, fileID, LogInfo);
-                    if (LogInfo->stopRun) {
-                        return;
-                    }
+                    *fileID = SW_Domain->SW_PathInputs
+                                  .openInFileIDs[inKey][var][file];
 
                     /* Check the current input file either against the
                        domain (current file is an index file or the input
@@ -8711,21 +8693,18 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                         SW_NC_check(
                             SW_Domain,
                             fileID,
-                            fileNames[file],
+                            fileNames[var],
                             openInPar,
                             openMode,
                             LogInfo
                         );
                     } else if (readInVars[inKey][1] && useIndexFile[inKey]) {
-                        if (primCRSIsGeo) {
-                            crsName = varInfo[INCRSNAME];
-                        } else {
-                            crsName = indexVarInfo[INCRSNAME];
-                        }
+                        crsName = (primCRSIsGeo) ? varInfo[INCRSNAME] :
+                                                   indexVarInfo[INCRSNAME];
 
                         /* index file exists */
                         check_input_file_against_index(
-                            SW_Domain->netCDFInput.inVarInfo[inKey][file],
+                            SW_Domain->netCDFInput.inVarInfo[inKey][var],
                             indexFileID,
                             inFileID,
                             crsName,
@@ -8745,21 +8724,13 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                             goto closeFile;
                         }
                     }
-
-                    if (file > 0) {
-                        nc_close(inFileID);
-                        inFileID = -1;
-                    }
                 }
             }
-
-            nc_close(indexFileID);
-            indexFileID = -1;
         }
     }
 
 closeFile:
-    free_tempcoords_close_files(NULL, fileIDs, 0, numFiles);
+    free_tempcoords_close_files(NULL, 0);
 }
 
 /**
@@ -10006,7 +9977,6 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         SW_Domain->netCDFInput.inVarInfo[eSW_InDomain][0][INNCVARNAME];
     unsigned int weatherFileIndex =
         SW_Domain->SW_PathInputs.weathStartFileIndex;
-    char *fileName;
     int indexVarNDims = 0;
     int numVarsToWrite = 0;
     Bool has2DCoordVars;
@@ -10018,10 +9988,9 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     double *useDomXVals;
 
     double **freeArr[] = {&inputYVals, &inputXVals};
-    int *fileIDs[] = {&templateID, &ncFileID};
-    const int numFree = 1;
     const int numCoordVars = 2;
     const int indexFile = 0;
+    const int firstFile = 0;
 
     char ***varInfo = NULL;
 
@@ -10062,10 +10031,12 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                 }
 
                 if (k == eSW_InWeather) {
-                    fileName = SW_Domain->SW_PathInputs
-                                   .ncWeatherInFiles[fIndex][weatherFileIndex];
+                    ncFileID = SW_Domain->SW_PathInputs
+                                   .openInFileIDs[eSW_InWeather][fIndex]
+                                                 [weatherFileIndex];
                 } else {
-                    fileName = SW_Domain->SW_PathInputs.ncInFiles[k][fIndex];
+                    ncFileID = SW_Domain->SW_PathInputs
+                                   .openInFileIDs[k][fIndex][indexFile];
                 }
 
                 inPrimCRSIsGeo = (Bool) (strcmp(
@@ -10085,11 +10056,6 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     domXSize = SW_netCDFIn->domXCoordProjSize;
                 }
 
-                SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
-                if (LogInfo->stopRun) {
-                    return;
-                }
-
                 SW_NC_create_template(
                     SW_Domain->DomainType,
                     domFile,
@@ -10104,8 +10070,8 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     return; /* Exit function prematurely due to error */
                 }
 
-                SW_Domain->SW_PathInputs.openInFileIDs[k][indexFile][0] =
-                    templateID;
+                SW_Domain->SW_PathInputs
+                    .openInFileIDs[k][indexFile][firstFile] = templateID;
                 inHasSite = SW_Domain->netCDFInput.siteDoms[k];
 
                 get_index_vars_info(
@@ -10166,7 +10132,6 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     goto freeMem;
                 }
 
-                nc_close(ncFileID);
                 ncFileID = -1;
 
                 /* Create and query the KD-tree then write to the index file */
@@ -10196,13 +10161,11 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     goto freeMem;
                 }
 
-                free_tempcoords_close_files(
-                    freeArr, fileIDs, numCoordVars, numFree
-                );
+                free_tempcoords_close_files(freeArr, numCoordVars);
             }
         }
     }
 
 freeMem:
-    free_tempcoords_close_files(freeArr, fileIDs, numCoordVars, numFree);
+    free_tempcoords_close_files(freeArr, numCoordVars);
 }
