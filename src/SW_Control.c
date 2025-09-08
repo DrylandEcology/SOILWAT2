@@ -659,14 +659,13 @@ checkStatus:
 #if defined(SWMPI)
             siteLog = &siteLogs[suid];
 #else
-            sw_init_logs(main_LogInfo->logfp, &local_LogInfo);
+        sw_init_logs(main_LogInfo->logfp, &local_LogInfo);
 
-            /* Check if suid needs to be simulated */
-            SW_DOM_calc_ncSuid(SW_Domain, suid, ncSuid);
+        /* Check if suid needs to be simulated */
+        SW_DOM_calc_ncSuid(SW_Domain, suid, ncSuid);
 
-            ok_suid = SW_DOM_CheckProgress(
-                progFileID, progVarID, ncSuid, &local_LogInfo
-            );
+        ok_suid =
+            SW_DOM_CheckProgress(progFileID, progVarID, ncSuid, &local_LogInfo);
 #endif
 
             if (ok_suid && !siteLog->stopRun && runSims &&
@@ -733,13 +732,7 @@ checkStatus:
 #endif
 
             handle_logs(
-                siteLog,
-                SW_Domain,
-                sDom,
-                ncSuid,
-                nSims,
-                succRun,
-                main_LogInfo
+                siteLog, SW_Domain, sDom, ncSuid, nSims, succRun, main_LogInfo
             );
             if (main_LogInfo->stopRun) {
 #if defined(SWMPI)
