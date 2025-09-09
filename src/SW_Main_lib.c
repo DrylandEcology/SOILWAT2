@@ -422,11 +422,6 @@ void sw_init_logs(FILE *logInitPtr, LOG_INFO *LogInfo) {
     LogInfo->numWarnings = 0;
     LogInfo->numDomainWarnings = 0;
     LogInfo->numDomainErrors = 0;
-
-#if defined(SWMPI)
-    LogInfo->logfps = NULL;
-    LogInfo->numFiles = 0;
-#endif
 }
 
 /**

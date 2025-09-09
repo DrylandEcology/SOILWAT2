@@ -1098,11 +1098,6 @@ typedef struct {
     if it's NULL or not NULL (where NULL represents silent mode). */
     FILE *logfp;
 
-#if defined(SWMPI)
-    FILE **logfps; /**< Store file pointers to all I/O process ranks */
-    int numFiles;
-#endif
-
     char errorMsg[MAX_LOG_SIZE], // Holds the message for a fatal error
         warningMsgs[MAX_MSGS][MAX_LOG_SIZE]; // Holds up to MAX_MSGS warning
                                              // messages to report
