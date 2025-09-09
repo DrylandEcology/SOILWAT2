@@ -613,12 +613,16 @@ checkStatus:
     (void) signal(SIGTERM, handle_interrupt);
 
 #if defined(SWMPI)
-    while ((SW_Domain->nProcSuids > 0 || (extraIter && numInputs > 0)) &&
+    while ((SW_Domain->nProcSuids > 0 || (extraIter && numInputs == 0)) &&
            runSims) {
         Bool succFlags[N_SUID_ASSIGN] = {swFALSE};
 
         for (logIndex = 0; logIndex < N_SUID_ASSIGN; logIndex++) {
             sw_init_logs(main_LogInfo->logfp, &siteLogs[logIndex]);
+        }
+
+        if (extraIter && numInputs == 0) {
+            extraIter = swFALSE;
         }
 
         numInputs = 0;
