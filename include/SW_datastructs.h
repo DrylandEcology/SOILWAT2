@@ -1743,7 +1743,7 @@ typedef struct {
                               (root process only) */
     size_t
         nProcSuids; /**< Number of suids that will be controlled by a process */
-    size_t **domSuids[SW_NINKEYSNC]; /**< A list of suids to describe the
+    size_t *domSuids[SW_NINKEYSNC]; /**< A list of suids to describe the
                                         domain; this includes translated suids
                                         for input keys if necessary */
 #endif

@@ -28,18 +28,6 @@
 /*                  Local Definitions                  */
 /* --------------------------------------------------- */
 
-#define FAIL_ALLOC_DESIG 0
-#define FAIL_ROOT_SETUP 1
-#define FAIL_ROOT_SEND 2
-#define FAIL_ALLOC_SUIDS 3
-#define FAIL_ALLOC_TSUIDS 4
-
-#define REQ_OUT_LOG 0
-#define REQ_OUT_NC 1
-#define REQ_OUT_BOTH 2
-
-#define COMP_COMPLETE 0
-
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
@@ -68,7 +56,6 @@ static void errorMPI(int rank, int mpiError) {
 @brief Deallocate helper memory that was allocated during the call to
     `SW_MPI_proc_workload()`
 
-@param[in] numActiveSites Number of active sites that will be simulated
 @param[in,out] activeSuids A list of domain SUIDs that was activated
     by the program and/or user given the progress input file; return
     the deallocation of this
@@ -79,20 +66,13 @@ static void errorMPI(int rank, int mpiError) {
 suids to assign to each process; return the deallocation of this
 */
 static void deallocProcHelpers(
-    size_t numActiveSites,
-    size_t ***activeSuids,
-    size_t ***activeTSuids,
-    size_t **nSuidsAssign
+    size_t **activeSuids, size_t *activeTSuids[], int **nSuidsAssign
 ) {
-    const int num2D = 4;
     const int num1D = 2;
     int var;
-    size_t pair;
     int inKey;
 
-    void **oneDimFree[] = {(void **) nSuidsAssign};
-
-    void ***twoDimFree[] = {(void ***) activeSuids};
+    void **oneDimFree[] = {(void **) nSuidsAssign, (void **) activeSuids};
 
     for (var = 0; var < num1D; var++) {
         if (!isnull((void *) (*oneDimFree[var]))) {
@@ -101,28 +81,8 @@ static void deallocProcHelpers(
         }
     }
 
-    for (var = 0; var < num2D; var++) {
-        if (!isnull(*twoDimFree[var])) {
-            for (pair = 0; pair < numActiveSites; pair++) {
-                if (!isnull((*twoDimFree[var])[pair])) {
-                    free((*twoDimFree[var])[pair]);
-                    (*twoDimFree[var])[pair] = NULL;
-                }
-            }
-            free((void *) (*twoDimFree[var]));
-            (*twoDimFree[var]) = NULL;
-        }
-    }
-
     ForEachNCInKey(inKey) {
         if (!isnull(activeTSuids[inKey])) {
-            for (pair = 0; pair < numActiveSites; pair++) {
-                if (!isnull(activeTSuids[inKey][pair])) {
-                    free((void *) activeTSuids[inKey][pair]);
-                    activeTSuids[inKey][pair] = NULL;
-                }
-            }
-
             free((void *) activeTSuids[inKey]);
             activeTSuids[inKey] = NULL;
         }
@@ -274,30 +234,21 @@ static void reorder_output(
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void allocateActiveSuids(
-    size_t numActiveSites, size_t ***activeSuids, LOG_INFO *LogInfo
+    size_t numActiveSites, size_t **activeSuids, LOG_INFO *LogInfo
 ) {
     const int nElemPerSuid = 2;
+    size_t numElem = numActiveSites * nElemPerSuid;
     size_t domIndex;
 
-    *activeSuids = (size_t **) Mem_Malloc(
-        sizeof(size_t *) * numActiveSites, "allocateActiveSuids", LogInfo
+    *activeSuids = (size_t *) Mem_Malloc(
+        sizeof(size_t) * numElem, "allocateActiveSuids", LogInfo
     );
     if (LogInfo->stopRun) {
         return;
     }
-    for (domIndex = 0; domIndex < numActiveSites; domIndex++) {
-        (*activeSuids)[domIndex] = NULL;
-    }
 
-    for (domIndex = 0; domIndex < numActiveSites; domIndex++) {
-        (*activeSuids)[domIndex] = (size_t *) Mem_Malloc(
-            sizeof(size_t) * nElemPerSuid, "allocateActiveSuids", LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return;
-        }
-
-        (*activeSuids)[domIndex][0] = (*activeSuids)[domIndex][1] = 0;
+    for (domIndex = 0; domIndex < numElem; domIndex++) {
+        (*activeSuids)[domIndex] = 0;
     }
 }
 
@@ -311,30 +262,16 @@ static void allocateActiveSuids(
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void allocateActiveTSuids(
-    size_t numActiveSites, size_t ***activeTSuids, LOG_INFO *LogInfo
+    size_t numActiveSites, size_t **activeTSuids, LOG_INFO *LogInfo
 ) {
-    const size_t nIndexVals = 2;
+    const size_t numElem = numActiveSites * 2;
     size_t site;
-    size_t col;
 
-    *activeTSuids = (size_t **) Mem_Malloc(
-        sizeof(size_t *) * numActiveSites, "allocateActiveTSuids", LogInfo
+    *activeTSuids = (size_t *) Mem_Malloc(
+        sizeof(size_t) * numElem, "allocateActiveTSuids", LogInfo
     );
-    for (site = 0; site < numActiveSites; site++) {
-        (*activeTSuids)[site] = NULL;
-    }
-
-    for (site = 0; site < numActiveSites; site++) {
-        (*activeTSuids)[site] = (size_t *) Mem_Malloc(
-            sizeof(size_t) * nIndexVals, "allocateActiveTSuids", LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return;
-        }
-
-        for (col = 0; col < nIndexVals; col++) {
-            (*activeTSuids)[site][col] = 0;
-        }
+    for (site = 0; site < numElem; site++) {
+        (*activeTSuids)[site] = 0;
     }
 }
 
@@ -352,15 +289,14 @@ rank/process will receive/handle
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void calcNumSites(
-    size_t numActiveSites, size_t worldSize, size_t **nSuids, LOG_INFO *LogInfo
+    size_t numActiveSites, size_t worldSize, int **nSuids, LOG_INFO *LogInfo
 ) {
     size_t siteIndex;
     size_t numProcSites = numActiveSites / worldSize;
     size_t overflowSites = numActiveSites % worldSize;
 
-    *nSuids = (size_t *) Mem_Malloc(
-        sizeof(size_t) * worldSize, "calcNumSites()", LogInfo
-    );
+    *nSuids =
+        (int *) Mem_Malloc(sizeof(int) * worldSize, "calcNumSites()", LogInfo);
     if (LogInfo->stopRun) {
         return;
     }
@@ -380,6 +316,41 @@ static void calcNumSites(
 }
 
 /**
+@brief Prepare any allocations/counts for when distributing suids across ranks;
+`nSuidAssign` values are updated to consider the number of total suid elements
+rather than total suids, i.e., suid = [y, x], num elem of [y, x] = 2
+
+@param[in] worldSize Total number of processes that the MPI run has created
+@param[out] displacements A list of values specifying the displacement
+within another array that MPI should start the send of a chunk of values
+to a rank
+@param[in,out] nSuidAssign A list the size of [world size] that specifies how
+many suid pairs are to go to each rank
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void prepare_suid_dist(
+    int worldSize, int **displacements, int nSuidAssign[], LOG_INFO *LogInfo
+) {
+    const int numSuidElem = 2;
+    int dispVal = 0;
+    int index;
+
+    *displacements = (int *) Mem_Malloc(
+        sizeof(int) * worldSize, "prepare_suid_dist", LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    for (index = 0; index < worldSize; index++) {
+        (*displacements)[index] = dispVal;
+
+        nSuidAssign[index] *= numSuidElem;
+        dispVal += nSuidAssign[index];
+    }
+}
+
+/**
 @brief Get or send a process domain designation to get ready for
     simulation
 
@@ -391,7 +362,8 @@ by the program and/or user given the progress input file
 @param[in] activeTSuids A list of translated domain SUIDs that was activated
 by the program and/or user given the progress input file
 @param[in] worldSize Total number of processes that the MPI run has created
-@param[in] useIndexFile Specifies to create/use an index file
+@param[in] readInVars An array of arrays specifying which variables should
+be read in; only used here to specify if we read ANY variables in a key
 @param[out] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs; this function
     call will update it with allocations to hold domain suids and
@@ -400,44 +372,41 @@ by the program and/or user given the progress input file
 */
 static void assignProcs(
     int rank,
-    size_t nSuidsAssign[],
-    size_t **activeSuids,
-    size_t ***activeTSuids,
+    int nSuidsAssign[],
+    size_t *activeSuids,
+    size_t *activeTSuids[],
     int worldSize,
-    const Bool useIndexFile[],
+    Bool *readInVars[],
     SW_DOMAIN *SW_Domain,
     LOG_INFO *LogInfo
 ) {
-    const int recvSuidCount = 1;
-    const int coordPairSize = 2;
-    size_t pair;
-    size_t activePairIndex;
-    int destRank;
-    int inKey;
-    size_t numPairs;
+    const int useKeyIndex = 0;
 
-    MPI_Request nullReq = MPI_REQUEST_NULL;
+    int recvSendSuidCount = 1;
+    int inKey;
+    int numSuids = 0;
+    Bool vectorized = swFALSE;
+    int *displacements = NULL;
 
     // Send nSuid information so processes know how many suids
     // to allocate for
     SW_MPI_Scatter(
         MPI_COMM_WORLD,
         nSuidsAssign,
+        &recvSendSuidCount,
+        MPI_INT,
+        recvSendSuidCount,
+        MPI_INT,
         SW_MPI_ROOT,
-        1,
-        recvSuidCount,
-        &SW_Domain->nProcSuids
+        vectorized,
+        &displacements,
+        &numSuids
     );
-    allocateActiveSuids(
-        SW_Domain->nProcSuids, &SW_Domain->domSuids[eSW_InDomain], LogInfo
-    );
-    if (LogInfo->stopRun) {
-        goto reportError;
-    }
+    SW_Domain->nProcSuids = (int) numSuids;
 
     ForEachNCInKey(inKey) {
-        if (inKey > eSW_InDomain && useIndexFile[inKey]) {
-            allocateActiveTSuids(
+        if (readInVars[inKey][useKeyIndex]) {
+            allocateActiveSuids(
                 SW_Domain->nProcSuids, &SW_Domain->domSuids[inKey], LogInfo
             );
             if (LogInfo->stopRun) {
@@ -451,74 +420,36 @@ reportError:
         return;
     }
 
-    // Copy root process' information
+    // Communicate suids to all ranks
+    vectorized = swTRUE;
     if (rank == SW_MPI_ROOT) {
-        for (pair = 0; pair < nSuidsAssign[SW_MPI_ROOT]; pair++) {
-            ForEachNCInKey(inKey) {
-                if (!isnull(SW_Domain->domSuids[inKey])) {
-                    if (inKey > eSW_InDomain) {
-                        SW_Domain->domSuids[inKey][pair][0] =
-                            (useIndexFile[inKey]) ?
-                                activeTSuids[inKey][pair][0] :
-                                activeSuids[pair][0];
-                        SW_Domain->domSuids[inKey][pair][1] =
-                            (useIndexFile[inKey]) ?
-                                activeTSuids[inKey][pair][1] :
-                                activeSuids[pair][1];
-                    } else {
-                        SW_Domain->domSuids[eSW_InDomain][pair][0] =
-                            activeSuids[pair][0];
-                        SW_Domain->domSuids[eSW_InDomain][pair][1] =
-                            activeSuids[pair][1];
-                    }
-                }
-            }
-        }
+        prepare_suid_dist(worldSize, &displacements, nSuidsAssign, LogInfo);
+    }
+    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
+        return;
     }
 
-    // Communicate suids to all ranks
-    activePairIndex = (rank == 0) ? nSuidsAssign[SW_MPI_ROOT] : 0;
-    for (destRank = 1; destRank < worldSize; destRank++) {
-        if (rank == SW_MPI_ROOT || destRank == rank) {
-            numPairs =
-                (rank == 0) ? nSuidsAssign[destRank] : SW_Domain->nProcSuids;
-
-            for (pair = 0; pair < numPairs; pair++) {
-                ForEachNCInKey(inKey) {
-                    if ((inKey > eSW_InDomain && !useIndexFile[inKey]) ||
-                        isnull(SW_Domain->domSuids[inKey])) {
-
-                        continue;
-                    }
-
-                    if (rank == SW_MPI_ROOT) {
-                        SW_MPI_Send(
-                            SW_MPI_SIZE_T,
-                            (!isnull(activeTSuids[inKey])) ?
-                                activeTSuids[inKey][activePairIndex] :
-                                activeSuids[activePairIndex],
-                            coordPairSize,
-                            destRank,
-                            swTRUE,
-                            0,
-                            &nullReq
-                        );
-                    } else {
-                        SW_MPI_Recv(
-                            SW_MPI_SIZE_T,
-                            SW_Domain->domSuids[inKey][pair],
-                            coordPairSize,
-                            SW_MPI_ROOT,
-                            swTRUE,
-                            0,
-                            &nullReq
-                        );
-                    }
-                }
-
-                activePairIndex++;
-            }
+    ForEachNCInKey(inKey) {
+        if (isnull(SW_Domain->domSuids[inKey])) {
+            continue;
         }
+
+        SW_MPI_Scatter(
+            MPI_COMM_WORLD,
+            (!isnull(activeTSuids[inKey])) ? activeTSuids[inKey] : activeSuids,
+            nSuidsAssign,
+            SW_MPI_SIZE_T,
+            (int) (SW_Domain->nProcSuids * 2),
+            SW_MPI_SIZE_T,
+            SW_MPI_ROOT,
+            vectorized,
+            &displacements,
+            SW_Domain->domSuids[inKey]
+        );
+    }
+
+    if (!isnull(displacements)) {
+        free((void *) displacements);
     }
 }
 
@@ -738,10 +669,11 @@ try to simulate/assign to compute processes
 void find_active_sites(
     int rank,
     SW_DOMAIN *SW_Domain,
-    size_t ***activeSuids,
+    size_t **activeSuids,
     size_t *numActiveSites,
     LOG_INFO *LogInfo
 ) {
+    const int numElemInSuid = 2;
     int suid = 0;
     signed char *prog = NULL;
     int progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprog];
@@ -802,8 +734,9 @@ void find_active_sites(
        the active domain SUIDs */
     for (progIndex = 0; progIndex < numSites; progIndex++) {
         if (prog[progIndex] == PRGRSS_READY) {
-            SW_DOM_calc_ncSuid(SW_Domain, progIndex, (*activeSuids)[suid]);
-            suid++;
+            SW_DOM_calc_ncSuid(SW_Domain, progIndex, &(*activeSuids)[suid]);
+
+            suid += numElemInSuid;
         }
     }
 
@@ -827,8 +760,8 @@ freeMem:
 */
 static void get_activated_tsuids(
     SW_DOMAIN *SW_Domain,
-    size_t **activeSuids,
-    size_t ***activeTSuids,
+    size_t *activeSuids,
+    size_t **activeTSuids,
     size_t numActiveSites,
     LOG_INFO *LogInfo
 ) {
@@ -846,8 +779,10 @@ static void get_activated_tsuids(
     int fileID = -1;
     int varID;
     size_t *indexCell;
-    size_t *domSuid;
+    size_t yVal;
+    size_t xVal;
     size_t offset;
+    int siteIndex;
     const int indexFile = 0;
 
     for (index = 0; index < (int) numPosKeys; index++) {
@@ -908,8 +843,9 @@ static void get_activated_tsuids(
         }
 
         for (site = 0; site < (int) numActiveSites; site++) {
-            domSuid = activeSuids[site];
-            indexCell = activeTSuids[inKey][site];
+            siteIndex = site * 2;
+            yVal = activeSuids[siteIndex];
+            indexCell = &activeTSuids[inKey][siteIndex];
 
             /*
                 Translate a domain suid for a site into a translated suid
@@ -917,11 +853,10 @@ static void get_activated_tsuids(
                 e.g., [0, 3] -> [1, 0]
              */
             if (inSDom) {
-                indexCell[0] = sxIndexVals[domSuid[0]];
+                indexCell[0] = sxIndexVals[yVal];
             } else {
-                offset = (sProgDom) ?
-                             domSuid[0] :
-                             (domSuid[0] * SW_Domain->nDimX) + domSuid[1];
+                xVal = activeSuids[siteIndex + 1];
+                offset = (sProgDom) ? yVal : (yVal * SW_Domain->nDimX) + xVal;
 
                 indexCell[0] = yIndexVals[offset];
                 indexCell[1] = sxIndexVals[offset];
@@ -937,8 +872,6 @@ static void get_activated_tsuids(
             free(yIndexVals);
             yIndexVals = NULL;
         }
-
-        nc_close(fileID);
     }
 
 freeMem:
@@ -1044,18 +977,10 @@ void SW_MPI_Fail(int rank, int failType, char *mpiErrStr) {
     temporal/spatial information for a set of simulation runs
 */
 void SW_MPI_deconstruct(SW_DOMAIN *SW_Domain) {
-    size_t suid;
     int inKey;
 
     ForEachNCInKey(inKey) {
         if (!isnull(SW_Domain->domSuids[inKey])) {
-            for (suid = 0; suid < SW_Domain->nProcSuids; suid++) {
-                if (!isnull(SW_Domain->domSuids[inKey][suid])) {
-                    free((void *) SW_Domain->domSuids[inKey][suid]);
-                    SW_Domain->domSuids[inKey][suid] = NULL;
-                }
-            }
-
             free((void *) SW_Domain->domSuids[inKey]);
             SW_Domain->domSuids[inKey] = NULL;
         }
@@ -1129,31 +1054,53 @@ void SW_MPI_Allreduce(
 @param[in] buffer Source buffer than information will be scattered from
 @param[in] src Source rank that will do the scattering
 @param[in] sendCount The number of elements that will be scattered from
-"buffer"
+"buffer", can be an array of counts if the calling function specifies for
+"vectorized"
 @param[in] recvCount The number of elements that each process will receive
+@param[in] vectorized Specifies if the function should use the vectorized
+version of `MPI_Scatter()` - `MPI_Scatterv()`
+@param[in] displacements An array of size [number spawned ranks] specifying
+where to start the sending of each assigned chunk of suids to a process
 @param[out] dest Destination buffer that will be filled with received
 information
 */
 void SW_MPI_Scatter(
     MPI_Comm comm,
     void *buffer,
-    int src,
-    int sendCount,
+    int *sendCount,
+    MPI_Datatype sendType,
     int recvCount,
+    MPI_Datatype recvType,
+    int src,
+    Bool vectorized,
+    int **displacements,
     void *dest
 ) {
-    int mpiRes = MPI_Scatter(
-        buffer,
-        sendCount,
-        SW_MPI_SIZE_T,
-        dest,
-        recvCount,
-        SW_MPI_SIZE_T,
-        src,
-        comm
-    );
+    int mpiRes;
+
+    if (vectorized) {
+        mpiRes = MPI_Scatterv(
+            buffer,
+            sendCount,
+            *displacements,
+            sendType,
+            dest,
+            recvCount,
+            recvType,
+            src,
+            comm
+        );
+    } else {
+        mpiRes = MPI_Scatter(
+            buffer, *sendCount, sendType, dest, recvCount, recvType, src, comm
+        );
+    }
 
     if (mpiRes != MPI_SUCCESS) {
+        if (!isnull(*displacements)) {
+            free((void *) displacements);
+        }
+
         errorMPI(-1, mpiRes);
     }
 }
@@ -1191,124 +1138,6 @@ void SW_MPI_Bcast(
     if (mpiRes != MPI_SUCCESS) {
         errorMPI(-1, mpiRes);
     }
-}
-
-/**
-@brief Wrapper for MPI-provided function `MPI_Send()` and reduces
-the ambiguity of how the information gets sent (no longer buffer or
-synchronous)
-
-@param[in] datatype Custom MPI datatype that will be sent
-@param[in] buffer Location of memory that holds the memory that
-we will be sending
-@param[in] count Number of items to send from the buffer
-@param[in] destRank Destination rank that information will be sent to
-@param[in] sync Specifies if the send should be synchronous or
-asynchronous
-@param[in] tag Unique identifier for a message that does not interact
-with any message tag values
-@param[in,out] request Type MPI_Request that holds information on a
-previous asynchronous send
-*/
-void SW_MPI_Send(
-    MPI_Datatype datatype,
-    void *buffer,
-    int count,
-    int destRank,
-    Bool sync,
-    int tag,
-    MPI_Request *request
-) {
-    int result = 0;
-
-    if (sync) {
-        result =
-            MPI_Ssend(buffer, count, datatype, destRank, tag, MPI_COMM_WORLD);
-    } else {
-        if (*request != MPI_REQUEST_NULL) {
-            result = MPI_Wait(request, MPI_STATUS_IGNORE);
-            if (result != MPI_SUCCESS) {
-                goto error;
-            }
-
-            result = MPI_Request_free(request);
-            if (result != MPI_SUCCESS) {
-                goto error;
-            }
-        }
-
-        result = MPI_Issend(
-            buffer, count, datatype, destRank, tag, MPI_COMM_WORLD, request
-        );
-    }
-
-error: {
-    if (result != MPI_SUCCESS) {
-        errorMPI(-1, result);
-    }
-}
-}
-
-/**
-@brief Wrapper for MPI-provided function `MPI_Recv()` and reduces
-the ambiguity of how the information gets sent (no longer buffer or
-synchronous)
-
-@param[in] datatype Custom MPI datatype that will be sent
-@param[in] buffer Location of memory that will be written to
-@param[in] count Number of items to recv from the buffer
-@param[in] srcRank Source rank that information will be received from
-@param[in] sync Specifies if the receive should be synchronous or
-asynchronous
-@param[in] tag Unique identifier for a message that does not interact
-with any message tag values
-@param[in,out] request Type MPI_Request that holds information on a
-previous asynchronous receive
-*/
-void SW_MPI_Recv(
-    MPI_Datatype datatype,
-    void *buffer,
-    int count,
-    int srcRank,
-    Bool sync,
-    int tag,
-    MPI_Request *request
-) {
-    int result = 0;
-
-    if (sync) {
-        result = MPI_Recv(
-            buffer,
-            count,
-            datatype,
-            srcRank,
-            tag,
-            MPI_COMM_WORLD,
-            MPI_STATUS_IGNORE
-        );
-    } else {
-        if (*request != MPI_REQUEST_NULL) {
-            result = MPI_Wait(request, MPI_STATUS_IGNORE);
-            if (result != MPI_SUCCESS) {
-                goto error;
-            }
-
-            result = MPI_Request_free(request);
-            if (result != MPI_SUCCESS) {
-                goto error;
-            }
-        }
-
-        result = MPI_Irecv(
-            buffer, count, datatype, srcRank, tag, MPI_COMM_WORLD, request
-        );
-    }
-
-error: {
-    if (result != MPI_SUCCESS) {
-        errorMPI(-1, result);
-    }
-}
 }
 
 /**
@@ -1433,9 +1262,9 @@ void SW_MPI_proc_workload(
     int rank, int worldSize, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
 ) {
     const int twoDomVarIDs = 2;
-    size_t **activeTSuids[SW_NINKEYSNC] = {NULL};
-    size_t **activeSuids = NULL;
-    size_t *nSuidsAssign = NULL;
+    size_t *activeTSuids[SW_NINKEYSNC] = {NULL};
+    size_t *activeSuids = NULL;
+    int *nSuidsAssign = NULL;
     size_t *numActiveSites = &SW_Domain->nActiveSuids;
 
     // Spread the index file creation flags across the world;
@@ -1492,15 +1321,13 @@ checkForError:
         activeSuids,
         activeTSuids,
         worldSize,
-        SW_Domain->netCDFInput.useIndexFile,
+        SW_Domain->netCDFInput.readInVars,
         SW_Domain,
         LogInfo
     );
 
 freeMem:
-    deallocProcHelpers(
-        *numActiveSites, &activeSuids, activeTSuids, &nSuidsAssign
-    );
+    deallocProcHelpers(&activeSuids, activeTSuids, &nSuidsAssign);
 }
 
 /**
@@ -1552,6 +1379,8 @@ void SW_MPI_store_outputs(
 @brief Transfer suids from the domain of a process to a smaller list
 of suids that will be used for simulating sites
 
+@param[in] readInVars An array of arrays specifying which variables should
+be read in; only used here to specify if we read ANY variables in a key
 @param[in] domSuids A list of domain suids for each input key, including
 those that are translated
 @param[in] useIndexFile A list of size SW_NINKEYSNC that specifies if an input
@@ -1567,7 +1396,8 @@ suids for each input key
 @param[out] nSuids Specifies the number of suids to be simulated this cycle
 */
 void SW_MPI_get_sim_suids(
-    size_t **domSuids[],
+    Bool *readInVars[],
+    size_t *domSuids[],
     const Bool useIndexFile[],
     size_t *readIndex,
     size_t *nSuidsLeft,
@@ -1576,24 +1406,38 @@ void SW_MPI_get_sim_suids(
 ) {
     const int xsCoordIndex = 0;
     const int yCoordIndex = 1;
+    const int useKeyIndex = 0;
 
     int inKey;
     size_t suid;
     size_t *destSuid;
-    size_t *srcSuid;
     size_t readStart = *readIndex;
+    size_t ysVal;
+    size_t xVal;
+    size_t *domKeySuids;
+    size_t suidIndex;
+    Bool useKey;
 
     *nSuids = (*nSuidsLeft < N_SUID_ASSIGN) ? *nSuidsLeft : N_SUID_ASSIGN;
 
     ForEachNCInKey(inKey) {
-        for (suid = 0; suid < *nSuids; suid++) {
-            destSuid = simSuids[inKey][suid];
-            srcSuid = (useIndexFile[inKey] && inKey > eSW_InDomain) ?
-                          domSuids[inKey][readStart + suid] :
-                          domSuids[eSW_InDomain][readStart + suid];
+        useKey = readInVars[inKey][useKeyIndex];
 
-            destSuid[xsCoordIndex] = srcSuid[xsCoordIndex];
-            destSuid[yCoordIndex] = srcSuid[yCoordIndex];
+        if (useKey) {
+            for (suid = 0; suid < *nSuids; suid++) {
+                destSuid = simSuids[inKey][suid];
+                domKeySuids = (inKey > eSW_InDomain && useIndexFile[inKey]) ?
+                                  domSuids[inKey] :
+                                  domSuids[eSW_InDomain];
+
+                suidIndex = (readStart + suid) * 2;
+
+                ysVal = domKeySuids[suidIndex];
+                xVal = domKeySuids[suidIndex + 1];
+
+                destSuid[xsCoordIndex] = ysVal;
+                destSuid[yCoordIndex] = xVal;
+            }
         }
     }
 
@@ -1662,6 +1506,7 @@ void SW_MPI_read_inputs(
     Bool ok_tsr = swFALSE;
 
     SW_MPI_get_sim_suids(
+        SW_Domain->netCDFInput.readInVars,
         SW_Domain->domSuids,
         SW_Domain->netCDFInput.useIndexFile,
         readIndex,

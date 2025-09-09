@@ -103,9 +103,13 @@ void SW_MPI_Allreduce(
 void SW_MPI_Scatter(
     MPI_Comm comm,
     void *buffer,
-    int src,
-    int sendCount,
+    int *sendCount,
+    MPI_Datatype sendType,
     int recvCount,
+    MPI_Datatype recvType,
+    int src,
+    Bool vectorized,
+    int **displacements,
     void *dest
 );
 
@@ -113,26 +117,6 @@ void SW_MPI_Barrier(MPI_Comm comm);
 
 void SW_MPI_Bcast(
     MPI_Datatype datatype, void *buffer, int count, int srcRank, MPI_Comm comm
-);
-
-void SW_MPI_Send(
-    MPI_Datatype datatype,
-    void *buffer,
-    int count,
-    int destRank,
-    Bool sync,
-    int tag,
-    MPI_Request *request
-);
-
-void SW_MPI_Recv(
-    MPI_Datatype datatype,
-    void *buffer,
-    int count,
-    int srcRank,
-    Bool sync,
-    int tag,
-    MPI_Request *request
 );
 
 void SW_MPI_domain_info(SW_DOMAIN *SW_Domain, int rank, LOG_INFO *LogInfo);
@@ -155,7 +139,8 @@ void SW_MPI_store_outputs(
 );
 
 void SW_MPI_get_sim_suids(
-    size_t **domSuids[],
+    Bool *readInVars[],
+    size_t *domSuids[],
     const Bool useIndexFile[],
     size_t *readIndex,
     size_t *nSuidsLeft,
