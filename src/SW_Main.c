@@ -19,6 +19,7 @@
 #include "include/generic.h"        // for Bool, swFALSE, swTRUE
 #include "include/SW_Control.h"     // for SW_CTL_RunSimSet, SW_CTL_clear...
 #include "include/SW_datastructs.h" // for LOG_INFO, SW_DOMAIN, SW_RUN
+#include "include/SW_Defines.h"     // for SW_MPI_ROOT
 #include "include/SW_Domain.h"      // for SW_DOM_deconstruct, SW_DOM_ini...
 #include "include/SW_Files.h"       // for eFirst
 #include "include/SW_Main_lib.h"    // for sw_fail_on_error, sw_init_args
@@ -34,9 +35,8 @@
 #endif
 
 #if defined(SWMPI)
-#include "include/SW_Defines.h" // for SW_MPI_ROOT
-#include "include/SW_MPI.h"     // for SW_MPI_setup_fail, SW_MPI_PROC_IO
-#include <mpi.h>                // for MPI_COMM_WORLD
+#include "include/SW_MPI.h" // for SW_MPI_setup_fail, SW_MPI_PROC_IO
+#include <mpi.h>            // for MPI_COMM_WORLD
 #endif
 
 
@@ -93,15 +93,7 @@ int main(int argc, char **argv) {
         &endQuietly,
         &LogInfo
     );
-#if defined(SWMPI)
-    if (endQuietly || SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD)) {
-        goto finishProgram;
-    }
-#else
-    if (endQuietly || LogInfo.stopRun) {
-        goto finishProgram;
-    }
-#endif
+    checkJumpToLabel(endQuietly || LogInfo.stopRun, finishProgram);
 
     // SOILWAT2: do print progress to console unless user requests quiet
     LogInfo.printProgressMsg = (Bool) (!LogInfo.QuietMode);
@@ -117,34 +109,14 @@ int main(int argc, char **argv) {
     SW_CTL_setup_domain(
         rank, userSUID, renameDomainTemplateNC, &SW_Domain, &LogInfo
     );
-#if defined(SWMPI)
-    if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD)) {
-        goto finishProgram;
-    }
-#else
-    if (LogInfo.stopRun) {
-        goto finishProgram;
-    }
-#endif
+    checkJumpToLabel(LogInfo.stopRun, finishProgram);
 
     // setup and construct model template (independent of inputs)
     SW_CTL_setup_model(&sw_template, &SW_Domain.OutDom, swTRUE, &LogInfo);
-    if (LogInfo.stopRun) {
-#if defined(SWMPI)
-        goto setupProgramData;
-#else
-        goto finishProgram;
-#endif
-    }
+    checkJumpToLabel(LogInfo.stopRun, finishProgram);
 
     SW_MDL_get_ModelRun(&sw_template.ModelIn, &SW_Domain, NULL, &LogInfo);
-    if (LogInfo.stopRun) {
-#if defined(SWMPI)
-        goto setupProgramData;
-#else
-        goto finishProgram;
-#endif
-    }
+    checkJumpToLabel(LogInfo.stopRun, finishProgram);
 
     // read user inputs
     SW_CTL_read_inputs_from_disk(
@@ -154,15 +126,7 @@ int main(int argc, char **argv) {
         &SW_Domain.hasConsistentSoilLayerDepths,
         &LogInfo
     );
-#if defined(SWMPI)
-    if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD)) {
-        goto setupProgramData;
-    }
-#else
-    if (LogInfo.stopRun) {
-        goto finishProgram;
-    }
-#endif
+    checkJumpToLabel(LogInfo.stopRun, finishProgram);
 
 #if defined(SWNETCDF)
     SW_NCIN_check_input_config(
@@ -171,24 +135,10 @@ int main(int argc, char **argv) {
         sw_template.SiteIn.inputsProvideSWRCp,
         &LogInfo
     );
-    if (LogInfo.stopRun) {
-#if defined(SWMPI)
-        goto setupProgramData;
-#else
-        goto finishProgram;
-#endif
-    }
+    checkJumpToLabel(LogInfo.stopRun, finishProgram);
 
     SW_NCIN_precalc_lookups(rank, &SW_Domain, &sw_template.WeatherIn, &LogInfo);
-#if defined(SWMPI)
-    if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD)) {
-        goto setupProgramData;
-    }
-#else
-    if (LogInfo.stopRun) {
-        goto finishProgram;
-    }
-#endif
+    checkJumpToLabel(LogInfo.stopRun, finishProgram);
 #endif
 
     // finalize daily weather
@@ -205,13 +155,7 @@ int main(int argc, char **argv) {
             swFALSE, // Does not matter
             &LogInfo
         );
-        if (LogInfo.stopRun) {
-#if defined(SWMPI)
-            goto setupProgramData;
-#else
-        goto finishProgram;
-#endif
-        }
+        checkJumpToLabel(LogInfo.stopRun, finishProgram);
 #if defined(SWNETCDF)
     }
 #endif
@@ -229,51 +173,24 @@ int main(int argc, char **argv) {
         sw_template.RunIn.SoilRunIn.depths,
         &LogInfo
     );
-    if (LogInfo.stopRun) {
-#if defined(SWMPI)
-        goto setupProgramData;
-#else
-        goto finishProgram;
-#endif
-    }
+    checkJumpToLabel(LogInfo.stopRun, finishProgram);
 
-#if defined(SWMPI)
-setupProgramData:
-#endif
     sw_setup_prog_data(
         rank, size, prepareFiles, &sw_template, &SW_Domain, &LogInfo
     );
-#if defined(SWMPI)
-    if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD)) {
-        goto finishProgram;
-    }
-#else
-    if (LogInfo.stopRun) {
-        goto finishProgram;
-    }
-#endif
+    checkJumpToLabel(LogInfo.stopRun, finishProgram);
 
     SW_OUT_create_files(
         rank, &sw_template.SW_PathOutputs, &SW_Domain, &LogInfo
     );
+    checkJumpToLabel(LogInfo.stopRun, closeFiles);
 
-#if defined(SWMPI)
-    if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD) || prepareFiles) {
-        if (prepareFiles && LogInfo.printProgressMsg) {
+    if (prepareFiles) {
+        if (LogInfo.printProgressMsg) {
             SW_MSG_ROOT("completed simulation preparations.", rank);
         }
-
         goto closeFiles;
     }
-#else
-    if (LogInfo.stopRun || prepareFiles) {
-        if (prepareFiles && LogInfo.printProgressMsg) {
-            SW_MSG_ROOT("completed simulation preparations.", rank);
-        }
-
-        goto closeFiles;
-    }
-#endif
 
     if (EchoInits && rank == 0) {
         echo_all_inputs(&sw_template, &SW_Domain.OutDom, &LogInfo);

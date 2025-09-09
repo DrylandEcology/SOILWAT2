@@ -615,15 +615,7 @@ void sw_setup_prog_data(
         &SW_Domain->OutDom,
         LogInfo
     );
-#if defined(SWMPI)
-    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-        return;
-    }
-#else
-    if (LogInfo->stopRun) {
-        return;
-    }
-#endif
+    checkReturn(LogInfo->stopRun);
 
 #if defined(SWNETCDF)
     SW_NCOUT_read_out_vars(
@@ -632,26 +624,10 @@ void sw_setup_prog_data(
         sw_template->VegEstabIn.parms,
         LogInfo
     );
-    if (LogInfo->stopRun) {
-        return;
-    }
-#if defined(SWMPI)
-    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-        return;
-    }
-#endif
+    checkReturn(LogInfo->stopRun);
 
     if (!prepareFiles) {
         SW_NCOUT_create_units_converters(&SW_Domain->OutDom, LogInfo);
-#if defined(SWMPI)
-        if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-            return;
-        }
-#else
-        if (LogInfo->stopRun) {
-            return;
-        }
-#endif
     }
 #endif // SWNETCDF
 }

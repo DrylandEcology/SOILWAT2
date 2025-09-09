@@ -575,13 +575,7 @@ void SW_CTL_RunSimSet(
     SW_NCIN_alloc_temp_instorage(
         allocSoils, &tempVals, &tempSoils, main_LogInfo
     );
-    if (main_LogInfo->stopRun) {
-#if defined(SWMPI)
-        goto checkStatus;
-#else
-        goto wrapUp;
-#endif
-    }
+    checkJumpToLabel(main_LogInfo->stopRun, wrapUp);
 #endif
 
 #if defined(SWMPI)
@@ -596,11 +590,6 @@ void SW_CTL_RunSimSet(
         &extraIter,
         main_LogInfo
     );
-
-checkStatus:
-    if (SW_MPI_setup_fail(main_LogInfo->stopRun, MPI_COMM_WORLD)) {
-        goto wrapUp;
-    }
 #endif
 
     if (main_LogInfo->printProgressMsg) {

@@ -5956,15 +5956,7 @@ static void open_input_files(
         SW_PathInputs->openInFileIDs[inKey] = (int **) Mem_Malloc(
             sizeof(int *) * numVarsInKey[inKey], "open_input_files", LogInfo
         );
-#if defined(SWMPI)
-        if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-            return;
-        }
-#else
-        if (LogInfo->stopRun) {
-            return;
-        }
-#endif
+        checkReturn(LogInfo->stopRun);
 
         for (var = 0; var < numVarsInKey[inKey]; var++) {
             SW_PathInputs->openInFileIDs[inKey][var] = NULL;
@@ -5986,15 +5978,7 @@ static void open_input_files(
             SW_PathInputs->openInFileIDs[inKey][var] = (int *) Mem_Malloc(
                 sizeof(int) * numFiles, "open_input_files", LogInfo
             );
-#if defined(SWMPI)
-            if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-                return;
-            }
-#else
-            if (LogInfo->stopRun) {
-                return;
-            }
-#endif
+            checkReturn(LogInfo->stopRun);
 
             for (file = 0; file < numFiles; file++) {
                 if (inKey == eSW_InWeather && var > 0 &&
@@ -6015,15 +5999,10 @@ static void open_input_files(
                     SW_NC_open_par(
                         fileName, NC_NOWRITE, MPI_COMM_WORLD, id, LogInfo
                     );
-                    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-                        return;
-                    }
 #else
                     SW_NC_open(fileName, NC_NOWRITE, id, LogInfo);
-                    if (LogInfo->stopRun) {
-                        return;
-                    }
 #endif
+                    checkReturn(LogInfo->stopRun);
                 }
             }
         }
@@ -9920,11 +9899,9 @@ void SW_NCIN_precalc_lookups(
     }
 
 checkForFail:
-#if defined(SWMPI)
-    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD) != NC_NOERR) {
-        return;
-    }
+    checkReturn(LogInfo->stopRun);
 
+#if defined(SWMPI)
     SW_MPI_Bcast(
         MPI_INT,
         SW_Domain->netCDFInput.useIndexFile,
@@ -9932,10 +9909,6 @@ checkForFail:
         SW_MPI_ROOT,
         MPI_COMM_WORLD
     );
-#else
-    if (LogInfo->stopRun) {
-        return; /* Exit function prematurely due to error */
-    }
 #endif
 
     /* Precalculate temperature temporal nc indices */
@@ -9948,26 +9921,10 @@ checkForFail:
             SW_Domain->endyr,
             LogInfo
         );
-#if defined(SWMPI)
-        if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD) != NC_NOERR) {
-            return;
-        }
-#else
-        if (LogInfo->stopRun) {
-            return; /* Exit function prematurely due to error */
-        }
-#endif
+        checkReturn(LogInfo->stopRun);
 
         get_weather_flags(SW_netCDFIn, SW_WeatherIn, LogInfo);
-#if defined(SWMPI)
-        if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD) != NC_NOERR) {
-            return;
-        }
-#else
-        if (LogInfo->stopRun) {
-            return; /* Exit function prematurely due to error */
-        }
-#endif
+        checkReturn(LogInfo->stopRun);
 #else
         (void) SW_WeatherIn;
 
@@ -9988,37 +9945,13 @@ checkForFail:
 #if defined(SWMPI)
     }
 #endif
-#if defined(SWMPI)
-    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-        return;
-    }
-#else
-    if (LogInfo.stopRun) {
-        return;
-    }
-#endif
+    checkReturn(LogInfo->stopRun);
 
     open_input_files(rank, SW_netCDFIn, &SW_Domain->SW_PathInputs, LogInfo);
-#if defined(SWMPI)
-    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD) != NC_NOERR) {
-        return;
-    }
-#else
-    if (LogInfo->stopRun) {
-        return; /* Exit function prematurely due to error */
-    }
-#endif
+    checkReturn(LogInfo->stopRun);
 
     SW_NCIN_check_input_files(rank, SW_Domain, LogInfo);
-#if defined(SWMPI)
-    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-        return;
-    }
-#else
-    if (LogInfo.stopRun) {
-        return;
-    }
-#endif
+    checkReturn(LogInfo->stopRun);
 
     get_invar_information(SW_netCDFIn, &SW_Domain->SW_PathInputs, LogInfo);
 }

@@ -361,6 +361,50 @@ typedef int sw_converter_t;
 /*                   Parallel Support                  */
 /* --------------------------------------------------- */
 
+/**
+ * @brief Helper macro to clean up repetative goto's within the code,
+ * mainly when having parallel support, i.e., the use of
+ *  `SW_MPI_setup_fail()`
+ *
+ * @param[in] stopRun A flag specifying if a run should be stopped due
+ * to a fatal error
+ * @param[in] label Name of the label to jump to
+ */
+#if defined(SWMPI)
+#define checkJumpToLabel(stopRun, label)                            \
+    do {                                                            \
+        if (SW_MPI_setup_fail(stopRun, MPI_COMM_WORLD) != NC_NOERR) \
+            goto label;                                             \
+    } while (0)
+#else
+#define checkJumpToLabel(stopRun, label) \
+    do {                                 \
+        if (stopRun)                     \
+            goto label;                  \
+    } while (0)
+#endif
+
+/**
+ * @brief Similar to that of `checkJumpToLabel` but returns from a function
+ * rather than jumping to a label
+ *
+ * @param[in] stopRun A flag specifying if a run should be stopped due
+ * to a fatal error
+ */
+#if defined(SWMPI)
+#define checkReturn(stopRun)                                        \
+    do {                                                            \
+        if (SW_MPI_setup_fail(stopRun, MPI_COMM_WORLD) != NC_NOERR) \
+            return;                                                 \
+    } while (0)
+#else
+#define checkReturn(stopRun) \
+    do {                     \
+        if (stopRun)         \
+            return;          \
+    } while (0)
+#endif
+
 #define SW_MPI_NTYPES 10
 #define SW_MPI_ROOT 0
 #define SW_GROUP_ROOT SW_MPI_ROOT
