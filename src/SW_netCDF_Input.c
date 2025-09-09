@@ -3968,6 +3968,7 @@ static void calc_temporal_weather_indices(
     double *timeVals = NULL;
     size_t timeSize = 0;
     int tempStart = -1;
+    char *calOverride = NULL;
 
 #if defined(SWUDUNITS)
     ut_system *system;
@@ -3993,8 +3994,8 @@ static void calc_temporal_weather_indices(
     weathInFiles = SW_PathInputs->ncWeatherInFiles[varIndex];
     timeName = SW_netCDFIn->inVarInfo[eSW_InWeather][varIndex][INTAXIS];
 
-    hasCalOverride =
-        (Bool) (strcmp(SW_netCDFIn->weathCalOverride[varIndex], "NA") != 0);
+    calOverride = SW_netCDFIn->weathCalOverride[varIndex];
+    hasCalOverride = (Bool) (strcmp(calOverride, "NA") != 0);
 
     SW_NCIN_alloc_weather_indices_years(
         &SW_PathInputs->ncWeatherStartEndIndices,
@@ -4048,9 +4049,11 @@ static void calc_temporal_weather_indices(
                 }
 
                 weatherCal = Str_Dup(calTypeUnit, LogInfo);
-                if (LogInfo->stopRun) {
-                    goto freeMem;
-                }
+            } else {
+                weatherCal = Str_Dup(calOverride, LogInfo);
+            }
+            if (LogInfo->stopRun) {
+                goto freeMem;
             }
         }
         SW_NC_get_str_att_val(
