@@ -10092,7 +10092,7 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                 }
 
                 inHasSite =
-                    (Bool) (strcmp(varInfo[k][fIndex][INDOMTYPE], "s") == 0);
+                    (Bool) (strcmp(varInfo[fIndex][INDOMTYPE], "s") == 0);
 
                 get_index_vars_info(
                     ncFileID,
