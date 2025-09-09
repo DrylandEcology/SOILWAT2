@@ -180,33 +180,15 @@ int main(int argc, char **argv) {
     }
 
     SW_NCIN_precalc_lookups(rank, &SW_Domain, &sw_template.WeatherIn, &LogInfo);
-    if (LogInfo.stopRun) {
 #if defined(SWMPI)
+    if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD)) {
         goto setupProgramData;
+    }
 #else
+    if (LogInfo.stopRun) {
         goto finishProgram;
-#endif
     }
-
-    if (rank == 0) {
-        SW_NCIN_create_indices(&SW_Domain, &LogInfo);
-        if (LogInfo.stopRun) {
-#if defined(SWMPI)
-            goto setupProgramData;
-#else
-            goto finishProgram;
 #endif
-        };
-
-        SW_NCIN_check_input_files(&SW_Domain, &LogInfo);
-        if (LogInfo.stopRun) {
-#if defined(SWMPI)
-            goto setupProgramData;
-#else
-            goto finishProgram;
-#endif
-        }
-    }
 #endif
 
     // finalize daily weather

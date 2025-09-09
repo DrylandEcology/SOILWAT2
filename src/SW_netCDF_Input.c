@@ -6010,25 +6010,21 @@ static void open_input_files(
                                SW_PathInputs->ncWeatherInFiles[var][file];
 
                 id = &SW_PathInputs->openInFileIDs[inKey][var][file];
+                if (FileExists(fileName)) {
 #if defined(SWMPI)
-                if (var > indexFile) {
                     SW_NC_open_par(
                         fileName, NC_NOWRITE, MPI_COMM_WORLD, id, LogInfo
                     );
                     if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
                         return;
                     }
-                } else if (rank == 0) {
-#endif
-                    if (FileExists(fileName) || var > indexFile) {
-                        SW_NC_open(fileName, NC_NOWRITE, id, LogInfo);
-                        if (LogInfo->stopRun) {
-                            return;
-                        }
+#else
+                    SW_NC_open(fileName, NC_NOWRITE, id, LogInfo);
+                    if (LogInfo->stopRun) {
+                        return;
                     }
-#if defined(SWMPI)
-                }
 #endif
+                }
             }
         }
     }
@@ -8636,11 +8632,14 @@ void SW_NCIN_check_input_config(
 /**
 @brief Check that all available netCDF input files are consistent with domain
 
+@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
+void SW_NCIN_check_input_files(
+    int rank, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
+) {
     int inKey;
     int var;
     int indexFileID = -1;
@@ -8661,6 +8660,10 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     unsigned int weathFileIndex = SW_Domain->SW_PathInputs.weathStartFileIndex;
     const Bool openInPar = swFALSE;
     const int openMode = NC_NOWRITE;
+
+#if defined(SWMPI)
+    char *fileName;
+#endif
 
     /* Check actual input files provided by the user */
     ForEachNCInKey(inKey) {
@@ -8716,7 +8719,7 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                         );
                     }
                     if (LogInfo->stopRun) {
-                        goto closeFile;
+                        goto freeMem;
                     }
 
                     if (strcmp(varInfo[INVAXIS], "NA") != 0) {
@@ -8724,15 +8727,33 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                             inFileID, varInfo[INVAXIS], LogInfo
                         );
                         if (LogInfo->stopRun) {
-                            goto closeFile;
+                            goto freeMem;
                         }
                     }
                 }
             }
+
+#if defined(SWMPI)
+            if (indexFileID > -1) {
+                nc_close(indexFileID);
+                indexFileID = -1;
+            }
+
+            fileName = SW_Domain->SW_PathInputs.ncInFiles[inKey][0];
+            if (rank == SW_MPI_ROOT && FileExists(fileName)) {
+                fileID = &SW_Domain->SW_PathInputs.openInFileIDs[inKey][0][0];
+                SW_NC_open(fileName, NC_NOWRITE, fileID, LogInfo);
+            }
+            if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
+                goto freeMem;
+            }
+#else
+            (void) rank;
+#endif
         }
     }
 
-closeFile:
+freeMem:
     free_tempcoords_close_files(NULL, 0);
 }
 
@@ -9887,7 +9908,7 @@ void SW_NCIN_precalc_lookups(
             LogInfo
         );
         if (LogInfo->stopRun) {
-            return; /* Exit prematurely due to error */
+            goto checkForFail; /* Exit prematurely due to error */
         }
 
         determine_indexfile_use(
@@ -9896,10 +9917,26 @@ void SW_NCIN_precalc_lookups(
             SW_Domain->spatialTol,
             LogInfo
         );
-        if (LogInfo->stopRun) {
-            return; /* Exit function prematurely due to error */
-        }
     }
+
+checkForFail:
+#if defined(SWMPI)
+    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD) != NC_NOERR) {
+        return;
+    }
+
+    SW_MPI_Bcast(
+        MPI_INT,
+        SW_Domain->netCDFInput.useIndexFile,
+        SW_NINKEYSNC,
+        SW_MPI_ROOT,
+        MPI_COMM_WORLD
+    );
+#else
+    if (LogInfo->stopRun) {
+        return; /* Exit function prematurely due to error */
+    }
+#endif
 
     /* Precalculate temperature temporal nc indices */
     if (SW_netCDFIn->readInVars[eSW_InWeather][0]) {
@@ -9911,14 +9948,26 @@ void SW_NCIN_precalc_lookups(
             SW_Domain->endyr,
             LogInfo
         );
-        if (LogInfo->stopRun) {
+#if defined(SWMPI)
+        if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD) != NC_NOERR) {
             return;
         }
+#else
+        if (LogInfo->stopRun) {
+            return; /* Exit function prematurely due to error */
+        }
+#endif
 
         get_weather_flags(SW_netCDFIn, SW_WeatherIn, LogInfo);
-        if (LogInfo->stopRun) {
+#if defined(SWMPI)
+        if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD) != NC_NOERR) {
             return;
         }
+#else
+        if (LogInfo->stopRun) {
+            return; /* Exit function prematurely due to error */
+        }
+#endif
 #else
         (void) SW_WeatherIn;
 
@@ -9932,10 +9981,44 @@ void SW_NCIN_precalc_lookups(
 #endif
     }
 
-    open_input_files(rank, SW_netCDFIn, &SW_Domain->SW_PathInputs, LogInfo);
-    if (LogInfo->stopRun) {
+#if defined(SWMPI)
+    if (rank == SW_MPI_ROOT) {
+#endif
+        SW_NCIN_create_indices(SW_Domain, LogInfo);
+#if defined(SWMPI)
+    }
+#endif
+#if defined(SWMPI)
+    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
         return;
     }
+#else
+    if (LogInfo.stopRun) {
+        return;
+    }
+#endif
+
+    open_input_files(rank, SW_netCDFIn, &SW_Domain->SW_PathInputs, LogInfo);
+#if defined(SWMPI)
+    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD) != NC_NOERR) {
+        return;
+    }
+#else
+    if (LogInfo->stopRun) {
+        return; /* Exit function prematurely due to error */
+    }
+#endif
+
+    SW_NCIN_check_input_files(rank, SW_Domain, LogInfo);
+#if defined(SWMPI)
+    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
+        return;
+    }
+#else
+    if (LogInfo.stopRun) {
+        return;
+    }
+#endif
 
     get_invar_information(SW_netCDFIn, &SW_Domain->SW_PathInputs, LogInfo);
 }
@@ -9954,6 +10037,7 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     int k;
     int varIDs[2];
     char *indexName = NULL;
+    char *fileName;
     int dimIDs[2][2] = {{0}}; /* Up to two dims for two variables */
     Bool inHasSite = swFALSE;
     Bool siteDom = (Bool) (strcmp(SW_Domain->DomainType, "s") == 0);
@@ -9992,8 +10076,6 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     double **freeArr[] = {&inputYVals, &inputXVals};
     const int numCoordVars = 2;
-    const int indexFile = 0;
-    const int firstFile = 0;
 
     char ***varInfo = NULL;
 
@@ -10034,12 +10116,10 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                 }
 
                 if (k == eSW_InWeather) {
-                    ncFileID = SW_Domain->SW_PathInputs
-                                   .openInFileIDs[eSW_InWeather][fIndex]
-                                                 [weatherFileIndex];
+                    fileName = SW_Domain->SW_PathInputs
+                                   .ncWeatherInFiles[fIndex][weatherFileIndex];
                 } else {
-                    ncFileID = SW_Domain->SW_PathInputs
-                                   .openInFileIDs[k][fIndex][indexFile];
+                    fileName = SW_Domain->SW_PathInputs.ncInFiles[k][fIndex];
                 }
 
                 inPrimCRSIsGeo = (Bool) (strcmp(
@@ -10059,6 +10139,11 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     domXSize = SW_netCDFIn->domXCoordProjSize;
                 }
 
+                SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
+                if (LogInfo->stopRun) {
+                    goto freeMem;
+                }
+
                 SW_NC_create_template(
                     SW_Domain->DomainType,
                     domFile,
@@ -10073,9 +10158,8 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     return; /* Exit function prematurely due to error */
                 }
 
-                SW_Domain->SW_PathInputs
-                    .openInFileIDs[k][indexFile][firstFile] = templateID;
-                inHasSite = SW_Domain->netCDFInput.siteDoms[k];
+                inHasSite =
+                    (Bool) (strcmp(varInfo[k][fIndex][INDOMTYPE], "s") == 0);
 
                 get_index_vars_info(
                     ncFileID,
@@ -10135,6 +10219,7 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     goto freeMem;
                 }
 
+                nc_close(ncFileID);
                 ncFileID = -1;
 
                 /* Create and query the KD-tree then write to the index file */
@@ -10160,6 +10245,10 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     SW_netCDFIn->projCoordConvs[k],
                     LogInfo
                 );
+
+                nc_close(templateID);
+                templateID = -1;
+
                 if (LogInfo->stopRun) {
                     goto freeMem;
                 }
@@ -10171,4 +10260,8 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
 freeMem:
     free_tempcoords_close_files(freeArr, numCoordVars);
+
+    if (ncFileID > -1) {
+        nc_close(ncFileID);
+    }
 }

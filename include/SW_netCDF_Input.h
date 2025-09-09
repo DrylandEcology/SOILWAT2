@@ -152,7 +152,9 @@ void SW_NCIN_check_input_config(
     LOG_INFO *LogInfo
 );
 
-void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
+void SW_NCIN_check_input_files(
+    int rank, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
+);
 
 void SW_NCIN_open_dom_prog_files(
     SW_NETCDF_IN *SW_netCDFIn, SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo
