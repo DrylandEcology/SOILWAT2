@@ -9938,6 +9938,9 @@ checkForFail:
 #endif
     }
 
+    get_invar_information(SW_netCDFIn, &SW_Domain->SW_PathInputs, LogInfo);
+    checkReturn(LogInfo->stopRun);
+
 #if defined(SWMPI)
     if (rank == SW_MPI_ROOT) {
 #endif
@@ -9951,9 +9954,6 @@ checkForFail:
     checkReturn(LogInfo->stopRun);
 
     SW_NCIN_check_input_files(rank, SW_Domain, LogInfo);
-    checkReturn(LogInfo->stopRun);
-
-    get_invar_information(SW_netCDFIn, &SW_Domain->SW_PathInputs, LogInfo);
 }
 
 /**
