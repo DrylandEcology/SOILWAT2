@@ -112,7 +112,7 @@ static void report_sim_start(SW_DOMAIN *SW_Domain, int rank, int worldSize) {
 #else
     char reportStr[MAX_FILENAMESIZE] = "\0";
 
-    if (rank == 0) {
+    if (rank == ROOT_PROC) {
         snprintf(
             reportStr,
             MAX_FILENAMESIZE,

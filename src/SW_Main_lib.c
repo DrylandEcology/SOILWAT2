@@ -287,7 +287,7 @@ void sw_init_args(
             break;
 
         case 4: /* -v */
-            if (rank == 0) {
+            if (rank == ROOT_PROC) {
                 sw_print_version();
                 *endQuietly = swTRUE;
                 return;
@@ -295,7 +295,7 @@ void sw_init_args(
             break;
 
         case 5: /* -h */
-            if (rank == 0) {
+            if (rank == ROOT_PROC) {
                 sw_print_usage();
                 *endQuietly = swTRUE;
                 return;
@@ -304,7 +304,7 @@ void sw_init_args(
 
         case 6: /* -s */
 #if defined(SWMPI)
-            if (rank == 0) {
+            if (rank == ROOT_PROC) {
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -537,7 +537,7 @@ void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
         CloseFile(&logfp, LogInfo);
     }
 
-    if (rank == 0) {
+    if (rank == ROOT_PROC) {
         // Notify the user that there are messages in the logfile (unless
         // QuietMode)
         if ((LogInfo->numDomainErrors > 0 || LogInfo->numDomainWarnings > 0 ||
@@ -659,7 +659,7 @@ void sw_finalize_program(
         SW_MPI_get_end_info(rank, size, SW_WallTime, LogInfo);
 #endif
 
-        if (rank == 0) {
+        if (rank == ROOT_PROC) {
             SW_WT_ReportTime(*SW_WallTime, LogInfo);
         }
 

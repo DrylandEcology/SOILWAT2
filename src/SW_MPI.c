@@ -397,7 +397,7 @@ static void assignProcs(
         MPI_INT,
         recvSendSuidCount,
         MPI_INT,
-        SW_MPI_ROOT,
+        ROOT_PROC,
         vectorized,
         &displacements,
         &numSuids
@@ -422,7 +422,7 @@ reportError:
 
     // Communicate suids to all ranks
     vectorized = swTRUE;
-    if (rank == SW_MPI_ROOT) {
+    if (rank == ROOT_PROC) {
         prepare_suid_dist(worldSize, &displacements, nSuidsAssign, LogInfo);
     }
     if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
@@ -441,7 +441,7 @@ reportError:
             SW_MPI_SIZE_T,
             (int) (SW_Domain->nProcSuids * 2),
             SW_MPI_SIZE_T,
-            SW_MPI_ROOT,
+            ROOT_PROC,
             vectorized,
             &displacements,
             SW_Domain->domSuids[inKey]
@@ -687,7 +687,7 @@ void find_active_sites(
 
     *numActiveSites = 0;
 
-    if (rank == SW_MPI_ROOT) {
+    if (rank == ROOT_PROC) {
         prog = (signed char *) Mem_Malloc(
             sizeof(signed char) * numSites, "find_active_sites", LogInfo
         );
@@ -715,7 +715,7 @@ void find_active_sites(
     }
 
     SW_NC_toggle_par_access(progFileID, progVarID, NC_COLLECTIVE, LogInfo);
-    if (LogInfo->stopRun || rank > SW_MPI_ROOT) {
+    if (LogInfo->stopRun || rank > ROOT_PROC) {
         goto freeMem;
     }
 
@@ -1206,7 +1206,7 @@ void SW_MPI_get_end_info(
         (void *) &overallTiming.nUntimedRuns
     };
 
-    if (rank == SW_MPI_ROOT) {
+    if (rank == ROOT_PROC) {
         Mem_Copy(&overallTiming, SW_WallTime, sizeof(SW_WALLTIME));
     }
 
@@ -1218,7 +1218,7 @@ void SW_MPI_get_end_info(
             1,
             (redVal <= maxDoubleIndex) ? MPI_DOUBLE : SW_MPI_SIZE_T,
             MPI_SUM,
-            SW_MPI_ROOT,
+            ROOT_PROC,
             MPI_COMM_WORLD
         );
 
@@ -1235,15 +1235,15 @@ void SW_MPI_get_end_info(
             1,
             SW_MPI_SIZE_T,
             MPI_SUM,
-            SW_MPI_ROOT,
+            ROOT_PROC,
             MPI_COMM_WORLD
         );
-        if (rank == SW_MPI_ROOT) {
+        if (rank == ROOT_PROC) {
             *(warnErrSrc[warnErr]) = totWarnErr;
         }
     }
 
-    if (rank == SW_MPI_ROOT) {
+    if (rank == ROOT_PROC) {
         Mem_Copy(SW_WallTime, &overallTiming, sizeof(SW_WALLTIME));
     }
 }
@@ -1274,7 +1274,7 @@ void SW_MPI_proc_workload(
         MPI_INT,
         SW_Domain->netCDFInput.ncDomVarIDs,
         twoDomVarIDs,
-        SW_MPI_ROOT,
+        ROOT_PROC,
         MPI_COMM_WORLD
     );
 
@@ -1283,7 +1283,7 @@ void SW_MPI_proc_workload(
         goto freeMem;
     }
 
-    if (rank == SW_MPI_ROOT) {
+    if (rank == ROOT_PROC) {
         if (*numActiveSites == 0) {
             LogError(LogInfo, LOGERROR, "No active sites to simulate.");
         } else if (*numActiveSites < (size_t) worldSize) {

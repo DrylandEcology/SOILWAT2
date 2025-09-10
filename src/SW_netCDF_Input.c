@@ -5905,7 +5905,7 @@ static void open_input_files(
 #if defined(SWMPI)
     int domVar;
 
-    if (rank == SW_MPI_ROOT) {
+    if (rank == ROOT_PROC) {
         nc_close(SW_PathInputs->ncDomFileIDs[vNCdom]);
         nc_close(SW_PathInputs->ncDomFileIDs[vNCprog]);
     }
@@ -5914,16 +5914,12 @@ static void open_input_files(
         MPI_INT,
         SW_netCDFIn->useIndexFile,
         SW_NINKEYSNC,
-        SW_MPI_ROOT,
+        ROOT_PROC,
         MPI_COMM_WORLD
     );
 
     SW_MPI_Bcast(
-        MPI_INT,
-        SW_netCDFIn->ncDomVarIDs,
-        SW_NVARDOM,
-        SW_MPI_ROOT,
-        MPI_COMM_WORLD
+        MPI_INT, SW_netCDFIn->ncDomVarIDs, SW_NVARDOM, ROOT_PROC, MPI_COMM_WORLD
     );
 #else
     (void) rank;
@@ -8719,7 +8715,7 @@ void SW_NCIN_check_input_files(
             }
 
             fileName = SW_Domain->SW_PathInputs.ncInFiles[inKey][0];
-            if (rank == SW_MPI_ROOT && FileExists(fileName)) {
+            if (rank == ROOT_PROC && FileExists(fileName)) {
                 fileID = &SW_Domain->SW_PathInputs.openInFileIDs[inKey][0][0];
                 SW_NC_open(fileName, NC_NOWRITE, fileID, LogInfo);
             }
@@ -9876,7 +9872,7 @@ void SW_NCIN_precalc_lookups(
         SW_Domain->OutDom.netCDFOutput.proj_XAxisName
     };
 
-    if (rank == 0) {
+    if (rank == ROOT_PROC) {
         read_domain_coordinates(
             SW_netCDFIn,
             domCoordVarNamesNonSite,
@@ -9906,7 +9902,7 @@ checkForFail:
         MPI_INT,
         SW_Domain->netCDFInput.useIndexFile,
         SW_NINKEYSNC,
-        SW_MPI_ROOT,
+        ROOT_PROC,
         MPI_COMM_WORLD
     );
 #endif
@@ -9942,7 +9938,7 @@ checkForFail:
     checkReturn(LogInfo->stopRun);
 
 #if defined(SWMPI)
-    if (rank == SW_MPI_ROOT) {
+    if (rank == ROOT_PROC) {
 #endif
         SW_NCIN_create_indices(SW_Domain, LogInfo);
 #if defined(SWMPI)

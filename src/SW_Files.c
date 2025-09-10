@@ -236,7 +236,7 @@ void SW_F_read(int rank, SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
     } else {
         DirName(SW_PathInputs->txtInFiles[eLog], logDir);
 
-        if (!DirExists(logDir) && rank == 0) {
+        if (!DirExists(logDir) && rank == ROOT_PROC) {
             MkDir(logDir, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;

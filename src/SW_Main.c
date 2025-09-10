@@ -19,7 +19,7 @@
 #include "include/generic.h"        // for Bool, swFALSE, swTRUE
 #include "include/SW_Control.h"     // for SW_CTL_RunSimSet, SW_CTL_clear...
 #include "include/SW_datastructs.h" // for LOG_INFO, SW_DOMAIN, SW_RUN
-#include "include/SW_Defines.h"     // for SW_MPI_ROOT
+#include "include/SW_Defines.h"     // for ROOT_PROC
 #include "include/SW_Domain.h"      // for SW_DOM_deconstruct, SW_DOM_ini...
 #include "include/SW_Files.h"       // for eFirst
 #include "include/SW_Main_lib.h"    // for sw_fail_on_error, sw_init_args
@@ -100,7 +100,7 @@ int main(int argc, char **argv) {
 
     if (LogInfo.printProgressMsg) {
         SW_MSG_ROOT("started.", rank);
-        if (rank == 0) {
+        if (rank == ROOT_PROC) {
             sw_print_version();
         }
     }
@@ -192,7 +192,7 @@ int main(int argc, char **argv) {
         goto closeFiles;
     }
 
-    if (EchoInits && rank == 0) {
+    if (EchoInits && rank == ROOT_PROC) {
         echo_all_inputs(&sw_template, &SW_Domain.OutDom, &LogInfo);
     }
 

@@ -362,6 +362,14 @@ typedef int sw_converter_t;
 /* --------------------------------------------------- */
 
 /**
+ * @brief General constant to define what value a root process will hold.
+ * This is mainly only useful when SWMPI mode is enabled, however is good
+ * to have to not have the line "rank == 0" in places that are not guaranteed
+ * to have SWMPI functionality
+ */
+#define ROOT_PROC 0
+
+/**
  * @brief Helper macro to clean up repetative goto's within the code,
  * mainly when having parallel support, i.e., the use of
  *  `SW_MPI_setup_fail()`
@@ -406,8 +414,6 @@ typedef int sw_converter_t;
 #endif
 
 #define SW_MPI_NTYPES 10
-#define SW_MPI_ROOT 0
-#define SW_GROUP_ROOT SW_MPI_ROOT
 
 #if defined(SWMPI)
 #define SW_MAX_PROCESSOR_NAME MPI_MAX_PROCESSOR_NAME

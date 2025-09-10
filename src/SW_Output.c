@@ -3289,7 +3289,7 @@ void SW_OUT_read(
     SW_OUT_set_nrow(&sw->ModelIn, OutDom->use_OutPeriod, OutDom->nrow_OUT);
 #endif
 
-    if (rank == 0) {
+    if (rank == ROOT_PROC) {
         if (DirExists(outDir)) {
             SW_F_CleanOutDir(outDir, LogInfo);
         } else {

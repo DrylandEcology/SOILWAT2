@@ -2340,7 +2340,7 @@ void SW_NCOUT_create_output_files(
                                 rangeStart, rangeEnd, baseTime, pd
                             );
 
-                            if (rank == 0) {
+                            if (rank == ROOT_PROC) {
                                 create_output_file(
                                     &SW_Domain->OutDom,
                                     domFile,
@@ -2366,7 +2366,7 @@ void SW_NCOUT_create_output_files(
                             }
 #if defined(SWMPI)
                             checkReturn(LogInfo->stopRun);
-                            if (rank == 0) {
+                            if (rank == ROOT_PROC) {
                                 nc_close(*fileID);
                             }
 
