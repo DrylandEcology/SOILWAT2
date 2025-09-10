@@ -556,6 +556,8 @@ void SW_CTL_RunSimSet(
 
     copyWeather = (Bool) (!SW_Domain->netCDFInput.readInVars[eSW_InWeather][0]);
     LOG_INFO *siteLog = &local_LogInfo;
+#else
+    LOG_INFO *siteLog = main_LogInfo;
 #endif // SWNETCDF
 
 #if !defined(SWMPI)
