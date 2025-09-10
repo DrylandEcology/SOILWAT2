@@ -1098,7 +1098,7 @@ void SW_MPI_Scatter(
 
     if (mpiRes != MPI_SUCCESS) {
         if (!isnull(*displacements)) {
-            free((void *) displacements);
+            free((void *) *displacements);
         }
 
         errorMPI(-1, mpiRes);
