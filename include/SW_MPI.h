@@ -143,9 +143,9 @@ void SW_MPI_get_sim_suids(
     size_t *domSuids[],
     const Bool useIndexFile[],
     size_t *readIndex,
-    size_t *nSuidsLeft,
+    unsigned int *nSuidsLeft,
     size_t simSuids[SW_NINKEYSNC][N_SUID_ASSIGN][2],
-    size_t *nSuids
+    unsigned int *nSuids
 );
 
 void SW_MPI_read_inputs(
@@ -154,7 +154,7 @@ void SW_MPI_read_inputs(
     double *tempVals,
     size_t *readIndex,
     size_t simSuids[SW_NINKEYSNC][N_SUID_ASSIGN][2],
-    size_t *nSuids,
+    unsigned int *nSuids,
     size_t starts[SW_NINKEYSNC][N_SUID_ASSIGN][2],
     size_t counts[SW_NINKEYSNC][N_SUID_ASSIGN][2],
     size_t numReads[],

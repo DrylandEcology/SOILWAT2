@@ -1741,7 +1741,7 @@ typedef struct {
 
     size_t nActiveSuids; /**< Number of active sites that will be simulated
                               (root process only) */
-    size_t
+    unsigned int
         nProcSuids; /**< Number of suids that will be controlled by a process */
     size_t *domSuids[SW_NINKEYSNC]; /**< A list of suids to describe the
                                         domain; this includes translated suids

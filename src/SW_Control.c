@@ -514,7 +514,6 @@ void SW_CTL_RunSimSet(
 
     double *tempVals = NULL;
     SW_SOIL_RUN_INPUTS *tempSoils = NULL;
-    LOG_INFO local_LogInfo;
 
     Bool ok_suid = swTRUE;
     size_t startSim;
@@ -530,6 +529,12 @@ void SW_CTL_RunSimSet(
 #if defined(SWTXT)
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
+#endif
+
+#if !defined(SWMPI)
+    startSim = SW_Domain->startSimSet;
+    endSim = SW_Domain->endSimSet;
+    LOG_INFO local_LogInfo;
 #endif
 
 #if defined(SWNETCDF)
@@ -548,22 +553,19 @@ void SW_CTL_RunSimSet(
         (int) ceil((double) SW_Domain->nProcSuids / N_SUID_ASSIGN);
     unsigned int n_years = sw_template->WeatherIn.n_years;
     size_t numSiteSimed;
-    size_t numInputs = 1;
+    unsigned int numInputs = 1;
     size_t domReadIndex = 0;
     int logIndex;
+    LOG_INFO *siteLog;
+#else
+    LOG_INFO *siteLog = &local_LogInfo;
 #endif // SWMPI
     Bool allocSoils = SW_Domain->netCDFInput.readInVars[eSW_InSoil][0];
 
     copyWeather = (Bool) (!SW_Domain->netCDFInput.readInVars[eSW_InWeather][0]);
-    LOG_INFO *siteLog = &local_LogInfo;
 #else
     LOG_INFO *siteLog = main_LogInfo;
 #endif // SWNETCDF
-
-#if !defined(SWMPI)
-    startSim = SW_Domain->startSimSet;
-    endSim = SW_Domain->endSimSet;
-#endif
 
     int progFileID = 0; // Value does not matter if SWNETCDF is not defined
     int progVarID = 0;  // Value does not matter if SWNETCDF is not defined
@@ -638,8 +640,8 @@ void SW_CTL_RunSimSet(
         }
 
         startSim = 0;
-        endSim = numInputs;
-        numSiteSimed = numInputs;
+        endSim = (size_t) numInputs;
+        numSiteSimed = (size_t) numInputs;
 #endif
 
         /* Loop over suids in simulation set of domain */

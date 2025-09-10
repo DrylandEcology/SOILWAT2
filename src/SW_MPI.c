@@ -234,10 +234,10 @@ static void reorder_output(
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void allocateActiveSuids(
-    size_t numActiveSites, size_t **activeSuids, LOG_INFO *LogInfo
+    unsigned int numActiveSites, size_t **activeSuids, LOG_INFO *LogInfo
 ) {
     const int nElemPerSuid = 2;
-    size_t numElem = numActiveSites * nElemPerSuid;
+    size_t numElem = (size_t) (numActiveSites) *nElemPerSuid;
     size_t domIndex;
 
     *activeSuids = (size_t *) Mem_Malloc(
@@ -292,8 +292,8 @@ static void calcNumSites(
     size_t numActiveSites, size_t worldSize, int **nSuids, LOG_INFO *LogInfo
 ) {
     size_t siteIndex;
-    size_t numProcSites = numActiveSites / worldSize;
     size_t overflowSites = numActiveSites % worldSize;
+    int numProcSites = (int) (numActiveSites / worldSize);
 
     *nSuids =
         (int *) Mem_Malloc(sizeof(int) * worldSize, "calcNumSites()", LogInfo);
@@ -384,7 +384,7 @@ static void assignProcs(
 
     int recvSendSuidCount = 1;
     int inKey;
-    int numSuids = 0;
+    unsigned int numSuids = 0;
     Bool vectorized = swFALSE;
     int *displacements = NULL;
 
@@ -394,15 +394,15 @@ static void assignProcs(
         MPI_COMM_WORLD,
         nSuidsAssign,
         &recvSendSuidCount,
-        MPI_INT,
+        MPI_UNSIGNED,
         recvSendSuidCount,
-        MPI_INT,
+        MPI_UNSIGNED,
         ROOT_PROC,
         vectorized,
         &displacements,
         &numSuids
     );
-    SW_Domain->nProcSuids = (int) numSuids;
+    SW_Domain->nProcSuids = numSuids;
 
     ForEachNCInKey(inKey) {
         if (readInVars[inKey][useKeyIndex]) {
@@ -760,7 +760,7 @@ freeMem:
 */
 static void get_activated_tsuids(
     SW_DOMAIN *SW_Domain,
-    size_t *activeSuids,
+    const size_t *activeSuids,
     size_t **activeTSuids,
     size_t numActiveSites,
     LOG_INFO *LogInfo
@@ -1400,9 +1400,9 @@ void SW_MPI_get_sim_suids(
     size_t *domSuids[],
     const Bool useIndexFile[],
     size_t *readIndex,
-    size_t *nSuidsLeft,
+    unsigned int *nSuidsLeft,
     size_t simSuids[SW_NINKEYSNC][N_SUID_ASSIGN][2],
-    size_t *nSuids
+    unsigned int *nSuids
 ) {
     const int xsCoordIndex = 0;
     const int yCoordIndex = 1;
@@ -1489,7 +1489,7 @@ void SW_MPI_read_inputs(
     double *tempVals,
     size_t *readIndex,
     size_t simSuids[SW_NINKEYSNC][N_SUID_ASSIGN][2],
-    size_t *nSuids,
+    unsigned int *nSuids,
     size_t starts[SW_NINKEYSNC][N_SUID_ASSIGN][2],
     size_t counts[SW_NINKEYSNC][N_SUID_ASSIGN][2],
     size_t numReads[],

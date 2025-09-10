@@ -8619,9 +8619,9 @@ void SW_NCIN_check_input_files(
     int var;
     int indexFileID = -1;
     int inFileID = -1;
-    int file;
+    unsigned int file;
     int *fileID;
-    const int firstFile = 0;
+    const unsigned int firstFile = 0;
     const int indexVar = 0;
 
     char **fileNames;
