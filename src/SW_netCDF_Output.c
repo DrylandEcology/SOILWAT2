@@ -1147,7 +1147,7 @@ static void create_output_file(
 
     /* If SWMPI is not enabled, then this is not used in
        `SW_NC_create_template()` */
-    Bool openInPar = swTRUE;
+    Bool openInPar = swFALSE;
 
     (void) sw_memccpy(frequency, (char *) pd2longstr[pd], '\0', 10);
     Str_ToLower(frequency, frequency);
@@ -2135,6 +2135,7 @@ is represented by
     - soil layer depths (if entire domain has the same soil layer profile)
     - soil layer number (if soil layer profile varies across domain)
 
+@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] domFile Name of the domain netCDF
 @param[in] domType Type of domain in which simulations are running
     (gridcell/sites)
@@ -2162,6 +2163,7 @@ holds basic information about output files and values
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCOUT_create_output_files(
+    int rank,
     const char *domFile,
     const char *domType,
     const char *outputPrefix,
@@ -2210,6 +2212,7 @@ void SW_NCOUT_create_output_files(
     unsigned int *numOutFiles = &SW_PathOutputs->numOutFiles;
     const Bool openInPar = swTRUE;
     const int openMode = NC_WRITE;
+    int *fileID;
 
     char periodSuffix[10];
     char *yearFormat;
@@ -2321,11 +2324,12 @@ void SW_NCOUT_create_output_files(
                             return; // Exit function prematurely due to error
                         }
 
+                        fileID =
+                            &SW_PathOutputs->openOutFileIDs[key][pd][fileNum];
                         if (FileExists(fileNameBuf)) {
                             SW_NC_check(
                                 SW_Domain,
-                                &SW_PathOutputs
-                                     ->openOutFileIDs[key][pd][fileNum],
+                                fileID,
                                 fileNameBuf,
                                 openInPar,
                                 openMode,
@@ -2336,33 +2340,46 @@ void SW_NCOUT_create_output_files(
                                 rangeStart, rangeEnd, baseTime, pd
                             );
 
-                            create_output_file(
-                                &SW_Domain->OutDom,
-                                domFile,
-                                domType,
+                            if (rank == 0) {
+                                create_output_file(
+                                    &SW_Domain->OutDom,
+                                    domFile,
+                                    domType,
+                                    fileNameBuf,
+                                    (OutKey) key,
+                                    pd,
+                                    nvar_OUT[key],
+                                    nsl_OUT[key],
+                                    npft_OUT[key],
+                                    hasConsistentSoilLayerDepths,
+                                    lyrDepths,
+                                    timeSize,
+                                    rangeStart,
+                                    baseCalendarYear,
+                                    &startTime[pd],
+                                    SW_Domain->OutDom.netCDFOutput.deflateLevel,
+                                    readinYName,
+                                    readinXName,
+                                    fileID,
+                                    LogInfo
+                                );
+                            }
+#if defined(SWMPI)
+                            checkReturn(LogInfo->stopRun);
+                            if (rank == 0) {
+                                nc_close(*fileID);
+                            }
+
+                            SW_NC_open_par(
                                 fileNameBuf,
-                                (OutKey) key,
-                                pd,
-                                nvar_OUT[key],
-                                nsl_OUT[key],
-                                npft_OUT[key],
-                                hasConsistentSoilLayerDepths,
-                                lyrDepths,
-                                timeSize,
-                                rangeStart,
-                                baseCalendarYear,
-                                &startTime[pd],
-                                SW_Domain->OutDom.netCDFOutput.deflateLevel,
-                                readinYName,
-                                readinXName,
-                                &SW_PathOutputs
-                                     ->openOutFileIDs[key][pd][fileNum],
+                                NC_WRITE,
+                                MPI_COMM_WORLD,
+                                fileID,
                                 LogInfo
                             );
+#endif
                         }
-                        if (LogInfo->stopRun) {
-                            return; // Exit function prematurely due to error
-                        }
+                        checkReturn(LogInfo->stopRun);
 
                         rangeStart = rangeEnd;
                     }
