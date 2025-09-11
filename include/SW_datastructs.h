@@ -1736,9 +1736,6 @@ typedef struct {
     SW_OUT_DOM OutDom;
 
 #if defined(SWMPI)
-    // Custom MPI data types used for sending information
-    MPI_Datatype datatypes[SW_MPI_NTYPES];
-
     size_t nActiveSuids; /**< Number of active sites that will be simulated
                               (root process only) */
     unsigned int

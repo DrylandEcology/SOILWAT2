@@ -29,41 +29,6 @@ extern "C" {
 #define SW_MPI_SIZE_T MPI_UNSIGNED_LONG_LONG
 #endif
 
-typedef enum {
-    eSW_MPI_Domain,
-    eSW_MPI_Spinup,
-    eSW_MPI_Inputs,
-    eSW_MPI_Designate,
-    eSW_MPI_WallTime,
-    eSW_MPI_OutDomIO,
-    eSW_MPI_VegEstabIn,
-    eSW_MPI_Req,
-    eSW_MPI_Log,
-    eSW_MPI_WeathHist
-} MPIType;
-
-#define SW_MPI_PROC_COMP 0
-#define SW_MPI_PROC_IO 1
-
-/**
- * @brief Number of iterations of output gathered by an I/O process before
- *        outputing all values
- * @note An iteration is defined as the product of number of compute processes
- *       and #N_SUID_ASSIGN number of outputs gathered<br>
- * E.g., #N_ITER_BEFORE_OUT = 3, #N_SUID_ASSIGN = 4, n comp procs = 2
- *  - Iter 1: SUIDs 0-7
- *  - Iter 2: SUIDs 8-15
- *  - Iter 3: SUIDs 16-23 \n
- * Write output values gathered in iter 1-3 (SUIDs 0-23)
- *
- * @note This constant defaults to 1 but can be overwritten by the user
- *       when compiling the program, i.e., ... -DN_ITER_BEFORE_OUT=[n
- *       iterations] ...
- */
-#ifndef N_ITER_BEFORE_OUT
-#define N_ITER_BEFORE_OUT 1
-#endif
-
 // Reasons to fail the MPI program
 #define SW_MPI_FAIL_NETCDF 1
 #define SW_MPI_FAIL_COMP_ERR 2
@@ -118,8 +83,6 @@ void SW_MPI_Barrier(MPI_Comm comm);
 void SW_MPI_Bcast(
     MPI_Datatype datatype, void *buffer, int count, int srcRank, MPI_Comm comm
 );
-
-void SW_MPI_domain_info(SW_DOMAIN *SW_Domain, int rank, LOG_INFO *LogInfo);
 
 Bool SW_MPI_setup_fail(Bool stopRun, MPI_Comm comm);
 
@@ -191,15 +154,6 @@ void SW_MPI_setup_inputs(
     IntU n_years,
     SW_OUT_RUN *tempOut,
     Bool *extraFailCheck,
-    LOG_INFO *LogInfo
-);
-
-void SW_MPI_handle_IO(
-    int rank,
-    SW_RUN *sw,
-    SW_DOMAIN *SW_Domain,
-    Bool *setupFail,
-    SW_WALLTIME *SW_WallTime,
     LOG_INFO *LogInfo
 );
 

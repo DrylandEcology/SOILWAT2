@@ -35,7 +35,7 @@
 #endif
 
 #if defined(SWMPI)
-#include "include/SW_MPI.h" // for SW_MPI_setup_fail, SW_MPI_PROC_IO
+#include "include/SW_MPI.h" // for SW_MPI_setup_fail
 #include <mpi.h>            // for MPI_COMM_WORLD
 #endif
 

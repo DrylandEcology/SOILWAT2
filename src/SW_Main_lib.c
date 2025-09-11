@@ -114,14 +114,7 @@ void sw_print_version(void) {
     sw_printf("\n");
 
 #if defined(SWMPI)
-    sw_printf(
-        "SWMPI           : SW_MPI_NIO = %d, N_SUID_ASSIGN = %d, "
-        "MAX_NODE_PROCS = %d, N_ITER_BEFORE_OUT = %d\n",
-        SW_MPI_NIO,
-        N_SUID_ASSIGN,
-        MAX_NODE_PROCS,
-        N_ITER_BEFORE_OUT
-    );
+    sw_printf("SWMPI           : N_SUID_ASSIGN = %d\n", N_SUID_ASSIGN);
 #endif
 
 #ifndef RSOILWAT
