@@ -175,8 +175,8 @@ There are two type of performance test conducted - with and without weather inpu
     - Number of I/O processes: 1, 2, and 3
         - If a number of I/O is too large for the total number of cores to split the core distribution at most 50/50, then the I/O size is not tested for the domain size
 
-- The second batch consisted of non-weather-inclusive performance runs that took place used a domain size of ~111k sites (excluding sites which error), a size no configuration will be able to engulf in one iteration of input-simulation-output. This batch uses the configuration combinations of
-    - Domain size: ~111,000
+- The second batch consisted of non-weather-inclusive performance runs that took place used a domain size of ~112k sites (excluding sites which error), a size no configuration will be able to engulf in one iteration of input-simulation-output. This batch uses the configuration combinations of
+    - Domain size: ~112,000
     - Number of cores: 128
     - Number of suids per compute process: 25, 40, 50, 60, 75, 90, and 100
     - Number of I/O processes: 1, 2, 3, 5, 10, 20, 40, and 64
@@ -190,8 +190,8 @@ There are two type of performance test conducted - with and without weather inpu
         - With suid consideration - Take the numbers of speedup at face value and calculate the efficiency as is (depending on the setup, can easily be above 1)
     - Sequential/parallel compute/I/O time partition % (second/third batch only) - gives the idea of how much overall time is spent doing compute and I/O operations. This can help to get a sense of the correct balance of compute and I/O creation
 
-- The third batch consisted of weather-inclusive (30 years) performance runs that also took place used a domain size of ~111k sites (excluding sites which error). This batch uses the configuration combinations of
-    - Domain size: ~111,000
+- The third batch consisted of weather-inclusive (30 years) performance runs that also took place used a domain size of ~112k sites (excluding sites which error). This batch uses the configuration combinations of
+    - Domain size: ~112,000
     - Number of cores: 128
     - Number of suids per compute process: 10, 20, 40, 50, 60, 70*, 80*
         - \* = only used during 40 & 64 I/O processes
@@ -228,13 +228,13 @@ No Weather (Figure 8) | Weather (Figure 9)
 :----------|-----------:
 ![Figure 8](Partition_Timing-25_Assigned_Suids-no-weather.png) | ![Figure 9](Partition_Timing-10_Assigned_Suids-weather.png)
 
-Partitioned timing into compute and I/O process with 25 (without weather) assigned suids and 10 (with weather) per compute process. (Without weather, left) We see an expected increase in the compute times and decrease in I/O times as the number of I/O processes increase. (With weather, right) With 20 I/O processes, the program is already saturated with computation operations and even more so with 64 I/O processes.
+Partitioned timing into compute and I/O process with 25 (without weather) assigned suids and 10 (with weather) per compute process. (Without weather, left) We see an unexpected increase in the I/O times and decrease in compute times as the number of I/O processes increase. (With weather, right) With 20 I/O processes, the program is already saturated with I/O operations and even more so with 64 I/O processes.
 
 No Weather (Figure 10) | Weather (Figure 11)
 :----------|-----------:
 ![Figure 10](Partition_Timing-100_Assigned_Suids-no-weather.png) | ![Figure 11](Partition_Timing-60_Assigned_Suids-weather.png)
 
-Partitioned timing into compute and I/O process with 100 (without weather) and 60 (with weather) assigned suids per compute process. (Without weather, left) The graph mostly shows the expected increase in the compute times and decrease in I/O times as the number of I/O processes increase. The exception is with 64 I/O processes, a small increase in I/O timing compared to 40 I/O processes. (With weather, right) 20 I/O is more saturated with I/O operations and relative to **Figure 9** is less saturated with compute operations at 64 I/O processes.
+Partitioned timing into compute and I/O process with 100 (without weather) and 60 (with weather) assigned suids per compute process. (Without weather, left) The graph mostly shows an unexpected increase in the I/O times and decrease in compute times as the number of I/O processes increase. The exception is with 64 I/O processes, a small increase in compute timing compared to 40 I/O processes. (With weather, right) 20 I/O is more saturated with compute operations and relative to **Figure 9** is less saturated with compute operations at 64 I/O processes.
 
 ![Figure 12](Speedup_Relative_to_Assigned_Suids-weather_40years.png)
 
