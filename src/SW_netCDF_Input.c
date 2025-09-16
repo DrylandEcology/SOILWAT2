@@ -5343,7 +5343,7 @@ static void read_spatial_topo_climate_site_inputs(
 #endif
 
         input = inputOrigin = 0;
-        for (read = 0; read < numReads[keyNum]; read++) {
+        for (read = 0; read < numReads[currKey]; read++) {
 #if defined(SWMPI)
             defSetStart[0] = starts[currKey][read][0];
             defSetStart[1] = starts[currKey][read][1];
