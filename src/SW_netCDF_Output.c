@@ -1148,6 +1148,7 @@ static void create_output_file(
     /* If SWMPI is not enabled, then this is not used in
        `SW_NC_create_template()` */
     Bool openInPar = swFALSE;
+    const int isInput = swFALSE;
 
     (void) sw_memccpy(frequency, (char *) pd2longstr[pd], '\0', 10);
     Str_ToLower(frequency, frequency);
@@ -1159,7 +1160,7 @@ static void create_output_file(
         domFile,
         newFileName,
         newFileID,
-        swFALSE,
+        isInput,
         frequency,
         openInPar,
         LogInfo
@@ -2366,9 +2367,12 @@ void SW_NCOUT_create_output_files(
                             }
 #if defined(SWMPI)
                             checkReturn(LogInfo->stopRun);
-                            if (rank == ROOT_PROC) {
+
+                            if (*fileID > -1 && rank == ROOT_PROC) {
                                 nc_close(*fileID);
                             }
+
+                            SW_MPI_Barrier(MPI_COMM_WORLD);
 
                             SW_NC_open_par(
                                 fileNameBuf,
