@@ -2381,6 +2381,7 @@ void SW_NCOUT_create_output_files(
                                 fileID,
                                 LogInfo
                             );
+                            checkReturn(LogInfo->stopRun);
 #endif
                         }
                         checkReturn(LogInfo->stopRun);
@@ -2394,9 +2395,7 @@ void SW_NCOUT_create_output_files(
                             &SW_PathOutputs->outTimeSizes[pd],
                             LogInfo
                         );
-                        if (LogInfo->stopRun) {
-                            return;
-                        }
+                        checkReturn(LogInfo->stopRun);
 
                         store_time_sizes(
                             SW_PathOutputs->openOutFileIDs[key][pd],
@@ -2404,9 +2403,7 @@ void SW_NCOUT_create_output_files(
                             *numOutFiles,
                             LogInfo
                         );
-                        if (LogInfo->stopRun) {
-                            return;
-                        }
+                        checkReturn(LogInfo->stopRun);
                     }
                 }
 
@@ -2418,9 +2415,7 @@ void SW_NCOUT_create_output_files(
                     SW_PathOutputs->ncOutVarIDs[key],
                     LogInfo
                 );
-                if (LogInfo->stopRun) {
-                    return;
-                }
+                checkReturn(LogInfo->stopRun);
             }
         }
     }
