@@ -1623,6 +1623,7 @@ void SW_CTL_run_sw(
     size_t starts[SW_NINKEYSNC][N_SUID_ASSIGN][2] = {{{0}}};
     size_t counts[SW_NINKEYSNC][N_SUID_ASSIGN][2] = {{{0}}};
     size_t numReads[SW_NINKEYSNC] = {1, 1, 1, 1, 1, 1, 1, 1};
+    size_t maxReads[SW_NINKEYSNC] = {1, 1, 1, 1, 1, 1, 1, 1};
     size_t suid[N_SUID_ASSIGN][2] = {{ncSuid[0], ncSuid[1]}};
 #else
     (void) count;
@@ -1675,6 +1676,7 @@ void SW_CTL_run_sw(
         counts,
         SW_Domain->SW_PathInputs.openInFileIDs,
         numReads,
+        maxReads,
         1,
         tempVals,
         suid,

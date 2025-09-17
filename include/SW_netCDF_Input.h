@@ -136,6 +136,7 @@ void SW_NCIN_read_inputs(
     size_t counts[][N_SUID_ASSIGN][2],
     int **openNCFileIDs[],
     size_t numReads[],
+    size_t maxReads[],
     size_t numInputs,
     double *tempVals,
     size_t domSuids[][2],
