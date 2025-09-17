@@ -1052,11 +1052,13 @@ void SW_MPI_Allreduce(
 
 @param[in] comm MPI communicator to scatter information across
 @param[in] buffer Source buffer than information will be scattered from
-@param[in] src Source rank that will do the scattering
 @param[in] sendCount The number of elements that will be scattered from
 "buffer", can be an array of counts if the calling function specifies for
 "vectorized"
+@param[in] sendType MPI type of the values being sent
 @param[in] recvCount The number of elements that each process will receive
+@param[in] recvType MPI type of the values being received
+@param[in] src Source rank that will do the scattering
 @param[in] vectorized Specifies if the function should use the vectorized
 version of `MPI_Scatter()` - `MPI_Scatterv()`
 @param[in] displacements An array of size [number spawned ranks] specifying
