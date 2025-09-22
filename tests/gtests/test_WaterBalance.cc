@@ -437,6 +437,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
         SW_Domain.SW_PathInputs.txtInFiles,
         SW_Run.SiteIn.inputsProvideSWRCp,
         SW_Run.RunIn.SoilRunIn.swrcpMineralSoil,
+        SW_Run.SiteIn.swrcpOM,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -506,6 +507,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
         SW_Domain.SW_PathInputs.txtInFiles,
         SW_Run.SiteIn.inputsProvideSWRCp,
         SW_Run.RunIn.SoilRunIn.swrcpMineralSoil,
+        SW_Run.SiteIn.swrcpOM,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error

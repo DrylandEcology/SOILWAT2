@@ -295,9 +295,6 @@ typedef struct {
 } SW_SOIL_RUN_INPUTS;
 
 typedef struct {
-    /** Number of transpiration regions (max = \ref MAX_TRANSP_REGIONS) */
-    LyrIndex n_transp_rgn;
-
     /** Number of soil layers from which bare-soil evaporation is possible */
     LyrIndex n_evap_lyrs;
 
@@ -320,30 +317,15 @@ typedef struct {
 
     Possible levels are: shallow, moderately shallow, deep and very deep.
     Calculated as the number of the deepest soil layer (base1)
-    that still is within the corresponding soil depth #TranspRgnDepths.
+    that still is within the corresponding soil depth #SW_SITE_INPUTS.TranspRgnDepths.
 
-    For instance, #TranspRgnDepths of 20, 40, and 100 cm define
+    For instance, #SW_SITE_INPUTS.TranspRgnDepths of 20, 40, and 100 cm define
     three transpiration regions; then,
     region 1 contains soil layers 5, 10 and 20 cm (bound = 3),
     region 2 contains soil layers 30 and 40 cm (bound = 5), and
     region 3 contains soil layers 60, 80 and 100 cm (bound = 8).
     */
     LyrIndex TranspRgnBounds[MAX_TRANSP_REGIONS];
-
-    /** Lower bounds of transpiration regions [cm]
-
-    There are up to four transpiration regions:
-        shallow, moderately shallow, deep and very deep.
-    They are defined by soil depths [cm] that are equal to or deeper than
-    the lower bounds of those soil layers that they contain.
-
-    For instance, #TranspRgnDepths of 20, 40, and 100 cm define
-    three transpiration regions; then,
-    region 1 contains soil layers 5, 10 and 20 cm,
-    region 2 contains soil layers 30 and 40 cm, and
-    region 3 contains soil layers 60, 80 and 100 cm.
-    */
-    double TranspRgnDepths[MAX_TRANSP_REGIONS];
 
     /* Soil components
             * bulk = relating to the whole soil
@@ -404,10 +386,6 @@ typedef struct {
         see `SWRC_check_parameters()`
     */
     double swrcp[MAX_LAYERS][SWRC_PARAM_NMAX];
-
-    /** SWRC parameters of the organic soil component
-        for (1) fibric and (2) sapric peat. */
-    double swrcpOM[2][SWRC_PARAM_NMAX];
 
     /** Array for plant functional types and soil layers with assigned
         transpiration region ID */
@@ -491,6 +469,28 @@ typedef struct {
     double SWCInitVal, /* initialization value for swc */
         SWCWetVal,     /* value for a "wet" day,       */
         SWCMinVal;     /* lower bound on swc.          */
+
+    /** Lower bounds of transpiration regions [cm]
+
+    There are up to four transpiration regions:
+        shallow, moderately shallow, deep and very deep.
+    They are defined by soil depths [cm] that are equal to or deeper than
+    the lower bounds of those soil layers that they contain.
+
+    For instance, #TranspRgnDepths of 20, 40, and 100 cm define
+    three transpiration regions; then,
+    region 1 contains soil layers 5, 10 and 20 cm,
+    region 2 contains soil layers 30 and 40 cm, and
+    region 3 contains soil layers 60, 80 and 100 cm.
+    */
+    double TranspRgnDepths[MAX_TRANSP_REGIONS];
+
+    /** Number of transpiration regions (max = \ref MAX_TRANSP_REGIONS) */
+    LyrIndex n_transp_rgn;
+
+    /** SWRC parameters of the organic soil component
+        for (1) fibric and (2) sapric peat. */
+    double swrcpOM[2][SWRC_PARAM_NMAX];
 } SW_SITE_INPUTS;
 
 typedef struct {

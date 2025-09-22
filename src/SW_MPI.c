@@ -4631,9 +4631,9 @@ void SW_MPI_template_info(
          (void *) &SW_Run->SiteIn.SWCInitVal,
          (void *) &SW_Run->SiteIn.SWCWetVal,
          (void *) &SW_Run->SiteIn.SWCMinVal,
-         (void *) &SW_Run->SiteSim.n_transp_rgn,
-         (void *) SW_Run->SiteSim.TranspRgnDepths,
-         (void *) SW_Run->SiteSim.swrcpOM},
+         (void *) &SW_Run->SiteIn.n_transp_rgn,
+         (void *) SW_Run->SiteIn.TranspRgnDepths,
+         (void *) SW_Run->SiteIn.swrcpOM},
         {(void *) &SW_Run->VegEstabIn.use, (void *) &SW_Run->VegEstabIn.count}
     };
     MPI_Datatype types[][43] = {

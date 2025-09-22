@@ -1483,7 +1483,6 @@ void SW_CTL_read_inputs_from_disk(
 
     SW_SIT_read(
         &sw->SiteIn,
-        &sw->SiteSim,
         SW_PathInputs->txtInFiles,
         &sw->CarbonIn,
         hasConsistentSoilLayerDepths,
@@ -1521,6 +1520,7 @@ void SW_CTL_read_inputs_from_disk(
         SW_PathInputs->txtInFiles,
         sw->SiteIn.inputsProvideSWRCp,
         sw->RunIn.SoilRunIn.swrcpMineralSoil,
+        sw->SiteIn.swrcpOM,
         LogInfo
     );
     if (LogInfo->stopRun) {
