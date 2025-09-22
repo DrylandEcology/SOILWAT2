@@ -1727,6 +1727,11 @@ void SW_CTL_run_sw(
     }
 #endif
 
+#if defined(SWNETCDF)
+    local_sw.SiteSim.site_has_swrcpMineralSoil =
+        sw_template->SiteIn.inputsProvideSWRCp;
+#endif
+
 #ifdef SWDEBUG
     if (debug) {
         sw_printf(

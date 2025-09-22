@@ -6737,8 +6737,6 @@ consistency checks.
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
-@param[out] SW_SiteSim Struct of type SW_SITE_SIM describing the
-    simulated site during a simulation run
 @param[out] SW_SiteRunIn Struct of type SW_SITE_RUN_INPUTS describing the
     simulated site for a specific run
 @param[in] soilInFiles List of input files the user provided for the
@@ -6757,13 +6755,11 @@ be returned with any site-specific errors/warnings
 */
 static void read_soil_inputs(
     SW_DOMAIN *SW_Domain,
-    SW_SITE_SIM *SW_SiteSim,
     char **soilInFiles,
     Bool hasConstSoilDepths,
     const double depthsAllSoilLayers[],
     sw_converter_t **soilConv,
     const size_t ncSUID[],
-    Bool inputsProvideSWRCp,
     size_t numInputs,
     size_t numReads,
     size_t **starts,
@@ -7070,8 +7066,6 @@ static void read_soil_inputs(
             );
         }
     }
-
-    SW_SiteSim->site_has_swrcpMineralSoil = inputsProvideSWRCp;
 
 closeFile:
 #if defined(SWMPI)
@@ -8482,13 +8476,11 @@ void SW_NCIN_read_inputs(
     if (readSoil) {
         read_soil_inputs(
             SW_Domain,
-            &sw->SiteSim,
             ncInFiles[eSW_InSoil],
             SW_Domain->hasConsistentSoilLayerDepths,
             SW_Domain->depthsAllSoilLayers,
             convs[eSW_InSoil],
             ncSUID,
-            sw->SiteIn.inputsProvideSWRCp,
             numInputs,
             numReads[eSW_InSoil],
             starts[eSW_InSoil],
