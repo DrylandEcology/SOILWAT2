@@ -19,6 +19,7 @@
 #include "include/generic.h"        // for Bool, swFALSE, swTRUE
 #include "include/SW_Control.h"     // for SW_CTL_RunSimSet, SW_CTL_clear...
 #include "include/SW_datastructs.h" // for LOG_INFO, SW_DOMAIN, SW_RUN
+#include "include/SW_Defines.h"     // for SW_MAX_PROCESSOR_NAME
 #include "include/SW_Domain.h"      // for SW_DOM_deconstruct, SW_DOM_ini...
 #include "include/SW_Files.h"       // for eFirst
 #include "include/SW_Main_lib.h"    // for sw_fail_on_error, sw_init_args
@@ -34,9 +35,8 @@
 #endif
 
 #if defined(SWMPI)
-#include "include/SW_Defines.h" // for SW_MPI_ROOT
-#include "include/SW_MPI.h"     // for SW_MPI_setup_fail, SW_MPI_PROC_IO
-#include <mpi.h>                // for MPI_COMM_WORLD
+#include "include/SW_MPI.h" // for SW_MPI_setup_fail, SW_MPI_PROC_IO
+#include <mpi.h>            // for MPI_COMM_WORLD
 #endif
 
 

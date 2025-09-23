@@ -7,7 +7,6 @@
 #include "tests/gtests/sw_testhelpers.h" // for tol3, tol0, tol1, tol6, mis...
 #include "gtest/gtest.h"                 // for Test, EXPECT_NEAR, TestInfo...
 #include <cmath>                         // for round, NAN, isfinite
-#include <memory>                        // for allocator
 #include <sstream>                       // for char_traits, basic_ostream
 #include <stdio.h>                       // for NULL (fprintf, fflush, FILE)
 
@@ -675,8 +674,8 @@ TEST(AtmDemSimTest, SolarRadiationExtraterrestrial) {
 
         for (k2 = 0; k2 < 12; k2++) {
 
-            SW_PET_init_run(&SW_AtmDemSim
-            ); // Init radiation memoization (for new location)
+            // Init radiation memoization (for new location)
+            SW_PET_init_run(&SW_AtmDemSim);
 
             if (std::isfinite(H_oh_Table1_10_1[k1][k2])) {
                 doy = doys_Table1_6_1[k2];
