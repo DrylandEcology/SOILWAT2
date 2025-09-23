@@ -1946,7 +1946,7 @@ static void open_input_files(
                         goto freeFileDom;
                     }
 
-                    if (domProgSame && domVar == vNCdom) {
+                    if (domProgSame && domVar == vNCprog) {
                         pathInputs->ncDomFileIDs[vNCprog] =
                             pathInputs->ncDomFileIDs[vNCdom];
                     } else {
