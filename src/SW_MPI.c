@@ -5051,20 +5051,26 @@ void SW_MPI_open_files(
     MPI_Comm comm = desig->groupComm;
     char *logFileName = pathInputs->txtInFiles[eLog];
     char **inDomFileNames = pathInputs->ncInFiles[eSW_InDomain];
-    char *domFile = inDomFileNames[vNCdom];
-    char *progFile = inDomFileNames[vNCprog];
-    Bool progFileDomain = (Bool) (strcmp(domFile, progFile) == 0);
+    char *domFile = NULL;
+    char *progFile = NULL;
+    Bool progFileDomain = swFALSE;
 
     if (rank == SW_MPI_ROOT) {
         nc_close(pathInputs->ncDomFileIDs[vNCdom]);
+
+        domFile = inDomFileNames[vNCdom];
+        progFile = inDomFileNames[vNCprog];
+        progFileDomain = (Bool) (strcmp(domFile, progFile) == 0);
 
         if (!progFileDomain) {
             nc_close(pathInputs->ncDomFileIDs[vNCprog]);
         }
     }
 
+    SW_MPI_Bcast(MPI_INT, &progFileDomain, 1, SW_MPI_ROOT, comm);
+
     open_input_files(rank, comm, netCDFIn, progFileDomain, pathInputs, LogInfo);
-    if (LogInfo->stopRun) {
+    if (SW_MPI_setup_fail(LogInfo->stopRun, comm)) {
         return;
     }
 
