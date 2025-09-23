@@ -2705,7 +2705,7 @@ void SW_NCOUT_write_output(
                         );
                         if (LogInfo->stopRun) {
                             /* Exit function prematurely due to error*/
-                            goto closeFile;
+                            return;
                         }
 #endif // SWDEBUG
 
@@ -2841,7 +2841,6 @@ void SW_NCOUT_write_output(
     (void) ncSuid;
     (void) ncOutFileNames;
 #else
-closeFile:
     (void) starts;
     (void) counts;
     (void) openOutFileIDs;

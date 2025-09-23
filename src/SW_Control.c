@@ -1449,7 +1449,6 @@ void SW_CTL_read_inputs_from_disk(
 
     SW_SIT_read(
         &sw->SiteIn,
-        &sw->SiteSim,
         SW_PathInputs->txtInFiles,
         &sw->CarbonIn,
         hasConsistentSoilLayerDepths,
@@ -1487,6 +1486,7 @@ void SW_CTL_read_inputs_from_disk(
         SW_PathInputs->txtInFiles,
         sw->SiteIn.inputsProvideSWRCp,
         sw->RunIn.SoilRunIn.swrcpMineralSoil,
+        sw->SiteIn.swrcpOM,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -1689,6 +1689,11 @@ void SW_CTL_run_sw(
     if (LogInfo->stopRun || !runSims) {
         goto freeMem;
     }
+#endif
+
+#if defined(SWNETCDF)
+    local_sw.SiteSim.site_has_swrcpMineralSoil =
+        sw_template->SiteIn.inputsProvideSWRCp;
 #endif
 
 #ifdef SWDEBUG

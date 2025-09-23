@@ -5217,9 +5217,8 @@ input keys
 @param[in] tempVals An allocated space to store temporary input values
     for converting and setting into proper location
 @param[in] openNCFileIDs A list of open netCDF file identifiers
-@param[out] inputs A list of structs (SWMPI) or singlular struct
-    (not SWMPI) of the type SW_RUN_INPUTS that will be filled with input
-    to be distributed to compute processes later
+@param[out] inputs A list of structs of the type SW_RUN_INPUTS that
+    will be filled with input
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void read_spatial_topo_climate_site_inputs(
@@ -6297,15 +6296,15 @@ closeFile:
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
-@param[in] starts A list of size SW_NINKEYSNC storing calculated
-    start indices for netCDFs to read contiguous data
-@param[in] counts A list of size SW_NINKEYSNC storing calculated
-    count sizes for netCDFs to read contiguous data; placement of
-    these sizes match those of `starts`
-@param[in] numReads A value holding how many contiguous reads it
-    will take to read all the input for the specified input SUIDs
-@param[in] maxReads A value holding the maximum number of contiguous reads
-    it will take to read all the input for the specified input SUIDs
+@param[in] starts A list specifying pre-calculated start indices
+for each read; attempting to be as little reads as possible by
+reading contiguous sites
+@param[in] counts A list storing calculated count sizes for netCDFs to read
+contiguous data; placement of these sizes match those of `starts`
+@param[in] vegInFiles List of input files pertaining to the vegetation
+input key
+@param[in] numReads Number of reads it will take to read all vegetation
+inputs
 @param[in] ncSUID simulation unit identifier for which is used
 to get data from netCDF
 @param[in] vegConv A list of UDUNITS2 converters that were created
@@ -6315,7 +6314,7 @@ to convert input data to units the program can understand within the
 @param[in] tempVals An allocated space to store temporary input values
     for converting and setting into proper location
 @param[out] inputs A list of structs of the type SW_RUN_INPUTS that
-    will be filled with input to be distributed to compute processes later
+    will be filled with input
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void read_veg_inputs(
@@ -6829,10 +6828,6 @@ consistency checks.
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
-@param[out] SW_SiteSim Struct of type SW_SITE_SIM describing the
-    simulated site during a simulation run
-@param[out] SW_SiteRunIn Struct of type SW_SITE_RUN_INPUTS describing the
-    simulated site for a specific run
 @param[in] hasConstSoilDepths Specifies of all soil inputs provided
     by the user (if any) have the same depth profile
 @param[in] depthsAllSoilLayers Depths of soil layers (cm),
@@ -6841,20 +6836,35 @@ consistency checks.
     units to units that SW2 understands
 @param[in] ncSUID Current simulation unit identifier for which is used
     to get data from netCDF
-@param[in] maxReads A value holding the maximum number of contiguous reads
-    it will take to read all the input for the specified input SUIDs
-@param[in] siteLogs A list of LOG_INFO of size N_SUID_ASSIGN that will
+@param[in] numInputs Total number of inputs that will be read; varies
+with mode SWMPI, sticks to one in mode SWNC/SWNETCDF
+@param[in] numReads Number of reads it will take to read all soil
+inputs
+@param[in] starts A list specifying pre-calculated start indices
+for each read; attempting to be as little reads as possible by
+reading contiguous sites
+@param[in] counts A list storing calculated count sizes for netCDFs to read
+contiguous data; placement of these sizes match those of `starts`
+@param[in] openSoilFileIDs A list of open soil file IDs
+@param[in] tempSilt A temporary buffer to store silt values
+@param[in] tempVals An allocated space to store temporary input values
+    for converting and setting into proper location
+@param[in] newSoilBuff A single (no SWMPI) or a list (SWMPI) of instances of
+    SW_SOIL_RUN_INPUTS used as temporary storage when reading inputs
+@param[in] domSuids A list of program-domain suids of sites that will
+have the inputs read for
+@param[out] inputs A list of structs of the type SW_RUN_INPUTS that
+    will be filled with input
+@param[out] siteLogs A list of LOG_INFO of size N_SUID_ASSIGN that will
 be returned with any site-specific errors/warnings
-@param[out] LogInfo Holds information on warnings and errors
+@param[out] mainLogInfo Holds information on warnings and errors
 */
 static void read_soil_inputs(
     SW_DOMAIN *SW_Domain,
-    SW_SITE_SIM *SW_SiteSim,
     Bool hasConstSoilDepths,
     const double depthsAllSoilLayers[],
     sw_converter_t **soilConv,
     const size_t ncSUID[],
-    Bool inputsProvideSWRCp,
     size_t numInputs,
     size_t numReads,
     size_t maxReads,
@@ -6863,8 +6873,8 @@ static void read_soil_inputs(
     int **openSoilFileIDs,
     double *tempVals,
     SW_SOIL_RUN_INPUTS *newSoilBuff,
-    SW_RUN_INPUTS *inputs,
     size_t domSuids[][2],
+    SW_RUN_INPUTS *inputs,
     LOG_INFO *siteLogs,
     LOG_INFO *mainLogInfo
 ) {
@@ -7154,8 +7164,6 @@ static void read_soil_inputs(
             );
         }
     }
-
-    SW_SiteSim->site_has_swrcpMineralSoil = inputsProvideSWRCp;
 
 #if defined(SWMPI)
     (void) ncSUID;
@@ -8077,14 +8085,22 @@ to get data from netCDF
 @param[in] weathConv A list of UDUNITS2 converters that were created
 to convert input data to units the program can understand within the
 "inWeather" input key
-@param[in] numInputs Total number of site inputs that will be read-in
-@param[in] numReads A value holding how many contiguous reads it
-    will take to read all the input for the specified input SUIDs
-@param[in] maxReads A value holding the maximum number of contiguous reads
-    it will take to read all the input for the specified input SUIDs
-@param[in] domSuids A list of program-domain suids of sites that will
-    have the inputs read for (MPI only)
+@param[in] numInputs Total number of inputs that will be read; varies
+with mode SWMPI, sticks to one in mode SWNC/SWNETCDF
+@param[in] numReads Number of reads it will take to read all soil
+inputs
+@param[in] starts A list specifying pre-calculated start indices
+for each read; attempting to be as little reads as possible by
+reading contiguous sites
+@param[in] counts A list storing calculated count sizes for netCDFs to read
+contiguous data; placement of these sizes match those of `starts`
+@param[in] weathFileIDs A list of open weather file IDs
 @param[in] elevation Site elevation above sea level [m]
+@param[in] tempVals A temporary buffer to store any weather variable in
+@param[in] domSuids A list of program-domain suids of sites that will
+have the inputs read for
+@param[out] inputs A list of structs of the type SW_RUN_INPUTS that
+will be filled with input
 @param[in] siteLogs A list of LOG_INFO of size N_SUID_ASSIGN that will
 be returned with any site-specific errors/warnings
 @param[out] mainLogInfo Holds information on warnings and errors
@@ -8426,11 +8442,11 @@ to SW_Run
 @param[in] numInputs Total number of site inputs that will be read-in
 @param[in] tempVals A temporary buffer to store any variable in
 @param[in] domSuids A list of program-domain suids of sites that will
-    have the inputs read for (MPI only)
+have the inputs read for
 @param[in] newSoils A single (no SWMPI) or a list (SWMPI) of instances of
     SW_SOIL_RUN_INPUTS used as temporary storage when reading inputs
-@param[in] inputs A single instance (no SWMPI) or a list (SWMPI) of
-    SW_RUN_INPUTS that will be filled by a normal or I/O process
+@param[out] inputs A list of structs of the type SW_RUN_INPUTS that
+    will be filled with input
 @param[out] siteLogs A list of LOG_INFO of size N_SUID_ASSIGN that will
 be returned with any site-specific errors/warnings
 @param[out] mainLogInfo Holds information on warnings and errors
@@ -8590,12 +8606,10 @@ void SW_NCIN_read_inputs(
     if (runSims && readSoil) {
         read_soil_inputs(
             SW_Domain,
-            &sw->SiteSim,
             SW_Domain->hasConsistentSoilLayerDepths,
             SW_Domain->depthsAllSoilLayers,
             convs[eSW_InSoil],
             ncSUID,
-            sw->SiteIn.inputsProvideSWRCp,
             numInputs,
             numReads[eSW_InSoil],
             maxReads[eSW_InSoil],
@@ -8604,8 +8618,8 @@ void SW_NCIN_read_inputs(
             soilFileIDs,
             tempVals,
             newSoils,
-            inputs,
             domSuids,
+            inputs,
             siteLogs,
             mainLogInfo
         );

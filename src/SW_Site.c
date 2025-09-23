@@ -1558,7 +1558,7 @@ void SW_SIT_construct(
 
     memset(SW_SiteIn, 0, sizeof(SW_SITE_INPUTS));
     memset(SW_SiteSim, 0, sizeof(SW_SITE_SIM));
-    SW_SIT_init_counts(n_layers, SW_SiteSim);
+    SW_SIT_init_counts(SW_SiteSim, n_layers);
 }
 
 /**
@@ -1566,8 +1566,6 @@ void SW_SIT_construct(
 
 @param[in,out] SW_SiteIn Struct of type SW_SITE_INPUTS describing the simulated
 site's input values
-@param[in,out] SW_SiteSim Struct of type SW_SITE_SIM describing the simulated
-site's simulation values
 @param[in] txtInFiles Array of program in/output files
 @param[out] SW_CarbonIn Struct of type SW_CARBON_INPUTS holding all CO2-related
 data
@@ -1580,7 +1578,6 @@ when dealing with nc inputs)
 */
 void SW_SIT_read(
     SW_SITE_INPUTS *SW_SiteIn,
-    SW_SITE_SIM *SW_SiteSim,
     char *txtInFiles[],
     SW_CARBON_INPUTS *SW_CarbonIn,
     Bool *hasConsistentSoilLayerDepths,
@@ -1883,13 +1880,13 @@ void SW_SIT_read(
             }
 
             if (region > MAX_TRANSP_REGIONS ||
-                SW_SiteSim->n_transp_rgn >= MAX_TRANSP_REGIONS) {
+                SW_SiteIn->n_transp_rgn >= MAX_TRANSP_REGIONS) {
                 too_many_regions = swTRUE;
                 goto Label_End_Read;
             }
 
-            SW_SiteSim->TranspRgnDepths[region - 1] = rgnlow;
-            SW_SiteSim->n_transp_rgn++;
+            SW_SiteIn->TranspRgnDepths[region - 1] = rgnlow;
+            SW_SiteIn->n_transp_rgn++;
         }
 
         lineno++;
@@ -1945,9 +1942,9 @@ Label_End_Read:
     }
 
     /* check for any discontinuities (reversals) in the transpiration regions */
-    for (r = 1; r < SW_SiteSim->n_transp_rgn; r++) {
-        if (SW_SiteSim->TranspRgnDepths[r - 1] >=
-            SW_SiteSim->TranspRgnDepths[r]) {
+    for (r = 1; r < SW_SiteIn->n_transp_rgn; r++) {
+        if (SW_SiteIn->TranspRgnDepths[r - 1] >=
+            SW_SiteIn->TranspRgnDepths[r]) {
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -2196,7 +2193,7 @@ void set_soillayers(
     unsigned int k;
 
     // De-allocate and delete previous soil layers and reset counters
-    SW_SIT_init_counts(n_layers, SW_SiteSim);
+    SW_SIT_init_counts(SW_SiteSim, n_layers);
 
     // Create new soil
     for (i = 0; i < nlyrs; i++) {
@@ -2237,10 +2234,10 @@ void set_soillayers(
     }
 
     // Set transpiration region input information
-    SW_SiteSim->n_transp_rgn = nRegions;
+    SW_SiteIn->n_transp_rgn = nRegions;
 
     for (i = 0; i < nRegions; i++) {
-        SW_SiteSim->TranspRgnDepths[i] = regionLowerBounds[i];
+        SW_SiteIn->TranspRgnDepths[i] = regionLowerBounds[i];
     }
 
     // Re-initialize site parameters based on new soil layers
@@ -2356,6 +2353,9 @@ site's simulation values
 @param[in] inputsProvideSWRCp Are SWRC parameters obtained from
     input files (TRUE) or estimated with a PTF (FALSE)
 @param[out] swrcpMineralSoil SWRC parameters of the mineral soil component
+@param[out] swrcpOM Array of length two of vectors of SWRC parameters
+    of fibric peat (surface conditions) and
+    of sapric peat (at depth `depthSapric`)
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_SWRC_read(
@@ -2364,6 +2364,7 @@ void SW_SWRC_read(
     char *txtInFiles[],
     Bool inputsProvideSWRCp,
     double swrcpMineralSoil[][SWRC_PARAM_NMAX],
+    double swrcpOM[][SWRC_PARAM_NMAX],
     LOG_INFO *LogInfo
 ) {
     FILE *f;
@@ -2445,7 +2446,7 @@ void SW_SWRC_read(
             if (isMineral) {
                 swrcpMineralSoil[lyrno][k] = tmp_swrcp[k];
             } else {
-                SW_SiteSim->swrcpOM[lyrno][k] = tmp_swrcp[k];
+                swrcpOM[lyrno][k] = tmp_swrcp[k];
             }
         }
 
@@ -2561,10 +2562,10 @@ void SW_SIT_init_run(
 
     /* Identify transpiration regions by soil layers */
     derive_TranspRgnBounds(
-        &SW_SiteSim->n_transp_rgn,
+        &SW_SiteIn->n_transp_rgn,
         SW_SiteSim->TranspRgnBounds,
-        SW_SiteSim->n_transp_rgn,
-        SW_SiteSim->TranspRgnDepths,
+        SW_SiteIn->n_transp_rgn,
+        SW_SiteIn->TranspRgnDepths,
         n_layers,
         SW_SoilRunIn->width,
         SW_SoilRunIn->transp_coeff,
@@ -2604,7 +2605,7 @@ void SW_SIT_init_run(
     /* Check parameters of organic SWRC */
     if (hasOM) {
         if (!SWRC_check_parameters(
-                SW_SiteIn->site_swrc_type, SW_SiteSim->swrcpOM[0], LogInfo
+                SW_SiteIn->site_swrc_type, SW_SiteIn->swrcpOM[0], LogInfo
             )) {
             LogError(
                 LogInfo,
@@ -2616,7 +2617,7 @@ void SW_SIT_init_run(
         }
 
         if (!SWRC_check_parameters(
-                SW_SiteIn->site_swrc_type, SW_SiteSim->swrcpOM[1], LogInfo
+                SW_SiteIn->site_swrc_type, SW_SiteIn->swrcpOM[1], LogInfo
             )) {
             LogError(
                 LogInfo,
@@ -2742,7 +2743,7 @@ void SW_SIT_init_run(
             SW_SiteSim->swrc_type[s],
             SW_SiteSim->swrcp[s],
             SW_SoilRunIn->swrcpMineralSoil[s],
-            SW_SiteSim->swrcpOM,
+            SW_SiteIn->swrcpOM,
             SW_SoilRunIn->fractionWeight_om[s],
             SW_SiteIn->depthSapric,
             (s > 0) ? SW_SoilRunIn->depths[s - 1] : 0,
@@ -3054,7 +3055,7 @@ void SW_SIT_init_run(
                s is base0.
             */
             curregion = 0;
-            ForEachTranspRegion(r, SW_SiteSim->n_transp_rgn) {
+            ForEachTranspRegion(r, SW_SiteIn->n_transp_rgn) {
                 if (s < SW_SiteSim->TranspRgnBounds[r] &&
                     SW_SiteSim->TranspRgnBounds[r] <= MAX_LAYERS) {
 
@@ -3236,18 +3237,18 @@ void SW_SIT_init_run(
 /**
 @brief Reset counts of `SW_Site` to zero
 
-@param[in] n_layers Number of layers of soil within the simulation run
 @param[out] SW_SiteSim Struct of type SW_SITE_SIM describing the simulated
 site's values used during simulation
+@param[out] n_layers Number of layers of soil within the simulation run;
+return zeroed value
 */
-void SW_SIT_init_counts(LyrIndex *n_layers, SW_SITE_SIM *SW_SiteSim) {
+void SW_SIT_init_counts(SW_SITE_SIM *SW_SiteSim, LyrIndex *n_layers) {
     int k;
 
     // Reset counts
     *n_layers = 0;
     SW_SiteSim->n_evap_lyrs = 0;
     SW_SiteSim->deep_lyr = 0;
-    SW_SiteSim->n_transp_rgn = 0;
 
     ForEachVegType(k) { SW_SiteSim->n_transp_lyrs[k] = 0; }
 
@@ -3386,7 +3387,7 @@ void echo_inputs(
         SW_SiteSim->n_transp_lyrs[SW_GRASS]
     );
     sw_printf(
-        "  Number of transpiration regions: %d\n", SW_SiteSim->n_transp_rgn
+        "  Number of transpiration regions: %d\n", SW_SiteIn->n_transp_rgn
     );
 
     sw_printf("\nLayer Specific Values:\n----------------------\n");
