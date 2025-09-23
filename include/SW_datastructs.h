@@ -317,7 +317,8 @@ typedef struct {
 
     Possible levels are: shallow, moderately shallow, deep and very deep.
     Calculated as the number of the deepest soil layer (base1)
-    that still is within the corresponding soil depth #SW_SITE_INPUTS.TranspRgnDepths.
+    that still is within the corresponding soil depth
+    #SW_SITE_INPUTS.TranspRgnDepths.
 
     For instance, #SW_SITE_INPUTS.TranspRgnDepths of 20, 40, and 100 cm define
     three transpiration regions; then,
