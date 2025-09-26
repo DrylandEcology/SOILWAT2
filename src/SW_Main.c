@@ -134,23 +134,28 @@ int main(int argc, char **argv) {
     SW_CTL_setup_domain(
         rank, userSUID, renameDomainTemplateNC, &SW_Domain, &LogInfo
     );
-    if (LogInfo.stopRun) {
 #if defined(SWMPI)
-        goto setupProgramData;
-#else
+    if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD)) {
         goto finishProgram;
-#endif
     }
+#else
+    if (LogInfo.stopRun) {
+        goto finishProgram;
+    }
+#endif
 
     // setup and construct model template (independent of inputs)
     SW_CTL_setup_model(&sw_template, &SW_Domain.OutDom, swTRUE, &LogInfo);
-    if (LogInfo.stopRun) {
 #if defined(SWMPI)
-        goto setupProgramData;
-#else
+    if (SW_MPI_setup_fail(LogInfo.stopRun, MPI_COMM_WORLD)) {
         goto finishProgram;
-#endif
     }
+#else
+    if (LogInfo.stopRun) {
+        goto finishProgram;
+    }
+#endif
+
 #if defined(SWMPI)
     if (rank > SW_MPI_ROOT) {
         goto setupProgramData;

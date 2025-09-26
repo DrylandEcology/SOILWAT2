@@ -7424,6 +7424,7 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     Bool primCRSIsGeo =
         SW_Domain->OutDom.netCDFOutput.primary_crs_is_geographic;
     char **inDomFileNames = SW_PathInputs->ncInFiles[eSW_InDomain];
+    char progDir[MAX_FILENAMESIZE] = "\0";
 
     /* Get latitude/longitude names that were read-in from input file */
     char *readinGeoYName = (primCRSIsGeo) ?
@@ -7516,6 +7517,15 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         if (progFileExists) {
             nc_redef(*progFileID);
         } else {
+            DirName(progFileName, progDir);
+
+            if (!DirExists(progDir)) {
+                MkDir(progDir, LogInfo);
+                if (LogInfo->stopRun) {
+                    return;
+                }
+            }
+
             SW_NC_create_template(
                 SW_Domain->DomainType,
                 domFileName,
@@ -7727,6 +7737,7 @@ void SW_NCIN_soilProfile(
 void SW_NCIN_create_domain_template(
     SW_DOMAIN *SW_Domain, char *fileName, LOG_INFO *LogInfo
 ) {
+    char domDir[MAX_FILENAMESIZE] = "\0";
 
     /* Get latitude/longitude names that were read-in from input file */
     char *readinGeoYName = SW_Domain->OutDom.netCDFOutput.geo_YAxisName;
@@ -7777,6 +7788,15 @@ void SW_NCIN_create_domain_template(
         SW_MSG_ROOT("is creating a domain template ...", 0);
     }
 #endif
+
+    DirName(fileName, domDir);
+
+    if (!DirExists(domDir)) {
+        MkDir(domDir, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+    }
 
     if (nc_create(fileName, NC_NETCDF4, domFileID) != NC_NOERR) {
         LogError(
