@@ -1133,7 +1133,7 @@ double solar_radiation(
             // Diffuse irradiation (anisotropic):
             // HDKR model (Reindl et al. 1990)
             // Allen et al. 2006: eq. 33
-            if (GT(K_bh_calc + K_dh_calc)) {
+            if (GT(K_bh_calc + K_dh_calc, 0.)) {
                 f_ia = f_i * (1. - K_bh_calc) *
                            (1. + sqrt(K_bh_calc / (K_bh_calc + K_dh_calc)) *
                                      pow(sin(slope / 2.), 3.)) +
