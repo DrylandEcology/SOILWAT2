@@ -607,15 +607,14 @@ void SW_CTL_RunSimSet(
     (void) signal(SIGTERM, handle_interrupt);
 
 #if defined(SWMPI)
-    while ((SW_Domain->nProcSuids > 0 || (extraIter && numInputs == 0)) &&
-           runSims) {
+    while ((SW_Domain->nProcSuids > 0 || extraIter) && runSims) {
         Bool succFlags[N_SUID_ASSIGN] = {swFALSE};
 
         for (logIndex = 0; logIndex < N_SUID_ASSIGN; logIndex++) {
             sw_init_logs(main_LogInfo->logfp, &siteLogs[logIndex]);
         }
 
-        if (extraIter && numInputs == 0) {
+        if (SW_Domain->nProcSuids == 0 && extraIter) {
             extraIter = swFALSE;
         }
 

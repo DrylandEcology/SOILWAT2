@@ -1529,6 +1529,15 @@ void SW_MPI_read_inputs(
         counts
     );
 
+    if (origNSuids == 0) {
+        ForEachNCInKey(inKey) {
+            for (suid = 0; suid < N_SUID_ASSIGN; suid++) {
+                counts[inKey][suid][0] = counts[inKey][suid][1] = 0;
+            }
+            numReads[inKey] = 0;
+        }
+    }
+
     ForEachNCInKey(inKey) {
         if (SW_Domain->netCDFInput.readInVars[inKey][0]) {
             SW_MPI_Allreduce(
@@ -1541,14 +1550,6 @@ void SW_MPI_read_inputs(
             );
 
             for (suid = numReads[inKey]; suid < maxReads[inKey]; suid++) {
-                counts[inKey][suid][0] = counts[inKey][suid][1] = 0;
-            }
-        }
-    }
-
-    if (origNSuids == 0) {
-        ForEachNCInKey(inKey) {
-            for (suid = 0; suid < N_SUID_ASSIGN; suid++) {
                 counts[inKey][suid][0] = counts[inKey][suid][1] = 0;
             }
         }
