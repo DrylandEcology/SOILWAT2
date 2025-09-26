@@ -1939,7 +1939,7 @@ static void create_bnd_names(
             "%s_bnds",
             writeBndsNames[varNum]
         );
-        if (scanRes < 0 || scanRes > (int) sizeof bndNames[varNum]) {
+        if (scanRes < 0 || scanRes >= (int) sizeof bndNames[varNum]) {
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -2909,7 +2909,7 @@ static void generate_weather_filenames(
                 return; /* Exit function prematurely due to error */
             }
 
-            if (sprintfRes < 0) {
+            if (sprintfRes < 0 || (unsigned int) sprintfRes >= MAX_FILENAMESIZE) {
                 LogError(
                     LogInfo,
                     LOGERROR,

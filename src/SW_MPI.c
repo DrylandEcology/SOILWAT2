@@ -2094,7 +2094,7 @@ static void open_logfiles(
     DirName(logfileName, dir);
 
     for (log = 0; log < numLogs; log++) {
-        snprintf(
+        resSNP = snprintf(
             logBuffer,
             sizeof logBuffer,
             "%s%d_%s_%s",
@@ -2103,7 +2103,7 @@ static void open_logfiles(
             (log > 0) ? "COMP" : "IO",
             baseName
         );
-        if (resSNP < 0 || (unsigned int) resSNP > sizeof(logBuffer)) {
+        if (resSNP < 0 || (unsigned int) resSNP >= sizeof(logBuffer)) {
             LogError(
                 LogInfo,
                 LOGERROR,
