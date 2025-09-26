@@ -8893,7 +8893,7 @@ void SW_NCIN_dealloc_inputkey_var_info(SW_NETCDF_IN *SW_netCDFIn, int key) {
     }
 
     if (!isnull(SW_netCDFIn->uconv[key])) {
-        for (int varNum = 0; varNum < varsInKey; varNum++) {
+        for (varNum = 0; varNum < varsInKey; varNum++) {
             if (!isnull(SW_netCDFIn->uconv[key][varNum])) {
 #if defined(SWNETCDF) && defined(SWUDUNITS)
                 cv_free(SW_netCDFIn->uconv[key][varNum]);
