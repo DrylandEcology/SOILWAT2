@@ -39,12 +39,18 @@ void SW_NCOUT_create_output_dimVar(
 void SW_NCOUT_read_out_vars(
     SW_OUT_DOM *OutDom,
     char *txtInFiles[],
-    SW_VEGESTAB_INFO **parms,
+    SW_VEGESTAB_INFO_INPUTS *parmsIn,
     LOG_INFO *LogInfo
 );
 
 void SW_NCOUT_alloc_files(
     char ***ncOutFiles, unsigned int numFiles, LOG_INFO *LogInfo
+);
+
+void SW_NCOUT_alloc_varids(int **ncVarIDs, IntUS numVars, LOG_INFO *LogInfo);
+
+void SW_NCOUT_alloc_timeSizes(
+    unsigned int numFiles, size_t **timeSizes, LOG_INFO *LogInfo
 );
 
 void SW_NCOUT_init_ptrs(SW_NETCDF_OUT *SW_netCDFOut);
@@ -73,8 +79,10 @@ void SW_NCOUT_create_output_files(
     unsigned int startYr,
     unsigned int endYr,
     int baseCalendarYear,
+    size_t *outFileTimeSizes[],
     unsigned int *numFilesPerKey,
     char **ncOutFileNames[][SW_OUTNPERIODS],
+    int *ncOutVarIDs[],
     LOG_INFO *LogInfo
 );
 
@@ -86,7 +94,15 @@ void SW_NCOUT_write_output(
     unsigned int numFilesPerKey,
     char **ncOutFileNames[][SW_OUTNPERIODS],
     const size_t ncSuid[],
-    const char *domType,
+    size_t numWritesGroup,
+    size_t numWritesProc,
+    size_t **starts,
+    size_t **counts,
+    int *openOutFileIDs[][SW_OUTNPERIODS],
+    int *outVarIDs[],
+    Bool siteDom,
+    const Bool succFlags[],
+    size_t *timeSizes[],
     LOG_INFO *LogInfo
 );
 

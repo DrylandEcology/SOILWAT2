@@ -14,8 +14,7 @@
 #include "include/generic.h"    // for EQ, GE, LE, sqrt, squared, Bool, GT, LT
 #include "include/SW_Defines.h" // for missing
 #include <ctype.h>              // for isspace, tolower, toupper
-#include <stdio.h>              // for NULL
-#include <string.h>             // for strchr, strlen, strstr
+#include <string.h>             // for NULL, strchr, strlen, strstr
 
 /* =================================================== */
 /*             Local Function Definitions              */

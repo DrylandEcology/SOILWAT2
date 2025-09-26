@@ -87,6 +87,42 @@ make -k CXX=include-what-you-use CPPFLAGS="-DSWNC" CXXFLAGS="-Xiwyu --error_alwa
 #-------------------------------------------------------------------------------
 echo $'\n'\
 ==================================================$'\n'\
+"Check mpi-based SOILWAT2 ..."$'\n'\
+==================================================
+make clean
+if command -v mpicc > /dev/null 2>&1 ; then
+    make -k CC=include-what-you-use CPPFLAGS="-DSWMPI" CFLAGS="-Xiwyu --error_always $(mpicc --showme:compile)"
+else
+    echo "Skip iwyu with mpicc."
+fi
+
+
+echo $'\n'\
+==================================================$'\n'\
+"Check mpi-based SOILWAT2 (debug) ..."$'\n'\
+==================================================
+make clean
+if command -v mpicc > /dev/null 2>&1 ; then
+    make -k CC=include-what-you-use CPPFLAGS="-DSWMPI -DSWDEBUG" CFLAGS="-Xiwyu --error_always $(mpicc --showme:compile)"
+else
+    echo "Skip iwyu with mpicc."
+fi
+
+echo $'\n'\
+==================================================$'\n'\
+"Check mpi-based SOILWAT2 tests ..."$'\n'\
+==================================================
+make clean
+if command -v mpicc > /dev/null 2>&1 ; then
+    make -k CXX=include-what-you-use CPPFLAGS="-DSWMPI" CXXFLAGS="-Xiwyu --error_always $(mpicc --showme:compile)" test
+else
+    echo "Skip iwyu with mpicc."
+fi
+
+
+#-------------------------------------------------------------------------------
+echo $'\n'\
+==================================================$'\n'\
 "Check SOILWAT2 library for rSOILWAT2 ..."$'\n'\
 ==================================================
 make clean
@@ -107,16 +143,14 @@ echo $'\n'\
 "Check SOILWAT2 with extra flags ..."$'\n'\
 ==================================================
 make clean
-make -k CXX=include-what-you-use CPPFLAGS="-DSW2_SpinupEvaluation" CXXFLAGS="-Xiwyu --error_always" test
-
-make clean
-make -k CXX=include-what-you-use CPPFLAGS="-DSW2_PET_Test__petfunc_by_temps" CXXFLAGS="-Xiwyu --error_always" test
-
-make clean
-make -k CXX=include-what-you-use CPPFLAGS="-DSW2_SolarPosition_Test__hourangles_by_lat_and_doy" CXXFLAGS="-Xiwyu --error_always" test
-
-make clean
-make -k CXX=include-what-you-use CPPFLAGS="-DSW2_SolarPosition_Test__hourangles_by_lats" CXXFLAGS="-Xiwyu --error_always" test
+make -k CXX=include-what-you-use \
+    CPPFLAGS="\
+    -DSW2_SpinupEvaluation \
+    -DSW2_PET_Test__petfunc_by_temps \
+    -DSW2_SolarPosition_Test__hourangles_by_lat_and_doy \
+    -DSW2_SolarPosition_Test__hourangles_by_lats \
+    " \
+    CXXFLAGS="-Xiwyu --error_always" test
 
 #-------------------------------------------------------------------------------
 echo $'\n'\

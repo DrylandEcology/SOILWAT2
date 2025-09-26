@@ -12,6 +12,7 @@
 
 #include "include/SW_datastructs.h" // for LOG_INFO
 #include "include/SW_Defines.h"     // for sw_random_t
+#include <stddef.h>                 // for size_t
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,9 +28,7 @@ typedef long RandListType;
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void RandSeed(
-    unsigned long initstate, unsigned long initseq, sw_random_t *pcg_rng
-);
+void RandSeed(size_t initstate, size_t initseq, sw_random_t *pcg_rng);
 
 double RandUni(sw_random_t *pcg_rng);
 

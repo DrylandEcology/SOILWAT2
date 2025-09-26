@@ -1,8 +1,11 @@
 #!/bin/bash
 
 # run as `./tools/run_test_sanitizer.sh`
+
 # note: consider cleaning previous build artifacts, e.g., `make clean_test`
 
+
+#--- flags
 debug_flags="-g -O0 -DSWDEBUG"
 
 warning_flags_severe_cxx="\

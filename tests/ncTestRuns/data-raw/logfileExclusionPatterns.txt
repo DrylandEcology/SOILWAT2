@@ -1,2 +1,4 @@
 WARNING: Transpiration coefficients for '[[:alpha:]]+' summed to
 WARNING: Evaporation coefficients summed to
+WARNING: Normalization was applied to rooting profile \(trco\)
+WARNING: Normalization was applied to evaporation coefficients \(evco\)

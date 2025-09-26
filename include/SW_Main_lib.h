@@ -21,12 +21,14 @@ extern "C" {
 void sw_init_args(
     int argc,
     char **argv,
+    int rank,
     Bool *EchoInits,
     char **firstfile,
-    unsigned long *userSUID,
+    size_t *userSUID,
     double *wallTimeLimit,
     Bool *renameDomainTemplateNC,
     Bool *prepareFiles,
+    Bool *endQuietly,
     LOG_INFO *LogInfo
 );
 
@@ -38,8 +40,27 @@ void sw_init_logs(FILE *logInitPtr, LOG_INFO *LogInfo);
 
 void sw_write_warnings(const char *header, LOG_INFO *LogInfo);
 
-void sw_wrapup_logs(LOG_INFO *LogInfo);
+void sw_wrapup_logs(int rank, LOG_INFO *LogInfo);
 
+void sw_setup_prog_data(
+    int rank,
+    int worldSize,
+    const char *procName,
+    Bool prepareFiles,
+    SW_RUN *sw_template,
+    SW_DOMAIN *SW_Domain,
+    LOG_INFO *LogInfo
+);
+
+void sw_finalize_program(
+    int rank,
+    int size,
+    SW_DOMAIN *SW_Domain,
+    SW_WALLTIME *SW_WallTime,
+    Bool setupFailed,
+    Bool endQuietly,
+    LOG_INFO *LogInfo
+);
 
 #ifdef __cplusplus
 }

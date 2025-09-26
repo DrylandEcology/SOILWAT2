@@ -15,6 +15,11 @@
 #include <stdlib.h>                    // for free, strtod
 #include <string.h>                    // for strcmp, strlen, strstr, memcpy
 
+#if defined(SWMPI)
+#include <mpi.h>        // for MPI_Barrier, MPI_Comm, MPI_INF...
+#include <netcdf_par.h> // for nc_open_par
+#endif
+
 /* =================================================== */
 /*                   Local Defines                     */
 /* --------------------------------------------------- */
@@ -131,6 +136,32 @@ static void update_netCDF_global_atts(
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
+
+/**
+@brief Gets the type of an attribute
+
+@param[in] ncFileID File identifier of the file to get information from
+@param[in] varID Variable identifier to get the attribute value from
+@param[in] attName Attribute name to get the type of
+@param[out] attType Resulting attribute type gathered
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NC_get_att_type(
+    int ncFileID,
+    int varID,
+    const char *attName,
+    nc_type *attType,
+    LOG_INFO *LogInfo
+) {
+    if (nc_inq_atttype(ncFileID, varID, attName, attType) != NC_NOERR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not get the type of attribute '%s'.",
+            attName
+        );
+    }
+}
 
 /**
 @brief Get a dimension value from a given netCDF file
@@ -273,7 +304,7 @@ void SW_NC_check(
     SW_CRS *crs_geogsc = &SW_Domain->OutDom.netCDFOutput.crs_geogsc;
     SW_CRS *crs_projsc = &SW_Domain->OutDom.netCDFOutput.crs_projsc;
     char *siteName = SW_Domain->OutDom.netCDFOutput.siteName;
-    char strAttVal[LARGE_VALUE];
+    char *strAttVal = NULL;
     double doubleAttVal;
     const char *geoCRS = crs_geogsc->crs_name;
     const char *projCRS = crs_projsc->crs_name;
@@ -411,13 +442,16 @@ void SW_NC_check(
     if (geoCRSExists) {
         for (attNum = 0; attNum < numNormAtts; attNum++) {
             SW_NC_get_str_att_val(
-                ncFileID, geoCRS, strAttsToComp[attNum], strAttVal, LogInfo
+                ncFileID, geoCRS, strAttsToComp[attNum], &strAttVal, LogInfo
             );
             if (LogInfo->stopRun) {
                 goto wrapUp; // Exit function prematurely due to error
             }
 
-            if (strcmp(geoStrAttVals[attNum], strAttVal) != 0) {
+            // `isnull()` should not be necessary here, it is only to
+            // silence Clang Tidy
+            if (isnull(strAttVal) ||
+                strcmp(geoStrAttVals[attNum], strAttVal) != 0) {
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -473,7 +507,7 @@ void SW_NC_check(
         // Normal attributes (same tested for in crs_geogsc)
         for (attNum = 0; attNum < numNormAtts; attNum++) {
             SW_NC_get_str_att_val(
-                ncFileID, projCRS, strAttsToComp[attNum], strAttVal, LogInfo
+                ncFileID, projCRS, strAttsToComp[attNum], &strAttVal, LogInfo
             );
             if (LogInfo->stopRun) {
                 goto wrapUp; // Exit function prematurely due to error
@@ -520,7 +554,11 @@ void SW_NC_check(
         // Projected CRS-only attributes
         for (attNum = 0; attNum < numProjStrAtts; attNum++) {
             SW_NC_get_str_att_val(
-                ncFileID, projCRS, strProjAttsToComp[attNum], strAttVal, LogInfo
+                ncFileID,
+                projCRS,
+                strProjAttsToComp[attNum],
+                &strAttVal,
+                LogInfo
             );
             if (LogInfo->stopRun) {
                 goto wrapUp; // Exit function prematurely due to error
@@ -586,6 +624,10 @@ void SW_NC_check(
 wrapUp:
     if (fileWasClosed) {
         nc_close(ncFileID);
+    }
+
+    if (!isnull(strAttVal)) {
+        free((void *) strAttVal);
     }
 }
 
@@ -659,24 +701,6 @@ void SW_NC_write_string_att(
             "Could not create new global attribute %s",
             attName
         );
-    }
-}
-
-/**
-@brief Write values to a variable of type string
-
-@param[in] ncFileID Identifier of the open netCDF file to write the attribute
-@param[in] varID Variable identifier within the given netCDF
-@param[in] varVals Attribute value(s) to write out
-@param[out] LogInfo Holds information on warnings and errors
-*/
-void SW_NC_write_string_vals(
-    int ncFileID, int varID, const char *const varVals[], LOG_INFO *LogInfo
-) {
-
-    if (nc_put_var_string(ncFileID, varID, (const char **) &varVals[0]) !=
-        NC_NOERR) {
-        LogError(LogInfo, LOGERROR, "Could not write string values.");
     }
 }
 
@@ -799,18 +823,28 @@ void SW_NC_get_str_att_val(
     int ncFileID,
     const char *varName,
     const char *attName,
-    char *strVal,
+    char **strVal,
     LOG_INFO *LogInfo
 ) {
-
+    const int firstStr = 0;
     int varID = 0;
+    nc_type attType = NC_CHAR;
     int attCallRes;
     int attLenCallRes;
     size_t attLen = 0;
+    size_t strLen;
+
+    size_t strIndex;
+    char **strAtts = NULL;
 
     SW_NC_get_var_identifier(ncFileID, varName, &varID, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
+    }
+
+    SW_NC_get_att_type(ncFileID, varID, attName, &attType, LogInfo);
+    if (LogInfo->stopRun) {
+        return;
     }
 
     attLenCallRes = nc_inq_attlen(ncFileID, varID, attName, &attLen);
@@ -833,13 +867,42 @@ void SW_NC_get_str_att_val(
             attName
         );
     }
-
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
+    if (!isnull(*strVal)) {
+        free((void *) *strVal);
+        *strVal = NULL;
+    }
 
-    attCallRes = nc_get_att_text(ncFileID, varID, attName, strVal);
+    if (attType == NC_CHAR) {
+        *strVal = (char *) Mem_Malloc(
+            sizeof(char) * attLen + 1, "SW_NC_get_str_att_val", LogInfo
+        );
+    } else if (attType == NC_STRING) {
+        strAtts = (char **) Mem_Malloc(
+            sizeof(char *) * attLen, "SW_NC_get_str_att_val", LogInfo
+        );
+    } else if (attType != NC_CHAR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Type of attribute '%s' must be characters or a string.",
+            attName
+        );
+    }
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    if (attType == NC_CHAR) {
+        attCallRes = nc_get_att_text(ncFileID, varID, attName, *strVal);
+
+        (*strVal)[attLen] = '\0';
+    } else {
+        attCallRes = nc_get_att_string(ncFileID, varID, attName, strAtts);
+    }
     if (attCallRes != NC_NOERR) {
         LogError(
             LogInfo,
@@ -849,10 +912,23 @@ void SW_NC_get_str_att_val(
             attName,
             varName
         );
-        return; // Exit function prematurely due to error
     }
 
-    strVal[attLen] = '\0';
+    if (!isnull(strAtts)) {
+        strLen = strlen(strAtts[firstStr]) + 1;
+
+        *strVal = (char *) Mem_Malloc(
+            sizeof(char) * strLen, "SW_NC_get_str_att_val", LogInfo
+        );
+
+        for (strIndex = 0; strIndex < strLen; strIndex++) {
+            (*strVal)[strIndex] = strAtts[firstStr][strIndex];
+        }
+
+        nc_free_string(attLen, strAtts);
+
+        free((void *) strAtts);
+    }
 }
 
 /**
@@ -866,7 +942,7 @@ void SW_NC_get_str_att_val(
 */
 void SW_NC_create_netCDF_dim(
     const char *dimName,
-    unsigned long size,
+    size_t size,
     const int *ncFileID,
     int *dimID,
     LOG_INFO *LogInfo
@@ -1362,7 +1438,7 @@ void SW_NC_alloc_unitssw(char ***units_sw, int nVar, LOG_INFO *LogInfo) {
 
         // Initialize the variable within SW_OUT_DOM
         *units_sw = (char **) Mem_Malloc(
-            sizeof(char *) * nVar, "SW_NC_alloc_unitssw()", LogInfo
+            sizeof(char *) * nVar, "SW_NC_alloc_unitssw", LogInfo
         );
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -1388,7 +1464,7 @@ void SW_NC_alloc_uconv(sw_converter_t ***uconv, int nVar, LOG_INFO *LogInfo) {
     if (nVar > 0) {
 
         *uconv = (sw_converter_t **) Mem_Malloc(
-            sizeof(sw_converter_t *) * nVar, "SW_NC_alloc_uconv()", LogInfo
+            sizeof(sw_converter_t *) * nVar, "SW_NC_alloc_uconv", LogInfo
         );
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -1418,7 +1494,7 @@ void SW_NC_alloc_req(Bool **reqOutVar, int nVar, LOG_INFO *LogInfo) {
         // Initialize the variable within SW_OUT_DOM which specifies if a
         // variable is to be written out or not
         *reqOutVar = (Bool *) Mem_Malloc(
-            sizeof(Bool) * nVar, "SW_NC_alloc_outReq()", LogInfo
+            sizeof(Bool) * nVar, "SW_NC_alloc_outReq", LogInfo
         );
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -1454,7 +1530,7 @@ void SW_NC_alloc_vars(
         // Allocate all memory for the variable information in the current
         // output key
         *keyVars = (char ***) Mem_Malloc(
-            sizeof(char **) * nVar, "SW_NC_alloc_vars()", LogInfo
+            sizeof(char **) * nVar, "SW_NC_alloc_vars", LogInfo
         );
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -1466,7 +1542,7 @@ void SW_NC_alloc_vars(
 
         for (index = 0; index < nVar; index++) {
             (*keyVars)[index] = (char **) Mem_Malloc(
-                sizeof(char *) * numAtts, "SW_NC_alloc_vars()", LogInfo
+                sizeof(char *) * numAtts, "SW_NC_alloc_vars", LogInfo
             );
             if (LogInfo->stopRun) {
                 for (varNum = 0; varNum < index; varNum++) {
@@ -1525,3 +1601,20 @@ void SW_NC_open(
         LogError(LogInfo, LOGERROR, "Could not open file '%s'.", ncFileName);
     }
 }
+
+#if defined(SWMPI)
+void SW_NC_open_par(
+    const char *fileName, int mode, MPI_Comm comm, int *id, LOG_INFO *LogInfo
+) {
+    if (nc_open_par(fileName, mode, comm, MPI_INFO_NULL, id) != NC_NOERR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not open the file '%s' for parallel I/O.",
+            fileName
+        );
+    }
+
+    MPI_Barrier(comm);
+}
+#endif

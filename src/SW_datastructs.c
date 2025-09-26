@@ -3,7 +3,6 @@
 /* --------------------------------------------------- */
 #include "include/SW_datastructs.h"
 #include "include/myMemory.h" // for Mem_Malloc
-#include <float.h>            // for DBL_MAX
 #include <math.h>             // for fabs, pow, cos, fmod
 #include <stdlib.h>           // for free
 
@@ -234,7 +233,7 @@ static SW_KD_NODE *createNode(
     SW_KD_NODE *newNode = NULL;
 
     newNode =
-        (SW_KD_NODE *) Mem_Malloc(sizeof(SW_KD_NODE), "createNode()", LogInfo);
+        (SW_KD_NODE *) Mem_Malloc(sizeof(SW_KD_NODE), "createNode", LogInfo);
 
     if (!LogInfo->stopRun) {
         copyData(
@@ -580,14 +579,14 @@ static void alloc_coords_indices(
     size_t pair;
 
     *coords = (double **) Mem_Malloc(
-        sizeof(double *) * numPoints, "alloc_coords_indices()", LogInfo
+        sizeof(double *) * numPoints, "alloc_coords_indices", LogInfo
     );
     if (LogInfo->stopRun) {
         return; /* Exit function prematurely due to error */
     }
 
     *indices = (unsigned int **) Mem_Malloc(
-        sizeof(unsigned int *) * numPoints, "alloc_coords_indices()", LogInfo
+        sizeof(unsigned int *) * numPoints, "alloc_coords_indices", LogInfo
     );
     if (LogInfo->stopRun) {
         return; /* Exit function prematurely due to error */
@@ -600,7 +599,7 @@ static void alloc_coords_indices(
 
     for (pair = 0; pair < numPoints; pair++) {
         (*coords)[pair] = (double *) Mem_Malloc(
-            sizeof(double) * 2, "alloc_coords_indices()", LogInfo
+            sizeof(double) * 2, "alloc_coords_indices", LogInfo
         );
         if (LogInfo->stopRun) {
             return; /* Exit function prematurely due to error */
@@ -610,7 +609,7 @@ static void alloc_coords_indices(
         (*coords)[pair][1] = 0.0;
 
         (*indices)[pair] = (unsigned int *) Mem_Malloc(
-            sizeof(unsigned int) * 2, "alloc_coords_indices()", LogInfo
+            sizeof(unsigned int) * 2, "alloc_coords_indices", LogInfo
         );
         if (LogInfo->stopRun) {
             return; /* Exit function prematurely due to error */
@@ -682,7 +681,6 @@ void SW_DATA_queryTree(
     double *bestDist
 ) {
     int inspectIndex = level % KD_NDIMS;
-    double *oppCoords = NULL;
     double currDist;
 
     if (isnull(currNode)) {
@@ -722,30 +720,26 @@ void SW_DATA_queryTree(
 
     /* Check to see if the other child branch holds a value that's closer
        than the current best option */
-    oppCoords = (goLeft) ? currNode->right->coords : currNode->left->coords;
-
-    if (!isnull(oppCoords)) {
-        if (goLeft && GE(queryCoords[inspectIndex] + *bestDist,
-                         currNode->coords[inspectIndex])) {
-            SW_DATA_queryTree(
-                currNode->right,
-                queryCoords,
-                level + 1,
-                primCRSIsGeo,
-                bestNode,
-                bestDist
-            );
-        } else if (!goLeft && LE(queryCoords[inspectIndex] - *bestDist,
-                                 currNode->coords[inspectIndex])) {
-            SW_DATA_queryTree(
-                currNode->left,
-                queryCoords,
-                level + 1,
-                primCRSIsGeo,
-                bestNode,
-                bestDist
-            );
-        }
+    if (goLeft && GE(queryCoords[inspectIndex] + *bestDist,
+                     currNode->coords[inspectIndex])) {
+        SW_DATA_queryTree(
+            currNode->right,
+            queryCoords,
+            level + 1,
+            primCRSIsGeo,
+            bestNode,
+            bestDist
+        );
+    } else if (!goLeft && LE(queryCoords[inspectIndex] - *bestDist,
+                             currNode->coords[inspectIndex])) {
+        SW_DATA_queryTree(
+            currNode->left,
+            queryCoords,
+            level + 1,
+            primCRSIsGeo,
+            bestNode,
+            bestDist
+        );
     }
 }
 

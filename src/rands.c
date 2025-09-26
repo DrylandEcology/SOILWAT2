@@ -8,8 +8,6 @@
 #include "include/myMemory.h"       // for Mem_Malloc
 #include "include/SW_datastructs.h" // for LOG_INFO
 #include "include/SW_Defines.h"     // for sw_random_t, SW_MISSING
-#include <math.h>                   // for log, exp, ldexp, fmin, fmax
-#include <stdlib.h>                 // for free
 
 #ifdef RSOILWAT
 // R-API requires that we use it's own random number implementation
@@ -21,10 +19,11 @@
 #include <Rmath.h> // for rnorm, runif, unif_rand
 #else
 #include "external/pcg/pcg_basic.h" // for pcg32_srandom_r, pcg32_boundedra...
-#include <stdio.h>                  // for NULL
 #include <time.h>                   // for time
 #endif
 
+#include <math.h>   // for log, exp, ldexp, fmin, fmax
+#include <stdlib.h> // for free, NULL
 
 /* =================================================== */
 /*                  Local Variables                    */
@@ -59,8 +58,8 @@ even if they occurred during the same system time.
 @param[in,out] pcg_rng The random number generator to set.
 */
 void RandSeed(
-    unsigned long initstate,
-    unsigned long initseq,
+    size_t initstate,
+    size_t initseq,
     sw_random_t *pcg_rng // NOLINT(readability-non-const-parameter)
 ) {
 // R uses its own random number generators

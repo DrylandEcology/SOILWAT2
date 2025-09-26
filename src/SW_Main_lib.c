@@ -22,13 +22,30 @@
 #include "include/myMemory.h"       // for Str_Dup
 #include "include/SW_datastructs.h" // for LOG_INFO
 #include "include/SW_Defines.h"     // for MAX_MSGS, MAX_LOG_SIZE, BUILD_DATE
-#include <stdio.h>                  // for fprintf, stderr, fflush, stdout
-#include <stdlib.h>                 // for exit, free, EXIT_FA...
-#include <string.h>                 // for strncmp
 
-#ifdef RSOILWAT
+#if defined(RSOILWAT)
 #include <R.h> // for Rf_error(), and Rf_warning() from <R_ext/Error.h>
+#else
+
+#include "include/SW_Output.h" // for SW_OUT_setup_output
+
+#if defined(SWNETCDF)
+#include "include/SW_netCDF_Output.h" // for SW_NCOUT_create_units_converters
 #endif
+
+#if defined(SWMPI)
+#include "include/SW_MPI.h"
+#include "include/SW_netCDF_Input.h" // for SW_NCOUT_create_units_converters
+#include <mpi.h>                     // for MPI_COMM_WORLD
+#else
+#include "include/Times.h" // for SW_WT_ReportTime
+#endif
+
+#endif
+
+#include <stdio.h>  // for fprintf, stderr, fflush, stdout
+#include <stdlib.h> // for exit, free, EXIT_FA...
+#include <string.h> // for strncmp
 
 /* =================================================== */
 /*             Local Function Definitions              */
@@ -39,24 +56,28 @@
 */
 static void sw_print_usage(void) {
     sw_printf(
-        "Ecosystem water simulation model SOILWAT2\n"
-        "More details at https://github.com/Burke-Lauenroth-Lab/SOILWAT2\n"
-        "Usage: ./SOILWAT2 [-d startdir] [-f files.in] [-e] [-q] [-v] [-h] "
-        "[-s 1] [-t 10] [-r]\n"
-        "  -d : operate (chdir) in startdir (default=.)\n"
-        "  -f : name of main input file (default=files.in)\n"
-        "       a preceeding path applies to all input files\n"
-        "  -e : echo initial values from site and estab to logfile\n"
-        "  -q : quiet mode (print version, print error, message to check "
-        "logfile)\n"
-        "  -v : print version information\n"
-        "  -h : print this help information\n"
-        "  -s : simulate all (0) or one (> 0) simulation unit from the domain\n"
-        "       (default = 0)\n"
-        "  -t : wall time limit in seconds\n"
-        "  -r : rename netCDF domain template file "
-        "[name provided in 'Input_nc/files_nc.in']\n"
-        "  -p : solely prepare domain/progress, index, and output files\n"
+        "SOILWAT2: an ecosystem water simulation model.\n"
+        "More details at https://github.com/DrylandEcology/SOILWAT2\n"
+        "Usage: SOILWAT2 [-d <directory>] [-f <mainFile>] [-e] [-q] [-v] [-h] "
+        "[-s <number>] [-t <number>] [-r] [-p]\n"
+        "Options:\n"
+        "  -d : Operate (chdir) in <directory> (default = '.').\n"
+        "  -f : Main input file relative to <directory>"
+        "(default = 'files.in').\n"
+        "  -e : Echo inputs from text-based input files.\n"
+        "  -q : Quiet mode (do not write messages to the console).\n"
+        "  -v : Print version information and exit.\n"
+        "  -h : Print this help information and exit.\n"
+        "  -s : Simulate all simulation units (if <number> = 0, default) or \n"
+        "       a specific simulation unit that is identified by its suid \n"
+        "       (suid = <number> if <number> > 0) \n"
+        "       Note: xy-domain `<number> = (y - 1) * nDimX + x`.\n"
+        "       This option is not functional in mpi-based SOILWAT2.\n"
+        "  -t : Set a wall time limit where <number> is in units of seconds.\n"
+        "  -r : A netCDF domain template file is automatically renamed\n"
+        "       to the domain file name provided in 'Input_nc/files_nc.in'.\n"
+        "  -p : Prepare domain, progress, index, and output netCDF files\n"
+        "       but do not run simulations.\n"
     );
 }
 
@@ -83,12 +104,26 @@ void sw_print_version(void) {
 #if defined(SWUDUNITS)
     sw_printf(", udunits2");
 #endif
+#if defined(SWMPI)
+    sw_printf(", MPI");
+#endif
 #else
     sw_printf("text");
 #endif
 #endif
 
     sw_printf("\n");
+
+#if defined(SWMPI)
+    sw_printf(
+        "SWMPI           : SW_MPI_NIO = %d, N_SUID_ASSIGN = %d, "
+        "MAX_NODE_PROCS = %d, N_ITER_BEFORE_OUT = %d\n",
+        SW_MPI_NIO,
+        N_SUID_ASSIGN,
+        MAX_NODE_PROCS,
+        N_ITER_BEFORE_OUT
+    );
+#endif
 
 #ifndef RSOILWAT
     sw_printf(
@@ -106,6 +141,8 @@ void sw_print_version(void) {
 
 @param[in] argc Number (count) of command line arguments.
 @param[in] argv Values of command line arguments.
+@param[in] rank Process number known to MPI for the current process (aka rank);
+    defaults to 0 (main process) if we are running sequentially
 @param[out] EchoInits Flag to control if inputs are to be output to the user
 @param[out] firstfile First file name to be filled in the program run
 @param[out] userSUID Simulation Unit Identifier requested by the user (base1);
@@ -118,17 +155,21 @@ void sw_print_version(void) {
 @param[out] prepareFiles Should we only prepare domain/progress, index,
             and output files? If so, simulations will occur without this
             flag being turned on
+@param[out] endQuietly A flag specifying if no messages should be produced,
+    e.g., if SOILWAT2 was called to print help or version only.
 @param[out] LogInfo Holds information on warnings and errors
 */
 void sw_init_args(
     int argc,
     char **argv,
+    int rank,
     Bool *EchoInits,
     char **firstfile,
-    unsigned long *userSUID,
+    size_t *userSUID,
     double *wallTimeLimit,
     Bool *renameDomainTemplateNC,
     Bool *prepareFiles,
+    Bool *endQuietly,
     LOG_INFO *LogInfo
 ) {
 
@@ -171,6 +212,7 @@ void sw_init_args(
     *EchoInits = swFALSE;
     *renameDomainTemplateNC = swFALSE;
     *userSUID = 0; // Default (if no input) is 0 (i.e., all suids)
+    *endQuietly = swFALSE;
 
     a = 1;
     for (i = 1; i <= nopts; i++) {
@@ -246,29 +288,42 @@ void sw_init_args(
             break;
 
         case 4: /* -v */
-            sw_print_version();
-            LogError(LogInfo, LOGERROR, "");
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+            if (rank == 0) {
+                sw_print_version();
+                *endQuietly = swTRUE;
+                return;
             }
             break;
 
         case 5: /* -h */
-            sw_print_usage();
-            LogError(LogInfo, LOGERROR, "");
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
+            if (rank == 0) {
+                sw_print_usage();
+                *endQuietly = swTRUE;
+                return;
             }
             break;
 
         case 6: /* -s */
-            *userSUID = sw_strtoul(str, errMsg, LogInfo);
+#if defined(SWMPI)
+            if (rank == 0) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "The option '-s' is currently disabled in SWMPI mode. It "
+                    "is suggested to use SWNC mode to run a specific site."
+                );
+            }
+
+            return;
+#endif
+
+            *userSUID = sw_strtosizet(str, errMsg, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
 
             /* Check that user input can be represented by userSUID
-             * (currently, unsigned long) */
+             * (currently, size_t) */
             /* Expect that conversion of string to double results in the
              * same value as conversion of userSUID to double */
             doubleUserSUID = sw_strtod(str, errMsg, LogInfo);
@@ -281,7 +336,7 @@ void sw_init_args(
                     LogInfo,
                     LOGERROR,
                     "User input not recognized as a simulation unit "
-                    "('-s %s' vs. %lu).",
+                    "('-s %s' vs. %zu).",
                     str,
                     *userSUID
                 );
@@ -343,7 +398,7 @@ void sw_fail_on_error(LOG_INFO *LogInfo) {
             (void) fprintf(stderr, "%s", LogInfo->errorMsg);
         }
         if (LogInfo->printProgressMsg) {
-            sw_message("ended.");
+            SW_MSG_ROOT("ended.", 0);
         }
         exit(EXIT_FAILURE);
     }
@@ -368,6 +423,11 @@ void sw_init_logs(FILE *logInitPtr, LOG_INFO *LogInfo) {
     LogInfo->numWarnings = 0;
     LogInfo->numDomainWarnings = 0;
     LogInfo->numDomainErrors = 0;
+
+#if defined(SWMPI)
+    LogInfo->logfps = NULL;
+    LogInfo->numFiles = 0;
+#endif
 }
 
 /**
@@ -449,8 +509,8 @@ void sw_write_warnings(const char *header, LOG_INFO *LogInfo) {
 
     writeErrMsg: {
         if (writeRes < 0) {
-            sw_message(
-                "Failed to write all warning/error messages to logfile.\n"
+            SW_MSG_ROOT(
+                "Failed to write all warning/error messages to logfile.\n", 0
             );
         }
     }
@@ -465,40 +525,256 @@ void sw_write_warnings(const char *header, LOG_INFO *LogInfo) {
 Close logfile and notify user that logfile has content (unless QuietMode);
 print number of simulation units with warnings and errors (if any).
 
+@param[in] rank Process number known to MPI for the current process (aka rank);
+    can only be different when SWMPI is enabled
 @param[in] LogInfo Holds information on warnings and errors
 */
-void sw_wrapup_logs(LOG_INFO *LogInfo) {
+void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
     Bool QuietMode = (Bool) (LogInfo->QuietMode || isnull(LogInfo->logfp));
-    Bool isLogFileSTD =
-        (Bool) (LogInfo->logfp == stdout || LogInfo->logfp == stderr);
+    FILE *logfp = LogInfo->logfp;
 
-    // Close logfile (but not if it is stdout or stderr)
-    if (!isLogFileSTD) {
-        CloseFile(&LogInfo->logfp, LogInfo);
+    // If we are running with MPI, we need to close all opened log files
+    // otherwise, when not using MPI, we only need to close one
+#if defined(SWMPI)
+    int file;
+
+    for (file = 0; file < LogInfo->numFiles; file++) {
+        logfp = LogInfo->logfps[file];
+#endif
+        // Close logfile (but not if it is stdout or stderr)
+        if (logfp != stdout || logfp != stderr) {
+            CloseFile(&logfp, LogInfo);
+        }
+#if defined(SWMPI)
+    }
+#endif
+
+    if (rank == 0) {
+        // Notify the user that there are messages in the logfile (unless
+        // QuietMode)
+        if ((LogInfo->numDomainErrors > 0 || LogInfo->numDomainWarnings > 0 ||
+             LogInfo->stopRun || LogInfo->numWarnings > 0) &&
+            !QuietMode && LogInfo->logfp != stdout &&
+            LogInfo->logfp != stderr) {
+            (void) fprintf(
+                stderr, "\nCheck logfile for warnings and error messages.\n"
+            );
+
+            if (LogInfo->numDomainWarnings > 0) {
+                (void) fprintf(
+                    stderr,
+                    "Simulation units with warnings: n = %zu\n",
+                    LogInfo->numDomainWarnings
+                );
+            }
+
+            if (LogInfo->numDomainErrors > 0) {
+                (void) fprintf(
+                    stderr,
+                    "Simulation units with an error: n = %zu\n",
+                    LogInfo->numDomainErrors
+                );
+            }
+        }
+    }
+}
+
+/**
+@brief Wrapper function to setup outputs and handle MPI
+
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] worldSize Total number of processes that the MPI run has created
+@param[in] procName Name of the processor/node the current processes is
+    running on
+@param[in] prepareFiles Should we only prepare domain/progress, index,
+    and output files? If so, simulations will occur without this
+    flag being turned on
+@param[in,out] sw_template Template SW_RUN for the function to use as a
+    reference for local versions of SW_RUN
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void sw_setup_prog_data(
+    int rank,
+    int worldSize,
+    const char *procName,
+    Bool prepareFiles,
+    SW_RUN *sw_template,
+    SW_DOMAIN *SW_Domain,
+    LOG_INFO *LogInfo
+) {
+#if defined(SWNETCDF)
+    Bool doOutStuff = swTRUE;
+#else
+    (void) prepareFiles;
+#endif
+#if defined(SWMPI)
+    int procJob;
+
+    if (!prepareFiles) {
+        SW_MPI_setup(
+            rank, worldSize, procName, SW_Domain, sw_template, LogInfo
+        );
+        if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
+            return;
+        }
+        procJob = SW_Domain->SW_Designation.procJob;
+        doOutStuff = (Bool) (procJob == SW_MPI_PROC_IO);
+    }
+#else
+    (void) rank;
+    (void) worldSize;
+    (void) procName;
+#endif
+
+    // initialize output
+    SW_OUT_setup_output(
+        SW_Domain->nMaxSoilLayers,
+        SW_Domain->nMaxEvapLayers,
+        sw_template->VegEstabIn.count,
+        sw_template->VegEstabIn.parms,
+        &SW_Domain->OutDom,
+        LogInfo
+    );
+#if defined(SWMPI)
+    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
+        return;
+    }
+#else
+    if (LogInfo->stopRun) {
+        return;
+    }
+#endif
+
+#if defined(SWNETCDF)
+#if defined(SWMPI)
+    if (rank == SW_MPI_ROOT) {
+#endif
+        SW_NCOUT_read_out_vars(
+            &SW_Domain->OutDom,
+            SW_Domain->SW_PathInputs.txtInFiles,
+            sw_template->VegEstabIn.parms,
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+#if defined(SWMPI)
+    }
+    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
+        return;
+    }
+#endif
+
+#if defined(SWMPI)
+    if (doOutStuff && !prepareFiles) {
+        SW_MPI_ncout_info(
+            rank,
+            SW_Domain->SW_Designation.groupComm,
+            &SW_Domain->OutDom,
+            LogInfo
+        );
+    }
+    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
+        return;
+    }
+#endif
+
+    if (!prepareFiles) {
+        if (doOutStuff) {
+            SW_NCOUT_create_units_converters(&SW_Domain->OutDom, LogInfo);
+        }
+#if defined(SWMPI)
+        if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
+            return;
+        }
+#else
+        if (LogInfo->stopRun) {
+            return;
+        }
+#endif
+
+#if defined(SWMPI)
+        if (rank > SW_MPI_ROOT && doOutStuff) {
+            SW_NCIN_create_units_converters(&SW_Domain->netCDFInput, LogInfo);
+        }
+#endif
+    }
+#endif // SWNETCDF
+}
+
+/**
+@brief Wrapper function to finalize the program depending on if SWMPI
+is enabled
+
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] size Number of processors (world size) within the
+    communicator MPI_COMM_WORLD
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+@param[in] SW_WallTime Struct of type SW_WALLTIME that holds timing
+    information for the program run
+@param[in] setupFailed A flag specifying if the program was exited
+    before setup was completed
+@param[in] endQuietly A flag specifying if no messages should be produced,
+    e.g., if SOILWAT2 was called to print help or version only.
+@param[in] LogInfo Holds information on warnings and errors
+*/
+void sw_finalize_program(
+    int rank,
+    int size,
+    SW_DOMAIN *SW_Domain,
+    SW_WALLTIME *SW_WallTime,
+    Bool setupFailed,
+    Bool endQuietly,
+    LOG_INFO *LogInfo
+) {
+#if defined(SWMPI)
+    int procJob = SW_Domain->SW_Designation.procJob;
+
+    /* Report information for the following scenarios
+        1) Failed during setup - error(s)/warning(s)
+        2) Failed during simulation runs - simulations statistics *
+        3) Successful program run - simulation statistics *
+
+        * = All warnings/errors are reported through I/O processes
+    */
+    if (!endQuietly) {
+        SW_MPI_report_log(
+            rank,
+            size,
+            SW_Domain->datatypes[eSW_MPI_WallTime],
+            SW_WallTime,
+            SW_Domain,
+            setupFailed,
+            LogInfo
+        );
     }
 
-    // Notify the user that there are messages in the logfile (unless QuietMode)
-    if ((LogInfo->numDomainErrors > 0 || LogInfo->numDomainWarnings > 0 ||
-         LogInfo->stopRun || LogInfo->numWarnings > 0) &&
-        !QuietMode && !isLogFileSTD) {
-        (void
-        ) fprintf(stderr, "\nCheck logfile for warnings and error messages.\n");
-
-        if (LogInfo->numDomainWarnings > 0) {
-            (void) fprintf(
-                stderr,
-                "Simulation units with warnings: n = %lu\n",
-                LogInfo->numDomainWarnings
-            );
-        }
-
-        if (LogInfo->numDomainErrors > 0) {
-            (void) fprintf(
-                stderr,
-                "Simulation units with an error: n = %lu\n",
-                LogInfo->numDomainErrors
-            );
-        }
+    // Free types and communicators
+    SW_MPI_free_comms_types(
+        &SW_Domain->SW_Designation, SW_Domain->datatypes, LogInfo
+    );
+#else
+    if (!endQuietly) {
+        sw_write_warnings("(main) ", LogInfo);
+        SW_WT_ReportTime(*SW_WallTime, LogInfo);
+        sw_fail_on_error(LogInfo);
     }
+
+    (void) size;
+    (void) setupFailed;
+    (void) SW_WallTime;
+    (void) SW_Domain;
+#endif
+
+    if (!endQuietly) {
+        sw_wrapup_logs(rank, LogInfo);
+    }
+
+#if defined(SWMPI)
+    SW_MPI_finalize(procJob, LogInfo);
+#endif
 }
 #endif // !defined(RSOILWAT)

@@ -4,6 +4,7 @@
 #include "include/generic.h"        // for Bool, IntUS
 #include "include/SW_datastructs.h" // for SW_DOMAIN, SW_NETCDF_OUT, S...
 #include "include/SW_Defines.h"     // for OutPeriod, SW_OUTNPERIODS, SW_OUTN...
+#include <netcdf.h>                 // for NC_NOERR, nc_close, NC_DOUBLE
 #include <stdio.h>                  // for size_t
 
 #ifdef __cplusplus
@@ -16,19 +17,21 @@ extern "C" {
 
 #define DOMAIN_TEMP "Input_nc/domain_template.nc"
 
-/** Specifies the number of input variables per key a user
-can provide; This number includes a variable for an index
-file after and including the input key `inSpatial`.
-These numbers must match up with `possVarNames` */
-static const int numVarsInKey[] = {
-    2,  /* inDomain */
-    3,  /* inSpatial */
-    4,  /* inTopo */
-    22, /* inSoil */
-    2,  /* inSite */
-    22, /* inVeg */
-    15, /* inWeather */
-    6   /* inClimate */
+/** Number of input variables per input key a user can provide.
+
+Except for 'inDomain', a value of 1 is added to numVarsInKey[] to account
+for the the spatial index file (indexSpatial) that each input key contains.
+
+Note: `numVarsInKey` and `possVarNames` must be consistent with each other. */
+static const int numVarsInKey[SW_NINKEYSNC] = {
+    2,                                /* inDomain */
+    3,                                /* inSpatial */
+    4,                                /* inTopo */
+    12 + SWRC_PARAM_NMAX + NVEGTYPES, /* inSoil */
+    2,                                /* inSite */
+    2 + 5 * NVEGTYPES,                /* inVeg */
+    15,                               /* inWeather */
+    6                                 /* inClimate */
 };
 
 #define ForEachNCInKey(k) for ((k) = 0; (k) < eSW_LastInKey; (k)++)
@@ -49,6 +52,27 @@ static const int numVarsInKey[] = {
 #define INTAXIS 12
 #define INSTPATRN 13
 #define INVAXIS 14
+
+/* Columns of interest, and excludes:
+    - Input key and input name
+    - "do input" flags in value
+    - Input file name/pattern
+    - St years and stride years start
+    - Calendar override
+    - User comment */
+#define NUM_INPUT_INFO 16
+
+#define MAX_NDIMS 5
+#define SIM_INFO_NFLAGS 6
+
+/** Progress status: SUID is ready for simulation */
+#define PRGRSS_READY ((signed char) 0)
+
+/** Progress status: SUID has successfully been simulated */
+#define PRGRSS_DONE ((signed char) 1)
+
+/** Progress status: SUID failed to simulate */
+#define PRGRSS_FAIL ((signed char) -1)
 
 /* =================================================== */
 /*             Global Function Declarations            */
@@ -73,11 +97,11 @@ void SW_NCIN_create_domain_template(
 void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
 
 void SW_NCIN_set_progress(
-    Bool isFailure,
-    const char *domType,
     int progFileID,
     int progVarID,
-    size_t ncSUID[],
+    size_t start[],
+    size_t count[],
+    const signed char *mark,
     LOG_INFO *LogInfo
 );
 
@@ -85,8 +109,33 @@ Bool SW_NCIN_check_progress(
     int progFileID, int progVarID, size_t ncSUID[], LOG_INFO *LogInfo
 );
 
+void SW_NCIN_alloc_weather_indices_years(
+    unsigned int ***ncWeatherStartEndIndices,
+    unsigned int numStartEndIndices,
+    unsigned int **numDaysInYear,
+    unsigned int numYears,
+    LOG_INFO *LogInfo
+);
+
 void SW_NCIN_read_inputs(
-    SW_RUN *sw, SW_DOMAIN *SW_Domain, const size_t ncSUID[], LOG_INFO *LogInfo
+    SW_RUN *sw,
+    SW_DOMAIN *SW_Domain,
+    const size_t ncSUID[],
+    size_t ***starts,
+    size_t ***counts,
+    int **openNCFileIDs[],
+    size_t numReads[],
+    size_t numInputs,
+    double *tempMonthlyVals,
+    double *elevations,
+    double *tempSiltVals,
+    double *tempVals,
+    double *tempWeath,
+    size_t **domSuids,
+    SW_SOIL_RUN_INPUTS *newSoils,
+    SW_RUN_INPUTS *inputs,
+    LOG_INFO *siteLogs,
+    LOG_INFO *mainLogInfo
 );
 
 void SW_NCIN_check_input_config(
@@ -102,7 +151,7 @@ void SW_NCIN_open_dom_prog_files(
     SW_NETCDF_IN *SW_netCDFIn, SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo
 );
 
-void SW_NCIN_close_files(int ncDomFileIDs[]);
+void SW_NCIN_close_files(SW_PATH_INPUTS *SW_PathInputs);
 
 void SW_NCIN_init_ptrs(SW_NETCDF_IN *SW_netCDFIn);
 
@@ -149,11 +198,37 @@ void SW_NCIN_alloc_weath_input_info(
     LOG_INFO *LogInfo
 );
 
+void SW_NCIN_allocate_startEndYrs(
+    unsigned int ***ncWeatherInStartEndYrs,
+    unsigned int numWeathIn,
+    LOG_INFO *LogInfo
+);
+
 void SW_NCIN_precalc_lookups(
-    SW_DOMAIN *SW_Domain, SW_WEATHER *SW_Weather, LOG_INFO *LogInfo
+    SW_DOMAIN *SW_Domain, SW_WEATHER_INPUTS *SW_WeatherIn, LOG_INFO *LogInfo
 );
 
 void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
+
+void SW_NCIN_alloc_miss_vals(
+    int numVars, double ***doubleMissVals, LOG_INFO *LogInfo
+);
+
+void SW_NCIN_alloc_sim_var_information(
+    int numVars,
+    int currKey,
+    Bool allocDimVars,
+    int **inVarIDs,
+    nc_type **inVarType,
+    Bool **hasScaleAndAddFact,
+    double ***scaleAndAddFactVals,
+    Bool ***missValFlags,
+    int ***dimOrderInVar,
+    size_t **numSoilVarLyrs,
+    LOG_INFO *LogInfo
+);
+
+void SW_NCIN_allocDimVar(int numVars, int ***dimOrderInVar, LOG_INFO *LogInfo);
 
 #ifdef __cplusplus
 }

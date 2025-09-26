@@ -11,6 +11,8 @@
 [semantic versioning]: https://semver.org/
 [netCDF]: https://downloads.unidata.ucar.edu/netcdf/
 [udunits2]: https://downloads.unidata.ucar.edu/udunits/
+[MPI]: https://www.open-mpi.org/
+[hdf5]: https://www.hdfgroup.org/solutions/hdf5/
 [ClangFormat]: https://clang.llvm.org/docs/ClangFormat.html
 [clang-tidy]: https://clang.llvm.org/extra/clang-tidy
 [iwyu]:https://include-what-you-use.org/
@@ -69,6 +71,14 @@ please see section [reverse dependencies](#revdep).
 
 <a name="guidelines"></a>
 ## Code guidelines
+
+All code style checks that are discussed below in greater detail,
+can be run with one script (note that `iwyu` output is verbose)
+
+```{.sh}
+    tools/allCodeChecks.sh
+```
+<br>
 
 
 <a name="code_format"></a>
@@ -210,7 +220,10 @@ Continuation of some longer description.
 @param[in,out] *argument2 Argument for foo
 */
 void foo(int argument1, int *argument2) {
-    /* Do something here */
+    /* tmp is most important */
+    int tmp;
+
+    /* More code here */
 }
 ```
 
@@ -218,35 +231,53 @@ void foo(int argument1, int *argument2) {
 
 
 <a name="code_tests"></a>
-## Code tests
+## Code output tests
+
+All output checks that are discussed below in greater detail,
+can be run with one script
+
+```{.sh}
+    tools/allOutputChecks.sh --outTag=<ref> --ntasks=2
+```
+<br>
+
 __Testing framework__
 
 The goal is to cover all code development with new or amended tests.
 `SOILWAT2` comes with unit tests, integration tests, and extra checks.
 Additionally, the github repository runs continuous integration checks.
 
+Ideally, create a reference output from a known state and name it
+`"Output_<ref>"` (where `<ref>` could be `"v820"` for example).
+
 Most of these tests and checks can be run with the following steps
+(after substituting `<ref>` with the actual name)
 
 ```{.sh}
-    # Run text-based and nc-based SOILWAT2 and compare example runs against Output_ref/
-    tools/check_functionality.sh check_SOILWAT2 "CC=" "CXX=" "txt" "tests/example/Output_ref" "false"
-    tools/check_functionality.sh check_SOILWAT2 "CC=" "CXX=" "nc" "tests/example/Output_ref" "false"
+    # Run text-based and nc-based SOILWAT2 and compare output against Output_<ref>/
+    tools/check_functionality.sh check_SOILWAT2 "CC=" "CXX=" "txt" "" "tests/example/Output_<ref>" "false"
+    tools/check_functionality.sh check_SOILWAT2 "CC=" "CXX=" "nc" "" "tests/example/Output_<ref>" "false"
 
-    # Compare output between text-based, nc-based SOILWAT2 and rSOILWAT2
+    # Run mpi-based SOILWAT2 (using compiler mpicc/mpicxx) and compare output against Output_<ref>/
+    tools/check_functionality.sh check_SOILWAT2 "CC=mpicc" "CXX=mpicxx" "mpi" "2" "tests/example/Output_<ref>" "false"
+
+    # Compare output between text-based, nc-based, mpi-based SOILWAT2 and rSOILWAT2
     tools/check_outputModes.sh
 
-    # Check output of a large set of nc-based simulation experiments agains a reference
+    # Check output of a large set of nc-based and mpi-based simulation experiments agains a reference
     tools/check_ncTestRuns.nc
+    tools/check_ncTestRuns.nc --mode=mpi --ntasks=2
 
     # Run checks with additional special use flags
     tools/check_extras.sh
 ```
 
+
 These checks can be modified to run the checks with a specific compiler and
 compare output from example runs against a previously created reference output
-(here, `Output_v700/` -- instead of creating a new reference), e.g.,
+(here, `Output_<ref>/` -- instead of creating a new reference), e.g.,
 ```{.sh}
-    tools/check_functionality.sh check_SOILWAT2 "CC=clang" "CXX=clang++" "txt" "tests/example/Output_v700" "false"
+    tools/check_functionality.sh check_SOILWAT2 "CC=clang" "CXX=clang++" "txt" "tests/example/Output_<ref>" "false"
 ```
 
 
@@ -301,8 +332,9 @@ for one generic location
 (it is a relatively wet and cool site in the sagebrush steppe).
 
 ```{.sh}
-    make bin_run                      # text-based SOILWAT2
-    make CPPFLAGS=-DSWNC bin_run      # nc-based SOILWAT2
+    make bin_run                                           # text-based SOILWAT2
+    make CPPFLAGS=-DSWNC bin_run                           # nc-based SOILWAT2
+    make CPPFLAGS=-DSWMPI CC=mpicc SW_NTASKS=2 bin_run     # mpi-based SOILWAT2
 ```
 
 The simulated output is stored at `tests/example/Output/`.
@@ -321,15 +353,17 @@ to the reference run (which, by default, is equivalent to `tests/example`);
 the output of that site/grid cell is compared against the reference output.
 
 ```{.sh}
-    tools/check_ncTestRuns.sh --help    # Display a help page
-    tools/check_ncTestRuns.sh           # Do all tests
+    tools/check_ncTestRuns.sh --help                    # Display a help page
+    tools/check_ncTestRuns.sh                           # Do all tests in nc-mode
+    tools/check_ncTestRuns.nc --mode=mpi --ntasks=2     # Do all tests in mpi-mode
 ```
 
 
 #### Output from different modes
 
-SOILWAT2 is can be used in text-based or netCDF-based mode (or via rSOILWAT2),
-this script makes sure that output between the different versions is the same
+SOILWAT2 is can be used in text-based, nc-based or mpi-based mode and
+via rSOILWAT2, this script checks whether output between the different
+versions is the same
 
 ```{.sh}
     tools/check_outputModes.sh

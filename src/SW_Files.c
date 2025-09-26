@@ -44,6 +44,10 @@
 #if defined(SWNETCDF)
 #include "include/SW_netCDF_General.h"
 #include "include/SW_netCDF_Input.h"
+
+#if defined(SWMPI)
+#include "include/SW_MPI.h"
+#endif
 #endif
 
 /* =================================================== */
@@ -310,6 +314,8 @@ holds basic information about input files and values
 void SW_F_init_ptrs(SW_PATH_INPUTS *SW_PathInputs) {
     int file;
 
+    SW_PathInputs->SW_ProjDir[0] = '\0';
+
     // Initialize `InFile` pointers to NULL
     for (file = 0; file < SW_NFILES; file++) {
         SW_PathInputs->txtInFiles[file] = NULL;
@@ -326,6 +332,9 @@ void SW_F_init_ptrs(SW_PATH_INPUTS *SW_PathInputs) {
         SW_PathInputs->scaleAndAddFactVals[k] = NULL;
         SW_PathInputs->missValFlags[k] = NULL;
         SW_PathInputs->doubleMissVals[k] = NULL;
+#if defined(SWMPI)
+        SW_PathInputs->openInFileIDs[k] = NULL;
+#endif
     }
 
     SW_PathInputs->ncWeatherInFiles = NULL;
@@ -337,75 +346,24 @@ void SW_F_init_ptrs(SW_PATH_INPUTS *SW_PathInputs) {
 }
 
 /**
-@brief Determines string length of file being read in combined with SW_ProjDir.
+@brief Constructor for SW_PATH_INPUTS (except the `first file`)
+
+File names of input files, e.g., those provided by the `first file`, are now
+interpreted as being relative to the execution path, i.e.,
+the directory provided via the `-d` option.
+Compared to previous versions, this function no longer sets `SW_ProjDir` to
+the directory part of the file name of the `first file`.
 
 @param[in,out] SW_PathInputs Struct of type SW_PATH_INPUTS which
 holds basic information about input files and values
-@param[out] LogInfo Holds information on warnings and errors
 */
-void SW_F_construct(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
-    /* =================================================== */
-    /* 10-May-02 (cwb) enhancement allows model to be run
-     *    in one directory while getting its input from another.
-     *    This was done mostly in support of STEPWAT but
-     *    it could be useful in a standalone run.
-     */
-
-    const char *firstfile = SW_PathInputs->txtInFiles[eFirst];
-    char *c;
-    char *p;
-    char *projDirPtr = SW_PathInputs->SW_ProjDir;
-    char *endProjDirPtr =
-        SW_PathInputs->SW_ProjDir + sizeof SW_PathInputs->SW_ProjDir - 1;
-    Bool fullBuffer = swFALSE;
-    size_t writeSize = sizeof SW_PathInputs->SW_ProjDir - 1;
-    char dirString[FILENAME_MAX];
-    char *localfirstfile = Str_Dup(firstfile, LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-
-    DirName(localfirstfile, dirString);
-    c = dirString;
-
-    if (c) {
-        fullBuffer = sw_memccpy_inc(
-            (void **) &projDirPtr, endProjDirPtr, (void *) c, '\0', &writeSize
-        );
-        if (fullBuffer) {
-            reportFullBuffer(LOGERROR, LogInfo);
-            return;
-        }
-
-        c = localfirstfile;
-        p = c + strlen(SW_PathInputs->SW_ProjDir);
-        while (*p) {
-            *(c++) = *(p++);
-        }
-        *c = '\0';
-    } else {
-        SW_PathInputs->SW_ProjDir[0] = '\0';
-    }
-
-    free(localfirstfile);
-
+void SW_F_construct(SW_PATH_INPUTS *SW_PathInputs) {
 #if defined(SWNETCDF)
-    int inKey;
-
-    ForEachNCInKey(inKey) {
-        SW_PathInputs->inVarTypes[inKey] = NULL;
-        SW_PathInputs->inVarIDs[inKey] = NULL;
-        SW_PathInputs->hasScaleAndAddFact[inKey] = NULL;
-        SW_PathInputs->scaleAndAddFactVals[inKey] = NULL;
-        SW_PathInputs->missValFlags[inKey] = NULL;
-        SW_PathInputs->doubleMissVals[inKey] = NULL;
-    }
-
     SW_PathInputs->ncDomFileIDs[vNCdom] = -1;
     SW_PathInputs->ncDomFileIDs[vNCprog] = -1;
-    SW_PathInputs->numSoilVarLyrs = NULL;
-
     SW_PathInputs->ncNumWeatherInFiles = 0;
+#else
+    (void) SW_PathInputs;
 #endif
 }
 
@@ -414,8 +372,9 @@ void SW_F_construct(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
 
 @param[in,out] SW_PathInputs Struct of type SW_PATH_INPUTS which
 holds basic information about output files and values
+@param[in] procJob Process job designation used when using MPI
 */
-void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
+void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs, int procJob) {
     IntUS i;
 
     for (i = 0; i < SW_NFILES; i++) {
@@ -431,6 +390,14 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
     unsigned int file;
     int k;
     int varNum;
+
+#if defined(SWMPI)
+    if (procJob == SW_MPI_PROC_IO) {
+#endif
+        SW_NCIN_close_files(SW_PathInputs);
+#if defined(SWMPI)
+    }
+#endif
 
     ForEachNCInKey(k) {
         if (!isnull(SW_PathInputs->ncInFiles[k])) {
@@ -496,6 +463,20 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
             free((void *) SW_PathInputs->doubleMissVals[k]);
             SW_PathInputs->doubleMissVals[k] = NULL;
         }
+
+#if defined(SWMPI)
+        if (!isnull(SW_PathInputs->openInFileIDs[k])) {
+            for (varNum = 0; varNum < numVarsInKey[k]; varNum++) {
+                if (!isnull(SW_PathInputs->openInFileIDs[k][varNum])) {
+                    free((void *) SW_PathInputs->openInFileIDs[k][varNum]);
+                    SW_PathInputs->openInFileIDs[k][varNum] = NULL;
+                }
+            }
+
+            free((void *) SW_PathInputs->openInFileIDs[k]);
+            SW_PathInputs->openInFileIDs[k] = NULL;
+        }
+#endif
     }
 
     if (!isnull(SW_PathInputs->ncWeatherStartEndIndices)) {
@@ -552,7 +533,9 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
         free((void *) SW_PathInputs->numDaysInYear);
         SW_PathInputs->numDaysInYear = NULL;
     }
+#endif
 
-    SW_NCIN_close_files(SW_PathInputs->ncDomFileIDs);
+#if !defined(SWMPI)
+    (void) procJob;
 #endif
 }

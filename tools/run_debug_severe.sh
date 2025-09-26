@@ -1,8 +1,26 @@
 #!/bin/bash
 
-# run as `./tools/run_debug_severe.sh`
+# run as `./tools/run_debug_severe.sh` [OPTIONS]
+# supported options
+#   -n,-np,--ntasks=<number>
+
 # note: consider cleaning previous build artifacts, e.g., `make clean_build`
 
+#--- Command line arguments
+nTasks=""
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --ntasks=*) nTasks="${1#*=}" ;;
+        -n|-np) nTasks="$2"; shift ;;
+
+        *) echo "Argument ""$1"" is not implemented."; exit 1 ;;
+    esac
+    shift
+done
+
+
+#--- flags
 debug_flags="-g -O0 -DSWDEBUG"
 
 warning_flags_severe_cc="\
@@ -30,4 +48,4 @@ instr_flags_severe="\
 
 
 
-SW2_FLAGS=""$debug_flags" "$warning_flags_severe_cc" "$instr_flags_severe"" make bin_run
+SW2_FLAGS=""$debug_flags" "$warning_flags_severe_cc" "$instr_flags_severe"" SW_NTASKS="${nTasks}" make bin_run
