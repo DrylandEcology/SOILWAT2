@@ -270,7 +270,8 @@ typedef unsigned short OutPeriod;
 
 #define ForEachVegType(k) for ((k) = 0; (k) < NVEGTYPES; (k)++)
 
-#define ForEachVegTypeBottomUp(k) for ((k) = NVEGTYPES - 1; (k) >= 0; (k)--)
+/* reverse for-loop with k in [NVEGTYPES - 1, 0] */
+#define ForEachVegTypeBottomUp(k) for ((k) = NVEGTYPES; (k)-- > 0;)
 
 /* define m as Months */
 #define ForEachMonth(m) for ((m) = Jan; (m) <= Dec; (m)++)
