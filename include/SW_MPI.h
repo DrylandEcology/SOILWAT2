@@ -150,7 +150,7 @@ void SW_MPI_setup_inputs(
     SW_RUN_INPUTS *runInputs,
     SW_OUT_DOM *OutDom,
     int numCyclesProc,
-    Bool copyWeather,
+    Bool readWeather,
     IntU n_years,
     SW_OUT_RUN *tempOut,
     Bool *extraFailCheck,

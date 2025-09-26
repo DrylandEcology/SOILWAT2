@@ -1742,7 +1742,7 @@ be filled with template data and possibly have weather copied into it
     information that do not change throughout simulation runs
 @param[in] numCyclesProc Number of input-sim-output cycles the current
 process will take to complete
-@param[in] copyWeather Flag specifying if template weather should be copied
+@param[in] readWeather Flag specifying if template weather should be copied
 into each instance of SW_RUN_INPUTS within "runInputs"
 @param[in] n_years Number of years of weather to receive if we do
     get weather from the I/O process
@@ -1757,7 +1757,7 @@ void SW_MPI_setup_inputs(
     SW_RUN_INPUTS *runInputs,
     SW_OUT_DOM *OutDom,
     int numCyclesProc,
-    Bool copyWeather,
+    Bool readWeather,
     IntU n_years,
     SW_OUT_RUN *tempOut,
     Bool *extraFailCheck,
@@ -1775,15 +1775,21 @@ void SW_MPI_setup_inputs(
     for (suid = 0; suid < N_SUID_ASSIGN; suid++) {
         memcpy(&runInputs[suid], &sw_template->RunIn, sizeof(SW_RUN_INPUTS));
 
-        if (!copyWeather) {
-            SW_WTH_allocateAllWeather(
-                &runInputs[suid].weathRunAllHist, n_years, LogInfo
+        runInputs[suid].weathRunAllHist = NULL;
+
+        SW_WTH_allocateAllWeather(
+            &runInputs[suid].weathRunAllHist, n_years, LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        if (!readWeather) {
+            memcpy(
+                runInputs[suid].weathRunAllHist,
+                sw_template->RunIn.weathRunAllHist,
+                sizeof(SW_WEATHER_HIST) * n_years
             );
-            if (LogInfo->stopRun) {
-                return;
-            }
-        } else {
-            runInputs[suid].weathRunAllHist = NULL;
         }
     }
 

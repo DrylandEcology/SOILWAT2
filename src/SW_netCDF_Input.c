@@ -5382,14 +5382,11 @@ static void read_spatial_topo_climate_site_inputs(
                 /* Determine how many values we will be reading from the
                 variables within this input key */
                 if (timeIndex > -1) {
-                    count[timeIndex] = MAX_MONTHS;
+                    count[timeIndex] =
+                        (read < numReads[currKey]) ? MAX_MONTHS : 0;
                 }
 
                 ncFileID = openNCFileIDs[currKey][varNum][0];
-
-                if (read >= numReads[currKey] && timeIndex > -1) {
-                    count[timeIndex] = 0;
-                }
 
                 get_values_multiple(
                     ncFileID, varID, start, count, varName, tempVals, LogInfo
@@ -8284,6 +8281,10 @@ static void read_weather_input(
                 numSites = (inSiteDom) ? count[latIndex] : count[lonIndex];
 
                 if (read >= numReads) {
+                    if (read == numReads) {
+                        start[timeIndex] += count[timeIndex];
+                    }
+
                     count[timeIndex] = 0;
                 }
 
@@ -8345,7 +8346,9 @@ static void read_weather_input(
                 }
             }
 
-            start[timeIndex] += count[timeIndex];
+            if (read <= numReads) {
+                start[timeIndex] += count[timeIndex];
+            }
             input = 0;
         }
     }
@@ -8508,15 +8511,6 @@ void SW_NCIN_read_inputs(
 
     /* Allocate information before gathering inputs */
     if (readWeather) {
-#if !defined(SWMPI)
-        SW_WTH_allocateAllWeather(
-            &sw->RunIn.weathRunAllHist, SW_WeatherIn->n_years, mainLogInfo
-        );
-        if (mainLogInfo->stopRun) {
-            return;
-        }
-#endif
-
         for (input = 0; input < numInputs; input++) {
             for (yearIn = 0; yearIn < SW_WeatherIn->n_years; yearIn++) {
                 clear_hist_weather(
@@ -8544,9 +8538,7 @@ void SW_NCIN_read_inputs(
         );
         checkReturn(mainLogInfo->stopRun);
 
-#if defined(SWMPI)
         for (inIndex = 0; inIndex < numInputs; inIndex++) {
-#endif
             for (yearIn = 0; yearIn < SW_WeatherIn->n_years; yearIn++) {
                 year = yearIn + SW_WeatherIn->startYear;
 
@@ -8563,9 +8555,7 @@ void SW_NCIN_read_inputs(
                     inputs[inIndex].SkyRunIn.r_humidity
                 );
             }
-#if defined(SWMPI)
         }
-#endif
     }
 
     if (runSims && readWeather && !SW_WeatherIn->use_weathergenerator_only) {

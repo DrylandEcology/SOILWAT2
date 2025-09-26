@@ -349,18 +349,13 @@ void SW_RUN_deepCopy(
 
     /* Allocate memory and copy daily weather */
     dest->RunIn.weathRunAllHist = NULL;
-#if !defined(SWMPI)
-    if (copyWeatherHist) {
-#endif
-        SW_WTH_allocateAllWeather(
-            &dest->RunIn.weathRunAllHist, source->WeatherIn.n_years, LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return; // Exit prematurely due to error
-        }
-#if !defined(SWMPI)
+
+    SW_WTH_allocateAllWeather(
+        &dest->RunIn.weathRunAllHist, source->WeatherIn.n_years, LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return; // Exit prematurely due to error
     }
-#endif
 
     for (unsigned int year = 0; year < source->WeatherIn.n_years; year++) {
         if (copyWeatherHist) {
@@ -558,12 +553,17 @@ void SW_CTL_RunSimSet(
     size_t domReadIndex = 0;
     int logIndex;
     LOG_INFO *siteLog;
+
+    copyWeather =
+        (Bool) (!SW_Domain->netCDFInput.readInVars[eSW_InWeather][0] &&
+                !SW_Domain->netCDFInput.readInVars[eSW_InClimate][0]);
+    Bool readWeather = SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
 #else
     LOG_INFO *siteLog = &local_LogInfo;
-#endif // SWMPI
-    Bool allocSoils = SW_Domain->netCDFInput.readInVars[eSW_InSoil][0];
 
     copyWeather = (Bool) (!SW_Domain->netCDFInput.readInVars[eSW_InWeather][0]);
+#endif // SWMPI
+    Bool allocSoils = SW_Domain->netCDFInput.readInVars[eSW_InSoil][0];
 #else
     LOG_INFO *siteLog = main_LogInfo;
 #endif // SWNETCDF
@@ -589,7 +589,7 @@ void SW_CTL_RunSimSet(
         inputs,
         &SW_Domain->OutDom,
         numCyclesProc,
-        copyWeather,
+        readWeather,
         n_years,
         &tempOut,
         &extraIter,
