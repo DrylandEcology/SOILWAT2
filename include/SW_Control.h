@@ -20,7 +20,7 @@
 
 #include "include/generic.h"        // for Bool
 #include "include/SW_datastructs.h" // for SW_RUN, LOG_INFO, SW_DOMAIN, SW_OU...
-#include <signal.h>                 // for signal,, sig_atomic_t
+#include <signal.h>                 // for sig_atomic_t
 #include <stddef.h>                 // for size_t
 
 #ifdef __cplusplus

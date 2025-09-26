@@ -51,6 +51,7 @@
 #include "include/SW_VegProd.h"      // for SW_VPD_co...
 #include "include/SW_Weather.h"      // for SW_WTH_co...
 #include "include/Times.h"           // for diff_walltime, set_walltime
+#include <signal.h>                  // for signal, SIGINT, SIGTERM
 #include <stdio.h>                   // for NULL, snprintf
 #include <stdlib.h>                  // for free
 #include <string.h>                  // for memcpy, NULL
