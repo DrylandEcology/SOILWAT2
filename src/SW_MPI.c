@@ -617,13 +617,15 @@ static void calculate_contiguous_allkeys(
     int inKey;
     Bool useIndex;
     Bool useTranslated;
+    Bool sameDomType;
     size_t suid;
 
     ForEachNCInKey(inKey) {
         useIndex = (inKey != eSW_InDomain) ? useIndexFile[inKey] : swFALSE;
+        sameDomType = (Bool) (sDoms[inKey] == sDoms[eSW_InDomain]);
 
         if (inKey == eSW_InDomain || readInVars[inKey][0]) {
-            if (inKey == eSW_InDomain || useIndex) {
+            if (inKey == eSW_InDomain || useIndex || !sameDomType) {
                 useTranslated = (Bool) (inKey != eSW_InDomain && useIndex);
 
                 get_contiguous_counts(
