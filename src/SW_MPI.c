@@ -510,7 +510,7 @@ static void get_contiguous_counts(
     starts[0][1] = prevX;
 
     counts[0][0] = (sDom) ? numDomSuids : 1;
-    counts[0][1] = (sDom) ? 1 : N_SUID_ASSIGN; // NOLINT(bugprone-branch-clone)
+    counts[0][1] = (sDom) ? 0 : N_SUID_ASSIGN; // NOLINT(bugprone-branch-clone)
 
     if (useSuccFlags) {
         currFlag = succFlags[0];
