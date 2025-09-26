@@ -49,6 +49,9 @@
 * Transpiration regions no longer require roots of every plant functional type
   (@dschlaep).
 
+* Solar radiation on tilted surfaces no longer fails if observed radiation
+  is zero (#476; @dschlaep).
+
 * Derived metrics including climatic water deficit, dry degree-days,
   wet degree-days, and total profile available soil moisture can now be
   requested as output (#466; @dschlaep).

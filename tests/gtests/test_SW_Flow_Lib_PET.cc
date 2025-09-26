@@ -986,6 +986,37 @@ TEST(AtmDemSimTest, SolarRadiationGlobal) {
             << "Duffie & Beckman 2013: Example 2.19.1 (observed rsds), cloud "
                "cover: "
             << "month = " << k + 1 << "\n";
+
+
+        //--- Test with observed radiation `rsds` of 0 and missing cloud cover
+        cc = SW_MISSING;
+        rsds = 0.; // zero observed radiation (gridMET has some zero values)
+
+        H_gt = solar_radiation(
+            &SW_AtmDemSim,
+            doys_Table1_6_1[k],
+            43. * deg_to_rad, // latitude
+            226.,             // elevation
+            60 * deg_to_rad,  // slope
+            0.,               // aspect
+            albedo[k],
+            &cc,
+            actual_vap_pressure,
+            rsds,
+            desc_rsds,
+            noFixMAXRSDS,
+            &H_oh,
+            &H_ot,
+            &H_gh,
+            &LogInfo
+        );
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+        // Expect zero tilted radiation if observed radiation is zero
+        EXPECT_DOUBLE_EQ(H_gt, 0.);
+        EXPECT_DOUBLE_EQ(H_gh, 0.);
+        // Expect complete cloud cover if observed radiation is zero
+        EXPECT_DOUBLE_EQ(cc, 100.);
     }
 }
 
