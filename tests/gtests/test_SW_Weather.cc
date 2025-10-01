@@ -1831,7 +1831,7 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
     SW_Run.WeatherIn.desc_rsds = 1; // MACA rsds is flux density over 24 hours
 
     // Request weather input fixes
-    SW_Run.WeatherIn.fixWeatherData[fixPERCENT] = swTRUE;
+    SW_Run.WeatherIn.fixWeatherData[idFixPERCENT] = swTRUE;
 
     // Allocate temporary location for weather
     allocate_temp_weather(1, 1, &tempWeatherHist, &LogInfo);

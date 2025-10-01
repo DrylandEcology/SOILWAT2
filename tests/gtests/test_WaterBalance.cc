@@ -604,7 +604,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
     SW_Run.WeatherIn.desc_rsds = 2;
 
     // Request weather input fixes
-    SW_Run.WeatherIn.fixWeatherData[fixMAXRSDS] = swTRUE;
+    SW_Run.WeatherIn.fixWeatherData[idFixMAXRSDS] = swTRUE;
 
     // Prepare weather data
     SW_WTH_read(
@@ -883,7 +883,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
     SW_Run.WeatherIn.desc_rsds = 1; // MACA rsds is flux density over 24 hours
 
     // Request weather input fixes
-    SW_Run.WeatherIn.fixWeatherData[fixPERCENT] = swTRUE;
+    SW_Run.WeatherIn.fixWeatherData[idFixPERCENT] = swTRUE;
 
     // Prepare weather data
     SW_WTH_read(
