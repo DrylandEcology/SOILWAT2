@@ -597,7 +597,7 @@ void DirName(const char *p, char *outString) {
      * before moving on.
      */
     const char *c;
-    long int l;
+    size_t l;
     char sep1 = '/';
     char sep2 = '\\';
 
@@ -609,7 +609,7 @@ void DirName(const char *p, char *outString) {
     }
 
     if (c) {
-        l = c - p + 1;
+        l = (size_t) (c - p + 1);
         strncpy(outString, p, l);
         outString[l] = '\0';
     }

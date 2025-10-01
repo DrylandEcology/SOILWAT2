@@ -640,10 +640,10 @@ static void read_spp(
             }
             break;
         case 1:
-            v->vegType = inBufintRes;
+            v->vegType = (unsigned int) inBufintRes;
             break;
         case 2:
-            v->estab_lyrs = inBufintRes;
+            v->estab_lyrs = (unsigned int) inBufintRes;
             break;
         case 3:
             v->bars[SW_GERM_BARS] = fabs(inBufDoubleVal);
@@ -652,25 +652,25 @@ static void read_spp(
             v->bars[SW_ESTAB_BARS] = fabs(inBufDoubleVal);
             break;
         case 5:
-            v->min_pregerm_days = inBufintRes;
+            v->min_pregerm_days = (TimeInt) inBufintRes;
             break;
         case 6:
-            v->max_pregerm_days = inBufintRes;
+            v->max_pregerm_days = (TimeInt) inBufintRes;
             break;
         case 7:
-            v->min_wetdays_for_germ = inBufintRes;
+            v->min_wetdays_for_germ = (TimeInt) inBufintRes;
             break;
         case 8:
-            v->max_drydays_postgerm = inBufintRes;
+            v->max_drydays_postgerm = (TimeInt) inBufintRes;
             break;
         case 9:
-            v->min_wetdays_for_estab = inBufintRes;
+            v->min_wetdays_for_estab = (TimeInt) inBufintRes;
             break;
         case 10:
-            v->min_days_germ2estab = inBufintRes;
+            v->min_days_germ2estab = (TimeInt) inBufintRes;
             break;
         case 11:
-            v->max_days_germ2estab = inBufintRes;
+            v->max_days_germ2estab = (TimeInt) inBufintRes;
             break;
         case 12:
             v->min_temp_germ = inBufDoubleVal;

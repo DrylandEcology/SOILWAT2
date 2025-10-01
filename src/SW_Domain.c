@@ -320,13 +320,13 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             );
             break;
         case 1: // Number of X slots
-            SW_Domain->nDimX = intRes;
+            SW_Domain->nDimX = (size_t) intRes;
             break;
         case 2: // Number of Y slots
-            SW_Domain->nDimY = intRes;
+            SW_Domain->nDimY = (size_t) intRes;
             break;
         case 3: // Number of S slots
-            SW_Domain->nDimS = intRes;
+            SW_Domain->nDimS = (size_t) intRes;
             break;
 
         case 4: // Start year
@@ -336,10 +336,10 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             SW_Domain->endyr = yearto4digit((TimeInt) intRes);
             break;
         case 6: // Start day of year
-            SW_Domain->startstart = intRes;
+            SW_Domain->startstart = (TimeInt) intRes;
             break;
         case 7: // End day of year
-            SW_Domain->endend = intRes;
+            SW_Domain->endend = (TimeInt) intRes;
             break;
 
         case 8: // CRS box
@@ -390,10 +390,10 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             SW_Domain->SW_SpinUp.mode = y;
             break;
         case 14: // Spinup Scope
-            SW_Domain->SW_SpinUp.scope = intRes;
+            SW_Domain->SW_SpinUp.scope = (TimeInt) intRes;
             break;
         case 15: // Spinup Duration
-            SW_Domain->SW_SpinUp.duration = intRes;
+            SW_Domain->SW_SpinUp.duration = (TimeInt) intRes;
 
             // Set the spinup flag to true if duration > 0
             if (SW_Domain->SW_SpinUp.duration <= 0) {
@@ -403,7 +403,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             }
             break;
         case 16: // Spinup Seed
-            SW_Domain->SW_SpinUp.rng_seed = intRes;
+            SW_Domain->SW_SpinUp.rng_seed = (size_t) intRes;
             break;
         case 17:
             SW_Domain->spatialTol = doubleRes;
@@ -630,8 +630,8 @@ void SW_DOM_init_ptrs(SW_DOMAIN *SW_Domain) {
 }
 
 void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
-    int k;
-    int i;
+    unsigned short k;
+    unsigned int i;
 
     SW_F_deconstruct(
         &SW_Domain->SW_PathInputs, SW_Domain->SW_Designation.procJob

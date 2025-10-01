@@ -4086,7 +4086,7 @@ void SW_MPI_create_types(MPI_Datatype datatypes[], LOG_INFO *LogInfo) {
          MPI_UNSIGNED,
          MPI_DOUBLE,
          MPI_INT}, /* SW_DOMAIN */
-        {MPI_UNSIGNED, MPI_UNSIGNED, MPI_INT, MPI_INT, MPI_UNSIGNED
+        {MPI_UNSIGNED, MPI_UNSIGNED, MPI_INT, SW_MPI_SIZE_T, MPI_UNSIGNED
         }, /* SW_SPINUP */
         {MPI_DATATYPE_NULL,
          MPI_DATATYPE_NULL,
@@ -4637,12 +4637,12 @@ void SW_MPI_template_info(
     };
     MPI_Datatype types[][43] = {
         {MPI_INT, MPI_INT, MPI_DOUBLE}, /* SW_CARBON_INPUTS */
-        {MPI_INT,      MPI_INT,      MPI_UNSIGNED, MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,
-         MPI_DOUBLE,   MPI_CHAR,     MPI_INT,      MPI_INT,
-         MPI_INT,      MPI_INT,      MPI_INT,      MPI_UNSIGNED,
-         MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED,
+        {MPI_INT,      MPI_INT,      MPI_UNSIGNED,  MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,    MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_DOUBLE,   MPI_DOUBLE,    MPI_DOUBLE,
+         MPI_DOUBLE,   MPI_CHAR,     SW_MPI_SIZE_T, MPI_INT,
+         MPI_INT,      MPI_INT,      MPI_INT,       MPI_UNSIGNED,
+         MPI_UNSIGNED, MPI_UNSIGNED, MPI_UNSIGNED,  MPI_UNSIGNED,
          MPI_INT}, /* SW_WEATHER_INPUTS */
         {MPI_INT, MPI_DOUBLE, MPI_INT, MPI_INT, MPI_DOUBLE
         }, /* SW_VEGPROD_INPUTS */

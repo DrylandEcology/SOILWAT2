@@ -137,9 +137,9 @@ typedef struct {
         scope, /**< Scope (N): use first N years of simulation for the spinup */
         duration; /**< Duration (M): sample M years out of the first N years */
 
-    int mode, /**< Mode: (1) repeated random resample; (2) construct sequence of
+    int mode; /**< Mode: (1) repeated random resample; (2) construct sequence of
                  M years */
-        rng_seed; /**< Seed for generating random years for mode 1 */
+    size_t rng_seed; /**< Seed for generating random years for mode 1 */
 
     sw_random_t spinup_rng; /**< Random number generator used for mode 1 */
 
@@ -170,10 +170,11 @@ typedef struct {
         cum_monthdays[MAX_MONTHS];     /* monthly cumulative number of days for
                                           "current" year */
 
-    int addtl_yr; /**< An integer representing how many years in the future we
-                     are simulating. Currently, only used to support rSFSW2
-                     functionality where scenario runs are based on an 'ambient'
-                     run plus number of years in the future*/
+    TimeInt addtl_yr; /**< An integer representing how many years in the future
+                         we are simulating.
+                         Currently, only used to support rSFSW2 functionality
+                         where scenario runs are based on an 'ambient'
+                         run plus number of years in the future*/
 
     /* first day of new week/month is checked for
      * printing and summing weekly/monthly values */
@@ -977,7 +978,7 @@ typedef struct {
     char name_prefix[MAX_FILENAMESIZE - 5]; // subtract 4-digit 'year' file type
                                             // extension
 
-    int rng_seed; // initial state for `mark`
+    size_t rng_seed; // initial state for `mark`
 
     /** Array of options to fix daily weather inputs, see #FixWeatherType */
     Bool fixWeatherData[NFIXWEATHER];

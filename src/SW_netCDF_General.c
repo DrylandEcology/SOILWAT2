@@ -1077,7 +1077,7 @@ void SW_NC_create_full_var(
     char *dimVarName;
     size_t timeVertVegVals[] = {timeSize, vertSize, pftSize};
     unsigned int numTimeVertVegVals = 3;
-    unsigned int varVal = 0;
+    size_t varVal = 0;
     size_t chunkSizes[MAX_NUM_DIMS] = {1, 1, 1, 1, 1};
     char coordValBuf[MAX_FILENAMESIZE] = "";
     char *writePtr = coordValBuf;

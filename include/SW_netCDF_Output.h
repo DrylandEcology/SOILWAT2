@@ -23,7 +23,7 @@ extern "C" {
 
 void SW_NCOUT_create_output_dimVar(
     char *name,
-    unsigned int size,
+    size_t size,
     int ncFileID,
     int *dimID,
     Bool hasConsistentSoilLayerDepths,

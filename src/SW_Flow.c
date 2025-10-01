@@ -292,7 +292,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
 
     TimeInt doy;
     TimeInt month;
-    int k;
+    unsigned int k;
     LyrIndex i;
     LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
 

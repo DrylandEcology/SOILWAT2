@@ -109,7 +109,7 @@ void transp_weighted_avg(
     LyrIndex n_layers,
     const unsigned int tr_regions[],
     double swc[],
-    int VegType,
+    unsigned int VegType,
     LOG_INFO *LogInfo
 );
 

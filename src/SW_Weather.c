@@ -2485,7 +2485,7 @@ void SW_WTH_setup(
             break;
 
         case 4:
-            SW_WeatherIn->rng_seed = inBufintRes;
+            SW_WeatherIn->rng_seed = (size_t) inBufintRes;
             break;
 
         case 5:
@@ -2569,7 +2569,7 @@ void SW_WTH_setup(
             break;
 
         case 25:
-            SW_WeatherIn->desc_rsds = inBufintRes;
+            SW_WeatherIn->desc_rsds = (unsigned int) inBufintRes;
             break;
 
 
@@ -2948,7 +2948,7 @@ void read_weather_hist(
      */
 
     FILE *f;
-    unsigned int x;
+    int x;
     unsigned int lineno = 0;
     unsigned int index;
     int doy = 0;
@@ -3003,7 +3003,7 @@ void read_weather_hist(
             weathInStrs[14]
         );
 
-        if (x != n_input_forcings + 1) {
+        if (x < 0 || (unsigned) x != n_input_forcings + 1) {
             LogError(
                 LogInfo,
                 LOGERROR,
