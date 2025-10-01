@@ -862,7 +862,7 @@ TEST_F(
 
 
     // ------ Clean up
-    for (int month = 0; month < MAX_MONTHS; month++) {
+    for (month = 0; month < MAX_MONTHS; month++) {
         delete[] PPTMon_cm[month];
         delete[] meanTempMon_C[month];
     }
