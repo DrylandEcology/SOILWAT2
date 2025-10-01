@@ -520,11 +520,6 @@ void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
     Bool QuietMode = (Bool) (LogInfo->QuietMode || isnull(LogInfo->logfp));
     FILE *logfp = LogInfo->logfp;
 
-    // If we are running with MPI, we need to close all opened log files
-    // otherwise, when not using MPI, we only need to close one
-
-    logfp = LogInfo->logfp;
-
     // Close logfile (but not if it is stdout or stderr)
     if (logfp != stdout || logfp != stderr) {
         CloseFile(&logfp, LogInfo);
