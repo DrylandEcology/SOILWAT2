@@ -406,7 +406,7 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
     // debugging with 'debugi': turn messages on/off for each check separately
     int debugi[N_WBCHECKS] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
     int snowChecks[3];
-    char flag[16];
+    char wbcHeader[16];
     double Etotal;
     double Etotalsurf;
     double Etotalint;
@@ -523,7 +523,11 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
 
     if (debug) {
         (void) snprintf(
-            flag, sizeof flag, "WB (%d-%d)", sw->ModelSim.year, sw->ModelSim.doy
+            wbcHeader,
+            sizeof wbcHeader,
+            "WB (%d-%d)",
+            sw->ModelSim.year,
+            sw->ModelSim.doy
         );
     }
 
@@ -541,7 +545,7 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
         if (debugi[0]) {
             sw_printf(
                 "%s: aet=%f, pet=%f\n",
-                flag,
+                wbcHeader,
                 sw->SoilWatSim.aet,
                 sw->SoilWatSim.pet
             );
@@ -563,7 +567,7 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
         if (debugi[1]) {
             sw_printf(
                 "%s: AET(%f) == %f == Etotal(%f) + Ttotal(%f)\n",
-                flag,
+                wbcHeader,
                 sw->SoilWatSim.aet,
                 rhs,
                 Etotal,
@@ -603,7 +607,7 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
             sw_printf(
                 "%s: Etotal(%f) == %f == Esoil(%f) + Eponded(%f) + Eveg(%f) + "
                 "Elitter(%f) + Esnow(%f)\n",
-                flag,
+                wbcHeader,
                 Etotal,
                 rhs,
                 Esoil,
@@ -631,7 +635,7 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
         if (debugi[4]) {
             sw_printf(
                 "%s: Esurf(%f) == %f == Eponded(%f) + Eveg(%f) + Elitter(%f)\n",
-                flag,
+                wbcHeader,
                 Etotalsurf,
                 rhs,
                 Eponded,
@@ -664,7 +668,7 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
                 "%s: inf(%f) == %f == rain(%f) + snowmelt(%f) + runon(%f) - "
                 "(runoff(%f) + intercepted(%f) + delta_surfaceWater(%f) + "
                 "Eponded(%f))\n",
-                flag,
+                wbcHeader,
                 infiltration,
                 rhs,
                 rain,
@@ -696,7 +700,7 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
             sw_printf(
                 "%s: Ttotal(%f) + Esoil(%f) == %f == %f == inf(%f) - "
                 "(deepDrainage(%f) + delta_swc(%f))\n",
-                flag,
+                wbcHeader,
                 Ttotal,
                 Esoil,
                 lhs,
@@ -732,7 +736,7 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
                 sw_printf(
                     "%s sl=%d: delta_swc(%f) == %f == perc_in(%f) + hydred(%f) "
                     "- (perc_out(%f) + Ttot(%f) + Esoil(%f))\n",
-                    flag,
+                    wbcHeader,
                     i,
                     delta_swcj[i],
                     rhs,
@@ -763,7 +767,7 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
             if (debugi[8]) {
                 sw_printf(
                     "%s sl=%d: swc_min(%f) <= swc(%f) <= swc_sat(%f)\n",
-                    flag,
+                    wbcHeader,
                     i,
                     sw->SiteSim.swcBulk_min[i],
                     sw->SoilWatSim.swcBulk[Today][i],
@@ -795,7 +799,7 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
             if (!snowChecks[0]) {
                 sw_printf(
                     "%s: snowpack = %f, snowdepth = %f\n",
-                    flag,
+                    wbcHeader,
                     snowpackWater,
                     snowpackDepth
                 );
@@ -803,7 +807,7 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
             if (!snowChecks[1]) {
                 sw_printf(
                     "%s: snowmelt = %f, snowpack = %f|%f, snowfall = %f\n",
-                    flag,
+                    wbcHeader,
                     snowmelt,
                     snowpackWater,
                     snowpackRecently,
@@ -813,7 +817,7 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
             if (!snowChecks[2]) {
                 sw_printf(
                     "%s: Esnow = %f, snowpack = %f|%f, snowfall = %f\n",
-                    flag,
+                    wbcHeader,
                     Esnow,
                     snowpackWater,
                     snowpackRecently,
