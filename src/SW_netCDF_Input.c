@@ -1941,7 +1941,7 @@ static void create_bnd_names(
             "%s_bnds",
             writeBndsNames[varNum]
         );
-        if (scanRes < 0 || scanRes > (int) sizeof bndNames[varNum]) {
+        if (scanRes < 0 || scanRes >= (int) sizeof bndNames[varNum]) {
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -2911,7 +2911,7 @@ static void generate_weather_filenames(
                 return; /* Exit function prematurely due to error */
             }
 
-            if (sprintfRes < 0) {
+            if (sprintfRes < 0 || (unsigned int) sprintfRes >= MAX_FILENAMESIZE) {
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -9041,7 +9041,7 @@ void SW_NCIN_dealloc_inputkey_var_info(SW_NETCDF_IN *SW_netCDFIn, int key) {
     }
 
     if (!isnull(SW_netCDFIn->uconv[key])) {
-        for (int varNum = 0; varNum < varsInKey; varNum++) {
+        for (varNum = 0; varNum < varsInKey; varNum++) {
             if (!isnull(SW_netCDFIn->uconv[key][varNum])) {
 #if defined(SWNETCDF) && defined(SWUDUNITS)
                 cv_free(SW_netCDFIn->uconv[key][varNum]);

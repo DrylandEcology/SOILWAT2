@@ -309,15 +309,6 @@ void UnComment(char *s);
 
 double interpolation(double x1, double x2, double y1, double y2, double deltaX);
 
-void st_getBounds(
-    unsigned int *x1,
-    unsigned int *x2,
-    unsigned int *equal,
-    unsigned int size,
-    double depth,
-    double bounds[]
-);
-
 double lobfM(const double xs[], const double ys[], unsigned int n);
 
 double lobfB(double xs[], double ys[], unsigned int n);

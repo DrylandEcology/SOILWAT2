@@ -211,7 +211,7 @@ static void LogErrorHelper(
     }
 
     expectedWriteSize = snprintf(outfmt, MAX_LOG_SIZE, "%s%s\n", msgType, fmt);
-    if (expectedWriteSize > MAX_LOG_SIZE) {
+    if (expectedWriteSize >= MAX_LOG_SIZE) {
         // Silence gcc (>= 7.1) compiler flag `-Wformat-truncation=`, i.e.,
         // handle output truncation
 #if defined(RSOILWAT)
@@ -227,7 +227,7 @@ static void LogErrorHelper(
     // NOLINTNEXTLINE(clang-analyzer-valist.Uninitialized)
     expectedWriteSize = vsnprintf(buf, MAX_LOG_SIZE, outfmt, args);
 #ifdef SWDEBUG
-    if (expectedWriteSize > MAX_LOG_SIZE) {
+    if (expectedWriteSize >= MAX_LOG_SIZE) {
 #if defined(RSOILWAT)
         Rf_error("Programmer: Injecting arguments to final message buffer "
                  "makes it exceed the maximum size.");
@@ -339,7 +339,7 @@ void LogErrorSuid(
             );
         }
 
-        if (expectedWriteSize > MAX_LOG_SIZE) {
+        if (expectedWriteSize >= MAX_LOG_SIZE) {
             // Silence gcc (>= 7.1) compiler flag `-Wformat-truncation=`, i.e.,
             // handle output truncation
 #if defined(RSOILWAT)
@@ -360,7 +360,7 @@ void LogErrorSuid(
         expectedWriteSize =
             snprintf(newFmt, MAX_LOG_SIZE, "%s%s", tag_suid, fmt);
 
-        if (expectedWriteSize > MAX_LOG_SIZE) {
+        if (expectedWriteSize >= MAX_LOG_SIZE) {
             // Silence gcc (>= 7.1) compiler flag `-Wformat-truncation=`,
             // i.e., handle output truncation
 #if defined(RSOILWAT)
