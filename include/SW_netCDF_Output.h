@@ -103,7 +103,7 @@ void SW_NCOUT_write_output(
     size_t numWritesGroup,
     size_t numWritesProc,
     size_t starts[][2],
-    const size_t counts[][2],
+    size_t counts[][2],
     int *openOutFileIDs[][SW_OUTNPERIODS],
     int *outVarIDs[],
     Bool siteDom,

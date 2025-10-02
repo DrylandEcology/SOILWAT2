@@ -89,7 +89,7 @@ void SW_CTL_run_sw(
     SW_DOMAIN *SW_Domain,
     size_t ncSuid[],
     Bool copyWeather,
-    const size_t count[][2],
+    size_t count[][2],
     double *tempVals,
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *LogInfo

@@ -517,7 +517,7 @@ void SW_CTL_RunSimSet(
     Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
     Bool copyWeather = swTRUE;
     Bool *succRun = NULL;
-    size_t count[N_SUID_ASSIGN][2] = {{1, (sDom) ? 0 : 1}};
+    size_t count[N_SUID_ASSIGN][2] = {{1, (size_t) ((sDom) ? 0 : 1)}};
 
     WallTimeSpec tss;
     Bool ok_tss = swFALSE;
@@ -1606,7 +1606,7 @@ void SW_CTL_run_sw(
     SW_DOMAIN *SW_Domain,
     size_t ncSuid[], // NOLINT(readability-non-const-parameter)
     Bool copyWeather,
-    const size_t count[][2],
+    size_t count[][2],
     double *tempVals, // NOLINT(readability-non-const-parameter)
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *LogInfo

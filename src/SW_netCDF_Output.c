@@ -1148,7 +1148,7 @@ static void create_output_file(
     /* If SWMPI is not enabled, then this is not used in
        `SW_NC_create_template()` */
     Bool openInPar = swFALSE;
-    const int isInput = swFALSE;
+    const Bool isInput = swFALSE;
 
     (void) sw_memccpy(frequency, (char *) pd2longstr[pd], '\0', 10);
     Str_ToLower(frequency, frequency);
@@ -2575,7 +2575,7 @@ void SW_NCOUT_write_output(
     size_t numWritesGroup,
     size_t numWritesProc,
     size_t starts[][2],
-    const size_t counts[][2],
+    size_t counts[][2],
     int *openOutFileIDs[][SW_OUTNPERIODS],
     int *outVarIDs[],
     Bool siteDom,
