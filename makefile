@@ -329,44 +329,8 @@ set_std++_tests := -std=c++17
 # Diagnostic warning/error messages
 warning_flags := -Wall -Wextra
 
-# Don't use 'warning_flags_severe*' for production builds and rSOILWAT2
-warning_flags_severe := \
-	$(warning_flags) \
-	-Wpedantic \
-	-Werror \
-	-Wcast-align \
-	-Wmissing-declarations \
-	-Wredundant-decls
-
-warning_flags_severe_cc := \
-	$(warning_flags_severe) \
-	-Wstrict-prototypes # '-Wstrict-prototypes' is valid for C/ObjC but not for C++
-
-warning_flags_severe_cxx := \
-	$(warning_flags_severe) \
-	-Wno-error=deprecated
-	# TODO: address underlying problems so that we can eliminate
-	# `-Wno-error=deprecated`
-	# (https://github.com/DrylandEcology/SOILWAT2/issues/208):
-	# "treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated"
-
-
 # Instrumentation options for debugging and testing
-instr_flags := -fstack-protector-all
-
-instr_flags_severe := \
-	$(instr_flags) \
-	-fsanitize=undefined \
-	-fsanitize=address \
-	-fno-omit-frame-pointer \
-	-fno-common
-	# -fstack-protector-strong (gcc >= v4.9)
-	# (gcc >= 4.0) -D_FORTIFY_SOURCE: lightweight buffer overflow protection to some memory and string functions
-	# (gcc >= 4.8; llvm >= 3.1) -fsanitize=address: AdressSanitizer: replaces `mudflap` run time checker; https://github.com/google/sanitizers/wiki/AddressSanitizer
-	#   -fno-omit-frame-pointer: allows fast unwinder to work properly for ASan
-	#   -fno-common: allows ASan to instrument global variables
-	# (gcc >= 4.9; llvm >= 3.3) -fsanitize=undefined: UndefinedBehaviorSanitizer
-
+instr_flags := -fstack-protector-strong
 
 # Precompiler and compiler flags and options
 sw_CPPFLAGS := $(CPPFLAGS) $(sw_info) -MMD -MP -I.
