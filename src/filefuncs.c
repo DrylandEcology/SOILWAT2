@@ -185,19 +185,24 @@ closeDir: { closedir(dir); }
 
 @param[in,out] LogInfo Holds information on warnings and errors
 @param[in] mode Indicator whether message is a warning or error
+@param[in] suidPrefix Prefix for message that identifies a suid
 @param[in] fmt Message string with optional format specifications for ...
-    arguments
+    arguments. Must be a literal or constant string.
 @param[in] args A list of arguments of type `va_list`
 */
 static void LogErrorHelper(
-    LOG_INFO *LogInfo, const int mode, const char *fmt, va_list args
+    LOG_INFO *LogInfo,
+    const int mode,
+    const char *suidPrefix,
+    const char *fmt,
+    va_list args
 ) {
     /* 9-Dec-03 (cwb) Modified to accept argument list similar
      *           to fprintf() so sprintf(errstr...) doesn't need
      *           to be called each time replacement args occur.
      */
 
-    char outfmt[MAX_LOG_SIZE] = {0}; /* to prepend err type str */
+    char msgFormatted[MAX_LOG_SIZE] = {0}; /* to prepend err type str */
     char buf[MAX_LOG_SIZE];
     char msgType[MAX_LOG_SIZE];
     int nextWarn = LogInfo->numWarnings;
@@ -210,22 +215,18 @@ static void LogErrorHelper(
         (void) sw_memccpy(writePtr, "ERROR: ", '\0', MAX_LOG_SIZE);
     }
 
-    expectedWriteSize = snprintf(outfmt, MAX_LOG_SIZE, "%s%s\n", msgType, fmt);
-    if (expectedWriteSize >= MAX_LOG_SIZE) {
-        // Silence gcc (>= 7.1) compiler flag `-Wformat-truncation=`, i.e.,
-        // handle output truncation
-#if defined(RSOILWAT)
-        Rf_error("Programmer: message exceeds the maximum size.");
-#else
-        (void) fprintf(stderr, "Programmer: message exceeds the maximum size.");
-#endif
-#ifdef SWDEBUG
-        exit(EXIT_FAILURE);
-#endif
-    }
+    int msgTypeLen = (int) strlen(msgType);
+    // Reserve space for msgType + msgFormatted + '\n + '\0'
+    int maxMsgLen = MAX_LOG_SIZE - msgTypeLen - 2;
 
-    // NOLINTNEXTLINE(clang-analyzer-valist.Uninitialized)
-    expectedWriteSize = vsnprintf(buf, MAX_LOG_SIZE, outfmt, args);
+
+    // 1) Format the user message (+1 for '\0')
+    va_list args_copy;
+    va_copy(args_copy, args);
+    // vsnprintf() expects a string literal for the format string
+    expectedWriteSize = vsnprintf(msgFormatted, maxMsgLen + 1, fmt, args_copy);
+    va_end(args_copy);
+
 #ifdef SWDEBUG
     if (expectedWriteSize >= MAX_LOG_SIZE) {
 #if defined(RSOILWAT)
@@ -241,9 +242,24 @@ static void LogErrorHelper(
         exit(EXIT_FAILURE);
     }
 #else
-    (void) expectedWriteSize; /* Silence clang-tidy
-                                 clang-analyzer-deadcode.DeadStores */
+    (void) expectedWriteSize;
 #endif
+
+    // 2) Build final message
+    expectedWriteSize = snprintf(
+        buf, sizeof buf, "%s%s%s\n", msgType, suidPrefix, msgFormatted
+    );
+    if (expectedWriteSize >= MAX_LOG_SIZE) {
+#if defined(RSOILWAT)
+        Rf_error("Programmer: message exceeds the maximum size.");
+#else
+        (void) fprintf(stderr, "Programmer: message exceeds the maximum size.");
+#endif
+#ifdef SWDEBUG
+        exit(EXIT_FAILURE);
+#endif
+    }
+
 
     if (LOGWARN & mode) {
         if (nextWarn < MAX_MSGS) {
@@ -288,7 +304,7 @@ void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...) {
 
     va_start(args, fmt);
 
-    LogErrorHelper(LogInfo, mode, fmt, args);
+    LogErrorHelper(LogInfo, mode, "", fmt, args);
 
     va_end(args);
 }
@@ -316,7 +332,6 @@ void LogErrorSuid(
     ...
 ) {
     va_list args;
-    char newFmt[MAX_LOG_SIZE] = "\0";
     int expectedWriteSize;
     /* tag_suid is 55:
     14 character for "(suid = [, ]) " + 40 character for 2 *
@@ -343,35 +358,10 @@ void LogErrorSuid(
             // Silence gcc (>= 7.1) compiler flag `-Wformat-truncation=`, i.e.,
             // handle output truncation
 #if defined(RSOILWAT)
-            Rf_error(
-                "Programmer: message exceeds the maximum size by adding suids."
-            );
+            Rf_error("Programmer: message prefix for suid failed.");
 #else
-            (void) fprintf(
-                stderr,
-                "Programmer: message exceeds the maximum size by adding suids."
-            );
-#endif
-#ifdef SWDEBUG
-            exit(EXIT_FAILURE);
-#endif
-        }
-
-        expectedWriteSize =
-            snprintf(newFmt, MAX_LOG_SIZE, "%s%s", tag_suid, fmt);
-
-        if (expectedWriteSize >= MAX_LOG_SIZE) {
-            // Silence gcc (>= 7.1) compiler flag `-Wformat-truncation=`,
-            // i.e., handle output truncation
-#if defined(RSOILWAT)
-            Rf_error("Programmer: message exceeds the maximum size by "
-                     "adding suid tag.");
-#else
-            (void) fprintf(
-                stderr,
-                "Programmer: message exceeds the maximum size by adding "
-                "suid tag."
-            );
+            (void
+            ) fprintf(stderr, "Programmer: message prefix for suid failed.");
 #endif
 #ifdef SWDEBUG
             exit(EXIT_FAILURE);
@@ -379,7 +369,7 @@ void LogErrorSuid(
         }
     }
 
-    LogErrorHelper(LogInfo, mode, (!isnull(ncSuid)) ? newFmt : fmt, args);
+    LogErrorHelper(LogInfo, mode, tag_suid, fmt, args);
 
     va_end(args);
 }
