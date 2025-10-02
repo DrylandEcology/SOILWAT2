@@ -4041,8 +4041,8 @@ void echo_outputs(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         (char *) key2str[0], /* Overwrite in loop below */
         (char *) "\n\tSummary Type: ",
         (char *) styp2str[0], /* Overwrite in loop below */
-        (char *) "\n\tStart period: %d",
-        (char *) "\n\tEnd period  : %d\n"
+        (char *) "\n\tStart period: %u",
+        (char *) "\n\tEnd period  : %u\n"
     };
 
     TimeInt writeVals[] = {
@@ -4058,20 +4058,20 @@ void echo_outputs(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     }
 
     ForEachOutKey(k) {
-        if (OutDom->use[k]) {
-            writeStrs[1] = (char *) key2str[k];
-            writeStrs[3] = (char *) styp2str[OutDom->sumtype[k]];
-
-            writeVals[0] = OutDom->first_orig[k];
-            writeVals[0] = OutDom->last_orig[k];
-        } else {
+        if (!OutDom->use[k]) {
             continue;
         }
+
+        writeStrs[1] = (char *) key2str[k];
+        writeStrs[3] = (char *) styp2str[OutDom->sumtype[k]];
+
+        writeVals[0] = OutDom->first_orig[k];
+        writeVals[1] = OutDom->last_orig[k];
 
         for (index = 0; index < numWriteStrs; index++) {
             cpyPtr = writeStrs[index];
 
-            if (index > 4) {
+            if (index >= 4) {
                 (void
                 ) snprintf(str, OUTSTRLEN, cpyPtr, writeVals[writeValIndex]);
 
