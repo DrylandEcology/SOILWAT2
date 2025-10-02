@@ -630,7 +630,7 @@ void SW_DOM_init_ptrs(SW_DOMAIN *SW_Domain) {
 }
 
 void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
-    unsigned short k;
+    int key;
     unsigned int i;
 
     SW_F_deconstruct(
@@ -641,8 +641,8 @@ void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
 
     SW_NC_deconstruct(&SW_Domain->OutDom.netCDFOutput);
 
-    ForEachOutKey(k) {
-        SW_NCOUT_dealloc_outputkey_var_info(&SW_Domain->OutDom, k);
+    ForEachOutKey(key) {
+        SW_NCOUT_dealloc_outputkey_var_info(&SW_Domain->OutDom, key);
     }
 
     SW_NCIN_deconstruct(&SW_Domain->netCDFInput);
@@ -651,17 +651,17 @@ void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
     SW_MPI_deconstruct(SW_Domain);
 #endif
 #endif
-    ForEachOutKey(k) {
+    ForEachOutKey(key) {
         for (i = 0; i < SW_NOUTCOLS; i++) {
-            if (!isnull(SW_Domain->OutDom.colnames_OUT[k][i])) {
-                free(SW_Domain->OutDom.colnames_OUT[k][i]);
-                SW_Domain->OutDom.colnames_OUT[k][i] = NULL;
+            if (!isnull(SW_Domain->OutDom.colnames_OUT[key][i])) {
+                free(SW_Domain->OutDom.colnames_OUT[key][i]);
+                SW_Domain->OutDom.colnames_OUT[key][i] = NULL;
             }
         }
 #ifdef RSOILWAT
-        if (!isnull(SW_Domain->OutDom.outfile[k])) {
-            free(SW_Domain->OutDom.outfile[k]);
-            SW_Domain->OutDom.outfile[k] = NULL;
+        if (!isnull(SW_Domain->OutDom.outfile[key])) {
+            free(SW_Domain->OutDom.outfile[key]);
+            SW_Domain->OutDom.outfile[key] = NULL;
         }
 #endif
     }
