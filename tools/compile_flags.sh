@@ -35,9 +35,6 @@ compile_flags() {
         -Wextra \
         -Wpedantic \
         -Werror \
-        -Werror=implicit \
-        -Werror=incompatible-pointer-types \
-        -Werror=int-conversion \
         -Wcast-align \
         -Wdeprecated \
         -Wformat \
@@ -61,9 +58,13 @@ compile_flags() {
         -fno-common \
         "
 
-
-    # '-Wstrict-prototypes' is valid for C/ObjC but not for C++
-    local flags_cc="-Wstrict-prototypes"
+    # Flags valid for C but not C++
+    local flags_cc="\
+        -Werror=implicit \
+        -Werror=incompatible-pointer-types \
+        -Werror=int-conversion \
+        -Wstrict-prototypes \
+        "
 
     # TODO: address underlying problems so that we can eliminate
     # `-Wno-error=deprecated`
