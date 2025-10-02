@@ -2911,7 +2911,8 @@ static void generate_weather_filenames(
                 return; /* Exit function prematurely due to error */
             }
 
-            if (sprintfRes < 0 || (unsigned int) sprintfRes >= MAX_FILENAMESIZE) {
+            if (sprintfRes < 0 ||
+                (unsigned int) sprintfRes >= MAX_FILENAMESIZE) {
                 LogError(
                     LogInfo,
                     LOGERROR,
