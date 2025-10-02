@@ -224,6 +224,7 @@ static void LogErrorHelper(
     va_list args_copy;
     va_copy(args_copy, args);
     // vsnprintf() expects a string literal for the format string
+    // NOLINTNEXTLINE(clang-analyzer-valist.Uninitialized)
     expectedWriteSize = vsnprintf(msgFormatted, maxMsgLen + 1, fmt, args_copy);
     va_end(args_copy);
 
@@ -338,8 +339,6 @@ void LogErrorSuid(
     ULONG_MAX + '\0' */
     char tag_suid[55] = "\0";
 
-    va_start(args, fmt);
-
     if (!isnull(ncSuid)) {
         if (sDom) {
             expectedWriteSize =
@@ -368,6 +367,8 @@ void LogErrorSuid(
 #endif
         }
     }
+
+    va_start(args, fmt);
 
     LogErrorHelper(LogInfo, mode, tag_suid, fmt, args);
 
