@@ -946,7 +946,6 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyInputPrioritization) {
 }
 
 TEST_F(WeatherFixtureTest, WeatherMonthlyScalingParameters) {
-    LOG_INFO LogInfo;
     sw_init_logs(NULL, &LogInfo);
 
     SW_WEATHER_INPUTS testWeather;
