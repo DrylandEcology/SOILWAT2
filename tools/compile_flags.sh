@@ -28,6 +28,7 @@ compile_flags() {
     # see also recommendations by
     # https://best.openssf.org/Compiler-Hardening-Guides/Compiler-Options-Hardening-Guide-for-C-and-C++.html
 
+    # Note: some of the flags require at least gcc13 or clang-15
     # Note: use -ftrivial-auto-var-init=zero for production code (not pattern)
 
     # TODO: set -fstrict-flex-arrays=3 (once we no longer use Apple Clang 15)

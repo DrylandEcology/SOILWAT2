@@ -45,10 +45,13 @@ on your side.
   - on any platform:
     - to compile the `SOILWAT2` simulation program
       - `C99` compliant [gcc][] or [clang/llvm][] toolchains
-    - to compile the `SOILWAT2` tests program (using `googletest`)
+    - to compile the `SOILWAT2` for testing or debugging (using `googletest`)
       - `C++17` compliant [gcc][] or [clang/llvm][] toolchains
          (see [googletest cxx support](https://github.com/google/oss-policies-info/blob/main/foundational-cxx-support-matrix.md));
       - `POSIX API` (needs to be activated on `cygwin`, see `makefile`)
+      - [gcc][] version 13 or newer and [clang/llvm][] version 15 or newer
+        that support compilation flags used by testing and debugging scripts
+        (see `tools/compile_flags.sh`)
     - GNU-compliant [make](https://www.gnu.org/software/make/)
     - [git][] to download the code from the `github` repository
   - additionally, on Windows OS:
