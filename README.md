@@ -1,18 +1,20 @@
 <!-- badges: start -->
 [![status][1]][2]
-[![tidy][3]][2]
+[![tidy][3]][13]
 [![github release][5]][6]
 [![DOI][7]][8]
 [![license][9]][10]
 [![codecov status][11]][12]
-[![doc status][4]][2]
+[![doc status][4]][14]
 <!-- badges: end -->
 
 
 [1]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/simulation-checks.yml/badge.svg
-[2]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows
+[2]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/simulation-checks.yml
 [3]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/clang-tidy-check.yml/badge.svg
+[13]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/clang-tidy-check.yml
 [4]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/check_doc.yml/badge.svg?
+[14]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/check_doc.yml
 
 [5]: https://img.shields.io/github/release/DrylandEcology/SOILWAT2.svg
 [6]: https://github.com/DrylandEcology/SOILWAT2/releases
