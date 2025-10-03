@@ -3371,7 +3371,7 @@ void soil_temperature(
             LogError(
                 LogInfo,
                 LOGWARN,
-                "%d-%d: soil temperature (%f [C]) in layer %d "
+                "%d-%d: soil temperature (%e [C]) in layer %d "
                 "outside [-100,100] [C].",
                 year,
                 doy,
