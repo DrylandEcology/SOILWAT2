@@ -1,5 +1,5 @@
 # NEWS
-# SOILWAT2 v8.2.0-devel
+# SOILWAT2 v8.2.0
 * This version produces similar but not identical simulation output
   as previously because of the following changes:
     * CO2-fertilization effects are now using provided atmospheric CO2 of the

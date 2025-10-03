@@ -1,6 +1,6 @@
 <!-- badges: start -->
-[![gh nix build status][1]][2]
-[![gh win build status][3]][2]
+[![status][1]][2]
+[![tidy][3]][2]
 [![github release][5]][6]
 [![DOI][7]][8]
 [![license][9]][10]
@@ -9,10 +9,10 @@
 <!-- badges: end -->
 
 
-[1]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/main_nix.yml/badge.svg?branch=master
+[1]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/simulation-checks.yml/badge.svg
 [2]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows
-[3]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/main_win.yml/badge.svg?branch=master
-[4]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/check_doc.yml/badge.svg?branch=master
+[3]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/clang-tidy-check.yml/badge.svg
+[4]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/check_doc.yml/badge.svg?
 
 [5]: https://img.shields.io/github/release/DrylandEcology/SOILWAT2.svg
 [6]: https://github.com/DrylandEcology/SOILWAT2/releases
@@ -43,9 +43,9 @@ SOILWAT2 is an ecosystem water balance simulation model.
 This repository of `SOILWAT2` contains the same code that is
 used by [rSOILWAT2][] and [STEPWAT2][].
 
-If you utilize this model, please cite appropriate references, and we would
-like to hear about your particular study (especially a copy of any published
-paper).
+If you utilize this model, please cite the code (DOI 10.5281/zenodo.3352249),
+appropriate references, and we would like to hear about your particular study
+(especially a copy of any published paper).
 
 
 Some references
