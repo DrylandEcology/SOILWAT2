@@ -29,7 +29,7 @@ TEST(WeatherGeneratorTest, WeatherGeneratorConstructor) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    int const rng_seed = 8;
+    size_t const rng_seed = 8;
 
     SW_MKV_construct(rng_seed, &SW_MarkovIn);
     allocateMKV(&SW_MarkovIn, &LogInfo);
@@ -79,7 +79,7 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
         Str_Dup("Input/mkv_prob.in", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    int rng_seed;
+    size_t rng_seed;
     // Turn on Markov weather generator
     unsigned int const generateWeatherMethod = 2;
 
@@ -214,7 +214,7 @@ TEST(WeatherGeneratorTest, WeatherGeneratormvnorm) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    int const rng_seed = 9;
+    size_t const rng_seed = 9;
     short k;
     short const n = 3;
     double tmax = 0.;
@@ -312,7 +312,7 @@ TEST(WeatherGeneratorTest, WeatherGeneratormvnormDeathTest) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
-    int const rng_seed = 11;
+    size_t const rng_seed = 11;
     double tmax = 0.;
     double tmin = 0.;
 

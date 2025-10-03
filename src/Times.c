@@ -519,7 +519,7 @@ wrapUpErrMsg: {
 @param[out] timeString Character array that returns the formatted time.
 @param[in] stringLength Length of timeString (should be at least 21).
 */
-void timeStringISO8601(char *timeString, int stringLength) {
+void timeStringISO8601(char *timeString, unsigned int stringLength) {
     time_t t = time(NULL);
     if (strftime(timeString, stringLength, "%FT%TZ", gmtime(&t)) == 0) {
         timeString[0] = '\0';

@@ -269,7 +269,6 @@ double interpolation(
     return y1 + (((y2 - y1) / (x2 - x1)) * (deltaX - x1));
 }
 
-
 /**************************************************************************************************************************************
  PURPOSE: Calculate the slope of a line of best fit
 

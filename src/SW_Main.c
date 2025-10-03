@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
 
     int rank = 0;
     int size = 0;
-    char procName[SW_MAX_PROCESSOR_NAME] = "\0";
+    char procName[SW_MAX_PROCESSOR_NAME] = {'\0'};
 
     size_t userSUID;
 

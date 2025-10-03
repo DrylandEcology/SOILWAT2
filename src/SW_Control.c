@@ -208,7 +208,7 @@ static void begin_day(SW_RUN *sw, LOG_INFO *LogInfo) {
 }
 
 static void end_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
-    int localTOffset = 1; // tOffset is one when called from this function
+    TimeInt localTOffset = 1; // tOffset is one when called from this function
 
     if (sw->ModelSim.doOutput) {
         collect_values(sw, OutDom, swFALSE, localTOffset, LogInfo);
@@ -1315,7 +1315,7 @@ void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     default: // same as case 1
         // initialize random array
         for (i = 0; i < duration; i++) {
-            yr = RandUniIntRange(
+            yr = (TimeInt) RandUniIntRange(
                 sw->ModelIn.startyr, finalyr, &sw->ModelIn.SW_SpinUp.spinup_rng
             );
             years[i] = yr;

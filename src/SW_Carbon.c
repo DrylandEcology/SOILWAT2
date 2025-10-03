@@ -68,7 +68,7 @@ Additionally, check for the following issues:
 */
 void SW_CBN_read(
     SW_CARBON_INPUTS *SW_CarbonIn,
-    int addtl_yr,
+    TimeInt addtl_yr,
     TimeInt startYr,
     TimeInt endYr,
     char *txtInFiles[],
@@ -89,8 +89,8 @@ void SW_CBN_read(
     char scenario[64] = {'\0'};
     TimeInt year;
     int scanRes;
-    TimeInt yr1 = MIN((TimeInt) (startYr + addtl_yr), vegYear);
-    TimeInt yr2 = MAX((TimeInt) (endYr + addtl_yr), vegYear);
+    TimeInt yr1 = MIN(startYr + addtl_yr, vegYear);
+    TimeInt yr2 = MAX(endYr + addtl_yr, vegYear);
 
     if (yr1 >= MAX_NYEAR || yr2 >= MAX_NYEAR) {
         LogError(
@@ -135,7 +135,7 @@ void SW_CBN_read(
             goto closeFile;
         }
 
-        year = sw_strtoi(yearStr, MyFileName, LogInfo);
+        year = (TimeInt) sw_strtoi(yearStr, MyFileName, LogInfo);
         if (LogInfo->stopRun) {
             goto closeFile;
         }
@@ -255,7 +255,7 @@ void SW_CBN_init_run(
     VegTypeIn vegIn[],
     VegTypeSim vegSim[],
     SW_CARBON_INPUTS *SW_CarbonIn,
-    int addtl_yr,
+    TimeInt addtl_yr,
     TimeInt startYr,
     TimeInt endYr,
     TimeInt vegYear,
