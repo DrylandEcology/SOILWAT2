@@ -465,11 +465,7 @@ $(lib_test) : $(objects_lib_test) $(objects_test_pcg) | $(dir_build_test)
 		$(AR) -rcs $(lib_test) $(objects_lib_test) $(objects_test_pcg)
 
 $(bin_test) : $(lib_gtest) $(lib_gmock) $(lib_test) $(objects_test) | $(dir_bin)
-		$(CXX) $(gtest_flags) $(debug_flags) $(warning_flags) \
-		$(instr_flags) $(set_std++_tests) \
-		-isystem ${dir_gtest}/include \
-                -isystem ${dir_gmock}/include -pthread \
-		$(objects_test) $(sw_LDFLAGS_test) $(gtest_LDLIBS) $(gmock_LDLIBS) $(test_LDLIBS) -o $(bin_test)
+		$(CXX) $(gtest_flags) $(debug_flags) $(warning_flags) $(instr_flags) $(set_std++_tests) -isystem ${dir_gtest}/include -isystem ${dir_gmock}/include -pthread $(objects_test) $(sw_LDFLAGS_test) $(gtest_LDLIBS) $(gmock_LDLIBS) $(test_LDLIBS) -o $(bin_test)
 
 # GoogleTest library
 # based on section 'Generic Build Instructions' at
@@ -477,20 +473,14 @@ $(bin_test) : $(lib_gtest) $(lib_gmock) $(lib_test) $(objects_test) | $(dir_bin)
 #   1) build googletest library
 #   2) compile SOILWAT2 test source file
 $(lib_gtest) : | $(dir_build_test)
-		$(CXX) $(sw_CPPFLAGS_test) $(sw_CXXFLAGS) $(gtest_flags) $(set_std++_tests) \
-		-isystem ${dir_gtest}/include -I${dir_gtest} \
-                -isystem ${dir_gmock}/include -I${dir_gmock} \
-		-pthread -c ${dir_gtest}/src/gtest-all.cc -o $(dir_build_test)/gtest-all.o
+		$(CXX) $(sw_CPPFLAGS_test) $(sw_CXXFLAGS) $(gtest_flags) $(set_std++_tests) -isystem ${dir_gtest}/include -I${dir_gtest} -isystem ${dir_gmock}/include -I${dir_gmock} -pthread -c ${dir_gtest}/src/gtest-all.cc -o $(dir_build_test)/gtest-all.o
 
 		$(AR) -r $(lib_gtest) $(dir_build_test)/gtest-all.o
 
 $(lib_gmock) : | $(dir_build_test)
-		 $(CXX) $(sw_CPPFLAGS_test) $(sw_CXXFLAGS) $(gtest_flags) $(set_std++_tests) \
-		 -isystem ${dir_gtest}/include -I${dir_gtest} \
-                 -isystem ${dir_gmock}/include -I${dir_gmock} \
-		 -pthread -c ${dir_gmock}/src/gmock-all.cc -o $(dir_build_test)/gmock-all.o
+		$(CXX) $(sw_CPPFLAGS_test) $(sw_CXXFLAGS) $(gtest_flags) $(set_std++_tests) -isystem ${dir_gtest}/include -I${dir_gtest} -isystem ${dir_gmock}/include -I${dir_gmock} -pthread -c ${dir_gmock}/src/gmock-all.cc -o $(dir_build_test)/gmock-all.o
 
-		 $(AR) -r $(lib_gmock) $(dir_build_test)/gmock-all.o
+		$(AR) -r $(lib_gmock) $(dir_build_test)/gmock-all.o
 
 
 #--- Compile source files for library and executable
@@ -509,9 +499,7 @@ $(dir_build_test)/%.o: $(dir_pcg)/%.c | $(dir_build_test)
 		$(CXX) $(sw_CPPFLAGS_test) $(sw_CXXFLAGS) $(gtest_flags) $(debug_flags) $(warning_flags) $(instr_flags) $(set_std++_tests) -c $< -o $@
 
 $(dir_build_test)/%.o: $(dir_test)/%.cc | $(dir_build_test)
-		$(CXX) $(sw_CPPFLAGS_test) $(sw_CXXFLAGS) $(gtest_flags) $(debug_flags) $(warning_flags) $(instr_flags) $(set_std++_tests) \
-                -isystem ${dir_gmock}/include \
-                -isystem ${dir_gtest}/include -pthread -c $< -o $@
+		$(CXX) $(sw_CPPFLAGS_test) $(sw_CXXFLAGS) $(gtest_flags) $(debug_flags) $(warning_flags) $(instr_flags) $(set_std++_tests) -isystem ${dir_gmock}/include -isystem ${dir_gtest}/include -pthread -c $< -o $@
 
 
 #--- Create directories
@@ -578,13 +566,13 @@ cov :
 
 #--- Targets for clang-tidy
 tidy-bin: $(sources_lib) $(sources_bin)
-	clang-tidy --config-file=.clang-tidy $(sources_lib) $(sources_bin) -- $(sw_CPPFLAGS_bin) $(sw_CFLAGS) $(bin_flags) $(warning_flags) $(set_std)
+		clang-tidy --config-file=.clang-tidy $(sources_lib) $(sources_bin) -- $(sw_CPPFLAGS_bin) $(sw_CFLAGS) $(bin_flags) $(warning_flags) $(set_std)
 
 tidy-mpi: $(sources_lib) $(sources_bin)
-	clang-tidy --config-file=.clang-tidy_mpi $(sources_lib) $(sources_bin) -- $(sw_CPPFLAGS_bin) $(sw_CFLAGS) $(bin_flags) $(warning_flags) $(set_std)
+		clang-tidy --config-file=.clang-tidy_mpi $(sources_lib) $(sources_bin) -- $(sw_CPPFLAGS_bin) $(sw_CFLAGS) $(bin_flags) $(warning_flags) $(set_std)
 
 tidy-test: $(sources_test)
-	clang-tidy --config-file=.clang-tidy_swtest $(sources_test) -- $(sw_CPPFLAGS_test) $(sw_CXXFLAGS) $(gtest_flags) $(debug_flags) $(warning_flags) $(instr_flags) $(set_std++_tests) -isystem ${dir_gmock}/include -isystem ${dir_gtest}/include
+		clang-tidy --config-file=.clang-tidy_swtest $(sources_test) -- $(sw_CPPFLAGS_test) $(sw_CXXFLAGS) $(gtest_flags) $(debug_flags) $(warning_flags) $(instr_flags) $(set_std++_tests) -isystem ${dir_gmock}/include -isystem ${dir_gtest}/include
 
 
 #--- Convenience targets for documentation
