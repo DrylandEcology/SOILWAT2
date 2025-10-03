@@ -220,12 +220,7 @@ static void LogErrorHelper(
     int maxMsgLen = MAX_LOG_SIZE - msgTypeLen - 2;
 
     // for debugging on GHA ubuntu-latest
-    printf(
-        "Before vsnprintf: write size: %d | format: '%s' | Max Msg Len: %d\n",
-        expectedWriteSize,
-        fmt,
-        maxMsgLen + 1
-    );
+    printf("Before: Max Msg Len: %4d | format: '%s'\n", maxMsgLen + 1, fmt);
 
     // 1) Format the user message (+1 for '\0')
     va_list args_copy;
@@ -237,7 +232,7 @@ static void LogErrorHelper(
 
     // for debugging on GHA ubuntu-latest
     printf(
-        "After vsnprintf: write size: %d | formatted msg: '%s'\n",
+        "After : write size : %4d | msg   : '%s'\n",
         expectedWriteSize,
         msgFormatted
     );
