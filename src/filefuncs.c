@@ -197,14 +197,10 @@ static void LogErrorHelper(
     const char *fmt,
     va_list args
 ) {
-    /* 9-Dec-03 (cwb) Modified to accept argument list similar
-     *           to fprintf() so sprintf(errstr...) doesn't need
-     *           to be called each time replacement args occur.
-     */
 
-    char msgFormatted[MAX_LOG_SIZE] = {0}; /* to prepend err type str */
-    char buf[MAX_LOG_SIZE];
-    char msgType[MAX_LOG_SIZE];
+    char msgFormatted[MAX_LOG_SIZE] = {'\0'};
+    char buf[MAX_LOG_SIZE] = {'\0'};
+    char msgType[MAX_LOG_SIZE] = {'\0'};
     int nextWarn = LogInfo->numWarnings;
     int expectedWriteSize;
     char *writePtr = msgType;
