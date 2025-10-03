@@ -219,9 +219,6 @@ static void LogErrorHelper(
     // Reserve space for msgType + msgFormatted + '\n + '\0'
     int maxMsgLen = MAX_LOG_SIZE - msgTypeLen - 2;
 
-    // for debugging on GHA ubuntu-latest
-    printf("Before: Max Msg Len: %4d | format: '%s'\n", maxMsgLen + 1, fmt);
-
     // 1) Format the user message (+1 for '\0')
     va_list args_copy;
     va_copy(args_copy, args);
@@ -229,13 +226,6 @@ static void LogErrorHelper(
     // NOLINTNEXTLINE(clang-analyzer-valist.Uninitialized)
     expectedWriteSize = vsnprintf(msgFormatted, maxMsgLen + 1, fmt, args_copy);
     va_end(args_copy);
-
-    // for debugging on GHA ubuntu-latest
-    printf(
-        "After : write size : %4d | msg   : '%s'\n",
-        expectedWriteSize,
-        msgFormatted
-    );
 
 
 #ifdef SWDEBUG
