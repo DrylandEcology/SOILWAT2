@@ -28,6 +28,9 @@ compile_flags() {
     # see also recommendations by
     # https://best.openssf.org/Compiler-Hardening-Guides/Compiler-Options-Hardening-Guide-for-C-and-C++.html
 
+    # Note: use -ftrivial-auto-var-init=zero for production code (not pattern)
+
+    # TODO: set -fstrict-flex-arrays=3 (once we no longer use Apple Clang 15)
     # TODO: address underlying problems so that we can add -Wformat=2
     # TODO: address underlying problems so that we can add -Wconversion
     local flags="\
@@ -49,11 +52,11 @@ compile_flags() {
         -fno-delete-null-pointer-checks \
         -fno-strict-overflow \
         -fno-strict-aliasing \
-        -ftrivial-auto-var-init=zero \
+        -ftrivial-auto-var-init=pattern \
         -fstack-protector-all \
         -fstack-protector-strong \
         -fstrict-aliasing \
-        -fstrict-flex-arrays=3
+        -fstrict-flex-arrays=2 \
         -fno-omit-frame-pointer \
         -fno-common \
         "
