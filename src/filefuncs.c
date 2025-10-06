@@ -338,12 +338,12 @@ void LogErrorSuid(
     if (!isnull(ncSuid)) {
         if (sDom) {
             expectedWriteSize =
-                snprintf(tag_suid, 55, "(suid = %lu) ", ncSuid[0] + 1);
+                snprintf(tag_suid, 55, "(suid = %zu) ", ncSuid[0] + 1);
         } else {
             expectedWriteSize = snprintf(
                 tag_suid,
                 55,
-                "(suid = [%lu, %lu]) ",
+                "(suid = [%zu, %zu]) ",
                 ncSuid[1] + 1,
                 ncSuid[0] + 1
             );
