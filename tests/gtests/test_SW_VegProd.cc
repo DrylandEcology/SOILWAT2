@@ -110,7 +110,7 @@ double calc_veg_average(
 }
 
 // Test the SW_VEGPROD_INPUTS constructor 'SW_VPD_construct'
-TEST_F(VegProdFixtureTest, VegProdConstructor) {
+TEST(VegProdTest, VegProdConstructor) {
     // This test requires a local copy of SW_VEGPROD_INPUTS to avoid a memory
     // leak (see issue #205)
     // -- If using `SW_Run.VegProdIn` or a global variable
@@ -123,10 +123,21 @@ TEST_F(VegProdFixtureTest, VegProdConstructor) {
     // to avoid a leak)
     SW_RUN sw;
     int k;
+    LOG_INFO LogInfo;
+    // Initialize logs and silence warn/error reporting
+    sw_init_logs(NULL, &LogInfo);
 
     SW_VPD_construct(
         &sw.VegProdIn, &sw.RunIn.VegProdRunIn, sw.vp_p_oagg, sw.vp_p_accu
     );
+
+    // Provide values for variables utilized by SW_VPD_init_run()
+    sw.ModelIn.startyr = 1980;
+    sw.ModelIn.endyr = 1981;
+    sw.RunIn.SiteRunIn.n_layers = 8;
+    sw.RunIn.ModelRunIn.isnorth = swTRUE;
+    sw.VegProdIn.veg_method = 0;
+    sw.SiteIn.methodMaxDepthSoilTemperature = 0;
 
     SW_VPD_init_run(&sw, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
