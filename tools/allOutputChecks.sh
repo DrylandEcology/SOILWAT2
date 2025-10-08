@@ -100,7 +100,7 @@ echo $'\n'\
 "SOILWAT2 (mpi): tests and example output with ""${pCC}"" ..."$'\n'\
 --------------------------------------------------
 if $doParallelSOILWAT2 ; then
-    tools/check_functionality.sh check_SOILWAT2 "CC=${pCC}" "CXX=${pCC}" "mpi" "${nTasks}" "${pathReferenceOutput}" "false"
+    tools/check_functionality.sh check_SOILWAT2 "CC=${pCC}" "CXX=${pCXX}" "mpi" "${nTasks}" "${pathReferenceOutput}" "false"
 else
     echo "Skip checks with mpi."
 fi

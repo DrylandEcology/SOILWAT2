@@ -193,8 +193,7 @@ There are two type of performance test conducted - with and without weather inpu
 - The third batch consisted of weather-inclusive (30 years) performance runs that also took place used a domain size of ~112k sites (excluding sites which error). This batch uses the configuration combinations of
     - Domain size: ~112,000
     - Number of cores: 128
-    - Number of suids per compute process: 10, 20, 40, 50, 60, 70*, 80*
-        - \* = only used during 40 & 64 I/O processes
+    - Number of suids per compute process: 10, 20, 40, 50, 60
     - Number of I/O processes: 20, 40, 64
     - Note: A couple supplemental performance tests were provided showing 40 years worth of weather under almost exact combinations as 30 years, but not as in-depth when it comes to the visualization
 
@@ -216,13 +215,13 @@ No Weather (Figure 4) | Weather (Figure 5)
 :----------|-----------:
 ![Figure 4](Speedup_Relative_to_Assigned_Suids-no-weather.png) | ![Figure 5](weather/Speedup_Relative_to_Assigned_Suids-weather.png)
 
-Speedup as the number of assigned suids per compute process increases. Multiple lines represent a different number of I/O processes. (no weather, left) With a lower number of assigned suids, there is no obvious pattern of which number of I/O processes is best, with a range of speedup ~75x to ~160x with 25 assigned suids. On the other end, the higher the number assigned suids, 64 I/O is the most obvious speedup at ~425x, with other I/O sizes being more mixed in their results. (With weather, right) We can see the peak of 20 I/O processes, where 40 and 64 I/O processes are roughly the same until reaching 80 assigned suids where 64 I/O processes provides a bigger performance boost. No data was gathered for 20 I/O process with 70 & 80 assigned suids as that amount of I/O processes already reached the maximum performance.
+Speedup as the number of assigned suids per compute process increases. Multiple lines represent a different number of I/O processes. (no weather, left) With a lower number of assigned suids, there is no obvious pattern of which number of I/O processes is best, with a range of speedup ~75x to ~160x with 25 assigned suids. On the other end, the higher the number assigned suids, 64 I/O is the most obvious speedup at ~425x, with other I/O sizes being more mixed in their results. (With weather, right) We can see the performance does not peak for all three amounts of I/O processes. We see a big jump from 20 to 40 assigned suids for 40 & 64 I/O processes.
 
 No Weather (Figure 6) | Weather (Figure 7)
 :----------|-----------:
 ![Figure 6](Speedup_Relative_to_I_O-no-weather.png) | ![Figure 7](Speedup_Relative_to_I_O-weather.png)
 
-Speedup as the number of I/O processes increases. Multiple lines represent a different number of assigned suids. (Without weather, left) Performance does not differ a lot between the number of assigned suids with a lower number of I/O processes. On the contrary, with 64 I/O processes, the more assigned suids, the better the performance gain. (With weather, right) For the most part, performance does not rely heavily on the number of I/O processes as we increase the number of assigned suids. The outliers being 60 and 80 assigned suids.
+Speedup as the number of I/O processes increases. Multiple lines represent a different number of assigned suids. (Without weather, left) Performance does not differ a lot between the number of assigned suids with a lower number of I/O processes. On the contrary, with 64 I/O processes, the more assigned suids, the better the performance gain. (With weather, right) For the most part, performance does not rely heavily on the number of I/O processes as we increase the number of assigned suids.
 
 No Weather (Figure 8) | Weather (Figure 9)
 :----------|-----------:

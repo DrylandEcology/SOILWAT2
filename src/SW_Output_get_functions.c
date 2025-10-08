@@ -107,7 +107,7 @@ static void format_IterationSummary2(
     const size_t nrow_OUT[],
     LOG_INFO *LogInfo
 ) {
-    int k;
+    IntUS k;
     LyrIndex i;
     size_t n;
     double sd;
@@ -241,7 +241,7 @@ dealing with OUTTEXT.
 @param[out] LogInfo Holds information on warnings and errors
 */
 void get_co2effects_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
-    int k;
+    IntUS k;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
     char str[OUTSTRLEN];
@@ -296,7 +296,7 @@ reportFullBuffer:
 
 #if defined(RSOILWAT) || defined(SWNETCDF)
 void get_co2effects_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
-    int k;
+    IntUS k;
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
     double *p = OutRun->p_OUT[eSW_CO2Effects][pd];
@@ -362,7 +362,7 @@ void get_co2effects_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 void get_co2effects_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
-    int k;
+    IntUS k;
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
 
@@ -417,7 +417,7 @@ void get_co2effects_agg(
 //------ eSW_Biomass
 #ifdef SW_OUTTEXT
 void get_biomass_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
-    int k;
+    IntUS k;
     SW_VEGPROD_OUTPUTS *vo = &sw->vp_p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
     size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
@@ -538,7 +538,7 @@ reportFullBuffer:
 
 #if defined(RSOILWAT) || defined(SWNETCDF)
 void get_biomass_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
-    int k;
+    IntUS k;
     SW_VEGPROD_OUTPUTS *vo = &sw->vp_p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
@@ -710,7 +710,7 @@ void get_biomass_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 void get_biomass_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
-    int k;
+    IntUS k;
     int i;
     SW_VEGPROD_OUTPUTS *vo = &sw->vp_p_oagg[pd];
     size_t iOUTIndex = 0;
@@ -1779,7 +1779,7 @@ void get_vwcMatric_agg(
 void get_swa_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     /* added 21-Oct-03, cwb */
     LyrIndex i;
-    int k;
+    IntUS k;
     SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
     size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
@@ -1829,7 +1829,7 @@ reportFullBuffer:
 */
 void get_swa_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
-    int k;
+    IntUS k;
     SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
@@ -1908,7 +1908,7 @@ void get_swa_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
     LyrIndex i;
-    int k;
+    IntUS k;
     SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
@@ -2915,7 +2915,7 @@ void get_runoffrunon_agg(
 void get_transp_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     LyrIndex i;
     LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
-    int k;
+    IntUS k;
     size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
     SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
@@ -2975,7 +2975,7 @@ reportFullBuffer:
 void get_transp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
     LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
-    int k;
+    IntUS k;
     SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
@@ -3085,7 +3085,7 @@ void get_transp_agg(
 ) {
     LyrIndex i;
     LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
-    int k;
+    IntUS k;
     SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
@@ -3151,7 +3151,7 @@ void get_transp_SXW(
 
     if (pd == eSW_Month) {
         LyrIndex i;
-        int k;
+        IntUS k;
         SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
         SW_OUT_RUN *OutRun = &sw->OutRun;
         month = sw->ModelSim.month - OutRun->tOffset;
@@ -3338,7 +3338,7 @@ void get_evapSoil_agg(
 @param[out] LogInfo Holds information on warnings and errors
 */
 void get_evapSurface_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
-    int k;
+    IntUS k;
     SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
     size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
@@ -3404,7 +3404,7 @@ reportFullBuffer:
     information that do not change throughout simulation runs
 */
 void get_evapSurface_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
-    int k;
+    IntUS k;
     SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
@@ -3502,7 +3502,7 @@ void get_evapSurface_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 void get_evapSurface_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
-    int k;
+    IntUS k;
     SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
@@ -3564,7 +3564,7 @@ void get_evapSurface_agg(
 @param[out] LogInfo Holds information on warnings and errors
 */
 void get_interception_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
-    int k;
+    IntUS k;
     SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
     size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
@@ -3621,7 +3621,7 @@ reportFullBuffer:
     information that do not change throughout simulation runs
 */
 void get_interception_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
-    int k;
+    IntUS k;
     SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
@@ -3703,7 +3703,7 @@ void get_interception_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 void get_interception_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
-    int k;
+    IntUS k;
     SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
@@ -4028,7 +4028,7 @@ void get_hydred_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     /* 20101020 (drs) added */
     LyrIndex i;
     LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
-    int k;
+    IntUS k;
     SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
     SW_OUT_RUN *OutRun = &sw->OutRun;
     size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
@@ -4088,7 +4088,7 @@ reportFullBuffer:
 void get_hydred_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
     LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
-    int k;
+    IntUS k;
     SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;
@@ -4205,7 +4205,7 @@ void get_hydred_agg(
 ) {
     LyrIndex i;
     LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
-    int k;
+    IntUS k;
     SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = &sw->OutRun;

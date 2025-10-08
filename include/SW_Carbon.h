@@ -26,7 +26,7 @@ void SW_CBN_deconstruct(void);
 
 void SW_CBN_read(
     SW_CARBON_INPUTS *SW_CarbonIn,
-    int addtl_yr,
+    TimeInt addtl_yr,
     TimeInt startYr,
     TimeInt endYr,
     char *txtInFiles[],
@@ -38,7 +38,7 @@ void SW_CBN_init_run(
     VegTypeIn vegIn[],
     VegTypeSim vegSim[],
     SW_CARBON_INPUTS *SW_CarbonIn,
-    int addtl_yr,
+    TimeInt addtl_yr,
     TimeInt startYr,
     TimeInt endYr,
     TimeInt vegYear,

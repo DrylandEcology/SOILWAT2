@@ -203,9 +203,9 @@ extern "C" {
 
 /** Options to fix daily weather inputs */
 typedef enum {
-    fixMINMAX,  /**< Index of fix if min > max */
-    fixPERCENT, /**< Index of fix if percentage > 100% */
-    fixMAXRSDS  /**< Index of fix if observed radiation > extraterrestrial */
+    idFixMINMAX,  /**< Index of fix if min > max */
+    idFixPERCENT, /**< Index of fix if percentage > 100% */
+    idFixMAXRSDS  /**< Index of fix if observed radiation > extraterrestrial */
 } FixWeatherType;
 
 /* output period specifiers */
