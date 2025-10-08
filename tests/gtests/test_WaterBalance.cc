@@ -59,6 +59,35 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSoilTemperature) {
     }
 }
 
+TEST_F(
+    WaterBalanceFixtureTest, WaterBalanceWithDynamicSoilTemperatureBoundary
+) {
+    int i;
+
+    // Turn on soil temperature simulations
+    SW_Run.SiteIn.use_soil_temp = swTRUE;
+
+    // Turn on dynamic soil temperature boundary condition
+    SW_Run.SiteIn.methodMaxDepthSoilTemperature = 1;
+    SW_Run.VegProdIn.nYearsDynamicShort = 3;
+    SW_Run.VegProdIn.nYearsDynamicLong = 10; // less than number of test years
+
+    // Initialize variables for dynamic boundary
+    SW_VPD_init_run(&SW_Run, &LogInfo);
+    sw_fail_on_error(&LogInfo);
+
+    // Run the simulation
+    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+        EXPECT_EQ(0, SW_Run.SoilWatSim.wbError[i])
+            << "Water balance error in test " << i << ": "
+            << SW_Run.SoilWatSim.wbErrorNames[i];
+    }
+}
+
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithPondedWaterRunonRunoff) {
     int i;
 
@@ -322,6 +351,31 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
 
     // Select method to estimate vegetation from long-term climate
     SW_Run.VegProdIn.veg_method = VEG_METHOD_LONG_EST;
+
+    // Re-calculate vegetation
+    SW_VPD_init_run(&SW_Run, &LogInfo);
+    sw_fail_on_error(&LogInfo);
+
+    // Run the simulation
+    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+        EXPECT_EQ(0, SW_Run.SoilWatSim.wbError[i])
+            << "Water balance error in test " << i << ": "
+            << SW_Run.SoilWatSim.wbErrorNames[i];
+    }
+}
+
+TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate2) {
+    int i;
+
+    // Select method to estimate vegetation dynamically
+    // from short-term and long-term climate
+    SW_Run.VegProdIn.veg_method = VEG_METHOD_DYN_EST;
+    SW_Run.VegProdIn.nYearsDynamicShort = 3;
+    SW_Run.VegProdIn.nYearsDynamicLong = 10; // less than number of test years
 
     // Re-calculate vegetation
     SW_VPD_init_run(&SW_Run, &LogInfo);
