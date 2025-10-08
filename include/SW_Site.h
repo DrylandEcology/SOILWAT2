@@ -304,11 +304,10 @@ void SW_SIT_construct(
     SW_SITE_INPUTS *SW_SiteIn, SW_SITE_SIM *SW_SiteSim, LyrIndex *n_layers
 );
 
-void SW_SIT_init_counts(LyrIndex *n_layers, SW_SITE_SIM *SW_SiteSim);
+void SW_SIT_init_counts(SW_SITE_SIM *SW_SiteSim, LyrIndex *n_layers);
 
 void SW_SIT_read(
     SW_SITE_INPUTS *SW_SiteIn,
-    SW_SITE_SIM *SW_SiteSim,
     char *txtInFiles[],
     SW_CARBON_INPUTS *SW_CarbonIn,
     Bool *hasConsistentSoilLayerDepths,
@@ -357,6 +356,7 @@ void SW_SWRC_read(
     char *txtInFiles[],
     Bool inputsProvideSWRCp,
     double swrcpMineralSoil[][SWRC_PARAM_NMAX],
+    double swrcpOM[][SWRC_PARAM_NMAX],
     LOG_INFO *LogInfo
 );
 

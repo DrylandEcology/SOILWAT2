@@ -171,17 +171,17 @@ void setup_SW_Site_for_tests(
     );
     SW_SiteIn->site_ptf_type = encode_str2ptf(SW_SiteIn->site_ptf_name);
 
-    SW_SiteSim->swrcpOM[0][0] = 1.03;
-    SW_SiteSim->swrcpOM[1][0] = 1.01;
+    SW_SiteIn->swrcpOM[0][0] = 1.03;
+    SW_SiteIn->swrcpOM[1][0] = 1.01;
 
-    SW_SiteSim->swrcpOM[0][1] = 0.93;
-    SW_SiteSim->swrcpOM[1][1] = 0.83;
+    SW_SiteIn->swrcpOM[0][1] = 0.93;
+    SW_SiteIn->swrcpOM[1][1] = 0.83;
 
-    SW_SiteSim->swrcpOM[0][2] = 2.7;
-    SW_SiteSim->swrcpOM[1][2] = 12.0;
+    SW_SiteIn->swrcpOM[0][2] = 2.7;
+    SW_SiteIn->swrcpOM[1][2] = 12.0;
 
-    SW_SiteSim->swrcpOM[0][3] = 2419.2;
-    SW_SiteSim->swrcpOM[1][3] = 0.864;
+    SW_SiteIn->swrcpOM[0][3] = 2419.2;
+    SW_SiteIn->swrcpOM[1][3] = 0.864;
 }
 
 /** Check command line arguments of sw_test
@@ -274,6 +274,7 @@ int setup_testGlobalSoilwatTemplate() {
     }
 
     SW_CTL_read_inputs_from_disk(
+        0,
         &template_SW_Run,
         &template_SW_Domain,
         &template_SW_Domain.hasConsistentSoilLayerDepths,

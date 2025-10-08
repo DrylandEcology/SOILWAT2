@@ -23,6 +23,11 @@
 #include <udunits2.h> // for cv_free, cv_convert_double
 #endif
 
+#if defined(SWMPI)
+#include "include/SW_MPI.h"
+#include <netcdf_par.h> // for NC_NOERR, nc_close, NC_DOUBLE
+#endif
+
 
 /* =================================================== */
 /*                   Local Defines                     */
@@ -664,7 +669,6 @@ into one location to write out
     variable information
 @param[out] resAtts Resulting attributes to write out
 @param[in] sumType Sum type of the output key
-@param[in] siteDom Specifies if the domain is site-oriented
 @param[in] readinYName User-provided geographical y-axis name
 @param[in] readinXName User-provided geographical x-axis name
 @param[out] LogInfo Holds information on warnings and errors
@@ -676,7 +680,6 @@ static int gather_var_attributes(
     int varNum,
     char *resAtts[],
     OutSum sumType,
-    Bool siteDom,
     const char *readinYName,
     const char *readinXName,
     LOG_INFO *LogInfo
@@ -750,11 +753,7 @@ static int gather_var_attributes(
 
     /* Fill coordinates attribute */
     resSNP = snprintf(
-        coordsAtt,
-        MAX_FILENAMESIZE,
-        (siteDom) ? "%s %s site" : "%s %s",
-        readinYName,
-        readinXName
+        coordsAtt, MAX_FILENAMESIZE, "%s %s", readinYName, readinXName
     );
     if (resSNP < 0 || (unsigned) resSNP >= (sizeof coordsAtt)) {
         LogError(
@@ -784,47 +783,31 @@ static int gather_var_attributes(
     get the last time size; files [0, num out files - 1] have repeating
     time sizes
 
-@param[in] keyFiles A list of files from the first key with active output
-    requests
+@param[in] openOutFileIDs A list of size [numFiles] that contains the
+    file ID for each output file in question
 @param[in] numFiles Number of output files being created per output key
 @param[out] outKeyTimes An array of size two to hold the time sizes for every
     output file for a specific output period
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void store_time_sizes(
-    char **keyFiles,
+    const int openOutFileIDs[],
     size_t **outKeyTimes,
     unsigned int numFiles,
     LOG_INFO *LogInfo
 ) {
-    int fileID = -1;
+    int fileID;
     unsigned int file;
 
-    SW_NCOUT_alloc_timeSizes(numFiles, outKeyTimes, LogInfo);
-    if (LogInfo->stopRun) {
-        return;
-    }
-
     for (file = 0; file < numFiles; file++) {
-        SW_NC_open(keyFiles[file], NC_NOWRITE, &fileID, LogInfo);
-        if (LogInfo->stopRun) {
-            return;
-        }
+        fileID = openOutFileIDs[file];
 
         SW_NC_get_dimlen_from_dimname(
             fileID, "time", &((*outKeyTimes)[file]), LogInfo
         );
         if (LogInfo->stopRun) {
-            goto closeFile;
+            return;
         }
-
-        nc_close(fileID);
-        fileID = -1;
-    }
-
-closeFile:
-    if (fileID > -1) {
-        nc_close(fileID);
     }
 }
 
@@ -1010,14 +993,21 @@ static void check_counts_against_vardim(
 }
 #endif // SWDEBUG
 
+#if defined(SWMPI)
+/**
+@brief Set the parallel access pattern to
+*/
+#endif
+
 /**
 @brief Get the identifiers of variables within output files
 
 @param[in] outputVarInfo A list of a key's output variable information that
     will be used to get the variable name
 @param[in] numVars Number of variables created within an output key
-@param[in] ncFileName Name of the output file that will be queried to get
-    variable identifiers
+@param[in] outFileIDs List of all netCDF file identifiers for a current output
+key
+@param[in] numOutFiles Number of output files
 @param[out] ncOutVarIDs A list of size SW_OUTNKEYS holding lists of output
     variable IDs
 @param[out] LogInfo Holds information on warnings and errors
@@ -1025,31 +1015,47 @@ static void check_counts_against_vardim(
 static void get_outvar_ids(
     char ***outputVarInfo,
     IntUS numVars,
-    char *ncFileName,
+    int outFileIDs[],
+    unsigned int numOutFiles,
     int *ncOutVarIDs,
     LOG_INFO *LogInfo
 ) {
+    const int firstOutFile = 0;
     char *varName;
     int var;
-    int fileID = -1;
 
-    SW_NC_open(ncFileName, NC_NOWRITE, &fileID, LogInfo);
-    if (LogInfo->stopRun) {
-        return;
-    }
+#if defined(SWMPI)
+    unsigned int file;
+    int varID;
+    int fileID;
+#endif
 
     for (var = 0; var < numVars; var++) {
         varName = outputVarInfo[var][VARNAME_INDEX];
 
-        SW_NC_get_var_identifier(fileID, varName, &ncOutVarIDs[var], LogInfo);
+        SW_NC_get_var_identifier(
+            outFileIDs[firstOutFile], varName, &ncOutVarIDs[var], LogInfo
+        );
         if (LogInfo->stopRun) {
-            goto closeFile;
+            return;
         }
-    }
 
-closeFile:
-    if (fileID > -1) {
-        nc_close(fileID);
+#if defined(SWMPI)
+        for (file = 0; file < numOutFiles; file++) {
+            varID = ncOutVarIDs[var];
+            fileID = outFileIDs[file];
+
+            if (varID > -1) {
+                SW_NC_toggle_par_access(fileID, varID, NC_COLLECTIVE, LogInfo);
+
+                if (LogInfo->stopRun) {
+                    return;
+                }
+            }
+        }
+#else
+        (void) numOutFiles;
+#endif
     }
 }
 
@@ -1091,7 +1097,8 @@ SW_OUTNPERIODS).
 variable
 @param[in] yName User-provided latitude/y name
 @param[in] xName User-provided longitude/x name
-@param[in] LogInfo Holds information on warnings and errors
+@param[out] newFileID New identifer for the newly created output file
+@param[out] LogInfo Holds information on warnings and errors
 */
 static void create_output_file(
     SW_OUT_DOM *OutDom,
@@ -1112,6 +1119,7 @@ static void create_output_file(
     int deflateLevel,
     const char *yName,
     const char *xName,
+    int *newFileID,
     LOG_INFO *LogInfo
 ) {
 
@@ -1128,38 +1136,38 @@ static void create_output_file(
     };
     char *attVals[MAX_NATTS] = {NULL};
     OutSum sumType = OutDom->sumtype[key];
-    Bool siteDom = (Bool) (strcmp(domType, "s") == 0);
 
     int numAtts = 0;
     const int nameAtt = 0;
     const int coordAttInd = 5;
 
-    int newFileID = -1; // Default to not created
     int cellMethAttInd = 0;
     char *varName;
     char **varInfo;
 
+    /* If SWMPI is not enabled, then this is not used in
+       `SW_NC_create_template()` */
+    Bool openInPar = swFALSE;
+    const Bool isInput = swFALSE;
+
     (void) sw_memccpy(frequency, (char *) pd2longstr[pd], '\0', 10);
     Str_ToLower(frequency, frequency);
 
-
-    // Create file
-    if (!FileExists(newFileName)) {
-        // Create a new output file
-        SW_NC_create_template(
-            domType,
-            domFile,
-            newFileName,
-            &newFileID,
-            swFALSE,
-            frequency,
-            LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
+    // Create a new output file - if this function is called,
+    // it means it did not already exist
+    SW_NC_create_template(
+        domType,
+        domFile,
+        newFileName,
+        newFileID,
+        isInput,
+        frequency,
+        openInPar,
+        LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
     }
-
 
     // Add output variables
     for (index = 0; index < nVar; index++) {
@@ -1169,23 +1177,14 @@ static void create_output_file(
                 OutDom->netCDFOutput.outputVarInfo[key][index][VARNAME_INDEX];
 
             numAtts = gather_var_attributes(
-                varInfo,
-                key,
-                pd,
-                index,
-                attVals,
-                sumType,
-                siteDom,
-                yName,
-                xName,
-                LogInfo
+                varInfo, key, pd, index, attVals, sumType, yName, xName, LogInfo
             );
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
 
             SW_NC_create_full_var(
-                &newFileID,
+                newFileID,
                 domType,
                 NC_DOUBLE,
                 originTimeSize,
@@ -1212,7 +1211,7 @@ static void create_output_file(
             );
 
             if (pd > eSW_Day) {
-                if (newFileID > -1) {
+                if (*newFileID > -1) {
                     // new file was created
                     cellMethAttInd = (key == eSW_Temp || key == eSW_SoilTemp) ?
                                          numAtts - 3 :
@@ -1232,17 +1231,10 @@ static void create_output_file(
                 attVals[coordAttInd] = NULL;
             }
             if (LogInfo->stopRun && FileExists(newFileName)) {
-                goto closeFile;
+                return;
             }
         }
     }
-
-closeFile: {
-    // Only close the file if it was created
-    if (newFileID > -1) {
-        nc_close(newFileID);
-    }
-}
 }
 
 /* =================================================== */
@@ -2088,6 +2080,54 @@ void SW_NCOUT_alloc_timeSizes(
 }
 
 /**
+@brief Allocate memory to store the output file IDs
+
+@param[in] numFiles Number of values to allocate for (one for every output file
+    in an output period)
+@param[out] fileIDs An array of size [numFiles] to hold all the enabled
+    output files' netCDF IDs
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NCOUT_alloc_outfile_ids(
+    unsigned int numFiles, int **fileIDs, LOG_INFO *LogInfo
+) {
+    unsigned int file;
+
+    *fileIDs = (int *) Mem_Malloc(
+        sizeof(int) * numFiles, "SW_NCOUT_alloc_timeSizes", LogInfo
+    );
+
+    for (file = 0; file < numFiles; file++) {
+        (*fileIDs)[file] = -1;
+    }
+}
+
+/**
+@brief Close all opened output netCDF files
+
+@param[in] openOutFileIDs A list of open output netCDF file IDs
+@param[in] numOutFiles Number of output files for each
+    output key/period
+*/
+void SW_NCOUT_close_out_files(
+    int *openOutFileIDs[][SW_OUTNPERIODS], IntU numOutFiles
+) {
+    int outKey;
+    OutPeriod pd;
+    IntU file;
+
+    ForEachOutKey(outKey) {
+        ForEachOutPeriod(pd) {
+            if (!isnull(openOutFileIDs[outKey][pd])) {
+                for (file = 0; file < numOutFiles; file++) {
+                    nc_close(openOutFileIDs[outKey][pd][file]);
+                }
+            }
+        }
+    }
+}
+
+/**
 @brief Generate all requested netCDF output files that will be written to
 instead of CSVs
 
@@ -2096,6 +2136,7 @@ is represented by
     - soil layer depths (if entire domain has the same soil layer profile)
     - soil layer number (if soil layer profile varies across domain)
 
+@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] domFile Name of the domain netCDF
 @param[in] domType Type of domain in which simulations are running
     (gridcell/sites)
@@ -2118,16 +2159,12 @@ SW_OUTNPERIODS).
 @param[in] startYr Start year of the simulation
 @param[in] endYr End year of the simulation
 @param[in] baseCalendarYear First year of the entire simulation
-@param[out] outFileTimeSizes A list of size SW_OUTNPERIODS by x number of
-    the time sizes in output files created from strides
-@param[out] numFilesPerKey Number of output netCDFs each output key will
-    have (same amount for each key)
-@param[out] ncOutFileNames A list of the generated output netCDF file names
-@param[out] ncOutVarIDs Output variable identifiers contained within every
-    output file that is created for a key
+@param[out] SW_PathOutputs Struct of type SW_PATH_OUTPUTS which
+holds basic information about output files and values
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCOUT_create_output_files(
+    int rank,
     const char *domFile,
     const char *domType,
     const char *outputPrefix,
@@ -2143,10 +2180,7 @@ void SW_NCOUT_create_output_files(
     unsigned int startYr,
     unsigned int endYr,
     int baseCalendarYear,
-    size_t *outFileTimeSizes[],
-    unsigned int *numFilesPerKey,
-    char **ncOutFileNames[][SW_OUTNPERIODS],
-    int *ncOutVarIDs[],
+    SW_PATH_OUTPUTS *SW_PathOutputs,
     LOG_INFO *LogInfo
 ) {
     Bool primCRSIsGeo =
@@ -2176,15 +2210,17 @@ void SW_NCOUT_create_output_files(
     unsigned int baseTime = 0;
     double startTime[SW_OUTNPERIODS];
     double baseStartTime[SW_OUTNPERIODS] = {0};
-    char *firstFileInKey = NULL;
+    unsigned int *numOutFiles = &SW_PathOutputs->numOutFiles;
+    const Bool openInPar = swTRUE;
+    const int openMode = NC_WRITE;
+    int *fileID;
 
     char periodSuffix[10];
     char *yearFormat;
 
-    *numFilesPerKey =
-        (strideOutYears == -1) ?
-            1 :
-            (unsigned int) ceil((double) numYears / strideOutYears);
+    *numOutFiles = (strideOutYears == -1) ?
+                       1 :
+                       (unsigned int) ceil((double) numYears / strideOutYears);
 
     yearOffset =
         (strideOutYears == -1) ? numYears : (unsigned int) strideOutYears;
@@ -2213,7 +2249,9 @@ void SW_NCOUT_create_output_files(
 
     ForEachOutKey(key) {
         if (nvar_OUT[key] > 0 && SW_Domain->OutDom.use[key]) {
-            SW_NCOUT_alloc_varids(&ncOutVarIDs[key], nvar_OUT[key], LogInfo);
+            SW_NCOUT_alloc_varids(
+                &SW_PathOutputs->ncOutVarIDs[key], nvar_OUT[key], LogInfo
+            );
             if (LogInfo->stopRun) {
                 return;
             }
@@ -2233,13 +2271,24 @@ void SW_NCOUT_create_output_files(
                     );
                     Str_ToLower(periodSuffix, periodSuffix);
 
+                    SW_NCOUT_alloc_outfile_ids(
+                        *numOutFiles,
+                        &SW_PathOutputs->openOutFileIDs[key][pd],
+                        LogInfo
+                    );
+                    if (LogInfo->stopRun) {
+                        return;
+                    }
+
                     SW_NCOUT_alloc_files(
-                        &ncOutFileNames[key][pd], *numFilesPerKey, LogInfo
+                        &SW_PathOutputs->ncOutFiles[key][pd],
+                        *numOutFiles,
+                        LogInfo
                     );
                     if (LogInfo->stopRun) {
                         return; // Exit prematurely due to error
                     }
-                    for (fileNum = 0; fileNum < *numFilesPerKey; fileNum++) {
+                    for (fileNum = 0; fileNum < *numOutFiles; fileNum++) {
                         if (rangeStart + yearOffset > endYr) {
                             rangeEnd = rangeStart + (endYr - rangeStart) + 1;
                         } else {
@@ -2270,83 +2319,104 @@ void SW_NCOUT_create_output_files(
                             return; // Exit function prematurely due to error
                         }
 
-                        ncOutFileNames[key][pd][fileNum] =
+                        SW_PathOutputs->ncOutFiles[key][pd][fileNum] =
                             Str_Dup(fileNameBuf, LogInfo);
                         if (LogInfo->stopRun) {
                             return; // Exit function prematurely due to error
                         }
-                        if (isnull(firstFileInKey)) {
-                            firstFileInKey = ncOutFileNames[key][pd][fileNum];
-                        }
 
+                        fileID =
+                            &SW_PathOutputs->openOutFileIDs[key][pd][fileNum];
                         if (FileExists(fileNameBuf)) {
-                            SW_NC_check(SW_Domain, -1, fileNameBuf, LogInfo);
-                            if (LogInfo->stopRun) {
-                                return; // Exit function prematurely due to
-                                        // error
-                            }
-
+                            SW_NC_check(
+                                SW_Domain,
+                                fileID,
+                                fileNameBuf,
+                                openInPar,
+                                openMode,
+                                LogInfo
+                            );
                         } else {
                             timeSize = calc_timeSize(
                                 rangeStart, rangeEnd, baseTime, pd
                             );
 
-                            create_output_file(
-                                &SW_Domain->OutDom,
-                                domFile,
-                                domType,
+                            if (rank == ROOT_PROC) {
+                                create_output_file(
+                                    &SW_Domain->OutDom,
+                                    domFile,
+                                    domType,
+                                    fileNameBuf,
+                                    (OutKey) key,
+                                    pd,
+                                    nvar_OUT[key],
+                                    nsl_OUT[key],
+                                    npft_OUT[key],
+                                    hasConsistentSoilLayerDepths,
+                                    lyrDepths,
+                                    timeSize,
+                                    rangeStart,
+                                    baseCalendarYear,
+                                    &startTime[pd],
+                                    SW_Domain->OutDom.netCDFOutput.deflateLevel,
+                                    readinYName,
+                                    readinXName,
+                                    fileID,
+                                    LogInfo
+                                );
+                            }
+#if defined(SWMPI)
+                            checkReturn(LogInfo->stopRun);
+
+                            if (*fileID > -1 && rank == ROOT_PROC) {
+                                nc_close(*fileID);
+                            }
+
+                            SW_MPI_Barrier(MPI_COMM_WORLD);
+
+                            SW_NC_open_par(
                                 fileNameBuf,
-                                (OutKey) key,
-                                pd,
-                                nvar_OUT[key],
-                                nsl_OUT[key],
-                                npft_OUT[key],
-                                hasConsistentSoilLayerDepths,
-                                lyrDepths,
-                                timeSize,
-                                rangeStart,
-                                baseCalendarYear,
-                                &startTime[pd],
-                                SW_Domain->OutDom.netCDFOutput.deflateLevel,
-                                readinYName,
-                                readinXName,
+                                NC_WRITE,
+                                MPI_COMM_WORLD,
+                                fileID,
                                 LogInfo
                             );
-                            if (LogInfo->stopRun) {
-                                return; // Exit function prematurely due to
-                                        // error
-                            }
+                            checkReturn(LogInfo->stopRun);
+#endif
                         }
+                        checkReturn(LogInfo->stopRun);
 
                         rangeStart = rangeEnd;
                     }
 
-                    if (isnull(outFileTimeSizes[pd])) {
-                        store_time_sizes(
-                            ncOutFileNames[key][pd],
-                            &outFileTimeSizes[pd],
-                            *numFilesPerKey,
+                    if (isnull(SW_PathOutputs->outTimeSizes[pd])) {
+                        SW_NCOUT_alloc_timeSizes(
+                            *numOutFiles,
+                            &SW_PathOutputs->outTimeSizes[pd],
                             LogInfo
                         );
-                        if (LogInfo->stopRun) {
-                            return;
-                        }
+                        checkReturn(LogInfo->stopRun);
+
+                        store_time_sizes(
+                            SW_PathOutputs->openOutFileIDs[key][pd],
+                            &SW_PathOutputs->outTimeSizes[pd],
+                            *numOutFiles,
+                            LogInfo
+                        );
+                        checkReturn(LogInfo->stopRun);
                     }
                 }
-            }
 
-            get_outvar_ids(
-                SW_Domain->OutDom.netCDFOutput.outputVarInfo[key],
-                nvar_OUT[key],
-                firstFileInKey,
-                ncOutVarIDs[key],
-                LogInfo
-            );
-            if (LogInfo->stopRun) {
-                return;
+                get_outvar_ids(
+                    SW_Domain->OutDom.netCDFOutput.outputVarInfo[key],
+                    nvar_OUT[key],
+                    SW_PathOutputs->openOutFileIDs[key][pd],
+                    *numOutFiles,
+                    SW_PathOutputs->ncOutVarIDs[key],
+                    LogInfo
+                );
+                checkReturn(LogInfo->stopRun);
             }
-
-            firstFileInKey = NULL;
         }
     }
 }
@@ -2504,8 +2574,8 @@ void SW_NCOUT_write_output(
     const size_t ncSuid[],
     size_t numWritesGroup,
     size_t numWritesProc,
-    size_t **starts,
-    size_t **counts,
+    size_t starts[][2],
+    size_t counts[][2],
     int *openOutFileIDs[][SW_OUTNPERIODS],
     int *outVarIDs[],
     Bool siteDom,
@@ -2541,17 +2611,16 @@ void SW_NCOUT_write_output(
     size_t numElem;
 #endif
 
-#if defined(SWMPI)
-    size_t pOUTStart[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
-#else
-    (void) succFlags;
-    (void) numWritesProc;
-#endif
 #if !defined(SWMPI) || (defined(SWDEBUG) && !defined(SWMPI))
     char *fileName;
-#endif
-#if defined(SWDEBUG) && !defined(SWMPI)
+#if defined(SWDEBUG)
     char *varName = NULL;
+#endif
+
+    (void) succFlags;
+    (void) numWritesProc;
+#else // No SWMPI
+    size_t pOUTStart[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
 #endif
 
     ForEachOutPeriod(pd) {
@@ -2583,14 +2652,7 @@ void SW_NCOUT_write_output(
                 }
 #endif
 
-#if defined(SWMPI)
                 currFileID = openOutFileIDs[key][pd][fileNum];
-#else
-                SW_NC_open(fileName, NC_WRITE, &currFileID, LogInfo);
-                if (LogInfo->stopRun) {
-                    return;
-                }
-#endif
 
                 // Get size of the "time" dimension
                 timeSize = timeSizes[pd][fileNum];
@@ -2643,7 +2705,7 @@ void SW_NCOUT_write_output(
                         );
                         if (LogInfo->stopRun) {
                             /* Exit function prematurely due to error*/
-                            goto closeFile;
+                            return;
                         }
 #endif // SWDEBUG
 
@@ -2678,6 +2740,17 @@ void SW_NCOUT_write_output(
                                 "double",
                                 LogInfo
                             );
+
+                            /*
+                                Sync after every write to decrease the
+                               likelihood of a deadlock due to parallel
+                               coordination done by the netCDF-C library; this
+                               is especially necessary until well-aligned
+                               chunking is used by output files
+                            */
+                            nc_sync(currFileID);
+                            checkReturn(LogInfo->stopRun);
+
                             continue;
                         }
 
@@ -2745,41 +2818,21 @@ void SW_NCOUT_write_output(
                             LogInfo
                         );
 
-#if !defined(SWMPI)
-                        if (LogInfo->stopRun) {
-                            goto closeFile; // Exit function prematurely due to
-                                            // error
-                        }
-#endif
+                        /*
+                            Sync after every write to decrease the likelihood
+                            of a deadlock due to parallel coordination done by
+                            the netCDF-C library; this is especially necessary
+                            until well-aligned chunking is used by output files
+                        */
+                        nc_sync(currFileID);
+                        checkReturn(LogInfo->stopRun);
 
                         numSiteSum += numSites;
                     }
-
-#if defined(SWMPI)
-                    /*
-                        The location of this `nc_sync()` is the result of if
-                        called too infrequently, may result in a segmentation
-                        fault, at least in netCDF-C v4.9.0.
-                        It has been observed that the most likely cause is the
-                        number of elements written before `nc_sync()` and
-                        the number of I/O processes.
-                        One occurrence observed was with 2 I/O processes
-                        and writing ~226 million elements (~1.7GB) before the
-                        call to `nc_sync()`.
-                        If this reoccurs when using more extreme configurations
-                        (i.e., # I/O and N_SUID_ASSIGN), the most immediate call
-                        to `SW_NC_write_vals()` will segfault even written
-                        from the start of an output buffer.
-                    */
-                    nc_sync(currFileID);
-#endif
                 }
 
                 // Update startTime
                 startTime += timeSize;
-#if !defined(SWMPI)
-                nc_close(currFileID);
-#endif
             }
         }
     }
@@ -2788,9 +2841,6 @@ void SW_NCOUT_write_output(
     (void) ncSuid;
     (void) ncOutFileNames;
 #else
-closeFile:
-    nc_close(currFileID);
-
     (void) starts;
     (void) counts;
     (void) openOutFileIDs;

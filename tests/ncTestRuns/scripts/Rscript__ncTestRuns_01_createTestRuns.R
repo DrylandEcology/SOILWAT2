@@ -2677,11 +2677,11 @@ for (k0 in seq_len(nrow(listTestRuns))) {
           r_humidity = "# Relative humidity \\[\\%\\]$",
           rmax_humidity = "# Maximum relative humidity \\[\\%\\]$",
           rmin_humidity = "# Minimum relative humidity \\[\\%\\]$",
-          spec_humidity = "# Specific humidity \\[\\%\\]$",
+          spec_humidity = "# Specific humidity \\[g kg-1\\]$",
           temp_dewpoint = "# Dew point temperature \\[C\\]$",
           actualVaporPressure = "# Actual vapor pressure \\[kPa\\]$",
           shortWaveRad = "# Downward surface shortwave radiation",
-          stop(vars_weather[[kc]], " is not implemented.")
+          stop(vars_weather[[kw]], " is not implemented.")
         ),
         value = 1L,
         classic = TRUE

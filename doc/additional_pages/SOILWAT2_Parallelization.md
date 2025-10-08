@@ -26,9 +26,11 @@ Processes that do purely I/O control a chunk of the compute processes by providi
 ## Recommendations
 - Do not change the value of `N_ITER_BEFORE_OUT`
 - Make sure the product of [n compute procs] * N_SUID_ASSIGN < [n active sites]
-- The higher the # I/O processes used, the less N_SUID_ASSIGN should be or vice versa, where as N_SUID_ASSIGN grows, shrink the # of I/O processes
 - Scale the number of I/O processes with the amount of input will be read. For example, if weather is not to be read, use less I/O processes, whereas if weather is read, use more I/O processes
 - If used on an HPC, use at most one node, or 128 cores
+- If using a site-oriented domain with gridded input files, try to make coordinates as consistent as possible. Chances are, using an index from site to gridded domains will increase the number of reads necessary to read all data. The worst-case scenario is having latitudes/longitudes that are random, making indices within an index file sporatic, practically eliminating the chance of reducing of the number of reads
+    - In general, when using random coordinates or indexing from site to gridded domains, try running a small sample of the program with two different values of N_SUID_ASSIGN, as a smaller value of this constant could provide better performance
+    - With that said, it stands that if you do not need to use an index file no matter the consistency of latitude/longitude values, you have the best chance at reducing the time reading inputs due to less but bigger contiguous site reads
 
 ## Additional HPC Usage
 ### Exiting Early
@@ -162,10 +164,10 @@ Additional limitations
 
 ## Performance Results
 
-There is one type of performance test conducted - without weather inputs. When reading weather, the original hypothesis was that the weather inputs drastically decreased the performance gain since weather inputs require so much reading to take place (will be added at a later date). This section is split into two sections - methodology used to test performance and notable results without weather inputs.
+There are two type of performance test conducted - with and without weather inputs. When reading weather, the original hypothesis was that the weather inputs drastically decreased the performance gain since weather inputs require so much reading to take place. This section is split into two sections - methodology used to test performance and notable results with and without weather inputs.
 
 ### Methodology
-- Two main performance test runs without weather occurred. The first batch of performance runs had the configuration combinations of
+- Three main performance test runs were run to get an idea of how the parallel version of the program runs. The first batch of performance runs had the configuration combinations of
     - Domain sizes: 1x1, 5x5, 10x10, 25x25, and 50x50
     - Number of cores: 2, 10, 20, 50, and 128
         - If a domain size is too small for a certain number of cores, then the maximum number of cores they use is coined as “max cores”
@@ -173,8 +175,8 @@ There is one type of performance test conducted - without weather inputs. When r
     - Number of I/O processes: 1, 2, and 3
         - If a number of I/O is too large for the total number of cores to split the core distribution at most 50/50, then the I/O size is not tested for the domain size
 
-- The second method batch of non-weather-inclusive performance runs took place using a domain size of ~111k sites (excluding sites which error), a size no configuration will be able to engulf in one iteration of input-simulation-output. This batch uses the configuration combinations of
-    - Domain size: ~111,000
+- The second batch consisted of non-weather-inclusive performance runs that took place used a domain size of ~112k sites (excluding sites which error), a size no configuration will be able to engulf in one iteration of input-simulation-output. This batch uses the configuration combinations of
+    - Domain size: ~112,000
     - Number of cores: 128
     - Number of suids per compute process: 25, 40, 50, 60, 75, 90, and 100
     - Number of I/O processes: 1, 2, 3, 5, 10, 20, 40, and 64
@@ -186,35 +188,57 @@ There is one type of performance test conducted - without weather inputs. When r
             - Without suid consideration - Attempt to represent the pure parallel efficiency without the additional speedup of # assigned suids
 [speed] / [# cores * # assigned suids]
         - With suid consideration - Take the numbers of speedup at face value and calculate the efficiency as is (depending on the setup, can easily be above 1)
-    - Sequential/parallel compute/I/O time partition % (second batch only) - gives the idea of how much overall time is spent doing compute and I/O operations. This can help to get a sense of the correct balance of compute and I/O creation
+    - Sequential/parallel compute/I/O time partition % (second/third batch only) - gives the idea of how much overall time is spent doing compute and I/O operations. This can help to get a sense of the correct balance of compute and I/O creation
+
+- The third batch consisted of weather-inclusive (30 years) performance runs that also took place used a domain size of ~112k sites (excluding sites which error). This batch uses the configuration combinations of
+    - Domain size: ~112,000
+    - Number of cores: 128
+    - Number of suids per compute process: 10, 20, 40, 50, 60, 70*, 80*
+        - \* = only used during 40 & 64 I/O processes
+    - Number of I/O processes: 20, 40, 64
+    - Note: A couple supplemental performance tests were provided showing 40 years worth of weather under almost exact combinations as 30 years, but not as in-depth when it comes to the visualization
+
+- The metrics measured were the same metrics as the non-weather-inclusive were used for this batch
 
 An important thing to keep in mind is the idea that the number of assigned suids per compute process has been the main driver of the performance gain. As you will see in the results found when the number of assigned suids, pure parallelization would not be enough to give the required boost. This is a result of how the program is highly dependent on I/O operations, or in other words, is I/O-bound by nature due to reading/writing from netCDF files with relatively light computations during simulations.
 
-## Results Without Weather
+## Results With and Without Weather
 
-![Figure 2](Speedup_1_I_O-1_Suid_Per_Compute-2_Cores.png)
+![Figure 2](Speedup_1_I_O-1_Suid_Per_Compute-2_Cores-no-weather.png)
 
-The speedup using 2 total processes, 1 I/O and 1 compute, with 1 suid assigned per compute process. This allows us to see how well the pure parallel version fares against the theoretical maximum speedup as the domain size increases. This graph shows with the use of these 2 total compute processes as the number of sites increases, it trends towards the maximum theoretical speedup (2x).
+The speedup using 2 total processes (without weather), 1 I/O and 1 compute, with 1 suid assigned per compute process. This allows us to see how well the pure parallel version fares against the theoretical maximum speedup as the domain size increases. This graph shows with the use of these 2 total compute processes as the number of sites increases, it trends towards the maximum theoretical speedup (2x).
 
-![Figure 3](Speedup_withI_O-1_Suid_Per_Compute-Max_Cores.png)
+![Figure 3](Speedup_withI_O-1_Suid_Per_Compute-Max_Cores-no-weather.png)
 
-Speedup as the domain sizes increase with maximum number of sites where # sites >= # sites in domain. Every line represents a number of I/O processes used, with the number of assigned suids per compute process being 1. As shown above, as the domain size increases, the higher the number of I/O process, the better the program performs, and no configuration matters with lower domain sizes.
+Speedup as the domain sizes increase (without weather) with maximum number of sites where # sites >= # sites in domain. Every line represents a number of I/O processes used, with the number of assigned suids per compute process being 1. As shown above, as the domain size increases, the higher the number of I/O process, the better the program performs, and no configuration matters with lower domain sizes.
 
-![Figure 4](Speedup_Relative_to_Assigned_Suids.png)
+No Weather (Figure 4) | Weather (Figure 5)
+:----------|-----------:
+![Figure 4](Speedup_Relative_to_Assigned_Suids-no-weather.png) | ![Figure 5](weather/Speedup_Relative_to_Assigned_Suids-weather.png)
 
-Speedup as the number of assigned suids per compute process increases. Multiple lines represent a different number of I/O processes. With a lower number of assigned suids, there is no obvious pattern of which number of I/O processes is best, with a range of speedup ~75x to ~160x with 25 assigned suids. On the other end, the higher the number assigned suids, 64 I/O is the most obvious speedup at ~425x, with other I/O sizes being more mixed in their results.
+Speedup as the number of assigned suids per compute process increases. Multiple lines represent a different number of I/O processes. (no weather, left) With a lower number of assigned suids, there is no obvious pattern of which number of I/O processes is best, with a range of speedup ~75x to ~160x with 25 assigned suids. On the other end, the higher the number assigned suids, 64 I/O is the most obvious speedup at ~425x, with other I/O sizes being more mixed in their results. (With weather, right) We can see the peak of 20 I/O processes, where 40 and 64 I/O processes are roughly the same until reaching 80 assigned suids where 64 I/O processes provides a bigger performance boost. No data was gathered for 20 I/O process with 70 & 80 assigned suids as that amount of I/O processes already reached the maximum performance.
 
-![Figure 5](Speedup_Relative_to_I_O.png)
+No Weather (Figure 6) | Weather (Figure 7)
+:----------|-----------:
+![Figure 6](Speedup_Relative_to_I_O-no-weather.png) | ![Figure 7](Speedup_Relative_to_I_O-weather.png)
 
-Speedup as the number of I/O processes increases. Multiple lines represent a different number of assigned suids. Performance does not differ a lot between the number of assigned suids with a lower number of I/O processes. On the contrary, with 64 I/O processes, the more assigned suids, the better the performance gain.
+Speedup as the number of I/O processes increases. Multiple lines represent a different number of assigned suids. (Without weather, left) Performance does not differ a lot between the number of assigned suids with a lower number of I/O processes. On the contrary, with 64 I/O processes, the more assigned suids, the better the performance gain. (With weather, right) For the most part, performance does not rely heavily on the number of I/O processes as we increase the number of assigned suids. The outliers being 60 and 80 assigned suids.
 
-![Figure 6](Partition_Timing-25_Assigned_Suids.png)
+No Weather (Figure 8) | Weather (Figure 9)
+:----------|-----------:
+![Figure 8](Partition_Timing-25_Assigned_Suids-no-weather.png) | ![Figure 9](Partition_Timing-10_Assigned_Suids-weather.png)
 
-Partitioned timing into compute and I/O process with 25 assigned suids per compute process. The graph shows the expected increase in the compute times and decrease in I/O times as the number of I/O processes increase.
+Partitioned timing into compute and I/O process with 25 (without weather) assigned suids and 10 (with weather) per compute process. (Without weather, left) We see an unexpected increase in the I/O times and decrease in compute times as the number of I/O processes increase. (With weather, right) With 20 I/O processes, the program is already saturated with I/O operations and even more so with 64 I/O processes.
 
-![Figure 7](Partition_Timing-100_Assigned_Suids.png)
+No Weather (Figure 10) | Weather (Figure 11)
+:----------|-----------:
+![Figure 10](Partition_Timing-100_Assigned_Suids-no-weather.png) | ![Figure 11](Partition_Timing-60_Assigned_Suids-weather.png)
 
-Partitioned timing into compute and I/O process with 100 assigned suids per compute process. The graph mostly shows the expected increase in the compute times and decrease in I/O times as the number of I/O processes increase. The exception is with 64 I/O processes, a small increase in I/O timing compared to 40 I/O processes.
+Partitioned timing into compute and I/O process with 100 (without weather) and 60 (with weather) assigned suids per compute process. (Without weather, left) The graph mostly shows an unexpected increase in the I/O times and decrease in compute times as the number of I/O processes increase. The exception is with 64 I/O processes, a small increase in compute timing compared to 40 I/O processes. (With weather, right) 20 I/O is more saturated with compute operations and relative to **Figure 9** is less saturated with compute operations at 64 I/O processes.
+
+![Figure 12](Speedup_Relative_to_Assigned_Suids-weather_40years.png)
+
+As expected, with 40 years worth of weather, we see that relative to **Figure 5**, there is a slight but noticable decrease in speedup. Also as expected, there is a noticable difference in speedup from 40 to 64 I/O processes as the number of assigned suids increases.
 <br>
 <hr>
 Go back to the [main page](README.md) or

@@ -623,7 +623,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     expectedNRegions = 3;
     double regionLowerBounds1[] = {20., 40., 100.};
     derive_TranspRgnBounds(
-        &SW_Run.SiteSim.n_transp_rgn,
+        &SW_Run.SiteIn.n_transp_rgn,
         SW_Run.SiteSim.TranspRgnBounds,
         nRegions,
         regionLowerBounds1,
@@ -634,13 +634,13 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    for (i = 0; i < SW_Run.SiteSim.n_transp_rgn; ++i) {
+    for (i = 0; i < SW_Run.SiteIn.n_transp_rgn; ++i) {
         EXPECT_EQ(expectedTranspRgnBounds[i], SW_Run.SiteSim.TranspRgnBounds[i])
             << "for transpiration region = " << i + 1 << " at a soil depth of "
             << soildepth[SW_Run.SiteSim.TranspRgnBounds[i]] << " cm";
     }
 
-    EXPECT_EQ(SW_Run.SiteSim.n_transp_rgn, expectedNRegions);
+    EXPECT_EQ(SW_Run.SiteIn.n_transp_rgn, expectedNRegions);
 
 
     // Check that setting one region for all soil layers works
@@ -651,7 +651,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     double regionLowerBounds2[] = {100.};
 
     derive_TranspRgnBounds(
-        &SW_Run.SiteSim.n_transp_rgn,
+        &SW_Run.SiteIn.n_transp_rgn,
         SW_Run.SiteSim.TranspRgnBounds,
         nRegions,
         regionLowerBounds2,
@@ -662,13 +662,13 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    for (i = 0; i < SW_Run.SiteSim.n_transp_rgn; ++i) {
+    for (i = 0; i < SW_Run.SiteIn.n_transp_rgn; ++i) {
         EXPECT_EQ(
             expectedTranspRgnBounds2[i], SW_Run.SiteSim.TranspRgnBounds[i]
         ) << "for a single transpiration region across all soil layers";
     }
 
-    EXPECT_EQ(SW_Run.SiteSim.n_transp_rgn, expectedNRegions);
+    EXPECT_EQ(SW_Run.SiteIn.n_transp_rgn, expectedNRegions);
 
 
     // Check that setting one region for one soil layer works
@@ -678,7 +678,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     double regionLowerBounds3[] = {SW_Run.RunIn.SoilRunIn.width[0]};
 
     derive_TranspRgnBounds(
-        &SW_Run.SiteSim.n_transp_rgn,
+        &SW_Run.SiteIn.n_transp_rgn,
         SW_Run.SiteSim.TranspRgnBounds,
         nRegions,
         regionLowerBounds3,
@@ -689,13 +689,13 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    for (i = 0; i < SW_Run.SiteSim.n_transp_rgn; ++i) {
+    for (i = 0; i < SW_Run.SiteIn.n_transp_rgn; ++i) {
         EXPECT_EQ(
             expectedTranspRgnBounds3[i], SW_Run.SiteSim.TranspRgnBounds[i]
         ) << "for a single transpiration region for the shallowest soil layer";
     }
 
-    EXPECT_EQ(SW_Run.SiteSim.n_transp_rgn, expectedNRegions);
+    EXPECT_EQ(SW_Run.SiteIn.n_transp_rgn, expectedNRegions);
 
 
     // Check that setting the maximal number of regions works
@@ -710,7 +710,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     }
 
     derive_TranspRgnBounds(
-        &SW_Run.SiteSim.n_transp_rgn,
+        &SW_Run.SiteIn.n_transp_rgn,
         SW_Run.SiteSim.TranspRgnBounds,
         nRegions,
         regionLowerBounds4,
@@ -721,12 +721,12 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    for (i = 0; i < SW_Run.SiteSim.n_transp_rgn; ++i) {
+    for (i = 0; i < SW_Run.SiteIn.n_transp_rgn; ++i) {
         EXPECT_EQ(i + 1, SW_Run.SiteSim.TranspRgnBounds[i])
             << "for transpiration region for the " << i + 1 << "-th soil layer";
     }
 
-    EXPECT_EQ(SW_Run.SiteSim.n_transp_rgn, expectedNRegions);
+    EXPECT_EQ(SW_Run.SiteIn.n_transp_rgn, expectedNRegions);
 
 
     // Check region assignment of deeper soil layers
@@ -736,7 +736,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     double regionLowerBounds5[] = {25., 45., 150., 200.};
 
     derive_TranspRgnBounds(
-        &SW_Run.SiteSim.n_transp_rgn,
+        &SW_Run.SiteIn.n_transp_rgn,
         SW_Run.SiteSim.TranspRgnBounds,
         nRegions,
         regionLowerBounds5,
@@ -747,7 +747,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    for (i = 0; i < SW_Run.SiteSim.n_transp_rgn; ++i) {
+    for (i = 0; i < SW_Run.SiteIn.n_transp_rgn; ++i) {
         EXPECT_EQ(
             expectedTranspRgnBounds5[i], SW_Run.SiteSim.TranspRgnBounds[i]
         ) << "for transpiration region = "
@@ -755,7 +755,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
           << soildepth[SW_Run.SiteSim.TranspRgnBounds[i]] << " cm";
     }
 
-    EXPECT_EQ(SW_Run.SiteSim.n_transp_rgn, expectedNRegions);
+    EXPECT_EQ(SW_Run.SiteIn.n_transp_rgn, expectedNRegions);
 
     delete[] regionLowerBounds4;
 }

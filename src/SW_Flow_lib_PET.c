@@ -1133,10 +1133,14 @@ double solar_radiation(
             // Diffuse irradiation (anisotropic):
             // HDKR model (Reindl et al. 1990)
             // Allen et al. 2006: eq. 33
-            f_ia = f_i * (1. - K_bh_calc) *
-                       (1. + sqrt(K_bh_calc / (K_bh_calc + K_dh_calc)) *
-                                 pow(sin(slope / 2.), 3.)) +
-                   f_B * K_bh_calc;
+            if (GT(K_bh_calc + K_dh_calc, 0.)) {
+                f_ia = f_i * (1. - K_bh_calc) *
+                           (1. + sqrt(K_bh_calc / (K_bh_calc + K_dh_calc)) *
+                                     pow(sin(slope / 2.), 3.)) +
+                       f_B * K_bh_calc;
+            } else {
+                f_ia = 0.;
+            }
 
             // Allen et al. 2006: eq. 31
             H_dt = f_ia * k_c * H_dh_calc;
@@ -1161,10 +1165,14 @@ double solar_radiation(
 
             // Diffuse irradiation
             // Allen et al. 2006: eq. 40 (see eq. 33)
-            f_ia = f_i * (1. - K_bh_obs) *
-                       (1. + sqrt(K_bh_obs / (K_bh_obs + K_dh_obs)) *
-                                 pow(sin(slope / 2.), 3.)) +
-                   f_B * K_bh_obs;
+            if (GT(K_bh_obs + K_dh_obs, 0.)) {
+                f_ia = f_i * (1. - K_bh_obs) *
+                           (1. + sqrt(K_bh_obs / (K_bh_obs + K_dh_obs)) *
+                                     pow(sin(slope / 2.), 3.)) +
+                       f_B * K_bh_obs;
+            } else {
+                f_ia = 0.;
+            }
 
             // Allen et al. 2006: eq. 38 part 2
             H_dt = f_ia * K_dh_obs * (*H_oh);

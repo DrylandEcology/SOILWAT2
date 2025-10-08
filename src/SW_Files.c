@@ -51,6 +51,42 @@
 #endif
 
 /* =================================================== */
+/*             Local Function Definitions              */
+/* --------------------------------------------------- */
+
+#if defined(SOILWAT)
+/**
+@brief Helper function to create a logfile name and create said file
+
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] fileName Provided name of the logfile to be created
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static FILE *create_logfile(int rank, const char *fileName, LOG_INFO *LogInfo) {
+
+#if defined(SWMPI)
+    char *fileNamePtr = NULL;
+
+    char logBuffer[LARGE_VALUE] = "\0";
+    char dir[MAX_FILENAMESIZE] = "\0";
+    const char *baseName = BaseName(fileName);
+
+    DirName(fileName, dir);
+
+    snprintf(logBuffer, sizeof logBuffer, "%srank_%d_%s", dir, rank, baseName);
+
+    fileNamePtr = logBuffer;
+#else
+    const char *fileNamePtr = fileName;
+    (void) rank;
+    (void) fileName;
+#endif
+
+    return OpenFile(fileNamePtr, "w", LogInfo);
+}
+#endif
+
+/* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
@@ -93,6 +129,7 @@ void SW_F_CleanOutDir(char *outDir, LOG_INFO *LogInfo) {
 @brief Read `first` input file `eFirst` that contains names of the remaining
 input files.
 
+@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in,out] SW_PathInputs Struct of type SW_PATH_INPUTS which
 holds basic information about input files and values
 @param[out] LogInfo Holds information on warnings and errors
@@ -108,7 +145,7 @@ Update values of variables within SW_PATH_INPUTS:
     - `txtInFiles`
     - `logfp` for SOILWAT2-standalone
 */
-void SW_F_read(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
+void SW_F_read(int rank, SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
 #ifdef SWDEBUG
     int debug = 0;
 #endif
@@ -199,16 +236,24 @@ void SW_F_read(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
     } else {
         DirName(SW_PathInputs->txtInFiles[eLog], logDir);
 
-        if (!DirExists(logDir)) {
+        if (!DirExists(logDir) && rank == ROOT_PROC) {
             MkDir(logDir, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
         }
+
+#if defined(SWMPI)
+        // Make sure the directory is created before we attempt
+        // to write to it
+        SW_MPI_Barrier(MPI_COMM_WORLD);
+#endif
+
         LogInfo->logfp =
-            OpenFile(SW_PathInputs->txtInFiles[eLog], "w", LogInfo);
+            create_logfile(rank, SW_PathInputs->txtInFiles[eLog], LogInfo);
     }
 #else
+    (void) rank;
     (void) logDir;
 #endif
 
@@ -314,6 +359,8 @@ holds basic information about input files and values
 void SW_F_init_ptrs(SW_PATH_INPUTS *SW_PathInputs) {
     int file;
 
+    SW_PathInputs->SW_ProjDir[0] = '\0';
+
     // Initialize `InFile` pointers to NULL
     for (file = 0; file < SW_NFILES; file++) {
         SW_PathInputs->txtInFiles[file] = NULL;
@@ -330,9 +377,7 @@ void SW_F_init_ptrs(SW_PATH_INPUTS *SW_PathInputs) {
         SW_PathInputs->scaleAndAddFactVals[k] = NULL;
         SW_PathInputs->missValFlags[k] = NULL;
         SW_PathInputs->doubleMissVals[k] = NULL;
-#if defined(SWMPI)
         SW_PathInputs->openInFileIDs[k] = NULL;
-#endif
     }
 
     SW_PathInputs->ncWeatherInFiles = NULL;
@@ -344,75 +389,24 @@ void SW_F_init_ptrs(SW_PATH_INPUTS *SW_PathInputs) {
 }
 
 /**
-@brief Determines string length of file being read in combined with SW_ProjDir.
+@brief Constructor for SW_PATH_INPUTS (except the `first file`)
+
+File names of input files, e.g., those provided by the `first file`, are now
+interpreted as being relative to the execution path, i.e.,
+the directory provided via the `-d` option.
+Compared to previous versions, this function no longer sets `SW_ProjDir` to
+the directory part of the file name of the `first file`.
 
 @param[in,out] SW_PathInputs Struct of type SW_PATH_INPUTS which
 holds basic information about input files and values
-@param[out] LogInfo Holds information on warnings and errors
 */
-void SW_F_construct(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
-    /* =================================================== */
-    /* 10-May-02 (cwb) enhancement allows model to be run
-     *    in one directory while getting its input from another.
-     *    This was done mostly in support of STEPWAT but
-     *    it could be useful in a standalone run.
-     */
-
-    const char *firstfile = SW_PathInputs->txtInFiles[eFirst];
-    char *c;
-    char *p;
-    char *projDirPtr = SW_PathInputs->SW_ProjDir;
-    char *endProjDirPtr =
-        SW_PathInputs->SW_ProjDir + sizeof SW_PathInputs->SW_ProjDir - 1;
-    Bool fullBuffer = swFALSE;
-    size_t writeSize = sizeof SW_PathInputs->SW_ProjDir - 1;
-    char dirString[FILENAME_MAX];
-    char *localfirstfile = Str_Dup(firstfile, LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-
-    DirName(localfirstfile, dirString);
-    c = dirString;
-
-    if (c) {
-        fullBuffer = sw_memccpy_inc(
-            (void **) &projDirPtr, endProjDirPtr, (void *) c, '\0', &writeSize
-        );
-        if (fullBuffer) {
-            reportFullBuffer(LOGERROR, LogInfo);
-            return;
-        }
-
-        c = localfirstfile;
-        p = c + strlen(SW_PathInputs->SW_ProjDir);
-        while (*p) {
-            *(c++) = *(p++);
-        }
-        *c = '\0';
-    } else {
-        SW_PathInputs->SW_ProjDir[0] = '\0';
-    }
-
-    free(localfirstfile);
-
+void SW_F_construct(SW_PATH_INPUTS *SW_PathInputs) {
 #if defined(SWNETCDF)
-    int inKey;
-
-    ForEachNCInKey(inKey) {
-        SW_PathInputs->inVarTypes[inKey] = NULL;
-        SW_PathInputs->inVarIDs[inKey] = NULL;
-        SW_PathInputs->hasScaleAndAddFact[inKey] = NULL;
-        SW_PathInputs->scaleAndAddFactVals[inKey] = NULL;
-        SW_PathInputs->missValFlags[inKey] = NULL;
-        SW_PathInputs->doubleMissVals[inKey] = NULL;
-    }
-
     SW_PathInputs->ncDomFileIDs[vNCdom] = -1;
     SW_PathInputs->ncDomFileIDs[vNCprog] = -1;
-    SW_PathInputs->numSoilVarLyrs = NULL;
-
     SW_PathInputs->ncNumWeatherInFiles = 0;
+#else
+    (void) SW_PathInputs;
 #endif
 }
 
@@ -421,16 +415,8 @@ void SW_F_construct(SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
 
 @param[in,out] SW_PathInputs Struct of type SW_PATH_INPUTS which
 holds basic information about output files and values
-@param[in] readInVars Specifies which variables are to be read-in as input
-@param[in] useIndexFile Specifies to create/use an index file
-@param[in] procJob Process job designation used when using MPI
 */
-void SW_F_deconstruct(
-    SW_PATH_INPUTS *SW_PathInputs,
-    Bool **readInVars,
-    const Bool useIndexFile[],
-    int procJob
-) {
+void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
     IntUS i;
 
     for (i = 0; i < SW_NFILES; i++) {
@@ -447,13 +433,7 @@ void SW_F_deconstruct(
     int k;
     int varNum;
 
-#if defined(SWMPI)
-    if (procJob == SW_MPI_PROC_IO) {
-#endif
-        SW_NCIN_close_files(SW_PathInputs, readInVars, useIndexFile);
-#if defined(SWMPI)
-    }
-#endif
+    SW_NCIN_close_files(SW_PathInputs);
 
     ForEachNCInKey(k) {
         if (!isnull(SW_PathInputs->ncInFiles[k])) {
@@ -520,7 +500,6 @@ void SW_F_deconstruct(
             SW_PathInputs->doubleMissVals[k] = NULL;
         }
 
-#if defined(SWMPI)
         if (!isnull(SW_PathInputs->openInFileIDs[k])) {
             for (varNum = 0; varNum < numVarsInKey[k]; varNum++) {
                 if (!isnull(SW_PathInputs->openInFileIDs[k][varNum])) {
@@ -532,7 +511,6 @@ void SW_F_deconstruct(
             free((void *) SW_PathInputs->openInFileIDs[k]);
             SW_PathInputs->openInFileIDs[k] = NULL;
         }
-#endif
     }
 
     if (!isnull(SW_PathInputs->ncWeatherStartEndIndices)) {
@@ -589,12 +567,5 @@ void SW_F_deconstruct(
         free((void *) SW_PathInputs->numDaysInYear);
         SW_PathInputs->numDaysInYear = NULL;
     }
-#else
-    (void) readInVars;
-    (void) useIndexFile;
-#endif
-
-#if !defined(SWMPI)
-    (void) procJob;
 #endif
 }

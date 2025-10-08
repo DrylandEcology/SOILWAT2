@@ -98,9 +98,9 @@ ${k}") Test SOILWAT2 with compiler "\'"${port_compilers[k]}"\'$'\n'\
 
 
   # Run checks
-  check_SOILWAT2 "CC=${ccs[k]}" "CXX=${cxxs[k]}" "txt" "${dirOutRefBase}" "${verbosity_on_error}"
+  check_SOILWAT2 "CC=${ccs[k]}" "CXX=${cxxs[k]}" "txt" "" "${dirOutRefBase}" "${verbosity_on_error}"
 
-  check_SOILWAT2 "CC=${ccs[k]}" "CXX=${cxxs[k]}" "nc" "${dirOutRefBase}" "${verbosity_on_error}"
+  check_SOILWAT2 "CC=${ccs[k]}" "CXX=${cxxs[k]}" "nc" "" "${dirOutRefBase}" "${verbosity_on_error}"
 
 
 

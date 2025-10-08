@@ -49,6 +49,9 @@
 * Transpiration regions no longer require roots of every plant functional type
   (@dschlaep).
 
+* Solar radiation on tilted surfaces no longer fails if observed radiation
+  is zero (#476; @dschlaep).
+
 * Derived metrics including climatic water deficit, dry degree-days,
   wet degree-days, and total profile available soil moisture can now be
   requested as output (#466; @dschlaep).
@@ -62,6 +65,10 @@
   (#460; @dschlaep).
 
 ## Changes to inputs
+* The user provided file names of inputs now represent paths relative to the
+  project/execution location, i.e., the directory provided via the `-d` option.
+  Previously, they represented paths relative to the directory that
+  contains `"files.in"`.
 * New input via `"domain.in"` that specifies the maximum number of failed
   sites/grid cells after which a mpi-based SOILWAT2 run terminates early.
 * New input via `"veg.in"` to specify the year for which vegetation inputs

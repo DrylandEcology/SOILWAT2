@@ -7,7 +7,6 @@
 #include "tests/gtests/sw_testhelpers.h" // for tol3, tol0, tol1, tol6, mis...
 #include "gtest/gtest.h"                 // for Test, EXPECT_NEAR, TestInfo...
 #include <cmath>                         // for round, NAN, isfinite
-#include <memory>                        // for allocator
 #include <sstream>                       // for char_traits, basic_ostream
 #include <stdio.h>                       // for NULL (fprintf, fflush, FILE)
 
@@ -675,8 +674,8 @@ TEST(AtmDemSimTest, SolarRadiationExtraterrestrial) {
 
         for (k2 = 0; k2 < 12; k2++) {
 
-            SW_PET_init_run(&SW_AtmDemSim
-            ); // Init radiation memoization (for new location)
+            // Init radiation memoization (for new location)
+            SW_PET_init_run(&SW_AtmDemSim);
 
             if (std::isfinite(H_oh_Table1_10_1[k1][k2])) {
                 doy = doys_Table1_6_1[k2];
@@ -987,6 +986,37 @@ TEST(AtmDemSimTest, SolarRadiationGlobal) {
             << "Duffie & Beckman 2013: Example 2.19.1 (observed rsds), cloud "
                "cover: "
             << "month = " << k + 1 << "\n";
+
+
+        //--- Test with observed radiation `rsds` of 0 and missing cloud cover
+        cc = SW_MISSING;
+        rsds = 0.; // zero observed radiation (gridMET has some zero values)
+
+        H_gt = solar_radiation(
+            &SW_AtmDemSim,
+            doys_Table1_6_1[k],
+            43. * deg_to_rad, // latitude
+            226.,             // elevation
+            60 * deg_to_rad,  // slope
+            0.,               // aspect
+            albedo[k],
+            &cc,
+            actual_vap_pressure,
+            rsds,
+            desc_rsds,
+            noFixMAXRSDS,
+            &H_oh,
+            &H_ot,
+            &H_gh,
+            &LogInfo
+        );
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+        // Expect zero tilted radiation if observed radiation is zero
+        EXPECT_DOUBLE_EQ(H_gt, 0.);
+        EXPECT_DOUBLE_EQ(H_gh, 0.);
+        // Expect complete cloud cover if observed radiation is zero
+        EXPECT_DOUBLE_EQ(cc, 100.);
     }
 }
 

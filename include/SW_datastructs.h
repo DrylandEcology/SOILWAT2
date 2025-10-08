@@ -252,10 +252,7 @@ typedef struct {
     size_t *outTimeSizes[SW_OUTNPERIODS]; /**< Holds x output file time sizes
                                                for each output period */
     unsigned int numOutFiles;
-
-#if defined(SWMPI)
     int *openOutFileIDs[SW_OUTNKEYS][SW_OUTNPERIODS];
-#endif
 #endif
 
 } SW_PATH_OUTPUTS;
@@ -340,30 +337,16 @@ typedef struct {
 
     Possible levels are: shallow, moderately shallow, deep and very deep.
     Calculated as the number of the deepest soil layer (base1)
-    that still is within the corresponding soil depth #TranspRgnDepths.
+    that still is within the corresponding soil depth
+    #SW_SITE_INPUTS.TranspRgnDepths.
 
-    For instance, #TranspRgnDepths of 20, 40, and 100 cm define
+    For instance, #SW_SITE_INPUTS.TranspRgnDepths of 20, 40, and 100 cm define
     three transpiration regions; then,
     region 1 contains soil layers 5, 10 and 20 cm (bound = 3),
     region 2 contains soil layers 30 and 40 cm (bound = 5), and
     region 3 contains soil layers 60, 80 and 100 cm (bound = 8).
     */
     LyrIndex TranspRgnBounds[MAX_TRANSP_REGIONS];
-
-    /** Lower bounds of transpiration regions [cm]
-
-    There are up to four transpiration regions:
-        shallow, moderately shallow, deep and very deep.
-    They are defined by soil depths [cm] that are equal to or deeper than
-    the lower bounds of those soil layers that they contain.
-
-    For instance, #TranspRgnDepths of 20, 40, and 100 cm define
-    three transpiration regions; then,
-    region 1 contains soil layers 5, 10 and 20 cm,
-    region 2 contains soil layers 30 and 40 cm, and
-    region 3 contains soil layers 60, 80 and 100 cm.
-    */
-    double TranspRgnDepths[MAX_TRANSP_REGIONS];
 
     /* Soil components
             * bulk = relating to the whole soil
@@ -424,10 +407,6 @@ typedef struct {
         see `SWRC_check_parameters()`
     */
     double swrcp[MAX_LAYERS][SWRC_PARAM_NMAX];
-
-    /** SWRC parameters of the organic soil component
-        for (1) fibric and (2) sapric peat. */
-    double swrcpOM[2][SWRC_PARAM_NMAX];
 
     /** Array for plant functional types and soil layers with assigned
         transpiration region ID */
@@ -517,6 +496,28 @@ typedef struct {
         1 (dynamically calculated from a moving long-term mean annual air
            temperature, see `nYearsDynamicLong` from veg.in) */
     unsigned int methodMaxDepthSoilTemperature;
+
+    /** Lower bounds of transpiration regions [cm]
+
+    There are up to four transpiration regions:
+        shallow, moderately shallow, deep and very deep.
+    They are defined by soil depths [cm] that are equal to or deeper than
+    the lower bounds of those soil layers that they contain.
+
+    For instance, #TranspRgnDepths of 20, 40, and 100 cm define
+    three transpiration regions; then,
+    region 1 contains soil layers 5, 10 and 20 cm,
+    region 2 contains soil layers 30 and 40 cm, and
+    region 3 contains soil layers 60, 80 and 100 cm.
+    */
+    double TranspRgnDepths[MAX_TRANSP_REGIONS];
+
+    /** Number of transpiration regions (max = \ref MAX_TRANSP_REGIONS) */
+    LyrIndex n_transp_rgn;
+
+    /** SWRC parameters of the organic soil component
+        for (1) fibric and (2) sapric peat. */
+    double swrcpOM[2][SWRC_PARAM_NMAX];
 } SW_SITE_INPUTS;
 
 typedef struct {
@@ -1192,11 +1193,6 @@ typedef struct {
     if it's NULL or not NULL (where NULL represents silent mode). */
     FILE *logfp;
 
-#if defined(SWMPI)
-    FILE **logfps; /**< Store file pointers to all I/O process ranks */
-    int numFiles;
-#endif
-
     char errorMsg[MAX_LOG_SIZE], // Holds the message for a fatal error
         warningMsgs[MAX_MSGS][MAX_LOG_SIZE]; // Holds up to MAX_MSGS warning
                                              // messages to report
@@ -1216,7 +1212,34 @@ typedef struct {
 
 typedef struct {
     char *txtInFiles[SW_NFILES];
-    char SW_ProjDir[FILENAME_MAX]; // SW_ProjDir
+
+    /** Relative directory path from current execution to the input files
+
+        - SOILWAT2: SW_ProjDir is equivalent to ".".
+            The `firstfile` "files.in" contains the file names of input files
+       that are relative to the execution path, i.e., the directory provided via
+            the `-d` option. For example,
+                a simulation project contains `Project/Input/siteparam.in`;
+                then, the user would run SOILWAT2 with `-d Project` and
+                `firstfile` contains "Input/siteparam.in".
+                The location of the `firstfile` does not matter.
+        - rSOILWAT2: unused.
+        - STEPWAT2: SW_ProjDir describes the relative path between STEPWAT2's
+            execution path and the folder with its copy of SOILWAT2 inputs.
+            STEPWAT2 sets SW_ProjDir to the directory part of its
+            SOILWAT2's `firstfile` copy. This `firstfile` contains the
+            file names of SOILWAT2 input files that are relative to the STEPWAT2
+            copy of the folder with SOILWAT2 inputs. For example,
+                a simulation project contains
+                `Project/Input/sxw/files_SOILWAT2.in` and
+                `Project/Input/sxw/Input/siteparam.in`;
+                then, the user would run STEPWAT2 with `-d Project`,
+                the `sxw.in` file contains "Input/sxw/files_SOILWAT2.in" and
+                the SOILWAT2 `firstfile` contains "Input/siteparam.in".
+                The location of the `firstfile` is important.
+    */
+    char SW_ProjDir[FILENAME_MAX];
+
     char txtWeatherPrefix[FILENAME_MAX];
     char outputPrefix[FILENAME_MAX];
 
@@ -1288,10 +1311,7 @@ typedef struct {
     /* NC information that will stay constant through program run
        domain information - domain and progress file IDs */
     int ncDomFileIDs[SW_NVARDOM];
-
-#if defined(SWMPI)
     int **openInFileIDs[SW_NINKEYSNC];
-#endif
 #endif
 } SW_PATH_INPUTS;
 
@@ -1729,58 +1749,6 @@ typedef enum {
 } InKeys;
 
 /* =================================================== */
-/*                  MPI Functionality                  */
-/* --------------------------------------------------- */
-
-typedef struct {
-    int sourceRank; /**< Rank of the process that sent the request */
-    Bool runStatus[N_SUID_ASSIGN]; /**< A list of size N_SUID_ASSIGN
-                         specifying the success of simulation runs */
-    int requestType;               /**< Type of request a compute process is
-                                        giving to an I/O process */
-} SW_MPI_REQUEST;
-
-typedef struct {
-    int procJob;    /**< The assigned job of a process;
-                         possibilities are: job assigner, compute, and I/O */
-    int ioRank;     /**< Rank of the compute node's assigned I/O process;
-                         only used if process is compute */
-    int nCompProcs; /**< Number of compute processes assigned to an I/O process;
-                         only used if process is I/O */
-    size_t
-        nSuids; /**< Number of suids that will be controlled by I/O processes */
-    Bool useTSuids; /**< Flag specifying if we will be using a list of
-                         translated domain SUIDs */
-
-    int ranks[PROCS_PER_IO]; /**< A list of ranks that the I/O process
-                                  controls */
-    size_t **domSuids; /**< A list of domain SUIDs that will be used by I/O
-                            processes for writing and reading information */
-    size_t **domTSuids[SW_NINKEYSNC]; /**< A list of translated domain SUIDs for
-                              each input key if index files are used */
-
-    int nTotCompProcs; /**< Number of compute processes in action;
-                              root only */
-    int nTotIOProcs;   /**< Number of I/O processes in action;
-                            root only */
-
-#if defined(SWMPI)
-    MPI_Comm groupComm;    /**< New group communicator; can either be for
-                                I/O or compute;
-                                Note: creating this new communicator
-                                      created a new rank labelling system
-                                      e.g., rank 2 in MPI_COMM_WORLD
-                                            could be 0, 1, etc. */
-    MPI_Comm rootCompComm; /**< Root process' communicator for the opposite
-                                of its original job to communicate data
-                                to all processes */
-
-    MPI_Comm ioCompComm; /**< New group communicator between I/O processes
-                              and their assigned compute processes */
-#endif
-} SW_MPI_DESIGNATE;
-
-/* =================================================== */
 /*                    Domain structs                   */
 /* --------------------------------------------------- */
 
@@ -1862,12 +1830,14 @@ typedef struct {
     // Information that is constant through simulation runs
     SW_OUT_DOM OutDom;
 
-    // Information about a process designation (MPI only)
-    SW_MPI_DESIGNATE SW_Designation;
-
 #if defined(SWMPI)
-    // Custom MPI data types used for sending information
-    MPI_Datatype datatypes[SW_MPI_NTYPES];
+    size_t nActiveSuids; /**< Number of active sites that will be simulated
+                              (root process only) */
+    unsigned int
+        nProcSuids; /**< Number of suids that will be controlled by a process */
+    size_t *domSuids[SW_NINKEYSNC]; /**< A list of suids to describe the
+                                        domain; this includes translated suids
+                                        for input keys if necessary */
 #endif
 } SW_DOMAIN;
 
