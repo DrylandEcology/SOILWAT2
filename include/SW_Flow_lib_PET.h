@@ -11,7 +11,8 @@
 #ifndef SW_PET_H
 #define SW_PET_H
 
-#include "include/SW_datastructs.h" // for SW_ATMD, LOG_INFO
+#include "include/generic.h"        // for Bool
+#include "include/SW_datastructs.h" // for SW_ATMD_SIM, LOG_INFO
 #include "include/SW_Defines.h"     // for TWO_DAYS
 
 #ifdef __cplusplus
@@ -22,7 +23,7 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_PET_init_run(SW_ATMD *SW_AtmDem);
+void SW_PET_init_run(SW_ATMD_SIM *SW_AtmDem);
 
 
 double sun_earth_distance_squaredinverse(unsigned int doy);
@@ -33,7 +34,7 @@ double sunset_hourangle(double lat, double declin);
 
 
 void sun_hourangles(
-    SW_ATMD *SW_AtmDem,
+    SW_ATMD_SIM *SW_AtmDem,
     unsigned int doy,
     double lat,
     double slope,
@@ -64,7 +65,7 @@ double actual_horizontal_transmissivityindex(double tau);
 
 
 double solar_radiation(
-    SW_ATMD *SW_AtmDem,
+    SW_ATMD_SIM *SW_AtmDem,
     unsigned int doy,
     double lat,
     double elev,
@@ -75,6 +76,7 @@ double solar_radiation(
     double e_a,
     double rsds,
     unsigned int desc_rsds,
+    Bool fixMAXRSDS,
     double *H_oh,
     double *H_ot,
     double *H_gh,
@@ -107,6 +109,10 @@ double svp2(double temp);
 double relativeHumidity1(double vp, double meanTemp);
 
 double relativeHumidity2(double huss, double meanTemp, double elevation);
+
+double relativeHumidity3(
+    double huss, double maxTemp, double minTemp, double elevation
+);
 
 double actualVaporPressure1(double hurs, double meanTemp);
 

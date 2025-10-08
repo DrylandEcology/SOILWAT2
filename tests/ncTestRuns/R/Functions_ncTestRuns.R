@@ -6,7 +6,7 @@ countDims <- function(domSizes, isGridded) {
 
   res <- vector(mode = "list", length = length(domSizes))
   res[isGridded] <- strsplit(domSizes[isGridded], split = "x", fixed = TRUE) |>
-    lapply(FUN = function(x) as.integer(x))
+    lapply(FUN = as.integer)
   res[!isGridded] <- as.integer(domSizes[!isGridded])
   res
 }
@@ -26,7 +26,10 @@ exampleSite <- function(crs = "WGS84") {
 locateExampleSite <- function(sites, crs = sf::st_crs(sites)) {
   stopifnot(requireNamespace("sf"), requireNamespace("units"))
   tmp <- sf::st_is_within_distance(
-    sites, y = exampleSite(crs), dist = units::set_units(1, "m"), sparse = FALSE
+    sites,
+    y = exampleSite(crs),
+    dist = units::set_units(1L, "m"),
+    sparse = FALSE
   )
   which(tmp[, 1L])
 }
@@ -48,20 +51,28 @@ getRunIDs <- function(nRuns, kcrs, es, grids) {
 copyInputTemplateNC <- function(filename, template, crsType, list_xyvars) {
   if (identical(crsType, "projected")) {
     # Remove geographic variables and crs if projected
-    res <- system2(
-      command = "ncks",
-      # -C = do not add associated variables (e.g., lat) to the extraction list
-      # -h = do not write to the history global attribute
-      # -x = invert selection made by -v
-      # -v = list of variables to operate on
-      args = paste(
-        "-C -h -x",
-        "-v",
-        paste(c(list_xyvars[["geographic"]], "crs_geogsc"), collapse = ","),
-        template,
-        filename
-      )
+    res <- try(
+      system2(
+        command = "ncks",
+        # -C = do not add associated variables (e.g., lat) to the extraction
+        # -h = do not write to the history global attribute
+        # -x = invert selection made by -v
+        # -v = list of variables to operate on
+        args = paste(
+          "-C -h -x",
+          "-v",
+          paste(c(list_xyvars[["geographic"]], "crs_geogsc"), collapse = ","),
+          template,
+          filename
+        )
+      ),
+      silent = TRUE
     )
+
+    if (inherits(res, "try-error")) {
+      stop(res)
+    }
+
     res == 0L && is.null(attributes(res))
 
   } else {
@@ -92,6 +103,42 @@ copyDir <- function(from, to) {
   }
 
   dir.exists(to)
+}
+
+# Prepended numbers are interpreted as prefixed units if there is no space
+#' @examples
+#' makePrefixedUnit("g g-1")
+#' makePrefixedUnit("100 g g-1")
+#'
+makePrefixedUnit <- function(unit) {
+  if (
+    grepl(" ", unit, fixed = TRUE) &&
+      !anyNA(suppressWarnings(as.integer(substr(unit, 1L, 1L))))
+  ) {
+    # remove first space (between number and unit)
+    sub(" ", "", unit, fixed = TRUE)
+  } else {
+    unit
+  }
+}
+
+convertUnits <- function(x, hasUnits = "1", newUnits = "1") {
+  if (!identical(hasUnits, newUnits)) {
+    stopifnot(requireNamespace("units"))
+
+    units(x) <- units::as_units(makePrefixedUnit(hasUnits)) # set current units
+    units(x) <- units::as_units(makePrefixedUnit(newUnits)) # transform
+    x <- units::drop_units(x)
+  }
+
+  x
+}
+
+
+replaceOldNames <- function(x, newNames, oldNames) {
+  ids <- match(x, oldNames, nomatch = 0L)
+  x[ids > 0L] <- newNames[ids]
+  x
 }
 
 
@@ -133,19 +180,19 @@ setTxtInput <- function(filename, tag, value, classic = FALSE) {
   value <- paste(value, collapse = " ")
   # suppress warnings about incomplete final lines
   fin <- suppressWarnings(readLines(filename))
-  line <- grep(
+  idLine <- grep(
     pattern = if (isTRUE(classic)) tag else paste0("^", tag, " "),
     x = fin,
     ignore.case = TRUE
   )
-  stopifnot(length(line) == 1L, line > 0L, line <= length(fin))
-  posComment <- regexpr("#", text = fin[[line]], fixed = TRUE)
+  stopifnot(length(idLine) == 1L, idLine > 0L, idLine <= length(fin))
+  posComment <- regexpr("#", text = fin[[idLine]], fixed = TRUE)
   res <- if (isTRUE(classic)) as.character(value) else paste(tag, value)
-  fin[[line]] <- if (posComment > 0L) {
+  fin[[idLine]] <- if (posComment > 0L) {
     paste0(
       res,
-      paste(rep(" ", max(1, posComment - 1L - nchar(res))), collapse = ""),
-      substr(fin[[line]], start = posComment, stop = 1e3)
+      strrep(" ", max(1L, posComment - 1L - nchar(res))),
+      substr(fin[[idLine]], start = posComment, stop = 1000L)
     )
   } else {
     res
@@ -158,10 +205,10 @@ getCRSParam <- function(wkt, param) {
   stopifnot(requireNamespace("sf"))
   wkt <- if (inherits(wkt, "crs")) wkt$Wkt else as.character(wkt)
   ptxts <- gregexec('PARAMETER\\[[a-zA-Z0-9\\",_.-]+\\]', text = wkt)
-  res <- regmatches(wkt, m = ptxts)[[1L]][1L,]
+  res <- regmatches(wkt, m = ptxts)[[1L]][1L, ]
   ids <- grep(param, x = res, fixed = TRUE)
   vapply(
-    strsplit(gsub("]", "", res[ids]), split = ",", fixed = TRUE),
+    strsplit(gsub("]", "", res[ids], fixed = TRUE), split = ",", fixed = TRUE),
     function(x) as.numeric(x[[2L]]),
     FUN.VALUE = NA_real_
   )
@@ -189,7 +236,7 @@ writeTSV <- function(x, filename) {
     row.names = FALSE
   )
   xtmp <- readLines(fcon)
-  ids <- which(xtmp == paste(rep("\t", times = ncol(x) - 1L), collapse = ""))
+  ids <- which(xtmp == strrep("\t", times = ncol(x) - 1L))
   xtmp[ids] <- ""
 
   writeLines(xtmp, con = filename)
@@ -204,7 +251,7 @@ toggleNCInputTSV <- function(
   x <- readTSV(filename)
 
   inuse <- if (identical(inkeys, "all")) {
-    nchar(x[["SW2 input group"]]) > 0L
+    nzchar(x[["SW2 input group"]], keepNA = TRUE)
   } else {
     tmp <- x[["SW2 input group"]] %in% inkeys
     if (is.null(sw2vars)) {
@@ -222,7 +269,7 @@ toggleNCInputTSV <- function(
     rep(TRUE, nrow(x))
   }
 
-  hasvalue <- inuse & incheck & x[["Do nc-input?"]] != ""
+  hasvalue <- inuse & incheck & nzchar(x[["Do nc-input?"]])
   x[["Do nc-input?"]][hasvalue] <- value[[1L]]
 
   writeTSV(x, filename)
@@ -285,13 +332,139 @@ setNCInputTSV <- function(
   writeTSV(x, filename)
 }
 
-runSW2 <- function(sw2, path_inputs, renameDomainTemplate = FALSE) {
+modifyNCUnitsTSV <- function(
+  filename,
+  unitsOfSOILWAT2ExampleInputs,
+  adjustUnits = list(
+    c(inkey = "inTopo", sw2var = "elevation", newUnit = "km"),
+    c(inkey = "inWeather", sw2var = "temp_max", newUnit = "K"),
+    c(inkey = "inClimate", sw2var = "r_humidity", newUnit = "1"),
+    c(
+      inkey = "inSoil",
+      sw2var = "fractionVolBulk_gravel",
+      newUnit = "0.01 cm3 cm-3"
+    ),
+    c(inkey = "inVeg", sw2var = "<veg>.litter", newUnit = "kg m-2"),
+    c(inkey = "inVeg", sw2var = "shrub.biomass", newUnit = "kg m-2"),
+    c(inkey = "inSite", sw2var = "Tsoil_constant", newUnit = "degF")
+  )
+) {
+  x <- readTSV(filename)
+
+  vars <- c(
+    "SW2 input group", "SW2 variable", "SW2 units", "ncVarName", "ncVarUnits"
+  )
+
+  #--- Set units used SOILWA2 example inputs
+  ids1 <- apply(x[, vars[1L:2L], drop = FALSE], 1L, paste, collapse = "-")
+  has2 <- which(
+    apply(unitsOfSOILWAT2ExampleInputs, 1L, function(x) any(nzchar(x)))
+  )
+  ids2 <- apply(
+    unitsOfSOILWAT2ExampleInputs[has2, vars[1L:2L], drop = FALSE],
+    MARGIN = 1L,
+    FUN = paste,
+    collapse = "-"
+  )
+
+  ids <- match(ids1, ids2, nomatch = 0L)
+  x[ids > 0L, "ncVarUnits"] <-
+    unitsOfSOILWAT2ExampleInputs[has2[ids], "inputUnits"]
+
+
+  #--- Adjust units as requested for ncTestRuns
+  res <- x[, vars, drop = FALSE]
+  res[["ncVarUnitsModified"]] <- res[["ncVarUnits"]]
+
+  for (k in seq_along(adjustUnits)) {
+    idrow <- which(
+      x[["SW2 input group"]] %in% adjustUnits[[k]][["inkey"]] &
+        x[["SW2 variable"]] %in% adjustUnits[[k]][["sw2var"]]
+    )
+
+    if (length(idrow) != 1L) {
+      stop(
+        "Could not identify row in nc-inputs.tsv: ",
+        "k = ", k, ", inkey = ", adjustUnits[[k]][["inkey"]],
+        ", sw2var = ", adjustUnits[[k]][["sw2var"]]
+      )
+    }
+
+    x[idrow, "ncVarUnits"] <- adjustUnits[[k]][["newUnit"]]
+    res[idrow, "ncVarUnitsModified"] <- adjustUnits[[k]][["newUnit"]]
+  }
+
+  writeTSV(x, filename)
+
+  res
+}
+
+getModifiedNCUnits <- function(x, inkey, ncvar) {
+  idrow <- which(
+    x[["SW2 input group"]] %in% inkey & x[["ncVarName"]] %in% ncvar
+  )
+
+  if (length(idrow) != 1L) {
+    stop(
+      "Could not identify row in nc-inputs.tsv: ",
+      "inkey = ", inkey, ", ncvar = ", ncvar
+    )
+  }
+
+  as.list(x[idrow, c("ncVarUnits", "ncVarUnitsModified")])
+}
+
+detectMPIExecutor <- function() {
+  executor <- NULL
+
+  hasSrun <- try(
+    system2(command = "command", args = "-v srun > /dev/null 2>&1"),
+    silent = TRUE
+  )
+
+  if (isTRUE(all.equal(hasSrun, 0L))) {
+    executor <- "srun"
+
+  } else {
+    hasMpirun <- try(
+      system2(command = "command", args = "-v mpirun > /dev/null 2>&1"),
+      silent = TRUE
+    )
+    if (isTRUE(all.equal(hasMpirun, 0L))) {
+      executor <- "mpirun"
+    }
+  }
+
+  executor
+}
+
+runSW2 <- function(
+  sw2,
+  path_inputs,
+  mode = c("nc", "mpi"),
+  nTasks = NULL,
+  mpiExecutor = NULL,
+  renameDomainTemplate = FALSE
+) {
+  mode <- match.arg(mode)
+  isMPI <- identical(mode, "mpi")
+  if (isMPI) {
+    if (is.null(mpiExecutor)) {
+      mpiExecutor <- detectMPIExecutor()
+    }
+    if (!mpiExecutor %in% c("mpirun", "srun")) {
+      stop("mpiExecutor ", shQuote(mpiExecutor), " is not implemented.")
+    }
+  }
+
   msg <- NULL
   res <- withCallingHandlers(
     tryCatch(
       system2(
-        command = sw2,
+        command = if (isMPI) mpiExecutor else sw2,
         args = paste(
+          if (isMPI && !is.null(nTasks)) paste("-n", nTasks),
+          if (isMPI) paste0("./", sw2),
           "-d", path_inputs,
           "-f files.in",
           if (isTRUE(renameDomainTemplate)) "-r"
@@ -315,230 +488,22 @@ runSW2 <- function(sw2, path_inputs, renameDomainTemplate = FALSE) {
 
 #--- * Manipulate input netCDFs ------
 
-updateGAttSourceVersion <- function(nc) {
-  stopifnot(requireNamespace("RNetCDF"))
-  RNetCDF::att.put.nc(
-    nc,
-    variable = "NC_GLOBAL", name = "source", type = "NC_CHAR",
-    value = "SOILWAT2v8.1.0"
-  )
-}
-
-updateGAttFrequency <- function(nc, frq) {
-  stopifnot(requireNamespace("RNetCDF"))
-  RNetCDF::att.put.nc(
-    nc,
-    variable = "NC_GLOBAL", name = "frequency", type = "NC_CHAR",
-    value = frq
-  )
-}
-
-updateGAttFeatureType <- function(nc, type) {
-  stopifnot(requireNamespace("RNetCDF"))
-  RNetCDF::att.put.nc(
-    nc,
-    variable = "NC_GLOBAL", name = "featureType", type = "NC_CHAR",
-    value = type
-  )
-}
-
 # 4.3.2. Dimensionless Vertical Coordinate (deprecated)
 # The units attribute is not required for dimensionless coordinates. For
 # backwards compatibility with COARDS we continue to allow the units attribute
 # to take one of the values: level, layer, or sigma_level. These values are not
 # recognized by the UDUNITS package, and are considered a deprecated feature in
 # the CF standard.
-createVerticalAxisNC <- function(nc, nlyrs) {
-  stopifnot(requireNamespace("RNetCDF"))
-  RNetCDF::dim.def.nc(nc, dimname = "vertical", dimlength = nlyrs)
-  RNetCDF::var.def.nc(
-    nc,
-    varname = "vertical", vartype = "NC_INT", dimensions = "vertical"
-  )
-  # RNetCDF::att.put.nc(
-  #   nc, variable = "vertical", name = "units", type = "NC_CHAR",
-  #   value = "layer"
-  # )
-  RNetCDF::att.put.nc(
-    nc,
-    variable = "vertical", name = "long_name", type = "NC_CHAR",
-    value = "soil layer"
-  )
-  RNetCDF::att.put.nc(
-    nc,
-    variable = "vertical", name = "axis", type = "NC_CHAR",
-    value = "Z"
-  )
-  RNetCDF::att.put.nc(
-    nc,
-    variable = "vertical", name = "standard_name", type = "NC_CHAR",
-    value = "depth"
-  )
-  RNetCDF::att.put.nc(
-    nc,
-    variable = "vertical", name = "positive", type = "NC_CHAR",
-    value = "down"
-  )
-  RNetCDF::att.put.nc(
-    nc,
-    variable = "vertical", name = "comment", type = "NC_CHAR",
-    value = "dimensionless vertical coordinate"
-  )
-  RNetCDF::var.put.nc(
-    nc,
-    variable = "vertical",
-    data = seq_len(nlyrs)
-  )
-}
-
-
-createPFTAxisNC <- function(nc, pfts) {
-  stopifnot(requireNamespace("RNetCDF"))
-  RNetCDF::dim.def.nc(nc, dimname = "pft", dimlength = length(pfts))
-  RNetCDF::var.def.nc(
-    nc,
-    varname = "pft", vartype = "NC_STRING", dimensions = "pft"
-  )
-  RNetCDF::att.put.nc(
-    nc,
-    variable = "pft", name = "standard_name", type = "NC_CHAR",
-    value = "biological_taxon_name"
-  )
-  RNetCDF::var.put.nc(nc, variable = "pft", data = pfts)
-}
-
-createTimeAxisNC <- function(nc, startYear, timeValues, calendar = "standard") {
-  stopifnot(requireNamespace("RNetCDF"))
-  RNetCDF::dim.def.nc(nc, dimname = "time", dimlength = length(timeValues))
-  RNetCDF::var.def.nc(
-    nc,
-    varname = "time", vartype = "NC_FLOAT", dimensions = "time"
-  )
-  RNetCDF::att.put.nc(
-    nc,
-    variable = "time", name = "units", type = "NC_CHAR",
-    value = paste0("days since ", startYear, "-01-01 00:00:00")
-  )
-  RNetCDF::att.put.nc(
-    nc,
-    variable = "time", name = "long_name", type = "NC_CHAR",
-    value = "time"
-  )
-  RNetCDF::att.put.nc(
-    nc,
-    variable = "time", name = "axis", type = "NC_CHAR",
-    value = "T"
-  )
-  RNetCDF::att.put.nc(
-    nc,
-    variable = "time", name = "standard_name", type = "NC_CHAR",
-    value = "time"
-  )
-  RNetCDF::att.put.nc(
-    nc,
-    variable = "time", name = "calendar", type = "NC_CHAR",
-    value = as.character(calendar)
-  )
-  RNetCDF::var.put.nc(nc, variable = "time", data = timeValues)
-}
-
-
-createMonthClimatologyAxisNC <- function(nc, startYear, endYear) {
-  stopifnot(requireNamespace("RNetCDF"))
-  time_unit <- paste0("days since ", startYear, "-01-01 00:00:00")
-
-  tv <- RNetCDF::utinvcal.nc(
-    time_unit,
-    value = seq(
-      from = as.Date(paste0(startYear, "-01-16")),
-      to = as.Date(paste0(startYear, "-12-16")),
-      by = "month"
-    ) |> as.POSIXct() # mid-month
-  )
-
-  createTimeAxisNC(
-    nc,
-    startYear = startYear,
-    timeValues = tv
-  )
-
-  RNetCDF::att.put.nc(
-    nc,
-    variable = "time", name = "climatology", type = "NC_CHAR",
-    value = "climatology_bounds"
-  )
-
-  res <- try(RNetCDF::dim.inq.nc(nc, "bnds"), silent = TRUE)
-  if (inherits(res, "try-error") && grepl("Invalid dimension", res)) {
-    RNetCDF::dim.def.nc(nc, dimname = "bnds", dimlength = 2L)
-  }
-
-  RNetCDF::var.def.nc(
-    nc,
-    varname = "climatology_bounds", vartype = "NC_DOUBLE",
-    dimensions = c("bnds", "time")
-  )
-
-
-  cbnds <- rbind(
-    start = RNetCDF::utinvcal.nc(
-      time_unit,
-      value = as.POSIXct(
-        as.Date(paste0(startYear, "-", seq_len(12L), "-01"))
-      )
-    ),
-    end = RNetCDF::utinvcal.nc(
-      time_unit,
-      value = as.POSIXct(
-        c(
-          as.Date(paste0(endYear, "-", seq_len(12L)[-1L], "-01")),
-          as.Date(paste0(endYear + 1L, "-01-01"))
-        ) - 1L
-      )
-    )
-  )
-
-  RNetCDF::var.put.nc(
-    nc,
-    variable = "climatology_bounds",
-    data = cbnds,
-    count = c(2L, 12L)
-  )
-}
-
-
-createVarNC <- function(
-    nc, varname, dimensions, units, long_name = varname,
-  vartype = c("NC_DOUBLE", "NC_FLOAT")
-) {
-  stopifnot(requireNamespace("RNetCDF"))
-  vartype <- match.arg(vartype)
-
-  RNetCDF::var.def.nc(
-    nc,
-    varname = varname, vartype = vartype, dimensions = dimensions
-  )
-  RNetCDF::att.put.nc(
-    nc,
-    variable = varname, name = "long_name", type = "NC_CHAR",
-    value = long_name
-  )
-  RNetCDF::att.put.nc(
-    nc,
-    variable = varname, name = "units", type = "NC_CHAR",
-    value = units
-  )
-}
-
 
 #' examples
 #' createTestRunData(
 #'   x = 1,
-#'   otherValues = 0,
+#'   otherValues = -273.15,
 #'   dims = c(lon = 3L, lat = 2L),
 #'   dimPermutation = c(2L, 1L),
 #'   spDims = c(lon = 3L, lat = 2L),
-#'   idExampleSite = 5L
+#'   idExampleSite = 5L,
+#'   usedUnits = list("degC", "K")
 #' )
 #'
 #' createTestRunData(
@@ -559,7 +524,13 @@ createVarNC <- function(
 #'   idExampleSite = 5L
 #' )
 createTestRunData <- function(
-    x, dims, dimPermutation, spDims, idExampleSite, otherValues = NULL
+  x,
+  dims,
+  dimPermutation,
+  spDims,
+  idExampleSite,
+  otherValues = NULL,
+  usedUnits = list(originalUnits = "1", newUnits = "1")
 ) {
   nonSpDims <- dims[setdiff(names(dims), names(spDims))]
   nNonSpDims <- length(nonSpDims)
@@ -620,8 +591,18 @@ createTestRunData <- function(
 
 
   # Permutate order of dimensions
-  aperm(res, perm = dimPermutation)
+  res <- aperm(res, perm = dimPermutation)
+
+  # Adjust units
+  if (!is.null(usedUnits)) {
+    res <- convertUnits(
+      res, hasUnits = usedUnits[[1L]], newUnits = usedUnits[[2L]]
+    )
+  }
+
+  res
 }
+
 
 #' @param nMinSoilLayers An integer value. Minimum number of soil layers at a
 #' site (grid cell). Note: this should be at least 3 if the vegetation
@@ -633,10 +614,14 @@ createTestRunSoils <- function(
   idExampleSite,
   nSoilLayersExampleSite,
   nMinSoilLayers = 3L,
-  type = c("standard", "variableSoilLayerNumber", "variableSoilLayerThickness")
+  type = c("standard", "variableSoilLayerNumber", "variableSoilLayerThickness"),
+  mixNonExampleSiteValues = FALSE,
+  usedUnits = list(originalUnits = "1", newUnits = "1"),
+  seed = 127L
 ) {
 
   type <- match.arg(type)
+  mixNonExampleSiteValues <- isTRUE(mixNonExampleSiteValues[[1L]])
 
   nSpElements <- prod(dims[-1L])
   stopifnot(
@@ -647,9 +632,11 @@ createTestRunSoils <- function(
     identical(names(dims)[[1L]], "vertical")
   )
 
+  xIDs <- array(data = seq_len(nSpElements), dim = dims[-1L])
+
   # Determine number of soil layers for each site/gridcell
   # Initialize array to nMinSoilLayers
-  xNSoilLayers <- array(data = as.integer(nMinSoilLayers), dim = dims[-1])
+  xNSoilLayers <- array(data = as.integer(nMinSoilLayers), dim = dims[-1L])
 
   # Set default number of layers for example site
   xNSoilLayers[idExampleSite] <- nSoilLayersExampleSite
@@ -664,21 +651,36 @@ createTestRunSoils <- function(
   # Create data structure and fill with values depending on number of layers
   x <- array(data = NA_real_, dim = dims)
 
-  for (k in seq_len(max(xNSoilLayers))) {
-    if (any(xNSoilLayers == k)) {
-      ks <- seq_len(k)
-      mids <- data.frame(which(xNSoilLayers == k, arr.ind = TRUE))
-      mids[["ids"]] <- apply(mids, 1L, paste, collapse = "-")
-      kids <- merge(
-        expand.grid(c(list(vertical = ks), mids["ids"])),
-        mids
-      )[, -1L]
-      x[data.matrix(kids)] <- soilData[ks]
+  if (mixNonExampleSiteValues) {
+    set.seed(seed)
+  }
+
+  for (k in seq_len(prod(dims[-1L]))) {
+    ks <- seq_len(xNSoilLayers[k])
+    mids <- data.frame(which(xIDs == k, arr.ind = TRUE))
+    mids[["ids"]] <- apply(mids, 1L, paste, collapse = "-")
+    kids <- merge(
+      expand.grid(c(list(vertical = ks), mids["ids"])),
+      mids
+    )[, -1L]
+    x[data.matrix(kids)] <- if (mixNonExampleSiteValues && k != idExampleSite) {
+      soilData[ks[sample.int(length(ks))]]
+    } else {
+      soilData[ks]
     }
   }
 
   # Permutate order of dimensions
-  aperm(x, perm = dimPermutation)
+  x <- aperm(x, perm = dimPermutation)
+
+  # Adjust units
+  if (!is.null(usedUnits)) {
+    x <- convertUnits(
+      x, hasUnits = usedUnits[[1L]], newUnits = usedUnits[[2L]]
+    )
+  }
+
+  x
 }
 
 
@@ -695,7 +697,7 @@ varySoilThicknessArray <- function(hzthkArray, dims, idExampleSite) {
       seq_len(dims[[1L]]),
       which(xthk == 1L, arr.ind = TRUE)[rep(1L, dims[[1L]]), ]
     )
-    hzthkArray[ithk] <- 2 * hzthkArray[ithk] # double thickness
+    hzthkArray[ithk] <- 2.0 * hzthkArray[ithk] # double thickness
   }
 
   hzthkArray
@@ -712,7 +714,7 @@ calcDepthArrayFromThickness <- function(hzthkArray, dimPermCounts) {
 
   # apply() loses the name of the "vertical" dimension
   tmp <- names(dim(res))
-  idsvert <- which(nchar(tmp) == 0L & !tmp %in% names(dimPermCounts))
+  idsvert <- which(!nzchar(tmp) & !tmp %in% names(dimPermCounts))
   names(dim(res))[[idsvert]] <- "vertical"
 
   if (!all(names(dim(res)) == names(dimPermCounts))) {
@@ -729,8 +731,8 @@ calcDepthArrayFromThickness <- function(hzthkArray, dimPermCounts) {
 #--- * Functions to work with testRun outputs ------
 
 appendToMessage <- function(hasMsg, newMsg) {
-  if (isTRUE(nchar(hasMsg) > 0L)) {
-    if (isTRUE(nchar(newMsg) > 0L)) {
+  if (isTRUE(nzchar(hasMsg, keepNA = TRUE))) {
+    if (isTRUE(nzchar(newMsg, keep = TRUE))) {
       paste(hasMsg, newMsg, sep = " -- ")
     } else {
       hasMsg
@@ -743,6 +745,7 @@ appendToMessage <- function(hasMsg, newMsg) {
 colorTestReport <- function(x) {
   stopifnot(requireNamespace("cli"))
 
+  # note: `fixed = TRUE` does not work
   gsub("\\<ok\\>", cli::col_green("ok"), x = x) |>
     gsub("\\<failed\\>", cli::col_red("failed"), x = _) |>
     gsub("\\<missing\\>", cli::col_yellow("missing"), x = _)
@@ -759,7 +762,7 @@ printColoredDF <- function(x, vars) {
 
   for (kr in seq_len(nrow(res))) {
     cat(
-      colorTestReport(paste0(res[kr, ], collapse = " ")),
+      colorTestReport(paste(res[kr, ], collapse = " ")),
       fill = TRUE
     )
   }
@@ -781,7 +784,7 @@ readUnitsAttributeNC <- function(fname, var) {
 }
 
 subsetNC <- function(
-    x,
+  x,
   ref,
   xdom,
   xid,
@@ -843,7 +846,8 @@ subsetNC <- function(
         xv <- switch(
           EXPR = nDims,
           stop(
-            "Cannot have a total of one dimension but vertical is at position 2."
+            "Cannot have a total of one dimension ",
+            "while vertical is at position 2."
           ),
           xv[, usedVertical, drop = FALSE],
           xv[, usedVertical, , drop = FALSE],
@@ -862,10 +866,10 @@ subsetNC <- function(
 
     # Identify which dimensions in output identify spatial domain
     tagVar <- paste(dim_x[[kv]], collapse = "x")
-    if (length(paste0(tagDom, "$")) > 1) print(paste0(tagDom, "$"))
+    if (length(paste0(tagDom, "$")) > 1L) message(paste0(tagDom, "$"))
     ids <- gregexpr(pattern = paste0(tagDom, "$"), text = tagVar)[[1L]]
 
-    if (isTRUE(ids[[1L]] < 0)) {
+    if (isTRUE(ids[[1L]] < 0L)) {
       # domain dimensions are not the right-most dimensions -> transpose
       ids <- gregexpr(pattern = tagDom, text = tagVar)[[1L]]
       tmp <- gregexpr("x", text = substr(tagVar, 1L, ids), fixed = TRUE)[[1L]]
@@ -875,7 +879,7 @@ subsetNC <- function(
       xv <- aperm(xv, perm = c(tmp[-idsDimDomain], idsDimDomain))
       dim_x[[kv]] <- dim(xv)
       tagVar <- paste(dim_x[[kv]], collapse = "x")
-      if (length(paste0(tagDom, "$")) > 1) print(paste0(tagDom, "$"))
+      if (length(paste0(tagDom, "$")) > 1L) message(paste0(tagDom, "$"))
       ids <- gregexpr(pattern = paste0(tagDom, "$"), text = tagVar)[[1L]]
     }
 
@@ -933,7 +937,7 @@ getSitesFromNC <- function(fn) {
     data.frame(xyvals)
   } else {
     ds <- lapply(xyvals, dim)
-    if (length(ds[[1L]]) == 2L && isTRUE(all.equal(ds[[1]], ds[[2L]]))) {
+    if (length(ds[[1L]]) == 2L && isTRUE(all.equal(ds[[1L]], ds[[2L]]))) {
       lapply(xyvals, as.vector) |> data.frame()
     } else {
       expand.grid(xyvals)
@@ -1114,10 +1118,20 @@ compareNCWeather <- function(
   idExampleSite,
   tolerance = sqrt(.Machine[["double.eps"]])
 ) {
-  stopifnot(requireNamespace("RNetCDF"))
-  stopifnot(requireNamespace("units"))
+  stopifnot(
+    requireNamespace("RNetCDF"),
+    requireNamespace("units")
+  )
 
   resMsg <- NULL
+
+  if (length(input[["fname"]]) == 0L) {
+    resMsg <- "No input."
+  } else if (length(output[["fname"]]) == 0L) {
+    resMsg <- "No output."
+  }
+
+  if (isTRUE(nzchar(resMsg))) return(resMsg)
 
   ncin <- RNetCDF::open.nc(input[["fname"]])
   on.exit(RNetCDF::close.nc(ncin), add = TRUE)
@@ -1288,7 +1302,7 @@ compareEqualityNCs <- function(
     }
   }
 
-  if (im == 0) TRUE else resMsg
+  if (im == 0L) TRUE else resMsg
 }
 
 

@@ -7,7 +7,7 @@
 
 #include "include/SW_datastructs.h" // for LOG_INFO
 #include <stdio.h>                  // for size_t
-
+#include <string.h>                 // for memccpy
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,6 +42,15 @@ Bool sw_memccpy_inc(
     int c,
     size_t *n
 );
+
+/* Memory copying via `sw_memccpy()` and SOILWAT2's custom function */
+#if (defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200809L) || \
+    (defined(__STDC__) && defined(__STDC_VERSION__) &&          \
+     __STDC_VERSION__ >= 202311L)
+#define sw_memccpy memccpy
+#else
+#define sw_memccpy sw_memccpy_custom
+#endif
 
 void reportFullBuffer(int errmode, LOG_INFO *LogInfo);
 

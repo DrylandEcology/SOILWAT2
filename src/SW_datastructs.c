@@ -2,12 +2,13 @@
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
 #include "include/SW_datastructs.h"
-#include "include/filefuncs.h"
-#include "include/myMemory.h"
-#include "include/rands.h"
+#include "include/myMemory.h" // for Mem_Malloc
+#include <math.h>             // for fabs, pow, cos, fmod
+#include <stdlib.h>           // for free
 
-#include <stdlib.h>
-#include <string.h>
+#if defined(SWNETCDF) && defined(SWUDUNITS)
+#include <udunits2.h> // for cv_convert_double
+#endif
 
 #define WITHIN_GRID 0
 #define TOP 1
@@ -232,7 +233,7 @@ static SW_KD_NODE *createNode(
     SW_KD_NODE *newNode = NULL;
 
     newNode =
-        (SW_KD_NODE *) Mem_Malloc(sizeof(SW_KD_NODE), "createNode()", LogInfo);
+        (SW_KD_NODE *) Mem_Malloc(sizeof(SW_KD_NODE), "createNode", LogInfo);
 
     if (!LogInfo->stopRun) {
         copyData(
@@ -578,14 +579,14 @@ static void alloc_coords_indices(
     size_t pair;
 
     *coords = (double **) Mem_Malloc(
-        sizeof(double *) * numPoints, "alloc_coords_indices()", LogInfo
+        sizeof(double *) * numPoints, "alloc_coords_indices", LogInfo
     );
     if (LogInfo->stopRun) {
         return; /* Exit function prematurely due to error */
     }
 
     *indices = (unsigned int **) Mem_Malloc(
-        sizeof(unsigned int *) * numPoints, "alloc_coords_indices()", LogInfo
+        sizeof(unsigned int *) * numPoints, "alloc_coords_indices", LogInfo
     );
     if (LogInfo->stopRun) {
         return; /* Exit function prematurely due to error */
@@ -598,7 +599,7 @@ static void alloc_coords_indices(
 
     for (pair = 0; pair < numPoints; pair++) {
         (*coords)[pair] = (double *) Mem_Malloc(
-            sizeof(double) * 2, "alloc_coords_indices()", LogInfo
+            sizeof(double) * 2, "alloc_coords_indices", LogInfo
         );
         if (LogInfo->stopRun) {
             return; /* Exit function prematurely due to error */
@@ -608,7 +609,7 @@ static void alloc_coords_indices(
         (*coords)[pair][1] = 0.0;
 
         (*indices)[pair] = (unsigned int *) Mem_Malloc(
-            sizeof(unsigned int) * 2, "alloc_coords_indices()", LogInfo
+            sizeof(unsigned int) * 2, "alloc_coords_indices", LogInfo
         );
         if (LogInfo->stopRun) {
             return; /* Exit function prematurely due to error */
@@ -679,10 +680,7 @@ void SW_DATA_queryTree(
     SW_KD_NODE **bestNode,
     double *bestDist
 ) {
-    Bool wentLeft = swFALSE;
     int inspectIndex = level % KD_NDIMS;
-    double oppDist = DBL_MAX;
-    double *oppCoords = NULL;
     double currDist;
 
     if (isnull(currNode)) {
@@ -693,7 +691,6 @@ void SW_DATA_queryTree(
         (Bool) LT(queryCoords[inspectIndex], currNode->coords[inspectIndex]);
 
     if (goLeft) {
-        wentLeft = swTRUE;
         SW_DATA_queryTree(
             currNode->left,
             queryCoords,
@@ -723,32 +720,26 @@ void SW_DATA_queryTree(
 
     /* Check to see if the other child branch holds a value that's closer
        than the current best option */
-    oppCoords = (wentLeft) ? currNode->right->coords : currNode->left->coords;
-
-    if (!isnull(oppCoords)) {
-        oppDist = calcDistance(oppCoords, queryCoords, primCRSIsGeo);
-
-        if (LT(oppDist, *bestDist)) {
-            if (wentLeft) {
-                SW_DATA_queryTree(
-                    currNode->right,
-                    queryCoords,
-                    level + 1,
-                    primCRSIsGeo,
-                    bestNode,
-                    bestDist
-                );
-            } else {
-                SW_DATA_queryTree(
-                    currNode->left,
-                    queryCoords,
-                    level + 1,
-                    primCRSIsGeo,
-                    bestNode,
-                    bestDist
-                );
-            }
-        }
+    if (goLeft && GE(queryCoords[inspectIndex] + *bestDist,
+                     currNode->coords[inspectIndex])) {
+        SW_DATA_queryTree(
+            currNode->right,
+            queryCoords,
+            level + 1,
+            primCRSIsGeo,
+            bestNode,
+            bestDist
+        );
+    } else if (!goLeft && LE(queryCoords[inspectIndex] - *bestDist,
+                             currNode->coords[inspectIndex])) {
+        SW_DATA_queryTree(
+            currNode->left,
+            queryCoords,
+            level + 1,
+            primCRSIsGeo,
+            bestNode,
+            bestDist
+        );
     }
 }
 

@@ -16,7 +16,7 @@
 #include "include/SW_Flow_lib_PET.h" // for SW_PET_init_run, actualVaporPre...
 #include "include/filefuncs.h"       // for LogError
 #include "include/generic.h"         // for squared, fmax, fmin, GT, Bool
-#include "include/SW_datastructs.h"  // for SW_ATMD, LOG_INFO
+#include "include/SW_datastructs.h"  // for SW_ATMD_SIM, LOG_INFO
 #include "include/SW_Defines.h"      // for missing, swPI, SW_MISSING, swPI2
 #include <math.h>                    // for tan, pow, sin, cos, exp, fabs
 
@@ -49,7 +49,7 @@ static const double G_sc = 118.1088;
 
 @param[in,out] SW_AtmDem Memoized variables pertaining to atmospheric demand
 */
-void SW_PET_init_run(SW_ATMD *SW_AtmDem) {
+void SW_PET_init_run(SW_ATMD_SIM *SW_AtmDem) {
     int k1;
     int k2;
 
@@ -196,7 +196,7 @@ if the input surface, defined by `slope` and `aspect`, is horizontal.
     above a horizontal (1st element) and tilted (2nd element) surface [-]
 */
 void sun_hourangles(
-    SW_ATMD *SW_AtmDem,
+    SW_ATMD_SIM *SW_AtmDem,
     unsigned int doy,
     double lat,
     double slope,
@@ -904,6 +904,7 @@ transpose direct and diffuse radiation to a tilted surface.
       (hypothetical) flat horizon averaged over an entire day (24 hour period)
     - 2: `rsds` represents flux density [W / m2] for a
       (hypothetical) flat horizon averaged over the daylight period of the day
+@param[in] fixMAXRSDS Request to reset \p rsds if larger than \p H_oh.
 
 @param[out] H_oh Daily extraterrestrial horizontal irradiation [MJ / m2]
 @param[out] H_ot Daily extraterrestrial tilted irradiation [MJ / m2]
@@ -913,7 +914,7 @@ transpose direct and diffuse radiation to a tilted surface.
 @return H_gt Daily global (tilted) irradiation [MJ / m2]
 */
 double solar_radiation(
-    SW_ATMD *SW_AtmDem,
+    SW_ATMD_SIM *SW_AtmDem,
     unsigned int doy,
     double lat,
     double elev,
@@ -924,6 +925,7 @@ double solar_radiation(
     double e_a,
     double rsds,
     unsigned int desc_rsds,
+    Bool fixMAXRSDS,
     double *H_oh,
     double *H_ot,
     double *H_gh,
@@ -1062,17 +1064,29 @@ double solar_radiation(
 
 
         if (!(*H_gh >= 0. && *H_gh <= *H_oh)) {
-            LogError(
-                LogInfo,
-                LOGWARN,
-                "\nInput global horizontal irradiation (%f) reset to be equal "
-                "to theoretical extraterrestrial radiation (%.0f MJ m-2) "
-                "because it was larger.\n",
-                *H_gh,
-                *H_oh
-            );
+            if (fixMAXRSDS) {
+                LogError(
+                    LogInfo,
+                    LOGWARN,
+                    "yyyy-%03d: Reset observed rsds (%f) to Hoh (%f [MJ m-2]).",
+                    doy,
+                    *H_gh,
+                    *H_oh
+                );
 
-            *H_gh = *H_oh;
+                *H_gh = *H_oh;
+
+            } else {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "yyyy-%03d: Observed rsds (%f) outside range "
+                    "[0, Hoh = %f [MJ m-2]].",
+                    doy,
+                    *H_gh,
+                    *H_oh
+                );
+            }
         }
 
 
@@ -1119,10 +1133,14 @@ double solar_radiation(
             // Diffuse irradiation (anisotropic):
             // HDKR model (Reindl et al. 1990)
             // Allen et al. 2006: eq. 33
-            f_ia = f_i * (1. - K_bh_calc) *
-                       (1. + sqrt(K_bh_calc / (K_bh_calc + K_dh_calc)) *
-                                 pow(sin(slope / 2.), 3.)) +
-                   f_B * K_bh_calc;
+            if (GT(K_bh_calc + K_dh_calc, 0.)) {
+                f_ia = f_i * (1. - K_bh_calc) *
+                           (1. + sqrt(K_bh_calc / (K_bh_calc + K_dh_calc)) *
+                                     pow(sin(slope / 2.), 3.)) +
+                       f_B * K_bh_calc;
+            } else {
+                f_ia = 0.;
+            }
 
             // Allen et al. 2006: eq. 31
             H_dt = f_ia * k_c * H_dh_calc;
@@ -1147,10 +1165,14 @@ double solar_radiation(
 
             // Diffuse irradiation
             // Allen et al. 2006: eq. 40 (see eq. 33)
-            f_ia = f_i * (1. - K_bh_obs) *
-                       (1. + sqrt(K_bh_obs / (K_bh_obs + K_dh_obs)) *
-                                 pow(sin(slope / 2.), 3.)) +
-                   f_B * K_bh_obs;
+            if (GT(K_bh_obs + K_dh_obs, 0.)) {
+                f_ia = f_i * (1. - K_bh_obs) *
+                           (1. + sqrt(K_bh_obs / (K_bh_obs + K_dh_obs)) *
+                                     pow(sin(slope / 2.), 3.)) +
+                       f_B * K_bh_obs;
+            } else {
+                f_ia = 0.;
+            }
 
             // Allen et al. 2006: eq. 38 part 2
             H_dt = f_ia * K_dh_obs * (*H_oh);
@@ -1180,7 +1202,7 @@ double solar_radiation(
         LogError(
             LogInfo,
             LOGERROR,
-            "\nSolar radiation (%f) out of valid range (0-50 MJ m-2)\n",
+            "Solar radiation (%f) out of valid range (0-50 MJ m-2).",
             H_g
         );
     }
@@ -1312,7 +1334,7 @@ double relativeHumidity1(double vp, double meanTemp) {
 }
 
 /**
-@brief Calculate relative humidity from specific humidity and temperature
+@brief Calculate relative humidity from specific humidity and mean temperature
 
 @param huss Daily mean specific humidity [g kg-1]
 @param meanTemp Daily mean air temperature [C]
@@ -1324,6 +1346,26 @@ double relativeHumidity2(double huss, double meanTemp, double elevation) {
     double vpVal = actualVaporPressure4(huss, elevation);
 
     return relativeHumidity1(vpVal, meanTemp);
+}
+
+/**
+@brief Calculate relative humidity from specific humidity and min/max
+temperature
+
+@param huss Daily mean specific humidity [g kg-1]
+@param maxTemp Daily maximum air temperature [C]
+@param minTemp Daily minimum air temperature [C]
+@param elevation Site elevation [m above mean sea level]
+
+@return Calculated relative humidity [0-100 %]
+*/
+double relativeHumidity3(
+    double huss, double maxTemp, double minTemp, double elevation
+) {
+    double vpVal = actualVaporPressure4(huss, elevation);
+    double hursmin = relativeHumidity1(vpVal, maxTemp);
+    double hursmax = relativeHumidity1(vpVal, minTemp);
+    return (hursmin + hursmax) / 2.;
 }
 
 /**

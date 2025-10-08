@@ -17,8 +17,8 @@ void GetRNGstate(void);
 void PutRNGstate(void);
 
 // From <R_ext/Error.h>
-void error(const char *, ...);
-void warning(const char *, ...);
+void Rf_error(const char *, ...);
+void Rf_warning(const char *, ...);
 
 #ifdef __cplusplus
 }

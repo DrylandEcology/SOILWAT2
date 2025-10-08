@@ -4,7 +4,12 @@
 #include "include/generic.h"        // for Bool, IntUS
 #include "include/SW_datastructs.h" // for SW_DOMAIN, SW_NETCDF_OUT, S...
 #include "include/SW_Defines.h"     // for OutPeriod, SW_OUTNPERIODS, SW_OUTN...
+#include <netcdf.h>                 // for nc_type
 #include <stdio.h>                  // for size_t
+
+#if defined(SWMPI)
+#include <mpi.h> // for MPI_Comm
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,6 +35,14 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
+
+void SW_NC_get_att_type(
+    int ncFileID,
+    int varID,
+    const char *attName,
+    nc_type *attType,
+    LOG_INFO *LogInfo
+);
 
 void SW_NC_get_dimlen_from_dimid(
     int ncFileID, int dimID, size_t *dimVal, LOG_INFO *LogInfo
@@ -79,10 +92,6 @@ void SW_NC_write_string_att(
     LOG_INFO *LogInfo
 );
 
-void SW_NC_write_string_vals(
-    int ncFileID, int varID, const char *const varVals[], LOG_INFO *LogInfo
-);
-
 Bool SW_NC_dimExists(const char *targetDim, int ncFileID);
 
 Bool SW_NC_varExists(int ncFileID, const char *varName);
@@ -102,13 +111,13 @@ void SW_NC_get_str_att_val(
     int ncFileID,
     const char *varName,
     const char *attName,
-    char *strVal,
+    char **strVal,
     LOG_INFO *LogInfo
 );
 
 void SW_NC_create_netCDF_dim(
     const char *dimName,
-    unsigned long size,
+    size_t size,
     const int *ncFileID,
     int *dimID,
     LOG_INFO *LogInfo
@@ -145,7 +154,7 @@ void SW_NC_create_full_var(
     const char *siteName,
     const int coordAttIndex,
     Bool useDefaultChunking,
-    void *defFillVal,
+    Bool addFillValueAttribute,
     LOG_INFO *LogInfo
 );
 
@@ -208,7 +217,7 @@ void SW_NC_create_units_converters(
     Bool *reqVars[],
     char ***varInfo[],
     Bool out_use[],
-    int numVars[],
+    unsigned int numVars[],
     int varNameInd,
     int varUnitsInd,
     LOG_INFO *LogInfo
@@ -225,6 +234,12 @@ void SW_NC_get_vals(
 void SW_NC_open(
     const char *ncFileName, int openMode, int *fileID, LOG_INFO *LogInfo
 );
+
+#if defined(SWMPI)
+void SW_NC_open_par(
+    const char *fileName, int mode, MPI_Comm comm, int *id, LOG_INFO *LogInfo
+);
+#endif
 
 #ifdef __cplusplus
 }

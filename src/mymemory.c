@@ -31,10 +31,10 @@
 /* --------------------------------------------------- */
 #include "include/myMemory.h"       // for Mem_Calloc, Mem_Copy, Mem_Malloc
 #include "include/filefuncs.h"      // for LogError
-#include "include/generic.h"        // for LOGERROR, byte, isnull
+#include "include/generic.h"        // for LOGERROR, Bool, isnull, byte
 #include "include/SW_datastructs.h" // for LOG_INFO
-#include <stdlib.h>                 // for free, malloc, realloc
-#include <string.h>                 // for strlen, memset, strcpy
+#include <stdlib.h>                 // for size_t, NULL, free, malloc, realloc
+#include <string.h>                 // for strlen, memcpy, memset, strcpy
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -55,7 +55,7 @@ char *Str_Dup(const char *s, LOG_INFO *LogInfo) {
 
     char *p;
 
-    p = (char *) Mem_Malloc(strlen(s) + 1, "Str_Dup()", LogInfo);
+    p = (char *) Mem_Malloc(strlen(s) + 1, "Str_Dup", LogInfo);
     if (LogInfo->stopRun) {
         return NULL; // Exit function prematurely due to error
     }

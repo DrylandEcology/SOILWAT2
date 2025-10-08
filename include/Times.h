@@ -74,6 +74,11 @@ extern "C" {
 
 extern const TimeInt monthdays[];
 
+/* Constants for timing specific sections (compute or I/O) of the
+   program run */
+#define TIME_COMPUTE 0
+#define TIME_IO 1
+
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
@@ -113,11 +118,11 @@ double diff_walltime(WallTimeSpec start, Bool ok_start);
 
 void SW_WT_StartTime(SW_WALLTIME *wt);
 
-void SW_WT_TimeRun(WallTimeSpec ts, Bool ok_ts, SW_WALLTIME *wt);
+void SW_WT_TimeRun(WallTimeSpec ts, Bool ok_ts, int timeSec, SW_WALLTIME *wt);
 
 void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo);
 
-void timeStringISO8601(char *timeString, int stringLength);
+void timeStringISO8601(char *timeString, unsigned int stringLength);
 
 #ifdef __cplusplus
 }

@@ -14,18 +14,21 @@
 #include "include/SW_datastructs.h" // for LOG_INFO
 #include "include/SW_Defines.h"     // for MAX_LOG_SIZE, KEY_NOT_FOUND, MAX...
 #include "include/Times.h"          // for timeStringISO8601
-#include <assert.h>                 // for assert
-#include <ctype.h>                  // for isspace
 #include <dirent.h>                 // for dirent, closedir, DIR, opendir, re...
 #include <errno.h>                  // for errno, ERANGE
-#include <limits.h>                 // for LONG_MIN, LONG_MAX, INT_MIN, INT_MAX
-#include <math.h>                   // for HUGE_VAL, HUGE_VALF
+#include <limits.h>                 // for INT_MIN, LONG_MIN, ULONG_MAX
+#include <math.h>                   // for HUGE_VAL
 #include <stdarg.h>                 // for va_end, va_start
+#include <stdint.h>                 // for SIZE_MAX
 #include <stdio.h>                  // for NULL, fclose, FILE, fopen, EOF
 #include <stdlib.h>                 // for free, strtod, strtof, strtol
 #include <string.h>                 // for strlen, strrchr, memccpy, strchr
 #include <sys/stat.h>               // for stat, mkdir, S_ISDIR, S_ISREG
 #include <unistd.h>                 // for chdir
+
+#ifdef RSOILWAT
+#include <R.h> // for Rf_error() from <R_ext/Error.h>
+#endif
 
 /* Note
 Some of these headers are not part of the C Standard Library header files;
@@ -177,36 +180,30 @@ closeDir: { closedir(dir); }
 
 // NOLINTEND(misc-no-recursion)
 
-/* =================================================== */
-/*             Global Function Definitions             */
-/* --------------------------------------------------- */
-
-/**************************************************************/
-
 /**
 @brief Compose, store and count warning and error messages
 
 @param[in,out] LogInfo Holds information on warnings and errors
 @param[in] mode Indicator whether message is a warning or error
+@param[in] suidPrefix Prefix for message that identifies a suid
 @param[in] fmt Message string with optional format specifications for ...
-    arguments
-@param[in] ... Additional values that are injected into fmt
+    arguments. Must be a literal or constant string.
+@param[in] args A list of arguments of type `va_list`
 */
-void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...) {
-    /* 9-Dec-03 (cwb) Modified to accept argument list similar
-     *           to fprintf() so sprintf(errstr...) doesn't need
-     *           to be called each time replacement args occur.
-     */
+static void LogErrorHelper(
+    LOG_INFO *LogInfo,
+    const int mode,
+    const char *suidPrefix,
+    const char *fmt,
+    va_list args
+) {
 
-    char outfmt[MAX_LOG_SIZE] = {0}; /* to prepend err type str */
-    char buf[MAX_LOG_SIZE];
-    char msgType[MAX_LOG_SIZE];
+    char msgFormatted[MAX_LOG_SIZE] = {'\0'};
+    char buf[MAX_LOG_SIZE] = {'\0'};
+    char msgType[MAX_LOG_SIZE] = {'\0'};
     int nextWarn = LogInfo->numWarnings;
-    va_list args;
     int expectedWriteSize;
     char *writePtr = msgType;
-
-    va_start(args, fmt);
 
     if (LOGWARN & mode) {
         (void) sw_memccpy(writePtr, "WARNING: ", '\0', MAX_LOG_SIZE);
@@ -214,32 +211,52 @@ void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...) {
         (void) sw_memccpy(writePtr, "ERROR: ", '\0', MAX_LOG_SIZE);
     }
 
-    expectedWriteSize = snprintf(outfmt, MAX_LOG_SIZE, "%s%s\n", msgType, fmt);
-    if (expectedWriteSize > MAX_LOG_SIZE) {
-        // Silence gcc (>= 7.1) compiler flag `-Wformat-truncation=`, i.e.,
-        // handle output truncation
-        (void
-        ) fprintf(stderr, "Programmer: message exceeds the maximum size.\n");
-#ifdef SWDEBUG
-        exit(EXIT_FAILURE);
-#endif
-    }
+    int msgTypeLen = (int) strlen(msgType);
+    // Reserve space for msgType + msgFormatted + '\n + '\0'
+    int maxMsgLen = MAX_LOG_SIZE - msgTypeLen - 2;
 
+    // 1) Format the user message (+1 for '\0')
+    va_list args_copy;
+    va_copy(args_copy, args);
+    // vsnprintf() expects a string literal for the format string
     // NOLINTNEXTLINE(clang-analyzer-valist.Uninitialized)
-    expectedWriteSize = vsnprintf(buf, MAX_LOG_SIZE, outfmt, args);
+    expectedWriteSize = vsnprintf(msgFormatted, maxMsgLen + 1, fmt, args_copy);
+    va_end(args_copy);
+
+
 #ifdef SWDEBUG
-    if (expectedWriteSize > MAX_LOG_SIZE) {
+    if (expectedWriteSize >= MAX_LOG_SIZE) {
+#if defined(RSOILWAT)
+        Rf_error("Programmer: Injecting arguments to final message buffer "
+                 "makes it exceed the maximum size.");
+#else
         (void) fprintf(
             stderr,
             "Programmer: Injecting arguments to final message buffer "
             "makes it exceed the maximum size.\n"
         );
+#endif
         exit(EXIT_FAILURE);
     }
 #else
-    (void) expectedWriteSize; /* Silence clang-tidy
-                                 clang-analyzer-deadcode.DeadStores */
+    (void) expectedWriteSize;
 #endif
+
+    // 2) Build final message
+    expectedWriteSize = snprintf(
+        buf, sizeof buf, "%s%s%s\n", msgType, suidPrefix, msgFormatted
+    );
+    if (expectedWriteSize >= MAX_LOG_SIZE) {
+#if defined(RSOILWAT)
+        Rf_error("Programmer: message exceeds the maximum size.");
+#else
+        (void) fprintf(stderr, "Programmer: message exceeds the maximum size.");
+#endif
+#ifdef SWDEBUG
+        exit(EXIT_FAILURE);
+#endif
+    }
+
 
     if (LOGWARN & mode) {
         if (nextWarn < MAX_MSGS) {
@@ -262,6 +279,94 @@ void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...) {
         LogInfo->stopRun = swTRUE;
 #endif
     }
+}
+
+/* =================================================== */
+/*             Global Function Definitions             */
+/* --------------------------------------------------- */
+
+/**************************************************************/
+
+/*
+@brief Compose, store and count warning and error messages
+
+@param[in,out] LogInfo Holds information on warnings and errors
+@param[in] mode Indicator whether message is a warning or error
+@param[in] fmt Message string with optional format specifications for ...
+    arguments
+@param[in] ... Additional values that are injected into fmt
+*/
+void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...) {
+    va_list args;
+
+    va_start(args, fmt);
+
+    LogErrorHelper(LogInfo, mode, "", fmt, args);
+
+    va_end(args);
+}
+
+/*
+@brief Similar to `LogError()`, compose, store and count warnings and error
+    messages, with the addition of injecting suids into warning/error messages;
+    this functionality is only available if it is mode SWMPI or SwNC
+
+@param[in,out] LogInfo Holds information on warnings and errors
+@param[in] mode Indicator whether message is a warning or error
+@param[in] ncSuid Unique indentifier of the current suid being simulated to
+    insert into the produced message
+@param[in] sDom Specifies the program's domain is site-oriented
+@param[in] fmt Message string with optional format specifications for ...
+    arguments
+@param[in] ... Additional values that are injected into fmt
+*/
+void LogErrorSuid(
+    LOG_INFO *LogInfo,
+    const int mode,
+    size_t ncSuid[],
+    Bool sDom,
+    const char *fmt,
+    ...
+) {
+    va_list args;
+    int expectedWriteSize;
+    /* tag_suid is 55:
+    14 character for "(suid = [, ]) " + 40 character for 2 *
+    ULONG_MAX + '\0' */
+    char tag_suid[55] = "\0";
+
+    if (!isnull(ncSuid)) {
+        if (sDom) {
+            expectedWriteSize =
+                snprintf(tag_suid, 55, "(suid = %zu) ", ncSuid[0] + 1);
+        } else {
+            expectedWriteSize = snprintf(
+                tag_suid,
+                55,
+                "(suid = [%zu, %zu]) ",
+                ncSuid[1] + 1,
+                ncSuid[0] + 1
+            );
+        }
+
+        if (expectedWriteSize >= MAX_LOG_SIZE) {
+            // Silence gcc (>= 7.1) compiler flag `-Wformat-truncation=`, i.e.,
+            // handle output truncation
+#if defined(RSOILWAT)
+            Rf_error("Programmer: message prefix for suid failed.");
+#else
+            (void
+            ) fprintf(stderr, "Programmer: message prefix for suid failed.");
+#endif
+#ifdef SWDEBUG
+            exit(EXIT_FAILURE);
+#endif
+        }
+    }
+
+    va_start(args, fmt);
+
+    LogErrorHelper(LogInfo, mode, tag_suid, fmt, args);
 
     va_end(args);
 }
@@ -276,10 +381,19 @@ void sw_message(const char *msg) {
     timeStringISO8601(timeString, sizeof timeString);
 
     sw_printf("SOILWAT2 (%s) %s\n", timeString, msg);
+#if !defined(RSOILWAT)
+    (void) fflush(stdout);
+#endif
 }
 
 /**
-@brief Convert string to unsigned long integer with error handling
+@brief Convert string to largest value possible using the "size_t" integer
+    with error handling
+
+@note This function uses unsigned long long to make the maximum value
+    consistant across the major platforms (i.e., Linux, Mac, and Windows);
+    Assuming 64-bit systems, Windows uses LLP64 where Mac/Linux primarily
+use the LP64 data model
 
 This function implements cert-err34-c
 "Detect errors when converting a string to a number".
@@ -288,36 +402,42 @@ This function implements cert-err34-c
 @param[in] errMsg Pointer to string included in error message.
 @param[out] LogInfo Holds information on warnings and errors
 */
-unsigned long int sw_strtoul(
-    const char *str, const char *errMsg, LOG_INFO *LogInfo
-) {
-    unsigned long int resul = ULONG_MAX;
+size_t sw_strtosizet(const char *str, const char *errMsg, LOG_INFO *LogInfo) {
+    unsigned long long resul = ULLONG_MAX;
     char *endStr;
 
     errno = 0;
 
-    resul = strtoul(str, &endStr, 10);
+    resul = strtoull(str, &endStr, 10);
 
     if (endStr == str || '\0' != *endStr) {
         LogError(
             LogInfo,
             LOGERROR,
-            "%s: converting '%s' to unsigned long integer failed.",
+            "%s: converting '%s' to unsigned long long integer failed.",
             errMsg,
             str
         );
 
-    } else if (ULONG_MAX == resul && ERANGE == errno) {
+    } else if (ULLONG_MAX == resul && ERANGE == errno) {
         LogError(
             LogInfo,
             LOGERROR,
-            "%s: '%s' out of range of type unsigned long integer.",
+            "%s: '%s' out of range of type unsigned long long integer.",
             errMsg,
             str
         );
+    } else if (SIZE_MAX < resul) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Value larger than maximum size of an object (%zu < %zu).",
+            SIZE_MAX,
+            resul
+        );
     }
 
-    return resul;
+    return (size_t) resul;
 }
 
 /**
@@ -464,7 +584,7 @@ void DirName(const char *p, char *outString) {
      * before moving on.
      */
     const char *c;
-    long int l;
+    size_t l;
     char sep1 = '/';
     char sep2 = '\\';
 
@@ -476,7 +596,7 @@ void DirName(const char *p, char *outString) {
     }
 
     if (c) {
-        l = c - p + 1;
+        l = (size_t) (c - p + 1);
         strncpy(outString, p, l);
         outString[l] = '\0';
     }
@@ -513,12 +633,12 @@ FILE *OpenFile(const char *name, const char *mode, LOG_INFO *LogInfo) {
 /**************************************************************/
 void CloseFile(FILE **f, LOG_INFO *LogInfo) {
     /* This routine is a wrapper for the basic fclose() so
-     it might be possible to add more code like error checking
-     or other special features in the future.
+        it might be possible to add more code like error checking
+        or other special features in the future.
 
-     Currently, the FILE pointer is set to NULL so it could be
-     used as a check for whether the file is opened or not.
-     */
+        Currently, the FILE pointer is set to NULL so it could be
+        used as a check for whether the file is opened or not.
+        */
     if (*f == NULL) {
         LogError(
             LogInfo, LOGWARN, "CloseFile: file doesn't exist or isn't open!"

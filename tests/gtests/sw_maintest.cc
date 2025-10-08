@@ -37,7 +37,14 @@ const char *const dir_test = "./tests/example";
 
 int main(int argc, char **argv) {
     int res;
+    int printVersionOnly = 0;
+
     /*--- Imitate 'SW_Main.c/main()' */
+    swtest_init_args(argc, argv, &printVersionOnly);
+
+    if (printVersionOnly != 0) {
+        return 0;
+    }
 
     // Emulate 'sw_init_args()'
     if (ChDir(dir_test) == 0u) {

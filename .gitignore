@@ -17,6 +17,8 @@
 /Debug/
 
 # Files produced by example run
+/logs
+/tests/example_*
 /tests/example/Output/*
 /tests/example/Output_*
 /tests/example/logs

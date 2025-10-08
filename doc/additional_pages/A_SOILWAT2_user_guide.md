@@ -13,6 +13,8 @@
 [xcode]: https://developer.apple.com/xcode
 [netCDF]: https://downloads.unidata.ucar.edu/netcdf/
 [udunits2]: https://downloads.unidata.ucar.edu/udunits/
+[MPI]: https://www.open-mpi.org/
+[hdf5]: https://www.hdfgroup.org/solutions/hdf5/
 
 
 Note: this document is best viewed as part of the doxygen-built documentation
@@ -26,8 +28,8 @@ If you are more familiar with `R`, then you may prefer to use our R package
 [rSOILWAT2][].
 
 We are continuously checking the successful installation, compilation,
-and passing of logical tests of `SOILWAT2` both on a `*nix` as well as on a
-Windows OS platform (using `cygwin`).
+and passing of logical tests of `SOILWAT2` on different platforms including
+ubuntu, macOS, and Windows OS (via `cygwin`).
 You can confirm yourself that these checks are passing
 by visiting the online `README` page of [SOILWAT2][] and double check that the
 badges are green. Thus, if installation
@@ -43,10 +45,13 @@ on your side.
   - on any platform:
     - to compile the `SOILWAT2` simulation program
       - `C99` compliant [gcc][] or [clang/llvm][] toolchains
-    - to compile the `SOILWAT2` tests program (using `googletest`)
-      - `C++14` compliant [gcc][] or [clang/llvm][] toolchains
+    - to compile the `SOILWAT2` for testing or debugging (using `googletest`)
+      - `C++17` compliant [gcc][] or [clang/llvm][] toolchains
          (see [googletest cxx support](https://github.com/google/oss-policies-info/blob/main/foundational-cxx-support-matrix.md));
       - `POSIX API` (needs to be activated on `cygwin`, see `makefile`)
+      - [gcc][] version 13 or newer and [clang/llvm][] version 15 or newer
+        that support compilation flags used by testing and debugging scripts
+        (see `tools/compile_flags.sh`)
     - GNU-compliant [make](https://www.gnu.org/software/make/)
     - [git][] to download the code from the `github` repository
   - additionally, on Windows OS:
@@ -62,6 +67,9 @@ on your side.
     - the `netCDF-C` library
   - to build with [udunits2][] support (optional)
     - the `udunits2` library
+  - to build with [MPI][] support (optional)
+    - the `mpi` library
+    - the `netCDF-C` library with a parallel [hdf5][] backend
 
 
 #### Example instructions for a minimal `latex` installation
@@ -129,6 +137,12 @@ on your side.
     make CPPFLAGS=-DSWNETCDF NC_CFLAGS="-I/path/to/include" NC_LIBS="-L/path/to/lib"
 ```
 
+  * Compile an executable parallelized binary with [MPI][] support; depending
+    on your parallel compiler you may or may not need to specify it, e.g.,
+```{.sh}
+    make CPPFLAGS=-DSWMPI CC=mpicc
+```
+
   * User-specified username and hostname, e.g.,
 ```{.sh}
     make USERNAME=nobody HOSTNAME=nowhere
@@ -148,16 +162,23 @@ on your side.
   * Documentation of user inputs and outputs
     * \subpage doc/additional_pages/SOILWAT2_Inputs.md "SOILWAT2 Inputs"
     * \subpage doc/additional_pages/SOILWAT2_Outputs.md "SOILWAT2 Outputs"
+
+  * Additional documentation for the mpi-based SOILWAT2
+    * \subpage doc/additional_pages/SOILWAT2_Parallelization.md "SOILWAT2 Parallelization"
+
+  * Brief outline of the main steps for setting up a simulation project
+    * \subpage templateProject/README-PROJECT.md "SOILWAT2 Template Project"
 <br>
 
 
 
-### Example
-  * The source code contains a complete example simulation project in
+### Example simulation
+  * The source code contains a complete example simulation simulation in
     `tests/example/`
 
   * The inputs comprise the configuration file `files.in` and
-    the content of the `Input/` folder and `Input_nc/` folder if in nc-mode.
+    the content of the `Input/` folder and
+    `Input_nc/` folder if in nc-mode or mpi-mode.
     Inputs are explained in detail
     [here](doc/additional_pages/SOILWAT2_Inputs.md).
 
@@ -180,14 +201,32 @@ on your side.
     make CPPFLAGS=-DSWNC
     bin/SOILWAT2 -d ./tests/example -f files.in
 ```
+    See the section "nc-based SOILWAT2" in `makefile` for an overview on how to
+    provide the compilation with specific headers and libraries of
+    the dependencies including netcdf-c and udunits2.
+
+  * Run the example simulation in mpi-mode, e.g.,
+```{.sh}
+    make CPPFLAGS=-DSWMPI CC=mpicc SW_NTASKS=2 bin_run
+```
+    or, equivalently,
+```{.sh}
+    make CPPFLAGS=-DSWMPI CC=mpicc
+    mpirun -n 2 bin/SOILWAT2 -d ./tests/example -f files.in
+```
+    See the section "mpi-based SOILWAT2" in `makefile` for an overview on how to
+    provide the compilation with specific headers and libraries of
+    the dependencies including netcdf-c and udunits2.
 
   * Warning and error messages, if any, are written to a
     logfile `logs/logfile.log`
-    (the file name and path is controlled by input from `"files.in"`).
+    (the file name and path is controlled by input from `"files.in"`) or,
+    if in mpi-mode, to a separate logfile for each I/O and compute process
+    `logs/<rank>_IO_logfile.log` and `logs/<rank>_COMP_logfile.log`.
 
   * Simulation outputs are written to `Output/`.
         * In text-mode, the output files are in `.csv` format
-        * In nc-mode, the output files are in `.nc` format
+        * In nc-mode and mpi-mode, the output files are in `.nc` format
   * Outputs are explained in detail
     [here](doc/additional_pages/SOILWAT2_Inputs.md).
 

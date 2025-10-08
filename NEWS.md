@@ -1,4 +1,93 @@
 # NEWS
+# SOILWAT2 v8.2.0
+* This version produces similar but not identical simulation output
+  as previously because of the following changes:
+    * CO2-fertilization effects are now using provided atmospheric CO2 of the
+      reference year 1995; previously, 360 ppm was assumed.
+    * Transpiration regions are no longer one soil layer too shallow.
+
+* SOILWAT2 gained a third mode `SWMPI` which is parallelized across sites or
+  grid cells with a time-before-space scheme using `MPI` (#399; @N1ckP3rsl3y)
+  and extends the nc-mode. See the extended documentation for details.
+  The mpi-based SOILWAT2 is compiled with
+    * `make CPPFLAGS=-DSWMPI`
+  The two previous modes continue to be available
+    * `make CPPFLAGS=-DSWTXT` (or as previously `make all`) for txt-based
+    * `make CPPFLAGS=-DSWNC` for nc-based SOILWAT2.
+
+* Several improvements to the code base including a new organization of
+  variables between inputs, simulated values, and outputs.
+
+* Several improvements to the testing infrastructure including automatic
+  identification of (common) parallel setups such as availability of `mpicc` for
+  compilation and `mpirun` vs. `srun` for execution of mpi-based SOILWAT2.
+
+* Annual time series of atmospheric CO2 concentrations can now be
+  combined from multiple data sets, e.g., `"CMIP6_historical|CMIP6_SSP585"`
+  (#456; @dschlaep).
+
+* CO2-fertilization is now adjusted for the year when vegetation inputs
+  were made (#328; @dschlaep).
+
+* The user can now specify if vegetation biomass inputs reflect
+  conditions on the ground (at the specified surface cover) or
+  if they represent vegetation as if that plant functional type occurred
+  at 100% surface cover (#328; @dschlaep).
+
+* If specific humidity is provided as input instead of relative humidity, then
+  relative humidity is now calculated using minimum and maximum temperature
+  (instead of mean temperature as previously).
+
+* User-requested corrections are now applied to problematic weather inputs
+  (#457; @dschlaep),
+    * Swap min/max values if min > max (air temperature, relative humidity).
+    * Reset percentages to 100% if they are larger than 100%
+      (relative humidity, cloud cover).
+    * Reset observed solar radiation to extraterrestrial radiation if
+      the observed value is larger than expected.
+
+* Transpiration regions no longer require roots of every plant functional type
+  (@dschlaep).
+
+* Solar radiation on tilted surfaces no longer fails if observed radiation
+  is zero (#476; @dschlaep).
+
+* Derived metrics including climatic water deficit, dry degree-days,
+  wet degree-days, and total profile available soil moisture can now be
+  requested as output (#466; @dschlaep).
+
+## Bugfixes
+* The KD-tree algorithm is now correctly calculating index positions for
+  lookup netCDFs also when the domain is a subset of the inputs (@N1ckP3rsl3y).
+* Inputs from netCDFs are now correctly handling missing values and unit
+  conversions for soil and vegetation inputs (@dschlaep).
+* Transpiration regions are now correctly assigned to soil layers
+  (#460; @dschlaep).
+
+## Changes to inputs
+* The user provided file names of inputs now represent paths relative to the
+  project/execution location, i.e., the directory provided via the `-d` option.
+  Previously, they represented paths relative to the directory that
+  contains `"files.in"`.
+* New input via `"domain.in"` that specifies the maximum number of failed
+  sites/grid cells after which a mpi-based SOILWAT2 run terminates early.
+* New input via `"veg.in"` to specify the year for which vegetation inputs
+  are valid, i.e., the year when CO2-fertilization has no effect on biomass
+  and water-use efficiency (default is 1995).
+* New input via `"veg.in"` to identify the spatial reference of biomass inputs
+  `"isBiomAsIf100Cover"` (default `"true"`).
+* `"carbon.in"` now provides annual time series of atmospheric CO2 concentration
+  for CMIP5 and CMIP6.
+* New inputs via `"weathsetup.in"` to request corrections for problematic
+  weather inputs (turned off by default).
+* New inputs via `"outsetup.in"` and, for nc-based SOILWAT2, via
+  `"SW2_netCDF_input_variables.tsv"` to request derived metrics as output.
+
+## Changes to outputs
+* Several derived metrics in output groups `"DERIVEDSUM"` and `"DERIVEDSAVG"`.
+* Vegetation types now use consistent names (previously, vegetation type names
+  different between txt-mode and nc/mpi-mode outputs; @dschlaep).
+
 
 # SOILWAT2 v8.1.2
 * Simulation output of the example remains the same as the previous version;

@@ -31,15 +31,15 @@ id,testrun,tag,comment,expectation,domainType,domainCRS,domainSize,domainSubset,
 30,30,dom-xy-3x2-geog_in-xy-geog-3x2-soillayers,variable number of soil layers,success,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,0,sw2,standard,1980,2010,dim,double,standard,variableSoilLayerNumber,no
 31,31,dom-xy-3x2-geog_in-xy-geog-3x2-soildepths,variable soil layer thickness,success,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,0,sw2,standard,1980,2010,dim,double,standard,variableSoilLayerThickness,no
 32,32,dom-xy-3x2-geog_in-xy-geog-3x2-swrcp,input SWRCp,success,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,0,sw2,standard,1980,2010,dim,double,standard,standard,yes
-33,37,dom-s-6-geog_in-s-geog-6,site geographic,success,s,geographic,6,NA,180,NA,s,geographic,6,0,sw2,standard,1980,2010,dim,double,standard,standard,no
+33,36,dom-s-6-geog_in-s-geog-6,site geographic,success,s,geographic,6,NA,180,NA,s,geographic,6,0,sw2,standard,1980,2010,dim,double,standard,standard,no
 34,38,dom-s-6-geog_in-s-geog-6-pftvar,pft as variable instead dimension,success,s,geographic,6,NA,180,NA,s,geographic,6,0,sw2,standard,1980,2010,var,double,standard,standard,no
 35,39,dom-s-6-geog_in-s-geog-6-mixdim,"site geographic, mixed order of input dimensions",success,s,geographic,6,NA,180,NA,s,geographic,6,0,sw2,standard,1980,2010,dim,double,mix,standard,no
 36,40,dom-s-6-geog_in-s-geog-6-soillayers,variable number of soil layers,success,s,geographic,6,NA,180,NA,s,geographic,6,0,sw2,standard,1980,2010,dim,double,standard,variableSoilLayerNumber,no
 37,41,dom-s-6-geog_in-s-geog-6-soildepths,variable soil layer thickness,success,s,geographic,6,NA,180,NA,s,geographic,6,0,sw2,standard,1980,2010,dim,double,standard,variableSoilLayerThickness,no
-38,41,dom-s-6-geog_in-s-geog-6-swrcp,input SWRCp,success,s,geographic,6,NA,180,NA,s,geographic,6,0,sw2,standard,1980,2010,dim,double,standard,standard,yes
-39,34,dom-s-6-geog_in-xy-geog-3x2,site-gridded geographic,success,s,geographic,6,NA,180,NA,xy,geographic,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no
-40,35,dom-s-6-geog-shifted_in-xy-geog-3x2,site-gridded geographic shifted out-of-inputs,error,s,geographic,6,NA,180,10;5,xy,geographic,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no
-41,36,dom-s-6-geog-subset_in-xy-geog-3x2,site-gridded geographic subset,success,s,geographic,6,3;5,180,NA,xy,geographic,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no
+38,42,dom-s-6-geog_in-s-geog-6-swrcp,input SWRCp,success,s,geographic,6,NA,180,NA,s,geographic,6,0,sw2,standard,1980,2010,dim,double,standard,standard,yes
+39,33,dom-s-6-geog_in-xy-geog-3x2,site-gridded geographic,success,s,geographic,6,NA,180,NA,xy,geographic,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no
+40,34,dom-s-6-geog-shifted_in-xy-geog-3x2,site-gridded geographic shifted out-of-inputs,error,s,geographic,6,NA,180,10;5,xy,geographic,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no
+41,35,dom-s-6-geog-subset_in-xy-geog-3x2,site-gridded geographic subset,success,s,geographic,6,3;5,180,NA,xy,geographic,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no
 42,37,dom-s-6-proj_in-xy-proj-3x2,site-gridded projected,success,s,projected,6,NA,NA,NA,xy,projected,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no
 43,43,dom-xy-3x2-geog_in-xy-geog-gridMET-3x2,gridMET,success,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,1,gridMET,NA,1980,2010,dim,double,standard,standard,no
 44,44,dom-xy-3x2-geog_in-xy-geog-MACAv2METDATA-3x2,MACAv2METDATA,success,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,1,MACAv2METDATA,NA,1980,2005,dim,double,standard,standard,no

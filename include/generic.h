@@ -63,7 +63,7 @@
 
 #include <float.h>  // for DBL_EPSILON, FLT_EPSILON
 #include <math.h>   // for fabs, sqrt, sqrtf
-#include <stddef.h> // for NULL
+#include <stddef.h> // for NULL, size_t
 
 #ifdef RSOILWAT
 #include <R.h> // for Rprintf() from <R_ext/Print.h>
@@ -308,15 +308,6 @@ Bool isDelim(char currChar, const char *delim);
 void UnComment(char *s);
 
 double interpolation(double x1, double x2, double y1, double y2, double deltaX);
-
-void st_getBounds(
-    unsigned int *x1,
-    unsigned int *x2,
-    unsigned int *equal,
-    unsigned int size,
-    double depth,
-    double bounds[]
-);
 
 double lobfM(const double xs[], const double ys[], unsigned int n);
 

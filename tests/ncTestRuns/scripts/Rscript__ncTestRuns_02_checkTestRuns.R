@@ -27,6 +27,8 @@
 #       Rscript__ncTestRuns_02_checkTestRuns.R \
 #       --path-to-ncTestRuns=<...> \
 #       --path-to-sw2=<...> \
+#       --swMode=<...> \
+#       --ntasks=<...> \
 #       --path-to-referenceOutput=<...> \
 #       --testRuns=<...>
 # ```
@@ -52,28 +54,51 @@ stopifnot(
 #------ Grab command line arguments (if any)
 args <- commandArgs(trailingOnly = TRUE)
 
-reqTestRuns <- if (any(ids <- grepl("--testRuns", args))) {
-  sub("--testRuns", "", args[ids]) |>
-    sub("=", "", x = _) |>
+ids <- grepl("--testRuns", args, fixed = TRUE)
+reqTestRuns <- if (any(ids)) {
+  sub("--testRuns", "", args[ids], fixed = TRUE) |>
+    sub("=", "", x = _, fixed = TRUE) |>
     trimws() |>
     as.integer()
 } else {
   -1L
 }
 
+ids <- grepl("--swMode", args, fixed = TRUE)
+swMode <- if (any(ids)) {
+  sub("--swMode", "", args[ids], fixed = TRUE) |>
+    sub("=", "", x = _, fixed = TRUE) |>
+    trimws() |>
+    tolower()
+} else {
+  "nc"
+}
+
+stopifnot(swMode %in% c("nc", "mpi"))
+
+ids <- grepl("--ntasks", args, fixed = TRUE)
+nTasks <- if (any(ids)) {
+  sub("--ntasks", "", args[ids], fixed = TRUE) |>
+    sub("=", "", x = _, fixed = TRUE) |>
+    trimws() |>
+    tolower()
+}
+
 
 #------ Paths (possibly as command-line arguments) ------
-dir_prj <- if (any(ids <- grepl("--path-to-ncTestRuns", args))) {
-  sub("--path-to-ncTestRuns", "", args[ids]) |>
-    sub("=", "", x = _) |>
+ids <- grepl("--path-to-ncTestRuns", args, fixed = TRUE)
+dir_prj <- if (any(ids)) {
+  sub("--path-to-ncTestRuns", "", args[ids], fixed = TRUE) |>
+    sub("=", "", x = _, fixed = TRUE) |>
     trimws()
 } else {
   ".."
 }
 
-fname_sw2 <- if (any(ids <- grepl("--path-to-sw2", args))) {
-  sub("--path-to-sw2", "", args[ids]) |>
-    sub("=", "", x = _) |>
+ids <- grepl("--path-to-sw2", args, fixed = TRUE)
+fname_sw2 <- if (any()) {
+  sub("--path-to-sw2", "", args[ids], fixed = TRUE) |>
+    sub("=", "", x = _, fixed = TRUE) |>
     trimws()
 } else {
   file.path(dir_prj, "..", "..", "bin", "SOILWAT2")
@@ -81,9 +106,10 @@ fname_sw2 <- if (any(ids <- grepl("--path-to-sw2", args))) {
 
 stopifnot(file.exists(fname_sw2))
 
-frefOutput <- if (any(ids <- grepl("--path-to-referenceOutput", args))) {
-  sub("--path-to-referenceOutput", "", args[ids]) |>
-    sub("=", "", x = _) |>
+ids <- grepl("--path-to-referenceOutput", args, fixed = TRUE)
+frefOutput <- if (any(ids)) {
+  sub("--path-to-referenceOutput", "", args[ids], fixed = TRUE) |>
+    sub("=", "", x = _, fixed = TRUE) |>
     trimws()
 } else {
   file.path("tests", "ncTestRuns", "results", "referenceRun", "Output")
@@ -114,6 +140,7 @@ dir.create(dir_testRuns, recursive = TRUE, showWarnings = FALSE)
 #------ Load functions ------
 copyDir <- NULL
 runSW2 <- NULL
+detectMPIExecutor <- NULL
 getSitesFromNC <- NULL
 locateExampleSite <- NULL
 appendToMessage <- NULL
@@ -129,6 +156,8 @@ res <- lapply(
   list.files(path = dir_R, pattern = ".R$", full.names = TRUE),
   source
 )
+
+mpiExecutor <- if (identical(swMode, "mpi")) detectMPIExecutor()
 
 
 #------ . ------
@@ -181,7 +210,8 @@ resTestRuns <- data.frame(
   CheckRun = "not run",
   MessageRun = "",
   CompToRef = "missing",
-  CompToWeather = "missing"
+  CompToWeather = "missing",
+  stringsAsFactors = FALSE
 )
 
 #--- Loop over testRuns ------
@@ -215,7 +245,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
 
   #--- * Execute testRun ------
-  res <- runSW2(sw2 = fname_sw2, path_inputs = dir_testRun)
+  res <- runSW2(
+    sw2 = fname_sw2,
+    path_inputs = dir_testRun,
+    mode = swMode,
+    nTasks = nTasks,
+    mpiExecutor = mpiExecutor
+  )
 
   hasSW2Error <- !is.null(res[["msg"]])
 
@@ -314,7 +350,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       testTolerance <- switch(
         EXPR = tolower(listTestRuns[k0, "inputVarType"]),
         float = sqrt(
-          (.Machine[["double.base"]] ^ (.Machine[["double.ulp.digits"]] / 2)) / 2
+          0.5 *
+            .Machine[["double.base"]] ^ (0.5 * .Machine[["double.ulp.digits"]])
         ),
         double = sqrt(.Machine[["double.eps"]])
       )
@@ -340,8 +377,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
           )
 
         if (
-          listTestRuns[k0, "simStartYear"] != 1980 ||
-            listTestRuns[k0, "simStartYear"] != 2010
+          listTestRuns[k0, "simStartYear"] != 1980L ||
+            listTestRuns[k0, "simStartYear"] != 2010L
         ) {
           # Only check common output files if simulation years differ
           ftmp <- list.files(
@@ -352,7 +389,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         }
 
 
-        #--- ....**** Compare example simulation subset to reference simulation output ------
+        #--- ....**** Compare example simulation subset to reference ------
         for (kr in seq_along(fnames_ref)) {
           msg <- try(
             compareNC(
@@ -370,21 +407,19 @@ for (k0 in seq_len(nrow(listTestRuns))) {
             silent = TRUE
           )
 
-          thisok <- !inherits(msg, "try-error") && nchar(msg) == 0L
+          thisok <- !inherits(msg, "try-error") && !nzchar(msg)
           ok <- ok && thisok
 
-          if (!thisok) {
-            if (nchar(msg) > 0L) {
-              tmp <- strsplit(
-                basename(fnames_ref[[kr]]), split = "_"
-              )[[1L]][[1L]]
+          if (!thisok && nzchar(msg)) {
+            tmp <- strsplit(
+              basename(fnames_ref[[kr]]), split = "_", fixed = TRUE
+            )[[1L]][[1L]]
 
-              if (!tmp %in% outkeysWithMsg) {
-                outkeysWithMsg <- c(outkeysWithMsg, tmp)
-                resTestRuns[k0, "MessageRun"] <- appendToMessage(
-                  hasMsg = resTestRuns[k0, "MessageRun"], newMsg = msg
-                )
-              }
+            if (!tmp %in% outkeysWithMsg) {
+              outkeysWithMsg <- c(outkeysWithMsg, tmp)
+              resTestRuns[k0, "MessageRun"] <- appendToMessage(
+                hasMsg = resTestRuns[k0, "MessageRun"], newMsg = msg
+              )
             }
           }
         }
@@ -454,10 +489,10 @@ for (k0 in seq_len(nrow(listTestRuns))) {
           silent = TRUE
         )
 
-        thisok <- !inherits(msg, "try-error") && nchar(msg) == 0L
+        thisok <- !inherits(msg, "try-error") && !nzchar(msg)
         ok <- ok && thisok
 
-        if (!thisok && nchar(msg) > 0L) {
+        if (!thisok && nzchar(msg)) {
           resTestRuns[k0, "MessageRun"] <- appendToMessage(
             hasMsg = resTestRuns[k0, "MessageRun"], newMsg = msg
           )
@@ -515,14 +550,15 @@ ids_failed <- c(
     res[["Expectation"]] == "success" & res[["CompToRef"]] == "missing"
   )
 ) |>
-  unique() |> sort()
+  unique() |>
+  sort()
 
 
 #--- * Warning details ------
 if (reportWarnings) {
   # Identify successful testRuns with warning messages
   ids_failedOrError <- c(ids_failed, which(res[["Expectation"]] == "error"))
-  ids_withMsg <- which(nchar(res[["MessageRun"]]) > 0L)
+  ids_withMsg <- which(nzchar(res[["MessageRun"]]))
   ids_okWithMsg <- setdiff(ids_withMsg, ids_failedOrError)
 
   if (length(ids_okWithMsg) > 0L) {
@@ -562,7 +598,7 @@ if (length(ids_failed) > 0L) {
 
     tmp <- paste0(
       tmp,
-      if (nchar(res[kr, "MessageRun"]) > 0L) {
+      if (nzchar(res[kr, "MessageRun"])) {
         paste0("\n\t** Messages: ", res[kr, "MessageRun"])
       },
       "\n"
