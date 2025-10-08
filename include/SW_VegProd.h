@@ -159,7 +159,10 @@ void calc_veg_predictor_vals(
 );
 
 void calc_CONUS_vegcov_2025(
-    SW_SOIL_SIM *ss, TimeInt yearIndex, SW_VEGPROD_SIM *vps
+    SW_SOIL_SIM *ss,
+    TimeInt yearIndex,
+    SW_VEGPROD_SIM *vps,
+    double *RelAbundanceL0
 );
 
 void update_veg_yearly(

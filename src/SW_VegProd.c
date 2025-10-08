@@ -716,18 +716,29 @@ void calc_veg_predictor_vals(
 }
 
 /**
-@brief Calculate updated vegetation cover values
+@brief Calculate vegetation cover
 
 @param[in] ss Struct of type SW_SOIL_SIM (soil sim -> ss) that holds constant
-predictor values for calculating updated vegetation values
+    predictor values for calculating updated vegetation values
 @param[in] yearIndex Index value specifying which place the year is in the
-simulation process (i.e., [0, n years) )
-@param[out] vps Struct of type SW_VEGPROD_SIM (VegProd sim -> vps) that holds
-information used and/or modified mainly during simulation runs; update
-vegetation values for current year of simulation runs
+    simulation process (i.e., [0, n years) )
+@param[in] vps Struct of type SW_VEGPROD_SIM (VegProd sim -> vps) with
+    short- and long-term climate values
+@param[out] RelAbundanceL0 Array of size seven with calculated cover values.
+    The elements are:
+        -# needle-leaved tree "treeNL",
+        -# broad-leaved tree "treeBL",
+        -# shrub,
+        -# forbs,
+        -# C3-grass "grassC3",
+        -# C4-grass "grassC4",
+        -# bare ground
 */
 void calc_CONUS_vegcov_2025(
-    SW_SOIL_SIM *ss, TimeInt yearIndex, SW_VEGPROD_SIM *vps
+    SW_SOIL_SIM *ss,
+    TimeInt yearIndex,
+    SW_VEGPROD_SIM *vps,
+    double *RelAbundanceL0
 ) {
     double ecoregionForest;
     double totalHerbaceousCoverNonForest;
@@ -1108,6 +1119,14 @@ void calc_CONUS_vegcov_2025(
         scaledBroadLeavedTreeCoverProportion / 100 * finalTotalTreeCoverCover;
     finalNeedleLeavedTreeCover =
         scaledNeedleLeavedTreeCoverProportion / 100 * finalTotalTreeCoverCover;
+
+    RelAbundanceL0[0] = finalNeedleLeavedTreeCover;
+    RelAbundanceL0[1] = finalBroadLeavedTreeCover;
+    RelAbundanceL0[2] = finalShrubCover;
+    RelAbundanceL0[3] = finalForbCover;
+    RelAbundanceL0[4] = finalGrassC3Cover;
+    RelAbundanceL0[5] = finalGrassC4Cover;
+    RelAbundanceL0[6] = finalBareGroundCover;
 }
 
 /**
@@ -1141,6 +1160,8 @@ void update_veg_yearly(
     Bool annTempOnly,
     SW_VEGPROD_SIM *SW_VegProdSim
 ) {
+    double RelAbundanceL0[7];
+
     // Update the yearly arrays to hold current year information
     calc_yearly_hist_vals(
         SW_YearWeathHist, SW_ModelSim, yearIndex, annTempOnly, SW_VegProdSim
@@ -1162,7 +1183,9 @@ void update_veg_yearly(
         );
 
         // Update vegetation values
-        calc_CONUS_vegcov_2025(SW_SoilSim, yearIndex, SW_VegProdSim);
+        calc_CONUS_vegcov_2025(
+            SW_SoilSim, yearIndex, SW_VegProdSim, RelAbundanceL0
+        );
     }
 }
 
