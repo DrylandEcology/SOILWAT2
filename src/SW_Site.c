@@ -1745,7 +1745,7 @@ void SW_SIT_read(
             SW_SiteIn->use_soil_temp = itob(intRes);
             break;
         case 33:
-            SW_SiteIn->methodSurfaceTemperature = intRes;
+            SW_SiteIn->methodSurfaceTemperature = (unsigned int) intRes;
             break;
 
         case 34:
@@ -1801,7 +1801,7 @@ void SW_SIT_read(
             break;
 
         case 39:
-            SW_SiteIn->type_soilDensityInput = intRes;
+            SW_SiteIn->type_soilDensityInput = (unsigned int) intRes;
             break;
 
         case 40:
@@ -2317,7 +2317,7 @@ void derive_TranspRgnBounds(
         // It becomes the bound.
         while (layer < n_layers && LE(totalDepth, TranspRgnDepths[i]) &&
                LE((totalDepth + width[layer]), TranspRgnDepths[i]) &&
-               sum_across_vegtypes(transp_coeff, layer)) {
+               sum_across_vegtypes(transp_coeff, layer) > 0) {
             totalDepth += width[layer];
             layer++;
             TranspRgnBounds[i] = layer; // TranspRgnBounds is base1

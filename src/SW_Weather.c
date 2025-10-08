@@ -845,7 +845,7 @@ void SW_WTH_setWeatherValues(
 
             if (hasMaxMinTempValues) {
                 // Swap min/max if min > max daily air temperature
-                if (fixWeatherData[fixMINMAX] &&
+                if (fixWeatherData[idFixMINMAX] &&
                     yearlyWeather[yearIndex].temp_min[doy] >
                         yearlyWeather[yearIndex].temp_max[doy]) {
 
@@ -884,7 +884,7 @@ void SW_WTH_setWeatherValues(
                 // Error or reset cloud cover to 100% if >100%
                 helperPercentValue(
                     &yearlyWeather[yearIndex].cloudcov_daily[doy],
-                    fixWeatherData[fixPERCENT],
+                    fixWeatherData[idFixPERCENT],
                     "cloud cover",
                     startYear + yearIndex,
                     doy,
@@ -928,7 +928,7 @@ void SW_WTH_setWeatherValues(
                         )) {
 
                         // Swap min/max if min > max daily relative humidity
-                        if (fixWeatherData[fixMINMAX] &&
+                        if (fixWeatherData[idFixMINMAX] &&
                             tempWeather[yearIndex][REL_HUMID_MIN][tempDoy] >
                                 tempWeather[yearIndex][REL_HUMID_MAX]
                                            [tempDoy]) {
@@ -959,7 +959,7 @@ void SW_WTH_setWeatherValues(
                         // if >100%
                         helperPercentValue(
                             &tempWeather[yearIndex][REL_HUMID_MAX][tempDoy],
-                            fixWeatherData[fixPERCENT],
+                            fixWeatherData[idFixPERCENT],
                             "max relative humidity",
                             startYear + yearIndex,
                             doy,
@@ -969,7 +969,7 @@ void SW_WTH_setWeatherValues(
                         );
                         helperPercentValue(
                             &tempWeather[yearIndex][REL_HUMID_MIN][tempDoy],
-                            fixWeatherData[fixPERCENT],
+                            fixWeatherData[idFixPERCENT],
                             "min relative humidity",
                             startYear + yearIndex,
                             doy,
@@ -1027,7 +1027,7 @@ void SW_WTH_setWeatherValues(
                 // Error or reset relative humidity to 100% if >100%
                 helperPercentValue(
                     &yearlyWeather[yearIndex].r_humidity_daily[doy],
-                    fixWeatherData[fixPERCENT],
+                    fixWeatherData[idFixPERCENT],
                     "relative humidity",
                     startYear + yearIndex,
                     doy,
@@ -1127,7 +1127,7 @@ void SW_WTH_setWeatherValues(
                         // Error or reset relative humidity to 100% if >100%
                         helperPercentValue(
                             &yearlyWeather[yearIndex].r_humidity_daily[doy],
-                            fixWeatherData[fixPERCENT],
+                            fixWeatherData[idFixPERCENT],
                             "relative humidity",
                             startYear + yearIndex,
                             doy,
@@ -1140,8 +1140,7 @@ void SW_WTH_setWeatherValues(
             }
 
             if (inputFlags[SHORT_WR]) {
-                /* fixMAXRSDS if requested is applied by solar_radiation()
-                 */
+                /* fixMAXRSDS if requested is applied by solar_radiation() */
                 yearlyWeather[yearIndex].shortWaveRad[doy] =
                     tempWeather[yearIndex][SHORT_WR][tempDoy];
             }
@@ -2486,19 +2485,19 @@ void SW_WTH_setup(
             break;
 
         case 4:
-            SW_WeatherIn->rng_seed = inBufintRes;
+            SW_WeatherIn->rng_seed = (size_t) inBufintRes;
             break;
 
         case 5:
-            SW_WeatherIn->fixWeatherData[fixMINMAX] = itob(inBufintRes);
+            SW_WeatherIn->fixWeatherData[idFixMINMAX] = itob(inBufintRes);
             break;
 
         case 6:
-            SW_WeatherIn->fixWeatherData[fixPERCENT] = itob(inBufintRes);
+            SW_WeatherIn->fixWeatherData[idFixPERCENT] = itob(inBufintRes);
             break;
 
         case 7:
-            SW_WeatherIn->fixWeatherData[fixMAXRSDS] = itob(inBufintRes);
+            SW_WeatherIn->fixWeatherData[idFixMAXRSDS] = itob(inBufintRes);
             break;
 
         case 8:
@@ -2570,7 +2569,7 @@ void SW_WTH_setup(
             break;
 
         case 25:
-            SW_WeatherIn->desc_rsds = inBufintRes;
+            SW_WeatherIn->desc_rsds = (unsigned int) inBufintRes;
             break;
 
 
@@ -2949,7 +2948,7 @@ void read_weather_hist(
      */
 
     FILE *f;
-    unsigned int x;
+    int x;
     unsigned int lineno = 0;
     unsigned int index;
     int doy = 0;
@@ -3004,7 +3003,7 @@ void read_weather_hist(
             weathInStrs[14]
         );
 
-        if (x != n_input_forcings + 1) {
+        if (x < 0 || (unsigned) x != n_input_forcings + 1) {
             LogError(
                 LogInfo,
                 LOGERROR,

@@ -229,7 +229,7 @@ void SW_NC_create_units_converters(
     Bool *reqVars[],
     char ***varInfo[],
     Bool out_use[],
-    int numVars[],
+    unsigned int numVars[],
     int varNameInd,
     int varUnitsInd,
     LOG_INFO *LogInfo

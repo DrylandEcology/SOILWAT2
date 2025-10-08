@@ -122,7 +122,7 @@ void SW_WT_TimeRun(WallTimeSpec ts, Bool ok_ts, int timeSec, SW_WALLTIME *wt);
 
 void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo);
 
-void timeStringISO8601(char *timeString, int stringLength);
+void timeStringISO8601(char *timeString, unsigned int stringLength);
 
 #ifdef __cplusplus
 }

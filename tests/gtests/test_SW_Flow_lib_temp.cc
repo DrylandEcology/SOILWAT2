@@ -826,7 +826,6 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureTodayFunction) {
 // is only called in the soil_temperature function
 TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
     SW_ST_SIM SW_StRegSimVals;
-    SW_ST_init_run(&SW_StRegSimVals);
 
     SW_SITE_INPUTS SW_SiteIn;
     SW_SITE_SIM SW_SiteSim;
@@ -893,6 +892,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
     SW_SiteSim.swcBulk_saturated[0] = 1.5;
 
 
+    SW_ST_init_run(&SW_StRegSimVals);
     SW_ST_setup_run(
         &SW_StRegSimVals,
         &SW_SoilRunIn,
@@ -1116,6 +1116,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
 
     meanTempAir = 1500.;
 
+    SW_ST_init_run(&SW_StRegSimVals);
     SW_ST_setup_run(
         &SW_StRegSimVals,
         &SW_SoilRunIn,
@@ -1189,7 +1190,6 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
     SW_SITE_RUN_INPUTS SW_SiteRunIn;
     SW_SOIL_RUN_INPUTS SW_SoilRunIn;
     SW_ST_SIM SW_StRegSimVals;
-    SW_ST_init_run(&SW_StRegSimVals);
 
     LOG_INFO LogInfo;
     // Initialize logs and silence warn/error reporting
@@ -1288,6 +1288,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
 
     SW_SiteRunIn.Tsoil_constant = 4.15;
 
+    SW_ST_init_run(&SW_StRegSimVals);
     SW_ST_setup_run(
         &SW_StRegSimVals,
         &SW_SoilRunIn,

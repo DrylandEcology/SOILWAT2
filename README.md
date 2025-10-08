@@ -1,18 +1,20 @@
 <!-- badges: start -->
-[![gh nix build status][1]][2]
-[![gh win build status][3]][2]
+[![status][1]][2]
+[![tidy][3]][13]
 [![github release][5]][6]
 [![DOI][7]][8]
 [![license][9]][10]
 [![codecov status][11]][12]
-[![doc status][4]][2]
+[![doc status][4]][14]
 <!-- badges: end -->
 
 
-[1]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/main_nix.yml/badge.svg?branch=master
-[2]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows
-[3]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/main_win.yml/badge.svg?branch=master
-[4]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/check_doc.yml/badge.svg?branch=master
+[1]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/simulation-checks.yml/badge.svg
+[2]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/simulation-checks.yml
+[3]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/clang-tidy-check.yml/badge.svg
+[13]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/clang-tidy-check.yml
+[4]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/check_doc.yml/badge.svg?
+[14]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/check_doc.yml
 
 [5]: https://img.shields.io/github/release/DrylandEcology/SOILWAT2.svg
 [6]: https://github.com/DrylandEcology/SOILWAT2/releases
@@ -43,9 +45,9 @@ SOILWAT2 is an ecosystem water balance simulation model.
 This repository of `SOILWAT2` contains the same code that is
 used by [rSOILWAT2][] and [STEPWAT2][].
 
-If you utilize this model, please cite appropriate references, and we would
-like to hear about your particular study (especially a copy of any published
-paper).
+If you utilize this model, please cite the code (DOI 10.5281/zenodo.3352249),
+appropriate references, and we would like to hear about your particular study
+(especially a copy of any published paper).
 
 
 Some references
@@ -88,8 +90,8 @@ A full code documentation may be built, see [here](#get_documentation).
 ### Compilation
   * Requirements:
     - the `gcc` or `clang/llvm` toolchains compliant with `C99`
-      - for unit tests (using `googletest`)
-        - toolchains compliant with `C++17`
+      - for unit tests (using `googletest`) and debugging
+        - toolchains compliant with `C++17` (>= `gcc13`, >= `clang-15`)
         - `POSIX API`
     - GNU-compliant `make`
     - On Windows OS: an installation of `cygwin`

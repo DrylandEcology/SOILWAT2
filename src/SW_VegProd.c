@@ -1558,7 +1558,7 @@ void SW_VPD_read(
             /* Calendar year corresponding to vegetation inputs */
             case 32:
                 SW_VegProdIn->vegYear =
-                    sw_strtoi(vegStrs[0], MyFileName, LogInfo);
+                    (TimeInt) sw_strtoi(vegStrs[0], MyFileName, LogInfo);
                 if (LogInfo->stopRun) {
                     goto closeFile;
                 }

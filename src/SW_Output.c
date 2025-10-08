@@ -2878,8 +2878,8 @@ int SW_OUT_read_onekey(
     SW_OUT_DOM *OutDom,
     OutKey k,
     OutSum sumtype,
-    int first,
-    int last,
+    TimeInt first,
+    TimeInt last,
     char msg[],
     size_t sizeof_msg,
     Bool *VegProd_use_SWA,
@@ -3053,7 +3053,7 @@ void SW_OUT_read(
     char upkey[50];
     char upsum[4];
     char inbuf[MAX_FILENAMESIZE];
-    int first;
+    TimeInt first;
     int last = -1;                             /* first doy for output */
     const int numReadInKeys = SW_OUTNKEYS - 4; /* 4 outkeys without output */
     const int outDirLineNo = numReadInKeys + 2;
@@ -3094,7 +3094,7 @@ void SW_OUT_read(
                 // strings, unlike the original scan
 
                 // maximum number of possible timeStep is SW_OUTNPERIODS
-                *used_OUTNPERIODS = sscanf(
+                *used_OUTNPERIODS = (IntUS) sscanf(
                     inbuf,
                     "%9s %9s %9s %9s %9s",
                     keyname,
@@ -3157,7 +3157,7 @@ void SW_OUT_read(
                 goto closeFile;
             }
 
-            first = sw_strtoi(firstStr, MyFileName, LogInfo);
+            first = (TimeInt) sw_strtoi(firstStr, MyFileName, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
@@ -3192,7 +3192,8 @@ void SW_OUT_read(
                 k,
                 str2stype(Str_ToUpper(sumtype, upsum), LogInfo),
                 first,
-                (Str_CompareI(lastStr, (char *) "END") == 0) ? 366 : last,
+                (Str_CompareI(lastStr, (char *) "END") == 0) ? 366 :
+                                                               (TimeInt) last,
                 msg,
                 sizeof msg,
                 &sw->VegProdIn.use_SWA,
@@ -3491,7 +3492,7 @@ void SW_OUT_write_today(
     char tempstr[MAX_LAYERS * OUTSTRLEN];
     int k;
     int i;
-    int outPeriod;
+    OutPeriod outPeriod;
 
 #ifdef SW_OUTTEXT
     Bool fullBuffer = swFALSE;
@@ -4046,8 +4047,8 @@ void echo_outputs(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         (char *) key2str[0], /* Overwrite in loop below */
         (char *) "\n\tSummary Type: ",
         (char *) styp2str[0], /* Overwrite in loop below */
-        (char *) "\n\tStart period: %d",
-        (char *) "\n\tEnd period  : %d\n"
+        (char *) "\n\tStart period: %u",
+        (char *) "\n\tEnd period  : %u\n"
     };
 
     TimeInt writeVals[] = {
@@ -4063,20 +4064,20 @@ void echo_outputs(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     }
 
     ForEachOutKey(k) {
-        if (OutDom->use[k]) {
-            writeStrs[1] = (char *) key2str[k];
-            writeStrs[3] = (char *) styp2str[OutDom->sumtype[k]];
-
-            writeVals[0] = OutDom->first_orig[k];
-            writeVals[0] = OutDom->last_orig[k];
-        } else {
+        if (!OutDom->use[k]) {
             continue;
         }
+
+        writeStrs[1] = (char *) key2str[k];
+        writeStrs[3] = (char *) styp2str[OutDom->sumtype[k]];
+
+        writeVals[0] = OutDom->first_orig[k];
+        writeVals[1] = OutDom->last_orig[k];
 
         for (index = 0; index < numWriteStrs; index++) {
             cpyPtr = writeStrs[index];
 
-            if (index > 4) {
+            if (index >= 4) {
                 (void
                 ) snprintf(str, OUTSTRLEN, cpyPtr, writeVals[writeValIndex]);
 
@@ -4153,8 +4154,8 @@ void SW_PATHOUT_deepCopy(
 
     int key;
     OutPeriod pd;
-    int numVars;
-    int var;
+    IntUS numVars;
+    IntUS var;
     unsigned int fileNum;
     unsigned int numFiles = source_files->numOutFiles;
     char **destFile = NULL;

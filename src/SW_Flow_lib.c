@@ -495,7 +495,7 @@ void transp_weighted_avg(
     LyrIndex n_layers,
     const unsigned int tr_regions[],
     double swc[],
-    int VegType,
+    unsigned int VegType,
     LOG_INFO *LogInfo
 ) {
 
@@ -3371,7 +3371,7 @@ void soil_temperature(
             LogError(
                 LogInfo,
                 LOGWARN,
-                "%d-%d: soil temperature (%f [C]) in layer %d "
+                "%d-%d: soil temperature (%e [C]) in layer %d "
                 "outside [-100,100] [C].",
                 year,
                 doy,
