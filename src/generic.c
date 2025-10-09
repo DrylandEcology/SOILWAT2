@@ -525,5 +525,5 @@ double correlation_coefficient(
         ySquSum += ((yArray[index] - yMean) * (yArray[index] - yMean));
     }
 
-    return prodSum / (xSquSum * ySquSum);
+    return prodSum / sqrt((xSquSum * ySquSum));
 }
