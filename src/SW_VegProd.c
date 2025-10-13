@@ -1832,6 +1832,8 @@ void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
         }
     }
 
+    sw->VegProdSim.shortIndex = sw->VegProdSim.longIndex = 0;
+
     if (veg_method == VEG_METHOD_LONG_EST) {
         /* static veg: estimated from simulation-wide climate */
         estimateVegetationFromClimate(
