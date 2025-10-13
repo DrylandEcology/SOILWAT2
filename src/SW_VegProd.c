@@ -600,13 +600,13 @@ void calc_veg_predictor_vals(
         &SW_VegProdSim->rateAnomPrecipDriestMon
     };
 
-    double *anomCalcVals[] = {// Precip-temp anomaly vals
-                              &SW_VegProdSim->annTempPrecipLongAvg,
-                              &SW_VegProdSim->annTempPrecipShortAvg,
-
-                              // Isothermality anomaly vals
+    double *anomCalcVals[] = {// Isothermality anomaly vals
                               &SW_VegProdSim->annIsothermLongAvg,
                               &SW_VegProdSim->annIsothermShortAvg,
+
+                              // Precip-temp anomaly vals
+                              &SW_VegProdSim->annTempPrecipLongAvg,
+                              &SW_VegProdSim->annTempPrecipShortAvg,
 
                               // Water deficit anomaly vals
                               &SW_VegProdSim->annWaterDefLongAvg,
@@ -615,8 +615,8 @@ void calc_veg_predictor_vals(
 
     double *rateAnomCalcVals[] = {
         // Seasonality precip rate of anomaly vals
-        &SW_VegProdSim->annPrecipDriestMonLongAvg,
-        &SW_VegProdSim->annPrecipDriestMonShortAvg,
+        &SW_VegProdSim->annSeasonPrecipLongAvg,
+        &SW_VegProdSim->annSeasonPrecipShortAvg,
 
         // Precip rate of anomaly vals
         &SW_VegProdSim->annPrecipLongAvg,
@@ -789,6 +789,7 @@ void calc_CONUS_vegcov_2025(
     double weighMeanCoarseFrag = ss->percCoarseFrag;
     double awhc = ss->totAWHC;
     double anomCorTempPrecip = vps->anomTempPrecipCorr;
+    double annCorTempPrecip = vps->annTempPrecipLongAvg;
     double anomIsotherm = vps->anomIsotherm;
     double anomWatDef = vps->anomWaterDef;
     double annPrecip = vps->annPrecipLongAvg;
@@ -812,7 +813,7 @@ void calc_CONUS_vegcov_2025(
     double zstaIsothermality = (anomIsotherm - 0.538807833) / 1.422356333;
     double zstaWaterDeficit = (anomWatDef + 0.119596687) / 0.424434636;
     double zltPrecip = (annPrecip - 613.900118155) / 502.187690606;
-    double zltCorPrTas = (anomCorTempPrecip + 0.120988193) / 0.410662268;
+    double zltCorPrTas = (annCorTempPrecip + 0.120988193) / 0.410662268;
     double zstraPrecipSeasonality =
         (anomRateSeasonPrecip + 0.025697534) / 0.132964252;
     double zSurfaceSOC = (percSOC - 3.681945502) / 6.405262851;
@@ -2040,12 +2041,14 @@ void SW_VPD_new_year(
     double biomassAsIf100Cover[MAX_MONTHS];
     double litterAsIf100Cover[MAX_MONTHS];
 
-    if (allocAnnTemp || veg_method == VEG_METHOD_DYN_EST) {
+    // Do not include current year in calculation unless it's the
+    // first year
+    if ((allocAnnTemp || veg_method == VEG_METHOD_DYN_EST) && yearIndex != 1) {
         update_veg_yearly(
             &SW_YearWeathHist[yearIndex],
             SW_ModelSim,
             SW_SoilSim,
-            yearIndex,
+            (yearIndex == 0) ? 0 : yearIndex - 1,
             nYearsDynamicShort,
             nYearsDynamicLong,
             annTempOnly,
