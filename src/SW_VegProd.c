@@ -1110,16 +1110,15 @@ void calc_CONUS_vegcov_2025(
     finalBareGroundCover = bareGroundCover / sumTotal;
 
     finalGrassC3Cover =
-        scaledGrassC3CoverProportion / 100 * finalTotalHerbaceousCover;
+        scaledGrassC3CoverProportion * finalTotalHerbaceousCover;
     finalGrassC4Cover =
-        scaledGrassC4CoverProportion / 100 * finalTotalHerbaceousCover;
-    finalForbCover =
-        scaledForbCoverProportion / 100 * finalTotalHerbaceousCover;
+        scaledGrassC4CoverProportion * finalTotalHerbaceousCover;
+    finalForbCover = scaledForbCoverProportion * finalTotalHerbaceousCover;
 
     finalBroadLeavedTreeCover =
-        scaledBroadLeavedTreeCoverProportion / 100 * finalTotalTreeCoverCover;
+        scaledBroadLeavedTreeCoverProportion * finalTotalTreeCoverCover;
     finalNeedleLeavedTreeCover =
-        scaledNeedleLeavedTreeCoverProportion / 100 * finalTotalTreeCoverCover;
+        scaledNeedleLeavedTreeCoverProportion * finalTotalTreeCoverCover;
 
     RelAbundanceL0[0] = finalNeedleLeavedTreeCover;
     RelAbundanceL0[1] = finalBroadLeavedTreeCover;
