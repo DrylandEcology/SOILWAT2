@@ -171,7 +171,8 @@ void update_veg_yearly(
     TimeInt nYearsDynamicShort,
     TimeInt nYearsDynamicLong,
     Bool annTempOnly,
-    SW_VEGPROD_SIM *SW_VegProdSim
+    SW_VEGPROD_SIM *SW_VegProdSim,
+    SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn
 );
 
 
@@ -193,7 +194,7 @@ void SW_VPD_new_year(
     TimeInt nYearsDynamicShort,
     TimeInt nYearsDynamicLong,
     unsigned int methodMaxDepthSoilTemperature,
-    VegTypeRunIn vegRunIn[],
+    SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,
     VegTypeSim vegSim[],
     VegTypeIn vegIn[]
 );

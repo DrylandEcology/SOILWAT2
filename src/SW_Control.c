@@ -264,7 +264,7 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         sw->VegProdIn.nYearsDynamicShort,
         sw->VegProdIn.nYearsDynamicLong,
         sw->SiteIn.methodMaxDepthSoilTemperature,
-        sw->RunIn.VegProdRunIn.veg,
+        &sw->RunIn.VegProdRunIn,
         sw->VegProdSim.veg,
         sw->VegProdIn.veg
     );

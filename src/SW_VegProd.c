@@ -1145,6 +1145,8 @@ annual temperature arrays
 @param[out] SW_VegProdSim Struct of type SW_VEGPROD_SIM that holds information
 used and/or modified mainly during simulation runs; dynamic arrays will have a
 new value for this year
+@param[out] SW_VegProdRunIn Struct of type SW_VEGPROD_RUN_INPUTS that
+    holds run-specific input information about vegetation production
 */
 void update_veg_yearly(
     SW_SOIL_SIM *SW_SoilSim,
@@ -1152,7 +1154,8 @@ void update_veg_yearly(
     TimeInt nYearsDynamicShort,
     TimeInt nYearsDynamicLong,
     Bool annTempOnly,
-    SW_VEGPROD_SIM *SW_VegProdSim
+    SW_VEGPROD_SIM *SW_VegProdSim,
+    SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn
 ) {
     double RelAbundanceL0[7];
 
@@ -1175,6 +1178,19 @@ void update_veg_yearly(
         calc_CONUS_vegcov_2025(
             SW_SoilSim, yearIndex, SW_VegProdSim, RelAbundanceL0
         );
+
+        // trees = needle-leaved + broad-leaved trees
+        SW_VegProdRunIn->veg[SW_TREES].cov.fCover =
+            RelAbundanceL0[0] + RelAbundanceL0[1];
+
+        SW_VegProdRunIn->veg[SW_SHRUB].cov.fCover = RelAbundanceL0[2];
+        SW_VegProdRunIn->veg[SW_FORBS].cov.fCover = RelAbundanceL0[3];
+
+        // grass = C3-grasses + C4-grasses
+        SW_VegProdRunIn->veg[SW_GRASS].cov.fCover =
+            RelAbundanceL0[4] + RelAbundanceL0[5];
+
+        SW_VegProdRunIn->bare_cov.fCover = RelAbundanceL0[6];
     }
 }
 
@@ -1969,8 +1985,8 @@ maximum depth:
         0 (user provided value);
         1 (dynamically calculated from a moving long-term mean annual air
            temperature, see `nYearsDynamicLong` from veg.in)
-@param[out] vegRunIn Array of size NVEGTYPES of type VegTypeRunIn describing
-    all NVEGTYPES vegetation types through simulation-specific inputs
+@param[out] SW_VegProdRunIn Struct of type SW_VEGPROD_RUN_INPUTS that
+    holds run-specific input information about vegetation production
 @param[out] vegSim Array of size NVEGTYPES of type VegTypeSim describing
     all NVEGTYPES vegetation types through values used purely during simulation
 @param[out] vegIn Array of size NVEGTYPES of type VegTypeIn describing
@@ -1988,7 +2004,7 @@ void SW_VPD_new_year(
     TimeInt nYearsDynamicShort,
     TimeInt nYearsDynamicLong,
     unsigned int methodMaxDepthSoilTemperature,
-    VegTypeRunIn vegRunIn[],
+    SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,
     VegTypeSim vegSim[],
     VegTypeIn vegIn[]
 ) {
@@ -2019,6 +2035,8 @@ void SW_VPD_new_year(
     Bool annTempOnly =
         (Bool) (allocAnnTemp && veg_method != VEG_METHOD_DYN_EST);
 
+    VegTypeRunIn *vegRunIn = SW_VegProdRunIn->veg; // array of NVEGTYPES
+
     // Interpolation is to be in base1 in `interpolate_monthlyValues()`
     Bool interpAsBase1 = swTRUE;
 
@@ -2028,6 +2046,7 @@ void SW_VPD_new_year(
     /* Monthly biomass at 100% cover */
     double biomassAsIf100Cover[MAX_MONTHS];
     double litterAsIf100Cover[MAX_MONTHS];
+
 
     /* Update dynamic vegetation or boundary conditions of soil temperature */
     if ((allocAnnTemp || veg_method == VEG_METHOD_DYN_EST)) {
@@ -2052,7 +2071,8 @@ void SW_VPD_new_year(
                 nYearsDynamicShort,
                 nYearsDynamicLong,
                 annTempOnly,
-                SW_VegProdSim
+                SW_VegProdSim,
+                SW_VegProdRunIn
             );
         }
     }
