@@ -166,8 +166,6 @@ void calc_CONUS_vegcov_2025(
 );
 
 void update_veg_yearly(
-    SW_WEATHER_HIST *SW_YearWeathHist,
-    SW_MODEL_SIM *SW_ModelSim,
     SW_SOIL_SIM *SW_SoilSim,
     TimeInt yearIndex,
     TimeInt nYearsDynamicShort,

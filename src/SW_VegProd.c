@@ -311,6 +311,10 @@ void calc_const_dynamic_veg_info(
 @brief Calculate and store yearly values within SW_VEGPROD_SIM's dynamic
 arrays that hold a yearly history of annual climate information
 
+Note: \p SW_ModelSim and \p SW_WeathHist must represent the same year.
+In particular, SW_MDL_new_year() must have been called to correctly set up
+\p SW_ModelSim for the year.
+
 @param[in] SW_WeathHist Array containing all historical data of a site
 @param[in] SW_ModelSim Struct of type SW_MODEL_SIM holding basic
 intermediate time information about the simulation run
@@ -480,34 +484,30 @@ static void calc_annTempLongAvg(
     /* Check if we have enough values to make a full average for the
        term in which we are taking the average of */
     if (yearIndex + 1 > nYearsDynamicLong) {
-        /*
-            Calculate the new average by converting the average into a sum,
+        /* Calculate the new average by converting the average into a sum,
             removing the oldest value, adding the newest value, and
             converting the sum into an average
             This method simplies how we calculate the moving window
-            average to be more constant in computation time
-        */
+            average to be more constant in computation time */
         *annTempLongAvg *= nYearsDynamicLong;
         *annTempLongAvg -= SW_VegProdSim->annTemp[termIndex];
         *annTempLongAvg += SW_VegProdSim->annTemp[yearIndex];
         *annTempLongAvg /= nYearsDynamicLong;
+
+        SW_VegProdSim->longIndex++;
+
     } else {
-        /*
-            Since we do not have enough years to compute the whole average,
+        /* Since we do not have enough years to compute the whole average,
             we keep a running average until we have enough years
             Do this by converting the running average into a sum
             (number of years currently within the sum), add the new
             value, and retake the average with the new number
-            of years in the sum (yearIndex + 1)
-        */
+            of years in the sum (yearIndex + 1) */
         *annTempLongAvg *= (yearIndex);
         *annTempLongAvg += SW_VegProdSim->annTemp[yearIndex];
         *annTempLongAvg /= (yearIndex + 1);
     }
 
-    if (yearIndex + 1 > nYearsDynamicLong) {
-        SW_VegProdSim->longIndex++;
-    }
 }
 
 /**
@@ -1132,10 +1132,6 @@ void calc_CONUS_vegcov_2025(
 /**
 @brief Wrapper function to update vegetation for the current year
 
-@param[in] SW_YearWeathHist Current year's array containing all historical
-data of a site
-@param[in] SW_ModelSim Struct of type SW_MODEL_SIM holding basic
-intermediate time information about the simulation run
 @param[in] SW_SoilSim Struct of type SW_SOIL_SIM holding constant soil content
 information that will be used during simulations
 @param[in] yearIndex Index value specifying which place the year is in the
@@ -1151,8 +1147,6 @@ used and/or modified mainly during simulation runs; dynamic arrays will have a
 new value for this year
 */
 void update_veg_yearly(
-    SW_WEATHER_HIST *SW_YearWeathHist,
-    SW_MODEL_SIM *SW_ModelSim,
     SW_SOIL_SIM *SW_SoilSim,
     TimeInt yearIndex,
     TimeInt nYearsDynamicShort,
@@ -1161,11 +1155,6 @@ void update_veg_yearly(
     SW_VEGPROD_SIM *SW_VegProdSim
 ) {
     double RelAbundanceL0[7];
-
-    // Update the yearly arrays to hold current year information
-    calc_yearly_hist_vals(
-        SW_YearWeathHist, SW_ModelSim, yearIndex, annTempOnly, SW_VegProdSim
-    );
 
     if (annTempOnly) {
         // Calculate long-term mean temperature
@@ -2040,22 +2029,36 @@ void SW_VPD_new_year(
     double biomassAsIf100Cover[MAX_MONTHS];
     double litterAsIf100Cover[MAX_MONTHS];
 
-    // Do not include current year in calculation unless it's the
-    // first year
-    if ((allocAnnTemp || veg_method == VEG_METHOD_DYN_EST) && yearIndex != 1) {
-        update_veg_yearly(
+    /* Update dynamic vegetation or boundary conditions of soil temperature */
+    if ((allocAnnTemp || veg_method == VEG_METHOD_DYN_EST)) {
+        /* Calculate annual predictor with weather of current year */
+        calc_yearly_hist_vals(
             &SW_YearWeathHist[yearIndex],
             SW_ModelSim,
-            SW_SoilSim,
-            (yearIndex == 0) ? 0 : yearIndex - 1,
-            nYearsDynamicShort,
-            nYearsDynamicLong,
+            yearIndex,
             annTempOnly,
             SW_VegProdSim
         );
+
+        /* Calculate across-year predictors and update vegetation
+            * first year: use annual predictors based on current year
+            * later years: use annual predictors based on previous year(s)
+              (skip second year because the same as first year)
+        */
+        if (yearIndex != 1) {
+            update_veg_yearly(
+                SW_SoilSim,
+                (yearIndex == 0) ? 0 : yearIndex - 1,
+                nYearsDynamicShort,
+                nYearsDynamicLong,
+                annTempOnly,
+                SW_VegProdSim
+            );
+        }
     }
 
-    // Grab the real year so we can access CO2 data
+
+    /* Calculate daily vegetation from monthly & adjust for aCO2 */
     ForEachVegType(k) {
         if (GT(vegRunIn[k].cov.fCover, 0.)) {
 
@@ -2140,6 +2143,8 @@ void SW_VPD_new_year(
         }
     }
 
+
+    /* Calculate additional daily vegetation variables */
     for (doy = 1; doy <= MAX_DAYS; doy++) {
         ForEachVegType(k) {
             if (GT(vegRunIn[k].cov.fCover, 0.)) {
