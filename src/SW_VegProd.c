@@ -720,8 +720,6 @@ void calc_veg_predictor_vals(
 
 @param[in] ss Struct of type SW_SOIL_SIM (soil sim -> ss) that holds constant
     predictor values for calculating updated vegetation values
-@param[in] yearIndex Index value specifying which place the year is in the
-    simulation process (i.e., [0, n years) )
 @param[in] vps Struct of type SW_VEGPROD_SIM (VegProd sim -> vps) with
     short- and long-term climate values
 @param[out] RelAbundanceL0 Array of size seven with calculated cover values.
@@ -735,10 +733,7 @@ void calc_veg_predictor_vals(
         -# bare ground
 */
 void calc_CONUS_vegcov_2025(
-    SW_SOIL_SIM *ss,
-    TimeInt yearIndex,
-    SW_VEGPROD_SIM *vps,
-    double *RelAbundanceL0
+    SW_SOIL_SIM *ss, SW_VEGPROD_SIM *vps, double *RelAbundanceL0
 ) {
     double ecoregionForest;
     double totalHerbaceousCoverNonForest;
@@ -781,6 +776,25 @@ void calc_CONUS_vegcov_2025(
 
     double tempVal;
 
+    /* Naming scheme of predictor variables
+        * Predictor types
+            * lt = longterm: long-term average conditions of annual values,
+              e.g., mean across 30 years
+            * st = shortterm: short-term average conditions of annual values,
+              e.g., mean across 3 years
+            * a = anomaly: difference between long-term average conditions
+              and short-term average conditions, i.e., lt - st
+            * ra = anomaly%: relative difference between long-term average
+              conditions and short-term average conditions relative to
+              long-term conditions, i.e., (lt - st) / lt
+            * c = constant: conditions that do not change over time
+
+        * Centering and scaling
+            * z = prefix if predictor is centered and scaled,
+              i.e., (predictor - centering) / scaling
+            * o = prefix if predictor is on original scale
+    */
+
     double annTemp = vps->annTempLongAvg;
     double annSeasonPrecip = vps->annSeasonPrecipLongAvg;
     double annIsotherm = vps->annIsothermLongAvg;
@@ -800,6 +814,13 @@ void calc_CONUS_vegcov_2025(
     double annWDD = vps->annWetDegDaysLongAvg;
     double anomRateWDD = vps->rateAnomWetDegDays;
     double percSOC = ss->surfaceOM * .58;
+
+    double oltTempWarmestMonth = vps->annTempWarmestMonLongAvg;
+    double oltTempColdestMonth = vps->annTempColdestMonLongAvg;
+    double oltPrecipWettestMonth = vps->annPrecipWettestMonLongAvg;
+    double oltWaterDeficit = vps->annWaterDefLongAvg;
+    double oltCorPrTas = vps->annTempPrecipLongAvg;
+    double oltIsothermality = vps->annIsothermLongAvg;
 
     double zltTempMean = (annTemp - 10.275203571) / 4.912309147;
     double zltPrecipSeasonality = (annSeasonPrecip - 0.923249309) / 0.245954382;
@@ -824,6 +845,7 @@ void calc_CONUS_vegcov_2025(
     double zltWDD = (annWDD - 1762.977520092) / 1160.20756048;
     double zstraWDD = (anomRateWDD - 0.02989113) / 0.243425185;
 
+    double zltTempMeanSqd = zltTempMean * zltTempMean;
     double zltPrecipSqd = zltPrecip * zltPrecip;
     double zltCorPrTasSqd = zltCorPrTas * zltCorPrTas;
     double zltIsothermalitySqd = zltIsothermality * zltIsothermality;
@@ -840,17 +862,18 @@ void calc_CONUS_vegcov_2025(
     double zSurfaceClaySqd = zSurfaceClay * zSurfaceClay;
     double zltPrecipSeasonalitySqd =
         zltPrecipSeasonality * zltPrecipSeasonality;
+    double zstraWDDSqd = zstraWDD * zstraWDD;
+
 
     /* 2.1 Ecoregion classification model */
     /* Predictor variables of the ecoregion model are on the original scale */
-    tempVal = 9.872597456 + -0.299906791 * vps->annTempWarmestMon[yearIndex] +
-              0.245551132 * vps->annTempColdestMon[yearIndex] +
-              0.010607279 * vps->annPrecipWettestMon[yearIndex] +
-              -0.062058523 * vps->annWaterDef[yearIndex] +
-              -2.786336969 * vps->annTempPrecipCorr[yearIndex] +
-              0.054028905 * vps->annIsotherm[yearIndex] +
-              -0.007599899 * ss->soilDepth + 0.033478424 * ss->percSand +
-              0.031037682 * ss->percCoarseFrag + 0.272601351 * percSOC;
+    tempVal = 9.872597456 + -0.299906791 * oltTempWarmestMonth +
+              0.245551132 * oltTempColdestMonth +
+              0.010607279 * oltPrecipWettestMonth +
+              -0.062058523 * oltWaterDeficit + -2.786336969 * oltCorPrTas +
+              0.054028905 * oltIsothermality + -0.007599899 * ss->soilDepth +
+              0.033478424 * ss->percSand + 0.031037682 * ss->percCoarseFrag +
+              0.272601351 * percSOC;
     ecoregionForest = 1 / (1 + exp(-tempVal));
 
     /* Predictor variables of cover models are centered & scaled 'z*' */
@@ -958,16 +981,15 @@ void calc_CONUS_vegcov_2025(
     shrubCover = exp(tempVal) - 2;
 
     /* 2.2.6 bare ground cover – CONUS-wide */
-    tempVal = 2.939339967 + 0.145466528 * zltPrecip +
-              -0.106416302 * zltPrecipSeasonality + -0.216540564 * zltCorPrTas +
-              0.091558229 * zMeanSand + 0.007762789 * zMeanCoarseFragments +
-              -0.083296458 * zltCorPrTasSqd + -0.056281606 * zMeanSandSqd +
-              -0.006510544 * zAWHCSqd +
-              0.048231968 * zltWDD * zstaIsothermality +
-              -0.030802083 * zstaIsothermality * zltIsothermality +
-              0.117940292 * zltIsothermality * zltTempMean +
-              0.037905068 * zltPrecip * zstraPrecipSeasonality +
-              0.045575111 * zltCorPrTas * zltTempMean;
+    tempVal =
+        2.746284299 + 0.262457983 * zltTempMean +
+        0.087718972 * zltIsothermality + -0.715375616 * zltWDD +
+        -0.267155829 * zMeanCoarseFragments + -0.064084039 * zstaIsothermality +
+        0.037782133 * zstraWDD + -0.079708661 * zltTempMeanSqd +
+        -0.036639124 * zltIsothermalitySqd + -0.002739534 * zltCorPrTasSqd +
+        -0.076610337 * zltPrecip + 0.003781266 * zstraWDDSqd +
+        0.133413710 * zltPrecip * zltWDD + -0.106746867 * zltWDD * zltCorPrTas +
+        0.125888447 * zltIsothermality * zltCorPrTas;
     bareGroundCover = exp(tempVal) - 2;
 
     /* 2.3 Level 2 functional group cover models */
@@ -1022,22 +1044,12 @@ void calc_CONUS_vegcov_2025(
     broadLeavedTreeCoverForestProportion = exp(tempVal) - 2;
 
     /* 2.3.5 The proportion of total tree that is needle-leaved – forest */
-    tempVal = 3.400837432 + 0.119928190 * zltTempMean +
-              0.254698982 * zltPrecipDriestMonth + 0.415003665 * zSurfaceClay +
-              0.005289910 * zMeanSand + -0.118297218 * zSurfaceSOC +
-              0.216869470 * zAWHC + 0.127567513 * zstraPrecip +
-              -0.030975228 * zstaCorPrTas + -0.136571036 * zltCorPrTasSqd +
-              0.026270176 * zltIsothermality * zstaIsothermality +
-              -0.218615897 * zltIsothermality * zltCorPrTas +
-              -0.013504372 * zstaIsothermality * zltPrecip +
-              -0.079997868 * zltTempMean * zstraPrecip +
-              -0.001941377 * zltPrecipDriestMonth * zltCorPrTas +
-              -0.108094550 * zltTempMean * zltCorPrTas +
-              0.056873963 * zltTempMean * zstaCorPrTas +
-              -0.084394634 * zSurfaceSOC * zAWHC +
-              -0.011095426 * zSurfaceSOC * zMeanCoarseFragments +
-              0.126127030 * zSurfaceClay * zMeanCoarseFragments +
-              -0.249606357 * zMeanSand * zMeanCoarseFragments;
+    tempVal = 4.37205983 + -0.21286237 * zltPrecipDriestMonth +
+              0.12039825 * zMeanSand + 0.07954909 * zSurfaceSOC +
+              0.03631508 * zltTempMeanSqd +
+              0.06724832 * zltCorPrTas * zltIsothermality +
+              -0.08652516 * zltPrecipDriestMonth * zltCorPrTas +
+              -0.04245934 * zltPrecipDriestMonth * zltTempMean;
     needleLeavedTreeCoverForestProportion = exp(tempVal) - 2;
 
     /* 2.3.6 The proportion of total tree that is broad-leaved – non-forest */
@@ -1186,9 +1198,7 @@ void update_veg_yearly(
         );
 
         // Update vegetation values
-        calc_CONUS_vegcov_2025(
-            SW_SoilSim, yearIndex, SW_VegProdSim, RelAbundanceL0
-        );
+        calc_CONUS_vegcov_2025(SW_SoilSim, SW_VegProdSim, RelAbundanceL0);
 
         // trees = needle-leaved + broad-leaved trees
         SW_VegProdRunIn->veg[SW_TREES].cov.fCover =
