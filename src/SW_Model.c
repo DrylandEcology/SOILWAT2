@@ -81,6 +81,7 @@ void SW_MDL_construct(SW_MODEL_SIM *SW_ModelSim) {
     ForEachOutPeriod(pd) { SW_ModelSim->newperiod[pd] = swFALSE; }
     SW_ModelSim->newperiod[eSW_Day] = swTRUE; // every day is a new day
 
+    SW_ModelSim->yearIdxSpinSim = -1; /* incremented at start of new year */
     SW_ModelSim->addtl_yr = 0;
     SW_ModelSim->doOutput = swTRUE;
 }
@@ -197,6 +198,8 @@ void SW_MDL_new_year(SW_MODEL_INPUTS *SW_ModelIn, SW_MODEL_SIM *SW_ModelSim) {
     /* 1/24/02 - added code for partial start and end years
      */
     TimeInt year = SW_ModelSim->year;
+
+    SW_ModelSim->yearIdxSpinSim++;
 
     SW_ModelSim->prevweek = SW_ModelSim->prevmonth = SW_ModelSim->prevyear =
         notime;

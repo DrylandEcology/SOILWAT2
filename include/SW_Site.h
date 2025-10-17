@@ -315,6 +315,12 @@ void SW_SIT_read(
     LOG_INFO *LogInfo
 );
 
+void SW_SIT_new_year(
+    unsigned int methodMaxDepthSoilTemperature,
+    double newTsoil_constant,
+    double *Tsoil_constant
+);
+
 void SW_SIT_init_run(
     SW_VEGPROD_INPUTS *SW_VegProdIn,
     SW_SITE_INPUTS *SW_SiteIn,

@@ -118,6 +118,1105 @@ const char *const key2veg[NVEGTYPES] = {"tree", "shrub", "forbs", "grass"};
 /* --------------------------------------------------- */
 
 /**
+@brief Allocate dynamic arrays to hold up to n years worth of yearly history
+of values
+
+@param[in] n_years Number of years in simulation
+@param[in] annTempOnly Specifies if this function is to only allocate
+annual temperature arrays
+@param[out] SW_VegProdSim Struct of type SW_VEGPROD_SIM that holds information
+used and/or modified mainly during simulation runs; dynamic arrays will be
+updated within this struct
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void alloc_nyear_arrays(
+    TimeInt n_years,
+    Bool annTempOnly,
+    SW_VEGPROD_SIM *SW_VegProdSim,
+    LOG_INFO *LogInfo
+) {
+    int index;
+    const int numArrays = (annTempOnly) ? 1 : 11;
+    double **allocArray[] = {
+        &SW_VegProdSim->annTemp,
+        &SW_VegProdSim->annTempPrecipCorr,
+        &SW_VegProdSim->annIsotherm,
+        &SW_VegProdSim->annPrecip,
+        &SW_VegProdSim->annWaterDef,
+        &SW_VegProdSim->annSeasonPrecip,
+        &SW_VegProdSim->annPrecipDriestMon,
+        &SW_VegProdSim->annWetDegDays,
+        &SW_VegProdSim->annTempWarmestMon,
+        &SW_VegProdSim->annTempColdestMon,
+        &SW_VegProdSim->annPrecipWettestMon
+    };
+
+    for (index = 0; index < numArrays; index++) {
+        *(allocArray[index]) = (double *) Mem_Malloc(
+            sizeof(double) * n_years, "alloc_nyear_arrays()", LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        memset(*(allocArray[index]), 0, n_years * sizeof(double));
+    }
+}
+
+/**
+@brief Given an unknown variable with max size of MAX_LAYERS, either calculate
+a weighted % of contents in the first 3cm (or first layer, whichever is
+deepest), or a weighted % across the whole soil profile (i.e., through
+all layers)
+
+@param[in] vals A list of size MAX_LAYERS containing values to calculate
+the weighted % through the first 3cm (or first layer), or throughout the
+soil profile (up to # of layers created)
+@param[in] depths Depths of soil layers (cm)
+@param[in] widths The width of the layers (cm).
+@param[in] n_layers Number of layers of soil within the simulation run
+@param[in] first3cm A flag specifying if the function should calculate
+the first 3cm (or first layer) of values or the entire soil layer
+
+@return Resulting weighted % or first layer value
+*/
+double calc_perc_var_in_soil_profile(
+    const double vals[],
+    double depths[],
+    const double widths[],
+    LyrIndex n_layers,
+    Bool first3cm
+) {
+    LyrIndex soilLyr;
+    double widthWeight;
+    double totDepth = (first3cm) ? 3.0 : depths[n_layers - 1];
+    double result = 0.;
+
+    if (first3cm && GE(depths[0], 3.0)) {
+        // Set result to be the first layer value
+        result = vals[0];
+    } else {
+        ForEachSoilLayer(soilLyr, n_layers) {
+            widthWeight = widths[soilLyr];
+
+            if (first3cm) {
+                // weight = layer thickness / 3cm
+                // layer thickness = if (bottom of layer <= 3 cm) then
+                // (bottom - top depth of layer) else (3 cm - top depth of
+                // layer)
+                if (LE(depths[soilLyr], 3.0)) {
+                    widthWeight = widths[soilLyr];
+                } else {
+                    widthWeight =
+                        3.0 - ((soilLyr > 0) ? depths[soilLyr - 1] : 0);
+                }
+            }
+            widthWeight /= totDepth;
+
+            result += vals[soilLyr] * widthWeight;
+
+            if (first3cm && GE(depths[soilLyr], 3.0)) {
+                break;
+            }
+        }
+    }
+
+    return result;
+}
+
+/**
+@brief Calculate total soil available water holding capacity (awhc)
+
+@param[in] swcBulk_fieldcap Soil water content (SWC) corresponding
+    to field capacity (SWP = -0.033 MPa) [cm]
+@param[in] swcBulk_wiltpt SWC corresponding to wilting point
+    (SWP = -1.5 MPa) [cm]
+@param[in] n_layers Number of layers of soil within the simulation run
+
+@return Resulting value of total soil available water holding capacity
+*/
+double calc_awhc(
+    double swcBulk_fieldcap[], double swcBulk_wiltpt[], LyrIndex n_layers
+) {
+    double awhc = 0.;
+    LyrIndex lyr;
+
+    ForEachSoilLayer(lyr, n_layers) {
+        awhc += fmax(0., swcBulk_fieldcap[lyr] - swcBulk_wiltpt[lyr]);
+    }
+
+    return awhc;
+}
+
+/**
+@brief Wrapper function to calculate constant that will be used for
+dynamic vegetation calculations for the simulation, these calculations
+include
+
+    - % values for either the first 3cm (or first layer) (for clay and organic
+      matter) or the whole soil profile (for sand and gravel)
+    - Total soil available water holding capacity
+    - Explicitly determine the maximum depth of soils for the current site
+
+@param[in,out] SW_SoilSim Struct of type SW_SOIL_SIM holding constant soil
+content information that will be used during simulations
+@param[in] SW_SoilRunIn Struct of type SW_SOIL_RUN_INPUTS describing
+    the simulated site's input values
+@param[in] SW_SiteSim Struct of type SW_SITE_SIM describing the simulated site's
+    simulation values
+@param[in] n_layers Number of layers of soil within the simulation run
+*/
+void calc_const_dynamic_veg_info(
+    SW_SOIL_SIM *SW_SoilSim,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
+    SW_SITE_SIM *SW_SiteSim,
+    LyrIndex n_layers
+) {
+    int index;
+    const int numValArrays = 4;
+    double *vals[] = {
+        SW_SoilRunIn->fractionWeightMatric_sand,
+        SW_SoilRunIn->fractionVolBulk_gravel,
+        SW_SoilRunIn->fractionWeightMatric_clay,
+        SW_SoilRunIn->fractionWeight_om
+    };
+
+    double *resDest[] = {
+        &SW_SoilSim->percSand,
+        &SW_SoilSim->percCoarseFrag,
+        &SW_SoilSim->surfaceClay,
+        &SW_SoilSim->surfaceOM
+    };
+
+    Bool first3cmFlags[] = {swFALSE, swFALSE, swTRUE, swTRUE};
+
+    for (index = 0; index < numValArrays; index++) {
+        *(resDest[index]) = calc_perc_var_in_soil_profile(
+            vals[index],
+            SW_SoilRunIn->depths,
+            SW_SoilRunIn->width,
+            n_layers,
+            first3cmFlags[index]
+        );
+    }
+
+    SW_SoilSim->totAWHC = calc_awhc(
+        SW_SiteSim->swcBulk_fieldcap, SW_SiteSim->swcBulk_wiltpt, n_layers
+    );
+
+    SW_SoilSim->soilDepth = SW_SoilRunIn->depths[n_layers - 1];
+}
+
+/**
+@brief Calculate and store yearly values within SW_VEGPROD_SIM's dynamic
+arrays that hold a yearly history of annual climate information
+
+Note: \p SW_ModelSim and \p SW_WeathHist must represent the same year.
+In particular, SW_MDL_new_year() must have been called to correctly set up
+\p SW_ModelSim for the year.
+
+@param[in] SW_WeathHist Array containing all historical data of a site
+@param[in] SW_ModelSim Struct of type SW_MODEL_SIM holding basic
+intermediate time information about the simulation run
+@param[in] yearIndex Index value specifying which place the year is in the
+simulation process including spinup (i.e., [0, n years) )
+@param[in] annTempOnly Specifies if this function is to only allocate
+annual temperature arrays
+@param[out] SW_VegProdSim Struct of type SW_VEGPROD_SIM that holds information
+used and/or modified mainly during simulation runs; dynamic arrays will have a
+new value for this year
+*/
+void calc_yearly_hist_vals(
+    SW_WEATHER_HIST *SW_WeathHist,
+    SW_MODEL_SIM *SW_ModelSim,
+    TimeInt yearIndex,
+    Bool annTempOnly,
+    SW_VEGPROD_SIM *SW_VegProdSim
+) {
+    double meanTemp[MAX_MONTHS] = {0.};
+    double meanTempAnn = 0.;
+    double maxMonTemp[MAX_MONTHS] = {0.};
+    double minMonTemp[MAX_MONTHS] = {0.};
+    double totPrecip[MAX_MONTHS] = {0.};
+    double isoThermSum[MAX_MONTHS] = {0.};
+
+    double warmMonTemp = 0.;
+    double dryMonPrecip = 0.;
+    double wetMonPrecip = 0.;
+    double watDef = 0.;
+    double wetDD = 0.;
+    double isothermCalc = 0.;
+    double precipSD = 0.;
+    double coldestMonTemp = 0.;
+
+    double monPrecipAvg = 0.;
+
+    TimeInt doy;
+    TimeInt mon = 0;
+    TimeInt nDaysYr = SW_ModelSim->cum_monthdays[MAX_MONTHS - 1];
+
+    for (doy = 0; doy < SW_ModelSim->lastdoy; doy++) {
+        // Check if this day is a new month
+        if (doy == SW_ModelSim->cum_monthdays[mon]) {
+            // Increment monthly index to move to the next month
+            mon++;
+        }
+
+        // Add to the sum of mean temperature and precipitation of
+        // current month, convert precip from cm -> mm
+        meanTemp[mon] += SW_WeathHist->temp_avg[doy];
+
+        if (!annTempOnly) {
+            totPrecip[mon] += SW_WeathHist->ppt[doy] * 10;
+
+            // Add to annual sum of precipitation
+            SW_VegProdSim->annPrecip[yearIndex] += SW_WeathHist->ppt[doy] * 10;
+
+            // Sum maximum and minimum temperature of each month
+            // to find the hottest and coldest monthly temperature later
+            maxMonTemp[mon] += SW_WeathHist->temp_max[doy];
+            minMonTemp[mon] += SW_WeathHist->temp_min[doy];
+        }
+    }
+
+    // If we only want to calculate annual mean daily temperature,
+    // so do here and return from the function
+    if (annTempOnly) {
+        for (mon = 0; mon < MAX_MONTHS; mon++) {
+            meanTempAnn += meanTemp[mon];
+        }
+
+        // Set annual mean temperature (corrected for number of days by month)
+        SW_VegProdSim->annTemp[yearIndex] = meanTempAnn / nDaysYr;
+        return;
+    }
+
+    // Loop through all months
+    for (mon = 0; mon < MAX_MONTHS; mon++) {
+        meanTempAnn += meanTemp[mon];
+
+        maxMonTemp[mon] /= SW_ModelSim->days_in_month[mon];
+        minMonTemp[mon] /= SW_ModelSim->days_in_month[mon];
+        meanTemp[mon] /= SW_ModelSim->days_in_month[mon];
+
+        // Find/store the maximum temperature month
+        if (GT(maxMonTemp[mon], warmMonTemp) || mon == 0) {
+            SW_VegProdSim->annTempWarmestMon[yearIndex] = maxMonTemp[mon];
+            warmMonTemp = maxMonTemp[mon];
+        }
+
+        // Find/store the minimum temperature month
+        if (LT(minMonTemp[mon], coldestMonTemp) || mon == 0) {
+            SW_VegProdSim->annTempColdestMon[yearIndex] = minMonTemp[mon];
+            coldestMonTemp = minMonTemp[mon];
+        }
+
+        // Find/store driest (lowest precip) month
+        if (LT(totPrecip[mon], dryMonPrecip) || mon == 0) {
+            SW_VegProdSim->annPrecipDriestMon[yearIndex] = totPrecip[mon];
+            dryMonPrecip = totPrecip[mon];
+        }
+
+        // Find/store precip of the wettest (highest precip) month
+        if (GT(totPrecip[mon], wetMonPrecip) || mon == 0) {
+            SW_VegProdSim->annPrecipWettestMon[yearIndex] = totPrecip[mon];
+            wetMonPrecip = totPrecip[mon];
+        }
+
+        // Sum to get annual water deficit and monthly wet-degree days
+        watDef = (2 * meanTemp[mon]) - totPrecip[mon];
+        wetDD = (30 * meanTemp[mon]) - totPrecip[mon];
+        SW_VegProdSim->annWaterDef[yearIndex] +=
+            GT(meanTemp[mon] * 2, totPrecip[mon]) ? watDef : 0.;
+        SW_VegProdSim->annWetDegDays[yearIndex] +=
+            LT(meanTemp[mon] * 2, totPrecip[mon]) ? wetDD : 0.;
+
+        // Set monthly isothermality calculation
+        isoThermSum[mon] = maxMonTemp[mon] - minMonTemp[mon];
+    }
+
+    // Set annual mean temperature (corrected for number of days by month)
+    SW_VegProdSim->annTemp[yearIndex] = meanTempAnn / nDaysYr;
+
+    // Set isothermality
+    // mean for every month[((max temp - min temp) values)] /
+    // (max temp of hottest month - min temp of coldest month)
+    isothermCalc = mean(isoThermSum, MAX_MONTHS);
+    isothermCalc /=
+        (SW_VegProdSim->annTempWarmestMon[yearIndex] -
+         SW_VegProdSim->annTempColdestMon[yearIndex]);
+    SW_VegProdSim->annIsotherm[yearIndex] = isothermCalc * 100;
+
+    // Set precip seasonality - coefficient of variation
+    precipSD = standardDeviation(totPrecip, MAX_MONTHS);
+    monPrecipAvg = mean(totPrecip, MAX_MONTHS);
+    SW_VegProdSim->annSeasonPrecip[yearIndex] = precipSD / monPrecipAvg;
+
+    // Set the temperature-precipitation correlation
+    SW_VegProdSim->annTempPrecipCorr[yearIndex] =
+        correlation_coefficient(meanTemp, totPrecip, MAX_MONTHS);
+}
+
+/**
+@brief Moving window of long-term mean temperature
+
+See also calc_veg_predictor_vals().
+
+@param[in] yearIndex Index value specifying which place the year is in the
+    simulation process (i.e., [0, n years) )
+@param[in] nYearsDynamicLong Number of years over which long-term
+    predictors are summarized
+@param[in] SW_VegProdSim Struct of type SW_VEGPROD_SIM that holds information
+    used and/or modified mainly during simulation runs
+@param[out] annTempLongAvg Calculated long-term mean temperature across the
+    moving window defined by \p nYearsDynamicLong
+*/
+static void calc_annTempLongAvg(
+    TimeInt yearIndex,
+    TimeInt nYearsDynamicLong,
+    SW_VEGPROD_SIM *SW_VegProdSim,
+    double *annTempLongAvg
+) {
+    IntU termIndex = SW_VegProdSim->longIndex;
+
+    if (yearIndex == 0) {
+        *annTempLongAvg = 0.;
+    }
+
+    /* Check if we have enough values to make a full average for the
+       term in which we are taking the average of */
+    if (yearIndex + 1 > nYearsDynamicLong) {
+        /* Calculate the new average by converting the average into a sum,
+            removing the oldest value, adding the newest value, and
+            converting the sum into an average
+            This method simplies how we calculate the moving window
+            average to be more constant in computation time */
+        *annTempLongAvg *= nYearsDynamicLong;
+        *annTempLongAvg -= SW_VegProdSim->annTemp[termIndex];
+        *annTempLongAvg += SW_VegProdSim->annTemp[yearIndex];
+        *annTempLongAvg /= nYearsDynamicLong;
+
+        SW_VegProdSim->longIndex++;
+
+    } else {
+        /* Since we do not have enough years to compute the whole average,
+            we keep a running average until we have enough years
+            Do this by converting the running average into a sum
+            (number of years currently within the sum), add the new
+            value, and retake the average with the new number
+            of years in the sum (yearIndex + 1) */
+        *annTempLongAvg *= (yearIndex);
+        *annTempLongAvg += SW_VegProdSim->annTemp[yearIndex];
+        *annTempLongAvg /= (yearIndex + 1);
+    }
+}
+
+/**
+@brief Using values calculated from `calc_yearly_hist_vals()`,
+calculate the predictor values for dynamic vegetation calculations
+
+@param[in] yearIndex Index value specifying which place the year is in the
+simulation process (i.e., [0, n years) )
+@param[in] nYearsDynamicShort Number of years over which short-term vegetation
+predictors are summarized (as anomaly to long-term predictors)
+@param[in] nYearsDynamicLong Number of years over which long-term vegetation
+predictors are summarized
+@param[out] SW_VegProdSim Struct of type SW_VEGPROD_SIM that holds information
+used and/or modified mainly during simulation runs; averages and anomalies
+will have updated values for this year
+*/
+void calc_veg_predictor_vals(
+    TimeInt yearIndex,
+    TimeInt nYearsDynamicShort,
+    TimeInt nYearsDynamicLong,
+    SW_VEGPROD_SIM *SW_VegProdSim
+) {
+    // Initialize variables
+    TimeInt termLength;
+    int var;
+    IntU termIndex;
+    int valIndex;
+    size_t longTermIndex;
+    size_t shortTermIndex;
+
+    double longTermVal;
+    double shortTermVal;
+
+    const int numAvgs = 18;
+    const int numAnom = 3;
+    const int numRateAnom = 5;
+    const int shortAvgIndex = 11;
+
+    double *termAvgs[] = {
+        &SW_VegProdSim->annTempLongAvg,
+        &SW_VegProdSim->annTempPrecipLongAvg,
+        &SW_VegProdSim->annIsothermLongAvg,
+        &SW_VegProdSim->annWaterDefLongAvg,
+        &SW_VegProdSim->annSeasonPrecipLongAvg,
+        &SW_VegProdSim->annPrecipDriestMonLongAvg,
+        &SW_VegProdSim->annWetDegDaysLongAvg,
+        &SW_VegProdSim->annTempWarmestMonLongAvg,
+        &SW_VegProdSim->annTempColdestMonLongAvg,
+        &SW_VegProdSim->annPrecipWettestMonLongAvg,
+        &SW_VegProdSim->annPrecipLongAvg,
+
+        &SW_VegProdSim->annIsothermShortAvg,
+        &SW_VegProdSim->annTempPrecipShortAvg,
+        &SW_VegProdSim->annSeasonPrecipShortAvg,
+        &SW_VegProdSim->annPrecipShortAvg,
+        &SW_VegProdSim->annWetDegDaysShortAvg,
+        &SW_VegProdSim->annWaterDefShortAvg,
+        &SW_VegProdSim->annPrecipDriestMonShortAvg
+    };
+
+    double *termHist[] = {
+        SW_VegProdSim->annTemp,
+        SW_VegProdSim->annTempPrecipCorr,
+        SW_VegProdSim->annIsotherm,
+        SW_VegProdSim->annWaterDef,
+        SW_VegProdSim->annSeasonPrecip,
+        SW_VegProdSim->annPrecipDriestMon,
+        SW_VegProdSim->annWetDegDays,
+        SW_VegProdSim->annTempWarmestMon,
+        SW_VegProdSim->annTempColdestMon,
+        SW_VegProdSim->annPrecipWettestMon,
+        SW_VegProdSim->annPrecip
+    };
+
+    // Index the value arrays short-term averages should use
+    // to simplify this function to use one array to house all averages
+    int shortValIndex[] = {2, 1, 4, 10, 6, 3, 5};
+
+    double *anomVals[] = {
+        &SW_VegProdSim->anomIsotherm,
+        &SW_VegProdSim->anomTempPrecipCorr,
+        &SW_VegProdSim->anomWaterDef
+    };
+
+    double *rateAnomVals[] = {
+        &SW_VegProdSim->rateAnomSeasonPrecip,
+        &SW_VegProdSim->rateAnomPrecip,
+        &SW_VegProdSim->rateAnomWetDegDays,
+        &SW_VegProdSim->rateAnomWaterDef,
+        &SW_VegProdSim->rateAnomPrecipDriestMon
+    };
+
+    double *anomCalcVals[] = {// Isothermality anomaly vals
+                              &SW_VegProdSim->annIsothermLongAvg,
+                              &SW_VegProdSim->annIsothermShortAvg,
+
+                              // Precip-temp anomaly vals
+                              &SW_VegProdSim->annTempPrecipLongAvg,
+                              &SW_VegProdSim->annTempPrecipShortAvg,
+
+                              // Water deficit anomaly vals
+                              &SW_VegProdSim->annWaterDefLongAvg,
+                              &SW_VegProdSim->annWaterDefShortAvg
+    };
+
+    double *rateAnomCalcVals[] = {
+        // Seasonality precip rate of anomaly vals
+        &SW_VegProdSim->annSeasonPrecipLongAvg,
+        &SW_VegProdSim->annSeasonPrecipShortAvg,
+
+        // Precip rate of anomaly vals
+        &SW_VegProdSim->annPrecipLongAvg,
+        &SW_VegProdSim->annPrecipShortAvg,
+
+        // Wet-degree days rate of anomaly vals
+        &SW_VegProdSim->annWetDegDaysLongAvg,
+        &SW_VegProdSim->annWetDegDaysShortAvg,
+
+        // Water deficit rate of anomaly vals
+        &SW_VegProdSim->annWaterDefLongAvg,
+        &SW_VegProdSim->annWaterDefShortAvg,
+
+        // Precip of the driest month rate of anomaly vals
+        &SW_VegProdSim->annPrecipDriestMonLongAvg,
+        &SW_VegProdSim->annPrecipDriestMonShortAvg
+    };
+
+    if (yearIndex == 0) {
+        for (var = 0; var < numAvgs; var++) {
+            *termAvgs[var] = 0.;
+        }
+    }
+
+    for (var = 0; var < numAvgs; var++) {
+        if (var < shortAvgIndex) {
+            termLength = nYearsDynamicLong;
+            termIndex = SW_VegProdSim->longIndex;
+            valIndex = var;
+        } else {
+            termLength = nYearsDynamicShort;
+            termIndex = SW_VegProdSim->shortIndex;
+            valIndex = shortValIndex[var - shortAvgIndex];
+        }
+
+        /* Check if we have enough values to make a full average for the
+           term in which we are taking the average of */
+        if (yearIndex + 1 > termLength) {
+            /*
+                Calculate the new average by converting the average into a sum,
+                removing the oldest value, adding the newest value, and
+                converting the sum into an average
+                This method simplies how we calculate the moving window
+                average to be more constant in computation time
+            */
+            *termAvgs[var] *= termLength;
+            *termAvgs[var] -= termHist[valIndex][termIndex];
+            *termAvgs[var] += termHist[valIndex][yearIndex];
+            *termAvgs[var] /= termLength;
+        } else {
+            /*
+                Since we do not have enough years to compute the whole average,
+                we keep a running average until we have enough years
+                Do this by converting the running average into a sum
+                (number of years currently within the sum), add the new
+                value, and retake the average with the new number
+                of years in the sum (yearIndex + 1)
+            */
+            *termAvgs[var] *= (yearIndex);
+            *termAvgs[var] += termHist[valIndex][yearIndex];
+            *termAvgs[var] /= (yearIndex + 1);
+        }
+    }
+
+    // Calculate anomaly values
+    for (var = 0; var < numAnom; var++) {
+        longTermIndex = (size_t) (var) * 2;
+        shortTermIndex = (size_t) (var) * 2 + 1;
+
+        longTermVal = *(anomCalcVals[longTermIndex]);
+        shortTermVal = *(anomCalcVals[shortTermIndex]);
+
+        *anomVals[var] = longTermVal - shortTermVal;
+    }
+
+    // Calculate rate of anomaly values
+    for (var = 0; var < numRateAnom; var++) {
+        longTermIndex = (size_t) (var) * 2;
+        shortTermIndex = (size_t) (var) * 2 + 1;
+
+        longTermVal = *rateAnomCalcVals[longTermIndex];
+        shortTermVal = *rateAnomCalcVals[shortTermIndex];
+
+        *rateAnomVals[var] = 0.;
+        if (!ZRO(longTermVal)) {
+            *rateAnomVals[var] = (longTermVal - shortTermVal) / longTermVal;
+        }
+    }
+
+    if (yearIndex + 1 > nYearsDynamicShort) {
+        SW_VegProdSim->shortIndex++;
+    }
+
+    if (yearIndex + 1 > nYearsDynamicLong) {
+        SW_VegProdSim->longIndex++;
+    }
+}
+
+/**
+@brief Calculate vegetation cover
+
+@param[in] ss Struct of type SW_SOIL_SIM (soil sim -> ss) that holds constant
+    predictor values for calculating updated vegetation values
+@param[in] vps Struct of type SW_VEGPROD_SIM (VegProd sim -> vps) with
+    short- and long-term climate values
+@param[out] RelAbundanceL0 Array of size seven with calculated cover values.
+    The elements are:
+        -# needle-leaved tree "treeNL",
+        -# broad-leaved tree "treeBL",
+        -# shrub,
+        -# forbs,
+        -# C3-grass "grassC3",
+        -# C4-grass "grassC4",
+        -# bare ground
+*/
+void calc_CONUS_vegcov_2025(
+    SW_SOIL_SIM *ss, SW_VEGPROD_SIM *vps, double *RelAbundanceL0
+) {
+    double ecoregionForest;
+    double totalHerbaceousCoverNonForest;
+    double totalHerbaceousCoverForest;
+    double totalTreeCoverNonForest;
+    double totalTreeCoverForest;
+    double shrubCover;
+    double bareGroundCover;
+    double GrassC3CoverProportion;
+    double GrassC4CoverProportion;
+    double forbCoverProportion;
+    double broadLeavedTreeCoverForestProportion;
+    double needleLeavedTreeCoverForestProportion;
+    double broadLeavedTreeCoverNonForestProportion;
+    double needleLeavedTreeCoverNonForestProportion;
+    double sumTreesForest;
+    double scaledBroadLeavedTreeCoverForestProportion;
+    double scaledNeedleLeavedTreeCoverForestProportion;
+    double sumTreesNonForest;
+    double scaledBroadLeavedTreeCoverNonForestProportion;
+    double scaledNeedleLeavedTreeCoverNonForestProportion;
+    double totalHerbaceousCover;
+    double totalTreeCoverCover;
+    double scaledBroadLeavedTreeCoverProportion;
+    double scaledNeedleLeavedTreeCoverProportion;
+    double sumTotal;
+    double finalTotalHerbaceousCover;
+    double finalTotalTreeCoverCover;
+    double finalShrubCover;
+    double finalBareGroundCover;
+    double finalGrassC3Cover;
+    double finalGrassC4Cover;
+    double finalForbCover;
+    double finalBroadLeavedTreeCover;
+    double finalNeedleLeavedTreeCover;
+    double sumHerbaceous;
+    double scaledGrassC3CoverProportion;
+    double scaledGrassC4CoverProportion;
+    double scaledForbCoverProportion;
+
+    double tempVal;
+
+    /* Naming scheme of predictor variables
+        * Predictor types
+            * lt = longterm: long-term average conditions of annual values,
+              e.g., mean across 30 years
+            * st = shortterm: short-term average conditions of annual values,
+              e.g., mean across 3 years
+            * a = anomaly: difference between long-term average conditions
+              and short-term average conditions, i.e., lt - st
+            * ra = anomaly%: relative difference between long-term average
+              conditions and short-term average conditions relative to
+              long-term conditions, i.e., (lt - st) / lt
+            * c = constant: conditions that do not change over time
+
+        * Centering and scaling
+            * z = prefix if predictor is centered and scaled,
+              i.e., (predictor - centering) / scaling
+            * o = prefix if predictor is on original scale
+    */
+
+    double annTemp = vps->annTempLongAvg;
+    double annSeasonPrecip = vps->annSeasonPrecipLongAvg;
+    double annIsotherm = vps->annIsothermLongAvg;
+    double annWatDef = vps->annWaterDefLongAvg;
+    double weighMeanSand = ss->percSand;
+    double weighMeanCoarseFrag = ss->percCoarseFrag;
+    double awhc = ss->totAWHC;
+    double anomCorTempPrecip = vps->anomTempPrecipCorr;
+    double annCorTempPrecip = vps->annTempPrecipLongAvg;
+    double anomIsotherm = vps->anomIsotherm;
+    double anomWatDef = vps->anomWaterDef;
+    double annPrecip = vps->annPrecipLongAvg;
+    double anomRateSeasonPrecip = vps->rateAnomSeasonPrecip;
+    double annPrecipDriestMon = vps->annPrecipDriestMonLongAvg;
+    double percClay = ss->surfaceClay;
+    double anomRatePrecip = vps->rateAnomPrecip;
+    double annWDD = vps->annWetDegDaysLongAvg;
+    double anomRateWDD = vps->rateAnomWetDegDays;
+    double percSOC = ss->surfaceOM * .58;
+
+    double oltTempWarmestMonth = vps->annTempWarmestMonLongAvg;
+    double oltTempColdestMonth = vps->annTempColdestMonLongAvg;
+    double oltPrecipWettestMonth = vps->annPrecipWettestMonLongAvg;
+    double oltWaterDeficit = vps->annWaterDefLongAvg;
+    double oltCorPrTas = vps->annTempPrecipLongAvg;
+    double oltIsothermality = vps->annIsothermLongAvg;
+
+    double zltTempMean = (annTemp - 10.275203571) / 4.912309147;
+    double zltPrecipSeasonality = (annSeasonPrecip - 0.923249309) / 0.245954382;
+    double zltIsothermality = (annIsotherm - 38.120111845) / 5.019479015;
+    double zltWaterDeficit = (annWatDef - 99.631248729) / 85.941823498;
+    double zMeanSand = (weighMeanSand - 47.706485501) / 16.730875594;
+    double zMeanCoarseFragments =
+        (weighMeanCoarseFrag - 12.799273363) / 11.332548324;
+    double zAWHC = (awhc - 13.671423701) / 5.155757156;
+    double zstaCorPrTas = (anomCorTempPrecip - 0.012171065) / 0.139613922;
+    double zstaIsothermality = (anomIsotherm - 0.538807833) / 1.422356333;
+    double zstaWaterDeficit = (anomWatDef + 0.119596687) / 0.424434636;
+    double zltPrecip = (annPrecip - 613.900118155) / 502.187690606;
+    double zltCorPrTas = (annCorTempPrecip + 0.120988193) / 0.410662268;
+    double zstraPrecipSeasonality =
+        (anomRateSeasonPrecip + 0.025697534) / 0.132964252;
+    double zSurfaceSOC = (percSOC - 3.681945502) / 6.405262851;
+    double zltPrecipDriestMonth =
+        (annPrecipDriestMon - 5.000260635) / 8.205443958;
+    double zSurfaceClay = (percClay - 18.489433548) / 9.078669938;
+    double zstraPrecip = (anomRatePrecip - 0.030312573) / 0.168767355;
+    double zltWDD = (annWDD - 1762.977520092) / 1160.20756048;
+    double zstraWDD = (anomRateWDD - 0.02989113) / 0.243425185;
+
+    double zltTempMeanSqd = zltTempMean * zltTempMean;
+    double zltPrecipSqd = zltPrecip * zltPrecip;
+    double zltCorPrTasSqd = zltCorPrTas * zltCorPrTas;
+    double zltIsothermalitySqd = zltIsothermality * zltIsothermality;
+    double zstaIsothermalitySqd = zstaIsothermality * zstaIsothermality;
+    double zstraPrecipSeasonalitySqd =
+        zstraPrecipSeasonality * zstraPrecipSeasonality;
+    double zstaCorPrTasSqd = zstaCorPrTas * zstaCorPrTas;
+    double zMeanSandSqd = zMeanSand * zMeanSand;
+    double zMeanCoarseFragmentsSqd =
+        zMeanCoarseFragments * zMeanCoarseFragments;
+    double zSurfaceSOCSqd = zSurfaceSOC * zSurfaceSOC;
+    double zAWHCSqd = zAWHC * zAWHC;
+    double zstaWaterDeficitSqd = zstaWaterDeficit * zstaWaterDeficit;
+    double zSurfaceClaySqd = zSurfaceClay * zSurfaceClay;
+    double zltPrecipSeasonalitySqd =
+        zltPrecipSeasonality * zltPrecipSeasonality;
+    double zstraWDDSqd = zstraWDD * zstraWDD;
+
+
+    /* 2.1 Ecoregion classification model */
+    /* Predictor variables of the ecoregion model are on the original scale */
+    tempVal = 9.872597456 + -0.299906791 * oltTempWarmestMonth +
+              0.245551132 * oltTempColdestMonth +
+              0.010607279 * oltPrecipWettestMonth +
+              -0.062058523 * oltWaterDeficit + -2.786336969 * oltCorPrTas +
+              0.054028905 * oltIsothermality + -0.007599899 * ss->soilDepth +
+              0.033478424 * ss->percSand + 0.031037682 * ss->percCoarseFrag +
+              0.272601351 * percSOC;
+    ecoregionForest = 1 / (1 + exp(-tempVal));
+
+    /* Predictor variables of cover models are centered & scaled 'z*' */
+    /* 2.2 Level 1 functional group cover models */
+    /* 2.2.1 Total Herbaceous Cover – non-forest */
+    tempVal =
+        3.276248186 + 0.333755104 * zltTempMean +
+        0.000988410 * zltPrecipSeasonality + -0.093566592 * zltIsothermality +
+        -0.401713218 * zltWaterDeficit + -0.101054822 * zMeanSand +
+        -0.059075423 * zMeanCoarseFragments + 0.097488751 * zAWHC +
+        0.013584831 * zstaCorPrTas + -0.011392877 * zstaIsothermality +
+        0.035960786 * zstaWaterDeficit + -0.217970279 * zltPrecipSqd +
+        0.367790702 * zltCorPrTasSqd + -0.031527015 * zltIsothermalitySqd +
+        -0.001997141 * zstraPrecipSeasonalitySqd +
+        -0.022758623 * zstaCorPrTasSqd + 0.014352225 * zMeanSandSqd +
+        0.025503657 * zMeanCoarseFragmentsSqd + 0.062557753 * zSurfaceSOCSqd +
+        -0.048139022 * zAWHCSqd + 0.002192693 * zltWaterDeficit * zstaCorPrTas +
+        0.014972237 * zltIsothermality * zstaWaterDeficit +
+        -0.051575876 * zstaWaterDeficit * zltPrecip +
+        0.038675358 * zltPrecipSeasonality * zstaWaterDeficit +
+        -0.009761302 * zstaCorPrTas * zstaWaterDeficit +
+        0.289340507 * zltIsothermality * zltPrecip +
+        0.078632789 * zltPrecipSeasonality * zltIsothermality +
+        0.132202861 * zltIsothermality * zltCorPrTas +
+        -0.009488915 * zltIsothermality * zstaCorPrTas +
+        0.063991677 * zltTempMean * zltIsothermality +
+        0.020965402 * zltPrecipSeasonality * zstaIsothermality +
+        0.237331817 * zltPrecip * zltCorPrTas +
+        0.009654127 * zltCorPrTas * zstraPrecipSeasonality +
+        0.011241877 * zstaCorPrTas * zstraPrecipSeasonality +
+        -0.185452900 * zltTempMean * zltCorPrTas +
+        0.042165264 * zMeanSand * zAWHC +
+        -0.014331054 * zMeanSand * zMeanCoarseFragments;
+    totalHerbaceousCoverNonForest = exp(tempVal) - 2;
+
+    /* 2.2.2 Total Herbaceous Cover – forest */
+    tempVal = 3.191837402 + -0.122792350 * zltPrecip +
+              0.116138373 * zltPrecipDriestMonth + 0.073364801 * zltCorPrTas +
+              -0.223502453 * zltIsothermality + 0.059416398 * zSurfaceClay +
+              -0.143976298 * zMeanSand + 0.093798717 * zAWHC +
+              -0.082685833 * zstaIsothermality +
+              -0.026084114 * zstaWaterDeficit + 0.067376300 * zltCorPrTasSqd +
+              0.025575815 * zltIsothermalitySqd +
+              0.010298554 * zstaIsothermalitySqd +
+              -0.001326385 * zstaWaterDeficitSqd + 0.075308377 * zMeanSandSqd +
+              0.073306773 * zAWHCSqd +
+              0.019965778 * zstaIsothermality * zstaWaterDeficit +
+              -0.016757681 * zltCorPrTas * zstaWaterDeficit +
+              -0.010148936 * zstaWaterDeficit * zltTempMean +
+              0.092170440 * zltPrecip * zltIsothermality +
+              0.016099673 * zltPrecip * zstaIsothermality +
+              0.019360302 * zstaIsothermality * zstraPrecip +
+              -0.007884072 * zltPrecipDriestMonth * zstaIsothermality +
+              -0.006048882 * zstaIsothermality * zstaCorPrTas +
+              -0.070468595 * zstaIsothermality * zltTempMean +
+              -0.013811905 * zltPrecip * zstaCorPrTas +
+              0.030103657 * zltPrecipDriestMonth * zstraPrecip +
+              -0.001131342 * zstraPrecip * zstaCorPrTas +
+              0.029138569 * zltTempMean * zstraPrecip +
+              -0.081971171 * zltPrecipDriestMonth * zltCorPrTas +
+              -0.015253376 * zltPrecipDriestMonth * zltTempMean +
+              -0.039321175 * zltCorPrTas * zstaCorPrTas +
+              0.042655226 * zltCorPrTas * zltTempMean +
+              0.013823818 * zltTempMean * zstaCorPrTas +
+              -0.020024507 * zAWHC * zSurfaceSOC +
+              0.078265961 * zSurfaceClay * zAWHC +
+              0.081708191 * zAWHC * zMeanCoarseFragments +
+              0.185762180 * zMeanSand * zAWHC +
+              -0.025554099 * zSurfaceSOC * zMeanCoarseFragments +
+              -0.038284034 * zMeanSand * zSurfaceSOC;
+    totalHerbaceousCoverForest = exp(tempVal) - 2;
+
+    /* 2.2.3 Total Tree Cover – non-forest */
+    tempVal = 2.58245786 + 1.14190425 * zltPrecip +
+              -0.15075425 * zltPrecipSeasonality +
+              0.03572512 * zltWaterDeficit + -0.07413619 * zMeanSand +
+              -0.31894087 * zAWHC;
+    totalTreeCoverNonForest = exp(tempVal) - 2;
+
+    /* 2.2.4 Total Tree Cover – forest */
+    tempVal = 3.28887888 + 0.10058372 * zltTempMean + 0.07165316 * zltPrecip +
+              0.12712928 * zltPrecipDriestMonth + 0.03173495 * zSurfaceSOC +
+              0.06648011 * zAWHC + -0.17846554 * zstraPrecip +
+              -0.02914362 * zstaIsothermalitySqd +
+              -0.04902481 * zSurfaceClaySqd +
+              0.11841332 * zltPrecip * zstaIsothermality +
+              0.11243677 * zltPrecipDriestMonth * zltCorPrTas +
+              0.02314517 * zltTempMean * zltPrecipDriestMonth +
+              -0.16107089 * zltTempMean * zltCorPrTas +
+              -0.03108354 * zSurfaceSOC * zSurfaceClay +
+              0.04845871 * zSurfaceSOC * zMeanCoarseFragments;
+    totalTreeCoverForest = exp(tempVal) - 2;
+
+    /* 2.2.5 shrub cover – CONUS-wide */
+    tempVal = 2.939339967 + 0.145466528 * zltPrecip +
+              -0.106416302 * zltPrecipSeasonality + -0.216540564 * zltCorPrTas +
+              0.091558229 * zMeanSand + 0.007762789 * zMeanCoarseFragments +
+              -0.083296458 * zltCorPrTasSqd + -0.056281606 * zMeanSandSqd +
+              -0.006510544 * zAWHCSqd +
+              0.048231968 * zltWDD * zstaIsothermality +
+              -0.030802083 * zstaIsothermality * zltIsothermality +
+              0.117940292 * zltIsothermality * zltTempMean +
+              0.037905068 * zltPrecip * zstraPrecipSeasonality +
+              0.045575111 * zltCorPrTas * zltTempMean;
+    shrubCover = exp(tempVal) - 2;
+
+    /* 2.2.6 bare ground cover – CONUS-wide */
+    tempVal =
+        2.746284299 + 0.262457983 * zltTempMean +
+        0.087718972 * zltIsothermality + -0.715375616 * zltWDD +
+        -0.267155829 * zMeanCoarseFragments + -0.064084039 * zstaIsothermality +
+        0.037782133 * zstraWDD + -0.079708661 * zltTempMeanSqd +
+        -0.036639124 * zltIsothermalitySqd + -0.002739534 * zltCorPrTasSqd +
+        -0.076610337 * zltPrecip + 0.003781266 * zstraWDDSqd +
+        0.133413710 * zltPrecip * zltWDD + -0.106746867 * zltWDD * zltCorPrTas +
+        0.125888447 * zltIsothermality * zltCorPrTas;
+    bareGroundCover = exp(tempVal) - 2;
+
+    /* 2.3 Level 2 functional group cover models */
+    /* 2.3.1 The proportion of total herbaceous that is C3 grass – CONUS-wide */
+    tempVal =
+        3.904167492 + -0.284822539 * zltTempMean + -0.387430439 * zltCorPrTas +
+        -0.264775838 * zltIsothermality + -0.168662971 * zltIsothermalitySqd +
+        -0.294089719 * zltCorPrTas * zltIsothermality + -0.009509765 * zltWDD;
+    GrassC3CoverProportion = exp(tempVal) - 2;
+
+    /* 2.3.2 The proportion of total herbaceous that is C4 grass – CONUS-wide */
+    tempVal = 2.41145985 + 0.48381716 * zltTempMean + 1.02026843 * zltCorPrTas +
+              0.54331054 * zltIsothermality + 0.05180567 * zstaCorPrTasSqd;
+    GrassC4CoverProportion = exp(tempVal) - 2;
+
+    /* 2.3.3 The proportion of total herbaceous that is forbs – CONUS-wide */
+    tempVal = 3.514178452 + 0.248393795 * zltPrecip +
+              -0.052267180 * zltPrecipSeasonality + -0.050423003 * zltCorPrTas +
+              -0.020802257 * zltIsothermality + 0.041673226 * zMeanSand +
+              0.059813143 * zMeanCoarseFragments +
+              -0.035820999 * zstraPrecipSeasonality +
+              0.051567741 * zltPrecipSeasonalitySqd +
+              0.014241935 * zstraPrecipSeasonalitySqd +
+              0.005274193 * zstaCorPrTasSqd +
+              -0.037700614 * zltTempMean * zltWDD +
+              -0.041194253 * zltCorPrTas * zltIsothermality +
+              0.060107858 * zltIsothermality * zltTempMean +
+              -0.092114033 * zMeanSand * zAWHC +
+              -0.053246622 * zMeanSand * zMeanCoarseFragments +
+              0.022969730 * zltPrecipSeasonality * zltTempMean +
+              0.004823926 * zstaIsothermalitySqd +
+              0.011303772 * zstaCorPrTas * zstraWDD;
+    forbCoverProportion = exp(tempVal) - 2;
+
+    /* 2.3.4 The proportion of total tree that is broad-leaved – forest */
+    tempVal = 3.400837432 + 0.119928190 * zltTempMean +
+              0.254698982 * zltPrecipDriestMonth + 0.415003665 * zSurfaceClay +
+              0.005289910 * zMeanSand + -0.118297218 * zSurfaceSOC +
+              0.216869470 * zAWHC + 0.127567513 * zstraPrecip +
+              -0.030975228 * zstaCorPrTas + -0.136571036 * zltCorPrTasSqd +
+              0.026270176 * zltIsothermality * zstaIsothermality +
+              -0.218615897 * zltIsothermality * zltCorPrTas +
+              -0.013504372 * zstaIsothermality * zltPrecip +
+              -0.079997868 * zltTempMean * zstraPrecip +
+              -0.001941377 * zltPrecipDriestMonth * zltCorPrTas +
+              -0.108094550 * zltTempMean * zltCorPrTas +
+              0.056873963 * zltTempMean * zstaCorPrTas +
+              -0.084394634 * zSurfaceSOC * zAWHC +
+              -0.011095426 * zSurfaceSOC * zMeanCoarseFragments +
+              0.126127030 * zSurfaceClay * zMeanCoarseFragments +
+              -0.249606357 * zMeanSand * zMeanCoarseFragments;
+    broadLeavedTreeCoverForestProportion = exp(tempVal) - 2;
+
+    /* 2.3.5 The proportion of total tree that is needle-leaved – forest */
+    tempVal = 4.37205983 + -0.21286237 * zltPrecipDriestMonth +
+              0.12039825 * zMeanSand + 0.07954909 * zSurfaceSOC +
+              0.03631508 * zltTempMeanSqd +
+              0.06724832 * zltCorPrTas * zltIsothermality +
+              -0.08652516 * zltPrecipDriestMonth * zltCorPrTas +
+              -0.04245934 * zltPrecipDriestMonth * zltTempMean;
+    needleLeavedTreeCoverForestProportion = exp(tempVal) - 2;
+
+    /* 2.3.6 The proportion of total tree that is broad-leaved – non-forest */
+    tempVal = 3.10338252 + 0.28241315 * zltTempMean + 0.80500002 * zltPrecip +
+              0.05186862 * zAWHC + -0.03647871 * zltCorPrTasSqd +
+              -0.06790977 * zstaCorPrTasSqd + 0.18569895 * zMeanSandSqd +
+              0.52842267 * zltTempMean * zltIsothermality +
+              -0.30139958 * zAWHC * zMeanCoarseFragments;
+    broadLeavedTreeCoverNonForestProportion = exp(tempVal) - 2;
+
+    /* 2.3.7 The proportion of total tree that is needle-leaved – non-forest */
+    tempVal = 4.52324174 + -0.18954119 * zltTempMean + -0.13086877 * zAWHC +
+              -0.03177446 * zltIsothermalitySqd +
+              -0.25163832 * zltTempMean * zltWaterDeficit +
+              -0.24377773 * zltTempMean * zltIsothermality +
+              -0.32422844 * zltTempMean * zltCorPrTas;
+    needleLeavedTreeCoverNonForestProportion = exp(tempVal) - 2;
+
+    /* 3 Scale level 2 cover variables by group */
+    /* 3.1 For components of total herbaceous cover */
+    sumHerbaceous =
+        GrassC3CoverProportion + GrassC4CoverProportion + forbCoverProportion;
+    scaledGrassC3CoverProportion = GrassC3CoverProportion / sumHerbaceous;
+    scaledGrassC4CoverProportion = GrassC4CoverProportion / sumHerbaceous;
+    scaledForbCoverProportion = forbCoverProportion / sumHerbaceous;
+
+    /* 3.2 For components of total tree cover – forest */
+    sumTreesForest = broadLeavedTreeCoverForestProportion +
+                     needleLeavedTreeCoverForestProportion;
+
+    scaledBroadLeavedTreeCoverForestProportion =
+        broadLeavedTreeCoverForestProportion / sumTreesForest;
+
+    scaledNeedleLeavedTreeCoverForestProportion =
+        needleLeavedTreeCoverForestProportion / sumTreesForest;
+
+    /* 3.3 For components of total tree cover – non-forest */
+    sumTreesNonForest = broadLeavedTreeCoverNonForestProportion +
+                        needleLeavedTreeCoverNonForestProportion;
+
+    scaledBroadLeavedTreeCoverNonForestProportion =
+        broadLeavedTreeCoverNonForestProportion / sumTreesNonForest;
+
+    scaledNeedleLeavedTreeCoverNonForestProportion =
+        needleLeavedTreeCoverNonForestProportion / sumTreesNonForest;
+
+    /* 4 Combine across ecoregions */
+    totalHerbaceousCover =
+        ecoregionForest * totalHerbaceousCoverForest +
+        (1 - ecoregionForest) * totalHerbaceousCoverNonForest;
+
+    totalTreeCoverCover = ecoregionForest * totalTreeCoverForest +
+                          (1 - ecoregionForest) * totalTreeCoverNonForest;
+
+    scaledBroadLeavedTreeCoverProportion =
+        ecoregionForest * scaledBroadLeavedTreeCoverForestProportion +
+        (1 - ecoregionForest) * scaledBroadLeavedTreeCoverNonForestProportion;
+
+    scaledNeedleLeavedTreeCoverProportion =
+        ecoregionForest * scaledNeedleLeavedTreeCoverForestProportion +
+        (1 - ecoregionForest) * scaledNeedleLeavedTreeCoverNonForestProportion;
+
+    /* 5 Final predictions */
+    sumTotal = totalHerbaceousCover + totalTreeCoverCover + shrubCover +
+               bareGroundCover;
+
+    finalTotalHerbaceousCover = totalHerbaceousCover / sumTotal;
+    finalTotalTreeCoverCover = totalTreeCoverCover / sumTotal;
+    finalShrubCover = shrubCover / sumTotal;
+    finalBareGroundCover = bareGroundCover / sumTotal;
+
+    finalGrassC3Cover =
+        scaledGrassC3CoverProportion * finalTotalHerbaceousCover;
+    finalGrassC4Cover =
+        scaledGrassC4CoverProportion * finalTotalHerbaceousCover;
+    finalForbCover = scaledForbCoverProportion * finalTotalHerbaceousCover;
+
+    finalBroadLeavedTreeCover =
+        scaledBroadLeavedTreeCoverProportion * finalTotalTreeCoverCover;
+    finalNeedleLeavedTreeCover =
+        scaledNeedleLeavedTreeCoverProportion * finalTotalTreeCoverCover;
+
+    RelAbundanceL0[0] = finalNeedleLeavedTreeCover;
+    RelAbundanceL0[1] = finalBroadLeavedTreeCover;
+    RelAbundanceL0[2] = finalShrubCover;
+    RelAbundanceL0[3] = finalForbCover;
+    RelAbundanceL0[4] = finalGrassC3Cover;
+    RelAbundanceL0[5] = finalGrassC4Cover;
+    RelAbundanceL0[6] = finalBareGroundCover;
+}
+
+/**
+@brief Calculate across-year predictors and update vegetation
+
+    - first year: use annual predictors based on current year
+    - later years: use annual predictors based on previous year(s)
+      (skip second year because the same as first year)
+
+@param[in] SW_SoilSim Struct of type SW_SOIL_SIM holding constant soil content
+information that will be used during simulations
+@param[in] yearIndex Index value specifying which place the year is in the
+simulation process including spinup (i.e., [0, n years) )
+@param[in] nYearsDynamicShort Number of years over which short-term vegetation
+predictors are summarized (as anomaly to long-term predictors)
+@param[in] nYearsDynamicLong Number of years over which long-term vegetation
+predictors are summarized
+@param[in] annTempOnly Specifies if this function is to only allocate
+annual temperature arrays
+@param[out] SW_VegProdSim Struct of type SW_VEGPROD_SIM that holds information
+used and/or modified mainly during simulation runs; dynamic arrays will have a
+new value for this year
+@param[out] SW_VegProdRunIn Struct of type SW_VEGPROD_RUN_INPUTS that
+    holds run-specific input information about vegetation production
+*/
+void update_veg_yearly(
+    SW_SOIL_SIM *SW_SoilSim,
+    TimeInt yearIndex,
+    TimeInt nYearsDynamicShort,
+    TimeInt nYearsDynamicLong,
+    Bool annTempOnly,
+    SW_VEGPROD_SIM *SW_VegProdSim,
+    SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn
+) {
+    double RelAbundanceL0[7];
+
+    if (yearIndex == 1) {
+        return; /* skip second year because the same as first year */
+    }
+
+    /* Use values from previous year after first */
+    yearIndex = (yearIndex == 0) ? 0 : yearIndex - 1;
+
+    if (annTempOnly) {
+        // Calculate long-term mean temperature
+        calc_annTempLongAvg(
+            yearIndex,
+            nYearsDynamicLong,
+            SW_VegProdSim,
+            &SW_VegProdSim->annTempLongAvg
+        );
+
+    } else {
+        // Calculate vegetation predictor variables
+        calc_veg_predictor_vals(
+            yearIndex, nYearsDynamicShort, nYearsDynamicLong, SW_VegProdSim
+        );
+
+        // Update vegetation values
+        calc_CONUS_vegcov_2025(SW_SoilSim, SW_VegProdSim, RelAbundanceL0);
+
+        // trees = needle-leaved + broad-leaved trees
+        SW_VegProdRunIn->veg[SW_TREES].cov.fCover =
+            RelAbundanceL0[0] + RelAbundanceL0[1];
+
+        SW_VegProdRunIn->veg[SW_SHRUB].cov.fCover = RelAbundanceL0[2];
+        SW_VegProdRunIn->veg[SW_FORBS].cov.fCover = RelAbundanceL0[3];
+
+        // grass = C3-grasses + C4-grasses
+        SW_VegProdRunIn->veg[SW_GRASS].cov.fCover =
+            RelAbundanceL0[4] + RelAbundanceL0[5];
+
+        SW_VegProdRunIn->bare_cov.fCover = RelAbundanceL0[6];
+    }
+}
+
+/**
 @brief Reads file for SW_VegProdIn
 
 @param[in,out] SW_VegProdIn Struct of type SW_VEGPROD_INPUTS describing surface
@@ -176,7 +1275,7 @@ void SW_VPD_read(
     int lineno = 0;
     int index;
     // last case line number before monthly biomass densities
-    const int line_help = 30;
+    const int line_help = 32;
     double help_veg[NVEGTYPES];
     double help_bareGround = 0.;
     double litt;
@@ -201,14 +1300,14 @@ void SW_VPD_read(
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
         lineno++;
 
-        startOfErrMsg = (lineno >= 25) ? (char *) "Not enough arguments" :
+        startOfErrMsg = (lineno >= 27) ? (char *) "Not enough arguments" :
                                          (char *) "Invalid record in";
 
         if (lineno <= line_help) {
-            if (lineno == 1 || lineno == 29 || lineno == 30) {
+            if ((lineno >= 1 && lineno <= 3) || lineno == 31 || lineno == 32) {
+
                 x = sscanf(inbuf, "%19s", vegStrs[0]);
                 expectedNumInVals = 1;
-
             } else {
                 x = sscanf(
                     inbuf,
@@ -220,7 +1319,7 @@ void SW_VPD_read(
                     bareGroundStr
                 );
 
-                expectedNumInVals = (lineno >= 4) ? NVEGTYPES : NVEGTYPES + 1;
+                expectedNumInVals = (lineno >= 6) ? NVEGTYPES : NVEGTYPES + 1;
 
                 ForEachVegType(k) {
                     help_veg[k] = sw_strtod(vegStrs[k], MyFileName, LogInfo);
@@ -258,10 +1357,60 @@ void SW_VPD_read(
                 if (LogInfo->stopRun) {
                     goto closeFile;
                 }
+
+                if (SW_VegProdIn->veg_method < 0 ||
+                    SW_VegProdIn->veg_method > 2) {
+
+                    LogError(
+                        LogInfo, LOGERROR, "'veg_method' must be 0, 1 or 2."
+                    );
+                }
+
+                break;
+
+            /* Number of years for long-term dynamic vegetation */
+            case 2:
+                SW_VegProdIn->nYearsDynamicLong =
+                    sw_strtoi(vegStrs[0], MyFileName, LogInfo);
+                if (LogInfo->stopRun) {
+                    goto closeFile;
+                }
+
+                if (SW_VegProdIn->nYearsDynamicLong == 0) {
+                    LogError(
+                        LogInfo, LOGERROR, "'nYearsDynamicLong' must be > 0."
+                    );
+                    goto closeFile;
+                }
+                break;
+
+            /* Number of years for short-term dynamic vegetation */
+            case 3:
+                SW_VegProdIn->nYearsDynamicShort =
+                    sw_strtoi(vegStrs[0], MyFileName, LogInfo);
+                if (LogInfo->stopRun) {
+                    goto closeFile;
+                }
+
+                if (SW_VegProdIn->nYearsDynamicShort == 0) {
+                    LogError(
+                        LogInfo, LOGERROR, "'nYearsDynamicShort' must be > 0."
+                    );
+                } else if (SW_VegProdIn->nYearsDynamicShort >=
+                           SW_VegProdIn->nYearsDynamicLong) {
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "'nYearsDynamicShort' must be < 'nYearsDynamicLong'."
+                    );
+                }
+                if (LogInfo->stopRun) {
+                    goto closeFile;
+                }
                 break;
 
             /* fractions of vegetation types */
-            case 2:
+            case 4:
                 ForEachVegType(k) {
                     SW_VegProdRunIn->veg[k].cov.fCover = help_veg[k];
                 }
@@ -269,7 +1418,7 @@ void SW_VPD_read(
                 break;
 
             /* albedo */
-            case 3:
+            case 5:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].cov.albedo = help_veg[k];
                 }
@@ -277,51 +1426,51 @@ void SW_VPD_read(
                 break;
 
             /* canopy height */
-            case 4:
+            case 6:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].cnpy.xinflec = help_veg[k];
                 }
                 break;
 
-            case 5:
+            case 7:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].cnpy.yinflec = help_veg[k];
                 }
                 break;
 
-            case 6:
+            case 8:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].cnpy.range = help_veg[k];
                 }
                 break;
 
-            case 7:
+            case 9:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].cnpy.slope = help_veg[k];
                 }
                 break;
 
-            case 8:
+            case 10:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].canopy_height_constant = help_veg[k];
                 }
                 break;
 
             /* vegetation interception parameters */
-            case 9:
+            case 11:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].veg_kSmax = help_veg[k];
                 }
                 break;
 
-            case 10:
+            case 12:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].veg_kdead = help_veg[k];
                 }
                 break;
 
             /* litter interception parameters */
-            case 11:
+            case 13:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].lit_kSmax = help_veg[k];
                 }
@@ -329,84 +1478,84 @@ void SW_VPD_read(
 
             /* parameter for partitioning of bare-soil evaporation and
              * transpiration */
-            case 12:
+            case 14:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].EsTpartitioning_param = help_veg[k];
                 }
                 break;
 
             /* Parameter for scaling and limiting bare soil evaporation rate */
-            case 13:
+            case 15:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].Es_param_limit = help_veg[k];
                 }
                 break;
 
             /* shade effects */
-            case 14:
+            case 16:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].shade_scale = help_veg[k];
                 }
                 break;
 
-            case 15:
+            case 17:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].shade_deadmax = help_veg[k];
                 }
                 break;
 
-            case 16:
+            case 18:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].tr_shade_effects.xinflec = help_veg[k];
                 }
                 break;
 
-            case 17:
+            case 19:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].tr_shade_effects.yinflec = help_veg[k];
                 }
                 break;
 
-            case 18:
+            case 20:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].tr_shade_effects.range = help_veg[k];
                 }
                 break;
 
-            case 19:
+            case 21:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].tr_shade_effects.slope = help_veg[k];
                 }
                 break;
 
             /* Hydraulic redistribution */
-            case 20:
+            case 22:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].flagHydraulicRedistribution =
                         (Bool) EQ(help_veg[k], 1.);
                 }
                 break;
 
-            case 21:
+            case 23:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].maxCondroot = help_veg[k];
                 }
                 break;
 
-            case 22:
+            case 24:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].swpMatric50 = help_veg[k];
                 }
                 break;
 
-            case 23:
+            case 25:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].shapeCond = help_veg[k];
                 }
                 break;
 
             /* Critical soil water potential */
-            case 24:
+            case 26:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].SWPcrit = -10. * help_veg[k];
                     SW_VegProdIn->critSoilWater[k] =
@@ -418,14 +1567,14 @@ void SW_VPD_read(
 
             /* CO2 Biomass Power Equation */
             // Coefficient 1
-            case 25:
+            case 27:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].co2_bio_coeff1 = help_veg[k];
                 }
                 break;
 
             // Coefficient 2
-            case 26:
+            case 28:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].co2_bio_coeff2 = help_veg[k];
                 }
@@ -433,21 +1582,21 @@ void SW_VPD_read(
 
             /* CO2 WUE Power Equation */
             // Coefficient 1
-            case 27:
+            case 29:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].co2_wue_coeff1 = help_veg[k];
                 }
                 break;
 
             // Coefficient 2
-            case 28:
+            case 30:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg[k].co2_wue_coeff2 = help_veg[k];
                 }
                 break;
 
             /* Spatial reference of biomass inputs */
-            case 29:
+            case 31:
                 SW_VegProdIn->isBiomAsIf100Cover =
                     sw_strtoi(vegStrs[0], MyFileName, LogInfo) ? swTRUE :
                                                                  swFALSE;
@@ -457,7 +1606,7 @@ void SW_VPD_read(
                 break;
 
             /* Calendar year corresponding to vegetation inputs */
-            case 30:
+            case 32:
                 SW_VegProdIn->vegYear =
                     (TimeInt) sw_strtoi(vegStrs[0], MyFileName, LogInfo);
                 if (LogInfo->stopRun) {
@@ -630,34 +1779,95 @@ void SW_VPD_construct(
     }
 }
 
-void SW_VPD_init_run(
-    SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,
-    SW_WEATHER_HIST *allHist,
-    SW_MODEL_INPUTS *SW_ModelIn,
-    SW_MODEL_SIM *SW_ModelSim,
-    VegTypeSim vegSim[],
-    Bool inNorthHem,
-    int veg_method,
-    LOG_INFO *LogInfo
-) {
+/**
+@brief Deconstructor for the SW_VegProd suite of structs if needed
 
+@param[in,out] SW_VegProdSim Struct of type SW_VEGPROD_SIM that holds
+information used and/or modified mainly during simulation runs; return with
+deallocated and NULL pointers
+*/
+void SW_VPD_deconstruct(SW_VEGPROD_SIM *SW_VegProdSim) {
+    int index;
+    const int numArrays = 11;
+    double **allocArray[] = {
+        &SW_VegProdSim->annTemp,
+        &SW_VegProdSim->annTempPrecipCorr,
+        &SW_VegProdSim->annIsotherm,
+        &SW_VegProdSim->annPrecip,
+        &SW_VegProdSim->annWaterDef,
+        &SW_VegProdSim->annSeasonPrecip,
+        &SW_VegProdSim->annPrecipDriestMon,
+        &SW_VegProdSim->annWetDegDays,
+        &SW_VegProdSim->annTempWarmestMon,
+        &SW_VegProdSim->annTempColdestMon,
+        &SW_VegProdSim->annPrecipWettestMon
+    };
+
+    for (index = 0; index < numArrays; index++) {
+        if (!isnull(*(allocArray[index]))) {
+            free((void *) *(allocArray[index]));
+            *(allocArray[index]) = NULL;
+        }
+    }
+}
+
+/**
+@brief Initialize all possible pointers in SW_VEGPROD_SIM to NULL
+
+@param[out] SW_VegProdSim Struct of type SW_VEGPROD_SIM that holds information
+used and/or modified mainly during simulation runs; dynamic arrays will be
+initialized to NULl
+*/
+void SW_VPD_init_ptrs(SW_VEGPROD_SIM *SW_VegProdSim) {
+    int index;
+    const int numArrays = 11;
+    double **allocArray[] = {
+        &SW_VegProdSim->annTemp,
+        &SW_VegProdSim->annTempPrecipCorr,
+        &SW_VegProdSim->annIsotherm,
+        &SW_VegProdSim->annPrecip,
+        &SW_VegProdSim->annWaterDef,
+        &SW_VegProdSim->annSeasonPrecip,
+        &SW_VegProdSim->annPrecipDriestMon,
+        &SW_VegProdSim->annWetDegDays,
+        &SW_VegProdSim->annTempWarmestMon,
+        &SW_VegProdSim->annTempColdestMon,
+        &SW_VegProdSim->annPrecipWettestMon
+    };
+
+    for (index = 0; index < numArrays; index++) {
+        *(allocArray[index]) = NULL;
+    }
+}
+
+void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
     TimeInt year;
+    TimeInt n_years;
     int k;
+    LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
+    Bool inNorthHem = sw->RunIn.ModelRunIn.isnorth;
+    int veg_method = sw->VegProdIn.veg_method;
+    Bool allocAnnTemp = (Bool) (sw->SiteIn.methodMaxDepthSoilTemperature == 1);
+    Bool annTempOnly =
+        (Bool) (allocAnnTemp && veg_method != VEG_METHOD_DYN_EST);
 
     /* Set co2-multipliers to default */
     for (year = 0; year < MAX_NYEAR; year++) {
         ForEachVegType(k) {
-            vegSim[k].co2_multipliers[BIO_INDEX][year] = 1.;
-            vegSim[k].co2_multipliers[WUE_INDEX][year] = 1.;
+            sw->VegProdSim.veg[k].co2_multipliers[BIO_INDEX][year] = 1.;
+            sw->VegProdSim.veg[k].co2_multipliers[WUE_INDEX][year] = 1.;
         }
     }
 
-    if (veg_method > 0) {
+    sw->VegProdSim.shortIndex = sw->VegProdSim.longIndex = 0;
+
+    if (veg_method == VEG_METHOD_LONG_EST) {
+        /* static veg: estimated from simulation-wide climate */
         estimateVegetationFromClimate(
-            SW_VegProdRunIn,
-            allHist,
-            SW_ModelIn,
-            SW_ModelSim,
+            &sw->RunIn.VegProdRunIn,
+            sw->RunIn.weathRunAllHist,
+            &sw->ModelIn,
+            &sw->ModelSim,
             inNorthHem,
             veg_method,
             LogInfo
@@ -667,7 +1877,27 @@ void SW_VPD_init_run(
         }
     }
 
-    checkBiomass(SW_VegProdRunIn->veg, LogInfo);
+    if (veg_method == VEG_METHOD_DYN_EST) {
+        /* dynamic veg: init arrays here; calculated by SW_VPD_new_year() */
+        calc_const_dynamic_veg_info(
+            &sw->SoilSim, &sw->RunIn.SoilRunIn, &sw->SiteSim, n_layers
+        );
+    }
+
+    if (veg_method == VEG_METHOD_DYN_EST || allocAnnTemp) {
+        /* Number of years for dynamic vegetation: spinup + simulation years */
+        n_years = sw->ModelIn.endyr - sw->ModelIn.startyr + 1;
+        if (sw->ModelIn.SW_SpinUp.duration > 0) {
+            n_years += sw->ModelIn.SW_SpinUp.duration;
+        }
+
+        alloc_nyear_arrays(n_years, annTempOnly, &sw->VegProdSim, LogInfo);
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+    }
+
+    checkBiomass(sw->RunIn.VegProdRunIn.veg, LogInfo);
 }
 
 /**
@@ -760,14 +1990,31 @@ void apply_biomassCO2effect(
 /**
 @brief Update vegetation parameters for new year
 
+@param[in] SW_YearWeathHist Array containing all historical data of a site
 @param[in] SW_ModelSim Struct of type SW_MODEL_SIM holding basic intermediate
     time information about the simulation run
+@param[in] SW_VegProdSim Struct of type SW_VEGPROD_SIM that holds
+information used and/or modified mainly during simulation runs
+@param[in] SW_SoilSim Struct of type SW_SOIL_SIM holding constant soil content
+information that will be used during simulations
 @param[in] isBiomAsIf100Cover Spatial reference of biomass inputs
     (are inputs as if 100% cover)
         - false (0): values as is (at given cover)
         - true (1), values as if cover was 100%
-@param[out] vegRunIn Array of size NVEGTYPES of type VegTypeRunIn describing
-    all NVEGTYPES vegetation types through simulation-specific inputs
+@param[in] veg_method The requested method to estimate vegetation values,
+    see SW_VEGPROD_INPUTS.veg_method
+@param[in] startYearWeather First year of the weather data
+@param[in] nYearsDynamicShort Number of years over which short-term vegetation
+predictors are summarized (as anomaly to long-term predictors)
+@param[in] nYearsDynamicLong Number of years over which long-term vegetation
+predictors are summarized
+@param[in] methodMaxDepthSoilTemperature Method for soil temperature at
+maximum depth:
+        0 (user provided value);
+        1 (dynamically calculated from a moving long-term mean annual air
+           temperature, see `nYearsDynamicLong` from veg.in)
+@param[out] SW_VegProdRunIn Struct of type SW_VEGPROD_RUN_INPUTS that
+    holds run-specific input information about vegetation production
 @param[out] vegSim Array of size NVEGTYPES of type VegTypeSim describing
     all NVEGTYPES vegetation types through values used purely during simulation
 @param[out] vegIn Array of size NVEGTYPES of type VegTypeIn describing
@@ -775,9 +2022,17 @@ void apply_biomassCO2effect(
     change between simulation runs)
 */
 void SW_VPD_new_year(
+    SW_WEATHER_HIST *SW_YearWeathHist,
     SW_MODEL_SIM *SW_ModelSim,
+    SW_VEGPROD_SIM *SW_VegProdSim,
+    SW_SOIL_SIM *SW_SoilSim,
     Bool isBiomAsIf100Cover,
-    VegTypeRunIn vegRunIn[],
+    int veg_method,
+    TimeInt startYearWeather,
+    TimeInt nYearsDynamicShort,
+    TimeInt nYearsDynamicLong,
+    unsigned int methodMaxDepthSoilTemperature,
+    SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,
     VegTypeSim vegSim[],
     VegTypeIn vegIn[]
 ) {
@@ -799,10 +2054,17 @@ void SW_VPD_new_year(
     *
     */
 
-    TimeInt doy; /* base1 */
-    TimeInt simyear = SW_ModelSim->simyear;
+    TimeInt doy;                            /* base1 */
+    TimeInt simyear = SW_ModelSim->simyear; /* adjusted year used for CO2 */
+    TimeInt yearIdxSpinSim = SW_ModelSim->yearIdxSpinSim;
+    TimeInt weatherYearIndex = SW_ModelSim->year - startYearWeather;
     int k;
     int mon;
+    Bool allocAnnTemp = (Bool) (methodMaxDepthSoilTemperature == 1);
+    Bool annTempOnly =
+        (Bool) (allocAnnTemp && veg_method != VEG_METHOD_DYN_EST);
+
+    VegTypeRunIn *vegRunIn = SW_VegProdRunIn->veg; // array of NVEGTYPES
 
     // Interpolation is to be in base1 in `interpolate_monthlyValues()`
     Bool interpAsBase1 = swTRUE;
@@ -815,7 +2077,31 @@ void SW_VPD_new_year(
     double litterAsIf100Cover[MAX_MONTHS];
 
 
-    // Grab the real year so we can access CO2 data
+    /* Update dynamic vegetation or boundary conditions of soil temperature */
+    if ((allocAnnTemp || veg_method == VEG_METHOD_DYN_EST)) {
+        /* Calculate annual predictor with weather of current year */
+        calc_yearly_hist_vals(
+            &SW_YearWeathHist[weatherYearIndex],
+            SW_ModelSim,
+            yearIdxSpinSim,
+            annTempOnly,
+            SW_VegProdSim
+        );
+
+        /* Calculate across-year predictors and update vegetation */
+        update_veg_yearly(
+            SW_SoilSim,
+            yearIdxSpinSim,
+            nYearsDynamicShort,
+            nYearsDynamicLong,
+            annTempOnly,
+            SW_VegProdSim,
+            SW_VegProdRunIn
+        );
+    }
+
+
+    /* Calculate daily vegetation from monthly & adjust for aCO2 */
     ForEachVegType(k) {
         if (GT(vegRunIn[k].cov.fCover, 0.)) {
 
@@ -900,6 +2186,8 @@ void SW_VPD_new_year(
         }
     }
 
+
+    /* Calculate additional daily vegetation variables */
     for (doy = 1; doy <= MAX_DAYS; doy++) {
         ForEachVegType(k) {
             if (GT(vegRunIn[k].cov.fCover, 0.)) {
@@ -1111,11 +2399,11 @@ void estimateVegetationFromClimate(
     LOG_INFO *LogInfo
 ) {
 
-    if (veg_method <= 0) {
+    if (veg_method <= VEG_METHOD_FILE) {
         return;
     }
 
-    if (veg_method == 1) {
+    if (veg_method == VEG_METHOD_LONG_EST) {
 
         unsigned int numYears = SW_ModelIn->endyr - SW_ModelIn->startyr + 1;
         unsigned int k;
@@ -1170,52 +2458,54 @@ void estimateVegetationFromClimate(
 
         averageClimateAcrossYears(&climateOutput, numYears, &climateAverages);
 
+        if (veg_method == VEG_METHOD_LONG_EST) {
 
-        C4Variables[0] = climateAverages.minTemp7thMon_C;
-        C4Variables[1] = climateAverages.ddAbove65F_degday;
-        C4Variables[2] = climateAverages.frostFree_days;
+            C4Variables[0] = climateAverages.minTemp7thMon_C;
+            C4Variables[1] = climateAverages.ddAbove65F_degday;
+            C4Variables[2] = climateAverages.frostFree_days;
 
-        estimatePotNatVegComposition(
-            climateAverages.meanTemp_C,
-            climateAverages.PPT_cm,
-            climateAverages.meanTempMon_C,
-            climateAverages.PPTMon_cm,
-            coverValues,
-            shrubLimit,
-            SumGrassesFraction,
-            C4Variables,
-            fillEmptyWithBareGround,
-            inNorthHem,
-            warnExtrapolation,
-            fixBareGround,
-            grassOutput,
-            RelAbundanceL0,
-            RelAbundanceL1,
-            LogInfo
-        );
+            estimatePotNatVegComposition(
+                climateAverages.meanTemp_C,
+                climateAverages.PPT_cm,
+                climateAverages.meanTempMon_C,
+                climateAverages.PPTMon_cm,
+                coverValues,
+                shrubLimit,
+                SumGrassesFraction,
+                C4Variables,
+                fillEmptyWithBareGround,
+                inNorthHem,
+                warnExtrapolation,
+                fixBareGround,
+                grassOutput,
+                RelAbundanceL0,
+                RelAbundanceL1,
+                LogInfo
+            );
 
-        if (LogInfo->stopRun) {
-            // Deallocate climate structs' memory before error
+            if (LogInfo->stopRun) {
+                // Deallocate climate structs' memory before error
+                deallocateClimateStructs(&climateOutput, &climateAverages);
+                return; // Exit function prematurely due to error
+            }
+
+            ForEachVegType(k) {
+                SW_VegProdRunIn->veg[k].cov.fCover = RelAbundanceL1[k];
+            }
+
+            SW_VegProdRunIn->bare_cov.fCover = RelAbundanceL0[bareGroundIndex];
+
+            // Deallocate climate structs' memory
             deallocateClimateStructs(&climateOutput, &climateAverages);
-            return; // Exit function prematurely due to error
+
+        } else {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Requested 'veg_method = %d' is not implemented.",
+                veg_method
+            );
         }
-
-        ForEachVegType(k) {
-            SW_VegProdRunIn->veg[k].cov.fCover = RelAbundanceL1[k];
-        }
-
-        SW_VegProdRunIn->bare_cov.fCover = RelAbundanceL0[bareGroundIndex];
-
-        // Deallocate climate structs' memory
-        deallocateClimateStructs(&climateOutput, &climateAverages);
-
-    } else {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Requested 'veg_method = %d' is not implemented.",
-            veg_method
-        );
     }
 }
 

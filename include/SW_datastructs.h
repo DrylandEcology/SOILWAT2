@@ -165,6 +165,10 @@ typedef struct {
      * doy and year are base1. */
     /* simyear = year + addtl_yr */
 
+    /** Index of the currently simulated year (base0), continous count across
+     spinup and simulation periods */
+    int yearIdxSpinSim;
+
     TimeInt days_in_month[MAX_MONTHS], /* number of days per month for "current"
                                           year */
         cum_monthdays[MAX_MONTHS];     /* monthly cumulative number of days for
@@ -293,6 +297,29 @@ typedef struct {
 } SW_SOIL_RUN_INPUTS;
 
 typedef struct {
+    /* Constant values pertaining to a site's soil profile used
+       in estimating vegetation when veg_method = VEG_METHOD_DYN_EST */
+    double soilDepth,   /**< Depth of soil in the grid cell in cm */
+        percSand,       /**< Average % of sand across the soil
+                            profile, weighted by the width of
+                            each soil layer */
+        percCoarseFrag, /**< Average % of coarse fragments across
+                            the soil profile, weighted by the
+                            width of each soil layer */
+        totAWHC,        /**< Total amount of available water holding
+                             capacity */
+        surfaceClay,    /**< % of clay in the 0-3 cm of the soil
+                             profile (or first layer if deeper
+                             than 3 cm) */
+        surfaceOM;      /**< % of organic matter in the 0-3 cm of
+                             the soil profile (or first layer if
+                             deeper than 3 cm) */
+} SW_SOIL_SIM;
+
+typedef struct {
+    /** Number of transpiration regions (max = \ref MAX_TRANSP_REGIONS) */
+    LyrIndex n_transp_rgn;
+
     /** Number of soil layers from which bare-soil evaporation is possible */
     LyrIndex n_evap_lyrs;
 
@@ -468,6 +495,12 @@ typedef struct {
     double SWCInitVal, /* initialization value for swc */
         SWCWetVal,     /* value for a "wet" day,       */
         SWCMinVal;     /* lower bound on swc.          */
+
+    /** Method for soil temperature at maximum depth:
+        0 (user provided value);
+        1 (dynamically calculated from a moving long-term mean annual air
+           temperature, see `nYearsDynamicLong` from veg.in) */
+    unsigned int methodMaxDepthSoilTemperature;
 
     /** Lower bounds of transpiration regions [cm]
 
@@ -693,6 +726,59 @@ typedef struct {
 
 typedef struct {
     VegTypeSim veg[NVEGTYPES];
+
+    double *annTemp,          /**< Dynamic array of size n years holding the
+                                   mean annual monthly temperature for each year */
+        *annTempPrecipCorr,   /**< Dynamic array of size n years holding the
+                                   correlation between each months' avg temp
+                                   and each month's precipitation for each year */
+        *annIsotherm,         /**< Dynamic array of size n years holding
+                                   isothermality for each year */
+        *annWaterDef,         /**< Dynamic array of size n years holding annual
+                                   water deficit for each year */
+        *annPrecip,           /**< Dynamic array of size n years holding annual
+                                   total precipitation (mm) for each year */
+        *annSeasonPrecip,     /**< Dynamic array of size n years holding the
+                                   coefficient of variation of monthly total
+                                   precipitation in a year for every year */
+        *annPrecipDriestMon,  /**< Dynamic array of size n years holding the
+                                   total precipitation of the driest month of the
+                                   year for every year */
+        *annWetDegDays,       /**< Dynamic array of size n years holding total
+                                   number of wet degree days in the year for every
+                                   year */
+        *annTempWarmestMon,   /**< Dynamic array of size n years holding the
+                                   maximum temperature of the warmest month of
+                                   the year for every year */
+        *annTempColdestMon,   /**< Dynamic array of size n years holding the
+                                   minimum temperature of the warmest month of
+                                   the year for every year */
+        *annPrecipWettestMon; /**< Dynamic array of size n years holding the
+                                   total precipitation of the wettest month
+                                   of the year for every year */
+
+    /* Long-term averages of any of the above variables that will be used
+       in calculating dynamic vegetation */
+    double annTempLongAvg, annTempPrecipLongAvg, annIsothermLongAvg,
+        annWaterDefLongAvg, annSeasonPrecipLongAvg, annPrecipDriestMonLongAvg,
+        annWetDegDaysLongAvg, annTempWarmestMonLongAvg,
+        annTempColdestMonLongAvg, annPrecipWettestMonLongAvg, annPrecipLongAvg;
+
+    /* Short-term average of any of the above variables that will be used
+       in calculating dynamic vegetation */
+    double annIsothermShortAvg, annTempPrecipShortAvg, annSeasonPrecipShortAvg,
+        annPrecipShortAvg, annWetDegDaysShortAvg, annWaterDefShortAvg,
+        annPrecipDriestMonShortAvg;
+
+    /* Variables to hold the anomaly ("anom...") or rate of anomaly
+       ("rateAnom...") for any of the variables near the top of this struct */
+    double anomIsotherm, anomTempPrecipCorr, anomWaterDef;
+
+    double rateAnomSeasonPrecip, rateAnomPrecip, rateAnomWetDegDays,
+        rateAnomWaterDef, rateAnomPrecipDriestMon;
+
+    /* Indices to keep track of the first/last values when taking averages */
+    IntU shortIndex, longIndex;
 } SW_VEGPROD_SIM;
 
 /** Data type to describe the surface cover of a SOILWAT2 simulation run */
@@ -733,8 +819,20 @@ typedef struct {
           are used to estimate fixed fractional cover of vegetation types;
           biomass and mean monthly phenology are obtained from user inputs
           as in option 0
+        - 2, climatic conditions that are summarized across a short-term and
+          long-term moving windows (which are updated every year) together with
+          soil conditions are used to estimate vegetation
     */
     int veg_method;
+
+
+    /** Number of years over which short-term vegetation predictors are
+       summarized (as anomaly to long-term predictors) */
+    TimeInt nYearsDynamicShort;
+
+    /** Number of years over which long-term vegetation predictors are
+     * summarized */
+    TimeInt nYearsDynamicLong;
 } SW_VEGPROD_INPUTS;
 
 typedef struct {
@@ -1850,6 +1948,7 @@ struct SW_RUN {
     SW_VEGPROD_SIM VegProdSim;
     SW_SOILWAT_SIM SoilWatSim;
     SW_SITE_SIM SiteSim;
+    SW_SOIL_SIM SoilSim;
 
     /* Output information */
     SW_OUT_RUN OutRun;

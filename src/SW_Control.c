@@ -250,17 +250,29 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         sw->RunIn.SkyRunIn.snow_density_daily
     );
 
-    // SW_SIT_new_year() not needed
-
     SW_VES_new_year(sw->VegEstabIn.count);
 
     // SW_VPD_new_year(): Dynamic CO2 effects on vegetation
     SW_VPD_new_year(
+        sw->RunIn.weathRunAllHist,
         &sw->ModelSim,
+        &sw->VegProdSim,
+        &sw->SoilSim,
         sw->VegProdIn.isBiomAsIf100Cover,
-        sw->RunIn.VegProdRunIn.veg,
+        sw->VegProdIn.veg_method,
+        sw->WeatherIn.startYear,
+        sw->VegProdIn.nYearsDynamicShort,
+        sw->VegProdIn.nYearsDynamicLong,
+        sw->SiteIn.methodMaxDepthSoilTemperature,
+        &sw->RunIn.VegProdRunIn,
         sw->VegProdSim.veg,
         sw->VegProdIn.veg
+    );
+
+    SW_SIT_new_year(
+        sw->SiteIn.methodMaxDepthSoilTemperature,
+        sw->VegProdSim.annTempLongAvg,
+        &sw->RunIn.SiteRunIn.Tsoil_constant
     );
 
     // SW_FLW_new_year() not needed
@@ -380,10 +392,8 @@ void SW_RUN_deepCopy(
         copyMKV(&dest->MarkovIn, &source->MarkovIn);
     }
 
+    SW_VPD_init_ptrs(&dest->VegProdSim);
     SW_VES_init_ptrs(&dest->VegEstabIn, dest->ves_p_accu, dest->ves_p_oagg);
-    if (LogInfo->stopRun) {
-        return; // Exit prematurely due to error
-    }
 
     /* Copy vegetation establishment parameters */
     dest->VegEstabIn.count = source->VegEstabIn.count;
@@ -801,8 +811,8 @@ program exit
 void SW_CTL_init_ptrs(SW_RUN *sw) {
     SW_WTH_init_ptrs(&sw->RunIn.weathRunAllHist);
     SW_MKV_init_ptrs(&sw->MarkovIn);
+    SW_VPD_init_ptrs(&sw->VegProdSim);
     SW_VES_init_ptrs(&sw->VegEstabIn, sw->ves_p_accu, sw->ves_p_oagg);
-    // SW_VPD_init_ptrs() not needed
     SW_OUT_init_ptrs(&sw->OutRun, &sw->SW_PathOutputs);
     SW_SWC_init_ptrs(&sw->SoilWatIn, &sw->SoilWatSim);
 }
@@ -989,7 +999,7 @@ void SW_CTL_clear_model(Bool full_reset, SW_RUN *sw) {
     // SW_SKY_INPUTS_deconstruct() not needed
     // SW_SIT_deconstruct() not needed
     SW_VES_deconstruct(sw->VegEstabIn.count, sw->ves_p_accu, sw->ves_p_oagg);
-    // SW_VPD_deconstruct() not needed
+    SW_VPD_deconstruct(&sw->VegProdSim);
     // SW_FLW_deconstruct() not needed
     SW_SWC_deconstruct(&sw->SoilWatIn, &sw->SoilWatSim);
     SW_CBN_deconstruct();
@@ -1044,16 +1054,7 @@ void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
         return; // Exit function prematurely due to error
     }
 
-    SW_VPD_init_run(
-        &sw->RunIn.VegProdRunIn,
-        sw->RunIn.weathRunAllHist,
-        &sw->ModelIn,
-        &sw->ModelSim,
-        sw->VegProdSim.veg,
-        sw->RunIn.ModelRunIn.isnorth,
-        sw->VegProdIn.veg_method,
-        LogInfo
-    );
+    SW_VPD_init_run(sw, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -1316,6 +1317,8 @@ void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 reSet: {
     sw->ModelIn.startyr = startyr;      // reset startyr to original value
     sw->ModelSim.doOutput = prev_doOut; // reset doOutput to original value
+    /* Note: don't reset sw->ModelSim.yearIdxSpinSim which is a
+    continuous index across spinup and simulation years) */
 
     free(years);
 }

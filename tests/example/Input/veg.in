@@ -9,9 +9,15 @@
 #       modified unless a vegetation type itself is altered.
 
 #---- Select method for vegetation parameters
-0	# 0 - Use values from this file
- 	# 1 - Estimate vegetation composition from long-term climate conditions
- 	#     (values for other vegetation parameters from this file)
+0       # 0 - Use values from this file
+        # 1 - Estimate vegetation composition from long-term climate conditions
+        #     (values for other vegetation parameters from this file)
+        # 2 - Dynamic vegetation using short- and long-term conditions
+        #     (see nYearsDynamicShort & nYearsDynamicLong options)
+
+#--- Dynamic Vegetation Moving Windows
+30	# nYearsDynamicLong: Number of years over which long-term climate predictors are summarized (used for dynamic vegetation and soil temperature at the lower boundary)
+3	# nYearsDynamicShort: Number of years over which short-term vegetation predictors are summarized (as anomaly to long-term predictors)
 
 #---- Composition of vegetation type components (0-1; must add up to 1)
 #	grass	shrub	tree	forbs	BareGround
