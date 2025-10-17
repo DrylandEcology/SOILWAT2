@@ -334,6 +334,7 @@ void calc_yearly_hist_vals(
     SW_VEGPROD_SIM *SW_VegProdSim
 ) {
     double meanTemp[MAX_MONTHS] = {0.};
+    double meanTempAnn = 0.;
     double maxMonTemp[MAX_MONTHS] = {0.};
     double minMonTemp[MAX_MONTHS] = {0.};
     double totPrecip[MAX_MONTHS] = {0.};
@@ -352,6 +353,7 @@ void calc_yearly_hist_vals(
 
     TimeInt doy;
     TimeInt mon = 0;
+    TimeInt nDaysYr = SW_ModelSim->cum_monthdays[MAX_MONTHS - 1];
 
     for (doy = 0; doy < SW_ModelSim->lastdoy; doy++) {
         // Check if this day is a new month
@@ -381,19 +383,18 @@ void calc_yearly_hist_vals(
     // so do here and return from the function
     if (annTempOnly) {
         for (mon = 0; mon < MAX_MONTHS; mon++) {
-            meanTemp[mon] /= SW_ModelSim->days_in_month[mon];
+            meanTempAnn += meanTemp[mon];
         }
 
-        SW_VegProdSim->annTemp[yearIndex] = mean(meanTemp, MAX_MONTHS);
-
+        // Set annual mean temperature (corrected for number of days by month)
+        SW_VegProdSim->annTemp[yearIndex] = meanTempAnn / nDaysYr;
         return;
     }
 
-    // Average total monthly precipitation
-    monPrecipAvg = mean(totPrecip, MAX_MONTHS);
-
     // Loop through all months
     for (mon = 0; mon < MAX_MONTHS; mon++) {
+        meanTempAnn += meanTemp[mon];
+
         maxMonTemp[mon] /= SW_ModelSim->days_in_month[mon];
         minMonTemp[mon] /= SW_ModelSim->days_in_month[mon];
         meanTemp[mon] /= SW_ModelSim->days_in_month[mon];
@@ -434,8 +435,8 @@ void calc_yearly_hist_vals(
         isoThermSum[mon] = maxMonTemp[mon] - minMonTemp[mon];
     }
 
-    // Set annual mean temperature
-    SW_VegProdSim->annTemp[yearIndex] = mean(meanTemp, MAX_MONTHS);
+    // Set annual mean temperature (corrected for number of days by month)
+    SW_VegProdSim->annTemp[yearIndex] = meanTempAnn / nDaysYr;
 
     // Set isothermality
     // mean for every month[((max temp - min temp) values)] /
@@ -448,6 +449,7 @@ void calc_yearly_hist_vals(
 
     // Set precip seasonality - coefficient of variation
     precipSD = standardDeviation(totPrecip, MAX_MONTHS);
+    monPrecipAvg = mean(totPrecip, MAX_MONTHS);
     SW_VegProdSim->annSeasonPrecip[yearIndex] = precipSD / monPrecipAvg;
 
     // Set the temperature-precipitation correlation
@@ -507,7 +509,6 @@ static void calc_annTempLongAvg(
         *annTempLongAvg += SW_VegProdSim->annTemp[yearIndex];
         *annTempLongAvg /= (yearIndex + 1);
     }
-
 }
 
 /**

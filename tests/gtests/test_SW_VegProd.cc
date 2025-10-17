@@ -1750,6 +1750,7 @@ TEST_F(VegProdFixtureTest, CalcAnnClimConditions) {
         be compared against the values produced in `calc_yearly_hist_vals()`
     */
     for (mon = 0; mon < MAX_MONTHS; mon++) {
+        expAnnTemp += monTemp[mon];
         monMaxTemp[mon] /= SW_ModelSim.days_in_month[mon];
         monTemp[mon] /= SW_ModelSim.days_in_month[mon];
         monMinTemp[mon] /= SW_ModelSim.days_in_month[mon];
@@ -1774,7 +1775,7 @@ TEST_F(VegProdFixtureTest, CalcAnnClimConditions) {
     isoThermVal /= (maxMonTemp - minMonTemp);
 
     corrVar = correlation_coefficient(monTemp, monPrecip, MAX_MONTHS);
-    expAnnTemp = mean(monTemp, MAX_MONTHS);
+    expAnnTemp /= SW_ModelSim.cum_monthdays[MAX_MONTHS - 1];
     expSeasonPrecip =
         standardDeviation(monPrecip, MAX_MONTHS) / mean(monPrecip, MAX_MONTHS);
 
