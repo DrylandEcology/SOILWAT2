@@ -1,5 +1,5 @@
 # NEWS
-# SOILWAT2 v8.2.1-devel
+# SOILWAT2 v8.3.0-devel
 * Simulation output remains the same as the previous version.
 
 * Soil temperature at the lower boundary can now be approximated by a
