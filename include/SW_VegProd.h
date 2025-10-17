@@ -190,7 +190,7 @@ void SW_VPD_new_year(
     SW_SOIL_SIM *SW_SoilSim,
     Bool isBiomAsIf100Cover,
     int veg_method,
-    TimeInt startYr,
+    TimeInt startYearWeather,
     TimeInt nYearsDynamicShort,
     TimeInt nYearsDynamicLong,
     unsigned int methodMaxDepthSoilTemperature,

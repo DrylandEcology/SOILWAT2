@@ -377,9 +377,20 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate2) {
     SW_Run.VegProdIn.nYearsDynamicShort = 3;
     SW_Run.VegProdIn.nYearsDynamicLong = 10; // less than number of test years
 
-    // Re-calculate vegetation
+    // Turn on spinup simulation (including spinup of dynamic vegetation)
+    // (see WaterBalanceFixtureTest.WaterBalanceWithSpinup)
+    SW_Run.ModelIn.SW_SpinUp.spinup = swTRUE;
+    // Set spinup variables
+    SW_Run.ModelIn.SW_SpinUp.mode = 1;
+    SW_Run.ModelIn.SW_SpinUp.duration = 5;
+    SW_Run.ModelIn.SW_SpinUp.scope = 8;
+
+    // Re-calculate vegetation (accounting for spinup)
     SW_VPD_init_run(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
+
+    // Run the spinup & deactivate
+    SW_CTL_run_spinup(&SW_Run, &SW_Domain.OutDom, &LogInfo);
 
     // Run the simulation
     SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);

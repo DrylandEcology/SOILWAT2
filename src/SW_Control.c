@@ -260,7 +260,7 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         &sw->SoilSim,
         sw->VegProdIn.isBiomAsIf100Cover,
         sw->VegProdIn.veg_method,
-        sw->ModelIn.startyr,
+        sw->WeatherIn.startYear,
         sw->VegProdIn.nYearsDynamicShort,
         sw->VegProdIn.nYearsDynamicLong,
         sw->SiteIn.methodMaxDepthSoilTemperature,
@@ -1317,6 +1317,8 @@ void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 reSet: {
     sw->ModelIn.startyr = startyr;      // reset startyr to original value
     sw->ModelSim.doOutput = prev_doOut; // reset doOutput to original value
+    /* Note: don't reset sw->ModelSim.yearIdxSpinSim which is a
+    continuous index across spinup and simulation years) */
 
     free(years);
 }

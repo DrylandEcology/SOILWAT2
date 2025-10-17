@@ -319,7 +319,7 @@ In particular, SW_MDL_new_year() must have been called to correctly set up
 @param[in] SW_ModelSim Struct of type SW_MODEL_SIM holding basic
 intermediate time information about the simulation run
 @param[in] yearIndex Index value specifying which place the year is in the
-simulation process (i.e., [0, n years) )
+simulation process including spinup (i.e., [0, n years) )
 @param[in] annTempOnly Specifies if this function is to only allocate
 annual temperature arrays
 @param[out] SW_VegProdSim Struct of type SW_VEGPROD_SIM that holds information
@@ -1130,12 +1130,16 @@ void calc_CONUS_vegcov_2025(
 }
 
 /**
-@brief Wrapper function to update vegetation for the current year
+@brief Calculate across-year predictors and update vegetation
+
+    - first year: use annual predictors based on current year
+    - later years: use annual predictors based on previous year(s)
+      (skip second year because the same as first year)
 
 @param[in] SW_SoilSim Struct of type SW_SOIL_SIM holding constant soil content
 information that will be used during simulations
 @param[in] yearIndex Index value specifying which place the year is in the
-simulation process (i.e., [0, n years) )
+simulation process including spinup (i.e., [0, n years) )
 @param[in] nYearsDynamicShort Number of years over which short-term vegetation
 predictors are summarized (as anomaly to long-term predictors)
 @param[in] nYearsDynamicLong Number of years over which long-term vegetation
@@ -1158,6 +1162,13 @@ void update_veg_yearly(
     SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn
 ) {
     double RelAbundanceL0[7];
+
+    if (yearIndex == 1) {
+        return; /* skip second year because the same as first year */
+    }
+
+    /* Use values from previous year after first */
+    yearIndex = (yearIndex == 0) ? 0 : yearIndex - 1;
 
     if (annTempOnly) {
         // Calculate long-term mean temperature
@@ -1820,7 +1831,7 @@ void SW_VPD_init_ptrs(SW_VEGPROD_SIM *SW_VegProdSim) {
 
 void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
     TimeInt year;
-    TimeInt n_years = sw->ModelIn.endyr - sw->ModelIn.startyr + 1;
+    TimeInt n_years;
     int k;
     LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
     Bool inNorthHem = sw->RunIn.ModelRunIn.isnorth;
@@ -1863,6 +1874,12 @@ void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
     }
 
     if (veg_method == VEG_METHOD_DYN_EST || allocAnnTemp) {
+        /* Number of years for dynamic vegetation: spinup + simulation years */
+        n_years = sw->ModelIn.endyr - sw->ModelIn.startyr + 1;
+        if (sw->ModelIn.SW_SpinUp.duration > 0) {
+            n_years += sw->ModelIn.SW_SpinUp.duration;
+        }
+
         alloc_nyear_arrays(n_years, annTempOnly, &sw->VegProdSim, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -1975,7 +1992,7 @@ information that will be used during simulations
         - true (1), values as if cover was 100%
 @param[in] veg_method The requested method to estimate vegetation values,
     see SW_VEGPROD_INPUTS.veg_method
-@param[in] startYr Start year of the simulation
+@param[in] startYearWeather First year of the weather data
 @param[in] nYearsDynamicShort Number of years over which short-term vegetation
 predictors are summarized (as anomaly to long-term predictors)
 @param[in] nYearsDynamicLong Number of years over which long-term vegetation
@@ -2000,7 +2017,7 @@ void SW_VPD_new_year(
     SW_SOIL_SIM *SW_SoilSim,
     Bool isBiomAsIf100Cover,
     int veg_method,
-    TimeInt startYr,
+    TimeInt startYearWeather,
     TimeInt nYearsDynamicShort,
     TimeInt nYearsDynamicLong,
     unsigned int methodMaxDepthSoilTemperature,
@@ -2026,9 +2043,10 @@ void SW_VPD_new_year(
     *
     */
 
-    TimeInt doy; /* base1 */
-    TimeInt simyear = SW_ModelSim->simyear;
-    TimeInt yearIndex = simyear - startYr;
+    TimeInt doy;                            /* base1 */
+    TimeInt simyear = SW_ModelSim->simyear; /* adjusted year used for CO2 */
+    TimeInt yearIdxSpinSim = SW_ModelSim->yearIdxSpinSim;
+    TimeInt weatherYearIndex = SW_ModelSim->year - startYearWeather;
     int k;
     int mon;
     Bool allocAnnTemp = (Bool) (methodMaxDepthSoilTemperature == 1);
@@ -2052,29 +2070,23 @@ void SW_VPD_new_year(
     if ((allocAnnTemp || veg_method == VEG_METHOD_DYN_EST)) {
         /* Calculate annual predictor with weather of current year */
         calc_yearly_hist_vals(
-            &SW_YearWeathHist[yearIndex],
+            &SW_YearWeathHist[weatherYearIndex],
             SW_ModelSim,
-            yearIndex,
+            yearIdxSpinSim,
             annTempOnly,
             SW_VegProdSim
         );
 
-        /* Calculate across-year predictors and update vegetation
-            * first year: use annual predictors based on current year
-            * later years: use annual predictors based on previous year(s)
-              (skip second year because the same as first year)
-        */
-        if (yearIndex != 1) {
-            update_veg_yearly(
-                SW_SoilSim,
-                (yearIndex == 0) ? 0 : yearIndex - 1,
-                nYearsDynamicShort,
-                nYearsDynamicLong,
-                annTempOnly,
-                SW_VegProdSim,
-                SW_VegProdRunIn
-            );
-        }
+        /* Calculate across-year predictors and update vegetation */
+        update_veg_yearly(
+            SW_SoilSim,
+            yearIdxSpinSim,
+            nYearsDynamicShort,
+            nYearsDynamicLong,
+            annTempOnly,
+            SW_VegProdSim,
+            SW_VegProdRunIn
+        );
     }
 
 

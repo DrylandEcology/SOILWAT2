@@ -165,6 +165,10 @@ typedef struct {
      * doy and year are base1. */
     /* simyear = year + addtl_yr */
 
+    /** Index of the currently simulated year (base0), continous count across
+     spinup and simulation periods */
+    int yearIdxSpinSim;
+
     TimeInt days_in_month[MAX_MONTHS], /* number of days per month for "current"
                                           year */
         cum_monthdays[MAX_MONTHS];     /* monthly cumulative number of days for
