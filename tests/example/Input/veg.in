@@ -15,8 +15,8 @@
         # 2 - Dynamic vegetation using short- and long-term conditions
         #     (see nYearsDynamicShort & nYearsDynamicLong options)
 
-#--- Dynamic Vegetation Time Durations
-30	# nYearsDynamicLong: Number of years over which long-term vegetation predictors are summarized
+#--- Dynamic Vegetation Moving Windows
+30	# nYearsDynamicLong: Number of years over which long-term climate predictors are summarized (used for dynamic vegetation and soil temperature at the lower boundary)
 3	# nYearsDynamicShort: Number of years over which short-term vegetation predictors are summarized (as anomaly to long-term predictors)
 
 #---- Composition of vegetation type components (0-1; must add up to 1)

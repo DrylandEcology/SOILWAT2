@@ -1,5 +1,22 @@
 # NEWS
 # SOILWAT2 v8.2.1-devel
+* Simulation output remains the same as the previous version.
+
+* Soil temperature at the lower boundary can now be approximated by a
+  long-term moving window of mean annual air temperature that is updated yearly
+  (#466; @dschlaep, @N1ckP3rsl3y).
+
+* Vegetation (currently, fractional cover of bare ground and vegetation types)
+  can now be estimated dynamically from predictors based on soil properties and
+  long-term and short-term moving windows of climate conditions that are
+  updated yearly (#396; @N1ckP3rsl3y, @dschlaep).
+
+## Changes to inputs
+* New input via `"siteparam.in"` that specifies the method for soil temperature
+  at the lower boundary.
+* New inputs via `"veg.in"` that specify if vegetation should be estimated
+  dynamically and that specify durations of the short-term and long-term moving
+  windows (for dynamic vegetation and soil temperature at the lower boundary).
 
 
 # SOILWAT2 v8.2.0
