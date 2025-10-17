@@ -2213,6 +2213,7 @@ void SW_NCOUT_create_output_files(
     const Bool openInPar = swTRUE;
     const int openMode = NC_WRITE;
     int *fileID;
+    Bool fileExists;
 
     char periodSuffix[10];
     char *yearFormat;
@@ -2326,7 +2327,11 @@ void SW_NCOUT_create_output_files(
 
                         fileID =
                             &SW_PathOutputs->openOutFileIDs[key][pd][fileNum];
-                        if (FileExists(fileNameBuf)) {
+                        fileExists = FileExists(fileNameBuf);
+#if defined(SWMPI)
+                        MPI_Barrier(MPI_COMM_WORLD);
+#endif
+                        if (fileExists) {
                             SW_NC_check(
                                 SW_Domain,
                                 fileID,
