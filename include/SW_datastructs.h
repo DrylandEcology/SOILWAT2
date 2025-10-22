@@ -873,8 +873,9 @@ typedef struct {
         nUntimedRuns;  /**< Number of simulation runs for which timing failed */
 
 #if defined(SWNETCDF)
-    double totIOCompTime, /**< Sum of I/O and computation runtimes */
-        totIOTime; /**< Sum of only the runtime of doing I/O operations */
+    double totCompTime, /**< Sum of computation runtime */
+        totInputTime,   /**< Sum of the runtime for input operations */
+        totOutputTime;  /**< Sum of the runtime for output operations */
 #endif
 } SW_WALLTIME;
 

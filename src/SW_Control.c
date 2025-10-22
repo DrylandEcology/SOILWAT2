@@ -1688,7 +1688,7 @@ void SW_CTL_run_sw(
         LogInfo,
         LogInfo
     );
-    SW_WT_TimeRun(tsr, ok_tsr, TIME_IO, SW_WallTime);
+    SW_WT_TimeRun(tsr, ok_tsr, TIME_IO_IN, SW_WallTime);
     if (LogInfo->stopRun || !runSims) {
         goto freeMem;
     }
@@ -1779,7 +1779,7 @@ void SW_CTL_run_sw(
         local_sw.SW_PathOutputs.outTimeSizes,
         LogInfo
     );
-    SW_WT_TimeRun(tsr, ok_tsr, TIME_IO, SW_WallTime);
+    SW_WT_TimeRun(tsr, ok_tsr, TIME_IO_OUT, SW_WallTime);
     (void) runNum;
 #endif
 #endif

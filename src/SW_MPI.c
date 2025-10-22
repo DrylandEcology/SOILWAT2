@@ -1176,7 +1176,7 @@ void SW_MPI_get_end_info(
     int rank, int size, SW_WALLTIME *SW_WallTime, LOG_INFO *LogInfo
 ) {
     SW_WALLTIME overallTiming;
-    const size_t numReduceVals = 7;
+    const size_t numReduceVals = 8;
     const size_t maxTimeIndex = 2;
     const size_t numWarnErr = 2;
     const size_t maxDoubleIndex = 4;
@@ -1193,8 +1193,9 @@ void SW_MPI_get_end_info(
         (void *) &SW_WallTime->timeMax,
         (void *) &SW_WallTime->timeMin,
         (void *) &SW_WallTime->timeMean,
-        (void *) &SW_WallTime->totIOCompTime,
-        (void *) &SW_WallTime->totIOTime,
+        (void *) &SW_WallTime->totCompTime,
+        (void *) &SW_WallTime->totInputTime,
+        (void *) &SW_WallTime->totOutputTime,
         (void *) &SW_WallTime->nTimedRuns,
         (void *) &SW_WallTime->nUntimedRuns
     };
@@ -1203,8 +1204,9 @@ void SW_MPI_get_end_info(
         (void *) &overallTiming.timeMax,
         (void *) &overallTiming.timeMin,
         (void *) &overallTiming.timeMean,
-        (void *) &overallTiming.totIOCompTime,
-        (void *) &overallTiming.totIOTime,
+        (void *) &overallTiming.totCompTime,
+        (void *) &overallTiming.totInputTime,
+        (void *) &overallTiming.totOutputTime,
         (void *) &overallTiming.nTimedRuns,
         (void *) &overallTiming.nUntimedRuns
     };
@@ -1575,7 +1577,7 @@ void SW_MPI_read_inputs(
         siteLogs,
         LogInfo
     );
-    SW_WT_TimeRun(tsr, ok_tsr, TIME_IO, SW_WallTime);
+    SW_WT_TimeRun(tsr, ok_tsr, TIME_IO_IN, SW_WallTime);
 }
 
 /**
@@ -1698,7 +1700,7 @@ void SW_MPI_write_outputs(
         SW_PathOutputs->outTimeSizes,
         LogInfo
     );
-    SW_WT_TimeRun(tsr, ok_tsr, TIME_IO, SW_WallTime);
+    SW_WT_TimeRun(tsr, ok_tsr, TIME_IO_OUT, SW_WallTime);
     if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
         return;
     }
@@ -1723,7 +1725,7 @@ void SW_MPI_write_outputs(
             (write < numWrites) ? succMark : NULL,
             LogInfo
         );
-        SW_WT_TimeRun(tsr, ok_tsr, TIME_IO, SW_WallTime);
+        SW_WT_TimeRun(tsr, ok_tsr, TIME_IO_OUT, SW_WallTime);
         if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
             return;
         }

@@ -337,8 +337,9 @@ void SW_WT_StartTime(SW_WALLTIME *wt) {
     wt->nUntimedRuns = 0;
 
 #if defined(SWNETCDF)
-    wt->totIOCompTime = 0;
-    wt->totIOTime = 0;
+    wt->totCompTime = 0.;
+    wt->totInputTime = 0.;
+    wt->totOutputTime = 0.;
 #endif
 }
 
@@ -362,11 +363,17 @@ void SW_WT_TimeRun(WallTimeSpec ts, Bool ok_ts, int timeSec, SW_WALLTIME *wt) {
         }
 
 #if defined(SWNETCDF)
-        if (timeSec == TIME_IO) {
-            wt->totIOTime += ut;
+        switch (timeSec) {
+        case TIME_COMPUTE:
+            wt->totCompTime += ut;
+            break;
+        case TIME_IO_IN:
+            wt->totInputTime += ut;
+            break;
+        default: // TIME_IO_OUT
+            wt->totOutputTime += ut;
+            break;
         }
-
-        wt->totIOCompTime += ut;
 #else
         (void) timeSec;
 #endif
@@ -402,6 +409,10 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
     int fprintRes = 0;
 
     FILE *logfp = LogInfo->QuietMode ? LogInfo->logfp : stdout;
+
+#if defined(SWNETCDF)
+    double totIOCompTime = 0.;
+#endif
 
     if (isnull(logfp)) {
         return;
@@ -469,18 +480,22 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
                 Adjust the compute and I/O times to be the average time
                 per site rather than the sum of all sites
             */
-            wt.totIOCompTime /= (double) wt.nTimedRuns;
-            wt.totIOTime /= (double) wt.nTimedRuns;
+            totIOCompTime = wt.totCompTime + wt.totInputTime + wt.totOutputTime;
+            totIOCompTime /= (double) wt.nTimedRuns;
+            wt.totInputTime /= (double) wt.nTimedRuns;
+            wt.totOutputTime /= (double) wt.nTimedRuns;
 
             fprintRes = fprintf(
                 logfp,
-                "    * Workload Partitioning: %.3f = %.3f (compute, %.2f%%) + "
-                "%.3f (I/O, %.2f%%) [seconds]\n",
-                wt.totIOCompTime,
+                "    * Workload Partitioning: %.3f = %.3f (input, %.2f%%) + "
+                "%.3f (compute, %.2f%%) + %.3f (output, %.2f%%) [seconds]\n",
+                totIOCompTime,
+                wt.totInputTime,
+                (wt.totInputTime / totIOCompTime) * 100,
                 wt.timeMean, // Average compute time
-                (wt.timeMean / wt.totIOCompTime) * 100,
-                wt.totIOTime,
-                (wt.totIOTime / wt.totIOCompTime) * 100
+                (wt.timeMean / totIOCompTime) * 100,
+                wt.totOutputTime,
+                (wt.totOutputTime / totIOCompTime) * 100
             );
             if (fprintRes < 0) {
                 goto wrapUpErrMsg;

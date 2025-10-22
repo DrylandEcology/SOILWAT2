@@ -77,7 +77,8 @@ extern const TimeInt monthdays[];
 /* Constants for timing specific sections (compute or I/O) of the
    program run */
 #define TIME_COMPUTE 0
-#define TIME_IO 1
+#define TIME_IO_IN 1
+#define TIME_IO_OUT 2
 
 /* =================================================== */
 /*             Global Function Declarations            */
