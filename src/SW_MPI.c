@@ -917,7 +917,7 @@ void SW_MPI_initialize(int *argc, char ***argv, int *rank, int *worldSize) {
 @brief Conclude the program run by finalizing/freeing anything that's
 been initialized/created through MPI within the program run
 */
-void SW_MPI_finalize() { MPI_Finalize(); }
+void SW_MPI_finalize(void) { MPI_Finalize(); }
 
 /**
 @brief Trigger an abort error when a fatal error occurs

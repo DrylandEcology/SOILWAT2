@@ -40,7 +40,7 @@ extern "C" {
 
 void SW_MPI_initialize(int *argc, char ***argv, int *rank, int *worldSize);
 
-void SW_MPI_finalize();
+void SW_MPI_finalize(void);
 
 void SW_MPI_Fail(int rank, int failType, char *mpiErrStr);
 
