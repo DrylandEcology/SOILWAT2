@@ -259,10 +259,17 @@ for (k0 in seq_len(nrow(listTestRuns))) {
   #--- * Check output ------
   dir_testRunOutput <- file.path(dir_testRun, "Output")
 
-  fname_logfile <- file.path(dir_testRun, "logs", "logfile.log")
-  has_logfile <- file.exists(fname_logfile)
+  fname_logfiles <- list.files(
+    path = file.path(dir_testRun, "logs"), 
+    pattern = "logfile.log",
+    full.names = TRUE
+  )
+  has_logfile <- length(fname_logfiles) > 0L
 
-  logfile <- if (has_logfile) readLines(fname_logfile)
+  logfile <- if (has_logfile) {
+    lapply(fname_logfiles, readLines) |>
+    do.call(c, args = _)
+  }
 
   if (length(listExclusionPatterns) > 0L) {
     idsRemove <- lapply(listExclusionPatterns, grep, x = logfile) |>

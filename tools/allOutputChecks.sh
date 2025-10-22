@@ -16,7 +16,7 @@
 
 #--- Command line arguments
 outTag="ref"
-nTasks=""
+nTasks="1"
 
 
 while [ $# -gt 0 ]; do

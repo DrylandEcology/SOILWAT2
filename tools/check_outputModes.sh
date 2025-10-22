@@ -56,7 +56,7 @@ res=$(make clean_example)
 rm -r tests/example/Output_comps-mpi > /dev/null 2>&1
 if $doParallelSOILWAT2 ; then
     echo "Run mpi-based SOILWAT2 on example simulation ..."
-    noflags[0]="SW_NTASKS=2"
+    noflags[0]="SW_NTASKS=1"
     res=$(run_fresh_sw2 "CC=${pCC}" noflags[@] "mpi" "bin_run" 2>&1)
     if [[ "${res}" == *"make failed"* ]]; then
         echo "${res}"
