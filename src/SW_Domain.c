@@ -633,7 +633,7 @@ void SW_DOM_init_ptrs(SW_DOMAIN *SW_Domain) {
     SW_NCIN_init_ptrs(&SW_Domain->netCDFInput);
 
 #if defined(SWMPI)
-    InKeys inKey;
+    int inKey; // type cannot be InKeys because of c++ tests
 
     ForEachNCInKey(inKey) { SW_Domain->domSuids[inKey] = NULL; }
 #endif
