@@ -1509,7 +1509,6 @@ void SW_MPI_read_inputs(
     size_t origNSuids = SW_Domain->nProcSuids;
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
-    size_t maxReads[SW_NINKEYSNC] = {0};
 
     SW_MPI_get_sim_suids(
         SW_Domain->netCDFInput.readInVars,
@@ -1542,23 +1541,6 @@ void SW_MPI_read_inputs(
         }
     }
 
-    ForEachNCInKey(inKey) {
-        if (SW_Domain->netCDFInput.readInVars[inKey][0]) {
-            SW_MPI_Allreduce(
-                &numReads[inKey],
-                &maxReads[inKey],
-                1,
-                SW_MPI_SIZE_T,
-                MPI_MAX,
-                MPI_COMM_WORLD
-            );
-
-            for (suid = numReads[inKey]; suid < maxReads[inKey]; suid++) {
-                counts[inKey][suid][0] = counts[inKey][suid][1] = 0;
-            }
-        }
-    }
-
     set_walltime(&tsr, &ok_tsr);
     SW_NCIN_read_inputs(
         sw,
@@ -1568,7 +1550,6 @@ void SW_MPI_read_inputs(
         counts,
         SW_Domain->SW_PathInputs.openInFileIDs,
         numReads,
-        maxReads,
         *nSuids,
         tempVals,
         simSuids[eSW_InDomain],

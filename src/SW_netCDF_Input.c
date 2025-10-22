@@ -5227,9 +5227,6 @@ temporal/spatial information for a set of simulation runs
 @param[in] numReads A list of size SW_NINKEYSNC holding how many
     contiguous reads it will take to read all the input for the specified
     input SUIDs
-@param[in] maxReads A list of size SW_NINKEYSNC holding how many
-    maximum contiguous reads it will take to read all the input for the
-    specified input SUIDs
 @param[in] ncSUID Current simulation unit identifier for which is used
 to get data from netCDF
 @param[in] starts A list of size SW_NINKEYSNC storing calculated
@@ -5250,7 +5247,6 @@ static void read_spatial_topo_climate_site_inputs(
     SW_DOMAIN *SW_Domain,
     size_t numInputs,
     const size_t numReads[],
-    const size_t maxReads[],
     const size_t ncSUID[],
     size_t starts[SW_NINKEYSNC][N_SUID_ASSIGN][2],
     size_t counts[SW_NINKEYSNC][N_SUID_ASSIGN][2],
@@ -5354,7 +5350,7 @@ static void read_spatial_topo_climate_site_inputs(
 #endif
 
         input = inputOrigin = 0;
-        for (read = 0; read < maxReads[currKey]; read++) {
+        for (read = 0; read < numReads[currKey]; read++) {
 #if defined(SWMPI)
             defSetStart[0] = starts[currKey][read][0];
             defSetStart[1] = starts[currKey][read][1];
@@ -5416,7 +5412,9 @@ static void read_spatial_topo_climate_site_inputs(
                 get_values_multiple(
                     ncFileID, varID, start, count, varName, tempVals, LogInfo
                 );
-                checkReturn(LogInfo->stopRun);
+                if (LogInfo->stopRun) {
+                    return;
+                }
 
                 if (varHasAddScaleAtts) {
                     scaleFactor = scaleAddFactors[varNum][0];
@@ -6005,18 +6003,6 @@ static void open_input_files(
                     SW_NC_open(fileName, NC_NOWRITE, id, LogInfo);
 #endif
                     checkReturn(LogInfo->stopRun);
-
-#if defined(SWMPI)
-                    if (var > indexFile) {
-                        SW_NC_toggle_par_access(
-                            *id,
-                            SW_PathInputs->inVarIDs[inKey][var],
-                            NC_COLLECTIVE,
-                            LogInfo
-                        );
-                        checkReturn(LogInfo->stopRun);
-                    }
-#endif
                 }
             }
         }
@@ -6344,7 +6330,6 @@ static void read_veg_inputs(
     size_t starts[][2],
     size_t counts[][2],
     size_t numReads,
-    size_t maxReads,
     const size_t ncSUID[],
     sw_converter_t **vegConv,
     int **vegFileIDs,
@@ -6419,7 +6404,7 @@ static void read_veg_inputs(
 #endif
 
 
-    for (read = 0; read < maxReads; read++) {
+    for (read = 0; read < numReads; read++) {
 #if defined(SWMPI)
         defSetStart[0] = starts[read][0];
         defSetStart[1] = starts[read][1];
@@ -6523,7 +6508,9 @@ static void read_veg_inputs(
             get_values_multiple(
                 ncFileID, varID, start, count, varName, tempVals, LogInfo
             );
-            checkReturn(LogInfo->stopRun);
+            if (LogInfo->stopRun) {
+                return;
+            }
 
             stride = calc_read_offset(timeIndex, 4, count);
 
@@ -6890,7 +6877,6 @@ static void read_soil_inputs(
     const size_t ncSUID[],
     size_t numInputs,
     size_t numReads,
-    size_t maxReads,
     size_t starts[][2],
     size_t counts[][2],
     int **openSoilFileIDs,
@@ -6984,7 +6970,7 @@ static void read_soil_inputs(
     }
     input = 0;
 
-    for (read = 0; read < maxReads; read++) {
+    for (read = 0; read < numReads; read++) {
 #if defined(SWMPI)
         defSetStart[0] = starts[read][0];
         defSetStart[1] = starts[read][1];
@@ -7047,7 +7033,9 @@ static void read_soil_inputs(
                 get_values_multiple(
                     ncFileID, varID, start, count, varName, NULL, mainLogInfo
                 );
-                checkReturn(mainLogInfo->stopRun);
+                if (mainLogInfo->stopRun) {
+                    return;
+                }
             }
 
             for (site = 0; site < numSites; site++) {
@@ -8155,7 +8143,6 @@ static void read_weather_input(
     sw_converter_t **weathConv,
     size_t numInputs,
     size_t numReads,
-    size_t maxReads,
     size_t starts[][2],
     size_t counts[][2],
     int **weathFileIDs,
@@ -8286,7 +8273,7 @@ static void read_weather_input(
                 addOffset = 0.0;
             }
 
-            for (read = 0; read < maxReads; read++) {
+            for (read = 0; read < numReads; read++) {
 #if defined(SWMPI)
                 defSetStart[0] = starts[read][0];
                 defSetStart[1] = starts[read][1];
@@ -8324,7 +8311,9 @@ static void read_weather_input(
                     tempVals,
                     mainLogInfo
                 );
-                checkJumpToLabel(mainLogInfo->stopRun, freeMem);
+                if (mainLogInfo->stopRun) {
+                    goto freeMem;
+                }
 
                 stride = calc_read_offset(timeIndex, 3, count);
 
@@ -8485,9 +8474,6 @@ to SW_Run
 @param[in] numReads A list of size SW_NINKEYSNC holding how many
     contiguous reads it will take to read all the input for the specified
     input SUIDs
-@param[in] maxReads A list of size SW_NINKEYSNC holding how many
-    maximum contiguous reads it will take to read all the input for the
-    specified input SUIDs
 @param[in] numInputs Total number of site inputs that will be read-in
 @param[in] tempVals A temporary buffer to store any variable in
 @param[in] domSuids A list of program-domain suids of sites that will
@@ -8508,7 +8494,6 @@ void SW_NCIN_read_inputs(
     size_t counts[][N_SUID_ASSIGN][2],
     int **openNCFileIDs[],
     size_t numReads[],
-    size_t maxReads[],
     size_t numInputs,
     double *tempVals,
     size_t domSuids[][2],
@@ -8552,7 +8537,6 @@ void SW_NCIN_read_inputs(
             SW_Domain,
             numInputs,
             numReads,
-            maxReads,
             ncSUID,
             starts,
             counts,
@@ -8592,7 +8576,6 @@ void SW_NCIN_read_inputs(
             convs[eSW_InWeather],
             numInputs,
             numReads[eSW_InWeather],
-            maxReads[eSW_InWeather],
             starts[eSW_InWeather],
             counts[eSW_InWeather],
             weathFileIDs,
@@ -8628,7 +8611,6 @@ void SW_NCIN_read_inputs(
             starts[eSW_InVeg],
             counts[eSW_InVeg],
             numReads[eSW_InVeg],
-            maxReads[eSW_InVeg],
             ncSUID,
             convs[eSW_InVeg],
             vegFileIDs,
@@ -8648,7 +8630,6 @@ void SW_NCIN_read_inputs(
             ncSUID,
             numInputs,
             numReads[eSW_InSoil],
-            maxReads[eSW_InSoil],
             starts[eSW_InSoil],
             counts[eSW_InSoil],
             soilFileIDs,
