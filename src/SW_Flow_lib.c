@@ -528,6 +528,7 @@ void transp_weighted_avg(
 
     *swp_avg = NAN;
 
+    // a tr_region == 0 indicates no transpiration region or no roots
     for (r = 1; r <= n_tr_rgns; r++) {
         swp = sumco = 0.0;
 

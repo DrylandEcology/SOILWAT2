@@ -1479,7 +1479,10 @@ LyrIndex nlayers_bsevap(double *evap_coeff, LyrIndex n_layers) {
 @brief Count soil layers with roots potentially extracting water for
     transpiration
 
-The count stops at first layer with 0 per vegetation type.
+Since v8.3.0, layers with no roots are not counted towards n_transp_lyrs, e.g.,
+the absence of roots in the shallowest soil layer no longer forces
+n_transp_lyrs to be zero.
+Previously, the count stopped at the first layer without roots.
 
 @param[in] n_layers Number of layers of soil within the simulation run
 @param[in] transp_coeff Prop. of total transp from this layer
@@ -1501,7 +1504,7 @@ void nlayers_vegroots(
             if (GT(transp_coeff[k][s], 0.0)) {
                 n_transp_lyrs[k]++;
             } else {
-                break;
+                continue;
             }
         }
     }
@@ -1997,26 +2000,32 @@ void SW_LYR_read(
     double soildensity;
     double imperm;
     double soiltemp;
-    double f_gravel;
-    double fom;
+    double pfragments;
+    double psom;
     char inbuf[MAX_FILENAMESIZE];
-    char inDoubleStrs[13][20] = {{'\0'}};
-    double *inDoubleVals[] = {
+    const int numSoilVariables = 15;
+    char inDoubleStrs[15][20] = {{'\0'}};
+    double *inDoubleVals[15] = {
         &dmax,
         &soildensity,
-        &f_gravel,
-        &evco,
-        &trco_veg[SW_GRASS],
-        &trco_veg[SW_SHRUB],
-        &trco_veg[SW_TREES],
-        &trco_veg[SW_FORBS],
+        &pfragments,
         &psand,
         &pclay,
+        &psom,
         &imperm,
         &soiltemp,
-        &fom
+        &evco,
+        NULL, // trco_veg[NVEGTYPES]
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL
     };
-    const int numDoubleInStrings = 13;
+
+    ForEachVegType(k) {
+        inDoubleVals[k + numSoilVariables - NVEGTYPES] = &trco_veg[k];
+    }
 
     /* note that Files.read() must be called prior to this. */
     char *MyFileName = txtInFiles[eLayers];
@@ -2031,7 +2040,8 @@ void SW_LYR_read(
 
         x = sscanf(
             inbuf,
-            "%19s %19s %19s %19s %19s %19s %19s %19s %19s %19s %19s %19s %19s",
+            "%19s %19s %19s %19s %19s %19s %19s %19s %19s %19s %19s %19s %19s "
+            "%19s %19s",
             inDoubleStrs[0],
             inDoubleStrs[1],
             inDoubleStrs[2],
@@ -2044,12 +2054,14 @@ void SW_LYR_read(
             inDoubleStrs[9],
             inDoubleStrs[10],
             inDoubleStrs[11],
-            inDoubleStrs[12]
+            inDoubleStrs[12],
+            inDoubleStrs[13],
+            inDoubleStrs[14]
         );
 
         /* Check that we have correct number of values per layer */
         /* Adjust number if new variables are added */
-        if (x != numDoubleInStrings) {
+        if (x != numSoilVariables) {
             LogError(
                 LogInfo,
                 LOGERROR,
@@ -2061,7 +2073,7 @@ void SW_LYR_read(
         }
 
         /* Convert strings to doubles */
-        for (index = 0; index < numDoubleInStrings; index++) {
+        for (index = 0; index < numSoilVariables; index++) {
             *(inDoubleVals[index]) =
                 sw_strtod(inDoubleStrs[index], MyFileName, LogInfo);
             if (LogInfo->stopRun) {
@@ -2075,19 +2087,21 @@ void SW_LYR_read(
         /* checks for valid values now carried out by `SW_SIT_init_run()` */
 
         dmin = dmax;
-        SW_SoilRunIn->fractionVolBulk_gravel[lyrno] = f_gravel;
         SW_SoilRunIn->soilDensityInput[lyrno] = soildensity;
+
+        SW_SoilRunIn->fractionVolBulk_gravel[lyrno] = pfragments;
+        SW_SoilRunIn->fractionWeightMatric_sand[lyrno] = psand;
+        SW_SoilRunIn->fractionWeightMatric_clay[lyrno] = pclay;
+        SW_SoilRunIn->fractionWeight_om[lyrno] = psom;
+
+        SW_SoilRunIn->impermeability[lyrno] = imperm;
+        SW_SoilRunIn->avgLyrTempInit[lyrno] = soiltemp;
+
         SW_SoilRunIn->evap_coeff[lyrno] = evco;
 
         ForEachVegType(k) {
             SW_SoilRunIn->transp_coeff[k][lyrno] = trco_veg[k];
         }
-
-        SW_SoilRunIn->fractionWeightMatric_sand[lyrno] = psand;
-        SW_SoilRunIn->fractionWeightMatric_clay[lyrno] = pclay;
-        SW_SoilRunIn->impermeability[lyrno] = imperm;
-        SW_SoilRunIn->avgLyrTempInit[lyrno] = soiltemp;
-        SW_SoilRunIn->fractionWeight_om[lyrno] = fom;
 
         if (lyrno >= MAX_LAYERS) {
             LogError(
@@ -2130,13 +2144,17 @@ site's simulation values
 @param[in] f_gravel Array of size \p nlyrs for volumetric gravel content [v/v]
 @param[in] evco Array of size \p nlyrs with bare-soil evaporation coefficients
     [0, 1] that sum up to 1.
-@param[in] trco_grass Array of size \p nlyrs with transpiration coefficients
-    for grasses [0, 1] that sum up to 1.
+@param[in] trco_grassC3 Array of size \p nlyrs with transpiration coefficients
+    for C3-grasses [0, 1] that sum up to 1.
+@param[in] trco_grassC4 Array of size \p nlyrs with transpiration coefficients
+    for C4-grasses [0, 1] that sum up to 1.
 @param[in] trco_shrub Array of size \p nlyrs with transpiration coefficients
     for shrubs [0, 1] that sum up to 1.
-@param[in] trco_tree Array of size \p nlyrs with transpiration coefficients
-    for trees [0, 1] that sum up to 1.
-@param[in] trco_forb Array of size \p nlyrs with transpiration coefficients
+@param[in] trco_treeNL Array of size \p nlyrs with transpiration coefficients
+    for needle-leaved trees [0, 1] that sum up to 1.
+@param[in] trco_treeBL Array of size \p nlyrs with transpiration coefficients
+    for broad-leaved trees [0, 1] that sum up to 1.
+@param[in] trco_forbs Array of size \p nlyrs with transpiration coefficients
     for forbs [0, 1] that sum up to 1.
 @param[in] psand Array of size \p nlyrs for sand content of the
     soil matrix [g3 / g3]
@@ -2175,10 +2193,12 @@ void set_soillayers(
     const double *bd,
     const double *f_gravel,
     const double *evco,
-    const double *trco_grass,
+    const double *trco_treeNL,
+    const double *trco_treeBL,
     const double *trco_shrub,
-    const double *trco_tree,
-    const double *trco_forb,
+    const double *trco_forbs,
+    const double *trco_grassC3,
+    const double *trco_grassC4,
     const double *psand,
     const double *pclay,
     const double *imperm,
@@ -2213,17 +2233,23 @@ void set_soillayers(
 
         ForEachVegType(k) {
             switch (k) {
-            case SW_TREES:
-                SW_SoilRunIn->transp_coeff[k][lyrno] = trco_tree[i];
+            case SW_TREENL:
+                SW_SoilRunIn->transp_coeff[k][lyrno] = trco_treeNL[i];
+                break;
+            case SW_TREEBL:
+                SW_SoilRunIn->transp_coeff[k][lyrno] = trco_treeBL[i];
                 break;
             case SW_SHRUB:
                 SW_SoilRunIn->transp_coeff[k][lyrno] = trco_shrub[i];
                 break;
             case SW_FORBS:
-                SW_SoilRunIn->transp_coeff[k][lyrno] = trco_forb[i];
+                SW_SoilRunIn->transp_coeff[k][lyrno] = trco_forbs[i];
                 break;
-            case SW_GRASS:
-                SW_SoilRunIn->transp_coeff[k][lyrno] = trco_grass[i];
+            case SW_GRASS3:
+                SW_SoilRunIn->transp_coeff[k][lyrno] = trco_grassC3[i];
+                break;
+            case SW_GRASS4:
+                SW_SoilRunIn->transp_coeff[k][lyrno] = trco_grassC4[i];
                 break;
             default:
                 break;
@@ -3087,7 +3113,7 @@ void SW_SIT_init_run(
                     SW_SiteSim->TranspRgnBounds[r] <= MAX_LAYERS) {
 
                     if (ZRO(SW_SoilRunIn->transp_coeff[k][s])) {
-                        break; /* end of transpiring layers */
+                        continue; /* skip this layer */
                     }
 
                     curregion = r + 1; // convert to base1
@@ -3095,23 +3121,8 @@ void SW_SIT_init_run(
                 }
             }
 
-            if (curregion > 0) {
-                SW_SiteSim->my_transp_rgn[k][s] = curregion;
-
-            } else if (s == 0) {
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "Top soil layer must be included "
-                    "in %s transpiration region",
-                    key2veg[k]
-                );
-                return; // Exit function prematurely due to error
-
-            } else {
-                // no transpiration region or not roots
-                SW_SiteSim->my_transp_rgn[k][s] = 0;
-            }
+            // if curregion == 0, then no transpiration region or no roots
+            SW_SiteSim->my_transp_rgn[k][s] = curregion;
         }
     } /*end ForEachSoilLayer */
 
@@ -3307,6 +3318,7 @@ void echo_inputs(
 ) {
     /* =================================================== */
     LyrIndex i;
+    int k;
     LOG_INFO LogInfo;
     FILE *logInitPtr = NULL;
 
@@ -3397,209 +3409,66 @@ void echo_inputs(
     sw_printf("  Soils File: 'soils.in'\n");
     sw_printf("  Number of soil layers: %d\n", n_layers);
     sw_printf("  Number of evaporation layers: %d\n", SW_SiteSim->n_evap_lyrs);
-    sw_printf(
-        "  Number of forb transpiration layers: %d\n",
-        SW_SiteSim->n_transp_lyrs[SW_FORBS]
-    );
-    sw_printf(
-        "  Number of tree transpiration layers: %d\n",
-        SW_SiteSim->n_transp_lyrs[SW_TREES]
-    );
-    sw_printf(
-        "  Number of shrub transpiration layers: %d\n",
-        SW_SiteSim->n_transp_lyrs[SW_SHRUB]
-    );
-    sw_printf(
-        "  Number of grass transpiration layers: %d\n",
-        SW_SiteSim->n_transp_lyrs[SW_GRASS]
-    );
+
+    ForEachVegType(k) {
+        sw_printf(
+            "  Number of %s transpiration layers: %d\n",
+            key2veg[k],
+            SW_SiteSim->n_transp_lyrs[k]
+        );
+    }
     sw_printf(
         "  Number of transpiration regions: %d\n", SW_SiteIn->n_transp_rgn
     );
 
     sw_printf("\nLayer Specific Values:\n----------------------\n");
     sw_printf("\n  Layer information on a per centimeter depth basis:\n");
-    sw_printf(
-        "  Lyr Width   BulkD 	%%Gravel    FieldC   WiltPt   %%Sand  %%Clay "
-        "VWC at Forb-critSWP 	VWC at Tree-critSWP	VWC at "
-        "Shrub-critSWP	VWC at Grass-critSWP	EvCo   	TrCo_Forb   TrCo_Tree  "
-        "TrCo_Shrub  TrCo_Grass   TrRgn_Forb    TrRgn_Tree   TrRgn_Shrub   "
-        "TrRgn_Grass   Wet     Min      Init     Saturated    Impermeability\n"
-    );
-    sw_printf(
-        "       (cm)   (g/cm^3)  (prop)    (cm/cm)  (cm/cm)   (prop) (prop)  "
-        "(cm/cm)			(cm/cm)                (cm/cm)         "
-        "   		(cm/cm)         (prop)    (prop)      (prop)     "
-        "(prop)    (prop)        (int)           (int) 	      	(int) 	    "
-        "(int) 	    (cm/cm)  (cm/cm)  (cm/cm)  (cm/cm)      (frac)\n"
-    );
-    sw_printf(
-        "  --- -----   ------    ------     ------   ------   -----  ------ "
-        "  ------                	-------			------         "
-        "   		------          ------    ------      ------      "
-        "------   ------       ------   	 -----	        -----       "
-        "-----   	 ----     ----     ----    ----         ----\n"
-    );
+    sw_printf("  Lyr  Width   BulkD   %%Gravel   %%Sand   %%Clay"
+              "   %%OM   evCo   Imperm");
+    sw_printf("   Sat   FieldC   WiltPt   Wet   Min   Init");
+    ForEachVegType(k) { sw_printf("   VWC at SWPcrit(%s)", key2veg[k]); }
+    ForEachVegType(k) { sw_printf("   trCo(%s)", key2veg[k]); }
+    ForEachVegType(k) { sw_printf("   trRgn(%s)", key2veg[k]); }
+    sw_printf("\n");
+
     ForEachSoilLayer(i, n_layers) {
         sw_printf(
-            "  %3d %5.1f %9.5f %6.2f %8.5f %8.5f %6.2f %6.2f %6.2f %6.2f %6.2f "
-            "%6.2f %9.2f %9.2f %9.2f %9.2f %9.2f %10d %10d %15d %15d %15.4f "
-            "%9.4f %9.4f %9.4f %9.4f\n",
+            "  %3d %6.2f %6.2f %6.2f %6.2f %6.2f %6.2f %6.2f %6.2f",
             i + 1,
             SW_SoilRunIn->width[i],
             SW_SiteSim->soilBulk_density[i],
             SW_SoilRunIn->fractionVolBulk_gravel[i],
-            SW_SiteSim->swcBulk_fieldcap[i] / SW_SoilRunIn->width[i],
-            SW_SiteSim->swcBulk_wiltpt[i] / SW_SoilRunIn->width[i],
             SW_SoilRunIn->fractionWeightMatric_sand[i],
             SW_SoilRunIn->fractionWeightMatric_clay[i],
-            SW_SiteSim->swcBulk_atSWPcrit[i][SW_FORBS] / SW_SoilRunIn->width[i],
-            SW_SiteSim->swcBulk_atSWPcrit[i][SW_TREES] / SW_SoilRunIn->width[i],
-            SW_SiteSim->swcBulk_atSWPcrit[i][SW_SHRUB] / SW_SoilRunIn->width[i],
-            SW_SiteSim->swcBulk_atSWPcrit[i][SW_GRASS] / SW_SoilRunIn->width[i],
+            SW_SoilRunIn->fractionWeight_om[i],
             SW_SoilRunIn->evap_coeff[i],
-            SW_SoilRunIn->transp_coeff[SW_FORBS][i],
-            SW_SoilRunIn->transp_coeff[SW_TREES][i],
-            SW_SoilRunIn->transp_coeff[SW_SHRUB][i],
-            SW_SoilRunIn->transp_coeff[i][SW_GRASS],
-            SW_SiteSim->my_transp_rgn[SW_FORBS][i],
-            SW_SiteSim->my_transp_rgn[SW_TREES][i],
-            SW_SiteSim->my_transp_rgn[SW_SHRUB][i],
-            SW_SiteSim->my_transp_rgn[SW_GRASS][i],
-            SW_SiteSim->swcBulk_wet[i] / SW_SoilRunIn->width[i],
-            SW_SiteSim->swcBulk_min[i] / SW_SoilRunIn->width[i],
-            SW_SiteSim->swcBulk_init[i] / SW_SoilRunIn->width[i],
-            SW_SiteSim->swcBulk_saturated[i] / SW_SoilRunIn->width[i],
             SW_SoilRunIn->impermeability[i]
         );
-    }
-    sw_printf("\n  Actual per-layer values:\n");
-    sw_printf("  Lyr Width  BulkD	 %%Gravel   FieldC   WiltPt %%Sand  "
-              "%%Clay	SWC at Forb-critSWP     SWC at Tree-critSWP	SWC at "
-              "Shrub-critSWP	SWC at Grass-critSWP	 Wet    Min      Init  "
-              "Saturated	SoilTemp\n");
-    sw_printf(
-        "       (cm)  (g/cm^3)	(prop)    (cm)     (cm)  (prop) (prop) "
-        "  (cm)    	(cm)        		(cm)            (cm)           "
-        " (cm)   (cm)      (cm)     (cm)		(celcius)\n"
-    );
-    sw_printf("  --- -----  -------	------   ------   ------ ------ ------ "
-              "  ------        	------            	------          ----   "
-              "		----     ----     ----    ----		----\n");
-
-    ForEachSoilLayer(i, n_layers) {
         sw_printf(
-            "  %3d %5.1f %9.5f %6.2f %8.5f %8.5f %6.2f %6.2f %7.4f %7.4f %7.4f "
-            "%7.4f %7.4f %7.4f %8.4f %7.4f %5.4f\n",
-            i + 1,
-            SW_SoilRunIn->width[i],
-            SW_SiteSim->soilBulk_density[i],
-            SW_SoilRunIn->fractionVolBulk_gravel[i],
-            SW_SiteSim->swcBulk_fieldcap[i],
-            SW_SiteSim->swcBulk_wiltpt[i],
-            SW_SoilRunIn->fractionWeightMatric_sand[i],
-            SW_SoilRunIn->fractionWeightMatric_clay[i],
-            SW_SiteSim->swcBulk_atSWPcrit[i][SW_FORBS],
-            SW_SiteSim->swcBulk_atSWPcrit[i][SW_TREES],
-            SW_SiteSim->swcBulk_atSWPcrit[i][SW_SHRUB],
-            SW_SiteSim->swcBulk_atSWPcrit[i][SW_GRASS],
-            SW_SiteSim->swcBulk_wet[i],
-            SW_SiteSim->swcBulk_min[i],
-            SW_SiteSim->swcBulk_init[i],
-            SW_SiteSim->swcBulk_saturated[i],
-            SW_SoilRunIn->avgLyrTempInit[i]
+            " %6.2f %6.2f %6.2f %6.2f %6.2f %6.2f",
+            SW_SiteSim->swcBulk_saturated[i] / SW_SoilRunIn->width[i],
+            SW_SiteSim->swcBulk_fieldcap[i] / SW_SoilRunIn->width[i],
+            SW_SiteSim->swcBulk_wiltpt[i] / SW_SoilRunIn->width[i],
+            SW_SiteSim->swcBulk_wet[i] / SW_SoilRunIn->width[i],
+            SW_SiteSim->swcBulk_min[i] / SW_SoilRunIn->width[i],
+            SW_SiteSim->swcBulk_init[i] / SW_SoilRunIn->width[i]
         );
+        ForEachVegType(k) {
+            sw_printf(
+                " %6.2f",
+                SW_SiteSim->swcBulk_atSWPcrit[i][k] / SW_SoilRunIn->width[i]
+            );
+        }
+        ForEachVegType(k) {
+            sw_printf(" %6.2f", SW_SoilRunIn->transp_coeff[k][i]);
+        }
+        ForEachVegType(k) {
+            sw_printf(" %6u", SW_SiteSim->my_transp_rgn[k][i]);
+        }
+        sw_printf("\n");
     }
 
-    sw_printf("\n  Water Potential values:\n");
-    sw_printf(
-        "  Lyr       FieldCap         WiltPt            Forb-critSWP     "
-        "Tree-critSWP     Shrub-critSWP    Grass-critSWP    Wet            "
-        "Min            Init\n"
-    );
-    sw_printf(
-        "            (bars)           (bars)            (bars)           "
-        "(bars)           (bars)           (bars)           (bars)         "
-        "(bars)         (bars)\n"
-    );
-    sw_printf(
-        "  ---       -----------      ------------      -----------      "
-        "-----------      -----------      -----------      -----------    "
-        "-----------    --------------    --------------\n"
-    );
-
-    ForEachSoilLayer(i, n_layers) {
-        sw_printf(
-            "  %3d   %15.4f   %15.4f  %15.4f %15.4f  %15.4f  %15.4f  %15.4f   "
-            "%15.4f   %15.4f\n",
-            i + 1,
-            SW_SWRC_SWCtoSWP(
-                SW_SiteSim->swcBulk_fieldcap[i],
-                SW_SoilRunIn,
-                SW_SiteSim,
-                i,
-                &LogInfo
-            ),
-            SW_SWRC_SWCtoSWP(
-                SW_SiteSim->swcBulk_wiltpt[i],
-                SW_SoilRunIn,
-                SW_SiteSim,
-                i,
-                &LogInfo
-            ),
-            SW_SWRC_SWCtoSWP(
-                SW_SiteSim->swcBulk_atSWPcrit[i][SW_FORBS],
-                SW_SoilRunIn,
-                SW_SiteSim,
-                i,
-                &LogInfo
-            ),
-            SW_SWRC_SWCtoSWP(
-                SW_SiteSim->swcBulk_atSWPcrit[i][SW_TREES],
-                SW_SoilRunIn,
-                SW_SiteSim,
-                i,
-                &LogInfo
-            ),
-            SW_SWRC_SWCtoSWP(
-                SW_SiteSim->swcBulk_atSWPcrit[i][SW_SHRUB],
-                SW_SoilRunIn,
-                SW_SiteSim,
-                i,
-                &LogInfo
-            ),
-            SW_SWRC_SWCtoSWP(
-                SW_SiteSim->swcBulk_atSWPcrit[i][SW_SHRUB],
-                SW_SoilRunIn,
-                SW_SiteSim,
-                i,
-                &LogInfo
-            ),
-            SW_SWRC_SWCtoSWP(
-                SW_SiteSim->swcBulk_atSWPcrit[i][SW_GRASS],
-                SW_SoilRunIn,
-                SW_SiteSim,
-                i,
-                &LogInfo
-            ),
-            SW_SWRC_SWCtoSWP(
-                SW_SiteSim->swcBulk_min[i],
-                SW_SoilRunIn,
-                SW_SiteSim,
-                i,
-                &LogInfo
-            ),
-            SW_SWRC_SWCtoSWP(
-                SW_SiteSim->swcBulk_init[i],
-                SW_SoilRunIn,
-                SW_SiteSim,
-                i,
-                &LogInfo
-            )
-        );
-    }
-
-    sw_printf("\nSoil Water Retention Curve:\n---------------------------\n");
+    sw_printf("\n\nSoil Water Retention Curve:\n---------------------------\n");
     sw_printf(
         "  SWRC type: %d (%s)\n",
         SW_SiteIn->site_swrc_type,

@@ -11,12 +11,36 @@
   long-term and short-term moving windows of climate conditions that are
   updated yearly (#396; @N1ckP3rsl3y, @dschlaep).
 
+* Vegetation is now represented with six (previously, four) plant functional
+  types (#472; @dschlaep).
+    * treeNL: needle-leaved trees
+    * treeBL: broad-leaved trees
+    * shrub: shrubs
+    * forbs: forbs
+    * grassC3: grasses with a C3 photosynthetic pathway
+    * grassC4: grasses with a C4 photosynthetic pathway
+
+* The rooting profiles no longer must start at the surface and may now have
+  gaps (@dschlaep).
+
 ## Changes to inputs
 * New input via `"siteparam.in"` that specifies the method for soil temperature
   at the lower boundary.
 * New inputs via `"veg.in"` that specify if vegetation should be estimated
   dynamically and that specify durations of the short-term and long-term moving
   windows (for dynamic vegetation and soil temperature at the lower boundary).
+* New input via `"veg.in"` and `"veg*.nc"` to provide parameters for the
+  new plant functional types. All inputs are now consistently ordered by
+  plant functional type.
+* New input via `"soils.in"` and `"soil.nc"` to specify the rooting profiles
+  for the new plant functional types. All variables in `"soils.in"` have been
+  re-organized.
+* New input via `"nc-inputs.tsv"` to describe parameters of the
+  new plant functional types.
+
+## Changes to outputs
+* Output contains additional variables for the new plant functional types.
+
 
 
 # SOILWAT2 v8.2.0

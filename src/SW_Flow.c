@@ -976,7 +976,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     // soil_temperature
     x = 0.;
     ForEachVegType(k) {
-        if (k == SW_TREES || k == SW_SHRUB) {
+        if (k == SW_TREENL || k == SW_TREEBL || k == SW_SHRUB) {
             // changed to exclude tree biomass, bMatric/c it was breaking the
             // soil_temperature function
             x += sw->VegProdSim.veg[k].biolive_daily[doy] *
