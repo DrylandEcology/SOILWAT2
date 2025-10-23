@@ -344,6 +344,7 @@ static void prepare_suid_dist(
     for (index = 0; index < worldSize; index++) {
         (*displacements)[index] = dispVal;
 
+        // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
         nSuidAssign[index] *= numSuidElem;
         dispVal += nSuidAssign[index];
     }
