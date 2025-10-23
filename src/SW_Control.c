@@ -847,12 +847,12 @@ void SW_CTL_setup_domain(
         return; // Exit function prematurely due to error
     }
 
-    SW_DOM_construct(SW_Domain->SW_SpinUp.rng_seed, SW_Domain);
-
     SW_DOM_read(SW_Domain, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
+
+    SW_DOM_construct(SW_Domain->SW_SpinUp.rng_seed, SW_Domain);
 
     SW_DOM_calc_nSUIDs(SW_Domain);
 
