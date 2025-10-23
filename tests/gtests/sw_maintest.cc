@@ -6,6 +6,10 @@
 
 #include "tests/gtests/sw_testhelpers.h"
 
+#if defined(SWMPI)
+#include <mpi.h>
+#endif
+
 
 /* The unit test code is using the SOILWAT2-standalone input files from
    tests/example/ as example inputs.
@@ -39,6 +43,10 @@ int main(int argc, char **argv) {
     int res;
     int printVersionOnly = 0;
 
+#if defined(SWMPI)
+    MPI_Init(&argc, &argv);
+#endif
+
     /*--- Imitate 'SW_Main.c/main()' */
     swtest_init_args(argc, argv, &printVersionOnly);
 
@@ -68,7 +76,14 @@ int main(int argc, char **argv) {
     // consideration to be run"
     // (https://google.github.io/googletest/reference/assertions.html#death)
     // See code example in header for `AllTestStruct`
+#if !defined(SWMPI)
+    /*
+        Only run this if SWMPI is not defined. With this line of code,
+        the program will go through all tests but stall at the end when
+        attempting to run `MPI_Finalize()`
+    */
     GTEST_FLAG_SET(death_test_style, "threadsafe");
+#endif
 
     // Run unit tests
     res = RUN_ALL_TESTS();
@@ -76,6 +91,10 @@ int main(int argc, char **argv) {
 
 finishProgram:
     teardown_testGlobalSoilwatTemplate();
+
+#if defined(SWMPI)
+    MPI_Finalize();
+#endif
 
     //--- Return output of 'RUN_ALL_TESTS()'
     // (https://google.github.io/googletest/primer.html#writing-the-main-function)
