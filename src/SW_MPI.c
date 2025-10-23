@@ -1791,3 +1791,29 @@ void SW_MPI_setup_inputs(
         SW_OUT_construct_outarray(N_SUID_ASSIGN, OutDom, tempOut, LogInfo);
     }
 }
+
+/**
+@brief Counterpart to SW_MPI_setup_inputs to deallocate any memory
+
+@param[in,out] runInputs A list of SW_RUN_INPUTS structs that will
+be deallocated
+@param[in,out] OutRun Struct of type SW_OUT_RUN that holds output
+information that may change throughout simulation runs
+@param[in,out] tempOut Struct of type SW_OUT_RUN that holds temporary output
+information; return this with deallocated p_OUT
+*/
+void SW_MPI_dealloc_inputs(
+    SW_RUN_INPUTS runInputs[], SW_OUT_RUN *OutRun, SW_OUT_RUN *tempOut
+) {
+    size_t suid;
+
+    for (suid = 0; suid < N_SUID_ASSIGN; suid++) {
+        SW_WTH_deconstruct(&runInputs[suid].weathRunAllHist);
+    }
+
+    SW_OUT_deconstruct_outarray(OutRun);
+
+    if (N_SUID_ASSIGN > 1) {
+        SW_OUT_deconstruct_outarray(tempOut);
+    }
+}

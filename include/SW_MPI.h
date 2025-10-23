@@ -157,6 +157,10 @@ void SW_MPI_setup_inputs(
     LOG_INFO *LogInfo
 );
 
+void SW_MPI_dealloc_inputs(
+    SW_RUN_INPUTS runInputs[], SW_OUT_RUN *OutRun, SW_OUT_RUN *tempOut
+);
+
 #ifdef __cplusplus
 }
 #endif

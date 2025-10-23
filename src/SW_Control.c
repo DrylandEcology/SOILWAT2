@@ -786,10 +786,9 @@ wrapUp:
 
 #if defined(SWNETCDF)
     SW_NCIN_dealloc_temp_instorage(&tempVals, &tempSoils);
+
 #if defined(SWMPI)
-    if (N_SUID_ASSIGN > 1) {
-        SW_OUT_deconstruct_outarray(&tempOut);
-    }
+    SW_MPI_dealloc_inputs(inputs, &sw_template->OutRun, &tempOut);
 
     if (errorCaused) {
         SW_MPI_Fail(rank, SW_MPI_FAIL_COMP_ERR, NULL);
