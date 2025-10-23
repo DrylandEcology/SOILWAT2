@@ -19,8 +19,8 @@ As mentioned in the last section, v8.2.0 has compute & I/O processes. These proc
 
 #### Main Changes
 - User no longer needs to worry about how to divide spawned processes into I/O and compute
-- Each process created their own logfile following the format "rank_[rank]_<log file name>", e.g., rank_0_logfile.log
-- Each process will now report their own log information as their own will rather than an I/O process handling it
+- Each process creates their own logfile following the format "rank_[rank]_<log file name>", e.g., rank_0_logfile.log
+- Each process now reports their own log information to their logfile instead of sending it to an I/O process
 - Removed multiple constants
     - N_ITER_BEFORE_OUT
     - MAX_NODE_PROCS
@@ -51,17 +51,17 @@ Additional limitations
 
 ### Performance Results
 
-There are two type of performance test conducted - with and without weather inputs. When reading weather, the original hypothesis was that the weather inputs drastically decreased the performance gain since weather inputs require so much reading to take place. This section is split into two sections - methodology used to test performance and notable results with and without weather inputs.
+There are two types of performance test conducted - with and without weather inputs. When reading weather from netCDFs, the original hypothesis was that the weather inputs drastically decreased the performance gain since weather inputs require so much reading to take place. This section is split into two subsections - methodology used to test performance and notable results with and without weather inputs.
 
 #### Methodology
-- Two sets of performance tests were run, with and without weather input, to get an idea of how the parallel version of the program runs. Since this is an intermediate step between the initial parallel version and the next version of the program, and lack of options to run, not a lot of performance analyses were obtained. The performance runs had the configuration combinations of
-    - Domain size: ~112,000
+- Two sets of performance tests were run, with and without weather input from netCDF files, to get an idea of how the parallel version of the program runs. Since this is an intermediate step between the initial parallel version and the next version of the program, and lack of options to run, not a lot of performance analyses were obtained. The performance runs had the configuration combinations of
+    - Domain size: ~112,000 (gridded)
     - Number of cores: 64
     - Number of assigned suids per compute process: 25, 40, 50, 60, 75, 90, 100
-    - Number of weather years: 30
+    - Number of years: 30
 
 #### Note
-Between v8.2.0 and v8.3.0, SWNC/SWNETCDF mode has conformed more into how SWMPI mode works, notably keeping files open the entire program run and closing at the end. Whether it's the file opening or another reason, SWNC/SWNETCDF mode is more efficient than v8.2.0, more specifically around 4x faster.
+Between v8.2.0 and v8.3.0, SWNC/SWNETCDF mode became more similar to how SWMPI mode works. In particular, both modes of v8.3.0 now keep files open the entire program run and only close them at the end. Whether it's the file opening or another reason, SWNC/SWNETCDF mode is now around 4x faster than v8.2.0.
 
 ### Results With and Without Weather
 
@@ -69,13 +69,13 @@ No Weather (Figure 1) | Weather (Figure 2)
 :----------|-----------:
 ![Figure 1](Speed_up-no_weather.png) | ![Figure 2](Speed_up-weather.png)
 
-Speedup relative to the number of assigned SUIDs. As expected, the program that does not read in weather (left) provides a bit more speedup than that of weather (right). However, we can see that the speedup between the two is more consistent that what is found in v8.2.0 figures 6 & 7, where there is a lesser discrepency.
+Speedup relative to the number of assigned SUIDs. As expected, the program that does not read in weather (left) provides a bit more speedup than that of weather (right). However, the differences in speedup between the two are now smaller than what they were with v8.2.0 (figures 6 & 7).
 
 No Weather (Figure 3) | Weather (Figure 4)
 :----------|-----------:
 ![Figure 3](Partition_Timing-no_weather.png) | ![Figure 4](Partition_Timing-weather.png)
 
-Partitioning time into two categories - I/O and compute relative to the number of assigned SUIDs. Going off of v8.2.0, it may be expected to have an increasing majority of I/O operations as the SUIDs increase. This is not what we see, however. It appears that for both with and without weather provide a stable ratio between compute and I/O time at around 75-80% I/O and 20-25% compute. This is the opposite of figures 8 & 9 and 10 & 11 in v8.2.0.
+Partitioning time into two categories - I/O and compute relative to the number of assigned SUIDs. Going off of v8.2.0, we expected an increasing contribution of I/O operations as SUIDs increase. This is not what we see, however. Runs with and without weather show a stable ratio between compute and I/O time at around 75-80% I/O and 20-25% compute. This is in contrast to v8.2.0 (figures 8 & 9 and 10 & 11).
 
 ---
 
