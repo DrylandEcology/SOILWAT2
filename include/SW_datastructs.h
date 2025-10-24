@@ -242,6 +242,7 @@ typedef struct {
     char buf_soil_agg[SW_OUTNPERIODS][MAX_LAYERS * OUTSTRLEN];
 #endif
 
+#if defined(SW_OUTTEXT)
     // if SOILWAT: "regular" output file
     // if STEPWAT: "regular" output file; new file for each iteration/repetition
     FILE *fp_reg[SW_OUTNPERIODS];
@@ -250,6 +251,7 @@ typedef struct {
     // if STEPWAT: new file for each iteration/repetition of STEPWAT
     FILE *fp_soil[SW_OUTNPERIODS];
     char buf_soil[SW_OUTNPERIODS][MAX_LAYERS * OUTSTRLEN];
+#endif
 
 #if defined(SWNETCDF)
     char **ncOutFiles[SW_OUTNKEYS][SW_OUTNPERIODS];
