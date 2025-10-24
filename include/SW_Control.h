@@ -60,6 +60,7 @@ void SW_CTL_clear_model(Bool full_reset, SW_RUN *sw);
 void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *LogInfo);
 
 void SW_CTL_read_inputs_from_disk(
+    int rank,
     SW_RUN *sw,
     SW_DOMAIN *SW_Domain,
     Bool *hasConsistentSoilLayerDepths,
@@ -68,20 +69,11 @@ void SW_CTL_read_inputs_from_disk(
 
 void SW_CTL_main(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
-void SW_CTL_RunSims(
-    int rank,
-    SW_RUN *sw_template,
-    SW_DOMAIN *SW_Domain,
-    Bool *setupFail,
-    SW_WALLTIME *SW_WallTime,
-    LOG_INFO *main_LogInfo
-);
-
 void SW_CTL_RunSimSet(
     int rank,
+    int worldSize,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
-    Bool *setupFail,
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *main_LogInfo
 );
@@ -97,7 +89,8 @@ void SW_CTL_run_sw(
     SW_DOMAIN *SW_Domain,
     size_t ncSuid[],
     Bool copyWeather,
-    const size_t count[],
+    size_t count[][2],
+    double *tempVals,
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *LogInfo
 );

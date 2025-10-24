@@ -334,7 +334,7 @@ for one generic location
 ```{.sh}
     make bin_run                                           # text-based SOILWAT2
     make CPPFLAGS=-DSWNC bin_run                           # nc-based SOILWAT2
-    make CPPFLAGS=-DSWMPI CC=mpicc SW_NTASKS=2 bin_run     # mpi-based SOILWAT2
+    make CPPFLAGS=-DSWMPI CC=mpicc SW_NTASKS=1 bin_run     # mpi-based SOILWAT2
 ```
 
 The simulated output is stored at `tests/example/Output/`.

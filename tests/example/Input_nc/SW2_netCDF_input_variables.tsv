@@ -47,12 +47,14 @@ inSoil	impermeability	1	1	Input_nc/inSoil/soil.nc	impermeability	1	s	site	crs_ge
 inSoil	avgLyrTempInit	degC	1	Input_nc/inSoil/soil.nc	tsl	degC	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	vertical	NA	NA	NA	NA	NA	NA	NA
 inSoil	evap_coeff	1	1	Input_nc/inSoil/soil.nc	evc	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	vertical	NA	NA	NA	NA	NA	NA	NA
 inSoil	<veg>.transp_coeff	1	1	Input_nc/inSoil/soil.nc	trc	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	vertical	NA	NA	NA	NA	NA	pft	NA
-
-inSoil	tree.transp_coeff	1	0	Input_nc/inSoil/soil.nc	trc_tree	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	vertical	NA	NA	NA	NA	NA	NA	NA
+																						
+inSoil	treeNL.transp_coeff	1	0	Input_nc/inSoil/soil.nc	trc_treeNL	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	vertical	NA	NA	NA	NA	NA	NA	NA
+inSoil	treeBL.transp_coeff	1	0	Input_nc/inSoil/soil.nc	trc_treeBL	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	vertical	NA	NA	NA	NA	NA	NA	NA
 inSoil	shrub.transp_coeff	1	0	Input_nc/inSoil/soil.nc	trc_shrub	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	vertical	NA	NA	NA	NA	NA	NA	NA
 inSoil	forbs.transp_coeff	1	0	Input_nc/inSoil/soil.nc	trc_forbs	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	vertical	NA	NA	NA	NA	NA	NA	NA
-inSoil	grass.transp_coeff	1	0	Input_nc/inSoil/soil.nc	trc_grass	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	vertical	NA	NA	NA	NA	NA	NA	NA
-
+inSoil	grassC3.transp_coeff	1	0	Input_nc/inSoil/soil.nc	trc_grassC3	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	vertical	NA	NA	NA	NA	NA	NA	NA
+inSoil	grassC4.transp_coeff	1	0	Input_nc/inSoil/soil.nc	trc_grassC4	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	vertical	NA	NA	NA	NA	NA	NA	NA
+																						
 inSoil	swrcpMineralSoil[1]	NA	0	Input_nc/inSoil/swrcp.nc	swrcp1	NA	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	vertical	NA	NA	NA	NA	NA	NA	NA
 inSoil	swrcpMineralSoil[2]	NA	0	Input_nc/inSoil/swrcp.nc	swrcp2	NA	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	vertical	NA	NA	NA	NA	NA	NA	NA
 inSoil	swrcpMineralSoil[3]	NA	0	Input_nc/inSoil/swrcp.nc	swrcp3	NA	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	vertical	NA	NA	NA	NA	NA	NA	NA
@@ -70,28 +72,40 @@ inVeg	<veg>.litter	g m-2	1	Input_nc/inVeg/vegPFT.nc	litter	g m-2	s	site	crs_geog
 inVeg	<veg>.biomass	g m-2	1	Input_nc/inVeg/vegPFT.nc	biomass	g m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	pft	NA
 inVeg	<veg>.pct_live	1	1	Input_nc/inVeg/vegPFT.nc	live	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	pft	NA
 inVeg	<veg>.lai_conv	g m-2	1	Input_nc/inVeg/vegPFT.nc	convLAI	g m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	pft	NA
-
-inVeg	tree.fCover	m2 m-2	0	Input_nc/inVeg/veg2.nc	fcover_tree	m2 m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	NA	NA
+																						
+inVeg	treeNL.fCover	m2 m-2	0	Input_nc/inVeg/veg2.nc	fcover_treeNL	m2 m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	NA	NA
+inVeg	treeBL.fCover	m2 m-2	0	Input_nc/inVeg/veg2.nc	fcover_treeBL	m2 m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	NA	NA
 inVeg	shrub.fCover	m2 m-2	0	Input_nc/inVeg/veg2.nc	fcover_shrub	m2 m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	NA	NA
 inVeg	forbs.fCover	m2 m-2	0	Input_nc/inVeg/veg2.nc	fcover_forbs	m2 m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	NA	NA
-inVeg	grass.fCover	m2 m-2	0	Input_nc/inVeg/veg2.nc	fcover_grass	m2 m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	NA	NA
-
-inVeg	tree.litter	g m-2	0	Input_nc/inVeg/veg2.nc	litter_tree	g m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
-inVeg	tree.biomass	g m-2	0	Input_nc/inVeg/veg2.nc	biomass_tree	g m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
-inVeg	tree.pct_live	1	0	Input_nc/inVeg/veg2.nc	live_tree	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
-inVeg	tree.lai_conv	g m-2	0	Input_nc/inVeg/veg2.nc	convLAI_tree	g m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
-
+inVeg	grassC3.fCover	m2 m-2	0	Input_nc/inVeg/veg2.nc	fcover_grassC3	m2 m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	NA	NA
+inVeg	grassC4.fCover	m2 m-2	0	Input_nc/inVeg/veg2.nc	fcover_grassC4	m2 m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	NA	NA
+																						
+inVeg	treeNL.litter	g m-2	0	Input_nc/inVeg/veg2.nc	litter_treeNL	g m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
+inVeg	treeNL.biomass	g m-2	0	Input_nc/inVeg/veg2.nc	biomass_treeNL	g m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
+inVeg	treeNL.pct_live	1	0	Input_nc/inVeg/veg2.nc	live_treeNL	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
+inVeg	treeNL.lai_conv	g m-2	0	Input_nc/inVeg/veg2.nc	convLAI_treeNL	g m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
+																						
+inVeg	treeBL.litter	g m-2	0	Input_nc/inVeg/veg2.nc	litter_treeBL	g m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
+inVeg	treeBL.biomass	g m-2	0	Input_nc/inVeg/veg2.nc	biomass_treeBL	g m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
+inVeg	treeBL.pct_live	1	0	Input_nc/inVeg/veg2.nc	live_treeBL	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
+inVeg	treeBL.lai_conv	g m-2	0	Input_nc/inVeg/veg2.nc	convLAI_treeBL	g m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
+																						
 inVeg	shrub.litter	g m-2	0	Input_nc/inVeg/veg2.nc	litter_shrub	g m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
 inVeg	shrub.biomass	g m-2	0	Input_nc/inVeg/veg2.nc	biomass_shrub	g m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
 inVeg	shrub.pct_live	1	0	Input_nc/inVeg/veg2.nc	live_shrub	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
 inVeg	shrub.lai_conv	g m-2	0	Input_nc/inVeg/veg2.nc	convLAI_shrub	g m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
-
+																						
 inVeg	forbs.litter	g m-2	0	Input_nc/inVeg/veg2.nc	litter_forbs	g m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
 inVeg	forbs.biomass	g m-2	0	Input_nc/inVeg/veg2.nc	biomass_forbs	g m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
 inVeg	forbs.pct_live	1	0	Input_nc/inVeg/veg2.nc	live_forbs	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
 inVeg	forbs.lai_conv	g m-2	0	Input_nc/inVeg/veg2.nc	convLAI_forbs	g m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
-
-inVeg	grass.litter	g m-2	0	Input_nc/inVeg/veg2.nc	litter_grass	g m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
-inVeg	grass.biomass	g m-2	0	Input_nc/inVeg/veg2.nc	biomass_grass	g m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
-inVeg	grass.pct_live	1	0	Input_nc/inVeg/veg2.nc	live_grass	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
-inVeg	grass.lai_conv	g m-2	0	Input_nc/inVeg/veg2.nc	convLAI_grass	g m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
+																						
+inVeg	grassC3.litter	g m-2	0	Input_nc/inVeg/veg2.nc	litter_grassC3	g m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
+inVeg	grassC3.biomass	g m-2	0	Input_nc/inVeg/veg2.nc	biomass_grassC3	g m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
+inVeg	grassC3.pct_live	1	0	Input_nc/inVeg/veg2.nc	live_grassC3	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
+inVeg	grassC3.lai_conv	g m-2	0	Input_nc/inVeg/veg2.nc	convLAI_grassC3	g m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
+																						
+inVeg	grassC4.litter	g m-2	0	Input_nc/inVeg/veg2.nc	litter_grassC4	g m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
+inVeg	grassC4.biomass	g m-2	0	Input_nc/inVeg/veg2.nc	biomass_grassC4	g m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
+inVeg	grassC4.pct_live	1	0	Input_nc/inVeg/veg2.nc	live_grassC4	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA
+inVeg	grassC4.lai_conv	g m-2	0	Input_nc/inVeg/veg2.nc	convLAI_grassC4	g m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	NA	NA

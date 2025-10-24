@@ -78,6 +78,17 @@ static const int numVarsInKey[SW_NINKEYSNC] = {
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 
+void SW_NCIN_alloc_temp_instorage(
+    Bool allocSoil,
+    double **tempVals,
+    SW_SOIL_RUN_INPUTS **tempSoils,
+    LOG_INFO *LogInfo
+);
+
+void SW_NCIN_dealloc_temp_instorage(
+    double **tempVals, SW_SOIL_RUN_INPUTS **tempSoils
+);
+
 void SW_NCIN_soilProfile(
     SW_NETCDF_IN *SW_netCDFIn,
     Bool hasConsistentSoilLayerDepths,
@@ -121,17 +132,13 @@ void SW_NCIN_read_inputs(
     SW_RUN *sw,
     SW_DOMAIN *SW_Domain,
     const size_t ncSUID[],
-    size_t ***starts,
-    size_t ***counts,
+    size_t starts[][N_SUID_ASSIGN][2],
+    size_t counts[][N_SUID_ASSIGN][2],
     int **openNCFileIDs[],
     size_t numReads[],
     size_t numInputs,
-    double *tempMonthlyVals,
-    double *elevations,
-    double *tempSiltVals,
     double *tempVals,
-    double *tempWeath,
-    size_t **domSuids,
+    size_t domSuids[][2],
     SW_SOIL_RUN_INPUTS *newSoils,
     SW_RUN_INPUTS *inputs,
     LOG_INFO *siteLogs,
@@ -145,11 +152,15 @@ void SW_NCIN_check_input_config(
     LOG_INFO *LogInfo
 );
 
-void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
+void SW_NCIN_check_input_files(
+    int rank, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
+);
 
 void SW_NCIN_open_dom_prog_files(
     SW_NETCDF_IN *SW_netCDFIn, SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo
 );
+
+void SW_NCIN_close_in_files(int **openInFileIDs[], unsigned int numWeathFiles);
 
 void SW_NCIN_close_files(SW_PATH_INPUTS *SW_PathInputs);
 
@@ -205,7 +216,10 @@ void SW_NCIN_allocate_startEndYrs(
 );
 
 void SW_NCIN_precalc_lookups(
-    SW_DOMAIN *SW_Domain, SW_WEATHER_INPUTS *SW_WeatherIn, LOG_INFO *LogInfo
+    int rank,
+    SW_DOMAIN *SW_Domain,
+    SW_WEATHER_INPUTS *SW_WeatherIn,
+    LOG_INFO *LogInfo
 );
 
 void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);

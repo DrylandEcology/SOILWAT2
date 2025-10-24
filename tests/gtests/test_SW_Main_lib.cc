@@ -10,7 +10,7 @@
 using ::testing::HasSubstr;
 
 namespace {
-TEST(Messages, WarningsAndErrors) {
+TEST(MessagesTest, WarningsAndErrors) {
     LOG_INFO LogInfo;
 
     sw_init_logs(NULL, &LogInfo);
@@ -27,7 +27,7 @@ TEST(Messages, WarningsAndErrors) {
     EXPECT_THAT(LogInfo.errorMsg, HasSubstr("This is an error."));
 }
 
-TEST(MessagesDeath, FailOnErrorDeath) {
+TEST(MessagesDeathTest, FailOnErrorDeath) {
     LOG_INFO LogInfo;
 
     sw_init_logs(NULL, &LogInfo);
@@ -37,6 +37,9 @@ TEST(MessagesDeath, FailOnErrorDeath) {
     EXPECT_EQ(LogInfo.numWarnings, 0);
     EXPECT_TRUE(LogInfo.stopRun);
 
+#if defined(SWMPI)
+    GTEST_SKIP() << "Death tests are incompatible with mpi-mode SOILWAT2";
+#else
     EXPECT_DEATH_IF_SUPPORTED(sw_fail_on_error(&LogInfo), "This is an error.")
 #if defined(SWNC)
         << "One reason this death test can fail is if the main test thread\n"
@@ -48,6 +51,7 @@ TEST(MessagesDeath, FailOnErrorDeath) {
            "may provide information.";
 #else
         ;
+#endif
 #endif
 }
 } // namespace

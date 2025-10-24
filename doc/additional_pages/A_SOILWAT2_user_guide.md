@@ -207,7 +207,7 @@ on your side.
 
   * Run the example simulation in mpi-mode, e.g.,
 ```{.sh}
-    make CPPFLAGS=-DSWMPI CC=mpicc SW_NTASKS=2 bin_run
+    make CPPFLAGS=-DSWMPI CC=mpicc SW_NTASKS=1 bin_run
 ```
     or, equivalently,
 ```{.sh}

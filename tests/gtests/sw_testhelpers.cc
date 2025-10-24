@@ -118,10 +118,12 @@ void create_test_soillayers(
         bulkd,
         f_gravel,
         evco,
-        trco_grass,
-        trco_shrub,
         trco_tree,
+        trco_tree,
+        trco_shrub,
         trco_forb,
+        trco_grass,
+        trco_grass,
         psand,
         pclay,
         imperm,
@@ -274,6 +276,7 @@ int setup_testGlobalSoilwatTemplate() {
     }
 
     SW_CTL_read_inputs_from_disk(
+        0,
         &template_SW_Run,
         &template_SW_Domain,
         &template_SW_Domain.hasConsistentSoilLayerDepths,

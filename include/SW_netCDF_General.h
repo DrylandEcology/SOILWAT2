@@ -36,6 +36,12 @@ extern "C" {
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 
+#if defined(SWMPI)
+void SW_NC_toggle_par_access(
+    int ncFileID, int ncVarID, int newAccess, LOG_INFO *LogInfo
+);
+#endif
+
 void SW_NC_get_att_type(
     int ncFileID,
     int varID,
@@ -62,7 +68,12 @@ void SW_NC_get_dim_identifier(
 );
 
 void SW_NC_check(
-    SW_DOMAIN *SW_Domain, int ncFileID, const char *fileName, LOG_INFO *LogInfo
+    SW_DOMAIN *SW_Domain,
+    int *ncFileID,
+    const char *fileName,
+    Bool openInPar,
+    int openMode,
+    LOG_INFO *LogInfo
 );
 
 void SW_NC_get_single_val(
@@ -179,6 +190,7 @@ void SW_NC_create_template(
     int *newFileID,
     Bool isInput,
     const char *freq,
+    Bool parOpen,
     LOG_INFO *LogInfo
 );
 

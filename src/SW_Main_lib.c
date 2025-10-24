@@ -22,6 +22,7 @@
 #include "include/myMemory.h"       // for Str_Dup
 #include "include/SW_datastructs.h" // for LOG_INFO
 #include "include/SW_Defines.h"     // for MAX_MSGS, MAX_LOG_SIZE, BUILD_DATE
+#include "include/Times.h"          // for SW_WT_ReportTime
 
 #if defined(RSOILWAT)
 #include <R.h> // for Rf_error(), and Rf_warning() from <R_ext/Error.h>
@@ -37,8 +38,6 @@
 #include "include/SW_MPI.h"
 #include "include/SW_netCDF_Input.h" // for SW_NCOUT_create_units_converters
 #include <mpi.h>                     // for MPI_COMM_WORLD
-#else
-#include "include/Times.h" // for SW_WT_ReportTime
 #endif
 
 #endif
@@ -115,14 +114,7 @@ void sw_print_version(void) {
     sw_printf("\n");
 
 #if defined(SWMPI)
-    sw_printf(
-        "SWMPI           : SW_MPI_NIO = %d, N_SUID_ASSIGN = %d, "
-        "MAX_NODE_PROCS = %d, N_ITER_BEFORE_OUT = %d\n",
-        SW_MPI_NIO,
-        N_SUID_ASSIGN,
-        MAX_NODE_PROCS,
-        N_ITER_BEFORE_OUT
-    );
+    sw_printf("SWMPI           : N_SUID_ASSIGN = %d\n", N_SUID_ASSIGN);
 #endif
 
 #ifndef RSOILWAT
@@ -288,7 +280,7 @@ void sw_init_args(
             break;
 
         case 4: /* -v */
-            if (rank == 0) {
+            if (rank == ROOT_PROC) {
                 sw_print_version();
                 *endQuietly = swTRUE;
                 return;
@@ -296,7 +288,7 @@ void sw_init_args(
             break;
 
         case 5: /* -h */
-            if (rank == 0) {
+            if (rank == ROOT_PROC) {
                 sw_print_usage();
                 *endQuietly = swTRUE;
                 return;
@@ -305,7 +297,7 @@ void sw_init_args(
 
         case 6: /* -s */
 #if defined(SWMPI)
-            if (rank == 0) {
+            if (rank == ROOT_PROC) {
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -423,11 +415,6 @@ void sw_init_logs(FILE *logInitPtr, LOG_INFO *LogInfo) {
     LogInfo->numWarnings = 0;
     LogInfo->numDomainWarnings = 0;
     LogInfo->numDomainErrors = 0;
-
-#if defined(SWMPI)
-    LogInfo->logfps = NULL;
-    LogInfo->numFiles = 0;
-#endif
 }
 
 /**
@@ -533,29 +520,17 @@ void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
     Bool QuietMode = (Bool) (LogInfo->QuietMode || isnull(LogInfo->logfp));
     FILE *logfp = LogInfo->logfp;
 
-    // If we are running with MPI, we need to close all opened log files
-    // otherwise, when not using MPI, we only need to close one
-#if defined(SWMPI)
-    int file;
-
-    for (file = 0; file < LogInfo->numFiles; file++) {
-        logfp = LogInfo->logfps[file];
-#endif
-        // Close logfile (but not if it is stdout or stderr)
-        if (logfp != stdout || logfp != stderr) {
-            CloseFile(&logfp, LogInfo);
-        }
-#if defined(SWMPI)
+    // Close logfile (but not if it is stdout or stderr)
+    if (logfp != stdout || logfp != stderr) {
+        CloseFile(&logfp, LogInfo);
     }
-#endif
 
-    if (rank == 0) {
+    if (rank == ROOT_PROC) {
         // Notify the user that there are messages in the logfile (unless
         // QuietMode)
         if ((LogInfo->numDomainErrors > 0 || LogInfo->numDomainWarnings > 0 ||
              LogInfo->stopRun || LogInfo->numWarnings > 0) &&
-            !QuietMode && LogInfo->logfp != stdout &&
-            LogInfo->logfp != stderr) {
+            !QuietMode && logfp != stdout && logfp != stderr) {
             (void) fprintf(
                 stderr, "\nCheck logfile for warnings and error messages.\n"
             );
@@ -584,8 +559,6 @@ void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
 
 @param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] worldSize Total number of processes that the MPI run has created
-@param[in] procName Name of the processor/node the current processes is
-    running on
 @param[in] prepareFiles Should we only prepare domain/progress, index,
     and output files? If so, simulations will occur without this
     flag being turned on
@@ -598,34 +571,27 @@ void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
 void sw_setup_prog_data(
     int rank,
     int worldSize,
-    const char *procName,
     Bool prepareFiles,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
     LOG_INFO *LogInfo
 ) {
-#if defined(SWNETCDF)
-    Bool doOutStuff = swTRUE;
-#else
-    (void) prepareFiles;
-#endif
 #if defined(SWMPI)
-    int procJob;
+    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
+        return;
+    }
 
     if (!prepareFiles) {
-        SW_MPI_setup(
-            rank, worldSize, procName, SW_Domain, sw_template, LogInfo
-        );
+        SW_MPI_proc_workload(rank, worldSize, SW_Domain, LogInfo);
+
         if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
             return;
         }
-        procJob = SW_Domain->SW_Designation.procJob;
-        doOutStuff = (Bool) (procJob == SW_MPI_PROC_IO);
     }
 #else
+    (void) prepareFiles;
     (void) rank;
     (void) worldSize;
-    (void) procName;
 #endif
 
     // initialize output
@@ -637,69 +603,19 @@ void sw_setup_prog_data(
         &SW_Domain->OutDom,
         LogInfo
     );
-#if defined(SWMPI)
-    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-        return;
-    }
-#else
-    if (LogInfo->stopRun) {
-        return;
-    }
-#endif
+    checkReturn(LogInfo->stopRun);
 
 #if defined(SWNETCDF)
-#if defined(SWMPI)
-    if (rank == SW_MPI_ROOT) {
-#endif
-        SW_NCOUT_read_out_vars(
-            &SW_Domain->OutDom,
-            SW_Domain->SW_PathInputs.txtInFiles,
-            sw_template->VegEstabIn.parms,
-            LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return;
-        }
-#if defined(SWMPI)
-    }
-    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-        return;
-    }
-#endif
-
-#if defined(SWMPI)
-    if (doOutStuff && !prepareFiles) {
-        SW_MPI_ncout_info(
-            rank,
-            SW_Domain->SW_Designation.groupComm,
-            &SW_Domain->OutDom,
-            LogInfo
-        );
-    }
-    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-        return;
-    }
-#endif
+    SW_NCOUT_read_out_vars(
+        &SW_Domain->OutDom,
+        SW_Domain->SW_PathInputs.txtInFiles,
+        sw_template->VegEstabIn.parms,
+        LogInfo
+    );
+    checkReturn(LogInfo->stopRun);
 
     if (!prepareFiles) {
-        if (doOutStuff) {
-            SW_NCOUT_create_units_converters(&SW_Domain->OutDom, LogInfo);
-        }
-#if defined(SWMPI)
-        if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-            return;
-        }
-#else
-        if (LogInfo->stopRun) {
-            return;
-        }
-#endif
-
-#if defined(SWMPI)
-        if (rank > SW_MPI_ROOT && doOutStuff) {
-            SW_NCIN_create_units_converters(&SW_Domain->netCDFInput, LogInfo);
-        }
-#endif
+        SW_NCOUT_create_units_converters(&SW_Domain->OutDom, LogInfo);
     }
 #endif // SWNETCDF
 }
@@ -711,12 +627,8 @@ is enabled
 @param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] size Number of processors (world size) within the
     communicator MPI_COMM_WORLD
-@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
-    temporal/spatial information for a set of simulation runs
 @param[in] SW_WallTime Struct of type SW_WALLTIME that holds timing
     information for the program run
-@param[in] setupFailed A flag specifying if the program was exited
-    before setup was completed
 @param[in] endQuietly A flag specifying if no messages should be produced,
     e.g., if SOILWAT2 was called to print help or version only.
 @param[in] LogInfo Holds information on warnings and errors
@@ -724,57 +636,31 @@ is enabled
 void sw_finalize_program(
     int rank,
     int size,
-    SW_DOMAIN *SW_Domain,
     SW_WALLTIME *SW_WallTime,
-    Bool setupFailed,
     Bool endQuietly,
     LOG_INFO *LogInfo
 ) {
-#if defined(SWMPI)
-    int procJob = SW_Domain->SW_Designation.procJob;
-
-    /* Report information for the following scenarios
-        1) Failed during setup - error(s)/warning(s)
-        2) Failed during simulation runs - simulations statistics *
-        3) Successful program run - simulation statistics *
-
-        * = All warnings/errors are reported through I/O processes
-    */
-    if (!endQuietly) {
-        SW_MPI_report_log(
-            rank,
-            size,
-            SW_Domain->datatypes[eSW_MPI_WallTime],
-            SW_WallTime,
-            SW_Domain,
-            setupFailed,
-            LogInfo
-        );
-    }
-
-    // Free types and communicators
-    SW_MPI_free_comms_types(
-        &SW_Domain->SW_Designation, SW_Domain->datatypes, LogInfo
-    );
-#else
     if (!endQuietly) {
         sw_write_warnings("(main) ", LogInfo);
-        SW_WT_ReportTime(*SW_WallTime, LogInfo);
-        sw_fail_on_error(LogInfo);
-    }
 
-    (void) size;
-    (void) setupFailed;
-    (void) SW_WallTime;
-    (void) SW_Domain;
+#if defined(SWMPI)
+        SW_MPI_get_end_info(rank, size, SW_WallTime, LogInfo);
 #endif
 
-    if (!endQuietly) {
+        if (rank == ROOT_PROC) {
+            SW_WT_ReportTime(*SW_WallTime, LogInfo);
+        }
+
         sw_wrapup_logs(rank, LogInfo);
     }
 
 #if defined(SWMPI)
-    SW_MPI_finalize(procJob, LogInfo);
+    SW_MPI_finalize();
+#else
+    sw_fail_on_error(LogInfo);
+
+    (void) size;
+    (void) SW_WallTime;
 #endif
 }
 #endif // !defined(RSOILWAT)

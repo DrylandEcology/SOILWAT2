@@ -153,11 +153,13 @@ extern "C" {
 #define SW_MAX 1
 
 /* indices to vegetation types */
-#define NVEGTYPES 4 /**< Number of vegetation types implemented */
-#define SW_TREES 0
-#define SW_SHRUB 1
-#define SW_FORBS 2
-#define SW_GRASS 3
+#define NVEGTYPES 6 /**< Number of vegetation types implemented */
+#define SW_TREENL 0 /**< Index for needle-leaved tree type */
+#define SW_TREEBL 1 /**< Index for broad-leaved tree type */
+#define SW_SHRUB 2  /**< Index for shrub type */
+#define SW_FORBS 3  /**< Index for forb type */
+#define SW_GRASS3 4 /**< Index for C3-grass type */
+#define SW_GRASS4 5 /**< Index for C4-grass type */
 
 /* Constants for number of months, weeks, and days in a year */
 /* number of days in each week. unlikely to change, but
@@ -362,9 +364,57 @@ typedef int sw_converter_t;
 /*                   Parallel Support                  */
 /* --------------------------------------------------- */
 
-#define SW_MPI_NTYPES 10
-#define SW_MPI_ROOT 0
-#define SW_GROUP_ROOT SW_MPI_ROOT
+/**
+ * @brief General constant to define what value a root process will hold.
+ * This is mainly only useful when SWMPI mode is enabled, however is good
+ * to have to not have the line "rank == 0" in places that are not guaranteed
+ * to have SWMPI functionality
+ */
+#define ROOT_PROC 0
+
+/**
+ * @brief Helper macro to clean up repetative goto's within the code,
+ * mainly when having parallel support, i.e., the use of
+ *  `SW_MPI_setup_fail()`
+ *
+ * @param[in] stopRun A flag specifying if a run should be stopped due
+ * to a fatal error
+ * @param[in] label Name of the label to jump to
+ */
+#if defined(SWMPI)
+#define checkJumpToLabel(stopRun, label)                            \
+    do {                                                            \
+        if (SW_MPI_setup_fail(stopRun, MPI_COMM_WORLD) != NC_NOERR) \
+            goto label;                                             \
+    } while (0)
+#else
+#define checkJumpToLabel(stopRun, label) \
+    do {                                 \
+        if (stopRun)                     \
+            goto label;                  \
+    } while (0)
+#endif
+
+/**
+ * @brief Similar to that of `checkJumpToLabel` but returns from a function
+ * rather than jumping to a label
+ *
+ * @param[in] stopRun A flag specifying if a run should be stopped due
+ * to a fatal error
+ */
+#if defined(SWMPI)
+#define checkReturn(stopRun)                                        \
+    do {                                                            \
+        if (SW_MPI_setup_fail(stopRun, MPI_COMM_WORLD) != NC_NOERR) \
+            return;                                                 \
+    } while (0)
+#else
+#define checkReturn(stopRun) \
+    do {                     \
+        if (stopRun)         \
+            return;          \
+    } while (0)
+#endif
 
 #if defined(SWMPI)
 #define SW_MAX_PROCESSOR_NAME MPI_MAX_PROCESSOR_NAME
@@ -372,46 +422,15 @@ typedef int sw_converter_t;
 #define SW_MAX_PROCESSOR_NAME 1
 #endif
 
-/**
- * @brief Maximum number of processes that can be spawned per compute node or
- *        on a local CPU; in other words, specifies the number of available
- *        CPU cores on a compute node (HPC), or processor on a local/personal
- *        computer
- *
- * @note This constant defaults to 128 but can be overwritten by the user
- *       when compiling the program, i.e., ... -DMAX_NODE_PROCS=[n procs] ...
- */
-#ifndef MAX_NODE_PROCS
-#define MAX_NODE_PROCS 128
+/* The number of SUIDs that are assigned to a compute process at once;
+   this is assumed to be a numeric value for comparison sake, a non-numeric
+   value may throw an error */
+#ifdef N_SUID_ASSIGN
+#if N_SUID_ASSIGN <= 0
+#undef N_SUID_ASSIGN
+#define N_SUID_ASSIGN 1
 #endif
-
-/**
- * @brief Maximum number of I/O processes that will be assigned per compute node
- *
- * @note - If the ratio of compute-to-I/O processes is less than 1, the program
- *       will auto-adjust so that at *most* half of the spawned processes in a
- *       compute node are I/O \n
- *           * E.g., n processes = 10, SW_MPI_NIO = 7, program assigns 5
- *             compute and 5 I/O processes
- * @note - This constant defaults to 2 but can be overwritten by the user
- *       when compiling the program, i.e., ... -DSW_MPI_NIO=[n I/O processes]
- *       ...
- */
-#ifndef SW_MPI_NIO
-#define SW_MPI_NIO 2
-#endif
-
-/**
- * @brief The maximum number of compute processes that can be assigned
- *        to an I/O process
- */
-#define PROCS_PER_IO                                                         \
-    (MAX_NODE_PROCS / SW_MPI_NIO >= 1 && SW_MPI_NIO <= MAX_NODE_PROCS / 2) ? \
-        (((MAX_NODE_PROCS - SW_MPI_NIO) / SW_MPI_NIO) + 1) :                 \
-        (MAX_NODE_PROCS / 2) + 1
-
-/* The number of SUIDs that are assigned to a compute process at once */
-#ifndef N_SUID_ASSIGN
+#else
 #define N_SUID_ASSIGN 1
 #endif
 
