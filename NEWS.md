@@ -1,6 +1,12 @@
 # NEWS
-# SOILWAT2 v8.3.0-devel
+# SOILWAT2 v8.3.0
 * Simulation output remains the same as the previous version.
+  However, output of the new plant functional types are renamed and include
+  additional variables.
+
+* Parallelization in the `SWMPI` mode of SOILWAT2 now uses a simplified
+  internal approach that no longer separates simulation computations from
+  input and output processes (#475; @N1ckP3rsl3y).
 
 * Soil temperature at the lower boundary can now be approximated by a
   long-term moving window of mean annual air temperature that is updated yearly
