@@ -804,6 +804,7 @@ void find_TXToutputSoilReg_inUse(
     }
 }
 
+#if defined(SW_OUTTEXT)
 /**
 @brief close all of the user-specified output text files.
 
@@ -863,3 +864,4 @@ void SW_OUT_close_textfiles(
         }
     }
 }
+#endif
