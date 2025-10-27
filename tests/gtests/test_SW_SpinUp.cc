@@ -1,8 +1,9 @@
-#include "include/generic.h"             // for swTRUE
-#include "include/SW_Control.h"          // for SW_CTL_main, SW_CTL_run_spinup
-#include "include/SW_datastructs.h"      // for SW_RUN
-#include "include/SW_Main_lib.h"         // for sw_fail_on_error
-#include "include/SW_Times.h"            // for Today
+#include "include/generic.h"        // for swTRUE
+#include "include/SW_Control.h"     // for SW_CTL_main, SW_CTL_run_spinup
+#include "include/SW_datastructs.h" // for SW_RUN
+#include "include/SW_Main_lib.h"    // for sw_fail_on_error
+#include "include/SW_Times.h"       // for Today
+#include "include/SW_VegProd.h"     // for SW_VPD_init_run, SW_VPD_deconstruct
 #include "tests/gtests/sw_testhelpers.h" // for SpinUpFixtureTest
 #include "gtest/gtest.h"                 // for Test, Message, TestPartResul...
 
@@ -22,6 +23,9 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeGreaterThanDuration) {
     double *prevTemp = new double[n];
     double *prevMoist = new double[n];
 
+    SW_VPD_init_run(&SW_Run, &LogInfo);
+    sw_fail_on_error(&LogInfo);
+
     SW_Run.ModelIn.SW_SpinUp.mode = 1;
     SW_Run.ModelIn.SW_SpinUp.scope = 27;
     SW_Run.ModelIn.SW_SpinUp.duration = 3;
@@ -61,6 +65,8 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeGreaterThanDuration) {
     // Deallocate arrays
     delete[] prevTemp;
     delete[] prevMoist;
+
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
 }
 
 // Test SpinUp with mode = 1 and scope = duration
@@ -70,6 +76,9 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeEqualToDuration) {
     double *prevTemp = new double[n];
     double *prevMoist = new double[n];
 
+    SW_VPD_init_run(&SW_Run, &LogInfo);
+    sw_fail_on_error(&LogInfo);
+
     SW_Run.ModelIn.SW_SpinUp.mode = 1;
     SW_Run.ModelIn.SW_SpinUp.scope = 3;
     SW_Run.ModelIn.SW_SpinUp.duration = 3;
@@ -109,6 +118,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeEqualToDuration) {
     // Deallocate arrays
     delete[] prevTemp;
     delete[] prevMoist;
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
 }
 
 // Test SpinUp with mode = 1 and scope < duration
@@ -117,6 +127,9 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeLessThanDuration) {
     int const n = 4; // n = number of soil layers to test
     double *prevTemp = new double[n];
     double *prevMoist = new double[n];
+
+    SW_VPD_init_run(&SW_Run, &LogInfo);
+    sw_fail_on_error(&LogInfo);
 
     SW_Run.ModelIn.SW_SpinUp.mode = 1;
     SW_Run.ModelIn.SW_SpinUp.scope = 1;
@@ -157,6 +170,8 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeLessThanDuration) {
     // Deallocate arrays
     delete[] prevTemp;
     delete[] prevMoist;
+
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
 }
 
 // Test SpinUp with mode = 2 and scope > duration
@@ -165,6 +180,9 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeGreaterThanDuration) {
     int const n = 4; // n = number of soil layers to test
     double *prevTemp = new double[n];
     double *prevMoist = new double[n];
+
+    SW_VPD_init_run(&SW_Run, &LogInfo);
+    sw_fail_on_error(&LogInfo);
 
     SW_Run.ModelIn.SW_SpinUp.mode = 2;
     SW_Run.ModelIn.SW_SpinUp.scope = 27;
@@ -205,6 +223,8 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeGreaterThanDuration) {
     // Deallocate arrays
     delete[] prevTemp;
     delete[] prevMoist;
+
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
 }
 
 // Test SpinUp with mode = 2 and scope = duration
@@ -213,6 +233,9 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeEqualToDuration) {
     int const n = 4; // n = number of soil layers to test
     double *prevTemp = new double[n];
     double *prevMoist = new double[n];
+
+    SW_VPD_init_run(&SW_Run, &LogInfo);
+    sw_fail_on_error(&LogInfo);
 
     SW_Run.ModelIn.SW_SpinUp.mode = 2;
     SW_Run.ModelIn.SW_SpinUp.scope = 3;
@@ -253,6 +276,8 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeEqualToDuration) {
     // Deallocate arrays
     delete[] prevTemp;
     delete[] prevMoist;
+
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
 }
 
 // Test SpinUp with mode = 2 and scope < duration
@@ -261,6 +286,9 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeLessThanDuration) {
     int const n = 4; // n = number of soil layers to test
     double *prevTemp = new double[n];
     double *prevMoist = new double[n];
+
+    SW_VPD_init_run(&SW_Run, &LogInfo);
+    sw_fail_on_error(&LogInfo);
 
     SW_Run.ModelIn.SW_SpinUp.mode = 2;
     SW_Run.ModelIn.SW_SpinUp.scope = 1;
@@ -301,6 +329,8 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeLessThanDuration) {
     // Deallocate arrays
     delete[] prevTemp;
     delete[] prevMoist;
+
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
 }
 
 // Evaluate spinup
@@ -337,6 +367,9 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
         {-2, -1.5, -1.25, -0.75, -0.5, 0.5, 1.5, 2},
         {2, 2, 2, 2, 2, 2, 2, 2}
     };
+
+    SW_VPD_init_run(&SW_Run, &LogInfo);
+    sw_fail_on_error(&LogInfo);
 
 
     // Output file
@@ -498,6 +531,8 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
 
     CloseFile(&fp, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
 }
 #endif // end of SW2_SpinupEvaluation_Test
 

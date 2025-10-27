@@ -267,7 +267,8 @@ void SW_CBN_init_run(
 
     int k;
     TimeInt year;
-    TimeInt simendyr = endYr + addtl_yr;
+    TimeInt ppm_yrIdx;
+    TimeInt endsimyr = endYr - startYr + 1 + addtl_yr;
     /* atmospheric CO2 concentration corresponding to vegetation input year */
     double vegCO2;
     double biomCorrectionFactor[NVEGTYPES];
@@ -276,19 +277,6 @@ void SW_CBN_init_run(
 
     if (!SW_CarbonIn->use_bio_mult && !SW_CarbonIn->use_wue_mult) {
         return;
-    }
-
-    if (vegYear >= MAX_NYEAR || simendyr >= MAX_NYEAR) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "A requested year (%d or %d) is "
-            "outside implemented range for annual aCO2 [0-%d].",
-            simendyr,
-            vegYear,
-            MAX_NYEAR - 1
-        );
-        return; // Exit function prematurely due to error
     }
 
     /* Adjustment for year of vegetation inputs relative to reference */
@@ -314,8 +302,9 @@ void SW_CBN_init_run(
 
 
     /* Calculate CO2 fertilization multipliers for each simulated year */
-    for (year = startYr + addtl_yr; year <= simendyr; year++) {
-        ppm = SW_CarbonIn->ppm[year];
+    for (year = addtl_yr; year < endsimyr; year++) {
+        ppm_yrIdx = year + startYr;
+        ppm = SW_CarbonIn->ppm[ppm_yrIdx];
 
         if (LT(ppm, 0.)) {
             LogError(

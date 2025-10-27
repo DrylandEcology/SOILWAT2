@@ -131,6 +131,7 @@ TEST(VegProdTest, VegProdConstructor) {
     SW_VPD_construct(
         &sw.VegProdIn, &sw.RunIn.VegProdRunIn, sw.vp_p_oagg, sw.vp_p_accu
     );
+    SW_VPD_init_ptrs(&sw.VegProdSim);
 
     // Provide values for variables utilized by SW_VPD_init_run()
     sw.ModelIn.startyr = 1980;
@@ -139,6 +140,7 @@ TEST(VegProdTest, VegProdConstructor) {
     sw.RunIn.ModelRunIn.isnorth = swTRUE;
     sw.VegProdIn.veg_method = 0;
     sw.SiteIn.methodMaxDepthSoilTemperature = 0;
+    sw.ModelSim.yearIdxSpinSim = 0;
 
     SW_VPD_init_run(&sw, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -147,17 +149,13 @@ TEST(VegProdTest, VegProdConstructor) {
         EXPECT_DOUBLE_EQ(
             1., sw.VegProdSim.veg[k].co2_multipliers[BIO_INDEX][0]
         );
-        EXPECT_DOUBLE_EQ(
-            1., sw.VegProdSim.veg[k].co2_multipliers[BIO_INDEX][MAX_NYEAR - 1]
-        );
 
         EXPECT_DOUBLE_EQ(
             1., sw.VegProdSim.veg[k].co2_multipliers[WUE_INDEX][0]
         );
-        EXPECT_DOUBLE_EQ(
-            1., sw.VegProdSim.veg[k].co2_multipliers[WUE_INDEX][MAX_NYEAR - 1]
-        );
     }
+
+    SW_VPD_deconstruct(&sw.VegProdSim);
 }
 
 // Test the application of the biomass CO2-effect
@@ -1730,6 +1728,8 @@ TEST_F(VegProdFixtureTest, CalcAnnClimConditions) {
     double expAnnTemp = 0.;
     double expSeasonPrecip = 0.;
 
+    SW_VPD_init_ptrs(&SW_VegProdSim);
+
     SW_WTH_deconstruct(&SW_Run.RunIn.weathRunAllHist);
     SW_WTH_allocateAllWeather(&SW_Run.RunIn.weathRunAllHist, 1, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1852,6 +1852,8 @@ TEST_F(VegProdFixtureTest, CalcVegPredictorVals) {
     double expShortAvg = 0.;
     double expAnom = 0.;
     double expRateAnom = 0.;
+
+    SW_VPD_init_ptrs(&SW_VegProdSim);
 
     alloc_nyear_arrays(numYears, swFALSE, &SW_VegProdSim, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error

@@ -247,10 +247,10 @@ void get_co2effects_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
     char *endOutstr = OutRun->sw_outstr + sizeof OutRun->sw_outstr - 1;
-    TimeInt simyear = sw->ModelSim.simyear;
     size_t writeSize = (size_t) (MAX_LAYERS * OUTSTRLEN);
     char *writePtr = OutRun->sw_outstr;
     Bool fullBuffer = swFALSE;
+    TimeInt co2_yrIdx = sw->ModelSim.yearIdxSpinSim;
 
     (void) pd; // hack to silence "-Wunused-parameter"
 
@@ -261,7 +261,7 @@ void get_co2effects_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
             "%c%.*f",
             OUTSEP,
             OUT_DIGITS,
-            sw->VegProdSim.veg[k].co2_multipliers[BIO_INDEX][simyear]
+            sw->VegProdSim.veg[k].co2_multipliers[BIO_INDEX][co2_yrIdx]
         );
         fullBuffer = sw_memccpy_inc(
             (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
@@ -277,7 +277,7 @@ void get_co2effects_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
             "%c%.*f",
             OUTSEP,
             OUT_DIGITS,
-            sw->VegProdSim.veg[k].co2_multipliers[WUE_INDEX][simyear]
+            sw->VegProdSim.veg[k].co2_multipliers[WUE_INDEX][co2_yrIdx]
         );
         fullBuffer = sw_memccpy_inc(
             (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
@@ -330,8 +330,9 @@ void get_co2effects_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
                     );
 #endif
 
-        p[iOUTIndex] = sw->VegProdSim.veg[k]
-                           .co2_multipliers[BIO_INDEX][sw->ModelSim.simyear];
+        p[iOUTIndex] =
+            sw->VegProdSim.veg[k]
+                .co2_multipliers[BIO_INDEX][sw->ModelSim.yearIdxSpinSim];
 
 
 #if defined(RSOILWAT)
@@ -353,8 +354,9 @@ void get_co2effects_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
                     );
 #endif
 
-        p[iOUTIndex] = sw->VegProdSim.veg[k]
-                           .co2_multipliers[WUE_INDEX][sw->ModelSim.simyear];
+        p[iOUTIndex] =
+            sw->VegProdSim.veg[k]
+                .co2_multipliers[WUE_INDEX][sw->ModelSim.yearIdxSpinSim];
     }
 }
 
@@ -379,7 +381,7 @@ void get_co2effects_agg(
             iOUTIndex,
             OutRun->currIter,
             sw->VegProdSim.veg[k]
-                .co2_multipliers[BIO_INDEX][sw->ModelSim.simyear]
+                .co2_multipliers[BIO_INDEX][sw->ModelSim.yearIdxSpinSim]
         );
 
         iOUTIndex = iOUT(
@@ -394,7 +396,7 @@ void get_co2effects_agg(
             iOUTIndex,
             OutRun->currIter,
             sw->VegProdSim.veg[k]
-                .co2_multipliers[WUE_INDEX][sw->ModelSim.simyear]
+                .co2_multipliers[WUE_INDEX][sw->ModelSim.yearIdxSpinSim]
         );
     }
 
