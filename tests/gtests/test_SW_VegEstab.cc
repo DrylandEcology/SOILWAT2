@@ -1,14 +1,19 @@
-#include "include/generic.h"             // for swFALSE, swTRUE
-#include "include/SW_Control.h"          // for SW_CTL_main
-#include "include/SW_datastructs.h"      // for SW_RUN
-#include "include/SW_Main_lib.h"         // for sw_fail_on_error
-#include "include/SW_VegEstab.h"         // for SW_VES_read2
+#include "include/generic.h"        // for swFALSE, swTRUE
+#include "include/SW_Control.h"     // for SW_CTL_main
+#include "include/SW_datastructs.h" // for SW_RUN
+#include "include/SW_Main_lib.h"    // for sw_fail_on_error
+#include "include/SW_VegEstab.h"    // for SW_VES_read2
+#include "include/SW_VegProd.h"     // for SW_VPD_init_run, SW_VPD_deconstruct
 #include "tests/gtests/sw_testhelpers.h" // for VegEstabFixtureTest
 #include "gtest/gtest.h"                 // for Message, AssertionResult
 
 namespace {
 // Run a simulation with vegetation establishment turn on
 TEST_F(VegEstabFixtureTest, SimulateWithVegEstab) {
+
+    SW_VPD_init_run(&SW_Run, &LogInfo);
+    sw_fail_on_error(&LogInfo);
+
     // Turn on vegetation establishment and process inputs (but ignore use flag)
     SW_VES_read2(
         &SW_Run.VegEstabIn,
@@ -38,5 +43,7 @@ TEST_F(VegEstabFixtureTest, SimulateWithVegEstab) {
         EXPECT_GE(SW_Run.VegEstabSim.parms[i].estab_doy, 0);
         EXPECT_LE(SW_Run.VegEstabSim.parms[i].estab_doy, 366);
     }
+
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
 }
 } // namespace

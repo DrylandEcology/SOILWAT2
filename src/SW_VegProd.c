@@ -116,6 +116,94 @@ const char *const key2veg[NVEGTYPES] = {
 };
 
 /* =================================================== */
+/*             Local Function Definitions              */
+/* --------------------------------------------------- */
+
+/**
+@brief Allocate co2_multipliers for the current simulation run
+
+@param[in] veg Array of size NVEGTYPES of type VegType describing
+all NVEGTYPES vegetation types through simulation-specific inputs;
+return struct with allocated co2_multiplier arrays
+Return arrays with allocated memory
+@param[in] n_years Number of years in simulation
+@param[in] addtl_yr Represents how many years in the future we are simulating
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void alloc_co2(
+    VegTypeSim veg[], size_t n_years, TimeInt addtl_yr, LOG_INFO *LogInfo
+) {
+    int vegIndex;
+    int co2Arr;
+    const int nco2Arr = 2;
+
+    ForEachVegType(vegIndex) {
+        for (co2Arr = 0; co2Arr < nco2Arr; co2Arr++) {
+            veg[vegIndex].co2_multipliers[co2Arr] = (double *) Mem_Malloc(
+                sizeof(double) * (n_years + addtl_yr), "alloc_co2", LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
+            }
+        }
+    }
+}
+
+/**
+@brief Moving window of long-term mean temperature
+
+See also calc_veg_predictor_vals().
+
+@param[in] yearIndex Index value specifying which place the year is in the
+    simulation process (i.e., [0, n years) )
+@param[in] nYearsDynamicLong Number of years over which long-term
+    predictors are summarized
+@param[in] SW_VegProdSim Struct of type SW_VEGPROD_SIM that holds information
+    used and/or modified mainly during simulation runs
+@param[out] annTempLongAvg Calculated long-term mean temperature across the
+    moving window defined by \p nYearsDynamicLong
+*/
+static void calc_annTempLongAvg(
+    TimeInt yearIndex,
+    TimeInt nYearsDynamicLong,
+    SW_VEGPROD_SIM *SW_VegProdSim,
+    double *annTempLongAvg
+) {
+    IntU termIndex = SW_VegProdSim->longIndex;
+
+    if (yearIndex == 0) {
+        *annTempLongAvg = 0.;
+    }
+
+    /* Check if we have enough values to make a full average for the
+       term in which we are taking the average of */
+    if (yearIndex + 1 > nYearsDynamicLong) {
+        /* Calculate the new average by converting the average into a sum,
+            removing the oldest value, adding the newest value, and
+            converting the sum into an average
+            This method simplies how we calculate the moving window
+            average to be more constant in computation time */
+        *annTempLongAvg *= nYearsDynamicLong;
+        *annTempLongAvg -= SW_VegProdSim->annTemp[termIndex];
+        *annTempLongAvg += SW_VegProdSim->annTemp[yearIndex];
+        *annTempLongAvg /= nYearsDynamicLong;
+
+        SW_VegProdSim->longIndex++;
+
+    } else {
+        /* Since we do not have enough years to compute the whole average,
+            we keep a running average until we have enough years
+            Do this by converting the running average into a sum
+            (number of years currently within the sum), add the new
+            value, and retake the average with the new number
+            of years in the sum (yearIndex + 1) */
+        *annTempLongAvg *= (yearIndex);
+        *annTempLongAvg += SW_VegProdSim->annTemp[yearIndex];
+        *annTempLongAvg /= (yearIndex + 1);
+    }
+}
+
+/* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
@@ -457,60 +545,6 @@ void calc_yearly_hist_vals(
     // Set the temperature-precipitation correlation
     SW_VegProdSim->annTempPrecipCorr[yearIndex] =
         correlation_coefficient(meanTemp, totPrecip, MAX_MONTHS);
-}
-
-/**
-@brief Moving window of long-term mean temperature
-
-See also calc_veg_predictor_vals().
-
-@param[in] yearIndex Index value specifying which place the year is in the
-    simulation process (i.e., [0, n years) )
-@param[in] nYearsDynamicLong Number of years over which long-term
-    predictors are summarized
-@param[in] SW_VegProdSim Struct of type SW_VEGPROD_SIM that holds information
-    used and/or modified mainly during simulation runs
-@param[out] annTempLongAvg Calculated long-term mean temperature across the
-    moving window defined by \p nYearsDynamicLong
-*/
-static void calc_annTempLongAvg(
-    TimeInt yearIndex,
-    TimeInt nYearsDynamicLong,
-    SW_VEGPROD_SIM *SW_VegProdSim,
-    double *annTempLongAvg
-) {
-    IntU termIndex = SW_VegProdSim->longIndex;
-
-    if (yearIndex == 0) {
-        *annTempLongAvg = 0.;
-    }
-
-    /* Check if we have enough values to make a full average for the
-       term in which we are taking the average of */
-    if (yearIndex + 1 > nYearsDynamicLong) {
-        /* Calculate the new average by converting the average into a sum,
-            removing the oldest value, adding the newest value, and
-            converting the sum into an average
-            This method simplies how we calculate the moving window
-            average to be more constant in computation time */
-        *annTempLongAvg *= nYearsDynamicLong;
-        *annTempLongAvg -= SW_VegProdSim->annTemp[termIndex];
-        *annTempLongAvg += SW_VegProdSim->annTemp[yearIndex];
-        *annTempLongAvg /= nYearsDynamicLong;
-
-        SW_VegProdSim->longIndex++;
-
-    } else {
-        /* Since we do not have enough years to compute the whole average,
-            we keep a running average until we have enough years
-            Do this by converting the running average into a sum
-            (number of years currently within the sum), add the new
-            value, and retake the average with the new number
-            of years in the sum (yearIndex + 1) */
-        *annTempLongAvg *= (yearIndex);
-        *annTempLongAvg += SW_VegProdSim->annTemp[yearIndex];
-        *annTempLongAvg /= (yearIndex + 1);
-    }
 }
 
 /**
@@ -1779,6 +1813,8 @@ deallocated and NULL pointers
 */
 void SW_VPD_deconstruct(SW_VEGPROD_SIM *SW_VegProdSim) {
     int index;
+    int co2Arr;
+    const int nCO2Arrs = 2;
     const int numArrays = 11;
     double **allocArray[] = {
         &SW_VegProdSim->annTemp,
@@ -1798,6 +1834,16 @@ void SW_VPD_deconstruct(SW_VEGPROD_SIM *SW_VegProdSim) {
         if (!isnull(*(allocArray[index]))) {
             free((void *) *(allocArray[index]));
             *(allocArray[index]) = NULL;
+        }
+    }
+
+    ForEachVegType(index) {
+        for (co2Arr = 0; co2Arr < nCO2Arrs; co2Arr++) {
+            if (!isnull(SW_VegProdSim->veg[index].co2_multipliers[co2Arr])) {
+                free((void *) SW_VegProdSim->veg[index].co2_multipliers[co2Arr]
+                );
+                SW_VegProdSim->veg[index].co2_multipliers[co2Arr] = NULL;
+            }
         }
     }
 }
@@ -1829,11 +1875,16 @@ void SW_VPD_init_ptrs(SW_VEGPROD_SIM *SW_VegProdSim) {
     for (index = 0; index < numArrays; index++) {
         *(allocArray[index]) = NULL;
     }
+
+    ForEachVegType(index) {
+        SW_VegProdSim->veg[index].co2_multipliers[0] = NULL;
+        SW_VegProdSim->veg[index].co2_multipliers[1] = NULL;
+    }
 }
 
 void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
     TimeInt year;
-    TimeInt n_years;
+    TimeInt n_years = sw->ModelIn.endyr - sw->ModelIn.startyr + 1;
     int k;
     LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
     Bool inNorthHem = sw->RunIn.ModelRunIn.isnorth;
@@ -1842,8 +1893,13 @@ void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
     Bool annTempOnly =
         (Bool) (allocAnnTemp && veg_method != VEG_METHOD_DYN_EST);
 
+    alloc_co2(sw->VegProdSim.veg, n_years, sw->ModelSim.addtl_yr, LogInfo);
+    if (LogInfo->stopRun) {
+        return;
+    }
+
     /* Set co2-multipliers to default */
-    for (year = 0; year < MAX_NYEAR; year++) {
+    for (year = 0; year < n_years; year++) {
         ForEachVegType(k) {
             sw->VegProdSim.veg[k].co2_multipliers[BIO_INDEX][year] = 1.;
             sw->VegProdSim.veg[k].co2_multipliers[WUE_INDEX][year] = 1.;
@@ -1877,7 +1933,6 @@ void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
 
     if (veg_method == VEG_METHOD_DYN_EST || allocAnnTemp) {
         /* Number of years for dynamic vegetation: spinup + simulation years */
-        n_years = sw->ModelIn.endyr - sw->ModelIn.startyr + 1;
         if (sw->ModelIn.SW_SpinUp.duration > 0) {
             n_years += sw->ModelIn.SW_SpinUp.duration;
         }
@@ -2045,8 +2100,7 @@ void SW_VPD_new_year(
     *
     */
 
-    TimeInt doy;                            /* base1 */
-    TimeInt simyear = SW_ModelSim->simyear; /* adjusted year used for CO2 */
+    TimeInt doy; /* base1 */
     TimeInt yearIdxSpinSim = SW_ModelSim->yearIdxSpinSim;
     TimeInt weatherYearIndex = SW_ModelSim->year - startYearWeather;
     int k;
@@ -2116,7 +2170,7 @@ void SW_VPD_new_year(
                 apply_biomassCO2effect(
                     biomass_after_CO2,
                     vegRunIn[k].pct_live,
-                    vegSim[k].co2_multipliers[BIO_INDEX][simyear]
+                    vegSim[k].co2_multipliers[BIO_INDEX][yearIdxSpinSim]
                 );
 
                 interpolate_monthlyValues(
@@ -2140,7 +2194,7 @@ void SW_VPD_new_year(
                 apply_biomassCO2effect(
                     biomass_after_CO2,
                     biomassAsIf100Cover,
-                    vegSim[k].co2_multipliers[BIO_INDEX][simyear]
+                    vegSim[k].co2_multipliers[BIO_INDEX][yearIdxSpinSim]
                 );
 
                 interpolate_monthlyValues(

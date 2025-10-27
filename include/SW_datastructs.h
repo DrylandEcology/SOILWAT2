@@ -617,7 +617,7 @@ typedef struct {
           - column \ref BIO_INDEX holds biomass multipliers
           - column \ref WUE_INDEX holds water-use-efficiency multipliers
           - rows represent years */
-        co2_multipliers[2][MAX_NYEAR];
+        *co2_multipliers[2];
 } VegTypeSim;
 
 /** Data type that is static through every simulation run describing
