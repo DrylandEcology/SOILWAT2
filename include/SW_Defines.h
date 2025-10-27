@@ -418,7 +418,7 @@ typedef int sw_converter_t;
 #define SW_MAX_PROCESSOR_NAME 1
 #endif
 
-/* The number of SUIDs that are assigned to a compute process at once;
+/* The number of SUIDs that are assigned to a process at once;
    this is assumed to be a numeric value for comparison sake, a non-numeric
    value may throw an error */
 #ifdef N_SUID_ASSIGN
