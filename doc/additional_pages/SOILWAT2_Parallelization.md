@@ -209,8 +209,8 @@ Plain netCDF (SWNC/SWNETCDF mode) inputs remain the same to read one site at a t
 - Current Solution(s)
     - If we want to write contiguous site data across netCDFs, this data is rearranged into the
       following format:
-        - [site 1, var 1, file 1], [site 1, var 1, file 2], ..., [site 1, var 2, file 1], ...
-          [site 2, var 1, file 1], [site 2, var 1, file 2], ..., [site x, var y, file z]
+        - [file 1, var 1, site 1], [file 1, var 1, site 2], ..., [file 1, var 2, site 1], ...
+          [file 2, var 1, site 1], [file 2, var 1, site 2], ..., [file 2, var 2, site 1]
     - The netCDF output function has been modified to use this format while also keeping
       functionality for the previous format (without MPI).
 
