@@ -20,9 +20,14 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
+
+void SW_CBN_alloc_ppm_existing_years(
+    TimeInt n_years, double **ppm, int **existing_years, LOG_INFO *LogInfo
+);
+
 void SW_CBN_construct(SW_CARBON_INPUTS *SW_CarbonIn);
 
-void SW_CBN_deconstruct(void);
+void SW_CBN_deconstruct(SW_CARBON_INPUTS *SW_CarbonIn);
 
 void SW_CBN_read(
     SW_CARBON_INPUTS *SW_CarbonIn,

@@ -13,7 +13,7 @@
 #define DATATYPES_H
 
 #include "include/generic.h"    // for Bool
-#include "include/SW_Defines.h" // for MAX_NYEAR, MAX_ST_RGR, MAX_LAYERS, M...
+#include "include/SW_Defines.h" // for MAX_ST_RGR, MAX_LAYERS, M...
 #include <stdio.h>              // for FILENAME_MAX, FILE
 
 #if defined(SWMPI)
@@ -64,11 +64,11 @@ typedef struct {
     char scenario[64]; /**< A 64-char array holding the scenario name for which
                           we are extracting CO2 data from the carbon.in file. */
 
-    double ppm[MAX_NYEAR]; /**< A 1D array holding atmospheric CO2 concentration
-                              values (units ppm) that are indexed by calendar
-                              year. Is typically only populated for the years
-                              that are being simulated. `ppm[index]` is the CO2
-                              value for the calendar year `index + 1` */
+    double *ppm; /**< A 1D array holding atmospheric CO2 concentration
+                              values (units ppm). Is typically only populated
+                              for the years that are being simulated.
+                              `ppm[index]` is the CO2 value for the calendar
+                    year `index + 1` */
 
 } SW_CARBON_INPUTS;
 
