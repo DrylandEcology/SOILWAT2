@@ -114,11 +114,11 @@ static size_t calc_num_out_vals(size_t timeSize, IntUS nsl, IntUS npft) {
 }
 
 /**
-@brief When receiving input from a compute process, it is not in the
-    order we need it to be to be output properly by the output function
-    due to the possibility of writing more than one site/grid cell;
-    reorder output so it can properly be output by the netCDF
-    output function
+@brief When storing output as simulations occur, the resulting output
+    is not in the order we need it to be to be output properly by the
+    output function due to the possibility of writing more than one
+    site/grid cell; reorder output so it can properly be output by
+    the netCDF output function
 
 @param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
@@ -458,7 +458,7 @@ reportError:
     based on the domain SUIDs
 
 This function must result in a number of writes between
-[1, num compute processes]
+[1, N_SUID_ASSIGN]
 
 @param[in] suids A list of domain SUIDs whose data will be distributed
     as the next batch of input; can be domain or translated (index)
@@ -576,9 +576,7 @@ the number of sites/gridcells, this should save time when reading/writing
     comparatively
 
 @param[in] nSuids Number of SUIDs that will be assigned
-@param[in] nSuidsLeft Number of SUIDs that are to be assigned; this
-    is only used when an I/O process is on the last assignments of
-    SUIDs (i.e., we attempt to assign more SUIDs than we have left)
+@param[in] nSuidsLeft Number of SUIDs that are to be assigned
 @param[in] useIndexFile Specifies to create/use an index file
 @param[in] readInVars Specifies which variables are to be read-in as input
 @param[in] distSUIDs A list of domain SUIDs whose data will be distributed
@@ -658,7 +656,7 @@ static void calculate_contiguous_allkeys(
 
 /**
 @brief Find the active sites within the provided domain so we do not
-try to simulate/assign to compute processes
+try to simulate/assign to processes
 
 @param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
@@ -1341,7 +1339,7 @@ freeMem:
 @brief Organize output data when completing a simulation run into
     a bigger output buffer to later reorganize and output
 
-@param[in] runNum Current run number the compute process is on,
+@param[in] runNum Current run number the process is on,
     should be between [0, N_SUID_ASSIGN - 1]
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
@@ -1578,8 +1576,7 @@ void SW_MPI_read_inputs(
 @param[in] distSUIDs A list of domain SUIDs whose data will be distributed
     as the next batch of input
 @param[in] numSuids Number of SUIDs that will be assigned, this should be
-    the product of the <number of compute processors for the I/O process>
-    and N_SUID_ASSIGN
+    maximum of N_SUID_ASSIGN
 @param[in] siteDom Specifies that the programs domain has sites, otherwise
     it is gridded
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
@@ -1732,8 +1729,7 @@ be filled with template data and possibly have weather copied into it
 process will take to complete
 @param[in] readWeather Flag specifying if template weather should be copied
 into each instance of SW_RUN_INPUTS within "runInputs"
-@param[in] n_years Number of years of weather to receive if we do
-    get weather from the I/O process
+@param[in] n_years Number of years of weather to read in
 @param[out] tempOut Struct of type SW_OUT_RUN that holds temporary output
 information; return this with allocated p_OUT
 @param[out] extraFailCheck Specifies if finished processes will have to

@@ -495,9 +495,7 @@ differences
                 structure that can hold N_SUID_ASSIGN amount of sites
             - Upon failure, do not store output and report that it was
                 a failed run
-        - Once done with the simulations
-            - Send report information to designated I/O process
-        - Repeat until the I/O process reports no inputs
+        - Once done with the simulations, write output values
         * Note: The assigned workload has already been predetermined to
             contain sites that are turned on my the program/user
 

@@ -2543,10 +2543,10 @@ output netCDF files
     have (same amount for each key)
 @param[in] ncOutFileNames A list of the generated output netCDF file names
 @param[in] ncSuid Unique indentifier of the current suid being simulated
-@param[in] numWritesGroup The number of writes within an I/O group
+@param[in] numWritesGroup The number of writes across all processes
     that must be performed by the calling function to output all simulated
     information for the sites (MPI only)
-@param[in] numWritesProc The number of writes an I/O process must perform
+@param[in] numWritesProc The number of writes a process must perform
     to output all of it's values, this may be a different (smaller) value
     from `numWritesGroup` (MPI only)
 @param[in] starts A list of size SW_NINKEYSNC specifying the start
