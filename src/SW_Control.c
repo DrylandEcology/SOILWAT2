@@ -349,6 +349,10 @@ void SW_RUN_deepCopy(
     Bool copyWeatherHist,
     LOG_INFO *LogInfo
 ) {
+    TimeInt n_years = source->ModelIn.endyr - source->ModelIn.startyr + 1 +
+                      source->ModelSim.addtl_yr;
+    int **dummyExistYears = NULL;
+
     memcpy(dest, source, sizeof(*dest));
 
 #if defined(SWMPI)
@@ -415,6 +419,19 @@ void SW_RUN_deepCopy(
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
+
+    SW_CBN_alloc_ppm_existing_years(
+        n_years, &dest->CarbonIn.ppm, dummyExistYears, LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    memcpy(
+        dest->CarbonIn.ppm,
+        source->CarbonIn.ppm,
+        sizeof(*dest->CarbonIn.ppm) * n_years
+    );
 
 #if defined(SWNETCDF)
     SW_PATHOUT_deepCopy(
@@ -1001,7 +1018,7 @@ void SW_CTL_clear_model(Bool full_reset, SW_RUN *sw) {
     SW_VPD_deconstruct(&sw->VegProdSim);
     // SW_FLW_deconstruct() not needed
     SW_SWC_deconstruct(&sw->SoilWatIn, &sw->SoilWatSim);
-    SW_CBN_deconstruct();
+    SW_CBN_deconstruct(&sw->CarbonIn);
 }
 
 /**

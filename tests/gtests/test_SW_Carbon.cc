@@ -23,14 +23,23 @@ TEST(CarbonTest, CarbonConstructor) {
 // Test reading yearly CO2 data from disk file
 TEST_F(CarbonFixtureTest, CarbonInReadInputFile) {
     TimeInt year;
-    TimeInt const simendyr = SW_Run.ModelIn.endyr + SW_Run.ModelSim.addtl_yr;
+    TimeInt const n_years = SW_Run.ModelIn.endyr - SW_Run.ModelIn.startyr + 1 +
+                            SW_Run.ModelSim.addtl_yr;
     double sum_CO2;
+    int **dummyExistArr = NULL;
+
+    SW_CBN_deconstruct(&SW_Run.CarbonIn);
 
     // Test if CO2-effects are turned off -> no CO2 concentration data are read
     // from file
     SW_CBN_construct(&SW_Run.CarbonIn);
     SW_Run.CarbonIn.use_wue_mult = 0;
     SW_Run.CarbonIn.use_bio_mult = 0;
+
+    SW_CBN_alloc_ppm_existing_years(
+        n_years, &SW_Run.CarbonIn.ppm, dummyExistArr, &LogInfo
+    );
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_CBN_read(
         &SW_Run.CarbonIn,
@@ -44,10 +53,12 @@ TEST_F(CarbonFixtureTest, CarbonInReadInputFile) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     sum_CO2 = 0.;
-    for (year = 0; year < MAX_NYEAR; year++) {
+    for (year = 0; year < n_years; year++) {
         sum_CO2 += SW_Run.CarbonIn.ppm[year];
     }
     EXPECT_DOUBLE_EQ(sum_CO2, 0.);
+
+    SW_CBN_deconstruct(&SW_Run.CarbonIn);
 
     // Test if CO2-effects are turned on -> CO2 concentration data are read from
     // file
@@ -74,9 +85,7 @@ TEST_F(CarbonFixtureTest, CarbonInReadInputFile) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    for (year = SW_Run.ModelIn.startyr + SW_Run.ModelSim.addtl_yr;
-         year <= simendyr;
-         year++) {
+    for (year = 0; year < n_years; year++) {
         EXPECT_GT(SW_Run.CarbonIn.ppm[year], 0.);
     }
 }
@@ -87,6 +96,8 @@ TEST_F(CarbonFixtureTest, CarbonInCO2multipliers) {
     TimeInt const endyr = SW_Run.ModelIn.endyr - SW_Run.ModelIn.startyr + 1 +
                           SW_Run.ModelSim.addtl_yr;
     int k;
+
+    SW_CBN_deconstruct(&SW_Run.CarbonIn);
 
     SW_CBN_construct(&SW_Run.CarbonIn);
     SW_VPD_init_run(&SW_Run, &LogInfo);

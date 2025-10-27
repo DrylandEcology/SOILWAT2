@@ -70,10 +70,6 @@ extern "C" {
 #define MAX_ST_RGR 100       /**< Maximum number of soil temperature nodes */
 #define MAX_NSPECIES 20      /**< Maximum number of vegetation species */
 
-/** An integer representing the max calendar year that is supported. The number
- * just needs to be reasonable, it is an artifical limit. */
-#define MAX_NYEAR 2500
-
 #define SW_MISSING 999. /**< Value to use as MISSING */
 
 // Euler's constant
