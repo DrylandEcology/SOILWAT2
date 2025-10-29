@@ -5884,17 +5884,13 @@ SWMPI is enabled, then they will be opened with parallel access;
 close the domain files (domain and progress) and reopen them for
 parallel access (if enabled)
 
-@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] SW_netCDFIn SW_netCDFIn Constant netCDF input file information
 @param[out] SW_PathInputs Struct of type SW_PATH_INPUTS which
 holds basic information about input files and values
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static void open_input_files(
-    int rank,
-    SW_NETCDF_IN *SW_netCDFIn,
-    SW_PATH_INPUTS *SW_PathInputs,
-    LOG_INFO *LogInfo
+    SW_NETCDF_IN *SW_netCDFIn, SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo
 ) {
     const int indexFile = 0;
     int inKey;
@@ -5907,13 +5903,6 @@ static void open_input_files(
     Bool useWeathFileArray;
 
 #if defined(SWMPI)
-    int domVar;
-
-    if (rank == ROOT_PROC) {
-        nc_close(SW_PathInputs->ncDomFileIDs[vNCdom]);
-        nc_close(SW_PathInputs->ncDomFileIDs[vNCprog]);
-    }
-
     SW_MPI_Bcast(
         MPI_INT,
         SW_netCDFIn->useIndexFile,
@@ -5921,35 +5910,10 @@ static void open_input_files(
         ROOT_PROC,
         MPI_COMM_WORLD
     );
-
-    SW_MPI_Bcast(
-        MPI_INT, SW_netCDFIn->ncDomVarIDs, SW_NVARDOM, ROOT_PROC, MPI_COMM_WORLD
-    );
-#else
-    (void) rank;
 #endif
 
     ForEachNCInKey(inKey) {
         if (!SW_netCDFIn->readInVars[inKey][0] || inKey == eSW_InDomain) {
-#if defined(SWMPI)
-            if (inKey == eSW_InDomain) {
-                // Reopen domain and progress file
-                for (domVar = 0; domVar < SW_NVARDOM; domVar++) {
-                    fileName = SW_PathInputs->ncInFiles[eSW_InDomain][domVar];
-
-                    SW_NC_open_par(
-                        fileName,
-                        (domVar == vNCdom) ? NC_NOWRITE : NC_WRITE,
-                        MPI_COMM_WORLD,
-                        &SW_PathInputs->ncDomFileIDs[domVar],
-                        LogInfo
-                    );
-                    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-                        return;
-                    }
-                }
-            }
-#endif
             continue;
         }
 
@@ -10017,7 +9981,7 @@ checkForFail:
 #endif
     checkReturn(LogInfo->stopRun);
 
-    open_input_files(rank, SW_netCDFIn, &SW_Domain->SW_PathInputs, LogInfo);
+    open_input_files(SW_netCDFIn, &SW_Domain->SW_PathInputs, LogInfo);
     checkReturn(LogInfo->stopRun);
 
     SW_NCIN_check_input_files(rank, SW_Domain, LogInfo);
