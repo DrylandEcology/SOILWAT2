@@ -1777,9 +1777,8 @@ typedef struct {
                    domainType is 'xy') or number of sites (if domainType is 's')
                  */
 
-        startSimSet, /**< First SUID in simulation set within domain to simulate
-                      */
-        endSimSet; /**< Last SUID in simulation set within domain to simulate */
+        userSUID; /**< First SUID in simulation set within domain to simulate
+                   */
 
     char crs_bbox[27]; /**< Input name/CRS type (domain.in) - holds up to "World
                           Geodetic System 1984" (26) */
@@ -1838,15 +1837,23 @@ typedef struct {
     // Information that is constant through simulation runs
     SW_OUT_DOM OutDom;
 
-#if defined(SWMPI)
-    size_t nActiveSuids; /**< Number of active sites that will be simulated
+    size_t nActiveSuidsTot; /**< Number of active sites that will be simulated
                               (root process only) */
-    unsigned int
-        nProcSuids; /**< Number of suids that will be controlled by a process */
-    size_t *domSuids[SW_NINKEYSNC]; /**< A list of suids to describe the
-                                        domain; this includes translated suids
-                                        for input keys if necessary */
-#endif
+
+    unsigned int nActiveSuidsProc; /**< Number of active suids that will be
+                                        controlled by a process */
+    size_t domStartIndex[SW_NINKEYSNC][NC_DIMS]; /**< A list of suids to
+                                        describe the start of a process'
+                                        subdomain; this includes translated
+                                        suids for input keys if necessary */
+    size_t domCounts[SW_NINKEYSNC]
+                    [NC_DIMS]; /**< A list of counts to describe
+                          the size of a subdomain for a process;
+                          includes translated suid sizes as well */
+
+    /* A list of size NC_DIMS to store the base chunking sizes for the spatial
+       dimensions of output (lat/lon or site) */
+    size_t spaceChunk[NC_DIMS];
 } SW_DOMAIN;
 
 /* =================================================== */

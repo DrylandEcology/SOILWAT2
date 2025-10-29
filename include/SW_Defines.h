@@ -250,6 +250,9 @@ typedef unsigned short OutPeriod;
 /** Number of keys that will be read-in for input netCDFs */
 #define SW_NINKEYSNC 8
 
+/** NetCDF domain constants */
+#define NC_DIMS 2
+
 /*------------ DON'T CHANGE ANYTHING BELOW THIS LINE ------------*/
 /* Macros to simplify and add consistency to common tasks */
 /* Note the loop var must be declared as LyrIndex */

@@ -135,6 +135,8 @@ void sw_print_version(void) {
 @param[in] argv Values of command line arguments.
 @param[in] rank Process number known to MPI for the current process (aka rank);
     defaults to 0 (main process) if we are running sequentially
+@param[in] worldSize Total number of processes that the MPI run has created
+(only relevant with SWMPI enabled)
 @param[out] EchoInits Flag to control if inputs are to be output to the user
 @param[out] firstfile First file name to be filled in the program run
 @param[out] userSUID Simulation Unit Identifier requested by the user (base1);
@@ -155,6 +157,7 @@ void sw_init_args(
     int argc,
     char **argv,
     int rank,
+    int worldSize,
     Bool *EchoInits,
     char **firstfile,
     size_t *userSUID,
@@ -332,6 +335,16 @@ void sw_init_args(
                     str,
                     *userSUID
                 );
+            } else if (worldSize > 1) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "More processes spawned than allowed for running a single "
+                    "site. Please only spawn 1 (%d spawned).",
+                    worldSize
+                );
+            }
+            if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
             break;

@@ -45,7 +45,7 @@ void SW_RUN_deepCopy(
 
 void SW_CTL_setup_domain(
     int rank,
-    size_t userSUID,
+    int nProcs,
     Bool renameDomainTemp,
     SW_DOMAIN *SW_Domain,
     LOG_INFO *LogInfo

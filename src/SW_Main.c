@@ -64,8 +64,6 @@ int main(int argc, char **argv) {
     int rank = 0;
     int size = 0;
 
-    size_t userSUID;
-
     // Start overall wall time
     SW_WT_StartTime(&SW_WallTime);
 
@@ -84,9 +82,10 @@ int main(int argc, char **argv) {
         argc,
         argv,
         rank,
+        size,
         &EchoInits,
         &SW_Domain.SW_PathInputs.txtInFiles[eFirst],
-        &userSUID,
+        &SW_Domain.userSUID,
         &SW_WallTime.wallTimeLimit,
         &renameDomainTemplateNC,
         &prepareFiles,
@@ -107,7 +106,7 @@ int main(int argc, char **argv) {
 
     // setup and construct domain
     SW_CTL_setup_domain(
-        rank, userSUID, renameDomainTemplateNC, &SW_Domain, &LogInfo
+        rank, size, renameDomainTemplateNC, &SW_Domain, &LogInfo
     );
     checkJumpToLabel(LogInfo.stopRun, finishProgram);
 

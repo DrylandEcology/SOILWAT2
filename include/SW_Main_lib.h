@@ -22,6 +22,7 @@ void sw_init_args(
     int argc,
     char **argv,
     int rank,
+    int worldSize,
     Bool *EchoInits,
     char **firstfile,
     size_t *userSUID,

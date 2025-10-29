@@ -40,6 +40,467 @@
 /*             Private Function Declarations           */
 /* --------------------------------------------------- */
 
+#if defined(SWMPI)
+/*
+@brief Allocate helper arrays to keep track of starts/counts for
+latitude and longitude dimensions
+
+@param[in] nChunks A list of size NC_DIMS to hold the number of chunks that
+will be contained in the latitude/site and longitude directions
+@param[in] sDom Specifies the program's domain is site-oriented
+@param[in] allocYX A flag specifying if both Y and X arrays should be
+allocated, only Y if not
+@param[in] alloc A flag specifying if the function is to allocate the given
+arrays or to deallocate
+@param[out] startY A list that will contain starting indices for each process
+in the latitude or site direction; only return an allocated list
+@param[out] startX A list that will contain starting indices for each process
+in the longitude direction; only return an allocated list
+@param[out] countY A list that will contain count sizes for each process
+in the latitude or site direction; only return an allocated list
+@param[out] countX A list that will contain count sizes for each process
+in the longitude direction; only return an allocated list
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void alloc_dom_start_count(
+    size_t nChunks[],
+    Bool sDom,
+    Bool allocYX,
+    Bool alloc,
+    size_t **startY,
+    size_t **startX,
+    size_t **countY,
+    size_t **countX,
+    LOG_INFO *LogInfo
+) {
+    if (alloc) {
+        *startY = (size_t *) Mem_Malloc(
+            sizeof(size_t) * nChunks[0], "get_sub_domains", LogInfo
+        );
+        checkReturn(LogInfo->stopRun);
+
+        *countY = (size_t *) Mem_Malloc(
+            sizeof(size_t) * nChunks[0], "get_sub_domains", LogInfo
+        );
+        checkReturn(LogInfo->stopRun);
+
+        if (!sDom) {
+            *startX = (size_t *) Mem_Malloc(
+                sizeof(size_t) * nChunks[1], "get_sub_domains", LogInfo
+            );
+            checkReturn(LogInfo->stopRun);
+
+            *countX = (size_t *) Mem_Malloc(
+                sizeof(size_t) * nChunks[1], "get_sub_domains", LogInfo
+            );
+        }
+    } else {
+        if (!isnull(*startY)) {
+            free((void *) *startY);
+        }
+
+        if (!isnull(*startX)) {
+            free((void *) *startX);
+        }
+
+        if (!isnull(*countY)) {
+            free((void *) *countY);
+        }
+
+        if (!isnull(*countX)) {
+            free((void *) *countX);
+        }
+    }
+}
+
+/*
+@brief Set the subdomain information for all processes
+
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] sDom Specifies the program's domain is site-oriented
+@param[in] nChunks A list of size NC_DIMS to hold the number of chunks that
+will be contained in the lat and lon directions
+@param[in] A list that is filled with starting indices for each process
+in the latitude or site direction
+@param[in] A list that is filled with starting indices for each process
+in the longitude direction
+@param[in] A list that is filled with count sizes for each process
+in the latitude or site direction
+@param[in] A list that is filled with count sizes for each process
+in the longitude direction
+@param[out] domStartIndexProg A list of size NC_DIMS to hold the start
+index (site domain)/indices (gridded) of the subdomain for a process
+@param[out] domCountsProg A list of size NC_DIMS to hold the counts
+in each dimension(s) of the subdomain for a process, i.e., the size
+of the subdomain
+*/
+static void assign_subdomain(
+    int rank,
+    Bool sDom,
+    size_t nChunks[],
+    size_t *startY,
+    size_t *startX,
+    size_t *countY,
+    size_t *countX,
+    size_t domStartIndexProg[],
+    size_t domCountsProg[]
+) {
+    const size_t nRowChunks = nChunks[0];
+    const size_t nColChunks = nChunks[1];
+    const int chunkRow = (sDom) ? rank : rank / nRowChunks;
+    const int chunkCol = (sDom) ? 0 : rank % nColChunks;
+
+    domStartIndexProg[0] = startY[chunkRow];
+    domStartIndexProg[1] = (sDom) ? 0 : startX[chunkCol];
+
+    domCountsProg[0] = countY[chunkRow];
+    domCountsProg[1] = (sDom) ? 0 : countX[chunkCol];
+}
+
+/*
+@brief Check that the generated subdomain start and count values
+
+@param[in] sDom Specifies the program's domain is site-oriented
+@param[in] nChunks A list of size NC_DIMS to hold the number of chunks that
+will be contained in the lat and lon directions
+@param[in] ysSize Size of the latitude/y or site dimension
+@param[in] xSize Size of the longitude/x dimension
+@param[in] startY A list that is filled with starting indices for each process
+in the latitude or site direction
+@param[in] startX A list that is filled with starting indices for each process
+in the longitude direction
+@param[in] countY A list that is filled with count sizes for each process
+in the latitude or site direction
+@param[in] countX A list that is filled with count sizes for each process
+in the longitude direction
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void check_valid_subdomains(
+    Bool sDom,
+    size_t nChunks[],
+    size_t ysSize,
+    size_t xSize,
+    size_t *startY,
+    size_t *startX,
+    size_t *countY,
+    size_t *countX,
+    LOG_INFO *LogInfo
+) {
+    const size_t nRowChunks = nChunks[0];
+    const size_t nColChunks = nChunks[1];
+
+    size_t index;
+    size_t sum = 0;
+    Bool fail = swFALSE;
+
+    for (index = 0; index < nRowChunks && !fail; index++) {
+        // Typically, a negative value would be tested for, however
+        // if a negetive were to show, it would be close to max size_t
+        if (startY[index] > ysSize || countY[index] > ysSize) {
+            fail = swTRUE;
+        }
+        sum += countY[index];
+    }
+
+    fail = (Bool) (fail || (!sDom && sum != ysSize));
+
+    if (!sDom && !fail) {
+        for (index = 0; index < nColChunks && !fail; index++) {
+            // Typically, a negative value would be tested for, however
+            // if a negetive were to show, it would be close to max size_t
+            if (startX[index] > xSize || countX[index] > xSize) {
+                fail = swTRUE;
+            }
+            sum += countX[index];
+        }
+
+        fail = (Bool) (fail || (!sDom && sum != xSize));
+    }
+
+    if (fail) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Subdomains could not be distributed properly. Please "
+            "try a different number of processes."
+        );
+    }
+}
+
+/*
+@brief Calculate the start/count values for every chunk we will create
+
+@param[in] sDom Specifies the program's domain is site-oriented
+@param[in] nChunks A list of size NC_DIMS to hold the number of chunks that
+will be contained in the lat and lon directions
+@param[in] ysSize Size of the latitude/y or site dimension
+@param[in] xSize Size of the longitude/x dimension
+@param[out] startY A list that will be filled with starting indices for each
+process in the latitude or site direction
+@param[out] startX A list that will be filled with starting indices for each
+process in the longitude direction
+@param[out] countY A list that will be filled with count sizes for each process
+in the latitude or site direction
+@param[out] countX A list that will be filled with count sizes for each process
+in the longitude direction
+*/
+static void calc_subdomain_start_counts(
+    Bool sDom,
+    size_t nChunks[],
+    size_t ysSize,
+    size_t xSize,
+    size_t *startY,
+    size_t *startX,
+    size_t *countY,
+    size_t *countX
+) {
+    const size_t rowRemainDef = ysSize / nChunks[0];
+    const size_t colRemainDef = ysSize / nChunks[1];
+
+    size_t rowRemainder = ysSize % nChunks[0];
+    size_t colRemainder = sDom ? 0 : xSize % nChunks[1];
+    size_t row;
+    size_t col;
+
+    // Calculate the starts for each chunk
+    startY[0] = 0;
+    countY[0] = ysSize;
+    for (row = 1; row < ysSize; row++) {
+        startY[row] = startY[row - 1] + rowRemainDef;
+
+        if (rowRemainder > 0) {
+            startY[row]++;
+            rowRemainder--;
+        }
+    }
+
+    if (!sDom) {
+        startX[0] = 0;
+        countX[0] = xSize;
+        for (col = 1; col < xSize; col++) {
+            startX[col] = startX[col - 1] + colRemainDef;
+
+            if (colRemainder > 0) {
+                colRemainder--;
+                startX[col]++;
+            }
+        }
+    }
+
+    // Calculate the counts for each chunk
+    for (row = 1; row < ysSize; row++) {
+        countY[row - 1] = startY[row] - startY[row - 1];
+    }
+    countY[nChunks[0] - 1] = ysSize - startY[nChunks[0] - 1];
+
+    if (!sDom) {
+        for (col = 1; col < ysSize; col++) {
+            countX[col - 1] = startX[col] - startX[col - 1];
+        }
+        countX[nChunks[1] - 1] = xSize - startX[nChunks[1] - 1];
+    }
+}
+
+/*
+@brief Divide a given gridded domain into subdomains/subrectangles
+to provide to each process
+
+@param[in] worldSize Total number of processes that the MPI run has created
+(only relevant with SWMPI enabled)
+@param[in] ySize Size of the latitude/y dimension
+@param[in] xSize Size of the longitude/x dimension
+@param[out] spaceChunks A list of size NC_DIMS to hold the default
+chunk size when creating/writing to output files; return with the
+array filled
+@param[out] nChunks A list of size NC_DIMS to hold the number of chunks that
+will be contained in the lat and lon directions
+*/
+static void divide_domain_subrects(
+    int worldSize,
+    size_t ySize,
+    size_t xSize,
+    size_t spaceChunks[],
+    size_t nChunks[]
+) {
+    size_t bestNChunksY = (size_t) worldSize;
+    size_t bestNChunksX = 1;
+    size_t height;
+    size_t width;
+    size_t bestDiff = bestNChunksY - bestNChunksX;
+    size_t currDiff;
+
+    for (height = 1; height < worldSize; height++) {
+        width = worldSize / height;
+
+        currDiff = height - width;
+        if (worldSize % height == 0 &&
+            abs((int) currDiff) < abs((int) bestDiff)) {
+
+            bestNChunksY = height;
+            bestNChunksX = width;
+
+            bestDiff = bestNChunksY - bestNChunksX;
+        }
+    }
+
+    nChunks[0] = bestNChunksY;
+    nChunks[1] = bestNChunksX;
+
+    spaceChunks[0] = (size_t) floor((double) ySize / bestNChunksY);
+    spaceChunks[1] = (size_t) floor((double) ySize / bestNChunksX);
+}
+#endif
+
+/**
+@brief Calculate the program's subdomain for each process to control
+
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] worldSize Total number of processes that the MPI run has created
+(only relevant with SWMPI enabled)
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void get_subdomains(
+    int rank, int worldSize, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
+) {
+    Bool sDom = (Bool) (strcmp(SW_Domain->DomainType, "s") == 0);
+    size_t sSize = SW_Domain->nDimS;
+    size_t ySize = SW_Domain->nDimY;
+    size_t xSize = SW_Domain->nDimX;
+
+#if defined(SWMPI)
+    const Bool allocate = swTRUE;
+    const Bool deallocate = swFALSE;
+    size_t *startsY = NULL;
+    size_t *startsX = NULL;
+    size_t *countsY = NULL;
+    size_t *countsX = NULL;
+    size_t nChunks[NC_DIMS] = {0};
+    Bool allocBothArrs = swFALSE;
+
+    if ((sDom && worldSize > sSize) || (worldSize > ySize * xSize)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Too many processes spawned to properly divide the domain. "
+            "Please use at most the number of sites worth of processes."
+        );
+        return;
+    }
+
+    // Check if domain lat/site or lon is divisible by worldSize
+    if ((sDom && worldSize <= sSize) ||
+        (!sDom && (worldSize <= ySize || worldSize <= xSize))) {
+
+        if (sDom) {
+            SW_Domain->spaceChunk[0] = sSize / worldSize;
+            SW_Domain->spaceChunk[1] = 0;
+
+            nChunks[0] = (double) floor((double) sSize / worldSize);
+        } else {
+            SW_Domain->spaceChunk[0] =
+                (worldSize <= ySize) ? ySize / worldSize : 1;
+            SW_Domain->spaceChunk[1] =
+                (worldSize <= ySize) ? 1 : xSize / worldSize;
+
+            nChunks[0] = (double) floor((double) ySize / worldSize);
+            nChunks[1] = (double) floor((double) xSize / worldSize);
+        }
+    } else {
+        // Otherwise, the domain needs to be split into subrectangles
+        divide_domain_subrects(
+            worldSize, ySize, xSize, SW_Domain->spaceChunk, nChunks
+        );
+
+        allocBothArrs = swTRUE;
+    }
+
+    // Allocate start/count arrays
+    // If method one above, only allocate one start and count
+    // Otherwise, allocate two for start and count
+    alloc_dom_start_count(
+        nChunks,
+        sDom,
+        allocBothArrs,
+        allocate,
+        &startsY,
+        &startsX,
+        &countsY,
+        &countsX,
+        LogInfo
+    );
+    checkJumpToLabel(LogInfo->stopRun, freeMem);
+
+    calc_subdomain_start_counts(
+        sDom,
+        nChunks,
+        (sDom) ? sSize : ySize,
+        xSize,
+        startsY,
+        startsX,
+        countsY,
+        countsX
+    );
+
+    // Check that the subdomains are properly divided into
+    // Fail if not
+    check_valid_subdomains(
+        sDom,
+        nChunks,
+        (sDom) ? sSize : ySize,
+        xSize,
+        startsY,
+        startsX,
+        countsY,
+        countsX,
+        LogInfo
+    );
+    checkJumpToLabel(LogInfo->stopRun, freeMem);
+
+    // Set the subdomains
+    // Get the start and end values that pertain to the process
+    assign_subdomain(
+        rank,
+        sDom,
+        nChunks,
+        startsY,
+        startsX,
+        countsY,
+        countsX,
+        SW_Domain->domStartIndex[eSW_InDomain],
+        SW_Domain->domCounts[eSW_InDomain]
+    );
+
+    // Deallocate arrays
+freeMem:
+    alloc_dom_start_count(
+        nChunks,
+        sDom,
+        allocBothArrs,
+        deallocate,
+        &startsY,
+        &startsX,
+        &countsY,
+        &countsX,
+        LogInfo
+    );
+#elif defined(SWNETCDF)
+    SW_Domain->domCounts[eSW_InDomain][0] = sDom ? sSize : ySize;
+    SW_Domain->domCounts[eSW_InDomain][1] = sDom ? 0 : xSize;
+
+    SW_Domain->domStartIndex[eSW_InDomain][0] =
+        SW_Domain->domStartIndex[eSW_InDomain][1] = 0;
+    SW_Domain->spaceChunk[0] = sDom ? sqrt(sSize) : sqrt(ySize);
+    SW_Domain->spaceChunk[1] = sDom ? 0 : sqrt(xSize);
+#else
+    (void) rank;
+    (void) worldSize;
+    (void) SW_Domain;
+    (void) LogInfo;
+#endif
+}
+
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
@@ -155,8 +616,17 @@ void SW_DOM_construct(size_t rng_seed, SW_DOMAIN *SW_Domain) {
     );
 
 #if defined(SWMPI)
-    SW_Domain->nProcSuids = 0;
-    SW_Domain->nActiveSuids = 0;
+    int inKey;
+
+    SW_Domain->nActiveSuidsProc = 0;
+    SW_Domain->nActiveSuidsTot = 0;
+    SW_Domain->spaceChunk[0] = SW_Domain->spaceChunk[1] = 0;
+
+    ForEachNCInKey(inKey) {
+        SW_Domain->domStartIndex[inKey][0] =
+            SW_Domain->domStartIndex[inKey][1] = 0;
+        SW_Domain->domCounts[inKey][0] = SW_Domain->domCounts[inKey][1] = 0;
+    }
 #endif
 
     SW_OUTDOM_construct(&SW_Domain->OutDom);
@@ -542,20 +1012,19 @@ void SW_DOM_SetProgress(
 /**
 @brief Calculate range of suids to run simulations for
 
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] worldSize Total number of processes that the MPI run has created
+(only relevant with SWMPI enabled)
 @param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
-@param[in] userSUID Simulation Unit Identifier requested by the user (base1);
-    0 indicates that all simulations units within domain are requested
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_DOM_SimSet(SW_DOMAIN *SW_Domain, size_t userSUID, LOG_INFO *LogInfo) {
-
-    Bool progFound;
-    size_t *startSimSet = &SW_Domain->startSimSet;
-    size_t *endSimSet = &SW_Domain->endSimSet;
-    size_t startSuid[2]; // 2 -> [y, x] or [0, s]
-    int progFileID = 0;  // Value does not matter if SWNETCDF is not defined
-    int progVarID = 0;   // Value does not matter if SWNETCDF is not defined
+void SW_DOM_SimSet(
+    int rank, int worldSize, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
+) {
+    size_t userSUID = SW_Domain->userSUID;
+    int progFileID = 0; // Value does not matter if SWNETCDF is not defined
+    int progVarID = 0;  // Value does not matter if SWNETCDF is not defined
 
 #if defined(SWNETCDF)
     progFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprog];
@@ -572,11 +1041,7 @@ void SW_DOM_SimSet(SW_DOMAIN *SW_Domain, size_t userSUID, LOG_INFO *LogInfo) {
                 userSUID,
                 SW_Domain->nSUIDs
             );
-            return; // Exit function prematurely due to error
         }
-
-        *startSimSet = userSUID - 1;
-        *endSimSet = userSUID;
     } else {
 #if defined(SOILWAT)
         if (LogInfo->printProgressMsg) {
@@ -584,17 +1049,7 @@ void SW_DOM_SimSet(SW_DOMAIN *SW_Domain, size_t userSUID, LOG_INFO *LogInfo) {
         }
 #endif
 
-        *endSimSet = SW_Domain->nSUIDs;
-        for (*startSimSet = 0; *startSimSet < *endSimSet; (*startSimSet)++) {
-            SW_DOM_calc_ncSuid(SW_Domain, *startSimSet, startSuid);
-
-            progFound =
-                SW_DOM_CheckProgress(progFileID, progVarID, startSuid, LogInfo);
-
-            if (progFound || LogInfo->stopRun) {
-                return; // Found start suid or error occurred
-            }
-        }
+        get_subdomains(rank, worldSize, SW_Domain, LogInfo);
     }
 }
 
@@ -631,12 +1086,6 @@ void SW_DOM_init_ptrs(SW_DOMAIN *SW_Domain) {
 
 #if defined(SWNETCDF)
     SW_NCIN_init_ptrs(&SW_Domain->netCDFInput);
-
-#if defined(SWMPI)
-    int inKey; // type cannot be InKeys because of c++ tests
-
-    ForEachNCInKey(inKey) { SW_Domain->domSuids[inKey] = NULL; }
-#endif
 #endif
 }
 

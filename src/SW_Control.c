@@ -119,7 +119,7 @@ static void report_sim_start(SW_DOMAIN *SW_Domain, int rank, int worldSize) {
             MAX_FILENAMESIZE,
             "is running simulations across the domain (%zu active sites) with "
             "%d %s...",
-            SW_Domain->nActiveSuids,
+            SW_Domain->nActiveSuidsTot,
             worldSize,
             (worldSize > 1) ? "processes" : "process"
         );
@@ -204,7 +204,7 @@ static void handle_logs(
     /* Produce global error if all suids failed */
     if (nSims > 0 && nSims == mainLog->numDomainErrors) {
 #if defined(SWMPI)
-        if (nSims == SW_Domain->nProcSuids) {
+        if (nSims == SW_Domain->nActiveSuidsProc) {
 #endif
             LogError(
                 mainLog,
@@ -571,7 +571,7 @@ void SW_CTL_RunSimSet(
     Bool errorCaused = swFALSE;
     Bool extraIter = swFALSE;
     int numCyclesProc =
-        (int) ceil((double) SW_Domain->nProcSuids / N_SUID_ASSIGN);
+        (int) ceil((double) SW_Domain->nActiveSuidsProc / N_SUID_ASSIGN);
     unsigned int n_years = sw_template->WeatherIn.n_years;
     size_t numSiteSimed;
     unsigned int numInputs = 1;
@@ -632,14 +632,14 @@ void SW_CTL_RunSimSet(
     (void) signal(SIGTERM, handle_interrupt);
 
 #if defined(SWMPI)
-    while ((SW_Domain->nProcSuids > 0 || extraIter) && runSims) {
+    while ((SW_Domain->nActiveSuidsProc > 0 || extraIter) && runSims) {
         Bool succFlags[N_SUID_ASSIGN] = {swFALSE};
 
         for (logIndex = 0; logIndex < N_SUID_ASSIGN; logIndex++) {
             sw_init_logs(main_LogInfo->logfp, &siteLogs[logIndex]);
         }
 
-        if (SW_Domain->nProcSuids == 0 && extraIter) {
+        if (SW_Domain->nActiveSuidsProc == 0 && extraIter) {
             extraIter = swFALSE;
         }
 
@@ -835,8 +835,8 @@ void SW_CTL_init_ptrs(SW_RUN *sw) {
 @brief Construct, setup, and obtain inputs for SW_DOMAIN
 
 @param[in] rank Process number known to MPI for the current process (aka rank)
-@param[in] userSUID Simulation Unit Identifier requested by the user (base1);
-    0 indicates that all simulations units within domain are requested
+@param[in] worldSize Total number of processes that the MPI run has created
+(only relevant with SWMPI enabled)
 @param[in] renameDomainTemp Specifies if the created domain netCDF file
 will automatically be renamed
 @param[out] SW_Domain Struct of type SW_DOMAIN holding constant
@@ -845,14 +845,21 @@ will automatically be renamed
 */
 void SW_CTL_setup_domain(
     int rank,
-    size_t userSUID,
+    int worldSize,
     Bool renameDomainTemp,
     SW_DOMAIN *SW_Domain,
     LOG_INFO *LogInfo
 ) {
 #if defined(SWNETCDF)
+    const int nDomFiles = 2;
     const Bool openInPar = swFALSE;
     const int openMode = NC_NOWRITE;
+    const Bool domProgFileExists[] = {
+        FileExists(SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom]),
+        FileExists(SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCprog])
+    };
+
+    int file;
 #endif
 
     SW_F_construct(&SW_Domain->SW_PathInputs);
@@ -885,7 +892,7 @@ void SW_CTL_setup_domain(
     }
 
     SW_NCIN_create_units_converters(&SW_Domain->netCDFInput, LogInfo);
-    if (LogInfo->stopRun || rank > 0) {
+    if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
@@ -897,26 +904,39 @@ void SW_CTL_setup_domain(
             SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom] :
             NULL;
 
-    if (!FileExists(SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom])) {
-        SW_NCIN_create_domain_template(
-            SW_Domain, fnameDomainTemplateNC, LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return; // Exit prematurely due to error
-        }
+    for (file = 0; file < nDomFiles; file++) {
+        if (rank == ROOT_PROC && !domProgFileExists[file]) {
+            switch (file) {
+            case vNCdom:
+                SW_NCIN_create_domain_template(
+                    SW_Domain, fnameDomainTemplateNC, LogInfo
+                );
 
-        if (!renameDomainTemp) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "Domain netCDF template has been created. "
-                "Please modify it and rename it to "
-                "'domain.nc' when done and try again. "
-                "The template path is: %s",
-                DOMAIN_TEMP
-            );
-            return; // Exit prematurely: user modifies the domain template
+                if (!LogInfo->stopRun && !renameDomainTemp) {
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "Domain netCDF template has been created. "
+                        "Please modify it and rename it to "
+                        "'domain.nc' when done and try again. "
+                        "The template path is: %s",
+                        DOMAIN_TEMP
+                    );
+                }
+                break;
+            case vNCprog:
+                SW_DOM_CreateProgress(SW_Domain, LogInfo);
+                break;
+            default:
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Programmer: Unkown file when setting up domain."
+                );
+                break;
+            }
         }
+        checkReturn(LogInfo->stopRun);
     }
 
     // Open necessary netCDF input files and check for consistency with
@@ -924,31 +944,24 @@ void SW_CTL_setup_domain(
     SW_NCIN_open_dom_prog_files(
         &SW_Domain->netCDFInput, &SW_Domain->SW_PathInputs, LogInfo
     );
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
+    checkReturn(LogInfo->stopRun);
 
-    SW_NC_check(
-        SW_Domain,
-        &SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom],
-        SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom],
-        openInPar,
-        openMode,
-        LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
+    if (rank == ROOT_PROC) {
+        SW_NC_check(
+            SW_Domain,
+            &SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom],
+            SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom],
+            openInPar,
+            openMode,
+            LogInfo
+        );
     }
+    checkReturn(LogInfo->stopRun);
 #else
     (void) renameDomainTemp;
 #endif
 
-    SW_DOM_CreateProgress(SW_Domain, LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-
-    SW_DOM_SimSet(SW_Domain, userSUID, LogInfo);
+    SW_DOM_SimSet(rank, worldSize, SW_Domain, LogInfo);
 }
 
 /**

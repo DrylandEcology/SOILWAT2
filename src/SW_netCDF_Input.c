@@ -8812,7 +8812,7 @@ holds basic information about input files and values
 void SW_NCIN_open_dom_prog_files(
     SW_NETCDF_IN *SW_netCDFIn, SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo
 ) {
-
+    Bool fileExists;
     char **inDomFileNames = SW_PathInputs->ncInFiles[eSW_InDomain];
     int *ncDomFileIDs = SW_PathInputs->ncDomFileIDs;
 
@@ -8832,13 +8832,21 @@ void SW_NCIN_open_dom_prog_files(
         fileID = &ncDomFileIDs[fileNum];
         varName = inDomVarInfo[fileNum][INNCVARNAME];
 
-        if (FileExists(fileName)) {
+        fileExists = FileExists(fileName);
+
+#if defined(SWMPI)
+        MPI_Barrier(MPI_COMM_WORLD);
+#endif
+
+        if (fileExists) {
             openType =
                 (fileNum == vNCdom && !progFileDomain) ? NC_NOWRITE : NC_WRITE;
+#if defined(SWMPI)
+            SW_NC_open_par(fileName, openType, MPI_COMM_WORLD, fileID, LogInfo);
+#else
             SW_NC_open(fileName, openType, fileID, LogInfo);
-            if (LogInfo->stopRun) {
-                return;
-            }
+#endif
+            checkReturn(LogInfo->stopRun);
 
             /*
               Get the ID for the domain variable and the progress variable if
@@ -8853,9 +8861,7 @@ void SW_NCIN_open_dom_prog_files(
                     &SW_netCDFIn->ncDomVarIDs[fileNum],
                     LogInfo
                 );
-                if (LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
-                }
+                checkReturn(LogInfo->stopRun);
             }
         }
     }
