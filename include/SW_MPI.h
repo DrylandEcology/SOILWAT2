@@ -44,8 +44,6 @@ void SW_MPI_finalize(void);
 
 void SW_MPI_Fail(int rank, int failType, char *mpiErrStr);
 
-void SW_MPI_deconstruct(SW_DOMAIN *SW_Domain);
-
 void SW_MPI_Reduce(
     void *src,
     void *dest,
@@ -88,10 +86,6 @@ Bool SW_MPI_setup_fail(Bool stopRun, MPI_Comm comm);
 
 void SW_MPI_get_end_info(
     int rank, int size, SW_WALLTIME *SW_WallTime, LOG_INFO *LogInfo
-);
-
-void SW_MPI_proc_workload(
-    int rank, int worldSize, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
 );
 
 void SW_MPI_store_outputs(

@@ -24,6 +24,257 @@
 /*                   Local Defines                     */
 /* --------------------------------------------------- */
 
+/**
+@brief Given one (sites) or two lists (gridded) of translated suids,
+use those values to determine the upper left and bottom right corner
+of a rectangular form they form
+
+@param[in] sDom Specifies the program's domain is site-oriented
+@param[in] yIndices A list of size <nSites> holding latitude index
+values from an index file
+@param[in] xsIndices A list of size <nSites> holding longitude or site index
+values from an index file (NULL if domain type is made of sites)
+@param[in] nSites Number of sites the subdomain of a process contains,
+active or not
+@param[out] resIndices Resulting indices relative to the translated
+suid subdomain
+*/
+static void calc_rect_from_indices(
+    Bool sDom,
+    IntU *yIndices,
+    IntU *xsIndices,
+    size_t nSites,
+    size_t *resIndices
+) {
+    size_t site;
+    size_t resIndex = 0;
+    size_t upLeftRow = sDom ? 0 : yIndices[0];
+    size_t upLeftCol = xsIndices[0];
+    size_t botRightRow = sDom ? 0 : yIndices[0];
+    size_t botRightCol = xsIndices[0];
+
+    size_t rowIndex;
+    size_t colIndex;
+
+    for (site = 0; site < nSites; site++) {
+        upLeftRow =
+            (!sDom && yIndices[site] < upLeftRow) ? yIndices[site] : upLeftRow;
+        upLeftCol = (xsIndices[site] < upLeftCol) ? xsIndices[site] : upLeftCol;
+
+        botRightRow = (!sDom && yIndices[site] > botRightRow) ? yIndices[site] :
+                                                                botRightRow;
+        botRightCol =
+            (xsIndices[site] > botRightCol) ? xsIndices[site] : botRightCol;
+    }
+
+    for (site = 0; site < nSites; site++) {
+        colIndex = xsIndices[site];
+
+        if (!sDom) {
+            rowIndex = yIndices[site];
+        }
+
+        resIndex = sDom ? colIndex - upLeftCol : rowIndex - upLeftRow;
+        resIndex = resIndex * (sDom ? 1 : botRightCol - upLeftCol);
+        resIndex = resIndex + (sDom ? 0 : colIndex);
+
+        resIndices[site] = resIndex;
+    }
+}
+
+/**
+@brief Get translated SUID bounds for the base program domain for
+every activated input key
+
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void get_tsuid_bnds(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
+    Bool inSDom;
+    Bool sProgDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
+    size_t nSites;
+    unsigned int *sxIndexVals = NULL;
+    unsigned int *yIndexVals = NULL;
+    Bool **readInVars = SW_Domain->netCDFInput.readInVars;
+    Bool *useIndexFile = SW_Domain->netCDFInput.useIndexFile;
+    int inKey;
+    int fileID = -1;
+    int varID;
+    const int indexFile = 0;
+
+    const size_t ysSize = SW_Domain->domCounts[eSW_InDomain][0];
+    const size_t xSize = SW_Domain->domCounts[eSW_InDomain][1];
+
+    ForEachNCInKey(inKey) {
+        if (inKey == eSW_InDomain || !readInVars[inKey][0] ||
+            !useIndexFile[inKey]) {
+            continue;
+        }
+
+        fileID = SW_Domain->SW_PathInputs.openInFileIDs[inKey][indexFile][0];
+
+        inSDom = SW_Domain->netCDFInput.siteDoms[inKey];
+        nSites = ysSize * (sProgDom ? 1 : xSize);
+
+        sxIndexVals = (unsigned int *) Mem_Malloc(
+            sizeof(unsigned int) * nSites, "get_tsuid_bnds", LogInfo
+        );
+        checkJumpToLabel(LogInfo->stopRun, freeMem);
+
+        if (!inSDom) {
+            yIndexVals = (unsigned int *) Mem_Malloc(
+                sizeof(unsigned int) * nSites, "get_tsuid_bnds", LogInfo
+            );
+            checkJumpToLabel(LogInfo->stopRun, freeMem);
+        }
+
+        SW_Domain->actSiteIdx[inKey] = (size_t *) Mem_Malloc(
+            sizeof(size_t) * nSites, "get_tsuid_bnds", LogInfo
+        );
+        checkJumpToLabel(LogInfo->stopRun, freeMem);
+
+        varID = -1;
+        SW_NC_get_vals(
+            fileID,
+            &varID,
+            (inSDom) ? "site_index" : "x_index",
+            SW_Domain->domStartIndex[eSW_InDomain],
+            SW_Domain->domCounts[eSW_InDomain],
+            sxIndexVals,
+            LogInfo
+        );
+        checkJumpToLabel(LogInfo->stopRun, freeMem);
+
+        if (!inSDom) {
+            varID = -1;
+            SW_NC_get_vals(
+                fileID,
+                &varID,
+                "y_index",
+                SW_Domain->domStartIndex[eSW_InDomain],
+                SW_Domain->domCounts[eSW_InDomain],
+                yIndexVals,
+                LogInfo
+            );
+            checkJumpToLabel(LogInfo->stopRun, freeMem);
+        }
+
+        calc_rect_from_indices(
+            inSDom,
+            yIndexVals,
+            sxIndexVals,
+            nSites,
+            SW_Domain->actSiteIdx[inKey]
+        );
+
+        if (!isnull(sxIndexVals)) {
+            free(sxIndexVals);
+            sxIndexVals = NULL;
+        }
+
+        if (!isnull(yIndexVals)) {
+            free(yIndexVals);
+            yIndexVals = NULL;
+        }
+    }
+
+freeMem:
+    if (!isnull(sxIndexVals)) {
+        free(sxIndexVals);
+    }
+
+    if (!isnull(yIndexVals)) {
+        free(yIndexVals);
+    }
+
+    if (fileID > -1) {
+        nc_close(fileID);
+    }
+}
+
+/**
+@brief Get the number of active sites within the provided domain so we
+do not attempt to allocate memory for deactivated sites later in the
+program
+
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
+    const size_t ysSize = SW_Domain->domCounts[eSW_InDomain][0];
+    const size_t xSize = SW_Domain->domCounts[eSW_InDomain][1];
+    int activeSite = 0;
+    int progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprog];
+    Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
+    size_t numSites = ysSize * (sDom ? 1 : xSize);
+    size_t progIndex;
+    int progFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprog];
+    size_t *counts = SW_Domain->domCounts[eSW_InDomain];
+    size_t *starts = SW_Domain->domStartIndex[eSW_InDomain];
+
+    IntU *numActiveSites = &SW_Domain->nActiveSuidsProc;
+    signed char **progVals = &SW_Domain->netCDFInput.progVals;
+
+    *progVals = (signed char *) Mem_Malloc(
+        sizeof(signed char) * numSites, "find_active_sites", LogInfo
+    );
+    checkReturn(LogInfo->stopRun);
+
+#if defined(SWMPI)
+    SW_NC_toggle_par_access(progFileID, progVarID, NC_COLLECTIVE, LogInfo);
+    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
+        return;
+    }
+#endif
+
+    /* Read all progress values - set the parallel access to
+       independent so all processes but the root can read 0 values */
+    if (nc_get_vara_schar(progFileID, progVarID, starts, counts, *progVals) !=
+        NC_NOERR) {
+
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not read all of the progress variable values."
+        );
+    }
+    checkReturn(LogInfo->stopRun);
+
+    /* Go through the entirety of the progress values and keep track of
+       how many are ready to be run */
+    for (progIndex = 0; progIndex < numSites; progIndex++) {
+        // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
+        *numActiveSites += ((*progVals)[progIndex] == PRGRSS_READY) ? 1 : 0;
+    }
+
+    SW_Domain->actSiteIdx[eSW_InDomain] = (size_t *) Mem_Malloc(
+        sizeof(size_t) * *numActiveSites, "find_active_sites", LogInfo
+    );
+    checkReturn(LogInfo->stopRun);
+
+    for (progIndex = 0; progIndex < numSites; progIndex++) {
+        if ((*progVals)[progIndex] == PRGRSS_READY) {
+            SW_Domain->actSiteIdx[eSW_InDomain][activeSite] = progIndex;
+
+            activeSite++;
+        }
+    }
+
+#if defined(SWMPI)
+    SW_MPI_Reduce(
+        &SW_Domain->nActiveSuidsProc,
+        &SW_Domain->nActiveSuidsTot,
+        1,
+        SW_MPI_SIZE_T,
+        MPI_SUM,
+        ROOT_PROC,
+        MPI_COMM_WORLD
+    );
+#endif
+}
+
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
@@ -1619,9 +1870,14 @@ void SW_NC_alloc_vars(
 @brief Generalized function to get values of any type from a netCDF
 files
 
+If `start` and/or `count` are NULL, then the function will read the entire
+variable, otherwise it will read in the provided `count` worth of values
+
 @param[in] ncFileID Identifier of the open netCDF file to test
 @param[in] varID Variable identifier within the given netCDF
 @param[in] varName Name of the variable to access
+@param[in] start Starting indices for each dimension of variable to read
+@param[in] count Number of values to read in each direction of every dimension
 @param[out] values Value(s) to write in
 @param[out] LogInfo Holds information on warnings and errors
 */
@@ -1629,9 +1885,13 @@ void SW_NC_get_vals(
     int ncFileID,
     int *varID,
     const char *varName,
+    const size_t *start,
+    const size_t *count,
     void *values,
     LOG_INFO *LogInfo
 ) {
+    int res;
+
     if (*varID < 0 && !isnull(varName)) {
         SW_NC_get_var_identifier(ncFileID, varName, varID, LogInfo);
         if (LogInfo->stopRun) {
@@ -1639,7 +1899,13 @@ void SW_NC_get_vals(
         }
     }
 
-    if (nc_get_var(ncFileID, *varID, values) != NC_NOERR) {
+    if (isnull(start) || isnull(count)) {
+        res = nc_get_var(ncFileID, *varID, values);
+    } else {
+        res = nc_get_vara(ncFileID, *varID, start, count, values);
+    }
+
+    if (res != NC_NOERR) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -1673,3 +1939,18 @@ void SW_NC_open_par(
     SW_MPI_Barrier(comm);
 }
 #endif
+
+/**
+@brief Calculate the number of active sites exist in a process' subdomain
+and get the translated subrectangle/subdomain to go along with them
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NC_proc_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
+    find_active_sites(SW_Domain, LogInfo);
+    checkReturn(LogInfo->stopRun);
+
+    get_tsuid_bnds(SW_Domain, LogInfo);
+}

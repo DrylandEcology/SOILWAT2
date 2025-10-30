@@ -3157,6 +3157,8 @@ static void read_domain_coordinates(
     int varID;
     const int numReadInDims = (primCRSIsGeo) ? 2 : 4;
     const int numDims = 2;
+    const size_t *nullStart = NULL;
+    const size_t *nullCount = NULL;
     Bool siteDom = (Bool) (strcmp("s", domType) == 0);
     Bool allocArrays[] = {swFALSE, swFALSE, swFALSE, swFALSE};
     Bool validY;
@@ -3289,6 +3291,8 @@ static void read_domain_coordinates(
                 domFileID,
                 &varID,
                 domCoordVarNames[index],
+                nullStart,
+                nullCount,
                 *domCoordArrs[index],
                 LogInfo
             );
@@ -8928,6 +8932,7 @@ void SW_NCIN_init_ptrs(SW_NETCDF_IN *SW_netCDFIn) {
     SW_netCDFIn->domYCoordsGeo = NULL;
     SW_netCDFIn->domXCoordsProj = NULL;
     SW_netCDFIn->domYCoordsProj = NULL;
+    SW_netCDFIn->progVals = NULL;
 }
 
 void SW_NCIN_deconstruct(SW_NETCDF_IN *SW_netCDFIn) {

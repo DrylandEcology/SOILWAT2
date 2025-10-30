@@ -1086,6 +1086,12 @@ void SW_DOM_init_ptrs(SW_DOMAIN *SW_Domain) {
 
 #if defined(SWNETCDF)
     SW_NCIN_init_ptrs(&SW_Domain->netCDFInput);
+
+#if defined(SWMPI)
+    int inKey;
+
+    ForEachNCInKey(inKey) { SW_Domain->actSiteIdx[inKey] = NULL; }
+#endif
 #endif
 }
 
@@ -1105,9 +1111,12 @@ void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
 
     SW_NCIN_deconstruct(&SW_Domain->netCDFInput);
 
-#if defined(SWMPI)
-    SW_MPI_deconstruct(SW_Domain);
-#endif
+    ForEachNCInKey(key) {
+        if (!isnull(SW_Domain->actSiteIdx[key])) {
+            free((void *) SW_Domain->actSiteIdx[key]);
+            SW_Domain->actSiteIdx[key] = NULL;
+        }
+    }
 #endif
     ForEachOutKey(key) {
         for (i = 0; i < SW_NOUTCOLS; i++) {

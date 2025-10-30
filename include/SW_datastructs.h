@@ -1621,6 +1621,11 @@ typedef struct {
 
     sw_converter_t *projCoordConvs[SW_NINKEYSNC][2];
 
+    signed char *progVals; /**< A list of progress values from the subdomain
+                                of a progress; this will be updated during
+                                simulations and written after every
+                                program run */
+
     /*
         Pre-calculate the location of dimensions within variable headers
         to rearrange start/count indices/values so we can match the current
@@ -1851,6 +1856,18 @@ typedef struct {
                           the size of a subdomain for a process;
                           includes translated suid sizes as well */
 
+    /*
+        A list of indices within the subdomain which contains an active site
+        where each sub array is size <n active sites> in the subdomain
+
+        E.g., Subdomain bounds: [0, 0] to [2, 2] with 5 active sites
+        Indices: [0, 1, 2, 5, 8], meaning each active site is index
+        0, 1, 2, 5, 8 within the subdomain, respectively
+
+        Note: this is a single index for both sites and gridded;
+        this will help when reading inputs
+    */
+    size_t *actSiteIdx[SW_NINKEYSNC];
     /* A list of size NC_DIMS to store the base chunking sizes for the spatial
        dimensions of output (lat/lon or site) */
     size_t spaceChunk[NC_DIMS];

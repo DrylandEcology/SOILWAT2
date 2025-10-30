@@ -31,7 +31,8 @@
 #include "include/SW_Output.h" // for SW_OUT_setup_output
 
 #if defined(SWNETCDF)
-#include "include/SW_netCDF_Output.h" // for SW_NCOUT_create_units_converters
+#include "include/SW_netCDF_General.h" // for SW_NCOUT_create_units_converters
+#include "include/SW_netCDF_Output.h"  // for SW_NCOUT_create_units_converters
 #endif
 
 #if defined(SWMPI)
@@ -570,7 +571,6 @@ void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
 /**
 @brief Wrapper function to setup outputs and handle MPI
 
-@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] worldSize Total number of processes that the MPI run has created
 @param[in] prepareFiles Should we only prepare domain/progress, index,
     and output files? If so, simulations will occur without this
@@ -582,28 +582,21 @@ void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
 @param[out] LogInfo Holds information on warnings and errors
 */
 void sw_setup_prog_data(
-    int rank,
     int worldSize,
     Bool prepareFiles,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
     LOG_INFO *LogInfo
 ) {
-#if defined(SWMPI)
-    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-        return;
-    }
+#if defined(SWNETCDF)
+    checkReturn(LogInfo->stopRun);
 
     if (!prepareFiles) {
-        SW_MPI_proc_workload(rank, worldSize, SW_Domain, LogInfo);
-
-        if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-            return;
-        }
+        SW_NC_proc_sites(SW_Domain, LogInfo);
+        checkReturn(LogInfo->stopRun);
     }
 #else
     (void) prepareFiles;
-    (void) rank;
     (void) worldSize;
 #endif
 

@@ -239,6 +239,8 @@ void SW_NC_get_vals(
     int ncFileID,
     int *varID,
     const char *varName,
+    const size_t *start,
+    const size_t *count,
     void *values,
     LOG_INFO *LogInfo
 );
@@ -252,6 +254,8 @@ void SW_NC_open_par(
     const char *fileName, int mode, MPI_Comm comm, int *id, LOG_INFO *LogInfo
 );
 #endif
+
+void SW_NC_proc_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
 
 #ifdef __cplusplus
 }
