@@ -1067,6 +1067,8 @@ is represented by
 
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
+@param[in] latLonChunkSize A list of size NC_DIMS that holds the
+chunking information for latitude and longitude or just sites
 @param[in] domFile Domain netCDF file name
 @param[in] domType Type of domain in which simulations are running
     (gridcell/sites)
@@ -1100,6 +1102,7 @@ variable
 */
 static void create_output_file(
     SW_OUT_DOM *OutDom,
+    size_t latLonChunkSize[],
     const char *domFile,
     const char *domType,
     const char *newFileName,
@@ -1188,6 +1191,8 @@ static void create_output_file(
                 originTimeSize,
                 nsl[index],
                 npft[index],
+                latLonChunkSize[0],
+                latLonChunkSize[1],
                 varName,
                 attNames,
                 (const char **) attVals,
@@ -2348,6 +2353,7 @@ void SW_NCOUT_create_output_files(
                             if (rank == ROOT_PROC) {
                                 create_output_file(
                                     &SW_Domain->OutDom,
+                                    SW_Domain->spaceChunk,
                                     domFile,
                                     domType,
                                     fileNameBuf,

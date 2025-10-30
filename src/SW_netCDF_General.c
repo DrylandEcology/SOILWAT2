@@ -1302,6 +1302,8 @@ and writing attributes
 @param[in] timeSize Size of "time" dimension
 @param[in] vertSize Size of "vertical" dimension
 @param[in] pftSize Size of "pft" dimension
+@param[in] latSChunkSize Size of the latitude or site dimension chunk
+@param[in] lonChunkSize Size of the longitude dimension chunk
 @param[in] varName Name of variable to write
 @param[in] attNames Attribute names that the new variable will contain
 @param[in] attVals Attribute values that the new variable will contain
@@ -1336,6 +1338,8 @@ void SW_NC_create_full_var(
     size_t timeSize,
     size_t vertSize,
     size_t pftSize,
+    size_t latSChunkSize,
+    size_t lonChunkSize,
     const char *varName,
     const char *attNames[],
     const char *attVals[],
@@ -1369,7 +1373,9 @@ void SW_NC_create_full_var(
     size_t timeVertVegVals[] = {timeSize, vertSize, pftSize};
     unsigned int numTimeVertVegVals = 3;
     size_t varVal = 0;
-    size_t chunkSizes[MAX_NUM_DIMS] = {1, 1, 1, 1, 1};
+    size_t chunkSizes[MAX_NUM_DIMS] = {
+        latSChunkSize, (domTypeIsSites ? 1 : lonChunkSize), 1, 1, 1
+    };
     char coordValBuf[MAX_FILENAMESIZE] = "";
     char *writePtr = coordValBuf;
     char *endWritePtr = writePtr + sizeof coordValBuf - 1;

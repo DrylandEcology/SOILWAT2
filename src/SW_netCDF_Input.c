@@ -7606,6 +7606,8 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     Bool createOrModFile =
         (Bool) (!progFileExists || (progFileIsiteDom && !progVarExists));
     Bool useDefaultChunking = swTRUE;
+    const size_t dummyLatChunkSize = 1;
+    const size_t dummyLonChunkSize = 1;
 
     /* If SWMPI is not enabled, then this is not used in
        `SW_NC_create_template()` */
@@ -7690,6 +7692,8 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             0,
             0,
             0,
+            dummyLatChunkSize,
+            dummyLonChunkSize,
             progVarName,
             attNames,
             attVals,
