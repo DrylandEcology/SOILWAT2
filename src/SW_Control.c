@@ -553,8 +553,8 @@ void SW_CTL_RunSimSet(
 #endif
 
 #if !defined(SWMPI)
-    startSim = SW_Domain->startSimSet;
-    endSim = SW_Domain->endSimSet;
+    startSim = 0;
+    endSim = 0;
     LOG_INFO local_LogInfo;
 #endif
 

@@ -47,7 +47,6 @@ latitude and longitude dimensions
 
 @param[in] nChunks A list of size NC_DIMS to hold the number of chunks that
 will be contained in the latitude/site and longitude directions
-@param[in] sDom Specifies the program's domain is site-oriented
 @param[in] allocYX A flag specifying if both Y and X arrays should be
 allocated, only Y if not
 @param[in] alloc A flag specifying if the function is to allocate the given
@@ -64,7 +63,6 @@ in the longitude direction; only return an allocated list
 */
 static void alloc_dom_start_count(
     size_t nChunks[],
-    Bool sDom,
     Bool allocYX,
     Bool alloc,
     size_t **startY,
@@ -84,7 +82,7 @@ static void alloc_dom_start_count(
         );
         checkReturn(LogInfo->stopRun);
 
-        if (!sDom) {
+        if (allocYX) {
             *startX = (size_t *) Mem_Malloc(
                 sizeof(size_t) * nChunks[1], "get_sub_domains", LogInfo
             );
@@ -329,7 +327,7 @@ static void divide_domain_subrects(
     size_t bestDiff = bestNChunksY - bestNChunksX;
     size_t currDiff;
 
-    for (height = 1; height < worldSize; height++) {
+    for (height = 1; height < (size_t) worldSize; height++) {
         width = worldSize / height;
 
         currDiff = height - width;
@@ -347,7 +345,7 @@ static void divide_domain_subrects(
     nChunks[1] = bestNChunksX;
 
     spaceChunks[0] = (size_t) floor((double) ySize / bestNChunksY);
-    spaceChunks[1] = (size_t) floor((double) ySize / bestNChunksX);
+    spaceChunks[1] = (size_t) floor((double) xSize / bestNChunksX);
 }
 #endif
 
@@ -377,9 +375,10 @@ static void get_subdomains(
     size_t *countsY = NULL;
     size_t *countsX = NULL;
     size_t nChunks[NC_DIMS] = {0};
-    Bool allocBothArrs = swFALSE;
+    Bool allocBothArrs = sDom;
 
-    if ((sDom && worldSize > sSize) || (worldSize > ySize * xSize)) {
+    if ((sDom && (size_t) worldSize > sSize) ||
+        ((size_t) worldSize > ySize * xSize)) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -390,8 +389,9 @@ static void get_subdomains(
     }
 
     // Check if domain lat/site or lon is divisible by worldSize
-    if ((sDom && worldSize <= sSize) ||
-        (!sDom && (worldSize <= ySize || worldSize <= xSize))) {
+    if ((sDom && (size_t) worldSize <= sSize) ||
+        (!sDom && ((size_t) worldSize <= ySize || (size_t) worldSize <= xSize)
+        )) {
 
         if (sDom) {
             SW_Domain->spaceChunk[0] = sSize / worldSize;
@@ -400,9 +400,9 @@ static void get_subdomains(
             nChunks[0] = (double) floor((double) sSize / worldSize);
         } else {
             SW_Domain->spaceChunk[0] =
-                (worldSize <= ySize) ? ySize / worldSize : 1;
+                ((size_t) worldSize <= ySize) ? ySize / worldSize : 1;
             SW_Domain->spaceChunk[1] =
-                (worldSize <= ySize) ? 1 : xSize / worldSize;
+                ((size_t) worldSize <= ySize) ? 1 : xSize / worldSize;
 
             nChunks[0] = (double) floor((double) ySize / worldSize);
             nChunks[1] = (double) floor((double) xSize / worldSize);
@@ -412,8 +412,6 @@ static void get_subdomains(
         divide_domain_subrects(
             worldSize, ySize, xSize, SW_Domain->spaceChunk, nChunks
         );
-
-        allocBothArrs = swTRUE;
     }
 
     // Allocate start/count arrays
@@ -421,7 +419,6 @@ static void get_subdomains(
     // Otherwise, allocate two for start and count
     alloc_dom_start_count(
         nChunks,
-        sDom,
         allocBothArrs,
         allocate,
         &startsY,
@@ -476,7 +473,6 @@ static void get_subdomains(
 freeMem:
     alloc_dom_start_count(
         nChunks,
-        sDom,
         allocBothArrs,
         deallocate,
         &startsY,
@@ -494,9 +490,16 @@ freeMem:
     SW_Domain->spaceChunk[0] = sDom ? sqrt(sSize) : sqrt(ySize);
     SW_Domain->spaceChunk[1] = sDom ? 0 : sqrt(xSize);
 #else
+    (void) SW_Domain;
+    (void) sDom;
+    (void) sSize;
+    (void) ySize;
+    (void) xSize;
+#endif
+
+#if !defined(SWMPI)
     (void) rank;
     (void) worldSize;
-    (void) SW_Domain;
     (void) LogInfo;
 #endif
 }
