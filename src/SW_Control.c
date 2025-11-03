@@ -1612,7 +1612,7 @@ The following operations are conditional on if SWMPI is enabled
 of all input keys
 @param[out] SW_WallTime Struct of type SW_WALLTIME that holds timing
     information for the program run including partitioning into
-    I/O (SWNETCDF) and compute (SWNETCDF, SWMPI) times
+    I/O and compute times
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_run_sw(

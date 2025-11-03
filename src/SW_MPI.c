@@ -1254,7 +1254,7 @@ void SW_MPI_get_end_info(
 }
 
 /**
-@brief Assign processes to compute or I/O jobs
+@brief Assign processes to a set of active sites to be simulated
 
 @param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] worldSize Number of processes that was created that make up
@@ -1483,7 +1483,7 @@ type SW_SOIL_RUN_INPUTS of size [num sites] (1 if not SWMPI)
 with input data from netCDFs
 @param[out] SW_WallTime Struct of type SW_WALLTIME that holds timing
     information for the program run including partitioning into
-    I/O (SWNETCDF) and compute (SWNETCDF, SWMPI) times
+    I/O and compute times
 @param[out] siteLogs A list of LOG_INFO of size N_SUID_ASSIGN that will
 be returned with any site-specific errors/warnings
 @param[out] LogInfo Holds information on warnings and errors
@@ -1594,7 +1594,7 @@ void SW_MPI_read_inputs(
     indices for each key
 @param[out] SW_WallTime Struct of type SW_WALLTIME that holds timing
     information for the program run including partitioning into
-    I/O (SWNETCDF) and compute (SWNETCDF, SWMPI) times
+    I/O and compute times
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_MPI_write_outputs(
