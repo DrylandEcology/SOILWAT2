@@ -295,7 +295,6 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     unsigned int k;
     LyrIndex i;
     LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
-    TimeInt co2MultIdx = sw->ModelSim.yearIdxSpinSim + sw->ModelSim.addtl_yr;
 
     double UpNeigh_lyrSWCBulk[MAX_LAYERS];
     double UpNeigh_lyrDrain[MAX_LAYERS];
@@ -674,7 +673,8 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
                 sw->VegProdIn.veg[k].tr_shade_effects.slope,
                 sw->VegProdIn.veg[k].tr_shade_effects.yinflec,
                 sw->VegProdIn.veg[k].tr_shade_effects.range,
-                sw->VegProdSim.veg[k].co2_multipliers[WUE_INDEX][co2MultIdx]
+                sw->VegProdSim.veg[k]
+                    .co2_multipliers[WUE_INDEX][sw->ModelSim.yearIdxSpinSim]
             );
 
             transp_rate[k] *= scale_veg[k];

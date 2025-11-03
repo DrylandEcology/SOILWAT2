@@ -299,7 +299,6 @@ Multipliers are only calculated for the years that will be simulated.
     simulation purposes
 @param[in] SW_CarbonIn Struct of type SW_CARBON_INPUTS holding all CO2-related
 data
-@param[in] addtl_yr Represents how many years in the future we are simulating
 @param[in] startYr Start year of the simulation
 @param[in] endYr End year of the simulation
 @param[in] vegYear Calendar year corresponding to vegetation inputs
@@ -309,7 +308,6 @@ void SW_CBN_init_run(
     VegTypeIn vegIn[],
     VegTypeSim vegSim[],
     SW_CARBON_INPUTS *SW_CarbonIn,
-    TimeInt addtl_yr,
     TimeInt startYr,
     TimeInt endYr,
     TimeInt vegYear,
@@ -321,7 +319,7 @@ void SW_CBN_init_run(
 
     int k;
     TimeInt year;
-    TimeInt endsimyr = endYr - startYr + 1 + addtl_yr;
+    TimeInt endsimyr = endYr - startYr + 1;
     TimeInt ppmVegCO2 = (vegYear > startYr) ? vegYear - startYr : 0;
     /* atmospheric CO2 concentration corresponding to vegetation input year */
     double vegCO2;
@@ -356,7 +354,7 @@ void SW_CBN_init_run(
 
 
     /* Calculate CO2 fertilization multipliers for each simulated year */
-    for (year = addtl_yr; year < endsimyr; year++) {
+    for (year = 0; year < endsimyr; year++) {
         ppm = SW_CarbonIn->ppm[year];
 
         if (LT(ppm, 0.)) {

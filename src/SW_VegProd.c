@@ -127,12 +127,9 @@ all NVEGTYPES vegetation types through simulation-specific inputs;
 return struct with allocated co2_multiplier arrays
 Return arrays with allocated memory
 @param[in] n_years Number of years in simulation
-@param[in] addtl_yr Represents how many years in the future we are simulating
 @param[out] LogInfo Holds information on warnings and errors
 */
-static void alloc_co2(
-    VegTypeSim veg[], size_t n_years, TimeInt addtl_yr, LOG_INFO *LogInfo
-) {
+static void alloc_co2(VegTypeSim veg[], size_t n_years, LOG_INFO *LogInfo) {
     int vegIndex;
     int co2Arr;
     const int nco2Arr = 2;
@@ -140,7 +137,7 @@ static void alloc_co2(
     ForEachVegType(vegIndex) {
         for (co2Arr = 0; co2Arr < nco2Arr; co2Arr++) {
             veg[vegIndex].co2_multipliers[co2Arr] = (double *) Mem_Malloc(
-                sizeof(double) * (n_years + addtl_yr), "alloc_co2", LogInfo
+                sizeof(double) * n_years, "alloc_co2", LogInfo
             );
             if (LogInfo->stopRun) {
                 return;
@@ -1893,7 +1890,7 @@ void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
     Bool annTempOnly =
         (Bool) (allocAnnTemp && veg_method != VEG_METHOD_DYN_EST);
 
-    alloc_co2(sw->VegProdSim.veg, n_years, sw->ModelSim.addtl_yr, LogInfo);
+    alloc_co2(sw->VegProdSim.veg, n_years, LogInfo);
     if (LogInfo->stopRun) {
         return;
     }

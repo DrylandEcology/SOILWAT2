@@ -43,7 +43,6 @@ void SW_CBN_init_run(
     VegTypeIn vegIn[],
     VegTypeSim vegSim[],
     SW_CARBON_INPUTS *SW_CarbonIn,
-    TimeInt addtl_yr,
     TimeInt startYr,
     TimeInt endYr,
     TimeInt vegYear,

@@ -93,8 +93,7 @@ TEST_F(CarbonFixtureTest, CarbonInReadInputFile) {
 // Test the calculation of CO2-effect multipliers
 TEST_F(CarbonFixtureTest, CarbonInCO2multipliers) {
     TimeInt year;
-    TimeInt const endyr = SW_Run.ModelIn.endyr - SW_Run.ModelIn.startyr + 1 +
-                          SW_Run.ModelSim.addtl_yr;
+    TimeInt const endyr = SW_Run.ModelIn.endyr - SW_Run.ModelIn.startyr + 1;
     int k;
 
     SW_CBN_deconstruct(&SW_Run.CarbonIn);
@@ -129,7 +128,6 @@ TEST_F(CarbonFixtureTest, CarbonInCO2multipliers) {
         SW_Run.VegProdIn.veg,
         SW_Run.VegProdSim.veg,
         &SW_Run.CarbonIn,
-        SW_Run.ModelSim.addtl_yr,
         SW_Run.ModelIn.startyr,
         SW_Run.ModelIn.endyr,
         SW_Run.VegProdIn.vegYear,
@@ -137,7 +135,7 @@ TEST_F(CarbonFixtureTest, CarbonInCO2multipliers) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    for (year = SW_Run.ModelSim.addtl_yr; year < endyr; year++) {
+    for (year = 0; year < endyr; year++) {
         ForEachVegType(k) {
             EXPECT_GT(
                 SW_Run.VegProdSim.veg[k].co2_multipliers[BIO_INDEX][year], 0.
