@@ -187,12 +187,12 @@ static void handle_logs(
         // Write the error with the suid indices to have a universal
         // identifier; Put in the order of [x, y] or s
         if (sDom) {
-            (void) snprintf(tag_suid, 55, "(suid = %lu) ", ncSuid[0] + 1);
+            (void) snprintf(tag_suid, 55, "(suid = %zu) ", ncSuid[0] + 1);
         } else {
             (void) snprintf(
                 tag_suid,
                 55,
-                "(suid = [%lu, %lu]) ",
+                "(suid = [%zu, %zu]) ",
                 ncSuid[1] + 1,
                 ncSuid[0] + 1
             );
