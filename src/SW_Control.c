@@ -349,8 +349,7 @@ void SW_RUN_deepCopy(
     Bool copyWeatherHist,
     LOG_INFO *LogInfo
 ) {
-    TimeInt n_years = source->ModelIn.endyr - source->ModelIn.startyr + 1 +
-                      source->ModelSim.addtl_yr;
+    TimeInt n_years = source->ModelIn.endyr - source->ModelIn.startyr + 1;
     int **dummyExistYears = NULL;
 
     memcpy(dest, source, sizeof(*dest));
