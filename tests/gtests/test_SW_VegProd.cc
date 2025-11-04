@@ -124,6 +124,8 @@ TEST(VegProdTest, VegProdConstructor) {
     // to avoid a leak)
     SW_RUN sw;
     int k;
+    TimeInt yrIdx;
+    TimeInt n_years;
     LOG_INFO LogInfo;
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
@@ -136,23 +138,25 @@ TEST(VegProdTest, VegProdConstructor) {
     // Provide values for variables utilized by SW_VPD_init_run()
     sw.ModelIn.startyr = 1980;
     sw.ModelIn.endyr = 1981;
+    n_years = sw.ModelIn.endyr - sw.ModelIn.startyr + 1;
     sw.RunIn.SiteRunIn.n_layers = 8;
     sw.RunIn.ModelRunIn.isnorth = swTRUE;
     sw.VegProdIn.veg_method = 0;
     sw.SiteIn.methodMaxDepthSoilTemperature = 0;
-    sw.ModelSim.yearIdxSpinSim = 0;
 
     SW_VPD_init_run(&sw, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     ForEachVegType(k) {
-        EXPECT_DOUBLE_EQ(
-            1., sw.VegProdSim.veg[k].co2_multipliers[BIO_INDEX][0]
-        );
+        for (yrIdx = 0; yrIdx < n_years; yrIdx++) {
+            EXPECT_DOUBLE_EQ(
+                1., sw.VegProdSim.veg[k].co2_multipliers[BIO_INDEX][yrIdx]
+            );
 
-        EXPECT_DOUBLE_EQ(
-            1., sw.VegProdSim.veg[k].co2_multipliers[WUE_INDEX][0]
-        );
+            EXPECT_DOUBLE_EQ(
+                1., sw.VegProdSim.veg[k].co2_multipliers[WUE_INDEX][yrIdx]
+            );
+        }
     }
 
     SW_VPD_deconstruct(&sw.VegProdSim);

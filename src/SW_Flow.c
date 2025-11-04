@@ -674,7 +674,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
                 sw->VegProdIn.veg[k].tr_shade_effects.yinflec,
                 sw->VegProdIn.veg[k].tr_shade_effects.range,
                 sw->VegProdSim.veg[k]
-                    .co2_multipliers[WUE_INDEX][sw->ModelSim.yearIdxSpinSim]
+                    .co2_multipliers[WUE_INDEX][sw->ModelSim.yearIdx]
             );
 
             transp_rate[k] *= scale_veg[k];

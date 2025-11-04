@@ -2098,6 +2098,7 @@ void SW_VPD_new_year(
     */
 
     TimeInt doy; /* base1 */
+    TimeInt yearIdx = SW_ModelSim->yearIdx;
     TimeInt yearIdxSpinSim = SW_ModelSim->yearIdxSpinSim;
     TimeInt weatherYearIndex = SW_ModelSim->year - startYearWeather;
     int k;
@@ -2167,7 +2168,7 @@ void SW_VPD_new_year(
                 apply_biomassCO2effect(
                     biomass_after_CO2,
                     vegRunIn[k].pct_live,
-                    vegSim[k].co2_multipliers[BIO_INDEX][yearIdxSpinSim]
+                    vegSim[k].co2_multipliers[BIO_INDEX][yearIdx]
                 );
 
                 interpolate_monthlyValues(
@@ -2191,7 +2192,7 @@ void SW_VPD_new_year(
                 apply_biomassCO2effect(
                     biomass_after_CO2,
                     biomassAsIf100Cover,
-                    vegSim[k].co2_multipliers[BIO_INDEX][yearIdxSpinSim]
+                    vegSim[k].co2_multipliers[BIO_INDEX][yearIdx]
                 );
 
                 interpolate_monthlyValues(

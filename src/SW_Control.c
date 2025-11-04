@@ -245,7 +245,7 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     // SW_SKY_new_year(): Update daily climate variables from monthly values
     SW_SKY_new_year(
         &sw->ModelSim,
-        sw->ModelIn.startyr,
+        sw->ModelSim.yearIdxSpinSim,
         sw->RunIn.SkyRunIn.snow_density,
         sw->RunIn.SkyRunIn.snow_density_daily
     );
@@ -1300,9 +1300,6 @@ void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 
     TimeInt *cur_yr = &sw->ModelSim.year;
     TimeInt yrIdx;
-    TimeInt startyr = sw->ModelIn.startyr;
-
-    sw->ModelIn.startyr = years[0]; // set startyr for spinup
 
     sw->ModelSim.doOutput = swFALSE; // turn output temporarily off
 
@@ -1326,7 +1323,6 @@ void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     }
 
 reSet: {
-    sw->ModelIn.startyr = startyr;      // reset startyr to original value
     sw->ModelSim.doOutput = prev_doOut; // reset doOutput to original value
     /* Note: don't reset sw->ModelSim.yearIdxSpinSim which is a
     continuous index across spinup and simulation years) */

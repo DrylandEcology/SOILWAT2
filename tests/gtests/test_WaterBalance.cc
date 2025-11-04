@@ -428,8 +428,6 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate2) {
     // Run the spinup & deactivate
     SW_CTL_run_spinup(&SW_Run, &SW_Domain.OutDom, &LogInfo);
 
-    SW_Run.ModelSim.yearIdxSpinSim = -1;
-
     // Run the simulation
     SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1061,8 +1059,6 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSpinup) {
 
     // Run the spinup & deactivate
     SW_CTL_run_spinup(&SW_Run, &SW_Domain.OutDom, &LogInfo);
-
-    SW_Run.ModelSim.yearIdxSpinSim = -1;
 
     // Run the simulation
     SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);

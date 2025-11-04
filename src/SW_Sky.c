@@ -172,8 +172,9 @@ closeFile: { CloseFile(&f, LogInfo); }
 (depends on "current" year)
 
 @param[in] SW_ModelSim Struct of type SW_MODEL_SIM holding basic intermediate
-time information about the simulation run
-@param[in] startYr Start year of the simulation
+    time information about the simulation run
+@param[in] yearIdxSpinSim Index of current year across spinup and simulation
+    period
 @param[in] snow_density[] Snow density (kg/m3)
 @param[out] snow_density_daily[] Interpolated daily snow density (kg/m3)
 
@@ -182,7 +183,7 @@ prior to this function.
 */
 void SW_SKY_new_year(
     SW_MODEL_SIM *SW_ModelSim,
-    TimeInt startYr,
+    int yearIdxSpinSim,
     double snow_density[MAX_MONTHS],
     double snow_density_daily[MAX_MONTHS]
 ) {
@@ -194,7 +195,7 @@ void SW_SKY_new_year(
        if previous year was different from current year in leap/noleap status
     */
 
-    if (year == startYr || isleapyear(year) != isleapyear(year - 1)) {
+    if (yearIdxSpinSim == 0 || isleapyear(year) != isleapyear(year - 1)) {
         interpolate_monthlyValues(
             snow_density,
             interpAsBase1,
