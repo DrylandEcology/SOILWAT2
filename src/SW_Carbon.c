@@ -102,7 +102,6 @@ void SW_CBN_deconstruct(SW_CARBON_INPUTS *SW_CarbonIn) {
 
 @param[in,out] SW_CarbonIn Struct of type SW_CARBON_INPUTS holding all
 CO2-related data
-@param[in] addtl_yr Represents how many years in the future we are simulating
 @param[in] startYr Start year of the simulation
 @param[in] endYr End year of the simulation
 @param[in] txtInFiles Array of program in/output files
@@ -118,7 +117,6 @@ Additionally, check for the following issues:
 */
 void SW_CBN_read(
     SW_CARBON_INPUTS *SW_CarbonIn,
-    TimeInt addtl_yr,
     TimeInt startYr,
     TimeInt endYr,
     char *txtInFiles[],
@@ -142,9 +140,7 @@ void SW_CBN_read(
     TimeInt year;
     TimeInt yearBase0;
     int scanRes;
-    TimeInt yr1 = startYr + addtl_yr;
-    TimeInt yr2 = endYr + addtl_yr;
-    TimeInt n_years = yr2 - yr1 + 1;
+    TimeInt n_years = endYr - startYr + 1;
 
     // The following variables must be initialized to show if they've been
     // changed or not
@@ -205,7 +201,7 @@ void SW_CBN_read(
             continue; // Keep searching for the right scenario
         }
         /* Requested scenario located - now look for requested years */
-        if (!((year >= yr1 && year <= yr2) || year == vegYear)) {
+        if (!((year >= startYr && year <= endYr) || year == vegYear)) {
             continue; // We aren't using this year
         }
 
@@ -221,11 +217,11 @@ void SW_CBN_read(
         }
 
         /* Look for sequence of simulation years */
-        if ((year < yr1) || (year > yr2)) {
+        if ((year < startYr) || (year > endYr)) {
             continue; // We aren't using this year; prevent out-of-bounds
         }
 
-        yearBase0 = year - yr1;
+        yearBase0 = year - startYr;
 
         /* Check if year already entered */
         if (existing_years[yearBase0] != 0) {
@@ -272,7 +268,7 @@ void SW_CBN_read(
                 LogInfo,
                 LOGERROR,
                 "(SW_Carbon) No CO2 data for year %d and scenario(s) '%.64s'.",
-                yearBase0 + yr1,
+                yearBase0 + startYr,
                 SW_CarbonIn->scenario
             );
             goto closeFile;

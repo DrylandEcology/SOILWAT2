@@ -183,7 +183,7 @@ void get_outvalleader(
     double *p
 ) {
 
-    p[irow_OUT[pd] + nrow_OUT[pd] * 0] = SW_ModelSim->simyear;
+    p[irow_OUT[pd] + nrow_OUT[pd] * 0] = SW_ModelSim->year;
 
     switch (pd) {
     case eSW_Day:

@@ -1545,7 +1545,6 @@ void SW_CTL_read_inputs_from_disk(
 
     SW_CBN_read(
         &sw->CarbonIn,
-        sw->ModelSim.addtl_yr,
         sw->ModelIn.startyr,
         sw->ModelIn.endyr,
         SW_PathInputs->txtInFiles,

@@ -29,6 +29,11 @@
 * The rooting profiles no longer must start at the surface and may now have
   gaps (@dschlaep).
 
+* The (internal) `addtl_yr` is now removed. It represented an offset between
+  values of the calendar years of the simulation period and the calendar years
+  used for atmospheric CO2 concentration values. `rSOILWAT2` previously used it
+  for an outdated approach to create simulation runs at different time periods.
+
 ## Changes to inputs
 * New input via `"siteparam.in"` that specifies the method for soil temperature
   at the lower boundary.

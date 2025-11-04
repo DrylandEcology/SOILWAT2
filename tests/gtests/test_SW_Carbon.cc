@@ -42,7 +42,6 @@ TEST_F(CarbonFixtureTest, CarbonInReadInputFile) {
 
     SW_CBN_read(
         &SW_Run.CarbonIn,
-        SW_Run.ModelSim.addtl_yr,
         SW_Run.ModelIn.startyr,
         SW_Run.ModelIn.endyr,
         SW_Domain.SW_PathInputs.txtInFiles,
@@ -71,11 +70,9 @@ TEST_F(CarbonFixtureTest, CarbonInReadInputFile) {
 
     SW_Run.CarbonIn.use_wue_mult = 1;
     SW_Run.CarbonIn.use_bio_mult = 1;
-    SW_Run.ModelSim.addtl_yr = 0;
 
     SW_CBN_read(
         &SW_Run.CarbonIn,
-        SW_Run.ModelSim.addtl_yr,
         SW_Run.ModelIn.startyr,
         SW_Run.ModelIn.endyr,
         SW_Domain.SW_PathInputs.txtInFiles,
@@ -109,11 +106,9 @@ TEST_F(CarbonFixtureTest, CarbonInCO2multipliers) {
     );
     SW_Run.CarbonIn.use_wue_mult = 1;
     SW_Run.CarbonIn.use_bio_mult = 1;
-    SW_Run.ModelSim.addtl_yr = 0;
 
     SW_CBN_read(
         &SW_Run.CarbonIn,
-        SW_Run.ModelSim.addtl_yr,
         SW_Run.ModelIn.startyr,
         SW_Run.ModelIn.endyr,
         SW_Domain.SW_PathInputs.txtInFiles,
