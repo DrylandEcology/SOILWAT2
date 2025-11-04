@@ -15,6 +15,15 @@ extern "C" {
 /* --------------------------------------------------- */
 void SW_DOM_calc_ncSuid(SW_DOMAIN *SW_Domain, size_t suid, size_t ncSuid[]);
 
+void SW_DOM_calc_suid_from_subdom(
+    Bool sDom,
+    size_t startYS,
+    size_t startX,
+    size_t actSiteIdx,
+    size_t nCols,
+    size_t ncSuid[]
+);
+
 void SW_DOM_calc_nSUIDs(SW_DOMAIN *SW_Domain);
 
 Bool SW_DOM_CheckProgress(

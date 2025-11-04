@@ -67,7 +67,23 @@ void SW_CTL_read_inputs_from_disk(
     LOG_INFO *LogInfo
 );
 
-void SW_CTL_main(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
+void SW_CTL_sim_sites(
+    size_t nActiveSites,
+    SW_DOMAIN *SW_Domain,
+    SW_RUN *SW_Runs,
+    LOG_INFO *LogInfos,
+    LOG_INFO *main_LogInfo
+);
+
+void SW_CTL_run_daily_timesteps(
+    TimeInt nDays,
+    size_t nActiveSites,
+    SW_DOMAIN *SW_Domain,
+    SW_RUN *SW_Runs,
+    LOG_INFO *LogInfos,
+    SW_WALLTIME *SW_WallTime,
+    LOG_INFO *main_LogInfo
+);
 
 void SW_CTL_RunSimSet(
     int rank,
@@ -78,9 +94,9 @@ void SW_CTL_RunSimSet(
     LOG_INFO *main_LogInfo
 );
 
-void SW_CTL_run_current_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
+void SW_CTL_run_current_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
-void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
+void SW_CTL_run_spinup(SW_DOMAIN *SW_Domain, SW_RUN *sw, LOG_INFO *LogInfo);
 
 void SW_CTL_run_sw(
     size_t runNum,

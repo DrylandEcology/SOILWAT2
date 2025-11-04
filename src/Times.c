@@ -540,3 +540,23 @@ void timeStringISO8601(char *timeString, unsigned int stringLength) {
         timeString[0] = '\0';
     }
 }
+
+/*
+@brief Calculate the number of days within a set of given years
+
+@param[in] startYr Start year of the simulation
+@param[in] endYr End year of the simulation
+
+@return Total number of days between the start and end years
+*/
+TimeInt Times_years_to_days(TimeInt startYr, TimeInt endYr) {
+    TimeInt year;
+
+    TimeInt totalDays = 0;
+
+    for (year = startYr; year <= endYr; year++) {
+        totalDays += Time_get_lastdoy_y(year);
+    }
+
+    return totalDays;
+}

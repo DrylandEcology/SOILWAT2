@@ -529,6 +529,34 @@ void SW_DOM_calc_ncSuid(SW_DOMAIN *SW_Domain, size_t suid, size_t ncSuid[]) {
 }
 
 /**
+@brief Calculate the suid from a global point-of-view from subdomain
+information
+
+@param[in] sDom Specifies the program's domain is site-oriented
+@param[in] startYS Start index of the Y dimension (gridded) or S dimension
+(site-oriented) of the assigned subdomain
+@param[in] startX Start index of the X dimension (gridded) of the assigned
+subdomain
+@param[in] actSiteIdx Active site index within the subdomain
+@param[in] nCols Number of columns in the subdomain
+@param[out] ncSuid Resulting global ncSuid calculation
+*/
+void SW_DOM_calc_suid_from_subdom(
+    Bool sDom,
+    size_t startYS,
+    size_t startX,
+    size_t actSiteIdx,
+    size_t nCols,
+    size_t ncSuid[]
+) {
+    size_t ysOffset = sDom ? actSiteIdx : actSiteIdx / nCols;
+    size_t xOffset = sDom ? 0 : actSiteIdx % nCols;
+
+    ncSuid[0] = startYS + ysOffset;
+    ncSuid[1] = sDom ? 0 : startX + xOffset;
+}
+
+/**
 @brief Calculate the number of suids in the given domain
 
 @param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant

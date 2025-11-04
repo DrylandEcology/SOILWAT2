@@ -216,6 +216,8 @@ void SW_MDL_new_year(SW_MODEL_INPUTS *SW_ModelIn, SW_MODEL_SIM *SW_ModelSim) {
         (year == SW_ModelIn->endyr && !SW_ModelIn->SW_SpinUp.spinup) ?
             SW_ModelIn->endend :
             Time_get_lastdoy_y(year);
+
+    SW_ModelSim->doy = 0;
 }
 
 /**
@@ -227,6 +229,8 @@ intermediate time information about the simulation run
 void SW_MDL_new_day(SW_MODEL_SIM *SW_ModelSim) {
 
     OutPeriod pd;
+
+    SW_ModelSim->doy++;
 
     SW_ModelSim->month =
         doy2month(SW_ModelSim->doy, SW_ModelSim->cum_monthdays); /* base0 */
