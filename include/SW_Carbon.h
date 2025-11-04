@@ -45,7 +45,6 @@ void SW_CBN_init_run(
     SW_CARBON_INPUTS *SW_CarbonIn,
     TimeInt startYr,
     TimeInt endYr,
-    TimeInt vegYear,
     LOG_INFO *LogInfo
 );
 

@@ -137,11 +137,13 @@ void SW_CBN_read(
     char helpStr[64];
     char yearStr[5];
     char scenario[64] = {'\0'};
+    char *MyFileName;
+    char inbuf[MAX_FILENAMESIZE];
     TimeInt year;
     TimeInt yearBase0;
     int scanRes;
-    TimeInt yr1 = MIN(startYr + addtl_yr, vegYear);
-    TimeInt yr2 = MAX(endYr + addtl_yr, vegYear);
+    TimeInt yr1 = startYr + addtl_yr;
+    TimeInt yr2 = endYr + addtl_yr;
     TimeInt n_years = yr2 - yr1 + 1;
 
     // The following variables must be initialized to show if they've been
@@ -149,8 +151,9 @@ void SW_CBN_read(
     double ppm = -1.;
     int *existing_years = NULL;
     short fileWasEmpty = 1;
-    char *MyFileName;
-    char inbuf[MAX_FILENAMESIZE];
+    Bool isAnotherScenario = swTRUE;
+    SW_CarbonIn->ppmVegRef = -1.;
+
 
     MyFileName = txtInFiles[eCarbon];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -185,20 +188,41 @@ void SW_CBN_read(
         if (LogInfo->stopRun) {
             goto closeFile;
         }
+
         /* Identify the scenario(s) */
         if (year == 0) {
             (void) sw_memccpy(scenario, helpStr, '\0', sizeof scenario);
+
+            /* Search for scenario in input "scenario1|scenario2" */
+            isAnotherScenario =
+                (Bool) (isnull(scenario) ||
+                        isnull(strstr(SW_CarbonIn->scenario, scenario)));
+
             continue; // Skip to the ppm values
         }
 
-        if ((year < yr1) || (year > yr2)) {
-            continue; // We aren't using this year; prevent out-of-bounds
+        if (isAnotherScenario) {
+            continue; // Keep searching for the right scenario
+        }
+        /* Requested scenario located - now look for requested years */
+        if (!((year >= yr1 && year <= yr2) || year == vegYear)) {
+            continue; // We aren't using this year
         }
 
-        /* Search for scenario in input "scenario1|scenario2" */
-        if (isnull(scenario) ||
-            isnull(strstr(SW_CarbonIn->scenario, scenario))) {
-            continue; // Keep searching for the right scenario
+        /* Read aCO2 [ppm] */
+        ppm = sw_strtod(helpStr, MyFileName, LogInfo);
+        if (LogInfo->stopRun) {
+            goto closeFile;
+        }
+
+        /* Save aCO2 during vegetation reference year */
+        if (year == vegYear) {
+            SW_CarbonIn->ppmVegRef = ppm;
+        }
+
+        /* Look for sequence of simulation years */
+        if ((year < yr1) || (year > yr2)) {
+            continue; // We aren't using this year; prevent out-of-bounds
         }
 
         yearBase0 = year - yr1;
@@ -215,12 +239,6 @@ void SW_CBN_read(
             goto closeFile;
         }
         existing_years[yearBase0] = 1;
-
-        /* Read aCO2 [ppm] */
-        ppm = sw_strtod(helpStr, MyFileName, LogInfo);
-        if (LogInfo->stopRun) {
-            goto closeFile;
-        }
 
         SW_CarbonIn->ppm[yearBase0] = ppm;
     }
@@ -248,17 +266,28 @@ void SW_CBN_read(
     }
 
     // Ensure that the desired years were calculated
-    for (year = 0; year < n_years; year++) {
-        if (existing_years[year] == 0) {
+    for (yearBase0 = 0; yearBase0 < n_years; yearBase0++) {
+        if (existing_years[yearBase0] == 0) {
             LogError(
                 LogInfo,
                 LOGERROR,
                 "(SW_Carbon) No CO2 data for year %d and scenario(s) '%.64s'.",
-                year,
+                yearBase0 + yr1,
                 SW_CarbonIn->scenario
             );
             goto closeFile;
         }
+    }
+
+    // Check that vegetation reference aCO2 was located
+    if (LE(SW_CarbonIn->ppmVegRef, 0.)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "(SW_Carbon) No CO2 data found for vegetation reference year %d.",
+            vegYear
+        );
+        goto closeFile;
     }
 
 closeFile: {
@@ -301,7 +330,6 @@ Multipliers are only calculated for the years that will be simulated.
 data
 @param[in] startYr Start year of the simulation
 @param[in] endYr End year of the simulation
-@param[in] vegYear Calendar year corresponding to vegetation inputs
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CBN_init_run(
@@ -310,7 +338,6 @@ void SW_CBN_init_run(
     SW_CARBON_INPUTS *SW_CarbonIn,
     TimeInt startYr,
     TimeInt endYr,
-    TimeInt vegYear,
     LOG_INFO *LogInfo
 ) {
 #ifdef SWDEBUG
@@ -320,7 +347,6 @@ void SW_CBN_init_run(
     int k;
     TimeInt year;
     TimeInt endsimyr = endYr - startYr + 1;
-    TimeInt ppmVegCO2 = (vegYear > startYr) ? vegYear - startYr : 0;
     /* atmospheric CO2 concentration corresponding to vegetation input year */
     double vegCO2;
     double biomCorrectionFactor[NVEGTYPES];
@@ -332,14 +358,13 @@ void SW_CBN_init_run(
     }
 
     /* Adjustment for year of vegetation inputs relative to reference */
-    vegCO2 = SW_CarbonIn->ppm[ppmVegCO2];
+    vegCO2 = SW_CarbonIn->ppmVegRef;
     if (missing(vegCO2) || LE(vegCO2, 0.)) {
         LogError(
             LogInfo,
             LOGERROR,
-            "Provided aCO2 (%f) is missing or not positive in year %d",
-            vegCO2,
-            vegYear
+            "Vegetation reference aCO2 (%f) is missing or not positive",
+            vegCO2
         );
         return; // Exit function prematurely due to error
     }

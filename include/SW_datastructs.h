@@ -65,10 +65,10 @@ typedef struct {
                           we are extracting CO2 data from the carbon.in file. */
 
     double *ppm; /**< A 1D array holding atmospheric CO2 concentration
-                              values (units ppm). Is typically only populated
-                              for the years that are being simulated.
-                              `ppm[index]` is the CO2 value for the calendar
-                    year `index + 1` */
+                              values (units ppm) for the simulation years */
+
+    /** aCO2 in [ppm] of the reference year for vegetation */
+    double ppmVegRef;
 
 } SW_CARBON_INPUTS;
 

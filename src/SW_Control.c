@@ -1089,7 +1089,6 @@ void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
         &sw->CarbonIn,
         sw->ModelIn.startyr,
         sw->ModelIn.endyr,
-        sw->VegProdIn.vegYear,
         LogInfo
     );
 }

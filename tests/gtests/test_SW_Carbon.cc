@@ -130,7 +130,6 @@ TEST_F(CarbonFixtureTest, CarbonInCO2multipliers) {
         &SW_Run.CarbonIn,
         SW_Run.ModelIn.startyr,
         SW_Run.ModelIn.endyr,
-        SW_Run.VegProdIn.vegYear,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
