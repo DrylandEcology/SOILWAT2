@@ -58,8 +58,14 @@ TEST_F(CarbonFixtureTest, CarbonInReadInputFile) {
 
     SW_CBN_deconstruct(&SW_Run.CarbonIn);
 
+
     // Test if CO2-effects are turned on -> CO2 concentration data are read from
     // file
+
+    // Set vegYear outside simulation period
+    SW_Run.VegProdIn.vegYear = SW_Run.ModelIn.endyr + 5;
+    SW_Run.CarbonIn.ppmVegRef = -1;
+
     SW_CBN_construct(&SW_Run.CarbonIn);
     (void) snprintf(
         SW_Run.CarbonIn.scenario,
@@ -81,8 +87,11 @@ TEST_F(CarbonFixtureTest, CarbonInReadInputFile) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
+    EXPECT_GT(SW_Run.CarbonIn.ppmVegRef, 0.);
+
     for (year = 0; year < n_years; year++) {
         EXPECT_GT(SW_Run.CarbonIn.ppm[year], 0.);
+        EXPECT_GT(SW_Run.CarbonIn.ppmVegRef, SW_Run.CarbonIn.ppm[year]);
     }
 }
 
