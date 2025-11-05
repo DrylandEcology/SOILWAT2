@@ -691,6 +691,8 @@ every site at once per daily time step
 @param[in] nDays Total number of days to simulate across all sites
 @param[in] nActiveSites Number of active sites to simulate within a subdomain
 (SWMPI) or a single site (SWTXT)
+@param[in] tempVals An allocated space to store temporary input values
+for converting and setting into proper location
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
 @param[in,out] SW_Runs A list of SW_RUN instances of size "nActiveSites" that
@@ -704,6 +706,7 @@ information for the program run
 void SW_CTL_run_daily_timesteps(
     TimeInt nDays,
     size_t nActiveSites,
+    double *tempVals,
     SW_DOMAIN *SW_Domain,
     SW_RUN *SW_Runs,
     LOG_INFO *LogInfos,
@@ -711,13 +714,6 @@ void SW_CTL_run_daily_timesteps(
     LOG_INFO *main_LogInfo
 ) {
     TimeInt day;
-
-    double *tempVals = NULL;
-
-#if defined(SWNETCDF)
-    SW_NCIN_alloc_temp_inputs(SW_Domain, &tempVals, main_LogInfo);
-    checkReturn(main_LogInfo->stopRun);
-#endif
 
     for (day = 0; day < nDays; day++) {
 #ifdef SWDEBUG
@@ -729,12 +725,7 @@ void SW_CTL_run_daily_timesteps(
         SW_CTL_sim_sites(
             nActiveSites, SW_Domain, SW_Runs, LogInfos, main_LogInfo
         );
-        checkJumpToLabel(main_LogInfo->stopRun, freeMem);
-    }
-
-freeMem:
-    if (!isnull(tempVals)) {
-        free((void *) tempVals);
+        checkReturn(main_LogInfo->stopRun);
     }
 }
 
@@ -776,11 +767,15 @@ void SW_CTL_RunSimSet(
 #if defined(SWNETCDF)
     const Bool alloc = swTRUE;
     const Bool dealloc = swFALSE;
+    const Bool readConstInfo = swTRUE;
 
     SW_SOIL_RUN_INPUTS *newSoils = NULL;
     SW_RUN_INPUTS *siteInputs = NULL;
     SW_RUN *siteRuns = NULL;
     LOG_INFO *siteLogs = NULL;
+    double *tempVals = NULL;
+    size_t site;
+    size_t siteIdx;
 
     const size_t nActiveSites = SW_Domain->nActiveSuidsProc;
 
@@ -796,6 +791,9 @@ void SW_CTL_RunSimSet(
     );
     checkReturn(main_LogInfo->stopRun);
 
+    SW_NCIN_alloc_temp_inputs(SW_Domain, &tempVals, main_LogInfo);
+    checkReturn(main_LogInfo->stopRun);
+
     init_all_logs(nActiveSites, main_LogInfo->logfp, siteLogs);
 
     init_all_runs(
@@ -809,9 +807,41 @@ void SW_CTL_RunSimSet(
     );
     checkReturn(main_LogInfo->stopRun);
 
+    SW_NCIN_read_inputs(
+        sw_template,
+        SW_Domain,
+        readConstInfo,
+        SW_Domain->domStartIndex,
+        SW_Domain->domCounts,
+        SW_Domain->SW_PathInputs.openInFileIDs,
+        tempVals,
+        NULL,
+        nActiveSites,
+        newSoils,
+        siteInputs,
+        siteLogs,
+        main_LogInfo
+    );
+    checkReturn(main_LogInfo->stopRun);
+
+    // Check if any sites failed when reading initial values before
+    // running simulations
+    for (site = 0; site < nActiveSites; site++) {
+        siteIdx = SW_Domain->actSiteIdx[eSW_InDomain][site];
+        handle_logs(
+            &siteLogs[site],
+            SW_Domain,
+            nActiveSites,
+            &SW_Domain->netCDFInput.progVals[siteIdx],
+            main_LogInfo
+        );
+    }
+    checkReturn(main_LogInfo->stopRun);
+
     SW_CTL_run_daily_timesteps(
         numDaysToSim,
         nActiveSites,
+        tempVals,
         SW_Domain,
         siteRuns,
         siteLogs,
@@ -1354,6 +1384,7 @@ void SW_CTL_run_spinup(SW_DOMAIN *SW_Domain, SW_RUN *sw, LOG_INFO *LogInfo) {
         SW_CTL_run_daily_timesteps(
             daysInYear,
             nActiveSites,
+            NULL, // Temp vals
             SW_Domain,
             sw,
             LogInfo,
