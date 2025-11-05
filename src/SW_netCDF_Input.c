@@ -6891,15 +6891,8 @@ static void read_soil_inputs(
         soils = (hasConstSoilDepths) ? &inputs[input].SoilRunIn :
                                        &newSoilBuff[input];
 
-        SW_DOM_calc_suid_from_subdom(
-            progSiteDom,
-            SW_Domain->domStartIndex[eSW_InWeather][0],
-            SW_Domain->domStartIndex[eSW_InWeather][1],
-            SW_Domain->actSiteIdx[eSW_InWeather][input],
-            (progSiteDom) ? SW_Domain->domCounts[eSW_InDomain][1] :
-                            SW_Domain->domCounts[eSW_InDomain][0],
-            errSuid
-        );
+        errSuid[0] = SW_Domain->globDomSuids[input][0];
+        errSuid[1] = progSiteDom ? 0 : SW_Domain->globDomSuids[input][1];
 
         /* Derive missing soil properties and check others */
         derive_missing_soils(
@@ -8068,15 +8061,8 @@ static void read_weather_input(
     for (site = 0; site < numSites; site++) {
         inIdx = SW_Domain->actSiteIdx[eSW_InWeather][site];
 
-        SW_DOM_calc_suid_from_subdom(
-            progSiteDom,
-            SW_Domain->domStartIndex[eSW_InWeather][0],
-            SW_Domain->domStartIndex[eSW_InWeather][1],
-            SW_Domain->actSiteIdx[eSW_InWeather][site],
-            (progSiteDom) ? SW_Domain->domCounts[eSW_InWeather][0] :
-                            SW_Domain->domCounts[eSW_InWeather][1],
-            errSuid
-        );
+        errSuid[0] = SW_Domain->globDomSuids[site][0];
+        errSuid[1] = progSiteDom ? 0 : SW_Domain->globDomSuids[site][1];
 
         SW_WTH_setWeatherValues(
             SW_Domain->startyr,

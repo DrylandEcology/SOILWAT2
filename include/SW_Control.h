@@ -78,6 +78,7 @@ void SW_CTL_sim_sites(
 void SW_CTL_run_daily_timesteps(
     TimeInt nDays,
     size_t nActiveSites,
+    double *tempVals,
     SW_DOMAIN *SW_Domain,
     SW_RUN *SW_Runs,
     LOG_INFO *LogInfos,

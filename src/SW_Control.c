@@ -292,15 +292,8 @@ static void report_logs(
 
     for (site = 0; site < nSims; site++) {
 #if defined(SWNETCDF)
-        SW_DOM_calc_suid_from_subdom(
-            sDom,
-            SW_Domain->domStartIndex[eSW_InDomain][0],
-            SW_Domain->domStartIndex[eSW_InDomain][1],
-            SW_Domain->actSiteIdx[eSW_InDomain][site],
-            sDom ? SW_Domain->domCounts[eSW_InDomain][0] :
-                   SW_Domain->domCounts[eSW_InDomain][1],
-            ncSuid
-        );
+        ncSuid[0] = SW_Domain->globDomSuids[site][0];
+        ncSuid[1] = SW_Domain->globDomSuids[site][1];
 #endif
 
         if (simLogs[site].stopRun || simLogs[site].numWarnings > 0) {
@@ -648,32 +641,21 @@ void SW_CTL_sim_sites(
     size_t site;
     TimeInt *doy = NULL;
     TimeInt nDaysInYear = Time_get_lastdoy_y(SW_Runs[0].ModelSim.year);
-    size_t ncSuid[NC_DIMS] = {0};
     signed char *runStatus = NULL;
 
 #if defined(SWNETCDF)
     signed char *progVals = SW_Domain->netCDFInput.progVals;
-    const size_t nCols = sDom ? SW_Domain->domCounts[eSW_InDomain][0] :
-                                SW_Domain->domCounts[eSW_InDomain][1];
-
-    size_t startYS = SW_Domain->domStartIndex[eSW_InDomain][0];
-    size_t startX = SW_Domain->domStartIndex[eSW_InDomain][1];
-
     size_t actSiteIdx;
 #endif
 
     for (site = 0; site < nActiveSites; site++) {
 #if defined(SWNETCDF)
+        actSiteIdx = SW_Domain->actSiteIdx[eSW_InDomain][site];
         runStatus = &progVals[actSiteIdx];
 
         if (*runStatus == PRGRSS_FAIL) {
             continue;
         }
-
-        actSiteIdx = SW_Domain->actSiteIdx[eSW_InDomain][site];
-        SW_DOM_calc_suid_from_subdom(
-            sDom, startYS, startX, actSiteIdx, nCols, ncSuid
-        );
 #endif
         doy = &SW_Runs[site].ModelSim.doy;
 

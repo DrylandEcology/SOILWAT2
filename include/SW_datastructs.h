@@ -1856,6 +1856,10 @@ typedef struct {
                           the size of a subdomain for a process;
                           includes translated suid sizes as well */
 
+    size_t **globDomSuids; /**< A list of size nsites by NC_DIMS to
+                                hold precalculated global domain suids
+                                based on the assigned subdomain */
+
     /*
         A list of indices within the subdomain which contains an active site
         where each sub array is size <n active sites> in the subdomain

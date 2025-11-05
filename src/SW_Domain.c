@@ -112,7 +112,8 @@ static void alloc_dom_start_count(
 }
 
 /*
-@brief Set the subdomain information for all processes
+@brief Set the subdomain information for all processes and create a list
+of active global suids from the local subdomain
 
 @param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] sDom Specifies the program's domain is site-oriented
@@ -1118,6 +1119,8 @@ void SW_DOM_init_ptrs(SW_DOMAIN *SW_Domain) {
 #if defined(SWNETCDF)
     SW_NCIN_init_ptrs(&SW_Domain->netCDFInput);
 
+    SW_Domain->globDomSuids = NULL;
+
 #if defined(SWMPI)
     int inKey;
 
@@ -1133,6 +1136,7 @@ void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
     SW_F_deconstruct(&SW_Domain->SW_PathInputs);
 
 #if defined(SWNETCDF)
+    size_t site;
 
     SW_NC_deconstruct(&SW_Domain->OutDom.netCDFOutput);
 
@@ -1146,6 +1150,15 @@ void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
         if (!isnull(SW_Domain->actSiteIdx[key])) {
             free((void *) SW_Domain->actSiteIdx[key]);
             SW_Domain->actSiteIdx[key] = NULL;
+        }
+    }
+
+    if (!isnull(SW_Domain->globDomSuids)) {
+        for (site = 0; site < SW_Domain->nActiveSuidsProc; site++) {
+            if (!isnull(SW_Domain->globDomSuids[site])) {
+                free((void *) SW_Domain->globDomSuids[site]);
+                SW_Domain->globDomSuids[site] = NULL;
+            }
         }
     }
 #endif

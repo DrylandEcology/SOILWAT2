@@ -7,6 +7,7 @@
 #include "include/myMemory.h"          // for Str_Dup, Mem_Malloc
 #include "include/SW_datastructs.h"    // for LOG_INFO, SW_NETCDF_OUT, SW_DOMAIN
 #include "include/SW_Defines.h"        // for MAX_FILENAMESIZE, OutPeriod
+#include "include/SW_Domain.h"         // for SW_DOM_calc_suid_from_subdom
 #include "include/SW_netCDF_Input.h"   // for
 #include "include/SW_netCDF_Output.h"  // for
 #include "include/Times.h"             // for isleapyear, timeStringISO8601
@@ -254,9 +255,35 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     );
     checkReturn(LogInfo->stopRun);
 
+    SW_Domain->globDomSuids = (size_t **) Mem_Malloc(
+        sizeof(size_t *) * *numActiveSites, "find_active_sites", LogInfo
+    );
+    checkReturn(LogInfo->stopRun);
+
+    for (progIndex = 0; progIndex < *numActiveSites; progIndex++) {
+        SW_Domain->globDomSuids[progIndex] = NULL;
+    }
+
+    for (progIndex = 0; progIndex < *numActiveSites; progIndex++) {
+        SW_Domain->globDomSuids[progIndex] = (size_t *) Mem_Malloc(
+            sizeof(size_t) * NC_DIMS, "find_active_sites", LogInfo
+        );
+        checkReturn(LogInfo->stopRun);
+    }
+
     for (progIndex = 0; progIndex < numSites; progIndex++) {
         if ((*progVals)[progIndex] == PRGRSS_READY) {
             SW_Domain->actSiteIdx[eSW_InDomain][activeSite] = progIndex;
+
+            SW_DOM_calc_suid_from_subdom(
+                sDom,
+                SW_Domain->domStartIndex[eSW_InDomain][0],
+                SW_Domain->domStartIndex[eSW_InDomain][1],
+                SW_Domain->actSiteIdx[eSW_InDomain][activeSite],
+                (sDom) ? SW_Domain->domCounts[eSW_InDomain][0] :
+                         SW_Domain->domCounts[eSW_InDomain][1],
+                SW_Domain->globDomSuids[activeSite]
+            );
 
             activeSite++;
         }
