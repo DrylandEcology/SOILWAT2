@@ -405,7 +405,7 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     // SW_SKY_new_year(): Update daily climate variables from monthly values
     SW_SKY_new_year(
         &sw->ModelSim,
-        sw->ModelIn.startyr,
+        sw->ModelSim.yearIdxSpinSim,
         sw->RunIn.SkyRunIn.snow_density,
         sw->RunIn.SkyRunIn.snow_density_daily
     );
@@ -509,8 +509,7 @@ void SW_RUN_deepCopy(
     Bool copyWeatherHist,
     LOG_INFO *LogInfo
 ) {
-    TimeInt n_years = source->ModelIn.endyr - source->ModelIn.startyr + 1 +
-                      source->ModelSim.addtl_yr;
+    TimeInt n_years = source->ModelIn.endyr - source->ModelIn.startyr + 1;
     int **dummyExistYears = NULL;
 
     memcpy(dest, source, sizeof(*dest));
@@ -1159,10 +1158,8 @@ void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
         sw->VegProdIn.veg,
         sw->VegProdSim.veg,
         &sw->CarbonIn,
-        sw->ModelSim.addtl_yr,
         sw->ModelIn.startyr,
         sw->ModelIn.endyr,
-        sw->VegProdIn.vegYear,
         LogInfo
     );
 }
@@ -1361,9 +1358,6 @@ void SW_CTL_run_spinup(SW_DOMAIN *SW_Domain, SW_RUN *sw, LOG_INFO *LogInfo) {
 
     TimeInt *cur_yr = &sw->ModelSim.year;
     TimeInt yrIdx;
-    TimeInt startyr = sw->ModelIn.startyr;
-
-    sw->ModelIn.startyr = years[0]; // set startyr for spinup
 
     sw->ModelSim.doOutput = swFALSE; // turn output temporarily off
 
@@ -1397,7 +1391,6 @@ void SW_CTL_run_spinup(SW_DOMAIN *SW_Domain, SW_RUN *sw, LOG_INFO *LogInfo) {
     }
 
 reSet: {
-    sw->ModelIn.startyr = startyr;      // reset startyr to original value
     sw->ModelSim.doOutput = prev_doOut; // reset doOutput to original value
     /* Note: don't reset sw->ModelSim.yearIdxSpinSim which is a
     continuous index across spinup and simulation years) */
@@ -1620,7 +1613,6 @@ void SW_CTL_read_inputs_from_disk(
 
     SW_CBN_read(
         &sw->CarbonIn,
-        sw->ModelSim.addtl_yr,
         sw->ModelIn.startyr,
         sw->ModelIn.endyr,
         SW_PathInputs->txtInFiles,
@@ -1681,7 +1673,7 @@ The following operations are conditional on if SWMPI is enabled
 of all input keys
 @param[out] SW_WallTime Struct of type SW_WALLTIME that holds timing
     information for the program run including partitioning into
-    I/O (SWNETCDF) and compute (SWNETCDF, SWMPI) times
+    I/O and compute times
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_run_sw(

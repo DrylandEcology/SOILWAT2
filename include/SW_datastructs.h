@@ -65,10 +65,10 @@ typedef struct {
                           we are extracting CO2 data from the carbon.in file. */
 
     double *ppm; /**< A 1D array holding atmospheric CO2 concentration
-                              values (units ppm). Is typically only populated
-                              for the years that are being simulated.
-                              `ppm[index]` is the CO2 value for the calendar
-                    year `index + 1` */
+                              values (units ppm) for the simulation years */
+
+    /** aCO2 in [ppm] of the reference year for vegetation */
+    double ppmVegRef;
 
 } SW_CARBON_INPUTS;
 
@@ -154,31 +154,28 @@ typedef struct {
 typedef struct {
     TimeInt /* controlling dates for model run */
         /* current year dates */
-        firstdoy, /* start day for this year */
-        lastdoy,  /* 366 if leapyear or endend if endyr */
-        doy, week, month, year, simyear, /* current model time */
-        prevweek,                        /* check for new week */
-        prevmonth,                       /* check for new month */
-        prevyear;                        /* check for new year */
+        firstdoy,               /* start day for this year */
+        lastdoy,                /* 366 if leapyear or endend if endyr */
+        doy, week, month, year, /* current model time */
+        prevweek,               /* check for new week */
+        prevmonth,              /* check for new month */
+        prevyear;               /* check for new year */
     /* however, week and month are base0 because they
      * are used as array indices, so take care.
      * doy and year are base1. */
-    /* simyear = year + addtl_yr */
 
     /** Index of the currently simulated year (base0), continous count across
-     spinup and simulation periods */
+     spinup and simulation periods, i.e., do not reset after spinup */
     int yearIdxSpinSim;
+
+    /** Index of the currently simulated year (base0) relative to the start year
+     of the simulation period */
+    TimeInt yearIdx;
 
     TimeInt days_in_month[MAX_MONTHS], /* number of days per month for "current"
                                           year */
         cum_monthdays[MAX_MONTHS];     /* monthly cumulative number of days for
                                           "current" year */
-
-    TimeInt addtl_yr; /**< An integer representing how many years in the future
-                         we are simulating.
-                         Currently, only used to support rSFSW2 functionality
-                         where scenario runs are based on an 'ambient'
-                         run plus number of years in the future*/
 
     /* first day of new week/month is checked for
      * printing and summing weekly/monthly values */

@@ -41,7 +41,7 @@ void SW_SKY_read(
 );
 void SW_SKY_new_year(
     SW_MODEL_SIM *SW_ModelSim,
-    TimeInt startYr,
+    int yearIdxSpinSim,
     double snow_density[MAX_MONTHS],
     double snow_density_daily[MAX_MONTHS]
 );

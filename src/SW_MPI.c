@@ -793,7 +793,7 @@ void SW_MPI_get_sim_suids(
     indices for each key
 @param[out] SW_WallTime Struct of type SW_WALLTIME that holds timing
     information for the program run including partitioning into
-    I/O (SWNETCDF) and compute (SWNETCDF, SWMPI) times
+    I/O and compute times
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_MPI_write_outputs(
