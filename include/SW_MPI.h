@@ -105,23 +105,6 @@ void SW_MPI_get_sim_suids(
     unsigned int *nSuids
 );
 
-void SW_MPI_read_inputs(
-    SW_RUN *sw,
-    SW_DOMAIN *SW_Domain,
-    double *tempVals,
-    size_t *readIndex,
-    size_t simSuids[SW_NINKEYSNC][N_SUID_ASSIGN][2],
-    unsigned int *nSuids,
-    size_t starts[SW_NINKEYSNC][N_SUID_ASSIGN][2],
-    size_t counts[SW_NINKEYSNC][N_SUID_ASSIGN][2],
-    size_t numReads[],
-    SW_SOIL_RUN_INPUTS *tempSoils,
-    SW_RUN_INPUTS *runInputs,
-    SW_WALLTIME *SW_WallTime,
-    LOG_INFO *siteLogs,
-    LOG_INFO *LogInfo
-);
-
 void SW_MPI_write_outputs(
     SW_PATH_OUTPUTS *SW_PathOutputs,
     int progFileID,

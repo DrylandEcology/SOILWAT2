@@ -131,14 +131,13 @@ void SW_NCIN_alloc_weather_indices_years(
 void SW_NCIN_read_inputs(
     SW_RUN *sw,
     SW_DOMAIN *SW_Domain,
-    const size_t ncSUID[],
-    size_t starts[][N_SUID_ASSIGN][2],
-    size_t counts[][N_SUID_ASSIGN][2],
+    Bool readConstInfo,
+    size_t starts[][NC_DIMS],
+    size_t counts[][NC_DIMS],
     int **openNCFileIDs[],
-    size_t numReads[],
-    size_t numInputs,
     double *tempVals,
     size_t domSuids[][2],
+    size_t nActiveSites,
     SW_SOIL_RUN_INPUTS *newSoils,
     SW_RUN_INPUTS *inputs,
     LOG_INFO *siteLogs,
@@ -243,6 +242,10 @@ void SW_NCIN_alloc_sim_var_information(
 );
 
 void SW_NCIN_allocDimVar(int numVars, int ***dimOrderInVar, LOG_INFO *LogInfo);
+
+void SW_NCIN_alloc_temp_inputs(
+    SW_DOMAIN *SW_Domain, double **tempVals, LOG_INFO *LogInfo
+);
 
 #ifdef __cplusplus
 }

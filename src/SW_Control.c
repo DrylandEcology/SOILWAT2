@@ -159,14 +159,18 @@ SW_RUN, SW_RUN_INPUTS, LOG_INFO for each active site
 @param[out] SW_Runs A list of SW_RUN instances of size "nActiveSites"
 @param[out] SW_RunInputs A list of SW_RUN_INPUTS instances of size
 "nActiveSites"
+@param[out] newSoils A temporary list of SW_SOIL_RUN_INPUTS instances to
+store input values
 @param[out] LogInfos A list of LOG_INFO instances of size "nActiveSites"
 @param[out] mainLogInfo The main LOG_INFO instance for the program
 */
 static void handle_sim_structs_mem(
     Bool allocate,
+    Bool consistentSoilDepths,
     size_t nActiveSites,
     SW_RUN **SW_Runs,
     SW_RUN_INPUTS **SW_RunInputs,
+    SW_SOIL_RUN_INPUTS **newSoils,
     LOG_INFO **LogInfos,
     LOG_INFO *main_LogInfo
 ) {
@@ -193,6 +197,15 @@ static void handle_sim_structs_mem(
         *LogInfos = (LOG_INFO *) Mem_Malloc(
             sizeof(LOG_INFO) * nActiveSites, "alloc_sim_structs", main_LogInfo
         );
+        checkReturn(main_LogInfo->stopRun);
+
+        if (!consistentSoilDepths) {
+            *newSoils = (SW_SOIL_RUN_INPUTS *) Mem_Malloc(
+                sizeof(SW_SOIL_RUN_INPUTS) * nActiveSites,
+                "handle_sim_structs_mem",
+                main_LogInfo
+            );
+        }
     } else {
         for (arr = 0; arr < numDeallocArrays; arr++) {
             if (!isnull(*(deallocArrays[arr]))) {
@@ -717,6 +730,13 @@ void SW_CTL_run_daily_timesteps(
 ) {
     TimeInt day;
 
+    double *tempVals = NULL;
+
+#if defined(SWNETCDF)
+    SW_NCIN_alloc_temp_inputs(SW_Domain, &tempVals, main_LogInfo);
+    checkReturn(main_LogInfo->stopRun);
+#endif
+
     for (day = 0; day < nDays; day++) {
 #ifdef SWDEBUG
         if (debug) {
@@ -727,7 +747,12 @@ void SW_CTL_run_daily_timesteps(
         SW_CTL_sim_sites(
             nActiveSites, SW_Domain, SW_Runs, LogInfos, main_LogInfo
         );
-        checkReturn(main_LogInfo->stopRun);
+        checkJumpToLabel(main_LogInfo->stopRun, freeMem);
+    }
+
+freeMem:
+    if (!isnull(tempVals)) {
+        free((void *) tempVals);
     }
 }
 
@@ -770,6 +795,7 @@ void SW_CTL_RunSimSet(
     const Bool alloc = swTRUE;
     const Bool dealloc = swFALSE;
 
+    SW_SOIL_RUN_INPUTS *newSoils = NULL;
     SW_RUN_INPUTS *siteInputs = NULL;
     SW_RUN *siteRuns = NULL;
     LOG_INFO *siteLogs = NULL;
@@ -777,7 +803,14 @@ void SW_CTL_RunSimSet(
     const size_t nActiveSites = SW_Domain->nActiveSuidsProc;
 
     handle_sim_structs_mem(
-        alloc, nActiveSites, &siteRuns, &siteInputs, &siteLogs, main_LogInfo
+        alloc,
+        nActiveSites,
+        SW_Domain->hasConsistentSoilLayerDepths,
+        &siteRuns,
+        &siteInputs,
+        &newSoils,
+        &siteLogs,
+        main_LogInfo
     );
     checkReturn(main_LogInfo->stopRun);
 
@@ -805,7 +838,14 @@ void SW_CTL_RunSimSet(
     );
 
     handle_sim_structs_mem(
-        dealloc, nActiveSites, &siteRuns, &siteInputs, &siteLogs, main_LogInfo
+        dealloc,
+        nActiveSites,
+        SW_Domain->hasConsistentSoilLayerDepths,
+        &siteRuns,
+        &siteInputs,
+        &newSoils,
+        &siteLogs,
+        main_LogInfo
     );
 #else
     const size_t nActiveSites = 1;
@@ -1652,8 +1692,8 @@ void SW_CTL_run_sw(
 
 #if defined(SWNETCDF) && !defined(SWMPI)
     SW_SOIL_RUN_INPUTS newSoil;
-    size_t starts[SW_NINKEYSNC][N_SUID_ASSIGN][2] = {{{0}}};
-    size_t counts[SW_NINKEYSNC][N_SUID_ASSIGN][2] = {{{0}}};
+    size_t starts[SW_NINKEYSNC][NC_DIMS] = {{0}};
+    size_t counts[SW_NINKEYSNC][NC_DIMS] = {{0}};
     size_t numReads[SW_NINKEYSNC] = {1, 1, 1, 1, 1, 1, 1, 1};
     size_t suid[N_SUID_ASSIGN][2] = {{ncSuid[0], ncSuid[1]}};
 #else
@@ -1699,22 +1739,22 @@ void SW_CTL_run_sw(
 #if defined(SWNETCDF) && !defined(SWMPI)
     set_walltime(&tsr, &ok_tsr);
     // Obtain suid-specific inputs
-    SW_NCIN_read_inputs(
-        &local_sw,
-        SW_Domain,
-        ncSuid,
-        starts,
-        counts,
-        SW_Domain->SW_PathInputs.openInFileIDs,
-        numReads,
-        1,
-        tempVals,
-        suid,
-        &newSoil,
-        &local_sw.RunIn,
-        LogInfo,
-        LogInfo
-    );
+    // SW_NCIN_read_inputs(
+    //     &local_sw,
+    //     SW_Domain,
+    //     ncSuid,
+    //     starts,
+    //     counts,
+    //     SW_Domain->SW_PathInputs.openInFileIDs,
+    //     numReads,
+    //     1,
+    //     tempVals,
+    //     suid,
+    //     &newSoil,
+    //     &local_sw.RunIn,
+    //     LogInfo,
+    //     LogInfo
+    // );
     SW_WT_TimeRun(tsr, ok_tsr, TIME_IO_IN, SW_WallTime);
     if (LogInfo->stopRun || !runSims) {
         goto freeMem;
