@@ -24,8 +24,6 @@ TEST(CarbonTest, CarbonConstructor) {
 TEST_F(CarbonFixtureTest, CarbonInReadInputFile) {
     TimeInt year;
     TimeInt const n_years = SW_Run.ModelIn.endyr - SW_Run.ModelIn.startyr + 1;
-    double sum_CO2;
-    int **dummyExistArr = NULL;
 
     SW_CBN_deconstruct(&SW_Run.CarbonIn);
 
@@ -35,12 +33,7 @@ TEST_F(CarbonFixtureTest, CarbonInReadInputFile) {
     SW_Run.CarbonIn.use_wue_mult = 0;
     SW_Run.CarbonIn.use_bio_mult = 0;
 
-    SW_CBN_alloc_ppm_existing_years(
-        n_years, &SW_Run.CarbonIn.ppm, dummyExistArr, &LogInfo
-    );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
-
-    SW_CBN_read(
+    SW_CBN_setup(
         &SW_Run.CarbonIn,
         SW_Run.ModelIn.startyr,
         SW_Run.ModelIn.endyr,
@@ -50,11 +43,7 @@ TEST_F(CarbonFixtureTest, CarbonInReadInputFile) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    sum_CO2 = 0.;
-    for (year = 0; year < n_years; year++) {
-        sum_CO2 += SW_Run.CarbonIn.ppm[year];
-    }
-    EXPECT_DOUBLE_EQ(sum_CO2, 0.);
+    EXPECT_TRUE(isnull(SW_Run.CarbonIn.ppm));
 
     SW_CBN_deconstruct(&SW_Run.CarbonIn);
 
@@ -64,7 +53,6 @@ TEST_F(CarbonFixtureTest, CarbonInReadInputFile) {
 
     // Set vegYear outside simulation period
     SW_Run.VegProdIn.vegYear = SW_Run.ModelIn.endyr + 5;
-    SW_Run.CarbonIn.ppmVegRef = -1;
 
     SW_CBN_construct(&SW_Run.CarbonIn);
     (void) snprintf(
@@ -76,8 +64,9 @@ TEST_F(CarbonFixtureTest, CarbonInReadInputFile) {
 
     SW_Run.CarbonIn.use_wue_mult = 1;
     SW_Run.CarbonIn.use_bio_mult = 1;
+    SW_Run.CarbonIn.ppmVegRef = -1;
 
-    SW_CBN_read(
+    SW_CBN_setup(
         &SW_Run.CarbonIn,
         SW_Run.ModelIn.startyr,
         SW_Run.ModelIn.endyr,
@@ -116,7 +105,7 @@ TEST_F(CarbonFixtureTest, CarbonInCO2multipliers) {
     SW_Run.CarbonIn.use_wue_mult = 1;
     SW_Run.CarbonIn.use_bio_mult = 1;
 
-    SW_CBN_read(
+    SW_CBN_setup(
         &SW_Run.CarbonIn,
         SW_Run.ModelIn.startyr,
         SW_Run.ModelIn.endyr,
@@ -148,5 +137,6 @@ TEST_F(CarbonFixtureTest, CarbonInCO2multipliers) {
     }
 
     SW_VPD_deconstruct(&SW_Run.VegProdSim);
+    SW_CBN_deconstruct(&SW_Run.CarbonIn);
 }
 } // namespace

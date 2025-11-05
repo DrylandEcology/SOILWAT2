@@ -350,7 +350,6 @@ void SW_RUN_deepCopy(
     LOG_INFO *LogInfo
 ) {
     TimeInt n_years = source->ModelIn.endyr - source->ModelIn.startyr + 1;
-    int **dummyExistYears = NULL;
 
     memcpy(dest, source, sizeof(*dest));
 
@@ -419,9 +418,8 @@ void SW_RUN_deepCopy(
         return; // Exit function prematurely due to error
     }
 
-    SW_CBN_alloc_ppm_existing_years(
-        n_years, &dest->CarbonIn.ppm, dummyExistYears, LogInfo
-    );
+    SW_CBN_init_ptrs(&dest->CarbonIn);
+    SW_CBN_alloc_ppm(n_years, &dest->CarbonIn.ppm, LogInfo);
     if (LogInfo->stopRun) {
         return;
     }
@@ -828,6 +826,7 @@ void SW_CTL_init_ptrs(SW_RUN *sw) {
     SW_VES_init_ptrs(&sw->VegEstabIn, sw->ves_p_accu, sw->ves_p_oagg);
     SW_OUT_init_ptrs(&sw->OutRun, &sw->SW_PathOutputs);
     SW_SWC_init_ptrs(&sw->SoilWatIn, &sw->SoilWatSim);
+    SW_CBN_init_ptrs(&sw->CarbonIn);
 }
 
 /**
@@ -1543,7 +1542,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_CBN_read(
+    SW_CBN_setup(
         &sw->CarbonIn,
         sw->ModelIn.startyr,
         sw->ModelIn.endyr,
