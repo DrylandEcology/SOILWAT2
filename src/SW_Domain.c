@@ -646,12 +646,12 @@ void SW_DOM_construct(size_t rng_seed, SW_DOMAIN *SW_Domain) {
         0,
         sizeof(&SW_Domain->depthsAllSoilLayers[0]) * MAX_LAYERS
     );
+    SW_Domain->nActiveSuidsProc = 1;
+    SW_Domain->nActiveSuidsTot = 1;
 
-#if defined(SWMPI)
+#if defined(SWNETCDF)
     int inKey;
 
-    SW_Domain->nActiveSuidsProc = 0;
-    SW_Domain->nActiveSuidsTot = 0;
     SW_Domain->spaceChunk[0] = SW_Domain->spaceChunk[1] = 0;
 
     ForEachNCInKey(inKey) {
