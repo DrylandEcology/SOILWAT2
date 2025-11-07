@@ -878,6 +878,9 @@ void SW_CTL_RunSimSet(
             &SW_Domain->netCDFInput.progVals[siteIdx],
             main_LogInfo
         );
+
+        siteRuns[site].SiteSim.site_has_swrcpMineralSoil =
+            sw_template->SiteIn.inputsProvideSWRCp;
     }
     checkReturn(main_LogInfo->stopRun);
 
