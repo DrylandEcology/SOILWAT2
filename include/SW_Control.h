@@ -38,7 +38,6 @@ void SW_RUN_deepCopy(
     SW_RUN *source,
     SW_RUN *dest,
     SW_OUT_DOM *OutDom,
-    SW_RUN_INPUTS *runInput,
     Bool copyWeatherHist,
     LOG_INFO *LogInfo
 );
@@ -68,17 +67,23 @@ void SW_CTL_read_inputs_from_disk(
 );
 
 void SW_CTL_sim_sites(
+    SW_RUN *sw_template,
+    double *tempVals,
+    SW_SOIL_RUN_INPUTS *newSoils,
     size_t nActiveSites,
     SW_DOMAIN *SW_Domain,
+    Bool updateNewYear,
+    TimeInt *nDaysInYear,
     SW_RUN *SW_Runs,
     LOG_INFO *LogInfos,
     LOG_INFO *main_LogInfo
 );
 
 void SW_CTL_run_daily_timesteps(
+    SW_RUN *sw_template,
     TimeInt nDays,
-    size_t nActiveSites,
     double *tempVals,
+    SW_SOIL_RUN_INPUTS *newSoils,
     SW_DOMAIN *SW_Domain,
     SW_RUN *SW_Runs,
     LOG_INFO *LogInfos,

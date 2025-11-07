@@ -172,6 +172,10 @@ typedef struct {
      of the simulation period */
     TimeInt yearIdx;
 
+    /** Index of the current simulated year (base0) within the number of
+        years of input we contain */
+    TimeInt inputYearIdx;
+
     TimeInt days_in_month[MAX_MONTHS], /* number of days per month for "current"
                                           year */
         cum_monthdays[MAX_MONTHS];     /* monthly cumulative number of days for
@@ -913,6 +917,9 @@ typedef struct {
     double snowRunoff, surfaceRunoff, surfaceRunon, soil_inf, surfaceAvg;
     double snow, snowmelt, snowloss, surfaceMax, surfaceMin;
     double temp_snow; // Snow temperature
+
+    Bool trivialScaling; /**< Scaling factors need to be applied to each
+                              day of weather input */
 } SW_WEATHER_SIM;
 
 /** Daily weather values for one calendar year */

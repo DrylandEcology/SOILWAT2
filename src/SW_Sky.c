@@ -210,7 +210,7 @@ void SW_SKY_new_year(
 @brief Validate mean monthly climate values
 
 Note: This function does not check r_humidity, cloudcov, and windspeed;
-these variables are checked by checkAllWeather() at a daily time step.
+these variables are checked by checkYearlyWeather() at a daily time step.
 
 @param[in] SkyRunIn Struct of type SW_SKY_INPUTS which describes sky conditions
     of the simulated site

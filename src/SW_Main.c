@@ -25,7 +25,7 @@
 #include "include/SW_Main_lib.h"    // for sw_fail_on_error, sw_init_args
 #include "include/SW_Model.h"       // for SW_MDL_get_ModelRun
 #include "include/SW_Output.h"      // for SW_OUT_close_files, SW_OUT_cre...
-#include "include/SW_Weather.h"     // for SW_WTH_finalize_all_weather
+#include "include/SW_Weather.h"     // for SW_WTH_finalize_yearly_weather
 #include "include/Times.h"          // for SW_WT_ReportTime, SW_WT_StartTime
 #include <stdio.h>                  // for NULL, FILENAME_MAX, size_t, stdout
 
@@ -138,25 +138,6 @@ int main(int argc, char **argv) {
 
     SW_NCIN_precalc_lookups(rank, &SW_Domain, &sw_template.WeatherIn, &LogInfo);
     checkJumpToLabel(LogInfo.stopRun, finishProgram);
-#endif
-
-    // finalize daily weather
-#if defined(SWNETCDF)
-    if (!SW_Domain.netCDFInput.readInVars[eSW_InWeather][0] && !prepareFiles) {
-#endif
-        SW_WTH_finalize_all_weather(
-            &sw_template.MarkovIn,
-            &sw_template.WeatherIn,
-            sw_template.RunIn.weathRunAllHist,
-            sw_template.ModelSim.cum_monthdays,
-            sw_template.ModelSim.days_in_month,
-            NULL,
-            swFALSE, // Does not matter
-            &LogInfo
-        );
-        checkJumpToLabel(LogInfo.stopRun, finishProgram);
-#if defined(SWNETCDF)
-    }
 #endif
 
     // identify domain-wide soil profile information

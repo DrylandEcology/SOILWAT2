@@ -659,6 +659,8 @@ void SW_DOM_construct(size_t rng_seed, SW_DOMAIN *SW_Domain) {
             SW_Domain->domStartIndex[inKey][1] = 0;
         SW_Domain->domCounts[inKey][0] = SW_Domain->domCounts[inKey][1] = 0;
     }
+
+    SW_Domain->SW_PathInputs.weathStartFileIndex = 0;
 #endif
 
     SW_OUTDOM_construct(&SW_Domain->OutDom);

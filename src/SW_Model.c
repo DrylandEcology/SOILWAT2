@@ -84,6 +84,24 @@ void SW_MDL_construct(SW_MODEL_SIM *SW_ModelSim) {
     SW_ModelSim->yearIdx = 0;         /* calculate at start of new year */
     SW_ModelSim->yearIdxSpinSim = -1; /* incremented at start of new year */
     SW_ModelSim->doOutput = swTRUE;
+    SW_ModelSim->doy = 1;
+
+#if defined(SWNETCDF)
+    SW_ModelSim->inputYearIdx = 0;
+#else
+    SW_ModelSim->inputYearIdx = -1; /* Increment at start of new year */
+#endif
+}
+
+/**
+@brief Initialize the information for the model
+
+@param[in] SW_ModelSim Struct of type SW_MODEL_SIM holding basic
+intermediate time information about the simulation run
+@param[in] startYr Start year of the simulation
+*/
+void SW_MDL_init_run(SW_MODEL_SIM *SW_ModelSim, TimeInt startYr) {
+    SW_ModelSim->year = startYr;
 }
 
 /**
@@ -217,7 +235,11 @@ void SW_MDL_new_year(SW_MODEL_INPUTS *SW_ModelIn, SW_MODEL_SIM *SW_ModelSim) {
             SW_ModelIn->endend :
             Time_get_lastdoy_y(year);
 
-    SW_ModelSim->doy = 0;
+    SW_ModelSim->doy = SW_ModelSim->firstdoy;
+
+#if !defined(SWNETCDF)
+    SW_ModelSim->inputYearIdx++;
+#endif
 }
 
 /**

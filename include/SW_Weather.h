@@ -221,14 +221,17 @@ void finalizeAllWeather(
     SW_MARKOV_INPUTS *SW_MarkovIn,
     SW_WEATHER_INPUTS *w,
     SW_WEATHER_HIST *allHist,
+    SW_WEATHER_SIM *SW_WeatherSim,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
     size_t ncSuid[],
+    TimeInt currYear,
+    Bool trivialScaling,
     Bool sDom,
     LOG_INFO *LogInfo
 );
 
-void scaleAllWeather(
+void scaleYearlyWeather(
     SW_WEATHER_HIST *allHist,
     unsigned int startYear,
     unsigned int n_years,
@@ -247,6 +250,7 @@ void scaleAllWeather(
 void generateMissingWeather(
     SW_MARKOV_INPUTS *SW_MarkovIn,
     SW_WEATHER_HIST *allHist,
+    SW_WEATHER_SIM *SW_WeathSim,
     unsigned int startYear,
     unsigned int n_years,
     unsigned int method,
@@ -256,9 +260,11 @@ void generateMissingWeather(
     LOG_INFO *LogInfo
 );
 
-void checkAllWeather(
+void checkYearlyWeather(
     SW_WEATHER_INPUTS *weather,
     SW_WEATHER_HIST *weathHist,
+    TimeInt currStartYear,
+    TimeInt n_years,
     size_t ncSuid[],
     Bool sDom,
     LOG_INFO *LogInfo
@@ -276,18 +282,23 @@ void clear_hist_weather(
     size_t extraStorMult, SW_WEATHER_HIST *yearWeather, double **fullWeathHist
 );
 
-void SW_WTH_finalize_all_weather(
+void SW_WTH_finalize_yearly_weather(
     SW_MARKOV_INPUTS *SW_MarkovIn,
     SW_WEATHER_INPUTS *SW_WeatherIn,
     SW_WEATHER_HIST *allHist,
+    SW_WEATHER_SIM *SW_WeatherSim,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
     size_t ncSuid[],
+    TimeInt currYear,
+    Bool trivialScaling,
     Bool sDom,
     LOG_INFO *LogInfo
 );
 
-void SW_WTH_init_run(SW_WEATHER_SIM *SW_WeatherSim);
+void SW_WTH_init_run(
+    SW_WEATHER_INPUTS *SW_WeatherIn, SW_WEATHER_SIM *SW_WeatherSim
+);
 
 void SW_WTH_construct(
     SW_WEATHER_INPUTS *SW_WeatherIn,
@@ -308,6 +319,7 @@ void SW_WTH_new_day(
     double snowpack[],
     TimeInt doy,
     TimeInt year,
+    TimeInt inYrIndex,
     LOG_INFO *LogInfo
 );
 

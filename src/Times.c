@@ -546,16 +546,29 @@ void timeStringISO8601(char *timeString, unsigned int stringLength) {
 
 @param[in] startYr Start year of the simulation
 @param[in] endYr End year of the simulation
+@param[in] startstart First day in first calendar year of the simulation runs
+@param[in] endend Last day in last calendar year of the simulation runs
 
 @return Total number of days between the start and end years
 */
-TimeInt Times_years_to_days(TimeInt startYr, TimeInt endYr) {
+TimeInt Times_years_to_days(
+    TimeInt startYr, TimeInt endYr, TimeInt startstart, TimeInt endend
+) {
     TimeInt year;
 
     TimeInt totalDays = 0;
+    TimeInt daysInYear;
 
     for (year = startYr; year <= endYr; year++) {
-        totalDays += Time_get_lastdoy_y(year);
+        daysInYear = Time_get_lastdoy_y(year);
+
+        if (year == startYr) {
+            totalDays = daysInYear - startstart + 1;
+        } else if (year == endYr) {
+            totalDays = endend;
+        }
+
+        totalDays += daysInYear;
     }
 
     return totalDays;

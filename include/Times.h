@@ -125,7 +125,9 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo);
 
 void timeStringISO8601(char *timeString, unsigned int stringLength);
 
-TimeInt Times_years_to_days(TimeInt startYr, TimeInt endYr);
+TimeInt Times_years_to_days(
+    TimeInt startYr, TimeInt endYr, TimeInt startstart, TimeInt endend
+);
 
 #ifdef __cplusplus
 }

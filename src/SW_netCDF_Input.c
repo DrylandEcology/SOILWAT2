@@ -5208,8 +5208,8 @@ input keys
 @param[in] tempVals An allocated space to store temporary input values
     for converting and setting into proper location
 @param[in] openNCFileIDs A list of open netCDF file identifiers
-@param[out] inputs A list of structs of the type SW_RUN_INPUTS that
-    will be filled with input
+@param[out] SW_Runs A list of n active sites of comprehensive structs
+of type SW_RUN containing all information in the simulation
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void read_spatial_topo_climate_site_inputs(
@@ -5219,7 +5219,7 @@ static void read_spatial_topo_climate_site_inputs(
     sw_converter_t ***convs,
     double tempVals[],
     int **openNCFileIDs[],
-    SW_RUN_INPUTS *inputs,
+    SW_RUN *SW_Runs,
     LOG_INFO *LogInfo
 ) {
     char ***inVarInfo;
@@ -5350,21 +5350,21 @@ static void read_spatial_topo_climate_site_inputs(
 
                 double *values[][5] = {
                     /* must match possVarNames[eSW_InSpatial] */
-                    {&inputs[site].ModelRunIn.latitude,
-                     &inputs[site].ModelRunIn.longitude},
+                    {&SW_Runs[site].RunIn.ModelRunIn.latitude,
+                     &SW_Runs[site].RunIn.ModelRunIn.longitude},
                     /* must match possVarNames[eSW_InTopo]
                         (without spatial index) */
-                    {&inputs[site].ModelRunIn.elevation,
-                     &inputs[site].ModelRunIn.slope,
-                     &inputs[site].ModelRunIn.aspect},
+                    {&SW_Runs[site].RunIn.ModelRunIn.elevation,
+                     &SW_Runs[site].RunIn.ModelRunIn.slope,
+                     &SW_Runs[site].RunIn.ModelRunIn.aspect},
                     /* must match possVarNames[eSW_InClimate]
                         (without spatial index) */
-                    {inputs[site].SkyRunIn.cloudcov,
-                     inputs[site].SkyRunIn.windspeed,
-                     inputs[site].SkyRunIn.r_humidity,
-                     inputs[site].SkyRunIn.snow_density,
-                     inputs[site].SkyRunIn.n_rain_per_day},
-                    {&inputs[site].SiteRunIn.Tsoil_constant}
+                    {SW_Runs[site].RunIn.SkyRunIn.cloudcov,
+                     SW_Runs[site].RunIn.SkyRunIn.windspeed,
+                     SW_Runs[site].RunIn.SkyRunIn.r_humidity,
+                     SW_Runs[site].RunIn.SkyRunIn.snow_density,
+                     SW_Runs[site].RunIn.SkyRunIn.n_rain_per_day},
+                    {&SW_Runs[site].RunIn.SiteRunIn.Tsoil_constant}
                 };
 
                 if (currKey != eSW_InClimate) {
@@ -5406,15 +5406,15 @@ static void read_spatial_topo_climate_site_inputs(
 
                 if (varNum == eiv_longitude && !twoDLat && !sDom) {
                     *(values[0][eiv_latitude - 1]) =
-                        inputs[0].ModelRunIn.latitude;
+                        SW_Runs[0].RunIn.ModelRunIn.latitude;
                 }
             }
         }
     }
 
     for (site = 0; site < nSites; site++) {
-        inputs[site].ModelRunIn.isnorth =
-            (Bool) (GT(inputs[site].ModelRunIn.latitude, 0.0));
+        SW_Runs[site].RunIn.ModelRunIn.isnorth =
+            (Bool) (GT(SW_Runs[site].RunIn.ModelRunIn.latitude, 0.0));
     }
 }
 
@@ -6178,6 +6178,8 @@ to convert input data to units the program can understand within the
     for converting and setting into proper location
 @param[out] inputs A list of structs of the type SW_RUN_INPUTS that
     will be filled with input
+@param[out] SW_Runs A list of n active sites of comprehensive structs
+of type SW_RUN containing all information in the simulation
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void read_veg_inputs(
@@ -6187,7 +6189,7 @@ static void read_veg_inputs(
     sw_converter_t **vegConv,
     int **vegFileIDs,
     double *tempVals,
-    SW_RUN_INPUTS *inputs,
+    SW_RUN *SW_Runs,
     LOG_INFO *LogInfo
 ) {
     const size_t numSites = SW_Domain->nActiveSuidsProc;
@@ -6336,27 +6338,27 @@ static void read_veg_inputs(
                 must match possVarNames[eSW_InVeg] (without spatial index) */
             switch (vegVarGroupCase) {
             case 0:
-                values = &inputs[site].VegProdRunIn.bare_cov.fCover;
+                values = &SW_Runs[site].RunIn.VegProdRunIn.bare_cov.fCover;
                 break;
 
             case 1:
-                values = &inputs[site].VegProdRunIn.veg[kVeg].cov.fCover;
+                values = &SW_Runs[site].RunIn.VegProdRunIn.veg[kVeg].cov.fCover;
                 break;
 
             case 2:
-                values = inputs[site].VegProdRunIn.veg[kVeg].litter;
+                values = SW_Runs[site].RunIn.VegProdRunIn.veg[kVeg].litter;
                 break;
 
             case 3:
-                values = inputs[site].VegProdRunIn.veg[kVeg].biomass;
+                values = SW_Runs[site].RunIn.VegProdRunIn.veg[kVeg].biomass;
                 break;
 
             case 4:
-                values = inputs[site].VegProdRunIn.veg[kVeg].pct_live;
+                values = SW_Runs[site].RunIn.VegProdRunIn.veg[kVeg].pct_live;
                 break;
 
             case 5:
-                values = inputs[site].VegProdRunIn.veg[kVeg].lai_conv;
+                values = SW_Runs[site].RunIn.VegProdRunIn.veg[kVeg].lai_conv;
                 break;
 
             default:
@@ -6651,8 +6653,8 @@ sizes for netCDFs to read an entire block subdomain worth of inputs
     for converting and setting into proper location
 @param[in] newSoilBuff A single (no SWMPI) or a list (SWMPI) of instances of
     SW_SOIL_RUN_INPUTS used as temporary storage when reading inputs
-@param[out] inputs A list of structs of the type SW_RUN_INPUTS that
-    will be filled with input
+@param[out] SW_Runs A list of n active sites of comprehensive structs
+of type SW_RUN containing all information in the simulation
 @param[out] siteLogs A list of LOG_INFO of size N_SUID_ASSIGN that will
 be returned with any site-specific errors/warnings
 @param[out] mainLogInfo Holds information on warnings and errors
@@ -6667,7 +6669,7 @@ static void read_soil_inputs(
     int **openSoilFileIDs,
     double *tempVals,
     SW_SOIL_RUN_INPUTS *newSoilBuff,
-    SW_RUN_INPUTS *inputs,
+    SW_RUN *SW_Runs,
     LOG_INFO *siteLogs,
     LOG_INFO *mainLogInfo
 ) {
@@ -6742,7 +6744,7 @@ static void read_soil_inputs(
 
     /* Initialize soils */
     for (input = 0; input < numSites; input++) {
-        inputs[input].SiteRunIn.n_layers = 0;
+        SW_Runs[input].RunIn.SiteRunIn.n_layers = 0;
 
         if (!hasConstSoilDepths) {
             SW_SOIL_construct(&newSoilBuff[input]);
@@ -6794,7 +6796,7 @@ static void read_soil_inputs(
             }
 
             inIdx = SW_Domain->actSiteIdx[eSW_InSoil][varNum];
-            soils = (hasConstSoilDepths) ? &inputs[input].SoilRunIn :
+            soils = (hasConstSoilDepths) ? &SW_Runs[input].RunIn.SoilRunIn :
                                            &newSoilBuff[input];
 
             /* must match possVarNames[eSW_InSoil] (without spatial index)
@@ -6888,7 +6890,7 @@ static void read_soil_inputs(
     }
 
     for (input = 0; input < numSites; input++) {
-        soils = (hasConstSoilDepths) ? &inputs[input].SoilRunIn :
+        soils = (hasConstSoilDepths) ? &SW_Runs[input].RunIn.SoilRunIn :
                                        &newSoilBuff[input];
 
         errSuid[0] = SW_Domain->globDomSuids[input][0];
@@ -6896,7 +6898,7 @@ static void read_soil_inputs(
 
         /* Derive missing soil properties and check others */
         derive_missing_soils(
-            &inputs[input].SiteRunIn.n_layers,
+            &SW_Runs[input].RunIn.SiteRunIn.n_layers,
             soils,
             readInputs,
             hasConstSoilDepths,
@@ -6910,7 +6912,7 @@ static void read_soil_inputs(
 
         if (!hasConstSoilDepths) {
             memcpy(
-                &inputs[input].SoilRunIn,
+                &SW_Runs[input].RunIn.SoilRunIn,
                 &newSoilBuff[input],
                 sizeof(SW_SOIL_RUN_INPUTS)
             );
@@ -7863,6 +7865,10 @@ to get data from netCDF
 @param[in] weathConv A list of UDUNITS2 converters that were created
 to convert input data to units the program can understand within the
 "inWeather" input key
+@param[in] inYearIndex Index of the current simulated year (base0) within
+the number of years of input we contain
+@param[in] yearIndex Index of the currently simulated year (base0) relative
+to the start year of the simulation period
 @param[in] spatStart A list of size NC_DIMS specifying pre-calculated spatial
 start indices for each dimension to read a subdomain worth of inputs
 @param[in] spatCount A list of size NC_DIMS storing calculated spatial count
@@ -7875,21 +7881,26 @@ have the inputs read for
 will be filled with input
 @param[in] siteLogs A list of LOG_INFO of size N_SUID_ASSIGN that will
 be returned with any site-specific errors/warnings
+@param[out] SW_Runs A list of n active sites of comprehensive structs
+of type SW_RUN containing all information in the simulation
 @param[out] mainLogInfo Holds information on warnings and errors
 */
 static void read_weather_input(
     SW_DOMAIN *SW_Domain,
     SW_WEATHER_INPUTS *SW_WeatherIn,
     sw_converter_t **weathConv,
+    TimeInt inYearIndex,
+    TimeInt yearIndex,
     size_t spatStart[],
     size_t spatCount[],
     int **weathFileIDs,
     double *tempVals,
-    SW_RUN_INPUTS *inputs,
     LOG_INFO *siteLogs,
+    SW_RUN *SW_Runs,
     LOG_INFO *mainLogInfo
 ) {
     size_t errSuid[NC_DIMS] = {0};
+    const TimeInt nTempYears = 1;
 
     unsigned int **weathStartEndYrs =
         SW_Domain->SW_PathInputs.ncWeatherInStartEndYrs;
@@ -7900,7 +7911,6 @@ static void read_weather_input(
     size_t start[3] = {0}; /* Up to three dimensions per variable */
     size_t count[3] = {0}; /* Up to three dimensions per variable */
     TimeInt numDays;
-    TimeInt yearIndex;
     TimeInt year;
     Bool progSiteDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
     int fIndex = 1;
@@ -7923,7 +7933,6 @@ static void read_weather_input(
         SW_Domain->SW_PathInputs.ncWeatherStartEndIndices;
     double scaleFactor;
     double addOffset;
-    unsigned int beforeFileIndex;
     int latIndex;
     int lonIndex;
     int timeIndex;
@@ -7939,9 +7948,7 @@ static void read_weather_input(
         fIndex++;
     }
 
-    allocate_temp_weather(
-        SW_WeatherIn->n_years, numSites, &tempWeatherHist, mainLogInfo
-    );
+    allocate_temp_weather(nTempYears, numSites, &tempWeatherHist, mainLogInfo);
     checkJumpToLabel(mainLogInfo->stopRun, freeMem);
 
     for (varNum = fIndex; varNum < numVarsInKey[eSW_InWeather]; varNum++) {
@@ -7958,104 +7965,98 @@ static void read_weather_input(
         start[timeIndex] = 0;
 
         weathFileIndex = SW_Domain->SW_PathInputs.weathStartFileIndex;
-        for (yearIndex = 0; yearIndex < SW_WeatherIn->n_years; yearIndex++) {
-            year = SW_Domain->startyr + yearIndex;
 
-            if (varNum == fIndex) {
-                clear_hist_weather(numSites, NULL, tempWeatherHist[yearIndex]);
+        if (varNum == fIndex) {
+            clear_hist_weather(numSites, NULL, tempWeatherHist[inYearIndex]);
+        }
+
+        year = SW_Domain->startyr + yearIndex;
+
+        while (weathFileIndex < numWeathFiles &&
+               weathStartEndYrs[weathFileIndex][1] < year) {
+
+            SW_Domain->SW_PathInputs.weathStartFileIndex++;
+            weathFileIndex = SW_Domain->SW_PathInputs.weathStartFileIndex;
+        }
+
+        numDays = numDaysInYears[yearIndex];
+        count[timeIndex] = numDays;
+
+        /* set_read_vals() recognizes NAN and nc-missingness as missing */
+        tempVals[MAX_DAYS - 1] = NAN;
+
+        varName = inVarInfo[varNum][INNCVARNAME];
+        start[timeIndex] = weatherIndices[weathFileIndex][0];
+
+        if (varHasAddScaleAtts) {
+            scaleFactor = scaleAddFactors[varNum][0];
+            addOffset = scaleAddFactors[varNum][1];
+        } else {
+            scaleFactor = 1.0;
+            addOffset = 0.0;
+        }
+
+        start[latIndex] = spatStart[0];
+        count[latIndex] = spatCount[0];
+
+        if (lonIndex > -1) {
+            count[lonIndex] = spatStart[1];
+            start[lonIndex] = spatCount[1];
+        }
+
+        ncFileID = weathFileIDs[varNum][weathFileIndex];
+
+        /* Read in an entire year's worth of weather data */
+        get_values_multiple(
+            ncFileID, varID, start, count, varName, tempVals, mainLogInfo
+        );
+        if (mainLogInfo->stopRun) {
+            goto freeMem;
+        }
+
+        stride = calc_read_offset(timeIndex, 3, count);
+
+        for (site = 0; site < numSites; site++) {
+            if (!runSims) {
+                return;
             }
 
-            beforeFileIndex = weathFileIndex;
-            while (weathFileIndex < numWeathFiles &&
-                   weathStartEndYrs[weathFileIndex][1] < year) {
-                weathFileIndex++;
-            }
-
-            numDays = numDaysInYears[yearIndex];
-            count[timeIndex] = numDays;
-            /* set_read_vals() recognizes NAN and nc-missingness as missing */
-            tempVals[MAX_DAYS - 1] = NAN;
-
-            varName = inVarInfo[varNum][INNCVARNAME];
-
-            /* Check to see if a different file has to be opened,
-               if so, we need to make sure the correct start index
-               is applied to the start index array */
-            if (weathFileIndex > beforeFileIndex) {
-                start[timeIndex] = weatherIndices[weathFileIndex][0];
-            }
-
-            if (varHasAddScaleAtts) {
-                scaleFactor = scaleAddFactors[varNum][0];
-                addOffset = scaleAddFactors[varNum][1];
-            } else {
-                scaleFactor = 1.0;
-                addOffset = 0.0;
-            }
-
-            start[latIndex] = spatStart[0];
-            count[latIndex] = spatCount[0];
+            inIdx = SW_Domain->actSiteIdx[eSW_InWeather][site];
+            writeIndex = inIdx * MAX_DAYS;
 
             if (lonIndex > -1) {
-                count[lonIndex] = spatStart[1];
-                start[lonIndex] = spatCount[1];
-            }
-
-            ncFileID = weathFileIDs[varNum][weathFileIndex];
-
-            /* Read in an entire year's worth of weather data */
-            get_values_multiple(
-                ncFileID, varID, start, count, varName, tempVals, mainLogInfo
-            );
-            if (mainLogInfo->stopRun) {
-                goto freeMem;
-            }
-
-            stride = calc_read_offset(timeIndex, 3, count);
-
-            for (site = 0; site < numSites; site++) {
-                if (!runSims) {
-                    return;
-                }
-
-                inIdx = SW_Domain->actSiteIdx[eSW_InWeather][site];
-                writeIndex = inIdx * MAX_DAYS;
-
-                if (lonIndex > -1) {
-                    if (timeIndex > latIndex && timeIndex > lonIndex) {
+                if (timeIndex > latIndex && timeIndex > lonIndex) {
+                    tempStart = inIdx * count[timeIndex];
+                } else if (timeIndex < latIndex && timeIndex < lonIndex) {
+                    tempStart = inIdx;
+                } else {
+                    if (latIndex > lonIndex) {
                         tempStart = inIdx * count[timeIndex];
-                    } else if (timeIndex < latIndex && timeIndex < lonIndex) {
-                        tempStart = inIdx;
                     } else {
-                        if (latIndex > lonIndex) {
-                            tempStart = inIdx * count[timeIndex];
-                        } else {
-                            tempStart = inIdx;
-                        }
+                        tempStart = inIdx;
                     }
-                } else { // Site domain
-                    tempStart = (timeIndex > latIndex) ?
-                                    count[timeIndex] * inIdx :
-                                    inIdx;
                 }
-
-                set_read_vals(
-                    missValFlags[varNum],
-                    isnull(doubleMissVals) ? NULL : doubleMissVals[varNum],
-                    &tempVals[tempStart],
-                    MAX_DAYS,
-                    varTypes[varNum],
-                    scaleFactor,
-                    addOffset,
-                    weathConv[varNum],
-                    stride,
-                    swFALSE,
-                    &tempWeatherHist[yearIndex][varNum - 1][writeIndex]
-                );
+            } else { // Site domain
+                tempStart =
+                    (timeIndex > latIndex) ? count[timeIndex] * inIdx : inIdx;
             }
 
-            start[timeIndex] += count[timeIndex];
+            set_read_vals(
+                missValFlags[varNum],
+                isnull(doubleMissVals) ? NULL : doubleMissVals[varNum],
+                &tempVals[tempStart],
+                MAX_DAYS,
+                varTypes[varNum],
+                scaleFactor,
+                addOffset,
+                weathConv[varNum],
+                stride,
+                swFALSE,
+                &tempWeatherHist[yearIndex][varNum - 1][writeIndex]
+            );
         }
+
+        start[timeIndex] += count[timeIndex];
     }
 
     for (site = 0; site < numSites; site++) {
@@ -8070,11 +8071,11 @@ static void read_weather_input(
             SW_WeatherIn->dailyInputFlags,
             SW_WeatherIn->fixWeatherData,
             tempWeatherHist,
-            inputs[site].ModelRunIn.elevation,
+            SW_Runs[site].RunIn.ModelRunIn.elevation,
             MAX_DAYS * inIdx,
             errSuid,
             progSiteDom,
-            inputs[site].weathRunAllHist,
+            SW_Runs[site].RunIn.weathRunAllHist,
             &siteLogs[site]
         );
     }
@@ -8142,8 +8143,8 @@ void SW_NCIN_alloc_weather_indices_years(
 @brief Read values from netCDF input files for available variables and copy
 to SW_Run
 
-@param[in,out] sw Comprehensive struct of type SW_RUN containing
-    all information in the simulation
+@param[in,out] SW_Runs A list of n active sites of comprehensive structs
+of type SW_RUN containing all information in the simulation
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
 @param[in] readConstInfo A flag specifying if the function must only
@@ -8155,38 +8156,31 @@ sizes for netCDFs to read an entire block subdomain worth of inputs
 @param[in] openNCFileIDs A list of open netCDF file identifiers; NULL if
     SWMPI is not defined
 @param[in] tempVals A temporary buffer to store any variable in
-@param[in] domSuids A list of program-domain suids of sites that will
-have the inputs read for
 @param[in] nActiveSites Number of active sites to simulate within a subdomain
 @param[in] newSoils A single (no SWMPI) or a list (SWMPI) of instances of
     SW_SOIL_RUN_INPUTS used as temporary storage when reading inputs
-@param[out] inputs A list of structs of the type SW_RUN_INPUTS that
-    will be filled with input
 @param[out] siteLogs A list of LOG_INFO of size N_SUID_ASSIGN that will
 be returned with any site-specific errors/warnings
 @param[out] mainLogInfo Holds information on warnings and errors
 */
 void SW_NCIN_read_inputs(
-    SW_RUN *sw,
+    SW_RUN *SW_Runs,
     SW_DOMAIN *SW_Domain,
     Bool readConstInfo,
     size_t spatStart[][NC_DIMS],
     size_t spatCount[][NC_DIMS],
     int **openNCFileIDs[],
     double *tempVals,
-    size_t domSuids[][2],
     size_t nActiveSites,
     SW_SOIL_RUN_INPUTS *newSoils,
-    SW_RUN_INPUTS *inputs,
     LOG_INFO *siteLogs,
     LOG_INFO *mainLogInfo
 ) {
+    const size_t yearIdx = SW_Runs[0].ModelSim.yearIdx;
+    const size_t inYearIndex = SW_Runs[0].ModelSim.inputYearIdx;
     const size_t numSites = SW_Domain->nActiveSuidsProc;
-    SW_WEATHER_INPUTS *SW_WeatherIn = &sw->WeatherIn;
     Bool **readInputs = SW_Domain->netCDFInput.readInVars;
     sw_converter_t ***convs = SW_Domain->netCDFInput.uconv;
-    unsigned int yearIn;
-    unsigned int year;
     size_t input;
     Bool readSpatial = readInputs[eSW_InSpatial][0];
     Bool readClimate = readInputs[eSW_InClimate][0];
@@ -8206,45 +8200,28 @@ void SW_NCIN_read_inputs(
 
     /* Read all activated inputs */
     if (!readConstInfo && readWeather &&
-        !SW_WeatherIn->use_weathergenerator_only) {
+        !SW_Runs[0].WeatherIn.use_weathergenerator_only) {
 
         for (input = 0; input < numSites; input++) {
-            for (yearIn = 0; yearIn < SW_WeatherIn->n_years; yearIn++) {
-                clear_hist_weather(
-                    1, &inputs[input].weathRunAllHist[yearIn], NULL
-                );
-            }
+            clear_hist_weather(
+                1, &SW_Runs[input].RunIn.weathRunAllHist[inYearIndex], NULL
+            );
         }
 
         read_weather_input(
             SW_Domain,
-            &sw->WeatherIn,
+            &SW_Runs[0].WeatherIn,
             convs[eSW_InWeather],
+            inYearIndex,
+            yearIdx,
             spatStart[eSW_InWeather],
             spatCount[eSW_InWeather],
             weathFileIDs,
             tempVals,
-            inputs,
             siteLogs,
+            SW_Runs,
             mainLogInfo
         );
-        checkReturn(mainLogInfo->stopRun);
-
-        for (input = 0; input < numSites; input++) {
-            SW_WTH_finalize_all_weather(
-                &sw->MarkovIn,
-                &sw->WeatherIn,
-                inputs[input].weathRunAllHist,
-                sw->ModelSim.cum_monthdays,
-                sw->ModelSim.days_in_month,
-                domSuids[input],
-                SW_Domain->netCDFInput.siteDoms[eSW_InDomain],
-                mainLogInfo
-            );
-            if (mainLogInfo->stopRun) {
-                break;
-            }
-        }
     } else {
         if (runSims && (readSpatial || readTopo || readClimate || readSite)) {
             read_spatial_topo_climate_site_inputs(
@@ -8254,28 +8231,24 @@ void SW_NCIN_read_inputs(
                 convs,
                 tempVals,
                 openNCFileIDs,
-                inputs,
+                SW_Runs,
                 mainLogInfo
             );
             checkReturn(mainLogInfo->stopRun);
 
             for (inIndex = 0; inIndex < nActiveSites; inIndex++) {
-                for (yearIn = 0; yearIn < SW_WeatherIn->n_years; yearIn++) {
-                    year = yearIn + SW_WeatherIn->startYear;
-
-                    SW_WTH_setWeathUsingClimate(
-                        &inputs[inIndex].weathRunAllHist[yearIn],
-                        year,
-                        SW_WeatherIn->use_cloudCoverMonthly,
-                        SW_WeatherIn->use_humidityMonthly,
-                        SW_WeatherIn->use_windSpeedMonthly,
-                        sw->ModelSim.cum_monthdays,
-                        sw->ModelSim.days_in_month,
-                        inputs[inIndex].SkyRunIn.cloudcov,
-                        inputs[inIndex].SkyRunIn.windspeed,
-                        inputs[inIndex].SkyRunIn.r_humidity
-                    );
-                }
+                SW_WTH_setWeathUsingClimate(
+                    &SW_Runs[inIndex].RunIn.weathRunAllHist[yearIdx],
+                    SW_Runs[0].ModelSim.year,
+                    SW_Runs[0].WeatherIn.use_cloudCoverMonthly,
+                    SW_Runs[0].WeatherIn.use_humidityMonthly,
+                    SW_Runs[0].WeatherIn.use_windSpeedMonthly,
+                    SW_Runs[0].ModelSim.cum_monthdays,
+                    SW_Runs[0].ModelSim.days_in_month,
+                    SW_Runs[inIndex].RunIn.SkyRunIn.cloudcov,
+                    SW_Runs[inIndex].RunIn.SkyRunIn.windspeed,
+                    SW_Runs[inIndex].RunIn.SkyRunIn.r_humidity
+                );
             }
         }
 
@@ -8287,7 +8260,7 @@ void SW_NCIN_read_inputs(
                 convs[eSW_InVeg],
                 vegFileIDs,
                 tempVals,
-                inputs,
+                SW_Runs,
                 mainLogInfo
             );
             checkReturn(mainLogInfo->stopRun);
@@ -8304,7 +8277,7 @@ void SW_NCIN_read_inputs(
                 soilFileIDs,
                 tempVals,
                 newSoils,
-                inputs,
+                SW_Runs,
                 siteLogs,
                 mainLogInfo
             );

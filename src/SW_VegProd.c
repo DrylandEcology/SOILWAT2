@@ -2046,7 +2046,7 @@ information that will be used during simulations
         - true (1), values as if cover was 100%
 @param[in] veg_method The requested method to estimate vegetation values,
     see SW_VEGPROD_INPUTS.veg_method
-@param[in] startYearWeather First year of the weather data
+@param[in] weatherYearIndex Current year index the simulation is going through
 @param[in] nYearsDynamicShort Number of years over which short-term vegetation
 predictors are summarized (as anomaly to long-term predictors)
 @param[in] nYearsDynamicLong Number of years over which long-term vegetation
@@ -2071,7 +2071,7 @@ void SW_VPD_new_year(
     SW_SOIL_SIM *SW_SoilSim,
     Bool isBiomAsIf100Cover,
     int veg_method,
-    TimeInt startYearWeather,
+    TimeInt weatherYearIndex,
     TimeInt nYearsDynamicShort,
     TimeInt nYearsDynamicLong,
     unsigned int methodMaxDepthSoilTemperature,
@@ -2100,7 +2100,6 @@ void SW_VPD_new_year(
     TimeInt doy; /* base1 */
     TimeInt yearIdx = SW_ModelSim->yearIdx;
     TimeInt yearIdxSpinSim = SW_ModelSim->yearIdxSpinSim;
-    TimeInt weatherYearIndex = SW_ModelSim->year - startYearWeather;
     int k;
     int mon;
     Bool allocAnnTemp = (Bool) (methodMaxDepthSoilTemperature == 1);
