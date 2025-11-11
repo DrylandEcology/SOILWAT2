@@ -60,7 +60,6 @@ void SW_CTL_clear_model(Bool full_reset, SW_RUN *sw);
 void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *LogInfo);
 
 void SW_CTL_read_inputs_from_disk(
-    int rank,
     SW_RUN *sw,
     SW_DOMAIN *SW_Domain,
     Bool *hasConsistentSoilLayerDepths,

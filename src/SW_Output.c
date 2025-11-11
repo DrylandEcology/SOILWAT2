@@ -2993,8 +2993,6 @@ We have two options to specify time steps:
       column `PERIOD` for each output variable. Note: only one time step per
       output variable can be specified.
 
-@param[in] rank Process number known to MPI for the current process (aka rank);
-rank here will be used to determine who creates the output directory
 @param[in,out] sw Comprehensive structure holding all information
     dealt with in SOILWAT2
 @param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
@@ -3005,7 +3003,6 @@ return an updated name to this directory after reading output input file
 @param[out] LogInfo Holds information on warnings and errors
  */
 void SW_OUT_read(
-    int rank,
     SW_RUN *sw,
     SW_OUT_DOM *OutDom,
     char *txtInFiles[],
@@ -3289,17 +3286,6 @@ void SW_OUT_read(
     // Determine number of used years/months/weeks/days in simulation period
     SW_OUT_set_nrow(&sw->ModelIn, OutDom->use_OutPeriod, OutDom->nrow_OUT);
 #endif
-
-    if (rank == ROOT_PROC) {
-        if (DirExists(outDir)) {
-            SW_F_CleanOutDir(outDir, LogInfo);
-        } else {
-            MkDir(outDir, LogInfo);
-        }
-        if (LogInfo->stopRun) {
-            goto closeFile;
-        }
-    }
 
 closeFile: { CloseFile(&f, LogInfo); }
 }
@@ -3950,6 +3936,20 @@ void SW_OUT_create_files(
     }
 #else
     (void) rank;
+#endif
+
+#if defined(SW_OUTTEXT) || defined(SWNETCDF)
+    if (rank == ROOT_PROC) {
+        if (DirExists(SW_Domain->SW_PathInputs.outputPrefix)) {
+            /* Remove files in output directory (txt-mode: *; nc-mode: *.csv) */
+            SW_F_CleanOutDir(SW_Domain->SW_PathInputs.outputPrefix, LogInfo);
+        } else {
+            MkDir(SW_Domain->SW_PathInputs.outputPrefix, LogInfo);
+        }
+        if (LogInfo->stopRun) {
+            return; /* Exit prematurely due to error */
+        }
+    }
 #endif
 
 #if defined(SOILWAT) && defined(SW_OUTTEXT)

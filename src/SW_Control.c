@@ -1334,7 +1334,6 @@ reSet: {
 @brief Reads inputs from disk and makes a print statement if there is an error
         in doing so.
 
-@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in,out] sw Comprehensive struct of type SW_RUN containing
 all information in the simulation
 @param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
@@ -1345,7 +1344,6 @@ when dealing with nc inputs)
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_read_inputs_from_disk(
-    int rank,
     SW_RUN *sw,
     SW_DOMAIN *SW_Domain,
     Bool *hasConsistentSoilLayerDepths,
@@ -1526,7 +1524,6 @@ void SW_CTL_read_inputs_from_disk(
 #endif
 
     SW_OUT_read(
-        rank,
         sw,
         &SW_Domain->OutDom,
         SW_PathInputs->txtInFiles,
