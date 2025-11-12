@@ -34,42 +34,19 @@ in SW_VegProd.c and SW_Flow_lib.c.
 /* --------------------------------------------------- */
 
 /**
-@brief Allocate ppm and existing_year arrays
+@brief Allocate ppm array
 
 @param[in] n_years Number of years in simulation
 @param[in,out] ppm A 1D array holding atmospheric CO2 concentration
 values (units ppm)
-@param[in,out] existing_years A list of years input has already encountered
 @param[in,out] LogInfo Holds information on warnings and errors
 */
-void SW_CBN_alloc_ppm_existing_years(
-    TimeInt n_years, double **ppm, int **existing_years, LOG_INFO *LogInfo
-) {
-    TimeInt yr;
+void SW_CBN_alloc_ppm(TimeInt n_years, double **ppm, LOG_INFO *LogInfo) {
+    *ppm = (double *) Mem_Calloc(n_years, sizeof(double), "alloc_ppm", LogInfo);
+}
 
-    *ppm = (double *) Mem_Malloc(
-        sizeof(double) * n_years, "alloc_ppm_existing_years", LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return;
-    }
-
-    for (yr = 0; yr < n_years; yr++) {
-        (*ppm)[yr] = 0;
-    }
-
-    if (!isnull(existing_years)) {
-        *existing_years = (int *) Mem_Malloc(
-            sizeof(int) * n_years, "alloc_ppm_existing_years", LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return;
-        }
-
-        for (yr = 0; yr < n_years; yr++) {
-            (*existing_years)[yr] = 0;
-        }
-    }
+void SW_CBN_init_ptrs(SW_CARBON_INPUTS *SW_CarbonIn) {
+    SW_CarbonIn->ppm = NULL;
 }
 
 /**
@@ -94,7 +71,34 @@ CO2-related data
 void SW_CBN_deconstruct(SW_CARBON_INPUTS *SW_CarbonIn) {
     if (!isnull(SW_CarbonIn->ppm)) {
         free((void *) SW_CarbonIn->ppm);
+        SW_CarbonIn->ppm = NULL;
     }
+}
+
+void SW_CBN_setup(
+    SW_CARBON_INPUTS *SW_CarbonIn,
+    TimeInt startYr,
+    TimeInt endYr,
+    char *txtInFiles[],
+    TimeInt vegYear,
+    LOG_INFO *LogInfo
+) {
+    // For efficiency, don't read carbon.in if neither multiplier is being used
+    // We can do this because SW_VPD_construct already populated the multipliers
+    // with default values
+    if (!SW_CarbonIn->use_bio_mult && !SW_CarbonIn->use_wue_mult) {
+        return;
+    }
+
+
+    TimeInt n_years = endYr - startYr + 1;
+
+    SW_CBN_alloc_ppm(n_years, &SW_CarbonIn->ppm, LogInfo);
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    SW_CBN_read(SW_CarbonIn, startYr, endYr, txtInFiles, vegYear, LogInfo);
 }
 
 /**
@@ -123,14 +127,6 @@ void SW_CBN_read(
     TimeInt vegYear,
     LOG_INFO *LogInfo
 ) {
-    // For efficiency, don't read carbon.in if neither multiplier is being used
-    // We can do this because SW_VPD_construct already populated the multipliers
-    // with default values
-    if (!SW_CarbonIn->use_bio_mult && !SW_CarbonIn->use_wue_mult) {
-        return; // Exit function prematurely due to error
-    }
-
-    /* Reading carbon.in */
     FILE *f;
     char helpStr[64];
     char yearStr[5];
@@ -157,11 +153,10 @@ void SW_CBN_read(
         return; // Exit function prematurely due to error
     }
 
-    SW_CBN_alloc_ppm_existing_years(
-        n_years, &SW_CarbonIn->ppm, &existing_years, LogInfo
-    );
+    existing_years =
+        (int *) Mem_Calloc(n_years, sizeof(int), "SW_CBN_read()", LogInfo);
     if (LogInfo->stopRun) {
-        goto closeFile;
+        goto cleanUp;
     }
 
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
@@ -177,12 +172,12 @@ void SW_CBN_read(
                 "(SW_Carbon) Expected two values but found '%s'.",
                 inbuf
             );
-            goto closeFile;
+            goto cleanUp;
         }
 
         year = (TimeInt) sw_strtoi(yearStr, MyFileName, LogInfo);
         if (LogInfo->stopRun) {
-            goto closeFile;
+            goto cleanUp;
         }
 
         /* Identify the scenario(s) */
@@ -208,7 +203,7 @@ void SW_CBN_read(
         /* Read aCO2 [ppm] */
         ppm = sw_strtod(helpStr, MyFileName, LogInfo);
         if (LogInfo->stopRun) {
-            goto closeFile;
+            goto cleanUp;
         }
 
         /* Save aCO2 during vegetation reference year */
@@ -232,7 +227,7 @@ void SW_CBN_read(
                 year,
                 SW_CarbonIn->scenario
             );
-            goto closeFile;
+            goto cleanUp;
         }
         existing_years[yearBase0] = 1;
 
@@ -247,7 +242,7 @@ void SW_CBN_read(
     // the scenario
     if (fileWasEmpty == 1) {
         LogError(LogInfo, LOGERROR, "(SW_Carbon) '%s' was empty.", MyFileName);
-        goto closeFile;
+        goto cleanUp;
     }
 
     // A scenario must be found in order for ppm to have a positive value
@@ -258,7 +253,7 @@ void SW_CBN_read(
             "(SW_Carbon) No scenario(s) '%.64s' and associated CO2 data found.",
             SW_CarbonIn->scenario
         );
-        goto closeFile;
+        goto cleanUp;
     }
 
     // Ensure that the desired years were calculated
@@ -271,7 +266,7 @@ void SW_CBN_read(
                 yearBase0 + startYr,
                 SW_CarbonIn->scenario
             );
-            goto closeFile;
+            goto cleanUp;
         }
     }
 
@@ -283,10 +278,10 @@ void SW_CBN_read(
             "(SW_Carbon) No CO2 data found for vegetation reference year %d.",
             vegYear
         );
-        goto closeFile;
+        goto cleanUp;
     }
 
-closeFile: {
+cleanUp: {
     CloseFile(&f, LogInfo);
 
     if (!isnull(existing_years)) {

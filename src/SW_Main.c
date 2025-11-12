@@ -119,7 +119,6 @@ int main(int argc, char **argv) {
 
     // read user inputs
     SW_CTL_read_inputs_from_disk(
-        rank,
         &sw_template,
         &SW_Domain,
         &SW_Domain.hasConsistentSoilLayerDepths,

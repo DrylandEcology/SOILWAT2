@@ -488,7 +488,6 @@ void SW_RUN_deepCopy(
 ) {
     const TimeInt n_weathYears = 1;
     TimeInt n_years = source->ModelIn.endyr - source->ModelIn.startyr + 1;
-    int **dummyExistYears = NULL;
 
     memcpy(dest, source, sizeof(*dest));
 
@@ -535,9 +534,8 @@ void SW_RUN_deepCopy(
         return; // Exit function prematurely due to error
     }
 
-    SW_CBN_alloc_ppm_existing_years(
-        n_years, &dest->CarbonIn.ppm, dummyExistYears, LogInfo
-    );
+    SW_CBN_init_ptrs(&dest->CarbonIn);
+    SW_CBN_alloc_ppm(n_years, &dest->CarbonIn.ppm, LogInfo);
     if (LogInfo->stopRun) {
         return;
     }
@@ -935,6 +933,7 @@ void SW_CTL_init_ptrs(SW_RUN *sw) {
     SW_VES_init_ptrs(&sw->VegEstabIn, sw->ves_p_accu, sw->ves_p_oagg);
     SW_OUT_init_ptrs(&sw->OutRun, &sw->SW_PathOutputs);
     SW_SWC_init_ptrs(&sw->SoilWatIn, &sw->SoilWatSim);
+    SW_CBN_init_ptrs(&sw->CarbonIn);
 }
 
 /**
@@ -1449,7 +1448,6 @@ reSet: {
 @brief Reads inputs from disk and makes a print statement if there is an error
         in doing so.
 
-@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in,out] sw Comprehensive struct of type SW_RUN containing
 all information in the simulation
 @param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
@@ -1460,7 +1458,6 @@ when dealing with nc inputs)
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_CTL_read_inputs_from_disk(
-    int rank,
     SW_RUN *sw,
     SW_DOMAIN *SW_Domain,
     Bool *hasConsistentSoilLayerDepths,
@@ -1641,7 +1638,6 @@ void SW_CTL_read_inputs_from_disk(
 #endif
 
     SW_OUT_read(
-        rank,
         sw,
         &SW_Domain->OutDom,
         SW_PathInputs->txtInFiles,
@@ -1657,7 +1653,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    SW_CBN_read(
+    SW_CBN_setup(
         &sw->CarbonIn,
         sw->ModelIn.startyr,
         sw->ModelIn.endyr,

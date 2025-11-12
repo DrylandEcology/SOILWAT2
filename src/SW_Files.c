@@ -91,18 +91,16 @@ static FILE *create_logfile(int rank, const char *fileName, LOG_INFO *LogInfo) {
 /* --------------------------------------------------- */
 
 /**
-@brief Removes all *.csv files from the specified directory.
+@brief Removes files from the specified directory.
 
-@param[in] outDir Name of the output directory to clean
+If in txt-mode, then all files in the specified directory are removed.
+If in nc-mode, then csv-files (pattern *.csv) are removed.
+
+@param[in] outDir Name of the directory to clean
 @param[out] LogInfo Holds information on warnings and errors
-
-@sideeffect *s Updated name of the first file to read for filenames, or NULL.
-If NULL, then read from DFLT_FIRSTFILE or whichever filename was set previously.
 */
 void SW_F_CleanOutDir(char *outDir, LOG_INFO *LogInfo) {
-    /* AKT 08/28/2016
-     *  remove old output and/or create the output directories if needed */
-    /* borrow inbuf for filenames */
+    /* AKT 08/28/2016 */
 
     char inbuf[FILENAME_MAX] = {'\0'};
     Bool clearDir = swTRUE;
