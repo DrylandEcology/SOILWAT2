@@ -1711,14 +1711,14 @@ void generateMissingWeather(
     unsigned int day;
     unsigned int nFilledLOCF;
 
-    double yesterdayPPT = SW_WeathSim->ppt;
-    double yesterdayTempMin = SW_WeathSim->temp_min;
-    double yesterdayTempMax = SW_WeathSim->temp_max;
-    double yesterdayCloudCov = SW_WeathSim->cloudCover;
-    double yesterdayWindSpeed = SW_WeathSim->windSpeed;
-    double yesterdayRelHum = SW_WeathSim->relHumidity;
-    double yesterdayShortWR = SW_WeathSim->shortWaveRad;
-    double yesterdayActVP = SW_WeathSim->actualVaporPressure;
+    double yesterdayPPT = SW_WeathSim->eoy_ppt;
+    double yesterdayTempMin = SW_WeathSim->eoy_temp_min;
+    double yesterdayTempMax = SW_WeathSim->eoy_temp_max;
+    double yesterdayCloudCov = SW_WeathSim->eoy_cloudCover;
+    double yesterdayWindSpeed = SW_WeathSim->eoy_windSpeed;
+    double yesterdayRelHum = SW_WeathSim->eoy_relHumidity;
+    double yesterdayShortWR = SW_WeathSim->eoy_shortWaveRad;
+    double yesterdayActVP = SW_WeathSim->eoy_actualVaporPressure;
 
     Bool any_missing;
     Bool missing_Tmax = swFALSE;
@@ -2258,6 +2258,12 @@ void SW_WTH_init_run(
     SW_WeatherSim->surfaceRunoff = SW_WeatherSim->surfaceRunon = 0.;
     SW_WeatherSim->soil_inf = 0.;
 
+    SW_WeatherSim->eoy_temp_max = SW_WeatherSim->eoy_temp_min = SW_MISSING;
+    SW_WeatherSim->eoy_ppt = SW_WeatherSim->eoy_cloudCover = SW_MISSING;
+    SW_WeatherSim->eoy_windSpeed = SW_WeatherSim->eoy_relHumidity =
+        SW_WeatherSim->eoy_shortWaveRad =
+            SW_WeatherSim->eoy_actualVaporPressure = SW_MISSING;
+
     SW_WeatherSim->trivialScaling = swTRUE;
 
     // Check if we have any non-trivial scaling parameter
@@ -2292,6 +2298,7 @@ simulation information pretaining to meteorological data
 @param[in] year Current year being run in the simulation
 @param[in] inYrIndex Index of the year relative to how many years of inputs
 are read in at once
+@param[in] endDoy Last day of the current year
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_WTH_new_day(
@@ -2303,6 +2310,7 @@ void SW_WTH_new_day(
     TimeInt doy,
     TimeInt year,
     TimeInt inYrIndex,
+    TimeInt endDoy,
     LOG_INFO *LogInfo
 ) {
     /* =================================================== */
@@ -2372,6 +2380,19 @@ void SW_WTH_new_day(
     SW_WeatherSim->shortWaveRad = allHist[inYrIndex].shortWaveRad[doy0];
     SW_WeatherSim->actualVaporPressure =
         allHist[inYrIndex].actualVaporPressure[doy0];
+
+    if (doy == endDoy) {
+        SW_WeatherSim->eoy_temp_max = allHist[inYrIndex].temp_max[doy0];
+        SW_WeatherSim->eoy_temp_min = allHist[inYrIndex].temp_min[doy0];
+        SW_WeatherSim->eoy_ppt = allHist[inYrIndex].ppt[doy0];
+        SW_WeatherSim->eoy_cloudCover = allHist[inYrIndex].cloudcov_daily[doy0];
+        SW_WeatherSim->eoy_windSpeed = allHist[inYrIndex].windspeed_daily[doy0];
+        SW_WeatherSim->eoy_relHumidity =
+            allHist[inYrIndex].r_humidity_daily[doy0];
+        SW_WeatherSim->eoy_shortWaveRad = allHist[inYrIndex].shortWaveRad[doy0];
+        SW_WeatherSim->eoy_actualVaporPressure =
+            allHist[inYrIndex].actualVaporPressure[doy0];
+    }
 
     SW_WeatherSim->temp_avg = allHist[inYrIndex].temp_avg[doy0];
 

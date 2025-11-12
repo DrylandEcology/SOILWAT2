@@ -449,6 +449,7 @@ static void begin_day(SW_RUN *sw, LOG_INFO *LogInfo) {
         sw->ModelSim.doy,
         sw->ModelSim.year,
         sw->ModelSim.inputYearIdx,
+        sw->ModelSim.lastdoy,
         LogInfo
     );
 }

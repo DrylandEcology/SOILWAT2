@@ -913,6 +913,11 @@ typedef struct {
     /** Daily mean near-surface actual vapor pressure [kPa] */
     double actualVaporPressure;
 
+    /** End of previous year values */
+    double eoy_temp_max, eoy_temp_min, eoy_ppt;
+    double eoy_cloudCover, eoy_windSpeed, eoy_relHumidity;
+    double eoy_shortWaveRad, eoy_actualVaporPressure;
+
     /** Weather values used throughout the simulation */
     double snowRunoff, surfaceRunoff, surfaceRunon, soil_inf, surfaceAvg;
     double snow, snowmelt, snowloss, surfaceMax, surfaceMin;

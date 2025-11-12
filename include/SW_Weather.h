@@ -320,6 +320,7 @@ void SW_WTH_new_day(
     TimeInt doy,
     TimeInt year,
     TimeInt inYrIndex,
+    TimeInt endDoy,
     LOG_INFO *LogInfo
 );
 
