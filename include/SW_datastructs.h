@@ -31,7 +31,7 @@
 #define SW_OUTTEXT
 #endif
 
-#define SW_NINFILES 19                       // For input `txtInFiles`
+#define SW_NINFILES 20                       // For input `txtInFiles`
 #define SW_NOUTFILES 8                       // For output `txtInFiles`
 #define SW_NFILES SW_NINFILES + SW_NOUTFILES // For `txtInFiles`
 #define SW_NVARDOM 2                         // For `InFilesNC`

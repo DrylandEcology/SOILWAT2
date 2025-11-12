@@ -245,6 +245,10 @@ void SW_NCIN_alloc_temp_inputs(
     SW_DOMAIN *SW_Domain, double **tempVals, LOG_INFO *LogInfo
 );
 
+void SW_NCIN_create_cache_file(
+    SW_DOMAIN *SW_Domain, SW_RUN *sw_template, LOG_INFO *main_LogInfo
+);
+
 #ifdef __cplusplus
 }
 #endif
