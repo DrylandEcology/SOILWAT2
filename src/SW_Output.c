@@ -213,8 +213,8 @@ static void sumof_ves(SW_VEGESTAB_SIM *v, SW_VEGESTAB_OUTPUTS *s, OutKey k);
 
 static void sumof_vpd(
     SW_VEGPROD_OUTPUTS *s,
-    VegTypeRunIn vegRunIn[],
-    VegTypeSim vegSim[],
+    VegTypeRunIn *vegRunIn,
+    VegTypeSim *vegSim,
     OutKey k,
     TimeInt doy,
     LOG_INFO *LogInfo
@@ -337,8 +337,8 @@ Bool has_keyname_soillayers(const char *var) {
 
 static void sumof_vpd(
     SW_VEGPROD_OUTPUTS *s,
-    VegTypeRunIn vegRunIn[],
-    VegTypeSim vegSim[],
+    VegTypeRunIn *vegRunIn,
+    VegTypeSim *vegSim,
     OutKey k,
     TimeInt doy,
     LOG_INFO *LogInfo
@@ -353,19 +353,20 @@ static void sumof_vpd(
     // scale biomass by fCover to obtain biomass as observed in total vegetation
     case eSW_Biomass:
         ForEachVegType(ik) {
-            tmp = vegSim[ik].biomass_daily[doy] * vegRunIn[ik].cov.fCover;
-            s->veg[ik].biomass_inveg += tmp;
+            tmp = vegSim->biomass_daily[ik][doy] * vegRunIn->cov[ik].fCover;
+            s->veg.biomass_inveg[ik] += tmp;
             s->biomass_total += tmp;
 
-            tmp = vegSim[ik].litter_daily[doy] * vegRunIn[ik].cov.fCover;
-            s->veg[ik].litter_inveg += tmp;
+            tmp = vegSim->litter_daily[ik][doy] * vegRunIn->cov[ik].fCover;
+            s->veg.litter_inveg[ik] += tmp;
             s->litter_total += tmp;
 
-            tmp = vegSim[ik].biolive_daily[doy] * vegRunIn[ik].cov.fCover;
-            s->veg[ik].biolive_inveg += tmp;
+            tmp = vegSim->biolive_daily[ik][doy] * vegRunIn->cov[ik].fCover;
+            s->veg.biolive_inveg[ik] += tmp;
             s->biolive_total += tmp;
 
-            s->LAI += vegSim[ik].lai_live_daily[doy] * vegRunIn[ik].cov.fCover;
+            s->LAI +=
+                vegSim->lai_live_daily[ik][doy] * vegRunIn->cov[ik].fCover;
         }
         break;
 
@@ -957,14 +958,14 @@ static void average_for(
 
         case eSW_Biomass:
             ForEachVegType(i) {
-                sw->vp_p_oagg[pd].veg[i].biomass_inveg =
-                    sw->vp_p_accu[pd].veg[i].biomass_inveg / div;
+                sw->vp_p_oagg[pd].veg.biomass_inveg[i] =
+                    sw->vp_p_accu[pd].veg.biomass_inveg[i] / div;
 
-                sw->vp_p_oagg[pd].veg[i].litter_inveg =
-                    sw->vp_p_accu[pd].veg[i].litter_inveg / div;
+                sw->vp_p_oagg[pd].veg.litter_inveg[i] =
+                    sw->vp_p_accu[pd].veg.litter_inveg[i] / div;
 
-                sw->vp_p_oagg[pd].veg[i].biolive_inveg =
-                    sw->vp_p_accu[pd].veg[i].biolive_inveg / div;
+                sw->vp_p_oagg[pd].veg.biolive_inveg[i] =
+                    sw->vp_p_accu[pd].veg.biolive_inveg[i] / div;
             }
 
             sw->vp_p_oagg[pd].biomass_total =
@@ -1107,8 +1108,8 @@ static void collect_sums(
             case eVPD:
                 sumof_vpd(
                     &sw->vp_p_accu[op],
-                    sw->RunIn.VegProdRunIn.veg,
-                    sw->VegProdSim.veg,
+                    &sw->RunIn.VegProdRunIn.veg,
+                    &sw->VegProdSim.veg,
                     (OutKey) k,
                     sw->ModelSim.doy,
                     LogInfo
@@ -2686,7 +2687,7 @@ void SW_OUT_set_colnames(
     }
 #endif
     for (i = 0; i < ncol_OUT[eSW_Estab]; i++) {
-        colnames_OUT[eSW_Estab][i] = Str_Dup(parmsIn[i].sppname, LogInfo);
+        colnames_OUT[eSW_Estab][i] = Str_Dup(parmsIn->sppname[i], LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -4126,7 +4127,7 @@ void echo_all_inputs(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     );
     echo_VegEstab(
         sw->RunIn.SoilRunIn.width,
-        sw->VegEstabIn.parms,
+        &sw->VegEstabIn.parms,
         sw->VegEstabIn.count,
         LogInfo
     );

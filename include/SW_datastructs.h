@@ -564,21 +564,21 @@ typedef struct {
 typedef struct {
     /** Data type that describes cover attributes of a surface type
         that can be changed before every simulation run */
-    CoverTypeRunIn cov;
+    CoverTypeRunIn cov[NVEGTYPES];
 
     double
         /** Monthly litter amount [g / m2];
             user input from file `Input/veg.in` */
-        litter[MAX_MONTHS],
+        litter[NVEGTYPES][MAX_MONTHS],
         /** Monthly aboveground biomass [g / m2];
           user input from file `Input/veg.in` */
-        biomass[MAX_MONTHS],
+        biomass[NVEGTYPES][MAX_MONTHS],
         /** Monthly live biomass in percent of aboveground biomass;
           user input from file `Input/veg.in` */
-        pct_live[MAX_MONTHS],
+        pct_live[NVEGTYPES][MAX_MONTHS],
         /** Parameter to translate biomass to LAI = 1 [g / m2];
           user input from file `Input/veg.in` */
-        lai_conv[MAX_MONTHS];
+        lai_conv[NVEGTYPES][MAX_MONTHS];
 } VegTypeRunIn;
 
 /** Data type that stores values set and used purely for simulation purposes
@@ -587,38 +587,38 @@ typedef struct {
     double
         /** Daily litter amount [g / m2]
             as if this vegetation type covers 100% of the simulated surface */
-        litter_daily[MAX_DAYS + 1],
+        litter_daily[NVEGTYPES][MAX_DAYS + 1],
         /** Daily aboveground biomass [g / m2]
             as if this vegetation type covers 100% of the simulated surface */
-        biomass_daily[MAX_DAYS + 1],
+        biomass_daily[NVEGTYPES][MAX_DAYS + 1],
         /** Daily live biomass in percent of aboveground biomass */
-        pct_live_daily[MAX_DAYS + 1],
+        pct_live_daily[NVEGTYPES][MAX_DAYS + 1],
         /** Daily height of vegetation canopy [cm] */
-        veg_height_daily[MAX_DAYS + 1],
+        veg_height_daily[NVEGTYPES][MAX_DAYS + 1],
         /** Daily parameter value to translate biomass to LAI = 1 [g / m2] */
-        lai_conv_daily[MAX_DAYS + 1],
+        lai_conv_daily[NVEGTYPES][MAX_DAYS + 1],
         /** Daily LAI of live biomass [m2 / m2]
             as if this vegetation type covers 100% of the simulated surface */
-        lai_live_daily[MAX_DAYS + 1],
+        lai_live_daily[NVEGTYPES][MAX_DAYS + 1],
         /** Daily total "compound" leaf area index [m2 / m2]
             as if this vegetation type covers 100% of the simulated surface */
-        bLAI_total_daily[MAX_DAYS + 1],
+        bLAI_total_daily[NVEGTYPES][MAX_DAYS + 1],
         /** Daily live biomass [g / m2]
             as if this vegetation type covers 100% of the simulated surface */
-        biolive_daily[MAX_DAYS + 1],
+        biolive_daily[NVEGTYPES][MAX_DAYS + 1],
         /** Daily dead standing biomass [g / m2]
             as if this vegetation type covers 100% of the simulated surface */
-        biodead_daily[MAX_DAYS + 1],
+        biodead_daily[NVEGTYPES][MAX_DAYS + 1],
         /** Daily sum of aboveground biomass & litter [g / m2]
             as if this vegetation type covers 100% of the simulated surface */
-        total_agb_daily[MAX_DAYS + 1];
+        total_agb_daily[NVEGTYPES][MAX_DAYS + 1];
 
     double
         /** Calculated multipliers for CO2-effects:
           - column \ref BIO_INDEX holds biomass multipliers
           - column \ref WUE_INDEX holds water-use-efficiency multipliers
           - rows represent years */
-        *co2_multipliers[2];
+        *co2_multipliers[NVEGTYPES][2];
 } VegTypeSim;
 
 /** Data type that is static through every simulation run describing
@@ -626,109 +626,110 @@ typedef struct {
 typedef struct {
     /** Data type that describes cover attributes of a surface type
         that is static through all simulation runs */
-    CoverTypeIn cov;
+    CoverTypeIn cov[NVEGTYPES];
 
     tanfunc_t
         /** Parameters to calculate canopy height based on biomass;
           user input from file `Input/veg.in` */
-        cnpy;
+        cnpy[NVEGTYPES];
     /** Constant canopy height: if > 0 then constant canopy height [cm] and
       overriding cnpy-tangens = f(biomass);
       user input from file `Input/veg.in` */
-    double canopy_height_constant;
+    double canopy_height_constant[NVEGTYPES];
 
     tanfunc_t
         /** Shading effect on transpiration based on live and dead biomass;
           user input from file `Input/veg.in` */
-        tr_shade_effects;
+        tr_shade_effects[NVEGTYPES];
 
     double
         /** Parameter of live and dead biomass shading effects;
              user input from file `Input/veg.in` */
-        shade_scale,
+        shade_scale[NVEGTYPES],
         /** Maximal dead biomass for shading effects;
              user input from file `Input/veg.in` */
-        shade_deadmax;
+        shade_deadmax[NVEGTYPES];
 
     Bool
         /** Flag for hydraulic redistribution/lift:
           1, simulate; 0, don't simulate;
           user input from file `Input/veg.in` */
-        flagHydraulicRedistribution;
+        flagHydraulicRedistribution[NVEGTYPES];
 
     double
         /** Parameter for hydraulic redistribution: maximum radial soil-root
           conductance of the entire active root system for water
           [cm / (-bar * day)];
           user input from file `Input/veg.in` */
-        maxCondroot,
+        maxCondroot[NVEGTYPES],
         /** Parameter for hydraulic redistribution: soil water potential [-bar]
           where conductance is reduced by 50%;
           user input from file `Input/veg.in` */
-        swpMatric50,
+        swpMatric50[NVEGTYPES],
         /** Parameter for hydraulic redistribution: shape parameter for the
           empirical relationship from van Genuchten to model relative soil-root
           conductance for water;
           user input from file `Input/veg.in` */
-        shapeCond;
+        shapeCond[NVEGTYPES];
 
     double
         /** Critical soil water potential below which vegetation cannot sustain
           transpiration [-bar];
           user input from file `Input/veg.in` */
-        SWPcrit;
+        SWPcrit[NVEGTYPES];
 
     double
         /** Parameter for vegetation interception;
           user input from file `Input/veg.in` */
-        veg_kSmax,
+        veg_kSmax[NVEGTYPES],
         /** Parameter for vegetation interception parameter;
           user input from file `Input/veg.in` */
-        veg_kdead,
+        veg_kdead[NVEGTYPES],
         /** Parameter for litter interception;
           user input from file `Input/veg.in` */
-        lit_kSmax;
+        lit_kSmax[NVEGTYPES];
 
     double
         /** Parameter for partitioning potential rates of bare-soil evaporation
           and transpiration;
           user input from file `Input/veg.in` */
-        EsTpartitioning_param,
+        EsTpartitioning_param[NVEGTYPES],
         /** Parameter for scaling and limiting bare soil evaporation rate;
           user input from file `Input/veg.in` */
-        Es_param_limit;
+        Es_param_limit[NVEGTYPES];
 
     double
         /** Parameter for CO2-effects on biomass;
           user input from file `Input/veg.in` */
-        co2_bio_coeff1,
+        co2_bio_coeff1[NVEGTYPES],
         /** Parameter for CO2-effects on biomass;
           user input from file `Input/veg.in` */
-        co2_bio_coeff2,
+        co2_bio_coeff2[NVEGTYPES],
         /** Parameter for CO2-effects on water-use-efficiency;
           user input from file `Input/veg.in` */
-        co2_wue_coeff1,
+        co2_wue_coeff1[NVEGTYPES],
         /** Parameter for CO2-effects on water-use-efficiency;
           user input from file `Input/veg.in` */
-        co2_wue_coeff2;
+        co2_wue_coeff2[NVEGTYPES];
 } VegTypeIn;
 
 typedef struct {
     // biomass [g/m2] per vegetation type as observed in total vegetation
     // (reduced from 100% cover per vegtype (inputs) to actual cover
     // (simulated))
-    double biomass_inveg, biolive_inveg, litter_inveg;
+    double biomass_inveg[NVEGTYPES], biolive_inveg[NVEGTYPES],
+        litter_inveg[NVEGTYPES];
 } VegTypeOut;
 
 typedef struct {
     // biomass [g/m2] per vegetation type as observed in total vegetation
-    VegTypeOut veg[NVEGTYPES];
+    VegTypeOut veg;
     // biomass [g/m2] of total vegetation
     double biomass_total, biolive_total, litter_total, LAI;
 } SW_VEGPROD_OUTPUTS;
 
 typedef struct {
-    VegTypeSim veg[NVEGTYPES];
+    VegTypeSim veg;
 
     double *annTemp,          /**< Dynamic array of size n years holding the
                                    mean annual monthly temperature for each year */
@@ -786,7 +787,7 @@ typedef struct {
 
 /** Data type to describe the surface cover of a SOILWAT2 simulation run */
 typedef struct {
-    VegTypeIn veg[NVEGTYPES];
+    VegTypeIn veg;
     CoverTypeIn bare_cov;
 
     /** Calendar year corresponding to vegetation inputs */
@@ -840,7 +841,7 @@ typedef struct {
 
 typedef struct {
     /** Data for each vegetation type */
-    VegTypeRunIn veg[NVEGTYPES];
+    VegTypeRunIn veg;
 
     /** Bare-ground cover of plot that is not occupied by vegetation;
         user input from file `Input/veg.in` */
@@ -1363,54 +1364,66 @@ typedef struct {
     /* see COMMENT-1 below for more information on these vars */
 
     /* THESE VARIABLES CAN CHANGE VALUE IN THE MODEL */
-    TimeInt estab_doy,    /* day of establishment for this plant */
-        germ_days,        /* elapsed days since germination with no estab */
-        drydays_postgerm, /* did sprout get too dry for estab? */
-        wetdays_for_germ, /* keep track of consecutive wet days */
-        wetdays_for_estab;
-    Bool germd,   /* has this plant germinated yet?  */
-        no_estab; /* if swTRUE, can't attempt estab for remainder of year */
+    TimeInt estab_doy[MAX_NSPECIES], /* day of establishment for this plant */
+        germ_days[MAX_NSPECIES], /* elapsed days since germination with no estab
+                                  */
+        drydays_postgerm[MAX_NSPECIES], /* did sprout get too dry for estab? */
+        wetdays_for_germ[MAX_NSPECIES], /* keep track of consecutive wet days */
+        wetdays_for_estab[MAX_NSPECIES];
+    Bool germd[MAX_NSPECIES],   /* has this plant germinated yet?  */
+        no_estab[MAX_NSPECIES]; /* if swTRUE, can't attempt estab for remainder
+                                   of year */
 } SW_VEGESTAB_INFO_SIM;
 
 typedef struct {
     /* see COMMENT-1 below for more information on these vars */
 
     /* THESE VARIABLES DO NOT CHANGE DURING THE NORMAL MODEL RUN */
-    char sppFileName[MAX_FILENAMESIZE]; /* Store the file Name and Path, Mostly
-                                           for Rsoilwat */
-    char sppname[MAX_SPECIESNAMELEN + 1]; /* one set of parms per species */
-    unsigned int vegType;     /**< Vegetation type of species (see "Indices to
-                                 vegetation types") */
-    TimeInt min_pregerm_days, /* first possible day of germination */
-        max_pregerm_days,     /* last possible day of germination */
-        min_wetdays_for_germ, /* number of consecutive days top layer must be */
-                              /* "wet" in order for germination to occur. */
-        max_drydays_postgerm, /* maximum number of consecutive dry days after */
+    char sppFileName[MAX_NSPECIES][MAX_FILENAMESIZE]; /* Store the file Name and
+                                           Path, Mostly for Rsoilwat */
+    char sppname[MAX_NSPECIES]
+                [MAX_SPECIESNAMELEN + 1]; /* one set of parms per species */
+    unsigned int vegType[MAX_NSPECIES];   /**< Vegetation type of species (see
+                               "Indices to   vegetation types") */
+    TimeInt
+        min_pregerm_days[MAX_NSPECIES], /* first possible day of germination */
+        max_pregerm_days[MAX_NSPECIES], /* last possible day of germination */
+        min_wetdays_for_germ[MAX_NSPECIES], /* number of consecutive days top
+                                               layer must be */
+        /* "wet" in order for germination to occur. */
+        max_drydays_postgerm[MAX_NSPECIES], /* maximum number of consecutive dry
+                                               days after */
         /* germination before establishment can no longer occur. */
-        min_wetdays_for_estab, /* minimum number of consecutive days the top
-                                  layer */
-                               /* must be "wet" in order to establish */
-        min_days_germ2estab, /* minimum number of days to wait after germination
-                              */
-                             /* and seminal roots wet before check for estab. */
-        max_days_germ2estab; /* maximum number of days after germination to wait
-                              */
-                             /* for establishment */
+        min_wetdays_for_estab[MAX_NSPECIES], /* minimum number of consecutive
+                                  days the top layer */
+        /* must be "wet" in order to establish */
+        min_days_germ2estab[MAX_NSPECIES], /* minimum number of days to wait
+                                            * after germination
+                                            */
+        /* and seminal roots wet before check for estab. */
+        max_days_germ2estab[MAX_NSPECIES]; /* maximum number of days after
+                                            * germination to wait
+                                            */
+                                           /* for establishment */
 
-    unsigned int
-        estab_lyrs;   /* estab could conceivably need more than one layer */
-                      /* swc is averaged over these top layers to compare to */
-                      /* the converted value from min_swc_estab */
-    double bars[2],   /* read from input, saved for reporting */
-        min_swc_germ, /* wetting point required for germination converted from
-                       */
+    unsigned int estab_lyrs[MAX_NSPECIES]; /* estab could conceivably need more
+                                              than one layer */
+    /* swc is averaged over these top layers to compare to */
+    /* the converted value from min_swc_estab */
+    double bars[MAX_NSPECIES][2],   /* read from input, saved for reporting */
+        min_swc_germ[MAX_NSPECIES], /* wetting point required for germination
+                                     * converted from
+                                     */
         /* bars to cm per layer for efficiency in the loop */
-        min_swc_estab, /* same as min_swc_germ but for establishment */
+        min_swc_estab[MAX_NSPECIES], /* same as min_swc_germ but for
+                                        establishment */
         /* this is the average of the swc of the first estab_lyrs */
-        min_temp_germ,  /* min avg daily temp req't for germination */
-        max_temp_germ,  /* max temp for germ in degC */
-        min_temp_estab, /* min avg daily temp req't for establishment */
-        max_temp_estab; /* max temp for estab in degC */
+        min_temp_germ[MAX_NSPECIES], /* min avg daily temp req't for germination
+                                      */
+        max_temp_germ[MAX_NSPECIES], /* max temp for germ in degC */
+        min_temp_estab[MAX_NSPECIES], /* min avg daily temp req't for
+                                         establishment */
+        max_temp_estab[MAX_NSPECIES]; /* max temp for estab in degC */
 } SW_VEGESTAB_INFO_INPUTS;
 
 typedef struct {
@@ -1424,13 +1437,11 @@ typedef struct {
     Bool use;   /* if swTRUE use establishment parms and chkestab() */
     IntU count; /* number of species to check */
 
-    SW_VEGESTAB_INFO_INPUTS
-    parms[MAX_NSPECIES]; /* array of input parms for each species */
+    SW_VEGESTAB_INFO_INPUTS parms; /* array of input parms for each species */
 } SW_VEGESTAB_INPUTS;
 
 typedef struct {
-    SW_VEGESTAB_INFO_SIM
-    parms[MAX_NSPECIES]; /* array of changing parms for each species */
+    SW_VEGESTAB_INFO_SIM parms; /* arrays of changing parms for each species */
 } SW_VEGESTAB_SIM;
 
 /* =================================================== */

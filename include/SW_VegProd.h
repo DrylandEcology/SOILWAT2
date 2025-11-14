@@ -192,7 +192,7 @@ void SW_VPD_new_year(
     TimeInt nYearsDynamicLong,
     unsigned int methodMaxDepthSoilTemperature,
     SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,
-    VegTypeSim vegSim[],
+    VegTypeSim *vegSim,
     VegTypeIn vegIn[]
 );
 
@@ -255,7 +255,7 @@ void SW_VPD_init_ptrs(SW_VEGPROD_SIM *SW_VegProdSim);
 
 void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *LogInfo);
 
-void checkBiomass(VegTypeRunIn veg[], LOG_INFO *LogInfo);
+void checkBiomass(VegTypeRunIn *veg, LOG_INFO *LogInfo);
 
 void apply_biomassCO2effect(
     double *new_biomass, const double *biomass, double multiplier

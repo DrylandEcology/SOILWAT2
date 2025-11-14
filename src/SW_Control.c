@@ -403,8 +403,8 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         sw->VegProdIn.nYearsDynamicLong,
         sw->SiteIn.methodMaxDepthSoilTemperature,
         &sw->RunIn.VegProdRunIn,
-        sw->VegProdSim.veg,
-        sw->VegProdIn.veg
+        &sw->VegProdSim.veg,
+        &sw->VegProdIn.veg
     );
 
     SW_SIT_new_year(
@@ -1165,7 +1165,7 @@ void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
         &sw->SiteIn,
         &sw->SiteSim,
         &sw->RunIn.SoilRunIn,
-        sw->VegProdIn.veg,
+        &sw->VegProdIn.veg,
         sw->RunIn.SiteRunIn.n_layers,
         LogInfo
     );
@@ -1175,7 +1175,7 @@ void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
 
     // SW_VES_init_run() must be called after `SW_SIT_init_run()`
     SW_VES_init_run(
-        sw->VegEstabIn.parms,
+        &sw->VegEstabIn.parms,
         &sw->RunIn.SoilRunIn,
         &sw->SiteSim,
         sw->SiteSim.n_transp_lyrs,
@@ -1202,8 +1202,8 @@ void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
         sw->RunIn.SiteRunIn.n_layers
     );
     SW_CBN_init_run(
-        sw->VegProdIn.veg,
-        sw->VegProdSim.veg,
+        &sw->VegProdIn.veg,
+        &sw->VegProdSim.veg,
         &sw->CarbonIn,
         sw->ModelIn.startyr,
         sw->ModelIn.endyr,
@@ -1252,15 +1252,15 @@ void SW_CTL_run_current_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
             &sw->SoilWatSim,
             sw->SiteSim.swcBulk_atSWPcrit,
             &sw->VegProdIn,
-            sw->RunIn.VegProdRunIn.veg,
+            &sw->RunIn.VegProdRunIn.veg,
             sw->RunIn.SiteRunIn.n_layers
         );
     }
 
     if (sw->VegEstabIn.use) {
         SW_VES_checkestab(
-            sw->VegEstabIn.parms,
-            sw->VegEstabSim.parms,
+            &sw->VegEstabIn.parms,
+            &sw->VegEstabSim.parms,
             sw->WeatherSim.temp_avg,
             sw->SoilWatSim.swcBulk,
             sw->ModelSim.doy,

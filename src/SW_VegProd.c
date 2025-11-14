@@ -122,23 +122,23 @@ const char *const key2veg[NVEGTYPES] = {
 /**
 @brief Allocate co2_multipliers for the current simulation run
 
-@param[in] veg Array of size NVEGTYPES of type VegType describing
-all NVEGTYPES vegetation types through simulation-specific inputs;
-return struct with allocated co2_multiplier arrays
-Return arrays with allocated memory
+@param[out] VegProdSim Struct of type SW_VEGPROD_SIM holding vegetation
+production simulation information; Return arrays with allocated
+"co2_multiplier" memory
 @param[in] n_years Number of years in simulation
 @param[out] LogInfo Holds information on warnings and errors
 */
-static void alloc_co2(VegTypeSim veg[], size_t n_years, LOG_INFO *LogInfo) {
+static void alloc_co2(
+    SW_VEGPROD_SIM *VegProdSim, size_t n_years, LOG_INFO *LogInfo
+) {
     int vegIndex;
     int co2Arr;
     const int nco2Arr = 2;
 
     ForEachVegType(vegIndex) {
         for (co2Arr = 0; co2Arr < nco2Arr; co2Arr++) {
-            veg[vegIndex].co2_multipliers[co2Arr] = (double *) Mem_Malloc(
-                sizeof(double) * n_years, "alloc_co2", LogInfo
-            );
+            VegProdSim->veg.co2_multipliers[vegIndex][co2Arr] = (double *)
+                Mem_Malloc(sizeof(double) * n_years, "alloc_co2", LogInfo);
             if (LogInfo->stopRun) {
                 return;
             }
@@ -1234,12 +1234,12 @@ void update_veg_yearly(
         // Update vegetation values
         calc_CONUS_vegcov_2025(SW_SoilSim, SW_VegProdSim, RelAbundanceL0);
 
-        SW_VegProdRunIn->veg[SW_TREENL].cov.fCover = RelAbundanceL0[0];
-        SW_VegProdRunIn->veg[SW_TREEBL].cov.fCover = RelAbundanceL0[1];
-        SW_VegProdRunIn->veg[SW_SHRUB].cov.fCover = RelAbundanceL0[2];
-        SW_VegProdRunIn->veg[SW_FORBS].cov.fCover = RelAbundanceL0[3];
-        SW_VegProdRunIn->veg[SW_GRASS3].cov.fCover = RelAbundanceL0[4];
-        SW_VegProdRunIn->veg[SW_GRASS4].cov.fCover = RelAbundanceL0[5];
+        SW_VegProdRunIn->veg.cov[SW_TREENL].fCover = RelAbundanceL0[0];
+        SW_VegProdRunIn->veg.cov[SW_TREEBL].fCover = RelAbundanceL0[1];
+        SW_VegProdRunIn->veg.cov[SW_SHRUB].fCover = RelAbundanceL0[2];
+        SW_VegProdRunIn->veg.cov[SW_FORBS].fCover = RelAbundanceL0[3];
+        SW_VegProdRunIn->veg.cov[SW_GRASS3].fCover = RelAbundanceL0[4];
+        SW_VegProdRunIn->veg.cov[SW_GRASS4].fCover = RelAbundanceL0[5];
 
         SW_VegProdRunIn->bare_cov.fCover = RelAbundanceL0[6];
     }
@@ -1444,7 +1444,7 @@ void SW_VPD_read(
             /* fractions of vegetation types */
             case 4:
                 ForEachVegType(k) {
-                    SW_VegProdRunIn->veg[k].cov.fCover = help_veg[k];
+                    SW_VegProdRunIn->veg.cov[k].fCover = help_veg[k];
                 }
                 SW_VegProdRunIn->bare_cov.fCover = help_bareGround;
                 break;
@@ -1452,7 +1452,7 @@ void SW_VPD_read(
             /* albedo */
             case 5:
                 ForEachVegType(k) {
-                    SW_VegProdIn->veg[k].cov.albedo = help_veg[k];
+                    SW_VegProdIn->veg.cov[k].albedo = help_veg[k];
                 }
                 SW_VegProdIn->bare_cov.albedo = help_bareGround;
                 break;
@@ -1460,51 +1460,51 @@ void SW_VPD_read(
             /* canopy height */
             case 6:
                 ForEachVegType(k) {
-                    SW_VegProdIn->veg[k].cnpy.xinflec = help_veg[k];
+                    SW_VegProdIn->veg.cnpy[k].xinflec = help_veg[k];
                 }
                 break;
 
             case 7:
                 ForEachVegType(k) {
-                    SW_VegProdIn->veg[k].cnpy.yinflec = help_veg[k];
+                    SW_VegProdIn->veg.cnpy[k].yinflec = help_veg[k];
                 }
                 break;
 
             case 8:
                 ForEachVegType(k) {
-                    SW_VegProdIn->veg[k].cnpy.range = help_veg[k];
+                    SW_VegProdIn->veg.cnpy[k].range = help_veg[k];
                 }
                 break;
 
             case 9:
                 ForEachVegType(k) {
-                    SW_VegProdIn->veg[k].cnpy.slope = help_veg[k];
+                    SW_VegProdIn->veg.cnpy[k].slope = help_veg[k];
                 }
                 break;
 
             case 10:
                 ForEachVegType(k) {
-                    SW_VegProdIn->veg[k].canopy_height_constant = help_veg[k];
+                    SW_VegProdIn->veg.canopy_height_constant[k] = help_veg[k];
                 }
                 break;
 
             /* vegetation interception parameters */
             case 11:
                 ForEachVegType(k) {
-                    SW_VegProdIn->veg[k].veg_kSmax = help_veg[k];
+                    SW_VegProdIn->veg.veg_kSmax[k] = help_veg[k];
                 }
                 break;
 
             case 12:
                 ForEachVegType(k) {
-                    SW_VegProdIn->veg[k].veg_kdead = help_veg[k];
+                    SW_VegProdIn->veg.veg_kdead[k] = help_veg[k];
                 }
                 break;
 
             /* litter interception parameters */
             case 13:
                 ForEachVegType(k) {
-                    SW_VegProdIn->veg[k].lit_kSmax = help_veg[k];
+                    SW_VegProdIn->veg.lit_kSmax[k] = help_veg[k];
                 }
                 break;
 
@@ -1512,84 +1512,84 @@ void SW_VPD_read(
              * transpiration */
             case 14:
                 ForEachVegType(k) {
-                    SW_VegProdIn->veg[k].EsTpartitioning_param = help_veg[k];
+                    SW_VegProdIn->veg.EsTpartitioning_param[k] = help_veg[k];
                 }
                 break;
 
             /* Parameter for scaling and limiting bare soil evaporation rate */
             case 15:
                 ForEachVegType(k) {
-                    SW_VegProdIn->veg[k].Es_param_limit = help_veg[k];
+                    SW_VegProdIn->veg.Es_param_limit[k] = help_veg[k];
                 }
                 break;
 
             /* shade effects */
             case 16:
                 ForEachVegType(k) {
-                    SW_VegProdIn->veg[k].shade_scale = help_veg[k];
+                    SW_VegProdIn->veg.shade_scale[k] = help_veg[k];
                 }
                 break;
 
             case 17:
                 ForEachVegType(k) {
-                    SW_VegProdIn->veg[k].shade_deadmax = help_veg[k];
+                    SW_VegProdIn->veg.shade_deadmax[k] = help_veg[k];
                 }
                 break;
 
             case 18:
                 ForEachVegType(k) {
-                    SW_VegProdIn->veg[k].tr_shade_effects.xinflec = help_veg[k];
+                    SW_VegProdIn->veg.tr_shade_effects[k].xinflec = help_veg[k];
                 }
                 break;
 
             case 19:
                 ForEachVegType(k) {
-                    SW_VegProdIn->veg[k].tr_shade_effects.yinflec = help_veg[k];
+                    SW_VegProdIn->veg.tr_shade_effects[k].yinflec = help_veg[k];
                 }
                 break;
 
             case 20:
                 ForEachVegType(k) {
-                    SW_VegProdIn->veg[k].tr_shade_effects.range = help_veg[k];
+                    SW_VegProdIn->veg.tr_shade_effects[k].range = help_veg[k];
                 }
                 break;
 
             case 21:
                 ForEachVegType(k) {
-                    SW_VegProdIn->veg[k].tr_shade_effects.slope = help_veg[k];
+                    SW_VegProdIn->veg.tr_shade_effects[k].slope = help_veg[k];
                 }
                 break;
 
             /* Hydraulic redistribution */
             case 22:
                 ForEachVegType(k) {
-                    SW_VegProdIn->veg[k].flagHydraulicRedistribution =
+                    SW_VegProdIn->veg.flagHydraulicRedistribution[k] =
                         (Bool) EQ(help_veg[k], 1.);
                 }
                 break;
 
             case 23:
                 ForEachVegType(k) {
-                    SW_VegProdIn->veg[k].maxCondroot = help_veg[k];
+                    SW_VegProdIn->veg.maxCondroot[k] = help_veg[k];
                 }
                 break;
 
             case 24:
                 ForEachVegType(k) {
-                    SW_VegProdIn->veg[k].swpMatric50 = help_veg[k];
+                    SW_VegProdIn->veg.swpMatric50[k] = help_veg[k];
                 }
                 break;
 
             case 25:
                 ForEachVegType(k) {
-                    SW_VegProdIn->veg[k].shapeCond = help_veg[k];
+                    SW_VegProdIn->veg.shapeCond[k] = help_veg[k];
                 }
                 break;
 
             /* Critical soil water potential */
             case 26:
                 ForEachVegType(k) {
-                    SW_VegProdIn->veg[k].SWPcrit = -10. * help_veg[k];
+                    SW_VegProdIn->veg.SWPcrit[k] = -10. * help_veg[k];
                     // for use with get_swa for properly partitioning swa
                     SW_VegProdIn->critSoilWater[k] = help_veg[k];
                 }
@@ -1600,14 +1600,14 @@ void SW_VPD_read(
             // Coefficient 1
             case 27:
                 ForEachVegType(k) {
-                    SW_VegProdIn->veg[k].co2_bio_coeff1 = help_veg[k];
+                    SW_VegProdIn->veg.co2_bio_coeff1[k] = help_veg[k];
                 }
                 break;
 
             // Coefficient 2
             case 28:
                 ForEachVegType(k) {
-                    SW_VegProdIn->veg[k].co2_bio_coeff2 = help_veg[k];
+                    SW_VegProdIn->veg.co2_bio_coeff2[k] = help_veg[k];
                 }
                 break;
 
@@ -1615,14 +1615,14 @@ void SW_VPD_read(
             // Coefficient 1
             case 29:
                 ForEachVegType(k) {
-                    SW_VegProdIn->veg[k].co2_wue_coeff1 = help_veg[k];
+                    SW_VegProdIn->veg.co2_wue_coeff1[k] = help_veg[k];
                 }
                 break;
 
             // Coefficient 2
             case 30:
                 ForEachVegType(k) {
-                    SW_VegProdIn->veg[k].co2_wue_coeff2 = help_veg[k];
+                    SW_VegProdIn->veg.co2_wue_coeff2[k] = help_veg[k];
                 }
                 break;
 
@@ -1696,10 +1696,10 @@ void SW_VPD_read(
                 }
             }
 
-            SW_VegProdRunIn->veg[k].litter[mon] = litt;
-            SW_VegProdRunIn->veg[k].biomass[mon] = biom;
-            SW_VegProdRunIn->veg[k].pct_live[mon] = pctl;
-            SW_VegProdRunIn->veg[k].lai_conv[mon] = laic;
+            SW_VegProdRunIn->veg.litter[k][mon] = litt;
+            SW_VegProdRunIn->veg.biomass[k][mon] = biom;
+            SW_VegProdRunIn->veg.pct_live[k][mon] = pctl;
+            SW_VegProdRunIn->veg.lai_conv[k][mon] = laic;
 
             mon++;
         }
@@ -1735,7 +1735,7 @@ void SW_VPD_fix_cover(
     double fraction_sum = 0.;
 
     fraction_sum = SW_VegProdRunIn->bare_cov.fCover;
-    ForEachVegType(k) { fraction_sum += SW_VegProdRunIn->veg[k].cov.fCover; }
+    ForEachVegType(k) { fraction_sum += SW_VegProdRunIn->veg.cov[k].fCover; }
 
     if (!EQ_w_tol(fraction_sum, 1.0, 1e-4)) {
         // inputs are never more precise than at most 3-4 digits
@@ -1758,13 +1758,13 @@ void SW_VPD_fix_cover(
         );
 
         ForEachVegType(k) {
-            SW_VegProdRunIn->veg[k].cov.fCover /= fraction_sum;
+            SW_VegProdRunIn->veg.cov[k].fCover /= fraction_sum;
             LogError(
                 LogInfo,
                 LOGWARN,
                 "%s fraction = %.4f",
                 key2veg[k],
-                SW_VegProdRunIn->veg[k].cov.fCover
+                SW_VegProdRunIn->veg.cov[k].fCover
             );
         }
     }
@@ -1836,10 +1836,10 @@ void SW_VPD_deconstruct(SW_VEGPROD_SIM *SW_VegProdSim) {
 
     ForEachVegType(index) {
         for (co2Arr = 0; co2Arr < nCO2Arrs; co2Arr++) {
-            if (!isnull(SW_VegProdSim->veg[index].co2_multipliers[co2Arr])) {
-                free((void *) SW_VegProdSim->veg[index].co2_multipliers[co2Arr]
+            if (!isnull(SW_VegProdSim->veg.co2_multipliers[index][co2Arr])) {
+                free((void *) SW_VegProdSim->veg.co2_multipliers[index][co2Arr]
                 );
-                SW_VegProdSim->veg[index].co2_multipliers[co2Arr] = NULL;
+                SW_VegProdSim->veg.co2_multipliers[index][co2Arr] = NULL;
             }
         }
     }
@@ -1874,8 +1874,8 @@ void SW_VPD_init_ptrs(SW_VEGPROD_SIM *SW_VegProdSim) {
     }
 
     ForEachVegType(index) {
-        SW_VegProdSim->veg[index].co2_multipliers[0] = NULL;
-        SW_VegProdSim->veg[index].co2_multipliers[1] = NULL;
+        SW_VegProdSim->veg.co2_multipliers[index][0] = NULL;
+        SW_VegProdSim->veg.co2_multipliers[index][1] = NULL;
     }
 }
 
@@ -1890,7 +1890,7 @@ void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
     Bool annTempOnly =
         (Bool) (allocAnnTemp && veg_method != VEG_METHOD_DYN_EST);
 
-    alloc_co2(sw->VegProdSim.veg, n_years, LogInfo);
+    alloc_co2(&sw->VegProdSim, n_years, LogInfo);
     if (LogInfo->stopRun) {
         return;
     }
@@ -1898,8 +1898,8 @@ void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
     /* Set co2-multipliers to default */
     for (year = 0; year < n_years; year++) {
         ForEachVegType(k) {
-            sw->VegProdSim.veg[k].co2_multipliers[BIO_INDEX][year] = 1.;
-            sw->VegProdSim.veg[k].co2_multipliers[WUE_INDEX][year] = 1.;
+            sw->VegProdSim.veg.co2_multipliers[k][BIO_INDEX][year] = 1.;
+            sw->VegProdSim.veg.co2_multipliers[k][WUE_INDEX][year] = 1.;
         }
     }
 
@@ -1940,66 +1940,66 @@ void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
         }
     }
 
-    checkBiomass(sw->RunIn.VegProdRunIn.veg, LogInfo);
+    checkBiomass(&sw->RunIn.VegProdRunIn.veg, LogInfo);
 }
 
 /**
 @brief Validate monthly biomass values
 
-@param[in] veg Array of size NVEGTYPES of type VegType describing
-    all NVEGTYPES vegetation types through simulation-specific inputs
+@param[in] veg A struct of type VegTypeSim holding NVEGTYPES amount of
+values describing all vegetation types in simulation-specific inputs
 @param[out] LogInfo Holds information on warnings and errors
 */
-void checkBiomass(VegTypeRunIn veg[], LOG_INFO *LogInfo) {
+void checkBiomass(VegTypeRunIn *veg, LOG_INFO *LogInfo) {
     unsigned int k;
     unsigned int mon;
 
     ForEachVegType(k) {
         for (mon = 0; mon < MAX_MONTHS; mon++) {
 
-            if (veg[k].litter[mon] < 0) {
+            if (veg->litter[k][mon] < 0) {
                 LogError(
                     LogInfo,
                     LOGERROR,
                     "%s litter (%.4f) is negative in month %d.",
                     key2veg[k],
-                    veg[k].litter[mon],
+                    veg->litter[k][mon],
                     mon + 1
                 );
                 return;
             }
 
-            if (veg[k].biomass[mon] < 0) {
+            if (veg->biomass[k][mon] < 0) {
                 LogError(
                     LogInfo,
                     LOGERROR,
                     "%s biomass (%.4f) is negative in month %d.",
                     key2veg[k],
-                    veg[k].biomass[mon],
+                    veg->biomass[k][mon],
                     mon + 1
                 );
                 return;
             }
 
-            if (veg[k].pct_live[mon] < 0 || veg[k].pct_live[mon] > 1) {
+            if (veg->pct_live[k][mon] < 0 || veg->pct_live[k][mon] > 1) {
                 LogError(
                     LogInfo,
                     LOGERROR,
                     "%s pct_live (%.4f) not within [0,1] in month %d.",
                     key2veg[k],
-                    veg[k].pct_live[mon],
+                    veg->pct_live[k][mon],
                     mon + 1
                 );
                 return;
             }
 
-            if (veg[k].lai_conv[mon] < 0) {
+            if (veg->lai_conv[k][mon] < 0) {
                 LogError(
                     LogInfo,
                     LOGERROR,
                     "%s lai_conv (%.4f) is negative in month %d.",
                     key2veg[k],
-                    veg[k].lai_conv[mon],
+                    veg->lai_conv[k][mon],
                     mon + 1
                 );
                 return;
@@ -2058,11 +2058,10 @@ maximum depth:
            temperature, see `nYearsDynamicLong` from veg.in)
 @param[out] SW_VegProdRunIn Struct of type SW_VEGPROD_RUN_INPUTS that
     holds run-specific input information about vegetation production
-@param[out] vegSim Array of size NVEGTYPES of type VegTypeSim describing
-    all NVEGTYPES vegetation types through values used purely during simulation
-@param[out] vegIn Array of size NVEGTYPES of type VegTypeIn describing
-    all NVEGTYPES vegetation types through static simulation values (cannot
-    change between simulation runs)
+@param[out] vegSim A struct of type VegTypeSim holding NVEGTYPES amount of
+values describing all vegetation types purely during simulations
+@param[out] vegIn A struct of type VegTypeIn holding arrays of size
+NVEGTYPES to hold static simulation data for each simulation type
 */
 void SW_VPD_new_year(
     SW_WEATHER_HIST *SW_YearWeathHist,
@@ -2076,8 +2075,8 @@ void SW_VPD_new_year(
     TimeInt nYearsDynamicLong,
     unsigned int methodMaxDepthSoilTemperature,
     SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,
-    VegTypeSim vegSim[],
-    VegTypeIn vegIn[]
+    VegTypeSim *vegSim,
+    VegTypeIn *vegIn
 ) {
     /* ================================================== */
     /*
@@ -2106,7 +2105,7 @@ void SW_VPD_new_year(
     Bool annTempOnly =
         (Bool) (allocAnnTemp && veg_method != VEG_METHOD_DYN_EST);
 
-    VegTypeRunIn *vegRunIn = SW_VegProdRunIn->veg; // array of NVEGTYPES
+    VegTypeRunIn *vegRunIn = &SW_VegProdRunIn->veg; // array of NVEGTYPES
 
     // Interpolation is to be in base1 in `interpolate_monthlyValues()`
     Bool interpAsBase1 = swTRUE;
@@ -2145,19 +2144,19 @@ void SW_VPD_new_year(
 
     /* Calculate daily vegetation from monthly & adjust for aCO2 */
     ForEachVegType(k) {
-        if (GT(vegRunIn[k].cov.fCover, 0.)) {
+        if (GT(vegRunIn->cov[k].fCover, 0.)) {
 
             /* Scale biomass to as if 100% cover unless provided as inputs */
             for (mon = 0; mon < MAX_MONTHS; mon++) {
                 biomassAsIf100Cover[mon] =
                     isBiomAsIf100Cover ?
-                        vegRunIn[k].biomass[mon] :
-                        (vegRunIn[k].biomass[mon] / vegRunIn[k].cov.fCover);
+                        vegRunIn->biomass[k][mon] :
+                        (vegRunIn->biomass[k][mon] / vegRunIn->cov[k].fCover);
 
                 litterAsIf100Cover[mon] =
                     isBiomAsIf100Cover ?
-                        vegRunIn[k].litter[mon] :
-                        (vegRunIn[k].litter[mon] / vegRunIn[k].cov.fCover);
+                        vegRunIn->litter[k][mon] :
+                        (vegRunIn->litter[k][mon] / vegRunIn->cov[k].fCover);
             }
 
             if (k == SW_TREENL || k == SW_TREEBL) {
@@ -2166,8 +2165,8 @@ void SW_VPD_new_year(
                 // biomass is increasing
                 apply_biomassCO2effect(
                     biomass_after_CO2,
-                    vegRunIn[k].pct_live,
-                    vegSim[k].co2_multipliers[BIO_INDEX][yearIdx]
+                    vegRunIn->pct_live[k],
+                    vegSim->co2_multipliers[k][BIO_INDEX][yearIdx]
                 );
 
                 interpolate_monthlyValues(
@@ -2175,14 +2174,14 @@ void SW_VPD_new_year(
                     interpAsBase1,
                     SW_ModelSim->cum_monthdays,
                     SW_ModelSim->days_in_month,
-                    vegSim[k].pct_live_daily
+                    vegSim->pct_live_daily[k]
                 );
                 interpolate_monthlyValues(
                     biomassAsIf100Cover,
                     interpAsBase1,
                     SW_ModelSim->cum_monthdays,
                     SW_ModelSim->days_in_month,
-                    vegSim[k].biomass_daily
+                    vegSim->biomass_daily[k]
                 );
 
             } else {
@@ -2191,7 +2190,7 @@ void SW_VPD_new_year(
                 apply_biomassCO2effect(
                     biomass_after_CO2,
                     biomassAsIf100Cover,
-                    vegSim[k].co2_multipliers[BIO_INDEX][yearIdx]
+                    vegSim->co2_multipliers[k][BIO_INDEX][yearIdx]
                 );
 
                 interpolate_monthlyValues(
@@ -2199,14 +2198,14 @@ void SW_VPD_new_year(
                     interpAsBase1,
                     SW_ModelSim->cum_monthdays,
                     SW_ModelSim->days_in_month,
-                    vegSim[k].biomass_daily
+                    vegSim->biomass_daily[k]
                 );
                 interpolate_monthlyValues(
-                    vegRunIn[k].pct_live,
+                    vegRunIn->pct_live[k],
                     interpAsBase1,
                     SW_ModelSim->cum_monthdays,
                     SW_ModelSim->days_in_month,
-                    vegSim[k].pct_live_daily
+                    vegSim->pct_live_daily[k]
                 );
             }
 
@@ -2216,14 +2215,14 @@ void SW_VPD_new_year(
                 interpAsBase1,
                 SW_ModelSim->cum_monthdays,
                 SW_ModelSim->days_in_month,
-                vegSim[k].litter_daily
+                vegSim->litter_daily[k]
             );
             interpolate_monthlyValues(
-                vegRunIn[k].lai_conv,
+                vegRunIn->lai_conv[k],
                 interpAsBase1,
                 SW_ModelSim->cum_monthdays,
                 SW_ModelSim->days_in_month,
-                vegSim[k].lai_conv_daily
+                vegSim->lai_conv_daily[k]
             );
         }
     }
@@ -2232,70 +2231,70 @@ void SW_VPD_new_year(
     /* Calculate additional daily vegetation variables */
     for (doy = 1; doy <= MAX_DAYS; doy++) {
         ForEachVegType(k) {
-            if (GT(vegRunIn[k].cov.fCover, 0.)) {
+            if (GT(vegRunIn->cov[k].fCover, 0.)) {
                 /* vegetation height = 'veg_height_daily' is used for
                  * 'snowdepth_scale'; historically, also for 'vegcov' */
-                if (GT(vegIn[k].canopy_height_constant, 0.)) {
-                    vegSim[k].veg_height_daily[doy] =
-                        vegIn[k].canopy_height_constant;
+                if (GT(vegIn->canopy_height_constant[k], 0.)) {
+                    vegSim->veg_height_daily[k][doy] =
+                        vegIn->canopy_height_constant[k];
 
                 } else {
-                    vegSim[k].veg_height_daily[doy] = tanfunc(
-                        vegSim[k].biomass_daily[doy],
-                        vegIn[k].cnpy.xinflec,
-                        vegIn[k].cnpy.yinflec,
-                        vegIn[k].cnpy.range,
-                        vegIn[k].cnpy.slope
+                    vegSim->veg_height_daily[k][doy] = tanfunc(
+                        vegSim->biomass_daily[k][doy],
+                        vegIn->cnpy[k].xinflec,
+                        vegIn->cnpy[k].yinflec,
+                        vegIn->cnpy[k].range,
+                        vegIn->cnpy[k].slope
                     );
                 }
 
                 /* live biomass = 'biolive_daily' is used for
                  * canopy-interception, transpiration, bare-soil evaporation,
                  * and hydraulic redistribution */
-                vegSim[k].biolive_daily[doy] = vegSim[k].biomass_daily[doy] *
-                                               vegSim[k].pct_live_daily[doy];
+                vegSim->biolive_daily[k][doy] = vegSim->biomass_daily[k][doy] *
+                                                vegSim->pct_live_daily[k][doy];
 
                 /* dead biomass = 'biodead_daily' is used for
                  * canopy-interception and transpiration */
-                vegSim[k].biodead_daily[doy] =
-                    vegSim[k].biomass_daily[doy] - vegSim[k].biolive_daily[doy];
+                vegSim->biodead_daily[k][doy] = vegSim->biomass_daily[k][doy] -
+                                                vegSim->biolive_daily[k][doy];
 
                 /* live leaf area index = 'lai_live_daily' is used for E-T
                  * partitioning */
-                vegSim[k].lai_live_daily[doy] = vegSim[k].biolive_daily[doy] /
-                                                vegSim[k].lai_conv_daily[doy];
+                vegSim->lai_live_daily[k][doy] = vegSim->biolive_daily[k][doy] /
+                                                 vegSim->lai_conv_daily[k][doy];
 
                 /* compound leaf area index = 'bLAI_total_daily' is used for
                  * canopy-interception */
-                vegSim[k].bLAI_total_daily[doy] =
-                    vegSim[k].lai_live_daily[doy] +
-                    vegIn[k].veg_kdead * vegSim[k].biodead_daily[doy] /
-                        vegSim[k].lai_conv_daily[doy];
+                vegSim->bLAI_total_daily[k][doy] =
+                    vegSim->lai_live_daily[k][doy] +
+                    vegIn->veg_kdead[k] * vegSim->biodead_daily[k][doy] /
+                        vegSim->lai_conv_daily[k][doy];
 
                 /* total above-ground biomass = 'total_agb_daily' is used for
                  * bare-soil evaporation */
                 if (k == SW_TREENL || k == SW_TREEBL) {
-                    vegSim[k].total_agb_daily[doy] =
-                        vegSim[k].litter_daily[doy] +
-                        vegSim[k].biolive_daily[doy];
+                    vegSim->total_agb_daily[k][doy] =
+                        vegSim->litter_daily[k][doy] +
+                        vegSim->biolive_daily[k][doy];
                 } else {
-                    vegSim[k].total_agb_daily[doy] =
-                        vegSim[k].litter_daily[doy] +
-                        vegSim[k].biomass_daily[doy];
+                    vegSim->total_agb_daily[k][doy] =
+                        vegSim->litter_daily[k][doy] +
+                        vegSim->biomass_daily[k][doy];
                 }
 
             } else {
                 /* No cover -> set all daily vegetation variables to 0 */
-                vegSim[k].litter_daily[doy] = 0.;
-                vegSim[k].biomass_daily[doy] = 0.;
-                vegSim[k].pct_live_daily[doy] = 0.;
-                vegSim[k].veg_height_daily[doy] = 0.;
-                vegSim[k].lai_conv_daily[doy] = 0.;
-                vegSim[k].lai_live_daily[doy] = 0.;
-                vegSim[k].bLAI_total_daily[doy] = 0.;
-                vegSim[k].biolive_daily[doy] = 0.;
-                vegSim[k].biodead_daily[doy] = 0.;
-                vegSim[k].total_agb_daily[doy] = 0.;
+                vegSim->litter_daily[k][doy] = 0.;
+                vegSim->biomass_daily[k][doy] = 0.;
+                vegSim->pct_live_daily[k][doy] = 0.;
+                vegSim->veg_height_daily[k][doy] = 0.;
+                vegSim->lai_conv_daily[k][doy] = 0.;
+                vegSim->lai_live_daily[k][doy] = 0.;
+                vegSim->bLAI_total_daily[k][doy] = 0.;
+                vegSim->biolive_daily[k][doy] = 0.;
+                vegSim->biodead_daily[k][doy] = 0.;
+                vegSim->total_agb_daily[k][doy] = 0.;
             }
         }
     }
@@ -2341,9 +2340,9 @@ void echo_VegProd(
         sw_printf(
             "%s   %1.2f   %1.2f   %d\n",
             key2veg[k],
-            SW_VegProdRunIn->veg[k].cov.fCover,
-            SW_VegProdIn->veg[k].cov.albedo,
-            SW_VegProdIn->veg[k].flagHydraulicRedistribution
+            SW_VegProdRunIn->veg.cov[k].fCover,
+            SW_VegProdIn->veg.cov[k].albedo,
+            SW_VegProdIn->veg.flagHydraulicRedistribution[k]
         );
     }
 
@@ -2539,7 +2538,7 @@ void estimateVegetationFromClimate(
             }
 
             ForEachVegType(k) {
-                SW_VegProdRunIn->veg[k].cov.fCover = RelAbundanceL2[k];
+                SW_VegProdRunIn->veg.cov[k].fCover = RelAbundanceL2[k];
             }
 
             SW_VegProdRunIn->bare_cov.fCover = RelAbundanceL0[bareGroundIndex];

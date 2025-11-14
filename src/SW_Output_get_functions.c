@@ -261,7 +261,7 @@ void get_co2effects_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
             "%c%.*f",
             OUTSEP,
             OUT_DIGITS,
-            sw->VegProdSim.veg[k].co2_multipliers[BIO_INDEX][yearIdx]
+            sw->VegProdSim.veg.co2_multipliers[k][BIO_INDEX][yearIdx]
         );
         fullBuffer = sw_memccpy_inc(
             (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
@@ -277,7 +277,7 @@ void get_co2effects_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
             "%c%.*f",
             OUTSEP,
             OUT_DIGITS,
-            sw->VegProdSim.veg[k].co2_multipliers[WUE_INDEX][yearIdx]
+            sw->VegProdSim.veg.co2_multipliers[k][WUE_INDEX][yearIdx]
         );
         fullBuffer = sw_memccpy_inc(
             (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
@@ -332,7 +332,7 @@ void get_co2effects_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 #endif
 
         p[iOUTIndex] =
-            sw->VegProdSim.veg[k].co2_multipliers[BIO_INDEX][yearIdx];
+            sw->VegProdSim.veg.co2_multipliers[k][BIO_INDEX][yearIdx];
 
 
 #if defined(RSOILWAT)
@@ -355,7 +355,7 @@ void get_co2effects_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 #endif
 
         p[iOUTIndex] =
-            sw->VegProdSim.veg[k].co2_multipliers[WUE_INDEX][yearIdx];
+            sw->VegProdSim.veg.co2_multipliers[k][WUE_INDEX][yearIdx];
     }
 }
 
@@ -381,7 +381,7 @@ void get_co2effects_agg(
             psd,
             iOUTIndex,
             OutRun->currIter,
-            sw->VegProdSim.veg[k].co2_multipliers[BIO_INDEX][yearIdx]
+            sw->VegProdSim.veg.co2_multipliers[k][BIO_INDEX][yearIdx]
         );
 
         iOUTIndex = iOUT(
@@ -395,7 +395,7 @@ void get_co2effects_agg(
             psd,
             iOUTIndex,
             OutRun->currIter,
-            sw->VegProdSim.veg[k].co2_multipliers[WUE_INDEX][yearIdx]
+            sw->VegProdSim.veg.co2_multipliers[k][WUE_INDEX][yearIdx]
         );
     }
 
@@ -452,7 +452,7 @@ void get_biomass_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
             "%c%.*f",
             OUTSEP,
             OUT_DIGITS,
-            sw->RunIn.VegProdRunIn.veg[k].cov.fCover
+            sw->RunIn.VegProdRunIn.veg.cov[k].fCover
         );
         (void) sw_memccpy_inc(
             (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
@@ -479,7 +479,7 @@ void get_biomass_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
             "%c%.*f",
             OUTSEP,
             OUT_DIGITS,
-            vo->veg[k].biomass_inveg
+            vo->veg.biomass_inveg[k]
         );
         fullBuffer = sw_memccpy_inc(
             (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
@@ -514,7 +514,7 @@ void get_biomass_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
             "%c%.*f",
             OUTSEP,
             OUT_DIGITS,
-            vo->veg[k].biolive_inveg
+            vo->veg.biolive_inveg[k]
         );
         fullBuffer = sw_memccpy_inc(
             (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
@@ -590,7 +590,7 @@ void get_biomass_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
             );
 #endif
 
-        p[iOUTIndex] = sw->RunIn.VegProdRunIn.veg[k].cov.fCover;
+        p[iOUTIndex] = sw->RunIn.VegProdRunIn.veg.cov[k].fCover;
     }
 
 // biomass (g/m2 as component of total) totals
@@ -629,7 +629,7 @@ void get_biomass_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
             );
 #endif
 
-        p[iOUTIndex] = vo->veg[k].biomass_inveg;
+        p[iOUTIndex] = vo->veg.biomass_inveg[k];
     }
 
 
@@ -686,7 +686,7 @@ void get_biomass_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
             );
 #endif
 
-        p[iOUTIndex] = vo->veg[k].biolive_inveg;
+        p[iOUTIndex] = vo->veg.biolive_inveg[k];
     }
 
 
@@ -741,7 +741,7 @@ void get_biomass_agg(
             psd,
             iOUTIndex,
             OutRun->currIter,
-            sw->RunIn.VegProdRunIn.veg[k].cov.fCover
+            sw->RunIn.VegProdRunIn.veg.cov[k].fCover
         );
     }
 
@@ -760,7 +760,7 @@ void get_biomass_agg(
             i + k, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
         );
         do_running_agg(
-            p, psd, iOUTIndex, OutRun->currIter, vo->veg[k].biomass_inveg
+            p, psd, iOUTIndex, OutRun->currIter, vo->veg.biomass_inveg[k]
         );
     }
 
@@ -786,7 +786,7 @@ void get_biomass_agg(
             i + k, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
         );
         do_running_agg(
-            p, psd, iOUTIndex, OutRun->currIter, vo->veg[k].biolive_inveg
+            p, psd, iOUTIndex, OutRun->currIter, vo->veg.biolive_inveg[k]
         );
     }
 
@@ -849,7 +849,7 @@ void get_estab_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
 
     for (i = 0; i < sw->VegEstabIn.count; i++) {
         (void) snprintf(
-            str, OUTSTRLEN, "%c%d", OUTSEP, sw->VegEstabSim.parms[i].estab_doy
+            str, OUTSTRLEN, "%c%d", OUTSEP, sw->VegEstabSim.parms.estab_doy[i]
         );
         fullBuffer = sw_memccpy_inc(
             (void **) &writePtr, endOutstr, (void *) str, '\0', &writeSize
@@ -911,7 +911,7 @@ void get_estab_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
                     iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
 #endif
 
-        p[iOUTIndex] = sw->VegEstabSim.parms[i].estab_doy;
+        p[iOUTIndex] = sw->VegEstabSim.parms.estab_doy[i];
     }
 }
 
@@ -951,7 +951,7 @@ void get_estab_agg(
             psd,
             iOUTIndex,
             OutRun->currIter,
-            sw->VegEstabSim.parms[i].estab_doy
+            sw->VegEstabSim.parms.estab_doy[i],
         );
     }
 

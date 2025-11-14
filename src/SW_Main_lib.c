@@ -605,7 +605,7 @@ void sw_setup_prog_data(
         SW_Domain->nMaxSoilLayers,
         SW_Domain->nMaxEvapLayers,
         sw_template->VegEstabIn.count,
-        sw_template->VegEstabIn.parms,
+        &sw_template->VegEstabIn.parms,
         &SW_Domain->OutDom,
         LogInfo
     );
@@ -615,7 +615,7 @@ void sw_setup_prog_data(
     SW_NCOUT_read_out_vars(
         &SW_Domain->OutDom,
         SW_Domain->SW_PathInputs.txtInFiles,
-        sw_template->VegEstabIn.parms,
+        &sw_template->VegEstabIn.parms,
         LogInfo
     );
     checkReturn(LogInfo->stopRun);

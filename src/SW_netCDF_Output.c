@@ -1770,7 +1770,7 @@ void SW_NCOUT_read_out_vars(
                                 .reqOutputVars[currOutKey][estVar] = swTRUE;
                             OutDom->netCDFOutput
                                 .outputVarInfo[currOutKey][estVar][index] =
-                                Str_Dup(parmsIn[estVar].sppname, LogInfo);
+                                Str_Dup(parmsIn->sppname[estVar], LogInfo);
                             break;
 
                         case LONGNAME_INDEX:

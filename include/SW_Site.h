@@ -326,7 +326,7 @@ void SW_SIT_init_run(
     SW_SITE_INPUTS *SW_SiteIn,
     SW_SITE_SIM *SW_SiteSim,
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
-    VegTypeIn veg[],
+    VegTypeIn *vegIn,
     LyrIndex n_layers,
     LOG_INFO *LogInfo
 );
