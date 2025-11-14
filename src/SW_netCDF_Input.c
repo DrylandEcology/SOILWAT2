@@ -12,6 +12,7 @@
 #include "include/SW_Files.h"          // for eNCIn
 #include "include/SW_netCDF_General.h" // for SW_NC_open, SW_NC_get_var_ide...
 #include "include/SW_Site.h"           // for SW_SOIL_construct
+#include "include/SW_Times.h"          // for Yesterday
 #include "include/SW_VegProd.h"        // for key2veg
 #include "include/SW_Weather.h"        // for clear_hist_weather, SW_WTH_al...
 #include "include/Times.h"             // for Time_get_lastdoy_y, timeStrin...
@@ -1036,6 +1037,521 @@ static const size_t cacheDimSizes[] = {
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
+
+/**
+@brief Reset values of an array before or after use to fill values of the
+same type for netCDFs, i.e., NC_FILL_DOUBLE, NC_FILL_UINT, NC_FILL_INT
+
+@param[in] nElem Maximum number of elements to reset
+@param[in] varType Type of the value that is being filled
+@param[out] values Array to be filled with the determined values
+*/
+static void reset_temp_vals(size_t nElem, int varType, void *values) {
+    int *intVals = NULL;
+    double *doubleVals = NULL;
+    IntU *intUVals = NULL;
+    size_t elem;
+
+    switch (varType) {
+    case NC_INT:
+        intVals = (int *) values;
+        break;
+    case NC_DOUBLE:
+        doubleVals = (double *) values;
+        break;
+    default: /* NC_UINT */
+        intUVals = (IntU *) values;
+        break;
+    }
+
+    for (elem = 0; elem < nElem; elem++) {
+        switch (varType) {
+        case NC_INT:
+            intVals[elem] = NC_FILL_INT;
+            break;
+        case NC_DOUBLE:
+            doubleVals[elem] = NC_FILL_DOUBLE;
+            break;
+        default: /* NC_UINT */
+            intUVals[elem] = NC_FILL_UINT;
+            break;
+        }
+    }
+}
+
+/**
+@brief Allocate or deallocate temporary storage for rearranging
+cache values
+
+@param[in] allocate A flag specifying if the arrays should be allocated
+(swTRUE) or deallocated (swFALSE)
+@param[in] nIntElem Number of integer elements to allocate for
+@param[in] nDoubleElem Number of double elements to allocate for
+@param[in] nIntUElem Number of unsigned integer elements to allocate for
+@param[out] tempInt Resulting allocated array to store integer values
+@param[out] tempDouble Resulting allocated array to store double values
+@param[out] tempIntU Resulting allocated array to store unsigned integer values
+@param[out] LogInfoHolds information on warnings and errors
+*/
+static void handle_temp_cache_mem(
+    Bool allocate,
+    size_t nIntElem,
+    size_t nDoubleElem,
+    size_t nIntUElem,
+    int **tempInt,
+    double **tempDouble,
+    IntU **tempIntU,
+    LOG_INFO *LogInfo
+) {
+    if (allocate) {
+        *tempInt = (int *) Mem_Calloc(
+            nIntElem, sizeof(int), "handle_temp_cache_mem", LogInfo
+        );
+        checkReturn(LogInfo->stopRun);
+        reset_temp_vals(nIntElem, NC_INT, *tempInt);
+
+        *tempDouble = (double *) Mem_Calloc(
+            nDoubleElem, sizeof(double), "handle_temp_cache_mem", LogInfo
+        );
+        checkReturn(LogInfo->stopRun);
+        reset_temp_vals(nDoubleElem, NC_DOUBLE, *tempDouble);
+
+        *tempIntU = (IntU *) Mem_Calloc(
+            nIntUElem, sizeof(IntU), "handle_temp_cache_mem", LogInfo
+        );
+        reset_temp_vals(nIntUElem, NC_UINT, *tempIntU);
+    } else {
+        if (!isnull(*tempInt)) {
+            free((void *) *tempInt);
+        }
+
+        if (!isnull(*tempDouble)) {
+            free((void *) *tempDouble);
+        }
+
+        if (!isnull(*tempIntU)) {
+            free((void *) *tempIntU);
+        }
+    }
+}
+
+/**
+@brief Find the biggest cache variable size we may need to write out
+for each possible type - double, unsigned integer, and integer
+
+@param[in] sDom Specifies the program's domain is site-oriented
+@param[in] nDimYS Size of the Y/lat (gridded) or site (site-oriented)
+dimension
+@param[in] nDimX Size of the X/lon dimension
+@param[out] largestIntSize Largest cache variable size (element-wise) of
+type integer
+@param[out] largestDoubleSize Largest cache variable size (element-wise) of
+type double
+@param[out] largestIntUSize Largest cache variable size (element-wise) of
+type unsigned integer
+*/
+static void find_largest_type_size(
+    Bool sDom,
+    size_t nDimYS,
+    size_t nDimX,
+    size_t *largestIntSize,
+    size_t *largestDoubleSize,
+    size_t *largestIntUSize
+) {
+    int cacheCat;
+    int nCacheVars;
+    int cacheVar;
+    int cacheDim;
+    int varType;
+
+    size_t currentSize;
+    size_t *destSize;
+
+    for (cacheCat = 0; cacheCat < nCacheCategories; cacheCat++) {
+        nCacheVars = nCacheVarsInCats[cacheCat];
+        for (cacheVar = 0; cacheVar < nCacheVars; cacheVar++) {
+            currentSize = 1;
+            cacheDim = 0;
+            varType = cacheVarTypes[cacheCat][cacheVar];
+
+            while (cacheVarDims[cacheCat][cacheVar][cacheDim] > -1) {
+                currentSize *= cacheVarDims[cacheCat][cacheVar][cacheDim];
+
+                cacheDim++;
+            }
+
+            switch (varType) {
+            case NC_INT:
+                destSize = largestIntSize;
+                break;
+            case NC_DOUBLE:
+                destSize = largestDoubleSize;
+                break;
+            default: /* NC_UINT */
+                destSize = largestIntUSize;
+                break;
+            }
+            if (currentSize > *destSize) {
+                *destSize = currentSize;
+            }
+        }
+    }
+
+    *largestIntSize *= nDimYS;
+    *largestDoubleSize *= nDimYS;
+    *largestIntUSize *= nDimYS;
+
+    *largestIntSize *= sDom ? 1 : nDimX;
+    *largestDoubleSize *= sDom ? 1 : nDimX;
+    *largestIntUSize *= sDom ? 1 : nDimX;
+}
+
+/**
+@brief Arrange cache values such that we can write out all
+values at once, rather than one site at a time
+
+Organize the data in the format of
+[site 0, val 0], [site 0, val 1], ..., [site 1, val 0]
+
+@param[in] SW_Runs A list of n active sites of comprehensive structs
+of type SW_RUN containing all information in the simulation
+@param[in] cacheCat Cache variable category index getting rearranged
+@param[in] cacheVar Cache variable index getting rearranged
+@param[in] n_years Number of years to be written out
+@param[in] nActiveSites Number of active sites the process controls
+and the side of "SW_Runs"
+@param[in] actSiteIdx Active site index within the subdomain
+@param[in] startNumDims Specifies how many dimensions are already written to
+count, aka where to start writing count sizes
+@param[out] tempDoubles Temporary storage for doubles to be arranged in
+@param[out] tempUInts Temporary storage for unsigned integers to be arranged in
+@param[out] tempInts Temporary storage for integers to be arranged in
+@param[out] count An array of size NC_MAX_DIMS to be updated with
+dimension sizes we will use to write out to file
+*/
+static void rearrange_cache_values(
+    SW_RUN *SW_Runs,
+    int cacheCat,
+    int cacheVar,
+    TimeInt n_years,
+    size_t nActiveSites,
+    size_t *actSiteIdx,
+    int startNumDims,
+    double *tempDoubles,
+    IntU *tempUInts,
+    int *tempInts,
+    size_t count[]
+) {
+    const int varType = cacheVarTypes[cacheCat][cacheVar];
+    const Bool hasPd =
+        (Bool) (cacheVarDims[cacheCat][cacheVar][0] == eiv_periods);
+
+    size_t startIndex;
+    size_t site;
+    size_t numElem = 1;
+    OutPeriod pd;
+    OutPeriod nPds = hasPd ? SW_OUTNPERIODS : 1;
+    size_t elem;
+    size_t dimSize;
+    size_t resIdx;
+    int globalIndex = 0;
+    int dimIndex;
+
+    while (cacheVarDims[cacheCat][cacheVar][globalIndex] > -1) {
+        dimIndex = cacheVarDims[cacheCat][cacheVar][globalIndex];
+        dimSize =
+            (dimIndex == eiv_max_years) ? n_years : cacheDimSizes[dimIndex];
+        numElem *= (dimIndex != eiv_periods) ? dimSize : 1;
+
+        count[startNumDims] = dimSize;
+
+        globalIndex++;
+        startNumDims++;
+    }
+
+    for (site = 0; site < nActiveSites; site++) {
+        for (pd = 0; pd < nPds; pd++) {
+            void *vars[][46] = {
+                /* SW_WEATHER_SIM */
+                {(void *) &SW_Runs[site].WeatherSim.eoy_temp_max,
+                 (void *) &SW_Runs[site].WeatherSim.eoy_temp_min,
+                 (void *) &SW_Runs[site].WeatherSim.eoy_ppt,
+                 (void *) &SW_Runs[site].WeatherSim.eoy_cloudCover,
+                 (void *) &SW_Runs[site].WeatherSim.eoy_windSpeed,
+                 (void *) &SW_Runs[site].WeatherSim.eoy_relHumidity,
+                 (void *) &SW_Runs[site].WeatherSim.eoy_shortWaveRad,
+                 (void *) &SW_Runs[site].WeatherSim.eoy_actualVaporPressure,
+                 (void *) &SW_Runs[site].WeatherSim.surfaceAvg,
+                 (void *) &SW_Runs[site].WeatherSim.surfaceMax,
+                 (void *) &SW_Runs[site].WeatherSim.surfaceMin},
+
+                /* SW_ST_SIM */
+                {(void *) &SW_Runs[site].StRegSimVals.oldavgLyrTempR,
+                 (void *) &SW_Runs[site].StRegSimVals.delta_time},
+
+                /* SW_VEGESTAB_SIM */
+                {(void *) SW_Runs[site].VegEstabSim.parms.estab_doy,
+                 (void *) SW_Runs[site].VegEstabSim.parms.germ_days,
+                 (void *) SW_Runs[site].VegEstabSim.parms.drydays_postgerm,
+                 (void *) SW_Runs[site].VegEstabSim.parms.wetdays_for_germ,
+                 (void *) SW_Runs[site].VegEstabSim.parms.wetdays_for_estab,
+                 (void *) SW_Runs[site].VegEstabSim.parms.germd,
+                 (void *) SW_Runs[site].VegEstabSim.parms.no_estab},
+
+                /* SW_VEGPROD_SIM */
+                {(void *) SW_Runs[site].VegProdSim.annTemp,
+                 (void *) SW_Runs[site].VegProdSim.annTempPrecipCorr,
+                 (void *) SW_Runs[site].VegProdSim.annIsotherm,
+                 (void *) SW_Runs[site].VegProdSim.annWaterDef,
+                 (void *) SW_Runs[site].VegProdSim.annPrecip,
+                 (void *) SW_Runs[site].VegProdSim.annSeasonPrecip,
+                 (void *) SW_Runs[site].VegProdSim.annPrecipDriestMon,
+                 (void *) SW_Runs[site].VegProdSim.annWetDegDays,
+                 (void *) SW_Runs[site].VegProdSim.annTempWarmestMon,
+                 (void *) SW_Runs[site].VegProdSim.annTempColdestMon,
+                 (void *) SW_Runs[site].VegProdSim.annPrecipWettestMon,
+                 (void *) &SW_Runs[site].VegProdSim.annTempLongAvg,
+                 (void *) &SW_Runs[site].VegProdSim.annTempPrecipLongAvg,
+                 (void *) &SW_Runs[site].VegProdSim.annIsothermLongAvg,
+                 (void *) &SW_Runs[site].VegProdSim.annWaterDefLongAvg,
+                 (void *) &SW_Runs[site].VegProdSim.annSeasonPrecipLongAvg,
+                 (void *) &SW_Runs[site].VegProdSim.annPrecipDriestMonLongAvg,
+                 (void *) &SW_Runs[site].VegProdSim.annWetDegDaysLongAvg,
+                 (void *) &SW_Runs[site].VegProdSim.annTempWarmestMonLongAvg,
+                 (void *) &SW_Runs[site].VegProdSim.annTempColdestMonLongAvg,
+                 (void *) &SW_Runs[site].VegProdSim.annPrecipWettestMonLongAvg,
+                 (void *) &SW_Runs[site].VegProdSim.annPrecipLongAvg,
+                 (void *) &SW_Runs[site].VegProdSim.annIsothermShortAvg,
+                 (void *) &SW_Runs[site].VegProdSim.annTempPrecipShortAvg,
+                 (void *) &SW_Runs[site].VegProdSim.annSeasonPrecipShortAvg,
+                 (void *) &SW_Runs[site].VegProdSim.annPrecipShortAvg,
+                 (void *) &SW_Runs[site].VegProdSim.annWetDegDaysShortAvg,
+                 (void *) &SW_Runs[site].VegProdSim.annWaterDefShortAvg,
+                 (void *) &SW_Runs[site].VegProdSim.annPrecipDriestMonShortAvg,
+                 (void *) &SW_Runs[site].VegProdSim.anomIsotherm,
+                 (void *) &SW_Runs[site].VegProdSim.anomTempPrecipCorr,
+                 (void *) &SW_Runs[site].VegProdSim.anomWaterDef,
+                 (void *) &SW_Runs[site].VegProdSim.rateAnomSeasonPrecip,
+                 (void *) &SW_Runs[site].VegProdSim.rateAnomPrecip,
+                 (void *) &SW_Runs[site].VegProdSim.rateAnomWetDegDays,
+                 (void *) &SW_Runs[site].VegProdSim.rateAnomWaterDef,
+                 (void *) &SW_Runs[site].VegProdSim.rateAnomPrecipDriestMon,
+                 (void *) &SW_Runs[site].VegProdSim.shortIndex,
+                 (void *) &SW_Runs[site].VegProdSim.longIndex},
+
+                /* SW_VEGPROD_SIM - VegTypeSim */
+                {(void *) &SW_Runs[site].VegProdSim.veg.litter_daily,
+                 (void *) &SW_Runs[site].VegProdSim.veg.biomass_daily,
+                 (void *) &SW_Runs[site].VegProdSim.veg.pct_live_daily,
+                 (void *) &SW_Runs[site].VegProdSim.veg.veg_height_daily,
+                 (void *) &SW_Runs[site].VegProdSim.veg.lai_conv_daily,
+                 (void *) &SW_Runs[site].VegProdSim.veg.lai_live_daily,
+                 (void *) &SW_Runs[site].VegProdSim.veg.bLAI_total_daily,
+                 (void *) &SW_Runs[site].VegProdSim.veg.biolive_daily,
+                 (void *) &SW_Runs[site].VegProdSim.veg.biodead_daily,
+                 (void *) &SW_Runs[site].VegProdSim.veg.total_agb_daily,
+                 (void *) &SW_Runs[site].VegProdSim.veg.co2_multipliers},
+
+                /* SW_SOILWAT_SIM */
+                {(void *) &SW_Runs[site]
+                     .SoilWatSim.swcBulk[Yesterday], /* "Yesterday" value */
+                 (void *) &SW_Runs[site]
+                     .SoilWatSim.snowpack[Yesterday], /* "Yesterday" value */
+                 (void *) SW_Runs[site].SoilWatSim.veg_int_storage,
+                 (void *) &SW_Runs[site].SoilWatSim.litter_int_storage,
+                 (void *) &SW_Runs[site]
+                     .SoilWatSim
+                     .standingWater[Yesterday], /* standingWater's
+                                                   "Yesterday" value */
+                 (void *) SW_Runs[site].SoilWatSim.soiltempError},
+
+                /* SW_WEATHER_OUTPUTS - accu */
+                {(void *) &SW_Runs[site].weath_p_accu[pd].temp_max,
+                 (void *) &SW_Runs[site].weath_p_accu[pd].temp_min,
+                 (void *) &SW_Runs[site].weath_p_accu[pd].temp_avg,
+                 (void *) &SW_Runs[site].weath_p_accu[pd].ppt,
+                 (void *) &SW_Runs[site].weath_p_accu[pd].rain,
+                 (void *) &SW_Runs[site].weath_p_accu[pd].snow,
+                 (void *) &SW_Runs[site].weath_p_accu[pd].snowmelt,
+                 (void *) &SW_Runs[site].weath_p_accu[pd].snowloss,
+                 (void *) &SW_Runs[site].weath_p_accu[pd].snowRunoff,
+                 (void *) &SW_Runs[site].weath_p_accu[pd].surfaceRunoff,
+                 (void *) &SW_Runs[site].weath_p_accu[pd].surfaceRunon,
+                 (void *) &SW_Runs[site].weath_p_accu[pd].soil_inf,
+                 (void *) &SW_Runs[site].weath_p_accu[pd].et,
+                 (void *) &SW_Runs[site].weath_p_accu[pd].aet,
+                 (void *) &SW_Runs[site].weath_p_accu[pd].pet,
+                 (void *) &SW_Runs[site].weath_p_accu[pd].surfaceAvg,
+                 (void *) &SW_Runs[site].weath_p_accu[pd].surfaceMax,
+                 (void *) &SW_Runs[site].weath_p_accu[pd].surfaceMin},
+
+                /* SW_WEATHER_OUTPUTS - oagg */
+                {(void *) &SW_Runs[site].weath_p_oagg[pd].temp_max,
+                 (void *) &SW_Runs[site].weath_p_oagg[pd].temp_min,
+                 (void *) &SW_Runs[site].weath_p_oagg[pd].temp_avg,
+                 (void *) &SW_Runs[site].weath_p_oagg[pd].ppt,
+                 (void *) &SW_Runs[site].weath_p_oagg[pd].rain,
+                 (void *) &SW_Runs[site].weath_p_oagg[pd].snow,
+                 (void *) &SW_Runs[site].weath_p_oagg[pd].snowmelt,
+                 (void *) &SW_Runs[site].weath_p_oagg[pd].snowloss,
+                 (void *) &SW_Runs[site].weath_p_oagg[pd].snowRunoff,
+                 (void *) &SW_Runs[site].weath_p_oagg[pd].surfaceRunoff,
+                 (void *) &SW_Runs[site].weath_p_oagg[pd].surfaceRunon,
+                 (void *) &SW_Runs[site].weath_p_oagg[pd].soil_inf,
+                 (void *) &SW_Runs[site].weath_p_oagg[pd].et,
+                 (void *) &SW_Runs[site].weath_p_oagg[pd].aet,
+                 (void *) &SW_Runs[site].weath_p_oagg[pd].pet,
+                 (void *) &SW_Runs[site].weath_p_oagg[pd].surfaceAvg,
+                 (void *) &SW_Runs[site].weath_p_oagg[pd].surfaceMax,
+                 (void *) &SW_Runs[site].weath_p_oagg[pd].surfaceMin},
+
+                /* SW_VEGPROD_OUTPUTS - accu */
+                {(void *) &SW_Runs[site].vp_p_accu[pd].biomass_total,
+                 (void *) &SW_Runs[site].vp_p_accu[pd].biolive_total,
+                 (void *) &SW_Runs[site].vp_p_accu[pd].litter_total,
+                 (void *) &SW_Runs[site].vp_p_accu[pd].LAI},
+
+                /* SW_VEGPROD_OUTPUTS - oagg */
+                {(void *) &SW_Runs[site].vp_p_oagg[pd].biomass_total,
+                 (void *) &SW_Runs[site].vp_p_oagg[pd].biolive_total,
+                 (void *) &SW_Runs[site].vp_p_oagg[pd].litter_total,
+                 (void *) &SW_Runs[site].vp_p_oagg[pd].LAI},
+
+                /* SW_VEGPROD_OUTPUTS via VegTypeOut - accu */
+                {(void *) SW_Runs[site].vp_p_accu[pd].veg.biomass_inveg,
+                 (void *) SW_Runs[site].vp_p_accu[pd].veg.biolive_inveg,
+                 (void *) SW_Runs[site].vp_p_accu[pd].veg.litter_inveg},
+
+                /* SW_VEGPROD_OUTPUTS via VegTypeOut - oagg */
+                {(void *) SW_Runs[site].vp_p_oagg[pd].veg.biomass_inveg,
+                 (void *) SW_Runs[site].vp_p_oagg[pd].veg.biolive_inveg,
+                 (void *) SW_Runs[site].vp_p_oagg[pd].veg.litter_inveg},
+
+                /* SW_SOILWAT_OUTPUTS - accu */
+                {(void *) &SW_Runs[site].sw_p_accu[pd].wetdays,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].vwcBulk,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].vwcMatric,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].swcBulk,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].swpMatric,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].swaBulk,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].SWA_VegType,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].swaMatric,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].transp_total,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].transp,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].evap_baresoil,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].lyrdrain,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].hydred_total,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].hydred,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].surfaceWater,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].surfaceWater_evap,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].total_evap,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].evap_veg,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].litter_evap,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].total_int,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].int_veg,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].litter_int,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].snowpack,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].snowdepth,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].et,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].aet,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].tran,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].esoil,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].ecnw,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].esurf,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].esnow,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].pet,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].H_oh,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].H_ot,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].H_gh,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].H_gt,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].deep,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].avgLyrTemp,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].lyrFrozen,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].minLyrTemperature,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].maxLyrTemperature,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].cwd,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].ddd5C30bar000to100cm,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].wdd5C15bar000to100cm,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].swa30bar000to100cm,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].swa39bar000to100cm},
+
+                /* SW_SOILWAT_OUTPUTS - oagg */
+                {(void *) &SW_Runs[site].sw_p_oagg[pd].wetdays,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].vwcBulk,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].vwcMatric,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].swcBulk,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].swpMatric,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].swaBulk,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].SWA_VegType,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].swaMatric,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].transp_total,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].transp,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].evap_baresoil,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].lyrdrain,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].hydred_total,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].hydred,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].surfaceWater,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].surfaceWater_evap,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].total_evap,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].evap_veg,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].litter_evap,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].total_int,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].int_veg,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].litter_int,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].snowpack,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].snowdepth,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].et,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].aet,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].tran,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].esoil,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].ecnw,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].esurf,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].esnow,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].pet,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].H_oh,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].H_ot,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].H_gh,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].H_gt,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].deep,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].avgLyrTemp,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].lyrFrozen,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].minLyrTemperature,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].maxLyrTemperature,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].cwd,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].ddd5C30bar000to100cm,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].wdd5C15bar000to100cm,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].swa30bar000to100cm,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].swa39bar000to100cm},
+
+                /* SW_VEGESTAB_OUTPUTS - accu */
+                {(void *) &SW_Runs[site].ves_p_accu[pd].days},
+
+                /* SW_VEGESTAB_OUTPUTS - oagg */
+                {(void *) &SW_Runs[site].ves_p_oagg[pd].days},
+            };
+
+            startIndex = pd * numElem + actSiteIdx[site] * numElem * nPds;
+            for (elem = 0; elem < numElem; elem++) {
+                resIdx = startIndex + elem;
+
+                switch (varType) {
+                case NC_INT:
+                    tempInts[resIdx] =
+                        ((int *) vars[cacheCat][cacheVar])[resIdx];
+                    break;
+                case NC_DOUBLE:
+                    tempDoubles[resIdx] =
+                        ((double *) vars[cacheCat][cacheVar])[resIdx];
+                    break;
+                default: /* NC_UINT */
+                    tempUInts[resIdx] =
+                        ((IntU *) vars[cacheCat][cacheVar])[resIdx];
+                    break;
+                }
+            }
+        }
+    }
+}
 
 /**
 @brief Allocate/deallocate temporary silt storage
@@ -7002,23 +7518,23 @@ static void read_veg_inputs(
                 break;
 
             case 1:
-                values = &SW_Runs[site].RunIn.VegProdRunIn.veg[kVeg].cov.fCover;
+                values = &SW_Runs[site].RunIn.VegProdRunIn.veg.cov[kVeg].fCover;
                 break;
 
             case 2:
-                values = SW_Runs[site].RunIn.VegProdRunIn.veg[kVeg].litter;
+                values = SW_Runs[site].RunIn.VegProdRunIn.veg.litter[kVeg];
                 break;
 
             case 3:
-                values = SW_Runs[site].RunIn.VegProdRunIn.veg[kVeg].biomass;
+                values = SW_Runs[site].RunIn.VegProdRunIn.veg.biomass[kVeg];
                 break;
 
             case 4:
-                values = SW_Runs[site].RunIn.VegProdRunIn.veg[kVeg].pct_live;
+                values = SW_Runs[site].RunIn.VegProdRunIn.veg.pct_live[kVeg];
                 break;
 
             case 5:
-                values = SW_Runs[site].RunIn.VegProdRunIn.veg[kVeg].lai_conv;
+                values = SW_Runs[site].RunIn.VegProdRunIn.veg.lai_conv[kVeg];
                 break;
 
             default:
@@ -10616,11 +11132,24 @@ to get stopped prematurely
 temporal/spatial information for a set of simulation runs
 @param[in] sw_template Template SW_RUN for the function to use as a
 reference for local versions of SW_RUN
+@param[out] cacheFileID File identifier of the cache file; returned with
+an updated value once created
 @param[out] main_LogInfo The main LOG_INFO instance for the program
 */
 void SW_NCIN_create_cache_file(
-    SW_DOMAIN *SW_Domain, SW_RUN *sw_template, LOG_INFO *main_LogInfo
+    SW_DOMAIN *SW_Domain,
+    SW_RUN *sw_template,
+    int *cacheFileID,
+    LOG_INFO *main_LogInfo
 ) {
+    Bool primCRSIsGeo =
+        SW_Domain->OutDom.netCDFOutput.primary_crs_is_geographic;
+    char *readinGeoYName = SW_Domain->OutDom.netCDFOutput.geo_YAxisName;
+    char *readinGeoXName = SW_Domain->OutDom.netCDFOutput.geo_XAxisName;
+    char *readinProjYName = SW_Domain->OutDom.netCDFOutput.proj_YAxisName;
+    char *readinProjXName = SW_Domain->OutDom.netCDFOutput.proj_XAxisName;
+    char *siteName = SW_Domain->OutDom.netCDFOutput.siteName;
+
     const Bool progSDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
     const IntU vegEstabCount = sw_template->VegEstabIn.count;
     const char *freq = "fx";
@@ -10635,12 +11164,15 @@ void SW_NCIN_create_cache_file(
     int category;
     int var;
     int dimSize;
-    int cacheFileID = -1;
+    int ysDimID;
+    int xDimID;
+    const char *YDimName = (primCRSIsGeo) ? readinGeoYName : readinProjYName;
+    const char *XDimName = (primCRSIsGeo) ? readinGeoXName : readinProjXName;
 
     int varDimIDs[MAX_NUM_DIMS] = {0};
     size_t varChunks[MAX_NUM_DIMS] = {0};
     const int startDimIdx = progSDom ? 1 : 2;
-    int dimIdx;
+    int dimIdx = 0;
     int dimID;
     int localDimIdx;
     int globalDimIdx;
@@ -10658,13 +11190,31 @@ void SW_NCIN_create_cache_file(
         SW_Domain->DomainType,
         domFile,
         SW_Domain->SW_PathInputs.txtInFiles[eNCCache],
-        &cacheFileID,
+        cacheFileID,
         isInput,
         freq,
         parOpen,
         main_LogInfo
     );
     checkReturn(main_LogInfo->stopRun);
+
+    SW_NC_get_dim_identifier(
+        *cacheFileID, progSDom ? YDimName : siteName, &ysDimID, main_LogInfo
+    );
+    checkReturn(main_LogInfo->stopRun);
+
+    if (!progSDom) {
+        SW_NC_get_dim_identifier(*cacheFileID, XDimName, &xDimID, main_LogInfo);
+        checkReturn(main_LogInfo->stopRun);
+    }
+
+    varDimIDs[dimIdx] = ysDimID;
+    dimIdx++;
+
+    if (!progSDom) {
+        varDimIDs[dimIdx] = xDimID;
+        dimIdx++;
+    }
 
     for (dim = 0; dim < nCacheDims; dim++) {
         if (cacheDimSizes[dim] > 0) {
@@ -10677,7 +11227,7 @@ void SW_NCIN_create_cache_file(
             SW_NC_create_netCDF_dim(
                 cacheDimNames[dim],
                 dimSize,
-                &cacheFileID,
+                cacheFileID,
                 &cacheDimIDs[dim],
                 main_LogInfo
             );
@@ -10699,13 +11249,14 @@ void SW_NCIN_create_cache_file(
 
                 globalDimIdx++;
                 localDimIdx++;
+                dimIdx++;
             }
 
             SW_NC_create_netCDF_var(
                 &varID,
                 cacheVarNames[category][var],
                 varDimIDs,
-                &cacheFileID,
+                cacheFileID,
                 cacheVarTypes[category][var],
                 localDimIdx,
                 varChunks,
@@ -10716,11 +11267,184 @@ void SW_NCIN_create_cache_file(
 
 #if defined(SWMPI)
             SW_NC_toggle_par_access(
-                cacheFileID, varID, NC_COLLECTIVE, main_LogInfo
+                *cacheFileID, varID, NC_COLLECTIVE, main_LogInfo
             );
             checkReturn(main_LogInfo->stopRun);
 #endif
         }
     }
+}
+
+/**
+@brief Write data to cache files for storage in between program runs; creates
+the cache file if it does not already exist
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[in] sw_template Template SW_RUN for the function to use as a
+reference for local versions of SW_RUN
+@param[in] SW_Runs A list of SW_RUN instances of size "nActiveSites" that
+will be used for holding all information for the simulation
+@param[out] main_LogInfo The main LOG_INFO instance for the program
+*/
+void SW_NCIN_write_cache_vals(
+    SW_DOMAIN *SW_Domain,
+    SW_RUN *sw_template,
+    SW_RUN *SW_Runs,
+    LOG_INFO *main_LogInfo
+) {
+    const int vegCountVar = 0;
+    const Bool allocate = swTRUE;
+    const Bool deallocate = swFALSE;
+    const Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
+    const TimeInt n_years = SW_Domain->endyr - SW_Domain->startyr + 1;
+    const char *cacheFileName = SW_Domain->SW_PathInputs.txtInFiles[eNCCache];
+    int cacheFileID = -1;
+    int *tempInt = NULL;
+    double *tempDoubles = NULL;
+    IntU *tempIntU = NULL;
+    char *typeStr = "";
+
+    int cacheCat;
+    int cacheVar;
+    int nCacheVars;
+    int varType;
+    int cacheVarID;
+    char *varName;
+
+    size_t intElem = 0;
+    size_t doubleElem = 0;
+    size_t intUElem = 0;
+    size_t numElem = 0;
+    int startNDims = 0;
+
+    void *writePtr = NULL;
+
+    Bool cacheFileExists = FileExists(cacheFileName);
+
+#if defined(SWMPI)
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
+
+    if (cacheFileExists) {
+#if defined(SWMPI)
+        SW_NC_open_par(
+            cacheFileName, NC_WRITE, MPI_COMM_WORLD, &cacheFileID, main_LogInfo
+        );
+#else
+        SW_NC_open(cacheFileName, NC_WRITE, &cacheFileID, main_LogInfo);
+#endif
+    } else {
+        SW_NCIN_create_cache_file(
+            SW_Domain, sw_template, &cacheFileID, main_LogInfo
+        );
+    }
+    checkReturn(main_LogInfo->stopRun);
+
+    find_largest_type_size(
+        sDom,
+        sDom ? SW_Domain->nDimS : SW_Domain->nDimY,
+        SW_Domain->nDimX,
+        &intElem,
+        &doubleElem,
+        &intUElem
+    );
+
+    handle_temp_cache_mem(
+        allocate,
+        intElem,
+        doubleElem,
+        intUElem,
+        &tempInt,
+        &tempDoubles,
+        &tempIntU,
+        main_LogInfo
+    );
+    checkJumpToLabel(main_LogInfo->stopRun, freeMem);
+
+    for (cacheCat = 0; cacheCat < nCacheCategories; cacheCat++) {
+        nCacheVars = nCacheVarsInCats[cacheCat];
+
+        for (cacheVar = 0; cacheVar < nCacheVars; cacheVar++) {
+            size_t start[NC_MAX_DIMS] = {0};
+            size_t count[NC_MAX_DIMS] = {0};
+            startNDims = 1;
+
+            varType = cacheVarTypes[cacheCat][cacheVar];
+            varName = (char *) cacheVarNames[cacheCat][cacheVar];
+
+            start[startNDims - 1] = sDom ? SW_Domain->nDimS : SW_Domain->nDimY;
+
+            if (!sDom) {
+                start[startNDims] = sDom ? 0 : SW_Domain->nDimX;
+                startNDims++;
+            }
+
+            if ((cacheCat != nCacheCategories - 1 && cacheVar != vegCountVar) ||
+                sw_template->VegEstabIn.use) {
+
+                rearrange_cache_values(
+                    SW_Runs,
+                    cacheCat,
+                    cacheVar,
+                    n_years,
+                    SW_Domain->nActiveSuidsProc,
+                    SW_Domain->actSiteIdx[eSW_InDomain],
+                    startNDims,
+                    tempDoubles,
+                    tempIntU,
+                    tempInt,
+                    count
+                );
+
+                switch (varType) {
+                case NC_INT:
+                    writePtr = (void *) tempInt;
+                    typeStr = "integer";
+                    numElem = intElem;
+                    break;
+                case NC_DOUBLE:
+                    writePtr = (void *) tempDoubles;
+                    typeStr = "double";
+                    numElem = doubleElem;
+                    break;
+                default: /* NC_UINT */
+                    writePtr = (void *) tempIntU;
+                    typeStr = "unsigned integer";
+                    numElem = intUElem;
+                    break;
+                }
+
+                cacheVarID = -1;
+                SW_NC_write_vals(
+                    &cacheVarID,
+                    cacheFileID,
+                    varName,
+                    writePtr,
+                    start,
+                    count,
+                    typeStr,
+                    main_LogInfo
+                );
+                checkJumpToLabel(main_LogInfo->stopRun, freeMem);
+
+                reset_temp_vals(numElem, varType, writePtr);
+            }
+        }
+    }
+
+freeMem:
+    handle_temp_cache_mem(
+        deallocate,
+        intElem,
+        doubleElem,
+        intUElem,
+        &tempInt,
+        &tempDoubles,
+        &tempIntU,
+        main_LogInfo
+    );
+
+    nc_close(cacheFileID);
 }
 

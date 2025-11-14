@@ -895,6 +895,14 @@ void SW_CTL_RunSimSet(
         main_LogInfo
     );
 
+    if (siteRuns[0].ModelSim.doy != siteRuns[0].ModelSim.lastdoy ||
+        siteRuns[0].ModelSim.year != sw_template->ModelIn.endyr) {
+
+        SW_NCIN_write_cache_vals(
+            SW_Domain, sw_template, siteRuns, main_LogInfo
+        );
+    }
+
     handle_sim_structs_mem(
         dealloc,
         nActiveSites,
