@@ -375,32 +375,34 @@ static const char *const possInKeys[] = {
 
 /** Cache file information */
 static const int nCacheDims = 11;
-static const int nCacheCategories = 12;
+static const int nCacheCategories = 16;
 static const int eiv_max_daysp1 = 0;
 static const int eiv_max_layers = 1;
-static const int eiv_max_layersp1 = 2;
-static const int eiv_max_years = 3;
-static const int eiv_max_months = 4;
-static const int eiv_max_species = 5;
-static const int eiv_pft = 6;
-static const int eiv_periods = 7;
-static const int eiv_max_rgr = 8;
-static const int eiv_bio_effects = 9;
-static const int eiv_vegestab_count = 10;
+static const int eiv_max_years = 2;
+static const int eiv_max_species = 3;
+static const int eiv_pft = 4;
+static const int eiv_periods = 5;
+static const int eiv_max_rgr = 6;
+static const int eiv_bio_effects = 7;
+static const int eiv_vegestab_count = 8;
 
 static const int nCacheVarsInCats[] = {
     11, /* SW_WEATHER_SIM */
-    9,  /* SW_ST_SIM */
-    12, /* SW_MODEL_SIM */
+    2,  /* SW_ST_SIM */
     7,  /* SW_VEGESTAB_SIM */
-    39, /* SW_VEGPROD_SIM */
-    11, /* SW_VEGPROD_SIM */
+    37, /* SW_VEGPROD_SIM */
+    11, /* SW_VEGPROD_SIM - VegTypeSim */
     6,  /* SW_SOILWAT_SIM */
-    18, /* SW_WEATHER_OUTPUTS */
-    4,  /* SW_VEGPROD_OUTPUTS */
-    3,  /* SW_VEGPROD_OUTPUTS */
-    46, /* SW_SOILWAT_OUTPUTS */
-    1   /* SW_VEGESTAB_OUTPUTS */
+    18, /* SW_WEATHER_OUTPUTS - accu */
+    18, /* SW_WEATHER_OUTPUTS - oagg */
+    4,  /* SW_VEGPROD_OUTPUTS - accu */
+    4,  /* SW_VEGPROD_OUTPUTS - oagg */
+    3,  /* SW_VEGPROD_OUTPUTS via VegTypeOut - accu */
+    3,  /* SW_VEGPROD_OUTPUTS via VegTypeOut - oagg */
+    46, /* SW_SOILWAT_OUTPUTS - accu */
+    46, /* SW_SOILWAT_OUTPUTS - oagg */
+    1,  /* SW_VEGESTAB_OUTPUTS - accu */
+    1   /* SW_VEGESTAB_OUTPUTS - oagg */
 };
 
 static const char *const cacheVarNames[][46] = {
@@ -417,31 +419,8 @@ static const char *const cacheVarNames[][46] = {
      "surfaceMax",
      "surfaceMin"},
 
-    /* SW_ST_SIM - COME BACK TO */
-    {"depthsR",
-     "fcR",
-     "wpR",
-     "bDensityR",
-     "oldavgLyrTempR",
-     "tlyrs_by_slyrs",
-     "soil_temp_init",
-     "fusion_pool_init",
-     "delta_time"},
-
-    /* SW_MODEL_SIM */
-    {"firstdoy",
-     "lastdoy",
-     "doy",
-     "week",
-     "month",
-     "year",
-     "prevweek",
-     "prevmonth",
-     "prevyear",
-     "yearIdxSpinSim",
-     "yearIdx",
-     "days_in_month",
-     "cum_monthdays"},
+    /* SW_ST_SIM */
+    {"oldavgLyrTempR", "delta_time"},
 
     /* SW_VEGESTAB_SIM */
     {"estab_doy",
@@ -489,9 +468,7 @@ static const char *const cacheVarNames[][46] = {
      "rateAnomPrecip",
      "rateAnomWetDegDays",
      "rateAnomWaterDef",
-     "rateAnomPrecipDriestMon",
-     "shortIndex",
-     "longIndex"},
+     "rateAnomPrecipDriestMon"},
 
     /* SW_VEGPROD_SIM - VegTypeSim */
     {"litter_daily",
@@ -514,85 +491,161 @@ static const char *const cacheVarNames[][46] = {
      "standingWaterYest", /* standingWater's "Yesterday" value */
      "soiltempError"},
 
-    /* SW_WEATHER_OUTPUTS */
-    {"temp_maxOutput",
-     "temp_minOutput",
-     "temp_avgOutput",
-     "pptOutput",
-     "rainOutput",
-     "snowOutput",
-     "snowmeltOutput",
-     "snowlossOutput",
-     "snowRunoffOutput",
-     "surfaceRunoffOutput",
-     "surfaceRunonOutput",
-     "soil_infOutput",
-     "etOutput",
-     "aetOutput",
-     "petOutput",
-     "surfaceAvgOutput",
-     "surfaceMaxOutput",
-     "surfaceMinOutput"},
+    /* SW_WEATHER_OUTPUTS - accu */
+    {"temp_max_accu",
+     "temp_min_accu",
+     "temp_avg_accu",
+     "ppt_accu",
+     "rain_accu",
+     "snow_accu",
+     "snowmelt_accu",
+     "snowloss_accu",
+     "snowRunoff_accu",
+     "surfaceRunoff_accu",
+     "surfaceRunon_accu",
+     "soil_inf_accu",
+     "et_accu",
+     "aet_accu",
+     "pet_accu",
+     "surfaceAvg_accu",
+     "surfaceMax_accu",
+     "surfaceMin_accu"},
 
-    /* SW_VEGPROD_OUTPUTS */
-    {"biomass_totalOutput",
-     "biolive_totalOutput",
-     "litter_totalOutput",
-     "LAIOutput"},
+    /* SW_WEATHER_OUTPUTS - oagg */
+    {"temp_max_oagg",
+     "temp_min_oagg",
+     "temp_avg_oagg",
+     "ppt_oagg",
+     "rain_oagg",
+     "snow_oagg",
+     "snowmelt_oagg",
+     "snowloss_oagg",
+     "snowRunoff_oagg",
+     "surfaceRunoff_oagg",
+     "surfaceRunon_oagg",
+     "soil_inf_oagg",
+     "et_oagg",
+     "aet_oagg",
+     "pet_oagg",
+     "surfaceAvg_oagg",
+     "surfaceMax_oagg",
+     "surfaceMin_oagg"},
 
-    /* SW_VEGPROD_OUTPUTS via VegTypeOut */
-    {"biomass_invegOutput", "biolive_invegOutput", "litter_invegOutput"},
+    /* SW_VEGPROD_OUTPUTS - accu */
+    {"biomass_total_accu", "biolive_total_accu", "litter_total_accu", "LAI_accu"
+    },
 
-    /* SW_SOILWAT_OUTPUTS */
-    {"wetdaysOutput",
-     "vwcBulkOutput",
-     "vwcMatricOutput",
-     "swcBulkOutput",
-     "swpMatricOutput",
-     "swaBulkOutput",
-     "SWA_VegTypeOutput",
-     "swaMatricOutput",
-     "transp_totalOutput",
-     "transpOutput",
-     "evap_baresoilOutput",
-     "lyrdrainOutput",
-     "hydred_totalOutput",
-     "hydredOutput",
-     "surfaceWaterOutput",
-     "surfaceWater_evapOutput",
-     "total_evapOutput",
-     "evap_vegOutput",
-     "litter_evapOutput",
-     "total_intOutput",
-     "int_vegOutput",
-     "litter_intOutput",
-     "snowpackOutput",
-     "snowdepthOutput",
-     "etOutput",
-     "aetOutput",
-     "tranOutput",
-     "esoilOutput",
-     "ecnwOutput",
-     "esurfOutput",
-     "esnowOutput",
-     "petOutput",
-     "H_ohOutput",
-     "H_otOutput",
-     "H_ghOutput",
-     "H_gtOutput",
-     "deepOutput",
-     "avgLyrTempOutput",
-     "lyrFrozenOutput",
-     "minLyrTemperatureOutput",
-     "maxLyrTemperatureOutput",
-     "cwdOutput",
-     "ddd5C30bar000to100cmOutput",
-     "wdd5C15bar000to100cmOutput",
-     "swa30bar000to100cmOutput",
-     "swa39bar000to100cmOutput"},
+    /* SW_VEGPROD_OUTPUTS - oagg */
+    {"biomass_total_oagg", "biolive_total_oagg", "litter_total_oagg", "LAI_oagg"
+    },
 
-    /* SW_VEGESTAB_OUTPUTS */
-    {"daysOutput"}
+    /* SW_VEGPROD_OUTPUTS via VegTypeOut - accu */
+    {"biomass_inveg_accu", "biolive_inveg_accu", "litter_inveg_accu"},
+
+    /* SW_VEGPROD_OUTPUTS via VegTypeOut - oagg */
+    {"biomass_inveg_oagg", "biolive_inveg_oagg", "litter_inveg_oagg"},
+
+    /* SW_SOILWAT_OUTPUTS - accu */
+    {"wetdays_accu",
+     "vwcBulk_accu",
+     "vwcMatric_accu",
+     "swcBulk_accu",
+     "swpMatric_accu",
+     "swaBulk_accu",
+     "SWA_VegType_accu",
+     "swaMatric_accu",
+     "transp_total_accu",
+     "transp_accu",
+     "evap_baresoil_accu",
+     "lyrdrain_accu",
+     "hydred_total_accu",
+     "hydred_accu",
+     "surfaceWater_accu",
+     "surfaceWater_evap_accu",
+     "total_evap_accu",
+     "evap_veg_accu",
+     "litter_evap_accu",
+     "total_int_accu",
+     "int_veg_accu",
+     "litter_int_accu",
+     "snowpack_accu",
+     "snowdepth_accu",
+     "et_accu",
+     "aet_accu",
+     "tran_accu",
+     "esoil_accu",
+     "ecnw_accu",
+     "esurf_accu",
+     "esnow_accu",
+     "pet_accu",
+     "H_oh_accu",
+     "H_ot_accu",
+     "H_gh_accu",
+     "H_gt_accu",
+     "deep_accu",
+     "avgLyrTemp_accu",
+     "lyrFrozen_accu",
+     "minLyrTemperature_accu",
+     "maxLyrTemperature_accu",
+     "cwd_accu",
+     "ddd5C30bar000to100cm_accu",
+     "wdd5C15bar000to100cm_accu",
+     "swa30bar000to100cm_accu",
+     "swa39bar000to100cm_accu"},
+
+    /* SW_SOILWAT_OUTPUTS - oagg */
+    {"wetdays_oagg",
+     "vwcBulk_oagg",
+     "vwcMatric_oagg",
+     "swcBulk_oagg",
+     "swpMatric_oagg",
+     "swaBulk_oagg",
+     "SWA_VegType_oagg",
+     "swaMatric_oagg",
+     "transp_total_oagg",
+     "transp_oagg",
+     "evap_baresoil_oagg",
+     "lyrdrain_oagg",
+     "hydred_total_oagg",
+     "hydred_oagg",
+     "surfaceWater_oagg",
+     "surfaceWater_evap_oagg",
+     "total_evap_oagg",
+     "evap_veg_oagg",
+     "litter_evap_oagg",
+     "total_int_oagg",
+     "int_veg_oagg",
+     "litter_int_oagg",
+     "snowpack_oagg",
+     "snowdepth_oagg",
+     "et_oagg",
+     "aet_oagg",
+     "tran_oagg",
+     "esoil_oagg",
+     "ecnw_oagg",
+     "esurf_oagg",
+     "esnow_oagg",
+     "pet_oagg",
+     "H_oh_oagg",
+     "H_ot_oagg",
+     "H_gh_oagg",
+     "H_gt_oagg",
+     "deep_oagg",
+     "avgLyrTemp_oagg",
+     "lyrFrozen_oagg",
+     "minLyrTemperature_oagg",
+     "maxLyrTemperature_oagg",
+     "cwd_oagg",
+     "ddd5C30bar000to100cm_oagg",
+     "wdd5C15bar000to100cm_oagg",
+     "swa30bar000to100cm_oagg",
+     "swa39bar000to100cm_oagg"},
+
+    /* SW_VEGESTAB_OUTPUTS - accu */
+    {"days_accu"},
+
+    /* SW_VEGESTAB_OUTPUTS - oagg */
+    {"days_oagg"}
 };
 
 static const int cacheVarTypes[][46] = {
@@ -609,31 +662,8 @@ static const int cacheVarTypes[][46] = {
      NC_DOUBLE,
      NC_DOUBLE},
 
-    /* SW_ST_SIM - COME BACK TO */
-    {NC_DOUBLE,
-     NC_DOUBLE,
-     NC_DOUBLE,
-     NC_DOUBLE,
-     NC_DOUBLE,
-     NC_DOUBLE,
-     NC_DOUBLE,
-     NC_DOUBLE,
-     NC_DOUBLE},
-
-    /* SW_MODEL_SIM */
-    {NC_UINT,
-     NC_UINT,
-     NC_UINT,
-     NC_UINT,
-     NC_UINT,
-     NC_UINT,
-     NC_UINT,
-     NC_UINT,
-     NC_UINT,
-     NC_INT,
-     NC_UINT,
-     NC_UINT,
-     NC_UINT},
+    /* SW_ST_SIM */
+    {NC_DOUBLE, NC_DOUBLE},
 
     /* SW_VEGESTAB_SIM via SW_VEGESTAB_INFO_SIM */
     {NC_UINT, NC_UINT, NC_UINT, NC_UINT, NC_UINT, NC_INT, NC_INT},
@@ -645,7 +675,7 @@ static const int cacheVarTypes[][46] = {
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
-     NC_DOUBLE, NC_UINT,   NC_UINT},
+     NC_DOUBLE},
 
     /* SW_VEGPROD_SIM via VegTypeSim */
     {NC_DOUBLE,
@@ -663,7 +693,7 @@ static const int cacheVarTypes[][46] = {
     /* SW_SOILWAT_SIM */
     {NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_INT},
 
-    /* SW_WEATHER_OUTPUTS */
+    /* SW_WEATHER_OUTPUTS - accu */
     {NC_DOUBLE,
      NC_DOUBLE,
      NC_DOUBLE,
@@ -683,13 +713,39 @@ static const int cacheVarTypes[][46] = {
      NC_DOUBLE,
      NC_DOUBLE},
 
-    /* SW_VEGPROD_OUTPUTS */
+    /* SW_WEATHER_OUTPUTS - oagg */
+    {NC_DOUBLE,
+     NC_DOUBLE,
+     NC_DOUBLE,
+     NC_DOUBLE,
+     NC_DOUBLE,
+     NC_DOUBLE,
+     NC_DOUBLE,
+     NC_DOUBLE,
+     NC_DOUBLE,
+     NC_DOUBLE,
+     NC_DOUBLE,
+     NC_DOUBLE,
+     NC_DOUBLE,
+     NC_DOUBLE,
+     NC_DOUBLE,
+     NC_DOUBLE,
+     NC_DOUBLE,
+     NC_DOUBLE},
+
+    /* SW_VEGPROD_OUTPUTS - accu */
     {NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE},
 
-    /* SW_VEGPROD_OUTPUTS via VegTypeOut */
+    /* SW_VEGPROD_OUTPUTS - oagg */
+    {NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE},
+
+    /* SW_VEGPROD_OUTPUTS via VegTypeOut - accu */
     {NC_DOUBLE, NC_DOUBLE, NC_DOUBLE},
 
-    /* SW_SOILWAT_OUTPUTS */
+    /* SW_VEGPROD_OUTPUTS via VegTypeOut - oagg */
+    {NC_DOUBLE, NC_DOUBLE, NC_DOUBLE},
+
+    /* SW_SOILWAT_OUTPUTS - accu */
     {NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
@@ -699,17 +755,28 @@ static const int cacheVarTypes[][46] = {
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE},
 
-    /* SW_VEGESTAB_OUTPUTS */
+    /* SW_SOILWAT_OUTPUTS - oagg */
+    {NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
+     NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
+     NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
+     NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
+     NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
+     NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
+     NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
+     NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE},
+
+    /* SW_VEGESTAB_OUTPUTS - accu */
+    {NC_UINT},
+
+    /* SW_VEGESTAB_OUTPUTS - oagg */
     {NC_UINT}
 };
 
 static const char *const cacheDimNames[] = {
     "max_daysp1",
     "max_layers",
-    "max_layersp1",
     "max_years",
     "seven_days",
-    "max_months",
     "max_species",
     "pft",
     "out_periods",
@@ -726,31 +793,8 @@ static const int cacheVarDims[][46][4] = {
     /* SW_WEATHER_SIM */
     {{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}},
 
-    /* SW_ST_SIM - COME BACK TO */
-    {{eiv_max_rgr, -1},
-     {eiv_max_rgr, -1},
-     {eiv_max_rgr, -1},
-     {eiv_max_rgr, -1},
-     {eiv_max_rgr, -1},
-     {eiv_max_rgr, eiv_max_layersp1, -1},
-     {-1},
-     {-1},
-     {-1}},
-
-    /* SW_MODEL_SIM */
-    {{-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {eiv_max_months, -1},
-     {eiv_max_months, -1}},
+    /* SW_ST_SIM */
+    {{eiv_max_rgr, -1}, {-1}},
 
     /* SW_VEGESTAB_SIM */
     {{eiv_max_species, -1},
@@ -798,27 +842,25 @@ static const int cacheVarDims[][46][4] = {
      {-1},
      {-1},
      {-1},
-     {-1},
-     {-1},
      {-1}},
 
     /* SW_VEGPROD_SIM - VegTypeSim */
-    {{eiv_max_daysp1, -1},
-     {eiv_max_daysp1, -1},
-     {eiv_max_daysp1, -1},
-     {eiv_max_daysp1, -1},
-     {eiv_max_daysp1, -1},
-     {eiv_max_daysp1, -1},
-     {eiv_max_daysp1, -1},
-     {eiv_max_daysp1, -1},
-     {eiv_max_daysp1, -1},
-     {eiv_max_daysp1, -1},
-     {eiv_max_years, eiv_bio_effects, -1}},
+    {{eiv_pft, eiv_max_daysp1, -1},
+     {eiv_pft, eiv_max_daysp1, -1},
+     {eiv_pft, eiv_max_daysp1, -1},
+     {eiv_pft, eiv_max_daysp1, -1},
+     {eiv_pft, eiv_max_daysp1, -1},
+     {eiv_pft, eiv_max_daysp1, -1},
+     {eiv_pft, eiv_max_daysp1, -1},
+     {eiv_pft, eiv_max_daysp1, -1},
+     {eiv_pft, eiv_max_daysp1, -1},
+     {eiv_pft, eiv_max_daysp1, -1},
+     {eiv_pft, eiv_bio_effects, eiv_max_years, -1}},
 
     /* SW_SOILWAT_SIM */
     {{eiv_max_layers, -1}, {-1}, {eiv_pft}, {-1}, {-1}, {-1}},
 
-    /* SW_WEATHER_OUTPUTS */
+    /* SW_WEATHER_OUTPUTS - accu */
     {{-1},
      {-1},
      {-1},
@@ -838,16 +880,45 @@ static const int cacheVarDims[][46][4] = {
      {-1},
      {-1}},
 
-    /* SW_VEGPROD_OUTPUTS */
+    /* SW_WEATHER_OUTPUTS - oagg */
+    {{-1},
+     {-1},
+     {-1},
+     {-1},
+     {-1},
+     {-1},
+     {-1},
+     {-1},
+     {-1},
+     {-1},
+     {-1},
+     {-1},
+     {-1},
+     {-1},
+     {-1},
+     {-1},
+     {-1},
+     {-1}},
+
+    /* SW_VEGPROD_OUTPUTS - accu */
     {{eiv_periods, -1}, {eiv_periods, -1}, {eiv_periods, -1}, {eiv_periods, -1}
     },
 
-    /* SW_VEGPROD_OUTPUTS via VegTypeOut */
+    /* SW_VEGPROD_OUTPUTS - oagg */
+    {{eiv_periods, -1}, {eiv_periods, -1}, {eiv_periods, -1}, {eiv_periods, -1}
+    },
+
+    /* SW_VEGPROD_OUTPUTS via VegTypeOut - accu */
     {{eiv_periods, eiv_pft, -1},
      {eiv_periods, eiv_pft, -1},
      {eiv_periods, eiv_pft, -1}},
 
-    /* SW_SOILWAT_OUTPUTS */
+    /* SW_VEGPROD_OUTPUTS via VegTypeOut - oagg */
+    {{eiv_periods, eiv_pft, -1},
+     {eiv_periods, eiv_pft, -1},
+     {eiv_periods, eiv_pft, -1}},
+
+    /* SW_SOILWAT_OUTPUTS - accu */
     {{eiv_periods, eiv_max_layers, -1},
      {eiv_periods, eiv_max_layers, -1},
      {eiv_periods, eiv_max_layers, -1},
@@ -895,22 +966,71 @@ static const int cacheVarDims[][46][4] = {
      {eiv_periods, -1},
      {eiv_periods, -1}},
 
-    /* SW_VEGESTAB_OUTPUTS */
+    /* SW_SOILWAT_OUTPUTS - oagg */
+    {{eiv_periods, eiv_max_layers, -1},
+     {eiv_periods, eiv_max_layers, -1},
+     {eiv_periods, eiv_max_layers, -1},
+     {eiv_periods, eiv_max_layers, -1},
+     {eiv_periods, eiv_max_layers, -1},
+     {eiv_periods, eiv_max_layers, -1},
+     {eiv_periods, eiv_max_layers, eiv_pft, -1},
+     {eiv_periods, eiv_max_layers, -1},
+     {eiv_periods, eiv_max_layers, -1},
+     {eiv_periods, eiv_max_layers, eiv_pft, -1},
+     {eiv_periods, eiv_max_layers, -1},
+     {eiv_periods, eiv_max_layers, -1},
+     {eiv_periods, eiv_max_layers, -1},
+     {eiv_periods, eiv_pft, eiv_max_layers, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, eiv_pft, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, eiv_pft, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, eiv_max_layers, -1},
+     {eiv_periods, eiv_max_layers, -1},
+     {eiv_periods, eiv_max_layers, -1},
+     {eiv_periods, eiv_max_layers, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1}},
+
+    /* SW_VEGESTAB_OUTPUTS - accu */
+    {{eiv_periods, eiv_vegestab_count, -1}},
+
+    /* SW_VEGESTAB_OUTPUTS - oagg */
     {{eiv_periods, eiv_vegestab_count, -1}}
 };
 
 static const size_t cacheDimSizes[] = {
     (size_t) MAX_DAYS + 1,
     (size_t) MAX_LAYERS,
-    (size_t) MAX_LAYERS + 1,
-    (size_t) 0, /* Fill at runtime */
-    (size_t) MAX_MONTHS,
+    (size_t) 0, /* Fill at runtime - n_years */
     (size_t) MAX_NSPECIES,
     (size_t) NVEGTYPES,
     (size_t) SW_OUTNPERIODS,
     (size_t) MAX_ST_RGR,
     (size_t) 2, /* Number of CO2 effects */
-    (size_t) 0  /* Fill at runtime */
+    (size_t) 0  /* Fill at runtime - vegetation establishment count */
 };
 
 /* =================================================== */
