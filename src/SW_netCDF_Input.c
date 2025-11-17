@@ -11184,15 +11184,10 @@ to get stopped prematurely
 temporal/spatial information for a set of simulation runs
 @param[in] sw_template Template SW_RUN for the function to use as a
 reference for local versions of SW_RUN
-@param[out] cacheFileID File identifier of the cache file; returned with
-an updated value once created
 @param[out] main_LogInfo The main LOG_INFO instance for the program
 */
 void SW_NCIN_create_cache_file(
-    SW_DOMAIN *SW_Domain,
-    SW_RUN *sw_template,
-    int *cacheFileID,
-    LOG_INFO *main_LogInfo
+    SW_DOMAIN *SW_Domain, SW_RUN *sw_template, LOG_INFO *main_LogInfo
 ) {
     Bool primCRSIsGeo =
         SW_Domain->OutDom.netCDFOutput.primary_crs_is_geographic;
@@ -11206,7 +11201,7 @@ void SW_NCIN_create_cache_file(
     const IntU vegEstabCount = sw_template->VegEstabIn.count;
     const char *freq = "fx";
     const Bool isInput = swTRUE;
-    const Bool parOpen = swTRUE;
+    const Bool parOpen = swFALSE;
     const char *domFile =
         SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom];
     const size_t n_years = (size_t) (sw_template->ModelIn.endyr -
@@ -11229,6 +11224,7 @@ void SW_NCIN_create_cache_file(
     int localDimIdx;
     int globalDimIdx;
     const int deflateLevel = 0;
+    int cacheFileID = -1;
 
     int varID = -1;
 
@@ -11242,22 +11238,22 @@ void SW_NCIN_create_cache_file(
         SW_Domain->DomainType,
         domFile,
         SW_Domain->SW_PathInputs.txtInFiles[eNCCache],
-        cacheFileID,
+        &cacheFileID,
         isInput,
         freq,
         parOpen,
         main_LogInfo
     );
-    checkReturn(main_LogInfo->stopRun);
+    checkJumpToLabel(main_LogInfo->stopRun, closeFile);
 
     SW_NC_get_dim_identifier(
-        *cacheFileID, progSDom ? YDimName : siteName, &ysDimID, main_LogInfo
+        cacheFileID, progSDom ? YDimName : siteName, &ysDimID, main_LogInfo
     );
-    checkReturn(main_LogInfo->stopRun);
+    checkJumpToLabel(main_LogInfo->stopRun, closeFile);
 
     if (!progSDom) {
-        SW_NC_get_dim_identifier(*cacheFileID, XDimName, &xDimID, main_LogInfo);
-        checkReturn(main_LogInfo->stopRun);
+        SW_NC_get_dim_identifier(cacheFileID, XDimName, &xDimID, main_LogInfo);
+        checkJumpToLabel(main_LogInfo->stopRun, closeFile);
     }
 
     varDimIDs[dimIdx] = ysDimID;
@@ -11279,11 +11275,11 @@ void SW_NCIN_create_cache_file(
             SW_NC_create_netCDF_dim(
                 cacheDimNames[dim],
                 dimSize,
-                cacheFileID,
+                &cacheFileID,
                 &cacheDimIDs[dim],
                 main_LogInfo
             );
-            checkReturn(main_LogInfo->stopRun);
+            checkJumpToLabel(main_LogInfo->stopRun, closeFile);
         }
     }
 
@@ -11308,7 +11304,7 @@ void SW_NCIN_create_cache_file(
                 &varID,
                 cacheVarNames[category][var],
                 varDimIDs,
-                cacheFileID,
+                &cacheFileID,
                 cacheVarTypes[category][var],
                 localDimIdx,
                 varChunks,
@@ -11318,6 +11314,9 @@ void SW_NCIN_create_cache_file(
             checkJumpToLabel(main_LogInfo->stopRun, closeFile);
         }
     }
+
+closeFile:
+    nc_close(cacheFileID);
 }
 
 /**
@@ -11375,25 +11374,18 @@ void SW_NCIN_handle_cache_vals(
 
     void *writePtr = NULL;
 
-    Bool cacheFileExists = FileExists(cacheFileName);
 
 #if defined(SWMPI)
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
 
-    if (cacheFileExists) {
 #if defined(SWMPI)
-        SW_NC_open_par(
-            cacheFileName, NC_WRITE, MPI_COMM_WORLD, &cacheFileID, main_LogInfo
-        );
+    SW_NC_open_par(
+        cacheFileName, NC_WRITE, MPI_COMM_WORLD, &cacheFileID, main_LogInfo
+    );
 #else
-        SW_NC_open(cacheFileName, NC_WRITE, &cacheFileID, main_LogInfo);
+    SW_NC_open(cacheFileName, NC_WRITE, &cacheFileID, main_LogInfo);
 #endif
-    } else {
-        SW_NCIN_create_cache_file(
-            SW_Domain, sw_template, &cacheFileID, main_LogInfo
-        );
-    }
     checkReturn(main_LogInfo->stopRun);
 
     find_largest_type_size(

@@ -246,10 +246,7 @@ void SW_NCIN_alloc_temp_inputs(
 );
 
 void SW_NCIN_create_cache_file(
-    SW_DOMAIN *SW_Domain,
-    SW_RUN *sw_template,
-    int *cacheFileID,
-    LOG_INFO *main_LogInfo
+    SW_DOMAIN *SW_Domain, SW_RUN *sw_template, LOG_INFO *main_LogInfo
 );
 
 void SW_NCIN_handle_cache_vals(

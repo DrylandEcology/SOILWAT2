@@ -825,8 +825,18 @@ void SW_CTL_RunSimSet(
     double *tempVals = NULL;
     size_t site;
     size_t siteIdx;
+    Bool readFromCacheFile = FileExists(cacheFileName);
 
     const size_t nActiveSites = SW_Domain->nActiveSuidsProc;
+
+#if defined(SWMPI)
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
+
+    if (!readFromCacheFile && rank == ROOT_PROC) {
+        SW_NCIN_create_cache_file(SW_Domain, sw_template, main_LogInfo);
+    }
+    checkReturn(main_LogInfo->stopRun);
 
     handle_sim_structs_mem(
         alloc,
