@@ -11228,6 +11228,12 @@ void SW_NCIN_create_cache_file(
 
     int varID = -1;
 
+#if defined(SOILWAT)
+    if (main_LogInfo->printProgressMsg) {
+        SW_MSG_ROOT("is creating a cache file ...", ROOT_PROC);
+    }
+#endif
+
     varDimIDs[0] = progSDom ? SW_Domain->nDimS : SW_Domain->nDimY;
     varDimIDs[1] = progSDom ? 0 : SW_Domain->nDimX;
 
@@ -11374,9 +11380,14 @@ void SW_NCIN_handle_cache_vals(
 
     void *writePtr = NULL;
 
-
-#if defined(SWMPI)
-    MPI_Barrier(MPI_COMM_WORLD);
+#if defined(SOILWAT)
+    if (main_LogInfo->printProgressMsg) {
+        if (read) {
+            SW_MSG_ROOT("is retrieving cached simulation values ...", rank);
+        } else {
+            SW_MSG_ROOT("is caching intermediate simulation values ...", rank);
+        }
+    }
 #endif
 
 #if defined(SWMPI)
