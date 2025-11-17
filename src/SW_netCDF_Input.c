@@ -11302,7 +11302,6 @@ void SW_NCIN_create_cache_file(
                 varChunks[dimIdx] = cacheDimSizes[localDimIdx];
 
                 globalDimIdx++;
-                localDimIdx++;
                 dimIdx++;
             }
 
