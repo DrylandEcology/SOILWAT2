@@ -850,7 +850,7 @@ void SW_CTL_RunSimSet(
     checkReturn(main_LogInfo->stopRun);
 
     SW_NCIN_alloc_temp_inputs(SW_Domain, &tempVals, main_LogInfo);
-    checkReturn(main_LogInfo->stopRun);
+    checkJumpToLabel(main_LogInfo->stopRun, freeMem);
 
     init_all_logs(nActiveSites, main_LogInfo->logfp, siteLogs);
 
@@ -862,7 +862,7 @@ void SW_CTL_RunSimSet(
         siteRuns,
         main_LogInfo
     );
-    checkReturn(main_LogInfo->stopRun);
+    checkJumpToLabel(main_LogInfo->stopRun, freeMem);
 
     SW_NCIN_read_inputs(
         siteRuns,
@@ -877,7 +877,7 @@ void SW_CTL_RunSimSet(
         siteLogs,
         main_LogInfo
     );
-    checkReturn(main_LogInfo->stopRun);
+    checkJumpToLabel(main_LogInfo->stopRun, freeMem);
 
     // Check if any sites failed when reading initial values before
     // running simulations
@@ -894,7 +894,7 @@ void SW_CTL_RunSimSet(
         siteRuns[site].SiteSim.site_has_swrcpMineralSoil =
             sw_template->SiteIn.inputsProvideSWRCp;
     }
-    checkReturn(main_LogInfo->stopRun);
+    checkJumpToLabel(main_LogInfo->stopRun, freeMem);
 
     if (readFromCacheFile) {
         SW_NCIN_handle_cache_vals(
