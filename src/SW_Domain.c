@@ -1079,7 +1079,7 @@ void SW_DOM_SimSet(
     } else {
 #if defined(SOILWAT)
         if (LogInfo->printProgressMsg) {
-            SW_MSG_ROOT("is identifying the simulation set ...", 0);
+            SW_MSG_ROOT("is identifying the simulation set ...", rank);
         }
 #endif
 
