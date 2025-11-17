@@ -252,7 +252,9 @@ void SW_NCIN_create_cache_file(
     LOG_INFO *main_LogInfo
 );
 
-void SW_NCIN_write_cache_vals(
+void SW_NCIN_handle_cache_vals(
+    int rank,
+    Bool read,
     SW_DOMAIN *SW_Domain,
     SW_RUN *sw_template,
     SW_RUN *SW_Runs,

@@ -1039,18 +1039,30 @@ static const size_t cacheDimSizes[] = {
 /* --------------------------------------------------- */
 
 /**
-@brief Reset values of an array before or after use to fill values of the
-same type for netCDFs, i.e., NC_FILL_DOUBLE, NC_FILL_UINT, NC_FILL_INT
+@brief Reset values of inactive sites in an array before use to fill
+values of the same type for netCDFs, i.e., NC_FILL_DOUBLE, NC_FILL_UINT,
+NC_FILL_INT
 
-@param[in] nElem Maximum number of elements to reset
+@param[in] nActiveSites Number of active sites to simulate within a subdomain
+@param[in] nElem Maximum number of elements to reset in a site
 @param[in] varType Type of the value that is being filled
+@param[in] actSiteIdx Active site index within the subdomain
 @param[out] values Array to be filled with the determined values
 */
-static void reset_temp_vals(size_t nElem, int varType, void *values) {
+static void reset_temp_vals(
+    size_t nActiveSites,
+    size_t nElem,
+    int varType,
+    size_t *actSiteIdx,
+    void *values
+) {
     int *intVals = NULL;
     double *doubleVals = NULL;
     IntU *intUVals = NULL;
     size_t elem;
+    size_t site;
+    size_t siteIndex;
+    size_t elemIndex;
 
     switch (varType) {
     case NC_INT:
@@ -1064,17 +1076,23 @@ static void reset_temp_vals(size_t nElem, int varType, void *values) {
         break;
     }
 
-    for (elem = 0; elem < nElem; elem++) {
-        switch (varType) {
-        case NC_INT:
-            intVals[elem] = NC_FILL_INT;
-            break;
-        case NC_DOUBLE:
-            doubleVals[elem] = NC_FILL_DOUBLE;
-            break;
-        default: /* NC_UINT */
-            intUVals[elem] = NC_FILL_UINT;
-            break;
+    for (site = 0; site < nActiveSites; site++) {
+        siteIndex = actSiteIdx[site];
+
+        for (elem = 0; elem < nElem; elem++) {
+            elemIndex = nElem * siteIndex + elem;
+
+            switch (varType) {
+            case NC_INT:
+                intVals[elemIndex] = NC_FILL_INT;
+                break;
+            case NC_DOUBLE:
+                doubleVals[elemIndex] = NC_FILL_DOUBLE;
+                break;
+            default: /* NC_UINT */
+                intUVals[elemIndex] = NC_FILL_UINT;
+                break;
+            }
         }
     }
 }
@@ -1108,18 +1126,15 @@ static void handle_temp_cache_mem(
             nIntElem, sizeof(int), "handle_temp_cache_mem", LogInfo
         );
         checkReturn(LogInfo->stopRun);
-        reset_temp_vals(nIntElem, NC_INT, *tempInt);
 
         *tempDouble = (double *) Mem_Calloc(
             nDoubleElem, sizeof(double), "handle_temp_cache_mem", LogInfo
         );
         checkReturn(LogInfo->stopRun);
-        reset_temp_vals(nDoubleElem, NC_DOUBLE, *tempDouble);
 
         *tempIntU = (IntU *) Mem_Calloc(
             nIntUElem, sizeof(IntU), "handle_temp_cache_mem", LogInfo
         );
-        reset_temp_vals(nIntUElem, NC_UINT, *tempIntU);
     } else {
         if (!isnull(*tempInt)) {
             free((void *) *tempInt);
@@ -1213,6 +1228,9 @@ values at once, rather than one site at a time
 Organize the data in the format of
 [site 0, val 0], [site 0, val 1], ..., [site 1, val 0]
 
+@param[in] storeInput A flag that specifies if the values we are
+reorganizing is arrays to SW_RUN (read values, swFALSE) or SW_RUN to arrays
+(outputting values, swTRUE)
 @param[in] SW_Runs A list of n active sites of comprehensive structs
 of type SW_RUN containing all information in the simulation
 @param[in] cacheCat Cache variable category index getting rearranged
@@ -1226,10 +1244,11 @@ count, aka where to start writing count sizes
 @param[out] tempDoubles Temporary storage for doubles to be arranged in
 @param[out] tempUInts Temporary storage for unsigned integers to be arranged in
 @param[out] tempInts Temporary storage for integers to be arranged in
-@param[out] count An array of size NC_MAX_DIMS to be updated with
+@param[out] count An array of size MAX_NUM_DIMS to be updated with
 dimension sizes we will use to write out to file
 */
 static void rearrange_cache_values(
+    Bool storeOutput,
     SW_RUN *SW_Runs,
     int cacheCat,
     int cacheVar,
@@ -1256,6 +1275,7 @@ static void rearrange_cache_values(
     size_t resIdx;
     int globalIndex = 0;
     int dimIndex;
+    void *writePtr = NULL;
 
     while (cacheVarDims[cacheCat][cacheVar][globalIndex] > -1) {
         dimIndex = cacheVarDims[cacheCat][cacheVar][globalIndex];
@@ -1267,6 +1287,21 @@ static void rearrange_cache_values(
 
         globalIndex++;
         startNumDims++;
+    }
+
+    if (storeOutput) {
+        switch (varType) {
+        case NC_INT:
+            writePtr = (void *) tempInts;
+            break;
+        case NC_DOUBLE:
+            writePtr = (void *) tempDoubles;
+            break;
+        default: /* NC_UINT */
+            writePtr = (void *) tempUInts;
+            break;
+        }
+        reset_temp_vals(nActiveSites, numElem, varType, actSiteIdx, writePtr);
     }
 
     for (site = 0; site < nActiveSites; site++) {
@@ -1534,19 +1569,36 @@ static void rearrange_cache_values(
             for (elem = 0; elem < numElem; elem++) {
                 resIdx = startIndex + elem;
 
-                switch (varType) {
-                case NC_INT:
-                    tempInts[resIdx] =
-                        ((int *) vars[cacheCat][cacheVar])[resIdx];
-                    break;
-                case NC_DOUBLE:
-                    tempDoubles[resIdx] =
-                        ((double *) vars[cacheCat][cacheVar])[resIdx];
-                    break;
-                default: /* NC_UINT */
-                    tempUInts[resIdx] =
-                        ((IntU *) vars[cacheCat][cacheVar])[resIdx];
-                    break;
+                if (storeOutput) {
+                    switch (varType) {
+                    case NC_INT:
+                        tempInts[resIdx] =
+                            ((int *) vars[cacheCat][cacheVar])[resIdx];
+                        break;
+                    case NC_DOUBLE:
+                        tempDoubles[resIdx] =
+                            ((double *) vars[cacheCat][cacheVar])[resIdx];
+                        break;
+                    default: /* NC_UINT */
+                        tempUInts[resIdx] =
+                            ((IntU *) vars[cacheCat][cacheVar])[resIdx];
+                        break;
+                    }
+                } else {
+                    switch (varType) {
+                    case NC_INT:
+                        ((int *) vars[cacheCat][cacheVar])[resIdx] =
+                            tempInts[resIdx];
+                        break;
+                    case NC_DOUBLE:
+                        ((double *) vars[cacheCat][cacheVar])[resIdx] =
+                            tempDoubles[resIdx];
+                        break;
+                    default: /* NC_UINT */
+                        ((IntU *) vars[cacheCat][cacheVar])[resIdx] =
+                            tempUInts[resIdx];
+                        break;
+                    }
                 }
             }
         }
@@ -11263,22 +11315,24 @@ void SW_NCIN_create_cache_file(
                 deflateLevel,
                 main_LogInfo
             );
-            checkReturn(main_LogInfo->stopRun);
-
-#if defined(SWMPI)
-            SW_NC_toggle_par_access(
-                *cacheFileID, varID, NC_COLLECTIVE, main_LogInfo
-            );
-            checkReturn(main_LogInfo->stopRun);
-#endif
+            checkJumpToLabel(main_LogInfo->stopRun, closeFile);
         }
     }
 }
 
 /**
-@brief Write data to cache files for storage in between program runs; creates
-the cache file if it does not already exist
+@brief Write data to cache files for storage in between program runs
 
+This function chooses a more memory-efficent tradeoff with time in the
+approach to the resetting of values. Instead of allocating, say, an array
+for each combination of dimensions (i.e., different max sizes), one
+maximum-length array is created for integer, double, and unsigned integer
+values at the cost of having to reset values within said arrays for each read.
+To make it more time-efficent, `reset_temp_vals()` will only reset
+inactive sites within the arrays to fill values, where the values controlled
+by active sites are guarenteed to be overwritten.
+
+@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
 @param[in] sw_template Template SW_RUN for the function to use as a
@@ -11287,7 +11341,9 @@ reference for local versions of SW_RUN
 will be used for holding all information for the simulation
 @param[out] main_LogInfo The main LOG_INFO instance for the program
 */
-void SW_NCIN_write_cache_vals(
+void SW_NCIN_handle_cache_vals(
+    int rank,
+    Bool read,
     SW_DOMAIN *SW_Domain,
     SW_RUN *sw_template,
     SW_RUN *SW_Runs,
@@ -11315,7 +11371,6 @@ void SW_NCIN_write_cache_vals(
     size_t intElem = 0;
     size_t doubleElem = 0;
     size_t intUElem = 0;
-    size_t numElem = 0;
     int startNDims = 0;
 
     void *writePtr = NULL;
@@ -11366,69 +11421,94 @@ void SW_NCIN_write_cache_vals(
         nCacheVars = nCacheVarsInCats[cacheCat];
 
         for (cacheVar = 0; cacheVar < nCacheVars; cacheVar++) {
-            size_t start[NC_MAX_DIMS] = {0};
-            size_t count[NC_MAX_DIMS] = {0};
+            size_t start[MAX_NUM_DIMS] = {0};
+            size_t count[MAX_NUM_DIMS] = {0};
             startNDims = 1;
+            cacheVarID = -1;
 
             varType = cacheVarTypes[cacheCat][cacheVar];
             varName = (char *) cacheVarNames[cacheCat][cacheVar];
 
-            start[startNDims - 1] = sDom ? SW_Domain->nDimS : SW_Domain->nDimY;
+            start[startNDims - 1] = SW_Domain->domStartIndex[eSW_InDomain][0];
+            count[startNDims - 1] = SW_Domain->domCounts[eSW_InDomain][0];
 
             if (!sDom) {
-                start[startNDims] = sDom ? 0 : SW_Domain->nDimX;
+                start[startNDims] = SW_Domain->domStartIndex[eSW_InDomain][1];
+                count[startNDims] = SW_Domain->domCounts[eSW_InDomain][1];
+
                 startNDims++;
             }
 
             if ((cacheCat != nCacheCategories - 1 && cacheVar != vegCountVar) ||
                 sw_template->VegEstabIn.use) {
 
-                rearrange_cache_values(
-                    SW_Runs,
-                    cacheCat,
-                    cacheVar,
-                    n_years,
-                    SW_Domain->nActiveSuidsProc,
-                    SW_Domain->actSiteIdx[eSW_InDomain],
-                    startNDims,
-                    tempDoubles,
-                    tempIntU,
-                    tempInt,
-                    count
-                );
+#if defined(SWMPI)
+                if (read) {
+                    SW_NC_get_var_identifier(
+                        cacheFileID, varName, &cacheVarID, main_LogInfo
+                    );
+                    checkJumpToLabel(main_LogInfo->stopRun, freeMem);
+
+                    SW_NC_toggle_par_access(
+                        cacheFileID, cacheVarID, NC_COLLECTIVE, main_LogInfo
+                    );
+                    checkJumpToLabel(main_LogInfo->stopRun, freeMem);
+                }
+#endif
 
                 switch (varType) {
                 case NC_INT:
                     writePtr = (void *) tempInt;
                     typeStr = "integer";
-                    numElem = intElem;
                     break;
                 case NC_DOUBLE:
                     writePtr = (void *) tempDoubles;
                     typeStr = "double";
-                    numElem = doubleElem;
                     break;
                 default: /* NC_UINT */
                     writePtr = (void *) tempIntU;
                     typeStr = "unsigned integer";
-                    numElem = intUElem;
                     break;
                 }
 
-                cacheVarID = -1;
-                SW_NC_write_vals(
-                    &cacheVarID,
-                    cacheFileID,
-                    varName,
-                    writePtr,
-                    start,
-                    count,
-                    typeStr,
-                    main_LogInfo
-                );
-                checkJumpToLabel(main_LogInfo->stopRun, freeMem);
+                if (read) {
+                    SW_NC_get_vals(
+                        cacheFileID,
+                        &cacheVarID,
+                        varName,
+                        start,
+                        count,
+                        writePtr,
+                        main_LogInfo
+                    );
+                } else {
+                    rearrange_cache_values(
+                        read,
+                        SW_Runs,
+                        cacheCat,
+                        cacheVar,
+                        n_years,
+                        SW_Domain->nActiveSuidsProc,
+                        SW_Domain->actSiteIdx[eSW_InDomain],
+                        startNDims,
+                        tempDoubles,
+                        tempIntU,
+                        tempInt,
+                        count
+                    );
 
-                reset_temp_vals(numElem, varType, writePtr);
+                    SW_NC_write_vals(
+                        &cacheVarID,
+                        cacheFileID,
+                        varName,
+                        writePtr,
+                        start,
+                        count,
+                        typeStr,
+                        main_LogInfo
+                    );
+                }
+                checkJumpToLabel(main_LogInfo->stopRun, freeMem);
             }
         }
     }

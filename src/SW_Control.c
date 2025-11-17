@@ -815,6 +815,9 @@ void SW_CTL_RunSimSet(
     const Bool alloc = swTRUE;
     const Bool dealloc = swFALSE;
     const Bool readConstInfo = swTRUE;
+    const Bool readCache = swTRUE;
+    const Bool writeCache = swFALSE;
+    const char *cacheFileName = SW_Domain->SW_PathInputs.txtInFiles[eNCCache];
 
     SW_SOIL_RUN_INPUTS *newSoils = NULL;
     SW_RUN *siteRuns = NULL;
@@ -883,6 +886,13 @@ void SW_CTL_RunSimSet(
     }
     checkReturn(main_LogInfo->stopRun);
 
+    if (readFromCacheFile) {
+        SW_NCIN_handle_cache_vals(
+            rank, readCache, SW_Domain, sw_template, siteRuns, main_LogInfo
+        );
+        checkJumpToLabel(main_LogInfo->stopRun, freeMem);
+    }
+
     SW_CTL_run_daily_timesteps(
         sw_template,
         numDaysToSim,
@@ -898,11 +908,12 @@ void SW_CTL_RunSimSet(
     if (siteRuns[0].ModelSim.doy != siteRuns[0].ModelSim.lastdoy ||
         siteRuns[0].ModelSim.year != sw_template->ModelIn.endyr) {
 
-        SW_NCIN_write_cache_vals(
-            SW_Domain, sw_template, siteRuns, main_LogInfo
+        SW_NCIN_handle_cache_vals(
+            rank, writeCache, SW_Domain, sw_template, siteRuns, main_LogInfo
         );
     }
 
+freeMem:
     handle_sim_structs_mem(
         dealloc,
         nActiveSites,
