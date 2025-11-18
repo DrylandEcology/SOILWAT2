@@ -505,6 +505,30 @@ freeMem:
 #endif
 }
 
+/**
+@brief Interface function to get the starting day of the simulation from
+progress file
+
+@param[in] progDayFileID Identifier of the netCDF file holding the
+progress day variable
+@param[in] progDayVarID Identifier of the variable within the target
+netCDF that the progress day resides
+@param[out] startDay Start day value read from progress file
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void get_start_sim_day(
+    int progDayFileID, int progDayVarID, IntU *startDay, LOG_INFO *LogInfo
+) {
+#if defined(SWNETCDF)
+    SW_NCIN_get_start_sim_day(progDayFileID, progDayVarID, startDay, LogInfo);
+#else
+    (void) *startDay;
+    (void) progDayFileID;
+    (void) progDayVarID;
+    (void) LogInfo;
+#endif
+}
+
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
@@ -648,6 +672,7 @@ void SW_DOM_construct(size_t rng_seed, SW_DOMAIN *SW_Domain) {
     );
     SW_Domain->nActiveSuidsProc = 1;
     SW_Domain->nActiveSuidsTot = 1;
+    SW_Domain->startSimDay = SW_Domain->endSimDay = 0;
 
 #if defined(SWNETCDF)
     int inKey;
@@ -1056,12 +1081,12 @@ void SW_DOM_SetProgress(
 void SW_DOM_SimSet(
     int rank, int worldSize, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
 ) {
-    int progFileID = 0; // Value does not matter if SWNETCDF is not defined
-    int progVarID = 0;  // Value does not matter if SWNETCDF is not defined
+    int progDayFileID = 0; // Value does not matter if SWNETCDF is not defined
+    int progDayVarID = 0;  // Value does not matter if SWNETCDF is not defined
 
 #if defined(SWNETCDF)
-    progFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprogStatus];
-    progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprogStatus];
+    progDayFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprogDay];
+    progDayVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprogDay];
 #endif
 
 #if defined(SOILWAT)
@@ -1069,6 +1094,18 @@ void SW_DOM_SimSet(
         SW_MSG_ROOT("is identifying the simulation set ...", rank);
     }
 #endif
+
+    get_start_sim_day(
+        progDayFileID, progDayVarID, &SW_Domain->startSimDay, LogInfo
+    );
+    checkReturn(LogInfo->stopRun);
+
+    SW_Domain->endSimDay = Times_years_to_days(
+        SW_Domain->startyr,
+        SW_Domain->endyr,
+        SW_Domain->startstart,
+        SW_Domain->endend
+    );
 
     get_subdomains(rank, worldSize, SW_Domain, LogInfo);
 }

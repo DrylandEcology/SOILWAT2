@@ -80,7 +80,8 @@ void SW_CTL_sim_sites(
 
 void SW_CTL_run_daily_timesteps(
     SW_RUN *sw_template,
-    TimeInt nDays,
+    TimeInt startDay,
+    TimeInt endDay,
     double *tempVals,
     SW_SOIL_RUN_INPUTS *newSoils,
     SW_DOMAIN *SW_Domain,

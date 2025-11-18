@@ -1816,6 +1816,9 @@ typedef struct {
                      */
         endend; /**< Last day in last calendar year of the simulation runs */
 
+    // Starting/ending information for previous premature program exiting
+    TimeInt startSimDay, endSimDay;
+
     // Vertical domain information
 
     /** Indicator of depths/thickness of soil layers among sites/gridcells:

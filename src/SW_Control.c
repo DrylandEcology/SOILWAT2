@@ -718,7 +718,8 @@ every site at once per daily time step
 
 @param[in] sw_template Template SW_RUN for the function to use as a
 reference for local versions of SW_RUN
-@param[in] nDays Total number of days to simulate across all sites
+@param[in] startDay Start day of the simulation
+@param[in] endDay End day of the simulation
 @param[in] tempVals An allocated space to store temporary input values
 for converting and setting into proper location
 @param[in] newSoils A temporary list of SW_SOIL_RUN_INPUTS instances to
@@ -735,7 +736,8 @@ information for the program run
 */
 void SW_CTL_run_daily_timesteps(
     SW_RUN *sw_template,
-    TimeInt nDays,
+    TimeInt startDay,
+    TimeInt endDay,
     double *tempVals,
     SW_SOIL_RUN_INPUTS *newSoils,
     SW_DOMAIN *SW_Domain,
@@ -748,7 +750,7 @@ void SW_CTL_run_daily_timesteps(
     TimeInt nDaysInYear = 0;
     Bool initFirstYear = swFALSE;
 
-    for (day = 0; day < nDays; day++) {
+    for (day = startDay; day <= endDay && !runSims; day++) {
 #ifdef SWDEBUG
         if (debug) {
             sw_printf("\t: begin day = %d ... ", SW_Run->ModelSim.doy);
@@ -803,13 +805,6 @@ void SW_CTL_RunSimSet(
     if (main_LogInfo->printProgressMsg) {
         report_sim_start(SW_Domain, rank, worldSize);
     }
-
-    const TimeInt numDaysToSim = Times_years_to_days(
-        sw_template->ModelIn.startyr,
-        sw_template->ModelIn.endyr,
-        sw_template->ModelIn.startstart,
-        sw_template->ModelIn.endend
-    );
 
 #if defined(SWNETCDF)
     const Bool alloc = swTRUE;
@@ -905,7 +900,8 @@ void SW_CTL_RunSimSet(
 
     SW_CTL_run_daily_timesteps(
         sw_template,
-        numDaysToSim,
+        SW_Domain->startSimDay,
+        SW_Domain->endSimDay,
         tempVals,
         newSoils,
         SW_Domain,
@@ -936,7 +932,8 @@ freeMem:
 #else
     SW_CTL_run_daily_timesteps(
         sw_template,
-        numDaysToSim,
+        SW_Domain->startSimDay,
+        SW_Domain->endSimDay,
         NULL,
         NULL,
         SW_Domain,

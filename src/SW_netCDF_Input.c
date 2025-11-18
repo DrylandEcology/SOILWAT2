@@ -8765,6 +8765,28 @@ void SW_NCIN_set_progress(
 }
 
 /**
+@brief Get the start day of the simulation based on the progress file
+
+@param[in] progDayFileID Identifier of the netCDF file holding the
+progress day variable
+@param[in] progDayVarID Identifier of the variable within the target
+netCDF that the progress day resides
+@param[out] startDay Start day value read from progress file
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+void SW_NCIN_get_start_sim_day(
+    int progDayFileID, int progDayVarID, IntU *startDay, LOG_INFO *LogInfo
+) {
+    const char *nullName = NULL;
+    const size_t *start = NULL;
+    const size_t *count = NULL;
+
+    SW_NC_get_vals(
+        progDayFileID, &progDayVarID, nullName, start, count, startDay, LogInfo
+    );
+}
+
+/**
 @brief Create a progress netCDF file
 
 @param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
