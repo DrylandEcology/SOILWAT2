@@ -11529,6 +11529,8 @@ inactive sites within the arrays to fill values, where the values controlled
 by active sites are guarenteed to be overwritten.
 
 @param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] read Specifies if the function is to read inputs (swTRUE) or write
+cache values to file (swFALSE)
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
 @param[in] sw_template Template SW_RUN for the function to use as a
