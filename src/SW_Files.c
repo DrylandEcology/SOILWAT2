@@ -400,8 +400,12 @@ holds basic information about input files and values
 */
 void SW_F_construct(SW_PATH_INPUTS *SW_PathInputs) {
 #if defined(SWNETCDF)
-    SW_PathInputs->ncDomFileIDs[vNCdom] = -1;
-    SW_PathInputs->ncDomFileIDs[vNCprog] = -1;
+    int domVar;
+
+    for (domVar = 0; domVar < SW_NVARDOM; domVar++) {
+        SW_PathInputs->ncDomFileIDs[domVar] = -1;
+    }
+
     SW_PathInputs->ncNumWeatherInFiles = 0;
 #else
     (void) SW_PathInputs;

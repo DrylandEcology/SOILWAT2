@@ -2144,6 +2144,8 @@ static void check_variable_for_required(
     int varNum,
     LOG_INFO *LogInfo
 ) {
+    /* Domain variable to ignore most attributes */
+    const int domIgVar = vNCprogDay;
 
     int attNum;
     int mustTestAttInd[] = {
@@ -2179,10 +2181,15 @@ static void check_variable_for_required(
 
 
     /* Make sure that the universally required attributes are filled in
-       skip the testing of the nc var units (can be NA) */
+       skip the testing of the nc var units (can be NA);
+       the newest progress variable "progress_day" can ignore the testing
+       for most attributes as it is a variable with no spatial relation
+       as it has no dimensions */
     for (attNum = 0; attNum < mustTestAtts; attNum++) {
         testInd = mustTestAttInd[attNum];
-        canBeNA = (Bool) ((testInd == INSITENAME && !inputDomIsSite) ||
+        canBeNA = (Bool) ((key == eSW_InDomain && varNum == domIgVar &&
+                           testInd >= INDOMTYPE) ||
+                          (testInd == INSITENAME && !inputDomIsSite) ||
                           testInd == INCRSNAME);
 
         if (!canBeNA && strcmp(inputInfo[varNum][testInd], "NA") == 0) {
@@ -2289,9 +2296,15 @@ static void check_inputkey_columns(
     char *currAtt = NULL;
 
     Bool ignoreAtt;
+    Bool ignoreVar;
 
     for (varNum = varStart; varNum < numVars; varNum++) {
-        if (readInVars[varNum + 1]) {
+        /* The variable "progress_day" does not need to be compared
+           to the rest of the variables in "inDomain" due to
+           not having any dimensions */
+        ignoreVar = (Bool) (key == eSW_InDomain && varNum == vNCprogDay);
+
+        if (!ignoreVar && readInVars[varNum + 1]) {
             if (compIndex == -1) {
                 compIndex = varNum;
             } else {
@@ -3849,22 +3862,215 @@ static long get_dom_fill_value(int domFileID, int domVarID, LOG_INFO *LogInfo) {
 }
 
 /**
+@brief Helper function to `SW_NCIN_create_progress()` to create one of the
+two possible variables
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[in] pVar Progress variable index
+@param[in] progFileID Progress variable file identifier
+@param[in] progVarID Progress variable ID within the "progFileID" netCDF
+@param[in] progVarName Progress variable name
+@param[in] progVarExists A flag specifying that the progress variable
+exists
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void create_prog_var(
+    SW_DOMAIN *SW_Domain,
+    int pVar,
+    int *progFileID,
+    int *progVarID,
+    const char *progVarName,
+    Bool progVarExists,
+    LOG_INFO *LogInfo
+) {
+    const size_t dummyLatChunkSize = 1;
+    const size_t dummyLonChunkSize = 1;
+    const Bool primCRSIsGeo =
+        SW_Domain->OutDom.netCDFOutput.primary_crs_is_geographic;
+
+    /* Progress status variable information */
+    char coordStr[MAX_FILENAMESIZE] = "\0";
+    char gridMapStr[MAX_FILENAMESIZE] = "\0";
+
+    const char *projGridMap = "%s: %s %s %s: %s %s";
+    const char *geoGridMap = SW_Domain->OutDom.netCDFOutput.crs_geogsc.crs_name;
+    const char *coord = (char *) "%s %s";
+    const char *grid_map = primCRSIsGeo ? geoGridMap : projGridMap;
+
+    /* Get latitude/longitude names that were read-in from input file */
+    char *readinGeoYName = (primCRSIsGeo) ?
+                               SW_Domain->OutDom.netCDFOutput.geo_YAxisName :
+                               SW_Domain->OutDom.netCDFOutput.proj_YAxisName;
+    char *readinGeoXName = (primCRSIsGeo) ?
+                               SW_Domain->OutDom.netCDFOutput.geo_XAxisName :
+                               SW_Domain->OutDom.netCDFOutput.proj_XAxisName;
+    const signed char flagVals[] = {PRGRSS_FAIL, PRGRSS_READY, PRGRSS_DONE};
+    const char *flagMeanings =
+        "simulation_error ready_to_simulate simulation_complete";
+    const char *attNames[] = {
+        "long_name", "units", "grid_mapping", "coordinates"
+    };
+    const char *attVals[] = {"simulation site statuses", "1", grid_map, coord};
+    const int numAtts = 4;
+
+    // SW_NC_create_full_var/SW_NC_create_template
+    // No time variable/dimension
+    double startTime = 0;
+
+    int numValsToWrite;
+
+    /* Progress day information */
+    const int numProgDayAtts = 2;
+    const int progDayNumDims = 0;
+    const char *dayAttNames[] = {"long_name", "units"};
+    const char *dayAttVals[] = {"next day of simulation to run", "day"};
+
+    int *progDayDimIDs = NULL;
+    size_t *progDayChunkSizes = NULL;
+
+    /* Fill dynamic coordinate names */
+    (void) snprintf(
+        coordStr, MAX_FILENAMESIZE, coord, readinGeoYName, readinGeoXName
+    );
+    attVals[numAtts - 1] = coordStr;
+
+    if (!primCRSIsGeo) {
+        (void) snprintf(
+            gridMapStr,
+            MAX_FILENAMESIZE,
+            grid_map,
+            SW_Domain->OutDom.netCDFOutput.crs_projsc.crs_name,
+            SW_Domain->OutDom.netCDFOutput.proj_XAxisName,
+            SW_Domain->OutDom.netCDFOutput.proj_YAxisName,
+            geoGridMap,
+            readinGeoYName,
+            readinGeoXName
+        );
+
+        attVals[numAtts - 2] = gridMapStr;
+    }
+
+    Bool useDefaultChunking = swTRUE;
+
+    int att;
+
+    switch (pVar) {
+    case vNCprogStatus:
+        SW_NC_create_full_var(
+            progFileID,
+            SW_Domain->DomainType,
+            NC_BYTE,
+            0,
+            0,
+            0,
+            dummyLatChunkSize,
+            dummyLonChunkSize,
+            progVarName,
+            attNames,
+            attVals,
+            numAtts,
+            swFALSE,
+            NULL,
+            &startTime,
+            0,
+            0,
+            0,
+            SW_Domain->OutDom.netCDFOutput.deflateLevel,
+            readinGeoYName,
+            readinGeoXName,
+            SW_Domain->OutDom.netCDFOutput.siteName,
+            -1,
+            useDefaultChunking,
+            swTRUE,
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        SW_NC_get_var_identifier(*progFileID, progVarName, progVarID, LogInfo);
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        // If the progress existed before this function was called,
+        // do not set the new attributes
+        if (!progVarExists) {
+            // Add attributes "flag_values" and "flag_meanings"
+            numValsToWrite = 3;
+            SW_NC_write_att(
+                "flag_values",
+                (void *) flagVals,
+                *progVarID,
+                *progFileID,
+                numValsToWrite,
+                NC_BYTE,
+                LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+            SW_NC_write_string_att(
+                "flag_meanings", flagMeanings, *progVarID, *progFileID, LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+        }
+        break;
+    default: /* vNCprogDay */
+        SW_NC_create_netCDF_var(
+            progVarID,
+            progVarName,
+            progDayDimIDs,
+            progFileID,
+            NC_UINT,
+            progDayNumDims,
+            progDayChunkSizes,
+            SW_Domain->OutDom.netCDFOutput.deflateLevel,
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        for (att = 0; att < numProgDayAtts; att++) {
+            SW_NC_write_string_att(
+                dayAttNames[att],
+                dayAttVals[att],
+                *progVarID,
+                *progFileID,
+                LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
+            }
+        }
+        break;
+    }
+}
+
+/**
 @brief Fill the progress variable in the progress netCDF with values
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
 @param[in,out] LogInfo Holds information on warnings and errors
 */
-static void fill_prog_netCDF_vals(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
+static void fill_prog_status_netCDF_vals(
+    SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
+) {
 
     int domVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCdom];
-    int progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprog];
+    int progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprogStatus];
     size_t suid;
     size_t ncSuid[2];
     size_t nSUIDs = SW_Domain->nSUIDs;
     size_t nDimY = SW_Domain->nDimY;
     size_t nDimX = SW_Domain->nDimX;
-    int progFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprog];
+    int progStatusFile = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprogStatus];
     int domFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom];
     size_t start1D[] = {0};
     size_t start2D[] = {0, 0};
@@ -3886,7 +4092,7 @@ static void fill_prog_netCDF_vals(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     long *readDomVals = NULL;
     signed char *vals = (signed char *) Mem_Malloc(
-        nSUIDs * sizeof(signed char), "fill_prog_netCDF_vals", LogInfo
+        nSUIDs * sizeof(signed char), "fill_prog_status_netCDF_vals", LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -3920,7 +4126,7 @@ static void fill_prog_netCDF_vals(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     readDomVals = (long *) Mem_Malloc(
         sizeof(long) * chunkSizes[0] * chunkSizes[1],
-        "fill_prog_netCDF_vals",
+        "fill_prog_status_netCDF_vals",
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -3970,9 +4176,16 @@ static void fill_prog_netCDF_vals(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     }
 
     SW_NC_write_vals(
-        &progVarID, progFileID, "progress", vals, start, count, "byte", LogInfo
+        &progVarID,
+        progStatusFile,
+        "progress",
+        vals,
+        start,
+        count,
+        "byte",
+        LogInfo
     );
-    nc_sync(progFileID);
+    nc_sync(progStatusFile);
 
 // Free allocated memory
 freeMem:
@@ -8562,201 +8775,159 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     SW_NETCDF_IN *SW_netCDFIn = &SW_Domain->netCDFInput;
     SW_PATH_INPUTS *SW_PathInputs = &SW_Domain->SW_PathInputs;
-    Bool primCRSIsGeo =
-        SW_Domain->OutDom.netCDFOutput.primary_crs_is_geographic;
-    char **inDomFileNames = SW_PathInputs->ncInFiles[eSW_InDomain];
+
+    const int numProgVars = 2;
     char progDir[MAX_FILENAMESIZE] = "\0";
-
-    /* Get latitude/longitude names that were read-in from input file */
-    char *readinGeoYName = (primCRSIsGeo) ?
-                               SW_Domain->OutDom.netCDFOutput.geo_YAxisName :
-                               SW_Domain->OutDom.netCDFOutput.proj_YAxisName;
-    char *readinGeoXName = (primCRSIsGeo) ?
-                               SW_Domain->OutDom.netCDFOutput.geo_XAxisName :
-                               SW_Domain->OutDom.netCDFOutput.proj_XAxisName;
-
-    const char *projGridMap = "%s: %s %s %s: %s %s";
-    const char *geoGridMap = SW_Domain->OutDom.netCDFOutput.crs_geogsc.crs_name;
-    const char *coord = (char *) "%s %s";
-    const char *grid_map = primCRSIsGeo ? geoGridMap : projGridMap;
-    char coordStr[MAX_FILENAMESIZE] = "\0";
-    char gridMapStr[MAX_FILENAMESIZE] = "\0";
-    const char *attNames[] = {
-        "long_name", "units", "grid_mapping", "coordinates"
-    };
-    const char *attVals[] = {"simulation progress", "1", grid_map, coord};
-    const int numAtts = 4;
-    int numValsToWrite;
-    const signed char flagVals[] = {PRGRSS_FAIL, PRGRSS_READY, PRGRSS_DONE};
-    const char *flagMeanings =
-        "simulation_error ready_to_simulate simulation_complete";
-    const char *progVarName =
-        SW_netCDFIn->inVarInfo[eSW_InDomain][vNCprog][INNCVARNAME];
     const char *freq = "fx";
+    const char *progStatusName =
+        SW_netCDFIn->inVarInfo[eSW_InDomain][vNCprogStatus][INNCVARNAME];
+    const char *progDayName =
+        SW_netCDFIn->inVarInfo[eSW_InDomain][vNCprogDay][INNCVARNAME];
 
-    int *progFileID = &SW_PathInputs->ncDomFileIDs[vNCprog];
+    char **inDomFileNames = SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain];
+
+    int *progStatusFileID = &SW_PathInputs->ncDomFileIDs[vNCprogStatus];
+    int *progDayFileID = &SW_PathInputs->ncDomFileIDs[vNCprogDay];
     const char *domFileName = inDomFileNames[vNCdom];
-    const char *progFileName = inDomFileNames[vNCprog];
-    int *progVarID = &SW_netCDFIn->ncDomVarIDs[vNCprog];
+    const char *progStatusFileName = inDomFileNames[vNCprogStatus];
+    const char *progDayFileName = inDomFileNames[vNCprogStatus];
+    int *progStatusVarID = &SW_netCDFIn->ncDomVarIDs[vNCprogStatus];
+    int *progDayVarID = &SW_netCDFIn->ncDomVarIDs[vNCprogDay];
     const int openMode = NC_NOWRITE;
 
-    // SW_NC_create_full_var/SW_NC_create_template
-    // No time variable/dimension
-    double startTime = 0;
+    Bool progStatusFileIsDom =
+        (Bool) (strcmp(progStatusFileName, domFileName) == 0);
+    Bool progStatusFileExists = FileExists(progStatusFileName);
 
-    Bool progFileIsiteDom = (Bool) (strcmp(progFileName, domFileName) == 0);
-    Bool progFileExists = FileExists(progFileName);
-    Bool progVarExists =
-        (Bool) (progFileExists && SW_NC_varExists(*progFileID, progVarName));
-    Bool createOrModFile =
-        (Bool) (!progFileExists || (progFileIsiteDom && !progVarExists));
-    Bool useDefaultChunking = swTRUE;
-    const size_t dummyLatChunkSize = 1;
-    const size_t dummyLonChunkSize = 1;
+    Bool progDayFileIsDom = (Bool) (strcmp(progDayFileName, domFileName) == 0);
+    Bool progDayFileExists = FileExists(progDayFileName);
+
+    const char *progFileNames[] = {progStatusFileName, progDayFileName};
+    const char *progVarNames[] = {progStatusName, progDayName};
+    int *progVarIDs[] = {progStatusVarID, progDayVarID};
+    int *progFileIDs[] = {progStatusFileID, progDayFileID};
+    Bool progFileExists[] = {progStatusFileExists, progDayFileExists};
+    Bool progVarExists[] = {
+        (Bool) (progStatusFileExists &&
+                SW_NC_varExists(*progStatusFileID, progStatusName)),
+        (Bool) (progDayFileID && SW_NC_varExists(*progDayFileID, progDayName))
+    };
+    Bool createOrModFile[] = {
+        (Bool) (!progStatusFileExists ||
+                (progStatusFileIsDom && !progVarExists[vNCprogStatus - 1])),
+        (Bool) (!progStatusFileExists ||
+                (progDayFileIsDom && !progVarExists[vNCprogDay - 1]))
+    };
+
+    IntU startProgDayVal = 0;
+    size_t *start = NULL;
+    size_t *count = NULL;
+
+    int pVar;
 
     /* If SWMPI is not enabled, then this is not used in
        `SW_NC_create_template()` */
     const Bool openInPar = swFALSE;
 
-    /* Fill dynamic coordinate names */
-    (void) snprintf(
-        coordStr, MAX_FILENAMESIZE, coord, readinGeoYName, readinGeoXName
-    );
-    attVals[numAtts - 1] = coordStr;
-
-    if (!primCRSIsGeo) {
-        (void) snprintf(
-            gridMapStr,
-            MAX_FILENAMESIZE,
-            grid_map,
-            SW_Domain->OutDom.netCDFOutput.crs_projsc.crs_name,
-            SW_Domain->OutDom.netCDFOutput.proj_XAxisName,
-            SW_Domain->OutDom.netCDFOutput.proj_YAxisName,
-            geoGridMap,
-            readinGeoYName,
-            readinGeoXName
-        );
-
-        attVals[numAtts - 2] = gridMapStr;
-    }
-
-    /*
-      If the progress file is not to be created or modified, check it
-
-      See if the progress variable exists within it's file, also handling
-      the case where the progress variable is in the domain netCDF
-
-      In addition to making sure the file exists, make sure the progress
-      variable is present
-    */
-    if (!createOrModFile) {
-        SW_NC_check(
-            SW_Domain, progFileID, progFileName, openInPar, openMode, LogInfo
-        );
-    } else {
-
 #if defined(SOILWAT)
-        if (LogInfo->printProgressMsg) {
-            SW_MSG_ROOT("is creating a progress tracker ...", 0);
-        }
+    if (LogInfo->printProgressMsg && (createOrModFile[vNCprogStatus - 1] ||
+                                      createOrModFile[vNCprogDay - 1])) {
+        SW_MSG_ROOT("is creating progress tracker(s) ...", ROOT_PROC);
+    }
 #endif
 
-        // No need for various information when creating the progress netCDF
-        // like start year, start time, base calendar year, layer depths
-        // and period
-        if (progFileExists) {
-            nc_redef(*progFileID);
-        } else {
-            DirName(progFileName, progDir);
+    /*
+      If the progress file(s) is not to be created or modified, check it
 
-            if (!DirExists(progDir)) {
-                MkDir(progDir, LogInfo);
+      See if the progress variables exist within their own file(s), also handle
+      the case where the progress variables are in the domain netCDF
+
+      In addition to making sure the file(s) exists, make sure the progress
+      variables are present
+    */
+    for (pVar = 0; pVar < numProgVars; pVar++) {
+        if (!createOrModFile[pVar]) {
+            SW_NC_check(
+                SW_Domain,
+                progFileIDs[pVar],
+                progFileNames[pVar],
+                openInPar,
+                openMode,
+                LogInfo
+            );
+        } else {
+            // No need for various information when creating the progress netCDF
+            // like start year, start time, base calendar year, layer depths
+            // and period
+            if (progFileExists[pVar]) {
+                nc_open(progFileNames[pVar], NC_NOWRITE, progFileIDs[pVar]);
+                nc_redef(*progFileIDs[pVar]);
+            } else {
+                DirName(progFileNames[pVar], progDir);
+
+                if (!DirExists(progDir)) {
+                    MkDir(progDir, LogInfo);
+                    if (LogInfo->stopRun) {
+                        return;
+                    }
+                }
+
+                SW_NC_create_template(
+                    SW_Domain->DomainType,
+                    domFileName,
+                    progFileNames[pVar],
+                    progFileIDs[pVar],
+                    swFALSE,
+                    freq,
+                    openInPar,
+                    LogInfo
+                );
                 if (LogInfo->stopRun) {
-                    return;
+                    goto closeFile;
                 }
             }
 
-            SW_NC_create_template(
-                SW_Domain->DomainType,
-                domFileName,
-                progFileName,
-                progFileID,
-                swFALSE,
-                freq,
-                openInPar,
+            create_prog_var(
+                SW_Domain,
+                pVar,
+                progFileIDs[pVar],
+                progVarIDs[pVar],
+                progVarNames[pVar],
+                progVarExists[pVar],
                 LogInfo
             );
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
+
+            nc_enddef(*progFileIDs[pVar]);
+
+            switch (pVar + 1) {
+            case vNCprogStatus:
+                fill_prog_status_netCDF_vals(SW_Domain, LogInfo);
+                break;
+            default: /* vNCprogDay */
+                SW_NC_write_vals(
+                    progVarIDs[pVar],
+                    *progFileIDs[pVar],
+                    progDayName,
+                    &startProgDayVal,
+                    start,
+                    count,
+                    "unsigned integer",
+                    LogInfo
+                );
+
+                nc_sync(*progFileIDs[pVar]);
+                break;
+            }
+
+        closeFile:
+            nc_close(*progFileIDs[pVar]);
             if (LogInfo->stopRun) {
                 return;
             }
         }
-        SW_NC_create_full_var(
-            progFileID,
-            SW_Domain->DomainType,
-            NC_BYTE,
-            0,
-            0,
-            0,
-            dummyLatChunkSize,
-            dummyLonChunkSize,
-            progVarName,
-            attNames,
-            attVals,
-            numAtts,
-            swFALSE,
-            NULL,
-            &startTime,
-            0,
-            0,
-            0,
-            SW_Domain->OutDom.netCDFOutput.deflateLevel,
-            readinGeoYName,
-            readinGeoXName,
-            SW_Domain->OutDom.netCDFOutput.siteName,
-            -1,
-            useDefaultChunking,
-            swTRUE,
-            LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
-
-        SW_NC_get_var_identifier(*progFileID, progVarName, progVarID, LogInfo);
-        if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
-
-        // If the progress existed before this function was called,
-        // do not set the new attributes
-        if (!progVarExists) {
-            // Add attributes "flag_values" and "flag_meanings"
-            numValsToWrite = 3;
-            SW_NC_write_att(
-                "flag_values",
-                (void *) flagVals,
-                *progVarID,
-                *progFileID,
-                numValsToWrite,
-                NC_BYTE,
-                LogInfo
-            );
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
-
-            SW_NC_write_string_att(
-                "flag_meanings", flagMeanings, *progVarID, *progFileID, LogInfo
-            );
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
-        }
-
-
-        nc_enddef(*progFileID);
-
-        fill_prog_netCDF_vals(SW_Domain, LogInfo);
     }
 }
 
@@ -9692,12 +9863,16 @@ void SW_NCIN_open_dom_prog_files(
     char ***inDomVarInfo = SW_netCDFIn->inVarInfo[eSW_InDomain];
     char *fileName;
     char *domFile = inDomFileNames[vNCdom];
-    char *progFile = inDomFileNames[vNCprog];
+    char *progStatusFile = inDomFileNames[vNCprogStatus];
+    char *progDayFile = inDomFileNames[vNCprogDay];
     char *varName;
-    Bool progFileDomain = (Bool) (strcmp(domFile, progFile) == 0);
+    Bool progStatusDom = (Bool) strcmp(domFile, progStatusFile) == 0;
+    Bool openDomWrite =
+        (Bool) (progStatusDom || strcmp(domFile, progDayFile) == 0);
+    Bool progStatSameDay = (Bool) strcmp(progStatusFile, progDayFile) == 0;
 
     // Open the domain/progress netCDF
-    for (fileNum = vNCdom; fileNum <= vNCprog; fileNum++) {
+    for (fileNum = vNCdom; fileNum <= vNCprogDay; fileNum++) {
         fileName = inDomFileNames[fileNum];
         fileID = &ncDomFileIDs[fileNum];
         varName = inDomVarInfo[fileNum][INNCVARNAME];
@@ -9710,7 +9885,7 @@ void SW_NCIN_open_dom_prog_files(
 
         if (fileExists) {
             openType =
-                (fileNum == vNCdom && !progFileDomain) ? NC_NOWRITE : NC_WRITE;
+                (fileNum == vNCdom && openDomWrite) ? NC_WRITE : NC_NOWRITE;
 #if defined(SWMPI)
             SW_NC_open_par(fileName, openType, MPI_COMM_WORLD, fileID, LogInfo);
 #else
@@ -9719,12 +9894,9 @@ void SW_NCIN_open_dom_prog_files(
             checkReturn(LogInfo->stopRun);
 
             /*
-              Get the ID for the domain variable and the progress variable if
-              it is not in the domain netCDF or it exists in the domain netCDF
+              Get the ID for the domain variable and the progress variable(s)
             */
-            if (fileNum == vNCdom || !progFileDomain ||
-                SW_NC_varExists(*fileID, varName)) {
-
+            if (fileNum == vNCdom || SW_NC_varExists(*fileID, varName)) {
                 SW_NC_get_var_identifier(
                     *fileID,
                     varName,
@@ -9739,9 +9911,16 @@ void SW_NCIN_open_dom_prog_files(
     // If the progress variable is contained in the domain netCDF, then
     // close the (redundant) progress file identifier
     // and use instead the (equivalent) domain file identifier
-    if (progFileDomain) {
-        nc_close(ncDomFileIDs[vNCprog]);
-        ncDomFileIDs[vNCprog] = ncDomFileIDs[vNCdom];
+    if (progStatusDom) {
+        nc_close(ncDomFileIDs[vNCprogStatus]);
+        ncDomFileIDs[vNCprogStatus] = ncDomFileIDs[vNCdom];
+    }
+
+    // If the day progress value is contained within the same file as
+    // the status information, close the file containing progress day
+    if (progStatSameDay) {
+        nc_close(ncDomFileIDs[vNCprogDay]);
+        ncDomFileIDs[vNCprogDay] = ncDomFileIDs[vNCprogStatus];
     }
 }
 
@@ -9791,17 +9970,30 @@ void SW_NCIN_close_in_files(int **openInFileIDs[], unsigned int numWeathFiles) {
 */
 void SW_NCIN_close_files(SW_PATH_INPUTS *SW_PathInputs) {
     int fileNum;
-    int domID = SW_PathInputs->ncDomFileIDs[vNCdom];
-    int progID = SW_PathInputs->ncDomFileIDs[vNCprog];
-    Bool domProgSame = (Bool) (progID == domID);
-    const int numDomFiles = (domProgSame) ? 1 : SW_NVARDOM;
+    int fileID;
+    int *fileIDs = SW_PathInputs->ncDomFileIDs;
+    int seenIDs[SW_NVARDOM] = {0};
+    int seenIndex;
+    Bool foundID;
 
     SW_NCIN_close_in_files(
         SW_PathInputs->openInFileIDs, SW_PathInputs->ncNumWeatherInFiles
     );
 
-    for (fileNum = 0; fileNum < numDomFiles; fileNum++) {
-        nc_close(SW_PathInputs->ncDomFileIDs[fileNum]);
+    for (fileNum = 0; fileNum < SW_NVARDOM; fileNum++) {
+        seenIndex = 0;
+        foundID = swFALSE;
+        fileID = fileIDs[fileNum];
+
+        while (!foundID && seenIndex < fileNum) {
+            foundID = (Bool) (seenIDs[seenIndex] == fileID);
+            seenIndex++;
+        }
+
+        if (!foundID) {
+            seenIDs[seenIndex] = fileID;
+            nc_close(fileID);
+        }
     }
 }
 

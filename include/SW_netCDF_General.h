@@ -22,8 +22,12 @@ extern "C" {
 /** Domain netCDF index within `InFilesNC` and `varNC` (SW_NETCDF_OUT) */
 #define vNCdom 0
 
-/** Progress netCDF index within `InFilesNC` and `varNC` (SW_NETCDF_OUT) */
-#define vNCprog 1
+/** Progress netCDF status index within `InFilesNC` and `varNC` (SW_NETCDF_OUT)
+ */
+#define vNCprogStatus 1
+
+/** Progress netCDF day index within `InFilesNC` and `varNC` (SW_NETCDF_OUT) */
+#define vNCprogDay 2
 
 #define MAX_NUM_DIMS 5
 

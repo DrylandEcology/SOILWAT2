@@ -1061,8 +1061,8 @@ void SW_DOM_SimSet(
     int progVarID = 0;  // Value does not matter if SWNETCDF is not defined
 
 #if defined(SWNETCDF)
-    progFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprog];
-    progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprog];
+    progFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprogStatus];
+    progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprogStatus];
 #endif
 
     if (userSUID > 0) {

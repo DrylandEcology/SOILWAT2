@@ -985,12 +985,16 @@ void SW_CTL_setup_domain(
     LOG_INFO *LogInfo
 ) {
 #if defined(SWNETCDF)
-    const int nDomFiles = 2;
+    /* Combine both prog vars into one in this case */
+    const int nUniqueDomVars = 2;
     const Bool openInPar = swFALSE;
     const int openMode = NC_NOWRITE;
     const Bool domProgFileExists[] = {
         FileExists(SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom]),
-        FileExists(SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCprog])
+        FileExists(
+            SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCprogStatus]
+        ),
+        FileExists(SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCprogDay])
     };
 
     int file;
@@ -1038,7 +1042,7 @@ void SW_CTL_setup_domain(
             SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom] :
             NULL;
 
-    for (file = 0; file < nDomFiles; file++) {
+    for (file = 0; file < nUniqueDomVars; file++) {
         if (rank == ROOT_PROC && !domProgFileExists[file]) {
             switch (file) {
             case vNCdom:
@@ -1058,7 +1062,7 @@ void SW_CTL_setup_domain(
                     );
                 }
                 break;
-            case vNCprog:
+            case vNCprogStatus: /* vNCprogStatus & vNCprogDay */
                 SW_DOM_CreateProgress(SW_Domain, LogInfo);
                 break;
             default:

@@ -24,7 +24,7 @@ for the the spatial index file (indexSpatial) that each input key contains.
 
 Note: `numVarsInKey` and `possVarNames` must be consistent with each other. */
 static const int numVarsInKey[SW_NINKEYSNC] = {
-    2,                                /* inDomain */
+    3,                                /* inDomain */
     3,                                /* inSpatial */
     4,                                /* inTopo */
     12 + SWRC_PARAM_NMAX + NVEGTYPES, /* inSoil */

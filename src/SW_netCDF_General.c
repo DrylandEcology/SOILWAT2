@@ -207,11 +207,11 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     const size_t ysSize = SW_Domain->domCounts[eSW_InDomain][0];
     const size_t xSize = SW_Domain->domCounts[eSW_InDomain][1];
     int activeSite = 0;
-    int progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprog];
+    int progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprogStatus];
     Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
     size_t numSites = ysSize * (sDom ? 1 : xSize);
     size_t progIndex;
-    int progFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprog];
+    int progFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprogStatus];
     size_t *counts = SW_Domain->domCounts[eSW_InDomain];
     size_t *starts = SW_Domain->domStartIndex[eSW_InDomain];
 
