@@ -1798,12 +1798,9 @@ typedef struct {
         nDimY,  /**< Number of grid cells along y dimension (used if domainType
                    is 'xy') */
         nDimS,  /**< Number of sites (used if domainType is 's') */
-        nSUIDs, /**< Total size of domain, i.e., total number of grid cells (if
+        nSUIDs; /**< Total size of domain, i.e., total number of grid cells (if
                    domainType is 'xy') or number of sites (if domainType is 's')
                  */
-
-        userSUID; /**< First SUID in simulation set within domain to simulate
-                   */
 
     char crs_bbox[27]; /**< Input name/CRS type (domain.in) - holds up to "World
                           Geodetic System 1984" (26) */

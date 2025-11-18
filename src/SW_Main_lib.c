@@ -59,7 +59,7 @@ static void sw_print_usage(void) {
         "SOILWAT2: an ecosystem water simulation model.\n"
         "More details at https://github.com/DrylandEcology/SOILWAT2\n"
         "Usage: SOILWAT2 [-d <directory>] [-f <mainFile>] [-e] [-q] [-v] [-h] "
-        "[-s <number>] [-t <number>] [-r] [-p]\n"
+        "[-t <number>] [-r] [-p]\n"
         "Options:\n"
         "  -d : Operate (chdir) in <directory> (default = '.').\n"
         "  -f : Main input file relative to <directory>"
@@ -68,11 +68,6 @@ static void sw_print_usage(void) {
         "  -q : Quiet mode (do not write messages to the console).\n"
         "  -v : Print version information and exit.\n"
         "  -h : Print this help information and exit.\n"
-        "  -s : Simulate all simulation units (if <number> = 0, default) or \n"
-        "       a specific simulation unit that is identified by its suid \n"
-        "       (suid = <number> if <number> > 0) \n"
-        "       Note: xy-domain `<number> = (y - 1) * nDimX + x`.\n"
-        "       This option is not functional in mpi-based SOILWAT2.\n"
         "  -t : Set a wall time limit where <number> is in units of seconds.\n"
         "  -r : A netCDF domain template file is automatically renamed\n"
         "       to the domain file name provided in 'Input_nc/files_nc.in'.\n"
@@ -136,12 +131,8 @@ void sw_print_version(void) {
 @param[in] argv Values of command line arguments.
 @param[in] rank Process number known to MPI for the current process (aka rank);
     defaults to 0 (main process) if we are running sequentially
-@param[in] worldSize Total number of processes that the MPI run has created
-(only relevant with SWMPI enabled)
 @param[out] EchoInits Flag to control if inputs are to be output to the user
 @param[out] firstfile First file name to be filled in the program run
-@param[out] userSUID Simulation Unit Identifier requested by the user (base1);
-            0 indicates that all simulations units within domain are requested
 @param[out] wallTimeLimit Terminate simulations early when
             wall time limit is reached
             (default value is set by SW_WT_StartTime())
@@ -158,10 +149,8 @@ void sw_init_args(
     int argc,
     char **argv,
     int rank,
-    int worldSize,
     Bool *EchoInits,
     char **firstfile,
-    size_t *userSUID,
     double *wallTimeLimit,
     Bool *renameDomainTemplateNC,
     Bool *prepareFiles,
@@ -186,18 +175,15 @@ void sw_init_args(
     const char *errMsg = "command-line";
 
     /* valid options */
-    char const *opts[] = {
-        "-d", "-f", "-e", "-q", "-v", "-h", "-s", "-t", "-r", "-p"
-    };
+    char const *opts[] = {"-d", "-f", "-e", "-q", "-v", "-h", "-t", "-r", "-p"};
 
     /* indicates options with values: 0=none, 1=required, -1=optional */
-    int valopts[] = {1, 1, 0, 0, 0, 0, 1, 1, 0, 0};
+    int valopts[] = {1, 1, 0, 0, 0, 0, 1, 0, 0};
 
     int i;  /* looper through all cmdline arguments */
     int a;  /* current valid argument-value position */
     int op; /* position number of found option */
     int nopts = sizeof(opts) / sizeof(char *);
-    double doubleUserSUID = 0.;
 
     /* Defaults */
     *firstfile = Str_Dup(DFLT_FIRSTFILE, LogInfo);
@@ -207,7 +193,6 @@ void sw_init_args(
 
     *EchoInits = swFALSE;
     *renameDomainTemplateNC = swFALSE;
-    *userSUID = 0; // Default (if no input) is 0 (i.e., all suids)
     *endQuietly = swFALSE;
 
     a = 1;
@@ -299,69 +284,18 @@ void sw_init_args(
             }
             break;
 
-        case 6: /* -s */
-#if defined(SWMPI)
-            if (rank == ROOT_PROC) {
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "The option '-s' is currently disabled in SWMPI mode. It "
-                    "is suggested to use SWNC mode to run a specific site."
-                );
-            }
-
-            return;
-#endif
-
-            *userSUID = sw_strtosizet(str, errMsg, LogInfo);
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
-
-            /* Check that user input can be represented by userSUID
-             * (currently, size_t) */
-            /* Expect that conversion of string to double results in the
-             * same value as conversion of userSUID to double */
-            doubleUserSUID = sw_strtod(str, errMsg, LogInfo);
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
-
-            if (!EQ(doubleUserSUID, (double) *userSUID)) {
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "User input not recognized as a simulation unit "
-                    "('-s %s' vs. %zu).",
-                    str,
-                    *userSUID
-                );
-            } else if (worldSize > 1) {
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "More processes spawned than allowed for running a single "
-                    "site. Please only spawn 1 (%d spawned).",
-                    worldSize
-                );
-            }
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
-            break;
-
-        case 7: /* -t */
+        case 6: /* -t */
             *wallTimeLimit = sw_strtod(str, errMsg, LogInfo);
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
             break;
 
-        case 8: /* -r */
+        case 7: /* -r */
             *renameDomainTemplateNC = swTRUE;
             break;
 
-        case 9: /* -p */
+        case 8: /* -p */
 #if defined(SWNETCDF)
             *prepareFiles = swTRUE;
 #else

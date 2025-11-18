@@ -219,7 +219,7 @@ void swtest_init_args(int argc, char **argv, int *printVersionOnly) {
 */
 int setup_testGlobalSoilwatTemplate() {
     int success = 0;
-    size_t userSUID;
+    int worldSize = 1;
     LOG_INFO LogInfo;
     const Bool renameDomainTemplateNC = swTRUE;
 
@@ -235,11 +235,8 @@ int setup_testGlobalSoilwatTemplate() {
         goto finishProgram;
     }
 
-    // userSUID: 0 means no user input for suid, i.e., entire simulation domain
-    userSUID = 0;
-
     SW_CTL_setup_domain(
-        0, userSUID, renameDomainTemplateNC, &template_SW_Domain, &LogInfo
+        0, worldSize, renameDomainTemplateNC, &template_SW_Domain, &LogInfo
     );
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;

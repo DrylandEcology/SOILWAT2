@@ -1056,7 +1056,6 @@ void SW_DOM_SetProgress(
 void SW_DOM_SimSet(
     int rank, int worldSize, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
 ) {
-    size_t userSUID = SW_Domain->userSUID;
     int progFileID = 0; // Value does not matter if SWNETCDF is not defined
     int progVarID = 0;  // Value does not matter if SWNETCDF is not defined
 
@@ -1065,26 +1064,13 @@ void SW_DOM_SimSet(
     progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprogStatus];
 #endif
 
-    if (userSUID > 0) {
-        if (userSUID > SW_Domain->nSUIDs) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "User requested simulation unit (suid = %zu) "
-                "does not exist in simulation domain (n = %zu).",
-                userSUID,
-                SW_Domain->nSUIDs
-            );
-        }
-    } else {
 #if defined(SOILWAT)
-        if (LogInfo->printProgressMsg) {
-            SW_MSG_ROOT("is identifying the simulation set ...", rank);
-        }
+    if (LogInfo->printProgressMsg) {
+        SW_MSG_ROOT("is identifying the simulation set ...", rank);
+    }
 #endif
 
-        get_subdomains(rank, worldSize, SW_Domain, LogInfo);
-    }
+    get_subdomains(rank, worldSize, SW_Domain, LogInfo);
 }
 
 void SW_DOM_deepCopy(SW_DOMAIN *source, SW_DOMAIN *dest, LOG_INFO *LogInfo) {
