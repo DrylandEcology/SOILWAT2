@@ -156,10 +156,7 @@ typedef struct {
         /* current year dates */
         firstdoy,               /* start day for this year */
         lastdoy,                /* 366 if leapyear or endend if endyr */
-        doy, week, month, year, /* current model time */
-        prevweek,               /* check for new week */
-        prevmonth,              /* check for new month */
-        prevyear;               /* check for new year */
+        doy, week, month, year; /* current model time */
     /* however, week and month are base0 because they
      * are used as array indices, so take care.
      * doy and year are base1. */
@@ -320,9 +317,6 @@ typedef struct {
 } SW_SOIL_SIM;
 
 typedef struct {
-    /** Number of transpiration regions (max = \ref MAX_TRANSP_REGIONS) */
-    LyrIndex n_transp_rgn;
-
     /** Number of soil layers from which bare-soil evaporation is possible */
     LyrIndex n_evap_lyrs;
 
