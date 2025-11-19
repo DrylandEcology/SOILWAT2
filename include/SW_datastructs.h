@@ -316,9 +316,6 @@ typedef struct {
 } SW_SOIL_SIM;
 
 typedef struct {
-    /** Number of transpiration regions (max = \ref MAX_TRANSP_REGIONS) */
-    LyrIndex n_transp_rgn;
-
     /** Number of soil layers from which bare-soil evaporation is possible */
     LyrIndex n_evap_lyrs;
 
