@@ -103,6 +103,9 @@ static void init_all_logs(
 @param[in] copyWeatherHist Specifies if the weather data should be copied;
 this only has the chance to be false when the program is dealing with
 nc inputs
+@param[in] readFromCacheFile Specifies if this program run is from the
+very start of the simulations (swFALSE) or if it's restarted from
+an incomplete prior run(s); only useful in SWNETCDF/SWNC/SWMPI mode
 @param[in] nActiveSites Number of active sites to initialize log
 information for
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
@@ -116,6 +119,7 @@ and initialized runs
 */
 static void init_all_runs(
     Bool copyWeatherHist,
+    Bool readFromCacheFile,
     size_t nActiveSites,
     SW_OUT_DOM *OutDom,
     SW_RUN *sw_template,
@@ -136,6 +140,8 @@ static void init_all_runs(
         if (main_LogInfo->stopRun) {
             return;
         }
+
+        SW_Runs[site].ModelSim.progRestarted = readFromCacheFile;
     }
 }
 
@@ -873,7 +879,20 @@ void SW_CTL_RunSimSet(
         main_LogInfo
     );
     checkJumpToLabel(main_LogInfo->stopRun, freeMem);
+#endif
 
+    init_all_runs(
+        copyWeatherHist,
+        (Bool) (readFromCacheFile && !freshRun),
+        nActiveSites,
+        &SW_Domain->OutDom,
+        sw_template,
+        siteRuns,
+        main_LogInfo
+    );
+    checkJumpToLabel(main_LogInfo->stopRun, freeMem);
+
+#if defined(SWNETCDF)
     // Check if any sites failed when reading initial values before
     // running simulations
     for (site = 0; site < nActiveSites; site++) {

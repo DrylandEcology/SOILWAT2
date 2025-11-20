@@ -186,6 +186,10 @@ typedef struct {
 
     int ncSuid[2]; // First element used for domain "s", both used for "xy"
 
+    Bool progRestarted; /* The program is picking up where it left off
+                           due exiting before simulations were complete
+                           in a previous */
+
 #ifdef STEPWAT
     /* Variables from GlobalType (STEPWAT2) used in SOILWAT2 */
     IntUS runModelIterations;

@@ -337,6 +337,7 @@ void SW_ST_setup_run(
     SW_SITE_INPUTS *SW_SiteIn,
     SW_SITE_SIM *SW_SiteSim,
     double Tsoil_constant,
+    Bool progRestarted,
     Bool *ptr_stError,
     Bool *soil_temp_init,
     double airTemp,
@@ -350,6 +351,7 @@ void SW_ST_setup_run(
 
 void soil_temperature_setup(
     SW_ST_SIM *SW_StRegSimVals,
+    Bool progRestarted,
     double bDensity[],
     double width[],
     double avgLyrTempInit[],

@@ -327,6 +327,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             &sw->SiteIn,
             &sw->SiteSim,
             sw->RunIn.SiteRunIn.Tsoil_constant,
+            sw->ModelSim.progRestarted,
             &sw->SoilWatSim.soiltempError,
             &sw->StRegSimVals.soil_temp_init,
             sw->WeatherSim.temp_avg,
