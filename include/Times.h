@@ -129,6 +129,8 @@ TimeInt Times_years_to_days(
     TimeInt startYr, TimeInt endYr, TimeInt startstart, TimeInt endend
 );
 
+TimeInt Time_sim_day_to_year(TimeInt year, TimeInt *numDays);
+
 #ifdef __cplusplus
 }
 #endif

@@ -573,3 +573,26 @@ TimeInt Times_years_to_days(
 
     return totalDays;
 }
+
+/**
+@brief Calculate which year the simulation is in based on the current day
+within the simulation
+
+@param[in] year Start year of the simulation
+@param[in,out] numDays Number of days into the simulation we are translating;
+returned with the remaining amount of days, aka the day of year
+
+@return Year in which the [numDays] day resides
+*/
+TimeInt Time_sim_day_to_year(TimeInt year, TimeInt *numDays) {
+    TimeInt numDaysInYear;
+
+    do {
+        numDaysInYear = Time_get_lastdoy_y(year);
+        *numDays -= numDaysInYear;
+
+        year += (numDaysInYear > *numDays) ? 1 : 0;
+    } while (numDaysInYear < *numDays);
+
+    return year;
+}

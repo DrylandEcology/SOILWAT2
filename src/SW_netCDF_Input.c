@@ -8425,6 +8425,108 @@ freeMem:
     }
 }
 
+/**
+@brief Calculate information that is constant across the entire domain
+when reading in values from a cache file, this includes the following
+information
+
+    - SW_MODEL_SIM
+        * firstdoy
+        * lastdoy
+        * doy
+        * year
+        * yearIdxSpinSim
+        * yearIdx
+        * days_in_month
+        * cum_monthdays
+
+    - SW_VEGPROD_SIM
+        * shortIndex
+        * longIndex
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[in] nYearsDynShort Number of years over which short-term vegetation
+predictors are summarized (as anomaly to long-term predictors)
+@param[in] nYearsDynLong Number of years over which long-term vegetation
+predictors are summarized
+@param[in,out] SW_Runs A list of n active sites of comprehensive structs
+of type SW_RUN containing all information in the simulation that will
+be updated with the calculated information listed above
+*/
+static void calc_const_cache_info(
+    SW_DOMAIN *SW_Domain,
+    TimeInt nYearsDynShort,
+    TimeInt nYearsDynLong,
+    SW_RUN *SW_Runs
+) {
+    const TimeInt startyr = SW_Domain->startyr;
+    const Bool doSpinup = SW_Domain->SW_SpinUp.spinup;
+
+    SW_RUN *targetRun;
+
+    TimeInt spinDur = doSpinup ? SW_Domain->SW_SpinUp.duration : 0;
+
+    TimeInt startDoy = SW_Domain->startSimDay;
+    TimeInt startYear;
+    TimeInt startFirstDoy;
+    TimeInt startLastDoy;
+
+    TimeInt calc_days_in_month[MAX_MONTHS] = {0};
+    TimeInt calc_cum_monthdays[MAX_MONTHS] = {0};
+
+    TimeInt startYearIdx;
+    TimeInt startSpinupYearIdx;
+
+    TimeInt startLongIndex;
+    TimeInt startShortIndex;
+
+    size_t site;
+
+    startYear = Time_sim_day_to_year(startyr, &startDoy);
+
+    startFirstDoy =
+        (startYear == SW_Domain->startyr) ? SW_Domain->startstart : 1;
+    startLastDoy = (startYear == SW_Domain->endyr) ?
+                       SW_Domain->endend :
+                       Time_get_lastdoy_y(startYear);
+
+    Time_new_year(startYear, calc_days_in_month, calc_cum_monthdays);
+
+    startYearIdx = startYear - startyr;
+    startSpinupYearIdx = startYearIdx + spinDur;
+
+    startLongIndex =
+        (startYear > nYearsDynLong) ? nYearsDynLong - startYear : 0;
+    startShortIndex =
+        (startYear > nYearsDynShort) ? nYearsDynShort - startYear : 0;
+
+    for (site = 0; site < SW_Domain->nActiveSuidsProc; site++) {
+        targetRun = &SW_Runs[site];
+
+        targetRun->ModelSim.firstdoy = startFirstDoy;
+        targetRun->ModelSim.lastdoy = startLastDoy;
+        targetRun->ModelSim.doy = startDoy;
+        targetRun->ModelSim.year = startYear;
+        targetRun->ModelSim.yearIdx = startYearIdx;
+        targetRun->ModelSim.yearIdxSpinSim = startSpinupYearIdx;
+
+        memcpy(
+            targetRun->ModelSim.days_in_month,
+            calc_days_in_month,
+            sizeof(TimeInt) * MAX_MONTHS
+        );
+        memcpy(
+            targetRun->ModelSim.cum_monthdays,
+            calc_cum_monthdays,
+            sizeof(TimeInt) * MAX_MONTHS
+        );
+
+        targetRun->VegProdSim.longIndex = startLongIndex;
+        targetRun->VegProdSim.shortIndex = startShortIndex;
+    }
+}
+
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
@@ -11729,6 +11831,15 @@ void SW_NCIN_handle_cache_vals(
                 checkJumpToLabel(main_LogInfo->stopRun, freeMem);
             }
         }
+    }
+
+    if (read) {
+        calc_const_cache_info(
+            SW_Domain,
+            sw_template->VegProdIn.nYearsDynamicShort,
+            sw_template->VegProdIn.nYearsDynamicLong,
+            SW_Runs
+        );
     }
 
 freeMem:
