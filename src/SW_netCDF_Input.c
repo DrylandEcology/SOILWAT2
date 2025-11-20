@@ -393,7 +393,7 @@ static const int nCacheVarsInCats[] = {
     7,  /* SW_VEGESTAB_SIM */
     37, /* SW_VEGPROD_SIM */
     11, /* SW_VEGPROD_SIM - VegTypeSim */
-    6,  /* SW_SOILWAT_SIM */
+    9,  /* SW_SOILWAT_SIM */
     18, /* SW_WEATHER_OUTPUTS - accu */
     18, /* SW_WEATHER_OUTPUTS - oagg */
     4,  /* SW_VEGPROD_OUTPUTS - accu */
@@ -487,6 +487,9 @@ static const char *const cacheVarNames[][46] = {
     /* SW_SOILWAT_SIM */
     {"swcBulkYest",  /* "Yesterday" value */
      "snowpackYest", /* "Yesterday" value */
+     "drain",
+     "avgLyrTemp",
+     "lyrFrozen",
      "veg_int_storage",
      "litter_int_storage",
      "standingWaterYest", /* standingWater's "Yesterday" value */
@@ -692,7 +695,15 @@ static const int cacheVarTypes[][46] = {
      NC_DOUBLE},
 
     /* SW_SOILWAT_SIM */
-    {NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_INT},
+    {NC_DOUBLE,
+     NC_DOUBLE,
+     NC_DOUBLE,
+     NC_DOUBLE,
+     NC_DOUBLE,
+     NC_DOUBLE,
+     NC_DOUBLE,
+     NC_DOUBLE,
+     NC_INT},
 
     /* SW_WEATHER_OUTPUTS - accu */
     {NC_DOUBLE,
@@ -859,7 +870,15 @@ static const int cacheVarDims[][46][4] = {
      {eiv_pft, eiv_bio_effects, eiv_max_years, -1}},
 
     /* SW_SOILWAT_SIM */
-    {{eiv_max_layers, -1}, {-1}, {eiv_pft}, {-1}, {-1}, {-1}},
+    {{eiv_max_layers, -1},
+     {-1},
+     {eiv_max_layers, -1},
+     {eiv_max_layers, -1},
+     {eiv_max_layers, -1},
+     {eiv_pft},
+     {-1},
+     {-1},
+     {-1}},
 
     /* SW_WEATHER_OUTPUTS - accu */
     {{-1},
@@ -1392,6 +1411,9 @@ static void rearrange_cache_values(
                      .SoilWatSim.swcBulk[Yesterday], /* "Yesterday" value */
                  (void *) &SW_Runs[site]
                      .SoilWatSim.snowpack[Yesterday], /* "Yesterday" value */
+                 (void *) SW_Runs[site].SoilWatSim.drain,
+                 (void *) SW_Runs[site].SoilWatSim.avgLyrTemp,
+                 (void *) SW_Runs[site].SoilWatSim.lyrFrozen,
                  (void *) SW_Runs[site].SoilWatSim.veg_int_storage,
                  (void *) &SW_Runs[site].SoilWatSim.litter_int_storage,
                  (void *) &SW_Runs[site]
