@@ -11906,3 +11906,72 @@ freeMem:
     nc_close(cacheFileID);
 }
 
+/**
+@brief Wrapper function to determine if cache values are to be written, if so,
+write the values; determine if we write the values based on the following
+conditions (all must be true, each process has their own result)
+
+    1) We didn't fail before running simulations
+    2) We aren't failing because all sites failed
+    3) The simulations were not fully completed
+
+This is all or nothing, meaning if a single process writes out cache values,
+then all processes with participate, but if no processes have anything to
+store, then no writing will be done
+
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[in] sw_template Template SW_RUN for the function to use as a
+reference for local versions of SW_RUN
+@param[in] SW_Runs A list of SW_RUN instances of size "nActiveSites" that
+will be used for holding all information for the simulation
+@param[in] siteLogs A list of LOG_INFO of size [n active sites] that will
+be returned with any site-specific errors/warnings
+@param[in] cacheAtEnd Specifies if the program made it to the running of
+simulations portion of the program
+@param[out] main_LogInfo The main LOG_INFO instance for the program
+*/
+void SW_NCIN_write_cache(
+    int rank,
+    SW_DOMAIN *SW_Domain,
+    SW_RUN *sw_template,
+    SW_RUN *SW_Runs,
+    LOG_INFO *siteLogs,
+    Bool cacheAtEnd,
+    LOG_INFO *main_LogInfo
+) {
+    const Bool writeCache = swTRUE;
+
+    Bool allCache;
+    size_t site = 0;
+    IntU nFailedSites = 0;
+
+#if defined(SWMPI)
+    const int numReduceElem = 1;
+#endif
+
+    for (site = 0; site < SW_Domain->nActiveSuidsProc; site++) {
+        nFailedSites += (siteLogs[site].stopRun) ? 1 : 0;
+    }
+
+    allCache =
+        (cacheAtEnd && nFailedSites < SW_Domain->nActiveSuidsProc &&
+         SW_Runs[site].ModelSim.doy != SW_Runs[site].ModelSim.lastdoy &&
+         SW_Runs[site].ModelSim.year != sw_template->ModelIn.endyr);
+
+#if defined(SWMPI)
+    // Determine if any process needs to write out cache values
+    SW_MPI_Allreduce(
+        &allCache, &cacheAtEnd, numReduceElem, MPI_INT, MPI_MAX, MPI_COMM_WORLD
+    );
+#else
+    cacheAtEnd = allCache;
+#endif
+
+    if (cacheAtEnd) {
+        SW_NCIN_handle_cache_vals(
+            rank, writeCache, SW_Domain, sw_template, SW_Runs, main_LogInfo
+        );
+    }
+}

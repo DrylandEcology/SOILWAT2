@@ -796,6 +796,13 @@ void SW_CTL_RunSimSet(
 
     const size_t nActiveSites = SW_Domain->nActiveSuidsProc;
 
+#if defined(SWNETCDF)
+    const TimeInt newSimStartDay = 1;
+    const Bool freshRun = (Bool) (SW_Domain->startSimDay == newSimStartDay);
+#else
+    const Bool freshRun = swTRUE;
+#endif
+
     Bool readFromCacheFile = swFALSE;
     Bool copyWeatherHist = swTRUE;
 
@@ -819,7 +826,6 @@ void SW_CTL_RunSimSet(
 #if defined(SWNETCDF)
     const Bool readConstInfo = swTRUE;
     const Bool readCache = swTRUE;
-    const Bool writeCache = swTRUE;
     const char *cacheFileName = SW_Domain->SW_PathInputs.txtInFiles[eNCCache];
 
     size_t site;
@@ -891,7 +897,7 @@ void SW_CTL_RunSimSet(
     }
     checkJumpToLabel(main_LogInfo->stopRun, freeMem);
 
-    if (readFromCacheFile) {
+    if (readFromCacheFile && !freshRun) {
         SW_NCIN_handle_cache_vals(
             rank, readCache, SW_Domain, sw_template, siteRuns, main_LogInfo
         );
@@ -916,11 +922,15 @@ void SW_CTL_RunSimSet(
 
 freeMem:
 #if defined(SWNETCDF)
-    if (cacheAtEnd) {
-        SW_NCIN_handle_cache_vals(
-            rank, writeCache, SW_Domain, sw_template, siteRuns, main_LogInfo
-        );
-    }
+    SW_NCIN_write_cache(
+        rank,
+        SW_Domain,
+        sw_template,
+        siteRuns,
+        siteLogs,
+        cacheAtEnd,
+        main_LogInfo
+    );
 
     SW_NCIN_handle_temp_inputs(
         alloc, SW_Domain, &tempVals, &newSoils, main_LogInfo

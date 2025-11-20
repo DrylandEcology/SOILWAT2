@@ -266,6 +266,16 @@ void SW_NCIN_handle_cache_vals(
     LOG_INFO *main_LogInfo
 );
 
+void SW_NCIN_write_cache(
+    int rank,
+    SW_DOMAIN *SW_Domain,
+    SW_RUN *sw_template,
+    SW_RUN *SW_Runs,
+    LOG_INFO *siteLogs,
+    Bool cacheAtEnd,
+    LOG_INFO *main_LogInfo
+);
+
 #ifdef __cplusplus
 }
 #endif
