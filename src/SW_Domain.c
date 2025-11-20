@@ -1100,7 +1100,7 @@ void SW_DOM_SimSet(
     );
     checkReturn(LogInfo->stopRun);
 
-    SW_Domain->endSimDay = Times_years_to_days(
+    SW_Domain->endSimDay = Time_years_to_days(
         SW_Domain->startyr,
         SW_Domain->endyr,
         SW_Domain->startstart,

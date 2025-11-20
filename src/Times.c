@@ -551,7 +551,7 @@ void timeStringISO8601(char *timeString, unsigned int stringLength) {
 
 @return Total number of days between the start and end years
 */
-TimeInt Times_years_to_days(
+TimeInt Time_years_to_days(
     TimeInt startYr, TimeInt endYr, TimeInt startstart, TimeInt endend
 ) {
     TimeInt year;
