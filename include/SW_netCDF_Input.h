@@ -245,8 +245,12 @@ void SW_NCIN_alloc_sim_var_information(
 
 void SW_NCIN_allocDimVar(int numVars, int ***dimOrderInVar, LOG_INFO *LogInfo);
 
-void SW_NCIN_alloc_temp_inputs(
-    SW_DOMAIN *SW_Domain, double **tempVals, LOG_INFO *LogInfo
+void SW_NCIN_handle_temp_inputs(
+    Bool allocate,
+    SW_DOMAIN *SW_Domain,
+    double **tempVals,
+    SW_SOIL_RUN_INPUTS **newSoils,
+    LOG_INFO *LogInfo
 );
 
 void SW_NCIN_create_cache_file(

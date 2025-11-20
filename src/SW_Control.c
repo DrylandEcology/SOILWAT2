@@ -76,7 +76,6 @@ volatile sig_atomic_t runSims = 1;
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
-#if defined(SWNETCDF)
 /**
 @brief Initialize all simulation run log (LOG_INFO) instances
 
@@ -153,17 +152,13 @@ SW_RUN, SW_RUN_INPUTS, LOG_INFO for each active site
 (swTRUE) or deallocated (swFALSE)
 @param[in] nActiveSites Number of active sites to allocate for
 @param[out] SW_Runs A list of SW_RUN instances of size "nActiveSites"
-@param[out] newSoils A temporary list of SW_SOIL_RUN_INPUTS instances to
-store input values
 @param[out] LogInfos A list of LOG_INFO instances of size "nActiveSites"
 @param[out] mainLogInfo The main LOG_INFO instance for the program
 */
 static void handle_sim_structs_mem(
     Bool allocate,
-    Bool consistentSoilDepths,
     size_t nActiveSites,
     SW_RUN **SW_Runs,
-    SW_SOIL_RUN_INPUTS **newSoils,
     LOG_INFO **LogInfos,
     LOG_INFO *main_LogInfo
 ) {
@@ -182,14 +177,6 @@ static void handle_sim_structs_mem(
             sizeof(LOG_INFO) * nActiveSites, "alloc_sim_structs", main_LogInfo
         );
         checkReturn(main_LogInfo->stopRun);
-
-        if (!consistentSoilDepths) {
-            *newSoils = (SW_SOIL_RUN_INPUTS *) Mem_Malloc(
-                sizeof(SW_SOIL_RUN_INPUTS) * nActiveSites,
-                "handle_sim_structs_mem",
-                main_LogInfo
-            );
-        }
     } else {
         for (arr = 0; arr < numDeallocArrays; arr++) {
             if (!isnull(*(deallocArrays[arr]))) {
@@ -199,7 +186,6 @@ static void handle_sim_structs_mem(
         }
     }
 }
-#endif
 
 /**
 @brief Handle an interrupt provided by the OS to stop the program;
@@ -805,6 +791,19 @@ void SW_CTL_RunSimSet(
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *main_LogInfo
 ) {
+    const Bool alloc = swTRUE;
+    const Bool dealloc = swFALSE;
+
+    const size_t nActiveSites = SW_Domain->nActiveSuidsProc;
+
+    Bool readFromCacheFile = swFALSE;
+    Bool copyWeatherHist = swTRUE;
+
+    SW_SOIL_RUN_INPUTS *newSoils = NULL;
+    SW_RUN *siteRuns = NULL;
+    LOG_INFO *siteLogs = NULL;
+    double *tempVals = NULL;
+
     (void) signal(SIGINT, handle_interrupt);
     (void) signal(SIGTERM, handle_interrupt);
 
@@ -812,23 +811,25 @@ void SW_CTL_RunSimSet(
         report_sim_start(SW_Domain, rank, worldSize);
     }
 
+    handle_sim_structs_mem(
+        alloc, nActiveSites, &siteRuns, &siteLogs, main_LogInfo
+    );
+    checkReturn(main_LogInfo->stopRun);
+
 #if defined(SWNETCDF)
-    const Bool alloc = swTRUE;
-    const Bool dealloc = swFALSE;
     const Bool readConstInfo = swTRUE;
     const Bool readCache = swTRUE;
-    const Bool writeCache = swFALSE;
+    const Bool writeCache = swTRUE;
     const char *cacheFileName = SW_Domain->SW_PathInputs.txtInFiles[eNCCache];
 
-    SW_SOIL_RUN_INPUTS *newSoils = NULL;
-    SW_RUN *siteRuns = NULL;
-    LOG_INFO *siteLogs = NULL;
-    double *tempVals = NULL;
     size_t site;
     size_t siteIdx;
-    Bool readFromCacheFile = FileExists(cacheFileName);
+    Bool cacheAtEnd = swFALSE;
 
-    const size_t nActiveSites = SW_Domain->nActiveSuidsProc;
+    copyWeatherHist =
+        (Bool) !SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
+
+    readFromCacheFile = FileExists(cacheFileName);
 
 #if defined(SWMPI)
     MPI_Barrier(MPI_COMM_WORLD);
@@ -839,32 +840,15 @@ void SW_CTL_RunSimSet(
     }
     checkReturn(main_LogInfo->stopRun);
 
-    handle_sim_structs_mem(
-        alloc,
-        nActiveSites,
-        SW_Domain->hasConsistentSoilLayerDepths,
-        &siteRuns,
-        &newSoils,
-        &siteLogs,
-        main_LogInfo
+    SW_NCIN_handle_temp_inputs(
+        alloc, SW_Domain, &tempVals, &newSoils, main_LogInfo
     );
-    checkReturn(main_LogInfo->stopRun);
-
-    SW_NCIN_alloc_temp_inputs(SW_Domain, &tempVals, main_LogInfo);
     checkJumpToLabel(main_LogInfo->stopRun, freeMem);
+#endif
 
     init_all_logs(nActiveSites, main_LogInfo->logfp, siteLogs);
 
-    init_all_runs(
-        swTRUE,
-        nActiveSites,
-        &SW_Domain->OutDom,
-        sw_template,
-        siteRuns,
-        main_LogInfo
-    );
-    checkJumpToLabel(main_LogInfo->stopRun, freeMem);
-
+#if defined(SWNETCDF)
     SW_NCIN_read_inputs(
         siteRuns,
         SW_Domain,
@@ -904,9 +888,6 @@ void SW_CTL_RunSimSet(
             &SW_Domain->netCDFInput.progVals[siteIdx],
             main_LogInfo
         );
-
-        siteRuns[site].SiteSim.site_has_swrcpMineralSoil =
-            sw_template->SiteIn.inputsProvideSWRCp;
     }
     checkJumpToLabel(main_LogInfo->stopRun, freeMem);
 
@@ -916,6 +897,9 @@ void SW_CTL_RunSimSet(
         );
         checkJumpToLabel(main_LogInfo->stopRun, freeMem);
     }
+
+    cacheAtEnd = swTRUE;
+#endif
 
     SW_CTL_run_daily_timesteps(
         sw_template,
@@ -930,38 +914,22 @@ void SW_CTL_RunSimSet(
         main_LogInfo
     );
 
-    if (siteRuns[0].ModelSim.doy != siteRuns[0].ModelSim.lastdoy ||
-        siteRuns[0].ModelSim.year != sw_template->ModelIn.endyr) {
-
+freeMem:
+#if defined(SWNETCDF)
+    if (cacheAtEnd) {
         SW_NCIN_handle_cache_vals(
             rank, writeCache, SW_Domain, sw_template, siteRuns, main_LogInfo
         );
     }
 
-freeMem:
-    handle_sim_structs_mem(
-        dealloc,
-        nActiveSites,
-        SW_Domain->hasConsistentSoilLayerDepths,
-        &siteRuns,
-        &newSoils,
-        &siteLogs,
-        main_LogInfo
-    );
-#else
-    SW_CTL_run_daily_timesteps(
-        sw_template,
-        SW_Domain->startSimDay,
-        SW_Domain->endSimDay,
-        NULL,
-        NULL,
-        SW_Domain,
-        sw_template,
-        main_LogInfo,
-        SW_WallTime,
-        main_LogInfo
+    SW_NCIN_handle_temp_inputs(
+        alloc, SW_Domain, &tempVals, &newSoils, main_LogInfo
     );
 #endif
+
+    handle_sim_structs_mem(
+        dealloc, nActiveSites, &siteRuns, &siteLogs, main_LogInfo
+    );
 }
 
 /**

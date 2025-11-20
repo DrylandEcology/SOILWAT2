@@ -11479,13 +11479,21 @@ freeMem:
 @brief Allocate temporary storage for values when reading in netCDF inputs
 using the theoretically most amount of values we could read in at once
 
+@param[in] allocate A flag specifying if the arrays should be allocated
+(swTRUE) or deallocated (swFALSE)
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
 @param[out] tempVals Pointer to be allocated for temporary storage for inputs
+@param[out] newSoils A temporary list of SW_SOIL_RUN_INPUTS instances to
+store input values
 @param[out] LogInfo The main LOG_INFO instance for the program
 */
-void SW_NCIN_alloc_temp_inputs(
-    SW_DOMAIN *SW_Domain, double **tempVals, LOG_INFO *LogInfo
+void SW_NCIN_handle_temp_inputs(
+    Bool allocate,
+    SW_DOMAIN *SW_Domain,
+    double **tempVals,
+    SW_SOIL_RUN_INPUTS **newSoils,
+    LOG_INFO *LogInfo
 ) {
     const int firstFile = 0;
     const char *pftVal =
@@ -11509,9 +11517,28 @@ void SW_NCIN_alloc_temp_inputs(
         nElem = (theorPFTSize > theorVegSize) ? theorVegSize : theorPFTSize;
     }
 
-    *tempVals = (double *) Mem_Calloc(
-        nElem, sizeof(double), "SW_NCIN_alloc_temp_inputs", LogInfo
-    );
+    if (allocate) {
+        *tempVals = (double *) Mem_Calloc(
+            nElem, sizeof(double), "SW_NCIN_handle_temp_inputs", LogInfo
+        );
+        checkReturn(LogInfo->stopRun);
+
+        if (!SW_Domain->hasConsistentSoilLayerDepths) {
+            *newSoils = (SW_SOIL_RUN_INPUTS *) Mem_Malloc(
+                sizeof(SW_SOIL_RUN_INPUTS) * SW_Domain->nActiveSuidsProc,
+                "SW_NCIN_handle_temp_inputs",
+                LogInfo
+            );
+        }
+    } else {
+        if (!isnull(*tempVals)) {
+            free((void *) *tempVals);
+        }
+
+        if (!isnull(*newSoils)) {
+            free((void *) newSoils);
+        }
+    }
 }
 
 /**
