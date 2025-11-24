@@ -945,7 +945,7 @@ void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         !missing(sw->SoilWatIn.hist.swc[sw->ModelSim.doy - 1][1])) {
 
         if (!(sw->ModelSim.doy == sw->ModelIn.startstart &&
-              sw->ModelSim.year == sw->ModelIn.startyr)) {
+              sw->ModelSim.yearIdxSpinSim == 0)) {
 
 #ifdef SWDEBUG
             if (debug) {

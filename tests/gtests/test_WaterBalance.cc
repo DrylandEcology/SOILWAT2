@@ -29,6 +29,8 @@ namespace {
 TEST_F(WaterBalanceFixtureTest, WaterBalanceExample1) {
     int i;
 
+    SW_VPD_init_run(&SW_Run, &LogInfo);
+
     // Run the simulation
     SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -39,6 +41,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceExample1) {
             << "Water balance error in test " << i << ": "
             << SW_Run.SoilWatSim.wbErrorNames[i];
     }
+
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
 }
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSoilTemperature) {
@@ -47,6 +51,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSoilTemperature) {
     // Turn on soil temperature simulations
     SW_Run.SiteIn.use_soil_temp = swTRUE;
 
+    SW_VPD_init_run(&SW_Run, &LogInfo);
+
     // Run the simulation
     SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -57,6 +63,39 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSoilTemperature) {
             << "Water balance error in test " << i << ": "
             << SW_Run.SoilWatSim.wbErrorNames[i];
     }
+
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
+}
+
+TEST_F(
+    WaterBalanceFixtureTest, WaterBalanceWithDynamicSoilTemperatureBoundary
+) {
+    int i;
+
+    // Turn on soil temperature simulations
+    SW_Run.SiteIn.use_soil_temp = swTRUE;
+
+    // Turn on dynamic soil temperature boundary condition
+    SW_Run.SiteIn.methodMaxDepthSoilTemperature = 1;
+    SW_Run.VegProdIn.nYearsDynamicShort = 3;
+    SW_Run.VegProdIn.nYearsDynamicLong = 10; // less than number of test years
+
+    // Initialize variables for dynamic boundary
+    SW_VPD_init_run(&SW_Run, &LogInfo);
+    sw_fail_on_error(&LogInfo);
+
+    // Run the simulation
+    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+        EXPECT_EQ(0, SW_Run.SoilWatSim.wbError[i])
+            << "Water balance error in test " << i << ": "
+            << SW_Run.SoilWatSim.wbErrorNames[i];
+    }
+
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
 }
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithPondedWaterRunonRunoff) {
@@ -67,6 +106,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithPondedWaterRunonRunoff) {
     SW_Run.SiteIn.percentRunoff = 0.5;
     SW_Run.SiteIn.percentRunon = 1.25;
 
+    SW_VPD_init_run(&SW_Run, &LogInfo);
+
     // Run the simulation
     SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -77,10 +118,14 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithPondedWaterRunonRunoff) {
             << "Water balance error in test " << i << ": "
             << SW_Run.SoilWatSim.wbErrorNames[i];
     }
+
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
 }
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
     int i;
+
+    SW_VPD_init_run(&SW_Run, &LogInfo);
 
     // Turn on Markov weather generator (and turn off use of historical weather)
     SW_Run.WeatherIn.generateWeatherMethod = 2;
@@ -140,6 +185,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
             << "Water balance error in test " << i << ": "
             << SW_Run.SoilWatSim.wbErrorNames[i];
     }
+
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
 }
 
 TEST_F(
@@ -147,6 +194,8 @@ TEST_F(
     WaterBalanceWithWeatherGeneratorForSomeMissingValues
 ) {
     int i;
+
+    SW_VPD_init_run(&SW_Run, &LogInfo);
 
     // Turn on Markov weather generator
     SW_Run.WeatherIn.generateWeatherMethod = 2;
@@ -205,11 +254,15 @@ TEST_F(
             << "Water balance error in test " << i << ": "
             << SW_Run.SoilWatSim.wbErrorNames[i];
     }
+
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
 }
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
     int i;
     LyrIndex s;
+
+    SW_VPD_init_run(&SW_Run, &LogInfo);
 
     // Set high gravel volume in all soil layers
     ForEachSoilLayer(s, SW_Run.RunIn.SiteRunIn.n_layers) {
@@ -244,10 +297,14 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
             << "Water balance error in test " << i << ": "
             << SW_Run.SoilWatSim.wbErrorNames[i];
     }
+
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
 }
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOneSoilLayer) {
     int i;
+
+    SW_VPD_init_run(&SW_Run, &LogInfo);
 
     SW_Run.RunIn.SiteRunIn.n_layers = 1;
 
@@ -278,10 +335,14 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOneSoilLayer) {
             << "Water balance error in test " << i << ": "
             << SW_Run.SoilWatSim.wbErrorNames[i];
     }
+
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
 }
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMaxSoilLayers) {
     int i;
+
+    SW_VPD_init_run(&SW_Run, &LogInfo);
 
     SW_Run.RunIn.SiteRunIn.n_layers = MAX_LAYERS;
 
@@ -315,25 +376,18 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMaxSoilLayers) {
             << "Water balance error in test " << i << ": "
             << SW_Run.SoilWatSim.wbErrorNames[i];
     }
+
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
 }
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
     int i;
 
     // Select method to estimate vegetation from long-term climate
-    SW_Run.VegProdIn.veg_method = 1;
+    SW_Run.VegProdIn.veg_method = VEG_METHOD_LONG_EST;
 
     // Re-calculate vegetation
-    SW_VPD_init_run(
-        &SW_Run.RunIn.VegProdRunIn,
-        SW_Run.RunIn.weathRunAllHist,
-        &SW_Run.ModelIn,
-        &SW_Run.ModelSim,
-        SW_Run.VegProdSim.veg,
-        SW_Run.RunIn.ModelRunIn.isnorth,
-        SW_Run.VegProdIn.veg_method,
-        &LogInfo
-    );
+    SW_VPD_init_run(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run the simulation
@@ -346,10 +400,52 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
             << "Water balance error in test " << i << ": "
             << SW_Run.SoilWatSim.wbErrorNames[i];
     }
+
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
+}
+
+TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate2) {
+    int i;
+
+    // Select method to estimate vegetation dynamically
+    // from short-term and long-term climate
+    SW_Run.VegProdIn.veg_method = VEG_METHOD_DYN_EST;
+    SW_Run.VegProdIn.nYearsDynamicShort = 3;
+    SW_Run.VegProdIn.nYearsDynamicLong = 10; // less than number of test years
+
+    // Turn on spinup simulation (including spinup of dynamic vegetation)
+    // (see WaterBalanceFixtureTest.WaterBalanceWithSpinup)
+    SW_Run.ModelIn.SW_SpinUp.spinup = swTRUE;
+    // Set spinup variables
+    SW_Run.ModelIn.SW_SpinUp.mode = 1;
+    SW_Run.ModelIn.SW_SpinUp.duration = 5;
+    SW_Run.ModelIn.SW_SpinUp.scope = 8;
+
+    // Re-calculate vegetation (accounting for spinup)
+    SW_VPD_init_run(&SW_Run, &LogInfo);
+    sw_fail_on_error(&LogInfo);
+
+    // Run the spinup & deactivate
+    SW_CTL_run_spinup(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+
+    // Run the simulation
+    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+        EXPECT_EQ(0, SW_Run.SoilWatSim.wbError[i])
+            << "Water balance error in test " << i << ": "
+            << SW_Run.SoilWatSim.wbErrorNames[i];
+    }
+
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
 }
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
     unsigned int i;
+
+    SW_VPD_init_run(&SW_Run, &LogInfo);
 
     // Set PTF (Cosby1984AndOthers handles OM only up to 8%)
     (void) snprintf(
@@ -400,10 +496,14 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
             << "Water balance error in test " << i << ": "
             << SW_Run.SoilWatSim.wbErrorNames[i];
     }
+
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
 }
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
     int i;
+
+    SW_VPD_init_run(&SW_Run, &LogInfo);
 
     // Set SWRC and PTF (and SWRC parameter input filename)
     (void) snprintf(
@@ -470,10 +570,14 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
             << "Water balance error in test " << i << ": "
             << SW_Run.SoilWatSim.wbErrorNames[i];
     }
+
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
 }
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
     unsigned int i;
+
+    SW_VPD_init_run(&SW_Run, &LogInfo);
 
     // Set SWRC and PTF (and SWRC parameter input filename)
     (void) snprintf(
@@ -547,10 +651,14 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
             << "Water balance error in test " << i << ": "
             << SW_Run.SoilWatSim.wbErrorNames[i];
     }
+
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
 }
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
     int i;
+
+    SW_VPD_init_run(&SW_Run, &LogInfo);
 
     // Point to Daymet weather data
     (void) snprintf(
@@ -642,10 +750,14 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
             << "Water balance error in test " << i << ": "
             << SW_Run.SoilWatSim.wbErrorNames[i];
     }
+
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
 }
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGridMET) {
     int i;
+
+    SW_VPD_init_run(&SW_Run, &LogInfo);
 
     // Point to gridMET weather data
     (void) snprintf(
@@ -734,10 +846,14 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGridMET) {
             << "Water balance error in test " << i << ": "
             << SW_Run.SoilWatSim.wbErrorNames[i];
     }
+
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
 }
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype1) {
     int i;
+
+    SW_VPD_init_run(&SW_Run, &LogInfo);
 
     // Switch directory to the input folder of the
     // first type of MACA (hursmin, hursmax)
@@ -826,10 +942,14 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype1) {
             << "Water balance error in test " << i << ": "
             << SW_Run.SoilWatSim.wbErrorNames[i];
     }
+
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
 }
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
     int i;
+
+    SW_VPD_init_run(&SW_Run, &LogInfo);
 
     // Switch directory to the input folder of the
     // second type of MACA (huss)
@@ -921,10 +1041,14 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
             << "Water balance error in test " << i << ": "
             << SW_Run.SoilWatSim.wbErrorNames[i];
     }
+
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
 }
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSpinup) {
     int i;
+
+    SW_VPD_init_run(&SW_Run, &LogInfo);
 
     // Turn on spinup simulation
     SW_Run.ModelIn.SW_SpinUp.spinup = swTRUE;
@@ -946,5 +1070,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSpinup) {
             << "Water balance error in test " << i << ": "
             << SW_Run.SoilWatSim.wbErrorNames[i];
     }
+
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
 }
 } // namespace

@@ -1342,9 +1342,7 @@ void SW_OUT_init_ptrs(SW_OUT_RUN *OutRun, SW_PATH_OUTPUTS *SW_PathOutputs) {
     SW_PathOutputs->ncOutFiles[key][column] = NULL;
     SW_PathOutputs->ncOutVarIDs[key] = NULL;
     SW_PathOutputs->outTimeSizes[column] = NULL;
-#if defined(SWMPI)
     SW_PathOutputs->openOutFileIDs[key][column] = NULL;
-#endif
 #endif
 
 #if !defined(SWNETCDF)
@@ -2058,12 +2056,10 @@ void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw) {
                 sw->SW_PathOutputs.ncOutFiles[k][pd] = NULL;
             }
 
-#if defined(SWMPI)
             if (!isnull(sw->SW_PathOutputs.openOutFileIDs[k][pd])) {
                 free((void *) sw->SW_PathOutputs.openOutFileIDs[k][pd]);
                 sw->SW_PathOutputs.openOutFileIDs[k][pd] = NULL;
             }
-#endif
             if (!isnull(sw->SW_PathOutputs.outTimeSizes[pd])) {
                 free((void *) sw->SW_PathOutputs.outTimeSizes[pd]);
                 sw->SW_PathOutputs.outTimeSizes[pd] = NULL;
@@ -3291,15 +3287,6 @@ void SW_OUT_read(
     SW_OUT_set_nrow(&sw->ModelIn, OutDom->use_OutPeriod, OutDom->nrow_OUT);
 #endif
 
-    if (DirExists(outDir)) {
-        SW_F_CleanOutDir(outDir, LogInfo);
-    } else {
-        MkDir(outDir, LogInfo);
-    }
-    if (LogInfo->stopRun) {
-        goto closeFile;
-    }
-
 closeFile: { CloseFile(&f, LogInfo); }
 }
 
@@ -3926,6 +3913,7 @@ void SW_OUT_write_today(
 /**
 @brief create all of the user-specified output files.
 
+@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in,out] SW_PathOutputs Struct of type SW_PATH_OUTPUTS which
 holds basic information about output files and values
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
@@ -3936,12 +3924,31 @@ holds basic information about output files and values
 after SW_OUT_read() which sets the global variable use_OutPeriod.
 */
 void SW_OUT_create_files(
-    SW_PATH_OUTPUTS *SW_PathOutputs, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
+    int rank,
+    SW_PATH_OUTPUTS *SW_PathOutputs,
+    SW_DOMAIN *SW_Domain,
+    LOG_INFO *LogInfo
 ) {
 
 #if defined(SOILWAT)
     if (LogInfo->printProgressMsg) {
-        SW_MSG_ROOT("is creating output files ...", 0);
+        SW_MSG_ROOT("is creating output files ...", rank);
+    }
+#else
+    (void) rank;
+#endif
+
+#if defined(SW_OUTTEXT) || defined(SWNETCDF)
+    if (rank == ROOT_PROC) {
+        if (DirExists(SW_Domain->SW_PathInputs.outputPrefix)) {
+            /* Remove files in output directory (txt-mode: *; nc-mode: *.csv) */
+            SW_F_CleanOutDir(SW_Domain->SW_PathInputs.outputPrefix, LogInfo);
+        } else {
+            MkDir(SW_Domain->SW_PathInputs.outputPrefix, LogInfo);
+        }
+        if (LogInfo->stopRun) {
+            return; /* Exit prematurely due to error */
+        }
     }
 #endif
 
@@ -3956,6 +3963,7 @@ void SW_OUT_create_files(
 
 #elif defined(SWNETCDF)
     SW_NCOUT_create_output_files(
+        rank,
         SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom],
         SW_Domain->DomainType,
         SW_Domain->SW_PathInputs.outputPrefix,
@@ -3971,10 +3979,7 @@ void SW_OUT_create_files(
         SW_Domain->startyr,
         SW_Domain->endyr,
         SW_Domain->OutDom.netCDFOutput.baseCalendarYear,
-        SW_PathOutputs->outTimeSizes,
-        &SW_PathOutputs->numOutFiles,
-        SW_PathOutputs->ncOutFiles,
-        SW_PathOutputs->ncOutVarIDs,
+        SW_PathOutputs,
         LogInfo
     );
 
@@ -4002,11 +4007,12 @@ void SW_OUT_close_files(
 
 #if defined(SW_OUTTEXT)
     SW_OUT_close_textfiles(SW_PathOutputs, OutDom, LogInfo);
-#elif defined(SWMPI)
-    SW_MPI_close_out_files(
-        SW_PathOutputs->openOutFileIDs, OutDom, SW_PathOutputs->numOutFiles
+#elif defined(SWNETCDF)
+    SW_NCOUT_close_out_files(
+        SW_PathOutputs->openOutFileIDs, SW_PathOutputs->numOutFiles
     );
     (void) LogInfo;
+    (void) OutDom;
 #else
     (void) SW_PathOutputs;
     (void) OutDom;
@@ -4189,6 +4195,22 @@ void SW_PATHOUT_deepCopy(
                                             // error
                                 }
                             }
+                        }
+                    }
+
+                    if (!isnull(source_files->openOutFileIDs[key][pd])) {
+                        SW_NCOUT_alloc_outfile_ids(
+                            numFiles,
+                            &dest_files->openOutFileIDs[key][pd],
+                            LogInfo
+                        );
+                        if (LogInfo->stopRun) {
+                            return;
+                        }
+
+                        for (fileNum = 0; fileNum < numFiles; fileNum++) {
+                            dest_files->openOutFileIDs[key][pd][fileNum] =
+                                source_files->openOutFileIDs[key][pd][fileNum];
                         }
                     }
                 }

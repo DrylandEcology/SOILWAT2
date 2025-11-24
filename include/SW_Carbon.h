@@ -20,13 +20,26 @@ extern "C" {
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
+
+void SW_CBN_init_ptrs(SW_CARBON_INPUTS *SW_CarbonIn);
+
+void SW_CBN_alloc_ppm(TimeInt n_years, double **ppm, LOG_INFO *LogInfo);
+
 void SW_CBN_construct(SW_CARBON_INPUTS *SW_CarbonIn);
 
-void SW_CBN_deconstruct(void);
+void SW_CBN_deconstruct(SW_CARBON_INPUTS *SW_CarbonIn);
+
+void SW_CBN_setup(
+    SW_CARBON_INPUTS *SW_CarbonIn,
+    TimeInt startYr,
+    TimeInt endYr,
+    char *txtInFiles[],
+    TimeInt vegYear,
+    LOG_INFO *LogInfo
+);
 
 void SW_CBN_read(
     SW_CARBON_INPUTS *SW_CarbonIn,
-    TimeInt addtl_yr,
     TimeInt startYr,
     TimeInt endYr,
     char *txtInFiles[],
@@ -38,10 +51,8 @@ void SW_CBN_init_run(
     VegTypeIn vegIn[],
     VegTypeSim vegSim[],
     SW_CARBON_INPUTS *SW_CarbonIn,
-    TimeInt addtl_yr,
     TimeInt startYr,
     TimeInt endYr,
-    TimeInt vegYear,
     LOG_INFO *LogInfo
 );
 

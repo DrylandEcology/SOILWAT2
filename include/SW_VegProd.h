@@ -104,10 +104,75 @@ extern "C" {
 /* --------------------------------------------------- */
 extern const char *const key2veg[NVEGTYPES];
 
+/* Constants for veg_method rather than having 0, 1 or 2 */
+#define VEG_METHOD_FILE 0 // Use values from file (unused constant right now)
+
+/* Estimate vegetation composition from long-term climate conditions */
+#define VEG_METHOD_LONG_EST 1
+
+/* Dynamic vegetation using short- and long-term climate conditions */
+#define VEG_METHOD_DYN_EST 2
 
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
+
+void alloc_nyear_arrays(
+    TimeInt n_years,
+    Bool annTempOnly,
+    SW_VEGPROD_SIM *SW_VegProdSim,
+    LOG_INFO *LogInfo
+);
+
+double calc_perc_var_in_soil_profile(
+    const double vals[],
+    double depths[],
+    const double widths[],
+    LyrIndex n_layers,
+    Bool first3cm
+);
+
+double calc_awhc(
+    double swcBulk_fieldcap[], double swcBulk_wiltpt[], LyrIndex n_layers
+);
+
+void calc_const_dynamic_veg_info(
+    SW_SOIL_SIM *SW_SoilSim,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
+    SW_SITE_SIM *SW_SiteSim,
+    LyrIndex n_layers
+);
+
+void calc_yearly_hist_vals(
+    SW_WEATHER_HIST *SW_WeathHist,
+    SW_MODEL_SIM *SW_ModelSim,
+    TimeInt yearIndex,
+    Bool annTempOnly,
+    SW_VEGPROD_SIM *SW_VegProdSim
+);
+
+void calc_veg_predictor_vals(
+    TimeInt yearIndex,
+    TimeInt nYearsDynamicShort,
+    TimeInt nYearsDynamicLong,
+    SW_VEGPROD_SIM *SW_VegProdSim
+);
+
+void calc_CONUS_vegcov_2025(
+    SW_SOIL_SIM *ss, SW_VEGPROD_SIM *vps, double *RelAbundanceL0
+);
+
+void update_veg_yearly(
+    SW_SOIL_SIM *SW_SoilSim,
+    TimeInt yearIndex,
+    TimeInt nYearsDynamicShort,
+    TimeInt nYearsDynamicLong,
+    Bool annTempOnly,
+    SW_VEGPROD_SIM *SW_VegProdSim,
+    SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn
+);
+
+
 void SW_VPD_read(
     SW_VEGPROD_INPUTS *SW_VegProdIn,
     SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,
@@ -116,9 +181,17 @@ void SW_VPD_read(
 );
 
 void SW_VPD_new_year(
+    SW_WEATHER_HIST *SW_YearWeathHist,
     SW_MODEL_SIM *SW_ModelSim,
+    SW_VEGPROD_SIM *SW_VegProdSim,
+    SW_SOIL_SIM *SW_SoilSim,
     Bool isBiomAsIf100Cover,
-    VegTypeRunIn vegRunIn[],
+    int veg_method,
+    TimeInt startYearWeather,
+    TimeInt nYearsDynamicShort,
+    TimeInt nYearsDynamicLong,
+    unsigned int methodMaxDepthSoilTemperature,
+    SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,
     VegTypeSim vegSim[],
     VegTypeIn vegIn[]
 );
@@ -133,6 +206,8 @@ void SW_VPD_construct(
     SW_VEGPROD_OUTPUTS vp_p_oagg[],
     SW_VEGPROD_OUTPUTS vp_p_accu[]
 );
+
+void SW_VPD_deconstruct(SW_VEGPROD_SIM *SW_VegProdSim);
 
 void estimateVegetationFromClimate(
     SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,
@@ -160,6 +235,7 @@ void estimatePotNatVegComposition(
     double *grassOutput,
     double *RelAbundanceL0,
     double *RelAbundanceL1,
+    double *RelAbundanceL2,
     LOG_INFO *LogInfo
 );
 
@@ -175,16 +251,9 @@ void uniqueIndices(
     LOG_INFO *LogInfo
 );
 
-void SW_VPD_init_run(
-    SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,
-    SW_WEATHER_HIST *allHist,
-    SW_MODEL_INPUTS *SW_ModelIn,
-    SW_MODEL_SIM *SW_ModelSim,
-    VegTypeSim vegSim[],
-    Bool inNorthHem,
-    int veg_method,
-    LOG_INFO *LogInfo
-);
+void SW_VPD_init_ptrs(SW_VEGPROD_SIM *SW_VegProdSim);
+
+void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *LogInfo);
 
 void checkBiomass(VegTypeRunIn veg[], LOG_INFO *LogInfo);
 

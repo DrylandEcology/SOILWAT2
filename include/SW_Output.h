@@ -265,7 +265,10 @@ void SW_OUT_close_files(
 );
 
 void SW_OUT_create_files(
-    SW_PATH_OUTPUTS *SW_PathOutputs, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
+    int rank,
+    SW_PATH_OUTPUTS *SW_PathOutputs,
+    SW_DOMAIN *SW_Domain,
+    LOG_INFO *LogInfo
 );
 
 void echo_outputs(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);

@@ -315,6 +315,12 @@ void SW_SIT_read(
     LOG_INFO *LogInfo
 );
 
+void SW_SIT_new_year(
+    unsigned int methodMaxDepthSoilTemperature,
+    double newTsoil_constant,
+    double *Tsoil_constant
+);
+
 void SW_SIT_init_run(
     SW_VEGPROD_INPUTS *SW_VegProdIn,
     SW_SITE_INPUTS *SW_SiteIn,
@@ -369,10 +375,12 @@ void set_soillayers(
     const double *bd,
     const double *f_gravel,
     const double *evco,
-    const double *trco_grass,
+    const double *trco_treeNL,
+    const double *trco_treeBL,
     const double *trco_shrub,
-    const double *trco_tree,
-    const double *trco_forb,
+    const double *trco_forbs,
+    const double *trco_grassC3,
+    const double *trco_grassC4,
     const double *psand,
     const double *pclay,
     const double *imperm,

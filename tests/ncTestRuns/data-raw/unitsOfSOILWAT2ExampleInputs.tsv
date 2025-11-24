@@ -48,10 +48,12 @@ inSoil	avgLyrTempInit	degC
 inSoil	evap_coeff	1
 inSoil	<veg>.transp_coeff	1
 		
-inSoil	tree.transp_coeff	1
+inSoil	treeNL.transp_coeff	1
+inSoil	treeBL.transp_coeff	1
 inSoil	shrub.transp_coeff	1
 inSoil	forbs.transp_coeff	1
-inSoil	grass.transp_coeff	1
+inSoil	grassC3.transp_coeff	1
+inSoil	grassC4.transp_coeff	1
 		
 inSoil	swrcpMineralSoil[1]	NA
 inSoil	swrcpMineralSoil[2]	NA
@@ -71,15 +73,22 @@ inVeg	<veg>.biomass	g m-2
 inVeg	<veg>.pct_live	1
 inVeg	<veg>.lai_conv	g m-2
 		
-inVeg	tree.fCover	m2 m-2
+inVeg	treeNL.fCover	m2 m-2
+inVeg	treeBL.fCover	m2 m-2
 inVeg	shrub.fCover	m2 m-2
 inVeg	forbs.fCover	m2 m-2
-inVeg	grass.fCover	m2 m-2
+inVeg	grassC3.fCover	m2 m-2
+inVeg	grassC4.fCover	m2 m-2
 		
-inVeg	tree.litter	g m-2
-inVeg	tree.biomass	g m-2
-inVeg	tree.pct_live	1
-inVeg	tree.lai_conv	g m-2
+inVeg	treeNL.litter	g m-2
+inVeg	treeNL.biomass	g m-2
+inVeg	treeNL.pct_live	1
+inVeg	treeNL.lai_conv	g m-2
+		
+inVeg	treeBL.litter	g m-2
+inVeg	treeBL.biomass	g m-2
+inVeg	treeBL.pct_live	1
+inVeg	treeBL.lai_conv	g m-2
 		
 inVeg	shrub.litter	g m-2
 inVeg	shrub.biomass	g m-2
@@ -91,7 +100,12 @@ inVeg	forbs.biomass	g m-2
 inVeg	forbs.pct_live	1
 inVeg	forbs.lai_conv	g m-2
 		
-inVeg	grass.litter	g m-2
-inVeg	grass.biomass	g m-2
-inVeg	grass.pct_live	1
-inVeg	grass.lai_conv	g m-2
+inVeg	grassC3.litter	g m-2
+inVeg	grassC3.biomass	g m-2
+inVeg	grassC3.pct_live	1
+inVeg	grassC3.lai_conv	g m-2
+		
+inVeg	grassC4.litter	g m-2
+inVeg	grassC4.biomass	g m-2
+inVeg	grassC4.pct_live	1
+inVeg	grassC4.lai_conv	g m-2

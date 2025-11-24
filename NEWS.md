@@ -1,4 +1,59 @@
 # NEWS
+# SOILWAT2 v8.3.0
+* Simulation output remains the same as the previous version.
+  However, output of the new plant functional types are renamed and include
+  additional variables.
+
+* Parallelization in the `SWMPI` mode of SOILWAT2 now uses a simplified
+  internal approach that no longer separates simulation computations from
+  input and output processes (#475; @N1ckP3rsl3y).
+
+* Soil temperature at the lower boundary can now be approximated by a
+  long-term moving window of mean annual air temperature that is updated yearly
+  (#466; @dschlaep, @N1ckP3rsl3y).
+
+* Vegetation (currently, fractional cover of bare ground and vegetation types)
+  can now be estimated dynamically from predictors based on soil properties and
+  long-term and short-term moving windows of climate conditions that are
+  updated yearly (#396; @N1ckP3rsl3y, @dschlaep).
+
+* Vegetation is now represented with six (previously, four) plant functional
+  types (#472; @dschlaep).
+    * treeNL: needle-leaved trees
+    * treeBL: broad-leaved trees
+    * shrub: shrubs
+    * forbs: forbs
+    * grassC3: grasses with a C3 photosynthetic pathway
+    * grassC4: grasses with a C4 photosynthetic pathway
+
+* The rooting profiles no longer must start at the surface and may now have
+  gaps (@dschlaep).
+
+* The (internal) `addtl_yr` is now removed. It represented an offset between
+  values of the calendar years of the simulation period and the calendar years
+  used for atmospheric CO2 concentration values. `rSOILWAT2` previously used it
+  for an outdated approach to create simulation runs at different time periods.
+
+## Changes to inputs
+* New input via `"siteparam.in"` that specifies the method for soil temperature
+  at the lower boundary.
+* New inputs via `"veg.in"` that specify if vegetation should be estimated
+  dynamically and that specify durations of the short-term and long-term moving
+  windows (for dynamic vegetation and soil temperature at the lower boundary).
+* New input via `"veg.in"` and `"veg*.nc"` to provide parameters for the
+  new plant functional types. All inputs are now consistently ordered by
+  plant functional type.
+* New input via `"soils.in"` and `"soil.nc"` to specify the rooting profiles
+  for the new plant functional types. All variables in `"soils.in"` have been
+  re-organized.
+* New input via `"nc-inputs.tsv"` to describe parameters of the
+  new plant functional types.
+
+## Changes to outputs
+* Output contains additional variables for the new plant functional types.
+
+
+
 # SOILWAT2 v8.2.0
 * This version produces similar but not identical simulation output
   as previously because of the following changes:

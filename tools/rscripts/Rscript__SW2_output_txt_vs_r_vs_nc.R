@@ -48,7 +48,7 @@ pds2 <- c("Day", "Week", "Month", "Year")
 pds1 <- tolower(pds2)
 pds3 <- c("daily", "weekly", "monthly", "yearly")
 
-vegtypes <- c("tree", "shrub", "forbs", "grass")
+vegtypes <- c("treeNL", "treeBL", "shrub", "forbs", "grassC3", "grassC4")
 
 outvars <- utils::read.delim(
   file.path(dir_example, "Input_nc", "SW2_netCDF_output_variables.tsv"),

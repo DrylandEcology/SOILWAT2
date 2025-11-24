@@ -630,7 +630,7 @@ void get_outstrleader(
             str,
             sizeof_str,
             "%d%c%d",
-            SW_ModelSim->simyear,
+            SW_ModelSim->year,
             OUTSEP,
             SW_ModelSim->doy
         );
@@ -641,7 +641,7 @@ void get_outstrleader(
             str,
             sizeof_str,
             "%d%c%d",
-            SW_ModelSim->simyear,
+            SW_ModelSim->year,
             OUTSEP,
             (SW_ModelSim->week + 1) - tOffset
         );
@@ -652,14 +652,14 @@ void get_outstrleader(
             str,
             sizeof_str,
             "%d%c%d",
-            SW_ModelSim->simyear,
+            SW_ModelSim->year,
             OUTSEP,
             (SW_ModelSim->month + 1) - tOffset
         );
         break;
 
     case eSW_Year:
-        (void) snprintf(str, sizeof_str, "%d", SW_ModelSim->simyear);
+        (void) snprintf(str, sizeof_str, "%d", SW_ModelSim->year);
         break;
 
     default:
@@ -804,6 +804,7 @@ void find_TXToutputSoilReg_inUse(
     }
 }
 
+#if defined(SW_OUTTEXT)
 /**
 @brief close all of the user-specified output text files.
 
@@ -863,3 +864,4 @@ void SW_OUT_close_textfiles(
         }
     }
 }
+#endif

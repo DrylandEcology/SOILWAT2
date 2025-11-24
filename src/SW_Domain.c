@@ -154,6 +154,11 @@ void SW_DOM_construct(size_t rng_seed, SW_DOMAIN *SW_Domain) {
         sizeof(&SW_Domain->depthsAllSoilLayers[0]) * MAX_LAYERS
     );
 
+#if defined(SWMPI)
+    SW_Domain->nProcSuids = 0;
+    SW_Domain->nActiveSuids = 0;
+#endif
+
     SW_OUTDOM_construct(&SW_Domain->OutDom);
 }
 
@@ -626,6 +631,12 @@ void SW_DOM_init_ptrs(SW_DOMAIN *SW_Domain) {
 
 #if defined(SWNETCDF)
     SW_NCIN_init_ptrs(&SW_Domain->netCDFInput);
+
+#if defined(SWMPI)
+    int inKey; // type cannot be InKeys because of c++ tests
+
+    ForEachNCInKey(inKey) { SW_Domain->domSuids[inKey] = NULL; }
+#endif
 #endif
 }
 
@@ -633,9 +644,7 @@ void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
     int key;
     unsigned int i;
 
-    SW_F_deconstruct(
-        &SW_Domain->SW_PathInputs, SW_Domain->SW_Designation.procJob
-    );
+    SW_F_deconstruct(&SW_Domain->SW_PathInputs);
 
 #if defined(SWNETCDF)
 
