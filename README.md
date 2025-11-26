@@ -11,12 +11,12 @@
 <!-- badges: end -->
 
 
-[1]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/ubuntu-checks.yaml/badge.svg
-[2]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/ubuntu-checks.yaml
-[23]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/macos-checks.yaml/badge.svg
-[24]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/macos-checks.yaml
-[25]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/windows-checks.yaml/badge.svg
-[26]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/windows-checks.yaml
+[1]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/checks-ubuntu.yaml/badge.svg
+[2]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/checks-ubuntu.yaml
+[23]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/checks-macos.yaml/badge.svg
+[24]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/checks-macos.yaml
+[25]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/checks-windows.yaml/badge.svg
+[26]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/checks-windows.yaml
 [3]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/clang-tidy-check.yml/badge.svg
 [13]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/clang-tidy-check.yml
 [4]: https://github.com/DrylandEcology/SOILWAT2/actions/workflows/check_doc.yml/badge.svg?
