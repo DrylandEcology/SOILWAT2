@@ -2,11 +2,13 @@
 [![ubuntu checks][1]][2]
 [![macos checks][23]][24]
 [![windows checks][25]][26]
+[![codecov status][11]][12]
 [![tidy][3]][13]
+<br>
 [![github release][5]][6]
 [![DOI][7]][8]
 [![license][9]][10]
-[![codecov status][11]][12]
+<br>
 [![doc status][4]][14]
 <!-- badges: end -->
 
