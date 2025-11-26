@@ -1,7 +1,7 @@
 name: simulation-checks
 
 # Checks: compilation, example run, and unit tests
-# Platforms: ubuntu, macOS, and Windows
+# Reusable workflow for platform os: ubuntu-latest, macos-latest, windows-latest
 # Compilers: defaults
 
 # Exclusions:
@@ -10,29 +10,25 @@ name: simulation-checks
 #     - ncTestRuns are currently excluded
 
 on:
-    push:
-        branches: [master, main, release/**]
-    pull_request:
-        branches: [master, main, release/**]
-
+  # workflow_call is a required field of the "on" property,
+  # when intending to use the workflow as a reusable workflow
+  workflow_call:
+    inputs:
+      os:
+        required: true
+        type: string
+      sw2mode:
+        required: true
+        type: string
+     
 
 jobs:
     checks:
 
-        runs-on: ${{ matrix.os }}
-
-        strategy:
-            fail-fast: false
-            matrix:
-                os: [ubuntu-latest, macos-latest, windows-latest]
-                sw2mode: [SWTXT, SWNC]
-                exclude:
-                - os: windows-latest
-                  sw2mode: SWNC
-            max-parallel: 3
+        runs-on: ${{ inputs.os }}
 
         env:
-            SW2MODE: ${{ matrix.sw2mode }}
+            SW2MODE: ${{ inputs.sw2mode }}
 
         defaults:
             run:
