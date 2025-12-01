@@ -76,7 +76,6 @@ void SW_OUT_set_nrow(
     int debug = 0;
 #endif
 
-    TimeInt i;
     size_t n_yrs;
     IntU startyear = SW_ModelIn->startyr;
     IntU endyear;
@@ -86,11 +85,23 @@ void SW_OUT_set_nrow(
     n_yrs = SW_ModelIn->runModelYears;
     endyear = startyear + n_yrs + 1;
 
-#else
+#elif !defined(SWNETCDF)
+    TimeInt i;
+
     n_yrs = SW_ModelIn->endyr - SW_ModelIn->startyr + 1;
     endyear = SW_ModelIn->endyr;
+#else
+    (void) n_yrs;
+    (void) startyear;
+    (void) endyear;
 #endif
 
+#if defined(SWNETCDF)
+    nrow_OUT[eSW_Day] = (size_t) use_OutPeriod[eSW_Day];
+    nrow_OUT[eSW_Week] = (size_t) use_OutPeriod[eSW_Week];
+    nrow_OUT[eSW_Month] = (size_t) use_OutPeriod[eSW_Month];
+    nrow_OUT[eSW_Year] = (size_t) use_OutPeriod[eSW_Year];
+#else
     nrow_OUT[eSW_Year] = n_yrs * use_OutPeriod[eSW_Year];
     nrow_OUT[eSW_Month] = n_yrs * MAX_MONTHS * use_OutPeriod[eSW_Month];
     nrow_OUT[eSW_Week] = n_yrs * MAX_WEEKS * use_OutPeriod[eSW_Week];
@@ -114,6 +125,7 @@ void SW_OUT_set_nrow(
             }
         }
     }
+#endif
 
 #ifdef SWDEBUG
     if (debug) {
@@ -268,6 +280,7 @@ void SW_OUT_construct_outarray(
                        (OutDom->ncol_OUT[k] + ncol_TimeOUT[timeStepOutPeriod]);
                 size *= sizeMult;
 
+                OutRun->nP_OUT[k][timeStepOutPeriod] = size;
                 OutRun->p_OUT[k][timeStepOutPeriod] = (double *) Mem_Calloc(
                     size, s, "SW_OUT_construct_outarray()", LogInfo
                 );
@@ -305,6 +318,7 @@ void SW_OUT_construct_outarray(
     (array of length SW_OUTNPERIODS).
 @param[in] nvar_OUT Number of output variables
     (array of length SW_OUTNPERIODS).
+@param[in] totNSites Total number of sites in the process' subdomain
 @param[in] nsl_OUT Number of output soil layer per variable
     (array of size SW_OUTNKEYS by SW_OUTNMAXVARS).
 @param[in] npft_OUT Number of output vegtypes per variable
@@ -315,6 +329,7 @@ void SW_OUT_construct_outarray(
 void SW_OUT_calc_iOUToffset(
     const size_t nrow_OUT[],
     const IntUS nvar_OUT[],
+    const size_t totNSites,
     IntUS nsl_OUT[][SW_OUTNMAXVARS],
     IntUS npft_OUT[][SW_OUTNMAXVARS],
     size_t iOUToffset[][SW_OUTNPERIODS][SW_OUTNMAXVARS]
@@ -344,8 +359,10 @@ void SW_OUT_calc_iOUToffset(
                 tmp = iOUTnc(
                     nrow_OUT[pd] - 1,
                     tmp_nsl - 1,
+                    totNSites - 1,
                     tmp_npft - 1,
                     tmp_nsl,
+                    totNSites,
                     tmp_npft
                 );
 

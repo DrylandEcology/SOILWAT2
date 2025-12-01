@@ -1395,14 +1395,12 @@ void SW_NC_create_full_var(
     unsigned int numConstDims = (domTypeIsSites) ? 1 : 2;
     const char *thirdDim = (domTypeIsSites) ? siteName : yName;
     const char *constDimNames[] = {thirdDim, xName};
-    const char *timeVertVegNames[] = {"time", "vertical", "pft"};
+    const char *timeVertVegNames[] = {"vertical", "pft", "time"};
     char *dimVarName;
     size_t timeVertVegVals[] = {timeSize, vertSize, pftSize};
     unsigned int numTimeVertVegVals = 3;
     size_t varVal = 0;
-    size_t chunkSizes[MAX_NUM_DIMS] = {
-        latSChunkSize, (domTypeIsSites ? 1 : lonChunkSize), 1, 1, 1
-    };
+    size_t chunkSizes[MAX_NUM_DIMS] = {1, 1, 1, 1, 1};
     char coordValBuf[MAX_FILENAMESIZE] = "";
     char *writePtr = coordValBuf;
     char *endWritePtr = writePtr + sizeof coordValBuf - 1;
@@ -1412,17 +1410,6 @@ void SW_NC_create_full_var(
     void *fillValue = NULL;
     char byteFillVal = NC_FILL_BYTE;
     double doubleFillVal = NC_FILL_DOUBLE;
-
-    for (index = 0; index < numConstDims; index++) {
-        SW_NC_get_dim_identifier(
-            *ncFileID, constDimNames[index], &dimIDs[dimArrSize], LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
-
-        dimArrSize++;
-    }
 
     for (index = 0; index < numTimeVertVegVals; index++) {
         dimVarName = (char *) timeVertVegNames[index];
@@ -1474,6 +1461,17 @@ void SW_NC_create_full_var(
         }
     }
 
+    for (index = 0; index < numConstDims; index++) {
+        SW_NC_get_dim_identifier(
+            *ncFileID, constDimNames[index], &dimIDs[dimArrSize], LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        dimArrSize++;
+    }
+
     if (coordAttIndex > -1 && !isnull(attVals[coordAttIndex])) {
         (void) snprintf(
             finalCoordVal,
@@ -1490,15 +1488,17 @@ void SW_NC_create_full_var(
         }
     }
 
-    for (index = numConstDims; index < MAX_NUM_DIMS; index++) {
-        if (index - numConstDims < 3) {
-            varVal = timeVertVegVals[index - numConstDims];
+    for (index = 0; index < MAX_NUM_DIMS - numConstDims; index++) {
+        if (index < 3) {
+            varVal = timeVertVegVals[index];
 
             if (varVal > 0) {
                 chunkSizes[index] = varVal;
             }
         }
     }
+    chunkSizes[index] = latSChunkSize;
+    chunkSizes[index + 1] = (domTypeIsSites) ? 1 : lonChunkSize;
 
     SW_NC_create_netCDF_var(
         &varID,

@@ -1337,6 +1337,7 @@ void SW_OUT_init_ptrs(SW_OUT_RUN *OutRun, SW_PATH_OUTPUTS *SW_PathOutputs) {
     int column;
     ForEachOutKey(key
     ){ForEachOutPeriod(column){OutRun->p_OUT[key][column] = NULL;
+    OutRun->nP_OUT[key][column] = 0;
 #if defined(STEPWAT)
     OutRun->p_OUTsd[key][column] = NULL;
 #elif defined(SWNETCDF)
@@ -1985,11 +1986,7 @@ void SW_OUTDOM_construct(SW_OUT_DOM *OutDom) {
 }
 
 void SW_OUT_construct(
-    Bool zeroOutStruct,
-    SW_PATH_OUTPUTS *SW_PathOutputs,
-    SW_OUT_DOM *OutDom,
-    SW_OUT_RUN *OutRun,
-    LOG_INFO *LogInfo
+    Bool zeroOutStruct, SW_PATH_OUTPUTS *SW_PathOutputs, SW_OUT_RUN *OutRun
 ) {
     /* =================================================== */
     OutPeriod p;
@@ -2012,17 +2009,6 @@ void SW_OUT_construct(
     ForEachOutPeriod(p) { OutRun->irow_OUT[p] = 0; }
 #else
     (void) OutRun;
-#endif
-
-#if defined(SWNETCDF)
-    SW_OUT_construct_outarray(1, OutDom, OutRun, LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-
-#else
-    (void) LogInfo;
-    (void) OutDom;
 #endif
 }
 
@@ -2799,6 +2785,7 @@ void SW_OUT_set_colnames(
 @param[in] tLayers Number of soil layers
 @param[in] n_evap_lyrs Number of soil layers with evaporation
 @param[in] count Number of species to check
+@param[in] totNSites Total number of sites in the process' subdomain
 @param[in] parmsIn Struct for inputs of vegetation establishment for each
     species
 @param[out] OutDom Struct of type SW_OUT_DOM that holds output
@@ -2809,6 +2796,7 @@ void SW_OUT_setup_output(
     unsigned int tLayers,
     unsigned int n_evap_lyrs,
     unsigned int count,
+    size_t totNSites,
     SW_VEGESTAB_INFO_INPUTS *parmsIn,
     SW_OUT_DOM *OutDom,
     LOG_INFO *LogInfo
@@ -2831,6 +2819,7 @@ void SW_OUT_setup_output(
     SW_OUT_calc_iOUToffset(
         OutDom->nrow_OUT,
         OutDom->nvar_OUT,
+        totNSites,
         OutDom->nsl_OUT,
         OutDom->npft_OUT,
         OutDom->netCDFOutput.iOUToffset
@@ -2841,6 +2830,8 @@ void SW_OUT_setup_output(
     SW_OUT_set_colnames(
         tLayers, parmsIn, OutDom->ncol_OUT, OutDom->colnames_OUT, LogInfo
     );
+
+    (void) totNSites;
 #endif // !SWNETCDF
 }
 
@@ -3899,7 +3890,12 @@ void SW_OUT_write_today(
     // increment row counts
     ForEachOutPeriod(p) {
         if (OutDom->use_OutPeriod[p] && writeit[p]) {
+#if defined(SWNETCDF)
+            sw->OutRun.irow_OUT[p] =
+                (sw->OutRun.irow_OUT[p] + 1) % OutDom->nrow_OUT[p];
+#else
             sw->OutRun.irow_OUT[p]++;
+#endif
         }
     }
 #endif

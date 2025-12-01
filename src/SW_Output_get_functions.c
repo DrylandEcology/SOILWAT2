@@ -325,8 +325,10 @@ void get_co2effects_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
                     iOUTnc(
                         OutRun->irow_OUT[pd],
                         0,
+                        sw->SiteIn.siteIndex,
                         k,
                         1,
+                        sw->SiteIn.nSites,
                         OutDom->npft_OUT[eSW_CO2Effects][0]
                     );
 #endif
@@ -348,8 +350,10 @@ void get_co2effects_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
                     iOUTnc(
                         OutRun->irow_OUT[pd],
                         0,
+                        sw->SiteIn.siteIndex,
                         k,
                         1,
+                        sw->SiteIn.nSites,
                         OutDom->npft_OUT[eSW_CO2Effects][1]
                     );
 #endif
@@ -565,7 +569,15 @@ void get_biomass_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Biomass][pd][0] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = sw->RunIn.VegProdRunIn.bare_cov.fCover;
@@ -583,11 +595,16 @@ void get_biomass_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         );
 
 #elif defined(SWNETCDF)
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_Biomass][pd][1] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], 0, k, 1, OutDom->npft_OUT[eSW_Biomass][1]
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Biomass][pd][1] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        0,
+                        sw->SiteIn.siteIndex,
+                        k,
+                        1,
+                        sw->SiteIn.nSites,
+                        OutDom->npft_OUT[eSW_Biomass][1]
+                    );
 #endif
 
         p[iOUTIndex] = sw->RunIn.VegProdRunIn.veg.cov[k].fCover;
@@ -604,7 +621,15 @@ void get_biomass_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Biomass][pd][2] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->biomass_total;
@@ -622,11 +647,16 @@ void get_biomass_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         );
 
 #elif defined(SWNETCDF)
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_Biomass][pd][3] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], 0, k, 1, OutDom->npft_OUT[eSW_Biomass][3]
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Biomass][pd][3] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        0,
+                        sw->SiteIn.siteIndex,
+                        k,
+                        1,
+                        sw->SiteIn.nSites,
+                        OutDom->npft_OUT[eSW_Biomass][3]
+                    );
 #endif
 
         p[iOUTIndex] = vo->veg.biomass_inveg[k];
@@ -644,7 +674,15 @@ void get_biomass_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Biomass][pd][4] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->litter_total;
@@ -661,7 +699,15 @@ void get_biomass_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Biomass][pd][5] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->biolive_total;
@@ -679,11 +725,16 @@ void get_biomass_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         );
 
 #elif defined(SWNETCDF)
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_Biomass][pd][6] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], 0, k, 1, OutDom->npft_OUT[eSW_Biomass][6]
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Biomass][pd][6] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        0,
+                        sw->SiteIn.siteIndex,
+                        k,
+                        1,
+                        sw->SiteIn.nSites,
+                        OutDom->npft_OUT[eSW_Biomass][6]
+                    );
 #endif
 
         p[iOUTIndex] = vo->veg.biolive_inveg[k];
@@ -701,7 +752,15 @@ void get_biomass_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Biomass][pd][7] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->LAI;
@@ -908,7 +967,15 @@ void get_estab_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
         iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Estab][pd][i] +
-                    iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        0,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        1,
+                        sw->SiteIn.nSites,
+                        1
+                    );
 #endif
 
         p[iOUTIndex] = sw->VegEstabSim.parms.estab_doy[i];
@@ -1050,7 +1117,15 @@ void get_temp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Temp][pd][0] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->temp_max;
@@ -1062,7 +1137,15 @@ void get_temp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Temp][pd][1] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->temp_min;
@@ -1074,7 +1157,15 @@ void get_temp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Temp][pd][2] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->temp_avg;
@@ -1086,7 +1177,15 @@ void get_temp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Temp][pd][3] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->surfaceMax;
@@ -1098,7 +1197,15 @@ void get_temp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Temp][pd][4] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->surfaceMin;
@@ -1110,7 +1217,15 @@ void get_temp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Temp][pd][5] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->surfaceAvg;
@@ -1289,7 +1404,15 @@ void get_precip_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Precip][pd][0] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->ppt;
@@ -1301,7 +1424,16 @@ void get_precip_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Precip][pd][1] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->rain;
@@ -1313,7 +1445,16 @@ void get_precip_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Precip][pd][2] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->snow;
@@ -1325,7 +1466,16 @@ void get_precip_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Precip][pd][3] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->snowmelt;
@@ -1337,7 +1487,16 @@ void get_precip_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Precip][pd][4] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->snowloss;
@@ -1517,11 +1676,16 @@ void get_vwcBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         );
 
 #elif defined(SWNETCDF)
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_VWCBulk][pd][0] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_VWCBulk][0], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_VWCBulk][pd][0] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_VWCBulk][0],
+                        sw->SiteIn.nSites,
+                        1
+                    );
 #endif
 
         /* vwcBulk at this point is identical to swcBulk */
@@ -1532,11 +1696,16 @@ void get_vwcBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     /* Set extra soil layers to missing/fill value (up to domain-wide max) */
     for (i = sw->RunIn.SiteRunIn.n_layers; i < OutDom->nsl_OUT[eSW_VWCBulk][0];
          i++) {
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_VWCBulk][pd][0] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_VWCBulk][0], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_VWCBulk][pd][0] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_VWCBulk][0],
+                        sw->SiteIn.nSites,
+                        1
+                    );
         p[iOUTIndex] = NC_FILL_DOUBLE;
     }
 #endif // SWNETCDF
@@ -1685,11 +1854,16 @@ void get_vwcMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         );
 
 #elif defined(SWNETCDF)
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_VWCMatric][pd][0] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_VWCMatric][0], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_VWCMatric][pd][0] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_VWCMatric][0],
+                        sw->SiteIn.nSites,
+                        1
+                    );
 #endif
 
         /* vwcMatric at this point is identical to swcBulk */
@@ -1703,11 +1877,16 @@ void get_vwcMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     for (i = sw->RunIn.SiteRunIn.n_layers;
          i < OutDom->nsl_OUT[eSW_VWCMatric][0];
          i++) {
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_VWCMatric][pd][0] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_VWCMatric][0], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_VWCMatric][pd][0] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_VWCMatric][0],
+                        sw->SiteIn.nSites,
+                        1
+                    );
         p[iOUTIndex] = NC_FILL_DOUBLE;
     }
 #endif // SWNETCDF
@@ -1865,8 +2044,10 @@ void get_swa_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
                         iOUTnc(
                             OutRun->irow_OUT[pd],
                             i,
+                            sw->SiteIn.siteIndex,
                             k,
                             OutDom->nsl_OUT[eSW_SWA][0],
+                            sw->SiteIn.nSites,
                             OutDom->npft_OUT[eSW_SWA][0]
                         );
 #endif
@@ -1883,8 +2064,10 @@ void get_swa_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
                         iOUTnc(
                             OutRun->irow_OUT[pd],
                             i,
+                            sw->SiteIn.siteIndex,
                             k,
                             OutDom->nsl_OUT[eSW_SWA][0],
+                            sw->SiteIn.nSites,
                             OutDom->npft_OUT[eSW_SWA][0]
                         );
             p[iOUTIndex] = NC_FILL_DOUBLE;
@@ -2022,11 +2205,16 @@ void get_swcBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         );
 
 #elif defined(SWNETCDF)
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_SWCBulk][pd][0] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_SWCBulk][0], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_SWCBulk][pd][0] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_SWCBulk][0],
+                        sw->SiteIn.nSites,
+                        1
+                    );
 #endif
 
         p[iOUTIndex] = vo->swcBulk[i];
@@ -2036,11 +2224,16 @@ void get_swcBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     /* Set extra soil layers to missing/fill value (up to domain-wide max) */
     for (i = sw->RunIn.SiteRunIn.n_layers; i < OutDom->nsl_OUT[eSW_SWCBulk][0];
          i++) {
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_SWCBulk][pd][0] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_SWCBulk][0], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_SWCBulk][pd][0] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_SWCBulk][0],
+                        sw->SiteIn.nSites,
+                        1
+                    );
         p[iOUTIndex] = NC_FILL_DOUBLE;
     }
 #endif // SWNETCDF
@@ -2216,11 +2409,16 @@ void get_swpMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         );
 
 #elif defined(SWNETCDF)
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_SWPMatric][pd][0] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_SWPMatric][0], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_SWPMatric][pd][0] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_SWPMatric][0],
+                        sw->SiteIn.nSites,
+                        1
+                    );
 #endif
 
         /* swpMatric at this point is identical to swcBulk */
@@ -2234,11 +2432,16 @@ void get_swpMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     for (i = sw->RunIn.SiteRunIn.n_layers;
          i < OutDom->nsl_OUT[eSW_SWPMatric][0];
          i++) {
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_SWPMatric][pd][0] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_SWPMatric][0], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_SWPMatric][pd][0] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_SWPMatric][0],
+                        sw->SiteIn.nSites,
+                        1
+                    );
         p[iOUTIndex] = NC_FILL_DOUBLE;
     }
 #endif // SWNETCDF
@@ -2376,11 +2579,16 @@ void get_swaBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         );
 
 #elif defined(SWNETCDF)
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_SWABulk][pd][0] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_SWABulk][0], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_SWABulk][pd][0] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_SWABulk][0],
+                        sw->SiteIn.nSites,
+                        1
+                    );
 #endif
 
         p[iOUTIndex] = vo->swaBulk[i];
@@ -2390,11 +2598,16 @@ void get_swaBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     /* Set extra soil layers to missing/fill value (up to domain-wide max) */
     for (i = sw->RunIn.SiteRunIn.n_layers; i < OutDom->nsl_OUT[eSW_SWABulk][0];
          i++) {
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_SWABulk][pd][0] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_SWABulk][0], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_SWABulk][pd][0] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_SWABulk][0],
+                        sw->SiteIn.nSites,
+                        1
+                    );
         p[iOUTIndex] = NC_FILL_DOUBLE;
     }
 #endif // SWNETCDF
@@ -2534,11 +2747,16 @@ void get_swaMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         );
 
 #elif defined(SWNETCDF)
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_SWAMatric][pd][0] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_SWAMatric][0], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_SWAMatric][pd][0] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_SWAMatric][0],
+                        sw->SiteIn.nSites,
+                        1
+                    );
 #endif
 
         /* swaMatric at this point is identical to swaBulk */
@@ -2551,11 +2769,16 @@ void get_swaMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     for (i = sw->RunIn.SiteRunIn.n_layers;
          i < OutDom->nsl_OUT[eSW_SWAMatric][0];
          i++) {
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_SWAMatric][pd][0] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_SWAMatric][0], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_SWAMatric][pd][0] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_SWAMatric][0],
+                        sw->SiteIn.nSites,
+                        1
+                    );
         p[iOUTIndex] = NC_FILL_DOUBLE;
     }
 #endif // SWNETCDF
@@ -2677,7 +2900,16 @@ void get_surfaceWater_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_SurfaceWater][pd][0] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->surfaceWater;
@@ -2803,7 +3035,16 @@ void get_runoffrunon_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Runoff][pd][0] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->surfaceRunoff + vo->snowRunoff - vo->surfaceRunon;
@@ -2815,7 +3056,16 @@ void get_runoffrunon_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Runoff][pd][1] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->surfaceRunoff;
@@ -2827,7 +3077,16 @@ void get_runoffrunon_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Runoff][pd][2] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->snowRunoff;
@@ -2839,7 +3098,16 @@ void get_runoffrunon_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Runoff][pd][3] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->surfaceRunon;
@@ -3002,11 +3270,16 @@ void get_transp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         );
 
 #elif defined(SWNETCDF)
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_Transp][pd][0] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_Transp][0], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Transp][pd][0] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_Transp][0],
+                        sw->SiteIn.nSites,
+                        1
+                    );
 #endif
 
         p[iOUTIndex] = vo->transp_total[i];
@@ -3016,11 +3289,16 @@ void get_transp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     /* Set extra soil layers to missing/fill value (up to domain-wide max) */
     for (i = sw->RunIn.SiteRunIn.n_layers; i < OutDom->nsl_OUT[eSW_Transp][0];
          i++) {
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_Transp][pd][0] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_Transp][0], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Transp][pd][0] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_Transp][0],
+                        sw->SiteIn.nSites,
+                        1
+                    );
         p[iOUTIndex] = NC_FILL_DOUBLE;
     }
 #endif // SWNETCDF
@@ -3040,8 +3318,10 @@ void get_transp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
                         iOUTnc(
                             OutRun->irow_OUT[pd],
                             i,
+                            sw->SiteIn.siteIndex,
                             k,
                             OutDom->nsl_OUT[eSW_Transp][1],
+                            sw->SiteIn.nSites,
                             OutDom->npft_OUT[eSW_Transp][1]
                         );
 #endif
@@ -3059,8 +3339,10 @@ void get_transp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
                         iOUTnc(
                             OutRun->irow_OUT[pd],
                             i,
+                            sw->SiteIn.siteIndex,
                             k,
                             OutDom->nsl_OUT[eSW_Transp][1],
+                            sw->SiteIn.nSites,
                             OutDom->npft_OUT[eSW_Transp][1]
                         );
             p[iOUTIndex] = NC_FILL_DOUBLE;
@@ -3255,11 +3537,16 @@ void get_evapSoil_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         );
 
 #elif defined(SWNETCDF)
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_EvapSoil][pd][0] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_EvapSoil][0], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_EvapSoil][pd][0] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_EvapSoil][0],
+                        sw->SiteIn.nSites,
+                        1
+                    );
 #endif
 
         p[iOUTIndex] = vo->evap_baresoil[i];
@@ -3269,11 +3556,16 @@ void get_evapSoil_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     /* Set extra soil layers to missing/fill value (up to domain-wide max) */
     for (i = sw->SiteSim.n_evap_lyrs; i < OutDom->nsl_OUT[eSW_EvapSoil][0];
          i++) {
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_EvapSoil][pd][0] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_EvapSoil][0], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_EvapSoil][pd][0] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_EvapSoil][0],
+                        sw->SiteIn.nSites,
+                        1
+                    );
         p[iOUTIndex] = NC_FILL_DOUBLE;
     }
 #endif // SWNETCDF
@@ -3429,7 +3721,16 @@ void get_evapSurface_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_EvapSurface][pd][0] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->total_evap;
@@ -3446,8 +3747,10 @@ void get_evapSurface_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
                     iOUTnc(
                         OutRun->irow_OUT[pd],
                         0,
+                        sw->SiteIn.siteIndex,
                         k,
                         1,
+                        sw->SiteIn.nSites,
                         OutDom->npft_OUT[eSW_EvapSurface][1]
                     );
 #endif
@@ -3466,7 +3769,16 @@ void get_evapSurface_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_EvapSurface][pd][2] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->litter_evap;
@@ -3482,7 +3794,16 @@ void get_evapSurface_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_EvapSurface][pd][3] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->surfaceWater_evap;
@@ -3646,7 +3967,16 @@ void get_interception_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Interception][pd][0] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->total_int;
@@ -3663,8 +3993,10 @@ void get_interception_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
                     iOUTnc(
                         OutRun->irow_OUT[pd],
                         0,
+                        sw->SiteIn.siteIndex,
                         k,
                         1,
+                        sw->SiteIn.nSites,
                         OutDom->npft_OUT[eSW_Interception][1]
                     );
 #endif
@@ -3683,7 +4015,16 @@ void get_interception_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Interception][pd][2] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->litter_int;
@@ -3814,7 +4155,16 @@ void get_soilinf_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_SoilInf][pd][0] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->soil_inf;
@@ -3942,11 +4292,16 @@ void get_lyrdrain_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         );
 
 #elif defined(SWNETCDF)
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_LyrDrain][pd][0] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_LyrDrain][0], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_LyrDrain][pd][0] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_LyrDrain][0],
+                        sw->SiteIn.nSites,
+                        1
+                    );
 #endif
 
         p[iOUTIndex] = vo->lyrdrain[i];
@@ -3958,11 +4313,16 @@ void get_lyrdrain_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     for (i = sw->RunIn.SiteRunIn.n_layers - 1;
          i < OutDom->nsl_OUT[eSW_LyrDrain][0];
          i++) {
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_LyrDrain][pd][0] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_LyrDrain][0], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_LyrDrain][pd][0] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_LyrDrain][0],
+                        sw->SiteIn.nSites,
+                        1
+                    );
         p[iOUTIndex] = NC_FILL_DOUBLE;
     }
 #endif // SWNETCDF
@@ -4115,11 +4475,16 @@ void get_hydred_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         );
 
 #elif defined(SWNETCDF)
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_HydRed][pd][0] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_HydRed][0], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_HydRed][pd][0] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_HydRed][0],
+                        sw->SiteIn.nSites,
+                        1
+                    );
 #endif
 
         p[iOUTIndex] = vo->hydred_total[i];
@@ -4130,11 +4495,16 @@ void get_hydred_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
      */
     for (i = sw->RunIn.SiteRunIn.n_layers; i < OutDom->nsl_OUT[eSW_HydRed][0];
          i++) {
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_HydRed][pd][0] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_HydRed][0], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_HydRed][pd][0] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_HydRed][0],
+                        sw->SiteIn.nSites,
+                        1
+                    );
         p[iOUTIndex] = NC_FILL_DOUBLE;
     }
 #endif // SWNETCDF
@@ -4159,8 +4529,10 @@ void get_hydred_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
                         iOUTnc(
                             OutRun->irow_OUT[pd],
                             i,
+                            sw->SiteIn.siteIndex,
                             k,
                             OutDom->nsl_OUT[eSW_HydRed][1],
+                            sw->SiteIn.nSites,
                             OutDom->npft_OUT[eSW_HydRed][1]
                         );
 #endif
@@ -4179,8 +4551,10 @@ void get_hydred_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
                         iOUTnc(
                             OutRun->irow_OUT[pd],
                             i,
+                            sw->SiteIn.siteIndex,
                             k,
                             OutDom->nsl_OUT[eSW_HydRed][1],
+                            sw->SiteIn.nSites,
                             OutDom->npft_OUT[eSW_HydRed][1]
                         );
             p[iOUTIndex] = NC_FILL_DOUBLE;
@@ -4337,7 +4711,16 @@ void get_aet_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_AET][pd][0] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->aet;
@@ -4349,7 +4732,16 @@ void get_aet_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_AET][pd][1] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->tran;
@@ -4361,7 +4753,16 @@ void get_aet_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_AET][pd][2] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->esoil;
@@ -4373,7 +4774,16 @@ void get_aet_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_AET][pd][3] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->ecnw;
@@ -4385,7 +4795,16 @@ void get_aet_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_AET][pd][4] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->esurf;
@@ -4397,7 +4816,16 @@ void get_aet_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_AET][pd][5] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo2->snowloss; // should be `vo->esnow`
@@ -4562,7 +4990,16 @@ void get_pet_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_PET][pd][0] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->pet;
@@ -4574,7 +5011,16 @@ void get_pet_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_PET][pd][1] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->H_oh;
@@ -4586,7 +5032,16 @@ void get_pet_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_PET][pd][2] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->H_ot;
@@ -4598,7 +5053,16 @@ void get_pet_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_PET][pd][3] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->H_gh;
@@ -4610,7 +5074,16 @@ void get_pet_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_PET][pd][4] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->H_gt;
@@ -4760,11 +5233,16 @@ void get_wetdays_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         );
 
 #elif defined(SWNETCDF)
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_WetDays][pd][0] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_WetDays][0], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_WetDays][pd][0] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_WetDays][0],
+                        sw->SiteIn.nSites,
+                        1
+                    );
 #endif
 
         if (pd == eSW_Day) {
@@ -4779,11 +5257,16 @@ void get_wetdays_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
      */
     for (i = sw->RunIn.SiteRunIn.n_layers; i < OutDom->nsl_OUT[eSW_WetDays][0];
          i++) {
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_WetDays][pd][0] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_WetDays][0], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_WetDays][pd][0] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_WetDays][0],
+                        sw->SiteIn.nSites,
+                        1
+                    );
         p[iOUTIndex] = NC_FILL_DOUBLE;
     }
 #endif // SWNETCDF
@@ -4919,7 +5402,16 @@ void get_snowpack_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_SnowPack][pd][0] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->snowpack;
@@ -4931,7 +5423,16 @@ void get_snowpack_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_SnowPack][pd][1] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->snowdepth;
@@ -5047,7 +5548,16 @@ void get_deepswc_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_DeepSWC][pd][0] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->deep;
@@ -5207,11 +5717,16 @@ void get_soiltemp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         );
 
 #elif defined(SWNETCDF)
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_SoilTemp][pd][0] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_SoilTemp][0], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_SoilTemp][pd][0] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_SoilTemp][0],
+                        sw->SiteIn.nSites,
+                        1
+                    );
 #endif
 
         p[iOUTIndex] = vo->maxLyrTemperature[i];
@@ -5226,11 +5741,16 @@ void get_soiltemp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         );
 
 #elif defined(SWNETCDF)
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_SoilTemp][pd][1] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_SoilTemp][1], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_SoilTemp][pd][1] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_SoilTemp][1],
+                        sw->SiteIn.nSites,
+                        1
+                    );
 #endif
 
         p[iOUTIndex] = vo->minLyrTemperature[i];
@@ -5245,11 +5765,16 @@ void get_soiltemp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         );
 
 #elif defined(SWNETCDF)
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_SoilTemp][pd][2] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_SoilTemp][2], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_SoilTemp][pd][2] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_SoilTemp][2],
+                        sw->SiteIn.nSites,
+                        1
+                    );
 #endif
 
         p[iOUTIndex] = vo->avgLyrTemp[i];
@@ -5260,25 +5785,40 @@ void get_soiltemp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
      */
     for (i = sw->RunIn.SiteRunIn.n_layers; i < OutDom->nsl_OUT[eSW_SoilTemp][0];
          i++) {
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_SoilTemp][pd][0] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_SoilTemp][0], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_SoilTemp][pd][0] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_SoilTemp][0],
+                        sw->SiteIn.nSites,
+                        1
+                    );
         p[iOUTIndex] = NC_FILL_DOUBLE;
 
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_SoilTemp][pd][1] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_SoilTemp][1], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_SoilTemp][pd][1] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_SoilTemp][1],
+                        sw->SiteIn.nSites,
+                        1
+                    );
         p[iOUTIndex] = NC_FILL_DOUBLE;
 
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_SoilTemp][pd][2] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_SoilTemp][2], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_SoilTemp][pd][2] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_SoilTemp][2],
+                        sw->SiteIn.nSites,
+                        1
+                    );
         p[iOUTIndex] = NC_FILL_DOUBLE;
     }
 #endif // SWNETCDF
@@ -5432,11 +5972,16 @@ void get_frozen_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
         );
 
 #elif defined(SWNETCDF)
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_Frozen][pd][0] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_Frozen][0], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Frozen][pd][0] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_Frozen][0],
+                        sw->SiteIn.nSites,
+                        1
+                    );
 #endif
 
         p[iOUTIndex] = vo->lyrFrozen[i];
@@ -5447,11 +5992,16 @@ void get_frozen_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
      */
     for (i = sw->RunIn.SiteRunIn.n_layers; i < OutDom->nsl_OUT[eSW_Frozen][0];
          i++) {
-        iOUTIndex =
-            OutDom->netCDFOutput.iOUToffset[eSW_Frozen][pd][0] +
-            iOUTnc(
-                OutRun->irow_OUT[pd], i, 0, OutDom->nsl_OUT[eSW_Frozen][0], 1
-            );
+        iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_Frozen][pd][0] +
+                    iOUTnc(
+                        OutRun->irow_OUT[pd],
+                        i,
+                        sw->SiteIn.siteIndex,
+                        0,
+                        OutDom->nsl_OUT[eSW_Frozen][0],
+                        sw->SiteIn.nSites,
+                        1
+                    );
         p[iOUTIndex] = NC_FILL_DOUBLE;
     }
 #endif // SWNETCDF
@@ -5573,7 +6123,16 @@ void get_derivedsum_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_DerivedSum][pd][0] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->cwd;
@@ -5584,7 +6143,16 @@ void get_derivedsum_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_DerivedSum][pd][1] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->ddd5C30bar000to100cm;
@@ -5595,7 +6163,16 @@ void get_derivedsum_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_DerivedSum][pd][2] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->wdd5C15bar000to100cm;
@@ -5723,7 +6300,16 @@ void get_derivedavg_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_DerivedAvg][pd][0] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->swa30bar000to100cm;
@@ -5734,7 +6320,16 @@ void get_derivedavg_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #elif defined(SWNETCDF)
     iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_DerivedAvg][pd][1] +
-                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+
+                iOUTnc(
+                    OutRun->irow_OUT[pd],
+                    0,
+                    sw->SiteIn.siteIndex,
+                    0,
+                    1,
+                    sw->SiteIn.nSites,
+                    1
+                );
 #endif
 
     p[iOUTIndex] = vo->swa39bar000to100cm;

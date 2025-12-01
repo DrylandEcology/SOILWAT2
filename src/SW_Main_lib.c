@@ -522,13 +522,20 @@ void sw_setup_prog_data(
     SW_DOMAIN *SW_Domain,
     LOG_INFO *LogInfo
 ) {
+    size_t totNSites = 1;
+
 #if defined(SWNETCDF)
+    Bool siteDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
+
     checkReturn(LogInfo->stopRun);
 
     if (!prepareFiles) {
         SW_NC_proc_sites(SW_Domain, LogInfo);
         checkReturn(LogInfo->stopRun);
     }
+
+    totNSites = SW_Domain->domCounts[eSW_InDomain][0];
+    totNSites *= siteDom ? 1 : SW_Domain->domCounts[eSW_InDomain][1];
 #else
     (void) prepareFiles;
     (void) worldSize;
@@ -539,6 +546,7 @@ void sw_setup_prog_data(
         SW_Domain->nMaxSoilLayers,
         SW_Domain->nMaxEvapLayers,
         sw_template->VegEstabIn.count,
+        totNSites,
         &sw_template->VegEstabIn.parms,
         &SW_Domain->OutDom,
         LogInfo

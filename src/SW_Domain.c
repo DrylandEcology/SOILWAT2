@@ -676,6 +676,7 @@ void SW_DOM_construct(size_t rng_seed, SW_DOMAIN *SW_Domain) {
 
 #if defined(SWNETCDF)
     int inKey;
+    int pd;
 
     SW_Domain->spaceChunk[0] = SW_Domain->spaceChunk[1] = 0;
 
@@ -686,6 +687,10 @@ void SW_DOM_construct(size_t rng_seed, SW_DOMAIN *SW_Domain) {
     }
 
     SW_Domain->SW_PathInputs.weathStartFileIndex = 0;
+
+    ForEachOutPeriod(pd) {
+        SW_Domain->OutDom.netCDFOutput.outTempStart[pd] = 0;
+    }
 #endif
 
     SW_OUTDOM_construct(&SW_Domain->OutDom);

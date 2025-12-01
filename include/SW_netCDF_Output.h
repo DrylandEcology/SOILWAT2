@@ -97,17 +97,15 @@ void SW_NCOUT_create_units_converters(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 void SW_NCOUT_write_output(
     SW_OUT_DOM *OutDom,
     double *p_OUT[][SW_OUTNPERIODS],
+    size_t irow_OUT[],
     unsigned int numFilesPerKey,
-    char **ncOutFileNames[][SW_OUTNPERIODS],
-    const size_t ncSuid[],
-    size_t numWritesGroup,
-    size_t numWritesProc,
-    size_t starts[][2],
-    size_t counts[][2],
+    size_t nSites,
+    size_t starts[],
+    size_t counts[],
     int *openOutFileIDs[][SW_OUTNPERIODS],
     int *outVarIDs[],
     Bool siteDom,
-    const Bool succFlags[],
+    Bool forceWriteOut,
     size_t *timeSizes[],
     LOG_INFO *LogInfo
 );

@@ -524,6 +524,12 @@ typedef struct {
     /** SWRC parameters of the organic soil component
         for (1) fibric and (2) sapric peat. */
     double swrcpOM[2][SWRC_PARAM_NMAX];
+
+    /** Site number within the process' assigned active sites */
+    IntU siteIndex;
+
+    /** Total number of active sites (at the beginning of simulation run) */
+    size_t nSites;
 } SW_SITE_INPUTS;
 
 typedef struct {
@@ -1582,6 +1588,9 @@ typedef struct {
         *uconv[SW_OUTNKEYS]; /**< udunits2 unit converter from internal SOILWAT2
                    units to user-requested units (dynamically
                    allocated array over output variables) */
+
+    size_t outTempStart[SW_OUTNPERIODS]; /**< Starting temporal index (base0)
+                                for writing outputs to correct time slot(s) */
 #endif
 
 } SW_NETCDF_OUT;
@@ -1918,6 +1927,7 @@ typedef struct {
     mean aggregation, and by SOILWAT2 when user requests netCDF output files.
     */
     double *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
+    size_t nP_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
 
     size_t irow_OUT[SW_OUTNPERIODS]; /**< current output time step index */
 #endif

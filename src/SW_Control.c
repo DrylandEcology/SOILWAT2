@@ -60,12 +60,11 @@
 #if defined(SWNETCDF)
 #include "include/SW_netCDF_General.h"
 #include "include/SW_netCDF_Input.h"
+#include "include/SW_netCDF_Output.h"
 #include "include/SW_Output_outarray.h"
 #if defined(SWMPI)
 #include "include/SW_MPI.h" // for SW_MPI_setup_fail, SW_MPI_Bcast
 #include <mpi.h>            // for MPI_COMM_WORLD, MPI_Datatype
-#else
-#include "include/SW_netCDF_Output.h"
 #endif
 #endif
 
@@ -107,8 +106,8 @@ very start of the simulations (swFALSE) or if it's restarted from
 an incomplete prior run(s); only useful in SWNETCDF/SWNC/SWMPI mode
 @param[in] nActiveSites Number of active sites to initialize log
 information for
-@param[in] OutDom Struct of type SW_OUT_DOM that holds output
-information that do not change throughout simulation runs
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
 @param[in] sw_template Template SW_RUN for the function to use as a
 reference for local versions of SW_RUN
 @param[out] SW_Runs A list of SW_RUN instances of size "nActiveSites" that
@@ -120,27 +119,68 @@ static void init_all_runs(
     Bool copyWeatherHist,
     Bool readFromCacheFile,
     size_t nActiveSites,
-    SW_OUT_DOM *OutDom,
+    SW_DOMAIN *SW_Domain,
     SW_RUN *sw_template,
     SW_RUN *SW_Runs,
     LOG_INFO *main_LogInfo
 ) {
     size_t site;
 
+#if defined(SWNETCDF)
+    int outPd;
+    int outKey;
+    Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
+    size_t nSites = SW_Domain->domCounts[eSW_InDomain][0];
+
+    nSites *= (sDom ? 1 : SW_Domain->domCounts[eSW_InDomain][1]);
+
+    SW_OUT_construct_outarray(
+        nSites, &SW_Domain->OutDom, &sw_template->OutRun, main_LogInfo
+    );
+#else
+    (void) SW_Domain;
+#endif
+
     for (site = 0; site < nActiveSites; site++) {
         SW_RUN_deepCopy(
-            sw_template, &SW_Runs[site], OutDom, copyWeatherHist, main_LogInfo
+            sw_template,
+            &SW_Runs[site],
+            &SW_Domain->OutDom,
+            copyWeatherHist,
+            main_LogInfo
         );
         if (main_LogInfo->stopRun) {
             return;
         }
+
+#if defined(SWNETCDF)
+        SW_Runs[site].SiteSim.site_has_swrcpMineralSoil =
+            sw_template->SiteIn.inputsProvideSWRCp;
+#endif
 
         SW_CTL_init_run(&SW_Runs[site], main_LogInfo);
         if (main_LogInfo->stopRun) {
             return;
         }
 
+#if defined(SWNETCDF)
+        memcpy(
+            SW_Runs[site].OutRun.p_OUT,
+            sw_template->OutRun.p_OUT,
+            sizeof(size_t *) * SW_OUTNPERIODS * SW_OUTNKEYS
+        );
+
+        ForEachOutKey(outKey) {
+            ForEachOutPeriod(outPd) {
+                SW_Runs[site].OutRun.p_OUT[outKey][outPd] =
+                    sw_template->OutRun.p_OUT[outKey][outPd];
+            }
+        }
+#endif
+
         SW_Runs[site].ModelSim.progRestarted = readFromCacheFile;
+        SW_Runs[site].SiteIn.siteIndex = site;
+        SW_Runs[site].SiteIn.nSites = SW_Domain->nActiveSuidsProc;
     }
 }
 
@@ -545,8 +585,6 @@ void SW_RUN_deepCopy(
     if (LogInfo->stopRun) {
         return; // Exit prematurely due to error
     }
-
-    SW_OUT_construct_outarray(1, OutDom, &dest->OutRun, LogInfo);
 #else
     (void) OutDom;
 #endif
@@ -604,10 +642,13 @@ void SW_CTL_sim_sites(
     size_t *suid = baseSuid;
 
 #if defined(SWNETCDF)
+    Bool forceWriteOut;
     signed char *progVals = SW_Domain->netCDFInput.progVals;
     size_t actSiteIdx;
     Bool readConstInfo = swFALSE;
     Bool readWeather = SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
+    int firstActiveSite = -1;
+    size_t lastFailed = 0;
 #else
     (void) tempVals;
     (void) newSoils;
@@ -697,11 +738,43 @@ void SW_CTL_sim_sites(
 
     handleLog:
         handle_logs(&LogInfos[site], SW_Domain, site, runStatus, main_LogInfo);
+        if (LogInfos[site].stopRun) {
+            lastFailed = site;
+        }
+
         checkJumpToLabel(main_LogInfo->stopRun, reportLogs);
     }
 
 reportLogs:
     report_logs(SW_Domain, LogInfos, sDom, nActiveSites);
+
+#if defined(SWNETCDF)
+    forceWriteOut = (Bool) (!runSims || main_LogInfo->stopRun);
+
+    for (site = 0; site < nActiveSites && firstActiveSite == -1; site++) {
+        nActiveSites = (!LogInfos[site].stopRun) ? site : -1;
+    }
+
+    if (firstActiveSite == -1) {
+        firstActiveSite = lastFailed;
+    }
+
+    SW_NCOUT_write_output(
+        &SW_Domain->OutDom,
+        sw_template->OutRun.p_OUT,
+        SW_Runs[firstActiveSite].OutRun.irow_OUT,
+        sw_template->SW_PathOutputs.numOutFiles,
+        SW_Domain->nActiveSuidsProc,
+        SW_Domain->domStartIndex[eSW_InDomain],
+        SW_Domain->domCounts[eSW_InDomain],
+        sw_template->SW_PathOutputs.openOutFileIDs,
+        sw_template->SW_PathOutputs.ncOutVarIDs,
+        SW_Domain->netCDFInput.siteDoms[eSW_InDomain],
+        forceWriteOut,
+        sw_template->SW_PathOutputs.outTimeEnds,
+        main_LogInfo
+    );
+#endif
 }
 
 /**
@@ -875,7 +948,7 @@ void SW_CTL_RunSimSet(
         copyWeatherHist,
         (Bool) (readFromCacheFile && !freshRun),
         nActiveSites,
-        &SW_Domain->OutDom,
+        SW_Domain,
         sw_template,
         siteRuns,
         main_LogInfo
@@ -1124,9 +1197,7 @@ void SW_CTL_setup_model(
         &sw->VegProdIn, &sw->RunIn.VegProdRunIn, sw->vp_p_oagg, sw->vp_p_accu
     );
     // SW_FLW_construct() not needed
-    SW_OUT_construct(
-        zeroOutInfo, &sw->SW_PathOutputs, OutDom, &sw->OutRun, LogInfo
-    );
+    SW_OUT_construct(zeroOutInfo, &sw->SW_PathOutputs, &sw->OutRun);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }

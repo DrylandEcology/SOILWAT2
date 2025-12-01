@@ -36,29 +36,34 @@ extern "C" {
 The position is specified by
     - `timeId` the current time index (e.g., `GenOutput->irow_OUT[OutPeriod]`)
     - `slId` the current (`k`-th) soil layer; set to 0 if no soil layers
-    - `ptfId` the current (`n`-th) vegetation type; set to 0 if no vegetation
+    - `pftId` the current (`n`-th) vegetation type; set to 0 if no vegetation
+    - `siteId` the current geogrpahical site index in subdomain
 
 The correct dimension of the output array `p_OUT[OutKey][OutPeriod]`
 is inferred from
     - `nSl` the total number of soil layers (e.g., `SiteSim.n_layers`);
       set to 1 if no soil layers
-    - `nPTF` the total number of vegetation types (e.g., `NVEGTYPES`);
+    - `nPFT` the total number of vegetation types (e.g., `NVEGTYPES`);
       set to 1 if no vegetation
+    - `nSite` the total number of sites in subdomain
     - `iOUToffset` the start indices for each variable
       (see SW_OUT_calc_iOUToffset())
 
 Positions are consecutive along
-    1. vegetation types (if present), then
-    2. soil layers (if present), then
-    3. time steps (of current output period `OutPeriod`), then
-    4. variables within output group `OutKey`
+    1. Geographic site, then
+    2. Vegetation types (if present), then
+    3. Soil layers (if present), then
+    4. Time steps (of current output period `OutPeriod`)
+    5. Variables within output group `OutKey`
+
+The current maximum-length order of dimensions is as follows
+    variable(vertical, pft, time, lat, lon)
 
 Thus, values for all soil layers and all vegetation types are contiguous
 at each time step.
 */
-#define iOUTnc(timeId, slId, ptfId, nSl, nPTF) \
-    ((ptfId) + (nPTF) * ((slId) + (nSl) * (timeId)))
-
+#define iOUTnc(timeId, slId, siteId, pftId, nSl, nSite, nPFT) \
+    ((siteId) + (nSite) * ((slId) + (nSl) * ((pftId) + (nPFT) * (timeId))))
 
 /**
 @brief Position in an output array `p_OUT[OutKey][OutPeriod]`
@@ -137,6 +142,7 @@ void do_running_agg(double *p, double *psd, size_t k, IntU n, double x);
 void SW_OUT_calc_iOUToffset(
     const size_t nrow_OUT[],
     const IntUS nvar_OUT[],
+    const size_t totNSites,
     IntUS nsl_OUT[][SW_OUTNMAXVARS],
     IntUS npft_OUT[][SW_OUTNMAXVARS],
     size_t iOUToffset[][SW_OUTNPERIODS][SW_OUTNMAXVARS]
