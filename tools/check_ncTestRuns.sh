@@ -45,6 +45,9 @@ Options:
     -n,-np <number>     Number of parallel processes in mpi-mode SOILWAT2.
     --ntasks=<number>
 
+    -w,-wt <number>     Walltime limit [seconds] of the first part for tests
+    --walltime=<number> that include a stop & restart (default is 2.5 [s]).
+
     -h, --help          Display this help page.
 
 Examples:
@@ -86,6 +89,7 @@ dirOutRef="${dirOutRefDefault}"
 testRun=-1
 withMode="nc"
 nTasks=""
+wallTime=2.5
 
 
 while [ $# -gt 0 ]; do
@@ -115,6 +119,9 @@ while [ $# -gt 0 ]; do
 
         --ntasks=*) nTasks="${1#*=}" ;;
         -n|-np) nTasks="$2"; shift ;;
+
+        --walltime=*) wallTime="${1#*=}" ;;
+        -w|-wt) wallTime="$2"; shift ;;
 
         -h|--help) echo "$usage"; exit 0 ;;
 
@@ -345,7 +352,8 @@ if [ "${doCheck}" = "true" ]; then
         --swMode="${withMode}" \
         --ntasks="${nTasks}" \
         --path-to-referenceOutput="${dirOutRef}" \
-        --testRuns="${testRun}"
+        --testRuns="${testRun}" \
+        --wallTime="${wallTime}"
 fi
 
 

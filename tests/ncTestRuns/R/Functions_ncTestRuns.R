@@ -141,6 +141,18 @@ replaceOldNames <- function(x, newNames, oldNames) {
   x
 }
 
+appendToMessage <- function(hasMsg, newMsg) {
+  if (isTRUE(nzchar(hasMsg, keepNA = TRUE))) {
+    if (isTRUE(nzchar(newMsg, keepNA = TRUE))) {
+      paste(hasMsg, newMsg, sep = " -- ")
+    } else {
+      hasMsg
+    }
+  } else {
+    newMsg
+  }
+}
+
 
 #--- * SOILWAT2-related functions ------
 
@@ -438,13 +450,15 @@ detectMPIExecutor <- function() {
   executor
 }
 
-runSW2 <- function(
+invokeSW2 <- function(
   sw2,
   path_inputs,
   mode = c("nc", "mpi"),
   nTasks = NULL,
   mpiExecutor = NULL,
-  renameDomainTemplate = FALSE
+  renameDomainTemplate = FALSE,
+  wallTimeSeconds = NULL,
+  prepare = FALSE
 ) {
   mode <- match.arg(mode)
   isMPI <- identical(mode, "mpi")
@@ -467,7 +481,9 @@ runSW2 <- function(
           if (isMPI) paste0("./", sw2),
           "-d", path_inputs,
           "-f files.in",
-          if (isTRUE(renameDomainTemplate)) "-r"
+          if (isTRUE(renameDomainTemplate)) "-r",
+          if (isTRUE(is.finite(wallTimeSeconds))) paste("-t", wallTimeSeconds),
+          if (isTRUE(prepare)) "-p"
         ),
         stdout = TRUE,
         stderr = TRUE
@@ -483,6 +499,88 @@ runSW2 <- function(
     }
   )
   list(res, msg = msg)
+}
+
+
+runSW2 <- function(
+  sw2,
+  path_inputs,
+  mode = c("nc", "mpi"),
+  nTasks = NULL,
+  mpiExecutor = NULL,
+  renameDomainTemplate = FALSE,
+  wallTimeSeconds = NULL
+) {
+
+  if (isTRUE(is.finite(wallTimeSeconds))) {
+    # Start, stop, & restart
+    stopifnot(requireNamespace("RNetCDF"))
+
+    # First step: prepare files
+    res1 <- invokeSW2(
+      sw2 = sw2,
+      path_inputs = path_inputs,
+      mode = mode,
+      nTasks = nTasks,
+      mpiExecutor = mpiExecutor,
+      renameDomainTemplate = renameDomainTemplate,
+      prepare = TRUE
+    )
+
+    # Second step: start simulation but stop early
+    res2 <- invokeSW2(
+      sw2 = sw2,
+      path_inputs = path_inputs,
+      mode = mode,
+      nTasks = nTasks,
+      mpiExecutor = mpiExecutor,
+      wallTimeSeconds = wallTimeSeconds
+    )
+
+    # Confirm that simulation stopped early (mix of completed/incompletd sites)
+    xnc <- RNetCDF::open.nc(file.path(path_inputs, "Input_nc", "progress.nc"))
+    on.exit(RNetCDF::close.nc(xnc))
+    progressData <- RNetCDF::var.get.nc(xnc, variable = "progress")
+
+    # Third step: re-start simulation and complete
+    hasNotStarted <- progressData == 0
+    res <- if (any(hasNotStarted) && !all(hasNotStarted)) {
+        invokeSW2(
+          sw2 = sw2,
+          path_inputs = path_inputs,
+          mode = mode,
+          nTasks = nTasks,
+          mpiExecutor = mpiExecutor
+        )
+      } else {
+        list(
+          NULL,
+          msg = if (all(hasNotStarted)) {
+            "Error: simulation did not start before stop & restart."
+          } else {
+            "Error: simulation was complete before stop & restart."
+          }
+        )
+      }
+
+  } else {
+    # Simulation without time limit
+    res1 <- res2 <- NULL
+    res <- invokeSW2(
+      sw2 = sw2,
+      path_inputs = path_inputs,
+      mode = mode,
+      nTasks = nTasks,
+      mpiExecutor = mpiExecutor,
+      renameDomainTemplate = renameDomainTemplate
+    )
+  }
+
+  list(
+    c(res1[[1L]], res2[[1L]], res[[1L]]),
+    msg = appendToMessage(res1[["msg"]], res2[["msg"]]) |>
+      appendToMessage(res[["msg"]])
+  )
 }
 
 
@@ -729,18 +827,6 @@ calcDepthArrayFromThickness <- function(hzthkArray, dimPermCounts) {
 
 
 #--- * Functions to work with testRun outputs ------
-
-appendToMessage <- function(hasMsg, newMsg) {
-  if (isTRUE(nzchar(hasMsg, keepNA = TRUE))) {
-    if (isTRUE(nzchar(newMsg, keep = TRUE))) {
-      paste(hasMsg, newMsg, sep = " -- ")
-    } else {
-      hasMsg
-    }
-  } else {
-    newMsg
-  }
-}
 
 colorTestReport <- function(x) {
   stopifnot(requireNamespace("cli"))
