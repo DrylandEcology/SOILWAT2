@@ -236,7 +236,7 @@ typedef unsigned short OutPeriod;
         - possKeys
         - key2obj
         - key2str
-        - SW_OUT_set_ncol()
+        - SW_OUT_set_out_counts()
         - SW_OUT_set_colnames()
         - average_for()
         - sumof_XXX()

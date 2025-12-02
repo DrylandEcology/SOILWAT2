@@ -281,6 +281,13 @@ void SW_OUT_construct_outarray(
                 size *= sizeMult;
 
                 OutRun->nP_OUT[k][timeStepOutPeriod] = size;
+
+#if defined(SWNETCDF)
+                /* Size must be + 1 to hold a space for disabled variables to
+                   write junk values */
+                size++;
+#endif
+
                 OutRun->p_OUT[k][timeStepOutPeriod] = (double *) Mem_Calloc(
                     size, s, "SW_OUT_construct_outarray()", LogInfo
                 );
@@ -319,10 +326,14 @@ void SW_OUT_construct_outarray(
 @param[in] nvar_OUT Number of output variables
     (array of length SW_OUTNPERIODS).
 @param[in] totNSites Total number of sites in the process' subdomain
+@param[in] useKey A list of size SW_OUTNKEYS specifying if an output key
+    should be output at all
 @param[in] nsl_OUT Number of output soil layer per variable
     (array of size SW_OUTNKEYS by SW_OUTNMAXVARS).
 @param[in] npft_OUT Number of output vegtypes per variable
     (array of size SW_OUTNKEYS by SW_OUTNMAXVARS).
+@param[in] reqOutVars Do/don't output a variable in the netCDF output
+    files (dynamically allocated array over output variables)
 @param[out] iOUToffset Offset positions of output variables for indexing
     p_OUT (array of size SW_OUTNKEYS by SW_OUTNPERIODS by SW_OUTNMAXVARS).
 */
@@ -330,27 +341,35 @@ void SW_OUT_calc_iOUToffset(
     const size_t nrow_OUT[],
     const IntUS nvar_OUT[],
     const size_t totNSites,
+    Bool useKey[],
     IntUS nsl_OUT[][SW_OUTNMAXVARS],
     IntUS npft_OUT[][SW_OUTNMAXVARS],
+    Bool *reqOutVars[],
     size_t iOUToffset[][SW_OUTNPERIODS][SW_OUTNMAXVARS]
 ) {
     int key;
     int ivar;
-    int iprev;
+    int iprev = 0;
     int pd;
     size_t tmp;
     size_t tmp_nsl;
     size_t tmp_npft;
-    size_t tmp_header;
 
     ForEachOutPeriod(pd) {
-        tmp_header = nrow_OUT[pd] * ncol_TimeOUT[pd];
-
         ForEachOutKey(key) {
-            iOUToffset[key][pd][0] = tmp_header;
+            for (ivar = 0; ivar < SW_OUTNMAXVARS; ivar++) {
+                iOUToffset[key][pd][ivar] = 0;
+            }
 
-            for (ivar = 1; ivar < nvar_OUT[key]; ivar++) {
-                iprev = ivar - 1;
+            if (!useKey[key]) {
+                continue;
+            }
+
+            iprev = -1;
+            for (ivar = 0; ivar < nvar_OUT[key]; ivar++) {
+                if (!reqOutVars[key][ivar]) {
+                    continue;
+                }
 
                 tmp_nsl = (nsl_OUT[key][iprev] > 0) ? nsl_OUT[key][iprev] : 1;
                 tmp_npft =
@@ -366,12 +385,18 @@ void SW_OUT_calc_iOUToffset(
                     tmp_npft
                 );
 
-                iOUToffset[key][pd][ivar] =
-                    iOUToffset[key][pd][iprev] + 1 + tmp;
+                if (iprev > -1) {
+                    iOUToffset[key][pd][ivar] =
+                        iOUToffset[key][pd][iprev] + 1 + tmp;
+                }
+
+                iprev = ivar;
             }
 
-            for (ivar = nvar_OUT[key]; ivar < SW_OUTNMAXVARS; ivar++) {
-                iOUToffset[key][pd][ivar] = 0;
+            for (ivar = 0; ivar < nvar_OUT[key]; ivar++) {
+                if (!reqOutVars[key][ivar]) {
+                    iOUToffset[key][pd][ivar] = iOUToffset[key][pd][iprev] + 1;
+                }
             }
         }
     }

@@ -174,14 +174,11 @@ void SW_OUT_construct(
 
 void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw);
 
-void SW_OUT_set_ncol(
+void SW_OUT_set_out_counts(
     unsigned int tLayers,
     unsigned int n_evap_lyrs,
     unsigned int nTaxaEstabl,
-    IntUS ncol_OUT[],
-    IntUS nvar_OUT[],
-    IntUS nsl_OUT[][SW_OUTNMAXVARS],
-    IntUS npft_OUT[][SW_OUTNMAXVARS],
+    SW_OUT_DOM *OutDom,
     LOG_INFO *LogInfo
 );
 
@@ -270,6 +267,8 @@ void SW_OUT_create_files(
     SW_DOMAIN *SW_Domain,
     LOG_INFO *LogInfo
 );
+
+void SW_OUT_sum_ncols(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
 void echo_outputs(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 

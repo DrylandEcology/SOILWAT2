@@ -674,7 +674,7 @@ write_headers_to_csv() is called only once for each set of output files and it
 goes through all values and if the value is defined to be used it creates the
 header in the output file.
 
-@note The functions SW_OUT_set_ncol() and SW_OUT_set_colnames() must
+@note The functions SW_OUT_set_out_counts() and SW_OUT_set_colnames() must
 be called before create_csv_headers(); otherwise, `ncol_OUT` and
 `colnames_OUT` are not set.
 

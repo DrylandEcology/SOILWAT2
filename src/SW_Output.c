@@ -2068,75 +2068,65 @@ Note to programmer: this function must match what `get_*()` implement.
 @param[in] tLayers Number of soil layers
 @param[in] n_evap_lyrs Number of soil layers with evaporation
 @param[in] nTaxaEstabl Number of taxa used for establishment output.
-@param[out] ncol_OUT Calculated number of output combinations across
-    variables, soil layers, and plant functional types (vegtypes)
-    as array of length SW_OUTNKEYS.
-@param[out] nvar_OUT Specified number of output variables (per outkey)
-    as array of length SW_OUTNKEYS.
-@param[out] nsl_OUT Specified number of output soil layer per variable
-    as array of size SW_OUTNKEYS by SW_OUTNMAXVARS.
-@param[out] npft_OUT Specified number of output vegtypes per variable
-    as array of size SW_OUTNKEYS by SW_OUTNMAXVARS.
+@param[out] OutDom A struct of type SW_OUT_DOM holding constant output
+    information needed throughout the program; update this with values
+    put into ncol_OUT, nvar_OUT, nsl_OUT and npft_OUT
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_OUT_set_ncol(
+void SW_OUT_set_out_counts(
     unsigned int tLayers,
     unsigned int n_evap_lyrs,
     unsigned int nTaxaEstabl,
-    IntUS ncol_OUT[],
-    IntUS nvar_OUT[],
-    IntUS nsl_OUT[][SW_OUTNMAXVARS],
-    IntUS npft_OUT[][SW_OUTNMAXVARS],
+    SW_OUT_DOM *OutDom,
     LOG_INFO *LogInfo
 ) {
 
     unsigned int key;
     unsigned int ivar;
-    IntUS tmp;
 
     //--- Set number of output variables ------
-    nvar_OUT[eSW_AllWthr] = 0;
-    nvar_OUT[eSW_Temp] = 6;
-    nvar_OUT[eSW_Precip] = 5;
-    nvar_OUT[eSW_SoilInf] = 1;
-    nvar_OUT[eSW_Runoff] = 4;
-    nvar_OUT[eSW_AllH2O] = 0;
-    nvar_OUT[eSW_VWCBulk] = 1;
-    nvar_OUT[eSW_VWCMatric] = 1;
-    nvar_OUT[eSW_SWCBulk] = 1;
-    nvar_OUT[eSW_SWABulk] = 1;
-    nvar_OUT[eSW_SWAMatric] = 1;
-    nvar_OUT[eSW_SWA] = 1;
-    nvar_OUT[eSW_SWPMatric] = 1;
-    nvar_OUT[eSW_SurfaceWater] = 1;
+    OutDom->nvar_OUT[eSW_AllWthr] = 0;
+    OutDom->nvar_OUT[eSW_Temp] = 6;
+    OutDom->nvar_OUT[eSW_Precip] = 5;
+    OutDom->nvar_OUT[eSW_SoilInf] = 1;
+    OutDom->nvar_OUT[eSW_Runoff] = 4;
+    OutDom->nvar_OUT[eSW_AllH2O] = 0;
+    OutDom->nvar_OUT[eSW_VWCBulk] = 1;
+    OutDom->nvar_OUT[eSW_VWCMatric] = 1;
+    OutDom->nvar_OUT[eSW_SWCBulk] = 1;
+    OutDom->nvar_OUT[eSW_SWABulk] = 1;
+    OutDom->nvar_OUT[eSW_SWAMatric] = 1;
+    OutDom->nvar_OUT[eSW_SWA] = 1;
+    OutDom->nvar_OUT[eSW_SWPMatric] = 1;
+    OutDom->nvar_OUT[eSW_SurfaceWater] = 1;
     // eSW_Transp: NVEGTYPES plus totals
-    nvar_OUT[eSW_Transp] = 2;
-    nvar_OUT[eSW_EvapSoil] = 1;
+    OutDom->nvar_OUT[eSW_Transp] = 2;
+    OutDom->nvar_OUT[eSW_EvapSoil] = 1;
     // eSW_EvapSurface: NVEGTYPES plus totals, litter, surface water
-    nvar_OUT[eSW_EvapSurface] = 4;
+    OutDom->nvar_OUT[eSW_EvapSurface] = 4;
     // eSW_Interception: NVEGTYPES plus totals, litter
-    nvar_OUT[eSW_Interception] = 3;
-    nvar_OUT[eSW_LyrDrain] = 1;
+    OutDom->nvar_OUT[eSW_Interception] = 3;
+    OutDom->nvar_OUT[eSW_LyrDrain] = 1;
     // eSW_HydRed: NVEGTYPES plus totals
-    nvar_OUT[eSW_HydRed] = 2;
-    nvar_OUT[eSW_ET] = 0;
-    nvar_OUT[eSW_AET] = 6;
-    nvar_OUT[eSW_PET] = 5;
-    nvar_OUT[eSW_WetDays] = 1;
-    nvar_OUT[eSW_SnowPack] = 2;
-    nvar_OUT[eSW_DeepSWC] = 1;
-    nvar_OUT[eSW_SoilTemp] = 3;
-    nvar_OUT[eSW_Frozen] = 1;
-    nvar_OUT[eSW_AllVeg] = 0;
-    nvar_OUT[eSW_Estab] = nTaxaEstabl;
-    nvar_OUT[eSW_CO2Effects] = 2;
+    OutDom->nvar_OUT[eSW_HydRed] = 2;
+    OutDom->nvar_OUT[eSW_ET] = 0;
+    OutDom->nvar_OUT[eSW_AET] = 6;
+    OutDom->nvar_OUT[eSW_PET] = 5;
+    OutDom->nvar_OUT[eSW_WetDays] = 1;
+    OutDom->nvar_OUT[eSW_SnowPack] = 2;
+    OutDom->nvar_OUT[eSW_DeepSWC] = 1;
+    OutDom->nvar_OUT[eSW_SoilTemp] = 3;
+    OutDom->nvar_OUT[eSW_Frozen] = 1;
+    OutDom->nvar_OUT[eSW_AllVeg] = 0;
+    OutDom->nvar_OUT[eSW_Estab] = nTaxaEstabl;
+    OutDom->nvar_OUT[eSW_CO2Effects] = 2;
     // eSW_Biomass: fCover for NVEGTYPES plus bare-ground
     //    biomass for NVEGTYPES plus totals and litter
     //    biolive for NVEGTYPES plus totals
     //    LAI
-    nvar_OUT[eSW_Biomass] = 8;
-    nvar_OUT[eSW_DerivedSum] = 3;
-    nvar_OUT[eSW_DerivedAvg] = 2;
+    OutDom->nvar_OUT[eSW_Biomass] = 8;
+    OutDom->nvar_OUT[eSW_DerivedSum] = 3;
+    OutDom->nvar_OUT[eSW_DerivedAvg] = 2;
 
 
     //--- Set number of soil layer and/or pft (vegtype) for each variable ------
@@ -2144,98 +2134,73 @@ void SW_OUT_set_ncol(
     // init
     ForEachOutKey(key) {
         for (ivar = 0; ivar < SW_OUTNMAXVARS; ivar++) {
-            nsl_OUT[key][ivar] = 0;
-            npft_OUT[key][ivar] = 0;
+            OutDom->nsl_OUT[key][ivar] = 0;
+            OutDom->npft_OUT[key][ivar] = 0;
         }
     }
 
-    nsl_OUT[eSW_VWCBulk][0] = tLayers;
+    OutDom->nsl_OUT[eSW_VWCBulk][0] = tLayers;
 
-    nsl_OUT[eSW_VWCMatric][0] = tLayers;
+    OutDom->nsl_OUT[eSW_VWCMatric][0] = tLayers;
 
-    nsl_OUT[eSW_SWCBulk][0] = tLayers;
+    OutDom->nsl_OUT[eSW_SWCBulk][0] = tLayers;
 
-    nsl_OUT[eSW_SWABulk][0] = tLayers;
+    OutDom->nsl_OUT[eSW_SWABulk][0] = tLayers;
 
-    nsl_OUT[eSW_SWAMatric][0] = tLayers;
+    OutDom->nsl_OUT[eSW_SWAMatric][0] = tLayers;
 
-    nsl_OUT[eSW_SWAMatric][0] = tLayers;
+    OutDom->nsl_OUT[eSW_SWAMatric][0] = tLayers;
 
-    nsl_OUT[eSW_SWA][0] = tLayers;
-    npft_OUT[eSW_SWA][0] = NVEGTYPES;
+    OutDom->nsl_OUT[eSW_SWA][0] = tLayers;
+    OutDom->npft_OUT[eSW_SWA][0] = NVEGTYPES;
 
-    nsl_OUT[eSW_SWPMatric][0] = tLayers;
+    OutDom->nsl_OUT[eSW_SWPMatric][0] = tLayers;
 
-    nsl_OUT[eSW_EvapSoil][0] = n_evap_lyrs;
+    OutDom->nsl_OUT[eSW_EvapSoil][0] = n_evap_lyrs;
 
-    nsl_OUT[eSW_LyrDrain][0] = tLayers - 1;
+    OutDom->nsl_OUT[eSW_LyrDrain][0] = tLayers - 1;
 
-    nsl_OUT[eSW_WetDays][0] = tLayers;
+    OutDom->nsl_OUT[eSW_WetDays][0] = tLayers;
 
-    nsl_OUT[eSW_SoilTemp][0] = tLayers;
-    nsl_OUT[eSW_SoilTemp][1] = tLayers;
-    nsl_OUT[eSW_SoilTemp][2] = tLayers;
+    OutDom->nsl_OUT[eSW_SoilTemp][0] = tLayers;
+    OutDom->nsl_OUT[eSW_SoilTemp][1] = tLayers;
+    OutDom->nsl_OUT[eSW_SoilTemp][2] = tLayers;
 
-    nsl_OUT[eSW_Frozen][0] = tLayers;
+    OutDom->nsl_OUT[eSW_Frozen][0] = tLayers;
 
-    npft_OUT[eSW_CO2Effects][0] = NVEGTYPES;
-    npft_OUT[eSW_CO2Effects][1] = NVEGTYPES;
+    OutDom->npft_OUT[eSW_CO2Effects][0] = NVEGTYPES;
+    OutDom->npft_OUT[eSW_CO2Effects][1] = NVEGTYPES;
 
 
     // OutKeys that combine variables of mixed-dimensions
-    nsl_OUT[eSW_Transp][0] = tLayers; // 0: TRANSP__transp_total
-    nsl_OUT[eSW_Transp][1] = tLayers; // 1: TRANSP__transp
-    npft_OUT[eSW_Transp][1] = NVEGTYPES;
+    OutDom->nsl_OUT[eSW_Transp][0] = tLayers; // 0: TRANSP__transp_total
+    OutDom->nsl_OUT[eSW_Transp][1] = tLayers; // 1: TRANSP__transp
+    OutDom->npft_OUT[eSW_Transp][1] = NVEGTYPES;
 
-    npft_OUT[eSW_EvapSurface][1] = NVEGTYPES; // 1: EVAPSURFACE__evap_veg
+    OutDom->npft_OUT[eSW_EvapSurface][1] =
+        NVEGTYPES; // 1: EVAPSURFACE__evap_veg
 
-    npft_OUT[eSW_Interception][1] = NVEGTYPES; // 1: INTERCEPTION__int_veg
+    OutDom->npft_OUT[eSW_Interception][1] =
+        NVEGTYPES; // 1: INTERCEPTION__int_veg
 
-    nsl_OUT[eSW_HydRed][0] = tLayers; // 0: HYDRED__hydred_total
-    nsl_OUT[eSW_HydRed][1] = tLayers; // 1: HYDRED__hydred
-    npft_OUT[eSW_HydRed][1] = NVEGTYPES;
+    OutDom->nsl_OUT[eSW_HydRed][0] = tLayers; // 0: HYDRED__hydred_total
+    OutDom->nsl_OUT[eSW_HydRed][1] = tLayers; // 1: HYDRED__hydred
+    OutDom->npft_OUT[eSW_HydRed][1] = NVEGTYPES;
 
-    npft_OUT[eSW_Biomass][1] = NVEGTYPES; // 1: BIOMASS__veg.cov.fCover
-    npft_OUT[eSW_Biomass][3] = NVEGTYPES; // 3: BIOMASS__veg.biomass_inveg
-    npft_OUT[eSW_Biomass][6] = NVEGTYPES; // 6: BIOMASS__veg.biolive_inveg
+    OutDom->npft_OUT[eSW_Biomass][1] = NVEGTYPES; // 1: BIOMASS__veg.cov.fCover
+    OutDom->npft_OUT[eSW_Biomass][3] =
+        NVEGTYPES; // 3: BIOMASS__veg.biomass_inveg
+    OutDom->npft_OUT[eSW_Biomass][6] =
+        NVEGTYPES; // 6: BIOMASS__veg.biolive_inveg
 
 
     //--- Sum up number of output combinations across variables - soil layers -
     // vegtypes ------
-    ForEachOutKey(key) {
-        ncol_OUT[key] = 0;
-
-        for (ivar = 0; ivar < nvar_OUT[key]; ivar++) {
-            tmp = 1; // variable has dimension T
-            if (nsl_OUT[key][ivar] > 0) {
-                // variable has dimension TZ
-                tmp = nsl_OUT[key][ivar];
-                if (npft_OUT[key][ivar] > 0) {
-                    // variable has dimension TZV
-                    tmp *= npft_OUT[key][ivar];
-                }
-            } else if (npft_OUT[key][ivar] > 0) {
-                // variable has dimension TV
-                tmp = npft_OUT[key][ivar];
-            }
-
-            ncol_OUT[key] += tmp;
-        }
-
-        if (ncol_OUT[key] > SW_NOUTCOLS) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "Programmer: Output group %s (key = %d) has "
-                "more columns (n = %d) than the maximum (%d).",
-                key2str[key],
-                key,
-                ncol_OUT[key],
-                SW_NOUTCOLS
-            );
-            return; /* Exit prematurely due to error */
-        }
-    }
+#if !defined(SWNETCDF)
+    SW_OUT_sum_ncols(OutDom, LogInfo);
+#else
+    (void) LogInfo;
+#endif
 }
 
 /**
@@ -2801,16 +2766,7 @@ void SW_OUT_setup_output(
     SW_OUT_DOM *OutDom,
     LOG_INFO *LogInfo
 ) {
-    SW_OUT_set_ncol(
-        tLayers,
-        n_evap_lyrs,
-        count,
-        OutDom->ncol_OUT,
-        OutDom->nvar_OUT,
-        OutDom->nsl_OUT,
-        OutDom->npft_OUT,
-        LogInfo
-    );
+    SW_OUT_set_out_counts(tLayers, n_evap_lyrs, count, OutDom, LogInfo);
     if (LogInfo->stopRun) {
         return;
     }
@@ -2820,8 +2776,10 @@ void SW_OUT_setup_output(
         OutDom->nrow_OUT,
         OutDom->nvar_OUT,
         totNSites,
+        OutDom->use,
         OutDom->nsl_OUT,
         OutDom->npft_OUT,
+        OutDom->netCDFOutput.reqOutputVars,
         OutDom->netCDFOutput.iOUToffset
     );
     (void) parmsIn;
@@ -3985,6 +3943,61 @@ void SW_OUT_create_files(
     (void) SW_Domain;
     (void) LogInfo;
 #endif
+}
+
+/**
+@brief Calculate the number of columns for an output key
+
+@param[out] OutDom A struct of type SW_OUT_DOM holding constant output
+    information needed throughout the program; update this with a
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_OUT_sum_ncols(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
+    int key;
+    int ivar;
+    int tmp;
+
+    Bool useVar = swTRUE;
+
+    ForEachOutKey(key) {
+        OutDom->ncol_OUT[key] = 0;
+
+        for (ivar = 0; ivar < OutDom->nvar_OUT[key]; ivar++) {
+#if defined(SWNETCDF)
+            useVar = OutDom->netCDFOutput.reqOutputVars[key][ivar];
+#endif
+
+            tmp = 1; // variable has dimension T
+
+            if (OutDom->nsl_OUT[key][ivar] > 0) {
+                // variable has dimension TZ
+                tmp = OutDom->nsl_OUT[key][ivar];
+                if (OutDom->npft_OUT[key][ivar] > 0) {
+                    // variable has dimension TZV
+                    tmp *= OutDom->npft_OUT[key][ivar];
+                }
+            } else if (OutDom->npft_OUT[key][ivar] > 0) {
+                // variable has dimension TV
+                tmp = OutDom->npft_OUT[key][ivar];
+            }
+
+            OutDom->ncol_OUT[key] += (useVar ? tmp : 0);
+        }
+
+        if (OutDom->ncol_OUT[key] > SW_NOUTCOLS) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Programmer: Output group %s (key = %d) has "
+                "more columns (n = %d) than the maximum (%d).",
+                key2str[key],
+                key,
+                OutDom->ncol_OUT[key],
+                SW_NOUTCOLS
+            );
+            return; /* Exit prematurely due to error */
+        }
+    }
 }
 
 /**
