@@ -30,8 +30,7 @@
 #       --swMode=<...> \
 #       --ntasks=<...> \
 #       --path-to-referenceOutput=<...> \
-#       --testRuns=<...> \
-#       --wallTime=<...>
+#       --testRuns=<...>
 # ```
 #------------------------------------------------------------------------------#
 
@@ -83,14 +82,6 @@ nTasks <- if (any(ids)) {
     sub("=", "", x = _, fixed = TRUE) |>
     trimws() |>
     tolower()
-}
-
-ids <- grepl("--wallTime", args, fixed = TRUE)
-requestedWallTime <- if (any(ids)) {
-  sub("--wallTime", "", args[ids], fixed = TRUE) |>
-    sub("=", "", x = _, fixed = TRUE) |>
-    trimws() |>
-    as.numeric()
 }
 
 
@@ -191,17 +182,6 @@ testRunTags <- paste0(
   listTestRuns[["tag"]]
 )
 
-if (
-  any(listTestRuns[["StopRestart"]] == "yes") &&
-    !(isTRUE(is.finite(requestedWallTime)) && isTRUE(requestedWallTime > 0L))
-) {
-  requestedWallTime <- 2
-  warning(
-    "Wall time reset to 2 seconds for requested runs with Stop&Restart.",
-    call. = FALSE
-  )
-}
-
 testRunsTemplates <- list.dirs(
   path = dir_testRunsTemplates,
   full.names = TRUE,
@@ -271,9 +251,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     mode = swMode,
     nTasks = nTasks,
     mpiExecutor = mpiExecutor,
-    wallTimeSeconds = if (identical(listTestRuns[k0, "StopRestart"], "yes")) {
-      requestedWallTime
-    }
+    stopRestart = identical(listTestRuns[k0, "StopRestart"], "yes")
   )
 
   hasSW2Error <- !is.null(res[["msg"]])

@@ -426,6 +426,36 @@ getModifiedNCUnits <- function(x, inkey, ncvar) {
   as.list(x[idrow, c("ncVarUnits", "ncVarUnitsModified")])
 }
 
+setSW2Progress <- function(
+  filename,
+  variable = "progress",
+  type = c("allButOneComplete", "resetToActual"),
+  value = NULL
+) {
+  stopifnot(requireNamespace("RNetCDF"))
+  type <- match.arg(type)
+
+  xnc <- RNetCDF::open.nc(filename, write = TRUE)
+  on.exit(RNetCDF::close.nc(xnc))
+
+  progressData <- RNetCDF::var.get.nc(xnc, variable)
+
+  if (identical(type, "allButOneComplete")) {
+    idToComplete <- which(progressData == 0, arr.ind = TRUE)
+    tmp <- res <- progressData
+    res[idToComplete[1L, , drop = FALSE]] <- 1L
+    tmp[idToComplete[-1L, , drop = FALSE]] <- 1L
+    RNetCDF::var.put.nc(xnc, variable, data = tmp)
+
+  } else if (identical(type, "resetToActual")) {
+    stopifnot(identical(dim(value), dim(progressData)))
+    RNetCDF::var.put.nc(xnc, variable, data = value)
+    res <- value
+  }
+
+  res
+}
+
 detectMPIExecutor <- function() {
   executor <- NULL
 
@@ -509,10 +539,11 @@ runSW2 <- function(
   nTasks = NULL,
   mpiExecutor = NULL,
   renameDomainTemplate = FALSE,
-  wallTimeSeconds = NULL
+  stopRestart = FALSE
 ) {
+  res <- NULL
 
-  if (isTRUE(is.finite(wallTimeSeconds))) {
+  if (isTRUE(stopRestart)) {
     # Start, stop, & restart
     stopifnot(requireNamespace("RNetCDF"))
 
@@ -527,45 +558,57 @@ runSW2 <- function(
       prepare = TRUE
     )
 
-    # Second step: start simulation but stop early
+    # Second step: simulate one site and stop
+    # (pretend that all but one site are completed)
+    progress2 <- setSW2Progress(
+      filename = file.path(path_inputs, "Input_nc", "progress.nc"),
+      type = "allButOneComplete"
+    )
     res2 <- invokeSW2(
       sw2 = sw2,
       path_inputs = path_inputs,
       mode = mode,
       nTasks = nTasks,
-      mpiExecutor = mpiExecutor,
-      wallTimeSeconds = wallTimeSeconds
+      mpiExecutor = mpiExecutor
+    )
+
+    # Third step: re-start simulation and complete
+    # (reset progress to actual status)
+    progress3 <- setSW2Progress(
+      filename = file.path(path_inputs, "Input_nc", "progress.nc"),
+      type = "resetToActual",
+      value = progress2
     )
 
     # Confirm that simulation stopped early (mix of completed/incompletd sites)
-    xnc <- RNetCDF::open.nc(file.path(path_inputs, "Input_nc", "progress.nc"))
-    on.exit(RNetCDF::close.nc(xnc))
-    progressData <- RNetCDF::var.get.nc(xnc, variable = "progress")
-
-    # Third step: re-start simulation and complete
-    hasNotStarted <- progressData == 0
+    hasNotStarted <- progress3 == 0
     res <- if (any(hasNotStarted) && !all(hasNotStarted)) {
-        invokeSW2(
-          sw2 = sw2,
-          path_inputs = path_inputs,
-          mode = mode,
-          nTasks = nTasks,
-          mpiExecutor = mpiExecutor
-        )
-      } else {
-        list(
-          NULL,
-          msg = if (all(hasNotStarted)) {
-            "Error: simulation did not start before stop & restart."
-          } else {
-            "Error: simulation was complete before stop & restart."
-          }
-        )
-      }
+      res3 <- invokeSW2(
+        sw2 = sw2,
+        path_inputs = path_inputs,
+        mode = mode,
+        nTasks = nTasks,
+        mpiExecutor = mpiExecutor
+      )
+
+      list(
+        c(res1[[1L]], res2[[1L]], res3[[1L]]),
+        msg = appendToMessage(res1[["msg"]], res2[["msg"]]) |>
+          appendToMessage(res3[["msg"]])
+      )
+    } else {
+      list(
+        NULL,
+        msg = if (all(hasNotStarted)) {
+          "Error: simulation did not start before stop & restart."
+        } else {
+          "Error: simulation was complete before stop & restart."
+        }
+      )
+    }
 
   } else {
     # Simulation without time limit
-    res1 <- res2 <- NULL
     res <- invokeSW2(
       sw2 = sw2,
       path_inputs = path_inputs,
@@ -576,11 +619,7 @@ runSW2 <- function(
     )
   }
 
-  list(
-    c(res1[[1L]], res2[[1L]], res[[1L]]),
-    msg = appendToMessage(res1[["msg"]], res2[["msg"]]) |>
-      appendToMessage(res[["msg"]])
-  )
+  res
 }
 
 
