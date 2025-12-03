@@ -1062,14 +1062,14 @@ static const size_t cacheDimSizes[] = {
 values of the same type for netCDFs, i.e., NC_FILL_DOUBLE, NC_FILL_UINT,
 NC_FILL_INT
 
-@param[in] nActiveSites Number of active sites to simulate within a subdomain
+@param[in] nTotalSites Total number of sites in the subdomain
 @param[in] nElem Maximum number of elements to reset in a site
 @param[in] varType Type of the value that is being filled
 @param[in] actSiteIdx Active site index within the subdomain
 @param[out] values Array to be filled with the determined values
 */
 static void reset_temp_vals(
-    size_t nActiveSites,
+    size_t nTotalSites,
     size_t nElem,
     int varType,
     size_t *actSiteIdx,
@@ -1079,8 +1079,8 @@ static void reset_temp_vals(
     double *doubleVals = NULL;
     IntU *intUVals = NULL;
     size_t elem;
-    size_t site;
-    size_t siteIndex;
+    size_t site = 0;
+    size_t siteIndex = 0;
     size_t elemIndex;
 
     switch (varType) {
@@ -1095,24 +1095,28 @@ static void reset_temp_vals(
         break;
     }
 
-    for (site = 0; site < nActiveSites; site++) {
-        siteIndex = actSiteIdx[site];
+    while (site < nTotalSites) {
+        if (site != actSiteIdx[siteIndex]) {
+            for (elem = 0; elem < nElem; elem++) {
+                elemIndex = nElem * site + elem;
 
-        for (elem = 0; elem < nElem; elem++) {
-            elemIndex = nElem * siteIndex + elem;
-
-            switch (varType) {
-            case NC_INT:
-                intVals[elemIndex] = NC_FILL_INT;
-                break;
-            case NC_DOUBLE:
-                doubleVals[elemIndex] = NC_FILL_DOUBLE;
-                break;
-            default: /* NC_UINT */
-                intUVals[elemIndex] = NC_FILL_UINT;
-                break;
+                switch (varType) {
+                case NC_INT:
+                    intVals[elemIndex] = NC_FILL_INT;
+                    break;
+                case NC_DOUBLE:
+                    doubleVals[elemIndex] = NC_FILL_DOUBLE;
+                    break;
+                default: /* NC_UINT */
+                    intUVals[elemIndex] = NC_FILL_UINT;
+                    break;
+                }
             }
+        } else {
+            siteIndex++;
         }
+
+        site++;
     }
 }
 
@@ -1257,6 +1261,7 @@ of type SW_RUN containing all information in the simulation
 @param[in] n_years Number of years to be written out
 @param[in] nActiveSites Number of active sites the process controls
 and the side of "SW_Runs"
+@param[in] nTotalSites Total number of sites in the assigned subdomain
 @param[in] actSiteIdx Active site index within the subdomain
 @param[in] startNumDims Specifies how many dimensions are already written to
 count, aka where to start writing count sizes
@@ -1273,6 +1278,7 @@ static void rearrange_cache_values(
     int cacheVar,
     TimeInt n_years,
     size_t nActiveSites,
+    size_t nTotalSites,
     size_t *actSiteIdx,
     int startNumDims,
     double *tempDoubles,
@@ -1320,7 +1326,7 @@ static void rearrange_cache_values(
             writePtr = (void *) tempUInts;
             break;
         }
-        reset_temp_vals(nActiveSites, numElem, varType, actSiteIdx, writePtr);
+        reset_temp_vals(nTotalSites, numElem, varType, actSiteIdx, writePtr);
     }
 
     for (site = 0; site < nActiveSites; site++) {
@@ -11726,6 +11732,10 @@ void SW_NCIN_handle_cache_vals(
     const Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
     const TimeInt n_years = SW_Domain->endyr - SW_Domain->startyr + 1;
     const char *cacheFileName = SW_Domain->SW_PathInputs.txtInFiles[eNCCache];
+    const size_t nTotalSites = sDom ? SW_Domain->domCounts[eSW_InDomain][0] :
+                                      SW_Domain->domCounts[eSW_InDomain][0] *
+                                          SW_Domain->domCounts[eSW_InDomain][1];
+
     int cacheFileID = -1;
     int *tempInt = NULL;
     double *tempDoubles = NULL;
@@ -11858,6 +11868,7 @@ void SW_NCIN_handle_cache_vals(
                         cacheVar,
                         n_years,
                         SW_Domain->nActiveSuidsProc,
+                        nTotalSites,
                         SW_Domain->actSiteIdx[eSW_InDomain],
                         startNDims,
                         tempDoubles,
