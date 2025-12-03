@@ -165,11 +165,7 @@ void SW_OUTDOM_init_ptrs(SW_OUT_DOM *OutDom);
 void SW_OUTDOM_construct(SW_OUT_DOM *OutDom);
 
 void SW_OUT_construct(
-    Bool zeroOutStruct,
-    SW_PATH_OUTPUTS *SW_PathOutputs,
-    SW_OUT_DOM *OutDom,
-    SW_OUT_RUN *OutRun,
-    LOG_INFO *LogInfo
+    Bool zeroOutStruct, SW_PATH_OUTPUTS *SW_PathOutputs, SW_OUT_RUN *OutRun
 );
 
 void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw);
@@ -194,6 +190,7 @@ void SW_OUT_setup_output(
     unsigned int tLayers,
     unsigned int n_evap_lyrs,
     unsigned int count,
+    size_t totNSites,
     SW_VEGESTAB_INFO_INPUTS *parmsIn,
     SW_OUT_DOM *OutDom,
     LOG_INFO *LogInfo
