@@ -604,8 +604,6 @@ reference for local versions of SW_RUN
 for converting and setting into proper location
 @param[in] newSoils A temporary list of SW_SOIL_RUN_INPUTS instances to
 store input values
-@param[in] nActiveSites Number of active sites to simulate within a subdomain
-(SWMPI) or a single site (SWTXT)
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
 @param[in] updateNewYear A flag specifying if this is the first day
@@ -621,7 +619,6 @@ void SW_CTL_sim_sites(
     SW_RUN *sw_template,
     double *tempVals,
     SW_SOIL_RUN_INPUTS *newSoils,
-    size_t nActiveSites,
     SW_DOMAIN *SW_Domain,
     Bool updateNewYear,
     TimeInt *nDaysInYear,
@@ -632,6 +629,8 @@ void SW_CTL_sim_sites(
 #ifdef SWDEBUG
     int debug = 0;
 #endif
+
+    size_t nActiveSites = SW_Domain->nActiveSuidsProc;
 
     Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
     size_t site;
@@ -647,7 +646,7 @@ void SW_CTL_sim_sites(
     size_t actSiteIdx;
     Bool readConstInfo = swFALSE;
     Bool readWeather = SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
-    int firstActiveSite = -1;
+    size_t firstActiveSite = 0;
     size_t lastFailed = 0;
 #else
     (void) tempVals;
@@ -738,9 +737,16 @@ void SW_CTL_sim_sites(
 
     handleLog:
         handle_logs(&LogInfos[site], SW_Domain, site, runStatus, main_LogInfo);
+
+#if defined(SWNETCDF)
         if (LogInfos[site].stopRun) {
             lastFailed = site;
+
+            SW_NCOUT_reset_failed_sites(
+                SW_Domain, actSiteIdx, sw_template->OutRun.p_OUT
+            );
         }
+#endif
 
         checkJumpToLabel(main_LogInfo->stopRun, reportLogs);
     }
@@ -751,11 +757,11 @@ reportLogs:
 #if defined(SWNETCDF)
     forceWriteOut = (Bool) (!runSims || main_LogInfo->stopRun);
 
-    for (site = 0; site < nActiveSites && firstActiveSite == -1; site++) {
-        nActiveSites = (!LogInfos[site].stopRun) ? site : -1;
+    while (site < nActiveSites && LogInfos[site].stopRun) {
+        site++;
     }
 
-    if (firstActiveSite == -1) {
+    if (site == nActiveSites) {
         firstActiveSite = lastFailed;
     }
 
@@ -826,7 +832,6 @@ void SW_CTL_run_daily_timesteps(
             sw_template,
             tempVals,
             newSoils,
-            SW_Domain->nActiveSuidsProc,
             SW_Domain,
             initFirstYear,
             &nDaysInYear,

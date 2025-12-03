@@ -26,6 +26,11 @@ History:
 #include <stdio.h>                      // for size_t
 
 #if defined(SW_OUTARRAY)
+
+#if defined(SWNETCDF)
+#include <netcdf.h>
+#endif
+
 #include "include/myMemory.h" // for Mem_Calloc
 #include <stdlib.h>           // for free
 #endif
@@ -269,6 +274,12 @@ void SW_OUT_construct_outarray(
     size_t s = sizeof(double);
     OutPeriod timeStepOutPeriod;
 
+#if defined(SWNETCDF)
+    size_t val;
+#else
+    (void) sizeMult;
+#endif
+
     ForEachOutKey(k) {
         for (i = 0; i < OutDom->used_OUTNPERIODS; i++) {
             timeStepOutPeriod = OutDom->timeSteps[k][i];
@@ -294,8 +305,12 @@ void SW_OUT_construct_outarray(
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }
-#else
-                (void) sizeMult;
+
+#if defined(SWNETCDF)
+                for (val = 0; val < size; val++) {
+                    OutRun->p_OUT[k][timeStepOutPeriod][val] = NC_FILL_DOUBLE;
+                }
+#endif
 #endif
 
 #if defined(STEPWAT)

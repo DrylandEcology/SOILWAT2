@@ -69,7 +69,6 @@ void SW_CTL_sim_sites(
     SW_RUN *sw_template,
     double *tempVals,
     SW_SOIL_RUN_INPUTS *newSoils,
-    size_t nActiveSites,
     SW_DOMAIN *SW_Domain,
     Bool updateNewYear,
     TimeInt *nDaysInYear,

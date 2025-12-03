@@ -21,6 +21,10 @@ extern "C" {
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 
+void SW_NCOUT_reset_failed_sites(
+    SW_DOMAIN *SW_Domain, size_t siteIndex, double *p_OUT[][SW_OUTNPERIODS]
+);
+
 void SW_NCOUT_create_output_dimVar(
     char *name,
     size_t size,

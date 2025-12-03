@@ -1387,6 +1387,81 @@ static void create_output_file(
 /* --------------------------------------------------- */
 
 /**
+@brief Zero-out failed site output values
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[in] siteIndex Index of the site that is being zeroed relative
+to the total number of sites in the subdomain
+@param[out] p_OUT Array of accumulated output values throughout
+simulation years
+*/
+void SW_NCOUT_reset_failed_sites(
+    SW_DOMAIN *SW_Domain, size_t siteIndex, double *p_OUT[][SW_OUTNPERIODS]
+) {
+    const Bool siteDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
+    const size_t nSites = siteDom ? SW_Domain->domCounts[eSW_InDomain][0] :
+                                    SW_Domain->domCounts[eSW_InDomain][0] *
+                                        SW_Domain->domCounts[eSW_InDomain][1];
+
+    SW_OUT_DOM *OutDom = &SW_Domain->OutDom;
+
+    size_t time;
+    int key;
+    int pd;
+    int var;
+    size_t sl;
+    size_t pft;
+
+    size_t nSl;
+    size_t npft;
+
+    Bool hasSl;
+    Bool hasPFT;
+
+    size_t targetIdx;
+
+    ForEachOutKey(key) {
+        if (!OutDom->use[key]) {
+            continue;
+        }
+
+        ForEachOutPeriod(pd) {
+            if (!OutDom->use_OutPeriod[pd]) {
+                continue;
+            }
+
+            for (time = 0; time < OutDom->nrow_OUT[pd]; time++) {
+                for (var = 0; var < OutDom->nvar_OUT[key]; var++) {
+                    if (!OutDom->netCDFOutput.reqOutputVars[key][var]) {
+                        continue;
+                    }
+
+                    hasSl = (Bool) (OutDom->nsl_OUT[key][var] == 0);
+                    hasPFT = (Bool) (OutDom->npft_OUT[key][var] == 0);
+
+                    nSl = hasSl ? OutDom->nsl_OUT[key][var] : 1;
+                    npft = hasPFT ? OutDom->npft_OUT[key][var] : 1;
+
+                    for (pft = 0; pft < npft; pft++) {
+                        ForEachSoilLayer(sl, nSl) {
+                            targetIdx =
+                                OutDom->netCDFOutput.iOUToffset[key][pd][var];
+
+                            targetIdx += iOUTnc(
+                                time, sl, siteIndex, pft, nSl, nSites, npft
+                            );
+
+                            p_OUT[key][pd][targetIdx] = NC_FILL_DOUBLE;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
 @brief Create a "time", "vertical", or "pft" dimension variable and the
 respective "*_bnds" variables (plus "bnds" dimension)
 and fill the variable with the respective information
