@@ -11995,6 +11995,11 @@ void SW_NCIN_update_progress_info(
 #if defined(SWMPI)
     const int oneElem = 1;
 #endif
+    const size_t nDaysLastYr = Time_get_lastdoy_y(SW_Domain->endyr);
+    const Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
+    const size_t nTotSites = sDom ? SW_Domain->domCounts[eSW_InDomain][0] :
+                                    SW_Domain->domCounts[eSW_InDomain][0] *
+                                        SW_Domain->domCounts[eSW_InDomain][1];
 
     const char *nullVarName = NULL;
 
@@ -12015,6 +12020,8 @@ void SW_NCIN_update_progress_info(
 
     size_t site;
 
+    Bool runComp = swFALSE;
+
     // Calculate the maximum number of days a site has reached
     for (site = 0; site < SW_Domain->nActiveSuidsProc; site++) {
         numDays = 0;
@@ -12027,6 +12034,10 @@ void SW_NCIN_update_progress_info(
         numDays += SW_Runs[site].ModelSim.doy;
 
         localMaxDays = (numDays > localMaxDays) ? numDays : localMaxDays;
+
+        runComp =
+            (runComp || (SW_Runs[site].ModelSim.year == SW_Domain->endyr &&
+                         SW_Runs[site].ModelSim.doy == nDaysLastYr + 1));
     }
 
 #if defined(SWMPI)
@@ -12049,6 +12060,14 @@ void SW_NCIN_update_progress_info(
         main_LogInfo
     );
     checkReturn(main_LogInfo->stopRun);
+
+    if (runComp) {
+        for (site = 0; site < nTotSites; site++) {
+            if (SW_Domain->netCDFInput.progVals[site] == PRGRSS_READY) {
+                SW_Domain->netCDFInput.progVals[site] = PRGRSS_DONE;
+            }
+        }
+    }
 
     SW_NC_write_vals(
         &progStatusVarID,
