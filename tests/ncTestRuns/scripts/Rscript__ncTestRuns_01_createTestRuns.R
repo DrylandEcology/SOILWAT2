@@ -807,6 +807,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       mpiExecutor = mpiExecutor
     )
 
+    unlink(file.path(dir_testRun, "logs"), recursive = TRUE)
+
     if (file.exists(fname_template)) {
       nc <- RNetCDF::open.nc(fname_template, write = TRUE)
 

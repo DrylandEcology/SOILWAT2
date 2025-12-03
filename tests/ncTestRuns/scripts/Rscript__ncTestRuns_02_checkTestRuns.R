@@ -250,7 +250,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     path_inputs = dir_testRun,
     mode = swMode,
     nTasks = nTasks,
-    mpiExecutor = mpiExecutor
+    mpiExecutor = mpiExecutor,
+    stopRestart = identical(listTestRuns[k0, "StopRestart"], "yes")
   )
 
   hasSW2Error <- !is.null(res[["msg"]])
@@ -260,7 +261,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
   dir_testRunOutput <- file.path(dir_testRun, "Output")
 
   fname_logfiles <- list.files(
-    path = file.path(dir_testRun, "logs"), 
+    path = file.path(dir_testRun, "logs"),
     pattern = "logfile.log",
     full.names = TRUE
   )
