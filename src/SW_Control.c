@@ -1010,6 +1010,8 @@ freeMem:
         main_LogInfo
     );
 
+    SW_NCIN_update_progress_info(SW_Domain, siteRuns, main_LogInfo);
+
     SW_NCIN_handle_temp_inputs(
         alloc, SW_Domain, &tempVals, &newSoils, main_LogInfo
     );

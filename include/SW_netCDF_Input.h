@@ -276,6 +276,10 @@ void SW_NCIN_write_cache(
     LOG_INFO *main_LogInfo
 );
 
+void SW_NCIN_update_progress_info(
+    SW_DOMAIN *SW_Domain, SW_RUN *SW_Runs, LOG_INFO *main_LogInfo
+);
+
 #ifdef __cplusplus
 }
 #endif

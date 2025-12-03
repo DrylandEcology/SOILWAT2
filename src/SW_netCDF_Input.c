@@ -11975,3 +11975,89 @@ void SW_NCIN_write_cache(
         );
     }
 }
+
+/**
+@brief Update progress information, namely the spatial status information
+and start day of year if the program were to be rerun; get the maximum
+day the simulation could start at because failed sites will also be
+taken into consideration just in case they failed immediately before
+this function was called
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[in] SW_Runs A list of n active sites of comprehensive structs
+of type SW_RUN containing all information in the simulation
+@param[out] main_LogInfo The main LOG_INFO instance for the program
+*/
+void SW_NCIN_update_progress_info(
+    SW_DOMAIN *SW_Domain, SW_RUN *SW_Runs, LOG_INFO *main_LogInfo
+) {
+#if defined(SWMPI)
+    const int oneElem = 1;
+#endif
+
+    const char *nullVarName = NULL;
+
+    int progStatusFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprogStatus];
+    int progDayFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprogDay];
+
+    int progStatusVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprogStatus];
+    int progDayVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprogDay];
+
+    size_t progDayStart = 0;
+    size_t progDayCount = 1;
+
+    TimeInt numDays = 0;
+    TimeInt currYear;
+    TimeInt year;
+    TimeInt localMaxDays = 0;
+    TimeInt globalMaxDays = 0;
+
+    size_t site;
+
+    // Calculate the maximum number of days a site has reached
+    for (site = 0; site < SW_Domain->nActiveSuidsProc; site++) {
+        numDays = 0;
+        currYear = SW_Runs[site].ModelSim.year;
+
+        for (year = SW_Domain->startyr; year < currYear; year++) {
+            numDays += Time_get_lastdoy_y(year);
+        }
+
+        numDays += SW_Runs[site].ModelSim.doy;
+
+        localMaxDays = (numDays > localMaxDays) ? numDays : localMaxDays;
+    }
+
+#if defined(SWMPI)
+    SW_MPI_Allreduce(
+        &numDays, &globalMaxDays, oneElem, MPI_UNSIGNED, MPI_MAX, MPI_COMM_WORLD
+    );
+#endif
+
+    // Increment to make it the next day
+    globalMaxDays++;
+
+    SW_NC_write_vals(
+        &progDayVarID,
+        progDayFileID,
+        nullVarName,
+        &globalMaxDays,
+        &progDayStart,
+        &progDayCount,
+        "unsigned integer",
+        main_LogInfo
+    );
+    checkReturn(main_LogInfo->stopRun);
+
+    SW_NC_write_vals(
+        &progStatusVarID,
+        progStatusFileID,
+        nullVarName,
+        SW_Domain->netCDFInput.progVals,
+        SW_Domain->domStartIndex[eSW_InDomain],
+        SW_Domain->domCounts[eSW_InDomain],
+        "signed character",
+        main_LogInfo
+    );
+}
