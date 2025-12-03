@@ -1589,8 +1589,11 @@ typedef struct {
                    units to user-requested units (dynamically
                    allocated array over output variables) */
 
-    size_t outTempStart[SW_OUTNPERIODS]; /**< Starting temporal index (base0)
-                                for writing outputs to correct time slot(s) */
+    size_t outTempStart[SW_OUTNPERIODS];  /**< Starting temporal index (base0)
+                                 for writing outputs to correct time slot(s) */
+    IntU runOutFileIndex[SW_OUTNPERIODS]; /**< Running index to know which
+                                output file to start outputting values for
+                                each output period */
 #endif
 
 } SW_NETCDF_OUT;

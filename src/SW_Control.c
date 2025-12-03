@@ -771,7 +771,7 @@ reportLogs:
         sw_template->SW_PathOutputs.ncOutVarIDs,
         SW_Domain->netCDFInput.siteDoms[eSW_InDomain],
         forceWriteOut,
-        sw_template->SW_PathOutputs.outTimeEnds,
+        sw_template->SW_PathOutputs.outTimeSizes,
         main_LogInfo
     );
 #endif

@@ -690,6 +690,7 @@ void SW_DOM_construct(size_t rng_seed, SW_DOMAIN *SW_Domain) {
 
     ForEachOutPeriod(pd) {
         SW_Domain->OutDom.netCDFOutput.outTempStart[pd] = 0;
+        SW_Domain->OutDom.netCDFOutput.runOutFileIndex[pd] = 0;
     }
 #endif
 
