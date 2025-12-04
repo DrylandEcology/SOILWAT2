@@ -635,7 +635,7 @@ TEST(SiteTest, EstimateSoilEvaporationParameters) {
 TEST_F(SiteFixtureTest, SiteSoilEvaporationParametersDeathTest) {
 
     // Check error for bad bare-soil evaporation coefficient (should be [0-1])
-
+    SW_Run.SiteIn.methodEvCo = 0; // do not estimate evco
     SW_Run.RunIn.SoilRunIn.evap_coeff[0] = -0.5;
 
     SW_SIT_init_run(

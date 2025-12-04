@@ -1422,6 +1422,7 @@ uses a maximum depth of 15 cm based on Torres et al. 2010 @cite torres2010HSJSH.
 @param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
 @param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
 @param[in] n_layers Number of soil layers
+
 */
 void estimate_evco(
     double evco[],
@@ -1676,7 +1677,7 @@ void SW_SIT_read(
 #endif
 
     FILE *f;
-    const int nLinesWithoutTR = 43; /* Number of inputs without tr regions */
+    const int nLinesWithoutTR = 44; /* Number of inputs without tr regions */
     int lineno = 0;
     int x;
     double rgnlow = 0; /* lower depth of region */
@@ -1704,15 +1705,15 @@ void SW_SIT_read(
         doubleRes = SW_MISSING;
         intRes = SW_MISSING;
 
-        strLine = (Bool) (lineno == 37 || lineno == 41 || lineno == 42);
+        strLine = (Bool) (lineno == 37 || lineno == 42 || lineno == 43);
 
         if (!strLine && lineno <= nLinesWithoutTR) {
             /* Check to see if the line number contains a double or integer
              * value
-               lineno with integers: 3, 4, 32, 33, 34, 35, 36, 38, 39, 43 */
+               lineno with integers: 3, 4, 32, 33, 34, 35, 36, 38, 39, 40, 44 */
             doDoubleConv =
                 (Bool) ((lineno >= 0 && lineno <= 2) ||
-                        (lineno >= 5 && lineno <= 31) || lineno == 40);
+                        (lineno >= 5 && lineno <= 31) || lineno == 41);
 
             if (doDoubleConv) {
                 doubleRes = sw_strtod(inbuf, MyFileName, LogInfo);
@@ -1888,10 +1889,14 @@ void SW_SIT_read(
             break;
 
         case 40:
-            SW_SiteIn->depthSapric = doubleRes;
+            SW_SiteIn->methodEvCo = (unsigned int) intRes;
             break;
 
         case 41:
+            SW_SiteIn->depthSapric = doubleRes;
+            break;
+
+        case 42:
             resSNP = snprintf(
                 SW_SiteIn->site_swrc_name,
                 sizeof SW_SiteIn->site_swrc_name,
@@ -1911,7 +1916,7 @@ void SW_SIT_read(
                 goto closeFile;
             }
             break;
-        case 42:
+        case 43:
             resSNP = snprintf(
                 SW_SiteIn->site_ptf_name,
                 sizeof SW_SiteIn->site_ptf_name,
@@ -1927,7 +1932,7 @@ void SW_SIT_read(
             }
             SW_SiteIn->site_ptf_type = encode_str2ptf(SW_SiteIn->site_ptf_name);
             break;
-        case 43:
+        case 44:
             if (lineno != nLinesWithoutTR) {
                 LogError(
                     LogInfo,
@@ -2680,15 +2685,12 @@ void SW_SIT_init_run(
     }
 
 
-    /* Determine number of layers with potential for
-       bare-soil evaporation and transpiration */
-    SW_SiteSim->n_evap_lyrs =
-        nlayers_bsevap(SW_SoilRunIn->evap_coeff, n_layers);
+    /* Transpiration: count number of layers with potential for transpiration */
     nlayers_vegroots(
         n_layers, SW_SiteSim->n_transp_lyrs, SW_SoilRunIn->transp_coeff
     );
 
-    /* Identify transpiration regions by soil layers */
+    /* Transpiration: transpiration regions by soil layers */
     derive_TranspRgnBounds(
         &SW_SiteIn->n_transp_rgn,
         SW_SiteSim->TranspRgnBounds,
@@ -2702,6 +2704,24 @@ void SW_SIT_init_run(
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
+
+
+    /* Evaporation from soil: estimate potential evaporation coefficients */
+    if (SW_SiteIn->methodEvCo == 1) {
+        estimate_evco(
+            SW_SoilRunIn->evap_coeff,
+            SW_SoilRunIn->depths,
+            SW_SoilRunIn->width,
+            SW_SoilRunIn->fractionWeightMatric_sand,
+            SW_SoilRunIn->fractionWeightMatric_clay,
+            n_layers
+        );
+    }
+
+    /* Evaporation from soil: count layers with potential for Es */
+    SW_SiteSim->n_evap_lyrs =
+        nlayers_bsevap(SW_SoilRunIn->evap_coeff, n_layers);
+
 
     /* Manage deep drainage */
     add_deepdrain_layer(SW_SiteSim, n_layers, SW_SiteIn->deepdrain);

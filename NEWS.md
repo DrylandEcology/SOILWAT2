@@ -5,6 +5,14 @@
   However, output of the example differs slightly from previous example output
   because of updated potential evaporation coefficients.
 
+* Potential evaporation coefficients can now be estimated from soil properties
+  (#409; @dschlaep).
+
+## Changes to inputs
+* New input via `"siteparam.in"` that specifies input options for potential
+  evaporation coefficients are provided as inputs by `"soils.in"` or
+  if (new) they are estimated from soil properties.
+
 ## Changes to outputs
 * txt-based mode now produces output of soil evaporation for every soil layer
   which is now consistent with the other modes.

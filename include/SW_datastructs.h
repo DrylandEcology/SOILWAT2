@@ -433,6 +433,10 @@ typedef struct {
         0 (Parton 1978); 1 (Parton 1984) */
     unsigned int methodSurfaceTemperature;
 
+    /** Method for potential evaporation coefficients:
+        0 (inputs from soils.in); 1 (estimated from soil properties) */
+    unsigned int methodEvCo;
+
     /* Soil water retention curve (SWRC), see `SW_LAYER_INFO` */
     unsigned int site_swrc_type, site_ptf_type;
 
