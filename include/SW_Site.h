@@ -284,6 +284,15 @@ void SWRC_bulkSoilParameters(
     double depthB
 );
 
+void estimate_evco(
+    double evco[],
+    const double depth[],
+    const double width[],
+    const double sand[],
+    const double clay[],
+    LyrIndex n_layers
+);
+
 double calculate_soilBulkDensity(double matricDensity, double fractionGravel);
 
 double calculate_soilMatricDensity(

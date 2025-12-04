@@ -119,7 +119,7 @@
 #include "include/SW_SoilWater.h"   // for SW_SWRC_SWCtoSWP, SW_SWRC_SWPtoSWC
 #include "include/SW_VegProd.h"     // for key2veg, get_critical_rank, sum_...
 #include <limits.h>                 // for UINT_MAX
-#include <math.h>                   // for fmod
+#include <math.h>                   // for fmod, round
 #include <stdio.h>                  // for sw_printf, sscanf, FILE, NULL, stdout
 #include <stdlib.h>                 // for free, strod, strtol
 #include <string.h>                 // for memset
@@ -1404,6 +1404,86 @@ void SWRC_bulkSoilParameters(
         for (k = 0; k < SWRC_PARAM_NMAX; k++) {
             swrcp[k] = swrcpMS[k];
         }
+    }
+}
+
+/**
+@brief Estimate potential evaporation coefficients from soil texture
+
+This function is based on R code from `rSW2data::calc_BareSoilEvapCoefs()`
+as of 2025-Dec-03.
+It represents the soil texture influence based on a small re-analysis of data
+from Wythers et al. 1999 @cite wythers1999SSSAJ and
+uses a maximum depth of 15 cm based on Torres et al. 2010 @cite torres2010HSJSH.
+
+@param[out] evco Estimated potential evaporation coefficients [0-1]
+@param[in] depth Depth at bottom of soil layer [`cm`]
+@param[in] width Width (thickness) of soil layer [`cm`]
+@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
+@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
+@param[in] n_layers Number of soil layers
+*/
+void estimate_evco(
+    double evco[],
+    const double depth[],
+    const double width[],
+    const double sand[],
+    const double clay[],
+    LyrIndex n_layers
+) {
+    const double maxDepth = 15.;
+    LyrIndex k;
+    LyrIndex kMax;
+    double wmSand = 0.;
+    double wmClay = 0.;
+    double depthEs;
+    double cec[MAX_LAYERS] = {0.};
+    double sec = 0.;
+    double nDigitsRound = 1e4;
+
+    // Initialize evco
+    ForEachSoilLayer(k, n_layers) { evco[k] = 0.; }
+
+    // Find count of soil layers that occur within maxDepth
+    for (kMax = 0; kMax < n_layers && LT(depth[kMax], maxDepth); kMax++) {
+    }
+
+    // Only most shallow soil layer within maxDepth
+    if (kMax == 0) {
+        evco[0] = 1.;
+        return;
+    }
+
+    // Depth-weighted mean sand and clay content
+    for (k = 0; k <= kMax; k++) {
+        wmSand += width[k] * sand[k];
+        wmClay += width[k] * clay[k];
+    }
+
+    wmSand /= depth[kMax];
+    wmClay /= depth[kMax];
+
+    // Equation from re-analysis to estimate depth
+    depthEs = fmin(
+        maxDepth, 4.1984 + 0.6695 * squared(wmSand) + 168.7603 * squared(wmClay)
+    );
+
+    // Equation with consistency to "previous" cumulative evco
+    for (k = 0; k <= kMax; k++) {
+        cec[k] = 1. - exp(-5. * depth[k] / depthEs);
+    }
+    cec[kMax] = 1.;
+
+    // Finalize potential evcos
+    evco[0] = round(nDigitsRound * cec[0]) / nDigitsRound;
+    sec += evco[0];
+    for (k = 1; k <= kMax; k++) {
+        evco[k] = round(nDigitsRound * (cec[k] - cec[k - 1])) / nDigitsRound;
+        sec += evco[k];
+    }
+
+    for (k = 0; k <= kMax; k++) {
+        evco[k] /= sec;
     }
 }
 
