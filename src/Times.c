@@ -405,7 +405,7 @@ Time is not reported at all if quiet mode and `logfile` is `NULL`.
 */
 void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
     double total_time = 0;
-    size_t nSims = wt.nTimedRuns + wt.nUntimedRuns;
+    size_t nDays = wt.nTimedRuns + wt.nUntimedRuns;
     int fprintRes = 0;
 
     FILE *logfp = LogInfo->QuietMode ? LogInfo->logfp : stdout;
@@ -437,9 +437,9 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
         goto wrapUpErrMsg;
     }
 
-    if (nSims > 1) {
+    if (nDays > 1) {
         fprintRes =
-            fprintf(logfp, "    * Number of simulation runs: %zu", nSims);
+            fprintf(logfp, "    * Number of days simulated: %zu", nDays);
         if (fprintRes < 0) {
             goto wrapUpErrMsg;
         }
@@ -464,7 +464,7 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
         if (wt.nTimedRuns > 0) {
             fprintRes = fprintf(
                 logfp,
-                "    * Variation among simulation runs: "
+                "    * Variation among daily simulation batches: "
                 "%.3f mean (%.3f SD, %.3f-%.3f min-max) [seconds]\n",
                 wt.timeMean,
                 final_running_sd(wt.nTimedRuns, wt.timeSS),
@@ -478,7 +478,7 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
 #if defined(SWNETCDF)
             /*
                 Adjust the compute and I/O times to be the average time
-                per site rather than the sum of all sites
+                per daily simulation batches rather than the sum of all batches
             */
             totIOCompTime = wt.totCompTime + wt.totInputTime + wt.totOutputTime;
             totIOCompTime /= (double) wt.nTimedRuns;

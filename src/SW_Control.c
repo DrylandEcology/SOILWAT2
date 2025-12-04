@@ -492,6 +492,8 @@ for converting and setting into proper location
 program run and we need to read and/or setup weather
 @param[in,out] SW_Runs A list of SW_RUN instances of size "nActiveSites" that
 will be used for holding all information for the simulation
+@param[out] SW_WallTime Struct of type SW_WALLTIME that holds timing
+information for the program run
 @param[out] newSoils A temporary list of SW_SOIL_RUN_INPUTS instances to
 store input values
 @param[out] main_LogInfo Holds information on warnings and errors
@@ -503,6 +505,7 @@ static void prepare_next_day(
     double *tempVals,
     Bool initFirstYear,
     SW_RUN *SW_Runs,
+    SW_WALLTIME *SW_WallTime,
     SW_SOIL_RUN_INPUTS *newSoils,
     LOG_INFO *main_LogInfo
 ) {
@@ -510,6 +513,9 @@ static void prepare_next_day(
     const Bool readWeather =
         SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
     const Bool readConstInfo = swFALSE;
+
+    WallTimeSpec tsr;
+    Bool ok_tsr = swFALSE;
 #endif
 
     size_t site;
@@ -545,6 +551,7 @@ static void prepare_next_day(
 #if defined(SWNETCDF)
         if (!SW_Domain->SW_SpinUp.spinup) {
             if (readWeather) {
+                set_walltime(&tsr, &ok_tsr);
                 SW_NCIN_read_inputs(
                     SW_Runs,
                     SW_Domain,
@@ -558,6 +565,7 @@ static void prepare_next_day(
                     LogInfos,
                     main_LogInfo
                 );
+                SW_WT_TimeRun(tsr, ok_tsr, TIME_IO_IN, SW_WallTime);
                 checkReturn(main_LogInfo->stopRun);
 
                 SW_F_handle_log_counts(
@@ -605,6 +613,7 @@ static void prepare_next_day(
     (void) tempVals;
     (void) newSoils;
     (void) main_LogInfo;
+    (void) SW_WallTime;
 #endif
 }
 
@@ -622,6 +631,8 @@ will be used to store site log information through all daily runs
 @param[in] nActiveSites Number of active sites to initialize log
 information for
 @param[in] lastFailedSite The last site to fail in this function call
+@param[out] SW_WallTime Struct of type SW_WALLTIME that holds timing
+information for the program run
 @param[out] main_LogInfo Holds information on warnings and errors
 */
 static void finalize_sites_day(
@@ -631,9 +642,13 @@ static void finalize_sites_day(
     LOG_INFO *LogInfos,
     size_t nActiveSites,
     size_t lastFailedSite,
+    SW_WALLTIME *SW_WallTime,
     LOG_INFO *main_LogInfo
 ) {
 #if defined(SWNETCDF)
+    WallTimeSpec tsr;
+    Bool ok_tsr = swFALSE;
+
     size_t site = 0;
     size_t firstActiveSite;
     Bool forceWriteOut = (Bool) (!runSims || main_LogInfo->stopRun);
@@ -647,6 +662,7 @@ static void finalize_sites_day(
         firstActiveSite = lastFailedSite;
     }
 
+    set_walltime(&tsr, &ok_tsr);
     SW_NCOUT_write_output(
         &SW_Domain->OutDom,
         sw_template->OutRun.p_OUT,
@@ -662,6 +678,7 @@ static void finalize_sites_day(
         sw_template->SW_PathOutputs.outTimeSizes,
         main_LogInfo
     );
+    SW_WT_TimeRun(tsr, ok_tsr, TIME_IO_OUT, SW_WallTime);
 #else
     (void) sw_template;
     (void) SW_Runs;
@@ -670,6 +687,7 @@ static void finalize_sites_day(
     (void) nActiveSites;
     (void) lastFailedSite;
     (void) main_LogInfo;
+    (void) SW_WallTime;
 #endif
 }
 
@@ -813,6 +831,11 @@ void SW_CTL_run_daily_timesteps(
     size_t nActiveSites = SW_Domain->nActiveSuidsProc;
     size_t lastFailedSite = 0;
 
+#if defined(SWNETCDF)
+    WallTimeSpec tsr;
+    Bool ok_tsr = swFALSE;
+#endif
+
     for (day = startDay; day <= endDay && !runSims; day++) {
         initFirstYear = (Bool) (day == startDay);
         prepare_next_day(
@@ -822,12 +845,16 @@ void SW_CTL_run_daily_timesteps(
             tempVals,
             initFirstYear,
             SW_Runs,
+            SW_WallTime,
             newSoils,
             main_LogInfo
         );
         checkJumpToLabel(main_LogInfo->stopRun, handleOutput);
 
         if (runSims) {
+#if defined(SWNETCDF)
+            set_walltime(&tsr, &ok_tsr);
+#endif
             SW_CTL_sim_sites(
                 sw_template,
                 SW_Domain,
@@ -837,6 +864,9 @@ void SW_CTL_run_daily_timesteps(
                 &lastFailedSite,
                 main_LogInfo
             );
+#if defined(SWNETCDF)
+            SW_WT_TimeRun(tsr, ok_tsr, TIME_COMPUTE, SW_WallTime);
+#endif
         }
 
     handleOutput:
@@ -847,6 +877,7 @@ void SW_CTL_run_daily_timesteps(
             LogInfos,
             nActiveSites,
             lastFailedSite,
+            SW_WallTime,
             main_LogInfo
         );
         checkReturn(main_LogInfo->stopRun);

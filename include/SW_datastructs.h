@@ -874,11 +874,15 @@ typedef struct {
                      standard deviation */
         timeSD, /**< Standard deviation of time [seconds] across simulation runs
                  */
-        timeMin, /**< Minimum time [seconds] of a simulation run */
-        timeMax; /**< Maximum time [seconds] of a simulation run */
+        timeMin, /**< Minimum time [seconds] of a full day for all active sites
+                  */
+        timeMax; /**< Maximum time [seconds] of a full day for all active sites
+                  */
 
-    size_t nTimedRuns, /**< Number of simulation runs with timing information */
-        nUntimedRuns;  /**< Number of simulation runs for which timing failed */
+    size_t nTimedRuns, /**< Number of daily simulation runs with timing
+                          information */
+        nUntimedRuns;  /**< Number of daily simulation runs for which timing
+                          failed */
 
 #if defined(SWNETCDF)
     double totCompTime, /**< Sum of computation runtime */

@@ -85,7 +85,11 @@ void SW_MPI_Bcast(
 Bool SW_MPI_setup_fail(Bool stopRun, MPI_Comm comm);
 
 void SW_MPI_get_end_info(
-    int rank, int size, SW_WALLTIME *SW_WallTime, LOG_INFO *LogInfo
+    int rank,
+    int size,
+    size_t nActiveSites,
+    SW_WALLTIME *SW_WallTime,
+    LOG_INFO *LogInfo
 );
 
 void SW_MPI_store_outputs(

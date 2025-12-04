@@ -188,7 +188,14 @@ finishProgram: {
     SW_DOM_deconstruct(&SW_Domain); // Includes closing netCDF files if needed
     SW_CTL_clear_model(swTRUE, &sw_template);
 
-    sw_finalize_program(rank, size, &SW_WallTime, endQuietly, &LogInfo);
+    sw_finalize_program(
+        rank,
+        size,
+        SW_Domain.nActiveSuidsProc,
+        &SW_WallTime,
+        endQuietly,
+        &LogInfo
+    );
     if (!endQuietly && LogInfo.printProgressMsg) {
         SW_MSG_ROOT("ended.", rank);
     }
