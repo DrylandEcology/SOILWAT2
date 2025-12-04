@@ -67,13 +67,11 @@ void SW_CTL_read_inputs_from_disk(
 
 void SW_CTL_sim_sites(
     SW_RUN *sw_template,
-    double *tempVals,
-    SW_SOIL_RUN_INPUTS *newSoils,
     SW_DOMAIN *SW_Domain,
     Bool updateNewYear,
-    TimeInt *nDaysInYear,
     SW_RUN *SW_Runs,
     LOG_INFO *LogInfos,
+    size_t *lastFailedSite,
     LOG_INFO *main_LogInfo
 );
 

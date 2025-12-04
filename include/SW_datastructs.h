@@ -1230,6 +1230,10 @@ typedef struct {
                        about logfile (only used by SOILWAT2) */
         printProgressMsg; /**< Do/don't print progress messages to the console
                            */
+    Bool loggedWarn,      /**< Specifies if the instance of LOG_INFO warning(s)
+                               has been accounted for */
+        loggedError;      /**< Specifies if the instance of LOG_INFO error(s)
+                               has been accounted for */
 } LOG_INFO;
 
 typedef struct {

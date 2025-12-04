@@ -93,7 +93,7 @@ void SW_F_check_fatal_log(
 
 void SW_F_report_logs(SW_DOMAIN *SW_Domain, LOG_INFO *simLogs, size_t nSims);
 
-void SW_F_handle_logs(
+void SW_F_handle_log_counts(
     LOG_INFO *simLog, signed char *runStatus, LOG_INFO *main_LogInfo
 );
 

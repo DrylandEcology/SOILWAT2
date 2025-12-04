@@ -477,114 +477,97 @@ void SW_RUN_deepCopy(
 #endif
 }
 
-/* =================================================== */
-/*             Global Function Definitions             */
-/* --------------------------------------------------- */
-
 /**
-@brief Calls 'SW_CTL_run_current_day' for each day in
-the simulation start/end dates
+@brief Prepare necessary information for the next day of the simulation
 
 @param[in] sw_template Template SW_RUN for the function to use as a
 reference for local versions of SW_RUN
-@param[in] tempVals An allocated space to store temporary input values
-for converting and setting into proper location
-@param[in] newSoils A temporary list of SW_SOIL_RUN_INPUTS instances to
-store input values
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
-@param[in] updateNewYear A flag specifying if this is the first day
-of the first year being run, and if so, being the first year
-@param[in,out] nDaysInYear Number of days within the current year
-@param[in,out] SW_Runs A list of SW_RUN instances of size "nActiveSites" that
-will be used for holding all information for the simulation
 @param[in] LogInfos A list of LOG_INFO instances of size "nActiveSites" that
 will be used to store site log information through all daily runs
+@param[in] tempVals An allocated space to store temporary input values
+for converting and setting into proper location
+@param[in] initFirstYear A flag specifying if it is the first day of the
+program run and we need to read and/or setup weather
+@param[in,out] SW_Runs A list of SW_RUN instances of size "nActiveSites" that
+will be used for holding all information for the simulation
+@param[out] newSoils A temporary list of SW_SOIL_RUN_INPUTS instances to
+store input values
 @param[out] main_LogInfo Holds information on warnings and errors
 */
-void SW_CTL_sim_sites(
+static void prepare_next_day(
     SW_RUN *sw_template,
-    double *tempVals,
-    SW_SOIL_RUN_INPUTS *newSoils,
     SW_DOMAIN *SW_Domain,
-    Bool updateNewYear,
-    TimeInt *nDaysInYear,
-    SW_RUN *SW_Runs,
     LOG_INFO *LogInfos,
+    double *tempVals,
+    Bool initFirstYear,
+    SW_RUN *SW_Runs,
+    SW_SOIL_RUN_INPUTS *newSoils,
     LOG_INFO *main_LogInfo
 ) {
-#ifdef SWDEBUG
-    int debug = 0;
+#if defined(SWNETCDF)
+    const Bool readWeather =
+        SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
+    const Bool readConstInfo = swFALSE;
 #endif
-
-    size_t nActiveSites = SW_Domain->nActiveSuidsProc;
 
     size_t site;
-    TimeInt *doy = NULL;
-    signed char *runStatus = NULL;
+    size_t nActiveSites = SW_Domain->nActiveSuidsProc;
     TimeInt inputYearIdx;
+    SW_RUN *firstActSiteInst;
     size_t baseSuid[NC_DIMS] = {0};
     size_t *suid = baseSuid;
+    size_t firstActiveSite;
 
-#if defined(SWNETCDF)
-    Bool forceWriteOut;
-    signed char *progVals = SW_Domain->netCDFInput.progVals;
-    size_t actSiteIdx;
-    Bool readConstInfo = swFALSE;
-    Bool readWeather = SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
-    size_t firstActiveSite = 0;
-    size_t lastFailed = 0;
-#else
-    (void) tempVals;
-    (void) newSoils;
-    (void) sw_template;
+    TimeInt doy;
+    TimeInt lastDoy;
+
+    firstActiveSite = 0;
+    while (LogInfos[firstActiveSite].stopRun) {
+        firstActiveSite++;
+    }
+    firstActSiteInst = &SW_Runs[firstActiveSite];
+
+    inputYearIdx = firstActSiteInst->ModelSim.inputYearIdx;
+    doy = firstActSiteInst->ModelSim.doy;
+    lastDoy = firstActSiteInst->ModelSim.lastdoy;
+
+#ifdef SWDEBUG
+    if (debug) {
+        sw_printf("\t: begin day = %d ... ", doy);
+    }
 #endif
 
-    for (site = 0; site < nActiveSites; site++) {
-        doy = &SW_Runs[site].ModelSim.doy;
+    if ((doy == firstActSiteInst->ModelSim.firstdoy) || doy == lastDoy ||
+        initFirstYear) {
 
 #if defined(SWNETCDF)
-        actSiteIdx = SW_Domain->actSiteIdx[eSW_InDomain][site];
-        runStatus = &progVals[actSiteIdx];
+        if (!SW_Domain->SW_SpinUp.spinup) {
+            if (readWeather) {
+                SW_NCIN_read_inputs(
+                    SW_Runs,
+                    SW_Domain,
+                    readConstInfo,
+                    SW_Domain->domStartIndex,
+                    SW_Domain->domCounts,
+                    SW_Domain->SW_PathInputs.openInFileIDs,
+                    tempVals,
+                    SW_Domain->nActiveSuidsProc,
+                    newSoils,
+                    LogInfos,
+                    main_LogInfo
+                );
+                checkReturn(main_LogInfo->stopRun);
 
-        if (*runStatus == PRGRSS_FAIL) {
-            continue;
-        }
+                SW_F_handle_log_counts(
+                    LogInfos, SW_Domain->netCDFInput.progVals, main_LogInfo
+                );
 
-        suid = SW_Domain->globDomSuids[site];
-#endif
-
-        if ((*doy == 1 && !updateNewYear) || *doy == *nDaysInYear) {
-            if (updateNewYear) {
-                SW_Runs[site].ModelSim.year++;
-            }
-
-            begin_year(&SW_Runs[site], &SW_Domain->OutDom, &LogInfos[site]);
-            checkJumpToLabel(LogInfos[site].stopRun, handleLog);
-
-            *nDaysInYear = SW_Runs[site].ModelSim.lastdoy -
-                           SW_Runs[site].ModelSim.firstdoy;
-
-            inputYearIdx = SW_Runs[0].ModelSim.inputYearIdx;
-
-#if defined(SWNETCDF)
-            if (!SW_Domain->SW_SpinUp.spinup && site == 0) {
-                if (readWeather) {
-                    SW_NCIN_read_inputs(
-                        SW_Runs,
-                        SW_Domain,
-                        readConstInfo,
-                        SW_Domain->domStartIndex,
-                        SW_Domain->domCounts,
-                        SW_Domain->SW_PathInputs.openInFileIDs,
-                        tempVals,
-                        SW_Domain->nActiveSuidsProc,
-                        newSoils,
-                        LogInfos,
-                        main_LogInfo
-                    );
-                    checkJumpToLabel(main_LogInfo->stopRun, handleLog);
-                } else {
+                SW_F_check_fatal_log(SW_Domain, nActiveSites, main_LogInfo);
+                checkReturn(main_LogInfo->stopRun);
+            } else {
+                for (site = 0; site < nActiveSites; site++) {
                     memcpy(
                         &SW_Runs[site].RunIn.weathRunAllHist[0],
                         &sw_template->RunIn.weathRunAllHist[inputYearIdx],
@@ -592,60 +575,76 @@ void SW_CTL_sim_sites(
                     );
                 }
             }
-#endif
-
-            // finalize daily weather
-            SW_WTH_finalize_yearly_weather(
-                &SW_Runs[0].MarkovIn,
-                &SW_Runs[0].WeatherIn,
-                &SW_Runs[site].RunIn.weathRunAllHist[inputYearIdx],
-                &SW_Runs[site].WeatherSim,
-                SW_Runs[0].ModelSim.cum_monthdays,
-                SW_Runs[0].ModelSim.days_in_month,
-                suid,
-                SW_Runs[site].ModelSim.year,
-                SW_Runs[site].WeatherSim.trivialScaling,
-                swFALSE, // Does not matter
-                &LogInfos[site]
-            );
-            checkJumpToLabel(LogInfos[site].stopRun, handleLog);
-        }
-
-#ifdef SWDEBUG
-        if (debug) {
-            sw_printf("\n'SW_CTL_sim_sites': simulate site = %zu\n", site);
         }
 #endif
 
-        SW_CTL_run_current_day(
-            &SW_Runs[site], &SW_Domain->OutDom, &LogInfos[site]
-        );
+        for (site = 0; site < nActiveSites; site++) {
+            if (!LogInfos[site].stopRun) {
+                suid = SW_Domain->globDomSuids[site];
 
-    handleLog:
-        handle_logs(&LogInfos[site], SW_Domain, site, runStatus, main_LogInfo);
-
-#if defined(SWNETCDF)
-        if (LogInfos[site].stopRun) {
-            lastFailed = site;
-
-            SW_NCOUT_reset_failed_sites(
-                SW_Domain, actSiteIdx, sw_template->OutRun.p_OUT
-            );
+                // finalize daily weather
+                SW_WTH_finalize_yearly_weather(
+                    &SW_Runs[0].MarkovIn,
+                    &SW_Runs[0].WeatherIn,
+                    &SW_Runs[site].RunIn.weathRunAllHist[inputYearIdx],
+                    &SW_Runs[site].WeatherSim,
+                    SW_Runs[0].ModelSim.cum_monthdays,
+                    SW_Runs[0].ModelSim.days_in_month,
+                    suid,
+                    SW_Runs[site].ModelSim.year,
+                    SW_Runs[site].WeatherSim.trivialScaling,
+                    swFALSE, // Does not matter
+                    &LogInfos[site]
+                );
+            }
         }
-#endif
     }
 
-    SW_F_check_fatal_log(SW_Domain, nActiveSites, main_LogInfo);
+#if !defined(SWNETCDF)
+    (void) sw_template;
+    (void) tempVals;
+    (void) newSoils;
+    (void) main_LogInfo;
+#endif
+}
 
+/**
+@brief Attempt to output values if necessary (SWNETCDF mode only)
+
+@param[in] sw_template Template SW_RUN for the function to use as a
+reference for local versions of SW_RUN
+@param[in] SW_Runs A list of SW_RUN instances of size "nActiveSites" that
+will be used for holding all information for the simulation
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[in] LogInfos A list of LOG_INFO instances of size "nActiveSites" that
+will be used to store site log information through all daily runs
+@param[in] nActiveSites Number of active sites to initialize log
+information for
+@param[in] lastFailedSite The last site to fail in this function call
+@param[out] main_LogInfo Holds information on warnings and errors
+*/
+static void finalize_sites_day(
+    SW_RUN *sw_template,
+    SW_RUN *SW_Runs,
+    SW_DOMAIN *SW_Domain,
+    LOG_INFO *LogInfos,
+    size_t nActiveSites,
+    size_t lastFailedSite,
+    LOG_INFO *main_LogInfo
+) {
 #if defined(SWNETCDF)
-    forceWriteOut = (Bool) (!runSims || main_LogInfo->stopRun);
+    size_t site = 0;
+    size_t firstActiveSite;
+    Bool forceWriteOut = (Bool) (!runSims || main_LogInfo->stopRun);
 
     while (site < nActiveSites && LogInfos[site].stopRun) {
         site++;
     }
 
+    firstActiveSite = site;
     if (site == nActiveSites) {
-        firstActiveSite = lastFailed;
+        firstActiveSite = lastFailedSite;
     }
 
     SW_NCOUT_write_output(
@@ -663,7 +662,116 @@ void SW_CTL_sim_sites(
         sw_template->SW_PathOutputs.outTimeSizes,
         main_LogInfo
     );
+#else
+    (void) sw_template;
+    (void) SW_Runs;
+    (void) SW_Domain;
+    (void) LogInfos;
+    (void) nActiveSites;
+    (void) lastFailedSite;
+    (void) main_LogInfo;
 #endif
+}
+
+/* =================================================== */
+/*             Global Function Definitions             */
+/* --------------------------------------------------- */
+
+/**
+@brief Calls 'SW_CTL_run_current_day' for each day in
+the simulation start/end dates
+
+@param[in] sw_template Template SW_RUN for the function to use as a
+reference for local versions of SW_RUN
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[in] updateNewYear A flag specifying if this is the first day
+of the first year being run, and if so, being the first year
+@param[in,out] SW_Runs A list of SW_RUN instances of size "nActiveSites" that
+will be used for holding all information for the simulation
+@param[in] LogInfos A list of LOG_INFO instances of size "nActiveSites" that
+will be used to store site log information through all daily runs
+@param[out] lastFailedSite The last site to fail in this function call
+@param[out] main_LogInfo Holds information on warnings and errors
+*/
+void SW_CTL_sim_sites(
+    SW_RUN *sw_template,
+    SW_DOMAIN *SW_Domain,
+    Bool updateNewYear,
+    SW_RUN *SW_Runs,
+    LOG_INFO *LogInfos,
+    size_t *lastFailedSite,
+    LOG_INFO *main_LogInfo
+) {
+#ifdef SWDEBUG
+    int debug = 0;
+#endif
+
+    size_t nActiveSites = SW_Domain->nActiveSuidsProc;
+
+    size_t site;
+    TimeInt *doy = NULL;
+    signed char *runStatus = NULL;
+
+    *lastFailedSite = 0;
+
+#if defined(SWNETCDF)
+    signed char *progVals = SW_Domain->netCDFInput.progVals;
+    size_t actSiteIdx;
+#else
+    (void) sw_template;
+#endif
+
+    for (site = 0; site < nActiveSites; site++) {
+        doy = &SW_Runs[site].ModelSim.doy;
+
+#if defined(SWNETCDF)
+        actSiteIdx = SW_Domain->actSiteIdx[eSW_InDomain][site];
+        runStatus = &progVals[actSiteIdx];
+
+        if (*runStatus == PRGRSS_FAIL) {
+            continue;
+        }
+#endif
+
+        if ((*doy == SW_Runs[site].ModelSim.firstdoy && !updateNewYear) ||
+            *doy == SW_Runs[site].ModelSim.lastdoy) {
+
+            if (updateNewYear || *doy == SW_Runs[site].ModelSim.lastdoy) {
+                SW_Runs[site].ModelSim.year++;
+            }
+
+            begin_year(&SW_Runs[site], &SW_Domain->OutDom, &LogInfos[site]);
+            checkJumpToLabel(LogInfos[site].stopRun, handleLog);
+        }
+
+#ifdef SWDEBUG
+        if (debug) {
+            sw_printf("\n'SW_CTL_sim_sites': simulate site = %zu\n", site);
+        }
+#endif
+
+        SW_CTL_run_current_day(
+            &SW_Runs[site], &SW_Domain->OutDom, &LogInfos[site]
+        );
+
+    handleLog:
+        SW_F_handle_log_counts(&LogInfos[site], runStatus, main_LogInfo);
+
+#if defined(SWNETCDF)
+        if (LogInfos[site].stopRun) {
+            *lastFailedSite = site;
+
+            SW_NCOUT_reset_failed_sites(
+                SW_Domain, actSiteIdx, sw_template->OutRun.p_OUT
+            );
+        }
+#endif
+
+        (*doy)++;
+    }
+
+    SW_F_check_fatal_log(SW_Domain, nActiveSites, main_LogInfo);
 }
 
 /**
@@ -701,30 +809,47 @@ void SW_CTL_run_daily_timesteps(
     LOG_INFO *main_LogInfo
 ) {
     TimeInt day;
-    TimeInt nDaysInYear = 0;
     Bool initFirstYear = swFALSE;
+    size_t nActiveSites = SW_Domain->nActiveSuidsProc;
+    size_t lastFailedSite = 0;
 
     for (day = startDay; day <= endDay && !runSims; day++) {
-#ifdef SWDEBUG
-        if (debug) {
-            sw_printf("\t: begin day = %d ... ", SW_Run->ModelSim.doy);
-        }
-#endif
-
-        SW_CTL_sim_sites(
+        initFirstYear = (Bool) (day == startDay);
+        prepare_next_day(
             sw_template,
-            tempVals,
-            newSoils,
             SW_Domain,
-            initFirstYear,
-            &nDaysInYear,
-            SW_Runs,
             LogInfos,
+            tempVals,
+            initFirstYear,
+            SW_Runs,
+            newSoils,
+            main_LogInfo
+        );
+        checkJumpToLabel(main_LogInfo->stopRun, handleOutput);
+
+        if (runSims) {
+            SW_CTL_sim_sites(
+                sw_template,
+                SW_Domain,
+                initFirstYear,
+                SW_Runs,
+                LogInfos,
+                &lastFailedSite,
+                main_LogInfo
+            );
+        }
+
+    handleOutput:
+        finalize_sites_day(
+            sw_template,
+            SW_Runs,
+            SW_Domain,
+            LogInfos,
+            nActiveSites,
+            lastFailedSite,
             main_LogInfo
         );
         checkReturn(main_LogInfo->stopRun);
-
-        initFirstYear = swTRUE;
     }
 }
 
@@ -848,7 +973,7 @@ void SW_CTL_RunSimSet(
     // running simulations
     for (site = 0; site < nActiveSites; site++) {
         siteIdx = SW_Domain->actSiteIdx[eSW_InDomain][site];
-        SW_F_handle_logs(
+        SW_F_handle_log_counts(
             &siteLogs[site],
             &SW_Domain->netCDFInput.progVals[siteIdx],
             main_LogInfo

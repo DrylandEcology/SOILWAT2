@@ -664,8 +664,8 @@ void SW_F_report_logs(SW_DOMAIN *SW_Domain, LOG_INFO *simLogs, size_t nSims) {
 }
 
 /**
-@brief Perform appropriate operations on any log information
-after a simulation run
+@brief Increment the total number of warnings/errors in the main
+instance of LOG_INFO
 
 @param[in] simLog Log that has been gone through a simulation run
 @param[out] runStatus Returns PRGRSS_FAIL (failed) if the respective
@@ -673,24 +673,25 @@ log information pertains to a failed site, otherwise, this value will
 not be modified
 @param[out] main_LogInfo Main log information from the domain-level
 */
-void SW_F_handle_logs(
+void SW_F_handle_log_counts(
     LOG_INFO *simLog,
     signed char *runStatus, // NOLINT(readability-non-const-parameter)
     LOG_INFO *main_LogInfo
 ) {
-    if (simLog->numWarnings > 0) {
+    /* Report errors and warnings for suid */
+    if (simLog->numWarnings > 0 && !simLog->loggedWarn) {
         // Counter of simulation units with warnings
         main_LogInfo->numDomainWarnings++;
+        simLog->loggedWarn = swTRUE;
     }
 
-    /* Report errors and warnings for suid */
-    if (simLog->stopRun) {
+    if (simLog->stopRun && !simLog->loggedError) {
         // Counter of simulation units with error
         main_LogInfo->numDomainErrors++;
 #if defined(SWNETCDF)
-    } else {
         *runStatus = PRGRSS_FAIL;
 #endif
+        simLog->loggedError = swTRUE;
     }
 
 #if !defined(SWNETCDF)

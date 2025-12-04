@@ -254,8 +254,6 @@ void SW_MDL_new_day(SW_MODEL_SIM *SW_ModelSim) {
     TimeInt prevWeek = SW_ModelSim->week;
     TimeInt prevMonth = SW_ModelSim->month;
 
-    SW_ModelSim->doy++;
-
     SW_ModelSim->month =
         doy2month(SW_ModelSim->doy, SW_ModelSim->cum_monthdays); /* base0 */
     SW_ModelSim->week =
