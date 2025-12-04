@@ -93,7 +93,6 @@ void SW_NCIN_soilProfile(
     SW_NETCDF_IN *SW_netCDFIn,
     Bool hasConsistentSoilLayerDepths,
     LyrIndex *nMaxSoilLayers,
-    LyrIndex *nMaxEvapLayers,
     double depthsAllSoilLayers[],
     const size_t numSoilVarLyrs[],
     LyrIndex default_n_layers,

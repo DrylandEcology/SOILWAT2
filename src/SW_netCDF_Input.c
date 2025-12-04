@@ -7788,7 +7788,6 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
 If \p hasConsistentSoilLayerDepths, then
     - \p nMaxSoilLayers is set equal to \p default_n_layers
-    - \p nMaxEvapLayers is set equal to \p nMaxSoilLayers
     - \p depthsAllSoilLayers is set equal to \p default_depths
     - a warning is produced if any soil nc-input has fewer layers than
       \p nMaxSoilLayers
@@ -7796,7 +7795,6 @@ If \p hasConsistentSoilLayerDepths, then
 If not \p hasConsistentSoilLayerDepths, then
     - \p nMaxSoilLayers is set to the size of the vertical dimension of
       soil layer inputs or soil layer width/thickness (if provided)
-    - \p nMaxEvapLayers is set equal to \p nMaxSoilLayers
     - an error is produced if any soil nc-input has fewer layers than
       \p nMaxSoilLayers
 
@@ -7808,9 +7806,6 @@ An error is produced if \p *nMaxSoilLayers > MAX_LAYERS.
     (though potentially variable number of soil layers)
 @param[out] nMaxSoilLayers Largest number of soil layers across
     simulation domain
-@param[out] nMaxEvapLayers Largest number of soil layers from which
-    bare-soil evaporation may extract water across simulation domain
-    (nMaxEvapLayers is set to nMaxSoilLayers).
 @param[out] depthsAllSoilLayers Lower soil layer depths [cm] if
     consistent across simulation domain
 @param[in] numSoilVarLyrs An array with the number of soil layers for
@@ -7823,7 +7818,6 @@ void SW_NCIN_soilProfile(
     SW_NETCDF_IN *SW_netCDFIn,
     Bool hasConsistentSoilLayerDepths,
     LyrIndex *nMaxSoilLayers,
-    LyrIndex *nMaxEvapLayers,
     double depthsAllSoilLayers[],
     const size_t numSoilVarLyrs[],
     LyrIndex default_n_layers,
@@ -7896,9 +7890,6 @@ void SW_NCIN_soilProfile(
             return; // Exit function prematurely due to error
         }
     }
-
-    /* nc-mode produces soil output for every soil layer */
-    *nMaxEvapLayers = *nMaxSoilLayers;
 }
 
 /**

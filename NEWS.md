@@ -1,9 +1,13 @@
 # NEWS
 
 # SOILWAT2 v8.4.0-devel
-* Simulation output remains the same as the previous version;
-  however, output of the example differs slightly from previous example output
+* Simulation output remains the same as the previous version.
+  However, output of the example differs slightly from previous example output
   because of updated potential evaporation coefficients.
+
+## Changes to outputs
+* txt-based mode now produces output of soil evaporation for every soil layer
+  which is now consistent with the other modes.
 
 
 # SOILWAT2 v8.3.0

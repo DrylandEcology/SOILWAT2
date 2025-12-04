@@ -1799,12 +1799,7 @@ typedef struct {
     /** Largest number of soil layers across domain */
     LyrIndex nMaxSoilLayers;
 
-    /** Largest number of soil layers from which bare-soil evaporation may
-    extract water across simulation domain */
-    LyrIndex nMaxEvapLayers;
-
     /** Soil layer depths profile
-
     Values represent the bottom depth of soil layers [cm].
     Used if #hasConsistentSoilLayerDepths.
     */

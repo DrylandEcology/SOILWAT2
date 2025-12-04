@@ -49,10 +49,8 @@ void SW_DOM_soilProfile(
     SW_PATH_INPUTS *SW_PathInputs,
     Bool hasConsistentSoilLayerDepths,
     LyrIndex *nMaxSoilLayers,
-    LyrIndex *nMaxEvapLayers,
     double depthsAllSoilLayers[],
     LyrIndex default_n_layers,
-    LyrIndex default_n_evap_lyrs,
     const double default_depths[],
     LOG_INFO *LogInfo
 );

@@ -469,9 +469,7 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
         }
     }
 
-    ForEachEvapLayer(i, sw->SiteSim.n_evap_lyrs) {
-        Esoil += sw->SoilWatSim.evap_baresoil[i];
-    }
+    ForEachEvapLayer(i, n_layers) { Esoil += sw->SoilWatSim.evap_baresoil[i]; }
 
     ForEachVegType(k) {
         Eveg += sw->SoilWatSim.evap_veg[k];

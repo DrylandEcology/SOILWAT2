@@ -2049,7 +2049,6 @@ closeFile: { CloseFile(&f, LogInfo); }
 
 @param[in,out] SW_SoilRunIn Struct of type SW_SOIL_RUN_INPUTS describing
     the simulated site's input values
-@param[in,out] n_evap_lyrs Number of soil layers with evaporation
 @param[in,out] n_layers Number of layers of soil within the simulation run
 @param[in] txtInFiles Array of program in/output files
 @param[out] LogInfo Holds information on warnings and errors
@@ -2058,7 +2057,6 @@ closeFile: { CloseFile(&f, LogInfo); }
 */
 void SW_LYR_read(
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
-    LyrIndex *n_evap_lyrs,
     LyrIndex *n_layers,
     char *txtInFiles[],
     LOG_INFO *LogInfo
@@ -2196,9 +2194,6 @@ void SW_LYR_read(
             goto closeFile;
         }
     }
-
-
-    *n_evap_lyrs = nlayers_bsevap(SW_SoilRunIn->evap_coeff, *n_layers);
 
 closeFile: { CloseFile(&f, LogInfo); }
 }

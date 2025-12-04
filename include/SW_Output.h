@@ -176,7 +176,6 @@ void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw);
 
 void SW_OUT_set_ncol(
     unsigned int tLayers,
-    unsigned int n_evap_lyrs,
     unsigned int nTaxaEstabl,
     IntUS ncol_OUT[],
     IntUS nvar_OUT[],
@@ -195,7 +194,6 @@ void SW_OUT_set_colnames(
 
 void SW_OUT_setup_output(
     unsigned int tLayers,
-    unsigned int n_evap_lyrs,
     unsigned int count,
     SW_VEGESTAB_INFO_INPUTS *parmsIn,
     SW_OUT_DOM *OutDom,
