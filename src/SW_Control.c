@@ -281,119 +281,6 @@ static void report_sim_start(SW_DOMAIN *SW_Domain, int rank, int worldSize) {
 }
 
 /**
-@brief Go through all simulation logs and report them as needed
-
-@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
-temporal/spatial information for a set of simulation runs
-@param[in] simLogs A list of simulation logs (LOG_INFO) to be reported
-@param[in] sDom Specifies the program's domain is site-oriented
-@param[in] nSims Number of simulations that been run
-*/
-static void report_logs(
-    SW_DOMAIN *SW_Domain, LOG_INFO *simLogs, Bool sDom, size_t nSims
-) {
-    /* tag_suid is 55:
-       14 character for "(suid = [, ]) " + 40 character for 2 *
-       ULONG_MAX + '\0' */
-    char tag_suid[55] = "\0";
-
-    size_t site;
-    size_t ncSuid[NC_DIMS] = {0};
-
-    for (site = 0; site < nSims; site++) {
-#if defined(SWNETCDF)
-        ncSuid[0] = SW_Domain->globDomSuids[site][0];
-        ncSuid[1] = SW_Domain->globDomSuids[site][1];
-#endif
-
-        if (simLogs[site].stopRun || simLogs[site].numWarnings > 0) {
-            // Write the error with the suid indices to have a universal
-            // identifier; Put in the order of [x, y] or s
-            if (sDom) {
-                (void) snprintf(tag_suid, 55, "(suid = %lu) ", ncSuid[0] + 1);
-            } else {
-                (void) snprintf(
-                    tag_suid,
-                    55,
-                    "(suid = [%lu, %lu]) ",
-                    ncSuid[1] + 1,
-                    ncSuid[0] + 1
-                );
-            }
-
-            sw_write_warnings(tag_suid, &simLogs[site]);
-        }
-    }
-}
-
-/**
-@brief Perform appropriate operations on any log information
-after a simulation run
-
-@param[in] simLog Log that has been gone through a simulation run
-@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
-temporal/spatial information for a set of simulation runs
-@param[in] nSims Number of simulations that been run
-@param[out] runStatus Returns PRGRSS_FAIL (failed) if the respective
-log information pertains to a failed site, otherwise, this value will
-not be modified
-@param[out] mainLog Main log information from the domain-level
-*/
-static void handle_logs(
-    LOG_INFO *simLog,
-    SW_DOMAIN *SW_Domain,
-    size_t nSims,
-    signed char *runStatus, // NOLINT(readability-non-const-parameter)
-    LOG_INFO *mainLog
-) {
-    if (simLog->numWarnings > 0) {
-        // Counter of simulation units with warnings
-        mainLog->numDomainWarnings++;
-    }
-
-    /* Report errors and warnings for suid */
-    if (simLog->stopRun) {
-        // Counter of simulation units with error
-        mainLog->numDomainErrors++;
-#if defined(SWMPI)
-        if (mainLog->numDomainErrors == (size_t) SW_Domain->maxSimErrors) {
-            LogError(
-                mainLog,
-                LOGERROR,
-                "Maximum number of allowed simulation errors reached "
-                "(n = %d).",
-                SW_Domain->maxSimErrors
-            );
-            return;
-        }
-    } else {
-        *runStatus = PRGRSS_FAIL;
-#endif
-    }
-
-    /* Produce global error if all suids failed */
-    if (nSims > 0 && nSims == mainLog->numDomainErrors) {
-#if defined(SWMPI)
-        if (nSims == SW_Domain->nActiveSuidsProc) {
-#endif
-            LogError(
-                mainLog,
-                LOGERROR,
-                "All simulated units (n = %zu) produced errors.",
-                nSims
-            );
-#if defined(SWMPI)
-        }
-#endif
-    }
-
-#if !defined(SWMPI)
-    (void) runStatus;
-    (void) SW_Domain;
-#endif
-}
-
-/**
 @brief Initiate/update variables for a new simulation year.
       In addition to the timekeeper (Model), usually only modules
       that read input yearly or produce output need to have this call.
@@ -632,7 +519,6 @@ void SW_CTL_sim_sites(
 
     size_t nActiveSites = SW_Domain->nActiveSuidsProc;
 
-    Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
     size_t site;
     TimeInt *doy = NULL;
     signed char *runStatus = NULL;
@@ -747,12 +633,9 @@ void SW_CTL_sim_sites(
             );
         }
 #endif
-
-        checkJumpToLabel(main_LogInfo->stopRun, reportLogs);
     }
 
-reportLogs:
-    report_logs(SW_Domain, LogInfos, sDom, nActiveSites);
+    SW_F_check_fatal_log(SW_Domain, nActiveSites, main_LogInfo);
 
 #if defined(SWNETCDF)
     forceWriteOut = (Bool) (!runSims || main_LogInfo->stopRun);
@@ -965,14 +848,13 @@ void SW_CTL_RunSimSet(
     // running simulations
     for (site = 0; site < nActiveSites; site++) {
         siteIdx = SW_Domain->actSiteIdx[eSW_InDomain][site];
-        handle_logs(
+        SW_F_handle_logs(
             &siteLogs[site],
-            SW_Domain,
-            nActiveSites,
             &SW_Domain->netCDFInput.progVals[siteIdx],
             main_LogInfo
         );
     }
+    SW_F_check_fatal_log(SW_Domain, nActiveSites, main_LogInfo);
     checkJumpToLabel(main_LogInfo->stopRun, freeMem);
 
     if (readFromCacheFile && !freshRun) {
@@ -1011,6 +893,8 @@ freeMem:
     );
 
     SW_NCIN_update_progress_info(SW_Domain, siteRuns, main_LogInfo);
+
+    SW_F_report_logs(SW_Domain, siteLogs, nActiveSites);
 
     SW_NCIN_handle_temp_inputs(
         alloc, SW_Domain, &tempVals, &newSoils, main_LogInfo

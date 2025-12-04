@@ -37,6 +37,7 @@
 #include "include/myMemory.h"       // for Str_Dup
 #include "include/SW_datastructs.h" // for LOG_INFO, SW_NFILES, SW_PATH_INPUTS
 #include "include/SW_Defines.h"     // for MAX_FILENAMESIZE
+#include "include/SW_Main_lib.h"    // for sw_write_warnings
 #include <stdio.h>                  // for FILENAME_MAX, NULL, FILE, stderr
 #include <stdlib.h>                 // for free
 #include <string.h>                 // for memccpy, strcmp, strlen, memcpy
@@ -569,5 +570,130 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
         free((void *) SW_PathInputs->numDaysInYear);
         SW_PathInputs->numDaysInYear = NULL;
     }
+#endif
+}
+
+/**
+@brief Check if logging should throw a fatal error due to too many errors
+thrown from simulation runs
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[in] nSims Number of simulations that been run
+@param[out] main_LogInfo Main log information from the domain-level
+*/
+void SW_F_check_fatal_log(
+    SW_DOMAIN *SW_Domain, size_t nSims, LOG_INFO *main_LogInfo
+) {
+
+#if defined(SWNETCDF)
+    if (nSims > 0 && nSims == main_LogInfo->numDomainErrors) {
+#if defined(SWMPI)
+        if (nSims == SW_Domain->nActiveSuidsProc) {
+#endif
+            LogError(
+                main_LogInfo,
+                LOGERROR,
+                "All simulated units (n = %zu) produced errors.",
+                nSims
+            );
+#if defined(SWMPI)
+        }
+#endif
+    } else if (main_LogInfo->numDomainErrors >=
+               (size_t) SW_Domain->maxSimErrors) {
+        LogError(
+            main_LogInfo,
+            LOGERROR,
+            "Limit for maximum allowed simulation errors reached "
+            "(%zu / %d).",
+            main_LogInfo->numDomainErrors,
+            SW_Domain->maxSimErrors
+        );
+    }
+#else
+    (void) SW_Domain;
+    (void) nSims;
+    (void) main_LogInfo;
+#endif
+}
+
+/**
+@brief Go through all simulation logs and report them as needed
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[in] simLogs A list of simulation logs (LOG_INFO) to be reported
+@param[in] nSims Number of simulations that have been run
+*/
+void SW_F_report_logs(SW_DOMAIN *SW_Domain, LOG_INFO *simLogs, size_t nSims) {
+    const Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
+
+    /* tag_suid is 55:
+       14 character for "(suid = [, ]) " + 40 character for 2 *
+       ULONG_MAX + '\0' */
+    char tag_suid[55] = "\0";
+
+    size_t site;
+    size_t ncSuid[NC_DIMS] = {0};
+
+    for (site = 0; site < nSims; site++) {
+#if defined(SWNETCDF)
+        ncSuid[0] = SW_Domain->globDomSuids[site][0];
+        ncSuid[1] = SW_Domain->globDomSuids[site][1];
+#endif
+
+        if (simLogs[site].stopRun || simLogs[site].numWarnings > 0) {
+            // Write the error with the suid indices to have a universal
+            // identifier; Put in the order of [x, y] or s
+            if (sDom) {
+                (void) snprintf(tag_suid, 55, "(suid = %lu) ", ncSuid[0] + 1);
+            } else {
+                (void) snprintf(
+                    tag_suid,
+                    55,
+                    "(suid = [%lu, %lu]) ",
+                    ncSuid[1] + 1,
+                    ncSuid[0] + 1
+                );
+            }
+
+            sw_write_warnings(tag_suid, &simLogs[site]);
+        }
+    }
+}
+
+/**
+@brief Perform appropriate operations on any log information
+after a simulation run
+
+@param[in] simLog Log that has been gone through a simulation run
+@param[out] runStatus Returns PRGRSS_FAIL (failed) if the respective
+log information pertains to a failed site, otherwise, this value will
+not be modified
+@param[out] main_LogInfo Main log information from the domain-level
+*/
+void SW_F_handle_logs(
+    LOG_INFO *simLog,
+    signed char *runStatus, // NOLINT(readability-non-const-parameter)
+    LOG_INFO *main_LogInfo
+) {
+    if (simLog->numWarnings > 0) {
+        // Counter of simulation units with warnings
+        main_LogInfo->numDomainWarnings++;
+    }
+
+    /* Report errors and warnings for suid */
+    if (simLog->stopRun) {
+        // Counter of simulation units with error
+        main_LogInfo->numDomainErrors++;
+#if defined(SWNETCDF)
+    } else {
+        *runStatus = PRGRSS_FAIL;
+#endif
+    }
+
+#if !defined(SWNETCDF)
+    (void) runStatus;
 #endif
 }
