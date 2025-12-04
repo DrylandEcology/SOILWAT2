@@ -1,6 +1,9 @@
 # NEWS
 
 # SOILWAT2 v8.4.0-devel
+* Simulation output remains the same as the previous version;
+  however, output of the example differs slightly from previous example output
+  because of updated potential evaporation coefficients.
 
 
 # SOILWAT2 v8.3.0
