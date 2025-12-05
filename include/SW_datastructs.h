@@ -186,7 +186,7 @@ typedef struct {
 
     int ncSuid[2]; // First element used for domain "s", both used for "xy"
 
-    Bool progRestarted; /* The program is picking up where it left off
+    Bool progRestarted; /**< The program is picking up where it left off
                            due exiting before simulations were complete
                            in a previous */
 
@@ -524,12 +524,6 @@ typedef struct {
     /** SWRC parameters of the organic soil component
         for (1) fibric and (2) sapric peat. */
     double swrcpOM[2][SWRC_PARAM_NMAX];
-
-    /** Site number within the process' assigned active sites */
-    IntU siteIndex;
-
-    /** Total number of active sites (at the beginning of simulation run) */
-    size_t nSites;
 } SW_SITE_INPUTS;
 
 typedef struct {
@@ -1800,8 +1794,82 @@ typedef enum {
 } InKeys;
 
 /* =================================================== */
+/*               Simulation Run Structs               */
+/* --------------------------------------------------- */
+
+typedef struct {
+
+#if defined(SW_OUTTEXT)
+    char sw_outstr[MAX_LAYERS * OUTSTRLEN];
+#endif
+
+    TimeInt tOffset; /* 1 or 0 means we're writing previous or current period */
+
+    /* Output first/last days of current year i.e., updated for each year */
+    TimeInt first[SW_OUTNKEYS], last[SW_OUTNKEYS];
+
+#ifdef SW_OUTARRAY
+    /**
+    @brief A 2-dim array of pointers to output arrays.
+
+    The variable p_OUT used by rSOILWAT2 for output, by STEPWAT2 for
+    mean aggregation, and by SOILWAT2 when user requests netCDF output files.
+    */
+    double *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
+    size_t nP_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
+
+    size_t irow_OUT[SW_OUTNPERIODS]; /**< current output time step index */
+#endif
+
+#ifdef STEPWAT
+    double *p_OUTsd[SW_OUTNKEYS][SW_OUTNPERIODS];
+
+    char sw_outstr_agg[MAX_LAYERS * OUTSTRLEN];
+
+    /** Variable from ModelType (STEPWAT2) used in SOILWAT2 */
+    IntUS currIter;
+
+    /* Variables from SXW_t (STEPWAT2) used in SOILWAT2 */
+    // transpXXX: monthly sum of soilwat's transpiration by soil layer
+    // * these are dynamic arrays that are indexed by Ilp()
+    double transpTotal[MAX_LAYERS][MAX_MONTHS], // total transpiration, i.e.,
+                                                // sum across vegetation types
+        transpVeg[NVEGTYPES][MAX_LAYERS]
+                 [MAX_MONTHS]; // transpiration as contributed by vegetation
+                               // types
+    double swc[MAX_LAYERS]
+              [MAX_MONTHS]; // monthly mean SWCbulk for each soil layer
+
+    // fixed monthly array:
+    double ppt_monthly[MAX_MONTHS];  // monthly sum of soilwat's precipitation
+    double temp_monthly[MAX_MONTHS]; // monthly mean soilwat's air temperature
+
+    // annual values:
+    double temp, // annual mean soilwat's air temperature
+        ppt,     // annual sum of soilwat's precipitation
+        aet;     // annual sum of soilwat's evapotranspiration
+#endif
+} SW_OUT_RUN;
+
+/* =================================================== */
 /*                    Domain structs                   */
 /* --------------------------------------------------- */
+
+typedef struct {
+    SW_WEATHER_INPUTS WeatherIn;
+    SW_CARBON_INPUTS CarbonIn;
+    SW_MARKOV_INPUTS MarkovIn;
+    SW_VEGPROD_INPUTS VegProdIn;
+    SW_MODEL_INPUTS ModelIn;
+    SW_VEGESTAB_INPUTS VegEstabIn;
+    SW_SOILWAT_INPUTS SoilWatIn;
+    SW_SITE_INPUTS SiteIn;
+
+    SW_MODEL_SIM ModelSim;
+
+    SW_OUT_RUN OutRun;
+    SW_PATH_OUTPUTS SW_PathOutputs;
+} SW_DOMAIN_CONST;
 
 typedef struct {
     // Spatial domain information
@@ -1910,68 +1978,24 @@ typedef struct {
         this will help when reading inputs
     */
     size_t *actSiteIdx[SW_NINKEYSNC];
+
     /* A list of size NC_DIMS to store the base chunking sizes for the spatial
        dimensions of output (lat/lon or site) */
     size_t spaceChunk[NC_DIMS];
+
+    SW_DOMAIN_CONST SW_ConstInfo;
+
+    IntU nProcSuids;
+    size_t *domSuids[500];
 } SW_DOMAIN;
 
-/* =================================================== */
-/*               Simulation Run Structs               */
-/* --------------------------------------------------- */
-
 typedef struct {
+    /** Site number within the process' assigned active sites */
+    IntU siteIndex;
 
-#if defined(SW_OUTTEXT)
-    char sw_outstr[MAX_LAYERS * OUTSTRLEN];
-#endif
-
-    TimeInt tOffset; /* 1 or 0 means we're writing previous or current period */
-
-    /* Output first/last days of current year i.e., updated for each year */
-    TimeInt first[SW_OUTNKEYS], last[SW_OUTNKEYS];
-
-#ifdef SW_OUTARRAY
-    /**
-    @brief A 2-dim array of pointers to output arrays.
-
-    The variable p_OUT used by rSOILWAT2 for output, by STEPWAT2 for
-    mean aggregation, and by SOILWAT2 when user requests netCDF output files.
-    */
-    double *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
-    size_t nP_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
-
-    size_t irow_OUT[SW_OUTNPERIODS]; /**< current output time step index */
-#endif
-
-#ifdef STEPWAT
-    double *p_OUTsd[SW_OUTNKEYS][SW_OUTNPERIODS];
-
-    char sw_outstr_agg[MAX_LAYERS * OUTSTRLEN];
-
-    /** Variable from ModelType (STEPWAT2) used in SOILWAT2 */
-    IntUS currIter;
-
-    /* Variables from SXW_t (STEPWAT2) used in SOILWAT2 */
-    // transpXXX: monthly sum of soilwat's transpiration by soil layer
-    // * these are dynamic arrays that are indexed by Ilp()
-    double transpTotal[MAX_LAYERS][MAX_MONTHS], // total transpiration, i.e.,
-                                                // sum across vegetation types
-        transpVeg[NVEGTYPES][MAX_LAYERS]
-                 [MAX_MONTHS]; // transpiration as contributed by vegetation
-                               // types
-    double swc[MAX_LAYERS]
-              [MAX_MONTHS]; // monthly mean SWCbulk for each soil layer
-
-    // fixed monthly array:
-    double ppt_monthly[MAX_MONTHS];  // monthly sum of soilwat's precipitation
-    double temp_monthly[MAX_MONTHS]; // monthly mean soilwat's air temperature
-
-    // annual values:
-    double temp, // annual mean soilwat's air temperature
-        ppt,     // annual sum of soilwat's precipitation
-        aet;     // annual sum of soilwat's evapotranspiration
-#endif
-} SW_OUT_RUN;
+    /** Total number of active sites (at the beginning of simulation run) */
+    size_t nSites;
+} SW_RUN_INFO;
 
 typedef struct {
     /*
@@ -1997,23 +2021,25 @@ typedef struct {
 } SW_RUN_INPUTS;
 
 struct SW_RUN {
+    /* Constant domain-level site information */
+    SW_RUN_INFO RunInfo;
 
     /* Input information */
-    SW_WEATHER_INPUTS WeatherIn;
-    SW_CARBON_INPUTS CarbonIn;
-    SW_MARKOV_INPUTS MarkovIn;
-    SW_VEGPROD_INPUTS VegProdIn;
-    SW_MODEL_INPUTS ModelIn;
-    SW_VEGESTAB_INPUTS VegEstabIn;
-    SW_SOILWAT_INPUTS SoilWatIn;
-    SW_SITE_INPUTS SiteIn;
+    SW_WEATHER_INPUTS *WeatherIn;
+    SW_CARBON_INPUTS *CarbonIn;
+    SW_MARKOV_INPUTS *MarkovIn;
+    SW_VEGPROD_INPUTS *VegProdIn;
+    SW_MODEL_INPUTS *ModelIn;
+    SW_VEGESTAB_INPUTS *VegEstabIn;
+    SW_SOILWAT_INPUTS *SoilWatIn;
+    SW_SITE_INPUTS *SiteIn;
     SW_RUN_INPUTS RunIn;
 
     /* Values used/modified during simulation that's not strictly inputs */
     SW_WEATHER_SIM WeatherSim;
     SW_ST_SIM StRegSimVals;
     SW_ATMD_SIM AtmDemSim;
-    SW_MODEL_SIM ModelSim;
+    SW_MODEL_SIM *ModelSim;
     SW_VEGESTAB_SIM VegEstabSim;
     SW_VEGPROD_SIM VegProdSim;
     SW_SOILWAT_SIM SoilWatSim;
@@ -2021,8 +2047,8 @@ struct SW_RUN {
     SW_SOIL_SIM SoilSim;
 
     /* Output information */
-    SW_OUT_RUN OutRun;
-    SW_PATH_OUTPUTS SW_PathOutputs;
+    SW_OUT_RUN *OutRun;
+    SW_PATH_OUTPUTS *SW_PathOutputs;
 
     /* This section contains values for computing the output quantities
        for all types of outputs.

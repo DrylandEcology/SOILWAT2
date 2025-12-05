@@ -101,9 +101,6 @@ static void init_all_logs(
 @param[in] copyWeatherHist Specifies if the weather data should be copied;
 this only has the chance to be false when the program is dealing with
 nc inputs
-@param[in] readFromCacheFile Specifies if this program run is from the
-very start of the simulations (swFALSE) or if it's restarted from
-an incomplete prior run(s); only useful in SWNETCDF/SWNC/SWMPI mode
 @param[in] nActiveSites Number of active sites to initialize log
 information for
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
@@ -117,7 +114,6 @@ and initialized runs
 */
 static void init_all_runs(
     Bool copyWeatherHist,
-    Bool readFromCacheFile,
     size_t nActiveSites,
     SW_DOMAIN *SW_Domain,
     SW_RUN *sw_template,
@@ -127,15 +123,13 @@ static void init_all_runs(
     size_t site;
 
 #if defined(SWNETCDF)
-    int outPd;
-    int outKey;
     Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
     size_t nSites = SW_Domain->domCounts[eSW_InDomain][0];
 
     nSites *= (sDom ? 1 : SW_Domain->domCounts[eSW_InDomain][1]);
 
     SW_OUT_construct_outarray(
-        nSites, &SW_Domain->OutDom, &sw_template->OutRun, main_LogInfo
+        nSites, &SW_Domain->OutDom, sw_template->OutRun, main_LogInfo
     );
 #else
     (void) SW_Domain;
@@ -143,11 +137,7 @@ static void init_all_runs(
 
     for (site = 0; site < nActiveSites; site++) {
         SW_RUN_deepCopy(
-            sw_template,
-            &SW_Runs[site],
-            &SW_Domain->OutDom,
-            copyWeatherHist,
-            main_LogInfo
+            sw_template, &SW_Runs[site], copyWeatherHist, main_LogInfo
         );
         if (main_LogInfo->stopRun) {
             return;
@@ -155,7 +145,7 @@ static void init_all_runs(
 
 #if defined(SWNETCDF)
         SW_Runs[site].SiteSim.site_has_swrcpMineralSoil =
-            sw_template->SiteIn.inputsProvideSWRCp;
+            sw_template->SiteIn->inputsProvideSWRCp;
 #endif
 
         SW_CTL_init_run(&SW_Runs[site], main_LogInfo);
@@ -163,24 +153,8 @@ static void init_all_runs(
             return;
         }
 
-#if defined(SWNETCDF)
-        memcpy(
-            SW_Runs[site].OutRun.p_OUT,
-            sw_template->OutRun.p_OUT,
-            sizeof(size_t *) * SW_OUTNPERIODS * SW_OUTNKEYS
-        );
-
-        ForEachOutKey(outKey) {
-            ForEachOutPeriod(outPd) {
-                SW_Runs[site].OutRun.p_OUT[outKey][outPd] =
-                    sw_template->OutRun.p_OUT[outKey][outPd];
-            }
-        }
-#endif
-
-        SW_Runs[site].ModelSim.progRestarted = readFromCacheFile;
-        SW_Runs[site].SiteIn.siteIndex = site;
-        SW_Runs[site].SiteIn.nSites = SW_Domain->nActiveSuidsProc;
+        SW_Runs[site].RunInfo.siteIndex = site;
+        SW_Runs[site].RunInfo.nSites = SW_Domain->nActiveSuidsProc;
     }
 }
 
@@ -291,84 +265,91 @@ static void report_sim_start(SW_DOMAIN *SW_Domain, int rank, int worldSize) {
     information that do not change throughout simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 */
-static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
+static void begin_year(
+    SW_RUN *sw, SW_OUT_DOM *OutDom, Bool updateConstInfo, LOG_INFO *LogInfo
+) {
     // SW_F_new_year() not needed
 
     // call SW_MDL_new_year() first to set up time-related arrays for this year
-    SW_MDL_new_year(&sw->ModelIn, &sw->ModelSim);
+    if (updateConstInfo) {
+        SW_MDL_new_year(sw->ModelIn, sw->ModelSim);
+    }
 
     // SW_MKV_new_year() not needed
 
     // SW_SKY_new_year(): Update daily climate variables from monthly values
     SW_SKY_new_year(
-        &sw->ModelSim,
-        sw->ModelSim.yearIdxSpinSim,
+        sw->ModelSim,
+        sw->ModelSim->yearIdxSpinSim,
         sw->RunIn.SkyRunIn.snow_density,
         sw->RunIn.SkyRunIn.snow_density_daily
     );
 
-    SW_VES_new_year(sw->VegEstabIn.count);
+    SW_VES_new_year(sw->VegEstabIn->count);
 
     // SW_VPD_new_year(): Dynamic CO2 effects on vegetation
     SW_VPD_new_year(
         sw->RunIn.weathRunAllHist,
-        &sw->ModelSim,
+        sw->ModelSim,
         &sw->VegProdSim,
         &sw->SoilSim,
-        sw->VegProdIn.isBiomAsIf100Cover,
-        sw->VegProdIn.veg_method,
-        sw->ModelSim.inputYearIdx,
-        sw->VegProdIn.nYearsDynamicShort,
-        sw->VegProdIn.nYearsDynamicLong,
-        sw->SiteIn.methodMaxDepthSoilTemperature,
+        sw->VegProdIn->isBiomAsIf100Cover,
+        sw->VegProdIn->veg_method,
+        sw->ModelSim->inputYearIdx,
+        sw->VegProdIn->nYearsDynamicShort,
+        sw->VegProdIn->nYearsDynamicLong,
+        sw->SiteIn->methodMaxDepthSoilTemperature,
         &sw->RunIn.VegProdRunIn,
         &sw->VegProdSim.veg,
-        &sw->VegProdIn.veg
+        &sw->VegProdIn->veg
     );
 
     SW_SIT_new_year(
-        sw->SiteIn.methodMaxDepthSoilTemperature,
+        sw->SiteIn->methodMaxDepthSoilTemperature,
         sw->VegProdSim.annTempLongAvg,
         &sw->RunIn.SiteRunIn.Tsoil_constant
     );
 
     // SW_FLW_new_year() not needed
 
-    SW_SWC_new_year(
-        &sw->SoilWatIn,
-        &sw->SoilWatSim,
-        &sw->SiteSim,
-        sw->ModelSim.year,
-        sw->SiteIn.reset_yr,
-        sw->RunIn.SiteRunIn.n_layers,
-        LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
+    if (updateConstInfo) {
+        SW_SWC_new_year(
+            sw->SoilWatIn,
+            &sw->SoilWatSim,
+            &sw->SiteSim,
+            sw->ModelSim->year,
+            sw->SiteIn->reset_yr,
+            updateConstInfo,
+            sw->RunIn.SiteRunIn.n_layers,
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
 
-    // SW_CBN_new_year() not needed
-    SW_OUT_new_year(
-        sw->ModelSim.firstdoy,
-        sw->ModelSim.lastdoy,
-        OutDom,
-        sw->OutRun.first,
-        sw->OutRun.last
-    );
+        // SW_CBN_new_year() not needed
+        SW_OUT_new_year(
+            sw->ModelSim->firstdoy,
+            sw->ModelSim->lastdoy,
+            OutDom,
+            sw->OutRun->first,
+            sw->OutRun->last
+        );
+    }
 }
 
 static void begin_day(SW_RUN *sw, LOG_INFO *LogInfo) {
-    SW_MDL_new_day(&sw->ModelSim);
+    SW_MDL_new_day(sw->ModelSim);
     SW_WTH_new_day(
-        &sw->WeatherIn,
+        sw->WeatherIn,
         &sw->WeatherSim,
         sw->RunIn.weathRunAllHist,
-        &sw->SiteIn,
+        sw->SiteIn,
         sw->SoilWatSim.snowpack,
-        sw->ModelSim.doy,
-        sw->ModelSim.year,
-        sw->ModelSim.inputYearIdx,
-        sw->ModelSim.lastdoy,
+        sw->ModelSim->doy,
+        sw->ModelSim->year,
+        sw->ModelSim->inputYearIdx,
+        sw->ModelSim->lastdoy,
         LogInfo
     );
 }
@@ -376,7 +357,7 @@ static void begin_day(SW_RUN *sw, LOG_INFO *LogInfo) {
 static void end_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     TimeInt localTOffset = 1; // tOffset is one when called from this function
 
-    if (sw->ModelSim.doOutput) {
+    if (sw->ModelSim->doOutput) {
         collect_values(sw, OutDom, swFALSE, localTOffset, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -391,26 +372,20 @@ static void end_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 
 @param[in] source Source struct of type SW_RUN to copy
 @param[out] dest Destination struct of type SW_RUN to be copied into
-@param[in] OutDom Struct of type SW_OUT_DOM that holds output
-    information that do not change throughout simulation runs
 @param[in] copyWeatherHist Specifies if the weather data should be copied;
 this only has the chance to be false when the program is dealing with
 nc inputs
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_RUN_deepCopy(
-    SW_RUN *source,
-    SW_RUN *dest,
-    SW_OUT_DOM *OutDom,
-    Bool copyWeatherHist,
-    LOG_INFO *LogInfo
+    SW_RUN *source, SW_RUN *dest, Bool copyWeatherHist, LOG_INFO *LogInfo
 ) {
     const TimeInt n_weathYears = 1;
-    TimeInt n_years = source->ModelIn.endyr - source->ModelIn.startyr + 1;
+    const IntU prevEstabCount = source->VegEstabIn->count;
 
     memcpy(dest, source, sizeof(*dest));
 
-    dest->SoilWatIn.hist.file_prefix = NULL; /* currently unused */
+    dest->SoilWatIn->hist.file_prefix = NULL; /* currently unused */
 
     /* Allocate memory and copy daily weather */
     dest->RunIn.weathRunAllHist = NULL;
@@ -424,22 +399,11 @@ void SW_RUN_deepCopy(
         }
     }
 
-    /* Copy weather generator parameters */
-    if (dest->WeatherIn.generateWeatherMethod == 2) {
-        copyMKV(&dest->MarkovIn, &source->MarkovIn);
-    }
-
     SW_VPD_init_ptrs(&dest->VegProdSim);
-    SW_VES_init_ptrs(&dest->VegEstabIn, dest->ves_p_accu, dest->ves_p_oagg);
+    SW_VES_init_ptrs(dest->VegEstabIn, dest->ves_p_accu, dest->ves_p_oagg);
 
     /* Copy vegetation establishment parameters */
-    dest->VegEstabIn.count = source->VegEstabIn.count;
-    memcpy(
-        &dest->VegEstabIn.parms,
-        &source->VegEstabIn.parms,
-        sizeof(dest->VegEstabIn.parms)
-    );
-
+    source->VegEstabIn->count = prevEstabCount;
     memcpy(
         &dest->VegEstabSim.parms,
         &source->VegEstabSim.parms,
@@ -447,34 +411,11 @@ void SW_RUN_deepCopy(
     );
 
     SW_VegEstab_alloc_outptrs(
-        dest->ves_p_accu, dest->ves_p_oagg, source->VegEstabIn.count, LogInfo
+        dest->ves_p_accu, dest->ves_p_oagg, source->VegEstabIn->count, LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
-
-    SW_CBN_init_ptrs(&dest->CarbonIn);
-    SW_CBN_alloc_ppm(n_years, &dest->CarbonIn.ppm, LogInfo);
-    if (LogInfo->stopRun) {
-        return;
-    }
-
-    memcpy(
-        dest->CarbonIn.ppm,
-        source->CarbonIn.ppm,
-        sizeof(*dest->CarbonIn.ppm) * n_years
-    );
-
-#if defined(SWNETCDF)
-    SW_PATHOUT_deepCopy(
-        &dest->SW_PathOutputs, &source->SW_PathOutputs, OutDom, LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return; // Exit prematurely due to error
-    }
-#else
-    (void) OutDom;
-#endif
 }
 
 /**
@@ -520,24 +461,13 @@ static void prepare_next_day(
 
     size_t site;
     size_t nActiveSites = SW_Domain->nActiveSuidsProc;
-    TimeInt inputYearIdx;
-    SW_RUN *firstActSiteInst;
+    TimeInt inputYearIdx = SW_Domain->SW_ConstInfo.ModelSim.inputYearIdx;
     size_t baseSuid[NC_DIMS] = {0};
     size_t *suid = baseSuid;
-    size_t firstActiveSite;
 
-    TimeInt doy;
-    TimeInt lastDoy;
-
-    firstActiveSite = 0;
-    while (LogInfos[firstActiveSite].stopRun) {
-        firstActiveSite++;
-    }
-    firstActSiteInst = &SW_Runs[firstActiveSite];
-
-    inputYearIdx = firstActSiteInst->ModelSim.inputYearIdx;
-    doy = firstActSiteInst->ModelSim.doy;
-    lastDoy = firstActSiteInst->ModelSim.lastdoy;
+    TimeInt doy = SW_Domain->SW_ConstInfo.ModelSim.doy;
+    TimeInt firstDoy = SW_Domain->SW_ConstInfo.ModelSim.firstdoy;
+    TimeInt lastDoy = SW_Domain->SW_ConstInfo.ModelSim.lastdoy;
 
 #ifdef SWDEBUG
     if (debug) {
@@ -545,8 +475,10 @@ static void prepare_next_day(
     }
 #endif
 
-    if ((doy == firstActSiteInst->ModelSim.firstdoy) || doy == lastDoy ||
-        initFirstYear) {
+    if (doy == firstDoy || doy == lastDoy || initFirstYear) {
+        if (!initFirstYear && doy == lastDoy) {
+            SW_Domain->SW_ConstInfo.ModelSim.year++;
+        }
 
 #if defined(SWNETCDF)
         if (!SW_Domain->SW_SpinUp.spinup) {
@@ -566,14 +498,7 @@ static void prepare_next_day(
                     main_LogInfo
                 );
                 SW_WT_TimeRun(tsr, ok_tsr, TIME_IO_IN, SW_WallTime);
-                checkReturn(main_LogInfo->stopRun);
-
-                SW_F_handle_log_counts(
-                    LogInfos, SW_Domain->netCDFInput.progVals, main_LogInfo
-                );
-
-                SW_F_check_fatal_log(SW_Domain, nActiveSites, main_LogInfo);
-                checkReturn(main_LogInfo->stopRun);
+                checkJumpToLabel(main_LogInfo->stopRun, handleLogs);
             } else {
                 for (site = 0; site < nActiveSites; site++) {
                     memcpy(
@@ -592,14 +517,14 @@ static void prepare_next_day(
 
                 // finalize daily weather
                 SW_WTH_finalize_yearly_weather(
-                    &SW_Runs[0].MarkovIn,
-                    &SW_Runs[0].WeatherIn,
+                    SW_Runs[site].MarkovIn,
+                    SW_Runs[site].WeatherIn,
                     &SW_Runs[site].RunIn.weathRunAllHist[inputYearIdx],
                     &SW_Runs[site].WeatherSim,
-                    SW_Runs[0].ModelSim.cum_monthdays,
-                    SW_Runs[0].ModelSim.days_in_month,
+                    SW_Runs[site].ModelSim->cum_monthdays,
+                    SW_Runs[site].ModelSim->days_in_month,
                     suid,
-                    SW_Runs[site].ModelSim.year,
+                    SW_Runs[site].ModelSim->year,
                     SW_Runs[site].WeatherSim.trivialScaling,
                     swFALSE, // Does not matter
                     &LogInfos[site]
@@ -607,6 +532,16 @@ static void prepare_next_day(
             }
         }
     }
+
+#if defined(SWNETCDF)
+handleLogs:
+#endif
+    SW_F_handle_log_counts(
+        LogInfos, SW_Domain->netCDFInput.progVals, main_LogInfo
+    );
+
+    SW_F_check_fatal_log(SW_Domain, nActiveSites, main_LogInfo);
+    checkReturn(main_LogInfo->stopRun);
 
 #if !defined(SWNETCDF)
     (void) sw_template;
@@ -622,26 +557,21 @@ static void prepare_next_day(
 
 @param[in] sw_template Template SW_RUN for the function to use as a
 reference for local versions of SW_RUN
-@param[in] SW_Runs A list of SW_RUN instances of size "nActiveSites" that
-will be used for holding all information for the simulation
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
 @param[in] LogInfos A list of LOG_INFO instances of size "nActiveSites" that
 will be used to store site log information through all daily runs
 @param[in] nActiveSites Number of active sites to initialize log
 information for
-@param[in] lastFailedSite The last site to fail in this function call
 @param[out] SW_WallTime Struct of type SW_WALLTIME that holds timing
 information for the program run
 @param[out] main_LogInfo Holds information on warnings and errors
 */
 static void finalize_sites_day(
     SW_RUN *sw_template,
-    SW_RUN *SW_Runs,
     SW_DOMAIN *SW_Domain,
     LOG_INFO *LogInfos,
     size_t nActiveSites,
-    size_t lastFailedSite,
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *main_LogInfo
 ) {
@@ -650,45 +580,39 @@ static void finalize_sites_day(
     Bool ok_tsr = swFALSE;
 
     size_t site = 0;
-    size_t firstActiveSite;
     Bool forceWriteOut = (Bool) (!runSims || main_LogInfo->stopRun);
 
     while (site < nActiveSites && LogInfos[site].stopRun) {
         site++;
     }
 
-    firstActiveSite = site;
-    if (site == nActiveSites) {
-        firstActiveSite = lastFailedSite;
-    }
-
     set_walltime(&tsr, &ok_tsr);
     SW_NCOUT_write_output(
         &SW_Domain->OutDom,
-        sw_template->OutRun.p_OUT,
-        SW_Runs[firstActiveSite].OutRun.irow_OUT,
-        sw_template->SW_PathOutputs.numOutFiles,
+        sw_template->OutRun->p_OUT,
+        SW_Domain->SW_ConstInfo.OutRun.irow_OUT,
+        sw_template->SW_PathOutputs->numOutFiles,
         SW_Domain->nActiveSuidsProc,
         SW_Domain->domStartIndex[eSW_InDomain],
         SW_Domain->domCounts[eSW_InDomain],
-        sw_template->SW_PathOutputs.openOutFileIDs,
-        sw_template->SW_PathOutputs.ncOutVarIDs,
+        sw_template->SW_PathOutputs->openOutFileIDs,
+        sw_template->SW_PathOutputs->ncOutVarIDs,
         SW_Domain->netCDFInput.siteDoms[eSW_InDomain],
         forceWriteOut,
-        sw_template->SW_PathOutputs.outTimeSizes,
+        sw_template->SW_PathOutputs->outTimeSizes,
         main_LogInfo
     );
     SW_WT_TimeRun(tsr, ok_tsr, TIME_IO_OUT, SW_WallTime);
 #else
     (void) sw_template;
-    (void) SW_Runs;
     (void) SW_Domain;
     (void) LogInfos;
     (void) nActiveSites;
-    (void) lastFailedSite;
     (void) main_LogInfo;
     (void) SW_WallTime;
 #endif
+
+    SW_Domain->SW_ConstInfo.ModelSim.doy++;
 }
 
 /* =================================================== */
@@ -703,8 +627,6 @@ the simulation start/end dates
 reference for local versions of SW_RUN
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
-@param[in] updateNewYear A flag specifying if this is the first day
-of the first year being run, and if so, being the first year
 @param[in,out] SW_Runs A list of SW_RUN instances of size "nActiveSites" that
 will be used for holding all information for the simulation
 @param[in] LogInfos A list of LOG_INFO instances of size "nActiveSites" that
@@ -715,7 +637,6 @@ will be used to store site log information through all daily runs
 void SW_CTL_sim_sites(
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
-    Bool updateNewYear,
     SW_RUN *SW_Runs,
     LOG_INFO *LogInfos,
     size_t *lastFailedSite,
@@ -728,8 +649,10 @@ void SW_CTL_sim_sites(
     size_t nActiveSites = SW_Domain->nActiveSuidsProc;
 
     size_t site;
-    TimeInt *doy = NULL;
+    TimeInt doy = SW_Domain->SW_ConstInfo.ModelSim.doy;
+    TimeInt lastDoy = SW_Domain->SW_ConstInfo.ModelSim.lastdoy;
     signed char *runStatus = NULL;
+    Bool updateConstInfo = swTRUE;
 
     *lastFailedSite = 0;
 
@@ -741,7 +664,6 @@ void SW_CTL_sim_sites(
 #endif
 
     for (site = 0; site < nActiveSites; site++) {
-        doy = &SW_Runs[site].ModelSim.doy;
 
 #if defined(SWNETCDF)
         actSiteIdx = SW_Domain->actSiteIdx[eSW_InDomain][site];
@@ -752,15 +674,18 @@ void SW_CTL_sim_sites(
         }
 #endif
 
-        if ((*doy == SW_Runs[site].ModelSim.firstdoy && !updateNewYear) ||
-            *doy == SW_Runs[site].ModelSim.lastdoy) {
+        if (doy == lastDoy) {
+            begin_year(
+                &SW_Runs[site],
+                &SW_Domain->OutDom,
+                updateConstInfo,
+                main_LogInfo
+            );
 
-            if (updateNewYear || *doy == SW_Runs[site].ModelSim.lastdoy) {
-                SW_Runs[site].ModelSim.year++;
+            updateConstInfo = swFALSE;
+            if (main_LogInfo->stopRun) {
+                goto handleLogs;
             }
-
-            begin_year(&SW_Runs[site], &SW_Domain->OutDom, &LogInfos[site]);
-            checkJumpToLabel(LogInfos[site].stopRun, handleLog);
         }
 
 #ifdef SWDEBUG
@@ -773,7 +698,7 @@ void SW_CTL_sim_sites(
             &SW_Runs[site], &SW_Domain->OutDom, &LogInfos[site]
         );
 
-    handleLog:
+    handleLogs:
         SW_F_handle_log_counts(&LogInfos[site], runStatus, main_LogInfo);
 
 #if defined(SWNETCDF)
@@ -781,12 +706,10 @@ void SW_CTL_sim_sites(
             *lastFailedSite = site;
 
             SW_NCOUT_reset_failed_sites(
-                SW_Domain, actSiteIdx, sw_template->OutRun.p_OUT
+                SW_Domain, actSiteIdx, sw_template->OutRun->p_OUT
             );
         }
 #endif
-
-        (*doy)++;
     }
 
     SW_F_check_fatal_log(SW_Domain, nActiveSites, main_LogInfo);
@@ -858,7 +781,6 @@ void SW_CTL_run_daily_timesteps(
             SW_CTL_sim_sites(
                 sw_template,
                 SW_Domain,
-                initFirstYear,
                 SW_Runs,
                 LogInfos,
                 &lastFailedSite,
@@ -872,11 +794,9 @@ void SW_CTL_run_daily_timesteps(
     handleOutput:
         finalize_sites_day(
             sw_template,
-            SW_Runs,
             SW_Domain,
             LogInfos,
             nActiveSites,
-            lastFailedSite,
             SW_WallTime,
             main_LogInfo
         );
@@ -988,9 +908,10 @@ void SW_CTL_RunSimSet(
     checkJumpToLabel(main_LogInfo->stopRun, freeMem);
 #endif
 
+    SW_Domain->SW_ConstInfo.ModelSim.progRestarted =
+        (Bool) (readFromCacheFile && !freshRun);
     init_all_runs(
         copyWeatherHist,
-        (Bool) (readFromCacheFile && !freshRun),
         nActiveSites,
         SW_Domain,
         sw_template,
@@ -1066,17 +987,31 @@ freeMem:
 @brief Initialize all possible pointers to NULL incase of an unexpected
 program exit
 
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
 @param[in,out] sw Comprehensive struct of type SW_RUN containing
     all information in the simulation
 */
-void SW_CTL_init_ptrs(SW_RUN *sw) {
+void SW_CTL_init_ptrs(SW_DOMAIN *SW_Domain, SW_RUN *sw) {
+    // Initialize pointers to structs held within SW_DOMAIN
+    sw->WeatherIn = &SW_Domain->SW_ConstInfo.WeatherIn;
+    sw->CarbonIn = &SW_Domain->SW_ConstInfo.CarbonIn;
+    sw->MarkovIn = &SW_Domain->SW_ConstInfo.MarkovIn;
+    sw->VegProdIn = &SW_Domain->SW_ConstInfo.VegProdIn;
+    sw->ModelIn = &SW_Domain->SW_ConstInfo.ModelIn;
+    sw->VegEstabIn = &SW_Domain->SW_ConstInfo.VegEstabIn;
+    sw->SoilWatIn = &SW_Domain->SW_ConstInfo.SoilWatIn;
+    sw->SiteIn = &SW_Domain->SW_ConstInfo.SiteIn;
+    sw->ModelSim = &SW_Domain->SW_ConstInfo.ModelSim;
+
+    // Initialize pointers within substructs
     SW_WTH_init_ptrs(&sw->RunIn.weathRunAllHist);
-    SW_MKV_init_ptrs(&sw->MarkovIn);
+    SW_MKV_init_ptrs(sw->MarkovIn);
     SW_VPD_init_ptrs(&sw->VegProdSim);
-    SW_VES_init_ptrs(&sw->VegEstabIn, sw->ves_p_accu, sw->ves_p_oagg);
-    SW_OUT_init_ptrs(&sw->OutRun, &sw->SW_PathOutputs);
-    SW_SWC_init_ptrs(&sw->SoilWatIn, &sw->SoilWatSim);
-    SW_CBN_init_ptrs(&sw->CarbonIn);
+    SW_VES_init_ptrs(sw->VegEstabIn, sw->ves_p_accu, sw->ves_p_oagg);
+    SW_OUT_init_ptrs(sw->OutRun, sw->SW_PathOutputs);
+    SW_SWC_init_ptrs(sw->SoilWatIn, &sw->SoilWatSim);
+    SW_CBN_init_ptrs(sw->CarbonIn);
 }
 
 /**
@@ -1229,29 +1164,29 @@ void SW_CTL_setup_domain(
 void SW_CTL_setup_model(
     SW_RUN *sw, SW_OUT_DOM *OutDom, Bool zeroOutInfo, LOG_INFO *LogInfo
 ) {
-    SW_MDL_construct(&sw->ModelSim);
+    SW_MDL_construct(sw->ModelSim);
     SW_WTH_construct(
-        &sw->WeatherIn, &sw->WeatherSim, sw->weath_p_accu, sw->weath_p_oagg
+        sw->WeatherIn, &sw->WeatherSim, sw->weath_p_accu, sw->weath_p_oagg
     );
 
     // delay SW_MKV_construct() until we know from inputs whether we need it
     // SW_SKY_construct() not need
-    SW_SIT_construct(&sw->SiteIn, &sw->SiteSim, &sw->RunIn.SiteRunIn.n_layers);
+    SW_SIT_construct(sw->SiteIn, &sw->SiteSim, &sw->RunIn.SiteRunIn.n_layers);
     SW_VES_construct(
-        &sw->VegEstabIn, &sw->VegEstabSim, sw->ves_p_oagg, sw->ves_p_accu
+        sw->VegEstabIn, &sw->VegEstabSim, sw->ves_p_oagg, sw->ves_p_accu
     );
     SW_VPD_construct(
-        &sw->VegProdIn, &sw->RunIn.VegProdRunIn, sw->vp_p_oagg, sw->vp_p_accu
+        sw->VegProdIn, &sw->RunIn.VegProdRunIn, sw->vp_p_oagg, sw->vp_p_accu
     );
     // SW_FLW_construct() not needed
-    SW_OUT_construct(zeroOutInfo, &sw->SW_PathOutputs, &sw->OutRun);
+    SW_OUT_construct(zeroOutInfo, sw->SW_PathOutputs, sw->OutRun);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
     SW_SWC_construct(
-        &sw->SoilWatIn, &sw->SoilWatSim, sw->sw_p_accu, sw->sw_p_oagg
+        sw->SoilWatIn, &sw->SoilWatSim, sw->sw_p_accu, sw->sw_p_oagg
     );
-    SW_CBN_construct(&sw->CarbonIn);
+    SW_CBN_construct(sw->CarbonIn);
 }
 
 /**
@@ -1272,14 +1207,14 @@ void SW_CTL_clear_model(Bool full_reset, SW_RUN *sw) {
 
     SW_MDL_deconstruct();
     SW_WTH_deconstruct(&sw->RunIn.weathRunAllHist);
-    SW_MKV_deconstruct(&sw->MarkovIn);
+    SW_MKV_deconstruct(sw->MarkovIn);
     // SW_SKY_INPUTS_deconstruct() not needed
     // SW_SIT_deconstruct() not needed
-    SW_VES_deconstruct(sw->VegEstabIn.count, sw->ves_p_accu, sw->ves_p_oagg);
+    SW_VES_deconstruct(sw->VegEstabIn->count, sw->ves_p_accu, sw->ves_p_oagg);
     SW_VPD_deconstruct(&sw->VegProdSim);
     // SW_FLW_deconstruct() not needed
-    SW_SWC_deconstruct(&sw->SoilWatIn, &sw->SoilWatSim);
-    SW_CBN_deconstruct(&sw->CarbonIn);
+    SW_SWC_deconstruct(sw->SoilWatIn, &sw->SoilWatSim);
+    SW_CBN_deconstruct(sw->CarbonIn);
 }
 
 /**
@@ -1295,8 +1230,8 @@ i.e., after calling begin_year()
 void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
 
     // SW_F_init_run() not needed
-    SW_MDL_init_run(&sw->ModelSim, sw->ModelIn.startyr);
-    SW_WTH_init_run(&sw->WeatherIn, &sw->WeatherSim);
+    SW_MDL_init_run(sw->ModelSim, sw->ModelIn->startyr);
+    SW_WTH_init_run(sw->WeatherIn, &sw->WeatherSim);
     // SW_MKV_init_run() not needed
     SW_PET_init_run(&sw->AtmDemSim);
 
@@ -1306,11 +1241,11 @@ void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
     }
 
     SW_SIT_init_run(
-        &sw->VegProdIn,
-        &sw->SiteIn,
+        sw->VegProdIn,
+        sw->SiteIn,
         &sw->SiteSim,
         &sw->RunIn.SoilRunIn,
-        &sw->VegProdIn.veg,
+        &sw->VegProdIn->veg,
         sw->RunIn.SiteRunIn.n_layers,
         LogInfo
     );
@@ -1320,11 +1255,11 @@ void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
 
     // SW_VES_init_run() must be called after `SW_SIT_init_run()`
     SW_VES_init_run(
-        &sw->VegEstabIn.parms,
+        &sw->VegEstabIn->parms,
         &sw->RunIn.SoilRunIn,
         &sw->SiteSim,
         sw->SiteSim.n_transp_lyrs,
-        sw->VegEstabIn.count,
+        sw->VegEstabIn->count,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -1347,11 +1282,11 @@ void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
         sw->RunIn.SiteRunIn.n_layers
     );
     SW_CBN_init_run(
-        &sw->VegProdIn.veg,
+        &sw->VegProdIn->veg,
         &sw->VegProdSim.veg,
-        &sw->CarbonIn,
-        sw->ModelIn.startyr,
-        sw->ModelIn.endyr,
+        sw->CarbonIn,
+        sw->ModelIn->startyr,
+        sw->ModelIn->endyr,
         LogInfo
     );
 }
@@ -1392,25 +1327,25 @@ void SW_CTL_run_current_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     }
 
     // Only run this function if SWA output is asked for
-    if (sw->VegProdIn.use_SWA) {
+    if (sw->VegProdIn->use_SWA) {
         calculate_repartitioned_soilwater(
             &sw->SoilWatSim,
             sw->SiteSim.swcBulk_atSWPcrit,
-            &sw->VegProdIn,
+            sw->VegProdIn,
             &sw->RunIn.VegProdRunIn.veg,
             sw->RunIn.SiteRunIn.n_layers
         );
     }
 
-    if (sw->VegEstabIn.use) {
+    if (sw->VegEstabIn->use) {
         SW_VES_checkestab(
-            &sw->VegEstabIn.parms,
+            &sw->VegEstabIn->parms,
             &sw->VegEstabSim.parms,
             sw->WeatherSim.temp_avg,
             sw->SoilWatSim.swcBulk,
-            sw->ModelSim.doy,
-            sw->ModelSim.firstdoy,
-            sw->VegEstabIn.count
+            sw->ModelSim->doy,
+            sw->ModelSim->firstdoy,
+            sw->VegEstabIn->count
         );
     }
 
@@ -1435,7 +1370,7 @@ void SW_CTL_run_current_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         sw_printf("'SW_CTL_run_current_day': flush output\n");
     }
 #endif
-    if (sw->ModelSim.doOutput) {
+    if (sw->ModelSim->doOutput) {
         SW_OUT_flush(sw, OutDom, LogInfo);
     }
 
@@ -1470,7 +1405,7 @@ temporal/spatial information for a set of simulation runs
 @param[out] LogInfo Holds information dealing with logfile output
 */
 void SW_CTL_run_spinup(SW_DOMAIN *SW_Domain, SW_RUN *sw, LOG_INFO *LogInfo) {
-    if (sw->ModelIn.SW_SpinUp.duration <= 0) {
+    if (sw->ModelIn->SW_SpinUp.duration <= 0) {
         return;
     }
 
@@ -1482,13 +1417,13 @@ void SW_CTL_run_spinup(SW_DOMAIN *SW_Domain, SW_RUN *sw, LOG_INFO *LogInfo) {
     unsigned int k;
     unsigned int quotient = 0;
     unsigned int remainder = 0;
-    int mode = sw->ModelIn.SW_SpinUp.mode;
+    int mode = sw->ModelIn->SW_SpinUp.mode;
     TimeInt yr;
-    TimeInt duration = sw->ModelIn.SW_SpinUp.duration;
-    TimeInt scope = sw->ModelIn.SW_SpinUp.scope;
-    TimeInt finalyr = sw->ModelIn.startyr + scope - 1;
+    TimeInt duration = sw->ModelIn->SW_SpinUp.duration;
+    TimeInt scope = sw->ModelIn->SW_SpinUp.scope;
+    TimeInt finalyr = sw->ModelIn->startyr + scope - 1;
     TimeInt *years;
-    Bool prev_doOut = sw->ModelSim.doOutput;
+    Bool prev_doOut = sw->ModelSim->doOutput;
     years = (TimeInt *) Mem_Malloc(
         sizeof(TimeInt) * duration, "SW_CTL_run_spinup", LogInfo
     );
@@ -1506,7 +1441,7 @@ void SW_CTL_run_spinup(SW_DOMAIN *SW_Domain, SW_RUN *sw, LOG_INFO *LogInfo) {
             mode,
             duration,
             scope,
-            sw->ModelIn.startyr,
+            sw->ModelIn->startyr,
             finalyr
         );
     }
@@ -1517,7 +1452,7 @@ void SW_CTL_run_spinup(SW_DOMAIN *SW_Domain, SW_RUN *sw, LOG_INFO *LogInfo) {
         // initialize structured array
         if (duration <= scope) {
             // 1:m
-            yr = sw->ModelIn.startyr;
+            yr = sw->ModelIn->startyr;
             for (i = 0; i < duration; i++) {
                 years[i] = yr + i;
             }
@@ -1525,7 +1460,7 @@ void SW_CTL_run_spinup(SW_DOMAIN *SW_Domain, SW_RUN *sw, LOG_INFO *LogInfo) {
             // { {1:n}_(m//n), 1:(m%n) }
             quotient = duration / scope;
             remainder = duration % scope;
-            yr = sw->ModelIn.startyr;
+            yr = sw->ModelIn->startyr;
             for (i = 0; i < quotient * scope; i++) {
                 years[i] = yr + (i % scope);
             }
@@ -1540,17 +1475,19 @@ void SW_CTL_run_spinup(SW_DOMAIN *SW_Domain, SW_RUN *sw, LOG_INFO *LogInfo) {
         // initialize random array
         for (i = 0; i < duration; i++) {
             yr = (TimeInt) RandUniIntRange(
-                sw->ModelIn.startyr, finalyr, &sw->ModelIn.SW_SpinUp.spinup_rng
+                sw->ModelIn->startyr,
+                finalyr,
+                &sw->ModelIn->SW_SpinUp.spinup_rng
             );
             years[i] = yr;
         }
         break;
     }
 
-    TimeInt *cur_yr = &sw->ModelSim.year;
+    TimeInt *cur_yr = &sw->ModelSim->year;
     TimeInt yrIdx;
 
-    sw->ModelSim.doOutput = swFALSE; // turn output temporarily off
+    sw->ModelSim->doOutput = swFALSE; // turn output temporarily off
 
     for (yrIdx = 0; yrIdx < duration; yrIdx++) {
         *cur_yr = years[yrIdx];
@@ -1581,8 +1518,8 @@ void SW_CTL_run_spinup(SW_DOMAIN *SW_Domain, SW_RUN *sw, LOG_INFO *LogInfo) {
     }
 
 reSet: {
-    sw->ModelSim.doOutput = prev_doOut; // reset doOutput to original value
-    /* Note: don't reset sw->ModelSim.yearIdxSpinSim which is a
+    sw->ModelSim->doOutput = prev_doOut; // reset doOutput to original value
+    /* Note: don't reset sw->ModelSim->yearIdxSpinSim which is a
     continuous index across spinup and simulation years) */
 
     free(years);
@@ -1635,7 +1572,7 @@ void SW_CTL_read_inputs_from_disk(
 #endif
 
     SW_WTH_setup(
-        &sw->WeatherIn,
+        sw->WeatherIn,
         SW_PathInputs->txtInFiles,
         SW_PathInputs->txtWeatherPrefix,
         LogInfo
@@ -1659,11 +1596,11 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    if (sw->WeatherIn.generateWeatherMethod == 2) {
+    if (sw->WeatherIn->generateWeatherMethod == 2) {
         SW_MKV_setup(
-            &sw->MarkovIn,
-            sw->WeatherIn.rng_seed,
-            sw->WeatherIn.generateWeatherMethod,
+            sw->MarkovIn,
+            sw->WeatherIn->rng_seed,
+            sw->WeatherIn->generateWeatherMethod,
             SW_PathInputs->txtInFiles,
             LogInfo
         );
@@ -1678,14 +1615,14 @@ void SW_CTL_read_inputs_from_disk(
     }
 
     SW_WTH_read(
-        &sw->WeatherIn,
+        sw->WeatherIn,
         &sw->RunIn.weathRunAllHist,
         &sw->RunIn.SkyRunIn,
-        &sw->ModelIn,
+        sw->ModelIn,
         sw->RunIn.ModelRunIn.elevation,
         readTextInputs,
-        sw->ModelSim.cum_monthdays,
-        sw->ModelSim.days_in_month,
+        sw->ModelSim->cum_monthdays,
+        sw->ModelSim->days_in_month,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -1699,7 +1636,7 @@ void SW_CTL_read_inputs_from_disk(
 #endif
 
     SW_VPD_read(
-        &sw->VegProdIn,
+        sw->VegProdIn,
         &sw->RunIn.VegProdRunIn,
         SW_PathInputs->txtInFiles,
         LogInfo
@@ -1714,9 +1651,9 @@ void SW_CTL_read_inputs_from_disk(
 #endif
 
     SW_SIT_read(
-        &sw->SiteIn,
+        sw->SiteIn,
         SW_PathInputs->txtInFiles,
-        &sw->CarbonIn,
+        sw->CarbonIn,
         hasConsistentSoilLayerDepths,
         &sw->RunIn.SiteRunIn.Tsoil_constant,
         LogInfo
@@ -1750,9 +1687,9 @@ void SW_CTL_read_inputs_from_disk(
         &sw->SiteSim,
         sw->RunIn.SiteRunIn.n_layers,
         SW_PathInputs->txtInFiles,
-        sw->SiteIn.inputsProvideSWRCp,
+        sw->SiteIn->inputsProvideSWRCp,
         sw->RunIn.SoilRunIn.swrcpMineralSoil,
-        sw->SiteIn.swrcpOM,
+        sw->SiteIn->swrcpOM,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -1765,7 +1702,7 @@ void SW_CTL_read_inputs_from_disk(
 #endif
 
     SW_VES_read(
-        &sw->VegEstabIn,
+        sw->VegEstabIn,
         &sw->VegEstabSim,
         sw->ves_p_accu,
         sw->ves_p_oagg,
@@ -1799,11 +1736,11 @@ void SW_CTL_read_inputs_from_disk(
 #endif
 
     SW_CBN_setup(
-        &sw->CarbonIn,
-        sw->ModelIn.startyr,
-        sw->ModelIn.endyr,
+        sw->CarbonIn,
+        sw->ModelIn->startyr,
+        sw->ModelIn->endyr,
         SW_PathInputs->txtInFiles,
-        sw->VegProdIn.vegYear,
+        sw->VegProdIn->vegYear,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -1816,7 +1753,7 @@ void SW_CTL_read_inputs_from_disk(
 #endif
 
     SW_SWC_read(
-        &sw->SoilWatIn, sw->ModelIn.endyr, SW_PathInputs->txtInFiles, LogInfo
+        sw->SoilWatIn, sw->ModelIn->endyr, SW_PathInputs->txtInFiles, LogInfo
     );
 #ifdef SWDEBUG
     if (LogInfo->stopRun) {

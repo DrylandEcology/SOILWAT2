@@ -377,27 +377,6 @@ void SW_MKV_deconstruct(SW_MARKOV_INPUTS *SW_MarkovIn) {
     deallocateMKV(SW_MarkovIn);
 }
 
-/** Copy SW_MARKOV memory
-
- @param[out] dest_MKV Struct of type SW_MARKOV_INPUTS which holds parameters
- for the weather generator
-
- @param[in] template_MKV Struct of type SW_MARKOV_INPUTS which holds parameters
- for the weather generator
-*/
-void copyMKV(SW_MARKOV_INPUTS *dest_MKV, SW_MARKOV_INPUTS *template_MKV) {
-    size_t s = sizeof(double) * MAX_DAYS; /* see `allocateMKV()` */
-
-    Mem_Copy(dest_MKV->wetprob, template_MKV->wetprob, s);
-    Mem_Copy(dest_MKV->dryprob, template_MKV->dryprob, s);
-    Mem_Copy(dest_MKV->avg_ppt, template_MKV->avg_ppt, s);
-    Mem_Copy(dest_MKV->std_ppt, template_MKV->std_ppt, s);
-    Mem_Copy(dest_MKV->cfxw, template_MKV->cfxw, s);
-    Mem_Copy(dest_MKV->cfxd, template_MKV->cfxd, s);
-    Mem_Copy(dest_MKV->cfnw, template_MKV->cfnw, s);
-    Mem_Copy(dest_MKV->cfnd, template_MKV->cfnd, s);
-}
-
 /**
 @brief Calculates precipitation and temperature.
 

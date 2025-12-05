@@ -1881,12 +1881,12 @@ void SW_VPD_init_ptrs(SW_VEGPROD_SIM *SW_VegProdSim) {
 
 void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
     TimeInt year;
-    TimeInt n_years = sw->ModelIn.endyr - sw->ModelIn.startyr + 1;
+    TimeInt n_years = sw->ModelIn->endyr - sw->ModelIn->startyr + 1;
     int k;
     LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
     Bool inNorthHem = sw->RunIn.ModelRunIn.isnorth;
-    int veg_method = sw->VegProdIn.veg_method;
-    Bool allocAnnTemp = (Bool) (sw->SiteIn.methodMaxDepthSoilTemperature == 1);
+    int veg_method = sw->VegProdIn->veg_method;
+    Bool allocAnnTemp = (Bool) (sw->SiteIn->methodMaxDepthSoilTemperature == 1);
     Bool annTempOnly =
         (Bool) (allocAnnTemp && veg_method != VEG_METHOD_DYN_EST);
 
@@ -1910,8 +1910,8 @@ void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
         estimateVegetationFromClimate(
             &sw->RunIn.VegProdRunIn,
             sw->RunIn.weathRunAllHist,
-            &sw->ModelIn,
-            &sw->ModelSim,
+            sw->ModelIn,
+            sw->ModelSim,
             inNorthHem,
             veg_method,
             LogInfo
@@ -1930,8 +1930,8 @@ void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
 
     if (veg_method == VEG_METHOD_DYN_EST || allocAnnTemp) {
         /* Number of years for dynamic vegetation: spinup + simulation years */
-        if (sw->ModelIn.SW_SpinUp.duration > 0) {
-            n_years += sw->ModelIn.SW_SpinUp.duration;
+        if (sw->ModelIn->SW_SpinUp.duration > 0) {
+            n_years += sw->ModelIn->SW_SpinUp.duration;
         }
 
         alloc_nyear_arrays(n_years, annTempOnly, &sw->VegProdSim, LogInfo);

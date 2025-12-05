@@ -526,8 +526,8 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
             wbcHeader,
             sizeof wbcHeader,
             "WB (%d-%d)",
-            sw->ModelSim.year,
-            sw->ModelSim.doy
+            sw->ModelSim->year,
+            sw->ModelSim->doy
         );
     }
 
@@ -941,11 +941,11 @@ void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo) {
      first year of simulation"
      */
 
-    if (sw->SoilWatIn.hist_use &&
-        !missing(sw->SoilWatIn.hist.swc[sw->ModelSim.doy - 1][1])) {
+    if (sw->SoilWatIn->hist_use &&
+        !missing(sw->SoilWatIn->hist.swc[sw->ModelSim->doy - 1][1])) {
 
-        if (!(sw->ModelSim.doy == sw->ModelIn.startstart &&
-              sw->ModelSim.yearIdxSpinSim == 0)) {
+        if (!(sw->ModelSim->doy == sw->ModelIn->startstart &&
+              sw->ModelSim->yearIdxSpinSim == 0)) {
 
 #ifdef SWDEBUG
             if (debug) {
@@ -957,8 +957,8 @@ void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             SW_SWC_adjust_swc(
                 sw->SoilWatSim.swcBulk,
                 sw->SiteSim.swcBulk_min,
-                sw->ModelSim.doy,
-                &sw->SoilWatIn.hist,
+                sw->ModelSim->doy,
+                &sw->SoilWatIn->hist,
                 sw->RunIn.SiteRunIn.n_layers,
                 LogInfo
             );
@@ -1358,6 +1358,8 @@ of last year, which is also, coincidentally, Yesterday
     input values
 @param[in] year Current year being run in the simulation
 @param[in] reset_yr Flag, reset values at the beginning of each year
+@param[in] canReadSWCHist A flag specifying that the next year of SWC history
+can be read in
 @param[in] n_layers Number of layers of soil within the simulation run
 @param[out] LogInfo Holds information on warnings and errors
 */
@@ -1367,6 +1369,7 @@ void SW_SWC_new_year(
     SW_SITE_SIM *SW_SiteSim,
     TimeInt year,
     Bool reset_yr,
+    Bool canReadSWCHist,
     LyrIndex n_layers,
     LOG_INFO *LogInfo
 ) {
@@ -1388,7 +1391,8 @@ void SW_SWC_new_year(
     }
 
     /* update historical (measured) values, if needed */
-    if (SW_SoilWatIn->hist_use && year >= SW_SoilWatIn->hist.yr.first) {
+    if (SW_SoilWatIn->hist_use && canReadSWCHist &&
+        year >= SW_SoilWatIn->hist.yr.first) {
 #ifndef RSOILWAT
         read_swc_hist(&SW_SoilWatIn->hist, year, LogInfo);
 #else

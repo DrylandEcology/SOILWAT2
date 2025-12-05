@@ -32,14 +32,10 @@ extern volatile sig_atomic_t runSims;
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_CTL_init_ptrs(SW_RUN *sw);
+void SW_CTL_init_ptrs(SW_DOMAIN *SW_Domain, SW_RUN *sw);
 
 void SW_RUN_deepCopy(
-    SW_RUN *source,
-    SW_RUN *dest,
-    SW_OUT_DOM *OutDom,
-    Bool copyWeatherHist,
-    LOG_INFO *LogInfo
+    SW_RUN *source, SW_RUN *dest, Bool copyWeatherHist, LOG_INFO *LogInfo
 );
 
 void SW_CTL_setup_domain(
@@ -68,7 +64,6 @@ void SW_CTL_read_inputs_from_disk(
 void SW_CTL_sim_sites(
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
-    Bool updateNewYear,
     SW_RUN *SW_Runs,
     LOG_INFO *LogInfos,
     size_t *lastFailedSite,

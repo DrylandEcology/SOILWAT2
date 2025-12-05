@@ -26,9 +26,9 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeGreaterThanDuration) {
     SW_VPD_init_run(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
-    SW_Run.ModelIn.SW_SpinUp.mode = 1;
-    SW_Run.ModelIn.SW_SpinUp.scope = 27;
-    SW_Run.ModelIn.SW_SpinUp.duration = 3;
+    SW_Run.ModelIn->SW_SpinUp.mode = 1;
+    SW_Run.ModelIn->SW_SpinUp.scope = 27;
+    SW_Run.ModelIn->SW_SpinUp.duration = 3;
 
     // Turn on soil temperature simulations
     SW_Run.SiteIn.use_soil_temp = swTRUE;
@@ -38,15 +38,15 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeGreaterThanDuration) {
         prevMoist[i] = SW_Run.SoilWatSim.swcBulk[Today][i];
     }
     // Turn on spinup flag
-    SW_Run.ModelIn.SW_SpinUp.spinup = swTRUE;
+    SW_Run.ModelIn->SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
     SW_CTL_run_spinup(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run (a short) simulation
-    SW_Run.ModelIn.startyr = 1980;
-    SW_Run.ModelIn.endyr = 1981;
+    SW_Run.ModelIn->startyr = 1980;
+    SW_Run.ModelIn->endyr = 1981;
     SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -79,9 +79,9 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeEqualToDuration) {
     SW_VPD_init_run(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
-    SW_Run.ModelIn.SW_SpinUp.mode = 1;
-    SW_Run.ModelIn.SW_SpinUp.scope = 3;
-    SW_Run.ModelIn.SW_SpinUp.duration = 3;
+    SW_Run.ModelIn->SW_SpinUp.mode = 1;
+    SW_Run.ModelIn->SW_SpinUp.scope = 3;
+    SW_Run.ModelIn->SW_SpinUp.duration = 3;
 
     // Turn on soil temperature simulations
     SW_Run.SiteIn.use_soil_temp = swTRUE;
@@ -91,15 +91,15 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeEqualToDuration) {
         prevMoist[i] = SW_Run.SoilWatSim.swcBulk[Today][i];
     }
     // Turn on spinup flag
-    SW_Run.ModelIn.SW_SpinUp.spinup = swTRUE;
+    SW_Run.ModelIn->SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
     SW_CTL_run_spinup(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run (a short) simulation
-    SW_Run.ModelIn.startyr = 1980;
-    SW_Run.ModelIn.endyr = 1981;
+    SW_Run.ModelIn->startyr = 1980;
+    SW_Run.ModelIn->endyr = 1981;
     SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -131,9 +131,9 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeLessThanDuration) {
     SW_VPD_init_run(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
-    SW_Run.ModelIn.SW_SpinUp.mode = 1;
-    SW_Run.ModelIn.SW_SpinUp.scope = 1;
-    SW_Run.ModelIn.SW_SpinUp.duration = 3;
+    SW_Run.ModelIn->SW_SpinUp.mode = 1;
+    SW_Run.ModelIn->SW_SpinUp.scope = 1;
+    SW_Run.ModelIn->SW_SpinUp.duration = 3;
 
     // Turn on soil temperature simulations
     SW_Run.SiteIn.use_soil_temp = swTRUE;
@@ -143,15 +143,15 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeLessThanDuration) {
         prevMoist[i] = SW_Run.SoilWatSim.swcBulk[Today][i];
     }
     // Turn on spinup flag
-    SW_Run.ModelIn.SW_SpinUp.spinup = swTRUE;
+    SW_Run.ModelIn->SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
     SW_CTL_run_spinup(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run (a short) simulation
-    SW_Run.ModelIn.startyr = 1980;
-    SW_Run.ModelIn.endyr = 1981;
+    SW_Run.ModelIn->startyr = 1980;
+    SW_Run.ModelIn->endyr = 1981;
     SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -184,9 +184,9 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeGreaterThanDuration) {
     SW_VPD_init_run(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
-    SW_Run.ModelIn.SW_SpinUp.mode = 2;
-    SW_Run.ModelIn.SW_SpinUp.scope = 27;
-    SW_Run.ModelIn.SW_SpinUp.duration = 3;
+    SW_Run.ModelIn->SW_SpinUp.mode = 2;
+    SW_Run.ModelIn->SW_SpinUp.scope = 27;
+    SW_Run.ModelIn->SW_SpinUp.duration = 3;
 
     // Turn on soil temperature simulations
     SW_Run.SiteIn.use_soil_temp = swTRUE;
@@ -196,15 +196,15 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeGreaterThanDuration) {
         prevMoist[i] = SW_Run.SoilWatSim.swcBulk[Today][i];
     }
     // Turn on spinup flag
-    SW_Run.ModelIn.SW_SpinUp.spinup = swTRUE;
+    SW_Run.ModelIn->SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
     SW_CTL_run_spinup(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run (a short) simulation
-    SW_Run.ModelIn.startyr = 1980;
-    SW_Run.ModelIn.endyr = 1981;
+    SW_Run.ModelIn->startyr = 1980;
+    SW_Run.ModelIn->endyr = 1981;
     SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -237,9 +237,9 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeEqualToDuration) {
     SW_VPD_init_run(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
-    SW_Run.ModelIn.SW_SpinUp.mode = 2;
-    SW_Run.ModelIn.SW_SpinUp.scope = 3;
-    SW_Run.ModelIn.SW_SpinUp.duration = 3;
+    SW_Run.ModelIn->SW_SpinUp.mode = 2;
+    SW_Run.ModelIn->SW_SpinUp.scope = 3;
+    SW_Run.ModelIn->SW_SpinUp.duration = 3;
 
     // Turn on soil temperature simulations
     SW_Run.SiteIn.use_soil_temp = swTRUE;
@@ -249,15 +249,15 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeEqualToDuration) {
         prevMoist[i] = SW_Run.SoilWatSim.swcBulk[Today][i];
     }
     // Turn on spinup flag
-    SW_Run.ModelIn.SW_SpinUp.spinup = swTRUE;
+    SW_Run.ModelIn->SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
     SW_CTL_run_spinup(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run (a short) simulation
-    SW_Run.ModelIn.startyr = 1980;
-    SW_Run.ModelIn.endyr = 1981;
+    SW_Run.ModelIn->startyr = 1980;
+    SW_Run.ModelIn->endyr = 1981;
     SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -290,9 +290,9 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeLessThanDuration) {
     SW_VPD_init_run(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
-    SW_Run.ModelIn.SW_SpinUp.mode = 2;
-    SW_Run.ModelIn.SW_SpinUp.scope = 1;
-    SW_Run.ModelIn.SW_SpinUp.duration = 3;
+    SW_Run.ModelIn->SW_SpinUp.mode = 2;
+    SW_Run.ModelIn->SW_SpinUp.scope = 1;
+    SW_Run.ModelIn->SW_SpinUp.duration = 3;
 
     // Turn on soil temperature simulations
     SW_Run.SiteIn.use_soil_temp = swTRUE;
@@ -302,15 +302,15 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeLessThanDuration) {
         prevMoist[i] = SW_Run.SoilWatSim.swcBulk[Today][i];
     }
     // Turn on spinup flag
-    SW_Run.ModelIn.SW_SpinUp.spinup = swTRUE;
+    SW_Run.ModelIn->SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
     SW_CTL_run_spinup(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run (a short) simulation
-    SW_Run.ModelIn.startyr = 1980;
-    SW_Run.ModelIn.endyr = 1981;
+    SW_Run.ModelIn->startyr = 1980;
+    SW_Run.ModelIn->endyr = 1981;
     SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -413,10 +413,10 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
 
 
                 //--- k1: set spinup
-                local_sw.ModelIn.SW_SpinUp.spinup = swTRUE;
-                local_sw.ModelIn.SW_SpinUp.duration = test_duration[k1];
-                local_sw.ModelIn.SW_SpinUp.mode = 1;
-                local_sw.ModelIn.SW_SpinUp.scope = 1;
+                local_sw.ModelIn->SW_SpinUp.spinup = swTRUE;
+                local_sw.ModelIn->SW_SpinUp.duration = test_duration[k1];
+                local_sw.ModelIn->SW_SpinUp.mode = 1;
+                local_sw.ModelIn->SW_SpinUp.scope = 1;
 
 
                 //--- k2: set initial swc values
@@ -499,8 +499,8 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
 
 
                 // Run (a short) simulation
-                local_sw.ModelIn.startyr = 1980;
-                local_sw.ModelIn.endyr = 1980;
+                local_sw.ModelIn->startyr = 1980;
+                local_sw.ModelIn->endyr = 1980;
                 SW_CTL_main(&local_sw, &SW_Domain.OutDom, &LogInfo);
                 // exit test program if unexpected error
                 sw_fail_on_error(&local_LogInfo);

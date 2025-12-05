@@ -23,7 +23,7 @@ TEST(CarbonTest, CarbonConstructor) {
 // Test reading yearly CO2 data from disk file
 TEST_F(CarbonFixtureTest, CarbonInReadInputFile) {
     TimeInt year;
-    TimeInt const n_years = SW_Run.ModelIn.endyr - SW_Run.ModelIn.startyr + 1;
+    TimeInt const n_years = SW_Run.ModelIn->endyr - SW_Run.ModelIn->startyr + 1;
 
     SW_CBN_deconstruct(&SW_Run.CarbonIn);
 
@@ -35,8 +35,8 @@ TEST_F(CarbonFixtureTest, CarbonInReadInputFile) {
 
     SW_CBN_setup(
         &SW_Run.CarbonIn,
-        SW_Run.ModelIn.startyr,
-        SW_Run.ModelIn.endyr,
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
         SW_Domain.SW_PathInputs.txtInFiles,
         SW_Run.VegProdIn.vegYear,
         &LogInfo
@@ -51,7 +51,7 @@ TEST_F(CarbonFixtureTest, CarbonInReadInputFile) {
     // file
 
     // Set vegYear outside simulation period
-    SW_Run.VegProdIn.vegYear = SW_Run.ModelIn.endyr + 5;
+    SW_Run.VegProdIn.vegYear = SW_Run.ModelIn->endyr + 5;
 
     SW_CBN_construct(&SW_Run.CarbonIn);
     (void) snprintf(
@@ -67,8 +67,8 @@ TEST_F(CarbonFixtureTest, CarbonInReadInputFile) {
 
     SW_CBN_setup(
         &SW_Run.CarbonIn,
-        SW_Run.ModelIn.startyr,
-        SW_Run.ModelIn.endyr,
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
         SW_Domain.SW_PathInputs.txtInFiles,
         SW_Run.VegProdIn.vegYear,
         &LogInfo
@@ -86,7 +86,7 @@ TEST_F(CarbonFixtureTest, CarbonInReadInputFile) {
 // Test the calculation of CO2-effect multipliers
 TEST_F(CarbonFixtureTest, CarbonInCO2multipliers) {
     TimeInt yrIdx;
-    TimeInt const n_years = SW_Run.ModelIn.endyr - SW_Run.ModelIn.startyr + 1;
+    TimeInt const n_years = SW_Run.ModelIn->endyr - SW_Run.ModelIn->startyr + 1;
     int k;
 
     SW_CBN_deconstruct(&SW_Run.CarbonIn);
@@ -106,8 +106,8 @@ TEST_F(CarbonFixtureTest, CarbonInCO2multipliers) {
 
     SW_CBN_setup(
         &SW_Run.CarbonIn,
-        SW_Run.ModelIn.startyr,
-        SW_Run.ModelIn.endyr,
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
         SW_Domain.SW_PathInputs.txtInFiles,
         SW_Run.VegProdIn.vegYear,
         &LogInfo
@@ -118,8 +118,8 @@ TEST_F(CarbonFixtureTest, CarbonInCO2multipliers) {
         SW_Run.VegProdIn.veg,
         SW_Run.VegProdSim.veg,
         &SW_Run.CarbonIn,
-        SW_Run.ModelIn.startyr,
-        SW_Run.ModelIn.endyr,
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error

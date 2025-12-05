@@ -157,8 +157,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
         &SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
-        SW_Run.ModelSim.cum_monthdays,
-        SW_Run.ModelSim.days_in_month,
+        SW_Run.ModelSim->cum_monthdays,
+        SW_Run.ModelSim->days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -167,8 +167,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
         &SW_Run.MarkovIn,
         &SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
-        SW_Run.ModelSim.cum_monthdays,
-        SW_Run.ModelSim.days_in_month,
+        SW_Run.ModelSim->cum_monthdays,
+        SW_Run.ModelSim->days_in_month,
         NULL,
         swFALSE, // Does not matter
         &LogInfo
@@ -226,8 +226,8 @@ TEST_F(
         &SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
-        SW_Run.ModelSim.cum_monthdays,
-        SW_Run.ModelSim.days_in_month,
+        SW_Run.ModelSim->cum_monthdays,
+        SW_Run.ModelSim->days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -236,8 +236,8 @@ TEST_F(
         &SW_Run.MarkovIn,
         &SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
-        SW_Run.ModelSim.cum_monthdays,
-        SW_Run.ModelSim.days_in_month,
+        SW_Run.ModelSim->cum_monthdays,
+        SW_Run.ModelSim->days_in_month,
         NULL,
         swFALSE, // Does not matter
         &LogInfo
@@ -415,11 +415,11 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate2) {
 
     // Turn on spinup simulation (including spinup of dynamic vegetation)
     // (see WaterBalanceFixtureTest.WaterBalanceWithSpinup)
-    SW_Run.ModelIn.SW_SpinUp.spinup = swTRUE;
+    SW_Run.ModelIn->SW_SpinUp.spinup = swTRUE;
     // Set spinup variables
-    SW_Run.ModelIn.SW_SpinUp.mode = 1;
-    SW_Run.ModelIn.SW_SpinUp.duration = 5;
-    SW_Run.ModelIn.SW_SpinUp.scope = 8;
+    SW_Run.ModelIn->SW_SpinUp.mode = 1;
+    SW_Run.ModelIn->SW_SpinUp.duration = 5;
+    SW_Run.ModelIn->SW_SpinUp.scope = 8;
 
     // Re-calculate vegetation (accounting for spinup)
     SW_VPD_init_run(&SW_Run, &LogInfo);
@@ -428,7 +428,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate2) {
     // Run the spinup & deactivate
     SW_CTL_run_spinup(&SW_Run, &SW_Domain.OutDom, &LogInfo);
 
-    SW_Run.ModelSim.yearIdxSpinSim = -1;
+    SW_Run.ModelSim->yearIdxSpinSim = -1;
 
     // Run the simulation
     SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
@@ -485,8 +485,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Two simulation years are sufficient
-    SW_Run.ModelIn.startyr = 1980;
-    SW_Run.ModelIn.endyr = 1981;
+    SW_Run.ModelIn->startyr = 1980;
+    SW_Run.ModelIn->endyr = 1981;
 
     // Run the simulation
     SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
@@ -671,8 +671,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
     );
 
     // Adjust simulation years: we have 2 years of Daymet inputs
-    SW_Run.ModelIn.startyr = 1980;
-    SW_Run.ModelIn.endyr = 1981;
+    SW_Run.ModelIn->startyr = 1980;
+    SW_Run.ModelIn->endyr = 1981;
 
     // Describe daily Daymet inputs
     SW_Run.WeatherIn.use_cloudCoverMonthly = swFALSE;
@@ -724,8 +724,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
         &SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
-        SW_Run.ModelSim.cum_monthdays,
-        SW_Run.ModelSim.days_in_month,
+        SW_Run.ModelSim->cum_monthdays,
+        SW_Run.ModelSim->days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -734,8 +734,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
         &SW_Run.MarkovIn,
         &SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
-        SW_Run.ModelSim.cum_monthdays,
-        SW_Run.ModelSim.days_in_month,
+        SW_Run.ModelSim->cum_monthdays,
+        SW_Run.ModelSim->days_in_month,
         NULL,
         swFALSE, // Does not matter
         &LogInfo
@@ -770,8 +770,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGridMET) {
     );
 
     // Adjust simulation years: we have 2 years of gridMET inputs
-    SW_Run.ModelIn.startyr = 1980;
-    SW_Run.ModelIn.endyr = 1981;
+    SW_Run.ModelIn->startyr = 1980;
+    SW_Run.ModelIn->endyr = 1981;
 
     // Describe daily gridMET inputs
     SW_Run.WeatherIn.use_cloudCoverMonthly = swFALSE;
@@ -820,8 +820,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGridMET) {
         &SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
-        SW_Run.ModelSim.cum_monthdays,
-        SW_Run.ModelSim.days_in_month,
+        SW_Run.ModelSim->cum_monthdays,
+        SW_Run.ModelSim->days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -830,8 +830,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGridMET) {
         &SW_Run.MarkovIn,
         &SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
-        SW_Run.ModelSim.cum_monthdays,
-        SW_Run.ModelSim.days_in_month,
+        SW_Run.ModelSim->cum_monthdays,
+        SW_Run.ModelSim->days_in_month,
         NULL,
         swFALSE, // Does not matter
         &LogInfo
@@ -867,8 +867,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype1) {
     );
 
     // Adjust simulation years: we have 2 years of MACA inputs
-    SW_Run.ModelIn.startyr = 1980;
-    SW_Run.ModelIn.endyr = 1981;
+    SW_Run.ModelIn->startyr = 1980;
+    SW_Run.ModelIn->endyr = 1981;
 
     // Describe daily MACA inputs
     SW_Run.WeatherIn.use_cloudCoverMonthly = swFALSE;
@@ -916,8 +916,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype1) {
         &SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
-        SW_Run.ModelSim.cum_monthdays,
-        SW_Run.ModelSim.days_in_month,
+        SW_Run.ModelSim->cum_monthdays,
+        SW_Run.ModelSim->days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -926,8 +926,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype1) {
         &SW_Run.MarkovIn,
         &SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
-        SW_Run.ModelSim.cum_monthdays,
-        SW_Run.ModelSim.days_in_month,
+        SW_Run.ModelSim->cum_monthdays,
+        SW_Run.ModelSim->days_in_month,
         NULL,
         swFALSE, // Does not matter
         &LogInfo
@@ -963,8 +963,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
     );
 
     // Adjust simulation years: we have 2 years of MACA inputs
-    SW_Run.ModelIn.startyr = 1980;
-    SW_Run.ModelIn.endyr = 1981;
+    SW_Run.ModelIn->startyr = 1980;
+    SW_Run.ModelIn->endyr = 1981;
 
     // Describe daily MACA inputs
     SW_Run.WeatherIn.use_cloudCoverMonthly = swFALSE;
@@ -1015,8 +1015,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
         &SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
-        SW_Run.ModelSim.cum_monthdays,
-        SW_Run.ModelSim.days_in_month,
+        SW_Run.ModelSim->cum_monthdays,
+        SW_Run.ModelSim->days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1025,8 +1025,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
         &SW_Run.MarkovIn,
         &SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
-        SW_Run.ModelSim.cum_monthdays,
-        SW_Run.ModelSim.days_in_month,
+        SW_Run.ModelSim->cum_monthdays,
+        SW_Run.ModelSim->days_in_month,
         NULL,
         swFALSE, // Does not matter
         &LogInfo
@@ -1053,16 +1053,16 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSpinup) {
     SW_VPD_init_run(&SW_Run, &LogInfo);
 
     // Turn on spinup simulation
-    SW_Run.ModelIn.SW_SpinUp.spinup = swTRUE;
+    SW_Run.ModelIn->SW_SpinUp.spinup = swTRUE;
     // Set spinup variables
-    SW_Run.ModelIn.SW_SpinUp.mode = 1;
-    SW_Run.ModelIn.SW_SpinUp.duration = 5;
-    SW_Run.ModelIn.SW_SpinUp.scope = 8;
+    SW_Run.ModelIn->SW_SpinUp.mode = 1;
+    SW_Run.ModelIn->SW_SpinUp.duration = 5;
+    SW_Run.ModelIn->SW_SpinUp.scope = 8;
 
     // Run the spinup & deactivate
     SW_CTL_run_spinup(&SW_Run, &SW_Domain.OutDom, &LogInfo);
 
-    SW_Run.ModelSim.yearIdxSpinSim = -1;
+    SW_Run.ModelSim->yearIdxSpinSim = -1;
 
     // Run the simulation
     SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);

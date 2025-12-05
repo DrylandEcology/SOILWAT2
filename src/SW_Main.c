@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
     sw_init_logs(stdout, &LogInfo);
 
     SW_DOM_init_ptrs(&SW_Domain);
-    SW_CTL_init_ptrs(&sw_template);
+    SW_CTL_init_ptrs(&SW_Domain, &sw_template);
 
     // Obtain user input from the command line
     sw_init_args(
@@ -112,7 +112,7 @@ int main(int argc, char **argv) {
     SW_CTL_setup_model(&sw_template, &SW_Domain.OutDom, swTRUE, &LogInfo);
     checkJumpToLabel(LogInfo.stopRun, finishProgram);
 
-    SW_MDL_get_ModelRun(&sw_template.ModelIn, &SW_Domain, NULL, &LogInfo);
+    SW_MDL_get_ModelRun(sw_template.ModelIn, &SW_Domain, NULL, &LogInfo);
     checkJumpToLabel(LogInfo.stopRun, finishProgram);
 
     // read user inputs
@@ -128,12 +128,12 @@ int main(int argc, char **argv) {
     SW_NCIN_check_input_config(
         &SW_Domain.netCDFInput,
         SW_Domain.hasConsistentSoilLayerDepths,
-        sw_template.SiteIn.inputsProvideSWRCp,
+        sw_template.SiteIn->inputsProvideSWRCp,
         &LogInfo
     );
     checkJumpToLabel(LogInfo.stopRun, finishProgram);
 
-    SW_NCIN_precalc_lookups(rank, &SW_Domain, &sw_template.WeatherIn, &LogInfo);
+    SW_NCIN_precalc_lookups(rank, &SW_Domain, sw_template.WeatherIn, &LogInfo);
     checkJumpToLabel(LogInfo.stopRun, finishProgram);
 #endif
 
@@ -155,9 +155,7 @@ int main(int argc, char **argv) {
     sw_setup_prog_data(size, prepareFiles, &sw_template, &SW_Domain, &LogInfo);
     checkJumpToLabel(LogInfo.stopRun, finishProgram);
 
-    SW_OUT_create_files(
-        rank, &sw_template.SW_PathOutputs, &SW_Domain, &LogInfo
-    );
+    SW_OUT_create_files(rank, sw_template.SW_PathOutputs, &SW_Domain, &LogInfo);
     checkJumpToLabel(LogInfo.stopRun, closeFiles);
 
     if (prepareFiles) {
@@ -178,9 +176,7 @@ int main(int argc, char **argv) {
 
 closeFiles: {
     // finish-up output (not used with rSOILWAT2)
-    SW_OUT_close_files(
-        &sw_template.SW_PathOutputs, &SW_Domain.OutDom, &LogInfo
-    );
+    SW_OUT_close_files(sw_template.SW_PathOutputs, &SW_Domain.OutDom, &LogInfo);
 }
 
 finishProgram: {

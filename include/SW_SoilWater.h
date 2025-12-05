@@ -141,6 +141,7 @@ void SW_SWC_new_year(
     SW_SITE_SIM *SW_SiteSim,
     TimeInt year,
     Bool reset_yr,
+    Bool canReadSWCHist,
     LyrIndex n_layers,
     LOG_INFO *LogInfo
 );

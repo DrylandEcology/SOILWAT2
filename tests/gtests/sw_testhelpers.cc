@@ -264,7 +264,7 @@ int setup_testGlobalSoilwatTemplate() {
     }
 
     /* turn off output during tests */
-    template_SW_Run.ModelSim.doOutput = swFALSE;
+    template_SW_Run.ModelSim->doOutput = swFALSE;
 
     SW_MDL_get_ModelRun(
         &template_SW_Run.ModelIn, &template_SW_Domain, NULL, &LogInfo
@@ -298,8 +298,8 @@ int setup_testGlobalSoilwatTemplate() {
         &template_SW_Run.MarkovIn,
         &template_SW_Run.WeatherIn,
         template_SW_Run.RunIn.weathRunAllHist,
-        template_SW_Run.ModelSim.cum_monthdays,
-        template_SW_Run.ModelSim.days_in_month,
+        template_SW_Run.ModelSim->cum_monthdays,
+        template_SW_Run.ModelSim->days_in_month,
         NULL,
         swFALSE, // Does not matter
         &LogInfo
@@ -316,8 +316,8 @@ int setup_testGlobalSoilwatTemplate() {
     SW_OUT_setup_output(
         template_SW_Run.RunIn.SiteRunIn.n_layers,
         template_SW_Run.SiteSim.n_evap_lyrs,
-        template_SW_Run.VegEstabIn.count,
-        template_SW_Run.VegEstabIn.parms,
+        template_SW_Run.VegEstabIn->count,
+        template_SW_Run.VegEstabIn->parms,
         &template_SW_Domain.OutDom,
         &LogInfo
     );

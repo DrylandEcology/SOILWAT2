@@ -274,7 +274,7 @@ void SW_MDL_new_day(SW_MODEL_SIM *SW_ModelSim) {
         SW_ModelSim->newperiod[eSW_Month] = swFALSE;
     }
 
-    /*  if (SW_ModelSim.week != prevweek || SW_ModelSim.month == NoMonth) { */
+    /*  if (SW_ModelSim->week != prevweek || SW_ModelSim->month == NoMonth) { */
     if (SW_ModelSim->week != prevWeek) {
         SW_ModelSim->newperiod[eSW_Week] =
             (prevWeek != notime) ? swTRUE : swFALSE;

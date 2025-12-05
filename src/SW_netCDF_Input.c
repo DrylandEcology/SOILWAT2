@@ -11,6 +11,7 @@
 #include "include/SW_Domain.h"         // for SW_DOM_calc_ncSuid
 #include "include/SW_Files.h"          // for eNCIn
 #include "include/SW_netCDF_General.h" // for SW_NC_open, SW_NC_get_var_ide...
+#include "include/SW_Output.h"         // for SW_OUT_new_year
 #include "include/SW_Site.h"           // for SW_SOIL_construct
 #include "include/SW_Times.h"          // for Yesterday
 #include "include/SW_VegProd.h"        // for key2veg
@@ -8489,11 +8490,11 @@ static void calc_const_cache_info(
     SW_RUN *SW_Runs
 ) {
     const TimeInt startyr = SW_Domain->startyr;
-    const Bool doSpinup = SW_Domain->SW_SpinUp.spinup;
+    const TimeInt nOutFiles =
+        SW_Domain->SW_ConstInfo.SW_PathOutputs.numOutFiles;
 
+    SW_DOMAIN_CONST *SW_ConstInfo = &SW_Domain->SW_ConstInfo;
     SW_RUN *targetRun;
-
-    TimeInt spinDur = doSpinup ? SW_Domain->SW_SpinUp.duration : 0;
     size_t *outTempStarts = SW_Domain->OutDom.netCDFOutput.outTempStart;
 
     TimeInt startDoy = SW_Domain->startSimDay;
@@ -8528,36 +8529,38 @@ static void calc_const_cache_info(
     Time_new_year(startYear, calc_days_in_month, calc_cum_monthdays);
 
     startYearIdx = startYear - startyr;
-    startSpinupYearIdx = startYearIdx + spinDur;
+    startSpinupYearIdx = startYearIdx + SW_Domain->SW_SpinUp.duration;
 
     startLongIndex =
         (startYear > nYearsDynLong) ? nYearsDynLong - startYear : 0;
     startShortIndex =
         (startYear > nYearsDynShort) ? nYearsDynShort - startYear : 0;
 
+    SW_ConstInfo->ModelSim.firstdoy = startFirstDoy;
+    SW_ConstInfo->ModelSim.lastdoy = startLastDoy;
+    SW_ConstInfo->ModelSim.doy = startDoy;
+    SW_ConstInfo->ModelSim.year = startYear;
+    SW_ConstInfo->ModelSim.yearIdx = startYearIdx;
+    SW_ConstInfo->ModelSim.yearIdxSpinSim = startSpinupYearIdx;
+
+    Mem_Copy(
+        SW_ConstInfo->ModelSim.days_in_month,
+        calc_days_in_month,
+        sizeof(TimeInt) * MAX_MONTHS
+    );
+    Mem_Copy(
+        SW_ConstInfo->ModelSim.cum_monthdays,
+        calc_cum_monthdays,
+        sizeof(TimeInt) * MAX_MONTHS
+    );
+
     for (site = 0; site < SW_Domain->nActiveSuidsProc; site++) {
         targetRun = &SW_Runs[site];
 
-        targetRun->ModelSim.firstdoy = startFirstDoy;
-        targetRun->ModelSim.lastdoy = startLastDoy;
-        targetRun->ModelSim.doy = startDoy;
-        targetRun->ModelSim.year = startYear;
-        targetRun->ModelSim.yearIdx = startYearIdx;
-        targetRun->ModelSim.yearIdxSpinSim = startSpinupYearIdx;
-
-        memcpy(
-            targetRun->ModelSim.days_in_month,
-            calc_days_in_month,
-            sizeof(TimeInt) * MAX_MONTHS
-        );
-        memcpy(
-            targetRun->ModelSim.cum_monthdays,
-            calc_cum_monthdays,
-            sizeof(TimeInt) * MAX_MONTHS
-        );
-
         targetRun->VegProdSim.longIndex = startLongIndex;
         targetRun->VegProdSim.shortIndex = startShortIndex;
+    }
+
     outTempStarts[eSW_Day] = SW_Domain->startSimDay;
     outTempStarts[eSW_Week] = (MAX_WEEKS * startYearIdx) + doy2week(startDoy);
     outTempStarts[eSW_Month] =
@@ -8572,7 +8575,8 @@ static void calc_const_cache_info(
             targetTimeSize = SW_Domain->OutDom.netCDFOutput.outTempStart[pd];
 
             while (file < nOutFiles && timeSize < targetTimeSize) {
-                currTSize = SW_Runs[0].SW_PathOutputs.outTimeSizes[pd][file];
+                currTSize = SW_Domain->SW_ConstInfo.SW_PathOutputs
+                                .outTimeSizes[pd][file];
                 timeSize += currTSize;
                 file++;
             }
@@ -9755,8 +9759,10 @@ void SW_NCIN_read_inputs(
     LOG_INFO *siteLogs,
     LOG_INFO *mainLogInfo
 ) {
-    const size_t yearIdx = SW_Runs[0].ModelSim.yearIdx;
-    const size_t inYearIndex = SW_Runs[0].ModelSim.inputYearIdx;
+    const Bool useWeathGenOnly =
+        SW_Domain->SW_ConstInfo.WeatherIn.use_weathergenerator_only;
+    const size_t yearIdx = SW_Domain->SW_ConstInfo.ModelSim.yearIdx;
+    const size_t inYearIndex = SW_Domain->SW_ConstInfo.ModelSim.inputYearIdx;
     const size_t numSites = SW_Domain->nActiveSuidsProc;
     Bool **readInputs = SW_Domain->netCDFInput.readInVars;
     sw_converter_t ***convs = SW_Domain->netCDFInput.uconv;
@@ -9778,9 +9784,7 @@ void SW_NCIN_read_inputs(
     }
 
     /* Read all activated inputs */
-    if (!readConstInfo && readWeather &&
-        !SW_Runs[0].WeatherIn.use_weathergenerator_only) {
-
+    if (!readConstInfo && readWeather && !useWeathGenOnly) {
         for (input = 0; input < numSites; input++) {
             clear_hist_weather(
                 1, &SW_Runs[input].RunIn.weathRunAllHist[inYearIndex], NULL
@@ -9789,7 +9793,7 @@ void SW_NCIN_read_inputs(
 
         read_weather_input(
             SW_Domain,
-            &SW_Runs[0].WeatherIn,
+            &SW_Domain->SW_ConstInfo.WeatherIn,
             convs[eSW_InWeather],
             inYearIndex,
             yearIdx,
@@ -9818,12 +9822,12 @@ void SW_NCIN_read_inputs(
             for (inIndex = 0; inIndex < nActiveSites; inIndex++) {
                 SW_WTH_setWeathUsingClimate(
                     &SW_Runs[inIndex].RunIn.weathRunAllHist[yearIdx],
-                    SW_Runs[0].ModelSim.year,
-                    SW_Runs[0].WeatherIn.use_cloudCoverMonthly,
-                    SW_Runs[0].WeatherIn.use_humidityMonthly,
-                    SW_Runs[0].WeatherIn.use_windSpeedMonthly,
-                    SW_Runs[0].ModelSim.cum_monthdays,
-                    SW_Runs[0].ModelSim.days_in_month,
+                    SW_Domain->SW_ConstInfo.ModelSim.year,
+                    SW_Domain->SW_ConstInfo.WeatherIn.use_cloudCoverMonthly,
+                    SW_Domain->SW_ConstInfo.WeatherIn.use_humidityMonthly,
+                    SW_Domain->SW_ConstInfo.WeatherIn.use_windSpeedMonthly,
+                    SW_Domain->SW_ConstInfo.ModelSim.cum_monthdays,
+                    SW_Domain->SW_ConstInfo.ModelSim.days_in_month,
                     SW_Runs[inIndex].RunIn.SkyRunIn.cloudcov,
                     SW_Runs[inIndex].RunIn.SkyRunIn.windspeed,
                     SW_Runs[inIndex].RunIn.SkyRunIn.r_humidity
@@ -11597,14 +11601,14 @@ void SW_NCIN_create_cache_file(
     char *siteName = SW_Domain->OutDom.netCDFOutput.siteName;
 
     const Bool progSDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
-    const IntU vegEstabCount = sw_template->VegEstabIn.count;
+    const IntU vegEstabCount = sw_template->VegEstabIn->count;
     const char *freq = "fx";
     const Bool isInput = swTRUE;
     const Bool parOpen = swFALSE;
     const char *domFile =
         SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom];
-    const size_t n_years = (size_t) (sw_template->ModelIn.endyr -
-                                     sw_template->ModelIn.startyr + 1);
+    const size_t n_years = (size_t) (sw_template->ModelIn->endyr -
+                                     sw_template->ModelIn->startyr + 1);
     int cacheDimIDs[] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
     int dim;
     int category;
@@ -11676,7 +11680,7 @@ void SW_NCIN_create_cache_file(
             dimSize = (dim == eiv_max_years) ? n_years : vegEstabCount;
         }
 
-        if (dim == eiv_vegestab_count || sw_template->VegEstabIn.use) {
+        if (dim == eiv_vegestab_count || sw_template->VegEstabIn->use) {
             SW_NC_create_netCDF_dim(
                 cacheDimNames[dim],
                 dimSize,
@@ -11847,7 +11851,7 @@ void SW_NCIN_handle_cache_vals(
             }
 
             if ((cacheCat != nCacheCategories - 1 && cacheVar != vegCountVar) ||
-                sw_template->VegEstabIn.use) {
+                sw_template->VegEstabIn->use) {
 
 #if defined(SWMPI)
                 if (read) {
@@ -11924,8 +11928,8 @@ void SW_NCIN_handle_cache_vals(
     if (read) {
         calc_const_cache_info(
             SW_Domain,
-            sw_template->VegProdIn.nYearsDynamicShort,
-            sw_template->VegProdIn.nYearsDynamicLong,
+            sw_template->VegProdIn->nYearsDynamicShort,
+            sw_template->VegProdIn->nYearsDynamicLong,
             SW_Runs
         );
     }
@@ -11996,8 +12000,8 @@ void SW_NCIN_write_cache(
 
     allCache =
         (cacheAtEnd && nFailedSites < SW_Domain->nActiveSuidsProc &&
-         SW_Runs[site].ModelSim.doy != SW_Runs[site].ModelSim.lastdoy &&
-         SW_Runs[site].ModelSim.year != sw_template->ModelIn.endyr);
+         SW_Runs[site].ModelSim->doy != SW_Runs[site].ModelSim->lastdoy &&
+         SW_Runs[site].ModelSim->year != sw_template->ModelIn->endyr);
 
 #if defined(SWMPI)
     // Determine if any process needs to write out cache values
@@ -12064,19 +12068,19 @@ void SW_NCIN_update_progress_info(
     // Calculate the maximum number of days a site has reached
     for (site = 0; site < SW_Domain->nActiveSuidsProc; site++) {
         numDays = 0;
-        currYear = SW_Runs[site].ModelSim.year;
+        currYear = SW_Runs[site].ModelSim->year;
 
         for (year = SW_Domain->startyr; year < currYear; year++) {
             numDays += Time_get_lastdoy_y(year);
         }
 
-        numDays += SW_Runs[site].ModelSim.doy;
+        numDays += SW_Runs[site].ModelSim->doy;
 
         localMaxDays = (numDays > localMaxDays) ? numDays : localMaxDays;
 
         runComp =
-            (runComp || (SW_Runs[site].ModelSim.year == SW_Domain->endyr &&
-                         SW_Runs[site].ModelSim.doy == nDaysLastYr + 1));
+            (runComp || (SW_Runs[site].ModelSim->year == SW_Domain->endyr &&
+                         SW_Runs[site].ModelSim->doy == nDaysLastYr + 1));
     }
 
 #if defined(SWMPI)
