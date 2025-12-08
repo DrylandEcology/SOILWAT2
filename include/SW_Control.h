@@ -66,11 +66,11 @@ void SW_CTL_sim_sites(
     SW_DOMAIN *SW_Domain,
     SW_RUN *SW_Runs,
     LOG_INFO *LogInfos,
-    size_t *lastFailedSite,
     LOG_INFO *main_LogInfo
 );
 
 void SW_CTL_run_daily_timesteps(
+    int rank,
     SW_RUN *sw_template,
     TimeInt startDay,
     TimeInt endDay,

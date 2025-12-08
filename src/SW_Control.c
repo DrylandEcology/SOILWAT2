@@ -555,12 +555,11 @@ handleLogs:
 /**
 @brief Attempt to output values if necessary (SWNETCDF mode only)
 
+@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] sw_template Template SW_RUN for the function to use as a
 reference for local versions of SW_RUN
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
-@param[in] LogInfos A list of LOG_INFO instances of size "nActiveSites" that
-will be used to store site log information through all daily runs
 @param[in] nActiveSites Number of active sites to initialize log
 information for
 @param[out] SW_WallTime Struct of type SW_WALLTIME that holds timing
@@ -568,10 +567,9 @@ information for the program run
 @param[out] main_LogInfo Holds information on warnings and errors
 */
 static void finalize_sites_day(
+    int rank,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
-    LOG_INFO *LogInfos,
-    size_t nActiveSites,
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *main_LogInfo
 ) {
@@ -579,12 +577,7 @@ static void finalize_sites_day(
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
 
-    size_t site = 0;
     Bool forceWriteOut = (Bool) (!runSims || main_LogInfo->stopRun);
-
-    while (site < nActiveSites && LogInfos[site].stopRun) {
-        site++;
-    }
 
     set_walltime(&tsr, &ok_tsr);
     SW_NCOUT_write_output(
@@ -604,10 +597,9 @@ static void finalize_sites_day(
     );
     SW_WT_TimeRun(tsr, ok_tsr, TIME_IO_OUT, SW_WallTime);
 #else
+    (void) rank;
     (void) sw_template;
     (void) SW_Domain;
-    (void) LogInfos;
-    (void) nActiveSites;
     (void) main_LogInfo;
     (void) SW_WallTime;
 #endif
@@ -631,7 +623,6 @@ temporal/spatial information for a set of simulation runs
 will be used for holding all information for the simulation
 @param[in] LogInfos A list of LOG_INFO instances of size "nActiveSites" that
 will be used to store site log information through all daily runs
-@param[out] lastFailedSite The last site to fail in this function call
 @param[out] main_LogInfo Holds information on warnings and errors
 */
 void SW_CTL_sim_sites(
@@ -639,7 +630,6 @@ void SW_CTL_sim_sites(
     SW_DOMAIN *SW_Domain,
     SW_RUN *SW_Runs,
     LOG_INFO *LogInfos,
-    size_t *lastFailedSite,
     LOG_INFO *main_LogInfo
 ) {
 #ifdef SWDEBUG
@@ -653,8 +643,6 @@ void SW_CTL_sim_sites(
     TimeInt lastDoy = SW_Domain->SW_ConstInfo.ModelSim.lastdoy;
     signed char *runStatus = NULL;
     Bool updateConstInfo = swTRUE;
-
-    *lastFailedSite = 0;
 
 #if defined(SWNETCDF)
     signed char *progVals = SW_Domain->netCDFInput.progVals;
@@ -703,8 +691,6 @@ void SW_CTL_sim_sites(
 
 #if defined(SWNETCDF)
         if (LogInfos[site].stopRun) {
-            *lastFailedSite = site;
-
             SW_NCOUT_reset_failed_sites(
                 SW_Domain, actSiteIdx, sw_template->OutRun->p_OUT
             );
@@ -719,6 +705,7 @@ void SW_CTL_sim_sites(
 @brief Run through all daily time steps requested by the user, simulating
 every site at once per daily time step
 
+@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] sw_template Template SW_RUN for the function to use as a
 reference for local versions of SW_RUN
 @param[in] startDay Start day of the simulation
@@ -738,6 +725,7 @@ information for the program run
 @param[out] main_LogInfo Holds information on warnings and errors
 */
 void SW_CTL_run_daily_timesteps(
+    int rank,
     SW_RUN *sw_template,
     TimeInt startDay,
     TimeInt endDay,
@@ -751,8 +739,6 @@ void SW_CTL_run_daily_timesteps(
 ) {
     TimeInt day;
     Bool initFirstYear = swFALSE;
-    size_t nActiveSites = SW_Domain->nActiveSuidsProc;
-    size_t lastFailedSite = 0;
 
 #if defined(SWNETCDF)
     WallTimeSpec tsr;
@@ -779,12 +765,7 @@ void SW_CTL_run_daily_timesteps(
             set_walltime(&tsr, &ok_tsr);
 #endif
             SW_CTL_sim_sites(
-                sw_template,
-                SW_Domain,
-                SW_Runs,
-                LogInfos,
-                &lastFailedSite,
-                main_LogInfo
+                sw_template, SW_Domain, SW_Runs, LogInfos, main_LogInfo
             );
 #if defined(SWNETCDF)
             SW_WT_TimeRun(tsr, ok_tsr, TIME_COMPUTE, SW_WallTime);
@@ -793,12 +774,7 @@ void SW_CTL_run_daily_timesteps(
 
     handleOutput:
         finalize_sites_day(
-            sw_template,
-            SW_Domain,
-            LogInfos,
-            nActiveSites,
-            SW_WallTime,
-            main_LogInfo
+            rank, sw_template, SW_Domain, SW_WallTime, main_LogInfo
         );
         checkReturn(main_LogInfo->stopRun);
     }
@@ -945,6 +921,7 @@ void SW_CTL_RunSimSet(
 #endif
 
     SW_CTL_run_daily_timesteps(
+        rank,
         sw_template,
         SW_Domain->startSimDay,
         SW_Domain->endSimDay,
