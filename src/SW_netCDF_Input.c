@@ -8125,7 +8125,7 @@ sizes for netCDFs to read an entire block subdomain worth of inputs
     SW_SOIL_RUN_INPUTS used as temporary storage when reading inputs
 @param[out] SW_Runs A list of n active sites of comprehensive structs
 of type SW_RUN containing all information in the simulation
-@param[out] siteLogs A list of LOG_INFO of size N_SUID_ASSIGN that will
+@param[out] siteLogs A list of LOG_INFO of size [n active sites] that will
 be returned with any site-specific errors/warnings
 @param[out] mainLogInfo Holds information on warnings and errors
 */
@@ -9462,7 +9462,7 @@ sizes for netCDFs to read an entire block subdomain worth of inputs
 have the inputs read for
 @param[out] inputs A list of structs of the type SW_RUN_INPUTS that
 will be filled with input
-@param[in] siteLogs A list of LOG_INFO of size N_SUID_ASSIGN that will
+@param[in] siteLogs A list of LOG_INFO of size [n active sites] that will
 be returned with any site-specific errors/warnings
 @param[out] SW_Runs A list of n active sites of comprehensive structs
 of type SW_RUN containing all information in the simulation
@@ -9742,7 +9742,7 @@ sizes for netCDFs to read an entire block subdomain worth of inputs
 @param[in] nActiveSites Number of active sites to simulate within a subdomain
 @param[in] newSoils A single (no SWMPI) or a list (SWMPI) of instances of
     SW_SOIL_RUN_INPUTS used as temporary storage when reading inputs
-@param[out] siteLogs A list of LOG_INFO of size N_SUID_ASSIGN that will
+@param[out] siteLogs A list of LOG_INFO of size [n active sites] that will
 be returned with any site-specific errors/warnings
 @param[out] mainLogInfo Holds information on warnings and errors
 */
@@ -9778,6 +9778,7 @@ void SW_NCIN_read_inputs(
     int **vegFileIDs = openNCFileIDs[eSW_InVeg];
     int **soilFileIDs = openNCFileIDs[eSW_InSoil];
     size_t inIndex = 0;
+    Bool fatalError = swTRUE;
 
     if (!runSims) {
         return;
@@ -9817,7 +9818,7 @@ void SW_NCIN_read_inputs(
                 SW_Runs,
                 mainLogInfo
             );
-            checkReturn(mainLogInfo->stopRun);
+            checkJumpToLabel(mainLogInfo->stopRun, handleLogs);
 
             for (inIndex = 0; inIndex < nActiveSites; inIndex++) {
                 SW_WTH_setWeathUsingClimate(
@@ -9846,7 +9847,7 @@ void SW_NCIN_read_inputs(
                 SW_Runs,
                 mainLogInfo
             );
-            checkReturn(mainLogInfo->stopRun);
+            checkJumpToLabel(mainLogInfo->stopRun, handleLogs);
         }
 
         if (runSims && readSoil) {
@@ -9866,6 +9867,10 @@ void SW_NCIN_read_inputs(
             );
         }
     }
+    fatalError = mainLogInfo->stopRun;
+
+handleLogs:
+    SW_F_check_site_logs(fatalError, SW_Domain, siteLogs, mainLogInfo);
 }
 
 /**

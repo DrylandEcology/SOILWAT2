@@ -2211,9 +2211,6 @@ void SW_WTH_allocateAllWeather(
     *allHist = (SW_WEATHER_HIST *) Mem_Malloc(
         sizeof(SW_WEATHER_HIST) * n_years, "SW_WTH_allocateAllWeather", LogInfo
     );
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
 }
 
 /**

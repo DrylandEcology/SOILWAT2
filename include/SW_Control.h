@@ -52,7 +52,7 @@ void SW_CTL_setup_model(
 
 void SW_CTL_clear_model(Bool full_reset, SW_RUN *sw);
 
-void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *LogInfo);
+void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *siteLog, LOG_INFO *main_LogInfo);
 
 void SW_CTL_read_inputs_from_disk(
     SW_RUN *sw,
@@ -65,7 +65,7 @@ void SW_CTL_sim_sites(
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
     SW_RUN *SW_Runs,
-    LOG_INFO *LogInfos,
+    LOG_INFO *siteLogs,
     LOG_INFO *main_LogInfo
 );
 
@@ -78,7 +78,7 @@ void SW_CTL_run_daily_timesteps(
     SW_SOIL_RUN_INPUTS *newSoils,
     SW_DOMAIN *SW_Domain,
     SW_RUN *SW_Runs,
-    LOG_INFO *LogInfos,
+    LOG_INFO *siteLogs,
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *main_LogInfo
 );

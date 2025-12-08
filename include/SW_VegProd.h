@@ -253,7 +253,7 @@ void uniqueIndices(
 
 void SW_VPD_init_ptrs(SW_VEGPROD_SIM *SW_VegProdSim);
 
-void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *LogInfo);
+void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *siteLog, LOG_INFO *main_LogInfo);
 
 void checkBiomass(VegTypeRunIn *veg, LOG_INFO *LogInfo);
 

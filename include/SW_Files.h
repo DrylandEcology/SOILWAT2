@@ -97,6 +97,12 @@ void SW_F_handle_log_counts(
     LOG_INFO *simLog, signed char *runStatus, LOG_INFO *main_LogInfo
 );
 
+void SW_F_check_site_logs(
+    Bool fatalError,
+    SW_DOMAIN *SW_Domain,
+    LOG_INFO *siteLogs,
+    LOG_INFO *main_LogInfo
+);
 
 #ifdef __cplusplus
 }

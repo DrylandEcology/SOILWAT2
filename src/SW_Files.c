@@ -698,3 +698,43 @@ void SW_F_handle_log_counts(
     (void) runStatus;
 #endif
 }
+
+/**
+@brief Wrapper function to check all site log information, track it
+and error if necessary
+
+@param[in] fatalError A flag specifying if a domain-level error occurred
+so we don't attempt to overwrite it
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[in] siteLogs A list of LOG_INFO of size [n active sites] that will
+be returned with any site-specific errors/warnings
+@param[out] main_LogInfo The main LOG_INFO instance for the program
+*/
+void SW_F_check_site_logs(
+    Bool fatalError,
+    SW_DOMAIN *SW_Domain,
+    LOG_INFO *siteLogs,
+    LOG_INFO *main_LogInfo
+) {
+    const size_t nSites = SW_Domain->nActiveSuidsProc;
+
+    size_t site;
+    size_t siteIdx = 0;
+
+    for (site = 0; site < nSites; site++) {
+#if defined(SWNETCDF)
+        siteIdx = SW_Domain->actSiteIdx[eSW_InDomain][site];
+#endif
+
+        SW_F_handle_log_counts(
+            &siteLogs[site],
+            &SW_Domain->netCDFInput.progVals[siteIdx],
+            main_LogInfo
+        );
+    }
+
+    if (!fatalError) {
+        SW_F_check_fatal_log(SW_Domain, nSites, main_LogInfo);
+    }
+}

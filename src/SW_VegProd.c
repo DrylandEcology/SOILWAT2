@@ -1879,7 +1879,7 @@ void SW_VPD_init_ptrs(SW_VEGPROD_SIM *SW_VegProdSim) {
     }
 }
 
-void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
+void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *siteLog, LOG_INFO *main_LogInfo) {
     TimeInt year;
     TimeInt n_years = sw->ModelIn->endyr - sw->ModelIn->startyr + 1;
     int k;
@@ -1890,8 +1890,8 @@ void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
     Bool annTempOnly =
         (Bool) (allocAnnTemp && veg_method != VEG_METHOD_DYN_EST);
 
-    alloc_co2(&sw->VegProdSim, n_years, LogInfo);
-    if (LogInfo->stopRun) {
+    alloc_co2(&sw->VegProdSim, n_years, main_LogInfo);
+    if (main_LogInfo->stopRun) {
         return;
     }
 
@@ -1914,9 +1914,9 @@ void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
             sw->ModelSim,
             inNorthHem,
             veg_method,
-            LogInfo
+            siteLog
         );
-        if (LogInfo->stopRun) {
+        if (siteLog->stopRun) {
             return; // Exit function prematurely due to error
         }
     }
@@ -1934,13 +1934,13 @@ void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
             n_years += sw->ModelIn->SW_SpinUp.duration;
         }
 
-        alloc_nyear_arrays(n_years, annTempOnly, &sw->VegProdSim, LogInfo);
-        if (LogInfo->stopRun) {
+        alloc_nyear_arrays(n_years, annTempOnly, &sw->VegProdSim, main_LogInfo);
+        if (main_LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
     }
 
-    checkBiomass(&sw->RunIn.VegProdRunIn.veg, LogInfo);
+    checkBiomass(&sw->RunIn.VegProdRunIn.veg, siteLog);
 }
 
 /**
