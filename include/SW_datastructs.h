@@ -1858,7 +1858,6 @@ typedef struct {
 typedef struct {
     SW_WEATHER_INPUTS WeatherIn;
     SW_CARBON_INPUTS CarbonIn;
-    SW_MARKOV_INPUTS MarkovIn;
     SW_VEGPROD_INPUTS VegProdIn;
     SW_MODEL_INPUTS ModelIn;
     SW_VEGESTAB_INPUTS VegEstabIn;
@@ -2027,7 +2026,7 @@ struct SW_RUN {
     /* Input information */
     SW_WEATHER_INPUTS *WeatherIn;
     SW_CARBON_INPUTS *CarbonIn;
-    SW_MARKOV_INPUTS *MarkovIn;
+    SW_MARKOV_INPUTS MarkovIn;
     SW_VEGPROD_INPUTS *VegProdIn;
     SW_MODEL_INPUTS *ModelIn;
     SW_VEGESTAB_INPUTS *VegEstabIn;

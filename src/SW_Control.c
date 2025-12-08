@@ -441,6 +441,11 @@ void SW_RUN_deepCopy(
         }
     }
 
+    /* Copy weather generator parameters */
+    if (dest->WeatherIn->generateWeatherMethod == 2) {
+        copyMKV(&dest->MarkovIn, &source->MarkovIn);
+    }
+
     SW_VPD_init_ptrs(&dest->VegProdSim);
     SW_VES_init_ptrs(dest->VegEstabIn, dest->ves_p_accu, dest->ves_p_oagg);
 
@@ -559,7 +564,7 @@ static void prepare_next_day(
 
                 // finalize daily weather
                 SW_WTH_finalize_yearly_weather(
-                    SW_Runs[site].MarkovIn,
+                    &SW_Runs[site].MarkovIn,
                     SW_Runs[site].WeatherIn,
                     &SW_Runs[site].RunIn.weathRunAllHist[inputYearIdx],
                     &SW_Runs[site].WeatherSim,
@@ -1047,7 +1052,6 @@ void SW_CTL_init_ptrs(SW_DOMAIN *SW_Domain, SW_RUN *sw) {
     // Initialize pointers to structs held within SW_DOMAIN
     sw->WeatherIn = &SW_Domain->SW_ConstInfo.WeatherIn;
     sw->CarbonIn = &SW_Domain->SW_ConstInfo.CarbonIn;
-    sw->MarkovIn = &SW_Domain->SW_ConstInfo.MarkovIn;
     sw->VegProdIn = &SW_Domain->SW_ConstInfo.VegProdIn;
     sw->ModelIn = &SW_Domain->SW_ConstInfo.ModelIn;
     sw->VegEstabIn = &SW_Domain->SW_ConstInfo.VegEstabIn;
@@ -1057,7 +1061,7 @@ void SW_CTL_init_ptrs(SW_DOMAIN *SW_Domain, SW_RUN *sw) {
 
     // Initialize pointers within substructs
     SW_WTH_init_ptrs(&sw->RunIn.weathRunAllHist);
-    SW_MKV_init_ptrs(sw->MarkovIn);
+    SW_MKV_init_ptrs(&sw->MarkovIn);
     SW_VPD_init_ptrs(&sw->VegProdSim);
     SW_VES_init_ptrs(sw->VegEstabIn, sw->ves_p_accu, sw->ves_p_oagg);
     SW_OUT_init_ptrs(sw->OutRun, sw->SW_PathOutputs);
@@ -1258,7 +1262,7 @@ void SW_CTL_clear_model(Bool full_reset, SW_RUN *sw) {
 
     SW_MDL_deconstruct();
     SW_WTH_deconstruct(&sw->RunIn.weathRunAllHist);
-    SW_MKV_deconstruct(sw->MarkovIn);
+    SW_MKV_deconstruct(&sw->MarkovIn);
     // SW_SKY_INPUTS_deconstruct() not needed
     // SW_SIT_deconstruct() not needed
     SW_VES_deconstruct(sw->VegEstabIn->count, sw->ves_p_accu, sw->ves_p_oagg);
@@ -1649,7 +1653,7 @@ void SW_CTL_read_inputs_from_disk(
 
     if (sw->WeatherIn->generateWeatherMethod == 2) {
         SW_MKV_setup(
-            sw->MarkovIn,
+            &sw->MarkovIn,
             sw->WeatherIn->rng_seed,
             sw->WeatherIn->generateWeatherMethod,
             SW_PathInputs->txtInFiles,

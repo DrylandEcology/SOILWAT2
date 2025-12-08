@@ -35,6 +35,8 @@ void deallocateMKV(SW_MARKOV_INPUTS *SW_Markov);
 
 void SW_MKV_deconstruct(SW_MARKOV_INPUTS *SW_MarkovIn);
 
+void copyMKV(SW_MARKOV_INPUTS *dest_MKV, SW_MARKOV_INPUTS *template_MKV);
+
 Bool SW_MKV_read_prob(
     char *txtInFiles[], SW_MARKOV_INPUTS *SW_MarkovIn, LOG_INFO *LogInfo
 );
