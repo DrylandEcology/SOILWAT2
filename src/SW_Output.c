@@ -498,8 +498,9 @@ static void sumof_swc(
         break;
 
     case eSW_EvapSoil:
-        ForEachEvapLayer(i, n_evap_layers) s->evap_baresoil[i] +=
-            v->evap_baresoil[i];
+        ForEachEvapLayer(i, n_evap_layers) {
+            s->evap_baresoil[i] += v->evap_baresoil[i];
+        }
         break;
 
     case eSW_EvapSurface:
@@ -878,8 +879,10 @@ static void average_for(
             break;
 
         case eSW_EvapSoil:
-            ForEachEvapLayer(i, n_evap_layers) sw->sw_p_oagg[pd]
-                .evap_baresoil[i] = sw->sw_p_accu[pd].evap_baresoil[i] / div;
+            ForEachEvapLayer(i, n_evap_layers) {
+                sw->sw_p_oagg[pd].evap_baresoil[i] =
+                    sw->sw_p_accu[pd].evap_baresoil[i] / div;
+            }
             break;
 
         case eSW_EvapSurface:
@@ -2079,7 +2082,6 @@ void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw) {
 Note to programmer: this function must match what `get_*()` implement.
 
 @param[in] tLayers Number of soil layers
-@param[in] n_evap_lyrs Number of soil layers with evaporation
 @param[in] nTaxaEstabl Number of taxa used for establishment output.
 @param[out] ncol_OUT Calculated number of output combinations across
     variables, soil layers, and plant functional types (vegtypes)
@@ -2094,7 +2096,6 @@ Note to programmer: this function must match what `get_*()` implement.
 */
 void SW_OUT_set_ncol(
     unsigned int tLayers,
-    unsigned int n_evap_lyrs,
     unsigned int nTaxaEstabl,
     IntUS ncol_OUT[],
     IntUS nvar_OUT[],
@@ -2179,7 +2180,7 @@ void SW_OUT_set_ncol(
 
     nsl_OUT[eSW_SWPMatric][0] = tLayers;
 
-    nsl_OUT[eSW_EvapSoil][0] = n_evap_lyrs;
+    nsl_OUT[eSW_EvapSoil][0] = tLayers; // before v8.4.0: n_evap_lyrs
 
     nsl_OUT[eSW_LyrDrain][0] = tLayers - 1;
 
@@ -2796,7 +2797,6 @@ void SW_OUT_set_colnames(
 /** Setup output information/description
 
 @param[in] tLayers Number of soil layers
-@param[in] n_evap_lyrs Number of soil layers with evaporation
 @param[in] count Number of species to check
 @param[in] parmsIn Struct for inputs of vegetation establishment for each
     species
@@ -2806,7 +2806,6 @@ void SW_OUT_set_colnames(
 */
 void SW_OUT_setup_output(
     unsigned int tLayers,
-    unsigned int n_evap_lyrs,
     unsigned int count,
     SW_VEGESTAB_INFO_INPUTS *parmsIn,
     SW_OUT_DOM *OutDom,
@@ -2814,7 +2813,6 @@ void SW_OUT_setup_output(
 ) {
     SW_OUT_set_ncol(
         tLayers,
-        n_evap_lyrs,
         count,
         OutDom->ncol_OUT,
         OutDom->nvar_OUT,

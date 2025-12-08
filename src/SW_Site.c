@@ -119,7 +119,7 @@
 #include "include/SW_SoilWater.h"   // for SW_SWRC_SWCtoSWP, SW_SWRC_SWPtoSWC
 #include "include/SW_VegProd.h"     // for key2veg, get_critical_rank, sum_...
 #include <limits.h>                 // for UINT_MAX
-#include <math.h>                   // for fmod
+#include <math.h>                   // for fmod, round
 #include <stdio.h>                  // for sw_printf, sscanf, FILE, NULL, stdout
 #include <stdlib.h>                 // for free, strod, strtol
 #include <string.h>                 // for memset
@@ -1408,6 +1408,87 @@ void SWRC_bulkSoilParameters(
 }
 
 /**
+@brief Estimate potential evaporation coefficients from soil texture
+
+This function is based on R code from `rSW2data::calc_BareSoilEvapCoefs()`
+as of 2025-Dec-03.
+It represents the soil texture influence based on a small re-analysis of data
+from Wythers et al. 1999 @cite wythers1999SSSAJ and
+uses a maximum depth of 15 cm based on Torres et al. 2010 @cite torres2010HSJSH.
+
+@param[out] evco Estimated potential evaporation coefficients [0-1]
+@param[in] depth Depth at bottom of soil layer [`cm`]
+@param[in] width Width (thickness) of soil layer [`cm`]
+@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
+@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
+@param[in] n_layers Number of soil layers
+
+*/
+void estimate_evco(
+    double evco[],
+    const double depth[],
+    const double width[],
+    const double sand[],
+    const double clay[],
+    LyrIndex n_layers
+) {
+    const double maxDepth = 15.;
+    LyrIndex k;
+    LyrIndex kMax;
+    double wmSand = 0.;
+    double wmClay = 0.;
+    double depthEs;
+    double cec[MAX_LAYERS] = {0.};
+    double sec = 0.;
+    double nDigitsRound = 1e4;
+
+    // Initialize evco
+    ForEachSoilLayer(k, n_layers) { evco[k] = 0.; }
+
+    // Find count of soil layers that occur within maxDepth
+    for (kMax = 0; kMax < n_layers && LT(depth[kMax], maxDepth); kMax++) {
+    }
+
+    // Only most shallow soil layer within maxDepth
+    if (kMax == 0) {
+        evco[0] = 1.;
+        return;
+    }
+
+    // Depth-weighted mean sand and clay content
+    for (k = 0; k <= kMax; k++) {
+        wmSand += width[k] * sand[k];
+        wmClay += width[k] * clay[k];
+    }
+
+    wmSand /= depth[kMax];
+    wmClay /= depth[kMax];
+
+    // Equation from re-analysis to estimate depth
+    depthEs = fmin(
+        maxDepth, 4.1984 + 0.6695 * squared(wmSand) + 168.7603 * squared(wmClay)
+    );
+
+    // Equation with consistency to "previous" cumulative evco
+    for (k = 0; k <= kMax; k++) {
+        cec[k] = 1. - exp(-5. * depth[k] / depthEs);
+    }
+    cec[kMax] = 1.;
+
+    // Finalize potential evcos
+    evco[0] = round(nDigitsRound * cec[0]) / nDigitsRound;
+    sec += evco[0];
+    for (k = 1; k <= kMax; k++) {
+        evco[k] = round(nDigitsRound * (cec[k] - cec[k - 1])) / nDigitsRound;
+        sec += evco[k];
+    }
+
+    for (k = 0; k <= kMax; k++) {
+        evco[k] /= sec;
+    }
+}
+
+/**
 @brief Estimate soil density of the whole soil (bulk).
 
 Based on equation 20 from Saxton. @cite Saxton2006.
@@ -1596,7 +1677,7 @@ void SW_SIT_read(
 #endif
 
     FILE *f;
-    const int nLinesWithoutTR = 43; /* Number of inputs without tr regions */
+    const int nLinesWithoutTR = 44; /* Number of inputs without tr regions */
     int lineno = 0;
     int x;
     double rgnlow = 0; /* lower depth of region */
@@ -1624,15 +1705,15 @@ void SW_SIT_read(
         doubleRes = SW_MISSING;
         intRes = SW_MISSING;
 
-        strLine = (Bool) (lineno == 37 || lineno == 41 || lineno == 42);
+        strLine = (Bool) (lineno == 37 || lineno == 42 || lineno == 43);
 
         if (!strLine && lineno <= nLinesWithoutTR) {
             /* Check to see if the line number contains a double or integer
              * value
-               lineno with integers: 3, 4, 32, 33, 34, 35, 36, 38, 39, 43 */
+               lineno with integers: 3, 4, 32, 33, 34, 35, 36, 38, 39, 40, 44 */
             doDoubleConv =
                 (Bool) ((lineno >= 0 && lineno <= 2) ||
-                        (lineno >= 5 && lineno <= 31) || lineno == 40);
+                        (lineno >= 5 && lineno <= 31) || lineno == 41);
 
             if (doDoubleConv) {
                 doubleRes = sw_strtod(inbuf, MyFileName, LogInfo);
@@ -1808,10 +1889,14 @@ void SW_SIT_read(
             break;
 
         case 40:
-            SW_SiteIn->depthSapric = doubleRes;
+            SW_SiteIn->methodEvCo = (unsigned int) intRes;
             break;
 
         case 41:
+            SW_SiteIn->depthSapric = doubleRes;
+            break;
+
+        case 42:
             resSNP = snprintf(
                 SW_SiteIn->site_swrc_name,
                 sizeof SW_SiteIn->site_swrc_name,
@@ -1831,7 +1916,7 @@ void SW_SIT_read(
                 goto closeFile;
             }
             break;
-        case 42:
+        case 43:
             resSNP = snprintf(
                 SW_SiteIn->site_ptf_name,
                 sizeof SW_SiteIn->site_ptf_name,
@@ -1847,7 +1932,7 @@ void SW_SIT_read(
             }
             SW_SiteIn->site_ptf_type = encode_str2ptf(SW_SiteIn->site_ptf_name);
             break;
-        case 43:
+        case 44:
             if (lineno != nLinesWithoutTR) {
                 LogError(
                     LogInfo,
@@ -1969,7 +2054,6 @@ closeFile: { CloseFile(&f, LogInfo); }
 
 @param[in,out] SW_SoilRunIn Struct of type SW_SOIL_RUN_INPUTS describing
     the simulated site's input values
-@param[in,out] n_evap_lyrs Number of soil layers with evaporation
 @param[in,out] n_layers Number of layers of soil within the simulation run
 @param[in] txtInFiles Array of program in/output files
 @param[out] LogInfo Holds information on warnings and errors
@@ -1978,7 +2062,6 @@ closeFile: { CloseFile(&f, LogInfo); }
 */
 void SW_LYR_read(
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
-    LyrIndex *n_evap_lyrs,
     LyrIndex *n_layers,
     char *txtInFiles[],
     LOG_INFO *LogInfo
@@ -2116,9 +2199,6 @@ void SW_LYR_read(
             goto closeFile;
         }
     }
-
-
-    *n_evap_lyrs = nlayers_bsevap(SW_SoilRunIn->evap_coeff, *n_layers);
 
 closeFile: { CloseFile(&f, LogInfo); }
 }
@@ -2605,15 +2685,12 @@ void SW_SIT_init_run(
     }
 
 
-    /* Determine number of layers with potential for
-       bare-soil evaporation and transpiration */
-    SW_SiteSim->n_evap_lyrs =
-        nlayers_bsevap(SW_SoilRunIn->evap_coeff, n_layers);
+    /* Transpiration: count number of layers with potential for transpiration */
     nlayers_vegroots(
         n_layers, SW_SiteSim->n_transp_lyrs, SW_SoilRunIn->transp_coeff
     );
 
-    /* Identify transpiration regions by soil layers */
+    /* Transpiration: transpiration regions by soil layers */
     derive_TranspRgnBounds(
         &SW_SiteIn->n_transp_rgn,
         SW_SiteSim->TranspRgnBounds,
@@ -2627,6 +2704,24 @@ void SW_SIT_init_run(
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
+
+
+    /* Evaporation from soil: estimate potential evaporation coefficients */
+    if (SW_SiteIn->methodEvCo == 1) {
+        estimate_evco(
+            SW_SoilRunIn->evap_coeff,
+            SW_SoilRunIn->depths,
+            SW_SoilRunIn->width,
+            SW_SoilRunIn->fractionWeightMatric_sand,
+            SW_SoilRunIn->fractionWeightMatric_clay,
+            n_layers
+        );
+    }
+
+    /* Evaporation from soil: count layers with potential for Es */
+    SW_SiteSim->n_evap_lyrs =
+        nlayers_bsevap(SW_SoilRunIn->evap_coeff, n_layers);
+
 
     /* Manage deep drainage */
     add_deepdrain_layer(SW_SiteSim, n_layers, SW_SiteIn->deepdrain);

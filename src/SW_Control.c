@@ -1473,7 +1473,6 @@ void SW_CTL_read_inputs_from_disk(
 
     SW_LYR_read(
         &sw->RunIn.SoilRunIn,
-        &sw->SiteSim.n_evap_lyrs,
         &sw->RunIn.SiteRunIn.n_layers,
         SW_PathInputs->txtInFiles,
         LogInfo

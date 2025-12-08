@@ -433,6 +433,10 @@ typedef struct {
         0 (Parton 1978); 1 (Parton 1984) */
     unsigned int methodSurfaceTemperature;
 
+    /** Method for potential evaporation coefficients:
+        0 (inputs from soils.in); 1 (estimated from soil properties) */
+    unsigned int methodEvCo;
+
     /* Soil water retention curve (SWRC), see `SW_LAYER_INFO` */
     unsigned int site_swrc_type, site_ptf_type;
 
@@ -1799,12 +1803,7 @@ typedef struct {
     /** Largest number of soil layers across domain */
     LyrIndex nMaxSoilLayers;
 
-    /** Largest number of soil layers from which bare-soil evaporation may
-    extract water across simulation domain */
-    LyrIndex nMaxEvapLayers;
-
     /** Soil layer depths profile
-
     Values represent the bottom depth of soil layers [cm].
     Used if #hasConsistentSoilLayerDepths.
     */

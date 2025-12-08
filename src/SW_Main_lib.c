@@ -597,7 +597,6 @@ void sw_setup_prog_data(
     // initialize output
     SW_OUT_setup_output(
         SW_Domain->nMaxSoilLayers,
-        SW_Domain->nMaxEvapLayers,
         sw_template->VegEstabIn.count,
         sw_template->VegEstabIn.parms,
         &SW_Domain->OutDom,
