@@ -180,10 +180,13 @@ static void handle_sim_structs_mem(
     LOG_INFO **siteLogs,
     LOG_INFO *main_LogInfo
 ) {
+    const Bool fullReset = swFALSE;
+    const int runIndex = 0;
     const int numDeallocArrays = 2;
     void **deallocArrays[] = {(void **) SW_Runs, (void **) siteLogs};
 
     int arr;
+    size_t site;
 
     if (allocate) {
         *SW_Runs = (SW_RUN *) Mem_Malloc(
@@ -194,10 +197,15 @@ static void handle_sim_structs_mem(
         *siteLogs = (LOG_INFO *) Mem_Malloc(
             sizeof(LOG_INFO) * nActiveSites, "alloc_sim_structs", main_LogInfo
         );
-        checkReturn(main_LogInfo->stopRun);
     } else {
         for (arr = 0; arr < numDeallocArrays; arr++) {
             if (!isnull(*(deallocArrays[arr]))) {
+                if (arr == runIndex) {
+                    for (site = 0; site < nActiveSites; site++) {
+                        SW_CTL_clear_model(fullReset, &((*SW_Runs)[site]));
+                    }
+                }
+
                 free((void *) *(deallocArrays[arr]));
                 *(deallocArrays[arr]) = NULL;
             }
