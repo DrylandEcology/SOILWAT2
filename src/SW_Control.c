@@ -254,6 +254,48 @@ static void report_sim_start(SW_DOMAIN *SW_Domain, int rank, int worldSize) {
 #endif
 }
 
+#if defined(SOILWAT) && defined(SWNETCDF)
+/**
+@brief Display the number of years that have been simulated by using
+a displace of consecutive periods
+
+@param[in] rank Process number known to MPI for the current process (aka rank);
+    defaults to 0 (main process) if we are running sequentially
+@param[in] nYears Number of years to display
+@param[in] startup A flag specifying if the program is starting up
+@param[in] finalYear A flag specifying if the last year that was simulated
+is the last in the simulation
+@param[in] displayYears A flag specifying if it is the end of the program
+and thus should print out how many years should be printed out
+*/
+static void display_yearly_progress(
+    int rank, TimeInt nYears, Bool startup, Bool finalYear, Bool displayYears
+) {
+    TimeInt year;
+    TimeInt numPrintYears = (finalYear) ? 1 : nYears;
+
+    if (rank == ROOT_PROC) {
+        if (startup) {
+            SW_MSG_ROOT("Yearly status", ROOT_PROC);
+        }
+
+        if (!displayYears || finalYear) {
+            for (year = 0; year < numPrintYears; year++) {
+                sw_printf(".");
+            }
+        }
+
+        if (displayYears) {
+            sw_printf(
+                " (%u %s completed)\n", nYears, (nYears == 1) ? "year" : "years"
+            );
+        }
+
+        fflush(stdout);
+    }
+}
+#endif
+
 /**
 @brief Initiate/update variables for a new simulation year.
       In addition to the timekeeper (Model), usually only modules
@@ -574,6 +616,13 @@ static void finalize_sites_day(
     LOG_INFO *main_LogInfo
 ) {
 #if defined(SWNETCDF)
+    const Bool displayNYears = swFALSE;
+    const TimeInt nYears = 1;
+    const Bool startupPrint = swFALSE;
+    const Bool finalYear = swFALSE;
+    const TimeInt doy = SW_Domain->SW_ConstInfo.ModelSim.doy;
+    const TimeInt lastDoy = SW_Domain->SW_ConstInfo.ModelSim.lastdoy;
+
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
 
@@ -596,6 +645,16 @@ static void finalize_sites_day(
         main_LogInfo
     );
     SW_WT_TimeRun(tsr, ok_tsr, TIME_IO_OUT, SW_WallTime);
+#endif
+
+    SW_Domain->SW_ConstInfo.ModelSim.doy++;
+
+#if defined(SWNETCDF)
+    if (doy == lastDoy) {
+        display_yearly_progress(
+            rank, nYears, startupPrint, finalYear, displayNYears
+        );
+    }
 #else
     (void) rank;
     (void) sw_template;
@@ -603,8 +662,6 @@ static void finalize_sites_day(
     (void) main_LogInfo;
     (void) SW_WallTime;
 #endif
-
-    SW_Domain->SW_ConstInfo.ModelSim.doy++;
 }
 
 /* =================================================== */
@@ -812,6 +869,12 @@ void SW_CTL_RunSimSet(
 #if defined(SWNETCDF)
     const TimeInt newSimStartDay = 1;
     const Bool freshRun = (Bool) (SW_Domain->startSimDay == newSimStartDay);
+    const Bool startupPrint = swTRUE;
+    const Bool displayNYearsBeforeSim = swFALSE;
+    const Bool displayNYearsAfterSim = swTRUE;
+    Bool finalYear = swFALSE;
+    TimeInt year = SW_Domain->SW_ConstInfo.ModelSim.year;
+    TimeInt nYears = year - SW_Domain->startyr;
 #else
     const Bool freshRun = swTRUE;
 #endif
@@ -918,6 +981,10 @@ void SW_CTL_RunSimSet(
     }
 
     cacheAtEnd = swTRUE;
+
+    display_yearly_progress(
+        rank, nYears, startupPrint, finalYear, displayNYearsBeforeSim
+    );
 #endif
 
     SW_CTL_run_daily_timesteps(
@@ -936,6 +1003,13 @@ void SW_CTL_RunSimSet(
 
 freeMem:
 #if defined(SWNETCDF)
+    year = SW_Domain->SW_ConstInfo.ModelSim.year;
+    finalYear = (Bool) (year == SW_Domain->endyr);
+    nYears = year - SW_Domain->startyr;
+    display_yearly_progress(
+        rank, nYears, startupPrint, finalYear, displayNYearsAfterSim
+    );
+
     SW_NCIN_write_cache(
         rank,
         SW_Domain,
