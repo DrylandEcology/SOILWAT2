@@ -1347,52 +1347,18 @@ void SW_SWC_init_run(
 }
 
 /**
-@brief init first doy swc, either by the computed init value or by the last day
-of last year, which is also, coincidentally, Yesterday
+@brief Read yearly SWC history if turned on
 
 @param[in,out] SW_SoilWatIn Struct of type SW_SOILWAT containing
     soil water input values
-@param[in,out] SW_SoilWatSim Struct of type SW_SOILWAT containing
-    soil water simulation values
-@param[in,out] SW_SiteSim Struct of type SW_SITE describing the simulated site's
-    input values
 @param[in] year Current year being run in the simulation
-@param[in] reset_yr Flag, reset values at the beginning of each year
-@param[in] canReadSWCHist A flag specifying that the next year of SWC history
-can be read in
-@param[in] n_layers Number of layers of soil within the simulation run
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_SWC_new_year(
-    SW_SOILWAT_INPUTS *SW_SoilWatIn,
-    SW_SOILWAT_SIM *SW_SoilWatSim,
-    SW_SITE_SIM *SW_SiteSim,
-    TimeInt year,
-    Bool reset_yr,
-    Bool canReadSWCHist,
-    LyrIndex n_layers,
-    LOG_INFO *LogInfo
+void SW_SWC_new_year_const(
+    SW_SOILWAT_INPUTS *SW_SoilWatIn, TimeInt year, LOG_INFO *LogInfo
 ) {
-
-    LyrIndex lyr;
-
-    if (reset_yr) {
-        reset_swc(SW_SoilWatSim, SW_SiteSim, n_layers);
-
-    } else {
-        /* update swc */
-        ForEachSoilLayer(lyr, n_layers) {
-            SW_SoilWatSim->swcBulk[Today][lyr] =
-                SW_SoilWatSim->swcBulk[Yesterday][lyr];
-        }
-
-        /* update snowpack */
-        SW_SoilWatSim->snowpack[Today] = SW_SoilWatSim->snowpack[Yesterday];
-    }
-
     /* update historical (measured) values, if needed */
-    if (SW_SoilWatIn->hist_use && canReadSWCHist &&
-        year >= SW_SoilWatIn->hist.yr.first) {
+    if (SW_SoilWatIn->hist_use && year >= SW_SoilWatIn->hist.yr.first) {
 #ifndef RSOILWAT
         read_swc_hist(&SW_SoilWatIn->hist, year, LogInfo);
 #else
@@ -1410,6 +1376,40 @@ void SW_SWC_new_year(
             // onSet_SW_SWC_hist(LogInfo);
         }
 #endif
+    }
+}
+
+/**
+@brief init first doy swc, either by the computed init value or by the last day
+of last year, which is also, coincidentally, Yesterday
+
+@param[in,out] SW_SoilWatSim Struct of type SW_SOILWAT containing
+    soil water simulation values
+@param[in,out] SW_SiteSim Struct of type SW_SITE describing the simulated site's
+    input values
+@param[in] reset_yr Flag, reset values at the beginning of each year
+@param[in] n_layers Number of layers of soil within the simulation run
+*/
+void SW_SWC_new_year_site(
+    SW_SOILWAT_SIM *SW_SoilWatSim,
+    SW_SITE_SIM *SW_SiteSim,
+    Bool reset_yr,
+    LyrIndex n_layers
+) {
+    LyrIndex lyr;
+
+    if (reset_yr) {
+        reset_swc(SW_SoilWatSim, SW_SiteSim, n_layers);
+
+    } else {
+        /* update swc */
+        ForEachSoilLayer(lyr, n_layers) {
+            SW_SoilWatSim->swcBulk[Today][lyr] =
+                SW_SoilWatSim->swcBulk[Yesterday][lyr];
+        }
+
+        /* update snowpack */
+        SW_SoilWatSim->snowpack[Today] = SW_SoilWatSim->snowpack[Yesterday];
     }
 }
 

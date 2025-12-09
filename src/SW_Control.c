@@ -309,37 +309,76 @@ static void display_yearly_progress(
 #endif
 
 /**
-@brief Initiate/update variables for a new simulation year.
-      In addition to the timekeeper (Model), usually only modules
-      that read input yearly or produce output need to have this call.
+@brief Initiate/update variables for a new simulation year. This
+function only updates constant simulation information once for
+all sites. In addition to the timekeeper (Model), usually only modules
+that read input yearly or produce output need to have this call.
 
 @param[in,out] sw Comprehensive struct of type SW_RUN containing all
   information in the simulation
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
+@param[in] textSkyVals A flag specifying if the sky values that will
+be used during simulation are text-based (swTRUE) or through
+netCDFs (swFALSE)
 @param[out] LogInfo Holds information on warnings and errors
 */
-static void begin_year(
-    SW_RUN *sw, SW_OUT_DOM *OutDom, Bool updateConstInfo, LOG_INFO *LogInfo
+static void begin_year_const(
+    SW_RUN *sw, SW_OUT_DOM *OutDom, Bool textSkyVals, LOG_INFO *LogInfo
 ) {
     // SW_F_new_year() not needed
 
-    // call SW_MDL_new_year() first to set up time-related arrays for this year
-    if (updateConstInfo) {
-        SW_MDL_new_year(sw->ModelIn, sw->ModelSim);
-    }
+    // call SW_MDL_new_year() first to set up time-related arrays for this
+    // year
+    SW_MDL_new_year(sw->ModelIn, sw->ModelSim);
 
     // SW_MKV_new_year() not needed
 
-    // SW_SKY_new_year(): Update daily climate variables from monthly values
-    SW_SKY_new_year(
-        sw->ModelSim,
-        sw->ModelSim->yearIdxSpinSim,
-        sw->RunIn.SkyRunIn.snow_density,
-        sw->RunIn.SkyRunIn.snow_density_daily
+    SW_VES_new_year(sw->VegEstabIn->count);
+
+    SW_SWC_new_year_const(sw->SoilWatIn, sw->ModelSim->year, LogInfo);
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    // SW_CBN_new_year() not needed
+    SW_OUT_new_year(
+        sw->ModelSim->firstdoy,
+        sw->ModelSim->lastdoy,
+        OutDom,
+        sw->OutRun->first,
+        sw->OutRun->last
     );
 
-    SW_VES_new_year(sw->VegEstabIn->count);
+    if (textSkyVals) {
+        // SW_SKY_new_year(): Update daily climate variables from monthly values
+        SW_SKY_new_year(
+            sw->ModelSim,
+            sw->ModelSim->yearIdxSpinSim,
+            sw->RunIn.SkyRunIn.snow_density,
+            sw->RunIn.SkyRunIn.snow_density_daily
+        );
+    }
+}
+
+/**
+@brief Initiate/update variables for a new simulation year. This
+function only updates site-based simulation information. This usually
+only modules that read input yearly or produce output need to have this call.
+
+@param[in,out] sw Comprehensive struct of type SW_RUN containing all
+  information in the simulation
+@param[in] textSkyVals A flag specifying if the sky values that will
+be used during simulation are text-based (swTRUE) or through
+netCDFs (swFALSE)
+*/
+static void begin_year_site(SW_RUN *sw, Bool textSkyVals) {
+    SW_SWC_new_year_site(
+        &sw->SoilWatSim,
+        &sw->SiteSim,
+        sw->SiteIn->reset_yr,
+        sw->RunIn.SiteRunIn.n_layers
+    );
 
     // SW_VPD_new_year(): Dynamic CO2 effects on vegetation
     SW_VPD_new_year(
@@ -358,42 +397,29 @@ static void begin_year(
         &sw->VegProdIn->veg
     );
 
+    if (!textSkyVals) {
+        // SW_SKY_new_year(): Update daily climate variables from monthly values
+        SW_SKY_new_year(
+            sw->ModelSim,
+            sw->ModelSim->yearIdxSpinSim,
+            sw->RunIn.SkyRunIn.snow_density,
+            sw->RunIn.SkyRunIn.snow_density_daily
+        );
+    }
+
+    // SW_FLW_new_year() not needed
     SW_SIT_new_year(
         sw->SiteIn->methodMaxDepthSoilTemperature,
         sw->VegProdSim.annTempLongAvg,
         &sw->RunIn.SiteRunIn.Tsoil_constant
     );
-
-    // SW_FLW_new_year() not needed
-
-    if (updateConstInfo) {
-        SW_SWC_new_year(
-            sw->SoilWatIn,
-            &sw->SoilWatSim,
-            &sw->SiteSim,
-            sw->ModelSim->year,
-            sw->SiteIn->reset_yr,
-            updateConstInfo,
-            sw->RunIn.SiteRunIn.n_layers,
-            LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
-
-        // SW_CBN_new_year() not needed
-        SW_OUT_new_year(
-            sw->ModelSim->firstdoy,
-            sw->ModelSim->lastdoy,
-            OutDom,
-            sw->OutRun->first,
-            sw->OutRun->last
-        );
-    }
 }
 
-static void begin_day(SW_RUN *sw, LOG_INFO *LogInfo) {
-    SW_MDL_new_day(sw->ModelSim);
+static void begin_day_const(SW_MODEL_SIM *SW_ModelSim) {
+    SW_MDL_new_day(SW_ModelSim);
+}
+
+static void begin_day_site(SW_RUN *sw, LOG_INFO *LogInfo) {
     SW_WTH_new_day(
         sw->WeatherIn,
         &sw->WeatherSim,
@@ -529,6 +555,8 @@ static void prepare_next_day(
         sw_printf("\t: begin day = %d ... ", doy);
     }
 #endif
+
+    begin_day_const(&SW_Domain->SW_ConstInfo.ModelSim);
 
     if (doy == firstDoy || doy == lastDoy || initFirstYear) {
         if (!initFirstYear && doy == lastDoy) {
@@ -709,14 +737,23 @@ void SW_CTL_sim_sites(
     TimeInt doy = SW_Domain->SW_ConstInfo.ModelSim.doy;
     TimeInt lastDoy = SW_Domain->SW_ConstInfo.ModelSim.lastdoy;
     signed char *runStatus = NULL;
-    Bool updateConstInfo = swTRUE;
+    Bool textSkyVals = swTRUE;
 
 #if defined(SWNETCDF)
     signed char *progVals = SW_Domain->netCDFInput.progVals;
     size_t actSiteIdx;
+
+    textSkyVals = (Bool) !SW_Domain->netCDFInput.readInVars[eSW_InClimate][0];
 #else
     (void) sw_template;
 #endif
+
+    begin_year_const(
+        sw_template, &SW_Domain->OutDom, textSkyVals, main_LogInfo
+    );
+    if (main_LogInfo->stopRun) {
+        return;
+    }
 
     for (site = 0; site < nActiveSites; site++) {
 
@@ -730,17 +767,7 @@ void SW_CTL_sim_sites(
 #endif
 
         if (doy == lastDoy) {
-            begin_year(
-                &SW_Runs[site],
-                &SW_Domain->OutDom,
-                updateConstInfo,
-                main_LogInfo
-            );
-
-            updateConstInfo = swFALSE;
-            if (main_LogInfo->stopRun) {
-                goto handleLogs;
-            }
+            begin_year_site(&SW_Runs[site], textSkyVals);
         }
 
 #ifdef SWDEBUG
@@ -753,7 +780,6 @@ void SW_CTL_sim_sites(
             &SW_Runs[site], &SW_Domain->OutDom, &siteLogs[site]
         );
 
-    handleLogs:
         SW_F_handle_log_counts(&siteLogs[site], runStatus, main_LogInfo);
 
 #if defined(SWNETCDF)
@@ -1355,7 +1381,7 @@ void SW_CTL_run_current_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     }
 #endif
 
-    begin_day(sw, LogInfo);
+    begin_day_site(sw, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
