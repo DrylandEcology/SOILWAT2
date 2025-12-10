@@ -171,7 +171,6 @@ void SW_OUT_deconstruct_outarray(SW_OUT_RUN *OutRun) {
 @param[in] pd Time period in simulation output (day/week/month/year)
 @param[in] irow_OUT Current time step
 @param[in] nrow_OUT Number of output rows for each output period
-@param[in] tOffset Offset describing the previous or current period
 @param[out] p Allocated array to hold output periods for every output key
 */
 void get_outvalleader(
@@ -179,7 +178,6 @@ void get_outvalleader(
     OutPeriod pd,
     const size_t irow_OUT[],
     const size_t nrow_OUT[],
-    TimeInt tOffset,
     double *p
 ) {
 
@@ -193,12 +191,12 @@ void get_outvalleader(
 
     case eSW_Week:
         p[irow_OUT[eSW_Week] + nrow_OUT[eSW_Week] * 1] =
-            SW_ModelSim->week + 1 - tOffset; // base0
+            SW_ModelSim->week + 1; // base0
         break;
 
     case eSW_Month:
         p[irow_OUT[eSW_Month] + nrow_OUT[eSW_Month] * 1] =
-            SW_ModelSim->month + 1 - tOffset; // base0
+            SW_ModelSim->month + 1; // base0
         break;
 
     case eSW_Year:

@@ -225,8 +225,6 @@ static void average_for(
     SW_OUT_DOM *OutDom,
     ObjType otyp,
     OutPeriod pd,
-    Bool bFlush_output,
-    TimeInt tOffset,
     LOG_INFO *LogInfo
 );
 
@@ -644,9 +642,6 @@ one greater than the period being summarized.
     information that do not change throughout simulation runs
 @param[in] otyp Identifies the current module/object
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] bFlush_output Determines if output should be created for
-    a specific output key
-@param[in] tOffset Offset describing with the previous or current period
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void average_for(
@@ -654,8 +649,6 @@ static void average_for(
     SW_OUT_DOM *OutDom,
     ObjType otyp,
     OutPeriod pd,
-    Bool bFlush_output,
-    TimeInt tOffset,
     LOG_INFO *LogInfo
 ) {
 
@@ -666,6 +659,8 @@ static void average_for(
     int j;
     LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
     LyrIndex n_evap_layers = sw->SiteSim.n_evap_lyrs;
+    TimeInt doy = sw->ModelSim.doy;
+    TimeInt lastDoy = sw->ModelSim.lastdoy;
 
     if (otyp == eVES) {
         return;
@@ -680,14 +675,14 @@ static void average_for(
 
         switch (pd) {
         case eSW_Week:
-            curr_pd = (sw->ModelSim.week + 1) - tOffset;
-            div = (bFlush_output) ? sw->ModelSim.lastdoy % WKDAYS : WKDAYS;
+            curr_pd = sw->ModelSim.week + 1;
+            div = (doy == lastDoy) ? lastDoy % WKDAYS : WKDAYS;
             break;
 
         case eSW_Month:
-            curr_pd = (sw->ModelSim.month + 1) - tOffset;
+            curr_pd = sw->ModelSim.month + 1;
             div = Time_days_in_month(
-                sw->ModelSim.month - tOffset, sw->ModelSim.days_in_month
+                sw->ModelSim.month, sw->ModelSim.days_in_month
             );
             break;
 
@@ -3288,51 +3283,28 @@ void SW_OUT_read(
 closeFile: { CloseFile(&f, LogInfo); }
 }
 
-void collect_values(
-    SW_RUN *sw,
-    SW_OUT_DOM *OutDom,
-    Bool bFlush_output,
-    TimeInt tOffset,
-    LOG_INFO *LogInfo
-) {
-    SW_OUT_sum_today(sw, OutDom, eSWC, bFlush_output, tOffset, LogInfo);
+void collect_values(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
+    SW_OUT_sum_today(sw, OutDom, eSWC, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    SW_OUT_sum_today(sw, OutDom, eWTH, bFlush_output, tOffset, LogInfo);
+    SW_OUT_sum_today(sw, OutDom, eWTH, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    SW_OUT_sum_today(sw, OutDom, eVES, bFlush_output, tOffset, LogInfo);
+    SW_OUT_sum_today(sw, OutDom, eVES, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    SW_OUT_sum_today(sw, OutDom, eVPD, bFlush_output, tOffset, LogInfo);
+    SW_OUT_sum_today(sw, OutDom, eVPD, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    SW_OUT_write_today(sw, OutDom, tOffset, LogInfo);
-}
-
-/** called at year end to process the remainder of the output period.
-
-This sets two flags: bFlush_output and tOffset to be used in the appropriate
-subs.
-
-@param[in,out] sw Comprehensive struct of type SW_RUN containing
-    all information in the simulation
-@param[in] OutDom Struct of type SW_OUT_DOM that holds output
-    information that do not change throughout simulation runs
-@param[out] LogInfo Holds information on warnings and errors
-*/
-void SW_OUT_flush(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
-    TimeInt localTOffset = 0; // tOffset is zero when called from this function
-
-    collect_values(sw, OutDom, swTRUE, localTOffset, LogInfo);
+    SW_OUT_write_today(sw, OutDom, LogInfo);
 }
 
 /** adds today's output values to week, month and year
@@ -3350,30 +3322,23 @@ need to perform _new_day() on the soilwater.
 @param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
 @param[in] otyp Identifies the current module/object
-@param[in] bFlush_output Determines if output should be created for
-    a specific output key
-@param[in] tOffset Offset describing with the previous or current period
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_OUT_sum_today(
-    SW_RUN *sw,
-    SW_OUT_DOM *OutDom,
-    ObjType otyp,
-    Bool bFlush_output,
-    TimeInt tOffset,
-    LOG_INFO *LogInfo
+    SW_RUN *sw, SW_OUT_DOM *OutDom, ObjType otyp, LOG_INFO *LogInfo
 ) {
-    /*  SW_VEGESTAB *v = &SW_VegEstab;  -> we don't need to sum daily for this
-     */
     OutPeriod pd;
 
     ForEachOutPeriod(pd) {
+        collect_sums(sw, OutDom, otyp, pd, LogInfo);
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
         // `endperiod[eSW_Day]` is always TRUE
-        if (bFlush_output || sw->ModelSim.endperiod[pd]) {
+        if (sw->ModelSim.endperiod[pd]) {
             if (pd > eSW_Day) {
-                average_for(
-                    sw, OutDom, otyp, pd, bFlush_output, tOffset, LogInfo
-                );
+                average_for(sw, OutDom, otyp, pd, LogInfo);
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }
@@ -3401,35 +3366,17 @@ void SW_OUT_sum_today(
             }
         }
     }
-
-    if (!bFlush_output) {
-        ForEachOutPeriod(pd) {
-            collect_sums(sw, OutDom, otyp, pd, LogInfo);
-
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
-        }
-    }
 }
 
-/** `SW_OUT_write_today` is called twice
-
-    - `end_day` at the end of each day with values
-      values of `bFlush_output` set to FALSE and `tOffset` set to 1
-    - `SW_OUT_flush` at the end of every year with
-      values of `bFlush_output` set to TRUE and `tOffset` set to 0
+/** `SW_OUT_write_today` is called once at the end of the day
 
 @param[in] sw Comprehensive struct of type SW_RUN containing all
     information in the simulation
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
-@param[in] tOffset Offset describing with the previous or current period
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_OUT_write_today(
-    SW_RUN *sw, SW_OUT_DOM *OutDom, TimeInt tOffset, LOG_INFO *LogInfo
-) {
+void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     /* --------------------------------------------------- */
     /* all output values must have been summed, averaged or
      * otherwise completed before this is called [now done
@@ -3505,10 +3452,6 @@ void SW_OUT_write_today(
         sw->SW_PathOutputs.buf_reg_agg[3]
     };
 #endif
-
-
-    /* Update `tOffset` within SW_OUT_RUN for output functions */
-    sw->OutRun.tOffset = tOffset;
 
 #if defined(SW_OUTTEXT)
     char str_time[10]; // year and day/week/month header for each output row
@@ -3761,9 +3704,7 @@ void SW_OUT_write_today(
     // write formatted output to csv-files
     ForEachOutPeriod(p) {
         if (OutDom->use_OutPeriod[p] && writeit[p]) {
-            get_outstrleader(
-                p, sizeof str_time, &sw->ModelSim, tOffset, str_time
-            );
+            get_outstrleader(p, sizeof str_time, &sw->ModelSim, str_time);
 
             if (sw->SW_PathOutputs.make_regular[p]) {
                 if (OutDom->print_SW_Output) {

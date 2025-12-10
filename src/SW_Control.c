@@ -316,10 +316,8 @@ static void begin_day(SW_RUN *sw, LOG_INFO *LogInfo) {
 }
 
 static void end_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
-    TimeInt localTOffset = 1; // tOffset is one when called from this function
-
     if (sw->ModelSim.doOutput) {
-        collect_values(sw, OutDom, swFALSE, localTOffset, LogInfo);
+        collect_values(sw, OutDom, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -1182,19 +1180,6 @@ void SW_CTL_run_current_year(
     }
 
 #ifdef SWDEBUG
-    if (debug) {
-        sw_printf("'SW_CTL_run_current_year': flush output\n");
-    }
-#endif
-    if (sw->ModelSim.doOutput) {
-        SW_OUT_flush(sw, OutDom, LogInfo);
-    }
-
-#ifdef SWDEBUG
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-
     if (debug) {
         sw_printf("'SW_CTL_run_current_year': completed.\n");
     }

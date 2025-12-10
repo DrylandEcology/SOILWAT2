@@ -230,29 +230,16 @@ void SW_OUT_read(
 );
 
 void SW_OUT_sum_today(
-    SW_RUN *sw,
-    SW_OUT_DOM *OutDom,
-    ObjType otyp,
-    Bool bFlush_output,
-    TimeInt tOffset,
-    LOG_INFO *LogInfo
+    SW_RUN *sw, SW_OUT_DOM *OutDom, ObjType otyp, LOG_INFO *LogInfo
 );
 
-void SW_OUT_write_today(
-    SW_RUN *sw, SW_OUT_DOM *OutDom, TimeInt tOffset, LOG_INFO *LogInfo
-);
+void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
 void SW_OUT_write_year(void);
 
 void SW_OUT_flush(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
-void collect_values(
-    SW_RUN *sw,
-    SW_OUT_DOM *OutDom,
-    Bool bFlush_output,
-    TimeInt tOffset,
-    LOG_INFO *LogInfo
-);
+void collect_values(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
 void SW_OUT_close_files(
     SW_PATH_OUTPUTS *SW_PathOutputs, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo

@@ -1849,9 +1849,6 @@ typedef struct {
 #if defined(SW_OUTTEXT)
     char sw_outstr[MAX_LAYERS * OUTSTRLEN];
 #endif
-
-    TimeInt tOffset; /* 1 or 0 means we're writing previous or current period */
-
     /* Output first/last days of current year i.e., updated for each year */
     TimeInt first[SW_OUTNKEYS], last[SW_OUTNKEYS];
 
