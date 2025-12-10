@@ -1448,7 +1448,7 @@ void estimate_evco(
     double tmpi;
     double nDigitsRound = 1e4;
 
-    memset(evco, 0., sizeof evco[0] * n_layers);
+    memset(evco, 0, sizeof evco[0] * n_layers);
 
     // Find count of soil layers that occur within maxDepth
     for (sMax = 0; sMax < n_layers && LT(depth[sMax], maxDepth); sMax++) {
@@ -1614,10 +1614,10 @@ void estimate_trco(
     double tmpd;
     double nDigitsRound = 1e4;
 
-    memset(trco, 0., sizeof trco[0] * NVEGTYPES);
+    memset(trco, 0, sizeof trco[0] * NVEGTYPES);
 
     ForEachVegType(k) {
-        memset(tmpTrCo, 0., sizeof tmpTrCo);
+        memset(tmpTrCo, 0, sizeof tmpTrCo);
         sumTrCo = 0.;
         tmp1 = 0.;
         tmpi = 0.;
