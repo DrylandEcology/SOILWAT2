@@ -656,9 +656,72 @@ TEST_F(SiteFixtureTest, SiteSoilEvaporationParametersDeathTest) {
     );
 }
 
+TEST_F(SiteFixtureTest, EstimateRootingProfileParameters) {
+    // Seven test datasets
+    const int nTestCases = 7;
+    const LyrIndex nMaxSoilLayers = 8;
+    unsigned int kv;
+    LyrIndex ks;
+    double strco;
+    double expectedSumTrco;
+    double trco[NVEGTYPES][MAX_LAYERS];
+    const LyrIndex nSoilLayers[7] = {
+        nMaxSoilLayers, nMaxSoilLayers, 3, 3, 3, 1, 1
+    };
+    const double depth[7][8] = {
+        {5, 10, 20, 30, 40, 60, 80, 100},
+        {5, 10, 20, 30, 40, 60, 80, 100},
+        {100, 150, 500},
+        {100, 150, 500},
+        {1, 5, 10},
+        {10},
+        {10}
+    };
+    const double impermeability[7][8] = {
+        {0.},
+        {0., 0., 0., 0.8, 0., 0., 1., 0.},
+        {0.},
+        {1., 0., 0.},
+        {0.},
+        {0.},
+        {0.9}
+    };
+
+
+    for (int kt = 0; kt < nTestCases; kt++) {
+        estimate_trco(
+            trco,
+            depth[kt],
+            impermeability[kt],
+            SW_Run.VegProdIn.veg,
+            nSoilLayers[kt]
+        );
+
+        ForEachVegType(kv) {
+            strco = 0.; // sum trco across soil profile
+
+            ForEachSoilLayer(ks, nMaxSoilLayers) {
+                strco += trco[kv][ks];
+
+                // Check that trco within [0, 1]
+                EXPECT_GE(trco[kv][ks], 0.)
+                    << "test " << kt << "/veg " << kv << ": layer = " << ks;
+                EXPECT_LE(trco[kv][ks], 1.)
+                    << "test " << kt << "/veg " << kv << ": layer = " << ks;
+            }
+
+            // Check that trcos sum to 1 across soil profile unless no roots
+            expectedSumTrco = (EQ(impermeability[kt][0], 1.)) ? 0. : 1.;
+            EXPECT_DOUBLE_EQ(strco, expectedSumTrco)
+                << "test " << kt << "/veg " << kv;
+        }
+    }
+}
+
 TEST_F(SiteFixtureTest, SiteSoilTranspirationParametersDeathTest) {
 
     // Check error for bad transpiration coefficient (should be [0-1])
+    SW_Run.SiteIn.methodTrCo = 0; // use transp_coeff -- do not estimate trco
 
     SW_Run.RunIn.SoilRunIn.transp_coeff[SW_GRASS3][1] = 1.5;
     SW_SIT_init_run(

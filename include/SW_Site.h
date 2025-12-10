@@ -301,6 +301,14 @@ double calculate_soilMatricDensity(
 
 LyrIndex nlayers_bsevap(double *evap_coeff, LyrIndex n_layers);
 
+void estimate_trco(
+    double trco[][MAX_LAYERS],
+    const double depth[],
+    const double impermeability[],
+    const VegTypeIn veg[NVEGTYPES],
+    LyrIndex n_layers
+);
+
 void nlayers_vegroots(
     LyrIndex n_layers,
     LyrIndex n_transp_lyrs[],

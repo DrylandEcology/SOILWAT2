@@ -1557,6 +1557,98 @@ LyrIndex nlayers_bsevap(double *evap_coeff, LyrIndex n_layers) {
 }
 
 /**
+@brief Estimate rooting profile with equation and vegetation type parameters
+
+The root fraction for every vegetation type is accumulated across the
+thickness (width) of each soil layer.
+Soil restrictions (impermeability) reduce proportionally the increments of
+the rooting profile at and below the depth of the restriction.
+Root fractions for each vegetation type are relative to the soil profile, i.e.,
+they sum to one across the soil depth. They are adjusted proportionally if
+a shallow soil depth or soil restrictions prevent roots from achieving their
+maximum depth.
+
+An equation by Zeng 2001 @cite zeng2001JH represents the cumulative
+rooting profile
+
+\f[Y = 1 - \frac{1}{2} * (exp ^ {(-\alpha * d)} + exp ^ {(-\beta * d)})\f]
+
+where Y is the cumulative root fraction from the surface to soil depth d,
+\f$d_{max}\f$ is the depth of the rooting zone, and \f$\alpha\f$ and \f$\beta\f$
+are two shape parameters.
+
+@param[out] trco Estimated potential transpiration coefficients [0-1]
+@param[in] depth Depth at bottom of soil layer [`cm`]
+@param[in] impermeability Relative restriction (impermeability) by layer [0-1].
+@param[in] veg Array of structure VegTypeIn with vegetation inputs including
+    root profile parameters \f$\alpha\f$, \f$\beta\f$, and \f$d_{max}\f$.
+@param[in] n_layers Number of soil layers
+*/
+void estimate_trco(
+    double trco[][MAX_LAYERS],
+    const double depth[],
+    const double impermeability[],
+    const VegTypeIn veg[NVEGTYPES],
+    LyrIndex n_layers
+) {
+    LyrIndex s;
+    unsigned int k;
+    double tmp1;
+    double tmp2;
+    double p1;
+    double p2;
+    double p3;
+    double d;
+    double sumTrCo;
+    double sumTrCoR;
+    double tmpTrCo[MAX_LAYERS];
+    double tmpi;
+    double tmpd;
+    double nDigitsRound = 1e4;
+
+    memset(trco, 0., sizeof trco[0] * NVEGTYPES);
+
+    ForEachVegType(k) {
+        memset(tmpTrCo, 0., sizeof tmpTrCo);
+        sumTrCo = 0.;
+        tmp1 = 0.;
+        tmpi = 0.;
+        p1 = veg[k].rootProfileParam[0]; /* shape parameter */
+        p2 = veg[k].rootProfileParam[1]; /* shape parameter */
+        p3 = veg[k].rootProfileParam[2]; /* maximum rooting depth */
+
+        ForEachSoilLayer(s, n_layers) {
+            tmpd = 1e-2 * depth[s]; /* convert depth from [cm] to [m] */
+            d = fmin(p3, tmpd);
+            tmp2 = 1. - 0.5 * (exp(-p1 * d) + exp(-p2 * d));
+            tmpi = fmax(tmpi, impermeability[s]);
+            tmpTrCo[s] = fmax(0., (tmp2 - tmp1) * (1. - tmpi));
+            sumTrCo += tmpTrCo[s];
+            if (p3 < tmpd || EQ(tmpi, 1.)) {
+                break;
+            }
+            tmp1 = tmp2;
+        }
+
+        /* Proportional adjustment if restricted soil depth or impermeability
+            prevented roots from achieving maximum depth, i.e., sum(trco) = 1 */
+        if (GT(sumTrCo, 0.)) {
+            sumTrCoR = 0.;
+            ForEachSoilLayer(s, n_layers) {
+                trco[k][s] =
+                    round(nDigitsRound * tmpTrCo[s] / sumTrCo) / nDigitsRound;
+                sumTrCoR += trco[k][s];
+            }
+            if (!EQ(sumTrCoR, 1.)) {
+                trco[k][0] += 1. - sumTrCoR;
+            }
+        } else {
+            ForEachSoilLayer(s, n_layers) { trco[k][s] = 0.; }
+        }
+    }
+}
+
+/**
 @brief Count soil layers with roots potentially extracting water for
     transpiration
 
@@ -1677,7 +1769,7 @@ void SW_SIT_read(
 #endif
 
     FILE *f;
-    const int nLinesWithoutTR = 44; /* Number of inputs without tr regions */
+    const int nLinesWithoutTR = 45; /* Number of inputs without tr regions */
     int lineno = 0;
     int x;
     double rgnlow = 0; /* lower depth of region */
@@ -1705,15 +1797,15 @@ void SW_SIT_read(
         doubleRes = SW_MISSING;
         intRes = SW_MISSING;
 
-        strLine = (Bool) (lineno == 37 || lineno == 42 || lineno == 43);
+        strLine = (Bool) (lineno == 37 || lineno == 43 || lineno == 44);
 
         if (!strLine && lineno <= nLinesWithoutTR) {
             /* Check to see if the line number contains a double or integer
              * value
-               lineno with integers: 3, 4, 32, 33, 34, 35, 36, 38, 39, 40, 44 */
+               lineno with ints: 3, 4, 32, 33, 34, 35, 36, 38, 39, 40, 41, 45 */
             doDoubleConv =
                 (Bool) ((lineno >= 0 && lineno <= 2) ||
-                        (lineno >= 5 && lineno <= 31) || lineno == 41);
+                        (lineno >= 5 && lineno <= 31) || lineno == 42);
 
             if (doDoubleConv) {
                 doubleRes = sw_strtod(inbuf, MyFileName, LogInfo);
@@ -1893,10 +1985,14 @@ void SW_SIT_read(
             break;
 
         case 41:
-            SW_SiteIn->depthSapric = doubleRes;
+            SW_SiteIn->methodTrCo = (unsigned int) intRes;
             break;
 
         case 42:
+            SW_SiteIn->depthSapric = doubleRes;
+            break;
+
+        case 43:
             resSNP = snprintf(
                 SW_SiteIn->site_swrc_name,
                 sizeof SW_SiteIn->site_swrc_name,
@@ -1916,7 +2012,7 @@ void SW_SIT_read(
                 goto closeFile;
             }
             break;
-        case 43:
+        case 44:
             resSNP = snprintf(
                 SW_SiteIn->site_ptf_name,
                 sizeof SW_SiteIn->site_ptf_name,
@@ -1932,7 +2028,7 @@ void SW_SIT_read(
             }
             SW_SiteIn->site_ptf_type = encode_str2ptf(SW_SiteIn->site_ptf_name);
             break;
-        case 44:
+        case 45:
             if (lineno != nLinesWithoutTR) {
                 LogError(
                     LogInfo,
@@ -2684,6 +2780,16 @@ void SW_SIT_init_run(
         );
     }
 
+    /* Transpiration: use equations to estimate trco */
+    if (SW_SiteIn->methodTrCo == 1) {
+        estimate_trco(
+            SW_SoilRunIn->transp_coeff,
+            SW_SoilRunIn->depths,
+            SW_SoilRunIn->impermeability,
+            veg,
+            n_layers
+        );
+    }
 
     /* Transpiration: count number of layers with potential for transpiration */
     nlayers_vegroots(

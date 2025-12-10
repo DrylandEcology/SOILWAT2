@@ -154,6 +154,9 @@ void setup_SW_Site_for_tests(
 
     SW_SiteIn->slow_drain_coeff = 0.02;
 
+    SW_SiteIn->methodEvCo = 0;
+    SW_SiteIn->methodTrCo = 0;
+
     SW_SiteSim->site_has_swrcpMineralSoil = swFALSE;
     SW_SiteIn->inputsProvideSWRCp = swFALSE;
 
