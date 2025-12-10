@@ -4273,30 +4273,24 @@ void SW_OUT_new_day(SW_MODEL_SIM *SW_ModelSim, SW_OUT_RUN *OutRun) {
 
   The function SW_CTL_run_current_year() in file SW_Control.c calls:
     - the function end_day() in file SW_Control.c, for each day, which in turn
-      calls collect_values() with (global) arguments `bFlush_output` = `FALSE`
-      and `tOffset` = 1
-    - the function SW_OUT_flush(), after the last day of each year, which in
-      turn calls collect_values() with (global) arguments
-      `bFlush_output` = TRUE and `tOffset` = 0
+      calls collect_values()
 
   The function collect_values()
     -# calls SW_OUT_sum_today() for each of the \ref ObjType `otype`
       that produce output, i.e., `eSWC`, `eWTH`, `eVES`, and `eVPD`.
       SW_OUT_sum_today() loops over each \ref OutPeriod `pd`
-      - if today is the start of a new day/week/month/year period or if
-        `bFlush_output`, then it
+      - calls collect_sums() with arguments `otype` and `pd` which calls
+        the output summing function corresponding to its \ref ObjType argument
+        `otype`, i.e., one of the functions sumof_swc(), sumof_wth(),
+        sumof_ves(), or sumof_vpd, in order to sum up the daily values in the
+        corresponding output accumulator `p_accu[pd]` variables.
+      - if today is the end of a day/week/month/year period
         -# calls average_for() with arguments `otype` and `pd` which
           -# loops over all output keys `k`
           -# divides the summed values by the duration of the specific output
              period
           -# fills the output aggregator `p_oagg[pd]` variables
         -# resets the memory of the output accumulator `p_accu[d]` variables
-      - and, unless `bFlush_output` is `FALSE`, in a second loop over each
-        \ref OutPeriod `pd` calls collect_sums() with arguments `otype` and `pd`
-        which calls the output summing function corresponding to its
-        \ref ObjType argument `otype`, i.e., one of the functions sumof_swc(),
-        sumof_wth(), sumof_ves(), or sumof_vpd, in order to sum up the daily
-        values in the corresponding output accumulator `p_accu[pd]` variables.
 
     -# calls SW_OUT_write_today() which loops over each \ref OutKey `k` and
       loops over each \ref OutPeriod `pd` and, depending on application (see
@@ -4348,172 +4342,6 @@ void SW_OUT_new_day(SW_MODEL_SIM *SW_ModelSim, SW_OUT_RUN *OutRun) {
         values directly in the appropriate elements of `SW_OUT_RUN.p_OUT`
       - these output formatter functions are assigned to pointers
         `OutDom.pfunc_mem[k]` and called by SW_OUT_write_today()
-      - currently used by `rSOILWAT2`
-
-
-  __Below text is outdated as of June 2018 (retained until updated):__
-
-  In detail:
-
-  There are two output structures - SW_OUT_DOM & SW_OUT_RUN.
-
-  The main structure used in SOILWAT2 is SW_OUT_DOM which holds output
-  information that is consistent through domain simulations. This includes:
-  1) Information from outsetup.in (array, an element per output key)
-  2) Output function pointers (array, an element per output key)
-  3) Other output information like output column names and time steps
-
-  SW_OUT_RUN holds a small amount of output information in SOILWAT2
-  the main information is
-  1) First and last day of the current year during simulation
-  2) Formatted output string for output files
-
-  The output arrays in SW_OUT_DOM (e.g., mykey) are filled in by
-  initialization process by matching defined macros of valid keys
-  with enumeration variables used as indices into the arrays of
-  information it contains. A similar combination of text macros
-  and enumeration constants handles the TIMEPERIOD conversion
-  from text to numeric index.
-
-  The arrays being spoke of hold the output period code, start
-  and end values, output file name, opened file pointer for output,
-  on/off status, and a pointer to the function that prepares a complete
-  line of formatted output per output period.
-
-  A _construct() function clears the SW_OUT_DOM in it's entirety to set
-  values and flags to zero. Those output objects that are turned off
-  are ignored. Thus, to add a new output variable, a new get_function
-  must be added to in addition to adding the new macro and enumeration
-  keys for it.  Oh, and a line or two of summarizing code.
-
-  After initialization, each valid output key has an element in
-  SW_OUT_DOM that "knows" its parameters and whether it is on or
-  off.  There is still space allocated for the "off" keys but they
-  are ignored by the use flag.
-
-  During the daily execution loop of the model, values for each of
-  the output objects are accumulated via a call to
-  SW_OUT_sum_today(x) function with x being a special enumeration
-  code that defines the actual module object to be summed (see
-  SW_Output.h).  This enumeration code breaks up the many output
-  variables into a few simple types so that adding a new output
-  variable is simplified by putting it into its proper category.
-
-  When the _sum_today() function is called, it calls the averaging
-  function which puts the sum, average, etc into the output
-  accumulators--(dy|wk|mo|yr)avg--then conditionally clears the
-  summary accumulators--(dy|wk|mo|yr)sum--if a new period has
-  occurred (in preparation for the new period), then calls the
-  function to handle collecting the summaries called collect_sums().
-
-  The collect_sums() function needs the object type (eg, eSWC, eWTH)
-  and the output period (eg, dy, wk, etc) and then, for each valid
-  output key, it assigns a pointer to the appropriate object's
-  summary sub-structure.  (This is where the complexity of this
-  approach starts to become a bit clumsy, but it nonetheless tends to
-  keep the overall code size down.) After assigning the pointer to
-  the summary structure, the pointers are passed to a routine to
-  actually do the accumulation for the various output objects
-  (currently SWC and WTH).  No other arithmetic is performed here.
-  This routine is only called, however, if the current day or period
-  falls within the range specified by the user.  Otherwise, the
-  accumulators will remain zero.  Also, the period check is used in
-  other places to determine whether to bother with averaging and
-  printing.
-
-  Once a period other than daily has passed, the accumulated values
-  are averaged or summed as appropriate within the average_for()
-  subroutine as mentioned above.
-
-  After the averaging function, the values are ready to format for
-  output.  The SW_OUT_write_today() routine is called from the
-  end_day() function in main(). Throughout the run for each period
-  all used values are appended to a string and at the end of the period
-  the string is written to the proper output file. The SW_OUT_write_today()
-  function goes through each key and if in use, it calls
-  populate_output_values() function to parse the output string and format it
-  properly. After the string is formatted it is added to an output string which
-  is written to the output File at the end of the period.
-
-  So to summarize, adding another output quantity requires several steps.
-  - Add an appropriate element to the SW_*_OUTPUTS substructure of the
-  main object (eg SW_Soilwat) to hold the output value.
-  - Define a new key string and add a macro definition and enumeration
-  to the appropriate list in Output.h.  Be sure the new key's position
-  in the list doesn't interfere with the ForEach*() loops.
-  - Increase the value of SW_OUTNKEYS macro in Output.h.
-  - Add the macro and enum keys to the key2str and key2obj lists in
-  SW_Output.c as appropriate, IN THE SAME LIST POSITION.
-  - Create and declare a get_*() function that returns the correctly
-  formatted string for output.
-  - Add a line to link the get_ function to the appropriate element in
-  the SW_OUT_DOM output function array in _construct().
-  - Add new code to the switch statement in sumof_*() to handle the new
-  key.
-  - Add new code to the switch statement in average_for() to do the
-  summarizing.
-  - Add new code to create_col_headers to make proper columns for new value
-  - if variable is a soil variable (has layers) add name to SW_OUT_read,
-  create_col_headers and populate_output_values in the if block checking for
-  SOIL variables looks like below code `if (has_key_soillayers(key)) {`
-
-
-
-  Comment (06/23/2015, akt): Adding Output at SOILWAT for further using at
-  RSOILWAT and STEP as well
-
-  Above details is good enough for knowing how to add a new output at soilwat.
-  However here we are adding some more details about how we can add this output
-  for further using that to RSOILWAT and STEP side as well.
-
-  At the top with Comment (06/23/2015, drs): details about how output of SOILWAT
-  works.
-
-  Example : Adding extra place holder at existing output of SOILWAT for both
-  STEP and RSOILWAT:
-  - Adding extra place holder for existing output for both STEP and RSOILWAT:
-  example adding extra output surfaceAvg at SW_WEATHER. We need to modified
-  SW_Weather.h with adding a placeholder at SW_WEATHER and at inner structure
-  SW_WEATHER_OUTPUTS.
-  - Then somewhere this surfaceAvg value need to set at SW_WEATHER placeholder,
-  here we add this atSW_Flow.c
-  - Further modify file SW_Output.c ; add sum of surfaceAvg at function
-  sumof_wth(). Then use this sum value to calculate average of surfaceAvg at
-  function average_for().
-  - Then go to function get_temp(), add extra placeholder like surfaceAvgVal
-  that will store this average surfaceAvg value. Add this value to both STEP and
-  RSOILWAT side code of this function for all the periods like weekly, monthly
-  and yearly (for daily set day sum value of surfaceAvg not avg), add this
-  surfaceAvgVal at end of this get_Temp() function for finally printing in
-  output file.
-  - Pass this surfaceAvgVal to sxw.h file from STEP, by adding extra placeholder
-  at sxw.h so that STEP model can use this value there.
-  - For using this surfaceAvg value in RSOILWAT side of function get_Temp(),
-  increment index of p_Rtemp output array by one and add this sum value  for
-  daily and avg value for other periods at last index.
-  - Further need to modify SW_R_lib.c, for newOutput we need to add new
-  pointers; functions start() and onGetOutput() will need to be modified. For
-  this example adding extra placeholder at existing TEMP output so only function
-  onGetOutput() need to be modified; add placeholder name for surfaceAvg at
-  array Ctemp_names[] and then 	increment number of columns for Rtemp outputs
-  (Rtemp_columns) by one.
-  - At RSOILWAT further we will need to modify L_swOutput.R and G_swOut.R. At
-  L_swOutput.R increment number of columns for swOutput_TEMP.
-
-  So to summarize, adding extra place holder at existing output of SOILWAT for
-  both STEP and RSOILWAT side code above steps are useful.
-
-  However, adding another new output quantity requires several steps for SOILWAT
-  and both STEP and RSOILWAT side code as well. So adding more information to
-  above details (for adding  another new output quantity that can further use in
-  both STEP and RSOILWAT) :
-  - We need to modify SW_R_lib.c of SOILWAT; add new pointers; functions start()
-  and onGetOutput() will need to be modified.
-  - The sw_output.c of SOILWAT will need to be modified for new output quantity;
-  add new pointers here too for RSOILWAT.
-  - We will need to also read in the new config params from outputsetup_v30.in ;
-  then we  will need to accumulate the new values ; write them out to file and
-  assign the values to the RSOILWAT pointers.
-  - At RSOILWAT we will need to modify L_swOutput.R and G_swOut.R
-
+      - currently used by `rSOILWAT2` and netCDF-enabled SOILWAT2-specific
+        modes SWNETCDF/SWNC/SWMPI
 */
