@@ -777,7 +777,7 @@ static void average_for(
             ForEachSoilLayer(i, n_layers) {
                 sw->sw_p_oagg[pd].vwcBulk[i] =
                     (OutDom->sumtype[k] == eSW_Fnl) ?
-                        sw->SoilWatSim.swcBulk[Yesterday][i] :
+                        sw->SoilWatSim.swcBulk[Today][i] :
                         sw->sw_p_accu[pd].vwcBulk[i] / div;
             }
             break;
@@ -787,7 +787,7 @@ static void average_for(
             ForEachSoilLayer(i, n_layers) {
                 sw->sw_p_oagg[pd].vwcMatric[i] =
                     (OutDom->sumtype[k] == eSW_Fnl) ?
-                        sw->SoilWatSim.swcBulk[Yesterday][i] :
+                        sw->SoilWatSim.swcBulk[Today][i] :
                         sw->sw_p_accu[pd].vwcMatric[i] / div;
             }
             break;
@@ -796,7 +796,7 @@ static void average_for(
             ForEachSoilLayer(i, n_layers) {
                 sw->sw_p_oagg[pd].swcBulk[i] =
                     (OutDom->sumtype[k] == eSW_Fnl) ?
-                        sw->SoilWatSim.swcBulk[Yesterday][i] :
+                        sw->SoilWatSim.swcBulk[Today][i] :
                         sw->sw_p_accu[pd].swcBulk[i] / div;
             }
             break;
@@ -806,7 +806,7 @@ static void average_for(
             ForEachSoilLayer(i, n_layers) {
                 sw->sw_p_oagg[pd].swpMatric[i] =
                     (OutDom->sumtype[k] == eSW_Fnl) ?
-                        sw->SoilWatSim.swcBulk[Yesterday][i] :
+                        sw->SoilWatSim.swcBulk[Today][i] :
                         sw->sw_p_accu[pd].swpMatric[i] / div;
             }
             break;
@@ -816,7 +816,7 @@ static void average_for(
                 sw->sw_p_oagg[pd].swaBulk[i] =
                     (OutDom->sumtype[k] == eSW_Fnl) ?
                         fmax(
-                            sw->SoilWatSim.swcBulk[Yesterday][i] -
+                            sw->SoilWatSim.swcBulk[Today][i] -
                                 sw->SiteSim.swcBulk_wiltpt[i],
                             0.
                         ) :
@@ -830,7 +830,7 @@ static void average_for(
                 sw->sw_p_oagg[pd].swaMatric[i] =
                     (OutDom->sumtype[k] == eSW_Fnl) ?
                         fmax(
-                            sw->SoilWatSim.swcBulk[Yesterday][i] -
+                            sw->SoilWatSim.swcBulk[Today][i] -
                                 sw->SiteSim.swcBulk_wiltpt[i],
                             0.
                         ) :
