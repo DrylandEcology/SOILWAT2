@@ -302,6 +302,7 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 
 static void begin_day(SW_RUN *sw, LOG_INFO *LogInfo) {
     SW_MDL_new_day(&sw->ModelSim);
+    SW_OUT_new_day(&sw->ModelSim, &sw->OutRun);
     SW_WTH_new_day(
         &sw->WeatherIn,
         &sw->WeatherSim,

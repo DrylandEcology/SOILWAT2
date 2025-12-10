@@ -3315,7 +3315,7 @@ void collect_values(
         return; // Exit function prematurely due to error
     }
 
-    SW_OUT_write_today(sw, OutDom, bFlush_output, tOffset, LogInfo);
+    SW_OUT_write_today(sw, OutDom, tOffset, LogInfo);
 }
 
 /** called at year end to process the remainder of the output period.
@@ -3368,8 +3368,8 @@ void SW_OUT_sum_today(
     OutPeriod pd;
 
     ForEachOutPeriod(pd) {
-        // `newperiod[eSW_Day]` is always TRUE
-        if (bFlush_output || sw->ModelSim.newperiod[pd]) {
+        // `endperiod[eSW_Day]` is always TRUE
+        if (bFlush_output || sw->ModelSim.endperiod[pd]) {
             if (pd > eSW_Day) {
                 average_for(
                     sw, OutDom, otyp, pd, bFlush_output, tOffset, LogInfo
@@ -3424,17 +3424,11 @@ void SW_OUT_sum_today(
     information in the simulation
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
-@param[in] bFlush_output Determines if output should be created for
-    a specific output key
 @param[in] tOffset Offset describing with the previous or current period
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_OUT_write_today(
-    SW_RUN *sw,
-    SW_OUT_DOM *OutDom,
-    Bool bFlush_output,
-    TimeInt tOffset,
-    LOG_INFO *LogInfo
+    SW_RUN *sw, SW_OUT_DOM *OutDom, TimeInt tOffset, LOG_INFO *LogInfo
 ) {
     /* --------------------------------------------------- */
     /* all output values must have been summed, averaged or
@@ -3465,10 +3459,9 @@ void SW_OUT_write_today(
     int debug = 0;
 #endif
 
-    TimeInt t = 0xffff;
     OutPeriod p;
-    Bool writeit[SW_OUTNPERIODS];
     Bool use_help;
+    Bool *writeit = sw->OutRun.writeit;
 
     // Temporary string to hold sw_outstr before concatenating
     // to buf_soil/buf_reg
@@ -3545,29 +3538,6 @@ void SW_OUT_write_today(
         );
     }
 #endif
-
-
-    // Determine which output periods should get formatted and output (if they
-    // are active)
-    t = sw->ModelSim.doy;
-
-    // `csv`-files assume anyhow that first/last are identical for every output
-    // type/key
-    writeit[eSW_Day] =
-        (Bool) (t < sw->OutRun.first[0] || t > sw->OutRun.last[0]);
-    writeit[eSW_Week] =
-        (Bool) (writeit[eSW_Day] &&
-                (sw->ModelSim.newperiod[eSW_Week] || bFlush_output));
-    writeit[eSW_Month] =
-        (Bool) (writeit[eSW_Day] &&
-                (sw->ModelSim.newperiod[eSW_Month] || bFlush_output));
-    writeit[eSW_Year] =
-        (Bool) (sw->ModelSim.newperiod[eSW_Year] || bFlush_output);
-
-    // update daily: don't process daily output if `bFlush_output` is TRUE
-    // because `end_day` was already called and produced daily output
-    writeit[eSW_Day] = (Bool) (writeit[eSW_Day] && !bFlush_output);
-
 
     // Loop over output types/keys, over used output time periods, call
     // formatting functions `get_XXX`, and concatenate for one row of
@@ -4326,6 +4296,30 @@ void SW_OUTDOM_deepCopy(
         }
 #endif
     }
+}
+
+/**
+@brief Update daily output information for the new day
+
+@param[in] SW_ModelSim Struct of type SW_MODEL_SIM holding basic
+intermediate time information about the simulation run
+@param[out] OutRun Struct of type SW_OUT_RUN that holds output
+information that may change throughout simulation runs
+*/
+void SW_OUT_new_day(SW_MODEL_SIM *SW_ModelSim, SW_OUT_RUN *OutRun) {
+    // Determine which output periods should get formatted and output (if they
+    // are active)
+    TimeInt doy = SW_ModelSim->doy;
+    Bool *writeit = OutRun->writeit;
+
+    // `csv`-files assume anyhow that first/last are identical for every output
+    // type/key
+    writeit[eSW_Day] = (Bool) (doy < OutRun->first[0] || doy > OutRun->last[0]);
+    writeit[eSW_Week] =
+        (Bool) (writeit[eSW_Day] && SW_ModelSim->endperiod[eSW_Week]);
+    writeit[eSW_Month] =
+        (Bool) (writeit[eSW_Day] && SW_ModelSim->endperiod[eSW_Month]);
+    writeit[eSW_Year] = SW_ModelSim->endperiod[eSW_Year];
 }
 
 /*==================================================================*/

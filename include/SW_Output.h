@@ -239,11 +239,7 @@ void SW_OUT_sum_today(
 );
 
 void SW_OUT_write_today(
-    SW_RUN *sw,
-    SW_OUT_DOM *OutDom,
-    Bool bFlush_output,
-    TimeInt tOffset,
-    LOG_INFO *LogInfo
+    SW_RUN *sw, SW_OUT_DOM *OutDom, TimeInt tOffset, LOG_INFO *LogInfo
 );
 
 void SW_OUT_write_year(void);
@@ -304,6 +300,8 @@ void SW_PATHOUT_deepCopy(
 void SW_OUTDOM_deepCopy(
     SW_OUT_DOM *source, SW_OUT_DOM *dest, LOG_INFO *LogInfo
 );
+
+void SW_OUT_new_day(SW_MODEL_SIM *SW_ModelSim, SW_OUT_RUN *OutRun);
 
 // Functions that format the output in `sw_outstr` for printing
 /* --------------------------------------------------- */
