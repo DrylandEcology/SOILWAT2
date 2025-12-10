@@ -381,6 +381,10 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
         "Table__SW2_SpinupEvaluation.csv"
     );
 
+    if (!DirExists(SW_Domain.SW_PathInputs.outputPrefix)) {
+        MkDir(SW_Domain.SW_PathInputs.outputPrefix, &LogInfo);
+        sw_fail_on_error(&LogInfo);
+    }
     fp = OpenFile(fname, "w", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
