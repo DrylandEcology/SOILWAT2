@@ -3390,12 +3390,6 @@ void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
      * 'sw_outstr'. Furthermore, those funcs must know their
      * own time period.  This version of the program only
      * prints one period for each quantity.
-     *
-     * The t value tests whether the current model time is
-     * outside the output time range requested by the user.
-     * Recall that times are based at 0 rather than 1 for
-     * array indexing purposes but the user request is in
-     * natural numbers, so we add one before testing.
      */
     /* 10-May-02 (cwb) Added conditional to interface with STEPPE.
      *           We want no output if running from STEPPE.
@@ -4248,13 +4242,20 @@ intermediate time information about the simulation run
 information that may change throughout simulation runs
 */
 void SW_OUT_new_day(SW_MODEL_SIM *SW_ModelSim, SW_OUT_RUN *OutRun) {
-    // Determine which output periods should get formatted and output (if they
-    // are active)
+    /*
+       - The doy value tests whether the current model time is
+         outside the output time range requested by the user
+
+      - Determine which output periods should get formatted and output
+        (if they are active)
+
+      - `csv`-files assume anyhow that first/last are identical for
+        every output type/key
+     */
+
     TimeInt doy = SW_ModelSim->doy;
     Bool *writeit = OutRun->writeit;
 
-    // `csv`-files assume anyhow that first/last are identical for every output
-    // type/key
     writeit[eSW_Day] = (Bool) (doy < OutRun->first[0] || doy > OutRun->last[0]);
     writeit[eSW_Week] =
         (Bool) (writeit[eSW_Day] && SW_ModelSim->endperiod[eSW_Week]);
