@@ -225,17 +225,18 @@ intermediate time information about the simulation run
 */
 void SW_MDL_new_day(SW_MODEL_SIM *SW_ModelSim) {
 
+    TimeInt *cum_monthdays = SW_ModelSim->cum_monthdays;
     TimeInt doy = SW_ModelSim->doy;
-    TimeInt endMonDays = SW_ModelSim->cum_monthdays[SW_ModelSim->month];
+    TimeInt month = SW_ModelSim->month;
     Bool *endperiod = SW_ModelSim->endperiod;
 
-    SW_ModelSim->month =
-        doy2month(SW_ModelSim->doy, SW_ModelSim->cum_monthdays); /* base0 */
+    SW_ModelSim->month = doy2month(SW_ModelSim->doy, cum_monthdays); /* base0 */
     SW_ModelSim->week =
         doy2week(SW_ModelSim->doy); /* base0; more often an index */
 
     endperiod[eSW_Year] = (Bool) (doy == SW_ModelSim->lastdoy);
-    endperiod[eSW_Month] = (Bool) (doy == endMonDays);
+    endperiod[eSW_Month] =
+        (Bool) (month != notime && doy == cum_monthdays[month]);
     endperiod[eSW_Week] = (Bool) (endperiod[eSW_Year] || doy % WKDAYS == 0);
 }
 
