@@ -290,6 +290,7 @@ void estimate_evco(
     const double width[],
     const double sand[],
     const double clay[],
+    const double impermeability[],
     LyrIndex n_layers
 );
 

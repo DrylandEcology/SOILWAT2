@@ -1416,11 +1416,15 @@ It represents the soil texture influence based on a small re-analysis of data
 from Wythers et al. 1999 @cite wythers1999SSSAJ and
 uses a maximum depth of 15 cm based on Torres et al. 2010 @cite torres2010HSJSH.
 
+Soil restrictions (impermeability) reduce proportionally the increments of
+the coefficients at and below the depth of the restriction.
+
 @param[out] evco Estimated potential evaporation coefficients [0-1]
 @param[in] depth Depth at bottom of soil layer [`cm`]
 @param[in] width Width (thickness) of soil layer [`cm`]
 @param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
 @param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
+@param[in] impermeability Relative restriction (impermeability) by layer [0-1].
 @param[in] n_layers Number of soil layers
 
 */
@@ -1430,39 +1434,40 @@ void estimate_evco(
     const double width[],
     const double sand[],
     const double clay[],
+    const double impermeability[],
     LyrIndex n_layers
 ) {
     const double maxDepth = 15.;
-    LyrIndex k;
-    LyrIndex kMax;
+    LyrIndex s;
+    LyrIndex sMax;
     double wmSand = 0.;
     double wmClay = 0.;
     double depthEs;
     double cec[MAX_LAYERS] = {0.};
     double sec = 0.;
+    double tmpi;
     double nDigitsRound = 1e4;
 
-    // Initialize evco
-    ForEachSoilLayer(k, n_layers) { evco[k] = 0.; }
+    memset(evco, 0., sizeof evco[0] * n_layers);
 
     // Find count of soil layers that occur within maxDepth
-    for (kMax = 0; kMax < n_layers && LT(depth[kMax], maxDepth); kMax++) {
+    for (sMax = 0; sMax < n_layers && LT(depth[sMax], maxDepth); sMax++) {
     }
 
     // Only most shallow soil layer within maxDepth
-    if (kMax == 0) {
+    if (sMax == 0) {
         evco[0] = 1.;
         return;
     }
 
     // Depth-weighted mean sand and clay content
-    for (k = 0; k <= kMax; k++) {
-        wmSand += width[k] * sand[k];
-        wmClay += width[k] * clay[k];
+    for (s = 0; s <= sMax; s++) {
+        wmSand += width[s] * sand[s];
+        wmClay += width[s] * clay[s];
     }
 
-    wmSand /= depth[kMax];
-    wmClay /= depth[kMax];
+    wmSand /= depth[sMax];
+    wmClay /= depth[sMax];
 
     // Equation from re-analysis to estimate depth
     depthEs = fmin(
@@ -1470,21 +1475,24 @@ void estimate_evco(
     );
 
     // Equation with consistency to "previous" cumulative evco
-    for (k = 0; k <= kMax; k++) {
-        cec[k] = 1. - exp(-5. * depth[k] / depthEs);
+    for (s = 0; s <= sMax; s++) {
+        cec[s] = 1. - exp(-5. * depth[s] / depthEs);
     }
-    cec[kMax] = 1.;
+    cec[sMax] = 1.;
 
     // Finalize potential evcos
-    evco[0] = round(nDigitsRound * cec[0]) / nDigitsRound;
+    tmpi = impermeability[0];
+    evco[0] = round(nDigitsRound * cec[0] * (1. - tmpi)) / nDigitsRound;
     sec += evco[0];
-    for (k = 1; k <= kMax; k++) {
-        evco[k] = round(nDigitsRound * (cec[k] - cec[k - 1])) / nDigitsRound;
-        sec += evco[k];
+    for (s = 1; s <= sMax; s++) {
+        tmpi = fmax(tmpi, impermeability[s]);
+        evco[s] = round(nDigitsRound * (cec[s] - cec[s - 1]) * (1. - tmpi)) /
+                  nDigitsRound;
+        sec += evco[s];
     }
 
-    for (k = 0; k <= kMax; k++) {
-        evco[k] /= sec;
+    for (s = 0; s <= sMax; s++) {
+        evco[s] /= sec;
     }
 }
 
@@ -1642,8 +1650,6 @@ void estimate_trco(
             if (!EQ(sumTrCoR, 1.)) {
                 trco[k][0] += 1. - sumTrCoR;
             }
-        } else {
-            ForEachSoilLayer(s, n_layers) { trco[k][s] = 0.; }
         }
     }
 }
@@ -2820,6 +2826,7 @@ void SW_SIT_init_run(
             SW_SoilRunIn->width,
             SW_SoilRunIn->fractionWeightMatric_sand,
             SW_SoilRunIn->fractionWeightMatric_clay,
+            SW_SoilRunIn->impermeability,
             n_layers
         );
     }
