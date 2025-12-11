@@ -47,9 +47,7 @@ void SW_CTL_setup_domain(
     LOG_INFO *LogInfo
 );
 
-void SW_CTL_setup_model(
-    SW_RUN *sw, SW_OUT_DOM *OutDom, Bool zeroOutInfo, LOG_INFO *LogInfo
-);
+void SW_CTL_setup_model(SW_RUN *sw, Bool zeroOutInfo, LOG_INFO *LogInfo);
 
 void SW_CTL_clear_model(Bool full_reset, SW_RUN *sw);
 

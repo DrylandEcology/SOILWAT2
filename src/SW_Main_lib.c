@@ -513,7 +513,6 @@ void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
 /**
 @brief Wrapper function to setup outputs and handle MPI
 
-@param[in] worldSize Total number of processes that the MPI run has created
 @param[in] prepareFiles Should we only prepare domain/progress, index,
     and output files? If so, simulations will occur without this
     flag being turned on
@@ -524,7 +523,6 @@ void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
 @param[out] LogInfo Holds information on warnings and errors
 */
 void sw_setup_prog_data(
-    int worldSize,
     Bool prepareFiles,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
@@ -546,7 +544,6 @@ void sw_setup_prog_data(
     totNSites *= siteDom ? 1 : SW_Domain->domCounts[eSW_InDomain][1];
 #else
     (void) prepareFiles;
-    (void) worldSize;
 #endif
 
     // initialize output

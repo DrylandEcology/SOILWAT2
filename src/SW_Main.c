@@ -111,7 +111,7 @@ int main(int argc, char **argv) {
     checkJumpToLabel(LogInfo.stopRun, finishProgram);
 
     // setup and construct model template (independent of inputs)
-    SW_CTL_setup_model(&sw_template, &SW_Domain.OutDom, swTRUE, &LogInfo);
+    SW_CTL_setup_model(&sw_template, swTRUE, &LogInfo);
     checkJumpToLabel(LogInfo.stopRun, finishProgram);
 
     SW_MDL_get_ModelRun(sw_template.ModelIn, &SW_Domain, NULL, &LogInfo);
@@ -152,7 +152,7 @@ int main(int argc, char **argv) {
     );
     checkJumpToLabel(LogInfo.stopRun, finishProgram);
 
-    sw_setup_prog_data(size, prepareFiles, &sw_template, &SW_Domain, &LogInfo);
+    sw_setup_prog_data(prepareFiles, &sw_template, &SW_Domain, &LogInfo);
     checkJumpToLabel(LogInfo.stopRun, finishProgram);
 
     SW_OUT_create_files(rank, sw_template.SW_PathOutputs, &SW_Domain, &LogInfo);
