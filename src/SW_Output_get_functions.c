@@ -3398,7 +3398,7 @@ void get_evapSoil_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
-    ForEachEvapLayer(i, sw->SiteSim.n_evap_lyrs) {
+    ForEachEvapLayer(i, sw->RunIn.SiteRunIn.n_layers) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->evap_baresoil[i]
         );
@@ -3442,7 +3442,7 @@ void get_evapSoil_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     );
 #endif
 
-    ForEachEvapLayer(i, sw->SiteSim.n_evap_lyrs) {
+    ForEachEvapLayer(i, sw->RunIn.SiteRunIn.n_layers) {
 #if defined(RSOILWAT)
         iOUTIndex = iOUT(
             i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
@@ -3506,7 +3506,7 @@ void get_evapSoil_agg(
     double *p = OutRun->p_OUT[eSW_EvapSoil][pd];
     double *psd = OutRun->p_OUTsd[eSW_EvapSoil][pd];
 
-    ForEachEvapLayer(i, sw->SiteSim.n_evap_lyrs) {
+    ForEachEvapLayer(i, sw->RunIn.SiteRunIn.n_layers) {
         iOUTIndex = iOUT(
             i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
         );

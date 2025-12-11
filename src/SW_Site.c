@@ -119,7 +119,7 @@
 #include "include/SW_SoilWater.h"   // for SW_SWRC_SWCtoSWP, SW_SWRC_SWPtoSWC
 #include "include/SW_VegProd.h"     // for key2veg, get_critical_rank, sum_...
 #include <limits.h>                 // for UINT_MAX
-#include <math.h>                   // for fmod
+#include <math.h>                   // for fmod, round
 #include <stdio.h>                  // for sw_printf, sscanf, FILE, NULL, stdout
 #include <stdlib.h>                 // for free, strod, strtol
 #include <string.h>                 // for memset
@@ -1408,6 +1408,95 @@ void SWRC_bulkSoilParameters(
 }
 
 /**
+@brief Estimate potential evaporation coefficients from soil texture
+
+This function is based on R code from `rSW2data::calc_BareSoilEvapCoefs()`
+as of 2025-Dec-03.
+It represents the soil texture influence based on a small re-analysis of data
+from Wythers et al. 1999 @cite wythers1999SSSAJ and
+uses a maximum depth of 15 cm based on Torres et al. 2010 @cite torres2010HSJSH.
+
+Soil restrictions (impermeability) reduce proportionally the increments of
+the coefficients at and below the depth of the restriction.
+
+@param[out] evco Estimated potential evaporation coefficients [0-1]
+@param[in] depth Depth at bottom of soil layer [`cm`]
+@param[in] width Width (thickness) of soil layer [`cm`]
+@param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
+@param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
+@param[in] impermeability Relative restriction (impermeability) by layer [0-1].
+@param[in] n_layers Number of soil layers
+
+*/
+void estimate_evco(
+    double evco[],
+    const double depth[],
+    const double width[],
+    const double sand[],
+    const double clay[],
+    const double impermeability[],
+    LyrIndex n_layers
+) {
+    const double maxDepth = 15.;
+    LyrIndex s;
+    LyrIndex sMax;
+    double wmSand = 0.;
+    double wmClay = 0.;
+    double depthEs;
+    double cec[MAX_LAYERS] = {0.};
+    double sec = 0.;
+    double tmpi;
+    double nDigitsRound = 1e4;
+
+    memset(evco, 0, sizeof evco[0] * n_layers);
+
+    // Find count of soil layers that occur within maxDepth
+    for (sMax = 0; sMax < n_layers && LT(depth[sMax], maxDepth); sMax++) {
+    }
+
+    // Only most shallow soil layer within maxDepth
+    if (sMax == 0) {
+        evco[0] = 1.;
+        return;
+    }
+
+    // Depth-weighted mean sand and clay content
+    for (s = 0; s <= sMax; s++) {
+        wmSand += width[s] * sand[s];
+        wmClay += width[s] * clay[s];
+    }
+
+    wmSand /= depth[sMax];
+    wmClay /= depth[sMax];
+
+    // Equation from re-analysis to estimate depth
+    depthEs = fmin(
+        maxDepth, 4.1984 + 0.6695 * squared(wmSand) + 168.7603 * squared(wmClay)
+    );
+
+    // Equation with consistency to "previous" cumulative evco
+    for (s = 0; s <= sMax; s++) {
+        cec[s] = 1. - exp(-5. * depth[s] / depthEs);
+    }
+    cec[sMax] = 1.;
+
+    // Finalize potential evcos
+    tmpi = impermeability[0];
+    evco[0] = round(nDigitsRound * cec[0] * (1. - tmpi)) / nDigitsRound;
+    sec += evco[0];
+    for (s = 1; s <= sMax; s++) {
+        tmpi = fmax(tmpi, impermeability[s]);
+        evco[s] = round(nDigitsRound * (cec[s] - cec[s - 1]) * (1. - tmpi)) /
+                  nDigitsRound;
+        sec += evco[s];
+    }
+
+    for (s = 0; s <= sMax; s++) {
+        evco[s] /= sec;
+    }
+}
+
+/**
 @brief Estimate soil density of the whole soil (bulk).
 
 Based on equation 20 from Saxton. @cite Saxton2006.
@@ -1473,6 +1562,96 @@ LyrIndex nlayers_bsevap(double *evap_coeff, LyrIndex n_layers) {
     }
 
     return n;
+}
+
+/**
+@brief Estimate rooting profile with equation and vegetation type parameters
+
+The root fraction for every vegetation type is accumulated across the
+thickness (width) of each soil layer.
+Soil restrictions (impermeability) reduce proportionally the increments of
+the rooting profile at and below the depth of the restriction.
+Root fractions for each vegetation type are relative to the soil profile, i.e.,
+they sum to one across the soil depth. They are adjusted proportionally if
+a shallow soil depth or soil restrictions prevent roots from achieving their
+maximum depth.
+
+An equation by Zeng 2001 @cite zeng2001JH represents the cumulative
+rooting profile
+
+\f[Y = 1 - \frac{1}{2} * (exp ^ {(-\alpha * d)} + exp ^ {(-\beta * d)})\f]
+
+where Y is the cumulative root fraction from the surface to soil depth d,
+\f$d_{max}\f$ is the depth of the rooting zone, and \f$\alpha\f$ and \f$\beta\f$
+are two shape parameters.
+
+@param[out] trco Estimated potential transpiration coefficients [0-1]
+@param[in] depth Depth at bottom of soil layer [`cm`]
+@param[in] impermeability Relative restriction (impermeability) by layer [0-1].
+@param[in] veg Array of structure VegTypeIn with vegetation inputs including
+    root profile parameters \f$\alpha\f$, \f$\beta\f$, and \f$d_{max}\f$.
+@param[in] n_layers Number of soil layers
+*/
+void estimate_trco(
+    double trco[][MAX_LAYERS],
+    const double depth[],
+    const double impermeability[],
+    const VegTypeIn *veg,
+    LyrIndex n_layers
+) {
+    LyrIndex s;
+    unsigned int k;
+    double tmp1;
+    double tmp2;
+    double p1;
+    double p2;
+    double p3;
+    double d;
+    double sumTrCo;
+    double sumTrCoR;
+    double tmpTrCo[MAX_LAYERS];
+    double tmpi;
+    double tmpd;
+    double nDigitsRound = 1e4;
+
+    memset(trco, 0, sizeof trco[0] * NVEGTYPES);
+
+    ForEachVegType(k) {
+        memset(tmpTrCo, 0, sizeof tmpTrCo);
+        sumTrCo = 0.;
+        tmp1 = 0.;
+        tmpi = 0.;
+        p1 = veg->rootProfileParam[k][0]; /* shape parameter */
+        p2 = veg->rootProfileParam[k][1]; /* shape parameter */
+        p3 = veg->rootProfileParam[k][2]; /* maximum rooting depth */
+
+        ForEachSoilLayer(s, n_layers) {
+            tmpd = 1e-2 * depth[s]; /* convert depth from [cm] to [m] */
+            d = fmin(p3, tmpd);
+            tmp2 = 1. - 0.5 * (exp(-p1 * d) + exp(-p2 * d));
+            tmpi = fmax(tmpi, impermeability[s]);
+            tmpTrCo[s] = fmax(0., (tmp2 - tmp1) * (1. - tmpi));
+            sumTrCo += tmpTrCo[s];
+            if (p3 < tmpd || EQ(tmpi, 1.)) {
+                break;
+            }
+            tmp1 = tmp2;
+        }
+
+        /* Proportional adjustment if restricted soil depth or impermeability
+            prevented roots from achieving maximum depth, i.e., sum(trco) = 1 */
+        if (GT(sumTrCo, 0.)) {
+            sumTrCoR = 0.;
+            ForEachSoilLayer(s, n_layers) {
+                trco[k][s] =
+                    round(nDigitsRound * tmpTrCo[s] / sumTrCo) / nDigitsRound;
+                sumTrCoR += trco[k][s];
+            }
+            if (!EQ(sumTrCoR, 1.)) {
+                trco[k][0] += 1. - sumTrCoR;
+            }
+        }
+    }
 }
 
 /**
@@ -1596,7 +1775,7 @@ void SW_SIT_read(
 #endif
 
     FILE *f;
-    const int nLinesWithoutTR = 43; /* Number of inputs without tr regions */
+    const int nLinesWithoutTR = 45; /* Number of inputs without tr regions */
     int lineno = 0;
     int x;
     double rgnlow = 0; /* lower depth of region */
@@ -1624,15 +1803,15 @@ void SW_SIT_read(
         doubleRes = SW_MISSING;
         intRes = SW_MISSING;
 
-        strLine = (Bool) (lineno == 37 || lineno == 41 || lineno == 42);
+        strLine = (Bool) (lineno == 37 || lineno == 43 || lineno == 44);
 
         if (!strLine && lineno <= nLinesWithoutTR) {
             /* Check to see if the line number contains a double or integer
              * value
-               lineno with integers: 3, 4, 32, 33, 34, 35, 36, 38, 39, 43 */
+               lineno with ints: 3, 4, 32, 33, 34, 35, 36, 38, 39, 40, 41, 45 */
             doDoubleConv =
                 (Bool) ((lineno >= 0 && lineno <= 2) ||
-                        (lineno >= 5 && lineno <= 31) || lineno == 40);
+                        (lineno >= 5 && lineno <= 31) || lineno == 42);
 
             if (doDoubleConv) {
                 doubleRes = sw_strtod(inbuf, MyFileName, LogInfo);
@@ -1808,10 +1987,18 @@ void SW_SIT_read(
             break;
 
         case 40:
-            SW_SiteIn->depthSapric = doubleRes;
+            SW_SiteIn->methodEvCo = (unsigned int) intRes;
             break;
 
         case 41:
+            SW_SiteIn->methodTrCo = (unsigned int) intRes;
+            break;
+
+        case 42:
+            SW_SiteIn->depthSapric = doubleRes;
+            break;
+
+        case 43:
             resSNP = snprintf(
                 SW_SiteIn->site_swrc_name,
                 sizeof SW_SiteIn->site_swrc_name,
@@ -1831,7 +2018,7 @@ void SW_SIT_read(
                 goto closeFile;
             }
             break;
-        case 42:
+        case 44:
             resSNP = snprintf(
                 SW_SiteIn->site_ptf_name,
                 sizeof SW_SiteIn->site_ptf_name,
@@ -1847,7 +2034,7 @@ void SW_SIT_read(
             }
             SW_SiteIn->site_ptf_type = encode_str2ptf(SW_SiteIn->site_ptf_name);
             break;
-        case 43:
+        case 45:
             if (lineno != nLinesWithoutTR) {
                 LogError(
                     LogInfo,
@@ -1969,7 +2156,6 @@ closeFile: { CloseFile(&f, LogInfo); }
 
 @param[in,out] SW_SoilRunIn Struct of type SW_SOIL_RUN_INPUTS describing
     the simulated site's input values
-@param[in,out] n_evap_lyrs Number of soil layers with evaporation
 @param[in,out] n_layers Number of layers of soil within the simulation run
 @param[in] txtInFiles Array of program in/output files
 @param[out] LogInfo Holds information on warnings and errors
@@ -1978,7 +2164,6 @@ closeFile: { CloseFile(&f, LogInfo); }
 */
 void SW_LYR_read(
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
-    LyrIndex *n_evap_lyrs,
     LyrIndex *n_layers,
     char *txtInFiles[],
     LOG_INFO *LogInfo
@@ -2116,9 +2301,6 @@ void SW_LYR_read(
             goto closeFile;
         }
     }
-
-
-    *n_evap_lyrs = nlayers_bsevap(SW_SoilRunIn->evap_coeff, *n_layers);
 
 closeFile: { CloseFile(&f, LogInfo); }
 }
@@ -2603,16 +2785,23 @@ void SW_SIT_init_run(
         );
     }
 
+    /* Transpiration: use equations to estimate trco */
+    if (SW_SiteIn->methodTrCo == 1) {
+        estimate_trco(
+            SW_SoilRunIn->transp_coeff,
+            SW_SoilRunIn->depths,
+            SW_SoilRunIn->impermeability,
+            vegIn,
+            n_layers
+        );
+    }
 
-    /* Determine number of layers with potential for
-       bare-soil evaporation and transpiration */
-    SW_SiteSim->n_evap_lyrs =
-        nlayers_bsevap(SW_SoilRunIn->evap_coeff, n_layers);
+    /* Transpiration: count number of layers with potential for transpiration */
     nlayers_vegroots(
         n_layers, SW_SiteSim->n_transp_lyrs, SW_SoilRunIn->transp_coeff
     );
 
-    /* Identify transpiration regions by soil layers */
+    /* Transpiration: transpiration regions by soil layers */
     derive_TranspRgnBounds(
         &SW_SiteIn->n_transp_rgn,
         SW_SiteSim->TranspRgnBounds,
@@ -2626,6 +2815,25 @@ void SW_SIT_init_run(
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
+
+
+    /* Evaporation from soil: estimate potential evaporation coefficients */
+    if (SW_SiteIn->methodEvCo == 1) {
+        estimate_evco(
+            SW_SoilRunIn->evap_coeff,
+            SW_SoilRunIn->depths,
+            SW_SoilRunIn->width,
+            SW_SoilRunIn->fractionWeightMatric_sand,
+            SW_SoilRunIn->fractionWeightMatric_clay,
+            SW_SoilRunIn->impermeability,
+            n_layers
+        );
+    }
+
+    /* Evaporation from soil: count layers with potential for Es */
+    SW_SiteSim->n_evap_lyrs =
+        nlayers_bsevap(SW_SoilRunIn->evap_coeff, n_layers);
+
 
     /* Manage deep drainage */
     add_deepdrain_layer(SW_SiteSim, n_layers, SW_SiteIn->deepdrain);

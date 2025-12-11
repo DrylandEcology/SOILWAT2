@@ -541,11 +541,122 @@ TEST(SiteTest, SitePTFRawlsBrakensiek1985) {
     EXPECT_DOUBLE_EQ(theta_min, 0);
 }
 
+TEST(SiteTest, EstimateSoilEvaporationParameters) {
+    const double maxDepthEs = 15.;
+    double sevco;
+    double prevco;
+    // Six test datasets, see example code of rSW2data::calc_BareSoilEvapCoefs()
+    const int nTestCases = 8;
+    const LyrIndex nMaxSoilLayers = 9;
+    double evco[9];
+    const double expectedEvCo[8][9] = {
+        {0.8111, 0.1532, 0.0357},
+        {0.8574, 0.1223, 0.0203},
+        {0.8716, 0.1119, 0.0165},
+        {0.9363, 0.0637, 0.0000},
+        {0.8111, 0.1532, 0.0357},
+        {1.},
+        {0.8111, 0.1532, 0.0357},
+        {1.}
+    };
+    const LyrIndex nSoilLayers[8] = {
+        nMaxSoilLayers, 3, 3, 3, 3, 3, nMaxSoilLayers, nMaxSoilLayers
+    };
+    const double depth[8][9] = {
+        {5, 10, 20, 30, 40, 60, 80, 100, 150},
+        {5, 10, 20},
+        {5, 10, 15},
+        {5, 15, 30},
+        {5, 10, 15},
+        {20, 30, 100},
+        {5, 10, 20, 30, 40, 60, 80, 100, 150},
+        {5, 10, 20, 30, 40, 60, 80, 100, 150}
+    };
+    const double width[8][9] = {
+        {5, 5, 10, 10, 10, 20, 20, 20, 50},
+        {5, 5, 10},
+        {5, 5, 5},
+        {5, 10, 15},
+        {5, 5, 5},
+        {20, 10, 70},
+        {5, 5, 10, 10, 10, 20, 20, 20, 50},
+        {5, 5, 10, 10, 10, 20, 20, 20, 50}
+    };
+    const double sand[8][9] = {
+        {0.51, 0.44, 0.35, 0.32, 0.31, 0.32, 0.57, 0.57},
+        {0.50, 0.40, 0.30},
+        {0.25, 0.30, 0.35},
+        {1.00, 0.30, 0.00},
+        {1.25, 1.00, 0.00}, // estimate_evco() does not check for bad inputs
+        {0.25, 0.30, 0.35},
+        {0.51, 0.44, 0.35, 0.32, 0.31, 0.32, 0.57, 0.57},
+        {0.51, 0.44, 0.35, 0.32, 0.31, 0.32, 0.57, 0.57}
+    };
+    const double clay[8][9] = {
+        {0.15, 0.26, 0.41, 0.45, 0.47, 0.47, 0.28, 0.28},
+        {0.20, 0.20, 0.25},
+        {0.15, 0.25, 0.25},
+        {0.00, 0.25, 1.00},
+        {0.15, 0.00, 1.00},
+        {0.15, 0.25, 0.25},
+        {0.15, 0.26, 0.41, 0.45, 0.47, 0.47, 0.28, 0.28},
+        {0.15, 0.26, 0.41, 0.45, 0.47, 0.47, 0.28, 0.28}
+    };
+    const double impermeability[8][9] = {
+        {0.}, {0.}, {0.}, {0.}, {0.}, {0.}, {0., 0., 0., 1.}, {0., 1.}
+    };
+
+
+    for (int kt = 0; kt < nTestCases; kt++) {
+        estimate_evco(
+            evco,
+            depth[kt],
+            width[kt],
+            sand[kt],
+            clay[kt],
+            impermeability[kt],
+            nSoilLayers[kt]
+        );
+
+        sevco = 0.;  // sum acros evcos
+        prevco = 1.; // previous evco per unit soil depth
+
+        for (LyrIndex ks = 0; ks < nSoilLayers[kt]; ks++) {
+            sevco += evco[ks];
+
+            // Check for identical value as rSW2data::calc_BareSoilEvapCoefs()
+            EXPECT_DOUBLE_EQ(evco[ks], expectedEvCo[kt][ks])
+                << "test = " << kt << ": layer = " << ks;
+
+            if (ks == 0 || LE(depth[kt][ks], maxDepthEs) ||
+                (ks > 0 && LT(depth[kt][ks - 1], maxDepthEs))) {
+                // Check that evco within [0, 1] if layer is less than max depth
+                EXPECT_GE(evco[ks], 0.)
+                    << "test = " << kt << ": layer = " << ks;
+                EXPECT_LE(evco[ks], 1.)
+                    << "test = " << kt << ": layer = " << ks;
+            } else {
+                // Check that evcos are 0 if layer deeper than max depth
+                EXPECT_DOUBLE_EQ(evco[ks], 0.)
+                    << "test = " << kt << ": layer = " << ks;
+            }
+
+            // Check for weak monotonic decrease of evcos per depth unit
+            EXPECT_LE(evco[ks] / depth[kt][ks], prevco)
+                << "test = " << kt << ": layer = " << ks;
+            prevco = evco[ks] / depth[kt][ks];
+        }
+
+        // Check that evcos sum to 1 across soil profile
+        EXPECT_NEAR(sevco, 1., 1e-4) << "test = " << kt;
+    }
+}
+
 // Test that `SW_SIT_init_run` fails on bad soil inputs
 TEST_F(SiteFixtureTest, SiteSoilEvaporationParametersDeathTest) {
 
     // Check error for bad bare-soil evaporation coefficient (should be [0-1])
-
+    SW_Run.SiteIn.methodEvCo = 0; // do not estimate evco
     SW_Run.RunIn.SoilRunIn.evap_coeff[0] = -0.5;
 
     SW_SIT_init_run(
@@ -566,9 +677,72 @@ TEST_F(SiteFixtureTest, SiteSoilEvaporationParametersDeathTest) {
     );
 }
 
+TEST_F(SiteFixtureTest, EstimateRootingProfileParameters) {
+    // Seven test datasets
+    const int nTestCases = 7;
+    const LyrIndex nMaxSoilLayers = 8;
+    unsigned int kv;
+    LyrIndex ks;
+    double strco;
+    double expectedSumTrco;
+    double trco[NVEGTYPES][MAX_LAYERS];
+    const LyrIndex nSoilLayers[7] = {
+        nMaxSoilLayers, nMaxSoilLayers, 3, 3, 3, 1, 1
+    };
+    const double depth[7][8] = {
+        {5, 10, 20, 30, 40, 60, 80, 100},
+        {5, 10, 20, 30, 40, 60, 80, 100},
+        {100, 150, 500},
+        {100, 150, 500},
+        {1, 5, 10},
+        {10},
+        {10}
+    };
+    const double impermeability[7][8] = {
+        {0.},
+        {0., 0., 0., 0.8, 0., 0., 1., 0.},
+        {0.},
+        {1., 0., 0.},
+        {0.},
+        {0.},
+        {0.9}
+    };
+
+
+    for (int kt = 0; kt < nTestCases; kt++) {
+        estimate_trco(
+            trco,
+            depth[kt],
+            impermeability[kt],
+            SW_Run.VegProdIn.veg,
+            nSoilLayers[kt]
+        );
+
+        ForEachVegType(kv) {
+            strco = 0.; // sum trco across soil profile
+
+            ForEachSoilLayer(ks, nMaxSoilLayers) {
+                strco += trco[kv][ks];
+
+                // Check that trco within [0, 1]
+                EXPECT_GE(trco[kv][ks], 0.)
+                    << "test " << kt << "/veg " << kv << ": layer = " << ks;
+                EXPECT_LE(trco[kv][ks], 1.)
+                    << "test " << kt << "/veg " << kv << ": layer = " << ks;
+            }
+
+            // Check that trcos sum to 1 across soil profile unless no roots
+            expectedSumTrco = (EQ(impermeability[kt][0], 1.)) ? 0. : 1.;
+            EXPECT_DOUBLE_EQ(strco, expectedSumTrco)
+                << "test " << kt << "/veg " << kv;
+        }
+    }
+}
+
 TEST_F(SiteFixtureTest, SiteSoilTranspirationParametersDeathTest) {
 
     // Check error for bad transpiration coefficient (should be [0-1])
+    SW_Run.SiteIn.methodTrCo = 0; // use transp_coeff -- do not estimate trco
 
     SW_Run.RunIn.SoilRunIn.transp_coeff[SW_GRASS3][1] = 1.5;
     SW_SIT_init_run(

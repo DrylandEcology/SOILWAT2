@@ -172,7 +172,6 @@ void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw);
 
 void SW_OUT_set_out_counts(
     unsigned int tLayers,
-    unsigned int n_evap_lyrs,
     unsigned int nTaxaEstabl,
     SW_OUT_DOM *OutDom,
     LOG_INFO *LogInfo
@@ -188,7 +187,6 @@ void SW_OUT_set_colnames(
 
 void SW_OUT_setup_output(
     unsigned int tLayers,
-    unsigned int n_evap_lyrs,
     unsigned int count,
     size_t totNSites,
     SW_VEGESTAB_INFO_INPUTS *parmsIn,

@@ -441,6 +441,14 @@ typedef struct {
         0 (Parton 1978); 1 (Parton 1984) */
     unsigned int methodSurfaceTemperature;
 
+    /** Method for potential evaporation coefficients:
+        0 (inputs from soils.in); 1 (estimated from soil properties) */
+    unsigned int methodEvCo;
+
+    /** Method for rooting profile (potential transpiration coefficients):
+        0 (inputs from soils.in); 1 (estimated with equations from veg.in) */
+    unsigned int methodTrCo;
+
     /* Soil water retention curve (SWRC), see `SW_LAYER_INFO` */
     unsigned int site_swrc_type, site_ptf_type;
 
@@ -709,6 +717,11 @@ typedef struct {
         /** Parameter for CO2-effects on water-use-efficiency;
           user input from file `Input/veg.in` */
         co2_wue_coeff2[NVEGTYPES];
+
+    /** Parameters of the rooting profile according to Zeng 2001
+        1 - 1 / 2 * (exp(- p1 * depth) + exp(- p2 * depth))
+        within maximum depth at p3 [m] */
+    double rootProfileParam[NVEGTYPES][3];
 } VegTypeIn;
 
 typedef struct {
@@ -1917,12 +1930,7 @@ typedef struct {
     /** Largest number of soil layers across domain */
     LyrIndex nMaxSoilLayers;
 
-    /** Largest number of soil layers from which bare-soil evaporation may
-    extract water across simulation domain */
-    LyrIndex nMaxEvapLayers;
-
     /** Soil layer depths profile
-
     Values represent the bottom depth of soil layers [cm].
     Used if #hasConsistentSoilLayerDepths.
     */

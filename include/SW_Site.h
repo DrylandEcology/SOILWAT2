@@ -284,6 +284,16 @@ void SWRC_bulkSoilParameters(
     double depthB
 );
 
+void estimate_evco(
+    double evco[],
+    const double depth[],
+    const double width[],
+    const double sand[],
+    const double clay[],
+    const double impermeability[],
+    LyrIndex n_layers
+);
+
 double calculate_soilBulkDensity(double matricDensity, double fractionGravel);
 
 double calculate_soilMatricDensity(
@@ -291,6 +301,14 @@ double calculate_soilMatricDensity(
 );
 
 LyrIndex nlayers_bsevap(double *evap_coeff, LyrIndex n_layers);
+
+void estimate_trco(
+    double trco[][MAX_LAYERS],
+    const double depth[],
+    const double impermeability[],
+    const VegTypeIn veg[NVEGTYPES],
+    LyrIndex n_layers
+);
 
 void nlayers_vegroots(
     LyrIndex n_layers,
@@ -344,7 +362,6 @@ void echo_inputs(
 /* these used to be in Layers */
 void SW_LYR_read(
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
-    LyrIndex *n_evap_lyrs,
     LyrIndex *n_layers,
     char *txtInFiles[],
     LOG_INFO *LogInfo

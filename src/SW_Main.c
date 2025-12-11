@@ -143,10 +143,8 @@ int main(int argc, char **argv) {
         &SW_Domain.SW_PathInputs,
         SW_Domain.hasConsistentSoilLayerDepths,
         &SW_Domain.nMaxSoilLayers,
-        &SW_Domain.nMaxEvapLayers,
         SW_Domain.depthsAllSoilLayers,
         sw_template.RunIn.SiteRunIn.n_layers,
-        sw_template.SiteSim.n_evap_lyrs,
         sw_template.RunIn.SoilRunIn.depths,
         &LogInfo
     );

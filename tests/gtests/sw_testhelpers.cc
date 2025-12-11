@@ -154,6 +154,9 @@ void setup_SW_Site_for_tests(
 
     SW_SiteIn->slow_drain_coeff = 0.02;
 
+    SW_SiteIn->methodEvCo = 0;
+    SW_SiteIn->methodTrCo = 0;
+
     SW_SiteSim->site_has_swrcpMineralSoil = swFALSE;
     SW_SiteIn->inputsProvideSWRCp = swFALSE;
 
@@ -218,6 +221,7 @@ void swtest_init_args(int argc, char **argv, int *printVersionOnly) {
   (i.e., same behavior as `RUN_ALL_TESTS()`)
 */
 int setup_testGlobalSoilwatTemplate() {
+    const size_t nSites = 1;
     int success = 0;
     int worldSize = 1;
     LOG_INFO LogInfo;
@@ -315,8 +319,8 @@ int setup_testGlobalSoilwatTemplate() {
 
     SW_OUT_setup_output(
         template_SW_Run.RunIn.SiteRunIn.n_layers,
-        template_SW_Run.SiteSim.n_evap_lyrs,
         template_SW_Run.VegEstabIn->count,
+        nSites,
         template_SW_Run.VegEstabIn->parms,
         &template_SW_Domain.OutDom,
         &LogInfo

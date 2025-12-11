@@ -2079,6 +2079,7 @@ TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
             SW_Run.RunIn.SoilRunIn.transp_coeff[vt1][i];
     }
 
+    SW_Run.SiteIn.methodTrCo = 0; // use transp_coeff -- do not estimate trco
 
     // Run with vt1
     SW_RUN_deepCopy(

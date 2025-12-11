@@ -773,7 +773,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
 
 
     /* bare-soil evaporation */
-    ForEachEvapLayer(i, sw->SiteSim.n_evap_lyrs) {
+    ForEachEvapLayer(i, n_layers) {
         // init to zero for today
         sw->SoilWatSim.evap_baresoil[i] = 0;
     }

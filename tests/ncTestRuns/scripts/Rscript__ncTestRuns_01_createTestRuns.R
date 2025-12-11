@@ -807,6 +807,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       mpiExecutor = mpiExecutor
     )
 
+    unlink(file.path(dir_testRun, "logs"), recursive = TRUE)
+
     if (file.exists(fname_template)) {
       nc <- RNetCDF::open.nc(fname_template, write = TRUE)
 
@@ -1531,8 +1533,12 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       grid_mapping = varAttrSp[["grid_mapping"]],
       dataType = dataType,
       values = createTestRunSoils(
-        soilData =
-          round(soilsTestRun[, "EvapBareSoil_frac", drop = TRUE], nDigsSoil),
+        soilData = if (identical(listTestRuns[k0, "EstimateEvCo"], "no")) {
+          round(soilsTestRun[, "EvapBareSoil_frac", drop = TRUE], nDigsSoil)
+        } else {
+          # test that estimation replaces this bogus value
+          rep(999, nMaxSoilLayersTestRun)
+        },
         usedUnits = u,
         dims = inDimCounts[["soil"]],
         dimPermutation = inDimPerms[["soil"]],
@@ -1543,6 +1549,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       ),
       count = inDimPermCounts[["soil"]]
     )
+
 
     #--- ..** inSoil: pft ------
     rSW2st::setAxisPFTsNCSW(nc, pfts)
@@ -1563,7 +1570,12 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     for (kpft in seq_len(npfts)) {
       cn <- paste0("trco", pfts[[kpft]], "_frac")
       cn <- paste0("TrCo_", pfts[[kpft]])
-      trc <- round(soilsTestRun[, cn, drop = TRUE], nDigsSoil)
+      trc <- if (identical(listTestRuns[k0, "EstimateTrCo"], "no")) {
+        round(soilsTestRun[, cn, drop = TRUE], nDigsSoil)
+      } else {
+        # test that estimation replaces this bogus value
+        rep(999, nMaxSoilLayersTestRun)
+      }
       kstart <- c(
         kpft,
         rep(1L, length = length(inDimPermCounts[["soilPFT1"]]) - 1L)
@@ -1691,6 +1703,12 @@ for (k0 in seq_len(nrow(listTestRuns))) {
   #--- ..** inSoil: set ncinputs.tsv ------
   toggleNCInputTSV(filename = fname_ncintsv, inkeys = "inSoil", value = 1L)
 
+  # Note: do not deactivate inputs from evc even if estimated
+  # -> read bogus values for evco (to overwrite template values from soils.in)
+
+  # Note: do not deactivate inputs from trc even if estimated
+  # -> read bogus values for trco (to overwrite template values from soils.in)
+
   if (!identical(listTestRuns[k0, "inputsProvideSWRCp", drop = TRUE], "yes")) {
     # Deactivate inputs from SWRCp
     toggleNCInputTSV(
@@ -1758,6 +1776,26 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       filename = fname,
       tag = "# 0 = depth/thickness of soil layers vary among sites/gridcells$",
       value = 0L, # change to 0 from default 1
+      classic = TRUE
+    )
+  }
+
+  if (identical(listTestRuns[k0, "EstimateEvCo"], "yes")) {
+    # Activate estimation of evco
+    setTxtInput(
+      filename = fname,
+      tag = "# 0 = Inputs for evco provided via \"soils.in\"",
+      value = 1L, # change to 1 from default 0
+      classic = TRUE
+    )
+  }
+
+  if (identical(listTestRuns[k0, "EstimateTrCo"], "yes")) {
+    # Activate estimation of trco
+    setTxtInput(
+      filename = fname,
+      tag = "# 0 = Inputs for trco provided via \"soils.in\"",
+      value = 1L, # change to 1 from default 0
       classic = TRUE
     )
   }
