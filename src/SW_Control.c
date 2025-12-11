@@ -155,6 +155,12 @@ static void init_all_runs(
 
         SW_CTL_init_run(&SW_Runs[site], &siteLogs[site], main_LogInfo);
         checkJumpToLabel(main_LogInfo->stopRun, checkLogs);
+
+        if (!siteLogs[site].stopRun) {
+            SW_CTL_run_spinup(SW_Domain, &SW_Runs[site], &siteLogs[site]);
+            SW_Runs[site].ModelSim->yearIdxSpinSim =
+                SW_Domain->SW_SpinUp.duration;
+        }
     }
     fatalError = swFALSE;
 
@@ -552,6 +558,7 @@ static void prepare_next_day(
     TimeInt lastDoy = SW_Domain->SW_ConstInfo.ModelSim.lastdoy;
     Bool fatalError = swTRUE;
     Bool newYear = (Bool) (initYear || doy == lastDoy + 1);
+    Bool spinup = SW_Domain->SW_SpinUp.spinup;
 
 #ifdef SWDEBUG
     if (debug) {
@@ -570,7 +577,7 @@ static void prepare_next_day(
         checkReturn(main_LogInfo->stopRun);
 
 #if defined(SWNETCDF)
-        if (!SW_Domain->SW_SpinUp.spinup) {
+        if (!spinup) {
             if (readWeather) {
                 set_walltime(&tsr, &ok_tsr);
                 SW_NCIN_read_inputs(
@@ -600,7 +607,7 @@ static void prepare_next_day(
         }
 #endif
 
-        for (site = 0; site < nActiveSites; site++) {
+        for (site = 0; site < nActiveSites && !spinup; site++) {
             if (!siteLogs[site].stopRun) {
                 suid = SW_Domain->globDomSuids[site];
 
@@ -673,30 +680,33 @@ static void finalize_sites_day(
     Bool ok_tsr = swFALSE;
 
     Bool forceWriteOut = (Bool) (!runSims || main_LogInfo->stopRun);
+    Bool spinup = SW_Domain->SW_SpinUp.spinup;
 
-    set_walltime(&tsr, &ok_tsr);
-    SW_NCOUT_write_output(
-        &SW_Domain->OutDom,
-        sw_template->OutRun->p_OUT,
-        SW_Domain->SW_ConstInfo.OutRun.irow_OUT,
-        sw_template->SW_PathOutputs->numOutFiles,
-        SW_Domain->nActiveSuidsProc,
-        SW_Domain->domStartIndex[eSW_InDomain],
-        SW_Domain->domCounts[eSW_InDomain],
-        sw_template->SW_PathOutputs->openOutFileIDs,
-        sw_template->SW_PathOutputs->ncOutVarIDs,
-        SW_Domain->netCDFInput.siteDoms[eSW_InDomain],
-        forceWriteOut,
-        sw_template->SW_PathOutputs->outTimeSizes,
-        main_LogInfo
-    );
-    SW_WT_TimeRun(tsr, ok_tsr, TIME_IO_OUT, SW_WallTime);
+    if (!spinup) {
+        set_walltime(&tsr, &ok_tsr);
+        SW_NCOUT_write_output(
+            &SW_Domain->OutDom,
+            sw_template->OutRun->p_OUT,
+            SW_Domain->SW_ConstInfo.OutRun.irow_OUT,
+            sw_template->SW_PathOutputs->numOutFiles,
+            SW_Domain->nActiveSuidsProc,
+            SW_Domain->domStartIndex[eSW_InDomain],
+            SW_Domain->domCounts[eSW_InDomain],
+            sw_template->SW_PathOutputs->openOutFileIDs,
+            sw_template->SW_PathOutputs->ncOutVarIDs,
+            SW_Domain->netCDFInput.siteDoms[eSW_InDomain],
+            forceWriteOut,
+            sw_template->SW_PathOutputs->outTimeSizes,
+            main_LogInfo
+        );
+        SW_WT_TimeRun(tsr, ok_tsr, TIME_IO_OUT, SW_WallTime);
+    }
 #endif
 
     SW_Domain->SW_ConstInfo.ModelSim.doy++;
 
 #if defined(SWNETCDF)
-    if (doy == lastDoy + 1) {
+    if (doy == lastDoy + 1 && !spinup) {
         display_yearly_progress(
             rank, nYears, startupPrint, finalYear, displayNYears
         );
@@ -753,6 +763,7 @@ void SW_CTL_sim_sites(
 #if defined(SWNETCDF)
     signed char *progVals = SW_Domain->netCDFInput.progVals;
     size_t actSiteIdx;
+    Bool spinup = SW_Domain->SW_SpinUp.spinup;
 
     textSkyVals = (Bool) !SW_Domain->netCDFInput.readInVars[eSW_InClimate][0];
 #else
@@ -787,7 +798,7 @@ void SW_CTL_sim_sites(
         SW_F_handle_log_counts(&siteLogs[site], runStatus, main_LogInfo);
 
 #if defined(SWNETCDF)
-        if (siteLogs[site].stopRun) {
+        if (siteLogs[site].stopRun && !spinup) {
             SW_NCOUT_reset_failed_sites(
                 SW_Domain, actSiteIdx, sw_template->OutRun->p_OUT
             );
@@ -795,7 +806,9 @@ void SW_CTL_sim_sites(
 #endif
     }
 
-    SW_F_check_fatal_log(SW_Domain, nActiveSites, main_LogInfo);
+    if (!spinup) {
+        SW_F_check_fatal_log(SW_Domain, nActiveSites, main_LogInfo);
+    }
 }
 
 /**
@@ -840,6 +853,7 @@ void SW_CTL_run_daily_timesteps(
 #if defined(SWNETCDF)
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
+    Bool spinup = SW_Domain->SW_SpinUp.spinup;
 #endif
 
     for (day = startDay; day <= endDay && !runSims; day++) {
@@ -859,7 +873,9 @@ void SW_CTL_run_daily_timesteps(
 
         if (runSims) {
 #if defined(SWNETCDF)
-            set_walltime(&tsr, &ok_tsr);
+            if (!spinup) {
+                set_walltime(&tsr, &ok_tsr);
+            }
 #endif
             SW_CTL_sim_sites(
                 sw_template,
@@ -870,7 +886,9 @@ void SW_CTL_run_daily_timesteps(
                 main_LogInfo
             );
 #if defined(SWNETCDF)
-            SW_WT_TimeRun(tsr, ok_tsr, TIME_COMPUTE, SW_WallTime);
+            if (!spinup) {
+                SW_WT_TimeRun(tsr, ok_tsr, TIME_COMPUTE, SW_WallTime);
+            }
 #endif
         }
 
@@ -1235,14 +1253,10 @@ void SW_CTL_setup_domain(
 
 @param[in,out] sw Comprehensive struct of type SW_RUN containing all
     information in the simulation
-@param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
-    information that do not change throughout simulation runs
 @param[in] zeroOutInfo Specifies if SW_OUT_RUN should be zeroed-out
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_CTL_setup_model(
-    SW_RUN *sw, SW_OUT_DOM *OutDom, Bool zeroOutInfo, LOG_INFO *LogInfo
-) {
+void SW_CTL_setup_model(SW_RUN *sw, Bool zeroOutInfo, LOG_INFO *LogInfo) {
     SW_MDL_construct(sw->ModelSim);
     SW_WTH_construct(
         sw->WeatherIn, &sw->WeatherSim, sw->weath_p_accu, sw->weath_p_oagg
@@ -1493,6 +1507,10 @@ void SW_CTL_run_spinup(SW_DOMAIN *SW_Domain, SW_RUN *sw, LOG_INFO *LogInfo) {
     int debug = 0;
 #endif
 
+    double *tempVals = NULL;
+    SW_SOIL_RUN_INPUTS *newSoil = NULL;
+    SW_WALLTIME *SW_WallTime = NULL;
+
     unsigned int i;
     unsigned int k;
     unsigned int quotient = 0;
@@ -1503,14 +1521,19 @@ void SW_CTL_run_spinup(SW_DOMAIN *SW_Domain, SW_RUN *sw, LOG_INFO *LogInfo) {
     TimeInt scope = sw->ModelIn->SW_SpinUp.scope;
     TimeInt finalyr = sw->ModelIn->startyr + scope - 1;
     TimeInt *years;
-    Bool prev_doOut = sw->ModelSim->doOutput;
+    TimeInt startDay = 0;
+    TimeInt endDay = 0;
+    size_t nActiveSites = SW_Domain->nActiveSuidsProc;
+    SW_MODEL_SIM tempMdl;
     years = (TimeInt *) Mem_Malloc(
         sizeof(TimeInt) * duration, "SW_CTL_run_spinup", LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
-    TimeInt daysInYear;
+
+    Mem_Copy(&tempMdl, &SW_Domain->SW_ConstInfo.ModelSim, sizeof(SW_MODEL_SIM));
+    sw->ModelSim = &tempMdl;
 
 #ifdef SWDEBUG
     if (debug) {
@@ -1568,10 +1591,11 @@ void SW_CTL_run_spinup(SW_DOMAIN *SW_Domain, SW_RUN *sw, LOG_INFO *LogInfo) {
     TimeInt yrIdx;
 
     sw->ModelSim->doOutput = swFALSE; // turn output temporarily off
+    SW_Domain->nActiveSuidsProc = 1;
 
     for (yrIdx = 0; yrIdx < duration; yrIdx++) {
         *cur_yr = years[yrIdx];
-        daysInYear = Time_get_lastdoy_y(*cur_yr);
+        endDay = Time_get_lastdoy_y(*cur_yr);
 
 #ifdef SWDEBUG
         if (debug) {
@@ -1582,23 +1606,30 @@ void SW_CTL_run_spinup(SW_DOMAIN *SW_Domain, SW_RUN *sw, LOG_INFO *LogInfo) {
             );
         }
 #endif
-
-        // SW_CTL_run_daily_timesteps(
-        //     daysInYear,
-        //     NULL, // Temp vals
-        //     SW_Domain,
-        //     sw,
-        //     LogInfo,
-        //     NULL, // Wall time
-        //     LogInfo
-        // );
+        // Timing and I/O operations should not occur
+        // so sending default rank, temporary values/storage
+        // is okay
+        SW_CTL_run_daily_timesteps(
+            ROOT_PROC,
+            sw,
+            startDay,
+            endDay,
+            tempVals,
+            newSoil,
+            SW_Domain,
+            sw,
+            LogInfo,
+            SW_WallTime,
+            LogInfo
+        );
         if (LogInfo->stopRun) {
             goto reSet; // Exit function prematurely due to error
         }
     }
 
 reSet: {
-    sw->ModelSim->doOutput = prev_doOut; // reset doOutput to original value
+    sw->ModelSim = &SW_Domain->SW_ConstInfo.ModelSim;
+    SW_Domain->nActiveSuidsProc = nActiveSites;
     /* Note: don't reset sw->ModelSim->yearIdxSpinSim which is a
     continuous index across spinup and simulation years) */
 
