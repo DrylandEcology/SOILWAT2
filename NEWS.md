@@ -4,7 +4,7 @@
 * Simulation output remains the same as the previous version.
   However, output of the example differs slightly from previous example output
   because of the following changes: updated potential evaporation coefficients;
-  updated rooting profiles.
+  updated rooting profiles; updated output algorithm.
 
 * Rooting profiles can now be estimated with an equation and parameters
   for each vegetation type; soil impermeability represents (semi-)restrictive
@@ -12,6 +12,9 @@
 
 * Potential evaporation coefficients can now be estimated from soil properties
   (#409; @dschlaep).
+
+* Vegetation establishment output no longer has the chance to report a value
+  one period too early (#494; @N1ckP3rsl3y).
 
 ## Changes to inputs
 * New input via `"siteparam.in"` to select the input option for potential
