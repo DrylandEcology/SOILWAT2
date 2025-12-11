@@ -509,7 +509,7 @@ temporal/spatial information for a set of simulation runs
 will be used to store site log information through all daily runs
 @param[in] tempVals An allocated space to store temporary input values
 for converting and setting into proper location
-@param[in] initFirstYear A flag specifying if it is the first day of the
+@param[in] initYear A flag specifying if it is the first day of the
 program run and we need to read and/or setup weather
 @param[in,out] SW_Runs A list of SW_RUN instances of size "nActiveSites" that
 will be used for holding all information for the simulation
@@ -524,12 +524,14 @@ static void prepare_next_day(
     SW_DOMAIN *SW_Domain,
     LOG_INFO *siteLogs,
     double *tempVals,
-    Bool initFirstYear,
+    Bool initYear,
     SW_RUN *SW_Runs,
     SW_WALLTIME *SW_WallTime,
     SW_SOIL_RUN_INPUTS *newSoils,
     LOG_INFO *main_LogInfo
 ) {
+    Bool textSkyVals = swTRUE;
+
 #if defined(SWNETCDF)
     const Bool readWeather =
         SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
@@ -537,6 +539,7 @@ static void prepare_next_day(
 
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
+    textSkyVals = (Bool) !SW_Domain->netCDFInput.readInVars[eSW_InClimate][0];
 #endif
 
     size_t site;
@@ -546,9 +549,9 @@ static void prepare_next_day(
     size_t *suid = baseSuid;
 
     TimeInt doy = SW_Domain->SW_ConstInfo.ModelSim.doy;
-    TimeInt firstDoy = SW_Domain->SW_ConstInfo.ModelSim.firstdoy;
     TimeInt lastDoy = SW_Domain->SW_ConstInfo.ModelSim.lastdoy;
     Bool fatalError = swTRUE;
+    Bool newYear = (Bool) (initYear || doy == lastDoy + 1);
 
 #ifdef SWDEBUG
     if (debug) {
@@ -556,12 +559,15 @@ static void prepare_next_day(
     }
 #endif
 
-    begin_day_const(&SW_Domain->SW_ConstInfo.ModelSim);
-
-    if (doy == firstDoy || doy == lastDoy || initFirstYear) {
-        if (!initFirstYear && doy == lastDoy) {
+    if (newYear) {
+        if (!initYear && doy == lastDoy + 1) {
             SW_Domain->SW_ConstInfo.ModelSim.year++;
         }
+
+        begin_year_const(
+            sw_template, &SW_Domain->OutDom, textSkyVals, main_LogInfo
+        );
+        checkReturn(main_LogInfo->stopRun);
 
 #if defined(SWNETCDF)
         if (!SW_Domain->SW_SpinUp.spinup) {
@@ -616,6 +622,8 @@ static void prepare_next_day(
         }
     }
     fatalError = swFALSE;
+
+    begin_day_const(&SW_Domain->SW_ConstInfo.ModelSim);
 
 #if defined(SWNETCDF)
 handleLogs:
@@ -688,7 +696,7 @@ static void finalize_sites_day(
     SW_Domain->SW_ConstInfo.ModelSim.doy++;
 
 #if defined(SWNETCDF)
-    if (doy == lastDoy) {
+    if (doy == lastDoy + 1) {
         display_yearly_progress(
             rank, nYears, startupPrint, finalYear, displayNYears
         );
@@ -718,12 +726,15 @@ temporal/spatial information for a set of simulation runs
 will be used for holding all information for the simulation
 @param[in] siteLogs A list of LOG_INFO instances of size "nActiveSites" that
 will be used to store site log information through all daily runs
+@param[in] initYear A flag specifying if it is the first day of the
+program run and we need to read and/or setup weather
 @param[out] main_LogInfo Holds information on warnings and errors
 */
 void SW_CTL_sim_sites(
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
     SW_RUN *SW_Runs,
+    Bool initYear,
     LOG_INFO *siteLogs,
     LOG_INFO *main_LogInfo
 ) {
@@ -735,7 +746,7 @@ void SW_CTL_sim_sites(
 
     size_t site;
     TimeInt doy = SW_Domain->SW_ConstInfo.ModelSim.doy;
-    TimeInt lastDoy = SW_Domain->SW_ConstInfo.ModelSim.lastdoy;
+    TimeInt firstDoy = SW_Domain->SW_ConstInfo.ModelSim.firstdoy;
     signed char *runStatus = NULL;
     Bool textSkyVals = swTRUE;
 
@@ -748,13 +759,6 @@ void SW_CTL_sim_sites(
     (void) sw_template;
 #endif
 
-    begin_year_const(
-        sw_template, &SW_Domain->OutDom, textSkyVals, main_LogInfo
-    );
-    if (main_LogInfo->stopRun) {
-        return;
-    }
-
     for (site = 0; site < nActiveSites; site++) {
 
 #if defined(SWNETCDF)
@@ -766,7 +770,7 @@ void SW_CTL_sim_sites(
         }
 #endif
 
-        if (doy == lastDoy) {
+        if (initYear || doy == firstDoy) {
             begin_year_site(&SW_Runs[site], textSkyVals);
         }
 
@@ -831,7 +835,7 @@ void SW_CTL_run_daily_timesteps(
     LOG_INFO *main_LogInfo
 ) {
     TimeInt day;
-    Bool initFirstYear = swFALSE;
+    Bool initYear = swFALSE;
 
 #if defined(SWNETCDF)
     WallTimeSpec tsr;
@@ -839,26 +843,31 @@ void SW_CTL_run_daily_timesteps(
 #endif
 
     for (day = startDay; day <= endDay && !runSims; day++) {
-        initFirstYear = (Bool) (day == startDay);
+        initYear = (Bool) (day == startDay);
         prepare_next_day(
             sw_template,
             SW_Domain,
             siteLogs,
             tempVals,
-            initFirstYear,
+            initYear,
             SW_Runs,
             SW_WallTime,
             newSoils,
             main_LogInfo
         );
-        checkJumpToLabel(main_LogInfo->stopRun, handleOutput);
+        checkJumpToLabel(main_LogInfo->stopRun || !runSims, handleOutput);
 
         if (runSims) {
 #if defined(SWNETCDF)
             set_walltime(&tsr, &ok_tsr);
 #endif
             SW_CTL_sim_sites(
-                sw_template, SW_Domain, SW_Runs, siteLogs, main_LogInfo
+                sw_template,
+                SW_Domain,
+                SW_Runs,
+                initYear,
+                siteLogs,
+                main_LogInfo
             );
 #if defined(SWNETCDF)
             SW_WT_TimeRun(tsr, ok_tsr, TIME_COMPUTE, SW_WallTime);

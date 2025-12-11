@@ -66,6 +66,7 @@ void SW_CTL_sim_sites(
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
     SW_RUN *SW_Runs,
+    Bool initYear,
     LOG_INFO *siteLogs,
     LOG_INFO *main_LogInfo
 );
