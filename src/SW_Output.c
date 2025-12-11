@@ -676,11 +676,13 @@ static void average_for(
         switch (pd) {
         case eSW_Week:
             curr_pd = sw->ModelSim.week + 1;
-            div = (doy == lastDoy) ? lastDoy % WKDAYS : WKDAYS;
+            /* Output produced only for complete weeks or at end of year */
+            div = (doy == lastDoy) ? (lastDoy - 1) % WKDAYS + 1 : WKDAYS;
             break;
 
         case eSW_Month:
             curr_pd = sw->ModelSim.month + 1;
+            /* Output produced only for complete months */
             div = Time_days_in_month(
                 sw->ModelSim.month, sw->ModelSim.days_in_month
             );

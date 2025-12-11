@@ -227,17 +227,21 @@ void SW_MDL_new_day(SW_MODEL_SIM *SW_ModelSim) {
 
     TimeInt *cum_monthdays = SW_ModelSim->cum_monthdays;
     TimeInt doy = SW_ModelSim->doy;
+    TimeInt week = SW_ModelSim->week;
     TimeInt month = SW_ModelSim->month;
     Bool *endperiod = SW_ModelSim->endperiod;
 
-    SW_ModelSim->month = doy2month(SW_ModelSim->doy, cum_monthdays); /* base0 */
-    SW_ModelSim->week =
-        doy2week(SW_ModelSim->doy); /* base0; more often an index */
-
+    /* Determine endperiods before incrementing (base0) week and month counters
+       Produce output only for complete weeks and months (or at end of year) */
     endperiod[eSW_Year] = (Bool) (doy == SW_ModelSim->lastdoy);
     endperiod[eSW_Month] =
         (Bool) (month != notime && doy == cum_monthdays[month]);
-    endperiod[eSW_Week] = (Bool) (endperiod[eSW_Year] || doy % WKDAYS == 0);
+    endperiod[eSW_Week] =
+        (Bool) (endperiod[eSW_Year] || (week != notime && doy % WKDAYS == 0));
+
+    /* Update (base0) week and month counters */
+    SW_ModelSim->month = doy2month(SW_ModelSim->doy, cum_monthdays);
+    SW_ModelSim->week = doy2week(SW_ModelSim->doy);
 }
 
 /**
