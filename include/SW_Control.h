@@ -40,8 +40,9 @@ void SW_RUN_deepCopy(
 
 void SW_CTL_setup_domain(
     int rank,
-    int nProcs,
+    int worldSize,
     Bool renameDomainTemp,
+    TimeInt runSimDayLen,
     SW_DOMAIN *SW_Domain,
     LOG_INFO *LogInfo
 );

@@ -73,6 +73,8 @@ static void sw_print_usage(void) {
         "       to the domain file name provided in 'Input_nc/files_nc.in'.\n"
         "  -p : Prepare domain, progress, index, and output netCDF files\n"
         "       but do not run simulations.\n"
+        "  -s : Run the next number of days for all sites then exit the "
+        "       program.\n"
     );
 }
 
@@ -143,6 +145,7 @@ void sw_print_version(void) {
             flag being turned on
 @param[out] endQuietly A flag specifying if no messages should be produced,
     e.g., if SOILWAT2 was called to print help or version only.
+@param[in] runSimDayLen The number of days the simulations are to be run for
 @param[out] LogInfo Holds information on warnings and errors
 */
 void sw_init_args(
@@ -155,6 +158,7 @@ void sw_init_args(
     Bool *renameDomainTemplateNC,
     Bool *prepareFiles,
     Bool *endQuietly,
+    TimeInt *runSimDayLen,
     LOG_INFO *LogInfo
 ) {
 
@@ -175,10 +179,12 @@ void sw_init_args(
     const char *errMsg = "command-line";
 
     /* valid options */
-    char const *opts[] = {"-d", "-f", "-e", "-q", "-v", "-h", "-t", "-r", "-p"};
+    char const *opts[] = {
+        "-d", "-f", "-e", "-q", "-v", "-h", "-t", "-r", "-p", "-s"
+    };
 
     /* indicates options with values: 0=none, 1=required, -1=optional */
-    int valopts[] = {1, 1, 0, 0, 0, 0, 1, 0, 0};
+    int valopts[] = {1, 1, 0, 0, 0, 0, 1, 0, 0, 1};
 
     int i;  /* looper through all cmdline arguments */
     int a;  /* current valid argument-value position */
@@ -194,6 +200,7 @@ void sw_init_args(
     *EchoInits = swFALSE;
     *renameDomainTemplateNC = swFALSE;
     *endQuietly = swFALSE;
+    *runSimDayLen = 0;
 
     a = 1;
     for (i = 1; i <= nopts; i++) {
@@ -248,16 +255,12 @@ void sw_init_args(
                 LogError(
                     LogInfo, LOGERROR, "Invalid project directory (%s)", str
                 );
-                return; // Exit function prematurely due to error
             }
             break;
 
         case 1: /* -f */
             free(*firstfile);
             *firstfile = Str_Dup(str, LogInfo);
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
             break;
 
         case 2: /* -e */
@@ -286,9 +289,6 @@ void sw_init_args(
 
         case 6: /* -t */
             *wallTimeLimit = sw_strtod(str, errMsg, LogInfo);
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
             break;
 
         case 7: /* -r */
@@ -303,13 +303,19 @@ void sw_init_args(
 #endif
             break;
 
+        case 9: /* -s */
+            *runSimDayLen = (TimeInt) sw_strtoi(str, errMsg, LogInfo);
+            break;
+
         default:
             LogError(
                 LogInfo,
                 LOGERROR,
                 "Programmer: bad option in main:sw_init_args:switch"
             );
-
+            break;
+        }
+        if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 

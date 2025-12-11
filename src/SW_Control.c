@@ -1090,6 +1090,7 @@ void SW_CTL_init_ptrs(SW_DOMAIN *SW_Domain, SW_RUN *sw) {
 (only relevant with SWMPI enabled)
 @param[in] renameDomainTemp Specifies if the created domain netCDF file
 will automatically be renamed
+@param[in] runSimDayLen The number of days the simulations are to be run for
 @param[out] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
 @param[out] LogInfo Holds information on warnings and errors
@@ -1098,6 +1099,7 @@ void SW_CTL_setup_domain(
     int rank,
     int worldSize,
     Bool renameDomainTemp,
+    TimeInt runSimDayLen,
     SW_DOMAIN *SW_Domain,
     LOG_INFO *LogInfo
 ) {
@@ -1216,7 +1218,7 @@ void SW_CTL_setup_domain(
     (void) renameDomainTemp;
 #endif
 
-    SW_DOM_SimSet(rank, worldSize, SW_Domain, LogInfo);
+    SW_DOM_SimSet(rank, worldSize, runSimDayLen, SW_Domain, LogInfo);
 }
 
 /**

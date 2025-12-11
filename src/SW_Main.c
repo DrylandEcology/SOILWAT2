@@ -60,6 +60,7 @@ int main(int argc, char **argv) {
     Bool renameDomainTemplateNC = swFALSE;
     Bool prepareFiles = swFALSE;
     Bool endQuietly = swFALSE;
+    TimeInt runSimDayLen = 0;
 
     int rank = 0;
     int size = 0;
@@ -88,6 +89,7 @@ int main(int argc, char **argv) {
         &renameDomainTemplateNC,
         &prepareFiles,
         &endQuietly,
+        &runSimDayLen,
         &LogInfo
     );
     checkJumpToLabel(endQuietly || LogInfo.stopRun, finishProgram);
@@ -104,7 +106,7 @@ int main(int argc, char **argv) {
 
     // setup and construct domain
     SW_CTL_setup_domain(
-        rank, size, renameDomainTemplateNC, &SW_Domain, &LogInfo
+        rank, size, renameDomainTemplateNC, runSimDayLen, &SW_Domain, &LogInfo
     );
     checkJumpToLabel(LogInfo.stopRun, finishProgram);
 

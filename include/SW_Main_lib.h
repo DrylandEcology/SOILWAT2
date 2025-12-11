@@ -28,6 +28,7 @@ void sw_init_args(
     Bool *renameDomainTemplateNC,
     Bool *prepareFiles,
     Bool *endQuietly,
+    TimeInt *runSimDayLen,
     LOG_INFO *LogInfo
 );
 

@@ -1079,15 +1079,22 @@ void SW_DOM_SetProgress(
 @param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] worldSize Total number of processes that the MPI run has created
 (only relevant with SWMPI enabled)
+@param[in] runSimDayLen The number of days the simulations are to be run for
 @param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_DOM_SimSet(
-    int rank, int worldSize, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
+    int rank,
+    int worldSize,
+    TimeInt runSimDayLen,
+    SW_DOMAIN *SW_Domain,
+    LOG_INFO *LogInfo
 ) {
     int progDayFileID = 0; // Value does not matter if SWNETCDF is not defined
     int progDayVarID = 0;  // Value does not matter if SWNETCDF is not defined
+    TimeInt endDay;
+    TimeInt endDayCalc;
 
 #if defined(SWNETCDF)
     progDayFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprogDay];
@@ -1105,12 +1112,18 @@ void SW_DOM_SimSet(
     );
     checkReturn(LogInfo->stopRun);
 
-    SW_Domain->endSimDay = Time_years_to_days(
+    endDay = Time_years_to_days(
         SW_Domain->startyr,
         SW_Domain->endyr,
         SW_Domain->startstart,
         SW_Domain->endend
     );
+
+    SW_Domain->endSimDay = endDay;
+    if (runSimDayLen > 0) {
+        endDayCalc = SW_Domain->startSimDay + runSimDayLen - 1;
+        SW_Domain->endSimDay = (endDayCalc > endDay) ? endDay : endDayCalc;
+    }
 
     get_subdomains(rank, worldSize, SW_Domain, LogInfo);
 }
