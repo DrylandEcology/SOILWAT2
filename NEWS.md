@@ -3,19 +3,29 @@
 # SOILWAT2 v8.4.0-devel
 * Simulation output remains the same as the previous version.
   However, output of the example differs slightly from previous example output
-  because of updated potential evaporation coefficients.
+  because of the following changes: updated potential evaporation coefficients;
+  updated rooting profiles.
+
+* Rooting profiles can now be estimated with an equation and parameters
+  for each vegetation type; soil impermeability represents (semi-)restrictive
+  soil layers that reduce rooting profiles (#459; @dschlaep).
 
 * Potential evaporation coefficients can now be estimated from soil properties
   (#409; @dschlaep).
 
 ## Changes to inputs
-* New input via `"siteparam.in"` that specifies input options for potential
-  evaporation coefficients are provided as inputs by `"soils.in"` or
-  if (new) they are estimated from soil properties.
+* New input via `"siteparam.in"` to select the input option for potential
+  evaporation coefficients: either provided as inputs by `"soils.in"` or
+  estimated from soil properties.
+* New input via `"siteparam.in"` to select the input option for
+  rooting profiles: either provided as inputs by `"soils.in"` or
+  estimated with an equation and parameters for a vegetation type.
+* New inputs via `"veg.in"` to provide values for the three parameters of the
+  rooting profile equation for each vegetation type.
 
 ## Changes to outputs
-* txt-based mode now produces output of soil evaporation for every soil layer
-  which is now consistent with the other modes.
+* All modes (including txt-based) now output values of soil evaporation
+  at each soil layer.
 
 
 # SOILWAT2 v8.3.0
