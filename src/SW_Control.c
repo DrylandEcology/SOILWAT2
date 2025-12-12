@@ -390,6 +390,11 @@ void SW_RUN_deepCopy(
 
     /* Copy weather generator parameters */
     if (dest->WeatherIn.generateWeatherMethod == 2) {
+        allocateMKV(&dest->MarkovIn, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
         copyMKV(&dest->MarkovIn, &source->MarkovIn);
     }
 
