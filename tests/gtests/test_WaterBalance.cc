@@ -128,7 +128,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
     SW_VPD_init_run(&SW_Run, &LogInfo);
 
     // Turn on Markov weather generator (and turn off use of historical weather)
-    SW_Run.WeatherIn.generateWeatherMethod = 2;
+    SW_Run.WeatherIn.generateWeatherMethod = wgMKV;
     SW_Run.WeatherIn.use_weathergenerator_only = swTRUE;
 
     // Read Markov weather generator input files (they are not normally read)
@@ -198,7 +198,7 @@ TEST_F(
     SW_VPD_init_run(&SW_Run, &LogInfo);
 
     // Turn on Markov weather generator
-    SW_Run.WeatherIn.generateWeatherMethod = 2;
+    SW_Run.WeatherIn.generateWeatherMethod = wgMKV;
 
     // Point to partial weather data
     (void) snprintf(

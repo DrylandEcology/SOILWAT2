@@ -96,14 +96,6 @@
 #include <stdlib.h>                  // for free
 #include <string.h>                  // for memset, NULL
 
-
-/* Weather generation methods */
-/** Markov weather generator method, see generateMissingWeather() */
-static const unsigned int wgMKV = 2;
-
-/** Weather generation method LOCF, see generateMissingWeather() */
-static const unsigned int wgLOCF = 1;
-
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
@@ -2452,7 +2444,7 @@ void SW_WTH_setup(
             switch (inBufintRes) {
             case 0:
                 // As is
-                SW_WeatherIn->generateWeatherMethod = 0;
+                SW_WeatherIn->generateWeatherMethod = wgHist;
                 break;
 
             case 1:

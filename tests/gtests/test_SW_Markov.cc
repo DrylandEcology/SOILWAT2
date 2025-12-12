@@ -5,6 +5,7 @@
 #include "include/SW_Files.h"       // for SW_F_deconstruct, eMarkovCov
 #include "include/SW_Main_lib.h"    // for sw_fail_on_error, sw_init_logs
 #include "include/SW_Markov.h"      // for SW_MKV_deconstruct, SW_MKV_init_...
+#include "include/SW_Weather.h"     // for wgMKV
 #include "gmock/gmock.h"            // for HasSubstr, MakePredicateFormatte...
 #include "gtest/gtest.h"            // for Test, Message, TestPartResult, Po...
 #include <stdio.h>                  // for NULL, size_t
@@ -81,7 +82,7 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
 
     size_t rng_seed;
     // Turn on Markov weather generator
-    unsigned int const generateWeatherMethod = 2;
+    unsigned int const generateWeatherMethod = wgMKV;
 
     short const n = 18;
     short const seed = 42;

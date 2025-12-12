@@ -389,7 +389,7 @@ void SW_RUN_deepCopy(
     }
 
     /* Copy weather generator parameters */
-    if (dest->WeatherIn.generateWeatherMethod == 2) {
+    if (dest->WeatherIn.generateWeatherMethod == wgMKV) {
         allocateMKV(&dest->MarkovIn, LogInfo);
         if (LogInfo->stopRun) {
             return;
@@ -1391,7 +1391,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    if (sw->WeatherIn.generateWeatherMethod == 2) {
+    if (sw->WeatherIn.generateWeatherMethod == wgMKV) {
         SW_MKV_setup(
             &sw->MarkovIn,
             sw->WeatherIn.rng_seed,
