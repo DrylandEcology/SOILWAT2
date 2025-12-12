@@ -19,6 +19,13 @@
   period too early; the bug occurred only for events on the first day of an
   output time period (#494; @N1ckP3rsl3y).
 
+* Program run no longer reports a segmentation fault or deallocation of a
+  freed pointer when the weather generator method is 2 (markov) (#497;
+  @N1ckP3rsl3y).
+
+* NetCDF-enabled modes (SWNC/SWNETCDF/SWMPI) properly generate weather data
+  when the weather generator method is 2 (markov) (#498, @N1ckP3rsl3y).
+
 ## Changes to inputs
 * New input via `"siteparam.in"` to select the input option for potential
   evaporation coefficients: either provided as inputs by `"soils.in"` or
