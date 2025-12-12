@@ -368,6 +368,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
         {2, 2, 2, 2, 2, 2, 2, 2}
     };
     const TimeInt endyr = SW_Run.ModelIn.startyr;
+    bool dirExists;
 
     // Output file
     (void) snprintf(
@@ -377,8 +378,9 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
         SW_Domain.SW_PathInputs.outputPrefix,
         "Table__SW2_SpinupEvaluation.csv"
     );
+    dirExists = (bool) DirExists(SW_Domain.SW_PathInputs.outputPrefix);
 
-    if (!DirExists(SW_Domain.SW_PathInputs.outputPrefix)) {
+    if (!dirExists) {
         MkDir(SW_Domain.SW_PathInputs.outputPrefix, &LogInfo);
         sw_fail_on_error(&LogInfo);
     }

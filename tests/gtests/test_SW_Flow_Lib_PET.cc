@@ -381,6 +381,7 @@ TEST(AtmDemSimTest, SolarPosHourAnglesByLatAndDoy) {
     FILE *fp;
     char *fname = NULL;
     char *outputPath = NULL;
+    bool dirExists;
 
     SW_ATMD_SIM SW_AtmDemSim;
     SW_PET_init_run(&SW_AtmDemSim); // Init radiation memoization
@@ -413,7 +414,9 @@ TEST(AtmDemSimTest, SolarPosHourAnglesByLatAndDoy) {
             outputPath = (char *) malloc(length_strnum + 1);
             DirName(fname, outputPath);
 
-            if (!DirExists(outputPath)) {
+            dirExists = (bool) DirExists(outputPath);
+
+            if (!dirExists) {
                 MkDir(outputPath, &LogInfo);
                 sw_fail_on_error(&LogInfo);
             }
@@ -538,6 +541,7 @@ TEST(AtmDemSimTest, SolarPosHourAnglesByLats) {
     FILE *fp;
     char fname[FILENAME_MAX];
     const char *outputPath = "Output/";
+    bool dirExists;
 
     SW_ATMD_SIM SW_AtmDemSim;
     SW_PET_init_run(&SW_AtmDemSim); // Init radiation memoization
@@ -553,8 +557,9 @@ TEST(AtmDemSimTest, SolarPosHourAnglesByLats) {
         outputPath,
         "Table__SW2_SolarPosition_Test__hourangles_by_lats.csv"
     );
+    dirExists = (bool) DirExists(outputPath);
 
-    if (!DirExists(outputPath)) {
+    if (!dirExists) {
         MkDir(outputPath, &LogInfo);
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     }
@@ -1534,6 +1539,7 @@ TEST(AtmDemSimTest, PETPetfuncByTemps) {
     FILE *fp;
     char fname[FILENAME_MAX];
     const char *outputPath = "Output/";
+    bool dirExists;
 
     (void) snprintf(
         fname,
@@ -1542,8 +1548,9 @@ TEST(AtmDemSimTest, PETPetfuncByTemps) {
         outputPath,
         "Table__SW2_PET_Test__petfunc_by_temps.csv"
     );
+    dirExists = (bool) DirExists(outputPath);
 
-    if (!DirExists(outputPath)) {
+    if (!dirExists) {
         MkDir(outputPath, &LogInfo);
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     }
