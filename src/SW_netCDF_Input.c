@@ -8577,7 +8577,9 @@ void SW_NCIN_read_inputs(
             mainLogInfo
         );
         checkReturn(mainLogInfo->stopRun);
+    }
 
+    if (runSims && readWeather) {
         for (input = 0; input < numInputs; input++) {
             SW_WTH_finalize_all_weather(
                 &sw->MarkovIn,
