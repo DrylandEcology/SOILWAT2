@@ -78,8 +78,8 @@ void SW_MDL_construct(SW_MODEL_SIM *SW_ModelSim) {
     // values of time are correct only after Time_new_year()
     Time_init_model(SW_ModelSim->days_in_month);
 
-    ForEachOutPeriod(pd) { SW_ModelSim->newperiod[pd] = swFALSE; }
-    SW_ModelSim->newperiod[eSW_Day] = swTRUE; // every day is a new day
+    ForEachOutPeriod(pd) { SW_ModelSim->endperiod[pd] = swFALSE; }
+    SW_ModelSim->endperiod[eSW_Day] = swTRUE; // every day is a new day
 
     SW_ModelSim->yearIdx = 0;         /* calculate at start of new year */
     SW_ModelSim->yearIdxSpinSim = -1; /* incremented at start of new year */
@@ -249,38 +249,23 @@ intermediate time information about the simulation run
 */
 void SW_MDL_new_day(SW_MODEL_SIM *SW_ModelSim) {
 
-    OutPeriod pd;
+    TimeInt *cum_monthdays = SW_ModelSim->cum_monthdays;
+    TimeInt doy = SW_ModelSim->doy;
+    TimeInt week = SW_ModelSim->week;
+    TimeInt month = SW_ModelSim->month;
+    Bool *endperiod = SW_ModelSim->endperiod;
 
-    TimeInt prevWeek = SW_ModelSim->week;
-    TimeInt prevMonth = SW_ModelSim->month;
+    /* Determine endperiods before incrementing (base0) week and month counters
+       Produce output only for complete weeks and months (or at end of year) */
+    endperiod[eSW_Year] = (Bool) (doy == SW_ModelSim->lastdoy);
+    endperiod[eSW_Month] =
+        (Bool) (month != notime && doy == cum_monthdays[month]);
+    endperiod[eSW_Week] =
+        (Bool) (endperiod[eSW_Year] || (week != notime && doy % WKDAYS == 0));
 
-    SW_ModelSim->month =
-        doy2month(SW_ModelSim->doy, SW_ModelSim->cum_monthdays); /* base0 */
-    SW_ModelSim->week =
-        doy2week(SW_ModelSim->doy); /* base0; more often an index */
-
-    /* in this case, we've finished the daily loop and are about
-     * to flush the output */
-    if (SW_ModelSim->doy > SW_ModelSim->lastdoy) {
-        ForEachOutPeriod(pd) { SW_ModelSim->newperiod[pd] = swTRUE; }
-
-        return;
-    }
-
-    if (SW_ModelSim->month != prevMonth) {
-        SW_ModelSim->newperiod[eSW_Month] =
-            (prevMonth != notime) ? swTRUE : swFALSE;
-    } else {
-        SW_ModelSim->newperiod[eSW_Month] = swFALSE;
-    }
-
-    /*  if (SW_ModelSim->week != prevweek || SW_ModelSim->month == NoMonth) { */
-    if (SW_ModelSim->week != prevWeek) {
-        SW_ModelSim->newperiod[eSW_Week] =
-            (prevWeek != notime) ? swTRUE : swFALSE;
-    } else {
-        SW_ModelSim->newperiod[eSW_Week] = swFALSE;
-    }
+    /* Update (base0) week and month counters */
+    SW_ModelSim->month = doy2month(SW_ModelSim->doy, cum_monthdays);
+    SW_ModelSim->week = doy2week(SW_ModelSim->doy);
 }
 
 /**

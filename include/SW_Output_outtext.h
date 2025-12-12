@@ -57,11 +57,7 @@ void SW_OUT_create_iteration_files(
 #endif
 
 void get_outstrleader(
-    OutPeriod pd,
-    size_t sizeof_str,
-    SW_MODEL_SIM *SW_ModelSim,
-    TimeInt tOffset,
-    char *str
+    OutPeriod pd, size_t sizeof_str, SW_MODEL_SIM *SW_ModelSim, char *str
 );
 
 void write_headers_to_csv(

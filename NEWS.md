@@ -1,10 +1,11 @@
 # NEWS
 
 # SOILWAT2 v8.4.0-devel
-* Simulation output remains the same as the previous version.
-  However, output of the example differs slightly from previous example output
-  because of the following changes: updated potential evaporation coefficients;
-  updated rooting profiles.
+* Simulation output remains the same as the previous version, but
+  output of vegetation establishment is now fixed. Additionally,
+  output of the example differs slightly from previous example output
+  because of the following changes to the example inputs:
+  updated potential evaporation coefficients; updated rooting profiles.
 
 * Rooting profiles can now be estimated with an equation and parameters
   for each vegetation type; soil impermeability represents (semi-)restrictive
@@ -12,6 +13,11 @@
 
 * Potential evaporation coefficients can now be estimated from soil properties
   (#409; @dschlaep).
+
+## Bugfixes
+* Output of vegetation establishment is no longer reported one output time
+  period too early; the bug occurred only for events on the first day of an
+  output time period (#494; @N1ckP3rsl3y).
 
 ## Changes to inputs
 * New input via `"siteparam.in"` to select the input option for potential

@@ -178,9 +178,10 @@ typedef struct {
         cum_monthdays[MAX_MONTHS];     /* monthly cumulative number of days for
                                           "current" year */
 
-    /* first day of new week/month is checked for
-     * printing and summing weekly/monthly values */
-    Bool newperiod[SW_OUTNPERIODS];
+    /* Last day of week/month/year is checked for
+     * printing and summing weekly/monthly values
+     * after simulation of a day */
+    Bool endperiod[SW_OUTNPERIODS];
     Bool doOutput; /**< Flag to indicate if output should be produced (TRUE) or
                       not (FALSE); set to FALSE for spinup and tests */
 
@@ -1811,15 +1812,14 @@ typedef enum {
 /* --------------------------------------------------- */
 
 typedef struct {
-
 #if defined(SW_OUTTEXT)
     char sw_outstr[MAX_LAYERS * OUTSTRLEN];
 #endif
-
-    TimeInt tOffset; /* 1 or 0 means we're writing previous or current period */
-
     /* Output first/last days of current year i.e., updated for each year */
     TimeInt first[SW_OUTNKEYS], last[SW_OUTNKEYS];
+
+    /* If it's the last day of an output period, so we write output */
+    Bool writeit[SW_OUTNPERIODS];
 
 #ifdef SW_OUTARRAY
     /**

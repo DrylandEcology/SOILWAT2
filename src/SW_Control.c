@@ -421,8 +421,9 @@ static void begin_year_site(SW_RUN *sw, Bool textSkyVals) {
     );
 }
 
-static void begin_day_const(SW_MODEL_SIM *SW_ModelSim) {
+static void begin_day_const(SW_MODEL_SIM *SW_ModelSim, SW_OUT_RUN *OutRun) {
     SW_MDL_new_day(SW_ModelSim);
+    SW_OUT_new_day(SW_ModelSim, OutRun);
 }
 
 static void begin_day_site(SW_RUN *sw, LOG_INFO *LogInfo) {
@@ -441,10 +442,8 @@ static void begin_day_site(SW_RUN *sw, LOG_INFO *LogInfo) {
 }
 
 static void end_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
-    TimeInt localTOffset = 1; // tOffset is one when called from this function
-
     if (sw->ModelSim->doOutput) {
-        collect_values(sw, OutDom, swFALSE, localTOffset, LogInfo);
+        collect_values(sw, OutDom, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -630,7 +629,9 @@ static void prepare_next_day(
     }
     fatalError = swFALSE;
 
-    begin_day_const(&SW_Domain->SW_ConstInfo.ModelSim);
+    begin_day_const(
+        &SW_Domain->SW_ConstInfo.ModelSim, &SW_Domain->SW_ConstInfo.OutRun
+    );
 
 #if defined(SWNETCDF)
 handleLogs:
@@ -1448,31 +1449,10 @@ void SW_CTL_run_current_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         sw_printf("ending day ... ");
     }
 #endif
+
     end_day(sw, OutDom, LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
 
 #ifdef SWDEBUG
-    if (debug) {
-        sw_printf("doy = %d completed.\n", *doy);
-    }
-#endif
-
-#ifdef SWDEBUG
-    if (debug) {
-        sw_printf("'SW_CTL_run_current_day': flush output\n");
-    }
-#endif
-    if (sw->ModelSim->doOutput) {
-        SW_OUT_flush(sw, OutDom, LogInfo);
-    }
-
-#ifdef SWDEBUG
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-
     if (debug) {
         sw_printf("'SW_CTL_run_current_day': completed.\n");
     }

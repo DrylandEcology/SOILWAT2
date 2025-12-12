@@ -614,15 +614,10 @@ void SW_OUT_create_iteration_files(
 @param[in] sizeof_str Size of parameter "str"
 @param[in] SW_ModelSim Struct of type SW_MODEL_SIM holding basic intermediate
 time information about the simulation run
-@param[in] tOffset Offset describing with the previous or current period
 @param[out] str String header buffer for every output row
 */
 void get_outstrleader(
-    OutPeriod pd,
-    size_t sizeof_str,
-    SW_MODEL_SIM *SW_ModelSim,
-    TimeInt tOffset,
-    char *str
+    OutPeriod pd, size_t sizeof_str, SW_MODEL_SIM *SW_ModelSim, char *str
 ) {
     switch (pd) {
     case eSW_Day:
@@ -643,7 +638,7 @@ void get_outstrleader(
             "%d%c%d",
             SW_ModelSim->year,
             OUTSEP,
-            (SW_ModelSim->week + 1) - tOffset
+            SW_ModelSim->week + 1
         );
         break;
 
@@ -654,7 +649,7 @@ void get_outstrleader(
             "%d%c%d",
             SW_ModelSim->year,
             OUTSEP,
-            (SW_ModelSim->month + 1) - tOffset
+            SW_ModelSim->month + 1
         );
         break;
 
