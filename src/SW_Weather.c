@@ -1390,19 +1390,21 @@ void finalizeAllWeather(
     unsigned int yearIndex;
 
     // Impute missing values
-    generateMissingWeather(
-        SW_MarkovIn,
-        allHist,
-        w->startYear,
-        w->n_years,
-        w->generateWeatherMethod,
-        3, // optLOCF_nMax (TODO: make this user input)
-        ncSuid,
-        sDom,
-        LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return; // Prematurely exit function
+    if (w->generateWeatherMethod != wgHist) {
+        generateMissingWeather(
+            SW_MarkovIn,
+            allHist,
+            w->startYear,
+            w->n_years,
+            w->generateWeatherMethod,
+            3, // optLOCF_nMax (TODO: make this user input)
+            ncSuid,
+            sDom,
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; // Prematurely exit function
+        }
     }
 
     // Check to see if actual vapor pressure needs to be calculated
@@ -1634,9 +1636,9 @@ SOILWAT2 handles three scenarios of missing data:
 absent)
     3. No daily weather input files are available
 
-Available methods to generate weather:
-    1. Pass through (`method` = 0)
-    2. Imputation by last-value-carried forward "LOCF" (`method` = 1)
+Available methods to generate weather (function is not called when
+weather generator method is 0):
+    1. Imputation by last-value-carried forward "LOCF" (`method` = 1)
         - affected variables (all implemented):
             - minimum and maximum temperature
             - precipitation (which is set to 0 instead of "LOCF")
@@ -1648,7 +1650,7 @@ Available methods to generate weather:
         - missing values are imputed individually
         - error if more than `optLOCF_nMax` days per calendar year are
 missing
-    3. First-order Markov weather generator (`method` = 2)
+    2. First-order Markov weather generator (`method` = 2)
         - affected variables (others are passed through as is):
             - minimum and maximum temperature
             - precipitation
@@ -1714,13 +1716,6 @@ void generateMissingWeather(
     Bool missing_RelHum = swFALSE;
     Bool missing_ActVP = swFALSE;
     Bool missing_ShortWR = swFALSE;
-
-
-    // Pass through method: return early
-    if (method == 0) {
-        return;
-    }
-
 
     // Error out if method not implemented
     if (method != wgLOCF && method != wgMKV) {
