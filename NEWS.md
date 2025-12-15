@@ -26,6 +26,9 @@
 * NetCDF-enabled modes (SWNC/SWNETCDF/SWMPI) properly generate weather data
   when the weather generator method is 2 (markov) (#498, @N1ckP3rsl3y).
 
+* Script `"tools/ncTestRuns.sh"` produces reference output and detects log file
+  when in mpi mode (#500, @N1ckP3rsl3y)
+
 ## Changes to inputs
 * New input via `"siteparam.in"` to select the input option for potential
   evaporation coefficients: either provided as inputs by `"soils.in"` or
