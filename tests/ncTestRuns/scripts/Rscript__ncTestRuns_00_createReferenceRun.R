@@ -140,7 +140,7 @@ res <- runSW2(
   renameDomainTemplate = TRUE
 )
 
-fname_logfile <- file.path(dir_refRun, "logs", "logfile.log")
+fname_logfile <- file.path(dir_refRun, "logs", "rank_0_logfile.log")
 has_logfile <- file.exists(fname_logfile)
 
 logfile <- if (has_logfile) readLines(fname_logfile)

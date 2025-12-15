@@ -298,7 +298,7 @@ if [ ! -d "${dirOutRef}" ] && [ "${dirOutRef}" = "${dirOutRefDefault}" ]; then
         --path-to-ncTestRuns="${dir_ncTestRuns}" \
         --path-to-sw2="${sw2}" \
         --swMode="${withMode}" \
-        --ntasks=2 \
+        --ntasks=1 \
         --path-to-referenceOutput="${dirOutRef}"
     status=$?
 
