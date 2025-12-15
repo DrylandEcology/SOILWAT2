@@ -1723,7 +1723,7 @@ void generateMissingWeather(
 
 
     // Error out if method not implemented
-    if (method > 2) {
+    if (method != wgLOCF && method != wgMKV) {
         LogErrorSuid(
             LogInfo,
             LOGERROR,
