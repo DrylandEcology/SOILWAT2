@@ -140,25 +140,6 @@ int main(int argc, char **argv) {
     checkJumpToLabel(LogInfo.stopRun, finishProgram);
 #endif
 
-    // finalize daily weather
-#if defined(SWNETCDF)
-    if (!SW_Domain.netCDFInput.readInVars[eSW_InWeather][0] && !prepareFiles) {
-#endif
-        SW_WTH_finalize_all_weather(
-            &sw_template.MarkovIn,
-            &sw_template.WeatherIn,
-            sw_template.RunIn.weathRunAllHist,
-            sw_template.ModelSim.cum_monthdays,
-            sw_template.ModelSim.days_in_month,
-            NULL,
-            swFALSE, // Does not matter
-            &LogInfo
-        );
-        checkJumpToLabel(LogInfo.stopRun, finishProgram);
-#if defined(SWNETCDF)
-    }
-#endif
-
     // identify domain-wide soil profile information
     SW_DOM_soilProfile(
         &SW_Domain.netCDFInput,

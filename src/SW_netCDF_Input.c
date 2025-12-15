@@ -8579,25 +8579,6 @@ void SW_NCIN_read_inputs(
         checkReturn(mainLogInfo->stopRun);
     }
 
-    if (runSims && readWeather) {
-        for (input = 0; input < numInputs; input++) {
-            SW_WTH_finalize_all_weather(
-                &sw->MarkovIn,
-                &sw->WeatherIn,
-                inputs[input].weathRunAllHist,
-                sw->ModelSim.cum_monthdays,
-                sw->ModelSim.days_in_month,
-                domSuids[input],
-                SW_Domain->netCDFInput.siteDoms[eSW_InDomain],
-                mainLogInfo
-            );
-            if (mainLogInfo->stopRun) {
-                break;
-            }
-        }
-        checkReturn(mainLogInfo->stopRun);
-    }
-
     if (runSims && readVeg) {
         read_veg_inputs(
             SW_Domain,

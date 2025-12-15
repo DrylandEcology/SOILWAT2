@@ -532,7 +532,7 @@ void SW_CTL_RunSimSet(
 ) {
     size_t suid;
     size_t nSims = 0;
-    size_t ncSuid[2]; // 2 -> [y, x] or [s, 0]
+    size_t ncSuid[2] = {0, 0}; // 2 -> [y, x] or [s, 0]
 
     double *tempVals = NULL;
     SW_SOIL_RUN_INPUTS *tempSoils = NULL;
@@ -681,6 +681,8 @@ void SW_CTL_RunSimSet(
 
 #if defined(SWMPI)
             siteLog = &siteLogs[suid];
+            ncSuid[0] = simSuids[eSW_InDomain][suid][0];
+            ncSuid[1] = simSuids[eSW_InDomain][suid][1];
 #else
         sw_init_logs(main_LogInfo->logfp, &local_LogInfo);
 
@@ -708,7 +710,7 @@ void SW_CTL_RunSimSet(
                     &inputs[suid],
                     sw_template,
                     SW_Domain,
-                    NULL,
+                    ncSuid,
                     copyWeather,
                     NULL,
                     tempVals,
@@ -1613,6 +1615,9 @@ void SW_CTL_run_sw(
 
     SW_RUN local_sw;
 
+    Bool sDom = swFALSE; // Does not matter for text
+    size_t *finalWeatherSuid = NULL;
+
 #if defined(SWNETCDF) && !defined(SWMPI)
     SW_SOIL_RUN_INPUTS newSoil;
     size_t starts[SW_NINKEYSNC][N_SUID_ASSIGN][2] = {{{0}}};
@@ -1630,6 +1635,9 @@ void SW_CTL_run_sw(
 #else
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
+
+    sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
+    finalWeatherSuid = ncSuid;
 #endif
 
 #ifdef SWDEBUG
@@ -1698,6 +1706,18 @@ void SW_CTL_run_sw(
         );
     }
 #endif
+
+    SW_WTH_finalize_all_weather(
+        &local_sw.MarkovIn,
+        &local_sw.WeatherIn,
+        local_sw.RunIn.weathRunAllHist,
+        local_sw.ModelSim.cum_monthdays,
+        local_sw.ModelSim.days_in_month,
+        finalWeatherSuid,
+        sDom,
+        LogInfo
+    );
+    checkJumpToLabel(LogInfo->stopRun, freeMem);
 
     // Initialize run-time variables
     SW_CTL_init_run(&local_sw, LogInfo);
