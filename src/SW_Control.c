@@ -398,10 +398,11 @@ void SW_RUN_deepCopy(
         copyMKV(&dest->MarkovIn, &source->MarkovIn);
     }
 
+    /* Copy vegetation parameters */
     SW_VPD_init_ptrs(&dest->VegProdSim);
-    SW_VES_init_ptrs(&dest->VegEstabIn, dest->ves_p_accu, dest->ves_p_oagg);
 
     /* Copy vegetation establishment parameters */
+    SW_VES_init_ptrs(&dest->VegEstabIn, dest->ves_p_accu, dest->ves_p_oagg);
     dest->VegEstabIn.count = source->VegEstabIn.count;
     memcpy(
         &dest->VegEstabIn.parms,
