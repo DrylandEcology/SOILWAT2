@@ -105,7 +105,7 @@ void SW_NCIN_create_domain_template(
 );
 
 void SW_NCIN_get_start_sim_day(
-    int progDayFileID, int progDayVarID, IntU *startDay, LOG_INFO *LogInfo
+    int progDayFileID, int progDayVarID, const IntU *startDay, LOG_INFO *LogInfo
 );
 
 void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);

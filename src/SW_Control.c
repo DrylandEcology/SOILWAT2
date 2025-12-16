@@ -159,7 +159,7 @@ static void init_all_runs(
         if (!siteLogs[site].stopRun) {
             SW_CTL_run_spinup(SW_Domain, &SW_Runs[site], &siteLogs[site]);
             SW_Runs[site].ModelSim->yearIdxSpinSim =
-                SW_Domain->SW_SpinUp.duration;
+                (int) SW_Domain->SW_SpinUp.duration;
         }
     }
     fatalError = swFALSE;
@@ -212,7 +212,7 @@ static void handle_sim_structs_mem(
                     }
                 }
 
-                free((void *) *(deallocArrays[arr]));
+                free(*(deallocArrays[arr]));
                 *(deallocArrays[arr]) = NULL;
             }
         }
@@ -309,7 +309,7 @@ static void display_yearly_progress(
             );
         }
 
-        fflush(stdout);
+        (void) fflush(stdout);
     }
 }
 #endif
@@ -528,13 +528,17 @@ static void prepare_next_day(
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
     LOG_INFO *siteLogs,
-    double *tempVals,
+    const double *tempVals,
     Bool initYear,
     SW_RUN *SW_Runs,
     SW_WALLTIME *SW_WallTime,
     SW_SOIL_RUN_INPUTS *newSoils,
     LOG_INFO *main_LogInfo
 ) {
+#ifdef SWDEBUG
+    int debug = 0;
+#endif
+
     Bool textSkyVals = swTRUE;
 
 #if defined(SWNETCDF)
@@ -544,14 +548,17 @@ static void prepare_next_day(
 
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
+    size_t *suid;
+
     textSkyVals = (Bool) !SW_Domain->netCDFInput.readInVars[eSW_InClimate][0];
+#else
+    size_t baseSuid[NC_DIMS] = {0};
+    size_t *suid = baseSuid;
 #endif
 
     size_t site;
     size_t nActiveSites = SW_Domain->nActiveSuidsProc;
     TimeInt inputYearIdx = SW_Domain->SW_ConstInfo.ModelSim.inputYearIdx;
-    size_t baseSuid[NC_DIMS] = {0};
-    size_t *suid = baseSuid;
 
     TimeInt doy = SW_Domain->SW_ConstInfo.ModelSim.doy;
     TimeInt lastDoy = SW_Domain->SW_ConstInfo.ModelSim.lastdoy;
@@ -586,7 +593,7 @@ static void prepare_next_day(
                     SW_Domain->domStartIndex,
                     SW_Domain->domCounts,
                     SW_Domain->SW_PathInputs.openInFileIDs,
-                    tempVals,
+                    (double *) tempVals,
                     SW_Domain->nActiveSuidsProc,
                     newSoils,
                     siteLogs,
@@ -608,7 +615,9 @@ static void prepare_next_day(
 
         for (site = 0; site < nActiveSites && !spinup; site++) {
             if (!siteLogs[site].stopRun) {
+#if defined(SWNETCDF)
                 suid = SW_Domain->globDomSuids[site];
+#endif
 
                 // finalize daily weather
                 SW_WTH_finalize_yearly_weather(
@@ -760,11 +769,11 @@ void SW_CTL_sim_sites(
     TimeInt firstDoy = SW_Domain->SW_ConstInfo.ModelSim.firstdoy;
     signed char *runStatus = NULL;
     Bool textSkyVals = swTRUE;
+    Bool spinup = SW_Domain->SW_SpinUp.spinup;
 
 #if defined(SWNETCDF)
     signed char *progVals = SW_Domain->netCDFInput.progVals;
     size_t actSiteIdx;
-    Bool spinup = SW_Domain->SW_SpinUp.spinup;
 
     textSkyVals = (Bool) !SW_Domain->netCDFInput.readInVars[eSW_InClimate][0];
 #else
@@ -848,6 +857,10 @@ void SW_CTL_run_daily_timesteps(
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *main_LogInfo
 ) {
+#ifdef SWDEBUG
+    int debug = 0;
+#endif
+
     TimeInt day;
     Bool initYear = swFALSE;
 
@@ -889,6 +902,15 @@ void SW_CTL_run_daily_timesteps(
 #if defined(SWNETCDF)
             if (!spinup) {
                 SW_WT_TimeRun(tsr, ok_tsr, TIME_COMPUTE, SW_WallTime);
+            }
+#endif
+
+#ifdef SWDEBUG
+            if (debug) {
+                sw_printf(
+                    "doy = %d completed.\n",
+                    SW_Domain->SW_ConstInfo.ModelSim.doy
+                );
             }
 #endif
         }
@@ -1857,3 +1879,17 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 }
+
+// TODO:
+// (C)   1) Print year status dots
+// (C)   2) Make the markov information site-based again for possible future
+//          modifications
+// (C)   3) Deconstruct SW_RUN instances after use
+// (C)   4) Think about splitting `SW_*_new_year` functions into two
+// (C)   5) Make spinup at least compile/run
+//       6) Double check constant information after reading cache file
+// (C)   7) New CL input: `-s`
+// (C)   8) Update SW_OUT_write_today information
+// (C)   9) Get rid of any remaining warnings
+//      10) Satisfy Clang Tidy
+//      11) Update tests to at least compile

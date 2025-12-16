@@ -488,8 +488,9 @@ freeMem:
 
     SW_Domain->domStartIndex[eSW_InDomain][0] =
         SW_Domain->domStartIndex[eSW_InDomain][1] = 0;
-    SW_Domain->spaceChunk[0] = sDom ? sqrt(sSize) : sqrt(ySize);
-    SW_Domain->spaceChunk[1] = sDom ? 0 : sqrt(xSize);
+    SW_Domain->spaceChunk[0] =
+        (size_t) (sDom ? sqrt((double) sSize) : sqrt((double) ySize));
+    SW_Domain->spaceChunk[1] = (size_t) (sDom ? 0 : sqrt((double) xSize));
 #else
     (void) SW_Domain;
     (void) sDom;
@@ -517,7 +518,7 @@ netCDF that the progress day resides
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static void get_start_sim_day(
-    int progDayFileID, int progDayVarID, IntU *startDay, LOG_INFO *LogInfo
+    int progDayFileID, int progDayVarID, const IntU *startDay, LOG_INFO *LogInfo
 ) {
 #if defined(SWNETCDF)
     SW_NCIN_get_start_sim_day(progDayFileID, progDayVarID, startDay, LogInfo);

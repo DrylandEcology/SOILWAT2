@@ -1074,7 +1074,7 @@ static void reset_temp_vals(
     size_t nTotalSites,
     size_t nElem,
     int varType,
-    size_t *actSiteIdx,
+    const size_t *actSiteIdx,
     void *values
 ) {
     int *intVals = NULL;
@@ -1428,7 +1428,7 @@ static void rearrange_cache_values(
                      .SoilWatSim
                      .standingWater[Yesterday], /* standingWater's
                                                    "Yesterday" value */
-                 (void *) SW_Runs[site].SoilWatSim.soiltempError},
+                 (void *) &SW_Runs[site].SoilWatSim.soiltempError},
 
                 /* SW_WEATHER_OUTPUTS - accu */
                 {(void *) &SW_Runs[site].weath_p_accu[pd].temp_max,
@@ -6784,7 +6784,6 @@ static void read_spatial_topo_climate_site_inputs(
         sDom = sDoms[currKey];
         keyInIdx = SW_Domain->actSiteIdx[currKey];
 
-        twoDLat = swFALSE;
         for (varNum = fIndex; varNum < numVarsInKey[currKey]; varNum++) {
             adjVarNum = varNum + 1;
             if (!readInput[adjVarNum]) {
@@ -7677,8 +7676,8 @@ of type SW_RUN containing all information in the simulation
 */
 static void read_veg_inputs(
     SW_DOMAIN *SW_Domain,
-    size_t spatStart[],
-    size_t spatCount[],
+    const size_t spatStart[],
+    const size_t spatCount[],
     sw_converter_t **vegConv,
     int **vegFileIDs,
     double *tempVals,
@@ -8157,8 +8156,8 @@ static void read_soil_inputs(
     Bool hasConstSoilDepths,
     const double depthsAllSoilLayers[],
     sw_converter_t **soilConv,
-    size_t spatStart[NC_DIMS],
-    size_t spatCount[NC_DIMS],
+    const size_t spatStart[NC_DIMS],
+    const size_t spatCount[NC_DIMS],
     int **openSoilFileIDs,
     double *tempVals,
     SW_SOIL_RUN_INPUTS *newSoilBuff,
@@ -8564,7 +8563,7 @@ static void calc_const_cache_info(
     SW_ConstInfo->ModelSim.doy = startDoy;
     SW_ConstInfo->ModelSim.year = startYear;
     SW_ConstInfo->ModelSim.yearIdx = startYearIdx;
-    SW_ConstInfo->ModelSim.yearIdxSpinSim = startSpinupYearIdx;
+    SW_ConstInfo->ModelSim.yearIdxSpinSim = (int) startSpinupYearIdx;
 
     Mem_Copy(
         SW_ConstInfo->ModelSim.days_in_month,
@@ -8594,7 +8593,7 @@ static void calc_const_cache_info(
     // to be local to said starting file
     ForEachOutPeriod(pd) {
         if (SW_Domain->OutDom.use_OutPeriod[pd]) {
-            timeSize = file = 0;
+            timeSize = file = currTSize = 0;
             targetTimeSize = SW_Domain->OutDom.netCDFOutput.outTempStart[pd];
 
             while (file < nOutFiles && timeSize < targetTimeSize) {
@@ -8960,14 +8959,20 @@ netCDF that the progress day resides
 @param[out] LogInfo Holds information dealing with logfile output
 */
 void SW_NCIN_get_start_sim_day(
-    int progDayFileID, int progDayVarID, IntU *startDay, LOG_INFO *LogInfo
+    int progDayFileID, int progDayVarID, const IntU *startDay, LOG_INFO *LogInfo
 ) {
     const char *nullName = NULL;
     const size_t *start = NULL;
     const size_t *count = NULL;
 
     SW_NC_get_vals(
-        progDayFileID, &progDayVarID, nullName, start, count, startDay, LogInfo
+        progDayFileID,
+        &progDayVarID,
+        nullName,
+        start,
+        count,
+        (void *) startDay,
+        LogInfo
     );
 }
 
@@ -9488,8 +9493,8 @@ static void read_weather_input(
     sw_converter_t **weathConv,
     TimeInt inYearIndex,
     TimeInt yearIndex,
-    size_t spatStart[],
-    size_t spatCount[],
+    const size_t spatStart[],
+    const size_t spatCount[],
     int **weathFileIDs,
     double *tempVals,
     LOG_INFO *siteLogs,
@@ -11626,13 +11631,13 @@ void SW_NCIN_create_cache_file(
     const Bool parOpen = swFALSE;
     const char *domFile =
         SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom];
-    const size_t n_years = (size_t) (sw_template->ModelIn->endyr -
-                                     sw_template->ModelIn->startyr + 1);
+    const size_t n_years =
+        sw_template->ModelIn->endyr - sw_template->ModelIn->startyr + 1;
     int cacheDimIDs[] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
     int dim;
     int category;
     int var;
-    int dimSize;
+    size_t dimSize;
     int ysDimID;
     int xDimID;
     const char *YDimName = (primCRSIsGeo) ? readinGeoYName : readinProjYName;
@@ -11655,9 +11660,6 @@ void SW_NCIN_create_cache_file(
         SW_MSG_ROOT("is creating a cache file ...", ROOT_PROC);
     }
 #endif
-
-    varDimIDs[0] = progSDom ? SW_Domain->nDimS : SW_Domain->nDimY;
-    varDimIDs[1] = progSDom ? 0 : SW_Domain->nDimX;
 
     varChunks[0] = SW_Domain->spaceChunk[0];
     varChunks[1] = progSDom ? 0 : SW_Domain->spaceChunk[1];
@@ -11791,7 +11793,7 @@ void SW_NCIN_handle_cache_vals(
     int *tempInt = NULL;
     double *tempDoubles = NULL;
     IntU *tempIntU = NULL;
-    char *typeStr = "";
+    char *typeStr;
 
     int cacheCat;
     int cacheVar;

@@ -42,8 +42,8 @@ suid subdomain
 */
 static void calc_rect_from_indices(
     Bool sDom,
-    IntU *yIndices,
-    IntU *xsIndices,
+    const IntU *yIndices,
+    const IntU *xsIndices,
     size_t nSites,
     size_t *resIndices
 ) {

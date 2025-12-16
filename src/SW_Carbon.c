@@ -399,9 +399,9 @@ void SW_CBN_init_run(
                 "= %1.3f / ppm = %3.2f, correctionFactor = %1.3f\n",
                 SW_CarbonIn->use_bio_mult,
                 year,
-                vegSim.co2_multipliers[SW_SHRUB][BIO_INDEX][year],
-                vegIn.co2_bio_coeff1[SW_SHRUB],
-                vegIn.co2_bio_coeff2[SW_SHRUB],
+                vegSim->co2_multipliers[SW_SHRUB][BIO_INDEX][year],
+                vegIn->co2_bio_coeff1[SW_SHRUB],
+                vegIn->co2_bio_coeff2[SW_SHRUB],
                 ppm,
                 biomCorrectionFactor[SW_SHRUB]
             );

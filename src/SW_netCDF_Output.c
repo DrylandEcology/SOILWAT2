@@ -830,11 +830,11 @@ cycle
 */
 static void get_num_out_files(
     IntU numOutFiles,
-    IntU startFiles[],
+    const IntU startFiles[],
     size_t *outTimeSizes[],
-    size_t periodIndices[],
-    size_t nrow_OUT[],
-    Bool use_OutPeriod[],
+    const size_t periodIndices[],
+    const size_t nrow_OUT[],
+    const Bool use_OutPeriod[],
     IntU numFiles[],
     size_t newStartIndices[]
 ) {
@@ -2435,7 +2435,7 @@ void SW_NCOUT_create_output_files(
     const Bool openInPar = swTRUE;
     const int openMode = NC_WRITE;
     int *fileID;
-    Bool fileExists;
+    Bool fileExists = swFALSE;
 
     char periodSuffix[10];
     char *yearFormat;
@@ -2795,7 +2795,7 @@ output netCDF files
 void SW_NCOUT_write_output(
     SW_OUT_DOM *OutDom,
     double *p_OUT[][SW_OUTNPERIODS],
-    size_t irow_OUT[],
+    const size_t irow_OUT[],
     unsigned int numFilesPerKey,
     size_t nSites,
     size_t starts[],
@@ -2877,7 +2877,6 @@ void SW_NCOUT_write_output(
                 currFileID = openOutFileIDs[key][pd][fileNum];
 
                 // Get size of the "time" dimension
-                timeSize = timeSizes[pd][fileNum];
                 if (startFile + 1 == destFile) {
                     timeSize = OutDom->nrow_OUT[pd];
                 } else {
