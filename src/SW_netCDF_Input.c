@@ -78,7 +78,7 @@ static const char *const expectedColNames[] = {
 /** Values of the column "SW2 units" of the tsv nc-input file */
 static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] = {
     /* inDomain */
-    {"1", "1"},
+    {"1", "1", "1"},
 
     /* inSpatial */
     {"1", "radian", "radian"},
@@ -182,7 +182,7 @@ static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] = {
     replaced with of the values of key2veg[] when used. */
 static const char *const possVarNames[SW_NINKEYSNC][SW_INNMAXVARS] = {
     /* inDomain */
-    {"domain", "progress"},
+    {"domain", "progress_status", "progress_day"},
 
     /* inSpatial */
     {"indexSpatial", "latitude", "longitude"},
@@ -299,7 +299,8 @@ However, we need to add one to correctly index #SW_NETCDF_IN.readInVars, e.g.,
 static const int eiv_indexSpatial = 0;
 /* inDomain (no indexSpatial) */
 static const int eiv_domain = 0;
-static const int eiv_progress = 1;
+static const int eiv_progressStatus = 1;
+static const int eiv_progressDay = 2;
 /* inSpatial */
 static const int eiv_latitude = 1;
 static const int eiv_longitude = 2;
@@ -1774,21 +1775,43 @@ domain and progress file inputs, fail if not
 static void check_for_input_domain(
     const Bool readDomInVars[], LOG_INFO *LogInfo
 ) {
+    const Bool varExists[] = {
+        readDomInVars[eiv_domain + 1],
+        readDomInVars[eiv_progressStatus + 1],
+        readDomInVars[eiv_progressDay + 1]
+    };
+
+    char missVarList[MAX_FILENAMESIZE] = {'\0'};
+    Bool oneVarName = swFALSE;
+
+    int var;
+
     if (!readDomInVars[0]) {
         LogError(
             LogInfo,
             LOGERROR,
-            "Both domain and progress variables were not provided."
+            "All domain, progress status and progress day variables were "
+            "not provided."
         );
-    } else if (!readDomInVars[eiv_domain + 1] ||
-               !readDomInVars[eiv_progress + 1]) {
+    } else if (!varExists[eiv_domain] || !varExists[eiv_progressStatus] ||
+               !varExists[eiv_progressDay]) {
+
+        for (var = eiv_domain; var <= eiv_progressDay; var++) {
+            if (!varExists[var]) {
+                if (oneVarName) {
+                    strcat(missVarList, " and ");
+                }
+
+                strcat(missVarList, possVarNames[eSW_InDomain][var]);
+                oneVarName = swTRUE;
+            }
+        }
+
         LogError(
             LogInfo,
             LOGERROR,
-            "The '%s' input variable is not turned on.",
-            (!readDomInVars[eiv_domain + 1]) ?
-                possVarNames[eSW_InDomain][eiv_domain] :
-                possVarNames[eSW_InDomain][eiv_progress]
+            "The following input variable(s) is not turned on: %s",
+            missVarList
         );
     }
 }
