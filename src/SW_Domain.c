@@ -62,7 +62,7 @@ in the longitude direction; only return an allocated list
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static void alloc_dom_start_count(
-    size_t nChunks[],
+    const size_t nChunks[],
     Bool allocYX,
     Bool alloc,
     size_t **startY,
@@ -136,22 +136,25 @@ of the subdomain
 static void assign_subdomain(
     int rank,
     Bool sDom,
-    size_t nChunks[],
-    size_t *startY,
-    size_t *startX,
-    size_t *countY,
-    size_t *countX,
+    const size_t nChunks[],
+    const size_t *startY,
+    const size_t *startX,
+    const size_t *countY,
+    const size_t *countX,
     size_t domStartIndexProg[],
     size_t domCountsProg[]
 ) {
     const size_t nRowChunks = nChunks[0];
     const size_t nColChunks = nChunks[1];
-    const int chunkRow = (sDom) ? rank : rank / nRowChunks;
-    const int chunkCol = (sDom) ? 0 : rank % nColChunks;
+    const size_t chunkRow = (sDom) ? rank : rank / nRowChunks;
+    const size_t chunkCol = (sDom) ? 0 : rank % nColChunks;
 
     domStartIndexProg[0] = startY[chunkRow];
+
+    // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
     domStartIndexProg[1] = (sDom) ? 0 : startX[chunkCol];
 
+    // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
     domCountsProg[0] = countY[chunkRow];
     domCountsProg[1] = (sDom) ? 0 : countX[chunkCol];
 }
@@ -176,13 +179,13 @@ in the longitude direction
 */
 static void check_valid_subdomains(
     Bool sDom,
-    size_t nChunks[],
+    const size_t nChunks[],
     size_t ysSize,
     size_t xSize,
-    size_t *startY,
-    size_t *startX,
-    size_t *countY,
-    size_t *countX,
+    const size_t *startY,
+    const size_t *startX,
+    const size_t *countY,
+    const size_t *countX,
     LOG_INFO *LogInfo
 ) {
     const size_t nRowChunks = nChunks[0];
@@ -195,15 +198,18 @@ static void check_valid_subdomains(
     for (index = 0; index < nRowChunks && !fail; index++) {
         // Typically, a negative value would be tested for, however
         // if a negetive were to show, it would be close to max size_t
+        // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
         if (startY[index] > ysSize || countY[index] > ysSize) {
             fail = swTRUE;
         }
+
+        // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
         sum += countY[index];
     }
 
     fail = (Bool) (fail || (!sDom && sum != ysSize));
 
-    if (!sDom && !fail) {
+    if (!sDom && !isnull(startX) && !fail) {
         for (index = 0; index < nColChunks && !fail; index++) {
             // Typically, a negative value would be tested for, however
             // if a negetive were to show, it would be close to max size_t
@@ -245,7 +251,7 @@ in the longitude direction
 */
 static void calc_subdomain_start_counts(
     Bool sDom,
-    size_t nChunks[],
+    const size_t nChunks[],
     size_t ysSize,
     size_t xSize,
     size_t *startY,
@@ -263,6 +269,8 @@ static void calc_subdomain_start_counts(
 
     // Calculate the starts for each chunk
     startY[0] = 0;
+
+    // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
     countY[0] = ysSize;
     for (row = 1; row < ysSize; row++) {
         startY[row] = startY[row - 1] + rowRemainDef;
@@ -274,6 +282,7 @@ static void calc_subdomain_start_counts(
     }
 
     if (!sDom) {
+        // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
         startX[0] = 0;
         countX[0] = xSize;
         for (col = 1; col < xSize; col++) {
@@ -345,8 +354,8 @@ static void divide_domain_subrects(
     nChunks[0] = bestNChunksY;
     nChunks[1] = bestNChunksX;
 
-    spaceChunks[0] = (size_t) floor((double) ySize / bestNChunksY);
-    spaceChunks[1] = (size_t) floor((double) xSize / bestNChunksX);
+    spaceChunks[0] = ySize / bestNChunksY;
+    spaceChunks[1] = xSize / bestNChunksX;
 }
 #endif
 
@@ -398,15 +407,15 @@ static void get_subdomains(
             SW_Domain->spaceChunk[0] = sSize / worldSize;
             SW_Domain->spaceChunk[1] = 0;
 
-            nChunks[0] = (double) floor((double) sSize / worldSize);
+            nChunks[0] = (size_t) (sSize / worldSize);
         } else {
             SW_Domain->spaceChunk[0] =
                 ((size_t) worldSize <= ySize) ? ySize / worldSize : 1;
             SW_Domain->spaceChunk[1] =
                 ((size_t) worldSize <= ySize) ? 1 : xSize / worldSize;
 
-            nChunks[0] = (double) floor((double) ySize / worldSize);
-            nChunks[1] = (double) floor((double) xSize / worldSize);
+            nChunks[0] = ySize / worldSize;
+            nChunks[1] = xSize / worldSize;
         }
     } else {
         // Otherwise, the domain needs to be split into subrectangles
@@ -472,6 +481,7 @@ static void get_subdomains(
 
     // Deallocate arrays
 freeMem:
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     alloc_dom_start_count(
         nChunks,
         allocBothArrs,
