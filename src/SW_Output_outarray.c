@@ -89,10 +89,7 @@ void SW_OUT_set_nrow(
 #ifdef STEPWAT
     n_yrs = SW_ModelIn->runModelYears;
     endyear = startyear + n_yrs + 1;
-
 #elif !defined(SWNETCDF)
-    TimeInt i;
-
     n_yrs = SW_ModelIn->endyr - SW_ModelIn->startyr + 1;
     endyear = SW_ModelIn->endyr;
 #else
@@ -107,6 +104,8 @@ void SW_OUT_set_nrow(
     nrow_OUT[eSW_Month] = (size_t) use_OutPeriod[eSW_Month];
     nrow_OUT[eSW_Year] = (size_t) use_OutPeriod[eSW_Year];
 #else
+    TimeInt i;
+
     nrow_OUT[eSW_Year] = n_yrs * use_OutPeriod[eSW_Year];
     nrow_OUT[eSW_Month] = n_yrs * MAX_MONTHS * use_OutPeriod[eSW_Month];
     nrow_OUT[eSW_Week] = n_yrs * MAX_WEEKS * use_OutPeriod[eSW_Week];
