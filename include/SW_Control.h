@@ -27,12 +27,23 @@
 extern "C" {
 #endif
 
+#define DO_IO_TIMING swTRUE
+#define NO_IO_TIMING swFALSE
+
 extern volatile sig_atomic_t runSims;
 
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_CTL_init_ptrs(SW_DOMAIN *SW_Domain, SW_RUN *sw);
+
+void SW_CTL_run_single_site(
+    TimeInt startYear,
+    TimeInt endYear,
+    SW_DOMAIN *SW_Domain,
+    SW_RUN *SW_Run,
+    LOG_INFO *LogInfo
+);
 
 void SW_RUN_deepCopy(
     SW_RUN *source, SW_RUN *dest, Bool copyWeatherHist, LOG_INFO *LogInfo
@@ -74,6 +85,7 @@ void SW_CTL_run_daily_timesteps(
     SW_RUN *sw_template,
     TimeInt startDay,
     TimeInt endDay,
+    Bool doIOPlusTiming,
     double *tempVals,
     SW_SOIL_RUN_INPUTS *newSoils,
     SW_DOMAIN *SW_Domain,

@@ -454,6 +454,62 @@ static void end_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 }
 
 /**
+@brief Interface function to reduce the complexity of running multiple sites
+if only one site is needed, namely when using STEPWAT2/rSOILWAT2 and testing
+
+@param[in] startYear Start year of the simulation
+@param[in] endYear End year of the simulation (inclusive)
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[out] SW_Run Single instance of SW_RUN to simulate
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_CTL_run_single_site(
+    TimeInt startYear,
+    TimeInt endYear,
+    SW_DOMAIN *SW_Domain,
+    SW_RUN *SW_Run,
+    LOG_INFO *LogInfo
+) {
+    const TimeInt startDay = 0;
+
+    double *tempVals = NULL;
+    SW_SOIL_RUN_INPUTS *tempSoils = NULL;
+    SW_WALLTIME *wt = NULL;
+
+    TimeInt year;
+    TimeInt nDays = 0;
+    TimeInt nDaysInYear;
+
+    for (year = startYear; year <= endYear; year++) {
+        nDaysInYear = Time_get_lastdoy_y(year);
+
+        if (year > SW_Domain->startyr && year < SW_Domain->endyr) {
+            nDays += nDaysInYear;
+        } else if (year == SW_Domain->startyr) {
+            nDays += (nDaysInYear - SW_Domain->startstart);
+        } else { /* End year */
+            nDays += SW_Domain->endend;
+        }
+    }
+
+    SW_CTL_run_daily_timesteps(
+        ROOT_PROC,
+        SW_Run,
+        startDay,
+        nDays,
+        NO_IO_TIMING,
+        tempVals,
+        tempSoils,
+        SW_Domain,
+        SW_Run,
+        LogInfo,
+        wt,
+        LogInfo
+    );
+}
+
+/**
 @brief Copy dynamic memory from a template SW_RUN to a new instance
 
 @param[in] source Source struct of type SW_RUN to copy
@@ -517,6 +573,8 @@ will be used to store site log information through all daily runs
 for converting and setting into proper location
 @param[in] initYear A flag specifying if it is the first day of the
 program run and we need to read and/or setup weather
+@param[in] doIOPlusTiming A flag specifying that this function is to perform
+I/O and timing operations
 @param[in,out] SW_Runs A list of SW_RUN instances of size "nActiveSites" that
 will be used for holding all information for the simulation
 @param[out] SW_WallTime Struct of type SW_WALLTIME that holds timing
@@ -531,6 +589,7 @@ static void prepare_next_day(
     LOG_INFO *siteLogs,
     const double *tempVals,
     Bool initYear,
+    Bool doIOPlusTiming,
     SW_RUN *SW_Runs,
     SW_WALLTIME *SW_WallTime,
     SW_SOIL_RUN_INPUTS *newSoils,
@@ -546,7 +605,6 @@ static void prepare_next_day(
     const Bool readWeather =
         SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
     const Bool readConstInfo = swFALSE;
-    const Bool spinup = SW_Domain->SW_SpinUp.spinup;
 
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
@@ -585,7 +643,7 @@ static void prepare_next_day(
 
 #if defined(SWNETCDF)
         if (readWeather) {
-            if (!spinup) {
+            if (!doIOPlusTiming) {
                 set_walltime(&tsr, &ok_tsr);
             }
             SW_NCIN_read_inputs(
@@ -601,7 +659,7 @@ static void prepare_next_day(
                 siteLogs,
                 main_LogInfo
             );
-            if (!spinup) {
+            if (!doIOPlusTiming) {
                 SW_WT_TimeRun(tsr, ok_tsr, TIME_IO_IN, SW_WallTime);
             }
             checkJumpToLabel(main_LogInfo->stopRun, handleLogs);
@@ -652,6 +710,7 @@ handleLogs:
     SW_F_check_site_logs(fatalError, SW_Domain, siteLogs, main_LogInfo);
 
 #if !defined(SWNETCDF)
+    (void) doIOPlusTiming;
     (void) sw_template;
     (void) tempVals;
     (void) newSoils;
@@ -664,6 +723,8 @@ handleLogs:
 @brief Attempt to output values if necessary (SWNETCDF mode only)
 
 @param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] doIOPlusTiming A flag specifying that this function is to perform
+I/O and timing operations
 @param[in] sw_template Template SW_RUN for the function to use as a
 reference for local versions of SW_RUN
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
@@ -676,6 +737,7 @@ information for the program run
 */
 static void finalize_sites_day(
     int rank,
+    Bool doIOPlusTiming,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
     SW_WALLTIME *SW_WallTime,
@@ -693,9 +755,8 @@ static void finalize_sites_day(
     Bool ok_tsr = swFALSE;
 
     Bool forceWriteOut = (Bool) (!runSims || main_LogInfo->stopRun);
-    Bool spinup = SW_Domain->SW_SpinUp.spinup;
 
-    if (!spinup) {
+    if (doIOPlusTiming) {
         set_walltime(&tsr, &ok_tsr);
         SW_NCOUT_write_output(
             &SW_Domain->OutDom,
@@ -719,12 +780,13 @@ static void finalize_sites_day(
     SW_Domain->SW_ConstInfo.ModelSim.doy++;
 
 #if defined(SWNETCDF)
-    if (doy == lastDoy + 1 && !spinup) {
+    if (doy == lastDoy + 1 && doIOPlusTiming) {
         display_yearly_progress(
             rank, nYears, startupPrint, finalYear, displayNYears
         );
     }
 #else
+    (void) doIOPlusTiming;
     (void) rank;
     (void) sw_template;
     (void) SW_Domain;
@@ -831,6 +893,8 @@ every site at once per daily time step
 reference for local versions of SW_RUN
 @param[in] startDay Start day of the simulation
 @param[in] endDay End day of the simulation
+@param[in] doIOPlusTiming A flag specifying that this function is to perform
+I/O and timing operations
 @param[in] tempVals An allocated space to store temporary input values
 for converting and setting into proper location
 @param[in] newSoils A temporary list of SW_SOIL_RUN_INPUTS instances to
@@ -850,6 +914,7 @@ void SW_CTL_run_daily_timesteps(
     SW_RUN *sw_template,
     TimeInt startDay,
     TimeInt endDay,
+    Bool doIOPlusTiming,
     double *tempVals,
     SW_SOIL_RUN_INPUTS *newSoils,
     SW_DOMAIN *SW_Domain,
@@ -868,7 +933,6 @@ void SW_CTL_run_daily_timesteps(
 #if defined(SWNETCDF)
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
-    Bool spinup = SW_Domain->SW_SpinUp.spinup;
 #endif
 
     for (day = startDay; day <= endDay && !runSims; day++) {
@@ -879,6 +943,7 @@ void SW_CTL_run_daily_timesteps(
             siteLogs,
             tempVals,
             initYear,
+            doIOPlusTiming,
             SW_Runs,
             SW_WallTime,
             newSoils,
@@ -888,7 +953,7 @@ void SW_CTL_run_daily_timesteps(
 
         if (runSims) {
 #if defined(SWNETCDF)
-            if (!spinup) {
+            if (doIOPlusTiming) {
                 set_walltime(&tsr, &ok_tsr);
             }
 #endif
@@ -901,7 +966,7 @@ void SW_CTL_run_daily_timesteps(
                 main_LogInfo
             );
 #if defined(SWNETCDF)
-            if (!spinup) {
+            if (doIOPlusTiming) {
                 SW_WT_TimeRun(tsr, ok_tsr, TIME_COMPUTE, SW_WallTime);
             }
 #endif
@@ -918,7 +983,12 @@ void SW_CTL_run_daily_timesteps(
 
     handleOutput:
         finalize_sites_day(
-            rank, sw_template, SW_Domain, SW_WallTime, main_LogInfo
+            rank,
+            doIOPlusTiming,
+            sw_template,
+            SW_Domain,
+            SW_WallTime,
+            main_LogInfo
         );
         checkReturn(main_LogInfo->stopRun);
     }
@@ -1062,6 +1132,7 @@ void SW_CTL_RunSimSet(
         sw_template,
         SW_Domain->startSimDay,
         SW_Domain->endSimDay,
+        DO_IO_TIMING,
         tempVals,
         newSoils,
         SW_Domain,
@@ -1611,6 +1682,7 @@ void SW_CTL_run_spinup(
             sw,
             startDay,
             endDay,
+            NO_IO_TIMING,
             tempVals,
             newSoil,
             SW_Domain,
