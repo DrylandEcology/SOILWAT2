@@ -101,7 +101,12 @@ res <- lapply(
 #------ . ------
 #------ Create reference runs ------
 
-implementedReferences <- c("example", "example-wGen")
+implementedReferences <- c(
+  "example",
+  "example-wGen",
+  "example-spinup",
+  "example-spinup-slowDyn"
+)
 
 
 #--- * Specifications of test runs ------
@@ -156,6 +161,42 @@ for (k0 in seq_along(dir_refRuns)) {
     setTxtInput(
       filename = fname,
       tag = "# 0 = use historical data only$",
+      value = 2L,
+      classic = TRUE
+    )
+  }
+
+  #--- * Turn on spinup ------
+  if (grepl("spinup", basename(dir_refRuns[[k0]]), fixed = TRUE)) {
+    fname <- file.path(dir_refRuns[[k0]], "Input", "domain.in")
+    setTxtInput(
+      filename = fname,
+      tag = "SpinupDuration",
+      value = 2L,
+      classic = FALSE
+    )
+  }
+
+  #--- * Turn on slow dynamics (vegetation, soil temperature boundary) ------
+  if (grepl("slowDyn", basename(dir_refRuns[[k0]]), fixed = TRUE)) {
+    fname <- file.path(dir_refRuns[[k0]], "Input", "siteparam.in")
+    setTxtInput(
+      filename = fname,
+      tag = "# Method for soil temperature at maximum depth:$",
+      value = 1L,
+      classic = TRUE
+    )
+    setTxtInput(
+      filename = fname,
+      tag = "# constant soil temperature \\(Celsius\\) at the lower boundary",
+      value = 999, # junk value
+      classic = TRUE
+    )
+
+    fname <- file.path(dir_refRuns[[k0]], "Input", "veg.in")
+    setTxtInput(
+      filename = fname,
+      tag = "# 0 - Use composition and biomass inputs from veg.in or veg.nc$",
       value = 2L,
       classic = TRUE
     )

@@ -645,6 +645,15 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     value = listTestRuns[k0, "simEndYear"]
   )
 
+  #--- Spinup
+  if (identical(listTestRuns[k0, "spinup"], "yes")) {
+    setTxtInput(
+      filename = fname,
+      tag = "SpinupDuration",
+      value = 2L
+    )
+  }
+
 
   #--- ....*** Set desc_nc.in ------
   fname <- file.path(dir_testrun_swinnc, "desc_nc.in")
@@ -1632,7 +1641,6 @@ for (k0 in seq_len(nrow(listTestRuns))) {
   }
 
 
-
   #------ . ------
   #--- * inSoil-swrc ------
   fname_soil <- file.path(dir_soil, "swrcp.nc")
@@ -1819,6 +1827,22 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
   }
 
+  if (identical(listTestRuns[k0, "slowDynamics"], "yes")) {
+    # Activate slow-dynamic estimation of soil temperature boundary
+    setTxtInput(
+      filename = fname,
+      tag = "# Method for soil temperature at maximum depth:$",
+      value = 1L,
+      classic = TRUE
+    )
+    setTxtInput(
+      filename = fname,
+      tag = "# constant soil temperature \\(Celsius\\) at the lower boundary",
+      value = 999, # junk value
+      classic = TRUE
+    )
+  }
+
 
   #--- ..** inSoil: set soils.in ------
   # Add extra soil layers so that text input file represent maximum number
@@ -1872,56 +1896,67 @@ for (k0 in seq_len(nrow(listTestRuns))) {
   dir.create(dir_site, recursive = TRUE, showWarnings = FALSE)
 
   #--- ..** inSite: tas-clim ------
-  fname_tasclim <- file.path(dir_site, "tas-clim.nc")
+  if (!identical(listTestRuns[k0, "slowDynamics"], "yes")) {
+    fname_tasclim <- file.path(dir_site, "tas-clim.nc")
 
-  if (!file.exists(fname_tasclim)) {
-    nDigsSite <- 2L
-    tasclim <- round(
-      swin@site@SoilTemperatureConstants[["ConstMeanAirTemp"]],
-      digits = nDigsSite
-    )
+    if (!file.exists(fname_tasclim)) {
+      nDigsSite <- 2L
+      tasclim <- round(
+        swin@site@SoilTemperatureConstants[["ConstMeanAirTemp"]],
+        digits = nDigsSite
+      )
 
-    copyInputTemplateNC(
-      fname_tasclim,
-      template = fname_inputTemplate,
-      crsType = listTestRuns[k0, "inputCRS"],
-      list_xyvars = sw_xyvars
-    )
+      copyInputTemplateNC(
+        fname_tasclim,
+        template = fname_inputTemplate,
+        crsType = listTestRuns[k0, "inputCRS"],
+        list_xyvars = sw_xyvars
+      )
 
-    nc <- RNetCDF::open.nc(fname_tasclim, write = TRUE)
-    rSW2st::setGlobalAttributesNCSW(nc, attributes = c(source = vSW2))
+      nc <- RNetCDF::open.nc(fname_tasclim, write = TRUE)
+      rSW2st::setGlobalAttributesNCSW(nc, attributes = c(source = vSW2))
 
-    u <- getModifiedNCUnits(usedUnits, "inSite", "tas")
+      u <- getModifiedNCUnits(usedUnits, "inSite", "tas")
 
-    rSW2st::setVariableNCSW(
-      nc,
-      varName = "tas",
-      long_name = "mean temperature",
-      dimensions = inDimNames[["sp"]],
-      units = u[["ncVarUnitsModified"]],
-      coordinates = varAttrSp[["coordinates"]],
-      grid_mapping = varAttrSp[["grid_mapping"]],
-      cell_method = "time: mean within days time: mean over days",
-      attributes = list(units_metadata = "temperature: on_scale"),
-      dataType = dataType,
-      values = createTestRunData(
-        x = tasclim,
-        otherValues = 0.0,
-        usedUnits = u,
-        dims = inDimCounts[["sp"]],
-        dimPermutation = inDimPerms[["sp"]],
-        spDims = inputSpDims,
-        idExampleSite = idInputExampleSite
-      ),
-      count = inDimPermCounts[["sp"]]
-    )
+      rSW2st::setVariableNCSW(
+        nc,
+        varName = "tas",
+        long_name = "mean temperature",
+        dimensions = inDimNames[["sp"]],
+        units = u[["ncVarUnitsModified"]],
+        coordinates = varAttrSp[["coordinates"]],
+        grid_mapping = varAttrSp[["grid_mapping"]],
+        cell_method = "time: mean within days time: mean over days",
+        attributes = list(units_metadata = "temperature: on_scale"),
+        dataType = dataType,
+        values = createTestRunData(
+          x = tasclim,
+          otherValues = 0.0,
+          usedUnits = u,
+          dims = inDimCounts[["sp"]],
+          dimPermutation = inDimPerms[["sp"]],
+          spDims = inputSpDims,
+          idExampleSite = idInputExampleSite
+        ),
+        count = inDimPermCounts[["sp"]]
+      )
 
-    RNetCDF::close.nc(nc)
+      RNetCDF::close.nc(nc)
+    }
   }
-
 
   #--- ..** inSite: set ncinputs.tsv ------
   toggleNCInputTSV(filename = fname_ncintsv, inkeys = "inSite", value = 1L)
+
+  if (identical(listTestRuns[k0, "slowDynamics"], "yes")) {
+    # Deactivate Tsoil_constant as input
+    toggleNCInputTSV(
+      filename = fname_ncintsv,
+      inkeys = "inSite",
+      sw2vars = "Tsoil_constant",
+      value = 0L
+    )
+  }
 
   setNCInputTSV(
     filename = fname_ncintsv,
@@ -2447,6 +2482,18 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     list_xyvars = sw_xyvars,
     list_crs = sw_crs
   )
+
+  #--- ..** inVeg: set veg.in ------
+  fname <- file.path(dir_testRun, "Input", "veg.in")
+
+  if (identical(listTestRuns[k0, "slowDynamics"], "yes")) {
+    setTxtInput(
+      filename = fname,
+      tag = "# 0 - Use composition and biomass inputs from veg.in or veg.nc$",
+      value = 2L,
+      classic = TRUE
+    )
+  }
 
 
   #------ . ------

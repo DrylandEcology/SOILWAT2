@@ -95,7 +95,7 @@ while [ $# -gt 0 ]; do
 
         clean) doCleanTests=true ;;
 
-        cleanReference) doCleanReference=true ;;
+        cleanReference|cleanReferences) doCleanReference=true ;;
 
         create) doCreate=true ;;
 
