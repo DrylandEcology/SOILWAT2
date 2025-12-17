@@ -338,7 +338,6 @@ fi
 
 
 if [ "${doCheck}" = "true" ]; then
-    echo $'\n'"Execute and check ncTestRuns ..."
     Rscript \
         "${dir_ncTestRuns}"/scripts/Rscript__ncTestRuns_02_checkTestRuns.R \
         --path-to-ncTestRuns="${dir_ncTestRuns}" \

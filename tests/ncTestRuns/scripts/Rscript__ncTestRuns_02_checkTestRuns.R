@@ -145,8 +145,7 @@ compareNC <- NULL
 compareNCWeather <- NULL
 listInputWeather <- NULL
 listOutputWeather <- NULL
-colorTestReport <- NULL
-printColoredDF <- NULL
+printReportRow <- NULL
 
 res <- lapply(
   list.files(path = dir_R, pattern = ".R$", full.names = TRUE),
@@ -216,9 +215,14 @@ stopifnot(any(lengths(fnames_ref) > 0L))
 
 
 #------ . ------
-#------ Execute nc-testRuns ------
+#------ Prepare test outcome report ------
 resTestRuns <- data.frame(
   TestName = testRunTags,
+  TestNameShort = vapply(
+    strsplit(testRunTags, split = "__", fixed = TRUE),
+    function(x) x[[1L]],
+    FUN.VALUE = NA_character_
+  ),
   Expectation = NA,
   CheckRun = "not run",
   MessageRun = "",
@@ -227,18 +231,32 @@ resTestRuns <- data.frame(
   stringsAsFactors = FALSE
 )
 
+rownames(resTestRuns) <- NULL
+
+nTestRuns <- nrow(resTestRuns)
+
+hasCCLI <- isTRUE(requireNamespace("cli", quietly = TRUE))
+
+vars_report <- c(
+  "TestNameShort", "Expectation", "CheckRun", "CompToRef", "CompToWeather"
+)
+stopifnot(vars_report %in% colnames(resTestRuns))
+
+cat("\nExecute and check", nTestRuns, "ncTestRuns ...", fill = TRUE)
+msg <- "\nSummary of test outcomes:"
+cat(if (hasCCLI) cli::style_bold(msg) else msg, fill = TRUE)
+printReportRow(vars_report, colored = hasCCLI)
+
+
+#------ . ------
+#------ Execute nc-testRuns ------
 
 #--- Loop over testRuns ------
-pb <- utils::txtProgressBar(max = nrow(listTestRuns), style = 3L)
 
-for (k0 in seq_len(nrow(listTestRuns))) {
+for (k0 in seq_len(nTestRuns)) {
 
   kt <- which(testRunTags[[k0]] == basename(testRunsTemplates))
-
-  if (length(kt) != 1L) {
-    utils::setTxtProgressBar(pb, value = k0)
-    next
-  }
+  if (length(kt) != 1L) next
 
   resTestRuns[k0, "Expectation"] <- tolower(listTestRuns[k0, "expectation"])
 
@@ -540,10 +558,11 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     }
   }
 
-  utils::setTxtProgressBar(pb, value = k0)
+  printReportRow(resTestRuns[k0, vars_report], colored = hasCCLI)
 }
 
-close(pb)
+cat("\n")
+
 
 tmp <- summary(warnings())
 if (length(tmp) > 0L) {
@@ -552,32 +571,8 @@ if (length(tmp) > 0L) {
 
 
 #------ . ------
-#------ Report test outcomes ------
-has_cli <- isTRUE(requireNamespace("cli", quietly = TRUE))
-
-#--- * Overall report ------
-vars_report <- c(
-  "TestNameShort", "Expectation", "CheckRun", "CompToRef", "CompToWeather"
-)
+#------ Finalize test outcome report ------
 res <- resTestRuns
-rownames(res) <- NULL
-
-res[["TestNameShort"]] <- vapply(
-  strsplit(res[["TestName"]], split = "__", fixed = TRUE),
-  function(x) x[[1L]],
-  FUN.VALUE = NA_character_
-)
-
-msg <- "\nSummary of test outcomes:"
-if (has_cli) {
-  cat(cli::style_bold(msg), fill = TRUE)
-  printColoredDF(res, vars = vars_report)
-
-} else {
-  cat(msg, fill = TRUE)
-  print(res[, vars_report, drop = FALSE])
-}
-cat("\n")
 
 ids_failed <- c(
   grep("failed", res[["CheckRun"]], fixed = TRUE),
@@ -600,7 +595,7 @@ if (reportWarnings) {
 
   if (length(ids_okWithMsg) > 0L) {
     msg <- "Messages produced by successful tests:"
-    cat(if (has_cli) cli::style_bold(msg) else msg, fill = TRUE)
+    cat(if (hasCCLI) cli::style_bold(msg) else msg, fill = TRUE)
 
     for (kr in ids_okWithMsg) {
       tmp <- paste0(
@@ -618,7 +613,7 @@ if (reportWarnings) {
 #--- * Failures details ------
 if (length(ids_failed) > 0L) {
   msg <- "Failed tests:"
-  cat(if (has_cli) cli::style_bold(msg) else msg, fill = TRUE)
+  cat(if (hasCCLI) cli::style_bold(msg) else msg, fill = TRUE)
 
   for (kr in ids_failed) {
     tmp <- paste0(
@@ -629,7 +624,7 @@ if (length(ids_failed) > 0L) {
       "\n\t** Comparison to weather inputs: ", res[kr, "CompToWeather"]
     )
 
-    if (has_cli) {
+    if (hasCCLI) {
       tmp <- colorTestReport(tmp)
     }
 
