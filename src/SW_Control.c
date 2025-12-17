@@ -103,6 +103,8 @@ this only has the chance to be false when the program is dealing with
 nc inputs
 @param[in] nActiveSites Number of active sites to initialize log
 information for
+@param[in] tempVals An allocated space to store temporary input values
+for converting and setting into proper location
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
 @param[in] sw_template Template SW_RUN for the function to use as a
@@ -117,6 +119,7 @@ be returned with any site-specific errors/warnings
 static void init_all_runs(
     Bool copyWeatherHist,
     size_t nActiveSites,
+    double *tempVals,
     SW_DOMAIN *SW_Domain,
     SW_RUN *sw_template,
     SW_RUN *SW_Runs,
@@ -155,13 +158,11 @@ static void init_all_runs(
 
         SW_CTL_init_run(&SW_Runs[site], &siteLogs[site], main_LogInfo);
         checkJumpToLabel(main_LogInfo->stopRun, checkLogs);
-
-        if (!siteLogs[site].stopRun) {
-            SW_CTL_run_spinup(SW_Domain, &SW_Runs[site], &siteLogs[site]);
-            SW_Runs[site].ModelSim->yearIdxSpinSim =
-                (int) SW_Domain->SW_SpinUp.duration;
-        }
     }
+    if (SW_Domain->SW_SpinUp.spinup > 0) {
+        SW_CTL_run_spinup(SW_Domain, tempVals, SW_Runs, siteLogs);
+    }
+
     fatalError = swFALSE;
 
 checkLogs:
@@ -545,6 +546,7 @@ static void prepare_next_day(
     const Bool readWeather =
         SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
     const Bool readConstInfo = swFALSE;
+    const Bool spinup = SW_Domain->SW_SpinUp.spinup;
 
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
@@ -564,7 +566,6 @@ static void prepare_next_day(
     TimeInt lastDoy = SW_Domain->SW_ConstInfo.ModelSim.lastdoy;
     Bool fatalError = swTRUE;
     Bool newYear = (Bool) (initYear || doy == lastDoy + 1);
-    Bool spinup = SW_Domain->SW_SpinUp.spinup;
 
 #ifdef SWDEBUG
     if (debug) {
@@ -583,37 +584,39 @@ static void prepare_next_day(
         checkReturn(main_LogInfo->stopRun);
 
 #if defined(SWNETCDF)
-        if (!spinup) {
-            if (readWeather) {
+        if (readWeather) {
+            if (!spinup) {
                 set_walltime(&tsr, &ok_tsr);
-                SW_NCIN_read_inputs(
-                    SW_Runs,
-                    SW_Domain,
-                    readConstInfo,
-                    SW_Domain->domStartIndex,
-                    SW_Domain->domCounts,
-                    SW_Domain->SW_PathInputs.openInFileIDs,
-                    (double *) tempVals,
-                    SW_Domain->nActiveSuidsProc,
-                    newSoils,
-                    siteLogs,
-                    main_LogInfo
-                );
+            }
+            SW_NCIN_read_inputs(
+                SW_Runs,
+                SW_Domain,
+                readConstInfo,
+                SW_Domain->domStartIndex,
+                SW_Domain->domCounts,
+                SW_Domain->SW_PathInputs.openInFileIDs,
+                (double *) tempVals,
+                SW_Domain->nActiveSuidsProc,
+                newSoils,
+                siteLogs,
+                main_LogInfo
+            );
+            if (!spinup) {
                 SW_WT_TimeRun(tsr, ok_tsr, TIME_IO_IN, SW_WallTime);
-                checkJumpToLabel(main_LogInfo->stopRun, handleLogs);
-            } else {
-                for (site = 0; site < nActiveSites; site++) {
-                    memcpy(
-                        &SW_Runs[site].RunIn.weathRunAllHist[0],
-                        &sw_template->RunIn.weathRunAllHist[inputYearIdx],
-                        sizeof(SW_WEATHER_HIST)
-                    );
-                }
+            }
+            checkJumpToLabel(main_LogInfo->stopRun, handleLogs);
+        } else {
+            for (site = 0; site < nActiveSites; site++) {
+                memcpy(
+                    &SW_Runs[site].RunIn.weathRunAllHist[0],
+                    &sw_template->RunIn.weathRunAllHist[inputYearIdx],
+                    sizeof(SW_WEATHER_HIST)
+                );
             }
         }
 #endif
 
-        for (site = 0; site < nActiveSites && !spinup; site++) {
+        for (site = 0; site < nActiveSites; site++) {
             if (!siteLogs[site].stopRun) {
 #if defined(SWNETCDF)
                 suid = SW_Domain->globDomSuids[site];
@@ -769,9 +772,9 @@ void SW_CTL_sim_sites(
     TimeInt firstDoy = SW_Domain->SW_ConstInfo.ModelSim.firstdoy;
     signed char *runStatus = NULL;
     Bool textSkyVals = swTRUE;
-    Bool spinup = SW_Domain->SW_SpinUp.spinup;
 
 #if defined(SWNETCDF)
+    const Bool spinup = SW_Domain->SW_SpinUp.spinup;
     signed char *progVals = SW_Domain->netCDFInput.progVals;
     size_t actSiteIdx;
 
@@ -816,9 +819,7 @@ void SW_CTL_sim_sites(
 #endif
     }
 
-    if (!spinup) {
-        SW_F_check_fatal_log(SW_Domain, nActiveSites, main_LogInfo);
-    }
+    SW_F_check_fatal_log(SW_Domain, nActiveSites, main_LogInfo);
 }
 
 /**
@@ -1032,6 +1033,7 @@ void SW_CTL_RunSimSet(
     init_all_runs(
         copyWeatherHist,
         nActiveSites,
+        tempVals,
         SW_Domain,
         sw_template,
         siteRuns,
@@ -1496,20 +1498,19 @@ void SW_CTL_run_current_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
+@param[in] tempVals An allocated space to store temporary input values
+for converting and setting into proper location
 @param[in,out] sw Comprehensive struct of type SW_RUN containing all
   information in the simulation
 @param[out] LogInfo Holds information dealing with logfile output
 */
-void SW_CTL_run_spinup(SW_DOMAIN *SW_Domain, SW_RUN *sw, LOG_INFO *LogInfo) {
-    if (sw->ModelIn->SW_SpinUp.duration <= 0) {
-        return;
-    }
-
+void SW_CTL_run_spinup(
+    SW_DOMAIN *SW_Domain, double *tempVals, SW_RUN *sw, LOG_INFO *LogInfo
+) {
 #ifdef SWDEBUG
     int debug = 0;
 #endif
 
-    double *tempVals = NULL;
     SW_SOIL_RUN_INPUTS *newSoil = NULL;
     SW_WALLTIME *SW_WallTime = NULL;
 
@@ -1525,17 +1526,12 @@ void SW_CTL_run_spinup(SW_DOMAIN *SW_Domain, SW_RUN *sw, LOG_INFO *LogInfo) {
     TimeInt *years;
     TimeInt startDay = 0;
     TimeInt endDay = 0;
-    size_t nActiveSites = SW_Domain->nActiveSuidsProc;
-    SW_MODEL_SIM tempMdl;
     years = (TimeInt *) Mem_Malloc(
         sizeof(TimeInt) * duration, "SW_CTL_run_spinup", LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
-
-    Mem_Copy(&tempMdl, &SW_Domain->SW_ConstInfo.ModelSim, sizeof(SW_MODEL_SIM));
-    sw->ModelSim = &tempMdl;
 
 #ifdef SWDEBUG
     if (debug) {
@@ -1593,7 +1589,6 @@ void SW_CTL_run_spinup(SW_DOMAIN *SW_Domain, SW_RUN *sw, LOG_INFO *LogInfo) {
     TimeInt yrIdx;
 
     sw->ModelSim->doOutput = swFALSE; // turn output temporarily off
-    SW_Domain->nActiveSuidsProc = 1;
 
     for (yrIdx = 0; yrIdx < duration; yrIdx++) {
         *cur_yr = years[yrIdx];
@@ -1608,7 +1603,7 @@ void SW_CTL_run_spinup(SW_DOMAIN *SW_Domain, SW_RUN *sw, LOG_INFO *LogInfo) {
             );
         }
 #endif
-        // Timing and I/O operations should not occur
+        // Timing and output to terminal operations do not occur
         // so sending default rank, temporary values/storage
         // is okay
         SW_CTL_run_daily_timesteps(
@@ -1630,8 +1625,12 @@ void SW_CTL_run_spinup(SW_DOMAIN *SW_Domain, SW_RUN *sw, LOG_INFO *LogInfo) {
     }
 
 reSet: {
-    sw->ModelSim = &SW_Domain->SW_ConstInfo.ModelSim;
-    SW_Domain->nActiveSuidsProc = nActiveSites;
+    SW_Domain->SW_ConstInfo.ModelSim.year = SW_Domain->startyr;
+
+#if defined(SWNETCDF)
+    SW_Domain->SW_PathInputs.weathStartFileIndex = 0;
+#endif
+
     /* Note: don't reset sw->ModelSim->yearIdxSpinSim which is a
     continuous index across spinup and simulation years) */
 

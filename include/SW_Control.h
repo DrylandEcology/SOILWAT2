@@ -94,7 +94,9 @@ void SW_CTL_RunSimSet(
 
 void SW_CTL_run_current_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
-void SW_CTL_run_spinup(SW_DOMAIN *SW_Domain, SW_RUN *sw, LOG_INFO *LogInfo);
+void SW_CTL_run_spinup(
+    SW_DOMAIN *SW_Domain, double *tempVals, SW_RUN *sw, LOG_INFO *LogInfo
+);
 
 void SW_CTL_run_sw(
     size_t runNum,

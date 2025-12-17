@@ -9513,7 +9513,7 @@ static void read_weather_input(
     size_t start[3] = {0}; /* Up to three dimensions per variable */
     size_t count[3] = {0}; /* Up to three dimensions per variable */
     TimeInt numDays;
-    TimeInt year;
+    TimeInt year = SW_Domain->SW_ConstInfo.ModelSim.year;
     Bool progSiteDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
     int fIndex = 1;
     int varID = -1;
@@ -9545,6 +9545,9 @@ static void read_weather_input(
     double ***tempWeatherHist = NULL;
     size_t writeIndex = 0;
     size_t inIdx;
+    TimeInt startYr;
+    TimeInt yearIdx;
+    Bool spinup = SW_Domain->SW_SpinUp.spinup;
 
     while (!readInput[fIndex + 1]) {
         fIndex++;
@@ -9564,15 +9567,12 @@ static void read_weather_input(
         lonIndex = dimOrderInVar[varNum][1];
         timeIndex = dimOrderInVar[varNum][3];
 
-        start[timeIndex] = 0;
-
-        weathFileIndex = SW_Domain->SW_PathInputs.weathStartFileIndex;
+        weathFileIndex =
+            (spinup) ? 0 : SW_Domain->SW_PathInputs.weathStartFileIndex;
 
         if (varNum == fIndex) {
             clear_hist_weather(numSites, NULL, tempWeatherHist[inYearIndex]);
         }
-
-        year = SW_Domain->startyr + yearIndex;
 
         while (weathFileIndex < numWeathFiles &&
                weathStartEndYrs[weathFileIndex][1] < year) {
@@ -9588,7 +9588,12 @@ static void read_weather_input(
         tempVals[MAX_DAYS - 1] = NAN;
 
         varName = inVarInfo[varNum][INNCVARNAME];
+
+        startYr = weathStartEndYrs[weathFileIndex][0];
         start[timeIndex] = weatherIndices[weathFileIndex][0];
+        for (yearIdx = startYr; yearIdx < year; yearIdx++) {
+            start[timeIndex] += Time_get_lastdoy_y(yearIdx);
+        }
 
         if (varHasAddScaleAtts) {
             scaleFactor = scaleAddFactors[varNum][0];
