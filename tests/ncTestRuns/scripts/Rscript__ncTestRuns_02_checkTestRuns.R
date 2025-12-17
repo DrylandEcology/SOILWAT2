@@ -29,7 +29,7 @@
 #       --path-to-sw2=<...> \
 #       --swMode=<...> \
 #       --ntasks=<...> \
-#       --path-to-referenceOutput=<...> \
+#       --path-to-references=<...> \
 #       --testRuns=<...>
 # ```
 #------------------------------------------------------------------------------#
@@ -106,19 +106,15 @@ fname_sw2 <- if (any()) {
 
 stopifnot(file.exists(fname_sw2))
 
-ids <- grepl("--path-to-referenceOutput", args, fixed = TRUE)
-frefOutput <- if (any(ids)) {
-  sub("--path-to-referenceOutput", "", args[ids], fixed = TRUE) |>
+ids <- grepl("--path-to-references", args, fixed = TRUE)
+path_refFolder <- if (any(ids)) {
+  sub("--path-to-references", "", args[ids], fixed = TRUE) |>
     sub("=", "", x = _, fixed = TRUE) |>
     trimws()
 } else {
-  file.path("tests", "ncTestRuns", "results", "referenceRun", "Output")
+  file.path("tests", "ncTestRuns", "results", "referenceRuns")
 }
 
-dir_refOutput <- file.path(dir_prj, "..", "..", frefOutput)
-fnames_ref <- list.files(
-  path = dir_refOutput, pattern = ".nc$", full.names = TRUE
-)
 
 dir_dataraw <- file.path(dir_prj, "data-raw")
 stopifnot(dir.exists(dir_dataraw))
@@ -149,8 +145,7 @@ compareNC <- NULL
 compareNCWeather <- NULL
 listInputWeather <- NULL
 listOutputWeather <- NULL
-colorTestReport <- NULL
-printColoredDF <- NULL
+printReportRow <- NULL
 
 res <- lapply(
   list.files(path = dir_R, pattern = ".R$", full.names = TRUE),
@@ -202,10 +197,32 @@ listExclusionPatterns <- if (file.exists(fep)) {
   readLines(fep)
 }
 
+
+#--- * Specifications of reference runs ------
+refRuns <- unique(listTestRuns[["reference"]])
+
+tmp <- file.path(dir_prj, "..", "..", path_refFolder)
+
+hasRefRuns <- list.dirs(tmp, full.names = FALSE, recursive = FALSE)
+stopifnot(refRuns %in% hasRefRuns)
+
+dir_refOutput <- stats::setNames(file.path(tmp, refRuns, "Output"), refRuns)
+
+fnames_ref <- lapply(
+  dir_refOutput, list.files, pattern = ".nc$", full.names = TRUE
+)
+stopifnot(any(lengths(fnames_ref) > 0L))
+
+
 #------ . ------
-#------ Execute nc-testRuns ------
+#------ Prepare test outcome report ------
 resTestRuns <- data.frame(
   TestName = testRunTags,
+  TestNameShort = vapply(
+    strsplit(testRunTags, split = "__", fixed = TRUE),
+    function(x) x[[1L]],
+    FUN.VALUE = NA_character_
+  ),
   Expectation = NA,
   CheckRun = "not run",
   MessageRun = "",
@@ -214,17 +231,32 @@ resTestRuns <- data.frame(
   stringsAsFactors = FALSE
 )
 
-#--- Loop over testRuns ------
-pb <- utils::txtProgressBar(max = nrow(listTestRuns), style = 3L)
+rownames(resTestRuns) <- NULL
 
-for (k0 in seq_len(nrow(listTestRuns))) {
+nTestRuns <- nrow(resTestRuns)
+
+hasCCLI <- isTRUE(requireNamespace("cli", quietly = TRUE))
+
+vars_report <- c(
+  "TestNameShort", "Expectation", "CheckRun", "CompToRef", "CompToWeather"
+)
+stopifnot(vars_report %in% colnames(resTestRuns))
+
+cat("\nExecute and check", nTestRuns, "ncTestRuns ...", fill = TRUE)
+msg <- "\nSummary of test outcomes:"
+cat(if (hasCCLI) cli::style_bold(msg) else msg, fill = TRUE)
+printReportRow(vars_report, colored = hasCCLI)
+
+
+#------ . ------
+#------ Execute nc-testRuns ------
+
+#--- Loop over testRuns ------
+
+for (k0 in seq_len(nTestRuns)) {
 
   kt <- which(testRunTags[[k0]] == basename(testRunsTemplates))
-
-  if (length(kt) != 1L) {
-    utils::setTxtProgressBar(pb, value = k0)
-    next
-  }
+  if (length(kt) != 1L) next
 
   resTestRuns[k0, "Expectation"] <- tolower(listTestRuns[k0, "expectation"])
 
@@ -364,9 +396,12 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         double = sqrt(.Machine[["double.eps"]])
       )
 
+      refName <- listTestRuns[k0, "reference"]
+
+
       #--- Identify simulation run corresponding to example site
       idSimExampleSite <-
-        file.path(dir_testRunOutput, basename(fnames_ref[[1L]])) |>
+        file.path(dir_testRunOutput, basename(fnames_ref[[refName]][[1L]])) |>
         getSitesFromNC() |>
         locateExampleSite()
 
@@ -374,12 +409,14 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
 
       #--- ....*** Comparisons to reference simulation output ------
-      if (length(fnames_ref) > 0L) {
+      usedFnamesRef <- fnames_ref[[refName]]
+
+      if (length(usedFnamesRef) > 0L) {
         ok <- TRUE
         outkeysWithMsg <- NULL
 
         checkValues <-
-          identical(listTestRuns[k0, "inWeather"], "sw2") &&
+          listTestRuns[k0, "inWeather"] %in% c("sw2", "wGen") &&
           isTRUE(
             listTestRuns[k0, "calendarWeather"] %in% comparableInputCalendars
           )
@@ -392,16 +429,16 @@ for (k0 in seq_len(nrow(listTestRuns))) {
           ftmp <- list.files(
             path = dir_testRunOutput, pattern = ".nc$", full.names = TRUE
           )
-          ids <- basename(fnames_ref) %in% basename(ftmp)
-          fnames_ref <- fnames_ref[ids]
+          ids <- basename(usedFnamesRef) %in% basename(ftmp)
+          usedFnamesRef <- usedFnamesRef[ids]
         }
 
 
         #--- ....**** Compare example simulation subset to reference ------
-        for (kr in seq_along(fnames_ref)) {
+        for (kr in seq_along(usedFnamesRef)) {
           msg <- try(
             compareNC(
-              fn = fnames_ref[[kr]],
+              fn = usedFnamesRef[[kr]],
               path = dir_testRunOutput,
               vars_required = vars_required,
               vars_other = vars_other,
@@ -420,7 +457,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
           if (!thisok && nzchar(msg)) {
             tmp <- strsplit(
-              basename(fnames_ref[[kr]]), split = "_", fixed = TRUE
+              basename(usedFnamesRef[[kr]]), split = "_", fixed = TRUE
             )[[1L]][[1L]]
 
             if (!tmp %in% outkeysWithMsg) {
@@ -433,11 +470,15 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         }
 
 
-        #--- ....**** Compare testRun01 to reference simulation output ------
-        # testRun01 is supposed to be exactly equal to the reference
-        if (testRunTags[[k0]] == "testRun-01__dom-s-1-geog_in-s-geog-1") {
+        #--- ....**** Compare select runs for equality to references ------
+        # testRun01 is supposed to be exactly equal to "example"
+        # testRun02 is supposed to be exactly equal to "example-wGen"
+        if (
+          k0 <= length(dir_refOutput) &&
+            grepl("dom-s-1-geog_in-s-geog-1", testRunTags[[k0]], fixed = TRUE)
+        ) {
           msg <- compareEqualityNCs(
-            dir1 = dir_refOutput,
+            dir1 = dir_refOutput[[refName]],
             dir2 = dir_testRunOutput,
             tolerance = testTolerance
           )
@@ -464,57 +505,64 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
 
       #--- ....*** Compare daily weather between input/output ------
-      intsv <- utils::read.delim(
-        file.path(dir_testRun, "Input_nc", "SW2_netCDF_input_variables.tsv"),
-        check.names = FALSE
-      )
+      if (identical(listTestRuns[k0, "inWeather"], "wGen")) {
+        resTestRuns[k0, "CompToWeather"] <- "skipped"
 
-      listCompToWeather <- list(
-        tasmax = list(
-          input = listInputWeather("temp_max", intsv, dir_testRun),
-          output = listOutputWeather("tasmax", "TEMP", dir_testRunOutput)
-        ),
-        tasmin = list(
-          input = listInputWeather("temp_min", intsv, dir_testRun),
-          output = listOutputWeather("tasmin", "TEMP", dir_testRunOutput)
-        ),
-        pr = list(
-          input = listInputWeather("ppt", intsv, dir_testRun),
-          output = listOutputWeather("pr", "PRECIP", dir_testRunOutput)
+      } else {
+
+        intsv <- utils::read.delim(
+          file.path(dir_testRun, "Input_nc", "SW2_netCDF_input_variables.tsv"),
+          check.names = FALSE
         )
-      )
 
-      ok <- TRUE
-
-      for (kr in seq_along(listCompToWeather)) {
-        msg <- try(
-          compareNCWeather(
-            input = listCompToWeather[[kr]][["input"]],
-            output = listCompToWeather[[kr]][["output"]],
-            idExampleSite = idSimExampleSite,
-            tolerance = sqrt(.Machine[["double.eps"]])
+        listCompToWeather <- list(
+          tasmax = list(
+            input = listInputWeather("temp_max", intsv, dir_testRun),
+            output = listOutputWeather("tasmax", "TEMP", dir_testRunOutput)
           ),
-          silent = TRUE
+          tasmin = list(
+            input = listInputWeather("temp_min", intsv, dir_testRun),
+            output = listOutputWeather("tasmin", "TEMP", dir_testRunOutput)
+          ),
+          pr = list(
+            input = listInputWeather("ppt", intsv, dir_testRun),
+            output = listOutputWeather("pr", "PRECIP", dir_testRunOutput)
+          )
         )
 
-        thisok <- !inherits(msg, "try-error") && !nzchar(msg)
-        ok <- ok && thisok
+        ok <- TRUE
 
-        if (!thisok && nzchar(msg)) {
-          resTestRuns[k0, "MessageRun"] <- appendToMessage(
-            hasMsg = resTestRuns[k0, "MessageRun"], newMsg = msg
+        for (kr in seq_along(listCompToWeather)) {
+          msg <- try(
+            compareNCWeather(
+              input = listCompToWeather[[kr]][["input"]],
+              output = listCompToWeather[[kr]][["output"]],
+              idExampleSite = idSimExampleSite,
+              tolerance = sqrt(.Machine[["double.eps"]])
+            ),
+            silent = TRUE
           )
-        }
-      }
 
-      resTestRuns[k0, "CompToWeather"] <- if (ok) "ok" else "failed"
+          thisok <- !inherits(msg, "try-error") && !nzchar(msg)
+          ok <- ok && thisok
+
+          if (!thisok && nzchar(msg)) {
+            resTestRuns[k0, "MessageRun"] <- appendToMessage(
+              hasMsg = resTestRuns[k0, "MessageRun"], newMsg = msg
+            )
+          }
+        }
+
+        resTestRuns[k0, "CompToWeather"] <- if (ok) "ok" else "failed"
+      }
     }
   }
 
-  utils::setTxtProgressBar(pb, value = k0)
+  printReportRow(resTestRuns[k0, vars_report], colored = hasCCLI)
 }
 
-close(pb)
+cat("\n")
+
 
 tmp <- summary(warnings())
 if (length(tmp) > 0L) {
@@ -523,32 +571,8 @@ if (length(tmp) > 0L) {
 
 
 #------ . ------
-#------ Report test outcomes ------
-has_cli <- isTRUE(requireNamespace("cli", quietly = TRUE))
-
-#--- * Overall report ------
-vars_report <- c(
-  "TestNameShort", "Expectation", "CheckRun", "CompToRef", "CompToWeather"
-)
+#------ Finalize test outcome report ------
 res <- resTestRuns
-rownames(res) <- NULL
-
-res[["TestNameShort"]] <- vapply(
-  strsplit(res[["TestName"]], split = "__", fixed = TRUE),
-  function(x) x[[1L]],
-  FUN.VALUE = NA_character_
-)
-
-msg <- "\nSummary of test outcomes:"
-if (has_cli) {
-  cat(cli::style_bold(msg), fill = TRUE)
-  printColoredDF(res, vars = vars_report)
-
-} else {
-  cat(msg, fill = TRUE)
-  print(res[, vars_report, drop = FALSE])
-}
-cat("\n")
 
 ids_failed <- c(
   grep("failed", res[["CheckRun"]], fixed = TRUE),
@@ -571,7 +595,7 @@ if (reportWarnings) {
 
   if (length(ids_okWithMsg) > 0L) {
     msg <- "Messages produced by successful tests:"
-    cat(if (has_cli) cli::style_bold(msg) else msg, fill = TRUE)
+    cat(if (hasCCLI) cli::style_bold(msg) else msg, fill = TRUE)
 
     for (kr in ids_okWithMsg) {
       tmp <- paste0(
@@ -589,7 +613,7 @@ if (reportWarnings) {
 #--- * Failures details ------
 if (length(ids_failed) > 0L) {
   msg <- "Failed tests:"
-  cat(if (has_cli) cli::style_bold(msg) else msg, fill = TRUE)
+  cat(if (hasCCLI) cli::style_bold(msg) else msg, fill = TRUE)
 
   for (kr in ids_failed) {
     tmp <- paste0(
@@ -600,7 +624,7 @@ if (length(ids_failed) > 0L) {
       "\n\t** Comparison to weather inputs: ", res[kr, "CompToWeather"]
     )
 
-    if (has_cli) {
+    if (hasCCLI) {
       tmp <- colorTestReport(tmp)
     }
 

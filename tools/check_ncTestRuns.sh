@@ -21,18 +21,19 @@ Actions:
     check               Execute SOILWAT2 and check selected test run(s).
     clean               Remove selected test setup and run(s).
     cleanTestRuns       Remove selected test run(s).
-    cleanReference      Remove the default reference run.
+    cleanReference      Remove the default reference runs.
     downloadExternalWeatherData Runs 'wget' scripts to download daily inputs
                         from external data sources including
                         Daymet, gridMET, and MACAv2METDATA
 
 Options:
-    -ref, --reference <path/to/reference/output>
-    --reference=<path/to/reference/output>
-                        Path to reference run output. If the default is
-                        selected as reference and output is missing, then
-                        SOILWAT2 will be run to create reference output.
-                        Default is 'tests/ncTestRuns/results/referenceRun/Output'
+    -ref, --reference <path/to/referenceRuns>
+    --reference=<path/to/referenceRuns>
+                        Path to folder with the reference run(s). If the default
+                        is selected as reference and output is missing, then
+                        SOILWAT2 will be run to create the reference outputs.
+                        Default is 'tests/ncTestRuns/results/referenceRuns' with
+                        'example/Output/' and 'example-wGen/Output/'
 
     -t, --testRun <test number>
     --testRun=<test number>
@@ -81,8 +82,8 @@ doCleanReference=false
 doCreate=false
 doCheck=false
 doExternalDownload=false
-dirOutRefDefault="${dir_ncTestRuns}""/results/referenceRun/Output"
-dirOutRef="${dirOutRefDefault}"
+dirRefDefaults="${dir_ncTestRuns}""/results/referenceRuns"
+dirReferences="${dirRefDefaults}"
 testRun=-1
 withMode="nc"
 nTasks=""
@@ -104,8 +105,8 @@ while [ $# -gt 0 ]; do
 
         downloadExternalWeatherData) doExternalDownload=true ;;
 
-        --reference=*) dirOutRef="${1#*=}" ;;
-        -ref|--reference) dirOutRef="$2"; shift ;;
+        --reference=*) dirReferences="${1#*=}" ;;
+        -ref|--reference) dirReferences="$2"; shift ;;
 
         --testRun=*) testRun="${1#*=}" ;;
         -t|--testRun) testRun="$2"; shift ;;
@@ -181,7 +182,7 @@ if [ "${doCleanTestRuns}" = "true" ] || [ "${doCleanTests}" = "true" ]; then
 fi
 
 if [ "${doCleanReference}" = "true" ]; then
-    rm -rf "${dir_ncTestRuns}"/results/referenceRun > /dev/null 2>&1
+    rm -rf "${dirRefDefaults}" > /dev/null 2>&1
 fi
 
 
@@ -289,7 +290,7 @@ if ! hasSW2 "${sw2}" "${withMode}"; then
 fi
 
 
-if [ ! -d "${dirOutRef}" ] && [ "${dirOutRef}" = "${dirOutRefDefault}" ]; then
+if [ ! -d "${dirReferences}" ] && [ "${dirReferences}" = "${dirRefDefaults}" ]; then
     echo $'\n'"Run SOILWAT2 to create default reference output ..."
     make clean_example
 
@@ -298,8 +299,8 @@ if [ ! -d "${dirOutRef}" ] && [ "${dirOutRef}" = "${dirOutRefDefault}" ]; then
         --path-to-ncTestRuns="${dir_ncTestRuns}" \
         --path-to-sw2="${sw2}" \
         --swMode="${withMode}" \
-        --ntasks=2 \
-        --path-to-referenceOutput="${dirOutRef}"
+        --ntasks=1 \
+        --path-to-references="${dirReferences}"
     status=$?
 
     if [ $status -ne 0 ]; then
@@ -308,8 +309,8 @@ if [ ! -d "${dirOutRef}" ] && [ "${dirOutRef}" = "${dirOutRefDefault}" ]; then
     fi
 fi
 
-if [ -d "${dirOutRef}" ]; then
-    echo $'\n'"Values from '""${dirOutRef}""' will be used as reference."
+if [ -d "${dirReferences}" ]; then
+    echo $'\n'"Values from '""${dirReferences}""' will be used as reference."
 else
     echo $'\n'"Failed to locate reference output ..."
     exit 1
@@ -337,14 +338,13 @@ fi
 
 
 if [ "${doCheck}" = "true" ]; then
-    echo $'\n'"Execute and check ncTestRuns ..."
     Rscript \
         "${dir_ncTestRuns}"/scripts/Rscript__ncTestRuns_02_checkTestRuns.R \
         --path-to-ncTestRuns="${dir_ncTestRuns}" \
         --path-to-sw2="${sw2}" \
         --swMode="${withMode}" \
         --ntasks="${nTasks}" \
-        --path-to-referenceOutput="${dirOutRef}" \
+        --path-to-references="${dirReferences}" \
         --testRuns="${testRun}"
 fi
 

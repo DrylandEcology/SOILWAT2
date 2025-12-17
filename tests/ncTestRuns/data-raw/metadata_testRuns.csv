@@ -1,47 +1,50 @@
-id,testrun,tag,comment,expectation,domainType,domainCRS,domainSize,domainSubset,domainLonConvention,domainShift,inputType,inputCRS,inputSize,expectIndexLookup,inWeather,calendarWeather,simStartYear,simEndYear,pft,inputVarType,inputDimOrder,inputSoilProfile,inputsProvideSWRCp,StopRestart,EstimateEvCo,EstimateTrCo
-1,1,dom-s-1-geog_in-s-geog-1,example,success,s,geographic,1,NA,180,NA,s,geographic,1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
-2,5,dom-s-1-proj_in-s-geog-1,SpatialCombination-5,success,s,projected,1,NA,NA,NA,s,geographic,1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
-3,11,dom-xy-1x1-geog_in-xy-geog-1x1,SpatialCombination-11,success,xy,geographic,1x1,NA,180,NA,xy,geographic,1x1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
-4,15,dom-xy-1x1-proj_in-xy-geog-1x1,SpatialCombination-15,success,xy,projected,1x1,NA,NA,NA,xy,geographic,1x1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
-5,2,dom-s-1-geog_in-s-proj,SpatialCombination-2,error,s,geographic,1,NA,180,NA,s,projected,1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
-6,3,dom-s-1-geog_in-xy-geog-1x1,SpatialCombination-3,success,s,geographic,1,NA,180,NA,xy,geographic,1x1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
-7,4,dom-s-1-geog_in-xy-proj-1x1,SpatialCombination-4,error,s,geographic,1,NA,180,NA,xy,projected,1x1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
-8,6,dom-s-1-proj_in-s-proj,SpatialCombination-6,success,s,projected,1,NA,NA,NA,s,projected,1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
-9,7,dom-s-1-proj_in-xy-geog-1x1,SpatialCombination-7,success,s,projected,1,NA,NA,NA,xy,geographic,1x1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
-10,8,dom-s-1-proj_in-xy-proj-1x1,SpatialCombination-8,success,s,projected,1,NA,NA,NA,xy,projected,1x1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
-11,9,dom-xy-1x1-geog_in-s-geog,SpatialCombination-9,error,xy,geographic,1x1,NA,180,NA,s,geographic,1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
-12,10,dom-xy-1x1-geog_in-s-proj,SpatialCombination-10,error,xy,geographic,1x1,NA,180,NA,s,projected,1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
-13,12,dom-xy-1x1-geog_in-xy-proj-1x1,SpatialCombination-12,error,xy,geographic,1x1,NA,180,NA,xy,projected,1x1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
-14,13,dom-xy-1x1-proj_in-s-geog,SpatialCombination-13,error,xy,projected,1x1,NA,NA,NA,s,geographic,1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
-15,14,dom-xy-1x1-proj_in-s-proj,SpatialCombination-14,error,xy,projected,1x1,NA,NA,NA,s,projected,1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
-16,16,dom-xy-1x1-proj_in-xy-proj-1x1,SpatialCombination-16,success,xy,projected,1x1,NA,NA,NA,xy,projected,1x1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
-17,17,dom-s-1-geog_in-s-geog-1-noleap,noleap calendar,success,s,geographic,1,NA,180,NA,s,geographic,1,0,sw2,noleap,1980,2010,dim,double,standard,standard,no,no,no,no
-18,18,dom-s-1-geog_in-s-geog-1-allleap,allleap calendar,success,s,geographic,1,NA,180,NA,s,geographic,1,0,sw2,allleap,1980,2010,dim,double,standard,standard,no,no,no,no
-19,19,dom-s-1-geog_in-s-geog-1-float,float instead of double as input,success,s,geographic,1,NA,180,NA,s,geographic,1,0,sw2,standard,1980,2010,dim,float,standard,standard,no,no,no,no
-20,24,dom-xy-3x2-geog_in-xy-geog-3x2,gridded geographic,success,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,0,sw2,standard,1980,2010,dim,double,standard,standard,no,yes,yes,yes
-21,25,dom-xy-3x2-geog-shifted_in-xy-geog-3x2,gridded geographic shifted out-of-inputs,error,xy,geographic,3x2,NA,180,10;5,xy,geographic,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no,no,yes,yes
-22,26,dom-xy-3x2-proj_in-xy-proj-3x2,gridded projected,success,xy,projected,3x2,NA,NA,NA,xy,projected,3x2,0,sw2,standard,1980,2010,dim,double,standard,standard,no,yes,yes,yes
-23,27,dom-xy-3x2-proj-subset_in-xy-proj-3x2,gridded projected subset,success,xy,projected,3x2,3;5,NA,NA,xy,projected,3x2,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,yes
-24,20,dom-xy-1x2-geog_in-xy-geog-3x2,gridded+lookup geographic,success,xy,geographic,1x2,NA,180,NA,xy,geographic,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,yes
-25,21,dom-xy-1x2-geog-lon360_in-xy-geog-3x2,gridded+lookup geographic lon0-360,success,xy,geographic,1x2,NA,360,NA,xy,geographic,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,yes
-26,22,dom-xy-1x2-proj_in-xy-proj-3x2,gridded+lookup projected,success,xy,projected,1x2,NA,NA,NA,xy,projected,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,yes
-27,23,dom-xy-1x2-proj-lon360_in-xy-geog-3x2,gridded+lookup projected lon0-360,success,xy,projected,1x2,NA,360,NA,xy,geographic,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,yes
-28,28,dom-xy-3x2-geog_in-xy-geog-3x2-pftvar,pft as variable instead dimension,success,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,0,sw2,standard,1980,2010,var,double,standard,standard,no,yes,yes,no
-29,29,dom-xy-3x2-geog_in-xy-geog-3x2-mixdim,"gridded geographic, mixed order of input dimensions",success,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,0,sw2,standard,1980,2010,dim,double,mix,standard,no,yes,yes,no
-30,30,dom-xy-3x2-geog_in-xy-geog-3x2-soillayers,variable number of soil layers,success,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,0,sw2,standard,1980,2010,dim,double,standard,variableSoilLayerNumber,no,yes,yes,no
-31,31,dom-xy-3x2-geog_in-xy-geog-3x2-soildepths,variable soil layer thickness,success,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,0,sw2,standard,1980,2010,dim,double,standard,variableSoilLayerThickness,no,yes,yes,no
-32,32,dom-xy-3x2-geog_in-xy-geog-3x2-swrcp,input SWRCp,success,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,0,sw2,standard,1980,2010,dim,double,standard,standard,yes,yes,yes,no
-33,36,dom-s-6-geog_in-s-geog-6,site geographic,success,s,geographic,6,NA,180,NA,s,geographic,6,0,sw2,standard,1980,2010,dim,double,standard,standard,no,yes,yes,yes
-34,38,dom-s-6-geog_in-s-geog-6-pftvar,pft as variable instead dimension,success,s,geographic,6,NA,180,NA,s,geographic,6,0,sw2,standard,1980,2010,var,double,standard,standard,no,yes,yes,yes
-35,39,dom-s-6-geog_in-s-geog-6-mixdim,"site geographic, mixed order of input dimensions",success,s,geographic,6,NA,180,NA,s,geographic,6,0,sw2,standard,1980,2010,dim,double,mix,standard,no,yes,yes,yes
-36,40,dom-s-6-geog_in-s-geog-6-soillayers,variable number of soil layers,success,s,geographic,6,NA,180,NA,s,geographic,6,0,sw2,standard,1980,2010,dim,double,standard,variableSoilLayerNumber,no,yes,yes,yes
-37,41,dom-s-6-geog_in-s-geog-6-soildepths,variable soil layer thickness,success,s,geographic,6,NA,180,NA,s,geographic,6,0,sw2,standard,1980,2010,dim,double,standard,variableSoilLayerThickness,no,yes,yes,yes
-38,42,dom-s-6-geog_in-s-geog-6-swrcp,input SWRCp,success,s,geographic,6,NA,180,NA,s,geographic,6,0,sw2,standard,1980,2010,dim,double,standard,standard,yes,yes,yes,yes
-39,33,dom-s-6-geog_in-xy-geog-3x2,site-gridded geographic,success,s,geographic,6,NA,180,NA,xy,geographic,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no,yes,yes,no
-40,34,dom-s-6-geog-shifted_in-xy-geog-3x2,site-gridded geographic shifted out-of-inputs,error,s,geographic,6,NA,180,10;5,xy,geographic,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no,no,yes,no
-41,35,dom-s-6-geog-subset_in-xy-geog-3x2,site-gridded geographic subset,success,s,geographic,6,3;5,180,NA,xy,geographic,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no,no,yes,no
-42,37,dom-s-6-proj_in-xy-proj-3x2,site-gridded projected,success,s,projected,6,NA,NA,NA,xy,projected,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no,yes,yes,no
-43,43,dom-xy-3x2-geog_in-xy-geog-gridMET-3x2,gridMET,success,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,1,gridMET,NA,1980,2010,dim,double,standard,standard,no,no,no,no
-44,44,dom-xy-3x2-geog_in-xy-geog-MACAv2METDATA-3x2,MACAv2METDATA,success,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,1,MACAv2METDATA,NA,1980,2005,dim,double,standard,standard,no,no,no,no
-45,45,dom-xy-3x2-geog_in-xy-geog-Daymet-3x2,Daymet-geographic,success,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,1,Daymet,NA,1980,2010,dim,double,standard,standard,no,no,no,no
-46,46,dom-xy-3x2-proj_in-xy-proj-Daymet-3x2,Daymet-projected,success,xy,projected,3x2,NA,NA,NA,xy,projected,3x2,1,Daymet,NA,1980,2010,dim,double,standard,standard,no,no,no,no
+id,testrun,tag,comment,expectation,reference,domainType,domainCRS,domainSize,domainSubset,domainLonConvention,domainShift,inputType,inputCRS,inputSize,expectIndexLookup,inWeather,calendarWeather,simStartYear,simEndYear,pft,inputVarType,inputDimOrder,inputSoilProfile,inputsProvideSWRCp,StopRestart,EstimateEvCo,EstimateTrCo
+1,1,dom-s-1-geog_in-s-geog-1,example,success,example,s,geographic,1,NA,180,NA,s,geographic,1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
+2,2,dom-s-1-geog_in-s-geog-1-wGen,example-wGen,success,example-wGen,s,geographic,1,NA,180,NA,s,geographic,1,0,wGen,standard,1980,2010,dim,double,standard,standard,no,no,no,no
+3,6,dom-s-1-proj_in-s-geog-1,SpatialCombination-5,success,example,s,projected,1,NA,NA,NA,s,geographic,1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
+4,12,dom-xy-1x1-geog_in-xy-geog-1x1,SpatialCombination-11,success,example,xy,geographic,1x1,NA,180,NA,xy,geographic,1x1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
+5,16,dom-xy-1x1-proj_in-xy-geog-1x1,SpatialCombination-15,success,example,xy,projected,1x1,NA,NA,NA,xy,geographic,1x1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
+6,3,dom-s-1-geog_in-s-proj,SpatialCombination-2,error,example,s,geographic,1,NA,180,NA,s,projected,1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
+7,4,dom-s-1-geog_in-xy-geog-1x1,SpatialCombination-3,success,example,s,geographic,1,NA,180,NA,xy,geographic,1x1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
+8,5,dom-s-1-geog_in-xy-proj-1x1,SpatialCombination-4,error,example,s,geographic,1,NA,180,NA,xy,projected,1x1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
+9,7,dom-s-1-proj_in-s-proj,SpatialCombination-6,success,example,s,projected,1,NA,NA,NA,s,projected,1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
+10,8,dom-s-1-proj_in-xy-geog-1x1,SpatialCombination-7,success,example,s,projected,1,NA,NA,NA,xy,geographic,1x1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
+11,9,dom-s-1-proj_in-xy-proj-1x1,SpatialCombination-8,success,example,s,projected,1,NA,NA,NA,xy,projected,1x1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
+12,10,dom-xy-1x1-geog_in-s-geog,SpatialCombination-9,error,example,xy,geographic,1x1,NA,180,NA,s,geographic,1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
+13,11,dom-xy-1x1-geog_in-s-proj,SpatialCombination-10,error,example,xy,geographic,1x1,NA,180,NA,s,projected,1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
+14,13,dom-xy-1x1-geog_in-xy-proj-1x1,SpatialCombination-12,error,example,xy,geographic,1x1,NA,180,NA,xy,projected,1x1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
+15,14,dom-xy-1x1-proj_in-s-geog,SpatialCombination-13,error,example,xy,projected,1x1,NA,NA,NA,s,geographic,1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
+16,15,dom-xy-1x1-proj_in-s-proj,SpatialCombination-14,error,example,xy,projected,1x1,NA,NA,NA,s,projected,1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
+17,17,dom-xy-1x1-proj_in-xy-proj-1x1,SpatialCombination-16,success,example,xy,projected,1x1,NA,NA,NA,xy,projected,1x1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no
+18,18,dom-s-1-geog_in-s-geog-1-noleap,noleap calendar,success,example,s,geographic,1,NA,180,NA,s,geographic,1,0,sw2,noleap,1980,2010,dim,double,standard,standard,no,no,no,no
+19,19,dom-s-1-geog_in-s-geog-1-allleap,allleap calendar,success,example,s,geographic,1,NA,180,NA,s,geographic,1,0,sw2,allleap,1980,2010,dim,double,standard,standard,no,no,no,no
+20,20,dom-s-1-geog_in-s-geog-1-float,float instead of double as input,success,example,s,geographic,1,NA,180,NA,s,geographic,1,0,sw2,standard,1980,2010,dim,float,standard,standard,no,no,no,no
+21,25,dom-xy-3x2-geog_in-xy-geog-3x2,gridded geographic,success,example,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,0,sw2,standard,1980,2010,dim,double,standard,standard,no,yes,yes,yes
+22,26,dom-xy-3x2-geog-shifted_in-xy-geog-3x2,gridded geographic shifted out-of-inputs,error,example,xy,geographic,3x2,NA,180,10;5,xy,geographic,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no,no,yes,yes
+23,27,dom-xy-3x2-proj_in-xy-proj-3x2,gridded projected,success,example,xy,projected,3x2,NA,NA,NA,xy,projected,3x2,0,sw2,standard,1980,2010,dim,double,standard,standard,no,yes,yes,yes
+24,28,dom-xy-3x2-proj-subset_in-xy-proj-3x2,gridded projected subset,success,example,xy,projected,3x2,3;5,NA,NA,xy,projected,3x2,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,yes
+25,21,dom-xy-1x2-geog_in-xy-geog-3x2,gridded+lookup geographic,success,example,xy,geographic,1x2,NA,180,NA,xy,geographic,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,yes
+26,22,dom-xy-1x2-geog-lon360_in-xy-geog-3x2,gridded+lookup geographic lon0-360,success,example,xy,geographic,1x2,NA,360,NA,xy,geographic,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,yes
+27,23,dom-xy-1x2-proj_in-xy-proj-3x2,gridded+lookup projected,success,example,xy,projected,1x2,NA,NA,NA,xy,projected,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,yes
+28,24,dom-xy-1x2-proj-lon360_in-xy-geog-3x2,gridded+lookup projected lon0-360,success,example,xy,projected,1x2,NA,360,NA,xy,geographic,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,yes
+29,29,dom-xy-3x2-geog_in-xy-geog-3x2-pftvar,pft as variable instead dimension,success,example,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,0,sw2,standard,1980,2010,var,double,standard,standard,no,yes,yes,no
+30,30,dom-xy-3x2-geog_in-xy-geog-3x2-mixdim,"gridded geographic, mixed order of input dimensions",success,example,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,0,sw2,standard,1980,2010,dim,double,mix,standard,no,yes,yes,no
+31,31,dom-xy-3x2-geog_in-xy-geog-3x2-soillayers,variable number of soil layers,success,example,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,0,sw2,standard,1980,2010,dim,double,standard,variableSoilLayerNumber,no,yes,yes,no
+32,32,dom-xy-3x2-geog_in-xy-geog-3x2-soildepths,variable soil layer thickness,success,example,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,0,sw2,standard,1980,2010,dim,double,standard,variableSoilLayerThickness,no,yes,yes,no
+33,33,dom-xy-3x2-geog_in-xy-geog-3x2-swrcp,input SWRCp,success,example,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,0,sw2,standard,1980,2010,dim,double,standard,standard,yes,yes,yes,no
+34,34,dom-xy-3x2-geog_in-xy-geog-3x2-wGen,"gridded geographic, weather generator",success,example-wGen,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,0,wGen,standard,1980,2010,dim,double,standard,standard,no,yes,yes,yes
+35,39,dom-s-6-geog_in-s-geog-6,site geographic,success,example,s,geographic,6,NA,180,NA,s,geographic,6,0,sw2,standard,1980,2010,dim,double,standard,standard,no,yes,yes,yes
+36,40,dom-s-6-geog_in-s-geog-6-pftvar,pft as variable instead dimension,success,example,s,geographic,6,NA,180,NA,s,geographic,6,0,sw2,standard,1980,2010,var,double,standard,standard,no,yes,yes,yes
+37,41,dom-s-6-geog_in-s-geog-6-mixdim,"site geographic, mixed order of input dimensions",success,example,s,geographic,6,NA,180,NA,s,geographic,6,0,sw2,standard,1980,2010,dim,double,mix,standard,no,yes,yes,yes
+38,42,dom-s-6-geog_in-s-geog-6-soillayers,variable number of soil layers,success,example,s,geographic,6,NA,180,NA,s,geographic,6,0,sw2,standard,1980,2010,dim,double,standard,variableSoilLayerNumber,no,yes,yes,yes
+39,43,dom-s-6-geog_in-s-geog-6-soildepths,variable soil layer thickness,success,example,s,geographic,6,NA,180,NA,s,geographic,6,0,sw2,standard,1980,2010,dim,double,standard,variableSoilLayerThickness,no,yes,yes,yes
+40,44,dom-s-6-geog_in-s-geog-6-swrcp,input SWRCp,success,example,s,geographic,6,NA,180,NA,s,geographic,6,0,sw2,standard,1980,2010,dim,double,standard,standard,yes,yes,yes,yes
+41,45,dom-s-6-geog_in-s-geog-6-wGen,"site geographic, weather generator",success,example-wGen,s,geographic,6,NA,180,NA,s,geographic,6,0,wGen,standard,1980,2010,dim,double,standard,standard,no,yes,yes,yes
+42,35,dom-s-6-geog_in-xy-geog-3x2,site-gridded geographic,success,example,s,geographic,6,NA,180,NA,xy,geographic,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no,yes,yes,no
+43,36,dom-s-6-geog-shifted_in-xy-geog-3x2,site-gridded geographic shifted out-of-inputs,error,example,s,geographic,6,NA,180,10;5,xy,geographic,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no,no,yes,no
+44,37,dom-s-6-geog-subset_in-xy-geog-3x2,site-gridded geographic subset,success,example,s,geographic,6,3;5,180,NA,xy,geographic,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no,no,yes,no
+45,38,dom-s-6-proj_in-xy-proj-3x2,site-gridded projected,success,example,s,projected,6,NA,NA,NA,xy,projected,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no,yes,yes,no
+46,46,dom-xy-3x2-geog_in-xy-geog-gridMET-3x2,gridMET,success,example,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,1,gridMET,NA,1980,2010,dim,double,standard,standard,no,no,no,no
+47,47,dom-xy-3x2-geog_in-xy-geog-MACAv2METDATA-3x2,MACAv2METDATA,success,example,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,1,MACAv2METDATA,NA,1980,2005,dim,double,standard,standard,no,no,no,no
+48,48,dom-xy-3x2-geog_in-xy-geog-Daymet-3x2,Daymet-geographic,success,example,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,1,Daymet,NA,1980,2010,dim,double,standard,standard,no,no,no,no
+49,49,dom-xy-3x2-proj_in-xy-proj-Daymet-3x2,Daymet-projected,success,example,xy,projected,3x2,NA,NA,NA,xy,projected,3x2,1,Daymet,NA,1980,2010,dim,double,standard,standard,no,no,no,no

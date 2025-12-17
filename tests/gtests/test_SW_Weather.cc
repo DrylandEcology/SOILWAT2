@@ -97,7 +97,7 @@ TEST_F(WeatherFixtureTest, WeatherNoMemoryLeakIfDecreasedNumberOfYears) {
 
 TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesDays) {
 
-    SW_Run.WeatherIn.generateWeatherMethod = 2;
+    SW_Run.WeatherIn.generateWeatherMethod = wgMKV;
 
     // Change directory to get input files with some missing data
     (void) snprintf(
@@ -169,7 +169,7 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesYears) {
 
     int year;
     int day;
-    SW_Run.WeatherIn.generateWeatherMethod = 2;
+    SW_Run.WeatherIn.generateWeatherMethod = wgMKV;
 
     // Change directory to get input files with some missing data
     (void) snprintf(
@@ -232,7 +232,7 @@ TEST_F(WeatherFixtureTest, WeatherWeatherGeneratorOnly) {
     int year;
     int day;
 
-    SW_Run.WeatherIn.generateWeatherMethod = 2;
+    SW_Run.WeatherIn.generateWeatherMethod = wgMKV;
     SW_Run.WeatherIn.use_weathergenerator_only = swTRUE;
 
     SW_MKV_setup(
@@ -300,7 +300,7 @@ TEST_F(WeatherFixtureTest, ReadAllWeatherTooManyMissingForLOCFDeathTest) {
     );
 
     // Set LOCF (temp) + 0 (PPT) method
-    SW_Run.WeatherIn.generateWeatherMethod = 1;
+    SW_Run.WeatherIn.generateWeatherMethod = wgLOCF;
 
     SW_Run.ModelIn.startyr = 1981;
     SW_Run.ModelIn.endyr = 1981;
@@ -2002,7 +2002,7 @@ TEST_F(WeatherFixtureTest, WeatherDailyLOCFInputValues) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Setup values/flags for `generateMissingWeather()` to deal with
-    SW_Run.WeatherIn.generateWeatherMethod = 1;
+    SW_Run.WeatherIn.generateWeatherMethod = wgLOCF;
     SW_Run.RunIn.weathRunAllHist[yearIndex].cloudcov_daily[0] = cloudCovTestVal;
     SW_Run.RunIn.weathRunAllHist[yearIndex].actualVaporPressure[0] =
         actVapPressTestVal;

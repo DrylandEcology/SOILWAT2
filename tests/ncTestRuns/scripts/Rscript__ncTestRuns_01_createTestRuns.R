@@ -158,6 +158,8 @@ listTestRuns <- utils::read.csv(
   file = file.path(dir_dataraw, "metadata_testRuns.csv")
 )
 
+stopifnot(anyDuplicated(listTestRuns[["testrun"]]) == 0L)
+
 nTotalTestRuns <- nrow(listTestRuns)
 
 if (reqTestRuns > 0L) {
@@ -403,16 +405,23 @@ pb <- utils::txtProgressBar(max = nrow(listTestRuns), style = 3L)
 for (k0 in seq_len(nrow(listTestRuns))) {
 
   #------ . ------
-  # Skip a testRun if no external weather data
-  if (isFALSE(hasWeather[[listTestRuns[k0, "inWeather"]]])) {
+  useWeatherGenerator <- identical(listTestRuns[k0, "inWeather"], "wGen")
+
+  # Skip a testRun if weather inputs and no weather data available
+  if (
+    !useWeatherGenerator &&
+      isFALSE(hasWeather[[listTestRuns[k0, "inWeather"]]])
+  ) {
     utils::setTxtProgressBar(pb, value = k0)
     next
   }
 
 
   #--- * Create testRun ------
-  isSW2ExampleRun <- identical(
-    listTestRuns[k0, "tag"], "dom-s-1-geog_in-s-geog-1"
+  isSW2ExampleRun <- grepl(
+    "dom-s-1-geog_in-s-geog-1",
+    listTestRuns[k0, "tag"],
+    fixed = TRUE
   )
 
   tagk <- paste0(
@@ -2447,10 +2456,12 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
   stopifnot(
     listTestRuns[k0, "inWeather"] %in%
-      c("sw2", "gridMET", "MACAv2METDATA", "Daymet")
+      c("sw2", "wGen", "gridMET", "MACAv2METDATA", "Daymet")
   )
 
-  useWeatherDatasets <- !identical(listTestRuns[k0, "inWeather"], "sw2")
+  useWeatherDatasets <- !any(
+    useWeatherGenerator, identical(listTestRuns[k0, "inWeather"], "sw2")
+  )
 
   ids1 <- which(inputWeatherTSV[["dataset"]] == listTestRuns[k0, "inWeather"])
   tmp <- sw_crs[[listTestRuns[k0, "inputCRS"]]][["grid_mapping_name"]]
@@ -2612,6 +2623,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
       RNetCDF::close.nc(nc)
     }
+  }
+
+
+  if (identical(listTestRuns[k0, "inWeather"], "wGen")) {
+    #--- ..** inWeather weather generator ------
+    impute_weather <- 2L
+    vars_weather <- NULL
   }
 
 
