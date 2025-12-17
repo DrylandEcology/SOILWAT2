@@ -33,17 +33,17 @@ id,testrun,tag,comment,expectation,reference,domainType,domainCRS,domainSize,dom
 32,32,dom-xy-3x2-geog_in-xy-geog-3x2-soildepths,variable soil layer thickness,success,example,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,0,sw2,standard,1980,2010,dim,double,standard,variableSoilLayerThickness,no,yes,yes,no
 33,33,dom-xy-3x2-geog_in-xy-geog-3x2-swrcp,input SWRCp,success,example,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,0,sw2,standard,1980,2010,dim,double,standard,standard,yes,yes,yes,no
 34,34,dom-xy-3x2-geog_in-xy-geog-3x2-wGen,"gridded geographic, weather generator",success,example-wGen,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,0,wGen,standard,1980,2010,dim,double,standard,standard,no,yes,yes,yes
-35,38,dom-s-6-geog_in-s-geog-6,site geographic,success,example,s,geographic,6,NA,180,NA,s,geographic,6,0,sw2,standard,1980,2010,dim,double,standard,standard,no,yes,yes,yes
+35,39,dom-s-6-geog_in-s-geog-6,site geographic,success,example,s,geographic,6,NA,180,NA,s,geographic,6,0,sw2,standard,1980,2010,dim,double,standard,standard,no,yes,yes,yes
 36,40,dom-s-6-geog_in-s-geog-6-pftvar,pft as variable instead dimension,success,example,s,geographic,6,NA,180,NA,s,geographic,6,0,sw2,standard,1980,2010,var,double,standard,standard,no,yes,yes,yes
 37,41,dom-s-6-geog_in-s-geog-6-mixdim,"site geographic, mixed order of input dimensions",success,example,s,geographic,6,NA,180,NA,s,geographic,6,0,sw2,standard,1980,2010,dim,double,mix,standard,no,yes,yes,yes
 38,42,dom-s-6-geog_in-s-geog-6-soillayers,variable number of soil layers,success,example,s,geographic,6,NA,180,NA,s,geographic,6,0,sw2,standard,1980,2010,dim,double,standard,variableSoilLayerNumber,no,yes,yes,yes
 39,43,dom-s-6-geog_in-s-geog-6-soildepths,variable soil layer thickness,success,example,s,geographic,6,NA,180,NA,s,geographic,6,0,sw2,standard,1980,2010,dim,double,standard,variableSoilLayerThickness,no,yes,yes,yes
 40,44,dom-s-6-geog_in-s-geog-6-swrcp,input SWRCp,success,example,s,geographic,6,NA,180,NA,s,geographic,6,0,sw2,standard,1980,2010,dim,double,standard,standard,yes,yes,yes,yes
 41,45,dom-s-6-geog_in-s-geog-6-wGen,"site geographic, weather generator",success,example-wGen,s,geographic,6,NA,180,NA,s,geographic,6,0,wGen,standard,1980,2010,dim,double,standard,standard,no,yes,yes,yes
-42,36,dom-s-6-geog_in-xy-geog-3x2,site-gridded geographic,success,example,s,geographic,6,NA,180,NA,xy,geographic,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no,yes,yes,no
-43,37,dom-s-6-geog-shifted_in-xy-geog-3x2,site-gridded geographic shifted out-of-inputs,error,example,s,geographic,6,NA,180,10;5,xy,geographic,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no,no,yes,no
-44,38,dom-s-6-geog-subset_in-xy-geog-3x2,site-gridded geographic subset,success,example,s,geographic,6,3;5,180,NA,xy,geographic,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no,no,yes,no
-45,40,dom-s-6-proj_in-xy-proj-3x2,site-gridded projected,success,example,s,projected,6,NA,NA,NA,xy,projected,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no,yes,yes,no
+42,35,dom-s-6-geog_in-xy-geog-3x2,site-gridded geographic,success,example,s,geographic,6,NA,180,NA,xy,geographic,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no,yes,yes,no
+43,36,dom-s-6-geog-shifted_in-xy-geog-3x2,site-gridded geographic shifted out-of-inputs,error,example,s,geographic,6,NA,180,10;5,xy,geographic,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no,no,yes,no
+44,37,dom-s-6-geog-subset_in-xy-geog-3x2,site-gridded geographic subset,success,example,s,geographic,6,3;5,180,NA,xy,geographic,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no,no,yes,no
+45,38,dom-s-6-proj_in-xy-proj-3x2,site-gridded projected,success,example,s,projected,6,NA,NA,NA,xy,projected,3x2,1,sw2,standard,1980,2010,dim,double,standard,standard,no,yes,yes,no
 46,46,dom-xy-3x2-geog_in-xy-geog-gridMET-3x2,gridMET,success,example,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,1,gridMET,NA,1980,2010,dim,double,standard,standard,no,no,no,no
 47,47,dom-xy-3x2-geog_in-xy-geog-MACAv2METDATA-3x2,MACAv2METDATA,success,example,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,1,MACAv2METDATA,NA,1980,2005,dim,double,standard,standard,no,no,no,no
 48,48,dom-xy-3x2-geog_in-xy-geog-Daymet-3x2,Daymet-geographic,success,example,xy,geographic,3x2,NA,180,NA,xy,geographic,3x2,1,Daymet,NA,1980,2010,dim,double,standard,standard,no,no,no,no

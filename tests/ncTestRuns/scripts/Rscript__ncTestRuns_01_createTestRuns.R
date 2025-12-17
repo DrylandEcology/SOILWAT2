@@ -158,6 +158,8 @@ listTestRuns <- utils::read.csv(
   file = file.path(dir_dataraw, "metadata_testRuns.csv")
 )
 
+stopifnot(anyDuplicated(listTestRuns[["testrun"]]) == 0L)
+
 nTotalTestRuns <- nrow(listTestRuns)
 
 if (reqTestRuns > 0L) {
