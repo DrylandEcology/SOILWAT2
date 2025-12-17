@@ -226,12 +226,14 @@ int setup_testGlobalSoilwatTemplate() {
     int worldSize = 1;
     LOG_INFO LogInfo;
     const Bool renameDomainTemplateNC = swTRUE;
+    const int runSimLen = 0; // Entire simulation
+    TimeInt n_years;
 
     // Initialize SOILWAT2 variables and read values from example input file
     sw_init_logs(NULL, &LogInfo);
 
     SW_DOM_init_ptrs(&template_SW_Domain);
-    SW_CTL_init_ptrs(&template_SW_Run);
+    SW_CTL_init_ptrs(&template_SW_Domain, &template_SW_Run);
 
     template_SW_Domain.SW_PathInputs.txtInFiles[eFirst] =
         Str_Dup(DFLT_FIRSTFILE, &LogInfo);
@@ -240,7 +242,12 @@ int setup_testGlobalSoilwatTemplate() {
     }
 
     SW_CTL_setup_domain(
-        0, worldSize, renameDomainTemplateNC, &template_SW_Domain, &LogInfo
+        0,
+        worldSize,
+        renameDomainTemplateNC,
+        runSimLen,
+        &template_SW_Domain,
+        &LogInfo
     );
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;
@@ -269,7 +276,7 @@ int setup_testGlobalSoilwatTemplate() {
     template_SW_Run.ModelSim->doOutput = swFALSE;
 
     SW_MDL_get_ModelRun(
-        &template_SW_Run.ModelIn, &template_SW_Domain, NULL, &LogInfo
+        template_SW_Run.ModelIn, &template_SW_Domain, NULL, &LogInfo
     );
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;
@@ -296,13 +303,18 @@ int setup_testGlobalSoilwatTemplate() {
     sw_wrapup_logs(0, &LogInfo);
     sw_init_logs(NULL, &LogInfo);
 
-    SW_WTH_finalize_all_weather(
+    n_years = template_SW_Domain.endyr - template_SW_Domain.startyr + 1;
+    SW_WTH_finalize_yearly_weather(
         &template_SW_Run.MarkovIn,
-        &template_SW_Run.WeatherIn,
+        template_SW_Run.WeatherIn,
         template_SW_Run.RunIn.weathRunAllHist,
+        &template_SW_Run.WeatherSim,
         template_SW_Run.ModelSim->cum_monthdays,
         template_SW_Run.ModelSim->days_in_month,
         NULL,
+        template_SW_Domain.startyr,
+        n_years,
+        template_SW_Run.WeatherSim.trivialScaling,
         swFALSE, // Does not matter
         &LogInfo
     );
@@ -310,7 +322,7 @@ int setup_testGlobalSoilwatTemplate() {
         goto finishProgram;
     }
 
-    SW_CTL_init_run(&template_SW_Run, &LogInfo);
+    SW_CTL_init_run(&template_SW_Run, &LogInfo, &LogInfo);
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
@@ -319,7 +331,7 @@ int setup_testGlobalSoilwatTemplate() {
         template_SW_Run.RunIn.SiteRunIn.n_layers,
         template_SW_Run.VegEstabIn->count,
         nSites,
-        template_SW_Run.VegEstabIn->parms,
+        &template_SW_Run.VegEstabIn->parms,
         &template_SW_Domain.OutDom,
         &LogInfo
     );

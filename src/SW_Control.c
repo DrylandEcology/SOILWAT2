@@ -522,7 +522,13 @@ nc inputs
 void SW_RUN_deepCopy(
     SW_RUN *source, SW_RUN *dest, Bool copyWeatherHist, LOG_INFO *LogInfo
 ) {
+#if defined(SWNETCDF)
     const TimeInt n_weathYears = 1;
+#else
+    const TimeInt n_weathYears =
+        source->ModelIn->endyr - source->ModelIn->startyr + 1;
+    TimeInt year;
+#endif
     const IntU prevEstabCount = source->VegEstabIn->count;
 
     memcpy(dest, source, sizeof(*dest));
@@ -537,6 +543,16 @@ void SW_RUN_deepCopy(
             &dest->RunIn.weathRunAllHist, n_weathYears, LogInfo
         );
         checkReturn(LogInfo->stopRun);
+
+#if !defined(SWNETCDF)
+        for (year = 0; year < n_weathYears; year++) {
+            Mem_Copy(
+                &dest->RunIn.weathRunAllHist[year],
+                &source->RunIn.weathRunAllHist[year],
+                sizeof(SW_WEATHER_HIST)
+            );
+        }
+#endif
     }
 
     /* Copy weather generator parameters */
@@ -605,6 +621,7 @@ static void prepare_next_day(
     const Bool readWeather =
         SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
     const Bool readConstInfo = swFALSE;
+    const TimeInt n_years = 1;
 
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
@@ -612,6 +629,7 @@ static void prepare_next_day(
 
     textSkyVals = (Bool) !SW_Domain->netCDFInput.readInVars[eSW_InClimate][0];
 #else
+    const TimeInt n_years = SW_Domain->endyr - SW_Domain->startyr + 1;
     size_t baseSuid[NC_DIMS] = {0};
     size_t *suid = baseSuid;
 #endif
@@ -690,6 +708,7 @@ static void prepare_next_day(
                     SW_Runs[site].ModelSim->days_in_month,
                     suid,
                     SW_Runs[site].ModelSim->year,
+                    n_years,
                     SW_Runs[site].WeatherSim.trivialScaling,
                     swFALSE, // Does not matter
                     &siteLogs[site]

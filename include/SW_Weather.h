@@ -226,6 +226,7 @@ void finalizeAllWeather(
     TimeInt days_in_month[],
     size_t ncSuid[],
     TimeInt currYear,
+    TimeInt n_years,
     Bool trivialScaling,
     Bool sDom,
     LOG_INFO *LogInfo
@@ -291,6 +292,7 @@ void SW_WTH_finalize_yearly_weather(
     TimeInt days_in_month[],
     size_t ncSuid[],
     TimeInt currYear,
+    TimeInt n_years,
     Bool trivialScaling,
     Bool sDom,
     LOG_INFO *LogInfo

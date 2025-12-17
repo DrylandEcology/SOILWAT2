@@ -1379,6 +1379,7 @@ year
 @param[in] ncSuid Unique indentifier of the current suid being simulated to
     insert into a produced message (MPI or NC mode only)
 @param[in] currYear Current year being simulated
+@param[in] n_years Number of years in simulation (length of `allHist`)
 @param[in] trivialScaling Flag specifying if weather scaling needs to take
 place
 @param[in] sDom Specifies the program's domain is site-oriented (MPI/NC only)
@@ -1397,6 +1398,7 @@ void finalizeAllWeather(
     TimeInt days_in_month[],
     size_t ncSuid[],
     TimeInt currYear,
+    TimeInt n_years,
     Bool trivialScaling,
     Bool sDom,
     LOG_INFO *LogInfo
@@ -1404,8 +1406,6 @@ void finalizeAllWeather(
 
     unsigned int day;
     unsigned int yearIndex;
-
-    const IntU n_years = 1;
 
     // Impute missing values
     generateMissingWeather(
@@ -1477,6 +1477,7 @@ void SW_WTH_finalize_yearly_weather(
     TimeInt days_in_month[],
     size_t ncSuid[],
     TimeInt currYear,
+    TimeInt n_years,
     Bool trivialScaling,
     Bool sDom,
     LOG_INFO *LogInfo
@@ -1491,6 +1492,7 @@ void SW_WTH_finalize_yearly_weather(
         days_in_month,
         ncSuid,
         currYear,
+        n_years,
         trivialScaling,
         sDom,
         LogInfo
