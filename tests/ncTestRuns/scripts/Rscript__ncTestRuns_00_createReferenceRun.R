@@ -14,7 +14,7 @@
 #       --path-to-sw2=<...> \
 #       --swMode=<...> \
 #       --ntasks=<...> \
-#       --path-to-referenceOutput=<...>
+#       --path-to-references=<...>
 # ```
 #------------------------------------------------------------------------------#
 
@@ -66,18 +66,20 @@ fname_sw2 <- if (any(ids)) {
 
 stopifnot(file.exists(fname_sw2))
 
-ids <- grepl("--path-to-referenceOutput", args, fixed = TRUE)
-frefOutput <- if (any(ids)) {
-  sub("--path-to-referenceOutput", "", args[ids], fixed = TRUE) |>
+ids <- grepl("--path-to-references", args, fixed = TRUE)
+path_refFolder <- if (any(ids)) {
+  sub("--path-to-references", "", args[ids], fixed = TRUE) |>
     sub("=", "", x = _, fixed = TRUE) |>
     trimws()
 } else {
-  file.path("tests", "ncTestRuns", "results", "referenceRun", "Output")
+  file.path("tests", "ncTestRuns", "results", "referenceRuns")
 }
 
-dir_refRun <- dirname(file.path(dir_prj, "..", "..", frefOutput))
 dir_refRunTemplate <- file.path(dir_prj, "..", "..", "tests", "example")
 stopifnot(dir.exists(dir_refRunTemplate))
+
+dir_dataraw <- file.path(dir_prj, "data-raw")
+stopifnot(dir.exists(dir_dataraw))
 
 dir_R <- file.path(dir_prj, "R")
 stopifnot(dir.exists(dir_R))
@@ -87,6 +89,7 @@ stopifnot(dir.exists(dir_R))
 #------ Load functions ------
 copyDir <- NULL
 toggleNCInputTSV <- NULL
+setTxtInput <- NULL
 runSW2 <- NULL
 
 res <- lapply(
@@ -96,60 +99,92 @@ res <- lapply(
 
 
 #------ . ------
-#------ Create reference run ------
+#------ Create reference runs ------
 
-#--- * Create temporary run from reference template ------
-unlink(dir_refRun, recursive = TRUE)
-dir.create(dir_refRun, recursive = TRUE, showWarnings = FALSE)
+implementedReferences <- c("example", "example-wGen")
 
-stopifnot(
-  copyDir(
-    from = file.path(dir_refRunTemplate, "Input"),
-    to = file.path(dir_refRun, "Input")
-  ),
-  copyDir(
-    from = file.path(dir_refRunTemplate, "Input_nc"),
-    to = file.path(dir_refRun, "Input_nc")
-  ),
-  file.copy(
-    from = file.path(dir_refRunTemplate, "files.in"),
-    to = dir_refRun
+
+#--- * Specifications of test runs ------
+listTestRuns <- utils::read.csv(
+  file = file.path(dir_dataraw, "metadata_testRuns.csv")
+)
+
+refRuns <- unique(listTestRuns[["reference"]])
+stopifnot(refRuns %in% implementedReferences)
+
+dir_refRuns <- file.path(dir_prj, "..", "..", path_refFolder, refRuns)
+
+
+for (k0 in seq_along(dir_refRuns)) {
+
+  #--- * Create temporary run from reference template ------
+  unlink(dir_refRuns[[k0]], recursive = TRUE)
+  dir.create(dir_refRuns[[k0]], recursive = TRUE, showWarnings = FALSE)
+
+  stopifnot(
+    copyDir(
+      from = file.path(dir_refRunTemplate, "Input"),
+      to = file.path(dir_refRuns[[k0]], "Input")
+    ),
+    copyDir(
+      from = file.path(dir_refRunTemplate, "Input_nc"),
+      to = file.path(dir_refRuns[[k0]], "Input_nc")
+    ),
+    file.copy(
+      from = file.path(dir_refRunTemplate, "files.in"),
+      to = dir_refRuns[[k0]]
+    )
   )
-)
 
 
-#--- * Turn off nc-inputs ------
-fname_ncintsv <- file.path(
-  dir_refRun, "Input_nc", "SW2_netCDF_input_variables.tsv"
-)
+  #--- * Turn off nc-inputs ------
+  fname_ncintsv <- file.path(
+    dir_refRuns[[k0]], "Input_nc", "SW2_netCDF_input_variables.tsv"
+  )
 
-toggleNCInputTSV(
-  filename = fname_ncintsv,
-  inkeys = c("inTopo", "inClimate", "inSoil", "inVeg", "inWeather"),
-  sw2vars = NULL,
-  value = 0L
-)
-
-
-#--- * Execute refRun ------
-res <- runSW2(
-  sw2 = fname_sw2,
-  path_inputs = dir_refRun,
-  mode = swMode,
-  nTasks = nTasks,
-  renameDomainTemplate = TRUE
-)
-
-fname_logfile <- file.path(dir_refRun, "logs", "rank_0_logfile.log")
-has_logfile <- file.exists(fname_logfile)
-
-logfile <- if (has_logfile) readLines(fname_logfile)
-has_logContent <- nzchar(paste(logfile, collapse = " "))
+  toggleNCInputTSV(
+    filename = fname_ncintsv,
+    inkeys = c("inTopo", "inClimate", "inSoil", "inVeg", "inWeather"),
+    sw2vars = NULL,
+    value = 0L
+  )
 
 
-if (!is.null(res[["msg"]]) || has_logContent) {
-  cat("Reference run failed.", fill = TRUE)
-  quit(status = 1L)
+  #--- * Turn on weather generator (wGen) ------
+  if (grepl("wGen", basename(dir_refRuns[[k0]]), fixed = TRUE)) {
+    fname <- file.path(dir_refRuns[[k0]], "Input", "weathsetup.in")
+    setTxtInput(
+      filename = fname,
+      tag = "# 0 = use historical data only$",
+      value = 2L,
+      classic = TRUE
+    )
+  }
+
+
+  #--- * Execute refRun ------
+  res <- runSW2(
+    sw2 = fname_sw2,
+    path_inputs = dir_refRuns[[k0]],
+    mode = swMode,
+    nTasks = nTasks,
+    renameDomainTemplate = TRUE
+  )
+
+  fname_logfile <- file.path(dir_refRuns[[k0]], "logs", "rank_0_logfile.log")
+  has_logfile <- file.exists(fname_logfile)
+
+  logfile <- if (has_logfile) readLines(fname_logfile)
+  has_logContent <- nzchar(paste(logfile, collapse = " "))
+
+
+  if (!is.null(res[["msg"]]) || has_logContent) {
+    cat(
+      "Reference run", shQuote(basename(dir_refRuns[[k0]])), "failed.",
+      fill = TRUE
+    )
+    quit(status = 1L)
+  }
 }
 
 #------ . ------
