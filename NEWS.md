@@ -14,20 +14,17 @@
 * Potential evaporation coefficients can now be estimated from soil properties
   (#409; @dschlaep).
 
+* The weather generator is now functional for all modes
+  (#497, #498; @N1ckP3rsl3y). However, nc-based SOILWAT2 cannot input
+  site-based coefficients and is restricted to domain-wide coefficients.
+
 ## Bugfixes
 * Output of vegetation establishment is no longer reported one output time
   period too early; the bug occurred only for events on the first day of an
   output time period (#494; @N1ckP3rsl3y).
 
-* Program run no longer reports a segmentation fault or deallocation of a
-  freed pointer when the weather generator method is 2 (markov) (#497;
-  @N1ckP3rsl3y).
-
-* NetCDF-enabled modes (SWNC/SWNETCDF/SWMPI) properly generate weather data
-  when the weather generator method is 2 (markov) (#498, @N1ckP3rsl3y).
-
-* Script `"tools/ncTestRuns.sh"` produces reference output and detects log file
-  when in mpi mode (#500, @N1ckP3rsl3y)
+* The mpi-mode of `"ncTestRuns"` now works again also for the reference run
+  (#500, @N1ckP3rsl3y).
 
 ## Changes to inputs
 * New input via `"siteparam.in"` to select the input option for potential
