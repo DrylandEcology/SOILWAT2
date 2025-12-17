@@ -378,6 +378,25 @@ should be exported. For instance,
 ```
 
 
+#### Output comparison between two nc-based simulation runs
+
+The R script `"Rscript__SW2_compareOutputNC.R"` compares nc-output from
+two different single-site simulations:
+  * equality check (that can be skipped)
+  * visualizing differences at each time step (day, week, month, year) as plots
+    stored to `PDF` files
+
+For instance
+```{.sh}
+Rscript \
+    tools/rscripts/Rscript__SW2_compareOutputNC.R \
+    --pathToOut1=tests/example/Output \
+    --pathToOut2=tests/ncTestRuns/results/referenceRuns/example/Output
+```
+
+See `"Rscript__SW2_compareOutputNC.R"` for a complete list of arguments.
+
+
 #### Output comparison to another version
 
 Another use case is to compare output of a new (development) branch to output
