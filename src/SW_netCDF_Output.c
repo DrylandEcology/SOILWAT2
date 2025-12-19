@@ -320,7 +320,9 @@ static unsigned int calc_timeSize(
                 break;
             case eSW_Month:
                 Time_new_year(endYr, numDaysInMonth, cumDaysInMonth);
-                while (cumDaysInMonth[monIndex] > SW_Domain->endend) {
+                while (monIndex > 0 &&
+                       cumDaysInMonth[monIndex] > SW_Domain->endend) {
+
                     numPdInDays++;
                     monIndex--;
                 }
