@@ -84,6 +84,7 @@ void SW_MDL_construct(SW_MODEL_SIM *SW_ModelSim) {
     SW_ModelSim->yearIdx = 0;         /* calculate at start of new year */
     SW_ModelSim->yearIdxSpinSim = -1; /* incremented at start of new year */
     SW_ModelSim->doOutput = swTRUE;
+    SW_ModelSim->inSpinup = swFALSE;
 }
 
 /**
