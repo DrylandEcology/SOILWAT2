@@ -183,7 +183,7 @@ static void handle_logs(
 #endif
     }
 
-    if (simLog->stopRun || simLog->numWarnings > 0) {
+    if ((simLog->stopRun || simLog->numWarnings > 0) && simLog != mainLog) {
         // Write the error with the suid indices to have a universal
         // identifier; Put in the order of [x, y] or s
         if (sDom) {
