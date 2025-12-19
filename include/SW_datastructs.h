@@ -1731,9 +1731,6 @@ struct SW_OUT_DOM {
     Bool use[SW_OUTNKEYS],   // TRUE if output is requested
         has_sl[SW_OUTNKEYS]; // TRUE if output key/type produces output for each
                              // soil layer
-    TimeInt first_orig[SW_OUTNKEYS],
-        last_orig[SW_OUTNKEYS]; /* first/last doy that were originally requested
-                                 */
 
 #if defined(RSOILWAT)
     char *outfile[SW_OUTNKEYS];

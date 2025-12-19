@@ -652,7 +652,6 @@ static void average_for(
     LOG_INFO *LogInfo
 ) {
 
-    TimeInt curr_pd = 0;
     double div = 0.; /* if sumtype=AVG, days in period; if sumtype=SUM, 1 */
     LyrIndex i;
     int k;
@@ -669,47 +668,42 @@ static void average_for(
     // carefully aggregate for specific time period and aggregation type
     // (mean, sum, final value)
     ForEachOutKey(k) {
-        if (!OutDom->use[k]) {
-            continue;
-        }
-
-        switch (pd) {
-        case eSW_Week:
-            curr_pd = sw->ModelSim.week + 1;
-            /* Output produced only for complete weeks or at end of year */
-            div = (doy == lastDoy) ? (lastDoy - 1) % WKDAYS + 1 : WKDAYS;
-            break;
-
-        case eSW_Month:
-            curr_pd = sw->ModelSim.month + 1;
-            /* Output produced only for complete months */
-            div = Time_days_in_month(
-                sw->ModelSim.month, sw->ModelSim.days_in_month
-            );
-            break;
-
-        case eSW_Year:
-            curr_pd = sw->OutRun.first[k];
-            div = sw->OutRun.last[k] - sw->OutRun.first[k] + 1;
-            break;
-
-        default:
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "Programmer: Invalid period in average_for()."
-            );
-            return; // Exit function prematurely due to error
-            break;
-        } /* end switch(pd) */
-
-        if (OutDom->myobj[k] != otyp || curr_pd < sw->OutRun.first[k] ||
-            curr_pd > sw->OutRun.last[k]) {
+        if (!OutDom->use[k] || OutDom->myobj[k] != otyp) {
             continue;
         }
 
         if (OutDom->sumtype[k] == eSW_Sum) {
-            div = 1.;
+            div = 1.; /* `div` is 1 if aggregation is `sum` */
+        } else {
+
+            /* Determine value of `div` if aggregation is `mean` */
+            switch (pd) {
+            case eSW_Week:
+                /* Output produced only for complete weeks or at end of year */
+                div = (doy == lastDoy) ? (lastDoy - 1) % WKDAYS + 1 : WKDAYS;
+                break;
+
+            case eSW_Month:
+                /* Output produced only for complete months */
+                div = Time_days_in_month(
+                    sw->ModelSim.month, sw->ModelSim.days_in_month
+                );
+                break;
+
+            case eSW_Year:
+                /* Output produced only for complete years */
+                div = Time_get_lastdoy_y(sw->ModelSim.year);
+                break;
+
+            default:
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Programmer: Invalid period in average_for()."
+                );
+                return; // Exit function prematurely due to error
+                break;
+            } /* end switch(pd) */
         }
 
         /* notice that all valid keys are in this switch */
@@ -1011,32 +1005,10 @@ static void collect_sums(
     OutPeriod op,
     LOG_INFO *LogInfo
 ) {
-    TimeInt pd = 0;
     int i;
     int k;
     Bool use_help;
     Bool use_KeyPeriodCombo;
-
-    switch (op) {
-    case eSW_Day:
-        pd = sw->ModelSim.doy;
-        break;
-    case eSW_Week:
-        pd = sw->ModelSim.week + 1;
-        break;
-    case eSW_Month:
-        pd = sw->ModelSim.month + 1;
-        break;
-    case eSW_Year:
-        pd = sw->ModelSim.doy;
-        break;
-    default:
-        LogError(
-            LogInfo, LOGERROR, "PGMR: Invalid outperiod in collect_sums()"
-        );
-        break;
-    }
-
 
     // call `sumof_XXX` for each output key x output period combination
     // for those output keys that belong to the output type `otyp` (eSWC, eWTH,
@@ -1062,8 +1034,7 @@ static void collect_sums(
             }
         }
 
-        if (use_KeyPeriodCombo && pd >= sw->OutRun.first[k] &&
-            pd <= sw->OutRun.last[k]) {
+        if (use_KeyPeriodCombo) {
             switch (otyp) {
             case eSWC:
                 sumof_swc(
@@ -1144,8 +1115,6 @@ static void set_SXWrequests_helper(
 
     OutDom->timeSteps_SXW[k][0] = pd;
     OutDom->use[k] = swTRUE;
-    OutDom->first_orig[k] = 1;
-    OutDom->last_orig[k] = 366;
 
     if (OutDom->sumtype[k] != aggfun) {
         if (warn && OutDom->sumtype[k] != eSW_Off) {
@@ -1255,7 +1224,7 @@ Currently implemented:
 
 @sideeffect Sets elements of `timeSteps_SXW`, updates
 `used_OUTNPERIODS`, and adjusts variables `use`, `sumtype` (with a warning),
-`first_orig`, and `last_orig` of `SW_Output`.
+ of `SW_Output`.
 */
 void SW_OUT_set_SXWrequests(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     // Update `used_OUTNPERIODS`:
@@ -1417,8 +1386,6 @@ void SW_OUTDOM_construct(SW_OUT_DOM *OutDom) {
         OutDom->myobj[k] = key2obj[k];
         OutDom->sumtype[k] = eSW_Off;
         OutDom->has_sl[k] = has_key_soillayers((OutKey) k);
-        OutDom->first_orig[k] = 1;
-        OutDom->last_orig[k] = 366;
 
         // assign `get_XXX` functions
         switch (k) {
@@ -2838,43 +2805,10 @@ void SW_OUT_setup_output(
 #endif // !SWNETCDF
 }
 
-void SW_OUT_new_year(
-    TimeInt firstdoy,
-    TimeInt lastdoy,
-    SW_OUT_DOM *OutDom,
-    TimeInt first[],
-    TimeInt last[]
-) {
-    /* =================================================== */
-    /* reset the terminal output days each year  */
-
-    int k;
-
-    ForEachOutKey(k) {
-        if (!OutDom->use[k]) {
-            continue;
-        }
-
-        if (OutDom->first_orig[k] <= firstdoy) {
-            first[k] = firstdoy;
-        } else {
-            first[k] = OutDom->first_orig[k];
-        }
-
-        if (OutDom->last_orig[k] >= lastdoy) {
-            last[k] = lastdoy;
-        } else {
-            last[k] = OutDom->last_orig[k];
-        }
-    }
-}
-
 int SW_OUT_read_onekey(
     SW_OUT_DOM *OutDom,
     OutKey k,
     OutSum sumtype,
-    TimeInt first,
-    TimeInt last,
     char msg[],
     size_t sizeof_msg,
     Bool *VegProd_use_SWA,
@@ -2922,8 +2856,6 @@ int SW_OUT_read_onekey(
     /* Check validity of output key */
     if (k == eSW_Estab) {
         OutDom->sumtype[k] = eSW_Sum;
-        first = 1;
-        last = 366;
 
     } else if ((k == eSW_AllVeg || k == eSW_ET || k == eSW_AllWthr ||
                 k == eSW_AllH2O)) {
@@ -2952,22 +2884,6 @@ int SW_OUT_read_onekey(
             txtInFiles[eSite]
         );
         return (LOGWARN);
-    }
-
-    // Set remaining values of `OutDom->...[k]`
-    OutDom->first_orig[k] = first;
-    OutDom->last_orig[k] = last;
-
-    if (OutDom->last_orig[k] == 0) {
-        (void) snprintf(
-            msg,
-            sizeof_msg,
-            "%s : Invalid ending day (%d), key=%s.",
-            MyFileName,
-            last,
-            key2str[k]
-        );
-        return (LOGERROR);
     }
 
     return (res);
@@ -3045,8 +2961,8 @@ void SW_OUT_read(
     char upkey[50];
     char upsum[4];
     char inbuf[MAX_FILENAMESIZE];
-    TimeInt first;
-    int last = -1;                             /* first doy for output */
+    TimeInt first = 1;
+    TimeInt last = 365;
     const int numReadInKeys = SW_OUTNKEYS - 4; /* 4 outkeys without output */
     const int outDirLineNo = numReadInKeys + 2;
     char relOutFileName[MAX_FILENAMESIZE] = {'\0'};
@@ -3153,12 +3069,30 @@ void SW_OUT_read(
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
+            if (first != 1) {
+                // Notify the user that this functionality has been removed
+                LogError(
+                    LogInfo,
+                    LOGWARN,
+                    "outsetup.in: values other than first = 1 are ignored."
+                );
+            }
 
             if (Str_CompareI(lastStr, (char *) "END") != 0) {
-                last = sw_strtoi(lastStr, MyFileName, LogInfo);
+                last = (TimeInt) sw_strtoi(lastStr, MyFileName, LogInfo);
                 if (LogInfo->stopRun) {
                     goto closeFile;
                 }
+            } else {
+                last = 365;
+            }
+            if (last < 365 || last > 366) {
+                // Notify the user that this functionality has been removed
+                LogError(
+                    LogInfo,
+                    LOGWARN,
+                    "outsetup.in: values other than last = end are ignored."
+                );
             }
 
             // Convert strings to index numbers
@@ -3183,9 +3117,6 @@ void SW_OUT_read(
                 OutDom,
                 k,
                 str2stype(Str_ToUpper(sumtype, upsum), LogInfo),
-                first,
-                (Str_CompareI(lastStr, (char *) "END") == 0) ? 366 :
-                                                               (TimeInt) last,
                 msg,
                 sizeof msg,
                 &sw->VegProdIn.use_SWA,
@@ -3928,14 +3859,12 @@ void SW_OUT_close_files(
 void echo_outputs(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     int k;
     int index;
-    int writeValIndex = 0;
-    char str[OUTSTRLEN];
     char errstr[MAX_ERROR];
     size_t writeSize = MAX_ERROR;
     char *writePtr = errstr;
     char *endErrstr = errstr + sizeof errstr - 1;
     char *cpyPtr = NULL;
-    const int numWriteStrs = 6;
+    const int numWriteStrs = 4;
     Bool fullBuffer = swFALSE;
 
     const char *errStrHeader = "---------------------------\nKey ";
@@ -3951,14 +3880,7 @@ void echo_outputs(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         (char *) errStrHeader,
         (char *) key2str[0], /* Overwrite in loop below */
         (char *) "\n\tSummary Type: ",
-        (char *) styp2str[0], /* Overwrite in loop below */
-        (char *) "\n\tStart period: %u",
-        (char *) "\n\tEnd period  : %u\n"
-    };
-
-    TimeInt writeVals[] = {
-        OutDom->first_orig[0], /* Overwrite in loop below */
-        OutDom->last_orig[0]   /* Overwrite in loop below */
+        (char *) styp2str[0] /* Overwrite in loop below */
     };
 
     fullBuffer = sw_memccpy_inc(
@@ -3976,19 +3898,8 @@ void echo_outputs(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         writeStrs[1] = (char *) key2str[k];
         writeStrs[3] = (char *) styp2str[OutDom->sumtype[k]];
 
-        writeVals[0] = OutDom->first_orig[k];
-        writeVals[1] = OutDom->last_orig[k];
-
         for (index = 0; index < numWriteStrs; index++) {
             cpyPtr = writeStrs[index];
-
-            if (index >= 4) {
-                (void
-                ) snprintf(str, OUTSTRLEN, cpyPtr, writeVals[writeValIndex]);
-
-                writeValIndex++;
-                cpyPtr = str;
-            }
 
             fullBuffer = sw_memccpy_inc(
                 (void **) &writePtr,
