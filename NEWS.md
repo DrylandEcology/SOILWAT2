@@ -18,6 +18,9 @@
   (#497, #498; @N1ckP3rsl3y). However, nc-based SOILWAT2 cannot input
   site-based coefficients and is restricted to domain-wide coefficients.
 
+* NetCDF-enabled modes stop output at user-requested last day of the last
+  simulation year (#503, @N1ckP3rsl3y).
+
 ## Bugfixes
 * Output of vegetation establishment is no longer reported one output time
   period too early; the bug occurred only for events on the first day of an
@@ -40,6 +43,7 @@
 * All modes (including txt-based) now output values of soil evaporation
   at each soil layer.
 
+* All modes do not produce output for partially completed years.
 
 # SOILWAT2 v8.3.0
 * Simulation output remains the same as the previous version.
